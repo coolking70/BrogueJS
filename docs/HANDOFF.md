@@ -19,7 +19,7 @@ BrogueJS 是 [Brogue CE](https://github.com/tmewett/BrogueCE) 的 TypeScript + V
 | 测试 | 约 240 个测试文件、4500+ 项断言；两份生成基线、三份黄金 trace |
 | 仓库布局 | 独立项目（BJS-1）：项目在仓库根，CE 参照源码按需 `npm run ce:fetch`，旧开发文档归档在 `docs/archive/` |
 
-发布：GitHub `coolking70/BrogueJS`，tag/Release `v0.2.0`。公开试玩为 Claude Artifact 测试构建（见 `docs/release.md`）。
+发布：GitHub `coolking70/BrogueJS`，tag/Release `v0.2.0`。公开试玩由 GitHub Pages 从 `main` 自动构建发布：<https://coolking70.github.io/BrogueJS/>（见 `docs/release.md`）。
 
 历史来源：本项目从 `coolking70/BrogueCE-chs` 仓库的 `brogue-web/` 目录整理而来；那个仓库保留完整开发历史和全部验收证据（约 850 MB），本仓库只保留代码、测试与文档。
 

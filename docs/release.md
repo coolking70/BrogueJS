@@ -22,17 +22,24 @@ npm run test:drift
 3. 打标签并推送：`git tag -a vX.Y.Z -m "…"`，`git push origin main vX.Y.Z`。
 4. 在 GitHub 创建 Release（`gh release create vX.Y.Z --notes-file <说明>`），正文取 `RELEASE_NOTES.md` 当前版本一节。
 
-## 3. 试玩构建
+## 3. GitHub Pages 在线试玩
 
-构建为静态站点，任意静态托管都可以：
+公开试玩地址：<https://coolking70.github.io/BrogueJS/>。
+
+`.github/workflows/pages.yml` 在每次推送 `main` 时自动执行以下流程：Node.js 22 安装依赖、以 `/BrogueJS/` 为资源基础路径构建、上传 `dist/` 并部署 GitHub Pages。也可以在 GitHub Actions 页面手动触发。
+
+本地复现 Pages 构建：
 
 ```bash
-npx vite build --base ./ --outDir <输出目录>
+npm ci
+npm run build -- --base /BrogueJS/
 ```
 
-`--base ./` 让资源用相对路径，便于放在子目录或 Artifact 中。
+普通本地开发仍使用 `npm run dev`，不带 `/BrogueJS/` 前缀。
 
-之前的公开试玩以 Claude Artifact 形式发布（https://claude.ai/artifact/SeidsFwF48F7J4BGf59bHb ，由所有者账号管理，设为"任何有链接的人"可访问）。更新方式是把上面的构建产物重新发布到同一个 Artifact；也可以改用 GitHub Pages 等托管（旧仓库 BrogueCE-chs 的 GitHub Pages 上是更早的 C/WASM 版本，与本项目无关）。
+如仓库改名或绑定自定义域名，需要同步修改工作流中的 `--base`：仓库 Pages 使用 `/<仓库名>/`，自定义域名使用 `/`。
+
+历史上的 Claude Artifact 测试构建继续保留，但不再作为当前公开版本的发布入口。旧仓库 BrogueCE-chs 的 GitHub Pages 是更早的 C/WASM 版本，与本项目无关。
 
 ## 4. 许可
 

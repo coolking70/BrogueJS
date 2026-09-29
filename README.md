@@ -2,6 +2,8 @@
 
 [Brogue: Community Edition](https://github.com/tmewett/BrogueCE) 的 TypeScript + Vue 3 网页移植，完整中文界面，支持桌面与手机触屏。
 
+**[在线试玩](https://coolking70.github.io/BrogueJS/)**
+
 规则、交互与内容按 CE C 源码逐项对齐：地牢生成、怪物 AI、战斗、物品与魔法、机关、深层与终局、存档与录像、自动探索与消息系统等，由约 240 个测试文件、4500 项断言守护。当前版本见 [RELEASE_NOTES.md](RELEASE_NOTES.md)。
 
 ## 快速开始
