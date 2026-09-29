@@ -4,6 +4,8 @@
 
 最后更新：2026-09-29（v0.2.0 发布后，独立仓库重构 BJS-1 之后）。
 
+> **进行中（2026-09-29）**：BJS-1 独立项目重构由 codex 在工作树 `~/.codex/worktrees/04e4/BrogueJS` 执行，尚未合并。本仓库当前仍是旧布局（`brogue-web/` + `BrogueCE-master/`），而 `docs/` 已按重构后的布局编写。合并、验收、推送的完整步骤见 [`docs/tasks/bjs-1-acceptance.md`](tasks/bjs-1-acceptance.md)。
+
 ## 1. 项目一句话
 
 BrogueJS 是 [Brogue CE](https://github.com/tmewett/BrogueCE) 的 TypeScript + Vue 3 网页移植，带中文界面，支持桌面与手机触屏。**目标是规则、交互与内容与 CE 源码一致**；不是另起炉灶的"类 Brogue"游戏。
