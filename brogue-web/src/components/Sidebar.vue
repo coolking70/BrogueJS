@@ -1,0 +1,440 @@
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import i18next from 'i18next';
+import { activeGame } from '../engine/Core/Game';
+import { foldCombatMessages, logger } from '../engine/Systems/Logger';
+import type { LogMessage } from '../engine/Systems/Logger';
+import { creatureStatusRows, isSidebarVisibleStatus } from '../engine/Status/statusConfig';
+import { STOMACH_SIZE, HUNGER_THRESHOLD, WEAK_THRESHOLD, FAINT_THRESHOLD } from '../entities/Player';
+import { computeSidebarWidth, displaySettings } from '../engine/Settings';
+import { sidebarEntityRows, sidebarPlayerStats } from '../engine/UI/MonsterSidebar';
+
+// P2-6：侧栏宽度模式（固定 340px / 按容器宽 20% 且不低于最小宽度）。
+// 侧栏是 app-layout（100vw flex 行）的直接子元素，容器宽即窗口宽；
+// 与地图不同，这里用 window.innerWidth 是正确口径（地图必须用画布容器尺寸，
+// 见 GameCanvas.computeMapLayout 的注释）。
+// FE-1：variant='drawer' 时侧栏装在紧凑模式的右侧抽屉里，铺满抽屉。
+const props = withDefaults(defineProps<{ variant?: 'panel' | 'drawer' }>(), { variant: 'panel' });
+const containerWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280);
+const onWindowResize = () => {
+  containerWidth.value = window.innerWidth;
+};
+const sidebarStyle = computed(() => {
+  if (props.variant === 'drawer') {
+    return { width: '100%', minWidth: '0', maxWidth: '100%', height: '100%' };
+  }
+  if (containerWidth.value <= 600) {
+    return { width: '100%', minWidth: '100%', maxWidth: '100%', height: '48vh' };
+  }
+  const w = computeSidebarWidth(containerWidth.value, displaySettings.sidebarWidthMode);
+  return { width: `${w}px`, minWidth: `${w}px`, maxWidth: `${w}px` };
+});
+
+const playerHp = ref(0);
+const playerMaxHp = ref(0);
+const playerDepth = ref(1);
+const playerNutrition = ref(STOMACH_SIZE);
+const logs = ref<LogMessage[]>([]);
+const hoverText = ref('');
+const playerStatuses = ref<ReturnType<typeof creatureStatusRows>>([]);
+const entityRows = ref<ReturnType<typeof sidebarEntityRows>>([]);
+const playerStats = ref<ReturnType<typeof sidebarPlayerStats> | null>(null);
+const playerNumberLines = computed(() => {
+  const stats = playerStats.value;
+  return stats ? [
+    i18next.t('sidebar.strength_armor', { current: stats.strength, max: stats.maxStrength, armor: stats.armor, defaultValue: 'Str: {{current}}/{{max}}  Armor: {{armor}}' }),
+    i18next.t('sidebar.gold', { gold: stats.gold, defaultValue: 'Gold: {{gold}}' }),
+    i18next.t('sidebar.stealth_range', { range: stats.stealthRange, defaultValue: 'Stealth range: {{range}}' }),
+  ] : [];
+});
+
+// Tiers mirror Player.computeHungerState: thresholds are CE Rogue.h:1125-1127
+const getNutritionStatus = (nutrition: number) => {
+    if (nutrition <= 0) return { text: i18next.t('sidebar.hunger.starved'), color: '#b91c1c' };
+    if (nutrition <= FAINT_THRESHOLD) return { text: i18next.t('sidebar.hunger.faint'), color: '#ef4444' };
+    if (nutrition <= WEAK_THRESHOLD) return { text: i18next.t('sidebar.hunger.weak'), color: '#f87171' };
+    if (nutrition <= HUNGER_THRESHOLD) return { text: i18next.t('sidebar.hunger.hungry'), color: '#facc15' };
+    return { text: i18next.t('sidebar.hunger.full'), color: '#4ade80' };
+};
+
+let pollInterval: number;
+
+onMounted(() => {
+  window.addEventListener('resize', onWindowResize);
+  // Poll state because the engine is pure TS
+  pollInterval = window.setInterval(() => {
+    if (activeGame && activeGame.player) {
+      playerHp.value = activeGame.player.hp;
+      playerMaxHp.value = activeGame.player.maxHp;
+      playerDepth.value = activeGame.depth;
+      playerNutrition.value = activeGame.player.nutrition;
+      hoverText.value = activeGame.hoveredText || activeGame.flavorText;
+      // UI-1 第 5 条：CE 有意不显示的状态（explosion_immunity 等，见
+      // statusConfig.CE_EMPTY_NAME_STATUSES）不进侧栏（CE IO.c:4823 name[0] 门）。
+      playerStatuses.value = creatureStatusRows(activeGame.player, isSidebarVisibleStatus);
+      entityRows.value = sidebarEntityRows(activeGame.player, activeGame.grid, activeGame.monsters,
+        activeGame.items, activeGame.hoveredCell, activeGame.depth);
+      // Read the existing calculation without changing Game's rules/method visibility
+      // (X3-U7's edit boundary excludes calculateStealthRange).
+      playerStats.value = sidebarPlayerStats(activeGame.player, activeGame.stats.gold,
+        activeGame['calculateStealthRange']());
+    }
+    // Clone array for Vue reactivity
+    logs.value = foldCombatMessages(logger.messages).reverse();
+  }, 100);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', onWindowResize);
+  clearInterval(pollInterval);
+});
+</script>
+
+<template>
+  <div class="sidebar glass-panel" :class="{ 'sidebar-drawer': variant === 'drawer' }" :style="sidebarStyle">
+    
+    <!-- Title Area -->
+    <div class="brand-header">
+      <h1 class="game-title">BROGUE <span class="edition">JS</span></h1>
+      <div class="depth-indicator">{{ $t('sidebar.depth', { depth: playerDepth }) }}</div>
+    </div>
+
+    <!-- Essential Stats Card -->
+    <div class="stats-card">
+      <div class="stat-row">
+        <span class="stat-label">{{ $t('sidebar.health') }}</span>
+        <div class="hp-bar-container">
+          <div 
+            class="hp-bar" 
+            :style="{ width: `${Math.max(0, (playerHp / Math.max(1, playerMaxHp)) * 100)}%` }"
+            :class="{ 'low-hp': (playerHp / Math.max(1, playerMaxHp)) < 0.3 }"
+          ></div>
+        </div>
+        <span class="stat-value">{{ playerHp }}/{{ playerMaxHp }}</span>
+      </div>
+      
+      <div class="stat-row" style="margin-top: 12px;">
+        <span class="stat-label">{{ $t('sidebar.food') }}</span>
+        <div class="nutrition-status" :style="{ color: getNutritionStatus(playerNutrition).color }">
+            {{ getNutritionStatus(playerNutrition).text }}
+        </div>
+      </div>
+
+      <div class="status-panel" v-if="playerStatuses.length > 0">
+        <span class="status-title">{{ $t('sidebar.status') }}</span>
+        <div class="status-tags">
+          <span
+            v-for="status in playerStatuses"
+            :key="status.id"
+            class="status-tag"
+            :style="{ borderColor: `${status.color}66`, color: status.color, background: `${status.color}22` }"
+          >
+            {{ status.label }}({{ status.value }})
+            <span class="status-duration" :style="{ width: `${status.fraction * 100}%`, background: status.color }"></span>
+          </span>
+        </div>
+      </div>
+
+      <div v-if="playerStats" class="player-numbers">
+        <div v-for="(line, index) in playerNumberLines" :key="index">{{ line }}</div>
+      </div>
+    </div>
+    
+    <div v-if="entityRows.length" class="monster-panel">
+      <div class="monster-heading">{{ $t('sidebar.monsters') }}</div>
+      <div v-for="entity in entityRows" :key="`${entity.kind}:${entity.id}`" class="monster-entry"
+        :class="{ 'entity-focused': entity.focused }" :data-entity-kind="entity.kind" :data-entity-id="entity.id">
+        <div class="monster-line">
+          <span class="monster-glyph" :style="{ color: entity.color }">{{ entity.char }}</span>
+          <span class="monster-name">{{ entity.name }}</span>
+          <span v-if="entity.kind === 'monster'" class="monster-health">{{ entity.hp }}/{{ entity.maxHp }}</span>
+        </div>
+        <template v-if="entity.kind === 'monster'">
+          <div class="monster-hp-track"><div class="monster-hp-fill"
+            :style="{ width: `${Math.max(0, Math.min(100, entity.hp / Math.max(1, entity.maxHp) * 100))}%`, background: entity.ally ? '#4ade80' : '#ef4444' }"></div></div>
+          <div v-if="entity.negated || entity.behavior" class="monster-statuses">
+            <span v-if="entity.negated" class="negated-label">{{ $t('negation.label', { defaultValue: 'Negated' }) }}</span>
+            <span>{{ entity.behavior }}</span>
+          </div>
+          <div v-if="entity.statuses.length" class="monster-statuses">
+            <span v-for="status in entity.statuses" :key="status.id" :style="{ color: status.color }">{{ status.label }} {{ status.value }}</span>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Inspect Info -->
+    <div v-if="hoverText" class="inspect-panel">
+        <span class="inspect-icon">👁</span> {{ hoverText }}
+    </div>
+
+    <!-- Message Log / Audit Trail -->
+    <div class="log-panel-container">
+      <div class="log-header">{{ $t('sidebar.log') }}</div>
+      <div class="log-panel">
+        <div 
+          v-for="(msg, index) in logs" 
+          :key="msg.id" 
+          class="log-message"
+          :class="{ 'log-latest': index === 0, 'log-acknowledge': msg.acknowledge }"
+          :style="{ color: msg.color }"
+        >
+          <span class="log-bullet">›</span> 
+          {{ msg.text }} 
+          <span v-if="msg.count > 1" class="log-count">x{{ msg.count }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.log-acknowledge { border-left: 2px solid #facc15; padding-left: 6px; font-weight: 600; }
+.player-numbers { margin-top: .75rem; font-family: var(--font-mono); font-size: .8rem; line-height: 1.6; }
+.entity-focused { outline: 1px solid var(--color-accent); border-radius: 3px; background: #ffffff0c; }
+.negated-label { color: #ff99aa; }
+.monster-panel { max-height: 28vh; overflow-y: auto; margin-bottom: 1rem; padding: .65rem; background: rgba(0,0,0,.3); border-radius: 8px; }
+.monster-heading { font-size: .75rem; color: var(--text-secondary); margin-bottom: .5rem; }
+.monster-entry { margin-bottom: .55rem; font-family: var(--font-mono); font-size: .8rem; }
+.monster-line { display: flex; align-items: center; gap: .4rem; }
+.monster-glyph { width: 1.2em; font-weight: bold; }
+.monster-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.monster-health { color: var(--text-secondary); }
+.monster-hp-track { height: 4px; background: #24242c; margin: .2rem 0; }
+.monster-hp-fill { height: 100%; }
+.monster-statuses { display: flex; gap: .4rem; flex-wrap: wrap; font-size: .7rem; }
+.sidebar {
+  /* 宽度由 computeSidebarWidth 按设置（固定/按比例）以内联样式驱动，
+     三值同步避免 flex 压缩或撑开；固定模式 = 原来的 340px 现状。 */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  border-left: 1px solid var(--border-color);
+  background: linear-gradient(180deg, rgba(20,20,24,0.95) 0%, rgba(10,10,12,0.98) 100%);
+  z-index: 10;
+}
+
+/* FE-1：抽屉内——给右上角关闭钮让位、缩小留白、尊重安全区 */
+.sidebar-drawer {
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  border-left: none;
+}
+.sidebar-drawer .brand-header { margin-bottom: 1rem; padding-right: 52px; }
+.sidebar-drawer .monster-panel { max-height: 34dvh; }
+
+/* Brand Header */
+.brand-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.game-title {
+  margin: 0;
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 2px;
+  color: #fff;
+}
+
+.edition {
+  color: var(--color-accent);
+  font-weight: 300;
+}
+
+.depth-indicator {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--color-gold);
+  background: rgba(251, 191, 36, 0.1);
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+/* Stats Card */
+.stats-card {
+  background: rgba(0,0,0,0.4);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  width: 2.5em;
+  flex-shrink: 0;
+}
+
+.hp-bar-container {
+  flex: 1;
+  height: 14px;
+  background-color: var(--color-hp-bg);
+  border-radius: 7px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+  position: relative;
+}
+
+.hp-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #b91c1c 0%, #ef4444 100%);
+  border-radius: 7px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.hp-bar.low-hp {
+  animation: pulse 1.5s infinite;
+  background: linear-gradient(90deg, #7f1d1d 0%, #b91c1c 100%);
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: #fff;
+  min-width: 45px;
+  text-align: right;
+}
+
+.status-panel {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.status-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+
+.status-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.status-duration { position: absolute; left: 0; bottom: 0; height: 2px; opacity: 0.6; }
+
+.status-tag {
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: #dbeafe;
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(147, 197, 253, 0.35);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+/* Inspect Panel */
+.inspect-panel {
+  background: rgba(56, 189, 248, 0.05);
+  border-left: 3px solid var(--color-accent);
+  padding: 0.75rem 1rem;
+  border-radius: 0 4px 4px 0;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: #e0f2fe;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.inspect-icon {
+  opacity: 0.7;
+  font-size: 1rem;
+}
+
+/* Log Panel */
+.log-panel-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+.log-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.02);
+}
+
+.log-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.log-message {
+  font-family: var(--font-main);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.log-latest {
+  opacity: 1;
+  font-weight: 500;
+  text-shadow: 0 0 8px rgba(255,255,255,0.2);
+}
+
+.log-bullet {
+  color: rgba(255,255,255,0.2);
+  font-family: var(--font-mono);
+  margin-top: -1px;
+}
+
+.log-count {
+  display: inline-block;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+</style>
