@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, toRaw } from 'vue';
+import { ref, onMounted, onUnmounted, computed, toRaw, nextTick } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import i18next from 'i18next';
 import { activeGame } from '../engine/Core/Game';
@@ -8,6 +8,7 @@ import type { Item } from '../engine/Items/Item';
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import { generateItemDetail } from '../engine/UI/DetailGenerator';
 import { createItemDetailContext } from '../engine/UI/ItemDetailContext';
+import { inputManager } from '../engine/Input';
 
 // Local reactive state for the inventory visibility
 const isVisible = ref(false);
@@ -30,16 +31,18 @@ const pendingUseConfirm = ref<Item | null>(null);
 const pendingUseConfirmText = ref('');
 
 const updateInventoryState = () => {
-    if (!activeGame.isInventoryOpen || ringSelectionPlayer !== activeGame.player
+    const playerChanged = ringSelectionPlayer !== activeGame.player;
+    if (!activeGame.isInventoryOpen || playerChanged
         || inventoryAction.value !== activeGame.inventoryAction) {
         ringReplacementTarget.value = null;
         ringSelectionPlayer = activeGame.player;
     }
-    if (inventoryAction.value !== activeGame.inventoryAction || !activeGame.isInventoryOpen) {
+    if (playerChanged || inventoryAction.value !== activeGame.inventoryAction || !activeGame.isInventoryOpen) {
         selectedItem.value = null;
         callTarget.value = null;
         callText.value = '';
     }
+    if (playerChanged) closeDeferred = false;
     inventoryAction.value = activeGame.inventoryAction;
     isVisible.value = activeGame.isInventoryOpen;
     pendingIdentify.value = activeGame.pendingIdentify;
@@ -50,16 +53,20 @@ const updateInventoryState = () => {
         : '';
     if (isVisible.value) {
         inventoryItems.value = [...activeGame.player.inventory.items];
+        if (selectedItem.value && !inventoryItems.value.some(item => item.id === selectedItem.value?.id)) selectedItem.value = null;
     }
 };
 
 onMounted(() => {
+    const removeKeyboard = inputManager.registerModalKeyHandler(handleInventoryKey);
+    updateInventoryState();
     // We'll set up a simple tick or event listener to sync state
     const interval = setInterval(() => { flushDeferredClose(); updateInventoryState(); }, 100);
     
     // Cleanup
     onUnmounted(() => {
         clearInterval(interval);
+        removeKeyboard();
     });
 });
 
@@ -70,7 +77,7 @@ onMounted(() => {
 let closeDeferred = false;
 const flushDeferredClose = () => {
     if (!closeDeferred) return;
-    if (!activeGame.isInventoryOpen || activeGame.pendingEnchantment || activeGame.pendingIdentify
+    if (ringSelectionPlayer !== activeGame.player || !activeGame.isInventoryOpen || activeGame.pendingEnchantment || activeGame.pendingIdentify
         || activeGame.pendingUseConfirm || activeGame.replayRecording) {
         closeDeferred = false;
         return;
@@ -144,7 +151,9 @@ const groupedItems = computed(() => {
     const alphabet = 'abcdefghijklmnopqrstuvwxyz';
     
     inventoryItems.value.forEach((item, index) => {
-        if (!pendingIdentify.value && !pendingEnchantment.value) {
+        if (ringReplacementTarget.value) {
+            if (item.category !== ItemCategory.RING || !isEquipped(item)) return;
+        } else if (!pendingIdentify.value && !pendingEnchantment.value) {
             if (inventoryAction.value === 'equip' && (!isEquippable(item) || isEquipped(item))) return;
             if (inventoryAction.value === 'unequip' && !isEquipped(item)) return;
             if (inventoryAction.value === 'call' && !isCallable(item)) return;
@@ -345,18 +354,23 @@ const openCallInput = (item: Item) => {
     callTarget.value = item;
     callMode.value = activeGame.itemCallMode(toRaw(item)) ?? 'kind';
     callText.value = callMode.value === 'inscribe' ? item.inscription ?? '' : ItemLoader.callTitles.get(kindIdOf(item) ?? '') ?? '';
+    focusCallInput();
 };
 
 const chooseCallScope = (inscribe: boolean) => {
     callMode.value = inscribe ? 'inscribe' : 'kind';
     callText.value = inscribe ? callTarget.value?.inscription ?? ''
         : ItemLoader.callTitles.get(kindIdOf(callTarget.value!) ?? '') ?? '';
+    focusCallInput();
 };
 const openRelabelInput = (item: Item) => {
     callTarget.value = item;
     callMode.value = 'relabel';
     callText.value = '';
+    focusCallInput();
 };
+
+const focusCallInput = () => { void nextTick(() => document.querySelector<HTMLInputElement>('.inventory-overlay .call-input')?.focus()); };
 
 const cancelCall = () => {
     callTarget.value = null;
@@ -368,6 +382,69 @@ const confirmCall = () => {
     activeGame.executeItemCommand(callMode.value === 'kind' ? 'call' : callMode.value, toRaw(callTarget.value), callText.value);
     cancelCall();
     updateInventoryState();
+};
+
+/** CE inventory owns letters before the main-game keymap. All pointer and
+ * keyboard selections share the handlers above, including mandatory targets. */
+const handleInventoryKey = (event: KeyboardEvent): boolean => {
+    updateInventoryState(); // Do not wait for the presentation polling interval.
+    if (!activeGame.isInventoryOpen || activeGame.isGameOver) return false;
+    // Keep browser shortcuts, focus navigation, scrolling and focused-button
+    // activation native while withholding them from the game keymap.
+    if (event.ctrlKey || event.metaKey || event.altKey || event.key === 'Tab') return true;
+    if ((event.target as HTMLElement | null)?.tagName === 'BUTTON'
+        && (event.key === 'Enter' || event.key === ' ')) return true;
+    if (event.repeat) { event.preventDefault(); return true; }
+    if (activeGame.isAdvancing || activeGame.replayRecording) return true;
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        if (callTarget.value) cancelCall();
+        else if (pendingUseConfirm.value) cancelMalevolentUse();
+        else if (ringReplacementTarget.value) ringReplacementTarget.value = null;
+        else if (selectedItem.value) selectedItem.value = null;
+        else closeInventory();
+        return true;
+    }
+    if (pendingUseConfirm.value || callTarget.value) {
+        if (event.key === 'y' || event.key === 'n') {
+            event.preventDefault();
+            if (pendingUseConfirm.value) {
+                if (event.key === 'y') confirmMalevolentUse(); else cancelMalevolentUse();
+            } else if (callMode.value === 'choice') chooseCallScope(event.key === 'y');
+        }
+        return true;
+    }
+    if (!/^[a-zA-Z]$/.test(event.key)) return true;
+    event.preventDefault();
+    const item = selectedItem.value;
+    if (!item || pendingIdentify.value || pendingEnchantment.value || ringReplacementTarget.value || inventoryAction.value) {
+        const entry = Object.values(groupedItems.value).flat().find(entry => entry.letter === event.key.toLowerCase());
+        if (entry) selectItemOrIdentify(entry.item);
+        return true;
+    }
+    switch (event.key) {
+        case 'd': performDrop(item); break;
+        case 't': performThrow(item); break;
+        case 'c': if (isCallable(item)) openCallInput(item); break;
+        case 'R': openRelabelInput(item); break;
+        case 'i': performInspect(item); break;
+        case 'e':
+            if (isFood(item)) performEat(item);
+            else if (isEquippable(item) && !isEquipped(item)) performEquip(item);
+            break;
+        case 'r':
+            if (isScroll(item)) performRead(item);
+            else if (isEquipped(item)) performUnequip(item);
+            break;
+        case 'q': if (isPotion(item)) performQuaff(item); break;
+        case 'a':
+            if (isPotion(item)) performQuaff(item);
+            else if (isScroll(item)) performRead(item);
+            else if (isFood(item)) performEat(item);
+            else if (isArcanaUsable(item)) performUse(item);
+            break;
+    }
+    return true;
 };
 </script>
 

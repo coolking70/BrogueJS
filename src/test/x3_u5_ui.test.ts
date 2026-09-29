@@ -38,7 +38,7 @@ let input: typeof import('../engine/Input').inputManager;
 const pollers = new Set<() => void>();
 beforeAll(async () => {
     vi.stubGlobal('window', { addEventListener() {}, removeEventListener() {}, clearTimeout() {}, clearInterval() {} });
-    vi.stubGlobal('document', { activeElement: null });
+    vi.stubGlobal('document', { activeElement: null, querySelector: () => null });
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
     input = (await import('../engine/Input')).inputManager;
     // Vitest's node SFC transform is SSR-only. Compile these same production
@@ -46,6 +46,7 @@ beforeAll(async () => {
     const modules: Record<string, unknown> = {
         vue: Vue, 'i18next-vue': translation, i18next,
         '../engine/Core/Game': { activeGame: game },
+        '../engine/Input': { inputManager: input },
         '../ui/commands': await import('../ui/commands'),
         '../types': await import('../types'),
         '../engine/Items/Item': await import('../engine/Items/Item'),

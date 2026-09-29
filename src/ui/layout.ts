@@ -20,6 +20,11 @@ export function computeLayoutMode(width: number, height: number): LayoutMode {
     return width <= height ? 'portrait' : 'landscape';
 }
 
+/** Viewport shape cannot tell whether the user has a touchscreen. */
+export function shouldShowTouchControls(coarsePointer: boolean, _mode: LayoutMode): boolean {
+    return coarsePointer;
+}
+
 export interface ViewportState {
     width: number;
     height: number;

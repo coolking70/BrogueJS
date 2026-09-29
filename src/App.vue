@@ -19,7 +19,7 @@ export function wireConfirmRequest(game: Game): void {
 </script>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { saveSnapshot, readSnapshot, readSaveSummary, deleteSnapshot, type SaveSummary } from './engine/Core/SaveStorage';
 import i18next from 'i18next';
 import GameCanvas from './components/GameCanvas.vue';
@@ -40,8 +40,8 @@ import CommandBar from './components/CommandBar.vue';
 import DPad from './components/DPad.vue';
 import TargetBar from './components/TargetBar.vue';
 import { activeGame, type GameMode } from './engine/Core/Game';
-import { logger } from './engine/Systems/Logger';
-import { viewport, startViewportTracking } from './ui/layout';
+import { viewport, startViewportTracking, shouldShowTouchControls } from './ui/layout';
+import { recordingJsonAtBoundary, RecordingExportError } from './ui/recordingExport';
 
 const REPLAY_KEY = 'brogue-web-replay-v1';
 
@@ -54,9 +54,12 @@ const touchUi = computed(() => !compact.value && viewport.coarsePointer);
 const panelOpen = ref(false);
 const replayTick = ref(0);
 const replayActive = computed(() => { replayTick.value; return !!activeGame.replayRecording; });
-onMounted(() => { window.setInterval(() => { replayTick.value++; }, 250); });
+let replayTimer = 0;
+onMounted(() => { replayTimer = window.setInterval(() => { replayTick.value++; }, 100); });
+onUnmounted(() => { window.clearInterval(replayTimer); runEpoch++; });
 /** 触控命令栏 + 方向键：紧凑模式或粗指针设备显示；回放期间让位给录像控制条。 */
-const showTouch = computed(() => (compact.value || touchUi.value) && !replayActive.value);
+const showTouch = computed(() => shouldShowTouchControls(viewport.coarsePointer, viewport.mode) && !replayActive.value);
+const showCommands = computed(() => (compact.value || showTouch.value) && !replayActive.value);
 
 // UI-1 第 6 条：把引擎确认钩子接到本组件（headless/测试环境不挂载 App，
 // 钩子保持 null → requestConfirm 按"确认"处理，与 C-5 申报一致）。
@@ -65,6 +68,14 @@ wireConfirmRequest(activeGame);
 const gameStarted = ref(false);
 const menuOpen = ref(true);
 const storageTick = ref(0);
+const runAvailable = ref(false);
+const replayBusy = ref(false);
+const replayFeedback = ref('');
+let runEpoch = 0;
+const canSaveReplay = computed(() => {
+  replayTick.value;
+  return runAvailable.value && (activeGame.hasCompleteRecording || !!activeGame.replayRecording);
+});
 
 const saveInfo = ref<SaveSummary | null>(null);
 const hasSave = computed(() => saveInfo.value !== null);
@@ -73,6 +84,7 @@ onMounted(async () => {
 });
 
 const replayInfo = computed(() => {
+  replayTick.value;
   if (!activeGame.replayRecording) return null;
   return {
     status: activeGame.replayStatus,
@@ -91,14 +103,16 @@ const hasReplay = computed(() => {
 });
 
 const startNewGame = (payload: { seed?: string; mode: GameMode }) => {
+  runEpoch++;
+  replayFeedback.value = '';
   activeGame.startNewGame({ seed: payload.seed, mode: payload.mode });
-  logger.log(
+  runAvailable.value = true;
+  replayMessage(
     i18next.t('menu.log.started_game', {
       mode: i18next.t(`menu.mode.${payload.mode}`, { defaultValue: payload.mode }),
       seed: activeGame.currentSeed,
       defaultValue: 'Started {{mode}} game (seed {{seed}}).'
-    }),
-    '#88ccff'
+    })
   );
   gameStarted.value = true;
   menuOpen.value = false;
@@ -107,11 +121,11 @@ const startNewGame = (payload: { seed?: string; mode: GameMode }) => {
 const saveGame = async () => {
   if (!gameStarted.value) return;
   try {
-    saveInfo.value = await saveSnapshot(activeGame.toSnapshot());
+    saveInfo.value = await saveSnapshot(activeGame.toSaveSnapshot());
     storageTick.value++;
-    logger.log(i18next.t('menu.log.game_saved', { defaultValue: 'Game saved.' }), '#88ff88');
+    replayMessage(i18next.t('menu.log.game_saved', { defaultValue: 'Game saved.' }));
   } catch {
-    logger.log(i18next.t('menu.log.save_failed', { defaultValue: 'Save failed.' }), '#ff6666');
+    replayMessage(i18next.t('menu.log.save_failed', { defaultValue: 'Save failed.' }));
   }
 };
 
@@ -120,15 +134,18 @@ const continueGame = async () => {
     const snapshot = await readSnapshot();
     if (!snapshot) return;
     if (!activeGame.loadSnapshot(snapshot)) {
-      logger.log(i18next.t('menu.log.save_format_not_supported', { defaultValue: 'Save format not supported.' }), '#ff6666');
+      replayMessage(i18next.t('menu.log.save_format_not_supported', { defaultValue: 'Save format not supported.' }));
       return;
     }
-    logger.log(i18next.t('menu.log.save_loaded', { defaultValue: 'Save loaded.' }), '#88ff88');
+    replayMessage(i18next.t('menu.log.save_loaded', { defaultValue: 'Save loaded.' }));
+    runEpoch++;
+    runAvailable.value = true;
+    replayFeedback.value = '';
     storageTick.value++;
     gameStarted.value = true;
     menuOpen.value = false;
   } catch {
-    logger.log(i18next.t('menu.log.failed_load_save', { defaultValue: 'Failed to load save.' }), '#ff6666');
+    replayMessage(i18next.t('menu.log.failed_load_save', { defaultValue: 'Failed to load save.' }));
   }
 };
 
@@ -137,20 +154,42 @@ const deleteSave = async () => {
     await deleteSnapshot();
     saveInfo.value = null;
     storageTick.value++;
-    logger.log(i18next.t('menu.log.save_deleted', { defaultValue: 'Save deleted.' }), '#ffaa88');
+    replayMessage(i18next.t('menu.log.save_deleted', { defaultValue: 'Save deleted.' }));
   } catch {
-    logger.log(i18next.t('menu.log.failed_delete_save', { defaultValue: 'Failed to delete save.' }), '#ff6666');
+    replayMessage(i18next.t('menu.log.failed_delete_save', { defaultValue: 'Failed to delete save.' }));
   }
 };
 
-const saveReplay = () => {
-  if (!gameStarted.value) return;
+// Menu feedback is presentation-only: Logger.log disturbs automatic actions.
+const replayMessage = (message: string) => { replayFeedback.value = message; };
+
+const currentReplayJson = async (): Promise<string> => {
+  if (activeGame.replayRecording) return JSON.stringify(activeGame.replayRecording);
+  const epoch = runEpoch;
+  if (!activeGame.canExportRecording) {
+    replayFeedback.value = i18next.t('menu.replay.waiting', { defaultValue: 'Waiting for the current turn to finish…' });
+  }
+  return recordingJsonAtBoundary(activeGame, () => runEpoch === epoch);
+};
+
+const saveReplay = async () => {
+  if (!canSaveReplay.value || replayBusy.value) return;
+  replayBusy.value = true;
   try {
-    window.localStorage.setItem(REPLAY_KEY, JSON.stringify(activeGame.exportRecording()));
+    const raw = await currentReplayJson();
+    window.localStorage.setItem(REPLAY_KEY, raw);
     storageTick.value++;
-    logger.log(i18next.t('menu.log.replay_saved', { defaultValue: 'Replay saved.' }), '#88ff88');
+    replayMessage(i18next.t('menu.log.replay_saved', { defaultValue: 'Replay saved.' }));
   } catch (error) {
-    logger.log(error instanceof Error ? error.message : i18next.t('menu.log.replay_save_failed', { defaultValue: 'Replay save failed.' }), '#ff6666');
+    if (error instanceof RecordingExportError) {
+      replayMessage(i18next.t('menu.replay.not_ready', { defaultValue: 'The recording is not ready. Please try again after the turn finishes.' }));
+    } else {
+      const failure = i18next.t('menu.log.replay_save_failed', { defaultValue: 'Replay save failed.' });
+      const recovery = i18next.t('menu.replay.storage_failed', { defaultValue: 'Browser storage is unavailable or full. You can still export this run as JSON.' });
+      replayMessage(failure + ' ' + recovery);
+    }
+  } finally {
+    replayBusy.value = false;
   }
 };
 
@@ -160,14 +199,17 @@ const loadReplay = () => {
     if (!raw) return;
     const recording = JSON.parse(raw);
     if (!activeGame.loadReplay(recording)) {
-      logger.log(i18next.t('menu.log.replay_load_failed', { defaultValue: 'Replay load failed.' }), '#ff6666');
+      replayMessage(i18next.t('menu.log.replay_load_failed', { defaultValue: 'Replay load failed.' }));
       return;
     }
     gameStarted.value = true;
     menuOpen.value = false;
-    logger.log(i18next.t('menu.log.replay_loaded', { defaultValue: 'Replay loaded.' }), '#88ccff');
+    replayMessage(i18next.t('menu.log.replay_loaded', { defaultValue: 'Replay loaded.' }));
+    runEpoch++;
+    runAvailable.value = true;
+    replayFeedback.value = '';
   } catch {
-    logger.log(i18next.t('menu.log.replay_load_failed', { defaultValue: 'Replay load failed.' }), '#ff6666');
+    replayMessage(i18next.t('menu.log.replay_load_failed', { defaultValue: 'Replay load failed.' }));
   }
 };
 
@@ -175,10 +217,9 @@ const deleteReplay = () => {
   try {
     window.localStorage.removeItem(REPLAY_KEY);
     storageTick.value++;
-    activeGame.clearReplay();
-    logger.log(i18next.t('menu.log.replay_deleted', { defaultValue: 'Replay deleted.' }), '#ffaa88');
+    replayMessage(i18next.t('menu.log.replay_deleted', { defaultValue: 'Replay deleted.' }));
   } catch {
-    logger.log(i18next.t('menu.log.replay_delete_failed', { defaultValue: 'Replay delete failed.' }), '#ff6666');
+    replayMessage(i18next.t('menu.log.replay_delete_failed', { defaultValue: 'Replay delete failed.' }));
   }
 };
 
@@ -202,21 +243,32 @@ const replaySeek = (index: number) => {
   activeGame.replaySeek(index);
 };
 
-const exportReplayJson = () => {
-  try {
-    const raw = window.localStorage.getItem(REPLAY_KEY);
-    if (!raw) return;
+const downloadReplayJson = (raw: string) => {
     const blob = new Blob([raw], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `brogue-web-replay-${Date.now()}.json`;
     a.click();
-    URL.revokeObjectURL(url);
-    logger.log(i18next.t('menu.log.replay_exported', { defaultValue: 'Replay JSON exported.' }), '#88ccff');
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    replayMessage(i18next.t('menu.log.replay_exported', { defaultValue: 'Replay JSON exported.' }));
+};
+
+const exportReplayJson = () => {
+  try {
+    const raw = window.localStorage.getItem(REPLAY_KEY);
+    if (raw) downloadReplayJson(raw);
   } catch {
-    logger.log(i18next.t('menu.log.replay_export_failed', { defaultValue: 'Replay JSON export failed.' }), '#ff6666');
+    replayMessage(i18next.t('menu.log.replay_export_failed', { defaultValue: 'Replay JSON export failed.' }));
   }
+};
+
+const exportCurrentReplayJson = async () => {
+  if (!canSaveReplay.value || replayBusy.value) return;
+  replayBusy.value = true;
+  try { downloadReplayJson(await currentReplayJson()); }
+  catch { replayMessage(i18next.t('menu.log.replay_export_failed', { defaultValue: 'Replay JSON export failed.' })); }
+  finally { replayBusy.value = false; }
 };
 
 const importReplayJson = async (file: File) => {
@@ -224,22 +276,23 @@ const importReplayJson = async (file: File) => {
     const text = await file.text();
     const recording = JSON.parse(text);
     if (!activeGame.loadReplay(recording)) {
-      logger.log(i18next.t('menu.log.replay_import_failed', { defaultValue: 'Replay JSON import failed.' }), '#ff6666');
+      replayMessage(i18next.t('menu.log.replay_import_failed', { defaultValue: 'Replay JSON import failed.' }));
       return;
     }
-    window.localStorage.setItem(REPLAY_KEY, JSON.stringify(recording));
-    storageTick.value++;
+    runEpoch++;
+    runAvailable.value = true;
+    replayFeedback.value = i18next.t('menu.replay.imported_unsaved', { defaultValue: 'Recording imported. Save it to keep it in this browser.' });
     gameStarted.value = true;
     menuOpen.value = false;
-    logger.log(i18next.t('menu.log.replay_imported', { defaultValue: 'Replay JSON imported.' }), '#88ff88');
+    const imported = i18next.t('menu.log.replay_imported', { defaultValue: 'Replay JSON imported.' });
+    replayFeedback.value = imported + ' ' + replayFeedback.value;
   } catch {
-    logger.log(i18next.t('menu.log.replay_import_failed', { defaultValue: 'Replay JSON import failed.' }), '#ff6666');
+    replayMessage(i18next.t('menu.log.replay_import_failed', { defaultValue: 'Replay JSON import failed.' }));
   }
 };
 
 const handleReturnToTitle = async () => {
     // Return to menu logic
-    activeGame.isGameOver = false;
     gameStarted.value = false;
     menuOpen.value = true;
     
@@ -260,10 +313,10 @@ const handleReturnToTitle = async () => {
       <MobileHud v-if="compact" class="area-hud" :mode="compactMode" @menu="menuOpen = true" @open-panel="panelOpen = true" />
       <div class="map-area">
         <GameCanvas class="game-view" />
-        <MapZoomControls v-if="compact" />
+        <MapZoomControls />
       </div>
       <TargetBar class="area-target" />
-      <CommandBar v-if="showTouch" class="area-cmd" :mode="viewport.mode" />
+      <CommandBar v-if="showCommands" class="area-cmd" :mode="viewport.mode" />
       <DPad v-if="showTouch" class="area-pad" :mode="viewport.mode" />
       <MessageStrip v-if="compact" class="area-strip" :lines="viewport.mode === 'landscape' ? 2 : 3" @open-panel="panelOpen = true" />
       <Sidebar v-if="!compact" />
@@ -271,7 +324,8 @@ const handleReturnToTitle = async () => {
         <Sidebar variant="drawer" />
       </SideDrawer>
       <InventoryOverlay />
-      <GameEndOverlay @return-to-title="handleReturnToTitle" />
+      <GameEndOverlay :can-save-replay="canSaveReplay" :replay-busy="replayBusy" :replay-feedback="replayFeedback"
+        @save-replay="saveReplay" @export-replay-json="exportCurrentReplayJson" @return-to-title="handleReturnToTitle" />
       <ReplayControls />
       <AgentControls class="agent-root" :hide-controls="compact || touchUi" />
       <DetailPanel />
@@ -288,6 +342,9 @@ const handleReturnToTitle = async () => {
       :in-game="gameStarted"
       :save-info="saveInfo"
       :replay-info="replayInfo"
+      :can-save-replay="canSaveReplay"
+      :replay-busy="replayBusy"
+      :replay-feedback="replayFeedback"
       @new-game="startNewGame"
       @continue-game="continueGame"
       @save-game="saveGame"
@@ -301,6 +358,7 @@ const handleReturnToTitle = async () => {
       @replay-restart="replayRestart"
       @replay-seek="replaySeek"
       @export-replay-json="exportReplayJson"
+      @export-current-replay-json="exportCurrentReplayJson"
       @import-replay-json="importReplayJson"
       @close="menuOpen = false"
     />

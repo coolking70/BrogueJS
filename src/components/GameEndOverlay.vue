@@ -2,8 +2,17 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { activeGame } from '../engine/Core/Game';
 import { readHighScores, type HighScoreEntry } from '../engine/Core/HighScores';
+import { logger } from '../engine/Systems/Logger';
+import { inputManager } from '../engine/Input';
+
+withDefaults(defineProps<{
+    canSaveReplay?: boolean;
+    replayBusy?: boolean;
+    replayFeedback?: string;
+}>(), { canSaveReplay: false, replayBusy: false, replayFeedback: '' });
 
 const isGameOver = ref(false);
+const hasAcknowledgment = ref(false);
 const won = ref(false);
 const reason = ref('');
 const stats = ref({
@@ -17,10 +26,14 @@ const highScores = ref<HighScoreEntry[]>([]);
 const inventory = ref<Array<{ name: string; category: number; enchantment: number; color: number }>>([]);
 
 let timer: number;
+let removeKeyboard: (() => void) | undefined;
 
 onMounted(() => {
+    // The end screen owns game keys, but native button/focus behavior remains.
+    removeKeyboard = inputManager.registerModalKeyHandler(() => activeGame.isGameOver, 100);
     // Polling is fine here since game over is a rare, one-time boundary event
     timer = window.setInterval(() => {
+        hasAcknowledgment.value = !!logger.pendingAcknowledgment;
         if (activeGame.isGameOver && !isGameOver.value) {
             isGameOver.value = true;
             won.value = activeGame.gameOverWon;
@@ -35,9 +48,9 @@ onMounted(() => {
     }, 200);
 });
 
-onUnmounted(() => clearInterval(timer));
+onUnmounted(() => { clearInterval(timer); removeKeyboard?.(); });
 
-const emit = defineEmits(['return-to-title']);
+const emit = defineEmits(['return-to-title', 'save-replay', 'export-replay-json']);
 
 const handleReturn = () => {
     isGameOver.value = false;
@@ -59,7 +72,9 @@ function enchantLabel(ench: number): string {
 </script>
 
 <template>
-    <div v-if="isGameOver" class="game-end-overlay">
+    <!-- Acknowledgments keep their original order and are never discarded by
+         death. Present the result after their last confirmation, not underneath. -->
+    <div v-if="isGameOver && !hasAcknowledgment" class="game-end-overlay">
         <div class="end-panel">
             <h1 :class="won ? 'title-win' : 'title-loss'">
                 {{ won
@@ -117,9 +132,18 @@ function enchantLabel(ench: number): string {
                 </div>
             </div>
 
-            <button class="return-btn" @click="handleReturn">
-                {{ $t('endgame.return', { defaultValue: 'Return to Title' }) }}
-            </button>
+            <div class="end-actions">
+                <button class="save-replay-btn" :disabled="!canSaveReplay || replayBusy" @click="emit('save-replay')">
+                    {{ $t('menu.replay.save', { defaultValue: 'Save Replay' }) }}
+                </button>
+                <button class="export-replay-btn" :disabled="!canSaveReplay || replayBusy" @click="emit('export-replay-json')">
+                    {{ $t('menu.replay.export_current', { defaultValue: 'Export Current Replay JSON' }) }}
+                </button>
+                <p v-if="replayFeedback" class="replay-feedback" role="status">{{ replayFeedback }}</p>
+                <button class="return-btn" :disabled="replayBusy" @click="handleReturn">
+                    {{ $t('endgame.return', { defaultValue: 'Return to Title' }) }}
+                </button>
+            </div>
         </div>
     </div>
 </template>
@@ -285,7 +309,9 @@ function enchantLabel(ench: number): string {
     color: #ff4444;
 }
 
-.return-btn {
+.end-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.replay-feedback { flex-basis: 100%; margin: 0; overflow-wrap: anywhere; }
+.end-actions button {
     background: #333;
     color: #fff;
     border: 1px solid #555;
@@ -296,7 +322,7 @@ function enchantLabel(ench: number): string {
     transition: all 0.2s;
 }
 
-.return-btn:hover {
+.end-actions button:hover:not(:disabled) {
     background: #444;
     border-color: #777;
 }

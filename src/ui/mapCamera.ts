@@ -1,8 +1,8 @@
 /**
  * src/ui/mapCamera.ts — FE-1 小屏地图相机（纯函数 + 纯 UI 状态）。
  *
- * 桌面仍由 GameCanvas.computeMapLayout 决定（等比/拉伸，P2-6 口径不变）。
- * 只有当那个结果"过小"（每格 < MIN_READABLE_TILE_PX）时才切入跟随模式：
+ * zoom=1 时桌面仍由 GameCanvas.computeMapLayout 决定（等比/拉伸，P2-6 口径不变）。
+ * 用户主动放大时桌面也可进入跟随模式。小屏基础格过小时自动跟随：
  * 以用户缩放级给出每格像素，视口以玩家为中心并夹在地图边界内，
  * 用户拖动产生的平移叠加在跟随中心上。
  *
@@ -50,6 +50,7 @@ function axis(view: number, mapPx: number, focusPx: number, pan: number): { offs
  * @param base    computeMapLayout 的结果
  * @param cols/rows/tile  地图格数与逻辑格边长（TILE_SIZE）
  * @param focus   跟随中心（玩家格坐标）
+ * @param autoFollow 仅紧凑视口按可读性阈值自动放大；桌面默认完整适配
  */
 export function computeMapCamera(
     viewW: number,
@@ -61,10 +62,22 @@ export function computeMapCamera(
     focus: { x: number; y: number },
     zoom: number,
     pan: { x: number; y: number },
+    autoFollow = true,
 ): CameraLayout {
     const baseTilePx = Math.min(base.scaleX, base.scaleY) * tile;
-    if (viewW <= 0 || viewH <= 0 || baseTilePx >= MIN_READABLE_TILE_PX) {
+    if (viewW <= 0 || viewH <= 0) {
         return { ...base, follow: false, panX: 0, panY: 0 };
+    }
+    if (baseTilePx >= MIN_READABLE_TILE_PX || !autoFollow) {
+        // No user zoom: preserve the established desktop layout exactly.
+        if (zoom <= 1) return { ...base, follow: false, panX: 0, panY: 0 };
+        const maxBaseTilePx = Math.max(base.scaleX, base.scaleY) * tile;
+        const factor = Math.max(1, Math.min(clamp(zoom, MIN_ZOOM, MAX_ZOOM), MAX_TILE_PX / maxBaseTilePx));
+        const scaleX = base.scaleX * factor;
+        const scaleY = base.scaleY * factor;
+        const x = axis(viewW, cols * tile * scaleX, (focus.x + 0.5) * tile * scaleX, pan.x);
+        const y = axis(viewH, rows * tile * scaleY, (focus.y + 0.5) * tile * scaleY, pan.y);
+        return { scaleX, scaleY, offsetX: x.offset, offsetY: y.offset, follow: factor > 1, panX: x.pan, panY: y.pan };
     }
     const tilePx = clamp(defaultTilePx(viewW, viewH) * clamp(zoom, MIN_ZOOM, MAX_ZOOM), baseTilePx, MAX_TILE_PX);
     if (tilePx <= baseTilePx + 1e-6) {
@@ -80,6 +93,8 @@ export interface CameraState {
     zoom: number;
     panX: number;
     panY: number;
+    /** Explicit full-map view, including compact screens that normally auto-follow. */
+    fit: boolean;
     /** 最近一次布局是否处于跟随模式（供 UI 决定是否显示缩放钮） */
     follow: boolean;
 }
@@ -94,7 +109,7 @@ function loadZoom(): number {
     }
 }
 
-export const cameraState = reactive<CameraState>({ zoom: loadZoom(), panX: 0, panY: 0, follow: false });
+export const cameraState = reactive<CameraState>({ zoom: loadZoom(), panX: 0, panY: 0, fit: false, follow: false });
 
 watch(() => cameraState.zoom, (zoom) => {
     try {
@@ -105,7 +120,19 @@ watch(() => cameraState.zoom, (zoom) => {
 });
 
 export function zoomBy(factor: number): void {
+    if (cameraState.fit && factor < 1) return;
+    if (!cameraState.follow && !cameraState.fit && cameraState.zoom <= 1 && factor < 1) return;
+    // A stored small-screen zoom below 1 should not make desktop's first + a no-op.
+    if (!cameraState.follow && factor > 1 && cameraState.zoom < 1) cameraState.zoom = 1;
+    cameraState.fit = false;
     cameraState.zoom = clamp(cameraState.zoom * factor, MIN_ZOOM, MAX_ZOOM);
+}
+
+/** Fit the whole map using the selected uniform/stretch layout. */
+export function fitMap(): void {
+    cameraState.zoom = 1;
+    cameraState.fit = true;
+    recenterCamera();
 }
 
 export function recenterCamera(): void {

@@ -8,6 +8,7 @@ import { creatureStatusRows, isSidebarVisibleStatus } from '../engine/Status/sta
 import { STOMACH_SIZE, HUNGER_THRESHOLD, WEAK_THRESHOLD, FAINT_THRESHOLD } from '../entities/Player';
 import { computeSidebarWidth, displaySettings } from '../engine/Settings';
 import { sidebarEntityRows, sidebarPlayerStats } from '../engine/UI/MonsterSidebar';
+import { inputManager } from '../engine/Input';
 
 // P2-6：侧栏宽度模式（固定 340px / 按容器宽 20% 且不低于最小宽度）。
 // 侧栏是 app-layout（100vw flex 行）的直接子元素，容器宽即窗口宽；
@@ -97,6 +98,10 @@ onUnmounted(() => {
     <div class="brand-header">
       <h1 class="game-title">BROGUE <span class="edition">JS</span></h1>
       <div class="depth-indicator">{{ $t('sidebar.depth', { depth: playerDepth }) }}</div>
+    </div>
+    <div class="keyboard-hints">
+      <button class="help-shortcut" @click="inputManager.triggerAction('help')">{{ $t('ux1.help', { defaultValue: 'Keyboard help (?)' }) }}</button>
+      <span>{{ $t('ux1.key_hint', { defaultValue: 'Arrows/vi move · i inventory · x explore · right-click inspect' }) }}</span>
     </div>
 
     <!-- Essential Stats Card -->
@@ -206,15 +211,40 @@ onUnmounted(() => {
 .sidebar {
   /* 宽度由 computeSidebarWidth 按设置（固定/按比例）以内联样式驱动，
      三值同步避免 flex 压缩或撑开；固定模式 = 原来的 340px 现状。 */
-  height: 100vh;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   padding: 1.5rem;
   box-sizing: border-box;
   border-left: 1px solid var(--border-color);
   background: linear-gradient(180deg, rgba(20,20,24,0.95) 0%, rgba(10,10,12,0.98) 100%);
   z-index: 10;
 }
+
+.keyboard-hints {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin-bottom: .75rem;
+  color: var(--text-secondary);
+  font-size: .7rem;
+  line-height: 1.45;
+  flex-shrink: 0;
+}
+.help-shortcut {
+  align-self: flex-start;
+  border: 1px solid var(--btn-border);
+  border-radius: 5px;
+  background: var(--btn-bg);
+  color: var(--text-primary);
+  padding: .35rem .55rem;
+  cursor: pointer;
+}
+.help-shortcut:hover { background: var(--btn-bg-active); }
+.help-shortcut:active { transform: translateY(1px); }
 
 /* FE-1：抽屉内——给右上角关闭钮让位、缩小留白、尊重安全区 */
 .sidebar-drawer {
@@ -375,7 +405,8 @@ onUnmounted(() => {
 
 /* Log Panel */
 .log-panel-container {
-  flex: 1;
+  flex: 1 0 8rem;
+  min-height: 8rem;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -396,7 +427,10 @@ onUnmounted(() => {
 
 .log-panel {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
   padding: 1rem;
   display: flex;
   flex-direction: column;

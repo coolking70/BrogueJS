@@ -117,7 +117,7 @@
   },
   "gameOverWon": {
     "kind": "run",
-    "contract": "run 同名键；Map 为 entries，嵌套结构深拷贝；常规跟随/环境补偿不新增消费者。"
+    "contract": "run 同名键；关联的 WeakMap gameOverSuperVictory 仅 true 时以 run.gameOverSuperVictory 保存，读档缺省 false，确保终局录像 checkpoint 保持一致。"
   },
   "goldGenerated": {
     "kind": "run",
@@ -165,7 +165,7 @@
   },
   "isInventoryOpen": {
     "kind": "derive",
-    "contract": "有 pendingIdentify/pendingEnchantment 时重新打开强制选择；普通背包界面关闭。"
+    "contract": "世界快照按 pendingIdentify/pendingEnchantment 重新打开强制选择。有效 toSaveSnapshot 另从 run.recordingOrigin.inputState 恢复背包开闭，保持续录命令含义；新局关闭。"
   },
   "isMouseTraveling": {
     "kind": "run",
@@ -173,7 +173,7 @@
   },
   "isThrowing": {
     "kind": "reset",
-    "contract": "界面、未提交且可取消的目标、动画/诊断清空；已结算的强制选择另有 persisted 字段。"
+    "contract": "新局/普通世界快照清空；有效 toSaveSnapshot 从 recordingOrigin.inputState.throwItemId 恢复投掷状态，物品必须属于背包。"
   },
   "items": {
     "kind": "level",
@@ -261,7 +261,7 @@
   },
   "pendingArcana": {
     "kind": "reset",
-    "contract": "界面、未提交且可取消的目标、动画/诊断清空；已结算的强制选择另有 persisted 字段。"
+    "contract": "新局/普通世界快照清空；有效 toSaveSnapshot 在 recordingOrigin.inputState 保存物品ID与目标格，校验引用/坐标后恢复，保持续录目标命令含义。"
   },
   "pendingBoltFrames": {
     "kind": "reset",
@@ -297,7 +297,7 @@
   },
   "pendingUseConfirm": {
     "kind": "reset",
-    "contract": "界面、未提交且可取消的目标、动画/诊断清空；已结算的强制选择另有 persisted 字段。"
+    "contract": "新局/普通世界快照清空；有效 toSaveSnapshot 在 recordingOrigin.inputState 保存并恢复背包物品ID，确认/取消仍经命令边界。"
   },
   "player": {
     "kind": "persist",
@@ -317,11 +317,11 @@
   },
   "recordedInputEvents": {
     "kind": "run",
-    "contract": "run 同名键；Map 为 entries，嵌套结构深拷贝；常规跟随/环境补偿不新增消费者。"
+    "contract": "run 同名键，深拷贝。toSaveSnapshot 附加可选 run.recordingOrigin（WeakMap 会话来源）；新局建立，clearRecording/回放清空。丢弃推进/异常/超时使完整来源失效，但同局保留起点并继续收集合法输入，仍禁止导出和保存有效来源。读档仅恢复来源有效、索引连续且末 checkpoint 与存点一致的前缀；缺来源仍可读档但不续录/导出，不迁移旧档。toSnapshot 保持世界投影。"
   },
   "recordedInputIndex": {
     "kind": "run",
-    "contract": "run 同名键；Map 为 entries，嵌套结构深拷贝；常规跟随/环境补偿不新增消费者。"
+    "contract": "run 同名键；续录前要求等于事件数且每条 index 连续。动画推进收尾后才提交完整 checkpoint；保存等待推进完成。"
   },
   "recordingStartAt": {
     "kind": "reset",
@@ -329,7 +329,7 @@
   },
   "referenceScreen": {
     "kind": "reset",
-    "contract": "界面、未提交且可取消的目标、动画/诊断清空；已结算的强制选择另有 persisted 字段。"
+    "contract": "新局/普通世界快照清空；有效 toSaveSnapshot 从 recordingOrigin.inputState 恢复帮助/发现页，因为其开闭会截获后续命令。"
   },
   "replayCursor": {
     "kind": "reset",
@@ -389,7 +389,7 @@
   },
   "throwItemTarget": {
     "kind": "reset",
-    "contract": "界面、未提交且可取消的目标、动画/诊断清空；已结算的强制选择另有 persisted 字段。"
+    "contract": "新局/普通世界快照清空；有效 toSaveSnapshot 从 recordingOrigin.inputState.throwItemId 恢复同一实体图的背包物品引用。"
   },
   "ticksTillUpdateEnvironment": {
     "kind": "persist",
@@ -445,7 +445,7 @@
   },
   "inventoryAction": {
     "kind": "reset",
-    "contract": "X3-U5：未提交的背包预选操作；新局、读档、关闭及普通背包/使用/投掷入口清空，不入世界快照。"
+    "contract": "X3-U5：背包预选操作在新局、普通世界快照读档、关闭及普通背包/使用/投掷入口清空；有效 toSaveSnapshot 在 recordingOrigin.inputState 保存并恢复，不改纯世界投影。"
   },
   "receivedLevitationWarning": {
     "kind": "run",

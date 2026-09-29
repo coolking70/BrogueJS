@@ -23,6 +23,10 @@ BrogueJS 是 [Brogue CE](https://github.com/tmewett/BrogueCE) 的 TypeScript + V
 
 历史来源：本项目从 `coolking70/BrogueCE-chs` 仓库的 `brogue-web/` 目录整理而来；那个仓库保留完整开发历史和全部验收证据（约 850 MB），本仓库只保留代码、测试与文档。
 
+## UX-1 试玩整改（2026-09-29，尚未发布）
+
+`codex/playtest-fixes` 独立工作树已实现桌面交互与缩放、背包字母优先级、消息确认/结算顺序、任意阶段保存录像与有效存档续录，以及保持路径次序的寻路优化。最终build、CE完整套件（246文件、4563项通过）与drift通过，生成基线/黄金trace未重录。自动化已按用户要求暂停，未推送或发布。详细证据和唯一旧测试夹具前提修订见[UX-1报告](reports/ux-1.report.md)。原设备麻痹死亡与自然长局D4卡顿仍需复现，见[验证缺口](known-issues.md)。
+
 ## 3. 已定决策（不要重新讨论，除非用户主动提出）
 
 这些都是项目所有者明确做过的裁决，见 `docs/ce-alignment.md` §3 的完整列表与理由：
