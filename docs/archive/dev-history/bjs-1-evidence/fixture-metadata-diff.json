@@ -1,0 +1,34 @@
+[
+  {
+    "field": "src/test/fixtures/ce-oracles/x2e/ce-oracle.json.sources",
+    "beforeKeys": [
+      "../BrogueCE-master/src/brogue/Rogue.h",
+      "../BrogueCE-master/src/brogue/GlobalsBase.c",
+      "../BrogueCE-master/src/brogue/Math.c",
+      "../BrogueCE-master/src/brogue/PowerTables.c",
+      "../BrogueCE-master/src/variants/GlobalsBrogue.c"
+    ],
+    "afterKeys": [
+      "src/brogue/Rogue.h",
+      "src/brogue/GlobalsBase.c",
+      "src/brogue/Math.c",
+      "src/brogue/PowerTables.c",
+      "src/variants/GlobalsBrogue.c"
+    ]
+  },
+  {
+    "field": "src/test/fixtures/ce-oracles/x2g/ce-oracle.json.sources",
+    "beforeKeys": [
+      "../BrogueCE-master/src/brogue/Monsters.c",
+      "../BrogueCE-master/src/brogue/Combat.c",
+      "../BrogueCE-master/src/brogue/Globals.c",
+      "../BrogueCE-master/src/brogue/Rogue.h"
+    ],
+    "afterKeys": [
+      "src/brogue/Monsters.c",
+      "src/brogue/Combat.c",
+      "src/brogue/Globals.c",
+      "src/brogue/Rogue.h"
+    ]
+  }
+]

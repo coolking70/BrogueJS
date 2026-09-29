@@ -1,0 +1,52 @@
+
+ RUN  v4.1.11 /private/tmp/bjs1-validation
+
+
+*** CE reference source not found; run npm run ce:fetch ***
+CE-dependent tests will be explicitly skipped.
+
+stdout | src/test/w_5_arcana_instance.test.ts > W-5 deterministic persistence / migration > versioned JSON snapshot preserves independent E, capacity, depletion and unknown-state flags on ground / in pack
+🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+
+ ❯ src/test/w_5_arcana_instance.test.ts (18 tests | 1 failed) 1052056ms
+     ✓ CE staff conditional draws / exact threshold sequence [50] -> E=2 3ms
+     ✓ CE staff conditional draws / exact threshold sequence [49,15] -> E=3 0ms
+     ✓ CE staff conditional draws / exact threshold sequence [49,14,10] -> E=4 0ms
+     ✓ CE staff conditional draws / exact threshold sequence [49,14,9,10] -> E=5 0ms
+     ✓ CE staff conditional draws / exact threshold sequence [0,0,0,0,0,99] -> E=7 0ms
+     ✓ 50,000 staff draws follow CE 50% / 42.5% / 6.75% / 0.675%, including tail >5 6ms
+     ✓ wand_of_teleportation uses its inclusive CE range, endpoints and actual RNG footprint 2ms
+     ✓ wand_of_slowness uses its inclusive CE range, endpoints and actual RNG footprint 2ms
+     ✓ wand_of_beckoning uses its inclusive CE range, endpoints and actual RNG footprint 1ms
+     ✓ wand_of_invisibility uses its inclusive CE range, endpoints and actual RNG footprint 1ms
+     ✓ wand_of_empowerment uses its inclusive CE range, endpoints and actual RNG footprint 1ms
+     ✓ every existing CE staff spawns full with E=capacity; consumption changes current charges only 1ms
+     ✓ retired direct constructions remain available with fixed capacity and no initial draw 0ms
+     ✓ W-26 has twelve CE staffs; W-24 nine CE wand identities/frequencies remain unchanged 0ms
+     ✓ ordinary generation dispatch uses the same initial draw (not a second roll) 0ms
+     ✓ actual deserializer preserves independent values without touching either RNG stream or spawns 1ms
+     ✓ versioned JSON snapshot preserves independent E, capacity, depletion and unknown-state flags on ground / in pack  1256ms
+   × W-5 generated results: 12 fixed seeds (W-24/W-25/W-26 coverage supplements) × D1–26 retain category coverage and obey initial per-kind values 1050778ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/w_5_arcana_instance.test.ts > W-5 generated results: 12 fixed seeds (W-24/W-25/W-26 coverage supplements) × D1–26 retain category coverage and obey initial per-kind values
+Error: Test timed out in 900000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/test/w_5_arcana_instance.test.ts:149:1
+    147| });
+    148|
+    149| it('W-5 generated results: 12 fixed seeds (W-24/W-25/W-26 coverage sup…
+       | ^
+    150|     const categories = new Set<ItemCategory>(), kinds = new Set<string…
+    151|     for (const seed of new Set([42, 12345, 20250308, 999, 1, 7, 202609…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 17 passed (18)
+   Start at  13:57:51
+   Duration  1055.59s (transform 1.33s, setup 0ms, import 3.26s, tests 1052.06s, environment 0ms)
+
+JSON report written to /private/tmp/bjs1-no-ce-w5-rerun.json

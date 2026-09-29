@@ -1,0 +1,23 @@
+{
+  "head": "3b18cee6aca8efe82882c5f3d20577cdffd82adc",
+  "stagedFiles": [],
+  "protectedDocsFiles": [],
+  "licenseAndTaskUnchanged": true,
+  "oldDirectoriesAbsent": true,
+  "migrationOriginalFiles": 1741,
+  "migrationMismatches": [],
+  "frozenInputs": 487,
+  "worktreeValidationInputMismatches": [],
+  "worktreeNodeModulesAbsent": true,
+  "legacyPathMatches": 8,
+  "unexpectedLegacyPaths": [],
+  "crlfFiles": [],
+  "migrationGroups": {
+    "retained-path": 4,
+    "bundled-ce": 45,
+    "history": 552,
+    "root": 453,
+    "fixture": 34,
+    "script": 653
+  }
+}

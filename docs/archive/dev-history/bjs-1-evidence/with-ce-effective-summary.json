@@ -1,0 +1,2063 @@
+{
+  "kind": "Complete CE suite plus any original-timeout reruns permitted by task section 3.4",
+  "files": 239,
+  "counts": {
+    "passed": 4520,
+    "todo": 5,
+    "skipped": 8
+  },
+  "ceMissingSkips": 0,
+  "ceChecksExecuted": 74,
+  "ceChecks": [
+    {
+      "file": "src/engine/Combat/BoltCatalog.test.ts",
+      "case": "W-1 CE catalog contract (source rows, not execution coverage) all 30 types and 22 effects retain CE enum values; all 10 flag bits include the bit-5 gap"
+    },
+    {
+      "file": "src/engine/Combat/BoltCatalog.test.ts",
+      "case": "W-1 CE catalog contract (source rows, not execution coverage) every CE catalog row preserves all 12 fields, including forbidden flags, glyph/color symbols and DF references"
+    },
+    {
+      "file": "src/engine/Combat/BoltCatalog.test.ts",
+      "case": "W-1 CE catalog contract (source rows, not execution coverage) 21 CE item identities follow the actual staff/wand power columns; inventions get no CE item identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE inventory is complete, disabled CE48 remains absent from web pool"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE8/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE8/F1: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE8/F2: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE8/F3: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE10/F1: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE11/F2: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE12/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE16/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE26/F5: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE27/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE28/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE29/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE30/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE31/F1: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE32/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE33/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE34/F1: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE35/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE36/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE37/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE38/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE39/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE40/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE41/F2: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE42/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE43/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE44/F1: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE45/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE46/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE46/F1: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE47/F3: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE48/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE49/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE50/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE51/F1: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE52/F3: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE53/F5: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE54/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE55/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE56/F0: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "case": "U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression) CE57/F2: generation/adoption/outsourcing/carry conserves identity"
+    },
+    {
+      "file": "src/test/u_09_learning_consumers.test.ts",
+      "case": "U09 complete learning eligibility / negation / execution identity matrix CE masks are exactly four behaviors and two abilities; no TURRET, FIERY, POISONS or reflection100"
+    },
+    {
+      "file": "src/test/u_14a_status_gaps.test.ts",
+      "case": "U14a fear lifecycle and persistence/display CE fear source stays retired; X2g completed darkness throw returns at CE frequency"
+    },
+    {
+      "file": "src/test/u_15b2_ring_birth.test.ts",
+      "case": "U15b2 ordinary and machine birth / full CE ringTable matches all eight CE ringTable names, order, frequency and unfiltered kind draw"
+    },
+    {
+      "file": "src/test/u_19a_machine_view.test.ts",
+      "case": "U19a independent compiled CE visibility oracle oracle source hashes pin the C inputs, and the old web scan demonstrably differs"
+    },
+    {
+      "file": "src/test/u_19a_machine_view.test.ts",
+      "case": "U19a candidate gates and feature-time snapshots affected catalog is exactly 14 machines / 18 features, retaining literal flags"
+    },
+    {
+      "file": "src/test/u_19d_machine_families.test.ts",
+      "case": "U19d CE selection contract all fifteen family rows retain CE depth, size, frequency and literal feature flags"
+    },
+    {
+      "file": "src/test/u_19e_machine_families.test.ts",
+      "case": "U19e independent CE selection contract literal frequency/depth/room/feature flags and all autoGen entries retain local CE values"
+    },
+    {
+      "file": "src/test/u_19f_autogen.test.ts",
+      "case": "U19f complete CE directory contracts 21 appended tiles and 24 DF rows retain every CE behavioral field"
+    },
+    {
+      "file": "src/test/u_26a_deep_levels.test.ts",
+      "case": "U26a CE deep-level contracts matches the CE 26/40 constants and all fourteen lumenstone quotas"
+    },
+    {
+      "file": "src/test/v_2b_9c_effects.test.ts",
+      "case": "V-2b-9c CE data and complete promotion closure four blueprint rows match every supported CE column; U19f restores #52 selection"
+    },
+    {
+      "file": "src/test/v_2b_9d_dungeon_profile.test.ts",
+      "case": "V-2b-9d CE profiles, blueprint rows and closed terrain chains both headers and all 19 features match CE including item/monster aliases and literal flags"
+    },
+    {
+      "file": "src/test/w_10_poison.test.ts",
+      "case": "W-10 CE formula and real poison staff contacts matches all 51 CE fixed-point table rows and both clamps, without pow approximation"
+    },
+    {
+      "file": "src/test/w_24_wand_catalog.test.ts",
+      "case": "W-24 CE nine-row catalog and ordinary entry parses the actual CE rows: order, frequency, market value, charge range, polarity, power and flavor slots"
+    },
+    {
+      "file": "src/test/w_25_staff_catalog.test.ts",
+      "case": "W-25 staff catalog parses all twelve CE rows including non-contiguous wood slots, range, polarity, value and power"
+    },
+    {
+      "file": "src/test/x2e_charms.test.ts",
+      "case": "X2e CE pool restoration (run after effects stage) matches all twelve CE table rows in order and frequency, including category-only machine requests"
+    },
+    {
+      "file": "src/test/x2g_native_effects.test.ts",
+      "case": "X2g native effects uses CE surface lichen and all three DF sources, not a lichen monster or gas"
+    },
+    {
+      "file": "src/test/x2g_native_effects.test.ts",
+      "case": "X2g rot gas and MB_SUBMERGED restores both CE frequency-7 potions; save/load preserves the next turn including gas, lichen and surfaced state"
+    },
+    {
+      "file": "src/test/x2m_lighting.test.ts",
+      "case": "X2m real sources and CE catalog checks every DF flare symbol against its CE source row and executes explosion DF"
+    },
+    {
+      "file": "src/test/x2o_horde_clump.test.ts",
+      "case": "X2o independent CE catalog and exhaustive original-C randClump pins CE source provenance and every member triple in all 175 rows"
+    },
+    {
+      "file": "src/test/x3_u8c_combat_items.test.ts",
+      "case": "X3-U8c CE catalog and pure combat text all 68 attack tables and all 15 overlapping classes match the local CE source"
+    },
+    {
+      "file": "src/test/x4_r1_world_catalog.test.ts",
+      "case": "X4-R1 CE identities, field fidelity and explicit scope ledger preserves every CE field of the fifteen new terrain and their visuals"
+    },
+    {
+      "file": "src/test/x4_r1_world_catalog.test.ts",
+      "case": "X4-R1 CE identities, field fidelity and explicit scope ledger uses actual CE IDs and complete fields for all nineteen new DFs"
+    },
+    {
+      "file": "src/test/x4_r1_world_catalog.test.ts",
+      "case": "X4-R1 CE identities, field fidelity and explicit scope ledger has no substituted DF tile or propagation carrier, and accounts for every absent CE enum"
+    },
+    {
+      "file": "src/test/x4_r3_creature_items.test.ts",
+      "case": "X4-R3 CE species blood and feature pipeline matches all 68 CE catalog rows and real DF enum IDs, including bloodless species"
+    },
+    {
+      "file": "src/test/x4_r3_creature_items.test.ts",
+      "case": "X4-R3 incendiary darts and aggravation scroll R6 ports registers the missing CE scroll in generation, polarity, metering, names and detail text"
+    },
+    {
+      "file": "src/test/x4_r5_content_text.test.ts",
+      "case": "X4-R5 CE text inventory pins all 215 CE rows and all 188 nonempty flavors against the actual C source"
+    },
+    {
+      "file": "src/test/x4_r5_content_text.test.ts",
+      "case": "X4-R5 species-specific monster text covers all 67 species and preserves the eight CE summon identities and all status distinctions"
+    },
+    {
+      "file": "src/test/x4_r5_content_text.test.ts",
+      "case": "X4-R5 flood/collapse warnings through the existing DF path restores 158 and keeps visibility/once-per-reset eligibility"
+    },
+    {
+      "file": "src/test/x4_r5_content_text.test.ts",
+      "case": "X4-R5 flood/collapse warnings through the existing DF path restores 163 and keeps visibility/once-per-reset eligibility"
+    }
+  ],
+  "unchangedSkipsAndTodos": [
+    {
+      "file": "src/engine/Combat/CombatFormulas.test.ts",
+      "case": "与 CE 不符的占位（暂不实现黄金值断言） weaponSlowDuration：web 为 3+floor(ench/2)；CE 为 (ench+2)^2/3（PowerTables.c:102）",
+      "status": "todo"
+    },
+    {
+      "file": "src/engine/Combat/CombatFormulas.test.ts",
+      "case": "与 CE 不符的占位（暂不实现黄金值断言） weaponConfusionDuration：web 为 3+floor(ench*0.75)；CE 为 max(3, ench*3/2)（PowerTables.c:100）",
+      "status": "todo"
+    },
+    {
+      "file": "src/engine/Combat/CombatFormulas.test.ts",
+      "case": "与 CE 不符的占位（暂不实现黄金值断言） weaponImageCount：web 为 1+floor(ench/3)；CE 为 clamp(ench/3, 1, 7)（PowerTables.c:103）",
+      "status": "todo"
+    },
+    {
+      "file": "src/engine/Combat/CombatFormulas.test.ts",
+      "case": "与 CE 不符的占位（暂不实现黄金值断言） weaponForceDistance：web 为 floor(ench/2)+2（min 1）；CE 为 max(4, ench*2+2)（PowerTables.c:101）",
+      "status": "todo"
+    },
+    {
+      "file": "src/test/p2_1_tick_architecture.test.ts",
+      "case": "P2-1 A: 与 p2_baseline 逐项一致（零行为变化） 4 seed × D1-D26：地形指纹 / 怪物数 / 物种集合 / 物品数 全部一致",
+      "status": "skipped"
+    },
+    {
+      "file": "src/test/p2_1_tick_architecture.test.ts",
+      "case": "P2-1 A: 与 p2_baseline 逐项一致（零行为变化） 4 seed × 400 回合玩法状态：玩家坐标 HP / 所在层 / 全部怪物位置与 HP 一致",
+      "status": "skipped"
+    },
+    {
+      "file": "src/test/p2_1_tick_architecture.test.ts",
+      "case": "P2-1 B: ticksUntilTurn 真实驱动调度（对抗性） B1 字段存在且初始口径正确：怪物满 TICKS_PER_TURN、玩家 0",
+      "status": "skipped"
+    },
+    {
+      "file": "src/test/p2_1_tick_architecture.test.ts",
+      "case": "P2-1 B: ticksUntilTurn 真实驱动调度（对抗性） B3 恒速口径：一个玩家动作后每只存活怪物恰好行动一次、ticks 归满、玩家归零",
+      "status": "skipped"
+    },
+    {
+      "file": "src/test/p2_2_real_speed.test.ts",
+      "case": "P2-2 F: p2_2_baseline 一致性 4 seed × D1-D26 生成期指标与 p2_2_baseline 一致，且与 P2-1 旧基线 levels 段相同（速度未泄漏进生成）",
+      "status": "skipped"
+    },
+    {
+      "file": "src/test/p2_2_real_speed.test.ts",
+      "case": "P2-2 F: p2_2_baseline 一致性 4 seed × 400 回合玩法状态与 p2_2_baseline 一致",
+      "status": "skipped"
+    },
+    {
+      "file": "src/test/p2_3_objective_time.test.ts",
+      "case": "P2-3 F: p2_3_baseline 一致性 4 seed × D1-D26 生成期指标与 p2_3_baseline 一致，且与 P2-1/P2-2 旧基线 levels 段相同（本轮不触碰生成）",
+      "status": "skipped"
+    },
+    {
+      "file": "src/test/p2_3_objective_time.test.ts",
+      "case": "P2-3 F: p2_3_baseline 一致性 4 seed × 400 回合玩法状态与 p2_3_baseline 一致（本轮后的新基准）——P1-26 退役：相位快照当回归闸门会拦住一切有意改动，见上方注释",
+      "status": "skipped"
+    },
+    {
+      "file": "src/test/smoke.test.ts",
+      "case": "headless 冒烟 c-placeholder 红灯占位：待 P1-2 重新提取 hordes.json 后转为正式断言（加固为每层非水栖怪数 > 0 之类的形态）",
+      "status": "todo"
+    }
+  ],
+  "withDrift": {
+    "files": 240,
+    "passed": 4521,
+    "skipped": 8,
+    "todo": 5,
+    "failed": 0
+  },
+  "fileResults": [
+    {
+      "file": "src/data/armors.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 7
+      }
+    },
+    {
+      "file": "src/data/hordes.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 25
+      }
+    },
+    {
+      "file": "src/data/monsterBolts.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 18
+      }
+    },
+    {
+      "file": "src/data/monsterDamage.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 3
+      }
+    },
+    {
+      "file": "src/data/monsters.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 4
+      }
+    },
+    {
+      "file": "src/data/weapons.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 13
+      }
+    },
+    {
+      "file": "src/engine/Combat/BoltCatalog.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 6
+      }
+    },
+    {
+      "file": "src/engine/Combat/BoltContract.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 10
+      }
+    },
+    {
+      "file": "src/engine/Combat/CombatFormulas.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 27,
+        "todo": 4
+      }
+    },
+    {
+      "file": "src/engine/Core/snapshotQuantity.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 1
+      }
+    },
+    {
+      "file": "src/engine/Core/startingKit.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 5
+      }
+    },
+    {
+      "file": "src/engine/Items/itemFlavors.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 6
+      }
+    },
+    {
+      "file": "src/engine/Random.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 6
+      }
+    },
+    {
+      "file": "src/engine/UI/DetailGenerator.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 5
+      }
+    },
+    {
+      "file": "src/engine/UI/Discoveries.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 3
+      }
+    },
+    {
+      "file": "src/test/ai_1_scent_tracking.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 5
+      }
+    },
+    {
+      "file": "src/test/armor_display_effect.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 16
+      }
+    },
+    {
+      "file": "src/test/armor_model_effect.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 2
+      }
+    },
+    {
+      "file": "src/test/armor_runic_effect.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 12
+      }
+    },
+    {
+      "file": "src/test/b1_retire_invented.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 44
+      }
+    },
+    {
+      "file": "src/test/b2_transcription.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 21
+      }
+    },
+    {
+      "file": "src/test/b_1_weapon_specials.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 16
+      }
+    },
+    {
+      "file": "src/test/b_1a_identification.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 34
+      }
+    },
+    {
+      "file": "src/test/b_1b_identification_persistence.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 14
+      }
+    },
+    {
+      "file": "src/test/b_1c_detect_magic.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 24
+      }
+    },
+    {
+      "file": "src/test/b_2_throwing.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 16
+      }
+    },
+    {
+      "file": "src/test/b_4a_item_generation.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 24
+      }
+    },
+    {
+      "file": "src/test/b_4b_item_placement.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 15
+      }
+    },
+    {
+      "file": "src/test/blueprint_ce_coverage.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 18
+      }
+    },
+    {
+      "file": "src/test/blueprint_center.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 7
+      }
+    },
+    {
+      "file": "src/test/c_0_add_loops.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 14
+      }
+    },
+    {
+      "file": "src/test/c_1_room_profile.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 14
+      }
+    },
+    {
+      "file": "src/test/c_2_lakes.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 17
+      }
+    },
+    {
+      "file": "src/test/c_2_lakes_determinism.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 1
+      }
+    },
+    {
+      "file": "src/test/c_2_lakes_e2e.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 6
+      }
+    },
+    {
+      "file": "src/test/c_3_walls_doors.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 15
+      }
+    },
+    {
+      "file": "src/test/c_4a_0_layer_model.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 20
+      }
+    },
+    {
+      "file": "src/test/c_4a_terrain_catalog.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 30
+      }
+    },
+    {
+      "file": "src/test/c_4b_dungeon_feature.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 31
+      }
+    },
+    {
+      "file": "src/test/c_4c_promotion.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 21
+      }
+    },
+    {
+      "file": "src/test/c_5_fall_subsystem.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 13
+      }
+    },
+    {
+      "file": "src/test/c_6_autogenerators.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 17
+      }
+    },
+    {
+      "file": "src/test/c_7_lighting.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 28
+      }
+    },
+    {
+      "file": "src/test/c_8_connectivity.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 7
+      }
+    },
+    {
+      "file": "src/test/f_1_fire_as_terrain.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 11
+      }
+    },
+    {
+      "file": "src/test/f_2a_fire_mechanics.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 12
+      }
+    },
+    {
+      "file": "src/test/f_2b_creature_burning.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 13
+      }
+    },
+    {
+      "file": "src/test/f_2c_explosion.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 14
+      }
+    },
+    {
+      "file": "src/test/fe_1_touch.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 16
+      }
+    },
+    {
+      "file": "src/test/g_1_gas_volumetric.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 16
+      }
+    },
+    {
+      "file": "src/test/g_2_gas_df_wiring.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 17
+      }
+    },
+    {
+      "file": "src/test/g_3_gas_effects.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 26
+      }
+    },
+    {
+      "file": "src/test/horde_selection.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 12
+      }
+    },
+    {
+      "file": "src/test/horde_terrain_spawn.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 10
+      }
+    },
+    {
+      "file": "src/test/hunger_curve_sim.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 3
+      }
+    },
+    {
+      "file": "src/test/hunger_regen.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 15
+      }
+    },
+    {
+      "file": "src/test/i_1_interaction.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 6
+      }
+    },
+    {
+      "file": "src/test/invented_content_pool.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 7
+      }
+    },
+    {
+      "file": "src/test/monster_damage_balance.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 2
+      }
+    },
+    {
+      "file": "src/test/monster_stats_effect.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 2
+      }
+    },
+    {
+      "file": "src/test/p1_20_item_placement.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 1
+      }
+    },
+    {
+      "file": "src/test/p1_24_death_sink.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 13
+      }
+    },
+    {
+      "file": "src/test/p1_26_invariants.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 5
+      }
+    },
+    {
+      "file": "src/test/p1_27_remove_drowning.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 9
+      }
+    },
+    {
+      "file": "src/test/p1_28_flag_channel.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 14
+      }
+    },
+    {
+      "file": "src/test/p1_29_adversarial_gate.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 1
+      }
+    },
+    {
+      "file": "src/test/p1_29_lake_connectivity.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 7
+      }
+    },
+    {
+      "file": "src/test/p1_30_i18n_gate.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 16
+      }
+    },
+    {
+      "file": "src/test/p1_31_35_placement_snapshot.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 10
+      }
+    },
+    {
+      "file": "src/test/p1_33_machine_chokepoint.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 7
+      }
+    },
+    {
+      "file": "src/test/p1_34_loopmap_reset.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 2
+      }
+    },
+    {
+      "file": "src/test/p1_37_machine_flag_i18n.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 9
+      }
+    },
+    {
+      "file": "src/test/p1_42_secret_door_search.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 14
+      }
+    },
+    {
+      "file": "src/test/p1_46_keybindings.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 7
+      }
+    },
+    {
+      "file": "src/test/p2_0_seeded_rng.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 6
+      }
+    },
+    {
+      "file": "src/test/p2_1_tick_architecture.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 6,
+        "skipped": 4
+      }
+    },
+    {
+      "file": "src/test/p2_2_real_speed.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 16,
+        "skipped": 2
+      }
+    },
+    {
+      "file": "src/test/p2_3_objective_time.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 17,
+        "skipped": 2
+      }
+    },
+    {
+      "file": "src/test/p2_4_animation_cadence.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 13
+      }
+    },
+    {
+      "file": "src/test/p2_6_display_settings.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 19
+      }
+    },
+    {
+      "file": "src/test/p4_10_waypoint.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 7
+      }
+    },
+    {
+      "file": "src/test/p4_1b_monster_casting.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 16
+      }
+    },
+    {
+      "file": "src/test/p4_2_monster_summoning.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 14
+      }
+    },
+    {
+      "file": "src/test/p4_3_special_monster_flags.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 12
+      }
+    },
+    {
+      "file": "src/test/p4_4_split_kamikaze.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 20
+      }
+    },
+    {
+      "file": "src/test/p4_5_melee_specials.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 24
+      }
+    },
+    {
+      "file": "src/test/p4_6_attack_geometry.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 14
+      }
+    },
+    {
+      "file": "src/test/p4_7_player_weapon_geometry.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 17
+      }
+    },
+    {
+      "file": "src/test/p4_8_scent_map.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 14
+      }
+    },
+    {
+      "file": "src/test/p4_9_safety_map.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 8
+      }
+    },
+    {
+      "file": "src/test/r_1_appearance.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 45
+      }
+    },
+    {
+      "file": "src/test/repo_hygiene.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 2
+      }
+    },
+    {
+      "file": "src/test/scroll_effects.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 20
+      }
+    },
+    {
+      "file": "src/test/smoke.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 3,
+        "todo": 1
+      }
+    },
+    {
+      "file": "src/test/t_1_tail.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 9
+      }
+    },
+    {
+      "file": "src/test/u20_inventory.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 5
+      }
+    },
+    {
+      "file": "src/test/u21c_flare_sidebar.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 3
+      }
+    },
+    {
+      "file": "src/test/u21c_terrain_appearance.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 2
+      }
+    },
+    {
+      "file": "src/test/u24_hardcoded_text.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 3
+      }
+    },
+    {
+      "file": "src/test/u25_machine_observation.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 1
+      }
+    },
+    {
+      "file": "src/test/u_00_new_run.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 17
+      }
+    },
+    {
+      "file": "src/test/u_01_instance_snapshot.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 17
+      }
+    },
+    {
+      "file": "src/test/u_02a_rng_snapshot.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 45
+      }
+    },
+    {
+      "file": "src/test/u_02b_level_rng.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 22
+      }
+    },
+    {
+      "file": "src/test/u_03_whole_run_snapshot.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 14
+      }
+    },
+    {
+      "file": "src/test/u_03b_level_travel.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 36
+      }
+    },
+    {
+      "file": "src/test/u_04c_machine_cells.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 7
+      }
+    },
+    {
+      "file": "src/test/u_05_machine_items.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 19
+      }
+    },
+    {
+      "file": "src/test/u_05a_item_ownership.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 51
+      }
+    },
+    {
+      "file": "src/test/u_06_monster_damage.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 37
+      }
+    },
+    {
+      "file": "src/test/u_07_monster_blink.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 53
+      }
+    },
+    {
+      "file": "src/test/u_08_terrain_bolts.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 32
+      }
+    },
+    {
+      "file": "src/test/u_09_learning_consumers.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 72
+      }
+    },
+    {
+      "file": "src/test/u_10_absorption_snapshot.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 40
+      }
+    },
+    {
+      "file": "src/test/u_11_corpse_learning.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 91
+      }
+    },
+    {
+      "file": "src/test/u_12a_cast_eligibility.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 4
+      }
+    },
+    {
+      "file": "src/test/u_12b_ally_mode.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 4
+      }
+    },
+    {
+      "file": "src/test/u_13_combat_math.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 40
+      }
+    },
+    {
+      "file": "src/test/u_14a_status_gaps.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 49
+      }
+    },
+    {
+      "file": "src/test/u_14b_status_gaps.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 97
+      }
+    },
+    {
+      "file": "src/test/u_15a_shattering.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 19
+      }
+    },
+    {
+      "file": "src/test/u_15b2_ring_birth.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 15
+      }
+    },
+    {
+      "file": "src/test/u_15b_rings.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 8
+      }
+    },
+    {
+      "file": "src/test/u_15c_charms.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 4
+      }
+    },
+    {
+      "file": "src/test/u_15d2_armor_runic.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 7
+      }
+    },
+    {
+      "file": "src/test/u_15d3_runic_generation.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 7
+      }
+    },
+    {
+      "file": "src/test/u_15d_weapon_runic.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 26
+      }
+    },
+    {
+      "file": "src/test/u_15e_potions.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 4
+      }
+    },
+    {
+      "file": "src/test/u_15f_food.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 4
+      }
+    },
+    {
+      "file": "src/test/u_16_lifecycle.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 5
+      }
+    },
+    {
+      "file": "src/test/u_17a_df_transaction.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 27
+      }
+    },
+    {
+      "file": "src/test/u_17b_carriers.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 20
+      }
+    },
+    {
+      "file": "src/test/u_17c_triggers.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 17
+      }
+    },
+    {
+      "file": "src/test/u_17d_vents.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 31
+      }
+    },
+    {
+      "file": "src/test/u_17e_altars.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 25
+      }
+    },
+    {
+      "file": "src/test/u_17f_carriers.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 18
+      }
+    },
+    {
+      "file": "src/test/u_18_water_cage.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 6
+      }
+    },
+    {
+      "file": "src/test/u_18a_2_generation_terrain.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 32
+      }
+    },
+    {
+      "file": "src/test/u_18a_3_generation.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 26
+      }
+    },
+    {
+      "file": "src/test/u_18a_terrain_contracts.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 24
+      }
+    },
+    {
+      "file": "src/test/u_19a_machine_view.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 32
+      }
+    },
+    {
+      "file": "src/test/u_19b_pending_occupancy.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 18
+      }
+    },
+    {
+      "file": "src/test/u_19c_immediate_entities.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 20
+      }
+    },
+    {
+      "file": "src/test/u_19d_machine_families.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 24
+      }
+    },
+    {
+      "file": "src/test/u_19e_machine_families.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 17
+      }
+    },
+    {
+      "file": "src/test/u_19f_autogen.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 28
+      }
+    },
+    {
+      "file": "src/test/u_19f_fire.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 3
+      }
+    },
+    {
+      "file": "src/test/u_19f_machines.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 3
+      }
+    },
+    {
+      "file": "src/test/u_23_memory_mapping.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 2
+      }
+    },
+    {
+      "file": "src/test/u_26a_deep_baseline.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 1
+      }
+    },
+    {
+      "file": "src/test/u_26a_deep_levels.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 16
+      }
+    },
+    {
+      "file": "src/test/u_26b_endgame.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 5
+      }
+    },
+    {
+      "file": "src/test/u_27_recording.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 5
+      }
+    },
+    {
+      "file": "src/test/u_r1_codec.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 2
+      }
+    },
+    {
+      "file": "src/test/u_r2_trace.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 1
+      }
+    },
+    {
+      "file": "src/test/u_r3_trace.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 1
+      }
+    },
+    {
+      "file": "src/test/u_r4_trace.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 1
+      }
+    },
+    {
+      "file": "src/test/ui_1_rendering.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 32
+      }
+    },
+    {
+      "file": "src/test/ui_2_protection.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 11
+      }
+    },
+    {
+      "file": "src/test/v_1a_blueprint_items.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 8
+      }
+    },
+    {
+      "file": "src/test/v_1b_alternative.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 9
+      }
+    },
+    {
+      "file": "src/test/v_1c_machine_structure.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 12
+      }
+    },
+    {
+      "file": "src/test/v_2a_vestibule_return.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 3
+      }
+    },
+    {
+      "file": "src/test/v_2b_2a_placement_flags.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 27
+      }
+    },
+    {
+      "file": "src/test/v_2b_2b_blueprints.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 24
+      }
+    },
+    {
+      "file": "src/test/v_2b_3_wired.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 28
+      }
+    },
+    {
+      "file": "src/test/v_2b_4_altars.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 36
+      }
+    },
+    {
+      "file": "src/test/v_2b_5_dormant.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 17
+      }
+    },
+    {
+      "file": "src/test/v_2b_6_keys.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 18
+      }
+    },
+    {
+      "file": "src/test/v_2b_7_features.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 22
+      }
+    },
+    {
+      "file": "src/test/v_2b_8_autogen.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 2
+      }
+    },
+    {
+      "file": "src/test/v_2b_9a_carriers.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 2
+      }
+    },
+    {
+      "file": "src/test/v_2b_9b_environment.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 4
+      }
+    },
+    {
+      "file": "src/test/v_2b_9c_effects.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 10
+      }
+    },
+    {
+      "file": "src/test/v_2b_9d_dungeon_profile.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 11
+      }
+    },
+    {
+      "file": "src/test/v_2b_9e_2_autogen.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 16
+      }
+    },
+    {
+      "file": "src/test/v_2b_9e_area_machine.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 44
+      }
+    },
+    {
+      "file": "src/test/w_10_poison.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 38
+      }
+    },
+    {
+      "file": "src/test/w_11_teleport_placement.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 37
+      }
+    },
+    {
+      "file": "src/test/w_12_blink_beckoning.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 50
+      }
+    },
+    {
+      "file": "src/test/w_13_tunneling.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 43
+      }
+    },
+    {
+      "file": "src/test/w_14_obstruction.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 24
+      }
+    },
+    {
+      "file": "src/test/w_15_shielding.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 57
+      }
+    },
+    {
+      "file": "src/test/w_16_conjuration.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 45
+      }
+    },
+    {
+      "file": "src/test/w_17_domination.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 42
+      }
+    },
+    {
+      "file": "src/test/w_18_entrancement.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 67
+      }
+    },
+    {
+      "file": "src/test/w_19_polymorph.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 53
+      }
+    },
+    {
+      "file": "src/test/w_20_cloning.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 57
+      }
+    },
+    {
+      "file": "src/test/w_21_empowerment.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 29
+      }
+    },
+    {
+      "file": "src/test/w_23_negation.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 42
+      }
+    },
+    {
+      "file": "src/test/w_24_wand_catalog.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 20
+      }
+    },
+    {
+      "file": "src/test/w_25_staff_catalog.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 31
+      }
+    },
+    {
+      "file": "src/test/w_26_arcana_closure.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 49
+      }
+    },
+    {
+      "file": "src/test/w_2_arcana_submission.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 30
+      }
+    },
+    {
+      "file": "src/test/w_3_bolt_trajectory.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 30
+      }
+    },
+    {
+      "file": "src/test/w_4_bolt_reflection.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 29
+      }
+    },
+    {
+      "file": "src/test/w_5_arcana_instance.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 18
+      }
+    },
+    {
+      "file": "src/test/w_6_arcana_recharge.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 28
+      }
+    },
+    {
+      "file": "src/test/w_7_arcana_enchantment.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 30
+      }
+    },
+    {
+      "file": "src/test/w_8_staff_damage.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 33
+      }
+    },
+    {
+      "file": "src/test/w_9_directed_status.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 77
+      }
+    },
+    {
+      "file": "src/test/x2a_recording_checkpoint.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 4
+      }
+    },
+    {
+      "file": "src/test/x2b_terrain_derivation.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 20
+      }
+    },
+    {
+      "file": "src/test/x2c_hit_status_owner.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 6
+      }
+    },
+    {
+      "file": "src/test/x2d_scroll_equipment.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 34
+      }
+    },
+    {
+      "file": "src/test/x2e_charms.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 11
+      }
+    },
+    {
+      "file": "src/test/x2f_thrown_math.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 9
+      }
+    },
+    {
+      "file": "src/test/x2g_native_effects.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 17
+      }
+    },
+    {
+      "file": "src/test/x2h_test_mode_reachability.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 1
+      }
+    },
+    {
+      "file": "src/test/x2i_discovery_text.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 4
+      }
+    },
+    {
+      "file": "src/test/x2i_i18n_flow.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 1
+      }
+    },
+    {
+      "file": "src/test/x2j_monster_ai.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 38
+      }
+    },
+    {
+      "file": "src/test/x2k_lifecycle.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 16
+      }
+    },
+    {
+      "file": "src/test/x2l_reflected_death.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 2
+      }
+    },
+    {
+      "file": "src/test/x2m_lighting.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 18
+      }
+    },
+    {
+      "file": "src/test/x2n_lumenstone_description.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 10
+      }
+    },
+    {
+      "file": "src/test/x2o_horde_clump.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 8
+      }
+    },
+    {
+      "file": "src/test/x3_u1_movement_safety.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 33
+      }
+    },
+    {
+      "file": "src/test/x3_u2_ally_captive.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 32
+      }
+    },
+    {
+      "file": "src/test/x3_u3_cursed_equipment.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 65
+      }
+    },
+    {
+      "file": "src/test/x3_u4_auto_travel.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 38
+      }
+    },
+    {
+      "file": "src/test/x3_u5_commands.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 44
+      }
+    },
+    {
+      "file": "src/test/x3_u5_ui.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 7
+      }
+    },
+    {
+      "file": "src/test/x3_u6_messages.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 51
+      }
+    },
+    {
+      "file": "src/test/x3_u7_sidebar.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 21
+      }
+    },
+    {
+      "file": "src/test/x3_u8a_forced_turns.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 15
+      }
+    },
+    {
+      "file": "src/test/x3_u8b_items.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 32
+      }
+    },
+    {
+      "file": "src/test/x3_u8c_combat_items.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 14
+      }
+    },
+    {
+      "file": "src/test/x3a_live_iteration.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 23
+      }
+    },
+    {
+      "file": "src/test/x3b_display_recording.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 4
+      }
+    },
+    {
+      "file": "src/test/x3b_item_details.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 13
+      }
+    },
+    {
+      "file": "src/test/x4_r1_world_catalog.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 10
+      }
+    },
+    {
+      "file": "src/test/x4_r2_generation.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 6
+      }
+    },
+    {
+      "file": "src/test/x4_r3_creature_items.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 23
+      }
+    },
+    {
+      "file": "src/test/x4_r4_item_details.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 23
+      }
+    },
+    {
+      "file": "src/test/x4_r5_content_text.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 10
+      }
+    },
+    {
+      "file": "src/test/x4_r6_integration.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 27
+      }
+    },
+    {
+      "file": "src/test/x4a_movement_rendering.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 21
+      }
+    },
+    {
+      "file": "src/test/x4b_flavor_text.test.ts",
+      "report": "with-ce-full",
+      "counts": {
+        "passed": 9
+      }
+    }
+  ]
+}

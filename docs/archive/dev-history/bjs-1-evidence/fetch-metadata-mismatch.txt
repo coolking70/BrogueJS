@@ -1,0 +1,2 @@
+WARNING: Tests are calibrated against legacy; upstream may fail CE comparison tests.
+Cannot reuse CE reference: source or commit does not match the requested reference. Run again with --force.

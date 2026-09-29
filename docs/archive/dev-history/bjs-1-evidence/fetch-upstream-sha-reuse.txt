@@ -1,0 +1,2 @@
+WARNING: Tests are calibrated against legacy; upstream may fail CE comparison tests.
+CE reference already verified: upstream 104a20fedbe7d9360d2dfc8ff665571694212ad8

@@ -2,21 +2,24 @@
 
 [Brogue: Community Edition](https://github.com/tmewett/BrogueCE) 的 TypeScript / Vue 3 网页移植，带完整中文界面，支持桌面与手机触屏。
 
-规则层、交互层与内容按 CE C 源码逐项对齐：地牢生成、怪物 AI、战斗、物品与魔法、机关、深层与终局、存档与录像、自动探索与消息系统等，并由约 240 个测试文件、4500 项断言守护。当前版本见 [brogue-web/RELEASE_NOTES.md](brogue-web/RELEASE_NOTES.md)。
+规则层、交互层与内容按 CE C 源码逐项对齐：地牢生成、怪物 AI、战斗、物品与魔法、机关、深层与终局、存档与录像、自动探索与消息系统等，并由约 240 个测试文件、4500 项断言守护。当前版本见 [RELEASE_NOTES.md](RELEASE_NOTES.md)。
 
 ## 目录
 
 | 路径 | 内容 |
 |---|---|
-| `brogue-web/` | 网页版源码（`src/`）、测试（`src/test/`）、开发脚本（`scripts/`）与开发文档（`ai_docs/`：勘察报告、各单元报告、任务书） |
-| `BrogueCE-master/src/` | 作为对照基准的 Brogue CE C 源码（含本项目早期中文化改动）；不少测试直接读取它做 CE 对照，请保持与 `brogue-web/` 同级 |
+| `src/`、`public/` | 网页版源码、资源与测试 |
+| `src/test/fixtures/` | 测试夹具、CE 黄金数据与回归 trace |
+| `scripts/` | 测试契约数据与 CE 参照拉取脚本 |
+| `docs/archive/dev-history/` | 旧开发文档、任务书与报告 |
+| `docs/archive/dev-scripts/` | 历史开发与验收脚本（仅归档） |
+| `.ce-reference/` | `npm run ce:fetch` 按需拉取的 CE 参照，不入库 |
 
 ## 运行
 
 需要 Node.js 20+。
 
 ```bash
-cd brogue-web
 npm ci
 npm run dev          # 本地开发服务器
 npm run build        # 生产构建，产物在 dist/

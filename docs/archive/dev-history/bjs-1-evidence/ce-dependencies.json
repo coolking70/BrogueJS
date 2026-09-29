@@ -1,0 +1,149 @@
+[
+  {
+    "file": "src/test/u_05a_item_ownership.test.ts",
+    "skippedDeclarations": [
+      "'U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression)'"
+    ]
+  },
+  {
+    "file": "src/test/u_09_learning_consumers.test.ts",
+    "skippedDeclarations": [
+      "'CE masks are exactly four behaviors and two abilities; no TURRET, FIERY, POISONS or reflection100'"
+    ]
+  },
+  {
+    "file": "src/test/u_14a_status_gaps.test.ts",
+    "skippedDeclarations": [
+      "'CE fear source stays retired; X2g completed darkness throw returns at CE frequency'"
+    ]
+  },
+  {
+    "file": "src/test/u_15b2_ring_birth.test.ts",
+    "skippedDeclarations": [
+      "'matches all eight CE ringTable names, order, frequency and unfiltered kind draw'"
+    ]
+  },
+  {
+    "file": "src/test/u_19a_machine_view.test.ts",
+    "skippedDeclarations": [
+      "'oracle source hashes pin the C inputs, and the old web scan demonstrably differs'",
+      "'affected catalog is exactly 14 machines / 18 features, retaining literal flags'"
+    ]
+  },
+  {
+    "file": "src/test/u_19d_machine_families.test.ts",
+    "skippedDeclarations": [
+      "'all fifteen family rows retain CE depth, size, frequency and literal feature flags'"
+    ]
+  },
+  {
+    "file": "src/test/u_19e_machine_families.test.ts",
+    "skippedDeclarations": [
+      "'literal frequency/depth/room/feature flags and all autoGen entries retain local CE values'"
+    ]
+  },
+  {
+    "file": "src/test/u_19f_autogen.test.ts",
+    "skippedDeclarations": [
+      "'21 appended tiles and 24 DF rows retain every CE behavioral field'"
+    ]
+  },
+  {
+    "file": "src/test/u_26a_deep_levels.test.ts",
+    "skippedDeclarations": [
+      "'matches the CE 26/40 constants and all fourteen lumenstone quotas'"
+    ]
+  },
+  {
+    "file": "src/test/v_2b_9c_effects.test.ts",
+    "skippedDeclarations": [
+      "'four blueprint rows match every supported CE column; U19f restores #52 selection'"
+    ]
+  },
+  {
+    "file": "src/test/v_2b_9d_dungeon_profile.test.ts",
+    "skippedDeclarations": [
+      "'both headers and all 19 features match CE including item/monster aliases and literal flags'"
+    ]
+  },
+  {
+    "file": "src/test/w_10_poison.test.ts",
+    "skippedDeclarations": [
+      "'matches all 51 CE fixed-point table rows and both clamps, without pow approximation'"
+    ]
+  },
+  {
+    "file": "src/test/w_24_wand_catalog.test.ts",
+    "skippedDeclarations": [
+      "'parses the actual CE rows: order, frequency, market value, charge range, polarity, power and flavor slots'"
+    ]
+  },
+  {
+    "file": "src/test/w_25_staff_catalog.test.ts",
+    "skippedDeclarations": [
+      "'parses all twelve CE rows including non-contiguous wood slots, range, polarity, value and power'"
+    ]
+  },
+  {
+    "file": "src/test/x2e_charms.test.ts",
+    "skippedDeclarations": [
+      "'matches all twelve CE table rows in order and frequency, including category-only machine requests'"
+    ]
+  },
+  {
+    "file": "src/test/x2g_native_effects.test.ts",
+    "skippedDeclarations": [
+      "'uses CE surface lichen and all three DF sources, not a lichen monster or gas'",
+      "'restores both CE frequency-7 potions; save/load preserves the next turn including gas, lichen and surfaced state'"
+    ]
+  },
+  {
+    "file": "src/test/x2m_lighting.test.ts",
+    "skippedDeclarations": [
+      "'checks every DF flare symbol against its CE source row and executes explosion DF'"
+    ]
+  },
+  {
+    "file": "src/test/x2o_horde_clump.test.ts",
+    "skippedDeclarations": [
+      "'pins CE source provenance and every member triple in all 175 rows'"
+    ]
+  },
+  {
+    "file": "src/test/x3_u8c_combat_items.test.ts",
+    "skippedDeclarations": [
+      "'all 68 attack tables and all 15 overlapping classes match the local CE source'"
+    ]
+  },
+  {
+    "file": "src/test/x4_r1_world_catalog.test.ts",
+    "skippedDeclarations": [
+      "'preserves every CE field of the fifteen new terrain and their visuals'",
+      "'uses actual CE IDs and complete fields for all nineteen new DFs'",
+      "'has no substituted DF tile or propagation carrier, and accounts for every absent CE enum'"
+    ]
+  },
+  {
+    "file": "src/test/x4_r3_creature_items.test.ts",
+    "skippedDeclarations": [
+      "'matches all 68 CE catalog rows and real DF enum IDs, including bloodless species'",
+      "'registers the missing CE scroll in generation, polarity, metering, names and detail text'"
+    ]
+  },
+  {
+    "file": "src/test/x4_r5_content_text.test.ts",
+    "skippedDeclarations": [
+      "'pins all 215 CE rows and all 188 nonempty flavors against the actual C source'",
+      "'covers all 67 species and preserves the eight CE summon identities and all status distinctions'",
+      "'restores %s and keeps visibility/once-per-reset eligibility'"
+    ]
+  },
+  {
+    "file": "src/engine/Combat/BoltCatalog.test.ts",
+    "skippedDeclarations": [
+      "'all 30 types and 22 effects retain CE enum values; all 10 flag bits include the bit-5 gap'",
+      "'every CE catalog row preserves all 12 fields, including forbidden flags, glyph/color symbols and DF references'",
+      "'21 CE item identities follow the actual staff/wand power columns; inventions get no CE item identity'"
+    ]
+  }
+]

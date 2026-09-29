@@ -1,0 +1,31 @@
+
+ RUN  v4.1.11 /private/tmp/bjs1-validation
+
+No test files found, exiting with code 1
+
+filter: src/test/repo_hygiene.test.ts
+include: **/*.{test,spec}.?(c|m)[jt]s?(x)
+exclude:  **/node_modules/**, **/.git/**
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: CE reference source not found; run npm run ce:fetch
+ ❯ Object.setup src/test/support/ceGlobalSetup.ts:5:54
+      3| export default function setup(): void {
+      4|     if (hasCeSource()) return;
+      5|     if (process.env.BROGUE_REQUIRE_CE === '1') throw new Error(CE_SKIP…
+       |                                                      ^
+      6|     console.warn(`\n*** ${CE_SKIP_REASON} ***\nCE-dependent tests will…
+      7| }
+ ❯ TestProject._initializeGlobalSetup node_modules/vitest/dist/chunks/cli-api.CnMVyzaz.js:10813:50
+ ❯ Vitest.initializeGlobalSetup node_modules/vitest/dist/chunks/cli-api.CnMVyzaz.js:13812:35
+ ❯ node_modules/vitest/dist/chunks/cli-api.CnMVyzaz.js:13655:6
+ ❯ node_modules/vitest/dist/chunks/cli-api.CnMVyzaz.js:13684:11
+ ❯ node_modules/vitest/dist/chunks/cli-api.CnMVyzaz.js:13546:19
+ ❯ startVitest node_modules/vitest/dist/chunks/cli-api.CnMVyzaz.js:14621:8
+ ❯ start node_modules/vitest/dist/chunks/cac.uFydS1Z4.js:2340:15
+ ❯ CAC.run node_modules/vitest/dist/chunks/cac.uFydS1Z4.js:2318:2
+
+
+
+

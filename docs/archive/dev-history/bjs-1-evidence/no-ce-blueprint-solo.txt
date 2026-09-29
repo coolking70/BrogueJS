@@ -1,0 +1,65 @@
+
+ RUN  v4.1.11 /private/tmp/bjs1-validation
+
+
+*** CE reference source not found; run npm run ce:fetch ***
+CE-dependent tests will be explicitly skipped.
+
+stdout | src/test/blueprint_center.test.ts > 蓝图宝藏落点（machine center）可通行性 > b) 全局扫描（44 seeds × D1..D26）：房间 center 可通行、区域 origin 属于 interior（CE8 空域单独验证）
+🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+[bp-center] seed=35 D1..D26 substantive RNG 抽取总数: 2280131
+[bp-center] seed=424242 D1..D26 substantive RNG 抽取总数: 2330917
+[bp-center] seed=20260913 D1..D26 substantive RNG 抽取总数: 1829492
+[bp-center] seed=1 D1..D26 substantive RNG 抽取总数: 2353549
+[bp-center] seed=777 D1..D26 substantive RNG 抽取总数: 2297841
+[bp-center] seed=31337 D1..D26 substantive RNG 抽取总数: 1931355
+[bp-center] seed=20260916 D1..D26 substantive RNG 抽取总数: 2221625
+[bp-center] seed=42 D1..D26 substantive RNG 抽取总数: 2200557
+[bp-center] seed=999 D1..D26 substantive RNG 抽取总数: 2218232
+[bp-center] seed=12345 D1..D26 substantive RNG 抽取总数: 1810844
+[bp-center] seed=55555 D1..D26 substantive RNG 抽取总数: 1970815
+[bp-center] seed=31415 D1..D26 substantive RNG 抽取总数: 2131686
+[bp-center] seed=27182 D1..D26 substantive RNG 抽取总数: 2096868
+[bp-center] seed=2 D1..D26 substantive RNG 抽取总数: 2205774
+[bp-center] seed=3 D1..D26 substantive RNG 抽取总数: 2258370
+[bp-center] seed=4 D1..D26 substantive RNG 抽取总数: 2166015
+[bp-center] seed=5 D1..D26 substantive RNG 抽取总数: 2433852
+[bp-center] seed=6 D1..D26 substantive RNG 抽取总数: 2453513
+[bp-center] seed=7 D1..D26 substantive RNG 抽取总数: 2213742
+[bp-center] seed=8 D1..D26 substantive RNG 抽取总数: 2039624
+[bp-center] seed=9 D1..D26 substantive RNG 抽取总数: 2006166
+[bp-center] seed=10 D1..D26 substantive RNG 抽取总数: 2096780
+[bp-center] seed=11 D1..D26 substantive RNG 抽取总数: 1995567
+[bp-center] seed=12 D1..D26 substantive RNG 抽取总数: 2455191
+[bp-center] seed=13 D1..D26 substantive RNG 抽取总数: 2246848
+[bp-center] seed=14 D1..D26 substantive RNG 抽取总数: 1986080
+[bp-center] seed=15 D1..D26 substantive RNG 抽取总数: 2655135
+[bp-center] seed=16 D1..D26 substantive RNG 抽取总数: 2384784
+[bp-center] seed=17 D1..D26 substantive RNG 抽取总数: 2240136
+[bp-center] seed=18 D1..D26 substantive RNG 抽取总数: 2080541
+[bp-center] seed=19 D1..D26 substantive RNG 抽取总数: 2118723
+[bp-center] seed=20 D1..D26 substantive RNG 抽取总数: 1944927
+[bp-center] seed=21 D1..D26 substantive RNG 抽取总数: 2465883
+[bp-center] seed=22 D1..D26 substantive RNG 抽取总数: 2117279
+[bp-center] seed=23 D1..D26 substantive RNG 抽取总数: 2348112
+[bp-center] seed=24 D1..D26 substantive RNG 抽取总数: 1878721
+[bp-center] seed=25 D1..D26 substantive RNG 抽取总数: 2056808
+[bp-center] seed=26 D1..D26 substantive RNG 抽取总数: 2412428
+[bp-center] seed=27 D1..D26 substantive RNG 抽取总数: 2107159
+[bp-center] seed=28 D1..D26 substantive RNG 抽取总数: 2321602
+[bp-center] seed=29 D1..D26 substantive RNG 抽取总数: 2434834
+[bp-center] seed=30 D1..D26 substantive RNG 抽取总数: 2008675
+[bp-center] seed=31 D1..D26 substantive RNG 抽取总数: 2130565
+[bp-center] seed=32 D1..D26 substantive RNG 抽取总数: 1620801
+[bp-center] 扫描 44 seeds × 26 层 = 1144 层，共 3697 台 machine，center 违例 0 条（涉及 0 层）；不可通行 terrain 分布：（无）
+[bp-center] center 上共见到 2 件宝藏：scroll_of_enchantment×1, charm_of_protection×1；宝藏违例 0 条
+
+ ✓ src/test/blueprint_center.test.ts (7 tests) 833338ms
+     ✓ b) 全局扫描（44 seeds × D1..D26）：房间 center 可通行、区域 origin 属于 interior（CE8 空域单独验证）  833331ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  14:23:29
+   Duration  834.82s (transform 776ms, setup 0ms, import 1.32s, tests 833.34s, environment 0ms)
+
+JSON report written to /private/tmp/bjs1-no-ce-blueprint-solo.json

@@ -1,0 +1,46 @@
+{
+  "scope": "All tracked and nonignored untracked deliverable files; archived history/evidence and unchanged task specification excluded from legacy-path matching",
+  "matches": [
+    {
+      "file": "scripts/fetch-ce-reference.mjs",
+      "line": 59,
+      "text": "if (!existsSync(join(destination, 'BrogueCE-master', file))) throw new Error(`missing ${file}`);"
+    },
+    {
+      "file": "scripts/fetch-ce-reference.mjs",
+      "line": 74,
+      "text": "const prefix = source === 'legacy' ? 'BrogueCE-master/' : '';"
+    },
+    {
+      "file": "scripts/fetch-ce-reference.mjs",
+      "line": 84,
+      "text": "const sourceRoot = source === 'legacy' ? join(checkout, 'BrogueCE-master') : checkout;"
+    },
+    {
+      "file": "scripts/fetch-ce-reference.mjs",
+      "line": 89,
+      "text": "renameSync(sourceRoot, join(staging, 'BrogueCE-master'));"
+    },
+    {
+      "file": "scripts/fetch-ce-reference.mjs",
+      "line": 92,
+      "text": "renameSync(checkout, join(staging, 'BrogueCE-master'));"
+    },
+    {
+      "file": "scripts/fetch-ce-reference.mjs",
+      "line": 93,
+      "text": "renameSync(join(staging, 'BrogueCE-master/.git'), join(staging, '.checkout'));"
+    },
+    {
+      "file": "scripts/fetch-ce-reference.mjs",
+      "line": 94,
+      "text": "git(join(staging, '.checkout'), 'config', 'core.worktree', '../BrogueCE-master');"
+    },
+    {
+      "file": "src/test/support/ceSource.ts",
+      "line": 8,
+      "text": ": resolve(repoRoot, '.ce-reference/BrogueCE-master');"
+    }
+  ],
+  "crlfFiles": []
+}

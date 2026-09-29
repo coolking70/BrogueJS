@@ -1,0 +1,44 @@
+[
+  {
+    "args": [
+      "--help"
+    ],
+    "exitCode": 0,
+    "stdout": "Usage: npm run ce:fetch -- [--source legacy|upstream] [--ref <tag|sha>] [--force]\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "--source"
+    ],
+    "exitCode": 1,
+    "stdout": "",
+    "stderr": "--source needs a value\n"
+  },
+  {
+    "args": [
+      "--source",
+      "unknown"
+    ],
+    "exitCode": 1,
+    "stdout": "",
+    "stderr": "Unknown source: unknown\n"
+  },
+  {
+    "args": [
+      "--ref",
+      "v1"
+    ],
+    "exitCode": 1,
+    "stdout": "",
+    "stderr": "legacy is pinned; --ref is only supported for upstream\n"
+  },
+  {
+    "args": [
+      "--unexpected"
+    ],
+    "exitCode": 1,
+    "stdout": "",
+    "stderr": "Unknown argument: --unexpected\n"
+  }
+]

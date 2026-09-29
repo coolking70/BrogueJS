@@ -1,0 +1,6 @@
+
+> brogue-web@0.2.0 ce:fetch
+> node scripts/fetch-ce-reference.mjs
+
+Fetching legacy 49be8dd3fc1b9a0fb477df4c9153c0e1cf796fe9 ...
+CE reference ready: legacy 49be8dd3fc1b9a0fb477df4c9153c0e1cf796fe9

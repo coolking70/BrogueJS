@@ -1,0 +1,20 @@
+
+ RUN  v4.1.11 /private/tmp/bjs1-validation
+
+
+*** CE reference source not found; run npm run ce:fetch ***
+CE-dependent tests will be explicitly skipped.
+
+stdout | src/test/w_5_arcana_instance.test.ts > W-5 deterministic persistence / migration > versioned JSON snapshot preserves independent E, capacity, depletion and unknown-state flags on ground / in pack
+🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+
+ ✓ src/test/w_5_arcana_instance.test.ts (18 tests) 721843ms
+     ✓ versioned JSON snapshot preserves independent E, capacity, depletion and unknown-state flags on ground / in pack  588ms
+   ✓ W-5 generated results: 12 fixed seeds (W-24/W-25/W-26 coverage supplements) × D1–26 retain category coverage and obey initial per-kind values  721239ms
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  14:37:25
+   Duration  723.32s (transform 802ms, setup 0ms, import 1.30s, tests 721.84s, environment 0ms)
+
+JSON report written to /private/tmp/bjs1-no-ce-w5-solo.json
