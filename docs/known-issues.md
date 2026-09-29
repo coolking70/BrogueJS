@@ -2,6 +2,15 @@
 
 截至 v0.2.0。条目来源于历次勘察与单元报告中标为"非阻塞"或"未完成"的部分；动手前先到对应报告确认上下文。
 
+## 0. 下一阶段目标：同步最新官方 Brogue CE
+
+当前对照基准是旧仓库 BrogueCE-chs 固定提交中的 CE 源码（CE 1.x 加早期 C 版中文化改动），`npm run ce:fetch` 默认拉取它。建议步骤：
+
+1. `npm run ce:fetch -- --source upstream --force` 拉取官方最新 CE（或指定 `--ref <tag>`），运行 `npm run test:full`。
+2. 失败的 CE 对照测试即为新旧 CE 差异清单：区分"规则确有变化"（修改 web 实现跟进）与"仅行号/文本/中文化改动差异"（更新夹具与注释引用）。
+3. 必要时对新 CE 做一轮只读勘察（按键、消息、目录、生成普查），方法见 `docs/development.md` §6。
+4. 全部处理后，把 `scripts/fetch-ce-reference.mjs` 的默认来源改为官方 CE 的固定 tag/提交，项目即不再依赖旧仓库。
+
 ## 1. 规则与 AI（需要进一步对照 CE）
 
 | 项 | 说明 | 来源 |

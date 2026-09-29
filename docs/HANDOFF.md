@@ -58,6 +58,7 @@ BrogueJS 是 [Brogue CE](https://github.com/tmewett/BrogueCE) 的 TypeScript + V
 ## 6. 下一步候选
 
 - 按用户试玩反馈修复（首选）。
+- **同步最新官方 Brogue CE**（下一阶段目标）：步骤见 `docs/known-issues.md` §0。
 - `docs/known-issues.md` 列出的非阻塞项：一般 AI/寻路/谱影合同逐项复核、自然长局深层录像、存储容量实测、两个稀有蓝图（CE46/CE50）自然零生成的原因确认、前端小问题。
 - 可选：一轮全项目只读复核勘察，确认 X-3/X-4 大改没有带进新偏差。
 
