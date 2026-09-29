@@ -7,7 +7,6 @@
 
 ```bash
 npm ci
-npm run ce:fetch        # 拉取 CE 参照源码到 .ce-reference/（对照测试需要）
 npm run dev             # 本地开发服务器
 ```
 
@@ -18,13 +17,13 @@ npm run dev             # 本地开发服务器
 | `npm run dev` | Vite 开发服务器 |
 | `npm run build` | 类型检查（vue-tsc）+ 生产构建，产物在 `dist/` |
 | `npm test` | 全部测试（不含生成基线）；没有 CE 参照源码时，CE 对照用例显式跳过 |
-| `npm run test:full` | 同上，但**要求** CE 参照源码存在（缺失即失败）——验收门禁用这个 |
+| `npm run test:full` | CE 一致性检查：同上，但**要求** CE 参照源码存在（缺失即失败），CE 对照用例全部运行 |
 | `npm run test:drift` | 地图生成回归基线 |
 | `npx vue-tsc -b` | 仅类型检查 |
 
-## 2. CE 参照源码
+## 2. CE 参照源码（可选）
 
-测试里有大量"CE 对照"：从 CE C 源码提取函数编译成参照程序比对、核对目录表、校验行号引用。这些需要 CE 源码，但本仓库不收录它：
+日常开发与验收不需要 CE 源码：约 98% 的测试（真实入口端到端、生成合理性、录像回放、目录全集、黄金 trace）不依赖它。少量"CE 对照"：从 CE C 源码提取函数编译成参照程序比对、核对目录表、校验行号引用。这些需要 CE 源码，但本仓库不收录它：
 
 ```bash
 npm run ce:fetch                          # 默认 legacy：BrogueCE-chs 固定提交里的 BrogueCE-master/src（测试按此版本编写）
@@ -68,7 +67,8 @@ grep -rln '^<<<<<<<\|^>>>>>>>' src scripts     # 必查：-3 可能静默留下�
 |---|---|---|
 | 轻 | 纯前端（组件、样式、界面文案） | `vue-tsc -b` + `build` + 相关前端测试 + **所有读源码的守卫** |
 | 中 | 引擎里不改规则的部分（消息、显示、日志、自动行动流程） | 轻档 + 相关单测 + UR2/UR3/UR4 黄金 trace + 录像测试（u_27、x2a、x3b）+ U03 契约 + `test:drift` |
-| 全量 | 规则、生成、随机数、存档 | `vue-tsc -b` + `build` + `npm run test:full` 完整跑完 + `test:drift` |
+| 全量 | 规则、生成、随机数、存档 | `vue-tsc -b` + `build` + `npm test` 完整跑完 + `test:drift` |
+| CE 一致性（附加） | 改动按 CE 对齐的规则代码；同步新版 CE；发版前 | `npm run ce:fetch` + `npm run test:full`（约 74 个 CE 对照用例） |
 
 - **打版本标签前必须全量兜底一次。**
 - "读源码的守卫"（扫描源码的测试）轻/中档也必须跑：`c_4a_terrain_catalog`（mechFlags 读者白名单）、`p1_30_i18n_gate`、`u24_hardcoded_text`、`repo_hygiene` 等。曾两次只在全量里才暴露白名单问题。

@@ -13,6 +13,6 @@
 - **所有改状态的输入经 `game.executeCommand` / `executeItemCommand`**；纯显示代码不得消耗实质随机流；给 `Game` 加字段要登记 `scripts/u03-state-contract.json`。
 - **生成基线 / 黄金 trace 变化**：先单变量归因，再用原捕获方法重录并逐字段登记（`docs/testing.md` §3）。
 - 所有玩家可见文本走 i18n（`docs/i18n.md`）。
-- 验收门禁用 `npm run test:full`（要求 CE 参照源码），不是会跳过 CE 对照的 `npm test`。
+- 日常验收门禁用 `npm test` + `npm run test:drift`（不需要 CE 源码）。改动按 CE 对齐的规则代码、或同步新版 CE 时，另跑 CE 一致性检查 `npm run ce:fetch && npm run test:full`（见 `docs/development.md` §4）。
 - 不追求同种子逐骰一致；不做旧存档迁移；不做无障碍（项目决策，见 `docs/ce-alignment.md` §3）。
 - 截图与 >1 MB 的原始证据不提交；不产生 CRLF；推送与测试分开执行，先确认测试结果。

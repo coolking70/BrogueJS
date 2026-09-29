@@ -18,8 +18,9 @@ npm run build          # 生产构建，产物在 dist/
 
 ```bash
 npm test               # 全部测试（不含生成基线）；未拉取 CE 参照源码时，CE 对照用例会跳过
+# CE 一致性检查（可选：改动按 CE 对齐的规则、或同步新版 CE 时）
 npm run ce:fetch       # 拉取 CE 参照源码到 .ce-reference/（git 忽略）
-npm run test:full      # 要求 CE 参照源码存在的完整测试（验收门禁用这个）
+npm run test:full      # 包含 CE 对照用例的完整测试
 npm run test:drift     # 地图生成回归基线
 ```
 

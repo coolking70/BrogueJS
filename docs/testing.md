@@ -42,7 +42,7 @@ UR4_CAPTURE=1 npx vitest run src/test/u_r4_trace.test.ts --maxWorkers=1
 
 ## 4. CE 参照源码与跳过
 
-- 没有 `.ce-reference/`（或 `BROGUE_CE_DIR`）时，`npm test` 会跳过 CE 对照用例并打印提示；**验收门禁必须用 `npm run test:full`**，它在缺少 CE 时直接失败，避免"跳过即绿"。
+- 没有 `.ce-reference/`（或 `BROGUE_CE_DIR`）时，`npm test` 会跳过 CE 对照用例并打印提示；日常门禁用 `npm test` 即可；需要做 CE 一致性检查时（改动按 CE 对齐的规则、同步新版 CE、发版前）用 `npm run test:full`，它在缺少 CE 时直接失败，避免"跳过即绿"。
 - 新写 CE 对照测试：用 `ceSource` 模块读取，并加 `skipIf(!hasCeSource())`。
 
 ## 5. 写新测试的要点

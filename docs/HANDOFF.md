@@ -39,7 +39,7 @@ BrogueJS 是 [Brogue CE](https://github.com/tmewett/BrogueCE) 的 TypeScript + V
 ## 4. 如何继续开发
 
 1. 读 `docs/development.md`（环境、工作流、门禁、验收规则）与 `docs/architecture.md`（代码地图）。
-2. 首次克隆后：`npm ci && npm run ce:fetch`（拉取 CE 参照源码，对照测试需要它）。
+2. 首次克隆后：`npm ci` 即可开发与跑门禁（`npm test`、`npm run test:drift`）；改动按 CE 对齐的规则或同步新版 CE 时，再 `npm run ce:fetch && npm run test:full` 做 CE 一致性检查。
 3. 需求来源优先级：
    - **用户试玩反馈**（最有效：X4a、X4b、X-3、X-4 都源自试玩发现）；
    - `docs/known-issues.md` 中的待办；
