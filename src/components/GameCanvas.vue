@@ -1,5 +1,5 @@
 <script lang="ts">
-import { rng, RNGType } from '../engine/Random';
+import { displayRandom } from '../engine/Lighting/CosmeticLight';
 import type { MapScaleMode } from '../engine/Settings';
 import { DCOLS, DROWS } from '../types';
 
@@ -7,29 +7,16 @@ import { DCOLS, DROWS } from '../types';
 export const TILE_SIZE = 16;
 
 /**
- * 幻觉渲染专用的纯视觉随机：必须走 COSMETIC 流，不得污染玩法（SUBSTANTIVE）流。
- * 渲染次数取决于帧率/窗口大小/玩家是否在看，若留在玩法流会让玩法随渲染而变。
- *
- * 成对用法对齐 CE 的 assureCosmeticRNG / restoreRNG（Rogue.h:1282-1283）：
- * 切到 COSMETIC -> 取数 -> 用完必须切回（try/finally 保证异常路径也恢复）。
- * 导出是为了让确定性测试直接断言"渲染不污染玩法流"（p2_0_seeded_rng.test.ts）。
+ * 幻觉外观随显示帧变化，但显示帧数不得推进命令录像所记录的任何 RNG 流。
+ * 和动态光照共用按地图隔离的显示随机流；省略 owner 时供旧的纯函数调用方使用。
  */
-export function cosmeticPercent(percent: number): boolean {
-    rng.setRNG(RNGType.RNG_COSMETIC);
-    try {
-        return rng.randPercent(percent);
-    } finally {
-        rng.setRNG(RNGType.RNG_SUBSTANTIVE);
-    }
+const fallbackDisplayOwner = {};
+export function cosmeticPercent(percent: number, owner: object = fallbackDisplayOwner): boolean {
+    return displayRandom(owner).randPercent(percent);
 }
 
-export function cosmeticPick<T>(list: readonly T[]): T {
-    rng.setRNG(RNGType.RNG_COSMETIC);
-    try {
-        return list[rng.randRange(0, list.length - 1)]!;
-    } finally {
-        rng.setRNG(RNGType.RNG_SUBSTANTIVE);
-    }
+export function cosmeticPick<T>(list: readonly T[], owner: object = fallbackDisplayOwner): T {
+    return list[displayRandom(owner).randRange(0, list.length - 1)]!;
 }
 
 /**
@@ -118,8 +105,10 @@ import { logger } from '../engine/Systems/Logger';
 import { inputManager } from '../engine/Input';
 import i18next from 'i18next';
 import { displaySettings } from '../engine/Settings';
+import { viewport } from '../ui/layout';
 // FE-1：小屏跟随相机（纯显示状态，不进存档/录像）
 import { computeMapCamera, cameraState, zoomBy } from '../ui/mapCamera';
+import { MAP_HOVER_FILL, MAP_HOVER_STROKE, MousePanTracker, shouldHandleMapWheel, shouldHighlightMapCell, wheelZoomFactor } from '../ui/mapPointer';
 // FE-1：触屏手势与目标选择（改状态的输出只经 ui/commands 的录制边界）
 import { GestureTracker, type GestureEvent } from '../ui/touchGestures';
 import { normalizeMapGlyph } from '../ui/mapGlyph';
@@ -221,6 +210,25 @@ onMounted(async () => {
     entityLayer.addChild(boltSprite);
     const arcanaCursor = new Graphics();
     entityLayer.addChild(arcanaCursor);
+    const hoverHighlight = new Graphics();
+    entityLayer.addChild(hoverHighlight);
+
+    // A display-only overlay. CE cursor mode highlights its current cell
+    // (IO.c:655-664); passive mouse hover is a Web affordance.
+    const drawHover = () => {
+        hoverHighlight.clear();
+        const game = activeGame;
+        const pos = game.hoveredCell;
+        if (!pos || game.isInventoryOpen || game.referenceScreen || game.pendingArcana
+            || game.isThrowing || game.isGameOver) return;
+        const cell = game.grid.getCell(pos.x, pos.y);
+        if (!shouldHighlightMapCell(cell)) return;
+        hoverHighlight.rect(pos.x * TILE_SIZE, pos.y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            .fill({ color: MAP_HOVER_FILL, alpha: 0.14 });
+        hoverHighlight.rect(pos.x * TILE_SIZE + 0.75, pos.y * TILE_SIZE + 0.75,
+            TILE_SIZE - 1.5, TILE_SIZE - 1.5)
+            .stroke({ color: MAP_HOVER_STROKE, width: 1.5 });
+    };
 
     // Floating text layer (max 8 floaters)
     const MAX_FLOAT_SPRITES = 8;
@@ -263,14 +271,15 @@ onMounted(async () => {
             el.clientHeight,
             displaySettings.mapScaleMode,
         );
-        // FE-1：桌面口径（上面的 computeMapLayout）每格 ≥ 12px 时原样使用；
-        // 小屏下才叠加跟随相机（以玩家为中心 + 用户平移/缩放，夹在地图边界内）。
+        // zoom=1 时保留原桌面布局；主动放大或小屏自动放大后使用跟随相机。
         const focus = activeGame.player?.loc ?? { x: 0, y: 0 };
-        const cam = computeMapCamera(
+        const cam = cameraState.fit ? { ...base, follow: false, panX: 0, panY: 0 } : computeMapCamera(
             el.clientWidth, el.clientHeight, base, DCOLS, DROWS, TILE_SIZE,
             focus, cameraState.zoom, { x: cameraState.panX, y: cameraState.panY },
+            viewport.mode !== 'desktop',
         );
         cameraState.follow = cam.follow;
+        pixiApp.canvas.style.cursor = cam.follow ? 'grab' : 'crosshair';
         if (cameraState.panX !== cam.panX) cameraState.panX = cam.panX;
         if (cameraState.panY !== cam.panY) cameraState.panY = cam.panY;
         lastFocusX = focus.x;
@@ -310,7 +319,7 @@ onMounted(async () => {
     // 需显式走同一条 applyLayout 重算路径，设置变更即时生效、无需刷新页面。
     stopScaleModeWatch = watch(() => displaySettings.mapScaleMode, () => applyLayout());
     // FE-1：缩放级 / 平移量变化同样走 applyLayout（纯显示，不影响玩法）。
-    stopCameraWatch = watch(() => [cameraState.zoom, cameraState.panX, cameraState.panY], () => applyLayout());
+    stopCameraWatch = watch(() => [cameraState.zoom, cameraState.panX, cameraState.panY, cameraState.fit], () => applyLayout());
 
     const game = activeGame;
     // P2-4 动画节奏（决策 E1-修订，CE Time.c:2704 口径）：UI 挂载后启用分步
@@ -330,6 +339,7 @@ onMounted(async () => {
     });
 
     const render = () => {
+        drawHover();
         // FE-1：玩家移动后相机回到跟随（清掉临时平移）并重算视口
         if (game.player.loc.x !== lastFocusX || game.player.loc.y !== lastFocusY) {
             cameraState.panX = 0;
@@ -367,8 +377,11 @@ onMounted(async () => {
         }
         const hallucinating = !!game.player.statusDurations.hallucinating;
         const telepathyRevealed = !!game.player.statusDurations.telepathy;
-        // 幻觉等纯视觉随机走 COSMETIC 流（见模块块 cosmeticPercent/cosmeticPick），
-        // 以 ctx 注入外观纯函数——本组件不再做任何"画什么"的决策。
+        // 和动态光照使用同一张地图持有的显示随机流，避免重绘改变录像 RNG 检查点。
+        // 仍由 Appearance 的 ctx 决定何时取数；这里仅绑定显示流 owner。
+        const displayRng = displayRandom(game.grid);
+        const cosmeticPercent = (percent: number) => displayRng.randPercent(percent);
+        const cosmeticPick = <T,>(list: readonly T[]) => list[displayRng.randRange(0, list.length - 1)]!;
         const cosmetic: CosmeticRng = { percent: cosmeticPercent, pick: cosmeticPick };
 
         // ---- Tiles ----
@@ -669,9 +682,57 @@ onMounted(async () => {
     pixiApp.stage.eventMode = 'static';
     // hitArea 初值已在 applyLayout 中按容器尺寸设置（含 ResizeObserver 跟随）
 
+    const mousePan = new MousePanTracker();
+    let suppressMouseClick = false;
+    let suppressTimer = 0;
+    const onMouseDown = (e: PointerEvent) => {
+        if (e.pointerType !== 'mouse' || e.button !== 0 || !cameraState.follow) return;
+        window.clearTimeout(suppressTimer);
+        suppressMouseClick = false;
+        mousePan.down(e.pointerId, e.clientX, e.clientY);
+        try { pixiApp!.canvas.setPointerCapture(e.pointerId); } catch { /* synthetic pointer */ }
+    };
+    const onMouseMove = (e: PointerEvent) => {
+        if (e.pointerType !== 'mouse') return;
+        const pan = mousePan.move(e.pointerId, e.clientX, e.clientY);
+        if (!pan.dragging) return;
+        suppressMouseClick = true;
+        cameraState.panX += pan.dx;
+        cameraState.panY += pan.dy;
+        game.clearHover();
+        drawHover();
+        pixiApp!.canvas.style.cursor = 'grabbing';
+    };
+    const onMouseUp = (e: PointerEvent) => {
+        if (e.pointerType !== 'mouse') return;
+        if (mousePan.up(e.pointerId)) {
+            suppressMouseClick = true;
+            e.preventDefault();
+            suppressTimer = window.setTimeout(() => { suppressMouseClick = false; }, 0);
+        }
+        pixiApp!.canvas.style.cursor = cameraState.follow ? 'grab' : 'crosshair';
+        try { pixiApp!.canvas.releasePointerCapture(e.pointerId); } catch { /* synthetic pointer */ }
+    };
+    const onMouseCancel = () => { mousePan.cancel(); suppressMouseClick = false; };
+    const onMapWheel = (e: WheelEvent) => {
+        if (!shouldHandleMapWheel(e)) return; // browser Ctrl/Cmd zoom remains native
+        e.preventDefault();
+        zoomBy(wheelZoomFactor(e.deltaY));
+    };
+    pixiApp.canvas.addEventListener('pointerdown', onMouseDown);
+    pixiApp.canvas.addEventListener('pointermove', onMouseMove);
+    pixiApp.canvas.addEventListener('pointerup', onMouseUp);
+    pixiApp.canvas.addEventListener('pointercancel', onMouseCancel);
+    pixiApp.canvas.addEventListener('wheel', onMapWheel, { passive: false });
+
     pixiApp.stage.on('pointermove', (e) => {
         // FE-1：触屏拖动是平移相机，不应让悬停提示跟着手指闪；触屏查看走长按。
-        if (e.pointerType !== 'mouse') return;
+        if (e.pointerType !== 'mouse' || mousePan.isDragging) return;
+        if (game.isInventoryOpen || game.referenceScreen || game.pendingArcana || game.isThrowing) {
+            game.clearHover();
+            drawHover();
+            return;
+        }
         const localPt = tileLayer.toLocal(e.global);
         const mapX = Math.floor(localPt.x / TILE_SIZE);
         const mapY = Math.floor(localPt.y / TILE_SIZE);
@@ -680,8 +741,10 @@ onMounted(async () => {
         } else {
            game.clearHover();
         }
+        drawHover();
     });
-    pixiApp.canvas.addEventListener('pointerleave', () => game.clearHover());
+    const onMouseLeave = () => { game.clearHover(); drawHover(); };
+    pixiApp.canvas.addEventListener('pointerleave', onMouseLeave);
 
     // FE-1：触屏目标选择的命令落地（全部经 ui/commands 的录制边界）。
     const runTapCommand = (cmd: TapCommand) => {
@@ -765,6 +828,7 @@ onMounted(async () => {
     pixiApp.stage.on('pointerup', (e) => {
         // FE-1：触屏/触控笔由下方手势识别器处理（区分单击/长按/拖动/捏合）
         if (e.pointerType !== 'mouse') return;
+        if (suppressMouseClick || mousePan.isDragging) return;
         const localPt = tileLayer.toLocal(e.global);
         activateCell(Math.floor(localPt.x / TILE_SIZE), Math.floor(localPt.y / TILE_SIZE), e.button, 'mouse');
     });
@@ -832,6 +896,13 @@ onMounted(async () => {
     canvasEl.addEventListener('pointercancel', onTouchCancel);
     removeTouchListeners = () => {
         window.clearInterval(longPressTimer);
+        window.clearTimeout(suppressTimer);
+        canvasEl.removeEventListener('pointerdown', onMouseDown);
+        canvasEl.removeEventListener('pointermove', onMouseMove);
+        canvasEl.removeEventListener('pointerup', onMouseUp);
+        canvasEl.removeEventListener('pointercancel', onMouseCancel);
+        canvasEl.removeEventListener('pointerleave', onMouseLeave);
+        canvasEl.removeEventListener('wheel', onMapWheel);
         canvasEl.removeEventListener('pointerdown', onTouchDown);
         canvasEl.removeEventListener('pointermove', onTouchMove);
         canvasEl.removeEventListener('pointerup', onTouchUp);

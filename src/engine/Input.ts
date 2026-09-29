@@ -4,6 +4,7 @@
  */
 
 import { Direction } from '../types';
+import { isTextEntry, ModalKeyboard, type ModalKeyHandler } from '../ui/modalKeyboard';
 
 export class InputManager {
     private keybMap: Record<string, boolean> = {};
@@ -12,6 +13,7 @@ export class InputManager {
      *  Unbound keys are not game commands (P1-46); the host decides whether an
      *  automation is running and only then issues `interrupt_auto`. */
     private onUnboundKeyCallback: (() => void) | null = null;
+    private modalKeyboard = new ModalKeyboard();
 
     constructor() {
         window.addEventListener('keydown', this.handleKeyDown.bind(this));
@@ -20,6 +22,10 @@ export class InputManager {
 
     public setCallback(cb: (action: string, data?: any) => void) {
         this.onActionCallback = cb;
+    }
+
+    public registerModalKeyHandler(handler: ModalKeyHandler, priority = 0): () => void {
+        return this.modalKeyboard.register(handler, priority);
     }
 
     public setUnboundKeyCallback(cb: (() => void) | null) {
@@ -34,8 +40,11 @@ export class InputManager {
 
     private handleKeyDown(e: KeyboardEvent) {
         // Text entry (e.g. call-item nickname) must not become a game command.
-        const target = e.target as HTMLElement | null;
-        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+        if (e.defaultPrevented || isTextEntry(e.target)) return;
+        if (this.modalKeyboard.handle(e)) {
+            e.stopImmediatePropagation();
+            return;
+        }
         this.keybMap[e.key] = true;
 
         if (this.onActionCallback) {

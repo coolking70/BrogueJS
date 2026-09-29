@@ -1,13 +1,13 @@
+/** Frozen production oracle from 4277e73721e6da425ca25c493b75e7015a494ab8. Only import/class names differ. */
 /**
  * src/engine/Map/Pathfind.ts
  * A* Pathfinding for Auto-move and Monster AI
  */
 
-import type { Grid } from './Grid';
+import type { Grid } from '../../engine/Map/Grid';
 import type { Pos } from '../../types';
-import { PathFrontier } from './PathFrontier';
 
-export class Pathfind {
+export class LegacyPathfind {
     /**
      * Compute an A* path from start to goal.
      * Returns an array of Pos from the next step up to the goal.
@@ -18,24 +18,38 @@ export class Pathfind {
         if (!grid.isValidPos(goalX, goalY)) return null;
         if (!canPass(goalX, goalY)) return null;
 
-        const openSet = new PathFrontier();
+        const openSet: Pos[] = [{ x: startX, y: startY }];
         const cameFrom = new Map<string, Pos>();
         const gScore = new Map<string, number>();
+        const fScore = new Map<string, number>();
 
         const toKey = (x: number, y: number) => `${x},${y}`;
         const startKey = toKey(startX, startY);
 
         gScore.set(startKey, 0);
-        openSet.improve(startKey, { x: startX, y: startY }, this.heuristic(startX, startY, goalX, goalY));
+        fScore.set(startKey, this.heuristic(startX, startY, goalX, goalY));
 
         while (openSet.length > 0) {
-            // Stable ties and decrease-key order match the former linear array.
-            const current = openSet.pop();
+            // Find lowest fScore
+            let currentIdx = 0;
+            let current = openSet[0]!;
+            let currentF = fScore.get(toKey(current.x, current.y)) ?? Infinity;
+
+            for (let i = 1; i < openSet.length; i++) {
+                const node = openSet[i]!;
+                const f = fScore.get(toKey(node.x, node.y)) ?? Infinity;
+                if (f < currentF) {
+                    current = node;
+                    currentF = f;
+                    currentIdx = i;
+                }
+            }
 
             if (current.x === goalX && current.y === goalY) {
                 return this.reconstructPath(cameFrom, current);
             }
 
+            openSet.splice(currentIdx, 1);
             const currentKey = toKey(current.x, current.y);
             const currentG = gScore.get(currentKey)!;
 
@@ -60,7 +74,11 @@ export class Pathfind {
                     if (tentative_gScore < nGScore) {
                         cameFrom.set(neighborKey, { x: current.x, y: current.y });
                         gScore.set(neighborKey, tentative_gScore);
-                        openSet.improve(neighborKey, { x: nx, y: ny }, tentative_gScore + this.heuristic(nx, ny, goalX, goalY));
+                        fScore.set(neighborKey, tentative_gScore + this.heuristic(nx, ny, goalX, goalY));
+
+                        if (!openSet.some(n => n.x === nx && n.y === ny)) {
+                            openSet.push({ x: nx, y: ny });
+                        }
                     }
                 }
             }

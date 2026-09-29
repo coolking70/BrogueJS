@@ -214,7 +214,7 @@ export { WHOLE_RUN_SCHEMA } from './WholeRunSnapshot';
 
 export type { LevelSnapshot, GameSnapshot } from './WholeRunSnapshot';
 export type GenerationPorts = ReturnType<Game["makeGenerationPorts"]>;
-export type GameRunSnapshot = ReturnType<Game['snapshotRunState']>;
+export type GameRunSnapshot = ReturnType<Game['snapshotRunState']> & { recordingOrigin?: RecordingOrigin };
 
 export type RecordedInputData = number | { x: number; y: number } | string | null;
 
@@ -241,12 +241,29 @@ export interface GameRecording {
     events: RecordedInputEvent[];
 }
 
+/** Provenance for saves made by this recorder, not a proof against edited worlds. */
+export interface RecordingOrigin {
+    version: 1;
+    seed: string;
+    mode: GameMode;
+    initial: Pick<RecordedInputEvent, 'tick' | 'depth' | 'player' | 'turn' | 'rng' | 'end'>;
+    inputState: {
+        inventoryOpen: boolean;
+        inventoryAction: Game['inventoryAction'];
+        referenceScreen: Game['referenceScreen'];
+        arcana: { itemId: number; cursor: Pos } | null;
+        throwItemId: number | null;
+        pendingUseConfirmId: number | null;
+    };
+}
+
 type ReplayStatus = 'idle' | 'loaded' | 'playing' | 'finished';
 interface RecordingRuntime {
     replayError: string | null;
     commandDecisions: boolean[] | null;
     replayDecisionCursor: number;
     recordingFromNewGame: boolean;
+    origin: RecordingOrigin | null;
     pendingCommand: { kind: 'record'; event: RecordedInputEvent }
         | { kind: 'replay'; event: RecordedInputEvent; silent: boolean } | null;
 }
@@ -254,7 +271,7 @@ const recordingRuntime = new WeakMap<Game, RecordingRuntime>();
 function recordingState(game: Game): RecordingRuntime {
     let state = recordingRuntime.get(game);
     if (!state) {
-        state = { replayError: null, commandDecisions: null, replayDecisionCursor: 0, recordingFromNewGame: true, pendingCommand: null };
+        state = { replayError: null, commandDecisions: null, replayDecisionCursor: 0, recordingFromNewGame: true, origin: null, pendingCommand: null };
         recordingRuntime.set(game, state);
     }
     return state;
@@ -524,6 +541,12 @@ export class Game {
     private set replayDecisionCursor(value: number) { recordingState(this).replayDecisionCursor = value; }
     private get recordingFromNewGame(): boolean { return recordingState(this).recordingFromNewGame; }
     private set recordingFromNewGame(value: boolean) { recordingState(this).recordingFromNewGame = value; }
+    /** A complete in-memory run is retained after death and returning to the title. */
+    public get hasCompleteRecording(): boolean { return this.recordingFromNewGame && !this.replayRecording; }
+    /** UI may wait for this without cancelling an in-flight command or its forced turns. */
+    public get canExportRecording(): boolean {
+        return this.hasCompleteRecording && !this.isAdvancing && !recordingState(this).pendingCommand;
+    }
     public signTexts = new Map<string, string>();
     public resetPlateRoomByPos = new Map<string, number>();
     public testRooms = new Map<number, TestRoomState>();
@@ -718,6 +741,12 @@ export class Game {
         this.generateDepth(false, true);
         this.needsRender = true;
         this.update();
+        recordingState(this).origin = {
+            version: 1, seed: this.currentSeed, mode: this.mode,
+            initial: { tick: timeSystem.currentTick, turn: this.absoluteTurnNumber, depth: this.depth,
+                player: { ...this.player.loc }, rng: rng.getState() },
+            inputState: this.recordingInputState(),
+        };
     }
 
     /**
@@ -2707,10 +2736,16 @@ export class Game {
         this.commandDecisions = decisions;
         try {
             this.applyCommand(action, data, perform);
-            if (this.recordingFromNewGame) {
+            // Keep collecting accepted input after an interrupted command for
+            // diagnostics. Only recordingFromNewGame authorizes full-run export.
+            if (recordingState(this).origin) {
                 const event = this.recordInputEvent(action, data, [...decisions]);
                 if (this.isAdvancing) recordingState(this).pendingCommand = { kind: 'record', event };
             }
+        } catch (error) {
+            // An exception may leave a changed world without a committed command.
+            this.recordingFromNewGame = false;
+            throw error;
         } finally {
             this.commandDecisions = null;
         }
@@ -2766,7 +2801,7 @@ export class Game {
     }
 
     public exportRecording(): GameRecording {
-        if (!this.recordingFromNewGame) throw new Error('Recording requires a fresh new game; saved games cannot continue a recording');
+        if (!this.hasCompleteRecording) throw new Error('Recording requires a fresh new game or a save with a complete recording prefix');
         if (this.isAdvancing) throw new Error('Recording cannot be exported while a turn is advancing');
         return {
             version: 2,
@@ -2780,10 +2815,10 @@ export class Game {
                 depth: event.depth,
                 player: { x: event.player.x, y: event.player.y },
                 action: event.action,
-                data: event.data,
+                data: typeof event.data === 'object' && event.data !== null ? { ...event.data } : event.data,
                 decisions: [...(event.decisions ?? [])],
                 turn: event.turn,
-                rng: event.rng,
+                rng: event.rng ? structuredClone(event.rng) : undefined,
                 ...(event.end ? { end: { ...event.end } } : {})
             }))
         };
@@ -2791,6 +2826,7 @@ export class Game {
 
     public clearRecording() {
         recordingState(this).pendingCommand = null;
+        recordingState(this).origin = null;
         this.recordedInputEvents = [];
         this.recordedInputIndex = 0;
         this.recordingStartAt = Date.now();
@@ -2835,7 +2871,7 @@ export class Game {
                 && typeof event.player?.x === 'number' && typeof event.player?.y === 'number'
                 && Array.isArray(event.decisions) && event.decisions.every(d => typeof d === 'boolean')
                 && Random.isState(event.rng)
-                && (event.end === undefined || (typeof event.end.won === 'boolean'
+                && (event.end === undefined || (!!event.end && typeof event.end === 'object' && typeof event.end.won === 'boolean'
                     && typeof event.end.superVictory === 'boolean'
                     && Number.isSafeInteger(event.end.score))));
     }
@@ -2854,7 +2890,7 @@ export class Game {
                 depth: event.depth,
                 player: { ...event.player },
                 action: event.action,
-                data: event.data,
+                data: typeof event.data === 'object' && event.data !== null ? { ...event.data } : event.data,
                 decisions: [...event.decisions!],
                 turn: event.turn,
                 rng: structuredClone(event.rng!),
@@ -8675,6 +8711,7 @@ export class Game {
         if (!this.isAdvancing || !this.advancementIter) return false;
         if (Date.now() >= this.animationLockDeadline) {
             // 保底①：锁超时——快进剩余调度并立即收尾解锁
+            this.recordingFromNewGame = false;
             this.finishAdvancement();
             return false;
         }
@@ -8691,6 +8728,7 @@ export class Game {
         } catch (err) {
             // 保底②：推进循环抛异常——记录证据、收尾、解锁（不吞掉证据）
             this.lastAdvancementError = err;
+            this.recordingFromNewGame = false;
             this.finishAdvancement();
             return false;
         }
@@ -8746,6 +8784,7 @@ export class Game {
 
     /** 场景重建（新游戏/读档/回放）时丢弃可能在途的推进，避免继承卡死的输入锁。 */
     public discardInFlightAdvancement(): void {
+        if (this.isAdvancing || recordingState(this).pendingCommand) this.recordingFromNewGame = false;
         recordingState(this).pendingCommand = null;
         this.commandDecisions = null;
         const iter = this.advancementIter;
@@ -8822,6 +8861,7 @@ export class Game {
             safetyMap: this.safetyMap, updatedSafetyMapThisTurn: this.updatedSafetyMapThisTurn,
             loopMap: this.loopMap,
             isGameOver: this.isGameOver, gameOverWon: this.gameOverWon, gameOverReason: this.gameOverReason,
+            gameOverSuperVictory: this.gameOverSuperVictory || undefined,
             gameOverInventory: this.gameOverInventory, gameOverScore: this.gameOverScore, lastDamageSource: this.lastDamageSource,
             everSeenItemIds: [...this.everSeenItems].map(i => i.id),
             everSeenMonsterIds: [...this.everSeenMonsters].map(m => m.id),
@@ -8883,6 +8923,62 @@ export class Game {
                 rewardRoomsGenerated: () => getRewardRoomsGenerated(),
             },
         });
+    }
+
+    /** Durable saves additionally carry recorder provenance. toSnapshot remains
+     * the world-only projection used by diagnostics and deterministic traces.
+     * Missing provenance is never synthesized when an older save is loaded. */
+    public toSaveSnapshot(): GameSnapshot {
+        if (this.isAdvancing || recordingState(this).pendingCommand) throw new Error('Cannot save during turn advancement');
+        const snapshot = this.toSnapshot();
+        const origin = recordingState(this).origin;
+        if (this.hasCompleteRecording && origin) {
+            snapshot.run.recordingOrigin = { ...structuredClone(origin), inputState: this.recordingInputState() };
+            if (!this.hasContinuousSnapshotRecording(snapshot)) delete snapshot.run.recordingOrigin;
+        }
+        return snapshot;
+    }
+
+    /** Modal state affects command interpretation even though it costs no turn. */
+    private recordingInputState(): RecordingOrigin['inputState'] {
+        return {
+            inventoryOpen: this.isInventoryOpen, inventoryAction: this.inventoryAction,
+            referenceScreen: this.referenceScreen,
+            arcana: this.pendingArcana ? { itemId: this.pendingArcana.item.id, cursor: { ...this.pendingArcana.cursor } } : null,
+            throwItemId: this.isThrowing ? this.throwItemTarget?.id ?? null : null,
+            pendingUseConfirmId: this.pendingUseConfirm?.id ?? null,
+        };
+    }
+
+    private hasContinuousSnapshotRecording(snapshot: GameSnapshot): boolean {
+        const { run } = snapshot;
+        const origin = run.recordingOrigin;
+        if (!origin || origin.version !== 1 || origin.seed !== snapshot.seed || origin.mode !== snapshot.mode
+            || !origin.initial || origin.initial.tick !== 0 || origin.initial.turn !== 0 || origin.initial.depth !== 1
+            || origin.initial.end !== undefined || !Random.isState(origin.initial.rng)
+            || !Number.isInteger(origin.initial.player?.x) || !Number.isInteger(origin.initial.player?.y)
+            || !Number.isSafeInteger(run.recordedInputIndex) || run.recordedInputIndex !== run.recordedInputEvents?.length
+            || !this.isValidRecording({ version: 2, seed: snapshot.seed, mode: snapshot.mode, startDepth: 1,
+                recordedAt: snapshot.savedAt, events: run.recordedInputEvents })) return false;
+        const input = origin.inputState;
+        const hasItem = (id: number | null) => id === null
+            || (Number.isSafeInteger(id) && snapshot.player.inventory.some(item => item.id === id));
+        if (!input || typeof input.inventoryOpen !== 'boolean'
+            || ![null, 'equip', 'unequip', 'drop', 'call', 'relabel'].includes(input.inventoryAction)
+            || ![null, 'discoveries', 'help'].includes(input.referenceScreen)
+            || !hasItem(input.throwItemId) || !hasItem(input.pendingUseConfirmId)
+            || (input.arcana !== null && (!input.arcana || typeof input.arcana.itemId !== 'number' || !hasItem(input.arcana.itemId)
+                || !Number.isInteger(input.arcana.cursor?.x) || !Number.isInteger(input.arcana.cursor?.y)
+                || input.arcana.cursor.x < 0 || input.arcana.cursor.x >= snapshot.width
+                || input.arcana.cursor.y < 0 || input.arcana.cursor.y >= snapshot.height))
+            || ((run.pendingIdentify || snapshot.pendingEnchantment) && !input.inventoryOpen)) return false;
+        const last = run.recordedInputEvents[run.recordedInputEvents.length - 1] ?? origin.initial;
+        return last.tick === run.currentTick && last.turn === run.absoluteTurnNumber && last.depth === snapshot.depth
+            && last.player.x === snapshot.player.loc.x && last.player.y === snapshot.player.loc.y
+            && JSON.stringify(last.rng) === JSON.stringify(snapshot.rngState)
+            && !!last.end === run.isGameOver
+            && (!last.end || (last.end.won === run.gameOverWon && last.end.score === run.gameOverScore
+                && last.end.superVictory === (run.gameOverSuperVictory ?? false)));
     }
 
     private serializeMonster(m: Monster): GameSnapshotMonster { return encodeMonster(m); }
@@ -8953,6 +9049,7 @@ export class Game {
         this.monsterPathCache = run.monsterPathCache ?? { safeTerrain: null, allySafety: null };
         this.safetyMap = run.safetyMap; this.updatedSafetyMapThisTurn = run.updatedSafetyMapThisTurn; this.loopMap = run.loopMap;
         this.stats = { ...snapshot.stats }; this.isGameOver = run.isGameOver; this.gameOverWon = run.gameOverWon;
+        this.gameOverSuperVictory = run.gameOverSuperVictory ?? false;
         this.gameOverReason = run.gameOverReason; this.gameOverInventory = run.gameOverInventory;
         this.gameOverScore = run.gameOverScore; this.lastDamageSource = run.lastDamageSource;
         this.everSeenItems = new Set(run.everSeenItemIds.map(id => entityGraph.items.get(id)!));
@@ -8970,8 +9067,9 @@ export class Game {
         this.travelTargetItem = run.travelTargetItemId === null ? undefined : entityGraph.items.get(run.travelTargetItemId);
         this.recordedInputEvents = run.recordedInputEvents; this.recordedInputIndex = run.recordedInputIndex;
         this.recordingStartAt = Date.now();
-        // A snapshot is not a reproducible new-run prefix. Do not export a partial log.
-        this.recordingFromNewGame = false;
+        // Legacy/world-only snapshots remain playable, but cannot create a trusted prefix.
+        this.recordingFromNewGame = this.hasContinuousSnapshotRecording(snapshot);
+        recordingState(this).origin = this.recordingFromNewGame ? structuredClone(run.recordingOrigin!) : null;
         this.clearReplay();
         this.signTexts = new Map(run.signTexts); this.resetPlateRoomByPos = new Map(run.resetPlateRoomByPos);
         this.testRooms = new Map(run.testRooms); this.currentTestCategory = run.currentTestCategory;
@@ -8988,6 +9086,15 @@ export class Game {
         this.isInventoryOpen = this.pendingIdentify || this.pendingEnchantment;
         this.referenceScreen = null; this.pendingArcana = null; this.pendingUseConfirm = null;
         this.isThrowing = false; this.throwItemTarget = null; this.isExamining = false; this.inspectTarget = null;
+        if (this.recordingFromNewGame) {
+            const input = run.recordingOrigin!.inputState;
+            this.isInventoryOpen = input.inventoryOpen; this.inventoryAction = input.inventoryAction;
+            this.referenceScreen = input.referenceScreen;
+            this.pendingArcana = input.arcana ? { item: entityGraph.items.get(input.arcana.itemId)!, cursor: { ...input.arcana.cursor } } : null;
+            this.throwItemTarget = input.throwItemId === null ? null : entityGraph.items.get(input.throwItemId)!;
+            this.isThrowing = this.throwItemTarget !== null;
+            this.pendingUseConfirm = input.pendingUseConfirmId === null ? null : entityGraph.items.get(input.pendingUseConfirmId)!;
+        }
         this.pendingBoltFrames = []; this.currentBoltFrameIndex = 0; this.boltAnimStartTime = 0;
         this.hoveredCell = null; this.hoveredText = ''; this.flavorText = ''; this.floatingTexts = []; this.lastPromotionUpdate = null;
         // Rebuild lighting without running update's discovery/auto-travel side

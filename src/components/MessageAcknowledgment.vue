@@ -42,13 +42,17 @@ onUnmounted(() => {
   place-items: center;
   padding: max(16px, env(safe-area-inset-top)) 16px;
   background: #0009;
-  touch-action: none;
+  box-sizing: border-box;
+  touch-action: pan-y;
 }
 .message-ack {
   box-sizing: border-box;
   width: min(100%, 560px);
-  max-height: 90dvh;
-  overflow: auto;
+  max-height: min(90dvh, 100%);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border: 2px solid #facc15;
   border-radius: 10px;
   padding: 22px;
@@ -57,7 +61,7 @@ onUnmounted(() => {
   box-shadow: 0 12px 48px #000b;
   text-align: center;
 }
-p { margin: 0 0 18px; line-height: 1.6; overflow-wrap: anywhere; }
-button { min-height: 44px; padding: 8px 24px; border: 0; border-radius: 5px; background: #facc15; color: #18181b; font-weight: bold; cursor: pointer; }
-small { display: block; margin-top: 12px; color: #e4e4e7; }
+p { min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 0 18px; line-height: 1.6; overflow-wrap: anywhere; }
+button { flex-shrink: 0; min-height: 44px; padding: 8px 24px; border: 0; border-radius: 5px; background: #facc15; color: #18181b; font-weight: bold; cursor: pointer; }
+small { flex-shrink: 0; display: block; margin-top: 12px; color: #e4e4e7; }
 </style>

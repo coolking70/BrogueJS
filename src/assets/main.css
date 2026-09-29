@@ -4,6 +4,8 @@
 */
 
 :root {
+  /* Display preference: scales rem-based text and spacing without transforming the map. */
+  --ui-scale: 1;
   /* Color Palette - Deep Dark / High Contrast */
   --bg-dark: #09090b;
   --bg-panel: rgba(24, 24, 27, 0.75);
@@ -36,6 +38,8 @@
   --font-main: 'Inter', var(--font-cjk), system-ui, -apple-system, sans-serif;
   --font-mono: 'Fira Code', 'Courier New', var(--font-cjk), monospace;
 }
+
+html { font-size: calc(16px * var(--ui-scale)); }
 
 button, input, select, textarea {
   font-family: inherit;

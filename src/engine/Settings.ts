@@ -20,6 +20,8 @@ export interface DisplaySettings {
     showDamageNumbers: boolean;
     mapScaleMode: MapScaleMode;
     sidebarWidthMode: SidebarWidthMode;
+    /** UI text and rem-based spacing only; map camera has separate zoom. */
+    uiScale: number;
 }
 
 export const DISPLAY_SETTINGS_KEY = 'brogue-web-display-v1';
@@ -46,7 +48,13 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
     showDamageNumbers: false,
     mapScaleMode: 'uniform',
     sidebarWidthMode: 'fixed',
+    uiScale: 1,
 };
+
+export function normalizeUiScale(value: unknown): number {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.min(1.5, Math.max(0.8, Math.round(n * 100) / 100)) : 1;
+}
 
 export function isMapScaleMode(v: unknown): v is MapScaleMode {
     return v === 'uniform' || v === 'stretch';
@@ -70,6 +78,7 @@ export function loadDisplaySettings(): DisplaySettings {
             sidebarWidthMode: isSidebarWidthMode(parsed.sidebarWidthMode)
                 ? parsed.sidebarWidthMode
                 : DEFAULT_DISPLAY_SETTINGS.sidebarWidthMode,
+            uiScale: normalizeUiScale(parsed.uiScale ?? 1),
         };
     } catch {
         return { ...DEFAULT_DISPLAY_SETTINGS };
@@ -79,6 +88,7 @@ export function loadDisplaySettings(): DisplaySettings {
 export function saveDisplaySettings(settings: DisplaySettings): void {
     try {
         window.localStorage.setItem(DISPLAY_SETTINGS_KEY, JSON.stringify({ mapScaleMode: settings.mapScaleMode, sidebarWidthMode: settings.sidebarWidthMode,
+            ...(settings.uiScale !== 1 ? { uiScale: normalizeUiScale(settings.uiScale) } : {}),
             ...(settings.showDamageNumbers ? { showDamageNumbers: true } : {}) }));
     } catch {
         // headless / 隐私模式下无 localStorage：设置仅本次会话有效
@@ -91,9 +101,17 @@ export function saveDisplaySettings(settings: DisplaySettings): void {
  */
 export const displaySettings = reactive<DisplaySettings>(loadDisplaySettings());
 
+function applyUiScale(value: number): void {
+    if (typeof document !== 'undefined') {
+        document.documentElement.style.setProperty('--ui-scale', String(normalizeUiScale(value)));
+    }
+}
+applyUiScale(displaySettings.uiScale);
+
 // 同步 flush：设置变更频率极低（用户点选），同步写让 localStorage 与
 // store 严格一致——变更后立刻关页也不丢，测试也无需等微任务。
 watch(displaySettings, () => {
+    applyUiScale(displaySettings.uiScale);
     saveDisplaySettings({ ...displaySettings });
 }, { flush: 'sync' });
 

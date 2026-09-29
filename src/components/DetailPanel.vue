@@ -9,6 +9,7 @@ const detail = ref<DetailInfo | null>(null);
 
 // Poll for inspect target changes
 let pollTimer = 0;
+let removeKeyboard: (() => void) | undefined;
 
 function checkInspectTarget() {
     const game = activeGame;
@@ -23,24 +24,29 @@ function close() {
     activeGame.inspectTarget = null;
 }
 
-function onKeydown(e: KeyboardEvent) {
+function onKeydown(e: KeyboardEvent): boolean {
+    checkInspectTarget();
     if (visible.value && (e.key === 'Escape' || e.key === 'x')) {
-        e.preventDefault();
-        e.stopPropagation();
         close();
+        // A pack letter belongs to the pack even when an inspection was open.
+        // End-game keys are claimed by the higher-priority result screen.
+        if (e.key === 'x' && (activeGame.isInventoryOpen || activeGame.isGameOver)) return false;
+        e.preventDefault();
         if (e.key === 'x') {
             inputManager.triggerAction('auto_explore');
         }
+        return true;
     }
+    return false;
 }
 
 onMounted(() => {
-    window.addEventListener('keydown', onKeydown, true);
+    removeKeyboard = inputManager.registerModalKeyHandler(onKeydown, 50);
     pollTimer = window.setInterval(checkInspectTarget, 100);
 });
 
 onUnmounted(() => {
-    window.removeEventListener('keydown', onKeydown, true);
+    removeKeyboard?.();
     if (pollTimer) window.clearInterval(pollTimer);
 });
 

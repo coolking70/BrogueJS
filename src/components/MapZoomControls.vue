@@ -1,13 +1,14 @@
 <script setup lang="ts">
-// FE-1：小屏地图缩放/回中按钮（纯显示状态；只在跟随模式下出现）。
-import { cameraState, zoomBy, recenterCamera } from '../ui/mapCamera';
+// Map controls remain available at every viewport size, including at zoom limits.
+import { cameraState, zoomBy, recenterCamera, fitMap, MAX_ZOOM, MIN_ZOOM } from '../ui/mapCamera';
 </script>
 
 <template>
-  <div v-if="cameraState.follow" class="map-zoom">
-    <button :aria-label="$t('mobile.zoom_in')" :title="$t('mobile.zoom_in')" @click="zoomBy(1.25)">+</button>
-    <button :aria-label="$t('mobile.zoom_out')" :title="$t('mobile.zoom_out')" @click="zoomBy(1 / 1.25)">−</button>
-    <button :aria-label="$t('mobile.recenter')" :title="$t('mobile.recenter')" @click="recenterCamera()">◎</button>
+  <div class="map-zoom">
+    <button :aria-label="$t('mobile.zoom_in')" :title="$t('mobile.zoom_in')" :disabled="cameraState.zoom >= MAX_ZOOM" @click="zoomBy(1.25)">+</button>
+    <button :aria-label="$t('mobile.zoom_out')" :title="$t('mobile.zoom_out')" :disabled="cameraState.fit || cameraState.zoom <= MIN_ZOOM || (!cameraState.follow && cameraState.zoom <= 1)" @click="zoomBy(1 / 1.25)">−</button>
+    <button :aria-label="$t('mobile.fit_map', { defaultValue: 'Fit map' })" :title="$t('mobile.fit_map', { defaultValue: 'Fit map' })" @click="fitMap()">⛶</button>
+    <button :aria-label="$t('mobile.recenter')" :title="$t('mobile.recenter')" :disabled="!cameraState.follow" @click="recenterCamera()">◎</button>
   </div>
 </template>
 
@@ -34,4 +35,5 @@ button {
   touch-action: manipulation;
 }
 button:active { background: var(--btn-bg-active, #2d3445); }
+button:hover:not(:disabled) { background: var(--btn-bg-active, #2d3445); }
 </style>

@@ -74,8 +74,11 @@ docs/                      文档；docs/archive/ 为旧开发记录
 
 ## 5. 存档与录像
 
-- **存档**：整局 JSON 快照（`engine/Core/WholeRunSnapshot.ts`，`version: 2`），含全部楼层缓存、实体、两条随机流状态。存储在浏览器 `localStorage`（键 `brogue-web-saves`，见 `SaveStorage.ts`）。字段的生命周期（新局初始化、中断清空、是否保存）登记在 `scripts/u03-state-contract.json`，由 U03 守卫强制——**给 `Game` 加字段必须同时登记**。
+- **存档**：整局 JSON 快照（`engine/Core/WholeRunSnapshot.ts`，`version: 2`），含全部楼层缓存、实体、两条随机流状态。存储在浏览器 IndexedDB（数据库 `brogue-web-saves`、对象仓库 `checkpoint`，见 `SaveStorage.ts`）。字段的生命周期（新局初始化、中断清空、是否保存）登记在 `scripts/u03-state-contract.json`，由 U03 守卫强制——**给 `Game` 加字段必须同时登记**。
 - **录像**：命令日志 JSON（`exportRecording`，`version: 2`）：开局种子 + 逐条命令 + 确认决策 + 检查点（位置、回合、两流随机数）。`loadReplay` / `replayStep` / `replaySeek` 回放时逐条校验，分歧报 OOS（out of sync）。
+- 新局自动在内存记录；点击保存录像才写入 localStorage 的 `brogue-web-replay-v1`，导入 JSON 不自动覆盖录像库。游戏中、结算及返回标题后均保留本局保存/导出入口，直至启动或载入另一局。
+- `toSaveSnapshot()` 在普通 `toSnapshot()` 的世界投影外附加有效 `run.recordingOrigin`：记录来源、完整命令前缀和影响下一条命令解释的浮层状态。读档校验连续索引及最终位置/回合/双流/终局检查点，验证通过才续录；普通诊断快照和缺失来源的旧存档可读取，但不能冒充完整录像。来源校验不是对任意手改世界的证明。
+- 保存录像等待当前命令和强制回合完成；菜单反馈只更新显示，不调用会中断自动行动的游戏日志。
 - 开发阶段**不做旧存档迁移**，旧版本录像直接拒绝。
 - 本地偏好：显示设置 `brogue-web-display-v1`、镜头 `brogue-web-camera-v1`（与游戏状态无关，不入存档/录像）。
 

@@ -11,4 +11,5 @@
 | [known-issues.md](known-issues.md) | 开发者 | 已知问题与待办 |
 | [release.md](release.md) | 维护者 | 版本、发布、试玩构建、许可 |
 | [tasks/](tasks/) | 开发者 | 任务书（新开发单元放这里） |
+| [UX-1 试玩反馈整改计划](tasks/ux-1-playtest-remediation.md) | 开发者 | 本轮八项反馈的代码依据、整改顺序、开工条件与验收标准 |
 | [archive/](archive/) | 参考 | 旧开发记录：勘察报告、单元报告、历史任务书、进度日志、历史脚本 |
