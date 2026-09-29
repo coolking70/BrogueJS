@@ -1,38 +1,43 @@
 # BrogueJS — Brogue CE 中文网页版
 
-[Brogue: Community Edition](https://github.com/tmewett/BrogueCE) 的 TypeScript / Vue 3 网页移植，带完整中文界面，支持桌面与手机触屏。
+[Brogue: Community Edition](https://github.com/tmewett/BrogueCE) 的 TypeScript + Vue 3 网页移植，完整中文界面，支持桌面与手机触屏。
 
-规则层、交互层与内容按 CE C 源码逐项对齐：地牢生成、怪物 AI、战斗、物品与魔法、机关、深层与终局、存档与录像、自动探索与消息系统等，并由约 240 个测试文件、4500 项断言守护。当前版本见 [RELEASE_NOTES.md](RELEASE_NOTES.md)。
+规则、交互与内容按 CE C 源码逐项对齐：地牢生成、怪物 AI、战斗、物品与魔法、机关、深层与终局、存档与录像、自动探索与消息系统等，由约 240 个测试文件、4500 项断言守护。当前版本见 [RELEASE_NOTES.md](RELEASE_NOTES.md)。
 
-## 目录
-
-| 路径 | 内容 |
-|---|---|
-| `src/`、`public/` | 网页版源码、资源与测试 |
-| `src/test/fixtures/` | 测试夹具、CE 黄金数据与回归 trace |
-| `scripts/` | 测试契约数据与 CE 参照拉取脚本 |
-| `docs/archive/dev-history/` | 旧开发文档、任务书与报告 |
-| `docs/archive/dev-scripts/` | 历史开发与验收脚本（仅归档） |
-| `.ce-reference/` | `npm run ce:fetch` 按需拉取的 CE 参照，不入库 |
-
-## 运行
+## 快速开始
 
 需要 Node.js 20+。
 
 ```bash
 npm ci
-npm run dev          # 本地开发服务器
-npm run build        # 生产构建，产物在 dist/
-npm test             # 全量测试（约 30 分钟）
-npm run test:drift   # 地图生成回归基线
+npm run dev            # 本地开发服务器
+npm run build          # 生产构建，产物在 dist/
 ```
+
+## 测试
+
+```bash
+npm test               # 全部测试（不含生成基线）；未拉取 CE 参照源码时，CE 对照用例会跳过
+npm run ce:fetch       # 拉取 CE 参照源码到 .ce-reference/（git 忽略）
+npm run test:full      # 要求 CE 参照源码存在的完整测试（验收门禁用这个）
+npm run test:drift     # 地图生成回归基线
+```
+
+`npm run ce:fetch` 默认拉取测试所依据的固定版本；加 `-- --source upstream` 可拉取官方最新 Brogue CE。详见 [docs/development.md](docs/development.md)。
 
 ## 操作
 
 - 移动：方向键 / vi 键（hjklyubn）/ 小键盘；Shift+方向奔跑
-- `x` 自动探索，`>` / `<` 前往楼梯，`s` 搜索，`z` 休息，`Z` 长休息，`i` 背包，`t` 投掷
-- 鼠标：单击前往，右键查看；触屏：点击前往，长按查看，底部命令栏与虚拟方向键
-- `?` 查看完整帮助
+- `x` 自动探索，`>` / `<` 前往楼梯，`s` 搜索，`z` 休息，`Z` 长休息，`i` 背包，`t` 投掷，`?` 帮助
+- 鼠标：单击前往，右键查看
+- 触屏：点击前往，长按查看，底部命令栏与虚拟方向键
+
+## 文档
+
+- [docs/HANDOFF.md](docs/HANDOFF.md)：项目状态、已定决策、如何继续（接手先读）
+- [docs/README.md](docs/README.md)：全部文档索引（架构、开发流程、测试、CE 对齐、i18n、已知问题、发布）
+- [AGENTS.md](AGENTS.md)：AI 协作者须知
+- `docs/archive/`：历次开发记录（勘察报告、单元报告、任务书）
 
 ## 与 CE 的明确差异
 

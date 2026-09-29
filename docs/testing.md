@@ -23,7 +23,7 @@
 ## 3. 生成基线与黄金 trace
 
 - **生成基线**：`src/test/fixtures/generation_baseline.json`（D1–D26）与 `deep_generation_baseline.json`（D27–D40），四个种子逐层指纹；`npm run test:drift` 校验。
-- **黄金 trace**：UR2（法器/反射等整局检查点）、UR3（生成与重访、存读档）、UR4（客观时间块：减速、加速、坠落、死亡），位于 `src/test/fixtures/`（具体文件名见测试 `u_r2_trace`、`u_r3_trace`、`u_r4_trace`）。
+- **黄金 trace**：UR2（法器/反射等整局检查点）、UR3（生成与重访、存读档）、UR4（客观时间块：减速、加速、坠落、死亡），位于 `src/test/fixtures/traces/`（`u-r2-trace.json`、`u-r3-trace.json.gz`、`u-r4-trace.json.gz`）。
 
 **重录流程**（任何导致它们变化的改动都要走）：
 
