@@ -88,6 +88,7 @@ export function computeMapOffset(viewportWidth: number, viewportHeight: number):
 </script>
 
 <script setup lang="ts">
+import { AUTO_ACTION_INTERVAL_MS, DISPLAY_FRAME_MS, stepCadence } from '../engine/UI/ActionCadence';
 import { terrainRandomValues, tickTerrainColors } from '../engine/UI/DancingColors';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import * as PIXI from 'pixi.js';
@@ -124,6 +125,7 @@ let resizeObserver: ResizeObserver | null = null;
 let stopScaleModeWatch: (() => void) | null = null;
 let stopCameraWatch: (() => void) | null = null;
 // FE-1：触屏手势监听的卸载函数
+let removeDisplayClockListener: (() => void) | null = null;
 let removeTouchListeners: (() => void) | null = null;
 
 onMounted(async () => {
@@ -440,8 +442,9 @@ onMounted(async () => {
                 if (char !== ' ') {
                     const text = normalizeMapGlyph(char);
                     if (sprite.text !== text) sprite.text = text;
-                    // @ts-ignore: fill is a standard style property
-                    if ((sprite.style as TextStyle).fill !== color) (sprite.style as TextStyle).fill = color;
+                    // Keep a white glyph texture: tint updates the GPU color without
+                    // rerasterizing text for every torch/water color change (PERF-2).
+                    sprite.tint = color;
                 }
             }
         }
@@ -571,18 +574,6 @@ onMounted(async () => {
     };
 
     game.onRenderRequested = render;
-
-    // Deterministic hooks for automation checks.
-    (window as Window & { advanceTime?: (ms: number) => void }).advanceTime = (ms: number) => {
-        const steps = Math.max(1, Math.round(ms / 100));
-        for (let i = 0; i < steps; i++) {
-            game.tickReplay();
-            if (!game.replayRecording && !game.isTimePaused() && game.isAutoTraveling()) {
-                game.stepAutoPath();
-            }
-            game.update();
-        }
-    };
 
     (window as Window & { render_game_to_text?: () => string }).render_game_to_text = () => {
         const visibleMonsters = game.monsters
@@ -909,17 +900,30 @@ onMounted(async () => {
         canvasEl.removeEventListener('pointercancel', onTouchCancel);
     };
 
-    let pathingTimer = 0;
+    let pathingTimer = 0; // Display milliseconds, not rendered frame count.
     let colorTimer = 0;
-    // Floating text animation ticker
-    pixiApp.ticker.add((ticker) => {
-        game.tickReplay();
+    let lastInput = game.recordedInputEvents[game.recordedInputEvents.length - 1];
+    let skipNextDisplayTime = false;
+    const autoAllowed = () => !game.replayRecording && !game.isTimePaused()
+        && !game.isAdvancing && !game.isInputLocked() && !game.isGameOver
+        && !logger.pendingAcknowledgment && game.isAutoTraveling() && !document.hidden;
+    const displayFrame = (elapsedMs: number, animationMs: number = elapsedMs) => {
+        const input = game.recordedInputEvents[game.recordedInputEvents.length - 1];
+        if (input !== lastInput) {
+            // A manual stop/restart can occur between frames. It starts a fresh
+            // interval; autonomous commands retain the remaining display time.
+            if (input?.action !== 'auto_step') pathingTimer = 0;
+            lastInput = input;
+        }
+        if (document.hidden || skipNextDisplayTime) elapsedMs = 0;
+        skipNextDisplayTime = false;
+        const autoWasAllowed = autoAllowed();
+        game.tickReplay(elapsedMs);
 
-        // P2-4：驱动分步推进（常规回合一步跑完；慢回合停在暂停点时按
-        // pendingPauseMs 节流；推进进行中输入锁生效）
-        game.tickAdvancement(ticker.deltaMS);
-
+        // Advancement keeps its existing clamped animation-time clock.
+        game.tickAdvancement(animationMs);
         if (game.isTimePaused()) {
+            pathingTimer = 0;
             return;
         }
 
@@ -929,26 +933,39 @@ onMounted(async () => {
             render();
         }
 
-        // Bolt animation tick
         const boltChanged = game.tickBoltAnimation();
-        const flareChanged = game.tickFlareAnimation(ticker.deltaMS);
-        const terrainChanged = tickTerrainColors(game.grid, ticker.deltaMS, game.depth);
-        colorTimer += ticker.deltaMS;
+        const flareChanged = game.tickFlareAnimation(animationMs);
+        const terrainChanged = tickTerrainColors(game.grid, animationMs, game.depth);
+        colorTimer += animationMs;
         const lightChanged = colorTimer >= 50;
         if (lightChanged) { colorTimer %= 50; game.lightMap.dance(); }
         if (boltChanged || flareChanged || terrainChanged || lightChanged) render();
 
-        if (!game.replayRecording && game.isAutoTraveling()) {
-            pathingTimer++;
-            if (pathingTimer > 4) { // 60/4 = 15 moves per second
+        pathingTimer = stepCadence(pathingTimer, autoWasAllowed ? elapsedMs : 0,
+            AUTO_ACTION_INTERVAL_MS, autoAllowed, () => {
                 game.stepAutoPath();
-                pathingTimer = 0;
                 game.update();
-            }
-        } else {
-            pathingTimer = 0;
+            });
+    };
+    const resetDisplayClock = () => {
+        pathingTimer = 0;
+        game.tickReplay(0);
+        skipNextDisplayTime = true;
+    };
+    document.addEventListener('visibilitychange', resetDisplayClock);
+    removeDisplayClockListener = () => document.removeEventListener('visibilitychange', resetDisplayClock);
+    pixiApp.ticker.add(ticker => displayFrame(ticker.elapsedMS, ticker.deltaMS));
+
+    // Exercise the real display loop with deterministic nominal frames.
+    (window as Window & { advanceTime?: (ms: number) => void }).advanceTime = (ms: number) => {
+        if (!Number.isFinite(ms) || ms <= 0) return;
+        let remaining = ms;
+        while (remaining > 1e-7) {
+            const frameMs = Math.min(remaining, DISPLAY_FRAME_MS);
+            displayFrame(frameMs);
+            remaining -= frameMs;
         }
-    });
+    };
 
     game.update(); // Compute initial FOV and trigger first render
   }
@@ -969,6 +986,8 @@ onUnmounted(() => {
   stopScaleModeWatch = null;
   stopCameraWatch?.();
   stopCameraWatch = null;
+  removeDisplayClockListener?.();
+  removeDisplayClockListener = null;
   removeTouchListeners?.();
   removeTouchListeners = null;
   clearAim();

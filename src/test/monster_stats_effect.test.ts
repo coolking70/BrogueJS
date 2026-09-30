@@ -31,6 +31,7 @@ import { createHeadlessGame, runTurns, type TurnAction, type TurnPolicy } from '
 import type { Game } from '../engine/Core/Game';
 import { Monster, MonsterState, type MonsterData } from '../entities/Monster';
 import { rng } from '../engine/Random';
+import { playerTravelDiagonalBlocked } from '../engine/Movement/PlayerTravel';
 import { TerrainType } from '../engine/Map/Grid';
 import monstersJson from '../data/monsters.json';
 
@@ -147,7 +148,10 @@ function makeSampler(agg: Agg, mode: 'legacy' | 'wired'): { policy: TurnPolicy; 
 
         for (const [dx, dy] of DIRS8) {
             const monster = game.getMonsterAt(px + dx, py + dy);
-            if (monster && monster.hp > 0 && !monster.isAlly) {
+            // LAVA-1: a blocked corner is neither a combat attempt nor an elapsed turn.
+            if (monster && monster.hp > 0 && !monster.isAlly
+                && (!playerTravelDiagonalBlocked(game.grid, game.player.loc, monster.loc, false)
+                    || monster.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))) {
                 pendingTarget = { mon: monster, hpBefore: monster.hp };
                 return { action: 'move', data: { x: dx, y: dy } };
             }
@@ -162,6 +166,7 @@ function makeSampler(agg: Agg, mode: 'legacy' | 'wired'): { policy: TurnPolicy; 
         }
         const movable = DIRS8.filter(([dx, dy]) =>
             privates.canMoveTo(px + dx, py + dy) && !game.getMonsterAt(px + dx, py + dy)
+            && !playerTravelDiagonalBlocked(game.grid, game.player.loc, {x: px + dx, y: py + dy}, false)
         );
         if (movable.length === 0) {
             return { action: 'wait' }; // X3-A05: no-move fallback is pure rest.
@@ -194,7 +199,8 @@ function runOnce(seed: number, agg: Agg, mode: 'legacy' | 'wired'): void {
     // turns, natural encounters, hit-rate limits and wiring assertions remain.
     const priv = game as unknown as GamePrivates;
     const spot = DIRS8.map(([dx,dy])=>({x:game.player.x+dx,y:game.player.y+dy}))
-        .find(p=>priv.canMoveTo(p.x,p.y)&&!game.getMonsterAt(p.x,p.y));
+        .find(p=>priv.canMoveTo(p.x,p.y)&&!game.getMonsterAt(p.x,p.y)
+            &&!playerTravelDiagonalBlocked(game.grid,game.player.loc,p,false));
     expect(spot, 'paired combat fixture needs a legal neighboring cell').toBeDefined();
     const target = new Monster(spot!.x,spot!.y,monstersJson.find(m=>m.id==='monkey') as MonsterData);
     target.state=MonsterState.HUNTING;game.monsters.push(target);

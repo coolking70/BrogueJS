@@ -1,0 +1,2936 @@
+[
+  {
+    "file": "src/test/fixtures/generation_baseline.json",
+    "beforeSHA256": "28932bc57e5ec7df795f0c5a683cece7661abfefe187d28c40956c022762482a",
+    "afterSHA256": "00ec4a83169b71e4b1cb9f50310a3922b60fa485845390b112378dbc918a69f3",
+    "changes": [
+      {
+        "path": "/levels/20260913/3/fp",
+        "before": "d62a1f1b:4892",
+        "after": "dbf28745:4939"
+      },
+      {
+        "path": "/levels/20260913/3/n",
+        "before": 6,
+        "after": 7
+      },
+      {
+        "path": "/levels/20260913/3/species",
+        "before": "Bloat,Kobold,Pink jelly,Rat,Toad",
+        "after": "Eel,Goblin,Goblin conjurer,Kobold,Pink jelly,Rat,Toad"
+      },
+      {
+        "path": "/levels/20260913/4/fp",
+        "before": "67c1f97d:4960",
+        "after": "52948d79:4960"
+      },
+      {
+        "path": "/levels/20260913/5/fp",
+        "before": "f46dbb13:5111",
+        "after": "53a5b0b3:5110"
+      },
+      {
+        "path": "/levels/20260913/7/fp",
+        "before": "f6d34b35:5025",
+        "after": "deb8659f:5027"
+      },
+      {
+        "path": "/levels/20260913/8/fp",
+        "before": "3902cf31:4962",
+        "after": "789e162a:4966"
+      },
+      {
+        "path": "/levels/20260913/9/fp",
+        "before": "09357a0c:4950",
+        "after": "5caab548:5079"
+      },
+      {
+        "path": "/levels/20260913/9/items",
+        "before": 8,
+        "after": 9
+      },
+      {
+        "path": "/levels/20260913/9/n",
+        "before": 7,
+        "after": 12
+      },
+      {
+        "path": "/levels/20260913/9/species",
+        "before": "Centipede,Dar blademaster,Ogre",
+        "after": "Acid mound,Eel,Goblin,Ogre,Spider,Wisp"
+      },
+      {
+        "path": "/levels/20260913/10/fp",
+        "before": "12445cb3:5003",
+        "after": "241340fb:4987"
+      },
+      {
+        "path": "/levels/20260913/10/items",
+        "before": 9,
+        "after": 7
+      },
+      {
+        "path": "/levels/20260913/11/fp",
+        "before": "faa3c863:4909",
+        "after": "496d6e96:4868"
+      },
+      {
+        "path": "/levels/20260913/11/n",
+        "before": 29,
+        "after": 8
+      },
+      {
+        "path": "/levels/20260913/11/species",
+        "before": "Centipede,Dar blademaster,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Vampire bat",
+        "after": "Dar blademaster,Eel,Kraken,Ogre,Spider,Troll,Wraith"
+      },
+      {
+        "path": "/levels/20260913/12/fp",
+        "before": "36805b92:5109",
+        "after": "ea94aa27:5168"
+      },
+      {
+        "path": "/levels/20260913/12/items",
+        "before": 10,
+        "after": 12
+      },
+      {
+        "path": "/levels/20260913/12/n",
+        "before": 13,
+        "after": 11
+      },
+      {
+        "path": "/levels/20260913/12/species",
+        "before": "Dar blademaster,Goblin,Goblin totem,Pink jelly,Troll,Vampire bat,Wraith",
+        "after": "Acid mound,Bog monster,Centaur,Centipede,Naga,Troll"
+      },
+      {
+        "path": "/levels/20260913/13/fp",
+        "before": "eef39603:5050",
+        "after": "3dc9905d:5159"
+      },
+      {
+        "path": "/levels/20260913/13/items",
+        "before": 10,
+        "after": 11
+      },
+      {
+        "path": "/levels/20260913/13/n",
+        "before": 20,
+        "after": 22
+      },
+      {
+        "path": "/levels/20260913/13/species",
+        "before": "Centaur,Dar blademaster,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Spider,Troll,explosive Centaur",
+        "after": "Bog monster,Centaur,Centipede,Eel,Naga,Ogre,Ogre shaman,Ogre totem,Salamander,reflective Bog monster"
+      },
+      {
+        "path": "/levels/20260913/14/fp",
+        "before": "ad7fefa5:5125",
+        "after": "dabcb869:5120"
+      },
+      {
+        "path": "/levels/20260913/14/items",
+        "before": 9,
+        "after": 11
+      },
+      {
+        "path": "/levels/20260913/14/n",
+        "before": 19,
+        "after": 22
+      },
+      {
+        "path": "/levels/20260913/14/species",
+        "before": "Imp,Ogre,Ogre shaman,Ogre totem,Pixie,Troll,Wisp,vampiric Ogre",
+        "after": "Bloat,Bog monster,Centaur,Dar blademaster,Dar priestess,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Imp,Spider,Wisp,Zombie,infested Bog monster,toxic Dar blademaster"
+      },
+      {
+        "path": "/levels/20260913/15/fp",
+        "before": "aa199191:4965",
+        "after": "1933a3da:4965"
+      },
+      {
+        "path": "/levels/20260913/16/fp",
+        "before": "4b4980ca:5013",
+        "after": "162f5fe0:5043"
+      },
+      {
+        "path": "/levels/20260913/16/species",
+        "before": "Centaur,Dar battlemage,Dar blademaster,Dar priestess,Eel,Naga,Pixie,Zombie,toxic Troll",
+        "after": "Golem,Naga,Ogre,Ogre shaman,Pixie,Troll,Wisp,infested Ogre shaman,infested Wraith"
+      },
+      {
+        "path": "/levels/20260913/17/fp",
+        "before": "71df1b4b:4982",
+        "after": "806920a0:4983"
+      },
+      {
+        "path": "/levels/20260913/17/items",
+        "before": 10,
+        "after": 13
+      },
+      {
+        "path": "/levels/20260913/17/n",
+        "before": 18,
+        "after": 16
+      },
+      {
+        "path": "/levels/20260913/17/species",
+        "before": "Bog monster,Dar blademaster,Dar priestess,Fury,Phantom,Troll,agile Fury,grappling Dar blademaster,reflective Dar battlemage,toxic Bog monster",
+        "after": "Acidic jelly,Bog monster,Dar battlemage,Dar blademaster,Dar priestess,Pixie,Troll,Wraith"
+      },
+      {
+        "path": "/levels/20260913/18/fp",
+        "before": "8b4722a2:5333",
+        "after": "ec4f7e40:5158"
+      },
+      {
+        "path": "/levels/20260913/18/items",
+        "before": 8,
+        "after": 6
+      },
+      {
+        "path": "/levels/20260913/18/n",
+        "before": 16,
+        "after": 13
+      },
+      {
+        "path": "/levels/20260913/18/species",
+        "before": "Kraken,Mirrored totem,Naga,Ogre,Ogre shaman,Salamander,Troll,Wraith,grappling Wraith,juggernaut Acidic jelly,reflective Naga,toxic Ogre",
+        "after": "Acidic jelly,Dar priestess,Fury,Imp,Phantom,Pink jelly,Wraith,agile Salamander,explosive Pink jelly"
+      },
+      {
+        "path": "/levels/20260913/22/fp",
+        "before": "ef02bbd1:5068",
+        "after": "a21cb135:5093"
+      },
+      {
+        "path": "/levels/20260913/22/items",
+        "before": 9,
+        "after": 19
+      },
+      {
+        "path": "/levels/20260913/22/n",
+        "before": 12,
+        "after": 10
+      },
+      {
+        "path": "/levels/20260913/22/species",
+        "before": "Bog monster,Flamedancer,Imp,Phantom,Tentacle horror,Wraith,grappling Phantom,infested Bog monster,infested Wraith",
+        "after": "Fury,Imp,Pit bloat,Tentacle horror,grappling Fury,infested Fury"
+      },
+      {
+        "path": "/levels/20260913/25/fp",
+        "before": "6f601c09:5106",
+        "after": "435f6716:5101"
+      },
+      {
+        "path": "/levels/31337/4/fp",
+        "before": "c9d03ad1:5033",
+        "after": "6cdc45f8:4960"
+      },
+      {
+        "path": "/levels/31337/4/n",
+        "before": 17,
+        "after": 9
+      },
+      {
+        "path": "/levels/31337/4/species",
+        "before": "Goblin,Goblin totem,Kobold,Monkey,Pink jelly,Rat,Toad",
+        "after": "Bloat,Goblin,Goblin conjurer,Kobold,Monkey,Rat"
+      },
+      {
+        "path": "/levels/31337/5/fp",
+        "before": "6006b399:4999",
+        "after": "63fbcf2f:5136"
+      },
+      {
+        "path": "/levels/31337/5/n",
+        "before": 24,
+        "after": 27
+      },
+      {
+        "path": "/levels/31337/5/species",
+        "before": "Acid mound,Goblin,Goblin mystic,Goblin totem,Jackal,Kobold,Pink jelly",
+        "after": "Acid mound,Bloat,Goblin,Goblin mystic,Goblin totem,Kobold,Monkey,Pink jelly,Vampire bat"
+      },
+      {
+        "path": "/levels/31337/6/fp",
+        "before": "456c1bc5:5082",
+        "after": "0bda1f33:5032"
+      },
+      {
+        "path": "/levels/31337/6/items",
+        "before": 16,
+        "after": 14
+      },
+      {
+        "path": "/levels/31337/6/n",
+        "before": 11,
+        "after": 14
+      },
+      {
+        "path": "/levels/31337/6/species",
+        "before": "Acid mound,Goblin,Goblin conjurer,Goblin totem,Spider,Toad",
+        "after": "Acid mound,Centipede,Eel,Jackal,Ogre,Pink jelly,Toad,Vampire bat"
+      },
+      {
+        "path": "/levels/31337/9/fp",
+        "before": "9ac2b40c:5069",
+        "after": "a4991d23:5085"
+      },
+      {
+        "path": "/levels/31337/9/items",
+        "before": 11,
+        "after": 10
+      },
+      {
+        "path": "/levels/31337/9/n",
+        "before": 24,
+        "after": 6
+      },
+      {
+        "path": "/levels/31337/9/species",
+        "before": "Dar blademaster,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Jackal,Pink jelly,Vampire bat,Wisp",
+        "after": "Bog monster,Centipede,Goblin,Wisp,Wraith"
+      },
+      {
+        "path": "/levels/31337/10/fp",
+        "before": "a1071cb3:5038",
+        "after": "57058f9d:5038"
+      },
+      {
+        "path": "/levels/31337/10/items",
+        "before": 10,
+        "after": 14
+      },
+      {
+        "path": "/levels/31337/10/n",
+        "before": 14,
+        "after": 6
+      },
+      {
+        "path": "/levels/31337/10/species",
+        "before": "Acid mound,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Ogre,Wraith,Zombie",
+        "after": "Dar blademaster,Spider,Toad,Wisp"
+      },
+      {
+        "path": "/levels/31337/14/fp",
+        "before": "1fbb88c6:5617",
+        "after": "dc9f464e:5027"
+      },
+      {
+        "path": "/levels/31337/14/items",
+        "before": 9,
+        "after": 10
+      },
+      {
+        "path": "/levels/31337/14/n",
+        "before": 60,
+        "after": 19
+      },
+      {
+        "path": "/levels/31337/14/species",
+        "before": "Centaur,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Goblin warlord,Ogre,Ogre shaman,Ogre totem,Pixie,explosive Goblin,explosive Goblin conjurer,grappling Goblin,infested Goblin,juggernaut Goblin,reflective Goblin mystic,vampiric Goblin",
+        "after": "Dar blademaster,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Salamander,Troll,Wraith,juggernaut Goblin"
+      },
+      {
+        "path": "/levels/31337/15/fp",
+        "before": "a2e4b36f:4906",
+        "after": "6f4e5905:4906"
+      },
+      {
+        "path": "/levels/31337/15/items",
+        "before": 10,
+        "after": 7
+      },
+      {
+        "path": "/levels/31337/15/n",
+        "before": 7,
+        "after": 11
+      },
+      {
+        "path": "/levels/31337/15/species",
+        "before": "Ogre,Ogre shaman,Phantom,Pixie,Wraith,reflective Zombie,toxic Wisp",
+        "after": "Bloat,Ogre,Ogre shaman,Pixie,Spider,Troll,Wraith"
+      },
+      {
+        "path": "/levels/31337/16/fp",
+        "before": "e4fcdf94:5106",
+        "after": "af7e422d:4944"
+      },
+      {
+        "path": "/levels/31337/16/items",
+        "before": 14,
+        "after": 8
+      },
+      {
+        "path": "/levels/31337/16/n",
+        "before": 22,
+        "after": 23
+      },
+      {
+        "path": "/levels/31337/16/species",
+        "before": "Centaur,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Imp,Ogre,Ogre shaman,Phantom,infested Goblin mystic,juggernaut Ogre",
+        "after": "Bloat,Bog monster,Ogre,Ogre shaman,Ogre totem,Troll,Wraith,juggernaut Bloat,toxic Ogre"
+      },
+      {
+        "path": "/levels/31337/17/fp",
+        "before": "020f75d4:5053",
+        "after": "08644240:5053"
+      },
+      {
+        "path": "/levels/31337/18/fp",
+        "before": "489af311:5099",
+        "after": "12f8850c:5421"
+      },
+      {
+        "path": "/levels/31337/18/items",
+        "before": 9,
+        "after": 15
+      },
+      {
+        "path": "/levels/31337/18/n",
+        "before": 16,
+        "after": 58
+      },
+      {
+        "path": "/levels/31337/18/species",
+        "before": "Bog monster,Dar battlemage,Dar blademaster,Dar priestess,Kraken,Troll,grappling Imp,infested Bog monster",
+        "after": "Acidic jelly,Bloat,Dar battlemage,Dar blademaster,Dar priestess,Fury,Golem,Imp,Ogre,Ogre shaman,Ogre totem,Phantom,Pixie,Revenant,Sentinel,Stone guardian,Winged guardian,agile Bloat,agile Dar blademaster,explosive Troll,grappling Sentinel,infested Ogre shaman,reflective Sentinel,toxic Sentinel,vampiric Fury"
+      },
+      {
+        "path": "/levels/31337/19/fp",
+        "before": "40e342d5:4966",
+        "after": "0ef4f523:5118"
+      },
+      {
+        "path": "/levels/31337/19/items",
+        "before": 10,
+        "after": 12
+      },
+      {
+        "path": "/levels/31337/19/n",
+        "before": 22,
+        "after": 16
+      },
+      {
+        "path": "/levels/31337/19/species",
+        "before": "Dar battlemage,Dar blademaster,Eel,Fury,Imp,Kraken,Naga,Phantom,Salamander,Wraith,grappling Phantom,reflective Dar priestess,toxic Fury",
+        "after": "Bog monster,Dar blademaster,Fury,Pixie,Salamander,Wraith,infested Fury,vampiric Fury"
+      },
+      {
+        "path": "/levels/31337/20/fp",
+        "before": "bc97b36d:5053",
+        "after": "6edd692d:5053"
+      },
+      {
+        "path": "/levels/31337/25/items",
+        "before": 7,
+        "after": 9
+      },
+      {
+        "path": "/levels/424242/1/fp",
+        "before": "adcba1c0:5135",
+        "after": "e36b16be:5167"
+      },
+      {
+        "path": "/levels/424242/1/n",
+        "before": 7,
+        "after": 9
+      },
+      {
+        "path": "/levels/424242/1/species",
+        "before": "Jackal,Monkey,Pit bloat,Rat",
+        "after": "Bloat,Eel,Jackal,Kobold"
+      },
+      {
+        "path": "/levels/424242/7/fp",
+        "before": "fd7a8b4c:5131",
+        "after": "ee29b3a0:5131"
+      },
+      {
+        "path": "/levels/424242/9/fp",
+        "before": "e83f6e88:4986",
+        "after": "64fd48af:4990"
+      },
+      {
+        "path": "/levels/424242/12/fp",
+        "before": "51c0b739:4856",
+        "after": "cdc873bb:5002"
+      },
+      {
+        "path": "/levels/424242/12/n",
+        "before": 13,
+        "after": 12
+      },
+      {
+        "path": "/levels/424242/12/species",
+        "before": "Acid mound,Bog monster,Pink jelly,Vampire bat,Zombie,reflective Acid mound",
+        "after": "Centaur,Dar blademaster,Goblin,Goblin totem,Pink jelly,Troll"
+      },
+      {
+        "path": "/levels/424242/13/fp",
+        "before": "62b4c07a:5073",
+        "after": "96b16f34:5074"
+      },
+      {
+        "path": "/levels/424242/14/fp",
+        "before": "7e99e7d2:4943",
+        "after": "1d7b7a00:4969"
+      },
+      {
+        "path": "/levels/424242/14/items",
+        "before": 8,
+        "after": 6
+      },
+      {
+        "path": "/levels/424242/14/n",
+        "before": 13,
+        "after": 21
+      },
+      {
+        "path": "/levels/424242/14/species",
+        "before": "Acidic jelly,Dar blademaster,Kraken,Sentinel,Troll,Wisp,grappling Naga",
+        "after": "Acidic jelly,Bloat,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Ogre,Ogre shaman,Salamander,Troll,Zombie,toxic Bloat,toxic Salamander"
+      },
+      {
+        "path": "/levels/424242/15/fp",
+        "before": "9c673ebd:5034",
+        "after": "5dcc4822:5036"
+      },
+      {
+        "path": "/levels/424242/15/items",
+        "before": 9,
+        "after": 12
+      },
+      {
+        "path": "/levels/424242/15/n",
+        "before": 19,
+        "after": 17
+      },
+      {
+        "path": "/levels/424242/15/species",
+        "before": "Bloat,Bog monster,Centaur,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Phantom,Wraith,explosive Bloat",
+        "after": "Explosive bloat,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Phantom,Troll,agile Phantom,grappling Goblin,grappling Spider"
+      },
+      {
+        "path": "/levels/424242/16/fp",
+        "before": "8fbea856:4877",
+        "after": "4a5c8835:4974"
+      },
+      {
+        "path": "/levels/424242/16/items",
+        "before": 11,
+        "after": 8
+      },
+      {
+        "path": "/levels/424242/16/n",
+        "before": 12,
+        "after": 19
+      },
+      {
+        "path": "/levels/424242/16/species",
+        "before": "Imp,Naga,Ogre,Ogre shaman,Ogre totem,Wraith,grappling Ogre",
+        "after": "Centaur,Dar priestess,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Imp,Pink jelly,Pixie,Wisp,explosive Goblin"
+      },
+      {
+        "path": "/levels/424242/17/fp",
+        "before": "dea3cf35:4909",
+        "after": "1132dc6d:4909"
+      },
+      {
+        "path": "/levels/424242/19/fp",
+        "before": "6fbb899b:5039",
+        "after": "cdf76fe7:5039"
+      },
+      {
+        "path": "/levels/424242/19/items",
+        "before": 10,
+        "after": 12
+      },
+      {
+        "path": "/levels/424242/20/fp",
+        "before": "a5fcd5d0:5165",
+        "after": "ef8ad449:5056"
+      },
+      {
+        "path": "/levels/424242/20/items",
+        "before": 9,
+        "after": 11
+      },
+      {
+        "path": "/levels/424242/20/n",
+        "before": 12,
+        "after": 14
+      },
+      {
+        "path": "/levels/424242/20/species",
+        "before": "Bloat,Centaur,Dar priestess,Pink jelly,Pixie,Tentacle horror,infested Centaur,reflective Dar priestess,reflective Phantom",
+        "after": "Acidic jelly,Centaur,Dar battlemage,Dar blademaster,Dar priestess,Pixie,Wraith,grappling Imp,juggernaut Wraith"
+      },
+      {
+        "path": "/levels/424242/21/fp",
+        "before": "9feb16ff:5121",
+        "after": "4d57def4:5190"
+      },
+      {
+        "path": "/levels/424242/21/items",
+        "before": 6,
+        "after": 10
+      },
+      {
+        "path": "/levels/424242/21/n",
+        "before": 11,
+        "after": 23
+      },
+      {
+        "path": "/levels/424242/21/species",
+        "before": "Fury,Imp,Kraken,Revenant,Tentacle horror,infested Fury",
+        "after": "Bog monster,Dar battlemage,Dar priestess,Fury,Imp,Phylactery,Pink jelly,Sentinel,Tentacle horror,explosive Bog monster,infested Bog monster,infested Dar priestess,vampiric Imp"
+      },
+      {
+        "path": "/levels/424242/24/fp",
+        "before": "0034df9a:5216",
+        "after": "1ef2b2ef:5215"
+      },
+      {
+        "path": "/levels/777/3/fp",
+        "before": "19a5231e:5014",
+        "after": "1e2b7fe8:5026"
+      },
+      {
+        "path": "/levels/777/3/n",
+        "before": 11,
+        "after": 9
+      },
+      {
+        "path": "/levels/777/3/species",
+        "before": "Jackal,Kobold,Pink jelly,Rat,Toad",
+        "after": "Acid mound,Eel,Goblin,Jackal,Monkey"
+      },
+      {
+        "path": "/levels/777/4/fp",
+        "before": "1c58730f:4995",
+        "after": "da52c1cd:4951"
+      },
+      {
+        "path": "/levels/777/4/n",
+        "before": 11,
+        "after": 6
+      },
+      {
+        "path": "/levels/777/4/species",
+        "before": "Eel,Goblin,Goblin totem,Monkey,Rat,Toad",
+        "after": "Goblin conjurer,Kobold,Monkey,Rat,Toad"
+      },
+      {
+        "path": "/levels/777/7/fp",
+        "before": "5ecbda13:5040",
+        "after": "edb6a1ba:5110"
+      },
+      {
+        "path": "/levels/777/7/items",
+        "before": 9,
+        "after": 8
+      },
+      {
+        "path": "/levels/777/7/n",
+        "before": 6,
+        "after": 18
+      },
+      {
+        "path": "/levels/777/7/species",
+        "before": "Bog monster,Ogre,Pink jelly,Toad",
+        "after": "Acid mound,Eel,Goblin,Goblin totem,Ogre,Pink jelly,Vampire bat,Wisp"
+      },
+      {
+        "path": "/levels/777/8/fp",
+        "before": "7f9eb772:5180",
+        "after": "51f4bfa5:5198"
+      },
+      {
+        "path": "/levels/777/8/items",
+        "before": 7,
+        "after": 9
+      },
+      {
+        "path": "/levels/777/8/n",
+        "before": 10,
+        "after": 18
+      },
+      {
+        "path": "/levels/777/8/species",
+        "before": "Centipede,Goblin,Goblin totem,Pink jelly,Pit bloat",
+        "after": "Acid mound,Bog monster,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Pink jelly,Spider,Toad"
+      },
+      {
+        "path": "/levels/777/9/fp",
+        "before": "85503392:5232",
+        "after": "4aa01abb:5231"
+      },
+      {
+        "path": "/levels/777/9/items",
+        "before": 9,
+        "after": 7
+      },
+      {
+        "path": "/levels/777/10/fp",
+        "before": "134993b6:5059",
+        "after": "edf47b28:5061"
+      },
+      {
+        "path": "/levels/777/10/items",
+        "before": 11,
+        "after": 9
+      },
+      {
+        "path": "/levels/777/13/fp",
+        "before": "62a52886:4926",
+        "after": "eda2d31a:4926"
+      },
+      {
+        "path": "/levels/777/14/fp",
+        "before": "3f6b348b:4890",
+        "after": "8b26ce41:4925"
+      },
+      {
+        "path": "/levels/777/14/items",
+        "before": 8,
+        "after": 7
+      },
+      {
+        "path": "/levels/777/14/species",
+        "before": "Acidic jelly,Centaur,Ogre,Ogre shaman,Wisp,Wraith,explosive Pixie,vampiric Salamander",
+        "after": "Acidic jelly,Dar blademaster,Dar priestess,Ogre,Ogre shaman,Spider,Zombie,agile Acidic jelly"
+      },
+      {
+        "path": "/levels/777/15/fp",
+        "before": "2b2f14ec:5106",
+        "after": "e173b5bb:5107"
+      },
+      {
+        "path": "/levels/777/17/fp",
+        "before": "1259b15b:5168",
+        "after": "92580c46:5169"
+      },
+      {
+        "path": "/levels/777/17/items",
+        "before": 22,
+        "after": 24
+      },
+      {
+        "path": "/levels/777/18/items",
+        "before": 10,
+        "after": 8
+      },
+      {
+        "path": "/levels/777/19/fp",
+        "before": "6aa7f445:4960",
+        "after": "64052d03:5026"
+      },
+      {
+        "path": "/levels/777/19/items",
+        "before": 9,
+        "after": 12
+      },
+      {
+        "path": "/levels/777/19/n",
+        "before": 16,
+        "after": 10
+      },
+      {
+        "path": "/levels/777/19/species",
+        "before": "Acidic jelly,Fury,Ogre,Ogre shaman,Sentinel,explosive Ogre shaman,juggernaut Fury,toxic Imp",
+        "after": "Acidic jelly,Centaur,Fury,Revenant,Tentacle horror,grappling Fury,juggernaut Acidic jelly"
+      },
+      {
+        "path": "/levels/777/20/fp",
+        "before": "421a77b9:5118",
+        "after": "7c6384cb:5118"
+      },
+      {
+        "path": "/levels/777/20/items",
+        "before": 13,
+        "after": 11
+      },
+      {
+        "path": "/levels/777/20/n",
+        "before": 10,
+        "after": 13
+      },
+      {
+        "path": "/levels/777/20/species",
+        "before": "Bog monster,Centaur,Fury,Golem,Imp,Kraken,explosive Fury",
+        "after": "Bog monster,Centaur,Fury,Golem,Imp,Kraken,explosive Fury,vampiric Phantom"
+      },
+      {
+        "path": "/levels/777/23/fp",
+        "before": "3e0ed20e:5075",
+        "after": "93e67773:5076"
+      },
+      {
+        "path": "/levels/777/23/items",
+        "before": 9,
+        "after": 13
+      },
+      {
+        "path": "/levels/777/23/n",
+        "before": 14,
+        "after": 20
+      },
+      {
+        "path": "/levels/777/23/species",
+        "before": "Bog monster,Dragon,Fury,Imp,Kraken,Revenant,vampiric Imp",
+        "after": "Bog monster,Dar blademaster,Dar priestess,Fury,Revenant,Tentacle horror,explosive Kraken,infested Imp,juggernaut Fury,reflective Fury"
+      },
+      {
+        "path": "/levels/777/25/fp",
+        "before": "8d9200f6:5020",
+        "after": "83c33b90:5020"
+      },
+      {
+        "path": "/note",
+        "before": "X4-R2: layered lakes/algae, forced D26 amulet area, horde camps, CE19 alternatives and CE9/10 effective counts. R2-only production rollback reproduces old fixtures. Original full-run capture method; see x4-r2.report.md.",
+        "after": "LAVA-1: CE cardinal lake connectivity and full-layer pathing flags; production-only rollback exactly reproduces previous fixtures. Original full-run capture; see docs/reports/lava-1.report.md."
+      }
+    ],
+    "fieldCounts": {
+      "fp": 56,
+      "n": 33,
+      "species": 35,
+      "items": 33,
+      "note": 1
+    }
+  },
+  {
+    "file": "src/test/fixtures/deep_generation_baseline.json",
+    "beforeSHA256": "82a2fc05dce0d86992c53b8b5c8557e0bfece9a565d0c652e4f4e39f33d5432d",
+    "afterSHA256": "14e8684e968b258cc9d32beff050600c886403e641a1e920714131ae90da6c46",
+    "changes": [
+      {
+        "path": "/levels/2/fp",
+        "before": "b6d17e86:5281",
+        "after": "85625df1:5309"
+      },
+      {
+        "path": "/levels/2/gems/0/x",
+        "before": 14,
+        "after": 2
+      },
+      {
+        "path": "/levels/2/gems/0/y",
+        "before": 25,
+        "after": 14
+      },
+      {
+        "path": "/levels/2/gems/1/x",
+        "before": 69,
+        "after": 15
+      },
+      {
+        "path": "/levels/2/gems/1/y",
+        "before": 11,
+        "after": 24
+      },
+      {
+        "path": "/levels/2/gems/2/x",
+        "before": 3,
+        "after": 47
+      },
+      {
+        "path": "/levels/2/gems/2/y",
+        "before": 10,
+        "after": 15
+      },
+      {
+        "path": "/levels/2/n",
+        "before": 27,
+        "after": 18
+      },
+      {
+        "path": "/levels/2/species",
+        "before": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Dar priestess,explosive Dar battlemage,toxic Golem,toxic Tentacle horror,vampiric Golem,vampiric Tentacle horror",
+        "after": "Golem,Kraken,Phylactery,Tentacle horror,agile Golem,explosive Golem,infested Dragon,infested Golem,juggernaut Dragon,toxic Dragon,toxic Kraken"
+      },
+      {
+        "path": "/levels/3/gems/0/x",
+        "before": 24,
+        "after": 13
+      },
+      {
+        "path": "/levels/3/gems/0/y",
+        "before": 18,
+        "after": 25
+      },
+      {
+        "path": "/levels/3/gems/1/x",
+        "before": 24,
+        "after": 4
+      },
+      {
+        "path": "/levels/3/gems/1/y",
+        "before": 24,
+        "after": 22
+      },
+      {
+        "path": "/levels/3/n",
+        "before": 36,
+        "after": 30
+      },
+      {
+        "path": "/levels/3/species",
+        "before": "Dar battlemage,Dar priestess,Golem,Phylactery,Tentacle horror,agile Golem,explosive Dragon,grappling Golem,infested Dar priestess,infested Golem,juggernaut Golem,reflective Tentacle horror,toxic Golem,vampiric Golem",
+        "after": "Dar priestess,Golem,Phylactery,Tentacle horror,agile Golem,explosive Dragon,grappling Golem,infested Golem,reflective Tentacle horror,toxic Golem,vampiric Golem"
+      },
+      {
+        "path": "/levels/7/fp",
+        "before": "9924feac:5198",
+        "after": "a35f76d5:5136"
+      },
+      {
+        "path": "/levels/7/gems/0/x",
+        "before": 18,
+        "after": 36
+      },
+      {
+        "path": "/levels/7/gems/0/y",
+        "before": 25,
+        "after": 1
+      },
+      {
+        "path": "/levels/7/gems/1/x",
+        "before": 21,
+        "after": 3
+      },
+      {
+        "path": "/levels/7/gems/1/y",
+        "before": 5,
+        "after": 4
+      },
+      {
+        "path": "/levels/7/n",
+        "before": 43,
+        "after": 40
+      },
+      {
+        "path": "/levels/7/species",
+        "before": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Dar priestess,agile Golem,explosive Dar battlemage,explosive Dar priestess,explosive Golem,juggernaut Revenant,reflective Dar battlemage,toxic Dragon,toxic Golem,toxic Tentacle horror,vampiric Dragon,vampiric Tentacle horror",
+        "after": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Dragon,explosive Dragon,explosive Golem,grappling Golem,infested Dar battlemage,infested Dragon,infested Golem,juggernaut Dragon,juggernaut Golem,juggernaut Tentacle horror,reflective Dar priestess,reflective Dragon,toxic Dragon,vampiric Dragon,vampiric Golem"
+      },
+      {
+        "path": "/levels/10/fp",
+        "before": "2855fe37:5276",
+        "after": "70c4dc97:5144"
+      },
+      {
+        "path": "/levels/10/gems/0/x",
+        "before": 64,
+        "after": 56
+      },
+      {
+        "path": "/levels/10/gems/0/y",
+        "before": 23,
+        "after": 7
+      },
+      {
+        "path": "/levels/10/n",
+        "before": 40,
+        "after": 62
+      },
+      {
+        "path": "/levels/10/species",
+        "before": "Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Dar battlemage,agile Dar priestess,agile Tentacle horror,explosive Dar battlemage,explosive Dar priestess,explosive Golem,grappling Dragon,grappling Golem,infested Dar battlemage,infested Dar priestess,infested Golem,juggernaut Golem,toxic Dragon,toxic Golem,toxic Tentacle horror,vampiric Golem",
+        "after": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Dragon,agile Golem,explosive Dar battlemage,explosive Golem,grappling Golem,grappling Revenant,grappling Tentacle horror,infested Dragon,infested Golem,juggernaut Dragon,juggernaut Golem,juggernaut Tentacle horror,reflective Dragon,reflective Kraken,reflective Tentacle horror,toxic Dragon,toxic Golem,toxic Revenant,vampiric Dragon,vampiric Golem,vampiric Kraken,vampiric Tentacle horror"
+      },
+      {
+        "path": "/levels/11/fp",
+        "before": "23704414:5179",
+        "after": "65683a9a:5241"
+      },
+      {
+        "path": "/levels/11/gems/0/x",
+        "before": 64,
+        "after": 37
+      },
+      {
+        "path": "/levels/11/gems/0/y",
+        "before": 7,
+        "after": 24
+      },
+      {
+        "path": "/levels/11/items",
+        "before": 2,
+        "after": 1
+      },
+      {
+        "path": "/levels/11/n",
+        "before": 46,
+        "after": 52
+      },
+      {
+        "path": "/levels/11/species",
+        "before": "Dar battlemage,Dragon,Golem,Phylactery,Tentacle horror,agile Dar battlemage,agile Dragon,agile Golem,agile Tentacle horror,explosive Dragon,explosive Golem,grappling Dragon,grappling Golem,grappling Tentacle horror,infested Dragon,infested Golem,juggernaut Dragon,reflective Dar priestess,reflective Dragon,toxic Golem,vampiric Dragon",
+        "after": "Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Golem,explosive Golem,explosive Kraken,explosive Tentacle horror,grappling Golem,grappling Revenant,infested Dragon,infested Golem,infested Kraken,juggernaut Golem,juggernaut Tentacle horror,reflective Kraken,toxic Dragon,toxic Golem,toxic Tentacle horror,vampiric Golem"
+      },
+      {
+        "path": "/levels/12/fp",
+        "before": "f1440dd2:5125",
+        "after": "f92ac489:5135"
+      },
+      {
+        "path": "/levels/12/gems/0/x",
+        "before": 51,
+        "after": 62
+      },
+      {
+        "path": "/levels/12/gems/0/y",
+        "before": 24,
+        "after": 2
+      },
+      {
+        "path": "/levels/12/items",
+        "before": 1,
+        "after": 2
+      },
+      {
+        "path": "/levels/14/fp",
+        "before": "8312b54d:5130",
+        "after": "cb7e69b7:5117"
+      },
+      {
+        "path": "/levels/14/gems/0/x",
+        "before": 24,
+        "after": 12
+      },
+      {
+        "path": "/levels/14/gems/0/y",
+        "before": 25,
+        "after": 7
+      },
+      {
+        "path": "/levels/14/gems/1/x",
+        "before": 51,
+        "after": 16
+      },
+      {
+        "path": "/levels/14/gems/1/y",
+        "before": 18,
+        "after": 15
+      },
+      {
+        "path": "/levels/14/gems/2/x",
+        "before": 11,
+        "after": 10
+      },
+      {
+        "path": "/levels/14/gems/2/y",
+        "before": 7,
+        "after": 25
+      },
+      {
+        "path": "/levels/14/items",
+        "before": 3,
+        "after": 4
+      },
+      {
+        "path": "/levels/18/fp",
+        "before": "0fd639a6:5215",
+        "after": "58d0e5c5:5184"
+      },
+      {
+        "path": "/levels/18/gems/0/x",
+        "before": 23,
+        "after": 59
+      },
+      {
+        "path": "/levels/18/gems/0/y",
+        "before": 19,
+        "after": 27
+      },
+      {
+        "path": "/levels/18/gems/1/x",
+        "before": 33,
+        "after": 66
+      },
+      {
+        "path": "/levels/18/gems/1/y",
+        "before": 22,
+        "after": 14
+      },
+      {
+        "path": "/levels/18/n",
+        "before": 31,
+        "after": 43
+      },
+      {
+        "path": "/levels/18/species",
+        "before": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Tentacle horror,agile Golem,grappling Dragon,grappling Golem,juggernaut Golem,juggernaut Tentacle horror,reflective Kraken,toxic Golem",
+        "after": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Tentacle horror,agile Golem,explosive Dar priestess,explosive Dragon,explosive Golem,grappling Golem,infested Golem,infested Kraken,infested Tentacle horror,juggernaut Dragon,reflective Tentacle horror,vampiric Golem"
+      },
+      {
+        "path": "/levels/19/fp",
+        "before": "4c6a6b84:5255",
+        "after": "e7d7f756:5255"
+      },
+      {
+        "path": "/levels/19/gems/0/x",
+        "before": 40,
+        "after": 26
+      },
+      {
+        "path": "/levels/19/gems/0/y",
+        "before": 23,
+        "after": 14
+      },
+      {
+        "path": "/levels/19/gems/1/x",
+        "before": 73,
+        "after": 61
+      },
+      {
+        "path": "/levels/19/gems/1/y",
+        "before": 20,
+        "after": 5
+      },
+      {
+        "path": "/levels/19/n",
+        "before": 36,
+        "after": 39
+      },
+      {
+        "path": "/levels/19/species",
+        "before": "Dragon,Golem,Phylactery,Tentacle horror,agile Dar battlemage,agile Dar priestess,explosive Golem,grappling Dragon,grappling Golem,infested Golem,infested Tentacle horror,reflective Tentacle horror,toxic Golem,toxic Tentacle horror,vampiric Dragon",
+        "after": "Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Golem,grappling Dragon,grappling Golem,grappling Revenant,infested Golem,reflective Revenant,vampiric Tentacle horror"
+      },
+      {
+        "path": "/levels/21/gems/0/x",
+        "before": 44,
+        "after": 72
+      },
+      {
+        "path": "/levels/21/gems/0/y",
+        "before": 5,
+        "after": 6
+      },
+      {
+        "path": "/levels/21/gems/1/x",
+        "before": 37,
+        "after": 14
+      },
+      {
+        "path": "/levels/21/gems/1/y",
+        "before": 5,
+        "after": 9
+      },
+      {
+        "path": "/levels/21/items",
+        "before": 3,
+        "after": 2
+      },
+      {
+        "path": "/levels/22/fp",
+        "before": "8466be29:5170",
+        "after": "a252e2c9:5163"
+      },
+      {
+        "path": "/levels/22/gems/0/x",
+        "before": 37,
+        "after": 75
+      },
+      {
+        "path": "/levels/22/gems/0/y",
+        "before": 8,
+        "after": 23
+      },
+      {
+        "path": "/levels/22/n",
+        "before": 76,
+        "after": 50
+      },
+      {
+        "path": "/levels/22/species",
+        "before": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Dragon,agile Tentacle horror,explosive Kraken,grappling Golem,grappling Tentacle horror,infested Dar battlemage,infested Kraken,infested Revenant,juggernaut Dragon,juggernaut Kraken,reflective Dar battlemage,reflective Dragon,reflective Kraken,reflective Revenant,toxic Golem,toxic Kraken,toxic Tentacle horror,vampiric Dragon,vampiric Golem,vampiric Kraken,vampiric Tentacle horror",
+        "after": "Dar priestess,Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Dragon,agile Golem,explosive Dragon,explosive Golem,explosive Tentacle horror,grappling Golem,infested Dragon,infested Golem,infested Tentacle horror,juggernaut Dragon,juggernaut Golem,juggernaut Tentacle horror,reflective Dar battlemage,reflective Dar priestess,reflective Dragon,toxic Dragon,vampiric Dragon"
+      },
+      {
+        "path": "/levels/23/fp",
+        "before": "b7d77a4c:5192",
+        "after": "184f6910:5141"
+      },
+      {
+        "path": "/levels/23/gems/0/x",
+        "before": 6,
+        "after": 11
+      },
+      {
+        "path": "/levels/23/gems/0/y",
+        "before": 12,
+        "after": 5
+      },
+      {
+        "path": "/levels/23/n",
+        "before": 43,
+        "after": 41
+      },
+      {
+        "path": "/levels/23/species",
+        "before": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Tentacle horror,agile Golem,agile Tentacle horror,explosive Dragon,explosive Golem,explosive Kraken,grappling Golem,infested Golem,juggernaut Golem,toxic Dragon,toxic Golem,toxic Kraken,vampiric Dragon,vampiric Golem,vampiric Tentacle horror",
+        "after": "Dragon,Golem,Phylactery,Tentacle horror,agile Golem,explosive Dar priestess,explosive Dragon,explosive Golem,infested Dragon,infested Tentacle horror,juggernaut Dragon,juggernaut Golem,reflective Dar battlemage,toxic Tentacle horror,vampiric Golem"
+      },
+      {
+        "path": "/levels/24/fp",
+        "before": "ff983872:5075",
+        "after": "27857e4d:5076"
+      },
+      {
+        "path": "/levels/24/gems/0/x",
+        "before": 29,
+        "after": 54
+      },
+      {
+        "path": "/levels/24/gems/0/y",
+        "before": 22,
+        "after": 15
+      },
+      {
+        "path": "/levels/24/n",
+        "before": 73,
+        "after": 92
+      },
+      {
+        "path": "/levels/24/species",
+        "before": "Dar battlemage,Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Golem,agile Tentacle horror,explosive Golem,explosive Kraken,explosive Revenant,grappling Golem,infested Dragon,infested Golem,infested Kraken,infested Tentacle horror,juggernaut Golem,juggernaut Kraken,reflective Kraken,toxic Golem,toxic Kraken,toxic Revenant,vampiric Golem,vampiric Kraken,vampiric Revenant,vampiric Tentacle horror",
+        "after": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,agile Golem,explosive Dragon,explosive Kraken,grappling Tentacle horror,infested Dar battlemage,infested Dragon,infested Kraken,infested Tentacle horror,juggernaut Dragon,juggernaut Kraken,juggernaut Tentacle horror,reflective Dragon,reflective Kraken,toxic Kraken,vampiric Kraken,vampiric Tentacle horror"
+      },
+      {
+        "path": "/levels/25/gems/0/x",
+        "before": 12,
+        "after": 4
+      },
+      {
+        "path": "/levels/25/gems/0/y",
+        "before": 6,
+        "after": 5
+      },
+      {
+        "path": "/levels/25/items",
+        "before": 1,
+        "after": 2
+      },
+      {
+        "path": "/levels/26/gems/0/x",
+        "before": 10,
+        "after": 12
+      },
+      {
+        "path": "/levels/26/gems/0/y",
+        "before": 15,
+        "after": 19
+      },
+      {
+        "path": "/levels/26/items",
+        "before": 2,
+        "after": 1
+      },
+      {
+        "path": "/levels/27/gems/0/x",
+        "before": 6,
+        "after": 33
+      },
+      {
+        "path": "/levels/27/gems/0/y",
+        "before": 9,
+        "after": 6
+      },
+      {
+        "path": "/levels/27/items",
+        "before": 1,
+        "after": 2
+      },
+      {
+        "path": "/levels/29/fp",
+        "before": "5fa97f90:5211",
+        "after": "c864cd77:5194"
+      },
+      {
+        "path": "/levels/29/gems/0/x",
+        "before": 71,
+        "after": 67
+      },
+      {
+        "path": "/levels/29/gems/0/y",
+        "before": 19,
+        "after": 14
+      },
+      {
+        "path": "/levels/29/gems/1/x",
+        "before": 8,
+        "after": 38
+      },
+      {
+        "path": "/levels/29/gems/1/y",
+        "before": 8,
+        "after": 7
+      },
+      {
+        "path": "/levels/29/gems/2/x",
+        "before": 71,
+        "after": 69
+      },
+      {
+        "path": "/levels/29/gems/2/y",
+        "before": 2,
+        "after": 11
+      },
+      {
+        "path": "/levels/29/n",
+        "before": 22,
+        "after": 25
+      },
+      {
+        "path": "/levels/29/species",
+        "before": "Dar battlemage,Dragon,Golem,Phylactery,explosive Dar battlemage,grappling Dragon,grappling Tentacle horror,infested Dar battlemage,infested Golem,infested Kraken,juggernaut Dragon,reflective Kraken,toxic Golem",
+        "after": "Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Dar battlemage,explosive Dar priestess,explosive Golem,explosive Tentacle horror,grappling Dragon,grappling Golem,juggernaut Golem,reflective Dragon,toxic Golem"
+      },
+      {
+        "path": "/levels/30/fp",
+        "before": "bdad1176:5087",
+        "after": "34b76b9e:5087"
+      },
+      {
+        "path": "/levels/30/gems/0/x",
+        "before": 56,
+        "after": 8
+      },
+      {
+        "path": "/levels/30/gems/0/y",
+        "before": 22,
+        "after": 13
+      },
+      {
+        "path": "/levels/30/gems/1/x",
+        "before": 16,
+        "after": 53
+      },
+      {
+        "path": "/levels/30/gems/1/y",
+        "before": 6,
+        "after": 22
+      },
+      {
+        "path": "/levels/30/n",
+        "before": 26,
+        "after": 31
+      },
+      {
+        "path": "/levels/30/species",
+        "before": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,explosive Golem,grappling Tentacle horror,infested Golem,infested Tentacle horror,juggernaut Golem,reflective Dar battlemage,vampiric Dragon",
+        "after": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,grappling Golem,grappling Tentacle horror,juggernaut Golem,juggernaut Tentacle horror,reflective Dar battlemage,vampiric Dragon"
+      },
+      {
+        "path": "/levels/33/fp",
+        "before": "918f0e16:5242",
+        "after": "3733b99f:5145"
+      },
+      {
+        "path": "/levels/33/gems/0/x",
+        "before": 66,
+        "after": 63
+      },
+      {
+        "path": "/levels/33/gems/0/y",
+        "before": 22,
+        "after": 17
+      },
+      {
+        "path": "/levels/33/gems/1/x",
+        "before": 29,
+        "after": 64
+      },
+      {
+        "path": "/levels/33/gems/1/y",
+        "before": 17,
+        "after": 5
+      },
+      {
+        "path": "/levels/33/n",
+        "before": 51,
+        "after": 54
+      },
+      {
+        "path": "/levels/33/species",
+        "before": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Dragon,agile Golem,agile Tentacle horror,explosive Dar battlemage,explosive Dar priestess,explosive Golem,grappling Dragon,grappling Golem,juggernaut Golem,toxic Golem,toxic Tentacle horror,vampiric Tentacle horror",
+        "after": "Dar battlemage,Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Golem,agile Revenant,agile Tentacle horror,explosive Dar battlemage,explosive Dar priestess,explosive Dragon,explosive Golem,explosive Kraken,explosive Revenant,explosive Tentacle horror,grappling Revenant,infested Dragon,infested Kraken,infested Tentacle horror,juggernaut Dragon,juggernaut Revenant,juggernaut Tentacle horror,toxic Golem,toxic Kraken,vampiric Dragon,vampiric Kraken,vampiric Tentacle horror"
+      },
+      {
+        "path": "/levels/34/fp",
+        "before": "d2556d6d:5228",
+        "after": "6d2b6e91:5351"
+      },
+      {
+        "path": "/levels/34/gems/0/x",
+        "before": 72,
+        "after": 63
+      },
+      {
+        "path": "/levels/34/gems/0/y",
+        "before": 13,
+        "after": 24
+      },
+      {
+        "path": "/levels/34/gems/1/x",
+        "before": 47,
+        "after": 31
+      },
+      {
+        "path": "/levels/34/gems/1/y",
+        "before": 15,
+        "after": 7
+      },
+      {
+        "path": "/levels/34/items",
+        "before": 2,
+        "after": 3
+      },
+      {
+        "path": "/levels/34/n",
+        "before": 58,
+        "after": 52
+      },
+      {
+        "path": "/levels/34/species",
+        "before": "Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Dar priestess,explosive Golem,explosive Revenant,explosive Tentacle horror,grappling Dragon,grappling Golem,grappling Revenant,grappling Tentacle horror,infested Dragon,infested Golem,infested Tentacle horror,juggernaut Golem,juggernaut Tentacle horror,reflective Dragon,reflective Tentacle horror,toxic Golem,toxic Revenant,vampiric Dragon,vampiric Golem",
+        "after": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Tentacle horror,agile Dar battlemage,agile Dar priestess,agile Golem,agile Tentacle horror,explosive Dragon,explosive Golem,explosive Kraken,explosive Tentacle horror,grappling Golem,infested Dar priestess,infested Golem,infested Kraken,juggernaut Dragon,juggernaut Kraken,reflective Dragon,reflective Kraken,reflective Tentacle horror,toxic Dragon,toxic Kraken,vampiric Kraken"
+      },
+      {
+        "path": "/levels/35/fp",
+        "before": "53f2fcce:5281",
+        "after": "e37ea316:5281"
+      },
+      {
+        "path": "/levels/35/gems/0/x",
+        "before": 10,
+        "after": 66
+      },
+      {
+        "path": "/levels/35/gems/0/y",
+        "before": 27,
+        "after": 3
+      },
+      {
+        "path": "/levels/35/gems/1/x",
+        "before": 76,
+        "after": 12
+      },
+      {
+        "path": "/levels/35/gems/1/y",
+        "before": 7,
+        "after": 6
+      },
+      {
+        "path": "/levels/35/items",
+        "before": 3,
+        "after": 2
+      },
+      {
+        "path": "/levels/35/n",
+        "before": 48,
+        "after": 68
+      },
+      {
+        "path": "/levels/35/species",
+        "before": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Dragon,agile Golem,agile Tentacle horror,explosive Dar battlemage,explosive Dar priestess,explosive Dragon,explosive Golem,explosive Tentacle horror,grappling Dragon,grappling Golem,infested Golem,infested Revenant,infested Tentacle horror,juggernaut Revenant,juggernaut Tentacle horror,reflective Tentacle horror,toxic Golem,vampiric Dragon,vampiric Golem",
+        "after": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Golem,agile Revenant,agile Tentacle horror,explosive Dar battlemage,explosive Dragon,explosive Golem,grappling Dragon,grappling Golem,grappling Tentacle horror,infested Dragon,infested Golem,juggernaut Dragon,juggernaut Golem,juggernaut Tentacle horror,reflective Dar priestess,reflective Revenant,toxic Dragon,vampiric Dragon,vampiric Golem,vampiric Tentacle horror"
+      },
+      {
+        "path": "/levels/36/fp",
+        "before": "76bacff8:5186",
+        "after": "b732d699:5190"
+      },
+      {
+        "path": "/levels/47/fp",
+        "before": "55990d97:5168",
+        "after": "8c70dbce:5186"
+      },
+      {
+        "path": "/levels/47/gems/0/x",
+        "before": 75,
+        "after": 48
+      },
+      {
+        "path": "/levels/47/gems/0/y",
+        "before": 5,
+        "after": 14
+      },
+      {
+        "path": "/levels/47/gems/1/x",
+        "before": 17,
+        "after": 56
+      },
+      {
+        "path": "/levels/47/gems/1/y",
+        "before": 21,
+        "after": 22
+      },
+      {
+        "path": "/levels/47/n",
+        "before": 43,
+        "after": 24
+      },
+      {
+        "path": "/levels/47/species",
+        "before": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Dar priestess,agile Golem,explosive Dar priestess,explosive Golem,grappling Golem,infested Golem,infested Revenant,juggernaut Dragon,juggernaut Golem,reflective Dragon,toxic Tentacle horror,vampiric Golem",
+        "after": "Dragon,Golem,Phylactery,Tentacle horror,agile Dragon,agile Tentacle horror,explosive Tentacle horror,grappling Dragon,juggernaut Golem,reflective Dragon,vampiric Kraken"
+      },
+      {
+        "path": "/levels/49/fp",
+        "before": "3d80f0df:5143",
+        "after": "bc3178f3:5167"
+      },
+      {
+        "path": "/levels/49/gems/0/x",
+        "before": 56,
+        "after": 33
+      },
+      {
+        "path": "/levels/49/gems/0/y",
+        "before": 10,
+        "after": 6
+      },
+      {
+        "path": "/levels/49/gems/1/x",
+        "before": 69,
+        "after": 14
+      },
+      {
+        "path": "/levels/49/gems/1/y",
+        "before": 9,
+        "after": 17
+      },
+      {
+        "path": "/levels/49/n",
+        "before": 66,
+        "after": 39
+      },
+      {
+        "path": "/levels/49/species",
+        "before": "Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Dar priestess,agile Golem,agile Revenant,agile Tentacle horror,explosive Dar battlemage,explosive Golem,explosive Tentacle horror,grappling Golem,grappling Revenant,grappling Tentacle horror,infested Golem,juggernaut Golem,reflective Tentacle horror,toxic Dragon,toxic Golem,toxic Kraken,toxic Revenant,toxic Tentacle horror,vampiric Golem,vampiric Kraken",
+        "after": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Dragon,explosive Dar priestess,explosive Dragon,grappling Tentacle horror,infested Dar priestess,infested Dragon,infested Golem,juggernaut Dragon,juggernaut Golem,juggernaut Tentacle horror,reflective Dar battlemage,reflective Tentacle horror,toxic Tentacle horror"
+      },
+      {
+        "path": "/levels/51/fp",
+        "before": "6b7ba043:5289",
+        "after": "48a41adb:5293"
+      },
+      {
+        "path": "/levels/52/fp",
+        "before": "0652cdd4:5144",
+        "after": "80597664:5146"
+      },
+      {
+        "path": "/levels/52/gems/0/x",
+        "before": 67,
+        "after": 68
+      },
+      {
+        "path": "/levels/52/gems/0/y",
+        "before": 22,
+        "after": 19
+      },
+      {
+        "path": "/levels/52/items",
+        "before": 1,
+        "after": 2
+      },
+      {
+        "path": "/levels/53/fp",
+        "before": "5c3f79af:5248",
+        "after": "6dcbfe41:5248"
+      },
+      {
+        "path": "/levels/53/gems/0/x",
+        "before": 7,
+        "after": 10
+      },
+      {
+        "path": "/levels/53/gems/0/y",
+        "before": 22,
+        "after": 6
+      },
+      {
+        "path": "/levels/53/items",
+        "before": 2,
+        "after": 1
+      },
+      {
+        "path": "/levels/54/fp",
+        "before": "7c60672b:5328",
+        "after": "d476e5a1:5300"
+      },
+      {
+        "path": "/levels/54/gems/0/x",
+        "before": 8,
+        "after": 12
+      },
+      {
+        "path": "/levels/54/gems/0/y",
+        "before": 16,
+        "after": 2
+      },
+      {
+        "path": "/levels/54/items",
+        "before": 1,
+        "after": 2
+      },
+      {
+        "path": "/levels/54/n",
+        "before": 59,
+        "after": 37
+      },
+      {
+        "path": "/levels/54/species",
+        "before": "Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Golem,agile Tentacle horror,explosive Golem,explosive Tentacle horror,grappling Golem,grappling Tentacle horror,infested Golem,infested Revenant,infested Tentacle horror,juggernaut Revenant,juggernaut Tentacle horror,reflective Dar battlemage,reflective Dar priestess,reflective Dragon,reflective Revenant,reflective Tentacle horror,toxic Golem,toxic Revenant,toxic Tentacle horror,vampiric Dragon,vampiric Golem,vampiric Revenant",
+        "after": "Dar battlemage,Dragon,Golem,Phylactery,Tentacle horror,agile Golem,explosive Dar battlemage,explosive Tentacle horror,grappling Dragon,grappling Tentacle horror,infested Dar priestess,infested Dragon,infested Golem,juggernaut Dragon,reflective Tentacle horror,toxic Dragon,toxic Golem,vampiric Golem"
+      },
+      {
+        "path": "/note",
+        "before": "X4-R2: layered lakes/algae, forced D26 amulet area, horde camps, CE19 alternatives and CE9/10 effective counts. R2-only production rollback reproduces old fixtures. Original full-run capture method; see x4-r2.report.md.",
+        "after": "LAVA-1: CE cardinal lake connectivity and full-layer pathing flags; production-only rollback exactly reproduces previous fixtures. Original full-run capture; see docs/reports/lava-1.report.md."
+      }
+    ],
+    "fieldCounts": {
+      "fp": 23,
+      "x": 43,
+      "y": 43,
+      "n": 18,
+      "species": 18,
+      "items": 12,
+      "note": 1
+    }
+  },
+  {
+    "file": "src/test/fixtures/traces/u-r3-trace.json.gz",
+    "beforeSHA256": "8fa58120b46c2599db873b492f59c5cb155123cc8a5383b53b386d60108123cd",
+    "afterSHA256": "971de7278b62d12f7a0ac9a423e3a9121b11c61fe5a08d0fc52192963ea4a246",
+    "changes": [
+      {
+        "path": "/20260913/depths/3/hash",
+        "before": "d4692339b2de68ba4a48a5bef8773b40dd25812075a1121ec8e0f3bbf67c2215",
+        "after": "5cd83063f78554f41842bfd79e2e5c2548bbc566ac5c644892ad9b050762630e"
+      },
+      {
+        "path": "/20260913/depths/3/monsters",
+        "before": 6,
+        "after": 7
+      },
+      {
+        "path": "/20260913/depths/3/observations",
+        "before": 12,
+        "after": 16
+      },
+      {
+        "path": "/20260913/depths/4/hash",
+        "before": "d27306564f61440f266f642c039424de4c543f495125d19f102dd4052e0e9564",
+        "after": "948ee14fb3ea52647443524f3f784feb71f26af91ccf21a31800951c777f884b"
+      },
+      {
+        "path": "/20260913/depths/4/observations",
+        "before": 14,
+        "after": 18
+      },
+      {
+        "path": "/20260913/depths/5/hash",
+        "before": "cc81e5bc96b4d5bae3cc184408faa3bf514807b29e6df92f3d1c140cb188d30c",
+        "after": "003b7c7b472641425c0dadf1b5c55ed6b9562b926825332a8d98ceb4abcdf683"
+      },
+      {
+        "path": "/20260913/depths/5/observations",
+        "before": 18,
+        "after": 22
+      },
+      {
+        "path": "/20260913/depths/6/hash",
+        "before": "8c72a55dda5c4c80b3acdd8b56ef5288c28a7a6244cf9af1fff5f123d274a05a",
+        "after": "56df1f94099204a33697a5b7dfe9a3c63d3e28e81f741f2028ea1b396e4c7981"
+      },
+      {
+        "path": "/20260913/depths/6/observations",
+        "before": 20,
+        "after": 24
+      },
+      {
+        "path": "/20260913/depths/7/hash",
+        "before": "bd617c83152062b12950f95cd5e9f4a6393cfdb2deb2d2f8d6a7bccc8ecb7b8c",
+        "after": "f51357840074154e570cb2a03b2f092898e98062674bcfc14908792bcb813f59"
+      },
+      {
+        "path": "/20260913/depths/7/observations",
+        "before": 26,
+        "after": 30
+      },
+      {
+        "path": "/20260913/depths/8/hash",
+        "before": "7bdaa357076e30836490e4848443e6579ccad599c55f379861768447db279853",
+        "after": "03e4a7823cf81fe9ab28bb3868a70b7817b72a2eb2d3144b1e6d2b31a85b912b"
+      },
+      {
+        "path": "/20260913/depths/8/observations",
+        "before": 29,
+        "after": 33
+      },
+      {
+        "path": "/20260913/depths/9/hash",
+        "before": "e326f8fc5a5dc52f0b1da8ef641b9b3212f324b4273abcf2626c47ac3573dfb1",
+        "after": "ff487e49258766650a412f8c34307639fec8a3cbed3a20ecb266b5494032c4c6"
+      },
+      {
+        "path": "/20260913/depths/9/items",
+        "before": 8,
+        "after": 9
+      },
+      {
+        "path": "/20260913/depths/9/monsters",
+        "before": 7,
+        "after": 12
+      },
+      {
+        "path": "/20260913/depths/9/observations",
+        "before": 32,
+        "after": 37
+      },
+      {
+        "path": "/20260913/depths/10/hash",
+        "before": "a75308029263490e94e11fe5d5cdd3ecfcab236f57df220e2e246aa1349f67bf",
+        "after": "623c995217d4511750496f850cbba6df55418d4c4319ec0b2064f6c29868f089"
+      },
+      {
+        "path": "/20260913/depths/10/items",
+        "before": 9,
+        "after": 7
+      },
+      {
+        "path": "/20260913/depths/10/observations",
+        "before": 38,
+        "after": 43
+      },
+      {
+        "path": "/20260913/depths/11/hash",
+        "before": "fbb17f8ff14679a4921081ca929da755f45351cc193ca0cb57aac9a225df6506",
+        "after": "62e6b45f2e18d253ba08561c7fb543790dcaf40e164a1abda5b78f60e287bfcd"
+      },
+      {
+        "path": "/20260913/depths/11/monsters",
+        "before": 29,
+        "after": 8
+      },
+      {
+        "path": "/20260913/depths/11/observations",
+        "before": 40,
+        "after": 46
+      },
+      {
+        "path": "/20260913/depths/12/hash",
+        "before": "9699a6309da60c1ffd21eee817a5886b2e0ef9d63a0f788c1c8a8b1c097e3d34",
+        "after": "19afd24ee7563a376aea335b0697542a3857d21bd690e5d9a3d926419a35d5dc"
+      },
+      {
+        "path": "/20260913/depths/12/items",
+        "before": 10,
+        "after": 12
+      },
+      {
+        "path": "/20260913/depths/12/monsters",
+        "before": 13,
+        "after": 11
+      },
+      {
+        "path": "/20260913/depths/12/observations",
+        "before": 43,
+        "after": 52
+      },
+      {
+        "path": "/20260913/depths/13/hash",
+        "before": "2501b69f56b6905c8ad3326426b74679724e2fa18cbbd00ddbc058e3eb46d874",
+        "after": "3d49f4905bf4402cffa76f73c5cdfec4ac267071406ff69820c4409ff4790b23"
+      },
+      {
+        "path": "/20260913/depths/13/items",
+        "before": 10,
+        "after": 11
+      },
+      {
+        "path": "/20260913/depths/13/monsters",
+        "before": 20,
+        "after": 22
+      },
+      {
+        "path": "/20260913/depths/13/observations",
+        "before": 47,
+        "after": 57
+      },
+      {
+        "path": "/20260913/depths/14/hash",
+        "before": "12a96cdea1d450c9d5c83b2f7ab84bee7bcabc1a0500264d2a4b43a7e7ecb769",
+        "after": "b0703742792020c2b0ece03651befe5ce9549d185fb11add397d5de2cf538e94"
+      },
+      {
+        "path": "/20260913/depths/14/items",
+        "before": 9,
+        "after": 11
+      },
+      {
+        "path": "/20260913/depths/14/monsters",
+        "before": 19,
+        "after": 22
+      },
+      {
+        "path": "/20260913/depths/14/observations",
+        "before": 53,
+        "after": 63
+      },
+      {
+        "path": "/20260913/depths/15/hash",
+        "before": "3d2da7e34c03b8dcc8907149bf602cf201e50fa00ef35ad91ad8875b1bad70f7",
+        "after": "c387235a0b614c1a12185076f9595081a40e02934f5ce42a57351f87f2185fb5"
+      },
+      {
+        "path": "/20260913/depths/15/observations",
+        "before": 55,
+        "after": 65
+      },
+      {
+        "path": "/20260913/depths/16/hash",
+        "before": "40c573b7ab85073da68589e5fef72049caaa8f96115365b45a06dd3c6ff5bf27",
+        "after": "4e375a7240daffbd91ef048c5862a312ac2468c83f0eaa74df2a6656c843f4ab"
+      },
+      {
+        "path": "/20260913/depths/16/observations",
+        "before": 60,
+        "after": 69
+      },
+      {
+        "path": "/20260913/depths/17/hash",
+        "before": "36e29db098bdc2cbb5c71550c64c415e57fc326aebcb70b05a34d5960b810e28",
+        "after": "1ef888137fce724a305df537220e190f5b6ec25221dc08f9c42d9c527815aa48"
+      },
+      {
+        "path": "/20260913/depths/17/items",
+        "before": 10,
+        "after": 13
+      },
+      {
+        "path": "/20260913/depths/17/monsters",
+        "before": 18,
+        "after": 16
+      },
+      {
+        "path": "/20260913/depths/17/observations",
+        "before": 61,
+        "after": 70
+      },
+      {
+        "path": "/20260913/depths/18/hash",
+        "before": "58236a4679bb8b21e9b89297982f2743e73221576a5bfbca39f38d92c48d3d81",
+        "after": "738f5bdd98c2a1ae1c016e1df88cba2efbea890cd431b4c3f389aea98c3a4246"
+      },
+      {
+        "path": "/20260913/depths/18/items",
+        "before": 8,
+        "after": 6
+      },
+      {
+        "path": "/20260913/depths/18/monsters",
+        "before": 16,
+        "after": 13
+      },
+      {
+        "path": "/20260913/depths/18/observations",
+        "before": 68,
+        "after": 73
+      },
+      {
+        "path": "/20260913/depths/19/hash",
+        "before": "958b8a1268123524ef8c53b487183a353d5ed4c470201a3abf98d994bbfdc3ac",
+        "after": "83ad87d4fda8915cd88814272a72ed1afcfebcaf750c4ad4bc3b93232653b605"
+      },
+      {
+        "path": "/20260913/depths/19/observations",
+        "before": 70,
+        "after": 75
+      },
+      {
+        "path": "/20260913/depths/20/hash",
+        "before": "71e84806802f0454fd9918cb64b2ba9bfb5a793fc2b41b259c7937a03c01c0cf",
+        "after": "c2862e8cea9c86d62d145dc7c93087b47add8ff9195d44a0047d6f71d05a8676"
+      },
+      {
+        "path": "/20260913/depths/20/observations",
+        "before": 75,
+        "after": 80
+      },
+      {
+        "path": "/20260913/depths/21/hash",
+        "before": "29875f7300330fe8cfe2aa9e9e253ea032805296b1cdbe52b8f2e6107f9a34c9",
+        "after": "35b950b3232f8a33e9daae5227f37d87815d8c263db787033c126b399fb34ff8"
+      },
+      {
+        "path": "/20260913/depths/21/observations",
+        "before": 78,
+        "after": 83
+      },
+      {
+        "path": "/20260913/depths/22/hash",
+        "before": "76623a29c2769f5f0ac34c29f5eec6e05603a2f71dba3e1cf81e8bd5acdd70ef",
+        "after": "b98b91f8193f7cd4b407bf2866b4e401afa2d86453f1c8198b61b4a1fa01ee33"
+      },
+      {
+        "path": "/20260913/depths/22/items",
+        "before": 9,
+        "after": 19
+      },
+      {
+        "path": "/20260913/depths/22/monsters",
+        "before": 12,
+        "after": 10
+      },
+      {
+        "path": "/20260913/depths/22/observations",
+        "before": 82,
+        "after": 86
+      },
+      {
+        "path": "/20260913/depths/23/hash",
+        "before": "33fbbe443143e2ba95569becd3b6321237486e8fbc4833b6e589f32ff8bd8c08",
+        "after": "4d894eb41fcd48982ce28e5fd6be1abe36e11362e99d0f5fe4db24846abccad6"
+      },
+      {
+        "path": "/20260913/depths/23/observations",
+        "before": 84,
+        "after": 88
+      },
+      {
+        "path": "/20260913/depths/24/hash",
+        "before": "b1685d0efef248977e133568e0082be3cefd8b1b034443ef9d56ea79f6ece486",
+        "after": "b26ee927ea19f0b0ed95d5c558998f4922ee34d0e0171cbdc76dc52f0bd045a3"
+      },
+      {
+        "path": "/20260913/depths/24/observations",
+        "before": 86,
+        "after": 90
+      },
+      {
+        "path": "/20260913/depths/25/hash",
+        "before": "86472c0dbeb4e253a5dcab118e533836ebb9d5d176fe33b401a7b29d0fb9faad",
+        "after": "b397db9cd79387d3ae8af0577eeff25c10861924c9998f2ce5f2d5671afa4bc5"
+      },
+      {
+        "path": "/20260913/depths/25/observations",
+        "before": 88,
+        "after": 92
+      },
+      {
+        "path": "/20260913/loaded/hash",
+        "before": "86472c0dbeb4e253a5dcab118e533836ebb9d5d176fe33b401a7b29d0fb9faad",
+        "after": "b397db9cd79387d3ae8af0577eeff25c10861924c9998f2ce5f2d5671afa4bc5"
+      },
+      {
+        "path": "/20260913/loaded/observations",
+        "before": 88,
+        "after": 92
+      },
+      {
+        "path": "/20260913/returnTo26/hash",
+        "before": "7d74ff4e44e3c11410ba1aa4cda74ce8baca844979b35cf819ce8b3407cbedc1",
+        "after": "ab9fe49e7d2308156089b4bd4916cac03e215325159fa8b36080e041898e40cd"
+      },
+      {
+        "path": "/20260913/returnTo26/observations",
+        "before": 88,
+        "after": 92
+      },
+      {
+        "path": "/20260913/revisit/hash",
+        "before": "88a847e2e057b5c038ae49add4c6350998735eef377e8731d006db0b8307001f",
+        "after": "36dcbf4e5c8a5eb49cf981832279c7d664afeca2c32c79f9f07e30ae8ee0e15b"
+      },
+      {
+        "path": "/20260913/revisit/observations",
+        "before": 88,
+        "after": 92
+      },
+      {
+        "path": "/31337/depths/4/hash",
+        "before": "f701b77016c1324192b812d0a0ebae6a932686adcaa3e721a16f20dca04ca139",
+        "after": "222c5198f0fff3fd937f4502046580b0eb90633a7b2a981767a01cc5a9ae1977"
+      },
+      {
+        "path": "/31337/depths/4/monsters",
+        "before": 17,
+        "after": 9
+      },
+      {
+        "path": "/31337/depths/4/observations",
+        "before": 13,
+        "after": 12
+      },
+      {
+        "path": "/31337/depths/5/hash",
+        "before": "2480c95c485b26193d2d090075e8da9c35ac136daa231ba32472522f058adfdb",
+        "after": "3e002f2e41c14326079103c0e25c0fee5b5ecc7cec5d34fad0622ad609ead92a"
+      },
+      {
+        "path": "/31337/depths/5/monsters",
+        "before": 24,
+        "after": 27
+      },
+      {
+        "path": "/31337/depths/5/observations",
+        "before": 14,
+        "after": 16
+      },
+      {
+        "path": "/31337/depths/6/hash",
+        "before": "6f95bd93ae18deda5ebbd4f1643825ddd32b228ef2a7e4b5bc8788c4bb67b0c1",
+        "after": "d00debbe4142acc6244f67ecb76a9b8a520b880009f6cd19be4388207ed8a4da"
+      },
+      {
+        "path": "/31337/depths/6/items",
+        "before": 16,
+        "after": 14
+      },
+      {
+        "path": "/31337/depths/6/monsters",
+        "before": 11,
+        "after": 14
+      },
+      {
+        "path": "/31337/depths/6/observations",
+        "before": 18,
+        "after": 23
+      },
+      {
+        "path": "/31337/depths/7/hash",
+        "before": "c216bc216bb4282dff407a904542457a930ec24806196b2de245a2c5a333dc20",
+        "after": "ecedd5bd54045d9be60e11a7da43aa97a45a254aeb718b1439d52d55911af55a"
+      },
+      {
+        "path": "/31337/depths/7/observations",
+        "before": 20,
+        "after": 25
+      },
+      {
+        "path": "/31337/depths/8/hash",
+        "before": "3ff463fa13f33befdbc92c422df5ff9a269c3d5f897319b449ede3b29da8ce30",
+        "after": "38ddc0474592f00bc793161a68e9d20e4924f617c0fdd290a24c1f0e00be0685"
+      },
+      {
+        "path": "/31337/depths/8/observations",
+        "before": 23,
+        "after": 28
+      },
+      {
+        "path": "/31337/depths/9/hash",
+        "before": "5fec99b325aad6c06f2e2cea85bcdf0cbbe65a7fffd76733f0114be05564e03d",
+        "after": "cf12fa5f5cd686abfd80b17555fc378ff344dd3f4e08446087991a2ab0b569cf"
+      },
+      {
+        "path": "/31337/depths/9/items",
+        "before": 11,
+        "after": 10
+      },
+      {
+        "path": "/31337/depths/9/monsters",
+        "before": 24,
+        "after": 6
+      },
+      {
+        "path": "/31337/depths/9/observations",
+        "before": 26,
+        "after": 30
+      },
+      {
+        "path": "/31337/depths/10/hash",
+        "before": "0f796df53ca2a0ee789b2ffc405943d0ed4f857d7aa40758632a2e23f2b777bf",
+        "after": "c7afd28a2fb8ab12f50f141ec42dd9e012ed1468568ece1cea66cbd3b3c5bbf9"
+      },
+      {
+        "path": "/31337/depths/10/items",
+        "before": 10,
+        "after": 14
+      },
+      {
+        "path": "/31337/depths/10/monsters",
+        "before": 14,
+        "after": 6
+      },
+      {
+        "path": "/31337/depths/10/observations",
+        "before": 32,
+        "after": 36
+      },
+      {
+        "path": "/31337/depths/11/hash",
+        "before": "80fe300aecf0893c35541581222b72317ceecfc4ebde8cf17362807e435a4a63",
+        "after": "9f9a53c65ff70a79a1330a476da4e3cc9afe21047d0ea2910f6b611b5907bcfd"
+      },
+      {
+        "path": "/31337/depths/11/observations",
+        "before": 34,
+        "after": 38
+      },
+      {
+        "path": "/31337/depths/12/hash",
+        "before": "c54f9a081305f5284b8729628875141c278d9ed37f80cc86df8de21a32aab10b",
+        "after": "eb7839e6e76423ebd7f7981c44ec3e0564f18adf05b26faf910ea617ba12dfda"
+      },
+      {
+        "path": "/31337/depths/12/observations",
+        "before": 41,
+        "after": 45
+      },
+      {
+        "path": "/31337/depths/13/hash",
+        "before": "65e1aa859eca29c2c2f767564ec80d24e346069ec8314ec848509f549911ea73",
+        "after": "1222020d8fe54336ec8ee4713d8024c94edae7015d40246549761928cb84f767"
+      },
+      {
+        "path": "/31337/depths/13/observations",
+        "before": 43,
+        "after": 47
+      },
+      {
+        "path": "/31337/depths/14/hash",
+        "before": "1bac3ca0528c34e4801ef178b7800d46e8ff3510c366804ce42891d34748f1f1",
+        "after": "bd7b85a45e7de77648562c51216804c3a86e24d68a508dc9af2107123a61be8f"
+      },
+      {
+        "path": "/31337/depths/14/items",
+        "before": 9,
+        "after": 10
+      },
+      {
+        "path": "/31337/depths/14/monsters",
+        "before": 60,
+        "after": 19
+      },
+      {
+        "path": "/31337/depths/14/observations",
+        "before": 48,
+        "after": 52
+      },
+      {
+        "path": "/31337/depths/15/hash",
+        "before": "3561fda5be7f678cba0fd35142bb4d601a483e7a29dfa4b5ef192826ed7a5017",
+        "after": "07626475a242978162f6ca9c20137bb3e5cf8e4bb107e620587b62f20a50d219"
+      },
+      {
+        "path": "/31337/depths/15/items",
+        "before": 10,
+        "after": 7
+      },
+      {
+        "path": "/31337/depths/15/monsters",
+        "before": 7,
+        "after": 11
+      },
+      {
+        "path": "/31337/depths/15/observations",
+        "before": 50,
+        "after": 54
+      },
+      {
+        "path": "/31337/depths/16/hash",
+        "before": "93b4f99efc65ced7b71f48e4f6d2e303ee7a5bc3ef5d58c1543c207b20e9d19b",
+        "after": "1987a8415b7c87d36a49284738cb97371fc5f07f8cff8be1e7d43186fcdb68d4"
+      },
+      {
+        "path": "/31337/depths/16/items",
+        "before": 14,
+        "after": 8
+      },
+      {
+        "path": "/31337/depths/16/monsters",
+        "before": 22,
+        "after": 23
+      },
+      {
+        "path": "/31337/depths/17/hash",
+        "before": "0674c49e6215b9a873172fb01713cba1809499c887b66b0d229f36742d3bdecb",
+        "after": "17114df1d12b7915ea0ef10d0e83185aec9313eeab534b50169fe2bbced247f1"
+      },
+      {
+        "path": "/31337/depths/18/hash",
+        "before": "102b3339631671ab2d490f94a5ed4c0467530d07d6b84be0da6f6308e7865eb2",
+        "after": "6a53564489c1c369063df8ceea186f3082c718aea02ff488f4fc6531c35b7736"
+      },
+      {
+        "path": "/31337/depths/18/items",
+        "before": 9,
+        "after": 15
+      },
+      {
+        "path": "/31337/depths/18/monsters",
+        "before": 16,
+        "after": 58
+      },
+      {
+        "path": "/31337/depths/18/observations",
+        "before": 65,
+        "after": 61
+      },
+      {
+        "path": "/31337/depths/19/hash",
+        "before": "942a680c5c00c07ba2b3c1322d67503fe94019f84d42bd889d731bf1e82fcb15",
+        "after": "3bb291213aa4664fa9b6f64fcf0e4f41e94ab2bf837e59e09266c8409ea3cbb3"
+      },
+      {
+        "path": "/31337/depths/19/items",
+        "before": 10,
+        "after": 12
+      },
+      {
+        "path": "/31337/depths/19/monsters",
+        "before": 22,
+        "after": 16
+      },
+      {
+        "path": "/31337/depths/19/observations",
+        "before": 66,
+        "after": 62
+      },
+      {
+        "path": "/31337/depths/20/hash",
+        "before": "b3c3e8ff9151473e1ad4ac399495f7867f6c341c0ccb093f6d7e474aaab94a43",
+        "after": "a8432bfe66bd1a246a8abc9766b4ab3f14f6d18d13fbfde41700b614f497374c"
+      },
+      {
+        "path": "/31337/depths/20/observations",
+        "before": 70,
+        "after": 66
+      },
+      {
+        "path": "/31337/depths/21/hash",
+        "before": "1121d590ce9691fcfec6bd8fda6d3635ba5e86ad6baf6c7a703ab52db73dbb4a",
+        "after": "03526e7d2b5bf9ce746f6a07df653c01cea4b87ce237d9b6025084076956770b"
+      },
+      {
+        "path": "/31337/depths/21/observations",
+        "before": 72,
+        "after": 68
+      },
+      {
+        "path": "/31337/depths/22/hash",
+        "before": "ff85cace41dedff0e6a4762dfaaf888750735c33020a30bacda264342455ef80",
+        "after": "9ba6abac6da925d910f2619b4492349697bec4968217aca936f4ddbe3fcf69b0"
+      },
+      {
+        "path": "/31337/depths/22/observations",
+        "before": 74,
+        "after": 70
+      },
+      {
+        "path": "/31337/depths/23/hash",
+        "before": "3ff8c3354bab7dbd713fb4e0585ae87f93af4ccc3f4f53005c8245de795f04e5",
+        "after": "01f7930e869042396dcc709b040deccd29c4c8ea7313ccebf6ec1d1993305ec6"
+      },
+      {
+        "path": "/31337/depths/23/observations",
+        "before": 76,
+        "after": 72
+      },
+      {
+        "path": "/31337/depths/24/hash",
+        "before": "57ca1d7fac8f8def84cea2b14a10324bac7042797b3ab372aaeaa67851a690fe",
+        "after": "810b04fb36ac18de1b581b9a7154954cf3005abbee85b077cb5b81ca53883c48"
+      },
+      {
+        "path": "/31337/depths/24/observations",
+        "before": 78,
+        "after": 74
+      },
+      {
+        "path": "/31337/depths/25/hash",
+        "before": "6eca82a2c2e7e76fd18eb75d42dbb2679c46e713411373e3728e3cac8634a740",
+        "after": "e64d021eb77196e0cdb7126840a35afedaa450639822c9d730a98badeb0c5c43"
+      },
+      {
+        "path": "/31337/depths/25/items",
+        "before": 7,
+        "after": 9
+      },
+      {
+        "path": "/31337/depths/25/observations",
+        "before": 82,
+        "after": 78
+      },
+      {
+        "path": "/31337/loaded/hash",
+        "before": "6eca82a2c2e7e76fd18eb75d42dbb2679c46e713411373e3728e3cac8634a740",
+        "after": "e64d021eb77196e0cdb7126840a35afedaa450639822c9d730a98badeb0c5c43"
+      },
+      {
+        "path": "/31337/loaded/items",
+        "before": 7,
+        "after": 9
+      },
+      {
+        "path": "/31337/loaded/observations",
+        "before": 82,
+        "after": 78
+      },
+      {
+        "path": "/31337/returnTo26/hash",
+        "before": "c4b1668c536d1531f75b4c5bb7db654ca83a78329e13148dafb9caa46c24320b",
+        "after": "afcd1d4060669e0a87735fb2d99df151d2f539ee56441ec74df3b0b6f0c329a3"
+      },
+      {
+        "path": "/31337/returnTo26/items",
+        "before": 7,
+        "after": 9
+      },
+      {
+        "path": "/31337/returnTo26/observations",
+        "before": 82,
+        "after": 78
+      },
+      {
+        "path": "/31337/revisit/hash",
+        "before": "20aeb87cf4976e5f3a51eed060dfb3a67ed081bdf66f01dfa62a118ad98ca65c",
+        "after": "ab59381dcb2dbca07604380ff860acb4fef0019ba1547d191502cbdd87225ee5"
+      },
+      {
+        "path": "/31337/revisit/observations",
+        "before": 82,
+        "after": 78
+      },
+      {
+        "path": "/424242/depths/1/hash",
+        "before": "14e928f63a415d696455b95cab9167a5d606e8d5a5f0a77a1896db71c5bf716e",
+        "after": "0b67e805cf57a96a37a7909c22f15fb255ac45237001134fea56d486f6ce31be"
+      },
+      {
+        "path": "/424242/depths/1/monsters",
+        "before": 7,
+        "after": 9
+      },
+      {
+        "path": "/424242/depths/2/hash",
+        "before": "de82cf308ce0e8ee116973e114d9fd13dbd80ab0f37285f64670b7eb1d5135a5",
+        "after": "9b7aa7867c09308f9b0d0fa475686e92679b185a184ad2a006272aa5f99d9f85"
+      },
+      {
+        "path": "/424242/depths/3/hash",
+        "before": "4c9f9f9971edb673e179c03bc86a1927c85a28da0d87ebb9cf555160115a421d",
+        "after": "7b3e0ad3653bd384e72ff4a003910703a5381659271ad5f70d4f1fd5ef042aec"
+      },
+      {
+        "path": "/424242/depths/4/hash",
+        "before": "96600a5b3c2c2c50bc733fefd077e23090e463b0c07db91d09c8726977d7facf",
+        "after": "61e72424c8c8238c8d813ab65ab7c9ab6affbd0dbab062c5b2fdab05fa94d481"
+      },
+      {
+        "path": "/424242/depths/5/hash",
+        "before": "0d40aea81db0097351bfbd402941c35da8a38460ee985198546172dc136594ac",
+        "after": "04cf05f74ce5e1ddd0e2c319ad1630d8578208a92c0a7ada738c50426f3ebbae"
+      },
+      {
+        "path": "/424242/depths/6/hash",
+        "before": "299b47a553d4bb8ebdbd7e302fce6e3eefa5b2bbb747acf9e16872cf6edca07c",
+        "after": "cb8daa5c44a17cf71f7268222325a482ce2b31a731c139a0890b80d147394f78"
+      },
+      {
+        "path": "/424242/depths/7/hash",
+        "before": "3598a89fc350503a07d829cbf1d2b4a811bcbc2af95bc258f37420d13c68274d",
+        "after": "c25e2ca347d9bfed5a5f08bcb6f18f520b7ed06f0e36a0bb5aacf09c30336e2b"
+      },
+      {
+        "path": "/424242/depths/8/hash",
+        "before": "8d6b5098c3edf3d7a968379310c9a7cb48695e761554f895f0b10dfbe7ec9b9d",
+        "after": "ef59aced4cc85c15cde7585a07ff28199e24f4719593cf06364b738af162bf67"
+      },
+      {
+        "path": "/424242/depths/9/hash",
+        "before": "f3c31983b7ba73db8388f89f657c5fba04e305f36fbf2e1f8311263063be3d22",
+        "after": "71e5b222751683f0c21bfdaeaebc37a1ab156b5419c46dd94729f15cb111e1e0"
+      },
+      {
+        "path": "/424242/depths/10/hash",
+        "before": "be7915f3e5001f0018b2ffc28fecdd2c6a333d39f5cd320958d2386f9f939309",
+        "after": "5fc2e6fda7efc849cf6dff638d952bdb8ef8c98e89afcab09303c68bfa2fafec"
+      },
+      {
+        "path": "/424242/depths/11/hash",
+        "before": "c1e7daa5171085245804917821b745b0b8211a163dd3a17de05d75106dcf7f60",
+        "after": "ab440134c2aaebd4199b1463ee0074fc4387448479f2232b1684ed13beb32cf8"
+      },
+      {
+        "path": "/424242/depths/12/hash",
+        "before": "1449c53d50b0815dd9e171d6c24e94897b5137c8d5a3f1403a1b0fcd6ffabe99",
+        "after": "fcded3832f54035f4d83bbf432a05ff246242d7cd12045b3870b5de6957c23f1"
+      },
+      {
+        "path": "/424242/depths/12/monsters",
+        "before": 13,
+        "after": 12
+      },
+      {
+        "path": "/424242/depths/12/observations",
+        "before": 47,
+        "after": 46
+      },
+      {
+        "path": "/424242/depths/13/hash",
+        "before": "f0cd6032473cd5c799ca40ed45baa955d6424f14ef9845427493df27cc15e233",
+        "after": "ab290daa52f797c1f23281e8c7b04070ac42b961274daf10117c1e52987a732b"
+      },
+      {
+        "path": "/424242/depths/13/observations",
+        "before": 50,
+        "after": 49
+      },
+      {
+        "path": "/424242/depths/14/hash",
+        "before": "bb4b582bb846a4c02839f6f471b8690dad5d07195ce7a81ab15a1477d40e7268",
+        "after": "b4d851ba4a56be4549ff859ec3b4195803f7352f40693d5d8a005b81b6318bce"
+      },
+      {
+        "path": "/424242/depths/14/items",
+        "before": 8,
+        "after": 6
+      },
+      {
+        "path": "/424242/depths/14/monsters",
+        "before": 13,
+        "after": 21
+      },
+      {
+        "path": "/424242/depths/14/observations",
+        "before": 53,
+        "after": 52
+      },
+      {
+        "path": "/424242/depths/15/hash",
+        "before": "5bd02aca2edcd4a4618c5807c3815815203ac9b6bd1775cc8cb24fd8ad67a7ff",
+        "after": "38e61cad255104bb5b1a62795100688b0165a8079be69b7661a6e54f7ea9462e"
+      },
+      {
+        "path": "/424242/depths/15/items",
+        "before": 9,
+        "after": 12
+      },
+      {
+        "path": "/424242/depths/15/monsters",
+        "before": 19,
+        "after": 17
+      },
+      {
+        "path": "/424242/depths/15/observations",
+        "before": 57,
+        "after": 56
+      },
+      {
+        "path": "/424242/depths/16/hash",
+        "before": "37d4570f5396da12b5c923526580eb9a554ddcf849e5d939227ac6ee3a5b9b3d",
+        "after": "6364eb406d8b5df427e0791a5cc3ac1c9a2d19ce98bade07a97e57e0fcb89ceb"
+      },
+      {
+        "path": "/424242/depths/16/items",
+        "before": 11,
+        "after": 8
+      },
+      {
+        "path": "/424242/depths/16/monsters",
+        "before": 12,
+        "after": 19
+      },
+      {
+        "path": "/424242/depths/16/observations",
+        "before": 60,
+        "after": 59
+      },
+      {
+        "path": "/424242/depths/17/hash",
+        "before": "cc3e007520c3de2e28666099e728c1c495a3bdc2fb909f6931b79584ad190269",
+        "after": "1245809258e1df49274ef474805efda475f9ebbb432e9cf70593d5b9c8f9522f"
+      },
+      {
+        "path": "/424242/depths/17/observations",
+        "before": 65,
+        "after": 64
+      },
+      {
+        "path": "/424242/depths/18/hash",
+        "before": "700e51c2b7e6f626986da8de7bdec52836e890a3b3864332aea63aba81e43430",
+        "after": "0fd01df612cfc92df90da93188b1c57fbdb97b5f064d5a71ba51a4e41b9f47c8"
+      },
+      {
+        "path": "/424242/depths/18/observations",
+        "before": 67,
+        "after": 66
+      },
+      {
+        "path": "/424242/depths/19/hash",
+        "before": "15c79ed12e01eae273f011aba936149e0273fb541b8988684db81d514779fbf5",
+        "after": "5db83e2c1b565a5b5f2f429fdbdc5a33559e905baedc0f721520c2334eda5ffb"
+      },
+      {
+        "path": "/424242/depths/19/items",
+        "before": 10,
+        "after": 12
+      },
+      {
+        "path": "/424242/depths/19/observations",
+        "before": 72,
+        "after": 71
+      },
+      {
+        "path": "/424242/depths/20/hash",
+        "before": "a88abb0612214611479ac7036d15cece5c5db77abedaccbf172e4db096f904c4",
+        "after": "1c5c6f99c5c570d46ef4f080b37640ea9488878ed87261795a052ee5b3c4ea72"
+      },
+      {
+        "path": "/424242/depths/20/items",
+        "before": 9,
+        "after": 11
+      },
+      {
+        "path": "/424242/depths/20/monsters",
+        "before": 12,
+        "after": 14
+      },
+      {
+        "path": "/424242/depths/20/observations",
+        "before": 78,
+        "after": 72
+      },
+      {
+        "path": "/424242/depths/21/hash",
+        "before": "95205667f31066f23eefd93d9ef31ad9d866aae63580121c613dba0a0be91ed7",
+        "after": "849a3eddd365b2f698fa228ba2b2b331375357cbb65084b60ff48b42b3694712"
+      },
+      {
+        "path": "/424242/depths/21/items",
+        "before": 6,
+        "after": 10
+      },
+      {
+        "path": "/424242/depths/21/monsters",
+        "before": 11,
+        "after": 23
+      },
+      {
+        "path": "/424242/depths/21/observations",
+        "before": 82,
+        "after": 77
+      },
+      {
+        "path": "/424242/depths/22/hash",
+        "before": "eb8b081669f1a673d92bdf0fe658b1ef9220be27508afaff590a933ab66ab5f6",
+        "after": "f89cdae8ccbed7fa34e16e79e1797957b1dab5706c153008b769650e5c48c800"
+      },
+      {
+        "path": "/424242/depths/22/observations",
+        "before": 87,
+        "after": 82
+      },
+      {
+        "path": "/424242/depths/23/hash",
+        "before": "c3fdf58e20a38b08b1ac7a7e2c7a8e274fcf75bfefd31269d1992a4a1e59b129",
+        "after": "0473872c300571bdc2a64aad433e81db9d28259baad4354c65f943b62645de58"
+      },
+      {
+        "path": "/424242/depths/23/observations",
+        "before": 92,
+        "after": 87
+      },
+      {
+        "path": "/424242/depths/24/hash",
+        "before": "53895de4b2fa055ef136fe52542ccf4e8ea2bb4dfbd7b6487d05ddd77e269f1a",
+        "after": "2117511275e536f87495b5249a7b04987156c090c474c20032afbb8f311b0bc5"
+      },
+      {
+        "path": "/424242/depths/24/observations",
+        "before": 94,
+        "after": 89
+      },
+      {
+        "path": "/424242/depths/25/hash",
+        "before": "bf3b5494b47b9a2d088d747b1f3729998758fd453ee7954256e47dc98b1e5293",
+        "after": "a616f1642d920c13f8e1dc63c58ca53300a554eee8d31b6fa2e41e168835c4c1"
+      },
+      {
+        "path": "/424242/depths/25/observations",
+        "before": 100,
+        "after": 95
+      },
+      {
+        "path": "/424242/fall",
+        "before": "0c3406900a508bb1e966d201f9b01daef8175b59c5aafd79206c5aa33df9b94e",
+        "after": "2222a0f7b4152d21569bce6d1f69b45dff6814d7028ae720a760983be9f17782"
+      },
+      {
+        "path": "/424242/loaded/hash",
+        "before": "bf3b5494b47b9a2d088d747b1f3729998758fd453ee7954256e47dc98b1e5293",
+        "after": "a616f1642d920c13f8e1dc63c58ca53300a554eee8d31b6fa2e41e168835c4c1"
+      },
+      {
+        "path": "/424242/loaded/observations",
+        "before": 100,
+        "after": 95
+      },
+      {
+        "path": "/424242/returnTo26/hash",
+        "before": "74fab8c090c248eede34b814c99b44bf4d60b185322083db288da4f1bec1b903",
+        "after": "a982668a8a9b252171581e2172a8945baa49b8d570d3f93a53e4540d1f575ced"
+      },
+      {
+        "path": "/424242/returnTo26/observations",
+        "before": 100,
+        "after": 95
+      },
+      {
+        "path": "/424242/revisit/hash",
+        "before": "ab757907d23506b86d7cfaa7dfb06c1eb2497976264aacc56006e1efd6b5a252",
+        "after": "b5714e203acb42a182c9a356ab92f8d6e9e1ee19722b83ad5bdd11fbded91b60"
+      },
+      {
+        "path": "/424242/revisit/observations",
+        "before": 100,
+        "after": 95
+      },
+      {
+        "path": "/777/depths/3/hash",
+        "before": "d61e10c6b2030194dd77f7b3d6a698f9c86ab7c26aa86f6122f75afc21685cc9",
+        "after": "5216160bd60be6db4a8b476195a8debd16176ef64742482feb38b6542519e522"
+      },
+      {
+        "path": "/777/depths/3/monsters",
+        "before": 11,
+        "after": 9
+      },
+      {
+        "path": "/777/depths/3/observations",
+        "before": 15,
+        "after": 18
+      },
+      {
+        "path": "/777/depths/4/hash",
+        "before": "3bf58027aa21c2a493095d44ca40f9b2c4f0a292ab4dbcb05269e68ed3c722d0",
+        "after": "9b733c5cbd401f8d10e15cd94dc0210950606790b0c6c66e518d2ecb9693dc2d"
+      },
+      {
+        "path": "/777/depths/4/monsters",
+        "before": 11,
+        "after": 6
+      },
+      {
+        "path": "/777/depths/4/observations",
+        "before": 21,
+        "after": 22
+      },
+      {
+        "path": "/777/depths/5/hash",
+        "before": "14e0ba6e07363e473813ce9ff1946e550dcade4a65946e94a8243eb62e60fcb7",
+        "after": "3377f8cfdb2240b98dd67a4002d774406a016de1a7880d5ee148db53755830a7"
+      },
+      {
+        "path": "/777/depths/5/observations",
+        "before": 21,
+        "after": 22
+      },
+      {
+        "path": "/777/depths/6/hash",
+        "before": "c96b70754ad9c824cd291128edf4a31b197fe919e969bcaebca9519fd7d76bce",
+        "after": "dca48319ed968dc85ac661e1972b142b03db25321e6de89cd1d33e01c2c93890"
+      },
+      {
+        "path": "/777/depths/6/observations",
+        "before": 25,
+        "after": 26
+      },
+      {
+        "path": "/777/depths/7/hash",
+        "before": "d90aca936c195c17337d8a2e1229e31d1ff58b8e5a0c15aa109ebfc700d80124",
+        "after": "c21916262957f01c0ef73c22a2fdca106073e34490e88e8138f5caafe0750672"
+      },
+      {
+        "path": "/777/depths/7/items",
+        "before": 9,
+        "after": 8
+      },
+      {
+        "path": "/777/depths/7/monsters",
+        "before": 6,
+        "after": 18
+      },
+      {
+        "path": "/777/depths/7/observations",
+        "before": 31,
+        "after": 30
+      },
+      {
+        "path": "/777/depths/8/hash",
+        "before": "60809401ae484f9a9816067062b8815f33270518b9d54bcbcae675457ab92afb",
+        "after": "3ae42da0417aacbe997f91373630a7355f916879d4e2da8f1d6b2efb44b86b0e"
+      },
+      {
+        "path": "/777/depths/8/items",
+        "before": 7,
+        "after": 9
+      },
+      {
+        "path": "/777/depths/8/monsters",
+        "before": 10,
+        "after": 18
+      },
+      {
+        "path": "/777/depths/8/observations",
+        "before": 35,
+        "after": 34
+      },
+      {
+        "path": "/777/depths/9/hash",
+        "before": "22036e9008cde1025e51d54091c159ced9f1ab637f565d8768a8fc93c58c91c9",
+        "after": "60fe1a7b3641352e022fe2fad698a48874d16d74eee3a56ba812970ff94de2c0"
+      },
+      {
+        "path": "/777/depths/9/items",
+        "before": 9,
+        "after": 7
+      },
+      {
+        "path": "/777/depths/9/observations",
+        "before": 40,
+        "after": 39
+      },
+      {
+        "path": "/777/depths/10/hash",
+        "before": "9efd48212ed9834957c140159b597910eede58e722a76a7cf9e8384606290183",
+        "after": "ce6a4adc84d2b6d82161088a280961f4df8c56d743a58509b8132b1a89d2e805"
+      },
+      {
+        "path": "/777/depths/10/items",
+        "before": 11,
+        "after": 9
+      },
+      {
+        "path": "/777/depths/10/observations",
+        "before": 46,
+        "after": 45
+      },
+      {
+        "path": "/777/depths/11/hash",
+        "before": "fb0883c87f3ae106ab14e0a3df20bcc588697ca6e4b62abb027c95dc4d1a1b39",
+        "after": "38e07af9d55060f7423cb5f34242b1c1d37e5bd2e2bb07dc5daef18c6ef6e126"
+      },
+      {
+        "path": "/777/depths/11/observations",
+        "before": 47,
+        "after": 46
+      },
+      {
+        "path": "/777/depths/12/hash",
+        "before": "a4dd81f711b2cbda2f01bd38957daffb12cba19895937f505b7aa1f0f57a7274",
+        "after": "5f8938e3cbd5163e52577bdf672faeec70f3e47e702ab6e585127b075edce8be"
+      },
+      {
+        "path": "/777/depths/12/observations",
+        "before": 51,
+        "after": 50
+      },
+      {
+        "path": "/777/depths/13/hash",
+        "before": "2ba1fc9c90b304f8815f1706d39976ccd470cb74470355309e8553fbb3c45225",
+        "after": "84bf45aa362006bcb888ff368a6b88017f18cca4d3bf5430aa17ba795ce44a94"
+      },
+      {
+        "path": "/777/depths/13/observations",
+        "before": 57,
+        "after": 56
+      },
+      {
+        "path": "/777/depths/14/hash",
+        "before": "df2c7fa8f2088144b915520271cae83690fa19f821da5538474f7b61a8c5f6b5",
+        "after": "5f815da82500c1d3781070814ed2c1e116435fbe247f051b9e0d78f958bac35d"
+      },
+      {
+        "path": "/777/depths/14/items",
+        "before": 8,
+        "after": 7
+      },
+      {
+        "path": "/777/depths/14/observations",
+        "before": 59,
+        "after": 58
+      },
+      {
+        "path": "/777/depths/15/hash",
+        "before": "ace1de9a9b53026faad005ba7ee071c68edd9dcd76d3a52ddc18bc3589d5fdfd",
+        "after": "4f4a2632359662730325387d182807f1aa2baddb43cbb3b0a1ad3e557a310306"
+      },
+      {
+        "path": "/777/depths/15/observations",
+        "before": 63,
+        "after": 62
+      },
+      {
+        "path": "/777/depths/16/hash",
+        "before": "90b078eead8870cd505d5c98be21e742dbf45a81c3de4603d82eed4b0e45e51c",
+        "after": "ca7a435174e7bd555bdb362fb72d65ff0c5bb8c6564bc5256f9c2ffdd4a30e67"
+      },
+      {
+        "path": "/777/depths/16/observations",
+        "before": 66,
+        "after": 65
+      },
+      {
+        "path": "/777/depths/17/hash",
+        "before": "d1e8f519d63d69015c14f2f24e404e0f7fbd03b007e78548beb8cf7699f18c27",
+        "after": "92f79b96958f787fa09b7c037a95733f96a2ee693dba98029c7577733a4c1faf"
+      },
+      {
+        "path": "/777/depths/17/items",
+        "before": 22,
+        "after": 24
+      },
+      {
+        "path": "/777/depths/17/observations",
+        "before": 73,
+        "after": 72
+      },
+      {
+        "path": "/777/depths/18/hash",
+        "before": "550f7a8de71e2843736751c300153bce1b5d1d94554acc784f0d7662eb0e8154",
+        "after": "66294fb29875bedd6e2dbeffb7f603636feade5e1a44e93e0f86c4b6741ca379"
+      },
+      {
+        "path": "/777/depths/18/items",
+        "before": 10,
+        "after": 8
+      },
+      {
+        "path": "/777/depths/18/observations",
+        "before": 75,
+        "after": 74
+      },
+      {
+        "path": "/777/depths/19/hash",
+        "before": "a69ad47cd0a9cfab54f65549e20d36c7e6181ee2d3b7b3eded92e630054073d0",
+        "after": "e6997d1ffa566e951037297e45d4472df218f1b38cce68fa6d79fc0bd35675f3"
+      },
+      {
+        "path": "/777/depths/19/items",
+        "before": 9,
+        "after": 12
+      },
+      {
+        "path": "/777/depths/19/monsters",
+        "before": 16,
+        "after": 10
+      },
+      {
+        "path": "/777/depths/20/hash",
+        "before": "9d00a540b18e390aa3ca22349f41122caa57ae78ff493b3691e49ebc69efdee5",
+        "after": "5463283b9ffebee91ced688b3ae9aad022f0ea78c780b96a64e178e4b8c577a7"
+      },
+      {
+        "path": "/777/depths/20/items",
+        "before": 13,
+        "after": 11
+      },
+      {
+        "path": "/777/depths/20/monsters",
+        "before": 10,
+        "after": 13
+      },
+      {
+        "path": "/777/depths/21/hash",
+        "before": "a80adce13f6133d5f0c63815021a843f654bc390e609180acb373356fbffc530",
+        "after": "755aa2b5b3d26400d0b498c7c9ef9361b838097670ccadbd57ad4ab589c51d00"
+      },
+      {
+        "path": "/777/depths/22/hash",
+        "before": "eed5df975674b7fc458339ce4a963bea7a9421336da678328475a5f85f367e6c",
+        "after": "e9c2cb6bbc0d12765466edf9af0283d15120ba2f6bc0c593cd8d53f643927420"
+      },
+      {
+        "path": "/777/depths/23/hash",
+        "before": "3351337ddeb27f17282e7e50b7458253327dd45851b0b0d6bdfa828098a3daa2",
+        "after": "b14d7cba8154d80b47849e19bc361f439a82533a38b7284c652d4d698fb30f1c"
+      },
+      {
+        "path": "/777/depths/23/items",
+        "before": 9,
+        "after": 13
+      },
+      {
+        "path": "/777/depths/23/monsters",
+        "before": 14,
+        "after": 20
+      },
+      {
+        "path": "/777/depths/23/observations",
+        "before": 102,
+        "after": 99
+      },
+      {
+        "path": "/777/depths/24/hash",
+        "before": "2588ff4e5d37add1279fb9f84f78a1539a1b21ba632c60462b1cadcfa9983b2e",
+        "after": "d443ff3919e2363a35f7bee748c76358d8b9543698b82b3690fad01dfd47f732"
+      },
+      {
+        "path": "/777/depths/24/observations",
+        "before": 104,
+        "after": 101
+      },
+      {
+        "path": "/777/depths/25/hash",
+        "before": "d0f33072c5f1521e6c00dd8e0dc6e4f273912717edbb0cb2497a560f83970625",
+        "after": "6ca518e20434c8f80b6d6bf81ead76754fefc7d665766fab0ac7498fe481bc9a"
+      },
+      {
+        "path": "/777/depths/25/observations",
+        "before": 106,
+        "after": 103
+      },
+      {
+        "path": "/777/loaded/hash",
+        "before": "d0f33072c5f1521e6c00dd8e0dc6e4f273912717edbb0cb2497a560f83970625",
+        "after": "6ca518e20434c8f80b6d6bf81ead76754fefc7d665766fab0ac7498fe481bc9a"
+      },
+      {
+        "path": "/777/loaded/observations",
+        "before": 106,
+        "after": 103
+      },
+      {
+        "path": "/777/returnTo26/hash",
+        "before": "1f92dfd5bbc84c81ba8edf7e35b6c2d48930a253cf1f64f4a4864276a6433c20",
+        "after": "d66a0a5004b910b169d9658fd96628473ebf6123407259d6dfb8614c99f2269d"
+      },
+      {
+        "path": "/777/returnTo26/observations",
+        "before": 106,
+        "after": 103
+      },
+      {
+        "path": "/777/revisit/hash",
+        "before": "96dcd086fc9c0314b043b6f24eecece385638d1b46c1879ee061fc8c3d26ce08",
+        "after": "a12828e33228fb55b29a5ce98b9900c9027195c46fb57ad5952b0f92553e8c40"
+      },
+      {
+        "path": "/777/revisit/observations",
+        "before": 106,
+        "after": 103
+      }
+    ],
+    "fieldCounts": {
+      "hash": 105,
+      "monsters": 33,
+      "observations": 88,
+      "items": 35,
+      "fall": 1
+    }
+  }
+]

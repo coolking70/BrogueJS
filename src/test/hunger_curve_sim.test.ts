@@ -17,6 +17,7 @@ import { describe, it, expect } from 'vitest';
 import { createHeadlessGame, type TurnPolicy } from './harness';
 import type { Game } from '../engine/Core/Game';
 import { rng } from '../engine/Random';
+import { playerTravelDiagonalBlocked } from '../engine/Movement/PlayerTravel';
 import { ItemCategory } from '../engine/Items/Item';
 
 const SEEDS = [1, 7, 42];
@@ -40,13 +41,17 @@ const roamPolicy: TurnPolicy = (game) => {
 
     for (const [dx, dy] of DIRS8) {
         const monster = game.getMonsterAt(px + dx, py + dy);
-        if (monster && monster.hp > 0 && !monster.isAlly) {
+        // LAVA-1: a blocked corner is neither a combat attempt nor an elapsed turn.
+        if (monster && monster.hp > 0 && !monster.isAlly
+            && (!playerTravelDiagonalBlocked(game.grid, game.player.loc, monster.loc, false)
+                || monster.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))) {
             return { action: 'move', data: { x: dx, y: dy } };
         }
     }
 
     const movable = DIRS8.filter(([dx, dy]) =>
         privates.canMoveTo(px + dx, py + dy) && !game.getMonsterAt(px + dx, py + dy)
+        && !playerTravelDiagonalBlocked(game.grid, game.player.loc, {x: px + dx, y: py + dy}, false)
     );
     if (movable.length === 0) {
         return { action: 'wait' };

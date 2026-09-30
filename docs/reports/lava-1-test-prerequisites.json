@@ -1,0 +1,149 @@
+{
+  "counterfactuals": [
+    "old-guards-state.json: production-only rollback; original 9 files/101 tests passed",
+    "isolate-movement-state.json: new connectivity + old movement; original combat/hunger/CE47 passed"
+  ],
+  "naturalCapture": [
+    "new-machine-cases.json",
+    "new-rare-machine-cases.json",
+    "entry-diagonal-probe.json"
+  ],
+  "fixtures": [
+    {
+      "file": "src/test/fixtures/u19d-natural-cases.json",
+      "beforeSHA256": "389dc2d3cb9352fa9f385ad6fd5c9b96a3bc4f71c5c516a254db5dfe27b4b9dc",
+      "afterSHA256": "ae57b658723d77660c1b786d976f7112de4ccfc20925f25b1a3c76da0605e386",
+      "changes": [
+        {
+          "path": "/9/seed",
+          "before": 3,
+          "after": 43
+        },
+        {
+          "path": "/9/depth",
+          "before": 25,
+          "after": 18
+        },
+        {
+          "path": "/10/seed",
+          "before": 1199819,
+          "after": 3
+        },
+        {
+          "path": "/10/depth",
+          "before": 2,
+          "after": 21
+        }
+      ]
+    },
+    {
+      "file": "src/test/fixtures/u19e-natural-cases.json",
+      "beforeSHA256": "98c368b5a3b16fb6b2a28e69d2dcea6e3fbbcaa3fb02f7f7270c694e23444a01",
+      "afterSHA256": "3d353df6d8187f9e11c19d97fb1f0c318f39de86522fe0e9df143a5080f85c66",
+      "changes": [
+        {
+          "path": "/3/seed",
+          "before": 1,
+          "after": 3
+        },
+        {
+          "path": "/3/depth",
+          "before": 23,
+          "after": 13
+        },
+        {
+          "path": "/3/entry/x",
+          "before": 16,
+          "after": 57
+        },
+        {
+          "path": "/3/entry/y",
+          "before": 5,
+          "after": 25
+        }
+      ]
+    },
+    {
+      "file": "src/test/fixtures/u19f-natural-cases.json",
+      "beforeSHA256": "2333783d37aa8468a03e4585219faebf87adcb10244de5cd5f00b6e64ed825fc",
+      "afterSHA256": "bbf6ea347687c7f682196442019c1aecabb7c9f5dfdd277480ec6adb3815acf6",
+      "changes": [
+        {
+          "path": "/0/seed",
+          "before": 1247333,
+          "after": 2
+        },
+        {
+          "path": "/0/depth",
+          "before": 18,
+          "after": 7
+        },
+        {
+          "path": "/0/entry/x",
+          "before": 66,
+          "after": 28
+        },
+        {
+          "path": "/0/entry/y",
+          "before": 18,
+          "after": 16
+        },
+        {
+          "path": "/1/seed",
+          "before": 13,
+          "after": 36
+        },
+        {
+          "path": "/1/depth",
+          "before": 16,
+          "after": 11
+        },
+        {
+          "path": "/1/machine",
+          "before": 4,
+          "after": 3
+        },
+        {
+          "path": "/1/entry/x",
+          "before": 41,
+          "after": 15
+        },
+        {
+          "path": "/1/entry/y",
+          "before": 9,
+          "after": 14
+        }
+      ]
+    }
+  ],
+  "scanExtensions": [
+    {
+      "file": "blueprint_center.test.ts",
+      "preserveAllOriginalSeeds": true,
+      "appendSeed": 43,
+      "depths": [
+        1,
+        26
+      ],
+      "naturalPositive": "CE39 origin items at D7"
+    },
+    {
+      "file": "horde_terrain_spawn.test.ts",
+      "preserveAllOriginalSeedsAndDepths": true,
+      "appendSeed": 777,
+      "depths": [
+        1,
+        14
+      ],
+      "naturalPositive": "CE47 adopted key at D14; original 4-seed amulet guard unchanged"
+    }
+  ],
+  "commandPolicies": [
+    "local combat and hunger policies filter actual blocked corner moves; through-wall attacks remain legal",
+    "CE47 test BFS filters blocked manual diagonal edges",
+    "CE55 setup uses actual outer floor (15,14) reachable from upstairs in 15 cardinal steps, diagonal lever bump is permitted before the CE corner guard",
+    "CE55 opening phase waits for both the reward route and zero active tunnel markers within the original 350 steps"
+  ],
+  "assertionsUnchanged": true,
+  "timeoutsAndBudgetsUnchanged": true
+}

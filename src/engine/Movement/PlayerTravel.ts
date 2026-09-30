@@ -18,12 +18,15 @@ function knownFlags(cell: Cell): number {
     return layers.reduce((flags, tile) => flags | TERRAIN_FLAGS[tile].flags, 0);
 }
 
-/** CE diagonalBlocked(..., true): neither corner may be a known obstruction. */
-export function playerTravelDiagonalBlocked(grid: Grid, from: Pos, to: Pos): boolean {
+/** CE diagonalBlocked: automatic travel uses known terrain; manual moves use actual layers. */
+export function playerTravelDiagonalBlocked(grid: Grid, from: Pos, to: Pos, limitToPlayerKnowledge = true): boolean {
     if (from.x === to.x || from.y === to.y) return false;
     return [[from.x, to.y], [to.x, from.y]].some(([x, y]) => {
         const cell = grid.getCell(x!, y!);
-        return !cell || !!(knownFlags(cell) & T_OBSTRUCTS_DIAGONAL_MOVEMENT);
+        if (!cell) return true;
+        const flags = limitToPlayerKnowledge ? knownFlags(cell)
+            : cell.layers.reduce((f, tile) => f | TERRAIN_FLAGS[tile].flags, 0);
+        return !!(flags & T_OBSTRUCTS_DIAGONAL_MOVEMENT);
     });
 }
 

@@ -1,3 +1,4 @@
+import { DISPLAY_FRAME_MS, stepCadence } from '../UI/ActionCadence';
 import { staffHealingPercent, staffHasteDuration, staffDiscordDuration, armorStealthAdjustment, ringStealthAdjustment, ringAwarenessBonus, ringClairvoyanceRadius } from '../Items/ItemEffectFormulas';
 import { emitCreatureFeature } from '../Combat/CreatureFeatures';
 import { isIncendiaryDart, resolveIncendiaryDart } from '../Items/IncendiaryDart';
@@ -518,6 +519,7 @@ export class Game {
     public replayStatus: ReplayStatus = 'idle';
     /** Explicit read-only item-detail projection; never changes game knowledge. */
     public replayOmniscientDetails = false;
+    // Display milliseconds; retained name is part of the U03 reset contract.
     private replayFrameAccumulator: number = 0;
     private readonly replayFramesPerStep: number = 6;
     public get replayError(): string | null { return recordingState(this).replayError; }
@@ -2916,10 +2918,12 @@ export class Game {
             this.replayStatus = 'finished';
             return;
         }
+        this.replayFrameAccumulator = 0;
         this.replayStatus = 'playing';
     }
 
     public replayPause() {
+        this.replayFrameAccumulator = 0;
         if (this.replayStatus === 'playing') {
             this.replayStatus = 'loaded';
         }
@@ -2997,12 +3001,14 @@ export class Game {
         logger.log(this.replayErrorDisplay ?? '', '#ff6666');
     }
 
-    public tickReplay() {
-        if (this.replayStatus !== 'playing') return;
-        this.replayFrameAccumulator++;
-        if (this.replayFrameAccumulator < this.replayFramesPerStep) return;
-        this.replayFrameAccumulator = 0;
-        this.replayStep();
+    public tickReplay(elapsedMs: number = DISPLAY_FRAME_MS) {
+        // Recorded modal/endgame commands must still play. Only playback and
+        // advancement locks control this clock, not the live-input pause state.
+        this.replayFrameAccumulator = stepCadence(
+            this.replayFrameAccumulator, elapsedMs, this.replayFramesPerStep * DISPLAY_FRAME_MS,
+            () => this.replayStatus === 'playing' && !this.isAdvancing && !this.isInputLocked(),
+            () => this.replayStep(),
+        );
     }
 
     public replaySeek(targetIndex: number) {
@@ -3295,11 +3301,13 @@ export class Game {
                     return;
                 }
 
-                // P4-7：CE Movement.c:1175-1186 —— 移动未被阻挡时（目标格可通行，
-                // 或格内是 MONST_ATTACKABLE_THRU_WALLS 目标）先试鞭、再试矛；出手即
-                // 耗掉本回合（CE：playerRecoversFromAttacking(true) + playerTurnEnded），
-                // 不落回普通移动/攻击。CE 的 diagonalBlocked 起步守卫不移植（web 全局
-                // 无对角墙角判定，P4-5 起同口径，见报告）。
+                // CE playerMoves/diagonalBlocked: reject a physical wall corner
+                // before attacks, key use or hazard confirmation. Bump promotions
+                // above retain their CE ordering; through-wall targets are exempt.
+                if (playerTravelDiagonalBlocked(this.grid, origin, { x: newX, y: newY }, false)
+                    && !blockingMonster?.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')) return;
+
+                // CE Movement.c:1175-1186: try whip/spear before normal movement.
                 const destCell = this.grid.getCell(newX, newY);
                 const destinationKey = destCell && (cellTerrainMechFlags(this.grid, newX, newY) & TM_PROMOTES_WITH_KEY)
                     ? this.keyInPackFor(newX, newY, destCell) : null;

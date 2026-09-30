@@ -64,15 +64,15 @@
   },
   {
     "ce": 21,
-    "seed": 3,
-    "depth": 25,
+    "seed": 43,
+    "depth": 18,
     "machine": 2,
     "kind": "natural action chain"
   },
   {
     "ce": 35,
-    "seed": 1199819,
-    "depth": 2,
+    "seed": 3,
+    "depth": 21,
     "machine": 3,
     "kind": "natural action chain"
   },

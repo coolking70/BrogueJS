@@ -265,14 +265,15 @@ describe('地形感知落点 — 既有 floorTiles 用法未被破坏（楼梯 /
         // 既有事实：machine/vault 房宝藏直接放在 room 质心（machine.center 等），
         // 质心可能落在墙里——这是与本修复无关的既有行为，只记录不判定。
         const onImpassable: string[] = [];
-        for (const seed of SCAN_SEEDS.slice(0, 4)) {
+        // LAVA-1: retain all four full scans; append a natural CE47 key positive at seed777/D14.
+        for (const seed of [...SCAN_SEEDS.slice(0, 4), 777]) {
             const game = createHeadlessGame(seed);
             let machines: MachineResult[] = [];
             const runtime = game as any, populate = runtime.populateLevel.bind(game);
             runtime.populateLevel = (...args: any[]) => {
                 const result = populate(...args); machines = args[3]; return result;
             };
-            for (let d = 1; d <= 26; d++) {
+            for (let d = 1; d <= (seed === 777 ? 14 : 26); d++) {
                 genDepth(game, d);
 
                 // 楼梯：D<26 必有下行梯，D>1 必有上行梯，且都是可站立格

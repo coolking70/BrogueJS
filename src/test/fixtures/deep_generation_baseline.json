@@ -1,5 +1,5 @@
 {
-  "note": "X4-R2: layered lakes/algae, forced D26 amulet area, horde camps, CE19 alternatives and CE9/10 effective counts. R2-only production rollback reproduces old fixtures. Original full-run capture method; see x4-r2.report.md.",
+  "note": "LAVA-1: CE cardinal lake connectivity and full-layer pathing flags; production-only rollback exactly reproduces previous fixtures. Original full-run capture; see docs/reports/lava-1.report.md.",
   "seeds": [
     424242,
     777,
@@ -66,26 +66,26 @@
     {
       "seed": 424242,
       "depth": 29,
-      "fp": "b6d17e86:5281",
-      "n": 27,
-      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Dar priestess,explosive Dar battlemage,toxic Golem,toxic Tentacle horror,vampiric Golem,vampiric Tentacle horror",
+      "fp": "85625df1:5309",
+      "n": 18,
+      "species": "Golem,Kraken,Phylactery,Tentacle horror,agile Golem,explosive Golem,infested Dragon,infested Golem,juggernaut Dragon,toxic Dragon,toxic Kraken",
       "items": 4,
       "gems": [
         {
-          "x": 14,
-          "y": 25,
+          "x": 2,
+          "y": 14,
           "originDepth": 29,
           "quantity": 1
         },
         {
-          "x": 69,
-          "y": 11,
+          "x": 15,
+          "y": 24,
           "originDepth": 29,
           "quantity": 1
         },
         {
-          "x": 3,
-          "y": 10,
+          "x": 47,
+          "y": 15,
           "originDepth": 29,
           "quantity": 1
         }
@@ -95,19 +95,19 @@
       "seed": 424242,
       "depth": 30,
       "fp": "b03dda4b:5203",
-      "n": 36,
-      "species": "Dar battlemage,Dar priestess,Golem,Phylactery,Tentacle horror,agile Golem,explosive Dragon,grappling Golem,infested Dar priestess,infested Golem,juggernaut Golem,reflective Tentacle horror,toxic Golem,vampiric Golem",
+      "n": 30,
+      "species": "Dar priestess,Golem,Phylactery,Tentacle horror,agile Golem,explosive Dragon,grappling Golem,infested Golem,reflective Tentacle horror,toxic Golem,vampiric Golem",
       "items": 2,
       "gems": [
         {
-          "x": 24,
-          "y": 18,
+          "x": 13,
+          "y": 25,
           "originDepth": 30,
           "quantity": 1
         },
         {
-          "x": 24,
-          "y": 24,
+          "x": 4,
+          "y": 22,
           "originDepth": 30,
           "quantity": 1
         }
@@ -182,20 +182,20 @@
     {
       "seed": 424242,
       "depth": 34,
-      "fp": "9924feac:5198",
-      "n": 43,
-      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Dar priestess,agile Golem,explosive Dar battlemage,explosive Dar priestess,explosive Golem,juggernaut Revenant,reflective Dar battlemage,toxic Dragon,toxic Golem,toxic Tentacle horror,vampiric Dragon,vampiric Tentacle horror",
+      "fp": "a35f76d5:5136",
+      "n": 40,
+      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Dragon,explosive Dragon,explosive Golem,grappling Golem,infested Dar battlemage,infested Dragon,infested Golem,juggernaut Dragon,juggernaut Golem,juggernaut Tentacle horror,reflective Dar priestess,reflective Dragon,toxic Dragon,vampiric Dragon,vampiric Golem",
       "items": 3,
       "gems": [
         {
-          "x": 18,
-          "y": 25,
+          "x": 36,
+          "y": 1,
           "originDepth": 34,
           "quantity": 1
         },
         {
-          "x": 21,
-          "y": 5,
+          "x": 3,
+          "y": 4,
           "originDepth": 34,
           "quantity": 1
         }
@@ -236,14 +236,14 @@
     {
       "seed": 424242,
       "depth": 37,
-      "fp": "2855fe37:5276",
-      "n": 40,
-      "species": "Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Dar battlemage,agile Dar priestess,agile Tentacle horror,explosive Dar battlemage,explosive Dar priestess,explosive Golem,grappling Dragon,grappling Golem,infested Dar battlemage,infested Dar priestess,infested Golem,juggernaut Golem,toxic Dragon,toxic Golem,toxic Tentacle horror,vampiric Golem",
+      "fp": "70c4dc97:5144",
+      "n": 62,
+      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Dragon,agile Golem,explosive Dar battlemage,explosive Golem,grappling Golem,grappling Revenant,grappling Tentacle horror,infested Dragon,infested Golem,juggernaut Dragon,juggernaut Golem,juggernaut Tentacle horror,reflective Dragon,reflective Kraken,reflective Tentacle horror,toxic Dragon,toxic Golem,toxic Revenant,vampiric Dragon,vampiric Golem,vampiric Kraken,vampiric Tentacle horror",
       "items": 1,
       "gems": [
         {
-          "x": 64,
-          "y": 23,
+          "x": 56,
+          "y": 7,
           "originDepth": 37,
           "quantity": 1
         }
@@ -252,14 +252,14 @@
     {
       "seed": 424242,
       "depth": 38,
-      "fp": "23704414:5179",
-      "n": 46,
-      "species": "Dar battlemage,Dragon,Golem,Phylactery,Tentacle horror,agile Dar battlemage,agile Dragon,agile Golem,agile Tentacle horror,explosive Dragon,explosive Golem,grappling Dragon,grappling Golem,grappling Tentacle horror,infested Dragon,infested Golem,juggernaut Dragon,reflective Dar priestess,reflective Dragon,toxic Golem,vampiric Dragon",
-      "items": 2,
+      "fp": "65683a9a:5241",
+      "n": 52,
+      "species": "Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Golem,explosive Golem,explosive Kraken,explosive Tentacle horror,grappling Golem,grappling Revenant,infested Dragon,infested Golem,infested Kraken,juggernaut Golem,juggernaut Tentacle horror,reflective Kraken,toxic Dragon,toxic Golem,toxic Tentacle horror,vampiric Golem",
+      "items": 1,
       "gems": [
         {
-          "x": 64,
-          "y": 7,
+          "x": 37,
+          "y": 24,
           "originDepth": 38,
           "quantity": 1
         }
@@ -268,14 +268,14 @@
     {
       "seed": 424242,
       "depth": 39,
-      "fp": "f1440dd2:5125",
+      "fp": "f92ac489:5135",
       "n": 62,
       "species": "Dragon,Golem,Kraken,Phylactery,Tentacle horror,agile Dragon,agile Revenant,explosive Kraken,grappling Golem,grappling Tentacle horror,infested Golem,infested Kraken,infested Tentacle horror,juggernaut Dragon,juggernaut Golem,juggernaut Revenant,reflective Dragon,reflective Kraken,reflective Revenant,toxic Golem,toxic Kraken,vampiric Kraken,vampiric Tentacle horror",
-      "items": 1,
+      "items": 2,
       "gems": [
         {
-          "x": 51,
-          "y": 24,
+          "x": 62,
+          "y": 2,
           "originDepth": 39,
           "quantity": 1
         }
@@ -300,26 +300,26 @@
     {
       "seed": 777,
       "depth": 27,
-      "fp": "8312b54d:5130",
+      "fp": "cb7e69b7:5117",
       "n": 18,
       "species": "Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Golem,explosive Golem,explosive Revenant,grappling Dragon,toxic Golem,vampiric Dragon",
-      "items": 3,
+      "items": 4,
       "gems": [
         {
-          "x": 24,
-          "y": 25,
-          "originDepth": 27,
-          "quantity": 1
-        },
-        {
-          "x": 51,
-          "y": 18,
-          "originDepth": 27,
-          "quantity": 1
-        },
-        {
-          "x": 11,
+          "x": 12,
           "y": 7,
+          "originDepth": 27,
+          "quantity": 1
+        },
+        {
+          "x": 16,
+          "y": 15,
+          "originDepth": 27,
+          "quantity": 1
+        },
+        {
+          "x": 10,
+          "y": 25,
           "originDepth": 27,
           "quantity": 1
         }
@@ -406,20 +406,20 @@
     {
       "seed": 777,
       "depth": 31,
-      "fp": "0fd639a6:5215",
-      "n": 31,
-      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Tentacle horror,agile Golem,grappling Dragon,grappling Golem,juggernaut Golem,juggernaut Tentacle horror,reflective Kraken,toxic Golem",
+      "fp": "58d0e5c5:5184",
+      "n": 43,
+      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Tentacle horror,agile Golem,explosive Dar priestess,explosive Dragon,explosive Golem,grappling Golem,infested Golem,infested Kraken,infested Tentacle horror,juggernaut Dragon,reflective Tentacle horror,vampiric Golem",
       "items": 2,
       "gems": [
         {
-          "x": 23,
-          "y": 19,
+          "x": 59,
+          "y": 27,
           "originDepth": 31,
           "quantity": 1
         },
         {
-          "x": 33,
-          "y": 22,
+          "x": 66,
+          "y": 14,
           "originDepth": 31,
           "quantity": 1
         }
@@ -428,20 +428,20 @@
     {
       "seed": 777,
       "depth": 32,
-      "fp": "4c6a6b84:5255",
-      "n": 36,
-      "species": "Dragon,Golem,Phylactery,Tentacle horror,agile Dar battlemage,agile Dar priestess,explosive Golem,grappling Dragon,grappling Golem,infested Golem,infested Tentacle horror,reflective Tentacle horror,toxic Golem,toxic Tentacle horror,vampiric Dragon",
+      "fp": "e7d7f756:5255",
+      "n": 39,
+      "species": "Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Golem,grappling Dragon,grappling Golem,grappling Revenant,infested Golem,reflective Revenant,vampiric Tentacle horror",
       "items": 3,
       "gems": [
         {
-          "x": 40,
-          "y": 23,
+          "x": 26,
+          "y": 14,
           "originDepth": 32,
           "quantity": 1
         },
         {
-          "x": 73,
-          "y": 20,
+          "x": 61,
+          "y": 5,
           "originDepth": 32,
           "quantity": 1
         }
@@ -475,17 +475,17 @@
       "fp": "19512bdc:5151",
       "n": 38,
       "species": "Dragon,Golem,Phylactery,Tentacle horror,agile Golem,agile Tentacle horror,explosive Dragon,explosive Golem,infested Dragon,infested Golem,juggernaut Dragon",
-      "items": 3,
+      "items": 2,
       "gems": [
         {
-          "x": 44,
-          "y": 5,
+          "x": 72,
+          "y": 6,
           "originDepth": 34,
           "quantity": 1
         },
         {
-          "x": 37,
-          "y": 5,
+          "x": 14,
+          "y": 9,
           "originDepth": 34,
           "quantity": 1
         }
@@ -494,14 +494,14 @@
     {
       "seed": 777,
       "depth": 35,
-      "fp": "8466be29:5170",
-      "n": 76,
-      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Dragon,agile Tentacle horror,explosive Kraken,grappling Golem,grappling Tentacle horror,infested Dar battlemage,infested Kraken,infested Revenant,juggernaut Dragon,juggernaut Kraken,reflective Dar battlemage,reflective Dragon,reflective Kraken,reflective Revenant,toxic Golem,toxic Kraken,toxic Tentacle horror,vampiric Dragon,vampiric Golem,vampiric Kraken,vampiric Tentacle horror",
+      "fp": "a252e2c9:5163",
+      "n": 50,
+      "species": "Dar priestess,Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Dragon,agile Golem,explosive Dragon,explosive Golem,explosive Tentacle horror,grappling Golem,infested Dragon,infested Golem,infested Tentacle horror,juggernaut Dragon,juggernaut Golem,juggernaut Tentacle horror,reflective Dar battlemage,reflective Dar priestess,reflective Dragon,toxic Dragon,vampiric Dragon",
       "items": 2,
       "gems": [
         {
-          "x": 37,
-          "y": 8,
+          "x": 75,
+          "y": 23,
           "originDepth": 35,
           "quantity": 1
         }
@@ -510,14 +510,14 @@
     {
       "seed": 777,
       "depth": 36,
-      "fp": "b7d77a4c:5192",
-      "n": 43,
-      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Tentacle horror,agile Golem,agile Tentacle horror,explosive Dragon,explosive Golem,explosive Kraken,grappling Golem,infested Golem,juggernaut Golem,toxic Dragon,toxic Golem,toxic Kraken,vampiric Dragon,vampiric Golem,vampiric Tentacle horror",
+      "fp": "184f6910:5141",
+      "n": 41,
+      "species": "Dragon,Golem,Phylactery,Tentacle horror,agile Golem,explosive Dar priestess,explosive Dragon,explosive Golem,infested Dragon,infested Tentacle horror,juggernaut Dragon,juggernaut Golem,reflective Dar battlemage,toxic Tentacle horror,vampiric Golem",
       "items": 1,
       "gems": [
         {
-          "x": 6,
-          "y": 12,
+          "x": 11,
+          "y": 5,
           "originDepth": 36,
           "quantity": 1
         }
@@ -526,14 +526,14 @@
     {
       "seed": 777,
       "depth": 37,
-      "fp": "ff983872:5075",
-      "n": 73,
-      "species": "Dar battlemage,Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Golem,agile Tentacle horror,explosive Golem,explosive Kraken,explosive Revenant,grappling Golem,infested Dragon,infested Golem,infested Kraken,infested Tentacle horror,juggernaut Golem,juggernaut Kraken,reflective Kraken,toxic Golem,toxic Kraken,toxic Revenant,vampiric Golem,vampiric Kraken,vampiric Revenant,vampiric Tentacle horror",
+      "fp": "27857e4d:5076",
+      "n": 92,
+      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,agile Golem,explosive Dragon,explosive Kraken,grappling Tentacle horror,infested Dar battlemage,infested Dragon,infested Kraken,infested Tentacle horror,juggernaut Dragon,juggernaut Kraken,juggernaut Tentacle horror,reflective Dragon,reflective Kraken,toxic Kraken,vampiric Kraken,vampiric Tentacle horror",
       "items": 2,
       "gems": [
         {
-          "x": 29,
-          "y": 22,
+          "x": 54,
+          "y": 15,
           "originDepth": 37,
           "quantity": 1
         }
@@ -545,11 +545,11 @@
       "fp": "10ec2987:5110",
       "n": 37,
       "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Golem,explosive Dar battlemage,explosive Dar priestess,explosive Golem,grappling Golem,juggernaut Dragon,juggernaut Golem,reflective Dar priestess,reflective Dragon,vampiric Golem,vampiric Tentacle horror",
-      "items": 1,
+      "items": 2,
       "gems": [
         {
-          "x": 12,
-          "y": 6,
+          "x": 4,
+          "y": 5,
           "originDepth": 38,
           "quantity": 1
         }
@@ -561,11 +561,11 @@
       "fp": "183315e2:5267",
       "n": 57,
       "species": "Dar priestess,Dragon,Golem,Phylactery,Revenant,Sentinel,Tentacle horror,agile Revenant,agile Tentacle horror,explosive Golem,explosive Sentinel,explosive Tentacle horror,grappling Dragon,grappling Tentacle horror,infested Dar battlemage,infested Golem,infested Revenant,juggernaut Revenant,reflective Dar priestess,reflective Sentinel,toxic Tentacle horror,vampiric Golem",
-      "items": 2,
+      "items": 1,
       "gems": [
         {
-          "x": 10,
-          "y": 15,
+          "x": 12,
+          "y": 19,
           "originDepth": 39,
           "quantity": 1
         }
@@ -577,11 +577,11 @@
       "fp": "2882f783:6100",
       "n": 0,
       "species": "",
-      "items": 1,
+      "items": 2,
       "gems": [
         {
-          "x": 6,
-          "y": 9,
+          "x": 33,
+          "y": 6,
           "originDepth": 40,
           "quantity": 1
         }
@@ -618,26 +618,26 @@
     {
       "seed": 20260913,
       "depth": 28,
-      "fp": "5fa97f90:5211",
-      "n": 22,
-      "species": "Dar battlemage,Dragon,Golem,Phylactery,explosive Dar battlemage,grappling Dragon,grappling Tentacle horror,infested Dar battlemage,infested Golem,infested Kraken,juggernaut Dragon,reflective Kraken,toxic Golem",
+      "fp": "c864cd77:5194",
+      "n": 25,
+      "species": "Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Dar battlemage,explosive Dar priestess,explosive Golem,explosive Tentacle horror,grappling Dragon,grappling Golem,juggernaut Golem,reflective Dragon,toxic Golem",
       "items": 4,
       "gems": [
         {
-          "x": 71,
-          "y": 19,
+          "x": 67,
+          "y": 14,
           "originDepth": 28,
           "quantity": 1
         },
         {
-          "x": 8,
-          "y": 8,
+          "x": 38,
+          "y": 7,
           "originDepth": 28,
           "quantity": 1
         },
         {
-          "x": 71,
-          "y": 2,
+          "x": 69,
+          "y": 11,
           "originDepth": 28,
           "quantity": 1
         }
@@ -646,20 +646,20 @@
     {
       "seed": 20260913,
       "depth": 29,
-      "fp": "bdad1176:5087",
-      "n": 26,
-      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,explosive Golem,grappling Tentacle horror,infested Golem,infested Tentacle horror,juggernaut Golem,reflective Dar battlemage,vampiric Dragon",
+      "fp": "34b76b9e:5087",
+      "n": 31,
+      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,grappling Golem,grappling Tentacle horror,juggernaut Golem,juggernaut Tentacle horror,reflective Dar battlemage,vampiric Dragon",
       "items": 3,
       "gems": [
         {
-          "x": 56,
-          "y": 22,
+          "x": 8,
+          "y": 13,
           "originDepth": 29,
           "quantity": 1
         },
         {
-          "x": 16,
-          "y": 6,
+          "x": 53,
+          "y": 22,
           "originDepth": 29,
           "quantity": 1
         },
@@ -718,20 +718,20 @@
     {
       "seed": 20260913,
       "depth": 32,
-      "fp": "918f0e16:5242",
-      "n": 51,
-      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Dragon,agile Golem,agile Tentacle horror,explosive Dar battlemage,explosive Dar priestess,explosive Golem,grappling Dragon,grappling Golem,juggernaut Golem,toxic Golem,toxic Tentacle horror,vampiric Tentacle horror",
+      "fp": "3733b99f:5145",
+      "n": 54,
+      "species": "Dar battlemage,Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Golem,agile Revenant,agile Tentacle horror,explosive Dar battlemage,explosive Dar priestess,explosive Dragon,explosive Golem,explosive Kraken,explosive Revenant,explosive Tentacle horror,grappling Revenant,infested Dragon,infested Kraken,infested Tentacle horror,juggernaut Dragon,juggernaut Revenant,juggernaut Tentacle horror,toxic Golem,toxic Kraken,vampiric Dragon,vampiric Kraken,vampiric Tentacle horror",
       "items": 3,
       "gems": [
         {
-          "x": 66,
-          "y": 22,
+          "x": 63,
+          "y": 17,
           "originDepth": 32,
           "quantity": 1
         },
         {
-          "x": 29,
-          "y": 17,
+          "x": 64,
+          "y": 5,
           "originDepth": 32,
           "quantity": 1
         }
@@ -740,20 +740,20 @@
     {
       "seed": 20260913,
       "depth": 33,
-      "fp": "d2556d6d:5228",
-      "n": 58,
-      "species": "Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Dar priestess,explosive Golem,explosive Revenant,explosive Tentacle horror,grappling Dragon,grappling Golem,grappling Revenant,grappling Tentacle horror,infested Dragon,infested Golem,infested Tentacle horror,juggernaut Golem,juggernaut Tentacle horror,reflective Dragon,reflective Tentacle horror,toxic Golem,toxic Revenant,vampiric Dragon,vampiric Golem",
-      "items": 2,
+      "fp": "6d2b6e91:5351",
+      "n": 52,
+      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Tentacle horror,agile Dar battlemage,agile Dar priestess,agile Golem,agile Tentacle horror,explosive Dragon,explosive Golem,explosive Kraken,explosive Tentacle horror,grappling Golem,infested Dar priestess,infested Golem,infested Kraken,juggernaut Dragon,juggernaut Kraken,reflective Dragon,reflective Kraken,reflective Tentacle horror,toxic Dragon,toxic Kraken,vampiric Kraken",
+      "items": 3,
       "gems": [
         {
-          "x": 72,
-          "y": 13,
+          "x": 63,
+          "y": 24,
           "originDepth": 33,
           "quantity": 1
         },
         {
-          "x": 47,
-          "y": 15,
+          "x": 31,
+          "y": 7,
           "originDepth": 33,
           "quantity": 1
         }
@@ -762,20 +762,20 @@
     {
       "seed": 20260913,
       "depth": 34,
-      "fp": "53f2fcce:5281",
-      "n": 48,
-      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Tentacle horror,agile Dragon,agile Golem,agile Tentacle horror,explosive Dar battlemage,explosive Dar priestess,explosive Dragon,explosive Golem,explosive Tentacle horror,grappling Dragon,grappling Golem,infested Golem,infested Revenant,infested Tentacle horror,juggernaut Revenant,juggernaut Tentacle horror,reflective Tentacle horror,toxic Golem,vampiric Dragon,vampiric Golem",
-      "items": 3,
+      "fp": "e37ea316:5281",
+      "n": 68,
+      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Golem,agile Revenant,agile Tentacle horror,explosive Dar battlemage,explosive Dragon,explosive Golem,grappling Dragon,grappling Golem,grappling Tentacle horror,infested Dragon,infested Golem,juggernaut Dragon,juggernaut Golem,juggernaut Tentacle horror,reflective Dar priestess,reflective Revenant,toxic Dragon,vampiric Dragon,vampiric Golem,vampiric Tentacle horror",
+      "items": 2,
       "gems": [
         {
-          "x": 10,
-          "y": 27,
+          "x": 66,
+          "y": 3,
           "originDepth": 34,
           "quantity": 1
         },
         {
-          "x": 76,
-          "y": 7,
+          "x": 12,
+          "y": 6,
           "originDepth": 34,
           "quantity": 1
         }
@@ -784,7 +784,7 @@
     {
       "seed": 20260913,
       "depth": 35,
-      "fp": "76bacff8:5186",
+      "fp": "b732d699:5190",
       "n": 41,
       "species": "Dar battlemage,Dar priestess,Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,explosive Golem,explosive Kraken,explosive Tentacle horror,juggernaut Golem,juggernaut Kraken,juggernaut Tentacle horror,reflective Kraken,reflective Tentacle horror,toxic Golem,vampiric Golem,vampiric Kraken,vampiric Revenant",
       "items": 2,
@@ -1008,20 +1008,20 @@
     {
       "seed": 31337,
       "depth": 32,
-      "fp": "55990d97:5168",
-      "n": 43,
-      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Dar priestess,agile Golem,explosive Dar priestess,explosive Golem,grappling Golem,infested Golem,infested Revenant,juggernaut Dragon,juggernaut Golem,reflective Dragon,toxic Tentacle horror,vampiric Golem",
+      "fp": "8c70dbce:5186",
+      "n": 24,
+      "species": "Dragon,Golem,Phylactery,Tentacle horror,agile Dragon,agile Tentacle horror,explosive Tentacle horror,grappling Dragon,juggernaut Golem,reflective Dragon,vampiric Kraken",
       "items": 3,
       "gems": [
         {
-          "x": 75,
-          "y": 5,
+          "x": 48,
+          "y": 14,
           "originDepth": 32,
           "quantity": 1
         },
         {
-          "x": 17,
-          "y": 21,
+          "x": 56,
+          "y": 22,
           "originDepth": 32,
           "quantity": 1
         }
@@ -1052,20 +1052,20 @@
     {
       "seed": 31337,
       "depth": 34,
-      "fp": "3d80f0df:5143",
-      "n": 66,
-      "species": "Dragon,Golem,Kraken,Phylactery,Revenant,Tentacle horror,agile Dar priestess,agile Golem,agile Revenant,agile Tentacle horror,explosive Dar battlemage,explosive Golem,explosive Tentacle horror,grappling Golem,grappling Revenant,grappling Tentacle horror,infested Golem,juggernaut Golem,reflective Tentacle horror,toxic Dragon,toxic Golem,toxic Kraken,toxic Revenant,toxic Tentacle horror,vampiric Golem,vampiric Kraken",
+      "fp": "bc3178f3:5167",
+      "n": 39,
+      "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Dragon,explosive Dar priestess,explosive Dragon,grappling Tentacle horror,infested Dar priestess,infested Dragon,infested Golem,juggernaut Dragon,juggernaut Golem,juggernaut Tentacle horror,reflective Dar battlemage,reflective Tentacle horror,toxic Tentacle horror",
       "items": 3,
       "gems": [
         {
-          "x": 56,
-          "y": 10,
+          "x": 33,
+          "y": 6,
           "originDepth": 34,
           "quantity": 1
         },
         {
-          "x": 69,
-          "y": 9,
+          "x": 14,
+          "y": 17,
           "originDepth": 34,
           "quantity": 1
         }
@@ -1090,7 +1090,7 @@
     {
       "seed": 31337,
       "depth": 36,
-      "fp": "6b7ba043:5289",
+      "fp": "48a41adb:5293",
       "n": 48,
       "species": "Dragon,Golem,Phylactery,Revenant,Tentacle horror,explosive Dragon,grappling Golem,grappling Revenant,grappling Tentacle horror,infested Dragon,infested Revenant,infested Tentacle horror,juggernaut Dragon,juggernaut Revenant,reflective Dragon,reflective Tentacle horror,toxic Dragon,vampiric Dragon,vampiric Golem,vampiric Revenant,vampiric Tentacle horror",
       "items": 2,
@@ -1106,14 +1106,14 @@
     {
       "seed": 31337,
       "depth": 37,
-      "fp": "0652cdd4:5144",
+      "fp": "80597664:5146",
       "n": 44,
       "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Dar battlemage,agile Dragon,agile Golem,agile Tentacle horror,explosive Dar priestess,grappling Golem,grappling Tentacle horror,infested Golem,infested Tentacle horror,juggernaut Revenant,juggernaut Tentacle horror,reflective Revenant,toxic Golem,toxic Tentacle horror,vampiric Golem,vampiric Revenant",
-      "items": 1,
+      "items": 2,
       "gems": [
         {
-          "x": 67,
-          "y": 22,
+          "x": 68,
+          "y": 19,
           "originDepth": 37,
           "quantity": 1
         }
@@ -1122,14 +1122,14 @@
     {
       "seed": 31337,
       "depth": 38,
-      "fp": "5c3f79af:5248",
+      "fp": "6dcbfe41:5248",
       "n": 47,
       "species": "Dar battlemage,Dar priestess,Dragon,Golem,Phylactery,agile Dar battlemage,agile Golem,explosive Golem,explosive Kraken,grappling Golem,grappling Revenant,grappling Tentacle horror,infested Golem,infested Kraken,infested Revenant,juggernaut Golem,reflective Dar battlemage,reflective Kraken,reflective Revenant,toxic Golem,toxic Tentacle horror,vampiric Dragon,vampiric Golem,vampiric Tentacle horror",
-      "items": 2,
+      "items": 1,
       "gems": [
         {
-          "x": 7,
-          "y": 22,
+          "x": 10,
+          "y": 6,
           "originDepth": 38,
           "quantity": 1
         }
@@ -1138,14 +1138,14 @@
     {
       "seed": 31337,
       "depth": 39,
-      "fp": "7c60672b:5328",
-      "n": 59,
-      "species": "Dragon,Golem,Phylactery,Revenant,Tentacle horror,agile Golem,agile Tentacle horror,explosive Golem,explosive Tentacle horror,grappling Golem,grappling Tentacle horror,infested Golem,infested Revenant,infested Tentacle horror,juggernaut Revenant,juggernaut Tentacle horror,reflective Dar battlemage,reflective Dar priestess,reflective Dragon,reflective Revenant,reflective Tentacle horror,toxic Golem,toxic Revenant,toxic Tentacle horror,vampiric Dragon,vampiric Golem,vampiric Revenant",
-      "items": 1,
+      "fp": "d476e5a1:5300",
+      "n": 37,
+      "species": "Dar battlemage,Dragon,Golem,Phylactery,Tentacle horror,agile Golem,explosive Dar battlemage,explosive Tentacle horror,grappling Dragon,grappling Tentacle horror,infested Dar priestess,infested Dragon,infested Golem,juggernaut Dragon,reflective Tentacle horror,toxic Dragon,toxic Golem,vampiric Golem",
+      "items": 2,
       "gems": [
         {
-          "x": 8,
-          "y": 16,
+          "x": 12,
+          "y": 2,
           "originDepth": 39,
           "quantity": 1
         }

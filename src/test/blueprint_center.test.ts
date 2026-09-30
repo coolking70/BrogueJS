@@ -201,7 +201,8 @@ function isCenterTreasure(item: unknown): boolean {
 // 降低，原来 3 个种子扫不到任何样本，用例 c) 的前置断言（样本数 > 0）因此翻红——
 // 这不是回归，是样本量不足。实测 40 种子稳定有样本；取 12 个在覆盖与耗时间折中。
 // U17f: RUBBLE generation moves the sample; seed35 D6 supplies a real CE39 declared origin.
-const DEFAULT_SCAN_SEEDS = [35, 424242, 20260913, 1, 777, 31337, 20260916, 42, 999, 12345, 55555, 31415, 27182];
+// LAVA-1: preserve every old scan seed and add the naturally observed CE39 origin sample.
+const DEFAULT_SCAN_SEEDS = [35, 424242, 20260913, 1, 777, 31337, 20260916, 42, 999, 12345, 55555, 31415, 27182, 43];
 const SCAN_SEEDS: number[] = [
     ...DEFAULT_SCAN_SEEDS,
     ...Array.from({ length: 32 }, (_, i) => i + 1).filter(seed => !DEFAULT_SCAN_SEEDS.includes(seed)),

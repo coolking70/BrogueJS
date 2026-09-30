@@ -45,11 +45,11 @@
  * levelIsDisconnectedWithBlockingMap 是"波及带两侧区域是否在被影响带内部
  * 相触"的**局域**判据（填死整个死角口袋会放行），且 4 向、通行判据含
  * 密门/锁门豁免（cellIsPassableOrDoor）；web 的
- * Connectivity.lakeDisruptsPassability 是"全部干地仍属一个 8 向连通块"的
+ * Connectivity.lakeDisruptsPassability 是"全部干地仍属一个四方向连通块"的
  * **全局**判据（会否决 CE 放行的死角填埋），BlueprintEngine 的
  * gateSealsOnlyInterior 是"单格门 + machineNumber 豁免"的另一个问题。
- * 三者判据与算法形状都不同，不能互相替代。Connectivity.ts 本轮禁改，
- * 也无需改——新函数放在本文件。
+ * 三者判据与算法形状都不同，不能互相替代。LAVA-1 已将湖泊检查恢复
+ * 为 CE 的四方向与 T_PATHING_BLOCKER 口径；局域 DF 判据保持独立。
  *
  * U17a: grid-scoped effects execute evacuation, synchronous cell contact,
  * description, alarm, flash/flare and invalidation in CE order. The result is

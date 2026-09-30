@@ -7,6 +7,7 @@ import monsters from '../../data/monsters.json';
 import type {Game} from '../../engine/Core/Game';
 import type {MachineTrace} from '../../engine/Generator/MachineObservation';
 import type {Pos} from '../../types';
+import {playerTravelDiagonalBlocked} from '../../engine/Movement/PlayerTravel';
 import {route as oldRoute, safe, type Action} from './u19d-machine-actions';
 
 const dirs=[{x:0,y:-1},{x:0,y:1},{x:-1,y:0},{x:1,y:0}];
@@ -27,7 +28,8 @@ export function runAltarActions(game:Game,trace:MachineTrace,explicitEntry?:Pos)
     const allowed=c&&(library
      ? safe(world,v,allowTrap)&&(same(v,to)||c.machineNumber!==number||!world.items.some((i:any)=>same(i.loc,v)))
      : c.trapType!=='teleport'&&(safe(world,v,true)||c.layers.includes(T.SECRET_DOOR))&&!world.monsters.some((m:any)=>m.markedForSacrifice&&same(m.loc,v)));
-    if(!seen.has(k)&&allowed){seen.set(k,p);q.push(v);}
+    // LAVA-1: plan only executable manual edges; secret-door search remains unchanged.
+    if(!seen.has(k)&&allowed&&!playerTravelDiagonalBlocked(world.grid,p,v,false)){seen.set(k,p);q.push(v);}
    }
   }return null;
  };

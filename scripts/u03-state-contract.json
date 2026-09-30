@@ -341,7 +341,7 @@
   },
   "replayFrameAccumulator": {
     "kind": "reset",
-    "contract": "播放控制器复位；正常输入历史已存。完整录制命令/检查点播放入口归 U27。"
+    "contract": "播放显示时钟的毫秒余量复位，暂停、锁定与后台时间不积攒输入；不写入世界快照。完整录制命令/检查点播放入口归 U27。"
   },
   "replayFramesPerStep": {
     "kind": "session",

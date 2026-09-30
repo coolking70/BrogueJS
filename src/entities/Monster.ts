@@ -1659,7 +1659,7 @@ export class Monster extends Creature {
                     if (dir) this.tryMoveTo(this.x + dir[0], this.y + dir[1], game);
                     else {
                         this.givenUpOnScent = true;
-                        const path = Pathfind.findPath(game.grid, this.x, this.y, game.player.x, game.player.y,
+                        const path = this.pathTowardPlayer(game,
                             (x, y) => this.canEnterMovementTerrain(game, x, y) && !game.getMonsterAt(x, y));
                         if (path?.length) this.tryMoveTo(path[0]!.x, path[0]!.y, game);
                     }
@@ -2008,7 +2008,7 @@ export class Monster extends Creature {
 
                 if (blinkReady && this.hasBehavior('MONST_ALWAYS_HUNTING') && this.givenUpOnScent
                     && blinkTowardCreature(game, this, game.player)) return;
-                const path = Pathfind.findPath(game.grid, this.loc.x, this.loc.y, game.player.loc.x, game.player.loc.y, (x, y) => {
+                const path = this.pathTowardPlayer(game, (x, y) => {
                     const c = game.grid.getCell(x, y);
                     if (!c) return false;
                     if (!this.canEnterWaterTerrain(game, x, y)) return false;
@@ -2086,6 +2086,22 @@ export class Monster extends Creature {
         }
         if (valid.length === 0) return null;
         return valid[rng.randRange(0, valid.length - 1)]!;
+    }
+
+    /** These two NPC predicates only read the synchronous world. Cache within
+     * one query; terrain, occupants, statuses and leader position can change
+     * before the next query. Generic A* callback order remains unchanged.
+     */
+    private pathTowardPlayer(game: Game, canPass: (x: number, y: number) => boolean): Pos[] | null {
+        const passable = new Map<number, boolean>();
+        return Pathfind.findPath(game.grid, this.x, this.y, game.player.x, game.player.y, (x, y) => {
+            const key = y * game.grid.width + x;
+            const cached = passable.get(key);
+            if (cached !== undefined) return cached;
+            const result = canPass(x, y);
+            passable.set(key, result);
+            return result;
+        });
     }
 
     /** CE monsterAvoids chooses terrain for walking; vision opacity is never

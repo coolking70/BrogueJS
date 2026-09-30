@@ -12,6 +12,10 @@ export function runCrystalWormActions(game:Game,trace:MachineTrace,origin:Pos){
  const g:any=game,ce=trace.ceBlueprintId!,machine=trace.machineNumber;
  const cells:Cell[]=g.grid.cells.flat(),owned=cells.filter(c=>c.machineNumber===machine);
  const neighbors=(p:Pos)=>dirs.map(d=>({x:p.x+d.x,y:p.y+d.y})).filter(p=>safe(g,p,true));
+ // CE playerMoves promotes wall levers before testing blocked diagonal corners.
+ // Keep cardinal routes, but allow an actual diagonal bump from an outer floor.
+ const leverNeighbors=(p:Pos)=>[...dirs,{x:-1,y:-1},{x:1,y:-1},{x:-1,y:1},{x:1,y:1}]
+  .map(d=>({x:p.x+d.x,y:p.y+d.y})).filter(p=>safe(g,p,true));
  const levers=owned.filter(c=>c.layers.includes(T.TURRET_LEVER));
  const hidden=owned.find(c=>c.layers.includes(T.WALL_LEVER_HIDDEN));
  const entry=safe(g,origin,true)?origin:neighbors(origin).find(p=>hidden?neighbors(hidden).some(n=>route(g,p,n,true)):true);
@@ -37,10 +41,12 @@ export function runCrystalWormActions(game:Game,trace:MachineTrace,origin:Pos){
  };
  if(ce===55){
   if(!hidden)throw Error('missing hidden lever');
-  const adjacent=neighbors(hidden).find(p=>route(g,g.player.loc,p,true));if(!adjacent)throw Error('hidden lever inaccessible');
+  const adjacent=leverNeighbors(hidden).find(p=>route(g,g.player.loc,p,true));if(!adjacent)throw Error('hidden lever inaccessible');
   walk(adjacent);for(let n=0;n<12&&hidden.layers.includes(T.WALL_LEVER_HIDDEN);n++)act('search');state('searched');
   act('move',{x:hidden.x-g.player.x,y:hidden.y-g.player.y});state('pulled');
-  for(let n=0;n<350&&!route(g,g.player.loc,reward.loc,true);n++)act('wait');state('opened');
+  // Observe the completed opening, not merely the first route to the reward.
+  for(let n=0;n<350&&(!route(g,g.player.loc,reward.loc,true)
+   ||owned.some(c=>c.layers.includes(T.WORM_TUNNEL_MARKER_ACTIVE)));n++)act('wait');state('opened');
  }else if(ce===52){
   if(!levers.length)throw Error('missing turret levers');
   for(const lever of levers){
