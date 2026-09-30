@@ -1659,7 +1659,7 @@ export class Monster extends Creature {
                     if (dir) this.tryMoveTo(this.x + dir[0], this.y + dir[1], game);
                     else {
                         this.givenUpOnScent = true;
-                        const path = Pathfind.findPath(game.grid, this.x, this.y, game.player.x, game.player.y,
+                        const path = this.findPlayerPath(game,
                             (x, y) => this.canEnterMovementTerrain(game, x, y) && !game.getMonsterAt(x, y));
                         if (path?.length) this.tryMoveTo(path[0]!.x, path[0]!.y, game);
                     }
@@ -2008,7 +2008,7 @@ export class Monster extends Creature {
 
                 if (blinkReady && this.hasBehavior('MONST_ALWAYS_HUNTING') && this.givenUpOnScent
                     && blinkTowardCreature(game, this, game.player)) return;
-                const path = Pathfind.findPath(game.grid, this.loc.x, this.loc.y, game.player.loc.x, game.player.loc.y, (x, y) => {
+                const path = this.findPlayerPath(game, (x, y) => {
                     const c = game.grid.getCell(x, y);
                     if (!c) return false;
                     if (!this.canEnterWaterTerrain(game, x, y)) return false;
@@ -2086,6 +2086,27 @@ export class Monster extends Creature {
         }
         if (valid.length === 0) return null;
         return valid[rng.randRange(0, valid.length - 1)]!;
+    }
+
+    /** The two player-path predicates in takeTurn are pure reads of terrain,
+     * occupancy, origin, status and allegiance. A synchronous A* does not yield
+     * or change any of those, so repeated coordinates have the same answer.
+     * Keep this cache local to ONE search: movement and other monster turns can
+     * invalidate every answer. Generic Pathfind still supports stateful callbacks.
+     * No costs, A* query order, corner rules or visit cutoff are changed. */
+    private findPlayerPath(game: Game, canPass: (x: number, y: number) => boolean): Pos[] | null {
+        const height = game.grid.height;
+        const passability = new Uint8Array(game.grid.width * height);
+        return Pathfind.findPath(game.grid, this.x, this.y, game.player.x, game.player.y, (x, y) => {
+            // findPath bounds-checks the goal and every neighbor before canPass.
+            const index = x * height + y;
+            let state = passability[index]!;
+            if (state === 0) {
+                state = canPass(x, y) ? 1 : 2;
+                passability[index] = state;
+            }
+            return state === 1;
+        });
     }
 
     /** CE monsterAvoids chooses terrain for walking; vision opacity is never

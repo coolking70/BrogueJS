@@ -19,11 +19,15 @@ export function wireConfirmRequest(game: Game): void {
 </script>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import UiLabToolbar from './components/UiLabToolbar.vue';
+import { displaySettings } from './engine/Settings';
+import { inputManager } from './engine/Input';
 import { saveSnapshot, readSnapshot, readSaveSummary, deleteSnapshot, type SaveSummary } from './engine/Core/SaveStorage';
 import i18next from 'i18next';
 import GameCanvas from './components/GameCanvas.vue';
-import Sidebar from './components/Sidebar.vue';
+import ContextPanel from './components/ContextPanel.vue';
+import MessageJournal from './components/MessageJournal.vue';
 import MessageAcknowledgment from './components/MessageAcknowledgment.vue';
 import InventoryOverlay from './components/InventoryOverlay.vue';
 import GameEndOverlay from './components/GameEndOverlay.vue';
@@ -48,10 +52,13 @@ const REPLAY_KEY = 'brogue-web-replay-v1';
 // FE-1：布局模式（desktop / portrait / landscape）按视口尺寸判定，纯显示。
 startViewportTracking();
 const compact = computed(() => viewport.mode !== 'desktop');
-const compactMode = computed(() => (viewport.mode === 'landscape' ? 'landscape' : 'portrait'));
 /** 桌面尺寸的粗指针设备（大平板横屏等）也显示触控命令栏。 */
 const touchUi = computed(() => !compact.value && viewport.coarsePointer);
 const panelOpen = ref(false);
+const contextOpen = ref(true);
+const contextWidth = computed(() => displaySettings.sidebarWidthMode === 'proportional' ? 'clamp(190px, 20vw, 280px)' : '216px');
+const journalOpen = ref(false);
+function toggleContext() { if (compact.value) panelOpen.value = !panelOpen.value; else contextOpen.value = !contextOpen.value; }
 const replayTick = ref(0);
 const replayActive = computed(() => { replayTick.value; return !!activeGame.replayRecording; });
 let replayTimer = 0;
@@ -67,6 +74,11 @@ wireConfirmRequest(activeGame);
 
 const gameStarted = ref(false);
 const menuOpen = ref(true);
+watch(menuOpen, (open) => {
+  if (!open || !gameStarted.value) return;
+  if (activeGame.replayStatus === 'playing') activeGame.replayPause();
+  else if (activeGame.isAutoTraveling()) inputManager.triggerAction('interrupt_auto');
+});
 const storageTick = ref(0);
 const runAvailable = ref(false);
 const replayBusy = ref(false);
@@ -306,22 +318,26 @@ const handleReturnToTitle = async () => {
 </script>
 
 <template>
-  <div class="app-layout" :class="[`layout-${viewport.mode}`, { 'is-replaying': replayActive }]">
+  <UiLabToolbar :in-game="gameStarted" />
+  <div class="app-layout" :style="{ '--context-width': contextWidth }" :class="[`layout-${viewport.mode}`, { 'is-replaying': replayActive, 'has-touch-controls': showTouch, 'context-visible': !compact && contextOpen }]">
     <template v-if="gameStarted">
       <!-- FE-1：GameCanvas 始终是同一位置的同一实例（旋转屏幕不重建 Pixi），
            其余部件按布局模式挂载，用 CSS grid 区域摆放。 -->
-      <MobileHud v-if="compact" class="area-hud" :mode="compactMode" @menu="menuOpen = true" @open-panel="panelOpen = true" />
+      <MobileHud class="area-hud" :mode="viewport.mode" :panel-open="compact ? panelOpen : contextOpen" @menu="menuOpen = true" @open-panel="toggleContext" />
       <div class="map-area">
         <GameCanvas class="game-view" />
         <MapZoomControls />
       </div>
       <TargetBar class="area-target" />
-      <CommandBar v-if="showCommands" class="area-cmd" :mode="viewport.mode" />
+      <CommandBar v-if="showCommands || (!compact && !replayActive)" class="area-cmd" :mode="viewport.mode" />
       <DPad v-if="showTouch" class="area-pad" :mode="viewport.mode" />
-      <MessageStrip v-if="compact" class="area-strip" :lines="viewport.mode === 'landscape' ? 2 : 3" @open-panel="panelOpen = true" />
-      <Sidebar v-if="!compact" />
-      <SideDrawer v-if="compact" :open="panelOpen" @close="panelOpen = false">
-        <Sidebar variant="drawer" />
+      <MessageStrip class="area-strip" :lines="viewport.mode === 'landscape' ? 1 : 2" @open-panel="journalOpen = true" />
+      <ContextPanel v-if="!compact && contextOpen" class="area-context" @close="contextOpen = false" />
+      <SideDrawer :open="panelOpen" @close="panelOpen = false">
+        <ContextPanel @close="panelOpen = false" />
+      </SideDrawer>
+      <SideDrawer :open="journalOpen" variant="journal" @close="journalOpen = false">
+        <MessageJournal />
       </SideDrawer>
       <InventoryOverlay />
       <GameEndOverlay :can-save-replay="canSaveReplay" :replay-busy="replayBusy" :replay-feedback="replayFeedback"
@@ -330,9 +346,8 @@ const handleReturnToTitle = async () => {
       <AgentControls class="agent-root" :hide-controls="compact || touchUi" />
       <DetailPanel />
       <ReferenceOverlay />
-      <button v-if="!compact" class="menu-btn" @click="menuOpen = true">{{ $t('menu.actions.menu', { defaultValue: 'Menu' }) }}</button>
     </template>
-    <div v-else class="blank-stage"></div>
+    <div v-else class="blank-stage" aria-hidden="true"></div>
 
     <MessageAcknowledgment />
     <MainMenu
@@ -423,10 +438,10 @@ const handleReturnToTitle = async () => {
 .area-hud { grid-area: hud; }
 .area-strip { grid-area: strip; min-width: 0; }
 .layout-landscape .area-strip {
-  grid-area: map;
-  align-self: end;
-  justify-self: start;
-  max-width: min(60%, 520px);
+  grid-area: strip;
+  align-self: stretch;
+  justify-self: stretch;
+  max-width: none;
   z-index: 12;
   border-top-right-radius: 10px;
   pointer-events: auto;
@@ -442,14 +457,14 @@ const handleReturnToTitle = async () => {
 }
 .layout-landscape .area-target { align-self: start; }
 .layout-landscape .area-pad {
-  grid-area: map;
-  align-self: end;
-  justify-self: end;
+  grid-area: pad;
+  align-self: center;
+  justify-self: stretch;
 }
 .layout-desktop .area-cmd {
-  grid-area: map;
-  align-self: end;
-  justify-self: start;
+  grid-area: cmd;
+  align-self: stretch;
+  justify-self: stretch;
 }
 .layout-desktop .area-pad {
   grid-area: map;

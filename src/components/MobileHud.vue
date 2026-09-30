@@ -4,16 +4,16 @@
 import { computed } from 'vue';
 import { useGameHud, nutritionStatus } from '../ui/useGameHud';
 
-defineProps<{ mode: 'portrait' | 'landscape' }>();
+defineProps<{ mode: 'portrait' | 'landscape' | 'desktop'; panelOpen?: boolean }>();
 const emit = defineEmits<{ (e: 'menu'): void; (e: 'open-panel'): void }>();
 
-const { hp, maxHp, depth, nutrition, statuses } = useGameHud();
+const { stats, hp, maxHp, depth, nutrition, statuses } = useGameHud();
 const hpFraction = computed(() => Math.max(0, Math.min(1, hp.value / Math.max(1, maxHp.value))));
 const food = computed(() => nutritionStatus(nutrition.value));
 </script>
 
 <template>
-  <header class="mobile-hud" :class="`hud-${mode}`">
+  <header @click="($event.target as HTMLElement).closest('button')?.blur()" @keydown.stop @keyup.stop class="mobile-hud" :class="`hud-${mode}`">
     <div class="hud-row">
       <button class="hud-btn" @click="emit('menu')">{{ $t('menu.actions.menu') }}</button>
       <span class="hud-depth">{{ $t('sidebar.depth', { depth }) }}</span>
@@ -22,8 +22,14 @@ const food = computed(() => nutritionStatus(nutrition.value));
         <span class="hud-hp-text">{{ hp }}/{{ maxHp }}</span>
       </div>
       <span class="hud-food" :style="{ color: food.color }">{{ food.text }}</span>
+      <div v-if="stats" class="hud-numbers">
+        <span><small>{{ $t('lab.hud_strength') }}</small>{{ stats.strength }}<i>/{{ stats.maxStrength }}</i></span>
+        <span><small>{{ $t('lab.hud_armor') }}</small>{{ stats.armor }}</span>
+        <span><small>{{ $t('lab.hud_gold') }}</small>{{ stats.gold }}</span>
+        <span class="hud-stealth"><small>{{ $t('lab.hud_stealth') }}</small>{{ stats.stealthRange }}</span>
+      </div>
       <div class="hud-tools">
-        <button class="hud-btn" @click="emit('open-panel')">{{ $t('mobile.open_panel') }}</button>
+        <button class="hud-btn" :aria-expanded="panelOpen" @click="emit('open-panel')">{{ $t('lab.context') }}</button>
       </div>
     </div>
     <div v-if="statuses.length" class="hud-statuses">

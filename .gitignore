@@ -18,3 +18,9 @@ tmp-*/
 *.sln
 *.sw?
 docs/archive/**/*-evidence/*.png
+
+# Local UI preview/build artifacts
+*.tsbuildinfo
+.openai/
+.sites-runtime/
+public/brogue-ui-source.tar.gz

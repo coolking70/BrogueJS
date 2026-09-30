@@ -1,0 +1,17 @@
+{
+  "mode": "Built-in image_gen, new generation, three parallel separate requests",
+  "assets": [
+    {
+      "key": "obsidian-reliquary",
+      "prompt": "Use case: stylized-concept. Asset type: original standalone game title background painting for a high-end indie dungeon roguelike. Create a wide landscape 16:9 cinematic dark-fantasy oil painting. Scene: colossal carved stone doorway descending into an ancient dungeon. A small solitary adventurer carrying a torch stands deep in the scene, conveying vast scale. Palette: charcoal stone, aged brass highlights, warm ember glow. Painterly physical textures and atmospheric depth, sophisticated restrained detail. Composition: the doorway, steps and adventurer are concentrated in the center-right and right 60%; the LEFT 40% is mostly near-black negative space with barely visible shadowed stone, suitable for later title/menu overlay. Complete edge-to-edge artwork, not a UI mockup. Absolutely no words, letters, numbers, logos, interface elements, decorative border or watermark."
+    },
+    {
+      "key": "verdant-abyss",
+      "prompt": "Use case: stylized-concept. Asset type: original standalone game title background painting for a high-end indie dungeon roguelike. Create a wide landscape 16:9 sophisticated jewel-toned cavern painting of an impossible dark underground cathedral. Green-blue bioluminescent fungi and crystal pools illuminate monumental ancient stone architecture, with a small central adventurer silhouette for scale. Palette: deepest indigo and emerald, cyan green light with restrained gold accents. Moody cinematic atmospheric depth, rich painterly physical surface. Composition: a roughly symmetrical architectural frame, but keep central upper and left areas dark and spacious for a later title overlay; luminous details favor the lower half and outer/right sides. Complete edge-to-edge artwork, not a UI mockup. Absolutely no words, letters, numbers, logos, interface elements, decorative border or watermark."
+    },
+    {
+      "key": "the-cartographer",
+      "prompt": "Use case: stylized-concept. Asset type: original standalone game title background illustration for a high-end indie dungeon roguelike. Create a wide landscape 16:9 bold antique woodcut and finely engraved etching of a fantasy dungeon entrance and a descending stone bridge. Deep black ink hatch marks and carved linework on textured warm ivory parchment; a single restrained vermilion sun or seal-like round accent without any symbols or text. Sophisticated historical printmaking, strong negative shapes, mysterious vast architecture and depth. Composition: the dungeon entrance, bridge, and all substantial illustration are concentrated in the RIGHT 60%; the LEFT 40% is mostly blank aged ivory paper, clean enough for later title and menu overlay. Complete edge-to-edge artwork, not a UI mockup. Absolutely no words, letters, numbers, logos, interface elements, decorative border or watermark."
+    }
+  ]
+}

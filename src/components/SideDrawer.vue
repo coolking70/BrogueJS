@@ -1,14 +1,26 @@
 <script setup lang="ts">
 // FE-1：紧凑模式下的侧栏抽屉（右侧滑出），承载完整 Sidebar（可见生物 + 日志）。
-defineProps<{ open: boolean }>();
+import { onMounted, onUnmounted, watch, ref, nextTick } from 'vue';
+import { inputManager } from '../engine/Input';
+const props = withDefaults(defineProps<{ open: boolean; variant?: 'context' | 'journal' }>(), { variant: 'context' });
+const panel = ref<HTMLElement>();
+let removeKeyboard: (() => void) | undefined;
+onMounted(() => { removeKeyboard = inputManager.registerModalKeyHandler((event) => {
+  if (!props.open) return false;
+  if (event.key === 'Escape') emit('close');
+  if (event.key !== 'Tab') event.preventDefault();
+  return true;
+}, 350); });
+onUnmounted(() => removeKeyboard?.());
+watch(() => props.open, async open => { if (open) { await nextTick(); panel.value?.focus(); } });
 const emit = defineEmits<{ (e: 'close'): void }>();
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="drawer">
-      <div v-if="open" class="drawer-backdrop" @click.self="emit('close')">
-        <aside class="drawer-panel" role="dialog" :aria-label="$t('mobile.open_panel')">
+      <div v-if="open" :class="['drawer-backdrop', `drawer-${variant}`]" @click.self="emit('close')">
+        <aside ref="panel" tabindex="-1" class="drawer-panel" role="dialog" @keydown.stop @keyup.stop @keydown.esc="emit('close')" :aria-label="variant === 'journal' ? $t('sidebar.log') : $t('lab.context')">
           <button class="drawer-close" :aria-label="$t('mobile.close')" @click="emit('close')">×</button>
           <slot />
         </aside>

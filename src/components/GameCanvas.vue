@@ -112,22 +112,36 @@ import { MAP_HOVER_FILL, MAP_HOVER_STROKE, MousePanTracker, shouldHandleMapWheel
 // FE-1：触屏手势与目标选择（改状态的输出只经 ui/commands 的录制边界）
 import { GestureTracker, type GestureEvent } from '../ui/touchGestures';
 import { normalizeMapGlyph } from '../ui/mapGlyph';
+import { concept } from '../ui/concept';
+import { RetainedBackgroundLayer, RetainedVectorLayer, VectorGeometryCache } from '../ui/retainedMapDrawing';
+import { RenderRequests } from '../ui/renderRequests';
+import { FrameProfile } from '../ui/frameProfile';
+import { mapMode } from '../ui/mapTiles';
+import { terrainSemantic, itemSemantic, rememberedItemSemantic, monsterSemantic, playerSemantic, projectileSemantic, floatingHanzi, type TileSemantic } from '../ui/mapTileSemantics';
+import { paintMapText, paintVectorTile, HANZI_FONT } from '../ui/mapTileDrawing';
 import { targetingState, clearAim, targetingTapCommand, type TapCommand, THROW_AIM_FILL, THROW_AIM_STROKE } from '../ui/targeting';
 import { dispatch as dispatchCommand, travelTo } from '../ui/commands';
 
 const canvasContainer = ref<HTMLDivElement | null>(null);
 let pixiApp: Application | null = null;
 const arcanaPrompt = ref('');
+const performanceReport = ref('');
+let frameProfile: FrameProfile | null = null;
+let vectorGeometry: VectorGeometryCache | null = null;
+let destroyRetainedDrawing: (() => void) | null = null;
+const resetProfile = () => frameProfile?.reset();
 // P2-4：居中/命中区随容器尺寸变化重算（挂载时建立，卸载时断开）
 let resizeObserver: ResizeObserver | null = null;
 // P2-6：地图缩放模式切换的 watch 停止器（onMounted 内创建，onUnmounted 内停止）
 let stopScaleModeWatch: (() => void) | null = null;
+let stopTileModeWatch: (() => void) | null = null;
 let stopCameraWatch: (() => void) | null = null;
 // FE-1：触屏手势监听的卸载函数
 let removeTouchListeners: (() => void) | null = null;
 
 onMounted(async () => {
   if (canvasContainer.value) {
+    await document.fonts.load('14px "' + HANZI_FONT + '"');
     pixiApp = new Application();
 
     await pixiApp.init({
@@ -159,8 +173,10 @@ onMounted(async () => {
     let layoutScaleY = 1;
 
     // ---------- Pre-allocated tile layer ----------
-    // One Graphics for bg rectangles (batch-drawn every frame)
-    const bgGraphics = new Graphics();
+    // Retained quads and shared vector geometry avoid per-refresh tessellation.
+    vectorGeometry = new VectorGeometryCache();
+    const bgGraphics = new RetainedBackgroundLayer();
+    const vectorTerrain = new RetainedVectorLayer(vectorGeometry, bgGraphics);
     bgGraphics.position.set(offsetX, offsetY);
 
     // One Text sprite per cell, reused every frame
@@ -183,10 +199,18 @@ onMounted(async () => {
 
     // ---------- Entity layer ----------
     // Fixed number of entity Text sprites (player + max ~30 entities)
-    const MAX_ENTITY_SPRITES = 64;
+    const MAX_ENTITY_SPRITES = 256;
     const entityLayer = new Container();
     entityLayer.position.set(offsetX, offsetY);
 
+    const vectorEntities = new RetainedVectorLayer(vectorGeometry);
+    entityLayer.addChild(vectorEntities);
+    destroyRetainedDrawing = () => {
+        // The white background texture and contexts are shared, not sprite-owned.
+        bgGraphics.destroy({ children: true, texture: false, context: false });
+        vectorTerrain.destroy();
+        vectorEntities.destroy({ children: true, context: false });
+    };
     const entitySprites: Text[] = [];
     for (let i = 0; i < MAX_ENTITY_SPRITES; i++) {
         const t = new Text({ text: ' ', style: new TextStyle(baseStyleOptions) });
@@ -266,17 +290,20 @@ onMounted(async () => {
         // 用容器 clientWidth/Height 而非 pixiApp.screen：resizeTo 的渲染器
         // 尺寸要等 Pixi 下一个渲染帧才跟上（queueResize），clientWidth 是
         // 布局完成后的即时真值，且能覆盖非 window 尺寸变化（如侧栏增减）。
-        const base = computeMapLayout(
+        const preferredLayout = computeMapLayout(
             el.clientWidth,
             el.clientHeight,
             displaySettings.mapScaleMode,
         );
+        const base = mapMode.value === 'hanzi' || mapMode.value === 'tiles'
+            ? computeMapLayout(el.clientWidth, el.clientHeight, 'uniform')
+            : preferredLayout;
         // zoom=1 时保留原桌面布局；主动放大或小屏自动放大后使用跟随相机。
         const focus = activeGame.player?.loc ?? { x: 0, y: 0 };
         const cam = cameraState.fit ? { ...base, follow: false, panX: 0, panY: 0 } : computeMapCamera(
             el.clientWidth, el.clientHeight, base, DCOLS, DROWS, TILE_SIZE,
             focus, cameraState.zoom, { x: cameraState.panX, y: cameraState.panY },
-            viewport.mode !== 'desktop',
+            viewport.mode !== 'desktop' || mapMode.value === 'hanzi' || mapMode.value === 'tiles',
         );
         cameraState.follow = cam.follow;
         pixiApp.canvas.style.cursor = cam.follow ? 'grab' : 'crosshair';
@@ -322,6 +349,17 @@ onMounted(async () => {
     stopCameraWatch = watch(() => [cameraState.zoom, cameraState.panX, cameraState.panY, cameraState.fit], () => applyLayout());
 
     const game = activeGame;
+    frameProfile = new URLSearchParams(window.location.search).get('profile') === '1' ? new FrameProfile() : null;
+    if (frameProfile) {
+        let started = 0;
+        const observer = {
+            prerender() { started = performance.now(); },
+            postrender() { frameProfile?.record('rendererCpuMs', performance.now() - started); },
+        };
+        // Renderer CPU submission, not GPU elapsed time; disabled in normal play.
+        pixiApp.renderer.runners.prerender.add(observer);
+        pixiApp.renderer.runners.postrender.add(observer);
+    }
     // P2-4 动画节奏（决策 E1-修订，CE Time.c:2704 口径）：UI 挂载后启用分步
     // 推进——常规动作（≤100 tick）零插帧、下一渲染帧即完成；慢回合（>100
     // tick）在 100-tick 客观块处暂停 25ms 各一次；自动寻路/探索在引擎侧直接
@@ -338,7 +376,9 @@ onMounted(async () => {
         game.update();
     });
 
+    const renders = new RenderRequests();
     const render = () => {
+        const profileStart = frameProfile ? performance.now() : 0;
         drawHover();
         // FE-1：玩家移动后相机回到跟随（清掉临时平移）并重算视口
         if (game.player.loc.x !== lastFocusX || game.player.loc.y !== lastFocusY) {
@@ -348,6 +388,8 @@ onMounted(async () => {
         }
         // ---- Background rectangles (batch draw) ----
         bgGraphics.clear();
+        vectorTerrain.clear();
+        vectorEntities.clear();
         arcanaCursor.clear();
         const selection = game.pendingArcana;
         arcanaPrompt.value = selection ? i18next.t('arcana.target_prompt', {
@@ -424,59 +466,60 @@ onMounted(async () => {
                     continue;
                 }
 
-                const { char, color, bgColor } = visual;
+                const { color, bgColor } = visual;
                 if (bgColor !== null) {
                     gasBackgrounds.set(`${x},${y}`, bgColor);
                 }
 
                 // Update background rect
                 if (bgColor !== null) {
-                    bgGraphics.rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                    bgGraphics.fill({ color: bgColor });
+                    bgGraphics.paint(bgColor, x, y, TILE_SIZE);
                 }
 
-                // Update tile text (avoid unnecessary style object allocation)
-                sprite.visible = char !== ' ';
-                if (char !== ' ') {
-                    const text = normalizeMapGlyph(char);
-                    if (sprite.text !== text) sprite.text = text;
-                    // @ts-ignore: fill is a standard style property
-                    if ((sprite.style as TextStyle).fill !== color) (sprite.style as TextStyle).fill = color;
+                // Replace only after the authoritative appearance/visibility gate.
+                const tile = terrainSemantic(cell!, visual, hallucinating);
+                paintMapText(sprite, tile, color, mapMode.value, concept.value, x, y, TILE_SIZE);
+                if (mapMode.value === 'tiles') {
+                    sprite.visible = paintVectorTile(vectorTerrain, tile, color, x, y, TILE_SIZE);
                 }
+
             }
         }
+
+        bgGraphics.finish();
+        vectorTerrain.finish();
 
         // ---- Entities ----
         let entityIdx = 0;
 
         // Helper to place an entity sprite
         const placeEntity = (
-            text: string,
+            _text: string,
             color: string | number,
             ex: number,
             ey: number,
-            isInteractive: boolean = false
+            isInteractive: boolean = false,
+            semantic: TileSemantic
         ) => {
             if (entityIdx >= MAX_ENTITY_SPRITES) return;
             const s = entitySprites[entityIdx]!;
-            s.text = normalizeMapGlyph(text);
-            (s.style as TextStyle).fill = color as never;
-            s.x = ex * TILE_SIZE;
-            s.y = ey * TILE_SIZE;
+            paintMapText(s, semantic, color, mapMode.value, concept.value, ex, ey, TILE_SIZE);
+            if (mapMode.value !== 'original' && tileSprites[ex]?.[ey]) tileSprites[ex]![ey]!.visible = false;
+            const showLabel = mapMode.value !== 'tiles' || paintVectorTile(vectorEntities, semantic, color, ex, ey, TILE_SIZE);
 
-            if (isInteractive) {
+            if (isInteractive && mapMode.value !== 'tiles') {
                 (s.style as TextStyle).dropShadow = {
                     color: color as never,
-                    blur: 8,
+                    blur: mapMode.value === 'original' ? 8 : 2,
                     distance: 0,
                     angle: 0,
-                    alpha: 0.8,
+                    alpha: mapMode.value === 'original' ? 0.8 : 0.3,
                 };
             } else {
                 (s.style as TextStyle).dropShadow = false;
             }
 
-            s.visible = true;
+            s.visible = showLabel;
             entityIdx++;
         };
 
@@ -485,7 +528,7 @@ onMounted(async () => {
             const cell = game.grid.getCell(x, y);
             if (cell) {
                 const visual = rememberedItemAppearance(cell);
-                if (visual) placeEntity(visual.char, visual.color, x, y, visual.interactive);
+                if (visual) placeEntity(visual.char, visual.color, x, y, visual.interactive, rememberedItemSemantic(cell, visual.char));
             }
         }
         for (const item of game.items) {
@@ -498,7 +541,7 @@ onMounted(async () => {
                 cosmetic,
             });
             if (visual && cell?.isVisible) {
-                placeEntity(visual.char, visual.color, item.loc.x, item.loc.y, visual.interactive);
+                placeEntity(visual.char, visual.color, item.loc.x, item.loc.y, visual.interactive, itemSemantic(item, visual.char, hallucinating));
             }
         }
 
@@ -518,13 +561,13 @@ onMounted(async () => {
                     ? gasBackgrounds.get(`${m.loc.x},${m.loc.y}`) : undefined,
             });
             if (visual) {
-                placeEntity(visual.char, visual.color, m.loc.x, m.loc.y, visual.interactive);
+                placeEntity(visual.char, visual.color, m.loc.x, m.loc.y, visual.interactive, monsterSemantic(m, visual.char, hallucinating, !direct && !known));
             }
         }
 
         // Player (always visible)
         const playerVisual = playerAppearance(game.player);
-        placeEntity(playerVisual.char, playerVisual.color, game.player.loc.x, game.player.loc.y, playerVisual.interactive);
+        placeEntity(playerVisual.char, playerVisual.color, game.player.loc.x, game.player.loc.y, playerVisual.interactive, playerSemantic(playerVisual.char));
 
         // Hide unused entity sprites
         for (let i = entityIdx; i < MAX_ENTITY_SPRITES; i++) {
@@ -534,7 +577,7 @@ onMounted(async () => {
         // ---- Bolt projectile ----
         const boltFrame = game.getCurrentBoltFrame();
         if (boltFrame) {
-            boltSprite.text = normalizeMapGlyph(boltFrame.char);
+            paintMapText(boltSprite, projectileSemantic(boltFrame.char), boltFrame.color, mapMode.value, concept.value, boltFrame.x, boltFrame.y, TILE_SIZE);
             const hexColor = '#' + boltFrame.color.toString(16).padStart(6, '0');
             (boltSprite.style as TextStyle).fill = hexColor as never;
             (boltSprite.style as TextStyle).dropShadow = {
@@ -544,12 +587,13 @@ onMounted(async () => {
                 angle: 0,
                 alpha: 0.95
             };
-            boltSprite.x = boltFrame.x * TILE_SIZE;
-            boltSprite.y = boltFrame.y * TILE_SIZE;
-            boltSprite.visible = true;
+            boltSprite.visible = mapMode.value !== 'tiles';
+            if (mapMode.value === 'tiles') paintVectorTile(vectorEntities, projectileSemantic(boltFrame.char), boltFrame.color, boltFrame.x, boltFrame.y, TILE_SIZE);
         } else {
             boltSprite.visible = false;
         }
+
+        vectorEntities.finish();
 
         // ---- Floating texts ----
         let floatIdx = 0;
@@ -557,7 +601,8 @@ onMounted(async () => {
             if (!displaySettings.showDamageNumbers && /^-\d+$/.test(ft.text)) continue;
             if (floatIdx >= MAX_FLOAT_SPRITES) break;
             const s = floatSprites[floatIdx]!;
-            s.text = normalizeMapGlyph(ft.text);
+            s.text = mapMode.value === 'hanzi' ? floatingHanzi(ft.text) : normalizeMapGlyph(ft.text);
+            (s.style as TextStyle).fontFamily = mapMode.value === 'hanzi' ? 'Noto Sans CJK SC, Microsoft YaHei, sans-serif' : 'Courier New';
             (s.style as TextStyle).fill = ft.color;
             s.x = (ft.x + 0.5) * TILE_SIZE - s.width / 2;
             s.y = ft.y * TILE_SIZE;
@@ -568,9 +613,11 @@ onMounted(async () => {
         for (let i = floatIdx; i < MAX_FLOAT_SPRITES; i++) {
             floatSprites[i]!.visible = false;
         }
+        frameProfile?.record('drawCpuMs', performance.now() - profileStart);
     };
 
-    game.onRenderRequested = render;
+    stopTileModeWatch = watch([mapMode, concept], () => { applyLayout(); renders.request(); });
+    game.onRenderRequested = renders.request;
 
     // Deterministic hooks for automation checks.
     (window as Window & { advanceTime?: (ms: number) => void }).advanceTime = (ms: number) => {
@@ -609,6 +656,7 @@ onMounted(async () => {
             .map((i) => ({ name: i.displayName, x: i.loc.x, y: i.loc.y }));
 
         return JSON.stringify({
+            mapStyle: mapMode.value,
             seed: game.currentSeed,
             acknowledgment: logger.pendingAcknowledgment?.text ?? null,
             mode: game.pendingEnchantment ? 'enchantment_target' : game.pendingArcana ? 'arcana_target' : game.isInventoryOpen ? 'inventory' : (game.isThrowing ? 'throw_target' : 'explore'),
@@ -751,7 +799,7 @@ onMounted(async () => {
         if (cmd.kind === 'none') return;
         if (cmd.kind === 'aim') {
             targetingState.aim = { x: cmd.x, y: cmd.y };
-            render(); // 纯显示：立即画出瞄准格
+            renders.request(); // 纯显示：下一帧画出瞄准格
             return;
         }
         if (cmd.kind === 'execute') {
@@ -913,40 +961,51 @@ onMounted(async () => {
     let colorTimer = 0;
     // Floating text animation ticker
     pixiApp.ticker.add((ticker) => {
-        game.tickReplay();
+        const profileNow = frameProfile ? performance.now() : 0;
+        frameProfile?.frame(profileNow, game.isAutoTraveling());
+        const report = frameProfile?.report(profileNow, { seed: game.currentSeed, depth: game.depth, turn: game.absoluteTurnNumber, mode: mapMode.value, geometryContexts: vectorGeometry?.size, position: [game.player.loc.x, game.player.loc.y], hp: game.player.hp, nutrition: game.player.nutrition, commands: game.recordedInputEvents.length });
+        if (report) performanceReport.value = report;
+        try {
+            game.tickReplay();
 
-        // P2-4：驱动分步推进（常规回合一步跑完；慢回合停在暂停点时按
-        // pendingPauseMs 节流；推进进行中输入锁生效）
-        game.tickAdvancement(ticker.deltaMS);
+            // P2-4：驱动分步推进（常规回合一步跑完；慢回合停在暂停点时按
+            // pendingPauseMs 节流；推进进行中输入锁生效）
+            game.tickAdvancement(ticker.deltaMS);
 
-        if (game.isTimePaused()) {
-            return;
-        }
-
-        if (game.floatingTexts.length > 0) {
-            game.floatingTexts.forEach(ft => ft.update());
-            game.floatingTexts = game.floatingTexts.filter(ft => ft.life > 0);
-            render();
-        }
-
-        // Bolt animation tick
-        const boltChanged = game.tickBoltAnimation();
-        const flareChanged = game.tickFlareAnimation(ticker.deltaMS);
-        const terrainChanged = tickTerrainColors(game.grid, ticker.deltaMS, game.depth);
-        colorTimer += ticker.deltaMS;
-        const lightChanged = colorTimer >= 50;
-        if (lightChanged) { colorTimer %= 50; game.lightMap.dance(); }
-        if (boltChanged || flareChanged || terrainChanged || lightChanged) render();
-
-        if (!game.replayRecording && game.isAutoTraveling()) {
-            pathingTimer++;
-            if (pathingTimer > 4) { // 60/4 = 15 moves per second
-                game.stepAutoPath();
-                pathingTimer = 0;
-                game.update();
+            if (game.isTimePaused()) {
+                return;
             }
-        } else {
-            pathingTimer = 0;
+
+            if (game.floatingTexts.length > 0) {
+                game.floatingTexts.forEach(ft => ft.update());
+                game.floatingTexts = game.floatingTexts.filter(ft => ft.life > 0);
+                renders.request();
+            }
+
+            // Bolt animation tick
+            const boltChanged = game.tickBoltAnimation();
+            const flareChanged = game.tickFlareAnimation(ticker.deltaMS);
+            const terrainChanged = tickTerrainColors(game.grid, ticker.deltaMS, game.depth);
+            colorTimer += ticker.deltaMS;
+            const lightChanged = colorTimer >= 50;
+            if (lightChanged) { colorTimer %= 50; game.lightMap.dance(); }
+            if (boltChanged || flareChanged || terrainChanged || lightChanged) renders.request();
+
+            if (!game.replayRecording && game.isAutoTraveling()) {
+                pathingTimer++;
+                if (pathingTimer > 4) { // Preserve the existing five-frame (~12/s at 60Hz) cadence
+                    const stepStart = frameProfile ? performance.now() : 0;
+                    game.stepAutoPath();
+                    pathingTimer = 0;
+                    game.update();
+                    frameProfile?.record('autoStepCpuMs', performance.now() - stepStart);
+                }
+            } else {
+                pathingTimer = 0;
+            }
+        } finally {
+            // Even paused frames must present requested overlays / final state.
+            renders.flush(render);
         }
     });
 
@@ -965,6 +1024,7 @@ onUnmounted(() => {
     resizeObserver = null;
   }
 
+  stopTileModeWatch?.();
   stopScaleModeWatch?.();
   stopScaleModeWatch = null;
   stopCameraWatch?.();
@@ -981,20 +1041,27 @@ onUnmounted(() => {
       activeGame.onRenderRequested = null;
   }
   
+  destroyRetainedDrawing?.();
+  destroyRetainedDrawing = null;
   if (pixiApp) {
     pixiApp.destroy(true, { children: true, texture: true });
     pixiApp = null;
   }
+  vectorGeometry?.destroy();
+  vectorGeometry = null;
 });
 </script>
 
 <template>
   <div class="game-container" ref="canvasContainer">
+    <aside v-if="performanceReport" class="performance-profile"><button @click="resetProfile">{{ i18next.t('performance.reset') }}</button><pre data-testid="game-performance">{{ performanceReport }}</pre></aside>
     <div v-if="arcanaPrompt" class="arcana-prompt" role="status">{{ arcanaPrompt }}</div>
   </div>
 </template>
 
 <style scoped>
+.performance-profile { position:absolute; top:8px; left:8px; z-index:5; max-height:80%; overflow:auto; background:#101820eb; color:#def; font:11px monospace; padding:6px; }
+.performance-profile pre { margin:4px 0 0; pointer-events:none; }
 .arcana-prompt {
   position: absolute;
   top: 52px;
