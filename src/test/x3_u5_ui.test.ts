@@ -38,7 +38,7 @@ let input: typeof import('../engine/Input').inputManager;
 const pollers = new Set<() => void>();
 beforeAll(async () => {
     vi.stubGlobal('window', { addEventListener() {}, removeEventListener() {}, clearTimeout() {}, clearInterval() {} });
-    vi.stubGlobal('document', { activeElement: null, querySelector: () => null });
+    vi.stubGlobal('document', { activeElement: null, querySelector: () => null, addEventListener() {}, removeEventListener() {} });
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
     input = (await import('../engine/Input')).inputManager;
     // Vitest's node SFC transform is SSR-only. Compile these same production
@@ -94,6 +94,11 @@ describe('X3-U5 real component command wiring', () => {
         expect(text(explore)).toBe('探索x'); explore.props.onClick();
         expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.action).toBe('auto_explore');
         for (const [action, direction] of [['auto_rest', undefined], ['search_long', undefined], ['travel_stairs', 'up'], ['travel_stairs', 'down']]) {
+            // The Site command bar intentionally puts secondary commands behind
+            // More. Exercise that real interaction instead of bypassing it.
+            find(root, n => n.props.class?.split(' ').includes('command-more'))
+                .props.onClick({ currentTarget: { blur() {} } });
+            await tick();
             const button = find(root, n => n.props['data-action'] === action && n.props['data-direction'] === direction);
             button.props.onClick(); const event = game.recordedInputEvents[game.recordedInputEvents.length - 1]!;
             expect([event.action, event.data]).toEqual([action, direction ?? null]);

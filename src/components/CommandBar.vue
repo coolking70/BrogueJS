@@ -1,11 +1,24 @@
 <script setup lang="ts">
 // FE-1：触屏常用命令栏。每个按钮 = 一个键盘命令，经 ui/commands.dispatch
 // （inputManager.triggerAction → game.handlePlayerAction）进入录制边界。
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useTranslation } from 'i18next-vue';
+import { inputManager } from '../engine/Input';
 import { dispatch } from '../ui/commands';
 
 defineProps<{ mode: 'portrait' | 'landscape' | 'desktop' }>();
+const expanded = ref(false);
+const root = ref<HTMLElement>();
+const closeOutside = (event: PointerEvent) => { if (expanded.value && !root.value?.contains(event.target as Node)) expanded.value = false; };
+const primary = new Set(['auto_explore', 'search', 'wait', 'pickup', 'toggle_inventory', 'throw_item', 'escape']);
+function invoke(action: string, data?: unknown) { expanded.value = false; (document.activeElement as HTMLElement)?.blur(); dispatch(action, data); }
+let removeKeyboard: (() => void) | undefined;
+onMounted(() => { document.addEventListener('pointerdown', closeOutside); removeKeyboard = inputManager.registerModalKeyHandler(event => {
+ if (!expanded.value) return false;
+ if (event.key === 'Escape') { expanded.value = false; (document.activeElement as HTMLElement)?.blur(); }
+ return true;
+}, 350); });
+onUnmounted(() => { removeKeyboard?.(); document.removeEventListener('pointerdown', closeOutside); });
 
 // key：与 Input.ts 同一动作名；label：i18n 键；glyph：CE 的按键字符，作为图标提示
 const { t } = useTranslation();
@@ -28,12 +41,16 @@ const commands = computed(() => [
 </script>
 
 <template>
-  <nav class="command-bar" :class="`cmd-${mode}`" :aria-label="$t('controls.title')">
-    <button v-for="cmd in commands" :key="cmd.action + (cmd.data ?? '')" class="cmd-btn" :data-action="cmd.action"
-            :data-direction="cmd.data" @click="dispatch(cmd.action, cmd.data)">
+  <nav ref="root" class="command-bar" :class="[`cmd-${mode}`, { expanded }]" @keydown.stop @keyup.stop @keydown.esc="expanded = false; ($event.target as HTMLElement)?.blur()" :aria-label="$t('controls.title')">
+    <button v-for="cmd in commands.filter(c => primary.has(c.action))" :key="cmd.action + (cmd.data ?? '')" class="cmd-btn" :data-action="cmd.action"
+            :data-direction="cmd.data" @click="invoke(cmd.action, cmd.data)">
       <span class="cmd-label">{{ cmd.label }}</span>
       <kbd v-if="cmd.glyph" class="cmd-key" aria-hidden="true">{{ cmd.glyph }}</kbd>
     </button>
+    <button class="cmd-btn command-more" :aria-expanded="expanded" @click="expanded = !expanded; ($event.currentTarget as HTMLElement).blur()"><span class="cmd-label">{{ expanded ? $t('lab.command_less') : $t('lab.command_more') }}</span><span>···</span></button>
+    <div v-if="expanded" class="command-overflow">
+      <button v-for="cmd in commands.filter(c => !primary.has(c.action))" :key="cmd.action + (cmd.data ?? '')" class="cmd-btn" :data-action="cmd.action" :data-direction="cmd.data" @click="invoke(cmd.action, cmd.data)"><span class="cmd-label">{{ cmd.label }}</span><kbd class="cmd-key">{{ cmd.glyph }}</kbd></button>
+    </div>
   </nav>
 </template>
 

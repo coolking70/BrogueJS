@@ -6,7 +6,7 @@ const out=process.env.LAVA1_OUTPUT ?? '/tmp/broguejs-lava-fix/browser'; await fs
 const b=await chromium.launch({headless:true});const page=await b.newPage({viewport:{width:1440,height:900}});const errors=[];
 page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('ERR_CERT_AUTHORITY_INVALID'))errors.push(m.text());});
 try {
-await page.goto(process.env.LAVA1_URL ?? 'http://127.0.0.1:5395');await page.locator('input[inputmode="numeric"]').fill('437995121');await page.getByRole('button',{name:'新游戏',exact:true}).click();await page.waitForFunction(()=>window.render_game_to_text&&document.querySelector('canvas'));
+await page.goto(process.env.LAVA1_URL ?? 'http://127.0.0.1:5395');await page.locator('.title-action.primary-action').click();await page.locator('input[inputmode="numeric"]').fill('437995121');await page.locator('.begin-button').click();await page.waitForFunction(()=>window.render_game_to_text&&document.querySelector('canvas'));
 const setup=await page.evaluate(async()=>{
  const {TerrainType:T}=await import('/src/engine/Map/Grid.ts');const {rng}=await import('/src/engine/Random.ts');const {logger}=await import('/src/engine/Systems/Logger.ts');const {timeSystem}=await import('/src/engine/Systems/Time.ts');window.lavaTest={T,rng,logger,timeSystem};const g=window.activeGame;
  for(let d=2;d<=4;d++){g.depth=d;g.generateDepth(false,false);}g.monsters=[];g.dormantMonsters=[];g.items=[];g.visibleMonsters.clear();g.visibleItems.clear();g.player.hp=g.player.maxHp=500;

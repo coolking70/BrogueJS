@@ -11,6 +11,8 @@ import { rng } from '../engine/Random';
 import { timeSystem } from '../engine/Systems/Time';
 import { logger } from '../engine/Systems/Logger';
 import { normalizeMapGlyph } from '../ui/mapGlyph';
+import { paintMapText } from '../ui/mapTileDrawing';
+import { glyphSemantic, projectileSemantic } from '../ui/mapTileSemantics';
 import { TERRAIN_APPEARANCES } from '../engine/UI/TerrainAppearanceCatalog';
 import zh from '../locales/zh_CN.json';
 
@@ -238,7 +240,22 @@ describe('X4a text presentation at all Pixi text boundaries', () => {
     });
     it('wires terrain, entities, bolts, floating text and throw cancel; removes obsolete i18n keys', () => {
         const canvas = readFileSync('src/components/GameCanvas.vue', 'utf8');
-        for (const call of ['normalizeMapGlyph(char)', 'normalizeMapGlyph(text)', 'normalizeMapGlyph(boltFrame.char)', 'normalizeMapGlyph(ft.text)']) expect(canvas).toContain(call);
+        // Terrain/entities/bolts now delegate to one map-mode-aware text painter.
+        // Guard every route AND execute that painter, rather than requiring
+        // normalizer calls to remain inline in this particular component.
+        for (const call of ['paintMapText(sprite, tile, color', 'paintMapText(s, semantic, color',
+            'paintMapText(boltSprite, projectileSemantic(boltFrame.char), boltFrame.color']) expect(canvas).toContain(call);
+        const drawing = readFileSync('src/ui/mapTileDrawing.ts', 'utf8');
+        expect(drawing).toContain('normalizeMapGlyph(value.original)');
+        expect(canvas).toContain('normalizeMapGlyph(ft.text)');
+        const glyphs = new Set([...Object.values(TERRAIN_APPEARANCES).map(v => v.char), ...monsters.map(m => m.char), '♈\uFE0F', '♠\uFE0F']);
+        for (const raw of glyphs) for (const mode of ['original', 'refined'] as const) {
+            for (const value of [glyphSemantic(raw, 'terrain'), glyphSemantic(raw, 'monster'), projectileSemantic(raw)]) {
+                const sprite = { text: '', style: {}, anchor: { set() {} }, visible: false, x: 0, y: 0 };
+                paintMapText(sprite as never, value, 0xffffff, mode, 'classic', 0, 0, 16);
+                expect(sprite.text).toBe(normalizeMapGlyph(raw));
+            }
+        }
         const target = readFileSync('src/components/TargetBar.vue', 'utf8');
         expect(target).toContain("dispatch('escape')"); expect(target).not.toContain('cancelUnsupported');
         expect(zh).not.toHaveProperty('move.path_blocked'); expect(zh).not.toHaveProperty('mobile.target.throw_cancel_unsupported');

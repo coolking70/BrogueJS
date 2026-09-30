@@ -46,3 +46,7 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 最终中档首次因新增测试误用不存在的 MonsterState.ALLY 在构建停止（未跑测试），证据保留 npc-final-medium-initial-type-error/。本项目盟友身份由 isAlly 独立表示；夹具改为 HUNTING + isAlly。仅回退 Monster 生产文件，两项重复读取断言失败；finally 逐字节恢复后 56 项通过。重新冻结门禁会话14167，npc-final-medium/state.json；build 已退出0，53文件中档运行，哈希 a7491c67b5011b12a7f095a87a0e7d0f096c15aea724294c6ac64bfebe3a8d87。只跟进这一轮。
 
 - 本轮授权计划全部完成。最终 build / 53文件987passed（8历史skip）/ drift1项全部exit0，于19:57:43结束，前后源码哈希a7491c67b5011b12a7f095a87a0e7d0f096c15aea724294c6ac64bfebe3a8d87一致。最终状态npc-final-medium/state.json；无需再启动测试或重复实施。原full两项超时及串行复核的实际退出码分开保留，未来合并/发版需按规定补验。主仓干净；本分支未提交/合并/推送/发布。HANDOFF/known-issues及两份报告已同步。5395预览保留，无需自动化，旧5396已停。
+
+- 2026-09-30 UI-LAB 新授权：获取远程 a4a48e3（基点 ee51a11），本地整改保存为 26ee897。独立工作树三方合并，生产冲突仅 GameCanvas/Monster；保留毫秒节奏+tint，整合 retained/coalesced 绘制，NPC 采用紧凑单查询数组，保留两套独立回归。任务书 docs/tasks/ui-lab-integration.md；最终合并门禁尚待完成。
+
+- UI-LAB 合并验收：定向19文件143项通过；真实三主题四地图状态不变、背包字母、日志、缩放、行动节奏、模拟双横竖屏触屏、保存/JSON导出、632条用户回放0OOS，控制台无错误；Pages实际基路径资源200。诊断原固定计数由三生产文件反事实1326/204归因后精确更新1309/212；重寻路目标新254回合13.51ms→7.35ms，Map与数组接近。完整报告 docs/reports/ui-lab-integration.report.md。即将冻结生产/测试/脚本，两个workers与4GB堆运行一轮完整CE门禁+drift，不并行重探针。

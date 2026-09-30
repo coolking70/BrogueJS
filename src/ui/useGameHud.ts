@@ -4,6 +4,7 @@
  * 沿用 Sidebar.vue 的 100ms 轮询模式（引擎是纯 TS 单例，无响应式），
  * 只读取玩家可见的显示信息，不调用任何改状态的方法。
  */
+import { sidebarPlayerStats } from '../engine/UI/MonsterSidebar';
 import { onMounted, onUnmounted, ref } from 'vue';
 import i18next from 'i18next';
 import { activeGame } from '../engine/Core/Game';
@@ -21,6 +22,7 @@ export function nutritionStatus(nutrition: number): { text: string; color: strin
 }
 
 export function useGameHud(logCount = 3) {
+    const stats = ref<ReturnType<typeof sidebarPlayerStats> | null>(null);
     const hp = ref(0);
     const maxHp = ref(0);
     const depth = ref(1);
@@ -34,6 +36,7 @@ export function useGameHud(logCount = 3) {
     const poll = () => {
         const game = activeGame;
         if (!game?.player) return;
+        stats.value = sidebarPlayerStats(game.player, game.stats.gold, game['calculateStealthRange']());
         hp.value = game.player.hp;
         maxHp.value = game.player.maxHp;
         depth.value = game.depth;
@@ -53,5 +56,5 @@ export function useGameHud(logCount = 3) {
     });
     onUnmounted(() => window.clearInterval(timer));
 
-    return { hp, maxHp, depth, nutrition, statuses, logs, hoverText, replayActive, targeting, poll };
+    return { stats, hp, maxHp, depth, nutrition, statuses, logs, hoverText, replayActive, targeting, poll };
 }
