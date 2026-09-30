@@ -119,6 +119,12 @@ export const TERRAIN_APPEARANCES: Record<TerrainType, BaseTerrainAppearance> = {
     [TerrainType.GAS_TRAP_POISON_HIDDEN]: { char: "\u00b7", color: '#4c4c4c', bgColor: 0x050519 , backDynamic: 'floorBackColor' }, // CE GAS_TRAP_POISON_HIDDEN
     [TerrainType.MANACLE_L]: { char: "-", color: '#7f7f7f', bgColor: null }, // CE MANACLE_L
     [TerrainType.MANACLE_T]: { char: "|", color: '#7f7f7f', bgColor: null }, // CE MANACLE_T
+    [TerrainType.MANACLE_TL]: { char: "\\", color: '#7f7f7f', bgColor: null }, // CE MANACLE_TL
+    [TerrainType.MANACLE_BR]: { char: "\\", color: '#7f7f7f', bgColor: null }, // CE MANACLE_BR
+    [TerrainType.MANACLE_TR]: { char: "/", color: '#7f7f7f', bgColor: null }, // CE MANACLE_TR
+    [TerrainType.MANACLE_BL]: { char: "/", color: '#7f7f7f', bgColor: null }, // CE MANACLE_BL
+    [TerrainType.MANACLE_B]: { char: "|", color: '#7f7f7f', bgColor: null }, // CE MANACLE_B
+    [TerrainType.MANACLE_R]: { char: "-", color: '#7f7f7f', bgColor: null }, // CE MANACLE_R
     [TerrainType.PORTAL]: { char: "\u03a9", color: '#726666', bgColor: 0x050519 , foreDynamic: 'wallBackColor', backDynamic: 'floorBackColor' }, // CE PORTAL
     [TerrainType.SACRIFICE_ALTAR_DORMANT]: { char: "|", color: '#0c1116', bgColor: 0x592d2d }, // CE SACRIFICE_ALTAR_DORMANT
     [TerrainType.SACRIFICE_CAGE_DORMANT]: { char: "#", color: '#592d2d', bgColor: 0x262626 }, // CE SACRIFICE_CAGE_DORMANT

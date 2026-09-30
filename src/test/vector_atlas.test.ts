@@ -7,10 +7,10 @@ import { resolveVectorIcon, VECTOR_MONSTER_IDS, VECTOR_ITEM_FAMILIES } from '../
 import { vectorIconSvg } from '../ui/vectorIconSvg';
 const tile=(id:string,hanzi:string,kind:TileSemantic['kind']):TileSemantic=>({id,hanzi,kind,original:'#'});
 describe('Complete graphic-only vector atlas',()=>{
- it('covers all 67 creatures, two special images, 208 terrain definitions and 13 item families',()=>{
+ it('covers all 67 creatures, two special images, 214 terrain definitions and 13 item families',()=>{
   expect(VECTOR_MONSTER_IDS).toHaveLength(69);
   expect(VECTOR_ITEM_FAMILIES).toHaveLength(13);
-  expect(Object.keys(mapText.terrain)).toHaveLength(208);
+  expect(Object.keys(mapText.terrain)).toHaveLength(214);
   for(const m of monsters){const icon=resolveVectorIcon(monsterSemantic({typeId:m.id,char:m.char},m.char));expect(icon.family,m.id).not.toBe('unknown');expect(icon.group).toBe('creature');}
   for(const [id,hanzi] of Object.entries(mapText.terrain))expect(resolveVectorIcon(tile(id,hanzi,'terrain')).family,id).not.toBe('unknown');
   for(const [id,hanzi] of Object.entries(mapText.items))expect(resolveVectorIcon(tile(id,hanzi,'item')).family,id).not.toBe('unknown');

@@ -1507,7 +1507,11 @@ describe('C-4b F：留痕（本轮明确不做的事；C-4c 翻转）', () => {
                                 //（DF_AMBIENT_BLOOD/DF_BONES）早就有这个形态，
                                 // 只是当时抽到的层恰好没有；非机器来源的
                                 // SURFACE 仍在下方的优先级门里逐格把关。
+                                // CAPTIVE-1 CE Monsters.c:767-785: these six anchors
+                                // have only the FLOOR / empty LIQUID direct-write origin.
+                                const CAPTIVE_SURFACE = new Set<TerrainType>([C.MANACLE_TL, C.MANACLE_BR, C.MANACLE_TR, C.MANACLE_BL, C.MANACLE_B, C.MANACLE_R]);
                                 const MACHINE_SURFACE_TILES: ReadonlySet<TerrainType> = new Set([
+                                    ...CAPTIVE_SURFACE,
                                     C.GRASS, C.FOLIAGE,          // C-6 自动生成器
                                     C.WEB,                       // key_web_room（37 号）的 SURFACE feature
                                     C.BLOOD, C.BONES,            // V-2b-6 Kennel 血/骨
@@ -1529,7 +1533,9 @@ describe('C-4b F：留痕（本轮明确不做的事；C-4c 翻转）', () => {
                                 ]);
                                 expect(MACHINE_SURFACE_TILES,
                                     `seed=${seed} D${depth} (${x},${y}) 两层格的 SURFACE 属未知来源`).toContain(cell.layers[L.SURFACE]);
-                                if (MACHINE_DUNGEON_TILES.has(cell.layers[L.DUNGEON] as TerrainType)) {
+                                if (CAPTIVE_SURFACE.has(cell.layers[L.SURFACE] as TerrainType)) {
+                                    expect(cell.layers.slice(0, L.SURFACE)).toEqual([C.FLOOR, C.NOTHING, C.NOTHING]);
+                                } else if (MACHINE_DUNGEON_TILES.has(cell.layers[L.DUNGEON] as TerrainType)) {
                                     // 合法（:1443 纯层写入，无优先级门）。
                                 } else if (cell.machineNumber > 0
                                     && cell.layers[L.DUNGEON] === C.NOTHING

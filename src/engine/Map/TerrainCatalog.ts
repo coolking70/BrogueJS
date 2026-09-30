@@ -1107,6 +1107,13 @@ export const TERRAIN_FLAGS: Record<TerrainType, TerrainFlagsEntry> = {
     [TerrainType.MANACLE_T]: e(
         0, 0, 0, '', '', '', 0
     ),
+    // CE Globals.c:480-487: the other six nonblocking, unlit anchors.
+    [TerrainType.MANACLE_TL]: e(0, 0, 0, '', '', '', 0),
+    [TerrainType.MANACLE_BR]: e(0, 0, 0, '', '', '', 0),
+    [TerrainType.MANACLE_TR]: e(0, 0, 0, '', '', '', 0),
+    [TerrainType.MANACLE_BL]: e(0, 0, 0, '', '', '', 0),
+    [TerrainType.MANACLE_B]: e(0, 0, 0, '', '', '', 0),
+    [TerrainType.MANACLE_R]: e(0, 0, 0, '', '', '', 0),
 
     // CE PORTAL，Globals.c:355：12 号的石门（TM_IS_WIRED，
     // promoteType DF_PORTAL_ACTIVATE）。

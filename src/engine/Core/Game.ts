@@ -4,6 +4,7 @@ import { emitCreatureFeature } from '../Combat/CreatureFeatures';
 import { isIncendiaryDart, resolveIncendiaryDart } from '../Items/IncendiaryDart';
 import { applyAggravationScroll } from '../Items/AggravationScroll';
 import { terrainHealingAmount } from '../Map/TerrainHealing';
+import { placeCaptiveManacles } from '../Generator/Architect';
 import { worldHealingText, worldFeatureText } from '../UI/WorldCatalogText';
 import { createItemDetailContext } from '../UI/ItemDetailContext';
 import { getTerrainDescription, describeTerrain, tileFlavor, selectTerrainTextLayer } from '../UI/TerrainTextCatalog';
@@ -1657,6 +1658,8 @@ export class Game {
             leaderMon.isCaged = true;
             leaderMon.state = MonsterState.WANDERING;
             leaderMon.hp = Math.floor(leaderMon.maxHp / 4) + 1;
+            // CE Monsters.c:875-878: special-terrain captives (e.g. cages) have no manacles.
+            if (!h.spawnsIn) placeCaptiveManacles(this.grid, centerPos);
         } else if (h.flags.includes('HORDE_ALLIED_WITH_PLAYER')) {
             // CE Monsters.c:879: portal legendary allies use the existing allegiance consumer.
             this.becomeAllyWith(leaderMon);

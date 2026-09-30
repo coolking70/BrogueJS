@@ -45,7 +45,7 @@ describe('X4-R5 CE text inventory', () => {
 
     it('covers every current web terrain, including the 88 former ground fallbacks and NOTHING', () => {
         const terrains = Object.values(T).filter((value): value is T => typeof value === 'number');
-        expect(terrains).toHaveLength(208);
+        expect(terrains).toHaveLength(214);
         expect(Object.keys(TERRAIN_TEXT_IDS)).toHaveLength(terrains.length);
         const byId = new Map(fixture.tiles.map(row => [row.id, row]));
         for (const terrain of terrains) {

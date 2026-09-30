@@ -404,6 +404,13 @@ describe('C-4a-0 归属层表（错误归属 → 具体后果翻红）', () => {
             [C.SACRIFICE_CAGE_DORMANT]: L.DUNGEON,
             [C.MANACLE_L]: L.SURFACE,
             [C.MANACLE_T]: L.SURFACE,
+            [C.MANACLE_TL]: L.SURFACE, // CAPTIVE-1 CE Globals.c:480-487
+            [C.MANACLE_BR]: L.SURFACE, // CAPTIVE-1 CE Globals.c:480-487
+            [C.MANACLE_TR]: L.SURFACE, // CAPTIVE-1 CE Globals.c:480-487
+            [C.MANACLE_BL]: L.SURFACE, // CAPTIVE-1 CE Globals.c:480-487
+            [C.MANACLE_B]: L.SURFACE, // CAPTIVE-1 CE Globals.c:480-487
+            [C.MANACLE_R]: L.SURFACE, // CAPTIVE-1 CE Globals.c:480-487
+
             [C.VOMIT]: L.SURFACE,
             [C.LUMINESCENT_FUNGUS]: L.SURFACE,
             [C.DEAD_FOLIAGE]: L.SURFACE,
@@ -627,6 +634,13 @@ describe('C-4a-0 归属层表（错误归属 → 具体后果翻红）', () => {
             [C.GAS_TRAP_POISON_HIDDEN]: 95,
             [C.MANACLE_L]: 20,
             [C.MANACLE_T]: 20,
+            [C.MANACLE_TL]: 20, // CAPTIVE-1 CE Globals.c:480-487
+            [C.MANACLE_BR]: 20, // CAPTIVE-1 CE Globals.c:480-487
+            [C.MANACLE_TR]: 20, // CAPTIVE-1 CE Globals.c:480-487
+            [C.MANACLE_BL]: 20, // CAPTIVE-1 CE Globals.c:480-487
+            [C.MANACLE_B]: 20, // CAPTIVE-1 CE Globals.c:480-487
+            [C.MANACLE_R]: 20, // CAPTIVE-1 CE Globals.c:480-487
+
             [C.PORTAL]: 17,
             [C.SACRIFICE_ALTAR_DORMANT]: 17,
             [C.SACRIFICE_CAGE_DORMANT]: 17,

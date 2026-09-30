@@ -1,0 +1,44 @@
+{
+  "MANACLE_TL": {
+    "ceTile": "MANACLE_TL",
+    "ceLine": 480,
+    "char": "\\",
+    "color": "#7f7f7f",
+    "bgColor": null
+  },
+  "MANACLE_BR": {
+    "ceTile": "MANACLE_BR",
+    "ceLine": 481,
+    "char": "\\",
+    "color": "#7f7f7f",
+    "bgColor": null
+  },
+  "MANACLE_TR": {
+    "ceTile": "MANACLE_TR",
+    "ceLine": 482,
+    "char": "/",
+    "color": "#7f7f7f",
+    "bgColor": null
+  },
+  "MANACLE_BL": {
+    "ceTile": "MANACLE_BL",
+    "ceLine": 483,
+    "char": "/",
+    "color": "#7f7f7f",
+    "bgColor": null
+  },
+  "MANACLE_B": {
+    "ceTile": "MANACLE_B",
+    "ceLine": 485,
+    "char": "|",
+    "color": "#7f7f7f",
+    "bgColor": null
+  },
+  "MANACLE_R": {
+    "ceTile": "MANACLE_R",
+    "ceLine": 487,
+    "char": "-",
+    "color": "#7f7f7f",
+    "bgColor": null
+  }
+}

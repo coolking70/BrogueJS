@@ -102,6 +102,10 @@ export function resolveVectorIcon(value: TileSemantic): VectorIcon {
     const effect: Record<string,string> = { '弹':'projectile','警':'alert','疑':'uncertain','幻':'hallucination','伤':'impact','疗':'healing','吉':'goodMagic','凶':'badMagic' };
     return icon('special',effect[value.hanzi] ?? VECTOR_TERRAIN_BY_HANZI[value.hanzi] ?? 'unknown');
   }
+  // Direction comes only from a terrain identity already authorized by Appearance.
+  if (value.kind === 'terrain' && value.hanzi === '铐'
+    && /^MANACLE_(?:TL|BR|TR|BL|T|B|L|R)$/.test(value.id))
+    return icon('terrain','manacles',value.id);
   return icon('terrain',VECTOR_TERRAIN_BY_HANZI[value.hanzi] ?? 'unknown');
 }
 
@@ -185,7 +189,7 @@ function gasCloud(p:Pen,kind:string):void {
   else {p.l([3,11,6,10,9,11,13,10],1,.65);p.l([3,7,6,6,9,7,13,6],1,.7);if(kind==='steam')p.l([6,5,5,3,6,1],.8,.55);}
 }
 
-function paintTerrain(p:Pen,f:string):void {
+function paintTerrain(p:Pen,f:string,variant=''):void {
   switch(f) {
     case 'blank': return;
     case 'wall':
@@ -248,7 +252,17 @@ function paintTerrain(p:Pen,f:string):void {
     case 'cage':p.l([2,14,2,5,5,2,11,2,14,5,14,14,2,14],1.1,.83);for(const xx of [5,8,11])p.l([xx,3,xx,14],1,.75);p.l([2,7,14,7],.9,.75);return;
     case 'bones':p.l([4,5,12,12],2,.75);p.l([4,12,11,5],2,.75);for(const [xx,yy] of [[3,4],[5,4],[11,12],[13,12],[3,12],[11,4]])p.c(xx!,yy!,1.3,.8);return;
     case 'coffin':p.p([5,1,11,1,13,5,11,14,5,14,3,5],.42);p.l([5,1,11,1,13,5,11,14,5,14,3,5,5,1],1.15,.9);p.l([8,4,8,10],1,.85);p.l([6,6,10,6],1,.85);return;
-    case 'manacles':p.ring(4.5,10,2.5,1.3,.8);p.ring(11.5,5,2.5,1.3,.8);p.l([6.5,8,9.5,7],1.3,.8);p.l([1,14,2.8,11.5],1,.65);return;
+    case 'manacles': {
+      const direction:Record<string,readonly [number,number]> = {
+        MANACLE_TL:[1,1],MANACLE_BR:[-1,-1],MANACLE_TR:[-1,1],MANACLE_BL:[1,-1],
+        MANACLE_T:[0,1],MANACLE_B:[0,-1],MANACLE_L:[1,0],MANACLE_R:[-1,0],
+      };
+      const [dx,dy]=direction[variant] ?? [1,-1];
+      // The inward links face the captive's adjacent cell; the outer ring is fixed.
+      for(const step of [-1,0,1])p.ring(8+dx*step*5,8+dy*step*5,2.2,1,.9);
+      p.l([8-dx*5,8-dy*5,8+dx*7.8,8+dy*7.8],.7,.7);
+      return;
+    }
     case 'fungus':p.p([2,8,3,5,6,3,10,3,13,5,14,8],.76);p.r(7,8,2,6,.9);p.c(6,5.5,.8,.85,true);p.c(10,6,.75,.85,true);p.l([4,14,12,14],.8,.4);return;
     case 'rubble':p.p([2,11,3,7,6,6,8,11],.58);p.p([9,13,10,9,14,10,14,13],.63);p.p([8,5,10,2,12,5],.52);return;
     case 'glass':p.p([2,11,5,4,7,10],.68);p.p([9,14,10,7,14,12],.6);p.l([10,2,12,5,14,3],.9,.85);return;
@@ -454,7 +468,7 @@ export function paintVectorTile(g:Graphics|RetainedVectorTarget,value:TileSemant
   // Quiet unframed occlusion halo: inherited floor/grass must not read through
   // the actor. Black only, so darkness and memory can never become brighter.
   if(resolved.group==='creature'||resolved.family==='adventurer')p.e(8,8,6.8,6.8,.60,true);
-  if(resolved.group==='terrain')paintTerrain(p,resolved.family);
+  if(resolved.group==='terrain')paintTerrain(p,resolved.family,resolved.variant);
   else if(resolved.group==='creature')paintCreature(p,resolved.family,resolved.variant);
   else if(resolved.group==='item')paintItem(p,resolved.family);
   else paintSpecial(p,resolved.family);

@@ -17,7 +17,7 @@ const rendered = (c:Cell,hall=false) => {const v=cellAppearance(c,{...ctx,halluc
 describe('Independent map renderer catalog and knowledge boundaries',()=>{
  it('covers every terrain identity, every species, and every item category',()=>{
   const ids=Object.values(TerrainType).filter(x=>typeof x==='number') as TerrainType[];
-  expect(ids.length).toBe(208);expect(Object.keys(mapText.terrain).length).toBe(208);
+  expect(ids.length).toBe(214);expect(Object.keys(mapText.terrain).length).toBe(214);
   for(const id of ids) expect(mapText.terrain[TerrainType[id] as keyof typeof mapText.terrain],TerrainType[id]).toMatch(han);
   expect(monsters.length).toBe(67);
   for(const m of monsters) expect(monsterSemantic({typeId:m.id,char:m.char},m.char).hanzi,m.id).toMatch(han);

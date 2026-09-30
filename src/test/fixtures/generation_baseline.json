@@ -1,5 +1,5 @@
 {
-  "note": "LAVA-1: CE cardinal lake connectivity and full-layer pathing flags; production-only rollback exactly reproduces previous fixtures. Original full-run capture; see docs/reports/lava-1.report.md.",
+  "note": "CAPTIVE-1: restore CE drawManacles during ordinary captive horde generation. Production-only rollback reproduces the original baseline and UR3; only chain terrain and inherited cell opacity/memory differ. See docs/reports/captive-chains.report.md.",
   "seeds": [
     424242,
     777,
@@ -9,7 +9,7 @@
   "levels": {
     "777": [
       {
-        "fp": "f7f70d1b:5027",
+        "fp": "8b9694fb:5032",
         "n": 9,
         "species": "Jackal,Kobold,Monkey,Rat",
         "items": 12
@@ -45,13 +45,13 @@
         "items": 6
       },
       {
-        "fp": "6cb29660:5092",
+        "fp": "b936e76a:5094",
         "n": 15,
         "species": "Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Ogre,Stone guardian,Toad",
         "items": 12
       },
       {
-        "fp": "edb6a1ba:5110",
+        "fp": "0963e226:5115",
         "n": 18,
         "species": "Acid mound,Eel,Goblin,Goblin totem,Ogre,Pink jelly,Vampire bat,Wisp",
         "items": 8
@@ -69,7 +69,7 @@
         "items": 7
       },
       {
-        "fp": "edf47b28:5061",
+        "fp": "32c0dd70:5062",
         "n": 16,
         "species": "Bog monster,Centipede,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Ogre,Spider,Toad,Wisp,Zombie",
         "items": 9
@@ -105,7 +105,7 @@
         "items": 9
       },
       {
-        "fp": "ed9118d1:5190",
+        "fp": "52a0dcce:5194",
         "n": 20,
         "species": "Acidic jelly,Bog monster,Naga,Ogre,Ogre shaman,Phylactery,Salamander,explosive Ogre shaman,juggernaut Ogre",
         "items": 8
@@ -147,7 +147,7 @@
         "items": 8
       },
       {
-        "fp": "93e67773:5076",
+        "fp": "105d9da6:5085",
         "n": 20,
         "species": "Bog monster,Dar blademaster,Dar priestess,Fury,Revenant,Tentacle horror,explosive Kraken,infested Imp,juggernaut Fury,reflective Fury",
         "items": 13
@@ -159,7 +159,7 @@
         "items": 12
       },
       {
-        "fp": "83c33b90:5020",
+        "fp": "047ecfc0:5026",
         "n": 10,
         "species": "Dar battlemage,Dar blademaster,Dar priestess,Dragon,Phylactery,Revenant,Tentacle horror,explosive Golem",
         "items": 13
@@ -197,7 +197,7 @@
         "items": 6
       },
       {
-        "fp": "63fbcf2f:5136",
+        "fp": "0b38b57a:5137",
         "n": 27,
         "species": "Acid mound,Bloat,Goblin,Goblin mystic,Goblin totem,Kobold,Monkey,Pink jelly,Vampire bat",
         "items": 8
@@ -209,13 +209,13 @@
         "items": 14
       },
       {
-        "fp": "b7649730:4909",
+        "fp": "962c793a:4915",
         "n": 19,
         "species": "Acid mound,Bog monster,Goblin,Goblin mystic,Goblin totem,Jackal,Ogre,Pink jelly,Vampire bat",
         "items": 7
       },
       {
-        "fp": "f663604c:5142",
+        "fp": "8e10abd5:5148",
         "n": 11,
         "species": "Acid mound,Centipede,Ogre,Spider,Vampire bat",
         "items": 7
@@ -251,7 +251,7 @@
         "items": 7
       },
       {
-        "fp": "dc9f464e:5027",
+        "fp": "8c269b81:5038",
         "n": 19,
         "species": "Dar blademaster,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Salamander,Troll,Wraith,juggernaut Goblin",
         "items": 10
@@ -263,13 +263,13 @@
         "items": 7
       },
       {
-        "fp": "af7e422d:4944",
+        "fp": "d9241783:4951",
         "n": 23,
         "species": "Bloat,Bog monster,Ogre,Ogre shaman,Ogre totem,Troll,Wraith,juggernaut Bloat,toxic Ogre",
         "items": 8
       },
       {
-        "fp": "08644240:5053",
+        "fp": "d3c7f52c:5064",
         "n": 27,
         "species": "Dar blademaster,Fury,Ogre,Ogre shaman,Salamander,Sentinel,Troll,Wraith,explosive Dar battlemage,explosive Fury,infested Dar priestess,vampiric Ogre",
         "items": 14
@@ -281,31 +281,31 @@
         "items": 15
       },
       {
-        "fp": "0ef4f523:5118",
+        "fp": "75075f60:5119",
         "n": 16,
         "species": "Bog monster,Dar blademaster,Fury,Pixie,Salamander,Wraith,infested Fury,vampiric Fury",
         "items": 12
       },
       {
-        "fp": "6edd692d:5053",
+        "fp": "d1e3b73f:5060",
         "n": 25,
         "species": "Bog monster,Dar battlemage,Dar blademaster,Dar priestess,Fury,Golem,Phantom,Revenant,Vampire,agile Fury,explosive Fury,infested Fury,toxic Bog monster,toxic Dar blademaster,toxic Fury",
         "items": 12
       },
       {
-        "fp": "13484dd0:5071",
+        "fp": "2eca3709:5078",
         "n": 12,
         "species": "Bloat,Dar battlemage,Dar blademaster,Dar priestess,Fury,Phantom,Tentacle horror,agile Fury,agile Golem",
         "items": 9
       },
       {
-        "fp": "486db816:5056",
+        "fp": "52fe693b:5062",
         "n": 16,
         "species": "Bog monster,Dar blademaster,Dar priestess,Imp,Phylactery,Pink jelly,explosive Bog monster,infested Imp,juggernaut Bog monster",
         "items": 10
       },
       {
-        "fp": "149b7dd6:4884",
+        "fp": "8b283388:4889",
         "n": 11,
         "species": "Dar blademaster,Golem,Imp,Phylactery,Revenant,infested Dragon,juggernaut Imp,juggernaut Kraken,toxic Kraken",
         "items": 10
@@ -317,7 +317,7 @@
         "items": 13
       },
       {
-        "fp": "ea87cade:4994",
+        "fp": "6995fa4c:5001",
         "n": 23,
         "species": "Bog monster,Dar priestess,Fury,Golem,Tentacle horror,agile Dar battlemage,grappling Revenant,infested Dar blademaster,juggernaut Bog monster,reflective Bog monster,toxic Bog monster,vampiric Bog monster",
         "items": 9
@@ -367,7 +367,7 @@
         "items": 9
       },
       {
-        "fp": "ee29b3a0:5131",
+        "fp": "1ccaaebe:5135",
         "n": 25,
         "species": "Centipede,Eel,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Kobold,Toad",
         "items": 26
@@ -403,13 +403,13 @@
         "items": 8
       },
       {
-        "fp": "96b16f34:5074",
+        "fp": "bc991d0c:5078",
         "n": 9,
         "species": "Acidic jelly,Dar blademaster,Ogre,Ogre shaman,Troll,reflective Acidic jelly",
         "items": 12
       },
       {
-        "fp": "1d7b7a00:4969",
+        "fp": "bd94ef3b:4975",
         "n": 21,
         "species": "Acidic jelly,Bloat,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Ogre,Ogre shaman,Salamander,Troll,Zombie,toxic Bloat,toxic Salamander",
         "items": 6
@@ -421,7 +421,7 @@
         "items": 12
       },
       {
-        "fp": "4a5c8835:4974",
+        "fp": "3af24580:4980",
         "n": 19,
         "species": "Centaur,Dar priestess,Goblin,Goblin conjurer,Goblin mystic,Goblin totem,Imp,Pink jelly,Pixie,Wisp,explosive Goblin",
         "items": 8
@@ -439,7 +439,7 @@
         "items": 7
       },
       {
-        "fp": "cdf76fe7:5039",
+        "fp": "d6206adc:5046",
         "n": 24,
         "species": "Centaur,Dar battlemage,Dar blademaster,Dar priestess,Fury,Golem,Sentinel,Tentacle horror,Wraith,explosive Dar blademaster,explosive Fury,toxic Fury",
         "items": 12
@@ -451,7 +451,7 @@
         "items": 11
       },
       {
-        "fp": "4d57def4:5190",
+        "fp": "97e577a4:5196",
         "n": 23,
         "species": "Bog monster,Dar battlemage,Dar priestess,Fury,Imp,Phylactery,Pink jelly,Sentinel,Tentacle horror,explosive Bog monster,infested Bog monster,infested Dar priestess,vampiric Imp",
         "items": 10
@@ -463,19 +463,19 @@
         "items": 8
       },
       {
-        "fp": "7d5c63a4:5121",
+        "fp": "4a36e70e:5132",
         "n": 17,
         "species": "Dar battlemage,Dar priestess,Fury,Imp,Kraken,Phylactery,Pit bloat,Revenant,explosive Fury,grappling Imp,reflective Fury,toxic Fury,toxic Pit bloat",
         "items": 9
       },
       {
-        "fp": "1ef2b2ef:5215",
+        "fp": "be1f5df9:5222",
         "n": 11,
         "species": "Bog monster,Fury,Imp,Phylactery,Revenant,Tentacle horror,explosive Bog monster,reflective Dragon,toxic Fury,vampiric Bog monster",
         "items": 9
       },
       {
-        "fp": "2ff98cc8:5152",
+        "fp": "e4325bd2:5161",
         "n": 20,
         "species": "Bog monster,Dar battlemage,Fury,Imp,Kraken,Phylactery,Revenant,explosive Tentacle horror,juggernaut Bog monster",
         "items": 13
@@ -507,7 +507,7 @@
         "items": 7
       },
       {
-        "fp": "52948d79:4960",
+        "fp": "9d1c09a9:4967",
         "n": 19,
         "species": "Bloat,Goblin,Goblin mystic,Goblin totem,Jackal,Kobold,Ogre,Rat",
         "items": 7
@@ -519,7 +519,7 @@
         "items": 8
       },
       {
-        "fp": "3176129d:5803",
+        "fp": "bff1737e:5810",
         "n": 35,
         "species": "Acid mound,Bloat,Bog monster,Goblin,Goblin mystic,Goblin totem,Goblin warlord,Jackal,Kobold",
         "items": 12
@@ -555,13 +555,13 @@
         "items": 9
       },
       {
-        "fp": "ea94aa27:5168",
+        "fp": "1f365199:5173",
         "n": 11,
         "species": "Acid mound,Bog monster,Centaur,Centipede,Naga,Troll",
         "items": 12
       },
       {
-        "fp": "3dc9905d:5159",
+        "fp": "8f703ca9:5164",
         "n": 22,
         "species": "Bog monster,Centaur,Centipede,Eel,Naga,Ogre,Ogre shaman,Ogre totem,Salamander,reflective Bog monster",
         "items": 11
@@ -579,25 +579,25 @@
         "items": 10
       },
       {
-        "fp": "162f5fe0:5043",
+        "fp": "68fe8043:5054",
         "n": 12,
         "species": "Golem,Naga,Ogre,Ogre shaman,Pixie,Troll,Wisp,infested Ogre shaman,infested Wraith",
         "items": 9
       },
       {
-        "fp": "806920a0:4983",
+        "fp": "18e781d3:4986",
         "n": 16,
         "species": "Acidic jelly,Bog monster,Dar battlemage,Dar blademaster,Dar priestess,Pixie,Troll,Wraith",
         "items": 13
       },
       {
-        "fp": "ec4f7e40:5158",
+        "fp": "50596bdf:5165",
         "n": 13,
         "species": "Acidic jelly,Dar priestess,Fury,Imp,Phantom,Pink jelly,Wraith,agile Salamander,explosive Pink jelly",
         "items": 6
       },
       {
-        "fp": "54b9e44e:5010",
+        "fp": "eeaa525c:5015",
         "n": 13,
         "species": "Acidic jelly,Bog monster,Centaur,Imp,Ogre shaman,Pixie,infested Centaur,toxic Bog monster,toxic Ogre,vampiric Bog monster",
         "items": 9
@@ -627,7 +627,7 @@
         "items": 12
       },
       {
-        "fp": "44e13b6b:5195",
+        "fp": "51dc03f5:5204",
         "n": 17,
         "species": "Dar battlemage,Dar blademaster,Dar priestess,Fury,Golem,Phylactery,juggernaut Revenant,reflective Fury",
         "items": 13

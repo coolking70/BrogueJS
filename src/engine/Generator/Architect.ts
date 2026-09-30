@@ -4,6 +4,7 @@
  */
 
 import { Grid, TerrainType, DungeonLayer, DCOLS, DROWS } from '../Map/Grid';
+import { captiveManaclePlacements } from '../Map/CaptiveManacles';
 import { cellTerrainFlags, cellTerrainMechFlags } from '../Map/DungeonFeature';
 import { T_PATHING_BLOCKER, T_OBSTRUCTS_PASSABILITY, TM_IS_SECRET, TM_PROMOTES_WITH_KEY, TM_CONNECTS_LEVEL } from '../Map/TerrainCatalog';
 import { DijkstraMap } from '../Map/Pathfinding';
@@ -21,6 +22,14 @@ import type { DungeonProfile, Pos } from '../../types';
 import * as RoomBuilder from './RoomBuilder';
 import { BlueprintEngine, resetMachineCounter } from './BlueprintEngine';
 import type { MachineResult, MachineEntityRuntime } from './BlueprintEngine';
+
+/** CE Monsters.c:767-785: the existing terrain generation owner applies
+ * persistent captive anchors; selection itself stays read-only. */
+export function placeCaptiveManacles(grid: Grid, origin: Pos): void {
+    for (const { x, y, tile } of captiveManaclePlacements(grid, origin)) {
+        grid.setTerrainLayer(x, y, DungeonLayer.SURFACE, tile);
+    }
+}
 
 /** 每个湖的放置尝试次数。CE Architect.c:2659 `for (k=0; k<20; k++)`。 */
 const LAKE_PLACEMENT_ATTEMPTS = 20;

@@ -52,3 +52,14 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - UI-LAB 合并验收：定向19文件143项通过；真实三主题四地图状态不变、背包字母、日志、缩放、行动节奏、模拟双横竖屏触屏、保存/JSON导出、632条用户回放0OOS，控制台无错误；Pages实际基路径资源200。诊断原固定计数由三生产文件反事实1326/204归因后精确更新1309/212；重寻路目标新254回合13.51ms→7.35ms，Map与数组接近。完整报告 docs/reports/ui-lab-integration.report.md。即将冻结生产/测试/脚本，两个workers与4GB堆运行一轮完整CE门禁+drift，不并行重探针。
 
 - UI-LAB 最终冻结7877a38门禁一次完整通过：Pages build0、cefetch0、full0（258文件4633pass/8历史skip/5todo，3367.30s）、drift0（1/1，25.81s）。前后代码/测试/脚本/资源SHA2568aa0e25c60043787e6a2a9558bc975d48ef5ac3a6e415232cd44c3b85c08767a。两旧超时普查本轮直接通过，无复跑。最终只写文档；main重新fetch仍ee51a11且干净，待快进推送并核查Pages。
+
+- 2026-10-01 CAPTIVE-1：用户反馈俘虏无原版锁链。复用空闲干净工作树，切codex/captive-chains，main 997872f已发布。CE legacy/upstream 均确认生成时四组方向锁链、笼内俘虏例外、救出后地面链锚留存。根因spawnHordeAt漏生成步骤且6种方向误标缺位。先红5/7，补齐后新8项通过；构建显露旧C7完整光源夹具需补新地形，待反事实后仅补前提。任务书docs/tasks/captive-chains.md。
+- CAPTIVE-1归因：仅回退生产的build及原3份失败文件7项全过；UR3同口径原哈希输入与黄金trace相等。新旧120快照逐叶4076变化仅链锚表层/结果地形/菌林覆盖后的透明性/重访记忆，非地图数据与RNG均未变。按原方法重录浅层基线37个指纹与UR3，深层/UR2/UR4未变。仅补C7新6项光源前提和图形目录精确214数量；断言/容差/超时/skip不变。报告及diff账本在docs/reports/captive-chains.*。临时捕获探针已移出测试目录。
+
+- CAPTIVE-1最终显示87项通过；四份旧目录/外观失败文件仅回退生产时100项全过，保持旧135投影、精确更新214目录并补CE独立六项外观。真实键盘/鼠标救出、四模式锁链、响应式横竖窗口验收通过，截图已查看。冻结门禁会话75648，/tmp/bjs-captive-chains/gates/state.json，前置SHA256 d6c9838f90a9c33f78475d76dd5cf3494d14b08c56b58fa7d5ec8e578175745f；不改src/scripts/public/config、不另开重测试，待full及drift最终退出。
+
+- CAPTIVE-1首轮全链结束：build/ce-fetch/drift exit0，full exit1（257文件通过、2失败；4642pass/3fail/8历史skip/5todo），前后冻结哈希相同。三项非超时，分别是C4a0新增地形期望缺失、Map直接写入违背原白名单、C4b F3缺新链锚组合。生产反事实原相关6项通过后恢复。保持写入白名单不变，把Map帮助函数改为纯选址、Architect原地形生成所有者负责写入（运行中曾计划放Game，该入口不在白名单，最终采用Architect）；CE六项期望补齐，F3仅准许FLOOR/空LIQUID/空GAS。build与定向19项通过，新回归共13项；重构后UR3/生成基线2项精确通过，无需重新捕获。
+
+- CAPTIVE-1最终浏览器复验全过，四模式/键盘及鼠标救援/双RNG状态不变，实际合成截图已查看，控制台零错误；手机尺寸仅响应式模拟。第二轮完整冻结门禁 /tmp/bjs-captive-chains/final-gates/state.json，2workers/4GB，build→cefetch→full→drift；只跟进这轮，不改生产或并行重测试。
+
+- CAPTIVE-1修复完成：最终会话83665，build/cefetch/full/drift均exit0；259文件4646passed/0failed/8历史skip/5todo，3359.65秒；drift1项，25.68秒。北京时间03:14:34结束，前后SHA256 64b47a05cdb15a78ee4f0451ab43cabdb072f2b7aad4d195c557b2d2e14c57c2一致。首轮3项失败在完整集合均恢复，不是定向拼接。最终仅补文档，main997872f干净；修复保存codex/captive-chains，未合并/推送/发布。5395预览保留，旧存档已生成楼层不迁移。无需重复开发或测试。

@@ -141,6 +141,13 @@ describe('C-7 光照目录（CE Globals.c:955-1020 逐值）', () => {
 describe('C-7 TerrainCatalog.glowLight 列（CE tileCatalog 第 10 列）', () => {
     /** web 全部 43 tile 的 CE glowLight 期望值（逐条核过 CE Globals.c:321-744）。 */
     const EXPECTED_GLOW: Record<TerrainType, number> = {
+        [TerrainType.MANACLE_TL]: LightKind.NO_LIGHT, // CAPTIVE-1 CE Globals.c:480-487
+        [TerrainType.MANACLE_BR]: LightKind.NO_LIGHT, // CAPTIVE-1 CE Globals.c:480-487
+        [TerrainType.MANACLE_TR]: LightKind.NO_LIGHT, // CAPTIVE-1 CE Globals.c:480-487
+        [TerrainType.MANACLE_BL]: LightKind.NO_LIGHT, // CAPTIVE-1 CE Globals.c:480-487
+        [TerrainType.MANACLE_B]: LightKind.NO_LIGHT, // CAPTIVE-1 CE Globals.c:480-487
+        [TerrainType.MANACLE_R]: LightKind.NO_LIGHT, // CAPTIVE-1 CE Globals.c:480-487
+
         [TerrainType.BLOODFLOWER_POD]: LightKind.NO_LIGHT, // X4-R1 CE :514
         [TerrainType.HEALING_CLOUD]: LightKind.NO_LIGHT, // X4-R1 CE :510
         [TerrainType.HAY]: LightKind.NO_LIGHT, // X4-R1 CE :452

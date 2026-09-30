@@ -19,9 +19,6 @@ export const CE_TERRAIN_GAPS: Readonly<Record<string, string>> = {
     ICE_DEEP: 'inactive-freeze-root', ICE_DEEP_MELT: 'inactive-freeze-root',
     ICE_SHALLOW: 'inactive-freeze-root', ICE_SHALLOW_MELT: 'inactive-freeze-root',
     HOLE_GLOW: 'legacy-staff-hole',
-    MANACLE_TL: 'unused-decoration', MANACLE_BR: 'unused-decoration',
-    MANACLE_TR: 'unused-decoration', MANACLE_BL: 'unused-decoration',
-    MANACLE_B: 'unused-decoration', MANACLE_R: 'unused-decoration',
 };
 
 export const CE_DF_GAPS: Readonly<Record<string, string>> = {
