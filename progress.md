@@ -50,3 +50,5 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 2026-09-30 UI-LAB 新授权：获取远程 a4a48e3（基点 ee51a11），本地整改保存为 26ee897。独立工作树三方合并，生产冲突仅 GameCanvas/Monster；保留毫秒节奏+tint，整合 retained/coalesced 绘制，NPC 采用紧凑单查询数组，保留两套独立回归。任务书 docs/tasks/ui-lab-integration.md；最终合并门禁尚待完成。
 
 - UI-LAB 合并验收：定向19文件143项通过；真实三主题四地图状态不变、背包字母、日志、缩放、行动节奏、模拟双横竖屏触屏、保存/JSON导出、632条用户回放0OOS，控制台无错误；Pages实际基路径资源200。诊断原固定计数由三生产文件反事实1326/204归因后精确更新1309/212；重寻路目标新254回合13.51ms→7.35ms，Map与数组接近。完整报告 docs/reports/ui-lab-integration.report.md。即将冻结生产/测试/脚本，两个workers与4GB堆运行一轮完整CE门禁+drift，不并行重探针。
+
+- UI-LAB 最终冻结7877a38门禁一次完整通过：Pages build0、cefetch0、full0（258文件4633pass/8历史skip/5todo，3367.30s）、drift0（1/1，25.81s）。前后代码/测试/脚本/资源SHA2568aa0e25c60043787e6a2a9558bc975d48ef5ac3a6e415232cd44c3b85c08767a。两旧超时普查本轮直接通过，无复跑。最终只写文档；main重新fetch仍ee51a11且干净，待快进推送并核查Pages。
