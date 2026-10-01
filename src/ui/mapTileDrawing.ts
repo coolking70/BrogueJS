@@ -4,7 +4,8 @@ import type { MapMode } from './mapTiles';
 import type { TileSemantic } from './mapTileSemantics';
 import { normalizeMapGlyph } from './mapGlyph';
 export const HANZI_FONT = 'Brogue Hanzi';
-export const MAP_INK = { classic: 0xc7ac76, tactical: 0x77b8a0, immersive: 0xc4b18b };
+export const MAP_INK: Record<Concept, number> = { classic: 0xc7ac76, tactical: 0x77b8a0, immersive: 0xc4b18b,
+  glyph: 0xc9c2b0, umbra: 0x9ea6d8, ember: 0xc8b49c, codex: 0xb9b6c8, zen: 0xbcbcbc, manual: 0xa9b8c4 };
 const numberColor = (color: string | number): number => typeof color === 'number' ? color : parseInt(color.replace('#', ''), 16);
 /** A slight neutral tint; retain engine lighting luminance and saturated hazards. */
 export function mapInk(color: string | number, theme: Concept, mode: MapMode, kind: TileSemantic['kind']): string | number {

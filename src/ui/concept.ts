@@ -1,6 +1,10 @@
 import { ref } from 'vue';
-export const conceptNames = ['classic', 'tactical', 'immersive'] as const;
+export const conceptNames = ['classic', 'tactical', 'immersive', 'glyph', 'umbra', 'ember', 'codex', 'zen', 'manual'] as const;
 export type Concept = typeof conceptNames[number];
+/** DESIGN-2 themes share one presentation shell (ThemeHud / ThemeLog / ThemeNearby). */
+export const shellConcepts = ['glyph', 'umbra', 'ember', 'codex', 'zen', 'manual'] as const satisfies readonly Concept[];
+export type ShellConcept = typeof shellConcepts[number];
+export function isShellConcept(value: Concept): value is ShellConcept { return (shellConcepts as readonly string[]).includes(value); }
 const candidate = typeof window === 'undefined' || !window.location ? null : new URLSearchParams(window.location.search).get('concept');
 export const concept = ref<Concept>(conceptNames.includes(candidate as Concept) ? candidate as Concept : 'classic');
 export function selectConcept(value: Concept) {
@@ -29,7 +33,7 @@ export function registerConceptTool(context?: ModelContext): (() => void) | unde
   try {
     void Promise.resolve(registry.registerTool({
       name: 'select_ui_concept',
-      description: 'Switch between the three BrogueJS interface designs. Keeps the current game and does not record a preferred design.',
+      description: 'Switch between the BrogueJS interface designs. Keeps the current game and does not record a preferred design.',
       inputSchema: { type: 'object', properties: { concept: { type: 'string', enum: [...conceptNames] } }, required: ['concept'], additionalProperties: false },
       annotations: { readOnlyHint: false, untrustedContentHint: false },
       execute(input: unknown) {

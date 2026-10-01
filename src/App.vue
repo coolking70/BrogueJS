@@ -43,6 +43,14 @@ import SideDrawer from './components/SideDrawer.vue';
 import CommandBar from './components/CommandBar.vue';
 import DPad from './components/DPad.vue';
 import TargetBar from './components/TargetBar.vue';
+import ThemeHud from './components/theme/ThemeHud.vue';
+import ThemeLog from './components/theme/ThemeLog.vue';
+import ThemeNearby from './components/theme/ThemeNearby.vue';
+import ThemeCodex from './components/theme/ThemeCodex.vue';
+import ThemeKit from './components/theme/ThemeKit.vue';
+import RadialCommands from './components/theme/RadialCommands.vue';
+import { concept, isShellConcept } from './ui/concept';
+import { cameraState } from './ui/mapCamera';
 import { activeGame, type GameMode } from './engine/Core/Game';
 import { viewport, startViewportTracking, shouldShowTouchControls } from './ui/layout';
 import { recordingJsonAtBoundary, RecordingExportError } from './ui/recordingExport';
@@ -59,10 +67,38 @@ const contextOpen = ref(true);
 const contextWidth = computed(() => displaySettings.sidebarWidthMode === 'proportional' ? 'clamp(190px, 20vw, 280px)' : '216px');
 const journalOpen = ref(false);
 function toggleContext() { if (compact.value) panelOpen.value = !panelOpen.value; else contextOpen.value = !contextOpen.value; }
+// DESIGN-2：新主题共用的外壳。纯显示状态，不进存档/录像。
+const shell = computed(() => isShellConcept(concept.value));
+const themePanelOpen = ref(false);
+/** 余烬/一线：面板按钮切换本主题的展开层；其余新主题在紧凑视口打开抽屉。 */
+function toggleThemePanel() {
+  if (compact.value && concept.value !== 'zen' && concept.value !== 'codex') panelOpen.value = !panelOpen.value;
+  else themePanelOpen.value = !themePanelOpen.value;
+}
+const themeLogLines = computed(() => {
+  const c = concept.value, mode = viewport.mode;
+  if (c === 'zen') return themePanelOpen.value ? 12 : 1;
+  if (c === 'manual') return mode === 'desktop' ? 8 : 6;
+  if (c === 'ember') return mode === 'desktop' ? 5 : mode === 'landscape' ? 4 : 3;
+  if (c === 'codex') return mode === 'desktop' ? 3 : 2;
+  return mode === 'landscape' ? 1 : mode === 'desktop' ? 3 : 2;
+});
+// 夜读：进入时把地图放大到跟随视角，离开时恢复之前的缩放（镜头是显示偏好）。
+let zoomBeforeCodex: number | null = null;
+watch(concept, (next, prev) => {
+  if (next === 'codex' && prev !== 'codex') { zoomBeforeCodex = cameraState.zoom; cameraState.fit = false; cameraState.zoom = Math.max(cameraState.zoom, 2); }
+  else if (prev === 'codex' && next !== 'codex' && zoomBeforeCodex !== null) { cameraState.zoom = zoomBeforeCodex; zoomBeforeCodex = null; }
+}, { immediate: true });
 const replayTick = ref(0);
 const replayActive = computed(() => { replayTick.value; return !!activeGame.replayRecording; });
 let replayTimer = 0;
-onMounted(() => { replayTimer = window.setInterval(() => { replayTick.value++; }, 100); });
+// 结算页只显示结算后的保存/导出反馈；开局时的菜单反馈不应带进结算页。
+let endFeedbackCleared = false;
+onMounted(() => { replayTimer = window.setInterval(() => {
+  replayTick.value++;
+  if (activeGame.isGameOver && !endFeedbackCleared) { endFeedbackCleared = true; replayFeedback.value = ''; }
+  else if (!activeGame.isGameOver) endFeedbackCleared = false;
+}, 100); });
 onUnmounted(() => { window.clearInterval(replayTimer); runEpoch++; });
 /** 触控命令栏 + 方向键：紧凑模式或粗指针设备显示；回放期间让位给录像控制条。 */
 const showTouch = computed(() => shouldShowTouchControls(viewport.coarsePointer, viewport.mode) && !replayActive.value);
@@ -319,11 +355,19 @@ const handleReturnToTitle = async () => {
 
 <template>
   <UiLabToolbar :in-game="gameStarted" />
-  <div class="app-layout" :style="{ '--context-width': contextWidth }" :class="[`layout-${viewport.mode}`, { 'is-replaying': replayActive, 'has-touch-controls': showTouch, 'context-visible': !compact && contextOpen }]">
+  <div class="app-layout" :style="{ '--context-width': contextWidth }" :class="[`layout-${viewport.mode}`, { 'is-replaying': replayActive, 'has-touch-controls': showTouch, 'context-visible': !compact && contextOpen, 'theme-shell': shell, 'theme-panel-open': shell && themePanelOpen }]">
     <template v-if="gameStarted">
       <!-- FE-1：GameCanvas 始终是同一位置的同一实例（旋转屏幕不重建 Pixi），
            其余部件按布局模式挂载，用 CSS grid 区域摆放。 -->
       <MobileHud class="area-hud" :mode="viewport.mode" :panel-open="compact ? panelOpen : contextOpen" @menu="menuOpen = true" @open-panel="toggleContext" />
+      <template v-if="shell">
+        <ThemeHud class="area-vitals" :panel-open="compact && concept !== 'zen' && concept !== 'codex' ? panelOpen : themePanelOpen" @menu="menuOpen = true" @panel="toggleThemePanel" />
+        <ThemeLog class="area-log" :lines="themeLogLines" @open-journal="journalOpen = true" />
+        <ThemeNearby v-if="concept !== 'codex'" class="area-near" />
+        <ThemeCodex v-if="concept === 'codex'" class="area-codex" @menu="menuOpen = true" @open-journal="journalOpen = true" @tab="same => themePanelOpen = same ? !themePanelOpen : true" />
+        <ThemeKit v-if="concept === 'manual'" class="area-kit" />
+        <RadialCommands v-if="concept === 'zen' && showTouch" class="area-radial" />
+      </template>
       <div class="map-area">
         <GameCanvas class="game-view" />
         <MapZoomControls />

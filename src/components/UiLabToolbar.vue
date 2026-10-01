@@ -2,13 +2,16 @@
 import { inputManager } from '../engine/Input';
 import { computed, ref, onMounted, onUnmounted } from "vue";
 import { useTranslation } from "i18next-vue";
-import { concept, selectConcept, registerConceptTool } from "../ui/concept";
+import { concept, selectConcept, registerConceptTool, isShellConcept } from "../ui/concept";
 import type { Concept } from "../ui/concept";
 import MapTileLegend from './MapTileLegend.vue';
 import { mapMode, selectMapMode } from '../ui/mapTiles';
 import type { MapMode } from '../ui/mapTiles';
 defineProps<{ inGame?: boolean }>();
 const legendOpen = ref(false);
+/** DESIGN-2 主题里切换栏默认收成一个小按钮，展开后浮在游戏上方，不占布局。 */
+const collapsed = ref(true);
+const shell = computed(() => isShellConcept(concept.value));
 const mapOptions = computed(() => [
  { id:'original' as MapMode, name:t('lab.map_original'), tip:t('lab.map_original_tip') },
  { id:'refined' as MapMode, name:t('lab.map_refined'), tip:t('lab.map_refined_tip') },
@@ -26,34 +29,22 @@ let cleanupTool: (() => void) | undefined;
 onMounted(() => {
   cleanupTool = registerConceptTool();
   removeKeyboard = inputManager.registerModalKeyHandler(event => {
-    if (!legendOpen.value && !infoOpen.value) return false;
-    if (event.key === 'Escape') { legendOpen.value = false; infoOpen.value = false; (document.activeElement as HTMLElement)?.blur(); }
+    if (!legendOpen.value && !infoOpen.value && (collapsed.value || !shell.value)) return false;
+    if (event.key === 'Escape') { legendOpen.value = false; infoOpen.value = false; collapsed.value = true; (document.activeElement as HTMLElement)?.blur(); }
     return true;
   }, 800);
 });
 onUnmounted(() => { cleanupTool?.(); removeKeyboard?.(); });
 const concepts = computed(() => [
-  {
-    id: "classic" as Concept,
-    number: "01",
-    name: t("lab.classic"),
-    code: t("lab.classic_code"),
-    description: t("lab.classic_desc"),
-  },
-  {
-    id: "tactical" as Concept,
-    number: "02",
-    name: t("lab.tactical"),
-    code: t("lab.tactical_code"),
-    description: t("lab.tactical_desc"),
-  },
-  {
-    id: "immersive" as Concept,
-    number: "03",
-    name: t("lab.immersive"),
-    code: t("lab.immersive_code"),
-    description: t("lab.immersive_desc"),
-  },
+  { id: "classic" as Concept, number: "01", name: t("lab.classic"), code: t("lab.classic_code"), description: t("lab.classic_desc") },
+  { id: "tactical" as Concept, number: "02", name: t("lab.tactical"), code: t("lab.tactical_code"), description: t("lab.tactical_desc") },
+  { id: "immersive" as Concept, number: "03", name: t("lab.immersive"), code: t("lab.immersive_code"), description: t("lab.immersive_desc") },
+  { id: "glyph" as Concept, number: "A", name: t("lab.glyph"), code: t("lab.glyph_code"), description: t("lab.glyph_desc") },
+  { id: "umbra" as Concept, number: "B", name: t("lab.umbra"), code: t("lab.umbra_code"), description: t("lab.umbra_desc") },
+  { id: "ember" as Concept, number: "C", name: t("lab.ember"), code: t("lab.ember_code"), description: t("lab.ember_desc") },
+  { id: "codex" as Concept, number: "D", name: t("lab.codex"), code: t("lab.codex_code"), description: t("lab.codex_desc") },
+  { id: "zen" as Concept, number: "E", name: t("lab.zen"), code: t("lab.zen_code"), description: t("lab.zen_desc") },
+  { id: "manual" as Concept, number: "F", name: t("lab.manual"), code: t("lab.manual_code"), description: t("lab.manual_desc") },
 ]);
 const current = computed(
   () => concepts.value.find((c) => c.id === concept.value)!,
@@ -77,11 +68,12 @@ function choose() {
 <template>
   <header
     class="ui-lab-toolbar"
-    :class="{ 'playing-toolbar': inGame }"
+    :class="{ 'playing-toolbar': inGame, 'lab-shell': shell, 'lab-collapsed': shell && collapsed }"
     @keydown.stop
     @keyup.stop
     @keydown.esc="legendOpen = false; infoOpen = false"
   >
+    <button v-if="shell" class="lab-collapse" :aria-expanded="!collapsed" :aria-label="t('lab.switch')" :title="t('lab.switch')" @click="collapsed = !collapsed; ($event.currentTarget as HTMLElement).blur()"><span aria-hidden="true">◈</span></button>
     <button
       class="lab-switch-trigger"
       @click="infoOpen = !infoOpen"

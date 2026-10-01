@@ -9,7 +9,7 @@ describe('UI concept presentation contract', () => {
     let tool: any; let signal: AbortSignal | undefined;
     const cleanup = registerConceptTool({ registerTool(t, options) { tool = t; signal = options.signal; } });
     expect(tool.name).toBe('select_ui_concept'); expect(tool.annotations.readOnlyHint).toBe(false);
-    expect(tool.inputSchema.properties.concept.enum).toEqual(['classic','tactical','immersive']);
+    expect(tool.inputSchema.properties.concept.enum).toEqual(['classic','tactical','immersive','glyph','umbra','ember','codex','zen','manual']);
     expect(await tool.execute({concept:'tactical'})).toEqual({concept:'tactical'}); expect(concept.value).toBe('tactical');
     expect(() => tool.execute({concept:'other'})).toThrow(); expect(() => tool.execute({concept:'classic',extra:true})).toThrow(); expect(concept.value).toBe('tactical');
     cleanup?.(); expect(signal?.aborted).toBe(true);
