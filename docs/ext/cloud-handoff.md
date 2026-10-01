@@ -1,3 +1,9 @@
+# EXT-0 云端接续记录（阶段0最终门禁已完成）
+
+当前状态：云端已在原ext/foundation基线上完成边界修复，四项完整门禁全部退出0，源码前后散列一致。完整npm test为262文件、4594通过/83跳过/5todo；drift为1/1通过。交付与命令原文见 [foundation.report.md](foundation.report.md)，最新证据见 [evidence/cloud-final/state.json](evidence/cloud-final/state.json)。停止在阶段0，等维护者审阅；本任务没有整合最新main ad3e902。
+
+以下保留迁移时的WIP记录，仅作为历史，不是当前验收状态。
+
 # EXT-0 云端接续：WIP，门禁未完成
 
 用户要求开发/测试尽量迁至云端，避免与本机其他任务抢CPU。本地已停止本任务全部测试/构建进程，不再启动重型测试。只保存并推送 `ext/foundation`，未创建PR、合并/rebase、推main、打标签、改Pages或开始阶段1。

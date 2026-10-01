@@ -8,7 +8,7 @@
 
 经典新局不调用注册表、工厂、模块初始化、派发或数据定义校验，`extensionRuntime === null`，生物没有扩展回调，存档/录像不添加扩展键。引擎只做空值分支；原规则、骰子次序、实体编码及经典 JSON 投影不变。模块代码的静态导入只声明类型/函数，没有顶层注册、随机调用或新局副作用。经典守卫用原 main 捕获的双流完整 tuple（含实质流计数）比较开局、命令攻击和等待结果，并断言注册/启用/钩子均零调用；既有黄金 trace 与生成基线保持原断言。
 
-新局选择属于录像起点配置。局内所有改状态输入经 `Game.executeCommand` / `executeItemCommand`。模块命令格式是 `executeCommand('ext:command', JSON.stringify({ module, action, payload }))`，`applyCommand` 在实时、回放、seek 中使用同一个派发器。模块命令必须自行校验 payload，不直接从 Vue 事件修改组件状态；本阶段示例不添加任何玩家命令。物品仍使用原命令边界。
+新局选择属于录像起点配置。局内所有改状态输入经 `Game.executeCommand` / `executeItemCommand`。模块命令格式是 `executeCommand('ext:command', JSON.stringify({ module, action, payload }))`，`applyCommand` 在实时、回放、seek 中使用同一个派发器。底座先校验命令必须为仅含 module/action/payload 的完整 JSON 对象，且 action 必须是模块自身登记的函数（不接受原型继承方法）；模块命令再自行校验 payload，不直接从 Vue 事件修改组件状态；本阶段示例不添加任何玩家命令。物品仍使用原命令边界。
 
 ## 2. 注册表与生命周期
 
@@ -27,9 +27,9 @@
 
 ## 3. 钩子清单与权限
 
-事件输入是深拷贝且深冻结的 DTO；`CreatureView`/`ItemView` 是摘要，不是活的引擎对象。模块只能通过 context 读写自己的 JSON 状态和自己命名空间里的生物组件；不能通过事件直接修改 HP、地图、命中或原伤害数值。context 的 `state` / `getComponent` 返回深拷贝。`setState` 和可选 `componentValidators` 校验写入与读档，所有数据还须有限值、无循环、无原型键的 JSON。
+事件输入是深拷贝且深冻结的 DTO；`CreatureView`/`ItemView` 是摘要，不是活的引擎对象。模块只能通过 context 读写自己的 JSON 状态和自己命名空间里的生物组件；不能通过事件直接修改 HP、地图、命中或原伤害数值。context 的 `state` / `getComponent` 返回深拷贝。写入权限按单次回调作用域授予，回调结束后永久失效；已结束回调或 `onLoad` 保存的 context 不能借后续事件重新获得写入、消息或随机权限。`setState` 和可选 `componentValidators` 校验写入与读档，所有数据还须有限值、无循环、无原型键的 JSON。
 
-以下事件均属于同步模拟生命周期，可通过 `context.randomInt` 消耗引擎实质随机流。该 API 强制选择实质流并恢复原流选择器；不创建第三条流。显示、保存、校验、读取/卸载禁止 RNG。回调顺序固定，随机调用数也因此固定。模块不得直接使用 `Math.random`、时间、网络或装饰流决定规则结果。
+以下事件均属于同步模拟生命周期，可通过 `context.randomInt` 消耗引擎实质随机流。该 API 强制选择实质流并恢复原流选择器；不创建第三条流。参数须为安全整数，闭区间跨度不得超过 `0xffffffff`，超界在调用引擎随机流前拒绝，避免原拒绝采样器零除数。显示、保存、校验、读取/卸载禁止 RNG。回调顺序固定，随机调用数也因此固定。模块不得直接使用 `Math.random`、时间、网络或装饰流决定规则结果。
 
 | 钩子 | 准确位置 / 时机 | 事件可读数据 | 可写与随机合同 |
 |---|---|---|---|
@@ -80,7 +80,7 @@
 }
 ```
 
-上例 components 的 growth 仅说明格式，真实包必须将 growth 纳入 manifest，否则拒绝。模块版本同时负责自身状态/组件格式；顶层 schema 负责底座包络。集合/版本、状态键集合、模块校验器、组件 ID/命名空间/JSON 均先校验，不接受部分扩展读取，不做迁移。经典局省略 extensions；显式扩展模式即使模块列表为空也保存包络。
+上例 components 的 growth 仅说明格式，真实包必须将 growth 纳入 manifest，否则拒绝。模块版本同时负责自身状态/组件格式；顶层 schema 负责底座包络。记录历史须为有效对象数组，异常容器/空元素在退休旧局前拒绝；集合/版本、状态键集合、模块校验器、组件 ID/命名空间/JSON 均先校验，不接受部分扩展读取，不做迁移。经典局省略 extensions；显式扩展模式即使模块列表为空也保存包络。
 
 `Game.extensionRuntime` 是新增的唯一实例字段，已登记 `scripts/u03-state-contract.json` 的 persist 合同。函数、事件处理器、实体回调与工厂不序列化；仅扩展包络深拷贝。生物回调是 `Creature` 访问器背后的 WeakMap，U01 实体字段登记表与原 codec 不变。经典 U03 世界投影不增加任何键。
 
@@ -98,7 +98,7 @@
 
 内置 example 1.0.0 每次非行政怪物死亡累加 kills，使用 `ext.example.kill` 在原消息栏显示。它统计死亡生命周期，不代表“玩家击杀归属”；也不会提供经验/等级。保存与回放都记录该计数，默认扩展局启用它。
 
-`ext_validation.test.ts` 另覆盖严格 JSON/容器及同步生命周期边界；`ext_foundation.test.ts` 覆盖注册/依赖、钩子顺序、状态/双生物组件往返、纯数据校验、真实拾取/使用、随机流接入、行政死亡去重、非法头拒绝、自然地图21条命令的击杀录像/seek/读档续录、扩展 checkpoint OOS，以及经典零模块调用+原 main 精确 RNG。既有测试、trace、生成夹具不修改。浏览器在1440×1000及390×844验证开局选择、自然击杀提示、存档录像和不匹配提示，截图不入库；手机尺寸是浏览器模拟，未声称安卓实机测试。
+`ext_hardening.test.ts` 覆盖过期权限、严格命令派发、随机区间、损坏历史无副作用拒绝、函数引用攻击与命令回放；`ext_validation.test.ts` 另覆盖严格 JSON/容器及同步生命周期边界；`ext_foundation.test.ts` 覆盖注册/依赖、钩子顺序、状态/双生物组件往返、纯数据校验、真实拾取/使用、随机流接入、行政死亡去重、非法头拒绝、自然地图21条命令的击杀录像/seek/读档续录、扩展 checkpoint OOS，以及经典零模块调用+原 main 精确 RNG。既有测试、trace、生成夹具不修改。浏览器在1440×1000及390×844验证开局选择、自然击杀提示、存档录像和不匹配提示，截图不入库；手机尺寸是浏览器模拟，未声称安卓实机测试。
 
 门禁与实际原文输出见 [阶段 0 报告](foundation.report.md)。
 

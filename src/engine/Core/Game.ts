@@ -9100,8 +9100,11 @@ export class Game {
 
     public loadSnapshot(snapshot: GameSnapshot): boolean {
         if (!Game.isSnapshot(snapshot)) return false;
+        // Check history before extension/provenance inspection or retiring the live run.
+        if (!Array.isArray(snapshot.run.recordedInputEvents)
+            || snapshot.run.recordedInputEvents.some(event => !event || typeof event !== 'object' || Array.isArray(event))) return false;
         if (snapshot.extensions === undefined && (snapshot.run.recordingOrigin?.extensions !== undefined
-            || snapshot.run.recordedInputEvents?.some(event => event.extensions !== undefined))) return false;
+            || snapshot.run.recordedInputEvents.some(event => event.extensions !== undefined))) return false;
         let extensions: ExtensionRuntime | null = null;
         if (snapshot.extensions !== undefined) {
             try { extensions = this.createExtensionRuntime(snapshot.extensions.manifest, snapshot.extensions); }

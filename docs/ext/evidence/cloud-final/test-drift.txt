@@ -1,0 +1,23 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> brogue-web@0.2.0 test:drift
+> vitest run src/test/generation_baseline.test.ts
+
+
+ RUN  v4.1.11 /workspace/scratch/db2caf941a8f/BrogueJS-cloud-ext
+
+
+*** CE reference source not found; run npm run ce:fetch ***
+CE-dependent tests will be explicitly skipped.
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  20:30:41
+   Duration  50.40s (transform 1.49s, setup 0ms, import 2.20s, tests 47.99s, environment 0ms)
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

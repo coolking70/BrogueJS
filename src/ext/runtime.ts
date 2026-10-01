@@ -25,7 +25,7 @@ export class ExtensionRuntime {
     private readonly creatures = new Set<Creature>();
     private readonly spawned = new WeakSet<Creature>();
     private readonly attacks: number[] = [];
-    private active = false;
+    private activeScope: object | null = null;
     private disposed = false;
     readonly manifest: ExtensionManifest;
     constructor(registry: ExtensionRegistry, manifest: ExtensionManifest, private readonly ports: ExtensionPorts, snapshot?: ExtensionSnapshot) {
@@ -38,9 +38,9 @@ export class ExtensionRuntime {
         this.components = snapshot ? structuredClone(snapshot.components) : {};
         this.validateSnapshot(this.snapshot());
     }
-    private context(module: ExtensionModule): ExtensionContext {
+    private context(module: ExtensionModule, scope: object | null): ExtensionContext {
         const runtime = this;
-        const writable = (): void => { if (!runtime.active || runtime.disposed) throw new Error('Extension mutation outside lifecycle/command/hook'); };
+        const writable = (): void => { if (!scope || runtime.activeScope !== scope || runtime.disposed) throw new Error('Extension mutation outside lifecycle/command/hook'); };
         const componentKey = (name: string): string => {
             if (!validId(name)) throw new Error('Invalid component name');
             return `${module.id}:${name}`;
@@ -58,22 +58,30 @@ export class ExtensionRuntime {
             getComponent(id, name) { const value = runtime.components[creatureKey(id)]?.[componentKey(name)]; return value === undefined ? undefined : cloneJson(value); },
             setComponent(id, name, value) { writable(); if (module.componentValidators?.[name] && !module.componentValidators[name]!(value)) throw new Error('Invalid component value'); const key = creatureKey(id); (runtime.components[key] ??= {})[componentKey(name)] = cloneJson(value); },
             removeComponent(id, name) { writable(); const key = creatureKey(id); delete runtime.components[key]?.[componentKey(name)]; if (runtime.components[key] && !Object.keys(runtime.components[key]!).length) delete runtime.components[key]; },
-            randomInt(min, max) { writable(); if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max) || min > max) throw new Error('Invalid extension random range'); return runtime.ports.randomInt(min, max); },
+            randomInt(min, max) {
+                writable();
+                const span = max - min + 1;
+                // The engine's rejection sampler requires a nonzero divisor.
+                if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max) || min > max
+                    || !Number.isSafeInteger(span) || span > 0xffffffff) throw new Error('Invalid extension random range');
+                return runtime.ports.randomInt(min, max);
+            },
             message(text) { writable(); runtime.ports.message(text); },
         };
     }
-    private invoke(callback: () => void): void {
+    private invoke(module: ExtensionModule, callback: (context: ExtensionContext) => void): void {
         if (this.disposed) throw new Error('Extension runtime unloaded');
-        const prior = this.active; this.active = true;
+        const prior = this.activeScope, scope = {};
+        this.activeScope = scope;
         try {
-            requireSynchronous(callback());
-        } finally { this.active = prior; }
+            requireSynchronous(callback(this.context(module, scope)));
+        } finally { this.activeScope = prior; }
     }
-    newGame(): void { for (const module of this.modules) if (module.onNewGame) this.invoke(() => module.onNewGame!(this.context(module))); }
+    newGame(): void { for (const module of this.modules) if (module.onNewGame) this.invoke(module, context => module.onNewGame!(context)); }
     loaded(): void {
         const before = canonical(this.snapshot());
         // Load callbacks have read-only contexts: no RNG or mutation.
-        for (const module of this.modules) requireSynchronous(module.onLoad?.(this.context(module)));
+        for (const module of this.modules) requireSynchronous(module.onLoad?.(this.context(module, null)));
         if (canonical(this.snapshot()) !== before) throw new Error('Load handler changed extension state');
     }
     emit<K extends HookName>(name: K, event: HookEvents[K]): void {
@@ -84,17 +92,20 @@ export class ExtensionRuntime {
         const input = structuredClone(event); freeze(input);
         for (const module of this.modules) {
             const handler = module.hooks?.[name];
-            if (handler) this.invoke(() => handler(input, this.context(module)));
+            if (handler) this.invoke(module, context => handler(input, context));
         }
     }
     command(data: unknown): void {
         if (typeof data !== 'string') throw new Error('Extension command requires JSON string');
         const input = JSON.parse(data) as { module: string; action: string; payload: Json };
-        if (!isJson(input)) throw new Error('Invalid extension command');
+        if (!isJson(input) || !input || typeof input !== 'object' || Array.isArray(input)
+            || Object.keys(input).length !== 3 || !Object.prototype.hasOwnProperty.call(input, 'payload')
+            || !validId(input.module) || typeof input.action !== 'string' || !input.action.length
+            || Object.keys(input).some(key => !['module', 'action', 'payload'].includes(key))) throw new Error('Invalid extension command');
         const module = this.modules.find(entry => entry.id === input.module);
-        const handler = module?.commands?.[input.action];
-        if (!module || !handler) throw new Error('Unknown extension command');
-        this.invoke(() => handler(input.payload, this.context(module)));
+        const handler = module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action) ? module.commands[input.action] : undefined;
+        if (!module || typeof handler !== 'function') throw new Error('Unknown extension command');
+        this.invoke(module, context => handler(input.payload, context));
     }
     attachCreature(creature: Creature, notifySpawn = true): void {
         if (this.disposed || this.creatures.has(creature)) return;
@@ -139,7 +150,8 @@ export class ExtensionRuntime {
     }
     unload(): void {
         if (this.disposed) return;
+        this.disposed = true;
         try { for (const module of [...this.modules].reverse()) requireSynchronous(module.onUnload?.()); }
-        finally { for (const creature of this.creatures) creature.extensionHooks = undefined; this.creatures.clear(); this.disposed = true; }
+        finally { for (const creature of this.creatures) creature.extensionHooks = undefined; this.creatures.clear(); }
     }
 }
