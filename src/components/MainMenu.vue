@@ -54,16 +54,19 @@ const emit = defineEmits<{
 
 const page = ref<"home" | "new" | "saves" | "records" | "settings">("home");
 const legendOpen = ref(false);
-const chapter = computed(() => t('title.glyph'));
-const chapterCode = computed(() => t('title.glyph_code'));
-/** 刻符：方块字符拼出的字标（只含方块与空格，不是可读文字）。 */
+/** The original wordmark bitmap; SVG grid cells replace font-dependent blocks. */
 const glyphWordmark = [
-  "████  ████   ███   ████ █   █ █████",
-  "█   █ █   █ █   █ █     █   █ █    ",
-  "████  ████  █   █ █  ██ █   █ ████ ",
-  "█   █ █  █  █   █ █   █ █   █ █    ",
-  "████  █   █  ███   ████  ███  █████",
-].join("\n");
+  "11110011110001110001111010001011111",
+  "10001010001010001010000010001010000",
+  "11110011110010001010011010001011110",
+  "10001010010010001010001010001010000",
+  "11110010001001110001111001110011111",
+];
+const glyphColumns = glyphWordmark[0]!.length;
+const glyphViewBox = `0 0 ${glyphColumns * 3} ${glyphWordmark.length * 5}`;
+// 3:5 cells retain the old monospace silhouette, with exact shared boundaries.
+const glyphPixels = glyphWordmark.flatMap((row, y) =>
+  [...row].flatMap((pixel, x) => pixel === "1" ? [{ x: x * 3, y: y * 5 }] : []));
 function goBack() {
   if (legendOpen.value) { legendOpen.value = false; return; }
   if (page.value !== "home") page.value = "home";
@@ -170,10 +173,14 @@ const sidebarWidthModel = computed({
         <div class="title-edition">
           <span></span>{{ editionText }}<span></span>
         </div>
-        <pre class="title-glyph" aria-hidden="true">{{ glyphWordmark }}</pre>
+        <svg class="title-glyph" :viewBox="glyphViewBox"
+             :width="glyphColumns * 3" :height="glyphWordmark.length * 5"
+             preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges"
+             fill="currentColor" aria-hidden="true">
+          <rect v-for="pixel in glyphPixels" :key="`${pixel.x},${pixel.y}`"
+                :x="pixel.x" :y="pixel.y" width="3" height="5" />
+        </svg>
         <h1>{{ t("title.brand") }}</h1>
-        <div class="title-chapter">{{ chapter }}</div>
-        <p class="title-code">{{ chapterCode }}</p>
       </div>
       <nav
         v-if="page === 'home'"
@@ -222,7 +229,7 @@ const sidebarWidthModel = computed({
         <header class="menu-section-header">
           <button class="back-button" @click="page = 'home'">
             {{ t("title.back") }}</button
-          ><span class="section-mark">{{ chapter }}</span>
+          >
         </header>
         <template v-if="page === 'new'">
           <h2>{{ t("menu.actions.new_game") }}</h2>

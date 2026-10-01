@@ -130,13 +130,11 @@ html[data-ui-concept=glyph] .message-journal h2{font-family:var(--th-display)!im
 html[data-ui-concept=glyph] .journal-tick{color:var(--th-dim)!important;font-family:var(--th-num)!important}
 html[data-ui-concept=glyph] .context-panel{background:var(--th-panel);border-color:var(--th-line)}
 
-/* ---------- title screen (no bitmap: CSS, canvas, characters) ---------- */
+/* ---------- title screen (CSS, canvas, inline SVG) ---------- */
 html[data-ui-concept=glyph] .menu-overlay{background:var(--th-bg)}
 html[data-ui-concept=glyph] .title-vignette{background:radial-gradient(ellipse at 30% 50%,transparent 30%,color-mix(in srgb,var(--th-bg) 80%,transparent) 100%)}
-html[data-ui-concept=glyph] .title-glyph{display:none}
 html[data-ui-concept=glyph] .title-brand h1{font-family:var(--th-display);color:var(--th-fg);text-shadow:none}
-html[data-ui-concept=glyph] .title-chapter{color:var(--th-accent);font-family:var(--th-font)}
-html[data-ui-concept=glyph] .title-edition,html[data-ui-concept=glyph] .title-code,html[data-ui-concept=glyph] .title-footer{color:var(--th-dim)}
+html[data-ui-concept=glyph] .title-edition,html[data-ui-concept=glyph] .title-footer{color:var(--th-dim)}
 html[data-ui-concept=glyph] .title-edition span{background:var(--th-line)}
 html[data-ui-concept=glyph] .title-action{color:var(--th-fg);font-family:var(--th-font)}
 html[data-ui-concept=glyph] .title-action .action-mark{color:var(--th-accent)}
@@ -145,7 +143,6 @@ html[data-ui-concept=glyph] .title-action.primary-action{border-color:color-mix(
 html[data-ui-concept=glyph] .action-detail,html[data-ui-concept=glyph] .title-action kbd{color:var(--th-dim)}
 html[data-ui-concept=glyph] .menu-card{background:var(--th-panel);border:1px solid var(--th-line);border-radius:var(--th-r);box-shadow:0 30px 90px #000a}
 html[data-ui-concept=glyph] .menu-card .begin-button{background:var(--th-accent)!important;color:var(--th-on-accent)!important;border-color:transparent!important}
-html[data-ui-concept=glyph] .section-mark{color:var(--th-accent);font-family:var(--th-font)}
 html[data-ui-concept=glyph] .menu-section-header{border-color:var(--th-line)}
 html[data-ui-concept=glyph] .menu-card button,html[data-ui-concept=glyph] .menu-card input,html[data-ui-concept=glyph] .menu-card select{background:var(--th-raised);border-color:var(--th-line);color:var(--th-fg);border-radius:var(--th-r);font-family:var(--th-font)}
 html[data-ui-concept=glyph] .pause-overlay{background:color-mix(in srgb,var(--th-bg) 86%,transparent);backdrop-filter:blur(6px)}
@@ -189,11 +186,26 @@ html[data-ui-concept=glyph] .inventory-modal .selected-row{background:var(--th-f
 html[data-ui-concept=glyph] .inventory-modal .selected-row .item-letter,html[data-ui-concept=glyph] .inventory-modal .selected-row .item-char,html[data-ui-concept=glyph] .inventory-modal .selected-row .equipped-tag{color:var(--th-bg)!important}
 html[data-ui-concept=glyph] .inventory-modal .category-title::before{content:'┤ '}html[data-ui-concept=glyph] .inventory-modal .category-title::after{content:' ├'}
 html[data-ui-concept=glyph] .inventory-modal .action-btn:hover{background:var(--th-fg);color:var(--th-bg)}
-html[data-ui-concept=glyph] .title-glyph{display:block;margin:0 auto 6px;font:clamp(6px,1.25vw,11px)/1 var(--th-font);color:var(--th-fg);text-shadow:0 0 10px #e4dfd155;white-space:pre;animation:th-flicker 4.5s infinite steps(1)}
+html[data-ui-concept=glyph] .title-glyph{display:block;width:clamp(147px,30.45vw,315px);max-width:100%;height:auto;margin:22px auto 0;overflow:visible;color:var(--th-fg);filter:drop-shadow(0 0 10px #e4dfd155);animation:th-flicker 4.5s infinite steps(1)}
 html[data-ui-concept=glyph] .title-brand h1{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-html[data-ui-concept=glyph] .title-chapter{letter-spacing:.5em;color:var(--th-dim)}
 html[data-ui-concept=glyph] .title-action.primary-action,html[data-ui-concept=glyph] .title-action:hover{background:var(--th-fg);color:var(--th-bg);border-color:var(--th-fg)}
 html[data-ui-concept=glyph] .title-action.primary-action .action-mark,html[data-ui-concept=glyph] .title-action:hover .action-mark,html[data-ui-concept=glyph] .title-action.primary-action .action-detail{color:var(--th-bg)}
+/* Keep inverse background/ink together across hover and immersive overrides.
+ * Every label uses opaque ink, including scoped and inline item/status colors. */
+html[data-ui-concept=glyph] .inventory-modal .selected-row,
+html[data-ui-concept=glyph] .theme-nearby .tn-row.focused,
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn:hover,
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn:focus-visible,
+html[data-ui-concept=glyph] .inventory-modal .action-btn:hover,
+html[data-ui-concept=glyph] .title-action.primary-action,
+html[data-ui-concept=glyph] .title-action:hover{background:var(--th-fg)!important;color:var(--th-bg)!important}
+html[data-ui-concept=glyph] .inventory-modal .selected-row *,
+html[data-ui-concept=glyph] .theme-nearby .tn-row.focused *,
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn:hover *,
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn:focus-visible *,
+html[data-ui-concept=glyph] .inventory-modal .action-btn:hover *,
+html[data-ui-concept=glyph] .title-action.primary-action *,
+html[data-ui-concept=glyph] .title-action:hover *{color:var(--th-bg)!important;opacity:1!important;text-shadow:none!important}
 @keyframes th-flicker{0%,100%{opacity:1}47%{opacity:.84}48%{opacity:1}73%{opacity:.93}}
 /* glyph compact */
 html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait{grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto auto minmax(0,1fr) auto!important;grid-template-areas:'vitals vitals' 'log log' 'map map' 'cmd pad'!important;gap:0!important;padding:0!important}
@@ -229,7 +241,6 @@ html[data-ui-concept=glyph] .theme-hud .th-hp .th-label,html[data-ui-concept=gly
 html[data-ui-concept=glyph] .theme-hud .th-chars{grid-column:2;grid-row:1}
 html[data-ui-concept=glyph] .theme-hud .th-hp-value,html[data-ui-concept=glyph] .theme-hud .th-food-word{grid-column:3;grid-row:1;justify-self:start;padding-left:6px}
 html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn:not([data-action]):not(.command-more)::before{display:none}
-html[data-ui-concept=glyph] .title-glyph{font-size:clamp(7px,1.45vw,15px);margin:22px auto 14px;line-height:1.05;letter-spacing:0}
 html[data-ui-concept=glyph] .title-brand{width:auto;max-width:100%}
 
 html[data-ui-concept=glyph] .app-layout.theme-shell{margin:0!important;height:100dvh!important;background:var(--th-bg)!important;color:var(--th-fg);font-family:var(--th-font);position:relative}
