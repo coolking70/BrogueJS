@@ -1,24 +1,88 @@
+<script lang="ts">
+/** Viewport coordinates: keep the popup above the actual More button, even
+ * when an immersive dock or a scrolling landscape bar changes its parent. */
+export function commandOverflowPosition(anchor: { top: number; right: number }, height: number,
+  viewport: { width: number; height: number; left?: number; top?: number }) {
+  const margin = 8, gap = 8;
+  const leftEdge = (viewport.left ?? 0) + margin;
+  const topEdge = (viewport.top ?? 0) + margin;
+  const width = Math.max(0, Math.min(290, viewport.width - margin * 2));
+  const bottom = Math.min(anchor.top - gap, (viewport.top ?? 0) + viewport.height - margin);
+  const maxHeight = Math.max(0, bottom - topEdge);
+  return {
+    left: Math.max(leftEdge, Math.min(anchor.right - width, leftEdge + viewport.width - margin * 2 - width)),
+    top: Math.max(topEdge, bottom - Math.min(height, maxHeight)),
+    width, maxHeight,
+  };
+}
+</script>
+
 <script setup lang="ts">
 // FE-1：触屏常用命令栏。每个按钮 = 一个键盘命令，经 ui/commands.dispatch
 // （inputManager.triggerAction → game.handlePlayerAction）进入录制边界。
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import { inputManager } from '../engine/Input';
 import { dispatch } from '../ui/commands';
 
-defineProps<{ mode: 'portrait' | 'landscape' | 'desktop' }>();
+const props = defineProps<{ mode: 'portrait' | 'landscape' | 'desktop' }>();
 const expanded = ref(false);
 const root = ref<HTMLElement>();
+const more = ref<HTMLElement>();
+const overflow = ref<HTMLElement>();
+const overflowStyle = ref<Record<string, string>>({ visibility: 'hidden' });
+let observedOverflow: HTMLElement | undefined;
+function positionOverflow() {
+  if (!expanded.value) return;
+  const anchor = more.value?.getBoundingClientRect?.();
+  const popup = overflow.value;
+  if (!anchor || !popup?.getBoundingClientRect) return;
+  const visual = window.visualViewport;
+  const position = commandOverflowPosition(anchor, popup.scrollHeight + 2, {
+    width: visual?.width ?? window.innerWidth, height: visual?.height ?? window.innerHeight,
+    left: visual?.offsetLeft, top: visual?.offsetTop,
+  });
+  overflowStyle.value = {
+    left: `${position.left}px`, top: `${position.top}px`, width: `${position.width}px`,
+    maxHeight: `${position.maxHeight}px`, visibility: 'visible',
+  };
+}
+watch([expanded, () => props.mode], async () => {
+  if (observedOverflow) resizeObserver?.unobserve?.(observedOverflow);
+  observedOverflow = undefined;
+  overflowStyle.value = { visibility: 'hidden' };
+  await nextTick();
+  if (overflow.value) { observedOverflow = overflow.value; resizeObserver?.observe(observedOverflow); }
+  positionOverflow();
+});
 const closeOutside = (event: PointerEvent) => { if (expanded.value && !root.value?.contains(event.target as Node)) expanded.value = false; };
 const primary = new Set(['auto_explore', 'search', 'wait', 'pickup', 'toggle_inventory', 'throw_item', 'escape']);
 function invoke(action: string, data?: unknown) { expanded.value = false; (document.activeElement as HTMLElement)?.blur(); dispatch(action, data); }
 let removeKeyboard: (() => void) | undefined;
-onMounted(() => { document.addEventListener('pointerdown', closeOutside); removeKeyboard = inputManager.registerModalKeyHandler(event => {
+let resizeObserver: ResizeObserver | undefined;
+onMounted(() => {
+ document.addEventListener('pointerdown', closeOutside);
+ window.addEventListener('resize', positionOverflow);
+ window.addEventListener('scroll', positionOverflow, true);
+ window.visualViewport?.addEventListener('resize', positionOverflow);
+ window.visualViewport?.addEventListener('scroll', positionOverflow);
+ if (typeof ResizeObserver !== 'undefined') {
+   resizeObserver = new ResizeObserver(positionOverflow);
+   if (root.value) resizeObserver.observe(root.value);
+ }
+ removeKeyboard = inputManager.registerModalKeyHandler(event => {
  if (!expanded.value) return false;
  if (event.key === 'Escape') { expanded.value = false; (document.activeElement as HTMLElement)?.blur(); }
  return true;
 }, 350); });
-onUnmounted(() => { removeKeyboard?.(); document.removeEventListener('pointerdown', closeOutside); });
+onUnmounted(() => {
+ removeKeyboard?.(); resizeObserver?.disconnect();
+ document.removeEventListener('pointerdown', closeOutside);
+ window.removeEventListener('resize', positionOverflow);
+ window.removeEventListener('scroll', positionOverflow, true);
+ window.visualViewport?.removeEventListener('resize', positionOverflow);
+ window.visualViewport?.removeEventListener('scroll', positionOverflow);
+});
 
 // key：与 Input.ts 同一动作名；label：i18n 键；glyph：CE 的按键字符，作为图标提示
 const { t } = useTranslation();
@@ -47,8 +111,8 @@ const commands = computed(() => [
       <span class="cmd-label">{{ cmd.label }}</span>
       <kbd v-if="cmd.glyph" class="cmd-key" aria-hidden="true">{{ cmd.glyph }}</kbd>
     </button>
-    <button class="cmd-btn command-more" :aria-expanded="expanded" @click="expanded = !expanded; ($event.currentTarget as HTMLElement).blur()"><span class="cmd-label">{{ expanded ? $t('theme.command_less') : $t('theme.command_more') }}</span><span>···</span></button>
-    <div v-if="expanded" class="command-overflow">
+    <button ref="more" class="cmd-btn command-more" :aria-expanded="expanded" @click="expanded = !expanded; ($event.currentTarget as HTMLElement).blur()"><span class="cmd-label">{{ expanded ? $t('theme.command_less') : $t('theme.command_more') }}</span><span>···</span></button>
+    <div v-if="expanded" ref="overflow" class="command-overflow" :style="overflowStyle">
       <button v-for="cmd in commands.filter(c => !primary.has(c.action))" :key="cmd.action + (cmd.data ?? '')" class="cmd-btn" :data-action="cmd.action" :data-direction="cmd.data" @click="invoke(cmd.action, cmd.data)"><span class="cmd-label">{{ cmd.label }}</span><kbd class="cmd-key">{{ cmd.glyph }}</kbd></button>
     </div>
   </nav>

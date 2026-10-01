@@ -1,11 +1,16 @@
 <script setup lang="ts">
 // 刻符状态区：只读轮询（useGameHud），沉浸模式只收起信息，不发游戏命令。
 import { computed } from 'vue';
+import { useTranslation } from 'i18next-vue';
 import { useGameHud, nutritionStatus } from '../../ui/useGameHud';
 import { STOMACH_SIZE } from '../../entities/Player';
 
 const props = withDefaults(defineProps<{ panelOpen?: boolean; showPanelButton?: boolean }>(), { panelOpen: false, showPanelButton: true });
 const emit = defineEmits<{ (e: 'menu'): void; (e: 'panel'): void }>();
+const { t } = useTranslation();
+const panelHint = computed(() => props.panelOpen
+  ? t('theme.panel_close', { defaultValue: 'Collapse nearby information' })
+  : t('theme.panel_hint', { defaultValue: 'Expand nearby entities and inspection information' }));
 const { stats, hp, maxHp, depth, turns, nutrition, statuses } = useGameHud(0);
 const fraction = computed(() => Math.max(0, Math.min(1, hp.value / Math.max(1, maxHp.value))));
 const low = computed(() => fraction.value < 0.3);
@@ -44,6 +49,6 @@ void props;
     <div v-if="statuses.length" class="th-statuses">
       <span v-for="status in statuses" :key="status.id" class="th-status" :style="{ color: status.color }">{{ status.label }} {{ status.value }}</span>
     </div>
-    <button v-if="showPanelButton" class="th-panel th-btn" :aria-expanded="panelOpen" @click="emit('panel')">{{ $t('theme.panel') }}</button>
+    <button v-if="showPanelButton" class="th-panel th-btn" :aria-expanded="panelOpen" :title="panelHint" @click="emit('panel')">{{ panelOpen ? $t('theme.panel_close') : $t('theme.panel') }}</button>
   </header>
 </template>

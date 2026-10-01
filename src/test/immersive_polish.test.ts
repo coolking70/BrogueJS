@@ -253,7 +253,9 @@ describe('DESIGN-3b live display entry points', () => {
         await Vue.nextTick();
         expect(text(find(root, 'tl-flavor'))).toBe('opening flavor');
         logger.log('latest message'); await vi.advanceTimersByTimeAsync(100);
-        expect(all(root).some(n => hasClass(n, 'tl-flavor'))).toBe(false);
+        // UI-4 keeps the flavor's fixed slot while the message covers it.
+        // Visibility still switches to the message; DOM removal was an old premise.
+        expect(find(root, 'tl-flavor').props['aria-hidden']).toBe(true);
         expect(all(root).filter(n => n.type === 'li').map(text)).toEqual([expect.stringContaining('latest message')]);
         find(root, 'tl-open').props.onClick(); expect(journal).toHaveBeenCalledOnce();
     });

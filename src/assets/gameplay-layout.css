@@ -1,5 +1,5 @@
 /* Shared drawers, command overflow and replay controls for the glyph shell. */
-html[data-ui-concept=glyph] .command-overflow{position:absolute;bottom:calc(100% + 8px);right:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;width:290px;max-width:calc(100vw - 25px);padding:10px;border:1px solid var(--th-line);background:var(--th-panel);box-shadow:0 12px 35px #0008;z-index:70}
+html[data-ui-concept=glyph] .command-overflow{position:fixed;bottom:auto;right:auto;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;width:290px;max-width:calc(100vw - 16px);padding:10px;border:1px solid var(--th-line);background:var(--th-panel);box-shadow:0 12px 35px #0008;z-index:70}
 html[data-ui-concept=glyph] .drawer-panel{background:var(--th-panel);padding:0;outline:none;height:100dvh}
 .drawer-panel .context-panel{height:100%;border:0}
 .drawer-panel .context-heading{padding:24px 65px 22px 22px}
@@ -8,10 +8,16 @@ html[data-ui-concept=glyph] .drawer-panel{background:var(--th-panel);padding:0;o
 .drawer-panel .context-inspection,.drawer-panel .context-panel footer{padding:20px 22px}
 .drawer-journal{align-items:flex-end!important;justify-content:center!important}
 .drawer-journal .drawer-panel{width:min(900px,100vw - 32px);height:min(460px,75dvh)!important;border:1px solid var(--th-line);box-shadow:0 -15px 65px #0007}
-.message-journal{display:flex;flex-direction:column;height:100%;padding:22px;color:var(--th-fg);background:var(--th-panel)}
+.message-journal{display:flex;flex-direction:column;box-sizing:border-box;height:100%;min-height:0;padding:22px;color:var(--th-fg);background:var(--th-panel)}
 .message-journal h2{font:18px var(--th-display);letter-spacing:3px;color:var(--th-fg);margin:0 55px 20px 0}
-.journal-entries{overflow-y:auto;min-height:0;flex:1;display:flex;flex-direction:column;gap:14px;font-size:13px;line-height:1.75}
-.journal-entries>div{display:flex;gap:16px}
+.journal-entries{overflow-y:scroll;scrollbar-gutter:stable;overscroll-behavior:contain;touch-action:pan-y;min-height:0;flex:1;display:flex;flex-direction:column;gap:14px;font-size:13px;line-height:1.75}
+/* Use the sized native WebKit scrollbar on Chromium, including macOS overlay
+ * defaults. Standard non-auto scrollbar colors would override that sizing. */
+.journal-entries::-webkit-scrollbar{width:12px}
+@supports not selector(::-webkit-scrollbar){.journal-entries{scrollbar-width:auto;scrollbar-color:var(--th-dim) var(--th-raised)}}
+.journal-entries::-webkit-scrollbar-track{background:var(--th-raised)}
+.journal-entries::-webkit-scrollbar-thumb{background:var(--th-dim);border:2px solid var(--th-raised)}
+.journal-entries>div{display:flex;flex-shrink:0;gap:16px;overflow-wrap:anywhere}
 .journal-tick{font:10px var(--th-num);color:var(--th-dim);padding-top:5px;flex:0 0 25px}
 .journal-entries .latest{padding-bottom:12px;border-bottom:1px solid var(--th-line)}
 .journal-entries .acknowledge{border-left:2px solid var(--th-warn);padding-left:10px}

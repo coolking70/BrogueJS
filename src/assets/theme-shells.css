@@ -55,8 +55,8 @@ html[data-ui-concept=glyph] .theme-log{display:flex;flex-direction:column;min-he
 html[data-ui-concept=glyph] .theme-log .tl-head{display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;background:none;color:var(--th-dim);font:12px var(--th-font);padding:0;min-height:28px;cursor:pointer;text-align:left}
 html[data-ui-concept=glyph] .theme-log .tl-head:hover{color:var(--th-accent)}
 html[data-ui-concept=glyph] .theme-log .tl-flavor{margin:0;color:var(--th-cool);font-size:13px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-html[data-ui-concept=glyph] .theme-log .tl-flavor.empty{display:none}
-html[data-ui-concept=glyph] .theme-log .tl-lines{list-style:none;margin:0;padding:0;overflow:hidden;min-height:0}
+html[data-ui-concept=glyph] .theme-log .tl-flavor.empty{visibility:hidden}
+html[data-ui-concept=glyph] .theme-log .tl-lines{height:calc(var(--log-lines,3) * 22px);flex:0 0 calc(var(--log-lines,3) * 22px);list-style:none;margin:0;padding:0;overflow:hidden;min-height:0}
 html[data-ui-concept=glyph] .theme-log .tl-lines li{display:flex;gap:8px;font-size:13px;line-height:1.55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 html[data-ui-concept=glyph] .theme-log .tl-text{overflow:hidden;text-overflow:ellipsis}
 html[data-ui-concept=glyph] .theme-log .tl-turn{display:none;font-family:var(--th-num);font-size:11px;color:var(--th-dim);opacity:.75;flex:0 0 auto;min-width:2.6em;text-align:right;padding-top:1px}
@@ -176,8 +176,8 @@ html[data-ui-concept=glyph] .theme-nearby .tn-head{border-top:1px solid var(--th
 html[data-ui-concept=glyph] .theme-nearby .tn-row{border:0;padding:4px 0}
 html[data-ui-concept=glyph] .theme-nearby .tn-row.focused{background:var(--th-fg);color:var(--th-bg)}
 html[data-ui-concept=glyph] .theme-log .tl-head{display:none}
-html[data-ui-concept=glyph] .theme-log .tl-lines li{font-size:14px}
-html[data-ui-concept=glyph] .theme-log .tl-flavor{order:3;color:var(--th-cool);border-top:1px dashed var(--th-line);margin-top:4px;padding-top:2px}
+html[data-ui-concept=glyph] .theme-log .tl-lines li{font-size:14px;height:22px;line-height:22px}
+html[data-ui-concept=glyph] .theme-log .tl-flavor{order:3;color:var(--th-cool);box-sizing:border-box;height:25px;flex:0 0 25px;line-height:22px;border-top:1px dashed var(--th-line);margin-top:4px;padding-top:2px}
 html[data-ui-concept=glyph] .app-layout.theme-shell .area-cmd{display:flex!important;flex-wrap:wrap;background:transparent;border:0;padding:0!important}
 html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn{flex:1 1 auto;flex-direction:row!important;justify-content:center!important;gap:6px!important;border:1px solid var(--th-line);background:transparent;min-height:36px;padding:0 10px!important}
 html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn .cmd-icon{display:none}
@@ -265,22 +265,23 @@ html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-status{border:0;paddi
 html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-panel{display:block;flex:0 0 auto;margin-left:auto}
 /* These selectors outrank the default desktop sidebar's 86px minimum and portrait rules. */
 html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-log{height:calc(32px + env(safe-area-inset-bottom));min-height:0;padding:2px 8px calc(2px + env(safe-area-inset-bottom));border:0;border-top:1px solid var(--th-line);background:var(--th-panel);text-align:left}
-html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line{display:flex;flex-direction:row;align-items:center;gap:8px}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line{display:grid;grid-template-columns:minmax(0,1fr) 28px;align-items:center;gap:8px}
 html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-head{display:none}
-html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-lines{flex:1;min-width:0}
-html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-lines:empty{display:none}
-html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-lines li{font-size:13px;line-height:28px;text-align:left}
-html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-flavor{order:0;flex:1;max-width:none;min-width:0;margin:0;padding:0;border:0;line-height:28px}
-html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-open{flex:0 0 28px;height:28px;padding:0;border:0;background:none;color:var(--th-dim);font:18px var(--th-font);cursor:pointer}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-lines{grid-area:1/1;height:28px;min-width:0}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line.has-messages .tl-flavor{visibility:hidden}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-lines li{font-size:13px;height:28px;line-height:28px;text-align:left}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-flavor{grid-area:1/1;height:28px;order:0;flex:1;max-width:none;min-width:0;margin:0;padding:0;border:0;line-height:28px}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-open{grid-area:1/2;height:28px;padding:0;border:0;background:none;color:var(--th-dim);font:18px var(--th-font);cursor:pointer}
 html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-near,html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-cmd{display:none!important}
 /* Preserve the eight-direction pad in compact/coarse-pointer immersive play. */
 html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-pad{display:grid!important;grid-area:map;position:relative;align-self:end;justify-self:start;z-index:45;margin:8px;border:1px solid var(--th-line);background:var(--th-panel)}
 html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open>.area-near{display:flex!important;position:absolute;z-index:45;right:0;top:52px;bottom:32px;width:min(340px,86vw);background:color-mix(in srgb,var(--th-bg) 94%,transparent);border-left:1px solid var(--th-line);padding:10px 14px;overflow-y:auto}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open>.area-log{position:absolute;z-index:46;right:0;bottom:0;width:min(340px,86vw);height:auto;max-height:50%;background:var(--th-bg);border-left:1px solid var(--th-line);padding:8px}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open>.area-log{position:absolute;z-index:46;right:0;bottom:0;width:min(340px,86vw);height:calc(var(--log-lines,12) * 22px + 85px);max-height:50%;background:var(--th-bg);border-left:1px solid var(--th-line);padding:8px}
 html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log{flex-direction:column;align-items:stretch;gap:4px}
 html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-head{display:flex}
 html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-flavor{order:-1;max-width:none}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-lines li{white-space:normal}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-lines{flex:1;overflow-y:auto}
+html[data-ui-concept=glyph] .immersive-mode.theme-panel-open .theme-log .tl-lines li{white-space:nowrap}
 html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open.layout-desktop>.area-cmd{display:grid!important;position:absolute;z-index:46;right:0;top:52px;width:min(340px,86vw);grid-template-columns:repeat(4,minmax(0,1fr))!important;border:0;border-left:1px solid var(--th-line);border-bottom:1px solid var(--th-line);border-radius:0;background:var(--th-bg)}
 html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open.layout-desktop>.area-near{top:160px}
 html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .cmd-btn{background:none;border:0;color:var(--th-fg);flex-direction:column!important;justify-content:center!important;gap:2px!important;min-height:52px}
@@ -310,3 +311,11 @@ html[data-ui-concept=glyph] .app-layout.immersive-mode.is-replaying{grid-templat
 html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape:not(.immersive-mode) .area-cmd{grid-template-columns:repeat(4,minmax(0,1fr))!important}
 html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn{min-width:0}
 html[data-ui-concept=glyph] .theme-hud .th-food-num{display:none}
+
+/* UI-4: native buttons fill the whole entity row in both the sidebar and drawer. */
+html[data-ui-concept=glyph] .theme-log{box-sizing:border-box;cursor:pointer}
+html[data-ui-concept=glyph] .theme-nearby button.tn-row,html[data-ui-concept=glyph] button.context-entity{width:100%;box-sizing:border-box;text-align:left;color:inherit;background:transparent;border-radius:0;font-family:inherit;cursor:pointer;touch-action:manipulation}
+html[data-ui-concept=glyph] .theme-nearby button.tn-row{border:0}
+html[data-ui-concept=glyph] button.context-entity{display:block;border:0;border-bottom:1px solid var(--th-line)}
+html[data-ui-concept=glyph] .theme-nearby button.tn-row:hover,html[data-ui-concept=glyph] button.context-entity:hover{background:var(--th-raised)}
+html[data-ui-concept=glyph] .theme-nearby button.tn-row:focus-visible,html[data-ui-concept=glyph] button.context-entity:focus-visible{outline:1px solid var(--th-accent);outline-offset:-1px}
