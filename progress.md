@@ -65,3 +65,9 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - CAPTIVE-1修复完成：最终会话83665，build/cefetch/full/drift均exit0；259文件4646passed/0failed/8历史skip/5todo，3359.65秒；drift1项，25.68秒。北京时间03:14:34结束，前后SHA256 64b47a05cdb15a78ee4f0451ab43cabdb072f2b7aad4d195c557b2d2e14c57c2一致。首轮3项失败在完整集合均恢复，不是定向拼接。最终仅补文档，main997872f干净；修复保存codex/captive-chains，未合并/推送/发布。5395预览保留，旧存档已生成楼层不迁移。无需重复开发或测试。
 
 - CAPTIVE-1后续合并授权：用户明确要求合并推送。fetch后origin/main仍997872f，修复分支干净且源代码散列与完整全绿门禁一致；fb79ace已快进main。只补合并交接文档，再推送由已有Pages工作流部署，不重复运行完整套件，不创建新版本标签。
+
+- 2026-10-01 DESIGN-2 评审整改（本轮）：原始请求为修复 umbra/ember 全幅地图、展开工具栏遮挡、codex 跟随边距、zen 桌面命令入口、HUD 回合刷新。仅表现层，轻档门禁；不 commit/push、不完整 npm test/CE fetch/full、不提交截图。已读项目约定；浏览器启动被 macOS MachPort 权限拒绝，连接接口无可用浏览器，待以几何/组件回归及指定门禁验证，不能声称截图验收完成。
+
+- DESIGN-2 评审整改完成：五项表现层修复及 ThemeLog 动态行数一并完成。新测试 TFunction 品牌类型通过真实 I18NextVue 插件修正，客户端 SFC 编译与首帧 nextTick 装配正确；新增14项回归。最终 vue-tsc/build exit0，26文件383项全过、补充源码守卫13文件21项全过（238项由名字筛选排除非守卫），原测试未改、规则层未改、无CRLF/commit/push。报告 docs/reports/design-2-review-fixes.report.md，原始门禁 /tmp/brogue-theme-fixes/。用户明确截图由其负责，本轮不再尝试浏览器；等比覆盖裁切与显式整图留白取舍已登记。临时预览5401供验收；无需再启动完整套件。
+
+- DESIGN-2 浏览器反馈 A/B：Claude 浏览器验收原五项基本通过。codex 强制/手动缩放改为主题内临时状态，不保存全局偏好，退出/卸载恢复 zoom/fit/pan；umbra 按浮层实际矩形选择玩家周围的无遮挡纵向区间，允许纵向余量并保留横向覆盖。新增8项，累计22项回归；最终轻档 vue-tsc/build exit0，27文件391项通过，补充源码守卫13文件21项通过（238项由名字筛选排除）。原测试与规则层未改，无CRLF、截图、commit/push；报告已更新，A/B 真实浏览器验收留给用户。门禁日志 /tmp/brogue-theme-fixes/，上一轮保留 round-1/；既有被污染的 zoom=2 不自动清除，可在其它主题点“整图”重设。

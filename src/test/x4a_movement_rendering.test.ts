@@ -252,7 +252,7 @@ describe('X4a text presentation at all Pixi text boundaries', () => {
         for (const raw of glyphs) for (const mode of ['original', 'refined'] as const) {
             for (const value of [glyphSemantic(raw, 'terrain'), glyphSemantic(raw, 'monster'), projectileSemantic(raw)]) {
                 const sprite = { text: '', style: {}, anchor: { set() {} }, visible: false, x: 0, y: 0 };
-                paintMapText(sprite as never, value, 0xffffff, mode, 'classic', 0, 0, 16);
+                paintMapText(sprite as never, value, 0xffffff, mode, 0, 0, 16);
                 expect(sprite.text).toBe(normalizeMapGlyph(raw));
             }
         }

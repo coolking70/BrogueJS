@@ -11,7 +11,7 @@ onUnmounted(() => window.clearInterval(timer));
  <section class="message-journal">
   <h2>{{ $t('sidebar.log') }}</h2>
   <div class="journal-entries" role="log">
-   <p v-if="!logs.length">{{ $t('lab.journal_empty') }}</p>
+   <p v-if="!logs.length">{{ $t('theme.journal_empty') }}</p>
    <div v-for="(msg,index) in logs" :key="msg.id" :class="{ latest:index === 0, acknowledge:msg.acknowledge }" :style="{ color:msg.color }"><span class="journal-tick">{{ String(logs.length-index).padStart(2, '0') }}</span><span>{{ msg.text }}<small v-if="msg.count > 1"> ×{{ msg.count }}</small></span></div>
   </div>
  </section>

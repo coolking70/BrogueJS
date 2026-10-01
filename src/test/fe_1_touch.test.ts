@@ -212,7 +212,7 @@ describe('FE-1 结构守卫：触屏组件只经录制边界改状态', () => {
         }
     });
     it('目标条/状态条/消息条/缩放钮/抽屉不调用 activeGame 的任何方法（只读字段）', () => {
-        for (const file of ['../components/TargetBar.vue', '../components/MobileHud.vue', '../components/MessageStrip.vue',
+        for (const file of ['../components/TargetBar.vue', '../components/theme/ThemeHud.vue', '../components/theme/ThemeLog.vue',
             '../components/MapZoomControls.vue', '../components/SideDrawer.vue', '../ui/useGameHud.ts', '../ui/targeting.ts',
             '../ui/mapCamera.ts', '../ui/touchGestures.ts', '../ui/layout.ts']) {
             expect(read(file), file).not.toMatch(/activeGame\.\w+\s*\(/);

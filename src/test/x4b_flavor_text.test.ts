@@ -168,10 +168,10 @@ describe('X4b CE flavorMessage display/archive boundary', () => {
     it('desktop and compact HUD put inspection before flavor, on the existing secondary line', () => {
         const sidebar = readFileSync('src/components/Sidebar.vue', 'utf8');
         const hud = readFileSync('src/ui/useGameHud.ts', 'utf8');
-        const strip = readFileSync('src/components/MessageStrip.vue', 'utf8');
+        const strip = readFileSync('src/components/theme/ThemeLog.vue', 'utf8');
         expect(sidebar).toContain('activeGame.hoveredText || activeGame.flavorText');
         expect(hud).toContain('game.hoveredText || game.flavorText');
-        expect(strip).toContain('class="strip-hover"');
-        expect(strip).toContain('useGameHud(props.lines)');
+        expect(strip).toContain('class="tl-flavor"');
+        expect(strip).toContain('useGameHud(() => props.lines)');
     });
 });

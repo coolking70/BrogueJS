@@ -1,8 +1,11 @@
 <script setup lang="ts">
 // FE-1：紧凑模式下的侧栏抽屉（右侧滑出），承载完整 Sidebar（可见生物 + 日志）。
-import { onMounted, onUnmounted, watch, ref, nextTick } from 'vue';
+import { computed, onMounted, onUnmounted, watch, ref, nextTick } from 'vue';
+import { useTranslation } from 'i18next-vue';
 import { inputManager } from '../engine/Input';
 const props = withDefaults(defineProps<{ open: boolean; variant?: 'context' | 'journal' }>(), { variant: 'context' });
+const { t } = useTranslation();
+const drawerLabel = computed(() => props.variant === 'journal' ? t('sidebar.log') : t('theme.context'));
 const panel = ref<HTMLElement>();
 let removeKeyboard: (() => void) | undefined;
 onMounted(() => { removeKeyboard = inputManager.registerModalKeyHandler((event) => {
@@ -20,7 +23,7 @@ const emit = defineEmits<{ (e: 'close'): void }>();
   <Teleport to="body">
     <Transition name="drawer">
       <div v-if="open" :class="['drawer-backdrop', `drawer-${variant}`]" @click.self="emit('close')">
-        <aside ref="panel" tabindex="-1" class="drawer-panel" role="dialog" @keydown.stop @keyup.stop @keydown.esc="emit('close')" :aria-label="variant === 'journal' ? $t('sidebar.log') : $t('lab.context')">
+        <aside ref="panel" tabindex="-1" class="drawer-panel" role="dialog" @keydown.stop @keyup.stop @keydown.esc="emit('close')" :aria-label="drawerLabel">
           <button class="drawer-close" :aria-label="$t('mobile.close')" @click="emit('close')">×</button>
           <slot />
         </aside>

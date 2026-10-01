@@ -1,0 +1,312 @@
+/* DESIGN-3: fixed glyph palette and shell, with optional immersive layout. */
+html[data-ui-concept=glyph]{--th-bg:#050505;--th-panel:#0d0d0c;--th-raised:#181815;--th-line:#34322c;--th-fg:#e4dfd1;--th-dim:#9e998d;--th-accent:#e4dfd1;--th-on-accent:#050505;--th-hp:#d9503f;--th-hp-bg:#3a2622;--th-ok:#8fbf6a;--th-warn:#d8b25a;--th-cool:#7fb6c9;--th-font:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mono","PingFang SC","Noto Sans CJK SC","Microsoft YaHei",monospace;--th-num:var(--th-font);--th-display:var(--th-font);--th-r:0px}
+
+/* map the shell tokens onto the variables the shared components already read */
+html[data-ui-concept=glyph]{--bg-dark:var(--th-bg);--bg-panel:var(--th-panel);--bg-panel-solid:var(--th-panel);--panel-bg:color-mix(in srgb,var(--th-panel) 97%,transparent);--panel-bg-strong:var(--th-panel);--border-color:var(--th-line);--panel-border:var(--th-line);--btn-border:var(--th-line);--btn-bg:var(--th-raised);--btn-bg-active:color-mix(in srgb,var(--th-accent) 22%,var(--th-raised));--text-primary:var(--th-fg);--text-secondary:var(--th-dim);--color-accent:var(--th-accent);--color-gold:var(--th-accent);--color-hp:var(--th-hp);--color-hp-bg:var(--th-hp-bg);--font-main:var(--th-font);--font-mono:var(--th-num);--font-display:var(--th-display);--ui-radius:var(--th-r);color-scheme:dark}
+html[data-ui-concept=glyph] body{background:var(--th-bg)}
+html[data-ui-concept=glyph] .th-num{font-family:var(--th-num);font-variant-numeric:tabular-nums}
+
+/* ---------- shell frame ---------- */
+html[data-ui-concept=glyph] .app-layout.theme-shell .map-area{border:0;border-radius:0;box-shadow:none;background:#000;margin:0}
+html[data-ui-concept=glyph] .app-layout.theme-shell .area-vitals{grid-area:vitals;min-width:0;min-height:0}
+html[data-ui-concept=glyph] .app-layout.theme-shell .area-log{grid-area:log;min-width:0;min-height:0}
+html[data-ui-concept=glyph] .app-layout.theme-shell .area-near{grid-area:near;min-width:0;min-height:0}
+html[data-ui-concept=glyph] .app-layout.theme-shell .area-target{grid-area:map;align-self:start;justify-self:center;z-index:40}
+html[data-ui-concept=glyph] .app-layout.theme-shell .target-bar{background:color-mix(in srgb,var(--th-panel) 94%,transparent);border-color:color-mix(in srgb,var(--th-accent) 50%,transparent);border-radius:var(--th-r)}
+html[data-ui-concept=glyph] .app-layout.theme-shell .target-prompt{color:var(--th-fg)}
+html[data-ui-concept=glyph] .app-layout.theme-shell .tb-btn{border-radius:var(--th-r)}
+html[data-ui-concept=glyph] .app-layout.theme-shell .tb-btn.primary{background:var(--th-accent);color:var(--th-on-accent);border-color:transparent}
+html[data-ui-concept=glyph] .app-layout.theme-shell .tb-btn.primary:disabled{background:transparent;color:var(--th-dim);border:1px dashed var(--th-line)}
+html[data-ui-concept=glyph] .map-zoom{opacity:.72;gap:4px}
+html[data-ui-concept=glyph] .map-zoom button{width:34px;height:34px;border-radius:var(--th-r);font-size:1rem;background:color-mix(in srgb,var(--th-panel) 80%,transparent);border-color:var(--th-line)}
+html[data-ui-concept=glyph] .has-touch-controls .map-zoom button{width:44px;height:44px}
+html[data-ui-concept=glyph] .app-layout.theme-shell .map-zoom{top:8px;right:8px}
+
+/* Glyph HUD */
+html[data-ui-concept=glyph] .theme-hud{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;color:var(--th-fg);font-family:var(--th-font);min-width:0}
+html[data-ui-concept=glyph] .theme-hud .th-label{color:var(--th-dim);font-size:12px}
+html[data-ui-concept=glyph] .theme-hud .th-btn{min-height:36px;padding:0 12px;border:1px solid var(--th-line);background:var(--th-raised);color:var(--th-fg);border-radius:var(--th-r);font:13px var(--th-font);white-space:nowrap}
+html[data-ui-concept=glyph] .has-touch-controls .theme-hud .th-btn,html[data-ui-concept=glyph] .layout-portrait .theme-hud .th-btn,html[data-ui-concept=glyph] .layout-landscape .theme-hud .th-btn{min-height:44px}
+html[data-ui-concept=glyph] .theme-hud .th-btn[aria-expanded=true]{border-color:var(--th-accent);color:var(--th-accent)}
+html[data-ui-concept=glyph] .theme-hud .th-hp,html[data-ui-concept=glyph] .theme-hud .th-food{display:flex;align-items:center;gap:8px;min-width:0}
+html[data-ui-concept=glyph] .theme-hud .th-hp-bar,html[data-ui-concept=glyph] .theme-hud .th-food-bar{display:block;position:relative;height:6px;background:var(--th-hp-bg);flex:1;min-width:40px;overflow:hidden;border-radius:calc(var(--th-r) / 2)}
+html[data-ui-concept=glyph] .theme-hud .th-hp-fill,html[data-ui-concept=glyph] .theme-hud .th-food-bar i{position:absolute;inset:0 auto 0 0;background:var(--th-hp);transition:width .3s}
+html[data-ui-concept=glyph] .theme-hud .th-food-bar{background:color-mix(in srgb,var(--food) 18%,transparent)}
+html[data-ui-concept=glyph] .theme-hud .th-food-bar i{background:var(--food)}
+html[data-ui-concept=glyph] .theme-hud .th-food-word{color:var(--food);white-space:nowrap}
+html[data-ui-concept=glyph] .theme-hud .th-food-segs i{background:linear-gradient(90deg,var(--food) calc(var(--f) * 100%),color-mix(in srgb,var(--food) 16%,transparent) calc(var(--f) * 100%))}
+html[data-ui-concept=glyph] .theme-hud .th-chars{display:none;font-family:var(--th-num);letter-spacing:-.06em;white-space:nowrap;line-height:1}
+html[data-ui-concept=glyph] .theme-hud .th-chars .on{color:var(--th-hp)}html[data-ui-concept=glyph] .theme-hud .th-chars .off{color:var(--th-hp-bg)}
+html[data-ui-concept=glyph] .theme-hud .th-food-chars .on{color:var(--food)}html[data-ui-concept=glyph] .theme-hud .th-food-chars .off{color:color-mix(in srgb,var(--food) 22%,transparent)}
+html[data-ui-concept=glyph] .theme-hud .th-hp-value b{font-weight:600}
+html[data-ui-concept=glyph] .theme-hud .th-hp-max{color:var(--th-dim)}
+html[data-ui-concept=glyph] .theme-hud .th-depth{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+html[data-ui-concept=glyph] .theme-hud .th-depth>b{color:var(--th-accent)}
+html[data-ui-concept=glyph] .theme-hud .th-stats{display:flex;gap:14px;margin:0}
+html[data-ui-concept=glyph] .theme-hud .th-stat{display:flex;gap:5px;align-items:baseline}
+html[data-ui-concept=glyph] .theme-hud .th-stat dt{color:var(--th-dim);font-size:12px}html[data-ui-concept=glyph] .theme-hud .th-stat dd{margin:0}
+html[data-ui-concept=glyph] .theme-hud .th-stat small{color:var(--th-dim);font-size:.8em}
+html[data-ui-concept=glyph] .theme-hud .th-statuses{display:flex;flex-wrap:wrap;gap:4px;flex-basis:100%}
+html[data-ui-concept=glyph] .theme-hud .th-status{font-size:11px;border:1px solid currentColor;padding:0 6px;border-radius:var(--th-r);opacity:.9}
+html[data-ui-concept=glyph] .theme-hud.hp-low .th-hp-cur{color:var(--th-hp)}
+
+/* log */
+html[data-ui-concept=glyph] .theme-log{display:flex;flex-direction:column;min-height:0;overflow:hidden;color:var(--th-fg);font-family:var(--th-font)}
+html[data-ui-concept=glyph] .theme-log .tl-head{display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;background:none;color:var(--th-dim);font:12px var(--th-font);padding:0;min-height:28px;cursor:pointer;text-align:left}
+html[data-ui-concept=glyph] .theme-log .tl-head:hover{color:var(--th-accent)}
+html[data-ui-concept=glyph] .theme-log .tl-flavor{margin:0;color:var(--th-cool);font-size:13px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-ui-concept=glyph] .theme-log .tl-flavor.empty{display:none}
+html[data-ui-concept=glyph] .theme-log .tl-lines{list-style:none;margin:0;padding:0;overflow:hidden;min-height:0}
+html[data-ui-concept=glyph] .theme-log .tl-lines li{display:flex;gap:8px;font-size:13px;line-height:1.55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-ui-concept=glyph] .theme-log .tl-text{overflow:hidden;text-overflow:ellipsis}
+html[data-ui-concept=glyph] .theme-log .tl-turn{display:none;font-family:var(--th-num);font-size:11px;color:var(--th-dim);opacity:.75;flex:0 0 auto;min-width:2.6em;text-align:right;padding-top:1px}
+html[data-ui-concept=glyph] .theme-log .tl-lines li.acknowledge{font-weight:600}
+html[data-ui-concept=glyph] .theme-log .tl-count{margin-left:6px;font-family:var(--th-num);font-size:.85em;opacity:.8}
+html[data-ui-concept=glyph] .theme-log .tl-lines li.age-1{opacity:.86}html[data-ui-concept=glyph] .theme-log .tl-lines li.age-2{opacity:.74}html[data-ui-concept=glyph] .theme-log .tl-lines li.age-3,html[data-ui-concept=glyph] .theme-log .tl-lines li.age-4{opacity:.64}
+
+/* nearby */
+html[data-ui-concept=glyph] .theme-nearby{display:flex;flex-direction:column;min-height:0;overflow:hidden;color:var(--th-fg);font-family:var(--th-font)}
+html[data-ui-concept=glyph] .theme-nearby .tn-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--th-dim);min-height:28px}
+html[data-ui-concept=glyph] .theme-nearby .tn-list{list-style:none;margin:0;padding:0;overflow-y:auto;min-height:0}
+html[data-ui-concept=glyph] .theme-nearby .tn-row{display:grid;grid-template-columns:1.4em minmax(0,1fr) auto;align-items:center;gap:2px 8px;padding:6px 0;font-size:13px;border-bottom:1px solid color-mix(in srgb,var(--th-line) 60%,transparent)}
+html[data-ui-concept=glyph] .theme-nearby .tn-row.focused{background:color-mix(in srgb,var(--th-accent) 10%,transparent)}
+html[data-ui-concept=glyph] .theme-nearby .tn-glyph{font-family:var(--th-num);text-align:center;font-weight:600}
+html[data-ui-concept=glyph] .theme-nearby .tn-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui-concept=glyph] .theme-nearby .tn-behavior{color:var(--th-dim);margin-left:4px;font-size:11px}
+html[data-ui-concept=glyph] .theme-nearby .tn-hp{grid-column:2;height:3px;background:var(--th-hp-bg);position:relative;overflow:hidden}
+html[data-ui-concept=glyph] .theme-nearby .tn-hp i{position:absolute;inset:0 auto 0 0}
+html[data-ui-concept=glyph] .theme-nearby .tn-hpnum{grid-column:3;grid-row:2;font-size:11px;color:var(--th-dim)}
+html[data-ui-concept=glyph] .theme-nearby .tn-dist{grid-column:3;grid-row:1;font-size:11px;color:var(--th-dim)}
+html[data-ui-concept=glyph] .theme-nearby .tn-statuses{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px;font-size:11px}
+html[data-ui-concept=glyph] .theme-nearby .tn-empty{margin:6px 0;color:var(--th-dim);font-size:12px}
+html[data-ui-concept=glyph] .theme-nearby .tn-count{color:var(--th-dim)}
+
+/* commands (CommandBar) */
+html[data-ui-concept=glyph] .app-layout.theme-shell .area-cmd{grid-area:cmd;margin:0;z-index:30;border-radius:var(--th-r);background:var(--th-panel);border:1px solid var(--th-line);padding:4px!important;gap:4px!important;box-shadow:none}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn{background:var(--th-raised);color:var(--th-fg);border:1px solid transparent;border-radius:var(--th-r);font-family:var(--th-font)}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn:hover{border-color:var(--th-accent);color:var(--th-accent);background:var(--th-raised)}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-label{font-size:12px!important;white-space:nowrap!important;letter-spacing:0}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-key{font-family:var(--th-num);font-size:10px!important;color:var(--th-dim);opacity:.9}
+html[data-ui-concept=glyph] .app-layout.theme-shell .command-overflow{background:var(--th-panel);border-color:var(--th-line);border-radius:var(--th-r)}
+html[data-ui-concept=glyph] .app-layout.theme-shell.has-touch-controls .cmd-key,html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait .cmd-key,html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape .cmd-key{display:none}
+html[data-ui-concept=glyph] .app-layout.theme-shell .area-pad{grid-area:pad;background:var(--th-panel);border:1px solid var(--th-line);border-radius:var(--th-r);padding:4px;gap:3px;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);align-self:end;justify-self:stretch;margin:0;opacity:1}
+html[data-ui-concept=glyph] .app-layout.theme-shell .pad-btn{background:var(--th-raised);border-color:var(--th-line);border-radius:var(--th-r);color:var(--th-fg)}
+html[data-ui-concept=glyph] .app-layout.theme-shell .replay-controls{grid-area:cmd}
+
+/* Glyph overlays */
+html[data-ui-concept=glyph] .inventory-modal{background:var(--th-panel)!important;border:1px solid var(--th-line)!important;border-radius:var(--th-r)!important;backdrop-filter:none;box-shadow:0 30px 80px #000c}
+html[data-ui-concept=glyph] .inventory-modal .modal-header{background:var(--th-raised);border-bottom:1px solid var(--th-line)}
+html[data-ui-concept=glyph] .inventory-modal .modal-header h2{font:600 18px var(--th-display);text-shadow:none;color:var(--th-fg)}
+html[data-ui-concept=glyph] .inventory-modal .close-btn{width:44px;height:44px;border-radius:var(--th-r);border-color:var(--th-line)}
+html[data-ui-concept=glyph] .inventory-modal .category-block{background:transparent;border:0;border-radius:0;margin-bottom:12px}
+html[data-ui-concept=glyph] .inventory-modal .category-title{background:none;border-bottom:1px solid var(--th-line);color:var(--th-dim);font-size:12px;letter-spacing:.1em;padding:6px 4px}
+html[data-ui-concept=glyph] .inventory-modal .item-row{font-family:var(--th-font);min-height:44px;padding:6px 8px;font-size:14px}
+html[data-ui-concept=glyph] .inventory-modal .item-letter{color:var(--th-accent);font-family:var(--th-num);opacity:.85}
+html[data-ui-concept=glyph] .inventory-modal .item-char{font-family:var(--th-num)}
+html[data-ui-concept=glyph] .inventory-modal .selected-row{background:color-mix(in srgb,var(--th-accent) 12%,transparent)!important;border-left:3px solid var(--th-accent)}
+html[data-ui-concept=glyph] .inventory-modal .equipped-tag{color:var(--th-ok);background:none!important;border:0!important;font-size:12px}
+html[data-ui-concept=glyph] .inventory-modal .item-actions{display:flex;flex-wrap:wrap;gap:6px;padding:6px 8px 10px 48px}
+html[data-ui-concept=glyph] .inventory-modal .action-btn{min-height:44px;padding:0 14px;border-radius:var(--th-r);border:1px solid var(--th-line);background:var(--th-raised);color:var(--th-fg);font:13px var(--th-font)}
+html[data-ui-concept=glyph] .inventory-modal .action-btn:first-child{border-color:var(--th-accent);color:var(--th-accent)}
+html[data-ui-concept=glyph] .inventory-modal .action-btn.danger{color:var(--th-hp);border-color:color-mix(in srgb,var(--th-hp) 50%,transparent);background:transparent}
+html[data-ui-concept=glyph] .detail-panel{background:var(--th-panel)!important;border:1px solid var(--th-line)!important;border-radius:var(--th-r)!important;color:var(--th-fg);font-family:var(--th-font)}
+html[data-ui-concept=glyph] .detail-header{background:var(--th-raised)!important;border-bottom:1px solid var(--th-line)!important}
+html[data-ui-concept=glyph] .detail-name{font-family:var(--th-display);color:var(--th-fg)!important}
+html[data-ui-concept=glyph] .section-header{color:var(--th-accent)!important;border-color:var(--th-line)!important}
+html[data-ui-concept=glyph] .detail-close{width:44px;height:44px;border-radius:var(--th-r)!important;background:var(--th-raised)!important;border-color:var(--th-line)!important;color:var(--th-fg)!important}
+html[data-ui-concept=glyph] .detail-footer{border-color:var(--th-line)!important;color:var(--th-dim)}
+html[data-ui-concept=glyph] .game-end-overlay{background:color-mix(in srgb,var(--th-bg) 82%,transparent)!important;backdrop-filter:blur(6px)}
+html[data-ui-concept=glyph] .end-panel{background:var(--th-panel)!important;border:1px solid var(--th-line)!important;border-radius:var(--th-r)!important;color:var(--th-fg)!important;font-family:var(--th-font)!important;max-height:calc(100dvh - 24px);overflow-y:auto}
+html[data-ui-concept=glyph] .end-panel h1{font-family:var(--th-display)!important;letter-spacing:.2em;font-weight:500!important;text-shadow:none!important}
+html[data-ui-concept=glyph] .end-panel .title-loss{color:var(--th-hp)!important}html[data-ui-concept=glyph] .end-panel .title-win{color:var(--th-accent)!important}
+html[data-ui-concept=glyph] .end-panel .score-value{color:var(--th-accent)!important;font-family:var(--th-num)}
+html[data-ui-concept=glyph] .end-panel .stats-grid,html[data-ui-concept=glyph] .end-panel .inventory-list{background:var(--th-raised)!important;border-color:var(--th-line)!important;border-radius:var(--th-r)!important}
+html[data-ui-concept=glyph] .end-panel .stat-value{font-family:var(--th-num)}
+html[data-ui-concept=glyph] .end-panel button{min-height:44px;border-radius:var(--th-r)!important;background:var(--th-raised)!important;border:1px solid var(--th-line)!important;color:var(--th-fg)!important;font-family:var(--th-font)!important}
+html[data-ui-concept=glyph] .end-panel .end-actions button:last-child{background:var(--th-accent)!important;color:var(--th-on-accent)!important;border-color:transparent!important}
+html[data-ui-concept=glyph] .drawer-panel{background:var(--th-panel)!important}
+html[data-ui-concept=glyph] .message-journal{background:var(--th-panel)!important;font-family:var(--th-font)}
+html[data-ui-concept=glyph] .message-journal h2{font-family:var(--th-display)!important;color:var(--th-fg)!important}
+html[data-ui-concept=glyph] .journal-tick{color:var(--th-dim)!important;font-family:var(--th-num)!important}
+html[data-ui-concept=glyph] .context-panel{background:var(--th-panel);border-color:var(--th-line)}
+
+/* ---------- title screen (no bitmap: CSS, canvas, characters) ---------- */
+html[data-ui-concept=glyph] .menu-overlay{background:var(--th-bg)}
+html[data-ui-concept=glyph] .title-vignette{background:radial-gradient(ellipse at 30% 50%,transparent 30%,color-mix(in srgb,var(--th-bg) 80%,transparent) 100%)}
+html[data-ui-concept=glyph] .title-glyph{display:none}
+html[data-ui-concept=glyph] .title-brand h1{font-family:var(--th-display);color:var(--th-fg);text-shadow:none}
+html[data-ui-concept=glyph] .title-chapter{color:var(--th-accent);font-family:var(--th-font)}
+html[data-ui-concept=glyph] .title-edition,html[data-ui-concept=glyph] .title-code,html[data-ui-concept=glyph] .title-footer{color:var(--th-dim)}
+html[data-ui-concept=glyph] .title-edition span{background:var(--th-line)}
+html[data-ui-concept=glyph] .title-action{color:var(--th-fg);font-family:var(--th-font)}
+html[data-ui-concept=glyph] .title-action .action-mark{color:var(--th-accent)}
+html[data-ui-concept=glyph] .title-action:hover{color:var(--th-accent);background:color-mix(in srgb,var(--th-accent) 10%,transparent)}
+html[data-ui-concept=glyph] .title-action.primary-action{border-color:color-mix(in srgb,var(--th-accent) 50%,transparent);background:color-mix(in srgb,var(--th-accent) 12%,transparent);color:var(--th-fg)}
+html[data-ui-concept=glyph] .action-detail,html[data-ui-concept=glyph] .title-action kbd{color:var(--th-dim)}
+html[data-ui-concept=glyph] .menu-card{background:var(--th-panel);border:1px solid var(--th-line);border-radius:var(--th-r);box-shadow:0 30px 90px #000a}
+html[data-ui-concept=glyph] .menu-card .begin-button{background:var(--th-accent)!important;color:var(--th-on-accent)!important;border-color:transparent!important}
+html[data-ui-concept=glyph] .section-mark{color:var(--th-accent);font-family:var(--th-font)}
+html[data-ui-concept=glyph] .menu-section-header{border-color:var(--th-line)}
+html[data-ui-concept=glyph] .menu-card button,html[data-ui-concept=glyph] .menu-card input,html[data-ui-concept=glyph] .menu-card select{background:var(--th-raised);border-color:var(--th-line);color:var(--th-fg);border-radius:var(--th-r);font-family:var(--th-font)}
+html[data-ui-concept=glyph] .pause-overlay{background:color-mix(in srgb,var(--th-bg) 86%,transparent);backdrop-filter:blur(6px)}
+
+/* ================= A · glyph (刻符): CE-native console ================= */
+html[data-ui-concept=glyph] .app-layout.theme-shell{font-family:var(--th-font)}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop{grid-template-columns:212px minmax(0,1fr)!important;grid-template-rows:auto auto minmax(0,1fr) auto!important;grid-template-areas:'vitals log' 'vitals map' 'near map' 'near cmd'!important;gap:0 12px!important;padding:0 12px 10px 0!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop .area-vitals,html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop .area-near{background:var(--th-panel);border-right:1px solid var(--th-line);padding:12px 14px}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop .area-near{padding-top:0}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop .area-log{padding:10px 56px 8px 0;min-height:86px}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop .area-cmd{margin-top:8px}
+html[data-ui-concept=glyph] .theme-hud{flex-direction:column;align-items:stretch;gap:6px;font-size:13px}
+html[data-ui-concept=glyph] .theme-hud .th-menu{order:-2;align-self:flex-start}
+html[data-ui-concept=glyph] .theme-hud .th-depth{order:-1;border:1px solid var(--th-line);padding:4px 8px;justify-content:space-between}
+html[data-ui-concept=glyph] .theme-hud .th-depth .th-turn{display:flex;gap:6px}
+html[data-ui-concept=glyph] .theme-hud .th-hp,html[data-ui-concept=glyph] .theme-hud .th-food{display:grid;grid-template-columns:4.5em 1fr;gap:0 8px}
+html[data-ui-concept=glyph] .theme-hud .th-hp .th-label,html[data-ui-concept=glyph] .theme-hud .th-food .th-label{grid-row:1/3}
+html[data-ui-concept=glyph] .theme-hud .th-hp-bar,html[data-ui-concept=glyph] .theme-hud .th-food-bar{display:none}
+html[data-ui-concept=glyph] .theme-hud .th-chars{display:block;font-size:13px}
+html[data-ui-concept=glyph] .theme-hud .th-hp-value{grid-column:2;order:2}
+html[data-ui-concept=glyph] .theme-hud .th-food-word{grid-column:2;order:2}
+html[data-ui-concept=glyph] .theme-hud .th-stats{flex-direction:column;gap:2px}
+html[data-ui-concept=glyph] .theme-hud .th-stat{display:grid;grid-template-columns:4.5em 1fr;gap:8px}
+html[data-ui-concept=glyph] .theme-hud .th-stat dt{font-size:13px}
+html[data-ui-concept=glyph] .theme-hud .th-panel{display:none}
+html[data-ui-concept=glyph] .theme-hud .th-status{border-radius:0}
+html[data-ui-concept=glyph] .theme-nearby .tn-head{border-top:1px solid var(--th-line);padding-top:6px}
+html[data-ui-concept=glyph] .theme-nearby .tn-row{border:0;padding:4px 0}
+html[data-ui-concept=glyph] .theme-nearby .tn-row.focused{background:var(--th-fg);color:var(--th-bg)}
+html[data-ui-concept=glyph] .theme-log .tl-head{display:none}
+html[data-ui-concept=glyph] .theme-log .tl-lines li{font-size:14px}
+html[data-ui-concept=glyph] .theme-log .tl-flavor{order:3;color:var(--th-cool);border-top:1px dashed var(--th-line);margin-top:4px;padding-top:2px}
+html[data-ui-concept=glyph] .app-layout.theme-shell .area-cmd{display:flex!important;flex-wrap:wrap;background:transparent;border:0;padding:0!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn{flex:1 1 auto;flex-direction:row!important;justify-content:center!important;gap:6px!important;border:1px solid var(--th-line);background:transparent;min-height:36px;padding:0 10px!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn .cmd-icon{display:none}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-key{order:-1;color:var(--th-warn)!important;font-size:12px!important;position:static!important;opacity:1!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-key::before{content:'['}html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-key::after{content:']'}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn:hover,html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn:focus-visible{background:var(--th-fg);color:var(--th-bg);border-color:var(--th-fg)}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn:hover .cmd-key{color:var(--th-bg)!important}
+html[data-ui-concept=glyph] .inventory-modal .selected-row{background:var(--th-fg)!important;color:var(--th-bg);border-left:0!important;padding-left:8px!important}
+html[data-ui-concept=glyph] .inventory-modal .selected-row .item-letter,html[data-ui-concept=glyph] .inventory-modal .selected-row .item-char,html[data-ui-concept=glyph] .inventory-modal .selected-row .equipped-tag{color:var(--th-bg)!important}
+html[data-ui-concept=glyph] .inventory-modal .category-title::before{content:'┤ '}html[data-ui-concept=glyph] .inventory-modal .category-title::after{content:' ├'}
+html[data-ui-concept=glyph] .inventory-modal .action-btn:hover{background:var(--th-fg);color:var(--th-bg)}
+html[data-ui-concept=glyph] .title-glyph{display:block;margin:0 auto 6px;font:clamp(6px,1.25vw,11px)/1 var(--th-font);color:var(--th-fg);text-shadow:0 0 10px #e4dfd155;white-space:pre;animation:th-flicker 4.5s infinite steps(1)}
+html[data-ui-concept=glyph] .title-brand h1{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+html[data-ui-concept=glyph] .title-chapter{letter-spacing:.5em;color:var(--th-dim)}
+html[data-ui-concept=glyph] .title-action.primary-action,html[data-ui-concept=glyph] .title-action:hover{background:var(--th-fg);color:var(--th-bg);border-color:var(--th-fg)}
+html[data-ui-concept=glyph] .title-action.primary-action .action-mark,html[data-ui-concept=glyph] .title-action:hover .action-mark,html[data-ui-concept=glyph] .title-action.primary-action .action-detail{color:var(--th-bg)}
+@keyframes th-flicker{0%,100%{opacity:1}47%{opacity:.84}48%{opacity:1}73%{opacity:.93}}
+/* glyph compact */
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait{grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto auto minmax(0,1fr) auto!important;grid-template-areas:'vitals vitals' 'log log' 'map map' 'cmd pad'!important;gap:0!important;padding:0!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait .area-near,html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape .area-near{display:none}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait .area-vitals{padding:6px 56px 6px 8px;border-bottom:1px solid var(--th-line);background:var(--th-panel)}
+html[data-ui-concept=glyph] .layout-portrait .theme-hud,html[data-ui-concept=glyph] .layout-landscape .theme-hud{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 12px}
+html[data-ui-concept=glyph] .layout-portrait .theme-hud .th-menu{order:0}
+html[data-ui-concept=glyph] .layout-portrait .theme-hud .th-depth{order:0;border:0;padding:0}
+html[data-ui-concept=glyph] .layout-portrait .theme-hud .th-turn{display:none!important}
+html[data-ui-concept=glyph] .layout-portrait .theme-hud .th-hp,html[data-ui-concept=glyph] .layout-portrait .theme-hud .th-food{display:flex}
+html[data-ui-concept=glyph] .layout-portrait .theme-hud .th-food .th-chars{display:none}
+html[data-ui-concept=glyph] .layout-portrait .theme-hud .th-stats{flex-direction:row;gap:12px}
+html[data-ui-concept=glyph] .layout-portrait .theme-hud .th-stat{display:flex;gap:4px}
+html[data-ui-concept=glyph] .layout-portrait .theme-hud .th-stealth{display:none}
+html[data-ui-concept=glyph] .layout-portrait .theme-hud .th-panel,html[data-ui-concept=glyph] .layout-landscape .theme-hud .th-panel{display:block;margin-left:auto}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait .area-log{padding:4px 8px;border-bottom:1px solid var(--th-line)}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait .area-cmd,html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape .area-cmd{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;padding:6px!important;border-top:1px solid var(--th-line)}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait .cmd-btn,html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape .cmd-btn{min-height:44px}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait .area-pad{border:0;border-left:1px solid var(--th-line);border-top:1px solid var(--th-line)}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape{grid-template-columns:200px minmax(0,1fr) auto!important;grid-template-rows:auto minmax(0,1fr) auto!important;grid-template-areas:'vitals log pad' 'vitals map pad' 'vitals cmd pad'!important;gap:0 8px!important;padding:0!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape .area-vitals{padding:6px 8px;background:var(--th-panel);border-right:1px solid var(--th-line);overflow:auto}
+html[data-ui-concept=glyph] .layout-landscape .theme-hud{flex-direction:column;align-items:stretch}
+html[data-ui-concept=glyph] .layout-landscape .theme-hud .th-stealth,html[data-ui-concept=glyph] .layout-landscape .theme-hud .th-turn{display:none!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape .area-log{padding:4px 56px 2px 0}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape .area-cmd{grid-template-columns:repeat(8,minmax(0,1fr))!important;padding:4px 0!important;border:0}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape .area-pad{align-self:end;margin:0 6px 6px 0;border:0}
+
+html[data-ui-concept=glyph] .app-layout.theme-shell .command-more>span:not(.cmd-label){display:none}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn[data-action=toggle_inventory]{color:inherit!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell .tb-btn.danger{background:transparent;color:var(--th-hp);border-color:color-mix(in srgb,var(--th-hp) 55%,transparent)}
+html[data-ui-concept=glyph] .theme-hud .th-hp,html[data-ui-concept=glyph] .theme-hud .th-food{grid-template-columns:2.5em auto minmax(0,1fr);gap:0 4px;align-items:center}
+html[data-ui-concept=glyph] .theme-hud .th-hp .th-label,html[data-ui-concept=glyph] .theme-hud .th-food .th-label{grid-row:auto}
+html[data-ui-concept=glyph] .theme-hud .th-chars{grid-column:2;grid-row:1}
+html[data-ui-concept=glyph] .theme-hud .th-hp-value,html[data-ui-concept=glyph] .theme-hud .th-food-word{grid-column:3;grid-row:1;justify-self:start;padding-left:6px}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn:not([data-action]):not(.command-more)::before{display:none}
+html[data-ui-concept=glyph] .title-glyph{font-size:clamp(7px,1.45vw,15px);margin:22px auto 14px;line-height:1.05;letter-spacing:0}
+html[data-ui-concept=glyph] .title-brand{width:auto;max-width:100%}
+
+html[data-ui-concept=glyph] .app-layout.theme-shell{margin:0!important;height:100dvh!important;background:var(--th-bg)!important;color:var(--th-fg);font-family:var(--th-font);position:relative}
+html[data-ui-concept=glyph] .menu-overlay{inset:0}
+html[data-ui-concept=glyph] .app-layout.theme-shell .map-zoom{top:8px;right:8px}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop{grid-template-columns:var(--context-width,216px) minmax(0,1fr)!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop>.area-vitals{overflow-y:auto;max-height:50dvh}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop>.area-context{position:absolute;left:var(--context-width,216px);top:0;bottom:0;width:min(340px,calc(100vw - var(--context-width,216px)));z-index:45;display:flex!important}
+html[data-ui-concept=glyph] .layout-desktop .theme-hud .th-panel{display:block}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait .area-vitals{padding-right:8px}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape .area-log{padding-right:0}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop.has-touch-controls:not(.immersive-mode){grid-template-areas:'vitals log log' 'vitals map map' 'near map map' 'near cmd pad'!important;grid-template-columns:var(--context-width,216px) minmax(0,1fr) auto!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell.is-replaying:not(.immersive-mode).layout-portrait{grid-template-columns:minmax(0,1fr)!important;grid-template-areas:'vitals' 'log' 'map' 'cmd'!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell.is-replaying:not(.immersive-mode).layout-landscape{grid-template-columns:200px minmax(0,1fr)!important;grid-template-areas:'vitals log' 'vitals map' 'vitals cmd'!important}
+
+/* Immersive layout: dedicated single-line HUD/log rows; controls overlay only the map. */
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto minmax(0,1fr) auto!important;grid-template-areas:'vitals' 'map' 'log'!important;gap:0!important;padding:0!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-vitals{max-height:none;border-right:0;border-bottom:1px solid var(--th-line);background:var(--th-panel);padding:4px 8px;position:relative}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud{flex-direction:row;flex-wrap:nowrap;align-items:center;gap:12px;font-size:13px;overflow:hidden;position:static}
+html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-btn{min-height:30px;border:0;background:none;color:var(--th-dim);padding:0 4px;text-decoration:underline;text-decoration-color:var(--th-accent);text-underline-offset:4px;flex:0 0 auto}
+html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-btn[aria-expanded=true]{color:var(--th-fg)}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-menu{order:0;align-self:auto}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-depth{order:0;border:0;padding:0;flex:0 0 auto}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-turn{display:flex!important;gap:4px}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-hp,html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-food{display:flex;gap:6px;flex:0 0 auto}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-hp-value,html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-food-word{padding:0;order:0}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-hp .th-chars,html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-hp-bar{display:none}
+html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-food .th-label,html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-food-bar,html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-food-chars{display:none}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-stats{flex-direction:row;flex-wrap:nowrap;gap:12px;min-width:0;overflow:hidden}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-stat{display:flex;gap:4px;flex:0 0 auto}
+html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-statuses{flex-basis:auto;flex-wrap:nowrap;overflow:hidden}
+html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-status{border:0;padding:0}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-panel{display:block;flex:0 0 auto;margin-left:auto}
+/* These selectors outrank the default desktop sidebar's 86px minimum and portrait rules. */
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-log{height:calc(32px + env(safe-area-inset-bottom));min-height:0;padding:2px 8px calc(2px + env(safe-area-inset-bottom));border:0;border-top:1px solid var(--th-line);background:var(--th-panel);text-align:left}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line{display:flex;flex-direction:row;align-items:center;gap:8px}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-head{display:none}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-lines{flex:1;min-width:0}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-lines:empty{display:none}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-lines li{font-size:13px;line-height:28px;text-align:left}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-flavor{order:0;flex:1;max-width:none;min-width:0;margin:0;padding:0;border:0;line-height:28px}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-open{flex:0 0 28px;height:28px;padding:0;border:0;background:none;color:var(--th-dim);font:18px var(--th-font);cursor:pointer}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-near,html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-cmd{display:none!important}
+/* Preserve the eight-direction pad in compact/coarse-pointer immersive play. */
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-pad{display:grid!important;grid-area:map;position:relative;align-self:end;justify-self:start;z-index:45;margin:8px;border:1px solid var(--th-line);background:var(--th-panel)}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open>.area-near{display:flex!important;position:absolute;z-index:45;right:0;top:52px;bottom:32px;width:min(340px,86vw);background:color-mix(in srgb,var(--th-bg) 94%,transparent);border-left:1px solid var(--th-line);padding:10px 14px;overflow-y:auto}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open>.area-log{position:absolute;z-index:46;right:0;bottom:0;width:min(340px,86vw);height:auto;max-height:50%;background:var(--th-bg);border-left:1px solid var(--th-line);padding:8px}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log{flex-direction:column;align-items:stretch;gap:4px}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-head{display:flex}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-flavor{order:-1;max-width:none}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-lines li{white-space:normal}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open.layout-desktop>.area-cmd{display:grid!important;position:absolute;z-index:46;right:0;top:52px;width:min(340px,86vw);grid-template-columns:repeat(4,minmax(0,1fr))!important;border:0;border-left:1px solid var(--th-line);border-bottom:1px solid var(--th-line);border-radius:0;background:var(--th-bg)}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open.layout-desktop>.area-near{top:160px}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .cmd-btn{background:none;border:0;color:var(--th-fg);flex-direction:column!important;justify-content:center!important;gap:2px!important;min-height:52px}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .cmd-btn:hover{color:var(--th-accent)}
+html[data-ui-concept=glyph] .immersive-mode .theme-nearby .tn-row{border-color:var(--th-line)}
+/* The ring's containing block is the map, so neither state can cover the message row. */
+html[data-ui-concept=glyph] .immersive-mode .radial-commands.area-radial{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:14px;z-index:50;width:60px;height:60px;--rc-radius:92px;--rc-item-size:52px;--rc-item-inset:4px}
+html[data-ui-concept=glyph] .immersive-mode .radial-commands.open{right:max(106px,env(safe-area-inset-right));bottom:106px}
+html[data-ui-concept=glyph] .immersive-mode .rc-hub{position:absolute;inset:0;border-radius:50%;border:0;background:var(--th-accent);color:var(--th-on-accent);font-size:24px;box-shadow:0 6px 24px #000a;touch-action:none;cursor:pointer}
+html[data-ui-concept=glyph] .immersive-mode .rc-item{position:absolute;left:var(--rc-item-inset);top:var(--rc-item-inset);width:var(--rc-item-size);height:var(--rc-item-size);border-radius:50%;border:1px solid var(--th-line);background:var(--th-panel);color:var(--th-fg);display:grid;place-items:center;align-content:center;gap:0;font:10px var(--th-font);padding:0;opacity:0;pointer-events:none;transform:rotate(var(--a)) translate(0) rotate(calc(var(--a) * -1));transition:opacity .18s}
+html[data-ui-concept=glyph] .immersive-mode .rc-item .cmd-icon{width:18px;height:18px}
+html[data-ui-concept=glyph] .immersive-mode .radial-commands.open .rc-item{opacity:1;pointer-events:auto;transform:rotate(var(--a)) translate(var(--rc-radius)) rotate(calc(var(--a) * -1))}
+html[data-ui-concept=glyph] .immersive-mode .rc-item:hover,html[data-ui-concept=glyph] .immersive-mode .rc-item:focus-visible{border-color:var(--th-accent);color:var(--th-accent)}
+/* A 216px open ring stays beside the 160px pad on the 390px portrait viewport. */
+html[data-ui-concept=glyph] .immersive-mode.has-touch-controls .radial-commands{--rc-radius:80px;--rc-item-size:48px;--rc-item-inset:6px}
+html[data-ui-concept=glyph] .immersive-mode.has-touch-controls .radial-commands.open{right:max(84px,env(safe-area-inset-right));bottom:84px}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-stats,html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-statuses{display:none}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud{gap:6px;font-size:12px}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-depth,html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-hp{gap:4px}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-btn{min-height:44px;padding:0 2px;font-size:12px}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-landscape .theme-hud .th-stats,html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-landscape .theme-hud .th-statuses{display:none}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .map-zoom{opacity:.45}
+/* Short landscape: keep the zoom tools above the left pad, away from the open ring. */
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.layout-landscape .map-zoom{flex-direction:row;left:8px;right:auto}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.is-replaying{grid-template-rows:auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals' 'map' 'log' 'cmd'!important}
+/* Narrow landscape commands wrap instead of pushing the map column wider. */
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape:not(.immersive-mode) .area-cmd{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn{min-width:0}
+html[data-ui-concept=glyph] .theme-hud .th-food-num{display:none}
