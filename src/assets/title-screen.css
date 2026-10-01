@@ -43,6 +43,15 @@ html[data-ui-concept=glyph] button:disabled{cursor:not-allowed}
 html[data-ui-concept=glyph] button:focus-visible,html[data-ui-concept=glyph] a:focus-visible{outline:2px solid var(--th-accent);outline-offset:4px}
 .menu-card .display-toggle{width:24px;height:24px;min-height:24px;accent-color:var(--th-accent)}
 .immersive-hint{grid-column:1/-1}
+.legend-field{align-self:start}
+.menu-card .legend-button{align-self:flex-start;min-height:44px;padding:10px 13px}
+/* The settings card scrolls independently; expanding its legend never recenters the wordmark. */
+.settings-open .title-brand{align-self:flex-start}
+.menu-card.settings-card{align-self:flex-start;max-height:calc(100dvh - 140px);overflow-y:auto;scrollbar-gutter:stable}
+.pause-overlay .settings-card{align-self:center;max-height:calc(100dvh - 80px)}
+@media(max-height:650px) and (min-width:701px){.menu-card.settings-card{max-height:calc(100dvh - 70px)}}
+@media(max-width:1023px){.menu-card.settings-card{max-height:calc(100dvh - 78px)}}
+@media(max-width:700px){.pause-overlay .settings-card{max-height:calc(100dvh - 60px)}}
 .menu-card .map-legend{position:relative;inset:auto;width:100%;max-width:none;max-height:none;background:var(--th-panel);color:var(--th-fg);border-color:var(--th-line);box-shadow:none;padding:12px}
 .menu-card .map-legend-grid{max-height:280px}
 .menu-card .map-legend-grid b{background:var(--th-raised);color:var(--th-fg);border-color:var(--th-line)}

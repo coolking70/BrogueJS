@@ -1371,6 +1371,7 @@
   "title.footer": "一段深入地牢的旅程",
   "title.version": "BROGUE JS · v0.2.0",
   "title.escape": "Esc",
+  "map.legend_view": "查看",
   "theme.depth": "深度",
   "theme.turn": "回合",
   "theme.hunger": "饥饿",

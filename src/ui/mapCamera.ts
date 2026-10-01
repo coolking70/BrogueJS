@@ -86,7 +86,9 @@ export function computeMapCamera(
         return { ...base, follow: false, panX: 0, panY: 0 };
     }
     if (presentation.fillViewport) {
-        const coverTilePx = Math.max(viewW / cols, viewH / rows, autoFollow ? defaultTilePx(viewW, viewH) : 0);
+        // 覆盖相机按画布比例铺满；横屏不额外放大到普通跟随镜头的 18 行，
+        // 给命令环/方向键上方保留可见的相邻格，同时保持小屏字形可读。
+        const coverTilePx = Math.max(viewW / cols, viewH / rows, autoFollow ? MIN_READABLE_TILE_PX : 0);
         const tilePx = coverTilePx * Math.max(1, Math.min(clamp(zoom, MIN_ZOOM, MAX_ZOOM), MAX_TILE_PX / coverTilePx));
         const scale = tilePx / tile;
         const padding = Math.max(0, presentation.edgePaddingTiles ?? 0) * tilePx;

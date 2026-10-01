@@ -158,7 +158,7 @@ const sidebarWidthModel = computed({
 <template>
   <div
     class="menu-overlay"
-    :class="{ 'pause-overlay': inGame, 'subpage-open': page !== 'home' }"
+    :class="{ 'pause-overlay': inGame, 'subpage-open': page !== 'home', 'settings-open': page === 'settings' }"
     @keydown.stop
     @keyup.stop
     @keydown.esc.prevent="goBack"
@@ -218,7 +218,7 @@ const sidebarWidthModel = computed({
           <span class="action-mark">◆</span>{{ t("title.settings") }}
         </button>
       </nav>
-      <section v-else class="menu-card" :aria-label="t('menu.actions.menu')">
+      <section v-else class="menu-card" :class="{ 'settings-card': page === 'settings' }" :aria-label="t('menu.actions.menu')">
         <header class="menu-section-header">
           <button class="back-button" @click="page = 'home'">
             {{ t("title.back") }}</button
@@ -386,7 +386,9 @@ const sidebarWidthModel = computed({
               <input class="display-toggle" type="checkbox" v-model="displaySettings.immersiveMode" />
             </label>
             <p class="field-hint immersive-hint">{{ t('menu.display.immersive_hint') }}</p>
-            <button class="legend-button" :aria-expanded="legendOpen" @click="legendOpen = !legendOpen">{{ t('map.legend') }}</button>
+            <div class="field legend-field"><span>{{ t('map.legend') }}</span>
+              <button class="legend-button" :aria-expanded="legendOpen" @click="legendOpen = !legendOpen">{{ t('map.legend_view') }}</button>
+            </div>
 
             <label class="field"
               ><span>{{ t("menu.display.ui_scale") }}</span

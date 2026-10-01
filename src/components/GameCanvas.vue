@@ -109,6 +109,8 @@ import { displaySettings } from '../engine/Settings';
 import { viewport } from '../ui/layout';
 // FE-1：小屏跟随相机（纯显示状态，不进存档/录像）
 import { computeMapCamera, cameraState, zoomBy } from '../ui/mapCamera';
+import { observeCanvasResize } from '../ui/canvasResize';
+import { readMapOcclusions, observeMapOcclusions } from '../ui/mapOcclusion';
 import { MAP_HOVER_FILL, MAP_HOVER_STROKE, MousePanTracker, shouldHandleMapWheel, shouldHighlightMapCell, wheelZoomFactor } from '../ui/mapPointer';
 // FE-1：触屏手势与目标选择（改状态的输出只经 ui/commands 的录制边界）
 import { GestureTracker, type GestureEvent } from '../ui/touchGestures';
@@ -130,12 +132,14 @@ let frameProfile: FrameProfile | null = null;
 let vectorGeometry: VectorGeometryCache | null = null;
 let destroyRetainedDrawing: (() => void) | null = null;
 const resetProfile = () => frameProfile?.reset();
-// P2-4：居中/命中区随容器尺寸变化重算（挂载时建立，卸载时断开）
-let resizeObserver: ResizeObserver | null = null;
+// Container sizing owns both the Pixi backing buffer and camera; no window-only resizeTo.
+let removeCanvasResizeObserver: (() => void) | null = null;
 // P2-6：地图缩放模式切换的 watch 停止器（onMounted 内创建，onUnmounted 内停止）
 let stopScaleModeWatch: (() => void) | null = null;
 let stopTileModeWatch: (() => void) | null = null;
 let stopCameraWatch: (() => void) | null = null;
+let stopImmersiveWatch: (() => void) | null = null;
+let removeOcclusionObserver: (() => void) | null = null;
 // FE-1：触屏手势监听的卸载函数
 let removeDisplayClockListener: (() => void) | null = null;
 let removeTouchListeners: (() => void) | null = null;
@@ -146,7 +150,8 @@ onMounted(async () => {
     pixiApp = new Application();
 
     await pixiApp.init({
-      resizeTo: canvasContainer.value,
+      width: Math.max(1, canvasContainer.value.clientWidth),
+      height: Math.max(1, canvasContainer.value.clientHeight),
       backgroundColor: 0x111111,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
@@ -288,9 +293,9 @@ onMounted(async () => {
     const applyLayout = () => {
         const el = canvasContainer.value;
         if (!el || !pixiApp) return;
-        // 用容器 clientWidth/Height 而非 pixiApp.screen：resizeTo 的渲染器
-        // 尺寸要等 Pixi 下一个渲染帧才跟上（queueResize），clientWidth 是
-        // 布局完成后的即时真值，且能覆盖非 window 尺寸变化（如侧栏增减）。
+        // 容器 clientWidth/Height 是布局真值，覆盖侧栏增减等非窗口变化。
+        // 尺寸观察器先同步 renderer，再进入这里更新图层与命中区；
+        // 仅缩放/平移/遮挡变化也可独立走这里，不重复 resize 渲染器。
         const preferredLayout = computeMapLayout(
             el.clientWidth,
             el.clientHeight,
@@ -304,7 +309,10 @@ onMounted(async () => {
         const cam = cameraState.fit ? { ...base, follow: false, panX: 0, panY: 0 } : computeMapCamera(
             el.clientWidth, el.clientHeight, base, DCOLS, DROWS, TILE_SIZE,
             focus, cameraState.zoom, { x: cameraState.panX, y: cameraState.panY },
-            viewport.mode !== 'desktop' || mapMode.value === 'hanzi' || mapMode.value === 'tiles'
+            viewport.mode !== 'desktop' || mapMode.value === 'hanzi' || mapMode.value === 'tiles',
+            { fillViewport: displaySettings.immersiveMode,
+                edgePaddingTiles: displaySettings.immersiveMode ? 2 : 0,
+                occlusions: displaySettings.immersiveMode ? readMapOcclusions(el) : undefined },
         );
         cameraState.follow = cam.follow;
         pixiApp.canvas.style.cursor = cam.follow ? 'grab' : 'crosshair';
@@ -335,13 +343,6 @@ onMounted(async () => {
         // 旧实现用 window 尺寸，侧栏右侧的点击会被映射到错误的格子。
         pixiApp.stage.hitArea = new PIXI.Rectangle(0, 0, el.clientWidth, el.clientHeight);
     };
-
-    applyLayout();
-    // 窗口 resize（容器随之变宽变高）与任何布局变化都会触发 ResizeObserver；
-    // 比起 window resize 事件，它还覆盖"窗口不变但布局变"的场景
-    // （如侧栏在固定/按比例间切换导致容器宽度变化）。
-    resizeObserver = new ResizeObserver(() => applyLayout());
-    resizeObserver.observe(canvasContainer.value);
 
     // P2-6：地图缩放模式切换不改变容器尺寸（ResizeObserver 不会触发），
     // 需显式走同一条 applyLayout 重算路径，设置变更即时生效、无需刷新页面。
@@ -617,7 +618,21 @@ onMounted(async () => {
         frameProfile?.record('drawCpuMs', performance.now() - profileStart);
     };
 
+    // DESIGN-3b browser regression: resizeTo only listened to window resize.
+    // Observe the container and merge notifications in rAF, sizing the renderer
+    // before updating the camera/hit area without recreating the Application.
+    removeCanvasResizeObserver = observeCanvasResize(canvasContainer.value, pixiApp.renderer, () => {
+        applyLayout(); renders.request();
+    });
     stopTileModeWatch = watch(mapMode, () => { applyLayout(); renders.request(); });
+    stopImmersiveWatch = watch(() => displaySettings.immersiveMode, () => {
+        removeOcclusionObserver?.();
+        removeOcclusionObserver = null;
+        if (displaySettings.immersiveMode && canvasContainer.value) {
+            removeOcclusionObserver = observeMapOcclusions(canvasContainer.value, () => { applyLayout(); renders.request(); });
+        }
+        applyLayout(); renders.request();
+    }, { immediate: true, flush: 'post' });
     game.onRenderRequested = renders.request;
 
     (window as Window & { render_game_to_text?: () => string }).render_game_to_text = () => {
@@ -1034,16 +1049,18 @@ onUnmounted(() => {
   activeGame.animationEnabled = false;
   activeGame.discardInFlightAdvancement();
 
-  if (resizeObserver) {
-    resizeObserver.disconnect();
-    resizeObserver = null;
-  }
+  removeCanvasResizeObserver?.();
+  removeCanvasResizeObserver = null;
 
   stopTileModeWatch?.();
   stopScaleModeWatch?.();
   stopScaleModeWatch = null;
   stopCameraWatch?.();
   stopCameraWatch = null;
+  stopImmersiveWatch?.();
+  stopImmersiveWatch = null;
+  removeOcclusionObserver?.();
+  removeOcclusionObserver = null;
   removeDisplayClockListener?.();
   removeDisplayClockListener = null;
   removeTouchListeners?.();

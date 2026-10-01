@@ -245,83 +245,67 @@ html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop.has-touch-con
 html[data-ui-concept=glyph] .app-layout.theme-shell.is-replaying:not(.immersive-mode).layout-portrait{grid-template-columns:minmax(0,1fr)!important;grid-template-areas:'vitals' 'log' 'map' 'cmd'!important}
 html[data-ui-concept=glyph] .app-layout.theme-shell.is-replaying:not(.immersive-mode).layout-landscape{grid-template-columns:200px minmax(0,1fr)!important;grid-template-areas:'vitals log' 'vitals map' 'vitals cmd'!important}
 
-/* Immersive layout borrows the former single-line arrangement, using glyph tokens. */
+/* Immersive layout: dedicated single-line HUD/log rows; controls overlay only the map. */
 html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto minmax(0,1fr) auto!important;grid-template-areas:'vitals' 'map' 'log'!important;gap:0!important;padding:0!important}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-vitals{padding:6px 60px 6px 12px;border-bottom:1px solid var(--th-line);position:relative}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud{flex-wrap:nowrap;gap:16px;font-size:14px;overflow:hidden}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-btn{min-height:30px;border:0;background:none;color:var(--th-dim);padding:0 4px;text-decoration:underline;text-decoration-color:var(--th-accent);text-underline-offset:4px}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-vitals{max-height:none;border-right:0;border-bottom:1px solid var(--th-line);background:var(--th-panel);padding:4px 8px;position:relative}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud{flex-direction:row;flex-wrap:nowrap;align-items:center;gap:12px;font-size:13px;overflow:hidden;position:static}
+html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-btn{min-height:30px;border:0;background:none;color:var(--th-dim);padding:0 4px;text-decoration:underline;text-decoration-color:var(--th-accent);text-underline-offset:4px;flex:0 0 auto}
 html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-btn[aria-expanded=true]{color:var(--th-fg)}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-hp-bar{display:none}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-chars{display:inline;font-size:13px}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-hp .th-chars{order:-1}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-hp .th-label{order:-2}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-depth>b{color:var(--th-accent)}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-food .th-label,html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-food-bar,html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-food-chars{display:none}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-stats{gap:12px}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-statuses{flex-basis:auto;flex-wrap:nowrap;overflow:hidden}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-status{border:0;padding:0}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-panel{margin-left:auto}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud{position:static}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-log{border-top:1px solid var(--th-line);padding:6px 12px}
-html[data-ui-concept=glyph] .immersive-mode .theme-log{flex-direction:row;align-items:center;gap:16px}
-html[data-ui-concept=glyph] .immersive-mode .theme-log .tl-head{display:none}
-html[data-ui-concept=glyph] .immersive-mode .theme-log .tl-lines{flex:1;min-width:0}
-html[data-ui-concept=glyph] .immersive-mode .theme-log .tl-lines li{font-size:14px}
-html[data-ui-concept=glyph] .immersive-mode .theme-log .tl-flavor{order:2;flex:0 1 auto;max-width:40%;color:var(--th-cool)}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-near,html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-cmd,html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-pad{display:none!important}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open>.area-near{display:flex!important;position:absolute;z-index:45;right:0;top:45px;bottom:45px;width:min(340px,86vw);background:color-mix(in srgb,var(--th-bg) 94%,transparent);border-left:1px solid var(--th-line);padding:10px 14px}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open>.area-log{position:absolute;z-index:46;left:auto;right:0;bottom:0;width:min(340px,86vw);top:auto;max-height:50%;background:var(--th-bg);border-left:1px solid var(--th-line)}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log{flex-direction:column;align-items:stretch;gap:4px}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-head{display:flex}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-flavor{order:-1;max-width:none}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-lines li{white-space:normal}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open.layout-desktop>.area-cmd{display:grid!important;position:absolute;z-index:46;right:0;top:45px;width:min(340px,86vw);grid-template-columns:repeat(4,minmax(0,1fr))!important;border:0;border-left:1px solid var(--th-line);border-bottom:1px solid var(--th-line);border-radius:0;background:var(--th-bg)}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open.layout-desktop>.area-near{top:150px}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .cmd-btn{background:none;border:0;color:var(--th-fg);flex-direction:column!important;justify-content:center!important;gap:2px!important;min-height:52px}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .cmd-btn:hover{color:var(--th-accent)}
-html[data-ui-concept=glyph] .immersive-mode .theme-nearby .tn-row{border-color:var(--th-line)}
-html[data-ui-concept=glyph] .immersive-mode .area-radial{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:calc(52px + env(safe-area-inset-bottom));z-index:50}
-html[data-ui-concept=glyph] .immersive-mode .radial-commands{position:relative;width:60px;height:60px}
-/* Keep every command inside the viewport when the ring opens. */
-html[data-ui-concept=glyph] .immersive-mode .radial-commands.open{right:max(106px,env(safe-area-inset-right));bottom:calc(144px + env(safe-area-inset-bottom))}
-html[data-ui-concept=glyph] .immersive-mode .rc-hub{position:absolute;inset:0;border-radius:50%;border:0;background:var(--th-accent);color:var(--th-on-accent);font-size:24px;box-shadow:0 6px 24px #000a;touch-action:none;cursor:pointer}
-html[data-ui-concept=glyph] .immersive-mode .rc-item{position:absolute;left:4px;top:4px;width:52px;height:52px;border-radius:50%;border:1px solid var(--th-line);background:#0b0b0bf0;color:var(--th-fg);display:grid;place-items:center;align-content:center;gap:0;font:10px var(--th-font);padding:0;opacity:0;pointer-events:none;transform:rotate(var(--a)) translate(0) rotate(calc(var(--a) * -1));transition:transform .18s ease,opacity .18s}
-html[data-ui-concept=glyph] .immersive-mode .rc-item .cmd-icon{width:18px;height:18px}
-html[data-ui-concept=glyph] .immersive-mode .radial-commands.open .rc-item{opacity:1;pointer-events:auto;transform:rotate(var(--a)) translate(92px) rotate(calc(var(--a) * -1))}
-html[data-ui-concept=glyph] .immersive-mode .rc-item:hover,html[data-ui-concept=glyph] .immersive-mode .rc-item:focus-visible{border-color:var(--th-accent);color:var(--th-accent)}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-stats,html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-statuses,html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-label{display:none}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud{gap:12px}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-landscape .theme-hud .th-stealth,html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-landscape .theme-hud .th-statuses{display:none}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.layout-portrait>.area-vitals,html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.layout-landscape>.area-vitals{padding-right:56px}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.layout-landscape>.area-vitals{padding-top:2px;padding-bottom:2px}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.layout-landscape>.area-log{padding:2px 12px}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-log .tl-flavor{display:none}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .map-zoom{opacity:.45}
-
-
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-vitals{max-height:none;border-right:0;background:var(--th-panel);padding:4px 8px}
-html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud{flex-direction:row;flex-wrap:nowrap;align-items:center;gap:12px;font-size:13px;overflow:hidden}
 html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-menu{order:0;align-self:auto}
 html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-depth{order:0;border:0;padding:0;flex:0 0 auto}
 html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-turn{display:flex!important;gap:4px}
 html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-hp,html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-food{display:flex;gap:6px;flex:0 0 auto}
 html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-hp-value,html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-food-word{padding:0;order:0}
-html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-hp .th-chars{display:none}
-html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-stats{flex-direction:row;flex-wrap:nowrap;min-width:0;overflow:hidden}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-hp .th-chars,html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-hp-bar{display:none}
+html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-food .th-label,html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-food-bar,html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-food-chars{display:none}
+html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-stats{flex-direction:row;flex-wrap:nowrap;gap:12px;min-width:0;overflow:hidden}
 html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-stat{display:flex;gap:4px;flex:0 0 auto}
+html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-statuses{flex-basis:auto;flex-wrap:nowrap;overflow:hidden}
+html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-status{border:0;padding:0}
 html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-panel{display:block;flex:0 0 auto;margin-left:auto}
-html[data-ui-concept=glyph] .app-layout.immersive-mode>.area-log{min-height:0;padding:4px 8px}
-html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-log .tl-flavor{margin:0;padding:0;border:0}
-html[data-ui-concept=glyph] .app-layout.immersive-mode .radial-commands.area-radial{position:absolute}
-html[data-ui-concept=glyph] .app-layout.immersive-mode .rc-item{background:var(--th-panel)}
-html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-nearby .tn-row.focused{background:var(--th-fg);color:var(--th-bg)}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.is-replaying{grid-template-rows:auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals' 'map' 'log' 'cmd'!important}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open>.area-near{overflow-y:auto}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud{gap:8px;font-size:12px}
+/* These selectors outrank the default desktop sidebar's 86px minimum and portrait rules. */
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-log{height:calc(32px + env(safe-area-inset-bottom));min-height:0;padding:2px 8px calc(2px + env(safe-area-inset-bottom));border:0;border-top:1px solid var(--th-line);background:var(--th-panel);text-align:left}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line{display:flex;flex-direction:row;align-items:center;gap:8px}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-head{display:none}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-lines{flex:1;min-width:0}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-lines:empty{display:none}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-lines li{font-size:13px;line-height:28px;text-align:left}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-flavor{order:0;flex:1;max-width:none;min-width:0;margin:0;padding:0;border:0;line-height:28px}
+html[data-ui-concept=glyph] .immersive-mode .theme-log.single-line .tl-open{flex:0 0 28px;height:28px;padding:0;border:0;background:none;color:var(--th-dim);font:18px var(--th-font);cursor:pointer}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-near,html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-cmd{display:none!important}
+/* Preserve the eight-direction pad in compact/coarse-pointer immersive play. */
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-pad{display:grid!important;grid-area:map;position:relative;align-self:end;justify-self:start;z-index:45;margin:8px;border:1px solid var(--th-line);background:var(--th-panel)}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open>.area-near{display:flex!important;position:absolute;z-index:45;right:0;top:52px;bottom:32px;width:min(340px,86vw);background:color-mix(in srgb,var(--th-bg) 94%,transparent);border-left:1px solid var(--th-line);padding:10px 14px;overflow-y:auto}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open>.area-log{position:absolute;z-index:46;right:0;bottom:0;width:min(340px,86vw);height:auto;max-height:50%;background:var(--th-bg);border-left:1px solid var(--th-line);padding:8px}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log{flex-direction:column;align-items:stretch;gap:4px}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-head{display:flex}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-flavor{order:-1;max-width:none}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.theme-panel-open .theme-log .tl-lines li{white-space:normal}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open.layout-desktop>.area-cmd{display:grid!important;position:absolute;z-index:46;right:0;top:52px;width:min(340px,86vw);grid-template-columns:repeat(4,minmax(0,1fr))!important;border:0;border-left:1px solid var(--th-line);border-bottom:1px solid var(--th-line);border-radius:0;background:var(--th-bg)}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.theme-panel-open.layout-desktop>.area-near{top:160px}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .cmd-btn{background:none;border:0;color:var(--th-fg);flex-direction:column!important;justify-content:center!important;gap:2px!important;min-height:52px}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .cmd-btn:hover{color:var(--th-accent)}
+html[data-ui-concept=glyph] .immersive-mode .theme-nearby .tn-row{border-color:var(--th-line)}
+/* The ring's containing block is the map, so neither state can cover the message row. */
+html[data-ui-concept=glyph] .immersive-mode .radial-commands.area-radial{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:14px;z-index:50;width:60px;height:60px;--rc-radius:92px;--rc-item-size:52px;--rc-item-inset:4px}
+html[data-ui-concept=glyph] .immersive-mode .radial-commands.open{right:max(106px,env(safe-area-inset-right));bottom:106px}
+html[data-ui-concept=glyph] .immersive-mode .rc-hub{position:absolute;inset:0;border-radius:50%;border:0;background:var(--th-accent);color:var(--th-on-accent);font-size:24px;box-shadow:0 6px 24px #000a;touch-action:none;cursor:pointer}
+html[data-ui-concept=glyph] .immersive-mode .rc-item{position:absolute;left:var(--rc-item-inset);top:var(--rc-item-inset);width:var(--rc-item-size);height:var(--rc-item-size);border-radius:50%;border:1px solid var(--th-line);background:var(--th-panel);color:var(--th-fg);display:grid;place-items:center;align-content:center;gap:0;font:10px var(--th-font);padding:0;opacity:0;pointer-events:none;transform:rotate(var(--a)) translate(0) rotate(calc(var(--a) * -1));transition:opacity .18s}
+html[data-ui-concept=glyph] .immersive-mode .rc-item .cmd-icon{width:18px;height:18px}
+html[data-ui-concept=glyph] .immersive-mode .radial-commands.open .rc-item{opacity:1;pointer-events:auto;transform:rotate(var(--a)) translate(var(--rc-radius)) rotate(calc(var(--a) * -1))}
+html[data-ui-concept=glyph] .immersive-mode .rc-item:hover,html[data-ui-concept=glyph] .immersive-mode .rc-item:focus-visible{border-color:var(--th-accent);color:var(--th-accent)}
+/* A 216px open ring stays beside the 160px pad on the 390px portrait viewport. */
+html[data-ui-concept=glyph] .immersive-mode.has-touch-controls .radial-commands{--rc-radius:80px;--rc-item-size:48px;--rc-item-inset:6px}
+html[data-ui-concept=glyph] .immersive-mode.has-touch-controls .radial-commands.open{right:max(84px,env(safe-area-inset-right));bottom:84px}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-stats,html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-statuses{display:none}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud{gap:6px;font-size:12px}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-depth,html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-hp{gap:4px}
 html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-btn{min-height:44px;padding:0 2px;font-size:12px}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-turn .th-label{display:none}
-html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-landscape .theme-hud .th-stats{display:none}
-html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-log .tl-lines li{font-size:13px}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-landscape .theme-hud .th-stats,html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-landscape .theme-hud .th-statuses{display:none}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .map-zoom{opacity:.45}
+/* Short landscape: keep the zoom tools above the left pad, away from the open ring. */
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.layout-landscape .map-zoom{flex-direction:row;left:8px;right:auto}
+html[data-ui-concept=glyph] .app-layout.immersive-mode.is-replaying{grid-template-rows:auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals' 'map' 'log' 'cmd'!important}
 /* Narrow landscape commands wrap instead of pushing the map column wider. */
 html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape:not(.immersive-mode) .area-cmd{grid-template-columns:repeat(4,minmax(0,1fr))!important}
 html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn{min-width:0}

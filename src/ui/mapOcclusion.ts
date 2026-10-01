@@ -23,7 +23,7 @@ export function unobstructedMapBand(height: number, focusX: number, radius: numb
     return best.bottom > best.top ? best : { top: 0, bottom: height };
 }
 
-const selector = ':scope > .area-vitals, :scope > .area-near, :scope > .area-cmd, :scope > .area-log, :scope > .area-pad, :scope > .area-target, .map-zoom, .command-overflow';
+const selector = ':scope > .area-vitals, :scope > .area-near, :scope > .area-cmd, :scope > .area-log, :scope > .area-pad, :scope > .area-target, .map-zoom, .command-overflow, .area-radial .rc-hub, .area-radial.open .rc-item';
 const overlays = (canvas: HTMLElement) => Array.from(canvas.closest('.app-layout')?.querySelectorAll<HTMLElement>(selector) ?? []);
 
 /** 矩形换算到画布坐标；隐藏或完全在画布外的元素不占安全区域。 */
@@ -35,7 +35,7 @@ export function readMapOcclusions(canvas: HTMLElement): MapOcclusion[] {
         .filter(r => r.right > 0 && r.left < bounds.width && r.bottom > 0 && r.top < bounds.height);
 }
 
-/** 内容变高、浮层挂载/卸载都重算；由调用者仅在 umbra 启用。 */
+/** 内容变高、浮层挂载/卸载、命令环开合与面板布局变化都重算；只在沉浸模式启用。 */
 export function observeMapOcclusions(canvas: HTMLElement, onChange: () => void): () => void {
     const root = canvas.closest('.app-layout');
     if (!root) return () => {};
@@ -47,7 +47,7 @@ export function observeMapOcclusions(canvas: HTMLElement, onChange: () => void):
         for (const el of current) if (!observed.has(el)) { resize.observe(el); observed.add(el); }
     };
     const mutations = new MutationObserver(() => { scan(); onChange(); });
-    mutations.observe(root, { childList: true, subtree: true });
+    mutations.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     scan();
     return () => { resize.disconnect(); mutations.disconnect(); };
 }

@@ -86,7 +86,8 @@ onMounted(() => {
 }, 100); });
 onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTimer); runEpoch++; });
 /** 触控命令栏 + 方向键：紧凑模式或粗指针设备显示；回放期间让位给录像控制条。 */
-const showTouch = computed(() => shouldShowTouchControls(viewport.coarsePointer, viewport.mode) && !replayActive.value);
+const showTouch = computed(() => (shouldShowTouchControls(viewport.coarsePointer, viewport.mode)
+  || (displaySettings.immersiveMode && compact.value)) && !replayActive.value);
 const showCommands = computed(() => (compact.value || showTouch.value) && !replayActive.value);
 
 // UI-1 第 6 条：把引擎确认钩子接到本组件（headless/测试环境不挂载 App，
@@ -344,12 +345,12 @@ const handleReturnToTitle = async () => {
       <!-- FE-1：GameCanvas 始终是同一位置的同一实例（旋转屏幕不重建 Pixi），
            其余部件按布局模式挂载，用 CSS grid 区域摆放。 -->
       <ThemeHud class="area-vitals" :panel-open="compact && !displaySettings.immersiveMode ? panelOpen : themePanelOpen" @menu="menuOpen = true" @panel="toggleThemePanel" />
-      <ThemeLog class="area-log" :lines="themeLogLines" @open-journal="journalOpen = true" />
+      <ThemeLog class="area-log" :lines="themeLogLines" :single-line="displaySettings.immersiveMode && !themePanelOpen" @open-journal="journalOpen = true" />
       <ThemeNearby class="area-near" />
-      <RadialCommands v-if="displaySettings.immersiveMode && !replayActive" class="area-radial" />
       <div class="map-area">
         <GameCanvas class="game-view" />
         <MapZoomControls />
+        <RadialCommands v-if="displaySettings.immersiveMode && !replayActive" class="area-radial" />
       </div>
       <TargetBar class="area-target" />
       <CommandBar v-if="showCommands || (!compact && !replayActive)" class="area-cmd" :mode="viewport.mode" />
