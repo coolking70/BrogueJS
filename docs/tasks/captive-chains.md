@@ -19,6 +19,6 @@ web spawnHordeAt 只设 isCaged/血量，未调用锁链生成；目录仅有MAN
 4. 生成改动用完整门禁：build + ce:fetch + test:full + test:drift；同一集合不重复跑 npm test。不降低守卫/超时。基线或黄金trace变化先做仅回退生产的反事实，再用原方法重录并逐字段登记。
 5. 真实Vue/Pixi浏览器验证四模式、救出、缩放与横竖响应式窗口，查看合成截图与控制台；窗口模拟不等同于手机硬件验收。
 
-工作树 /Users/coolking70/.codex/worktrees/playtest-fixes/BrogueJS，分支 codex/captive-chains，基于 main 997872f。不混入其他修改；本轮尚无新的发布授权。
+工作树 /Users/coolking70/.codex/worktrees/playtest-fixes/BrogueJS，分支 codex/captive-chains，基于 main 997872f。不混入其他修改；先独立验收，用户随后已授权合并推送。
 
-状态：2026-10-01修复及验收完成。完整CE259文件4646项与drift全过，四模式真实浏览器及救援操作通过；详细反事实、夹具登记和两轮门禁结果见 docs/reports/captive-chains.report.md。保存在独立分支，未合并发布。
+状态：2026-10-01修复及验收完成。完整CE259文件4646项与drift全过，四模式真实浏览器及救援操作通过；详细反事实、夹具登记和两轮门禁结果见 docs/reports/captive-chains.report.md。修复提交fb79ace已按后续授权快进main，推送由已有Pages工作流部署。

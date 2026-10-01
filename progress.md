@@ -63,3 +63,5 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - CAPTIVE-1最终浏览器复验全过，四模式/键盘及鼠标救援/双RNG状态不变，实际合成截图已查看，控制台零错误；手机尺寸仅响应式模拟。第二轮完整冻结门禁 /tmp/bjs-captive-chains/final-gates/state.json，2workers/4GB，build→cefetch→full→drift；只跟进这轮，不改生产或并行重测试。
 
 - CAPTIVE-1修复完成：最终会话83665，build/cefetch/full/drift均exit0；259文件4646passed/0failed/8历史skip/5todo，3359.65秒；drift1项，25.68秒。北京时间03:14:34结束，前后SHA256 64b47a05cdb15a78ee4f0451ab43cabdb072f2b7aad4d195c557b2d2e14c57c2一致。首轮3项失败在完整集合均恢复，不是定向拼接。最终仅补文档，main997872f干净；修复保存codex/captive-chains，未合并/推送/发布。5395预览保留，旧存档已生成楼层不迁移。无需重复开发或测试。
+
+- CAPTIVE-1后续合并授权：用户明确要求合并推送。fetch后origin/main仍997872f，修复分支干净且源代码散列与完整全绿门禁一致；fb79ace已快进main。只补合并交接文档，再推送由已有Pages工作流部署，不重复运行完整套件，不创建新版本标签。

@@ -2,7 +2,7 @@
 
 本文件写给接手 BrogueJS 的开发者或 AI 会话：项目现在处于什么状态、之前定下了哪些不再重议的决策、怎样继续推进。
 
-最后更新：2026-10-01（UI-LAB 已发布 main；CAPTIVE-1 俘虏锁链修复完整验收通过，待合并）。
+最后更新：2026-10-01（CAPTIVE-1 俘虏锁链修复完整验收通过，已按用户授权合并 main）。
 
 ## 1. 项目一句话
 
@@ -37,11 +37,11 @@ LAVA 统一完整套件跑完：4573 项通过，2 项原 900000ms 超时；两�
 
 用户已授权将远程 feat/ui-lab-visuals-performance 与本地 LAVA-1/PERF-2 评估整合后推送main。纳入主题/四种地图/保留几何/绘制合并；保留本地物理规则、毫秒节奏和地形tint。NPC采用同范围三态数组并保留两侧回归。差异取舍、诊断夹具精确计数反事实、浏览器/性能证据见 [合并报告](reports/ui-lab-integration.report.md)。最终Pages构建、ce:fetch、完整CE套件258文件/4633项、drift全部退出0；另8项历史skip/5项todo未改。生产/测试/脚本/资源前后散列一致，原两超时普查本轮直接通过。合并结果7877a38，按本次用户授权快进main并由已有Pages工作流部署；没有打新版本标签。
 
-## CAPTIVE-1 俘虏锁链（2026-10-01，独立分支验收通过）
+## CAPTIVE-1 俘虏锁链（2026-10-01，已合并 main）
 
 用户试玩发现俘虏没有原版多方向锁链：spawnHordeAt漏掉CE链锚放置步骤，另有6种方向地形被错标为未使用装饰。已补齐八方向链锚，按CE四组斜向→竖向→横向回退；特殊地形俘虏例外、救出后地面锚点留下。选址保持纯函数，原Architect生成所有者落地，未改写入守卫白名单或消耗RNG。
 
-独立工作树 /Users/coolking70/.codex/worktrees/playtest-fixes/BrogueJS，codex/captive-chains，基于main997872f。最终build/ce-fetch/full259文件4646项/drift全部exit0，8历史skip/5todo未改，前后代码散列一致；四种地图真实浏览器与键盘/鼠标救援验收通过。首轮三项失败的反事实及精确前提修订、生成基线/UR3逐叶归因见[修复报告](reports/captive-chains.report.md)。本分支尚未合并、推送或发布；不对旧存档的已生成楼层迁移补链。开发预览5395保留，无需重新实施或启动重复门禁。
+独立工作树 /Users/coolking70/.codex/worktrees/playtest-fixes/BrogueJS，codex/captive-chains，基于main997872f。最终build/ce-fetch/full259文件4646项/drift全部exit0，8历史skip/5todo未改，前后代码散列一致；四种地图真实浏览器与键盘/鼠标救援验收通过。首轮三项失败的反事实及精确前提修订、生成基线/UR3逐叶归因见[修复报告](reports/captive-chains.report.md)。用户随后授权合并推送，修复提交fb79ace已快进main，沿用main推送自动发布Pages的流程；不对旧存档的已生成楼层迁移补链。开发预览5395保留，无需重新实施或启动重复门禁。
 
 ## 3. 已定决策（不要重新讨论，除非用户主动提出）
 
