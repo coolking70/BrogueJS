@@ -48,6 +48,7 @@ import { registerImmersiveShortcut } from './ui/immersiveMode';
 import { activeGame, type GameMode } from './engine/Core/Game';
 import { viewport, startViewportTracking, shouldShowTouchControls } from './ui/layout';
 import { recordingJsonAtBoundary, RecordingExportError } from './ui/recordingExport';
+import type { DetailInfo } from './engine/UI/DetailGenerator';
 
 const REPLAY_KEY = 'brogue-web-replay-v1';
 
@@ -59,11 +60,12 @@ const touchUi = computed(() => !compact.value && viewport.coarsePointer);
 const panelOpen = ref(false);
 const contextWidth = computed(() => displaySettings.sidebarWidthMode === 'proportional' ? 'clamp(190px, 20vw, 280px)' : '216px');
 const journalOpen = ref(false);
+const nearbyInspection = ref<DetailInfo | null>(null);
 // Display-only panel expansion; preserve one GameCanvas instance across layout changes.
 const themePanelOpen = ref(false);
 function toggleThemePanel() {
-  if (displaySettings.immersiveMode || !compact.value) themePanelOpen.value = !themePanelOpen.value;
-  else panelOpen.value = !panelOpen.value;
+  if (displaySettings.immersiveMode) themePanelOpen.value = !themePanelOpen.value;
+  else if (compact.value) panelOpen.value = !panelOpen.value;
 }
 const themeLogLines = computed(() => displaySettings.immersiveMode
   ? (themePanelOpen.value ? 12 : 1)
@@ -344,9 +346,9 @@ const handleReturnToTitle = async () => {
     <template v-if="gameStarted">
       <!-- FE-1：GameCanvas 始终是同一位置的同一实例（旋转屏幕不重建 Pixi），
            其余部件按布局模式挂载，用 CSS grid 区域摆放。 -->
-      <ThemeHud class="area-vitals" :panel-open="compact && !displaySettings.immersiveMode ? panelOpen : themePanelOpen" @menu="menuOpen = true" @panel="toggleThemePanel" />
+      <ThemeHud class="area-vitals" :show-panel-button="compact || displaySettings.immersiveMode" :panel-open="compact && !displaySettings.immersiveMode ? panelOpen : themePanelOpen" @menu="menuOpen = true" @panel="toggleThemePanel" />
       <ThemeLog class="area-log" :lines="themeLogLines" :single-line="displaySettings.immersiveMode && !themePanelOpen" @open-journal="journalOpen = true" />
-      <ThemeNearby class="area-near" />
+      <ThemeNearby class="area-near" @inspect="nearbyInspection = $event" />
       <div class="map-area">
         <GameCanvas class="game-view" />
         <MapZoomControls />
@@ -355,9 +357,9 @@ const handleReturnToTitle = async () => {
       <TargetBar class="area-target" />
       <CommandBar v-if="showCommands || (!compact && !replayActive)" class="area-cmd" :mode="viewport.mode" />
       <DPad v-if="showTouch" class="area-pad" :mode="viewport.mode" />
-      <ContextPanel v-if="!compact && themePanelOpen && !displaySettings.immersiveMode" class="area-context" @close="themePanelOpen = false" />
+      <ContextPanel v-if="!compact && themePanelOpen && !displaySettings.immersiveMode" class="area-context" @close="themePanelOpen = false" @inspect="nearbyInspection = $event" />
       <SideDrawer :open="panelOpen" @close="panelOpen = false">
-        <ContextPanel @close="panelOpen = false" />
+        <ContextPanel @close="panelOpen = false" @inspect="nearbyInspection = $event" />
       </SideDrawer>
       <SideDrawer :open="journalOpen" variant="journal" @close="journalOpen = false">
         <MessageJournal />
@@ -367,7 +369,7 @@ const handleReturnToTitle = async () => {
         @save-replay="saveReplay" @export-replay-json="exportCurrentReplayJson" @return-to-title="handleReturnToTitle" />
       <ReplayControls />
       <AgentControls class="agent-root" :hide-controls="compact || touchUi" />
-      <DetailPanel />
+      <DetailPanel :display-detail="nearbyInspection" @close="nearbyInspection = null" />
       <ReferenceOverlay />
     </template>
     <div v-else class="blank-stage" aria-hidden="true"></div>
