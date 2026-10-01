@@ -3,12 +3,11 @@
 // 每个主题用 html[data-ui-concept=…] 选择显示哪些部件与如何排布。
 import { computed } from 'vue';
 import { useGameHud, nutritionStatus } from '../../ui/useGameHud';
-import { activeGame } from '../../engine/Core/Game';
 import { STOMACH_SIZE } from '../../entities/Player';
 
 const props = withDefaults(defineProps<{ panelOpen?: boolean; showPanelButton?: boolean }>(), { panelOpen: false, showPanelButton: true });
 const emit = defineEmits<{ (e: 'menu'): void; (e: 'panel'): void }>();
-const { stats, hp, maxHp, depth, nutrition, statuses } = useGameHud(0);
+const { stats, hp, maxHp, depth, turns, nutrition, statuses } = useGameHud(0);
 const fraction = computed(() => Math.max(0, Math.min(1, hp.value / Math.max(1, maxHp.value))));
 const low = computed(() => fraction.value < 0.3);
 const food = computed(() => nutritionStatus(nutrition.value));
@@ -19,7 +18,6 @@ const foodSegments = computed(() => Array.from({ length: 10 }, (_, i) => Math.ma
 const chars = (f: number) => { const n = Math.round(f * 10); return { on: '█'.repeat(n), off: '░'.repeat(10 - n) }; };
 const hpChars = computed(() => chars(fraction.value));
 const foodChars = computed(() => chars(foodFraction.value));
-const turns = computed(() => { void hp.value; return activeGame?.stats?.turns ?? 0; });
 const depthBand = computed(() => depth.value <= 5 ? 1 : depth.value <= 12 ? 2 : depth.value <= 20 ? 3 : 4);
 const depthMarks = Array.from({ length: 26 }, (_, i) => i + 1);
 void props;

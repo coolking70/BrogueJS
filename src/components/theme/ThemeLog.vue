@@ -3,7 +3,7 @@
 import { useGameHud } from '../../ui/useGameHud';
 const props = withDefaults(defineProps<{ lines?: number }>(), { lines: 5 });
 const emit = defineEmits<{ (e: 'open-journal'): void }>();
-const { logs, hoverText } = useGameHud(props.lines);
+const { logs, hoverText } = useGameHud(() => props.lines);
 </script>
 
 <template>

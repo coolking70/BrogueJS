@@ -9,6 +9,7 @@
  * 相机状态（缩放级、平移量）是纯显示状态：不进存档、不进录像、不碰 rng。
  */
 import { reactive, watch } from 'vue';
+import { unobstructedMapBand, type MapOcclusion } from './mapOcclusion';
 
 export const MIN_READABLE_TILE_PX = 12;
 export const MAX_TILE_PX = 40;
@@ -39,11 +40,26 @@ export function defaultTilePx(viewW: number, viewH: number): number {
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /** 一个轴：地图比视口小就居中；否则以 focus 为中心 + pan，夹在 [view - map, 0]。 */
-function axis(view: number, mapPx: number, focusPx: number, pan: number): { offset: number; pan: number } {
-    if (mapPx <= view) return { offset: (view - mapPx) / 2, pan: 0 };
+function axis(view: number, mapPx: number, focusPx: number, pan: number, padding = 0, neutralPan = false): { offset: number; pan: number } {
+    if (mapPx + padding * 2 <= view) return { offset: (view - mapPx) / 2, pan: 0 };
     const centered = view / 2 - focusPx;
+    if (padding > 0 || neutralPan) {
+        // 留出地图外的显示余量；边界修正不成为用户平移，resize 后仍从玩家跟随。
+        const origin = clamp(centered, view - mapPx - padding, padding);
+        const offset = clamp(origin + pan, view - mapPx - padding, padding);
+        return { offset, pan: offset - origin };
+    }
     const offset = clamp(centered + pan, view - mapPx, 0);
     return { offset, pan: offset - centered };
+}
+
+export interface CameraPresentation {
+    /** 等比覆盖视口，适用于全幅地图外壳；显式整图按钮仍可退出覆盖。 */
+    fillViewport?: boolean;
+    /** 跟随时允许地图外显示几格余量，避免边缘玩家贴住画布。 */
+    edgePaddingTiles?: number;
+    /** 画布内浮层的实际遮挡矩形；覆盖模式只纵向越界，保持横向铺满。 */
+    occlusions?: readonly MapOcclusion[];
 }
 
 /**
@@ -63,11 +79,27 @@ export function computeMapCamera(
     zoom: number,
     pan: { x: number; y: number },
     autoFollow = true,
+    presentation: CameraPresentation = {},
 ): CameraLayout {
     const baseTilePx = Math.min(base.scaleX, base.scaleY) * tile;
     if (viewW <= 0 || viewH <= 0) {
         return { ...base, follow: false, panX: 0, panY: 0 };
     }
+    if (presentation.fillViewport) {
+        const coverTilePx = Math.max(viewW / cols, viewH / rows, autoFollow ? defaultTilePx(viewW, viewH) : 0);
+        const tilePx = coverTilePx * Math.max(1, Math.min(clamp(zoom, MIN_ZOOM, MAX_ZOOM), MAX_TILE_PX / coverTilePx));
+        const scale = tilePx / tile;
+        const padding = Math.max(0, presentation.edgePaddingTiles ?? 0) * tilePx;
+        const x = axis(viewW, cols * tilePx, (focus.x + 0.5) * tilePx, pan.x, 0, true);
+        // 只考虑玩家及相邻格所在横向范围的浮层，侧面板不会挤掉整幅地图。
+        const band = unobstructedMapBand(viewH, x.offset + (focus.x + 0.5) * tilePx,
+            padding + tilePx / 2, presentation.occlusions ?? []);
+        const y = axis(band.bottom - band.top, rows * tilePx, (focus.y + 0.5) * tilePx, pan.y, padding, true);
+        return { scaleX: scale, scaleY: scale, offsetX: x.offset, offsetY: band.top + y.offset,
+            follow: cols * tilePx > viewW || rows * tilePx > viewH || band.top > 0 || band.bottom < viewH || padding > 0,
+            panX: x.pan, panY: y.pan };
+    }
+    const paddingTiles = Math.max(0, presentation.edgePaddingTiles ?? 0);
     if (baseTilePx >= MIN_READABLE_TILE_PX || !autoFollow) {
         // No user zoom: preserve the established desktop layout exactly.
         if (zoom <= 1) return { ...base, follow: false, panX: 0, panY: 0 };
@@ -75,8 +107,8 @@ export function computeMapCamera(
         const factor = Math.max(1, Math.min(clamp(zoom, MIN_ZOOM, MAX_ZOOM), MAX_TILE_PX / maxBaseTilePx));
         const scaleX = base.scaleX * factor;
         const scaleY = base.scaleY * factor;
-        const x = axis(viewW, cols * tile * scaleX, (focus.x + 0.5) * tile * scaleX, pan.x);
-        const y = axis(viewH, rows * tile * scaleY, (focus.y + 0.5) * tile * scaleY, pan.y);
+        const x = axis(viewW, cols * tile * scaleX, (focus.x + 0.5) * tile * scaleX, pan.x, paddingTiles * tile * scaleX);
+        const y = axis(viewH, rows * tile * scaleY, (focus.y + 0.5) * tile * scaleY, pan.y, paddingTiles * tile * scaleY);
         return { scaleX, scaleY, offsetX: x.offset, offsetY: y.offset, follow: factor > 1, panX: x.pan, panY: y.pan };
     }
     const tilePx = clamp(defaultTilePx(viewW, viewH) * clamp(zoom, MIN_ZOOM, MAX_ZOOM), baseTilePx, MAX_TILE_PX);
@@ -84,8 +116,8 @@ export function computeMapCamera(
         return { ...base, follow: false, panX: 0, panY: 0 };
     }
     const scale = tilePx / tile;
-    const x = axis(viewW, cols * tilePx, (focus.x + 0.5) * tilePx, pan.x);
-    const y = axis(viewH, rows * tilePx, (focus.y + 0.5) * tilePx, pan.y);
+    const x = axis(viewW, cols * tilePx, (focus.x + 0.5) * tilePx, pan.x, paddingTiles * tilePx);
+    const y = axis(viewH, rows * tilePx, (focus.y + 0.5) * tilePx, pan.y, paddingTiles * tilePx);
     return { scaleX: scale, scaleY: scale, offsetX: x.offset, offsetY: y.offset, follow: true, panX: x.pan, panY: y.pan };
 }
 
@@ -110,14 +142,29 @@ function loadZoom(): number {
 }
 
 export const cameraState = reactive<CameraState>({ zoom: loadZoom(), panX: 0, panY: 0, fit: false, follow: false });
+let cameraBeforeCodex: Pick<CameraState, 'zoom' | 'fit' | 'panX' | 'panY'> | null = null;
+
+/** codex 的强制与手动缩放均为主题内临时呈现；退出恢复全局偏好。 */
+export function setCodexCamera(active: boolean): void {
+    if (active && cameraBeforeCodex === null) {
+        cameraBeforeCodex = { zoom: cameraState.zoom, fit: cameraState.fit, panX: cameraState.panX, panY: cameraState.panY };
+        recenterCamera();
+        cameraState.fit = false;
+        cameraState.zoom = Math.max(cameraState.zoom, 2);
+    } else if (!active && cameraBeforeCodex !== null) {
+        Object.assign(cameraState, cameraBeforeCodex);
+        cameraBeforeCodex = null;
+    }
+}
 
 watch(() => cameraState.zoom, (zoom) => {
+    if (cameraBeforeCodex !== null) return;
     try {
         window.localStorage.setItem(CAMERA_SETTINGS_KEY, JSON.stringify({ zoom }));
     } catch {
         // headless / 隐私模式：仅本次会话有效
     }
-});
+}, { flush: 'sync' }); // 在临时状态边界内同步判断，避免恢复后异步写入主题缩放。
 
 export function zoomBy(factor: number): void {
     if (cameraState.fit && factor < 1) return;

@@ -50,7 +50,7 @@ import ThemeCodex from './components/theme/ThemeCodex.vue';
 import ThemeKit from './components/theme/ThemeKit.vue';
 import RadialCommands from './components/theme/RadialCommands.vue';
 import { concept, isShellConcept } from './ui/concept';
-import { cameraState } from './ui/mapCamera';
+import { setCodexCamera } from './ui/mapCamera';
 import { activeGame, type GameMode } from './engine/Core/Game';
 import { viewport, startViewportTracking, shouldShowTouchControls } from './ui/layout';
 import { recordingJsonAtBoundary, RecordingExportError } from './ui/recordingExport';
@@ -83,12 +83,8 @@ const themeLogLines = computed(() => {
   if (c === 'codex') return mode === 'desktop' ? 3 : 2;
   return mode === 'landscape' ? 1 : mode === 'desktop' ? 3 : 2;
 });
-// 夜读：进入时把地图放大到跟随视角，离开时恢复之前的缩放（镜头是显示偏好）。
-let zoomBeforeCodex: number | null = null;
-watch(concept, (next, prev) => {
-  if (next === 'codex' && prev !== 'codex') { zoomBeforeCodex = cameraState.zoom; cameraState.fit = false; cameraState.zoom = Math.max(cameraState.zoom, 2); }
-  else if (prev === 'codex' && next !== 'codex' && zoomBeforeCodex !== null) { cameraState.zoom = zoomBeforeCodex; zoomBeforeCodex = null; }
-}, { immediate: true });
+// 夜读：临时跟随镜头不写全局偏好，离开时恢复进入前的 zoom/fit/pan。
+watch(concept, next => setCodexCamera(next === 'codex'), { immediate: true });
 const replayTick = ref(0);
 const replayActive = computed(() => { replayTick.value; return !!activeGame.replayRecording; });
 let replayTimer = 0;
@@ -99,7 +95,7 @@ onMounted(() => { replayTimer = window.setInterval(() => {
   if (activeGame.isGameOver && !endFeedbackCleared) { endFeedbackCleared = true; replayFeedback.value = ''; }
   else if (!activeGame.isGameOver) endFeedbackCleared = false;
 }, 100); });
-onUnmounted(() => { window.clearInterval(replayTimer); runEpoch++; });
+onUnmounted(() => { window.clearInterval(replayTimer); setCodexCamera(false); runEpoch++; });
 /** 触控命令栏 + 方向键：紧凑模式或粗指针设备显示；回放期间让位给录像控制条。 */
 const showTouch = computed(() => shouldShowTouchControls(viewport.coarsePointer, viewport.mode) && !replayActive.value);
 const showCommands = computed(() => (compact.value || showTouch.value) && !replayActive.value);
@@ -366,7 +362,7 @@ const handleReturnToTitle = async () => {
         <ThemeNearby v-if="concept !== 'codex'" class="area-near" />
         <ThemeCodex v-if="concept === 'codex'" class="area-codex" @menu="menuOpen = true" @open-journal="journalOpen = true" @tab="same => themePanelOpen = same ? !themePanelOpen : true" />
         <ThemeKit v-if="concept === 'manual'" class="area-kit" />
-        <RadialCommands v-if="concept === 'zen' && showTouch" class="area-radial" />
+        <RadialCommands v-if="concept === 'zen' && !replayActive" class="area-radial" />
       </template>
       <div class="map-area">
         <GameCanvas class="game-view" />

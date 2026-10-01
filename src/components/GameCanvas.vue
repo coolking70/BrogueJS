@@ -109,6 +109,7 @@ import { displaySettings } from '../engine/Settings';
 import { viewport } from '../ui/layout';
 // FE-1：小屏跟随相机（纯显示状态，不进存档/录像）
 import { computeMapCamera, cameraState, zoomBy } from '../ui/mapCamera';
+import { readMapOcclusions, observeMapOcclusions } from '../ui/mapOcclusion';
 import { MAP_HOVER_FILL, MAP_HOVER_STROKE, MousePanTracker, shouldHandleMapWheel, shouldHighlightMapCell, wheelZoomFactor } from '../ui/mapPointer';
 // FE-1：触屏手势与目标选择（改状态的输出只经 ui/commands 的录制边界）
 import { GestureTracker, type GestureEvent } from '../ui/touchGestures';
@@ -137,6 +138,8 @@ let resizeObserver: ResizeObserver | null = null;
 let stopScaleModeWatch: (() => void) | null = null;
 let stopTileModeWatch: (() => void) | null = null;
 let stopCameraWatch: (() => void) | null = null;
+let stopOcclusionWatch: (() => void) | null = null;
+let removeOcclusionObserver: (() => void) | null = null;
 // FE-1：触屏手势监听的卸载函数
 let removeDisplayClockListener: (() => void) | null = null;
 let removeTouchListeners: (() => void) | null = null;
@@ -306,6 +309,9 @@ onMounted(async () => {
             el.clientWidth, el.clientHeight, base, DCOLS, DROWS, TILE_SIZE,
             focus, cameraState.zoom, { x: cameraState.panX, y: cameraState.panY },
             viewport.mode !== 'desktop' || mapMode.value === 'hanzi' || mapMode.value === 'tiles',
+            { fillViewport: concept.value === 'umbra' || concept.value === 'ember',
+                edgePaddingTiles: concept.value === 'codex' || concept.value === 'umbra' ? 3 : 0,
+                occlusions: concept.value === 'umbra' ? readMapOcclusions(el) : undefined },
         );
         cameraState.follow = cam.follow;
         pixiApp.canvas.style.cursor = cam.follow ? 'grab' : 'crosshair';
@@ -619,6 +625,14 @@ onMounted(async () => {
     };
 
     stopTileModeWatch = watch([mapMode, concept], () => { applyLayout(); renders.request(); });
+    stopOcclusionWatch = watch(concept, (next, prev) => {
+        removeOcclusionObserver?.();
+        removeOcclusionObserver = null;
+        if (next === 'umbra' && canvasContainer.value) {
+            removeOcclusionObserver = observeMapOcclusions(canvasContainer.value, () => { applyLayout(); renders.request(); });
+        }
+        if (next === 'umbra' || prev === 'umbra') { applyLayout(); renders.request(); }
+    }, { immediate: true, flush: 'post' });
     game.onRenderRequested = renders.request;
 
     (window as Window & { render_game_to_text?: () => string }).render_game_to_text = () => {
@@ -1045,6 +1059,10 @@ onUnmounted(() => {
   stopScaleModeWatch = null;
   stopCameraWatch?.();
   stopCameraWatch = null;
+  stopOcclusionWatch?.();
+  stopOcclusionWatch = null;
+  removeOcclusionObserver?.();
+  removeOcclusionObserver = null;
   removeDisplayClockListener?.();
   removeDisplayClockListener = null;
   removeTouchListeners?.();

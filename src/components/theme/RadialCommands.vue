@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// DESIGN-2（一线）：触屏命令环。轻点中心展开/收起，点选一项即执行；
+// DESIGN-2（一线）：桌面/触屏命令环。轻点中心展开/收起，点选一项即执行；
 // 按住中心拖到某项上松手也会执行。每项 = 一个键盘命令，经 ui/commands.dispatch。
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useTranslation } from 'i18next-vue';
@@ -22,7 +22,11 @@ const items = computed<Array<{ action: string; label: string; data?: string }>>(
 ]);
 const angle = (i: number) => -90 + i * (360 / items.value.length);
 function run(action: string, data?: unknown) { open.value = false; (document.activeElement as HTMLElement)?.blur(); dispatch(action, data); }
-function onHubDown() { open.value = !open.value; dragFromHub = open.value; }
+function onHubDown(event: PointerEvent) {
+  open.value = !open.value; dragFromHub = open.value;
+  // 展开时圆环向视口内移动；保持抬起事件送到中心，继续支持拖选。
+  (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+}
 function onRelease(event: PointerEvent) {
   const fromHub = dragFromHub; dragFromHub = false;
   if (!open.value || !fromHub) return;

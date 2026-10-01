@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inputManager } from '../engine/Input';
-import { computed, ref, onMounted, onUnmounted } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { useTranslation } from "i18next-vue";
 import { concept, selectConcept, registerConceptTool, isShellConcept } from "../ui/concept";
 import type { Concept } from "../ui/concept";
@@ -9,9 +9,16 @@ import { mapMode, selectMapMode } from '../ui/mapTiles';
 import type { MapMode } from '../ui/mapTiles';
 defineProps<{ inGame?: boolean }>();
 const legendOpen = ref(false);
-/** DESIGN-2 主题里切换栏默认收成一个小按钮，展开后浮在游戏上方，不占布局。 */
+/** DESIGN-2：收起保留角落按钮；展开按实际高度为游戏外壳让出空间。 */
 const collapsed = ref(true);
 const shell = computed(() => isShellConcept(concept.value));
+const toolbar = ref<HTMLElement>();
+let resizeObserver: ResizeObserver | undefined;
+function measureToolbar() {
+  const height = shell.value && !collapsed.value ? toolbar.value?.getBoundingClientRect().height ?? 0 : 0;
+  document.documentElement.style.setProperty('--shell-toolbar-height', `${height}px`);
+}
+watch([shell, collapsed], measureToolbar, { flush: 'post' });
 const mapOptions = computed(() => [
  { id:'original' as MapMode, name:t('lab.map_original'), tip:t('lab.map_original_tip') },
  { id:'refined' as MapMode, name:t('lab.map_refined'), tip:t('lab.map_refined_tip') },
@@ -27,6 +34,9 @@ const infoOpen = ref(false);
 let removeKeyboard: (() => void) | undefined;
 let cleanupTool: (() => void) | undefined;
 onMounted(() => {
+  measureToolbar();
+  resizeObserver = new ResizeObserver(measureToolbar);
+  if (toolbar.value) resizeObserver.observe(toolbar.value);
   cleanupTool = registerConceptTool();
   removeKeyboard = inputManager.registerModalKeyHandler(event => {
     if (!legendOpen.value && !infoOpen.value && (collapsed.value || !shell.value)) return false;
@@ -34,7 +44,11 @@ onMounted(() => {
     return true;
   }, 800);
 });
-onUnmounted(() => { cleanupTool?.(); removeKeyboard?.(); });
+onUnmounted(() => {
+  resizeObserver?.disconnect();
+  document.documentElement.style.removeProperty('--shell-toolbar-height');
+  cleanupTool?.(); removeKeyboard?.();
+});
 const concepts = computed(() => [
   { id: "classic" as Concept, number: "01", name: t("lab.classic"), code: t("lab.classic_code"), description: t("lab.classic_desc") },
   { id: "tactical" as Concept, number: "02", name: t("lab.tactical"), code: t("lab.tactical_code"), description: t("lab.tactical_desc") },
@@ -67,6 +81,7 @@ function choose() {
 </script>
 <template>
   <header
+    ref="toolbar"
     class="ui-lab-toolbar"
     :class="{ 'playing-toolbar': inGame, 'lab-shell': shell, 'lab-collapsed': shell && collapsed }"
     @keydown.stop
