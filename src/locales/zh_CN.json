@@ -1413,8 +1413,6 @@
   "theme.armor": "护甲",
   "theme.gold": "金币",
   "theme.stealth": "潜行",
-  "title.glyph": "刻符",
-  "title.glyph_code": "GLYPH CONSOLE",
   "map.coverage_tiles": "覆盖 208 种地形、67 种生物与 13 类物品；同类生物以轮廓和装备区分。隐藏机关仍显示普通墙或地，未探索区域保持隐藏。",
   "menu.display.map_style": "地图显示模式",
   "menu.display.immersive_mode": "沉浸模式",
