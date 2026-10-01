@@ -3,7 +3,9 @@ import type { Monster } from '../../entities/Monster';
 // Runtime ownership is deliberately outside the serialized creature graph.
 // Bind on array insertion/replacement so spawns, restored floors and passengers
 // all use their owning Game, including when combat has no Grid argument.
+import type { ExtensionRuntime } from '../../ext/runtime';
 interface DeathOwner {
+    extensionRuntime?: ExtensionRuntime | null;
     monsters: Monster[];
     dormantMonsters: Monster[];
     killMonster(monster: Monster): void;
@@ -30,10 +32,16 @@ export function ownedMonsterList(input: Monster[], owner: DeathOwner): Monster[]
     const old = lists.get(input);
     if (old?.owner === owner) return input;
     const raw = old?.raw ?? input;
-    for (const monster of raw) owners.set(monster, owner);
+    for (const monster of raw) {
+        owners.set(monster, owner);
+        if (owner.extensionRuntime) owner.extensionRuntime.attachCreature(monster);
+    }
     const list = new Proxy(raw, {
         set(target, key, value, receiver) {
-            if (typeof key === 'string' && /^\d+$/.test(key)) owners.set(value, owner);
+            if (typeof key === 'string' && /^\d+$/.test(key)) {
+                owners.set(value, owner);
+                if (owner.extensionRuntime) owner.extensionRuntime.attachCreature(value);
+            }
             return Reflect.set(target, key, value, receiver);
         },
     });

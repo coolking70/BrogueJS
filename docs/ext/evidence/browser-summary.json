@@ -1,0 +1,52 @@
+{
+  "result": {
+    "ruleSet": "extended",
+    "manifest": {
+      "schema": 1,
+      "modules": [
+        {
+          "id": "example",
+          "version": "1.0.0"
+        }
+      ]
+    }
+  },
+  "exercised": {
+    "kills": 1,
+    "events": 21,
+    "replayError": null,
+    "text": "{\"ruleSet\":\"extended\",\"depth\":1,\"turn\":20,\"player\":{\"id\":1,\"x\":27,\"y\":24,\"hp\":999},\"extensions\":{\"manifest\":{\"schema\":1,\"modules\":[{\"id\":\"example\",\"version\":\"1.0.0\"}]},\"modules\":{\"example\":{\"kills\":1}},\"components\":{}}}",
+    "messages": [
+      {
+        "id": 0,
+        "text": "你看到了豺狼。",
+        "color": "#ffccaa",
+        "count": 1,
+        "turn": 19
+      },
+      {
+        "id": 1,
+        "text": "你看到了狗头人。",
+        "color": "#ffccaa",
+        "count": 1,
+        "turn": 19
+      },
+      {
+        "id": 2,
+        "text": "【扩展】豺狼 倒下了，累计击杀 1。",
+        "color": "#88ccff",
+        "count": 1,
+        "turn": 19
+      },
+      {
+        "id": 3,
+        "text": "你消灭了豺狼（趁其熟睡）",
+        "color": "#ffcc00",
+        "count": 1,
+        "turn": 20,
+        "foldable": true
+      }
+    ]
+  },
+  "errors": []
+}

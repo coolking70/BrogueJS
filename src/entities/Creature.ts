@@ -53,7 +53,16 @@ export function ensureEntityIdAbove(maxInUseId: number): void {
     }
 }
 
+import type { CreatureExtensionHooks } from '../ext/types';
+const extensionCreatureHooks = new WeakMap<Creature, CreatureExtensionHooks>();
+
 export class Creature implements Entity {
+    /** Extension-only session callbacks; excluded from the explicit entity codec. */
+    public get extensionHooks(): CreatureExtensionHooks | undefined { return extensionCreatureHooks.get(this); }
+    public set extensionHooks(value: CreatureExtensionHooks | undefined) {
+        if (value) extensionCreatureHooks.set(this, value);
+        else extensionCreatureHooks.delete(this);
+    }
     /** CE target-owned path cache; refreshed only when target moves beyond value 3. */
     public mapToMe: number[][] | null = null;
     public id: number;
@@ -317,7 +326,9 @@ export class Creature implements Entity {
         if (grid) spawnCreatureBlood(grid, this.loc, this.bloodType, damage, this.hp, this.bloodInvulnerable());
         // CE Combat.c:1827-1878: blood precedes transference, including self-hits.
         beforeHpLoss?.(damage);
+        const hpBefore = this.hp;
         this.hp -= damage;
+        if (this.extensionHooks) this.extensionHooks.damage(this, damage, hpBefore);
         if (this.hp <= 0) {
             this.die();
         }

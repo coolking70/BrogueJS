@@ -1,0 +1,42 @@
+{
+  "baseline": "3c1407fcb0b074a7b4dd4879d15eb7c0be346749",
+  "branch": "ext/foundation",
+  "started": "2026-10-01T17:28:56Z",
+  "sourceBefore": "9a2519d9295e7214458835645de11a1b83eeb348742c35731b70c10979cc6439",
+  "environment": {
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "VITEST_MAX_WORKERS": "1"
+  },
+  "gates": [
+    {
+      "command": "npx vue-tsc -b",
+      "output": "vue-tsc.txt",
+      "status": "completed",
+      "exitCode": 0,
+      "durationSeconds": 14.7
+    },
+    {
+      "command": "npm run build",
+      "output": "build.txt",
+      "status": "completed",
+      "exitCode": 0,
+      "durationSeconds": 20.33
+    },
+    {
+      "command": "npm test",
+      "output": "npm-test.txt",
+      "status": "interrupted",
+      "exitCode": null
+    },
+    {
+      "command": "npm run test:drift",
+      "output": "test-drift.txt",
+      "status": "not_started",
+      "exitCode": null
+    }
+  ],
+  "outcome": "Interrupted at user request to migrate development/testing to cloud. Complete npm test not finished; three p4_5_melee_specials failures had been reported. No acceptance pass claimed.",
+  "interrupted": "2026-10-01T18:53:19Z",
+  "migrationSource": "934bb0f09b05b3bb246cc5a17d962fd0a91ad5e241835a19642f0d9ff6511814",
+  "migrationNote": "Two explicit CombatSystem.resolveAttack references restore unbound attack-call compatibility. This edit is not revalidated locally; all four gates remain required in cloud."
+}

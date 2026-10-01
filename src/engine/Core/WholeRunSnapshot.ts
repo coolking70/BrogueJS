@@ -55,7 +55,10 @@ export interface LevelSnapshot {
     playerExitedVia: Pos;
 }
 
+import type { ExtensionSnapshot } from '../../ext/types';
+
 export interface GameSnapshot extends LevelSnapshot {
+    extensions?: ExtensionSnapshot;
     /** U01 entity envelope version; schema discriminates whole-run saves. */
     version: number;
     schema: typeof WHOLE_RUN_SCHEMA;

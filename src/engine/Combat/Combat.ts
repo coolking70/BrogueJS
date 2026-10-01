@@ -68,7 +68,16 @@ export class CombatSystem {
      * Resolves an attack from one creature to another.
      * Implements CE-accurate hit probability and damage formulas.
      */
-    public static attack(attacker: Creature, defender: Creature, opts?: {
+    public static attack(attacker: Creature, defender: Creature, opts?: Parameters<typeof CombatSystem.resolveAttack>[2]): AttackResult {
+        const hooks = attacker.extensionHooks ?? defender.extensionHooks;
+        if (!hooks) return CombatSystem.resolveAttack(attacker, defender, opts);
+        hooks.beforeAttack(attacker, defender);
+        let result: AttackResult | undefined;
+        try { result = CombatSystem.resolveAttack(attacker, defender, opts); return result; }
+        finally { hooks.afterAttack(attacker, defender, result); }
+    }
+
+    private static resolveAttack(attacker: Creature, defender: Creature, opts?: {
         /**
          * P4-3：CE attack()（Combat.c:1243-1245）把 MONST_IMMUNE_TO_WEAPONS 的豁免
          * 限定在“武器伤害”——近战与投掷武器都走这条 attack() 复用路径，默认 true。

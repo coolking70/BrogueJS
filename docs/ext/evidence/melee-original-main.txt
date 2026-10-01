@@ -1,0 +1,13 @@
+
+ RUN  v4.1.11 /private/tmp/bjs-ext-baseline
+
+
+*** CE reference source not found; run npm run ce:fetch ***
+CE-dependent tests will be explicitly skipped.
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  02:22:41
+   Duration  11.82s (transform 520ms, setup 0ms, import 1.16s, tests 10.56s, environment 0ms)
+

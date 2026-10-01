@@ -1432,5 +1432,17 @@
   "lab.journal_empty": "旅程刚刚开始。",
   "lab.command_more": "更多",
   "lab.command_less": "收起",
-  "lab.map_coverage_tiles": "覆盖 208 种地形、67 种生物与 13 类物品；同类生物以轮廓和装备区分。隐藏机关仍显示普通墙或地，未探索区域保持隐藏。"
+  "lab.map_coverage_tiles": "覆盖 208 种地形、67 种生物与 13 类物品；同类生物以轮廓和装备区分。隐藏机关仍显示普通墙或地，未探索区域保持隐藏。",
+    "ext.mode.label": "规则模式",
+    "ext.mode.classic": "经典 CE",
+    "ext.mode.extended": "扩展模式",
+    "ext.example.kill": "【扩展】{{name}} 倒下了，累计击杀 {{kills}}。",
+    "ext.error.incompatible": "无法读取：启用的扩展集合、版本或状态不一致。",
+    "ext.definition.observe": "观察",
+    "ext.definition.wanderer": "旅人",
+    "ext.definition.traveler": "行路人",
+    "ext.definition.greeting": "问候",
+    "ext.definition.hello": "你好，旅人。",
+    "ext.definition.leave": "告辞",
+    "ext.definition.guide": "向导"
 }

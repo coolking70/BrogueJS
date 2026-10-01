@@ -195,7 +195,9 @@ export class Player extends Creature {
         if (this.hp <= 0) return 'normal';
         // Starvation: nutrition exhausted, 1 HP lost per turn (Time.c:2525-2530)
         if (this.nutrition <= 0) {
+            const hpBefore = this.hp;
             this.hp -= 1;
+            if (this.extensionHooks) this.extensionHooks.damage(this, 1, hpBefore);
             logger.disturb();
             return 'starving';
         }
@@ -239,7 +241,9 @@ export class Player extends Creature {
 
         // Starvation: nutrition exhausted, 1 HP lost per turn (Time.c:2525-2530)
         if (this.nutrition <= 0) {
+            const hpBefore = this.hp;
             this.hp -= 1;
+            if (this.extensionHooks) this.extensionHooks.damage(this, 1, hpBefore);
             logger.disturb();
             return 'starving';
         }

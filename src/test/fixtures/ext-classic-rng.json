@@ -1,0 +1,67 @@
+{
+  "baseline": "3c1407fcb0b074a7b4dd4879d15eb7c0be346749",
+  "seed": 4101,
+  "initial": {
+    "version": 2,
+    "algorithm": "brogue-web-ranval32-uint64-level-v2",
+    "streams": [
+      {
+        "a": 1036314787,
+        "b": 2895326027,
+        "c": 3576816094,
+        "d": 1864760331
+      },
+      {
+        "a": 2531880008,
+        "b": 3759112340,
+        "c": 3623510102,
+        "d": 2976292354
+      }
+    ],
+    "currentRNG": 0,
+    "randomNumbersGenerated": 2602,
+    "cosmeticNumbersGenerated": 162
+  },
+  "combat": {
+    "version": 2,
+    "algorithm": "brogue-web-ranval32-uint64-level-v2",
+    "streams": [
+      {
+        "a": 2722795272,
+        "b": 1983815027,
+        "c": 1803272826,
+        "d": 3725370495
+      },
+      {
+        "a": 2531880008,
+        "b": 3759112340,
+        "c": 3623510102,
+        "d": 2976292354
+      }
+    ],
+    "currentRNG": 0,
+    "randomNumbersGenerated": 2610,
+    "cosmeticNumbersGenerated": 162
+  },
+  "afterWait": {
+    "version": 2,
+    "algorithm": "brogue-web-ranval32-uint64-level-v2",
+    "streams": [
+      {
+        "a": 2722795272,
+        "b": 1983815027,
+        "c": 1803272826,
+        "d": 3725370495
+      },
+      {
+        "a": 2531880008,
+        "b": 3759112340,
+        "c": 3623510102,
+        "d": 2976292354
+      }
+    ],
+    "currentRNG": 0,
+    "randomNumbersGenerated": 2610,
+    "cosmeticNumbersGenerated": 162
+  }
+}

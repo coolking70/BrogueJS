@@ -1,0 +1,70 @@
+
+ RUN  v4.1.11 /Users/coolking70/Documents/Codex/2026-10-02/task/BrogueJS
+
+
+*** CE reference source not found; run npm run ce:fetch ***
+CE-dependent tests will be explicitly skipped.
+
+ ❯ src/test/ext_validation.test.ts (4 tests | 3 failed) 5ms
+     × rejects sparse arrays, array properties, prototypes, cycles and non-finite values 3ms
+     × requires object state containers, including empty enabled sets 1ms
+     × rejects asynchronous event/init/load/unload handlers 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/ext_validation.test.ts > EXT-0 strict data and synchronous lifecycle boundaries > rejects sparse arrays, array properties, prototypes, cycles and non-finite values
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/test/ext_validation.test.ts:14:38
+     12| describe('EXT-0 strict data and synchronous lifecycle boundaries', () …
+     13|     it('rejects sparse arrays, array properties, prototypes, cycles an…
+     14|         expect(isJson(new Array(2))).toBe(false);
+       |                                      ^
+     15|         const array: unknown[] & { extra?: number } = [1]; array.extra…
+     16|         expect(isJson(JSON.parse('{"__proto__":{}}'))).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/test/ext_validation.test.ts > EXT-0 strict data and synchronous lifecycle boundaries > requires object state containers, including empty enabled sets
+AssertionError: expected [Function] to throw an error
+ ❯ src/test/ext_validation.test.ts:24:92
+     22|         const runtime = make(), valid = runtime.snapshot();
+     23|         for (const value of [1, true, 'value', [], null]) {
+     24|             expect(() => runtime.validateSnapshot({ ...valid, componen…
+       |                                                                                            ^
+     25|             expect(() => runtime.validateSnapshot({ ...valid, modules:…
+     26|         }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/test/ext_validation.test.ts > EXT-0 strict data and synchronous lifecycle boundaries > rejects asynchronous event/init/load/unload handlers
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ src/test/ext_validation.test.ts:43:78
+     41|         expect(() => make({ ...module(), onNewGame: async () => {} }).…
+     42|         expect(() => make({ ...module(), hooks: { enteredLevel: async …
+     43|         expect(() => make({ ...module(), onLoad: async () => {} }).loa…
+       |                                                                              ^
+     44|         expect(() => make({ ...module(), onUnload: async () => {} }).u…
+     45|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 1 passed (4)
+   Start at  01:09:16
+   Duration  117ms (transform 15ms, setup 0ms, import 20ms, tests 5ms, environment 0ms)
+

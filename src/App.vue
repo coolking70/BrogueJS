@@ -114,10 +114,10 @@ const hasReplay = computed(() => {
   }
 });
 
-const startNewGame = (payload: { seed?: string; mode: GameMode }) => {
+const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "classic" | "extended" }) => {
   runEpoch++;
   replayFeedback.value = '';
-  activeGame.startNewGame({ seed: payload.seed, mode: payload.mode });
+  activeGame.startNewGame({ seed: payload.seed, mode: payload.mode, ruleSet: payload.ruleSet });
   runAvailable.value = true;
   replayMessage(
     i18next.t('menu.log.started_game', {

@@ -454,5 +454,9 @@
   "replayOmniscientDetails": {
     "kind": "session",
     "contract": "X4-R6：显式回放物品详情全知偏好，仅只读投影；普通游玩不启用。新局重置，seek 保持；不写入世界快照，不改变知识表/RNG/回合。"
+  },
+  "extensionRuntime": {
+    "kind": "persist",
+    "contract": "EXT-0：经典局 null，不创建/调用模块；扩展局运行期服务，仅 modules/components/manifest 深拷贝到独立顶层 extensions。新局卸载后重建；读档验证版本和模块状态后重建，绑定全部生物，不重播生成事件，不消耗 RNG。"
   }
 }

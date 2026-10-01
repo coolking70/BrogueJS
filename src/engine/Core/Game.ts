@@ -216,11 +216,17 @@ export { WHOLE_RUN_SCHEMA } from './WholeRunSnapshot';
 
 export type { LevelSnapshot, GameSnapshot } from './WholeRunSnapshot';
 export type GenerationPorts = ReturnType<Game["makeGenerationPorts"]>;
+import { ExtensionRuntime } from '../../ext/runtime';
+import { createExtensionRegistry, DEFAULT_EXTENSIONS } from '../../ext/catalog';
+import { canonical } from '../../ext/json';
+import { creatureView, itemView, type ExtensionManifest, type ExtensionSnapshot, type RuleSet } from '../../ext/types';
+
 export type GameRunSnapshot = ReturnType<Game['snapshotRunState']> & { recordingOrigin?: RecordingOrigin };
 
 export type RecordedInputData = number | { x: number; y: number } | string | null;
 
 export interface RecordedInputEvent {
+    extensions?: ExtensionSnapshot;
     index: number;
     tick: number;
     depth: number;
@@ -234,6 +240,7 @@ export interface RecordedInputEvent {
 }
 
 export interface GameRecording {
+    extensions?: ExtensionManifest;
     version: number;
     recordedAt: number;
     /** Exports are canonical decimal strings; safe numeric recordings remain readable. */
@@ -245,10 +252,11 @@ export interface GameRecording {
 
 /** Provenance for saves made by this recorder, not a proof against edited worlds. */
 export interface RecordingOrigin {
+    extensions?: ExtensionManifest;
     version: 1;
     seed: string;
     mode: GameMode;
-    initial: Pick<RecordedInputEvent, 'tick' | 'depth' | 'player' | 'turn' | 'rng' | 'end'>;
+    initial: Pick<RecordedInputEvent, 'tick' | 'depth' | 'player' | 'turn' | 'rng' | 'end' | 'extensions'>;
     inputState: {
         inventoryOpen: boolean;
         inventoryAction: Game['inventoryAction'];
@@ -307,6 +315,22 @@ const superVictoryState = new WeakMap<Game, boolean>();
 const TURNS_FOR_FULL_REGEN = 300;
 
 export class Game {
+    public extensionRuntime: ExtensionRuntime | null = null;
+    public get ruleSet(): RuleSet { return this.extensionRuntime ? 'extended' : 'classic'; }
+
+    private createExtensionRuntime(manifest: ExtensionManifest, snapshot?: ExtensionSnapshot): ExtensionRuntime {
+        return new ExtensionRuntime(createExtensionRegistry(), manifest, {
+            depth: () => this.depth,
+            playerId: () => this.player.id,
+            randomInt: (min, max) => {
+                const stream = rng.getState().currentRNG;
+                rng.setRNG(RNGType.RNG_SUBSTANTIVE);
+                try { return rng.randRange(min, max); } finally { rng.setRNG(stream); }
+            },
+            message: text => logger.log(text, '#88ccff'),
+        }, snapshot);
+    }
+
     public grid!: Grid;
     public environment!: EnvironmentManager;
     public fov!: FOVSys;
@@ -562,12 +586,17 @@ export class Game {
         this.startNewGame();
     }
 
-    public startNewGame(options?: { seed?: SeedInput; mode?: GameMode }) {
+    public startNewGame(options?: { seed?: SeedInput; mode?: GameMode; ruleSet?: RuleSet; extensions?: readonly string[] }) {
         // Validate before retiring the current run (unsafe numeric inputs cannot be recovered).
         const seed = normalizeSeed(options?.seed ?? 0);
+        if (options?.ruleSet !== undefined && options.ruleSet !== 'classic' && options.ruleSet !== 'extended') throw new Error('Invalid rule set');
+        const extensionManifest = options?.ruleSet === 'extended'
+            ? createExtensionRegistry().manifest(options.extensions ?? DEFAULT_EXTENSIONS) : undefined;
         // U00: retire the old run before seeding/allocating the next one. Returning
         // the iterator must not run an old turn's epilogue against the new world.
         this.discardInFlightAdvancement();
+        if (this.extensionRuntime) this.extensionRuntime.unload();
+        this.extensionRuntime = null;
         if (this.grid) { setDormantAwakener(this.grid, null); setAllyResurrector(this.grid, null); setDungeonFeatureEffects(this.grid, null); }
         for (const level of this.levels.values()) { setDormantAwakener(level.grid, null); setAllyResurrector(level.grid, null); setDungeonFeatureEffects(level.grid, null); }
         this.purgatory = [];
@@ -741,13 +770,20 @@ export class Game {
             this.player.equip(leatherArmor);
         }
 
+        if (extensionManifest) {
+            this.extensionRuntime = this.createExtensionRuntime(extensionManifest);
+            this.extensionRuntime.newGame();
+            this.extensionRuntime.attachCreature(this.player);
+        }
         this.generateDepth(false, true);
         this.needsRender = true;
         this.update();
         recordingState(this).origin = {
             version: 1, seed: this.currentSeed, mode: this.mode,
+            ...(this.extensionRuntime ? { extensions: this.extensionRuntime.manifest } : {}),
             initial: { tick: timeSystem.currentTick, turn: this.absoluteTurnNumber, depth: this.depth,
-                player: { ...this.player.loc }, rng: rng.getState() },
+                player: { ...this.player.loc }, rng: rng.getState(),
+                ...(this.extensionRuntime ? { extensions: this.extensionRuntime.snapshot() } : {}) },
             inputState: this.recordingInputState(),
         };
     }
@@ -1242,7 +1278,14 @@ export class Game {
     private generateDepth(isGoingUp: boolean = false, isFirstLevel: boolean = false, fell: boolean = false) {
         this.monsterPathCache = { safeTerrain: null, allySafety: null };
         for (const m of this.monsters) m.mapToMe = null;
-        return generateDepth(this.makeGenerationPorts(), isGoingUp, isFirstLevel, fell);
+        const firstVisit = !this.levelSeeds[this.depth - 1]?.visited;
+        if (this.extensionRuntime && firstVisit) this.extensionRuntime.emit('beforeLevelGeneration', { depth: this.depth });
+        const result = generateDepth(this.makeGenerationPorts(), isGoingUp, isFirstLevel, fell);
+        if (this.extensionRuntime) {
+            if (firstVisit) this.extensionRuntime.emit('afterLevelGeneration', { depth: this.depth });
+            this.extensionRuntime.emit('enteredLevel', { depth: this.depth, firstVisit });
+        }
+        return result;
     }
 
     private levelStair(type: TerrainType): Pos | null {
@@ -2730,6 +2773,8 @@ export class Game {
         event.player = { x: this.player.loc.x, y: this.player.loc.y };
         event.turn = this.absoluteTurnNumber;
         event.rng = rng.getState();
+        if (this.extensionRuntime) event.extensions = this.extensionRuntime.snapshot();
+        else delete event.extensions;
         if (this.isGameOver) event.end = { won: this.gameOverWon, superVictory: this.gameOverSuperVictory, score: this.gameOverScore };
         else delete event.end;
     }
@@ -2768,7 +2813,10 @@ export class Game {
             perform();
             return;
         }
-        if (action.startsWith('item:')) {
+        if (action === 'ext:command') {
+            if (!this.extensionRuntime) throw new Error('Extension command in classic mode');
+            this.extensionRuntime.command(data);
+        } else if (action.startsWith('item:')) {
             const [operation, letter, ...rest] = String(data ?? '').split('|');
             const item = this.player.inventory.items.find(i => i.inventoryLetter === letter);
             if (operation !== 'confirm' && operation !== 'cancel' && !item) throw new Error(`Missing replay item ${letter}`);
@@ -2814,6 +2862,7 @@ export class Game {
             seed: this.currentSeed,
             mode: this.mode,
             startDepth: 1,
+            ...(this.extensionRuntime ? { extensions: structuredClone(this.extensionRuntime.manifest) } : {}),
             events: this.recordedInputEvents.map((event) => ({
                 index: event.index,
                 tick: event.tick,
@@ -2823,6 +2872,7 @@ export class Game {
                 data: typeof event.data === 'object' && event.data !== null ? { ...event.data } : event.data,
                 decisions: [...(event.decisions ?? [])],
                 turn: event.turn,
+                ...(event.extensions ? { extensions: structuredClone(event.extensions) } : {}),
                 rng: event.rng ? structuredClone(event.rng) : undefined,
                 ...(event.end ? { end: { ...event.end } } : {})
             }))
@@ -2857,6 +2907,13 @@ export class Game {
     private isValidRecording(recording: unknown): recording is GameRecording {
         if (!recording || typeof recording !== 'object') return false;
         const r = recording as Partial<GameRecording>;
+        if (!Array.isArray(r.events)) return false;
+        if (r.extensions !== undefined) {
+            try {
+                const runtime = this.createExtensionRuntime(r.extensions);
+                for (const event of r.events ?? []) runtime.validateSnapshot(event.extensions!);
+            } catch { return false; }
+        } else if (r.events?.some(event => event?.extensions !== undefined || event?.action === 'ext:command')) return false;
         const validSeed = isSeed(r.seed) || (typeof r.seed === 'number' && Number.isSafeInteger(r.seed) && r.seed >= 0);
         return r.version === 2
             && validSeed
@@ -2882,13 +2939,21 @@ export class Game {
     }
 
     public loadReplay(recording: unknown): boolean {
-        if (!this.isValidRecording(recording)) return false;
+        if (!this.isValidRecording(recording)) {
+            if (recording && typeof recording === 'object' && ('extensions' in recording
+                || (Array.isArray((recording as GameRecording).events)
+                    && (recording as GameRecording).events.some(event => event?.extensions !== undefined || event?.action === 'ext:command')))) {
+                logger.log(i18next.t('ext.error.incompatible', { defaultValue: 'Extension set, version or state is incompatible.' }), '#ff6666');
+            }
+            return false;
+        }
         const safeRecording: GameRecording = {
             version: 2,
             recordedAt: recording.recordedAt ?? Date.now(),
             seed: normalizeSeed(recording.seed),
             mode: recording.mode,
             startDepth: recording.startDepth ?? 1,
+            ...(recording.extensions ? { extensions: structuredClone(recording.extensions) } : {}),
             events: recording.events.map((event) => ({
                 index: event.index,
                 tick: event.tick,
@@ -2898,12 +2963,15 @@ export class Game {
                 data: typeof event.data === 'object' && event.data !== null ? { ...event.data } : event.data,
                 decisions: [...event.decisions!],
                 turn: event.turn,
+                ...(event.extensions ? { extensions: structuredClone(event.extensions) } : {}),
                 rng: structuredClone(event.rng!),
                 ...(event.end ? { end: { ...event.end } } : {})
             }))
         };
 
-        this.startNewGame({ seed: safeRecording.seed, mode: safeRecording.mode });
+        this.startNewGame({ seed: safeRecording.seed, mode: safeRecording.mode,
+            ruleSet: safeRecording.extensions ? 'extended' : 'classic',
+            extensions: safeRecording.extensions?.modules.map(module => module.id) });
         this.clearRecording();
         this.replayRecording = safeRecording;
         this.replayEvents = safeRecording.events;
@@ -2985,6 +3053,9 @@ export class Game {
         if (!!event.end !== this.isGameOver || (event.end && (this.gameOverWon !== event.end.won
             || this.gameOverSuperVictory !== event.end.superVictory || this.gameOverScore !== event.end.score))) {
             throw new Error(`endgame mismatch after command ${event.index + 1}`);
+        }
+        if (this.extensionRuntime && canonical(this.extensionRuntime.snapshot()) !== canonical(event.extensions)) {
+            throw new Error('extension state mismatch');
         }
         this.update();
         this.replayCursor++;
@@ -4056,6 +4127,7 @@ export class Game {
 
             this.needsRender = true;
             // CE Items.c:7633 apply()：POTION 分支后统一 playerTurnEnded()——完整回合
+            if (this.extensionRuntime) this.extensionRuntime.emit('itemUsed', { creature: creatureView(this.player, this.player.id), item: itemView(item), operation: 'quaff' });
             finishItemUse(this.player, () => this.playerTurnEnded());
         }
     }
@@ -4085,6 +4157,7 @@ export class Game {
         if (!this.player.inventory.consumeOne(item)) return false;
         this.player.nutrition = Math.min(STOMACH_SIZE, this.player.nutrition + nutrition);
         this.player.refreshHungerState();
+        if (this.extensionRuntime) this.extensionRuntime.emit('itemUsed', { creature: creatureView(this.player, this.player.id), item: itemView(item), operation: 'eat' });
         logger.log(trueId === 'ration_of_food'
             ? i18next.t('food.ration_tasted', { defaultValue: 'That food tasted delicious!' })
             : i18next.t('food.mango_tasted', { defaultValue: 'My, what a yummy mango!' }), '#44ff44');
@@ -4252,6 +4325,7 @@ export class Game {
 
             this.needsRender = true;
             // CE Items.c:7633 apply()：SCROLL 分支后统一 playerTurnEnded()——完整回合
+            if (this.extensionRuntime) this.extensionRuntime.emit('itemUsed', { creature: creatureView(this.player, this.player.id), item: itemView(item), operation: 'read' });
             finishItemUse(this.player, () => this.playerTurnEnded());
         }
     }
@@ -4284,7 +4358,10 @@ export class Game {
                 teleport: () => this.teleportPlayerRandom(true),
                 rechargeStaffs: () => { this.rechargeStaffsAndCharms(false); },
                 negate: radius => this.negationBlastFromPlayer(i18next.t('arcana.charm_emitter', { defaultValue: 'Your charm' }), radius),
-                endTurn: () => this.playerTurnEnded(),
+                endTurn: () => {
+                    if (this.extensionRuntime) this.extensionRuntime.emit('itemUsed', { creature: creatureView(this.player, this.player.id), item: itemView(item), operation: 'charm' });
+                    this.playerTurnEnded();
+                },
             });
             return;
         }
@@ -4379,6 +4456,7 @@ export class Game {
             logIdentify: targetItem => logger.log(i18next.t('item.identify', { name: targetItem.displayName, defaultValue: 'You identify {{name}}.' }), '#00ffff'),
             logEmpty: targetItem => logger.log(i18next.t('arcana.no_charges', { name: targetItem.displayName, defaultValue: '{{name}} has no charges.' }), '#ff8888'),
         }) as BoltResult | null;
+        if (this.extensionRuntime) this.extensionRuntime.emit('itemUsed', { creature: creatureView(this.player, this.player.id), item: itemView(item), operation: 'arcana' });
         this.needsRender = true;
         // CE Time.c:2604-2605 uses movementSpeed at turn end (after effects).
         if (!this.isGameOver) finishItemUse(this.player, () => this.playerTurnEnded());
@@ -5717,7 +5795,9 @@ export class Game {
                 : monster.hasBehavior('MONST_INANIMATE') || monster.hasBehavior('MONST_TURRET')
                     ? i18next.t('negation.shatters', { target: originalName, defaultValue: `${originalName} shatters into tiny pieces!` })
                     : i18next.t('bolt.negation_dies', { target: originalName, defaultValue: `${originalName} falls to the ground, lifeless!` });
+            const hpBefore = monster.hp;
             monster.hp = 0;
+            if (monster.extensionHooks) monster.extensionHooks.damage(monster, hpBefore, hpBefore);
             monster.takeDamage(0, true);
             logger.log(message, '#ffffff');
             this.needsRender = true;
@@ -8156,6 +8236,9 @@ export class Game {
             logger.log(i18next.t('death.ally_loss', { defaultValue: 'You feel a sense of loss.' }), '#ff8888');
         }
         m.deathProcessed = true; // MB_HAS_DIED / occupancy removal
+        if (this.extensionRuntime) this.extensionRuntime.emit('kill', {
+            creature: creatureView(m, this.player.id), sourceId: this.extensionRuntime.sourceId, administrative,
+        });
         if (m.isDormant) {
             const cell = this.grid.getCell(m.x, m.y);
             if (cell) cell.hasDormantMonster = false;
@@ -8597,6 +8680,7 @@ export class Game {
         this.updateFlavorText(); // CE Time.c:2876, including headless/animated turns.
         this.checkShoreWarning();
         logger.endCombatTurn();
+        if (this.extensionRuntime) this.extensionRuntime.emit('playerTurnEnded', { turn: this.stats.turns });
     }
 
     /** CE Time.c:2878-2911. Recomputed from current layers; no RNG or path changes. */
@@ -8910,7 +8994,7 @@ export class Game {
     public toSnapshot(): GameSnapshot {
         if (this.isAdvancing) throw new Error('Cannot save during turn advancement');
         this.finishTransientDisplay(true);
-        return toWholeRunSnapshot({
+        const snapshot = toWholeRunSnapshot({
             depth: this.depth, currentLevelDepth: this.currentLevelDepth,
             active: this.activeLevelState(), levels: this.levels,
             snapshotLevel: (depth, level) => this.snapshotLevel(depth, level),
@@ -8934,6 +9018,8 @@ export class Game {
                 rewardRoomsGenerated: () => getRewardRoomsGenerated(),
             },
         });
+        if (this.extensionRuntime) snapshot.extensions = this.extensionRuntime.snapshot();
+        return snapshot;
     }
 
     /** Durable saves additionally carry recorder provenance. toSnapshot remains
@@ -8964,13 +9050,16 @@ export class Game {
     private hasContinuousSnapshotRecording(snapshot: GameSnapshot): boolean {
         const { run } = snapshot;
         const origin = run.recordingOrigin;
+        if (snapshot.extensions && (canonical(origin?.extensions) !== canonical(snapshot.extensions.manifest)
+            || canonical((run.recordedInputEvents[run.recordedInputEvents.length - 1] ?? origin?.initial)?.extensions) !== canonical(snapshot.extensions))) return false;
         if (!origin || origin.version !== 1 || origin.seed !== snapshot.seed || origin.mode !== snapshot.mode
             || !origin.initial || origin.initial.tick !== 0 || origin.initial.turn !== 0 || origin.initial.depth !== 1
             || origin.initial.end !== undefined || !Random.isState(origin.initial.rng)
             || !Number.isInteger(origin.initial.player?.x) || !Number.isInteger(origin.initial.player?.y)
             || !Number.isSafeInteger(run.recordedInputIndex) || run.recordedInputIndex !== run.recordedInputEvents?.length
             || !this.isValidRecording({ version: 2, seed: snapshot.seed, mode: snapshot.mode, startDepth: 1,
-                recordedAt: snapshot.savedAt, events: run.recordedInputEvents })) return false;
+                recordedAt: snapshot.savedAt, events: run.recordedInputEvents,
+                ...(snapshot.extensions ? { extensions: snapshot.extensions.manifest } : {}) })) return false;
         const input = origin.inputState;
         const hasItem = (id: number | null) => id === null
             || (Number.isSafeInteger(id) && snapshot.player.inventory.some(item => item.id === id));
@@ -9011,6 +9100,16 @@ export class Game {
 
     public loadSnapshot(snapshot: GameSnapshot): boolean {
         if (!Game.isSnapshot(snapshot)) return false;
+        if (snapshot.extensions === undefined && (snapshot.run.recordingOrigin?.extensions !== undefined
+            || snapshot.run.recordedInputEvents?.some(event => event.extensions !== undefined))) return false;
+        let extensions: ExtensionRuntime | null = null;
+        if (snapshot.extensions !== undefined) {
+            try { extensions = this.createExtensionRuntime(snapshot.extensions.manifest, snapshot.extensions); }
+            catch {
+                logger.log(i18next.t('ext.error.incompatible', { defaultValue: 'Extension set, version or state is incompatible.' }), '#ff6666');
+                return false;
+            }
+        }
         // Decode the entire world before retiring the live one.
         let decoded: ReturnType<typeof decodeWholeRunWorld>;
         try { decoded = decodeWholeRunWorld(snapshot, entityCodecDeps); } catch { return false; }
@@ -9018,6 +9117,8 @@ export class Game {
         const levelRows = [snapshot, ...snapshot.levels];
 
         this.discardInFlightAdvancement();
+        if (this.extensionRuntime) this.extensionRuntime.unload();
+        this.extensionRuntime = null;
         if (this.grid) { setDormantAwakener(this.grid, null); setAllyResurrector(this.grid, null); setDungeonFeatureEffects(this.grid, null); }
         for (const level of this.levels.values()) { setDormantAwakener(level.grid, null); setAllyResurrector(level.grid, null); setDungeonFeatureEffects(level.grid, null); }
         this.animationLockDeadline = 0;
@@ -9129,6 +9230,12 @@ export class Game {
         this.onRenderRequested?.();
         this.updateFlavorText();
         rng.setState(snapshot.rngState);
+        this.extensionRuntime = extensions;
+        if (extensions) {
+            extensions.attachCreature(this.player, false);
+            for (const creature of entityGraph.monsters.values()) extensions.attachCreature(creature, false);
+            extensions.loaded();
+        }
         return true;
     }
 
@@ -10739,6 +10846,7 @@ export class Game {
     }
 
     private logPickup(item: Item): void {
+        if (this.extensionRuntime) this.extensionRuntime.emit('itemPickedUp', { creature: creatureView(this.player, this.player.id), item: itemView(item) });
         if (item.category === ItemCategory.GOLD) {
             logger.log(i18next.t('item.pickup_gold', { quantity: item.quantity,
                 defaultValue: 'you found {{quantity}} pieces of gold.' }), '#ffffff');

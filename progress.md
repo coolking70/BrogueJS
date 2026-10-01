@@ -65,3 +65,7 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - CAPTIVE-1修复完成：最终会话83665，build/cefetch/full/drift均exit0；259文件4646passed/0failed/8历史skip/5todo，3359.65秒；drift1项，25.68秒。北京时间03:14:34结束，前后SHA256 64b47a05cdb15a78ee4f0451ab43cabdb072f2b7aad4d195c557b2d2e14c57c2一致。首轮3项失败在完整集合均恢复，不是定向拼接。最终仅补文档，main997872f干净；修复保存codex/captive-chains，未合并/推送/发布。5395预览保留，旧存档已生成楼层不迁移。无需重复开发或测试。
 
 - CAPTIVE-1后续合并授权：用户明确要求合并推送。fetch后origin/main仍997872f，修复分支干净且源代码散列与完整全绿门禁一致；fb79ace已快进main。只补合并交接文档，再推送由已有Pages工作流部署，不重复运行完整套件，不创建新版本标签。
+
+- 2026-10-02 EXT-0 新授权：独立任务克隆 main 3c1407f，ext/foundation；完整阅读 docs/ext 路线/两参考、AGENTS、HANDOFF/architecture/development/testing。实现按开局启用的注册表、生命周期、只读事件 DTO + 模块 JSON/通用生物组件、命令边界、独立存档和录像包络/命令检查点；经典运行时为 null，不调用模块。新增13项回归与原main精确RNG夹具，旧测试/trace/基线未改。桌面/手机模拟浏览器自然21命令击杀、存读档/回放与版本拒绝通过，截图只在/tmp/bjs-ext-browser。阶段0完成后停止，未开始阶段1；最终四项门禁待冻结执行。
+
+- EXT-0 cloud migration WIP: user requested cloud development/testing to avoid local CPU contention. Stopped only task runner/tests; vue-tsc/build passed on source9a2519d, full npm test interrupted with 3 melee failures reported, drift not started. Two unbound attack-call references corrected without local retesting. Current source934bb0f; see docs/ext/cloud-handoff.md. No stage1 or main integration.

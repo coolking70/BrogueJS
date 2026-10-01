@@ -4,6 +4,7 @@ import { useTranslation } from "i18next-vue";
 import { inputManager } from "../engine/Input";
 import { concept } from "../ui/concept";
 import { normalizeSeed } from "../engine/Seed";
+import type { RuleSet } from '../ext/types';
 import type { GameMode } from "../engine/Core/Game";
 import {
   displaySettings,
@@ -32,7 +33,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "new-game", payload: { seed?: string; mode: GameMode }): void;
+  (e: "new-game", payload: { seed?: string; mode: GameMode; ruleSet?: RuleSet }): void;
   (e: "continue-game"): void;
   (e: "save-game"): void;
   (e: "delete-save"): void;
@@ -70,6 +71,7 @@ function goBack() {
   else if (props.inGame) emit("close");
 }
 const mode = ref<GameMode>("normal");
+const ruleSet = ref<RuleSet>('classic');
 const seedInput = ref("");
 const replaySeekInput = ref("");
 const replayFileInput = ref<HTMLInputElement | null>(null);
@@ -101,7 +103,8 @@ const parsedSeed = computed(() => {
 
 const startGame = () => {
   if (parsedSeed.value === null) return;
-  emit("new-game", { seed: parsedSeed.value, mode: mode.value });
+  emit("new-game", { seed: parsedSeed.value, mode: mode.value,
+    ...(ruleSet.value === "extended" ? { ruleSet: ruleSet.value } : {}) });
 };
 
 const modeLabel = (value: string) =>
@@ -221,6 +224,13 @@ const sidebarWidthModel = computed({
         <template v-if="page === 'new'">
           <h2>{{ t("menu.actions.new_game") }}</h2>
           <p class="section-description">{{ t("title.new_hint") }}</p>
+          <label class="field">
+            <span>{{ t("ext.mode.label") }}</span>
+            <select v-model="ruleSet" data-testid="rule-set">
+              <option value="classic">{{ t("ext.mode.classic") }}</option>
+              <option value="extended">{{ t("ext.mode.extended") }}</option>
+            </select>
+          </label>
           <label class="field"
             ><span>{{ t("menu.mode.label") }}</span
             ><select v-model="mode">

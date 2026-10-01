@@ -1,0 +1,27 @@
+{
+  "base": "3c1407fcb0b074a7b4dd4879d15eb7c0be346749",
+  "latestMain": "b0860eb27ed4a64bb822ad10876ade03a9861416",
+  "sharedTrackedFiles": [
+    {
+      "path": "progress.md",
+      "mergeFileExit": 1,
+      "conflictRegions": 1
+    },
+    {
+      "path": "src/App.vue",
+      "mergeFileExit": 0,
+      "conflictRegions": 0
+    },
+    {
+      "path": "src/components/MainMenu.vue",
+      "mergeFileExit": 0,
+      "conflictRegions": 0
+    },
+    {
+      "path": "src/locales/zh_CN.json",
+      "mergeFileExit": 1,
+      "conflictRegions": 1
+    }
+  ],
+  "method": "git merge-file -p over temporary copies only; no merge, rebase, checkout or index mutation"
+}
