@@ -47,7 +47,7 @@ const commands = computed(() => [
       <span class="cmd-label">{{ cmd.label }}</span>
       <kbd v-if="cmd.glyph" class="cmd-key" aria-hidden="true">{{ cmd.glyph }}</kbd>
     </button>
-    <button class="cmd-btn command-more" :aria-expanded="expanded" @click="expanded = !expanded; ($event.currentTarget as HTMLElement).blur()"><span class="cmd-label">{{ expanded ? $t('lab.command_less') : $t('lab.command_more') }}</span><span>···</span></button>
+    <button class="cmd-btn command-more" :aria-expanded="expanded" @click="expanded = !expanded; ($event.currentTarget as HTMLElement).blur()"><span class="cmd-label">{{ expanded ? $t('theme.command_less') : $t('theme.command_more') }}</span><span>···</span></button>
     <div v-if="expanded" class="command-overflow">
       <button v-for="cmd in commands.filter(c => !primary.has(c.action))" :key="cmd.action + (cmd.data ?? '')" class="cmd-btn" :data-action="cmd.action" :data-direction="cmd.data" @click="invoke(cmd.action, cmd.data)"><span class="cmd-label">{{ cmd.label }}</span><kbd class="cmd-key">{{ cmd.glyph }}</kbd></button>
     </div>

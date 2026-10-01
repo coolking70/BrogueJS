@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// DESIGN-2（一线）：桌面/触屏命令环。轻点中心展开/收起，点选一项即执行；
+// DESIGN-3（沉浸模式）：桌面/触屏命令环。轻点中心展开/收起，点选一项即执行；
 // 按住中心拖到某项上松手也会执行。每项 = 一个键盘命令，经 ui/commands.dispatch。
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useTranslation } from 'i18next-vue';

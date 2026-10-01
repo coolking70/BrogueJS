@@ -26,9 +26,9 @@ onUnmounted(() => window.clearInterval(timer));
      <div class="context-status"><span v-if="entity.negated">{{ $t('negation.label') }}</span>{{ entity.behavior }}<span v-for="status in entity.statuses" :key="status.id" :style="{ color: status.color }">{{ status.label }} {{ status.value }}</span></div>
     </template>
    </div>
-   <p v-if="!rows.length" class="context-empty">{{ $t('lab.context_empty') }}</p>
+   <p v-if="!rows.length" class="context-empty">{{ $t('theme.context_empty') }}</p>
   </div>
   <div v-if="hoverText" class="context-inspection"><span class="inspection-mark">⌖</span><p>{{ hoverText }}</p></div>
-  <footer>{{ $t('lab.inspect_hint') }}</footer>
+  <footer>{{ $t('theme.inspect_hint') }}</footer>
  </aside>
 </template>

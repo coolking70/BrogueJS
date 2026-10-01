@@ -22,6 +22,8 @@ export interface DisplaySettings {
     sidebarWidthMode: SidebarWidthMode;
     /** UI text and rem-based spacing only; map camera has separate zoom. */
     uiScale: number;
+    /** Collapse glyph panels; never part of Game/save/replay state. */
+    immersiveMode: boolean;
 }
 
 export const DISPLAY_SETTINGS_KEY = 'brogue-web-display-v1';
@@ -49,6 +51,7 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
     mapScaleMode: 'uniform',
     sidebarWidthMode: 'fixed',
     uiScale: 1,
+    immersiveMode: false,
 };
 
 export function normalizeUiScale(value: unknown): number {
@@ -79,6 +82,7 @@ export function loadDisplaySettings(): DisplaySettings {
                 ? parsed.sidebarWidthMode
                 : DEFAULT_DISPLAY_SETTINGS.sidebarWidthMode,
             uiScale: normalizeUiScale(parsed.uiScale ?? 1),
+            immersiveMode: typeof parsed.immersiveMode === 'boolean' ? parsed.immersiveMode : false,
         };
     } catch {
         return { ...DEFAULT_DISPLAY_SETTINGS };
@@ -89,6 +93,7 @@ export function saveDisplaySettings(settings: DisplaySettings): void {
     try {
         window.localStorage.setItem(DISPLAY_SETTINGS_KEY, JSON.stringify({ mapScaleMode: settings.mapScaleMode, sidebarWidthMode: settings.sidebarWidthMode,
             ...(settings.uiScale !== 1 ? { uiScale: normalizeUiScale(settings.uiScale) } : {}),
+            ...(settings.immersiveMode ? { immersiveMode: true } : {}),
             ...(settings.showDamageNumbers ? { showDamageNumbers: true } : {}) }));
     } catch {
         // headless / 隐私模式下无 localStorage：设置仅本次会话有效

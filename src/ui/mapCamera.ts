@@ -142,29 +142,13 @@ function loadZoom(): number {
 }
 
 export const cameraState = reactive<CameraState>({ zoom: loadZoom(), panX: 0, panY: 0, fit: false, follow: false });
-let cameraBeforeCodex: Pick<CameraState, 'zoom' | 'fit' | 'panX' | 'panY'> | null = null;
-
-/** codex 的强制与手动缩放均为主题内临时呈现；退出恢复全局偏好。 */
-export function setCodexCamera(active: boolean): void {
-    if (active && cameraBeforeCodex === null) {
-        cameraBeforeCodex = { zoom: cameraState.zoom, fit: cameraState.fit, panX: cameraState.panX, panY: cameraState.panY };
-        recenterCamera();
-        cameraState.fit = false;
-        cameraState.zoom = Math.max(cameraState.zoom, 2);
-    } else if (!active && cameraBeforeCodex !== null) {
-        Object.assign(cameraState, cameraBeforeCodex);
-        cameraBeforeCodex = null;
-    }
-}
-
 watch(() => cameraState.zoom, (zoom) => {
-    if (cameraBeforeCodex !== null) return;
     try {
         window.localStorage.setItem(CAMERA_SETTINGS_KEY, JSON.stringify({ zoom }));
     } catch {
         // headless / 隐私模式：仅本次会话有效
     }
-}, { flush: 'sync' }); // 在临时状态边界内同步判断，避免恢复后异步写入主题缩放。
+}, { flush: 'sync' });
 
 export function zoomBy(factor: number): void {
     if (cameraState.fit && factor < 1) return;

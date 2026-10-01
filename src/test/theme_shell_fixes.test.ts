@@ -13,7 +13,6 @@ import { DCOLS, DROWS } from '../types';
 import { activeGame } from '../engine/Core/Game';
 import { logger } from '../engine/Systems/Logger';
 import { rng } from '../engine/Random';
-import { concept, selectConcept } from '../ui/concept';
 import '../i18n';
 
 const tile = 16;
@@ -38,7 +37,7 @@ describe('DESIGN-2 map presentation regressions', () => {
         });
 
     it.each([[920, 640], [920, 480], [390, 530], [390, 300]])(
-        'leaves three tiles around an edge player in a %i×%i codex viewport, including after resize', (w, h) => {
+        'leaves three tiles around an edge player in a %i×%i padded viewport, including after resize', (w, h) => {
             for (const focus of [{ x: 0, y: 0 }, { x: DCOLS - 1, y: DROWS - 1 }]) {
                 const c = computeMapCamera(w, h, base(w, h), DCOLS, DROWS, tile, focus, 2,
                     { x: 0, y: 0 }, true, { edgePaddingTiles: 3 });
@@ -131,7 +130,7 @@ describe('DESIGN-2 map presentation regressions', () => {
         expect(c.offsetX + DCOLS * size).toBeCloseTo(w);
     });
 
-    it('keeps the seed 12345 opening player clear of the umbra dock without consuming RNG', () => {
+    it('keeps the seed 12345 opening player clear of the floating dock without consuming RNG', () => {
         activeGame.startNewGame({ seed: '12345', mode: 'wizard' });
         const focus = activeGame.player.loc, w = 1280, h = 800;
         const occlusions = [
@@ -208,7 +207,7 @@ describe('DESIGN-2 floating overlay geometry', () => {
 });
 
 // Vue's custom renderer runs the real components/lifecycles without a browser.
-// The toolbar's measured height is a fixture; CSS/Pixi screenshot QA remains separate.
+// CSS/Pixi screenshot QA remains separate.
 interface Node {
     type: string; text: string; props: Record<string, any>; children: Node[]; parent: Node | null;
     getBoundingClientRect(): { height: number }; blur(): void;
@@ -243,12 +242,9 @@ function mount(component: Component, props = {}) {
     return root;
 }
 const css = new Map<string, string>();
-let resize: (() => void) | undefined;
-let UiLabToolbar: Component;
 let RadialCommands: Component;
 let ThemeHud: Component;
 let ThemeLog: Component;
-const oldConcept = concept.value;
 beforeAll(async () => {
     vi.stubGlobal('window', {
         setInterval: (callback: () => void, ms: number) => globalThis.setInterval(callback, ms),
@@ -260,8 +256,7 @@ beforeAll(async () => {
             setProperty: (key: string, value: string) => css.set(key, value), removeProperty: (key: string) => css.delete(key),
         } } });
     vi.stubGlobal('ResizeObserver', class {
-        constructor(callback: () => void) { resize = callback; }
-        observe() {} disconnect() { resize = undefined; }
+        observe() {} disconnect() {}
     });
     // Node's Vite SFC import is SSR-only. As in x3_u5_ui, compile the unchanged
     // production scripts/templates for the client to exercise real DOM handlers.
@@ -269,7 +264,6 @@ beforeAll(async () => {
     const modules: Record<string, unknown> = {
         vue: Vue, 'i18next-vue': translation,
         '../engine/Input': input, '../../engine/Input': input,
-        '../ui/concept': await import('../ui/concept'),
         '../ui/mapTiles': await import('../ui/mapTiles'),
         '../../ui/commands': await import('../ui/commands'),
         '../../ui/useGameHud': await import('../ui/useGameHud'),
@@ -292,13 +286,11 @@ beforeAll(async () => {
     modules['./CmdIcon.vue'] = { default: compile('theme/CmdIcon.vue'), __esModule: true };
     ThemeHud = compile('theme/ThemeHud.vue');
     ThemeLog = compile('theme/ThemeLog.vue');
-    UiLabToolbar = compile('UiLabToolbar.vue');
     RadialCommands = compile('theme/RadialCommands.vue');
 });
 afterEach(() => {
     for (const app of mounted.splice(0)) app.unmount();
     vi.useRealTimers();
-    selectConcept(oldConcept);
 });
 afterAll(() => vi.unstubAllGlobals());
 
@@ -344,27 +336,6 @@ describe('DESIGN-2 live component regressions', () => {
         const state = rng.getState();
         await vi.advanceTimersByTimeAsync(400);
         expect(rng.getState()).toEqual(state);
-    });
-
-    it('reserves the expanded toolbar height, responds to wrapping/resize, and releases space on collapse or old themes', async () => {
-        selectConcept('umbra');
-        const root = mount(UiLabToolbar, { inGame: true });
-        expect(css.get('--shell-toolbar-height')).toBe('0px');
-        findClass(root, 'lab-collapse').props.onClick({ currentTarget: { blur() {} } });
-        await nextTick();
-        expect(css.get('--shell-toolbar-height')).toBe('72px');
-        measuredHeight = 202;
-        resize?.();
-        expect(css.get('--shell-toolbar-height')).toBe('202px');
-        for (const name of ['classic', 'tactical', 'immersive'] as const) {
-            selectConcept(name); await nextTick();
-            expect(css.get('--shell-toolbar-height')).toBe('0px');
-        }
-        selectConcept('umbra'); await nextTick();
-        expect(css.get('--shell-toolbar-height')).toBe('202px');
-        findClass(root, 'lab-collapse').props.onClick({ currentTarget: { blur() {} } });
-        await nextTick();
-        expect(css.get('--shell-toolbar-height')).toBe('0px');
     });
 
     it('executes a desktop radial command through dispatch exactly once and closes the ring', async () => {

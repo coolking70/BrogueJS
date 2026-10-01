@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 export const mapModes = ['original', 'refined', 'hanzi', 'tiles'] as const;
 export type MapMode = typeof mapModes[number];
+export function isMapMode(value: unknown): value is MapMode { return mapModes.includes(value as MapMode); }
 const key = 'brogue-ui-map-style';
 function initialMode(): MapMode {
   if (typeof window === 'undefined') return 'refined';

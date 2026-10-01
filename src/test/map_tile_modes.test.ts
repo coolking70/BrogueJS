@@ -9,7 +9,7 @@ import monsters from '../data/monsters.json';
 import { mapText, terrainSemantic, itemSemantic, monsterSemantic, rememberedItemSemantic, glyphSemantic, playerSemantic, projectileSemantic, floatingHanzi } from '../ui/mapTileSemantics';
 import { paintVectorTile, paintMapText, mapInk } from '../ui/mapTileDrawing';
 import { mapMode, selectMapMode } from '../ui/mapTiles';
-import { concept } from '../ui/concept';
+import { displaySettings } from '../engine/Settings';
 const han = /^\p{Script=Han}$/u;
 const ctx = {gas:undefined,lightChannels:{r:100,g:100,b:100},groundItem:null,carriedItem:null,hallucinating:false,cosmetic:{percent:()=>false,pick:<T>(a:readonly T[])=>a[0]!}};
 const visible = (type:TerrainType) => {const c=new Cell(1,2);c.layers=[type,TerrainType.NOTHING,TerrainType.NOTHING,TerrainType.NOTHING];c.isVisible=true;c.isExplored=true;return c;};
@@ -76,9 +76,9 @@ describe('Independent map renderer catalog and knowledge boundaries',()=>{
   }
   expect(floatingHanzi('-12')).toBe('-12');expect(floatingHanzi('+5')).toBe('+5');expect(floatingHanzi('!')).toBe('警');
  });
- it('style selection is independent of interface themes and invalid values do nothing',()=>{
-  const before=concept.value;
-  for(const mode of ['original','refined','hanzi','tiles'] as const){selectMapMode(mode);expect(mapMode.value).toBe(mode);expect(concept.value).toBe(before);}
+ it('style selection is independent of immersive layout and invalid values do nothing',()=>{
+  const before=displaySettings.immersiveMode;
+  for(const mode of ['original','refined','hanzi','tiles'] as const){selectMapMode(mode);expect(mapMode.value).toBe(mode);expect(displaySettings.immersiveMode).toBe(before);}
   selectMapMode('bad' as never);expect(mapMode.value).toBe('tiles');
  });
  it('all vector paths use only valid geometry; every unpictured tile retains its label',()=>{
@@ -88,16 +88,16 @@ describe('Independent map renderer catalog and knowledge boundaries',()=>{
  });
  it('centers CJK inside the same square cell and retains original Latin positioning',()=>{
   const sprite={style:{},text:'',anchor:{set:(v:number)=>{anchor=v;}},x:0,y:0,visible:false};let anchor=0;
-  paintMapText(sprite as never,playerSemantic('@'),'#ffcc00','hanzi','classic',2,3,16);
+  paintMapText(sprite as never,playerSemantic('@'),'#ffcc00','hanzi',2,3,16);
   expect(sprite.text).toBe('我');expect(anchor).toBe(.5);expect(sprite.x).toBe(40);expect(sprite.y).toBe(56);expect((sprite.style as {fontSize:number}).fontSize).toBeLessThan(16);
-  paintMapText(sprite as never,playerSemantic('@'),'#ffcc00','original','classic',2,3,16);expect(sprite.text).toBe('@');expect(anchor).toBe(0);expect(sprite.x).toBe(32);
+  paintMapText(sprite as never,playerSemantic('@'),'#ffcc00','original',2,3,16);expect(sprite.text).toBe('@');expect(anchor).toBe(0);expect(sprite.x).toBe(32);
  });
  it('leaves original colors, monster status colors and saturated terrain hazards unchanged',()=>{
-  for(const theme of ['classic','tactical','immersive'] as const){expect(mapInk('#ff3300',theme,'hanzi','terrain')).toBe('#ff3300');expect(mapInk('#6688aa',theme,'tiles','monster')).toBe('#6688aa');expect(mapInk('#999999',theme,'original','terrain')).toBe('#999999');}
+  {expect(mapInk('#ff3300','hanzi','terrain')).toBe('#ff3300');expect(mapInk('#6688aa','tiles','monster')).toBe('#6688aa');expect(mapInk('#999999','original','terrain')).toBe('#999999');}
  });
  it('retains engine appearance and command pipeline; maps only at renderer boundaries',()=>{
   const src=readFileSync(new URL('../components/GameCanvas.vue',import.meta.url),'utf8');
-  for(const marker of ['terrainSemantic(cell!, visual','rememberedItemSemantic(cell','itemSemantic(item','monsterSemantic(m','playerSemantic(playerVisual.char)','projectileSemantic(boltFrame.char)','floatingHanzi(ft.text)','watch([mapMode, concept]'])expect(src).toContain(marker);
+  for(const marker of ['terrainSemantic(cell!, visual','rememberedItemSemantic(cell','itemSemantic(item','monsterSemantic(m','playerSemantic(playerVisual.char)','projectileSemantic(boltFrame.char)','floatingHanzi(ft.text)','watch(mapMode'])expect(src).toContain(marker);
   expect(src).toContain('game.handlePlayerAction(action, data)');
  });
 });
@@ -106,12 +106,12 @@ it('terrain color animation reuses white glyph ink while preserving entity color
  const terrain = glyphSemantic('#', 'terrain');
  const sprite = {style: {fill: 0xffffff}, text: '', tint: 0xffffff, anchor: {set() {}}, x: 0, y: 0, visible: false};
  for (const color of [0x554433, 0x665544, 0xff3300]) {
-  paintMapText(sprite as never, terrain, color, 'original', 'classic', 1, 2, 16, true);
+  paintMapText(sprite as never, terrain, color, 'original', 1, 2, 16, true);
   expect(sprite.style.fill).toBe(0xffffff);
   expect(sprite.tint).toBe(color);
   expect(sprite.text).toBe(normalizeMapGlyph('#'));
  }
- paintMapText(sprite as never, playerSemantic('@'), 0xffcc00, 'original', 'classic', 1, 2, 16);
+ paintMapText(sprite as never, playerSemantic('@'), 0xffcc00, 'original', 1, 2, 16);
  expect(sprite.style.fill).toBe(0xffcc00);
  expect(sprite.tint).toBe(0xffffff);
 });

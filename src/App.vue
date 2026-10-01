@@ -20,7 +20,6 @@ export function wireConfirmRequest(game: Game): void {
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
-import UiLabToolbar from './components/UiLabToolbar.vue';
 import { displaySettings } from './engine/Settings';
 import { inputManager } from './engine/Input';
 import { saveSnapshot, readSnapshot, readSaveSummary, deleteSnapshot, type SaveSummary } from './engine/Core/SaveStorage';
@@ -36,8 +35,6 @@ import ReplayControls from './components/ReplayControls.vue';
 import AgentControls from './components/AgentControls.vue';
 import DetailPanel from './components/DetailPanel.vue';
 import ReferenceOverlay from './components/ReferenceOverlay.vue';
-import MobileHud from './components/MobileHud.vue';
-import MessageStrip from './components/MessageStrip.vue';
 import MapZoomControls from './components/MapZoomControls.vue';
 import SideDrawer from './components/SideDrawer.vue';
 import CommandBar from './components/CommandBar.vue';
@@ -46,11 +43,8 @@ import TargetBar from './components/TargetBar.vue';
 import ThemeHud from './components/theme/ThemeHud.vue';
 import ThemeLog from './components/theme/ThemeLog.vue';
 import ThemeNearby from './components/theme/ThemeNearby.vue';
-import ThemeCodex from './components/theme/ThemeCodex.vue';
-import ThemeKit from './components/theme/ThemeKit.vue';
 import RadialCommands from './components/theme/RadialCommands.vue';
-import { concept, isShellConcept } from './ui/concept';
-import { setCodexCamera } from './ui/mapCamera';
+import { registerImmersiveShortcut } from './ui/immersiveMode';
 import { activeGame, type GameMode } from './engine/Core/Game';
 import { viewport, startViewportTracking, shouldShowTouchControls } from './ui/layout';
 import { recordingJsonAtBoundary, RecordingExportError } from './ui/recordingExport';
@@ -63,39 +57,34 @@ const compact = computed(() => viewport.mode !== 'desktop');
 /** 桌面尺寸的粗指针设备（大平板横屏等）也显示触控命令栏。 */
 const touchUi = computed(() => !compact.value && viewport.coarsePointer);
 const panelOpen = ref(false);
-const contextOpen = ref(true);
 const contextWidth = computed(() => displaySettings.sidebarWidthMode === 'proportional' ? 'clamp(190px, 20vw, 280px)' : '216px');
 const journalOpen = ref(false);
-function toggleContext() { if (compact.value) panelOpen.value = !panelOpen.value; else contextOpen.value = !contextOpen.value; }
-// DESIGN-2：新主题共用的外壳。纯显示状态，不进存档/录像。
-const shell = computed(() => isShellConcept(concept.value));
+// Display-only panel expansion; preserve one GameCanvas instance across layout changes.
 const themePanelOpen = ref(false);
-/** 余烬/一线：面板按钮切换本主题的展开层；其余新主题在紧凑视口打开抽屉。 */
 function toggleThemePanel() {
-  if (compact.value && concept.value !== 'zen' && concept.value !== 'codex') panelOpen.value = !panelOpen.value;
-  else themePanelOpen.value = !themePanelOpen.value;
+  if (displaySettings.immersiveMode || !compact.value) themePanelOpen.value = !themePanelOpen.value;
+  else panelOpen.value = !panelOpen.value;
 }
-const themeLogLines = computed(() => {
-  const c = concept.value, mode = viewport.mode;
-  if (c === 'zen') return themePanelOpen.value ? 12 : 1;
-  if (c === 'manual') return mode === 'desktop' ? 8 : 6;
-  if (c === 'ember') return mode === 'desktop' ? 5 : mode === 'landscape' ? 4 : 3;
-  if (c === 'codex') return mode === 'desktop' ? 3 : 2;
-  return mode === 'landscape' ? 1 : mode === 'desktop' ? 3 : 2;
-});
-// 夜读：临时跟随镜头不写全局偏好，离开时恢复进入前的 zoom/fit/pan。
-watch(concept, next => setCodexCamera(next === 'codex'), { immediate: true });
+const themeLogLines = computed(() => displaySettings.immersiveMode
+  ? (themePanelOpen.value ? 12 : 1)
+  : viewport.mode === 'landscape' ? 1 : viewport.mode === 'desktop' ? 3 : 2);
+watch(() => displaySettings.immersiveMode, () => { themePanelOpen.value = false; panelOpen.value = false; });
 const replayTick = ref(0);
 const replayActive = computed(() => { replayTick.value; return !!activeGame.replayRecording; });
 let replayTimer = 0;
+let removeImmersiveShortcut: (() => void) | undefined;
 // 结算页只显示结算后的保存/导出反馈；开局时的菜单反馈不应带进结算页。
 let endFeedbackCleared = false;
-onMounted(() => { replayTimer = window.setInterval(() => {
+onMounted(() => {
+  removeImmersiveShortcut = registerImmersiveShortcut(inputManager, () => ({
+    inGame: gameStarted.value, menuOpen: menuOpen.value, game: activeGame,
+  }));
+  replayTimer = window.setInterval(() => {
   replayTick.value++;
   if (activeGame.isGameOver && !endFeedbackCleared) { endFeedbackCleared = true; replayFeedback.value = ''; }
   else if (!activeGame.isGameOver) endFeedbackCleared = false;
 }, 100); });
-onUnmounted(() => { window.clearInterval(replayTimer); setCodexCamera(false); runEpoch++; });
+onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTimer); runEpoch++; });
 /** 触控命令栏 + 方向键：紧凑模式或粗指针设备显示；回放期间让位给录像控制条。 */
 const showTouch = computed(() => shouldShowTouchControls(viewport.coarsePointer, viewport.mode) && !replayActive.value);
 const showCommands = computed(() => (compact.value || showTouch.value) && !replayActive.value);
@@ -350,20 +339,14 @@ const handleReturnToTitle = async () => {
 </script>
 
 <template>
-  <UiLabToolbar :in-game="gameStarted" />
-  <div class="app-layout" :style="{ '--context-width': contextWidth }" :class="[`layout-${viewport.mode}`, { 'is-replaying': replayActive, 'has-touch-controls': showTouch, 'context-visible': !compact && contextOpen, 'theme-shell': shell, 'theme-panel-open': shell && themePanelOpen }]">
+  <div class="app-layout theme-shell" :style="{ '--context-width': contextWidth }" :class="[`layout-${viewport.mode}`, { 'is-replaying': replayActive, 'has-touch-controls': showTouch, 'immersive-mode': displaySettings.immersiveMode, 'theme-panel-open': themePanelOpen }]">
     <template v-if="gameStarted">
       <!-- FE-1：GameCanvas 始终是同一位置的同一实例（旋转屏幕不重建 Pixi），
            其余部件按布局模式挂载，用 CSS grid 区域摆放。 -->
-      <MobileHud class="area-hud" :mode="viewport.mode" :panel-open="compact ? panelOpen : contextOpen" @menu="menuOpen = true" @open-panel="toggleContext" />
-      <template v-if="shell">
-        <ThemeHud class="area-vitals" :panel-open="compact && concept !== 'zen' && concept !== 'codex' ? panelOpen : themePanelOpen" @menu="menuOpen = true" @panel="toggleThemePanel" />
-        <ThemeLog class="area-log" :lines="themeLogLines" @open-journal="journalOpen = true" />
-        <ThemeNearby v-if="concept !== 'codex'" class="area-near" />
-        <ThemeCodex v-if="concept === 'codex'" class="area-codex" @menu="menuOpen = true" @open-journal="journalOpen = true" @tab="same => themePanelOpen = same ? !themePanelOpen : true" />
-        <ThemeKit v-if="concept === 'manual'" class="area-kit" />
-        <RadialCommands v-if="concept === 'zen' && !replayActive" class="area-radial" />
-      </template>
+      <ThemeHud class="area-vitals" :panel-open="compact && !displaySettings.immersiveMode ? panelOpen : themePanelOpen" @menu="menuOpen = true" @panel="toggleThemePanel" />
+      <ThemeLog class="area-log" :lines="themeLogLines" @open-journal="journalOpen = true" />
+      <ThemeNearby class="area-near" />
+      <RadialCommands v-if="displaySettings.immersiveMode && !replayActive" class="area-radial" />
       <div class="map-area">
         <GameCanvas class="game-view" />
         <MapZoomControls />
@@ -371,8 +354,7 @@ const handleReturnToTitle = async () => {
       <TargetBar class="area-target" />
       <CommandBar v-if="showCommands || (!compact && !replayActive)" class="area-cmd" :mode="viewport.mode" />
       <DPad v-if="showTouch" class="area-pad" :mode="viewport.mode" />
-      <MessageStrip class="area-strip" :lines="viewport.mode === 'landscape' ? 1 : 2" @open-panel="journalOpen = true" />
-      <ContextPanel v-if="!compact && contextOpen" class="area-context" @close="contextOpen = false" />
+      <ContextPanel v-if="!compact && themePanelOpen && !displaySettings.immersiveMode" class="area-context" @close="themePanelOpen = false" />
       <SideDrawer :open="panelOpen" @close="panelOpen = false">
         <ContextPanel @close="panelOpen = false" />
       </SideDrawer>
@@ -433,33 +415,6 @@ const handleReturnToTitle = async () => {
   overflow: hidden;
 }
 
-/* 桌面：地图 + 右侧侧栏（与 v0.1.0 一致） */
-.layout-desktop {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: minmax(0, 1fr);
-  grid-template-areas: "map side";
-}
-
-/* 竖屏：状态条 / 地图 / 消息 / 命令栏 + 方向键 */
-.layout-portrait {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
-  grid-template-areas:
-    "hud hud"
-    "map map"
-    "strip strip"
-    "cmd pad";
-}
-
-/* 横屏：左侧命令栏；右侧状态条 + 地图，消息与方向键浮在地图上 */
-.layout-landscape {
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
-  grid-template-areas:
-    "cmd hud"
-    "cmd map";
-}
-
 .map-area {
   grid-area: map;
   position: relative;
@@ -473,18 +428,6 @@ const handleReturnToTitle = async () => {
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-.area-hud { grid-area: hud; }
-.area-strip { grid-area: strip; min-width: 0; }
-.layout-landscape .area-strip {
-  grid-area: strip;
-  align-self: stretch;
-  justify-self: stretch;
-  max-width: none;
-  z-index: 12;
-  border-top-right-radius: 10px;
-  pointer-events: auto;
 }
 
 /* 触控命令栏 / 方向键 / 目标选择条的网格落位 */
@@ -519,17 +462,4 @@ const handleReturnToTitle = async () => {
   grid-column: 1 / -1;
 }
 
-.menu-btn {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 1200;
-  height: 30px;
-  border: 1px solid var(--btn-border);
-  background: var(--btn-bg);
-  color: #e5e7eb;
-  border-radius: 6px;
-  padding: 0 10px;
-  cursor: pointer;
-}
 </style>

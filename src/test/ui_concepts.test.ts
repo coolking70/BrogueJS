@@ -1,17 +1,28 @@
-import { describe, it, expect } from 'vitest';
-import { concept, selectConcept, registerConceptTool, type Concept } from '../ui/concept';
-describe('UI concept presentation contract', () => {
-  it('switches all three concepts without requiring a browser or game mutation', () => {
-    for (const name of ['classic','tactical','immersive'] as Concept[]) { selectConcept(name); expect(concept.value).toBe(name); }
-    expect(() => selectConcept('invalid' as Concept)).toThrow(); expect(concept.value).toBe('immersive');
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { readFileSync, existsSync } from 'node:fs';
+const source = (path: string) => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+afterEach(() => vi.unstubAllGlobals());
+describe('DESIGN-3 fixed glyph interface', () => {
+  it('ignores retired theme queries and always initializes the glyph CSS scope', async () => {
+    const dataset: Record<string, string> = {};
+    const replaceState = vi.fn();
+    vi.stubGlobal('document', { documentElement: { dataset } });
+    vi.stubGlobal('window', { location: { search: '?concept=umbra' }, history: { replaceState } });
+    vi.resetModules();
+    const module = await import('../ui/concept');
+    expect(dataset.uiConcept).toBe('glyph');
+    expect(Object.keys(module)).toEqual([]);
+    expect(replaceState).not.toHaveBeenCalled();
   });
-  it('registers the browser tool, shares selection state and rejects invalid input', async () => {
-    let tool: any; let signal: AbortSignal | undefined;
-    const cleanup = registerConceptTool({ registerTool(t, options) { tool = t; signal = options.signal; } });
-    expect(tool.name).toBe('select_ui_concept'); expect(tool.annotations.readOnlyHint).toBe(false);
-    expect(tool.inputSchema.properties.concept.enum).toEqual(['classic','tactical','immersive','glyph','umbra','ember','codex','zen','manual']);
-    expect(await tool.execute({concept:'tactical'})).toEqual({concept:'tactical'}); expect(concept.value).toBe('tactical');
-    expect(() => tool.execute({concept:'other'})).toThrow(); expect(() => tool.execute({concept:'classic',extra:true})).toThrow(); expect(concept.value).toBe('tactical');
-    cleanup?.(); expect(signal?.aborted).toBe(true);
+  it('removes switching UI, tools, retired theme CSS and bitmap assets', () => {
+    for (const path of ['components/UiLabToolbar.vue', 'components/MobileHud.vue', 'components/MessageStrip.vue', 'components/theme/ThemeCodex.vue', 'components/theme/ThemeKit.vue', 'assets/ui-concepts.css']) {
+      expect(existsSync(new URL('../' + path, import.meta.url)), path).toBe(false);
+    }
+    for (const path of ['App.vue', 'ui/concept.ts', 'assets/theme-shells.css', 'assets/gameplay-layout.css', 'components/MainMenu.vue']) {
+      const text = source(path);
+      expect(text).not.toMatch(/UiLabToolbar|registerConceptTool|select_ui_concept|--lab-h|data-ui-concept=(?:classic|tactical|immersive|umbra|ember|codex|zen|manual)/);
+    }
+    expect(existsSync(new URL('../../public/art', import.meta.url))).toBe(false);
+    expect(source('components/MainMenu.vue')).toContain('<TitleFx v-if="!inGame" />');
   });
 });

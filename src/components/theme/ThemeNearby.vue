@@ -32,6 +32,6 @@ const pct = (row: Row) => row.kind === 'monster' ? Math.max(0, Math.min(100, row
         <span v-if="row.kind === 'monster' && row.statuses.length" class="tn-statuses"><span v-for="s in row.statuses" :key="s.id" :style="{ color: s.color }">{{ s.label }} {{ s.value }}</span></span>
       </li>
     </ul>
-    <p v-if="!rows.length" class="tn-empty">{{ $t('lab.context_empty') }}</p>
+    <p v-if="!rows.length" class="tn-empty">{{ $t('theme.context_empty') }}</p>
   </section>
 </template>

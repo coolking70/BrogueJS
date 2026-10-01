@@ -2,7 +2,8 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useTranslation } from "i18next-vue";
 import { inputManager } from "../engine/Input";
-import { concept, isShellConcept, type Concept, type ShellConcept } from "../ui/concept";
+import MapTileLegend from './MapTileLegend.vue';
+import { mapMode, selectMapMode, isMapMode } from '../ui/mapTiles';
 import TitleFx from "./theme/TitleFx.vue";
 import { normalizeSeed } from "../engine/Seed";
 import type { GameMode } from "../engine/Core/Game";
@@ -52,22 +53,9 @@ const emit = defineEmits<{
 }>();
 
 const page = ref<"home" | "new" | "saves" | "records" | "settings">("home");
-// i18n 键必须是字面量（p1_30 扫描器要求首参可静态解析）
-const chapterNames: Record<Concept, () => [string, string]> = {
-  classic: () => [t("lab.classic"), t("lab.classic_code")],
-  tactical: () => [t("lab.tactical"), t("lab.tactical_code")],
-  immersive: () => [t("lab.immersive"), t("lab.immersive_code")],
-  glyph: () => [t("lab.glyph"), t("lab.glyph_code")],
-  umbra: () => [t("lab.umbra"), t("lab.umbra_code")],
-  ember: () => [t("lab.ember"), t("lab.ember_code")],
-  codex: () => [t("lab.codex"), t("lab.codex_code")],
-  zen: () => [t("lab.zen"), t("lab.zen_code")],
-  manual: () => [t("lab.manual"), t("lab.manual_code")],
-};
-const chapter = computed(() => chapterNames[concept.value]()[0]);
-const chapterCode = computed(() => chapterNames[concept.value]()[1]);
-const titleFx = computed(() => ({ glyph: 'glyphs', umbra: 'spores', ember: 'embers', codex: 'stars', zen: 'none', manual: 'grid' } as const)[concept.value as ShellConcept] ?? 'none');
-const shell = computed(() => isShellConcept(concept.value));
+const legendOpen = ref(false);
+const chapter = computed(() => t('title.glyph'));
+const chapterCode = computed(() => t('title.glyph_code'));
 /** 刻符：方块字符拼出的字标（只含方块与空格，不是可读文字）。 */
 const glyphWordmark = [
   "████  ████   ███   ████ █   █ █████",
@@ -77,6 +65,7 @@ const glyphWordmark = [
   "████  █   █  ███   ████  ███  █████",
 ].join("\n");
 function goBack() {
+  if (legendOpen.value) { legendOpen.value = false; return; }
   if (page.value !== "home") page.value = "home";
   else if (props.inGame) emit("close");
 }
@@ -94,7 +83,7 @@ onMounted(() => {
   }, 1000);
 });
 onUnmounted(() => removeMenuKeyboard?.());
-watch(page, async () => { await nextTick(); menuCard.value?.focus(); });
+watch(page, async () => { legendOpen.value = false; await nextTick(); menuCard.value?.focus(); });
 const { t } = useTranslation();
 const editionText = computed(() => t("title.edition"));
 const seedPlaceholder = computed(() => t("menu.seed.placeholder"));
@@ -153,6 +142,11 @@ const mapScaleModel = computed({
   },
 });
 
+const mapModeModel = computed({
+  get: () => mapMode.value,
+  set: (value: string) => { if (isMapMode(value)) selectMapMode(value); },
+});
+
 const sidebarWidthModel = computed({
   get: () => displaySettings.sidebarWidthMode,
   set: (v: string) => {
@@ -169,16 +163,15 @@ const sidebarWidthModel = computed({
     @keyup.stop
     @keydown.esc.prevent="goBack"
   >
-    <div v-if="!inGame" class="title-art" aria-hidden="true"></div>
     <div v-if="!inGame" class="title-vignette" aria-hidden="true"></div>
-    <TitleFx v-if="!inGame && shell && titleFx !== 'none'" :key="concept" :kind="titleFx" />
+    <TitleFx v-if="!inGame" />
     <div ref="menuCard" class="title-screen" tabindex="-1">
       <div class="title-brand">
         <div class="title-edition">
           <span></span>{{ editionText }}<span></span>
         </div>
-        <pre v-if="concept === 'glyph'" class="title-glyph" aria-hidden="true">{{ glyphWordmark }}</pre>
-        <h1>{{ t("lab.brand") }}</h1>
+        <pre class="title-glyph" aria-hidden="true">{{ glyphWordmark }}</pre>
+        <h1>{{ t("title.brand") }}</h1>
         <div class="title-chapter">{{ chapter }}</div>
         <p class="title-code">{{ chapterCode }}</p>
       </div>
@@ -381,6 +374,20 @@ const sidebarWidthModel = computed({
           <h2>{{ t("title.settings") }}</h2>
           <p class="section-description">{{ t("title.settings_hint") }}</p>
           <div class="display-group">
+            <label class="field"><span>{{ t('menu.display.map_style') }}</span>
+              <select v-model="mapModeModel" data-map-setting>
+                <option value="original">{{ t('map.original') }}</option>
+                <option value="refined">{{ t('map.refined') }}</option>
+                <option value="hanzi">{{ t('map.hanzi') }}</option>
+                <option value="tiles">{{ t('map.tiles') }}</option>
+              </select>
+            </label>
+            <label class="field checkbox-field"><span>{{ t('menu.display.immersive_mode') }}</span>
+              <input class="display-toggle" type="checkbox" v-model="displaySettings.immersiveMode" />
+            </label>
+            <p class="field-hint immersive-hint">{{ t('menu.display.immersive_hint') }}</p>
+            <button class="legend-button" :aria-expanded="legendOpen" @click="legendOpen = !legendOpen">{{ t('map.legend') }}</button>
+
             <label class="field"
               ><span>{{ t("menu.display.ui_scale") }}</span
               ><select v-model.number="displaySettings.uiScale">
@@ -417,6 +424,7 @@ const sidebarWidthModel = computed({
               </select></label
             >
           </div>
+          <MapTileLegend v-if="legendOpen" @close="legendOpen = false" />
         </template>
       </section>
       <input
