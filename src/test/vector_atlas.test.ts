@@ -36,7 +36,7 @@ describe('Complete graphic-only vector atlas',()=>{
  });
  it('does not populate a text sprite in vector mode, even for unknown cells and bolts',()=>{
   const s={text:'OLD',visible:true};
-  for(const value of [playerSemantic('@'),glyphSemantic('🙂'),projectileSemantic('*')]){paintMapText(s as never,value,0xffffff,'tiles','classic',0,0,16);expect(s.text).toBe('');expect(s.visible).toBe(false);}
+  for(const value of [playerSemantic('@'),glyphSemantic('🙂'),projectileSemantic('*')]){paintMapText(s as never,value,0xffffff,'tiles',0,0,16);expect(s.text).toBe('');expect(s.visible).toBe(false);}
   const source=readFileSync(new URL('../components/GameCanvas.vue',import.meta.url),'utf8');
   expect(source).toContain("boltSprite.visible = mapMode.value !== 'tiles'");
   expect(source).toContain('paintVectorTile(vectorEntities, projectileSemantic(boltFrame.char)');

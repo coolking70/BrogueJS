@@ -167,7 +167,10 @@ describe('W-14 detonation and terrain boundaries', () => {
     it('invalidates active path/safety caches without adding a non-CE waypoint rebuild', () => {
         const g = scene(); g.grid.setTerrain(12, 5, T.WALL);
         g.autoPath = [{ x: 10, y: 5 }]; g.isMouseTraveling = true; g.updatedSafetyMapThisTurn = true;
-        const rebuild = vi.spyOn(g, 'rebuildWaypoints'); g.zapBoltFromPlayer(OBSTRUCTION, staff(), { x: 9, y: 5 });
+        const rebuild = vi.spyOn(g, 'rebuildWaypoints');
+        // A player cast first cancels travel at the shared input boundary.
+        // CE Architect.c:3240-3244's DF cache invalidation alone is not a stop.
+        g.executeCommand('item:command', undefined, () => g.zapBoltFromPlayer(OBSTRUCTION, staff(), { x: 9, y: 5 }));
         expect(g.autoPath).toEqual([]); expect(g.isMouseTraveling).toBe(false); expect(g.updatedSafetyMapThisTurn).toBe(false);
         expect(rebuild).not.toHaveBeenCalled(); expect(g.loopMap).toBeDefined(); expect((g as any).needsRender).toBe(true);
     });

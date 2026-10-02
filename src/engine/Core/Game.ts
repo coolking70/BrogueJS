@@ -9853,8 +9853,10 @@ export class Game {
             invalidatePathing: () => {
                 this.loopMap = analyzeLoopMap(this.grid);
                 this.updatedSafetyMapThisTurn = false;
-                this.autoPath = [];
-                this.isAutoExploring = false; this.isMouseTraveling = false;
+                // CE Architect.c:3240-3244 only marks the loop map stale.
+                // A distant DF (e.g. melting forcefields) is not a disturbance;
+                // travelRoute revalidates its remaining route (Movement.c:1860-1870)
+                // and explore rebuilds its map before each step (:2325-2333).
             },
             invalidateShore: () => { this.updatedSafetyMapThisTurn = false; },
             gameHasEnded: () => this.isGameOver === true,

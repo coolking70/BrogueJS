@@ -1,19 +1,24 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { activeGame } from '../engine/Core/Game';
 import { inputManager } from '../engine/Input';
 import type { DetailInfo } from '../engine/UI/DetailGenerator';
 
+const props = defineProps<{ displayDetail?: DetailInfo | null }>();
+const emit = defineEmits<{ close: [] }>();
 const visible = ref(false);
 const detail = ref<DetailInfo | null>(null);
+const panel = ref<HTMLElement>();
+let returnFocus: HTMLElement | null = null;
 
 // Poll for inspect target changes
 let pollTimer = 0;
 let removeKeyboard: (() => void) | undefined;
+let removeDisplayKeyboard: (() => void) | undefined;
 
 function checkInspectTarget() {
     const game = activeGame;
-    const target = game.inspectTarget;
+    const target = props.displayDetail ?? game.inspectTarget;
     detail.value = target;
     visible.value = !!target;
 }
@@ -21,8 +26,19 @@ function checkInspectTarget() {
 function close() {
     visible.value = false;
     detail.value = null;
-    activeGame.inspectTarget = null;
+    if (props.displayDetail) {
+        emit('close');
+        const origin = returnFocus;
+        returnFocus = null;
+        void nextTick(() => { if (origin?.isConnected) origin.focus({ preventScroll: true }); });
+    } else activeGame.inspectTarget = null;
 }
+
+watch(() => props.displayDetail, async target => {
+    if (target) returnFocus = document.activeElement as HTMLElement | null;
+    checkInspectTarget();
+    if (target) { await nextTick(); panel.value?.focus({ preventScroll: true }); }
+});
 
 function onKeydown(e: KeyboardEvent): boolean {
     checkInspectTarget();
@@ -42,11 +58,19 @@ function onKeydown(e: KeyboardEvent): boolean {
 
 onMounted(() => {
     removeKeyboard = inputManager.registerModalKeyHandler(onKeydown, 50);
+    // A sidebar detail is display-only, including when a context drawer (350)
+    // sits below it. Consume game keys while retaining native Tab/button keys.
+    removeDisplayKeyboard = inputManager.registerModalKeyHandler(event => {
+        if (!props.displayDetail) return false;
+        if (event.key === 'Escape') { event.preventDefault(); close(); }
+        return true;
+    }, 400);
     pollTimer = window.setInterval(checkInspectTarget, 100);
 });
 
 onUnmounted(() => {
     removeKeyboard?.();
+    removeDisplayKeyboard?.();
     if (pollTimer) window.clearInterval(pollTimer);
 });
 
@@ -61,7 +85,7 @@ function colorToCSS(color: number): string {
 <template>
     <Teleport to="body">
         <div v-if="visible && detail" class="detail-overlay" @click.self="close">
-            <div class="detail-panel">
+            <div ref="panel" class="detail-panel" role="dialog" tabindex="-1" :aria-label="detail.name" @keydown.stop @keyup.stop @keydown.esc.prevent="close">
                 <!-- Header -->
                 <div class="detail-header">
                     <span class="detail-char" :style="{ color: colorToCSS(detail.color) }">{{ detail.char }}</span>

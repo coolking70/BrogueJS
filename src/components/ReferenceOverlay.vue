@@ -27,6 +27,7 @@ const commands = computed(() => [
   ['x / X', t('reference.cmd.explore')],
   [t('reference.mouse.inspect_key'), t('reference.cmd.examine')],
   ['D', t('reference.cmd.discoveries')], ['?', t('reference.cmd.help')],
+  ['`', t('reference.cmd.immersive')],
   ['Esc', t('reference.cmd.cancel')],
 ]);
 const touchCommands = computed(() => [

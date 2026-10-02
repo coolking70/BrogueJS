@@ -5,7 +5,7 @@
  * 只读取玩家可见的显示信息，不调用任何改状态的方法。
  */
 import { sidebarPlayerStats } from '../engine/UI/MonsterSidebar';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, toValue, type MaybeRefOrGetter } from 'vue';
 import i18next from 'i18next';
 import { activeGame } from '../engine/Core/Game';
 import { foldCombatMessages, logger, type LogMessage } from '../engine/Systems/Logger';
@@ -21,11 +21,12 @@ export function nutritionStatus(nutrition: number): { text: string; color: strin
     return { text: i18next.t('sidebar.hunger.full'), color: '#4ade80' };
 }
 
-export function useGameHud(logCount = 3) {
+export function useGameHud(logCount: MaybeRefOrGetter<number> = 3) {
     const stats = ref<ReturnType<typeof sidebarPlayerStats> | null>(null);
     const hp = ref(0);
     const maxHp = ref(0);
     const depth = ref(1);
+    const turns = ref(0);
     const nutrition = ref(STOMACH_SIZE);
     const statuses = ref<ReturnType<typeof creatureStatusRows>>([]);
     const logs = ref<LogMessage[]>([]);
@@ -40,10 +41,12 @@ export function useGameHud(logCount = 3) {
         hp.value = game.player.hp;
         maxHp.value = game.player.maxHp;
         depth.value = game.depth;
+        // CE Time.c:2500 playerTurnNumber；stats.turns 还包含强制麻痹结算。
+        turns.value = logger.turn;
         nutrition.value = game.player.nutrition;
         statuses.value = creatureStatusRows(game.player, isSidebarVisibleStatus);
         const all = foldCombatMessages(logger.messages);
-        logs.value = all.slice(Math.max(0, all.length - logCount)).reverse();
+        logs.value = all.slice(Math.max(0, all.length - toValue(logCount))).reverse();
         hoverText.value = game.hoveredText || game.flavorText;
         replayActive.value = !!game.replayRecording;
         targeting.value = game.pendingArcana ? 'arcana' : game.isThrowing ? 'throw' : 'none';
@@ -56,5 +59,5 @@ export function useGameHud(logCount = 3) {
     });
     onUnmounted(() => window.clearInterval(timer));
 
-    return { stats, hp, maxHp, depth, nutrition, statuses, logs, hoverText, replayActive, targeting, poll };
+    return { stats, hp, maxHp, depth, turns, nutrition, statuses, logs, hoverText, replayActive, targeting, poll };
 }
