@@ -28,6 +28,12 @@ export class GestureTracker {
         return this.pointers.size > 0;
     }
 
+    reset(): void {
+        this.pointers.clear();
+        this.mode = 'idle';
+        this.pinchDist = 0;
+    }
+
     down(id: number, x: number, y: number, t: number): GestureEvent[] {
         this.pointers.set(id, { x, y, startX: x, startY: y, startT: t });
         if (this.pointers.size === 1) {

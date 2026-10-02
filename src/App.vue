@@ -7,9 +7,11 @@
 // ACKNOWLEDGE_KEY = ' ' 同样映射 No，Rogue.h:1179）。
 // 纯逻辑（回放旁路）拆成可单测的导出函数；测试见 ui_1_rendering.test.ts。
 import type { Game } from './engine/Core/Game';
+import { cancelHeldInputs } from './ui/heldInput';
 
 export function wireConfirmRequest(game: Game): void {
     game.onConfirmRequest = (message: string): boolean => {
+        cancelHeldInputs();
         // CE IO.c:2944：autoPlayingLevel 是自动演示，不是旅行/探索。
         // 引擎在提问前停止自动行进；回放决策由 requestConfirm 消费。
         if (game.replayStatus === 'playing') return true;
@@ -98,6 +100,11 @@ wireConfirmRequest(activeGame);
 
 const gameStarted = ref(false);
 const menuOpen = ref(true);
+// These modals are Vue state; cancel synchronously on entry. Engine-owned
+// overlays are monitored by GameCanvas through the same held-input registry.
+watch([menuOpen, panelOpen, journalOpen, nearbyInspection, themePanelOpen], (next, previous) => {
+  if (next.some((value, index) => !!value && value !== previous[index])) cancelHeldInputs();
+}, { flush: 'sync' });
 watch(menuOpen, (open) => {
   if (!open || !gameStarted.value) return;
   if (activeGame.replayStatus === 'playing') activeGame.replayPause();
@@ -230,6 +237,7 @@ const saveReplay = async () => {
 };
 
 const loadReplay = () => {
+  cancelHeldInputs();
   try {
     const raw = window.localStorage.getItem(REPLAY_KEY);
     if (!raw) return;
@@ -260,6 +268,7 @@ const deleteReplay = () => {
 };
 
 const replayPlay = () => {
+  cancelHeldInputs();
   activeGame.replayPlay();
 };
 
@@ -308,6 +317,7 @@ const exportCurrentReplayJson = async () => {
 };
 
 const importReplayJson = async (file: File) => {
+  cancelHeldInputs();
   try {
     const text = await file.text();
     const recording = JSON.parse(text);
@@ -352,10 +362,10 @@ const handleReturnToTitle = async () => {
       <div class="map-area">
         <GameCanvas class="game-view" />
         <MapZoomControls />
-        <RadialCommands v-if="displaySettings.immersiveMode && !replayActive" class="area-radial" />
+        <RadialCommands v-if="displaySettings.immersiveMode && !replayActive" class="area-radial" @modal-open="cancelHeldInputs" />
       </div>
       <TargetBar class="area-target" />
-      <CommandBar v-if="showCommands || (!compact && !replayActive)" class="area-cmd" :mode="viewport.mode" />
+      <CommandBar v-if="showCommands || (!compact && !replayActive)" class="area-cmd" :mode="viewport.mode" @modal-open="cancelHeldInputs" />
       <DPad v-if="showTouch" class="area-pad" :mode="viewport.mode" />
       <ContextPanel v-if="!compact && themePanelOpen && !displaySettings.immersiveMode" class="area-context" @close="themePanelOpen = false" @inspect="nearbyInspection = $event" />
       <SideDrawer :open="panelOpen" @close="panelOpen = false">

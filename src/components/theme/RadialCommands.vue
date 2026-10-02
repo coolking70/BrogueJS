@@ -1,13 +1,15 @@
 <script setup lang="ts">
 // DESIGN-3（沉浸模式）：桌面/触屏命令环。轻点中心展开/收起，点选一项即执行；
 // 按住中心拖到某项上松手也会执行。每项 = 一个键盘命令，经 ui/commands.dispatch。
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import { inputManager } from '../../engine/Input';
 import { dispatch } from '../../ui/commands';
 import CmdIcon from './CmdIcon.vue';
 const { t } = useTranslation();
 const open = ref(false);
+const emit = defineEmits<{ 'modal-open': [] }>();
+watch(open, value => { if (value) emit('modal-open'); }, { flush: 'sync' });
 let dragFromHub: boolean = false;
 const root = ref<HTMLElement>();
 const items = computed<Array<{ action: string; label: string; data?: string }>>(() => [
