@@ -2,7 +2,7 @@
 
 工作分支：`ext/foundation`。基线 `99f64bce00309179ae0cd593acebfe0ebf07b0c2`，已用远端精确引用核对。本步没有再次合并 main，没有修改/推送 main、打标签或启用 1a 玩法。
 
-状态：实现完成；完整/CE 门禁受云端 exec-server 反复断开及 HTTP 503 服务故障阻塞，尚无完整套件终态。当前保存 WIP，不作为验收通过；最终门禁完成前不推送交付。交付后停在 **1a0**，等待维护者确认后才进入 **1a**。
+状态：主体及加载边界修复完成，162项定向回归已通过；当前重新冻结执行最终完整/CE门禁，尚未取得全量终态。此前WIP不作为验收通过，最终门禁完成前不推送交付。交付后停在 **1a0**，等待维护者确认后才进入 **1a**。
 
 ## 主要验收材料
 
@@ -64,7 +64,7 @@
 - `src/entities/Monster.ts`：毒/火清理、寿命终结、on-hit 真实来源
 - `src/entities/Player.ts`：物伤类别与无来源饥饿伤害
 
-新增测试五份：`ext_causality`、`ext_bolt_causality`、`ext_generation_transactions`、`ext_growth_config`、`ext_growth_foundation_contracts`；共 116 项本步断言用例。既有测试文件、黄金 trace 和生成基线未修改。独立只读复核提出的两项问题（直接掘地/粉碎来源、楼层外蓝图发布后的打断泄漏）均已修复并新增回归。
+新增测试五份：`ext_causality`、`ext_bolt_causality`、`ext_generation_transactions`、`ext_growth_config`、`ext_growth_foundation_contracts`；共 118 项本步断言用例。既有测试文件、黄金 trace 和生成基线未修改。独立只读复核提出的两项问题（直接掘地/粉碎来源、楼层外蓝图发布后的打断泄漏）均已修复并新增回归。
 
 ## 运行环境中断说明
 
@@ -84,10 +84,25 @@ END ce-fetch EXIT_CODE=0 DURATION_SECONDS=0 2026-10-02T03:05:12Z
 START test-full 2026-10-02T03:05:12Z
 ```
 
-完整 test:full：未取得退出状态；CE 对照用例未取得完整执行结果，不能视为通过。test:drift：本步尚未执行。原有构建 >500kB 提示保留。
+完整 test:full：未取得退出状态；CE 对照用例未取得完整执行结果，不能视为通过。test:drift：另在同一冻结代码上完整执行，exit0；原文见下。原有构建 >500kB 提示保留。
 
 冻结的生产/测试/脚本/资源树聚合 SHA-256：`b2260b4931d88bcb6a7306a6810d432a25248382ca991296693ed80930f20ee4`。各次服务恢复后核对相同；完整门禁后仍须再次核对。散列清单不提交。
 
 合入 main 前，维护方仍须按用户要求在本地另行完整运行 `test:full`。本步不会执行该合并。
 
 补充环境事实：后续完整套件在4/2/1 worker与4096/1536/1024MiB配置下均遇exec-server断开；前三轮旧会话明确不存在，第四轮最近日志仅RUN、未见具体测试结果。出现过明确 HTTP 503 Service Unavailable，不能认定OOM或测试断言失败。没有改测试超时/断言/集合，也没有以定向结果拼接全量。
+
+
+### 独立 drift 原文（后续生产代码修复前的冻结树）
+
+```text
+END standalone-drift EXIT_CODE=0 2026-10-02T03:21:53Z
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  03:21:01
+   Duration  52.43s (transform 1.38s, setup 0ms, import 2.11s, tests 50.14s, environment 0ms)
+```
+
+服务恢复后单 worker/1024MiB 加短轮询的完整套件正常推进，生成长跑原断言已出现通过结果；但收尾发现加载器错误文案仅有格式 helper、生产边界尚未调用。为符合本步“加载时本地化报错”，于 03:45:47 显式停止本任务该轮 full（exit130），修复后重新冻结验收；这次是主动修复合同缺口，不是平台故障或测试断言失败。
+
+最新冻结树（完成真实加载错误本地化、真实资源驱动新增定义两项修复）：`f4edf7111f7533b99d01b056a65d46248dcbb1c94a1da9e48f9be65cffca3d18`。全体扩展与原本地化/仓库守卫组合11文件162项通过；该定向结果不替代新树完整门禁。

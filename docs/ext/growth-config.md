@@ -677,6 +677,8 @@
 
 错误码为`json`、`shape`、`field`、`range`、`duplicate`、`reference`、`cycle`、`version`、`text`、`budget`，映射`ext.growth.error.<code>`并带出错路径。parse成功后返回深拷贝/深冻结数据，不暴露调用方可变别名。
 
+纯schema抛出结构化GrowthValidationError；实际public parse/load及合同工厂的错误message已在生产边界本地化，同时保留key/path/detail/code供诊断和后续UI。技术引用ID可展示，内部英文诊断短语不直接拼给玩家。工厂按真实zh_CN资源目录校验非空词条，不以text.ts的样例词条表作为定义白名单；新增技能/属性只需修改定义JSON及本地化资源，不需改界面或词条登记代码。
+
 纯包校验不替代实际create-character身份组合、目标合法性、资源充足、revision和原子提交检查，后者属于1b/1d/1e；通过模板校验也不表示已生成/执行该模板。
 
 ## 7. 版本升级规则

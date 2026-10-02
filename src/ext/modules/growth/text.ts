@@ -82,5 +82,9 @@ export function growthDefinitionText(): Record<string, string> {
 
 export function formatGrowthValidationError(error: GrowthValidationError): string {
     const localized = growthDefinitionText()[error.key]!.replace('{{path}}', error.path);
-    return error.detail ? `${localized} (${error.detail})` : localized;
+    // Show stable technical references, not untranslated internal diagnostic prose.
+    // The original detail remains on the structured error for diagnostics.
+    const reference = ['reference', 'duplicate', 'cycle', 'text'].includes(error.code)
+        && /^[a-zA-Z][a-zA-Z0-9_.:-]*$/.test(error.detail) ? error.detail : '';
+    return reference ? `${localized} (${reference})` : localized;
 }

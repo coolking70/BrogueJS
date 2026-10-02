@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import i18next from 'i18next';
 import { createHash } from 'node:crypto';
 import data from '../ext/modules/growth/definitions.json';
 import monsters from '../data/monsters.json';
@@ -236,5 +237,110 @@ describe('EXT content fingerprint: exact local package binding', () => {
         expect(before.fingerprint).toMatch(/^sha256:[0-9a-f]{64}$/);
         expect(extensionDataFingerprint(changed)).not.toBe(before.fingerprint);
         expect(() => extensionDataFingerprint({ value: Infinity })).toThrow();
+    });
+});
+
+
+describe('EXT growth public loader diagnostics and production validation wiring', () => {
+    it.each([false, true])('localizes actual parse/load/factory failures (Chinese initialized: %s)', async initialized => {
+        const translation = i18next.createInstance();
+        if (initialized) await translation.init({ lng: 'zh_CN', fallbackLng: 'zh_CN',
+            resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
+        expect(!!translation.isInitialized).toBe(initialized);
+        // Use a real independent i18next instance, with real uninitialized fallback rather than stubbing t().
+        vi.resetModules();
+        vi.doMock('i18next', () => ({ default: translation }));
+        try {
+            const { default: productionData } = await import('../ext/modules/growth/definitions.json');
+            const { default: resourceCatalog } = await import('../locales/zh_CN.json');
+            const loader = await import('../ext/modules/growth/definitions');
+            const factory = await import('../ext/modules/growth');
+            const schema = await import('../ext/modules/growth/schema');
+            const invalid = structuredClone(productionData) as unknown as GrowthDefinitionPack;
+            skill(invalid, 'steady-hand').prerequisites = [{ kind: 'skill', skillId: 'growth.skill.missing' }];
+            const capture = (call: () => unknown): InstanceType<typeof schema.GrowthValidationError> => {
+                try { call(); } catch (error) {
+                    expect(error).toBeInstanceOf(schema.GrowthValidationError);
+                    return error as InstanceType<typeof schema.GrowthValidationError>;
+                }
+                throw new Error('Expected a public loader failure');
+            };
+            const assertReadable = (error: InstanceType<typeof schema.GrowthValidationError>): void => {
+                expect(error.message).toContain(error.path);
+                expect(error.message).not.toContain('ext.growth.error.');
+                if (initialized) expect(error.message).toMatch(/[\u4e00-\u9fff]/);
+                else expect(error.message).toMatch(/growth/i);
+            };
+            const parseError = capture(() => loader.parseGrowthDefinitionPack(invalid, options));
+            expect(parseError.code).toBe('reference');
+            expect(parseError.key).toBe('ext.growth.error.reference');
+            expect(parseError.detail).toBe('growth.skill.missing');
+            expect(parseError.message).toContain(parseError.detail); assertReadable(parseError);
+            const pureError = capture(() => schema.validateGrowthDefinitionPack(invalid, options));
+            expect(pureError.message).toContain('ext.growth.error.reference');
+            const oldCap = productionData.config.levels.cap;
+            try {
+                productionData.config.levels.cap = -1;
+                const loadError = capture(() => loader.loadGrowthDefinitionPack(options));
+                expect(loadError.path).toBe('$.config.levels.cap'); assertReadable(loadError);
+            } finally { productionData.config.levels.cap = oldCap; }
+            const mutations: { mutate: () => () => void; code: string; detail?: string }[] = [
+                { mutate: () => { const old = productionData.config.itemGrowth.rules[0]!.itemId;
+                    productionData.config.itemGrowth.rules[0]!.itemId = 'unknown_item';
+                    return () => { productionData.config.itemGrowth.rules[0]!.itemId = old; }; }, code: 'reference', detail: 'unknown_item' },
+                { mutate: () => { const old = productionData.config.experience.kills.monsterQuotes[0]!.monsterId;
+                    productionData.config.experience.kills.monsterQuotes[0]!.monsterId = 'unknown_monster';
+                    return () => { productionData.config.experience.kills.monsterQuotes[0]!.monsterId = old; }; }, code: 'reference' },
+                { mutate: () => { const old = productionData.config.experience.identification.categories;
+                    productionData.config.experience.identification.categories = ['unknown_category'];
+                    return () => { productionData.config.experience.identification.categories = old; }; }, code: 'reference', detail: 'unknown_category' },
+                { mutate: () => { const old = productionData.moduleVersion; productionData.moduleVersion = '999.0.0';
+                    return () => { productionData.moduleVersion = old; }; }, code: 'version' },
+                { mutate: () => { const old = productionData.rulesVersion; productionData.rulesVersion = '999.0.0';
+                    return () => { productionData.rulesVersion = old; }; }, code: 'version' },
+            ];
+            for (const test of mutations) {
+                const restore = test.mutate();
+                try {
+                    const error = capture(() => factory.createGrowthContractModule());
+                    expect(error.code).toBe(test.code); assertReadable(error);
+                    if (test.detail) { expect(error.detail).toBe(test.detail); expect(error.message).toContain(test.detail); }
+                    expect(error.message).not.toContain('exact monster catalog');
+                } finally { restore(); }
+            }
+            const mutablePack = productionData as unknown as GrowthDefinitionPack;
+            const mutableText = resourceCatalog as Record<string, string>;
+            const extraSkill = structuredClone(skill(mutablePack, 'steady-hand'));
+            extraSkill.id = 'growth.skill.data-only'; extraSkill.tags = ['growth.tag.data-only'];
+            extraSkill.nameKey = 'ext.growth.skill.data-only.name'; extraSkill.descriptionKey = 'ext.growth.skill.data-only.description';
+            extraSkill.prerequisites = []; extraSkill.effects = [];
+            const extraAttribute = structuredClone(mutablePack.config.attributes[0]!);
+            extraAttribute.id = 'growth.attribute.data-only'; extraAttribute.nameKey = 'ext.growth.attribute.data-only.name';
+            extraAttribute.descriptionKey = 'ext.growth.attribute.data-only.description'; extraAttribute.effects = [];
+            const newKeys = [extraSkill.nameKey, extraSkill.descriptionKey, extraAttribute.nameKey, extraAttribute.descriptionKey];
+            mutablePack.definitions.push(extraSkill); mutablePack.config.attributes.push(extraAttribute);
+            try {
+                const missing = capture(() => factory.createGrowthContractModule());
+                expect(missing.code).toBe('text'); expect(newKeys).toContain(missing.detail); assertReadable(missing);
+                for (const key of newKeys) mutableText[key] = '测试新增数据文本';
+                // No text.ts registration change: production accepts new skill AND attribute from data/resources alone.
+                expect(() => factory.createGrowthContractModule()).not.toThrow();
+                delete mutableText[extraSkill.descriptionKey];
+                const removed = capture(() => factory.createGrowthContractModule());
+                expect(removed.code).toBe('text'); expect(removed.detail).toBe(extraSkill.descriptionKey);
+                expect(removed.message).toContain(extraSkill.descriptionKey); assertReadable(removed);
+                mutableText[extraSkill.descriptionKey] = '   ';
+                expect(capture(() => factory.createGrowthContractModule()).code).toBe('text');
+            } finally {
+                mutablePack.definitions.pop(); mutablePack.config.attributes.pop();
+                for (const key of newKeys) delete mutableText[key];
+            }
+            expect(() => factory.createGrowthContractModule()).not.toThrow();
+            const providerError = new Error('provider failure');
+            expect(() => loader.parseGrowthDefinitionPack(productionData, { ...options, hasText: () => { throw providerError; } })).toThrow(providerError);
+        } finally {
+            vi.doUnmock('i18next');
+            vi.resetModules();
+        }
     });
 });

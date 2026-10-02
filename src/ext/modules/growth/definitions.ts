@@ -1,6 +1,7 @@
 import data from './definitions.json';
 import { extensionDataFingerprint } from '../../fingerprint';
-import { validateGrowthDefinitionPack, type GrowthValidationOptions } from './schema';
+import { GrowthValidationError, validateGrowthDefinitionPack, type GrowthValidationOptions } from './schema';
+import { formatGrowthValidationError } from './text';
 import type { GrowthDefinitionPack, GrowthPackIdentity } from './types';
 
 export const GROWTH_VERSION = '1.0.0';
@@ -16,8 +17,14 @@ function freeze<T>(value: T): DeepReadonly<T> {
 }
 /** Validate before cloning; never return a mutable alias to caller-provided configuration. */
 export function parseGrowthDefinitionPack(value: unknown, options: GrowthValidationOptions): DeepReadonly<GrowthDefinitionPack> {
-    validateGrowthDefinitionPack(value, options);
-    return freeze(structuredClone(value));
+    try {
+        validateGrowthDefinitionPack(value, options);
+        return freeze(structuredClone(value));
+    } catch (error) {
+        // Public loading reports readable text; the pure validator keeps its structured diagnostics.
+        if (error instanceof GrowthValidationError) error.message = formatGrowthValidationError(error);
+        throw error;
+    }
 }
 export function loadGrowthDefinitionPack(options: Omit<GrowthValidationOptions, 'moduleVersion'>): DeepReadonly<GrowthDefinitionPack> {
     return parseGrowthDefinitionPack(data, { ...options, moduleVersion: GROWTH_VERSION });

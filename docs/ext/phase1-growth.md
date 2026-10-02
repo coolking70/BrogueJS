@@ -333,15 +333,16 @@ D22-A 已固定：从 1a 起在扩展新局建立后、首个玩家动作前录�
 当前 `Game.generateDepth` 的 before/after 只是首次入层外壳；`MonsterLifecycle.ownedMonsterList` 插入即 attach/spawned。里面至少有 `GenerationCoordinator.generateDepth` 的楼梯连通重试、`BlueprintEngine.applyBlueprint` 的实体/地图回滚。只在最外层 afterLevelGeneration 打一个 commit 不够。
 
 ```ts
-type GenerationToken = Readonly<{ id: number; parentId: number | null; depth: number }>;
+// 1a0 实际合同：token 以对象身份识别，不暴露可伪造的流水号。
+type GenerationToken = Readonly<{ label: string }>;
 interface GenerationTransactions {
-  begin(input: Readonly<{ depth: number; scope: 'floor-attempt' | 'blueprint' }>): GenerationToken;
-  commit(token: GenerationToken): void;
-  rollback(token: GenerationToken): void;
+  beginGeneration(label: string): GenerationToken;
+  commitGeneration(token: GenerationToken): void;
+  rollbackGeneration(token: GenerationToken): void;
 }
-// 提交事实交给模块；不是把 Game/rollback closure 暴露给模块。
-// generationCommitted: {depth, transactionId, spawnedIds}
-// generationRolledBack: {depth, transactionId}（只读诊断，无 RNG/状态写权限）
+// 底座严格后进先出；模块只得到提交事实，不得持有 Game/token/rollback closure。
+// generationCommitted: {label, creatureIds}
+// generationRolledBack: {label}（只读诊断，无 RNG/状态写权限）
 ```
 
 在原事务快照建立处 begin，原成功分支 commit，原实体/地图恢复之后 rollback；子 commit 只并入父事务，外层失败仍全部丢弃。出生初始化按实体稳定 ID，缓冲事实按原产生次序（不能重排递归死亡），且必须在原实体编号最终确定后。生成中的 attach 仅绑定底座会话资源、暂存组件/出生描述，不发可变的 growth 出生钩子、不消耗模块 RNG、不发消息、不发 XP；外层 commit 后一次初始化。正常局内无生成事务的新出生直接提交。所有生成投机范围内可变模块事件（包括 example 的 kill）统一缓冲；不能只拦 growth 出生却让 example 先改计数/发消息。仅已提交实体的事实按稳定产生次序在外层 commit 后派发；回滚范围内的事件全部丢弃。模块不在投机范围运行，因此没有投机模块 RNG/日志需要“撤销”。这保持 example 在已提交世界的语义，不承诺投机回调的旧时序，也不修改原经典测试期望。
