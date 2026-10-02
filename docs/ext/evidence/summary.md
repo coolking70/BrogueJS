@@ -149,3 +149,33 @@ FINAL all_gates=0 2026-10-02T11:20:35Z
 前后源码聚合相同：`8aec4a68979ee9c78e6c6d50371aff563a686b3bbf2ed5fea67b0945876e3aa8`。活动 CE 对照已执行；8历史skip/5历史todo明确保留，未新增。此前一轮为修复加载预检实体ID消耗而主动中止exit130，不计完整通过。最终代码后没有再改生产/测试。原始日志/清单/中断记录仅在忽略目录 `tmp-phase1a-raw/`。
 
 1a 完成后停下；合 main 前由维护者本机另跑完整 test:full。
+
+
+## 阶段 1a1：生成检查点缩窄最终完整 / CE 门禁
+
+2026-10-02 UTC；云端 Linux / Node24.19.0 / npm11.9.0，`TZ=UTC`、`NODE_OPTIONS=--max-old-space-size=3072`。完整 2 worker，drift 1 worker，原超时/断言/测试集合不变；唯一最终完整轮次全部 exit0。实现、13项新回归、性能和剩余实体规模成本见 [1a1 报告](../phase1a1.report.md)。
+
+```text
+END vue-tsc EXIT_CODE=0 DURATION_SECONDS=16 2026-10-02T12:05:32Z
+✓ built in 5.94s
+END build EXIT_CODE=0 DURATION_SECONDS=21 2026-10-02T12:05:53Z
+CE reference already verified: legacy 49be8dd3fc1b9a0fb477df4c9153c0e1cf796fe9
+END ce-fetch EXIT_CODE=0 DURATION_SECONDS=0 2026-10-02T12:05:53Z
+
+> BROGUE_REQUIRE_CE=1 vitest run --exclude '**/generation_baseline.test.ts' --maxWorkers=2 --reporter=verbose --bail=1
+ Test Files  281 passed (281)
+      Tests  4987 passed | 8 skipped | 5 todo (5000)
+   Start at  12:05:53
+   Duration  6080.44s (transform 9.58s, setup 0ms, import 205.48s, tests 11908.80s, environment 112ms)
+END test-full EXIT_CODE=0 DURATION_SECONDS=6081 2026-10-02T13:47:14Z
+
+> vitest run src/test/generation_baseline.test.ts --maxWorkers=1
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  13:47:14
+   Duration  53.66s (transform 1.41s, setup 0ms, import 2.22s, tests 51.26s, environment 0ms)
+END test-drift EXIT_CODE=0 DURATION_SECONDS=54 2026-10-02T13:48:08Z
+FINAL all_gates=0 2026-10-02T13:48:08Z
+```
+
+CE活动对照全部执行，8个skip/5个todo仅原有退役或历史占位；无新增skip/todo，无FATAL/OOM/worker异常。构建保留既有大块产物警告。595个输入前后SHA-256相同：`e3c05d9aa0a1daaae6eb463c3500adc3496c446dc60e035ea6ec30a6535e232c`。原1a0/1a/经典测试、黄金trace/生成基线与U03未改。门禁后只整理文档；不把预检或性能成功路径当回滚正确性替代证据。

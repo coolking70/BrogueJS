@@ -1319,10 +1319,49 @@ export class Game {
     private generateDepth(isGoingUp: boolean = false, isFirstLevel: boolean = false, fell: boolean = false) {
         if (this.extensionRuntime) {
             const runtime = this.extensionRuntime;
-            const restoreWorld = checkpointGenerationWorld({ game: this,
-                identifiedItems: ItemLoader.identifiedItems, callTitles: ItemLoader.callTitles,
-                magicPolarityRevealed: ItemLoader.magicPolarityRevealed,
-            }, [runtime]);
+            const restoreWorld = checkpointGenerationWorld(() => {
+                const cached = [...this.levels.values()];
+                const target = this.mode !== 'test' && this.currentLevelDepth === this.depth
+                    ? { grid: this.grid, environment: this.environment, fov: this.fov,
+                        lightMap: this.lightMap, scent: this.scent, waypoints: this.waypoints,
+                        pendingCaughtFireCells: this.pendingCaughtFireCells }
+                    : this.mode !== 'test' ? this.levels.get(this.depth) : undefined;
+                const creatures = collectEntityGraph([...this.monsters, ...this.dormantMonsters, ...this.purgatory,
+                    ...this.everSeenMonsters, ...this.visibleMonsters,
+                    ...cached.flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? []), ...level.visibleMonsters]),
+                    ...[...this.pendingFallenByDepth.values()].flat()]).monsters;
+                const display = [this.lightMap, ...(target?.lightMap && target.lightMap !== this.lightMap
+                    ? [target.lightMap] : [])].map(light => light.checkpointRenderState());
+                return {
+                    // Cache entries themselves are never edited. Membership of
+                    // levels and all creature lists still belongs to the write-set.
+                    shallow: [this, this.levels, ...cached.filter(level => level !== target),
+                        this.visibleMonsters, this.visibleItems, this.everSeenMonsters, this.everSeenItems,
+                        this.signTexts, this.resetPlateRoomByPos, this.testRooms, this.machineCells],
+                    deep: [target, this.player, creatures, this.monsters, this.dormantMonsters, this.purgatory,
+                        ...cached.flatMap(level => [level.monsters, level.dormantMonsters]),
+                        this.items, this.pendingFallenByDepth, this.pendingFallenItemsByDepth,
+                        this.levelSeeds, this.meteredItems, this.stats, this.minersLight,
+                        // Dig-time DF aggravation can still reach the departed
+                        // scent/waypoint system before the new ones are installed.
+                        this.scent, this.waypoints, this.pendingCaughtFireCells,
+                        ItemLoader.identifiedItems, ItemLoader.callTitles, ItemLoader.magicPolarityRevealed],
+                    references: [runtime, ...display.flatMap(state => state.references),
+                        // These monster maps are only replaced, never written
+                        // in place by generation/catch-up or published hooks.
+                        ...creatures.flatMap(monster => [monster.mapToMe, monster.safetySnapshot]),
+                        // Aggravation refreshes only waypoint zero; setup replaces
+                        // every map and coverage, but reuses its mutable scanner.
+                        ...this.waypoints.distanceMaps.slice(1), this.waypoints.coverage,
+                        ...(target?.waypoints && target.waypoints !== this.waypoints
+                            ? [target.waypoints.coordinates, target.waypoints.distanceMaps, target.waypoints.coverage] : [])],
+                    // Entry only appends to these old queues or replaces them.
+                    // Recording/replay events, UI detail trees and old animation
+                    // payloads otherwise stay behind the shallow Game boundary.
+                    appendOnly: [this.floatingTexts, this.pendingDiscoveryMessages, this.activeFlares, this.terrainFlashes],
+                    restoreSession: display.map(state => state.restore),
+                };
+            });
             const roots = [...this.monsters, ...this.dormantMonsters, ...this.purgatory,
                 ...[...this.levels.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]),
                 ...[...this.pendingFallenByDepth.values()].flat()];

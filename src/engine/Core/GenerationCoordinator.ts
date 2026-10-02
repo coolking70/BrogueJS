@@ -39,19 +39,38 @@ const HORDE_MACHINE_ONLY_FLAGS: readonly string[] = [
 ];
 const HORDE_POPULATE_FORBIDDEN_FLAGS: readonly string[] = ['HORDE_IS_SUMMONED', ...HORDE_MACHINE_ONLY_FLAGS];
 
-/** Extension-only failure recovery at the generation boundary. Retain the live
- * object graph rather than loading a save (which would retire the current run,
- * replace its creatures, and cannot run during turn advancement). Every value
- * remains the original object; only its own mutable data is checkpointed. Weak
- * session associations are rebound by the caller. Engine RNG/ID allocators are
- * deliberately not part of this checkpoint. Classic generation never calls it. */
-export function checkpointGenerationWorld(root: object, excluded: readonly object[]): () => void {
-    const seen = new Set<object>(excluded);
+/** The generation boundary owns the write-set, not the whole reachable Game.
+ * Shallow roots preserve pointers/container membership without following them;
+ * deep roots preserve mutable descendants, stopping at explicit reference roots.
+ * Append-only presentation queues need their original reference and length only.
+ * Selection runs inside capture so performance measurements include its cost. */
+export interface GenerationCheckpointRoots {
+    shallow: readonly object[];
+    deep: readonly unknown[];
+    references?: readonly unknown[];
+    appendOnly?: readonly unknown[][];
+    restoreSession?: readonly (() => void)[];
+}
+
+/** Extension-only in-place failure recovery. No save loading, constructors,
+ * setters on owned creature lists, or RNG/ID allocation during restoration.
+ * Weak session associations are restored separately by the generation boundary.
+ * Classic generation never calls this function. */
+export function checkpointGenerationWorld(select: () => GenerationCheckpointRoots): () => void {
+    const roots = select();
+    const seen = new Set<unknown>(roots.references);
+    const shallow = new Set(roots.shallow);
     const restore: Array<() => void> = [];
+    for (const queue of roots.appendOnly ?? []) {
+        seen.add(queue);
+        const length = queue.length;
+        restore.push(() => { queue.length = length; });
+    }
     const capture = (value: unknown): void => {
         if (!value || typeof value !== 'object' || seen.has(value) || Object.isFrozen(value)) return;
         seen.add(value);
         if (value instanceof WeakMap || value instanceof WeakSet) return;
+        const descend = !shallow.has(value);
         if (ArrayBuffer.isView(value)) {
             const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
             const saved = bytes.slice();
@@ -59,11 +78,11 @@ export function checkpointGenerationWorld(root: object, excluded: readonly objec
         } else if (value instanceof Map) {
             const entries = [...value];
             restore.push(() => { value.clear(); for (const [key, entry] of entries) value.set(key, entry); });
-            for (const [key, entry] of entries) { capture(key); capture(entry); }
+            if (descend) for (const [key, entry] of entries) { capture(key); capture(entry); }
         } else if (value instanceof Set) {
             const entries = [...value];
             restore.push(() => { value.clear(); for (const entry of entries) value.add(entry); });
-            entries.forEach(capture);
+            if (descend) entries.forEach(capture);
         } else {
             const descriptors = Object.getOwnPropertyDescriptors(value);
             restore.push(() => {
@@ -72,11 +91,18 @@ export function checkpointGenerationWorld(root: object, excluded: readonly objec
                 }
                 Object.defineProperties(value, descriptors);
             });
-            for (const descriptor of Object.values(descriptors)) if ('value' in descriptor) capture(descriptor.value);
+            if (descend) for (const key of Reflect.ownKeys(descriptors)) {
+                const descriptor = descriptors[key as keyof typeof descriptors]!;
+                if ('value' in descriptor) capture(descriptor.value);
+            }
         }
     };
-    capture(root);
-    return () => { for (const apply of restore) apply(); };
+    roots.shallow.forEach(capture);
+    roots.deep.forEach(capture);
+    return () => {
+        for (const apply of restore) apply();
+        for (const apply of roots.restoreSession ?? []) apply();
+    };
 }
 
 /** CE Monsters.c:860-862: build the accompanying camp before creating the

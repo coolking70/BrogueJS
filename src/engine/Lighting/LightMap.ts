@@ -71,6 +71,24 @@ const renderSources = new WeakMap<LightMap, PaintLightParams[]>();
 export class LightMap {
     private visualMap: LightMap | null = null;
 
+    /** Generation never edits an existing render-source record: clearLighting
+     * replaces the list and paintLight appends. Keep callbacks opaque, preserving
+     * only the association and append boundary for failed cached-level entry. */
+    public checkpointRenderState(): { references: readonly object[]; restore: () => void } {
+        const sources = renderSources.get(this), visual = this.visualMap;
+        const length = sources?.length ?? 0;
+        return {
+            // dance creates a new visual map; generation only clears this
+            // pointer. Its old render-only cells never enter the write-set.
+            references: visual ? [visual] : [],
+            restore: () => {
+                this.visualMap = visual;
+                if (sources) { sources.length = length; renderSources.set(this, sources); }
+                else renderSources.delete(this);
+            },
+        };
+    }
+
     /** Base light stays deterministic. Only the renderer requests color/radius noise. */
     public dance(): void {
         const visual = new LightMap(this.grid);

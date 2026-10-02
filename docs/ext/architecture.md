@@ -170,3 +170,17 @@
 - 存档预检验证组件互相一致、来源摘要/队伍凭证与 foundation 引用、原生资源及机械实体根。观察历史保留的尸体仍可存在于原存档实体图，但不因此要求成长组件或重新绑定 hooks；加载不发奖励、不重新应用差额
 
 对外配置的已启用/仅 helper/后续待接线状态见 [growth-config §1](growth-config.md)。1a 不推进专注恢复/技能冷却时间、不执行属性/技能/身份/模板；没有扩展通用脚本解释器或某个样例技能 ID 的规则分支。checkpointGenerationWorld 本步未优化，性能测量与缩小写集方案见 [1a 报告](phase1a.report.md)。
+
+
+## 11. 1a1：生成检查点的显式写集
+
+`checkpointGenerationWorld` 不再从整个 Game 递归捕获。Game 在调用内选择写集，捕获仍保存原对象的属性描述符、Map/Set 成员与 typed-array 字节；失败时原位恢复，不重新加载存档、不替换实体、不调用所有权数组 setter。选择根的成本包括在检查点捕获计时中。
+
+- Game 顶层、levels 容器、非目标缓存层包装对象做浅快照；顶层指针替换/标量写入和缓存成员增删仍能撤销
+- 深快照覆盖玩家/背包、当前/休眠/炼狱/所有缓存层及 pending fallen 的生物图（包括 leader/carriedMonster/carriedItem、观察集中仍有的生物）、相关数组、物品与坠落队列、levelSeeds、计量生成表、stats、矿灯参数、鉴定集合
+- 真正重访目标或同层重入的网格/环境/模拟光照/气味图仍深捕获；未触达缓存层的几何、光照、环境、FOV、气味和 waypoint 大图只保留引用。缓存怪物不可整体排除：跨层 demote 修改领导/waypoint 标志，monstersFall 可追加已缓存下一层的原 monsters 数组
+- 新层挖图期间，部分 DF 早于替换 scent/waypoints；无条件 aggravate 会改离层气味、waypoint 0 和可重用 scanner，因此这些仍捕获。其它旧 waypoint 距离图与 coverage 保留引用；重访目标 setUpWaypoints 会替换 coordinates/distanceMaps/coverage，旧图保留引用，scanner 仍捕获
+- 录像/回放历史和 UI 详情没有生成期写入，保留顶层引用。旧浮字/发现消息/flare/flash 队列在本边界只追加或替换，保存引用和原长度。模拟光照与纯显示缓存区分：LightMap 保存旧 visualMap 引用和弱 renderSources 列表的引用/长度，避免失败重访影响下一次 dance
+- 既有 RNG/日志/奖励配额/死亡 WeakSet/DF 会话绑定/陷阱弱状态恢复继续保留；实体 ID 不回退重用；机器编号保留原生成路径的分配/重置行为，不随外层失败回退，经典模式从不调用检查点
+
+写集的前提是当前 generation、environment catch-up 与受限发布端口。新增生成期写入时须同步审计写集及回滚守卫；不能把此函数当作任意 Game 修改事务。实现、反例覆盖、性能及完整门禁见 [1a1 报告](phase1a1.report.md)。
