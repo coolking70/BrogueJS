@@ -394,10 +394,10 @@ export class Monster extends Creature {
 
     protected override bloodInvulnerable(): boolean { return this.isInvulnerable(); }
 
-    public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void): void {
+    public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: import('../ext/causality').DamageKind = 'other'): void {
         this.interruptCorpseAbsorption(amount);
         const damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
-        super.takeDamage(damage, true, grid, beforeHpLoss);
+        super.takeDamage(damage, true, grid, beforeHpLoss, damageKind);
     }
 
     public administrativeDeath?: boolean;
@@ -447,6 +447,10 @@ export class Monster extends Creature {
         this.onHitStatus = form.onHitStatus;
         this.onHitChance = form.onHitChance ?? 0;
         this.onHitDuration = form.onHitDuration ?? 0;
+        if (this.extensionHooks) {
+            this.extensionHooks.causality.clearStatus(this.id, 'poisoned');
+            this.extensionHooks.causality.clearStatus(this.id, 'burning');
+        }
         this.statusDurations = {};
         this.maxStatus = {};
         this.maxShield = 0;
@@ -779,6 +783,10 @@ export class Monster extends Creature {
         // polymorph neither generates nor discards items (CE carriedItem stays).
         this.wasNegated = false;
         // Counts and pending corpse absorption belong to creature, not the replaced info.
+        if (this.extensionHooks) {
+            this.extensionHooks.causality.clearStatus(this.id, 'poisoned');
+            this.extensionHooks.causality.clearStatus(this.id, 'burning');
+        }
         this.statusDurations = {};
         this.maxStatus = {};
         this.maxShield = 0; // maxStatus is reset; poisonAmount is NOT reset in CE.
@@ -818,7 +826,14 @@ export class Monster extends Creature {
         // CE burning death returns before the lifespan case; do not expire it twice.
         if (this.hp <= 0 && this.hasStatus('lifespan_remaining')) return [];
         const expired = super.tickStatuses();
-        if (expired.includes('lifespan_remaining') && this.hp > 0) this.die();
+        if (expired.includes('lifespan_remaining') && this.hp > 0) {
+            if (this.extensionHooks) {
+                const effects = this.extensionHooks.causality;
+                const origin = effects.create('lifespan', null, null, null, null);
+                effects.terminal(this.id, origin);
+                effects.withOrigin(origin, () => this.die());
+            } else this.die();
+        }
         if (expired.includes('magical_fear')) {
             // CE restores ALLY if the leader is the player; web stores allegiance separately.
             this.isAlly = this.isAlly || this.leader instanceof Player;
@@ -1345,10 +1360,10 @@ export class Monster extends Creature {
                 game.reportAttack(this, game.player, result);
                 game.spawnFloatingText(`-${result.damage}`, game.player.loc.x, game.player.loc.y, 0xff5555);
                 if (this.hasEffectiveOnHitStatus() && rng.randPercent(Math.floor(this.onHitChance * 100))) {
-                    game.applyMonsterOnHitStatus(game.player, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration);
+                    game.applyMonsterOnHitStatus(game.player, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration, this);
                 }
                 if (this.hasAbility('MA_HIT_HALLUCINATE')) {
-                    game.applyMonsterOnHitStatus(game.player, game.monsterDisplayName(this), 'hallucinating', 15);
+                    game.applyMonsterOnHitStatus(game.player, game.monsterDisplayName(this), 'hallucinating', 15, this);
                 }
                 if (this.hasAbility('MA_HIT_DEGRADE_ARMOR')) {
                     // I-1：ITEM_PROTECTED 豁免（CE Combat.c:425-431——带保护则完全
@@ -1379,10 +1394,10 @@ export class Monster extends Creature {
                 game.spawnFloatingText(`-${result.damage}`, target.loc.x, target.loc.y, 0xff5555);
                 (game as any).trySplitMonster(target, this);
                 if (this.hasEffectiveOnHitStatus() && rng.randPercent(Math.floor(this.onHitChance * 100))) {
-                    game.applyMonsterOnHitStatus(target, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration);
+                    game.applyMonsterOnHitStatus(target, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration, this);
                 }
                 if (this.hasAbility('MA_HIT_HALLUCINATE')) {
-                    game.applyMonsterOnHitStatus(target, game.monsterDisplayName(this), 'hallucinating', 15);
+                    game.applyMonsterOnHitStatus(target, game.monsterDisplayName(this), 'hallucinating', 15, this);
                 }
             } else {
                 game.reportAttack(this, target, result);
@@ -1592,10 +1607,10 @@ export class Monster extends Creature {
                         game.reportAttack(this, target, result);
                         game.spawnFloatingText(`-${result.damage}`, target.loc.x, target.loc.y, 0xff5555);
                         if (this.hasEffectiveOnHitStatus() && rng.randPercent(Math.floor(this.onHitChance * 100))) {
-                            game.applyMonsterOnHitStatus(target, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration);
+                            game.applyMonsterOnHitStatus(target, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration, this);
                         }
                         if (this.hasAbility('MA_HIT_HALLUCINATE')) {
-                            game.applyMonsterOnHitStatus(target, game.monsterDisplayName(this), 'hallucinating', 15);
+                            game.applyMonsterOnHitStatus(target, game.monsterDisplayName(this), 'hallucinating', 15, this);
                         }
                         // P4-4：CE splitMonster(defender, attacker)（Combat.c:1424）——
                         // 命中后，若目标带 MA_CLONE_SELF_ON_DEFEND 且仍存活，尝试分裂。
@@ -1823,10 +1838,10 @@ export class Monster extends Creature {
                             game.reportAttack(this, other, result);
                             game.spawnFloatingText(`-${result.damage}`, other.loc.x, other.loc.y, 0xff5555);
                             if (this.hasEffectiveOnHitStatus() && rng.randPercent(Math.floor(this.onHitChance * 100))) {
-                                game.applyMonsterOnHitStatus(other, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration);
+                                game.applyMonsterOnHitStatus(other, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration, this);
                             }
                             if (this.hasAbility('MA_HIT_HALLUCINATE')) {
-                                game.applyMonsterOnHitStatus(other, game.monsterDisplayName(this), 'hallucinating', 15);
+                                game.applyMonsterOnHitStatus(other, game.monsterDisplayName(this), 'hallucinating', 15, this);
                             }
                             (game as any).trySplitMonster(other, this);
                         } else {
@@ -1892,10 +1907,10 @@ export class Monster extends Creature {
                     game.reportAttack(this, game.player, result);
                     game.spawnFloatingText(`-${result.damage}`, game.player.loc.x, game.player.loc.y, 0xff5555);
                     if (this.hasEffectiveOnHitStatus() && rng.randPercent(Math.floor(this.onHitChance * 100))) {
-                        game.applyMonsterOnHitStatus(game.player, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration);
+                        game.applyMonsterOnHitStatus(game.player, game.monsterDisplayName(this), this.onHitStatus!, this.onHitDuration, this);
                     }
                     if (this.hasAbility('MA_HIT_HALLUCINATE')) {
-                        game.applyMonsterOnHitStatus(game.player, game.monsterDisplayName(this), 'hallucinating', 15);
+                        game.applyMonsterOnHitStatus(game.player, game.monsterDisplayName(this), 'hallucinating', 15, this);
                     }
                     if (this.hasAbility('MA_HIT_DEGRADE_ARMOR')) {
                         // I-1：ITEM_PROTECTED 豁免（CE Combat.c:425-431——带保护则

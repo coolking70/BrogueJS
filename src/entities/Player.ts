@@ -60,15 +60,15 @@ export class Player extends Creature {
 
     public override get bloodType(): number { return PLAYER_BLOOD_TYPE; }
 
-    public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void): void {
+    public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: import('../ext/causality').DamageKind = 'other'): void {
         if (amount > 0) logger.disturb();
-        super.takeDamage(amount, ignoresProtectionShield, grid, beforeHpLoss);
+        super.takeDamage(amount, ignoresProtectionShield, grid, beforeHpLoss, damageKind);
     }
 
     /** Ordinary melee is the sole damage exception during CE startFighting. */
     public takeCombatDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void): void {
         if (!logger.blockCombatText && amount > 0) logger.disturb();
-        super.takeDamage(amount, ignoresProtectionShield, grid, beforeHpLoss);
+        super.takeDamage(amount, ignoresProtectionShield, grid, beforeHpLoss, 'physical');
     }
     public restoreHungerTransition(value: HungerState | null): void { this.hungerTransition = value; }
 
@@ -197,7 +197,10 @@ export class Player extends Creature {
         if (this.nutrition <= 0) {
             const hpBefore = this.hp;
             this.hp -= 1;
-            if (this.extensionHooks) this.extensionHooks.damage(this, 1, hpBefore);
+            if (this.extensionHooks) {
+                const hooks = this.extensionHooks;
+                hooks.causality.withOrigin(null, () => hooks.damage(this, 1, hpBefore));
+            }
             logger.disturb();
             return 'starving';
         }
@@ -243,7 +246,10 @@ export class Player extends Creature {
         if (this.nutrition <= 0) {
             const hpBefore = this.hp;
             this.hp -= 1;
-            if (this.extensionHooks) this.extensionHooks.damage(this, 1, hpBefore);
+            if (this.extensionHooks) {
+                const hooks = this.extensionHooks;
+                hooks.causality.withOrigin(null, () => hooks.damage(this, 1, hpBefore));
+            }
             logger.disturb();
             return 'starving';
         }

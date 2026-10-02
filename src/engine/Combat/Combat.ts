@@ -71,10 +71,18 @@ export class CombatSystem {
     public static attack(attacker: Creature, defender: Creature, opts?: Parameters<typeof CombatSystem.resolveAttack>[2]): AttackResult {
         const hooks = attacker.extensionHooks ?? defender.extensionHooks;
         if (!hooks) return CombatSystem.resolveAttack(attacker, defender, opts);
-        hooks.beforeAttack(attacker, defender);
-        let result: AttackResult | undefined;
-        try { result = CombatSystem.resolveAttack(attacker, defender, opts); return result; }
-        finally { hooks.afterAttack(attacker, defender, result); }
+        const effects = hooks.causality;
+        const current = effects.current;
+        // BE_ATTACK keeps the bolt's independently reflected responsibility.
+        const origin = current && current.actorId === attacker.id
+            && ['melee', 'bolt', 'reflection'].includes(current.kind) ? current
+            : effects.create('melee', attacker.id, attacker.id, hooks.partyId(attacker));
+        return effects.withOrigin(origin, () => {
+            hooks.beforeAttack(attacker, defender);
+            let result: AttackResult | undefined;
+            try { result = CombatSystem.resolveAttack(attacker, defender, opts); return result; }
+            finally { hooks.afterAttack(attacker, defender, result); }
+        });
     }
 
     private static resolveAttack(attacker: Creature, defender: Creature, opts?: {
@@ -311,7 +319,7 @@ export class CombatSystem {
             const hpDamage = applyTo.absorbShieldDamage(damage);
             const transfer = () => CombatSystem.transferMonsterHealth(attacker, applyTo, hpDamage);
             if (applyTo instanceof Player) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
-            else applyTo.takeDamage(hpDamage, true, opts?.grid, transfer); // shield applied exactly once
+            else applyTo.takeDamage(hpDamage, true, opts?.grid, transfer, 'physical'); // shield applied exactly once
             if (poisonDuration > 0) applyTo.addPoison(poisonDuration, 1);
         } else {
             // CE inflictDamage still applies the ring's minimum ±1 on a hit
@@ -377,7 +385,12 @@ export class CombatSystem {
             if (!bonus) return;
             const amount = Math.trunc(dealt * ringTransferencePercent(bonus) / 100);
             const transfer = amount || (bonus > 0 ? 1 : -1);
-            if (transfer < 0) attacker.takeDamage(-transfer, true);
+            if (transfer < 0) {
+                const hooks = attacker.extensionHooks;
+                if (hooks) hooks.causality.withOrigin(hooks.causality.create('transference', attacker.id, attacker.id, hooks.partyId(attacker)),
+                    () => attacker.takeDamage(-transfer, true));
+                else attacker.takeDamage(-transfer, true);
+            }
             else attacker.hp += transfer;
         } else if (attacker instanceof Monster && attacker.hasAbility('MA_TRANSFERENCE')) {
             attacker.hp += Math.trunc(dealt * (attacker.isAlly ? 4 : 9) / 10);
@@ -438,6 +451,15 @@ export class CombatSystem {
         item: Item,
         grid?: Grid
     ): { hit: boolean; damage: number; killed: boolean; triggeredRunic?: string } {
+        const hooks = thrower.extensionHooks ?? defender.extensionHooks;
+        if (!hooks) return CombatSystem.resolveThrownWeaponClassic(thrower, defender, item, grid);
+        const origin = hooks.causality.current?.kind === 'projectile' ? hooks.causality.current
+            : hooks.causality.create('projectile', thrower.id, thrower.id, hooks.partyId(thrower));
+        return hooks.causality.withOrigin(origin, () => CombatSystem.resolveThrownWeaponClassic(thrower, defender, item, grid));
+    }
+
+    private static resolveThrownWeaponClassic(thrower: Player, defender: Monster, item: Item, grid?: Grid):
+        { hit: boolean; damage: number; killed: boolean; triggeredRunic?: string } {
         // CE Items.c:6790: a thrown weapon attempt releases even on a miss.
         defender.setStatusDuration('entranced', 0);
         if (defender.creatureMode !== MonsterMode.PERM_FLEEING && !defender.isCaged && (!defender.isAlly || defender.hasStatus('magical_fear'))
@@ -471,7 +493,7 @@ export class CombatSystem {
         }
 
         const hpDamage = defender.absorbShieldDamage(damage);
-        defender.takeDamage(hpDamage, true, grid, () => CombatSystem.transferMonsterHealth(thrower, defender, hpDamage));
+        defender.takeDamage(hpDamage, true, grid, () => CombatSystem.transferMonsterHealth(thrower, defender, hpDamage), 'physical');
         const killed = defender.hp <= 0;
         // CE thrown hit calls moralAttack after the separate pre-hit aggro gate.
         // A permanent thief keeps its mode, but a surviving hit still shortens fear.

@@ -1,6 +1,8 @@
-# 阶段 0：扩展底座
+# 扩展底座：阶段 0 与 1a0 技术合同
 
-基于 main `3c1407fcb0b074a7b4dd4879d15eb7c0be346749`。本阶段只搭底座；不引入成长、NPC、魂系战斗或多格规则。范围与优先级遵循 [路线](README.md)、[Lost Flame 机制笔记](references/lost-flame-notes.md) 和 [totalwar 笔记](references/totalwar-notes.md)。机制结构自行设计，未读取/复制商业游戏代码、数据或素材，未查 CE 源码。
+阶段 0 基于 main `3c1407fcb0b074a7b4dd4879d15eb7c0be346749`。本阶段只搭底座；不引入成长、NPC、魂系战斗或多格规则。范围与优先级遵循 [路线](README.md)、[Lost Flame 机制笔记](references/lost-flame-notes.md) 和 [totalwar 笔记](references/totalwar-notes.md)。机制结构自行设计，未读取/复制商业游戏代码、数据或素材，未查 CE 源码。
+
+> 当前 1a0 已补充可信因果来源、生成事务、死亡事实/回收和版本化成长数据合同；尚未启用经验、属性求值或技能玩法。当前合同以本文第 3/4/5/6/9 节增补及 [配置说明](growth-config.md)、[24 项表达审计](growth-expression-audit.md) 为准。阶段 0 报告是历史证据，1a0 门禁另见 [本步报告](phase1a0.report.md)。
 
 ## 1. 隔离与输入边界
 
@@ -33,19 +35,22 @@
 
 | 钩子 | 准确位置 / 时机 | 事件可读数据 | 可写与随机合同 |
 |---|---|---|---|
-| `beforeLevelGeneration` | `Game.generateDepth`，目标层首次访问，调用原 `GenerationCoordinator.generateDepth` 前 | 目标深度 | 自身状态/组件；此时用进入前的全局实质流，旧楼层仍是当前世界 |
+| `beforeLevelGeneration` | `Game.generateDepth`，首次访问时先生成事实，缓冲到外层生成提交后派发 | 目标深度 | 自身状态/组件；1a0 起不得在投机生成期间运行模块，派发使用已恢复的本局实质流/已提交世界 |
 | `afterLevelGeneration` | 同一包装方法，原生成与入层补跑/落点/居民恢复完整返回后，只首次访问触发 | 目标深度 | 自身状态/组件；原生成器已恢复返程种子，使用恢复后的实质流 |
-| `creatureSpawned` | `MonsterLifecycle.ownedMonsterList` 的列表绑定/插入调用 `runtime.attachCreature`；玩家在新局初始化后显式绑定 | 生物 ID/名字/HP/位置/是否玩家 | 自身状态/组件；每个对象每局首次绑定一次，换列表/唤醒/重访不重复，读档不发；生成期间用当前楼层随机域 |
+| `creatureSpawned` | `MonsterLifecycle.ownedMonsterList` 的列表绑定/插入调用 `runtime.attachCreature`；玩家在新局初始化后显式绑定 | 生物 ID/名字/HP/位置/是否玩家 | 自身状态/组件；每个对象每局首次绑定一次，换列表/唤醒/重访不重复，读档不发；生成中出生暂存，外层提交按实体 ID 初始化，失败丢弃，不消费模块 RNG |
 | `playerTurnEnded` | `Game.finishTurnEpilogue`，原结算、最终视野、消息合并后 | 原 `stats.turns` | 自身状态/组件；覆盖同步、动画与强制回合的共同收尾，原回合调度不改 |
 | `beforeAttack` | `CombatSystem.attack` 包装器，原 `resolveAttack` 任何掷骰/早退之前 | 攻防双方摘要 | 自身状态/组件；无取消或改伤害接口；覆盖原 attack 的近战与复用该入口的效果 |
 | `afterAttack` | 同包装器，原结果返回后、调用者的额外符文/分裂/文本等后处理之前 | 双方结算后摘要、完整只读 `AttackResult`（含未命中/抓持等早退） | 自身状态/组件；异常时只清理攻击来源栈，不发成功结果事件 |
-| `damage` | `Creature.takeDamage`，原吸盾、血迹、转移回调、扣 HP 之后，调用 `die` 之前；另在 `Player.recoverPerTurn` / 旧饥饿入口的原扣血点及 `Game` 否定致死赋值插入 | 生物摘要、原 HP、HP 伤害、当前攻击源 ID 或 null | 自身状态/组件；吸盾与免疫仍由原路径决定。零伤害也可发事件；否定致死沿原后续零伤害通知另有事件，不能按事件次数当伤害次数 |
-| `kill` | `Game.killMonster`，`deathProcessed=true` 后、乘客处理前；原去重旗标防重复 | 死者摘要、攻击源 ID 或 null、是否行政移除 | 自身状态/组件；死亡 DF 在此之前，可发生递归死亡。行政移除也报告，示例明确忽略 |
+| `damage` | `Creature.takeDamage`，原吸盾、血迹、转移回调、扣 HP 之后，调用 `die` 之前；另在 `Player.recoverPerTurn` / 旧饥饿入口的原扣血点及 `Game` 否定致死赋值插入 | 生物摘要、原 HP、HP 伤害、兼容观察 sourceId、可信 origin、实际 hpLost、damageKind | 自身状态/组件；吸盾与免疫仍由原路径决定。零伤害也可发事件；否定致死沿原后续零伤害通知另有事件，不能按事件次数当伤害次数 |
+| `kill` | `Game.killMonster`，`deathProcessed=true` 后、乘客处理前；原去重旗标防重复 | 死者摘要、兼容 sourceId、终结 origin、是否行政移除 | 自身状态/组件；终结来源在死亡 DF 之前捕获，派发仍在原去重之后；递归 DF 不覆盖原终结来源。行政移除 origin=null |
 | `itemPickedUp` | `Game.logPickup`，手动拾取及位移/行走拾取的共同成功出口 | 玩家摘要、原物品 ID/类别/数量（堆叠可合并） | 自身状态/组件；满包/避让/取消均不发，金币也发；事件与原移除地面对象相邻，不要推断事件发生时所有后处理都完成 |
 | `itemUsed` | `Game.quaffItem` / `readItem` 成功消费并应用效果后的回合尾前；`consumeFood` 成功消费/补营养后；护符 `invokeCharm` 的成功 endTurn；法杖/魔杖 `commitArcanaTarget` 后 | 玩家/物品摘要、quaff/read/eat/charm/arcana | 自身状态/组件；取消、冷却、已知空杖不发。未知空杖按原消耗回合的使用尝试发；选择法器目标本身不发 |
 | `enteredLevel` | `Game.generateDepth` 完整返回后，排在 `afterLevelGeneration` 后；包含重访和首层 | 深度、firstVisit | 自身状态/组件；使用入层后的实质流 |
 
-钩子边界有意不伪装成完整规则替换系统：`kill` 当前是怪物生命周期，玩家死亡仍通过原终局流程；`sourceId` 仅在 `attack` 栈内可信，环境、普通法术伤害为 null，不能直接据此给玩家 XP。投掷的独立 `projectileWeaponHit`、独立法术伤害不发 attack 事件，但 HP 损失走 damage，怪物死亡走 kill。生成重试/蓝图回滚中的列表插入可能是暂态出生；阶段 1 若按出生附加持久复杂状态，要先加入生成事务的提交/回滚钩子。上述范围是阶段 0 的明确能力边界，不改变旧规则来统一入口。
+1a0 增补：怪物仍只派发一次原 `kill`，玩家非获胜终局另派发 `playerDied`，两者共享 `DeathFact` 的只读结构。`generationCommitted` 在成功提交时提供 label/creatureIds；`generationRolledBack` 使用只读 context，禁止状态、消息、RNG。嵌套回滚诊断等外层成功后派发；失败外层只通知自身回滚。任何开放生成事务都不能取 `runtime.snapshot()`。
+
+`sourceId` 继续只作旧 attack 栈观察，**绝不能据此发 XP**。新 `EffectOrigin` 明确 actor/creditActor/creditParty、类型与父链，近战/投掷/射线/反射/反伤/毒/燃烧/位移接线见第 9 节。属性替换仍须 1b 的只读策略端口，不允许通过 damage/kill 事件暗改 HP。
+
 
 ## 4. 数据定义与生物组件
 
@@ -66,7 +71,7 @@
 
 `modules/example/definitions.json` 是覆盖五种定义的原创示例包，只用于格式验证，不生成 NPC、不提供技能/职业玩法。`text.ts` 登记示例包的 i18n 词汇。后续模块先加载自身包并校验，跨包引用应在所有包登记后进行二阶段校验，不能依赖异步加载先后。
 
-生物组件使用独立表 `components[creatureId]['moduleId:componentName']`，玩家、敌人、中立 NPC、盟友使用相同 API。已有 `ProgressionComponent`、`AttributesComponent`、`ProfessionComponent` 类型及纯校验器，未来种族/信仰/技能以新组件加入，绝不往 Player 添加专属成长字段。模块用 `componentValidators` 登记自身组件规则。实体 ID 为本局稳定 ID，涵盖当前/缓存层、休眠、携带、待坠落、炼狱实体；读档绑定整个实体图。死亡组件可保留供复活，局结束清空；长期局的墓碑回收策略留待阶段 1 设计，不能简单按“当前楼层不在场”删除。
+生物组件使用独立表 `components[creatureId]['moduleId:componentName']`，玩家、敌人、中立 NPC、盟友使用相同 API。已有 `ProgressionComponent`、`AttributesComponent`、`ProfessionComponent` 类型及纯校验器，未来种族/信仰/技能以新组件加入，绝不往 Player 添加专属成长字段。模块用 `componentValidators` 登记自身组件规则。实体 ID 为本局稳定 ID，涵盖当前/缓存层、休眠、携带、待坠落、炼狱实体；读档绑定整个实体图。1a0 在命令最终安全边界按机械实体图可达性回收：当前/缓存/休眠/携带/待坠落/炼狱及其 leader 引用保留；everSeen/可见历史不单独保活。组件和因果终结记录回收，模块状态中的独立奖励收据不删；不能按当前楼层不在场删除。
 
 ## 5. 独立扩展存档区块与契约
 
@@ -74,9 +79,10 @@
 
 ```json
 {
-  "manifest": { "schema": 1, "modules": [{ "id": "example", "version": "1.0.0" }] },
+  "manifest": { "schema": 1, "foundation": 1, "modules": [{ "id": "example", "version": "1.0.0" }] },
   "modules": { "example": { "kills": 1 } },
-  "components": { "1": { "growth:progression": { "level": 1, "experience": 0 } } }
+  "components": { "1": { "growth:progression": { "level": 1, "experience": 0 } } },
+  "foundation": { "version": 1, "causality": { "nextEffectId": 1, "statusOrigins": {}, "fatalOrigins": {}, "pendingDisplacements": {} }, "deaths": {} }
 }
 ```
 
@@ -88,11 +94,11 @@
 
 ## 6. 录像与确定性
 
-经典录像 version 2、字段、检查点保持不变。扩展录像附加可选头 `extensions: { schema: 1, modules: [{ id, version }] }`；每条扩展命令检查点附加 `extensions: ExtensionSnapshot`。兼容校验按本地注册表精确核对头中的集合/版本；读取后按头启用该集合，不要求播放器当前正在玩同一模式。已注册但未在头中启用的模块不参与回放，缺依赖或缺模块拒绝。
+经典录像 version 2、字段、检查点保持不变。扩展录像附加可选头 `extensions: { schema: 1, foundation: 1, modules: [{ id, version, rules? }] }`；每条扩展命令检查点附加 `extensions: ExtensionSnapshot`。兼容校验按本地注册表精确核对头中的集合/版本；读取后按头启用该集合，不要求播放器当前正在玩同一模式。已注册但未在头中启用的模块不参与回放，缺依赖或缺模块拒绝。
 
 删除头而事件仍含扩展数据/命令、改变版本、未注册模块、非法状态均明确拒绝并给本地化提示。回放保留原位置/回合/决策/双 RNG 校验，再以规范键序 JSON 比较扩展状态；差异进入原 OOS，消息使用现有本地化 OOS 显示。seek 通过原重新开局+命令执行路径，扩展状态不从任意跳转点猜测恢复。
 
-阶段 0 为便于调试，每命令保存完整扩展状态。阶段 1 状态变大后应测量录像体积，设计稳定摘要和周期快照；不能在没有等价测试时直接删 checkpoint。所有模块须升级版本来记录规则/数据变更，避免同版本数据漂移造成无提示错误。
+阶段 0 为便于调试，每命令保存完整扩展状态。D19 已确认 A：阶段 1 继续完整 checkpoint，只测量大小；摘要/周期快照是另行确认的后续优化，不能直接删 checkpoint。所有模块须升级版本来记录规则/数据变更，避免同版本数据漂移造成无提示错误。
 
 ## 7. 示例与验证
 
@@ -123,3 +129,30 @@
 7. **验收**：仅在扩展模式启用新的占位策略，经典继续原查询路径。先独立2×2测试场，覆盖转角、双单位碰撞、AOE去重、坠层/存读档/回放，再开始自然 Boss 场地。阶段5建立在这些合同之上，不能同时切换空间模型与世界时钟。
 
 建议按路线1→2→3→4→5，每阶段结束审核；阶段1先纯成长状态与输入/录像，属性战斗政策后接；阶段3先预警；阶段4先2×2专场；阶段5先设计与世界图原型。本次到阶段0停止。
+
+## 9. 1a0 已实现的补强及尚未启用部分
+
+### 因果传播
+
+- `src/ext/causality.ts` 的 `EffectCausality` 只在扩展 runtime 中实例化；scope 必须同步，Promise 拒绝，try/finally 恢复，显式 null 屏蔽外层来源，ID 不用 RNG/墙钟
+- 近战、玩家投掷和符文后处理、法器/怪物射线都带独立来源；反射改变 creditActor 而不改变 CE 的机械 caster，墙反射清责任者。反伤/分摊归实际反伤者，负转移自伤归实际付费者
+- 毒/燃烧仅最后一次有效增强/刷新更新来源；清除、免疫、变形和复活清相应记录。持续伤害不借当前 attack 栈，来源实体死亡/离场不影响保存的 ID 证据
+- 显式位移紧邻落地与死亡 DF 同步爆炸有界继承；跨结算坠落使用一次性的 pendingDisplacements。后续地火、气体、自然陷阱、饥饿明确无责任者；掘地/粉碎对镶墙生物的直接致死叶子保留施法/反射来源，其后地形/DF 仍明确无归属
+- 玩家、怪物直接终结（否定、寿命、行政移除）有明确终结原因。怪物终结在死亡 DF 之前捕获，DF 的新来源属于死者，避免递归爆炸抢走外层归属
+- creditPartyId 保存施加时 `player:<id>` 或 null。**它是因果证据，不是经验领取资格**；1a 必须另行校验生成资格、实际队伍关系和唯一收据。1a0 未实施关系版本账本或 XP 分配
+
+### 事务和安全边界
+
+1. 实际蓝图 checkpoint 有可选 commit；每次楼梯重试和外层楼层进入有嵌套事务。扩展事件/出生暂存，失败机器/失败尝试丢弃其来源和组件资料，不运行模块 RNG/消息
+2. 最外层成功后，出生初始化按稳定 ID，缓冲事实按原产生顺序。生命周期 beforeLevelGeneration 的“before”表示事实产生位置，不再表示可在投机世界执行模块
+3. 外层异常恢复旧 live 对象图、原 runtime、原 RNG、日志/待确认/战斗缓冲、已知物品集合、奖励配额、死亡 WeakSet 和已存在格图的会话绑定；不走 loadSnapshot，也不因动画推进无法取档而放弃回滚。内部生成失败/重试仍保留 CE 原随机消耗；实体 ID 不倒退重用
+4. 渲染通知只在生成事务提交后发出；UI 回调异常不能把已提交模拟倒退成半局
+5. 回收在实时命令/动画最终 checkpoint 和回放校验前同一安全边界执行；不把回收塞进纯 snapshot getter
+
+### 数据与版本
+
+完整 growth 包位于 `src/ext/modules/growth/`，包含有限端口/效果/动作 DTO、严格 schema、静态引用/循环/范围校验及 24 样例；模块仅空状态，没有成长玩法 hook/command。默认扩展仍为 example；显式选择 growth 可验证其存档/录像版本合同。
+
+1a0 manifest 增加精确 `foundation:1`，snapshot 增加 foundation.version/causality/deaths。缺旧版本字段直接拒绝，不迁移。数据模块 rules 携带 schema/version/规范 JSON SHA-256；schema、模块/规则版本、完整内容指纹任一不符都拒绝。手改数值却漏升版本也不能静默播放旧输入。hash/加载校验只在扩展启用边界运行。
+
+纯规则求值、属性对 CE 规则的策略端口、实际动作执行/消费/资源提交分别属于 1b/1d（基础资源提交 1a），身份模板属于 1e；本步不声称这些合同已经改变玩法。全部新增 Game 成员均是方法，无新增实例字段，原 U03 字段清单无需改变。

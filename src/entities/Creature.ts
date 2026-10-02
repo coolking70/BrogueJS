@@ -54,6 +54,7 @@ export function ensureEntityIdAbove(maxInUseId: number): void {
 }
 
 import type { CreatureExtensionHooks } from '../ext/types';
+import type { DamageKind } from '../ext/causality';
 const extensionCreatureHooks = new WeakMap<Creature, CreatureExtensionHooks>();
 
 export class Creature implements Entity {
@@ -165,6 +166,10 @@ export class Creature implements Entity {
     }
 
     public setStatusDuration(id: StatusId, duration: number) {
+        if (this.extensionHooks && id === 'immune_fire' && duration > 0) this.extensionHooks.causality.clearStatus(this.id, 'burning');
+        if (this.extensionHooks && (id === 'poisoned' || (id as string) === 'burning')) {
+            this.extensionHooks.causality.statusChanged(this.id, id as 'poisoned' | 'burning', this.getStatusDuration(id), duration);
+        }
         if (id === 'weakened' && duration <= 0) this.weaknessAmount = 0;
         if (id === 'shielded') this.maxShield = Math.max(0, duration);
         if (id === 'poisoned') this.poisonAmount = duration > 0 && this.hasStatus(id) ? Math.max(1, this.poisonAmount) : duration > 0 ? 1 : 0;
@@ -195,6 +200,7 @@ export class Creature implements Entity {
         if (id === 'nauseous' || id === 'magical_fear') this.maxStatus[id] = next;
         if (next === current) return false;
         this.statusDurations[id] = next;
+        if (this.extensionHooks && id === 'immune_fire') this.extensionHooks.causality.clearStatus(this.id, 'burning');
         this.refreshSpeeds();
         return true;
     }
@@ -221,6 +227,7 @@ export class Creature implements Entity {
     public heal(percent: number, panacea = false): number {
         const before = this.hp;
         this.hp = Math.min(this.maxHp, this.hp + Math.trunc(percent * this.maxHp / 100));
+        if (this.extensionHooks && before <= 0 && this.hp > 0) this.extensionHooks.causality.clearTerminal(this.id);
         if (panacea) {
             for (const id of ['hallucinating', 'confused', 'slowed', 'nauseous'] as const) {
                 if (this.getStatusDuration(id) > 1) this.setStatusDuration(id, 1);
@@ -245,6 +252,7 @@ export class Creature implements Entity {
         const oldDuration = this.getStatusDuration('poisoned');
         this.poisonAmount = Math.max(1, (oldDuration > 0 ? Math.max(1, this.poisonAmount) : 0) + concentration);
         this.statusDurations.poisoned = oldDuration + duration;
+        if (this.extensionHooks) this.extensionHooks.causality.statusChanged(this.id, 'poisoned', oldDuration, oldDuration + duration);
         return true;
     }
 
@@ -321,14 +329,14 @@ export class Creature implements Entity {
     public get bloodType(): number { return 0; }
     protected bloodInvulnerable(): boolean { return false; }
 
-    public takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void) {
+    public takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: DamageKind = 'other') {
         const damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
         if (grid) spawnCreatureBlood(grid, this.loc, this.bloodType, damage, this.hp, this.bloodInvulnerable());
         // CE Combat.c:1827-1878: blood precedes transference, including self-hits.
         beforeHpLoss?.(damage);
         const hpBefore = this.hp;
         this.hp -= damage;
-        if (this.extensionHooks) this.extensionHooks.damage(this, damage, hpBefore);
+        if (this.extensionHooks) this.extensionHooks.damage(this, damage, hpBefore, damageKind);
         if (this.hp <= 0) {
             this.die();
         }

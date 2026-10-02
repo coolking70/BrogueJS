@@ -158,7 +158,7 @@ export interface MachineItemSpawn {
 /** Optional entity adapter: standalone Architect callers can still inspect a
  * terrain/recipe preview. Game always supplies this adapter during construction. */
 export interface MachineEntityRuntime {
-    checkpoint(): () => void;
+    checkpoint(): (() => void) & { commit?: () => void };
     hasMonster(x: number, y: number): boolean;
     hasItem(x: number, y: number): boolean;
     spawn(spawn: MachineMonsterSpawn, machineNumber: number): Monster[];
@@ -1206,12 +1206,14 @@ export class BlueprintEngine {
     ): MachineResult | null {
         const backup = this.entities ? this.backupLevel() : null;
         const abort = this.entities?.checkpoint();
+        let rolledBack = false;
         try {
             const result = this.applyBlueprintContents(bp, room, ctx);
-            if (!result && backup) { this.restoreLevel(backup); abort!(); }
+            if (!result && backup) { this.restoreLevel(backup); rolledBack = true; abort!(); }
+            else if (result) abort?.commit?.();
             return result;
         } catch (error) {
-            if (backup) { this.restoreLevel(backup); abort!(); }
+            if (backup && !rolledBack) { this.restoreLevel(backup); abort!(); }
             throw error;
         }
     }

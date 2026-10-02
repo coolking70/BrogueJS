@@ -12,7 +12,7 @@ import { formatMonsterSummonMessage } from '../UI/MonsterTextCatalog';
 import { ownedMonsterList, dyingMonsters, iterateCreatures } from './MonsterLifecycle';
 import { alertMonster, wakeMonster } from '../Combat/MonsterAI';
 import { type MachineEntityRuntime } from '../Generator/BlueprintEngine';
-import { buildHordeMachine, createMachineRuntime, generateDepth, placeStairs, populateLevel } from './GenerationCoordinator';
+import { buildHordeMachine, checkpointGenerationWorld, createMachineRuntime, generateDepth, placeStairs, populateLevel } from './GenerationCoordinator';
 import { itemIsSwappable, enchantLevelKnown, swapItemToEnchantLevel } from '../Items/Commutation';
 import { generateQualifiedMachineItem } from '../Items/MachineItemGeneration';
 import { minionPlacement, generationDistances, speciesForbiddenFlags } from '../Generator/GenerationPlacement';
@@ -35,7 +35,7 @@ import { Grid, TerrainType, DCOLS, DROWS, DungeonLayer, DRAW_PRIORITY, type Cell
 import { blocksPassability, isDeepWater, isAutoDescent, TERRAIN_FLAGS, T_CAUSES_CONFUSION, T_CAUSES_POISON, T_CAUSES_NAUSEA, T_CAUSES_DAMAGE, T_CAUSES_PARALYSIS, T_CAUSES_EXPLOSIVE_DAMAGE, T_RESPIRATION_IMMUNITIES, TM_EXTINGUISHES_FIRE, T_AUTO_DESCENT, T_ENTANGLES, T_IS_DEEP_WATER, T_MOVES_ITEMS, T_PATHING_BLOCKER, T_DIVIDES_LEVEL, T_OBSTRUCTS_DIAGONAL_MOVEMENT, T_OBSTRUCTS_PASSABILITY, T_OBSTRUCTS_VISION, T_OBSTRUCTS_ITEMS, TM_IS_SECRET, TM_ALLOWS_SUBMERGING, TM_PROMOTES_ON_PLAYER_ENTRY, TM_PROMOTES_WITH_KEY, TM_PROMOTES_ON_CREATURE, TM_SWAP_ENCHANTS_ACTIVATION, TM_PROMOTES_ON_SACRIFICE_ENTRY, T_IS_DF_TRAP, T_HARMFUL_TERRAIN, T_SACRED, T_IS_FIRE, T_LAVA_INSTA_DEATH, T_SPONTANEOUSLY_IGNITES } from '../Map/TerrainCatalog';
 // B-4b：物品落位热力图与食物落位原语（CE Items.c:463-535 / Architect.c:171,3822）
 import { randomMatchingLocation, passableArcCount as terrainPassableArcCount } from '../Items/ItemSpawnHeatMap';
-import { cellTerrainMechFlags, cellTerrainFlags, catalogFeature, discoverSecretsAt, setDormantAwakener, setAllyResurrector, setDungeonFeatureEffects, terrainMechFlags, spawnDungeonFeature } from '../Map/DungeonFeature';
+import { cellTerrainMechFlags, cellTerrainFlags, catalogFeature, checkpointDungeonFeatureState, discoverSecretsAt, setDormantAwakener, setAllyResurrector, setDungeonFeatureEffects, terrainMechFlags, spawnDungeonFeature } from '../Map/DungeonFeature';
 import { DF } from '../Map/DungeonFeatureCatalog';
 // V-1c：奖励房配额计数器是 CE rogue.rewardRoomsGenerated 的 web 载体——
 // run 级全局，开局清零（RogueMain.c:292 等价）并随存档往返（见快照字段注）。
@@ -209,7 +209,7 @@ export const HORDE_PERIODIC_FORBIDDEN_FLAGS: readonly string[] = [
 import { restoreEntityGraph, entityCodecDeps,
     serializeItem as encodeItem, deserializeItem as decodeItem,
     serializeMonster as encodeMonster,
-    type GameSnapshotItem, type GameSnapshotMonster } from './EntitySnapshot';
+    collectEntityGraph, type GameSnapshotItem, type GameSnapshotMonster } from './EntitySnapshot';
 export type { GameSnapshotItem, GameSnapshotMonster } from './EntitySnapshot';
 
 export { WHOLE_RUN_SCHEMA } from './WholeRunSnapshot';
@@ -592,6 +592,9 @@ export class Game {
         if (options?.ruleSet !== undefined && options.ruleSet !== 'classic' && options.ruleSet !== 'extended') throw new Error('Invalid rule set');
         const extensionManifest = options?.ruleSet === 'extended'
             ? createExtensionRegistry().manifest(options.extensions ?? DEFAULT_EXTENSIONS) : undefined;
+        // Factories/data/state validators are pure preflight: an invalid data pack
+        // must not unload the existing run. Player/depth ports are live closures.
+        const preparedExtensions = extensionManifest ? this.createExtensionRuntime(extensionManifest) : null;
         // U00: retire the old run before seeding/allocating the next one. Returning
         // the iterator must not run an old turn's epilogue against the new world.
         this.discardInFlightAdvancement();
@@ -771,7 +774,7 @@ export class Game {
         }
 
         if (extensionManifest) {
-            this.extensionRuntime = this.createExtensionRuntime(extensionManifest);
+            this.extensionRuntime = preparedExtensions!;
             this.extensionRuntime.newGame();
             this.extensionRuntime.attachCreature(this.player);
         }
@@ -1116,6 +1119,25 @@ export class Game {
     private makeGenerationPorts() {
         const thisGame = this;
         return {
+            generationTransactions: this.extensionRuntime ? {
+                begin: (label: string) => {
+                    const runtime = thisGame.extensionRuntime!;
+                    const token = runtime.beginGeneration(label);
+                    return {
+                        commit: () => {
+                            const before = rng.getState(), restoreMessages = logger.checkpoint();
+                            const disturbed = thisGame.disturbed;
+                            try { runtime.commitGeneration(token); }
+                            catch (error) {
+                                rng.setState(before); restoreMessages();
+                                thisGame.disturbed = disturbed;
+                                throw error;
+                            }
+                        },
+                        rollback: () => runtime.rollbackGeneration(token),
+                    };
+                },
+            } : undefined,
             get absoluteTurnNumber() { return thisGame.absoluteTurnNumber; },
             set absoluteTurnNumber(value: Game["absoluteTurnNumber"]) { thisGame.absoluteTurnNumber = value; },
             get activeFlares() { return thisGame.activeFlares; },
@@ -1164,7 +1186,7 @@ export class Game {
             set monsters(value: Game["monsters"]) { thisGame.monsters = value; },
             get needsRender() { return thisGame.needsRender; },
             set needsRender(value: Game["needsRender"]) { thisGame.needsRender = value; },
-            get onRenderRequested() { return thisGame.onRenderRequested; },
+            get onRenderRequested() { return thisGame.extensionRuntime ? null : thisGame.onRenderRequested; },
             set onRenderRequested(value: Game["onRenderRequested"]) { thisGame.onRenderRequested = value; },
             get pendingCaughtFireCells() { return thisGame.pendingCaughtFireCells; },
             set pendingCaughtFireCells(value: Game["pendingCaughtFireCells"]) { thisGame.pendingCaughtFireCells = value; },
@@ -1276,16 +1298,69 @@ export class Game {
     }
 
     private generateDepth(isGoingUp: boolean = false, isFirstLevel: boolean = false, fell: boolean = false) {
+        if (this.extensionRuntime) {
+            const runtime = this.extensionRuntime;
+            const restoreWorld = checkpointGenerationWorld({ game: this,
+                identifiedItems: ItemLoader.identifiedItems, callTitles: ItemLoader.callTitles,
+                magicPolarityRevealed: ItemLoader.magicPolarityRevealed,
+            }, [runtime]);
+            const roots = [...this.monsters, ...this.dormantMonsters, ...this.purgatory,
+                ...[...this.levels.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]),
+                ...[...this.pendingFallenByDepth.values()].flat()];
+            const previousDying = collectEntityGraph(roots).monsters.map(monster => [monster, dyingMonsters.has(monster)] as const);
+            const previousDepth = this.currentLevelDepth ?? this.depth;
+            const previousRewards = getRewardRoomsGenerated();
+            const restoreMessages = logger.checkpoint();
+            const previousRng = rng.getState();
+            const grids = [this.grid, ...[...this.levels.values()].map(level => level.grid)];
+            const restoreFeatureState = checkpointDungeonFeatureState(grids);
+            const previousTraps = grids
+                .map(grid => {
+                    const traps = this.displacementTrapDepressions?.get(grid);
+                    return [grid, traps, traps ? [...traps] : []] as const;
+                });
+            const token = runtime.beginGeneration('floor');
+            try {
+                this.monsterPathCache = { safeTerrain: null, allySafety: null };
+                for (const m of this.monsters) m.mapToMe = null;
+                const firstVisit = !this.levelSeeds[this.depth - 1]?.visited;
+                if (firstVisit) runtime.emit('beforeLevelGeneration', { depth: this.depth });
+                generateDepth(this.makeGenerationPorts(), isGoingUp, isFirstLevel, fell);
+                if (firstVisit) runtime.emit('afterLevelGeneration', { depth: this.depth });
+                runtime.emit('enteredLevel', { depth: this.depth, firstVisit });
+                // Mutable module hooks only see the completed world and the run
+                // RNG restored by the generation coordinator's finally block.
+                runtime.commitGeneration(token);
+            } catch (error) {
+                restoreWorld();
+                for (const [monster, wasDying] of previousDying) {
+                    if (wasDying) dyingMonsters.add(monster);
+                    else dyingMonsters.delete(monster);
+                }
+                this.depth = previousDepth;
+                for (const [grid, traps, cells] of previousTraps) {
+                    if (traps) {
+                        traps.clear(); cells.forEach(cell => traps.add(cell));
+                        this.displacementTrapDepressions?.set(grid, traps);
+                    }
+                    else this.displacementTrapDepressions?.delete(grid);
+                }
+                setRewardRoomsGenerated(previousRewards);
+                restoreMessages();
+                // A fatal outer failure leaves no committed transition. Internal
+                // blueprint/stair retries retain every original engine draw;
+                // only this extension failure path restores the old run stream.
+                rng.setState(previousRng);
+                restoreFeatureState();
+                runtime.rollbackGeneration(token);
+                throw error;
+            }
+            this.onRenderRequested?.();
+            return;
+        }
         this.monsterPathCache = { safeTerrain: null, allySafety: null };
         for (const m of this.monsters) m.mapToMe = null;
-        const firstVisit = !this.levelSeeds[this.depth - 1]?.visited;
-        if (this.extensionRuntime && firstVisit) this.extensionRuntime.emit('beforeLevelGeneration', { depth: this.depth });
-        const result = generateDepth(this.makeGenerationPorts(), isGoingUp, isFirstLevel, fell);
-        if (this.extensionRuntime) {
-            if (firstVisit) this.extensionRuntime.emit('afterLevelGeneration', { depth: this.depth });
-            this.extensionRuntime.emit('enteredLevel', { depth: this.depth, firstVisit });
-        }
-        return result;
+        return generateDepth(this.makeGenerationPorts(), isGoingUp, isFirstLevel, fell);
     }
 
     private levelStair(type: TerrainType): Pos | null {
@@ -2767,7 +2842,16 @@ export class Game {
         return event;
     }
 
+    private collectExtensionComponents(): void {
+        if (!this.extensionRuntime || this.isAdvancing) return;
+        const roots = [...this.monsters, ...this.dormantMonsters, ...this.purgatory,
+            ...[...this.levels.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]),
+            ...[...this.pendingFallenByDepth.values()].flat()];
+        this.extensionRuntime.collectComponents([this.player, ...collectEntityGraph(roots).monsters]);
+    }
+
     private updateRecordedCheckpoint(event: RecordedInputEvent): void {
+        if (this.extensionRuntime) this.collectExtensionComponents();
         event.tick = timeSystem.currentTick;
         event.depth = this.depth;
         event.player = { x: this.player.loc.x, y: this.player.loc.y };
@@ -2786,6 +2870,7 @@ export class Game {
         this.commandDecisions = decisions;
         try {
             this.applyCommand(action, data, perform);
+            if (this.extensionRuntime) this.collectExtensionComponents();
             // Keep collecting accepted input after an interrupted command for
             // diagnostics. Only recordingFromNewGame authorizes full-run export.
             if (recordingState(this).origin) {
@@ -3042,6 +3127,7 @@ export class Game {
     }
 
     private completeReplayEvent(event: RecordedInputEvent, silent: boolean): void {
+        if (this.extensionRuntime) this.collectExtensionComponents();
         const actual = { tick: timeSystem.currentTick, depth: this.depth,
             player: this.player.loc, turn: this.absoluteTurnNumber, rng: rng.getState() };
         if (actual.tick !== event.tick || actual.depth !== event.depth
@@ -4549,28 +4635,44 @@ export class Game {
         let autoID = false, applied = false, dug = false;
         const impactFrames: BoltFrame[] = [];
         let alreadyReflected = false;
+        const causality = this.extensionRuntime?.causality;
+        const caster = result.caster;
+        let origin = causality?.create('bolt', caster?.id ?? null, caster?.id ?? null,
+            caster === this.player || (caster instanceof Monster && caster.isAlly) ? `player:${this.player.id}` : null) ?? null;
         const hideDetails = !ItemLoader.identifiedItems.has((item as Item & { identityId?: string }).identityId ?? '');
         const actual = traceBolt(this.grid, result.bolt, result.origin, result.aimPos,
             this.boltWorld(result.caster, hideDetails), {
             onTunnel: (pos, atOrigin) => {
-                const changed = this.tunnelAt(pos);
+                const changed = causality ? causality.withImmediateTerrain(null, () => this.tunnelAt(pos, origin)) : this.tunnelAt(pos);
                 dug = changed || dug;
                 if (!atOrigin) autoID = changed || autoID;
                 return changed;
             },
             onReflection: reflection => {
                 alreadyReflected = true;
+                // Travel identifies the actual reflector. Keep the original
+                // mechanical caster, including when a wall clears kill credit.
+                if (causality) origin = causality.create('reflection', caster?.id ?? null,
+                    reflection.creature?.id ?? null,
+                    reflection.creature === this.player || (reflection.creature instanceof Monster && reflection.creature.isAlly)
+                        ? `player:${this.player.id}` : null, origin);
                 this.observeBoltReflection(reflection);
             },
             onCell: (pos, hit) => {
                 if (hit && result.effect !== BoltEffect.OBSTRUCTION && result.effect !== BoltEffect.CONJURATION) {
                     const contact = createBoltResult(result.bolt, result.caster, result.origin, result.aimPos, [pos], [hit]);
-                    autoID = this.applyBoltEffect(contact, item, alreadyReflected) || autoID;
+                    autoID = (causality
+                        ? causality.withOrigin(origin, () => this.applyBoltEffect(contact, item, alreadyReflected))
+                        : this.applyBoltEffect(contact, item, alreadyReflected)) || autoID;
                     impactFrames.push(...contact.frames.slice(1));
                     applied = true;
                 }
                 if (this.player.hp <= 0 || this.isGameOver) return false;
-                autoID = this.applyBoltTerrainAt(result.bolt, pos) || autoID;
+                // Residual terrain has no bolt ownership, even if this cast
+                // itself is nested within another synchronous effect.
+                autoID = (causality
+                    ? causality.withOrigin(null, () => this.applyBoltTerrainAt(result.bolt, pos))
+                    : this.applyBoltTerrainAt(result.bolt, pos)) || autoID;
                 if (this.player.hp <= 0 || this.isGameOver) return false;
             },
         });
@@ -4578,7 +4680,9 @@ export class Game {
         result.frames.push(...impactFrames);
         // Landing effects still run on misses. W-9 directed effects require a hit;
         // an empty path has no detonation (in particular no origin fire).
-        if (!applied && result.landingPos) autoID = this.applyBoltEffect(result, item) || autoID;
+        if (!applied && result.landingPos) autoID = (causality
+            ? causality.withOrigin(result.effect === BoltEffect.BLINKING ? origin : null, () => this.applyBoltEffect(result, item))
+            : this.applyBoltEffect(result, item)) || autoID;
         if (result.effect === BoltEffect.TUNNELING && result.landingPos) {
             // CE detonateBolt always rebuilds waypoints. Other derived maps only
             // need invalidation if an excavation (including origin) succeeded.
@@ -4605,7 +4709,7 @@ export class Game {
 
     /** CE tunnelize's creature callbacks. All layer writes/DF/diagonal repair
      * stay in Map/Promotion; turret death follows DF dormant activation. */
-    private tunnelAt(pos: Pos): boolean {
+    private tunnelAt(pos: Pos, directOrigin: import('../../ext/causality').EffectOrigin | null = null): boolean {
         const changed = tunnelize(this.grid, pos.x, pos.y, {
             beforeOpen: p => {
                 const monster = this.getMonsterAt(p.x, p.y);
@@ -4615,7 +4719,13 @@ export class Game {
             afterOpen: p => {
                 const monster = this.getMonsterAt(p.x, p.y);
                 // MONST_TURRET is an unexpanded CE composite in web data (Rogue.h:2093).
-                if (monster && (monster.hasBehavior('MONST_ATTACKABLE_THRU_WALLS') || monster.hasBehavior('MONST_TURRET'))) monster.takeDamage(monster.hp, true, this.grid);
+                if (monster && (monster.hasBehavior('MONST_ATTACKABLE_THRU_WALLS') || monster.hasBehavior('MONST_TURRET'))) {
+                    // The spell directly destroys the embedded creature. Only
+                    // this leaf carries the caster/reflector; excavation stays unowned.
+                    if (this.extensionRuntime) this.extensionRuntime.causality.withOrigin(directOrigin,
+                        () => monster.takeDamage(monster.hp, true, this.grid));
+                    else monster.takeDamage(monster.hp, true, this.grid);
+                }
             },
         });
         if (changed) this.updateVision();
@@ -4828,7 +4938,7 @@ export class Game {
         const hpDamage = target.absorbShieldDamage(damage);
         target.takeDamage(hpDamage, true, this.grid, () => {
             if (result.caster) CombatSystem.transferMonsterHealth(result.caster, target, hpDamage);
-        });
+        }, result.effect === BoltEffect.FIRE ? 'fire' : 'other');
         if (this.finishLethalBoltHit(target, result.caster,
             result.bolt.ceType === null ? result.bolt.name : CE_BOLT_CATALOG[result.bolt.ceType].name)) return damage;
         if (target.hp > 0) {
@@ -5305,7 +5415,11 @@ export class Game {
                 defaultValue: `The ${this.monsterDisplayName(caster)} blinks.` }), '#aaaaaa');
         }
         const result = traceBolt(this.grid, MONSTER_BLINK, caster.loc, aim, this.boltWorld(caster));
-        this.finishBlink(result);
+        if (this.extensionRuntime) {
+            const causality = this.extensionRuntime.causality;
+            const origin = causality.create('bolt', caster.id, caster.id, caster.isAlly ? `player:${this.player.id}` : null);
+            causality.withOrigin(origin, () => this.finishBlink(result));
+        } else this.finishBlink(result);
         this.pendingBoltFrames = result.frames;
         this.currentBoltFrameIndex = 0;
         this.boltAnimStartTime = Date.now();
@@ -5342,25 +5456,38 @@ export class Game {
             selfTargeting: false,
         };
         let autoID = false;
+        const causality = this.extensionRuntime?.causality;
+        let origin = causality?.create('bolt', caster.id, caster.id, caster.isAlly ? `player:${this.player.id}` : null) ?? null;
         const boltResult = traceBolt(this.grid, visualBolt, caster.loc, target.loc, this.boltWorld(caster), {
-            onReflection: reflection => this.observeBoltReflection(reflection),
+            onReflection: reflection => {
+                if (causality) origin = causality.create('reflection', caster.id, reflection.creature?.id ?? null,
+                    reflection.creature === this.player || (reflection.creature instanceof Monster && reflection.creature.isAlly)
+                        ? `player:${this.player.id}` : null, origin);
+                this.observeBoltReflection(reflection);
+            },
             onCell: (pos, hit) => {
-                if (hit) autoID = this.applyMonsterBoltHit(caster, hit.creature, ceBoltName, meta) || autoID;
+                if (hit) autoID = (causality
+                    ? causality.withOrigin(origin, () => this.applyMonsterBoltHit(caster, hit.creature, ceBoltName, meta))
+                    : this.applyMonsterBoltHit(caster, hit.creature, ceBoltName, meta)) || autoID;
                 // CE Items.c:5168-5178: lethal player damage returns before
                 // tile exposure and terminates even a piercing spark.
                 if (this.player.hp <= 0 || this.isGameOver) return false;
-                autoID = this.applyBoltTerrainAt(visualBolt, pos) || autoID;
+                autoID = (causality
+                    ? causality.withOrigin(null, () => this.applyBoltTerrainAt(visualBolt, pos))
+                    : this.applyBoltTerrainAt(visualBolt, pos)) || autoID;
                 if (this.player.hp <= 0 || this.isGameOver) return false;
             },
         });
         // CE detonateBolt :5562: target DF at the actual landing, even a wall
         // or an intervening creature; never at the requested target by fiat.
         if (meta.effect === BoltEffect.NONE && definition.targetDF && boltResult.landingPos) {
-            this.spawnEntanglingBoltFeature(definition.targetDF, boltResult.landingPos);
+            if (causality) causality.withOrigin(null, () => this.spawnEntanglingBoltFeature(definition.targetDF!, boltResult.landingPos!));
+            else this.spawnEntanglingBoltFeature(definition.targetDF, boltResult.landingPos);
             this.updateVision();
         }
         if (meta.effect === BoltEffect.CONJURATION && boltResult.landingPos) {
-            autoID = this.conjureBladesAt(boltResult.landingPos, meta.magnitude);
+            autoID = causality ? causality.withOrigin(null, () => this.conjureBladesAt(boltResult.landingPos!, meta.magnitude))
+                : this.conjureBladesAt(boltResult.landingPos, meta.magnitude);
             this.updateVision();
         }
         this.pendingBoltFrames = boltResult.frames;
@@ -5400,7 +5527,7 @@ export class Game {
                 // CE inflictDamage transfers after shielding and before death,
                 // including when reflection makes caster and victim identical.
                 target.takeDamage(hpDamage, true, this.grid,
-                    () => CombatSystem.transferMonsterHealth(caster, target, hpDamage)); // shield already consumed once.
+                    () => CombatSystem.transferMonsterHealth(caster, target, hpDamage), meta.fiery ? 'fire' : 'other'); // shield already consumed once.
                 if (hpDamage > 0 && isPlayer) this.lastDamageSource = caster.name;
                 if (this.finishLethalBoltHit(target, caster, ceBoltName)) return autoID;
                 if (hpDamage > 0) {
@@ -5774,6 +5901,11 @@ export class Game {
      * bolts and scroll blasts. The return is the CE effect/autoID boolean;
      * recovering learning slots and evaluating the tile alone do not set it. */
     private negateCreatureMagic(target: Creature): boolean {
+        if (this.extensionRuntime && this.extensionRuntime.causality.current?.kind !== 'negation') {
+            const effects = this.extensionRuntime.causality, parent = effects.current;
+            const origin = effects.create('negation', parent?.actorId ?? null, parent?.creditActorId ?? null, parent?.creditPartyId ?? null);
+            return effects.withOrigin(origin, () => this.negateCreatureMagic(target));
+        }
         if (target.hp <= 0) return false;
         const monster = target instanceof Monster ? target : undefined;
         const originalName = target.name;
@@ -5861,6 +5993,11 @@ export class Game {
      *      RING 揭示 +0 / CHARM 重置充能延迟）。
      */
     private negationBlastFromPlayer(emitterName: string, distance = DCOLS): void {
+        if (this.extensionRuntime && this.extensionRuntime.causality.current?.kind !== 'negation') {
+            const effects = this.extensionRuntime.causality;
+            return effects.withOrigin(effects.create('negation', this.player.id, this.player.id, `player:${this.player.id}`),
+                () => this.negationBlastFromPlayer(emitterName, distance));
+        }
         logger.log(i18next.t('scroll.negate_burst', {
             emitter: emitterName,
             defaultValue: `${emitterName} emits a numbing torrent of anti-magic!`
@@ -5966,6 +6103,8 @@ export class Game {
      * Refresh vision immediately; the web renderer consumes needsRender.
      */
     private crystalizeFromPlayer(radius: number): void {
+        const causality = this.extensionRuntime?.causality;
+        const directOrigin = causality?.create('bolt', this.player.id, this.player.id, `player:${this.player.id}`) ?? null;
         const px = this.player.loc.x;
         const py = this.player.loc.y;
         for (let i = 0; i < DCOLS; i++) {
@@ -5981,13 +6120,18 @@ export class Game {
                 cell.layers[DungeonLayer.DUNGEON] = TerrainType.FORCEFIELD; // CE :4916
                 cell.refreshTerrainProperties();
                 // CE :4917: RUBBLE on SURFACE, start=0; also wakes dormant monsters.
-                spawnDungeonFeature(this.grid, i, j, catalogFeature(DF.DF_SHATTERING_SPELL), false);
+                if (causality) causality.withImmediateTerrain(null,
+                    () => spawnDungeonFeature(this.grid, i, j, catalogFeature(DF.DF_SHATTERING_SPELL), false));
+                else spawnDungeonFeature(this.grid, i, j, catalogFeature(DF.DF_SHATTERING_SPELL), false);
 
                 const monst = this.getMonsterAt(i, j); // CE :4919 HAS_MONSTER
                 if (monst) {
                     // MONST_TURRET is an unexpanded CE composite in web data.
                     if (monst.hasBehavior('MONST_ATTACKABLE_THRU_WALLS') || monst.hasBehavior('MONST_TURRET')) {
-                        monst.takeDamage(monst.hp, true, this.grid); // CE inflictLethalDamage bypasses shields.
+                        // CE inflictLethalDamage is the shattering spell's direct
+                        // hit, independently of the unowned rubble/terrain DF.
+                        if (causality) causality.withOrigin(directOrigin, () => monst.takeDamage(monst.hp, true, this.grid));
+                        else monst.takeDamage(monst.hp, true, this.grid);
                     } else if (monst.isCaged && (cellTerrainFlags(this.grid, i, j) & T_OBSTRUCTS_PASSABILITY)) {
                         // Movement.c:760 freeCaptivesEmbeddedAt, after the DF as in CE.
                         this.freeCaptive(monst);
@@ -6237,7 +6381,11 @@ export class Game {
                     if (monst.creatureMode !== MonsterMode.PERM_FLEEING && !monst.isAlly && monst.state !== MonsterState.FLEEING) {
                         monst.state = MonsterState.HUNTING;
                     }
-                    const res = CombatSystem.resolveThrownWeapon(this.player, monst, thrown, this.grid);
+                    const effects = this.extensionRuntime?.causality;
+                    const projectileOrigin = effects ? effects.create('projectile', this.player.id, this.player.id, `player:${this.player.id}`) : null;
+                    const res = effects ? effects.withOrigin(projectileOrigin,
+                        () => CombatSystem.resolveThrownWeapon(this.player, monst, thrown, this.grid))
+                        : CombatSystem.resolveThrownWeapon(this.player, monst, thrown, this.grid);
                     if (res.hit) {
                         if (res.killed) {
                             logger.log(i18next.t('throw.killed', {
@@ -6253,7 +6401,8 @@ export class Game {
                             // CE Items.c:6845-6849：符文只在目标存活时触发
                             //（resolveThrownWeapon 同口径只在存活时掷）。
                             if (res.triggeredRunic) {
-                                this.applyWeaponRunicEffect(monst, res.damage, res.triggeredRunic);
+                                if (effects) effects.withOrigin(projectileOrigin, () => this.applyWeaponRunicEffect(monst, res.damage, res.triggeredRunic!));
+                                else this.applyWeaponRunicEffect(monst, res.damage, res.triggeredRunic);
                             }
                         }
                         this.needsRender = true;
@@ -6362,7 +6511,13 @@ export class Game {
             creatureAt: pos => this.player.hp > 0 && this.player.x === pos.x && this.player.y === pos.y
                 ? this.player : this.getMonsterAt(pos.x, pos.y),
             exposeToFire: creature => {
-                if (creature instanceof Player || creature instanceof Monster) this.exposeCreatureToFire(creature);
+                if (creature instanceof Player || creature instanceof Monster) {
+                    if (this.extensionRuntime) {
+                        const effects = this.extensionRuntime.causality;
+                        effects.withOrigin(effects.create('projectile', this.player.id, this.player.id, `player:${this.player.id}`),
+                            () => this.exposeCreatureToFire(creature));
+                    } else this.exposeCreatureToFire(creature);
+                }
             },
         })) {
             this.needsRender = true;
@@ -6573,7 +6728,13 @@ export class Game {
         return { nullifyChance, durationReduction };
     }
 
-    public applyMonsterOnHitStatus(target: Creature, monsterName: string, status: StatusId, duration: number): boolean {
+    public applyMonsterOnHitStatus(target: Creature, monsterName: string, status: StatusId, duration: number, source?: Creature): boolean {
+        if (source && this.extensionRuntime) {
+            const effects = this.extensionRuntime.causality;
+            const origin = effects.current?.actorId === source.id ? effects.current
+                : effects.create('melee', source.id, source.id, source.extensionHooks?.partyId(source) ?? null);
+            return effects.withOrigin(origin, () => this.applyMonsterOnHitStatus(target, monsterName, status, duration));
+        }
         if (target instanceof Monster) return this.applyStatusToMonster(target, status, duration);
         if (target !== this.player) return false;
         // Preserve immunity granted by existing status sources.
@@ -6649,7 +6810,12 @@ export class Game {
      * This is separate from tryTriggerWeaponRunic, which uses legacy flat-chance triggers.
      * applyWeaponRunicEffect is called when Combat.ts's enchantment-scaled trigger fires.
      */
-    private applyWeaponRunicEffect(target: Monster, damage: number, runicType: string) {
+    private applyWeaponRunicEffect(target: Monster, damage: number, runicType: string): void {
+        if (this.extensionRuntime && this.extensionRuntime.causality.current?.actorId !== this.player.id) {
+            const effects = this.extensionRuntime.causality;
+            return effects.withOrigin(effects.create('melee', this.player.id, this.player.id, `player:${this.player.id}`),
+                () => this.applyWeaponRunicEffect(target, damage, runicType));
+        }
         const weapon = this.player.equippedWeapon;
         if (!weapon) return;
         const previouslyKnown = weapon.runicKnown;
@@ -6783,7 +6949,12 @@ export class Game {
                     traveled++;
                 }
                 if (traveled > 0) {
-                    this.applyEnvironmentalEffects(target);
+                    if (this.extensionRuntime) {
+                        const effects = this.extensionRuntime.causality, parent = effects.current;
+                        const origin = effects.create('displacement', this.player.id, parent ? parent.creditActorId : this.player.id,
+                            parent ? parent.creditPartyId : `player:${this.player.id}`);
+                        effects.withImmediateTerrain(origin, () => this.applyEnvironmentalEffects(target));
+                    } else this.applyEnvironmentalEffects(target);
                     this.updateVision();
                 }
                 // CE forceWeaponHit: a collision before full travel damages
@@ -6884,7 +7055,11 @@ export class Game {
                 // CE distributes before the player's shield absorbs the remaining share.
                 prevent(incomingDamage - share);
                 for (const m of hitList) {
-                    m.takeDamage(share, true, this.grid);
+                    if (this.extensionRuntime) {
+                        const effects = this.extensionRuntime.causality;
+                        effects.withOrigin(effects.create('reprisal', this.player.id, this.player.id, `player:${this.player.id}`),
+                            () => m.takeDamage(share, true, this.grid, undefined, 'physical'));
+                    } else m.takeDamage(share, true, this.grid);
                     this.spawnFloatingText(`-${share}`, m.loc.x, m.loc.y, 0xddaaff);
                 }
                 const wasKnown = armor.runicKnown;
@@ -6946,7 +7121,11 @@ export class Game {
             // 反弹 armorReprisalPercent(netEnchant)% 伤害（PowerTables.c:106）：
             // max(1, percent * damage / 100)（C 整数除法）。
             const reprisalDmg = Math.max(1, Math.trunc((armorReprisalPercent(netEnch) * incomingDamage) / 100));
-            attacker.takeDamage(reprisalDmg, true, this.grid);
+            if (this.extensionRuntime) {
+                const effects = this.extensionRuntime.causality;
+                effects.withOrigin(effects.create('reprisal', this.player.id, this.player.id, `player:${this.player.id}`),
+                    () => attacker.takeDamage(reprisalDmg, true, this.grid, undefined, 'physical'));
+            } else attacker.takeDamage(reprisalDmg, true, this.grid);
             if (canSeeMonster(this.player, this.grid, attacker)) {
                 armor.runicKnown = true;
                 logger.log(
@@ -7005,8 +7184,15 @@ export class Game {
     private resolvePoisonDamage(entity: Player | Monster): void {
         if (entity.hp <= 0 || !entity.hasStatus('poisoned')) return;
         if (entity === this.player) this.poisonedDuringTurn = true;
-        if (!entity.canBePoisoned()) return;
-        entity.takeDamage(Math.max(1, entity.poisonAmount), true, this.grid);
+        if (!entity.canBePoisoned()) {
+            if (this.extensionRuntime) this.extensionRuntime.causality.clearStatus(entity.id, 'poisoned');
+            return;
+        }
+        if (this.extensionRuntime) {
+            const effects = this.extensionRuntime.causality;
+            effects.withOrigin(effects.statusOrigin(entity.id, 'poisoned'),
+                () => entity.takeDamage(Math.max(1, entity.poisonAmount), true, this.grid, undefined, 'poison'));
+        } else entity.takeDamage(Math.max(1, entity.poisonAmount), true, this.grid);
         if (entity === this.player) {
             this.lastDamageSource = 'poison';
         } else if (entity.hp <= 0) {
@@ -7336,6 +7522,11 @@ export class Game {
      * 命中文案——补专用文案需新增 zh_CN.json 键，在本轮文件边界外（见报告）。
      */
     private resolvePlayerMeleeAttackOn(target: Monster, lungeAttack = false): boolean {
+        if (this.extensionRuntime && this.extensionRuntime.causality.current?.kind !== 'melee') {
+            const effects = this.extensionRuntime.causality;
+            return effects.withOrigin(effects.create('melee', this.player.id, this.player.id, `player:${this.player.id}`),
+                () => this.resolvePlayerMeleeAttackOn(target, lungeAttack));
+        }
         const res = CombatSystem.attack(this.player, target, { grid: this.grid, lungeAttack });
         if (this.player.hasStatus('invisible')) {
             this.player.setStatusDuration('invisible', 0);
@@ -7537,6 +7728,11 @@ export class Game {
     // 对类型检查器不可见）。调用方仍按项目既有约定用 `(game as any)` 转接，
     // 这里只是把可见性开放到匹配实际调用面。
     public processStaggerHit(attacker: Creature, defender: Creature): void {
+        if (this.extensionRuntime && this.extensionRuntime.causality.current?.kind !== 'displacement') {
+            const effects = this.extensionRuntime.causality;
+            const origin = effects.create('displacement', attacker.id, attacker.id, attacker.extensionHooks?.partyId(attacker) ?? null);
+            return effects.withImmediateTerrain(origin, () => this.processStaggerHit(attacker, defender));
+        }
         if (defender instanceof Monster &&
             (defender.isInvulnerable() || defender.hasBehavior('MONST_IMMOBILE') ||
                 defender.hasBehavior('MONST_INANIMATE') || defender.isCaged)) {
@@ -7891,6 +8087,7 @@ export class Game {
      *      teleport(&player, INVALID_POS, true)）。
      */
     private playerFalls(): void {
+        const fallOrigin = this.extensionRuntime?.causality.consumeDisplacement(this.player.id) ?? null;
         const px = this.player.loc.x;
         const py = this.player.loc.y;
 
@@ -7939,7 +8136,9 @@ export class Game {
                     damage = Math.floor(damage / 2); // CE :1157 damage /= 2（浅水/沼减半）
                 }
                 logger.log(i18next.t('fall.injured', { defaultValue: 'You are injured by the fall.' }), '#ff6666');
-                this.player.takeDamage(damage, false, this.grid);
+                if (this.extensionRuntime) this.extensionRuntime.causality.withOrigin(fallOrigin,
+                    () => this.player.takeDamage(damage, false, this.grid, undefined, 'physical'));
+                else this.player.takeDamage(damage, false, this.grid);
                 this.disturbed = true;
                 if (this.player.hp <= 0) {
                     // CE :1161-1163 killCreature + gameOver("Killed by a fall")
@@ -7976,6 +8175,7 @@ export class Game {
             if (m.hp <= 0 || fellOut.has(m)) continue;
             if (!m.falling && !this.creatureShouldFall(m)) continue;
             m.falling = true;
+            const fallOrigin = this.extensionRuntime?.causality.consumeDisplacement(m.id) ?? null;
 
             const loc = this.grid.getCell(m.loc.x, m.loc.y);
             if (loc?.isVisible) {
@@ -7987,12 +8187,15 @@ export class Game {
             }
 
             if (m.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')) {
+                if (this.extensionRuntime) this.extensionRuntime.causality.terminal(m.id, fallOrigin);
                 (m as unknown as { die(): void }).die(); // CE :1553-1556
             } else {
                 // CE :1560 inflictDamage(..., false): existing immunity gate, then shield.
                 let died = false;
                 if (!m.isInvulnerable()) {
-                    m.takeDamage(rng.randClumpedRange(6, 12, 2), false, this.grid);
+                    if (this.extensionRuntime) this.extensionRuntime.causality.withOrigin(fallOrigin,
+                        () => m.takeDamage(rng.randClumpedRange(6, 12, 2), false, this.grid, undefined, 'physical'));
+                    else m.takeDamage(rng.randClumpedRange(6, 12, 2), false, this.grid);
                     if (m.hp <= 0) died = true;
                 }
                 if (!died) {
@@ -8219,6 +8422,8 @@ export class Game {
      * physical removal and purgatory. Reentrant death DFs cannot kill twice. */
     public killMonster(m: Monster, administrative = false): void {
         if (m.deathProcessed || dyingMonsters.has(m)) return;
+        const death = this.extensionRuntime?.captureDeath(m, administrative,
+            administrative ? null : this.extensionRuntime.causality.deathOrigin(m.id));
         dyingMonsters.add(m); // MB_IS_DYING, before item placement/DF callbacks
         m.hp = 0;
         if (administrative) {
@@ -8227,7 +8432,11 @@ export class Game {
             m.carriedMonster = null;
         } else {
             this.makeMonsterDropItem(m);
-            this.triggerDeathFeatures(m);
+            if (this.extensionRuntime) {
+                const cause = this.extensionRuntime.causality;
+                const origin = cause.create('death-effect', m.id, m.id, m.isAlly ? `player:${this.player.id}` : null);
+                cause.withOrigin(origin, () => cause.withImmediateTerrain(origin, () => this.triggerDeathFeatures(m)));
+            } else this.triggerDeathFeatures(m);
         }
         if (!administrative && m.isAlly && !this.canSeeMonsterAtDeath(m)
             && (!m.hasBehavior('MONST_INANIMATE') || (monsterData as MonsterData[])
@@ -8237,7 +8446,7 @@ export class Game {
         }
         m.deathProcessed = true; // MB_HAS_DIED / occupancy removal
         if (this.extensionRuntime) this.extensionRuntime.emit('kill', {
-            creature: creatureView(m, this.player.id), sourceId: this.extensionRuntime.sourceId, administrative,
+            creature: creatureView(m, this.player.id), sourceId: this.extensionRuntime.sourceId, administrative, origin: death!.origin,
         });
         if (m.isDormant) {
             const cell = this.grid.getCell(m.x, m.y);
@@ -9262,6 +9471,7 @@ export class Game {
 
     private setBurningDuration(entity: Player | Monster | Creature, turns: number): void {
         const durations = (entity.statusDurations as unknown) as Record<string, number>;
+        if (this.extensionRuntime) this.extensionRuntime.causality.statusChanged(entity.id, 'burning', durations.burning ?? 0, turns);
         if (turns > 0) {
             durations['burning'] = turns;
         } else {
@@ -9342,7 +9552,12 @@ export class Game {
         const damage = rng.randRange(1, 3); // CE rand_range(1,3)，免疫者照掷
         if (!entity.hasStatus('immune_fire')
             && !(entity !== this.player && (entity as Monster).isInvulnerable())) {
-            if (entity instanceof Monster) entity.takeDamage(damage, true, this.grid);
+            if (this.extensionRuntime) {
+                const effects = this.extensionRuntime.causality;
+                effects.withOrigin(effects.statusOrigin(entity.id, 'burning'),
+                    () => entity.takeDamage(damage, true, this.grid, undefined, 'fire'));
+                if (!(entity instanceof Monster)) this.disturbed = true;
+            } else if (entity instanceof Monster) entity.takeDamage(damage, true, this.grid);
             else { entity.takeDamage(damage, true, this.grid); this.disturbed = true; } // CE burning bypasses shields.
             if (entity === this.player) {
                 this.lastDamageSource = 'fire';
@@ -9406,6 +9621,10 @@ export class Game {
      * 返回是否实际结算了一次伤害（测试与调用方判据）。
      */
     private resolveExplosionDamage(entity: Player | Monster): boolean {
+        if (this.extensionRuntime && this.extensionRuntime.causality.current !== this.extensionRuntime.causality.terrainOrigin) {
+            const effects = this.extensionRuntime.causality;
+            return effects.withOrigin(effects.terrainOrigin, () => this.resolveExplosionDamage(entity));
+        }
         if (entity.hp <= 0 || isSubmerged(entity)) return false;
         const x = entity.loc.x;
         const y = entity.loc.y;
@@ -9519,7 +9738,12 @@ export class Game {
         }
     }
 
-    private applyEnvironmentalEffects(instantTarget?: Creature, deferPlayerNausea = false) {
+    private applyEnvironmentalEffects(instantTarget?: Creature, deferPlayerNausea = false): void {
+        // Terrain never inherits an attack. Only the immediate lethal leaves below
+        // consult the separately bounded displacement/death-explosion evidence.
+        if (this.extensionRuntime && this.extensionRuntime.causality.current !== null) {
+            return this.extensionRuntime.causality.withOrigin(null, () => this.applyEnvironmentalEffects(instantTarget, deferPlayerNausea));
+        }
         const checkEntity = (entity: any, name: string) => {
             if (entity.hp <= 0) return;
             const x = entity.loc.x;
@@ -9535,6 +9759,9 @@ export class Game {
             //（"handled at end of turn"）。结算点在 playerTurnEnded 顶部与
             // 客观块的 monstersFall。
             if (this.creatureShouldFall(entity)) {
+                if (this.extensionRuntime && instantTarget && this.extensionRuntime.causality.terrainOrigin?.kind === 'displacement') {
+                    this.extensionRuntime.causality.markDisplacement(entity.id);
+                }
                 if (entity === this.player) {
                     this.playerFalling = true;
                     return;
@@ -9559,6 +9786,7 @@ export class Game {
                 // CE 条款里的 T_ENTANGLES|T_OBSTRUCTS_PASSABILITY 与 TM_EXTINGUISHES_FIRE
                 // 两个地形条件对纯岩浆 tile 恒假（Globals.c:420 LAVA 无这些旗标），
                 // web 按地形类型分支即等价。
+                if (this.extensionRuntime) this.extensionRuntime.causality.terminal(entity.id, this.extensionRuntime.causality.terrainOrigin);
                 if (entity === this.player) {
                     this.lastDamageSource = '';
                     logger.log(i18next.t('env.player_incinerated', { defaultValue: 'You are incinerated by the lava!' }), '#ff4400', { acknowledge: true });
@@ -10015,6 +10243,7 @@ export class Game {
         candidate.deathProcessed = false;
         candidate.deathEffectTriggered = false;
         candidate.falling = false;
+        if (this.extensionRuntime) this.extensionRuntime.causality.clearCreature(candidate.id);
         if (!candidate.hasBehavior('MONST_FIERY')) (candidate.statusDurations as Record<string, number>).burning = 0;
         candidate.setStatusDuration('discordant', 0);
         candidate.heal(100, true);
@@ -10706,7 +10935,11 @@ export class Game {
         target.loc.x = destination.x;
         target.loc.y = destination.y;
         this.needsRender = true;
-        this.applyEnvironmentalEffects(target);
+        if (this.extensionRuntime) {
+            const effects = this.extensionRuntime.causality, source = effects.current;
+            const origin = source ? effects.create('displacement', source.actorId, source.creditActorId, source.creditPartyId) : null;
+            effects.withImmediateTerrain(origin, () => this.applyEnvironmentalEffects(target));
+        } else this.applyEnvironmentalEffects(target);
         const pickUp = () => {
             if (target === this.player && target.hp > 0 && !this.isGameOver) this.pickUpItemAfterDisplacement();
         };
@@ -11246,6 +11479,10 @@ export class Game {
     public triggerGameOver(won: boolean, reason?: string, superVictory: boolean = false) {
         if (this.isGameOver) return;
         this.isGameOver = true;
+        if (this.extensionRuntime && !won) {
+            const fact = this.extensionRuntime.captureDeath(this.player, false, this.extensionRuntime.causality.deathOrigin(this.player.id));
+            this.extensionRuntime.emit('playerDied', fact);
+        }
         this.gameOverWon = won;
         this.gameOverSuperVictory = won && superVictory;
         const deathReason = reason || i18next.t('death.unknown', { defaultValue: 'Killed by unknown causes.' });

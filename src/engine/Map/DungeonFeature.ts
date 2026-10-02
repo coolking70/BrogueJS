@@ -837,6 +837,27 @@ export function setAllyResurrector(grid: Grid, fn: ((origin: Pos) => boolean) | 
     else allyResurrectors.delete(grid);
 }
 
+/** Extension-only generation rollback must also restore detached cached grids'
+ * session bindings and once-per-level descriptions. Active DF call scopes are
+ * independently restored by spawnDungeonFeature's existing finally block. */
+export function checkpointDungeonFeatureState(grids: readonly Grid[]): () => void {
+    const states = [...new Set(grids)].map(grid => ({ grid,
+        effects: featureEffects.get(grid), awaken: dormantAwakeners.get(grid), resurrect: allyResurrectors.get(grid),
+        messages: displayedMessages.get(grid), seen: [...(displayedMessages.get(grid) ?? [])],
+    }));
+    return () => {
+        for (const state of states) {
+            setDungeonFeatureEffects(state.grid, state.effects ?? null);
+            setDormantAwakener(state.grid, state.awaken ?? null);
+            setAllyResurrector(state.grid, state.resurrect ?? null);
+            if (state.messages) {
+                state.messages.clear(); state.seen.forEach(message => state.messages!.add(message));
+                displayedMessages.set(state.grid, state.messages);
+            } else displayedMessages.delete(state.grid);
+        }
+    };
+}
+
 export interface SpawnFeatureResult {
     /** CE 返回值：false 仅当被连通性否决；"因优先级一格没建"仍算成功
      *  （CE :3410 注释）。 */

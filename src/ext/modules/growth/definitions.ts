@@ -1,0 +1,24 @@
+import data from './definitions.json';
+import { extensionDataFingerprint } from '../../fingerprint';
+import { validateGrowthDefinitionPack, type GrowthValidationOptions } from './schema';
+import type { GrowthDefinitionPack, GrowthPackIdentity } from './types';
+
+export const GROWTH_VERSION = '1.0.0';
+/** Local content identity is recorded with the manifest; same-version edits still invalidate old inputs. */
+export function getGrowthPackIdentity(): GrowthPackIdentity {
+    return Object.freeze({ schema: 1, version: GROWTH_VERSION, fingerprint: extensionDataFingerprint(data) });
+}
+export type DeepReadonly<T> = T extends readonly (infer U)[] ? readonly DeepReadonly<U>[]
+    : T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } : T;
+function freeze<T>(value: T): DeepReadonly<T> {
+    if (value && typeof value === 'object') { Object.values(value).forEach(child => freeze(child)); Object.freeze(value); }
+    return value as DeepReadonly<T>;
+}
+/** Validate before cloning; never return a mutable alias to caller-provided configuration. */
+export function parseGrowthDefinitionPack(value: unknown, options: GrowthValidationOptions): DeepReadonly<GrowthDefinitionPack> {
+    validateGrowthDefinitionPack(value, options);
+    return freeze(structuredClone(value));
+}
+export function loadGrowthDefinitionPack(options: Omit<GrowthValidationOptions, 'moduleVersion'>): DeepReadonly<GrowthDefinitionPack> {
+    return parseGrowthDefinitionPack(data, { ...options, moduleVersion: GROWTH_VERSION });
+}

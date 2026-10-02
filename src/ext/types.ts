@@ -1,16 +1,21 @@
 import type { Creature } from '../entities/Creature';
 import type { AttackResult } from '../engine/Combat/Combat';
 import type { Item } from '../engine/Items/Item';
+import type { EffectCausality, EffectOrigin, DamageKind, CausalitySnapshot } from './causality';
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
-export interface ExtensionVersion { id: string; version: string }
-export interface ExtensionManifest { schema: 1; modules: ExtensionVersion[] }
+export interface ExtensionRulesIdentity { schema: number; version: string; fingerprint: string }
+export interface ExtensionVersion { id: string; version: string; rules?: ExtensionRulesIdentity }
+export interface ExtensionManifest { schema: 1; foundation?: 1; modules: ExtensionVersion[] }
 export interface ExtensionSnapshot {
     manifest: ExtensionManifest;
     modules: Record<string, Json>;
     /** Run-local creature ID -> module-qualified component ID -> JSON. */
     components: Record<string, Record<string, Json>>;
+    foundation: { version: 1; causality: CausalitySnapshot; deaths: Record<string, DeathFact> };
 }
+export interface DeathFact { creature: CreatureView; origin: EffectOrigin | null; administrative: boolean; }
+export interface GenerationToken { readonly label: string; }
 export type RuleSet = 'classic' | 'extended';
 export interface CreatureView {
     readonly id: number; readonly name: string; readonly hp: number; readonly maxHp: number;
@@ -24,8 +29,11 @@ export interface HookEvents {
     playerTurnEnded: { turn: number };
     beforeAttack: { attacker: CreatureView; defender: CreatureView };
     afterAttack: { attacker: CreatureView; defender: CreatureView; result: Readonly<AttackResult> };
-    damage: { creature: CreatureView; amount: number; hpBefore: number; sourceId: number | null };
-    kill: { creature: CreatureView; sourceId: number | null; administrative: boolean };
+    damage: { creature: CreatureView; amount: number; hpBefore: number; sourceId: number | null; origin?: EffectOrigin | null; damageKind?: DamageKind; hpLost?: number };
+    kill: { creature: CreatureView; sourceId: number | null; administrative: boolean; origin?: EffectOrigin | null };
+    playerDied: DeathFact;
+    generationCommitted: { label: string; creatureIds: number[] };
+    generationRolledBack: { label: string };
     itemPickedUp: { creature: CreatureView; item: ItemView };
     itemUsed: { creature: CreatureView; item: ItemView; operation: string };
     enteredLevel: { depth: number; firstVisit: boolean };
@@ -60,7 +68,9 @@ export interface ExtensionModule extends ExtensionVersion {
 export interface CreatureExtensionHooks {
     beforeAttack(attacker: Creature, defender: Creature): void;
     afterAttack(attacker: Creature, defender: Creature, result?: AttackResult): void;
-    damage(creature: Creature, amount: number, hpBefore: number): void;
+    readonly causality: EffectCausality;
+    partyId(creature: Creature): string | null;
+    damage(creature: Creature, amount: number, hpBefore: number, damageKind?: DamageKind): void;
 }
 export function creatureView(creature: Creature, playerId: number): CreatureView {
     return Object.freeze({ id: creature.id, name: creature.name, hp: creature.hp, maxHp: creature.maxHp,

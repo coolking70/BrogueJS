@@ -39,6 +39,46 @@ const HORDE_MACHINE_ONLY_FLAGS: readonly string[] = [
 ];
 const HORDE_POPULATE_FORBIDDEN_FLAGS: readonly string[] = ['HORDE_IS_SUMMONED', ...HORDE_MACHINE_ONLY_FLAGS];
 
+/** Extension-only failure recovery at the generation boundary. Retain the live
+ * object graph rather than loading a save (which would retire the current run,
+ * replace its creatures, and cannot run during turn advancement). Every value
+ * remains the original object; only its own mutable data is checkpointed. Weak
+ * session associations are rebound by the caller. Engine RNG/ID allocators are
+ * deliberately not part of this checkpoint. Classic generation never calls it. */
+export function checkpointGenerationWorld(root: object, excluded: readonly object[]): () => void {
+    const seen = new Set<object>(excluded);
+    const restore: Array<() => void> = [];
+    const capture = (value: unknown): void => {
+        if (!value || typeof value !== 'object' || seen.has(value) || Object.isFrozen(value)) return;
+        seen.add(value);
+        if (value instanceof WeakMap || value instanceof WeakSet) return;
+        if (ArrayBuffer.isView(value)) {
+            const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+            const saved = bytes.slice();
+            restore.push(() => { bytes.set(saved); });
+        } else if (value instanceof Map) {
+            const entries = [...value];
+            restore.push(() => { value.clear(); for (const [key, entry] of entries) value.set(key, entry); });
+            for (const [key, entry] of entries) { capture(key); capture(entry); }
+        } else if (value instanceof Set) {
+            const entries = [...value];
+            restore.push(() => { value.clear(); for (const entry of entries) value.add(entry); });
+            entries.forEach(capture);
+        } else {
+            const descriptors = Object.getOwnPropertyDescriptors(value);
+            restore.push(() => {
+                for (const key of Reflect.ownKeys(value)) {
+                    if (!Object.prototype.hasOwnProperty.call(descriptors, key)) Reflect.deleteProperty(value, key);
+                }
+                Object.defineProperties(value, descriptors);
+            });
+            for (const descriptor of Object.values(descriptors)) if ('value' in descriptor) capture(descriptor.value);
+        }
+    };
+    capture(root);
+    return () => { for (const apply of restore) apply(); };
+}
+
 /** CE Monsters.c:860-862: build the accompanying camp before creating the
  * leader. A failed machine rolls back its terrain/entities; the horde still
  * spawns. The existing engine transaction also covers recursive products. */
@@ -114,6 +154,7 @@ export function createMachineRuntime(ports: GenerationPorts, depth: number): Mac
                 item.entity.loc = {...bearer.loc};
             },
             checkpoint: () => {
+                const transaction = ports.generationTransactions?.begin('blueprint');
                 const start = created.length;
                 const previous = new Map(items);
                 const floor = new Set(ports.items);
@@ -121,7 +162,7 @@ export function createMachineRuntime(ports: GenerationPorts, depth: number): Mac
                 const borrowed = [...items.values()].map(item => ({item, loc: {...item.loc},
                     keyLoc: item.keyLoc?.map(k => ({...k, loc: {...k.loc}})), flags: item.flags ? [...item.flags] : undefined,
                     originDepth: item.originDepth, maxChargesKnown: item.maxChargesKnown}));
-                return () => {
+                const abort: ReturnType<MachineEntityRuntime['checkpoint']> = () => {
                     const discarded = new Set([...items].filter(([id]) => !previous.has(id)).map(([, item]) => item));
                     ports.items = ports.items.filter(item => !discarded.has(item) && (!itemsHas(item) || floor.has(item)));
                     for (const mon of [...ports.monsters, ...ports.dormantMonsters]) {
@@ -135,7 +176,10 @@ export function createMachineRuntime(ports: GenerationPorts, depth: number): Mac
                     for (const [mon, item] of carriers) if (mon.hp > 0 && (ports.monsters.includes(mon) || ports.dormantMonsters.includes(mon))) mon.carriedItem = item;
                     for (let x = 0; x < ports.grid.width; x++) for (let y = 0; y < ports.grid.height; y++) ports.grid.getCell(x, y)!.hasDormantMonster = false;
                     for (const mon of ports.dormantMonsters) ports.grid.getCell(mon.x, mon.y)!.hasDormantMonster = true;
+                    transaction?.rollback();
                 };
+                if (transaction) abort.commit = transaction.commit;
+                return abort;
             },
             hasItem: (x, y) => ports.items.some(i => i.x === x && i.y === y),
             hasMonster: (x, y) => ports.monsters.some(m => m.hp > 0 && m.x === x && m.y === y),
@@ -257,19 +301,27 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
                 let architect!: Architect;
                 let stairsPlaced = false;
                 for (let attempt = 0; attempt < 50; attempt++) {
-                    ports.monsters = [];
-                    ports.dormantMonsters = [];
-                    ports.items = [];
-                    ports.grid = new Grid(DCOLS, DROWS);
-                    ports.player.loc = {x: 0, y: 0}; // CE removes the player during digDungeon.
-                    ports.pendingCaughtFireCells = [];
-                    ports.bindDormantAwakener(); // Later machine DFs see already-created entities.
-                    architect = new Architect(ports.grid, ports.createMachineRuntime(ports.depth));
-                    ports.grid = architect.generateLevel(ports.depth);
-                    if (ports.placeStairs(architect.machineResults)) {
-                        stairsPlaced = true;
-                        break;
+                    const transaction = ports.generationTransactions?.begin('floor-attempt');
+                    try {
+                        ports.monsters = [];
+                        ports.dormantMonsters = [];
+                        ports.items = [];
+                        ports.grid = new Grid(DCOLS, DROWS);
+                        ports.player.loc = {x: 0, y: 0}; // CE removes the player during digDungeon.
+                        ports.pendingCaughtFireCells = [];
+                        ports.bindDormantAwakener(); // Later machine DFs see already-created entities.
+                        architect = new Architect(ports.grid, ports.createMachineRuntime(ports.depth));
+                        ports.grid = architect.generateLevel(ports.depth);
+                        if (ports.placeStairs(architect.machineResults)) {
+                            transaction?.commit();
+                            stairsPlaced = true;
+                            break;
+                        }
+                    } catch (error) {
+                        transaction?.rollback();
+                        throw error;
                     }
+                    transaction?.rollback();
                 }
                 if (!stairsPlaced) throw new Error(`Failed to place stairs at depth ${ports.depth} after 50 attempts`);
                 ports.environment = new EnvironmentManager(ports.grid);

@@ -32,3 +32,13 @@
 ## 当前审阅入口
 
 阶段 0 已交付，门禁精简原文见 [evidence/summary.md](evidence/summary.md)。阶段 1 第一阶段仅设计：[phase1-growth.md](phase1-growth.md)。确认设计后才分小步实施，每小步完成再次停下；不因设计中的推荐而自动开始代码。原始日志/缓存/全量哈希/中断记录不再提交。
+
+
+## 阶段 1 当前交付
+
+- [确认后的成长设计与分步门禁](phase1-growth.md)
+- [1a0 技术底座与数据合同报告](phase1a0.report.md)
+- [完整成长配置字段说明](growth-config.md)
+- [12 技能 / 4 职业 / 4 血统 / 4 信仰表达审计](growth-expression-audit.md)
+
+1a0 不启用经验或技能玩法；交付后等待维护者确认，再进入 1a。所有玩法 A 数值只是可调整样例，技术 D02/D04/D16/D17/D18/D19/D20/D22 固定按 A。

@@ -90,6 +90,27 @@ export class Logger {
         this.flushCombat();
         heardCombat.delete(this);
     }
+    /** Extension generation needs an in-memory rollback, including presentation
+     * and pending combat. Unlike getState(), observing this checkpoint must not
+     * flush messages, disturb the player or consume acknowledgments. */
+    public checkpoint(): () => void {
+        const messages = this.messages.map(message => ({ ...message }));
+        const nextId = this.nextId, turn = this.turn, blockCombatText = this.blockCombatText;
+        const combat = combatBuffers.get(this)?.map(message => ({ ...message }));
+        const heard = heardCombat.has(this), display = presentations.get(this);
+        const pending = display?.pending.map(message => ({ ...message }));
+        const disturb = disturbanceCallbacks.get(this);
+        return () => {
+            this.messages = messages.map(message => ({ ...message }));
+            this.nextId = nextId; this.turn = turn; this.blockCombatText = blockCombatText;
+            if (combat) combatBuffers.set(this, combat.map(message => ({ ...message })));
+            else combatBuffers.delete(this);
+            if (heard) heardCombat.add(this); else heardCombat.delete(this);
+            if (display) presentations.set(this, { enabled: display.enabled, pending: pending!.map(message => ({ ...message })) });
+            else presentations.delete(this);
+            if (disturb) disturbanceCallbacks.set(this, disturb); else disturbanceCallbacks.delete(this);
+        };
+    }
     public getState() {
         this.flushCombat();
         return { messages: this.messages.map(m => ({ ...m })), nextId: this.nextId, turn: this.turn };

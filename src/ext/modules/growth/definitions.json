@@ -1,0 +1,2541 @@
+{
+  "schema": 1,
+  "moduleId": "growth",
+  "moduleVersion": "1.0.0",
+  "rulesVersion": "1.0.0",
+  "config": {
+    "experience": {
+      "sources": {
+        "kills": true,
+        "firstVisits": true,
+        "identification": true,
+        "story": false
+      },
+      "kills": {
+        "base": 6,
+        "perThreatRank": 2,
+        "threatRank": {
+          "min": 1,
+          "max": 20
+        },
+        "eligibleCreationReasons": [
+          "natural"
+        ],
+        "requireInitiallyHostile": true,
+        "requireHostileAtDeath": true,
+        "monsterQuotes": [
+          {
+            "monsterId": "rat",
+            "threatRank": 1,
+            "amount": null
+          },
+          {
+            "monsterId": "kobold",
+            "threatRank": 1,
+            "amount": null
+          },
+          {
+            "monsterId": "jackal",
+            "threatRank": 2,
+            "amount": null
+          },
+          {
+            "monsterId": "eel",
+            "threatRank": 2,
+            "amount": null
+          },
+          {
+            "monsterId": "monkey",
+            "threatRank": 2,
+            "amount": null
+          },
+          {
+            "monsterId": "bloat",
+            "threatRank": 2,
+            "amount": null
+          },
+          {
+            "monsterId": "pit_bloat",
+            "threatRank": 5,
+            "amount": null
+          },
+          {
+            "monsterId": "goblin",
+            "threatRank": 3,
+            "amount": null
+          },
+          {
+            "monsterId": "goblin_conjurer",
+            "threatRank": 4,
+            "amount": null
+          },
+          {
+            "monsterId": "goblin_mystic",
+            "threatRank": 4,
+            "amount": null
+          },
+          {
+            "monsterId": "goblin_totem",
+            "threatRank": 4,
+            "amount": null
+          },
+          {
+            "monsterId": "pink_jelly",
+            "threatRank": 3,
+            "amount": null
+          },
+          {
+            "monsterId": "toad",
+            "threatRank": 3,
+            "amount": null
+          },
+          {
+            "monsterId": "vampire_bat",
+            "threatRank": 3,
+            "amount": null
+          },
+          {
+            "monsterId": "arrow_turret",
+            "threatRank": 4,
+            "amount": null
+          },
+          {
+            "monsterId": "acid_mound",
+            "threatRank": 3,
+            "amount": null
+          },
+          {
+            "monsterId": "centipede",
+            "threatRank": 4,
+            "amount": null
+          },
+          {
+            "monsterId": "ogre",
+            "threatRank": 5,
+            "amount": null
+          },
+          {
+            "monsterId": "bog_monster",
+            "threatRank": 6,
+            "amount": null
+          },
+          {
+            "monsterId": "ogre_totem",
+            "threatRank": 8,
+            "amount": null
+          },
+          {
+            "monsterId": "spider",
+            "threatRank": 4,
+            "amount": null
+          },
+          {
+            "monsterId": "spark_turret",
+            "threatRank": 6,
+            "amount": null
+          },
+          {
+            "monsterId": "wisp",
+            "threatRank": 4,
+            "amount": null
+          },
+          {
+            "monsterId": "wraith",
+            "threatRank": 7,
+            "amount": null
+          },
+          {
+            "monsterId": "zombie",
+            "threatRank": 5,
+            "amount": null
+          },
+          {
+            "monsterId": "troll",
+            "threatRank": 8,
+            "amount": null
+          },
+          {
+            "monsterId": "ogre_shaman",
+            "threatRank": 6,
+            "amount": null
+          },
+          {
+            "monsterId": "naga",
+            "threatRank": 8,
+            "amount": null
+          },
+          {
+            "monsterId": "salamander",
+            "threatRank": 7,
+            "amount": null
+          },
+          {
+            "monsterId": "explosive_bloat",
+            "threatRank": 6,
+            "amount": null
+          },
+          {
+            "monsterId": "dar_blademaster",
+            "threatRank": 9,
+            "amount": null
+          },
+          {
+            "monsterId": "dar_priestess",
+            "threatRank": 9,
+            "amount": null
+          },
+          {
+            "monsterId": "dar_battlemage",
+            "threatRank": 9,
+            "amount": null
+          },
+          {
+            "monsterId": "acidic_jelly",
+            "threatRank": 8,
+            "amount": null
+          },
+          {
+            "monsterId": "centaur",
+            "threatRank": 6,
+            "amount": null
+          },
+          {
+            "monsterId": "underworm",
+            "threatRank": 10,
+            "amount": null
+          },
+          {
+            "monsterId": "sentinel",
+            "threatRank": 6,
+            "amount": null
+          },
+          {
+            "monsterId": "dart_turret",
+            "threatRank": 4,
+            "amount": null
+          },
+          {
+            "monsterId": "kraken",
+            "threatRank": 12,
+            "amount": null
+          },
+          {
+            "monsterId": "lich",
+            "threatRank": 13,
+            "amount": null
+          },
+          {
+            "monsterId": "phylactery",
+            "threatRank": 13,
+            "amount": null
+          },
+          {
+            "monsterId": "pixie",
+            "threatRank": 8,
+            "amount": null
+          },
+          {
+            "monsterId": "phantom",
+            "threatRank": 10,
+            "amount": null
+          },
+          {
+            "monsterId": "flame_turret",
+            "threatRank": 7,
+            "amount": null
+          },
+          {
+            "monsterId": "imp",
+            "threatRank": 9,
+            "amount": null
+          },
+          {
+            "monsterId": "fury",
+            "threatRank": 11,
+            "amount": null
+          },
+          {
+            "monsterId": "revenant",
+            "threatRank": 14,
+            "amount": null
+          },
+          {
+            "monsterId": "tentacle_horror",
+            "threatRank": 13,
+            "amount": null
+          },
+          {
+            "monsterId": "golem",
+            "threatRank": 14,
+            "amount": null
+          },
+          {
+            "monsterId": "dragon",
+            "threatRank": 16,
+            "amount": null
+          },
+          {
+            "monsterId": "goblin_warlord",
+            "threatRank": 5,
+            "amount": null
+          },
+          {
+            "monsterId": "black_jelly",
+            "threatRank": 11,
+            "amount": null
+          },
+          {
+            "monsterId": "vampire",
+            "threatRank": 12,
+            "amount": null
+          },
+          {
+            "monsterId": "flamedancer",
+            "threatRank": 10,
+            "amount": null
+          },
+          {
+            "monsterId": "spectral_blade",
+            "threatRank": 1,
+            "amount": null
+          },
+          {
+            "monsterId": "spectral_sword",
+            "threatRank": 1,
+            "amount": null
+          },
+          {
+            "monsterId": "stone_guardian",
+            "threatRank": 14,
+            "amount": null
+          },
+          {
+            "monsterId": "winged_guardian",
+            "threatRank": 15,
+            "amount": null
+          },
+          {
+            "monsterId": "guardian_spirit",
+            "threatRank": 15,
+            "amount": null
+          },
+          {
+            "monsterId": "Warden_of_Yendor",
+            "threatRank": 20,
+            "amount": null
+          },
+          {
+            "monsterId": "eldritch_totem",
+            "threatRank": 13,
+            "amount": null
+          },
+          {
+            "monsterId": "mirrored_totem",
+            "threatRank": 14,
+            "amount": null
+          },
+          {
+            "monsterId": "unicorn",
+            "threatRank": 8,
+            "amount": null
+          },
+          {
+            "monsterId": "ifrit",
+            "threatRank": 12,
+            "amount": null
+          },
+          {
+            "monsterId": "phoenix",
+            "threatRank": 13,
+            "amount": null
+          },
+          {
+            "monsterId": "phoenix_egg",
+            "threatRank": 1,
+            "amount": null
+          },
+          {
+            "monsterId": "mangrove_dryad",
+            "threatRank": 9,
+            "amount": null
+          }
+        ]
+      },
+      "firstVisits": {
+        "minDepth": 2,
+        "maxDepth": 26,
+        "base": 20,
+        "perDepth": 5,
+        "cap": null
+      },
+      "identification": {
+        "perKind": 10,
+        "totalCap": 300,
+        "categories": [
+          "potion",
+          "scroll",
+          "wand",
+          "staff",
+          "ring",
+          "charm"
+        ]
+      },
+      "story": {
+        "rewards": []
+      },
+      "allySplit": {
+        "playerBasisPoints": 8000,
+        "remainder": "credited-actor",
+        "rounding": "floor"
+      }
+    },
+    "levels": {
+      "cap": 20,
+      "experience": {
+        "kind": "curve",
+        "base": 40,
+        "linear": 20,
+        "quadratic": 4
+      },
+      "attributePoints": {
+        "kind": "periodic",
+        "firstLevel": 2,
+        "every": 1,
+        "amount": 1
+      },
+      "skillPoints": {
+        "kind": "periodic",
+        "firstLevel": 2,
+        "every": 2,
+        "amount": 1
+      },
+      "maxHp": {
+        "grants": {
+          "kind": "periodic",
+          "firstLevel": 2,
+          "every": 2,
+          "amount": 1
+        },
+        "cap": 10
+      },
+      "recovery": {
+        "levelHp": "none",
+        "allocationHp": "none",
+        "levelFocus": "none",
+        "allocationFocus": "none",
+        "clearCooldownOnLevel": false,
+        "clearCooldownOnAllocation": false,
+        "creationHp": "full"
+      }
+    },
+    "attributes": [
+      {
+        "id": "growth.attribute.strength-training",
+        "nameKey": "ext.growth.attribute.strength-training.name",
+        "descriptionKey": "ext.growth.attribute.strength-training.description",
+        "min": 0,
+        "cap": 4,
+        "initial": 0,
+        "pointCost": 3,
+        "effects": [
+          {
+            "kind": "modifier",
+            "port": "strengthBonus",
+            "operation": "add",
+            "slot": null,
+            "magnitude": {
+              "source": {
+                "kind": "attribute",
+                "attributeId": "growth.attribute.strength-training"
+              },
+              "coefficient": 1,
+              "divisor": 1,
+              "rounding": "floor",
+              "min": 0,
+              "max": 4
+            },
+            "conditions": []
+          }
+        ]
+      },
+      {
+        "id": "growth.attribute.agility",
+        "nameKey": "ext.growth.attribute.agility.name",
+        "descriptionKey": "ext.growth.attribute.agility.description",
+        "min": 0,
+        "cap": 8,
+        "initial": 0,
+        "pointCost": 1,
+        "effects": [
+          {
+            "kind": "modifier",
+            "port": "hitChance",
+            "operation": "add",
+            "slot": null,
+            "magnitude": {
+              "source": {
+                "kind": "attribute",
+                "attributeId": "growth.attribute.agility"
+              },
+              "coefficient": 100,
+              "divisor": 1,
+              "rounding": "floor",
+              "min": 0,
+              "max": 800
+            },
+            "conditions": [
+              {
+                "kind": "role",
+                "value": "actor"
+              },
+              {
+                "kind": "attack-kind",
+                "values": [
+                  "melee",
+                  "thrown"
+                ]
+              },
+              {
+                "kind": "damage-kind",
+                "values": [
+                  "physical"
+                ]
+              },
+              {
+                "kind": "probability-roll",
+                "value": true
+              }
+            ]
+          },
+          {
+            "kind": "modifier",
+            "port": "hitChance",
+            "operation": "add",
+            "slot": null,
+            "magnitude": {
+              "source": {
+                "kind": "attribute",
+                "attributeId": "growth.attribute.agility"
+              },
+              "coefficient": -50,
+              "divisor": 1,
+              "rounding": "floor",
+              "min": -400,
+              "max": 0
+            },
+            "conditions": [
+              {
+                "kind": "role",
+                "value": "target"
+              },
+              {
+                "kind": "attack-kind",
+                "values": [
+                  "melee",
+                  "thrown"
+                ]
+              },
+              {
+                "kind": "damage-kind",
+                "values": [
+                  "physical"
+                ]
+              },
+              {
+                "kind": "probability-roll",
+                "value": true
+              }
+            ]
+          },
+          {
+            "kind": "modifier",
+            "port": "stealthRange",
+            "operation": "add",
+            "slot": null,
+            "magnitude": {
+              "source": {
+                "kind": "attribute",
+                "attributeId": "growth.attribute.agility"
+              },
+              "coefficient": -1,
+              "divisor": 3,
+              "rounding": "ceil",
+              "min": -2,
+              "max": 0
+            },
+            "conditions": []
+          }
+        ]
+      },
+      {
+        "id": "growth.attribute.constitution",
+        "nameKey": "ext.growth.attribute.constitution.name",
+        "descriptionKey": "ext.growth.attribute.constitution.description",
+        "min": 0,
+        "cap": 8,
+        "initial": 0,
+        "pointCost": 1,
+        "effects": [
+          {
+            "kind": "modifier",
+            "port": "maxHpBonus",
+            "operation": "add",
+            "slot": null,
+            "magnitude": {
+              "source": {
+                "kind": "attribute",
+                "attributeId": "growth.attribute.constitution"
+              },
+              "coefficient": 3,
+              "divisor": 1,
+              "rounding": "floor",
+              "min": 0,
+              "max": 24
+            },
+            "conditions": []
+          }
+        ]
+      },
+      {
+        "id": "growth.attribute.will",
+        "nameKey": "ext.growth.attribute.will.name",
+        "descriptionKey": "ext.growth.attribute.will.description",
+        "min": 0,
+        "cap": 8,
+        "initial": 0,
+        "pointCost": 1,
+        "effects": [
+          {
+            "kind": "modifier",
+            "port": "focusCapacity",
+            "operation": "add",
+            "slot": null,
+            "magnitude": {
+              "source": {
+                "kind": "attribute",
+                "attributeId": "growth.attribute.will"
+              },
+              "coefficient": 1,
+              "divisor": 2,
+              "rounding": "floor",
+              "min": 0,
+              "max": 4
+            },
+            "conditions": []
+          },
+          {
+            "kind": "modifier",
+            "port": "cooldownDuration",
+            "operation": "add",
+            "slot": null,
+            "magnitude": {
+              "source": {
+                "kind": "attribute",
+                "attributeId": "growth.attribute.will"
+              },
+              "coefficient": -1,
+              "divisor": 4,
+              "rounding": "ceil",
+              "min": -2,
+              "max": 0
+            },
+            "conditions": []
+          }
+        ]
+      },
+      {
+        "id": "growth.attribute.perception",
+        "nameKey": "ext.growth.attribute.perception.name",
+        "descriptionKey": "ext.growth.attribute.perception.description",
+        "min": 0,
+        "cap": 8,
+        "initial": 0,
+        "pointCost": 1,
+        "effects": [
+          {
+            "kind": "modifier",
+            "port": "searchStrength",
+            "operation": "add",
+            "slot": null,
+            "magnitude": {
+              "source": {
+                "kind": "attribute",
+                "attributeId": "growth.attribute.perception"
+              },
+              "coefficient": 2,
+              "divisor": 1,
+              "rounding": "floor",
+              "min": 0,
+              "max": 16
+            },
+            "conditions": []
+          }
+        ]
+      }
+    ],
+    "strengthTraining": {
+      "enabled": true,
+      "attributeId": "growth.attribute.strength-training",
+      "pointCost": 3,
+      "cap": 4
+    },
+    "respec": {
+      "enabled": false,
+      "cost": {
+        "resource": "gold",
+        "amount": 0
+      },
+      "refundBasisPoints": 10000,
+      "clearCooldowns": false
+    },
+    "skills": {
+      "activeSlots": 3,
+      "passiveSlots": 3,
+      "equipTime": "native-wait",
+      "lockMode": "soft",
+      "prerequisites": "all",
+      "equipPreservesCooldowns": true,
+      "equipPreservesFocus": true
+    },
+    "focus": {
+      "base": 8,
+      "min": 0,
+      "cap": 13,
+      "recoveryAmount": 1,
+      "recoveryInterval": 8,
+      "objectiveTicksPerBlock": 100,
+      "resetRemainderWhenFull": true
+    },
+    "rules": {
+      "budgets": [
+        {
+          "id": "growth.budget.hitchance",
+          "min": -10000,
+          "max": 10000
+        },
+        {
+          "id": "growth.budget.physical",
+          "min": -2500,
+          "max": 2000
+        },
+        {
+          "id": "growth.budget.stealthrange",
+          "min": -9007199254740991,
+          "max": 9007199254740991
+        },
+        {
+          "id": "growth.budget.searchstrength",
+          "min": 0,
+          "max": 40
+        },
+        {
+          "id": "growth.budget.strengthbonus",
+          "min": 0,
+          "max": 4
+        },
+        {
+          "id": "growth.budget.maxhpbonus",
+          "min": 0,
+          "max": 34
+        },
+        {
+          "id": "growth.budget.focuscapacity",
+          "min": -8,
+          "max": 5
+        },
+        {
+          "id": "growth.budget.focusrecoveryinterval",
+          "min": -7,
+          "max": 9007199254740991
+        },
+        {
+          "id": "growth.budget.cooldownduration",
+          "min": -9007199254740991,
+          "max": 9007199254740991
+        },
+        {
+          "id": "growth.budget.tag-duration",
+          "min": -9007199254740991,
+          "max": 9007199254740991
+        },
+        {
+          "id": "growth.budget.tag-intensity",
+          "min": -9007199254740991,
+          "max": 9007199254740991
+        },
+        {
+          "id": "growth.budget.tag-cooldown",
+          "min": -9007199254740991,
+          "max": 9007199254740991
+        }
+      ],
+      "ports": {
+        "hitChance": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.hitchance",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 500,
+            "max": 9500
+          },
+          "rounding": "floor",
+          "preserveZero": false,
+          "minimumPositive": null,
+          "minimumBaseRatio": null
+        },
+        "physicalDamage": {
+          "additiveMode": "base-basis-points",
+          "budgetId": "growth.budget.physical",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 0,
+            "max": 9007199254740991
+          },
+          "rounding": "floor",
+          "preserveZero": true,
+          "minimumPositive": 1,
+          "minimumBaseRatio": null
+        },
+        "receivedPhysicalDamage": {
+          "additiveMode": "base-basis-points",
+          "budgetId": "growth.budget.physical",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 0,
+            "max": 9007199254740991
+          },
+          "rounding": "floor",
+          "preserveZero": true,
+          "minimumPositive": 1,
+          "minimumBaseRatio": null
+        },
+        "stealthRange": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.stealthrange",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 1,
+            "max": 9007199254740991
+          },
+          "rounding": "floor",
+          "preserveZero": false,
+          "minimumPositive": null,
+          "minimumBaseRatio": null
+        },
+        "searchStrength": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.searchstrength",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 0,
+            "max": 9007199254740991
+          },
+          "rounding": "floor",
+          "preserveZero": false,
+          "minimumPositive": null,
+          "minimumBaseRatio": null
+        },
+        "strengthBonus": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.strengthbonus",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 0,
+            "max": 4
+          },
+          "rounding": "floor",
+          "preserveZero": false,
+          "minimumPositive": null,
+          "minimumBaseRatio": null
+        },
+        "maxHpBonus": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.maxhpbonus",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 0,
+            "max": 34
+          },
+          "rounding": "floor",
+          "preserveZero": false,
+          "minimumPositive": null,
+          "minimumBaseRatio": null
+        },
+        "focusCapacity": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.focuscapacity",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 0,
+            "max": 13
+          },
+          "rounding": "floor",
+          "preserveZero": false,
+          "minimumPositive": null,
+          "minimumBaseRatio": null
+        },
+        "focusRecoveryInterval": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.focusrecoveryinterval",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 1,
+            "max": 9007199254740991
+          },
+          "rounding": "floor",
+          "preserveZero": false,
+          "minimumPositive": null,
+          "minimumBaseRatio": null
+        },
+        "cooldownDuration": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.cooldownduration",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 0,
+            "max": 9007199254740991
+          },
+          "rounding": "ceil",
+          "preserveZero": true,
+          "minimumPositive": null,
+          "minimumBaseRatio": 0.75
+        }
+      },
+      "order": [
+        "add",
+        "multiply",
+        "global-clamp",
+        "round"
+      ],
+      "hitPrecedence": {
+        "guaranteedHit": "preserve",
+        "guaranteedMiss": "preserve",
+        "guaranteedRoll": "preserve-roll"
+      },
+      "taggedProperties": {
+        "duration": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.tag-duration",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 1,
+            "max": 9007199254740991
+          },
+          "rounding": "floor",
+          "preserveZero": false,
+          "minimumPositive": null,
+          "minimumBaseRatio": null
+        },
+        "intensity": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.tag-intensity",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": -9007199254740991,
+            "max": 9007199254740991
+          },
+          "rounding": "floor",
+          "preserveZero": false,
+          "minimumPositive": null,
+          "minimumBaseRatio": null
+        },
+        "cooldown": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.tag-cooldown",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 0,
+            "max": 9007199254740991
+          },
+          "rounding": "floor",
+          "preserveZero": false,
+          "minimumPositive": null,
+          "minimumBaseRatio": null
+        }
+      }
+    },
+    "identities": {
+      "enabled": {
+        "professions": true,
+        "lineages": true,
+        "faiths": true
+      },
+      "defaults": {
+        "professionId": "growth.profession.guardian",
+        "lineageId": "growth.lineage.human",
+        "faithId": "growth.faith.unaffiliated"
+      },
+      "budgets": {
+        "profession": 2,
+        "lineage": 1,
+        "faith": 0
+      },
+      "giftLimits": {
+        "active": 1,
+        "passive": 1
+      },
+      "changeFaith": false
+    },
+    "itemGrowth": {
+      "rules": [
+        {
+          "itemId": "potion_of_strength",
+          "nativeEffect": "preserve",
+          "destination": "strengthBonus",
+          "conversion": 1,
+          "perItemCap": null,
+          "runCap": null
+        },
+        {
+          "itemId": "potion_of_life",
+          "nativeEffect": "preserve",
+          "destination": "maxHpBonus",
+          "conversion": 1,
+          "perItemCap": null,
+          "runCap": null
+        },
+        {
+          "itemId": "scroll_of_enchantment",
+          "nativeEffect": "preserve",
+          "destination": "enchantment",
+          "conversion": 1,
+          "perItemCap": null,
+          "runCap": null
+        }
+      ]
+    },
+    "monsters": {
+      "enabled": true,
+      "defaultTemplateId": "growth.template.neutral",
+      "alliesGrow": true,
+      "clone": {
+        "inheritBuild": true,
+        "inheritUnspentPoints": false,
+        "rewards": false,
+        "progression": false
+      },
+      "templates": [
+        {
+          "id": "growth.template.neutral",
+          "nameKey": "ext.growth.template.neutral.name",
+          "descriptionKey": "ext.growth.template.neutral.description",
+          "level": 1,
+          "experience": 0,
+          "attributes": [],
+          "professionId": null,
+          "lineageId": null,
+          "faithId": null,
+          "skills": [],
+          "activeSlots": [],
+          "passiveSlots": [],
+          "unspentAttributePoints": 0,
+          "unspentSkillPoints": 0
+        }
+      ],
+      "depthTemplates": []
+    },
+    "attributeTotalCap": 36
+  },
+  "definitions": [
+    {
+      "id": "growth.skill.steady-hand",
+      "nameKey": "ext.growth.skill.steady-hand.name",
+      "descriptionKey": "ext.growth.skill.steady-hand.description",
+      "kind": "skill",
+      "mode": "passive",
+      "tags": [
+        "growth.tag.steady-hand"
+      ],
+      "cost": 1,
+      "prerequisites": [
+        {
+          "kind": "attribute",
+          "attributeId": "growth.attribute.agility",
+          "min": 2
+        }
+      ],
+      "lock": {
+        "mode": "none",
+        "professionIds": [],
+        "lineageIds": [],
+        "faithIds": []
+      },
+      "focusCost": 0,
+      "cooldown": 0,
+      "action": null,
+      "effects": [
+        {
+          "kind": "modifier",
+          "port": "hitChance",
+          "operation": "add",
+          "slot": null,
+          "magnitude": {
+            "source": {
+              "kind": "constant"
+            },
+            "coefficient": 500,
+            "divisor": 1,
+            "rounding": "floor",
+            "min": 500,
+            "max": 500
+          },
+          "conditions": [
+            {
+              "kind": "role",
+              "value": "actor"
+            },
+            {
+              "kind": "attack-kind",
+              "values": [
+                "thrown"
+              ]
+            },
+            {
+              "kind": "probability-roll",
+              "value": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "growth.skill.close-guard",
+      "nameKey": "ext.growth.skill.close-guard.name",
+      "descriptionKey": "ext.growth.skill.close-guard.description",
+      "kind": "skill",
+      "mode": "passive",
+      "tags": [
+        "growth.tag.close-guard"
+      ],
+      "cost": 1,
+      "prerequisites": [
+        {
+          "kind": "attribute",
+          "attributeId": "growth.attribute.constitution",
+          "min": 2
+        }
+      ],
+      "lock": {
+        "mode": "none",
+        "professionIds": [],
+        "lineageIds": [],
+        "faithIds": []
+      },
+      "focusCost": 0,
+      "cooldown": 0,
+      "action": null,
+      "effects": [
+        {
+          "kind": "modifier",
+          "port": "hitChance",
+          "operation": "add",
+          "slot": null,
+          "magnitude": {
+            "source": {
+              "kind": "constant"
+            },
+            "coefficient": -300,
+            "divisor": 1,
+            "rounding": "floor",
+            "min": -300,
+            "max": -300
+          },
+          "conditions": [
+            {
+              "kind": "role",
+              "value": "target"
+            },
+            {
+              "kind": "attack-kind",
+              "values": [
+                "melee",
+                "thrown"
+              ]
+            },
+            {
+              "kind": "damage-kind",
+              "values": [
+                "physical"
+              ]
+            },
+            {
+              "kind": "probability-roll",
+              "value": true
+            },
+            {
+              "kind": "adjacent",
+              "value": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "growth.skill.careful-step",
+      "nameKey": "ext.growth.skill.careful-step.name",
+      "descriptionKey": "ext.growth.skill.careful-step.description",
+      "kind": "skill",
+      "mode": "passive",
+      "tags": [
+        "growth.tag.careful-step"
+      ],
+      "cost": 1,
+      "prerequisites": [
+        {
+          "kind": "attribute",
+          "attributeId": "growth.attribute.agility",
+          "min": 2
+        }
+      ],
+      "lock": {
+        "mode": "none",
+        "professionIds": [],
+        "lineageIds": [],
+        "faithIds": []
+      },
+      "focusCost": 0,
+      "cooldown": 0,
+      "action": null,
+      "effects": [
+        {
+          "kind": "modifier",
+          "port": "stealthRange",
+          "operation": "add",
+          "slot": null,
+          "magnitude": {
+            "source": {
+              "kind": "constant"
+            },
+            "coefficient": -1,
+            "divisor": 1,
+            "rounding": "floor",
+            "min": -1,
+            "max": -1
+          },
+          "conditions": []
+        }
+      ]
+    },
+    {
+      "id": "growth.skill.methodical",
+      "nameKey": "ext.growth.skill.methodical.name",
+      "descriptionKey": "ext.growth.skill.methodical.description",
+      "kind": "skill",
+      "mode": "passive",
+      "tags": [
+        "growth.tag.methodical"
+      ],
+      "cost": 1,
+      "prerequisites": [
+        {
+          "kind": "attribute",
+          "attributeId": "growth.attribute.perception",
+          "min": 2
+        }
+      ],
+      "lock": {
+        "mode": "none",
+        "professionIds": [],
+        "lineageIds": [],
+        "faithIds": []
+      },
+      "focusCost": 0,
+      "cooldown": 0,
+      "action": null,
+      "effects": [
+        {
+          "kind": "modifier",
+          "port": "searchStrength",
+          "operation": "add",
+          "slot": null,
+          "magnitude": {
+            "source": {
+              "kind": "constant"
+            },
+            "coefficient": 5,
+            "divisor": 1,
+            "rounding": "floor",
+            "min": 5,
+            "max": 5
+          },
+          "conditions": [
+            {
+              "kind": "search-mode",
+              "value": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "growth.skill.composure",
+      "nameKey": "ext.growth.skill.composure.name",
+      "descriptionKey": "ext.growth.skill.composure.description",
+      "kind": "skill",
+      "mode": "passive",
+      "tags": [
+        "growth.tag.composure"
+      ],
+      "cost": 1,
+      "prerequisites": [
+        {
+          "kind": "attribute",
+          "attributeId": "growth.attribute.will",
+          "min": 2
+        }
+      ],
+      "lock": {
+        "mode": "none",
+        "professionIds": [],
+        "lineageIds": [],
+        "faithIds": []
+      },
+      "focusCost": 0,
+      "cooldown": 0,
+      "action": null,
+      "effects": [
+        {
+          "kind": "modifier",
+          "port": "focusRecoveryInterval",
+          "operation": "add",
+          "slot": null,
+          "magnitude": {
+            "source": {
+              "kind": "constant"
+            },
+            "coefficient": -1,
+            "divisor": 1,
+            "rounding": "floor",
+            "min": -1,
+            "max": -1
+          },
+          "conditions": []
+        }
+      ]
+    },
+    {
+      "id": "growth.skill.weapon-familiarity",
+      "nameKey": "ext.growth.skill.weapon-familiarity.name",
+      "descriptionKey": "ext.growth.skill.weapon-familiarity.description",
+      "kind": "skill",
+      "mode": "passive",
+      "tags": [
+        "growth.tag.weapon-familiarity"
+      ],
+      "cost": 1,
+      "prerequisites": [
+        {
+          "kind": "level",
+          "min": 4
+        }
+      ],
+      "lock": {
+        "mode": "none",
+        "professionIds": [],
+        "lineageIds": [],
+        "faithIds": []
+      },
+      "focusCost": 0,
+      "cooldown": 0,
+      "action": null,
+      "effects": [
+        {
+          "kind": "modifier",
+          "port": "physicalDamage",
+          "operation": "add",
+          "slot": null,
+          "magnitude": {
+            "source": {
+              "kind": "constant"
+            },
+            "coefficient": 500,
+            "divisor": 1,
+            "rounding": "floor",
+            "min": 500,
+            "max": 500
+          },
+          "conditions": [
+            {
+              "kind": "role",
+              "value": "actor"
+            },
+            {
+              "kind": "attack-kind",
+              "values": [
+                "melee"
+              ]
+            },
+            {
+              "kind": "damage-kind",
+              "values": [
+                "physical"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "growth.skill.measured-strike",
+      "nameKey": "ext.growth.skill.measured-strike.name",
+      "descriptionKey": "ext.growth.skill.measured-strike.description",
+      "kind": "skill",
+      "mode": "active",
+      "tags": [
+        "growth.tag.measured-strike"
+      ],
+      "cost": 2,
+      "prerequisites": [],
+      "lock": {
+        "mode": "none",
+        "professionIds": [],
+        "lineageIds": [],
+        "faithIds": []
+      },
+      "focusCost": 2,
+      "cooldown": 6,
+      "action": {
+        "kind": "attack",
+        "target": "adjacent-creature",
+        "attackKind": "melee",
+        "time": "native-attack"
+      },
+      "effects": [
+        {
+          "kind": "timed",
+          "id": "growth.effect.measured-strike",
+          "tags": [
+            "growth.tag.measured-strike"
+          ],
+          "recipient": "self",
+          "application": "action-start",
+          "conditions": [],
+          "duration": {
+            "kind": "action"
+          },
+          "modifiers": [
+            {
+              "kind": "modifier",
+              "port": "hitChance",
+              "operation": "add",
+              "slot": null,
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": 1000,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": 1000,
+                "max": 1000
+              },
+              "conditions": [
+                {
+                  "kind": "role",
+                  "value": "actor"
+                },
+                {
+                  "kind": "attack-kind",
+                  "values": [
+                    "melee"
+                  ]
+                },
+                {
+                  "kind": "probability-roll",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "kind": "modifier",
+              "port": "physicalDamage",
+              "operation": "add",
+              "slot": null,
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": -1000,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": -1000,
+                "max": -1000
+              },
+              "conditions": [
+                {
+                  "kind": "role",
+                  "value": "actor"
+                },
+                {
+                  "kind": "attack-kind",
+                  "values": [
+                    "melee"
+                  ]
+                },
+                {
+                  "kind": "damage-kind",
+                  "values": [
+                    "physical"
+                  ]
+                }
+              ]
+            }
+          ],
+          "consume": {
+            "event": "none",
+            "count": 0,
+            "phase": "per-resolution-commit",
+            "includesShieldAbsorbed": false
+          },
+          "interruptions": []
+        }
+      ]
+    },
+    {
+      "id": "growth.skill.brace",
+      "nameKey": "ext.growth.skill.brace.name",
+      "descriptionKey": "ext.growth.skill.brace.description",
+      "kind": "skill",
+      "mode": "active",
+      "tags": [
+        "growth.tag.brace"
+      ],
+      "cost": 2,
+      "prerequisites": [
+        {
+          "kind": "attribute",
+          "attributeId": "growth.attribute.constitution",
+          "min": 2
+        }
+      ],
+      "lock": {
+        "mode": "none",
+        "professionIds": [],
+        "lineageIds": [],
+        "faithIds": []
+      },
+      "focusCost": 3,
+      "cooldown": 10,
+      "action": {
+        "kind": "wait",
+        "target": "self",
+        "time": "native-wait"
+      },
+      "effects": [
+        {
+          "kind": "timed",
+          "id": "growth.effect.brace",
+          "tags": [
+            "growth.tag.brace"
+          ],
+          "recipient": "self",
+          "application": "action-result",
+          "conditions": [],
+          "duration": {
+            "kind": "objective-blocks",
+            "blocks": 2,
+            "cap": 3
+          },
+          "modifiers": [
+            {
+              "kind": "modifier",
+              "port": "receivedPhysicalDamage",
+              "operation": "add",
+              "slot": null,
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": -2000,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": -2000,
+                "max": -2000
+              },
+              "conditions": [
+                {
+                  "kind": "role",
+                  "value": "target"
+                },
+                {
+                  "kind": "damage-kind",
+                  "values": [
+                    "physical"
+                  ]
+                },
+                {
+                  "kind": "direct-damage",
+                  "value": true
+                }
+              ]
+            }
+          ],
+          "consume": {
+            "event": "positive-direct-physical",
+            "count": 1,
+            "phase": "per-resolution-commit",
+            "includesShieldAbsorbed": true
+          },
+          "interruptions": []
+        }
+      ]
+    },
+    {
+      "id": "growth.skill.withdraw",
+      "nameKey": "ext.growth.skill.withdraw.name",
+      "descriptionKey": "ext.growth.skill.withdraw.description",
+      "kind": "skill",
+      "mode": "active",
+      "tags": [
+        "growth.tag.withdraw"
+      ],
+      "cost": 2,
+      "prerequisites": [
+        {
+          "kind": "attribute",
+          "attributeId": "growth.attribute.agility",
+          "min": 2
+        }
+      ],
+      "lock": {
+        "mode": "none",
+        "professionIds": [],
+        "lineageIds": [],
+        "faithIds": []
+      },
+      "focusCost": 3,
+      "cooldown": 8,
+      "action": {
+        "kind": "move",
+        "target": "adjacent-cell",
+        "occupied": "reject",
+        "time": "native-move"
+      },
+      "effects": [
+        {
+          "kind": "timed",
+          "id": "growth.effect.withdraw",
+          "tags": [
+            "growth.tag.withdraw"
+          ],
+          "recipient": "self",
+          "application": "action-result",
+          "conditions": [],
+          "duration": {
+            "kind": "objective-blocks",
+            "blocks": 1,
+            "cap": 1
+          },
+          "modifiers": [
+            {
+              "kind": "modifier",
+              "port": "hitChance",
+              "operation": "add",
+              "slot": null,
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": -500,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": -500,
+                "max": -500
+              },
+              "conditions": [
+                {
+                  "kind": "role",
+                  "value": "target"
+                },
+                {
+                  "kind": "attack-kind",
+                  "values": [
+                    "melee",
+                    "thrown"
+                  ]
+                },
+                {
+                  "kind": "damage-kind",
+                  "values": [
+                    "physical"
+                  ]
+                },
+                {
+                  "kind": "probability-roll",
+                  "value": true
+                }
+              ]
+            }
+          ],
+          "consume": {
+            "event": "none",
+            "count": 0,
+            "phase": "per-resolution-commit",
+            "includesShieldAbsorbed": false
+          },
+          "interruptions": []
+        }
+      ]
+    },
+    {
+      "id": "growth.skill.hold-breath",
+      "nameKey": "ext.growth.skill.hold-breath.name",
+      "descriptionKey": "ext.growth.skill.hold-breath.description",
+      "kind": "skill",
+      "mode": "active",
+      "tags": [
+        "growth.tag.hold-breath"
+      ],
+      "cost": 2,
+      "prerequisites": [
+        {
+          "kind": "attribute",
+          "attributeId": "growth.attribute.agility",
+          "min": 2
+        }
+      ],
+      "lock": {
+        "mode": "none",
+        "professionIds": [],
+        "lineageIds": [],
+        "faithIds": []
+      },
+      "focusCost": 2,
+      "cooldown": 8,
+      "action": {
+        "kind": "wait",
+        "target": "self",
+        "time": "native-wait"
+      },
+      "effects": [
+        {
+          "kind": "timed",
+          "id": "growth.effect.hold-breath",
+          "tags": [
+            "growth.tag.hold-breath"
+          ],
+          "recipient": "self",
+          "application": "action-result",
+          "conditions": [],
+          "duration": {
+            "kind": "objective-blocks",
+            "blocks": 3,
+            "cap": 4
+          },
+          "modifiers": [
+            {
+              "kind": "modifier",
+              "port": "stealthRange",
+              "operation": "add",
+              "slot": null,
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": -2,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": -2,
+                "max": -2
+              },
+              "conditions": []
+            }
+          ],
+          "consume": {
+            "event": "none",
+            "count": 0,
+            "phase": "per-resolution-commit",
+            "includesShieldAbsorbed": false
+          },
+          "interruptions": [
+            "attack",
+            "projectile",
+            "cast"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "growth.skill.survey",
+      "nameKey": "ext.growth.skill.survey.name",
+      "descriptionKey": "ext.growth.skill.survey.description",
+      "kind": "skill",
+      "mode": "active",
+      "tags": [
+        "growth.tag.survey"
+      ],
+      "cost": 2,
+      "prerequisites": [
+        {
+          "kind": "attribute",
+          "attributeId": "growth.attribute.perception",
+          "min": 2
+        }
+      ],
+      "lock": {
+        "mode": "none",
+        "professionIds": [],
+        "lineageIds": [],
+        "faithIds": []
+      },
+      "focusCost": 3,
+      "cooldown": 8,
+      "action": {
+        "kind": "search",
+        "target": "self",
+        "mode": "manual",
+        "time": "native-search"
+      },
+      "effects": [
+        {
+          "kind": "timed",
+          "id": "growth.effect.survey",
+          "tags": [
+            "growth.tag.survey"
+          ],
+          "recipient": "self",
+          "application": "action-start",
+          "conditions": [],
+          "duration": {
+            "kind": "action"
+          },
+          "modifiers": [
+            {
+              "kind": "modifier",
+              "port": "searchStrength",
+              "operation": "add",
+              "slot": null,
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": 10,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": 10,
+                "max": 10
+              },
+              "conditions": [
+                {
+                  "kind": "search-mode",
+                  "value": "manual"
+                }
+              ]
+            }
+          ],
+          "consume": {
+            "event": "none",
+            "count": 0,
+            "phase": "per-resolution-commit",
+            "includesShieldAbsorbed": false
+          },
+          "interruptions": []
+        }
+      ]
+    },
+    {
+      "id": "growth.skill.pressure",
+      "nameKey": "ext.growth.skill.pressure.name",
+      "descriptionKey": "ext.growth.skill.pressure.description",
+      "kind": "skill",
+      "mode": "active",
+      "tags": [
+        "growth.tag.pressure"
+      ],
+      "cost": 2,
+      "prerequisites": [
+        {
+          "kind": "attribute",
+          "attributeId": "growth.attribute.will",
+          "min": 2
+        },
+        {
+          "kind": "level",
+          "min": 4
+        }
+      ],
+      "lock": {
+        "mode": "none",
+        "professionIds": [],
+        "lineageIds": [],
+        "faithIds": []
+      },
+      "focusCost": 3,
+      "cooldown": 10,
+      "action": {
+        "kind": "attack",
+        "target": "adjacent-creature",
+        "attackKind": "melee",
+        "time": "native-attack"
+      },
+      "effects": [
+        {
+          "kind": "timed",
+          "id": "growth.effect.pressure-attack",
+          "tags": [
+            "growth.tag.pressure"
+          ],
+          "recipient": "self",
+          "application": "action-start",
+          "conditions": [],
+          "duration": {
+            "kind": "action"
+          },
+          "modifiers": [
+            {
+              "kind": "modifier",
+              "port": "physicalDamage",
+              "operation": "add",
+              "slot": null,
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": -2500,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": -2500,
+                "max": -2500
+              },
+              "conditions": [
+                {
+                  "kind": "role",
+                  "value": "actor"
+                },
+                {
+                  "kind": "attack-kind",
+                  "values": [
+                    "melee"
+                  ]
+                },
+                {
+                  "kind": "damage-kind",
+                  "values": [
+                    "physical"
+                  ]
+                }
+              ]
+            }
+          ],
+          "consume": {
+            "event": "none",
+            "count": 0,
+            "phase": "per-resolution-commit",
+            "includesShieldAbsorbed": false
+          },
+          "interruptions": []
+        },
+        {
+          "kind": "timed",
+          "id": "growth.effect.pressure-target",
+          "tags": [
+            "growth.tag.pressure-target"
+          ],
+          "recipient": "target",
+          "application": "action-result",
+          "conditions": [
+            {
+              "kind": "hit",
+              "value": true
+            },
+            {
+              "kind": "positive-hp-damage",
+              "value": true
+            }
+          ],
+          "duration": {
+            "kind": "objective-blocks",
+            "blocks": 2,
+            "cap": 2
+          },
+          "modifiers": [
+            {
+              "kind": "modifier",
+              "port": "hitChance",
+              "operation": "add",
+              "slot": null,
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": -500,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": -500,
+                "max": -500
+              },
+              "conditions": [
+                {
+                  "kind": "role",
+                  "value": "actor"
+                },
+                {
+                  "kind": "attack-kind",
+                  "values": [
+                    "melee",
+                    "thrown"
+                  ]
+                },
+                {
+                  "kind": "damage-kind",
+                  "values": [
+                    "physical"
+                  ]
+                },
+                {
+                  "kind": "probability-roll",
+                  "value": true
+                }
+              ]
+            }
+          ],
+          "consume": {
+            "event": "physical-probability-roll",
+            "count": 1,
+            "phase": "per-resolution-commit",
+            "includesShieldAbsorbed": false
+          },
+          "interruptions": []
+        }
+      ]
+    },
+    {
+      "id": "growth.profession.guardian",
+      "nameKey": "ext.growth.profession.guardian.name",
+      "descriptionKey": "ext.growth.profession.guardian.description",
+      "kind": "profession",
+      "attributes": [
+        {
+          "attributeId": "growth.attribute.constitution",
+          "amount": 2
+        }
+      ],
+      "choices": [],
+      "gifts": [
+        {
+          "skillId": "growth.skill.close-guard",
+          "waivePrerequisites": true
+        },
+        {
+          "skillId": "growth.skill.brace",
+          "waivePrerequisites": true
+        }
+      ],
+      "effects": [],
+      "oaths": [],
+      "recommendedAttributes": [
+        "growth.attribute.constitution",
+        "growth.attribute.agility",
+        "growth.attribute.will",
+        "growth.attribute.perception"
+      ],
+      "recommendedSkills": [
+        "growth.skill.close-guard",
+        "growth.skill.brace"
+      ]
+    },
+    {
+      "id": "growth.profession.scout",
+      "nameKey": "ext.growth.profession.scout.name",
+      "descriptionKey": "ext.growth.profession.scout.description",
+      "kind": "profession",
+      "attributes": [
+        {
+          "attributeId": "growth.attribute.agility",
+          "amount": 2
+        }
+      ],
+      "choices": [],
+      "gifts": [
+        {
+          "skillId": "growth.skill.careful-step",
+          "waivePrerequisites": true
+        },
+        {
+          "skillId": "growth.skill.hold-breath",
+          "waivePrerequisites": true
+        }
+      ],
+      "effects": [],
+      "oaths": [],
+      "recommendedAttributes": [
+        "growth.attribute.agility",
+        "growth.attribute.perception",
+        "growth.attribute.constitution",
+        "growth.attribute.will"
+      ],
+      "recommendedSkills": [
+        "growth.skill.careful-step",
+        "growth.skill.hold-breath"
+      ]
+    },
+    {
+      "id": "growth.profession.explorer",
+      "nameKey": "ext.growth.profession.explorer.name",
+      "descriptionKey": "ext.growth.profession.explorer.description",
+      "kind": "profession",
+      "attributes": [
+        {
+          "attributeId": "growth.attribute.perception",
+          "amount": 2
+        }
+      ],
+      "choices": [],
+      "gifts": [
+        {
+          "skillId": "growth.skill.methodical",
+          "waivePrerequisites": true
+        },
+        {
+          "skillId": "growth.skill.survey",
+          "waivePrerequisites": true
+        }
+      ],
+      "effects": [],
+      "oaths": [],
+      "recommendedAttributes": [
+        "growth.attribute.perception",
+        "growth.attribute.constitution",
+        "growth.attribute.will",
+        "growth.attribute.agility"
+      ],
+      "recommendedSkills": [
+        "growth.skill.methodical",
+        "growth.skill.survey"
+      ]
+    },
+    {
+      "id": "growth.profession.skirmisher",
+      "nameKey": "ext.growth.profession.skirmisher.name",
+      "descriptionKey": "ext.growth.profession.skirmisher.description",
+      "kind": "profession",
+      "attributes": [
+        {
+          "attributeId": "growth.attribute.agility",
+          "amount": 1
+        },
+        {
+          "attributeId": "growth.attribute.will",
+          "amount": 1
+        }
+      ],
+      "choices": [],
+      "gifts": [
+        {
+          "skillId": "growth.skill.steady-hand",
+          "waivePrerequisites": true
+        },
+        {
+          "skillId": "growth.skill.measured-strike",
+          "waivePrerequisites": true
+        }
+      ],
+      "effects": [],
+      "oaths": [],
+      "recommendedAttributes": [
+        "growth.attribute.agility",
+        "growth.attribute.will",
+        "growth.attribute.constitution",
+        "growth.attribute.perception"
+      ],
+      "recommendedSkills": [
+        "growth.skill.steady-hand",
+        "growth.skill.measured-strike"
+      ]
+    },
+    {
+      "id": "growth.lineage.human",
+      "nameKey": "ext.growth.lineage.human.name",
+      "descriptionKey": "ext.growth.lineage.human.description",
+      "kind": "lineage",
+      "attributes": [],
+      "choices": [
+        {
+          "attributeIds": [
+            "growth.attribute.agility",
+            "growth.attribute.constitution",
+            "growth.attribute.will",
+            "growth.attribute.perception"
+          ],
+          "points": 1,
+          "perAttributeCap": 1
+        }
+      ],
+      "gifts": [],
+      "effects": [],
+      "oaths": [],
+      "recommendedAttributes": [],
+      "recommendedSkills": []
+    },
+    {
+      "id": "growth.lineage.stoneborn",
+      "nameKey": "ext.growth.lineage.stoneborn.name",
+      "descriptionKey": "ext.growth.lineage.stoneborn.description",
+      "kind": "lineage",
+      "attributes": [
+        {
+          "attributeId": "growth.attribute.constitution",
+          "amount": 1
+        }
+      ],
+      "choices": [],
+      "gifts": [],
+      "effects": [
+        {
+          "kind": "tagged-modifier",
+          "tag": "growth.tag.brace",
+          "property": "duration",
+          "operation": "add",
+          "magnitude": {
+            "source": {
+              "kind": "constant"
+            },
+            "coefficient": 1,
+            "divisor": 1,
+            "rounding": "floor",
+            "min": 1,
+            "max": 1
+          },
+          "conditions": [],
+          "slot": null
+        }
+      ],
+      "oaths": [],
+      "recommendedAttributes": [],
+      "recommendedSkills": []
+    },
+    {
+      "id": "growth.lineage.duskborn",
+      "nameKey": "ext.growth.lineage.duskborn.name",
+      "descriptionKey": "ext.growth.lineage.duskborn.description",
+      "kind": "lineage",
+      "attributes": [
+        {
+          "attributeId": "growth.attribute.agility",
+          "amount": 1
+        }
+      ],
+      "choices": [],
+      "gifts": [],
+      "effects": [
+        {
+          "kind": "tagged-modifier",
+          "tag": "growth.tag.hold-breath",
+          "property": "duration",
+          "operation": "add",
+          "magnitude": {
+            "source": {
+              "kind": "constant"
+            },
+            "coefficient": 1,
+            "divisor": 1,
+            "rounding": "floor",
+            "min": 1,
+            "max": 1
+          },
+          "conditions": [],
+          "slot": null
+        }
+      ],
+      "oaths": [],
+      "recommendedAttributes": [],
+      "recommendedSkills": []
+    },
+    {
+      "id": "growth.lineage.reedfolk",
+      "nameKey": "ext.growth.lineage.reedfolk.name",
+      "descriptionKey": "ext.growth.lineage.reedfolk.description",
+      "kind": "lineage",
+      "attributes": [
+        {
+          "attributeId": "growth.attribute.perception",
+          "amount": 1
+        }
+      ],
+      "choices": [],
+      "gifts": [],
+      "effects": [
+        {
+          "kind": "modifier",
+          "port": "searchStrength",
+          "operation": "add",
+          "slot": null,
+          "magnitude": {
+            "source": {
+              "kind": "constant"
+            },
+            "coefficient": 2,
+            "divisor": 1,
+            "rounding": "floor",
+            "min": 2,
+            "max": 2
+          },
+          "conditions": [
+            {
+              "kind": "tag",
+              "tag": "growth.tag.survey"
+            },
+            {
+              "kind": "search-mode",
+              "value": "manual"
+            }
+          ]
+        }
+      ],
+      "oaths": [],
+      "recommendedAttributes": [],
+      "recommendedSkills": []
+    },
+    {
+      "id": "growth.faith.unaffiliated",
+      "nameKey": "ext.growth.faith.unaffiliated.name",
+      "descriptionKey": "ext.growth.faith.unaffiliated.description",
+      "kind": "faith",
+      "attributes": [],
+      "choices": [],
+      "gifts": [],
+      "effects": [],
+      "oaths": [],
+      "recommendedAttributes": [],
+      "recommendedSkills": []
+    },
+    {
+      "id": "growth.faith.watch",
+      "nameKey": "ext.growth.faith.watch.name",
+      "descriptionKey": "ext.growth.faith.watch.description",
+      "kind": "faith",
+      "attributes": [],
+      "choices": [],
+      "gifts": [],
+      "effects": [],
+      "oaths": [
+        {
+          "id": "growth.oath.watch",
+          "descriptionKey": "ext.growth.oath.watch.description",
+          "effects": [
+            {
+              "kind": "tagged-modifier",
+              "tag": "growth.tag.brace",
+              "property": "intensity",
+              "operation": "add",
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": -500,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": -500,
+                "max": -500
+              },
+              "conditions": [],
+              "slot": null
+            },
+            {
+              "kind": "tagged-modifier",
+              "tag": "growth.tag.brace",
+              "property": "cooldown",
+              "operation": "add",
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": 2,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": 2,
+                "max": 2
+              },
+              "conditions": [],
+              "slot": null
+            }
+          ]
+        }
+      ],
+      "recommendedAttributes": [],
+      "recommendedSkills": []
+    },
+    {
+      "id": "growth.faith.path",
+      "nameKey": "ext.growth.faith.path.name",
+      "descriptionKey": "ext.growth.faith.path.description",
+      "kind": "faith",
+      "attributes": [],
+      "choices": [],
+      "gifts": [],
+      "effects": [],
+      "oaths": [
+        {
+          "id": "growth.oath.path",
+          "descriptionKey": "ext.growth.oath.path.description",
+          "effects": [
+            {
+              "kind": "resource",
+              "id": "growth.effect.path-focus",
+              "resource": "focus",
+              "amount": 1,
+              "trigger": {
+                "kind": "first-visit",
+                "minDepth": 2,
+                "maxDepth": 26,
+                "receipt": "depth"
+              },
+              "clamp": "resource-bounds"
+            },
+            {
+              "kind": "modifier",
+              "port": "focusCapacity",
+              "operation": "add",
+              "slot": null,
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": -1,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": -1,
+                "max": -1
+              },
+              "conditions": []
+            }
+          ]
+        }
+      ],
+      "recommendedAttributes": [],
+      "recommendedSkills": []
+    },
+    {
+      "id": "growth.faith.restraint",
+      "nameKey": "ext.growth.faith.restraint.name",
+      "descriptionKey": "ext.growth.faith.restraint.description",
+      "kind": "faith",
+      "attributes": [],
+      "choices": [],
+      "gifts": [],
+      "effects": [],
+      "oaths": [
+        {
+          "id": "growth.oath.restraint",
+          "descriptionKey": "ext.growth.oath.restraint.description",
+          "effects": [
+            {
+              "kind": "modifier",
+              "port": "focusCapacity",
+              "operation": "add",
+              "slot": null,
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": 1,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": 1,
+                "max": 1
+              },
+              "conditions": []
+            },
+            {
+              "kind": "modifier",
+              "port": "focusRecoveryInterval",
+              "operation": "add",
+              "slot": null,
+              "magnitude": {
+                "source": {
+                  "kind": "constant"
+                },
+                "coefficient": 1,
+                "divisor": 1,
+                "rounding": "floor",
+                "min": 1,
+                "max": 1
+              },
+              "conditions": []
+            }
+          ]
+        }
+      ],
+      "recommendedAttributes": [],
+      "recommendedSkills": []
+    }
+  ]
+}
