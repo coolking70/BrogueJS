@@ -1,4 +1,4 @@
-# Growth 数据配置合同（1b，schema 1 / rules 1.2.0）
+# Growth 数据配置合同（1c，schema 1 / rules 1.2.0）
 
 本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。技能动作/效果消费和身份模板仍分别归 1d/1e；下列运行状态区分已经接线和仅有数据合同。
 
@@ -10,6 +10,7 @@
 | `src/ext/modules/growth/module.ts`、`state.ts` | XP 事实队列/安全点结算、角色创建、收据/来源摘要与跨组件/世界校验 |
 | `src/ext/modules/growth/experience.ts`、`components.ts` | 精确整数等级/发点/自动 HP、资源提交基础、严格组件校验 |
 | `src/ext/modules/growth/types.ts` | 配置类型、判别联合、有限规则端口/动作词汇 |
+| `src/ext/modules/growth/view.ts` | 1c 纯玩家显示投影、配置条目/前置/槽位和分配/洗点预览；不执行技能或身份效果 |
 | `src/ext/modules/growth/schema.ts` | `getGrowthSchema()`结构合同及两阶段纯校验、引用/预算/循环/版本检查；schema显式请求时才构造并冻结缓存 |
 | `src/ext/modules/growth/definitions.json` | 默认样例配置和12技能/4职业/4血统/4信仰定义 |
 | `src/ext/modules/growth/definitions.ts` | `parseGrowthDefinitionPack`验证后深拷贝/深冻结；默认加载器和惰性数据指纹 |
@@ -55,6 +56,14 @@
 - 克隆的 inheritBuild 指属性/训练构筑，不继承来源等级、XP、奖励收据或物品使用额度。默认 level1、无未分配点、无奖且不成长，原 1a 等级/自动生命断言不变；若配置显式开放 inheritUnspentPoints/progression，分别记录来源余额并只为克隆后续新等级发点。nativeStatsCopied 的护甲幻影与分裂同样受复制体规则约束；普通召唤不是复制体
 - 专注容量/恢复间隔、冷却时长与比例下限已有纯端口；专注客观时间推进、技能冷却启动、临时效果消费仍属 1d，不把数值求值写成已执行技能
 - `growth:items` 保存每个原物品规则实际永久输出累计；见 §5.5。组件合同/行为变化将 moduleVersion/rulesVersion 同升为 1.2.0，schema 形状仍是1；旧1.1.0扩展存档/录像精确拒绝，无迁移
+
+### 1.4 1c 的只读界面边界
+
+- 成长模块通过只读 view descriptor 发布当前工厂实际使用的定义包、created/revision/playerId 和当前玩家的 progression/attributes/derived/focus/skills；运行器按字段分离复制并冻结，不轮询整局存档、奖励账本、因果表或 NPC 组件
+- UI 只从统一读模型取得属性/费用/上限、技能/前置/槽位、身份目录及当前经验；自定义合法包增删条目不需要改 Vue 列表或 ID 分支。技能和身份仍为明确标记尚未启用的目录，1c 不增加学习/施技/身份选择命令
+- 分配草稿保存会话身份和 revision；读档、seek、重开局使旧会话草稿失效。提交前重读当前模型，实际修改仍只经过原 executeCommand 的 allocate/respec。只读显示不升规则版本，growth 精确版本仍为1.2.0
+- 资源预览复用既有纯属性/恢复计算；上下文规则显示使用明示参考输入，不读取未知敌人或冒充当前战斗的最终伤害。攻方/守方端口参考不可顺序相乘当作完整物伤，实际战斗仍用共享预算/乘法槽一次联合求值
+- 普通/沉浸 HUD 与角色页都是显示状态；回放只读，取消/重置不发命令。自动命令/录像帧在角色页打开期间由 UI 暂停推进，不改变模拟时钟或录像状态
 
 ## 2. 固定技术合同与可调数据
 

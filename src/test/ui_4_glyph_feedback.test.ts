@@ -135,6 +135,10 @@ beforeAll(async () => {
     modules['./components/MainMenu.vue'] = { default: Vue.defineComponent({ emits: ['new-game'], setup(_props, { emit }) {
         return () => Vue.h('start', { onClick: () => emit('new-game', { seed: 33005, mode: 'test' }) });
     } }), __esModule: true };
+    modules['./components/growth/GrowthCharacterPanel.vue'] = empty;
+    modules['./ui/useGrowthCharacter'] = await import('../ui/useGrowthCharacter');
+    modules['./ext/modules/growth/view'] = await import('../ext/modules/growth/view');
+    modules['./engine/Systems/Logger'] = await import('../engine/Systems/Logger');
     App = compile('App.vue').default;
 });
 beforeEach(() => {

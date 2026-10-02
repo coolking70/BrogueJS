@@ -3,10 +3,11 @@
 import { computed } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import { useGameHud, nutritionStatus } from '../../ui/useGameHud';
+import type { GrowthCharacterViewModel } from '../../ext/modules/growth/view';
 import { STOMACH_SIZE } from '../../entities/Player';
 
-const props = withDefaults(defineProps<{ panelOpen?: boolean; showPanelButton?: boolean }>(), { panelOpen: false, showPanelButton: true });
-const emit = defineEmits<{ (e: 'menu'): void; (e: 'panel'): void }>();
+const props = withDefaults(defineProps<{ panelOpen?: boolean; showPanelButton?: boolean; growth?: GrowthCharacterViewModel | null; growthBlocked?: boolean; immersive?: boolean }>(), { panelOpen: false, showPanelButton: true });
+const emit = defineEmits<{ (e: 'menu'): void; (e: 'panel'): void; (e: 'character'): void }>();
 const { t } = useTranslation();
 const panelHint = computed(() => props.panelOpen
   ? t('theme.panel_close', { defaultValue: 'Collapse nearby information' })
@@ -23,7 +24,7 @@ void props;
 </script>
 
 <template>
-  <header class="theme-hud" :class="{ 'hp-low': low }" @keydown.stop @keyup.stop
+  <header class="theme-hud" :class="{ 'hp-low': low, 'has-growth': !!growth }" @keydown.stop @keyup.stop
           @click="($event.target as HTMLElement).closest('button')?.blur()">
     <button class="th-menu th-btn" @click="emit('menu')">{{ $t('menu.actions.menu') }}</button>
     <div class="th-depth"><span class="th-label">{{ $t('theme.depth') }}</span><b class="th-num">{{ depth }}</b><span class="th-turn"><span class="th-label">{{ $t('theme.turn') }}</span><b class="th-num">{{ turns }}</b></span></div>
@@ -49,6 +50,17 @@ void props;
     <div v-if="statuses.length" class="th-statuses">
       <span v-for="status in statuses" :key="status.id" class="th-status" :style="{ color: status.color }">{{ status.label }} {{ status.value }}</span>
     </div>
+    <div v-if="growth" class="th-growth" :class="{ 'th-growth-compact': immersive }">
+      <div class="th-growth-heading"><strong v-if="!immersive">{{ $t('ext.growth.ui.level_short', { level: growth.level }) }}</strong><button class="th-growth-entry th-btn" :disabled="growthBlocked" :aria-label="$t('ext.growth.ui.character')" :title="$t('ext.growth.ui.character')" @click="emit('character')">{{ immersive ? $t('ext.growth.ui.level_short', { level: growth.level }) : $t('ext.growth.ui.character') }}<span v-if="growth.hasUnspentPoints" class="th-growth-dot" :title="$t('ext.growth.ui.unspent')">●</span></button></div>
+      <template v-if="!immersive"><progress v-if="!growth.atLevelCap" :value="growth.experienceInLevel" :max="growth.experienceToNext ?? 1" :aria-label="$t('ext.growth.ui.experience_label')" /><span class="th-growth-xp">{{ growth.atLevelCap ? $t('ext.growth.ui.level_cap') : $t('ext.growth.ui.experience', { current: growth.experienceInLevel, next: growth.experienceToNext }) }}</span><span class="th-growth-points">{{ $t('ext.growth.ui.points', { attributes: growth.attributePoints, skills: growth.skillPoints }) }}</span></template>
+    </div>
     <button v-if="showPanelButton" class="th-panel th-btn" :aria-expanded="panelOpen" :title="panelHint" @click="emit('panel')">{{ panelOpen ? $t('theme.panel_close') : $t('theme.panel') }}</button>
   </header>
 </template>
+
+<style scoped>
+.th-growth{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding-top:8px;border-top:1px solid var(--th-line,#555);font-size:11px;width:100%;box-sizing:border-box}
+.th-growth-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}.th-growth-heading strong,.th-growth-dot{color:var(--th-accent,#dcc88d)}.th-growth-dot{margin-left:4px}.th-growth progress{height:5px;min-width:35px;width:60px;flex:1;accent-color:var(--th-accent,#dcc88d)}.th-growth-points{width:100%;color:var(--th-dim,#aaa)}.th-growth-compact{width:auto;flex:0 0 auto;border:0;padding:0;font-size:12px}.th-growth-compact .th-growth-heading{gap:4px}.th-growth-compact .th-growth-entry{padding:0 2px!important;font-size:12px}.th-growth-entry:disabled{opacity:.4}
+@media(max-width:700px){.th-growth:not(.th-growth-compact){flex-basis:100%;gap:4px 8px;padding-top:4px}.th-growth:not(.th-growth-compact) .th-growth-heading{width:auto;gap:7px}.th-growth:not(.th-growth-compact) .th-growth-points{width:auto}.th-growth:not(.th-growth-compact) .th-growth-entry{min-height:34px!important;font-size:12px!important;padding:0 6px!important}.th-growth:not(.th-growth-compact) .th-growth-xp{font-size:10px}}
+@media(max-width:420px){:global(html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud.has-growth .th-turn){display:none!important}:global(.immersive-mode .theme-hud.has-growth){gap:4px!important}}
+</style>

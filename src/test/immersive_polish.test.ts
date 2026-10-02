@@ -201,6 +201,10 @@ beforeAll(async () => {
     } }, __esModule: true };
     for (const component of ['ThemeHud', 'ThemeNearby', 'RadialCommands']) modules[`./components/theme/${component}.vue`] = empty;
     modules['./components/theme/ThemeLog.vue'] = { default: Log, __esModule: true };
+    modules['./components/growth/GrowthCharacterPanel.vue'] = empty;
+    modules['./ui/useGrowthCharacter'] = await import('../ui/useGrowthCharacter');
+    modules['./ext/modules/growth/view'] = await import('../ext/modules/growth/view');
+    modules['./engine/Systems/Logger'] = await import('../engine/Systems/Logger');
     App = compile('App.vue');
 });
 afterEach(() => {

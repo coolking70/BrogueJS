@@ -1,7 +1,7 @@
 import type { Creature } from '../entities/Creature';
 import { Player } from '../entities/Player';
 import type { ExtensionRegistry } from './registry';
-import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json, ActorFacts, ResourceCommit, CharacterResources, CharacterResourceCommit, ExtensionRuleContext, ExtensionRuleInput, ExtensionRulePolicies, ItemGrowthInput } from './types';
+import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json, ActorFacts, ResourceCommit, CharacterResources, CharacterResourceCommit, ExtensionRuleContext, ExtensionRuleInput, ExtensionRulePolicies, ItemGrowthInput, ExtensionViewDescriptor, ExtensionModuleView } from './types';
 import { creatureView } from './types';
 import { readCreatureBirth } from './birth';
 import { canonical, cloneJson, isJson, validId } from './json';
@@ -26,6 +26,12 @@ export interface ExtensionPorts {
     knownKinds?(): { id: string; category: string }[];
     testMode?(): boolean;
 }
+function freezeView<T>(value: T): T {
+    if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+        Object.values(value).forEach(freezeView); Object.freeze(value);
+    }
+    return value;
+}
 function requireSynchronous(result: unknown): void {
     if (result && typeof (result as { then?: unknown }).then === 'function') {
         // Reject the handler and retire its result; context capabilities expire
@@ -47,6 +53,8 @@ interface GenerationFrame {
 }
 export class ExtensionRuntime {
     private readonly modules: ExtensionModule[];
+    private readonly viewSession: object = Object.freeze({});
+    private readonly views = new Map<string, ExtensionViewDescriptor>();
     private states: Record<string, Json> = {};
     private components: ExtensionSnapshot['components'] = {};
     private readonly creatures = new Set<Creature>();
@@ -65,6 +73,11 @@ export class ExtensionRuntime {
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
         Object.freeze(this.manifest.modules); Object.freeze(this.manifest);
         this.modules = registry.create(manifest);
+        for (const module of this.modules) if (module.view) {
+            if (!isJson(module.view.definitions) || !module.view.stateFields.every(validId)
+                || !module.view.playerComponents.every(validId)) throw new Error('Invalid extension display descriptor');
+            this.views.set(module.id, freezeView(structuredClone(module.view)));
+        }
         for (const port of ['hitChance', 'physicalDamage', 'stealthRange', 'searchStrength', 'strengthBonus', 'maxHpBonus', 'focusCapacity', 'focusRecoveryInterval', 'cooldownDuration', 'nativeBonuses'] as const) {
             if (this.modules.filter(module => module.rulePolicies?.[port]).length > 1) throw new Error('Conflicting extension rule providers');
         }
@@ -449,6 +462,22 @@ export class ExtensionRuntime {
         // Module-owned reward receipts are deliberately not collected with bodies.
     }
     get sourceId(): number | null { return this.attacks[this.attacks.length - 1] ?? null; }
+    /** Pure player-only projection. Never snapshots causal ledgers, NPCs, rewards, or the world. */
+    readModuleView(moduleId: string): ExtensionModuleView | null {
+        const descriptor = this.views.get(moduleId);
+        if (this.disposed || !descriptor) return null;
+        const state = this.states[moduleId], playerId = this.ports.playerId();
+        const fields: Record<string, Json> = {}, components: Record<string, Json> = {};
+        if (state && typeof state === 'object' && !Array.isArray(state)) for (const name of descriptor.stateFields) {
+            const value = state[name]; if (value !== undefined) fields[name] = cloneJson(value);
+        }
+        for (const name of descriptor.playerComponents) {
+            const value = this.components[String(playerId)]?.[`${moduleId}:${name}`];
+            if (value !== undefined) components[name] = cloneJson(value);
+        }
+        return freezeView({ session: this.viewSession, definitions: descriptor.definitions, playerId,
+            state: fields, components, canManageCharacter: this.ports.canManageCharacter?.() ?? true });
+    }
     snapshot(): ExtensionSnapshot {
         if (this.generations.length) throw new Error('Cannot snapshot an open generation transaction');
         return structuredClone({ manifest: this.manifest, modules: this.states, components: this.components,

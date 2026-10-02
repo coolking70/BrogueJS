@@ -126,6 +126,8 @@ import { paintMapText, paintVectorTile, HANZI_FONT } from '../ui/mapTileDrawing'
 import { targetingState, clearAim, targetingTapCommand, type TapCommand, THROW_AIM_FILL, THROW_AIM_STROKE } from '../ui/targeting';
 import { dispatch as dispatchCommand, travelTo } from '../ui/commands';
 
+const props = withDefaults(defineProps<{ displayModalOpen?: boolean }>(), { displayModalOpen: false });
+
 const canvasContainer = ref<HTMLDivElement | null>(null);
 let pixiApp: Application | null = null;
 const arcanaPrompt = ref('');
@@ -378,12 +380,14 @@ onMounted(async () => {
     // headless（无渲染）环境不挂载本组件，animationEnabled 保持 false，同步推进。
     game.animationEnabled = true;
     inputManager.setCallback((action, data) => {
+        if (props.displayModalOpen) return;
         syncHeldInputContext();
         game.handlePlayerAction(action, data);
         syncHeldInputContext();
         game.update();
     });
     inputManager.setUnboundKeyCallback(() => {
+        if (props.displayModalOpen) return;
         if (!game.isAutoTraveling()) return;
         game.handlePlayerAction('interrupt_auto');
         game.update();
@@ -833,6 +837,7 @@ onMounted(async () => {
      * 触屏在投掷/法杖瞄准时改为"先瞄准、再确认"（ui/targeting.ts）。
      */
     const activateCell = (mapX: number, mapY: number, button: number, pointer: 'mouse' | 'touch') => {
+        if (props.displayModalOpen) return;
         if (mapX < 0 || mapX >= DCOLS || mapY < 0 || mapY >= DROWS) return;
         if (game.pendingArcana) {
             if (pointer === 'touch') {
@@ -943,7 +948,7 @@ onMounted(async () => {
     let colorTimer = 0;
     let lastInput = game.recordedInputEvents[game.recordedInputEvents.length - 1];
     let skipNextDisplayTime = false;
-    const autoAllowed = () => !game.replayRecording && !game.isTimePaused()
+    const autoAllowed = () => !props.displayModalOpen && !game.replayRecording && !game.isTimePaused()
         && !game.isAdvancing && !game.isInputLocked() && !game.isGameOver
         && !logger.pendingAcknowledgment && game.isAutoTraveling() && !document.hidden;
     const displayFrame = (elapsedMs: number, animationMs: number = elapsedMs) => {
@@ -953,6 +958,9 @@ onMounted(async () => {
         const report = frameProfile?.report(profileNow, { seed: game.currentSeed, depth: game.depth, turn: game.absoluteTurnNumber, mode: mapMode.value, geometryContexts: vectorGeometry?.size, position: [game.player.loc.x, game.player.loc.y], hp: game.player.hp, nutrition: game.player.nutrition, commands: game.recordedInputEvents.length });
         if (report) performanceReport.value = report;
         try {
+            // A Vue display modal freezes automatic display-driven simulation without
+            // adding an interrupt command or changing the replay clock/state.
+            if (props.displayModalOpen) { pathingTimer = 0; return; }
             const input = game.recordedInputEvents[game.recordedInputEvents.length - 1];
             if (input !== lastInput) {
                 // A manual stop/restart can occur between frames. It starts a fresh
@@ -1069,7 +1077,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="game-container" ref="canvasContainer">
+  <div class="game-container" ref="canvasContainer" tabindex="-1">
     <aside v-if="performanceReport" class="performance-profile"><button @click="resetProfile">{{ i18next.t('performance.reset') }}</button><pre data-testid="game-performance">{{ performanceReport }}</pre></aside>
     <div v-if="arcanaPrompt" class="arcana-prompt" role="status">{{ arcanaPrompt }}</div>
   </div>

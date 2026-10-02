@@ -101,6 +101,7 @@ docs/                      文档；docs/archive/ 为旧开发记录
 | 区域 | 为什么敏感 | 必须做的 |
 |---|---|---|
 | RNG 调用顺序 | 改变后续所有生成与战斗结果 | 单变量归因，按原方法重录基线/trace |
+| classic / extension 战斗双解算器与命中预览 | 近战、投掷的独立实现可能在命中优先级、伤害、状态、消息或 RNG 边界上漂移 | 修改 classic 解算器或命中规则时必须同步 extension；`src/test/ext_combat_neutral_differential.test.ts` 的中性策略逐场差分与命中精确枚举必须通过 |
 | 命令边界 / 确认 | 录像确定性 | 回放零 OOS 守卫 |
 | `Game` 字段 | 存档合同 | 登记 `scripts/u03-state-contract.json` |
 | 地形/DF 目录 | 生成、寻路、渲染全受影响 | 目录全集守卫、生成基线 |
@@ -110,3 +111,9 @@ docs/                      文档；docs/archive/ 为旧开发记录
 ### 扩展生成写集维护
 
 修改扩展生成、离层补算或模块发布路径的写入时，必须同步更新 `checkpointGenerationWorld` 的显式写集，并保证 `src/test/ext_generation_checkpoint_differential.test.ts` 对原 1a0 完整对象图捕获的差分回滚测试通过。不能只比较存档投影而漏掉未登记字段/对象身份；详细边界见 [扩展架构](ext/architecture.md) §11–12。
+
+### 扩展战斗同义维护
+
+修改 `Combat.ts` 的经典 `resolveAttack` / `resolveThrownWeaponClassic` 或命中判定时，必须同步 `resolveAttackExtended` / `resolveThrownWeaponExtended` 与 `previewHitChance`，并保证本节对等测试通过。文件保留独立的 classic 与 extension 近战/投掷解算器，中性策略（加值 0、倍率 1，无成长预算或钳制影响）必须严格等价。保险测试以固定种子独立重建每场，比较完整 `AttackResult`、双方完整自有状态对象图（包括背包、装备、Set 与引用关系）、生产战斗消息、两条 RNG 的完整状态及调用计数，并覆盖真实力场符文击退与碰撞。不要改成同一实现自比、存档字段投影或仅均值/命中率统计。
+
+`previewHitChance` 必须遵守与实际攻击一致的必命中/必失败优先级；突进与非武器攻击预览须传入相应选项。命中保险枚举 `randPercent` 的全部 100 个可能结果，通过真实 classic 执行路径核验概率与跳过/保留 RNG 调用的边界，不以共享命中公式充当参照。调整 classic 命中或解算规则后，同步 extension 与预览，并让上述差分测试通过后才能验收。

@@ -25,8 +25,8 @@ import { useTranslation } from 'i18next-vue';
 import { inputManager } from '../engine/Input';
 import { dispatch } from '../ui/commands';
 
-const props = defineProps<{ mode: 'portrait' | 'landscape' | 'desktop' }>();
-const emit = defineEmits<{ 'modal-open': [] }>();
+const props = defineProps<{ mode: 'portrait' | 'landscape' | 'desktop'; showCharacter?: boolean; characterBlocked?: boolean; hasGrowthPoints?: boolean }>();
+const emit = defineEmits<{ 'modal-open': []; character: [] }>();
 const expanded = ref(false);
 watch(expanded, open => { if (open) emit('modal-open'); }, { flush: 'sync' });
 const root = ref<HTMLElement>();
@@ -58,8 +58,8 @@ watch([expanded, () => props.mode], async () => {
   positionOverflow();
 });
 const closeOutside = (event: PointerEvent) => { if (expanded.value && !root.value?.contains(event.target as Node)) expanded.value = false; };
-const primary = new Set(['auto_explore', 'search', 'wait', 'pickup', 'toggle_inventory', 'throw_item', 'escape']);
-function invoke(action: string, data?: unknown) { expanded.value = false; (document.activeElement as HTMLElement)?.blur(); dispatch(action, data); }
+const primary = new Set(['auto_explore', 'search', 'wait', 'pickup', 'toggle_inventory', 'show_character', 'throw_item', 'escape']);
+function invoke(action: string, data?: unknown) { expanded.value = false; (document.activeElement as HTMLElement)?.blur(); if (action === 'show_character') emit('character'); else dispatch(action, data); }
 let removeKeyboard: (() => void) | undefined;
 let resizeObserver: ResizeObserver | undefined;
 onMounted(() => {
@@ -96,6 +96,7 @@ const commands = computed(() => [
   { action: 'auto_rest', label: t('mobile.cmd.auto_rest'), glyph: 'Z' },
   { action: 'pickup', label: t('mobile.cmd.pickup'), glyph: 'g' },
   { action: 'toggle_inventory', label: t('mobile.cmd.inventory'), glyph: 'i' },
+  ...(props.showCharacter ? [{ action: 'show_character', label: t('ext.growth.ui.character'), glyph: props.hasGrowthPoints ? '●' : '' }] : []),
   { action: 'throw_item', label: t('mobile.cmd.throw'), glyph: 't' },
   { action: 'auto_explore', label: t('mobile.cmd.explore'), glyph: 'x' },
   { action: 'travel_stairs', data: 'up', label: t('mobile.cmd.stairs_up'), glyph: '<' },
@@ -109,7 +110,7 @@ const commands = computed(() => [
 <template>
   <nav ref="root" class="command-bar" :class="[`cmd-${mode}`, { expanded }]" @keydown.stop @keyup.stop @keydown.esc="expanded = false; ($event.target as HTMLElement)?.blur()" :aria-label="$t('controls.title')">
     <button v-for="cmd in commands.filter(c => primary.has(c.action))" :key="cmd.action + (cmd.data ?? '')" class="cmd-btn" :data-action="cmd.action"
-            :data-direction="cmd.data" @click="invoke(cmd.action, cmd.data)">
+            :data-direction="cmd.data" :disabled="cmd.action === 'show_character' && characterBlocked" @click="invoke(cmd.action, cmd.data)">
       <span class="cmd-label">{{ cmd.label }}</span>
       <kbd v-if="cmd.glyph" class="cmd-key" aria-hidden="true">{{ cmd.glyph }}</kbd>
     </button>

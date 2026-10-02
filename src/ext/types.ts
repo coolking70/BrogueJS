@@ -4,6 +4,21 @@ import type { Item } from '../engine/Items/Item';
 import type { EffectCausality, EffectOrigin, DamageKind, CausalitySnapshot } from './causality';
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
+export type ReadonlyJson = null | boolean | number | string | readonly ReadonlyJson[] | { readonly [key: string]: ReadonlyJson };
+/** Session-only display data. State/component selections never include other actors or world ledgers. */
+export interface ExtensionViewDescriptor {
+    readonly definitions: ReadonlyJson;
+    readonly stateFields: readonly string[];
+    readonly playerComponents: readonly string[];
+}
+export interface ExtensionModuleView {
+    readonly session: object;
+    readonly definitions: ReadonlyJson;
+    readonly playerId: number;
+    readonly state: Readonly<Record<string, ReadonlyJson>>;
+    readonly components: Readonly<Record<string, ReadonlyJson>>;
+    readonly canManageCharacter: boolean;
+}
 export interface ExtensionRulesIdentity { schema: number; version: string; fingerprint: string }
 export interface ExtensionVersion { id: string; version: string; rules?: ExtensionRulesIdentity }
 export interface ExtensionManifest { schema: 1; foundation?: 1; modules: ExtensionVersion[] }
@@ -106,6 +121,7 @@ export interface ExtensionContext {
 export type HookHandlers = { [K in HookName]?: (event: Readonly<HookEvents[K]>, context: ExtensionContext) => void };
 export interface ExtensionModule extends ExtensionVersion {
     dependencies?: readonly string[];
+    readonly view?: ExtensionViewDescriptor;
     initialState(): Json;
     validateState(state: unknown): state is Json;
     hooks?: HookHandlers;

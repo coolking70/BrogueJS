@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import type { ActorFacts, ExtensionContext, ExtensionModule, ExtensionRuleContext, ExtensionRuleInput, Json } from '../../types';
+import type { ActorFacts, ExtensionContext, ExtensionModule, ExtensionRuleContext, ExtensionRuleInput, Json, ReadonlyJson } from '../../types';
 import type { CreatureBirth } from '../../birth';
 import { canonical, isJson } from '../../json';
 import type { DeepReadonly } from './definitions';
@@ -250,6 +250,8 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
     }
     const module: ExtensionModule = {
         id: 'growth',version: pack.moduleVersion,rules: identity,resourceCommits: true,
+        view: { definitions: pack as unknown as ReadonlyJson, stateFields: ['created','revision'],
+            playerComponents: ['progression','attributes','derived','focus','skills'] },
         rulePolicies: {
             hitChance:policy('hitChance'), physicalDamage:(input,context) => evaluateGrowthPhysicalDamage(pack,policyInput(input,context) as GrowthDamageInput),
             stealthRange:policy('stealthRange'), searchStrength:policy('searchStrength'), strengthBonus:policy('strengthBonus'),maxHpBonus:policy('maxHpBonus'),

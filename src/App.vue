@@ -21,9 +21,10 @@ export function wireConfirmRequest(game: Game): void {
 </script>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import { computed, ref, shallowRef, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { displaySettings } from './engine/Settings';
 import { inputManager } from './engine/Input';
+import { logger } from './engine/Systems/Logger';
 import { saveSnapshot, readSnapshot, readSaveSummary, deleteSnapshot, type SaveSummary } from './engine/Core/SaveStorage';
 import i18next from 'i18next';
 import GameCanvas from './components/GameCanvas.vue';
@@ -51,6 +52,9 @@ import { activeGame, type GameMode } from './engine/Core/Game';
 import { viewport, startViewportTracking, shouldShowTouchControls } from './ui/layout';
 import { recordingJsonAtBoundary, RecordingExportError } from './ui/recordingExport';
 import type { DetailInfo } from './engine/UI/DetailGenerator';
+import GrowthCharacterPanel from './components/growth/GrowthCharacterPanel.vue';
+import { useGrowthCharacter } from './ui/useGrowthCharacter';
+import { createGrowthAllocationDraft, buildGrowthAllocateCommand, buildGrowthRespecCommand, type GrowthAllocationDraft } from './ext/modules/growth/view';
 
 const REPLAY_KEY = 'brogue-web-replay-v1';
 
@@ -62,6 +66,70 @@ const touchUi = computed(() => !compact.value && viewport.coarsePointer);
 const panelOpen = ref(false);
 const contextWidth = computed(() => displaySettings.sidebarWidthMode === 'proportional' ? 'clamp(190px, 20vw, 280px)' : '216px');
 const journalOpen = ref(false);
+const characterOpen = ref(false);
+const growthDraft = shallowRef<GrowthAllocationDraft | null>(null);
+const { view: growthView, poll: pollGrowth } = useGrowthCharacter(growthDraft);
+const growthSubmitting = ref(false);
+const growthError = ref<string | null>(null);
+const growthNotice = ref<string | null>(null);
+// The game is not reactive; the existing display tick keeps availability current.
+function canOpenGrowthCharacter() {
+  return !!growthView.value && growthView.value.disabledReason !== 'unavailable'
+    && growthView.value.disabledReason !== 'creation-required'
+    && !(menuOpen.value || activeGame.isInventoryOpen || activeGame.isThrowing || activeGame.pendingArcana
+      || activeGame.pendingEnchantment || activeGame.pendingIdentify || activeGame.pendingUseConfirm
+      || logger.pendingAcknowledgment || activeGame.referenceScreen || activeGame.isGameOver
+      || activeGame.isAdvancing || activeGame.isInputLocked());
+}
+const growthBlocked = computed(() => { replayTick.value; return !canOpenGrowthCharacter(); });
+function openCharacter() {
+  pollGrowth();
+  if (!growthView.value || !canOpenGrowthCharacter()) return;
+  cancelHeldInputs();
+  panelOpen.value = false; journalOpen.value = false; themePanelOpen.value = false;
+  nearbyInspection.value = null; activeGame.inspectTarget = null;
+  growthError.value = null; growthNotice.value = null;
+  growthDraft.value = createGrowthAllocationDraft(growthView.value);
+  characterOpen.value = true;
+}
+function closeCharacter() {
+  if (growthSubmitting.value) return;
+  characterOpen.value = false; growthDraft.value = null; growthError.value = null; growthNotice.value = null;
+  void nextTick(() => document.querySelector<HTMLElement>('.game-view')?.focus({ preventScroll: true }));
+}
+function resetGrowthDraft() {
+  if (!growthView.value || growthSubmitting.value) return;
+  growthDraft.value = createGrowthAllocationDraft(growthView.value); growthError.value = null; growthNotice.value = null;
+}
+function adjustGrowthDraft(id: string, amount: number) {
+  if (!growthDraft.value || !growthView.value || growthSubmitting.value || growthView.value.readOnly) return;
+  const row = growthView.value.attributes.find(attribute => attribute.id === id);
+  if (!row || (amount > 0 ? !row.canIncrease : !row.canDecrease)) return;
+  const attributes = { ...growthDraft.value.attributes, [id]: (growthDraft.value.attributes[id] ?? 0) + amount };
+  if (!attributes[id]) delete attributes[id];
+  growthDraft.value = { ...growthDraft.value, attributes }; growthError.value = null; growthNotice.value = null;
+}
+async function submitGrowth(kind: 'allocate' | 'respec') {
+  if (!characterOpen.value || growthSubmitting.value || !growthView.value || growthView.value.readOnly) return;
+  growthSubmitting.value = true; growthError.value = null; growthNotice.value = null;
+  try {
+    const command = kind === 'allocate' ? buildGrowthAllocateCommand(growthView.value, activeGame)
+      : buildGrowthRespecCommand(growthView.value, activeGame);
+    if (!command) { growthError.value = 'ext.growth.ui.command_rejected'; pollGrowth(); return; }
+    const revision = growthView.value.revision;
+    activeGame.executeCommand('ext:command', command);
+    pollGrowth();
+    if (growthView.value?.revision === revision) { growthError.value = 'ext.growth.ui.command_rejected'; return; }
+    // Keep the panel over the map after success: a physical second click cannot
+    // become an unintended movement. The fresh empty draft also disables submit.
+    growthDraft.value = createGrowthAllocationDraft(growthView.value!);
+    growthNotice.value = kind === 'allocate' ? 'ext.growth.ui.allocated' : 'ext.growth.ui.respecced';
+  } catch {
+    growthError.value = 'ext.growth.ui.command_rejected'; pollGrowth();
+  } finally {
+    await nextTick(); growthSubmitting.value = false;
+  }
+}
 const nearbyInspection = ref<DetailInfo | null>(null);
 // Display-only panel expansion; preserve one GameCanvas instance across layout changes.
 const themePanelOpen = ref(false);
@@ -105,8 +173,10 @@ const menuOpen = ref(true);
 watch([menuOpen, panelOpen, journalOpen, nearbyInspection, themePanelOpen], (next, previous) => {
   if (next.some((value, index) => !!value && value !== previous[index])) cancelHeldInputs();
 }, { flush: 'sync' });
+watch(characterOpen, open => { if (open) cancelHeldInputs(); }, { flush: 'sync' });
 watch(menuOpen, (open) => {
   if (!open || !gameStarted.value) return;
+  if (characterOpen.value) closeCharacter();
   if (activeGame.replayStatus === 'playing') activeGame.replayPause();
   else if (activeGame.isAutoTraveling()) inputManager.triggerAction('interrupt_auto');
 });
@@ -147,6 +217,7 @@ const hasReplay = computed(() => {
 
 const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "classic" | "extended" }) => {
   runEpoch++;
+  characterOpen.value = false; growthDraft.value = null;
   replayFeedback.value = '';
   activeGame.startNewGame({ seed: payload.seed, mode: payload.mode, ruleSet: payload.ruleSet });
   for (const command of activeGame.extensionRuntime?.initialCommands() ?? []) activeGame.executeCommand('ext:command', command);
@@ -158,7 +229,8 @@ const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "class
       defaultValue: 'Started {{mode}} game (seed {{seed}}).'
     })
   );
-  gameStarted.value = true;
+  pollGrowth();
+    gameStarted.value = true;
   menuOpen.value = false;
 };
 
@@ -186,6 +258,7 @@ const continueGame = async () => {
     runAvailable.value = true;
     replayFeedback.value = '';
     storageTick.value++;
+    pollGrowth();
     gameStarted.value = true;
     menuOpen.value = false;
   } catch {
@@ -247,6 +320,7 @@ const loadReplay = () => {
       replayMessage(i18next.t('menu.log.replay_load_failed', { defaultValue: 'Replay load failed.' }));
       return;
     }
+    pollGrowth();
     gameStarted.value = true;
     menuOpen.value = false;
     replayMessage(i18next.t('menu.log.replay_loaded', { defaultValue: 'Replay loaded.' }));
@@ -282,11 +356,11 @@ const replayStep = () => {
 };
 
 const replayRestart = () => {
-  activeGame.replayRestart();
+  activeGame.replayRestart(); pollGrowth();
 };
 
 const replaySeek = (index: number) => {
-  activeGame.replaySeek(index);
+  activeGame.replaySeek(index); pollGrowth();
 };
 
 const downloadReplayJson = (raw: string) => {
@@ -329,6 +403,7 @@ const importReplayJson = async (file: File) => {
     runEpoch++;
     runAvailable.value = true;
     replayFeedback.value = i18next.t('menu.replay.imported_unsaved', { defaultValue: 'Recording imported. Save it to keep it in this browser.' });
+    pollGrowth();
     gameStarted.value = true;
     menuOpen.value = false;
     const imported = i18next.t('menu.log.replay_imported', { defaultValue: 'Replay JSON imported.' });
@@ -357,16 +432,16 @@ const handleReturnToTitle = async () => {
     <template v-if="gameStarted">
       <!-- FE-1：GameCanvas 始终是同一位置的同一实例（旋转屏幕不重建 Pixi），
            其余部件按布局模式挂载，用 CSS grid 区域摆放。 -->
-      <ThemeHud class="area-vitals" :show-panel-button="compact || displaySettings.immersiveMode" :panel-open="compact && !displaySettings.immersiveMode ? panelOpen : themePanelOpen" @menu="menuOpen = true" @panel="toggleThemePanel" />
+      <ThemeHud class="area-vitals" :show-panel-button="compact || displaySettings.immersiveMode" :panel-open="compact && !displaySettings.immersiveMode ? panelOpen : themePanelOpen" :growth="growthView" :growth-blocked="growthBlocked" :immersive="displaySettings.immersiveMode" @character="openCharacter" @menu="menuOpen = true" @panel="toggleThemePanel" />
       <ThemeLog class="area-log" :lines="themeLogLines" :single-line="displaySettings.immersiveMode && !themePanelOpen" @open-journal="journalOpen = true" />
       <ThemeNearby class="area-near" @inspect="nearbyInspection = $event" />
       <div class="map-area">
-        <GameCanvas class="game-view" />
+        <GameCanvas class="game-view" :display-modal-open="characterOpen" />
         <MapZoomControls />
         <RadialCommands v-if="displaySettings.immersiveMode && !replayActive" class="area-radial" @modal-open="cancelHeldInputs" />
       </div>
       <TargetBar class="area-target" />
-      <CommandBar v-if="showCommands || (!compact && !replayActive)" class="area-cmd" :mode="viewport.mode" @modal-open="cancelHeldInputs" />
+      <CommandBar v-if="showCommands || (!compact && !replayActive)" class="area-cmd" :mode="viewport.mode" :show-character="!!growthView" :character-blocked="growthBlocked" :has-growth-points="growthView?.hasUnspentPoints" @character="openCharacter" @modal-open="cancelHeldInputs" />
       <DPad v-if="showTouch" class="area-pad" :mode="viewport.mode" />
       <ContextPanel v-if="!compact && themePanelOpen && !displaySettings.immersiveMode" class="area-context" @close="themePanelOpen = false" @inspect="nearbyInspection = $event" />
       <SideDrawer :open="panelOpen" @close="panelOpen = false">
@@ -375,6 +450,8 @@ const handleReturnToTitle = async () => {
       <SideDrawer :open="journalOpen" variant="journal" @close="journalOpen = false">
         <MessageJournal />
       </SideDrawer>
+      <GrowthCharacterPanel v-if="characterOpen && growthView" :model="growthView" :submitting="growthSubmitting" :error="growthError" :notice="growthNotice"
+        @close="closeCharacter" @reset="resetGrowthDraft" @adjust="adjustGrowthDraft" @submit="submitGrowth('allocate')" @respec="submitGrowth('respec')" />
       <InventoryOverlay />
       <GameEndOverlay :can-save-replay="canSaveReplay" :replay-busy="replayBusy" :replay-feedback="replayFeedback"
         @save-replay="saveReplay" @export-replay-json="exportCurrentReplayJson" @return-to-title="handleReturnToTitle" />
