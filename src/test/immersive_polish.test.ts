@@ -171,6 +171,7 @@ beforeAll(async () => {
         '../../ui/useGameHud': await import('../ui/useGameHud'), '../ui/commands': await import('../ui/commands'),
         '../types': await import('../types'), './ui/layout': await import('../ui/layout'),
         './ui/immersiveMode': await import('../ui/immersiveMode'), './ui/recordingExport': await import('../ui/recordingExport'),
+        './ui/heldInput': await import('../ui/heldInput'), '../ui/heldInput': await import('../ui/heldInput'),
         './engine/Core/Game': await import('../engine/Core/Game'), './engine/Core/SaveStorage': await import('../engine/Core/SaveStorage'),
         './MapTileLegend.vue': { default: { emits: ['close'], render: () => Vue.h('section', { class: 'map-legend' }) }, __esModule: true },
         './theme/TitleFx.vue': empty,

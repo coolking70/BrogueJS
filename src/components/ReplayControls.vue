@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import { activeGame } from '../engine/Core/Game';
+import { cancelHeldInputs } from '../ui/heldInput';
 
 const { t } = useTranslation();
 const pulse = ref(0);
@@ -26,6 +27,7 @@ const togglePlay = () => {
   if (isPlaying.value) {
     activeGame.replayPause();
   } else {
+    cancelHeldInputs();
     if (activeGame.replayStatus === 'finished') {
         activeGame.replaySeek(0);
     }

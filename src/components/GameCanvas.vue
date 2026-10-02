@@ -113,7 +113,9 @@ import { observeCanvasResize } from '../ui/canvasResize';
 import { readMapOcclusions, observeMapOcclusions } from '../ui/mapOcclusion';
 import { MAP_HOVER_FILL, MAP_HOVER_STROKE, MousePanTracker, shouldHandleMapWheel, shouldHighlightMapCell, wheelZoomFactor } from '../ui/mapPointer';
 // FE-1：触屏手势与目标选择（改状态的输出只经 ui/commands 的录制边界）
-import { GestureTracker, type GestureEvent } from '../ui/touchGestures';
+import type { GestureEvent } from '../ui/touchGestures';
+import { bindMapTouchInput } from '../ui/mapTouchInput';
+import { registerHeldInputContext, syncHeldInputContext } from '../ui/heldInput';
 import { normalizeMapGlyph } from '../ui/mapGlyph';
 import { RetainedBackgroundLayer, RetainedVectorLayer, VectorGeometryCache } from '../ui/retainedMapDrawing';
 import { RenderRequests } from '../ui/renderRequests';
@@ -143,6 +145,7 @@ let removeOcclusionObserver: (() => void) | null = null;
 // FE-1：触屏手势监听的卸载函数
 let removeDisplayClockListener: (() => void) | null = null;
 let removeTouchListeners: (() => void) | null = null;
+let removeHeldInputContext: (() => void) | null = null;
 
 onMounted(async () => {
   if (canvasContainer.value) {
@@ -351,6 +354,12 @@ onMounted(async () => {
     stopCameraWatch = watch(() => [cameraState.zoom, cameraState.panX, cameraState.panY, cameraState.fit], () => applyLayout());
 
     const game = activeGame;
+    removeHeldInputContext = registerHeldInputContext(() => [
+        game.isInventoryOpen, game.referenceScreen, game.inspectTarget,
+        game.pendingArcana, game.isThrowing, game.pendingEnchantment,
+        game.pendingIdentify, game.pendingUseConfirm, logger.pendingAcknowledgment,
+        game.isGameOver, game.replayRecording, game.replayStatus === 'playing',
+    ]);
     frameProfile = new URLSearchParams(window.location.search).get('profile') === '1' ? new FrameProfile() : null;
     if (frameProfile) {
         let started = 0;
@@ -369,7 +378,9 @@ onMounted(async () => {
     // headless（无渲染）环境不挂载本组件，animationEnabled 保持 false，同步推进。
     game.animationEnabled = true;
     inputManager.setCallback((action, data) => {
+        syncHeldInputContext();
         game.handlePlayerAction(action, data);
+        syncHeldInputContext();
         game.update();
     });
     inputManager.setUnboundKeyCallback(() => {
@@ -633,7 +644,7 @@ onMounted(async () => {
         }
         applyLayout(); renders.request();
     }, { immediate: true, flush: 'post' });
-    game.onRenderRequested = renders.request;
+    game.onRenderRequested = () => { syncHeldInputContext(); renders.request(); };
 
     (window as Window & { render_game_to_text?: () => string }).render_game_to_text = () => {
         const visibleMonsters = game.monsters
@@ -837,6 +848,7 @@ onMounted(async () => {
         }
         if (button === 2) {
             game.handleInspectAt(mapX, mapY);
+            syncHeldInputContext();
             return;
         }
 
@@ -886,7 +898,6 @@ onMounted(async () => {
     });
 
     // ---------- FE-1：触屏手势（单击 / 长按查看 / 单指平移 / 双指缩放） ----------
-    const gestures = new GestureTracker();
     const canvasEl = pixiApp.canvas;
     const cellAtClient = (clientX: number, clientY: number) => {
         const rect = canvasEl.getBoundingClientRect();
@@ -916,38 +927,9 @@ onMounted(async () => {
             }
         }
     };
-    let longPressTimer = 0;
-    const isTouchLike = (e: PointerEvent) => e.pointerType === 'touch' || e.pointerType === 'pen';
-    const onTouchDown = (e: PointerEvent) => {
-        if (!isTouchLike(e)) return;
-        e.preventDefault();
-        try { canvasEl.setPointerCapture?.(e.pointerId); } catch { /* 合成事件无活动指针 */ }
-        handleGestures(gestures.down(e.pointerId, e.clientX, e.clientY, performance.now()));
-        if (!longPressTimer) {
-            longPressTimer = window.setInterval(() => {
-                handleGestures(gestures.poll(performance.now()));
-                if (!gestures.active) { window.clearInterval(longPressTimer); longPressTimer = 0; }
-            }, 50);
-        }
-    };
-    const onTouchMove = (e: PointerEvent) => {
-        if (!isTouchLike(e)) return;
-        handleGestures(gestures.move(e.pointerId, e.clientX, e.clientY));
-    };
-    const onTouchUp = (e: PointerEvent) => {
-        if (!isTouchLike(e)) return;
-        handleGestures(gestures.up(e.pointerId, performance.now()));
-    };
-    const onTouchCancel = (e: PointerEvent) => {
-        if (!isTouchLike(e)) return;
-        gestures.cancel(e.pointerId);
-    };
-    canvasEl.addEventListener('pointerdown', onTouchDown);
-    canvasEl.addEventListener('pointermove', onTouchMove);
-    canvasEl.addEventListener('pointerup', onTouchUp);
-    canvasEl.addEventListener('pointercancel', onTouchCancel);
+    const removeMapTouchInput = bindMapTouchInput(canvasEl, handleGestures);
     removeTouchListeners = () => {
-        window.clearInterval(longPressTimer);
+        removeMapTouchInput();
         window.clearTimeout(suppressTimer);
         canvasEl.removeEventListener('pointerdown', onMouseDown);
         canvasEl.removeEventListener('pointermove', onMouseMove);
@@ -955,10 +937,6 @@ onMounted(async () => {
         canvasEl.removeEventListener('pointercancel', onMouseCancel);
         canvasEl.removeEventListener('pointerleave', onMouseLeave);
         canvasEl.removeEventListener('wheel', onMapWheel);
-        canvasEl.removeEventListener('pointerdown', onTouchDown);
-        canvasEl.removeEventListener('pointermove', onTouchMove);
-        canvasEl.removeEventListener('pointerup', onTouchUp);
-        canvasEl.removeEventListener('pointercancel', onTouchCancel);
     };
 
     let pathingTimer = 0; // Display milliseconds, not rendered frame count.
@@ -969,6 +947,7 @@ onMounted(async () => {
         && !game.isAdvancing && !game.isInputLocked() && !game.isGameOver
         && !logger.pendingAcknowledgment && game.isAutoTraveling() && !document.hidden;
     const displayFrame = (elapsedMs: number, animationMs: number = elapsedMs) => {
+        syncHeldInputContext();
         const profileNow = frameProfile ? performance.now() : 0;
         frameProfile?.frame(profileNow, game.isAutoTraveling());
         const report = frameProfile?.report(profileNow, { seed: game.currentSeed, depth: game.depth, turn: game.absoluteTurnNumber, mode: mapMode.value, geometryContexts: vectorGeometry?.size, position: [game.player.loc.x, game.player.loc.y], hp: game.player.hp, nutrition: game.player.nutrition, commands: game.recordedInputEvents.length });
@@ -1015,6 +994,7 @@ onMounted(async () => {
                     frameProfile?.record('autoStepCpuMs', performance.now() - stepStart);
                 });
         } finally {
+            syncHeldInputContext();
             // Present requested overlays and final states even while paused.
             renders.flush(render);
         }
@@ -1065,6 +1045,8 @@ onUnmounted(() => {
   removeDisplayClockListener = null;
   removeTouchListeners?.();
   removeTouchListeners = null;
+  removeHeldInputContext?.();
+  removeHeldInputContext = null;
   clearAim();
 
   delete (window as Window & { advanceTime?: (ms: number) => void }).advanceTime;

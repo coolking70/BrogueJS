@@ -26,7 +26,9 @@ import { inputManager } from '../engine/Input';
 import { dispatch } from '../ui/commands';
 
 const props = defineProps<{ mode: 'portrait' | 'landscape' | 'desktop' }>();
+const emit = defineEmits<{ 'modal-open': [] }>();
 const expanded = ref(false);
+watch(expanded, open => { if (open) emit('modal-open'); }, { flush: 'sync' });
 const root = ref<HTMLElement>();
 const more = ref<HTMLElement>();
 const overflow = ref<HTMLElement>();
