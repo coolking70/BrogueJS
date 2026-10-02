@@ -1,5 +1,0 @@
-
-*** CE reference source not found; run npm run ce:fetch ***
-CE-dependent tests will be explicitly skipped.
-
-{"skipped":83,"missingCe":75,"historicalSkip":8,"todo":5}
