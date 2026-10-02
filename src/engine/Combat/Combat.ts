@@ -66,7 +66,9 @@ export class CombatSystem {
 
     /** Extended detail prediction: pure native facts, the same probability port,
      * no attack hooks, temporary-effect consumption, state changes or random draws. */
-    public static previewHitChance(attacker: Creature, defender: Creature): number {
+    public static previewHitChance(attacker: Creature, defender: Creature, opts?: {
+        lungeAttack?: boolean; isWeaponAttack?: boolean;
+    }): number {
         let accuracy = 100, defense = 0, enchant: number | undefined;
         if (attacker instanceof Player) {
             if (!attacker.equippedWeapon) accuracy = monsterAccuracyAdjusted(100, attacker.weaknessAmount);
@@ -78,15 +80,15 @@ export class CombatSystem {
             defender.equippedArmor.enchantment, defender.effectiveStrength, defender.equippedArmor.strengthRequired || 0,
             defender.getStatusDuration('donning'));
         if (attacker instanceof Monster && attacker.hasAbility('MA_KAMIKAZE')) return 100;
-        if (attacker instanceof Monster && attacker.hasBehavior('MONST_RESTRICTED_TO_LIQUID')
+        if (opts?.isWeaponAttack !== false && attacker instanceof Monster && attacker.hasBehavior('MONST_RESTRICTED_TO_LIQUID')
             && (defender.hasStatus('levitating') || defender.hasStatus('flying'))) return 0;
         if (attacker instanceof Monster && attacker.hasAbility('MA_SEIZES') && (!attacker.seizing || !defender.seized)) return 0;
         const inanimate = defender instanceof Monster && defender.hasBehavior('MONST_INANIMATE');
-        const autoHit = defender.hasStatus('paralyzed') || defender.hasStatus('stuck')
+        const autoHit = opts?.lungeAttack === true || defender.hasStatus('paralyzed') || defender.hasStatus('stuck')
             || (defender instanceof Monster && (defender.isCaged || (!inanimate && (defender.state === MonsterState.ASLEEP
                 || (attacker instanceof Player && !defender.isAlly && defender.state === MonsterState.WANDERING)))));
         const probability = defender.seized && attacker.seizing ? 100 : hitProbability(accuracy, defense, enchant);
-        const rule = (attacker.extensionHooks ?? defender.extensionHooks)?.rule;
+        const rule = opts?.isWeaponAttack === false ? undefined : (attacker.extensionHooks ?? defender.extensionHooks)?.rule;
         if (!rule) return autoHit ? 100 : probability;
         const result = Math.floor(rule('hitChance', { actorId: attacker.id, targetId: defender.id, baseValue: probability * 100,
             attackKind: 'melee', adjacent: Math.max(Math.abs(attacker.x - defender.x), Math.abs(attacker.y - defender.y)) === 1,
