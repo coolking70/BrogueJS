@@ -54,6 +54,57 @@ const cls = (name: string, scope = body) => all(scope).find(n => hasClass(n, nam
 const click = (n: Node) => { expect(n).toBeTruthy(); if (!n.props.disabled) n.props.onClick?.({ target: n, currentTarget: n, stopPropagation() {}, preventDefault() {} }); };
 async function tick() { await Vue.nextTick(); await Vue.nextTick(); }
 const source = (path: string) => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+/** Apply the actual compiled scoped styles followed by the later shell stylesheet.
+ * This verifies the cascade, not browser glyph measurements or scroll gestures. */
+function hudCascade(target: Node, width: number, height = 844): Record<string, string> {
+    const compiled = parse(source('components/theme/ThemeHud.vue')).descriptor.styles.map(style => {
+        const result = compileStyle({ source: style.content, filename: 'ThemeHud.vue', id: 'data-v-growth-hud', scoped: style.scoped });
+        expect(result.errors).toEqual([]); return result.code;
+    }).join('\n');
+    const stylesheet = postcss.parse(compiled + '\n' + source('assets/theme-shells.css'));
+    const html = node('html'); html.props['data-ui-concept'] = 'glyph';
+    const ancestors: Node[] = [];
+    for (let parent = target.parent; parent; parent = parent.parent) ancestors.unshift(parent);
+    ancestors.unshift(html);
+    const matches = (element: Node, compound: string): boolean => {
+        compound = compound.replace(/\[data-v-growth-hud\]/g, '');
+        const attrs = [...compound.matchAll(/\[([\w-]+)=([\w-]+)\]/g)];
+        if (attrs.some(match => element.props[match[1]!] !== match[2])) return false;
+        compound = compound.replace(/\[[^\]]+\]/g, '');
+        if ([...compound.matchAll(/\.([\w-]+)/g)].some(match => !hasClass(element, match[1]!))) return false;
+        compound = compound.replace(/\.[\w-]+/g, '');
+        return !compound || compound === element.type;
+    };
+    const values: Record<string, string> = {}, scores: Record<string, number> = {};
+    stylesheet.walkRules(rule => {
+        for (let parent: postcss.AnyNode | undefined = rule.parent; parent; parent = parent.parent) {
+            if (parent.type !== 'atrule' || parent.name !== 'media') continue;
+            const applies = parent.params.split(',').some(query => [...query.matchAll(/(max|min)-(width|height)\s*:\s*(\d+)px/g)].every(match => {
+                const actual = match[2] === 'width' ? width : height, limit = Number(match[3]);
+                return match[1] === 'max' ? actual <= limit : actual >= limit;
+            }));
+            if (!applies) return;
+        }
+        for (const raw of rule.selectors) {
+            if (/[>+~:]|\*/.test(raw)) continue;
+            const selector = raw.replace(/\[data-v-growth-hud\]/g, ''), parts = selector.trim().split(/\s+/);
+            if (!matches(target, parts.pop()!)) continue;
+            let index = ancestors.length - 1, match = true;
+            for (const part of parts.reverse()) {
+                while (index >= 0 && !matches(ancestors[index]!, part)) index--;
+                if (index < 0) { match = false; break; }
+                index--;
+            }
+            if (!match) continue;
+            const specificity = (selector.match(/\.[\w-]+|\[[^\]]+\]/g) ?? []).length * 10 + (selector.startsWith('html') ? 1 : 0);
+            rule.walkDecls(declaration => {
+                const score = specificity + (declaration.important ? 1000 : 0);
+                if (score >= (scores[declaration.prop] ?? -1)) { scores[declaration.prop] = score; values[declaration.prop] = declaration.value; }
+            });
+        }
+    });
+    return values;
+}
 const win = { innerWidth: 1440, innerHeight: 900, addEventListener: vi.fn(), removeEventListener: vi.fn(),
     localStorage: { getItem: () => null, setItem() {} }, matchMedia: () => ({ matches: false }),
     setInterval: (fn: () => void, ms: number) => globalThis.setInterval(fn, ms),
@@ -200,6 +251,24 @@ describe('EXT-1c mounted growth character interactions', () => {
             });
             expect(narrowRules).toBe(2);
         }
+    });
+    it.each([320, 390])('preserves intrinsic search and other badges in the compiled immersive cascade at %i px', async width => {
+        configured(); await start(); viewport.mode = 'portrait'; displaySettings.immersiveMode = true;
+        game.monsters = []; game.dormantMonsters = [];
+        game.executeCommand('search'); game.executeCommand('search'); game.executeCommand('search');
+        game.player.setStatusDuration('poisoned', 20); game.player.setStatusDuration('haste', 20);
+        vi.advanceTimersByTime(100); await tick();
+        const header = cls('theme-hud', root), statuses = cls('th-statuses', root);
+        const badges = all(statuses).filter(item => hasClass(item, 'th-status'));
+        expect(text(badges[0]!)).toContain('搜索中 3/5');
+        expect(badges.map(text).join(' ')).toContain('中毒'); expect(badges.map(text).join(' ')).toContain('急行');
+        expect(hudCascade(header, width).gap).toBe('2px');
+        expect(hudCascade(statuses, width)).toMatchObject({ flex: '0 1 auto', width: 'auto', 'min-width': '0', 'overflow-x': 'auto', 'overflow-y': 'hidden', 'flex-wrap': 'nowrap' });
+        for (const badge of badges) expect(hudCascade(badge, width)).toMatchObject({ 'max-width': 'none', flex: '0 0 auto', 'white-space': 'nowrap' });
+        for (const name of ['th-hp', 'th-food', 'th-depth', 'th-growth']) expect(hudCascade(cls(name, root), width).display).not.toBe('none');
+        viewport.mode = 'desktop'; displaySettings.immersiveMode = false; await tick();
+        expect(hudCascade(statuses, 1440, 900)['flex-wrap']).toBe('wrap');
+        for (const badge of badges) expect(hudCascade(badge, 1440, 900)['max-width']).toBe('100%');
     });
     it('removes extension HUD and entry on the first rendered classic restart frame', async () => {
         configured(); await start(); expect(cls('th-growth', root)).toBeTruthy();

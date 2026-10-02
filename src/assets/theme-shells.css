@@ -276,7 +276,7 @@ html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-stat{displ
 /* Multiple statuses share one line; overflow scrolls within the HUD's remaining width. */
 html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-statuses{flex:0 1 auto;order:0;width:auto;align-self:center;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
 html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-statuses::-webkit-scrollbar{display:none}
-html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-status{border:0;padding:0 0 3px}
+html[data-ui-concept=glyph] .immersive-mode .theme-hud .th-status{max-width:none;border:0;padding:0 0 3px}
 html[data-ui-concept=glyph] .app-layout.immersive-mode .theme-hud .th-panel{order:2;display:block;flex:0 0 auto;margin-left:auto}
 /* These selectors outrank the default desktop sidebar's 86px minimum and portrait rules. */
 html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode>.area-log{height:calc(32px + env(safe-area-inset-bottom));min-height:0;padding:2px 8px calc(2px + env(safe-area-inset-bottom));border:0;border-top:1px solid var(--th-line);background:var(--th-panel);text-align:left}
@@ -319,6 +319,9 @@ html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hu
 html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud .th-btn{min-height:44px;padding:0 2px;font-size:12px}
 html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-landscape .theme-hud .th-stats{display:none}
 html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud.has-search-progress .th-turn{display:none!important}
+/* Preserve intrinsic badge widths for scrolling; reserve more room for the first
+ * search badge on narrow growth HUDs without removing any vital information. */
+@media(max-width:420px){html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud.has-growth.has-search-progress{gap:2px!important}}
 html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .map-zoom{opacity:.45}
 /* Short landscape: keep the zoom tools above the left pad, away from the open ring. */
 html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.layout-landscape .map-zoom{flex-direction:row;left:8px;right:auto}
