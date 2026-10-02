@@ -433,6 +433,7 @@ export class Monster extends Creature {
         this.char = form.char;
         this.color = form.color;
         this.maxHp = form.hp;
+        this.extensionHooks?.nativeMaximumReset?.(this);
         this.damageString = form.damage;
         this.damageClumping = form.clumping ?? CombatSystem.parseDamageString(form.damage ?? '1d3').clumping;
         this.accuracy = form.accuracy ?? 100;
@@ -742,6 +743,7 @@ export class Monster extends Creature {
         // to this entity survive; hostile followers retain their own leader too.
         if (this.isAlly) {
             this.isAlly = false;
+            this.extensionHooks?.relationshipChanged?.(this);
             this.leader = null;
             this.state = MonsterState.HUNTING;
         }
@@ -760,6 +762,7 @@ export class Monster extends Creature {
         this.description = data.description ?? '';
         this.maxHp = data.hp;
         this.hp = hp;
+        this.extensionHooks?.nativeMaximumReset?.(this);
         this.damageString = data.damage;
         this.damageClumping = data.clumping ?? CombatSystem.parseDamageString(data.damage ?? '1d3').clumping;
         this.accuracy = data.accuracy ?? 100;

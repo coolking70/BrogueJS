@@ -1508,5 +1508,8 @@
   "ext.growth.error.cycle": "技能前置存在循环：{{path}}",
   "ext.growth.error.version": "成长配置与模块版本不一致：{{path}}",
   "ext.growth.error.text": "成长配置缺少本地化文本：{{path}}",
-  "ext.growth.error.budget": "成长配置超过声明预算：{{path}}"
+  "ext.growth.error.budget": "成长配置超过声明预算：{{path}}",
+  "ext.growth.command.rejected": "当前状态无法执行该角色命令。",
+  "ext.growth.command.creation_required": "请先创建角色，再保存游戏。",
+  "ext.growth.level_gained": "你的等级提升至 {{level}} 级。"
 }

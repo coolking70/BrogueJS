@@ -20,3 +20,12 @@ export function createGrowthContractModule(): ExtensionModule {
         validateState: (value): value is Record<string, never> => isJson(value) && value !== null
             && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0 };
 }
+
+import { createGrowthGameplay } from './module';
+/** Active 1a runtime; the original contract-only factory remains available to explicit probes. */
+export function createGrowthModule(): ExtensionModule {
+    const contract = createGrowthContractModule();
+    const text: Readonly<Record<string,string>> = zhCN;
+    const pack = loadGrowthDefinitionPack({hasText: key => typeof text[key] === 'string' && text[key]!.trim().length > 0});
+    return createGrowthGameplay(pack,contract.rules);
+}

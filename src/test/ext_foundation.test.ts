@@ -24,7 +24,7 @@ const probe = (id: string, hooks: ExtensionModule['hooks'] = {}): ExtensionModul
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 function extended(seed = 4101, mode: 'normal' | 'wizard' | 'test' = 'test'): Game {
     const game = createHeadlessGame(seed, 'test');
-    game.startNewGame({ seed, mode, ruleSet: 'extended' });
+    game.startNewGame({ seed, mode, ruleSet: 'extended', extensions: ['example'] });
     return game;
 }
 const rat = (game: Game): Monster => new Monster(game.player.x + 1, game.player.y,

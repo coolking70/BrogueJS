@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ExtensionRegistry } from '../ext/registry';
+import * as catalog from '../ext/catalog';
+import { createGrowthContractModule } from '../ext/modules/growth';
 import { ExtensionRuntime, type ExtensionPorts } from '../ext/runtime';
 import { Creature } from '../entities/Creature';
 import type { MonsterData } from '../entities/Monster';
@@ -65,7 +67,7 @@ describe('EXT-1a0 foundation versions and retained data', () => {
     });
     it('validates source/death records atomically, without retiring a currently running game', () => {
         const game = createHeadlessGame(700, 'test');
-        game.startNewGame({ seed: 700, mode: 'test', ruleSet: 'extended' });
+        game.startNewGame({ seed: 700, mode: 'test', ruleSet: 'extended', extensions: ['example'] });
         const original = game.extensionRuntime, player = game.player;
         const invalid = game.toSaveSnapshot();
         invalid.extensions!.foundation.causality.nextEffectId = 0;
@@ -142,7 +144,7 @@ describe('EXT-1a0 command-boundary collection', () => {
     });
     it('finalizes animated checkpoints after collection and reproduces the same save/replay envelope', () => {
         const game = createHeadlessGame(701, 'test');
-        game.startNewGame({ seed: 701, mode: 'test', ruleSet: 'extended' });
+        game.startNewGame({ seed: 701, mode: 'test', ruleSet: 'extended', extensions: ['example'] });
         game.animationEnabled = true;
         game.executeCommand('wait');
         expect(game.isAdvancing).toBe(true);
@@ -162,6 +164,14 @@ describe('EXT-1a0 command-boundary collection', () => {
 
 describe('EXT-1a0 opt-in data contract module', () => {
     it('records and restores the actual sample data identity without enabling growth gameplay', () => {
+        // Historical 1a0 contract probe: explicit empty-state factory and its original versioned envelope.
+        // Production growth gameplay/default selection is covered independently by ext_growth_runtime.
+        const contract = createGrowthContractModule();
+        const rules = { ...contract.rules!, version: '1.0.0' };
+        const registry = new ExtensionRegistry();
+        registry.register('growth', '1.0.0', () => ({ ...contract, version: '1.0.0', rules }), rules);
+        const factory = vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(registry);
+        try {
         const game = createHeadlessGame(704, 'test');
         game.startNewGame({ seed: 704, mode: 'test', ruleSet: 'extended', extensions: ['growth'] });
         const identity = game.extensionRuntime!.manifest.modules[0]!.rules!;
@@ -180,6 +190,7 @@ describe('EXT-1a0 opt-in data contract module', () => {
         expect(restored.extensionRuntime!.manifest.modules[0]!.rules).toEqual(identity);
         const replay = createHeadlessGame(706, 'test'); expect(replay.loadReplay(recording)).toBe(true); replay.replayStep(true);
         expect(replay.replayError).toBeNull(); expect(replay.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        } finally { factory.mockRestore(); }
     });
     it('rejects invalid local data before retiring the previous live run', async () => {
         const data = (await import('../ext/modules/growth/definitions.json')).default;

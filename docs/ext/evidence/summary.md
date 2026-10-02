@@ -124,3 +124,28 @@ END test-full EXIT_CODE=0 DURATION_SECONDS=5594 2026-10-02T08:20:28Z
    Duration  49.79s (transform 1.19s, setup 0ms, import 1.87s, tests 47.75s, environment 0ms)
 END test-drift EXIT_CODE=0 DURATION_SECONDS=52 2026-10-02T08:21:20Z
 ```
+
+
+## 阶段 1a：配置驱动经验与等级最终验收
+
+基线 51897db，完整报告见 [phase1a.report.md](../phase1a.report.md)。实际改动 Game、GenerationCoordinator、ItemLoader、Monster 四个引擎/实体文件，因此采用完整/CE档；test:full 替代 npm test。84 新用例、全部 ext 13文件225例、全部源码守卫146快速+3重型预检通过。获准历史初始化调整的单变量反事实及9例清单见报告，原断言不变。
+
+```text
+END vue-tsc EXIT_CODE=0 DURATION_SECONDS=14 2026-10-02T09:43:28Z
+END build EXIT_CODE=0 DURATION_SECONDS=21 2026-10-02T09:43:49Z
+CE reference already verified: legacy 49be8dd3fc1b9a0fb477df4c9153c0e1cf796fe9
+END ce-fetch EXIT_CODE=0 DURATION_SECONDS=0 2026-10-02T09:43:49Z
+ Test Files  280 passed (280)
+      Tests  4974 passed | 8 skipped | 5 todo (4987)
+   Duration  5754.68s (transform 9.04s, setup 0ms, import 192.59s, tests 11273.62s, environment 109ms)
+END test-full EXIT_CODE=0 DURATION_SECONDS=5756 2026-10-02T11:19:45Z
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Duration  49.96s (transform 1.24s, setup 0ms, import 1.96s, tests 47.84s, environment 0ms)
+END test-drift EXIT_CODE=0 DURATION_SECONDS=50 2026-10-02T11:20:35Z
+FINAL all_gates=0 2026-10-02T11:20:35Z
+```
+
+前后源码聚合相同：`8aec4a68979ee9c78e6c6d50371aff563a686b3bbf2ed5fea67b0945876e3aa8`。活动 CE 对照已执行；8历史skip/5历史todo明确保留，未新增。此前一轮为修复加载预检实体ID消耗而主动中止exit130，不计完整通过。最终代码后没有再改生产/测试。原始日志/清单/中断记录仅在忽略目录 `tmp-phase1a-raw/`。
+
+1a 完成后停下；合 main 前由维护者本机另跑完整 test:full。

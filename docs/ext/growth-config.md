@@ -1,12 +1,14 @@
-# Growth 数据配置合同（1a0）
+# Growth 数据配置合同（1a，schema 1 / rules 1.1.0）
 
-本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0只提供合同/加载验证/版本绑定，**不注册启用成长玩法，不发XP，不执行属性、技能或身份效果**。
+本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0 已验收；1a 启用配置驱动 XP、等级、自动生命及中性角色创建。属性纯求值/分配、技能执行、身份/模板仍分别归 1b/1d/1e；下列运行状态区分已经接线和仅有数据合同。
 
 ## 1. 实际文件与边界
 
 | 文件 | 责任 |
 |---|---|
-| `src/ext/modules/growth/index.ts` | 显式opt-in合同工厂：校验真实怪物/物品/类别引用，仅允许空模块状态，无XP/创建/技能钩子 |
+| `src/ext/modules/growth/index.ts` | 生产 growth 工厂校验真实目录并创建 1a 运行器；保留显式合同探针工厂供底座测试 |
+| `src/ext/modules/growth/module.ts`、`state.ts` | XP 事实队列/安全点结算、角色创建、收据/来源摘要与跨组件/世界校验 |
+| `src/ext/modules/growth/experience.ts`、`components.ts` | 精确整数等级/发点/自动 HP、资源提交基础、严格组件校验 |
 | `src/ext/modules/growth/types.ts` | 配置类型、判别联合、有限规则端口/动作词汇 |
 | `src/ext/modules/growth/schema.ts` | `getGrowthSchema()`结构合同及两阶段纯校验、引用/预算/循环/版本检查；schema显式请求时才构造并冻结缓存 |
 | `src/ext/modules/growth/definitions.json` | 默认样例配置和12技能/4职业/4血统/4信仰定义 |
@@ -14,7 +16,35 @@
 | `src/ext/modules/growth/text.ts` | 样例定义与校验错误的本地化词条 |
 | `src/ext/registry.ts`、`src/ext/types.ts` | 模块数据合同与阶段0精确版本校验衔接 |
 
-不复用阶段0 `src/ext/definitions.ts` 的示例三属性/简单effects冒充正式成长schema。旧 example 包与测试保持原合同；growth包通过数据校验不等于引擎支持其中所有动作。显式合同工厂`createGrowthContractModule()`不进入默认扩展集合；当前默认仍是example。工厂仅验证包/返回空状态模块，不提供玩法钩子。当前实际门禁结果及尚未接线的运行能力以1a0报告为准。
+不复用阶段0 `src/ext/definitions.ts` 的示例三属性/简单effects冒充正式成长schema。旧 example 包与测试保持原合同；growth包通过数据校验不等于引擎支持其中所有动作。默认扩展集合为 `growth`；`example` 仍可显式选择，保留原合同。`createGrowthContractModule()` 是显式测试探针；生产目录注册 `createGrowthModule()`。当前实际门禁和未接线能力见 [1a 报告](phase1a.report.md)。
+
+
+### 1.1 1a 的实际运行状态（后续归属不变）
+
+| 配置/能力 | 当前状态与精确语义 | 后续边界 |
+|---|---|---|
+| experience 全部来源开关/报价/深度范围/总额上限/盟友比例 | 已接线。出生固定报价，不按变形/当前 HP/深度重算；行政/无归属/不合资格死亡为零；所有 XP 在最终模拟安全点提交 | 剧情表默认空，受信模块可调用配置定义奖励；没有玩家加经验命令 |
+| levels.cap / table 或 curve / 点数计划 / maxHp 计划和上限 | 已接线。累计表 index=L−1；曲线离开 L 的费用 base+linear×L+quadratic×L²；L1 发点也读计划，跳级按累计差额发放；满级 XP 钳在阈值 | 无加点/学习消费命令，未分配池保持配置应有总额 |
+| recovery.levelHp / levelFocus / clearCooldownOnLevel | 已接线；none 保留当前量并钳上限，increase 只补容量增量，full 回满；死亡者不会被回复复活；截止时刻清零仅在开关为 true 时 | 1a 专注容量固定为 focus.base，因此 levelFocus=increase 暂无容量增量；属性影响归 1b |
+| recovery.creationHp | 仅中性 create-character 的玩家创建提交使用；NPC/克隆保留原当前 HP，缩小上限时钳制，不使用创建满血策略 | 1e 身份创建仍走同一原子边界 |
+| focus.base / min / cap，focus/current/remainder，skills/readyAt | 已有资源/冷却状态及严格校验，最大专注不重复存储；min/cap 限制容量，当前专注最低 0 | 自动恢复、客观时钟推进、冷却扣费、装配/效果归 1d；recoveryAmount/Interval 等尚不推进玩法 |
+| recovery.allocation* / clearCooldownOnAllocation | 纯资源提交 helper 可表达且有测试；无公开分配命令 | 1b 实际分配接入 |
+| 首访事实/资源收据 P04 | 首访账本独立于 XP 开关；受限 resource helper 使用 effectId+actorId+depth 收据，focus 钳 [0,capacity]，存活 HP 钳 [1,maxHp]，不从 getter 消费 | 1e 才调用身份首访效果；1a 没有赠予信仰资源，也不允许资源效果绕过死亡管线 |
+| monsters.alliesGrow | 已在 XP 兑付中决定盟友自己的份额是否可成长；关闭时不把该份额额外转给玩家 | 自动分点策略归 1e |
+| monsters.enabled / templates / depthTemplates / clone 配置 | 仍是已校验的 1e 合同；1a 给普通生物中性组件；实际克隆/分裂/幻影来源已区分，默认新体中性且不复制未分配点 | 可配置模板、继承构筑/经验/奖励开关归 1e，不能把当前中性行为当模板已启用 |
+| attributes、rules 端口/效果、物品换算、技能/身份 | 有严格数据合同，1a 不求值、不应用样例效果 | P01 归 1b，P02/P03/P05/P07 完整执行归 1d，P06/身份归 1e |
+
+1a 新增的 birth/reward/来源关系/进度状态随 growth 模块精确升为 `1.1.0`；包形状未变，所以 schema 仍为 1。旧 `growth@1.0.0` 输入拒绝，同版本改包也按 fingerprint 拒绝。任何后续接线令此前未运行字段开始影响状态，同样是规则变化，须再升 moduleVersion/rulesVersion。
+
+### 1.2 1a 事实、收据与原生字段的所有者
+
+- `create-character` 的唯一 1a payload 为 `{revision:0}`；不接受任意 actorId/身份/属性。菜单新局建立后立即通过真实 `executeCommand` 录入，回放按同一条命令重放。半创建局不能行动或持久保存；重复/未知命令在改 UI/模拟状态和录像之前拒绝
+- 出生桥记录 creationReason、originalMonsterType、initiallyHostile、sourceId、nativeStatsCopied。最后一项区分真正复制原生属性的克隆/分裂/护甲幻影，与仅有召唤者来源的新建召唤物。出生提交后固定 `birth:<entityId>` 奖励身份与报价，变形/复活/读档不重置收据
+- 来源队伍凭证包括主角 ID、责任者 ID、关系版本；捕获时与结算时必须相同。解盟后再入队也不恢复旧凭证。仍被毒/火/位移/死亡事实引用的离场来源只留必要摘要；主体组件按机械实体图回收，观察历史不保活
+- 真正种类知识由 ItemLoader 的种类提交/推断路径发 `itemKnowledgeChanged`，安全点读取已知集合并以种类 ID 收据去重。初始已知种类在创建时记为基线；探测、拾取、实例附魔揭示不冒充新种类
+- 自动最大生命用 `appliedMaxHp` 差额更新原生 maxHp；没有第二套当前 HP。复制体先减去真正复制的旧自动加值再应用自身中性值；变形/召唤形态恢复的原生 maxHp 重置后补回现有自动加值。此为 1a 必要一致性桥，不是 1b 通用属性求值器
+- 受信 `context.grantReward({recipientId,rewardId,instanceId})` 只引用配置中的剧情定义，金额/原因由定义决定；收据键含发出模块、定义、实例。默认没有实际剧情内容，也不开放玩家自报金额/原因
+- 模块/组件/来源引用/机械世界共同校验，在退休旧局前拒绝错误；onLoad 不发点、不补经验、不重新应用差额。完整每命令 checkpoint 保持，未改变黄金 trace/生成基线
 
 ## 2. 固定技术合同与可调数据
 
@@ -46,8 +76,8 @@
 | `$` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1a0 |
 | `$.schema` | 枚举 `1` | `1` | 1a0 |
 | `$.moduleId` | 枚举 `"growth"` | `"growth"` | 1a0 |
-| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.0.0"` | 1a0 |
-| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.0.0"` | 1a0 |
+| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.1.0"` | 1a0 |
+| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.1.0"` | 1a0 |
 | `$.config` | object；全部配置子组必填，见以下各节 | 对象 | 1a–1e |
 | `$.definitions` | array；元素为Skill或Identity，完整结构见对应节 | 24项：12技能/4职业/4血统/4信仰 | 1d/1e |
 
@@ -670,7 +700,7 @@
 - JSON/形状：有限、无环、无危险原型键；对象完整且无未知键；oneOf恰好匹配一个变体；数组唯一性、ID格式、数值范围、枚举严格检查
 - 引用/去重：属性、定义、预算、模板ID唯一；技能/身份/推荐/赠技引用必须存在且kind匹配；命名前置不能重复，skill依赖图无环；临时/资源效果ID唯一
 - 效果/叠加：来源属性存在，幅度min≤max且计算不溢出；add必须slot=null，multiply必须引用已声明槽且幅度不负；duration标签要命中客观块临时效果，intensity要命中可修正强度，cooldown要命中主动技能；消费事件/count/护盾旗标匹配；求值order固定且每预算/槽/钳制范围有效
-- 等级/预算：累计表长度=cap、L1=0且严格递增；曲线有正费用且满级累计安全；发点表长度=cap或periodic起始级合法，累计授予安全；属性初值/上限、总属性上限、训练属性与价格/上限一致；focus的min≤base≤cap
+- 等级/预算：累计表长度=cap、L1=0且严格递增；曲线有正费用且满级累计安全；发点表长度=cap或periodic起始级合法，累计授予安全；首访单次报价与未设 cap 时的全深度累计安全（BigInt 精确核对）；属性初值/上限、总属性上限、训练属性与价格/上限一致；focus的min≤base≤cap
 - 身份/模板：固定初值、选择容量、身份点数及赠技数量校验；模板等级/XP区间、属性/技能预算、赠技豁免、实际前置/硬锁、已学与装配模式/槽数校验；深度范围min≤max、模板引用存在，同priority的重叠范围拒绝
 - 外部目录：传`monsterIds`时必须与报价表精确同集合；传`itemIds`/`categoryIds`时检查物品/鉴定类别引用。显式`createGrowthContractModule`工厂会传实际怪物、物品和支持类别目录；直接调用纯schema校验时若省略这些可选参数，不会凭空查引擎目录
 - 版本/文本：schema固定1，moduleVersion匹配调用方版本且rulesVersion与其相等；所有引用的nameKey/descriptionKey/reasonKey须通过hasText。注册/读取模块时再比较规范化包SHA-256指纹，拒绝同版本换包

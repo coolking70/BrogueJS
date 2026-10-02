@@ -220,6 +220,7 @@ import { ExtensionRuntime } from '../../ext/runtime';
 import { createExtensionRegistry, DEFAULT_EXTENSIONS } from '../../ext/catalog';
 import { canonical } from '../../ext/json';
 import { creatureView, itemView, type ExtensionManifest, type ExtensionSnapshot, type RuleSet } from '../../ext/types';
+import { markCreatureBirth, type CreationReason } from '../../ext/birth';
 
 export type GameRunSnapshot = ReturnType<Game['snapshotRunState']> & { recordingOrigin?: RecordingOrigin };
 
@@ -328,6 +329,15 @@ export class Game {
                 try { return rng.randRange(min, max); } finally { rng.setRNG(stream); }
             },
             message: text => logger.log(text, '#88ccff'),
+            testMode: () => this.mode === 'test',
+            knownKinds: () => {
+                const catalogs = { weapon: ItemLoader.weapons, armor: ItemLoader.armors, potion: ItemLoader.potions,
+                    scroll: ItemLoader.scrolls, food: ItemLoader.food, wand: ItemLoader.wands, staff: ItemLoader.staffs,
+                    ring: ItemLoader.rings, charm: ItemLoader.charms, key: ItemLoader.keys, amulet: ItemLoader.amulets };
+                return Object.entries(catalogs).flatMap(([category, entries]) => entries
+                    .filter(entry => ItemLoader.identifiedItems.has(entry.id)).map(entry => ({ id: entry.id as string, category })))
+                    .sort((a, b) => a.id.localeCompare(b.id));
+            },
         }, snapshot);
     }
 
@@ -600,6 +610,7 @@ export class Game {
         this.discardInFlightAdvancement();
         if (this.extensionRuntime) this.extensionRuntime.unload();
         this.extensionRuntime = null;
+        ItemLoader.onKnowledgeChanged = null;
         if (this.grid) { setDormantAwakener(this.grid, null); setAllyResurrector(this.grid, null); setDungeonFeatureEffects(this.grid, null); }
         for (const level of this.levels.values()) { setDormantAwakener(level.grid, null); setAllyResurrector(level.grid, null); setDungeonFeatureEffects(level.grid, null); }
         this.purgatory = [];
@@ -775,6 +786,7 @@ export class Game {
 
         if (extensionManifest) {
             this.extensionRuntime = preparedExtensions!;
+            ItemLoader.onKnowledgeChanged = kindId => this.extensionRuntime!.emit('itemKnowledgeChanged',{kindId});
             this.extensionRuntime.newGame();
             this.extensionRuntime.attachCreature(this.player);
         }
@@ -1115,10 +1127,15 @@ export class Game {
 
     /** CE buildAMachine creates entities inside the feature loop. The ledger is
      * shared across recursive machines; abort deletes all creations since the
-     * checkpoint without restoring RNG or resurrecting quietly replaced monsters. */
-    private makeGenerationPorts() {
+     * checkpoint without restoring RNG or resurrecting quietly replaced monsters.
+     * Birth policy: floor population explicitly supplies natural; a horde camp
+     * inherits its horde's reason (including periodic) through all submachines.
+     * Standalone machine callers are scripted unless they supply a reason. */
+    private makeGenerationPorts(creationReason: CreationReason = 'scripted') {
         const thisGame = this;
         return {
+            markCreatureBirth: this.extensionRuntime
+                ? (creature: Monster) => markCreatureBirth(creature, creationReason) : undefined,
             generationTransactions: this.extensionRuntime ? {
                 begin: (label: string) => {
                     const runtime = thisGame.extensionRuntime!;
@@ -1211,7 +1228,7 @@ export class Game {
             applyRandomMutation: this.applyRandomMutation.bind(this),
             bindDormantAwakener: this.bindDormantAwakener.bind(this),
             catchUpEnvironment: this.catchUpEnvironment.bind(this),
-            createMachineRuntime: this.createMachineRuntime.bind(this),
+            createMachineRuntime: (depth: number) => this.createMachineRuntime(depth, creationReason),
             demoteMonsterFromLeadership: this.demoteMonsterFromLeadership.bind(this),
             finalizeBlueprintMonster: this.finalizeBlueprintMonster.bind(this),
             findQualifyingPathLocNear: this.findQualifyingPathLocNear.bind(this),
@@ -1233,8 +1250,10 @@ export class Game {
             restoreLevelResidents: this.restoreLevelResidents.bind(this),
             rollSpawnDepth: this.rollSpawnDepth.bind(this),
             spawnBlueprintItem: this.spawnBlueprintItem.bind(this),
-            spawnHordeAt: this.spawnHordeAt.bind(this),
-            spawnHordeAtFeature: this.spawnHordeAtFeature.bind(this),
+            spawnHordeAt: (horde: HordeEntry, pos: Pos, depth: number, wandering: boolean, floorTiles?: Pos[], collected?: Monster[]) =>
+                this.spawnHordeAt(horde, pos, depth, wandering, floorTiles, collected, creationReason),
+            spawnHordeAtFeature: (spawn: MachineMonsterSpawn, depth: number, machineNumber: number, created?: Monster[]) =>
+                this.spawnHordeAtFeature(spawn, depth, machineNumber, created, creationReason),
             spawnPopulateItem: this.spawnPopulateItem.bind(this),
             updateVision: this.updateVision.bind(this),
         };
@@ -1260,8 +1279,8 @@ export class Game {
         }
     }
 
-    private createMachineRuntime(depth: number): MachineEntityRuntime {
-        return createMachineRuntime(this.makeGenerationPorts(), depth);
+    private createMachineRuntime(depth: number, creationReason: CreationReason = 'scripted'): MachineEntityRuntime {
+        return createMachineRuntime(this.makeGenerationPorts(creationReason), depth);
     }
 
     /** Resolve a blueprint monster ID placeholder to actual MonsterData */
@@ -1325,7 +1344,7 @@ export class Game {
                 for (const m of this.monsters) m.mapToMe = null;
                 const firstVisit = !this.levelSeeds[this.depth - 1]?.visited;
                 if (firstVisit) runtime.emit('beforeLevelGeneration', { depth: this.depth });
-                generateDepth(this.makeGenerationPorts(), isGoingUp, isFirstLevel, fell);
+                generateDepth(this.makeGenerationPorts('natural'), isGoingUp, isFirstLevel, fell);
                 if (firstVisit) runtime.emit('afterLevelGeneration', { depth: this.depth });
                 runtime.emit('enteredLevel', { depth: this.depth, firstVisit });
                 // Mutable module hooks only see the completed world and the run
@@ -1360,7 +1379,7 @@ export class Game {
         }
         this.monsterPathCache = { safeTerrain: null, allySafety: null };
         for (const m of this.monsters) m.mapToMe = null;
-        return generateDepth(this.makeGenerationPorts(), isGoingUp, isFirstLevel, fell);
+        return generateDepth(this.makeGenerationPorts('natural'), isGoingUp, isFirstLevel, fell);
     }
 
     private levelStair(type: TerrainType): Pos | null {
@@ -1450,11 +1469,11 @@ export class Game {
     /** CE placeStairs: closest qualifying wall ring, then no-liquid fallback.
      * Deferred machine products only reserve their positions; U19c ordering stays separate. */
     private placeStairs(machineResults: MachineResult[] = []): boolean {
-        return placeStairs(this.makeGenerationPorts(), machineResults);
+        return placeStairs(this.makeGenerationPorts('natural'), machineResults);
     }
 
     private populateLevel(depth: number, isGoingUp: boolean = false, isFirstLevel: boolean = false, machineResults: MachineResult[] = []) {
-        return populateLevel(this.makeGenerationPorts(), depth, isGoingUp, isFirstLevel, machineResults);
+        return populateLevel(this.makeGenerationPorts('natural'), depth, isGoingUp, isFirstLevel, machineResults);
     }
 
     /**
@@ -1662,7 +1681,7 @@ export class Game {
      *   - horde 的领袖与成员（CE spawnMinions Monsters.c:743 同置
      *     MB_JUST_SUMMONED）一并走机器收尾：记属机 / 睡姿 / 休眠。
      */
-    private spawnHordeAtFeature(spawn: MachineMonsterSpawn, depth: number, machineNumber: number, created?: Monster[]): Monster | null {
+    private spawnHordeAtFeature(spawn: MachineMonsterSpawn, depth: number, machineNumber: number, created?: Monster[], creationReason: CreationReason = 'scripted'): Monster | null {
         const required = spawn.hordeFlags ?? [];
         const forbidden = ['HORDE_IS_SUMMONED', 'HORDE_LEADER_CAPTIVE']
             .filter(f => !required.includes(f));
@@ -1685,7 +1704,7 @@ export class Game {
         if (!picked) return null;
 
         const collected: Monster[] = [];
-        this.spawnHordeAt(picked, spawn.pos, depth, false, undefined, collected);
+        this.spawnHordeAt(picked, spawn.pos, depth, false, undefined, collected, creationReason);
         for (const mon of collected) {
             this.finalizeBlueprintMonster(mon, spawn, machineNumber);
         }
@@ -1761,12 +1780,13 @@ export class Game {
          * （Monsters.c:743 成员也置位），机器的睡姿/休眠/记属机收尾要遍历它。
          * 缺省（undefined）= 不收集，既有调用方行为逐位不变。
          */
-        collected?: Monster[]
+        collected?: Monster[],
+        creationReason: CreationReason = 'natural'
     ): boolean {
         const leaderMData = (monsterData as MonsterData[]).find(m => m.id === h.leader.toLowerCase());
         if (!leaderMData) return false;
 
-        if (h.machine > 0) buildHordeMachine(this.makeGenerationPorts(), h.machine, centerPos, depth);
+        if (h.machine > 0) buildHordeMachine(this.makeGenerationPorts(creationReason), h.machine, centerPos, depth);
 
         const leaderMon = new Monster(centerPos.x, centerPos.y, leaderMData);
         // CE Monsters.c:883-885: only the horde leader is the marked sacrifice.
@@ -1785,6 +1805,7 @@ export class Game {
         this.applyRandomMutation(leaderMon, depth);
         if (wandering) leaderMon.state = MonsterState.WANDERING;
         leaderMon.submerged = monsterCanSubmergeNow(leaderMon, this.grid);
+        if (this.extensionRuntime) markCreatureBirth(leaderMon, creationReason);
         this.monsters.push(leaderMon);
         collected?.push(leaderMon);
 
@@ -1819,6 +1840,7 @@ export class Game {
                 // CE Monsters.c:753: the flag applies to every member as well as the leader.
                 if (h.flags.includes('HORDE_ALLIED_WITH_PLAYER')) this.becomeAllyWith(mon);
                 mon.submerged = monsterCanSubmergeNow(mon, this.grid);
+                if (this.extensionRuntime) markCreatureBirth(mon, creationReason);
                 this.monsters.push(mon);
                 collected?.push(mon);
                 if (floorTiles) {
@@ -1947,6 +1969,7 @@ export class Game {
                 mon.state = summoner.state;
                 mon.ticksUntilTurn = 101; // CE Monsters.c:1034
                 mon.submerged = monsterCanSubmergeNow(mon, this.grid);
+                if (this.extensionRuntime) markCreatureBirth(mon, 'summoned', summoner.id);
                 this.monsters.push(mon);
                 spawned.push(mon);
             }
@@ -2042,7 +2065,7 @@ export class Game {
             const cand = this.pickHordeType(this.hordeCandidates(spawn.depth, forbidden));
             if (!cand) return false;
             if (this.hordeFitsTerrain(cand, loc)) {
-                return this.spawnHordeAt(cand, loc, this.depth, true);
+                return this.spawnHordeAt(cand, loc, this.depth, true, undefined, undefined, 'periodic');
             }
         }
         return false;
@@ -2466,6 +2489,7 @@ export class Game {
                     roomItems.push(spawned.item);
                 }
                 if (spawned.monster) {
+                    if (this.extensionRuntime) markCreatureBirth(spawned.monster, 'test');
                     this.monsters.push(spawned.monster);
                     roomMonsters.push(spawned.monster);
                 }
@@ -2847,7 +2871,9 @@ export class Game {
         const roots = [...this.monsters, ...this.dormantMonsters, ...this.purgatory,
             ...[...this.levels.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]),
             ...[...this.pendingFallenByDepth.values()].flat()];
-        this.extensionRuntime.collectComponents([this.player, ...collectEntityGraph(roots).monsters]);
+        const reachable = [this.player, ...collectEntityGraph(roots).monsters];
+        this.extensionRuntime.settle(reachable);
+        this.extensionRuntime.collectComponents(reachable);
     }
 
     private updateRecordedCheckpoint(event: RecordedInputEvent): void {
@@ -2866,6 +2892,10 @@ export class Game {
     /** Every user command, including inventory and modal choices, crosses this boundary. */
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
         if (this.replayRecording || this.isAdvancing || this.isInputLocked() || logger.pendingAcknowledgment) return;
+        if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data)) {
+            logger.log(i18next.t('ext.growth.command.rejected', { defaultValue: 'Character command is not available in the current state.' }), '#ff6666');
+            return;
+        }
         const decisions: boolean[] = [];
         this.commandDecisions = decisions;
         try {
@@ -2888,6 +2918,8 @@ export class Game {
 
     /** Shared by live input, replay/seek and autonomous steps, before any dispatch. */
     private applyCommand(action: string, data?: unknown, perform?: () => void): void {
+        if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data))
+            throw new Error(i18next.t('ext.growth.command.rejected', { defaultValue: 'Character command is not available in the current state.' }));
         logger.onDisturb = () => { this.disturbed = true; };
         // All explicit input, including modal/unknown keys, cancels automation.
         // Nested movement from auto_step shares the same command boundary.
@@ -2997,6 +3029,7 @@ export class Game {
             try {
                 const runtime = this.createExtensionRuntime(r.extensions);
                 for (const event of r.events ?? []) runtime.validateSnapshot(event.extensions!);
+                if (!runtime.validateRecording(r.events ?? [])) return false;
             } catch { return false; }
         } else if (r.events?.some(event => event?.extensions !== undefined || event?.action === 'ext:command')) return false;
         const validSeed = isSeed(r.seed) || (typeof r.seed === 'number' && Number.isSafeInteger(r.seed) && r.seed >= 0);
@@ -4638,7 +4671,7 @@ export class Game {
         const causality = this.extensionRuntime?.causality;
         const caster = result.caster;
         let origin = causality?.create('bolt', caster?.id ?? null, caster?.id ?? null,
-            caster === this.player || (caster instanceof Monster && caster.isAlly) ? `player:${this.player.id}` : null) ?? null;
+            (caster ? caster.extensionHooks?.partyId(caster) ?? null : null)) ?? null;
         const hideDetails = !ItemLoader.identifiedItems.has((item as Item & { identityId?: string }).identityId ?? '');
         const actual = traceBolt(this.grid, result.bolt, result.origin, result.aimPos,
             this.boltWorld(result.caster, hideDetails), {
@@ -4654,8 +4687,7 @@ export class Game {
                 // mechanical caster, including when a wall clears kill credit.
                 if (causality) origin = causality.create('reflection', caster?.id ?? null,
                     reflection.creature?.id ?? null,
-                    reflection.creature === this.player || (reflection.creature instanceof Monster && reflection.creature.isAlly)
-                        ? `player:${this.player.id}` : null, origin);
+                    reflection.creature ? reflection.creature.extensionHooks?.partyId(reflection.creature) ?? null : null, origin);
                 this.observeBoltReflection(reflection);
             },
             onCell: (pos, hit) => {
@@ -5105,6 +5137,7 @@ export class Game {
             // CE sets info.attackSpeed + 1, not movementSpeed or a lifetime.
             blade.ticksUntilTurn = blade.attackSpeed + 1;
             blade.goldDropChance = blade.itemDropChance = 0; // CE blade has no MONST_CARRY_ITEM_* flags.
+            if (this.extensionRuntime) markCreatureBirth(blade, 'summoned', this.player.id);
             this.monsters.push(blade);
             autoID = true; // W-2 handoff: only a real entity identifies.
         }
@@ -5128,6 +5161,7 @@ export class Game {
         guardian.setStatusDuration('lifespan_remaining', lifespan);
         guardian.maxStatus.lifespan_remaining = lifespan;
         guardian.goldDropChance = guardian.itemDropChance = 0;
+        if (this.extensionRuntime) markCreatureBirth(guardian, 'summoned', this.player.id);
         this.monsters.push(guardian);
         this.needsRender = true;
     }
@@ -5417,7 +5451,7 @@ export class Game {
         const result = traceBolt(this.grid, MONSTER_BLINK, caster.loc, aim, this.boltWorld(caster));
         if (this.extensionRuntime) {
             const causality = this.extensionRuntime.causality;
-            const origin = causality.create('bolt', caster.id, caster.id, caster.isAlly ? `player:${this.player.id}` : null);
+            const origin = causality.create('bolt', caster.id, caster.id, caster.extensionHooks?.partyId(caster) ?? null);
             causality.withOrigin(origin, () => this.finishBlink(result));
         } else this.finishBlink(result);
         this.pendingBoltFrames = result.frames;
@@ -5457,12 +5491,11 @@ export class Game {
         };
         let autoID = false;
         const causality = this.extensionRuntime?.causality;
-        let origin = causality?.create('bolt', caster.id, caster.id, caster.isAlly ? `player:${this.player.id}` : null) ?? null;
+        let origin = causality?.create('bolt', caster.id, caster.id, caster.extensionHooks?.partyId(caster) ?? null) ?? null;
         const boltResult = traceBolt(this.grid, visualBolt, caster.loc, target.loc, this.boltWorld(caster), {
             onReflection: reflection => {
                 if (causality) origin = causality.create('reflection', caster.id, reflection.creature?.id ?? null,
-                    reflection.creature === this.player || (reflection.creature instanceof Monster && reflection.creature.isAlly)
-                        ? `player:${this.player.id}` : null, origin);
+                    reflection.creature ? reflection.creature.extensionHooks?.partyId(reflection.creature) ?? null : null, origin);
                 this.observeBoltReflection(reflection);
             },
             onCell: (pos, hit) => {
@@ -5995,7 +6028,7 @@ export class Game {
     private negationBlastFromPlayer(emitterName: string, distance = DCOLS): void {
         if (this.extensionRuntime && this.extensionRuntime.causality.current?.kind !== 'negation') {
             const effects = this.extensionRuntime.causality;
-            return effects.withOrigin(effects.create('negation', this.player.id, this.player.id, `player:${this.player.id}`),
+            return effects.withOrigin(effects.create('negation', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
                 () => this.negationBlastFromPlayer(emitterName, distance));
         }
         logger.log(i18next.t('scroll.negate_burst', {
@@ -6104,7 +6137,7 @@ export class Game {
      */
     private crystalizeFromPlayer(radius: number): void {
         const causality = this.extensionRuntime?.causality;
-        const directOrigin = causality?.create('bolt', this.player.id, this.player.id, `player:${this.player.id}`) ?? null;
+        const directOrigin = causality?.create('bolt', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null) ?? null;
         const px = this.player.loc.x;
         const py = this.player.loc.y;
         for (let i = 0; i < DCOLS; i++) {
@@ -6211,6 +6244,7 @@ export class Game {
                 this.applyRandomMutation(mon, this.depth);
                 mon.state = MonsterState.HUNTING; // Items.c:7987 wakeUp(monst)
                 mon.submerged = monsterCanSubmergeNow(mon, this.grid);
+                if (this.extensionRuntime) markCreatureBirth(mon, 'summoned', this.player.id);
                 this.monsters.push(mon);
                 numberOfMonsters++;
             }
@@ -6382,7 +6416,7 @@ export class Game {
                         monst.state = MonsterState.HUNTING;
                     }
                     const effects = this.extensionRuntime?.causality;
-                    const projectileOrigin = effects ? effects.create('projectile', this.player.id, this.player.id, `player:${this.player.id}`) : null;
+                    const projectileOrigin = effects ? effects.create('projectile', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null) : null;
                     const res = effects ? effects.withOrigin(projectileOrigin,
                         () => CombatSystem.resolveThrownWeapon(this.player, monst, thrown, this.grid))
                         : CombatSystem.resolveThrownWeapon(this.player, monst, thrown, this.grid);
@@ -6514,7 +6548,7 @@ export class Game {
                 if (creature instanceof Player || creature instanceof Monster) {
                     if (this.extensionRuntime) {
                         const effects = this.extensionRuntime.causality;
-                        effects.withOrigin(effects.create('projectile', this.player.id, this.player.id, `player:${this.player.id}`),
+                        effects.withOrigin(effects.create('projectile', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
                             () => this.exposeCreatureToFire(creature));
                     } else this.exposeCreatureToFire(creature);
                 }
@@ -6813,7 +6847,7 @@ export class Game {
     private applyWeaponRunicEffect(target: Monster, damage: number, runicType: string): void {
         if (this.extensionRuntime && this.extensionRuntime.causality.current?.actorId !== this.player.id) {
             const effects = this.extensionRuntime.causality;
-            return effects.withOrigin(effects.create('melee', this.player.id, this.player.id, `player:${this.player.id}`),
+            return effects.withOrigin(effects.create('melee', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
                 () => this.applyWeaponRunicEffect(target, damage, runicType));
         }
         const weapon = this.player.equippedWeapon;
@@ -6913,6 +6947,7 @@ export class Game {
                     if (weapon.flags?.includes('ITEM_ATTACKS_PENETRATE')) blade.abilityFlags.add('MA_ATTACKS_PENETRATE');
                     if (weapon.flags?.includes('ITEM_ATTACKS_ALL_ADJACENT')) blade.abilityFlags.add('MA_ATTACKS_ALL_ADJACENT');
                     if (weapon.flags?.includes('ITEM_ATTACKS_EXTEND')) blade.abilityFlags.add('MA_ATTACKS_EXTEND');
+                    if (this.extensionRuntime) markCreatureBirth(blade, 'summoned', this.player.id);
                     this.monsters.push(blade);
                 }
                 weapon.runicKnown = true;
@@ -6952,7 +6987,7 @@ export class Game {
                     if (this.extensionRuntime) {
                         const effects = this.extensionRuntime.causality, parent = effects.current;
                         const origin = effects.create('displacement', this.player.id, parent ? parent.creditActorId : this.player.id,
-                            parent ? parent.creditPartyId : `player:${this.player.id}`);
+                            parent ? parent.creditPartyId : this.player.extensionHooks?.partyId(this.player) ?? null);
                         effects.withImmediateTerrain(origin, () => this.applyEnvironmentalEffects(target));
                     } else this.applyEnvironmentalEffects(target);
                     this.updateVision();
@@ -7011,7 +7046,9 @@ export class Game {
             !attacker.hasBehavior('MONST_INANIMATE') && !attacker.hasBehavior('MONST_INVULNERABLE') &&
             rng.randPercent(33)) {
             for (let i = 0; i < armorImageCount(netEnch); i++) {
-                const clone = this.cloneMonster(attacker);
+                const clone = this.extensionRuntime
+                    ? this.cloneMonster(attacker, undefined, { creationReason: 'summoned', initiallyAllied: true })
+                    : this.cloneMonster(attacker);
                 if (!clone) break;
                 clone.isAlly = true;
                 clone.leader = null;
@@ -7057,7 +7094,7 @@ export class Game {
                 for (const m of hitList) {
                     if (this.extensionRuntime) {
                         const effects = this.extensionRuntime.causality;
-                        effects.withOrigin(effects.create('reprisal', this.player.id, this.player.id, `player:${this.player.id}`),
+                        effects.withOrigin(effects.create('reprisal', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
                             () => m.takeDamage(share, true, this.grid, undefined, 'physical'));
                     } else m.takeDamage(share, true, this.grid);
                     this.spawnFloatingText(`-${share}`, m.loc.x, m.loc.y, 0xddaaff);
@@ -7123,7 +7160,7 @@ export class Game {
             const reprisalDmg = Math.max(1, Math.trunc((armorReprisalPercent(netEnch) * incomingDamage) / 100));
             if (this.extensionRuntime) {
                 const effects = this.extensionRuntime.causality;
-                effects.withOrigin(effects.create('reprisal', this.player.id, this.player.id, `player:${this.player.id}`),
+                effects.withOrigin(effects.create('reprisal', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
                     () => attacker.takeDamage(reprisalDmg, true, this.grid, undefined, 'physical'));
             } else attacker.takeDamage(reprisalDmg, true, this.grid);
             if (canSeeMonster(this.player, this.grid, attacker)) {
@@ -7524,7 +7561,7 @@ export class Game {
     private resolvePlayerMeleeAttackOn(target: Monster, lungeAttack = false): boolean {
         if (this.extensionRuntime && this.extensionRuntime.causality.current?.kind !== 'melee') {
             const effects = this.extensionRuntime.causality;
-            return effects.withOrigin(effects.create('melee', this.player.id, this.player.id, `player:${this.player.id}`),
+            return effects.withOrigin(effects.create('melee', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
                 () => this.resolvePlayerMeleeAttackOn(target, lungeAttack));
         }
         const res = CombatSystem.attack(this.player, target, { grid: this.grid, lungeAttack });
@@ -7748,13 +7785,20 @@ export class Game {
     /** CE Monsters.c:568-628. A supplied location belongs to splitMonster;
      * otherwise use CE's nearest qualifying path location. Preflight avoids
      * CE's unchecked INVALID_POS and leaves source/HP/world intact on failure. */
-    public cloneMonster(source: Creature, splitLocation?: Pos): Monster | null {
+    public cloneMonster(source: Creature, splitLocation?: Pos,
+        birth?: { creationReason: CreationReason; initiallyAllied?: boolean }): Monster | null {
         if (source.hp <= 0 || (!(source instanceof Monster) && source !== this.player)) return null;
         const spot = splitLocation ?? cloneLocation(this, source);
         if (!spot) return null;
         const clone = source instanceof Monster ? source.copyForClone() : Monster.copyPlayerForClone(this.player);
         if (source instanceof Monster && source.isCaged) this.becomeAllyWith(clone);
         clone.loc = { ...spot };
+        if (this.extensionRuntime) {
+            // Armor phantoms become allied as part of creation. Capture that
+            // initial faction without advancing the mechanical assignment.
+            markCreatureBirth(clone, birth?.creationReason ?? (splitLocation ? 'split' : 'clone'), source.id,
+                birth?.initiallyAllied ? false : undefined, true);
+        }
         // Preserve dormant chain ownership for direct helper callers.
         if (clone.isDormant) this.dormantMonsters.push(clone);
         else this.monsters.push(clone);
@@ -8434,7 +8478,7 @@ export class Game {
             this.makeMonsterDropItem(m);
             if (this.extensionRuntime) {
                 const cause = this.extensionRuntime.causality;
-                const origin = cause.create('death-effect', m.id, m.id, m.isAlly ? `player:${this.player.id}` : null);
+                const origin = cause.create('death-effect', m.id, m.id, m.extensionHooks?.partyId(m) ?? null);
                 cause.withOrigin(origin, () => cause.withImmediateTerrain(origin, () => this.triggerDeathFeatures(m)));
             } else this.triggerDeathFeatures(m);
         }
@@ -9070,6 +9114,7 @@ export class Game {
         if (!aborted && !this.isGameOver && this.player.hp > 0 && this.player.hasStatus('paralyzed')) {
             playerTurnEnded(this.timePorts(), true);
         }
+        if (this.extensionRuntime) this.collectExtensionComponents();
         const pending = recordingState(this).pendingCommand;
         recordingState(this).pendingCommand = null;
         if (pending?.kind === 'record') {
@@ -9235,6 +9280,7 @@ export class Game {
      * the world-only projection used by diagnostics and deterministic traces.
      * Missing provenance is never synthesized when an older save is loaded. */
     public toSaveSnapshot(): GameSnapshot {
+        if (this.extensionRuntime && !this.extensionRuntime.readyToSave) throw new Error(i18next.t('ext.growth.command.creation_required', { defaultValue: 'Create the character before saving.' }));
         if (this.isAdvancing || recordingState(this).pendingCommand) throw new Error('Cannot save during turn advancement');
         const snapshot = this.toSnapshot();
         const origin = recordingState(this).origin;
@@ -9326,11 +9372,25 @@ export class Game {
         let decoded: ReturnType<typeof decodeWholeRunWorld>;
         try { decoded = decodeWholeRunWorld(snapshot, entityCodecDeps); } catch { return false; }
         const { entityGraph, restored } = decoded;
+        // Player's decoder constructs a temporary instance. Growth preflight may
+        // reject it, so that read-only phase cannot consume the live ID allocator.
+        const preflightNextId = extensions ? getNextEntityId() : null;
+        let decodedPlayer: Player;
+        try { decodedPlayer = decodePlayer(snapshot.player, entityGraph.items); }
+        catch { return false; }
+        finally { if (preflightNextId !== null) restoreNextEntityId(preflightNextId); }
+        // Observation-only history is serialized, but must not pin growth components or session hooks.
+        const extensionRoots = [...restored.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]);
+        extensionRoots.push(...(snapshot.purgatory ?? []).map(monster => entityGraph.monsters.get(monster.id)!));
+        extensionRoots.push(...snapshot.pendingFallenByDepth.flatMap(queue => queue.monsters.map(monster => entityGraph.monsters.get(monster.id)!)));
+        const extensionCreatures = collectEntityGraph(extensionRoots).monsters;
+        try { extensions?.validateWorld([decodedPlayer, ...extensionCreatures]); } catch { return false; }
         const levelRows = [snapshot, ...snapshot.levels];
 
         this.discardInFlightAdvancement();
         if (this.extensionRuntime) this.extensionRuntime.unload();
         this.extensionRuntime = null;
+        ItemLoader.onKnowledgeChanged = null;
         if (this.grid) { setDormantAwakener(this.grid, null); setAllyResurrector(this.grid, null); setDungeonFeatureEffects(this.grid, null); }
         for (const level of this.levels.values()) { setDormantAwakener(level.grid, null); setAllyResurrector(level.grid, null); setDungeonFeatureEffects(level.grid, null); }
         this.animationLockDeadline = 0;
@@ -9357,7 +9417,7 @@ export class Game {
         this.bindDormantAwakener();
         this.activeFlares = []; this.terrainFlashes = []; this.flareLightMap = null; this.flareElapsedMs = 0;
 
-        this.player = decodePlayer(snapshot.player, entityGraph.items);
+        this.player = decodedPlayer;
 
         const run = JSON.parse(JSON.stringify(snapshot.run)) as GameSnapshot['run'];
         this.meteredItems = run.meteredItems; this.foodSpawned = run.foodSpawned; this.goldGenerated = run.goldGenerated;
@@ -9443,9 +9503,10 @@ export class Game {
         this.updateFlavorText();
         rng.setState(snapshot.rngState);
         this.extensionRuntime = extensions;
+        ItemLoader.onKnowledgeChanged = extensions ? kindId => extensions.emit('itemKnowledgeChanged',{kindId}) : null;
         if (extensions) {
             extensions.attachCreature(this.player, false);
-            for (const creature of entityGraph.monsters.values()) extensions.attachCreature(creature, false);
+            for (const creature of extensionCreatures) extensions.attachCreature(creature, false);
             extensions.loaded();
         }
         return true;
@@ -10620,7 +10681,9 @@ export class Game {
             this.items.push(this.deserializeItem(itemSnapshot));
         }
         for (const monsterSnapshot of room.baselineMonsters) {
-            this.monsters.push(this.createMonsterFromSnapshot(monsterSnapshot));
+            const monster = this.createMonsterFromSnapshot(monsterSnapshot);
+            if (this.extensionRuntime) markCreatureBirth(monster, 'test');
+            this.monsters.push(monster);
         }
         this.restoreMonsterLeaders(room.baselineMonsters, this.monsters);
 
@@ -11029,6 +11092,7 @@ export class Game {
 
         monster.isCaged = false;
         monster.isAlly = true;
+        if (this.extensionRuntime) this.extensionRuntime.observeCreature(monster);
         monster.leader = null;
         monster.leaderlessAfterDemotion = false;
         monster.seized = false;

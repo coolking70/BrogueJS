@@ -1,3 +1,4 @@
+import { experienceThreshold, scheduledGrantTotal } from './experience';
 import { canonical, isJson, validId } from '../../json';
 import { GROWTH_RULE_PORTS, type GrowthDefinitionPack, type GrowthEffect, type GrowthIdentity,
     type GrowthMagnitude, type GrowthPrerequisite, type GrowthSchedule, type GrowthSkill } from './types';
@@ -222,14 +223,13 @@ export function validateGrowthDefinitionPack(value: unknown, options: GrowthVali
     } else {
         // Per-level cost for leaving level L: base + linear*L + quadratic*L^2.
         if (levels.cap > 1 && xp.base + xp.linear + xp.quadratic <= 0) fail('range', '$.config.levels.experience', 'positive costs');
-        const n = levels.cap - 1;
-        safe(n * xp.base + xp.linear * n * (n + 1) / 2 + xp.quadratic * n * (n + 1) * (2 * n + 1) / 6, '$.config.levels.experience');
+        try { experienceThreshold(levels, levels.cap); } catch { fail('range', '$.config.levels.experience', 'safe integer'); }
     }
     scheduleCheck(levels.attributePoints, '$.config.levels.attributePoints'); scheduleCheck(levels.skillPoints, '$.config.levels.skillPoints');
     scheduleCheck(levels.maxHp.grants, '$.config.levels.maxHp.grants');
-    const scheduleTotal = (schedule: GrowthSchedule, level: number): number => schedule.kind === 'table'
-        ? schedule.grants.slice(0, level).reduce((sum, amount) => sum + amount, 0)
-        : Math.max(0, Math.floor((level - schedule.firstLevel) / schedule.every) + 1) * schedule.amount;
+    const scheduleTotal = (schedule: GrowthSchedule, level: number): number => {
+        try { return scheduledGrantTotal(schedule, level); } catch { return fail('range', '$.config.levels', 'safe integer'); }
+    };
     for (const item of [levels.attributePoints, levels.skillPoints, levels.maxHp.grants]) safe(scheduleTotal(item, levels.cap), '$.config.levels');
     range(config.focus.min, config.focus.cap, '$.config.focus');
     if (config.focus.base < config.focus.min || config.focus.base > config.focus.cap) fail('range', '$.config.focus.base');
@@ -379,7 +379,11 @@ export function validateGrowthDefinitionPack(value: unknown, options: GrowthVali
         if (expected.size !== actual.size || [...expected].some(id => !actual.has(id))) fail('reference', '$.config.experience.kills.monsterQuotes', 'exact monster catalog');
     }
     const first = config.experience.firstVisits;
-    range(first.minDepth, first.maxDepth, '$.config.experience.firstVisits'); safe(first.base + first.perDepth * first.maxDepth, '$.config.experience.firstVisits');
+    range(first.minDepth, first.maxDepth, '$.config.experience.firstVisits');
+    const firstQuote = BigInt(first.base) + BigInt(first.perDepth) * BigInt(first.maxDepth);
+    const depthCount = BigInt(first.maxDepth) - BigInt(first.minDepth) + 1n;
+    const firstTotal = depthCount * BigInt(first.base) + BigInt(first.perDepth) * depthCount * (BigInt(first.minDepth) + BigInt(first.maxDepth)) / 2n;
+    if (firstQuote > BigInt(LIMIT) || (first.cap === null && firstTotal > BigInt(LIMIT))) fail('range', '$.config.experience.firstVisits', 'safe integer');
     unique(config.experience.story.rewards, reward => reward.id, '$.config.experience.story.rewards');
     config.experience.story.rewards.forEach(reward => checkText(reward.reasonKey, '$.config.experience.story.rewards'));
     unique(config.itemGrowth.rules, item => item.itemId, '$.config.itemGrowth.rules');
@@ -389,7 +393,7 @@ export function validateGrowthDefinitionPack(value: unknown, options: GrowthVali
     if (!templates.has(config.monsters.defaultTemplateId)) fail('reference', '$.config.monsters.defaultTemplateId');
     const cumulative = (level: number): number => {
         if (xp.kind === 'table') return xp.cumulative[level - 1]!;
-        const n = level - 1; return n * xp.base + xp.linear * n * (n + 1) / 2 + xp.quadratic * n * (n + 1) * (2 * n + 1) / 6;
+        return experienceThreshold(levels,level);
     };
     for (const [index, template] of config.monsters.templates.entries()) {
         const path = `$.config.monsters.templates[${index}]`; namedText(template, path);

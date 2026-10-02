@@ -142,6 +142,7 @@ const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "class
   runEpoch++;
   replayFeedback.value = '';
   activeGame.startNewGame({ seed: payload.seed, mode: payload.mode, ruleSet: payload.ruleSet });
+  for (const command of activeGame.extensionRuntime?.initialCommands() ?? []) activeGame.executeCommand('ext:command', command);
   runAvailable.value = true;
   replayMessage(
     i18next.t('menu.log.started_game', {

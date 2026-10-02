@@ -200,6 +200,7 @@ export function createMachineRuntime(ports: GenerationPorts, depth: number): Mac
                         if (spawn.isCaged) mon.isCaged = true;
                         ports.applyRandomMutation(mon, depth);
                         mon.submerged = monsterCanSubmergeNow(mon, ports.grid);
+                        ports.markCreatureBirth?.(mon);
                         ports.monsters.push(mon);
                         ports.finalizeBlueprintMonster(mon, spawn, machineNumber);
                         made.push(mon);
@@ -702,6 +703,7 @@ export function populateLevel(ports: GenerationPorts,
                     handOff(mon, spawn, mr);
                     ports.applyRandomMutation(mon, depth);
                     mon.submerged = monsterCanSubmergeNow(mon, ports.grid);
+                    ports.markCreatureBirth?.(mon);
                     ports.monsters.push(mon);
                     ports.finalizeBlueprintMonster(mon, spawn, mr.machineNumber);
                     if (trace) trace.products.push({ kind: 'monster', featureIndex: spawn.sourceFeatureIndex ?? null,

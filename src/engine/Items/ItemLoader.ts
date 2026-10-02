@@ -68,6 +68,13 @@ export interface ArcanaConfig {
 type Poolable = { excludeFromGeneration?: boolean };
 
 export class ItemLoader {
+    /** Current run's extension-only knowledge sink; no observer is installed in classic mode. */
+    public static onKnowledgeChanged: ((kindId: string) => void) | null = null;
+    private static learnKind(kindId: string): void {
+        const known = this.identifiedItems.has(kindId);
+        this.identifiedItems.add(kindId);
+        if (!known) this.onKnowledgeChanged?.(kindId);
+    }
     public static weapons = weaponsData as any[];
     public static armors = armorsData as any[];
     public static potions = consumablesData.potions as ConsumableConfig[];
@@ -790,7 +797,7 @@ export class ItemLoader {
         const oppositeCount = kinds.filter(k => this.MAGIC_POLARITY[k] === -polarity).length;
         const oppositeKnownCount = this.polarityKnownCount(kinds, -polarity as 1 | -1);
         if (this.isPolarityRevealed(lastKind) || oppositeKnownCount === oppositeCount) {
-            this.identifiedItems.add(lastKind);
+            this.learnKind(lastKind);
         }
     }
 
@@ -822,7 +829,7 @@ export class ItemLoader {
         // not create a flavor/knowledge table: CE identifies equipment per instance.
         if (item.category === ItemCategory.WEAPON || item.category === ItemCategory.ARMOR) return;
         const kindId = (item as any).consumableId ?? (item as any).identityId as string | undefined;
-        if (kindId) this.identifiedItems.add(kindId);
+        if (kindId) this.learnKind(kindId);
 
         if (item.category === ItemCategory.RING && item.enchantment <= 0) {
             item.identified = true;
@@ -1270,7 +1277,7 @@ export class ItemLoader {
     }
 
     public static identify(consumableId: string) {
-        this.identifiedItems.add(consumableId);
+        this.learnKind(consumableId);
     }
 
     public static getWeaponConfigs() {

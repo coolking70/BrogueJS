@@ -1,7 +1,8 @@
 import type { Creature } from '../entities/Creature';
 import type { ExtensionRegistry } from './registry';
-import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json } from './types';
+import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json, ActorFacts, ResourceCommit } from './types';
 import { creatureView } from './types';
+import { readCreatureBirth } from './birth';
 import { canonical, cloneJson, isJson, validId } from './json';
 import { EffectCausality, validEffectOrigin, type EffectOrigin } from './causality';
 import type { DeathFact, GenerationToken } from './types';
@@ -18,6 +19,8 @@ export interface ExtensionPorts {
     playerId(): number;
     randomInt(min: number, max: number): number;
     message(text: string): void;
+    knownKinds?(): { id: string; category: string }[];
+    testMode?(): boolean;
 }
 function requireSynchronous(result: unknown): void {
     if (result && typeof (result as { then?: unknown }).then === 'function') {
@@ -47,6 +50,7 @@ export class ExtensionRuntime {
     private readonly attacks: number[] = [];
     private activeScope: object | null = null;
     private disposed = false;
+    private resourcePhase = false;
     readonly manifest: ExtensionManifest;
     readonly causality: EffectCausality;
     private deaths: Record<string, DeathFact> = {};
@@ -87,6 +91,16 @@ export class ExtensionRuntime {
             getComponent(id, name) { const value = runtime.components[creatureKey(id)]?.[componentKey(name)]; return value === undefined ? undefined : cloneJson(value); },
             setComponent(id, name, value) { writable(); if (module.componentValidators?.[name] && !module.componentValidators[name]!(value)) throw new Error('Invalid component value'); const key = creatureKey(id); (runtime.components[key] ??= {})[componentKey(name)] = cloneJson(value); },
             removeComponent(id, name) { writable(); const key = creatureKey(id); delete runtime.components[key]?.[componentKey(name)]; if (runtime.components[key] && !Object.keys(runtime.components[key]!).length) delete runtime.components[key]; },
+            creature(id) { const actor = [...runtime.creatures].find(creature => creature.id === id); return actor ? runtime.actorFacts(actor) : null; },
+            grantReward(request) {
+                writable();
+                if (!request || Object.keys(request).sort().join(',') !== 'instanceId,recipientId,rewardId'
+                    || !Number.isSafeInteger(request.recipientId) || request.recipientId < 1 || !validId(request.rewardId) || !validId(request.instanceId))
+                    throw new Error('Invalid trusted reward request');
+                runtime.emit('rewardGranted',{issuerId:module.id,...request});
+            },
+            knownKinds() { return structuredClone(runtime.ports.knownKinds?.() ?? []); },
+            commitResources(id, value) { writable(); if (!module.resourceCommits || !runtime.resourcePhase) throw new Error('Resource commit outside authorized growth boundary'); runtime.commitResources(id, value); },
             randomInt(min, max) {
                 writable();
                 const span = max - min + 1;
@@ -97,6 +111,77 @@ export class ExtensionRuntime {
             },
             message(text) { writable(); runtime.ports.message(text); },
         };
+    }
+    private actorFacts(creature: Creature, playerId = this.ports.playerId()): ActorFacts {
+        const player = creature.id === playerId;
+        const allied = player || ('isAlly' in creature && creature.isAlly === true);
+        return Object.freeze({ ...creatureView(creature, playerId), allied,
+            hostile: !player && !allied && !('isCaged' in creature && creature.isCaged === true),
+            monsterId: 'typeId' in creature && typeof creature.typeId === 'string' ? creature.typeId : null });
+    }
+    observeCreature(creature: Creature): void {
+        if (this.modules.some(module => module.hooks?.actorObserved)) this.emit('actorObserved', { actor: this.actorFacts(creature) });
+    }
+    private commitResources(id: number, value: ResourceCommit): void {
+        const actor = [...this.creatures].find(creature => creature.id === id);
+        if (!actor || Object.keys(value).sort().join(',') !== 'expectedHp,expectedMaxHp,hp,maxHp'
+            || !Object.values(value).every(Number.isSafeInteger) || value.maxHp < 1 || value.hp < 0
+            || value.hp > value.maxHp || value.expectedHp !== actor.hp || value.expectedMaxHp !== actor.maxHp
+            || (actor.hp <= 0 && value.hp > 0)) throw new Error('Invalid extension resource commit');
+        actor.maxHp = value.maxHp; actor.hp = value.hp;
+    }
+    allowsInput(action: string, data?: unknown): boolean {
+        if (action === 'ext:command') {
+            try {
+                if (typeof data !== 'string') return false;
+                const input = JSON.parse(data);
+                if (!isJson(input) || !input || typeof input !== 'object' || Array.isArray(input)
+                    || Object.keys(input).sort().join(',') !== 'action,module,payload' || typeof input.module !== 'string'
+                    || typeof input.action !== 'string' || !validId(input.module)) return false;
+                const module = this.modules.find(module => module.id === input.module);
+                if (!module?.commands || !Object.prototype.hasOwnProperty.call(module.commands,input.action)) return false;
+            } catch { return false; }
+        }
+        return this.modules.every(module => module.allowInput?.(action, data, this.context(module, null)) !== false);
+    }
+    get readyToSave(): boolean { return this.modules.every(module => module.readyToSave?.(this.context(module, null)) !== false); }
+    validateRecording(events: readonly {action:string;data:unknown;extensions?:ExtensionSnapshot}[]): boolean {
+        return this.modules.every(module => !module.validateRecording || module.validateRecording(events));
+    }
+    initialCommands(): string[] {
+        return this.modules.flatMap(module => module.initialCommand ? [JSON.stringify({ module: module.id, ...module.initialCommand })] : []);
+    }
+    creditParty(creature: Creature): string | null {
+        this.observeCreature(creature);
+        const actor = this.actorFacts(creature);
+        const provider = this.modules.find(module => module.creditParty);
+        return provider ? provider.creditParty!(actor, this.context(provider, null))
+            : actor.allied ? `player:${this.ports.playerId()}` : null;
+    }
+    /** Actual command/animation commit point, before GC and recording comparison. */
+    settle(reachable: readonly Creature[]): void {
+        if (!this.modules.some(module => module.hooks?.simulationSettled)) return;
+        if (this.generations.length || this.activeScope) throw new Error('Extension settlement outside safe boundary');
+        const beforeStates = structuredClone(this.states), beforeComponents = structuredClone(this.components);
+        const resources = [...this.creatures].map(actor => [actor, actor.hp, actor.maxHp] as const);
+        try {
+            for (const actor of [...this.creatures].sort((a, b) => a.id - b.id)) this.observeCreature(actor);
+            const causes = this.causality.snapshot();
+            const origins = [...Object.values(causes.statusOrigins).flatMap(Object.values), ...Object.values(causes.fatalOrigins),
+                ...Object.values(causes.pendingDisplacements), ...Object.values(this.deaths).map(death => death.origin)];
+            const sourceIds = [...new Set(origins.flatMap(origin => origin?.creditActorId ? [origin.creditActorId] : []))].sort((a,b) => a-b);
+            this.emit('simulationSettled', { knownKinds: this.ports.knownKinds?.() ?? [],
+                reachableIds: reachable.map(actor => actor.id).sort((a,b) => a-b), sourceIds });
+        } catch (error) {
+            this.states = beforeStates; this.components = beforeComponents;
+            for (const [actor, hp, maxHp] of resources) { actor.hp = hp; actor.maxHp = maxHp; }
+            throw error;
+        }
+    }
+    validateWorld(creatures: readonly Creature[]): void {
+        const actors = creatures.map(actor => this.actorFacts(actor,creatures[0]!.id));
+        for (const module of this.modules) if (module.validateWorld && !module.validateWorld(this.states[module.id]!, this.components, actors))
+            throw new Error('Invalid extension world references');
     }
     private invoke(module: ExtensionModule, callback: (context: ExtensionContext) => void): void {
         if (this.disposed) throw new Error('Extension runtime unloaded');
@@ -130,7 +215,11 @@ export class ExtensionRuntime {
             const handler = module.hooks?.[name];
             if (handler) {
                 if (readOnly) requireSynchronous(handler(input, this.context(module, null)));
-                else this.invoke(module, context => handler(input, context));
+                else {
+                    const prior = this.resourcePhase;
+                    this.resourcePhase = ['creatureSpawned','simulationSettled','nativeMaximumReset'].includes(name);
+                    try { this.invoke(module, context => handler(input, context)); } finally { this.resourcePhase = prior; }
+                }
             }
         }
     }
@@ -144,14 +233,17 @@ export class ExtensionRuntime {
         const module = this.modules.find(entry => entry.id === input.module);
         const handler = module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action) ? module.commands[input.action] : undefined;
         if (!module || typeof handler !== 'function') throw new Error('Unknown extension command');
-        this.invoke(module, context => handler(input.payload, context));
+        const prior = this.resourcePhase; this.resourcePhase = true;
+        try { this.invoke(module, context => handler(input.payload, context)); } finally { this.resourcePhase = prior; }
     }
     attachCreature(creature: Creature, notifySpawn = true): void {
         if (this.disposed || this.creatures.has(creature)) return;
         this.creatures.add(creature);
         creature.extensionHooks = {
             causality: this.causality,
-            partyId: actor => actor.id === this.ports.playerId() || ('isAlly' in actor && actor.isAlly === true) ? `player:${this.ports.playerId()}` : null,
+            partyId: actor => this.creditParty(actor),
+            relationshipChanged: actor => this.observeCreature(actor),
+            nativeMaximumReset: actor => this.emit('nativeMaximumReset', {actor:this.actorFacts(actor)}),
             beforeAttack: (attacker, defender) => {
                 this.attacks.push(attacker.id);
                 try { this.emit('beforeAttack', { attacker: creatureView(attacker, this.ports.playerId()), defender: creatureView(defender, this.ports.playerId()) }); }
@@ -170,8 +262,14 @@ export class ExtensionRuntime {
         if (notifySpawn && !this.spawned.has(creature)) {
             this.spawned.add(creature);
             if (this.generations.length) this.generations[this.generations.length - 1]!.births.add(creature);
-            this.emit('creatureSpawned', { creature: creatureView(creature, this.ports.playerId()) });
+            this.emit('creatureSpawned', this.spawnFact(creature));
         }
+    }
+    private spawnFact(creature: Creature): HookEvents['creatureSpawned'] {
+        const actor = this.actorFacts(creature);
+        return { creature: creatureView(creature, this.ports.playerId()), birth: readCreatureBirth(creature) ?? {
+            creationReason: this.ports.testMode?.() ? 'test' : 'scripted', originalMonsterType: actor.monsterId,
+            initiallyHostile: actor.hostile, sourceId: null, nativeStatsCopied: false } };
     }
     /** Engine-only transaction handles. Module contexts do not expose these APIs. */
     beginGeneration(label: string): GenerationToken {
@@ -200,7 +298,7 @@ export class ExtensionRuntime {
         this.publishingGeneration = true;
         try {
             for (const creature of [...frame.births].sort((a, b) => a.id - b.id)) {
-                this.dispatch('creatureSpawned', { creature: creatureView(creature, this.ports.playerId()) });
+                this.dispatch('creatureSpawned', this.spawnFact(creature));
             }
             for (const fact of frame.facts) if (fact.name !== 'creatureSpawned') this.dispatch<HookName>(fact.name, fact.event, fact.readonly);
             this.dispatch('generationCommitted', { label: token.label, creatureIds: [...frame.births].map(c => c.id).sort((a, b) => a - b) });
@@ -222,6 +320,8 @@ export class ExtensionRuntime {
     }
     /** Capture before recursive death effects; a later kill notification cannot overwrite it. */
     captureDeath(creature: Creature, administrative: boolean, origin: EffectOrigin | null): DeathFact {
+        this.observeCreature(creature);
+        if (this.modules.some(module => module.hooks?.deathCaptured)) this.emit('deathCaptured', { actor: this.actorFacts(creature), origin: structuredClone(origin), administrative });
         const fact = { creature: creatureView(creature, this.ports.playerId()), origin: structuredClone(origin), administrative };
         this.deaths[String(creature.id)] = fact;
         return structuredClone(fact);
@@ -262,6 +362,7 @@ export class ExtensionRuntime {
                 || Object.keys(fact).some(key => !['creature', 'origin', 'administrative'].includes(key))) throw new Error('Invalid death fact');
         }
         for (const module of this.modules) if (!module.validateState(value.modules[module.id])) throw new Error(`Invalid module state: ${module.id}`);
+        for (const module of this.modules) if (module.validateComponents && !module.validateComponents(value.modules[module.id]!, value.components, value.foundation)) throw new Error('Invalid module component references');
         for (const [id, components] of Object.entries(value.components)) {
             if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id)) || !components || typeof components !== 'object' || Array.isArray(components)) throw new Error('Invalid creature components');
             for (const [key, value] of Object.entries(components)) {
