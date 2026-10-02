@@ -18,6 +18,7 @@ import { creatureStatusRows } from '../Status/statusConfig';
 import { monsterAccuracyAdjusted, monsterDefenseAdjusted, monsterDamageAdjustmentAmount } from '../Combat/CombatFormulas';
 import { hitProbability, netEnchant, damageFraction, playerDefense } from '../Combat/CombatFormulas';
 import { CombatSystem } from '../Combat/Combat';
+import { weaponSlaysMonster } from '../Combat/MonsterClass';
 
 // ---------- Helper types ----------
 
@@ -115,7 +116,8 @@ export function generateMonsterDetail(
     playerHallucinating = false,
     playerDonning = 0,
     playerStuck = false,
-    forecastHit?: (direction: 'incoming' | 'outgoing') => number
+    forecastHit?: (direction: 'incoming' | 'outgoing') => number,
+    playerWeapon?: Pick<Item, 'flags' | 'runicType' | 'vorpalEnemy'> | null
 ): DetailInfo {
     const sections: DetailSection[] = [];
 
@@ -211,7 +213,9 @@ export function generateMonsterDetail(
     // Player hitting monster
     if (playerWeaponDamage) {
         const wNE = netEnchant(playerWeaponEnchant, playerStrength, playerWeaponStrReq);
+        // CE Combat.c:130-135: use the actual rune even when unidentified.
         const playerHitProb = forecastHit ? forecastHit('outgoing') : monster.hasStatus('stuck') || monster.hasStatus('paralyzed') || monster.isCaged
+            || weaponSlaysMonster(playerWeapon, monster.typeId)
             ? 100 : hitProbability(100, monDef, wNE);
         combatLines.push({
             text: `你有 ${playerHitProb}% 的概率命中该怪物。`,

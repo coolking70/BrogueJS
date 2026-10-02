@@ -2203,7 +2203,8 @@ export class Game {
                     this.player.getStatusDuration('donning'),
                     this.player.hasStatus('stuck'),
                     this.extensionRuntime ? direction => direction === 'incoming'
-                        ? CombatSystem.previewHitChance(m, this.player) : CombatSystem.previewHitChance(this.player, m) : undefined
+                        ? CombatSystem.previewHitChance(m, this.player) : CombatSystem.previewHitChance(this.player, m) : undefined,
+                    this.player.equippedWeapon
                 );
                 return;
             }
@@ -2257,7 +2258,8 @@ export class Game {
                 this.player.getStatusDuration('donning'),
                 this.player.hasStatus('stuck'),
                 this.extensionRuntime ? direction => direction === 'incoming'
-                    ? CombatSystem.previewHitChance(monster, this.player) : CombatSystem.previewHitChance(this.player, monster) : undefined
+                    ? CombatSystem.previewHitChance(monster, this.player) : CombatSystem.previewHitChance(this.player, monster) : undefined,
+                this.player.equippedWeapon
             );
             return;
         }
