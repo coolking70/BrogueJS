@@ -397,7 +397,9 @@ export class Monster extends Creature {
     public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: import('../ext/causality').DamageKind = 'other'): void {
         this.interruptCorpseAbsorption(amount);
         const damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
-        super.takeDamage(damage, true, grid, beforeHpLoss, damageKind);
+        // Preserve the original CE damage/blood call in classic runs.
+        if (this.extensionHooks) super.takeDamage(damage, true, grid, beforeHpLoss, damageKind);
+        else super.takeDamage(damage, true, grid, beforeHpLoss);
     }
 
     public administrativeDeath?: boolean;
