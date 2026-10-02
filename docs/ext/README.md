@@ -31,7 +31,7 @@
 
 ## 当前审阅入口
 
-阶段 0 已交付，门禁精简原文见 [evidence/summary.md](evidence/summary.md)。阶段 1 第一阶段仅设计：[phase1-growth.md](phase1-growth.md)。确认设计后才分小步实施，每小步完成再次停下；不因设计中的推荐而自动开始代码。原始日志/缓存/全量哈希/中断记录不再提交。
+阶段 0 已交付；阶段 1 已按维护者确认的数据驱动拆分完成 1a0，当前等待本步验收。设计见 [phase1-growth.md](phase1-growth.md)，各步门禁精简原文见 [evidence/summary.md](evidence/summary.md)。每小步完成再次停下，确认后才继续；不因默认样例数值或推荐而自动开始后续代码。原始日志/缓存/全量哈希/中断记录不再提交。
 
 
 ## 阶段 1 当前交付

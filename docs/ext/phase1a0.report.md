@@ -2,7 +2,7 @@
 
 工作分支：`ext/foundation`。基线 `99f64bce00309179ae0cd593acebfe0ebf07b0c2`，已用远端精确引用核对。本步没有再次合并 main，没有修改/推送 main、打标签或启用 1a 玩法。
 
-状态：主体及加载边界修复完成，162项定向回归已通过；当前重新冻结执行最终完整/CE门禁，尚未取得全量终态。此前WIP不作为验收通过，最终门禁完成前不推送交付。交付后停在 **1a0**，等待维护者确认后才进入 **1a**。
+状态：**1a0 完成，最终完整/CE 门禁全部通过**。本步新增 118 项回归及全部读源码守卫通过；既有测试/黄金 trace/生成基线未改断言。停在 **1a0**，等待维护者确认后才进入 **1a**。
 
 ## 主要验收材料
 
@@ -66,43 +66,66 @@
 
 新增测试五份：`ext_causality`、`ext_bolt_causality`、`ext_generation_transactions`、`ext_growth_config`、`ext_growth_foundation_contracts`；共 118 项本步断言用例。既有测试文件、黄金 trace 和生成基线未修改。独立只读复核提出的两项问题（直接掘地/粉碎来源、楼层外蓝图发布后的打断泄漏）均已修复并新增回归。
 
-## 运行环境中断说明
+## 验收过程说明
 
-首轮冻结代码门禁的类型检查/构建/CE参照复核通过后，完整 test:full 尚未结束时云端执行环境被替换。旧进程会话已不存在，/tmp 原始日志丢失，没有取得完整套件退出状态；该轮不计完整验收通过。恢复后生产/测试树散列与冻结值一致，重新从类型检查开始跑完整一轮；日志改存已忽略的工作区目录以保留后续证据。没有以定向复跑或中断前的输出拼接成全量通过。
+- 此前完整套件多次因云端执行会话丢失或 HTTP 503 中断，均无完整退出状态；一次为修复真实数据加载本地化边界而主动停止（exit130）。这些运行均不计完整通过
+- 后续 1024MiB heap 完整运行出现两次 V8 worker heap OOM，并发现 `c_4b` 要求经典 `super.takeDamage` 原调用形态。生产代码已恢复经典原调用；旧守卫/断言未改。原失败与受影响 5 文件 / 96 用例复测通过
+- 同一内存重型 AD3a 原用例在 3072MiB heap 下通过，峰值 RSS 2825016KiB。最终运行使用 Node v24.19.0，2 worker × 3072MiB heap，保持原用例/超时/断言；失败即停，避免已知错误继续空耗
+- 重跑前以别名/调用/导入依赖扫描 276 个测试文件（含 `src/test` 外 15 个），77 处生产源码读取落入 46 文件 / 149 项原用例。146 项快速静态守卫和 3 项共享真实生成 census 的原守卫均通过，45 种子 × 26 层共 1170 层、3803 台机器、center 违例为零；并未将动态 census 替换成文本抽取或 mock
+- 原始日志、静态清单、资源记录均留在忽略目录，仓库仅保留本报告及最终门禁摘要；不拼接中断轮次冒充完整套件通过
 
 ## 最终门禁原文摘要
 
-尚无完整/CE与drift终态，不得将此前定向测试当成本轮全量结果。最近一轮原文摘要：
+环境：云端 Linux，Node v24.19.0 / npm 11.9.0，`TZ=UTC`、`NODE_OPTIONS=--max-old-space-size=3072`。完整套件 2 worker，drift 1 worker；没有修改原超时/测试集合/断言。`--bail=1` 只在失败时提前终止，本轮无失败，因此执行完整集合。
+
+### `npx vue-tsc -b` — exit 0
 
 ```text
-END vue-tsc EXIT_CODE=0 DURATION_SECONDS=17 2026-10-02T03:04:50Z
-END build EXIT_CODE=0 DURATION_SECONDS=22 2026-10-02T03:05:12Z
-✓ 968 modules transformed.
-✓ built in 5.41s
-CE reference already verified: legacy 49be8dd3fc1b9a0fb477df4c9153c0e1cf796fe9
-END ce-fetch EXIT_CODE=0 DURATION_SECONDS=0 2026-10-02T03:05:12Z
-START test-full 2026-10-02T03:05:12Z
+END vue-tsc EXIT_CODE=0 DURATION_SECONDS=16 2026-10-02T06:46:50Z
 ```
 
-完整 test:full：未取得退出状态；CE 对照用例未取得完整执行结果，不能视为通过。test:drift：另在同一冻结代码上完整执行，exit0；原文见下。原有构建 >500kB 提示保留。
-
-冻结的生产/测试/脚本/资源树聚合 SHA-256：`b2260b4931d88bcb6a7306a6810d432a25248382ca991296693ed80930f20ee4`。各次服务恢复后核对相同；完整门禁后仍须再次核对。散列清单不提交。
-
-合入 main 前，维护方仍须按用户要求在本地另行完整运行 `test:full`。本步不会执行该合并。
-
-补充环境事实：后续完整套件在4/2/1 worker与4096/1536/1024MiB配置下均遇exec-server断开；前三轮旧会话明确不存在，第四轮最近日志仅RUN、未见具体测试结果。出现过明确 HTTP 503 Service Unavailable，不能认定OOM或测试断言失败。没有改测试超时/断言/集合，也没有以定向结果拼接全量。
-
-
-### 独立 drift 原文（后续生产代码修复前的冻结树）
+### `npm run build` — exit 0
 
 ```text
-END standalone-drift EXIT_CODE=0 2026-10-02T03:21:53Z
+✓ 968 modules transformed.
+(!) Some chunks are larger than 500 kB after minification. Consider:
+✓ built in 5.63s
+END build EXIT_CODE=0 DURATION_SECONDS=22 2026-10-02T06:47:12Z
+```
+
+### `npm run ce:fetch` — exit 0
+
+```text
+CE reference already verified: legacy 49be8dd3fc1b9a0fb477df4c9153c0e1cf796fe9
+END ce-fetch EXIT_CODE=0 DURATION_SECONDS=2 2026-10-02T06:47:14Z
+```
+
+### `npm run test:full -- --maxWorkers=2 --reporter=verbose --bail=1` — exit 0
+
+```text
+ Test Files  275 passed (275)
+      Tests  4890 passed | 8 skipped | 5 todo (4903)
+   Start at  06:47:14
+   Duration  5592.13s (transform 8.49s, setup 0ms, import 183.36s, tests 10951.56s, environment 105ms)
+END test-full EXIT_CODE=0 DURATION_SECONDS=5594 2026-10-02T08:20:28Z
+```
+
+### `npm run test:drift -- --maxWorkers=1` — exit 0
+
+```text
  Test Files  1 passed (1)
       Tests  1 passed (1)
-   Start at  03:21:01
-   Duration  52.43s (transform 1.38s, setup 0ms, import 2.11s, tests 50.14s, environment 0ms)
+   Start at  08:20:28
+   Duration  49.79s (transform 1.19s, setup 0ms, import 1.87s, tests 47.75s, environment 0ms)
+END test-drift EXIT_CODE=0 DURATION_SECONDS=52 2026-10-02T08:21:20Z
 ```
 
-服务恢复后单 worker/1024MiB 加短轮询的完整套件正常推进，生成长跑原断言已出现通过结果；但收尾发现加载器错误文案仅有格式 helper、生产边界尚未调用。为符合本步“加载时本地化报错”，于 03:45:47 显式停止本任务该轮 full（exit130），修复后重新冻结验收；这次是主动修复合同缺口，不是平台故障或测试断言失败。
+CE 参照可用，`BROGUE_REQUIRE_CE=1` 下所有活动 CE 对照已执行；**没有因缺参照/联网失败而跳过的 CE 用例**。原有 8 skip 是 P2-1/P2-2/P2-3 退役测试，5 todo 是 smoke 的1个历史占位及 CombatFormulas 的4个历史 CE 公式占位（weaponSlowDuration、weaponConfusionDuration、weaponImageCount、weaponForceDistance）；这些原有占位未执行，未将它们声称为已验证。本步没有增加 skip/todo。
 
-最新冻结树（完成真实加载错误本地化、真实资源驱动新增定义两项修复）：`f4edf7111f7533b99d01b056a65d46248dcbb1c94a1da9e48f9be65cffca3d18`。全体扩展与原本地化/仓库守卫组合11文件162项通过；该定向结果不替代新树完整门禁。
+类型/构建/完整CE/drift 前后生产、测试、脚本、资源树 SHA-256 一致：`07fc94f9eadf0defa3afa720e34066fc08c086f696f285334e6908f58803d854`。只保留聚合值，不提交全量散列清单；最终门禁后仅整理文档摘要，没有再改源码或测试。
+
+```text
+FINAL all_gates=0 source_hash_unchanged=True 2026-10-02T08:21:20Z
+```
+
+合入 main 前，维护方仍须按用户要求在本地另行完整运行 `test:full`。本步不会执行该合并。
