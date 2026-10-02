@@ -114,7 +114,8 @@ export function generateMonsterDetail(
     playerArmorStrReq?: number,
     playerHallucinating = false,
     playerDonning = 0,
-    playerStuck = false
+    playerStuck = false,
+    forecastHit?: (direction: 'incoming' | 'outgoing') => number
 ): DetailInfo {
     const sections: DetailSection[] = [];
 
@@ -184,7 +185,7 @@ export function generateMonsterDetail(
     const effectivePlayerDefense = armorBase > 0
         ? playerDefense(armorBase, playerArmorEnchant ?? 0, playerStrength, playerArmorStrReq ?? 0, playerDonning)
         : 0;
-    const monHitProb = playerStuck ? 100 : hitProbability(monAcc, effectivePlayerDefense);
+    const monHitProb = forecastHit ? forecastHit('incoming') : playerStuck ? 100 : hitProbability(monAcc, effectivePlayerDefense);
     combatLines.push({
         text: `该怪物有 ${monHitProb}% 的概率命中你。`,
         color: monHitProb > 50 ? '#ff6644' : '#ffcc44'
@@ -210,7 +211,7 @@ export function generateMonsterDetail(
     // Player hitting monster
     if (playerWeaponDamage) {
         const wNE = netEnchant(playerWeaponEnchant, playerStrength, playerWeaponStrReq);
-        const playerHitProb = monster.hasStatus('stuck') || monster.hasStatus('paralyzed') || monster.isCaged
+        const playerHitProb = forecastHit ? forecastHit('outgoing') : monster.hasStatus('stuck') || monster.hasStatus('paralyzed') || monster.isCaged
             ? 100 : hitProbability(100, monDef, wNE);
         combatLines.push({
             text: `你有 ${playerHitProb}% 的概率命中该怪物。`,

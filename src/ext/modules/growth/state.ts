@@ -5,8 +5,10 @@ import { isJson, canonical } from '../../json';
 import type { CreatureBirth } from '../../birth';
 import type { DeepReadonly } from './definitions';
 import type { GrowthDefinitionPack } from './types';
-import { automaticGrowthDerived, scheduledGrantTotal } from './experience';
+import { scheduledGrantTotal } from './experience';
 import { isGrowthDerived, isGrowthFocus, isGrowthProgression, isGrowthSkills } from './components';
+import { growthAllocatedCost, growthDerived, growthFocusCapacity, growthFocusInterval, growthRuleActor, isGrowthAttributes } from './attributes';
+import { isGrowthItemLedger, growthItemPointGrants } from './items';
 
 export type GrowthActor = { player: boolean; allied: boolean; hostile: boolean; alive: boolean; relation: number };
 export type GrowthReward = CreatureBirth & { rewardId: string; threatRank: number; amount: number };
@@ -65,22 +67,31 @@ export function isGrowthState(value: unknown, pack: DeepReadonly<GrowthDefinitio
             && ['player','allied','hostile'].every(key => typeof actor[key] === 'boolean') && (actor.monsterId === null || text(actor.monsterId));
     });
 }
-/** Cross-component checks happen before a live run is retired. 1a has no spending/template grants yet. */
+/** Cross-component checks happen before a live run is retired; every point has a grant, allocation, or irreversible-fee owner. */
 export function validGrowthComponents(state: GrowthState, components: ExtensionSnapshot['components'], pack: DeepReadonly<GrowthDefinitionPack>): boolean {
     const config = pack.config;
     for (const [id, entries] of Object.entries(components)) {
         const own = Object.keys(entries).filter(key => key.startsWith('growth:'));
         if (!own.length) continue;
-        if (!state.actors[id] || own.sort().join(',') !== 'growth:derived,growth:focus,growth:progression,growth:reward,growth:skills') return false;
-        const progression = entries['growth:progression'];
-        if (!isGrowthProgression(progression,config.levels)
-            || progression.attributePoints !== scheduledGrantTotal(config.levels.attributePoints,progression.level)
-            || progression.skillPoints !== scheduledGrantTotal(config.levels.skillPoints,progression.level)
-            || !isGrowthDerived(entries['growth:derived'],automaticGrowthDerived(config.levels,progression.level))
-            || !isGrowthFocus(entries['growth:focus'],config.focus.base,config.focus.recoveryInterval)
-            || !isGrowthSkills(entries['growth:skills'],pack.definitions.filter(def => def.kind === 'skill' && def.mode === 'active').map(def => def.id))
-            || !isGrowthReward(entries['growth:reward'])) return false;
-        const reward = entries['growth:reward'];
+        if (!state.actors[id] || own.sort().join(',') !== 'growth:attributes,growth:derived,growth:focus,growth:items,growth:progression,growth:reward,growth:skills') return false;
+        const progression = entries['growth:progression'], reward = entries['growth:reward'], attributes = entries['growth:attributes'], items = entries['growth:items'];
+        if (!isGrowthProgression(progression,config.levels) || !isGrowthReward(reward)
+            || !isGrowthAttributes(attributes,pack,reward.nativeStatsCopied && config.monsters.clone.inheritBuild)
+            || !isGrowthItemLedger(items,config.itemGrowth)) return false;
+        const actor = growthRuleActor(Number(id),progression,attributes), grants = growthItemPointGrants(config.itemGrowth,items);
+        const clone = reward.nativeStatsCopied;
+        if ((!clone || !config.monsters.clone.inheritUnspentPoints) && (attributes.inheritedAttributePoints || attributes.inheritedSkillPoints)
+            || (clone && !config.monsters.clone.progression && (progression.level !== 1 || progression.experience !== 0))) return false;
+        const attributeGrants = BigInt(scheduledGrantTotal(config.levels.attributePoints,progression.level))
+            - BigInt(clone ? scheduledGrantTotal(config.levels.attributePoints,1) : 0) + BigInt(attributes.inheritedAttributePoints);
+        const skillGrants = BigInt(scheduledGrantTotal(config.levels.skillPoints,progression.level))
+            - BigInt(clone ? scheduledGrantTotal(config.levels.skillPoints,1) : 0) + BigInt(attributes.inheritedSkillPoints);
+        if (BigInt(progression.attributePoints) + BigInt(growthAllocatedCost(pack,attributes)) + BigInt(attributes.attributePointsSpent)
+                !== attributeGrants + BigInt(grants.attributePoints)
+            || BigInt(progression.skillPoints) + BigInt(attributes.skillPointsSpent) !== skillGrants + BigInt(grants.skillPoints)
+            || !isGrowthDerived(entries['growth:derived'],growthDerived(pack,actor))
+            || !isGrowthFocus(entries['growth:focus'],growthFocusCapacity(pack,actor),growthFocusInterval(pack,actor))
+            || !isGrowthSkills(entries['growth:skills'],pack.definitions.filter(def => def.kind === 'skill' && def.mode === 'active').map(def => def.id))) return false;
         if (reward.rewardId !== `birth:${id}`) return false;
         const quote = config.experience.kills.monsterQuotes.find(quote => quote.monsterId === reward.originalMonsterType);
         if (reward.threatRank !== (quote?.threatRank ?? 0) || reward.amount !== (quote ? quote.amount ?? config.experience.kills.base + config.experience.kills.perThreatRank * quote.threatRank : 0)) return false;

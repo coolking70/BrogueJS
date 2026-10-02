@@ -5,8 +5,8 @@ export const staffHasteDuration = (enchantment: number): number => 2 + 4 * encha
 export const staffDiscordDuration = (enchantment: number): number => 4 * enchantment;
 export const armorStealthAdjustment = (strengthRequired: number): number => Math.max(0, strengthRequired - 12);
 
-export function enchantedEquipment(enchantment: number, strengthRequired: number) {
-    return { enchantment: enchantment + 1, strengthRequired: Math.max(0, strengthRequired - 1) };
+export function enchantedEquipment(enchantment: number, strengthRequired: number, magnitude = 1) {
+    return { enchantment: enchantment + magnitude, strengthRequired: Math.max(0, strengthRequired - magnitude) };
 }
 
 export const ringStealthAdjustment = (bonus: number): number => bonus < 0 ? -4 * bonus : -bonus;

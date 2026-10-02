@@ -1,4 +1,5 @@
 import { experienceThreshold, scheduledGrantTotal } from './experience';
+import { invalidGrowthItemSource, type GrowthItemSource } from './items';
 import { canonical, isJson, validId } from '../../json';
 import { GROWTH_RULE_PORTS, type GrowthDefinitionPack, type GrowthEffect, type GrowthIdentity,
     type GrowthMagnitude, type GrowthPrerequisite, type GrowthSchedule, type GrowthSkill } from './types';
@@ -183,6 +184,8 @@ export interface GrowthValidationOptions {
     /** When supplied, quotes must cover this exact engine catalog once; no engine import is needed. */
     monsterIds?: readonly string[];
     itemIds?: readonly string[];
+    /** Finite native item-effect capabilities; supplying a catalog rejects unsupported conversions. */
+    itemGrowthSources?: readonly GrowthItemSource[];
     categoryIds?: readonly string[];
 }
 /** Strict two-pass pure validation. Never repairs/coerces content or runs a data-provided callback. */
@@ -236,7 +239,8 @@ export function validateGrowthDefinitionPack(value: unknown, options: GrowthVali
     if (config.strengthTraining.enabled && config.strengthTraining.attributeId === null) fail('reference', '$.config.strengthTraining.attributeId');
     if (config.strengthTraining.attributeId !== null) {
         const training = attribute(config.strengthTraining.attributeId, '$.config.strengthTraining.attributeId');
-        if (config.strengthTraining.cap > training.cap || config.strengthTraining.pointCost !== training.pointCost) fail('range', '$.config.strengthTraining');
+        if (config.strengthTraining.cap > training.cap || training.initial > config.strengthTraining.cap
+            || config.strengthTraining.pointCost !== training.pointCost) fail('range', '$.config.strengthTraining');
     }
     if (config.attributeTotalCap !== null && config.attributes.reduce((sum, attr) => sum + attr.initial, 0) > config.attributeTotalCap) fail('budget', '$.config.attributeTotalCap');
     const tags = new Set<string>();
@@ -291,9 +295,30 @@ export function validateGrowthDefinitionPack(value: unknown, options: GrowthVali
         ...Object.entries(config.rules.taggedProperties).map(([name, rule]) => [`$.config.rules.taggedProperties.${name}`, rule] as const)]) {
         if (!budgets.has(rule.budgetId)) fail('reference', `${path}.budgetId`, rule.budgetId);
         range(rule.globalClamp.min, rule.globalClamp.max, `${path}.globalClamp`);
+        if (Math.ceil(rule.globalClamp.min) > Math.floor(rule.globalClamp.max)) fail('range', `${path}.globalClamp`, 'no integer result');
         unique(rule.multiplierSlots, slot => slot.id, `${path}.multiplierSlots`);
         rule.multiplierSlots.forEach(slot => range(slot.min, slot.max, `${path}.multiplierSlots`));
         if (rule.minimumPositive !== null && rule.minimumPositive > rule.globalClamp.max) fail('range', `${path}.minimumPositive`);
+        if (rule.minimumPositive !== null && Math.ceil(rule.minimumPositive) > Math.floor(rule.globalClamp.max)) fail('range', `${path}.minimumPositive`, 'no integer result');
+    }
+    for (const port of GROWTH_RULE_PORTS) {
+        if (config.rules.ports[port].globalClamp.min < 0) fail('range', `$.config.rules.ports.${port}.globalClamp.min`, 'native scalar must be nonnegative');
+    }
+    if (config.rules.ports.hitChance.globalClamp.max > 10000) fail('range', '$.config.rules.ports.hitChance.globalClamp.max', 'probability basis points');
+    if (config.rules.ports.focusRecoveryInterval.globalClamp.min < 1) fail('range', '$.config.rules.ports.focusRecoveryInterval.globalClamp.min', 'positive interval');
+    const focusRule = config.rules.ports.focusCapacity;
+    const focusMinimum = Math.max(config.focus.min, focusRule.globalClamp.min);
+    const focusMaximum = Math.min(config.focus.cap, focusRule.globalClamp.max);
+    if (Math.ceil(focusMinimum) > Math.floor(focusMaximum)
+        || (focusRule.minimumPositive !== null && Math.ceil(focusRule.minimumPositive) > Math.floor(focusMaximum))) {
+        fail('range', '$.config.rules.ports.focusCapacity.globalClamp', 'no integer result within focus bounds');
+    }
+    // Both directional declarations describe one physical-resolution kernel, never two scaling passes.
+    if (canonical(config.rules.ports.physicalDamage) !== canonical(config.rules.ports.receivedPhysicalDamage)) {
+        fail('shape', '$.config.rules.ports.receivedPhysicalDamage', 'must match physicalDamage');
+    }
+    if (config.rules.ports.stealthRange.globalClamp.max < 2) {
+        fail('range', '$.config.rules.ports.stealthRange.globalClamp.max', 'native minimum is 2');
     }
     if (config.rules.order.join(',') !== 'add,multiply,global-clamp,round') fail('shape', '$.config.rules.order', 'fixed evaluation order');
     const grantsCheck = (grants: GrowthIdentity['attributes'], path: string): number => {
@@ -388,6 +413,10 @@ export function validateGrowthDefinitionPack(value: unknown, options: GrowthVali
     config.experience.story.rewards.forEach(reward => checkText(reward.reasonKey, '$.config.experience.story.rewards'));
     unique(config.itemGrowth.rules, item => item.itemId, '$.config.itemGrowth.rules');
     if (options.itemIds) for (const item of config.itemGrowth.rules) if (!options.itemIds.includes(item.itemId)) fail('reference', '$.config.itemGrowth.rules', item.itemId);
+    if (options.itemGrowthSources) {
+        const index = invalidGrowthItemSource(config.itemGrowth, options.itemGrowthSources);
+        if (index !== null) fail('reference', `$.config.itemGrowth.rules[${index}]`, 'native item growth source');
+    }
     if (options.categoryIds) for (const category of config.experience.identification.categories) if (!options.categoryIds.includes(category)) fail('reference', '$.config.experience.identification.categories', category);
     for (const item of config.itemGrowth.rules) if (item.perItemCap !== null && item.runCap !== null && item.perItemCap > item.runCap) fail('range', '$.config.itemGrowth.rules');
     if (!templates.has(config.monsters.defaultTemplateId)) fail('reference', '$.config.monsters.defaultTemplateId');

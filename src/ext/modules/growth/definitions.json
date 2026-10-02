@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "moduleId": "growth",
-  "moduleVersion": "1.1.0",
-  "rulesVersion": "1.1.0",
+  "moduleVersion": "1.2.0",
+  "rulesVersion": "1.2.0",
   "config": {
     "experience": {
       "sources": {

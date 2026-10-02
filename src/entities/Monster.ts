@@ -697,7 +697,8 @@ export class Monster extends Creature {
         });
         // Player stores fractional HP; Monster stores elapsed regeneration turns.
         // Project current rate/progress without retaining a Player/inventory ref.
-        const regenTurns = TURNS_FOR_FULL_REGEN / player.maxHp * (player.hasStatus('regenerating') ? 0.6 : 1);
+        const nativeMaximum = player.extensionHooks?.nativeMaximumBase?.(player) ?? player.maxHp;
+        const regenTurns = TURNS_FOR_FULL_REGEN / nativeMaximum * (player.hasStatus('regenerating') ? 0.6 : 1);
         Object.assign(model, { regenTurns, regenCounter: player.regenCarry * regenTurns,
             name: ItemLoader.translateName('clone') || 'clone', hp: player.hp, maxHp: player.maxHp, carriedItem: null,
             statusDurations: { ...player.statusDurations }, statusImmunities: new Set(player.statusImmunities),
@@ -720,6 +721,13 @@ export class Monster extends Creature {
         if (this.hp <= 0 || this.hasBehavior('MONST_INANIMATE')
             || this.hasBehavior('MONST_TURRET') || this.isInvulnerable()) return false;
         const { min, max } = CombatSystem.parseDamageString(this.damageString);
+        if (this.extensionHooks?.nativeMaximumBase) {
+            const combinedMaximum = this.maxHp;
+            this.maxHp = this.extensionHooks.nativeMaximumBase(this);
+            // Keep native overhealth (e.g. vampire transference), removing only
+            // the portion of current HP that belongs to the growth maximum.
+            this.hp = Math.min(this.hp, this.maxHp) + Math.max(0, this.hp - combinedMaximum);
+        }
         this.maxHp += 12;
         this.defense += 10;
         this.accuracy += 10;
@@ -727,6 +735,7 @@ export class Monster extends Creature {
         this.newPowerCount++;
         this.totalPowerCount++;
         this.heal(100, true);
+        this.extensionHooks?.nativeMaximumReset?.(this);
         return true;
     }
 
@@ -752,6 +761,13 @@ export class Monster extends Creature {
         delete this.deathDFType;
         this.carriedMonster = null; // CE freeCreature, not killCreature.
         const data = polymorphSpecies(this.typeId, rng);
+        if (this.extensionHooks?.nativeMaximumBase) {
+            const combinedMaximum = this.maxHp;
+            this.maxHp = this.extensionHooks.nativeMaximumBase(this);
+            // Keep native overhealth (e.g. vampire transference), removing only
+            // the portion of current HP that belongs to the growth maximum.
+            this.hp = Math.min(this.hp, this.maxHp) + Math.max(0, this.hp - combinedMaximum);
+        }
         const hp = polymorphHP(this.hp, this.maxHp, data.hp);
         const hasted = this.hasStatus('hasted') || this.hasStatus('haste');
         const slowed = this.hasStatus('slowed');
@@ -762,7 +778,7 @@ export class Monster extends Creature {
         this.description = data.description ?? '';
         this.maxHp = data.hp;
         this.hp = hp;
-        this.extensionHooks?.nativeMaximumReset?.(this);
+        this.extensionHooks?.nativeMaximumReset?.(this, true);
         this.damageString = data.damage;
         this.damageClumping = data.clumping ?? CombatSystem.parseDamageString(data.damage ?? '1d3').clumping;
         this.accuracy = data.accuracy ?? 100;
@@ -962,9 +978,17 @@ export class Monster extends Creature {
         this.name = i18next.t('mutation.' + m.id, { name: this.name, defaultValue: m.name + ' ' + this.name });
         this.color = m.color;
 
-        // Apply stat multipliers
+        // Apply stat multipliers to the native base, never exponentiate growth.
+        if (this.extensionHooks?.nativeMaximumBase) {
+            const combinedMaximum = this.maxHp;
+            this.maxHp = this.extensionHooks.nativeMaximumBase(this);
+            // Keep native overhealth (e.g. vampire transference), removing only
+            // the portion of current HP that belongs to the growth maximum.
+            this.hp = Math.min(this.hp, this.maxHp) + Math.max(0, this.hp - combinedMaximum);
+        }
         this.maxHp = Math.max(1, Math.floor(this.maxHp * m.healthFactor));
         this.hp = this.maxHp;
+        this.extensionHooks?.nativeMaximumReset?.(this);
         this.baseMoveSpeed = Math.floor(this.baseMoveSpeed * m.moveSpeedFactor);
         this.baseAttackSpeed = Math.floor(this.baseAttackSpeed * m.attackSpeedFactor);
         // CE generateMonster 的顺序是 mutateMonster → initializeMonster：初始

@@ -64,6 +64,36 @@ export interface AttackResult {
 
 export class CombatSystem {
 
+    /** Extended detail prediction: pure native facts, the same probability port,
+     * no attack hooks, temporary-effect consumption, state changes or random draws. */
+    public static previewHitChance(attacker: Creature, defender: Creature): number {
+        let accuracy = 100, defense = 0, enchant: number | undefined;
+        if (attacker instanceof Player) {
+            if (!attacker.equippedWeapon) accuracy = monsterAccuracyAdjusted(100, attacker.weaknessAmount);
+            if (attacker.equippedWeapon?.damage) enchant = netEnchant(attacker.equippedWeapon.enchantment,
+                attacker.effectiveStrength, attacker.equippedWeapon.strengthRequired || 0);
+        } else if (attacker instanceof Monster) accuracy = monsterAccuracyAdjusted(attacker.accuracy, attacker.weaknessAmount);
+        if (defender instanceof Monster) defense = monsterDefenseAdjusted(defender.defense, defender.weaknessAmount);
+        else if (defender instanceof Player && defender.equippedArmor?.armor) defense = playerDefense(defender.equippedArmor.armor,
+            defender.equippedArmor.enchantment, defender.effectiveStrength, defender.equippedArmor.strengthRequired || 0,
+            defender.getStatusDuration('donning'));
+        if (attacker instanceof Monster && attacker.hasAbility('MA_KAMIKAZE')) return 100;
+        if (attacker instanceof Monster && attacker.hasBehavior('MONST_RESTRICTED_TO_LIQUID')
+            && (defender.hasStatus('levitating') || defender.hasStatus('flying'))) return 0;
+        if (attacker instanceof Monster && attacker.hasAbility('MA_SEIZES') && (!attacker.seizing || !defender.seized)) return 0;
+        const inanimate = defender instanceof Monster && defender.hasBehavior('MONST_INANIMATE');
+        const autoHit = defender.hasStatus('paralyzed') || defender.hasStatus('stuck')
+            || (defender instanceof Monster && (defender.isCaged || (!inanimate && (defender.state === MonsterState.ASLEEP
+                || (attacker instanceof Player && !defender.isAlly && defender.state === MonsterState.WANDERING)))));
+        const probability = defender.seized && attacker.seizing ? 100 : hitProbability(accuracy, defense, enchant);
+        const rule = (attacker.extensionHooks ?? defender.extensionHooks)?.rule;
+        if (!rule) return autoHit ? 100 : probability;
+        const result = Math.floor(rule('hitChance', { actorId: attacker.id, targetId: defender.id, baseValue: probability * 100,
+            attackKind: 'melee', adjacent: Math.max(Math.abs(attacker.x - defender.x), Math.abs(attacker.y - defender.y)) === 1,
+            rollMode: autoHit ? 'skip-guaranteed-hit' : probability >= 100 ? 'roll-guaranteed' : 'roll-probability' }) / 100);
+        return autoHit ? 100 : result;
+    }
+
     /**
      * Resolves an attack from one creature to another.
      * Implements CE-accurate hit probability and damage formulas.
@@ -80,7 +110,9 @@ export class CombatSystem {
         return effects.withOrigin(origin, () => {
             hooks.beforeAttack(attacker, defender);
             let result: AttackResult | undefined;
-            try { result = CombatSystem.resolveAttack(attacker, defender, opts); return result; }
+            try { result = hooks.rule && origin.kind === 'melee' && opts?.isWeaponAttack !== false
+                ? CombatSystem.resolveAttackExtended(attacker, defender, opts)
+                : CombatSystem.resolveAttack(attacker, defender, opts); return result; }
             finally { hooks.afterAttack(attacker, defender, result); }
         });
     }
@@ -377,6 +409,311 @@ export class CombatSystem {
     /** CE inflictDamage (Combat.c:1847-1871), after shielding and before
      * subtracting HP. The original attacker owns reflected damage; no maxHP cap.
      * Environment/poison ticks have no attacker and do not call this helper. */
+    /** Extension-only native solver adapter. The classic solver above is kept
+     * byte-for-byte at its original rules/RNG sites; do not add policy checks there. */
+    private static resolveAttackExtended(attacker: Creature, defender: Creature, opts?: {
+        /**
+         * P4-3：CE attack()（Combat.c:1243-1245）把 MONST_IMMUNE_TO_WEAPONS 的豁免
+         * 限定在“武器伤害”——近战与投掷武器都走这条 attack() 复用路径，默认 true。
+         * BE_DAMAGE 已由 U06 独立结算；BE_ATTACK 保持 true
+         * （CE inflictDamage 本身只认 MONST_INVULNERABLE，不检查 IMMUNE_TO_WEAPONS）。
+         */
+        isWeaponAttack?: boolean;
+        grid?: Grid;
+        itemGenerationDepth?: number;
+        /** CE armor adjustment precedes contact poison and shield absorption. */
+        beforeDamage?: (damage: number) => number;
+        /**
+         * B-1：CE attack(attacker, defender, lungeAttack) 第三形参——刺剑突进
+         * （Movement.c:1482-1483 对 hitList 结算时按武器 LUNGE 旗标传入）。
+         * 效果：①该击自动命中（Combat.c:1239 的 || 短路）；
+         * ②伤害吃 ×3/×5 偷袭倍率（Combat.c:1259-1268）。
+         */
+        lungeAttack?: boolean;
+    }): AttackResult {
+        let attackerAccuracy = 100; // Player base accuracy
+        let defenderDefense = 0;
+        let damageString = '1d2'; // CE monsterCatalog[MK_YOU]
+        let weaponName = 'bare hands';
+        let weaponEnchant: number | undefined;
+        let weaponRunic: string | undefined;
+        let backstab = false;
+        let clumping: number | undefined;
+
+        if (attacker instanceof Monster && opts?.isWeaponAttack !== false
+            && !(attacker.hasAbility('MA_SEIZES') && !attacker.seizing)) attacker.submerged = false;
+        // --- Determine attacker stats ---
+        if (attacker instanceof Player) {
+            if (!attacker.equippedWeapon) attackerAccuracy = monsterAccuracyAdjusted(100, attacker.weaknessAmount);
+            if (attacker.equippedWeapon && attacker.equippedWeapon.damage) {
+                damageString = attacker.equippedWeapon.damage;
+                clumping = attacker.equippedWeapon.clumping;
+                weaponName = attacker.equippedWeapon.name;
+                const strReq = attacker.equippedWeapon.strengthRequired || 0;
+                weaponEnchant = netEnchant(
+                    attacker.equippedWeapon.enchantment,
+                    attacker.effectiveStrength,
+                    strReq
+                );
+                weaponRunic = attacker.equippedWeapon.runicType;
+            }
+        } else if (attacker instanceof Monster) {
+            attackerAccuracy = monsterAccuracyAdjusted(attacker.accuracy, attacker.weaknessAmount);
+            damageString = attacker.damageString || '1d3';
+            clumping = attacker.damageClumping;
+            weaponName = 'claws/teeth';
+        }
+
+        // --- Determine defender stats ---
+        if (defender instanceof Monster) {
+            defenderDefense = monsterDefenseAdjusted(defender.defense, defender.weaknessAmount);
+        } else if (defender instanceof Player) {
+            // Player defense comes from equipped armor.
+            // CE 内部 ×10 标度（Items.c:8515-8523），只降低被命中概率（Combat.c:140），
+            // 不参与伤害结算——CE 的护甲没有任何"减伤"步骤。
+            if (defender.equippedArmor && defender.equippedArmor.armor) {
+                const strReq = defender.equippedArmor.strengthRequired || 0;
+                defenderDefense = playerDefense(
+                    defender.equippedArmor.armor,
+                    defender.equippedArmor.enchantment,
+                    defender.effectiveStrength,
+                    strReq,
+                    defender.getStatusDuration('donning')
+                );
+            }
+        }
+
+        // --- Auto-hit conditions ---
+        // B-1：触发集对齐 CE attack()（Combat.c:1190-1196 + 1239）：
+        //   - defenderWasAsleep   = 目标 MONSTER_SLEEPING（Combat.c:1196-1198）
+        //   - defenderWasParalyzed = STATUS_PARALYZED > 0（Combat.c:1199）
+        //   - sneakAttack         = 玩家攻击 WANDERING 目标（Combat.c:1193-1195；
+        //     CE 的 creatureState==WANDERING 天然排除盟友，web 的 isAlly 是独立
+        //     维度，须显式排除）
+        //   - lungeAttack         = 突进（opts 传入，Movement.c:1482-1483）
+        // CE Combat.c:1190-1194：MONST_INANIMATE 目标（镜像等无生命物）身上
+        // 三类偷袭标志一律清零——web 原实现漏了这层守卫，此处照 CE 补上。
+        const inanimateDefender = (defender instanceof Monster) &&
+            defender.hasBehavior('MONST_INANIMATE');
+        const defenderStuck = !inanimateDefender && defender.hasStatus('paralyzed');
+        const defenderAsleep = !inanimateDefender && (defender instanceof Monster) &&
+            (defender.state === MonsterState.ASLEEP);
+        const sneakAttack = !inanimateDefender && (attacker instanceof Player) &&
+            (defender instanceof Monster) && !defender.isAlly &&
+            defender.state === MonsterState.WANDERING;
+        const lungeAttack = opts?.lungeAttack === true;
+
+        // Backstab: sleeping, paralyzed, or unaware targets take triple damage
+        if (defenderAsleep || defenderStuck || sneakAttack) {
+            backstab = true;
+        }
+
+        // 偷袭触发集整体自动命中（CE Combat.c:1239 的 || 短路，attackHit 不掷）。
+        // attackHit() has its own short circuit, even for an inanimate paralyzed
+        // defender: it auto-hits without granting the sneak damage multiplier.
+        const autoHit = backstab || lungeAttack || defender.hasStatus('paralyzed') || defender.hasStatus('stuck')
+            || (defender instanceof Monster && defender.isCaged);
+        // --- P4-4: MA_KAMIKAZE (Combat.c:1159-1162) ---
+        // CE 的检查在 attackHit() 掷骰之前（line 1159 早于 line 1240 的命中判定）：
+        // 自爆怪物的攻击永远"成功"，不参与命中率——攻击者直接自毁代替造成伤害，
+        // defender 完全不受影响。三只膨胀怪的 damage 都是 0d1，真正的杀伤来自
+        // 死亡时触发的 DF（Game.triggerDeathFeatures），不是这次攻击本身。
+        if (attacker instanceof Monster && attacker.hasAbility('MA_KAMIKAZE')) {
+            if (defender instanceof Player && !logger.blockCombatText) logger.disturb();
+            attacker.takeDamage(attacker.hp, true);
+            return { damage: 0, weaponName, hit: true, backstab: false, kamikazeSelfDestruct: true };
+        }
+
+        // CE Combat.c:1173-1177: this is a rejected physical attack, before
+        // entrancement release. BE_DAMAGE has a separate U06 path.
+        if (opts?.isWeaponAttack !== false && attacker instanceof Monster
+            && attacker.hasBehavior('MONST_RESTRICTED_TO_LIQUID')
+            && (defender.hasStatus('levitating') || defender.hasStatus('flying'))) {
+            return { damage: 0, weaponName, hit: false, backstab: false };
+        }
+
+        // CE Combat.c:1179: attempts involving the player disturb even on a miss.
+        if (!logger.blockCombatText && (attacker instanceof Player || defender instanceof Player)) logger.disturb();
+
+        // W-18 CE Combat.c:1183: attempts release entrancement even on a miss.
+        // U06 handles BE_DAMAGE aggression in its separate damage path.
+        if (opts?.isWeaponAttack !== false) {
+            defender.setStatusDuration('entranced', 0);
+            defender.shortenMagicalFear();
+        }
+
+        // --- P4-5: MA_SEIZES (Combat.c:1212-1237) ---
+        // CE 条件：attacker 带 MA_SEIZES，且"不是（attacker 已经在抓 && defender
+        // 已经被抓）"——即两个标记还没有同时置位时，这一下贴脸就是"抓住"而不是
+        // 攻击：双方标记置位，伤害恒 0，直接 return false，不参与 attackHit 命中
+        // 掷骰（比下面的命中率计算更早）。调用方（web 假定进 attack() 时双方
+        // 已经相邻，距离判定由各调用点的 distToPlayer<=1 保证，对应 CE 的
+        // distanceBetween==1 检查）。
+        if (attacker instanceof Monster && attacker.hasAbility('MA_SEIZES') &&
+            (!attacker.seizing || !defender.seized)) {
+            attacker.seizing = true;
+            defender.seized = true;
+            if (defender instanceof Player && attacker.submerged && opts?.grid
+                && canSeeMonster(defender, opts.grid, attacker)) attacker.submerged = false;
+            return { damage: 0, weaponName, hit: false, backstab: false, seized: true };
+        }
+
+        // Seizing is probability=100, NOT an attackHit short circuit: it still
+        // rolls 0..99. Sleeping/sneak/paralysis/lunge/captive bypass that roll.
+        const rule = (attacker.extensionHooks ?? defender.extensionHooks)!.rule!;
+        const probability = defender.seized && attacker.seizing
+            ? 100 : hitProbability(attackerAccuracy, defenderDefense, weaponEnchant);
+        const adjustedProbability = Math.floor(rule('hitChance', {
+            actorId: attacker.id, targetId: defender.id, baseValue: probability * 100, attackKind: 'melee',
+            adjacent: Math.max(Math.abs(attacker.x - defender.x), Math.abs(attacker.y - defender.y)) === 1,
+            rollMode: autoHit ? 'skip-guaranteed-hit' : probability >= 100 ? 'roll-guaranteed' : 'roll-probability',
+        }) / 100);
+        if (!autoHit && !rng.randPercent(adjustedProbability)) {
+            return { damage: 0, weaponName, hit: false, backstab: false };
+        }
+
+        if (opts?.isWeaponAttack === false) defender.setStatusDuration('entranced', 0);
+
+        const parts = CombatSystem.parseDamageString(damageString);
+        let { min, max } = parts;
+        if (weaponEnchant !== undefined) {
+            // CE Items.c recalculateEquipmentBonuses: scale/truncate endpoints
+            // BEFORE randClump, preserving clumpFactor and every interior value.
+            min = Math.max(1, enchantedDamage(min, weaponEnchant));
+            max = Math.max(1, enchantedDamage(max, weaponEnchant));
+        }
+        const isWeaponAttack = opts?.isWeaponAttack !== false;
+        const immune = defender instanceof Monster && (defender.isInvulnerable()
+            || (isWeaponAttack && defender.isImmuneToWeapons()));
+        // CE Combat.c:1242-1246: immunity skips damage RNG entirely. Zero damage
+        // ranges stay zero. Weakness scales the rolled damage, before sneak multipliers.
+        let damage = immune ? 0 : clumpedRoll(min, max, clumping ?? parts.clumping,
+            (lo, hi) => rng.randRange(lo, hi));
+
+        if (attacker instanceof Monster) damage = Math.trunc(damage * monsterDamageAdjustmentAmount(attacker.weaknessAmount));
+
+        // CE :1248-1258: only the sneak set delays/wakes a monster, even on an
+        // immune hit; lunge/captive/attackHit-only paralysis do not.
+        if (backstab && defender instanceof Monster) {
+            defender.ticksUntilTurn += Math.max(defender.movementSpeed, defender.attackSpeed);
+            if (!defender.isAlly) defender.state = MonsterState.HUNTING;
+        }
+
+        // B-1：CE Combat.c:1259-1268 —— 偷袭触发集（sneakAttack || asleep ||
+        // paralyzed || lungeAttack）命中时只乘【一次】倍率：玩家装备匕首
+        //（ITEM_SNEAK_ATTACK_BONUS）×5，否则通用 ×3。web 原本只有 asleep/
+        // paralyzed 两支触发 ×3（基线已存在），本轮补上 sneakAttack(WANDERING)
+        // 与 lungeAttack 两支触发和匕首的 ×5 升档。
+        // 注意：backstab 字段保留"符文触发率翻倍集"语义（CE Combat.c:1419-1421
+        // 只收 sneakAttack || asleep || paralyzed，不含 lungeAttack），突进只
+        // 走下面的倍率与自动命中，不置 backstab。
+        if (backstab || lungeAttack) {
+            const daggerSneak = attacker instanceof Player &&
+                attacker.equippedWeapon?.flags?.includes('ITEM_SNEAK_ATTACK_BONUS');
+            damage *= daggerSneak ? 5 : 3;
+        }
+
+        // CE has no independent invisible damage multiplier. Visibility can
+        // affect awareness through AI.
+
+        // One combined outgoing/received slot. Contact poison's original roll
+        // remains its duration; only the replacement physical point is scaled below.
+        const contactPoison = isWeaponAttack && attacker instanceof Monster && attacker.hasAbility('MA_POISONS');
+        const physicalDamage = (baseValue: number): number => rule('physicalDamage', {
+            actorId: attacker.id, targetId: defender.id, baseValue, attackKind: 'melee', damageKind: 'physical', direct: true, immune,
+        });
+        if (!contactPoison) damage = physicalDamage(damage);
+        if (damage > 0 && opts?.beforeDamage) damage = opts.beforeDamage(damage) ?? damage;
+
+        // CE Combat.c:1275-1289: only attack(), before inflictDamage/shielding,
+        // capped by current HP. Thrown weapons and bolts do not enter this path.
+        if (attacker instanceof Player
+            && !(defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable()))) {
+            const reaping = ringBonus(attacker.rings(), 'ring_of_reaping');
+            if (reaping) {
+                const bound = (Math.min(damage, defender.hp) * reaping << 16) >> 16;
+                const amount = reaping > 0 ? rng.randRange(0, bound) : rng.randRange(bound, 0);
+                if (amount) {
+                    const ready = rechargeItemsIncrementally(attacker.inventory.items,
+                        equippedWisdomBonus(attacker.rings()), rng, amount);
+                    for (const item of ready) logger.log(i18next.t('item.charm_recharged', {
+                        name: item.displayName, defaultValue: `Your ${item.displayName} has recharged.`,
+                    }), '#66ddff');
+                }
+            }
+        }
+
+        // W-10 / CE Combat.c:1320-1323,1404,524-527: physical MA_POISONS
+        // replaces rolled damage with 1 contact damage; the original roll becomes
+        // poison duration. Centralized here for player, ally and geometry targets.
+        // BE_DAMAGE is resolved separately by U06.
+        const poisonDuration = isWeaponAttack && attacker instanceof Monster
+            && attacker.hasAbility('MA_POISONS') && damage > 0 ? damage : 0;
+        if (poisonDuration > 0) damage = physicalDamage(1);
+
+
+        let triggeredRunic: string | undefined;
+        // Reflection has already selected the actual defender in bolt travel.
+        const applyTo = defender;
+        if (damage > 0) {
+            const hpDamage = applyTo.absorbShieldDamage(damage);
+            const transfer = () => CombatSystem.transferMonsterHealth(attacker, applyTo, hpDamage);
+            if (applyTo instanceof Player) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
+            else applyTo.takeDamage(hpDamage, true, opts?.grid, transfer, 'physical'); // shield applied exactly once
+            if (poisonDuration > 0) applyTo.addPoison(poisonDuration, 1);
+        } else {
+            // CE inflictDamage still applies the ring's minimum ±1 on a hit
+            // whose weapon damage was reduced to zero.
+            CombatSystem.transferMonsterHealth(attacker, applyTo, 0);
+        }
+
+        // --- Check for runic trigger ---
+        if (weaponRunic && attacker instanceof Player && attacker.equippedWeapon) {
+            // CE Combat.c:666-677：触发率取 runicWeaponChance——内部按 CE netEnchant
+            // （含力量修正，PowerTables.c:306-308）与武器基础伤害中值计算；此处传
+            // 已算好的净附魔 weaponEnchant 与 parseDamageString 的基础伤害区间
+            // （与 CE range.lowerBound/upperBound 同口径）。
+            const triggerChance = weaponRunic === 'slaying'
+                ? (defender instanceof Monster && monsterIsInClass(defender.typeId, attacker.equippedWeapon.vorpalEnemy) ? 100 : 0)
+                : defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable()) ? 0
+                : runicWeaponChance(
+                weaponEnchant ?? attacker.equippedWeapon.enchantment,
+                weaponRunic,
+                { damageMin: parts.min, damageMax: parts.max,
+                  attacksStagger: attacker.equippedWeapon.flags?.includes('ITEM_ATTACKS_STAGGER'),
+                  attacksQuickly: attacker.equippedWeapon.flags?.includes('ITEM_ATTACKS_QUICKLY') }
+            );
+            // Backstab doubles runic chance (CE: min(chance*2, (chance+100)/2))
+            let adjustedChance = triggerChance;
+            if (backstab && adjustedChance < 100) {
+                adjustedChance = Math.min(adjustedChance * 2, Math.floor((adjustedChance + 100) / 2));
+            }
+            if ((weaponRunic === 'speed' || weaponRunic === 'multiplicity' || defender.hp > 0)
+                && adjustedChance > 0 && rng.randPercent(adjustedChance)) {
+                triggeredRunic = weaponRunic;
+            }
+        }
+
+        if (isWeaponAttack && defender.hp > 0 && damage > 0 && attacker instanceof Monster && attacker.hasAbility('MA_CAUSES_WEAKNESS')
+            && !(defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable()))) {
+            defender.weaken(300); // GlobalsBrogue.c:onHitWeakenDuration, survivor gate; damage is the pre-shield roll.
+        }
+
+        if (isWeaponAttack && defender instanceof Player && defender.hp > 0 && attacker instanceof Monster) {
+            stealFromPlayer(attacker, defender, () => defender.hasStatus('stuck') || defender.hasStatus('paralyzed')
+                || rng.randPercent(defender.seized && attacker.seizing ? 100 : hitProbability(attackerAccuracy, defenderDefense)), opts?.itemGenerationDepth ?? 1);
+        }
+        if (defender instanceof Monster) defender.enrageAfterAttack();
+        const adjustment = attacker instanceof Player ? 1 : monsterDamageAdjustmentAmount(attacker.weaknessAmount);
+        const percentile = Math.trunc(Math.max(damage - Math.trunc(min * adjustment), 0) * 100
+            / Math.max(1, Math.trunc((max - min) * adjustment)));
+        const circumstance: AttackCircumstance = damage === 0 ? 'zero' : lungeAttack ? 'lunge'
+            : defenderStuck ? 'paralyzed' : defenderAsleep ? 'asleep' : sneakAttack ? 'sneak'
+            : defender.hasStatus('stuck') || (defender instanceof Monster && defender.isCaged) ? 'helpless' : 'none';
+        return { damage, weaponName, hit: true, backstab, lunge: lungeAttack, triggeredRunic,
+            text: { percentile, circumstance } };
+    }
+
     public static transferMonsterHealth(attacker: Creature, defender: Creature, hpDamage: number): void {
         if (defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable())) return;
         const dealt = Math.min(hpDamage, defender.hp);
@@ -455,7 +792,9 @@ export class CombatSystem {
         if (!hooks) return CombatSystem.resolveThrownWeaponClassic(thrower, defender, item, grid);
         const origin = hooks.causality.current?.kind === 'projectile' ? hooks.causality.current
             : hooks.causality.create('projectile', thrower.id, thrower.id, hooks.partyId(thrower));
-        return hooks.causality.withOrigin(origin, () => CombatSystem.resolveThrownWeaponClassic(thrower, defender, item, grid));
+        return hooks.causality.withOrigin(origin, () => hooks.rule
+            ? CombatSystem.resolveThrownWeaponExtended(thrower, defender, item, grid)
+            : CombatSystem.resolveThrownWeaponClassic(thrower, defender, item, grid));
     }
 
     private static resolveThrownWeaponClassic(thrower: Player, defender: Monster, item: Item, grid?: Grid):
@@ -492,6 +831,75 @@ export class CombatSystem {
             damage = enchantedDamage(damage, enchant);
         }
 
+        const hpDamage = defender.absorbShieldDamage(damage);
+        defender.takeDamage(hpDamage, true, grid, () => CombatSystem.transferMonsterHealth(thrower, defender, hpDamage), 'physical');
+        const killed = defender.hp <= 0;
+        // CE thrown hit calls moralAttack after the separate pre-hit aggro gate.
+        // A permanent thief keeps its mode, but a surviving hit still shortens fear.
+        if (!killed) defender.shortenMagicalFear();
+        defender.enrageAfterAttack();
+
+        // CE Items.c:6845-6849：magicWeaponHit 只在非击杀分支调用。
+        let triggeredRunic: string | undefined;
+        if (!killed && item.runicType) {
+            const parts = CombatSystem.parseDamageString(item.damage || '1d3');
+            const chance = item.runicType === 'slaying'
+                ? (monsterIsInClass(defender.typeId, item.vorpalEnemy) ? 100 : 0)
+                : defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable() ? 0
+                : runicWeaponChance(enchant, item.runicType,
+                    { damageMin: parts.min, damageMax: parts.max,
+                      attacksStagger: item.flags?.includes('ITEM_ATTACKS_STAGGER'),
+                      attacksQuickly: item.flags?.includes('ITEM_ATTACKS_QUICKLY') });
+            if (chance > 0 && rng.randPercent(chance)) {
+                triggeredRunic = item.runicType;
+            }
+        }
+
+        return { hit: true, damage, killed, triggeredRunic };
+    }
+
+    private static resolveThrownWeaponExtended(thrower: Player, defender: Monster, item: Item, grid?: Grid):
+        { hit: boolean; damage: number; killed: boolean; triggeredRunic?: string } {
+        // CE Items.c:6790: a thrown weapon attempt releases even on a miss.
+        defender.setStatusDuration('entranced', 0);
+        if (defender.creatureMode !== MonsterMode.PERM_FLEEING && !defender.isCaged && (!defender.isAlly || defender.hasStatus('magical_fear'))
+            && (defender.state !== MonsterState.FLEEING || defender.hasStatus('magical_fear'))) {
+            defender.state = MonsterState.HUNTING;
+            defender.shortenMagicalFear();
+        }
+        const strReq = item.strengthRequired || 0;
+        const enchant = netEnchant(item.enchantment, thrower.effectiveStrength, strReq);
+
+        // CE attackHit (Combat.c:149-158): short circuit, no accuracy roll.
+        const autoHit = defender.hasStatus('paralyzed') || defender.hasStatus('stuck') || defender.isCaged;
+        // A slaying rune (Combat.c:130-135) sets probability to 100 but still
+        // consumes attackHit's rand_percent roll; only the conditions above skip it.
+        const slayingHit = item.runicType === 'slaying' && monsterIsInClass(defender.typeId, item.vorpalEnemy);
+        const probability = slayingHit || (defender.seized && thrower.seizing)
+            ? 100 : hitProbability(100, monsterDefenseAdjusted(defender.defense, defender.weaknessAmount), enchant);
+        const rule = (thrower.extensionHooks ?? defender.extensionHooks)!.rule!;
+        const adjustedProbability = Math.floor(rule('hitChance', {
+            actorId: thrower.id, targetId: defender.id, baseValue: probability * 100, attackKind: 'thrown',
+            adjacent: Math.max(Math.abs(thrower.x - defender.x), Math.abs(thrower.y - defender.y)) === 1,
+            rollMode: autoHit ? 'skip-guaranteed-hit' : probability >= 100 ? 'roll-guaranteed' : 'roll-probability',
+        }) / 100);
+        const hit = autoHit || rng.randPercent(adjustedProbability);
+        if (!hit) {
+            return { hit: false, damage: 0, killed: false };
+        }
+
+        // CE Items.c:6817-6821：豁免在三目里先判，豁免时不掷伤害骰。
+        const immune = defender.isInvulnerable() || defender.isImmuneToWeapons();
+        let damage = 0;
+        if (!immune) {
+            const parts = CombatSystem.parseDamageString(item.damage || '1d3');
+            damage = clumpedRoll(parts.min, parts.max, item.clumping ?? parts.clumping,
+                (lo, hi) => rng.randRange(lo, hi));
+            damage = enchantedDamage(damage, enchant);
+        }
+
+        damage = rule('physicalDamage', { actorId: thrower.id, targetId: defender.id, baseValue: damage,
+            attackKind: 'thrown', damageKind: 'physical', direct: true, immune });
         const hpDamage = defender.absorbShieldDamage(damage);
         defender.takeDamage(hpDamage, true, grid, () => CombatSystem.transferMonsterHealth(thrower, defender, hpDamage), 'physical');
         const killed = defender.hp <= 0;

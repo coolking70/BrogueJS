@@ -7,7 +7,7 @@ import { Creature, allocateEntityId } from '../../entities/Creature';
 import type { Pos } from '../../types';
 import type { BoltWorld } from '../Combat/BoltTrajectory';
 import { timeSystem } from '../Systems/Time';
-import { canEnchantArcana, enchantArcana } from './ArcanaEnchantment';
+import { canEnchantArcana, arcanaEnchantmentGain, finishArcanaEnchantment } from './ArcanaEnchantment';
 import { charmEffectDuration, charmHealing, charmProtection, charmRechargeDelay, charmShattering, charmGuardianLifespan, charmNegationRadius, isCharmKind } from './CharmModel';
 import { logger } from '../Systems/Logger';
 import i18next from 'i18next';
@@ -36,21 +36,45 @@ export function canEnchantChosenItem(player: Player, item: Item): boolean {
         || item.category === ItemCategory.WEAPON || item.category === ItemCategory.ARMOR);
 }
 
-export function enchantChosenItem(player: Player, item: Item, ports: {
+export interface EnchantmentPorts {
     updateVision: () => void;
     logEnchanted: (item: Item) => void;
     logUncursed: (item: Item) => void;
-}): void {
-    // CE Items.c:7839-7899: the selected pack object, never a preferred slot.
+}
+
+/** Prevalidate the complete CE permanent bundle before the first native field is written. */
+export function applyChosenEnchantmentGain(item: Item, magnitude: number): void {
+    if (!Number.isSafeInteger(magnitude) || magnitude < 0) throw new RangeError('Invalid enchantment magnitude');
+    if (!magnitude) return;
+    const gain = {
+        timesEnchanted: item.timesEnchanted + magnitude,
+        ...(item.category === ItemCategory.RING ? { enchantment: item.enchantment + magnitude }
+            : canEnchantArcana(item) ? arcanaEnchantmentGain(item, magnitude)
+            : enchantedEquipment(item.enchantment, item.strengthRequired ?? 0, magnitude)),
+    };
+    if (!Object.values(gain).every(Number.isSafeInteger)) throw new RangeError('Unsafe enchantment gain');
+    Object.assign(item, gain);
+}
+
+/** Limited engine-owned undo state; never exposed through an extension context. */
+export function checkpointEnchantmentGain(item: Item): () => void {
+    const fields = ['timesEnchanted', 'enchantment', 'strengthRequired', 'maxCharges', 'charges'] as const;
+    const descriptors = fields.map(key => [key, Object.getOwnPropertyDescriptor(item, key)] as const);
+    return () => {
+        for (const [key, descriptor] of descriptors) {
+            if (descriptor) Object.defineProperty(item, key, descriptor);
+            else Reflect.deleteProperty(item, key);
+        }
+    };
+}
+
+export function finishChosenEnchantment(player: Player, item: Item, ports: EnchantmentPorts): void {
     const wasCursed = item.isCursed;
-    item.timesEnchanted++;
     if (item.category === ItemCategory.RING) {
-        item.enchantment++;
         if (player.rings().includes(item) && item.identityId === 'ring_of_clairvoyance') ports.updateVision();
     } else if (canEnchantArcana(item)) {
-        enchantArcana(item);
+        finishArcanaEnchantment(item);
     } else {
-        Object.assign(item, enchantedEquipment(item.enchantment, item.strengthRequired ?? 0));
         if (item.category === ItemCategory.WEAPON && item.quiverNumber) {
             item.quiverNumber = rng.randRange(1, 60000);
         }
@@ -63,6 +87,12 @@ export function enchantChosenItem(player: Player, item: Item, ports: {
     item.isCursed = false;
     ports.logEnchanted(item);
     if (wasCursed) ports.logUncursed(item);
+}
+
+export function enchantChosenItem(player: Player, item: Item, ports: EnchantmentPorts, magnitude = 1): void {
+    // CE Items.c:7839-7899: the selected pack object, never a preferred slot.
+    applyChosenEnchantmentGain(item, magnitude);
+    finishChosenEnchantment(player, item, ports);
 }
 
 /** In this CE tree readScroll reassigns theItem to the chosen target, then

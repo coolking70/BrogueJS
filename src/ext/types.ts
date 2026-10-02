@@ -27,9 +27,42 @@ export interface ActorFacts extends CreatureView {
     readonly monsterId: string | null; readonly allied: boolean; readonly hostile: boolean;
 }
 export interface ResourceCommit { expectedHp: number; expectedMaxHp: number; hp: number; maxHp: number }
+/** Frozen rule inputs have no engine objects or mutation capabilities. */
+export interface ExtensionRuleContext {
+    readonly playerId: number;
+    readonly state: Json;
+    getComponent(creatureId: number, name: string): Json | undefined;
+}
+export interface ExtensionRuleInput {
+    readonly actorId: number; readonly targetId: number | null; readonly baseValue: number;
+    readonly attackKind?: 'melee' | 'thrown';
+    readonly rollMode?: 'skip-guaranteed-hit' | 'skip-guaranteed-miss' | 'roll-guaranteed' | 'roll-probability';
+    readonly adjacent?: boolean; readonly damageKind?: 'physical'; readonly direct?: boolean; readonly immune?: boolean;
+    readonly nativeMinimum?: number; readonly invisible?: boolean; readonly mode?: 'manual' | 'automatic';
+    readonly skillId?: string; readonly baseCooldown?: number;
+}
+export interface ExtensionRulePolicies {
+    hitChance?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
+    /** Outgoing and received physical modifiers must be combined in this one slot. */
+    physicalDamage?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
+    stealthRange?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
+    searchStrength?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
+    strengthBonus?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
+    maxHpBonus?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
+    focusCapacity?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
+    focusRecoveryInterval?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
+    cooldownDuration?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
+    nativeBonuses?(actorId: number, context: ExtensionRuleContext): Readonly<{ maxHp: number; strength: number }>;
+}
+export interface ItemGrowthInput {
+    readonly actor: ActorFacts; readonly itemId: string;
+    readonly nativeDestination: 'strengthBonus' | 'maxHpBonus' | 'enchantment'; readonly nativeAmount: number;
+}
+export interface CharacterResources { strength: number | null; gold: number | null }
+export interface CharacterResourceCommit extends CharacterResources { expectedStrength: number | null; expectedGold: number | null }
 export interface HookEvents {
     actorObserved: { actor: ActorFacts };
-    nativeMaximumReset: { actor: ActorFacts };
+    nativeMaximumReset: { actor: ActorFacts; preserveOverhealth?: boolean };
     itemKnowledgeChanged: { kindId: string };
     rewardGranted: { issuerId: string; recipientId: number; rewardId: string; instanceId: string };
     deathCaptured: { actor: ActorFacts; origin: EffectOrigin | null; administrative: boolean };
@@ -64,6 +97,9 @@ export interface ExtensionContext {
     knownKinds(): { id: string; category: string }[];
     grantReward(request: { recipientId: number; rewardId: string; instanceId: string }): void;
     commitResources(id: number, value: ResourceCommit): void;
+    characterResources(id: number): CharacterResources;
+    canManageCharacter(): boolean;
+    commitCharacterResources(id: number, value: CharacterResourceCommit): void;
     randomInt(min: number, max: number): number;
     message(text: string): void;
 }
@@ -82,6 +118,8 @@ export interface ExtensionModule extends ExtensionVersion {
     allowInput?(action: string, data: unknown, context: ExtensionContext): boolean;
     readyToSave?(context: ExtensionContext): boolean;
     resourceCommits?: boolean;
+    rulePolicies?: ExtensionRulePolicies;
+    commitItemGrowth?(input: Readonly<ItemGrowthInput>, context: ExtensionContext): { nativeAmount: number };
     initialCommand?: { action: string; payload: Json };
     creditParty?(actor: ActorFacts, context: ExtensionContext): string | null;
     validateComponents?(state: Json, components: ExtensionSnapshot['components'], foundation: ExtensionSnapshot['foundation']): boolean;
@@ -96,7 +134,9 @@ export interface CreatureExtensionHooks {
     readonly causality: EffectCausality;
     partyId(creature: Creature): string | null;
     relationshipChanged?(creature: Creature): void;
-    nativeMaximumReset?(creature: Creature): void;
+    nativeMaximumReset?(creature: Creature, preserveOverhealth?: boolean): void;
+    nativeMaximumBase?(creature: Creature): number;
+    rule?(port: 'hitChance' | 'physicalDamage', input: ExtensionRuleInput): number;
     damage(creature: Creature, amount: number, hpBefore: number, damageKind?: DamageKind): void;
 }
 export function creatureView(creature: Creature, playerId: number): CreatureView {

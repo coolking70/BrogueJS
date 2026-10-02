@@ -179,3 +179,29 @@ FINAL all_gates=0 2026-10-02T13:48:08Z
 ```
 
 CE活动对照全部执行，8个skip/5个todo仅原有退役或历史占位；无新增skip/todo，无FATAL/OOM/worker异常。构建保留既有大块产物警告。595个输入前后SHA-256相同：`e3c05d9aa0a1daaae6eb463c3500adc3496c446dc60e035ea6ec30a6535e232c`。原1a0/1a/经典测试、黄金trace/生成基线与U03未改。门禁后只整理文档；不把预检或性能成功路径当回滚正确性替代证据。
+
+
+## 1b：纯求值、属性与原物品（2026-10-02）
+
+完整/CE档；实现/覆盖/边界见 [1b报告](../phase1b.report.md)。冻结后五项均exit0，test:full替代npm test，没有拼接定向结果冒充完整通过：
+
+```text
+END vue-tsc EXIT_CODE=0 DURATION_SECONDS=15 2026-10-02T15:07:23Z
+✓ built in 6.31s
+END build EXIT_CODE=0 DURATION_SECONDS=24 2026-10-02T15:07:47Z
+CE reference already verified: legacy 49be8dd3fc1b9a0fb477df4c9153c0e1cf796fe9
+END ce-fetch EXIT_CODE=0 DURATION_SECONDS=0 2026-10-02T15:07:47Z
+ Test Files  289 passed (289)
+      Tests  5140 passed | 8 skipped | 5 todo (5153)
+   Duration  6751.17s (transform 10.09s, setup 0ms, import 224.71s, tests 13229.83s, environment 123ms)
+END test-full EXIT_CODE=0 DURATION_SECONDS=6752 2026-10-02T17:00:19Z
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Duration  52.06s (transform 1.29s, setup 0ms, import 1.96s, tests 49.94s, environment 0ms)
+END test-drift EXIT_CODE=0 DURATION_SECONDS=53 2026-10-02T17:01:12Z
+FINAL all_gates=0 2026-10-02T17:01:12Z
+```
+
+607个输入前后SHA-256相同：`6093922b8969e9df75050e652794ae6e994c010b6a9a089e16e02e6db2bd15d1`。8 skip/5 todo为原有历史项；无FATAL/OOM/worker异常。旧测试、源守卫、黄金trace、生成基线及U03未改。新增153项回归，含13项独立完整对象图差分及漏写敏感性控制。预检全部ext391项、源码守卫146快速+3真实普查通过；后者45种子×26层、3803台machine、0center违例。
+
+初期复活合同整合失败和新经典测试private签名typecheck失败均修生产/新测试后重新验证；详情和原始日志位置见报告。最终完整运行与drift均一次完整全绿，不把这些早期失败隐藏为通过。停在1b，未开始1c，未合并main。

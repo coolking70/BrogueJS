@@ -63,7 +63,7 @@ import { staffBladeCount, bladeSpawnLocation } from '../Combat/Conjuration';
 import { weaponParalysisDuration, weaponConfusionDuration, weaponSlowDuration, weaponImageCount, weaponImageDuration, armorImageCount, weaponForceDistance, netEnchant, damageFraction, armorAbsorptionMax, armorReprisalPercent, monsterDamageAdjustmentAmount } from '../Combat/CombatFormulas';
 import { monsterIsInClass } from '../Combat/MonsterClass';
 import { ItemCategory, Item } from '../Items/Item';
-import { consumeForUse, finishItemUse, prepareThrownItem, boltWorldFor, commitArcanaTarget, hasIdentifyTarget, canIdentifyChosenItem, canEnchantChosenItem, enchantChosenItem, enchantingAutoIdentifiesTarget, invokeCharm } from '../Items/ItemUseCoordinator';
+import { consumeForUse, finishItemUse, prepareThrownItem, boltWorldFor, commitArcanaTarget, hasIdentifyTarget, canIdentifyChosenItem, canEnchantChosenItem, enchantChosenItem, applyChosenEnchantmentGain, checkpointEnchantmentGain, finishChosenEnchantment, type EnchantmentPorts, enchantingAutoIdentifiesTarget, invokeCharm } from '../Items/ItemUseCoordinator';
 import { endgameScore, victoryLumenstoneQuantity } from './Endgame';
 import { saveHighScore } from './HighScores';
 import { ItemLoader } from '../Items/ItemLoader';
@@ -311,6 +311,8 @@ interface TestRoomState {
 }
 
 const superVictoryState = new WeakMap<Game, boolean>();
+const extensionManualSearch = new WeakSet<Game>();
+const extensionRulePrototypes = new WeakMap<Game, object>();
 
 /** CE Rogue.h:1123 TURNS_FOR_FULL_REGEN (autoRest recovery cap). */
 const TURNS_FOR_FULL_REGEN = 300;
@@ -323,6 +325,11 @@ export class Game {
         return new ExtensionRuntime(createExtensionRegistry(), manifest, {
             depth: () => this.depth,
             playerId: () => this.player.id,
+            canManageCharacter: () => !this.isGameOver && this.player.hp > 0 && !this.player.hasStatus('paralyzed')
+                && !this.isAdvancing && !this.isInputLocked() && !logger.pendingAcknowledgment && !this.pendingIdentify
+                && !this.pendingEnchantment && !this.pendingArcana && !this.throwItemTarget && !this.pendingUseConfirm,
+            gold: () => this.stats.gold,
+            setGold: value => { this.stats.gold = value; },
             randomInt: (min, max) => {
                 const stream = rng.getState().currentRNG;
                 rng.setRNG(RNGType.RNG_SUBSTANTIVE);
@@ -341,6 +348,33 @@ export class Game {
         }, snapshot);
     }
 
+    /** Select session adapters once; classic calls retain the original method bodies. */
+    private configureExtensionRuleAdapters(): void {
+        const original = extensionRulePrototypes.get(this);
+        if (original) { Object.setPrototypeOf(this, original); extensionRulePrototypes.delete(this); }
+        extensionManualSearch.delete(this);
+        if (this.extensionRuntime) {
+            const prototype = Object.getPrototypeOf(this);
+            extensionRulePrototypes.set(this, prototype);
+            Object.setPrototypeOf(this, Object.create(prototype, {
+                calculateStealthRange: { value: this.calculateStealthRangeExtended, configurable: true },
+                searchForSecrets: { value: this.searchForSecretsExtended, configurable: true },
+                manualSearch: { value: this.manualSearchExtended, configurable: true },
+            }));
+        }
+    }
+
+    private searchForSecretsExtended(strength: number): boolean {
+        const mode = extensionManualSearch.has(this) ? 'manual' : 'automatic';
+        extensionManualSearch.delete(this); // The later turn-end passive search is a separate automatic resolution.
+        const next = this.extensionRuntime!.rule('searchStrength', { actorId: this.player.id, targetId: null,
+            baseValue: strength, mode });
+        return Game.prototype.searchForSecrets.call(this, next);
+    }
+    private manualSearchExtended(): void {
+        extensionManualSearch.add(this);
+        try { Game.prototype.manualSearch.call(this); } finally { extensionManualSearch.delete(this); }
+    }
     public grid!: Grid;
     public environment!: EnvironmentManager;
     public fov!: FOVSys;
@@ -610,6 +644,7 @@ export class Game {
         this.discardInFlightAdvancement();
         if (this.extensionRuntime) this.extensionRuntime.unload();
         this.extensionRuntime = null;
+        this.configureExtensionRuleAdapters();
         ItemLoader.onKnowledgeChanged = null;
         if (this.grid) { setDormantAwakener(this.grid, null); setAllyResurrector(this.grid, null); setDungeonFeatureEffects(this.grid, null); }
         for (const level of this.levels.values()) { setDormantAwakener(level.grid, null); setAllyResurrector(level.grid, null); setDungeonFeatureEffects(level.grid, null); }
@@ -786,6 +821,7 @@ export class Game {
 
         if (extensionManifest) {
             this.extensionRuntime = preparedExtensions!;
+            this.configureExtensionRuleAdapters();
             ItemLoader.onKnowledgeChanged = kindId => this.extensionRuntime!.emit('itemKnowledgeChanged',{kindId});
             this.extensionRuntime.newGame();
             this.extensionRuntime.attachCreature(this.player);
@@ -2165,7 +2201,9 @@ export class Game {
                     this.player.equippedArmor?.strengthRequired ?? 0, // 缺省口径对齐 Combat.ts 的 || 0
                     this.player.hasStatus('hallucinating'),
                     this.player.getStatusDuration('donning'),
-                    this.player.hasStatus('stuck')
+                    this.player.hasStatus('stuck'),
+                    this.extensionRuntime ? direction => direction === 'incoming'
+                        ? CombatSystem.previewHitChance(m, this.player) : CombatSystem.previewHitChance(this.player, m) : undefined
                 );
                 return;
             }
@@ -2217,7 +2255,9 @@ export class Game {
                 this.player.equippedArmor?.strengthRequired ?? 0, // 缺省口径对齐 Combat.ts 的 || 0
                 this.player.hasStatus('hallucinating'),
                 this.player.getStatusDuration('donning'),
-                this.player.hasStatus('stuck')
+                this.player.hasStatus('stuck'),
+                this.extensionRuntime ? direction => direction === 'incoming'
+                    ? CombatSystem.previewHitChance(monster, this.player) : CombatSystem.previewHitChance(this.player, monster) : undefined
             );
             return;
         }
@@ -4123,6 +4163,25 @@ export class Game {
         // `return false`（不消耗药水、不推进回合）。
         if (this.gateMalevolentUse(item, confirmed)) return;
 
+        // Extended permanent grants preflight and commit before consumption. A rejected
+        // output leaves the live potion, native resource and module receipt untouched.
+        let lifeMaximumBefore: number | undefined;
+        if (this.extensionRuntime && this.player.inventory.items.includes(item)) {
+            const kind = ItemLoader.potions.find(potion => potion.id === item.consumableId);
+            if (kind?.effect === 'heal_full' || kind?.effect === 'gain_strength') {
+                const life = kind.effect === 'heal_full';
+                if (life) lifeMaximumBefore = this.player.maxHp;
+                this.extensionRuntime.commitItemGrowth(this.player, kind.id, life ? 'maxHpBonus' : 'strengthBonus', life ? 10 : 1, {
+                    apply: amount => {
+                        if (!amount) return;
+                        const field = life ? 'maxHp' : 'strength', next = this.player[field] + amount;
+                        if (!Number.isSafeInteger(next)) throw new Error(i18next.t('ext.growth.command.rejected', { defaultValue: 'Character command is not available in the current state.' }));
+                        this.player[field] = next;
+                    },
+                });
+            }
+        }
+
         // Remove from inventory
         if (consumeForUse(this.player, item)) {
             const trueId = (item as any).consumableId;
@@ -4136,9 +4195,10 @@ export class Game {
                 // Execute effect
                 switch (data.effect) {
                     case 'heal_full': {
-                        const oldMaxHp = this.player.maxHp;
+                        const oldMaxHp = lifeMaximumBefore ?? this.player.maxHp;
                         const wasInjured = this.player.hp < oldMaxHp;
-                        this.player.maxHp += 10; // CE POTION_LIFE range {10,10,0}
+                        // The extension scales only the permanent CE POTION_LIFE +10; healing/cleanup stay native.
+                        if (!this.extensionRuntime) this.player.maxHp += 10;
                         this.player.hp = this.player.maxHp;
                         for (const status of ['hallucinating', 'confused', 'nauseous', 'slowed'] as const) {
                             if (this.player.getStatusDuration(status) > 1) this.player.setStatusDuration(status, 1);
@@ -4157,13 +4217,14 @@ export class Game {
                         this.player.hp = Math.min(this.player.hp + Math.floor(this.player.maxHp / 2), this.player.maxHp);
                         logger.log(i18next.t('potion.heal_partial', { defaultValue: 'You feel slightly better.' }), '#44ff44');
                         break;
-                    case 'gain_strength':
+                    case 'gain_strength': {
                         this.createFlare(this.player.loc.x, this.player.loc.y, LightKind.POTION_STRENGTH_LIGHT);
-                        this.player.strength += 1;
+                        if (!this.extensionRuntime) this.player.strength += 1;
                         if (this.player.hasStatus('weakened')) this.player.setStatusDuration('weakened', 1);
                         this.player.weaknessAmount = 0;
                         logger.log(i18next.t('potion.strength', { defaultValue: 'You feel stronger!' }), '#ff4444');
                         break;
+                    }
                     case 'fall_down':
                         // C-5（吸收 P1-22）：CE Items.c:8095-8100 POTION_DESCENT——
                         // 原地铺 DF_HOLE_POTION（HOLE_EDGE 波前 + subsequentDF
@@ -5915,13 +5976,25 @@ export class Game {
     // supplies its live pack object. Both entries share the CE mutation path.
     private enchantEquippedItem(target: Item | null = this.player.equippedWeapon ?? this.player.equippedArmor): boolean {
         if (!target) return false;
-        enchantChosenItem(this.player, target, {
+        const ports: EnchantmentPorts = {
             updateVision: () => this.updateVision(),
             logEnchanted: item => logger.log(i18next.t('item.arcana_enchanted', { name: item.displayName,
                 interpolation: { escapeValue: false }, defaultValue: 'Your {{name}} gleams briefly in the darkness.' }), '#99ddff'),
             logUncursed: item => logger.log(i18next.t('scroll.protect_uncurse', { name: item.displayName,
                 interpolation: { escapeValue: false }, defaultValue: 'A malevolent force leaves your {{name}}.' }), '#88ffcc'),
-        });
+        };
+        if (this.extensionRuntime) {
+            // A real accepted target and its complete native permanent bundle share the
+            // module transaction. Cleanup and the existing RNG draw occur only afterward.
+            this.extensionRuntime.commitItemGrowth(this.player, 'scroll_of_enchantment', 'enchantment', 1, {
+                apply: amount => {
+                    try { applyChosenEnchantmentGain(target, amount); }
+                    catch { throw new Error(i18next.t('ext.growth.command.rejected', { defaultValue: 'Character command is not available in the current state.' })); }
+                },
+                rollback: checkpointEnchantmentGain(target),
+            });
+            finishChosenEnchantment(this.player, target, ports);
+        } else enchantChosenItem(this.player, target, ports);
         return true;
     }
 
@@ -6715,6 +6788,47 @@ export class Game {
         return range;
     }
 
+    private calculateStealthRangeExtended(): number {
+        if (this.player.hasStatus('invisible')) return 1;
+
+        let range = 14;
+        // C-7 翻正 P4-8 的"恒处于阴影"近似（CE Time.c:798-806）：
+        //   - playerInDarkness（Light.c:283-287）：玩家格三通道光强全部
+        //     低于矿灯色−10 → 减半；
+        //   - IS_IN_SHADOW（Light.c:97-99：矿灯不驱散阴影，地形/生物正色光
+        //     驱散）→ 再减半，可叠加。周边无光源时玩家仍恒在阴影中（与
+        //     CE 一致），站进岩浆/祭坛烛光等光照范围则恢复。
+        if (this.playerInDarkness()) {
+            range = Math.floor(range / 2);
+        }
+        if (this.lightMap.inShadowAt(this.player.loc.x, this.player.loc.y)) {
+            range = Math.floor(range / 2);
+        }
+
+        const armor = this.player.equippedArmor;
+        if (armor) {
+            range += armorStealthAdjustment(armor.strengthRequired ?? 0);
+        }
+
+        if (this.justRested) {
+            range = Math.ceil(range / 2);
+        }
+
+        range += this.player.getStatusDuration('aggravating');
+        // CE Time.c:821-823 / updateRingBonuses: a negative stealth bonus is multiplied by four.
+        const stealth = ringBonus(this.player.rings(), 'ring_of_stealth');
+        range += ringStealthAdjustment(stealth);
+
+        range = this.extensionRuntime!.rule('stealthRange', { actorId: this.player.id, targetId: null,
+            baseValue: range, nativeMinimum: this.justRested ? 1 : 2, invisible: false });
+        if (range < 2 && !this.justRested) {
+            range = 2;
+        } else if (range < 1) {
+            range = 1;
+        }
+        return range;
+    }
+
     /** CE Movement.c:700 / Monsters.c:3742. No HP/nutrition penalty.
      * Call only for physical movement/melee attempts, never rest or casting. */
     public tryVomit(entity: Creature): boolean {
@@ -7100,6 +7214,7 @@ export class Game {
                 clone.setStatusDuration('lifespan_remaining', 3);
                 clone.maxStatus.lifespan_remaining = 3;
                 clone.hp = clone.maxHp = 1;
+                clone.extensionHooks?.nativeMaximumReset?.(clone);
                 clone.defense = 0;
                 clone.ticksUntilTurn = 100;
                 clone.typeId = 'spectral_image';
@@ -9429,6 +9544,7 @@ export class Game {
         this.discardInFlightAdvancement();
         if (this.extensionRuntime) this.extensionRuntime.unload();
         this.extensionRuntime = null;
+        this.configureExtensionRuleAdapters();
         ItemLoader.onKnowledgeChanged = null;
         if (this.grid) { setDormantAwakener(this.grid, null); setAllyResurrector(this.grid, null); setDungeonFeatureEffects(this.grid, null); }
         for (const level of this.levels.values()) { setDormantAwakener(level.grid, null); setAllyResurrector(level.grid, null); setDungeonFeatureEffects(level.grid, null); }
@@ -9542,6 +9658,7 @@ export class Game {
         this.updateFlavorText();
         rng.setState(snapshot.rngState);
         this.extensionRuntime = extensions;
+        this.configureExtensionRuleAdapters();
         ItemLoader.onKnowledgeChanged = extensions ? kindId => extensions.emit('itemKnowledgeChanged',{kindId}) : null;
         if (extensions) {
             extensions.attachCreature(this.player, false);

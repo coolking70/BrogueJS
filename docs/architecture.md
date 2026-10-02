@@ -105,3 +105,8 @@ docs/                      文档；docs/archive/ 为旧开发记录
 | `Game` 字段 | 存档合同 | 登记 `scripts/u03-state-contract.json` |
 | 地形/DF 目录 | 生成、寻路、渲染全受影响 | 目录全集守卫、生成基线 |
 | 读源码守卫（如 c_4a 白名单） | 新增文件读某些字段会被拒 | 按守卫注释的"扩清单"流程登记并写明 CE 依据 |
+
+
+### 扩展生成写集维护
+
+修改扩展生成、离层补算或模块发布路径的写入时，必须同步更新 `checkpointGenerationWorld` 的显式写集，并保证 `src/test/ext_generation_checkpoint_differential.test.ts` 对原 1a0 完整对象图捕获的差分回滚测试通过。不能只比较存档投影而漏掉未登记字段/对象身份；详细边界见 [扩展架构](ext/architecture.md) §11–12。

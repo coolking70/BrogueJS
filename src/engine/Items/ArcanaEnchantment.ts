@@ -19,23 +19,33 @@ export function canEnchantArcana(item: Item): boolean {
  * CE uses enchant1 itself as staff capacity. W-5 stores that capacity separately;
  * synchronize it to the new E without filling the existing charge deficit.
  */
-export function enchantArcana(item: Item): boolean {
-    if (!canEnchantArcana(item)) return false;
+export function arcanaEnchantmentGain(item: Item, magnitude: number): Partial<Pick<Item, 'enchantment' | 'maxCharges' | 'charges'>> {
+    if (!canEnchantArcana(item)) throw new RangeError('Invalid arcana enchantment target');
+    if (!Number.isSafeInteger(magnitude) || magnitude < 0) throw new RangeError('Invalid enchantment magnitude');
+    if (!magnitude) return {};
+    const gain = item.category === ItemCategory.STAFF
+        ? { enchantment: item.enchantment + magnitude, maxCharges: item.enchantment + magnitude, charges: item.charges! + magnitude }
+        : item.category === ItemCategory.CHARM ? { enchantment: item.enchantment + magnitude }
+        : { charges: item.charges! + WAND_INITIAL_RANGES[item.identityId!]![0] * magnitude };
+    if (!Object.values(gain).every(value => Number.isSafeInteger(value) && value! >= 0)) throw new RangeError('Unsafe arcana enchantment gain');
+    return gain;
+}
+
+/** Native non-permanent effects still occur at zero growth magnitude. */
+export function finishArcanaEnchantment(item: Item): void {
     if (item.category === ItemCategory.STAFF) {
-        item.enchantment++;
-        item.maxCharges = item.enchantment;
-        item.charges!++;
         // This is 500/new E, NOT the 5000/new E recurring recharge duration.
         item.staffRechargeRemaining = Math.floor(500 / item.enchantment);
     } else if (item.category === ItemCategory.CHARM) {
-        item.enchantment++;
         item.cooldownRemaining = 0; // CE Items.c:7868-7871
         if (isCharmKind(item.identityId)) item.cooldownTurns = charmRechargeDelay(item.identityId, item.enchantment);
-    } else {
-        const id = (item as Item & { identityId: string }).identityId;
-        item.charges! += WAND_INITIAL_RANGES[id]![0];
-        // Wand maxCharges remains its initial count, not a cap on added uses.
     }
     item.isCursed = false; // Items.c:7892, common post-enchantment uncurse.
+}
+
+export function enchantArcana(item: Item, magnitude = 1): boolean {
+    if (!canEnchantArcana(item)) return false;
+    Object.assign(item, arcanaEnchantmentGain(item, magnitude));
+    finishArcanaEnchantment(item);
     return true;
 }

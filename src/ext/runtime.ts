@@ -1,6 +1,7 @@
 import type { Creature } from '../entities/Creature';
+import { Player } from '../entities/Player';
 import type { ExtensionRegistry } from './registry';
-import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json, ActorFacts, ResourceCommit } from './types';
+import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json, ActorFacts, ResourceCommit, CharacterResources, CharacterResourceCommit, ExtensionRuleContext, ExtensionRuleInput, ExtensionRulePolicies, ItemGrowthInput } from './types';
 import { creatureView } from './types';
 import { readCreatureBirth } from './birth';
 import { canonical, cloneJson, isJson, validId } from './json';
@@ -17,6 +18,9 @@ function isCreatureView(value: unknown): boolean {
 export interface ExtensionPorts {
     depth(): number;
     playerId(): number;
+    canManageCharacter?(): boolean;
+    gold?(): number;
+    setGold?(value: number): void;
     randomInt(min: number, max: number): number;
     message(text: string): void;
     knownKinds?(): { id: string; category: string }[];
@@ -61,6 +65,10 @@ export class ExtensionRuntime {
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
         Object.freeze(this.manifest.modules); Object.freeze(this.manifest);
         this.modules = registry.create(manifest);
+        for (const port of ['hitChance', 'physicalDamage', 'stealthRange', 'searchStrength', 'strengthBonus', 'maxHpBonus', 'focusCapacity', 'focusRecoveryInterval', 'cooldownDuration', 'nativeBonuses'] as const) {
+            if (this.modules.filter(module => module.rulePolicies?.[port]).length > 1) throw new Error('Conflicting extension rule providers');
+        }
+        if (this.modules.filter(module => module.commitItemGrowth).length > 1) throw new Error('Conflicting item growth providers');
         this.causality = new EffectCausality();
         if (snapshot) this.validateSnapshot(snapshot);
         this.states = snapshot ? structuredClone(snapshot.modules) : Object.fromEntries(this.modules.map(module => [module.id, cloneJson(module.initialState())]));
@@ -101,6 +109,9 @@ export class ExtensionRuntime {
             },
             knownKinds() { return structuredClone(runtime.ports.knownKinds?.() ?? []); },
             commitResources(id, value) { writable(); if (!module.resourceCommits || !runtime.resourcePhase) throw new Error('Resource commit outside authorized growth boundary'); runtime.commitResources(id, value); },
+            canManageCharacter() { return runtime.ports.canManageCharacter?.() ?? true; },
+            characterResources(id) { return runtime.characterResources(id); },
+            commitCharacterResources(id, value) { writable(); if (!module.resourceCommits || !runtime.resourcePhase) throw new Error('Character commit outside authorized growth boundary'); runtime.commitCharacterResources(id, value); },
             randomInt(min, max) {
                 writable();
                 const span = max - min + 1;
@@ -126,9 +137,89 @@ export class ExtensionRuntime {
         const actor = [...this.creatures].find(creature => creature.id === id);
         if (!actor || Object.keys(value).sort().join(',') !== 'expectedHp,expectedMaxHp,hp,maxHp'
             || !Object.values(value).every(Number.isSafeInteger) || value.maxHp < 1 || value.hp < 0
-            || value.hp > value.maxHp || value.expectedHp !== actor.hp || value.expectedMaxHp !== actor.maxHp
+            || (value.hp > value.maxHp && (actor instanceof Player || actor.hp <= actor.maxHp || value.hp > actor.hp))
+            || value.expectedHp !== actor.hp || value.expectedMaxHp !== actor.maxHp
             || (actor.hp <= 0 && value.hp > 0)) throw new Error('Invalid extension resource commit');
         actor.maxHp = value.maxHp; actor.hp = value.hp;
+    }
+    private characterResources(id: number): CharacterResources {
+        const actor = [...this.creatures].find(creature => creature.id === id);
+        if (!actor) throw new Error('Unknown character resource owner');
+        return actor instanceof Player ? { strength: actor.strength, gold: this.ports.gold?.() ?? 0 } : { strength: null, gold: null };
+    }
+    private commitCharacterResources(id: number, value: CharacterResourceCommit): void {
+        const actor = [...this.creatures].find(creature => creature.id === id), current = this.characterResources(id);
+        if (Object.keys(value).sort().join(',') !== 'expectedGold,expectedStrength,gold,strength'
+            || value.expectedStrength !== current.strength || value.expectedGold !== current.gold
+            || (actor instanceof Player ? (!Number.isSafeInteger(value.strength) || value.strength! < 1
+                || !Number.isSafeInteger(value.gold) || value.gold! < 0) : value.strength !== null || value.gold !== null))
+            throw new Error('Invalid extension character resource commit');
+        if (actor instanceof Player) {
+            if (!this.ports.setGold && value.gold !== current.gold) throw new Error('Native currency port unavailable');
+            actor.strength = value.strength!; this.ports.setGold?.(value.gold!);
+        }
+    }
+    private ruleContext(module: ExtensionModule): ExtensionRuleContext {
+        const freeze = <T>(value: T): T => {
+            if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); }
+            return value;
+        };
+        const runtime = this;
+        return Object.freeze({ playerId: this.ports.playerId(),
+            get state() { return freeze(cloneJson(runtime.states[module.id]!)); },
+            getComponent: (id: number, name: string): Json | undefined => {
+                if (!Number.isSafeInteger(id) || id < 1 || !validId(name)) throw new Error('Invalid rule component query');
+                const value = this.components[String(id)]?.[`${module.id}:${name}`];
+                return value === undefined ? undefined : freeze(cloneJson(value));
+            } });
+    }
+    /** Pure engine adapter: one provider per slot, finite synchronous bounded scalars. */
+    rule(port: Exclude<keyof ExtensionRulePolicies, 'nativeBonuses'>, input: ExtensionRuleInput): number {
+        const module = this.modules.find(module => module.rulePolicies?.[port]);
+        if (!module) return input.baseValue;
+        const result = module.rulePolicies![port]!(Object.freeze({ ...input }), this.ruleContext(module));
+        requireSynchronous(result);
+        if (!Number.isSafeInteger(result) || result < 0 || (port === 'hitChance' && result > 10000)) throw new Error('Invalid extension rule result');
+        return result;
+    }
+    commitItemGrowth(actor: Creature, itemId: string, nativeDestination: ItemGrowthInput['nativeDestination'], nativeAmount: number,
+        nativeCommit?: { apply(amount: number): void; rollback?(): void }): number {
+        const module = this.modules.find(module => module.commitItemGrowth);
+        if (!module) { nativeCommit?.apply(nativeAmount); return nativeAmount; }
+        if (!this.creatures.has(actor) || !Number.isSafeInteger(nativeAmount) || nativeAmount < 0) throw new Error('Invalid item growth owner or amount');
+        const states = structuredClone(this.states), components = structuredClone(this.components);
+        const resources = [...this.creatures].map(creature => ({ creature, hp: creature.hp, maxHp: creature.maxHp,
+            strength: creature instanceof Player ? creature.strength : null, gold: creature instanceof Player ? this.ports.gold?.() ?? 0 : null }));
+        const prior = this.resourcePhase; this.resourcePhase = true;
+        let result: { nativeAmount: number } | undefined;
+        try {
+            this.invoke(module, context => { result = module.commitItemGrowth!(Object.freeze({ actor: this.actorFacts(actor), itemId, nativeDestination, nativeAmount }), context); });
+            requireSynchronous(result);
+            if (!result || Object.keys(result).join(',') !== 'nativeAmount' || !Number.isSafeInteger(result.nativeAmount) || result.nativeAmount < 0)
+                throw new Error('Invalid item growth result');
+            nativeCommit?.apply(result.nativeAmount);
+            return result.nativeAmount;
+        } catch (error) {
+            try { nativeCommit?.rollback?.(); } finally {
+                this.states = states; this.components = components;
+                for (const saved of resources) {
+                    saved.creature.hp = saved.hp; saved.creature.maxHp = saved.maxHp;
+                    if (saved.creature instanceof Player) { saved.creature.strength = saved.strength!; this.ports.setGold?.(saved.gold!); }
+                }
+            }
+            throw error;
+        } finally { this.resourcePhase = prior; }
+    }
+    private nativeMaximumBase(actor: Creature): number {
+        const module = this.modules.find(module => module.rulePolicies?.nativeBonuses);
+        if (!module) return actor.maxHp;
+        const bonuses = module.rulePolicies!.nativeBonuses!(actor.id, this.ruleContext(module));
+        requireSynchronous(bonuses);
+        if (!bonuses || !Number.isSafeInteger(bonuses.maxHp) || bonuses.maxHp < 0
+            || !Number.isSafeInteger(bonuses.strength) || bonuses.strength < 0
+            || actor.maxHp - bonuses.maxHp < 1
+            || (actor instanceof Player && actor.strength - bonuses.strength < 1)) throw new Error('Invalid native extension bonuses');
+        return actor.maxHp - bonuses.maxHp;
     }
     allowsInput(action: string, data?: unknown): boolean {
         if (action === 'ext:command') {
@@ -163,7 +254,8 @@ export class ExtensionRuntime {
         if (!this.modules.some(module => module.hooks?.simulationSettled)) return;
         if (this.generations.length || this.activeScope) throw new Error('Extension settlement outside safe boundary');
         const beforeStates = structuredClone(this.states), beforeComponents = structuredClone(this.components);
-        const resources = [...this.creatures].map(actor => [actor, actor.hp, actor.maxHp] as const);
+        const resources = [...this.creatures].map(actor => [actor, actor.hp, actor.maxHp,
+            actor instanceof Player ? actor.strength : null, actor instanceof Player ? this.ports.gold?.() ?? 0 : null] as const);
         try {
             for (const actor of [...this.creatures].sort((a, b) => a.id - b.id)) this.observeCreature(actor);
             const causes = this.causality.snapshot();
@@ -174,11 +266,15 @@ export class ExtensionRuntime {
                 reachableIds: reachable.map(actor => actor.id).sort((a,b) => a-b), sourceIds });
         } catch (error) {
             this.states = beforeStates; this.components = beforeComponents;
-            for (const [actor, hp, maxHp] of resources) { actor.hp = hp; actor.maxHp = maxHp; }
+            for (const [actor, hp, maxHp, strength, gold] of resources) {
+                actor.hp = hp; actor.maxHp = maxHp;
+                if (actor instanceof Player) { actor.strength = strength!; this.ports.setGold?.(gold!); }
+            }
             throw error;
         }
     }
     validateWorld(creatures: readonly Creature[]): void {
+        for (const actor of creatures) this.nativeMaximumBase(actor);
         const actors = creatures.map(actor => this.actorFacts(actor,creatures[0]!.id));
         for (const module of this.modules) if (module.validateWorld && !module.validateWorld(this.states[module.id]!, this.components, actors))
             throw new Error('Invalid extension world references');
@@ -234,7 +330,18 @@ export class ExtensionRuntime {
         const handler = module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action) ? module.commands[input.action] : undefined;
         if (!module || typeof handler !== 'function') throw new Error('Unknown extension command');
         const prior = this.resourcePhase; this.resourcePhase = true;
-        try { this.invoke(module, context => handler(input.payload, context)); } finally { this.resourcePhase = prior; }
+        const states = structuredClone(this.states), components = structuredClone(this.components);
+        const resources = [...this.creatures].map(actor => ({ actor, hp: actor.hp, maxHp: actor.maxHp,
+            strength: actor instanceof Player ? actor.strength : null, gold: actor instanceof Player ? this.ports.gold?.() ?? 0 : null }));
+        try { this.invoke(module, context => handler(input.payload, context)); }
+        catch (error) {
+            this.states = states; this.components = components;
+            for (const saved of resources) {
+                saved.actor.hp = saved.hp; saved.actor.maxHp = saved.maxHp;
+                if (saved.actor instanceof Player) { saved.actor.strength = saved.strength!; this.ports.setGold?.(saved.gold!); }
+            }
+            throw error;
+        } finally { this.resourcePhase = prior; }
     }
     attachCreature(creature: Creature, notifySpawn = true): void {
         if (this.disposed || this.creatures.has(creature)) return;
@@ -243,7 +350,10 @@ export class ExtensionRuntime {
             causality: this.causality,
             partyId: actor => this.creditParty(actor),
             relationshipChanged: actor => this.observeCreature(actor),
-            nativeMaximumReset: actor => this.emit('nativeMaximumReset', {actor:this.actorFacts(actor)}),
+            nativeMaximumReset: (actor, preserveOverhealth = false) => this.emit('nativeMaximumReset', { actor: this.actorFacts(actor),
+                ...(preserveOverhealth ? { preserveOverhealth: true } : {}) }),
+            nativeMaximumBase: actor => this.nativeMaximumBase(actor),
+            rule: (port, input) => this.rule(port, input),
             beforeAttack: (attacker, defender) => {
                 this.attacks.push(attacker.id);
                 try { this.emit('beforeAttack', { attacker: creatureView(attacker, this.ports.playerId()), defender: creatureView(defender, this.ports.playerId()) }); }

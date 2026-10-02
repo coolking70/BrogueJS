@@ -6,6 +6,12 @@ export type GrowthDerived = { appliedStrength: number; appliedMaxHp: number };
 export type GrowthFocus = { current: number; remainder: number };
 /** Minimal persisted cooldown substrate; learning/equipment/effect state is added in its own versioned step. */
 export type GrowthSkills = { readyAt: Record<string, number> };
+/** Paid ranks are separate from initial/inherited build ranks. Irrecoverable refunds/fees stay in the budget ledger. */
+export type GrowthAttributes = {
+    values: Record<string, number>; allocated: Record<string, number>;
+    attributePointsSpent: number; skillPointsSpent: number;
+    inheritedAttributePoints: number; inheritedSkillPoints: number;
+};
 
 function integer(value: unknown, minimum = 0): value is number { return Number.isSafeInteger(value) && (value as number) >= minimum; }
 /** Data properties only: validation must not call accessors, accept foreign prototypes, or ignore symbol/hidden keys. */

@@ -1,12 +1,12 @@
-# Growth 数据配置合同（1a，schema 1 / rules 1.1.0）
+# Growth 数据配置合同（1b，schema 1 / rules 1.2.0）
 
-本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0 已验收；1a 启用配置驱动 XP、等级、自动生命及中性角色创建。属性纯求值/分配、技能执行、身份/模板仍分别归 1b/1d/1e；下列运行状态区分已经接线和仅有数据合同。
+本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。技能动作/效果消费和身份模板仍分别归 1d/1e；下列运行状态区分已经接线和仅有数据合同。
 
 ## 1. 实际文件与边界
 
 | 文件 | 责任 |
 |---|---|
-| `src/ext/modules/growth/index.ts` | 生产 growth 工厂校验真实目录并创建 1a 运行器；保留显式合同探针工厂供底座测试 |
+| `src/ext/modules/growth/index.ts` | 生产 growth 工厂校验真实目录并创建 1b 运行器；保留显式合同探针工厂供底座测试 |
 | `src/ext/modules/growth/module.ts`、`state.ts` | XP 事实队列/安全点结算、角色创建、收据/来源摘要与跨组件/世界校验 |
 | `src/ext/modules/growth/experience.ts`、`components.ts` | 精确整数等级/发点/自动 HP、资源提交基础、严格组件校验 |
 | `src/ext/modules/growth/types.ts` | 配置类型、判别联合、有限规则端口/动作词汇 |
@@ -16,10 +16,10 @@
 | `src/ext/modules/growth/text.ts` | 样例定义与校验错误的本地化词条 |
 | `src/ext/registry.ts`、`src/ext/types.ts` | 模块数据合同与阶段0精确版本校验衔接 |
 
-不复用阶段0 `src/ext/definitions.ts` 的示例三属性/简单effects冒充正式成长schema。旧 example 包与测试保持原合同；growth包通过数据校验不等于引擎支持其中所有动作。默认扩展集合为 `growth`；`example` 仍可显式选择，保留原合同。`createGrowthContractModule()` 是显式测试探针；生产目录注册 `createGrowthModule()`。当前实际门禁和未接线能力见 [1a 报告](phase1a.report.md)。
+不复用阶段0 `src/ext/definitions.ts` 的示例三属性/简单effects冒充正式成长schema。旧 example 包与测试保持原合同；growth包通过数据校验不等于引擎支持其中所有动作。默认扩展集合为 `growth`；`example` 仍可显式选择，保留原合同。`createGrowthContractModule()` 是显式测试探针；生产目录注册 `createGrowthModule()`。当前实际门禁和未接线能力见 [1b 报告](phase1b.report.md)。
 
 
-### 1.1 1a 的实际运行状态（后续归属不变）
+### 1.1 已验收 1a 的历史运行状态（1b 新增接线见 §1.3）
 
 | 配置/能力 | 当前状态与精确语义 | 后续边界 |
 |---|---|---|
@@ -45,6 +45,16 @@
 - 自动最大生命用 `appliedMaxHp` 差额更新原生 maxHp；没有第二套当前 HP。复制体先减去真正复制的旧自动加值再应用自身中性值；变形/召唤形态恢复的原生 maxHp 重置后补回现有自动加值。此为 1a 必要一致性桥，不是 1b 通用属性求值器
 - 受信 `context.grantReward({recipientId,rewardId,instanceId})` 只引用配置中的剧情定义，金额/原因由定义决定；收据键含发出模块、定义、实例。默认没有实际剧情内容，也不开放玩家自报金额/原因
 - 模块/组件/来源引用/机械世界共同校验，在退休旧局前拒绝错误；onLoad 不发点、不补经验、不重新应用差额。完整每命令 checkpoint 保持，未改变黄金 trace/生成基线
+
+### 1.3 1b 的实际运行状态
+
+- `evaluator.ts` 实现 P01：属性目录及有限条件只读求值，共享加法预算、唯一乘法槽、全局范围与最终舍入。实际近战/投掷命中和一次物伤、潜行、手动/自动搜索已接引擎；命中详情使用同一纯公式，经典原 solver/随机路径不变
+- `attributes.ts` 与 `growth:attributes` 保存实际属性、已付费增量、不可退还损失/费用和可选克隆继承点数来源；初值/费用/单项/合计/力量训练上限均读配置。`allocate` payload 精确为 `{revision,attributes:{属性ID:增量}}`；`respec` 为 `{revision}`，都只处理当前玩家、0 tick、0 RNG。技能学习不接受在此步 payload 中混入
+- 洗点只退款已付费属性，保留配置初值/继承构筑；退款向下取整，不可退部分及属性/技能点费用记账。gold/focus 由真实资源支付，费用不足/过期 revision/原目标选择或强制行动未完成时整体拒绝。洗点不额外治疗或恢复专注，降最大生命只钳制当前 HP；冷却是否清空由 respec 配置决定
+- 派生生命/力量在合法提交点应用新旧差额；物品原生永久增益仍是基础数值，不计入 applied 派生加值。load 校验后只重绑，不重复叠加/治疗；变形、突变、强化、还原和复活先按原生基值执行，再加回一次构筑加值
+- 克隆的 inheritBuild 指属性/训练构筑，不继承来源等级、XP、奖励收据或物品使用额度。默认 level1、无未分配点、无奖且不成长，原 1a 等级/自动生命断言不变；若配置显式开放 inheritUnspentPoints/progression，分别记录来源余额并只为克隆后续新等级发点。nativeStatsCopied 的护甲幻影与分裂同样受复制体规则约束；普通召唤不是复制体
+- 专注容量/恢复间隔、冷却时长与比例下限已有纯端口；专注客观时间推进、技能冷却启动、临时效果消费仍属 1d，不把数值求值写成已执行技能
+- `growth:items` 保存每个原物品规则实际永久输出累计；见 §5.5。组件合同/行为变化将 moduleVersion/rulesVersion 同升为 1.2.0，schema 形状仍是1；旧1.1.0扩展存档/录像精确拒绝，无迁移
 
 ## 2. 固定技术合同与可调数据
 
@@ -655,6 +665,16 @@
 
 先按固定顺序汇总加法，受共享预算限制；再按声明顺序应用有名乘法槽，最后global-clamp和round。每端口声明flat或base-basis-points解释、保零、正值下限及基值比例下限。默认`physicalDamage`与`receivedPhysicalDamage`共享`growth.budget.physical`：同一次物理结算收集攻守两向修正，合并预算后只缩放一次，不能把两个端口各自乘一次。必中/必失优先，原100%仍取骰路径必须保留其原随机调用。有限词汇和解释算法归1b；1a0只验证配置结构/引用。
 
+1b明确同一提供者内的乘法槽组合：magnitude表示普通倍率，1为中性值；同槽先求`1 + Σ(倍率 − 1)`，再按该槽[min,max]钳制并只乘一次。例如两个1.5倍贡献合成2倍，不是2.25倍，也不后写覆盖。没有贡献的槽保持中性，不应用其min；多个有贡献的槽按声明顺序各执行一次。跨规则提供者的未设计冲突仍拒绝启用。
+
+物伤双向端口必须声明完全一致的`RulePort`配置（含预算、槽位及顺序、钳制、舍入和各下限）；校验器拒绝不一致配置。出伤只读取actor的physicalDamage修正，承伤只读取target的receivedPhysicalDamage修正，合入同一求值核。命中读取两方各自角色事实；非双向标量端口只读取actor，不因传入target重复计入属性。
+
+整数端口在round后限制到可行整数区间`[ceil(有效下限), floor(globalClamp.max)]`，避免小数边界经舍入越界。有效下限包含globalClamp.min，以及正基值适用的minimumPositive和minimumBaseRatio；舍入不能削弱这些下限。配置中的全局区间及正值下限必须至少允许一个整数；依赖本次基值的比例下限若与全局上限矛盾，纯求值确定性报错。preserveZero优先保留原0；原免疫、必中/必失、仍掷骰的100%命中及隐身早退均优先保留原语义。
+
+原生端口约束在加载时校验：所有`rules.ports`的globalClamp.min不得为负；hitChance上限不得超过10000bp；focusRecoveryInterval下限至少1；stealthRange上限至少2，以容纳原正常潜行下限。特殊/隐身下限1仍保留。taggedProperties.intensity允许负值，不受非负原生端口约束。
+
+focusCapacity在同一纯求值器内取`config.focus[min,cap]`与端口globalClamp的交集；策略读值与实际资源容量使用同一结果。加载时拒绝没有可行整数的交集及与该交集矛盾的minimumPositive，不能只在状态提交端另行封顶。
+
 ### 5.2 有限条件、临时效果与消费
 
 条件数组为AND，不存在任意布尔表达式脚本。条件读取动作类别、伤害类别、角色位置、相邻、手动/自动搜索、实际概率求值、命中、实际HP伤害、直接伤害或稳定标签事实。
@@ -667,7 +687,7 @@
 
 只允许attack、move、wait、search。攻击仅相邻普通近战；移动仅合法相邻格且被占格拒绝；等待/搜索以self为目标、搜索限manual。耗时引用native-attack/native-move/native-wait/native-search，不能由JSON绕过原时间、危险确认、终局/麻痹/模态等资格守卫。运行器归1d；玩家命令不能提交任意actorId或嵌套公开executeCommand来伪造一次动作。
 
-### 5.4 纯端口与提交事实DTO（类型合同，未实现运行器）
+### 5.4 纯端口与提交事实DTO（1b 已实现纯规则；动作结果/消费仍属1d）
 
 `types.ts`同时提供以下只读输入/输出合同；不是额外JSON配置字段，不含活Game/Creature、回调、UI或RNG权限。
 
@@ -687,7 +707,15 @@
 
 ### 5.5 原物品永久收益的唯一换算
 
-`itemGrowth.rules[].nativeEffect=preserve`时，conversion是原永久收益的倍率；默认力量药水/生命药水/强化卷轴均为1，分别保留原+1力量/+10最大生命/+1强化。`replace`时conversion是每次使用的替代授予量，destination指定接收字段/点数。perItemCap/runCap只限制这笔永久收益，不按比例改原治疗、清状态或其它物品效果；执行桥归1b。
+`itemGrowth.rules[].nativeEffect=preserve`时，conversion是原永久收益的倍率；默认力量药水/生命药水/强化卷轴均为1，分别保留原+1力量/+10最大生命/+1强化。`replace`时conversion是每次使用的替代授予量，destination指定接收字段/点数。1b已接通这些原生永久收益分支；未配置的物品保持原收益。
+
+- 换算后依次限制每次成功使用的`perItemCap`及本角色、本`itemId`累计永久授予的`runCap`，最终向下取整一次；不保存或跨次累积小数余量。`growth:items.awarded`只登记实际正整数收益，存读档后继续使用同一上限；点数收益同时参与点数来源校验。
+- 工厂按实际物品目录的效果能力提供来源元数据，不在扩展求值器内分派样例物品ID。`preserve.destination`必须匹配原生来源；`replace`可改授力量、最大生命或两类点数，但`enchantment`只能由原生强化分支授给已经接受的合法背包目标。无来源、错误保留目标、药水转强化及不安全数值在配置加载时拒绝。
+- 上限只约束永久收益。生命药水仍完整治疗并执行原清状态逻辑；力量药水仍执行原虚弱清理。强化幅度统一缩放附魔值、`timesEnchanted`、装备力量要求下降、法杖容量/充能及魔杖充能增长；归零时这些永久字段不增长。解除诅咒、法杖充能计时重置、护符冷却重置、穿甲状态刷新与弹药分组随机数仍按原路径各执行一次，不额外抽取随机数。
+- 强化在接受真实合法目标时才授予并记账；取消尝试、拒绝目标、只有待选状态的存档都不提前支付收益。Classic直接走原生数量，不调用物品扩展策略。
+- 原生永久字段的完整加法在写入前检查安全整数，并与扩展账本处于同一窄事务。药水在检查、提交成功后才消耗；强化若溢出，目标的永久字段和账本一起回滚，仍保留待选状态。静态可判定的溢出在载入规则时拒绝，其余由实际原生目标的当前数值检查。
+
+纯换算与账本校验在`src/ext/modules/growth/items.ts`，配置来源能力由`index.ts`/`schema.ts`校验；执行桥在`src/ext/runtime.ts`、`src/engine/Core/Game.ts`及`src/engine/Items/ItemUseCoordinator.ts`、`ArcanaEnchantment.ts`、`ItemEffectFormulas.ts`。模块只提交替代目标收益；同目标数量由原生所有者写入一次。
 
 力量训练换算只由其引用属性的strengthBonus modifier幅度定义，避免重复strengthPerPoint字段造成两套答案。冷却最小比例只由`rules.ports.cooldownDuration.minimumBaseRatio`定义，focus中没有第二个floorCooldownRatio。其它maxHp/strength原生所有者及派生差额同步仍沿[阶段1设计](phase1-growth.md)约束，不将永久收益重复加到原字段。
 
