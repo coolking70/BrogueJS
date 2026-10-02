@@ -205,3 +205,33 @@ FINAL all_gates=0 2026-10-02T17:01:12Z
 607个输入前后SHA-256相同：`6093922b8969e9df75050e652794ae6e994c010b6a9a089e16e02e6db2bd15d1`。8 skip/5 todo为原有历史项；无FATAL/OOM/worker异常。旧测试、源守卫、黄金trace、生成基线及U03未改。新增153项回归，含13项独立完整对象图差分及漏写敏感性控制。预检全部ext391项、源码守卫146快速+3真实普查通过；后者45种子×26层、3803台machine、0center违例。
 
 初期复活合同整合失败和新经典测试private签名typecheck失败均修生产/新测试后重新验证；详情和原始日志位置见报告。最终完整运行与drift均一次完整全绿，不把这些早期失败隐藏为通过。停在1b，未开始1c，未合并main。
+
+
+## 阶段1c：中性对等保险与刻符界面最终验收
+
+2026-10-02 19:34:25–21:13:42 UTC；最终代码包含main0ca1c67与预期搜索修复830ad74。实际引擎文件Combat.ts（预览修复）、Game.ts（合入只读getter），因此完整/CE档；full替代npm test。Mac仅做最终v5真实三尺寸/普通沉浸浏览器和D1→D5计时，详见[1c报告](../phase1c.report.md)。移动视口不是物理手机，真实触摸/连续触控按住未实测；截图只留Mac本地。
+
+Node24.19.0/npm11.9.0、3GiB、full两worker/drift一worker；冻结624输入SHA256 `9f5813c8683725a9793876aa732c67ed9a9072e446443312d509edbe3d1d744a`，最终unchanged=true。原断言/黄金trace/生成基线未改；三份旧SFC仅在生产单变量反事实后补resolver依赖。两次被浏览器整改中断的full为exit130、drift未开始，不移用为通过证据。
+
+```text
+END vue-tsc EXIT_CODE=0 DURATION_SECONDS=17 2026-10-02T19:34:42Z
+✓ built in 5.71s
+END build EXIT_CODE=0 DURATION_SECONDS=21 2026-10-02T19:35:03Z
+CE reference already verified: legacy 49be8dd3fc1b9a0fb477df4c9153c0e1cf796fe9
+END ce-fetch EXIT_CODE=0 DURATION_SECONDS=0 2026-10-02T19:35:03Z
+
+ Test Files  295 passed (295)
+      Tests  5416 passed | 8 skipped | 5 todo (5429)
+   Start at  19:35:04
+   Duration  5868.48s (transform 8.91s, setup 0ms, import 199.53s, tests 11491.51s, environment 111ms)
+END test-full EXIT_CODE=0 DURATION_SECONDS=5869 2026-10-02T21:12:52Z
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  21:12:53
+   Duration  48.49s (transform 1.20s, setup 0ms, import 1.84s, tests 46.50s, environment 0ms)
+END test-drift EXIT_CODE=0 DURATION_SECONDS=49 2026-10-02T21:13:41Z
+FINAL all_gates=0 2026-10-02T21:13:42Z
+```
+
+8 skip/5 todo均为历史原项；CE活动对照全部执行，无FATAL/OOM/worker异常。原始日志与完整散列仅保留执行环境tmp-phase1c-raw/。仅限ext/foundation交付；1c后停止，1d/1e未授权。

@@ -1,6 +1,6 @@
 # 阶段 1：数据驱动 RPG 成长合同与实施计划
 
-状态：**1a0 / 1a / 1a1 / 1b 已验收；当前获准实施 1c，首先补中性策略战斗对等测试，1d–1e 尚未获准实施。** 1a0 只建设技术底座、配置 schema/校验/版本合同与表达审计，不启用玩家 XP、属性收益、技能或身份玩法。每个小步完成、报告后都停下，等待下一步确认。1a1 的写集、正确性与性能验收见 [phase1a1.report.md](phase1a1.report.md)。
+状态：**1a0 / 1a / 1a1 / 1b 已验收；1c中性策略对等保险与数据驱动界面已完成真实浏览器及完整/CE门禁，停下待维护者验收，1d–1e 尚未获准实施。** 1a0 只建设技术底座、配置 schema/校验/版本合同与表达审计，不启用玩家 XP、属性收益、技能或身份玩法。每个小步完成、报告后都停下，等待下一步确认。1a1 的写集、正确性与性能验收见 [phase1a1.report.md](phase1a1.report.md)。
 
 已定技术方案：**D02、D04、D16、D17、D18、D19、D20、D22 固定按 A。** 其余 A 中的玩法取值全部只是可调整的默认样例数据，包括经验、等级、属性、点数/洗点、资源/槽位、身份、原物品收益、普通怪物成长和升级回复。本文表格中的数值不是硬编码常量，也不是已经通过平衡验证的承诺；B/C 仅保留为历史设计比较。开发重点是有限通用词汇和数据驱动执行，不做数值平衡、固定种子奖励分布测量或目标升级曲线校准。
 
@@ -430,7 +430,7 @@ interface GenerationTransactions {
 
 ## 12. 已批准的六步拆分与独立验收
 
-依赖顺序固定为 **1a0 → 1a → 1b → 1c → 1d → 1e**。当前执行已批准的 1c（含中性策略对等保险）；每步完成后报告并停下，后续要再次确认。1a–1d 使用首动作前 `create-character` 命令记录的中性样例角色，不能延至 1e 才补录创建边界。1a0 只定义/校验合同，不注册启用成长玩法。
+依赖顺序固定为 **1a0 → 1a → 1b → 1c → 1d → 1e**。已完成本次批准的 1c（含中性策略对等保险），见[1c报告](phase1c.report.md)；每步完成后报告并停下，后续要再次确认。1a–1d 使用首动作前 `create-character` 命令记录的中性样例角色，不能延至 1e 才补录创建边界。1a0 只定义/校验合同，不注册启用成长玩法。
 
 | 小步 | 范围与交付 | 独立验收标准 |
 |---|---|---|
@@ -449,7 +449,7 @@ interface GenerationTransactions {
 |---|---|---|
 | 1a0、1b、1d：完整/CE | `npx vue-tsc -b`、`npm run build`、`npm run test:drift`；尽力 `npm run ce:fetch`，CE可用时完整 `npm run test:full` | `test:full` **替代**完整 `npm test`，不要两者重复全跑；CE无法取得/工具链无法运行时回退完整 `npm test`，报告确切错误和“CE 对照用例未执行” |
 | 1a、1e：全量 | `npx vue-tsc -b`、`npm run build`、完整 `npm test`、`npm run test:drift` | 实际改到 `src/engine/` 或 `src/entities/` 的规则代码时升为上一行完整/CE档；同样用 `test:full` 替代 `npm test` |
-| 1c：轻档 | `npx vue-tsc -b`、`npm run build`、相关前端测试、全部下列源码守卫和本次相关 ext 测试 | 若实际越出纯 UI 范围，按实际引擎/实体规则改动升档；不能因纯 UI 跳过源码守卫 |
+| 1c：轻档 | `npx vue-tsc -b`、`npm run build`、相关前端测试、全部下列源码守卫和全部 ext_ 测试 | 仅UI与src/ext时按本轻档；对等保险或合并main实际涉及引擎/实体文件改动时升完整/CE档，不能跳过源码守卫 |
 
 1c 必跑源码/前端守卫（不是示例子集）：`c_4a_terrain_catalog`、`p1_30_i18n_gate`、`u24_hardcoded_text`、`repo_hygiene`、`ui_1_rendering`、`ui_2_protection`、`i_1_interaction`、`fe_1_touch`，对应 `src/test/<name>.test.ts`；加上相关前端测试及全部 ext_ 测试。使用仓库默认固定 legacy CE参照，不用任意新版源码冒充；缺少参照时的显式 skip 不是 CE对照通过。
 
@@ -486,3 +486,5 @@ CE已可用而`test:full`测试失败时，不能换跑`npm test`规避失败；
 2026-10-02 UTC，从已验收 `0100699` fresh fetch 后将 `origin/main 0ca1c67a9b850d60edcd768127f2d18d5bd7debd` 合入 `ext/foundation`，合并提交 `631dfcef0da790b3038aa3523dcb57cad951a0e4`。纳入按住方向键遇确认框/模态的重复输入修复；此时 main 尚无随后计划的搜索进度显示修复。只有 `progress.md` 冲突并保留双方内容，`App.vue` 自动三方合并，其余组件保留 main 改动。合并后 `vue-tsc -b`、`build` 已通过。
 
 先补大量固定种子中性策略近战/投掷对等测试，逐场景比较 `AttackResult`、双方状态、消息及双随机流状态/消耗，并以经典实际取骰判定验证命中预览；同步在主架构高风险区记录双求值器维护责任。仅 UI/src/ext 变更时执行轻档；若本对等工作或前置合并实际修改引擎/实体文件则升级完整/CE 档。真实浏览器验收包括 1440×900、390×844、320 宽普通/沉浸界面及手机尺寸 D1→D5 入层计时，截图与原始证据只留本地。最终结果见本步报告，不以计划代替通过结论。
+
+本轮预期的搜索进度修复随后在main落地，浏览器整改窗口再次明确纳入 `origin/main 830ad74cabeff1731b73a32ad882186e59c1ac03`，合并提交`abc962f`。唯一ThemeHud根class冲突保留成长与搜索双方，Game.ts只读getter和状态栏/Sidebar/locale全部保留；合并后vue-tsc/build通过。最终门禁须覆盖这个整合结果，前一版中断的full不移用。
