@@ -6712,6 +6712,11 @@ export class Game {
      */
     private searchingCharge: number = 0;
 
+    /** Read-only HUD projection of CE STATUS_SEARCHING (Time.c:2395-2430). */
+    public get searchProgress(): number {
+        return this.searchingCharge;
+    }
+
     /**
      * P1-42：本层"是否存在未发现密门"的惰性缓存（secretScanDepth = 建立缓存
      * 时的层号，-1 = 无效）。searchForSecrets 首次在当前层被调用时全格扫一遍

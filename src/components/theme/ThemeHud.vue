@@ -13,6 +13,7 @@ const panelHint = computed(() => props.panelOpen
   ? t('theme.panel_close', { defaultValue: 'Collapse nearby information' })
   : t('theme.panel_hint', { defaultValue: 'Expand nearby entities and inspection information' }));
 const { stats, hp, maxHp, depth, turns, nutrition, statuses } = useGameHud(0);
+const searching = computed(() => statuses.value.some(status => status.id === 'searching'));
 const fraction = computed(() => Math.max(0, Math.min(1, hp.value / Math.max(1, maxHp.value))));
 const low = computed(() => fraction.value < 0.3);
 const food = computed(() => nutritionStatus(nutrition.value));
@@ -24,7 +25,7 @@ void props;
 </script>
 
 <template>
-  <header class="theme-hud" :class="{ 'hp-low': low, 'has-growth': !!growth }" @keydown.stop @keyup.stop
+  <header class="theme-hud" :class="{ 'hp-low': low, 'has-growth': !!growth, 'has-search-progress': searching }" @keydown.stop @keyup.stop
           @click="($event.target as HTMLElement).closest('button')?.blur()">
     <button class="th-menu th-btn" @click="emit('menu')">{{ $t('menu.actions.menu') }}</button>
     <div class="th-depth"><span class="th-label">{{ $t('theme.depth') }}</span><b class="th-num">{{ depth }}</b><span class="th-turn"><span class="th-label">{{ $t('theme.turn') }}</span><b class="th-num">{{ turns }}</b></span></div>
@@ -48,7 +49,10 @@ void props;
       <div class="th-stat th-stealth"><dt>{{ $t('theme.stealth') }}</dt><dd class="th-num">{{ stats.stealthRange }}</dd></div>
     </dl>
     <div v-if="statuses.length" class="th-statuses">
-      <span v-for="status in statuses" :key="status.id" class="th-status" :style="{ color: status.color }">{{ status.label }} {{ status.value }}</span>
+      <span v-for="status in statuses" :key="status.id" class="th-status" :class="{ 'th-search-progress': status.id === 'searching' }" :style="{ color: status.color }">
+        {{ status.label }} {{ status.value }}
+        <span class="th-status-fill" :style="{ width: `${status.fraction * 100}%` }"></span>
+      </span>
     </div>
     <div v-if="growth" class="th-growth" :class="{ 'th-growth-compact': immersive }">
       <div class="th-growth-heading"><strong v-if="!immersive">{{ $t('ext.growth.ui.level_short', { level: growth.level }) }}</strong><button class="th-growth-entry th-btn" :disabled="growthBlocked" :aria-label="$t('ext.growth.ui.character')" :title="$t('ext.growth.ui.character')" @click="emit('character')">{{ immersive ? $t('ext.growth.ui.level_short', { level: growth.level }) : $t('ext.growth.ui.character') }}<span v-if="growth.hasUnspentPoints" class="th-growth-dot" :title="$t('ext.growth.ui.unspent')">●</span></button></div>
