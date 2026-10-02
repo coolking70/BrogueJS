@@ -4,7 +4,8 @@ import i18next from 'i18next';
 import { activeGame } from '../engine/Core/Game';
 import { foldCombatMessages, logger } from '../engine/Systems/Logger';
 import type { LogMessage } from '../engine/Systems/Logger';
-import { creatureStatusRows, isSidebarVisibleStatus } from '../engine/Status/statusConfig';
+import { playerHudStatusRows } from '../ui/useGameHud';
+import { isSidebarVisibleStatus } from '../engine/Status/statusConfig';
 import { STOMACH_SIZE, HUNGER_THRESHOLD, WEAK_THRESHOLD, FAINT_THRESHOLD } from '../entities/Player';
 import { computeSidebarWidth, displaySettings } from '../engine/Settings';
 import { sidebarEntityRows, sidebarPlayerStats } from '../engine/UI/MonsterSidebar';
@@ -37,7 +38,7 @@ const playerDepth = ref(1);
 const playerNutrition = ref(STOMACH_SIZE);
 const logs = ref<LogMessage[]>([]);
 const hoverText = ref('');
-const playerStatuses = ref<ReturnType<typeof creatureStatusRows>>([]);
+const playerStatuses = ref<ReturnType<typeof playerHudStatusRows>>([]);
 const entityRows = ref<ReturnType<typeof sidebarEntityRows>>([]);
 const playerStats = ref<ReturnType<typeof sidebarPlayerStats> | null>(null);
 const playerNumberLines = computed(() => {
@@ -72,7 +73,7 @@ onMounted(() => {
       hoverText.value = activeGame.hoveredText || activeGame.flavorText;
       // UI-1 第 5 条：CE 有意不显示的状态（explosion_immunity 等，见
       // statusConfig.CE_EMPTY_NAME_STATUSES）不进侧栏（CE IO.c:4823 name[0] 门）。
-      playerStatuses.value = creatureStatusRows(activeGame.player, isSidebarVisibleStatus);
+      playerStatuses.value = playerHudStatusRows(activeGame, isSidebarVisibleStatus);
       entityRows.value = sidebarEntityRows(activeGame.player, activeGame.grid, activeGame.monsters,
         activeGame.items, activeGame.hoveredCell, activeGame.depth);
       // Read the existing calculation without changing Game's rules/method visibility

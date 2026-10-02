@@ -714,6 +714,7 @@
   "mobile.zoom_out": "缩小地图",
   "mobile.recenter": "回到玩家",
   "mobile.dpad": "方向键",
+  "sidebar.searching": "搜索中",
   "mobile.cmd.search": "搜索",
   "mobile.cmd.rest": "休息",
   "mobile.cmd.pickup": "拾取",
