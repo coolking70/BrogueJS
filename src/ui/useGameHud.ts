@@ -7,7 +7,7 @@
 import { sidebarPlayerStats } from '../engine/UI/MonsterSidebar';
 import { onMounted, onUnmounted, ref, toValue, type MaybeRefOrGetter } from 'vue';
 import i18next from 'i18next';
-import { activeGame } from '../engine/Core/Game';
+import { activeGame, type Game } from '../engine/Core/Game';
 import { foldCombatMessages, logger, type LogMessage } from '../engine/Systems/Logger';
 import { creatureStatusRows, isSidebarVisibleStatus } from '../engine/Status/statusConfig';
 import { STOMACH_SIZE, HUNGER_THRESHOLD, WEAK_THRESHOLD, FAINT_THRESHOLD } from '../entities/Player';
@@ -19,6 +19,18 @@ export function nutritionStatus(nutrition: number): { text: string; color: strin
     if (nutrition <= WEAK_THRESHOLD) return { text: i18next.t('sidebar.hunger.weak'), color: '#f87171' };
     if (nutrition <= HUNGER_THRESHOLD) return { text: i18next.t('sidebar.hunger.hungry'), color: '#facc15' };
     return { text: i18next.t('sidebar.hunger.full'), color: '#4ade80' };
+}
+
+/** CE IO.c:4824: searching uses the same progress row as other visible statuses.
+ * Keep its existing Game counter out of the creature's decaying status store. */
+export function playerHudStatusRows(game: Pick<Game, 'player' | 'searchProgress'>, visible = isSidebarVisibleStatus) {
+    const rows = creatureStatusRows(game.player, visible);
+    const charge = game.searchProgress;
+    if (charge > 0 && visible('searching')) {
+        rows.unshift({ id: 'searching', label: i18next.t('sidebar.searching', { defaultValue: 'Searching' }),
+            color: '#93c5fd', value: `${charge}/5`, fraction: Math.max(0, Math.min(1, charge / 5)) });
+    }
+    return rows;
 }
 
 export function useGameHud(logCount: MaybeRefOrGetter<number> = 3) {
@@ -44,7 +56,7 @@ export function useGameHud(logCount: MaybeRefOrGetter<number> = 3) {
         // CE Time.c:2500 playerTurnNumber；stats.turns 还包含强制麻痹结算。
         turns.value = logger.turn;
         nutrition.value = game.player.nutrition;
-        statuses.value = creatureStatusRows(game.player, isSidebarVisibleStatus);
+        statuses.value = playerHudStatusRows(game);
         const all = foldCombatMessages(logger.messages);
         logs.value = all.slice(Math.max(0, all.length - toValue(logCount))).reverse();
         hoverText.value = game.hoveredText || game.flavorText;
