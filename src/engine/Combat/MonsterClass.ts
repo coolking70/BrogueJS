@@ -1,3 +1,5 @@
+import type { Item } from '../Items/Item';
+
 /** CE Globals.c:1416-1433 monsterClassCatalog membership (not generation weights). */
 export const MONSTER_CLASS_MEMBERS: Record<string, readonly string[]> = {
     abomination: ['bog_monster', 'underworm', 'kraken', 'tentacle_horror'],
@@ -19,4 +21,15 @@ export const MONSTER_CLASS_MEMBERS: Record<string, readonly string[]> = {
 
 export function monsterIsInClass(typeId: string, className?: string): boolean {
     return !!className && (MONSTER_CLASS_MEMBERS[className]?.includes(typeId) ?? false);
+}
+
+/** CE Combat.c:130-135: actual rune fields, independent of identification.
+ * The caller must supply the player's equipped weapon (attacker == &player).
+ * Pure predicate shared by melee and its detail preview; consumes no RNG. */
+export function weaponSlaysMonster(
+    weapon: Pick<Item, 'flags' | 'runicType' | 'vorpalEnemy'> | null | undefined,
+    typeId: string
+): boolean {
+    return !!weapon?.flags?.includes('ITEM_RUNIC') && weapon.runicType === 'slaying'
+        && monsterIsInClass(typeId, weapon.vorpalEnemy);
 }

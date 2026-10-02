@@ -18,7 +18,7 @@ import { equippedWisdomBonus, rechargeItemsIncrementally } from '../Items/Arcana
 import { logger } from '../Systems/Logger';
 import i18next from 'i18next';
 import { rng } from '../Random';
-import { monsterIsInClass } from './MonsterClass';
+import { monsterIsInClass, weaponSlaysMonster } from './MonsterClass';
 import type { AttackCircumstance } from './CombatText';
 import {
     netEnchant,
@@ -215,9 +215,12 @@ export class CombatSystem {
             return { damage: 0, weaponName, hit: false, backstab: false, seized: true };
         }
 
-        // Seizing is probability=100, NOT an attackHit short circuit: it still
-        // rolls 0..99. Sleeping/sneak/paralysis/lunge/captive bypass that roll.
+        // CE Combat.c:122-146: stuck/captive short circuit above, then seizing,
+        // then the player's equipped slaying rune, then the clamped formula.
+        // Seizing and slaying are probability=100 and still roll 0..99 here.
         if (!autoHit && !rng.randPercent(defender.seized && attacker.seizing
+            || (attacker instanceof Player && defender instanceof Monster
+                && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId))
             ? 100 : hitProbability(attackerAccuracy, defenderDefense, weaponEnchant))) {
             return { damage: 0, weaponName, hit: false, backstab: false };
         }

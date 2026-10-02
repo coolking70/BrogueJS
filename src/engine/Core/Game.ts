@@ -1985,7 +1985,8 @@ export class Game {
                     this.player.equippedArmor?.strengthRequired ?? 0, // 缺省口径对齐 Combat.ts 的 || 0
                     this.player.hasStatus('hallucinating'),
                     this.player.getStatusDuration('donning'),
-                    this.player.hasStatus('stuck')
+                    this.player.hasStatus('stuck'),
+                    this.player.equippedWeapon
                 );
                 return;
             }
@@ -2037,7 +2038,8 @@ export class Game {
                 this.player.equippedArmor?.strengthRequired ?? 0, // 缺省口径对齐 Combat.ts 的 || 0
                 this.player.hasStatus('hallucinating'),
                 this.player.getStatusDuration('donning'),
-                this.player.hasStatus('stuck')
+                this.player.hasStatus('stuck'),
+                this.player.equippedWeapon
             );
             return;
         }
