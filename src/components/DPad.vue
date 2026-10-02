@@ -6,6 +6,7 @@ import { computed, onUnmounted } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import { Direction } from '../types';
 import { dispatch } from '../ui/commands';
+import { registerHeldInput, syncHeldInputContext } from '../ui/heldInput';
 
 defineProps<{ mode: 'portrait' | 'landscape' | 'desktop' }>();
 
@@ -13,27 +14,55 @@ const REPEAT_DELAY_MS = 350;
 const REPEAT_INTERVAL_MS = 140;
 let delayTimer = 0;
 let repeatTimer = 0;
+let holding = false;
+let capture: { button: HTMLElement; id: number } | null = null;
 
 const stop = () => {
+  holding = false;
   window.clearTimeout(delayTimer);
   window.clearInterval(repeatTimer);
   delayTimer = 0;
   repeatTimer = 0;
+  const old = capture;
+  capture = null;
+  try { old?.button.releasePointerCapture(old.id); } catch { /* 指针可能已被原生模态释放 */ }
 };
+const removeHeldInput = registerHeldInput(stop);
 
 const fire = (dir: Direction | null) => {
   if (dir === null) dispatch('wait');
   else dispatch('move', dir);
+  syncHeldInputContext();
 };
 
 const press = (e: PointerEvent, dir: Direction | null) => {
   e.preventDefault();
   stop();
+  syncHeldInputContext();
+  holding = true;
+  const button = e.currentTarget as HTMLElement;
+  capture = { button, id: e.pointerId };
+  try { button.setPointerCapture(e.pointerId); } catch { /* 合成事件无活动指针 */ }
   fire(dir);
-  if (dir === null) return; // 休息不自动重复，避免误触连休
+  // fire can synchronously open a native confirmation and cancel this hold.
+  if (!holding || dir === null) { stop(); return; } // 休息不自动重复，避免误触连休
   delayTimer = window.setTimeout(() => {
-    repeatTimer = window.setInterval(() => fire(dir), REPEAT_INTERVAL_MS);
+    delayTimer = 0;
+    syncHeldInputContext();
+    if (!holding) return;
+    repeatTimer = window.setInterval(() => {
+      syncHeldInputContext();
+      if (holding) fire(dir);
+    }, REPEAT_INTERVAL_MS);
   }, REPEAT_DELAY_MS);
+};
+
+// Pointer capture suppresses boundary events until release; detect leaving
+// the original button from captured pointer moves as well.
+const move = (e: PointerEvent) => {
+  if (!capture || capture.id !== e.pointerId) return;
+  const r = capture.button.getBoundingClientRect();
+  if (e.clientX < r.left || e.clientX >= r.right || e.clientY < r.top || e.clientY >= r.bottom) stop();
 };
 
 // 键盘/读屏用户：click 事件（pointer 事件已 preventDefault 时 detail>0 的 click 不再重复触发）
@@ -41,7 +70,7 @@ const keyActivate = (e: MouseEvent, dir: Direction | null) => {
   if (e.detail === 0) fire(dir);
 };
 
-onUnmounted(stop);
+onUnmounted(removeHeldInput);
 
 const { t } = useTranslation();
 const keys = computed(() => [
@@ -61,7 +90,7 @@ const keys = computed(() => [
   <div class="dpad" :class="`pad-${mode}`" role="group" :aria-label="$t('mobile.dpad')">
     <button v-for="key in keys" :key="key.glyph" class="pad-btn" :class="{ center: key.dir === null }"
             :aria-label="key.label"
-            @pointerdown="press($event, key.dir)" @pointerup="stop" @pointercancel="stop" @pointerleave="stop"
+            @pointerdown="press($event, key.dir)" @pointermove="move" @pointerup="stop" @pointercancel="stop" @pointerleave="stop" @lostpointercapture="stop"
             @click="keyActivate($event, key.dir)" @contextmenu.prevent>
       {{ key.glyph }}
     </button>

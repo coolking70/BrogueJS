@@ -48,6 +48,7 @@ beforeAll(async () => {
         '../engine/Core/Game': { activeGame: game },
         '../engine/Input': { inputManager: input },
         '../ui/commands': await import('../ui/commands'),
+        '../ui/heldInput': await import('../ui/heldInput'),
         '../types': await import('../types'),
         '../engine/Items/Item': await import('../engine/Items/Item'),
         '../engine/Items/ItemLoader': { ItemLoader },

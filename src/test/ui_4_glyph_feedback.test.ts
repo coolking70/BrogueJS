@@ -102,6 +102,7 @@ beforeAll(async () => {
         './engine/Core/Game': { activeGame: game }, './ui/layout': layoutModule,
         './engine/Core/SaveStorage': await import('../engine/Core/SaveStorage'),
         './ui/immersiveMode': await import('../ui/immersiveMode'), './ui/recordingExport': await import('../ui/recordingExport'),
+        './ui/heldInput': await import('../ui/heldInput'),
     };
     function compile(file: string) {
         const { descriptor } = parse(source(file));
