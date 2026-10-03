@@ -7,6 +7,8 @@
 - `src/test/harness.ts`：`createHeadlessGame(seed, mode)` 等无渲染游戏构造工具，大部分引擎测试从这里起。
 - `src/test/support/ceSource.ts`：CE 参照源码定位（`CE_ROOT`、`hasCeSource()`、`readCe()`）。
 - `src/test/fixtures/`：夹具（CE 目录抽取、自然机关场景、生成基线、黄金 trace 等）。
+- `scripts/test-suites.json`：全部测试文件的唯一归属清单。`test`（含强制 CE 的 `test:full`）、`gen`（重型生成普查）、`drift`（生成基线）三组互斥且覆盖全仓库；新增文件必须登记，`test_suite_membership.test.ts` 会检查遗漏、重复与实际配置的归属。
+- `npm test` / `npm run test:full` 排除重型生成普查与生成基线；`npm run test:gen` 只跑普查，`npm run test:drift` 只跑基线。普查按实测耗时（通常单文件 ≥60 秒）和多种子、多层生成的执行成本入选，登记依据见 [分档调整报告](reports/chore-test-tiers.report.md)。直接 `npx vitest run <文件>` 保留定向入口，可跑普查文件中的局部回归或源码守卫。
 
 ## 2. 守卫类型
 
@@ -22,7 +24,7 @@
 
 ## 3. 生成基线与黄金 trace
 
-- **生成基线**：`src/test/fixtures/generation_baseline.json`（D1–D26）与 `deep_generation_baseline.json`（D27–D40），四个种子逐层指纹；`npm run test:drift` 校验。
+- **生成基线**：`src/test/fixtures/generation_baseline.json`（D1–D26）与 `deep_generation_baseline.json`（D27–D40），四个种子逐层指纹；`npm run test:drift` 分别通过 `generation_baseline.test.ts` 和 `u_26a_deep_baseline.test.ts` 校验两份基线。
 - **黄金 trace**：UR2（法器/反射等整局检查点）、UR3（生成与重访、存读档）、UR4（客观时间块：减速、加速、坠落、死亡），位于 `src/test/fixtures/traces/`（`u-r2-trace.json`、`u-r3-trace.json.gz`、`u-r4-trace.json.gz`）。
 
 **重录流程**（任何导致它们变化的改动都要走）：
@@ -43,6 +45,7 @@ UR4_CAPTURE=1 npx vitest run src/test/u_r4_trace.test.ts --maxWorkers=1
 ## 4. CE 参照源码与跳过
 
 - 没有 `.ce-reference/`（或 `BROGUE_CE_DIR`）时，`npm test` 会跳过 CE 对照用例并打印提示；日常门禁用 `npm test` 即可；需要做 CE 一致性检查时（改动按 CE 对齐的规则、同步新版 CE、发版前）用 `npm run test:full`，它在缺少 CE 时直接失败，避免"跳过即绿"。
+- `test:gen` 沿用同一 CE 检查；全量档用 `BROGUE_REQUIRE_CE=1 npm run test:gen`，缺参照即失败。`test:full` 本身只覆盖常规组，完整验收须加上强制 CE 的普查与 drift，档位见 [开发指南 §4](development.md#4-门禁分档)。
 - 新写 CE 对照测试：用 `ceSource` 模块读取，并加 `skipIf(!hasCeSource())`。
 
 ## 5. 写新测试的要点

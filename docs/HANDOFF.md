@@ -65,7 +65,7 @@ LAVA 统一完整套件跑完：4573 项通过，2 项原 900000ms 超时；两�
 ## 4. 如何继续开发
 
 1. 读 `docs/development.md`（环境、工作流、门禁、验收规则）与 `docs/architecture.md`（代码地图）。
-2. 首次克隆后：`npm ci` 即可开发与跑门禁（`npm test`、`npm run test:drift`）；改动按 CE 对齐的规则或同步新版 CE 时，再 `npm run ce:fetch && npm run test:full` 做 CE 一致性检查。
+2. 首次克隆后：`npm ci` 即可开发与跑常规/基线门禁（`npm test`、`npm run test:drift`）；CE 局部规则改动先 `npm run ce:fetch` 再跑 `test:full`。生成、随机数消耗、存档/录像格式改动或同步新版 CE 等全量档还须 `BROGUE_REQUIRE_CE=1 npm run test:gen`；具体按 `docs/development.md` §4 执行。
 3. 需求来源优先级：
    - **用户试玩反馈**（最有效：X4a、X4b、X-3、X-4 都源自试玩发现）；
    - `docs/known-issues.md` 中的待办；

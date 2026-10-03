@@ -16,14 +16,15 @@ npm run dev             # 本地开发服务器
 |---|---|
 | `npm run dev` | Vite 开发服务器 |
 | `npm run build` | 类型检查（vue-tsc）+ 生产构建，产物在 `dist/` |
-| `npm test` | 全部测试（不含生成基线）；没有 CE 参照源码时，CE 对照用例显式跳过 |
-| `npm run test:full` | CE 一致性检查：同上，但**要求** CE 参照源码存在（缺失即失败），CE 对照用例全部运行 |
+| `npm test` | 常规测试（不含重型生成普查、生成基线）；没有 CE 参照源码时，CE 对照用例显式跳过 |
+| `npm run test:full` | CE 一致性检查：同上，但**要求** CE 参照源码存在（缺失即失败），常规组 CE 对照用例全部运行 |
+| `npm run test:gen` | 重型生成普查；需要强制 CE 对照时用 `BROGUE_REQUIRE_CE=1 npm run test:gen` |
 | `npm run test:drift` | 地图生成回归基线 |
 | `npx vue-tsc -b` | 仅类型检查 |
 
 ## 2. CE 参照源码（可选）
 
-日常开发与验收不需要 CE 源码：约 98% 的测试（真实入口端到端、生成合理性、录像回放、目录全集、黄金 trace）不依赖它。少量"CE 对照"：从 CE C 源码提取函数编译成参照程序比对、核对目录表、校验行号引用。这些需要 CE 源码，但本仓库不收录它：
+轻/中档开发与验收不需要 CE 源码。大部分测试（真实入口端到端、生成合理性、录像回放、目录全集、黄金 trace）不依赖它。少量"CE 对照"：从 CE C 源码提取函数编译成参照程序比对、核对目录表、校验行号引用。这些需要 CE 源码，但本仓库不收录它：
 
 ```bash
 npm run ce:fetch                          # 默认 legacy：BrogueCE-chs 固定提交里的 BrogueCE-master/src（测试按此版本编写）
@@ -65,15 +66,16 @@ grep -rln '^<<<<<<<\|^>>>>>>>' src scripts     # 必查：-3 可能静默留下�
 
 | 档位 | 适用 | 内容 |
 |---|---|---|
-| 轻 | 纯前端（组件、样式、界面文案） | `vue-tsc -b` + `build` + 相关前端测试 + **所有读源码的守卫** |
-| 中 | 引擎里不改规则的部分（消息、显示、日志、自动行动流程） | 轻档 + 相关单测 + UR2/UR3/UR4 黄金 trace + 录像测试（u_27、x2a、x3b）+ U03 契约 + `test:drift` |
-| 全量 | 规则、生成、随机数、存档 | `vue-tsc -b` + `build` + `npm test` 完整跑完 + `test:drift` |
-| CE 一致性（附加） | 改动按 CE 对齐的规则代码；同步新版 CE；发版前 | `npm run ce:fetch` + `npm run test:full`（约 74 个 CE 对照用例） |
+| 轻 | 纯前端（组件、样式、界面文案、只读显示） | `vue-tsc -b` + `build` + 相关前端测试 + **所有读源码守卫** |
+| 中 | 引擎里不改规则的部分（消息、显示、日志、自动行动流程、输入） | 轻档 + 相关单测 + UR2/UR3/UR4 黄金 trace + 录像测试（u_27、x2a、x3b）+ U03 契约 + `test:drift` |
+| 局部规则 | 只改战斗、物品效果、状态、AI 等局部规则；不改生成、随机数消耗次数/顺序、存档或录像格式 | 中档 + 与改动相关的全部测试 + `test:full`（不含重型生成普查）+ `test:drift` |
+| 全量 | 改地图/物品/怪物生成、随机数消耗、存档/录像格式；同步新版 CE；合并扩展分支进 main；打版本标签前 | `vue-tsc -b` + `build` + `test:full` + `BROGUE_REQUIRE_CE=1 npm run test:gen` + `test:drift` |
 
-- **打版本标签前必须全量兜底一次。**
-- "读源码的守卫"（扫描源码的测试）轻/中档也必须跑：`c_4a_terrain_catalog`（mechFlags 读者白名单）、`p1_30_i18n_gate`、`u24_hardcoded_text`、`repo_hygiene` 等。曾两次只在全量里才暴露白名单问题。
-- 长测试（普查类，如 `blueprint_center`、`b2_transcription`、`v_2b_7_features`）在 CPU 争用下容易超时：按原门限单独复跑确认，不要改超时。
-- 跳过全量复跑的条件（三条同时满足）：主分支自执行方开工后没变（只允许有纯文档提交）、验收方没改任何文件、执行方的全量是完整跑完的全绿（不是中止或定向拼接）。
+- **打版本标签前必须全量兜底一次。** 局部规则/全量档先 `npm run ce:fetch` 准备参照源码；`test:full` 缺 CE 即失败。全量档的普查也强制要求 CE，避免对照用例被跳过。
+- 三套文件归属由 `scripts/test-suites.json` 唯一定义：常规（含 `test:full`）、重型生成普查、生成基线互不重叠。新增测试必须登记；普查以实测耗时和执行内容判定，不能只按文件名分类。
+- "读源码的守卫"（扫描源码的测试）轻/中档也必须跑：`c_4a_terrain_catalog`（mechFlags 读者白名单）、`p1_30_i18n_gate`、`u24_hardcoded_text`、`repo_hygiene`、`test_suite_membership` 等。曾两次只在全量里才暴露白名单问题。若文件归入 `test:gen`，仍须用 `npx vitest run <文件> -t '<守卫用例名>'` 跑其中的源码守卫；直接定向运行不受 npm 套件排除影响。
+- 长普查测试（如 `blueprint_center`、`b2_transcription`、`v_2b_7_features`）在 CPU 争用下容易超时：按原门限、单 worker 单独复跑确认，不改超时、种子或断言。保留原完整命令的退出码；串行复核通过不能冒充完整套件一次全绿。
+- 跳过全量复跑的条件（三条同时满足）：主分支自执行方开工后没变（只允许有纯文档提交）、验收方没改任何文件、执行方的全量三套命令（`test:full`、强制 CE 的 `test:gen`、`test:drift`）均完整跑完全绿（不是中止或定向拼接）。
 
 ## 5. 验收裁决规则
 

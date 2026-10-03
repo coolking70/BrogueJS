@@ -15,6 +15,7 @@ npm ci
 npm run ce:fetch
 npx vue-tsc -b && npm run build
 npm run test:full
+BROGUE_REQUIRE_CE=1 npm run test:gen
 npm run test:drift
 ```
 

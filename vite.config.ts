@@ -1,5 +1,17 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
+import { readFileSync } from 'node:fs'
+
+const suites = JSON.parse(readFileSync(new URL('./scripts/test-suites.json', import.meta.url), 'utf8')) as Record<string, string[]>
+
+/** npm suites share one manifest; direct Vitest filters remain available. */
+export function testSuiteOptions(suite: string | undefined): { include?: string[]; exclude: string[] } {
+  if (suite === undefined) return { exclude: configDefaults.exclude }
+  if (!Object.prototype.hasOwnProperty.call(suites, suite)) throw new Error(`Unknown test suite: ${suite}`)
+  return suite === 'test'
+    ? { exclude: [...configDefaults.exclude, ...suites.gen!, ...suites.drift!] }
+    : { include: suites[suite]!, exclude: configDefaults.exclude }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -9,6 +21,7 @@ export default defineConfig({
   // 在此统一放宽，避免验收被环境噪声干扰；真正的死循环由单条用例自己的
   // 更短 timeout 或断言来兜。
   test: {
+    ...testSuiteOptions(process.env.BROGUE_TEST_SUITE),
     globalSetup: ['./src/test/support/ceGlobalSetup.ts'],
     // 验收方 2026-09-16 上调：本套件有多个重型长跑用例（26 层 × 多种子的整图扫描），
     // 单文件耗时实测 c_0_add_loops 148s、p1_29 71s、invented_content_pool 52s。
