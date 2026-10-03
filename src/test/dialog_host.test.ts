@@ -16,9 +16,13 @@ import { ItemLoader } from '../engine/Items/ItemLoader';
 import { TerrainType } from '../engine/Map/Grid';
 import type { Game } from '../engine/Core/Game';
 import { setupDialogD3Scene } from './support/dialogD3Scene';
+import { setupDialogD4Scene } from './support/dialogD4Scene';
 import { activeGame } from '../engine/Core/Game';
 import { displayedFrame, presentationTimeline } from '../ui/presentationTimeline';
 import zhCN from '../locales/zh_CN.json';
+import { targetingTapCommand } from '../ui/targeting';
+let inputManager: (typeof import('../engine/Input'))['inputManager'];
+import { registerHeldInput } from '../ui/heldInput';
 
 // Compile real client SFCs and exercise their lifecycle/DOM input contracts.
 // This renderer does not claim browser CSS geometry or physical touch coverage.
@@ -88,6 +92,7 @@ function mount(inventory = false, reference = false) {
 }
 beforeAll(async () => {
     vi.stubGlobal('window', Object.assign(new EventTarget(), { setInterval: globalThis.setInterval, clearInterval: globalThis.clearInterval }));
+    ({ inputManager } = await import('../engine/Input'));
     documentStub = { activeElement: null, querySelector: () => null, hidden: false };
     vi.stubGlobal('document', documentStub);
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
@@ -321,6 +326,64 @@ describe('D2 real Host resumes engine command capabilities', () => {
 // cursor. Geometry, WebGL and physical touch remain browser acceptance work.
 const byClass = (name: string) => all(root).find(n => n.props.class?.split(' ').includes(name));
 const textOf = (root: Node): string => root.text + root.children.map(textOf).join('');
+
+describe('D4 actual TargetBar and Host input', () => {
+    it.each(['target-bar', 'touch', 'keyboard'] as const)('%s opens the same risk capability, stops held input and rejects stale releases/repeats', async entry => {
+        window.setInterval = ((...args: Parameters<typeof setInterval>) => globalThis.setInterval(...args)) as typeof window.setInterval;
+        window.clearInterval = (id => globalThis.clearInterval(id)) as typeof window.clearInterval;
+        activeGame.startNewGame({ seed: 33441 });
+        const { item, aim } = setupDialogD4Scene(activeGame, false);
+        gameModule.activeGame = activeGame;
+        activeGame.executeItemCommand('use', item);
+        for (let i = 0; i < 10; i++) activeGame.executeCommand('move', { x: 1, y: 0 });
+        root = node('root'); body.children.push(root); root.parent = body;
+        app = renderer.createApp({ render: () => Vue.h('main', [Vue.h(Target), Vue.h(Host, { service, epoch: epoch.value })]) });
+        app.use(I18NextVue, { i18next }); app.provide(dialogServiceKey, service); app.mount(root);
+        await Vue.nextTick();
+        const stop = vi.fn();
+        // This document is a renderer fixture; provide only listener methods for
+        // the actual shared held-input registry.
+        Object.assign(documentStub, { addEventListener() {}, removeEventListener() {} });
+        const removeHold = registerHeldInput(stop);
+        inputManager.setCallback((action, data) => activeGame.handlePlayerAction(action, data));
+        const resolver = vi.fn(() => { throw new Error('native blink resolver'); }); activeGame.onConfirmRequest = resolver;
+        const random = rng.getState(), turn = activeGame.absoluteTurnNumber, index = activeGame.recordedInputEvents.length;
+        try {
+            press('ArrowRight');
+            if (entry === 'target-bar') byClass('tb-btn')!.props.onClick();
+            if (entry === 'touch') {
+                const command = targetingTapCommand('arcana', aim, null, activeGame.pendingArcana!.cursor, activeGame.player.loc);
+                expect(command.kind).toBe('dispatch');
+                if (command.kind === 'dispatch') inputManager.triggerAction(command.action, 'data' in command ? command.data : undefined);
+            }
+            if (entry === 'keyboard') {
+                press('Enter'); inputManager.triggerAction('confirm_target');
+            }
+            await Vue.nextTick();
+            expect(stop).toHaveBeenCalled(); expect(findDialog()?.props['data-dialog-kind']).toBe('confirm');
+            expect(service.current?.text).toBe(zhCN['arcana.blink_unknown_lava']);
+            expect(activeGame.recordedInputEvents).toHaveLength(index); expect(item.charges).toBe(2);
+            press('ArrowRight', true); inputManager.triggerAction('wait');
+            // An old pointerup never approves; a fresh Host press is required.
+            dialogInput.pointerup({ pointerId: 87, button: 0, target: findAction('yes'), clientX: 0, clientY: 0,
+                preventDefault() {}, stopImmediatePropagation() {} } as unknown as PointerEvent);
+            press('Enter', true); vi.advanceTimersByTime(6000);
+            expect(activeGame.hasPendingConfirmation).toBe(true); expect(rng.getState()).toEqual(random);
+            if (entry === 'keyboard') { release('Enter'); press('Enter'); }
+            else if (entry === 'target-bar') click(findAction('no')!);
+            else press('Escape');
+            await Vue.nextTick();
+            expect(activeGame.hasPendingConfirmation).toBe(false); expect(resolver).not.toHaveBeenCalled();
+            const approved = entry === 'keyboard';
+            expect(item.charges).toBe(approved ? 1 : 2); expect(activeGame.absoluteTurnNumber).toBe(turn + (approved ? 1 : 0));
+            expect(activeGame.recordedInputEvents[index]).toMatchObject({ action: 'arcana:risk-confirm', decisions: [approved] });
+            press('ArrowRight', true); expect(activeGame.recordedInputEvents).toHaveLength(index + 1);
+            release('ArrowRight');
+            if (!approved) expect(rng.getState()).toEqual(random);
+        } finally { inputManager.setCallback(() => {}); removeHold(); activeGame.onConfirmRequest = null; }
+    });
+});
+
 const settleTimeline = async () => { vi.advanceTimersByTime(250); await Vue.nextTick(); };
 function mountTimeline(automatic = false, animation = true) {
     window.setInterval = ((...args: Parameters<typeof setInterval>) => globalThis.setInterval(...args)) as typeof window.setInterval;

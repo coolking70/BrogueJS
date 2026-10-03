@@ -1,5 +1,7 @@
 Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工试玩问题；用户在 2026-09-29 明确要求停止定时任务并启动合适子进程开发。
 
+- 2026-10-04 D4：按 docs/tasks/dialog-d4-blink.md，feat/dialog-d4-blink 基点3e2d64d；指定文档与只读CE已读。新增21项回归旧生产16红/5绿，原UI-1 33项通过；键盘与地图点选接入同一续体，实际风险点改写最终action为arcana:risk-confirm。App移除原生兜底；旧confirm_target批准回放免UI/不造答案，旧取消缺口保留。开发/门禁证据/private/tmp/dialog-d4；不commit/push，浏览器验收交Claude。
+
 - 2026-10-03 fix-search-progress-bar 已完成：按 docs/tasks/fix-search-progress-bar.md 增加只读搜索进度；分支 fix/search-progress-bar，基于 main 0ca1c67。旧生产新增回归 8/8 红，最终 14/14 绿；只新增 getter、共用状态行和刻符通用进度条，保留规则/存档/录像/RNG，旧测试与夹具未改。最终轻档 typecheck/build、24 文件 416 项相关测试、72 文件 107 项源码守卫、7 文件 12 项共享读取守卫全部退出 0，冻结前后 SHA256 相同；证据 /tmp/search-progress-gates/。报告 docs/reports/fix-search-progress-bar.report.md 已写；未 staging/commit/push，无 CRLF/截图/大证据。浏览器各布局尺寸与裁切验收仍由用户完成，本轮无需重复实施或启动门禁。
 - 2026-10-03 浏览器验收续修已完成：1280×800 状态区竖框由纵向 flex-wrap:wrap 与 flex-basis:100% 将栏高当状态高度造成。普通布局改为内容高度、全栏宽及纵向不换列，沉浸多状态单行内滚动。新增 5 项/10 布局场景先红后绿，最终搜索/排版共 19 项通过；两项“紧凑沉浸隐藏其它状态”期望按新用户要求及 CE IO.c:4823–4825 更新，固定原断言仅切 CSS 的反事实日志在 /tmp/search-progress-layout-counterfactual*。续修最终 typecheck/build、24 文件 421 项、72 文件 107 项源码守卫、7 文件 12 项共享读取守卫全绿，冻结前后哈希一致；证据 /tmp/search-progress-layout-gates/，报告已更新。未 staging/commit/push，无 CRLF/截图/大证据，浏览器尺寸/裁切待 Claude 复验。
 
@@ -91,3 +93,11 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 2026-10-03 D3 开始：按 docs/tasks/dialog-d3-timeline.md，分支 feat/dialog-d3-timeline、基点53bd160。已读指定文档与只读CE执行路径；显示事件/投影使用会话WeakMap，模拟与记录不变。Playwright启动被MachPort权限拒绝，浏览器验收按任务交Claude，采用实际Vue宿主及live夹具验证。未commit/push。
 - D3 实现及相关回归：新增21项时间线测试和7项真实Host测试，9文件197项通过；背包目标列表按揭示ACK后开放，动画间隔保留延迟关闭。首轮门禁中止日志保存在/private/tmp/dialog-d3/gates-interrupted；最终重跑会话4434，type/build已exit0，完整npm test运行中，之后串行源码守卫与drift。src/scripts冻结SHA256 af3e24279d4a777e45c0b84e8e2bfb1484203fef50ecbac5f8a9fe6683f7b9ca；不并行启动重门禁。
 - 2026-10-04 D3 完成：最终type/build/完整npm test（250文件4550pass、8历史skip/5todo）/生成套件源码守卫（7文件12pass、132筛选未选）/drift（2文件2pass）均exit0。门禁前后576个src/scripts文件SHA256与上述冻结值一致；旧断言/白名单/黄金trace/生成基线未改，无CRLF/大证据/staging/commit/push。报告docs/reports/dialog-d3-timeline.report.md已补完整结果和固定seed33421的浏览器live构造步骤。浏览器四视口/Pixi/物理触摸验收按任务交Claude；本轮无需重复实施或重启门禁。
+
+- D4 回归收口：引擎28项、真实Host/TargetBar新增3项通过；旧UI原生接口两项按仅App回退33/33通过的反事实转换，问题/双答案/回放免UI/实际Host接线保持。新增Host夹具提前导入Input导致window未初始化，已改成现有beforeAll时点加载；生产不变。最终全量runner在/private/tmp/dialog-d4/run-gates.py串行执行，src/scripts冻结，不并行重测试。
+
+- D4 冻结复查补获鼠标分支状态差异：新action回放若走键盘入口会清justRested，而原mouse_travel保留。新增false/true两个正式wait→use→mouse_travel保存状态回归，修前均红；带坐标risk事件改走原地图入口。第一次门禁CE/type/build/相关326项过，full人为中止exit130，日志gates-interrupted，不计完整通过；修后从头重新冻结全量。
+
+- D4 最终冻结门禁：CE/type/build/相关10文件327项均exit0；完整test:full已exit0（251文件4582pass、8历史skip/5todo，1089.45s）。强制CE test:gen运行中，之后串行drift；runner会话26235、/private/tmp/dialog-d4/gates-state.json。578个src/scripts文件SHA256 3a4ab01e50a7a3b2765524b09d32cc0ed509b5d2832177d08578c443ce4316ba，中途复核相同。报告已写实现/兼容/反事实/复现，门禁尚待收尾，不重复启动或改源码。
+
+- 2026-10-04 D4 完成：最终CE/type/build/相关10文件327项/test:full（251文件4582pass、8历史skip/5todo）/强制CE test:gen（27文件436pass，无超时复跑）/drift（2文件2pass）全部exit0。578文件冻结前后SHA256均为3a4ab01e50a7a3b2765524b09d32cc0ed509b5d2832177d08578c443ce4316ba。报告docs/reports/dialog-d4-blink.report.md已补全反事实、旧取消缺口与seed33441浏览器布景；五份trace/基线未重录，无CRLF/截图/大证据/staging/commit/push。浏览器验收按任务交Claude，本轮无需重复开发或重启门禁。
