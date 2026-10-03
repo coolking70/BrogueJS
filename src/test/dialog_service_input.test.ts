@@ -185,6 +185,25 @@ describe('D1 unified capture arbitration', () => {
         input.keyup(key('ArrowRight')); input.keydown(key('ArrowRight')); expect(gameKey).toHaveBeenCalledOnce();
         input.dispose();
     });
+    it('an element blur seen by the capture listener does not void the pressed pointer or its click', () => {
+        const input = new DialogInput(), service = new DialogService();
+        const win = new EventTarget(); input.install(win as unknown as Window);
+        input.attach({ service, contains: () => false, hint() {} });
+        const down = pointer(1), up = pointer(1);
+        input.pointerdown(down);
+        // Focus moving from the previous button to the clicked one: element blur, not window blur.
+        (input as unknown as { blur(event: Event): void }).blur({ target: {} } as unknown as Event);
+        input.pointerup(up);
+        expect(up.stopImmediatePropagation).not.toHaveBeenCalled();
+        const click = { preventDefault: vi.fn(), stopImmediatePropagation: vi.fn() } as unknown as MouseEvent;
+        input.click(click);
+        expect(click.stopImmediatePropagation).not.toHaveBeenCalled();
+        // A real window blur still quarantines the held pointer until its release.
+        input.pointerdown(pointer(2)); win.dispatchEvent(new Event('blur'));
+        const staleUp = pointer(2); input.pointerup(staleUp);
+        expect(staleUp.stopImmediatePropagation).toHaveBeenCalled();
+        input.dispose();
+    });
     it('view-result remains available with advancing simulation and leaves MORE unread', () => {
         const entry = { kind: 'acknowledgment', terminalAvailable: true } as DialogEntry;
         expect(dialogKeyAction(entry, key('r'))).toBe('view-result');
