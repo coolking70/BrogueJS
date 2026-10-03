@@ -688,6 +688,7 @@ export class Game {
         // UI callbacks and animationEnabled are session settings and stay intact.
         resetEntityIds();
         this.player = new Player(Math.floor(DCOLS / 2), Math.floor(DROWS / 2));
+        this.bindTransferenceDeath();
         // RogueMain.c:403：monsterSpawnFuse 在开局时初始化（先于首层生成，保证 rng 流稳定）
         this.monsterSpawnFuse = rng.randRange(SPAWN_FUSE_MIN, SPAWN_FUSE_MAX);
         // RogueMain.c:404：客观时间门复位
@@ -4751,7 +4752,7 @@ export class Game {
         }).value, rng) : result.magnitude;
         const hpDamage = target.absorbShieldDamage(damage);
         target.takeDamage(hpDamage, true, this.grid, () => {
-            if (result.caster) CombatSystem.transferMonsterHealth(result.caster, target, hpDamage);
+            if (result.caster) return CombatSystem.transferMonsterHealth(result.caster, target, hpDamage);
         });
         if (this.finishLethalBoltHit(target, result.caster,
             result.bolt.ceType === null ? result.bolt.name : CE_BOLT_CATALOG[result.bolt.ceType].name)) return damage;
@@ -6436,10 +6437,13 @@ export class Game {
     }
 
     private applyTimedStatus(entity: Player | Monster, status: StatusId, duration: number): boolean {
+        const wasParalyzed = entity.hasStatus('paralyzed');
         const applied = entity.applyStatus(status, duration, 'refresh');
         if (!applied) return false;
         if (entity === this.player) {
-            if (status === 'paralyzed') logger.log(i18next.t('status.player.paralyzed', { defaultValue: 'You are paralyzed!' }), '#ff9999', { acknowledge: true });
+            // The shared player onset warning follows Time.c:475-490. Keep
+            // source-specific on-hit prose and all status application unchanged.
+            if (status === 'paralyzed' && !wasParalyzed) logger.log(i18next.t('status.player.paralyzed', { defaultValue: 'You are paralyzed!' }), '#ff9999', { acknowledge: true });
             if (status === 'confused' || status === 'hallucinating') {
                 logger.log(i18next.t('status.player.disoriented', { defaultValue: 'Your senses become unstable.' }), '#cc99ff');
             }
@@ -9052,6 +9056,7 @@ export class Game {
         this.activeFlares = []; this.terrainFlashes = []; this.flareLightMap = null; this.flareElapsedMs = 0;
 
         this.player = decodePlayer(snapshot.player, entityGraph.items);
+        this.bindTransferenceDeath();
 
         const run = JSON.parse(JSON.stringify(snapshot.run)) as GameSnapshot['run'];
         this.meteredItems = run.meteredItems; this.foodSpawned = run.foodSpawned; this.goldGenerated = run.goldGenerated;
@@ -9632,10 +9637,11 @@ export class Game {
                                 || (entity as Monster).isInvulnerable());
                         if (!exempt) {
                             if (entity === this.player) this.disturbed = true; // CE Time.c:492
+                            const wasParalyzed = entity.hasStatus('paralyzed');
                             const applied = entity === this.player
                                 ? entity.applyStatus('paralyzed', 20)
                                 : this.applyStatusToMonster(entity as Monster, 'paralyzed', 20, 'gas');
-                            if (entity === this.player && applied) {
+                            if (entity === this.player && !wasParalyzed && applied) {
                                 logger.log(i18next.t('status.player.paralyzed', { defaultValue: 'You are paralyzed!' }), '#ff9999', { acknowledge: true });
                             }
                         }
@@ -11137,6 +11143,11 @@ export class Game {
             // the following auto_step will rebuild again after vision changes.
             if (!enemy) this.recomputeExplorePath();
         } else if (!this.autoPath.length) this.stopAutoTravel();
+    }
+
+    private bindTransferenceDeath(): void {
+        CombatSystem.bindTransferenceDeath(this.player, () => this.triggerGameOver(false,
+            i18next.t('death.cursed_ring', { defaultValue: 'Drained by a cursed ring' })));
     }
 
     public triggerGameOver(won: boolean, reason?: string, superVictory: boolean = false) {

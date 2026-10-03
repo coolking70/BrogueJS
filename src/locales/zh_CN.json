@@ -1,4 +1,8 @@
 {
+  "death.cursed_ring": "被诅咒戒指吸干生命",
+  "messages.view_result": "查看结算",
+  "messages.view_result_hint": "按 R 查看结算；未读消息会保留。",
+  "messages.unread": "未读消息",
   "performance.reset": "重置性能统计",
   "detail.item.runic.reflection_inactive": "当前有效附魔不大于零，反射符文不会偏转法术。",
   "terrain.flavor.clean_air": "一股清凉洁净的空气在你身边环绕。",

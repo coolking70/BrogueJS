@@ -312,11 +312,11 @@ export class Creature implements Entity {
     public get bloodType(): number { return 0; }
     protected bloodInvulnerable(): boolean { return false; }
 
-    public takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void) {
+    public takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => boolean | void) {
         const damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
         if (grid) spawnCreatureBlood(grid, this.loc, this.bloodType, damage, this.hp, this.bloodInvulnerable());
         // CE Combat.c:1827-1878: blood precedes transference, including self-hits.
-        beforeHpLoss?.(damage);
+        if (beforeHpLoss?.(damage) === false) return;
         this.hp -= damage;
         if (this.hp <= 0) {
             this.die();

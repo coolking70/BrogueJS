@@ -20,7 +20,9 @@ export const MESSAGE_ARCHIVE_ENTRIES = 34 * 10 * 4;
 export const MAX_MESSAGE_REPEATS = 100;
 const disturbanceCallbacks = new WeakMap<Logger, () => void>();
 // UI wiring and pending clicks must never enter snapshots or recording hashes.
-const presentations = new WeakMap<Logger, { enabled: () => boolean; pending: LogMessage[] }>();
+const presentations = new WeakMap<Logger, {
+    enabled: () => boolean; pending: LogMessage[]; unread: LogMessage[]; terminalShown: boolean;
+}>();
 const combatBuffers = new WeakMap<Logger, { text: string; color: string }[]>();
 const heardCombat = new WeakSet<Logger>();
 
@@ -53,18 +55,31 @@ export class Logger {
 
     /** Mounted UI opts in; headless and replay never wait for a human. */
     public presentAcknowledgments(enabled: (() => boolean) | null): void {
-        if (enabled) presentations.set(this, { enabled, pending: [] });
+        if (enabled) presentations.set(this, { enabled, pending: [], unread: [], terminalShown: false });
         else presentations.delete(this);
     }
     public get pendingAcknowledgment(): LogMessage | undefined {
         const display = presentations.get(this);
-        if (display && !display.enabled()) display.pending = [];
+        if (display && !display.enabled()) this.clearAcknowledgments();
         return display?.pending[0];
+    }
+    /** Presentation copies in occurrence order, including folded duplicates. */
+    public get unreadAcknowledgments(): LogMessage[] {
+        return presentations.get(this)?.unread.map(message => ({ ...message })) ?? [];
+    }
+    public showTerminalAcknowledgments(): void {
+        const display = presentations.get(this);
+        if (!display) return;
+        display.terminalShown = true;
+        display.unread.push(...display.pending);
+        display.pending = [];
     }
     public acknowledgeNext(): void { presentations.get(this)?.pending.shift(); }
     public clearAcknowledgments(): void {
         const display = presentations.get(this);
-        if (display) display.pending = [];
+        if (display) {
+            display.pending = []; display.unread = []; display.terminalShown = false;
+        }
     }
 
     public combat(text: string, color = '#ffffff', lethal = false): void {
@@ -140,7 +155,9 @@ export class Logger {
             entry.acknowledge = true;
             const display = presentations.get(this);
             // Each occurrence still needs acknowledgment, even at count 100.
-            if (display?.enabled()) display.pending.push({ ...entry, text, color });
+            if (display?.enabled()) {
+                (display.terminalShown ? display.unread : display.pending).push({ ...entry, text, color });
+            }
         }
     }
 }

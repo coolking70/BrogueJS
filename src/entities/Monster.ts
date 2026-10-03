@@ -394,7 +394,7 @@ export class Monster extends Creature {
 
     protected override bloodInvulnerable(): boolean { return this.isInvulnerable(); }
 
-    public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void): void {
+    public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => boolean | void): void {
         this.interruptCorpseAbsorption(amount);
         const damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
         super.takeDamage(damage, true, grid, beforeHpLoss);

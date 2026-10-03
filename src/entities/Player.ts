@@ -60,13 +60,13 @@ export class Player extends Creature {
 
     public override get bloodType(): number { return PLAYER_BLOOD_TYPE; }
 
-    public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void): void {
+    public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => boolean | void): void {
         if (amount > 0) logger.disturb();
         super.takeDamage(amount, ignoresProtectionShield, grid, beforeHpLoss);
     }
 
     /** Ordinary melee is the sole damage exception during CE startFighting. */
-    public takeCombatDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void): void {
+    public takeCombatDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => boolean | void): void {
         if (!logger.blockCombatText && amount > 0) logger.disturb();
         super.takeDamage(amount, ignoresProtectionShield, grid, beforeHpLoss);
     }
