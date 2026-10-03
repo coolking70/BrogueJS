@@ -59,6 +59,7 @@
     "src/test/monster_damage_balance.test.ts",
     "src/test/monster_path_cache.test.ts",
     "src/test/monster_stats_effect.test.ts",
+    "src/test/overheal_turn_clamp.test.ts",
     "src/test/p1_20_item_placement.test.ts",
     "src/test/p1_24_death_sink.test.ts",
     "src/test/p1_27_remove_drowning.test.ts",

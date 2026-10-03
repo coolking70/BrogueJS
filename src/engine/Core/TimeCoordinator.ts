@@ -123,15 +123,21 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
             if (ports.clock.ticksTillUpdateEnvironment <= 0) {
                 ports.clock.ticksTillUpdateEnvironment += 100;
                 ports.effects.objectiveTimeBlock();
+                // CE Time.c:2699-2701 / 2858-2860: death from instant terrain
+                // ends the turn before either the HP cap or playerFalls.
+                if (ports.clock.isGameOver || ports.world.player.hp <= 0) return;
                 // C-5：CE Time.c:2866-2871——客观块内（环境瞬时结算）置位的
                 // 玩家坠落旗标在本圈循环立即结算（CE 的 do-while 每圈在
                 // applyInstantTileEffectsToCreature(&player) 之后检查）。
                 if (ports.clock.playerFalling) {
+                    // This early fall bypasses the ordinary epilogue. Preserve
+                    // CE Time.c:2862-2866: cap after tile effects, before falling.
+                    if (ports.world.player.hp > ports.world.player.maxHp) {
+                        ports.world.player.hp = ports.world.player.maxHp;
+                    }
                     ports.effects.playerFalls();
                     return;
                 }
-                // CE Time.c:2713-2715：岩浆/毒气等致死后立即退出推进
-                if (ports.clock.isGameOver || ports.world.player.hp <= 0) return;
                 // CE Time.c:2704-2707：仅当玩家本次动作慢于一个标准回合
                 //（>100 tick；此刻玩家 tick 尚未递减，口径与 CE 一致）才暂停。
                 // 自动寻路/探索对应 rogue.playbackFastForward——锁存但不暂停。
@@ -155,6 +161,9 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
             for (const m of [...ports.world.monsters]) {
                 if (ports.clock.isGameOver) break; // CE Time.c:2721 的 gameHasEnded 守卫
                 if (m.hp > 0 && m.ticksUntilTurn <= 0) {
+                    // CE Time.c:2721-2723: temporary transference/polymorph
+                    // excess ends when due, even if the action is withheld.
+                    if (m.hp > m.maxHp) m.hp = m.maxHp;
                     // CE Time.c:2725-2733 withholds the action BEFORE
                     // monstersTurn/absorption, even though that inner function
                     // updates absorption before its own status checks.
@@ -528,6 +537,12 @@ export function finishTurnEpilogue(ports: TimePorts): void {
                 deathReason = i18next.t('death.unknown', { defaultValue: 'Killed by unknown causes.' });
             }
             ports.effects.triggerGameOver(false, deathReason);
+        }
+
+        // CE Time.c:2857-2864: keep attack-time excess through environmental
+        // effects and the game-end check; cap at the surviving turn boundary.
+        if (!ports.clock.isGameOver && ports.world.player.hp > ports.world.player.maxHp) {
+            ports.world.player.hp = ports.world.player.maxHp;
         }
 
         // CE Time.c:2759: commit final vision after monsters/environment move.
