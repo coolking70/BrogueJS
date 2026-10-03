@@ -365,3 +365,105 @@ CODE_TEST_INPUT_HASH=b3e049d421ec9c64920f70ee975ad0bdc1bc098438c131da712d946284d
 ```
 
 浏览器不由engine-only冒充；Mac使用与第二树新构建逐字相同的normal24文件/删模块16文件，实际UI证据及工具限制见报告。无FATAL/OOM/未处理或worker异常。日志、完整散列、截图与百MB级跨版本快照均不提交。
+
+
+## 阶段2a1：叙事包与纯执行内核
+
+第二冻结树：2026-10-03T17:03:36.644Z–2026-10-03T19:51:35.899Z。Node24.19.0/npm11.9.0、3072MiB堆、2workers；正常树与三个真实删除副本严格串行。首次完整npm test的1项扫描前提失败及修复详见[报告](../phase2a1.report.md)，下列为第二树各自完整运行结果。
+
+```text
+COMMAND npx vue-tsc -b
+EXIT_CODE=0 WALL_SECONDS=25.69
+COMMAND npm run build
+EXIT_CODE=0 WALL_SECONDS=30.21
+COMMAND node scripts/check-module-boundaries.mjs
+EXIT_CODE=0 WALL_SECONDS=3.48
+COMMAND npm run test:ext -- --maxWorkers=2
+ Test Files  55 passed (55)
+      Tests  1101 passed (1101)
+   Duration  252.30s (transform 4.77s, setup 0ms, import 47.85s, tests 446.77s, environment 24ms)
+EXIT_CODE=0 WALL_SECONDS=253.04
+COMMAND npm test -- --maxWorkers=2
+ Test Files  300 passed (300)
+      Tests  5515 passed | 8 skipped | 5 todo (5528)
+   Duration  2270.08s (transform 14.12s, setup 0ms, import 286.91s, tests 4192.57s, environment 138ms)
+EXIT_CODE=0 WALL_SECONDS=2271.06
+COMMAND node scripts/check-module-composition-smoke.mjs --engine-only --output <json>
+installed=[growth,narrative] combinations=4 engine=passed browser=not-run EXIT_CODE=0
+
+COMMAND node scripts/check-module-removal.mjs --retain=growth --engine-only --maxWorkers=2 --output=<isolated-evidence>
+ACTUAL_REMOVAL=src/ext/modules/narrative
+DELETED_FILES=19 DELETED_OWNED_TEST_FILES=3
+COMMAND node scripts/check-module-boundaries.mjs
+EXIT_CODE=0 WALL_SECONDS=4.09
+COMMAND node node_modules/vue-tsc/bin/vue-tsc.js -b
+EXIT_CODE=0 WALL_SECONDS=25.95
+COMMAND npm run build
+EXIT_CODE=0 WALL_SECONDS=28.18
+COMMAND npm run test:ext -- --maxWorkers=2
+ Test Files  52 passed (52)
+      Tests  986 passed (986)
+   Duration  245.82s (transform 5.00s, setup 0ms, import 45.37s, tests 433.40s, environment 22ms)
+EXIT_CODE=0 WALL_SECONDS=246.80
+COMMAND npm test -- --maxWorkers=2
+ Test Files  297 passed (297)
+      Tests  5400 passed | 8 skipped | 5 todo (5413)
+   Duration  2263.59s (transform 14.28s, setup 0ms, import 273.16s, tests 4131.10s, environment 146ms)
+EXIT_CODE=0 WALL_SECONDS=2265.07
+engine=passed combinations=2 browser=not-run
+REMOVAL_STATUS=partial-browser-not-verified EXIT_CODE=0
+
+COMMAND node scripts/check-module-removal.mjs --retain=narrative --engine-only --maxWorkers=2 --output=<isolated-evidence>
+ACTUAL_REMOVAL=src/ext/modules/growth
+DELETED_FILES=60 DELETED_OWNED_TEST_FILES=30
+COMMAND node scripts/check-module-boundaries.mjs
+EXIT_CODE=0 WALL_SECONDS=3.65
+COMMAND node node_modules/vue-tsc/bin/vue-tsc.js -b
+EXIT_CODE=0 WALL_SECONDS=20.58
+COMMAND npm run build
+EXIT_CODE=0 WALL_SECONDS=26.86
+COMMAND npm run test:ext -- --maxWorkers=2
+ Test Files  25 passed (25)
+      Tests  555 passed (555)
+   Duration  195.82s (transform 2.76s, setup 0ms, import 18.71s, tests 341.99s, environment 11ms)
+EXIT_CODE=0 WALL_SECONDS=196.70
+COMMAND npm test -- --maxWorkers=2
+ Test Files  270 passed (270)
+      Tests  4969 passed | 8 skipped | 5 todo (4982)
+   Duration  2144.34s (transform 12.30s, setup 0ms, import 231.52s, tests 3966.18s, environment 137ms)
+EXIT_CODE=0 WALL_SECONDS=2145.35
+engine=passed combinations=2 browser=not-run
+REMOVAL_STATUS=partial-browser-not-verified EXIT_CODE=0
+
+COMMAND node scripts/check-module-removal.mjs --retain=none --engine-only --maxWorkers=2 --output=<isolated-evidence>
+ACTUAL_REMOVAL=src/ext/modules/growth,src/ext/modules/narrative
+DELETED_FILES=79 DELETED_OWNED_TEST_FILES=33
+COMMAND node scripts/check-module-boundaries.mjs
+EXIT_CODE=0 WALL_SECONDS=3.54
+COMMAND node node_modules/vue-tsc/bin/vue-tsc.js -b
+EXIT_CODE=0 WALL_SECONDS=17.62
+COMMAND npm run build
+EXIT_CODE=0 WALL_SECONDS=25.11
+COMMAND npm run test:ext -- --maxWorkers=2
+ Test Files  22 passed (22)
+      Tests  441 passed (441)
+   Duration  162.76s (transform 3.35s, setup 0ms, import 17.47s, tests 289.12s, environment 12ms)
+EXIT_CODE=0 WALL_SECONDS=163.59
+COMMAND npm test -- --maxWorkers=2
+ Test Files  267 passed (267)
+      Tests  4855 passed | 8 skipped | 5 todo (4868)
+   Duration  2294.49s (transform 10.46s, setup 0ms, import 211.02s, tests 4281.82s, environment 119ms)
+EXIT_CODE=0 WALL_SECONDS=2295.40
+engine=passed combinations=1 browser=not-run
+REMOVAL_STATUS=partial-browser-not-verified EXIT_CODE=0
+
+FROZEN_INPUT_COUNT=2037
+FROZEN_INPUT_HASH=f3b04aaa8c2d733219117a922fcbdc056eac68daa8e389833666abf6a1d485cf
+FROZEN_INPUTS_UNCHANGED=true
+ALL_REMOVAL_COPIES_MATCHED_SOURCE_BEFORE_DELETION=true
+ALL_REMOVAL_COPIES_UNCHANGED_DURING_GATES=true
+QA_BUILD_FILE_COUNT=80
+QA_BUILD_BYTES_UNCHANGED=true
+```
+
+每组完整npm test均为8个原有skip与5个原有todo；没有新增skip/todo，没有FATAL/OOM/未处理错误或worker异常。保留Vite大chunk/npm代理配置提示。无fetch/full/gen/drift。engine-only不冒充浏览器，Mac同字节四构建小QA与明确限制见报告；原始日志、完整散列、隔离副本与截图不提交。

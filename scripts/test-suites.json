@@ -39,6 +39,7 @@
     "src/test/ext_bolt_causality.test.ts",
     "src/test/ext_causality.test.ts",
     "src/test/ext_combat_neutral_differential.test.ts",
+    "src/test/ext_compatibility_diagnostics.test.ts",
     "src/test/ext_controlled_action_bridge.test.ts",
     "src/test/ext_engine_policies.test.ts",
     "src/test/ext_fingerprint.test.ts",

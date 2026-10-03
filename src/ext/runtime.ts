@@ -6,6 +6,7 @@ import { creatureView } from './types';
 import { readCreatureBirth } from './birth';
 import { canonical, cloneJson, isJson, validId } from './json';
 import { EffectCausality, validEffectOrigin, type EffectOrigin } from './causality';
+import { ExtensionCompatibilityError } from './compatibility';
 import type { DeathFact, GenerationToken, ControlledActionRequest, ControlledActionResult, ControlledActionOutcome, PhysicalResolutionFact, OptionalQueryResult, OptionalQueryProvider } from './types';
 
 function isCreatureView(value: unknown): boolean {
@@ -315,22 +316,27 @@ export class ExtensionRuntime {
             || (actor instanceof Player && actor.strength - bonuses.strength < 1)) throw new Error('Invalid native extension bonuses');
         return actor.maxHp - bonuses.maxHp;
     }
+    /** Static envelope/registration check; safe for historical inputs without
+     * consulting the current run's state-dependent allowInput gates. */
+    private hasRegisteredCommand(data: unknown): boolean {
+        try {
+            if (typeof data !== 'string') return false;
+            const input = JSON.parse(data);
+            if (!isJson(input) || !input || typeof input !== 'object' || Array.isArray(input)
+                || Object.keys(input).sort().join(',') !== 'action,module,payload' || typeof input.module !== 'string'
+                || typeof input.action !== 'string' || !validId(input.module)) return false;
+            const module = this.modules.find(module => module.id === input.module);
+            return !!module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action)
+                && typeof module.commands[input.action] === 'function';
+        } catch { return false; }
+    }
     allowsInput(action: string, data?: unknown): boolean {
-        if (action === 'ext:command') {
-            try {
-                if (typeof data !== 'string') return false;
-                const input = JSON.parse(data);
-                if (!isJson(input) || !input || typeof input !== 'object' || Array.isArray(input)
-                    || Object.keys(input).sort().join(',') !== 'action,module,payload' || typeof input.module !== 'string'
-                    || typeof input.action !== 'string' || !validId(input.module)) return false;
-                const module = this.modules.find(module => module.id === input.module);
-                if (!module?.commands || !Object.prototype.hasOwnProperty.call(module.commands,input.action)) return false;
-            } catch { return false; }
-        }
+        if (action === 'ext:command' && !this.hasRegisteredCommand(data)) return false;
         return this.modules.every(module => module.allowInput?.(action, data, this.context(module, null)) !== false);
     }
     get readyToSave(): boolean { return this.modules.every(module => module.readyToSave?.(this.context(module, null)) !== false); }
     validateRecording(events: readonly {action:string;data:unknown;extensions?:ExtensionSnapshot}[]): boolean {
+        if (events.some(event => event.action === 'ext:command' && !this.hasRegisteredCommand(event.data))) return false;
         const count = this.modules.filter(module => module.initialCommand).length;
         if (events.length < count || !events.slice(0, count).every(event => event.action === 'ext:command' && typeof event.data === 'string')
             || !this.validateInitialCommands(events.slice(0, count).map(event => event.data as string))
@@ -660,15 +666,18 @@ export class ExtensionRuntime {
                 || !isCreatureView(fact.creature)
                 || Object.keys(fact).some(key => !['creature', 'origin', 'administrative'].includes(key))) throw new Error('Invalid death fact');
         }
-        for (const module of this.modules) if (!module.validateState(value.modules[module.id])) throw new Error(`Invalid module state: ${module.id}`);
-        for (const module of this.modules) if (module.validateComponents && !module.validateComponents(value.modules[module.id]!, value.components, value.foundation)) throw new Error('Invalid module component references');
+        for (const module of this.modules) if (!module.validateState(value.modules[module.id]))
+            throw new ExtensionCompatibilityError('state-invalid', module.id, `Invalid module state: ${module.id}`);
+        for (const module of this.modules) if (module.validateComponents && !module.validateComponents(value.modules[module.id]!, value.components, value.foundation))
+            throw new ExtensionCompatibilityError('state-invalid', module.id, `Invalid module component references: ${module.id}`);
         for (const [id, components] of Object.entries(value.components)) {
             if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id)) || !components || typeof components !== 'object' || Array.isArray(components)) throw new Error('Invalid creature components');
             for (const [key, value] of Object.entries(components)) {
                 const [module, component, extra] = key.split(':');
                 const definition = this.modules.find(entry => entry.id === module);
                 if (extra !== undefined || !definition || !validId(component)) throw new Error('Invalid component namespace');
-                if (definition.componentValidators?.[component] && !definition.componentValidators[component]!(value)) throw new Error('Invalid component value');
+                if (definition.componentValidators?.[component] && !definition.componentValidators[component]!(value))
+                    throw new ExtensionCompatibilityError('state-invalid', definition.id, `Invalid component value: ${definition.id}`);
             }
         }
     }

@@ -224,8 +224,9 @@ const continueGame = async () => {
   try {
     const snapshot = await readSnapshot();
     if (!snapshot) return;
-    if (!activeGame.loadSnapshot(snapshot)) {
-      replayMessage(i18next.t('menu.log.save_format_not_supported', { defaultValue: 'Save format not supported.' }));
+    let diagnostic: string | undefined;
+    if (!activeGame.loadSnapshot(snapshot, message => { diagnostic = message; })) {
+      replayMessage(diagnostic ?? i18next.t('menu.log.save_format_not_supported', { defaultValue: 'Save format not supported.' }));
       return;
     }
     replayMessage(i18next.t('menu.log.save_loaded', { defaultValue: 'Save loaded.' }));
@@ -291,8 +292,9 @@ const loadReplay = () => {
     const raw = window.localStorage.getItem(REPLAY_KEY);
     if (!raw) return;
     const recording = JSON.parse(raw);
-    if (!activeGame.loadReplay(recording)) {
-      replayMessage(i18next.t('menu.log.replay_load_failed', { defaultValue: 'Replay load failed.' }));
+    let diagnostic: string | undefined;
+    if (!activeGame.loadReplay(recording, message => { diagnostic = message; })) {
+      replayMessage(diagnostic ?? i18next.t('menu.log.replay_load_failed', { defaultValue: 'Replay load failed.' }));
       return;
     }
     moduleUi.refresh();
@@ -371,8 +373,9 @@ const importReplayJson = async (file: File) => {
   try {
     const text = await file.text();
     const recording = JSON.parse(text);
-    if (!activeGame.loadReplay(recording)) {
-      replayMessage(i18next.t('menu.log.replay_import_failed', { defaultValue: 'Replay JSON import failed.' }));
+    let diagnostic: string | undefined;
+    if (!activeGame.loadReplay(recording, message => { diagnostic = message; })) {
+      replayMessage(diagnostic ?? i18next.t('menu.log.replay_import_failed', { defaultValue: 'Replay JSON import failed.' }));
       return;
     }
     clearCreationTransition(); runEpoch++;

@@ -1,5 +1,6 @@
 import type { ExtensionModule, ExtensionManifest, ExtensionRulesIdentity } from './types';
 import { validId, canonical, isJson } from './json';
+import { ExtensionCompatibilityError } from './compatibility';
 
 export class ExtensionRegistry {
     private readonly factories = new Map<string, { version: string; create: () => ExtensionModule; rules?: ExtensionRulesIdentity }>();
@@ -26,6 +27,25 @@ export class ExtensionRegistry {
             || header.modules.some(entry => !entry || !validId(entry.id) || typeof entry.version !== 'string'
                 || Object.keys(entry).some(key => key !== 'id' && key !== 'version' && key !== 'rules'))
             || Object.keys(header).some(key => key !== 'schema' && key !== 'modules' && key !== 'foundation')) throw new Error('Invalid extension manifest');
+        // Keep malformed headers on the existing generic path. For otherwise
+        // valid identities, report the first mismatch in stable module-ID order.
+        if (header.foundation === 1 && new Set(header.modules.map(entry => entry.id)).size === header.modules.length
+            && header.modules.every(entry => /^\d+\.\d+\.\d+$/.test(entry.version)
+                && (entry.rules === undefined || (entry.rules && Number.isSafeInteger(entry.rules.schema)
+                    && entry.rules.schema >= 1 && /^\d+\.\d+\.\d+$/.test(entry.rules.version)
+                    && /^sha256:[a-f0-9]{64}$/.test(entry.rules.fingerprint)
+                    && Object.keys(entry.rules).sort().join(',') === 'fingerprint,schema,version')))) {
+            for (const entry of [...header.modules].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) {
+                const installed = this.factories.get(entry.id);
+                if (!installed) throw new ExtensionCompatibilityError('missing', entry.id,
+                    `Unavailable extension: ${entry.id}`, entry.version, null);
+                if (entry.version !== installed.version) throw new ExtensionCompatibilityError('version', entry.id,
+                    `Extension set/version mismatch: ${entry.id}`, entry.version, installed.version);
+                if (canonical(entry.rules) !== canonical(installed.rules)) throw new ExtensionCompatibilityError('version', entry.id,
+                    `Extension set/version mismatch: ${entry.id}`, entry.version, installed.version,
+                    { expected: entry.rules, actual: installed.rules });
+            }
+        }
         const expected = this.manifest(header.modules.map(entry => entry.id));
         if (canonical(header) !== canonical(expected)) throw new Error('Extension set/version mismatch');
     }

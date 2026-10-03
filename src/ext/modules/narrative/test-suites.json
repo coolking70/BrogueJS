@@ -1,0 +1,9 @@
+{
+  "test": [
+    "tests/narrative_schema.test.ts",
+    "tests/narrative_kernel.test.ts",
+    "tests/narrative_runtime.test.ts"
+  ],
+  "gen": [],
+  "drift": []
+}

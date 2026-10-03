@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "displayVersion": "1.0.0",
+  "portraits": [
+    {
+      "id": "archive.keeper.neutral",
+      "asset": null,
+      "width": 240,
+      "height": 320,
+      "fit": "contain",
+      "anchor": "bottom-center",
+      "altKey": "ext.narrative.portrait.keeper",
+      "fallbackGlyph": "人"
+    }
+  ]
+}

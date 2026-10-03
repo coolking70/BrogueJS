@@ -218,6 +218,7 @@ export { WHOLE_RUN_SCHEMA } from './WholeRunSnapshot';
 export type { LevelSnapshot, GameSnapshot } from './WholeRunSnapshot';
 export type GenerationPorts = ReturnType<Game["makeGenerationPorts"]>;
 import { ExtensionRuntime } from '../../ext/runtime';
+import { formatExtensionCompatibilityError } from '../../ext/compatibility';
 import { createExtensionRegistry, DEFAULT_EXTENSIONS } from '../../ext/catalog';
 import { canonical } from '../../ext/json';
 import { creatureView, itemView, type ExtensionManifest, type ExtensionSnapshot, type RuleSet, type ControlledActionRequest, type ControlledActionOutcome } from '../../ext/types';
@@ -3117,7 +3118,7 @@ export class Game {
         return { x: data.x, y: data.y };
     }
 
-    private isValidRecording(recording: unknown): recording is GameRecording {
+    private isValidRecording(recording: unknown, onExtensionError?: (error: unknown) => void): recording is GameRecording {
         if (!recording || typeof recording !== 'object') return false;
         const r = recording as Partial<GameRecording>;
         if (!Array.isArray(r.events)) return false;
@@ -3126,7 +3127,7 @@ export class Game {
                 const runtime = this.createExtensionRuntime(r.extensions);
                 for (const event of r.events ?? []) runtime.validateSnapshot(event.extensions!);
                 if (!runtime.validateRecording(r.events ?? [])) return false;
-            } catch { return false; }
+            } catch (error) { onExtensionError?.(error); return false; }
         } else if (r.events?.some(event => event?.extensions !== undefined || event?.action === 'ext:command')) return false;
         const validSeed = isSeed(r.seed) || (typeof r.seed === 'number' && Number.isSafeInteger(r.seed) && r.seed >= 0);
         return r.version === 2
@@ -3152,12 +3153,14 @@ export class Game {
                     && Number.isSafeInteger(event.end.score))));
     }
 
-    public loadReplay(recording: unknown): boolean {
-        if (!this.isValidRecording(recording)) {
+    public loadReplay(recording: unknown, onExtensionError?: (message: string) => void): boolean {
+        let extensionError: unknown;
+        if (!this.isValidRecording(recording, error => { extensionError = error; })) {
             if (recording && typeof recording === 'object' && ('extensions' in recording
                 || (Array.isArray((recording as GameRecording).events)
                     && (recording as GameRecording).events.some(event => event?.extensions !== undefined || event?.action === 'ext:command')))) {
-                logger.log(i18next.t('ext.error.incompatible', { defaultValue: 'Extension set, version or state is incompatible.' }), '#ff6666');
+                const message = formatExtensionCompatibilityError(extensionError);
+                logger.log(message, '#ff6666'); onExtensionError?.(message);
             }
             return false;
         }
@@ -9657,7 +9660,7 @@ export class Game {
         return isWholeRunSnapshot(value);
     }
 
-    public loadSnapshot(snapshot: GameSnapshot): boolean {
+    public loadSnapshot(snapshot: GameSnapshot, onExtensionError?: (message: string) => void): boolean {
         if (!Game.isSnapshot(snapshot)) return false;
         // Check history before extension/provenance inspection or retiring the live run.
         if (!Array.isArray(snapshot.run.recordedInputEvents)
@@ -9667,8 +9670,9 @@ export class Game {
         let extensions: ExtensionRuntime | null = null;
         if (snapshot.extensions !== undefined) {
             try { extensions = this.createExtensionRuntime(snapshot.extensions.manifest, snapshot.extensions); }
-            catch {
-                logger.log(i18next.t('ext.error.incompatible', { defaultValue: 'Extension set, version or state is incompatible.' }), '#ff6666');
+            catch (error) {
+                const message = formatExtensionCompatibilityError(error);
+                logger.log(message, '#ff6666'); onExtensionError?.(message);
                 return false;
             }
         }

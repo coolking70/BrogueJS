@@ -16,6 +16,8 @@
  */
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { join, dirname } from 'node:path';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import i18next, { type TOptions } from 'i18next';
 
@@ -47,6 +49,111 @@ if (!i18next.isInitialized) {
         initImmediate: false, // 同步初始化
     });
 }
+
+describe('P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间', () => {
+    const dataFields = ['nameKey', 'descriptionKey', 'textKey', 'titleKey', 'unavailableKey', 'altKey', 'reasonKey', 'labelKey'];
+    const usedKeys = [...dataFields.map(field => `ext.fixture.data.${field}`),
+        'ext.fixture.error.A', 'ext.fixture.error.B', 'ext.fixture.static'];
+    const resource = Object.fromEntries([...usedKeys, 'ext.fixture.error.UNUSED'].map(key => [key, '测试文本']));
+    const withPack = (check: (root: string, moduleDir: string) => void): void => {
+        const root = mkdtempSync(join(tmpdir(), 'p1-30-pack-i18n-'));
+        const moduleDir = join(root, 'ext', 'modules', 'fixture');
+        const write = (path: string, code: string) => {
+            const file = join(moduleDir, path);
+            mkdirSync(dirname(file), { recursive: true });
+            writeFileSync(file, code);
+        };
+        try {
+            write('descriptor.ts', 'export {};');
+            write('data/nested/definitions.json', JSON.stringify({ entries: dataFields.map(field => ({
+                [field]: `ext.fixture.data.${field}`, note: 'ext.fixture.error.UNUSED',
+            })), optional: { textKey: null } }));
+            write('locales/zh_CN.json', JSON.stringify({ textKey: 'ext.fixture.error.UNUSED' }));
+            write('tests/helper.ts', 'const ignored = { textKey: "ext.fixture.error.UNUSED" };');
+            write('ignored.test.ts', 'const ignored = { textKey: "ext.fixture.error.UNUSED" };');
+            write('codes.ts', 'export const CODES = ["A", "B"] as const; export type Code = typeof CODES[number];');
+            write('errors.ts', [
+                'import type { Code } from "./codes";',
+                'export class Diagnostic {',
+                '  readonly textKey: string;',
+                '  constructor(code: Code) { this.textKey = `ext.fixture.error.${code}`; }',
+                '}',
+                'export const message = { textKey: "ext.fixture.static" };',
+            ].join('\n'));
+            check(root, moduleDir);
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    };
+
+    it('引用实际嵌套数据与跨文件 readonly 枚举派生模板，未使用错误码仍为死键', () => {
+        withPack(root => {
+            const result = scanI18nUsage(root, resource);
+            expect([...result.literals.keys()].sort()).toEqual([...usedKeys].sort());
+            expect(result.unreferenced).toEqual(['ext.fixture.error.UNUSED']);
+            expect(result.prefixes.size).toBe(0);
+            expect(result.missing).toEqual([]);
+            expect(result.unresolved).toEqual([]);
+            expect(result.filesScanned).toContain('ext/modules/fixture/data/nested/definitions.json');
+            expect(result.literals.get('ext.fixture.error.A')?.[0]).toMatchObject({
+                file: 'ext/modules/fixture/errors.ts', line: 4,
+            });
+        });
+    });
+
+    it('数据引用及有限模板缺失资源均亮红，不能由同前缀其它翻译掩盖', () => {
+        withPack(root => {
+            const missing = ['ext.fixture.data.altKey', 'ext.fixture.error.B'];
+            const incomplete = Object.fromEntries(Object.entries(resource).filter(([key]) => !missing.includes(key)));
+            expect(scanI18nUsage(root, incomplete).missing.map(entry => entry.key).sort()).toEqual(missing);
+        });
+    });
+
+    it('开放 string 模板不可扩大成前缀豁免，超过有限候选预算也拒绝', () => {
+        withPack((root, moduleDir) => {
+            writeFileSync(join(moduleDir, 'errors.ts'), [
+                'export function diagnostic(code: string) { return { textKey: `ext.fixture.error.${code}` }; }',
+                'export function nullable(code: "A" | null) { return { textKey: `ext.fixture.error.${code}` }; }',
+                `type Huge = ${Array.from({ length: 257 }, (_, i) => JSON.stringify(String(i))).join(' | ')};`,
+                'export function excessive(code: Huge) { return { textKey: `ext.fixture.error.${code}` }; }',
+            ].join('\n'));
+            const result = scanI18nUsage(root, resource);
+            expect(result.unresolved).toHaveLength(3);
+            expect(result.prefixes.size).toBe(0);
+            expect(result.unreferenced).toEqual([
+                'ext.fixture.error.A', 'ext.fixture.error.B', 'ext.fixture.error.UNUSED', 'ext.fixture.static',
+            ]);
+        });
+    });
+
+    it('多插值保留所有静态后缀，只产生精确有限键', () => {
+        withPack((root, moduleDir) => {
+            writeFileSync(join(moduleDir, 'errors.ts'), [
+                'export function diagnostic(code: "A" | "B", state: "open" | "closed") {',
+                '  return { textKey: `ext.fixture.${code}.state.${state}.text` };',
+                '}',
+            ].join('\n'));
+            const keys = ['A', 'B'].flatMap(code => ['open', 'closed'].map(state => `ext.fixture.${code}.state.${state}.text`));
+            const result = scanI18nUsage(root, { ...resource, ...Object.fromEntries(keys.map(key => [key, '文本'])) });
+            expect(keys.every(key => result.literals.has(key))).toBe(true);
+            expect(result.prefixes.size).toBe(0);
+            expect(result.missing).toEqual([]);
+            expect(result.unresolved).toEqual([]);
+        });
+    });
+
+    it('删除模块后数据及错误词汇均自然移除，不留硬导入或测试引用', () => {
+        withPack((root, moduleDir) => {
+            rmSync(moduleDir, { recursive: true });
+            const result = scanI18nUsage(root, {});
+            expect(result.filesScanned).toEqual([]);
+            expect(result.literals.size).toBe(0);
+            expect(result.missing).toEqual([]);
+            expect(result.unresolved).toEqual([]);
+            expect(scanI18nUsage(root, resource).unreferenced).toEqual(Object.keys(resource).sort());
+        });
+    });
+});
 
 describe('P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json', () => {
     const result = scanI18nUsage(REPO_SRC, RESOURCE, [

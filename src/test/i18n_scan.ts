@@ -3,7 +3,8 @@
  *
  * P1-30 引入，见 docs/archive/dev-history/p1_30_i18n_gate_report.md。职责：
  *  1. 找出 src/ 下 i18next.t(...) / $t(...) 及 useTranslation() 的 t(...) 调用点，解析第一个实参；
- *  2. 与 zh_CN.json 比对，产出「缺失键」（红灯依据）与「从未被引用的键」（归档依据）。
+ *  2. 扫描已安装模块 data JSON 的明确文本字段，以及源码 textKey 的有限字面量模板；
+ *  3. 与 zh_CN.json 比对，产出「缺失键」（红灯依据）与「从未被引用的键」（归档依据）。
  *
  * 动态键的处理（防漏报与误报的核心设计）：
  *  - 静态字面量：t('combat.hit', …) → 精确键，必须存在于资源文件；
@@ -17,8 +18,9 @@
  *    空前缀等于"全部键都被引用"，会让归档与缺失检查双双失明，绝不接受。
  */
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
+import ts from 'typescript';
 
 export interface KeyLocation {
     file: string;
@@ -45,7 +47,7 @@ export interface ScanResult {
     literals: Map<string, KeyLocation[]>;
     /** 动态键的静态前缀 → 出现位置 */
     prefixes: Map<string, KeyLocation[]>;
-    /** 无法解析首参的调用点（测试视为红灯） */
+    /** 无法解析首参或有限 textKey 模板的位置（测试视为红灯） */
     unresolved: (KeyLocation & { reason: string })[];
     /** 被代码引用但资源文件里不存在的键 */
     missing: { key: string; locs: KeyLocation[] }[];
@@ -58,6 +60,117 @@ export interface ScanResult {
 const SCAN_EXTENSIONS = new Set(['.ts', '.tsx', '.vue']);
 /** 测试文件自身不参与扫描（测试里会出现故意的坏键）；界面 .vue 文件必须扫。 */
 const TEST_FILE_PATTERN = /\.(test|spec)\.[cm]?[jt]sx?$/;
+
+/** Module packs can own localized data before a UI consumes it. Only these
+ * semantic fields in installed modules' data JSON are references, never locale
+ * contents, arbitrary strings, or an entire module namespace. */
+const DATA_TEXT_FIELDS = new Set([
+    'nameKey', 'descriptionKey', 'textKey', 'titleKey', 'unavailableKey',
+    'altKey', 'reasonKey', 'labelKey',
+]);
+const MAX_FINITE_TEXT_KEYS = 256;
+
+function scanModuleTextReferences(srcDir: string, files: readonly string[],
+    literals: Map<string, KeyLocation[]>, unresolved: ScanResult['unresolved'],
+): string[] {
+    const moduleRoot = join(srcDir, 'ext', 'modules');
+    if (!existsSync(moduleRoot)) return [];
+    const moduleDirs = readdirSync(moduleRoot).map(name => join(moduleRoot, name))
+        .filter(dir => statSync(dir).isDirectory() && existsSync(join(dir, 'descriptor.ts')));
+    const extraFiles: string[] = [];
+    const location = (source: ts.SourceFile, node: ts.Node): KeyLocation => ({
+        file: relative(srcDir, source.fileName).split(sep).join('/'),
+        line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1,
+        snippet: node.getText(source).replace(/\s+/g, ' ').slice(0, 140),
+    });
+    const add = (key: string, loc: KeyLocation) => {
+        const locs = literals.get(key) ?? [];
+        locs.push(loc);
+        literals.set(key, locs);
+    };
+    const fieldName = (node: ts.PropertyName): string | undefined =>
+        ts.isIdentifier(node) || ts.isStringLiteral(node) ? node.text : undefined;
+    const scanData = (dir: string): void => {
+        if (!existsSync(dir)) return;
+        for (const entry of readdirSync(dir)) {
+            const file = join(dir, entry);
+            if (statSync(file).isDirectory()) {
+                if (entry !== 'test' && entry !== 'tests') scanData(file);
+            } else if (entry.endsWith('.json')) {
+                const code = readFileSync(file, 'utf-8');
+                JSON.parse(code); // Fail closed on malformed pack data.
+                const source = ts.createSourceFile(file, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSON);
+                extraFiles.push(file);
+                const visit = (node: ts.Node): void => {
+                    if (ts.isPropertyAssignment(node) && DATA_TEXT_FIELDS.has(fieldName(node.name) ?? '')
+                        && ts.isStringLiteral(node.initializer)) {
+                        add(node.initializer.text, location(source, node));
+                    }
+                    ts.forEachChild(node, visit);
+                };
+                visit(source);
+            }
+        }
+    };
+    for (const dir of moduleDirs) scanData(join(dir, 'data'));
+
+    // Diagnostics may expose a finite localized textKey without calling t().
+    // Resolve only actual string/template assignments to that field. Re-exported
+    // types and readonly enum arrays are handled by the checker, not regexes or
+    // evaluation of module code. Ordinary forwarded fields remain data-owned.
+    const textValues = (source: ts.SourceFile): ts.Expression[] => {
+        const values: ts.Expression[] = [];
+        const visit = (node: ts.Node): void => {
+            let value: ts.Expression | undefined;
+            if ((ts.isPropertyAssignment(node) || ts.isPropertyDeclaration(node))
+                && fieldName(node.name) === 'textKey') value = node.initializer;
+            if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+                const left = node.left;
+                if ((ts.isPropertyAccessExpression(left) && left.name.text === 'textKey')
+                    || (ts.isElementAccessExpression(left) && ts.isStringLiteral(left.argumentExpression)
+                        && left.argumentExpression.text === 'textKey')) value = node.right;
+            }
+            if (value && (ts.isStringLiteralLike(value) || ts.isTemplateExpression(value))) values.push(value);
+            ts.forEachChild(node, visit);
+        };
+        visit(source);
+        return values;
+    };
+    const roots = files.filter(file => file.endsWith('.ts') || file.endsWith('.tsx'))
+        .filter(file => moduleDirs.some(dir => file.startsWith(dir + sep)))
+        .filter(file => !/(?:^|\/)(?:test|tests)\//.test(relative(srcDir, file).split(sep).join('/')))
+        .filter(file => textValues(ts.createSourceFile(file, readFileSync(file, 'utf-8'), ts.ScriptTarget.Latest, true)).length > 0);
+    if (roots.length === 0) return extraFiles;
+    const program = ts.createProgram(roots, {
+        lib: ['lib.es5.d.ts'], types: [], strict: true, target: ts.ScriptTarget.ESNext,
+        module: ts.ModuleKind.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler,
+    });
+    const checker = program.getTypeChecker();
+    for (const file of roots) {
+        const source = program.getSourceFile(file)!;
+        for (const value of textValues(source)) {
+            const loc = location(source, value);
+            if (ts.isStringLiteralLike(value)) { add(value.text, loc); continue; }
+            if (!ts.isTemplateExpression(value)) continue;
+            let keys = [value.head.text];
+            for (const span of value.templateSpans) {
+                const type = checker.getTypeAtLocation(span.expression);
+                const variants = type.isUnion() ? type.types : [type];
+                if (!variants.every(part => part.isStringLiteral())
+                    || keys.length * variants.length > MAX_FINITE_TEXT_KEYS) {
+                    keys = [];
+                    break;
+                }
+                keys = keys.flatMap(key => variants.map(part => key + (part as ts.StringLiteralType).value + span.literal.text));
+            }
+            if (keys.length === 0) unresolved.push({ ...loc,
+                reason: `textKey template must have a finite string-literal vocabulary (at most ${MAX_FINITE_TEXT_KEYS} keys)`,
+            });
+            else for (const key of new Set(keys)) add(key, loc);
+        }
+    }
+    return extraFiles;
+}
 
 // ---------------------------------------------------------------------------
 // 词法层：一个迷你状态机，跳过注释/字符串/正则字面量，只认「代码位」上的调用。
@@ -634,6 +747,8 @@ export function scanI18nUsage(srcDir: string, resource: Record<string, string>, 
         }
     }
 
+    files.push(...scanModuleTextReferences(srcDir, files, literals, unresolved));
+    files.sort();
     const resourceKeys = Object.keys(resource);
     const isReferenced = (k: string) =>
         literals.has(k) || [...prefixes.keys()].some(p => k.startsWith(p));

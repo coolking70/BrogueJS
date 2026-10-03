@@ -1,0 +1,148 @@
+{
+  "schema": 1,
+  "moduleId": "narrative",
+  "moduleVersion": "1.0.0",
+  "rulesVersion": "1.0.0",
+  "stateVersion": 1,
+  "inputVersion": 1,
+  "config": {
+    "timePolicy": "free-frozen",
+    "closePolicy": "close-session",
+    "limits": {
+      "conditionDepth": 8,
+      "conditionOpsPerCommand": 256,
+      "effectsPerCommand": 64,
+      "eventsPerCommand": 32,
+      "transitionsPerSession": 128,
+      "maxActiveNpcs": 32,
+      "maxJournalEntries": 256,
+      "maxReceipts": 4096
+    }
+  },
+  "flags": [
+    {
+      "id": "archive.read",
+      "type": "boolean",
+      "initial": false,
+      "min": null,
+      "max": null,
+      "values": null
+    }
+  ],
+  "counters": [],
+  "npcs": [
+    {
+      "id": "archive.keeper",
+      "nameKey": "ext.narrative.npc.keeper.name",
+      "descriptionKey": "ext.narrative.npc.keeper.description",
+      "glyph": "人",
+      "color": "#c3ad80",
+      "portraitId": "archive.keeper.neutral",
+      "dialogueId": "archive.greeting",
+      "presence": "stationary-interactable",
+      "interactionDistance": 1,
+      "placements": [
+        {
+          "id": "archive.first",
+          "minDepth": 1,
+          "maxDepth": 1,
+          "maxPerRun": 1,
+          "maxPerDepth": 1,
+          "minStairDistance": 1,
+          "maxEntranceDistance": 8,
+          "onNoSpace": "skip"
+        }
+      ]
+    }
+  ],
+  "dialogues": [
+    {
+      "id": "archive.greeting",
+      "entry": "hello",
+      "nodes": [
+        {
+          "id": "hello",
+          "textKey": "ext.narrative.dialogue.keeper.hello",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "read-note",
+              "textKey": "ext.narrative.choice.read",
+              "condition": {
+                "op": "flag",
+                "id": "archive.read",
+                "equals": false
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.choice.already_read",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "archive.read",
+                  "value": true
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "archive.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "archive.read-done"
+                }
+              ],
+              "next": null
+            },
+            {
+              "id": "leave",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "journal": [
+    {
+      "id": "archive.note",
+      "titleKey": "ext.narrative.journal.note.title",
+      "textKey": "ext.narrative.journal.note.body"
+    }
+  ],
+  "storyEvents": [
+    {
+      "id": "archive.read-done"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "archive.reward",
+      "on": {
+        "kind": "story",
+        "eventId": "archive.read-done"
+      },
+      "priority": 0,
+      "condition": {
+        "op": "true"
+      },
+      "repeat": {
+        "kind": "once-per-run"
+      },
+      "effects": [
+        {
+          "kind": "optional-reward",
+          "capability": "growth.story-reward.v1",
+          "rewardId": "archive.read",
+          "receiptId": "archive.reward",
+          "onUnavailable": "skip"
+        }
+      ]
+    }
+  ]
+}

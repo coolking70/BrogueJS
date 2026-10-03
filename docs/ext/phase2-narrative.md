@@ -1,10 +1,10 @@
 # 阶段 2 独立叙事模块设计
 
-> 状态：维护者已确认 P2-D01/02/03/04 全 A，并只批准实施、独立验收 2a0。2a1–2e 尚未授权自动开工。设计原始事实基线为阶段 1 验收提交 `0f0dfc1`；2a0 实施基线为 `2c27ab1`，完成证据见 [2a0 报告](phase2a0.report.md)。下文“拟新增”中超出 2a0 的能力仍为后续设计，不代表已实现。总原则以 [路线](README.md) 与 [底座架构](architecture.md) 的新产品合同为准。
+> 状态：维护者已确认 P2-D01/02/03/04 全 A；2a0 已验收，本轮仅批准实施、独立验收 2a1。2b–2e 尚未授权自动开工。设计原始事实基线为阶段 1 验收提交 `0f0dfc1`；2a0 实施基线为 `2c27ab1`，完成证据见 [2a0 报告](phase2a0.report.md)。2a1 的实际范围见 [本步报告](phase2a1.report.md)；下文完整阶段目标中超出纯包/执行计划的 NPC、世界输入 gate、全局事实与奖励 flush、UI 仍为后续设计，不代表已实现。总原则以 [路线](README.md) 与 [底座架构](architecture.md) 的新产品合同为准。
 
 ## 1 结论与范围
 
-先做可单独验收的 **2a0 模块组合与物理可移除底座**，再做 `narrative`。不能在现有“扩展模式等于 growth”菜单上继续叠叙事，再把能关闭开关称为独立模块。2a0 已获得独立实施授权；验收后仍须等待维护者批准，不能自动进入 2a1 或其它后续步骤。
+先做可单独验收的 **2a0 模块组合与物理可移除底座**，再做 `narrative`。不能在现有“扩展模式等于 growth”菜单上继续叠叙事，再把能关闭开关称为独立模块。2a0 已独立验收，2a1 已另获实施授权；本步交付后仍须等待维护者批准，不能自动进入 2b 或其它后续步骤。
 
 阶段 2 的最小完整交付为：可交互的中立 NPC、条件与效果驱动的对话图、立绘占位展示、可重复验证的剧情事件、自己的存档块和录像输入版本。只硬依赖底座；独立启用时不安装、不初始化、不调用 growth 也能开局、游玩、存读、录像、seek 与续录。
 
@@ -18,7 +18,7 @@
 - 单模块及所有已实现模块的任意子集均须开局、play/save/replay 成功。阶段 2 完成时实测 `{}`、`{growth}`、`{narrative}`、`{growth,narrative}`；阶段 1–5 全部存在时是 32 个子集，不以 pairwise 代替全集启动/存读/录像冒烟
 - 同一模块集合、规则包、种子、命令序列得到相同机械结果。不同集合允许玩法与实质 RNG 轨迹不同，不要求含叙事与无叙事同骰
 - 未启用 narrative 时无 NPC、触发器、对话状态、叙事命令/UI/资源加载或 RNG 消耗；未使用的软联动不改变其它模块状态/费用/消息。通用底座可以存在空能力入口，不继承旧“所有扩展零调用”测试义务
-- 删除 narrative 或任何其它阶段的目录及其数据后，余下产品可编译并通过余下模块自己的测试。此目标目前尚未达到，实际迁移与删除矩阵见第 3 节
+- 删除 narrative 或任何其它阶段的目录及其数据后，余下产品可编译并通过余下模块自己的测试。实际迁移与删除矩阵见第 3 节、2a0 与 2a1 报告，不将未执行的未来模块组合写成已通过
 
 ### 1.2 本阶段不默认加入
 
@@ -181,7 +181,7 @@ interface OptionalCapabilities {
 
 ### 4.4 顺序与确定性
 
-开局还有一个必须补齐的边界：当前首次enteredLevel可早于growth的create-character，不能直接在该钩子里发剧情XP。2a0拟提供统一的run-ready安全点：先创建原世界与录制起点，按既有顺序执行所有已选模块要求的初始化命令，最后由引擎执行且记录一次底座boot-complete提交，才排空初次入层剧情/放置事实并允许普通输入。无growth时初始化批次可为空，仍完成同一边界；不要求narrative造一个成长初始化命令。boot-complete是拟新增的受限引擎命令（具体名称实施时固定），只允许初始化阶段一次，不能被玩家任意重发；重放消费同一事件，load不重放。若采用等价自动边界，必须在录像起点/末初始化命令的checkpoint中明确归属并证明相同效果，不能留下未记录的开局尾变更。
+开局还有一个必须补齐的边界：当前首次enteredLevel可早于growth的create-character，不能直接在该钩子里发剧情XP。后续世界/事实接入拟提供统一的run-ready安全点（2a0/2a1尚未实现）：先创建原世界与录制起点，按既有顺序执行所有已选模块要求的初始化命令，最后由引擎执行且记录一次底座boot-complete提交，才排空初次入层剧情/放置事实并允许普通输入。无growth时初始化批次可为空，仍完成同一边界；不要求narrative造一个成长初始化命令。boot-complete是拟新增的受限引擎命令（具体名称实施时固定），只允许初始化阶段一次，不能被玩家任意重发；重放消费同一事件，load不重放。若采用等价自动边界，必须在录像起点/末初始化命令的checkpoint中明确归属并证明相同效果，不能留下未记录的开局尾变更。
 
 所有模块先按稳定 ID 构建；能力解析在初始化之前完成，不按 UI 勾选顺序或文件枚举顺序。每条命令的安全边界拟明确为：
 
@@ -193,13 +193,13 @@ interface OptionalCapabilities {
 
 通用事实序号由底座持久 `extensions.foundation.nextFactId`（拟升版包络字段）分配，load/seek/续录从同一保存值恢复，只在成功提交时前进；被拒绝的预检和显示不分配，回滚恢复计数。每个原生事实只包装一次，重复读取/保存/checkpoint不能再发事实；这是拟新增底座合同与版本变更。
 
-不以再次调用整个 `simulationSettled` 到“不变”为算法，否则可能重复 first-visit/奖励。2a0 须设计新的分阶段安全点或一次性队列 flush，并把现有 growth 的 pending 收口迁入；所有组合测试覆盖。descriptor发现、工厂、initialState、校验、显示查询、load/unload禁用 RNG；已授权的同步 onNewGame 等模拟钩子仍沿既有引擎RNG权限合同。narrative首版自身初始化与对话条件均不取 RNG。首版剧情效果和放置默认无随机项；以后若加随机分支，只能在已接受的命令/事实提交内调用 `context.randomInt`，持久保存选择结果，升规则版本并补抽取计数测试。
+不以再次调用整个 `simulationSettled` 到“不变”为算法，否则可能重复 first-visit/奖励。后续2c须设计新的分阶段安全点或一次性队列 flush，并把现有 growth 的 pending 收口迁入；所有组合测试覆盖。descriptor发现、工厂、initialState、校验、显示查询、load/unload禁用 RNG；已授权的同步 onNewGame 等模拟钩子仍沿既有引擎RNG权限合同。narrative首版自身初始化与对话条件均不取 RNG。首版剧情效果和放置默认无随机项；以后若加随机分支，只能在已接受的命令/事实提交内调用 `context.randomInt`，持久保存选择结果，升规则版本并补抽取计数测试。
 
 ## 5 中立 NPC 与世界边界
 
 ### 5.1 推荐的首版实体合同
 
-本节及以下示例以 P2-D03 选择 A 为前提，只是推荐方案，维护者尚未确认。推荐采用底座的 **单格固定驻点、可穿行、非战斗交互对象**。它是有稳定 entityId/ownerModuleId/位置/可见性规则的真实世界交互实体，由地图渲染与目标选择读取；不是 DOM 上贴一个永远可点的 NPC。它不进入 Monster 的 hostile/ally 二分，也不伪装 isCaged。
+本节及以下示例采用维护者已确认的 P2-D03 A；世界实体的实际实施仍属 2b。推荐采用底座的 **单格固定驻点、可穿行、非战斗交互对象**。它是有稳定 entityId/ownerModuleId/位置/可见性规则的真实世界交互实体，由地图渲染与目标选择读取；不是 DOM 上贴一个永远可点的 NPC。它不进入 Monster 的 hostile/ally 二分，也不伪装 isCaged。
 
 拟新增 `WorldInteractable` 保存于底座世界对象区，拥有 run-local entityId、owner module、archetypeId、depth、x/y、enabled。使用底座统一 ID 分配并保存计数，读档/缓存层/GC 均覆盖。NPC 的 narrative 绑定、对话入口和剧情状态仍放自己的模块区；底座只知道通用交互对象。初版不是 `Creature`，不自动获得 growth progression/attributes，也不需要怪物模板；以后若需要可战斗 NPC，再扩展通用 actor/relationship 能力，不把战斗模型塞入 narrative。
 
@@ -513,7 +513,7 @@ UI 专用焦点、滚动、绘图资源、opaque token、输入去重锁不入�
 
 沿刻符现有深色石面、细金线、正文高对比风格，不另开浏览器窗口。目标为游戏界面内单一 overlay host；与 main 未来统一界面内弹窗层对齐，但本次核对的基线仍 `window.confirm`，没有可直接复用的已验证服务。
 
-到 2d 实施前核对 main 的准确提交：如果 D1 DialogService/DialogHost 统一仲裁已完成，按需 merge/cherry-pick 复用其通用 host/input capture/focus 契约并扩展 dialogue；如果尚未完成，必须先询问维护者。禁止在本分支另造一套弹窗容器。本轮 2a0 不拉入 main 无关改动、不提前实施 2d，也不把整个原生确认/所有背包菜单的改造塞入叙事。不得直接把同步 `onConfirmRequest` 改成返回 Promise；native confirm 迁移需要自己的显式命令续体、同命令决策与取消录像测试。
+到 2d 实施前核对 main 的准确提交：如果 D1 DialogService/DialogHost 统一仲裁已完成，按需 merge/cherry-pick 复用其通用 host/input capture/focus 契约并扩展 dialogue；如果尚未完成，必须先询问维护者。禁止在本分支另造一套弹窗容器。本轮 2a1 不拉入 main 无关改动、不提前实施 2d，也不把整个原生确认/所有背包菜单的改造塞入叙事。不得直接把同步 `onConfirmRequest` 改成返回 Promise；native confirm 迁移需要自己的显式命令续体、同命令决策与取消录像测试。
 
 已只读核对 main 固定提交 `1c9c337f3e430774b3f9555c6a238efd5fe19e25` 的[界面内弹窗层设计](https://github.com/coolking70/BrogueJS/blob/1c9c337f3e430774b3f9555c6a238efd5fe19e25/docs/design/in-app-dialogs.md)：维护者确认采用显式命令续体、presentation timeline及死亡时“查看结算”，但各步仍待实施，dialogue也仅为预留类型。该文头部已排除D5/D6扩展适配与合并；后文§7.3残留的合并、classic parity及CE门禁不成为本原型义务。按本分支需要选择性参考，不合并main或扩大本次实现范围。
 
@@ -626,6 +626,8 @@ interface PortraitManifest {
 即使选择 B/C 重联动，也仍只通过底座/可选能力执行，不能硬依赖其它阶段存在。阶段 3–5 的联动由届时模块设计逐项加入；没有决定的能力不默默加入 schema。最终默认模块组合由维护者将来决定，本表不抢定。
 
 ## 11 分步实施方案 每步验收后停止
+
+2a1 范围澄清：本步提供可安装包、纯条件/效果/触发计划与 state/input 校验。第 8 节的完整 state 是阶段 2 目标；2a1 仅有 schema/revision/lastFactId/flags/counters/triggerReceipts/rewardReceipts/journal，没有 NPC 绑定、活动会话或放置字段。第 7 节 open/choose/close 只定义并校验 v1 语法，不作为可执行的 Game 命令；2b 接入世界后再按实际字段与语义升级版本。第 4.4 节全局事实/boot-ready/意图 flush 不因纯 trigger planner 已存在就视为已实现，仍属后续授权。
 
 | 步骤 | 实现边界 | 必须交付的验收结果 |
 |---|---|---|
