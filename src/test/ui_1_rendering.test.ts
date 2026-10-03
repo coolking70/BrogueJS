@@ -25,7 +25,7 @@
  *    LIGHT_SMOOTHING_THRESHOLD=150）。
  */
 
-import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { TerrainType, Cell } from '../engine/Map/Grid';
 import { GasType, type GasCell } from '../engine/Environment/Gas';
@@ -55,18 +55,7 @@ import { isSidebarVisibleStatus, CE_EMPTY_NAME_STATUSES } from '../engine/Status
 import { Item, ItemCategory } from '../engine/Items/Item';
 import { MonsterState, type Monster } from '../entities/Monster';
 import { commandConfirmationFixture } from './support/commandConfirmation';
-import type { Game } from '../engine/Core/Game';
 import ceTerrainGoldens from './fixtures/u21c-ce-terrain.json';
-
-// App.vue 的模块依赖链（GameCanvas → Input 单例）在模块加载期访问 window——
-// headless 下先 stub 再动态导入（p2_0 同款做法）。wireConfirmRequest 是纯逻辑，
-// 不依赖 window 存在；各用例按需重 stub 带 confirm 的 window。
-let wireConfirmRequest: (game: Game) => void;
-beforeAll(async () => {
-    vi.stubGlobal('window', { addEventListener: () => {}, removeEventListener: () => {} });
-    const mod = await import('../App.vue');
-    wireConfirmRequest = mod.wireConfirmRequest;
-});
 
 // ════════════════════════ 工具 ════════════════════════
 
@@ -397,14 +386,6 @@ describe('UI-1 第 6 条：Game.onConfirmRequest 生产侧接线', () => {
         vi.restoreAllMocks();
     });
 
-    function stubGame(overrides: Partial<Pick<Game, 'replayStatus'>> & { autoTraveling?: boolean } = {}): Game {
-        return {
-            onConfirmRequest: null,
-            replayStatus: overrides.replayStatus ?? 'idle',
-            isAutoTraveling: () => overrides.autoTraveling ?? false,
-        } as unknown as Game;
-    }
-
     it('常规对局：问题原样转给 Host，受控答案映射到引擎（CE Enter=Yes/Esc=No）', () => {
         const confirm = commandConfirmationFixture();
         confirm.publish('潜入深渊？');
@@ -434,19 +415,25 @@ describe('UI-1 第 6 条：Game.onConfirmRequest 生产侧接线', () => {
         confirm.dispose();
     });
 
-    // D4's explicitly deferred blink resolver still needs its native wiring.
-    it('D4 闪现钩子保留原生确认和 playing 旁路', () => {
-        const native = vi.fn(() => false); vi.stubGlobal('window', { confirm: native });
-        const game = stubGame(); wireConfirmRequest(game);
-        expect(game.onConfirmRequest!('blink?')).toBe(false);
-        expect(native).toHaveBeenCalledWith('blink?');
-        const replay = stubGame({ replayStatus: 'playing' }); wireConfirmRequest(replay);
-        expect(replay.onConfirmRequest!('blink?')).toBe(true); expect(native).toHaveBeenCalledTimes(1);
+    // D4 replaces the explicitly deferred native resolver with the same Host
+    // capability. Keep the original question/both answers/replay-no-UI contract.
+    it('D4 闪现风险使用界面内确认、两分支与回放免询问', () => {
+        const confirm = commandConfirmationFixture();
+        confirm.publish('blink?'); expect(confirm.service.current?.text).toBe('blink?');
+        expect(confirm.answer(false)).toBe(true);
+        expect(confirm.resolved).toHaveBeenCalledWith('blink?', false);
+        confirm.publish('blink?'); expect(confirm.answer(true)).toBe(true);
+        expect(confirm.resolved).toHaveBeenLastCalledWith('blink?', true);
+        confirm.dispose();
+        const replay = commandConfirmationFixture(true); replay.publish('blink?');
+        expect(replay.service.current).toBeUndefined(); expect(replay.resolved).not.toHaveBeenCalled(); replay.dispose();
     });
 
-    it('结构守卫：App.vue 挂载时真的接线（谁把 wireConfirmRequest(activeGame) 删了谁红）', () => {
+    it('结构守卫：App.vue 常驻 Host，Host 真的绑定引擎命令确认', () => {
         const src = readFileSync(new URL('../App.vue', import.meta.url), 'utf8');
-        expect(src).toMatch(/wireConfirmRequest\(activeGame\)/);
+        const host = readFileSync(new URL('../components/DialogHost.vue', import.meta.url), 'utf8');
+        expect(src).toMatch(/<DialogHost\s/);
+        expect(host).toMatch(/bindDialogCommands\(service, activeGame\)/);
     });
 });
 

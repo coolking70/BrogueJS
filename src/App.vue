@@ -1,24 +1,6 @@
-<script lang="ts">
-// D4 only: the historical blink hook still has a synchronous native resolver.
-// Q1–Q10 are wired by DialogHost through onCommandConfirmRequest; replay answers
-// are consumed by the engine and never reach that adapter.
-import type { Game } from './engine/Core/Game';
-import { cancelHeldInputs } from './ui/heldInput';
-import { dialogInput } from './ui/dialogInput';
-
-export function wireConfirmRequest(game: Game): void {
-    game.onConfirmRequest = (message: string): boolean => {
-        cancelHeldInputs();
-        // CE IO.c:2944：autoPlayingLevel 是自动演示，不是旅行/探索。
-        // 引擎在提问前停止自动行进；回放决策由 requestConfirm 消费。
-        if (game.replayStatus === 'playing') return true;
-        return dialogInput.native(() => window.confirm(message));
-    };
-}
-</script>
-
 <script setup lang="ts">
 import { computed, ref, watch, provide, onMounted, onUnmounted } from 'vue';
+import { cancelHeldInputs } from './ui/heldInput';
 import { displaySettings } from './engine/Settings';
 import { inputManager } from './engine/Input';
 import { saveSnapshot, readSnapshot, readSaveSummary, deleteSnapshot, type SaveSummary } from './engine/Core/SaveStorage';
@@ -94,9 +76,6 @@ onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTime
 const showTouch = computed(() => (shouldShowTouchControls(viewport.coarsePointer, viewport.mode)
   || (displaySettings.immersiveMode && compact.value)) && !replayActive.value);
 const showCommands = computed(() => (compact.value || showTouch.value) && !replayActive.value);
-
-// D4 闪现暂留原同步接线；经典确认由常驻 DialogHost 适配。
-wireConfirmRequest(activeGame);
 
 const gameStarted = ref(false);
 const menuOpen = ref(true);

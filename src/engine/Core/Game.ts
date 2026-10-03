@@ -129,7 +129,7 @@ import {
 import { FloatingText } from '../Visuals/FloatingText';
 import { STATUS_CONFIG } from '../Status/statusConfig';
 import { exposeBoltPathToElectricity, getBoltForItem, boltPath, createBoltResult, BoltEffect, BOLT_EFFECT_CE_EFFECT, MONSTER_BOLT_TABLE, type BoltConfig, type BoltFrame, type BoltResult, type BoltReflection, type MonsterBoltMeta } from '../Combat/Bolt';
-import { traceBolt, type BoltWorld } from '../Combat/BoltTrajectory';
+import { boltLine, traceBolt, type BoltWorld } from '../Combat/BoltTrajectory';
 import { CE_BOLT_CATALOG, CEBoltEffect, CEBoltType, resolveCEBoltMagnitude } from '../Combat/BoltCatalog';
 import { rollStaffDamage } from '../Combat/StaffDamage';
 import { canPlaceCreature, teleportCandidates, captiveItemDropCandidates, qualifyingPathCandidates, allySwapCandidates } from '../Movement/CreaturePlacement';
@@ -2899,16 +2899,26 @@ export class Game {
             const target = data as Pos;
             if (grid.isValidPos(target.x, target.y)) positions.push(...boltPath(player.loc, target));
         }
+        const arcana = this.pendingArcana;
+        // Unknown blink range examines the whole ray, including beyond the aim.
+        // Guard the same knowledge/selection facts across the UI wait.
+        if (arcana) positions.push(...boltLine(grid, player.loc, arcana.cursor,
+            getBoltForItem((arcana.item as Item & { identityId?: string }).identityId ?? ''), this.boltWorld(player)));
         const facts = () => JSON.stringify({
             loc: player.loc, hp: player.hp, nutrition: player.nutrition, statuses: player.statusDurations,
             tick: timeSystem.currentTick, turn: this.absoluteTurnNumber, ticks: player.ticksUntilTurn,
             movementSpeed: player.movementSpeed, attackSpeed: player.attackSpeed,
             seized: player.seized, strength: player.strength, gameOver: this.isGameOver,
+            arcana: this.pendingArcana ? { cursor: this.pendingArcana.cursor,
+                item: this.pendingArcana.item.id,
+                kindKnown: ItemLoader.identifiedItems.has((this.pendingArcana.item as Item & { identityId?: string }).identityId ?? '') } : null,
             items: [...new Set([...items, ...equipment].filter((item): item is Item => !!item))].map(item => ({
                 id: item.id, letter: item.inventoryLetter, quantity: item.quantity, category: item.category,
                 enchantment: item.enchantment, timesEnchanted: item.timesEnchanted, charges: item.charges,
                 cursed: item.isCursed, protected: item.isProtected, identified: item.isIdentified,
                 runic: item.runicType, known: item.runicKnown, vorpal: item.vorpalEnemy, flags: item.flags,
+                identity: (item as Item & { identityId?: string }).identityId,
+                maxChargesKnown: item.maxChargesKnown,
                 keyLoc: item.keyLoc, originDepth: item.originDepth,
             })),
             monsters: monsters.map(monster => ({ id: monster.id, loc: monster.loc, hp: monster.hp,
@@ -2923,6 +2933,7 @@ export class Game {
         });
         const before = facts();
         return () => this.player === player && this.grid === grid && this.depth === depth
+            && this.pendingArcana === arcana
             && items.length === player.inventory.items.length
             && items.every((item, index) => player.inventory.items[index] === item)
             && equipment.every((item, index) => [player.equippedWeapon, player.equippedArmor, player.ringLeft, player.ringRight][index] === item)
@@ -2972,9 +2983,12 @@ export class Game {
                 case 'cancel': this.cancelPendingUse(); break;
                 default: throw new Error(`Unknown item command ${operation}`);
             }
-        } else if (action === 'mouse_travel') {
+        } else if (action === 'mouse_travel'
+            || (action === 'arcana:risk-confirm' && data !== null && typeof data === 'object')) {
+            // A risk event with coordinates came from map selection. Retain
+            // that entry's prefix (e.g. justRested), rather than keyboard input.
             const pos = data as Pos;
-            (yield* this.handleMouseTravelStages(pos.x, pos.y));
+            (yield* this.handleMouseTravelStages(pos.x, pos.y, action === 'arcana:risk-confirm'));
         } else if (action === 'auto_step') {
             (yield* this.performAutoPathStepStages());
         } else {
@@ -3263,7 +3277,9 @@ export class Game {
 
         if (this.pendingArcana) {
             if (action === 'escape' || action === 'cancel_target') this.cancelArcanaSelection();
-            else if (action === 'confirm_target') this.confirmArcanaTarget();
+            else if (action === 'confirm_target' || action === 'arcana:risk-confirm') {
+                yield* this.confirmArcanaTargetStages(action === 'arcana:risk-confirm');
+            }
             else if (action === 'cycle_target') this.cycleArcanaTarget(data === -1);
             else if (action === 'move') {
                 const delta = typeof data === 'number' ? this.directionToVec(data as Direction) : data as Pos | undefined;
@@ -4543,9 +4559,14 @@ export class Game {
     /** CE Items.c:7368-7440: choose -> resolve/autoID -> spend existing charge
      * -> one movement-speed turn. Initial charges and recharge remain W-5/W-6. */
     public confirmArcanaTarget(): BoltResult | null {
+        if (this.hasPendingConfirmation) return null;
+        return this.runSynchronousStages(this.confirmArcanaTargetStages());
+    }
+
+    private *confirmArcanaTargetStages(recordedRisk = false): CommandStages<BoltResult | null> {
         const pending = this.pendingArcana;
         if (!pending || this.isInputLocked()) return null;
-        const { item, cursor } = pending;
+        const item = pending.item, cursor = { ...pending.cursor };
         if (this.isGameOver || this.player.hp <= 0 || this.player.hasStatus('paralyzed')
             || !this.player.inventory.items.includes(item)) {
             this.cancelArcanaSelection();
@@ -4564,11 +4585,19 @@ export class Game {
             this.cancelArcanaSelection();
             return null;
         }
-        if (this.replayStatus !== 'playing' && preview?.risk === 'possible' && !(this.onConfirmRequest?.(i18next.t('arcana.blink_unknown_lava', {
-            defaultValue: 'Blink across lava with unknown range?'
-        })) ?? false)) {
-            this.cancelArcanaSelection();
-            return null;
+        // CE Items.c:7261-7319 / 7370-7376: ask before charge/effect/time.
+        // Historical confirm_target (and map-click) events never recorded this
+        // answer. Preserve their approved playback interpretation without UI or
+        // a fabricated decision; old cancellations remain an information gap.
+        if (preview?.risk === 'possible' && (!this.replayRecording || recordedRisk)) {
+            const execution = recordingState(this).execution;
+            if (execution) execution.action = 'arcana:risk-confirm';
+            if (!(yield* this.requestConfirm(i18next.t('arcana.blink_unknown_lava', {
+                defaultValue: 'Blink across lava with unknown range?'
+            })))) {
+                this.cancelArcanaSelection();
+                return null;
+            }
         }
         this.cancelArcanaSelection(); // Consume the pending transaction exactly once.
         if (!bolt) return null;
@@ -10412,9 +10441,9 @@ export class Game {
         return this.runSynchronousStages(this.handleMouseTravelStages(x, y));
     }
 
-    private *handleMouseTravelStages(x: number, y: number): CommandStages<void> {
+    private *handleMouseTravelStages(x: number, y: number, recordedRisk = false): CommandStages<void> {
         if (this.pendingArcana) {
-            if (this.setArcanaTarget(x, y)) this.confirmArcanaTarget();
+            if (this.setArcanaTarget(x, y)) yield* this.confirmArcanaTargetStages(recordedRisk);
             return;
         }
         if (this.isInventoryOpen) return;
