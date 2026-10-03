@@ -7,11 +7,12 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run --exclude '**/generation_baseline.test.ts'",
+    "test": "node scripts/run-test-suite.mjs test",
     "test:watch": "vitest",
-    "test:drift": "vitest run src/test/generation_baseline.test.ts",
+    "test:drift": "node scripts/run-test-suite.mjs drift",
+    "test:gen": "node scripts/run-test-suite.mjs gen",
     "ce:fetch": "node scripts/fetch-ce-reference.mjs",
-    "test:full": "BROGUE_REQUIRE_CE=1 vitest run --exclude '**/generation_baseline.test.ts'"
+    "test:full": "node scripts/run-test-suite.mjs full"
   },
   "dependencies": {
     "i18next": "^25.8.13",

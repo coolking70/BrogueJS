@@ -19,14 +19,15 @@ npm run build          # 生产构建，产物在 dist/
 ## 测试
 
 ```bash
-npm test               # 全部测试（不含生成基线）；未拉取 CE 参照源码时，CE 对照用例会跳过
-# CE 一致性检查（可选：改动按 CE 对齐的规则、或同步新版 CE 时）
+npm test               # 常规测试（不含重型生成普查/基线）；缺 CE 时对照用例显式跳过
+npm run test:drift     # 浅层/深层地图生成回归基线
+# 局部规则档/全量档的 CE 一致性检查
 npm run ce:fetch       # 拉取 CE 参照源码到 .ce-reference/（git 忽略）
-npm run test:full      # 包含 CE 对照用例的完整测试
-npm run test:drift     # 地图生成回归基线
+npm run test:full      # 常规组，强制要求 CE（不含普查/基线）
+BROGUE_REQUIRE_CE=1 npm run test:gen  # 全量档另跑重型生成普查，强制要求 CE
 ```
 
-`npm run ce:fetch` 默认拉取测试所依据的固定版本；加 `-- --source upstream` 可拉取官方最新 Brogue CE。详见 [docs/development.md](docs/development.md)。
+`npm run ce:fetch` 默认拉取测试所依据的固定版本；加 `-- --source upstream` 可拉取官方最新 Brogue CE。普查单独可用 `npm run test:gen`；各类改动的门禁档位见 [docs/development.md §4](docs/development.md#4-门禁分档)。
 
 ## 操作
 
