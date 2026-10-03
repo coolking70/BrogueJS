@@ -102,6 +102,8 @@ beforeAll(async () => {
         './engine/Core/Game': { activeGame: game }, './ui/layout': layoutModule,
         './engine/Core/SaveStorage': await import('../engine/Core/SaveStorage'),
         './ui/immersiveMode': await import('../ui/immersiveMode'), './ui/recordingExport': await import('../ui/recordingExport'),
+        './ui/dialogService': await import('../ui/dialogService'), './ui/dialogInput': await import('../ui/dialogInput'),
+        './engine/Systems/Logger': await import('../engine/Systems/Logger'),
         './ui/heldInput': await import('../ui/heldInput'),
     };
     function compile(file: string) {
@@ -123,7 +125,7 @@ beforeAll(async () => {
     Journal = compile('components/MessageJournal.vue').default; Drawer = compile('components/SideDrawer.vue').default;
     Detail = compile('components/DetailPanel.vue').default;
     const empty = { default: { render: () => null }, __esModule: true };
-    for (const name of ['GameCanvas', 'MessageAcknowledgment', 'InventoryOverlay', 'GameEndOverlay', 'ReplayControls',
+    for (const name of ['GameCanvas', 'DialogHost', 'InventoryOverlay', 'GameEndOverlay', 'ReplayControls',
         'AgentControls', 'ReferenceOverlay', 'MapZoomControls', 'CommandBar', 'DPad', 'TargetBar']) modules[`./components/${name}.vue`] = empty;
     modules['./components/theme/RadialCommands.vue'] = empty;
     modules['./components/theme/ThemeNearby.vue'] = { default: Nearby, __esModule: true };

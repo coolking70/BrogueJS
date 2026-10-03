@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, toRaw, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, computed, toRaw, nextTick, inject } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import i18next from 'i18next';
 import { activeGame } from '../engine/Core/Game';
@@ -9,6 +9,9 @@ import { ItemLoader } from '../engine/Items/ItemLoader';
 import { generateItemDetail } from '../engine/UI/DetailGenerator';
 import { createItemDetailContext } from '../engine/UI/ItemDetailContext';
 import { inputManager } from '../engine/Input';
+import { logger } from '../engine/Systems/Logger';
+import { dialogServiceKey, type DialogRequest } from '../ui/dialogService';
+const dialogs = inject(dialogServiceKey, undefined);
 
 // Local reactive state for the inventory visibility
 const isVisible = ref(false);
@@ -28,7 +31,6 @@ const callText = ref('');
 const callMode = ref<'kind' | 'inscribe' | 'choice' | 'relabel'>('kind');
 // B-1c：恶意品使用确认的待决态（引擎 Game.pendingUseConfirm 的镜像）
 const pendingUseConfirm = ref<Item | null>(null);
-const pendingUseConfirmText = ref('');
 
 const updateInventoryState = () => {
     const playerChanged = ringSelectionPlayer !== activeGame.player;
@@ -48,17 +50,16 @@ const updateInventoryState = () => {
     pendingIdentify.value = activeGame.pendingIdentify;
     pendingEnchantment.value = activeGame.pendingEnchantment;
     pendingUseConfirm.value = activeGame.pendingUseConfirm;
-    pendingUseConfirmText.value = activeGame.pendingUseConfirm
-        ? activeGame.malevolentUseConfirmPrompt(activeGame.pendingUseConfirm)
-        : '';
     if (isVisible.value) {
         inventoryItems.value = [...activeGame.player.inventory.items];
         if (selectedItem.value && !inventoryItems.value.some(item => item.id === selectedItem.value?.id)) selectedItem.value = null;
     }
+    dialogs?.sync();
 };
 
 onMounted(() => {
     const removeKeyboard = inputManager.registerModalKeyHandler(handleInventoryKey);
+    const removeSource = dialogs?.registerSource(syncPendingUse);
     updateInventoryState();
     // We'll set up a simple tick or event listener to sync state
     const interval = setInterval(() => { flushDeferredClose(); updateInventoryState(); }, 100);
@@ -67,6 +68,8 @@ onMounted(() => {
     onUnmounted(() => {
         clearInterval(interval);
         removeKeyboard();
+        removeSource?.();
+        useRequest?.cancel();
     });
 });
 
@@ -83,6 +86,7 @@ const flushDeferredClose = () => {
         return;
     }
     if (activeGame.isAdvancing) return;
+    if (dialogs?.current) return;
     closeDeferred = false;
     activeGame.handlePlayerAction('escape');
 };
@@ -243,6 +247,21 @@ const cancelMalevolentUse = () => {
     activeGame.executeItemCommand('cancel');
     updateInventoryState();
 };
+let useRequest: DialogRequest | undefined;
+let useTarget: Item | null = null;
+const syncPendingUse = () => {
+    const target = activeGame.replayRecording || activeGame.isGameOver ? null : activeGame.pendingUseConfirm;
+    if (target === useTarget && useRequest && dialogs?.isPending(useRequest.token)) return;
+    useRequest?.cancel(); useRequest = undefined;
+    useTarget = target;
+    if (!target || !dialogs) return;
+    useRequest = dialogs.request({ kind: 'confirm', owner: 'inventory:use', danger: true, defaultAction: 'no',
+        text: activeGame.malevolentUseConfirmPrompt(target), onAnswer: action => {
+            if (activeGame.pendingUseConfirm !== target || activeGame.isAdvancing || activeGame.isInputLocked()
+                || activeGame.replayRecording || activeGame.isGameOver || logger.pendingAcknowledgment) return false;
+            if (action === 'yes') confirmMalevolentUse(); else cancelMalevolentUse();
+        } });
+};
 
 const selectItem = (item: Item) => {
     selectedItem.value = selectedItem.value?.id === item.id ? null : item;
@@ -309,7 +328,7 @@ const performDrop = (item: Item) => {
 
 const performQuaff = (item: Item) => {
     activeGame.executeItemCommand('quaff', toRaw(item));
-    // B-1c：被确认闸拦下时不关面板——确认行就在这一行下方渲染
+    // Keep the source inventory open while DialogHost asks the existing question.
     if (activeGame.pendingUseConfirm) { updateInventoryState(); return; }
     closeInventory();
 };
@@ -509,12 +528,6 @@ const handleInventoryKey = (event: KeyboardEvent): boolean => {
                   </div>
                   <div v-if="selectedItem?.id === entry.item.id && !pendingIdentify && !pendingEnchantment && !ringReplacementTarget" class="item-actions">
                     <button @click="openRelabelInput(entry.item)" class="action-btn">{{ t('item.relabel', { defaultValue: 'Relabel' }) }}</button>
-                  </div>
-                  <!-- B-1c：恶意品使用确认（CE confirm()，Items.c:8054-8060） -->
-                  <div v-if="pendingUseConfirm?.id === entry.item.id" class="item-actions confirm-row">
-                    <span class="confirm-label">{{ pendingUseConfirmText }}</span>
-                    <button @click="confirmMalevolentUse()" class="action-btn danger">{{ t('Yes') || 'Yes' }}</button>
-                    <button @click="cancelMalevolentUse()" class="action-btn">{{ t('No') || 'No' }}</button>
                   </div>
                   <!-- B-1b：call 绰号输入（CE getInputTextString，Items.c:1423） -->
                   <div v-if="callTarget?.id === entry.item.id && !pendingEnchantment" class="item-actions call-input-row">

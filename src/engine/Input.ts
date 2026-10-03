@@ -5,6 +5,7 @@
 
 import { Direction } from '../types';
 import { isTextEntry, ModalKeyboard, type ModalKeyHandler } from '../ui/modalKeyboard';
+import { dialogInput } from '../ui/dialogInput';
 
 export class InputManager {
     private keybMap: Record<string, boolean> = {};
@@ -16,6 +17,7 @@ export class InputManager {
     private modalKeyboard = new ModalKeyboard();
 
     constructor() {
+        dialogInput.install(window);
         window.addEventListener('keydown', this.handleKeyDown.bind(this));
         window.addEventListener('keyup', this.handleKeyUp.bind(this));
     }
@@ -33,15 +35,19 @@ export class InputManager {
     }
 
     public triggerAction(action: string, data?: any) {
+        if (dialogInput.busy()) return;
         if (this.onActionCallback) {
             this.onActionCallback(action, data);
+            dialogInput.sync();
         }
     }
 
     private handleKeyDown(e: KeyboardEvent) {
+        if (dialogInput.busy()) return;
         // Text entry (e.g. call-item nickname) must not become a game command.
         if (e.defaultPrevented || isTextEntry(e.target)) return;
         if (this.modalKeyboard.handle(e)) {
+            dialogInput.sync();
             e.stopImmediatePropagation();
             return;
         }
@@ -65,11 +71,13 @@ export class InputManager {
             if (direction !== undefined) {
                 e.preventDefault?.();
                 this.onActionCallback(e.shiftKey || e.ctrlKey ? 'run' : 'move', direction);
+                dialogInput.sync();
                 return;
             }
             if (e.code === 'Numpad5') {
                 e.preventDefault?.();
                 this.onActionCallback('wait');
+                dialogInput.sync();
                 return;
             }
             switch (e.key) {
@@ -157,6 +165,7 @@ export class InputManager {
                     break;
                 // null dir means rest
             }
+            dialogInput.sync();
         }
     }
 

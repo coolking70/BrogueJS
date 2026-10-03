@@ -115,7 +115,8 @@ import { MAP_HOVER_FILL, MAP_HOVER_STROKE, MousePanTracker, shouldHandleMapWheel
 // FE-1：触屏手势与目标选择（改状态的输出只经 ui/commands 的录制边界）
 import type { GestureEvent } from '../ui/touchGestures';
 import { bindMapTouchInput } from '../ui/mapTouchInput';
-import { registerHeldInputContext, syncHeldInputContext } from '../ui/heldInput';
+import { registerHeldInput, registerHeldInputContext, syncHeldInputContext } from '../ui/heldInput';
+import { dialogInput } from '../ui/dialogInput';
 import { normalizeMapGlyph } from '../ui/mapGlyph';
 import { RetainedBackgroundLayer, RetainedVectorLayer, VectorGeometryCache } from '../ui/retainedMapDrawing';
 import { RenderRequests } from '../ui/renderRequests';
@@ -746,12 +747,16 @@ onMounted(async () => {
     // hitArea 初值已在 applyLayout 中按容器尺寸设置（含 ResizeObserver 跟随）
 
     const mousePan = new MousePanTracker();
+    let mousePointer: number | null = null;
     let suppressMouseClick = false;
     let suppressTimer = 0;
     const onMouseDown = (e: PointerEvent) => {
-        if (e.pointerType !== 'mouse' || e.button !== 0 || !cameraState.follow) return;
+        if (dialogInput.busy()) return;
+        if (e.pointerType !== 'mouse') return;
         window.clearTimeout(suppressTimer);
         suppressMouseClick = false;
+        if (e.button !== 0 || !cameraState.follow) return;
+        mousePointer = e.pointerId;
         mousePan.down(e.pointerId, e.clientX, e.clientY);
         try { pixiApp!.canvas.setPointerCapture(e.pointerId); } catch { /* synthetic pointer */ }
     };
@@ -775,8 +780,18 @@ onMounted(async () => {
         }
         pixiApp!.canvas.style.cursor = cameraState.follow ? 'grab' : 'crosshair';
         try { pixiApp!.canvas.releasePointerCapture(e.pointerId); } catch { /* synthetic pointer */ }
+        mousePointer = null;
     };
     const onMouseCancel = () => { mousePan.cancel(); suppressMouseClick = false; };
+    const removeMouseHold = registerHeldInput(() => {
+        mousePan.cancel();
+        window.clearTimeout(suppressTimer);
+        suppressMouseClick = true;
+        if (mousePointer !== null) {
+            try { pixiApp!.canvas.releasePointerCapture(mousePointer); } catch { /* cancelled pointer */ }
+            mousePointer = null;
+        }
+    });
     const onMapWheel = (e: WheelEvent) => {
         if (!shouldHandleMapWheel(e)) return; // browser Ctrl/Cmd zoom remains native
         e.preventDefault();
@@ -833,6 +848,7 @@ onMounted(async () => {
      * 触屏在投掷/法杖瞄准时改为"先瞄准、再确认"（ui/targeting.ts）。
      */
     const activateCell = (mapX: number, mapY: number, button: number, pointer: 'mouse' | 'touch') => {
+        if (dialogInput.busy()) return;
         if (mapX < 0 || mapX >= DCOLS || mapY < 0 || mapY >= DROWS) return;
         if (game.pendingArcana) {
             if (pointer === 'touch') {
@@ -892,7 +908,7 @@ onMounted(async () => {
     pixiApp.stage.on('pointerup', (e) => {
         // FE-1：触屏/触控笔由下方手势识别器处理（区分单击/长按/拖动/捏合）
         if (e.pointerType !== 'mouse') return;
-        if (suppressMouseClick || mousePan.isDragging) return;
+        if (dialogInput.busy() || suppressMouseClick || mousePan.isDragging) return;
         const localPt = tileLayer.toLocal(e.global);
         activateCell(Math.floor(localPt.x / TILE_SIZE), Math.floor(localPt.y / TILE_SIZE), e.button, 'mouse');
     });
@@ -932,6 +948,7 @@ onMounted(async () => {
         removeMapTouchInput();
         window.clearTimeout(suppressTimer);
         canvasEl.removeEventListener('pointerdown', onMouseDown);
+        removeMouseHold();
         canvasEl.removeEventListener('pointermove', onMouseMove);
         canvasEl.removeEventListener('pointerup', onMouseUp);
         canvasEl.removeEventListener('pointercancel', onMouseCancel);
@@ -945,7 +962,7 @@ onMounted(async () => {
     let skipNextDisplayTime = false;
     const autoAllowed = () => !game.replayRecording && !game.isTimePaused()
         && !game.isAdvancing && !game.isInputLocked() && !game.isGameOver
-        && !logger.pendingAcknowledgment && game.isAutoTraveling() && !document.hidden;
+        && !dialogInput.busy() && !logger.pendingAcknowledgment && game.isAutoTraveling() && !document.hidden;
     const displayFrame = (elapsedMs: number, animationMs: number = elapsedMs) => {
         syncHeldInputContext();
         const profileNow = frameProfile ? performance.now() : 0;

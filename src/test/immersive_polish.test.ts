@@ -171,6 +171,8 @@ beforeAll(async () => {
         '../../ui/useGameHud': await import('../ui/useGameHud'), '../ui/commands': await import('../ui/commands'),
         '../types': await import('../types'), './ui/layout': await import('../ui/layout'),
         './ui/immersiveMode': await import('../ui/immersiveMode'), './ui/recordingExport': await import('../ui/recordingExport'),
+        './ui/dialogService': await import('../ui/dialogService'), './ui/dialogInput': await import('../ui/dialogInput'),
+        './engine/Systems/Logger': await import('../engine/Systems/Logger'),
         './ui/heldInput': await import('../ui/heldInput'), '../ui/heldInput': await import('../ui/heldInput'),
         './engine/Core/Game': await import('../engine/Core/Game'), './engine/Core/SaveStorage': await import('../engine/Core/SaveStorage'),
         './MapTileLegend.vue': { default: { emits: ['close'], render: () => Vue.h('section', { class: 'map-legend' }) }, __esModule: true },
@@ -190,7 +192,7 @@ beforeAll(async () => {
         return exports.default;
     };
     Menu = compile('components/MainMenu.vue'); Log = compile('components/theme/ThemeLog.vue'); Pad = compile('components/DPad.vue');
-    for (const component of ['ContextPanel', 'MessageJournal', 'MessageAcknowledgment', 'InventoryOverlay', 'GameEndOverlay',
+    for (const component of ['ContextPanel', 'MessageJournal', 'DialogHost', 'InventoryOverlay', 'GameEndOverlay',
         'ReplayControls', 'AgentControls', 'DetailPanel', 'ReferenceOverlay', 'MapZoomControls', 'SideDrawer', 'CommandBar', 'TargetBar']) {
         modules[`./components/${component}.vue`] = empty;
     }

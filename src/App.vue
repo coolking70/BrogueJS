@@ -8,6 +8,7 @@
 // 纯逻辑（回放旁路）拆成可单测的导出函数；测试见 ui_1_rendering.test.ts。
 import type { Game } from './engine/Core/Game';
 import { cancelHeldInputs } from './ui/heldInput';
+import { dialogInput } from './ui/dialogInput';
 
 export function wireConfirmRequest(game: Game): void {
     game.onConfirmRequest = (message: string): boolean => {
@@ -15,13 +16,13 @@ export function wireConfirmRequest(game: Game): void {
         // CE IO.c:2944：autoPlayingLevel 是自动演示，不是旅行/探索。
         // 引擎在提问前停止自动行进；回放决策由 requestConfirm 消费。
         if (game.replayStatus === 'playing') return true;
-        return window.confirm(message);
+        return dialogInput.native(() => window.confirm(message));
     };
 }
 </script>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import { computed, ref, watch, provide, onMounted, onUnmounted } from 'vue';
 import { displaySettings } from './engine/Settings';
 import { inputManager } from './engine/Input';
 import { saveSnapshot, readSnapshot, readSaveSummary, deleteSnapshot, type SaveSummary } from './engine/Core/SaveStorage';
@@ -29,7 +30,9 @@ import i18next from 'i18next';
 import GameCanvas from './components/GameCanvas.vue';
 import ContextPanel from './components/ContextPanel.vue';
 import MessageJournal from './components/MessageJournal.vue';
-import MessageAcknowledgment from './components/MessageAcknowledgment.vue';
+import DialogHost from './components/DialogHost.vue';
+import { DialogService, dialogServiceKey } from './ui/dialogService';
+import { logger } from './engine/Systems/Logger';
 import InventoryOverlay from './components/InventoryOverlay.vue';
 import GameEndOverlay from './components/GameEndOverlay.vue';
 import MainMenu from './components/MainMenu.vue';
@@ -53,6 +56,8 @@ import { recordingJsonAtBoundary, RecordingExportError } from './ui/recordingExp
 import type { DetailInfo } from './engine/UI/DetailGenerator';
 
 const REPLAY_KEY = 'brogue-web-replay-v1';
+const dialogs = new DialogService();
+provide(dialogServiceKey, dialogs);
 
 // FE-1：布局模式（desktop / portrait / landscape）按视口尺寸判定，纯显示。
 startViewportTracking();
@@ -88,7 +93,7 @@ onMounted(() => {
   if (activeGame.isGameOver && !endFeedbackCleared) { endFeedbackCleared = true; replayFeedback.value = ''; }
   else if (!activeGame.isGameOver) endFeedbackCleared = false;
 }, 100); });
-onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTimer); runEpoch++; });
+onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTimer); runEpoch.value++; });
 /** 触控命令栏 + 方向键：紧凑模式或粗指针设备显示；回放期间让位给录像控制条。 */
 const showTouch = computed(() => (shouldShowTouchControls(viewport.coarsePointer, viewport.mode)
   || (displaySettings.immersiveMode && compact.value)) && !replayActive.value);
@@ -114,7 +119,7 @@ const storageTick = ref(0);
 const runAvailable = ref(false);
 const replayBusy = ref(false);
 const replayFeedback = ref('');
-let runEpoch = 0;
+const runEpoch = ref(0);
 const canSaveReplay = computed(() => {
   replayTick.value;
   return runAvailable.value && (activeGame.hasCompleteRecording || !!activeGame.replayRecording);
@@ -146,7 +151,7 @@ const hasReplay = computed(() => {
 });
 
 const startNewGame = (payload: { seed?: string; mode: GameMode }) => {
-  runEpoch++;
+  runEpoch.value++;
   replayFeedback.value = '';
   activeGame.startNewGame({ seed: payload.seed, mode: payload.mode });
   runAvailable.value = true;
@@ -181,7 +186,7 @@ const continueGame = async () => {
       return;
     }
     replayMessage(i18next.t('menu.log.save_loaded', { defaultValue: 'Save loaded.' }));
-    runEpoch++;
+    runEpoch.value++;
     runAvailable.value = true;
     replayFeedback.value = '';
     storageTick.value++;
@@ -208,11 +213,11 @@ const replayMessage = (message: string) => { replayFeedback.value = message; };
 
 const currentReplayJson = async (): Promise<string> => {
   if (activeGame.replayRecording) return JSON.stringify(activeGame.replayRecording);
-  const epoch = runEpoch;
+  const epoch = runEpoch.value;
   if (!activeGame.canExportRecording) {
     replayFeedback.value = i18next.t('menu.replay.waiting', { defaultValue: 'Waiting for the current turn to finish…' });
   }
-  return recordingJsonAtBoundary(activeGame, () => runEpoch === epoch);
+  return recordingJsonAtBoundary(activeGame, () => runEpoch.value === epoch);
 };
 
 const saveReplay = async () => {
@@ -249,7 +254,7 @@ const loadReplay = () => {
     gameStarted.value = true;
     menuOpen.value = false;
     replayMessage(i18next.t('menu.log.replay_loaded', { defaultValue: 'Replay loaded.' }));
-    runEpoch++;
+    runEpoch.value++;
     runAvailable.value = true;
     replayFeedback.value = '';
   } catch {
@@ -281,10 +286,12 @@ const replayStep = () => {
 };
 
 const replayRestart = () => {
+  runEpoch.value++;
   activeGame.replayRestart();
 };
 
 const replaySeek = (index: number) => {
+  runEpoch.value++;
   activeGame.replaySeek(index);
 };
 
@@ -325,7 +332,7 @@ const importReplayJson = async (file: File) => {
       replayMessage(i18next.t('menu.log.replay_import_failed', { defaultValue: 'Replay JSON import failed.' }));
       return;
     }
-    runEpoch++;
+    runEpoch.value++;
     runAvailable.value = true;
     replayFeedback.value = i18next.t('menu.replay.imported_unsaved', { defaultValue: 'Recording imported. Save it to keep it in this browser.' });
     gameStarted.value = true;
@@ -338,6 +345,8 @@ const importReplayJson = async (file: File) => {
 };
 
 const handleReturnToTitle = async () => {
+    logger.clearAcknowledgments();
+    runEpoch.value++;
     // Return to menu logic
     gameStarted.value = false;
     menuOpen.value = true;
@@ -384,7 +393,7 @@ const handleReturnToTitle = async () => {
     </template>
     <div v-else class="blank-stage" aria-hidden="true"></div>
 
-    <MessageAcknowledgment />
+    <DialogHost :service="dialogs" :epoch="runEpoch" />
     <MainMenu
       v-if="menuOpen"
       :has-save="hasSave"

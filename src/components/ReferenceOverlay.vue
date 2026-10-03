@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import { activeGame } from '../engine/Core/Game';
 import { getDiscoveries } from '../engine/UI/Discoveries';
+import { dialogInput } from '../ui/dialogInput';
 
 // FE-1：原先标题/分组名/帮助条目以 `zh ? '中文' : 'English'` 硬编码在脚本里，
 // 现全部迁入 zh_CN.json（审查 P-22），并补充触屏操作说明。
@@ -44,14 +45,15 @@ function close() {
   screen.value = activeGame.referenceScreen;
 }
 function onKey(e: KeyboardEvent) {
-  if (!screen.value) return;
-  e.preventDefault(); e.stopImmediatePropagation(); close();
+  if (!activeGame.referenceScreen) return false;
+  e.preventDefault(); close(); return true;
 }
+let removeKeyboard: (() => void) | undefined;
 onMounted(() => {
   timer = window.setInterval(() => { screen.value = activeGame.referenceScreen; }, 100);
-  window.addEventListener('keydown', onKey, true);
+  removeKeyboard = dialogInput.register({ keydown: onKey });
 });
-onUnmounted(() => { window.clearInterval(timer); window.removeEventListener('keydown', onKey, true); });
+onUnmounted(() => { window.clearInterval(timer); removeKeyboard?.(); });
 </script>
 
 <template>

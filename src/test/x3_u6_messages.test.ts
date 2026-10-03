@@ -85,7 +85,7 @@ describe('X3-U6 presentation acknowledgments', () => {
     it('consumes one key and its autorepeat/key-up, without dispatching a game command', () => {
         logger.presentAcknowledgments(() => true); const keys = acknowledgmentKeys();
         logger.log('one', '#fff', { acknowledge: true }); logger.log('two', '#fff', { acknowledge: true });
-        const key = (repeat = false) => ({ key: 'ArrowRight', code: 'ArrowRight', repeat,
+        const key = (repeat = false) => ({ key: ' ', code: 'Space', repeat,
             preventDefault: vi.fn(), stopImmediatePropagation: vi.fn() }) as unknown as KeyboardEvent;
         const first = key(); keys.keydown(first); expect(first.stopImmediatePropagation).toHaveBeenCalledOnce();
         expect(logger.pendingAcknowledgment?.text).toBe('two');

@@ -22,7 +22,12 @@ const disturbanceCallbacks = new WeakMap<Logger, () => void>();
 // UI wiring and pending clicks must never enter snapshots or recording hashes.
 const presentations = new WeakMap<Logger, {
     enabled: () => boolean; pending: LogMessage[]; unread: LogMessage[]; terminalShown: boolean;
+    changed?: () => void;
 }>();
+// UI notifications cannot alter the result of an engine command.
+function notifyPresentation(log: Logger): void {
+    try { presentations.get(log)?.changed?.(); } catch { /* presentation is optional */ }
+}
 const combatBuffers = new WeakMap<Logger, { text: string; color: string }[]>();
 const heardCombat = new WeakSet<Logger>();
 
@@ -54,14 +59,18 @@ export class Logger {
     public disturb(): void { this.onDisturb?.(); }
 
     /** Mounted UI opts in; headless and replay never wait for a human. */
-    public presentAcknowledgments(enabled: (() => boolean) | null): void {
-        if (enabled) presentations.set(this, { enabled, pending: [], unread: [], terminalShown: false });
+    public presentAcknowledgments(enabled: (() => boolean) | null, changed?: () => void): void {
+        if (enabled) presentations.set(this, { enabled, pending: [], unread: [], terminalShown: false, changed });
         else presentations.delete(this);
     }
     public get pendingAcknowledgment(): LogMessage | undefined {
         const display = presentations.get(this);
         if (display && !display.enabled()) this.clearAcknowledgments();
         return display?.pending[0];
+    }
+    public get pendingAcknowledgments(): readonly Readonly<LogMessage>[] {
+        this.pendingAcknowledgment; // Preserve the existing replay bypass.
+        return presentations.get(this)?.pending.slice() ?? [];
     }
     /** Presentation copies in occurrence order, including folded duplicates. */
     public get unreadAcknowledgments(): LogMessage[] {
@@ -73,12 +82,14 @@ export class Logger {
         display.terminalShown = true;
         display.unread.push(...display.pending);
         display.pending = [];
+        notifyPresentation(this);
     }
-    public acknowledgeNext(): void { presentations.get(this)?.pending.shift(); }
+    public acknowledgeNext(): void { presentations.get(this)?.pending.shift(); notifyPresentation(this); }
     public clearAcknowledgments(): void {
         const display = presentations.get(this);
         if (display) {
             display.pending = []; display.unread = []; display.terminalShown = false;
+            notifyPresentation(this);
         }
     }
 
@@ -159,6 +170,7 @@ export class Logger {
                 (display.terminalShown ? display.unread : display.pending).push({ ...entry, text, color });
             }
         }
+        notifyPresentation(this);
     }
 }
 export const logger = new Logger();
