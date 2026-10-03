@@ -81,7 +81,7 @@ describe('EXT-0 cloud boundary regressions', () => {
     it('rejects malformed save event containers before replacing classic or extended live state', () => {
         for (const ruleSet of ['classic', 'extended'] as const) {
             const game = createHeadlessGame(4101, 'test');
-            game.startNewGame({ seed: 4101, mode: 'test', ruleSet, ...(ruleSet === 'extended' ? { extensions: ['example'] } : {}) });
+            game.startNewGame({ seed: 4101, mode: 'test', ruleSet, ...(ruleSet === 'extended' ? { extensions: [] } : {}) });
             const snapshot = game.toSaveSnapshot(), player = game.player, runtime = game.extensionRuntime, random = rng.getState();
             for (const events of [{}, null, [null], undefined]) {
                 const malformed = structuredClone(snapshot);

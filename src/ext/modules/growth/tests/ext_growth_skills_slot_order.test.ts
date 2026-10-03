@@ -1,0 +1,52 @@
+import { afterEach, expect, it, vi } from 'vitest';
+import { createHeadlessGame } from '../../../../test/harness';
+import type { Game } from '../../../../engine/Core/Game';
+import data from '../data/definitions.json';
+import { parseGrowthDefinitionPack } from '../definitions';
+import { createGrowthGameplay } from '../module';
+import type { GrowthDefinitionPack } from '../types';
+import type { GrowthState } from '../state';
+import type { GrowthSkillBuild } from '../skills';
+import { extensionDataFingerprint } from '../../../../ext/fingerprint';
+import { ExtensionRegistry } from '../../../../ext/registry';
+import * as catalog from '../../../../ext/catalog';
+
+const state=(game:Game)=>game.extensionRuntime!.snapshot().modules.growth as unknown as GrowthState;
+const build=(game:Game)=>game.extensionRuntime!.snapshot().components[game.player.id]!['growth:skill-build'] as unknown as GrowthSkillBuild;
+const id=(name:string)=>`growth.skill.${name}`;
+afterEach(()=>vi.restoreAllMocks());
+it('preserves nonlexical passive slot order while canonical timed tag sources survive actual save/load and replay',()=> {
+    const pack=structuredClone(data) as unknown as GrowthDefinitionPack;
+    pack.config.levels.attributePoints={kind:'periodic',firstLevel:1,every:1,amount:20};
+    pack.config.levels.skillPoints={kind:'periodic',firstLevel:1,every:1,amount:20};
+    pack.config.experience.sources.firstVisits=false;
+    const parsed=parseGrowthDefinitionPack(pack,{moduleVersion:pack.moduleVersion,hasText:()=>true});
+    const identity={schema:1,version:pack.moduleVersion,fingerprint:extensionDataFingerprint(pack)};
+    vi.spyOn(catalog,'createExtensionRegistry').mockImplementation(()=> {
+        const registry=new ExtensionRegistry();registry.register('growth',pack.moduleVersion,()=>createGrowthGameplay(parsed,identity),identity);return registry;
+    });
+    const game=createHeadlessGame(771921,'test');game.startNewGame({seed:771921,mode:'test',ruleSet:'extended'});
+    const command=(action:string,payload:Record<string,unknown>)=> {
+        game.executeCommand('ext:command',JSON.stringify({module:'growth',action,payload:{revision:state(game).revision,...payload}}));
+        while(game.isAdvancing)game.stepAdvancement();expect(game.lastAdvancementError).toBeNull();
+    };
+    command('create-character',{revision:0});
+    command('allocate',{attributes:{'growth.attribute.agility':2,'growth.attribute.will':2,'growth.attribute.constitution':2}});
+    for(const name of ['steady-hand','composure','brace'])command('learn-skill',{skillId:id(name)});
+    const passive=[id('steady-hand'),id('composure')];
+    command('equip-skills',{active:[id('brace')],passive});
+    command('use-skill',{skillId:id('brace'),target:{kind:'self'}});
+    expect(build(game).passive).toEqual(passive);expect(build(game).effects).toHaveLength(1);
+    expect(build(game).effects[0]!.taggedSources).toEqual([...passive].sort());
+    const expected=game.extensionRuntime!.snapshot(),saved=game.toSaveSnapshot(),recording=game.exportRecording();
+    expect(game.hasCompleteRecording).toBe(true);
+    const loaded=createHeadlessGame(91,'test');expect(loaded.loadSnapshot(saved)).toBe(true);
+    expect(loaded.extensionRuntime!.snapshot()).toEqual(expected);expect(build(loaded).passive).toEqual(passive);
+    const forged=structuredClone(saved);
+    const capacity=game.extensionRuntime!.rule('focusCapacity',{actorId:game.player.id,targetId:null,baseValue:pack.config.focus.base});
+    forged.extensions!.components[game.player.id]!['growth:focus']={current:capacity,remainder:1};
+    expect(loaded.loadSnapshot(forged)).toBe(false);expect(loaded.extensionRuntime!.snapshot()).toEqual(expected);
+    const replay=createHeadlessGame(92,'test');expect(replay.loadReplay(recording)).toBe(true);
+    while(replay.replayCursor<recording.events.length&&!replay.replayError)replay.replayStep(true);
+    expect(replay.replayError).toBeNull();expect(replay.extensionRuntime!.snapshot()).toEqual(expected);expect(build(replay).passive).toEqual(passive);
+});

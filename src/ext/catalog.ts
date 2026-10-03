@@ -1,12 +1,16 @@
-import { ExtensionRegistry } from './registry';
-import { createExampleModule, EXAMPLE_ID, EXAMPLE_VERSION } from './modules/example';
-import { createGrowthModule } from './modules/growth';
-import { GROWTH_VERSION, getGrowthPackIdentity } from './modules/growth/definitions';
-// Only invoked for an explicitly extended run or extended input validation.
-export function createExtensionRegistry(): ExtensionRegistry {
-    const registry = new ExtensionRegistry();
-    registry.register(EXAMPLE_ID, EXAMPLE_VERSION, createExampleModule);
-    registry.register('growth', GROWTH_VERSION, createGrowthModule, getGrowthPackIdentity());
-    return registry;
+import type { ExtensionRegistry } from './registry';
+import { registryFromDescriptors, validateModuleDescriptors, type ModuleDescriptor } from './descriptor';
+
+// Vite/Vitest discover pure declarations only, without constructing any run.
+const discovered = import.meta.glob<{ descriptor: ModuleDescriptor }>('./modules/*/descriptor.ts', { eager: true });
+const installed = validateModuleDescriptors(Object.entries(discovered).map(([path, entry]) => {
+    const directory = path.split('/')[2];
+    if (!entry.descriptor || entry.descriptor.id !== directory) throw new Error(`Module directory/descriptor mismatch: ${path}`);
+    return entry.descriptor;
+}));
+export function getInstalledModuleDescriptors(): readonly ModuleDescriptor[] { return installed; }
+export function createExtensionRegistry(descriptors: readonly ModuleDescriptor[] = installed): ExtensionRegistry {
+    return registryFromDescriptors(descriptors);
 }
-export const DEFAULT_EXTENSIONS: readonly string[] = ['growth'];
+/** Current configurable package defaults. Any subset, including empty, is valid. */
+export const DEFAULT_EXTENSIONS: readonly string[] = Object.freeze(installed.filter(module => module.defaultEnabled).map(module => module.id));

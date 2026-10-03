@@ -52,7 +52,12 @@ beforeAll(async () => {
     ({ wireConfirmRequest } = await import('../App.vue'));
     heldInput = await import('../ui/heldInput');
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
-    const modules: Record<string, unknown> = { vue: Vue, 'i18next-vue': translation,
+    const modules: Record<string, unknown> = {
+        './ext/ui/useModuleUi': await import('../ext/ui/useModuleUi'),
+        '../ext/catalog': await import('../ext/catalog'),
+        '../ext/ui/defaults': await import('../ext/ui/defaults'),
+        '../ext/ui/creation': await import('../ext/ui/creation'),
+ vue: Vue, 'i18next-vue': translation,
         i18next: { default: i18next, __esModule: true }, '../types': { Direction },
         '../ui/commands': { dispatch: moves }, '../../ui/commands': { dispatch: moves },
         '../ui/heldInput': heldInput, './ui/heldInput': heldInput,
@@ -61,8 +66,6 @@ beforeAll(async () => {
         './engine/Input': { inputManager: { triggerAction: moves } },
         './engine/Settings': { displaySettings: settings }, './engine/Core/Game': { activeGame: gameStub },
         './engine/Systems/Logger': await import('../engine/Systems/Logger'),
-        './ui/useGrowthCharacter': await import('../ui/useGrowthCharacter'),
-        './ext/modules/growth/view': await import('../ext/modules/growth/view'),
         './engine/Core/SaveStorage': { readSaveSummary: async () => null },
         './ui/immersiveMode': { registerImmersiveShortcut: () => () => {} }, './ui/recordingExport': {},
         './ui/layout': { viewport: { mode: 'portrait', coarsePointer: true }, startViewportTracking() {}, shouldShowTouchControls: () => true },
@@ -235,5 +238,70 @@ describe('DPad held input', () => {
         while (replay.replayCursor < recording.events.length && !replay.replayError) replay.replayStep();
         expect(replay.replayError).toBeNull(); expect(replay.replayCursor).toBe(4);
         expect(replay.player.loc).toEqual(position); expect(replay.absoluteTurnNumber).toBe(turn);
+    });
+});
+
+
+describe('foundation CommandBar module and native action partitions', () => {
+    it.each(['portrait', 'landscape', 'desktop'] as const)('keeps every %s action reachable exactly once and routes module callbacks separately', async mode => {
+        const alpha = vi.fn(), beta = vi.fn(), blocked = vi.fn();
+        const root = node('root');
+        const app = renderer.createApp(Bar, { mode, moduleCommands: [
+            { id: 'alpha:open', label: 'Alpha', invoke: alpha },
+            { id: 'beta:open', label: 'Beta', invoke: beta },
+            { id: 'alpha:blocked', label: 'Blocked', disabled: true, invoke: blocked },
+        ] });
+        app.use(I18NextVue, { i18next }); app.mount(root); mounted.push(app);
+        const tick = async () => { await Vue.nextTick(); await Vue.nextTick(); };
+        const hasClass = (entry: Node, value: string) => String(entry.props.class).split(' ').includes(value);
+        const commandButtons = () => all(root).filter(entry => entry.type === 'button' && typeof entry.props['data-action'] === 'string');
+        const identity = (entry: Node) => `${entry.props['data-action']}:${entry.props['data-direction'] ?? ''}`;
+        const click = (entry: Node) => entry.props.onClick({ target: entry, currentTarget: entry });
+        const expand = async () => {
+            if (!all(root).some(entry => hasClass(entry, 'command-overflow'))) {
+                click(all(root).find(entry => hasClass(entry, 'command-more'))!); await tick();
+            }
+        };
+        const native: readonly (readonly [string, string?])[] = [
+            ['search'], ['search_long'], ['wait'], ['auto_rest'], ['pickup'], ['toggle_inventory'],
+            ['throw_item'], ['auto_explore'], ['travel_stairs', 'up'], ['travel_stairs', 'down'],
+            ['discoveries'], ['help'], ['escape'],
+        ];
+        const primaryNative = ['search:', 'wait:', 'pickup:', 'toggle_inventory:', 'throw_item:', 'auto_explore:', 'escape:'];
+        const moduleIds = ['alpha:open:', 'beta:open:', 'alpha:blocked:'];
+        expect(commandButtons().map(identity).sort()).toEqual([...primaryNative, ...moduleIds].sort());
+        await expand();
+        const nav = all(root).find(entry => entry.type === 'nav')!;
+        const overflow = all(root).find(entry => hasClass(entry, 'command-overflow'))!;
+        const primary = commandButtons().filter(entry => entry.parent === nav).map(identity);
+        const secondary = commandButtons().filter(entry => entry.parent === overflow).map(identity);
+        expect(primary.sort()).toEqual([...primaryNative, ...moduleIds].sort());
+        expect(secondary.sort()).toEqual(['search_long:', 'auto_rest:', 'travel_stairs:up', 'travel_stairs:down', 'discoveries:', 'help:'].sort());
+        expect(primary.filter(id => secondary.includes(id))).toEqual([]);
+        const allIds = commandButtons().map(identity);
+        expect(allIds.sort()).toEqual([...native.map(([action, data]) => `${action}:${data ?? ''}`), ...moduleIds].sort());
+        expect(new Set(allIds).size).toBe(allIds.length);
+        expect(commandButtons().filter(entry => entry.props['data-action'] === 'travel_stairs').map(entry => entry.props['data-direction']).sort()).toEqual(['down', 'up']);
+
+        // Module entries invoke only their own callbacks, never the native input path.
+        for (const action of ['alpha:open', 'beta:open']) {
+            click(commandButtons().find(entry => entry.props['data-action'] === action)!); await tick();
+        }
+        expect(alpha).toHaveBeenCalledTimes(1); expect(beta).toHaveBeenCalledTimes(1); expect(moves).not.toHaveBeenCalled();
+        const disabled = commandButtons().find(entry => entry.props['data-action'] === 'alpha:blocked')!;
+        expect(disabled.props.disabled).toBe(true);
+        // Invoke the bound handler directly too: the dispatch guard must reject it
+        // even if a stale event bypasses the browser's disabled-button behavior.
+        click(disabled); await tick(); expect(blocked).not.toHaveBeenCalled(); expect(moves).not.toHaveBeenCalled();
+
+        // Reopen the real overflow after every click, so each assertion uses a
+        // currently mounted reachable button rather than a retired DOM listener.
+        for (const [action, data] of native) {
+            let button = commandButtons().find(entry => entry.props['data-action'] === action && entry.props['data-direction'] === data);
+            if (!button) { await expand(); button = commandButtons().find(entry => entry.props['data-action'] === action && entry.props['data-direction'] === data); }
+            expect(button).toBeTruthy(); click(button!); await tick();
+        }
+        expect(moves.mock.calls).toEqual(native.map(([action, data]) => [action, data]));
+        expect(alpha).toHaveBeenCalledTimes(1); expect(beta).toHaveBeenCalledTimes(1); expect(blocked).not.toHaveBeenCalled();
     });
 });

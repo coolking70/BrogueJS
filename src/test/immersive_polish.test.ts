@@ -164,6 +164,11 @@ beforeAll(async () => {
         documentElement: { dataset: {}, style: { setProperty() {} } } });
     const empty = { default: { render: () => null }, __esModule: true };
     const modules: Record<string, unknown> = {
+        './ext/ui/useModuleUi': await import('../ext/ui/useModuleUi'),
+        '../ext/catalog': await import('../ext/catalog'),
+        '../ext/ui/defaults': await import('../ext/ui/defaults'),
+        '../ext/ui/creation': await import('../ext/ui/creation'),
+
         vue: Vue, 'i18next-vue': translation, i18next: { default: i18next, __esModule: true },
         '../engine/Input': await import('../engine/Input'), './engine/Input': await import('../engine/Input'),
         '../engine/Settings': await import('../engine/Settings'), './engine/Settings': await import('../engine/Settings'),
@@ -175,7 +180,6 @@ beforeAll(async () => {
         './engine/Core/Game': await import('../engine/Core/Game'), './engine/Core/SaveStorage': await import('../engine/Core/SaveStorage'),
         './MapTileLegend.vue': { default: { emits: ['close'], render: () => Vue.h('section', { class: 'map-legend' }) }, __esModule: true },
         './theme/TitleFx.vue': empty,
-        './growth/GrowthCreationPanel.vue': empty, '../ext/modules/growth/view': await import('../ext/modules/growth/view'),
     };
     const compile = (file: string): Vue.Component => {
         const { descriptor } = parse(source(file));
@@ -202,9 +206,6 @@ beforeAll(async () => {
     } }, __esModule: true };
     for (const component of ['ThemeHud', 'ThemeNearby', 'RadialCommands']) modules[`./components/theme/${component}.vue`] = empty;
     modules['./components/theme/ThemeLog.vue'] = { default: Log, __esModule: true };
-    modules['./components/growth/GrowthCharacterPanel.vue'] = empty;
-    modules['./ui/useGrowthCharacter'] = await import('../ui/useGrowthCharacter');
-    modules['./ext/modules/growth/view'] = await import('../ext/modules/growth/view');
     modules['./engine/Systems/Logger'] = await import('../engine/Systems/Logger');
     App = compile('App.vue');
 });

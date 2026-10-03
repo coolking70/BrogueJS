@@ -1,12 +1,12 @@
-import { describe, expect, it, vi, afterEach } from 'vitest';
+import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import { ExtensionRegistry } from '../ext/registry';
 import { ExtensionRuntime, type ExtensionPorts } from '../ext/runtime';
-import { createExampleModule, EXAMPLE_VERSION } from '../ext/modules/example';
+import { createExampleModule, EXAMPLE_VERSION } from './fixtures/example-module';
 import * as catalog from '../ext/catalog';
 import { createExtensionRegistry } from '../ext/catalog';
 import { validateDefinitionPack, isAttributes, isProfession, isProgression } from '../ext/definitions';
-import definitions from '../ext/modules/example/definitions.json';
-import translations from '../locales/zh_CN.json';
+import definitions from './fixtures/example-module/definitions.json';
+import translations from './fixtures/example-module/locales/zh_CN.json';
 import classicRng from './fixtures/ext-classic-rng.json';
 import { Game, type GameRecording } from '../engine/Core/Game';
 import { ItemLoader } from '../engine/Items/ItemLoader';
@@ -30,6 +30,11 @@ function extended(seed = 4101, mode: 'normal' | 'wizard' | 'test' = 'test'): Gam
 const rat = (game: Game): Monster => new Monster(game.player.x + 1, game.player.y,
     (monsters as MonsterData[]).find(monster => monster.id === 'rat')!);
 const kills = (game: Game): number => (game.extensionRuntime!.snapshot().modules.example as { kills: number }).kills;
+beforeEach(() => {
+    const registry = new ExtensionRegistry();
+    registry.register('example', EXAMPLE_VERSION, createExampleModule);
+    vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(registry);
+});
 afterEach(() => vi.restoreAllMocks());
 
 describe('EXT-0 registry and lifecycle', () => {
@@ -222,5 +227,19 @@ describe('EXT-0 live game integration', () => {
         runtime.emit('kill', { creature: creatureView(creature, 1), sourceId: 1, administrative: false });
         expect(p.randomInt).not.toHaveBeenCalled(); expect(runtime.snapshot().modules.example).toEqual({ kills: 1 });
         expect(createExampleModule().version).toBe(EXAMPLE_VERSION);
+    });
+});
+
+describe('EXT fixture durable lifecycle', () => {
+    it('explicit example still starts, saves, loads and replays while classic never constructs an extension',() => {
+        const g=createHeadlessGame(4901,'test');
+        g.startNewGame({seed:4901,mode:'test',ruleSet:'extended',extensions:['example']});g.executeCommand('wait');
+        expect(g.extensionRuntime!.manifest.modules.map(module=>module.id)).toEqual(['example']);
+        const saved=g.toSaveSnapshot(),recording=g.exportRecording();
+        const restored=createHeadlessGame(4902,'test');expect(restored.loadSnapshot(saved)).toBe(true);expect(restored.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(restored.loadReplay(recording)).toBe(true);restored.replayStep(true);expect(restored.replayError).toBeNull();
+        expect(restored.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        const factory=vi.spyOn(catalog,'createExtensionRegistry').mockClear();const classic=createHeadlessGame(4903,'test');classic.executeCommand('wait');
+        expect(factory).not.toHaveBeenCalled();expect(classic.extensionRuntime).toBeNull();expect(classic.toSnapshot().extensions).toBeUndefined();
     });
 });

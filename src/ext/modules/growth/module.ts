@@ -503,15 +503,19 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                         && summary.alive === (actor.hp > 0); });
         },
         validateRecording(events) {
-            return events.length > 0 && events[0]!.action === 'ext:command' && isCreationCommand(events[0]!.data) && validCreation(JSON.parse(events[0]!.data as string).payload)
-                && events.every((event,index) => (event.extensions?.modules.growth as unknown as GrowthState)?.created === true
-                    && (index === 0 || event.action !== 'ext:command' || !isCreationCommand(event.data)));
+            // The foundation validates the complete ordered creation prefix.
+            // This module owns only its transition, which need not be event 0.
+            const first = events.findIndex(event => event.action === 'ext:command' && isCreationCommand(event.data));
+            return first >= 0 && validCreation(JSON.parse(events[first]!.data as string).payload)
+                && events.every((event,index) => (event.extensions?.modules.growth as unknown as GrowthState)?.created === (index >= first)
+                    && (index === first || event.action !== 'ext:command' || !isCreationCommand(event.data)));
         },
         initialCommand: { action: 'create-character',payload: { revision: 0 } },
         validateInitialCommand: (action,payload,native) => action === 'create-character' && validCreation(payload,native),
         allowInput(action,data,context) {
             const state = getState(context);
             if (!state.created) {
+                if (context.isInitialCommand(action, data) && !isCreationCommand(data)) return true;
                 const actor = context.creature(context.playerId), native = context.characterResources(context.playerId);
                 return !!actor && actor.hp > 0 && native.strength !== null && action === 'ext:command' && isCreationCommand(data)
                     && validCreation(JSON.parse(data as string).payload,{maxHp:actor.maxHp,strength:native.strength});

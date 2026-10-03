@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import i18next, { type TOptions } from 'i18next';
 
 import zhCN from '../locales/zh_CN.json';
+import { getInstalledModuleDescriptors } from '../ext/catalog';
 import { scanI18nUsage } from './i18n_scan';
 import monstersJson from '../data/monsters.json';
 import weaponsJson from '../data/weapons.json';
@@ -33,7 +34,8 @@ import { Monster, type MonsterData, type MutationData } from '../entities/Monste
 import { createHeadlessGame, runTurns } from './harness';
 
 const REPO_SRC = join(dirname(fileURLToPath(import.meta.url)), '..');
-const RESOURCE = zhCN as Record<string, string>;
+const descriptors = getInstalledModuleDescriptors();
+const RESOURCE: Record<string, string> = Object.assign({}, zhCN, ...descriptors.map(module => module.locales?.zh_CN ?? {}));
 
 // 本文件所有用例都用真实 zh_CN 资源。i18next 未初始化时（其他 test 文件的
 // 模块图与本文件隔离，vitest 默认 isolate）这里就是第一次也是唯一一次 init。
@@ -41,13 +43,16 @@ if (!i18next.isInitialized) {
     i18next.init({
         lng: 'zh_CN',
         fallbackLng: 'zh_CN',
-        resources: { zh_CN: { translation: zhCN } },
+        resources: { zh_CN: { translation: RESOURCE } },
         initImmediate: false, // 同步初始化
     });
 }
 
 describe('P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json', () => {
-    const result = scanI18nUsage(REPO_SRC, RESOURCE);
+    const result = scanI18nUsage(REPO_SRC, RESOURCE, [
+        { file: 'components/MainMenu.vue', expression: 'module.labelKey', keys: descriptors.map(module => module.labelKey) },
+        { file: 'components/MainMenu.vue', expression: 'module.descriptionKey', keys: descriptors.flatMap(module => module.descriptionKey ? [module.descriptionKey] : []) },
+    ]);
 
     it('扫描覆盖了引擎、实体与界面（不含测试文件自身）', () => {
         expect(result.filesScanned.length).toBeGreaterThan(30);

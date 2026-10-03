@@ -1,7 +1,7 @@
 import type { ExtensionModule } from '../../types';
 import { isJson } from '../../json';
 import { getGrowthPackIdentity, GROWTH_VERSION, loadGrowthDefinitionPack } from './definitions';
-import zhCN from '../../../locales/zh_CN.json';
+import zhCN from './locales/zh_CN.json';
 import monsters from '../../../data/monsters.json';
 import consumables from '../../../data/consumables.json';
 import arcana from '../../../data/arcana.json';

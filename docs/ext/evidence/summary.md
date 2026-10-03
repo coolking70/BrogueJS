@@ -306,3 +306,62 @@ FINAL_END 2026-10-03T10:18:46Z EXIT_CODE=0
 ```
 
 旧8skip/5todo未改，CE用例执行；源码守卫/黄金trace/两份生成基线原断言保留。96份严格JSON、3份JSONC、LF及diff检查通过，无FATAL/OOM/未处理或worker异常。第二候选生产hash e08d450666c2f607b95832a9a237c4b56952f7e28738e3b5e936b26e6ce6043e；16个dist与Mac验收字节一致。Mac六布局/完整身份、18次真实上下步双击、创建屏障、7事件自然存读/导入/seek/续录与法器瞄准取消通过；原生食物确认取消、真实触摸、导出剪贴板字节未覆盖，既有BODY/Tab焦点限制非1e回归，详见[1e报告](../phase1e.report.md)。原始日志/反事实/截图不提交。
+
+
+## 阶段2a0：组合与物理可移除底座
+
+第二冻结树：2026-10-03 13:49:43–14:37:45 UTC，Node24.19.0/npm11.9.0，3072MiB堆，每命令2workers。原CE缓存保持，未fetch/full/gen；无地图生成改动，不跑drift。下面原文结果均来自这一最终代码/测试树，首轮唯一源码字符串守卫失败和旧删除轮exit130另记于[报告](../phase2a0.report.md)。
+
+```text
+COMMAND npx vue-tsc -b
+EXIT_CODE=0 WALL_SECONDS=22.82
+COMMAND npm run build
+EXIT_CODE=0 WALL_SECONDS=34.83
+COMMAND node scripts/check-module-boundaries.mjs
+Module boundaries and test ownership verified.
+EXIT_CODE=0
+COMMAND npm run test:ext -- --maxWorkers=2
+ Test Files  51 passed (51)
+      Tests  976 passed (976)
+   Duration  273.37s
+EXIT_CODE=0
+COMMAND npm test -- --maxWorkers=2
+ Test Files  296 passed (296)
+      Tests  5385 passed | 8 skipped | 5 todo (5398)
+   Duration  2543.61s
+EXIT_CODE=0
+
+COMMAND node scripts/check-module-removal.mjs --retain=none --engine-only --maxWorkers=2 --output=<isolated-evidence>
+ACTUAL_REMOVAL=src/ext/modules/growth
+DELETED_FILES=60 DELETED_OWNED_TEST_FILES=30
+COMMAND node scripts/check-module-boundaries.mjs
+Module boundaries and test ownership verified.
+EXIT_CODE=0
+COMMAND node node_modules/vue-tsc/bin/vue-tsc.js -b
+EXIT_CODE=0
+COMMAND npm run build
+EXIT_CODE=0
+COMMAND npm run test:ext -- --maxWorkers=2
+ Test Files  21 passed (21)
+      Tests  431 passed (431)
+   Duration  192.83s
+EXIT_CODE=0
+COMMAND npm test -- --maxWorkers=2
+ Test Files  266 passed (266)
+      Tests  4840 passed | 8 skipped | 5 todo (4853)
+   Duration  2296.95s
+EXIT_CODE=0
+COMMAND node scripts/check-module-composition-smoke.mjs --output <json> --engine-only --removed-modules growth
+installed=[] engine=passed requestedScopePassed=true browser=not-run
+REMOVAL_STATUS=partial-browser-not-verified
+EXIT_CODE=0
+
+FROZEN_INPUT_COUNT=2015
+FROZEN_INPUT_HASH=6291f89229bd60dc075a1576e2b62f43792e5249637f164bc1b55b8b93a19d60
+FROZEN_INPUTS_UNCHANGED=true
+REMOVED_COPY_INPUTS_UNCHANGED=true
+CODE_TEST_INPUT_COUNT=727
+CODE_TEST_INPUT_HASH=b3e049d421ec9c64920f70ee975ad0bdc1bc098438c131da712d946284ded0d8
+```
+
+浏览器不由engine-only冒充；Mac使用与第二树新构建逐字相同的normal24文件/删模块16文件，实际UI证据及工具限制见报告。无FATAL/OOM/未处理或worker异常。日志、完整散列、截图与百MB级跨版本快照均不提交。

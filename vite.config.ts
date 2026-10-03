@@ -1,16 +1,14 @@
 import { configDefaults, defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
-import { readFileSync } from 'node:fs'
+import { getTestDiscovery } from './scripts/test-discovery.mjs'
 
-const suites = JSON.parse(readFileSync(new URL('./scripts/test-suites.json', import.meta.url), 'utf8')) as Record<string, string[]>
+const discovery = getTestDiscovery()
 
-/** npm suites share one manifest; direct Vitest filters remain available. */
-export function testSuiteOptions(suite: string | undefined): { include?: string[]; exclude: string[] } {
-  if (suite === undefined) return { exclude: configDefaults.exclude }
-  if (!Object.prototype.hasOwnProperty.call(suites, suite)) throw new Error(`Unknown test suite: ${suite}`)
-  return suite === 'test'
-    ? { exclude: [...configDefaults.exclude, ...suites.gen!, ...suites.drift!] }
-    : { include: suites[suite]!, exclude: configDefaults.exclude }
+/** npm, direct Vitest and ownership guards consume the same discovered partition. */
+export function testSuiteOptions(suite: string | undefined): { include: string[]; exclude: string[] } {
+  if (suite === undefined) return { include: discovery.files, exclude: configDefaults.exclude }
+  if (!Object.prototype.hasOwnProperty.call(discovery.suites, suite)) throw new Error(`Unknown test suite: ${suite}`)
+  return { include: discovery.suites[suite as keyof typeof discovery.suites], exclude: configDefaults.exclude }
 }
 
 // https://vite.dev/config/

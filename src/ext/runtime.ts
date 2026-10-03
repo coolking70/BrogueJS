@@ -6,7 +6,7 @@ import { creatureView } from './types';
 import { readCreatureBirth } from './birth';
 import { canonical, cloneJson, isJson, validId } from './json';
 import { EffectCausality, validEffectOrigin, type EffectOrigin } from './causality';
-import type { DeathFact, GenerationToken, ControlledActionRequest, ControlledActionResult, ControlledActionOutcome, PhysicalResolutionFact } from './types';
+import type { DeathFact, GenerationToken, ControlledActionRequest, ControlledActionResult, ControlledActionOutcome, PhysicalResolutionFact, OptionalQueryResult, OptionalQueryProvider } from './types';
 
 function isCreatureView(value: unknown): boolean {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -59,6 +59,7 @@ interface GenerationFrame {
 }
 export class ExtensionRuntime {
     private readonly modules: ExtensionModule[];
+    private readonly optionalQueries = new Map<string, { module: ExtensionModule; provider: OptionalQueryProvider }>();
     private readonly viewSession: object = Object.freeze({});
     private readonly views = new Map<string, ExtensionViewDescriptor>();
     private states: Record<string, Json> = {};
@@ -85,6 +86,12 @@ export class ExtensionRuntime {
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
         Object.freeze(this.manifest.modules); Object.freeze(this.manifest);
         this.modules = registry.create(manifest);
+        for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalQueries ?? {})) {
+            if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
+                || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid optional query provider');
+            if (this.optionalQueries.has(capability)) throw new Error(`Conflicting optional query providers: ${capability}`);
+            this.optionalQueries.set(capability, { module, provider });
+        }
         for (const module of this.modules) if (module.view) {
             if (!isJson(module.view.definitions) || !module.view.stateFields.every(safeStateField)
                 || !module.view.playerComponents.every(validId)) throw new Error('Invalid extension display descriptor');
@@ -124,6 +131,8 @@ export class ExtensionRuntime {
             get depth() { return runtime.ports.depth(); },
             get playerId() { return runtime.ports.playerId(); },
             get state() { return cloneJson(runtime.states[module.id]!); },
+            isInitialCommand(action, data) { return runtime.isInitialCommand(action, data); },
+            queryOptional(capability, input) { return runtime.queryOptional(capability, input); },
             setState(value) { writable(); if (!module.validateState(value)) throw new Error(`Invalid module state: ${module.id}`); runtime.states[module.id] = cloneJson(value); },
             getComponent(id, name) { const value = runtime.components[creatureKey(id)]?.[componentKey(name)]; return value === undefined ? undefined : cloneJson(value); },
             setComponent(id, name, value) { writable(); if (module.componentValidators?.[name] && !module.componentValidators[name]!(value)) throw new Error('Invalid component value'); const key = creatureKey(id); (runtime.components[key] ??= {})[componentKey(name)] = cloneJson(value); },
@@ -234,6 +243,31 @@ export class ExtensionRuntime {
             } });
     }
     /** Pure engine adapter: one provider per slot, finite synchronous bounded scalars. */
+    queryOptional(capability: string, input: Json): OptionalQueryResult {
+        if (this.disposed) throw new Error('Extension runtime unloaded');
+        if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !isJson(input)) throw new Error('Invalid optional query');
+        const entry = this.optionalQueries.get(capability);
+        if (!entry) return Object.freeze({ status: 'unavailable', reason: 'absent' });
+        const value = freezeView(cloneJson(input)), { module, provider } = entry;
+        const accepted = provider.accepts(value);
+        requireSynchronous(accepted);
+        if (typeof accepted !== 'boolean') throw new Error('Invalid optional query acceptance');
+        if (!accepted) return Object.freeze({ status: 'unavailable', reason: 'unsupported-input' });
+        const result = provider.query(value, Object.freeze({
+            playerId: this.ports.playerId(), state: freezeView(cloneJson(this.states[module.id]!)),
+            getPlayerComponent: (name: string) => {
+                if (!validId(name)) throw new Error('Invalid optional player component');
+                const component = this.components[String(this.ports.playerId())]?.[`${module.id}:${name}`];
+                return component === undefined ? undefined : freezeView(cloneJson(component));
+            },
+        }));
+        requireSynchronous(result);
+        const valid = provider.validate(result);
+        requireSynchronous(valid);
+        if (valid !== true || !isJson(result)) throw new Error('Invalid optional query result');
+        return freezeView({ status: 'available' as const, value: cloneJson(result) });
+    }
+    /** Pure engine adapter: one provider per slot, finite synchronous bounded scalars. */
     rule(port: Exclude<keyof ExtensionRulePolicies, 'nativeBonuses'>, input: ExtensionRuleInput): number {
         const module = this.modules.find(module => module.rulePolicies?.[port]);
         if (!module) return input.baseValue;
@@ -297,7 +331,36 @@ export class ExtensionRuntime {
     }
     get readyToSave(): boolean { return this.modules.every(module => module.readyToSave?.(this.context(module, null)) !== false); }
     validateRecording(events: readonly {action:string;data:unknown;extensions?:ExtensionSnapshot}[]): boolean {
+        const count = this.modules.filter(module => module.initialCommand).length;
+        if (events.length < count || !events.slice(0, count).every(event => event.action === 'ext:command' && typeof event.data === 'string')
+            || !this.validateInitialCommands(events.slice(0, count).map(event => event.data as string))
+            || events.slice(count).some(event => this.isInitialAction(event.action, event.data))) return false;
         return this.modules.every(module => !module.validateRecording || module.validateRecording(events));
+    }
+    /** Recognition, deliberately independent of payload validity: a malformed
+     * duplicate creation input must not evade pre-load prefix rejection. */
+    private isInitialAction(action: string, data: unknown): boolean {
+        if (action !== 'ext:command' || typeof data !== 'string') return false;
+        try {
+            const input = JSON.parse(data);
+            return !!input && typeof input === 'object' && this.modules.some(module => module.initialCommand
+                && input.module === module.id && input.action === module.initialCommand.action);
+        } catch { return false; }
+    }
+    isInitialCommand(action: string, data: unknown): boolean {
+        if (action !== 'ext:command' || typeof data !== 'string') return false;
+        try {
+            const input = JSON.parse(data);
+            if (!isJson(input) || !input || typeof input !== 'object' || Array.isArray(input)
+                || Object.keys(input).sort().join(',') !== 'action,module,payload') return false;
+            const module = this.modules.find(module => module.id === input.module);
+            if (!module?.initialCommand || input.action !== module.initialCommand.action
+                || !Object.prototype.hasOwnProperty.call(module.commands ?? {}, input.action)) return false;
+            const accepted = module.validateInitialCommand ? module.validateInitialCommand(input.action, input.payload!)
+                : canonical(input) === canonical({ module: module.id, ...module.initialCommand });
+            requireSynchronous(accepted);
+            return accepted === true;
+        } catch { return false; }
     }
     initialCommands(): string[] {
         return this.modules.flatMap(module => module.initialCommand ? [JSON.stringify({ module: module.id, ...module.initialCommand })] : []);
@@ -315,9 +378,11 @@ export class ExtensionRuntime {
                 const input = JSON.parse(command), module = expected[index]!;
                 if (!isJson(input) || !input || typeof input !== 'object' || Array.isArray(input)
                     || Object.keys(input).sort().join(',') !== 'action,module,payload' || input.module !== module.id
-                    || typeof input.action !== 'string' || !module.commands?.[input.action]) return false;
-                return module.validateInitialCommand ? module.validateInitialCommand(input.action,input.payload!,resources)
+                    || typeof input.action !== 'string' || !Object.prototype.hasOwnProperty.call(module.commands ?? {}, input.action)) return false;
+                const accepted = module.validateInitialCommand ? module.validateInitialCommand(input.action,input.payload!,resources)
                     : canonical(input) === canonical({module:module.id,...module.initialCommand!});
+                requireSynchronous(accepted);
+                return accepted === true;
             });
         } catch { return false; }
     }

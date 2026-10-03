@@ -2989,7 +2989,7 @@ export class Game {
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
         if (this.replayRecording || this.isAdvancing || this.isInputLocked() || logger.pendingAcknowledgment) return;
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data)) {
-            logger.log(i18next.t('ext.growth.command.rejected', { defaultValue: 'Character command is not available in the current state.' }), '#ff6666');
+            logger.log(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }), '#ff6666');
             return;
         }
         const decisions: boolean[] = [];
@@ -3015,7 +3015,7 @@ export class Game {
     /** Shared by live input, replay/seek and autonomous steps, before any dispatch. */
     private applyCommand(action: string, data?: unknown, perform?: () => void): void {
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data))
-            throw new Error(i18next.t('ext.growth.command.rejected', { defaultValue: 'Character command is not available in the current state.' }));
+            throw new Error(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }));
         logger.onDisturb = () => { this.disturbed = true; };
         // All explicit input, including modal/unknown keys, cancels automation.
         // Nested movement from auto_step shares the same command boundary.
@@ -4284,7 +4284,7 @@ export class Game {
                     apply: amount => {
                         if (!amount) return;
                         const field = life ? 'maxHp' : 'strength', next = this.player[field] + amount;
-                        if (!Number.isSafeInteger(next)) throw new Error(i18next.t('ext.growth.command.rejected', { defaultValue: 'Character command is not available in the current state.' }));
+                        if (!Number.isSafeInteger(next)) throw new Error(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }));
                         this.player[field] = next;
                     },
                 });
@@ -6101,7 +6101,7 @@ export class Game {
             this.extensionRuntime.commitItemGrowth(this.player, 'scroll_of_enchantment', 'enchantment', 1, {
                 apply: amount => {
                     try { applyChosenEnchantmentGain(target, amount); }
-                    catch { throw new Error(i18next.t('ext.growth.command.rejected', { defaultValue: 'Character command is not available in the current state.' })); }
+                    catch { throw new Error(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' })); }
                 },
                 rollback: checkpointEnchantmentGain(target),
             });
@@ -9584,7 +9584,7 @@ export class Game {
      * the world-only projection used by diagnostics and deterministic traces.
      * Missing provenance is never synthesized when an older save is loaded. */
     public toSaveSnapshot(): GameSnapshot {
-        if (this.extensionRuntime && !this.extensionRuntime.readyToSave) throw new Error(i18next.t('ext.growth.command.creation_required', { defaultValue: 'Create the character before saving.' }));
+        if (this.extensionRuntime && !this.extensionRuntime.readyToSave) throw new Error(i18next.t('ext.command.creation_required', { defaultValue: 'Complete module initialization before saving.' }));
         if (this.isAdvancing || recordingState(this).pendingCommand) throw new Error('Cannot save during turn advancement');
         const snapshot = this.toSnapshot();
         const origin = recordingState(this).origin;

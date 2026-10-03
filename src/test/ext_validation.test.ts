@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { isJson } from '../ext/json';
 import { ExtensionRegistry } from '../ext/registry';
 import { ExtensionRuntime } from '../ext/runtime';
@@ -42,5 +42,20 @@ describe('EXT-0 strict data and synchronous lifecycle boundaries', () => {
         expect(() => make({ ...module(), hooks: { enteredLevel: async () => {} } }).emit('enteredLevel', { depth: 1, firstVisit: true })).toThrow('Async');
         expect(() => make({ ...module(), onLoad: async () => {} }).loaded()).toThrow('Async');
         expect(() => make({ ...module(), onUnload: async () => {} }).unload()).toThrow('Async');
+    });
+    it('requires one synchronous boolean result from initial command validators', () => {
+        const command = JSON.stringify({ module: 'alpha', action: 'initialize', payload: null });
+        for (const returned of [true, false, 'yes', 1, {}, Promise.resolve(true), Promise.reject(new Error('async failure'))]) {
+            const validate = vi.fn(() => returned) as unknown as NonNullable<ExtensionModule['validateInitialCommand']>;
+            const runtime = make({ ...module(), initialCommand: { action: 'initialize', payload: null },
+                commands: { initialize() {} }, validateInitialCommand: validate });
+            const before = runtime.snapshot();
+            expect(runtime.validateInitialCommands([command])).toBe(returned === true);
+            expect(validate).toHaveBeenCalledTimes(1);
+            vi.mocked(validate).mockClear();
+            expect(runtime.isInitialCommand('ext:command', command)).toBe(returned === true);
+            expect(validate).toHaveBeenCalledTimes(1);
+            expect(runtime.snapshot()).toEqual(before);
+        }
     });
 });

@@ -12,7 +12,10 @@
     "test:drift": "node scripts/run-test-suite.mjs drift",
     "test:gen": "node scripts/run-test-suite.mjs gen",
     "ce:fetch": "node scripts/fetch-ce-reference.mjs",
-    "test:full": "node scripts/run-test-suite.mjs full"
+    "test:full": "node scripts/run-test-suite.mjs full",
+    "test:ext": "node scripts/run-test-suite.mjs ext",
+    "check:modules": "node scripts/check-module-boundaries.mjs",
+    "check:module-removal": "node scripts/check-module-removal.mjs"
   },
   "dependencies": {
     "i18next": "^25.8.13",

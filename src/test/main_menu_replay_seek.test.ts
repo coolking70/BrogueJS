@@ -75,10 +75,14 @@ beforeAll(async () => {
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
     const empty = { default: { render: () => null }, __esModule: true };
     const modules: Record<string, unknown> = {
+        './ext/ui/useModuleUi': await import('../ext/ui/useModuleUi'),
+        '../ext/catalog': await import('../ext/catalog'),
+        '../ext/ui/defaults': await import('../ext/ui/defaults'),
+        '../ext/ui/creation': await import('../ext/ui/creation'),
+
         vue: Vue, 'i18next-vue': translation,
         '../engine/Input': { inputManager: { registerModalKeyHandler: () => () => {} } },
         './MapTileLegend.vue': empty, './theme/TitleFx.vue': empty,
-        './growth/GrowthCreationPanel.vue': empty, '../ext/modules/growth/view': await import('../ext/modules/growth/view'),
         '../ui/mapTiles': await import('../ui/mapTiles'), '../engine/Seed': await import('../engine/Seed'),
         '../engine/Settings': await import('../engine/Settings'),
     };

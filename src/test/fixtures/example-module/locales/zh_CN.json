@@ -1,0 +1,10 @@
+{
+  "ext.example.kill": "【扩展】{{name}} 倒下了，累计击杀 {{kills}}。",
+  "ext.definition.observe": "观察",
+  "ext.definition.wanderer": "旅人",
+  "ext.definition.traveler": "行路人",
+  "ext.definition.greeting": "问候",
+  "ext.definition.hello": "你好，旅人。",
+  "ext.definition.leave": "告辞",
+  "ext.definition.guide": "向导"
+}

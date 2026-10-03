@@ -2,13 +2,16 @@ import i18next from 'i18next';
 import I18NextVue from 'i18next-vue';
 import zhCN from './locales/zh_CN.json';
 import zhContent from './locales/zh_CN.content.json';
+import { getInstalledModuleDescriptors } from './ext/catalog';
+
+const moduleText = Object.assign({}, ...getInstalledModuleDescriptors().map(module => module.locales?.zh_CN ?? {}));
 
 i18next.init({
     lng: 'zh_CN',
     fallbackLng: 'zh_CN',
     resources: {
         zh_CN: {
-            translation: zhCN,
+            translation: { ...zhCN, ...moduleText },
             content: zhContent
         }
     }

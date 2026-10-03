@@ -558,7 +558,11 @@ function walk(dir: string, out: string[]): void {
     }
 }
 
-export function scanI18nUsage(srcDir: string, resource: Record<string, string>): ScanResult {
+/** Exact data-driven fields may supply their discovered finite vocabulary.
+ * This does not whitelist a prefix or suppress unknown expressions. */
+export function scanI18nUsage(srcDir: string, resource: Record<string, string>, declaredLookups: readonly {
+    file: string; expression: string; keys: readonly string[];
+}[] = []): ScanResult {
     const files: string[] = [];
     walk(srcDir, files);
     files.sort();
@@ -575,6 +579,10 @@ export function scanI18nUsage(srcDir: string, resource: Record<string, string>):
             const snippet = code.slice(Math.max(0, paren - 60), paren + 40).replace(/\s+/g, ' ').trim();
             const loc: KeyLocation = { file: rel, line, snippet };
             let parsed = parseStringExpr(code, paren, [',', ')']);
+            const declared = declaredLookups.find(lookup => lookup.file === rel
+                && code.slice(paren).trimStart().startsWith(lookup.expression)
+                && /^\s*[,)]/.test(code.slice(paren).trimStart().slice(lookup.expression.length)));
+            if (declared) parsed = { candidates: declared.keys.map(key => ({ kind: 'literal' as const, key })), endIndex: paren };
             if ('unresolved' in parsed) {
                 // 首参若以裸标识符开头，尝试同文件追踪（局部 const / 函数参数实参）
                 const ident = /^\s*([A-Za-z_$][\w$]*)/.exec(code.slice(paren, paren + 200))?.[1];

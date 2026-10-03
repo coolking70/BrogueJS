@@ -86,6 +86,11 @@ beforeAll(async () => {
     const inputModule = await import('../engine/Input'); input = inputModule.inputManager;
     const layoutModule = await import('../ui/layout'); viewport = layoutModule.viewport;
     const modules: Record<string, unknown> = {
+        './ext/ui/useModuleUi': await import('../ext/ui/useModuleUi'),
+        '../ext/catalog': await import('../ext/catalog'),
+        '../ext/ui/defaults': await import('../ext/ui/defaults'),
+        '../ext/ui/creation': await import('../ext/ui/creation'),
+
         vue: { ...Vue, Transition: { props: ['name'], setup: (_props: unknown, { slots }: any) => () => slots.default?.() } },
         'i18next-vue': translation, i18next: { default: i18next, __esModule: true },
         '../engine/Input': inputModule, '../engine/Core/Game': { activeGame: game },
@@ -135,9 +140,6 @@ beforeAll(async () => {
     modules['./components/MainMenu.vue'] = { default: Vue.defineComponent({ emits: ['new-game'], setup(_props, { emit }) {
         return () => Vue.h('start', { onClick: () => emit('new-game', { seed: 33005, mode: 'test' }) });
     } }), __esModule: true };
-    modules['./components/growth/GrowthCharacterPanel.vue'] = empty;
-    modules['./ui/useGrowthCharacter'] = await import('../ui/useGrowthCharacter');
-    modules['./ext/modules/growth/view'] = await import('../ext/modules/growth/view');
     modules['./engine/Systems/Logger'] = await import('../engine/Systems/Logger');
     App = compile('App.vue').default;
 });

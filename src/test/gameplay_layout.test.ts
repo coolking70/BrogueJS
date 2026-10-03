@@ -25,7 +25,8 @@ describe('Expedition workspace presentation contract',()=>{
   const s=source('components/CommandBar.vue');
   for(const action of ['search','search_long','wait','auto_rest','pickup','toggle_inventory','throw_item','auto_explore','travel_stairs','discoveries','help','escape'])expect(s).toContain(`action: '${action}'`);
   expect(s).toContain("'throw_item', 'escape'");
-  expect(s).toContain('commands.filter(c => !primary.has(c.action))');
+  expect(s).toContain('commands.filter(c => (primary.has(c.action) || props.moduleCommands?.some(entry => entry.id === c.action)))');
+  expect(s).toContain('commands.filter(c => !(primary.has(c.action) || props.moduleCommands?.some(entry => entry.id === c.action)))');
   expect(s).toContain('dispatch(action, data)');
   expect(s).not.toMatch(/activeGame\.|executeCommand/);
  });

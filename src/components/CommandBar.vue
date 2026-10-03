@@ -24,9 +24,10 @@ import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import { inputManager } from '../engine/Input';
 import { dispatch } from '../ui/commands';
+import type { ModuleUiCommand } from '../ext/ui/types';
 
-const props = defineProps<{ mode: 'portrait' | 'landscape' | 'desktop'; showCharacter?: boolean; characterBlocked?: boolean; hasGrowthPoints?: boolean }>();
-const emit = defineEmits<{ 'modal-open': []; character: [] }>();
+const props = defineProps<{ mode: 'portrait' | 'landscape' | 'desktop'; moduleCommands?: readonly ModuleUiCommand[] }>();
+const emit = defineEmits<{ 'modal-open': [] }>();
 const expanded = ref(false);
 watch(expanded, open => { if (open) emit('modal-open'); }, { flush: 'sync' });
 const root = ref<HTMLElement>();
@@ -58,8 +59,8 @@ watch([expanded, () => props.mode], async () => {
   positionOverflow();
 });
 const closeOutside = (event: PointerEvent) => { if (expanded.value && !root.value?.contains(event.target as Node)) expanded.value = false; };
-const primary = new Set(['auto_explore', 'search', 'wait', 'pickup', 'toggle_inventory', 'show_character', 'throw_item', 'escape']);
-function invoke(action: string, data?: unknown) { expanded.value = false; (document.activeElement as HTMLElement)?.blur(); if (action === 'show_character') emit('character'); else dispatch(action, data); }
+const primary = new Set(['auto_explore', 'search', 'wait', 'pickup', 'toggle_inventory', 'throw_item', 'escape']);
+function invoke(action: string, data?: unknown) { expanded.value = false; (document.activeElement as HTMLElement)?.blur(); const command = props.moduleCommands?.find(entry => entry.id === action); if (command) { if (!command.disabled) command.invoke(); } else dispatch(action, data); }
 let removeKeyboard: (() => void) | undefined;
 let resizeObserver: ResizeObserver | undefined;
 onMounted(() => {
@@ -89,14 +90,14 @@ onUnmounted(() => {
 // key：与 Input.ts 同一动作名；label：i18n 键；glyph：CE 的按键字符，作为图标提示
 const { t } = useTranslation();
 // i18n 键必须是字面量（p1_30 扫描器要求首参可静态解析）
-const commands = computed(() => [
+const commands = computed<{ action: string; label: string; glyph?: string; data?: string; disabled?: boolean }[]>(() => [
   { action: 'search', label: t('mobile.cmd.search'), glyph: 's' },
   { action: 'search_long', label: t('mobile.cmd.search_long'), glyph: 'Ctrl-S' },
   { action: 'wait', label: t('mobile.cmd.rest'), glyph: 'z' },
   { action: 'auto_rest', label: t('mobile.cmd.auto_rest'), glyph: 'Z' },
   { action: 'pickup', label: t('mobile.cmd.pickup'), glyph: 'g' },
   { action: 'toggle_inventory', label: t('mobile.cmd.inventory'), glyph: 'i' },
-  ...(props.showCharacter ? [{ action: 'show_character', label: t('ext.growth.ui.character'), glyph: props.hasGrowthPoints ? '●' : '' }] : []),
+  ...(props.moduleCommands ?? []).map(command => ({ action: command.id, label: command.label, glyph: command.glyph, disabled: command.disabled })),
   { action: 'throw_item', label: t('mobile.cmd.throw'), glyph: 't' },
   { action: 'auto_explore', label: t('mobile.cmd.explore'), glyph: 'x' },
   { action: 'travel_stairs', data: 'up', label: t('mobile.cmd.stairs_up'), glyph: '<' },
@@ -109,14 +110,14 @@ const commands = computed(() => [
 
 <template>
   <nav ref="root" class="command-bar" :class="[`cmd-${mode}`, { expanded }]" @keydown.stop @keyup.stop @keydown.esc="expanded = false; ($event.target as HTMLElement)?.blur()" :aria-label="$t('controls.title')">
-    <button v-for="cmd in commands.filter(c => primary.has(c.action))" :key="cmd.action + (cmd.data ?? '')" class="cmd-btn" :data-action="cmd.action"
-            :data-direction="cmd.data" :disabled="cmd.action === 'show_character' && characterBlocked" @click="invoke(cmd.action, cmd.data)">
+    <button v-for="cmd in commands.filter(c => (primary.has(c.action) || props.moduleCommands?.some(entry => entry.id === c.action)))" :key="cmd.action + (cmd.data ?? '')" class="cmd-btn" :data-action="cmd.action"
+            :data-direction="cmd.data" :disabled="cmd.disabled" @click="invoke(cmd.action, cmd.data)">
       <span class="cmd-label">{{ cmd.label }}</span>
       <kbd v-if="cmd.glyph" class="cmd-key" aria-hidden="true">{{ cmd.glyph }}</kbd>
     </button>
     <button ref="more" class="cmd-btn command-more" :aria-expanded="expanded" @click="expanded = !expanded; ($event.currentTarget as HTMLElement).blur()"><span class="cmd-label">{{ expanded ? $t('theme.command_less') : $t('theme.command_more') }}</span><span>···</span></button>
     <div v-if="expanded" ref="overflow" class="command-overflow" :style="overflowStyle">
-      <button v-for="cmd in commands.filter(c => !primary.has(c.action))" :key="cmd.action + (cmd.data ?? '')" class="cmd-btn" :data-action="cmd.action" :data-direction="cmd.data" @click="invoke(cmd.action, cmd.data)"><span class="cmd-label">{{ cmd.label }}</span><kbd class="cmd-key">{{ cmd.glyph }}</kbd></button>
+      <button v-for="cmd in commands.filter(c => !(primary.has(c.action) || props.moduleCommands?.some(entry => entry.id === c.action)))" :key="cmd.action + (cmd.data ?? '')" class="cmd-btn" :data-action="cmd.action" :data-direction="cmd.data" @click="invoke(cmd.action, cmd.data)"><span class="cmd-label">{{ cmd.label }}</span><kbd class="cmd-key">{{ cmd.glyph }}</kbd></button>
     </div>
   </nav>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, shallowRef, computed, watch, onMounted, onUnmounted, nextTick, type Component } from "vue";
 import { useTranslation } from "i18next-vue";
 import { inputManager } from "../engine/Input";
 import MapTileLegend from './MapTileLegend.vue';
@@ -7,10 +7,9 @@ import { mapMode, selectMapMode, isMapMode } from '../ui/mapTiles';
 import TitleFx from "./theme/TitleFx.vue";
 import { normalizeSeed } from "../engine/Seed";
 import type { RuleSet } from '../ext/types';
-import GrowthCreationPanel from './growth/GrowthCreationPanel.vue';
-import { loadGrowthCreationContext, createGrowthCreationDraft, selectGrowthCreationIdentity, adjustGrowthCreationChoice, readGrowthCreationView, buildGrowthCreationCommands, type GrowthCreationContext } from '../ext/modules/growth/view';
-import type { GrowthIdentitySelection } from '../ext/modules/growth/identities';
-import type { GrowthIdentity } from '../ext/modules/growth/types';
+import { DEFAULT_EXTENSIONS, getInstalledModuleDescriptors } from '../ext/catalog';
+import { DEFAULT_NEW_GAME_RULE_SET } from '../ext/ui/defaults';
+import { prepareModuleCreation, buildModuleCreationCommands, type ModuleCreationPlan } from '../ext/ui/creation';
 import type { GameMode } from "../engine/Core/Game";
 import {
   displaySettings,
@@ -39,7 +38,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "new-game", payload: { seed?: string; mode: GameMode; ruleSet?: RuleSet; initialCommands?: readonly string[]; onRejected?: () => void }): void;
+  (e: "new-game", payload: { seed?: string; mode: GameMode; ruleSet?: RuleSet; extensions?: readonly string[]; initialCommands?: readonly string[]; onRejected?: () => void }): void;
   (e: "continue-game"): void;
   (e: "save-game"): void;
   (e: "delete-save"): void;
@@ -79,7 +78,9 @@ function goBack() {
   else if (props.inGame) emit("close");
 }
 const mode = ref<GameMode>("normal");
-const ruleSet = ref<RuleSet>('classic');
+const ruleSet = ref<RuleSet>(DEFAULT_NEW_GAME_RULE_SET);
+const installedModules = getInstalledModuleDescriptors();
+const selectedModules = ref<string[]>([...DEFAULT_EXTENSIONS]);
 const seedInput = ref("");
 const replaySeekInput = ref<string | number>("");
 const replayFileInput = ref<HTMLInputElement | null>(null);
@@ -92,7 +93,7 @@ onMounted(() => {
     return true;
   }, 1000);
 });
-onUnmounted(() => removeMenuKeyboard?.());
+onUnmounted(() => { removeMenuKeyboard?.(); if (creationStepTimer !== undefined) globalThis.clearTimeout(creationStepTimer); creationSession++; creationLoadAttempt++; });
 watch(page, async () => { legendOpen.value = false; await nextTick(); menuCard.value?.focus(); });
 const { t } = useTranslation();
 const editionText = computed(() => t("title.edition"));
@@ -109,42 +110,88 @@ const parsedSeed = computed(() => {
   }
 });
 
-const creationContext = shallowRef<GrowthCreationContext | null>(null);
-const creationDraft = shallowRef<GrowthIdentitySelection | null>(null);
-const creationSubmitting = ref(false), creationError = ref<string | null>(null);
-const creationModel = computed(() => creationContext.value && creationDraft.value ? readGrowthCreationView(creationContext.value.pack, creationDraft.value) : null);
+const creationContext = shallowRef<ModuleCreationPlan | null>(null);
+const creationStep = ref(0);
+const creationRun = shallowRef<{ seed?: string; mode: GameMode } | null>(null);
+const creationSelections = new Map<string, readonly string[]>();
+const creationSubmitting = ref(false), creationLoading = ref(false), creationError = ref<string | null>(null);
+const creationComponent = shallowRef<Component | null>(null);
+const creationHandlers = shallowRef<{ onCancel(): void; onComplete(commands: readonly string[]): void } | null>(null);
+let creationSession = 0, creationLoadAttempt = 0;
+let creationStepTimer: ReturnType<typeof setTimeout> | undefined;
+const activeCreationStep = computed(() => creationContext.value?.steps[creationStep.value] ?? null);
 function cancelCreation() {
   if (creationSubmitting.value) return;
-  creationContext.value = null; creationDraft.value = null; creationError.value = null;
+  creationSession++; creationLoadAttempt++;
+  creationContext.value = null; creationRun.value = null; creationSelections.clear(); creationError.value = null;
+  creationComponent.value = null; creationHandlers.value = null; creationLoading.value = false;
   void nextTick(() => menuCard.value?.focus({ preventScroll: true }));
 }
-function selectIdentity(kind: GrowthIdentity['kind'], id: string) {
-  if (!creationContext.value || !creationDraft.value || creationSubmitting.value) return;
-  creationDraft.value = selectGrowthCreationIdentity(creationContext.value.pack, creationDraft.value, kind, id); creationError.value = null;
-}
-function adjustIdentityChoice(identityId: string, choiceIndex: number, attributeId: string, delta: number) {
-  if (!creationContext.value || !creationDraft.value || creationSubmitting.value) return;
-  creationDraft.value = adjustGrowthCreationChoice(creationContext.value.pack, creationDraft.value, identityId, choiceIndex, attributeId, delta); creationError.value = null;
+async function loadCreationStep() {
+  const step = activeCreationStep.value;
+  if (!step || creationLoading.value) return;
+  const session = creationSession, index = creationStep.value, attempt = ++creationLoadAttempt;
+  const current = () => creationSession === session && creationStep.value === index && creationLoadAttempt === attempt && !!creationContext.value;
+  creationLoading.value = true; creationError.value = null;
+  creationComponent.value = null; creationHandlers.value = null;
+  try {
+    const component = step.component ?? await step.load?.();
+    if (!current()) return;
+    if (!component) throw new Error('Missing module creation component');
+    creationHandlers.value = {
+      onCancel: () => { if (current()) cancelCreation(); },
+      onComplete: commands => { if (current()) completeCreationStep(session, index, step.moduleId, commands); },
+    };
+    creationComponent.value = component;
+  } catch {
+    if (current()) creationError.value = 'ext.creation.unavailable';
+  } finally {
+    if (current()) creationLoading.value = false;
+  }
 }
 function submitCreation() {
-  if (!creationContext.value || !creationDraft.value || creationSubmitting.value || parsedSeed.value === null || !creationModel.value?.valid) return;
-  const initialCommands = buildGrowthCreationCommands(creationContext.value, creationDraft.value);
-  if (!initialCommands) { creationError.value = 'ext.growth.creation.invalid'; return; }
-  // Latch before emitting: repeated clicks/Enter cannot create a second run.
-  creationSubmitting.value = true;
-  emit('new-game', { seed: parsedSeed.value, mode: mode.value, ruleSet: 'extended', initialCommands,
-    onRejected: () => { creationSubmitting.value = false; creationError.value = 'ext.growth.creation.start_failed'; } });
+  if (!creationContext.value || !creationRun.value || creationSubmitting.value) return;
+  try {
+    const initialCommands = buildModuleCreationCommands(creationContext.value, creationSelections), session = creationSession;
+    // Latch before emitting: repeated clicks/Enter cannot create a second run.
+    creationSubmitting.value = true;
+    emit('new-game', { ...creationRun.value, ruleSet: 'extended', extensions: creationContext.value.extensions, initialCommands,
+      onRejected: () => {
+        if (session !== creationSession) return;
+        creationSubmitting.value = false; creationError.value = 'ext.creation.start_failed';
+        if (!activeCreationStep.value) creationContext.value = null;
+      } });
+  } catch { creationError.value = 'ext.creation.unavailable'; }
+}
+function completeCreationStep(session: number, index: number, moduleId: string, commands: readonly string[]) {
+  if (session !== creationSession || index !== creationStep.value || moduleId !== activeCreationStep.value?.moduleId
+      || !creationComponent.value || creationSubmitting.value || creationLoading.value) return;
+  creationSelections.set(moduleId, Object.freeze([...commands]));
+  creationError.value = null;
+  if (creationStep.value + 1 < creationContext.value!.steps.length) {
+    // Absorb the second physical click before the next module's controls activate.
+    creationSubmitting.value = true; creationStep.value++;
+    creationStepTimer = globalThis.setTimeout(() => { creationStepTimer = undefined; creationSubmitting.value = false; }, 600);
+    void loadCreationStep();
+  } else submitCreation();
 }
 const startGame = () => {
   if (parsedSeed.value === null || creationSubmitting.value || creationContext.value) return;
+  creationSession++;
   if (ruleSet.value === 'extended') {
     try {
-      const context = loadGrowthCreationContext(), draft = createGrowthCreationDraft(context.pack);
-      creationContext.value = context; creationDraft.value = draft; creationError.value = null;
-    } catch { creationError.value = 'ext.growth.creation.unavailable'; }
+      creationContext.value = prepareModuleCreation(selectedModules.value);
+      creationRun.value = { seed: parsedSeed.value, mode: mode.value };
+      creationSelections.clear(); creationStep.value = 0; creationError.value = null;
+      if (!creationContext.value.steps.length) submitCreation();
+      else void loadCreationStep();
+    } catch { creationContext.value = null; creationError.value = 'ext.creation.unavailable'; }
     return;
   }
-  emit('new-game', { seed: parsedSeed.value, mode: mode.value });
+  const session = creationSession;
+  creationSubmitting.value = true;
+  emit('new-game', { seed: parsedSeed.value, mode: mode.value,
+    onRejected: () => { if (session !== creationSession) return; creationSubmitting.value = false; creationError.value = 'ext.creation.start_failed'; } });
 };
 
 const modeLabel = (value: string) =>
@@ -208,7 +255,7 @@ const sidebarWidthModel = computed({
   >
     <div v-if="!inGame" class="title-vignette" aria-hidden="true"></div>
     <TitleFx v-if="!inGame" />
-    <div ref="menuCard" class="title-screen" tabindex="-1" :inert="!!creationContext">
+    <div ref="menuCard" class="title-screen" tabindex="-1" :inert="!!creationComponent">
       <div class="title-brand">
         <div class="title-edition">
           <span></span>{{ editionText }}<span></span>
@@ -267,7 +314,7 @@ const sidebarWidthModel = computed({
       </nav>
       <section v-else class="menu-card" :class="{ 'settings-card': page === 'settings' }" :aria-label="t('menu.actions.menu')">
         <header class="menu-section-header">
-          <button class="back-button" @click="page = 'home'">
+          <button class="back-button" :disabled="creationSubmitting" @click="goBack">
             {{ t("title.back") }}</button
           >
         </header>
@@ -276,14 +323,24 @@ const sidebarWidthModel = computed({
           <p class="section-description">{{ t("title.new_hint") }}</p>
           <label class="field">
             <span>{{ t("ext.mode.label") }}</span>
-            <select v-model="ruleSet" data-testid="rule-set">
+            <select v-model="ruleSet" :disabled="!!creationContext" data-testid="rule-set">
               <option value="classic">{{ t("ext.mode.classic") }}</option>
               <option value="extended">{{ t("ext.mode.extended") }}</option>
             </select>
           </label>
+          <fieldset v-if="ruleSet === 'extended'" class="module-selector" :disabled="!!creationContext" data-testid="module-selector">
+            <legend>{{ t('ext.modules.label') }}</legend>
+            <p class="field-hint">{{ t('ext.modules.hint') }}</p>
+            <p class="field-hint">{{ t('ext.modules.default_hint') }}</p>
+            <label v-for="module in installedModules" :key="module.id" class="module-option">
+              <input v-model="selectedModules" type="checkbox" :value="module.id" :data-module="module.id" />
+              <span>{{ t(module.labelKey) }}<small v-if="module.descriptionKey">{{ t(module.descriptionKey) }}</small></span>
+            </label>
+            <p v-if="!selectedModules.length" class="field-hint">{{ t('ext.modules.empty') }}</p>
+          </fieldset>
           <label class="field"
             ><span>{{ t("menu.mode.label") }}</span
-            ><select v-model="mode">
+            ><select v-model="mode" :disabled="!!creationContext">
               <option value="normal">{{ t("menu.mode.normal") }}</option>
               <option value="easy">{{ t("menu.mode.easy") }}</option>
               <option value="wizard">{{ t("menu.mode.wizard") }}</option>
@@ -298,7 +355,7 @@ const sidebarWidthModel = computed({
               inputmode="numeric"
               :aria-invalid="parsedSeed === null"
               aria-describedby="seed-hint"
-              :disabled="mode === 'test'"
+              :disabled="mode === 'test' || !!creationContext"
               :placeholder="
                 mode === 'test'
                   ? t('menu.seed.disabled_for_test')
@@ -312,10 +369,15 @@ const sidebarWidthModel = computed({
           >
             {{ t("menu.seed.range") }}
           </p>
-          <p v-if="creationError && !creationContext" class="field-hint" role="alert">{{ t('ext.growth.creation.unavailable') }}</p>
+          <p v-if="creationError && !creationComponent" class="field-hint" role="alert">{{ t(creationError === 'ext.creation.start_failed' ? 'ext.creation.start_failed' : 'ext.creation.unavailable') }}</p>
+          <div v-if="creationContext && !creationComponent" class="creation-load-controls">
+            <p v-if="creationLoading" class="field-hint" role="status">{{ t('ext.creation.loading') }}</p>
+            <button data-creation-load="cancel" :disabled="creationSubmitting" @click="cancelCreation">{{ t('ext.creation.cancel') }}</button>
+            <button v-if="creationError && !creationLoading" data-creation-load="retry" :disabled="creationSubmitting" @click="loadCreationStep">{{ t('ext.creation.retry') }}</button>
+          </div>
           <button
             class="begin-button"
-            :disabled="parsedSeed === null || replayBusy"
+            :disabled="parsedSeed === null || replayBusy || creationSubmitting || !!creationContext"
             @click="startGame"
           >
             {{ t("title.begin") }}<span>◆</span>
@@ -496,7 +558,12 @@ const sidebarWidthModel = computed({
         ><span>{{ t("title.version") }}</span>
       </footer>
     </div>
-    <GrowthCreationPanel v-if="creationModel" :model="creationModel" :submitting="creationSubmitting" :error="creationError"
-      @cancel="cancelCreation" @select="selectIdentity" @adjust="adjustIdentityChoice" @submit="submitCreation" />
+    <component v-if="creationComponent" :is="creationComponent" :key="`${creationSession}:${creationStep}:${activeCreationStep?.moduleId}`"
+      :submitting="creationSubmitting" :error="creationError" v-bind="creationHandlers" />
   </div>
 </template>
+
+<style scoped>
+.creation-load-controls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.creation-load-controls p{flex-basis:100%}.creation-load-controls button{min-height:44px;padding:8px 12px;font:inherit;color:inherit;background:var(--th-raised,#293026);border:1px solid var(--th-line,#555)}
+.module-selector{border:1px solid var(--th-line,#555);padding:10px 12px;margin:12px 0}.module-selector legend{font-size:12px;color:var(--th-dim,#aaa)}.module-option{display:flex;align-items:flex-start;gap:10px;padding:8px 0;font-size:14px;cursor:pointer}.module-option input{margin:4px 0;accent-color:var(--th-accent,#dbc689)}.module-option small{display:block;color:var(--th-dim,#aaa);font-size:11px;margin-top:4px}
+</style>

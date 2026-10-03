@@ -50,6 +50,21 @@ export interface ExtensionRuleContext {
     readonly state: Json;
     getComponent(creatureId: number, name: string): Json | undefined;
 }
+/** Read-only optional protocol seam. IDs include an explicit version (e.g.
+ * foundation.sample.v1); absence is normal, malformed provider output is not.
+ * No mutation/reward preparation is promised by this query-only interface. */
+export interface OptionalQueryContext {
+    readonly playerId: number;
+    readonly state: ReadonlyJson;
+    getPlayerComponent(name: string): ReadonlyJson | undefined;
+}
+export interface OptionalQueryProvider {
+    accepts(input: ReadonlyJson): boolean;
+    query(input: ReadonlyJson, context: OptionalQueryContext): Json;
+    validate(value: unknown): value is Json;
+}
+export type OptionalQueryResult = { readonly status: 'unavailable'; readonly reason: 'absent' | 'unsupported-input' }
+    | { readonly status: 'available'; readonly value: ReadonlyJson };
 export interface ExtensionRuleInput {
     readonly actorId: number; readonly targetId: number | null; readonly baseValue: number;
     readonly attackKind?: 'melee' | 'thrown';
@@ -126,6 +141,10 @@ export interface ExtensionContext {
     readonly depth: number;
     readonly playerId: number;
     readonly state: Json;
+    /** Pure recognition of a selected module's declared creation command.
+     * Lets an uninitialized module permit another module's initialization. */
+    isInitialCommand(action: string, data: unknown): boolean;
+    queryOptional(capability: string, input: Json): OptionalQueryResult;
     setState(state: Json): void;
     getComponent(creatureId: number, name: string): Json | undefined;
     setComponent(creatureId: number, name: string, value: Json): void;
@@ -147,6 +166,7 @@ export type HookHandlers = { [K in HookName]?: (event: Readonly<HookEvents[K]>, 
 export interface ExtensionCreationResources { readonly maxHp: number; readonly strength: number }
 export interface ExtensionModule extends ExtensionVersion {
     dependencies?: readonly string[];
+    readonly optionalQueries?: Readonly<Record<string, OptionalQueryProvider>>;
     readonly view?: ExtensionViewDescriptor;
     /** Pure projection receives only a detached selected player component, never a world/context capability. */
     projectPlayerComponent?(name: string, value: ReadonlyJson): Json;

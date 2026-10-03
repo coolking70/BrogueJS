@@ -21,7 +21,7 @@ export function wireConfirmRequest(game: Game): void {
 </script>
 
 <script setup lang="ts">
-import { computed, ref, shallowRef, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { displaySettings } from './engine/Settings';
 import { inputManager } from './engine/Input';
 import { logger } from './engine/Systems/Logger';
@@ -52,9 +52,7 @@ import { activeGame, type GameMode } from './engine/Core/Game';
 import { viewport, startViewportTracking, shouldShowTouchControls } from './ui/layout';
 import { recordingJsonAtBoundary, RecordingExportError } from './ui/recordingExport';
 import type { DetailInfo } from './engine/UI/DetailGenerator';
-import GrowthCharacterPanel from './components/growth/GrowthCharacterPanel.vue';
-import { useGrowthCharacter } from './ui/useGrowthCharacter';
-import { createGrowthAllocationDraft, buildGrowthAllocateCommand, buildGrowthRespecCommand, buildGrowthSkillCommand, readGrowthSkillTargets, type GrowthSkillTarget, type GrowthCharacterViewModel, type GrowthAllocationDraft } from './ext/modules/growth/view';
+import { useModuleUi } from './ext/ui/useModuleUi';
 
 const REPLAY_KEY = 'brogue-web-replay-v1';
 
@@ -66,7 +64,6 @@ const touchUi = computed(() => !compact.value && viewport.coarsePointer);
 const panelOpen = ref(false);
 const contextWidth = computed(() => displaySettings.sidebarWidthMode === 'proportional' ? 'clamp(190px, 20vw, 280px)' : '216px');
 const journalOpen = ref(false);
-const characterOpen = ref(false);
 const creationTransition = ref(false);
 let creationTransitionTimer: ReturnType<typeof setTimeout> | undefined;
 let removeCreationKeyboard: (() => void) | undefined;
@@ -85,115 +82,6 @@ function beginCreationTransition() {
     clearCreationTransition(); cancelHeldInputs();
     if (runEpoch === epoch && !menuOpen.value) void nextTick(() => document.querySelector<HTMLElement>('.game-view')?.focus({ preventScroll: true }));
   }, 600);
-}
-const growthDraft = shallowRef<GrowthAllocationDraft | null>(null);
-const { view: growthView, poll: pollGrowth } = useGrowthCharacter(growthDraft);
-const growthSubmitting = ref(false);
-const growthError = ref<string | null>(null);
-const growthNotice = ref<string | null>(null);
-const growthName = (key: string) => i18next.t(`ext.growth.${key.slice('ext.growth.'.length)}`);
-const growthInitialTab = ref<'attributes' | 'skills'>('attributes');
-const growthTargetDraft = shallowRef<{ view: GrowthCharacterViewModel; skillId: string } | null>(null);
-const growthSkillBarExpanded = ref(false);
-const growthTargets = computed(() => growthTargetDraft.value && growthView.value
-  ? readGrowthSkillTargets(activeGame, growthView.value, growthTargetDraft.value.skillId) : []);
-const equippedGrowthSkills = computed(() => growthView.value?.skills.filter(skill => skill.mode === 'active' && skill.equipped) ?? []);
-function cancelGrowthTarget() { growthTargetDraft.value = null; }
-// The game is not reactive; the existing display tick keeps availability current.
-function canOpenGrowthCharacter() {
-  return !!growthView.value && growthView.value.disabledReason !== 'unavailable'
-    && growthView.value.disabledReason !== 'creation-required'
-    && !(creationTransition.value || menuOpen.value || activeGame.isInventoryOpen || activeGame.isThrowing || activeGame.pendingArcana
-      || activeGame.pendingEnchantment || activeGame.pendingIdentify || activeGame.pendingUseConfirm
-      || logger.pendingAcknowledgment || activeGame.referenceScreen || activeGame.isGameOver
-      || activeGame.isAdvancing || activeGame.isInputLocked());
-}
-const growthBlocked = computed(() => { replayTick.value; return !canOpenGrowthCharacter(); });
-function openCharacter(initialTab: 'attributes' | 'skills' = 'attributes') {
-  pollGrowth();
-  if (!growthView.value || !canOpenGrowthCharacter()) return;
-  cancelHeldInputs();
-  panelOpen.value = false; journalOpen.value = false; themePanelOpen.value = false;
-  nearbyInspection.value = null; activeGame.inspectTarget = null;
-  growthError.value = null; growthNotice.value = null;
-  growthDraft.value = createGrowthAllocationDraft(growthView.value);
-  growthInitialTab.value = initialTab; growthTargetDraft.value = null; characterOpen.value = true;
-}
-function closeCharacter() {
-  if (growthSubmitting.value) return;
-  characterOpen.value = false; growthTargetDraft.value = null; growthDraft.value = null; growthError.value = null; growthNotice.value = null;
-  void nextTick(() => document.querySelector<HTMLElement>('.game-view')?.focus({ preventScroll: true }));
-}
-function resetGrowthDraft() {
-  if (!growthView.value || growthSubmitting.value) return;
-  growthDraft.value = createGrowthAllocationDraft(growthView.value); growthError.value = null; growthNotice.value = null;
-}
-function adjustGrowthDraft(id: string, amount: number) {
-  if (!growthDraft.value || !growthView.value || growthSubmitting.value || growthView.value.readOnly) return;
-  const row = growthView.value.attributes.find(attribute => attribute.id === id);
-  if (!row || (amount > 0 ? !row.canIncrease : !row.canDecrease)) return;
-  const attributes = { ...growthDraft.value.attributes, [id]: (growthDraft.value.attributes[id] ?? 0) + amount };
-  if (!attributes[id]) delete attributes[id];
-  growthDraft.value = { ...growthDraft.value, attributes }; growthError.value = null; growthNotice.value = null;
-}
-async function submitGrowth(kind: 'allocate' | 'respec') {
-  if (!characterOpen.value || growthSubmitting.value || !growthView.value || growthView.value.readOnly) return;
-  growthSubmitting.value = true; growthError.value = null; growthNotice.value = null;
-  try {
-    const command = kind === 'allocate' ? buildGrowthAllocateCommand(growthView.value, activeGame)
-      : buildGrowthRespecCommand(growthView.value, activeGame);
-    if (!command) { growthError.value = 'ext.growth.ui.command_rejected'; pollGrowth(); return; }
-    const revision = growthView.value.revision;
-    activeGame.executeCommand('ext:command', command);
-    pollGrowth();
-    if (growthView.value?.revision === revision) { growthError.value = 'ext.growth.ui.command_rejected'; return; }
-    // Keep the panel over the map after success: a physical second click cannot
-    // become an unintended movement. The fresh empty draft also disables submit.
-    growthDraft.value = createGrowthAllocationDraft(growthView.value!);
-    growthNotice.value = kind === 'allocate' ? 'ext.growth.ui.allocated' : 'ext.growth.ui.respecced';
-  } catch {
-    growthError.value = 'ext.growth.ui.command_rejected'; pollGrowth();
-  } finally {
-    await nextTick(); growthSubmitting.value = false;
-  }
-}
-async function submitGrowthSkill(action: 'learn' | 'equip' | 'unequip' | 'use', skillId: string, target?: GrowthSkillTarget) {
-  if (growthSubmitting.value) return;
-  if (!characterOpen.value) openCharacter('skills');
-  if (!characterOpen.value || !growthView.value || growthView.value.readOnly) return;
-  if (action === 'use' && !target) {
-    pollGrowth();
-    const skill = growthView.value?.skills.find(entry => entry.id === skillId);
-    if (!skill?.canUse || !skill.action) return;
-    if (skill.action.target !== 'self') {
-      growthTargetDraft.value = { view: growthView.value!, skillId };
-      growthError.value = null; growthNotice.value = null;
-      await nextTick();
-      const body = document.querySelector<HTMLElement>('.growth-body'); if (body) body.scrollTop = 0;
-      return;
-    }
-    target = { kind: 'self' };
-  }
-  growthSubmitting.value = true; growthError.value = null; growthNotice.value = null;
-  try {
-    const view = growthTargetDraft.value?.view ?? growthView.value;
-    const command = buildGrowthSkillCommand(view, activeGame, action, skillId, target);
-    if (!command) { growthError.value = 'ext.growth.ui.command_rejected'; pollGrowth(); return; }
-    const revision = view.revision;
-    activeGame.executeCommand('ext:command', command);
-    pollGrowth();
-    if (growthView.value?.revision === revision) { growthError.value = 'ext.growth.ui.command_rejected'; return; }
-    growthDraft.value = createGrowthAllocationDraft(growthView.value!);
-    growthNotice.value = action === 'learn' ? 'ext.growth.ui.skill_learned' : action === 'use' ? 'ext.growth.ui.skill_used' : 'ext.growth.ui.skill_equipped';
-  } catch {
-    growthError.value = 'ext.growth.ui.command_rejected'; pollGrowth();
-  } finally {
-    growthTargetDraft.value = null;
-    await nextTick(); growthSubmitting.value = false;
-  }
-}
-function confirmGrowthTarget(target: GrowthSkillTarget) {
-  if (growthTargetDraft.value) void submitGrowthSkill('use', growthTargetDraft.value.skillId, target);
 }
 const nearbyInspection = ref<DetailInfo | null>(null);
 // Display-only panel expansion; preserve one GameCanvas instance across layout changes.
@@ -233,15 +121,29 @@ wireConfirmRequest(activeGame);
 
 const gameStarted = ref(false);
 const menuOpen = ref(true);
+const moduleUi = useModuleUi({
+  game: () => activeGame, tick: replayTick, immersive: computed(() => displaySettings.immersiveMode),
+  canOpenPanel: () => !(creationTransition.value || menuOpen.value || activeGame.isInventoryOpen || activeGame.isThrowing || activeGame.pendingArcana
+    || activeGame.pendingEnchantment || activeGame.pendingIdentify || activeGame.pendingUseConfirm
+    || logger.pendingAcknowledgment || activeGame.referenceScreen || activeGame.isGameOver
+    || activeGame.isAdvancing || activeGame.isInputLocked()),
+  beforeOpenPanel: () => {
+    cancelHeldInputs(); moduleUi.closePanels();
+    panelOpen.value = false; journalOpen.value = false; themePanelOpen.value = false;
+    nearbyInspection.value = null; activeGame.inspectTarget = null;
+  },
+  afterClosePanel: () => { void nextTick(() => document.querySelector<HTMLElement>('.game-view')?.focus({ preventScroll: true })); },
+});
+const { hudSlots, barSlots, panelSlots, commands: moduleCommands, panelOpen: modulePanelOpen } = moduleUi;
 // These modals are Vue state; cancel synchronously on entry. Engine-owned
 // overlays are monitored by GameCanvas through the same held-input registry.
 watch([menuOpen, panelOpen, journalOpen, nearbyInspection, themePanelOpen], (next, previous) => {
   if (next.some((value, index) => !!value && value !== previous[index])) cancelHeldInputs();
 }, { flush: 'sync' });
-watch(characterOpen, open => { if (open) cancelHeldInputs(); }, { flush: 'sync' });
+watch(modulePanelOpen, open => { if (open) cancelHeldInputs(); }, { flush: 'sync' });
 watch(menuOpen, (open) => {
   if (!open || !gameStarted.value) return;
-  if (characterOpen.value) closeCharacter();
+  moduleUi.closePanels();
   if (activeGame.replayStatus === 'playing') activeGame.replayPause();
   else if (activeGame.isAutoTraveling()) inputManager.triggerAction('interrupt_auto');
 });
@@ -280,19 +182,19 @@ const hasReplay = computed(() => {
   }
 });
 
-const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "classic" | "extended"; initialCommands?: readonly string[]; onRejected?: () => void }) => {
+const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "classic" | "extended"; extensions?: readonly string[]; initialCommands?: readonly string[]; onRejected?: () => void }) => {
   try {
-    activeGame.startNewGame({ seed: payload.seed, mode: payload.mode, ruleSet: payload.ruleSet, initialCommands: payload.initialCommands });
+    activeGame.startNewGame({ seed: payload.seed, mode: payload.mode, ruleSet: payload.ruleSet, extensions: payload.extensions, initialCommands: payload.initialCommands });
     // Preserve the explicit programmatic neutral start contract. The real menu
     // always supplies validated selected commands at the atomic new-run boundary.
     if (!payload.initialCommands) for (const command of activeGame.extensionRuntime?.initialCommands() ?? []) activeGame.executeCommand('ext:command', command);
   } catch {
-    replayFeedback.value = i18next.t('ext.growth.creation.start_failed'); payload.onRejected?.(); return;
+    replayFeedback.value = i18next.t('ext.creation.start_failed'); payload.onRejected?.(); return;
   }
   clearCreationTransition(); runEpoch++;
   if (payload.initialCommands) beginCreationTransition();
   cancelHeldInputs();
-  characterOpen.value = false; growthTargetDraft.value = null; growthDraft.value = null;
+  moduleUi.closePanels();
   replayFeedback.value = '';
   runAvailable.value = true;
   replayMessage(
@@ -302,7 +204,7 @@ const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "class
       defaultValue: 'Started {{mode}} game (seed {{seed}}).'
     })
   );
-  pollGrowth();
+  moduleUi.refresh();
     gameStarted.value = true;
   menuOpen.value = false;
 };
@@ -331,7 +233,7 @@ const continueGame = async () => {
     runAvailable.value = true;
     replayFeedback.value = '';
     storageTick.value++;
-    pollGrowth();
+    moduleUi.refresh();
     gameStarted.value = true;
     menuOpen.value = false;
   } catch {
@@ -393,7 +295,7 @@ const loadReplay = () => {
       replayMessage(i18next.t('menu.log.replay_load_failed', { defaultValue: 'Replay load failed.' }));
       return;
     }
-    pollGrowth();
+    moduleUi.refresh();
     gameStarted.value = true;
     menuOpen.value = false;
     replayMessage(i18next.t('menu.log.replay_loaded', { defaultValue: 'Replay loaded.' }));
@@ -429,11 +331,11 @@ const replayStep = () => {
 };
 
 const replayRestart = () => {
-  activeGame.replayRestart(); pollGrowth();
+  activeGame.replayRestart(); moduleUi.refresh();
 };
 
 const replaySeek = (index: number) => {
-  activeGame.replaySeek(index); pollGrowth();
+  activeGame.replaySeek(index); moduleUi.refresh();
 };
 
 const downloadReplayJson = (raw: string) => {
@@ -476,7 +378,7 @@ const importReplayJson = async (file: File) => {
     clearCreationTransition(); runEpoch++;
     runAvailable.value = true;
     replayFeedback.value = i18next.t('menu.replay.imported_unsaved', { defaultValue: 'Recording imported. Save it to keep it in this browser.' });
-    pollGrowth();
+    moduleUi.refresh();
     gameStarted.value = true;
     menuOpen.value = false;
     const imported = i18next.t('menu.log.replay_imported', { defaultValue: 'Replay JSON imported.' });
@@ -502,28 +404,25 @@ const handleReturnToTitle = async () => {
 </script>
 
 <template>
-  <div class="app-layout theme-shell" :style="{ '--context-width': contextWidth }" :class="[`layout-${viewport.mode}`, { 'is-replaying': replayActive, 'has-touch-controls': showTouch, 'immersive-mode': displaySettings.immersiveMode, 'theme-panel-open': themePanelOpen, 'has-growth-skills': !!growthView }]">
+  <div class="app-layout theme-shell" :style="{ '--context-width': contextWidth }" :class="[`layout-${viewport.mode}`, { 'is-replaying': replayActive, 'has-touch-controls': showTouch, 'immersive-mode': displaySettings.immersiveMode, 'theme-panel-open': themePanelOpen, 'has-module-bars': !!barSlots.length }]">
     <template v-if="gameStarted">
       <!-- FE-1：GameCanvas 始终是同一位置的同一实例（旋转屏幕不重建 Pixi），
            其余部件按布局模式挂载，用 CSS grid 区域摆放。 -->
-      <ThemeHud class="area-vitals" :show-panel-button="compact || displaySettings.immersiveMode" :panel-open="compact && !displaySettings.immersiveMode ? panelOpen : themePanelOpen" :growth="growthView" :growth-blocked="growthBlocked" :immersive="displaySettings.immersiveMode" @character="openCharacter" @menu="menuOpen = true" @panel="toggleThemePanel" />
+      <ThemeHud class="area-vitals" :show-panel-button="compact || displaySettings.immersiveMode" :panel-open="compact && !displaySettings.immersiveMode ? panelOpen : themePanelOpen" :has-module-hud="!!hudSlots.length" :immersive="displaySettings.immersiveMode" @menu="menuOpen = true" @panel="toggleThemePanel">
+        <component v-for="slot in hudSlots" :key="slot.id" :is="slot.component" v-bind="slot.props" />
+      </ThemeHud>
       <ThemeLog class="area-log" :lines="themeLogLines" :single-line="displaySettings.immersiveMode && !themePanelOpen" @open-journal="journalOpen = true" />
       <ThemeNearby class="area-near" @inspect="nearbyInspection = $event" />
       <div class="map-area">
-        <GameCanvas class="game-view" :display-modal-open="characterOpen || creationTransition" />
+        <GameCanvas class="game-view" :display-modal-open="modulePanelOpen || creationTransition" />
         <MapZoomControls />
         <RadialCommands v-if="displaySettings.immersiveMode && !replayActive" class="area-radial" @modal-open="cancelHeldInputs" />
       </div>
       <TargetBar class="area-target" />
-      <section v-if="growthView" class="area-skills growth-skill-bar" @keydown.stop @keyup.stop @pointerdown.stop @touchstart.stop>
-        <button data-action="show-skills" :disabled="growthBlocked" @click="openCharacter('skills')">{{ $t('ext.growth.ui.skills_list') }}</button>
-        <button v-if="displaySettings.immersiveMode && equippedGrowthSkills.length" data-action="toggle-skills" :aria-expanded="growthSkillBarExpanded" @click="growthSkillBarExpanded = !growthSkillBarExpanded">{{ growthSkillBarExpanded ? '−' : '+' }}</button>
-        <div v-if="!displaySettings.immersiveMode || growthSkillBarExpanded" class="growth-equipped-skills">
-          <button v-for="skill in equippedGrowthSkills" :key="skill.id" :data-use-skill="skill.id" :disabled="!skill.canUse || growthBlocked || growthSubmitting" @click="submitGrowthSkill('use', skill.id)">{{ skill.cooldownRemaining ? $t('ext.growth.ui.skill_bar_cooldown', { name: growthName(skill.nameKey), count: skill.cooldownRemaining }) : $t('ext.growth.ui.skill_bar_ready', { name: growthName(skill.nameKey), focus: skill.focusCost }) }}</button>
-        </div>
-        <span class="growth-bar-focus">{{ $t('ext.growth.ui.focus_compact', { current: growthView.focus.current, capacity: growthView.focus.capacity }) }}</span>
-      </section>
-      <CommandBar v-if="showCommands || (!compact && !replayActive)" class="area-cmd" :mode="viewport.mode" :show-character="!!growthView" :character-blocked="growthBlocked" :has-growth-points="growthView?.hasUnspentPoints" @character="openCharacter" @modal-open="cancelHeldInputs" />
+      <div v-if="barSlots.length" class="area-skills module-bars">
+        <component v-for="slot in barSlots" :key="slot.id" :is="slot.component" v-bind="slot.props" />
+      </div>
+      <CommandBar v-if="showCommands || (!compact && !replayActive)" class="area-cmd" :mode="viewport.mode" :module-commands="moduleCommands" @modal-open="cancelHeldInputs" />
       <DPad v-if="showTouch" class="area-pad" :mode="viewport.mode" />
       <ContextPanel v-if="!compact && themePanelOpen && !displaySettings.immersiveMode" class="area-context" @close="themePanelOpen = false" @inspect="nearbyInspection = $event" />
       <SideDrawer :open="panelOpen" @close="panelOpen = false">
@@ -532,8 +431,7 @@ const handleReturnToTitle = async () => {
       <SideDrawer :open="journalOpen" variant="journal" @close="journalOpen = false">
         <MessageJournal />
       </SideDrawer>
-      <GrowthCharacterPanel v-if="characterOpen && growthView" :model="growthView" :submitting="growthSubmitting" :error="growthError" :notice="growthNotice" :initial-tab="growthInitialTab" :target-skill-id="growthTargetDraft?.skillId" :targets="growthTargets"
-        @close="closeCharacter" @reset="resetGrowthDraft" @adjust="adjustGrowthDraft" @submit="submitGrowth('allocate')" @respec="submitGrowth('respec')" @skill="submitGrowthSkill" @target="confirmGrowthTarget" @cancel-target="cancelGrowthTarget" />
+      <component v-for="slot in panelSlots" :key="slot.id" :is="slot.component" v-bind="slot.props" />
       <InventoryOverlay />
       <GameEndOverlay :can-save-replay="canSaveReplay" :replay-busy="replayBusy" :replay-feedback="replayFeedback"
         @save-replay="saveReplay" @export-replay-json="exportCurrentReplayJson" @return-to-title="handleReturnToTitle" />
@@ -544,7 +442,7 @@ const handleReturnToTitle = async () => {
     </template>
     <div v-else class="blank-stage" aria-hidden="true"></div>
 
-    <div v-if="creationTransition" class="growth-creation-transition" data-testid="creation-transition" aria-hidden="true"
+    <div v-if="creationTransition" class="module-creation-transition" data-testid="creation-transition" aria-hidden="true"
       @pointerdown.prevent.stop @pointerup.prevent.stop @touchstart.prevent.stop @touchend.prevent.stop @click.prevent.stop @dblclick.prevent.stop @keydown.prevent.stop @keyup.prevent.stop></div>
     <MessageAcknowledgment />
     <MainMenu
@@ -578,17 +476,16 @@ const handleReturnToTitle = async () => {
 </template>
 
 <style scoped>
-.growth-skill-bar{grid-area:skills;display:flex;align-items:center;gap:6px;padding:4px 8px;min-width:0;border-top:1px solid var(--th-line,#555);background:var(--th-panel,#171918);font:12px var(--th-font,monospace);color:var(--th-fg,#eee);z-index:31;box-sizing:border-box}.growth-skill-bar button{min-height:40px;flex:0 0 auto;white-space:nowrap;padding:6px 9px;border:1px solid var(--th-line,#555);background:var(--th-raised,#222);color:inherit;font:inherit;touch-action:manipulation;cursor:pointer}.growth-skill-bar button:disabled{opacity:.45;cursor:default}.growth-equipped-skills{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:thin;flex:1}.growth-bar-focus{margin-left:auto;white-space:nowrap;flex:0 0 auto;color:var(--th-dim,#aaa)}
-@media(max-width:700px){.growth-skill-bar{gap:4px;padding:3px 6px;font-size:11px}.growth-skill-bar button{min-height:44px;padding:5px 7px}.growth-equipped-skills{gap:4px}}
+.module-bars{grid-area:skills;min-width:0;z-index:31}
 /* Whole-selector :global preserves grid scope after Vue's SFC compilation. */
-:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop.has-growth-skills:not(.immersive-mode)){grid-template-rows:auto auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals log' 'vitals map' 'near map' 'near skills' 'near cmd'!important}
-:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-growth-skills:not(.immersive-mode)){grid-template-rows:auto auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals vitals' 'log log' 'map map' 'skills skills' 'cmd pad'!important}
-:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape.has-growth-skills:not(.immersive-mode)){grid-template-rows:auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals log pad' 'vitals map pad' 'vitals skills pad' 'vitals cmd pad'!important}
-:global(html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.has-growth-skills){grid-template-rows:auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals' 'map' 'skills' 'log'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop.has-module-bars:not(.immersive-mode)){grid-template-rows:auto auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals log' 'vitals map' 'near map' 'near skills' 'near cmd'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode)){grid-template-rows:auto auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals vitals' 'log log' 'map map' 'skills skills' 'cmd pad'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape.has-module-bars:not(.immersive-mode)){grid-template-rows:auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals log pad' 'vitals map pad' 'vitals skills pad' 'vitals cmd pad'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.has-module-bars){grid-template-rows:auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals' 'map' 'skills' 'log'!important}
 
-:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop.has-growth-skills.has-touch-controls:not(.immersive-mode)){grid-template-areas:'vitals log log' 'vitals map map' 'near map map' 'near skills skills' 'near cmd pad'!important}
-:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-growth-skills.is-replaying:not(.immersive-mode)){grid-template-areas:'vitals' 'log' 'map' 'skills' 'cmd'!important}
-:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape.has-growth-skills.is-replaying:not(.immersive-mode)){grid-template-areas:'vitals log' 'vitals map' 'vitals skills' 'vitals cmd'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop.has-module-bars.has-touch-controls:not(.immersive-mode)){grid-template-areas:'vitals log log' 'vitals map map' 'near map map' 'near skills skills' 'near cmd pad'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars.is-replaying:not(.immersive-mode)){grid-template-areas:'vitals' 'log' 'map' 'skills' 'cmd'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape.has-module-bars.is-replaying:not(.immersive-mode)){grid-template-areas:'vitals log' 'vitals map' 'vitals skills' 'vitals cmd'!important}
 
 .app-layout {
   width: 100vw;
@@ -652,5 +549,5 @@ const handleReturnToTitle = async () => {
 </style>
 
 <style scoped>
-.growth-creation-transition{position:fixed;inset:0;z-index:2300;background:transparent;touch-action:none}
+.module-creation-transition{position:fixed;inset:0;z-index:2300;background:transparent;touch-action:none}
 </style>

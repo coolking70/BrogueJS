@@ -1,4 +1,4 @@
-import data from './definitions.json';
+import data from './data/definitions.json';
 import { extensionDataFingerprint } from '../../fingerprint';
 import { GrowthValidationError, validateGrowthDefinitionPack, type GrowthValidationOptions } from './schema';
 import { formatGrowthValidationError } from './text';

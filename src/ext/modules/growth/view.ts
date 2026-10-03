@@ -15,7 +15,7 @@ import { canDisplayMonster, canSeeMonster } from '../../../engine/UI/MonsterVisi
 import { describeGrowthAttribute, describeGrowthSkill, describeGrowthIdentity } from './describe';
 import { canLearnGrowthSkill, growthPublicSkillCooldown, growthPublicSkillScopes, projectGrowthSkillBuild, growthSkillScopes, advanceGrowthFocus, initialGrowthSkillBuild, type GrowthPublicSkillBuild } from './skills';
 
-import { createExtensionRegistry, DEFAULT_EXTENSIONS } from '../../catalog';
+import { createExtensionRegistry } from '../../catalog';
 import { createGrowthIdentityBuild, defaultGrowthIdentitySelection, initialGrowthIdentityBuild, grantGrowthIdentitySkills, growthIdentityAttributeValues, type GrowthIdentitySelection, type GrowthIdentityBuild } from './identities';
 
 export interface GrowthAllocationDraft {
@@ -381,11 +381,11 @@ export interface GrowthCreationView {
 /** Called only after the player explicitly opens extended creation. Factories validate
  * definitions, but no runtime, new game, command, checkpoint or RNG is constructed. */
 export function loadGrowthCreationContext(): GrowthCreationContext {
-    const registry = createExtensionRegistry(), modules = registry.create(registry.manifest(DEFAULT_EXTENSIONS));
-    const pack = modules.find(module => module.id === 'growth')?.view?.definitions as unknown as GrowthPack | undefined;
+    const registry = createExtensionRegistry();
+    const module = registry.create(registry.manifest(['growth']))[0]!;
+    const pack = module.view?.definitions as unknown as GrowthPack | undefined;
     if (!pack) throw new Error('Growth creation definitions unavailable');
-    return freeze({ pack, otherInitialCommands: modules.filter(module => module.id !== 'growth' && module.initialCommand)
-        .map(module => JSON.stringify({ module: module.id, ...module.initialCommand! })) });
+    return freeze({ pack, otherInitialCommands: [] });
 }
 export function createGrowthCreationDraft(pack: GrowthPack): GrowthIdentitySelection {
     return defaultGrowthIdentitySelection(pack);
