@@ -85,5 +85,5 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 
 - 2026-10-03 fix-slaying-melee-autohit 新授权：按 docs/tasks/fix-slaying-melee-autohit.md 执行，分支 fix/slaying-melee-autohit，基于 main 830ad74；不 commit/push。已读全部指定文档，CE legacy 与官方当前 Combat.c 执行路径一致，ce:fetch 只验证已有只读参照。新增 17 项回归在旧生产上 6 红/11 绿，近战和两处详情遗漏已补，投掷路径未改；定向验证运行中。原始证据 /tmp/slaying-melee-autohit/。
 - 本轮定向 5 文件 97 项通过；初次 typecheck 暴露新增测试的 StatusId/Cell 夹具类型，已修且最终 typecheck 通过。浏览器标准客户端与 Vite 启动受沙箱 EPERM 限制，日志保留；未绕过环境限制。生产/测试/脚本即将冻结，完整门禁 runner /tmp/slaying-melee-autohit/run-gates.py 串行 typecheck→build→ce-fetch→full（2 workers）→drift，状态 gates/state.json；不并行跑重门禁。
-- 续轮用户调整验收范围：上一轮完整门禁因宿主后台时限中断，原 exec session 3965 已不可恢复，full 日志仅启动头，无退出码/结果；drift 未进入。本轮禁止完整 npm test/test:full/test:drift，只跑 typecheck/build/新增和战斗命中详情符文定向/UR2-UR3-UR4；完整 CE 门禁由 Claude 本地执行。保留上一轮原始日志，不视为门禁通过。
+- 续轮 Claude 调整验收范围：上一轮完整门禁因宿主后台时限中断，原 exec session 3965 已不可恢复，full 日志仅启动头，无退出码/结果；drift 未进入。本轮禁止完整 npm test/test:full/test:drift，只跑 typecheck/build/新增和战斗命中详情符文定向/UR2-UR3-UR4；完整 CE 门禁由 Claude 本地执行。保留上一轮原始日志，不视为门禁通过。
 - 续轮定向验收已完成：typecheck/build/26 文件 447 项相关测试/UR2-UR3-UR4 三文件三项均 exit0，日志 targeted-final/；冻结前后清单 SHA256 0c1b349f8d5bb8a5b214e1a3872cd33e83aff54939e697de675de97e18859dbc 一致，变化路径为空。五份基线/trace 字节与 HEAD 完全相同，未重录。报告已补齐；完整 CE 门禁及生成 drift 由 Claude 本地执行，本轮不再启动完整套件。未 commit/push。
