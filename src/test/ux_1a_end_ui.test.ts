@@ -5,7 +5,6 @@ import { readFileSync } from 'node:fs';
 import { parse, compileScript } from '@vue/compiler-sfc';
 import { transformWithEsbuild } from 'vite';
 import * as highScores from '../engine/Core/HighScores';
-import * as acknowledgments from '../ui/messageAcknowledgment';
 import { logger } from '../engine/Systems/Logger';
 import { rng } from '../engine/Random';
 
@@ -17,8 +16,17 @@ const { game } = vi.hoisted(() => ({ game: {
 
 // Vue's actual component lifecycle/render functions, with a tiny host renderer.
 // CSS geometry and native hit testing are covered by scripts/ux-1-ui-check.mjs.
-interface Node { type: string; children: Node[]; parent: Node | null; props: Record<string, any>; text: string }
-const node = (type: string, text = ''): Node => ({ type, text, children: [], parent: null, props: {} });
+interface Node { type: string; children: Node[]; parent: Node | null; props: Record<string, any>; text: string;
+    contains(target: unknown): boolean; closest(selector: string): Node | null; getAttribute(name: string): string | null;
+    querySelector(selector: string): Node | null; querySelectorAll(): Node[]; focus(): void }
+const documentStub = { activeElement: null as Node | null, querySelector: () => null };
+const node = (type: string, text = ''): Node => Vue.markRaw({ type, text, children: [], parent: null, props: {} as Record<string, any>,
+    contains(target) { return target === this || this.children.some(child => child.contains(target)); },
+    closest(selector) { return selector === '[data-dialog-action]' && this.props['data-dialog-action'] ? this : this.parent?.closest(selector) ?? null; },
+    getAttribute(name) { return this.props[name] ?? null; }, querySelector(selector) {
+        const action = selector.match(/data-dialog-action="([^"]+)"/)?.[1];
+        return all(this).find(item => item.props['data-dialog-action'] === action) ?? null;
+    }, querySelectorAll() { return all(this).filter(item => item.type === 'button'); }, focus() { documentStub.activeElement = this; } });
 const renderer = createRenderer<Node, Node>({
     createElement: tag => node(tag), createText: text => node('#text', text), createComment: text => node('#comment', text),
     insert(child, parent, anchor) {
@@ -30,12 +38,16 @@ const renderer = createRenderer<Node, Node>({
     setText: (n, text) => { n.text = text; }, setElementText: (n, text) => { n.text = text; n.children = []; },
     parentNode: n => n.parent, nextSibling: n => n.parent?.children[n.parent.children.indexOf(n) + 1] ?? null,
     patchProp: (n, key, _old, value) => { n.props[key] = value; },
+    querySelector: () => root,
 });
 let End: Component;
 let Ack: Component;
 let app: ReturnType<typeof renderer.createApp> | undefined;
 let root: Node;
 let captureKeydown: (event: KeyboardEvent) => void;
+let captureKeyup: (event: KeyboardEvent) => void;
+let capturePointerdown: (event: PointerEvent) => void;
+let capturePointerup: (event: PointerEvent) => void;
 const all = (root: Node): Node[] => [root, ...root.children.flatMap(all)];
 const byClass = (name: string) => all(root).find(n => n.props.class?.split(' ').includes(name));
 const settle = async () => { vi.advanceTimersByTime(250); await nextTick(); };
@@ -49,15 +61,21 @@ beforeAll(async () => {
     const target = new EventTarget();
     vi.stubGlobal('window', { addEventListener: (type: string, handler: EventListener, capture?: boolean) => {
         if (type === 'keydown' && capture) captureKeydown = handler as (event: KeyboardEvent) => void;
+        if (type === 'keyup' && capture) captureKeyup = handler as (event: KeyboardEvent) => void;
+        if (type === 'pointerdown' && capture) capturePointerdown = handler as (event: PointerEvent) => void;
+        if (type === 'pointerup' && capture) capturePointerup = handler as (event: PointerEvent) => void;
         target.addEventListener(type, handler, capture);
     }, removeEventListener: target.removeEventListener.bind(target),
         setInterval: (...args: Parameters<typeof setInterval>) => setInterval(...args), clearInterval: (id: ReturnType<typeof setInterval>) => clearInterval(id) });
+    vi.stubGlobal('document', documentStub);
     const input = await import('../engine/Input');
     // Vitest compiles SFCs for SSR. Compile the same script/template for the
     // client here, so the host renderer exercises the browser render function.
     const modules: Record<string, unknown> = { vue: Vue, '../engine/Core/Game': { activeGame: game },
         '../engine/Core/HighScores': highScores, '../engine/Systems/Logger': { logger },
-        '../engine/Input': input, '../ui/messageAcknowledgment': acknowledgments };
+        '../engine/Input': input, '../ui/dialogService': await import('../ui/dialogService'),
+        '../ui/dialogInput': await import('../ui/dialogInput'), '../ui/heldInput': await import('../ui/heldInput'),
+        '../ui/dialogAcknowledgments': await import('../ui/dialogAcknowledgments') };
     const load = async (name: string): Promise<Component> => {
         const filename = new URL('../components/' + name + '.vue', import.meta.url);
         const { descriptor } = parse(readFileSync(filename, 'utf8'));
@@ -71,10 +89,15 @@ beforeAll(async () => {
         return module.exports.default;
     };
     End = await load('GameEndOverlay');
-    Ack = await load('MessageAcknowledgment');
+    Ack = await load('DialogHost');
 });
 beforeEach(() => { vi.useFakeTimers(); logger.reset(); game.isGameOver = false; game.isAdvancing = false; });
-afterEach(() => { app?.unmount(); app = undefined; vi.useRealTimers(); logger.presentAcknowledgments(null); });
+afterEach(() => {
+    for (const [key, code] of [['r','KeyR'], ['Tab','Tab'], ['Enter','Enter'], [' ','Space']]) {
+        captureKeyup({ key, code, preventDefault() {}, stopImmediatePropagation() {} } as KeyboardEvent);
+    }
+    app?.unmount(); app = undefined; vi.useRealTimers(); logger.presentAcknowledgments(null);
+});
 afterAll(() => vi.unstubAllGlobals());
 
 describe('UX-1A acknowledgment before terminal controls', () => {
@@ -88,7 +111,9 @@ describe('UX-1A acknowledgment before terminal controls', () => {
         const archive = JSON.parse(JSON.stringify(logger.messages));
         const random = rng.getState();
         expect(byClass('view-result-btn')).toBeDefined();
-        byClass('view-result-btn')!.props.onClick({ stopPropagation() {} }); await settle();
+        const pointer = { target: byClass('view-result-btn')!, pointerId: 1, button: 0, clientX: 0, clientY: 0,
+            preventDefault() {}, stopImmediatePropagation() {} } as unknown as PointerEvent;
+        capturePointerdown(pointer); capturePointerup(pointer); await settle();
         expect(byClass('game-end-overlay')).toBeDefined();
         expect(byClass('message-ack-backdrop')).toBeUndefined();
         expect(logger.pendingAcknowledgment).toBeUndefined();
@@ -142,6 +167,9 @@ describe('UX-1A acknowledgment before terminal controls', () => {
             expect(byClass('game-end-overlay')).toBeDefined();
             expect(all(byClass('unread-messages')!).filter(n => n.type === 'li').map(n => n.text)).toEqual(['unread']);
             app!.unmount(); app = undefined; logger.reset(); game.isGameOver = false;
+            for (const [key, code] of [['Tab','Tab'], ['Enter','Enter'], [' ','Space']]) {
+                captureKeyup({ key, code, preventDefault() {}, stopImmediatePropagation() {} } as KeyboardEvent);
+            }
         }
     });
 

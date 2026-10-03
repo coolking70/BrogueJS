@@ -264,8 +264,10 @@ describe('W-7 equipment boundary and UI source coverage (S, no Vue import edge)'
     });
     it('Vue keeps mandatory selection visible, suppresses other actions, and unwraps both item boundaries', () => {
         const src = readFileSync(fileURLToPath(new URL('../components/InventoryOverlay.vue', import.meta.url)), 'utf8');
-        expect(src).toContain('activeGame.readItem(toRaw(item))');
-        expect(src).toContain('activeGame.chooseEnchantTarget(toRaw(item))');
+        // D2 operation descriptors replace the old perform closures. Keep both
+        // production item boundaries raw, and all mandatory-selection needles.
+        expect(src).toContain("activeGame.executeItemCommand('read', toRaw(item))");
+        expect(src).toContain("activeGame.executeItemCommand('enchant', toRaw(item))");
         expect(src).toContain('activeGame.canEnchantTarget(toRaw(entry.item))');
         expect(src).toContain('if (activeGame.pendingEnchantment) return;');
         expect(src).toContain('!pendingIdentify && !pendingEnchantment');

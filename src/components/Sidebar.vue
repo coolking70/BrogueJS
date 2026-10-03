@@ -4,7 +4,7 @@ import i18next from 'i18next';
 import { activeGame } from '../engine/Core/Game';
 import { foldCombatMessages, logger } from '../engine/Systems/Logger';
 import type { LogMessage } from '../engine/Systems/Logger';
-import { playerHudStatusRows } from '../ui/useGameHud';
+import { playerHudStatusRows, displayedFrame } from '../ui/useGameHud';
 import { isSidebarVisibleStatus } from '../engine/Status/statusConfig';
 import { STOMACH_SIZE, HUNGER_THRESHOLD, WEAK_THRESHOLD, FAINT_THRESHOLD } from '../entities/Player';
 import { computeSidebarWidth, displaySettings } from '../engine/Settings';
@@ -66,6 +66,14 @@ onMounted(() => {
   // Poll state because the engine is pure TS
   pollInterval = window.setInterval(() => {
     if (activeGame && activeGame.player) {
+      const frame = displayedFrame(activeGame);
+      if (frame) {
+        playerHp.value = frame.player.hp; playerMaxHp.value = frame.player.maxHp; playerDepth.value = frame.depth;
+        playerNutrition.value = frame.player.nutrition; hoverText.value = frame.hoverText;
+        playerStatuses.value = frame.statuses; entityRows.value = frame.rows; playerStats.value = frame.stats;
+        logs.value = foldCombatMessages(frame.logs).reverse();
+        return;
+      }
       playerHp.value = activeGame.player.hp;
       playerMaxHp.value = activeGame.player.maxHp;
       playerDepth.value = activeGame.depth;

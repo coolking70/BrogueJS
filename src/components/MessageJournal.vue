@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted } from 'vue';
+import { activeGame } from '../engine/Core/Game';
+import { displayedFrame } from '../ui/useGameHud';
 import { foldCombatMessages, logger, type LogMessage } from '../engine/Systems/Logger';
 const logs = ref<LogMessage[]>([]);
 const entries = ref<HTMLElement>();
 let timer = 0;
-function poll() { logs.value = foldCombatMessages(logger.messages).slice().reverse(); }
+function poll() { logs.value = foldCombatMessages(displayedFrame(activeGame)?.logs ?? logger.messages).slice().reverse(); }
 onMounted(async () => {
  poll(); timer = window.setInterval(poll, 100);
  await nextTick();

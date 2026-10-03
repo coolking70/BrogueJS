@@ -54,6 +54,7 @@ import {
 import { isSidebarVisibleStatus, CE_EMPTY_NAME_STATUSES } from '../engine/Status/statusConfig';
 import { Item, ItemCategory } from '../engine/Items/Item';
 import { MonsterState, type Monster } from '../entities/Monster';
+import { commandConfirmationFixture } from './support/commandConfirmation';
 import type { Game } from '../engine/Core/Game';
 import ceTerrainGoldens from './fixtures/u21c-ce-terrain.json';
 
@@ -404,35 +405,43 @@ describe('UI-1 第 6 条：Game.onConfirmRequest 生产侧接线', () => {
         } as unknown as Game;
     }
 
-    it('常规对局：问题原样转给模态框，答案映射为返回值（Enter=Yes/Esc=No 由原生 confirm 承载，≙ CE RETURN/ESCAPE_KEY）', () => {
-        const confirmSpy = vi.fn(() => true);
-        vi.stubGlobal('window', { confirm: confirmSpy });
-        const game = stubGame();
-        wireConfirmRequest(game);
-        expect(game.onConfirmRequest).not.toBeNull();
-        expect(game.onConfirmRequest!('潜入深渊？')).toBe(true);
-        expect(confirmSpy).toHaveBeenCalledWith('潜入深渊？');
-
-        confirmSpy.mockReturnValue(false);
-        expect(game.onConfirmRequest!('潜入深渊？')).toBe(false);
+    it('常规对局：问题原样转给 Host，受控答案映射到引擎（CE Enter=Yes/Esc=No）', () => {
+        const confirm = commandConfirmationFixture();
+        confirm.publish('潜入深渊？');
+        expect(confirm.service.current?.text).toBe('潜入深渊？');
+        expect(confirm.answer(true)).toBe(true);
+        expect(confirm.resolved).toHaveBeenCalledWith('潜入深渊？', true);
+        confirm.publish('潜入深渊？');
+        expect(confirm.answer(false)).toBe(true);
+        expect(confirm.resolved).toHaveBeenLastCalledWith('潜入深渊？', false);
+        confirm.dispose();
     });
 
-    it('回放期间直接放行且**不弹框**（CE IO.c:2941-2943 "oh yes he did"；弹框会卡死回放）', () => {
-        const confirmSpy = vi.fn(() => true);
-        vi.stubGlobal('window', { confirm: confirmSpy });
-        const game = stubGame({ replayStatus: 'playing' });
-        wireConfirmRequest(game);
-        expect(game.onConfirmRequest!('潜入深渊？')).toBe(true);
-        expect(confirmSpy).not.toHaveBeenCalled();
+    it('回放期间不弹 Host（CE IO.c:2941-2943；答案由引擎消费）', () => {
+        const confirm = commandConfirmationFixture(true);
+        confirm.publish('潜入深渊？');
+        expect(confirm.service.current).toBeUndefined();
+        expect(confirm.resolved).not.toHaveBeenCalled();
+        confirm.dispose();
     });
 
     it('自动寻路仍询问（CE autoPlayingLevel 是自动演示；X3-U1 D10）', () => {
-        const confirmSpy = vi.fn(() => false);
-        vi.stubGlobal('window', { confirm: confirmSpy });
-        const game = stubGame({ autoTraveling: true });
-        wireConfirmRequest(game);
-        expect(game.onConfirmRequest!('潜入深渊？')).toBe(false);
-        expect(confirmSpy).toHaveBeenCalledWith('潜入深渊？');
+        const confirm = commandConfirmationFixture();
+        confirm.publish('潜入深渊？');
+        expect(confirm.service.current?.text).toBe('潜入深渊？');
+        confirm.answer(false);
+        expect(confirm.resolved).toHaveBeenCalledWith('潜入深渊？', false);
+        confirm.dispose();
+    });
+
+    // D4's explicitly deferred blink resolver still needs its native wiring.
+    it('D4 闪现钩子保留原生确认和 playing 旁路', () => {
+        const native = vi.fn(() => false); vi.stubGlobal('window', { confirm: native });
+        const game = stubGame(); wireConfirmRequest(game);
+        expect(game.onConfirmRequest!('blink?')).toBe(false);
+        expect(native).toHaveBeenCalledWith('blink?');
+        const replay = stubGame({ replayStatus: 'playing' }); wireConfirmRequest(replay);
+        expect(replay.onConfirmRequest!('blink?')).toBe(true); expect(native).toHaveBeenCalledTimes(1);
     });
 
     it('结构守卫：App.vue 挂载时真的接线（谁把 wireConfirmRequest(activeGame) 删了谁红）', () => {

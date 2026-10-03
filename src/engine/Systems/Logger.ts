@@ -22,9 +22,16 @@ const disturbanceCallbacks = new WeakMap<Logger, () => void>();
 // UI wiring and pending clicks must never enter snapshots or recording hashes.
 const presentations = new WeakMap<Logger, {
     enabled: () => boolean; pending: LogMessage[]; unread: LogMessage[]; terminalShown: boolean;
+    changed?: () => void;
 }>();
+// UI notifications cannot alter the result of an engine command.
+function notifyPresentation(log: Logger): void {
+    try { presentations.get(log)?.changed?.(); } catch { /* presentation is optional */ }
+}
 const combatBuffers = new WeakMap<Logger, { text: string; color: string }[]>();
 const heardCombat = new WeakSet<Logger>();
+type MessageObserver = (message: Readonly<LogMessage>, acknowledge: boolean, occurrence?: Readonly<LogMessage>) => void;
+const messageObservers = new WeakMap<Logger, MessageObserver>();
 
 /** CE FOLDABLE presentation: preserve the individual archive entries/repeats. */
 export function foldCombatMessages(messages: readonly LogMessage[], width = 100): LogMessage[] {
@@ -42,6 +49,11 @@ export function foldCombatMessages(messages: readonly LogMessage[], width = 100)
 }
 
 export class Logger {
+    /** After archiving, before the caller's next effect. Never flushes combat. */
+    public observeMessages(observer: MessageObserver | null): void {
+        if (observer) messageObservers.set(this, observer);
+        else messageObservers.delete(this);
+    }
     public messages: LogMessage[] = [];
     public turn = 0;
     private nextId = 0;
@@ -54,14 +66,18 @@ export class Logger {
     public disturb(): void { this.onDisturb?.(); }
 
     /** Mounted UI opts in; headless and replay never wait for a human. */
-    public presentAcknowledgments(enabled: (() => boolean) | null): void {
-        if (enabled) presentations.set(this, { enabled, pending: [], unread: [], terminalShown: false });
+    public presentAcknowledgments(enabled: (() => boolean) | null, changed?: () => void): void {
+        if (enabled) presentations.set(this, { enabled, pending: [], unread: [], terminalShown: false, changed });
         else presentations.delete(this);
     }
     public get pendingAcknowledgment(): LogMessage | undefined {
         const display = presentations.get(this);
         if (display && !display.enabled()) this.clearAcknowledgments();
         return display?.pending[0];
+    }
+    public get pendingAcknowledgments(): readonly Readonly<LogMessage>[] {
+        this.pendingAcknowledgment; // Preserve the existing replay bypass.
+        return presentations.get(this)?.pending.slice() ?? [];
     }
     /** Presentation copies in occurrence order, including folded duplicates. */
     public get unreadAcknowledgments(): LogMessage[] {
@@ -73,12 +89,14 @@ export class Logger {
         display.terminalShown = true;
         display.unread.push(...display.pending);
         display.pending = [];
+        notifyPresentation(this);
     }
-    public acknowledgeNext(): void { presentations.get(this)?.pending.shift(); }
+    public acknowledgeNext(): void { presentations.get(this)?.pending.shift(); notifyPresentation(this); }
     public clearAcknowledgments(): void {
         const display = presentations.get(this);
         if (display) {
             display.pending = []; display.unread = []; display.terminalShown = false;
+            notifyPresentation(this);
         }
     }
 
@@ -151,14 +169,19 @@ export class Logger {
             this.messages.push(entry);
             if (this.messages.length > MESSAGE_ARCHIVE_ENTRIES) this.messages.shift();
         }
+        let occurrence: Readonly<LogMessage> | undefined;
         if (options.acknowledge) {
             entry.acknowledge = true;
             const display = presentations.get(this);
             // Each occurrence still needs acknowledgment, even at count 100.
             if (display?.enabled()) {
-                (display.terminalShown ? display.unread : display.pending).push({ ...entry, text, color });
+                occurrence = Object.freeze({ ...entry, text, color });
+                (display.terminalShown ? display.unread : display.pending).push(occurrence as LogMessage);
             }
         }
+        try { messageObservers.get(this)?.(Object.freeze({ ...entry, text, color }), !!options.acknowledge, occurrence); }
+        catch { /* observation cannot enter an engine error path */ }
+        notifyPresentation(this);
     }
 }
 export const logger = new Logger();

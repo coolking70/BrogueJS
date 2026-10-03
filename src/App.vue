@@ -1,13 +1,10 @@
 <script lang="ts">
-// UI-1 第 6 条：Game.onConfirmRequest（C-5 落下的钩子，Game.ts:408）的生产侧接线。
-// 引擎的 requestConfirm 是**同步**契约（CE confirm() 在文本框里自旋等键，IO.c:2946-2975），
-// 所以这里用浏览器原生 confirm()——它是 web 平台唯一能同步阻塞等答案的模态，
-// 且按键语义与 CE 完全同构：Enter = OK = Yes（CE RETURN_KEY 挂在 Yes 钮，
-// IO.c:2956）、Esc = Cancel = No（CE ESCAPE_KEY 挂在 No 钮，IO.c:2966；
-// ACKNOWLEDGE_KEY = ' ' 同样映射 No，Rogue.h:1179）。
-// 纯逻辑（回放旁路）拆成可单测的导出函数；测试见 ui_1_rendering.test.ts。
+// D4 only: the historical blink hook still has a synchronous native resolver.
+// Q1–Q10 are wired by DialogHost through onCommandConfirmRequest; replay answers
+// are consumed by the engine and never reach that adapter.
 import type { Game } from './engine/Core/Game';
 import { cancelHeldInputs } from './ui/heldInput';
+import { dialogInput } from './ui/dialogInput';
 
 export function wireConfirmRequest(game: Game): void {
     game.onConfirmRequest = (message: string): boolean => {
@@ -15,13 +12,13 @@ export function wireConfirmRequest(game: Game): void {
         // CE IO.c:2944：autoPlayingLevel 是自动演示，不是旅行/探索。
         // 引擎在提问前停止自动行进；回放决策由 requestConfirm 消费。
         if (game.replayStatus === 'playing') return true;
-        return window.confirm(message);
+        return dialogInput.native(() => window.confirm(message));
     };
 }
 </script>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import { computed, ref, watch, provide, onMounted, onUnmounted } from 'vue';
 import { displaySettings } from './engine/Settings';
 import { inputManager } from './engine/Input';
 import { saveSnapshot, readSnapshot, readSaveSummary, deleteSnapshot, type SaveSummary } from './engine/Core/SaveStorage';
@@ -29,7 +26,9 @@ import i18next from 'i18next';
 import GameCanvas from './components/GameCanvas.vue';
 import ContextPanel from './components/ContextPanel.vue';
 import MessageJournal from './components/MessageJournal.vue';
-import MessageAcknowledgment from './components/MessageAcknowledgment.vue';
+import DialogHost from './components/DialogHost.vue';
+import { DialogService, dialogServiceKey, presentationTimeline } from './ui/dialogService';
+import { logger } from './engine/Systems/Logger';
 import InventoryOverlay from './components/InventoryOverlay.vue';
 import GameEndOverlay from './components/GameEndOverlay.vue';
 import MainMenu from './components/MainMenu.vue';
@@ -53,6 +52,8 @@ import { recordingJsonAtBoundary, RecordingExportError } from './ui/recordingExp
 import type { DetailInfo } from './engine/UI/DetailGenerator';
 
 const REPLAY_KEY = 'brogue-web-replay-v1';
+const dialogs = new DialogService();
+provide(dialogServiceKey, dialogs);
 
 // FE-1：布局模式（desktop / portrait / landscape）按视口尺寸判定，纯显示。
 startViewportTracking();
@@ -88,14 +89,13 @@ onMounted(() => {
   if (activeGame.isGameOver && !endFeedbackCleared) { endFeedbackCleared = true; replayFeedback.value = ''; }
   else if (!activeGame.isGameOver) endFeedbackCleared = false;
 }, 100); });
-onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTimer); runEpoch++; });
+onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTimer); runEpoch.value++; });
 /** 触控命令栏 + 方向键：紧凑模式或粗指针设备显示；回放期间让位给录像控制条。 */
 const showTouch = computed(() => (shouldShowTouchControls(viewport.coarsePointer, viewport.mode)
   || (displaySettings.immersiveMode && compact.value)) && !replayActive.value);
 const showCommands = computed(() => (compact.value || showTouch.value) && !replayActive.value);
 
-// UI-1 第 6 条：把引擎确认钩子接到本组件（headless/测试环境不挂载 App，
-// 钩子保持 null → requestConfirm 按"确认"处理，与 C-5 申报一致）。
+// D4 闪现暂留原同步接线；经典确认由常驻 DialogHost 适配。
 wireConfirmRequest(activeGame);
 
 const gameStarted = ref(false);
@@ -114,7 +114,7 @@ const storageTick = ref(0);
 const runAvailable = ref(false);
 const replayBusy = ref(false);
 const replayFeedback = ref('');
-let runEpoch = 0;
+const runEpoch = ref(0);
 const canSaveReplay = computed(() => {
   replayTick.value;
   return runAvailable.value && (activeGame.hasCompleteRecording || !!activeGame.replayRecording);
@@ -146,7 +146,7 @@ const hasReplay = computed(() => {
 });
 
 const startNewGame = (payload: { seed?: string; mode: GameMode }) => {
-  runEpoch++;
+  runEpoch.value++;
   replayFeedback.value = '';
   activeGame.startNewGame({ seed: payload.seed, mode: payload.mode });
   runAvailable.value = true;
@@ -163,6 +163,10 @@ const startNewGame = (payload: { seed?: string; mode: GameMode }) => {
 
 const saveGame = async () => {
   if (!gameStarted.value) return;
+  if (activeGame.hasPendingConfirmation) {
+    replayMessage(i18next.t('menu.command.waiting', { defaultValue: 'Please answer the current confirmation before saving or exporting.' }));
+    return;
+  }
   try {
     saveInfo.value = await saveSnapshot(activeGame.toSaveSnapshot());
     storageTick.value++;
@@ -181,7 +185,7 @@ const continueGame = async () => {
       return;
     }
     replayMessage(i18next.t('menu.log.save_loaded', { defaultValue: 'Save loaded.' }));
-    runEpoch++;
+    runEpoch.value++;
     runAvailable.value = true;
     replayFeedback.value = '';
     storageTick.value++;
@@ -204,15 +208,20 @@ const deleteSave = async () => {
 };
 
 // Menu feedback is presentation-only: Logger.log disturbs automatic actions.
-const replayMessage = (message: string) => { replayFeedback.value = message; };
+const replayMessage = (message: string) => {
+  replayFeedback.value = message + (presentationTimeline(activeGame)?.busy
+    ? ' ' + i18next.t('menu.presentation.pending', { defaultValue: 'Presentation is still playing; saves and exports use the completed turn.' }) : '');
+};
 
 const currentReplayJson = async (): Promise<string> => {
   if (activeGame.replayRecording) return JSON.stringify(activeGame.replayRecording);
-  const epoch = runEpoch;
+  const epoch = runEpoch.value;
   if (!activeGame.canExportRecording) {
-    replayFeedback.value = i18next.t('menu.replay.waiting', { defaultValue: 'Waiting for the current turn to finish…' });
+    replayFeedback.value = activeGame.hasPendingConfirmation
+      ? i18next.t('menu.command.waiting', { defaultValue: 'Please answer the current confirmation before saving or exporting.' })
+      : i18next.t('menu.replay.waiting', { defaultValue: 'Waiting for the current turn to finish…' });
   }
-  return recordingJsonAtBoundary(activeGame, () => runEpoch === epoch);
+  return recordingJsonAtBoundary(activeGame, () => runEpoch.value === epoch);
 };
 
 const saveReplay = async () => {
@@ -249,7 +258,7 @@ const loadReplay = () => {
     gameStarted.value = true;
     menuOpen.value = false;
     replayMessage(i18next.t('menu.log.replay_loaded', { defaultValue: 'Replay loaded.' }));
-    runEpoch++;
+    runEpoch.value++;
     runAvailable.value = true;
     replayFeedback.value = '';
   } catch {
@@ -281,10 +290,12 @@ const replayStep = () => {
 };
 
 const replayRestart = () => {
+  runEpoch.value++;
   activeGame.replayRestart();
 };
 
 const replaySeek = (index: number) => {
+  runEpoch.value++;
   activeGame.replaySeek(index);
 };
 
@@ -325,7 +336,7 @@ const importReplayJson = async (file: File) => {
       replayMessage(i18next.t('menu.log.replay_import_failed', { defaultValue: 'Replay JSON import failed.' }));
       return;
     }
-    runEpoch++;
+    runEpoch.value++;
     runAvailable.value = true;
     replayFeedback.value = i18next.t('menu.replay.imported_unsaved', { defaultValue: 'Recording imported. Save it to keep it in this browser.' });
     gameStarted.value = true;
@@ -338,6 +349,9 @@ const importReplayJson = async (file: File) => {
 };
 
 const handleReturnToTitle = async () => {
+    activeGame.cancelPendingCommand();
+    logger.clearAcknowledgments();
+    runEpoch.value++;
     // Return to menu logic
     gameStarted.value = false;
     menuOpen.value = true;
@@ -384,7 +398,7 @@ const handleReturnToTitle = async () => {
     </template>
     <div v-else class="blank-stage" aria-hidden="true"></div>
 
-    <MessageAcknowledgment />
+    <DialogHost :service="dialogs" :epoch="runEpoch" />
     <MainMenu
       v-if="menuOpen"
       :has-save="hasSave"
