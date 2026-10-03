@@ -69,7 +69,7 @@ grep -rln '^<<<<<<<\|^>>>>>>>' src scripts     # 必查：-3 可能静默留下�
 | 轻 | 纯前端（组件、样式、界面文案、只读显示） | `vue-tsc -b` + `build` + 相关前端测试 + **所有读源码守卫** |
 | 中 | 引擎里不改规则的部分（消息、显示、日志、自动行动流程、输入） | 轻档 + 相关单测 + UR2/UR3/UR4 黄金 trace + 录像测试（u_27、x2a、x3b）+ U03 契约 + `test:drift` |
 | 局部规则 | 只改战斗、物品效果、状态、AI 等局部规则；不改生成、随机数消耗次数/顺序、存档或录像格式 | 中档 + 与改动相关的全部测试 + `test:full`（不含重型生成普查）+ `test:drift` |
-| 全量 | 改地图/物品/怪物生成、随机数消耗、存档/录像格式；同步新版 CE；合并扩展分支进 main；打版本标签前 | `vue-tsc -b` + `build` + `test:full` + `BROGUE_REQUIRE_CE=1 npm run test:gen` + `test:drift` |
+| 全量 | 改地图/物品/怪物生成、随机数消耗、存档/录像格式；同步新版 CE；打版本标签前 | `vue-tsc -b` + `build` + `test:full` + `BROGUE_REQUIRE_CE=1 npm run test:gen` + `test:drift` |
 
 - **打版本标签前必须全量兜底一次。** 局部规则/全量档先 `npm run ce:fetch` 准备参照源码；`test:full` 缺 CE 即失败。全量档的普查也强制要求 CE，避免对照用例被跳过。
 - 三套文件归属由 `scripts/test-suites.json` 唯一定义：常规（含 `test:full`）、重型生成普查、生成基线互不重叠。新增测试必须登记；普查以实测耗时和执行内容判定，不能只按文件名分类。

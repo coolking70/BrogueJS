@@ -101,3 +101,7 @@ LAVA 统一完整套件跑完：4573 项通过，2 项原 900000ms 超时；两�
 | `docs/known-issues.md` | 已知问题与待办 |
 | `docs/release.md` | 版本、发布与试玩构建 |
 | `docs/archive/dev-history/` | 旧开发文档归档（勘察报告、单元报告、任务书、进度日志），只读参考 |
+
+## 扩展原型（不在主线）
+
+RPG 化二次开发是独立新产品的原型，在分支 `ext/foundation` 上进行，**不合并进 main**，也不要求与本移植保持兼容；路线、原则与参考资料见该分支的 `docs/ext/`。主线（本仓库 main）仍是严格对齐 Brogue CE 的移植。
