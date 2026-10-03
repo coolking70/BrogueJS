@@ -150,7 +150,7 @@ describe('P2-3 B: 主观/客观分离', () => {
         // CE Time.c:949-963 会先自动吃包内食物；此用例只验证无食物的扣血链。
         game.player.inventory.items = game.player.inventory.items.filter(i => i.category !== ItemCategory.FOOD);
         game.player.nutrition = 0;
-        game.player.hp = 100;
+        game.player.hp = game.player.maxHp = 100; // isolate starvation from CE's end-turn HP cap.
         game.player.applyStatus('haste', 30);
         game.player.refreshSpeeds();
 

@@ -133,7 +133,7 @@ describe('B-2 命中：掷骰、未中落地', () => {
         dart.quantity = 5;
         game.player.inventory.addItem(dart);
         const rat = makeMonster(game, 'rat', 8, 5);
-        rat.hp = 999;
+        rat.hp = rat.maxHp = 999; // keep the miss probe independent of CE's pre-action HP cap.
         rat.defense = 50; // 防御>0 → 命中率 <100，命中骰有意义
 
         // 第一次 randRange 强制 99：randPercent(p<100) 必为 false → miss。
