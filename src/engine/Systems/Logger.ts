@@ -30,6 +30,8 @@ function notifyPresentation(log: Logger): void {
 }
 const combatBuffers = new WeakMap<Logger, { text: string; color: string }[]>();
 const heardCombat = new WeakSet<Logger>();
+type MessageObserver = (message: Readonly<LogMessage>, acknowledge: boolean, occurrence?: Readonly<LogMessage>) => void;
+const messageObservers = new WeakMap<Logger, MessageObserver>();
 
 /** CE FOLDABLE presentation: preserve the individual archive entries/repeats. */
 export function foldCombatMessages(messages: readonly LogMessage[], width = 100): LogMessage[] {
@@ -47,6 +49,11 @@ export function foldCombatMessages(messages: readonly LogMessage[], width = 100)
 }
 
 export class Logger {
+    /** After archiving, before the caller's next effect. Never flushes combat. */
+    public observeMessages(observer: MessageObserver | null): void {
+        if (observer) messageObservers.set(this, observer);
+        else messageObservers.delete(this);
+    }
     public messages: LogMessage[] = [];
     public turn = 0;
     private nextId = 0;
@@ -162,14 +169,18 @@ export class Logger {
             this.messages.push(entry);
             if (this.messages.length > MESSAGE_ARCHIVE_ENTRIES) this.messages.shift();
         }
+        let occurrence: Readonly<LogMessage> | undefined;
         if (options.acknowledge) {
             entry.acknowledge = true;
             const display = presentations.get(this);
             // Each occurrence still needs acknowledgment, even at count 100.
             if (display?.enabled()) {
-                (display.terminalShown ? display.unread : display.pending).push({ ...entry, text, color });
+                occurrence = Object.freeze({ ...entry, text, color });
+                (display.terminalShown ? display.unread : display.pending).push(occurrence as LogMessage);
             }
         }
+        try { messageObservers.get(this)?.(Object.freeze({ ...entry, text, color }), !!options.acknowledge, occurrence); }
+        catch { /* observation cannot enter an engine error path */ }
         notifyPresentation(this);
     }
 }

@@ -119,6 +119,8 @@ import { registerHeldInput, registerHeldInputContext, syncHeldInputContext } fro
 import { dialogInput } from '../ui/dialogInput';
 import { normalizeMapGlyph } from '../ui/mapGlyph';
 import { RetainedBackgroundLayer, RetainedVectorLayer, VectorGeometryCache } from '../ui/retainedMapDrawing';
+import { displayedFrame, presentationTimeline } from '../ui/presentationTimeline';
+import type { DisplayFrame } from '../ui/displayProjection';
 import { RenderRequests } from '../ui/renderRequests';
 import { FrameProfile } from '../ui/frameProfile';
 import { mapMode } from '../ui/mapTiles';
@@ -130,6 +132,7 @@ import { dispatch as dispatchCommand, travelTo } from '../ui/commands';
 const canvasContainer = ref<HTMLDivElement | null>(null);
 let pixiApp: Application | null = null;
 const arcanaPrompt = ref('');
+const arcanaCursorStroke = { width: 2, color: 0xdddddd };
 const performanceReport = ref('');
 let frameProfile: FrameProfile | null = null;
 let vectorGeometry: VectorGeometryCache | null = null;
@@ -252,6 +255,7 @@ onMounted(async () => {
     const drawHover = () => {
         hoverHighlight.clear();
         const game = activeGame;
+        if (displayedFrame(game)) return;
         const pos = game.hoveredCell;
         if (!pos || game.isInventoryOpen || game.referenceScreen || game.pendingArcana
             || game.isThrowing || game.isGameOver) return;
@@ -309,7 +313,7 @@ onMounted(async () => {
             ? computeMapLayout(el.clientWidth, el.clientHeight, 'uniform')
             : preferredLayout;
         // zoom=1 时保留原桌面布局；主动放大或小屏自动放大后使用跟随相机。
-        const focus = activeGame.player?.loc ?? { x: 0, y: 0 };
+        const focus = displayedFrame(activeGame)?.player ?? activeGame.player?.loc ?? { x: 0, y: 0 };
         const cam = cameraState.fit ? { ...base, follow: false, panX: 0, panY: 0 } : computeMapCamera(
             el.clientWidth, el.clientHeight, base, DCOLS, DROWS, TILE_SIZE,
             focus, cameraState.zoom, { x: cameraState.panX, y: cameraState.panY },
@@ -391,15 +395,72 @@ onMounted(async () => {
     });
 
     const renders = new RenderRequests();
+    const renderProjection = (frame: DisplayFrame) => {
+        bgGraphics.clear(); vectorTerrain.clear(); vectorEntities.clear(); arcanaCursor.clear();
+        arcanaPrompt.value = frame.arcana ? i18next.t('arcana.target_prompt', {
+            interpolation: { escapeValue: false }, name: frame.arcana.name,
+            defaultValue: '{{name}} — hjklyubn / arrows: aim · Tab: next · Enter / click: cast · Esc: cancel',
+        }) : '';
+        if (frame.arcana) {
+            if (frame.arcana.maxDistance !== null) arcanaPrompt.value += i18next.t('arcana.blink_range', { distance: frame.arcana.maxDistance });
+            for (const p of frame.arcana.path) arcanaCursor.rect(p.x * TILE_SIZE, p.y * TILE_SIZE, TILE_SIZE, TILE_SIZE).fill(ARCANA_TRAJECTORY_FILL);
+            arcanaCursor.rect(frame.arcana.cursor.x * TILE_SIZE, frame.arcana.cursor.y * TILE_SIZE, TILE_SIZE, TILE_SIZE).stroke(arcanaCursorStroke);
+        }
+        if (frame.throwAim && !frame.arcana) {
+            arcanaCursor.rect(frame.throwAim.x * TILE_SIZE, frame.throwAim.y * TILE_SIZE, TILE_SIZE, TILE_SIZE).fill(THROW_AIM_FILL);
+            arcanaCursor.rect(frame.throwAim.x * TILE_SIZE, frame.throwAim.y * TILE_SIZE, TILE_SIZE, TILE_SIZE).stroke({ width: 2, color: THROW_AIM_STROKE });
+        }
+        for (let x = 0; x < DCOLS; x++) for (let y = 0; y < DROWS; y++) {
+            const tile = frame.map.columns[x]?.[y];
+            const sprite = tileSprites[x]![y]!;
+            if (!tile) { sprite.visible = false; continue; }
+            if (tile.bgColor !== null) bgGraphics.paint(tile.bgColor, x, y, TILE_SIZE);
+            paintMapText(sprite, tile.semantic, tile.color, mapMode.value, x, y, TILE_SIZE, true);
+            if (mapMode.value === 'tiles') sprite.visible = paintVectorTile(vectorTerrain, tile.semantic, tile.color, x, y, TILE_SIZE);
+        }
+        bgGraphics.finish(); vectorTerrain.finish();
+        let entityIdx = 0;
+        for (const entity of frame.map.entities) {
+            if (entityIdx >= MAX_ENTITY_SPRITES) break;
+            const sprite = entitySprites[entityIdx++]!;
+            paintMapText(sprite, entity.semantic, entity.color, mapMode.value, entity.x, entity.y, TILE_SIZE);
+            if (mapMode.value !== 'original' && tileSprites[entity.x]?.[entity.y]) tileSprites[entity.x]![entity.y]!.visible = false;
+            sprite.visible = mapMode.value !== 'tiles' || paintVectorTile(vectorEntities, entity.semantic, entity.color, entity.x, entity.y, TILE_SIZE);
+            (sprite.style as TextStyle).dropShadow = entity.interactive && mapMode.value !== 'tiles'
+                ? { color: entity.color as never, blur: mapMode.value === 'original' ? 8 : 2, distance: 0, angle: 0, alpha: mapMode.value === 'original' ? 0.8 : 0.3 } : false;
+        }
+        for (let i = entityIdx; i < MAX_ENTITY_SPRITES; i++) entitySprites[i]!.visible = false;
+        const bolt = frame.bolt;
+        boltSprite.visible = !!bolt && mapMode.value !== 'tiles';
+        if (bolt) {
+            paintMapText(boltSprite, projectileSemantic(bolt.char), bolt.color, mapMode.value, bolt.x, bolt.y, TILE_SIZE);
+            if (mapMode.value === 'tiles') paintVectorTile(vectorEntities, projectileSemantic(bolt.char), bolt.color, bolt.x, bolt.y, TILE_SIZE);
+        }
+        vectorEntities.finish();
+        let floatIdx = 0;
+        for (const ft of frame.floatingTexts) {
+            if ((!displaySettings.showDamageNumbers && /^-\d+$/.test(ft.text)) || floatIdx >= MAX_FLOAT_SPRITES) continue;
+            const sprite = floatSprites[floatIdx++]!;
+            sprite.text = mapMode.value === 'hanzi' ? floatingHanzi(ft.text) : normalizeMapGlyph(ft.text);
+            (sprite.style as TextStyle).fill = ft.color;
+            (sprite.style as TextStyle).fontFamily = mapMode.value === 'hanzi' ? 'Noto Sans CJK SC, Microsoft YaHei, sans-serif' : 'Courier New';
+            sprite.x = (ft.x + 0.5) * TILE_SIZE - sprite.width / 2; sprite.y = ft.y * TILE_SIZE;
+            sprite.alpha = Math.max(0, ft.life / 30); sprite.visible = true;
+        }
+        for (let i = floatIdx; i < MAX_FLOAT_SPRITES; i++) floatSprites[i]!.visible = false;
+    };
     const render = () => {
         const profileStart = frameProfile ? performance.now() : 0;
         drawHover();
         // FE-1：玩家移动后相机回到跟随（清掉临时平移）并重算视口
-        if (game.player.loc.x !== lastFocusX || game.player.loc.y !== lastFocusY) {
+        const projection = displayedFrame(game);
+        const focus = projection?.player ?? game.player.loc;
+        if (focus.x !== lastFocusX || focus.y !== lastFocusY) {
             cameraState.panX = 0;
             cameraState.panY = 0;
             applyLayout();
         }
+        if (projection) { renderProjection(projection); return; }
         // ---- Background rectangles (batch draw) ----
         bgGraphics.clear();
         vectorTerrain.clear();
@@ -421,7 +482,7 @@ onMounted(async () => {
                     .fill(ARCANA_TRAJECTORY_FILL);
             }
             arcanaCursor.rect(selection.cursor.x * TILE_SIZE, selection.cursor.y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                .stroke({ width: 2, color: 0xdddddd });
+                .stroke(arcanaCursorStroke);
         }
         // FE-1：触屏投掷的 UI 瞄准格（纯绘制；投掷模式结束即清除）
         const aim = targetingState.aim;
@@ -648,6 +709,7 @@ onMounted(async () => {
     game.onRenderRequested = () => { syncHeldInputContext(); renders.request(); };
 
     (window as Window & { render_game_to_text?: () => string }).render_game_to_text = () => {
+        const frame = displayedFrame(game);
         const visibleMonsters = game.monsters
             .filter((m) => canSeeMonster(game.player, game.grid, m))
             .map((m) => ({ name: m.name, x: m.loc.x, y: m.loc.y, hp: m.hp,
@@ -673,17 +735,18 @@ onMounted(async () => {
 
         return JSON.stringify({
             mapStyle: mapMode.value,
+            presentation: presentationTimeline(game)?.diagnostics ?? { simulationTurn: game.absoluteTurnNumber, displayTurn: game.absoluteTurnNumber },
             seed: game.currentSeed,
             acknowledgment: logger.pendingAcknowledgment?.text ?? null,
             pendingCommand: game.pendingCommandConfirmation?.ownerCommandId ?? null,
             confirmation: game.pendingCommandConfirmation?.message ?? null,
-            mode: game.pendingEnchantment ? 'enchantment_target' : game.pendingArcana ? 'arcana_target' : game.isInventoryOpen ? 'inventory' : (game.isThrowing ? 'throw_target' : 'explore'),
+            mode: frame ? frame.targeting : game.pendingEnchantment ? 'enchantment_target' : game.pendingArcana ? 'arcana_target' : game.isInventoryOpen ? 'inventory' : (game.isThrowing ? 'throw_target' : 'explore'),
             enchantmentTargets: game.pendingEnchantment
                 ? game.player.inventory.items.filter(item => game.canEnchantTarget(item)).map(item => ({ id: item.id, name: item.displayName })) : [],
-            arcanaPreview: game.getArcanaPreview(),
+            arcanaPreview: frame ? frame.arcana : game.getArcanaPreview(),
             arcanaTarget: game.pendingArcana ? { name: game.pendingArcana.item.displayName, ...game.pendingArcana.cursor } : null,
             coordinateSystem: { origin: 'top-left', xAxis: 'right', yAxis: 'down' },
-            player: {
+            player: frame ? { ...frame.player, statuses: frame.player.statuses } : {
                 weaknessAmount: game.player.weaknessAmount, effectiveStrength: game.player.effectiveStrength, maxStatus: { ...game.player.maxStatus },
                 x: game.player.loc.x,
                 y: game.player.loc.y,
@@ -700,7 +763,7 @@ onMounted(async () => {
             },
             recordedInputEvents: game.recordedInputEvents.length,
             // FE-1：自动化验收用的只读补充——已知（见过/记得）的楼梯位置与背包清单
-            depth: game.depth,
+            depth: frame?.depth ?? game.depth,
             knownStairs: (() => {
                 const s = game.levelSeeds[game.depth - 1];
                 const known = (p?: { x: number; y: number }) => {
@@ -715,9 +778,9 @@ onMounted(async () => {
             // 画布内格子 → CSS 像素：x = offsetX + (cell + 0.5) * tile * scaleX
             mapLayout: { offsetX, offsetY, scaleX: layoutScaleX, scaleY: layoutScaleY, tile: TILE_SIZE, follow: cameraState.follow },
             autoPathLength: game.autoPath.length,
-            monsters: visibleMonsters,
-            revealedLocations,
-            items: visibleItems
+            monsters: frame ? frame.rows.filter(row => row.kind === 'monster') : visibleMonsters,
+            revealedLocations: frame ? frame.map.entities.filter(entity => entity.semantic.kind === 'marker').map(entity => ({ x: entity.x, y: entity.y })) : revealedLocations,
+            items: frame ? frame.rows.filter(row => row.kind === 'item') : visibleItems
         });
     };
 
@@ -960,11 +1023,12 @@ onMounted(async () => {
 
     let pathingTimer = 0; // Display milliseconds, not rendered frame count.
     let colorTimer = 0;
+    let lastProjection = displayedFrame(game);
     let lastInput = game.recordedInputEvents[game.recordedInputEvents.length - 1];
     let skipNextDisplayTime = false;
     const autoAllowed = () => !game.replayRecording && !game.isTimePaused()
         && !game.hasPendingConfirmation && !game.isAdvancing && !game.isInputLocked() && !game.isGameOver
-        && !dialogInput.busy() && !logger.pendingAcknowledgment && game.isAutoTraveling() && !document.hidden;
+        && !presentationTimeline(game)?.busy && !dialogInput.busy() && !logger.pendingAcknowledgment && game.isAutoTraveling() && !document.hidden;
     const displayFrame = (elapsedMs: number, animationMs: number = elapsedMs) => {
         syncHeldInputContext();
         const profileNow = frameProfile ? performance.now() : 0;
@@ -986,6 +1050,7 @@ onMounted(async () => {
 
             // Advancement keeps its existing clamped animation-time clock.
             game.tickAdvancement(animationMs);
+            presentationTimeline(game)?.tick(document.hidden ? 0 : animationMs);
             if (game.isTimePaused()) {
                 pathingTimer = 0;
                 return;
@@ -1014,6 +1079,8 @@ onMounted(async () => {
                 });
         } finally {
             syncHeldInputContext();
+            const nextProjection = displayedFrame(game);
+            if (nextProjection !== lastProjection) { lastProjection = nextProjection; renders.request(); }
             // Present requested overlays and final states even while paused.
             renders.flush(render);
         }

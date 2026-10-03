@@ -15,6 +15,9 @@ import { ItemCategory } from '../engine/Items/Item';
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import { TerrainType } from '../engine/Map/Grid';
 import type { Game } from '../engine/Core/Game';
+import { setupDialogD3Scene } from './support/dialogD3Scene';
+import { activeGame } from '../engine/Core/Game';
+import { displayedFrame, presentationTimeline } from '../ui/presentationTimeline';
 import zhCN from '../locales/zh_CN.json';
 
 // Compile real client SFCs and exercise their lifecycle/DOM input contracts.
@@ -58,7 +61,7 @@ const renderer = Vue.createRenderer<Node, Node>({
     parentNode: n => n.parent, nextSibling: n => n.parent?.children[n.parent.children.indexOf(n) + 1] ?? null,
     patchProp: (n, key, _old, value) => { n.props[key] = value; }, querySelector: () => body,
 });
-let Host: Vue.Component, Inventory: Vue.Component, Reference: Vue.Component;
+let Host: Vue.Component, Inventory: Vue.Component, Reference: Vue.Component, Hud: Vue.Component, End: Vue.Component, Journal: Vue.Component, Nearby: Vue.Component, Target: Vue.Component;
 const gameModule = { activeGame: {} as Game };
 let app: ReturnType<typeof renderer.createApp> | undefined;
 let root: Node, service: DialogService;
@@ -97,6 +100,14 @@ beforeAll(async () => {
         '../engine/UI/DetailGenerator': await import('../engine/UI/DetailGenerator'),
         '../engine/UI/ItemDetailContext': await import('../engine/UI/ItemDetailContext'),
         '../engine/UI/Discoveries': await import('../engine/UI/Discoveries'),
+        '../../ui/useGameHud': await import('../ui/useGameHud'), '../ui/useGameHud': await import('../ui/useGameHud'),
+        '../../entities/Player': await import('../entities/Player'),
+        '../engine/Core/HighScores': await import('../engine/Core/HighScores'),
+        '../../engine/Core/Game': gameModule,
+        '../../engine/UI/MonsterSidebar': await import('../engine/UI/MonsterSidebar'),
+        '../../ui/mapGlyph': await import('../ui/mapGlyph'),
+        '../../ui/nearbyInspection': await import('../ui/nearbyInspection'),
+        '../ui/targeting': await import('../ui/targeting'), '../ui/commands': await import('../ui/commands'),
     };
     function compile(name: string): Vue.Component {
         const { descriptor } = parse(readFileSync(new URL('../components/' + name + '.vue', import.meta.url), 'utf8'));
@@ -112,6 +123,7 @@ beforeAll(async () => {
         return exports.default;
     }
     Host = compile('DialogHost'); Inventory = compile('InventoryOverlay'); Reference = compile('ReferenceOverlay');
+    Hud = compile('theme/ThemeHud'); End = compile('GameEndOverlay'); Journal = compile('MessageJournal'); Nearby = compile('theme/ThemeNearby'); Target = compile('TargetBar');
 });
 beforeEach(() => {
     vi.useFakeTimers(); logger.reset(); service = new DialogService(); epoch.value = 0;
@@ -301,5 +313,132 @@ describe('D2 real Host resumes engine command capabilities', () => {
         expect(game.resolveCommandDecision(spec.token, true)).toBe(false);
         expect(service.answer(token, 'yes')).toBe(false);
         expect(game.recordedInputEvents).toEqual([]); expect(game.player.inventory.items).toContain(food);
+    });
+});
+
+
+// D3 runs the real Host/HUD/journal/nearby/target/end SFCs against the same
+// cursor. Geometry, WebGL and physical touch remain browser acceptance work.
+const byClass = (name: string) => all(root).find(n => n.props.class?.split(' ').includes(name));
+const textOf = (root: Node): string => root.text + root.children.map(textOf).join('');
+const settleTimeline = async () => { vi.advanceTimersByTime(250); await Vue.nextTick(); };
+function mountTimeline(automatic = false, animation = true) {
+    window.setInterval = ((...args: Parameters<typeof setInterval>) => globalThis.setInterval(...args)) as typeof window.setInterval;
+    window.clearInterval = (id => globalThis.clearInterval(id)) as typeof window.clearInterval;
+    vi.spyOn(performance, 'now').mockImplementation(() => clock);
+    activeGame.startNewGame({ seed: 33421 }); setupDialogD3Scene(activeGame, animation);
+    gameModule.activeGame = activeGame;
+    root = node('root'); body.children.push(root); root.parent = body;
+    app = renderer.createApp({ render: () => Vue.h('main', [Vue.h(Hud), Vue.h(Nearby), Vue.h(Journal), Vue.h(Target),
+        Vue.h(End, { canSaveReplay: true }), Vue.h(Host, { service, epoch: epoch.value })]) });
+    app.use(I18NextVue, { i18next }); app.provide(dialogServiceKey, service); app.mount(root);
+    if (automatic) { activeGame.autoPath = [{ x: 11, y: 10 }]; activeGame.executeCommand('auto_step'); }
+    else activeGame.executeCommand('move', { x: 1, y: 0 });
+    while (activeGame.isAdvancing) activeGame.tickAdvancement(25);
+    return presentationTimeline(activeGame)!;
+}
+
+describe('D3 actual client projections and terminal input', () => {
+    it.each([false, true])('animation=%s: HUD/journal/nearby freeze with MORE and resume together', async animation => {
+        const timeline = mountTimeline(false, animation); await settleTimeline();
+        expect(activeGame.isGameOver).toBe(true);
+        expect(byClass('th-hp-cur')?.text).toBe('36');
+        const first = displayedFrame(activeGame)!;
+        expect(textOf(byClass('message-journal')!)).not.toContain('被麻痹');
+        expect(textOf(byClass('theme-nearby')!)).toContain(first.rows.find(row => row.kind === 'monster')!.name);
+        expect(byClass('game-end-overlay')).toBeUndefined();
+        vi.advanceTimersByTime(60_000); timeline.tick(60_000); await Vue.nextTick();
+        expect(byClass('th-hp-cur')?.text).toBe('36'); expect(displayedFrame(activeGame)).toBe(first);
+        click(findAction('more')!); await settleTimeline();
+        expect(displayedFrame(activeGame)).not.toBe(first); expect(byClass('th-hp-cur')?.text).toBe(String(displayedFrame(activeGame)!.player.hp));
+        expect(textOf(byClass('message-journal')!)).toContain('被麻痹');
+        for (let i = 0; timeline.busy && i < 100; i++) {
+            clock += 1000;
+            if (findAction('more')) click(findAction('more')!);
+            else timeline.tick(25);
+            await settleTimeline();
+        }
+        expect(byClass('th-hp-cur')?.text).toBe('0');
+        expect(byClass('game-end-overlay')).toBeDefined(); expect(findDialog()).toBeUndefined();
+    });
+    it('automatic action: explicit results preserve unread occurrences, final save and return are available', async () => {
+        const timeline = mountTimeline(true); await settleTimeline();
+        const archive = structuredClone(logger.messages), pending = logger.pendingAcknowledgments.map(message => ({ ...message }));
+        click(findAction('view-result')!); await settleTimeline();
+        expect(timeline.busy).toBe(false); expect(findDialog()).toBeUndefined();
+        expect(byClass('game-end-overlay')).toBeDefined();
+        expect(logger.unreadAcknowledgments).toEqual(pending); expect(logger.messages).toEqual(archive);
+        expect(byClass('return-btn')?.props.disabled).toBe(false);
+        expect(byClass('save-replay-btn')?.props.disabled).toBe(false);
+        expect(() => activeGame.toSaveSnapshot()).not.toThrow();
+        byClass('return-btn')!.props.onClick(); epoch.value++; await settleTimeline();
+        expect(logger.unreadAcknowledgments).toHaveLength(0); expect(displayedFrame(activeGame)).toBeUndefined();
+    });
+    it('results stay reachable during the animation interval between ACKs, with matching physical release', async () => {
+        const timeline = mountTimeline(); await settleTimeline();
+        // Consume through the first forced-turn frame, leaving a 25ms delay.
+        for (let i = 0; timeline.acknowledgment && i < 100; i++) {
+            clock += 1000; click(findAction('more')!); await settleTimeline();
+        }
+        expect(timeline.busy).toBe(true); expect(findDialog()).toBeUndefined();
+        expect(findAction('view-result')).toBeDefined();
+        clock += 1000; click(findAction('view-result')!); await settleTimeline();
+        expect(timeline.terminalReady).toBe(true); expect(byClass('game-end-overlay')).toBeDefined();
+    });
+});
+
+describe('D3 inventory presentation boundaries', () => {
+    function inventoryScene(animated = false) {
+        window.setInterval = ((...args: Parameters<typeof setInterval>) => globalThis.setInterval(...args)) as typeof window.setInterval;
+        window.clearInterval = (id => globalThis.clearInterval(id)) as typeof window.clearInterval;
+        vi.spyOn(performance, 'now').mockImplementation(() => clock);
+        const game = createHeadlessGame(33422); gameModule.activeGame = game;
+        game.monsters = []; game.dormantMonsters = []; game.items = [];
+        game.player.loc = { x: 10, y: 10 }; game.player.statusDurations = {};
+        for (let x = 5; x < 16; x++) for (let y = 5; y < 16; y++) game.grid.setTerrain(x, y, TerrainType.FLOOR);
+        game.animationEnabled = animated; game.executeCommand('toggle_inventory');
+        mount(true);
+        return game;
+    }
+    it.each(['scroll_of_identify', 'scroll_of_enchantment'])('%s opens mandatory targets only after its reveal ACK', async kind => {
+        const game = inventoryScene(), scroll = ItemLoader.spawnScroll(kind, -1, -1)!;
+        game.player.inventory.addItem(ItemLoader.spawnPotion('potion_of_strength', -1, -1)!);
+        game.player.inventory.addItem(scroll); await settleTimeline();
+        expect(byClass('inventory-overlay')).toBeDefined();
+        game.executeItemCommand('read', scroll); await settleTimeline();
+        expect(game.pendingIdentify || game.pendingEnchantment).toBe(true);
+        expect(findAction('more')).toBeDefined();
+        expect(byClass('inventory-overlay')).toBeUndefined();
+        clock += 1000; click(findAction('more')!); await settleTimeline();
+        expect(presentationTimeline(game)!.busy).toBe(false);
+        expect(byClass('inventory-overlay')).toBeDefined();
+        expect(byClass('identify-banner')).toBeDefined();
+        game.executeCommand('escape');
+        expect(game.pendingIdentify || game.pendingEnchantment).toBe(true);
+        expect(game.isInventoryOpen).toBe(true);
+    });
+    it('quaff keeps its deferred close across an ACK-free animation interval', async () => {
+        const game = inventoryScene(true), potion = ItemLoader.spawnPotion('potion_of_paralysis', -1, -1)!;
+        game.player.inventory.addItem(potion); await settleTimeline();
+        const row = all(body).find(n => n.props.class === 'item-letter' && n.text.startsWith(potion.inventoryLetter!))!.parent!;
+        row.props.onClick(); await Vue.nextTick();
+        const quaff = all(body).find(n => n.type === 'button' && n.text === i18next.t('Quaff'))!;
+        expect(quaff).toBeDefined(); quaff.props.onClick();
+        while (game.isAdvancing) game.tickAdvancement(25);
+        const timeline = presentationTimeline(game)!; await settleTimeline();
+        expect(timeline.busy).toBe(true); expect(game.isInventoryOpen).toBe(true);
+        for (let i = 0; timeline.acknowledgment && i < 100; i++) {
+            clock += 1000; click(findAction('more')!); await settleTimeline();
+        }
+        expect(timeline.busy).toBe(true); expect(findDialog()).toBeUndefined();
+        // The deferred-close poll runs here, when no Host request is visible.
+        await settleTimeline(); expect(game.isInventoryOpen).toBe(true);
+        for (let i = 0; timeline.busy && i < 100; i++) {
+            clock += 1000;
+            if (findAction('more')) click(findAction('more')!); else timeline.tick(25);
+            await settleTimeline();
+        }
+        expect(timeline.busy).toBe(false); expect(game.isInventoryOpen).toBe(false);
+        expect(game.recordedInputEvents.filter(event => event.action === 'escape')).toHaveLength(1);
     });
 });

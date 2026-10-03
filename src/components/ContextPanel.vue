@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { activeGame } from '../engine/Core/Game';
 import { sidebarEntityRows } from '../engine/UI/MonsterSidebar';
-import { useGameHud } from '../ui/useGameHud';
+import { useGameHud, displayedFrame } from '../ui/useGameHud';
 import { nearbyDetail } from '../ui/nearbyInspection';
 import type { DetailInfo } from '../engine/UI/DetailGenerator';
 const emit = defineEmits<{ close: []; inspect: [detail: DetailInfo] }>();
@@ -12,7 +12,7 @@ let timer = 0;
 function poll() {
  const game = activeGame;
  if (!game?.player) return;
- rows.value = sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth);
+ rows.value = displayedFrame(game)?.rows ?? sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth);
 }
 onMounted(() => { poll(); timer = window.setInterval(poll, 100); });
 onUnmounted(() => window.clearInterval(timer));

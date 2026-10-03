@@ -1,4 +1,5 @@
 import type { InjectionKey } from 'vue';
+export { presentationTimeline } from './presentationTimeline';
 
 export type DialogAction = 'yes' | 'no' | 'more' | 'view-result';
 export interface DialogToken { readonly id: number; readonly epoch: number }
@@ -30,6 +31,7 @@ export class DialogService {
     private syncing = false;
     private answering = false;
     private disposed = false;
+    private resetListeners = new Set<() => void>();
 
     get current(): DialogEntry | undefined { return this.queue[0]?.entry; }
     get queueLength(): number { return this.queue.length; }
@@ -38,6 +40,10 @@ export class DialogService {
     subscribe(listener: () => void): () => void {
         this.listeners.add(listener);
         return () => { this.listeners.delete(listener); };
+    }
+    onReset(listener: () => void): () => void {
+        this.resetListeners.add(listener);
+        return () => { this.resetListeners.delete(listener); };
     }
     registerSource(sync: () => void, priority = 0): () => void {
         const source = { sync, priority };
@@ -99,6 +105,7 @@ export class DialogService {
         this.epoch++;
         const previous = this.queue.splice(0);
         for (const pending of previous) pending.settle({ status: 'cancelled' });
+        for (const listener of [...this.resetListeners]) listener();
         this.notify();
     }
     dispose(): void {
@@ -106,6 +113,7 @@ export class DialogService {
         this.reset();
         this.sources = [];
         this.listeners.clear();
+        this.resetListeners.clear();
     }
     private notify(): void { for (const listener of [...this.listeners]) listener(); }
 }

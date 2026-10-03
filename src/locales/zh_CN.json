@@ -1433,5 +1433,6 @@
   "theme.inspect_hint": "右键或长按地图查看详情",
   "theme.journal_empty": "旅程刚刚开始。",
   "theme.command_more": "更多",
-  "theme.command_less": "收起"
+  "theme.command_less": "收起",
+  "menu.presentation.pending": "演示尚未看完；保存或导出使用本回合已结算的最终状态。"
 }

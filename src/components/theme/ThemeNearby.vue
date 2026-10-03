@@ -5,6 +5,7 @@ import { activeGame } from '../../engine/Core/Game';
 import { sidebarEntityRows } from '../../engine/UI/MonsterSidebar';
 import { normalizeMapGlyph } from '../../ui/mapGlyph';
 import { nearbyDetail } from '../../ui/nearbyInspection';
+import { displayedFrame } from '../../ui/useGameHud';
 import type { DetailInfo } from '../../engine/UI/DetailGenerator';
 const emit = defineEmits<{ inspect: [detail: DetailInfo] }>();
 type Row = ReturnType<typeof sidebarEntityRows>[number] & { distance: number };
@@ -13,8 +14,9 @@ let timer = 0;
 function poll() {
   const game = activeGame;
   if (!game?.player) return;
-  const p = game.player;
-  rows.value = sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth)
+  const frame = displayedFrame(game);
+  const p = frame?.player ?? game.player;
+  rows.value = (frame?.rows ?? sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth))
     .map(row => ({ ...row, distance: Math.max(Math.abs(row.loc.x - p.x), Math.abs(row.loc.y - p.y)) }));
 }
 onMounted(() => { poll(); timer = window.setInterval(poll, 100); });

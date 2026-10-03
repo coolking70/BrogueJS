@@ -10,7 +10,7 @@ import { generateItemDetail } from '../engine/UI/DetailGenerator';
 import { createItemDetailContext } from '../engine/UI/ItemDetailContext';
 import { inputManager } from '../engine/Input';
 import { logger } from '../engine/Systems/Logger';
-import { dialogServiceKey, type DialogRequest } from '../ui/dialogService';
+import { dialogServiceKey, presentationTimeline, type DialogRequest } from '../ui/dialogService';
 const dialogs = inject(dialogServiceKey, undefined);
 
 // Local reactive state for the inventory visibility
@@ -33,6 +33,12 @@ const callMode = ref<'kind' | 'inscribe' | 'choice' | 'relabel'>('kind');
 const pendingUseConfirm = ref<Item | null>(null);
 
 const updateInventoryState = () => {
+    // Inventory rows retain writable Item references. Reopen them only after
+    // the cursor reaches the settled world, including mandatory scroll targets.
+    if (presentationTimeline(activeGame)?.busy) {
+        isVisible.value = false;
+        return;
+    }
     const playerChanged = ringSelectionPlayer !== activeGame.player;
     if (!activeGame.isInventoryOpen || playerChanged
         || inventoryAction.value !== activeGame.inventoryAction) {
@@ -60,6 +66,7 @@ const updateInventoryState = () => {
 onMounted(() => {
     const removeKeyboard = inputManager.registerModalKeyHandler(handleInventoryKey);
     const removeSource = dialogs?.registerSource(syncPendingUse);
+    const removeListener = dialogs?.subscribe(updateInventoryState);
     updateInventoryState();
     // We'll set up a simple tick or event listener to sync state
     const interval = setInterval(() => { flushDeferredClose(); updateInventoryState(); }, 100);
@@ -69,6 +76,7 @@ onMounted(() => {
         clearInterval(interval);
         removeKeyboard();
         removeSource?.();
+        removeListener?.();
         useRequest?.cancel();
     });
 });
@@ -85,7 +93,7 @@ const flushDeferredClose = () => {
         closeDeferred = false;
         return;
     }
-    if (activeGame.isAdvancing || activeGame.hasPendingConfirmation) return;
+    if (activeGame.isAdvancing || activeGame.hasPendingConfirmation || presentationTimeline(activeGame)?.busy) return;
     if (dialogs?.current) return;
     closeDeferred = false;
     activeGame.handlePlayerAction('escape');
@@ -95,7 +103,8 @@ const closeInventory = () => {
     if (activeGame.pendingEnchantment) return; // CE mandatory target after reading.
     activeGame.handlePlayerAction('escape');
     ringReplacementTarget.value = null;
-    if (activeGame.isInventoryOpen && (activeGame.isAdvancing || activeGame.hasPendingConfirmation)) closeDeferred = true;
+    if (activeGame.isInventoryOpen && (activeGame.isAdvancing || activeGame.hasPendingConfirmation
+        || presentationTimeline(activeGame)?.busy)) closeDeferred = true;
     selectedItem.value = null;
     updateInventoryState();
 };

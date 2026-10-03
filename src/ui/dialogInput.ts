@@ -21,6 +21,9 @@ interface Host {
     contains(target: EventTarget | null): boolean;
     hint(): void;
     tab?(event: KeyboardEvent): void;
+    blocked?(): boolean;
+    resultAvailable?(): boolean;
+    viewResult?(): void;
 }
 const POINTER_CLUSTER_MS = 500;
 
@@ -35,6 +38,8 @@ export class DialogInput {
     private stalePointers = new Set<number>();
     private press?: { id: number; token: DialogToken; action: DialogAction; x: number; y: number };
     private activeToken?: DialogToken;
+    private activeBusy = false;
+    private resultPress?: { id: number; x: number; y: number };
     private nativeDepth = 0;
     private removeListeners?: () => void;
     // The second physical press of a browser double click must not answer
@@ -71,21 +76,26 @@ export class DialogInput {
             this.host = undefined;
             this.activeToken = undefined;
             this.press = undefined;
+            this.activeBusy = false;
+            this.resultPress = undefined;
         };
     }
     sync(): void {
         this.host?.service.sync();
         const token = this.host?.service.current?.token;
-        if (token === this.activeToken) return;
+        const busy = !!token || !!this.host?.blocked?.();
+        if (token === this.activeToken && busy === this.activeBusy) return;
         this.activeToken = token;
+        this.activeBusy = busy;
         this.press = undefined;
-        if (token) {
+        this.resultPress = undefined;
+        if (busy) {
             for (const code of this.pressed) this.swallowed.add(code);
             for (const id of this.pointers) this.stalePointers.add(id);
             cancelHeldInputs();
         }
     }
-    busy(): boolean { this.sync(); return !!this.activeToken || this.nativeDepth > 0; }
+    busy(): boolean { this.sync(); return this.activeBusy || this.nativeDepth > 0; }
     native<T>(perform: () => T): T {
         cancelHeldInputs();
         for (const code of this.pressed) this.swallowed.add(code);
@@ -113,6 +123,15 @@ export class DialogInput {
             else this.host!.hint();
             return;
         }
+        if (this.host?.blocked?.()) {
+            this.swallowed.add(code);
+            if (event.key === 'Tab') { event.stopImmediatePropagation(); return; }
+            this.consume(event);
+            const results = (event.target as HTMLElement | null)?.closest?.('[data-dialog-action="view-result"]');
+            if (!event.repeat && !old && this.host.resultAvailable?.()
+                && (event.key.toLowerCase() === 'r' || (results && ['Enter', ' '].includes(event.key)))) this.host.viewResult?.();
+            return;
+        }
         for (const { handler } of this.handlers) {
             if (handler.keydown(event)) { event.stopImmediatePropagation(); return; }
         }
@@ -130,7 +149,17 @@ export class DialogInput {
         this.pointers.add(event.pointerId);
         if (this.nativeDepth) { this.stalePointers.add(event.pointerId); this.consume(event); return; }
         const entry = this.host?.service.current;
-        if (!entry) return;
+        if (!entry) {
+            if (this.host?.blocked?.()) {
+                this.consume(event);
+                const result = (event.target as HTMLElement | null)?.closest?.('[data-dialog-action="view-result"]');
+                if (result && this.host.resultAvailable?.() && event.button === 0 && !this.stalePointers.has(event.pointerId)
+                    && !(event.detail > 1) && performance.now() - this.lastPointerAnswer >= POINTER_CLUSTER_MS) {
+                    this.resultPress = { id: event.pointerId, x: event.clientX, y: event.clientY };
+                } else this.stalePointers.add(event.pointerId);
+            }
+            return;
+        }
         const inside = this.host!.contains(event.target);
         // Prevent background activation, but preserve scrolling inside long text.
         event.stopImmediatePropagation();
@@ -148,7 +177,14 @@ export class DialogInput {
         this.pointers.delete(event.pointerId);
         const stale = this.stalePointers.delete(event.pointerId);
         const entry = this.host?.service.current;
-        if (stale || entry || this.nativeDepth) { this.consume(event); this.suppressClicksUntil = performance.now() + POINTER_CLUSTER_MS; }
+        if (stale || entry || this.nativeDepth || this.activeBusy) { this.consume(event); this.suppressClicksUntil = performance.now() + POINTER_CLUSTER_MS; }
+        const result = this.resultPress;
+        this.resultPress = undefined;
+        if (!entry && !stale && !this.nativeDepth && event.button === 0 && result?.id === event.pointerId
+            && this.host?.resultAvailable?.() && (event.target as HTMLElement | null)?.closest?.('[data-dialog-action="view-result"]')
+            && Math.hypot(event.clientX - result.x, event.clientY - result.y) <= 10) {
+            this.host.viewResult?.(); this.lastPointerAnswer = performance.now(); return;
+        }
         const press = this.press;
         this.press = undefined;
         if (!entry || stale || this.nativeDepth || event.button !== 0 || !press || press.id !== event.pointerId || press.token !== entry.token
@@ -161,10 +197,12 @@ export class DialogInput {
         this.pointers.delete(event.pointerId);
         this.stalePointers.delete(event.pointerId);
         if (this.press?.id === event.pointerId) this.press = undefined;
+        if (this.resultPress?.id === event.pointerId) this.resultPress = undefined;
         if (this.host?.service.current) this.consume(event);
     };
     private lostCapture = (event: PointerEvent): void => {
         if (this.press?.id === event.pointerId) this.press = undefined;
+        if (this.resultPress?.id === event.pointerId) this.resultPress = undefined;
         // Losing DOM capture does not mean that the physical finger is up.
         if (this.stalePointers.has(event.pointerId) || this.host?.service.current) this.consume(event);
     };
@@ -179,6 +217,7 @@ export class DialogInput {
         for (const code of this.pressed) this.swallowed.add(code);
         for (const id of this.pointers) this.stalePointers.add(id);
         this.press = undefined;
+        this.resultPress = undefined;
         cancelHeldInputs();
     };
     private consume(event: Event): void { event.preventDefault(); event.stopImmediatePropagation(); }

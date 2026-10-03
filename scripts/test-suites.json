@@ -93,6 +93,7 @@
     "src/test/perf_2_auto_cadence.test.ts",
     "src/test/perf_2_npc_path_cache.test.ts",
     "src/test/perf_2_replay_cadence.test.ts",
+    "src/test/presentation_timeline.test.ts",
     "src/test/r_1_appearance.test.ts",
     "src/test/repo_hygiene.test.ts",
     "src/test/retained_map_drawing.test.ts",

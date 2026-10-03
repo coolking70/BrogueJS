@@ -4,7 +4,7 @@ import { activeGame } from '../engine/Core/Game';
 import { logger } from '../engine/Systems/Logger';
 import { DialogService, type DialogEntry } from '../ui/dialogService';
 import { dialogInput } from '../ui/dialogInput';
-import { bindDialogAcknowledgments, bindDialogCommands } from '../ui/dialogAcknowledgments';
+import { bindDialogAcknowledgments, bindDialogCommands, presentationTimeline } from '../ui/dialogAcknowledgments';
 import { registerHeldInputContext } from '../ui/heldInput';
 
 const props = defineProps<{ service?: DialogService; epoch?: number }>();
@@ -12,6 +12,8 @@ const service = props.service ?? new DialogService();
 const current = shallowRef<DialogEntry>();
 const panel = ref<HTMLElement | null>(null);
 const invalidAnswer = ref(false);
+const resultAvailable = ref(false);
+const viewResult = () => presentationTimeline(activeGame)?.showResult();
 let sourceFocus: HTMLElement | null = null;
 let removeInput: (() => void) | undefined;
 let removeCommands: (() => void) | undefined;
@@ -20,6 +22,7 @@ let removeContext: (() => void) | undefined;
 let timer = 0;
 
 const refresh = () => {
+    resultAvailable.value = !!presentationTimeline(activeGame)?.resultAvailable;
     const next = service.current;
     if (current.value?.token !== next?.token) {
         invalidAnswer.value = false;
@@ -42,6 +45,8 @@ watch(() => props.epoch, () => service.reset(), { flush: 'sync' });
 onMounted(() => {
     dialogInput.install(window);
     removeInput = dialogInput.attach({ service, contains: target => !!panel.value?.contains(target as Node),
+        blocked: () => !!presentationTimeline(activeGame)?.busy,
+        resultAvailable: () => !!presentationTimeline(activeGame)?.resultAvailable, viewResult,
         hint: () => { invalidAnswer.value = true; }, tab: event => {
             const buttons = [...(panel.value?.querySelectorAll<HTMLButtonElement>('button') ?? [])];
             const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
@@ -66,6 +71,9 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
+    <button v-if="!current && resultAvailable" type="button" class="timeline-result view-result-btn" data-dialog-action="view-result">
+      {{ $t('messages.view_result', { defaultValue: 'View Results' }) }}
+    </button>
     <div v-if="current" class="dialog-backdrop message-ack-backdrop" @contextmenu.prevent>
       <section ref="panel" class="dialog-panel" :class="{ 'dialog-danger': current.danger }"
         role="alertdialog" aria-modal="true" :data-dialog-kind="current.kind"
@@ -104,6 +112,7 @@ onUnmounted(() => {
   font-family: var(--font-main, monospace); box-shadow: 0 12px 48px #000c;
 }
 .dialog-danger { border-color: #db7878; }
+.timeline-result { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 10000; }
 h2 { flex-shrink: 0; margin: 0 0 12px; font-size: 1rem; color: var(--color-accent, #d8b86a); }
 .dialog-message { min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; overflow-wrap: anywhere; white-space: pre-wrap; margin: 0 0 16px; line-height: 1.65; }
 .dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }

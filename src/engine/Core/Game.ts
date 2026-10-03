@@ -1,3 +1,4 @@
+import { observePresentation, presentationBlocked, resetPresentation } from './PresentationObserver';
 import { DISPLAY_FRAME_MS, stepCadence } from '../UI/ActionCadence';
 import { staffHealingPercent, staffHasteDuration, staffDiscordDuration, armorStealthAdjustment, ringStealthAdjustment, ringAwarenessBonus, ringClairvoyanceRadius } from '../Items/ItemEffectFormulas';
 import { emitCreatureFeature } from '../Combat/CreatureFeatures';
@@ -587,6 +588,7 @@ export class Game {
     public startNewGame(options?: { seed?: SeedInput; mode?: GameMode }) {
         // Validate before retiring the current run (unsafe numeric inputs cannot be recovered).
         const seed = normalizeSeed(options?.seed ?? 0);
+        resetPresentation(this);
         // U00: retire the old run before seeding/allocating the next one. Returning
         // the iterator must not run an old turn's epilogue against the new world.
         this.discardInFlightAdvancement();
@@ -2762,7 +2764,7 @@ export class Game {
     /** Every user command, including inventory and modal choices, crosses this boundary. */
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
         if (recordingState(this).execution || this.replayRecording || this.isAdvancing
-            || this.isInputLocked() || logger.pendingAcknowledgment) return;
+            || this.isInputLocked() || logger.pendingAcknowledgment || presentationBlocked(this)) return;
         const state = recordingState(this);
         const execution: CommandExecution = {
             id: state.nextCommandId++, action,
@@ -2843,6 +2845,7 @@ export class Game {
                 const event = this.recordInputEvent(execution.action, execution.data, [...execution.decisions]);
                 if (this.isAdvancing) state.pendingCommand = { kind: 'record', event };
             }
+            if (!this.isAdvancing) observePresentation(this, 'command-complete');
         } catch (error) {
             state.execution = null;
             this.recordingFromNewGame = false;
@@ -3224,7 +3227,7 @@ export class Game {
 
     public handlePlayerAction(action: string, data?: unknown, source: 'player' | 'system' = 'player') {
         if (source === 'player') this.executeCommand(action, data);
-        else if (!this.hasPendingConfirmation) {
+        else if (!this.hasPendingConfirmation && (recordingState(this).drivingStages > 0 || !presentationBlocked(this))) {
             // Automatic movement keeps the public shared entry (and its
             // observers), while its parent command owns the yielded stages.
             if (this.inAutoTravelStep && recordingState(this).drivingStages > 0) return this.applyCommandStages(action, data);
@@ -4273,7 +4276,9 @@ export class Game {
         const nutrition = data.nutrition ?? 0;
         if (confirm && STOMACH_SIZE - this.player.nutrition < nutrition
             && !(yield* this.requestConfirm(i18next.t('food.not_hungry_confirm', {
-                food: trueId === 'ration_of_food' ? 'food' : 'mango',
+                food: trueId === 'ration_of_food'
+                    ? i18next.t('name.Ration of Food', { defaultValue: 'food' })
+                    : i18next.t('name.Mango', { defaultValue: 'mango' }),
                 defaultValue: `You're not hungry enough to fully enjoy the ${trueId === 'ration_of_food' ? 'food' : 'mango'}. Eat it anyway?`,
             })))) return false;
 
@@ -8679,6 +8684,7 @@ export class Game {
                 beginAdvancement: (stealthRange) => game.beginAdvancement(stealthRange),
                 advancementLoop: (stealthRange) => game.advancementLoop(stealthRange),
                 finishTurnEpilogue: () => game.finishTurnEpilogue(),
+                observeAnimationDelay: milliseconds => observePresentation(game, 'animation-delay', milliseconds),
                 triggerGameOver: (victory, reason) => game.triggerGameOver(victory, reason),
             },
         };
@@ -8812,6 +8818,7 @@ export class Game {
         this.updateFlavorText(); // CE Time.c:2876, including headless/animated turns.
         this.checkShoreWarning();
         logger.endCombatTurn();
+        observePresentation(this, 'turn', this.animationEnabled ? Game.ANIMATION_PAUSE_MS : 0);
     }
 
     /** CE Time.c:2878-2911. Recomputed from current layers; no RNG or path changes. */
@@ -9006,6 +9013,7 @@ export class Game {
             }
         }
         this.update();
+        observePresentation(this, 'command-complete');
     }
 
     /** 场景重建（新游戏/读档/回放）时丢弃可能在途的推进，避免继承卡死的输入锁。 */
@@ -9234,6 +9242,7 @@ export class Game {
         const { entityGraph, restored } = decoded;
         const levelRows = [snapshot, ...snapshot.levels];
 
+        resetPresentation(this);
         this.discardInFlightAdvancement();
         if (this.grid) { setDormantAwakener(this.grid, null); setAllyResurrector(this.grid, null); setDungeonFeatureEffects(this.grid, null); }
         for (const level of this.levels.values()) { setDormantAwakener(level.grid, null); setAllyResurrector(level.grid, null); setDungeonFeatureEffects(level.grid, null); }
@@ -11412,6 +11421,7 @@ export class Game {
         }
 
         this.needsRender = true;
+        observePresentation(this, 'terminal');
     }
 }
 

@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { activeGame } from '../engine/Core/Game';
 import { readHighScores, type HighScoreEntry } from '../engine/Core/HighScores';
 import { logger, type LogMessage } from '../engine/Systems/Logger';
+import { terminalPresentationReady } from '../ui/dialogAcknowledgments';
 import { inputManager } from '../engine/Input';
 
 withDefaults(defineProps<{
@@ -34,7 +35,7 @@ onMounted(() => {
     removeKeyboard = inputManager.registerModalKeyHandler(() => activeGame.isGameOver, 100);
     // Polling is fine here since game over is a rare, one-time boundary event
     timer = window.setInterval(() => {
-        hasAcknowledgment.value = !!logger.pendingAcknowledgment;
+        hasAcknowledgment.value = !!logger.pendingAcknowledgment || !terminalPresentationReady(activeGame);
         if (activeGame.isGameOver && !hasAcknowledgment.value) logger.showTerminalAcknowledgments();
         unreadMessages.value = logger.unreadAcknowledgments;
         if (activeGame.isGameOver && !isGameOver.value) {

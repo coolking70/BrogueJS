@@ -27,7 +27,7 @@ import GameCanvas from './components/GameCanvas.vue';
 import ContextPanel from './components/ContextPanel.vue';
 import MessageJournal from './components/MessageJournal.vue';
 import DialogHost from './components/DialogHost.vue';
-import { DialogService, dialogServiceKey } from './ui/dialogService';
+import { DialogService, dialogServiceKey, presentationTimeline } from './ui/dialogService';
 import { logger } from './engine/Systems/Logger';
 import InventoryOverlay from './components/InventoryOverlay.vue';
 import GameEndOverlay from './components/GameEndOverlay.vue';
@@ -208,7 +208,10 @@ const deleteSave = async () => {
 };
 
 // Menu feedback is presentation-only: Logger.log disturbs automatic actions.
-const replayMessage = (message: string) => { replayFeedback.value = message; };
+const replayMessage = (message: string) => {
+  replayFeedback.value = message + (presentationTimeline(activeGame)?.busy
+    ? ' ' + i18next.t('menu.presentation.pending', { defaultValue: 'Presentation is still playing; saves and exports use the completed turn.' }) : '');
+};
 
 const currentReplayJson = async (): Promise<string> => {
   if (activeGame.replayRecording) return JSON.stringify(activeGame.replayRecording);

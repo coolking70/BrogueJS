@@ -94,6 +94,7 @@ export interface EffectsPort {
     advancementLoop(stealthRange: number): Generator<number, void, void>;
     finishTurnEpilogue(): void;
     triggerGameOver(victory: boolean, reason: string): void;
+    observeAnimationDelay?(milliseconds: number): void;
 }
 
 export interface TimePorts { world: WorldPort; clock: ClockPort; effects: EffectsPort }
@@ -144,6 +145,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 if (ports.world.player.ticksUntilTurn > 100 && !fastForward) {
                     fastForward = true;
                     if (!ports.effects.isAutoTraveling()) {
+                        ports.effects.observeAnimationDelay?.(ports.clock.animationEnabled ? ports.clock.animationPauseMs : 0);
                         yield ports.clock.animationPauseMs; // pauseAnimation(25, PAUSE_BEHAVIOR_DEFAULT)
                     }
                 }

@@ -2,10 +2,18 @@ import type { CommandConfirmation, Game } from '../engine/Core/Game';
 import type { Logger, LogMessage } from '../engine/Systems/Logger';
 import { cancelHeldInputs } from './heldInput';
 import { DialogService, type DialogRequest } from './dialogService';
+import { PresentationTimeline, presentationTimeline } from './presentationTimeline';
+export { displayedFrame, presentationTimeline } from './presentationTimeline';
 
-/** Keep Logger's occurrence queue and archive semantics. No display timeline
- * or engine decision is introduced at D1. */
+export function terminalPresentationReady(game: Game): boolean {
+    return presentationTimeline(game)?.terminalReady ?? game.isGameOver;
+}
+
+/** Logger retains occurrence/archive ownership; the timeline exposes only the
+ * ACK at the display cursor. Minimal non-world hosts retain the D1 adapter. */
 export function bindDialogAcknowledgments(service: DialogService, game: Game, log: Logger): () => void {
+    const timeline = game.grid ? new PresentationTimeline(game, log, () => service.sync()) : undefined;
+    const removeReset = service.onReset(() => timeline?.clear());
     const requests = new Map<Readonly<LogMessage>, DialogRequest>();
     let player = game.player;
     const sync = () => {
@@ -14,7 +22,8 @@ export function bindDialogAcknowledgments(service: DialogService, game: Game, lo
             service.reset();
             requests.clear();
         }
-        const pending = log.pendingAcknowledgments;
+        if (game.replayRecording) timeline?.clear();
+        const pending = timeline ? (timeline.acknowledgment ? [timeline.acknowledgment] : []) : log.pendingAcknowledgments;
         for (const [message, request] of requests) {
             if (!pending.includes(message) || !service.isPending(request.token)) { request.cancel(); requests.delete(message); }
         }
@@ -26,19 +35,22 @@ export function bindDialogAcknowledgments(service: DialogService, game: Game, lo
                         if (log.pendingAcknowledgment !== message) return false;
                         if (action === 'view-result') {
                             if (!game.isGameOver) return false;
-                            log.showTerminalAcknowledgments();
-                        } else log.acknowledgeNext();
+                            if (timeline) timeline.showResult();
+                            else log.showTerminalAcknowledgments();
+                        } else if (timeline) return timeline.acknowledge(message);
+                        else log.acknowledgeNext();
                     } });
                 requests.set(message, request);
             }
             service.update(request.token, { terminalAvailable: game.isGameOver });
         }
     };
-    const removeSource = service.registerSource(sync, 100);
+    const removeSource = service.registerSource(sync, 300);
     log.presentAcknowledgments(() => !game.replayRecording, () => service.sync());
     service.sync();
     return () => {
         removeSource();
+        removeReset(); timeline?.dispose();
         for (const request of requests.values()) request.cancel();
         log.presentAcknowledgments(null);
     };
