@@ -101,6 +101,7 @@
     "src/test/retained_render_determinism.test.ts",
     "src/test/scroll_effects.test.ts",
     "src/test/search_progress_hud.test.ts",
+    "src/test/sfc_harness.test.ts",
     "src/test/slaying_melee_autohit.test.ts",
     "src/test/smoke.test.ts",
     "src/test/t_1_tail.test.ts",

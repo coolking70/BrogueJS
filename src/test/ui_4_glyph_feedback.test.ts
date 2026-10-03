@@ -1,10 +1,8 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
-import * as translation from 'i18next-vue';
 import I18NextVue from 'i18next-vue';
 import i18next from 'i18next';
-import { parse, compileScript } from '@vue/compiler-sfc';
-import ts from 'typescript';
+import { createSfcHarness, type SfcModule } from './support/sfcHarness';
 import postcss from 'postcss';
 import { readFileSync } from 'node:fs';
 import zhCN from '../locales/zh_CN.json';
@@ -85,59 +83,27 @@ beforeAll(async () => {
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
     const inputModule = await import('../engine/Input'); input = inputModule.inputManager;
     const layoutModule = await import('../ui/layout'); viewport = layoutModule.viewport;
-    const modules: Record<string, unknown> = {
+    const stubs = {
         vue: { ...Vue, Transition: { props: ['name'], setup: (_props: unknown, { slots }: any) => () => slots.default?.() } },
-        'i18next-vue': translation, i18next: { default: i18next, __esModule: true },
-        '../engine/Input': inputModule, '../engine/Core/Game': { activeGame: game },
-        '../../engine/Core/Game': { activeGame: game },
-        '../ui/commands': await import('../ui/commands'),
-        '../../ui/useGameHud': await import('../ui/useGameHud'), '../ui/useGameHud': await import('../ui/useGameHud'),
-        '../../ui/mapGlyph': await import('../ui/mapGlyph'),
-        '../../engine/UI/MonsterSidebar': await import('../engine/UI/MonsterSidebar'),
-        '../engine/UI/MonsterSidebar': await import('../engine/UI/MonsterSidebar'),
-        '../ui/nearbyInspection': { nearbyDetail }, '../../ui/nearbyInspection': { nearbyDetail },
-        '../../entities/Player': await import('../entities/Player'),
-        '../engine/Systems/Logger': await import('../engine/Systems/Logger'),
-        './engine/Settings': await import('../engine/Settings'), './engine/Input': inputModule,
-        './engine/Core/Game': { activeGame: game }, './ui/layout': layoutModule,
-        './engine/Core/SaveStorage': await import('../engine/Core/SaveStorage'),
-        './ui/immersiveMode': await import('../ui/immersiveMode'), './ui/recordingExport': await import('../ui/recordingExport'),
-        './ui/dialogService': await import('../ui/dialogService'), './ui/dialogInput': await import('../ui/dialogInput'),
-        './engine/Systems/Logger': await import('../engine/Systems/Logger'),
-        './ui/heldInput': await import('../ui/heldInput'),
     };
-    function compile(file: string) {
-        const { descriptor } = parse(source(file));
-        const script = compileScript(descriptor, { id: file, inlineTemplate: true });
-        const code = ts.transpileModule(script.content, { compilerOptions: {
-            target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, esModuleInterop: true,
-        } }).outputText;
-        const exports: any = {};
-        new Function('require', 'exports', code)((key: string) => {
-            if (!(key in modules)) throw new Error(`Unresolved UI-4 component import: ${key}`);
-            return modules[key];
-        }, exports);
-        return exports;
-    }
-    const bar = compile('components/CommandBar.vue'); CommandBar = bar.default; position = bar.commandOverflowPosition;
-    Log = compile('components/theme/ThemeLog.vue').default;
-    Nearby = compile('components/theme/ThemeNearby.vue').default; Context = compile('components/ContextPanel.vue').default;
-    Journal = compile('components/MessageJournal.vue').default; Drawer = compile('components/SideDrawer.vue').default;
-    Detail = compile('components/DetailPanel.vue').default;
-    const empty = { default: { render: () => null }, __esModule: true };
-    for (const name of ['GameCanvas', 'DialogHost', 'InventoryOverlay', 'GameEndOverlay', 'ReplayControls',
-        'AgentControls', 'ReferenceOverlay', 'MapZoomControls', 'CommandBar', 'DPad', 'TargetBar']) modules[`./components/${name}.vue`] = empty;
-    modules['./components/theme/RadialCommands.vue'] = empty;
-    modules['./components/theme/ThemeNearby.vue'] = { default: Nearby, __esModule: true };
-    modules['./components/theme/ThemeHud.vue'] = { default: compile('components/theme/ThemeHud.vue').default, __esModule: true };
-    modules['./components/theme/ThemeLog.vue'] = { default: Log, __esModule: true };
-    for (const [name, component] of [['ContextPanel', Context], ['MessageJournal', Journal], ['SideDrawer', Drawer], ['DetailPanel', Detail]] as const) {
-        modules[`./components/${name}.vue`] = { default: component, __esModule: true };
-    }
-    modules['./components/MainMenu.vue'] = { default: Vue.defineComponent({ emits: ['new-game'], setup(_props, { emit }) {
-        return () => Vue.h('start', { onClick: () => emit('new-game', { seed: 33005, mode: 'test' }) });
-    } }), __esModule: true };
-    App = compile('App.vue').default;
+    const harness = createSfcHarness({ baseURL: import.meta.url, stubs });
+    const bar = await harness.loadModule<SfcModule & { commandOverflowPosition: typeof position }>('../components/CommandBar.vue');
+    CommandBar = bar.default; position = bar.commandOverflowPosition;
+    Log = await harness.load('../components/theme/ThemeLog.vue');
+    Nearby = await harness.load('../components/theme/ThemeNearby.vue'); Context = await harness.load('../components/ContextPanel.vue');
+    Journal = await harness.load('../components/MessageJournal.vue'); Drawer = await harness.load('../components/SideDrawer.vue');
+    Detail = await harness.load('../components/DetailPanel.vue');
+    const appHarness = createSfcHarness({ baseURL: import.meta.url, stubs, stubComponents: { render: () => null }, components: {
+        '../components/theme/ThemeNearby.vue': Nearby,
+        '../components/theme/ThemeHud.vue': await harness.load('../components/theme/ThemeHud.vue'),
+        '../components/theme/ThemeLog.vue': Log,
+        '../components/ContextPanel.vue': Context, '../components/MessageJournal.vue': Journal,
+        '../components/SideDrawer.vue': Drawer, '../components/DetailPanel.vue': Detail,
+        '../components/MainMenu.vue': Vue.defineComponent({ emits: ['new-game'], setup(_props, { emit }) {
+            return () => Vue.h('start', { onClick: () => emit('new-game', { seed: 33005, mode: 'test' }) });
+        } }),
+    } });
+    App = await appHarness.load('../App.vue');
 });
 beforeEach(() => {
     vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-02T00:00:00Z'));

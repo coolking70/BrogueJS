@@ -1,12 +1,9 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createRenderer, nextTick, type Component } from 'vue';
 import * as Vue from 'vue';
-import * as translation from 'i18next-vue';
 import I18NextVue from 'i18next-vue';
 import i18next from 'i18next';
-import { parse, compileScript } from '@vue/compiler-sfc';
-import ts from 'typescript';
-import { readFileSync } from 'node:fs';
+import { createSfcHarness } from './support/sfcHarness';
 import { computeMapCamera } from '../ui/mapCamera';
 import { readMapOcclusions, observeMapOcclusions, unobstructedMapBand, type MapOcclusion } from '../ui/mapOcclusion';
 import { DCOLS, DROWS } from '../types';
@@ -258,35 +255,10 @@ beforeAll(async () => {
     vi.stubGlobal('ResizeObserver', class {
         observe() {} disconnect() {}
     });
-    // Node's Vite SFC import is SSR-only. As in x3_u5_ui, compile the unchanged
-    // production scripts/templates for the client to exercise real DOM handlers.
-    const input = await import('../engine/Input');
-    const modules: Record<string, unknown> = {
-        vue: Vue, 'i18next-vue': translation,
-        '../engine/Input': input, '../../engine/Input': input,
-        '../ui/mapTiles': await import('../ui/mapTiles'),
-        '../../ui/commands': await import('../ui/commands'),
-        '../../ui/useGameHud': await import('../ui/useGameHud'),
-        '../../entities/Player': await import('../entities/Player'),
-        './MapTileLegend.vue': { default: { render: () => null } },
-    };
-    const compile = (file: string): Component => {
-        const { descriptor } = parse(readFileSync(new URL(`../components/${file}`, import.meta.url), 'utf8'));
-        const script = compileScript(descriptor, { id: file, inlineTemplate: true });
-        const code = ts.transpileModule(script.content, { compilerOptions: {
-            target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, esModuleInterop: true,
-        } }).outputText;
-        const exports: any = {};
-        new Function('require', 'exports', code)((key: string) => {
-            if (!(key in modules)) throw new Error(`Unresolved component import: ${key}`);
-            return modules[key];
-        }, exports);
-        return exports.default;
-    };
-    modules['./CmdIcon.vue'] = { default: compile('theme/CmdIcon.vue'), __esModule: true };
-    ThemeHud = compile('theme/ThemeHud.vue');
-    ThemeLog = compile('theme/ThemeLog.vue');
-    RadialCommands = compile('theme/RadialCommands.vue');
+    const harness = createSfcHarness({ baseURL: import.meta.url });
+    ThemeHud = await harness.load('../components/theme/ThemeHud.vue');
+    ThemeLog = await harness.load('../components/theme/ThemeLog.vue');
+    RadialCommands = await harness.load('../components/theme/RadialCommands.vue');
 });
 afterEach(() => {
     for (const app of mounted.splice(0)) app.unmount();
