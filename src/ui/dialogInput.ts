@@ -42,6 +42,7 @@ export class DialogInput {
     private resultPress?: { id: number; x: number; y: number };
     private nativeDepth = 0;
     private removeListeners?: () => void;
+    private win?: Window;
     // The second physical press of a browser double click must not answer
     // the next question. This also covers touch where click.detail is absent.
     private lastPointerAnswer = -Infinity;
@@ -49,6 +50,7 @@ export class DialogInput {
 
     install(win: Window): void {
         if (this.removeListeners) return;
+        this.win = win;
         const bindings: Array<[string, EventListener]> = [
             ['keydown', this.keydown as EventListener], ['keyup', this.keyup as EventListener],
             ['pointerdown', this.pointerdown as EventListener], ['pointerup', this.pointerup as EventListener],
@@ -211,7 +213,11 @@ export class DialogInput {
         // clicks and touch compatibility clicks never settle a second request.
         if (this.busy() || performance.now() < this.suppressClicksUntil) this.consume(event);
     };
-    private blur = (): void => {
+    private blur = (event?: Event): void => {
+        // The capture listener also receives every element's blur (blur does
+        // not bubble, but capture sees it). Moving focus between buttons on a
+        // click is not a window blur and must not void the pressed pointer.
+        if (event && event.target !== this.win) return;
         // Losing window focus is not a physical release (native confirm can
         // also blur it). Keep the quarantine until the actual up/cancel.
         for (const code of this.pressed) this.swallowed.add(code);
