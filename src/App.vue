@@ -54,7 +54,7 @@ import { recordingJsonAtBoundary, RecordingExportError } from './ui/recordingExp
 import type { DetailInfo } from './engine/UI/DetailGenerator';
 import GrowthCharacterPanel from './components/growth/GrowthCharacterPanel.vue';
 import { useGrowthCharacter } from './ui/useGrowthCharacter';
-import { createGrowthAllocationDraft, buildGrowthAllocateCommand, buildGrowthRespecCommand, type GrowthAllocationDraft } from './ext/modules/growth/view';
+import { createGrowthAllocationDraft, buildGrowthAllocateCommand, buildGrowthRespecCommand, buildGrowthSkillCommand, readGrowthSkillTargets, type GrowthSkillTarget, type GrowthCharacterViewModel, type GrowthAllocationDraft } from './ext/modules/growth/view';
 
 const REPLAY_KEY = 'brogue-web-replay-v1';
 
@@ -72,6 +72,14 @@ const { view: growthView, poll: pollGrowth } = useGrowthCharacter(growthDraft);
 const growthSubmitting = ref(false);
 const growthError = ref<string | null>(null);
 const growthNotice = ref<string | null>(null);
+const growthName = (key: string) => i18next.t(`ext.growth.${key.slice('ext.growth.'.length)}`);
+const growthInitialTab = ref<'attributes' | 'skills'>('attributes');
+const growthTargetDraft = shallowRef<{ view: GrowthCharacterViewModel; skillId: string } | null>(null);
+const growthSkillBarExpanded = ref(false);
+const growthTargets = computed(() => growthTargetDraft.value && growthView.value
+  ? readGrowthSkillTargets(activeGame, growthView.value, growthTargetDraft.value.skillId) : []);
+const equippedGrowthSkills = computed(() => growthView.value?.skills.filter(skill => skill.mode === 'active' && skill.equipped) ?? []);
+function cancelGrowthTarget() { growthTargetDraft.value = null; }
 // The game is not reactive; the existing display tick keeps availability current.
 function canOpenGrowthCharacter() {
   return !!growthView.value && growthView.value.disabledReason !== 'unavailable'
@@ -82,7 +90,7 @@ function canOpenGrowthCharacter() {
       || activeGame.isAdvancing || activeGame.isInputLocked());
 }
 const growthBlocked = computed(() => { replayTick.value; return !canOpenGrowthCharacter(); });
-function openCharacter() {
+function openCharacter(initialTab: 'attributes' | 'skills' = 'attributes') {
   pollGrowth();
   if (!growthView.value || !canOpenGrowthCharacter()) return;
   cancelHeldInputs();
@@ -90,11 +98,11 @@ function openCharacter() {
   nearbyInspection.value = null; activeGame.inspectTarget = null;
   growthError.value = null; growthNotice.value = null;
   growthDraft.value = createGrowthAllocationDraft(growthView.value);
-  characterOpen.value = true;
+  growthInitialTab.value = initialTab; growthTargetDraft.value = null; characterOpen.value = true;
 }
 function closeCharacter() {
   if (growthSubmitting.value) return;
-  characterOpen.value = false; growthDraft.value = null; growthError.value = null; growthNotice.value = null;
+  characterOpen.value = false; growthTargetDraft.value = null; growthDraft.value = null; growthError.value = null; growthNotice.value = null;
   void nextTick(() => document.querySelector<HTMLElement>('.game-view')?.focus({ preventScroll: true }));
 }
 function resetGrowthDraft() {
@@ -129,6 +137,44 @@ async function submitGrowth(kind: 'allocate' | 'respec') {
   } finally {
     await nextTick(); growthSubmitting.value = false;
   }
+}
+async function submitGrowthSkill(action: 'learn' | 'equip' | 'unequip' | 'use', skillId: string, target?: GrowthSkillTarget) {
+  if (growthSubmitting.value) return;
+  if (!characterOpen.value) openCharacter('skills');
+  if (!characterOpen.value || !growthView.value || growthView.value.readOnly) return;
+  if (action === 'use' && !target) {
+    pollGrowth();
+    const skill = growthView.value?.skills.find(entry => entry.id === skillId);
+    if (!skill?.canUse || !skill.action) return;
+    if (skill.action.target !== 'self') {
+      growthTargetDraft.value = { view: growthView.value!, skillId };
+      growthError.value = null; growthNotice.value = null;
+      await nextTick();
+      const body = document.querySelector<HTMLElement>('.growth-body'); if (body) body.scrollTop = 0;
+      return;
+    }
+    target = { kind: 'self' };
+  }
+  growthSubmitting.value = true; growthError.value = null; growthNotice.value = null;
+  try {
+    const view = growthTargetDraft.value?.view ?? growthView.value;
+    const command = buildGrowthSkillCommand(view, activeGame, action, skillId, target);
+    if (!command) { growthError.value = 'ext.growth.ui.command_rejected'; pollGrowth(); return; }
+    const revision = view.revision;
+    activeGame.executeCommand('ext:command', command);
+    pollGrowth();
+    if (growthView.value?.revision === revision) { growthError.value = 'ext.growth.ui.command_rejected'; return; }
+    growthDraft.value = createGrowthAllocationDraft(growthView.value!);
+    growthNotice.value = action === 'learn' ? 'ext.growth.ui.skill_learned' : action === 'use' ? 'ext.growth.ui.skill_used' : 'ext.growth.ui.skill_equipped';
+  } catch {
+    growthError.value = 'ext.growth.ui.command_rejected'; pollGrowth();
+  } finally {
+    growthTargetDraft.value = null;
+    await nextTick(); growthSubmitting.value = false;
+  }
+}
+function confirmGrowthTarget(target: GrowthSkillTarget) {
+  if (growthTargetDraft.value) void submitGrowthSkill('use', growthTargetDraft.value.skillId, target);
 }
 const nearbyInspection = ref<DetailInfo | null>(null);
 // Display-only panel expansion; preserve one GameCanvas instance across layout changes.
@@ -217,7 +263,7 @@ const hasReplay = computed(() => {
 
 const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "classic" | "extended" }) => {
   runEpoch++;
-  characterOpen.value = false; growthDraft.value = null;
+  characterOpen.value = false; growthTargetDraft.value = null; growthDraft.value = null;
   replayFeedback.value = '';
   activeGame.startNewGame({ seed: payload.seed, mode: payload.mode, ruleSet: payload.ruleSet });
   for (const command of activeGame.extensionRuntime?.initialCommands() ?? []) activeGame.executeCommand('ext:command', command);
@@ -428,7 +474,7 @@ const handleReturnToTitle = async () => {
 </script>
 
 <template>
-  <div class="app-layout theme-shell" :style="{ '--context-width': contextWidth }" :class="[`layout-${viewport.mode}`, { 'is-replaying': replayActive, 'has-touch-controls': showTouch, 'immersive-mode': displaySettings.immersiveMode, 'theme-panel-open': themePanelOpen }]">
+  <div class="app-layout theme-shell" :style="{ '--context-width': contextWidth }" :class="[`layout-${viewport.mode}`, { 'is-replaying': replayActive, 'has-touch-controls': showTouch, 'immersive-mode': displaySettings.immersiveMode, 'theme-panel-open': themePanelOpen, 'has-growth-skills': !!growthView }]">
     <template v-if="gameStarted">
       <!-- FE-1：GameCanvas 始终是同一位置的同一实例（旋转屏幕不重建 Pixi），
            其余部件按布局模式挂载，用 CSS grid 区域摆放。 -->
@@ -441,6 +487,14 @@ const handleReturnToTitle = async () => {
         <RadialCommands v-if="displaySettings.immersiveMode && !replayActive" class="area-radial" @modal-open="cancelHeldInputs" />
       </div>
       <TargetBar class="area-target" />
+      <section v-if="growthView" class="area-skills growth-skill-bar" @keydown.stop @keyup.stop @pointerdown.stop @touchstart.stop>
+        <button data-action="show-skills" :disabled="growthBlocked" @click="openCharacter('skills')">{{ $t('ext.growth.ui.skills_list') }}</button>
+        <button v-if="displaySettings.immersiveMode && equippedGrowthSkills.length" data-action="toggle-skills" :aria-expanded="growthSkillBarExpanded" @click="growthSkillBarExpanded = !growthSkillBarExpanded">{{ growthSkillBarExpanded ? '−' : '+' }}</button>
+        <div v-if="!displaySettings.immersiveMode || growthSkillBarExpanded" class="growth-equipped-skills">
+          <button v-for="skill in equippedGrowthSkills" :key="skill.id" :data-use-skill="skill.id" :disabled="!skill.canUse || growthBlocked || growthSubmitting" @click="submitGrowthSkill('use', skill.id)">{{ skill.cooldownRemaining ? $t('ext.growth.ui.skill_bar_cooldown', { name: growthName(skill.nameKey), count: skill.cooldownRemaining }) : $t('ext.growth.ui.skill_bar_ready', { name: growthName(skill.nameKey), focus: skill.focusCost }) }}</button>
+        </div>
+        <span class="growth-bar-focus">{{ $t('ext.growth.ui.focus_compact', { current: growthView.focus.current, capacity: growthView.focus.capacity }) }}</span>
+      </section>
       <CommandBar v-if="showCommands || (!compact && !replayActive)" class="area-cmd" :mode="viewport.mode" :show-character="!!growthView" :character-blocked="growthBlocked" :has-growth-points="growthView?.hasUnspentPoints" @character="openCharacter" @modal-open="cancelHeldInputs" />
       <DPad v-if="showTouch" class="area-pad" :mode="viewport.mode" />
       <ContextPanel v-if="!compact && themePanelOpen && !displaySettings.immersiveMode" class="area-context" @close="themePanelOpen = false" @inspect="nearbyInspection = $event" />
@@ -450,8 +504,8 @@ const handleReturnToTitle = async () => {
       <SideDrawer :open="journalOpen" variant="journal" @close="journalOpen = false">
         <MessageJournal />
       </SideDrawer>
-      <GrowthCharacterPanel v-if="characterOpen && growthView" :model="growthView" :submitting="growthSubmitting" :error="growthError" :notice="growthNotice"
-        @close="closeCharacter" @reset="resetGrowthDraft" @adjust="adjustGrowthDraft" @submit="submitGrowth('allocate')" @respec="submitGrowth('respec')" />
+      <GrowthCharacterPanel v-if="characterOpen && growthView" :model="growthView" :submitting="growthSubmitting" :error="growthError" :notice="growthNotice" :initial-tab="growthInitialTab" :target-skill-id="growthTargetDraft?.skillId" :targets="growthTargets"
+        @close="closeCharacter" @reset="resetGrowthDraft" @adjust="adjustGrowthDraft" @submit="submitGrowth('allocate')" @respec="submitGrowth('respec')" @skill="submitGrowthSkill" @target="confirmGrowthTarget" @cancel-target="cancelGrowthTarget" />
       <InventoryOverlay />
       <GameEndOverlay :can-save-replay="canSaveReplay" :replay-busy="replayBusy" :replay-feedback="replayFeedback"
         @save-replay="saveReplay" @export-replay-json="exportCurrentReplayJson" @return-to-title="handleReturnToTitle" />
@@ -494,6 +548,18 @@ const handleReturnToTitle = async () => {
 </template>
 
 <style scoped>
+.growth-skill-bar{grid-area:skills;display:flex;align-items:center;gap:6px;padding:4px 8px;min-width:0;border-top:1px solid var(--th-line,#555);background:var(--th-panel,#171918);font:12px var(--th-font,monospace);color:var(--th-fg,#eee);z-index:31;box-sizing:border-box}.growth-skill-bar button{min-height:40px;flex:0 0 auto;white-space:nowrap;padding:6px 9px;border:1px solid var(--th-line,#555);background:var(--th-raised,#222);color:inherit;font:inherit;touch-action:manipulation;cursor:pointer}.growth-skill-bar button:disabled{opacity:.45;cursor:default}.growth-equipped-skills{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:thin;flex:1}.growth-bar-focus{margin-left:auto;white-space:nowrap;flex:0 0 auto;color:var(--th-dim,#aaa)}
+@media(max-width:700px){.growth-skill-bar{gap:4px;padding:3px 6px;font-size:11px}.growth-skill-bar button{min-height:44px;padding:5px 7px}.growth-equipped-skills{gap:4px}}
+/* Whole-selector :global preserves grid scope after Vue's SFC compilation. */
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop.has-growth-skills:not(.immersive-mode)){grid-template-rows:auto auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals log' 'vitals map' 'near map' 'near skills' 'near cmd'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-growth-skills:not(.immersive-mode)){grid-template-rows:auto auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals vitals' 'log log' 'map map' 'skills skills' 'cmd pad'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape.has-growth-skills:not(.immersive-mode)){grid-template-rows:auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals log pad' 'vitals map pad' 'vitals skills pad' 'vitals cmd pad'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.has-growth-skills){grid-template-rows:auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals' 'map' 'skills' 'log'!important}
+
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop.has-growth-skills.has-touch-controls:not(.immersive-mode)){grid-template-areas:'vitals log log' 'vitals map map' 'near map map' 'near skills skills' 'near cmd pad'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-growth-skills.is-replaying:not(.immersive-mode)){grid-template-areas:'vitals' 'log' 'map' 'skills' 'cmd'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape.has-growth-skills.is-replaying:not(.immersive-mode)){grid-template-areas:'vitals log' 'vitals map' 'vitals skills' 'vitals cmd'!important}
+
 .app-layout {
   width: 100vw;
   height: 100vh;

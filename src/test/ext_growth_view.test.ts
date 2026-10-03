@@ -89,7 +89,7 @@ describe('EXT-1c immutable configured growth character readmodel', () => {
         expect(view.draft).toMatchObject({ valid: true, cost: 4, remainingPoints: 16 });
         expect(view.preview.maxHp.delta).toBe(14);
         expect(view.skills.map(skill => skill.id)).toEqual(pack.definitions.filter(definition => definition.kind === 'skill').map(skill => skill.id));
-        expect(view.skills.find(skill => skill.id === 'growth.skill.custom')).toMatchObject({ cost: 3, prerequisitesMet: true, available: false, futurePhase: '1d' });
+        expect(view.skills.find(skill => skill.id === 'growth.skill.custom')).toMatchObject({ cost: 3, prerequisitesMet: true, available: false, learned: false, equipped: false, canUse: false });
         expect(view.slots.map(slot => [slot.mode, slot.count])).toEqual([['active', 1], ['passive', 0]]);
         expect(view.identities.find(group => group.kind === 'faith')!.definitions.some(definition => definition.id === 'growth.faith.custom')).toBe(true);
         expect(view.identities.find(group => group.kind === 'lineage')).toMatchObject({ enabled: false, selectedId: null });
@@ -241,9 +241,14 @@ describe('EXT-1c immutable configured growth character readmodel', () => {
     });
     it('exposes immutable player-only selection and reuses its frozen pack rather than cloning the run per read', () => {
         configured(); const g = game(), first = g.extensionRuntime!.readModuleView('growth')!, second = g.extensionRuntime!.readModuleView('growth')!;
-        expect(Object.keys(first.state).sort()).toEqual(['created', 'revision']);
-        expect(Object.keys(first.components).sort()).toEqual(['attributes', 'derived', 'focus', 'progression', 'skills']);
+        expect(Object.keys(first.state).sort()).toEqual(['created', 'objectiveClock', 'revision']);
+        expect(Object.keys(first.components).sort()).toEqual(['attributes', 'derived', 'focus', 'progression', 'skill-build', 'skills']);
         expect(first.definitions).toBe(second.definitions); expect(first.session).toBe(second.session);
+        expect(Object.isFrozen(first.components['skill-build'])).toBe(true);
+        for (const field of ['learned', 'inherited', 'active', 'passive', 'effects']) {
+            expect(Object.isFrozen((first.components['skill-build'] as Record<string, unknown>)[field])).toBe(true);
+        }
+        expect(typeof first.state.objectiveClock).toBe('number');
         expect(Object.isFrozen(first.components.attributes)).toBe(true); expect(Object.isFrozen(first.state)).toBe(true);
         expect(first.playerId).toBe(g.player.id);
     });

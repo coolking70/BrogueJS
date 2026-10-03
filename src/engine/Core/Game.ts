@@ -219,7 +219,7 @@ export type GenerationPorts = ReturnType<Game["makeGenerationPorts"]>;
 import { ExtensionRuntime } from '../../ext/runtime';
 import { createExtensionRegistry, DEFAULT_EXTENSIONS } from '../../ext/catalog';
 import { canonical } from '../../ext/json';
-import { creatureView, itemView, type ExtensionManifest, type ExtensionSnapshot, type RuleSet } from '../../ext/types';
+import { creatureView, itemView, type ExtensionManifest, type ExtensionSnapshot, type RuleSet, type ControlledActionRequest, type ControlledActionOutcome } from '../../ext/types';
 import { markCreatureBirth, type CreationReason } from '../../ext/birth';
 
 export type GameRunSnapshot = ReturnType<Game['snapshotRunState']> & { recordingOrigin?: RecordingOrigin };
@@ -310,6 +310,15 @@ interface TestRoomState {
     }>;
 }
 
+/** Synchronous command-local bridge; never retained in Game or serialized. */
+interface ControlledPlayerAction {
+    readonly action: ControlledActionRequest['action'];
+    readonly targetId: number | null;
+    recordDisplacement(): void;
+    beforeCommit(): boolean;
+    afterResolve(): void;
+}
+
 const superVictoryState = new WeakMap<Game, boolean>();
 const extensionManualSearch = new WeakSet<Game>();
 const extensionRulePrototypes = new WeakMap<Game, object>();
@@ -328,6 +337,8 @@ export class Game {
             canManageCharacter: () => !this.isGameOver && this.player.hp > 0 && !this.player.hasStatus('paralyzed')
                 && !this.isAdvancing && !this.isInputLocked() && !logger.pendingAcknowledgment && !this.pendingIdentify
                 && !this.pendingEnchantment && !this.pendingArcana && !this.throwItemTarget && !this.pendingUseConfirm,
+            validateAction: request => this.validateControlledAction(request),
+            executeAction: (request, callbacks) => this.executeControlledAction(request, callbacks),
             gold: () => this.stats.gold,
             setGold: value => { this.stats.gold = value; },
             randomInt: (min, max) => {
@@ -371,9 +382,10 @@ export class Game {
             baseValue: strength, mode });
         return Game.prototype.searchForSecrets.call(this, next);
     }
-    private manualSearchExtended(): void {
+    private manualSearchExtended(control?: ControlledPlayerAction): void {
+        if (!control) this.extensionRuntime!.notifyCommittedAction({ actorId: this.player.id, action: 'search' });
         extensionManualSearch.add(this);
-        try { Game.prototype.manualSearch.call(this); } finally { extensionManualSearch.delete(this); }
+        try { Game.prototype.manualSearch.call(this, control); } finally { extensionManualSearch.delete(this); }
     }
     public grid!: Grid;
     public environment!: EnvironmentManager;
@@ -3319,7 +3331,77 @@ export class Game {
         else this.applyCommand(action, data);
     }
 
-    private performPlayerAction(action: string, data?: unknown, source: 'player' | 'system' = 'system') {
+    /** Pure input/world preflight: no prompts, writes, dice or hidden target discovery. */
+    public validateControlledAction(request: ControlledActionRequest): boolean {
+        if (!this.extensionRuntime || !request || typeof request !== 'object'
+            || Object.keys(request).sort().join(',') !== 'action,actorId,target'
+            || !Number.isSafeInteger(request.actorId) || request.actorId !== this.player.id
+            || !['attack', 'move', 'wait', 'search'].includes(request.action)
+            || !request.target || typeof request.target !== 'object'
+            || this.isGameOver || this.player.hp <= 0 || this.player.hasStatus('paralyzed')
+            || this.isAdvancing || this.isInputLocked() || logger.pendingAcknowledgment
+            || this.pendingIdentify || this.pendingEnchantment || this.pendingArcana || this.pendingUseConfirm
+            || this.isInventoryOpen || this.isThrowing || this.throwItemTarget || this.referenceScreen) return false;
+        const target = request.target;
+        if (request.action === 'wait' || request.action === 'search')
+            return target.kind === 'self' && Object.keys(target).length === 1;
+        // A specified skill target is not permission to substitute a random move/attack.
+        if (this.player.hasStatus('confused')) return false;
+        if (request.action === 'attack') {
+            if (target.kind !== 'creature' || Object.keys(target).sort().join(',') !== 'id,kind'
+                || !Number.isSafeInteger(target.id)) return false;
+            const defender = this.monsters.find(actor => actor.id === target.id && actor.hp > 0);
+            return !!defender && this.canObserveBoltTarget(defender) && !defender.isCaged
+                && (!defender.isAlly || defender.hasStatus('discordant'))
+                && Math.max(Math.abs(defender.x - this.player.x), Math.abs(defender.y - this.player.y)) === 1
+                && (!playerTravelDiagonalBlocked(this.grid, this.player.loc, defender.loc, false)
+                    || defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))
+                && (!!this.grid.getCell(defender.x, defender.y)?.isPassable || defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'));
+        }
+        if (target.kind !== 'cell' || Object.keys(target).sort().join(',') !== 'kind,x,y'
+            || !Number.isSafeInteger(target.x) || !Number.isSafeInteger(target.y)
+            || Math.max(Math.abs(target.x - this.player.x), Math.abs(target.y - this.player.y)) !== 1
+            || this.getMonsterAt(target.x, target.y)
+            || playerTravelDiagonalBlocked(this.grid, this.player.loc, target, false)) return false;
+        const cell = this.grid.getCell(target.x, target.y);
+        // Stairs are a distinct level-change command, not this single-step primitive.
+        if (!cell || cell.layers.some(layer => layer === TerrainType.STAIRS_UP || layer === TerrainType.STAIRS_DOWN
+            || layer === TerrainType.DUNGEON_PORTAL || layer === TerrainType.ALTAR)) return false;
+        return !cell.layers.some(blocksPassability);
+    }
+
+    private executeControlledAction(request: ControlledActionRequest,
+        callbacks: { beforeCommit(): void; afterResolve(outcome: ControlledActionOutcome): void }): boolean {
+        if (!this.validateControlledAction(request)) return false;
+        let committed = false, resolved = false, moved = false;
+        const control: ControlledPlayerAction = {
+            action: request.action,
+            targetId: request.target.kind === 'creature' ? request.target.id : null,
+            recordDisplacement: () => { moved = true; },
+            beforeCommit: () => {
+                if (committed) return true;
+                // Confirm callbacks can expose new state; repeat pure eligibility at commit.
+                if (!this.validateControlledAction(request)) return false;
+                this.extensionRuntime!.notifyCommittedAction({ actorId: this.player.id, action: request.action });
+                callbacks.beforeCommit(); committed = true; return true;
+            },
+            afterResolve: () => {
+                if (!committed || resolved) return;
+                resolved = true; callbacks.afterResolve({ moved });
+            },
+        };
+        const target = request.target;
+        if (request.action === 'attack' && target.kind === 'creature') {
+            const monster = this.monsters.find(actor => actor.id === target.id)!;
+            this.performPlayerAction('move', { x: monster.x - this.player.x, y: monster.y - this.player.y }, 'system', control);
+        } else if (request.action === 'move' && target.kind === 'cell') {
+            this.performPlayerAction('move', { x: target.x - this.player.x, y: target.y - this.player.y }, 'system', control);
+        } else this.performPlayerAction(request.action, undefined, 'system', control);
+        if (committed && !resolved) throw new Error('Controlled action did not close before returning');
+        return committed;
+    }
+
+    private performPlayerAction(action: string, data?: unknown, source: 'player' | 'system' = 'system', control?: ControlledPlayerAction) {
         if (action === 'discoveries' || action === 'help') {
             this.referenceScreen = this.referenceScreen === action ? null : action;
             return;
@@ -3500,7 +3582,7 @@ export class Game {
         // CE manualSearch (Time.c:2395-2430): both s and each yielded Ctrl-S
         // iteration use this entry, preserving the existing five-search charge.
         if (action === 'search') {
-            this.manualSearch();
+            this.manualSearch(control);
             return;
         }
 
@@ -3571,6 +3653,7 @@ export class Game {
                     })) {
                     this.needsRender = true;
                     timeSystem.currentTick += this.player.movementSpeed;
+                    control?.afterResolve();
                     this.playerTurnEnded();
                     return;
                 }
@@ -3587,7 +3670,7 @@ export class Game {
                     ? this.keyInPackFor(newX, newY, destCell) : null;
                 const moveNotBlocked = (!!destCell && !(cellTerrainFlags(this.grid, newX, newY) & T_OBSTRUCTS_PASSABILITY)) || !!destinationKey ||
                     (!!blockingMonster && blockingMonster.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'));
-                const geometryAttack = moveNotBlocked && this.tryPlayerWeaponGeometryAttack(dx, dy);
+                const geometryAttack = moveNotBlocked && (control?.action === 'move' ? false : this.tryPlayerWeaponGeometryAttack(dx, dy, control));
                 if (geometryAttack === 'aborted') return;
                 if (geometryAttack) {
                     this.needsRender = true;
@@ -3618,8 +3701,12 @@ export class Game {
                     // （sweep = 武器带 ITEM_ATTACKS_ALL_ADJACENT，Combat.c:2049-2090）
                     // + 攻击循环（循环内复查目标存活，对应 CE MB_IS_DYING 复查）。
                     const hitList = this.buildPlayerMeleeHitList(blockingMonster);
+                    const targetsUnchanged = control ? this.captureControlledAttackTargets(hitList) : null;
                     if (this.abortPlayerAttack(hitList)) return;
-                    if (this.playerVomitAttempt()) return;
+                    if (targetsUnchanged && !targetsUnchanged()) return;
+                    if (control && !control.beforeCommit()) return;
+                    if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
+                    if (this.playerVomitAttempt(control)) return;
                     let anyAttackHit = false;
                     for (const target of hitList) {
                         if (target.hp <= 0) continue;
@@ -3643,6 +3730,8 @@ export class Game {
                     // web 的 handlePlayerAction 每次调用即对应一次已提交的单步
                     // 输入，没有"排队按键、可取消"的上层缓冲，因此统一按 CE 的
                     // committed 分支处理：耗掉这一回合、玩家原地不动，见报告。
+                    if (control && !control.beforeCommit()) return;
+                    if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'move' });
                     const seizer = this.findLiveSeizer()!;
                     logger.log(i18next.t('combat.player_seized_struggle', {
                         monster: seizer.name,
@@ -3667,6 +3756,7 @@ export class Game {
                     const isItemCage = keyCell.layers.includes(TerrainType.ALTAR_CAGE_CLOSED);
                     const keyItem = this.keyInPackFor(newX, newY, keyCell);
                     if (keyItem) {
+                        if (control && !control.beforeCommit()) return;
                         // CE Movement.c:636-656：只有匹配条目（同坐标或同机器）
                         // 带 disposableHere 才消耗钥匙。缺省 true —— 旧存档里
                         // V-2b-6 前的绑定无该字段，行为与旧 web（恒消耗）一致。
@@ -3703,6 +3793,7 @@ export class Game {
                             // CE Movement.c:1166: a matching key permits entering
                             // the cage; the key remains on that tile in the pack.
                             if (!this.movePlayerPastAlly(newX, newY, blockingMonster)) return;
+                            control?.recordDisplacement();
                             this.handleSpecialTileEntry();
                         }
                         this.needsRender = true;
@@ -3748,9 +3839,12 @@ export class Game {
                         }
                     } else {
                         // Empty altar is walkable
-                        if (this.playerStruggle(dx, dy)) return;
-                        if (this.playerVomitAttempt()) return;
+                        if (control && !control.beforeCommit()) return;
+                        if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'move' });
+                        if (this.playerStruggle(dx, dy, control)) return;
+                        if (this.playerVomitAttempt(control)) return;
                         if (!this.movePlayerPastAlly(newX, newY, blockingMonster)) return;
+                        control?.recordDisplacement();
                         this.moveEntrancedMonsters(dx, dy);
                         this.needsRender = true;
                         spentTurn = true;
@@ -3763,14 +3857,18 @@ export class Game {
                     // CE Movement.c:1368-1400: confirm the complete movement
                     // attack before struggling, nausea RNG or displacement.
                     const specialTargets = this.buildLungeFlailHitList(dx, dy, newX, newY);
+                    const targetsUnchanged = control ? this.captureControlledAttackTargets(specialTargets) : null;
                     if (this.abortPlayerAttack(specialTargets)) return;
-                    if (this.playerStruggle(dx, dy)) return;
+                    if (targetsUnchanged && !targetsUnchanged()) return;
+                    if (control && !control.beforeCommit()) return;
+                    if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'move' });
+                    if (this.playerStruggle(dx, dy, control)) return;
 
                     // B-1：CE Movement.c:1368-1400 —— 突进/连枷目标在移动
                     // 【前】收集（连枷判据需要移动前坐标；突进看移动方向两格
                     // 之外），移动【后】结算（Movement.c:1480-1492）。
                     // 挣扎出网的 return 分支在上面：没动成就没有移动攻击。
-                    if (this.playerVomitAttempt()) return;
+                    if (this.playerVomitAttempt(control)) return;
                     // CE Movement.c:1432-1441 intercepts the actual stair
                     // coordinates before ordinary entry. Otherwise the newly
                     // live REPEL_CREATURES transaction ejects the player before
@@ -3790,10 +3888,12 @@ export class Game {
                     }
                     // Move
                     if (!this.movePlayerPastAlly(newX, newY, blockingMonster)) return;
+                    control?.recordDisplacement();
                     this.moveEntrancedMonsters(dx, dy);
                     this.needsRender = true;
 
                     if (specialTargets.length > 0) {
+                        if (this.extensionRuntime) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
                         // B-1：CE Movement.c:1480-1492 —— 先移动后攻击；结算完
                         // 才 playerRecoversFromAttacking（攻击口径记进
                         // ticksUntilTurn，下方 playerTurnEnded 的 ==0 分支因此
@@ -3839,14 +3939,18 @@ export class Game {
                         // is full. Do not loop between uncollectable loot goals.
                         if (foundItem && this.inAutoTravelStep) this.stopAutoTravel();
                     }
+                    control?.afterResolve();
                     this.playerTurnEnded();
                 }
 
             } else {
                 // rest
+                if (control && !control.beforeCommit()) return;
+                if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'wait' });
                 this.justRested = true; // P4-8 返工：CE rogue.justRested（IO.c:2521-2524）
                 spentTurn = true;
                 timeSystem.currentTick += this.player.movementSpeed;
+                control?.afterResolve();
                 this.playerTurnEnded();
             }
         } else if (action === 'pickup') {
@@ -4571,6 +4675,7 @@ export class Game {
                 return;
             }
 
+            if (this.extensionRuntime) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'cast' });
             invokeCharm(this.player, item, identityId, {
                 applyTimedStatus: (status, duration) => { this.applyTimedStatus(this.player, status, duration); },
                 extinguish: () => this.extinguishCreatureFire(this.player),
@@ -4671,6 +4776,7 @@ export class Game {
         this.cancelArcanaSelection(); // Consume the pending transaction exactly once.
         if (!bolt) return null;
         if ((item.charges ?? 0) <= 0 && item.identified === true) return null;
+        if (this.extensionRuntime) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'cast' });
         const result = commitArcanaTarget(item, cursor, {
             currentTurn: this.absoluteTurnNumber,
             zap: (targetItem, targetCursor) => this.zapBoltFromPlayer(bolt, targetItem, targetCursor),
@@ -5568,6 +5674,7 @@ export class Game {
         const meta = MONSTER_BOLT_TABLE[ceBoltName];
         if (!meta || meta.effect === null || meta.effect === BoltEffect.TUNNELING
             || meta.effect === BoltEffect.OBSTRUCTION) return; // CE monsters never cast these.
+        if (this.extensionRuntime) this.extensionRuntime.notifyCommittedAction({ actorId: caster.id, action: 'cast' });
         this.bindDungeonFeatureEffects(); // Direct engine callers share the same world ports as player bolts.
 
         if (meta.effect === BoltEffect.NONE && this.canObserveBoltTarget(caster)) {
@@ -6499,6 +6606,8 @@ export class Game {
             }
         }
 
+        if (this.extensionRuntime) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'throw' });
+
         const origin = { ...this.player.loc };
         const maxDistance = this.throwMaxDistance();
 
@@ -6850,9 +6959,10 @@ export class Game {
         return true;
     }
 
-    private playerVomitAttempt(): boolean {
+    private playerVomitAttempt(control?: ControlledPlayerAction): boolean {
         if (!this.tryVomit(this.player)) return false;
         timeSystem.currentTick += this.player.movementSpeed;
+        control?.afterResolve();
         this.playerTurnEnded();
         return true;
     }
@@ -7597,17 +7707,17 @@ export class Game {
      * 合，不落回普通移动）。斧不在其中：CE 的横扫只挂在"目标格有怪"的普通
      * 近战分支（buildHitList sweep）。dx/dy 统一取符号归一成 8 向单位步。
      */
-    private tryPlayerWeaponGeometryAttack(dx: number, dy: number): boolean | 'aborted' {
+    private tryPlayerWeaponGeometryAttack(dx: number, dy: number, control?: ControlledPlayerAction): boolean | 'aborted' {
         const flags = this.player.equippedWeapon?.flags;
         if (!flags?.length) return false;
         const ux = Math.sign(dx);
         const uy = Math.sign(dy);
         if (ux === 0 && uy === 0) return false;
         if (flags.includes('ITEM_ATTACKS_EXTEND')) {
-            const result = this.playerWhipAttack(ux, uy);
+            const result = this.playerWhipAttack(ux, uy, control);
             if (result) return result;
         }
-        if (flags.includes('ITEM_ATTACKS_PENETRATE')) return this.playerSpearAttack(ux, uy);
+        if (flags.includes('ITEM_ATTACKS_PENETRATE')) return this.playerSpearAttack(ux, uy, control);
         return false;
     }
 
@@ -7620,7 +7730,18 @@ export class Game {
      *（Movement.c:893）与怪物侧同款简化：web 无照明级可见性 targeting，
      * 只按 invisible 状态近似 monsterIsHidden（P4-1b 起同口径）。
      */
-    private playerWhipAttack(dirX: number, dirY: number): boolean | 'aborted' {
+    /** A confirmation may change the world. Never resolve a stale approved hit list. */
+    private captureControlledAttackTargets(targets: readonly Monster[]): () => boolean {
+        const origin = { ...this.player.loc };
+        const locations = targets.map(actor => ({ actor, x: actor.x, y: actor.y }));
+        return () => this.player.x === origin.x && this.player.y === origin.y && locations.every(({ actor, x, y }) =>
+            actor.hp > 0 && actor.x === x && actor.y === y && this.getMonsterAt(x, y) === actor
+            && this.playerWillAttackTarget(actor)
+            && (!!this.grid.getCell(x, y)?.isPassable || actor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))
+            && (this.hasLineOfSight(origin.x, origin.y, x, y) || actor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')));
+    }
+
+    private playerWhipAttack(dirX: number, dirY: number, control?: ControlledPlayerAction): boolean | 'aborted' {
         let strike: Monster | undefined;
         for (let i = 0; i < 5; i++) {
             const tx = this.player.loc.x + (1 + i) * dirX;
@@ -7639,7 +7760,12 @@ export class Game {
             }
         }
         if (!strike || !this.playerWillAttackTarget(strike)) return false;
+        if (control?.targetId !== undefined && control.targetId !== null && strike.id !== control.targetId) return 'aborted';
+        const targetsUnchanged = control ? this.captureControlledAttackTargets([strike]) : null;
         if (this.abortPlayerAttack([strike])) return 'aborted';
+        if (targetsUnchanged && !targetsUnchanged()) return 'aborted';
+        if (control && !control.beforeCommit()) return 'aborted';
+        if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
         this.resolvePlayerMeleeAttackOn(strike);
         return true;
     }
@@ -7653,7 +7779,7 @@ export class Game {
      *   "Artificially reverse the order of the attacks, so that spears of
      *   force can send both monsters flying."——照实现，测试锁死。
      */
-    private playerSpearAttack(dirX: number, dirY: number): boolean | 'aborted' {
+    private playerSpearAttack(dirX: number, dirY: number, control?: ControlledPlayerAction): boolean | 'aborted' {
         const hitList: Monster[] = [];
         let proceed = false;
         for (let i = 0; i < 2; i++) {
@@ -7675,7 +7801,12 @@ export class Game {
             }
         }
         if (!proceed) return false;
+        if (control?.targetId !== undefined && control.targetId !== null && !hitList.some(target => target.id === control.targetId)) return 'aborted';
+        const targetsUnchanged = control ? this.captureControlledAttackTargets(hitList) : null;
         if (this.abortPlayerAttack(hitList)) return 'aborted';
+        if (targetsUnchanged && !targetsUnchanged()) return 'aborted';
+        if (control && !control.beforeCommit()) return 'aborted';
+        if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
         // CE Movement.c:1007-1009：先打远的、后打近的（倒序）
         for (let i = hitList.length - 1; i >= 0; i--) {
             this.resolvePlayerMeleeAttackOn(hitList[i]!);
@@ -8919,6 +9050,15 @@ export class Game {
             },
             effects: {
                 objectiveTimeBlock: () => game.objectiveTimeBlock(),
+                beginObjectiveTime: game.extensionRuntime?.hasHook('objectiveTime') ? () => {
+                    const runtime = game.extensionRuntime!;
+                    const actorIds = [game.player, ...game.monsters].filter(actor => actor.hp > 0).map(actor => actor.id);
+                    return () => {
+                        runtime.emit('objectiveTime', { ticks: 100, mode: 'realtime', actorIds });
+                        // A timed stealth modifier may expire midway through a slow native action.
+                        return game.calculateStealthRange();
+                    };
+                } : undefined,
                 playerFalls: () => game.playerFalls(),
                 isAutoTraveling: () => game.isAutoTraveling(),
                 sweepDeepWaterItem: (creature, ticks) => game.sweepDeepWaterItem(creature, ticks),
@@ -9916,7 +10056,7 @@ export class Game {
         if (!(cellTerrainFlags(this.grid, entity.x, entity.y) & T_ENTANGLES)) entity.setStatusDuration('stuck', 0);
     }
 
-    private playerStruggle(dx: number, dy: number): boolean {
+    private playerStruggle(dx: number, dy: number, control?: ControlledPlayerAction): boolean {
         if (!this.player.hasStatus('stuck') || !(cellTerrainFlags(this.grid, this.player.x, this.player.y) & T_ENTANGLES)) return false;
         this.player.setStatusDuration('stuck', this.player.getStatusDuration('stuck') - 1);
         if (!this.player.hasStatus('stuck')) {
@@ -9928,6 +10068,7 @@ export class Game {
         this.needsRender = true;
         timeSystem.currentTick += this.player.movementSpeed;
         this.moveEntrancedMonsters(dx, dy);
+        control?.afterResolve();
         this.playerTurnEnded();
         return true;
     }
@@ -11000,7 +11141,8 @@ export class Game {
      * 不弱于当前被动搜索（Time.c:2427 max(...)），收尾照 rest 分支口径
      * 耗 movementSpeed 并 playerTurnEnded。
      */
-    private manualSearch(): void {
+    private manualSearch(control?: ControlledPlayerAction): void {
+        if (control && !control.beforeCommit()) return;
         if (this.searchingCharge <= 0) {
             this.searchingCharge = 0;
         }
@@ -11023,6 +11165,7 @@ export class Game {
 
         this.justSearched = true;
         timeSystem.currentTick += this.player.movementSpeed;
+        control?.afterResolve();
         this.playerTurnEnded();
     }
 

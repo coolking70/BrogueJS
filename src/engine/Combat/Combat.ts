@@ -29,6 +29,12 @@ import {
     runicWeaponChance
 } from './CombatFormulas';
 
+interface PhysicalResolutionTrace {
+    probabilityRolled: boolean;
+    positivePhysicalDamage: boolean;
+    hpLost: number;
+}
+
 export interface AttackResult {
     /** Presentation metadata captured before wake/status changes; no RNG. */
     text?: { percentile: number; circumstance: AttackCircumstance };
@@ -87,7 +93,10 @@ export class CombatSystem {
         const autoHit = opts?.lungeAttack === true || defender.hasStatus('paralyzed') || defender.hasStatus('stuck')
             || (defender instanceof Monster && (defender.isCaged || (!inanimate && (defender.state === MonsterState.ASLEEP
                 || (attacker instanceof Player && !defender.isAlly && defender.state === MonsterState.WANDERING)))));
-        const probability = defender.seized && attacker.seizing ? 100 : hitProbability(accuracy, defense, enchant);
+        const probability = defender.seized && attacker.seizing
+            || (attacker instanceof Player && defender instanceof Monster
+                && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId))
+            ? 100 : hitProbability(accuracy, defense, enchant);
         const rule = opts?.isWeaponAttack === false ? undefined : (attacker.extensionHooks ?? defender.extensionHooks)?.rule;
         if (!rule) return autoHit ? 100 : probability;
         const result = Math.floor(rule('hitChance', { actorId: attacker.id, targetId: defender.id, baseValue: probability * 100,
@@ -112,10 +121,21 @@ export class CombatSystem {
         return effects.withOrigin(origin, () => {
             hooks.beforeAttack(attacker, defender);
             let result: AttackResult | undefined;
-            try { result = hooks.rule && origin.kind === 'melee' && opts?.isWeaponAttack !== false
-                ? CombatSystem.resolveAttackExtended(attacker, defender, opts)
-                : CombatSystem.resolveAttack(attacker, defender, opts); return result; }
-            finally { hooks.afterAttack(attacker, defender, result); }
+            try {
+                if (hooks.rule && origin.kind === 'melee' && opts?.isWeaponAttack !== false) {
+                    if (!(hooks.wantsPhysicalResolution?.() ?? !!hooks.physicalResolved)) {
+                        result = CombatSystem.resolveAttackExtended(attacker, defender, opts);
+                        return result;
+                    }
+                    // Each strike has its own committed identity, including sweep/spear hits.
+                    const resolution = effects.create('melee', attacker.id, origin.creditActorId, origin.creditPartyId);
+                    const trace: PhysicalResolutionTrace = { probabilityRolled: false, positivePhysicalDamage: false, hpLost: 0 };
+                    result = effects.withOrigin(resolution, () => CombatSystem.resolveAttackExtended(attacker, defender, opts, trace));
+                    hooks.physicalResolved?.(attacker, defender, { resolutionId: resolution.effectId,
+                        attackKind: 'melee', result, ...trace });
+                } else result = CombatSystem.resolveAttack(attacker, defender, opts);
+                return result;
+            } finally { hooks.afterAttack(attacker, defender, result); }
         });
     }
 
@@ -435,7 +455,7 @@ export class CombatSystem {
          * ②伤害吃 ×3/×5 偷袭倍率（Combat.c:1259-1268）。
          */
         lungeAttack?: boolean;
-    }): AttackResult {
+    }, trace?: PhysicalResolutionTrace): AttackResult {
         let attackerAccuracy = 100; // Player base accuracy
         let defenderDefense = 0;
         let damageString = '1d2'; // CE monsterCatalog[MK_YOU]
@@ -563,16 +583,19 @@ export class CombatSystem {
             return { damage: 0, weaponName, hit: false, backstab: false, seized: true };
         }
 
-        // Seizing is probability=100, NOT an attackHit short circuit: it still
-        // rolls 0..99. Sleeping/sneak/paralysis/lunge/captive bypass that roll.
+        // CE Combat.c:122-146: seizing and actual matching slaying weapons keep
+        // a 100% probability draw; they do not join the native auto-hit short circuit.
         const rule = (attacker.extensionHooks ?? defender.extensionHooks)!.rule!;
         const probability = defender.seized && attacker.seizing
+            || (attacker instanceof Player && defender instanceof Monster
+                && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId))
             ? 100 : hitProbability(attackerAccuracy, defenderDefense, weaponEnchant);
         const adjustedProbability = Math.floor(rule('hitChance', {
             actorId: attacker.id, targetId: defender.id, baseValue: probability * 100, attackKind: 'melee',
             adjacent: Math.max(Math.abs(attacker.x - defender.x), Math.abs(attacker.y - defender.y)) === 1,
             rollMode: autoHit ? 'skip-guaranteed-hit' : probability >= 100 ? 'roll-guaranteed' : 'roll-probability',
         }) / 100);
+        if (trace) trace.probabilityRolled = !autoHit;
         if (!autoHit && !rng.randPercent(adjustedProbability)) {
             return { damage: 0, weaponName, hit: false, backstab: false };
         }
@@ -657,14 +680,17 @@ export class CombatSystem {
         if (poisonDuration > 0) damage = physicalDamage(1);
 
 
+        if (trace) trace.positivePhysicalDamage = damage > 0 && !immune;
         let triggeredRunic: string | undefined;
         // Reflection has already selected the actual defender in bolt travel.
         const applyTo = defender;
         if (damage > 0) {
             const hpDamage = applyTo.absorbShieldDamage(damage);
+            const hpBefore = applyTo.hp;
             const transfer = () => CombatSystem.transferMonsterHealth(attacker, applyTo, hpDamage);
             if (applyTo instanceof Player) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
             else applyTo.takeDamage(hpDamage, true, opts?.grid, transfer, 'physical'); // shield applied exactly once
+            if (trace) trace.hpLost = Math.max(0, hpBefore - applyTo.hp);
             if (poisonDuration > 0) applyTo.addPoison(poisonDuration, 1);
         } else {
             // CE inflictDamage still applies the ring's minimum ±1 on a hit
@@ -797,9 +823,18 @@ export class CombatSystem {
         if (!hooks) return CombatSystem.resolveThrownWeaponClassic(thrower, defender, item, grid);
         const origin = hooks.causality.current?.kind === 'projectile' ? hooks.causality.current
             : hooks.causality.create('projectile', thrower.id, thrower.id, hooks.partyId(thrower));
-        return hooks.causality.withOrigin(origin, () => hooks.rule
-            ? CombatSystem.resolveThrownWeaponExtended(thrower, defender, item, grid)
-            : CombatSystem.resolveThrownWeaponClassic(thrower, defender, item, grid));
+        return hooks.causality.withOrigin(origin, () => {
+            if (!hooks.rule) return CombatSystem.resolveThrownWeaponClassic(thrower, defender, item, grid);
+            if (!(hooks.wantsPhysicalResolution?.() ?? !!hooks.physicalResolved))
+                return CombatSystem.resolveThrownWeaponExtended(thrower, defender, item, grid);
+            const resolution = hooks.causality.create('projectile', thrower.id, origin.creditActorId, origin.creditPartyId);
+            const trace: PhysicalResolutionTrace = { probabilityRolled: false, positivePhysicalDamage: false, hpLost: 0 };
+            const result = hooks.causality.withOrigin(resolution,
+                () => CombatSystem.resolveThrownWeaponExtended(thrower, defender, item, grid, trace));
+            hooks.physicalResolved?.(thrower, defender, { resolutionId: resolution.effectId, attackKind: 'thrown',
+                result: { hit: result.hit, damage: result.damage, backstab: false }, ...trace });
+            return result;
+        });
     }
 
     private static resolveThrownWeaponClassic(thrower: Player, defender: Monster, item: Item, grid?: Grid):
@@ -863,7 +898,7 @@ export class CombatSystem {
         return { hit: true, damage, killed, triggeredRunic };
     }
 
-    private static resolveThrownWeaponExtended(thrower: Player, defender: Monster, item: Item, grid?: Grid):
+    private static resolveThrownWeaponExtended(thrower: Player, defender: Monster, item: Item, grid?: Grid, trace?: PhysicalResolutionTrace):
         { hit: boolean; damage: number; killed: boolean; triggeredRunic?: string } {
         // CE Items.c:6790: a thrown weapon attempt releases even on a miss.
         defender.setStatusDuration('entranced', 0);
@@ -888,6 +923,7 @@ export class CombatSystem {
             adjacent: Math.max(Math.abs(thrower.x - defender.x), Math.abs(thrower.y - defender.y)) === 1,
             rollMode: autoHit ? 'skip-guaranteed-hit' : probability >= 100 ? 'roll-guaranteed' : 'roll-probability',
         }) / 100);
+        if (trace) trace.probabilityRolled = !autoHit;
         const hit = autoHit || rng.randPercent(adjustedProbability);
         if (!hit) {
             return { hit: false, damage: 0, killed: false };
@@ -905,8 +941,11 @@ export class CombatSystem {
 
         damage = rule('physicalDamage', { actorId: thrower.id, targetId: defender.id, baseValue: damage,
             attackKind: 'thrown', damageKind: 'physical', direct: true, immune });
+        if (trace) trace.positivePhysicalDamage = damage > 0 && !immune;
+        const hpBefore = defender.hp;
         const hpDamage = defender.absorbShieldDamage(damage);
         defender.takeDamage(hpDamage, true, grid, () => CombatSystem.transferMonsterHealth(thrower, defender, hpDamage), 'physical');
+        if (trace) trace.hpLost = Math.max(0, hpBefore - defender.hp);
         const killed = defender.hp <= 0;
         // CE thrown hit calls moralAttack after the separate pre-hit aggro gate.
         // A permanent thief keeps its mode, but a surviving hit still shortens fear.

@@ -2,10 +2,10 @@
 import { computed, ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import { inputManager } from '../../engine/Input';
-import type { GrowthCharacterViewModel, GrowthPortPreview, GrowthResourcePreview } from '../../ext/modules/growth/view';
+import type { GrowthCharacterViewModel, GrowthPortPreview, GrowthResourcePreview, GrowthTargetChoice, GrowthSkillTarget } from '../../ext/modules/growth/view';
 
-const props = defineProps<{ model: GrowthCharacterViewModel; submitting: boolean; error: string | null; notice: string | null }>();
-const emit = defineEmits<{ close: []; reset: []; adjust: [id: string, amount: number]; submit: []; respec: [] }>();
+const props = defineProps<{ model: GrowthCharacterViewModel; submitting: boolean; error: string | null; notice: string | null; initialTab?: 'attributes' | 'skills'; targetSkillId?: string | null; targets?: readonly GrowthTargetChoice[] }>();
+const emit = defineEmits<{ close: []; reset: []; adjust: [id: string, amount: number]; submit: []; respec: []; skill: [action: 'learn' | 'equip' | 'unequip' | 'use', id: string]; target: [target: GrowthSkillTarget]; cancelTarget: [] }>();
 const { t } = useTranslation();
 // Names and descriptions have been validated against the pack's localization keys.
 const text = (key: string) => t(`ext.growth.${key.slice('ext.growth.'.length)}`);
@@ -24,7 +24,7 @@ function portContext(port: GrowthPortPreview): string[] {
     });
 }
 const lockText = (mode: string) => t(`ext.growth.ui.lock.${mode}`);
-const tab = ref<'attributes' | 'skills' | 'identities'>('attributes');
+const tab = ref<'attributes' | 'skills' | 'identities'>(props.initialTab ?? 'attributes');
 const respecConfirm = ref(false);
 watch(() => props.model.revision, () => { respecConfirm.value = false; });
 const panel = ref<HTMLElement>();
@@ -50,7 +50,7 @@ const recoveryText = computed(() => ({
     none: t('ext.growth.ui.recovery_none'), increase: t('ext.growth.ui.recovery_increase'), full: t('ext.growth.ui.recovery_full'),
 }));
 let removeKeyboard: (() => void) | undefined;
-function close() { if (!props.submitting) emit('close'); }
+function close() { if (!props.submitting) { if (props.targetSkillId) emit('cancelTarget'); else emit('close'); } }
 onMounted(async () => {
     removeKeyboard = inputManager.registerModalKeyHandler(event => {
         if (event.key === 'Escape') { event.preventDefault(); close(); }
@@ -78,14 +78,14 @@ onUnmounted(() => removeKeyboard?.());
           <p v-if="model.disabledReason === 'replay'" class="growth-notice">{{ $t('ext.growth.ui.replay_read_only') }}</p>
         </div>
         <nav class="growth-tabs">
-          <button v-for="item in tabs" :key="item.id" :data-tab="item.id" :class="{ selected: tab === item.id }" @click="tab = item.id; respecConfirm = false">{{ item.label }}</button>
+          <button v-for="item in tabs" :key="item.id" :data-tab="item.id" :class="{ selected: tab === item.id }" @click="tab = item.id; respecConfirm = false; emit('cancelTarget')">{{ item.label }}</button>
         </nav>
-        <main class="growth-body">
+        <main class="growth-body" @click.self="emit('cancelTarget')">
           <template v-if="tab === 'attributes'">
             <p class="growth-hint">{{ $t('ext.growth.ui.draft_hint') }}</p>
             <article v-for="attribute in model.attributes" :key="attribute.id" class="growth-attribute" :data-attribute="attribute.id">
               <div class="growth-attribute-title"><h3>{{ text(attribute.nameKey) }}</h3><strong>{{ attribute.value }}<span v-if="attribute.increment" class="growth-delta"> → {{ attribute.preview }}</span></strong></div>
-              <p>{{ text(attribute.descriptionKey) }}</p>
+              <p v-for="(line, index) in attribute.description" :key="index" class="growth-effect-description">{{ line }}</p>
               <div class="growth-attribute-controls">
                 <span>{{ $t('ext.growth.ui.attribute_cost_cap', { cost: attribute.pointCost, cap: attribute.cap }) }}</span>
                 <span v-if="!attribute.enabled" class="growth-muted">{{ $t('ext.growth.ui.config_disabled') }}</span>
@@ -119,19 +119,38 @@ onUnmounted(() => removeKeyboard?.());
             </section>
           </template>
           <template v-else-if="tab === 'skills'">
-            <p class="growth-notice">{{ $t('ext.growth.ui.skills_future') }}</p>
-            <div class="growth-slot-list"><div v-for="slot in model.slots" :key="slot.mode" class="growth-slot"><b>{{ slot.mode === 'active' ? $t('ext.growth.ui.active_slots') : $t('ext.growth.ui.passive_slots') }}</b><span>{{ $t('ext.growth.ui.slot_count', { count: slot.count }) }}</span><small>{{ $t('ext.growth.ui.future_1d') }}</small></div></div>
-            <article v-for="skill in model.skills" :key="skill.id" class="growth-definition" :data-skill="skill.id">
-              <h3>{{ text(skill.nameKey) }}<small>{{ skill.mode === 'active' ? $t('ext.growth.ui.active') : $t('ext.growth.ui.passive') }}</small></h3>
-              <p>{{ text(skill.descriptionKey) }}</p>
-              <p>{{ $t('ext.growth.ui.skill_cost', { cost: skill.cost }) }} · {{ skill.affordable ? $t('ext.growth.ui.affordable') : $t('ext.growth.ui.unaffordable') }}</p>
-              <p v-if="skill.mode === 'active'">{{ $t('ext.growth.ui.skill_resources', { focus: skill.focusCost, cooldown: skill.adjustedCooldown.preview }) }}</p>
-              <p>{{ $t('ext.growth.ui.lock_label', { mode: lockText(skill.effectiveLockMode) }) }}</p>
-              <h4>{{ $t('ext.growth.ui.prerequisites') }}</h4>
-              <p v-if="!skill.prerequisites.length">{{ $t('ext.growth.ui.no_prerequisites') }}</p>
-              <ul v-else><li v-for="(requirement, index) in skill.prerequisites" :key="index" :class="{ 'growth-unmet': !requirement.met }">{{ text(requirement.nameKey) }}<span v-if="requirement.min !== undefined"> ≥ {{ requirement.min }}</span> · {{ requirement.met ? $t('ext.growth.ui.met') : $t('ext.growth.ui.unmet') }}</li></ul>
-              <span class="growth-future">{{ $t('ext.growth.ui.future_1d') }}</span>
-            </article>
+            <section v-if="targetSkillId" class="growth-target-picker" @click.self="emit('cancelTarget')">
+              <h3>{{ $t('ext.growth.ui.select_target', { name: definitionName(targetSkillId) }) }}</h3>
+              <p>{{ $t('ext.growth.ui.target_hint') }}</p>
+              <div class="growth-target-grid">
+                <button v-for="choice in targets" :key="choice.direction" :data-direction="choice.direction" :class="`growth-direction-${choice.direction}`"
+                  :disabled="!choice.enabled || submitting || model.readOnly" @click="emit('target', choice.target)">{{ $t(`ext.growth.ui.direction.${choice.direction}`) }}</button>
+                <button class="growth-direction-center" data-action="cancel-target" :disabled="submitting" @click="emit('cancelTarget')">{{ $t('ext.growth.ui.cancel') }}</button>
+              </div>
+            </section>
+            <p v-if="model.draft.changed" class="growth-notice">{{ $t('ext.growth.ui.skill_draft_hint') }}</p>
+            <p class="growth-hint">{{ model.equipment.time === 'native-wait' ? $t('ext.growth.ui.equip_native_wait') : $t('ext.growth.ui.equip_no_time') }} · {{ model.equipment.preservesCooldowns ? $t('ext.growth.ui.cooldown_preserve') : $t('ext.growth.ui.cooldown_clear') }} · {{ model.equipment.preservesFocus ? $t('ext.growth.ui.equip_focus_preserve') : $t('ext.growth.ui.equip_focus_full') }}</p>
+            <div class="growth-slot-list"><div v-for="slot in model.slots" :key="slot.mode" class="growth-slot"><b>{{ slot.mode === 'active' ? $t('ext.growth.ui.active_slots') : $t('ext.growth.ui.passive_slots') }}</b><span>{{ $t('ext.growth.ui.slot_count', { count: slot.count }) }}</span><small>{{ $t('ext.growth.ui.slot_used', { count: slot.used }) }}</small></div></div>
+            <section v-for="skill in model.skills" :key="skill.id" class="growth-skill-card">
+              <article class="growth-definition" :data-skill="skill.id">
+                <h3>{{ text(skill.nameKey) }}<small>{{ skill.mode === 'active' ? $t('ext.growth.ui.active') : $t('ext.growth.ui.passive') }}</small></h3>
+                <p v-for="(line, index) in skill.description" :key="index" class="growth-effect-description">{{ line }}</p>
+                <p>{{ $t('ext.growth.ui.skill_cost', { cost: skill.cost }) }} · {{ skill.affordable ? $t('ext.growth.ui.affordable') : $t('ext.growth.ui.unaffordable') }}</p>
+                <p v-if="skill.mode === 'active'">{{ $t('ext.growth.ui.skill_resources', { focus: skill.focusCost, cooldown: skill.adjustedCooldown.preview }) }} · {{ $t('ext.growth.ui.cooldown_remaining', { count: skill.cooldownRemaining }) }}</p>
+                <p>{{ $t('ext.growth.ui.lock_label', { mode: lockText(skill.effectiveLockMode) }) }}</p>
+                <h4>{{ $t('ext.growth.ui.prerequisites') }}</h4>
+                <p v-if="!skill.prerequisites.length">{{ $t('ext.growth.ui.no_prerequisites') }}</p>
+                <ul v-else><li v-for="(requirement, index) in skill.prerequisites" :key="index" :class="{ 'growth-unmet': !requirement.met }">{{ text(requirement.nameKey) }}<span v-if="requirement.min !== undefined"> ≥ {{ requirement.min }}</span> · {{ requirement.met ? $t('ext.growth.ui.met') : $t('ext.growth.ui.unmet') }}</li></ul>
+              </article>
+              <!-- Stable action columns: a second click after rendering must not become another action. -->
+              <div class="growth-skill-actions" :data-skill-actions="skill.id">
+                <span>{{ skill.equipped ? $t('ext.growth.ui.equipped') : skill.learned ? $t('ext.growth.ui.learned') : $t('ext.growth.ui.unlearned') }}</span>
+                <button data-action="learn-skill" :disabled="!skill.canLearn || submitting || !!targetSkillId" @click="emit('skill', 'learn', skill.id)">{{ $t('ext.growth.ui.learn_skill') }}</button>
+                <button data-action="equip-skill" :disabled="!skill.canEquip || submitting || !!targetSkillId" @click="emit('skill', 'equip', skill.id)">{{ $t('ext.growth.ui.equip_skill') }}</button>
+                <button data-action="unequip-skill" :disabled="!skill.canUnequip || submitting || !!targetSkillId" @click="emit('skill', 'unequip', skill.id)">{{ $t('ext.growth.ui.unequip_skill') }}</button>
+                <button data-action="use-skill" class="growth-primary" :disabled="!skill.canUse || submitting || !!targetSkillId" @click="emit('skill', 'use', skill.id)">{{ $t('ext.growth.ui.use_skill') }}</button>
+              </div>
+            </section>
           </template>
           <template v-else>
             <p class="growth-notice">{{ $t('ext.growth.ui.identities_future') }}</p>
@@ -166,6 +185,8 @@ onUnmounted(() => removeKeyboard?.());
 </template>
 
 <style scoped>
+.growth-skill-card{margin-bottom:14px;border:1px solid var(--th-line,#555)}.growth-skill-card .growth-definition{margin:0;border:0}.growth-skill-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;gap:8px;padding:10px 14px;border-top:1px dotted var(--th-line,#555)}.growth-skill-actions>span{grid-column:1/-1;color:var(--th-dim,#aaa);font-size:12px}.growth-panel .growth-skill-actions button{white-space:nowrap;min-width:0;padding:8px 2px}.growth-target-picker{position:sticky;top:0;z-index:2;border:1px solid var(--th-accent,#dcc88d);background:var(--th-panel,#171918);padding:12px;margin-bottom:14px}.growth-target-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-width:320px;margin:auto}.growth-direction-nw{grid-area:1/1}.growth-direction-n{grid-area:1/2}.growth-direction-ne{grid-area:1/3}.growth-direction-w{grid-area:2/1}.growth-direction-center{grid-area:2/2}.growth-direction-e{grid-area:2/3}.growth-direction-sw{grid-area:3/1}.growth-direction-s{grid-area:3/2}.growth-direction-se{grid-area:3/3}
+
 .growth-overlay{position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;padding:24px;background:#000b;box-sizing:border-box;color:var(--th-fg,#e4dfd1);font:14px var(--th-font,monospace);overscroll-behavior:contain;touch-action:pan-y}
 .growth-panel{display:flex;flex-direction:column;width:min(780px,100%);height:min(780px,calc(100dvh - 48px));max-width:100%;background:var(--th-panel,#171918);border:1px solid var(--th-line,#555);box-shadow:0 20px 80px #0008;outline:none;overflow:hidden}
 .growth-header{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--th-line,#555)}

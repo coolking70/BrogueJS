@@ -1,7 +1,7 @@
 import type { DeepReadonly } from './definitions';
 import type { GrowthBounds, GrowthCondition, GrowthDamageInput, GrowthDefinitionPack, GrowthHitInput, GrowthMagnitude,
     GrowthModifier, GrowthPrerequisite, GrowthRounding, GrowthRuleActor, GrowthRuleConfig, GrowthRuleInput,
-    GrowthRulePolicies, GrowthRulePort } from './types';
+    GrowthRulePolicies, GrowthRulePort, GrowthTaggedModifier } from './types';
 
 export type GrowthEvaluationPack = DeepReadonly<GrowthDefinitionPack>;
 export type GrowthEvaluationOwner = 'actor' | 'target';
@@ -22,6 +22,9 @@ export interface GrowthEvaluationFacts {
 export interface GrowthScopedModifiers {
     readonly owner: GrowthEvaluationOwner;
     readonly modifiers: readonly DeepReadonly<GrowthModifier>[];
+    readonly tags?: readonly string[];
+    readonly source?: GrowthRuleActor;
+    readonly taggedModifiers?: readonly DeepReadonly<GrowthTaggedModifier>[];
 }
 export interface GrowthEvaluatedModifier {
     readonly operation: 'add' | 'multiply';
@@ -199,10 +202,18 @@ function collectModifiers(pack: GrowthEvaluationPack, input: GrowthEvaluationInp
     for (const scope of ports) {
         const owner = scope.owner === 'actor' ? input.actor : input.target;
         if (!owner) continue;
-        const modifiers = [...attributes, ...effects.filter(effect => effect.owner === scope.owner).flatMap(effect => effect.modifiers)];
-        for (const modifier of modifiers) {
-            if (modifier.port === scope.port && matchesGrowthConditions(modifier.conditions, { ...common, role: scope.owner })) {
-                result.push({ operation: modifier.operation, slot: modifier.slot, magnitude: evaluateGrowthMagnitude(modifier.magnitude, owner) });
+        const groups: readonly GrowthScopedModifiers[] = [{owner:scope.owner,modifiers:attributes},...effects.filter(effect=>effect.owner === scope.owner)];
+        for (const group of groups) for (const modifier of group.modifiers) {
+            const facts = { ...common, role: scope.owner, tags:[...(common.tags ?? []),...(group.tags ?? [])] };
+            if (modifier.port === scope.port && matchesGrowthConditions(modifier.conditions, facts)) {
+                const source = group.source ?? owner;
+                let magnitude = evaluateGrowthMagnitude(modifier.magnitude, source);
+                if (group.taggedModifiers?.length) {
+                    const tags = group.taggedModifiers.filter(item=>item.property === 'intensity' && group.tags?.includes(item.tag)
+                        && matchesGrowthConditions(item.conditions,facts)).map(item=>({operation:item.operation,slot:item.slot,magnitude:evaluateGrowthMagnitude(item.magnitude,source)}));
+                    magnitude = evaluateGrowthModifiers(pack.config.rules,pack.config.rules.taggedProperties.intensity,magnitude,tags);
+                }
+                result.push({ operation: modifier.operation, slot: modifier.slot, magnitude });
             }
         }
     }

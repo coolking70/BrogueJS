@@ -75,8 +75,28 @@ export interface ItemGrowthInput {
 }
 export interface CharacterResources { strength: number | null; gold: number | null }
 export interface CharacterResourceCommit extends CharacterResources { expectedStrength: number | null; expectedGold: number | null }
+/** Data-only native primitives; the engine owns eligibility, confirmations and time. */
+export type ControlledActionTarget = { kind: 'self' } | { kind: 'creature'; id: number } | { kind: 'cell'; x: number; y: number };
+export interface ControlledActionRequest { actorId: number; action: 'attack' | 'move' | 'wait' | 'search'; target: ControlledActionTarget }
+export interface PhysicalResolutionFact {
+    resolutionId: number; attacker: CreatureView; defender: CreatureView;
+    attackKind: 'melee' | 'thrown'; result: Readonly<AttackResult>;
+    probabilityRolled: boolean; positivePhysicalDamage: boolean; hpLost: number;
+}
+/** Native core outcome, distinct from accepting a paid attempt. */
+export interface ControlledActionOutcome { readonly moved: boolean }
+export interface ControlledActionResult extends ControlledActionRequest, ControlledActionOutcome {
+    actorId: number; resolutions: readonly PhysicalResolutionFact[]; hit: boolean; hpLost: number;
+}
+export interface ControlledActionCallbacks {
+    beforeCommit(context: ExtensionContext): void;
+    afterResolve(result: Readonly<ControlledActionResult>, context: ExtensionContext): void;
+}
 export interface HookEvents {
     actorObserved: { actor: ActorFacts };
+    objectiveTime: { ticks: number; mode: 'realtime'; actorIds: number[] };
+    committedAction: { actorId: number; action: 'attack' | 'throw' | 'cast' | 'move' | 'wait' | 'search' };
+    physicalResolved: PhysicalResolutionFact;
     nativeMaximumReset: { actor: ActorFacts; preserveOverhealth?: boolean };
     itemKnowledgeChanged: { kindId: string };
     rewardGranted: { issuerId: string; recipientId: number; rewardId: string; instanceId: string };
@@ -114,6 +134,8 @@ export interface ExtensionContext {
     commitResources(id: number, value: ResourceCommit): void;
     characterResources(id: number): CharacterResources;
     canManageCharacter(): boolean;
+    validateAction(request: ControlledActionRequest): boolean;
+    executeAction(request: ControlledActionRequest, callbacks: ControlledActionCallbacks): boolean;
     commitCharacterResources(id: number, value: CharacterResourceCommit): void;
     randomInt(min: number, max: number): number;
     message(text: string): void;
@@ -147,6 +169,8 @@ export interface ExtensionModule extends ExtensionVersion {
 export interface CreatureExtensionHooks {
     beforeAttack(attacker: Creature, defender: Creature): void;
     afterAttack(attacker: Creature, defender: Creature, result?: AttackResult): void;
+    wantsPhysicalResolution?(): boolean;
+    physicalResolved?(attacker: Creature, defender: Creature, fact: Omit<PhysicalResolutionFact, 'attacker' | 'defender'>): void;
     readonly causality: EffectCausality;
     partyId(creature: Creature): string | null;
     relationshipChanged?(creature: Creature): void;

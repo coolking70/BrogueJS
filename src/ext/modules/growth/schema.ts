@@ -306,6 +306,8 @@ export function validateGrowthDefinitionPack(value: unknown, options: GrowthVali
     }
     if (config.rules.ports.hitChance.globalClamp.max > 10000) fail('range', '$.config.rules.ports.hitChance.globalClamp.max', 'probability basis points');
     if (config.rules.ports.focusRecoveryInterval.globalClamp.min < 1) fail('range', '$.config.rules.ports.focusRecoveryInterval.globalClamp.min', 'positive interval');
+    for (const property of ['duration','cooldown'] as const) if (config.rules.taggedProperties[property].globalClamp.min < 0)
+        fail('range', `$.config.rules.taggedProperties.${property}.globalClamp.min`, 'nonnegative duration');
     const focusRule = config.rules.ports.focusCapacity;
     const focusMinimum = Math.max(config.focus.min, focusRule.globalClamp.min);
     const focusMaximum = Math.min(config.focus.cap, focusRule.globalClamp.max);
@@ -351,6 +353,9 @@ export function validateGrowthDefinitionPack(value: unknown, options: GrowthVali
         const path = `$.definitions[${index}]`; namedText(def, path); effectsCheck(def.effects, `${path}.effects`);
         if (def.kind === 'skill') {
             if (def.mode === 'passive' ? def.action !== null || def.focusCost !== 0 || def.cooldown !== 0 : def.action === null) fail('shape', path, 'skill mode/action');
+            // 1d finite activation vocabulary: passive scalar/tag modifiers; active effects carry an explicit timed trigger.
+            if (def.effects.some(effect => def.mode === 'active' ? effect.kind !== 'timed' : effect.kind !== 'modifier' && effect.kind !== 'tagged-modifier'))
+                fail('shape', `${path}.effects`, 'skill activation requires explicit supported trigger');
             prereqCheck(def.prerequisites, `${path}.prerequisites`);
             for (const kind of ['profession', 'lineage', 'faith'] as const) for (const id of def.lock[`${kind}Ids`]) reference(id, kind, `${path}.lock`);
             if (def.lock.mode === 'none' && (def.lock.professionIds.length || def.lock.lineageIds.length || def.lock.faithIds.length)) fail('shape', `${path}.lock`, 'none has no restrictions');

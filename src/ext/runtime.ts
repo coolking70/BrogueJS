@@ -6,7 +6,7 @@ import { creatureView } from './types';
 import { readCreatureBirth } from './birth';
 import { canonical, cloneJson, isJson, validId } from './json';
 import { EffectCausality, validEffectOrigin, type EffectOrigin } from './causality';
-import type { DeathFact, GenerationToken } from './types';
+import type { DeathFact, GenerationToken, ControlledActionRequest, ControlledActionResult, ControlledActionOutcome, PhysicalResolutionFact } from './types';
 
 function isCreatureView(value: unknown): boolean {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -19,12 +19,18 @@ export interface ExtensionPorts {
     depth(): number;
     playerId(): number;
     canManageCharacter?(): boolean;
+    validateAction?(request: ControlledActionRequest): boolean;
+    executeAction?(request: ControlledActionRequest, callbacks: { beforeCommit(): void; afterResolve(outcome: ControlledActionOutcome): void }): boolean;
     gold?(): number;
     setGold?(value: number): void;
     randomInt(min: number, max: number): number;
     message(text: string): void;
     knownKinds?(): { id: string; category: string }[];
     testMode?(): boolean;
+}
+function safeStateField(value: unknown): value is string {
+    return typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_.-]*$/.test(value)
+        && !['constructor', 'prototype', '__proto__'].includes(value);
 }
 function freezeView<T>(value: T): T {
     if (value && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -63,6 +69,12 @@ export class ExtensionRuntime {
     private activeScope: object | null = null;
     private disposed = false;
     private resourcePhase = false;
+    private commandModule: ExtensionModule | null = null;
+    private commandActionUsed = false;
+    private commandScope: object | null = null;
+    private controlledAction = false;
+    private actionActorId: number | null = null;
+    private actionResolutions: PhysicalResolutionFact[] | null = null;
     readonly manifest: ExtensionManifest;
     readonly causality: EffectCausality;
     private deaths: Record<string, DeathFact> = {};
@@ -74,7 +86,7 @@ export class ExtensionRuntime {
         Object.freeze(this.manifest.modules); Object.freeze(this.manifest);
         this.modules = registry.create(manifest);
         for (const module of this.modules) if (module.view) {
-            if (!isJson(module.view.definitions) || !module.view.stateFields.every(validId)
+            if (!isJson(module.view.definitions) || !module.view.stateFields.every(safeStateField)
                 || !module.view.playerComponents.every(validId)) throw new Error('Invalid extension display descriptor');
             this.views.set(module.id, freezeView(structuredClone(module.view)));
         }
@@ -123,6 +135,37 @@ export class ExtensionRuntime {
             knownKinds() { return structuredClone(runtime.ports.knownKinds?.() ?? []); },
             commitResources(id, value) { writable(); if (!module.resourceCommits || !runtime.resourcePhase) throw new Error('Resource commit outside authorized growth boundary'); runtime.commitResources(id, value); },
             canManageCharacter() { return runtime.ports.canManageCharacter?.() ?? true; },
+            validateAction(request) { return runtime.ports.validateAction?.(request) ?? false; },
+            executeAction(request, callbacks) {
+                writable();
+                if (runtime.commandModule !== module || runtime.activeScope !== runtime.commandScope || runtime.controlledAction || runtime.commandActionUsed || !runtime.ports.executeAction)
+                    throw new Error('Controlled action outside module command');
+                if (!callbacks || typeof callbacks.beforeCommit !== 'function' || typeof callbacks.afterResolve !== 'function')
+                    throw new Error('Invalid controlled action callbacks');
+                const input = freezeView(structuredClone(request));
+                runtime.controlledAction = true; runtime.commandActionUsed = true; runtime.actionActorId = input.actorId;
+                let committed = false, resolved = false;
+                try {
+                    return runtime.ports.executeAction(input, {
+                        beforeCommit() {
+                            if (committed) throw new Error('Duplicate controlled action commit');
+                            committed = true; runtime.actionResolutions = [];
+                            runtime.invoke(module, context => callbacks.beforeCommit(context));
+                        },
+                        afterResolve(outcome) {
+                            if (!committed || resolved) throw new Error('Invalid controlled action resolution');
+                            resolved = true;
+                            const resolutions = runtime.actionResolutions ?? [];
+                            const selectedTarget = input.target.kind === 'creature' ? input.target.id : null;
+                            const selected = resolutions.filter(fact => selectedTarget === null || fact.defender.id === selectedTarget);
+                            const result: ControlledActionResult = { ...input, moved: outcome.moved, actorId: input.actorId, resolutions,
+                                hit: selected.some(fact => fact.result.hit), hpLost: selected.reduce((sum, fact) => sum + fact.hpLost, 0) };
+                            runtime.actionResolutions = null;
+                            runtime.invoke(module, context => callbacks.afterResolve(freezeView(structuredClone(result)), context));
+                        },
+                    });
+                } finally { runtime.actionResolutions = null; runtime.actionActorId = null; runtime.controlledAction = false; }
+            },
             characterResources(id) { return runtime.characterResources(id); },
             commitCharacterResources(id, value) { writable(); if (!module.resourceCommits || !runtime.resourcePhase) throw new Error('Character commit outside authorized growth boundary'); runtime.commitCharacterResources(id, value); },
             randomInt(min, max) {
@@ -292,13 +335,14 @@ export class ExtensionRuntime {
         for (const module of this.modules) if (module.validateWorld && !module.validateWorld(this.states[module.id]!, this.components, actors))
             throw new Error('Invalid extension world references');
     }
-    private invoke(module: ExtensionModule, callback: (context: ExtensionContext) => void): void {
+    private invoke(module: ExtensionModule, callback: (context: ExtensionContext) => void, command = false): void {
         if (this.disposed) throw new Error('Extension runtime unloaded');
-        const prior = this.activeScope, scope = {};
+        const prior = this.activeScope, priorCommandScope = this.commandScope, scope = {};
         this.activeScope = scope;
+        if (command) this.commandScope = scope;
         try {
             requireSynchronous(callback(this.context(module, scope)));
-        } finally { this.activeScope = prior; }
+        } finally { this.activeScope = prior; this.commandScope = priorCommandScope; }
     }
     newGame(): void { for (const module of this.modules) if (module.onNewGame) this.invoke(module, context => module.onNewGame!(context)); }
     loaded(): void {
@@ -306,6 +350,11 @@ export class ExtensionRuntime {
         // Load callbacks have read-only contexts: no RNG or mutation.
         for (const module of this.modules) requireSynchronous(module.onLoad?.(this.context(module, null)));
         if (canonical(this.snapshot()) !== before) throw new Error('Load handler changed extension state');
+    }
+    /** New optional facts must remain invisible to modules that never subscribed. */
+    hasHook(name: HookName): boolean { return this.modules.some(module => typeof module.hooks?.[name] === 'function'); }
+    notifyCommittedAction(event: HookEvents['committedAction']): void {
+        if (this.hasHook('committedAction')) this.emit('committedAction', event);
     }
     emit<K extends HookName>(name: K, event: HookEvents[K]): void {
         if (this.generations.length && !this.publishingGeneration) {
@@ -326,7 +375,7 @@ export class ExtensionRuntime {
                 if (readOnly) requireSynchronous(handler(input, this.context(module, null)));
                 else {
                     const prior = this.resourcePhase;
-                    this.resourcePhase = ['creatureSpawned','simulationSettled','nativeMaximumReset'].includes(name);
+                    this.resourcePhase = ['creatureSpawned','simulationSettled','nativeMaximumReset','objectiveTime','committedAction','physicalResolved'].includes(name);
                     try { this.invoke(module, context => handler(input, context)); } finally { this.resourcePhase = prior; }
                 }
             }
@@ -346,7 +395,9 @@ export class ExtensionRuntime {
         const states = structuredClone(this.states), components = structuredClone(this.components);
         const resources = [...this.creatures].map(actor => ({ actor, hp: actor.hp, maxHp: actor.maxHp,
             strength: actor instanceof Player ? actor.strength : null, gold: actor instanceof Player ? this.ports.gold?.() ?? 0 : null }));
-        try { this.invoke(module, context => handler(input.payload, context)); }
+        const priorCommandModule = this.commandModule, priorActionUsed = this.commandActionUsed;
+        this.commandModule = module; this.commandActionUsed = false;
+        try { this.invoke(module, context => handler(input.payload, context), true); }
         catch (error) {
             this.states = states; this.components = components;
             for (const saved of resources) {
@@ -354,7 +405,7 @@ export class ExtensionRuntime {
                 if (saved.actor instanceof Player) { saved.actor.strength = saved.strength!; this.ports.setGold?.(saved.gold!); }
             }
             throw error;
-        } finally { this.resourcePhase = prior; }
+        } finally { this.resourcePhase = prior; this.commandModule = priorCommandModule; this.commandActionUsed = priorActionUsed; }
     }
     attachCreature(creature: Creature, notifySpawn = true): void {
         if (this.disposed || this.creatures.has(creature)) return;
@@ -368,6 +419,8 @@ export class ExtensionRuntime {
             nativeMaximumBase: actor => this.nativeMaximumBase(actor),
             rule: (port, input) => this.rule(port, input),
             beforeAttack: (attacker, defender) => {
+                if (attacker.id !== this.ports.playerId() && this.causality.current?.kind === 'melee')
+                    this.notifyCommittedAction({ actorId: attacker.id, action: 'attack' });
                 this.attacks.push(attacker.id);
                 try { this.emit('beforeAttack', { attacker: creatureView(attacker, this.ports.playerId()), defender: creatureView(defender, this.ports.playerId()) }); }
                 catch (error) { this.attacks.pop(); throw error; }
@@ -375,6 +428,13 @@ export class ExtensionRuntime {
             afterAttack: (attacker, defender, result) => {
                 try { if (result) this.emit('afterAttack', { attacker: creatureView(attacker, this.ports.playerId()), defender: creatureView(defender, this.ports.playerId()), result }); }
                 finally { this.attacks.pop(); }
+            },
+            wantsPhysicalResolution: () => this.actionResolutions !== null || this.hasHook('physicalResolved'),
+            physicalResolved: (attacker, defender, detail) => {
+                const fact: PhysicalResolutionFact = { ...detail, attacker: creatureView(attacker, this.ports.playerId()),
+                    defender: creatureView(defender, this.ports.playerId()) };
+                if (attacker.id === this.actionActorId) this.actionResolutions?.push(structuredClone(fact));
+                if (this.hasHook('physicalResolved')) this.emit('physicalResolved', fact);
             },
             damage: (target, amount, hpBefore, damageKind = 'other') => {
                 const fact = this.causality.recordDamage(target.id, hpBefore, target.hp, damageKind);
@@ -469,7 +529,8 @@ export class ExtensionRuntime {
         const state = this.states[moduleId], playerId = this.ports.playerId();
         const fields: Record<string, Json> = {}, components: Record<string, Json> = {};
         if (state && typeof state === 'object' && !Array.isArray(state)) for (const name of descriptor.stateFields) {
-            const value = state[name]; if (value !== undefined) fields[name] = cloneJson(value);
+            const value = Object.prototype.hasOwnProperty.call(state, name) ? state[name] : undefined;
+            if (value !== undefined) fields[name] = cloneJson(value);
         }
         for (const name of descriptor.playerComponents) {
             const value = this.components[String(playerId)]?.[`${moduleId}:${name}`];

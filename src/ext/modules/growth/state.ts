@@ -9,6 +9,7 @@ import { scheduledGrantTotal } from './experience';
 import { isGrowthDerived, isGrowthFocus, isGrowthProgression, isGrowthSkills } from './components';
 import { growthAllocatedCost, growthDerived, growthFocusCapacity, growthFocusInterval, growthRuleActor, isGrowthAttributes } from './attributes';
 import { isGrowthItemLedger, growthItemPointGrants } from './items';
+import { growthSkillScopes, growthLearnedCost, isGrowthSkillBuild, validGrowthCooldowns } from './skills';
 
 export type GrowthActor = { player: boolean; allied: boolean; hostile: boolean; alive: boolean; relation: number };
 export type GrowthReward = CreatureBirth & { rewardId: string; threatRank: number; amount: number };
@@ -16,13 +17,13 @@ export type GrowthPending = { kind: 'kill'; actor: ActorFacts; origin: EffectOri
     | { kind: 'visit'; depth: number }
     | { kind: 'story'; recipientId: number; rewardKey: string; definitionId: string; amount: number; reasonKey: string };
 export type GrowthState = {
-    created: boolean; playerId: number; revision: number;
+    created: boolean; playerId: number; revision: number; objectiveClock: number; objectiveRemainder: number; nextEffectId: number; nextActionId: number;
     visitedDepths: number[]; identifiedKinds: string[]; identificationAwarded: number; visitAwarded: number;
     rewardReceipts: string[]; storyReceipts: string[]; resourceReceipts: string[];
     actors: Record<string, GrowthActor>; pending: GrowthPending[];
 };
 export function initialGrowthState(): GrowthState {
-    return { created: false, playerId: 0, revision: 0, visitedDepths: [], identifiedKinds: [], identificationAwarded: 0,
+    return { created: false, playerId: 0, revision: 0, objectiveClock: 0, objectiveRemainder: 0, nextEffectId: 1, nextActionId: 1, visitedDepths: [], identifiedKinds: [], identificationAwarded: 0,
         visitAwarded: 0, rewardReceipts: [], storyReceipts: [], resourceReceipts: [], actors: {}, pending: [] };
 }
 const integer = (value: unknown, min = 0): value is number => Number.isSafeInteger(value) && (value as number) >= min;
@@ -43,7 +44,8 @@ export function isGrowthReward(value: unknown): value is GrowthReward {
 }
 export function isGrowthState(value: unknown, pack: DeepReadonly<GrowthDefinitionPack>): value is GrowthState {
     if (!isJson(value) || !record(value, Object.keys(initialGrowthState())) || typeof value.created !== 'boolean'
-        || !integer(value.playerId) || !integer(value.revision) || (value.created && (value.playerId === 0 || value.revision < 1))
+        || !integer(value.objectiveClock) || !integer(value.objectiveRemainder) || value.objectiveRemainder >= pack.config.focus.objectiveTicksPerBlock
+        || !integer(value.nextEffectId,1) || !integer(value.nextActionId,1) || !integer(value.playerId) || !integer(value.revision) || (value.created && (value.playerId === 0 || value.revision < 1))
         || !sorted(value.visitedDepths, (v): v is number => integer(v, 1)) || !sorted(value.identifiedKinds, text)
         || !integer(value.identificationAwarded) || value.identificationAwarded > pack.config.experience.identification.totalCap
         || !integer(value.visitAwarded) || (pack.config.experience.firstVisits.cap !== null && value.visitAwarded > pack.config.experience.firstVisits.cap)
@@ -69,17 +71,24 @@ export function isGrowthState(value: unknown, pack: DeepReadonly<GrowthDefinitio
 }
 /** Cross-component checks happen before a live run is retired; every point has a grant, allocation, or irreversible-fee owner. */
 export function validGrowthComponents(state: GrowthState, components: ExtensionSnapshot['components'], pack: DeepReadonly<GrowthDefinitionPack>): boolean {
-    const config = pack.config;
+    try {
+    const config = pack.config, effectIds = new Set<number>();
     for (const [id, entries] of Object.entries(components)) {
         const own = Object.keys(entries).filter(key => key.startsWith('growth:'));
         if (!own.length) continue;
-        if (!state.actors[id] || own.sort().join(',') !== 'growth:attributes,growth:derived,growth:focus,growth:items,growth:progression,growth:reward,growth:skills') return false;
+        if (!state.actors[id] || own.sort().join(',') !== 'growth:attributes,growth:derived,growth:focus,growth:items,growth:progression,growth:reward,growth:skill-build,growth:skills') return false;
         const progression = entries['growth:progression'], reward = entries['growth:reward'], attributes = entries['growth:attributes'], items = entries['growth:items'];
         if (!isGrowthProgression(progression,config.levels) || !isGrowthReward(reward)
             || !isGrowthAttributes(attributes,pack,reward.nativeStatsCopied && config.monsters.clone.inheritBuild)
             || !isGrowthItemLedger(items,config.itemGrowth)) return false;
-        const actor = growthRuleActor(Number(id),progression,attributes), grants = growthItemPointGrants(config.itemGrowth,items);
+        const build = entries['growth:skill-build'];
+        if (!isGrowthSkillBuild(build,pack,Number(id),state.objectiveClock,state.nextEffectId)) return false;
+        for (const effect of build.effects) {if(effectIds.has(effect.instanceId)) return false;effectIds.add(effect.instanceId);}
+        const actor = growthRuleActor(Number(id),progression,attributes), scopes = growthSkillScopes(pack,build,state.objectiveClock), grants = growthItemPointGrants(config.itemGrowth,items);
+        const focus = entries['growth:focus'], capacity = growthFocusCapacity(pack,actor,scopes), interval = growthFocusInterval(pack,actor,scopes);
+        if (!isGrowthFocus(focus,capacity,interval) || (config.focus.resetRemainderWhenFull && focus.current === capacity && focus.remainder !== 0)) return false;
         const clone = reward.nativeStatsCopied;
+        if (build.inherited.length && (!clone || !config.monsters.clone.inheritBuild)) return false;
         if ((!clone || !config.monsters.clone.inheritUnspentPoints) && (attributes.inheritedAttributePoints || attributes.inheritedSkillPoints)
             || (clone && !config.monsters.clone.progression && (progression.level !== 1 || progression.experience !== 0))) return false;
         const attributeGrants = BigInt(scheduledGrantTotal(config.levels.attributePoints,progression.level))
@@ -88,15 +97,15 @@ export function validGrowthComponents(state: GrowthState, components: ExtensionS
             - BigInt(clone ? scheduledGrantTotal(config.levels.skillPoints,1) : 0) + BigInt(attributes.inheritedSkillPoints);
         if (BigInt(progression.attributePoints) + BigInt(growthAllocatedCost(pack,attributes)) + BigInt(attributes.attributePointsSpent)
                 !== attributeGrants + BigInt(grants.attributePoints)
-            || BigInt(progression.skillPoints) + BigInt(attributes.skillPointsSpent) !== skillGrants + BigInt(grants.skillPoints)
-            || !isGrowthDerived(entries['growth:derived'],growthDerived(pack,actor))
-            || !isGrowthFocus(entries['growth:focus'],growthFocusCapacity(pack,actor),growthFocusInterval(pack,actor))
-            || !isGrowthSkills(entries['growth:skills'],pack.definitions.filter(def => def.kind === 'skill' && def.mode === 'active').map(def => def.id))) return false;
+            || BigInt(progression.skillPoints) + BigInt(attributes.skillPointsSpent) + BigInt(growthLearnedCost(pack,build)) !== skillGrants + BigInt(grants.skillPoints)
+            || !isGrowthDerived(entries['growth:derived'],growthDerived(pack,actor,scopes))
+            || !isGrowthSkills(entries['growth:skills'],pack.definitions.filter(def => def.kind === 'skill' && def.mode === 'active').map(def => def.id)) || !validGrowthCooldowns(entries['growth:skills'] as never,build)) return false;
         if (reward.rewardId !== `birth:${id}`) return false;
         const quote = config.experience.kills.monsterQuotes.find(quote => quote.monsterId === reward.originalMonsterType);
         if (reward.threatRank !== (quote?.threatRank ?? 0) || reward.amount !== (quote ? quote.amount ?? config.experience.kills.base + config.experience.kills.perThreatRank * quote.threatRank : 0)) return false;
     }
     return !state.created || !!components[String(state.playerId)]?.['growth:progression'];
+    } catch { return false; }
 }
 export function growthPartyId(state: GrowthState, id: number): string | null {
     const actor = state.actors[id];

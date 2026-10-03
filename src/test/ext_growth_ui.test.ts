@@ -355,3 +355,178 @@ describe('EXT-1c mounted growth character interactions', () => {
         expect(all(body).filter(n => n.props['data-step']).every(n => n.props.disabled)).toBe(true); expect(find('data-action', 'allocate').props.disabled).toBe(true); expect(find('data-action', 'review-respec').props.disabled).toBe(true);
     });
 });
+
+describe('EXT-1d mounted skill learning, loadout, targeting and display', () => {
+    const skillId = (suffix: string) => `growth.skill.${suffix}`;
+    const actions = (suffix: string) => find('data-skill-actions', skillId(suffix));
+    async function skills() { click(find('data-action', 'show-skills', root)); await tick(); expect(find('data-tab', 'skills').props.class).toContain('selected'); }
+    async function press(action: string, suffix: string) { click(find('data-action', action, actions(suffix))); await tick(); await tick(); }
+    function record(action: string, payload: object) {
+        game.executeCommand('ext:command', JSON.stringify({ module: 'growth', action, payload: { revision: readGrowthCharacterView(game)!.revision, ...payload } }));
+    }
+    async function prepared() {
+        configured(pack => { pack.config.levels.skillPoints = { kind: 'periodic', firstLevel: 1, every: 1, amount: 30 }; pack.config.skills.activeSlots = 6; });
+        await start(); game.monsters = []; game.dormantMonsters = []; game.items = [];
+        record('allocate', { attributes: { 'growth.attribute.constitution': 2, 'growth.attribute.agility': 2, 'growth.attribute.perception': 2 } });
+        vi.advanceTimersByTime(100); await tick();
+    }
+    it('shows data-derived attribute and skill text, learns once on double click and equips with one native wait', async () => {
+        await prepared(); await open(); expect(text(find('data-attribute', con))).toContain('每点：最大生命 +3（单项上限 +24）');
+        click(find('data-tab', 'skills')); await tick(); const row = find('data-skill', skillId('brace'));
+        expect(text(row)).toContain('受到的物理伤害 -20%'); expect(text(row)).toContain('使用消耗：3 专注');
+        expect(all(row).some(node => node.type === 'button')).toBe(false);
+        const before = game.recordedInputEvents.length, turns = game.stats.turns, rngBefore = rng.getState();
+        const button = find('data-action', 'learn-skill', actions('brace')); click(button); click(button); await tick(); await tick();
+        expect(game.recordedInputEvents).toHaveLength(before + 1); expect(game.stats.turns).toBe(turns); expect(rng.getState()).toEqual(rngBefore);
+        expect(readGrowthCharacterView(game)!.skills.find(skill => skill.id === skillId('brace'))!.learned).toBe(true);
+        await press('equip-skill', 'brace'); expect(game.stats.turns).toBe(turns + 1); expect(game.recordedInputEvents).toHaveLength(before + 2);
+        const event = JSON.parse(String(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.data));
+        expect(event).toMatchObject({ action: 'equip-skills', payload: { active: [skillId('brace')], passive: [] } });
+        expect(find('data-action', 'use-skill', actions('brace')).props.disabled).toBe(false);
+    });
+    it('keeps action positions stable when the second physical click arrives after a Vue rerender', async () => {
+        await prepared(); await skills();
+        const buttons = () => all(actions('measured-strike')).filter(node => node.type === 'button');
+        const initial = buttons(), order = ['learn-skill', 'equip-skill', 'unequip-skill', 'use-skill'];
+        expect(initial.map(node => node.props['data-action'])).toEqual(order);
+        const count = game.recordedInputEvents.length, turns = game.stats.turns, points = readGrowthCharacterView(game)!.skillPoints;
+        click(initial[0]!); await tick(); await tick(); vi.advanceTimersByTime(100); await tick();
+        // Hit-test the same column after the DOM update, not the old listener captured before rendering.
+        const afterLearn = buttons(); expect(afterLearn.map(node => node.props['data-action'])).toEqual(order);
+        expect(afterLearn[0]).toBe(initial[0]); expect(afterLearn[0]!.props.disabled).toBe(true); click(afterLearn[0]!); await tick(); await tick();
+        expect(game.recordedInputEvents).toHaveLength(count + 1); expect(game.stats.turns).toBe(turns);
+        expect(readGrowthCharacterView(game)!.skillPoints).toBe(points - 2);
+        expect(readGrowthCharacterView(game)!.skills.find(skill => skill.id === skillId('measured-strike'))!.equipped).toBe(false);
+        click(afterLearn[1]!); await tick(); await tick(); vi.advanceTimersByTime(100); await tick();
+        const afterEquip = buttons(); expect(afterEquip.map(node => node.props['data-action'])).toEqual(order);
+        expect(afterEquip[1]).toBe(initial[1]); expect(afterEquip[1]!.props.disabled).toBe(true); click(afterEquip[1]!); await tick(); await tick();
+        expect(game.recordedInputEvents).toHaveLength(count + 2); expect(game.stats.turns).toBe(turns + 1);
+        expect(readGrowthCharacterView(game)!.skills.find(skill => skill.id === skillId('measured-strike'))!.equipped).toBe(true);
+        click(afterEquip[2]!); await tick(); await tick();
+        const afterUnequip = buttons(); expect(afterUnequip[2]).toBe(initial[2]); expect(afterUnequip[2]!.props.disabled).toBe(true);
+        click(afterUnequip[2]!); await tick(); await tick(); expect(game.recordedInputEvents).toHaveLength(count + 3); expect(game.stats.turns).toBe(turns + 2);
+    });
+    it.each([[320, false], [320, true], [390, false], [390, true]] as const)('reserves the complete first search badge with Lv20/10 points at %ipx immersive=%s', async (width, immersive) => {
+        const priorObserver = globalThis.ResizeObserver;
+        let resized: (() => void) | undefined;
+        vi.stubGlobal('ResizeObserver', class { constructor(callback: () => void) { resized = callback; } observe() {} disconnect() {} });
+        try {
+            configured(); await start(); app!.unmount();
+            game.monsters = []; game.dormantMonsters = []; game.executeCommand('search');
+            game.player.hp = 52; game.player.maxHp = 69;
+            game.player.setStatusDuration('poisoned', 20); game.player.setStatusDuration('haste', 20);
+            win.innerWidth = width; viewport.mode = 'portrait'; displaySettings.immersiveMode = immersive;
+            const model = Vue.shallowRef({ ...readGrowthCharacterView(game)!, level: 20, attributePoints: 10, skillPoints: 10 });
+            root = node('root');
+            app = renderer.createApp({ setup: () => () => Vue.h('div', { class: `app-layout theme-shell layout-portrait ${immersive ? 'immersive-mode' : ''}` },
+                [Vue.h(Hud, { growth: model.value, immersive, showPanelButton: true })]) });
+            app.use(I18NextVue, { i18next }); app.mount(root); await tick();
+            const statuses = cls('th-statuses', root), first = cls('th-search-progress', root);
+            expect(text(first)).toContain('搜索中 1/5'); expect(text(cls('th-growth', root))).toContain('Lv20');
+            if (!immersive) expect(text(cls('th-growth-points', root))).toContain('10');
+            // Measured fixture from the actual 320px Mac failure; no simulation value is changed by this callback.
+            first.getBoundingClientRect = () => ({ width: 59.49, top: 0, right: 59.49 });
+            const saved = game.extensionRuntime!.snapshot(), random = rng.getState(), count = game.recordedInputEvents.length;
+            expect(resized).toBeTypeOf('function'); resized!(); await tick();
+            // The inline logical minimum wins over the real compiled cascade's generic min-width:0.
+            expect(statuses.props.style.minInlineSize).toBe('60px');
+            const styles = hudCascade(statuses, width);
+            if (immersive) {
+                expect(styles).toMatchObject({ flex: '0 1 auto', 'overflow-x': 'auto', 'overflow-y': 'hidden', 'flex-wrap': 'nowrap' });
+                expect(hudCascade(first, width)).toMatchObject({ flex: '0 0 auto', 'max-width': 'none', 'white-space': 'nowrap' });
+                expect(text(cls('th-panel', root))).toBe('周围');
+            }
+            for (const name of ['th-hp', 'th-food', 'th-depth', 'th-growth']) expect(hudCascade(cls(name, root), width).display).not.toBe('none');
+            expect(all(statuses).filter(item => hasClass(item, 'th-status'))).toHaveLength(3);
+            expect(game.extensionRuntime!.snapshot()).toEqual(saved); expect(rng.getState()).toEqual(random); expect(game.recordedInputEvents).toHaveLength(count);
+        } finally { vi.stubGlobal('ResizeObserver', priorObserver); win.innerWidth = 1440; }
+    });
+    it('compiles stable four-column skill controls that remain bounded on a 320px panel', () => {
+        const style = parse(source('components/growth/GrowthCharacterPanel.vue')).descriptor.styles[0]!;
+        const compiled = compileStyle({ source: style.content, filename: 'GrowthCharacterPanel.vue', id: 'data-v-growth-panel', scoped: style.scoped });
+        expect(compiled.errors).toEqual([]);
+        const declarations: Record<string, Record<string, string>> = {};
+        postcss.parse(compiled.code).walkRules(rule => { if (!rule.selector.includes('.growth-skill-actions')) return;
+            const name = rule.selector.replace(/\[data-v-growth-panel\]/g, '');
+            rule.walkDecls(value => { (declarations[name] ??= {})[value.prop] = value.value; });
+        });
+        expect(declarations['.growth-skill-actions']).toMatchObject({ display: 'grid', 'grid-template-columns': 'repeat(4,minmax(0,1fr))' });
+        expect(declarations['.growth-skill-actions>span']).toMatchObject({ 'grid-column': '1/-1' });
+        expect(declarations['.growth-panel .growth-skill-actions button']).toMatchObject({ 'min-width': '0', padding: '8px 2px' });
+    });
+    it('executes wait/search skills exactly once and disables cooldown repeat while browsing is pure', async () => {
+        await prepared(); await skills(); await press('learn-skill', 'brace'); await press('equip-skill', 'brace');
+        const before = game.recordedInputEvents.length, turns = game.stats.turns, focus = readGrowthCharacterView(game)!.focus.current;
+        const button = find('data-action', 'use-skill', actions('brace')); click(button); click(button); await tick(); await tick();
+        expect(game.recordedInputEvents).toHaveLength(before + 1); expect(game.stats.turns).toBe(turns + 1);
+        expect(readGrowthCharacterView(game)!.focus.current).toBe(focus - 3);
+        expect(find('data-action', 'use-skill', actions('brace')).props.disabled).toBe(true);
+        vi.spyOn(Date, 'now').mockReturnValue(123456);
+        const saved = JSON.stringify(game.toSnapshot()), random = rng.getState();
+        vi.advanceTimersByTime(2000); await tick(); expect(JSON.stringify(game.toSnapshot())).toBe(saved); expect(rng.getState()).toEqual(random);
+        await press('learn-skill', 'survey'); await press('equip-skill', 'survey');
+        await press('use-skill', 'survey'); expect(game.searchProgress).toBe(1);
+        expect(JSON.parse(String(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.data))).toMatchObject({ action: 'use-skill', payload: { skillId: skillId('survey'), target: { kind: 'self' } } });
+    });
+    it('cancels targeting with center, outside and Escape without resource/time/RNG/record changes; native targets revalidate', async () => {
+        await prepared(); await skills(); await press('learn-skill', 'withdraw'); await press('equip-skill', 'withdraw');
+        const saved = JSON.stringify(game.toSnapshot()), random = rng.getState(), count = game.recordedInputEvents.length;
+        await press('use-skill', 'withdraw'); expect(cls('growth-target-picker')).toBeTruthy();
+        click(find('data-action', 'cancel-target')); await tick(); expect(cls('growth-target-picker')).toBeUndefined();
+        await press('use-skill', 'withdraw'); click(cls('growth-overlay')); await tick(); expect(cls('growth-panel')).toBeTruthy(); expect(cls('growth-target-picker')).toBeUndefined();
+        await press('use-skill', 'withdraw'); input['handleKeyDown']({ key: 'Escape', code: 'Escape', target: body, preventDefault() {}, stopImmediatePropagation() {} } as unknown as KeyboardEvent); await tick();
+        expect(cls('growth-panel')).toBeTruthy(); expect(cls('growth-target-picker')).toBeUndefined();
+        expect(game.recordedInputEvents).toHaveLength(count); expect(JSON.stringify(game.toSnapshot())).toBe(saved); expect(rng.getState()).toEqual(random);
+        await press('use-skill', 'withdraw'); const choice = all(body).find(node => node.props['data-direction'] && !node.props.disabled)!;
+        expect(choice).toBeTruthy(); const before = { ...game.player.loc }; click(choice); await tick(); await tick();
+        expect(game.player.loc).not.toEqual(before); expect(game.recordedInputEvents).toHaveLength(count + 1);
+        const event = JSON.parse(String(game.recordedInputEvents[count]!.data)); expect(event.payload.target).toEqual({ kind: 'cell', ...game.player.loc }); expect(event.payload.actorId).toBeUndefined();
+        expect(cls('growth-panel')).toBeTruthy(); expect(cls('growth-target-picker')).toBeUndefined();
+    });
+    it('uses visible adjacent creature IDs and rejects a stale target without paying or substituting a different attack', async () => {
+        await prepared(); await skills(); await press('learn-skill', 'measured-strike'); await press('equip-skill', 'measured-strike');
+        const { Monster } = await import('../entities/Monster');
+        const { TerrainType } = await import('../engine/Map/Grid');
+        const { default: monsters } = await import('../data/monsters.json');
+        const x = game.player.x + 1, y = game.player.y;
+        game.grid.setTerrain(x, y, TerrainType.FLOOR); const cell = game.grid.getCell(x, y)!;
+        cell.isVisible = true; cell.isDiscovered = true;
+        const enemy = new Monster(x, y, monsters.find(monster => monster.id === 'rat') as never);
+        enemy.hp = enemy.maxHp = 1000; enemy.ticksUntilTurn = 10000; game.monsters.push(enemy); game.extensionRuntime!.attachCreature(enemy);
+        vi.advanceTimersByTime(100); await tick(); await press('use-skill', 'measured-strike');
+        const east = find('data-direction', 'e'); expect(east.props.disabled).toBe(false);
+        enemy.loc.x += 2;
+        const count = game.recordedInputEvents.length, focus = readGrowthCharacterView(game)!.focus.current, turns = game.stats.turns, random = rng.getState();
+        click(east); await tick(); await tick(); expect(cls('growth-error')).toBeTruthy();
+        expect(game.recordedInputEvents).toHaveLength(count); expect(readGrowthCharacterView(game)!.focus.current).toBe(focus);
+        expect(game.stats.turns).toBe(turns); expect(rng.getState()).toEqual(random);
+        enemy.loc.x = x; vi.advanceTimersByTime(100); await tick(); await press('use-skill', 'measured-strike'); click(find('data-direction', 'e')); await tick(); await tick();
+        expect(game.recordedInputEvents).toHaveLength(count + 1); expect(readGrowthCharacterView(game)!.focus.current).toBe(focus - 2);
+        expect(JSON.parse(String(game.recordedInputEvents[count]!.data))).toMatchObject({ action: 'use-skill', payload: { skillId: skillId('measured-strike'), target: { kind: 'creature', id: enemy.id } } });
+        expect(game.stats.turns).toBe(turns + 1);
+    });
+    it('keeps no-slot/unmet/unaffordable learning and all replay mutations disabled', async () => {
+        configured(pack => { pack.config.skills.activeSlots = 0; pack.config.levels.skillPoints = { kind: 'periodic', firstLevel: 1, every: 1, amount: 2 }; });
+        await start(); await skills(); expect(find('data-action', 'learn-skill', actions('brace')).props.disabled).toBe(true);
+        await press('learn-skill', 'measured-strike'); expect(find('data-action', 'equip-skill', actions('measured-strike')).props.disabled).toBe(true);
+        expect(find('data-action', 'learn-skill', actions('survey')).props.disabled).toBe(true);
+        click(cls('growth-back')); await tick(); const recording = game.exportRecording(); expect(game.loadReplay(recording)).toBe(true);
+        while (game.replayCursor < recording.events.length && !game.replayError) game.replayStep(true);
+        vi.advanceTimersByTime(100); await tick(); await skills();
+        expect(all(body).filter(node => ['learn-skill', 'equip-skill', 'unequip-skill', 'use-skill'].includes(node.props['data-action'])).every(node => node.props.disabled)).toBe(true);
+        expect(text(body)).toContain('录像回放');
+    });
+    it('compiles dedicated skill layout rows with fully scoped selectors in normal/immersive/replay/coarse layouts', () => {
+        const style = parse(source('App.vue')).descriptor.styles[0]!;
+        const compiled = compileStyle({ source: style.content, filename: 'App.vue', id: 'data-v-growth-app', scoped: style.scoped });
+        expect(compiled.errors).toEqual([]); const rows: string[] = [];
+        postcss.parse(compiled.code).walkRules(rule => {
+            if (!rule.selector.includes('has-growth-skills')) return;
+            expect(rule.selector).toMatch(/^html\[data-ui-concept=glyph\] \.app-layout\.theme-shell\./);
+            expect(rule.selector).not.toContain('[data-v-');
+            rule.walkDecls('grid-template-areas', declaration => { expect(declaration.value).toContain('skills'); expect(declaration.value).toContain('map'); rows.push(rule.selector); });
+            rule.walkDecls(declaration => expect(declaration.prop).not.toBe('display'));
+        });
+        expect(rows).toHaveLength(7);
+    });
+});

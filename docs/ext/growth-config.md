@@ -1,23 +1,23 @@
-# Growth 数据配置合同（1c，schema 1 / rules 1.2.0）
+# Growth 数据配置合同（1d，schema 1 / rules 1.3.0）
 
-本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。技能动作/效果消费和身份模板仍分别归 1d/1e；下列运行状态区分已经接线和仅有数据合同。
+本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。1d 已接技能动作/效果消费/客观时钟和数据生成说明；身份模板仍归 1e。下列历史运行表由新增的 1d 实际状态补充，不把模板合同当作已执行能力。
 
 ## 1. 实际文件与边界
 
 | 文件 | 责任 |
 |---|---|
-| `src/ext/modules/growth/index.ts` | 生产 growth 工厂校验真实目录并创建 1b 运行器；保留显式合同探针工厂供底座测试 |
+| `src/ext/modules/growth/index.ts` | 生产 growth 工厂校验真实目录并创建 1d 运行器；保留显式合同探针工厂供底座测试 |
 | `src/ext/modules/growth/module.ts`、`state.ts` | XP 事实队列/安全点结算、角色创建、收据/来源摘要与跨组件/世界校验 |
 | `src/ext/modules/growth/experience.ts`、`components.ts` | 精确整数等级/发点/自动 HP、资源提交基础、严格组件校验 |
 | `src/ext/modules/growth/types.ts` | 配置类型、判别联合、有限规则端口/动作词汇 |
-| `src/ext/modules/growth/view.ts` | 1c 纯玩家显示投影、配置条目/前置/槽位和分配/洗点预览；不执行技能或身份效果 |
+| `src/ext/modules/growth/view.ts` | 纯玩家显示投影、配置条目/前置/槽位、分配/洗点/技能预览与严格命令 DTO；不在显示层执行规则 |
 | `src/ext/modules/growth/schema.ts` | `getGrowthSchema()`结构合同及两阶段纯校验、引用/预算/循环/版本检查；schema显式请求时才构造并冻结缓存 |
 | `src/ext/modules/growth/definitions.json` | 默认样例配置和12技能/4职业/4血统/4信仰定义 |
 | `src/ext/modules/growth/definitions.ts` | `parseGrowthDefinitionPack`验证后深拷贝/深冻结；默认加载器和惰性数据指纹 |
 | `src/ext/modules/growth/text.ts` | 样例定义与校验错误的本地化词条 |
 | `src/ext/registry.ts`、`src/ext/types.ts` | 模块数据合同与阶段0精确版本校验衔接 |
 
-不复用阶段0 `src/ext/definitions.ts` 的示例三属性/简单effects冒充正式成长schema。旧 example 包与测试保持原合同；growth包通过数据校验不等于引擎支持其中所有动作。默认扩展集合为 `growth`；`example` 仍可显式选择，保留原合同。`createGrowthContractModule()` 是显式测试探针；生产目录注册 `createGrowthModule()`。当前实际门禁和未接线能力见 [1b 报告](phase1b.report.md)。
+不复用阶段0 `src/ext/definitions.ts` 的示例三属性/简单effects冒充正式成长schema。旧 example 包与测试保持原合同；growth包通过数据校验不等于引擎支持其中所有动作。默认扩展集合为 `growth`；`example` 仍可显式选择，保留原合同。`createGrowthContractModule()` 是显式测试探针；生产目录注册 `createGrowthModule()`。当前实际门禁和未接线能力见 [1d 报告](phase1d.report.md)；下列1a/1b/1c段落保留阶段历史，不覆盖§1.5的当前状态。
 
 
 ### 1.1 已验收 1a 的历史运行状态（1b 新增接线见 §1.3）
@@ -65,6 +65,18 @@
 - 资源预览复用既有纯属性/恢复计算；上下文规则显示使用明示参考输入，不读取未知敌人或冒充当前战斗的最终伤害。攻方/守方端口参考不可顺序相乘当作完整物伤，实际战斗仍用共享预算/乘法槽一次联合求值
 - 普通/沉浸 HUD 与角色页都是显示状态；回放只读，取消/重置不发命令。自动命令/录像帧在角色页打开期间由 UI 暂停推进，不改变模拟时钟或录像状态
 
+
+### 1.5 1d 当前实际状态
+
+- P02：动作起点/结果的 self/target 临时效果、施加时快照、绝对截止时刻、逐物理结算消费、已提交行动中断均执行。P03 的 duration/intensity/cooldown 按标签有限求值可供已装被动引用；1e 身份引用尚未激活
+- P05：内部 actorId 请求对应原攻击/普通相邻位移/等待/手动搜索；当前原生动作适配器执行玩家路径。取消、拒绝、过期目标不支付；合法 miss 支付。已提交后被原生抓持/蛛网/呕吐中断的位移尝试仍按原生尝试支付耗时，但 moved=false，不应用移动结果效果。NPC 主动施放/AI 选择按维护者确认后延，共用被动/临时效果与真实战斗/时间/消费/存读回放已接线，未来接口见 architecture §14
+- P07：learn-skill、equip-skills、use-skill 均走扩展命令边界；前置 AND、全局/单项锁定取较宽松者、学习费用和两种槽数读配置。装配提交整个 active/passive ID 数组，保留顺序，拒绝重复/错类别/未学/超槽位；不是录“第几个槽”
+- 专注容量、恢复量/间隔、原100 tick 到配置客观块的折算余数、满值余数策略、每技能 readyAt 均执行。默认换槽保留专注/CD；equipPreservesFocus=false 明确定义为重置至新容量，再按 resetRemainderWhenFull 处理满值余数；equipPreservesCooldowns=false 清现有 readyAt。改变恢复间隔只在提交点规范化已有恢复信用，读取不能反复兑付
+- 数据生成说明在 describe.ts，按效果类别/端口/幅度来源/数值/上下限/条件/时长/消费/中断及前置生成本地化文本。属性与技能增删、数值修改立即反映；没有按技能/属性 ID 的描述分支。说明不执行效果，不读隐藏敌人、不取 RNG
+- 数据 schema 形状仍为1，moduleVersion/rulesVersion 同升1.3.0；skill effect 触发合同补强：被动只允许 modifier/tagged-modifier，主动只允许 timed。原来结构上允许但没有触发时点的被动 timed/resource 或主动裸 modifier/resource 现拒绝，不再把它们默默加载为不生效内容。身份 resource first-visit 仍是1e合同
+
+实际代码：skills.ts（学习/装配/实例/标签/时钟数学）、module.ts（命令与提交钩子）、state.ts（跨组件一致性）、runtime/types（受限动作与只读事实）、Game/Combat/TimeCoordinator（原生边界）。skills:{readyAt} 保留原基础合同；新增 skill-build 保存 learned/inherited/active/passive/effects。inherited 只表示克隆配置允许复制的已学知识，不重复扣费；不继承临时效果或旧冷却。状态新增 objectiveClock、objectiveRemainder、nextEffectId、nextActionId，均持久保存；UI只额外投影显示冷却所需的 objectiveClock 与当前玩家 skill-build，不暴露时钟内部余数、序号或全体生物账本。
+
 ## 2. 固定技术合同与可调数据
 
 固定A：D02确定致死来源、D04有界环境/持续伤害因果、D16经典隔离和窄纯端口、D17嵌套生成事务、D18安全点可达性回收、D19每命令完整checkpoint、D20最后有效状态施加者、D22首世界动作前create-character命令。这些不能靠改JSON关闭。
@@ -95,8 +107,8 @@
 | `$` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1a0 |
 | `$.schema` | 枚举 `1` | `1` | 1a0 |
 | `$.moduleId` | 枚举 `"growth"` | `"growth"` | 1a0 |
-| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.1.0"` | 1a0 |
-| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.1.0"` | 1a0 |
+| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.3.0"` | 1a0；1d升级 |
+| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.3.0"` | 1a0；1d升级 |
 | `$.config` | object；全部配置子组必填，见以下各节 | 对象 | 1a–1e |
 | `$.definitions` | array；元素为Skill或Identity，完整结构见对应节 | 24项：12技能/4职业/4血统/4信仰 | 1d/1e |
 
@@ -680,7 +692,7 @@
 
 整数端口在round后限制到可行整数区间`[ceil(有效下限), floor(globalClamp.max)]`，避免小数边界经舍入越界。有效下限包含globalClamp.min，以及正基值适用的minimumPositive和minimumBaseRatio；舍入不能削弱这些下限。配置中的全局区间及正值下限必须至少允许一个整数；依赖本次基值的比例下限若与全局上限矛盾，纯求值确定性报错。preserveZero优先保留原0；原免疫、必中/必失、仍掷骰的100%命中及隐身早退均优先保留原语义。
 
-原生端口约束在加载时校验：所有`rules.ports`的globalClamp.min不得为负；hitChance上限不得超过10000bp；focusRecoveryInterval下限至少1；stealthRange上限至少2，以容纳原正常潜行下限。特殊/隐身下限1仍保留。taggedProperties.intensity允许负值，不受非负原生端口约束。
+原生端口约束在加载时校验：所有`rules.ports`的globalClamp.min不得为负；hitChance上限不得超过10000bp；focusRecoveryInterval下限至少1；stealthRange上限至少2，以容纳原正常潜行下限。特殊/隐身下限1仍保留。taggedProperties.duration/cooldown的globalClamp.min同样不得为负；taggedProperties.intensity允许负值，不受此非负约束。
 
 focusCapacity在同一纯求值器内取`config.focus[min,cap]`与端口globalClamp的交集；策略读值与实际资源容量使用同一结果。加载时拒绝没有可行整数的交集及与该交集矛盾的minimumPositive，不能只在状态提交端另行封顶。
 
@@ -696,7 +708,7 @@ focusCapacity在同一纯求值器内取`config.focus[min,cap]`与端口globalCl
 
 只允许attack、move、wait、search。攻击仅相邻普通近战；移动仅合法相邻格且被占格拒绝；等待/搜索以self为目标、搜索限manual。耗时引用native-attack/native-move/native-wait/native-search，不能由JSON绕过原时间、危险确认、终局/麻痹/模态等资格守卫。运行器归1d；玩家命令不能提交任意actorId或嵌套公开executeCommand来伪造一次动作。
 
-### 5.4 纯端口与提交事实DTO（1b 已实现纯规则；动作结果/消费仍属1d）
+### 5.4 纯端口与提交事实DTO（1b纯规则与1d动作/消费）
 
 `types.ts`同时提供以下只读输入/输出合同；不是额外JSON配置字段，不含活Game/Creature、回调、UI或RNG权限。
 
@@ -709,8 +721,9 @@ focusCapacity在同一纯求值器内取`config.focus[min,cap]`与端口globalCl
 | `GrowthStealthInput` / `GrowthSearchInput` | 前者加nativeMinimum/invisible，后者加mode(manual/automatic) | 1b保留原隐身/最低距离/搜索语义 |
 | `GrowthCooldownInput` | 基础字段+skillId/baseCooldown | 1b求值，1d状态提交 |
 | `GrowthRulePolicies` | 10个方法名与config.rules.ports相同；每次返回有限同步number | 1b；不得消费效果或写状态 |
-| `GrowthActionResult` | actionId、resolutionId、actorId、nullable targetId、kind、committed、hit、hpLost、positiveDirectPhysicalBeforeShield、probabilityRollCommitted | 1d原结算事实；区分架势和牵制条件 |
-| `GrowthEffectConsumptionFact` | effectId、actorId、actionId、resolutionId、event(positive-direct-physical/physical-probability-roll)、consumedCount | 1d逐单独命中后提交，不能等整命令结尾 |
+| `GrowthActionResult` | 1a0设计DTO：actionId、resolutionId、actorId、nullable targetId、kind、committed、hit、hpLost、positiveDirectPhysicalBeforeShield、probabilityRollCommitted | 类型草图保留；1d实际引擎事实见下一行 |
+| `ControlledActionResult` / `PhysicalResolutionFact`（ext/types.ts） | action/actorId/严格target、moved、resolutions/hit/hpLost；逐击resolutionId、attacker/defender、attackKind、result、probabilityRolled、positivePhysicalDamage、hpLost | 真实受控动作/逐击提交；moved只在原生位移完成时记录，不以最终坐标猜测；保证架势与牵制使用不同判定点 |
+| `GrowthEffectConsumptionFact` | 1a0设计DTO：effectId、actorId、actionId、resolutionId、event(positive-direct-physical/physical-probability-roll)、consumedCount | 历史类型草图；1d实际由module.ts直接处理PhysicalResolutionFact逐击消费，不另发此DTO，不能等整命令结尾 |
 
 学习限制采用`none < soft < hard`；有效模式是全局`config.skills.lockMode`与每技能`lock.mode`两者较宽松者（min），soft仅建议。只有两者均hard时才按非空身份白名单限制；显式赠技豁免单独校验。默认样例技能mode=none，因此全局soft不会把其变成身份硬锁。前置数组始终按`all`求AND，不随soft推荐模式跳过。
 

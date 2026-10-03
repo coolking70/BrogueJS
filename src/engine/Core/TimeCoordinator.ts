@@ -57,6 +57,8 @@ export interface ClockPort {
 
 export interface EffectsPort {
     objectiveTimeBlock(): void;
+    /** Extension-only completed block fact; native environment/status order stays unchanged. */
+    beginObjectiveTime?(): () => number;
     playerFalls(): void;
     isAutoTraveling(): boolean;
     sweepDeepWaterItem(creature: Game['player'] | Monster, ticks: number): void;
@@ -118,58 +120,69 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 if (m.hp > 0) m.ticksUntilTurn -= soonestTurn;
             }
 
-            // CE Time.c:2653-2655：客观时间门推进，归零则 +100 并执行客观块。
-            ports.clock.ticksTillUpdateEnvironment -= soonestTurn;
-            if (ports.clock.ticksTillUpdateEnvironment <= 0) {
-                ports.clock.ticksTillUpdateEnvironment += 100;
-                ports.effects.objectiveTimeBlock();
-                // C-5：CE Time.c:2866-2871——客观块内（环境瞬时结算）置位的
-                // 玩家坠落旗标在本圈循环立即结算（CE 的 do-while 每圈在
-                // applyInstantTileEffectsToCreature(&player) 之后检查）。
-                if (ports.clock.playerFalling) {
-                    ports.effects.playerFalls();
-                    return;
-                }
-                // CE Time.c:2713-2715：岩浆/毒气等致死后立即退出推进
-                if (ports.clock.isGameOver || ports.world.player.hp <= 0) return;
-                // CE Time.c:2704-2707：仅当玩家本次动作慢于一个标准回合
-                //（>100 tick；此刻玩家 tick 尚未递减，口径与 CE 一致）才暂停。
-                // 自动寻路/探索对应 rogue.playbackFastForward——锁存但不暂停。
-                if (ports.world.player.ticksUntilTurn > 100 && !fastForward) {
-                    fastForward = true;
-                    if (!ports.effects.isAutoTraveling()) {
-                        yield ports.clock.animationPauseMs; // pauseAnimation(25, PAUSE_BEHAVIOR_DEFAULT)
+            let completeObjective: (() => number) | undefined;
+            let suspended = false;
+            try {
+                // CE Time.c:2653-2655：客观时间门推进，归零则 +100 并执行客观块。
+                ports.clock.ticksTillUpdateEnvironment -= soonestTurn;
+                if (ports.clock.ticksTillUpdateEnvironment <= 0) {
+                    ports.clock.ticksTillUpdateEnvironment += 100;
+                    completeObjective = ports.effects.beginObjectiveTime?.();
+                    ports.effects.objectiveTimeBlock();
+                    // C-5：CE Time.c:2866-2871——客观块内（环境瞬时结算）置位的
+                    // 玩家坠落旗标在本圈循环立即结算（CE 的 do-while 每圈在
+                    // applyInstantTileEffectsToCreature(&player) 之后检查）。
+                    if (ports.clock.playerFalling) {
+                        ports.effects.playerFalls();
+                        return;
+                    }
+                    // CE Time.c:2713-2715：岩浆/毒气等致死后立即退出推进
+                    if (ports.clock.isGameOver || ports.world.player.hp <= 0) return;
+                    // CE Time.c:2704-2707：仅当玩家本次动作慢于一个标准回合
+                    //（>100 tick；此刻玩家 tick 尚未递减，口径与 CE 一致）才暂停。
+                    // 自动寻路/探索对应 rogue.playbackFastForward——锁存但不暂停。
+                    if (ports.world.player.ticksUntilTurn > 100 && !fastForward) {
+                        fastForward = true;
+                        if (!ports.effects.isAutoTraveling()) {
+                            suspended = true;
+                            yield ports.clock.animationPauseMs; // pauseAnimation(25, PAUSE_BEHAVIOR_DEFAULT)
+                            suspended = false;
+                        }
                     }
                 }
-            }
 
-            // CE Time.c:2720-2745：归零怪物行动。行动耗时按类型落账：
-            // 攻击/施法出口在 Monster.takeTurn 内已置 attackSpeed（含
-            // MONST_CAST_SPELLS_SLOWLY ×2）；移动/跳过（麻痹/俘虏/入迷等
-            // takeTurn 早退）留 <= 0，由这里统一置 movementSpeed（CE
-            // Time.c:2731 的不行动口径）。注意此处不 refreshSpeeds——公有
-            // moveSpeed/attackSpeed 是"当前值"，直接写即生效（legacy 回置
-            // 依赖此语义），重算反而会覆盖外部写入。
-            // E1-修订：怪物行动不 yield——常规动作一次性跑完后统一渲染
-            // （CE 连"豺狼 50 tick 走两步"也不单独成帧）。
-            for (const m of [...ports.world.monsters]) {
-                if (ports.clock.isGameOver) break; // CE Time.c:2721 的 gameHasEnded 守卫
-                if (m.hp > 0 && m.ticksUntilTurn <= 0) {
-                    // CE Time.c:2725-2733 withholds the action BEFORE
-                    // monstersTurn/absorption, even though that inner function
-                    // updates absorption before its own status checks.
-                    if (m.isCaged && m.carriedItem) ports.effects.monsterDropItem(m);
-                    if (!m.hasStatus('entranced') && !m.hasStatus('paralyzed') && !m.isCaged
-                        && !m.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')) ports.effects.monsterTakeTurn(m, stealthRange);
-                    if (m.ticksUntilTurn <= 0) {
-                        m.ticksUntilTurn = m.movementSpeed;
+                // CE Time.c:2720-2745：归零怪物行动。行动耗时按类型落账：
+                // 攻击/施法出口在 Monster.takeTurn 内已置 attackSpeed（含
+                // MONST_CAST_SPELLS_SLOWLY ×2）；移动/跳过（麻痹/俘虏/入迷等
+                // takeTurn 早退）留 <= 0，由这里统一置 movementSpeed（CE
+                // Time.c:2731 的不行动口径）。注意此处不 refreshSpeeds——公有
+                // moveSpeed/attackSpeed 是"当前值"，直接写即生效（legacy 回置
+                // 依赖此语义），重算反而会覆盖外部写入。
+                // E1-修订：怪物行动不 yield——常规动作一次性跑完后统一渲染
+                // （CE 连"豺狼 50 tick 走两步"也不单独成帧）。
+                for (const m of [...ports.world.monsters]) {
+                    if (ports.clock.isGameOver) break; // CE Time.c:2721 的 gameHasEnded 守卫
+                    if (m.hp > 0 && m.ticksUntilTurn <= 0) {
+                        // CE Time.c:2725-2733 withholds the action BEFORE
+                        // monstersTurn/absorption, even though that inner function
+                        // updates absorption before its own status checks.
+                        if (m.isCaged && m.carriedItem) ports.effects.monsterDropItem(m);
+                        if (!m.hasStatus('entranced') && !m.hasStatus('paralyzed') && !m.isCaged
+                            && !m.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')) ports.effects.monsterTakeTurn(m, stealthRange);
+                        if (m.ticksUntilTurn <= 0) {
+                            m.ticksUntilTurn = m.movementSpeed;
+                        }
+                        if (m.hp > 0) ports.effects.sweepDeepWaterItem(m, m.ticksUntilTurn);
                     }
-                    if (m.hp > 0) ports.effects.sweepDeepWaterItem(m, m.ticksUntilTurn);
                 }
-            }
 
-            ports.world.player.ticksUntilTurn -= soonestTurn;
-            if (ports.clock.isGameOver) return; // CE Time.c:2756-2758
+                ports.world.player.ticksUntilTurn -= soonestTurn;
+                if (ports.clock.isGameOver) return; // CE Time.c:2756-2758
+            } finally {
+                // Same-tick monster resolutions still see effects valid through this block.
+                // A yielded block is incomplete: retiring that iterator must not publish it.
+                if (!suspended && completeObjective) stealthRange = completeObjective();
+            }
         }
     }
 

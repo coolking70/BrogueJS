@@ -235,3 +235,35 @@ FINAL all_gates=0 2026-10-02T21:13:42Z
 ```
 
 8 skip/5 todo均为历史原项；CE活动对照全部执行，无FATAL/OOM/worker异常。原始日志与完整散列仅保留执行环境tmp-phase1c-raw/。仅限ext/foundation交付；1c后停止，1d/1e未授权。
+
+
+## 阶段1d：受控动作、技能与数据说明最终验收
+
+2026-10-03 01:27:13–03:01:13 UTC；实现、两项限定旧UI前提反事实、真实ITEM_RUNIC补充对等保险及Mac最终浏览器证据见[1d报告](../phase1d.report.md)。Node24.19.0/npm11.9.0、`TZ=UTC`、`NODE_OPTIONS=--max-old-space-size=3072`；full两worker，drift一worker。旧完整脚本仍含生成普查，新main门禁拆分不在本次冻结输入中；没有改变原超时或跳过失败。此前00:02轮次会话中断、无完整退出码或drift结果，不计入通过。
+
+```text
+END vue-tsc EXIT_CODE=0 DURATION_SECONDS=16 2026-10-03T01:27:29Z
+✓ built in 5.67s
+END build EXIT_CODE=0 DURATION_SECONDS=22 2026-10-03T01:27:51Z
+CE reference already verified: legacy 49be8dd3fc1b9a0fb477df4c9153c0e1cf796fe9
+END ce-fetch EXIT_CODE=0 DURATION_SECONDS=0 2026-10-03T01:27:51Z
+
+> BROGUE_REQUIRE_CE=1 vitest run --exclude '**/generation_baseline.test.ts' --maxWorkers=2 --reporter=verbose --bail=1
+ Test Files  307 passed (307)
+      Tests  5550 passed | 8 skipped | 5 todo (5563)
+   Start at  01:27:52
+   Duration  5548.96s (transform 9.30s, setup 0ms, import 197.01s, tests 10861.06s, environment 111ms)
+END test-full EXIT_CODE=0 DURATION_SECONDS=5550 2026-10-03T03:00:21Z
+
+> vitest run src/test/generation_baseline.test.ts --maxWorkers=1
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  03:00:21
+   Duration  51.99s (transform 1.31s, setup 0ms, import 1.89s, tests 49.94s, environment 0ms)
+END test-drift EXIT_CODE=0 DURATION_SECONDS=52 2026-10-03T03:01:13Z
+FINAL all_gates=0 2026-10-03T03:01:13Z
+```
+
+638个生产/测试/脚本/资源/构建输入前后SHA256一致：`f5c0c383384cf798c075cae576b3160c503caf310ee4a0cdccc476d6dd183f96`。最终生产哈希`ddbc12288df0e4546fc67eec5c64ff726a565760ead96ae90f97a1c9e5c2c315`与Mac第三版完全相同。活动CE对照已执行；8 skip/5 todo均为原有历史项，无新增。D27–40独立基线在full、D1–26基线在drift通过，原黄金trace/基线/U03未改。完整日志无FATAL/OOM/断言失败/未处理错误/worker异常；保留既有大产物块与npm代理配置警告。原始日志、全量散列及中断轮次只留`tmp-phase1d-raw/`。
+
+仅限ext/foundation交付；远端目标SHA由发布步骤单独核对。本步后停止，1e与NPC主动AI未实施。

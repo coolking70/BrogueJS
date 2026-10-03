@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 刻符状态区：只读轮询（useGameHud），沉浸模式只收起信息，不发游戏命令。
-import { computed } from 'vue';
+import { computed, ref, onUnmounted } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import { useGameHud, nutritionStatus } from '../../ui/useGameHud';
 import type { GrowthCharacterViewModel } from '../../ext/modules/growth/view';
@@ -14,6 +14,26 @@ const panelHint = computed(() => props.panelOpen
   : t('theme.panel_hint', { defaultValue: 'Expand nearby entities and inspection information' }));
 const { stats, hp, maxHp, depth, turns, nutrition, statuses } = useGameHud(0);
 const searching = computed(() => statuses.value.some(status => status.id === 'searching'));
+// Reserve the first progress badge's intrinsic width, never a guessed character count.
+// The rest of the status row can still scroll. These DOM reads never touch simulation.
+const searchBadgeWidth = ref(0);
+let searchBadge: HTMLElement | null = null;
+const measureSearchBadgeWidth = () => {
+    if (!searchBadge || typeof searchBadge.getBoundingClientRect !== 'function' || searchBadge.isConnected === false) return;
+    const width = Math.ceil(Math.max(searchBadge.getBoundingClientRect().width, searchBadge.scrollWidth || 0));
+    if (Number.isFinite(width) && width > 0) searchBadgeWidth.value = width;
+};
+const searchObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measureSearchBadgeWidth);
+function bindSearchBadge(element: unknown) {
+    // A non-DOM renderer or a retiring ref has no measurable live element.
+    // Keep the CSS fallback instead of observing or measuring that value.
+    const candidate = element as HTMLElement | null;
+    const next = candidate && typeof candidate.getBoundingClientRect === 'function' && candidate.isConnected !== false ? candidate : null;
+    if (next !== searchBadge) { searchObserver?.disconnect(); searchBadge = next; if (next) searchObserver?.observe(next); }
+    if (next) measureSearchBadgeWidth(); else searchBadgeWidth.value = 0;
+}
+onUnmounted(() => searchObserver?.disconnect());
+
 const fraction = computed(() => Math.max(0, Math.min(1, hp.value / Math.max(1, maxHp.value))));
 const low = computed(() => fraction.value < 0.3);
 const food = computed(() => nutritionStatus(nutrition.value));
@@ -48,8 +68,8 @@ void props;
       <div class="th-stat"><dt>{{ $t('theme.gold') }}</dt><dd class="th-num">{{ stats.gold }}</dd></div>
       <div class="th-stat th-stealth"><dt>{{ $t('theme.stealth') }}</dt><dd class="th-num">{{ stats.stealthRange }}</dd></div>
     </dl>
-    <div v-if="statuses.length" class="th-statuses">
-      <span v-for="status in statuses" :key="status.id" class="th-status" :class="{ 'th-search-progress': status.id === 'searching' }" :style="{ color: status.color }">
+    <div v-if="statuses.length" class="th-statuses" :style="searching ? { minInlineSize: searchBadgeWidth ? `${searchBadgeWidth}px` : '6em' } : undefined">
+      <span v-for="status in statuses" :key="status.id" :ref="status.id === 'searching' ? bindSearchBadge : undefined" class="th-status" :class="{ 'th-search-progress': status.id === 'searching' }" :style="{ color: status.color }">
         {{ status.label }} {{ status.value }}
         <span class="th-status-fill" :style="{ width: `${status.fraction * 100}%` }"></span>
       </span>
@@ -58,7 +78,7 @@ void props;
       <div class="th-growth-heading"><strong v-if="!immersive">{{ $t('ext.growth.ui.level_short', { level: growth.level }) }}</strong><button class="th-growth-entry th-btn" :disabled="growthBlocked" :aria-label="$t('ext.growth.ui.character')" :title="$t('ext.growth.ui.character')" @click="emit('character')">{{ immersive ? $t('ext.growth.ui.level_short', { level: growth.level }) : $t('ext.growth.ui.character') }}<span v-if="growth.hasUnspentPoints" class="th-growth-dot" :title="$t('ext.growth.ui.unspent')">●</span></button></div>
       <template v-if="!immersive"><progress v-if="!growth.atLevelCap" :value="growth.experienceInLevel" :max="growth.experienceToNext ?? 1" :aria-label="$t('ext.growth.ui.experience_label')" /><span class="th-growth-xp">{{ growth.atLevelCap ? $t('ext.growth.ui.level_cap') : $t('ext.growth.ui.experience', { current: growth.experienceInLevel, next: growth.experienceToNext }) }}</span><span class="th-growth-points">{{ $t('ext.growth.ui.points', { attributes: growth.attributePoints, skills: growth.skillPoints }) }}</span></template>
     </div>
-    <button v-if="showPanelButton" class="th-panel th-btn" :aria-expanded="panelOpen" :title="panelHint" @click="emit('panel')">{{ panelOpen ? $t('theme.panel_close') : $t('theme.panel') }}</button>
+    <button v-if="showPanelButton" class="th-panel th-btn" :aria-expanded="panelOpen" :title="panelHint" @click="emit('panel')">{{ immersive && growth ? (panelOpen ? $t('ext.growth.ui.nearby_close_short') : $t('ext.growth.ui.nearby_short')) : (panelOpen ? $t('theme.panel_close') : $t('theme.panel')) }}</button>
   </header>
 </template>
 

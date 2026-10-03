@@ -76,7 +76,7 @@ function goBack() {
 const mode = ref<GameMode>("normal");
 const ruleSet = ref<RuleSet>('classic');
 const seedInput = ref("");
-const replaySeekInput = ref("");
+const replaySeekInput = ref<string | number>("");
 const replayFileInput = ref<HTMLInputElement | null>(null);
 const menuCard = ref<HTMLElement | null>(null);
 let removeMenuKeyboard: (() => void) | undefined;
@@ -126,7 +126,7 @@ const onReplayFileChange = (event: Event) => {
 };
 
 const seekReplay = () => {
-  const n = Number.parseInt(replaySeekInput.value.trim(), 10);
+  const n = Number.parseInt(String(replaySeekInput.value).trim(), 10);
   if (!Number.isFinite(n)) return;
   emit("replay-seek", n);
 };

@@ -7,6 +7,13 @@ import { allocateGrowthAttributes, growthDerived, growthFocusCapacity, growthFoc
 import { addGrowthIntegers, automaticMaxHpBonus, experienceThreshold, reconcileGrowthMaximum, reconcileGrowthResources } from './experience';
 import { evaluateGrowthPort, meetsGrowthPrerequisites, type GrowthEvaluationFacts, type GrowthEvaluationInput } from './evaluator';
 import { canonical } from '../../json';
+import { TerrainType } from '../../../engine/Map/Grid';
+import { TERRAIN_FLAGS, T_OBSTRUCTS_PASSABILITY, TM_PROMOTES_WITH_KEY } from '../../../engine/Map/TerrainCatalog';
+import { terrainMechFlags } from '../../../engine/Map/DungeonFeature';
+import { playerTravelDiagonalBlocked } from '../../../engine/Movement/PlayerTravel';
+import { canDisplayMonster, canSeeMonster } from '../../../engine/UI/MonsterVisibility';
+import { describeGrowthAttribute, describeGrowthSkill } from './describe';
+import { canLearnGrowthSkill, growthSkillCooldown, growthSkillScopes, advanceGrowthFocus, initialGrowthSkillBuild, type GrowthSkillBuild } from './skills';
 
 export interface GrowthAllocationDraft {
     /** Opaque, session-local identity. A load, replay seek or new game invalidates the old draft. */
@@ -22,14 +29,16 @@ export interface GrowthResourcePreview {
 export interface GrowthAttributeView {
     readonly id: string; readonly nameKey: string; readonly descriptionKey: string;
     readonly value: number; readonly allocated: number; readonly increment: number; readonly preview: number;
-    readonly pointCost: number; readonly cap: number; readonly enabled: boolean;
+    readonly pointCost: number; readonly cap: number; readonly enabled: boolean; readonly description: readonly string[];
     readonly canIncrease: boolean; readonly canDecrease: boolean;
 }
 export type GrowthPrerequisiteView = DeepReadonly<GrowthPrerequisite> & { readonly nameKey: string; readonly met: boolean; readonly min?: number };
 export type GrowthSkillView = Omit<DeepReadonly<GrowthSkill>, 'prerequisites'> & {
     readonly prerequisites: readonly GrowthPrerequisiteView[];
-    readonly prerequisitesMet: boolean; readonly affordable: boolean; readonly available: false; readonly futurePhase: '1d';
-    readonly learned: false; readonly equipped: false; readonly effectiveLockMode: 'none' | 'soft' | 'hard';
+    readonly prerequisitesMet: boolean; readonly affordable: boolean; readonly available: boolean;
+    readonly learned: boolean; readonly equipped: boolean;
+    readonly canLearn: boolean; readonly canEquip: boolean; readonly canUnequip: boolean; readonly canUse: boolean;
+    readonly cooldownRemaining: number; readonly description: readonly string[]; readonly effectiveLockMode: 'none' | 'soft' | 'hard';
     readonly adjustedCooldown: GrowthValuePreview;
 };
 export interface GrowthIdentityGroupView {
@@ -57,7 +66,8 @@ export interface GrowthCharacterViewModel {
     readonly preview: GrowthResourcePreview & { readonly ports: readonly GrowthPortPreview[] };
     readonly recovery: { readonly hp: 'none' | 'increase' | 'full'; readonly focus: 'none' | 'increase' | 'full'; readonly clearCooldowns: boolean };
     readonly skills: readonly GrowthSkillView[];
-    readonly slots: readonly { readonly mode: 'active' | 'passive'; readonly count: number; readonly available: false; readonly futurePhase: '1d' }[];
+    readonly equipment: { readonly time: 'native-wait' | 'none'; readonly preservesCooldowns: boolean; readonly preservesFocus: boolean };
+    readonly slots: readonly { readonly mode: 'active' | 'passive'; readonly count: number; readonly used: number; readonly available: boolean; }[];
     readonly identities: readonly GrowthIdentityGroupView[];
     readonly respec: { readonly enabled: boolean; readonly available: boolean;
         readonly cost: DeepReadonly<GrowthDefinitionPack['config']['respec']['cost']>;
@@ -68,7 +78,7 @@ export interface GrowthCharacterViewModel {
 interface CharacterInput {
     pack: GrowthPack; session: object; revision: number; created: boolean; playerId: number;
     canManage: boolean; replay: boolean; progression: GrowthProgression; attributes: GrowthAttributes;
-    derived: GrowthDerived; focus: GrowthFocus; skills: GrowthSkills;
+    derived: GrowthDerived; focus: GrowthFocus; skills: GrowthSkills; skillBuild: GrowthSkillBuild; clock: number;
     hp: number; maxHp: number; strength: number; effectiveStrength: number; gold: number;
 }
 function freeze<T>(value: T): T {
@@ -84,6 +94,7 @@ const errorKey = (reason: string): string => `ext.growth.view.error.${reason}`;
 function plan(input: CharacterInput, action: 'allocate' | 'respec', increments: unknown) {
     const { pack, progression, attributes: prior, derived: oldDerived, focus, skills } = input, config = pack.config;
     const oldActor = growthRuleActor(input.playerId, progression, prior);
+    const scopes = growthSkillScopes(pack, input.skillBuild, input.clock);
     let attributes: GrowthAttributes, cost = 0, refund = 0, nextPoints = progression.attributePoints;
     if (action === 'allocate') {
         const proposal = allocateGrowthAttributes(pack, prior, progression.attributePoints, increments);
@@ -102,17 +113,17 @@ function plan(input: CharacterInput, action: 'allocate' | 'respec', increments: 
             addGrowthIntegers(attributes.attributePointsSpent, fee.amount);
         } else if (fee.resource === 'skill-points') addGrowthIntegers(attributes.skillPointsSpent, fee.amount);
     }
-    const nextActor = growthRuleActor(input.playerId, progression, attributes), derived = growthDerived(pack, nextActor);
+    const nextActor = growthRuleActor(input.playerId, progression, attributes), derived = growthDerived(pack, nextActor, scopes);
     const maxHp = reconcileGrowthMaximum(input.maxHp, oldDerived.appliedMaxHp, derived.appliedMaxHp);
     const strength = reconcileGrowthMaximum(input.strength, oldDerived.appliedStrength, derived.appliedStrength);
-    const capacity = growthFocusCapacity(pack, nextActor);
+    const capacity = growthFocusCapacity(pack, nextActor, scopes);
     const resources = action === 'allocate' ? reconcileGrowthResources(config.levels, config.focus, 'allocation', {
-        hp: input.hp, maxHp: input.maxHp, nextMaxHp: maxHp, focus, focusCapacity: growthFocusCapacity(pack, oldActor),
+        hp: input.hp, maxHp: input.maxHp, nextMaxHp: maxHp, focus, focusCapacity: growthFocusCapacity(pack, oldActor, scopes),
         nextFocusCapacity: capacity, skills,
     }) : { hp: Math.min(input.hp, maxHp), focus: { ...focus, current: Math.min(focus.current, capacity) } };
     if (action === 'respec' && config.respec.cost.resource === 'focus')
         resources.focus.current = Math.min(focus.current - config.respec.cost.amount, capacity);
-    if (resources.focus.remainder >= growthFocusInterval(pack, nextActor)) throw new RangeError('Invalid recovery remainder');
+    resources.focus = advanceGrowthFocus(pack, resources.focus, capacity, growthFocusInterval(pack, nextActor, scopes), 0);
     addGrowthIntegers(input.revision, 1);
     return { attributes, nextActor, cost, refund, remainingPoints: nextPoints, maxHp, strength, hp: resources.hp, focus: resources.focus.current, capacity };
 }
@@ -143,7 +154,7 @@ function examples(conditions: readonly DeepReadonly<GrowthCondition>[]): GrowthE
     }
     return result;
 }
-function previewPorts(pack: GrowthPack, actor: GrowthRuleActor, nextActor: GrowthRuleActor): GrowthPortPreview[] {
+function previewPorts(pack: GrowthPack, actor: GrowthRuleActor, nextActor: GrowthRuleActor, skillBuild: GrowthSkillBuild, clock: number): GrowthPortPreview[] {
     const rows: GrowthPortPreview[] = [], seen = new Set<string>();
     const neutral: GrowthRuleActor = { id: 0, level: 1, attributes: Object.fromEntries(pack.config.attributes.map(attribute => [attribute.id, 0])) };
     for (const modifier of pack.config.attributes.flatMap(attribute => attribute.effects)) for (const facts of examples(modifier.conditions)) {
@@ -158,7 +169,7 @@ function previewPorts(pack: GrowthPack, actor: GrowthRuleActor, nextActor: Growt
             const input: GrowthEvaluationInput = { ...growthScalarInput(subject === 'actor' ? owner : neutral, baseValue),
                 target: subject === 'target' ? owner : null, baseCooldown: baseValue,
                 ...(port === 'hitChance' ? { rollMode: facts.probabilityRoll === false ? 'roll-guaranteed' : 'roll-probability' } : {}) };
-            return evaluateGrowthPort(pack, port, input, [], facts);
+            return evaluateGrowthPort(pack, port, input, growthSkillScopes(pack, skillBuild, clock, subject), facts);
         };
         rows.push({ port, nameKey: `ext.growth.view.port.${port}`, baseValue, contextKey: key, facts, reference, conditions: modifier.conditions,
             subject, ...delta(value(actor), value(nextActor)) });
@@ -180,6 +191,7 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
         replay: !!game.replayRecording, progression: components.progression as unknown as GrowthProgression,
         attributes: components.attributes as unknown as GrowthAttributes, derived: components.derived as unknown as GrowthDerived,
         focus: components.focus as unknown as GrowthFocus, skills: components.skills as unknown as GrowthSkills,
+        skillBuild: (components['skill-build'] as unknown as GrowthSkillBuild | undefined) ?? initialGrowthSkillBuild(), clock: (source.state.objectiveClock as number | undefined) ?? 0,
         hp: game.player.hp, maxHp: game.player.maxHp, strength: game.player.strength, effectiveStrength: game.player.effectiveStrength, gold: game.stats.gold };
     const { progression, attributes } = input, config = pack.config;
     const disabledReason = input.replay ? 'replay' : !input.created ? 'creation-required' : !input.canManage || input.hp <= 0 ? 'unavailable' : null;
@@ -194,7 +206,11 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
     else problem = errorKey('empty');
     if (readOnly && !stale) problem = errorKey(disabledReason === 'creation-required' ? 'creation_required' : disabledReason!);
     const actor = growthRuleActor(input.playerId, progression, attributes), nextActor = proposal?.nextActor ?? actor;
-    const facts = { level: progression.level, attributes: nextActor.attributes, skills: [] as string[], professionId: null, lineageId: null, faithId: null };
+    const skillBuild = input.skillBuild;
+    const { learned, active, passive } = skillBuild;
+    const clock = (source.state.objectiveClock as number | undefined) ?? 0;
+    const facts = { level: progression.level, attributes: nextActor.attributes, skills: learned, professionId: null, lineageId: null, faithId: null };
+
     const attributeRows: GrowthAttributeView[] = config.attributes.map(definition => {
         const training = definition.id === config.strengthTraining.attributeId;
         const enabled = !training || config.strengthTraining.enabled;
@@ -206,21 +222,28 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
         }
         return { id: definition.id, nameKey: definition.nameKey, descriptionKey: definition.descriptionKey,
             value: attributes.values[definition.id]!, allocated: attributes.allocated[definition.id]!, increment,
-            preview: nextActor.attributes[definition.id]!, pointCost: definition.pointCost, cap, enabled,
+            preview: nextActor.attributes[definition.id]!, pointCost: definition.pointCost, cap, enabled, description: describeGrowthAttribute(pack, definition),
             canIncrease, canDecrease: !readOnly && !stale && Number.isSafeInteger(increment) && increment > 0 };
     });
     const skills: GrowthSkillView[] = pack.definitions.filter((definition): definition is DeepReadonly<GrowthSkill> => definition.kind === 'skill').map(definition => {
         const modes = ['none', 'soft', 'hard'] as const;
         const effectiveLockMode = modes[Math.min(modes.indexOf(config.skills.lockMode), modes.indexOf(definition.lock.mode))]!;
-        const cooldown = (owner: GrowthRuleActor) => evaluateGrowthPort(pack, 'cooldownDuration', { ...growthScalarInput(owner, definition.cooldown), baseCooldown: definition.cooldown });
+        const cooldown = (owner: GrowthRuleActor) => growthSkillCooldown(pack, definition, owner, skillBuild, clock);
+        const isLearned = learned.includes(definition.id), equipped = (definition.mode === 'active' ? active : passive).includes(definition.id);
+        const cooldownRemaining = Math.max(0, (input.skills.readyAt[definition.id] ?? 0) - clock);
+        const canLearn = !readOnly && !stale && !changed && !isLearned && progression.skillPoints >= definition.cost && canLearnGrowthSkill(pack, definition, actor, skillBuild);
+        const canEquip = !readOnly && !stale && !changed && isLearned && !equipped
+            && (definition.mode === 'active' ? active.length < config.skills.activeSlots : passive.length < config.skills.passiveSlots);
+        const canUse = !readOnly && !stale && !changed && definition.mode === 'active' && equipped && cooldownRemaining === 0 && input.focus.current >= definition.focusCost;
         return { ...definition, prerequisites: definition.prerequisites.map(requirement => ({ ...requirement,
             nameKey: prerequisiteName(requirement, pack), met: meetsGrowthPrerequisites([requirement], facts) })),
             prerequisitesMet: meetsGrowthPrerequisites(definition.prerequisites, facts), affordable: progression.skillPoints >= definition.cost,
-            available: false, futurePhase: '1d', learned: false, equipped: false, effectiveLockMode,
+            available: canUse, learned: isLearned, equipped, effectiveLockMode, canLearn, canEquip, canUse,
+            canUnequip: !readOnly && !stale && !changed && equipped, cooldownRemaining, description: describeGrowthSkill(pack, definition, cooldown(nextActor)),
             adjustedCooldown: delta(cooldown(actor), cooldown(nextActor)) };
     });
     const slots = Object.entries(config.skills).filter(([key]) => key.endsWith('Slots')).map(([key, count]) => ({
-        mode: key.slice(0, -5) as 'active' | 'passive', count: count as number, available: false as const, futurePhase: '1d' as const,
+        mode: key.slice(0, -5) as 'active' | 'passive', count: count as number, used: key === 'activeSlots' ? active.length : passive.length, available: !readOnly,
     }));
     const identities: GrowthIdentityGroupView[] = Object.entries(config.identities.enabled).map(([key, enabled]) => {
         const kind = key.slice(0, -1) as GrowthIdentity['kind'];
@@ -233,7 +256,7 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
     const refund = respecGrowthAttributes(pack, attributes).refund;
     const atLevelCap = progression.level === config.levels.cap;
     const threshold = experienceThreshold(config.levels, progression.level);
-    const capacity = growthFocusCapacity(pack, actor);
+    const capacity = growthFocusCapacity(pack, actor, growthSkillScopes(pack, skillBuild, clock));
     const resources = (planned: ReturnType<typeof plan> | null): GrowthResourcePreview => ({
         hp: delta(input.hp, planned?.hp ?? input.hp), maxHp: delta(input.maxHp, planned?.maxHp ?? input.maxHp),
         strength: delta(input.effectiveStrength, input.effectiveStrength + (planned ? planned.strength - input.strength : 0)),
@@ -246,9 +269,10 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
         attributePoints: progression.attributePoints, skillPoints: progression.skillPoints,
         hasUnspentPoints: progression.attributePoints > 0 || progression.skillPoints > 0,
         focus: { current: input.focus.current, capacity }, attributes: attributeRows,
+        equipment: { time: config.skills.equipTime, preservesCooldowns: config.skills.equipPreservesCooldowns, preservesFocus: config.skills.equipPreservesFocus },
         draft: { valid: !!proposal && !readOnly && !stale, stale, changed, cost: proposal?.cost ?? 0,
             remainingPoints: proposal?.remainingPoints ?? progression.attributePoints, errorKey: problem },
-        preview: { ...resources(proposal), ports: previewPorts(pack, actor, nextActor) },
+        preview: { ...resources(proposal), ports: previewPorts(pack, actor, nextActor, skillBuild, clock) },
         recovery: { hp: config.levels.recovery.allocationHp, focus: config.levels.recovery.allocationFocus,
             clearCooldowns: config.levels.recovery.clearCooldownOnAllocation }, skills, slots, identities,
         respec: { enabled: config.respec.enabled, available: respecAvailable, cost: config.respec.cost,
@@ -271,4 +295,61 @@ export function buildGrowthRespecCommand(view: GrowthCharacterViewModel, game: G
     const current = readGrowthCharacterView(game);
     if (!current?.respec.available || current.session !== view.session || current.revision !== view.revision) return null;
     return JSON.stringify({ module: 'growth', action: 'respec', payload: { revision: view.revision } });
+}
+
+export type GrowthSkillTarget = { readonly kind: 'self' } | { readonly kind: 'creature'; readonly id: number }
+    | { readonly kind: 'cell'; readonly x: number; readonly y: number };
+export interface GrowthTargetChoice {
+    readonly direction: string; readonly target: GrowthSkillTarget; readonly enabled: boolean;
+}
+/** Preview only what the player knows. Unknown cells remain possible candidates;
+ * full-world eligibility belongs exclusively to the later command preflight. */
+function knownGrowthMoveCandidate(game: Game, x: number, y: number): boolean {
+    const cell = game.grid.getCell(x, y);
+    if (!cell || game.player.hasStatus('confused') || game.player.hasStatus('paralyzed')) return false;
+    if (game.monsters.some(monster => monster.x === x && monster.y === y && canDisplayMonster(game.player, game.grid, monster))) return false;
+    if (playerTravelDiagonalBlocked(game.grid, game.player.loc, { x, y }, true)) return false;
+    const known = cell.isVisible || cell.hasMemory || cell.isMagicMapped || cell.isExplored;
+    if (!known) return true;
+    const layers = cell.isVisible ? cell.layers : cell.rememberedLayers;
+    if (layers.some(layer => layer === TerrainType.STAIRS_UP || layer === TerrainType.STAIRS_DOWN
+        || layer === TerrainType.DUNGEON_PORTAL || layer === TerrainType.ALTAR)) return false;
+    return !layers.some(layer => TERRAIN_FLAGS[layer].flags & T_OBSTRUCTS_PASSABILITY)
+        || layers.some(layer => terrainMechFlags(layer) & TM_PROMOTES_WITH_KEY);
+}
+/** Target choices disclose no unobserved creature identity or hidden occupancy/terrain.
+ * An optimistic candidate may still be rejected, without cost, when actually submitted. */
+export function readGrowthSkillTargets(game: Game, view: GrowthCharacterViewModel, skillId: string): readonly GrowthTargetChoice[] {
+    const skill = view.skills.find(entry => entry.id === skillId);
+    if (!skill?.canUse || !skill.action || skill.action.target === 'self') return [];
+    const directions = [
+        ['nw', -1, -1], ['n', 0, -1], ['ne', 1, -1], ['w', -1, 0], ['e', 1, 0],
+        ['sw', -1, 1], ['s', 0, 1], ['se', 1, 1],
+    ] as const;
+    return freeze(directions.map(([direction, dx, dy]) => {
+        const x = game.player.x + dx, y = game.player.y + dy;
+        if (skill.action!.kind === 'move') return { direction, target: { kind: 'cell' as const, x, y }, enabled: knownGrowthMoveCandidate(game, x, y) };
+        const creature = game.monsters.find(monster => monster.x === x && monster.y === y && canSeeMonster(game.player, game.grid, monster));
+        const enabled = !!creature && !creature.isCaged && (!creature.isAlly || creature.hasStatus('discordant'))
+            && !game.player.hasStatus('confused') && !game.player.hasStatus('paralyzed')
+            && (!playerTravelDiagonalBlocked(game.grid, game.player.loc, { x, y }, true) || creature.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'));
+        return { direction, target: { kind: 'creature' as const, id: enabled ? creature.id : 0 }, enabled };
+    }));
+}
+export function buildGrowthSkillCommand(view: GrowthCharacterViewModel, game: Game | null | undefined,
+    action: 'learn' | 'equip' | 'unequip' | 'use', skillId: string, target?: GrowthSkillTarget): string | null {
+    const current = readGrowthCharacterView(game);
+    if (!current || !game || current.session !== view.session || current.revision !== view.revision || current.readOnly || view.draft.changed || view.draft.stale) return null;
+    const skill = current.skills.find(entry => entry.id === skillId);
+    if (!skill || !(action === 'learn' ? skill.canLearn : action === 'equip' ? skill.canEquip : action === 'unequip' ? skill.canUnequip : skill.canUse)) return null;
+    if (action === 'use') {
+        if (!target || !skill.action || !game.validateControlledAction({ actorId: game.player.id, action: skill.action.kind, target })) return null;
+        return JSON.stringify({ module: 'growth', action: 'use-skill', payload: { revision: current.revision, skillId, target } });
+    }
+    if (action === 'learn') return JSON.stringify({ module: 'growth', action: 'learn-skill', payload: { revision: current.revision, skillId } });
+    const equipped = current.skills.filter(entry => entry.equipped && (action !== 'unequip' || entry.id !== skillId));
+    if (action === 'equip') equipped.push(skill);
+    const active = equipped.filter(entry => entry.mode === 'active').map(entry => entry.id).sort();
+    const passive = equipped.filter(entry => entry.mode === 'passive').map(entry => entry.id).sort();
+    return JSON.stringify({ module: 'growth', action: 'equip-skills', payload: { revision: current.revision, active, passive } });
 }

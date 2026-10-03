@@ -958,9 +958,14 @@ onMounted(async () => {
         const report = frameProfile?.report(profileNow, { seed: game.currentSeed, depth: game.depth, turn: game.absoluteTurnNumber, mode: mapMode.value, geometryContexts: vectorGeometry?.size, position: [game.player.loc.x, game.player.loc.y], hp: game.player.hp, nutrition: game.player.nutrition, commands: game.recordedInputEvents.length });
         if (report) performanceReport.value = report;
         try {
-            // A Vue display modal freezes automatic display-driven simulation without
-            // adding an interrupt command or changing the replay clock/state.
-            if (props.displayModalOpen) { pathingTimer = 0; return; }
+            // Browsing freezes replay/auto travel. A skill may have already committed
+            // its one native action while this panel stays open to prevent click-through;
+            // drain only that in-flight advancement so its time/checkpoint can settle.
+            if (props.displayModalOpen) {
+                pathingTimer = 0;
+                if (game.isAdvancing && !game.replayRecording) game.tickAdvancement(animationMs);
+                return;
+            }
             const input = game.recordedInputEvents[game.recordedInputEvents.length - 1];
             if (input !== lastInput) {
                 // A manual stop/restart can occur between frames. It starts a fresh

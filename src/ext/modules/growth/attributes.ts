@@ -2,7 +2,7 @@ import type { DeepReadonly } from './definitions';
 import type { GrowthDefinitionPack, GrowthRuleActor, GrowthRuleInput } from './types';
 import type { GrowthAttributes, GrowthDerived, GrowthProgression } from './components';
 import { automaticMaxHpBonus } from './experience';
-import { evaluateGrowthPort } from './evaluator';
+import { evaluateGrowthPort, type GrowthScopedModifiers } from './evaluator';
 
 export type GrowthPack = DeepReadonly<GrowthDefinitionPack>;
 const integer = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0;
@@ -21,16 +21,16 @@ export function growthRuleActor(id: number, progression: Readonly<GrowthProgress
 export function growthScalarInput(actor: GrowthRuleActor, baseValue: number): GrowthRuleInput {
     return { actor, target: null, baseValue, actionId: 0, resolutionId: 0, tags: [] };
 }
-export function growthDerived(pack: GrowthPack, actor: GrowthRuleActor): GrowthDerived {
-    return { appliedStrength: evaluateGrowthPort(pack, 'strengthBonus', growthScalarInput(actor, 0)),
-        appliedMaxHp: evaluateGrowthPort(pack, 'maxHpBonus', growthScalarInput(actor, automaticMaxHpBonus(pack.config.levels, actor.level))) };
+export function growthDerived(pack: GrowthPack, actor: GrowthRuleActor, effects: readonly GrowthScopedModifiers[] = []): GrowthDerived {
+    return { appliedStrength: evaluateGrowthPort(pack, 'strengthBonus', growthScalarInput(actor, 0), effects),
+        appliedMaxHp: evaluateGrowthPort(pack, 'maxHpBonus', growthScalarInput(actor, automaticMaxHpBonus(pack.config.levels, actor.level)), effects) };
 }
-export function growthFocusCapacity(pack: GrowthPack, actor: GrowthRuleActor): number {
+export function growthFocusCapacity(pack: GrowthPack, actor: GrowthRuleActor, effects: readonly GrowthScopedModifiers[] = []): number {
     return Math.max(pack.config.focus.min, Math.min(pack.config.focus.cap,
-        evaluateGrowthPort(pack, 'focusCapacity', growthScalarInput(actor, pack.config.focus.base))));
+        evaluateGrowthPort(pack, 'focusCapacity', growthScalarInput(actor, pack.config.focus.base), effects)));
 }
-export function growthFocusInterval(pack: GrowthPack, actor: GrowthRuleActor): number {
-    return evaluateGrowthPort(pack, 'focusRecoveryInterval', growthScalarInput(actor, pack.config.focus.recoveryInterval));
+export function growthFocusInterval(pack: GrowthPack, actor: GrowthRuleActor, effects: readonly GrowthScopedModifiers[] = []): number {
+    return evaluateGrowthPort(pack, 'focusRecoveryInterval', growthScalarInput(actor, pack.config.focus.recoveryInterval), effects);
 }
 export function growthAllocatedCost(pack: GrowthPack, attributes: Readonly<GrowthAttributes>): number {
     return safe(pack.config.attributes.reduce((sum, attribute) => sum + BigInt(attributes.allocated[attribute.id]!) * BigInt(attribute.pointCost), 0n));
