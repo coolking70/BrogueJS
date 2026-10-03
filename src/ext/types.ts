@@ -10,6 +10,8 @@ export interface ExtensionViewDescriptor {
     readonly definitions: ReadonlyJson;
     readonly stateFields: readonly string[];
     readonly playerComponents: readonly string[];
+    /** Optional shallow whitelist for public fields within a projected player component. */
+    readonly componentFields?: Readonly<Record<string, readonly string[]>>;
 }
 export interface ExtensionModuleView {
     readonly session: object;
@@ -116,7 +118,7 @@ export interface HookEvents {
     generationRolledBack: { label: string };
     itemPickedUp: { creature: CreatureView; item: ItemView };
     itemUsed: { creature: CreatureView; item: ItemView; operation: string };
-    enteredLevel: { depth: number; firstVisit: boolean };
+    enteredLevel: { depth: number; firstVisit: boolean; actorIds?: number[] };
 }
 export type HookName = keyof HookEvents;
 export interface ExtensionContext {
@@ -141,9 +143,13 @@ export interface ExtensionContext {
     message(text: string): void;
 }
 export type HookHandlers = { [K in HookName]?: (event: Readonly<HookEvents[K]>, context: ExtensionContext) => void };
+/** Detached native newborn bases for safe composition before a current run is retired. */
+export interface ExtensionCreationResources { readonly maxHp: number; readonly strength: number }
 export interface ExtensionModule extends ExtensionVersion {
     dependencies?: readonly string[];
     readonly view?: ExtensionViewDescriptor;
+    /** Pure projection receives only a detached selected player component, never a world/context capability. */
+    projectPlayerComponent?(name: string, value: ReadonlyJson): Json;
     initialState(): Json;
     validateState(state: unknown): state is Json;
     hooks?: HookHandlers;
@@ -159,6 +165,8 @@ export interface ExtensionModule extends ExtensionVersion {
     rulePolicies?: ExtensionRulePolicies;
     commitItemGrowth?(input: Readonly<ItemGrowthInput>, context: ExtensionContext): { nativeAmount: number };
     initialCommand?: { action: string; payload: Json };
+    /** Pure creation preflight, before an existing run is retired; no live actor ports. */
+    validateInitialCommand?(action: string, payload: Json, native?: ExtensionCreationResources): boolean;
     creditParty?(actor: ActorFacts, context: ExtensionContext): string | null;
     validateComponents?(state: Json, components: ExtensionSnapshot['components'], foundation: ExtensionSnapshot['foundation']): boolean;
     validateRecording?(events: readonly { action: string; data: unknown; extensions?: ExtensionSnapshot }[]): boolean;

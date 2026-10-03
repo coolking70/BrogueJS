@@ -67,6 +67,25 @@ const panelOpen = ref(false);
 const contextWidth = computed(() => displaySettings.sidebarWidthMode === 'proportional' ? 'clamp(190px, 20vw, 280px)' : '216px');
 const journalOpen = ref(false);
 const characterOpen = ref(false);
+const creationTransition = ref(false);
+let creationTransitionTimer: ReturnType<typeof setTimeout> | undefined;
+let removeCreationKeyboard: (() => void) | undefined;
+function clearCreationTransition() {
+  if (creationTransitionTimer !== undefined) globalThis.clearTimeout(creationTransitionTimer);
+  creationTransitionTimer = undefined; removeCreationKeyboard?.(); removeCreationKeyboard = undefined;
+  creationTransition.value = false;
+}
+function beginCreationTransition() {
+  clearCreationTransition(); cancelHeldInputs(); creationTransition.value = true;
+  const epoch = runEpoch;
+  removeCreationKeyboard = inputManager.registerModalKeyHandler(event => { event.preventDefault(); return true; }, 2500);
+  // Presentation-only protection against the second pointerup of a physical
+  // double click landing on the map after the creation dialog unmounts.
+  creationTransitionTimer = globalThis.setTimeout(() => {
+    clearCreationTransition(); cancelHeldInputs();
+    if (runEpoch === epoch && !menuOpen.value) void nextTick(() => document.querySelector<HTMLElement>('.game-view')?.focus({ preventScroll: true }));
+  }, 600);
+}
 const growthDraft = shallowRef<GrowthAllocationDraft | null>(null);
 const { view: growthView, poll: pollGrowth } = useGrowthCharacter(growthDraft);
 const growthSubmitting = ref(false);
@@ -84,7 +103,7 @@ function cancelGrowthTarget() { growthTargetDraft.value = null; }
 function canOpenGrowthCharacter() {
   return !!growthView.value && growthView.value.disabledReason !== 'unavailable'
     && growthView.value.disabledReason !== 'creation-required'
-    && !(menuOpen.value || activeGame.isInventoryOpen || activeGame.isThrowing || activeGame.pendingArcana
+    && !(creationTransition.value || menuOpen.value || activeGame.isInventoryOpen || activeGame.isThrowing || activeGame.pendingArcana
       || activeGame.pendingEnchantment || activeGame.pendingIdentify || activeGame.pendingUseConfirm
       || logger.pendingAcknowledgment || activeGame.referenceScreen || activeGame.isGameOver
       || activeGame.isAdvancing || activeGame.isInputLocked());
@@ -202,7 +221,7 @@ onMounted(() => {
   if (activeGame.isGameOver && !endFeedbackCleared) { endFeedbackCleared = true; replayFeedback.value = ''; }
   else if (!activeGame.isGameOver) endFeedbackCleared = false;
 }, 100); });
-onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTimer); runEpoch++; });
+onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTimer); clearCreationTransition(); runEpoch++; });
 /** 触控命令栏 + 方向键：紧凑模式或粗指针设备显示；回放期间让位给录像控制条。 */
 const showTouch = computed(() => (shouldShowTouchControls(viewport.coarsePointer, viewport.mode)
   || (displaySettings.immersiveMode && compact.value)) && !replayActive.value);
@@ -261,12 +280,20 @@ const hasReplay = computed(() => {
   }
 });
 
-const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "classic" | "extended" }) => {
-  runEpoch++;
+const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "classic" | "extended"; initialCommands?: readonly string[]; onRejected?: () => void }) => {
+  try {
+    activeGame.startNewGame({ seed: payload.seed, mode: payload.mode, ruleSet: payload.ruleSet, initialCommands: payload.initialCommands });
+    // Preserve the explicit programmatic neutral start contract. The real menu
+    // always supplies validated selected commands at the atomic new-run boundary.
+    if (!payload.initialCommands) for (const command of activeGame.extensionRuntime?.initialCommands() ?? []) activeGame.executeCommand('ext:command', command);
+  } catch {
+    replayFeedback.value = i18next.t('ext.growth.creation.start_failed'); payload.onRejected?.(); return;
+  }
+  clearCreationTransition(); runEpoch++;
+  if (payload.initialCommands) beginCreationTransition();
+  cancelHeldInputs();
   characterOpen.value = false; growthTargetDraft.value = null; growthDraft.value = null;
   replayFeedback.value = '';
-  activeGame.startNewGame({ seed: payload.seed, mode: payload.mode, ruleSet: payload.ruleSet });
-  for (const command of activeGame.extensionRuntime?.initialCommands() ?? []) activeGame.executeCommand('ext:command', command);
   runAvailable.value = true;
   replayMessage(
     i18next.t('menu.log.started_game', {
@@ -300,7 +327,7 @@ const continueGame = async () => {
       return;
     }
     replayMessage(i18next.t('menu.log.save_loaded', { defaultValue: 'Save loaded.' }));
-    runEpoch++;
+    clearCreationTransition(); runEpoch++;
     runAvailable.value = true;
     replayFeedback.value = '';
     storageTick.value++;
@@ -370,7 +397,7 @@ const loadReplay = () => {
     gameStarted.value = true;
     menuOpen.value = false;
     replayMessage(i18next.t('menu.log.replay_loaded', { defaultValue: 'Replay loaded.' }));
-    runEpoch++;
+    clearCreationTransition(); runEpoch++;
     runAvailable.value = true;
     replayFeedback.value = '';
   } catch {
@@ -446,7 +473,7 @@ const importReplayJson = async (file: File) => {
       replayMessage(i18next.t('menu.log.replay_import_failed', { defaultValue: 'Replay JSON import failed.' }));
       return;
     }
-    runEpoch++;
+    clearCreationTransition(); runEpoch++;
     runAvailable.value = true;
     replayFeedback.value = i18next.t('menu.replay.imported_unsaved', { defaultValue: 'Recording imported. Save it to keep it in this browser.' });
     pollGrowth();
@@ -460,6 +487,7 @@ const importReplayJson = async (file: File) => {
 };
 
 const handleReturnToTitle = async () => {
+    clearCreationTransition();
     // Return to menu logic
     gameStarted.value = false;
     menuOpen.value = true;
@@ -482,7 +510,7 @@ const handleReturnToTitle = async () => {
       <ThemeLog class="area-log" :lines="themeLogLines" :single-line="displaySettings.immersiveMode && !themePanelOpen" @open-journal="journalOpen = true" />
       <ThemeNearby class="area-near" @inspect="nearbyInspection = $event" />
       <div class="map-area">
-        <GameCanvas class="game-view" :display-modal-open="characterOpen" />
+        <GameCanvas class="game-view" :display-modal-open="characterOpen || creationTransition" />
         <MapZoomControls />
         <RadialCommands v-if="displaySettings.immersiveMode && !replayActive" class="area-radial" @modal-open="cancelHeldInputs" />
       </div>
@@ -516,6 +544,8 @@ const handleReturnToTitle = async () => {
     </template>
     <div v-else class="blank-stage" aria-hidden="true"></div>
 
+    <div v-if="creationTransition" class="growth-creation-transition" data-testid="creation-transition" aria-hidden="true"
+      @pointerdown.prevent.stop @pointerup.prevent.stop @touchstart.prevent.stop @touchend.prevent.stop @click.prevent.stop @dblclick.prevent.stop @keydown.prevent.stop @keyup.prevent.stop></div>
     <MessageAcknowledgment />
     <MainMenu
       v-if="menuOpen"
@@ -619,4 +649,8 @@ const handleReturnToTitle = async () => {
   grid-column: 1 / -1;
 }
 
+</style>
+
+<style scoped>
+.growth-creation-transition{position:fixed;inset:0;z-index:2300;background:transparent;touch-action:none}
 </style>

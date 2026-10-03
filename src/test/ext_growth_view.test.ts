@@ -93,7 +93,7 @@ describe('EXT-1c immutable configured growth character readmodel', () => {
         expect(view.slots.map(slot => [slot.mode, slot.count])).toEqual([['active', 1], ['passive', 0]]);
         expect(view.identities.find(group => group.kind === 'faith')!.definitions.some(definition => definition.id === 'growth.faith.custom')).toBe(true);
         expect(view.identities.find(group => group.kind === 'lineage')).toMatchObject({ enabled: false, selectedId: null });
-        expect(view.identities.every(group => group.futurePhase === '1e' && !group.available && group.selectedId === null)).toBe(true);
+        expect(view.identities.every(group => group.futurePhase === null && !group.available && group.selectedId === null)).toBe(true);
     });
     it('matches configured allocation previews to actual atomic commands, with exact revision payloads and native wounds', () => {
         configured(); const g = game(); g.player.hp -= 7; g.player.weaknessAmount = 2;
@@ -242,9 +242,11 @@ describe('EXT-1c immutable configured growth character readmodel', () => {
     it('exposes immutable player-only selection and reuses its frozen pack rather than cloning the run per read', () => {
         configured(); const g = game(), first = g.extensionRuntime!.readModuleView('growth')!, second = g.extensionRuntime!.readModuleView('growth')!;
         expect(Object.keys(first.state).sort()).toEqual(['created', 'objectiveClock', 'revision']);
-        expect(Object.keys(first.components).sort()).toEqual(['attributes', 'derived', 'focus', 'progression', 'skill-build', 'skills']);
+        expect(Object.keys(first.components).sort()).toEqual(['attributes', 'derived', 'focus', 'identity', 'progression', 'skill-build', 'skills']);
         expect(first.definitions).toBe(second.definitions); expect(first.session).toBe(second.session);
         expect(Object.isFrozen(first.components['skill-build'])).toBe(true);
+        expect(Object.isFrozen(first.components.identity)).toBe(true);
+        expect(Object.isFrozen((first.components.identity as Record<string, unknown>).choices)).toBe(true);
         for (const field of ['learned', 'inherited', 'active', 'passive', 'effects']) {
             expect(Object.isFrozen((first.components['skill-build'] as Record<string, unknown>)[field])).toBe(true);
         }

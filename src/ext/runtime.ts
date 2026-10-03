@@ -1,7 +1,7 @@
 import type { Creature } from '../entities/Creature';
 import { Player } from '../entities/Player';
 import type { ExtensionRegistry } from './registry';
-import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json, ActorFacts, ResourceCommit, CharacterResources, CharacterResourceCommit, ExtensionRuleContext, ExtensionRuleInput, ExtensionRulePolicies, ItemGrowthInput, ExtensionViewDescriptor, ExtensionModuleView } from './types';
+import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json, ActorFacts, ResourceCommit, CharacterResources, CharacterResourceCommit, ExtensionRuleContext, ExtensionRuleInput, ExtensionRulePolicies, ItemGrowthInput, ExtensionViewDescriptor, ExtensionModuleView, ExtensionCreationResources } from './types';
 import { creatureView } from './types';
 import { readCreatureBirth } from './birth';
 import { canonical, cloneJson, isJson, validId } from './json';
@@ -88,6 +88,10 @@ export class ExtensionRuntime {
         for (const module of this.modules) if (module.view) {
             if (!isJson(module.view.definitions) || !module.view.stateFields.every(safeStateField)
                 || !module.view.playerComponents.every(validId)) throw new Error('Invalid extension display descriptor');
+            if (module.view.componentFields && (!isJson(module.view.componentFields) || Array.isArray(module.view.componentFields)
+                || Object.entries(module.view.componentFields).some(([name,fields])=>!module.view!.playerComponents.includes(name)
+                    || !Array.isArray(fields) || new Set(fields).size !== fields.length || !fields.every(safeStateField))))
+                throw new Error('Invalid extension component projection');
             this.views.set(module.id, freezeView(structuredClone(module.view)));
         }
         for (const port of ['hitChance', 'physicalDamage', 'stealthRange', 'searchStrength', 'strengthBonus', 'maxHpBonus', 'focusCapacity', 'focusRecoveryInterval', 'cooldownDuration', 'nativeBonuses'] as const) {
@@ -297,6 +301,25 @@ export class ExtensionRuntime {
     }
     initialCommands(): string[] {
         return this.modules.flatMap(module => module.initialCommand ? [JSON.stringify({ module: module.id, ...module.initialCommand })] : []);
+    }
+    /** A complete, ordered creation batch is validated without touching world/state/RNG. */
+    validateInitialCommands(commands: readonly string[], native?: ExtensionCreationResources): boolean {
+        try {
+            if (!Array.isArray(commands)) return false;
+            if (native && (![native.maxHp,native.strength].every(value=>Number.isSafeInteger(value) && value > 0))) return false;
+            const resources = native ? Object.freeze({...native}) : undefined;
+            const expected = this.modules.filter(module => module.initialCommand);
+            if (commands.length !== expected.length) return false;
+            return commands.every((command,index) => {
+                if (typeof command !== 'string') return false;
+                const input = JSON.parse(command), module = expected[index]!;
+                if (!isJson(input) || !input || typeof input !== 'object' || Array.isArray(input)
+                    || Object.keys(input).sort().join(',') !== 'action,module,payload' || input.module !== module.id
+                    || typeof input.action !== 'string' || !module.commands?.[input.action]) return false;
+                return module.validateInitialCommand ? module.validateInitialCommand(input.action,input.payload!,resources)
+                    : canonical(input) === canonical({module:module.id,...module.initialCommand!});
+            });
+        } catch { return false; }
     }
     creditParty(creature: Creature): string | null {
         this.observeCreature(creature);
@@ -527,14 +550,25 @@ export class ExtensionRuntime {
         const descriptor = this.views.get(moduleId);
         if (this.disposed || !descriptor) return null;
         const state = this.states[moduleId], playerId = this.ports.playerId();
+        const projector = this.modules.find(module=>module.id === moduleId)?.projectPlayerComponent;
         const fields: Record<string, Json> = {}, components: Record<string, Json> = {};
         if (state && typeof state === 'object' && !Array.isArray(state)) for (const name of descriptor.stateFields) {
             const value = Object.prototype.hasOwnProperty.call(state, name) ? state[name] : undefined;
             if (value !== undefined) fields[name] = cloneJson(value);
         }
         for (const name of descriptor.playerComponents) {
-            const value = this.components[String(playerId)]?.[`${moduleId}:${name}`];
-            if (value !== undefined) components[name] = cloneJson(value);
+            let value = this.components[String(playerId)]?.[`${moduleId}:${name}`];
+            if (value !== undefined && projector) {
+                const projected = projector(name,freezeView(cloneJson(value)));requireSynchronous(projected);
+                if (!isJson(projected)) throw new Error('Invalid extension display projection');
+                value = projected;
+            }
+            if (value !== undefined) {
+                const selectedFields = descriptor.componentFields?.[name];
+                if (!selectedFields) components[name] = cloneJson(value);
+                else if (value && typeof value === 'object' && !Array.isArray(value)) components[name] = Object.fromEntries(selectedFields
+                    .filter(field=>Object.prototype.hasOwnProperty.call(value,field)).map(field=>[field,cloneJson(value[field]!)]) );
+            }
         }
         return freezeView({ session: this.viewSession, definitions: descriptor.definitions, playerId,
             state: fields, components, canManageCharacter: this.ports.canManageCharacter?.() ?? true });

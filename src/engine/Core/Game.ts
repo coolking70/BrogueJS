@@ -50,7 +50,7 @@ import {
 } from '../Generator/BlueprintEngine';
 import blueprintData from '../../data/blueprints.json';
 import { getMachineObservationHook, setMachineObservationSeed } from '../Generator/MachineObservation';
-import { Player, STOMACH_SIZE, type HungerState } from '../../entities/Player';
+import { PLAYER_STARTING_RESOURCES, Player, STOMACH_SIZE, type HungerState } from '../../entities/Player';
 import { Monster, monstersAreTeammates, monstersAreEnemies, avoidedFlagsForCaster } from '../../entities/Monster';
 import { CombatSystem, type AttackResult } from '../Combat/Combat';
 import { formatCombatText, type CombatantText } from '../Combat/CombatText';
@@ -140,6 +140,7 @@ import { isSubmerged, monsterCanSubmergeNow, surfaceOnDryLand, hiddenBySubmersio
 import { canSeeMonster, canDirectlySeeMonster, canDisplayMonster, monsterHidden, monsterRevealed } from '../UI/MonsterVisibility';
 
 export type GameMode = 'normal' | 'easy' | 'wizard' | 'test';
+const PLAYER_MODE_RESOURCES = Object.freeze({easy:Object.freeze({maxHp:45,strength:14}),wizard:Object.freeze({maxHp:999,strength:18})});
 
 export interface HordeMemberEntry {
     type: string;
@@ -642,7 +643,7 @@ export class Game {
         this.startNewGame();
     }
 
-    public startNewGame(options?: { seed?: SeedInput; mode?: GameMode; ruleSet?: RuleSet; extensions?: readonly string[] }) {
+    public startNewGame(options?: { seed?: SeedInput; mode?: GameMode; ruleSet?: RuleSet; extensions?: readonly string[]; initialCommands?: readonly string[] }) {
         // Validate before retiring the current run (unsafe numeric inputs cannot be recovered).
         const seed = normalizeSeed(options?.seed ?? 0);
         if (options?.ruleSet !== undefined && options.ruleSet !== 'classic' && options.ruleSet !== 'extended') throw new Error('Invalid rule set');
@@ -651,6 +652,10 @@ export class Game {
         // Factories/data/state validators are pure preflight: an invalid data pack
         // must not unload the existing run. Player/depth ports are live closures.
         const preparedExtensions = extensionManifest ? this.createExtensionRuntime(extensionManifest) : null;
+        // A rejected/cancelled identity selection must leave the old run and both streams intact.
+        const initialCommands = options?.initialCommands === undefined ? undefined : [...options.initialCommands];
+        if (initialCommands !== undefined && (!preparedExtensions || !preparedExtensions.validateInitialCommands(initialCommands,options?.mode === 'easy' || options?.mode === 'wizard' ? PLAYER_MODE_RESOURCES[options.mode] : PLAYER_STARTING_RESOURCES)))
+            throw new Error('Invalid extension creation commands');
         // U00: retire the old run before seeding/allocating the next one. Returning
         // the iterator must not run an old turn's epilogue against the new world.
         this.discardInFlightAdvancement();
@@ -782,14 +787,11 @@ export class Game {
         this.monsterSpawnFuse = rng.randRange(SPAWN_FUSE_MIN, SPAWN_FUSE_MAX);
         // RogueMain.c:404：客观时间门复位
         this.ticksTillUpdateEnvironment = 100;
-        if (this.mode === 'easy') {
-            this.player.maxHp = 45;
-            this.player.hp = 45;
-            this.player.strength = 14;
-        } else if (this.mode === 'wizard') {
-            this.player.maxHp = 999;
-            this.player.hp = 999;
-            this.player.strength = 18;
+        if (this.mode === 'easy' || this.mode === 'wizard') {
+            const resources = PLAYER_MODE_RESOURCES[this.mode];
+            this.player.maxHp = resources.maxHp;
+            this.player.hp = resources.maxHp;
+            this.player.strength = resources.strength;
         }
 
         // 开局装备对齐 BrogueCE RogueMain.c:420-443：口粮 → 匕首 → 飞镖×15 → 皮甲。
@@ -849,6 +851,7 @@ export class Game {
                 ...(this.extensionRuntime ? { extensions: this.extensionRuntime.snapshot() } : {}) },
             inputState: this.recordingInputState(),
         };
+        for (const command of initialCommands ?? []) this.executeCommand('ext:command',command);
     }
 
     /**
@@ -1433,7 +1436,7 @@ export class Game {
                 if (firstVisit) runtime.emit('beforeLevelGeneration', { depth: this.depth });
                 generateDepth(this.makeGenerationPorts('natural'), isGoingUp, isFirstLevel, fell);
                 if (firstVisit) runtime.emit('afterLevelGeneration', { depth: this.depth });
-                runtime.emit('enteredLevel', { depth: this.depth, firstVisit });
+                runtime.emit('enteredLevel', { depth: this.depth, firstVisit, actorIds: [...new Set([this.player.id,...this.monsters.map(actor=>actor.id),...this.dormantMonsters.map(actor=>actor.id)])].sort((a,b)=>a-b) });
                 // Mutable module hooks only see the completed world and the run
                 // RNG restored by the generation coordinator's finally block.
                 runtime.commitGeneration(token);

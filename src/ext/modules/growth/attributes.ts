@@ -35,7 +35,7 @@ export function growthFocusInterval(pack: GrowthPack, actor: GrowthRuleActor, ef
 export function growthAllocatedCost(pack: GrowthPack, attributes: Readonly<GrowthAttributes>): number {
     return safe(pack.config.attributes.reduce((sum, attribute) => sum + BigInt(attributes.allocated[attribute.id]!) * BigInt(attribute.pointCost), 0n));
 }
-export function isGrowthAttributes(value: unknown, pack: GrowthPack, inherited = false): value is GrowthAttributes {
+export function isGrowthAttributes(value: unknown, pack: GrowthPack, inherited = false, baseline?: Readonly<Record<string, number>>): value is GrowthAttributes {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
     const build = value as GrowthAttributes;
     if (Object.keys(build).sort().join(',') !== 'allocated,attributePointsSpent,inheritedAttributePoints,inheritedSkillPoints,skillPointsSpent,values'
@@ -49,7 +49,7 @@ export function isGrowthAttributes(value: unknown, pack: GrowthPack, inherited =
         const rank = build.values[attribute.id]!, paid = build.allocated[attribute.id]!;
         if (rank < attribute.min || rank > attribute.cap || paid > rank - attribute.min
             || (attribute.id === pack.config.strengthTraining.attributeId && rank > pack.config.strengthTraining.cap)
-            || (!inherited && rank - paid !== attribute.initial)
+            || (!inherited && rank - paid !== (baseline?.[attribute.id] ?? attribute.initial))
             || (!pack.config.strengthTraining.enabled && attribute.id === pack.config.strengthTraining.attributeId && paid > 0)) return false;
         total += BigInt(rank);
     }
@@ -57,7 +57,7 @@ export function isGrowthAttributes(value: unknown, pack: GrowthPack, inherited =
 }
 /** Preflight only. The command writes all resources/components after every branch succeeds. */
 export function allocateGrowthAttributes(pack: GrowthPack, old: Readonly<GrowthAttributes>, available: number,
-    increments: unknown): { attributes: GrowthAttributes; cost: number } {
+    increments: unknown, baseline?: Readonly<Record<string, number>>): { attributes: GrowthAttributes; cost: number } {
     if (!increments || typeof increments !== 'object' || Array.isArray(increments)) throw new RangeError('Invalid growth allocation');
     const attributes: GrowthAttributes = structuredClone(old), config = pack.config;
     let cost = 0n, count = 0n;
@@ -69,7 +69,7 @@ export function allocateGrowthAttributes(pack: GrowthPack, old: Readonly<GrowthA
         attributes.allocated[id] = safe(BigInt(attributes.allocated[id]!) + BigInt(amount));
         cost += BigInt(amount) * BigInt(definition.pointCost); count += BigInt(amount);
     }
-    if (!count || cost > BigInt(available) || !isGrowthAttributes(attributes, pack)) throw new RangeError('Invalid growth allocation');
+    if (!count || cost > BigInt(available) || !isGrowthAttributes(attributes, pack, false, baseline)) throw new RangeError('Invalid growth allocation');
     return { attributes, cost: safe(cost) };
 }
 export function respecGrowthAttributes(pack: GrowthPack, old: Readonly<GrowthAttributes>): { attributes: GrowthAttributes; refund: number } {

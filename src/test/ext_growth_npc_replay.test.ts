@@ -25,6 +25,8 @@ const skillId = (name: string) => `growth.skill.${name}`;
 function configuredNpcScene() {
     const pack = structuredClone(data) as unknown as GrowthDefinitionPack;
     pack.config.levels.skillPoints = { kind: 'periodic', firstLevel: 1, every: 1, amount: 30 };
+    // Equivalent NPC birth budget under the now-active complete-template contract.
+    pack.config.monsters.templates[0]!.unspentSkillPoints = 30;
     pack.config.experience.sources.firstVisits = false;
     for (const def of pack.definitions) if (def.kind === 'skill') def.prerequisites = [];
     const parsed = parseGrowthDefinitionPack(pack, { moduleVersion: pack.moduleVersion, hasText: () => true });

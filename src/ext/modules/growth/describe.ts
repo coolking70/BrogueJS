@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import type { DeepReadonly } from './definitions';
 import type { GrowthPack } from './attributes';
-import type { GrowthAttribute, GrowthCondition, GrowthEffect, GrowthModifier, GrowthPrerequisite, GrowthRulePort, GrowthSkill } from './types';
+import type { GrowthAttribute, GrowthCondition, GrowthEffect, GrowthModifier, GrowthIdentity, GrowthPrerequisite, GrowthRulePort, GrowthSkill } from './types';
 
 const describeText = (key: string, values: Record<string, unknown> = {}) => i18next.t(`ext.growth.describe.${key}`, { ...values, interpolation: { escapeValue: false } });
 const name = (pack: GrowthPack, id: string) => {
@@ -122,6 +122,51 @@ export function describeGrowthAttribute(pack: GrowthPack, attribute: DeepReadonl
 export function describeGrowthSkill(pack: GrowthPack, skill: DeepReadonly<GrowthSkill>, cooldown = skill.cooldown): string[] {
     return [describeText('learning_cost', { cost: skill.cost }), ...(skill.action ? [describeText('use', { focus: skill.focusCost, cooldown,
         action: describeText(`action.${skill.action.kind}`), target: describeText(`target.${skill.action.target}`) }), ...describeGrowthPortConstraints(pack, 'cooldownDuration')] : [describeText('passive')]),
-        ...describeGrowthEffects(pack, skill.effects), describeText('prerequisites', { value: skill.prerequisites.length
+        describeText('base_effect_rules'), ...describeGrowthEffects(pack, skill.effects), describeText('prerequisites', { value: skill.prerequisites.length
             ? skill.prerequisites.map(requirement => describeGrowthPrerequisite(pack, requirement)).join(describeText('separator')) : describeText('none') })];
+}
+
+/** Every identity line is derived from the active pack, including oath costs and gift exceptions. */
+export function describeGrowthIdentity(pack: GrowthPack, identity: DeepReadonly<GrowthIdentity>): string[] {
+    const config = pack.config.identities;
+    const cost = identity.attributes.reduce((sum, grant) => sum + grant.amount * pack.config.attributes.find(attribute => attribute.id === grant.attributeId)!.pointCost, 0)
+        + identity.choices.reduce((sum, choice) => sum + choice.points, 0);
+    const lines = [describeText('identity_budget', { cost, budget: config.budgets[identity.kind] })];
+    for (const grant of identity.attributes) lines.push(describeText('identity_grant', { name: name(pack, grant.attributeId), amount: grant.amount }));
+    for (const choice of identity.choices) lines.push(describeText('identity_choice', { names: choice.attributeIds.map(id => name(pack, id)).join(describeText('or')),
+        points: choice.points, cap: choice.perAttributeCap }));
+    for (const gift of identity.gifts) {
+        const skill = pack.definitions.find(definition => definition.id === gift.skillId) as DeepReadonly<GrowthSkill>;
+        lines.push(describeText('identity_gift', { name: name(pack, gift.skillId), mode: i18next.t(`ext.growth.ui.${skill.mode}`),
+            requirement: describeText(gift.waivePrerequisites ? 'gift_waives' : 'gift_requires') }));
+        lines.push(describeText('gift_base_rules'));
+        lines.push(...describeGrowthSkill(pack, skill).filter(line => line !== describeText('learning_cost', { cost: skill.cost })));
+    }
+    lines.push(...describeGrowthEffects(pack, identity.effects));
+    for (const oath of identity.oaths) {
+        lines.push(i18next.t(`ext.growth.${oath.descriptionKey.slice('ext.growth.'.length)}`));
+        lines.push(...describeGrowthEffects(pack, oath.effects));
+    }
+    for (const effect of [...identity.effects, ...identity.oaths.flatMap(oath => oath.effects)]) {
+        if (effect.kind !== 'tagged-modifier') continue;
+        for (const skill of pack.definitions.filter((entry): entry is DeepReadonly<GrowthSkill> => entry.kind === 'skill')) {
+            const targets = skill.effects.filter(target => target.kind === 'timed' && target.tags.includes(effect.tag));
+            if (effect.property === 'cooldown' && skill.tags.includes(effect.tag)) {
+                lines.push(describeText('tagged_cooldown_base', { name: name(pack, skill.id), cooldown: skill.cooldown }));
+                lines.push(...describeGrowthPortConstraints(pack, 'cooldownDuration'));
+            }
+            for (const target of targets) {
+                if (target.kind !== 'timed') continue;
+                if (effect.property === 'duration' && target.duration.kind === 'objective-blocks')
+                    lines.push(describeText('tagged_duration_base', { name: name(pack, skill.id), duration: target.duration.blocks, cap: target.duration.cap }));
+                if (effect.property === 'intensity') for (const modifier of target.modifiers) {
+                    if (modifier.operation === 'add' || effect.operation === 'multiply') lines.push(describeText('tagged_intensity_target', { name: name(pack, skill.id), value: modifierDescription(pack, { ...effect, kind: 'modifier', port: modifier.port }) }));
+                    lines.push(...describeGrowthPortConstraints(pack, modifier.port));
+                }
+            }
+        }
+    }
+    if (identity.recommendedAttributes.length) lines.push(describeText('identity_recommend_attributes', { names: identity.recommendedAttributes.map(id => name(pack, id)).join(describeText('or')) }));
+    if (identity.recommendedSkills.length) lines.push(describeText('identity_recommend_skills', { names: identity.recommendedSkills.map(id => name(pack, id)).join(describeText('or')) }));
+    return lines;
 }

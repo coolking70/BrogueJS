@@ -31,7 +31,7 @@ export function createGrowthContractModule(): ExtensionModule {
 }
 
 import { createGrowthGameplay } from './module';
-/** Active 1a runtime; the original contract-only factory remains available to explicit probes. */
+/** Active growth runtime; the original contract-only factory remains available to explicit probes. */
 export function createGrowthModule(): ExtensionModule {
     const contract = createGrowthContractModule();
     const text: Readonly<Record<string,string>> = zhCN;

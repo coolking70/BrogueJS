@@ -146,6 +146,8 @@ describe('EXT-1b configured attributes and atomic commands',() => {
     });
     it.each([false,true])('configured clone progression accounts for withheld birth grants and inherited points=%s',inheritUnspentPoints => {
         configured(pack=>{pack.config.monsters.clone.progression=true;pack.config.monsters.clone.inheritUnspentPoints=inheritUnspentPoints;
+            // 1e complete template birth balances replace the former implicit NPC L1 grants (20 / 4).
+            pack.config.monsters.templates[0]!.unspentAttributePoints=20;pack.config.monsters.templates[0]!.unspentSkillPoints=4;
             pack.config.levels.experience={kind:'curve',base:1,linear:0,quadratic:0};});
         const g=game(), species=(monsters as MonsterData[]).find(monster=>monster.id==='goblin')!;
         const source=new Monster(g.player.x+3,g.player.y,species);markCreatureBirth(source,'natural');g.monsters.push(source);

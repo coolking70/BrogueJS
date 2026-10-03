@@ -1,13 +1,14 @@
-# Growth 数据配置合同（1d，schema 1 / rules 1.3.0）
+# Growth 数据配置合同（1e，schema 1 / rules 1.4.0）
 
-本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。1d 已接技能动作/效果消费/客观时钟和数据生成说明；身份模板仍归 1e。下列历史运行表由新增的 1d 实际状态补充，不把模板合同当作已执行能力。
+本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。1d 已接技能动作/效果消费/客观时钟；1e 接通身份选择/授予/誓约、怪物模板与盟友自动分配。§1.1–1.5 是逐步交付历史，当前实际状态以 §1.6 为准。
 
 ## 1. 实际文件与边界
 
 | 文件 | 责任 |
 |---|---|
-| `src/ext/modules/growth/index.ts` | 生产 growth 工厂校验真实目录并创建 1d 运行器；保留显式合同探针工厂供底座测试 |
+| `src/ext/modules/growth/index.ts` | 生产 growth 工厂校验真实目录并创建 1e 运行器；保留显式合同探针工厂供底座测试 |
 | `src/ext/modules/growth/module.ts`、`state.ts` | XP 事实队列/安全点结算、角色创建、收据/来源摘要与跨组件/世界校验 |
+| `src/ext/modules/growth/identities.ts`、`templates.ts` | 纯身份/选择/赠技/誓约与出生模板、确定性盟友分配 |
 | `src/ext/modules/growth/experience.ts`、`components.ts` | 精确整数等级/发点/自动 HP、资源提交基础、严格组件校验 |
 | `src/ext/modules/growth/types.ts` | 配置类型、判别联合、有限规则端口/动作词汇 |
 | `src/ext/modules/growth/view.ts` | 纯玩家显示投影、配置条目/前置/槽位、分配/洗点/技能预览与严格命令 DTO；不在显示层执行规则 |
@@ -17,7 +18,7 @@
 | `src/ext/modules/growth/text.ts` | 样例定义与校验错误的本地化词条 |
 | `src/ext/registry.ts`、`src/ext/types.ts` | 模块数据合同与阶段0精确版本校验衔接 |
 
-不复用阶段0 `src/ext/definitions.ts` 的示例三属性/简单effects冒充正式成长schema。旧 example 包与测试保持原合同；growth包通过数据校验不等于引擎支持其中所有动作。默认扩展集合为 `growth`；`example` 仍可显式选择，保留原合同。`createGrowthContractModule()` 是显式测试探针；生产目录注册 `createGrowthModule()`。当前实际门禁和未接线能力见 [1d 报告](phase1d.report.md)；下列1a/1b/1c段落保留阶段历史，不覆盖§1.5的当前状态。
+不复用阶段0 `src/ext/definitions.ts` 的示例三属性/简单effects冒充正式成长schema。旧 example 包与测试保持原合同；growth包通过数据校验不等于引擎支持其中所有动作。默认扩展集合为 `growth`；`example` 仍可显式选择，保留原合同。`createGrowthContractModule()` 是显式测试探针；生产目录注册 `createGrowthModule()`。当前实际门禁和未接线能力见 [1e 报告](phase1e.report.md)；下列1a–1d段落保留阶段历史，不覆盖§1.6的当前状态。
 
 
 ### 1.1 已验收 1a 的历史运行状态（1b 新增接线见 §1.3）
@@ -66,7 +67,7 @@
 - 普通/沉浸 HUD 与角色页都是显示状态；回放只读，取消/重置不发命令。自动命令/录像帧在角色页打开期间由 UI 暂停推进，不改变模拟时钟或录像状态
 
 
-### 1.5 1d 当前实际状态
+### 1.5 1d 时的实际状态（历史）
 
 - P02：动作起点/结果的 self/target 临时效果、施加时快照、绝对截止时刻、逐物理结算消费、已提交行动中断均执行。P03 的 duration/intensity/cooldown 按标签有限求值可供已装被动引用；1e 身份引用尚未激活
 - P05：内部 actorId 请求对应原攻击/普通相邻位移/等待/手动搜索；当前原生动作适配器执行玩家路径。取消、拒绝、过期目标不支付；合法 miss 支付。已提交后被原生抓持/蛛网/呕吐中断的位移尝试仍按原生尝试支付耗时，但 moved=false，不应用移动结果效果。NPC 主动施放/AI 选择按维护者确认后延，共用被动/临时效果与真实战斗/时间/消费/存读回放已接线，未来接口见 architecture §14
@@ -76,6 +77,46 @@
 - 数据 schema 形状仍为1，moduleVersion/rulesVersion 同升1.3.0；skill effect 触发合同补强：被动只允许 modifier/tagged-modifier，主动只允许 timed。原来结构上允许但没有触发时点的被动 timed/resource 或主动裸 modifier/resource 现拒绝，不再把它们默默加载为不生效内容。身份 resource first-visit 仍是1e合同
 
 实际代码：skills.ts（学习/装配/实例/标签/时钟数学）、module.ts（命令与提交钩子）、state.ts（跨组件一致性）、runtime/types（受限动作与只读事实）、Game/Combat/TimeCoordinator（原生边界）。skills:{readyAt} 保留原基础合同；新增 skill-build 保存 learned/inherited/active/passive/effects。inherited 只表示克隆配置允许复制的已学知识，不重复扣费；不继承临时效果或旧冷却。状态新增 objectiveClock、objectiveRemainder、nextEffectId、nextActionId，均持久保存；UI只额外投影显示冷却所需的 objectiveClock 与当前玩家 skill-build，不暴露时钟内部余数、序号或全体生物账本。
+
+### 1.6 1e 当前实际状态与配置入口
+
+所有运行数值仍由 `definitions.json` 提供；没有身份/模板 ID 特判、任意脚本或新随机流。默认 4 职业 / 4 血统 / 4 信仰全部可选，普通怪物默认仍是中性 L1 模板，`depthTemplates: []` 不主动提升原怪物难度。
+
+| 配置入口 | 现在执行的语义 |
+|---|---|
+| `identities.enabled` / `defaults` | 开局卡片维度开关与可撤销预选；禁用维度只能提交 null。经典菜单不创建成长数据工厂 |
+| `identities.budgets` / `giftLimits` | 固定属性及选择按属性 `pointCost` 计费；每组选择必须精确用完 points，单属性增量限 perAttributeCap；合并身份后再检查总属性上限及唯一赠技数量 |
+| 身份 `attributes` / `choices` / `gifts` | 玩家在 create-character 一次授予；NPC完整模板按下文出生一次。赠技不扣技能点，waivePrerequisites 仅本次授予豁免；按可用主动/被动槽装配，溢出槽位的知识仍已学但不生效 |
+| 身份 `effects` / `oaths[].effects` | 常驻 modifier、tagged-modifier、first-visit resource 执行；誓约收益/代价都走同一有限求值器。身份没有原动作触发，裸 timed 明确拒绝 |
+| `skills.lockMode` / 单技能 lock | none / soft 都不禁止学习；双方都 hard 才执行身份名单锁定。普通前置始终检查；职业推荐不降低价格 |
+| `monsters.enabled` | false 不创建 NPC progression/attributes/identity/derived/focus 等成长状态，不授模板/XP。仍保留出生奖励账本与临时受技容器，敌方可被牵制，击杀奖励与来源归属不因此消失 |
+| `monsters.templates` / `defaultTemplateId` / `depthTemplates` | 首次真实出生选择最高 priority 的匹配深度模板，未匹配用默认。相同优先级重叠拒绝；重访、变形、复活、读档不重新选择 |
+| `monsters.alliesGrow` + 身份 recommendations | 有职业盟友升级后自动分配；无职业保留余额。属性按公开推荐序列、已分配秩最低者优先循环，达到上限/禁用/不足费用时跳过；无推荐则用属性配置顺序。技能先推荐、再定义顺序，检查费用/前置/锁/空槽；不自动替换已装槽、不运行 NPC 主动技能 AI |
+| `monsters.clone` | inheritBuild 复制属性/身份/已学与槽位，不复制效果、冷却、等级或 XP；inheritUnspentPoints 独立决定余额。新体 L1/XP0；progression 控制未来收益，rewards 还要同时通过创建原因与敌对资格规则 |
+
+#### 创建、组件与保存格式
+
+菜单先完成职业 → 血统 → 信仰 → 汇总，取消/返回仅丢弃草稿；选择本身不改变当前局、时间、双 RNG 或录像。开始时 `Game.startNewGame({initialCommands})` 先让各模块纯校验完整初始命令批次，再退休旧局，建立原世界与录制起点，最后同步执行真实 `create-character`。首条录像 payload 精确为 `{revision:0, professionId, lineageId, faithId, choices:[{identityId,choiceIndex,attributes:{属性ID:增量}}]}`；未知键/伪造 actor/超预算/缺失选择全部拒绝。现有精确 `{revision:0}` 程序化中性创建合同保留；正式菜单始终发送显式身份选项。
+
+`growth:identity` 保存 professionId、lineageId、faithId、choices、templateId。`growth:skill-build` 新增 gifted，明确区分身份赠技、模板/克隆 inherited 和付费 learned；学习费用只计非 gifted/non-inherited 条目。模板记录完整出生构筑：`attributes` 已包含身份预算，不再叠加身份固定赠点；`skills` 包含实际赠予/学习的全部技能，槽位必须是其中同模式子集。模板明确的 unspentAttributePoints/unspentSkillPoints 是出生余额；以后只发模板出生等级之后的增量，不能重复领取出生前等级点数。
+
+玩家初始余额仍来自等级表 L1 的 attributePoints/skillPoints 计划，与1d完全一致；身份固定属性/选择点及 gifted 是额外免费构筑，不抵扣、不替代这两类余额。程序化中性创建和正式身份创建都使用同一 initialGrowthProgression。NPC 则不再隐式读取等级表 L1 计划：即使该计划改成20属性点/4技能点，默认中性模板的两项出生余额仍为显式0。要让 NPC 获得同样余额，必须在模板 unspentAttributePoints/unspentSkillPoints 分别写20/4，并通过等级/身份预算校验；等级表仍约束模板合法总预算及出生后跨级授予。
+
+迁移注意：这是1e启用既有模板合同后的明确语义变化。调整等级表不等于调整 NPC 出生余额，应同步检查每个模板；原1d测试夹具隐式使用L1赠点的场景已按维护者批准补入等值模板余额。1.3.0旧档/录像直接拒绝，不自动补余额或迁移。
+
+免费初值/身份选择/模板基值与 paid allocated 分开保存，洗点只退已购买增量，不移除身份赠予。模板/身份效果进入同一纯端口与派生差额提交；clone 先扣复制来的原成长最大生命，再加自身派生值一次。关闭 NPC 成长时仍去掉原生复制字段携带的来源成长加值。
+
+盟友升级按“等级恢复 → 自动属性分配恢复 → 槽位保留/重置政策”依次计算，只提交最终差额；没有跨级的新 XP 不抢先消费模板出生余额，封顶零收益不改构筑。自动分配不伪造玩家录像输入或额外原行动，技能 AI 仍留阶段 3。
+
+首访进入事实携带实际当前层参与者，避免给缓存层生物隔空发资源；resource 收据为 effectId:actorId:depth，与 XP 开关独立。默认寻路誓约 D2–D26 专注 +1、容量 −1；同深度重访、load/seek 不重赠，钳制吸收的奖励也记收据。死者不会被资源效果复活。
+
+只读投影另有严格公开合同：identity 只给玩家已确认的 `professionId`、`lineageId`、`faithId`、`choices`；每项 choices 只有 `identityId`、`choiceIndex`、`attributes`，用于将公开分配结果关联到配置选择组、展示身世和复算分配/洗点基值。模板出处 `templateId`、内部赠技 `gifted`、资源/奖励收据均不投影；草稿和已确认模型分离。
+
+技能公开 DTO 保留 learned/inherited/active/passive/effects，effects 仅含 expiresAt/tags/modifiers/taggedModifiers：所有施放者属性/等级幅度已用当时不可变来源值计算为常量，条件仍留给同一纯求值器。无来源 actorId/属性快照、身份来源 ID、实例分配序号或内部消费计数；由此 NPC 身份不能通过被施加效果的元数据旁路泄漏。公开数值作用与原始持久效果逐条件对等，查询不耗 RNG 或改状态。完整定义包是公开可选内容目录，不是当前 NPC 身份图。
+
+此步数据 schema 形状仍是 1，growth moduleVersion/rulesVersion 同升 1.4.0；身份组件、gifted、临时效果的身份来源与首访参与者改变扩展存档/录像合同，因此旧 1.3.0 输入精确拒绝，不做迁移。经典格式无变化。配置包指纹继续精确绑定；改 ID 或数值需同步版本与引用，但无需修改解释器/UI。
+
+默认选择器只做有界、无 RNG 的预选搜索；极端可配置加权选择若不能在有限 UI 工作预算中找到分配，保留未完成草稿供手动选择，开始按钮禁用。这是预览计算限制，不是玩法点数上限；正式命令可验证任何合法完整分配。
 
 ## 2. 固定技术合同与可调数据
 
@@ -107,8 +148,8 @@
 | `$` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1a0 |
 | `$.schema` | 枚举 `1` | `1` | 1a0 |
 | `$.moduleId` | 枚举 `"growth"` | `"growth"` | 1a0 |
-| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.3.0"` | 1a0；1d升级 |
-| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.3.0"` | 1a0；1d升级 |
+| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.4.0"` | 1a0；1e升级 |
+| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.4.0"` | 1a0；1e升级 |
 | `$.config` | object；全部配置子组必填，见以下各节 | 对象 | 1a–1e |
 | `$.definitions` | array；元素为Skill或Identity，完整结构见对应节 | 24项：12技能/4职业/4血统/4信仰 | 1d/1e |
 
@@ -311,7 +352,7 @@
 | `$.config.identities.giftLimits` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1e |
 | `$.config.identities.giftLimits.active` | 安全整数 [0,MAX] | `1` | 1e |
 | `$.config.identities.giftLimits.passive` | 安全整数 [0,MAX] | `1` | 1e |
-| `$.config.identities.changeFaith` | boolean | `false` | 1e |
+| `$.config.identities.changeFaith` | boolean；当前仅 false，true 明确拒绝（改信未实现） | `false` | 保留字段，不是已启用开关 |
 
 ### 4.12 config.itemGrowth
 
@@ -358,8 +399,8 @@
 | `$.config.monsters.templates[].activeSlots[]` | 稳定ID（小写；`.`/`-`分段） | 样例未选此变体/无元素 | 1e |
 | `$.config.monsters.templates[].passiveSlots` | array，长度≥0；元素唯一 | `[]` | 1e |
 | `$.config.monsters.templates[].passiveSlots[]` | 稳定ID（小写；`.`/`-`分段） | 样例未选此变体/无元素 | 1e |
-| `$.config.monsters.templates[].unspentAttributePoints` | 安全整数 [0,MAX] | `0` | 1e |
-| `$.config.monsters.templates[].unspentSkillPoints` | 安全整数 [0,MAX] | `0` | 1e |
+| `$.config.monsters.templates[].unspentAttributePoints` | 安全整数 [0,MAX]；NPC出生余额，不隐式叠加等级表L1计划（§1.6） | `0` | 1e |
+| `$.config.monsters.templates[].unspentSkillPoints` | 安全整数 [0,MAX]；NPC出生余额，不隐式叠加等级表L1计划（§1.6） | `0` | 1e |
 | `$.config.monsters.depthTemplates` | array，长度≥0 | `[]` | 1e |
 | `$.config.monsters.depthTemplates[]` | object；所有列出子键必填，未知键拒绝 | 样例未选此变体/无元素 | 1e |
 | `$.config.monsters.depthTemplates[].minDepth` | 安全整数 [1,MAX] | 样例未选此变体/无元素 | 1e |
@@ -759,7 +800,7 @@ focusCapacity在同一纯求值器内取`config.focus[min,cap]`与端口globalCl
 
 纯schema抛出结构化GrowthValidationError；实际public parse/load及合同工厂的错误message已在生产边界本地化，同时保留key/path/detail/code供诊断和后续UI。技术引用ID可展示，内部英文诊断短语不直接拼给玩家。工厂按真实zh_CN资源目录校验非空词条，不以text.ts的样例词条表作为定义白名单；新增技能/属性只需修改定义JSON及本地化资源，不需改界面或词条登记代码。
 
-纯包校验不替代实际create-character身份组合、目标合法性、资源充足、revision和原子提交检查，后者属于1b/1d/1e；通过模板校验也不表示已生成/执行该模板。
+纯包校验不替代实际create-character身份组合、目标合法性、资源充足、revision和原子提交检查，后者属于1b/1d/1e；模板配置通过后只在实际出生入口执行，不在显示或 load 时执行。
 
 ## 7. 版本升级规则
 

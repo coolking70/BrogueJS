@@ -22,6 +22,9 @@ export const FAINT_THRESHOLD = 50; // Rogue.h:1127
 
 export type HungerState = 'normal' | 'hungry' | 'weak' | 'faint' | 'starving';
 
+/** Native newborn values, shared by pure extended-creation preflight and the constructor. */
+export const PLAYER_STARTING_RESOURCES = Object.freeze({maxHp:30,strength:12});
+
 export class Player extends Creature {
     public inventory: Inventory;
     public equippedWeapon: Item | null = null;
@@ -33,7 +36,7 @@ export class Player extends Creature {
      */
     public ringLeft: Item | null = null;
     public ringRight: Item | null = null;
-    public strength: number = 12;
+    public strength: number = PLAYER_STARTING_RESOURCES.strength;
     /** Equipment is computed on demand, so every dose/cure refreshes all consumers. */
     public get effectiveStrength(): number { return this.strength - this.weaknessAmount; }
     public lastMoveDirection: Direction | null = null;
@@ -51,8 +54,8 @@ export class Player extends Creature {
 
     constructor(x: number, y: number) {
         super(x, y, 'Player', '@', 0xFFFFFF);
-        this.maxHp = 30;
-        this.hp = 30;
+        this.maxHp = PLAYER_STARTING_RESOURCES.maxHp;
+        this.hp = PLAYER_STARTING_RESOURCES.maxHp;
         this.inventory = new Inventory();
     }
 

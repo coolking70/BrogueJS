@@ -239,3 +239,14 @@
 - 需要补充的接口：按 actorId 验证原生 NPC 行動/目标/可见信息、NPC 移动/搜索即时核心、原生攻击/施法中断事实及统一耗时结果；扩展技能计划/资源/效果执行器复用本步实现，不新增公开可伪造 actorId 的玩家命令
 
 NPC 测试除纯求值外，还使用真实攻击、AI 响应和确定性测试场景的命令录像验证被动、护盾前消费、截止到期、加载、seek 与续录；测试场景的出生配置不是生产 AI 选技功能。
+
+
+## 15. 1e：身份与模板创建边界
+
+- `ExtensionModule.validateInitialCommand` 为纯数据预校验，`ExtensionRuntime.validateInitialCommands` 要求每个有 initialCommand 的模块各一条、顺序确定、无未知模块/命令/字段；Game 在旧局退休前校验可选批次，在录制起点之后执行。无新增 Game 实例字段，不另建 RNG
+- 身份/选择/赠技由 identities.ts 纯计算，出生模板/自动分配由 templates.ts 纯计算；module.ts 在既有资源/组件事务内一次提交。`growth:identity` 对所有有成长的生物共享，公开命令仍不能指定 actorId
+- 现有 neutral create-character DTO 保留供程序化场景；实际菜单提供显式选项并以第一条命令录入。非法新选项不退休旧局，未创建状态仍不能行动/保存；任意外部扩展回调异常并不升级成全 Game 通用事务
+- 怪物模板在真实 creatureSpawned 首次提交选择，深度优先级纯确定；出生事务回滚沿用阶段1a0/1a1。clone 复用完整基值/身份/技能，只按配置继承免费构筑/余额，复活/变形/load 不重授
+- monsters.enabled=false 仅保留奖励归属和临时受技容器；纯端口通过缺失 progression 标识跳过该生物所有配置属性修正，玩家修正与已施加 debuff 独立有效
+- enteredLevel 附当前层 actorIds，首访资源只给这些实际参与者；来源事实/奖励/收据与 XP 首访开关独立。冷却/效果仍沿绝对客观时间，不为缓存层凭空推进资源
+- 只读投影额外包含当前玩家 identity 的显式字段白名单（职业/血统/信仰ID与公开选择结果）；不带模板出处或赠予账本。projectPlayerComponent只接收分离冻结的玩家组件，不提供世界/context/RNG；临时效果来源被转换成无来源常量幅度，同时保留条件，避免NPC身份/属性通过效果元数据泄漏。身份、誓约、赠技、限制和推荐从公开定义生成本地化说明。完整字段和持久预算归属见 growth-config §1.6

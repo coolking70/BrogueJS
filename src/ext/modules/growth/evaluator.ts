@@ -42,6 +42,8 @@ export type GrowthEvaluationInput = Readonly<GrowthRuleInput> & {
     readonly nativeMinimum?: number;
     readonly invisible?: boolean;
     readonly baseCooldown?: number;
+    /** Actors without growth still receive explicit debuffs, but never configured attribute effects. */
+    readonly inactiveAttributeActorIds?: readonly number[];
 };
 export interface GrowthPrerequisiteFacts {
     readonly level: number;
@@ -202,7 +204,7 @@ function collectModifiers(pack: GrowthEvaluationPack, input: GrowthEvaluationInp
     for (const scope of ports) {
         const owner = scope.owner === 'actor' ? input.actor : input.target;
         if (!owner) continue;
-        const groups: readonly GrowthScopedModifiers[] = [{owner:scope.owner,modifiers:attributes},...effects.filter(effect=>effect.owner === scope.owner)];
+        const groups: readonly GrowthScopedModifiers[] = [...(input.inactiveAttributeActorIds?.includes(owner.id) ? [] : [{owner:scope.owner,modifiers:attributes}]),...effects.filter(effect=>effect.owner === scope.owner)];
         for (const group of groups) for (const modifier of group.modifiers) {
             const facts = { ...common, role: scope.owner, tags:[...(common.tags ?? []),...(group.tags ?? [])] };
             if (modifier.port === scope.port && matchesGrowthConditions(modifier.conditions, facts)) {

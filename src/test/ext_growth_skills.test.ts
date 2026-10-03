@@ -118,6 +118,8 @@ describe('EXT-1d generic skill definitions and P03/P07 pure state',()=> {
 function combatHarness(zeroDamage=false, configure?: (pack:GrowthDefinitionPack)=>void) {
     const mutable=structuredClone(data) as unknown as GrowthDefinitionPack;
     mutable.config.levels.skillPoints={kind:'periodic',firstLevel:1,every:1,amount:30};
+    // Equivalent NPC birth budget; template initialization no longer implicitly copies the L1 player grant.
+    mutable.config.monsters.templates[0]!.unspentSkillPoints=30;
     for(const definition of mutable.definitions)if(definition.kind==='skill')definition.prerequisites=[];
     configure?.(mutable);
     const custom=parseGrowthDefinitionPack(mutable,{moduleVersion:mutable.moduleVersion,hasText:()=>true});

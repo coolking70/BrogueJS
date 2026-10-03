@@ -324,7 +324,7 @@ describe('EXT-1c mounted growth character interactions', () => {
         await start(); await open(); expect(all(body).filter(n => n.props['data-attribute']).length).toBe(pack.config.attributes.length);
         await step('growth.attribute.custom'); await step('growth.attribute.custom'); expect(text(find('data-preview', 'maxHp'))).toContain('+14'); expect(text(cls('growth-budget'))).toContain('4'); expect(find('data-step', 'plus', find('data-attribute', 'growth.attribute.custom')).props.disabled).toBe(true);
         click(find('data-tab', 'skills')); await tick(); const row = find('data-skill', 'growth.skill.custom'); expect(text(row)).toContain('坚韧测试'); expect(text(row)).toContain('已满足'); expect(text(cls('growth-slot-list'))).toContain('1 槽'); expect(text(cls('growth-slot-list'))).toContain('0 槽'); expect(all(row).some(n => n.type === 'button')).toBe(false);
-        click(find('data-tab', 'identities')); await tick(); expect(text(find('data-identity', 'growth.faith.custom'))).toContain('新信仰测试'); expect(text(body)).toContain('阶段 1e');
+        click(find('data-tab', 'identities')); await tick(); expect(text(find('data-identity', 'growth.faith.custom'))).toContain('新信仰测试'); expect(text(body)).toContain(i18next.t('ext.growth.creation.fixed_identity'));
     });
     it('supports inline configured respec review/cancel and commits once through its command boundary', async () => {
         configured(pack => { pack.config.respec = { enabled: true, cost: { resource: 'attribute-points', amount: 1 }, refundBasisPoints: 5000, clearCooldowns: false }; });

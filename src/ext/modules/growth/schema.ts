@@ -361,6 +361,9 @@ export function validateGrowthDefinitionPack(value: unknown, options: GrowthVali
             if (def.lock.mode === 'none' && (def.lock.professionIds.length || def.lock.lineageIds.length || def.lock.faithIds.length)) fail('shape', `${path}.lock`, 'none has no restrictions');
             if (def.lock.mode === 'hard' && !(def.lock.professionIds.length || def.lock.lineageIds.length || def.lock.faithIds.length)) fail('shape', `${path}.lock`, 'hard needs restrictions');
         } else {
+            // Identities have no native action; only persistent modifiers and explicit first-visit triggers can activate.
+            if ([...def.effects,...def.oaths.flatMap(oath => oath.effects)].some(effect => effect.kind === 'timed'))
+                fail('shape', `${path}.effects`, 'identity activation requires an explicit supported trigger');
             let spent = grantsCheck(def.attributes, `${path}.attributes`);
             for (const choice of def.choices) {
                 let capacity = 0;
@@ -389,6 +392,7 @@ export function validateGrowthDefinitionPack(value: unknown, options: GrowthVali
     };
     pack.definitions.forEach(def => visit(def.id));
     for (const kind of ['profession', 'lineage', 'faith'] as const) reference(config.identities.defaults[`${kind}Id`], kind, '$.config.identities.defaults');
+    if (config.identities.changeFaith) fail('shape', '$.config.identities.changeFaith', 'faith changes are not implemented');
     const defaults = config.identities.defaults;
     const defaultGrants = new Map<string, number>();
     for (const kind of ['profession', 'lineage', 'faith'] as const) {
@@ -434,16 +438,22 @@ export function validateGrowthDefinitionPack(value: unknown, options: GrowthVali
         if (template.level > levels.cap || template.experience < cumulative(template.level)
             || template.experience > cumulative(levels.cap) || (template.level < levels.cap && template.experience >= cumulative(template.level + 1))) fail('range', path, 'level/experience');
         const spent = grantsCheck(template.attributes, `${path}.attributes`);
+        for (const grant of template.attributes) if (grant.attributeId === config.strengthTraining.attributeId
+            && attribute(grant.attributeId,path).initial + grant.amount > config.strengthTraining.cap) fail('range', path, 'strength training cap');
         let identityBudget = 0;
         const gifts = new Set<string>();
         for (const kind of ['profession', 'lineage', 'faith'] as const) {
-            const id = template[`${kind}Id`]; if (id !== null) { reference(id, kind, path); identityBudget += config.identities.budgets[kind];
+            const id = template[`${kind}Id`]; if (id !== null) { reference(id, kind, path);
+                if (!config.identities.enabled[`${kind}s`]) fail('reference', path, 'disabled identity dimension');
+                identityBudget += config.identities.budgets[kind];
                 (defs.get(id) as GrowthIdentity).gifts.forEach(gift => gifts.add(gift.skillId)); }
         }
         if (spent + template.unspentAttributePoints > scheduleTotal(levels.attributePoints, template.level) + identityBudget) fail('budget', path, 'attribute points');
         let skillCost = 0;
         for (const id of template.skills) { reference(id, 'skill', path); if (!gifts.has(id)) skillCost += (defs.get(id) as GrowthSkill).cost; }
         if (skillCost + template.unspentSkillPoints > scheduleTotal(levels.skillPoints, template.level)) fail('budget', path, 'skill points');
+        for (const mode of ['active','passive'] as const) if (template.skills.filter(id=>gifts.has(id) && (defs.get(id) as GrowthSkill).mode === mode).length > config.identities.giftLimits[mode])
+            fail('budget', path, `combined identity gifts: ${mode}`);
         const templateAttributes = new Map(config.attributes.map(attr => [attr.id, attr.initial + (template.attributes.find(grant => grant.attributeId === attr.id)?.amount ?? 0)]));
         for (const id of template.skills) {
             const skill = defs.get(id) as GrowthSkill;

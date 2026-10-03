@@ -153,18 +153,14 @@ onUnmounted(() => removeKeyboard?.());
             </section>
           </template>
           <template v-else>
-            <p class="growth-notice">{{ $t('ext.growth.ui.identities_future') }}</p>
+            <p class="growth-notice">{{ $t('ext.growth.creation.fixed_identity') }}</p>
             <section v-for="group in model.identities" :key="group.kind" class="growth-identity-group">
               <h3>{{ text(group.nameKey) }} <small v-if="!group.enabled">{{ $t('ext.growth.ui.config_disabled') }}</small></h3>
-              <article v-for="identity in group.definitions" :key="identity.id" class="growth-definition" :data-identity="identity.id">
-                <h4>{{ text(identity.nameKey) }}</h4><p>{{ text(identity.descriptionKey) }}</p>
-                <template v-if="identity.attributes.length"><h4>{{ $t('ext.growth.ui.identity_grants') }}</h4><ul><li v-for="grant in identity.attributes" :key="grant.attributeId">{{ definitionName(grant.attributeId) }} +{{ grant.amount }}</li></ul></template>
-                <template v-if="identity.gifts.length"><h4>{{ $t('ext.growth.ui.identity_gifts') }}</h4><ul><li v-for="gift in identity.gifts" :key="gift.skillId">{{ definitionName(gift.skillId) }}</li></ul></template>
-                <p v-for="(choice, choiceIndex) in identity.choices" :key="choiceIndex">{{ $t('ext.growth.ui.identity_choices', { names: choice.attributeIds.map(definitionName).join('、'), points: choice.points, cap: choice.perAttributeCap }) }}</p>
-                <p v-if="identity.recommendedAttributes.length">{{ $t('ext.growth.ui.recommended_attributes', { names: identity.recommendedAttributes.map(definitionName).join('、') }) }}</p>
-                <p v-if="identity.recommendedSkills.length">{{ $t('ext.growth.ui.recommended_skills', { names: identity.recommendedSkills.map(definitionName).join('、') }) }}</p>
-                <p v-for="oath in identity.oaths" :key="oath.id">{{ text(oath.descriptionKey) }}</p>
-                <span class="growth-future">{{ $t('ext.growth.ui.future_1e') }}</span>
+              <article v-for="identity in group.definitions" :key="identity.id" class="growth-definition" :data-identity="identity.id" :class="{ 'growth-selected-identity': group.selectedId === identity.id }">
+                <h4>{{ text(identity.nameKey) }} <small v-if="group.selectedId === identity.id">{{ $t('ext.growth.creation.selected') }}</small></h4>
+                <p>{{ text(identity.descriptionKey) }}</p>
+                <p v-if="group.selectedId === identity.id && group.chosenAttributes?.length">{{ $t('ext.growth.creation.chosen_attributes', { names: group.chosenAttributes.map(grant => `${definitionName(grant.attributeId)} +${grant.amount}`).join('、') }) }}</p>
+                <ul><li v-for="(line, index) in identity.description" :key="index">{{ line }}</li></ul>
               </article>
             </section>
           </template>
@@ -202,4 +198,8 @@ onUnmounted(() => removeKeyboard?.());
 .growth-notice{padding:9px 12px;border-left:2px solid var(--th-accent,#dcc88d);background:var(--th-raised,#2d2e26);font-size:12px;flex-basis:100%;margin:0!important}.growth-body>.growth-notice{margin-bottom:14px!important}.growth-slot-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.growth-slot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--th-line,#555);padding:12px}.growth-slot small{flex-basis:100%;margin:0}.growth-definition ul{padding-left:20px;font-size:12px;line-height:1.7}.growth-definition h4{margin-top:12px}.growth-definition h3{display:flex;align-items:center;justify-content:space-between}.growth-unmet{color:var(--th-warn,#e3aa76)}.growth-future{font-size:11px;color:var(--th-dim,#aaa);display:inline-block;border:1px solid var(--th-line,#555);padding:3px 6px}.growth-identity-group>h3{margin:20px 0 12px}.growth-identity-group:first-of-type>h3{margin-top:0}.growth-respec-actions{display:flex;flex-wrap:wrap;gap:8px}.growth-respec-preview{flex-basis:100%;margin:0}.growth-respec-preview>div{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dotted var(--th-line,#555)}.growth-respec-preview dd{margin:0}.growth-respec-actions p{flex-basis:100%}
 .growth-footer{padding:10px 20px 14px;border-top:1px solid var(--th-line,#555);background:var(--th-panel,#171918);flex-shrink:0}.growth-footer p{font-size:12px;margin:0 0 9px;line-height:1.5}.growth-footer-actions{display:flex;justify-content:flex-end;gap:8px}.growth-footer .growth-primary{background:var(--th-accent,#dcc88d);color:var(--th-bg,#171918);border-color:transparent}.growth-success{color:var(--th-accent,#dcc88d)}.growth-error{color:var(--th-warn,#e3aa76)}
 @media(max-width:700px),(max-height:500px){.growth-overlay{padding:0}.growth-panel{width:100%;height:100dvh;max-height:100dvh;border:0}.growth-header{padding:10px 12px;gap:10px;flex-wrap:wrap}.growth-header h2{font-size:17px}.growth-header-points{font-size:11px}.growth-summary{padding:10px 12px;font-size:12px;gap:7px 12px}.growth-tabs{padding:0 12px}.growth-body{padding:12px;scrollbar-gutter:auto}.growth-panel button{min-height:44px;padding:8px 10px}.growth-footer{padding:10px 12px max(12px,env(safe-area-inset-bottom))}.growth-footer-actions>button{flex:1;min-width:0;padding:8px 4px;font-size:12px}.growth-stepper button{width:44px;padding:0}.growth-attribute{padding:11px 10px}.growth-attribute-controls{flex-wrap:wrap;gap:6px}.growth-stepper{margin-left:auto}.growth-slot-list{gap:8px}.growth-slot{padding:10px}.growth-slot b{font-size:12px}}
+</style>
+
+<style scoped>
+.growth-selected-identity{border-left:3px solid var(--th-accent,#dcc88d)}.growth-selected-identity h4 small{color:var(--th-accent,#dcc88d);font-size:11px;margin-left:8px}
 </style>

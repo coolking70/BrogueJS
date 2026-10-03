@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, shallowRef, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useTranslation } from "i18next-vue";
 import { inputManager } from "../engine/Input";
 import MapTileLegend from './MapTileLegend.vue';
@@ -7,6 +7,10 @@ import { mapMode, selectMapMode, isMapMode } from '../ui/mapTiles';
 import TitleFx from "./theme/TitleFx.vue";
 import { normalizeSeed } from "../engine/Seed";
 import type { RuleSet } from '../ext/types';
+import GrowthCreationPanel from './growth/GrowthCreationPanel.vue';
+import { loadGrowthCreationContext, createGrowthCreationDraft, selectGrowthCreationIdentity, adjustGrowthCreationChoice, readGrowthCreationView, buildGrowthCreationCommands, type GrowthCreationContext } from '../ext/modules/growth/view';
+import type { GrowthIdentitySelection } from '../ext/modules/growth/identities';
+import type { GrowthIdentity } from '../ext/modules/growth/types';
 import type { GameMode } from "../engine/Core/Game";
 import {
   displaySettings,
@@ -35,7 +39,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "new-game", payload: { seed?: string; mode: GameMode; ruleSet?: RuleSet }): void;
+  (e: "new-game", payload: { seed?: string; mode: GameMode; ruleSet?: RuleSet; initialCommands?: readonly string[]; onRejected?: () => void }): void;
   (e: "continue-game"): void;
   (e: "save-game"): void;
   (e: "delete-save"): void;
@@ -69,6 +73,7 @@ const glyphViewBox = `0 0 ${glyphColumns * 3} ${glyphWordmark.length * 5}`;
 const glyphPixels = glyphWordmark.flatMap((row, y) =>
   [...row].flatMap((pixel, x) => pixel === "1" ? [{ x: x * 3, y: y * 5 }] : []));
 function goBack() {
+  if (creationContext.value) { cancelCreation(); return; }
   if (legendOpen.value) { legendOpen.value = false; return; }
   if (page.value !== "home") page.value = "home";
   else if (props.inGame) emit("close");
@@ -104,10 +109,42 @@ const parsedSeed = computed(() => {
   }
 });
 
+const creationContext = shallowRef<GrowthCreationContext | null>(null);
+const creationDraft = shallowRef<GrowthIdentitySelection | null>(null);
+const creationSubmitting = ref(false), creationError = ref<string | null>(null);
+const creationModel = computed(() => creationContext.value && creationDraft.value ? readGrowthCreationView(creationContext.value.pack, creationDraft.value) : null);
+function cancelCreation() {
+  if (creationSubmitting.value) return;
+  creationContext.value = null; creationDraft.value = null; creationError.value = null;
+  void nextTick(() => menuCard.value?.focus({ preventScroll: true }));
+}
+function selectIdentity(kind: GrowthIdentity['kind'], id: string) {
+  if (!creationContext.value || !creationDraft.value || creationSubmitting.value) return;
+  creationDraft.value = selectGrowthCreationIdentity(creationContext.value.pack, creationDraft.value, kind, id); creationError.value = null;
+}
+function adjustIdentityChoice(identityId: string, choiceIndex: number, attributeId: string, delta: number) {
+  if (!creationContext.value || !creationDraft.value || creationSubmitting.value) return;
+  creationDraft.value = adjustGrowthCreationChoice(creationContext.value.pack, creationDraft.value, identityId, choiceIndex, attributeId, delta); creationError.value = null;
+}
+function submitCreation() {
+  if (!creationContext.value || !creationDraft.value || creationSubmitting.value || parsedSeed.value === null || !creationModel.value?.valid) return;
+  const initialCommands = buildGrowthCreationCommands(creationContext.value, creationDraft.value);
+  if (!initialCommands) { creationError.value = 'ext.growth.creation.invalid'; return; }
+  // Latch before emitting: repeated clicks/Enter cannot create a second run.
+  creationSubmitting.value = true;
+  emit('new-game', { seed: parsedSeed.value, mode: mode.value, ruleSet: 'extended', initialCommands,
+    onRejected: () => { creationSubmitting.value = false; creationError.value = 'ext.growth.creation.start_failed'; } });
+}
 const startGame = () => {
-  if (parsedSeed.value === null) return;
-  emit("new-game", { seed: parsedSeed.value, mode: mode.value,
-    ...(ruleSet.value === "extended" ? { ruleSet: ruleSet.value } : {}) });
+  if (parsedSeed.value === null || creationSubmitting.value || creationContext.value) return;
+  if (ruleSet.value === 'extended') {
+    try {
+      const context = loadGrowthCreationContext(), draft = createGrowthCreationDraft(context.pack);
+      creationContext.value = context; creationDraft.value = draft; creationError.value = null;
+    } catch { creationError.value = 'ext.growth.creation.unavailable'; }
+    return;
+  }
+  emit('new-game', { seed: parsedSeed.value, mode: mode.value });
 };
 
 const modeLabel = (value: string) =>
@@ -171,7 +208,7 @@ const sidebarWidthModel = computed({
   >
     <div v-if="!inGame" class="title-vignette" aria-hidden="true"></div>
     <TitleFx v-if="!inGame" />
-    <div ref="menuCard" class="title-screen" tabindex="-1">
+    <div ref="menuCard" class="title-screen" tabindex="-1" :inert="!!creationContext">
       <div class="title-brand">
         <div class="title-edition">
           <span></span>{{ editionText }}<span></span>
@@ -275,6 +312,7 @@ const sidebarWidthModel = computed({
           >
             {{ t("menu.seed.range") }}
           </p>
+          <p v-if="creationError && !creationContext" class="field-hint" role="alert">{{ t('ext.growth.creation.unavailable') }}</p>
           <button
             class="begin-button"
             :disabled="parsedSeed === null || replayBusy"
@@ -458,5 +496,7 @@ const sidebarWidthModel = computed({
         ><span>{{ t("title.version") }}</span>
       </footer>
     </div>
+    <GrowthCreationPanel v-if="creationModel" :model="creationModel" :submitting="creationSubmitting" :error="creationError"
+      @cancel="cancelCreation" @select="selectIdentity" @adjust="adjustIdentityChoice" @submit="submitCreation" />
   </div>
 </template>

@@ -267,3 +267,42 @@ FINAL all_gates=0 2026-10-03T03:01:13Z
 638个生产/测试/脚本/资源/构建输入前后SHA256一致：`f5c0c383384cf798c075cae576b3160c503caf310ee4a0cdccc476d6dd183f96`。最终生产哈希`ddbc12288df0e4546fc67eec5c64ff726a565760ead96ae90f97a1c9e5c2c315`与Mac第三版完全相同。活动CE对照已执行；8 skip/5 todo均为原有历史项，无新增。D27–40独立基线在full、D1–26基线在drift通过，原黄金trace/基线/U03未改。完整日志无FATAL/OOM/断言失败/未处理错误/worker异常；保留既有大产物块与npm代理配置警告。原始日志、全量散列及中断轮次只留`tmp-phase1d-raw/`。
 
 仅限ext/foundation交付；远端目标SHA由发布步骤单独核对。本步后停止，1e与NPC主动AI未实施。
+
+
+## 阶段1e：身份、怪物模板与阶段1收尾（最终验收）
+
+档位：新版全量；扩展身份/赠技/来源与创建DTO改变存档/录像合同，真实出生启用模板。前置合入main1ff39a8，保留36个既有遗漏测试登记，新增8个测试全登记。最终只用下列第二候选完整一轮，不拼接第一候选中断结果。第一候选07:50–08:01 UTC因真实浏览器QA-1（双击下一步越页）主动exit130，full未完整结束、gen/drift未执行。
+
+Node24.19.0/npm11.9.0，3072MiB堆，full/gen两worker、drift一worker；2026-10-03 08:21:16–10:18:46 UTC。类型26秒、build38秒、固定legacy ce:fetch均exit0；build保留原大块与npm代理提示。
+
+```text
+CE reference already verified: legacy 49be8dd3fc1b9a0fb477df4c9153c0e1cf796fe9
+
+COMMAND npm run test:full -- --maxWorkers=2
+ Test Files  288 passed (288)
+      Tests  5314 passed | 8 skipped | 5 todo (5327)
+   Start at  08:22:21
+   Duration  2334.86s (transform 14.10s, setup 0ms, import 254.82s, tests 4360.89s, environment 141ms)
+EXIT_CODE=0
+
+COMMAND env BROGUE_REQUIRE_CE=1 npm run test:gen -- --maxWorkers=2
+ Test Files  27 passed (27)
+      Tests  436 passed (436)
+   Start at  09:01:17
+   Duration  4513.57s (transform 4.39s, setup 0ms, import 34.28s, tests 8898.17s, environment 13ms)
+EXIT_CODE=0
+
+COMMAND npm run test:drift -- --maxWorkers=1
+ Test Files  2 passed (2)
+      Tests  2 passed (2)
+   Start at  10:16:32
+   Duration  133.76s (transform 1.80s, setup 0ms, import 3.65s, tests 129.73s, environment 1ms)
+EXIT_CODE=0
+
+FROZEN_INPUT_COUNT=652
+FROZEN_INPUT_HASH=55e2ab92d5291176f31812c417b1b96ae09469c003f7cd7a12179dbfc5c45792
+FROZEN_INPUTS_UNCHANGED=true
+FINAL_END 2026-10-03T10:18:46Z EXIT_CODE=0
+```
+
+旧8skip/5todo未改，CE用例执行；源码守卫/黄金trace/两份生成基线原断言保留。96份严格JSON、3份JSONC、LF及diff检查通过，无FATAL/OOM/未处理或worker异常。第二候选生产hash e08d450666c2f607b95832a9a237c4b56952f7e28738e3b5e936b26e6ce6043e；16个dist与Mac验收字节一致。Mac六布局/完整身份、18次真实上下步双击、创建屏障、7事件自然存读/导入/seek/续录与法器瞄准取消通过；原生食物确认取消、真实触摸、导出剪贴板字节未覆盖，既有BODY/Tab焦点限制非1e回归，详见[1e报告](../phase1e.report.md)。原始日志/反事实/截图不提交。

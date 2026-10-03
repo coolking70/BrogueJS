@@ -175,6 +175,7 @@ beforeAll(async () => {
         './engine/Core/Game': await import('../engine/Core/Game'), './engine/Core/SaveStorage': await import('../engine/Core/SaveStorage'),
         './MapTileLegend.vue': { default: { emits: ['close'], render: () => Vue.h('section', { class: 'map-legend' }) }, __esModule: true },
         './theme/TitleFx.vue': empty,
+        './growth/GrowthCreationPanel.vue': empty, '../ext/modules/growth/view': await import('../ext/modules/growth/view'),
     };
     const compile = (file: string): Vue.Component => {
         const { descriptor } = parse(source(file));

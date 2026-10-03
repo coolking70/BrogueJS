@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import type { ControlledActionRequest, ControlledActionResult, ActorFacts, ExtensionContext, ExtensionModule, ExtensionRuleContext, ExtensionRuleInput, Json, ReadonlyJson } from '../../types';
+import type { ControlledActionRequest, ControlledActionResult, ActorFacts, ExtensionContext, ExtensionModule, ExtensionCreationResources, ExtensionRuleContext, ExtensionRuleInput, Json, ReadonlyJson } from '../../types';
 import type { CreatureBirth } from '../../birth';
 import { canonical, isJson } from '../../json';
 import type { DeepReadonly } from './definitions';
@@ -11,8 +11,10 @@ import { growthPartyId, initialGrowthState, isGrowthState, isGrowthReward, valid
     type GrowthReward, type GrowthState } from './state';
 import { allocateGrowthAttributes, growthDerived, growthFocusCapacity, growthFocusInterval, growthRuleActor, initialGrowthAttributes, respecGrowthAttributes } from './attributes';
 import { evaluateGrowthPhysicalDamage, evaluateGrowthPort, matchesGrowthConditions, type GrowthScopedModifiers } from './evaluator';
-import { initialGrowthSkillBuild, inheritGrowthSkillBuild, canLearnGrowthSkill, growthSkillDefinition, growthSkillScopes, growthSkillCooldown, growthTimedDefinition,
-    createGrowthEffectInstance, growthEffectDuration, advanceGrowthFocus, type GrowthSkillBuild, type GrowthSkillDefinition } from './skills';
+import { initialGrowthSkillBuild, canLearnGrowthSkill, growthSkillDefinition, growthSkillScopes, growthSkillCooldown, growthTimedDefinition,
+    createGrowthEffectInstance, growthEffectDuration, growthTaggedSources, projectGrowthSkillBuild, advanceGrowthFocus, type GrowthSkillBuild, type GrowthSkillDefinition } from './skills';
+import { initialGrowthIdentityBuild, createGrowthIdentityBuild, growthIdentityAttributeValues, growthIdentityFirstVisitEffects, grantGrowthIdentitySkills, type GrowthIdentityBuild } from './identities';
+import { selectGrowthMonsterTemplate, initializeGrowthTemplate, initializeGrowthClone, autoAllocateGrowthAlly, type GrowthActorBuild } from './templates';
 import { initialGrowthItemLedger, resolveGrowthItemGain, type GrowthItemLedger } from './items';
 
 const getState = (context: ExtensionContext): GrowthState => context.state as GrowthState;
@@ -32,7 +34,8 @@ function isCreationCommand(data: unknown): boolean {
     if (typeof data !== 'string') return false;
     try {
         const input = JSON.parse(data);
-        return isJson(input) && canonical(input) === canonical({ module: 'growth', action: 'create-character', payload: { revision: 0 } });
+        return isJson(input) && !!input && typeof input === 'object' && !Array.isArray(input)
+            && Object.keys(input).sort().join(',') === 'action,module,payload' && input.module === 'growth' && input.action === 'create-character';
     } catch { return false; }
 }
 /** Integral split with an exact rational intermediate, including non-default rounding choices. */
@@ -44,7 +47,7 @@ export function splitGrowthReward(amount: number, basisPoints: number, rounding:
     if (rounding === 'nearest' && numerator % denominator >= denominator / 2n) player++;
     return [Number(player),amount - Number(player)];
 }
-/** P04 substrate: caller supplies an already-authorized first-visit effect. Identity triggering belongs to 1e. */
+/** P04: caller supplies a configured first-visit effect; the identity owner and current-floor participants are selected by settle. */
 export function commitFirstVisitResource(context: ExtensionContext, state: GrowthState, pack: DeepReadonly<GrowthDefinitionPack>,
     actorId: number, depth: number, effect: Readonly<GrowthResourceEffect>): boolean {
     if (!state.visitedDepths.includes(depth) || depth < effect.trigger.minDepth || depth > effect.trigger.maxDepth) return false;
@@ -58,7 +61,7 @@ export function commitFirstVisitResource(context: ExtensionContext, state: Growt
         const current = Number(BigInt(focus.current) + BigInt(effect.amount));
         const progression = component<GrowthProgression>(context,actorId,'progression'), attributes = component<GrowthAttributes>(context,actorId,'attributes');
         const build = component<GrowthSkillBuild>(context,actorId,'skill-build') ?? initialGrowthSkillBuild();
-        const actor = growthRuleActor(actorId,progression,attributes), scopes = growthSkillScopes(pack,build,state.objectiveClock);
+        const actor = growthRuleActor(actorId,progression,attributes), scopes = growthSkillScopes(pack,build,state.objectiveClock,'actor',component<GrowthIdentityBuild>(context,actorId,'identity'));
         const capacity = growthFocusCapacity(pack,actor,scopes), interval = growthFocusInterval(pack,actor,scopes);
         put(context,actorId,'focus',advanceGrowthFocus(pack,{ ...focus,current: Math.max(0,Math.min(capacity,current)) },capacity,interval,0));
     } else {
@@ -71,6 +74,32 @@ export function commitFirstVisitResource(context: ExtensionContext, state: Growt
 export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, identity: ExtensionModule['rules']): ExtensionModule {
     const config = pack.config;
     const rejected = (): Error => new Error(i18next.t('ext.growth.command.rejected', {defaultValue:'Character command is not available in the current state.'}));
+    const actorIdentity = (context: ExtensionContext | ExtensionRuleContext,id: number): GrowthIdentityBuild =>
+        context.getComponent(id,'identity') as GrowthIdentityBuild | undefined ?? initialGrowthIdentityBuild();
+    function creationBuild(payload: Json, native?: ExtensionCreationResources): GrowthActorBuild {
+        // The original explicit neutral contract remains useful to programmatic callers; the opening UI sends full selections.
+        let identity: GrowthIdentityBuild;
+        if (canonical(payload) === canonical({revision:0})) identity = initialGrowthIdentityBuild();
+        else {
+            if (!payload || typeof payload !== 'object' || Array.isArray(payload) || payload.revision !== 0
+                || Object.keys(payload).sort().join(',') !== 'choices,faithId,lineageId,professionId,revision') throw rejected();
+            const {revision:_,...selection} = payload;
+            identity = createGrowthIdentityBuild(pack,selection);
+        }
+        const progression = initialGrowthProgression(config.levels), attributes = initialGrowthAttributes(pack,growthIdentityAttributeValues(pack,identity));
+        const build = grantGrowthIdentitySkills(pack,identity,growthRuleActor(1,progression,attributes),initialGrowthSkillBuild());
+        // Resource calculations are pure preflight too; invalid composite definitions cannot retire a live game.
+        const actor = growthRuleActor(1,progression,attributes), effects = growthSkillScopes(pack,build,0,'actor',identity);
+        const derived = growthDerived(pack,actor,effects); growthFocusCapacity(pack,actor,effects); growthFocusInterval(pack,actor,effects);
+        if (native) {addGrowthIntegers(native.maxHp,derived.appliedMaxHp);addGrowthIntegers(native.strength,derived.appliedStrength);}
+        return {progression,attributes,build,identity};
+    }
+    function validCreation(payload: Json, native?: ExtensionCreationResources): boolean { try {creationBuild(payload,native);return true;} catch {return false;} }
+    function readBuild(context: ExtensionContext,id: number): GrowthActorBuild | undefined {
+        const progression = component<GrowthProgression>(context,id,'progression');
+        return progression ? {progression,attributes:component<GrowthAttributes>(context,id,'attributes'),
+            build:component<GrowthSkillBuild>(context,id,'skill-build'),identity:actorIdentity(context,id)} : undefined;
+    }
     function view(context: ExtensionContext | ExtensionRuleContext, id: number): GrowthRuleActor {
         const progression = context.getComponent(id,'progression') as GrowthProgression | undefined;
         const attributes = context.getComponent(id,'attributes') as GrowthAttributes | undefined;
@@ -79,54 +108,56 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
     const skillBuild = (context: ExtensionContext | ExtensionRuleContext, id: number): GrowthSkillBuild =>
         context.getComponent(id,'skill-build') as GrowthSkillBuild | undefined ?? initialGrowthSkillBuild();
     function scopes(context: ExtensionContext | ExtensionRuleContext, id: number, owner: 'actor'|'target' = 'actor'): readonly GrowthScopedModifiers[] {
-        return growthSkillScopes(pack,skillBuild(context,id),(context.state as unknown as GrowthState).objectiveClock,owner);
+        return growthSkillScopes(pack,skillBuild(context,id),(context.state as unknown as GrowthState).objectiveClock,owner,actorIdentity(context,id));
     }
     function policyScopes(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): readonly GrowthScopedModifiers[] {
         return [...scopes(context,input.actorId),...(input.targetId === null ? [] : scopes(context,input.targetId,'target'))];
     }
     function policyInput(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext) {
         return { ...input,actor: view(context,input.actorId),target: input.targetId === null ? null : view(context,input.targetId),
+            inactiveAttributeActorIds: [input.actorId,...(input.targetId === null ? [] : [input.targetId])].filter(id=>!context.getComponent(id,'progression')),
             actionId: 0,resolutionId: 0,tags: skillBuild(context,input.actorId).effects.filter(instance=>instance.expiresAt === null || instance.expiresAt > (context.state as unknown as GrowthState).objectiveClock).flatMap(instance => growthTimedDefinition(pack,instance)?.tags ?? []) };
     }
     const policy = (port: GrowthRulePort) => (input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number =>
         evaluateGrowthPort(pack,port,policyInput(input,context),policyScopes(input,context));
-    function initialize(context: ExtensionContext, state: GrowthState, actor: ActorFacts, birth: CreatureBirth): void {
+    function initialize(context: ExtensionContext, state: GrowthState, actor: ActorFacts, birth: CreatureBirth, selected?: GrowthActorBuild): void {
         observe(state,actor);
-        if (context.getComponent(actor.id,'progression')) return;
-        const progression = initialGrowthProgression(config.levels);
-        const sourceBuild = birth.nativeStatsCopied && birth.sourceId !== null && config.monsters.clone.inheritBuild
-            ? component<GrowthAttributes>(context,birth.sourceId,'attributes') : undefined;
-        const attributes = initialGrowthAttributes(pack,sourceBuild?.values);
-        const clone = birth.nativeStatsCopied;
-        if (clone) {
-            const source = birth.sourceId === null ? undefined : component<GrowthProgression>(context,birth.sourceId,'progression');
-            attributes.inheritedAttributePoints = config.monsters.clone.inheritUnspentPoints ? source?.attributePoints ?? 0 : 0;
-            attributes.inheritedSkillPoints = config.monsters.clone.inheritUnspentPoints ? source?.skillPoints ?? 0 : 0;
-            progression.attributePoints = attributes.inheritedAttributePoints; progression.skillPoints = attributes.inheritedSkillPoints;
-        }
-        const sourceSkills = clone && config.monsters.clone.inheritBuild && birth.sourceId !== null ? component<GrowthSkillBuild>(context,birth.sourceId,'skill-build') : undefined;
-        const build = sourceSkills ? inheritGrowthSkillBuild(sourceSkills) : initialGrowthSkillBuild();
-        const growthActor = growthRuleActor(actor.id,progression,attributes), initialEffects = growthSkillScopes(pack,build,state.objectiveClock), derived = growthDerived(pack,growthActor,initialEffects);
+        if (context.getComponent(actor.id,'reward')) return;
         const quote = config.experience.kills.monsterQuotes.find(entry => entry.monsterId === birth.originalMonsterType);
         const reward: GrowthReward = { ...birth,rewardId: `birth:${actor.id}`,threatRank: quote?.threatRank ?? 0,
             amount: quote ? quote.amount ?? config.experience.kills.base + config.experience.kills.perThreatRank * quote.threatRank : 0 };
-        const copied = birth.nativeStatsCopied;
-        const previous = !copied || birth.sourceId === null ? undefined : component<GrowthDerived>(context,birth.sourceId,'derived');
-        // A CE clone copies native maxHp. Remove copied automatic growth once before installing its neutral progression.
-        const oldBonus = previous?.appliedMaxHp ?? 0;
-        const maxHp = reconcileGrowthMaximum(actor.maxHp,oldBonus,derived.appliedMaxHp);
-        const capacity = growthFocusCapacity(pack,growthActor,initialEffects), focus = { current: capacity,remainder: 0 }, skills = { readyAt: {} };
+        put(context,actor.id,'reward',reward);
+        if (!actor.player && !config.monsters.enabled) {
+            // Reward provenance and received temporary effects are independent of NPC growth.
+            // Copied native fields can carry the source's bonus even if this new body has growth disabled.
+            const oldBonus = birth.nativeStatsCopied && birth.sourceId !== null ? component<GrowthDerived>(context,birth.sourceId,'derived')?.appliedMaxHp ?? 0 : 0;
+            if (oldBonus) {
+                const maximum = reconcileGrowthMaximum(actor.maxHp,oldBonus,0);
+                context.commitResources(actor.id,{expectedHp:actor.hp,expectedMaxHp:actor.maxHp,
+                    hp:Math.min(actor.hp,maximum)+Math.max(0,actor.hp-actor.maxHp),maxHp:maximum});
+            }
+            put(context,actor.id,'skill-build',initialGrowthSkillBuild()); return;
+        }
+        const clone = birth.nativeStatsCopied;
+        const birthBuild = selected ?? (clone ? initializeGrowthClone(pack,birth.sourceId === null ? undefined : readBuild(context,birth.sourceId))
+            : initializeGrowthTemplate(pack,selectGrowthMonsterTemplate(pack,context.depth)!));
+        const {progression,attributes,build,identity} = birthBuild;
+        const growthActor = growthRuleActor(actor.id,progression,attributes), initialEffects = growthSkillScopes(pack,build,state.objectiveClock,'actor',identity), derived = growthDerived(pack,growthActor,initialEffects);
+        const previous = !clone || birth.sourceId === null ? undefined : component<GrowthDerived>(context,birth.sourceId,'derived');
+        // A native clone copies maximum health. Remove the copied contribution before installing this body's build.
+        const oldBonus = previous?.appliedMaxHp ?? 0, maxHp = reconcileGrowthMaximum(actor.maxHp,oldBonus,derived.appliedMaxHp);
+        const capacity = growthFocusCapacity(pack,growthActor,initialEffects), focus = {current:capacity,remainder:0}, skills = {readyAt:{}};
         const resources = reconcileGrowthResources(config.levels,config.focus,'creation',
-            { hp: Math.min(actor.hp,actor.maxHp),maxHp: actor.maxHp,nextMaxHp: maxHp,focus,focusCapacity: capacity,nextFocusCapacity: capacity,skills });
-        if (!actor.player) resources.hp = Math.min(actor.hp,actor.maxHp-oldBonus) + Math.max(0,actor.hp-actor.maxHp);
-        put(context,actor.id,'progression',progression); put(context,actor.id,'derived',derived); put(context,actor.id,'attributes',attributes);
-        put(context,actor.id,'items',initialGrowthItemLedger()); put(context,actor.id,'skill-build',build);
-        put(context,actor.id,'reward',reward); put(context,actor.id,'focus',resources.focus); put(context,actor.id,'skills',resources.skills);
+            {hp:Math.min(actor.hp,actor.maxHp),maxHp:actor.maxHp,nextMaxHp:maxHp,focus,focusCapacity:capacity,nextFocusCapacity:capacity,skills});
+        if (!actor.player) resources.hp = Math.min(actor.hp,actor.maxHp,maxHp) + Math.max(0,actor.hp-actor.maxHp);
+        put(context,actor.id,'progression',progression);put(context,actor.id,'attributes',attributes);put(context,actor.id,'derived',derived);
+        put(context,actor.id,'identity',identity);put(context,actor.id,'items',initialGrowthItemLedger());put(context,actor.id,'skill-build',build);
+        put(context,actor.id,'focus',resources.focus);put(context,actor.id,'skills',resources.skills);
         if (actor.hp !== resources.hp || actor.maxHp !== resources.maxHp)
-            context.commitResources(actor.id,{expectedHp: actor.hp,expectedMaxHp: actor.maxHp,hp: resources.hp,maxHp: resources.maxHp});
+            context.commitResources(actor.id,{expectedHp:actor.hp,expectedMaxHp:actor.maxHp,hp:resources.hp,maxHp:resources.maxHp});
         const native = context.characterResources(actor.id);
         if (native.strength !== null && derived.appliedStrength) context.commitCharacterResources(actor.id,
-            { expectedStrength:native.strength,strength:addGrowthIntegers(native.strength,derived.appliedStrength),expectedGold:native.gold,gold:native.gold });
+            {expectedStrength:native.strength,strength:addGrowthIntegers(native.strength,derived.appliedStrength),expectedGold:native.gold,gold:native.gold});
     }
     function award(context: ExtensionContext, state: GrowthState, recipientId: number, amount: number): void {
         const old = component<GrowthProgression>(context,recipientId,'progression'), actor = context.creature(recipientId);
@@ -136,16 +167,42 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         if (!actor.player && !config.monsters.alliesGrow && actor.allied) return;
         const gain = grantExperience(config.levels,old,amount);
         const priorDerived = component<GrowthDerived>(context,recipientId,'derived');
-        const attributes = component<GrowthAttributes>(context,recipientId,'attributes');
-        const oldActor = growthRuleActor(recipientId,old,attributes), nextActor = growthRuleActor(recipientId,gain.progression,attributes);
-        const derived = growthDerived(pack,nextActor,scopes(context,recipientId));
+        const priorAttributes = component<GrowthAttributes>(context,recipientId,'attributes'), priorBuild = skillBuild(context,recipientId);
+        const identity = actorIdentity(context,recipientId), oldScopes = scopes(context,recipientId);
+        const nextBuild = !actor.player && actor.allied && gain.levelsGained
+            ? autoAllocateGrowthAlly(pack,recipientId,{progression:gain.progression,attributes:priorAttributes,build:priorBuild,identity})
+            : {progression:gain.progression,attributes:priorAttributes,build:priorBuild,identity};
+        const attributes = nextBuild.attributes, allocated = canonical(attributes) !== canonical(priorAttributes);
+        const equipped = canonical(nextBuild.build.active) !== canonical(priorBuild.active) || canonical(nextBuild.build.passive) !== canonical(priorBuild.passive);
+        gain.progression = nextBuild.progression;
+        const nextScopes = growthSkillScopes(pack,nextBuild.build,state.objectiveClock,'actor',identity);
+        const oldActor = growthRuleActor(recipientId,old,priorAttributes), levelActor = growthRuleActor(recipientId,gain.progression,priorAttributes);
+        const nextActor = growthRuleActor(recipientId,gain.progression,attributes), derived = growthDerived(pack,nextActor,nextScopes);
+        const levelDerived = growthDerived(pack,levelActor,oldScopes), levelMaxHp = reconcileGrowthMaximum(actor.maxHp,priorDerived.appliedMaxHp,levelDerived.appliedMaxHp);
         const nextMaxHp = reconcileGrowthMaximum(actor.maxHp,priorDerived.appliedMaxHp,derived.appliedMaxHp);
-        const resources = gain.levelsGained ? reconcileGrowthResources(config.levels,config.focus,'level',{
-            hp: Math.min(actor.hp,actor.maxHp),maxHp: actor.maxHp,nextMaxHp,focus: component<GrowthFocus>(context,recipientId,'focus'),
-            focusCapacity: growthFocusCapacity(pack,oldActor,scopes(context,recipientId)),nextFocusCapacity: growthFocusCapacity(pack,nextActor,scopes(context,recipientId)),skills: component<GrowthSkills>(context,recipientId,'skills'),
-        }) : { hp: actor.hp,maxHp: actor.maxHp,focus: component<GrowthFocus>(context,recipientId,'focus'),skills: component<GrowthSkills>(context,recipientId,'skills') };
-        if (!actor.player && actor.hp > actor.maxHp && nextMaxHp >= actor.maxHp && config.levels.recovery.levelHp !== 'full') resources.hp = actor.hp;
+        const allocatedDerived = growthDerived(pack,nextActor,oldScopes), allocatedMaxHp = reconcileGrowthMaximum(actor.maxHp,priorDerived.appliedMaxHp,allocatedDerived.appliedMaxHp);
+        let resources = gain.levelsGained ? reconcileGrowthResources(config.levels,config.focus,'level',{
+            hp:Math.min(actor.hp,actor.maxHp),maxHp:actor.maxHp,nextMaxHp:levelMaxHp,focus:component<GrowthFocus>(context,recipientId,'focus'),
+            focusCapacity:growthFocusCapacity(pack,oldActor,oldScopes),nextFocusCapacity:growthFocusCapacity(pack,levelActor,oldScopes),skills:component<GrowthSkills>(context,recipientId,'skills'),
+        }) : {hp:actor.hp,maxHp:actor.maxHp,focus:component<GrowthFocus>(context,recipientId,'focus'),skills:component<GrowthSkills>(context,recipientId,'skills')};
+        if (!actor.player && actor.hp > actor.maxHp && levelMaxHp >= actor.maxHp && config.levels.recovery.levelHp !== 'full') resources.hp = actor.hp;
+        if (allocated) {
+            const before = resources;
+            resources = reconcileGrowthResources(config.levels,config.focus,'allocation',{
+                hp:Math.min(before.hp,before.maxHp),maxHp:before.maxHp,nextMaxHp:allocatedMaxHp,focus:before.focus,
+                focusCapacity:growthFocusCapacity(pack,levelActor,oldScopes),nextFocusCapacity:growthFocusCapacity(pack,nextActor,oldScopes),skills:before.skills,
+            });
+            if (!actor.player && before.hp > before.maxHp && allocatedMaxHp >= before.maxHp && config.levels.recovery.allocationHp !== 'full') resources.hp = before.hp;
+        }
+        if (equipped) {
+            resources.hp = nextMaxHp < resources.maxHp ? Math.min(resources.hp,nextMaxHp) : resources.hp; resources.maxHp = nextMaxHp;
+        }
+        const capacity = growthFocusCapacity(pack,nextActor,nextScopes);
+        if (equipped && !config.skills.equipPreservesFocus) resources.focus.current = capacity;
+        if (equipped && !config.skills.equipPreservesCooldowns) resources.skills.readyAt = Object.fromEntries(Object.keys(resources.skills.readyAt).map(id=>[id,0]));
+        resources.focus = advanceGrowthFocus(pack,{...resources.focus,current:Math.min(resources.focus.current,capacity)},capacity,growthFocusInterval(pack,nextActor,nextScopes),0);
         put(context,recipientId,'progression',gain.progression); put(context,recipientId,'derived',derived);
+        put(context,recipientId,'attributes',attributes);put(context,recipientId,'skill-build',nextBuild.build);
         put(context,recipientId,'focus',resources.focus); put(context,recipientId,'skills',resources.skills);
         const native = context.characterResources(recipientId);
         if (native.strength !== null && derived.appliedStrength !== priorDerived.appliedStrength) context.commitCharacterResources(recipientId,
@@ -167,7 +224,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         const native = context.characterResources(actor.id), oldActor = growthRuleActor(actor.id,progression,prior);
         let attributes: GrowthAttributes, next = { ...progression }, gold = native.gold;
         if (action === 'allocate') {
-            const proposal = allocateGrowthAttributes(pack,prior,progression.attributePoints,payload.attributes);
+            const proposal = allocateGrowthAttributes(pack,prior,progression.attributePoints,payload.attributes,growthIdentityAttributeValues(pack,actorIdentity(context,actor.id)));
             attributes = proposal.attributes; next.attributePoints -= proposal.cost;
         } else {
             if (!config.respec.enabled) throw rejected();
@@ -252,16 +309,16 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
             skill = typeof payload.skillId === 'string' ? growthSkillDefinition(pack,payload.skillId) : undefined;
             if (!skill) throw rejected();
             if (action === 'learn-skill') {
-                if (progression.skillPoints < skill.cost || !canLearnGrowthSkill(pack,skill,view(context,actor.id),build)) throw rejected();
+                if (progression.skillPoints < skill.cost || !canLearnGrowthSkill(pack,skill,view(context,actor.id),build,actorIdentity(context,actor.id))) throw rejected();
             } else {
                 if (!build.active.includes(skill.id) || skill.mode !== 'active' || !skill.action || focus.current < skill.focusCost
                     || (skills.readyAt[skill.id] ?? 0) > state.objectiveClock) throw rejected();
                 request = {actorId,action:skill.action.kind,target:payload.target as unknown as ControlledActionRequest['target']};
-                addGrowthIntegers(state.objectiveClock,growthSkillCooldown(pack,skill,view(context,actorId),build,state.objectiveClock));
+                addGrowthIntegers(state.objectiveClock,growthSkillCooldown(pack,skill,view(context,actorId),build,state.objectiveClock,actorIdentity(context,actorId)));
                 addGrowthIntegers(state.nextActionId,1);
                 addGrowthIntegers(state.nextEffectId,skill.effects.filter(effect=>effect.kind==='timed').length);
                 for (const effect of skill.effects) if (effect.kind==='timed') {
-                    const duration = growthEffectDuration(pack,effect,view(context,actorId),build.passive);
+                    const duration = growthEffectDuration(pack,effect,view(context,actorId),growthTaggedSources(pack,build,actorIdentity(context,actorId)));
                     if (duration !== null) addGrowthIntegers(state.objectiveClock,duration);
                 }
             }
@@ -284,7 +341,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                     directDamage:skill.action?.kind === 'attack' ? true : undefined,tags:[...skill.tags,...effect.tags]})) continue;
             const recipientId = effect.recipient === 'self' ? actorId : target.kind === 'creature' ? target.id : null;
             if (recipientId === null || !context.getComponent(recipientId,'skill-build')) continue;
-            const instance = createGrowthEffectInstance(pack,skill,effect,source,sourceBuild,state.objectiveClock,actionId,state.nextEffectId);
+            const instance = createGrowthEffectInstance(pack,skill,effect,source,sourceBuild,state.objectiveClock,actionId,state.nextEffectId,actorIdentity(context,actorId));
             state.nextEffectId = addGrowthIntegers(state.nextEffectId,1);
             const build = skillBuild(context,recipientId); build.effects.push(instance); put(context,recipientId,'skill-build',build);
             // Save clock/sequence before reconciling; policies read the same committed state.
@@ -329,7 +386,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                 const state = getState(fresh), focus = component<GrowthFocus>(fresh,actorId,'focus'), skills = component<GrowthSkills>(fresh,actorId,'skills');
                 actionId = state.nextActionId; state.nextActionId = addGrowthIntegers(state.nextActionId,1); openAction = actionId;
                 focus.current -= skill.focusCost;
-                skills.readyAt[skill.id] = addGrowthIntegers(state.objectiveClock,growthSkillCooldown(pack,skill,view(fresh,actorId),skillBuild(fresh,actorId),state.objectiveClock));
+                skills.readyAt[skill.id] = addGrowthIntegers(state.objectiveClock,growthSkillCooldown(pack,skill,view(fresh,actorId),skillBuild(fresh,actorId),state.objectiveClock,actorIdentity(fresh,actorId)));
                 put(fresh,actorId,'focus',focus);put(fresh,actorId,'skills',skills);state.revision = addGrowthIntegers(state.revision,1);saveState(fresh,state);
                 applyTimed(fresh,skill,actorId,actionId,'action-start',plan.request!.target);
             },
@@ -349,6 +406,9 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         for (const fact of state.pending) {
             if (fact.kind === 'visit') {
                 if (!remember(state.visitedDepths,fact.depth)) continue;
+                for (const id of fact.actorIds) if (context.getComponent(id,'identity'))
+                    for (const {effect} of growthIdentityFirstVisitEffects(pack,actorIdentity(context,id),id,fact.depth,state.resourceReceipts))
+                        commitFirstVisitResource(context,state,pack,id,fact.depth,effect);
                 const rule = config.experience.firstVisits;
                 if (!config.experience.sources.firstVisits || fact.depth < rule.minDepth || fact.depth > rule.maxDepth) continue;
                 const quoted = rule.base + rule.perDepth * fact.depth;
@@ -393,7 +453,10 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
     const module: ExtensionModule = {
         id: 'growth',version: pack.moduleVersion,rules: identity,resourceCommits: true,
         view: { definitions: pack as unknown as ReadonlyJson, stateFields: ['created','revision','objectiveClock'],
-            playerComponents: ['progression','attributes','derived','focus','skills','skill-build'] },
+            playerComponents: ['progression','attributes','derived','focus','skills','skill-build','identity'],
+            componentFields:{identity:['professionId','lineageId','faithId','choices'],'skill-build':['learned','inherited','active','passive','effects']} },
+        projectPlayerComponent: (name,value) => name === 'skill-build'
+            ? projectGrowthSkillBuild(pack,value as unknown as GrowthSkillBuild) as unknown as Json : structuredClone(value) as Json,
         rulePolicies: {
             hitChance:policy('hitChance'), physicalDamage:(input,context) => evaluateGrowthPhysicalDamage(pack,policyInput(input,context) as GrowthDamageInput,policyScopes(input,context)),
             stealthRange:policy('stealthRange'), searchStrength:policy('searchStrength'), strengthBonus:policy('strengthBonus'),maxHpBonus:policy('maxHpBonus'),
@@ -433,20 +496,26 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
             if (!growth.created || growth.pending.length || !actors.some(actor => actor.player && actor.id === growth.playerId)) return false;
             return Object.entries(components).every(([id,entries]) => !Object.keys(entries).some(key => key.startsWith('growth:')) || ids.has(Number(id)))
                 && actors.every(actor => { const summary = growth.actors[actor.id];
-                    return !!components[actor.id]?.['growth:progression'] && actor.maxHp > componentBonus(components[actor.id]?.['growth:derived'])
+                    return !!components[actor.id]?.['growth:reward'] && (actor.player || config.monsters.enabled ? !!components[actor.id]?.['growth:progression'] : !components[actor.id]?.['growth:progression'])
+                        && actor.maxHp > componentBonus(components[actor.id]?.['growth:derived'])
                         && Number.isSafeInteger(actor.hp) && Number.isSafeInteger(actor.maxHp) && actor.maxHp >= 1 && actor.hp >= 0 && (!actor.player || actor.hp <= actor.maxHp)
                         && !!summary && summary.player === actor.player && summary.allied === actor.allied && summary.hostile === actor.hostile
                         && summary.alive === (actor.hp > 0); });
         },
         validateRecording(events) {
-            return events.length > 0 && events[0]!.action === 'ext:command' && isCreationCommand(events[0]!.data)
+            return events.length > 0 && events[0]!.action === 'ext:command' && isCreationCommand(events[0]!.data) && validCreation(JSON.parse(events[0]!.data as string).payload)
                 && events.every((event,index) => (event.extensions?.modules.growth as unknown as GrowthState)?.created === true
                     && (index === 0 || event.action !== 'ext:command' || !isCreationCommand(event.data)));
         },
         initialCommand: { action: 'create-character',payload: { revision: 0 } },
+        validateInitialCommand: (action,payload,native) => action === 'create-character' && validCreation(payload,native),
         allowInput(action,data,context) {
             const state = getState(context);
-            if (!state.created) return action === 'ext:command' && isCreationCommand(data) && (context.creature(context.playerId)?.hp ?? 0) > 0;
+            if (!state.created) {
+                const actor = context.creature(context.playerId), native = context.characterResources(context.playerId);
+                return !!actor && actor.hp > 0 && native.strength !== null && action === 'ext:command' && isCreationCommand(data)
+                    && validCreation(JSON.parse(data as string).payload,{maxHp:actor.maxHp,strength:native.strength});
+            }
             if (action !== 'ext:command') return true;
             try {
                 const input = JSON.parse(String(data)); if (input.module !== 'growth') return true;
@@ -461,9 +530,9 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         onNewGame(context) { const state = initialGrowthState(); state.playerId = context.playerId; saveState(context,state); },
         commands: { 'create-character'(payload,context) {
             const state = getState(context), actor = context.creature(context.playerId);
-            if (state.created || canonical(payload) !== canonical({revision:0}) || !actor || actor.hp <= 0)
+            if (state.created || !validCreation(payload) || !actor || actor.hp <= 0)
                 throw new Error(i18next.t('ext.growth.command.rejected', {defaultValue:'Character command is not available in the current state.'}));
-            initialize(context,state,actor,{creationReason:'scripted',originalMonsterType:null,initiallyHostile:false,sourceId:null,nativeStatsCopied:false});
+            initialize(context,state,actor,{creationReason:'scripted',originalMonsterType:null,initiallyHostile:false,sourceId:null,nativeStatsCopied:false},creationBuild(payload,{maxHp:actor.maxHp,strength:context.characterResources(actor.id).strength!}));
             state.created = true; state.revision = 1; state.identifiedKinds = context.knownKinds().map(kind => kind.id).sort();
             saveState(context,state);
         }, allocate(payload,context) { commitCharacterCommand('allocate',payload,context); },
@@ -523,9 +592,9 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                 if (actor.player) return;
                 const state = getState(context); state.pending.push({kind:'kill',actor:{...actor},origin,administrative}); saveState(context,state);
             },
-            enteredLevel({depth,firstVisit},context) {
+            enteredLevel({depth,firstVisit,actorIds},context) {
                 if (!firstVisit) return;
-                const state = getState(context); state.pending.push({kind:'visit',depth}); saveState(context,state);
+                const state = getState(context); state.pending.push({kind:'visit',depth,actorIds:[...(actorIds ?? [context.playerId])]}); saveState(context,state);
             },
             itemKnowledgeChanged({kindId},context) {
                 // Knowledge is committed by ItemLoader; payment waits for the common command safe point.

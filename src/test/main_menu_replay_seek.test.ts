@@ -78,6 +78,7 @@ beforeAll(async () => {
         vue: Vue, 'i18next-vue': translation,
         '../engine/Input': { inputManager: { registerModalKeyHandler: () => () => {} } },
         './MapTileLegend.vue': empty, './theme/TitleFx.vue': empty,
+        './growth/GrowthCreationPanel.vue': empty, '../ext/modules/growth/view': await import('../ext/modules/growth/view'),
         '../ui/mapTiles': await import('../ui/mapTiles'), '../engine/Seed': await import('../engine/Seed'),
         '../engine/Settings': await import('../engine/Settings'),
     };
