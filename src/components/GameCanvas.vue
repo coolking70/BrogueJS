@@ -675,6 +675,8 @@ onMounted(async () => {
             mapStyle: mapMode.value,
             seed: game.currentSeed,
             acknowledgment: logger.pendingAcknowledgment?.text ?? null,
+            pendingCommand: game.pendingCommandConfirmation?.ownerCommandId ?? null,
+            confirmation: game.pendingCommandConfirmation?.message ?? null,
             mode: game.pendingEnchantment ? 'enchantment_target' : game.pendingArcana ? 'arcana_target' : game.isInventoryOpen ? 'inventory' : (game.isThrowing ? 'throw_target' : 'explore'),
             enchantmentTargets: game.pendingEnchantment
                 ? game.player.inventory.items.filter(item => game.canEnchantTarget(item)).map(item => ({ id: item.id, name: item.displayName })) : [],
@@ -961,7 +963,7 @@ onMounted(async () => {
     let lastInput = game.recordedInputEvents[game.recordedInputEvents.length - 1];
     let skipNextDisplayTime = false;
     const autoAllowed = () => !game.replayRecording && !game.isTimePaused()
-        && !game.isAdvancing && !game.isInputLocked() && !game.isGameOver
+        && !game.hasPendingConfirmation && !game.isAdvancing && !game.isInputLocked() && !game.isGameOver
         && !dialogInput.busy() && !logger.pendingAcknowledgment && game.isAutoTraveling() && !document.hidden;
     const displayFrame = (elapsedMs: number, animationMs: number = elapsedMs) => {
         syncHeldInputContext();

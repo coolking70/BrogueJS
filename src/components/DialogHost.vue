@@ -4,7 +4,7 @@ import { activeGame } from '../engine/Core/Game';
 import { logger } from '../engine/Systems/Logger';
 import { DialogService, type DialogEntry } from '../ui/dialogService';
 import { dialogInput } from '../ui/dialogInput';
-import { bindDialogAcknowledgments } from '../ui/dialogAcknowledgments';
+import { bindDialogAcknowledgments, bindDialogCommands } from '../ui/dialogAcknowledgments';
 import { registerHeldInputContext } from '../ui/heldInput';
 
 const props = defineProps<{ service?: DialogService; epoch?: number }>();
@@ -14,6 +14,7 @@ const panel = ref<HTMLElement | null>(null);
 const invalidAnswer = ref(false);
 let sourceFocus: HTMLElement | null = null;
 let removeInput: (() => void) | undefined;
+let removeCommands: (() => void) | undefined;
 let removeAcknowledgments: (() => void) | undefined;
 let removeContext: (() => void) | undefined;
 let timer = 0;
@@ -50,6 +51,7 @@ onMounted(() => {
                 buttons[event.shiftKey ? buttons.length - 1 : 0]?.focus();
             }
         } });
+    removeCommands = bindDialogCommands(service, activeGame);
     removeAcknowledgments = bindDialogAcknowledgments(service, activeGame, logger);
     removeContext = registerHeldInputContext(() => { service.sync(); return [service.current?.token]; });
     timer = window.setInterval(() => { service.sync(); refresh(); }, 50);
@@ -57,7 +59,7 @@ onMounted(() => {
 });
 onUnmounted(() => {
     window.clearInterval(timer);
-    removeContext?.(); removeAcknowledgments?.(); removeInput?.(); unsubscribe();
+    removeContext?.(); removeCommands?.(); removeAcknowledgments?.(); removeInput?.(); unsubscribe();
     service.dispose();
 });
 </script>

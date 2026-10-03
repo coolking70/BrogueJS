@@ -85,7 +85,7 @@ const flushDeferredClose = () => {
         closeDeferred = false;
         return;
     }
-    if (activeGame.isAdvancing) return;
+    if (activeGame.isAdvancing || activeGame.hasPendingConfirmation) return;
     if (dialogs?.current) return;
     closeDeferred = false;
     activeGame.handlePlayerAction('escape');
@@ -95,7 +95,7 @@ const closeInventory = () => {
     if (activeGame.pendingEnchantment) return; // CE mandatory target after reading.
     activeGame.handlePlayerAction('escape');
     ringReplacementTarget.value = null;
-    if (activeGame.isInventoryOpen && activeGame.isAdvancing) closeDeferred = true;
+    if (activeGame.isInventoryOpen && (activeGame.isAdvancing || activeGame.hasPendingConfirmation)) closeDeferred = true;
     selectedItem.value = null;
     updateInventoryState();
 };
@@ -278,7 +278,7 @@ const selectItemOrIdentify = (item: Item) => {
         return;
     }
     if (pendingEnchantment.value) {
-        activeGame.executeItemCommand('enchant', toRaw(item), undefined, () => activeGame.chooseEnchantTarget(toRaw(item)));
+        activeGame.executeItemCommand('enchant', toRaw(item));
         selectedItem.value = null;
         updateInventoryState();
         return;
@@ -334,7 +334,7 @@ const performQuaff = (item: Item) => {
 };
 
 const performRead = (item: Item) => {
-    activeGame.executeItemCommand('read', toRaw(item), undefined, () => activeGame.readItem(toRaw(item)));
+    activeGame.executeItemCommand('read', toRaw(item));
     if (activeGame.pendingEnchantment) {
         selectedItem.value = null;
         cancelCall();

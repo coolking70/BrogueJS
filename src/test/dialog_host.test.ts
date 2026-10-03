@@ -11,6 +11,7 @@ import { dialogInput } from '../ui/dialogInput';
 import { logger } from '../engine/Systems/Logger';
 import { rng } from '../engine/Random';
 import { createHeadlessGame } from './harness';
+import { ItemCategory } from '../engine/Items/Item';
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import { TerrainType } from '../engine/Map/Grid';
 import type { Game } from '../engine/Core/Game';
@@ -242,5 +243,63 @@ describe('D1 real inventory command adapter', () => {
         app!.unmount(); app = undefined;
         expect(service.answer(token, 'yes')).toBe(false);
         expect(game.recordedInputEvents).toHaveLength(count); expect(game.player.inventory.items).toContain(item);
+    });
+});
+
+
+describe('D2 real Host resumes engine command capabilities', () => {
+    it.each([false, true])('inventory food answer %s keeps waiting command unrecorded and closes only after completion', async decision => {
+        const game = createHeadlessGame(33207); gameModule.activeGame = game;
+        game.animationEnabled = true;
+        const food = game.player.inventory.items.find(item => item.category === ItemCategory.FOOD)!;
+        game.executeCommand('toggle_inventory'); mount(true); await Vue.nextTick();
+        const native = vi.fn(() => { throw new Error('native classic confirmation'); });
+        game.onConfirmRequest = native;
+        const row = all(body).find(n => n.props.class === 'item-letter' && n.text.startsWith(food.inventoryLetter!))!.parent!;
+        row.props.onClick(); await Vue.nextTick();
+        const eat = all(body).find(n => n.type === 'button' && n.text === '食用');
+        expect(eat).toBeDefined(); eat!.props.onClick(); await Vue.nextTick();
+        const count = game.recordedInputEvents.length;
+        expect(game.hasPendingConfirmation).toBe(true);
+        expect(game.isInventoryOpen).toBe(true);
+        expect(findDialog()?.props['data-dialog-owner']).toMatch(/^command:/);
+        game.executeCommand('wait'); expect(game.recordedInputEvents).toHaveLength(count);
+        vi.advanceTimersByTime(6000); expect(game.hasPendingConfirmation).toBe(true);
+        click(findAction(decision ? 'yes' : 'no')!); await Vue.nextTick();
+        while (game.isAdvancing) game.tickAdvancement(25);
+        await settle();
+        expect(native).not.toHaveBeenCalled(); expect(game.hasPendingConfirmation).toBe(false);
+        expect(game.recordedInputEvents[count]!.decisions).toEqual([decision]);
+        expect(game.player.inventory.items.includes(food)).toBe(!decision);
+        expect(game.isInventoryOpen).toBe(false);
+        expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.action).toBe('escape');
+    });
+    it('engine multi-question risk chain requires a fresh keyboard lifecycle for the next question', async () => {
+        const game = createHeadlessGame(33208); gameModule.activeGame = game;
+        game.monsters = []; game.player.loc = { x: 10, y: 10 }; game.player.hp = 500;
+        game.grid.setTerrain(10, 10, TerrainType.FLOOR);
+        game.grid.setTerrain(11, 10, TerrainType.PRESSURE_PLATE);
+        game.grid.setTerrainLayer(11, 10, 3, TerrainType.PLAIN_FIRE);
+        Object.assign(game.grid.getCell(11, 10)!, { isVisible: true, hasMemory: true });
+        mount(); game.executeCommand('move', { x: 1, y: 0 }); await Vue.nextTick();
+        const first = service.current!.token;
+        press('Enter'); await Vue.nextTick();
+        expect(service.current?.token).not.toBe(first);
+        expect(service.current?.text).toContain('压力板');
+        press('Enter', true); expect(game.hasPendingConfirmation).toBe(true);
+        release('Enter'); press('n'); release('n'); await Vue.nextTick();
+        expect(game.player.loc).toEqual({ x: 10, y: 10 });
+        expect(game.recordedInputEvents[0]!.decisions).toEqual([true, false]);
+        expect(findDialog()).toBeUndefined();
+    });
+    it('Host unmount invalidates a real engine continuation without committing a No', async () => {
+        const game = createHeadlessGame(33209); gameModule.activeGame = game; mount();
+        const food = game.player.inventory.items.find(item => item.category === ItemCategory.FOOD)!;
+        game.executeItemCommand('eat', food); await Vue.nextTick();
+        const spec = game.pendingCommandConfirmation!, token = service.current!.token;
+        app!.unmount(); app = undefined;
+        expect(game.resolveCommandDecision(spec.token, true)).toBe(false);
+        expect(service.answer(token, 'yes')).toBe(false);
+        expect(game.recordedInputEvents).toEqual([]); expect(game.player.inventory.items).toContain(food);
     });
 });

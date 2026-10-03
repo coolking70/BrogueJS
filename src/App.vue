@@ -1,11 +1,7 @@
 <script lang="ts">
-// UI-1 第 6 条：Game.onConfirmRequest（C-5 落下的钩子，Game.ts:408）的生产侧接线。
-// 引擎的 requestConfirm 是**同步**契约（CE confirm() 在文本框里自旋等键，IO.c:2946-2975），
-// 所以这里用浏览器原生 confirm()——它是 web 平台唯一能同步阻塞等答案的模态，
-// 且按键语义与 CE 完全同构：Enter = OK = Yes（CE RETURN_KEY 挂在 Yes 钮，
-// IO.c:2956）、Esc = Cancel = No（CE ESCAPE_KEY 挂在 No 钮，IO.c:2966；
-// ACKNOWLEDGE_KEY = ' ' 同样映射 No，Rogue.h:1179）。
-// 纯逻辑（回放旁路）拆成可单测的导出函数；测试见 ui_1_rendering.test.ts。
+// D4 only: the historical blink hook still has a synchronous native resolver.
+// Q1–Q10 are wired by DialogHost through onCommandConfirmRequest; replay answers
+// are consumed by the engine and never reach that adapter.
 import type { Game } from './engine/Core/Game';
 import { cancelHeldInputs } from './ui/heldInput';
 import { dialogInput } from './ui/dialogInput';
@@ -99,8 +95,7 @@ const showTouch = computed(() => (shouldShowTouchControls(viewport.coarsePointer
   || (displaySettings.immersiveMode && compact.value)) && !replayActive.value);
 const showCommands = computed(() => (compact.value || showTouch.value) && !replayActive.value);
 
-// UI-1 第 6 条：把引擎确认钩子接到本组件（headless/测试环境不挂载 App，
-// 钩子保持 null → requestConfirm 按"确认"处理，与 C-5 申报一致）。
+// D4 闪现暂留原同步接线；经典确认由常驻 DialogHost 适配。
 wireConfirmRequest(activeGame);
 
 const gameStarted = ref(false);
@@ -168,6 +163,10 @@ const startNewGame = (payload: { seed?: string; mode: GameMode }) => {
 
 const saveGame = async () => {
   if (!gameStarted.value) return;
+  if (activeGame.hasPendingConfirmation) {
+    replayMessage(i18next.t('menu.command.waiting', { defaultValue: 'Please answer the current confirmation before saving or exporting.' }));
+    return;
+  }
   try {
     saveInfo.value = await saveSnapshot(activeGame.toSaveSnapshot());
     storageTick.value++;
@@ -215,7 +214,9 @@ const currentReplayJson = async (): Promise<string> => {
   if (activeGame.replayRecording) return JSON.stringify(activeGame.replayRecording);
   const epoch = runEpoch.value;
   if (!activeGame.canExportRecording) {
-    replayFeedback.value = i18next.t('menu.replay.waiting', { defaultValue: 'Waiting for the current turn to finish…' });
+    replayFeedback.value = activeGame.hasPendingConfirmation
+      ? i18next.t('menu.command.waiting', { defaultValue: 'Please answer the current confirmation before saving or exporting.' })
+      : i18next.t('menu.replay.waiting', { defaultValue: 'Waiting for the current turn to finish…' });
   }
   return recordingJsonAtBoundary(activeGame, () => runEpoch.value === epoch);
 };
@@ -345,6 +346,7 @@ const importReplayJson = async (file: File) => {
 };
 
 const handleReturnToTitle = async () => {
+    activeGame.cancelPendingCommand();
     logger.clearAcknowledgments();
     runEpoch.value++;
     // Return to menu logic

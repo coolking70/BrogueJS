@@ -35,6 +35,7 @@
     "src/test/canvas_resize.test.ts",
     "src/test/captive_manacles.test.ts",
     "src/test/dialog_host.test.ts",
+    "src/test/dialog_continuations.test.ts",
     "src/test/dialog_service_input.test.ts",
     "src/test/dpad_hold_input.test.ts",
     "src/test/f_1_fire_as_terrain.test.ts",

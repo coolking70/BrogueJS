@@ -1,4 +1,6 @@
 {
+  "dialog.command_changed": "情况已改变，请重新输入命令。",
+  "menu.command.waiting": "请先回答当前确认，再保存或导出。",
   "death.cursed_ring": "被诅咒戒指吸干生命",
   "messages.view_result": "查看结算",
   "messages.view_result_hint": "按 R 查看结算；未读消息会保留。",

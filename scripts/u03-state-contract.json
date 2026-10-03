@@ -1,4 +1,8 @@
 {
+  "onCommandConfirmRequest": {
+    "kind": "session",
+    "contract": "D2：可选会话呈现通知；续体/token 在 WeakMap，重建场景丢弃，不写存档或录像。"
+  },
   "absoluteTurnNumber": {
     "kind": "run",
     "contract": "U03b：客观块加一；环境补跑暂借历史值后恢复。"
