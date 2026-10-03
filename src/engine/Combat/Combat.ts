@@ -62,7 +62,14 @@ export interface AttackResult {
     seized?: boolean;
 }
 
+// The owning run handles immediate gameOver; the callback is never persisted.
+const transferenceDeathHandlers = new WeakMap<Player, () => void>();
+
 export class CombatSystem {
+
+    public static bindTransferenceDeath(player: Player, handler: () => void): void {
+        transferenceDeathHandlers.set(player, handler);
+    }
 
     /**
      * Resolves an attack from one creature to another.
@@ -363,19 +370,26 @@ export class CombatSystem {
     /** CE inflictDamage (Combat.c:1847-1871), after shielding and before
      * subtracting HP. The original attacker owns reflected damage; no maxHP cap.
      * Environment/poison ticks have no attacker and do not call this helper. */
-    public static transferMonsterHealth(attacker: Creature, defender: Creature, hpDamage: number): void {
-        if (defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable())) return;
+    public static transferMonsterHealth(attacker: Creature, defender: Creature, hpDamage: number): boolean {
+        if (defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable())) return true;
         const dealt = Math.min(hpDamage, defender.hp);
         if (attacker instanceof Player) {
             const bonus = ringBonus(attacker.rings(), 'ring_of_transference');
-            if (!bonus) return;
+            if (!bonus) return true;
             const amount = Math.trunc(dealt * ringTransferencePercent(bonus) / 100);
             const transfer = amount || (bonus > 0 ? 1 : -1);
             if (transfer < 0) attacker.takeDamage(-transfer, true);
             else attacker.hp += transfer;
+            // CE Combat.c:1872-1875 returns false from inflictDamage before
+            // victim HP loss. Its callers still follow their survivor paths.
+            if (attacker.hp <= 0) {
+                transferenceDeathHandlers.get(attacker)?.();
+                return false;
+            }
         } else if (attacker instanceof Monster && attacker.hasAbility('MA_TRANSFERENCE')) {
             attacker.hp += Math.trunc(dealt * (attacker.isAlly ? 4 : 9) / 10);
         }
+        return true;
     }
 
     /**
