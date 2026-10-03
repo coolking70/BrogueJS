@@ -1,11 +1,8 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
-import * as translation from 'i18next-vue';
 import I18NextVue from 'i18next-vue';
 import i18next from 'i18next';
-import { parse, compileScript } from '@vue/compiler-sfc';
-import ts from 'typescript';
-import { readFileSync } from 'node:fs';
+import { createSfcHarness } from './support/sfcHarness';
 import zhCN from '../locales/zh_CN.json';
 import { Direction } from '../types';
 import { commandConfirmationFixture } from './support/commandConfirmation';
@@ -53,52 +50,33 @@ beforeAll(async () => {
     await import('./harness');
     heldInput = await import('../ui/heldInput');
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
-    const modules: Record<string, unknown> = { vue: Vue, 'i18next-vue': translation,
-        i18next: { default: i18next, __esModule: true }, '../types': { Direction },
-        '../ui/commands': { dispatch: moves }, '../../ui/commands': { dispatch: moves },
-        '../ui/heldInput': heldInput, './ui/dialogService': await import('../ui/dialogService'), './ui/dialogInput': await import('../ui/dialogInput'),
-        './engine/Systems/Logger': await import('../engine/Systems/Logger'),
-        './ui/heldInput': heldInput,
-        '../engine/Input': { inputManager: { registerModalKeyHandler: () => () => {} } },
-        '../../engine/Input': { inputManager: { registerModalKeyHandler: () => () => {} } },
-        './engine/Input': { inputManager: { triggerAction: moves } },
-        './engine/Settings': { displaySettings: settings }, './engine/Core/Game': { activeGame: gameStub },
-        './engine/Core/SaveStorage': { readSaveSummary: async () => null, saveSnapshot },
-        './ui/immersiveMode': { registerImmersiveShortcut: () => () => {} }, './ui/recordingExport': {},
-        './ui/layout': { viewport: { mode: 'portrait', coarsePointer: true }, startViewportTracking() {}, shouldShowTouchControls: () => true },
-        './CmdIcon.vue': { default: { render: () => null }, __esModule: true },
-    };
-    function compile(file: string) {
-        const source = readFileSync(new URL('../' + file, import.meta.url), 'utf8');
-        const { descriptor } = parse(source);
-        const script = compileScript(descriptor, { id: file, inlineTemplate: true });
-        const code = ts.transpileModule(script.content, { compilerOptions: {
-            target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, esModuleInterop: true,
-        } }).outputText;
-        const exports: any = {};
-        new Function('require', 'exports', code)((key: string) => {
-            if (!(key in modules)) throw new Error(`Unresolved hold-test import: ${key}`);
-            return modules[key];
-        }, exports);
-        return exports.default;
-    }
-    DPad = compile('components/DPad.vue'); Bar = compile('components/CommandBar.vue'); Radial = compile('components/theme/RadialCommands.vue');
-    for (const key of readFileSync('src/App.vue', 'utf8').matchAll(/from '(\.\/components\/[^']+\.vue)'/g)) {
-        modules[key[1]!] = { default: { render: () => null }, __esModule: true };
-    }
-    const emitter = (type: string, event: string, payload?: unknown) => ({ default: Vue.defineComponent({
+    const stubs = { '../ui/commands': { dispatch: moves } };
+    const harness = createSfcHarness({ baseURL: import.meta.url, stubs: {
+        ...stubs, '../engine/Input': { inputManager: { registerModalKeyHandler: () => () => {} } },
+    }, components: { '../components/theme/CmdIcon.vue': { render: () => null } } });
+    DPad = await harness.load('../components/DPad.vue'); Bar = await harness.load('../components/CommandBar.vue');
+    Radial = await harness.load('../components/theme/RadialCommands.vue');
+    const emitter = (type: string, event: string, payload?: unknown) => Vue.defineComponent({
         emits: [event], setup(_props, { emit }) { return () => Vue.h(type, { onActivate: () => emit(event, payload) }); },
-    }), __esModule: true });
-    modules['./components/MainMenu.vue'] = emitter('start', 'new-game', { mode: 'test' });
-    modules['./components/theme/ThemeHud.vue'] = { default: Vue.defineComponent({ emits: ['menu', 'panel'], setup(_props, { emit }) {
-        return () => Vue.h('hud', { onMenu: () => emit('menu'), onPanel: () => emit('panel') });
-    } }), __esModule: true };
-    modules['./components/theme/ThemeLog.vue'] = emitter('journal', 'open-journal');
-    modules['./components/theme/ThemeNearby.vue'] = emitter('nearby', 'inspect', { name: 'detail' });
-    modules['./components/DPad.vue'] = { default: DPad, __esModule: true };
-    modules['./components/CommandBar.vue'] = emitter('commands', 'modal-open');
-    modules['./components/theme/RadialCommands.vue'] = emitter('radial', 'modal-open');
-    App = compile('App.vue');
+    });
+    const appHarness = createSfcHarness({ baseURL: import.meta.url, stubComponents: { render: () => null }, stubs: {
+        ...stubs, '../engine/Input': { inputManager: { triggerAction: moves } },
+        '../engine/Settings': { displaySettings: settings }, '../engine/Core/Game': { activeGame: gameStub },
+        '../engine/Core/SaveStorage': { readSaveSummary: async () => null, saveSnapshot },
+        '../ui/immersiveMode': { registerImmersiveShortcut: () => () => {} }, '../ui/recordingExport': {},
+        '../ui/layout': { viewport: { mode: 'portrait', coarsePointer: true }, startViewportTracking() {}, shouldShowTouchControls: () => true },
+    }, components: {
+        '../components/MainMenu.vue': emitter('start', 'new-game', { mode: 'test' }),
+        '../components/theme/ThemeHud.vue': Vue.defineComponent({ emits: ['menu', 'panel'], setup(_props, { emit }) {
+            return () => Vue.h('hud', { onMenu: () => emit('menu'), onPanel: () => emit('panel') });
+        } }),
+        '../components/theme/ThemeLog.vue': emitter('journal', 'open-journal'),
+        '../components/theme/ThemeNearby.vue': emitter('nearby', 'inspect', { name: 'detail' }),
+        '../components/DPad.vue': DPad,
+        '../components/CommandBar.vue': emitter('commands', 'modal-open'),
+        '../components/theme/RadialCommands.vue': emitter('radial', 'modal-open'),
+    } });
+    App = await appHarness.load('../App.vue');
 });
 beforeEach(() => {
     vi.useFakeTimers(); moves.mockReset(); saveSnapshot.mockReset(); toSaveSnapshot.mockReset(); gameStub.hasPendingConfirmation = false;

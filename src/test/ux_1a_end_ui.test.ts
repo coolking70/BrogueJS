@@ -1,10 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
 import { createRenderer, h, nextTick, type Component } from 'vue';
-import { readFileSync } from 'node:fs';
-import { parse, compileScript } from '@vue/compiler-sfc';
-import { transformWithEsbuild } from 'vite';
-import * as highScores from '../engine/Core/HighScores';
+import { createSfcHarness } from './support/sfcHarness';
 import { logger } from '../engine/Systems/Logger';
 import { rng } from '../engine/Random';
 
@@ -68,28 +65,8 @@ beforeAll(async () => {
     }, removeEventListener: target.removeEventListener.bind(target),
         setInterval: (...args: Parameters<typeof setInterval>) => setInterval(...args), clearInterval: (id: ReturnType<typeof setInterval>) => clearInterval(id) });
     vi.stubGlobal('document', documentStub);
-    const input = await import('../engine/Input');
-    // Vitest compiles SFCs for SSR. Compile the same script/template for the
-    // client here, so the host renderer exercises the browser render function.
-    const modules: Record<string, unknown> = { vue: Vue, '../engine/Core/Game': { activeGame: game },
-        '../engine/Core/HighScores': highScores, '../engine/Systems/Logger': { logger },
-        '../engine/Input': input, '../ui/dialogService': await import('../ui/dialogService'),
-        '../ui/dialogInput': await import('../ui/dialogInput'), '../ui/heldInput': await import('../ui/heldInput'),
-        '../ui/dialogAcknowledgments': await import('../ui/dialogAcknowledgments') };
-    const load = async (name: string): Promise<Component> => {
-        const filename = new URL('../components/' + name + '.vue', import.meta.url);
-        const { descriptor } = parse(readFileSync(filename, 'utf8'));
-        const script = compileScript(descriptor, { id: name, inlineTemplate: true });
-        const { code } = await transformWithEsbuild(script.content, name + '.ts', { loader: 'ts', format: 'cjs' });
-        const module = { exports: {} as { default: Component } };
-        new Function('require', 'module', 'exports', code)((id: string) => {
-            if (!(id in modules)) throw new Error('Unexpected UI dependency: ' + id);
-            return modules[id];
-        }, module, module.exports);
-        return module.exports.default;
-    };
-    End = await load('GameEndOverlay');
-    Ack = await load('DialogHost');
+    const harness = createSfcHarness({ baseURL: import.meta.url, stubs: { '../engine/Core/Game': { activeGame: game } } });
+    End = await harness.load('../components/GameEndOverlay.vue'); Ack = await harness.load('../components/DialogHost.vue');
 });
 beforeEach(() => { vi.useFakeTimers(); logger.reset(); game.isGameOver = false; game.isAdvancing = false; });
 afterEach(() => {

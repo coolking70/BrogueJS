@@ -1,10 +1,8 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
-import * as translation from 'i18next-vue';
 import I18NextVue from 'i18next-vue';
 import i18next from 'i18next';
-import { compileScript, parse } from '@vue/compiler-sfc';
-import ts from 'typescript';
+import { createSfcHarness } from './support/sfcHarness';
 import { readFileSync } from 'node:fs';
 import { parse as parseCss } from 'postcss';
 import { activeGame as game, Game } from '../engine/Core/Game';
@@ -121,33 +119,8 @@ beforeAll(async () => {
         clearInterval: (id: ReturnType<typeof setInterval>) => globalThis.clearInterval(id),
         addEventListener() {}, removeEventListener() {},
     });
-    const modules: Record<string, unknown> = {
-        vue: Vue, 'i18next-vue': translation, i18next: { default: i18next, __esModule: true },
-        '../engine/Core/Game': { activeGame: game },
-        '../engine/Systems/Logger': await import('../engine/Systems/Logger'),
-        '../engine/Status/statusConfig': await import('../engine/Status/statusConfig'),
-        '../engine/Settings': await import('../engine/Settings'),
-        '../engine/UI/MonsterSidebar': await import('../engine/UI/MonsterSidebar'),
-        '../engine/Input': await import('../engine/Input'),
-        '../entities/Player': await import('../entities/Player'),
-        '../../entities/Player': await import('../entities/Player'),
-        '../ui/useGameHud': await import('../ui/useGameHud'),
-        '../../ui/useGameHud': await import('../ui/useGameHud'),
-    };
-    const compile = (file: string): Vue.Component => {
-        const { descriptor } = parse(readFileSync(new URL(`../components/${file}`, import.meta.url), 'utf8'));
-        const script = compileScript(descriptor, { id: file, inlineTemplate: true });
-        const code = ts.transpileModule(script.content, { compilerOptions: {
-            target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, esModuleInterop: true,
-        } }).outputText;
-        const exports: any = {};
-        new Function('require', 'exports', code)((key: string) => {
-            if (!(key in modules)) throw new Error(`Unresolved search HUD import: ${key}`);
-            return modules[key];
-        }, exports);
-        return exports.default;
-    };
-    ThemeHud = compile('theme/ThemeHud.vue'); Sidebar = compile('Sidebar.vue');
+    const harness = createSfcHarness({ baseURL: import.meta.url });
+    ThemeHud = await harness.load('../components/theme/ThemeHud.vue'); Sidebar = await harness.load('../components/Sidebar.vue');
 });
 beforeEach(() => {
     vi.useFakeTimers(); game.startNewGame({ seed: 33005, mode: 'test' }); room();

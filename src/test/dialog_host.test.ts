@@ -1,11 +1,8 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
-import * as translation from 'i18next-vue';
 import I18NextVue from 'i18next-vue';
 import i18next from 'i18next';
-import ts from 'typescript';
-import { parse, compileScript } from '@vue/compiler-sfc';
-import { readFileSync } from 'node:fs';
+import { createSfcHarness } from './support/sfcHarness';
 import { DialogService, dialogServiceKey } from '../ui/dialogService';
 import { dialogInput } from '../ui/dialogInput';
 import { logger } from '../engine/Systems/Logger';
@@ -96,39 +93,11 @@ beforeAll(async () => {
     documentStub = { activeElement: null, querySelector: () => null, hidden: false };
     vi.stubGlobal('document', documentStub);
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
-    const modules: Record<string, unknown> = { vue: Vue, 'i18next-vue': translation,
-        i18next: { default: i18next, __esModule: true }, '../engine/Core/Game': gameModule,
-        '../ui/dialogService': await import('../ui/dialogService'), '../ui/dialogInput': await import('../ui/dialogInput'),
-        '../ui/dialogAcknowledgments': await import('../ui/dialogAcknowledgments'), '../ui/heldInput': await import('../ui/heldInput'),
-        '../engine/Systems/Logger': await import('../engine/Systems/Logger'), '../engine/Input': await import('../engine/Input'),
-        '../engine/Items/Item': await import('../engine/Items/Item'), '../engine/Items/ItemLoader': { ItemLoader },
-        '../engine/UI/DetailGenerator': await import('../engine/UI/DetailGenerator'),
-        '../engine/UI/ItemDetailContext': await import('../engine/UI/ItemDetailContext'),
-        '../engine/UI/Discoveries': await import('../engine/UI/Discoveries'),
-        '../../ui/useGameHud': await import('../ui/useGameHud'), '../ui/useGameHud': await import('../ui/useGameHud'),
-        '../../entities/Player': await import('../entities/Player'),
-        '../engine/Core/HighScores': await import('../engine/Core/HighScores'),
-        '../../engine/Core/Game': gameModule,
-        '../../engine/UI/MonsterSidebar': await import('../engine/UI/MonsterSidebar'),
-        '../../ui/mapGlyph': await import('../ui/mapGlyph'),
-        '../../ui/nearbyInspection': await import('../ui/nearbyInspection'),
-        '../ui/targeting': await import('../ui/targeting'), '../ui/commands': await import('../ui/commands'),
-    };
-    function compile(name: string): Vue.Component {
-        const { descriptor } = parse(readFileSync(new URL('../components/' + name + '.vue', import.meta.url), 'utf8'));
-        const script = compileScript(descriptor, { id: name, inlineTemplate: true });
-        const code = ts.transpileModule(script.content, { compilerOptions: {
-            target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, esModuleInterop: true,
-        } }).outputText;
-        const exports: any = {};
-        new Function('require', 'exports', code)((key: string) => {
-            if (!(key in modules)) throw new Error('Unresolved D1 component import: ' + key);
-            return modules[key];
-        }, exports);
-        return exports.default;
-    }
-    Host = compile('DialogHost'); Inventory = compile('InventoryOverlay'); Reference = compile('ReferenceOverlay');
-    Hud = compile('theme/ThemeHud'); End = compile('GameEndOverlay'); Journal = compile('MessageJournal'); Nearby = compile('theme/ThemeNearby'); Target = compile('TargetBar');
+    const harness = createSfcHarness({ baseURL: import.meta.url, stubs: { '../engine/Core/Game': gameModule } });
+    Host = await harness.load('../components/DialogHost.vue'); Inventory = await harness.load('../components/InventoryOverlay.vue');
+    Reference = await harness.load('../components/ReferenceOverlay.vue'); Hud = await harness.load('../components/theme/ThemeHud.vue');
+    End = await harness.load('../components/GameEndOverlay.vue'); Journal = await harness.load('../components/MessageJournal.vue');
+    Nearby = await harness.load('../components/theme/ThemeNearby.vue'); Target = await harness.load('../components/TargetBar.vue');
 });
 beforeEach(() => {
     vi.useFakeTimers(); logger.reset(); service = new DialogService(); epoch.value = 0;

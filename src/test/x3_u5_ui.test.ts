@@ -1,10 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createRenderer, nextTick, type Component } from 'vue';
-import * as Vue from 'vue';
-import * as translation from 'i18next-vue';
-import { parse, compileScript } from '@vue/compiler-sfc';
-import ts from 'typescript';
-import { readFileSync } from 'node:fs';
+import { createSfcHarness } from './support/sfcHarness';
 import I18NextVue from 'i18next-vue';
 import i18next from 'i18next';
 import zhCN from '../locales/zh_CN.json';
@@ -41,36 +37,12 @@ beforeAll(async () => {
     vi.stubGlobal('document', { activeElement: null, querySelector: () => null, addEventListener() {}, removeEventListener() {} });
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
     input = (await import('../engine/Input')).inputManager;
-    // Vitest's node SFC transform is SSR-only. Compile these same production
-    // scripts/templates for the client so Vue installs their real click handlers.
-    const modules: Record<string, unknown> = {
-        vue: Vue, 'i18next-vue': translation, i18next,
-        '../engine/Core/Game': { activeGame: game },
-        '../engine/Input': { inputManager: input },
-        '../ui/commands': await import('../ui/commands'),
-        '../ui/dialogService': await import('../ui/dialogService'),
-        '../ui/heldInput': await import('../ui/heldInput'),
-        '../types': await import('../types'),
-        '../engine/Items/Item': await import('../engine/Items/Item'),
-        '../engine/Items/ItemLoader': { ItemLoader },
-        '../engine/Systems/Logger': await import('../engine/Systems/Logger'),
-        '../engine/UI/DetailGenerator': await import('../engine/UI/DetailGenerator'),
-        '../engine/UI/ItemDetailContext': await import('../engine/UI/ItemDetailContext'),
-    };
-    const compile = (file: string): Component => {
-        const { descriptor } = parse(readFileSync(new URL(`../components/${file}`, import.meta.url), 'utf8'));
-        const script = compileScript(descriptor, { id: file, inlineTemplate: true });
-        const code = ts.transpileModule(script.content, { compilerOptions: {
-            target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, esModuleInterop: true,
-        } }).outputText;
-        const exports: any = {};
-        new Function('require', 'exports', 'setInterval', 'clearInterval', code)((key: string) => {
-            if (!(key in modules)) throw new Error(`Unresolved component import: ${key}`);
-            return modules[key];
-        }, exports, (callback: () => void) => { pollers.add(callback); return callback; }, (callback: () => void) => pollers.delete(callback));
-        return exports.default;
-    };
-    CommandBar = compile('CommandBar.vue'); Inventory = compile('InventoryOverlay.vue'); DPad = compile('DPad.vue');
+    const harness = createSfcHarness({ baseURL: import.meta.url, globals: {
+        setInterval: (callback: () => void) => { pollers.add(callback); return callback; },
+        clearInterval: (callback: () => void) => pollers.delete(callback),
+    } });
+    CommandBar = await harness.load('../components/CommandBar.vue');
+    Inventory = await harness.load('../components/InventoryOverlay.vue'); DPad = await harness.load('../components/DPad.vue');
 });
 afterEach(() => { unmount?.(); unmount = undefined; pollers.clear(); });
 async function mount(component: Component) {
