@@ -4,18 +4,19 @@ import { assertNarrativeJson, assertLoadedNarrativePack, NARRATIVE_LIMITS } from
 import type { FlagDefinition, NarrativePack, Scalar } from './types';
 
 export type TriggerReceipt = { triggerId: string; scopeKey: string; firings: number; lastTurn: number; lastFactId: number };
-/** Real reward adapters remain a later phase. Ready rewards cannot become persistent receipts. */
-export type RewardReceipt = { id: string; instanceKey: string; result: 'skipped'; reason: 'absent' | 'disabled' | 'unsupported-key' };
+/** Only successful provider commits produce applied receipts; skips never retry. */
+export type RewardReceipt = { id: string; instanceKey: string; result: 'applied'; reason: null }
+    | { id: string; instanceKey: string; result: 'skipped'; reason: 'absent' | 'disabled' | 'unsupported-key' };
 export type NpcBinding = { npcId: string; placementId: string; instanceKey: string };
 export type PlacementReceipt = NpcBinding & { depth: number; result: 'placed' | 'skipped' };
 export type PendingPlacement = NpcBinding & { attemptedDepths: number[] };
 export type NarrativeSession = { sessionId: number; targetEntityId: number; dialogueId: string; nodeId: string; transitions: number };
 export type NarrativeState = {
-    schema: 2; revision: number; nextSessionId: number;
+    schema: 3; revision: number; nextSessionId: number;
     npcBindings: Record<string, NpcBinding>;
     placementReceipts: PlacementReceipt[]; pendingPlacements: PendingPlacement[];
     active: NarrativeSession | null;
-    /** Module-local causal sequence, NOT an engine/global fact ID. */
+    /** Last consumed foundation fact ID, including derived story events. */
     lastFactId: number;
     flags: Record<string, Scalar>; counters: Record<string, number>;
     triggerReceipts: TriggerReceipt[]; rewardReceipts: RewardReceipt[];
@@ -38,7 +39,7 @@ export function validFlagValue(definition: FlagDefinition, value: unknown): valu
 export function narrativeRewardInstance(receiptId: string): string { return `narrative.${receiptId}.run`; }
 export function initialNarrativeState(pack: NarrativePack): NarrativeState {
     assertLoadedNarrativePack(pack);
-    return { schema: 2, revision: 0, lastFactId: 0, nextSessionId: 1,
+    return { schema: 3, revision: 0, lastFactId: 0, nextSessionId: 1,
         npcBindings: {}, placementReceipts: [], pendingPlacements: [], active: null,
         flags: Object.fromEntries(pack.flags.map(flag => [flag.id, flag.initial])),
         counters: Object.fromEntries(pack.counters.map(counter => [counter.id, counter.initial])),
@@ -54,7 +55,7 @@ export function validateNarrativeState(raw: unknown, pack: NarrativePack): Narra
     assertNarrativeJson(raw, '$state');
     const value = narrativeRecord(raw, ['schema','revision','lastFactId','nextSessionId','npcBindings','placementReceipts','pendingPlacements','active','flags','counters','triggerReceipts','rewardReceipts','journal'], '$state', 'INVALID_STATE');
     const fail = (path: string): never => { throw new NarrativeError('INVALID_STATE', path); };
-    if (value.schema !== 2) fail('$state.schema');
+    if (value.schema !== 3) fail('$state.schema');
     if (!narrativeInteger(value.revision, 0)) fail('$state.revision');
     if (!narrativeInteger(value.lastFactId, 0) || value.revision === 0 && value.lastFactId !== 0) fail('$state.lastFactId');
     if (!narrativeInteger(value.nextSessionId, 1) || (value.nextSessionId as number) - 1 > (value.revision as number)) fail('$state.nextSessionId');
@@ -95,8 +96,8 @@ export function validateNarrativeState(raw: unknown, pack: NarrativePack): Narra
         if (!validId(receipt.id) || receipt.id <= previous || !rewardDefinitions.some(effect => effect.receiptId === receipt.id)) fail(`${path}.id`);
         previous = receipt.id as string;
         if (receipt.instanceKey !== narrativeRewardInstance(receipt.id as string)) fail(`${path}.instanceKey`);
-        if (receipt.result !== 'skipped') fail(`${path}.result`);
-        if (!['absent','disabled','unsupported-key'].includes(receipt.reason as string)) fail(`${path}.reason`);
+        if (receipt.result !== 'skipped' && receipt.result !== 'applied') fail(`${path}.result`);
+        if (receipt.result === 'applied' ? receipt.reason !== null : !['absent','disabled','unsupported-key'].includes(receipt.reason as string)) fail(`${path}.reason`);
     }
     if (!Array.isArray(value.journal)) fail('$state.journal');
     const journal = value.journal as unknown[];

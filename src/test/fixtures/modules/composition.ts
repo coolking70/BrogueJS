@@ -63,6 +63,6 @@ export function compositionDescriptor(id: string, options: {
             },
         };
     };
-    return { id, version, rules, foundation: 2, labelKey: `ext.${id}.name`, create,
+    return { id, version, rules, foundation: 3, labelKey: `ext.${id}.name`, create,
         locales: { en: { [`ext.${id}.name`]: `${id} fixture` } } };
 }

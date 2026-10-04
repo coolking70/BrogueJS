@@ -24,14 +24,17 @@ export interface ExtensionModuleView {
 }
 export interface ExtensionRulesIdentity { schema: number; version: string; fingerprint: string }
 export interface ExtensionVersion { id: string; version: string; rules?: ExtensionRulesIdentity }
-export interface ExtensionManifest { schema: 1; foundation?: 2; modules: ExtensionVersion[] }
+export interface ExtensionManifest { schema: 1; foundation?: 3; modules: ExtensionVersion[] }
 export interface ExtensionSnapshot {
     manifest: ExtensionManifest;
     modules: Record<string, Json>;
     /** Run-local creature ID -> module-qualified component ID -> JSON. */
     components: Record<string, Record<string, Json>>;
-    foundation: { version: 2; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
+    foundation: { version: 3; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
 }
+/** Native facts wait for run initialization; sequence numbers are reserved on commit. */
+export interface PendingStoryFact { kind: 'entered-level'; depth: number; firstVisit: boolean; turn: number }
+export interface StoryFact extends PendingStoryFact { factId: number }
 export interface DeathFact { creature: CreatureView; origin: EffectOrigin | null; administrative: boolean; }
 export interface GenerationToken { readonly label: string; }
 export type RuleSet = 'classic' | 'extended';
@@ -66,6 +69,22 @@ export interface OptionalQueryProvider {
 }
 export type OptionalQueryResult = { readonly status: 'unavailable'; readonly reason: 'absent' | 'unsupported-input' }
     | { readonly status: 'available'; readonly value: ReadonlyJson };
+/** Versioned synchronous optional reward seam; provider plans never leave this call. */
+export interface OptionalRewardRequest { issuerId: string; rewardId: string; instanceId: string; recipient: 'player' }
+export interface OptionalRewardPrepareContext extends OptionalQueryContext {
+    readonly player: ActorFacts | null;
+    readonly resources: Readonly<CharacterResources>;
+}
+export type OptionalRewardPreparation = { status: 'ready'; plan: Json }
+    | { status: 'skipped'; reason: 'disabled' | 'unsupported-key' };
+export type OptionalRewardPrepareResult = { readonly status: 'ready' }
+    | { readonly status: 'skipped'; readonly reason: 'absent' | 'disabled' | 'unsupported-key' };
+export type OptionalRewardResult = { readonly status: 'applied' }
+    | { readonly status: 'skipped'; readonly reason: 'absent' | 'disabled' | 'unsupported-key' };
+export interface OptionalRewardProvider {
+    prepare(request: Readonly<OptionalRewardRequest>, context: OptionalRewardPrepareContext): OptionalRewardPreparation;
+    commit(request: Readonly<OptionalRewardRequest>, plan: ReadonlyJson, context: ExtensionContext): void;
+}
 export interface ExtensionRuleInput {
     readonly actorId: number; readonly targetId: number | null; readonly baseValue: number;
     readonly attackKind?: 'melee' | 'thrown';
@@ -111,6 +130,7 @@ export interface ControlledActionCallbacks {
     afterResolve(result: Readonly<ControlledActionResult>, context: ExtensionContext): void;
 }
 export interface HookEvents {
+    storyFact: StoryFact;
     interactionClosed: { owner: string; targetEntityId: number; sessionId: number; reason: 'game-over' | 'target-removed' };
     interactablesRemoved: { owner: string; entityIds: number[] };
     actorObserved: { actor: ActorFacts };
@@ -143,6 +163,8 @@ export interface ExtensionContext {
     readonly moduleId: string;
     readonly depth: number;
     readonly turn: number;
+    readonly nextFactId: number;
+    commitFactRange(first: number, count: number): void;
     interactables(): readonly WorldInteractable[];
     interactionTarget(id: number): WorldInteractable | null;
     placeInteractables(requests: readonly WorldInteractablePlacement[]): readonly WorldInteractablePlacementResult[];
@@ -153,6 +175,8 @@ export interface ExtensionContext {
      * Lets an uninitialized module permit another module's initialization. */
     isInitialCommand(action: string, data: unknown): boolean;
     queryOptional(capability: string, input: Json): OptionalQueryResult;
+    prepareOptionalReward(capability: string, rewardId: string, instanceId: string): OptionalRewardPrepareResult;
+    commitOptionalReward(capability: string, rewardId: string, instanceId: string): OptionalRewardResult;
     setState(state: Json): void;
     getComponent(creatureId: number, name: string): Json | undefined;
     setComponent(creatureId: number, name: string, value: Json): void;
@@ -174,6 +198,7 @@ export type HookHandlers = { [K in HookName]?: (event: Readonly<HookEvents[K]>, 
 export interface ExtensionCreationResources { readonly maxHp: number; readonly strength: number }
 export interface ExtensionModule extends ExtensionVersion {
     dependencies?: readonly string[];
+    readonly optionalRewards?: Readonly<Record<string, OptionalRewardProvider>>;
     readonly optionalQueries?: Readonly<Record<string, OptionalQueryProvider>>;
     readonly view?: ExtensionViewDescriptor;
     readonly worldInteractables?: true;
@@ -192,6 +217,9 @@ export interface ExtensionModule extends ExtensionVersion {
     /** Pure gates share live/replay input; rejection must not become a recorded action. */
     allowInput?(action: string, data: unknown, context: ExtensionContext): boolean;
     readyToSave?(context: ExtensionContext): boolean;
+    /** Pure run-ready gate derived from persisted own state/components, separate
+     * from temporary settlement/save readiness. Candidate validation has no native ports. */
+    initializationReady?(context: ExtensionContext): boolean;
     resourceCommits?: boolean;
     rulePolicies?: ExtensionRulePolicies;
     commitItemGrowth?(input: Readonly<ItemGrowthInput>, context: ExtensionContext): { nativeAmount: number };

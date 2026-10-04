@@ -4,7 +4,7 @@ import { GrowthValidationError, validateGrowthDefinitionPack, type GrowthValidat
 import { formatGrowthValidationError } from './text';
 import type { GrowthDefinitionPack, GrowthPackIdentity } from './types';
 
-export const GROWTH_VERSION = '1.4.0';
+export const GROWTH_VERSION = '1.5.0';
 /** Local content identity is recorded with the manifest; same-version edits still invalidate old inputs. */
 export function getGrowthPackIdentity(): GrowthPackIdentity {
     return Object.freeze({ schema: 1, version: GROWTH_VERSION, fingerprint: extensionDataFingerprint(data) });

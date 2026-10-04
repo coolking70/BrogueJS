@@ -9,7 +9,7 @@ import { readCreatureBirth } from './birth';
 import { canonical, cloneJson, isJson, validId } from './json';
 import { EffectCausality, validEffectOrigin, type EffectOrigin } from './causality';
 import { ExtensionCompatibilityError } from './compatibility';
-import type { DeathFact, GenerationToken, ControlledActionRequest, ControlledActionResult, ControlledActionOutcome, PhysicalResolutionFact, OptionalQueryResult, OptionalQueryProvider } from './types';
+import type { DeathFact, GenerationToken, ControlledActionRequest, ControlledActionResult, ControlledActionOutcome, PhysicalResolutionFact, OptionalQueryResult, OptionalQueryProvider, OptionalRewardProvider, OptionalRewardRequest, OptionalRewardPreparation, OptionalRewardPrepareResult, OptionalRewardResult, PendingStoryFact } from './types';
 
 function isCreatureView(value: unknown): boolean {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -31,6 +31,8 @@ export interface ExtensionPorts {
     gold?(): number;
     setGold?(value: number): void;
     randomInt(min: number, max: number): number;
+    /** Native RNG rollback for a failed synchronous extension commit. */
+    checkpointRandom?(): () => void;
     message(text: string): void;
     knownKinds?(): { id: string; category: string }[];
     testMode?(): boolean;
@@ -58,6 +60,9 @@ interface GenerationFrame {
     token: GenerationToken;
     world: WorldInteractionSnapshot;
     placementNextEntityId: number | null;
+    nextFactId: number;
+    pendingStoryFacts: PendingStoryFact[];
+    resources: ResourceCheckpoint[];
     states: Record<string, Json>;
     components: ExtensionSnapshot['components'];
     causality: ReturnType<EffectCausality['snapshot']>;
@@ -66,8 +71,18 @@ interface GenerationFrame {
     facts: BufferedFact[];
     births: Set<Creature>;
 }
+interface ResourceCheckpoint { actor: Creature; hp: number; maxHp: number; strength: number | null; gold: number | null }
+const STORY_FACT_LIMIT = 4096;
+function validPendingStoryFact(value: unknown): value is PendingStoryFact {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const fact = value as PendingStoryFact;
+    return Object.keys(fact).sort().join(',') === 'depth,firstVisit,kind,turn' && fact.kind === 'entered-level'
+        && Number.isSafeInteger(fact.depth) && fact.depth >= 1 && typeof fact.firstVisit === 'boolean'
+        && Number.isSafeInteger(fact.turn) && fact.turn >= 0;
+}
 export class ExtensionRuntime {
     private readonly modules: ExtensionModule[];
+    private readonly optionalRewards = new Map<string, { module: ExtensionModule; provider: OptionalRewardProvider }>();
     private readonly optionalQueries = new Map<string, { module: ExtensionModule; provider: OptionalQueryProvider }>();
     private readonly viewSession: object = Object.freeze({});
     private readonly views = new Map<string, ExtensionViewDescriptor>();
@@ -83,6 +98,7 @@ export class ExtensionRuntime {
     private commandActionUsed = false;
     private commandScope: object | null = null;
     private controlledAction = false;
+    private nativeActionRevision = 0;
     private actionActorId: number | null = null;
     private actionResolutions: PhysicalResolutionFact[] | null = null;
     readonly manifest: ExtensionManifest;
@@ -92,6 +108,12 @@ export class ExtensionRuntime {
     private publishingGeneration = false;
     private world: WorldInteractionSnapshot = { entities: [], gate: null };
     private currentHook: HookName | null = null;
+    private nextFactId = 1;
+    private pendingStoryFacts: PendingStoryFact[] = [];
+    private flushingStoryFacts = false;
+    private rewardProviderPhase = false;
+    private pureProviderPhase = false;
+    private readonly messageBuffers: string[][] = [];
     constructor(registry: ExtensionRegistry, manifest: ExtensionManifest, private readonly ports: ExtensionPorts, snapshot?: ExtensionSnapshot) {
         this.manifest = structuredClone(manifest);
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
@@ -102,6 +124,13 @@ export class ExtensionRuntime {
                 || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid optional query provider');
             if (this.optionalQueries.has(capability)) throw new Error(`Conflicting optional query providers: ${capability}`);
             this.optionalQueries.set(capability, { module, provider });
+        }
+        for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalRewards ?? {})) {
+            if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
+                || Object.keys(provider).sort().join(',') !== 'commit,prepare'
+                || typeof provider.prepare !== 'function' || typeof provider.commit !== 'function') throw new Error('Invalid optional reward provider');
+            if (this.optionalRewards.has(capability)) throw new Error(`Conflicting optional reward providers: ${capability}`);
+            this.optionalRewards.set(capability, { module, provider });
         }
         for (const module of this.modules) if (module.interactionCommands && (!Array.isArray(module.interactionCommands)
             || new Set(module.interactionCommands).size !== module.interactionCommands.length
@@ -128,12 +157,15 @@ export class ExtensionRuntime {
             this.causality.restore(snapshot.foundation.causality);
             this.deaths = structuredClone(snapshot.foundation.deaths);
             this.world = structuredClone(snapshot.foundation.world);
+            this.nextFactId = snapshot.foundation.nextFactId;
+            this.pendingStoryFacts = structuredClone(snapshot.foundation.pendingStoryFacts);
         }
         this.validateSnapshot(this.snapshot());
     }
     private context(module: ExtensionModule, scope: object | null): ExtensionContext {
         const runtime = this;
-        const writable = (): void => { if (!scope || runtime.activeScope !== scope || runtime.disposed) throw new Error('Extension mutation outside lifecycle/command/hook'); };
+        const writable = (): void => { if (!scope || runtime.activeScope !== scope || runtime.disposed || runtime.pureProviderPhase) throw new Error('Extension mutation outside lifecycle/command/hook'); };
+        const ordinaryCapability = (): void => { writable(); if (runtime.rewardProviderPhase) throw new Error('Capability forbidden in optional reward provider'); };
         const componentKey = (name: string): string => {
             if (!validId(name)) throw new Error('Invalid component name');
             return `${module.id}:${name}`;
@@ -146,18 +178,25 @@ export class ExtensionRuntime {
             moduleId: module.id,
             get depth() { return runtime.ports.depth(); },
             get turn() { return runtime.ports.turn?.() ?? 0; },
+            get nextFactId() { return runtime.nextFactId; },
+            commitFactRange(first, count) {
+                ordinaryCapability();
+                if (!Number.isSafeInteger(first) || first !== runtime.nextFactId || !Number.isSafeInteger(count) || count < 1
+                    || !Number.isSafeInteger(first + count)) throw new Error('Invalid story fact range');
+                runtime.nextFactId += count;
+            },
             interactables() { return freezeView(structuredClone(runtime.world.entities.filter(entity => entity.owner === module.id))); },
             interactionTarget(id) {
                 const entity = runtime.world.entities.find(entity => entity.id === id && entity.owner === module.id);
                 return entity && runtime.ports.canInteractWith?.(entity) ? freezeView(structuredClone(entity)) : null;
             },
             placeInteractables(requests) {
-                writable();
+                ordinaryCapability();
                 if (!module.worldInteractables || runtime.currentHook !== 'enteredLevel' || !runtime.publishingGeneration) throw new Error('World placement outside committed level entry');
                 return runtime.placeInteractables(module.id, requests);
             },
             interactionGate(active) {
-                writable();
+                ordinaryCapability();
                 if (runtime.commandModule !== module || runtime.activeScope !== runtime.commandScope) throw new Error('Interaction gate outside module command');
                 if (active === null) {
                     if (runtime.world.gate && runtime.world.gate.owner !== module.id) throw new Error('Interaction gate owner mismatch');
@@ -176,13 +215,20 @@ export class ExtensionRuntime {
             get state() { return cloneJson(runtime.states[module.id]!); },
             isInitialCommand(action, data) { return runtime.isInitialCommand(action, data); },
             queryOptional(capability, input) { return runtime.queryOptional(capability, input); },
+            prepareOptionalReward(capability, rewardId, instanceId) {
+                return runtime.prepareOptionalReward(module.id, capability, rewardId, instanceId);
+            },
+            commitOptionalReward(capability, rewardId, instanceId) {
+                ordinaryCapability();
+                return runtime.commitOptionalReward(module.id, capability, rewardId, instanceId);
+            },
             setState(value) { writable(); if (!module.validateState(value)) throw new Error(`Invalid module state: ${module.id}`); runtime.states[module.id] = cloneJson(value); },
             getComponent(id, name) { const value = runtime.components[creatureKey(id)]?.[componentKey(name)]; return value === undefined ? undefined : cloneJson(value); },
             setComponent(id, name, value) { writable(); if (module.componentValidators?.[name] && !module.componentValidators[name]!(value)) throw new Error('Invalid component value'); const key = creatureKey(id); (runtime.components[key] ??= {})[componentKey(name)] = cloneJson(value); },
             removeComponent(id, name) { writable(); const key = creatureKey(id); delete runtime.components[key]?.[componentKey(name)]; if (runtime.components[key] && !Object.keys(runtime.components[key]!).length) delete runtime.components[key]; },
             creature(id) { const actor = [...runtime.creatures].find(creature => creature.id === id); return actor ? runtime.actorFacts(actor) : null; },
             grantReward(request) {
-                writable();
+                ordinaryCapability();
                 if (!request || Object.keys(request).sort().join(',') !== 'instanceId,recipientId,rewardId'
                     || !Number.isSafeInteger(request.recipientId) || request.recipientId < 1 || !validId(request.rewardId) || !validId(request.instanceId))
                     throw new Error('Invalid trusted reward request');
@@ -193,13 +239,13 @@ export class ExtensionRuntime {
             canManageCharacter() { return runtime.ports.canManageCharacter?.() ?? true; },
             validateAction(request) { return runtime.ports.validateAction?.(request) ?? false; },
             executeAction(request, callbacks) {
-                writable();
+                ordinaryCapability();
                 if (runtime.commandModule !== module || runtime.activeScope !== runtime.commandScope || runtime.controlledAction || runtime.commandActionUsed || !runtime.ports.executeAction)
                     throw new Error('Controlled action outside module command');
                 if (!callbacks || typeof callbacks.beforeCommit !== 'function' || typeof callbacks.afterResolve !== 'function')
                     throw new Error('Invalid controlled action callbacks');
                 const input = freezeView(structuredClone(request));
-                runtime.controlledAction = true; runtime.commandActionUsed = true; runtime.actionActorId = input.actorId;
+                runtime.controlledAction = true; runtime.commandActionUsed = true; runtime.nativeActionRevision++; runtime.actionActorId = input.actorId;
                 let committed = false, resolved = false;
                 try {
                     return runtime.ports.executeAction(input, {
@@ -225,14 +271,19 @@ export class ExtensionRuntime {
             characterResources(id) { return runtime.characterResources(id); },
             commitCharacterResources(id, value) { writable(); if (!module.resourceCommits || !runtime.resourcePhase) throw new Error('Character commit outside authorized growth boundary'); runtime.commitCharacterResources(id, value); },
             randomInt(min, max) {
-                writable();
+                ordinaryCapability();
                 const span = max - min + 1;
                 // The engine's rejection sampler requires a nonzero divisor.
                 if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max) || min > max
                     || !Number.isSafeInteger(span) || span > 0xffffffff) throw new Error('Invalid extension random range');
                 return runtime.ports.randomInt(min, max);
             },
-            message(text) { writable(); runtime.ports.message(text); },
+            message(text) {
+                writable();
+                if (typeof text !== 'string') throw new Error('Invalid extension message');
+                const buffer = runtime.messageBuffers[runtime.messageBuffers.length - 1];
+                if (buffer) buffer.push(text); else runtime.ports.message(text);
+            },
         };
     }
     private actorFacts(creature: Creature, playerId = this.ports.playerId()): ActorFacts {
@@ -310,6 +361,146 @@ export class ExtensionRuntime {
         if (valid !== true || !isJson(result)) throw new Error('Invalid optional query result');
         return freezeView({ status: 'available' as const, value: cloneJson(result) });
     }
+    private prepareReward(issuerId: string, capability: string, rewardId: string, instanceId: string):
+        { request: Readonly<OptionalRewardRequest>; entry: { module: ExtensionModule; provider: OptionalRewardProvider }; preparation: OptionalRewardPreparation }
+        | { preparation: { status: 'skipped'; reason: 'absent' } } {
+        if (this.disposed || !validId(capability) || !/\.v[1-9]\d*$/.test(capability)
+            || !validId(issuerId) || !validId(rewardId) || !validId(instanceId)) throw new Error('Invalid optional reward request');
+        if (this.pureProviderPhase || this.rewardProviderPhase) throw new Error('Recursive optional reward provider');
+        const entry = this.optionalRewards.get(capability);
+        if (!entry) return { preparation: { status: 'skipped', reason: 'absent' } };
+        const request: Readonly<OptionalRewardRequest> = Object.freeze({ issuerId, rewardId, instanceId, recipient: 'player' });
+        const { module, provider } = entry, playerId = this.ports.playerId();
+        const actor = [...this.creatures].find(creature => creature.id === playerId);
+        let active = true;
+        const check = (): void => { if (!active) throw new Error('Expired optional reward preparation'); };
+        const context = Object.freeze({
+            playerId, player: actor ? this.actorFacts(actor) : null,
+            resources: freezeView(actor ? this.characterResources(playerId) : { strength: null, gold: null }),
+            state: freezeView(cloneJson(this.states[module.id]!)),
+            getPlayerComponent: (name: string) => {
+                check();
+                if (!validId(name)) throw new Error('Invalid optional player component');
+                const component = this.components[String(playerId)]?.[`${module.id}:${name}`];
+                return component === undefined ? undefined : freezeView(cloneJson(component));
+            },
+        });
+        this.pureProviderPhase = true;
+        try {
+            const preparation = provider.prepare(request, context);
+            requireSynchronous(preparation);
+            if (!isJson(preparation) || !preparation || typeof preparation !== 'object' || Array.isArray(preparation)
+                || (preparation.status === 'ready' ? Object.keys(preparation).sort().join(',') !== 'plan,status'
+                    : preparation.status !== 'skipped' || Object.keys(preparation).sort().join(',') !== 'reason,status'
+                        || !['disabled', 'unsupported-key'].includes(preparation.reason))) throw new Error('Invalid optional reward preparation');
+            return { request, entry, preparation: freezeView(structuredClone(preparation)) };
+        } finally { active = false; this.pureProviderPhase = false; }
+    }
+    private prepareOptionalReward(issuerId: string, capability: string, rewardId: string, instanceId: string): OptionalRewardPrepareResult {
+        const { preparation } = this.prepareReward(issuerId, capability, rewardId, instanceId);
+        return Object.freeze(preparation.status === 'ready' ? { status: 'ready' } : { ...preparation });
+    }
+    private commitOptionalReward(issuerId: string, capability: string, rewardId: string, instanceId: string): OptionalRewardResult {
+        // Re-preflight against the exact current state. No plan token can escape,
+        // be forged, survive a command, or be replayed after another grant.
+        const prepared = this.prepareReward(issuerId, capability, rewardId, instanceId);
+        if (prepared.preparation.status === 'skipped') return Object.freeze({ ...prepared.preparation });
+        if (!('entry' in prepared)) throw new Error('Missing optional reward provider');
+        const { module, provider } = prepared.entry, plan = prepared.preparation.plan;
+        return this.transaction(() => {
+            const priorResources = this.resourcePhase; this.resourcePhase = true; this.rewardProviderPhase = true;
+            try { this.invoke(module, context => provider.commit(prepared.request, plan, context)); }
+            finally { this.resourcePhase = priorResources; this.rewardProviderPhase = false; }
+            return Object.freeze({ status: 'applied' as const });
+        });
+    }
+    private resourceCheckpoint(): ResourceCheckpoint[] {
+        return [...this.creatures].map(actor => ({ actor, hp: actor.hp, maxHp: actor.maxHp,
+            strength: actor instanceof Player ? actor.strength : null,
+            gold: actor instanceof Player ? this.ports.gold?.() ?? 0 : null }));
+    }
+    private restoreResources(resources: readonly ResourceCheckpoint[]): void {
+        for (const { actor, hp, maxHp, strength, gold } of resources) {
+            actor.hp = hp; actor.maxHp = maxHp;
+            if (actor instanceof Player) { actor.strength = strength!; this.ports.setGold?.(gold!); }
+        }
+    }
+    private bufferMessages<T>(work: () => T): T {
+        const messages: string[] = []; this.messageBuffers.push(messages);
+        let result: T;
+        try { result = work(); } catch (error) { this.messageBuffers.pop(); throw error; }
+        this.messageBuffers.pop();
+        const parent = this.messageBuffers[this.messageBuffers.length - 1];
+        if (parent) parent.push(...messages); else for (const message of messages) this.ports.message(message);
+        return result;
+    }
+    /** Extension-owned state and native resource ports form one synchronous commit. */
+    private transaction<T>(work: () => T): T {
+        const states = structuredClone(this.states), components = structuredClone(this.components), world = structuredClone(this.world);
+        const deaths = structuredClone(this.deaths), causes = this.causality.snapshot(), resources = this.resourceCheckpoint();
+        const nextFactId = this.nextFactId, pending = structuredClone(this.pendingStoryFacts), nativeActionRevision = this.nativeActionRevision;
+        const creatures = new Map([...this.creatures].map(actor => [actor, actor.extensionHooks]));
+        const restoreRandom = this.ports.checkpointRandom?.();
+        try { return this.bufferMessages(work); }
+        catch (error) {
+            this.states = states; this.components = components; this.world = world;
+            this.nextFactId = nextFactId; this.pendingStoryFacts = pending; this.restoreResources(resources);
+            for (const [actor, hooks] of creatures) { this.creatures.add(actor); actor.extensionHooks = hooks; }
+            // Controlled native actions are not full-world transactions. Never
+            // rewind their RNG, causal ledgers or entity allocator while their
+            // spawned/moved world objects still exist. Generation owns its own
+            // allocator rollback; pure reward/creation/settlement can rewind RNG.
+            if (nativeActionRevision === this.nativeActionRevision) {
+                this.deaths = deaths; this.causality.restore(causes); restoreRandom?.();
+            }
+            throw error;
+        }
+    }
+    private initializationReadyFor(snapshot?: ExtensionSnapshot): boolean {
+        return this.modules.every(module => {
+            // Creation modules should explicitly expose readiness independently
+            // of temporary settlement/save work; legacy gates remain compatible.
+            // A candidate may belong to another run. Readiness may inspect only
+            // its persisted namespace, never the still-live game's native ports.
+            const candidate = snapshot ? Object.freeze({
+                moduleId: module.id, nextFactId: snapshot.foundation.nextFactId,
+                get state() { return freezeView(cloneJson(snapshot.modules[module.id]!)); },
+                getComponent(id: number, name: string) {
+                    if (!Number.isSafeInteger(id) || id < 1 || !validId(name)) throw new Error('Invalid initialization component query');
+                    const value = snapshot.components[String(id)]?.[`${module.id}:${name}`];
+                    return value === undefined ? undefined : freezeView(cloneJson(value));
+                },
+            }) : null;
+            const context = candidate ? new Proxy(candidate, { get(target, key, receiver) {
+                if (!(key in target)) throw new Error('Initialization readiness must use persisted state/components');
+                return Reflect.get(target, key, receiver);
+            } }) as unknown as ExtensionContext : this.context(module, null);
+            const ready = module.initializationReady?.(context) ?? module.readyToSave?.(context) ?? true;
+            requireSynchronous(ready);
+            if (typeof ready !== 'boolean') throw new Error('Invalid extension initialization readiness');
+            return ready;
+        });
+    }
+    private get initializationReady(): boolean { return this.initializationReadyFor(); }
+    private flushStoryFacts(): void {
+        if (this.flushingStoryFacts || !this.pendingStoryFacts.length || !this.initializationReady) return;
+        this.flushingStoryFacts = true;
+        try {
+            let count = 0;
+            while (this.pendingStoryFacts.length) {
+                if (++count > STORY_FACT_LIMIT) throw new Error('Story fact flush budget exceeded');
+                const pending = this.pendingStoryFacts[0]!, first = this.nextFactId;
+                this.dispatch('storyFact', { ...pending, factId: first });
+                // A consumer can reserve root + derived facts as one atomic range.
+                // Even an uninterested subscriber consumes the native root once.
+                if (this.nextFactId === first) {
+                    if (!Number.isSafeInteger(first + 1)) throw new Error('Story fact sequence exhausted');
+                    this.nextFactId++;
+                }
+                this.pendingStoryFacts.shift();
+            }
+        } finally { this.flushingStoryFacts = false; }
+    }
     /** Pure engine adapter: one provider per slot, finite synchronous bounded scalars. */
     rule(port: Exclude<keyof ExtensionRulePolicies, 'nativeBonuses'>, input: ExtensionRuleInput): number {
         const module = this.modules.find(module => module.rulePolicies?.[port]);
@@ -374,6 +565,7 @@ export class ExtensionRuntime {
     }
     allowsInput(action: string, data?: unknown): boolean {
         if (this.disposed) return false;
+        if (!this.initializationReady && !this.isInitialCommand(action, data)) return false;
         if (this.world.gate) {
             try {
                 if (action !== 'ext:command' || typeof data !== 'string') return false;
@@ -384,7 +576,7 @@ export class ExtensionRuntime {
         if (action === 'ext:command' && !this.hasRegisteredCommand(data)) return false;
         return this.modules.every(module => module.allowInput?.(action, data, this.context(module, null)) !== false);
     }
-    get readyToSave(): boolean { return this.modules.every(module => module.readyToSave?.(this.context(module, null)) !== false); }
+    get readyToSave(): boolean { return this.pendingStoryFacts.length === 0 && this.initializationReady && this.modules.every(module => module.readyToSave?.(this.context(module, null)) !== false); }
     validateRecording(events: readonly {action:string;data:unknown;extensions?:ExtensionSnapshot}[]): boolean {
         if (events.some(event => event.action === 'ext:command' && !this.hasRegisteredCommand(event.data))) return false;
         // Check historical gates against their own previous checkpoint, never
@@ -468,12 +660,10 @@ export class ExtensionRuntime {
     }
     /** Actual command/animation commit point, before GC and recording comparison. */
     settle(reachable: readonly Creature[]): void {
-        if (!this.modules.some(module => module.hooks?.simulationSettled)) return;
+        if (!this.hasHook('simulationSettled') && !this.pendingStoryFacts.length) return;
         if (this.generations.length || this.activeScope) throw new Error('Extension settlement outside safe boundary');
-        const beforeStates = structuredClone(this.states), beforeComponents = structuredClone(this.components);
-        const resources = [...this.creatures].map(actor => [actor, actor.hp, actor.maxHp,
-            actor instanceof Player ? actor.strength : null, actor instanceof Player ? this.ports.gold?.() ?? 0 : null] as const);
-        try {
+        this.transaction(() => {
+            this.flushStoryFacts();
             for (const actor of [...this.creatures].sort((a, b) => a.id - b.id)) this.observeCreature(actor);
             const causes = this.causality.snapshot();
             const origins = [...Object.values(causes.statusOrigins).flatMap(Object.values), ...Object.values(causes.fatalOrigins),
@@ -481,16 +671,12 @@ export class ExtensionRuntime {
             const sourceIds = [...new Set(origins.flatMap(origin => origin?.creditActorId ? [origin.creditActorId] : []))].sort((a,b) => a-b);
             this.emit('simulationSettled', { knownKinds: this.ports.knownKinds?.() ?? [],
                 reachableIds: reachable.map(actor => actor.id).sort((a,b) => a-b), sourceIds });
-        } catch (error) {
-            this.states = beforeStates; this.components = beforeComponents;
-            for (const [actor, hp, maxHp, strength, gold] of resources) {
-                actor.hp = hp; actor.maxHp = maxHp;
-                if (actor instanceof Player) { actor.strength = strength!; this.ports.setGold?.(gold!); }
-            }
-            throw error;
-        }
+        });
     }
     validateWorld(creatures: readonly Creature[], world?: Omit<WorldInteractionValidation, 'entities' | 'gate'>): void {
+        const depth = world?.depth ?? this.ports.depth(), turn = world?.turn ?? this.ports.turn?.() ?? 0;
+        if (this.pendingStoryFacts.some(fact => fact.depth !== depth || fact.turn > turn))
+            throw new Error('Invalid pending story fact world references');
         for (const actor of creatures) this.nativeMaximumBase(actor);
         const actors = creatures.map(actor => this.actorFacts(actor,creatures[0]!.id));
         for (const module of this.modules) if (module.validateWorld && !module.validateWorld(this.states[module.id]!, this.components, actors, freezeView({ ...world, depth: world?.depth ?? this.ports.depth(), turn: world?.turn ?? this.ports.turn?.() ?? 0, isGameOver: world?.isGameOver ?? false, nextEntityId: world?.nextEntityId ?? getNextEntityId(), entities: structuredClone(this.world.entities), gate: structuredClone(this.world.gate) })))
@@ -542,8 +728,14 @@ export class ExtensionRuntime {
                 }
             }
         }
+        if (name === 'enteredLevel' && !readOnly && this.hasHook('storyFact')) {
+            const entered = event as HookEvents['enteredLevel'];
+            const pending: PendingStoryFact = { kind: 'entered-level', depth: entered.depth, firstVisit: entered.firstVisit, turn: this.ports.turn?.() ?? 0 };
+            if (!validPendingStoryFact(pending) || this.pendingStoryFacts.length >= STORY_FACT_LIMIT) throw new Error('Invalid pending story fact');
+            this.pendingStoryFacts.push(pending);
+        }
     }
-    command(data: unknown): void {
+    command(data: unknown, settle?: () => void): void {
         if (this.world.gate && !this.allowsInput('ext:command', data)) throw new Error('Interaction gate rejects command');
         if (typeof data !== 'string') throw new Error('Extension command requires JSON string');
         const input = JSON.parse(data) as { module: string; action: string; payload: Json };
@@ -555,20 +747,14 @@ export class ExtensionRuntime {
         const handler = module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action) ? module.commands[input.action] : undefined;
         if (!module || typeof handler !== 'function') throw new Error('Unknown extension command');
         const prior = this.resourcePhase; this.resourcePhase = true;
-        const states = structuredClone(this.states), components = structuredClone(this.components);
-        const resources = [...this.creatures].map(actor => ({ actor, hp: actor.hp, maxHp: actor.maxHp,
-            strength: actor instanceof Player ? actor.strength : null, gold: actor instanceof Player ? this.ports.gold?.() ?? 0 : null }));
-        const priorWorld = structuredClone(this.world);
         const priorCommandModule = this.commandModule, priorActionUsed = this.commandActionUsed;
         this.commandModule = module; this.commandActionUsed = false;
-        try { this.invoke(module, context => handler(input.payload, context), true); }
-        catch (error) {
-            this.states = states; this.components = components; this.world = priorWorld;
-            for (const saved of resources) {
-                saved.actor.hp = saved.hp; saved.actor.maxHp = saved.maxHp;
-                if (saved.actor instanceof Player) { saved.actor.strength = saved.strength!; this.ports.setGold?.(saved.gold!); }
-            }
-            throw error;
+        try {
+            this.transaction(() => {
+                this.invoke(module, context => handler(input.payload, context), true);
+                this.flushStoryFacts();
+                if (settle) requireSynchronous(settle());
+            });
         } finally { this.resourcePhase = prior; this.commandModule = priorCommandModule; this.commandActionUsed = priorActionUsed; }
     }
     attachCreature(creature: Creature, notifySpawn = true): void {
@@ -622,7 +808,7 @@ export class ExtensionRuntime {
     beginGeneration(label: string): GenerationToken {
         if (this.disposed || this.publishingGeneration || !label.length) throw new Error('Invalid generation transaction');
         const token = Object.freeze({ label });
-        this.generations.push({ token, world: structuredClone(this.world), placementNextEntityId: null, states: structuredClone(this.states), components: structuredClone(this.components),
+        this.generations.push({ token, nextFactId: this.nextFactId, pendingStoryFacts: structuredClone(this.pendingStoryFacts), resources: this.resourceCheckpoint(), world: structuredClone(this.world), placementNextEntityId: null, states: structuredClone(this.states), components: structuredClone(this.components),
             causality: this.causality.snapshot(), deaths: structuredClone(this.deaths), creatures: new Set(this.creatures), facts: [], births: new Set() });
         return token;
     }
@@ -643,18 +829,19 @@ export class ExtensionRuntime {
         // Keep the token alive until all synchronous handlers succeed. The engine
         // can restore its own world/RNG/logs and call rollbackGeneration on failure.
         this.publishingGeneration = true;
-        try {
+        try { this.bufferMessages(() => {
             for (const creature of [...frame.births].sort((a, b) => a.id - b.id)) {
                 this.dispatch('creatureSpawned', this.spawnFact(creature));
             }
             for (const fact of frame.facts) if (fact.name !== 'creatureSpawned') this.dispatch<HookName>(fact.name, fact.event, fact.readonly);
             this.dispatch('generationCommitted', { label: token.label, creatureIds: [...frame.births].map(c => c.id).sort((a, b) => a - b) });
             this.generations.pop();
-        } finally { this.publishingGeneration = false; }
+        }); } finally { this.publishingGeneration = false; }
     }
     rollbackGeneration(token: GenerationToken): void {
         const frame = this.generation(token);
         this.states = frame.states; this.components = frame.components; this.world = frame.world;
+        this.nextFactId = frame.nextFactId; this.pendingStoryFacts = frame.pendingStoryFacts; this.restoreResources(frame.resources);
         if (frame.placementNextEntityId !== null) restoreNextEntityId(frame.placementNextEntityId);
         this.causality.restore(frame.causality); this.deaths = frame.deaths;
         for (const creature of this.creatures) if (!frame.creatures.has(creature)) {
@@ -783,7 +970,7 @@ export class ExtensionRuntime {
     snapshot(): ExtensionSnapshot {
         if (this.generations.length) throw new Error('Cannot snapshot an open generation transaction');
         return structuredClone({ manifest: this.manifest, modules: this.states, components: this.components,
-            foundation: { version: 2, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
+            foundation: { version: 3, nextFactId: this.nextFactId, pendingStoryFacts: this.pendingStoryFacts, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
     }
     validateSnapshot(value: ExtensionSnapshot): void {
         if (!value || !isJson(value) || canonical(value.manifest) !== canonical(this.manifest)
@@ -792,7 +979,11 @@ export class ExtensionRuntime {
             || Object.keys(value).some(key => !['manifest', 'modules', 'components', 'foundation'].includes(key))
             || canonical(Object.keys(value.modules).sort()) !== canonical(this.modules.map(module => module.id).sort())) throw new Error('Invalid extension snapshot');
         const foundation = value.foundation;
-        if (!foundation || foundation.version !== 2 || Object.keys(foundation).sort().join(',') !== 'causality,deaths,version,world'
+        if (!foundation || foundation.version !== 3 || Object.keys(foundation).sort().join(',') !== 'causality,deaths,nextFactId,pendingStoryFacts,version,world'
+            || !Number.isSafeInteger(foundation.nextFactId) || foundation.nextFactId < 1
+            || !Array.isArray(foundation.pendingStoryFacts) || foundation.pendingStoryFacts.length > STORY_FACT_LIMIT
+            || !foundation.pendingStoryFacts.every(validPendingStoryFact)
+            || (foundation.pendingStoryFacts.length > 0 && !this.hasHook('storyFact'))
             || !validWorldSnapshot(foundation.world, this.modules.map(module => module.id))
             || !EffectCausality.validateSnapshot(foundation.causality) || !foundation.deaths || Array.isArray(foundation.deaths)
             || typeof foundation.deaths !== 'object') throw new Error('Invalid extension foundation snapshot');
@@ -808,6 +999,10 @@ export class ExtensionRuntime {
         }
         for (const module of this.modules) if (!module.validateState(value.modules[module.id]))
             throw new ExtensionCompatibilityError('state-invalid', module.id, `Invalid module state: ${module.id}`);
+        // Persistent queues are only valid in a not-yet-ready recording origin
+        // or intermediate initialization checkpoint. Ready runs must be drained.
+        if (foundation.pendingStoryFacts.length && this.initializationReadyFor(value))
+            throw new Error('Pending story facts in initialized snapshot');
         for (const module of this.modules) if (module.validateComponents && !module.validateComponents(value.modules[module.id]!, value.components, value.foundation))
             throw new ExtensionCompatibilityError('state-invalid', module.id, `Invalid module component references: ${module.id}`);
         for (const [id, components] of Object.entries(value.components)) {

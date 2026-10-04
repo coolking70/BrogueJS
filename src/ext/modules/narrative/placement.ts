@@ -1,21 +1,16 @@
 import type { ExtensionContext, HookEvents, Json, WorldInteractablePlacement } from '../../types';
-import { commitNarrativePlan, planNarrativeFact } from './effects';
 import { NarrativeError } from './errors';
+import { narrativeNextRevision } from './sessions';
 import { narrativePlacementDefinition, narrativePlacementKey, narrativeReceiptCount, validateNarrativeState,
     type NarrativeState, type NpcBinding, type PendingPlacement } from './state';
 import type { NarrativePack } from './types';
-import i18next from 'i18next';
 
 const order = (a: NpcBinding, b: NpcBinding) => a.instanceKey < b.instanceKey ? -1 : a.instanceKey > b.instanceKey ? 1 : 0;
 /** A committed entry is the only installation point. The foundation rolls back the complete hook batch on failure. */
 export function enterNarrativeLevel(pack: NarrativePack, event: Readonly<HookEvents['enteredLevel']>, context: ExtensionContext): void {
-    const before = validateNarrativeState(context.state, pack);
-    const fact = planNarrativeFact(pack, before, { kind: 'entered-level', factId: before.lastFactId + 1,
-        depth: event.depth, turn: context.turn, firstVisit: event.firstVisit }, { queryOptional: context.queryOptional });
-    const next = commitNarrativePlan(pack, before, fact);
-    if (event.firstVisit) place(pack, next, event.depth, context);
+    const next = validateNarrativeState(context.state, pack);
+    if (event.firstVisit) { place(pack, next, event.depth, context); narrativeNextRevision(next); }
     context.setState(validateNarrativeState(next, pack) as unknown as Json);
-    for (const message of fact.messages) context.message(i18next.t(message.textKey));
 }
 function place(pack: NarrativePack, next: NarrativeState, depth: number, context: ExtensionContext): void {
     // Expiry is deterministic even if the player jumps over the final eligible depth.

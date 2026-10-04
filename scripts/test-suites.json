@@ -55,6 +55,7 @@
     "src/test/ext_module_removal.test.ts",
     "src/test/ext_module_ui.test.ts",
     "src/test/ext_optional_queries.test.ts",
+    "src/test/ext_optional_rewards.test.ts",
     "src/test/ext_slaying_alignment.test.ts",
     "src/test/ext_validation.test.ts",
     "src/test/ext_world_display.test.ts",

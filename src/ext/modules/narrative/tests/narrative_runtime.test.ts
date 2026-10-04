@@ -43,12 +43,12 @@ describe('EXT-2b narrative installed contract', () => {
         expect(module.version).toBe(NARRATIVE_VERSION);
         expect(module.rules).toEqual(getNarrativePackIdentity());
         expect(pack.inputVersion).toBe(2);
-        expect(pack.stateVersion).toBe(2);
+        expect(pack.stateVersion).toBe(3);
         expect(descriptor.defaultEnabled).toBe(false);
         expect(module.dependencies).toBeUndefined();
         expect(module.initialCommand).toBeUndefined();
         expect(Object.keys(module.commands!)).toEqual(['open', 'choose', 'close']);
-        expect(Object.keys(module.hooks!)).toEqual(['enteredLevel', 'interactionClosed', 'interactablesRemoved']);
+        expect(Object.keys(module.hooks!)).toEqual(['enteredLevel', 'storyFact', 'interactionClosed', 'interactablesRemoved']);
         expect(module.projectView).toBeTypeOf('function');
         expect(module.view).toBeUndefined();
         expect(module.optionalQueries).toBeUndefined();
@@ -306,6 +306,9 @@ function startNaturalNarrative(seed = 8201): Game {
 function enterWorldOnly(game: Game, depth: number): void {
     const up = depth < game.depth; game.depth = depth;
     (game as unknown as { generateDepth(up: boolean): void }).generateDepth(up);
+    // The helper bypasses executeCommand's final safe boundary. Drain the queued
+    // entry explicitly before attempting a durable save; no input is fabricated.
+    (game as unknown as { collectExtensionComponents(): void }).collectExtensionComponents();
     acknowledge();
 }
 describe('EXT-2b actual normal-world cache and terminal lifecycle', () => {

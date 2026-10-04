@@ -1,12 +1,13 @@
 import type { ExtensionContext, Json, WorldInteractable } from '../../types';
 import { NarrativeError } from './errors';
 import { validateNarrativeInput, type NarrativeInput } from './input';
-import { commitNarrativePlan, planNarrativeChoice, planNarrativeFact } from './effects';
+import { stagedNarrativeState, planNarrativeChoice, planNarrativeFact, type NarrativePlan } from './effects';
 import { narrativeInteger, narrativePlacementDefinition, validateNarrativeState, type NarrativeState } from './state';
 import type { NarrativePack } from './types';
 
 export interface NarrativeCommandPlan {
     readonly nextState: NarrativeState;
+    readonly storyPlan?: NarrativePlan;
     readonly messages: readonly { readonly textKey: string }[];
 }
 export function narrativeNextRevision(state: NarrativeState): void {
@@ -32,12 +33,12 @@ export function planNarrativeCommand(pack: NarrativePack, raw: unknown, context:
         const npc = narrativeBoundTarget(pack, state, context.interactionTarget(input.payload.targetEntityId));
         const dialogue = pack.dialogues.find(dialogue => dialogue.id === npc.dialogueId)!;
         const plan = planNarrativeFact(pack, state, { kind: 'npc-interacted', npcId: npc.id,
-            factId: state.lastFactId + 1, depth: context.depth, turn: context.turn }, { queryOptional: context.queryOptional });
-        const nextState = commitNarrativePlan(pack, state, plan);
+            factId: context.nextFactId, depth: context.depth, turn: context.turn }, { queryOptional: context.queryOptional, prepareReward: intent => context.prepareOptionalReward(intent.capability, intent.rewardId, intent.instanceKey) });
+        const nextState = stagedNarrativeState(pack, state, plan);
         nextState.active = { sessionId: state.nextSessionId, targetEntityId: input.payload.targetEntityId,
             dialogueId: dialogue.id, nodeId: dialogue.entry, transitions: 0 };
         nextState.nextSessionId++;
-        return { nextState: validateNarrativeState(nextState, pack), messages: plan.messages };
+        return { nextState: validateNarrativeState(nextState, pack), messages: plan.messages, storyPlan: plan };
     }
     const active = state.active;
     if (!active || active.sessionId !== input.payload.sessionId) throw new NarrativeError('INVALID_INPUT', '$input.payload.sessionId');
@@ -48,12 +49,12 @@ export function planNarrativeCommand(pack: NarrativePack, raw: unknown, context:
     if (active.nodeId !== input.payload.nodeId) throw new NarrativeError('INVALID_INPUT', '$input.payload.nodeId');
     narrativeBoundTarget(pack, state, context.interactionTarget(active.targetEntityId));
     const plan = planNarrativeChoice(pack, state, { kind: 'dialogue-choice', dialogueId: active.dialogueId, choiceId: input.payload.choiceId,
-        factId: state.lastFactId + 1, depth: context.depth, turn: context.turn },
+        factId: context.nextFactId, depth: context.depth, turn: context.turn },
     { dialogueId: active.dialogueId, nodeId: active.nodeId, choiceId: input.payload.choiceId, transitions: active.transitions },
-    { queryOptional: context.queryOptional });
-    const nextState = commitNarrativePlan(pack, state, plan);
+    { queryOptional: context.queryOptional, prepareReward: intent => context.prepareOptionalReward(intent.capability, intent.rewardId, intent.instanceKey) });
+    const nextState = stagedNarrativeState(pack, state, plan);
     nextState.active = plan.choice!.nextNodeId === null ? null : { ...active, nodeId: plan.choice!.nextNodeId, transitions: plan.choice!.transitions };
-    return { nextState: validateNarrativeState(nextState, pack), messages: plan.messages };
+    return { nextState: validateNarrativeState(nextState, pack), messages: plan.messages, storyPlan: plan };
 }
 export function narrativeCommandInput(action: NarrativeInput['action'], payload: Json): NarrativeInput {
     return validateNarrativeInput({ module: 'narrative', action, payload });

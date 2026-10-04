@@ -174,12 +174,14 @@ describe('EXT-1e selected identity engine creation and durable commands',()=> {
         expect(game.extensionRuntime!.snapshot().components[npc.id]).toBeUndefined();expect(state(game).resourceReceipts).toContain(receipt);
         const saved=game.toSaveSnapshot(),before=projection(game);expect(game.loadSnapshot(saved)).toBe(true);expect(projection(game)).toEqual(before);
     });
-    it('rejects phase1d manifest downgrades and same-version fingerprint changes in selected saves and recordings without retiring the live run',()=> {
+    it('rejects previous growth manifest versions and same-version fingerprint changes in selected saves and recordings without retiring the live run',()=> {
         const game=scene(selection('guardian','stoneborn','watch'));command(game,'use-skill',{skillId:'growth.skill.brace',target:{kind:'self'}});
         const saved=game.toSaveSnapshot(),recording=game.exportRecording(),before=projection(game),player=game.player,runtime=game.extensionRuntime;
         const events=structuredClone(game.recordedInputEvents), original=saved.extensions!.manifest.modules.find(module=>module.id==='growth')!;
-        expect(original.version).toBe('1.4.0');expect(original.rules!.version).toBe('1.4.0');
+        expect(original.version).toBe('1.5.0');expect(original.rules!.version).toBe('1.5.0');
         const mutations: ((module: ExtensionVersion)=>void)[]=[
+            module=>{module.version='1.4.0';},module=>{module.rules!.version='1.4.0';},
+            module=>{module.version='1.4.0';module.rules!.version='1.4.0';},
             module=>{module.version='1.3.0';},module=>{module.rules!.version='1.3.0';},
             module=>{module.version='1.3.0';module.rules!.version='1.3.0';},
             module=>{module.rules!.fingerprint=`sha256:${'0'.repeat(64)}`;},

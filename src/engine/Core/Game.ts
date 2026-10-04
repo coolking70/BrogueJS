@@ -355,6 +355,7 @@ export class Game {
                 rng.setRNG(RNGType.RNG_SUBSTANTIVE);
                 try { return rng.randRange(min, max); } finally { rng.setRNG(stream); }
             },
+            checkpointRandom: () => { const state = rng.getState(); return () => rng.setState(state); },
             message: text => logger.log(text, '#88ccff'),
             testMode: () => this.mode === 'test',
             knownKinds: () => {
@@ -878,6 +879,9 @@ export class Game {
         this.generateDepth(false, true);
         this.needsRender = true;
         this.update();
+        // Drain run-ready story facts before the recording origin; creation-gated
+        // modules retain their queue until their recorded initialization command.
+        this.collectExtensionComponents();
         recordingState(this).origin = {
             version: 1, seed: this.currentSeed, mode: this.mode,
             ...(this.extensionRuntime ? { extensions: this.extensionRuntime.manifest } : {}),
@@ -3066,7 +3070,7 @@ export class Game {
         }
         if (action === 'ext:command') {
             if (!this.extensionRuntime) throw new Error('Extension command in classic mode');
-            this.extensionRuntime.command(data);
+            this.extensionRuntime.command(data, () => this.collectExtensionComponents());
         } else if (action.startsWith('item:')) {
             const [operation, letter, ...rest] = String(data ?? '').split('|');
             const item = this.player.inventory.items.find(i => i.inventoryLetter === letter);
@@ -3164,6 +3168,8 @@ export class Game {
                 const runtime = this.createExtensionRuntime(r.extensions);
                 for (const event of r.events ?? []) {
                     runtime.validateSnapshot(event.extensions!);
+                    if (event.extensions!.foundation.pendingStoryFacts.some(fact => fact.depth !== event.depth || event.turn === undefined || fact.turn > event.turn))
+                        throw new Error('Invalid recording story fact world boundary');
                     const world = event.extensions!.foundation.world;
                     if (world.gate && (event.end || !world.entities.some(entity => entity.id === world.gate!.targetEntityId && entity.depth === event.depth)))
                         throw new Error('Invalid recording interaction gate');

@@ -7,14 +7,17 @@ import { assertLoadedNarrativePack } from './schema';
 import { enterNarrativeLevel } from './placement';
 import { narrativeCommandInput, narrativeNextRevision, planNarrativeCommand } from './sessions';
 import { projectNarrativeView } from './view';
+import { commitNarrativeStoryPlan } from './commit';
+import { planNarrativeFact, stagedNarrativeState } from './effects';
 import { narrativeActiveWorldValid, validateNarrativeRecording, validateNarrativeWorldBindings } from './validation';
 
-/** 2b installs world placement and zero-tick sessions. Global fact/reward adapters are intentionally absent. */
+/** Plans every effect first, then commits optional rewards and local state in one foundation transaction. */
 export function createNarrativeModuleFromPack(pack: NarrativePack): ExtensionModule {
     assertLoadedNarrativePack(pack);
     const command = (action: 'open' | 'choose' | 'close'): NonNullable<ExtensionModule['commands']>[string] => (payload, context) => {
         const plan = planNarrativeCommand(pack, narrativeCommandInput(action, payload), context);
-        context.setState(plan.nextState as unknown as Json);
+        if (plan.storyPlan) commitNarrativeStoryPlan(pack, plan.storyPlan, plan.nextState, context);
+        else context.setState(plan.nextState as unknown as Json);
         context.interactionGate(plan.nextState.active ? { targetEntityId: plan.nextState.active.targetEntityId, sessionId: plan.nextState.active.sessionId } : null);
         for (const message of plan.messages) context.message(i18next.t(message.textKey));
     };
@@ -26,7 +29,7 @@ export function createNarrativeModuleFromPack(pack: NarrativePack): ExtensionMod
         worldInteractables: true,
         interactionCommands: ['choose', 'close'],
         projectView: context => projectNarrativeView(pack, context),
-        validateComponents(state, _components, foundation) { return validateNarrativeWorldBindings(pack, state, foundation.world); },
+        validateComponents(state, _components, foundation) { return validateNarrativeWorldBindings(pack, state, foundation.world) && (state as unknown as NarrativeState).lastFactId < foundation.nextFactId; },
         validateWorld(state, _components, _actors, world) {
             return validateNarrativeWorldBindings(pack, state, world) && narrativeActiveWorldValid(state as unknown as NarrativeState, world.entities, world.depth, world.isGameOver);
         },
@@ -43,6 +46,12 @@ export function createNarrativeModuleFromPack(pack: NarrativePack): ExtensionMod
         },
         hooks: {
             enteredLevel: (event, context) => enterNarrativeLevel(pack, event, context),
+            storyFact(event, context) {
+                const plan = planNarrativeFact(pack, context.state, event, { queryOptional: context.queryOptional,
+                    prepareReward: intent => context.prepareOptionalReward(intent.capability, intent.rewardId, intent.instanceKey) });
+                commitNarrativeStoryPlan(pack, plan, stagedNarrativeState(pack, context.state, plan), context);
+                for (const message of plan.messages) context.message(i18next.t(message.textKey));
+            },
             interactionClosed(event, context) {
                 if (event.owner !== 'narrative') return;
                 const state = validateNarrativeState(context.state, pack);

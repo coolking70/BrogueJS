@@ -1,7 +1,7 @@
 import type { ActorFacts, ExtensionSnapshot } from '../../types';
 import type { EffectOrigin } from '../../causality';
 import { validEffectOrigin } from '../../causality';
-import { isJson, canonical } from '../../json';
+import { isJson, canonical, validId } from '../../json';
 import type { CreatureBirth } from '../../birth';
 import type { DeepReadonly } from './definitions';
 import type { GrowthDefinitionPack } from './types';
@@ -52,6 +52,15 @@ export function isGrowthState(value: unknown, pack: DeepReadonly<GrowthDefinitio
         || !integer(value.visitAwarded) || (pack.config.experience.firstVisits.cap !== null && value.visitAwarded > pack.config.experience.firstVisits.cap)
         || !sorted(value.rewardReceipts,text) || !sorted(value.storyReceipts,text) || !sorted(value.resourceReceipts,text)
         || !record(value.actors) || !Array.isArray(value.pending)) return false;
+    // An issuer may no longer be installed, and disabled legacy story grants still leave quoted receipts.
+    // The provider owns the reward definition, so each durable key must name one of its own quotes.
+    const storyQuote = (receipt: unknown) => {
+        if (typeof receipt !== 'string') return undefined;
+        const parts = receipt.split(':');
+        return parts.length === 3 && parts.every(validId)
+            ? pack.config.experience.story.rewards.find(quote=>quote.id === parts[1]) : undefined;
+    };
+    if (value.storyReceipts.some(receipt=>!storyQuote(receipt))) return false;
     for (const [id, actor] of Object.entries(value.actors)) if (!/^[1-9]\d*$/.test(id) || !integer(Number(id),1)
         || !record(actor,['player','allied','hostile','alive','relation']) || !integer(actor.relation)
         || ['player','allied','hostile','alive'].some(key => typeof actor[key] !== 'boolean')
@@ -67,8 +76,12 @@ export function isGrowthState(value: unknown, pack: DeepReadonly<GrowthDefinitio
     return value.pending.every(pending => {
         if (!record(pending)) return false;
         if (pending.kind === 'visit') return record(pending,['kind','depth','actorIds']) && integer(pending.depth,1) && sorted(pending.actorIds,(id): id is number=>integer(id,1));
-        if (pending.kind === 'story') return record(pending,['kind','recipientId','rewardKey','definitionId','amount','reasonKey'])
-            && integer(pending.recipientId,1) && text(pending.rewardKey) && text(pending.definitionId) && integer(pending.amount) && text(pending.reasonKey);
+        if (pending.kind === 'story') {
+            const quote = storyQuote(pending.rewardKey);
+            return record(pending,['kind','recipientId','rewardKey','definitionId','amount','reasonKey'])
+                && integer(pending.recipientId,1) && !!quote && pending.definitionId === quote.id
+                && pending.amount === quote.amount && pending.reasonKey === quote.reasonKey;
+        }
         if (pending.kind !== 'kill' || !record(pending,['kind','actor','origin','administrative']) || typeof pending.administrative !== 'boolean'
             || (pending.origin !== null && !validEffectOrigin(pending.origin))
             || !record(pending.actor,['id','name','hp','maxHp','x','y','player','monsterId','allied','hostile'])) return false;

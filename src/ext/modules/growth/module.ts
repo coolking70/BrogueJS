@@ -1,7 +1,7 @@
 import i18next from 'i18next';
-import type { ControlledActionRequest, ControlledActionResult, ActorFacts, ExtensionContext, ExtensionModule, ExtensionCreationResources, ExtensionRuleContext, ExtensionRuleInput, Json, ReadonlyJson } from '../../types';
+import type { ControlledActionRequest, ControlledActionResult, ActorFacts, ExtensionContext, ExtensionModule, ExtensionCreationResources, ExtensionRuleContext, ExtensionRuleInput, Json, ReadonlyJson, OptionalRewardRequest, OptionalRewardPrepareContext, OptionalQueryProvider } from '../../types';
 import type { CreatureBirth } from '../../birth';
-import { canonical, isJson } from '../../json';
+import { canonical, isJson, validId } from '../../json';
 import type { DeepReadonly } from './definitions';
 import type { GrowthDamageInput, GrowthDefinitionPack, GrowthResourceEffect, GrowthRuleActor, GrowthRulePort } from './types';
 import { grantExperience, initialGrowthProgression, reconcileGrowthMaximum,
@@ -19,7 +19,7 @@ import { initialGrowthItemLedger, resolveGrowthItemGain, type GrowthItemLedger }
 
 const getState = (context: ExtensionContext): GrowthState => context.state as GrowthState;
 const saveState = (context: ExtensionContext, state: GrowthState): void => context.setState(state as Json);
-const component = <T>(context: ExtensionContext, id: number, name: string): T => context.getComponent(id,name) as T;
+const component = <T>(context: Pick<ExtensionContext, 'getComponent'>, id: number, name: string): T => context.getComponent(id,name) as T;
 const put = (context: ExtensionContext,id: number,name: string,value: unknown): void => context.setComponent(id,name,value as Json);
 function remember<T extends string | number>(values: T[], value: T): boolean {
     if (values.includes(value)) return false;
@@ -159,7 +159,8 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         if (native.strength !== null && derived.appliedStrength) context.commitCharacterResources(actor.id,
             {expectedStrength:native.strength,strength:addGrowthIntegers(native.strength,derived.appliedStrength),expectedGold:native.gold,gold:native.gold});
     }
-    function award(context: ExtensionContext, state: GrowthState, recipientId: number, amount: number): void {
+    /** All grant math and native-resource bounds are checked before any write. */
+    function planAward(context: Pick<ExtensionContext, 'getComponent' | 'creature' | 'characterResources'>, state: Readonly<GrowthState>, recipientId: number, amount: number) {
         const old = component<GrowthProgression>(context,recipientId,'progression'), actor = context.creature(recipientId);
         if (!old || !actor || amount === 0) return;
         const reward = component<GrowthReward>(context,recipientId,'reward');
@@ -167,8 +168,10 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         if (!actor.player && !config.monsters.alliesGrow && actor.allied) return;
         const gain = grantExperience(config.levels,old,amount);
         const priorDerived = component<GrowthDerived>(context,recipientId,'derived');
-        const priorAttributes = component<GrowthAttributes>(context,recipientId,'attributes'), priorBuild = skillBuild(context,recipientId);
-        const identity = actorIdentity(context,recipientId), oldScopes = scopes(context,recipientId);
+        const priorAttributes = component<GrowthAttributes>(context,recipientId,'attributes');
+        const priorBuild = component<GrowthSkillBuild>(context,recipientId,'skill-build') ?? initialGrowthSkillBuild();
+        const identity = component<GrowthIdentityBuild>(context,recipientId,'identity') ?? initialGrowthIdentityBuild();
+        const oldScopes = growthSkillScopes(pack,priorBuild,state.objectiveClock,'actor',identity);
         const nextBuild = !actor.player && actor.allied && gain.levelsGained
             ? autoAllocateGrowthAlly(pack,recipientId,{progression:gain.progression,attributes:priorAttributes,build:priorBuild,identity})
             : {progression:gain.progression,attributes:priorAttributes,build:priorBuild,identity};
@@ -201,17 +204,66 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         if (equipped && !config.skills.equipPreservesFocus) resources.focus.current = capacity;
         if (equipped && !config.skills.equipPreservesCooldowns) resources.skills.readyAt = Object.fromEntries(Object.keys(resources.skills.readyAt).map(id=>[id,0]));
         resources.focus = advanceGrowthFocus(pack,{...resources.focus,current:Math.min(resources.focus.current,capacity)},capacity,growthFocusInterval(pack,nextActor,nextScopes),0);
-        put(context,recipientId,'progression',gain.progression); put(context,recipientId,'derived',derived);
-        put(context,recipientId,'attributes',attributes);put(context,recipientId,'skill-build',nextBuild.build);
-        put(context,recipientId,'focus',resources.focus); put(context,recipientId,'skills',resources.skills);
         const native = context.characterResources(recipientId);
-        if (native.strength !== null && derived.appliedStrength !== priorDerived.appliedStrength) context.commitCharacterResources(recipientId,
-            { expectedStrength:native.strength,strength:reconcileGrowthMaximum(native.strength,priorDerived.appliedStrength,derived.appliedStrength),expectedGold:native.gold,gold:native.gold });
-        if (actor.hp !== resources.hp || actor.maxHp !== resources.maxHp)
-            context.commitResources(recipientId,{expectedHp: actor.hp,expectedMaxHp: actor.maxHp,hp: resources.hp,maxHp: resources.maxHp});
-        if (gain.gainedExperience) state.revision = addGrowthIntegers(state.revision,1);
-        if (gain.levelsGained && actor.player) context.message(i18next.t('ext.growth.level_gained', { level: gain.progression.level,defaultValue: 'You reached level {{level}}.' }));
+        const character = native.strength !== null && derived.appliedStrength !== priorDerived.appliedStrength
+            ? { expectedStrength:native.strength,strength:reconcileGrowthMaximum(native.strength,priorDerived.appliedStrength,derived.appliedStrength),expectedGold:native.gold,gold:native.gold }
+            : null;
+        return { recipientId, progression:gain.progression, derived, attributes, build:nextBuild.build, focus:resources.focus, skills:resources.skills,
+            character, resources:actor.hp !== resources.hp || actor.maxHp !== resources.maxHp
+                ? {expectedHp:actor.hp,expectedMaxHp:actor.maxHp,hp:resources.hp,maxHp:resources.maxHp} : null,
+            revision:gain.gainedExperience ? addGrowthIntegers(state.revision,1) : state.revision,
+            announceLevel:gain.levelsGained && actor.player ? gain.progression.level : null };
     }
+    function commitAward(context: ExtensionContext, state: GrowthState, plan: NonNullable<ReturnType<typeof planAward>>): void {
+        const id = plan.recipientId;
+        put(context,id,'progression',plan.progression); put(context,id,'derived',plan.derived);
+        put(context,id,'attributes',plan.attributes); put(context,id,'skill-build',plan.build);
+        put(context,id,'focus',plan.focus); put(context,id,'skills',plan.skills);
+        if (plan.character) context.commitCharacterResources(id,plan.character);
+        if (plan.resources) context.commitResources(id,plan.resources);
+        state.revision = plan.revision;
+        if (plan.announceLevel !== null) context.message(i18next.t('ext.growth.level_gained', { level:plan.announceLevel,defaultValue:'You reached level {{level}}.' }));
+    }
+    function award(context: ExtensionContext, state: GrowthState, recipientId: number, amount: number): void {
+        const plan = planAward(context,state,recipientId,amount);
+        if (plan) commitAward(context,state,plan);
+    }
+    function prepareStoryReward(request: Readonly<OptionalRewardRequest>, context: OptionalRewardPrepareContext) {
+        // The provider owns the quote, reason and receipt; the consumer names only its bounded reward key.
+        if (!config.experience.sources.story) return {status:'skipped' as const,reason:'disabled' as const};
+        const quote = config.experience.story.rewards.find(reward=>reward.id === request.rewardId);
+        if (!quote) return {status:'skipped' as const,reason:'unsupported-key' as const};
+        const state = context.state as unknown as GrowthState;
+        if (request.recipient !== 'player' || !state.created || state.playerId !== context.playerId
+            || !context.player?.player || context.player.id !== context.playerId || !context.getPlayerComponent('progression')) throw rejected();
+        const receiptId = `${request.issuerId}:${request.rewardId}:${request.instanceId}`;
+        const received = state.storyReceipts.includes(receiptId);
+        const read = { getComponent:(id: number,name: string): Json | undefined => {
+                if (id !== context.playerId) throw rejected();
+                const value = context.getPlayerComponent(name);
+                return value === undefined ? undefined : structuredClone(value) as Json;
+            }, creature:(id: number) => id === context.playerId ? context.player : null,
+            characterResources:(id: number) => { if (id !== context.playerId) throw rejected(); return {...context.resources}; } };
+        return {status:'ready' as const,plan:{v:1,receiptId,recipientId:context.playerId,amount:quote.amount,reasonKey:quote.reasonKey,
+            expectedRevision:state.revision,received,award:received ? null : planAward(read,state,context.playerId,quote.amount) ?? null}};
+    }
+    const publicCharacter: OptionalQueryProvider = {
+        accepts: input => !!input && typeof input === 'object' && !Array.isArray(input)
+            && Object.keys(input).length === 1 && 'v' in input && input.v === 1,
+        query(_input,context) {
+            const state = context.state as unknown as GrowthState;
+            const progression = context.getPlayerComponent('progression') as GrowthProgression | undefined;
+            const identity = context.getPlayerComponent('identity') as GrowthIdentityBuild | undefined;
+            if (!state.created || state.playerId !== context.playerId || !progression || !identity) throw rejected();
+            return {level:progression.level,professionId:identity.professionId,lineageId:identity.lineageId,faithId:identity.faithId};
+        },
+        validate(value): value is Json {
+            if (!isJson(value) || !value || typeof value !== 'object' || Array.isArray(value)
+                || Object.keys(value).sort().join(',') !== 'faithId,level,lineageId,professionId') return false;
+            return Number.isSafeInteger(value.level) && (value.level as number) >= 1 && (value.level as number) <= config.levels.cap
+                && ['professionId','lineageId','faithId'].every(field=>value[field] === null || validId(value[field]));
+        },
+    };
     function planCharacterCommand(action: 'allocate' | 'respec', payload: Json, context: ExtensionContext) {
         const state = getState(context), actor = context.creature(context.playerId);
         if (!state.created || !actor || actor.hp <= 0 || !context.canManageCharacter()
@@ -452,6 +504,24 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
     }
     const module: ExtensionModule = {
         id: 'growth',version: pack.moduleVersion,rules: identity,resourceCommits: true,
+        initializationReady: context => getState(context).created,
+        optionalQueries: {'growth.public-character.v1':publicCharacter},
+        optionalRewards: {'growth.story-reward.v1': {
+            prepare(request,context) {
+                const prepared = prepareStoryReward(request,context);
+                return prepared.status === 'ready' ? {status:'ready',plan:prepared.plan as unknown as Json} : prepared;
+            },
+            commit(request,plan,context) {
+                const prepared = prepareStoryReward(request,{playerId:context.playerId,state:context.state,
+                    getPlayerComponent:name=>context.getComponent(context.playerId,name),
+                    player:context.creature(context.playerId),resources:context.characterResources(context.playerId)});
+                if (prepared.status !== 'ready' || canonical(prepared.plan) !== canonical(plan)) throw rejected();
+                if (prepared.plan.received) return;
+                const state = getState(context);
+                if (prepared.plan.award) commitAward(context,state,prepared.plan.award);
+                remember(state.storyReceipts,prepared.plan.receiptId); saveState(context,state);
+            },
+        }},
         view: { definitions: pack as unknown as ReadonlyJson, stateFields: ['created','revision','objectiveClock'],
             playerComponents: ['progression','attributes','derived','focus','skills','skill-build','identity'],
             componentFields:{identity:['professionId','lineageId','faithId','choices'],'skill-build':['learned','inherited','active','passive','effects']} },

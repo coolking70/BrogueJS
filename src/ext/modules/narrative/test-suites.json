@@ -4,7 +4,8 @@
     "tests/narrative_kernel.test.ts",
     "tests/narrative_runtime.test.ts",
     "tests/narrative_sessions.test.ts",
-    "tests/narrative_ui.test.ts"
+    "tests/narrative_ui.test.ts",
+    "tests/narrative_rewards.test.ts"
   ],
   "gen": [],
   "drift": []

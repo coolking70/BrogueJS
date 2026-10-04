@@ -19,9 +19,13 @@ function fixture(pack = loadNarrativeDefinitionPack()) {
     let gate: { owner: string; targetEntityId: number; sessionId: number } | null = null;
     const entities: WorldInteractable[] = [];
     const message = vi.fn(), randomInt = vi.fn();
-    let reachable = true, space = true;
+    let reachable = true, space = true, nextFactId = 1;
     const context = {
         moduleId: 'narrative', playerId: 1, turn: 0,
+        get nextFactId() { return nextFactId; },
+        commitFactRange(first: number, count: number) { expect(first).toBe(nextFactId); nextFactId += count; },
+        prepareOptionalReward: () => ({ status: 'skipped', reason: 'absent' }),
+        commitOptionalReward: () => { throw new Error('Unexpected reward commit'); },
         get state() { return clone(state) as unknown as Json; }, get depth() { return depth; },
         setState(value: Json) { state = validateNarrativeState(value, pack); },
         creature: () => ({ id: 1, hp: 20, maxHp: 20, name: 'player', x: 1, y: 1, player: true, monsterId: null, allied: true, hostile: false }),
@@ -39,7 +43,7 @@ function fixture(pack = loadNarrativeDefinitionPack()) {
         interactionGate(active: { targetEntityId: number; sessionId: number } | null) { gate = active ? { owner: 'narrative', ...active } : null; },
         message, randomInt,
     } as unknown as ExtensionContext;
-    function enter(value = 1, firstVisit = true) { depth = value; module.hooks!.enteredLevel!({ depth, firstVisit }, context); }
+    function enter(value = 1, firstVisit = true) { depth = value; module.hooks!.enteredLevel!({ depth, firstVisit }, context); module.hooks!.storyFact!({ kind: 'entered-level', depth, firstVisit, turn: 0, factId: nextFactId }, context); }
     function input(action: string, payload: object) { return JSON.stringify({ module: 'narrative', action, payload: { v: 2, revision: state.revision, ...payload } }); }
     function execute(data: string) {
         if (!module.allowInput!('ext:command', data, context)) return false;

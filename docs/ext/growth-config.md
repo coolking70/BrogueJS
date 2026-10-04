@@ -1,6 +1,6 @@
-# Growth 数据配置合同（1e，schema 1 / rules 1.4.0）
+# Growth 数据配置合同（2c，schema 1 / rules 1.5.0）
 
-本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。1d 已接技能动作/效果消费/客观时钟；1e 接通身份选择/授予/誓约、怪物模板与盟友自动分配。§1.1–1.5 是逐步交付历史，当前实际状态以 §1.6 为准。
+本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。1d 已接技能动作/效果消费/客观时钟；1e 接通身份选择/授予/誓约、怪物模板与盟友自动分配。§1.1–1.6 保留逐步交付历史，2c 新增可选能力见 §1.7。
 
 ## 1. 实际文件与边界
 
@@ -18,7 +18,7 @@
 | `src/ext/modules/growth/text.ts` | 样例定义与校验错误的本地化词条 |
 | `src/ext/registry.ts`、`src/ext/types.ts` | 模块数据合同与阶段0精确版本校验衔接 |
 
-不复用阶段0 `src/ext/definitions.ts` 的示例三属性/简单effects冒充正式成长schema。旧 example 包与测试保持原合同；growth包通过数据校验不等于引擎支持其中所有动作。默认扩展集合为 `growth`；`example` 仍可显式选择，保留原合同。`createGrowthContractModule()` 是显式测试探针；生产目录注册 `createGrowthModule()`。当前实际门禁和未接线能力见 [1e 报告](phase1e.report.md)；下列1a–1d段落保留阶段历史，不覆盖§1.6的当前状态。
+不复用阶段0 `src/ext/definitions.ts` 的示例三属性/简单effects冒充正式成长schema。旧 example 包与测试保持原合同；growth包通过数据校验不等于引擎支持其中所有动作。默认扩展集合为 `growth`；`example` 仍可显式选择，保留原合同。`createGrowthContractModule()` 是显式测试探针；生产目录注册 `createGrowthModule()`。1e 当时的门禁见 [1e 报告](phase1e.report.md)；当前验收政策以 [扩展 README](README.md) 为准。下列1a–1e段落保留阶段历史，2c 新增可选能力见 §1.7。
 
 
 ### 1.1 已验收 1a 的历史运行状态（1b 新增接线见 §1.3）
@@ -78,7 +78,7 @@
 
 实际代码：skills.ts（学习/装配/实例/标签/时钟数学）、module.ts（命令与提交钩子）、state.ts（跨组件一致性）、runtime/types（受限动作与只读事实）、Game/Combat/TimeCoordinator（原生边界）。skills:{readyAt} 保留原基础合同；新增 skill-build 保存 learned/inherited/active/passive/effects。inherited 只表示克隆配置允许复制的已学知识，不重复扣费；不继承临时效果或旧冷却。状态新增 objectiveClock、objectiveRemainder、nextEffectId、nextActionId，均持久保存；UI只额外投影显示冷却所需的 objectiveClock 与当前玩家 skill-build，不暴露时钟内部余数、序号或全体生物账本。
 
-### 1.6 1e 当前实际状态与配置入口
+### 1.6 1e 交付状态与配置入口
 
 所有运行数值仍由 `definitions.json` 提供；没有身份/模板 ID 特判、任意脚本或新随机流。默认 4 职业 / 4 血统 / 4 信仰全部可选，普通怪物默认仍是中性 L1 模板，`depthTemplates: []` 不主动提升原怪物难度。
 
@@ -118,6 +118,19 @@
 
 默认选择器只做有界、无 RNG 的预选搜索；极端可配置加权选择若不能在有限 UI 工作预算中找到分配，保留未完成草稿供手动选择，开始按钮禁用。这是预览计算限制，不是玩法点数上限；正式命令可验证任何合法完整分配。
 
+### 1.7 2c 可选剧情奖励与公开玩家查询
+
+数据 schema 仍为 1；可选能力接线改变规则语义，因此 growth moduleVersion/rulesVersion 同升 `1.5.0`，descriptor 要求 foundation 3。旧 `1.4.0` 存档/录像按精确 manifest 拒绝，不自动迁移。现有 `story` 配置形状不变，默认仍关闭且 rewards 为空。
+
+- `growth.story-reward.v1` 接受底座生成的 issuerId、rewardId、instanceId 与固定 `recipient: 'player'`。调用者不能传经验数额或本地化理由；growth 自己从 `config.experience.story.rewards` 取 amount/reasonKey
+- story 关闭返回 `skipped/disabled`；开启但没有对应报价返回 `skipped/unsupported-key`。两者不创建 growth 收据或经验。模块缺席由底座返回 `skipped/absent`，由剧情模块处理自己的 skip 收据
+- prepare 只读取深冻结的自身状态、玩家组件、玩家公开事实及原生资源；完整计算经验、等级、派生值、回复/冷却及整数上限。ready 表示可提交，不表示已经发奖；准备阶段没有世界写入、消息或 RNG
+- commit 在底座受控事务内复核准备结果，直接提交成长组件、原生资源与 `issuerId:rewardId:instanceId` 收据。可选奖励不进入旧 pending 队列，不等待下一条命令；重复收据保持幂等，包括零经验和已封顶的有效报价
+- `growth.public-character.v1` 只接受 `{v:1}`，只返回玩家 level/professionId/lineageId/faithId 四项。没有身份时为 null；不接受 actorId，不暴露 NPC、模板、身份选择细节或内部收据。错误输入版本由底座返回 unavailable/unsupported-input，缺席为 unavailable/absent；创建角色前查询属于非法生命周期，会拒绝而非伪造可用角色
+- growth 通过 initializationReady 区分创建前后；底座先完成所有模块初始化，再在同一安全边界释放首次剧情事实。旧 kills/firstVisits/identification 与受信 grantReward 路径仍用既有最终结算，只复用同一个纯奖励计算器
+
+新测试 `ext_growth_optional_rewards.test.ts` 同时覆盖 provider 纯预检、整数溢出、默认/未知报价 skip、同命令连发、零值/重复收据，以及发现式安装组合中的真实 narrative 对话、存读、逐条 replay 和 seek；不通过导入 narrative 私有实现建立依赖。
+
 ## 2. 固定技术合同与可调数据
 
 固定A：D02确定致死来源、D04有界环境/持续伤害因果、D16经典隔离和窄纯端口、D17嵌套生成事务、D18安全点可达性回收、D19每命令完整checkpoint、D20最后有效状态施加者、D22首世界动作前create-character命令。这些不能靠改JSON关闭。
@@ -148,8 +161,8 @@
 | `$` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1a0 |
 | `$.schema` | 枚举 `1` | `1` | 1a0 |
 | `$.moduleId` | 枚举 `"growth"` | `"growth"` | 1a0 |
-| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.4.0"` | 1a0；1e升级 |
-| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.4.0"` | 1a0；1e升级 |
+| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.5.0"` | 1a0；2c升级 |
+| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.5.0"` | 1a0；2c升级 |
 | `$.config` | object；全部配置子组必填，见以下各节 | 对象 | 1a–1e |
 | `$.definitions` | array；元素为Skill或Identity，完整结构见对应节 | 24项：12技能/4职业/4血统/4信仰 | 1d/1e |
 
@@ -828,4 +841,4 @@ focusCapacity在同一纯求值器内取`config.focus[min,cap]`与端口globalCl
 | 1d | 动作桥、12技能、客观时间、资源消耗、效果持续/结果条件/逐命中消费/中断/回放 |
 | 1e | 身份选择/赠予/誓约、怪物模板与盟友自动分配；收齐实际字段、样例和运行限制 |
 
-各步门禁按 [phase1-growth.md §12.1](phase1-growth.md#121-每小步门禁最新批准替代旧的重复全量要求)。完整/CE档中test:full替代npm test；取不到CE时回退npm test并明确“CE 对照用例未执行”。未来合入main前由维护者本机补跑完整test:full。此配置文档不代替实际测试报告，也不把尚未执行的步骤写成通过。
+当前原型门禁按 [README](README.md#当前验收门禁)：正常候选类型/构建/边界/全部ext/完整npm test一次，真实删除副本只跑removal档；不要求CE对齐、ce:fetch、test:full或test:gen。阶段1历史门禁仍见其原报告。此配置文档不代替实际测试结果，不把尚未执行的检查写成通过。

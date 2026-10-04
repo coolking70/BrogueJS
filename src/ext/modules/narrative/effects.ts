@@ -15,7 +15,7 @@ export type NarrativeRewardPreparation = { readonly status: 'ready' }
     | { readonly status: 'skipped'; readonly reason: 'absent' | 'disabled' | 'unsupported-key' };
 export interface NarrativePlanOptions {
     readonly queryOptional?: NarrativeQuery;
-    /** Pure preflight only; a real external reward commit adapter is a later phase. */
+    /** Pure preflight: ready is not an applied receipt. */
     readonly prepareReward?: (intent: Readonly<NarrativeRewardIntent>) => NarrativeRewardPreparation;
 }
 export interface NarrativeChoiceSelection { readonly dialogueId: string; readonly nodeId: string; readonly choiceId: string; readonly transitions: number }
@@ -110,7 +110,7 @@ function buildPlan(pack: NarrativePack, rawState: unknown, rawFact: unknown, eff
                         state.journal.push({ entryId: effect.entryId, order: state.journal.length + 1 });
                     }
                     break;
-                case 'message': messages.push({ textKey: effect.textKey, factId: fact.factId, effectIndex: index }); break;
+                case 'message': messages.push({ textKey: effect.textKey, factId: fact.factId, effectIndex: usage.effects - 1 }); break;
                 case 'emit-story':
                     if (!pack.storyEvents.some(event => event.id === effect.eventId)) throw new NarrativeError('UNKNOWN_REFERENCE', `${effectPath}.eventId`);
                     if (!narrativeInteger(state.lastFactId + 1, 1)) throw new NarrativeError('INVALID_FACT', '$fact.factId');
@@ -121,7 +121,7 @@ function buildPlan(pack: NarrativePack, rawState: unknown, rawFact: unknown, eff
                     // Prepared receipts also reserve capacity, although they cannot yet become persistent state.
                     if (narrativeReceiptCount(state) + rewardIntents.length >= pack.config.limits.maxReceipts) throw new NarrativeError('RECEIPT_LIMIT', '$state.rewardReceipts');
                     const intent: NarrativeRewardIntent = { capability: effect.capability, rewardId: effect.rewardId, receiptId: effect.receiptId,
-                        instanceKey: narrativeRewardInstance(effect.receiptId), recipient: 'player', factId: fact.factId, effectIndex: index };
+                        instanceKey: narrativeRewardInstance(effect.receiptId), recipient: 'player', factId: fact.factId, effectIndex: usage.effects - 1 };
                     const result = prepareReward(intent, providers.prepareReward);
                     if (result.status === 'ready') rewardIntents.push({ ...intent, status: 'prepared' });
                     else {
@@ -177,14 +177,18 @@ export function planNarrativeChoice(pack: NarrativePack, state: unknown, rawFact
         { dialogueId: dialogue.id, nextNodeId: choice.next, transitions: (selection.transitions as number) + 1 });
 }
 /** Returns the sole supported write set (new narrative state). The caller owns any real command boundary. */
-export function commitNarrativePlan(pack: NarrativePack, current: unknown, plan: NarrativePlan): NarrativeState {
+export function stagedNarrativeState(pack: NarrativePack, current: unknown, plan: NarrativePlan): NarrativeState {
     assertLoadedNarrativePack(pack);
     const registration = plans.get(plan);
     if (!registration || registration.pack !== pack) throw new NarrativeError('STALE_PLAN', '$plan');
     const state = validateNarrativeState(current, pack);
     if (state.revision !== plan.baseRevision || canonical(state) !== registration.base) throw new NarrativeError('STALE_PLAN', '$state');
-    if (plan.rewardIntents.length) throw new NarrativeError('REWARD_COMMIT_REQUIRED', '$plan.rewardIntents');
     return validateNarrativeState(plan.nextState, pack);
+}
+export function commitNarrativePlan(pack: NarrativePack, current: unknown, plan: NarrativePlan): NarrativeState {
+    const state = stagedNarrativeState(pack, current, plan);
+    if (plan.rewardIntents.length) throw new NarrativeError('REWARD_COMMIT_REQUIRED', '$plan.rewardIntents');
+    return state;
 }
 // Re-export the constructor to keep pure-tool callers independent of any module installation lifecycle.
 export { initialNarrativeState };

@@ -159,9 +159,10 @@ export function loadNarrativePack(raw: unknown, portraitData: unknown, locales: 
     const root = object(raw, ['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'stateVersion', 'inputVersion',
         'config', 'flags', 'counters', 'npcs', 'dialogues', 'journal', 'storyEvents', 'triggers'], '$');
     if (root.schema !== 1) fail('INVALID_VERSION', '$.schema');
-    for (const key of ['stateVersion', 'inputVersion']) if (root[key] !== 2) fail('INVALID_VERSION', `$.${key}`);
+    if (root.stateVersion !== 3) fail('INVALID_VERSION', '$.stateVersion');
+    if (root.inputVersion !== 2) fail('INVALID_VERSION', '$.inputVersion');
     if (root.moduleId !== 'narrative') fail('INVALID_ID', '$.moduleId');
-    for (const key of ['moduleVersion', 'rulesVersion']) if (root[key] !== '1.1.0') fail('INVALID_VERSION', `$.${key}`);
+    for (const key of ['moduleVersion', 'rulesVersion']) if (root[key] !== '1.2.0') fail('INVALID_VERSION', `$.${key}`);
     const config = object(root.config, ['timePolicy', 'closePolicy', 'limits'], '$.config');
     enumeration(config.timePolicy, ['free-frozen'], '$.config.timePolicy');
     enumeration(config.closePolicy, ['close-session'], '$.config.closePolicy');
