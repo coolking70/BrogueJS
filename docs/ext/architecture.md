@@ -354,3 +354,9 @@ NPC 测试除纯求值外，还使用真实攻击、AI 响应和确定性测试�
 - 当前growth只为use-skill及耗时equip-skills提供纯计划。外层命令一次归一化，答案暂存suppliedAnswers而非decisions；通过runtime/扩展快照/双RNG/原生事实guard后，原同步Runtime.command恰好执行一次。requestConfirm逐条核对并消费答案，且只在此处向原命令记录一次。No仍执行原同步拒绝路径，成本、冷却、actionId和效果提交点不变。
 - 未消费/未提供/错序答案、错误动作原语、陈旧revision/目标均不能默认为Yes；不能把旧同步辅助drain用作prepared命令的UI等待通道。未来模块必须提供相同纯合同或另有明确续体，不允许先执行后回滚作预检。
 - 桥接不增加持久格式。foundation3、narrative module/rules1.2.0/state3/input2、growth1.5.0维持；立绘manifest的displayVersion1.0.0独立于规则指纹。main的D4新`arcana:risk-confirm`录像动作仍需要支持该动作的引擎，不能把格式号不变称为任意旧程序都能读取。
+
+## 22 阶段2收尾与独立交付
+
+2c+2d已由维护者联合验收；2e仅进行最终独立性/持久验收与文档交接，不重新设计§21输入和prepared命令合同。正常安装树的四种启用子集与正常/删growth/删narrative/全删四种目录状态是两条不同轴；未启用不等于物理删除，缺模块旧档拒绝不等于无该模块的新局不可玩。
+
+作者入口为[叙事配置手册](narrative-config.md)，阶段2已提供能力、版本与兼容界限、实际门禁和浏览器证据范围为[2e报告](phase2e.report.md)。不扩展任意脚本/背包给予/地形/传送/战斗NPC等重世界事务，不把现有单storyFact消费者协议声称为未来所有阶段已验证。

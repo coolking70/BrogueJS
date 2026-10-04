@@ -6,7 +6,8 @@
     "tests/narrative_sessions.test.ts",
     "tests/narrative_ui.test.ts",
     "tests/narrative_rewards.test.ts",
-    "tests/narrative_dialogue.test.ts"
+    "tests/narrative_dialogue.test.ts",
+    "tests/narrative_persistence.test.ts"
   ],
   "gen": [],
   "drift": []
