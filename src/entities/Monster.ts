@@ -1532,17 +1532,25 @@ export class Monster extends Creature {
             statusImmunities: [...this.statusImmunities], statusResistTurns: { ...this.statusResistTurns } };
     }
 
-    public takeTurn(game: Game, stealthRange: number) {
+    public takeTurn(game: Game, stealthRange: number): void {
+        if (!this.prepareNativeDecision(game, stealthRange)) this.takeNativeDecision(game);
+    }
+
+    /** Run once when an idle monster receives a new decision. A true result
+     * consumes this decision; callers must not select an action or run the
+     * native remainder. The scheduler retains its outer disability gates.
+     * Busy action-phase boundaries must never run this prelude again. */
+    public prepareNativeDecision(game: Game, stealthRange: number): boolean {
         assertNativeSpatial(this);
-        if (this.hp <= 0) return;
+        if (this.hp <= 0) return true;
         // CE monstersTurn runs this before its own status/AI gates. Time.c's
         // outer scheduler separately withholds actions from disabled monsters.
-        if (this.corpseAbsorptionCounter >= 0 && updateMonsterCorpseAbsorption(game, this)) return;
+        if (this.corpseAbsorptionCounter >= 0 && updateMonsterCorpseAbsorption(game, this)) return true;
         emitCreatureFeature(game.grid, this, 'activation');
         surfaceOnDryLand(this, game.grid);
         game.applyEntanglementFromTerrain(this);
-        if (this.hasStatus('paralyzed') || this.hasStatus('entranced')) return;
-        if (this.isCaged) { game.makeMonsterDropItem(this); return; }
+        if (this.hasStatus('paralyzed') || this.hasStatus('entranced')) return true;
+        if (this.isCaged) { game.makeMonsterDropItem(this); return true; }
 
         const wasAsleep = !this.isAlly && this.state === MonsterState.ASLEEP;
         if (wasAsleep) this.ticksUntilTurn = this.movementSpeed;
@@ -1550,9 +1558,15 @@ export class Monster extends Creature {
         // CE awakening consumes this action, even for ALWAYS_HUNTING sleepers.
         if (wasAsleep || (!this.isAlly && this.state === MonsterState.ASLEEP)) {
             if (this.ticksUntilTurn <= 0) this.ticksUntilTurn = this.movementSpeed;
-            return;
+            return true;
         }
+        return false;
+    }
 
+    /** Native fallback after prepareNativeDecision returned false for this
+     * same decision. Preserve native survival, ally, magic and attack order;
+     * do not repeat activation, perception, or corpse absorption here. */
+    public takeNativeDecision(game: Game): void {
         // U07: CE ally escape and fleeing blink precede ordinary magic. Only
         // blink-capable, awake, mobile monsters enter this dedicated schedule.
         const blinkReady = hasBlink(this) && !this.isDormant

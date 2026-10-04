@@ -84,6 +84,7 @@
 ## 当前审阅入口
 
 - [阶段3独立类魂战斗设计](phase3-combat.md)：已批准（P3-D01–D07=A），3a1 已验收；3a0 在 4a0 之上进行
+- [3a0 共用动作底座报告](phase3a0.report.md)：基于已合并 4a0 的有限动作/调度/防御 fixture；正式 combat 仍保持 inert，等待独立验收
 - [阶段4大型敌人设计](phase4-giants.md)：已批准（r3）；[4a0 报告](phase4a0.report.md)已验收并合入
 
 - [2e收尾、独立性与阶段2总结](phase2e.report.md)

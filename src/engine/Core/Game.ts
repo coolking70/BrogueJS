@@ -6,6 +6,8 @@ import { squarePlacementCandidates } from '../Movement/SquarePlacement';
 import { squareContactScope, withSquareContactScope } from '../Movement/SpatialContactScope';
 import { SPATIAL_LIMITS, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
 import { assertNativeSpatial, assertSingleCellPlayer, nativeContactOf, footprintOf, footprintEvery, footprintSome, commitCreatureAnchor, squareAnchorRevision, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canFitAt, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
+import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction } from './ActorActionSession';
+import { assertActorActionScope, type ActorActionScope } from './ActorActionScope';
 import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
 import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
 import { observePresentation, presentationBlocked, resetPresentation } from './PresentationObserver';
@@ -288,7 +290,7 @@ export interface CommandConfirmation {
     readonly message: string;
 }
 /** Engine-owned risk facts; no entity, module context or callback survives preparation. */
-interface ControlledActionRisk {
+export interface ControlledActionRisk {
     readonly kind: 'acid' | 'ally' | 'chasm' | 'fire' | 'gas' | 'plate';
     readonly target: { readonly kind: 'creature'; readonly id: number } | { readonly kind: 'cell'; readonly x: number; readonly y: number };
     readonly message: string;
@@ -297,7 +299,7 @@ interface PreparedControlledCommandPlan extends PreparedControlledCommand {
     readonly risks: readonly ControlledActionRisk[];
 }
 interface SuppliedCommandAnswers {
-    readonly request: ControlledActionRequest;
+    readonly request: ControlledActionRequest | null;
     readonly answers: readonly { risk: ControlledActionRisk; decision: boolean }[];
     cursor: number;
 }
@@ -3386,6 +3388,35 @@ export class Game {
         } finally { state.suppliedAnswers = null; }
     }
 
+    /** Trusted engine-only 3a0 preparation. The returned risks contain no live actors. */
+    public prepareActorAttackRisks(sourceId: number, cells: readonly Pos[]): readonly ControlledActionRisk[] {
+        if (sourceId !== this.player.id) return Object.freeze([]);
+        const targets = this.collectBodyTargets(cells, { effect: 'direct' })
+            .map(target => target.entity).filter((actor): actor is Monster => actor instanceof Monster);
+        return Object.freeze(this.preparePlayerAttackRisks(targets).map(risk => Object.freeze({
+            ...risk, target: Object.freeze({ ...risk.target }),
+        })));
+    }
+
+    /** Answers were collected as data before acquiring the synchronous authority.
+     * Reuse requestConfirm so No and Yes are recorded once at their native boundary. */
+    public consumeActorActionAnswers(scope: ActorActionScope, actorId: number,
+        risks: readonly ControlledActionRisk[], answers: readonly { risk: ControlledActionRisk; decision: boolean }[]): boolean {
+        assertActorActionScope(scope, this, actorId, 'player-command');
+        if (actorId !== this.player.id || !this.commandDecisions || recordingState(this).suppliedAnswers)
+            throw new Error('Actor action answers require the active player command');
+        const firstNo = answers.findIndex(answer => answer.decision === false);
+        if (answers.some((answer, index) => typeof answer.decision !== 'boolean' || canonical(answer.risk) !== canonical(risks[index]))
+            || (firstNo < 0 ? answers.length !== risks.length : answers.length !== firstNo + 1))
+            throw new Error('Missing, extra or out-of-order actor action answers');
+        const state = recordingState(this);
+        state.suppliedAnswers = { request: null, answers, cursor: 0 };
+        try {
+            for (const risk of risks) if (!this.runSynchronousStages(this.requestConfirm(risk.message, risk))) return false;
+            return true;
+        } finally { state.suppliedAnswers = null; }
+    }
+
     /** Same predicates and hit-list preparation as ordinary native movement/attack. */
     private prepareControlledActionRisks(request: ControlledActionRequest): ControlledActionRisk[] {
         if (!this.validateControlledAction(request)) throw new Error('Invalid controlled action preparation');
@@ -3414,6 +3445,7 @@ export class Game {
     }
 
     public exportRecording(): GameRecording {
+        assertNoActorActionFixture(this);
         if (!this.hasCompleteRecording) throw new Error('Recording requires a fresh new game or a save with a complete recording prefix');
         if (this.isAdvancing) throw new Error('Recording cannot be exported while a turn is advancing');
         if (this.hasPendingConfirmation) throw new Error('Recording cannot be exported during a command');
@@ -9593,6 +9625,7 @@ export class Game {
     private timePorts(): TimePorts {
         const game = this;
         return {
+            actions: actorActionSchedulerFor(game),
             world: {
                 get grid() { return game.grid; },
                 get player() { return game.player; },
@@ -9654,7 +9687,18 @@ export class Game {
                 monsterDropItem: (monster) => game.makeMonsterDropItem(monster),
                 monsterTakeTurn: (monster, stealthRange) => {
                     const carried = monster.carriedItem;
-                    monster.takeTurn(game, stealthRange);
+                    if (actorActionSchedulerFor(game)) {
+                        // One shared prelude per FREE decision; busy phase boundaries
+                        // never enter this path. Native fallback runs only its remainder.
+                        if (!monster.prepareNativeDecision(game, stealthRange)) {
+                            const result = selectNativeActorAction(game, monster.id);
+                            if (!['handled', 'blocked', 'native-fallback'].includes(result)) throw new Error('Invalid actor selection result');
+                            if (result === 'native-fallback') {
+                                if (actorActionSchedulerFor(game)!.isBusy(monster.id)) throw new Error('Busy actor cannot fall back to native decision');
+                                monster.takeNativeDecision(game);
+                            } else if (monster.ticksUntilTurn <= 0) throw new Error('Actor selection must establish a positive timer');
+                        }
+                    } else monster.takeTurn(game, stealthRange);
                     if (!carried && monster.carriedItem && monster.hasAbility('MA_HIT_STEAL_FLEE')) {
                         game.autoPath = []; game.isAutoExploring = false; game.isMouseTraveling = false;
                     }
@@ -10144,6 +10188,7 @@ export class Game {
     /** Saves are turn-boundary checkpoints. A suspended JS generator cannot be
      * encoded; callers may retry once its existing animation has completed. */
     public toSnapshot(): GameSnapshot {
+        assertNoActorActionFixture(this);
         if (this.isAdvancing) throw new Error('Cannot save during turn advancement');
         this.finishTransientDisplay(true);
         const snapshot = toWholeRunSnapshot({
@@ -10253,6 +10298,7 @@ export class Game {
     }
 
     public loadSnapshot(snapshot: GameSnapshot, onExtensionError?: (message: string) => void): boolean {
+        assertNoActorActionFixture(this);
         if (!Game.isSnapshot(snapshot)) return false;
         // Check history before extension/provenance inspection or retiring the live run.
         if (!Array.isArray(snapshot.run.recordedInputEvents)
