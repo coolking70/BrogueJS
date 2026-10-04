@@ -1,5 +1,6 @@
 import { commitCreatureAnchor, footprintContains } from '../Movement/CreatureSpatial';
 import { monsterCanSubmergeNow } from '../Movement/Submersion';
+import { travelPlacement } from '../Movement/LevelTravel';
 /**
  * Floor generation transaction. Ports are live accessors and bound callbacks:
  * a stair retry discards only that attempt's geometry, a successful dig commits
@@ -387,7 +388,17 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
                 const fallen = ports.pendingFallenByDepth.get(ports.depth);
                 if (fallen && fallen.length > 0) {
                     ports.pendingFallenByDepth.delete(ports.depth);
-                    for (const m of fallen) {
+                    const arrivals = fallen.some(m => m.spatial) ? [...fallen].sort((a, b) => a.id - b.id) : fallen;
+                    for (const m of arrivals) {
+                        if (m.spatial) {
+                            const spot = travelPlacement(ports, m, m.loc, true, true, true);
+                            if (spot) { commitCreatureAnchor(m, spot); m.preplaced = false; ports.monsters.push(m); }
+                            else {
+                                const pending = ports.pendingFallenByDepth.get(ports.depth) ?? [];
+                                pending.push(m); ports.pendingFallenByDepth.set(ports.depth, pending);
+                            }
+                            continue;
+                        }
                         const spot = ports.findQualifyingPathLocNear(m.loc);
                         if (spot) {
                             commitCreatureAnchor(m, { x: spot.x, y: spot.y }, 'mutate');

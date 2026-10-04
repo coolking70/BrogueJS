@@ -1,4 +1,4 @@
-import { assertNativeSpatial, footprintContains, canFitAt } from './CreatureSpatial';
+import { assertNativeSpatial, footprintContains, footprintOf, canFitAt } from './CreatureSpatial';
 import { DijkstraMap, MAX_DISTANCE } from '../Map/Pathfinding';
 /** W-11: destination policy is separate from the displacement commit.
  * CE Monsters.c:650-670,1155-1204; Dijkstra.c:209-255; Grid.c:224-244.
@@ -30,6 +30,10 @@ export interface PlacementWorld {
  */
 export function canPlaceCreature(world: Pick<PlacementWorld, 'grid' | 'player' | 'monsters' | 'dormantMonsters'>, target: Creature, at: Pos, walkingSecretDoor = false): boolean {
     assertNativeSpatial(target);
+    if (target.spatial && walkingSecretDoor) return canFitAt(world, target, at, { allowsTerrain: p => {
+        const cell = world.grid.getCell(p.x, p.y);
+        return !!cell && !(cell.layers.reduce((f, tile) => f | (tile === TerrainType.SECRET_DOOR ? 0 : TERRAIN_FLAGS[tile].flags), 0) & T_OBSTRUCTS_PASSABILITY);
+    } });
     return canFitAt(world, target, at, { allowsTerrain: p => !(cellTerrainFlags(world.grid, p.x, p.y) & T_OBSTRUCTS_PASSABILITY)
         || !!(walkingSecretDoor && world.grid.getCell(p.x, p.y)?.layers.includes(TerrainType.SECRET_DOOR)) });
 }
@@ -51,7 +55,7 @@ export function teleportForbiddenFlags(target: Creature): number {
  * CE's all-ones fallback occurs BEFORE terrain/map/FOV filtering, never after.
  */
 export function teleportCandidates(world: PlacementWorld, target: Creature, respectTerrainAvoidancePreferences = false): Pos[] {
-    assertNativeSpatial(target); // actor-native path/FOV maps remain unopened for spatial fixtures
+    assertNativeSpatial(target); // endpoint body rules; perception remains the 4a-2 anchor contract
     const { grid } = world;
     const forbidden = teleportForbiddenFlags(target);
     const destinationFlags = respectTerrainAvoidancePreferences
@@ -68,6 +72,13 @@ export function teleportCandidates(world: PlacementWorld, target: Creature, resp
         // The current catalog's only passable-on-discovery secret is SECRET_DOOR.
         costs[x]![y] = !stationary && (cell.layers.includes(TerrainType.SECRET_DOOR)
             || !(cellTerrainFlags(grid, x, y) & (blocking | T_OBSTRUCTS_PASSABILITY)));
+        if (target.spatial) costs[x]![y] = footprintOf({ loc: { x, y }, spatial: target.spatial }).every(p => {
+            const tile = grid.getCell(p.x, p.y);
+            return !!tile && (tile.layers.includes(TerrainType.SECRET_DOOR) || !(cellTerrainFlags(grid, p.x, p.y) & (blocking | T_OBSTRUCTS_PASSABILITY)))
+                && !world.monsters.some(m => m !== target && m.hp > 0 && footprintContains(m, p)
+                    && (m.hasBehavior('MONST_IMMUNE_TO_WEAPONS') || m.isInvulnerable())
+                    && (m.hasBehavior('MONST_IMMOBILE') || m.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')));
+        });
     }
     const queue: Pos[] = [{ ...target.loc }];
     distances[target.loc.x]![target.loc.y] = 0;
@@ -95,6 +106,12 @@ export function teleportCandidates(world: PlacementWorld, target: Creature, resp
             || (respectTerrainAvoidancePreferences && target instanceof Monster && target.hasBehavior('MONST_RESTRICTED_TO_LIQUID')
                 && !(cellTerrainMechFlags(grid, x, y) & TM_ALLOWS_SUBMERGING))
             || !canPlaceCreature(world, target, { x, y })) continue;
+        if (target.spatial && !footprintOf({ loc: { x, y }, spatial: target.spatial }).every(p => {
+            const tile = grid.getCell(p.x, p.y);
+            return !!tile && !tile.machineNumber && !tile.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL)
+                && !(cellTerrainFlags(grid, p.x, p.y) & destinationFlags)
+                && !(respectTerrainAvoidancePreferences && target instanceof Monster && target.hasBehavior('MONST_RESTRICTED_TO_LIQUID') && !(cellTerrainMechFlags(grid, p.x, p.y) & TM_ALLOWS_SUBMERGING));
+        })) continue;
         result.push({ x, y });
     }
     return result;

@@ -27,6 +27,10 @@ export interface BodyTarget {
 }
 export type FootprintActor = Pick<Creature, 'loc' | 'spatial'>;
 const listeners = new WeakMap<Creature, Set<() => void>>();
+const squareAnchorRevisions = new WeakMap<Creature, number>();
+/** Short-lived contact sequences can detect even a nested out-and-back move.
+ * Derived, square-only bookkeeping; ordinary creatures never get an entry. */
+export function squareAnchorRevision(creature: Creature): number { return squareAnchorRevisions.get(creature) ?? 0; }
 /** The only anchor publication primitive. Existing callers own their CE
  * destination policy and contact ordering. mode preserves their old reference
  * semantics. Unpublished construction/restore is deliberately separate from
@@ -36,13 +40,19 @@ export function commitCreatureAnchor(creature: Creature, at: Pos, mode: 'replace
     if (!fixture) assertNativeSpatial(creature);
     if (mode === 'mutate') { creature.loc.x = at.x; creature.loc.y = at.y; }
     else creature.loc = at;
+    if (creature.spatial) squareAnchorRevisions.set(creature, squareAnchorRevision(creature) + 1);
     listeners.get(creature)?.forEach(invalidate => invalidate());
 }
 export function assertNativeSpatial(creature: Creature): void {
-    if (Object.prototype.hasOwnProperty.call(creature, 'spatial')) validateSpatialComponent(creature.spatial);
+    if (Object.prototype.hasOwnProperty.call(creature, 'spatial')) {
+        try { squareMovementSize(creature); }
+        catch (error) { throw new SpatialValidationError(`Spatial capability is not open: ${(error as Error).message}`); }
+    }
 }
-/** Explicitly scoped square movement capability, NOT a replacement for the
- * production gate. Arbitrary fixture masks, zones/groups/locks/regions and
+export function assertSingleCellPlayer(creature: Pick<Creature, 'spatial'>): void {
+    if (Object.prototype.hasOwnProperty.call(creature, 'spatial')) throw new SpatialValidationError('Player spatial capability is not open');
+}
+/** Explicitly scoped native square capability. Arbitrary fixture masks, zones/groups/locks/regions and
  * explicit single-cell components are not executable square bodies. */
 export function squareMovementSize(creature: Creature, catalog = nativeSpatialCatalog): number {
     if (!Object.prototype.hasOwnProperty.call(creature, 'spatial')) return 1;
@@ -50,7 +60,7 @@ export function squareMovementSize(creature: Creature, catalog = nativeSpatialCa
     const s = creature.spatial!;
     if (!['builtin:square-2', 'builtin:square-3'].includes(s.footprintId) || s.pose !== 'r0'
         || Object.keys(s).some(k => !['schema', 'footprintId', 'pose'].includes(k))) {
-        throw new SpatialValidationError('Square movement capability requires an independent unzoned r0 square');
+        throw new SpatialValidationError('Spatial capability is not open: Square movement requires an independent unzoned r0 square');
     }
     return s.footprintId === 'builtin:square-2' ? 2 : 3;
 }
@@ -138,10 +148,11 @@ export class CreatureSpatial {
             if (!integer(c.loc.x, -32768, 32767) || !integer(c.loc.y, -32768, 32767)) throw new SpatialValidationError('Invalid spatial anchor');
             if (c === world.player && Object.prototype.hasOwnProperty.call(c, 'spatial')) throw new SpatialValidationError('Player spatial capability is not open');
             if (Object.prototype.hasOwnProperty.call(c, 'spatial')) {
-                validateSpatialComponent(c.spatial, this.catalog, !this.catalog.fixture);
+                if (this.catalog.fixture) validateSpatialComponent(c.spatial, this.catalog, false);
+                else assertNativeSpatial(c);
                 // Region geometry remains extension-owned. Native fixtures do
                 // not have a region resolver; never accept a dangling reference.
-                if (c.spatial.movementRegionId !== undefined) throw new SpatialValidationError('Spatial region capability is not open in native fixtures');
+                if (c.spatial!.movementRegionId !== undefined) throw new SpatialValidationError('Spatial region capability is not open in native fixtures');
                 users++; occupiedCells += footprintOf(c, this.catalog).length;
             }
             if (footprintOf(c, this.catalog).some(p => !world.grid.isValidPos(p.x, p.y))) throw new SpatialValidationError('Spatial footprint outside its layer');
@@ -156,7 +167,10 @@ export class CreatureSpatial {
         this.invalidate();
     }
     setSpatial(c: Creature, component?: CreatureSpatialComponent): void {
-        if (component !== undefined) validateSpatialComponent(component, this.catalog, !this.catalog.fixture);
+        if (!this.catalog.fixture) throw new SpatialValidationError('Spatial conversion capability is not open');
+        if (component !== undefined) {
+            validateSpatialComponent(component, this.catalog, false);
+        }
         if (!this.cohort.includes(c)) throw new SpatialValidationError('Unowned spatial entity');
         const previous = c.spatial;
         if (component === undefined) delete c.spatial; else c.spatial = structuredClone(component);
@@ -166,6 +180,10 @@ export class CreatureSpatial {
         }
     }
     get hasIndex(): boolean { return this.activeIndex !== undefined; }
+    dispose(): void {
+        releaseSpatialTerrain(this);
+        for (const c of this.cohort) listeners.get(c)?.delete(this.invalidate);
+    }
     get capabilityUsers(): number { return this.users; }
     get grid(): Grid { return this.world.grid; }
     get occupancyRevision(): number { return this.revision; }
@@ -251,9 +269,8 @@ export class CreatureSpatial {
         }
         return true;
     }
-    /** 4a-1 movement submilestone: an actual checked one-anchor square step in
-     * the native fixture world. Game's production capability gate stays closed
-     * until all displacement/environment/persistence entrances are migrated. */
+    /** Checked one-anchor square step in the native or fixture world. The
+     * caller owns turn costs and environmental contact after its commit. */
     planStepPlacement(c: Creature, at: Pos, options: FitOptions = {}): PlacementPlan | null {
         squareMovementSize(c, this.catalog);
         if (!this.isActive(c)) return null;
@@ -354,11 +371,22 @@ export function footprintEvery(c: FootprintActor, predicate: (p: Readonly<Pos>) 
 }
 export function canFitAt(world: SpatialWorld, c: Creature, at: Pos, options: FitOptions = {}): boolean {
     assertNativeSpatial(c);
+    if (c.spatial) {
+        if (!integer(at.x, -32768, 32767) || !integer(at.y, -32768, 32767)) return false;
+        const ignore = new Set([c, ...(options.ignore ?? [])]);
+        return nativeSpatialCatalog.cells(c.spatial.footprintId, 'r0').every(o => {
+            const p = { x: at.x + o.x, y: at.y + o.y };
+            return world.grid.isValidPos(p.x, p.y)
+                && (options.allowsTerrain?.(p) ?? !(flagsAt(world.grid, p) & T_OBSTRUCTS_PASSABILITY))
+                && !creatureAtCell(world, p, options.policy ?? 'active-or-reserved', ignore);
+        });
+    }
     return integer(at.x, -32768, 32767) && integer(at.y, -32768, 32767) && world.grid.isValidPos(at.x, at.y)
         && (options.allowsTerrain?.(at) ?? !(flagsAt(world.grid, at) & T_OBSTRUCTS_PASSABILITY))
         && !creatureAtCell(world, at, options.policy ?? 'active-or-reserved', new Set([c, ...(options.ignore ?? [])]));
 }
 export function canStepFootprint(world: SpatialWorld, c: Creature, at: Pos, options: FitOptions = {}): boolean {
+    if (c.spatial) return conservativeSquareStep(c.loc, at, p => canFitAt(world, c, p, options));
     const dx = at.x - c.x, dy = at.y - c.y;
     return Math.max(Math.abs(dx), Math.abs(dy)) === 1 && canFitAt(world, c, at, options)
         && (!(dx && dy) || !((flagsAt(world.grid, { x: c.x + dx, y: c.y }) | flagsAt(world.grid, { x: c.x, y: c.y + dy })) & T_OBSTRUCTS_DIAGONAL_MOVEMENT));
@@ -379,4 +407,7 @@ export function collectBodyTargets(world: SpatialWorld, cells: readonly Pos[], p
 /** Explicit native 1x1 physical contact port. 4a0 does not advertise multi-cell
  * environmental reducers/path maps; those callers reject a component before
  * reading a single contact, rather than silently treating its anchor as a body. */
-export function nativeContactOf(c: Creature): Readonly<Pos> { assertNativeSpatial(c); return c.loc; }
+export function nativeContactOf(c: Creature): Readonly<Pos> {
+    if (c.spatial) throw new SpatialValidationError('Single-cell contact cannot reduce a square body');
+    assertNativeSpatial(c); return c.loc;
+}

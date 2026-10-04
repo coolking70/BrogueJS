@@ -3,23 +3,29 @@ import type { Pos } from '../../types';
 import { CreatureSpatial, conservativeSquareStep, footprintOf, squareMovementSize } from '../Movement/CreatureSpatial';
 import { SpatialValidationError, integer } from '../Movement/SpatialSchema';
 import type { Grid } from './Grid';
+import { TerrainType } from './Grid';
+import { TERRAIN_FLAGS } from './TerrainCatalog';
 import { PathFrontier } from './PathFrontier';
-import { T_OBSTRUCTS_PASSABILITY, T_OBSTRUCTS_DIAGONAL_MOVEMENT } from './TerrainCatalog';
-import { cellTerrainFlags } from './DungeonFeature';
+import { T_OBSTRUCTS_PASSABILITY, T_OBSTRUCTS_DIAGONAL_MOVEMENT, TM_ALLOWS_SUBMERGING } from './TerrainCatalog';
+import { cellTerrainFlags, cellTerrainMechFlags } from './DungeonFeature';
 
 /** Immutable value policy. Immunity/status changes are represented by different
  * forbidden flags/costs, not by a closure whose behavior can change behind the
  * cache key. Occupancy never participates in the shared terrain table. */
 export interface FootprintTraversalPolicy {
     readonly forbiddenFlags?: number;
+    readonly requiresSubmergible?: boolean;
+    readonly allowSecretDoors?: boolean;
     readonly costs?: readonly { readonly flags: number; readonly cost: number }[];
 }
 export type FootprintGoal =
-    | { readonly kind: 'contact'; readonly target: Creature }
+    | { readonly kind: 'contact' | 'escape'; readonly target: Creature }
     | { readonly kind: 'anchors'; readonly anchors: readonly Readonly<Pos>[] };
 export type FootprintStep = Readonly<{
     kind: 'step' | 'arrived' | 'blocked' | 'unreachable' | 'unsupported';
     at?: Readonly<Pos>;
+    distance?: number;
+    distanceAt?: (at: Readonly<Pos>) => number;
     replanned: boolean;
 }>;
 export interface FootprintPathingStats {
@@ -37,9 +43,8 @@ const DIRS = [
 ] as const;
 const MAX_GRAPHS = 8;
 
-/** 4a-1 native square pathing submilestone. Explicit session service, derived
- * only; never installed on an ordinary Game, never saved, no RNG. NPC selection
- * and displacement/environment entrances remain gated until their own migration.
+/** 4a-1 native square pathing. Explicit session service, derived
+ * only; never installed on an ordinary Game, never saved, no RNG.
  * At most eight shape/policy groups, each with ONE current target distance map. */
 export class FootprintPathing {
     private readonly graphs = new Map<string, TerrainGraph>();
@@ -59,7 +64,7 @@ export class FootprintPathing {
     }
     clear(): void { this.graphs.clear(); this.grid = undefined; this.terrainRevision = -1; }
 
-    planStep(actor: Creature, goal: FootprintGoal, policy: FootprintTraversalPolicy = {}): FootprintStep {
+    planStep(actor: Creature, goal: FootprintGoal, policy: FootprintTraversalPolicy = {}, distanceOnly = false): FootprintStep {
         // No cell scan, terrain subscription, arrays or counters for 1x1. Their
         // native AI still owns its original path and exact tie/RNG contract.
         if (!Object.prototype.hasOwnProperty.call(actor, 'spatial')) {
@@ -83,7 +88,18 @@ export class FootprintPathing {
             this.graphs.set(key, graph);
             if (this.graphs.size > MAX_GRAPHS) this.graphs.delete(this.graphs.keys().next().value!);
         }
-        const goals = this.goals(actor, goal, graph);
+        let goals = this.goals(actor, goal, graph);
+        if (goal.kind === 'escape') {
+            const fromThreat = this.scan(graph, goals, graph.fit);
+            let maximum = -Infinity;
+            goals = [];
+            for (let i = 0; i < fromThreat.length; i++) {
+                const distance = fromThreat[i]!;
+                if (!Number.isFinite(distance) || distance < maximum) continue;
+                if (distance > maximum) { maximum = distance; goals = []; }
+                goals.push(i);
+            }
+        }
         const targetKey = JSON.stringify(goals);
         if (graph.targetKey !== targetKey) {
             graph.targetKey = targetKey;
@@ -91,8 +107,27 @@ export class FootprintPathing {
             this.distanceBuilds++;
         }
         const start = actor.y * grid.width + actor.x;
-        if (!grid.isValidPos(actor.x, actor.y) || !Number.isFinite(graph.distances![start])) return { kind: 'unreachable', replanned: false };
-        const options = { allowsTerrain: (p: Pos) => !(cellTerrainFlags(grid, p.x, p.y) & normalized.forbiddenFlags) };
+        if (distanceOnly) {
+            const distances = graph.distances!;
+            return { kind: Number.isFinite(distances[start]) ? 'arrived' : 'unreachable', distance: distances[start] ?? Infinity,
+                distanceAt: at => grid.isValidPos(at.x, at.y) ? distances[at.y * grid.width + at.x] ?? Infinity : Infinity, replanned: false };
+        }
+        const options = { allowsTerrain: (p: Pos) => this.allows(grid, p, normalized) };
+        if (!grid.isValidPos(actor.x, actor.y)) return { kind: 'unreachable', replanned: false };
+        if (!Number.isFinite(graph.distances![start])) {
+            // A displacement/DF can leave the origin outside the actor's
+            // voluntary terrain policy. Source rejection must not prevent a
+            // checked edge out to a legal node; swept intermediate bodies still
+            // obey the same policy. This never creates a cached terrain opening.
+            if (!graph.fit[start]) {
+                const exits = DIRS.map(([dx, dy]) => ({ x: actor.x + dx, y: actor.y + dy }))
+                    .filter(at => this.edge(grid, actor.loc, at, graph.fit) && Number.isFinite(graph.distances![at.y * grid.width + at.x]))
+                    .sort((a, b) => graph.distances![a.y * grid.width + a.x]! - graph.distances![b.y * grid.width + b.x]!);
+                const at = exits.find(p => this.spatial.canStepFootprint(actor, p, options));
+                if (at) return { kind: 'step', at: Object.freeze(at), replanned: false };
+            }
+            return { kind: 'unreachable', replanned: false };
+        }
         if (graph.distances![start] === 0) return { kind: 'arrived', replanned: false };
         const next = this.next(graph, actor.loc, graph.distances!, graph.fit);
         if (next && this.spatial.canStepFootprint(actor, next, options)) return { kind: 'step', at: Object.freeze(next), replanned: false };
@@ -113,9 +148,11 @@ export class FootprintPathing {
         return { kind: 'blocked', replanned: true };
     }
 
-    private policy(policy: FootprintTraversalPolicy): { forbiddenFlags: number; costs: { flags: number; cost: number }[] } {
-        if (Object.keys(policy).some(k => !['forbiddenFlags', 'costs'].includes(k))
+    private policy(policy: FootprintTraversalPolicy): { forbiddenFlags: number; requiresSubmergible: boolean; allowSecretDoors: boolean; costs: { flags: number; cost: number }[] } {
+        if (Object.keys(policy).some(k => !['forbiddenFlags', 'costs', 'requiresSubmergible', 'allowSecretDoors'].includes(k))
             || !integer(policy.forbiddenFlags ?? 0, 0, 0x7fffffff)
+            || (policy.requiresSubmergible !== undefined && typeof policy.requiresSubmergible !== 'boolean')
+            || (policy.allowSecretDoors !== undefined && typeof policy.allowSecretDoors !== 'boolean')
             || (policy.costs !== undefined && (!Array.isArray(policy.costs) || policy.costs.length > 32))) {
             throw new SpatialValidationError('Invalid square traversal policy');
         }
@@ -124,13 +161,20 @@ export class FootprintPathing {
                 || !integer(c.cost, 1, 1000000)) throw new SpatialValidationError('Invalid square traversal cost');
             return { flags: c.flags, cost: c.cost };
         }).sort((a, b) => a.flags - b.flags || a.cost - b.cost);
-        return { forbiddenFlags: T_OBSTRUCTS_PASSABILITY | (policy.forbiddenFlags ?? 0), costs };
+        return { forbiddenFlags: T_OBSTRUCTS_PASSABILITY | (policy.forbiddenFlags ?? 0), requiresSubmergible: policy.requiresSubmergible ?? false, allowSecretDoors: policy.allowSecretDoors ?? false, costs };
+    }
+    private allows(grid: Grid, p: Pos, policy: ReturnType<FootprintPathing['policy']>): boolean {
+        const cell = grid.getCell(p.x, p.y);
+        if (!cell) return false;
+        const flags = policy.allowSecretDoors ? cell.layers.reduce((f, tile) => f | (tile === TerrainType.SECRET_DOOR ? 0 : TERRAIN_FLAGS[tile].flags), 0) : cellTerrainFlags(grid, p.x, p.y);
+        return !(flags & policy.forbiddenFlags)
+            && (!policy.requiresSubmergible || !!(cellTerrainMechFlags(grid, p.x, p.y) & TM_ALLOWS_SUBMERGING));
     }
     private buildTerrain(actor: Creature, policy: ReturnType<FootprintPathing['policy']>): TerrainGraph {
         const grid = this.spatial.grid, length = grid.width * grid.height;
         const fit = new Uint8Array(length), cost = new Float64Array(length);
         const offsets = this.spatial.catalog.cells(actor.spatial!.footprintId, 'r0');
-        const options = { allowsTerrain: (p: Pos) => !(cellTerrainFlags(grid, p.x, p.y) & policy.forbiddenFlags) };
+        const options = { allowsTerrain: (p: Pos) => this.allows(grid, p, policy) };
         for (let i = 0; i < length; i++) {
             const at = this.pos(grid, i);
             if (!this.spatial.canFitTerrainAt(actor, at, options)) continue;
@@ -152,7 +196,7 @@ export class FootprintPathing {
                 if (!integer(p.x, -32768, 32767) || !integer(p.y, -32768, 32767)) throw new SpatialValidationError('Invalid square target anchor');
                 if (grid.isValidPos(p.x, p.y) && fit[p.y * grid.width + p.x]) result.add(p.y * grid.width + p.x);
             }
-        } else if (goal.kind === 'contact') {
+        } else if (goal.kind === 'contact' || goal.kind === 'escape') {
             if (!this.spatial.isActive(goal.target) || goal.target === actor) return [];
             squareMovementSize(goal.target, this.spatial.catalog);
             const targets = footprintOf(goal.target, this.spatial.catalog);

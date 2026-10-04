@@ -1,5 +1,11 @@
-import type { SpatialWorldSnapshot } from '../Movement/SpatialSchema';
-import { assertNativeSpatial, nativeContactOf, footprintSome, commitCreatureAnchor, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
+import { footprintExposure } from '../Movement/FootprintExposure';
+import { CreatureSpatial } from '../Movement/CreatureSpatial';
+import { FootprintPathing, type FootprintGoal } from '../Map/FootprintPathing';
+import { releaseSpatialTerrain, spatialTerrainRevision } from '../Movement/SpatialRevision';
+import { squarePlacementCandidates } from '../Movement/SquarePlacement';
+import { squareContactScope, withSquareContactScope } from '../Movement/SpatialContactScope';
+import { SPATIAL_LIMITS, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
+import { assertNativeSpatial, assertSingleCellPlayer, nativeContactOf, footprintOf, footprintEvery, footprintSome, commitCreatureAnchor, squareAnchorRevision, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canFitAt, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
 import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
 import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
 import { observePresentation, presentationBlocked, resetPresentation } from './PresentationObserver';
@@ -14,14 +20,14 @@ import { worldHealingText, worldFeatureText } from '../UI/WorldCatalogText';
 import { createItemDetailContext } from '../UI/ItemDetailContext';
 import { getTerrainDescription, describeTerrain, tileFlavor, selectTerrainTextLayer } from '../UI/TerrainTextCatalog';
 import { formatMonsterSummonMessage } from '../UI/MonsterTextCatalog';
-import { ownedMonsterList, dyingMonsters, iterateCreatures } from './MonsterLifecycle';
+import { ownedMonsterList, squareListUsers, dyingMonsters, iterateCreatures } from './MonsterLifecycle';
 import { alertMonster, wakeMonster } from '../Combat/MonsterAI';
 import { type MachineEntityRuntime } from '../Generator/BlueprintEngine';
 import { buildHordeMachine, checkpointGenerationWorld, createMachineRuntime, generateDepth, placeStairs, populateLevel } from './GenerationCoordinator';
 import { itemIsSwappable, enchantLevelKnown, swapItemToEnchantLevel } from '../Items/Commutation';
 import { generateQualifiedMachineItem } from '../Items/MachineItemGeneration';
 import { minionPlacement, generationDistances, speciesForbiddenFlags } from '../Generator/GenerationPlacement';
-import { travelDistanceMap, travelPlacement, restoreTravelPosition, APPROACHING_DOWNSTAIRS, APPROACHING_UPSTAIRS, APPROACHING_PIT } from '../Movement/LevelTravel';
+import { travelDistanceMap, travelPlacement, restoreTravelPosition, restoreSquareTravelPosition, APPROACHING_DOWNSTAIRS, APPROACHING_UPSTAIRS, APPROACHING_PIT } from '../Movement/LevelTravel';
 import { snapshotLevel as projectLevel, projectRunState, toWholeRunSnapshot,
     decodeWholeRunWorld, decodePlayer, isWholeRunSnapshot, type LevelSnapshot, type GameSnapshot } from './WholeRunSnapshot';
 import { memoryTerrainAppearance } from '../UI/Appearance';
@@ -29,7 +35,7 @@ import { initializeLevelSeeds, copyLevelSeeds, type LevelSeed } from './LevelSee
 import type { LevelState } from './LevelState';
 export type { LevelState } from './LevelState';
 import { NEGATABLE_TRAITS, NON_NEGATABLE_ABILITIES, NEGATABLE_MUTATIONS, hasNegatableBolt, negateBolts, negateCreatureStatusEffects } from '../Combat/Negation';
-import { cloneLocation } from '../Combat/Cloning';
+import { cloneLocation, canPlaceSquareCloneAt } from '../Combat/Cloning';
 import { advancementLoop, objectiveTimeBlock, updateEnvironment, playerTurnEnded, finishTurnEpilogue, type TimePorts } from './TimeCoordinator';
 import { anyoneWantABite } from '../Combat/MonsterAbsorption';
 /**
@@ -496,7 +502,7 @@ export class Game {
     private pendingDiscoveryMessages: Array<{ text: string; color: string }> = [];
     private activeMonsterList = ownedMonsterList([], this);
     public get monsters(): Monster[] { return this.activeMonsterList; }
-    public set monsters(value: Monster[]) { this.activeMonsterList = ownedMonsterList(value, this); }
+    public set monsters(value: Monster[]) { this.activeMonsterList = ownedMonsterList(value, this); this.monsterListsChanged(); }
     /**
      * V-2b-5：CE 全局 `dormantMonsters`（Monsters.c:4156-4210 的第二条链表）。
      * 休眠怪**不在 `this.monsters` 里**——CE 摘链换表让「不占格、不获回合、
@@ -506,7 +512,7 @@ export class Game {
      */
     private dormantMonsterList = ownedMonsterList([], this);
     public get dormantMonsters(): Monster[] { return this.dormantMonsterList; }
-    public set dormantMonsters(value: Monster[]) { this.dormantMonsterList = ownedMonsterList(value, this); }
+    public set dormantMonsters(value: Monster[]) { this.dormantMonsterList = ownedMonsterList(value, this); this.monsterListsChanged(); }
     /** CE purgatory: eligible dead allies awaiting a resurrection altar. */
     public purgatory: Monster[] = [];
     public items: Item[] = [];
@@ -771,6 +777,8 @@ export class Game {
         // Normal generation resets this per level; test mode can bypass it.
         resetMachineCounter();
 
+        if (this.squareMotion) { this.squareMotion.spatial.dispose(); delete this.squareMotion; }
+        this.clearSquareLandingRetry();
         this.depth = 1;
         this.currentLevelDepth = null;
         this.absoluteTurnNumber = 0;
@@ -1562,6 +1570,13 @@ export class Game {
 
     /** CE Architect.restoreMonster; JSON decoding never invokes this lifecycle. */
     private restoreLevelResident(m: Monster, map?: number[][]): void {
+        if (m.spatial) {
+            if (m.entersLevelIn > 0 && !m.preplaced) restoreSquareTravelPosition(this, m, m.approaching & APPROACHING_PIT ? this.currentLevelExitedVia : this.player.loc);
+            const spot = travelPlacement(this, m, m.loc, true, true, true);
+            if (!spot) { this.deferSquareLanding(m, this.depth); return; }
+            commitCreatureAnchor(m, spot);
+            map = undefined; // square bodies never advance through a 1x1 map
+        }
         if (m.entersLevelIn > 0) {
             if (map) restoreTravelPosition(this.grid, m, map);
             m.preplaced = true;
@@ -1582,9 +1597,10 @@ export class Game {
     }
 
     private restoreLevelResidents(): void {
+        this.retrySquareLandings();
         const stairs = travelDistanceMap(this.grid, this.monsters, this.player.loc, T_PATHING_BLOCKER);
         const pit = travelDistanceMap(this.grid, this.monsters, this.currentLevelExitedVia, T_PATHING_BLOCKER);
-        for (const m of this.monsters) {
+        for (const m of [...this.monsters]) {
             if (m.hp <= 0) continue;
             this.restoreLevelResident(m, m.approaching & APPROACHING_PIT ? pit : stairs);
         }
@@ -1609,6 +1625,17 @@ export class Game {
         const origin = pit ? source.playerExitedVia : this.levelStair(m.approaching & APPROACHING_DOWNSTAIRS
             ? TerrainType.STAIRS_UP : TerrainType.STAIRS_DOWN);
         if (!origin) throw new Error('Missing level travel exit');
+        if (m.spatial || squareListUsers(this.monsters) || squareListUsers(this.dormantMonsters)) {
+            const spot = travelPlacement(this, m, origin, true, true, true);
+            if (!spot) return; // retain original ownership, anchor and countdown
+            commitCreatureAnchor(m, spot);
+            source.monsters.splice(source.monsters.indexOf(m), 1); source.visibleMonsters.delete(m);
+            m.clearCorpseTargetOnLevelChange(); m.entersLevelIn = m.approaching = 0;
+            m.preplaced = m.falling = false; m.ticksUntilTurn = m.movementSpeed;
+            this.monsters.unshift(m);
+            if (pit && !m.hasStatus('levitating') && !m.isInvulnerable()) m.takeDamage(rng.randClumpedRange(6, 12, 2), false, this.grid);
+            this.needsRender = true; return;
+        }
         commitCreatureAnchor(m, { ...origin });
         m.clearCorpseTargetOnLevelChange();
         if (!pit) {
@@ -1697,6 +1724,7 @@ export class Game {
         if (cell.layers.includes(TerrainType.STAIRS_UP) ||
             cell.layers.includes(TerrainType.STAIRS_DOWN) || cell.layers.includes(TerrainType.DUNGEON_PORTAL)) return false;
         if (this.getMonsterAt(x, y)) return false;
+        if (squareListUsers(this.dormantMonsters) && this.dormantMonsters.some(m => m.spatial && m.hp > 0 && footprintContains(m, { x, y }))) return false;
         if (this.machineCells.has(y * DCOLS + x)) return false;
         return true;
     }
@@ -3065,7 +3093,7 @@ export class Game {
 
     /** Every user command, including inventory and modal choices, crosses this boundary. */
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
-        assertNativeSpatial(this.player);
+        assertSingleCellPlayer(this.player);
         if (recordingState(this).execution || this.replayRecording || this.isAdvancing
             || this.isInputLocked() || logger.pendingAcknowledgment || presentationBlocked(this)) return;
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data)) {
@@ -5683,12 +5711,26 @@ export class Game {
     /** CE updateBolt: immunity, then free captive, then destination search. */
     private teleportBoltTarget(target: Creature): boolean {
         if (target instanceof Monster && target.hasCEBehavior('MONST_IMMOBILE')) return false;
+        if (target.spatial) return this.teleportCreature(target, false, true);
         if (target instanceof Monster && target.isCaged) this.freeCaptive(target);
         return this.teleportCreature(target);
     }
 
     private polymorphBoltTarget(target: Creature | undefined): boolean {
-        if (!(target instanceof Monster) || !target.polymorph(() => this.demoteMonsterFromLeadership(target))) return false;
+        const square = !!target?.spatial;
+        if (!(target instanceof Monster) || !target.polymorph(() => this.demoteMonsterFromLeadership(target), data => {
+            // Unpublished value candidate: no constructor, allocator, generation,
+            // hook or mutation of the live creature before a destination exists.
+            const candidate = Object.assign(Object.create(Monster.prototype), Object.fromEntries(Object.entries(target).filter(([key]) => key !== 'spatial')),
+                { typeId: data.id, behaviorFlags: new Set(data.behaviorFlags ?? []), abilityFlags: new Set(data.abilityFlags ?? []), statusDurations: {} }) as Monster;
+            return travelPlacement({ ...this.spatialWorldPort(), monsters: this.monsters.filter(c => c !== target), dormantMonsters: this.dormantMonsters.filter(c => c !== target) }, candidate, target.loc, true, false, true);
+        })) return false;
+        // A component-to-single transition retires every derived body cache and
+        // refreshes lifecycle metadata by publishing fresh owned list wrappers.
+        if (square) {
+            if (this.squareMotion) { this.squareMotion.spatial.dispose(); delete this.squareMotion; }
+            this.monsters = [...this.monsters]; this.dormantMonsters = [...this.dormantMonsters];
+        }
         const autoID = !target.hasStatus('invisible');
         this.updateVision();
         this.needsRender = true;
@@ -6044,7 +6086,10 @@ export class Game {
             logger.log(i18next.t('combat.monster_blinks', { monster: this.monsterDisplayName(caster),
                 defaultValue: `The ${this.monsterDisplayName(caster)} blinks.` }), '#aaaaaa');
         }
-        const result = traceBolt(this.grid, MONSTER_BLINK, caster.loc, aim, this.boltWorld(caster));
+        const world = this.boltWorld(caster);
+        const result = traceBolt(this.grid, MONSTER_BLINK, caster.loc, aim, caster.spatial ? { ...world, creatureAt: p => {
+            const occupant = world.creatureAt(p); return occupant === caster ? undefined : occupant;
+        } } : world);
         if (this.extensionRuntime) {
             const causality = this.extensionRuntime.causality;
             const origin = causality.create('bolt', caster.id, caster.id, caster.extensionHooks?.partyId(caster) ?? null);
@@ -7639,32 +7684,36 @@ export class Game {
                 logger.log(i18next.t('runic.weapon.force', { target: this.monsterDisplayName(target), dist, defaultValue: `Your blow launches the ${this.monsterDisplayName(target)} backward ${dist} tiles!` }), '#ffffff');
                 this.spawnFloatingText(i18next.t('runic.force_float', { defaultValue: 'Force!' }), target.loc.x, target.loc.y, 0xffffff);
                 // Apply knockback
-                const dx = target.loc.x - this.player.loc.x;
-                const dy = target.loc.y - this.player.loc.y;
+                const contact = target.spatial ? nearestContact(this.player, target) : undefined;
+                const dx = contact ? contact.to.x - contact.from.x : target.loc.x - this.player.loc.x;
+                const dy = contact ? contact.to.y - contact.from.y : target.loc.y - this.player.loc.y;
                 const ndx = Math.sign(dx);
                 const ndy = Math.sign(dy);
+                const previousBody = target.spatial ? this.footprintOf(target) : undefined;
                 let traveled = 0;
                 for (let i = 0; i < dist; i++) {
                     const nx = target.loc.x + ndx;
                     const ny = target.loc.y + ndy;
                     const cell = this.grid.getCell(nx, ny);
-                    if (!cell || !cell.isPassable || cell.isOpaque || this.getMonsterAt(nx, ny)) break;
+                    if (target.spatial ? !this.canStepFootprint(target, { x: nx, y: ny }) : (!cell || !cell.isPassable || cell.isOpaque || this.getMonsterAt(nx, ny))) break;
                     commitCreatureAnchor(target, { x: nx, y: ny }, 'mutate');
                     traveled++;
                 }
                 if (traveled > 0) {
+                    const contactEffects = () => target.spatial ? this.applyEnvironmentalEffects(target, false, undefined, previousBody) : this.applyEnvironmentalEffects(target);
                     if (this.extensionRuntime) {
                         const effects = this.extensionRuntime.causality, parent = effects.current;
                         const origin = effects.create('displacement', this.player.id, parent ? parent.creditActorId : this.player.id,
                             parent ? parent.creditPartyId : this.player.extensionHooks?.partyId(this.player) ?? null);
-                        effects.withImmediateTerrain(origin, () => this.applyEnvironmentalEffects(target));
-                    } else this.applyEnvironmentalEffects(target);
+                        effects.withImmediateTerrain(origin, contactEffects);
+                    } else contactEffects();
                     this.updateVision();
                 }
                 // CE forceWeaponHit: a collision before full travel damages
                 // both the launched creature and the creature it strikes.
                 if (traveled > 0 && traveled < dist && target.hp > 0) {
-                    const other = this.getMonsterAt(target.x + ndx, target.y + ndy);
+                    const other = target.spatial ? this.footprintOf(target).map(p => this.getMonsterAt(p.x + ndx, p.y + ndy, target)).find(c => !!c)
+                        : this.getMonsterAt(target.x + ndx, target.y + ndy);
                     if (!target.isImmuneToWeapons() && !target.isInvulnerable()) target.takeDamage(traveled, false, this.grid);
                     if (other && !other.isImmuneToWeapons() && !other.isInvulnerable()) other.takeDamage(traveled, false, this.grid);
                 }
@@ -8477,8 +8526,10 @@ export class Game {
         }
         if (cellTerrainFlags(this.grid, defender.x, defender.y) & T_OBSTRUCTS_PASSABILITY) return;
         const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
-        const newX = clamp1(defender.loc.x - attacker.loc.x) + defender.loc.x;
-        const newY = clamp1(defender.loc.y - attacker.loc.y) + defender.loc.y;
+        const contact = defender.spatial || attacker.spatial ? nearestContact(attacker, defender) : undefined;
+        const newX = clamp1(contact ? contact.to.x - contact.from.x : defender.loc.x - attacker.loc.x) + defender.loc.x;
+        const newY = clamp1(contact ? contact.to.y - contact.from.y : defender.loc.y - attacker.loc.y) + defender.loc.y;
+        if (defender.spatial && !this.canStepFootprint(defender, { x: newX, y: newY })) return;
         this.placeCreature(defender, { x: newX, y: newY });
     }
 
@@ -8489,8 +8540,9 @@ export class Game {
         birth?: { creationReason: CreationReason; initiallyAllied?: boolean }): Monster | null {
         assertNativeSpatial(source);
         if (source.hp <= 0 || (!(source instanceof Monster) && source !== this.player)) return null;
+        if (source.spatial && !this.squarePublicationFits(source)) return null;
         const spot = splitLocation ?? cloneLocation(this, source);
-        if (!spot) return null;
+        if (!spot || (source.spatial && !canPlaceSquareCloneAt(this, source, spot))) return null;
         const clone = source instanceof Monster ? source.copyForClone() : Monster.copyPlayerForClone(this.player);
         if (source instanceof Monster && source.isCaged) this.becomeAllyWith(clone);
         commitCreatureAnchor(clone, { ...spot });
@@ -8513,6 +8565,7 @@ export class Game {
     private trySplitMonster(defender: Monster, attacker: Creature): void {
         if (!defender.hasAbility('MA_CLONE_SELF_ON_DEFEND')) return;
         if (defender.hp <= 0) return;
+        if (defender.spatial && !this.squarePublicationFits(defender)) return;
         if (this.alliedCloneCount(defender) >= 100) return;
 
         const key = (x: number, y: number) => `${x},${y}`;
@@ -8521,12 +8574,12 @@ export class Game {
         // 1) 连通同阵营怪物群（4 方向 flood fill）；攻击者相邻时预先并入该组
         //    （CE 注释：让果冻能在走廊里分裂到玩家背后）。
         const inGroup = new Set<string>();
-        inGroup.add(key(defender.loc.x, defender.loc.y));
+        for (const p of footprintOf(defender)) inGroup.add(key(p.x, p.y));
         const dist = distanceBetweenFootprints(defender, attacker);
         if (dist <= 1 && this.grid.isValidPos(attacker.loc.x, attacker.loc.y)) {
-            inGroup.add(key(attacker.loc.x, attacker.loc.y));
+            for (const p of footprintOf(attacker)) inGroup.add(key(p.x, p.y));
         }
-        const queue: Array<{ x: number; y: number }> = [{ x: defender.loc.x, y: defender.loc.y }];
+        const queue: Array<{ x: number; y: number }> = footprintOf(defender).map(p => ({ x: p.x, y: p.y }));
         while (queue.length > 0) {
             const cur = queue.shift()!;
             for (const [dx, dy] of dirs4) {
@@ -8536,8 +8589,9 @@ export class Game {
                 if (inGroup.has(k)) continue;
                 const m = this.getMonsterAt(nx, ny);
                 if (m && monstersAreTeammates(m, defender)) {
-                    inGroup.add(k);
-                    queue.push({ x: nx, y: ny });
+                    for (const p of footprintOf(m)) if (!inGroup.has(key(p.x, p.y))) {
+                        inGroup.add(key(p.x, p.y)); queue.push({ x: p.x, y: p.y });
+                    }
                 }
             }
         }
@@ -8553,6 +8607,14 @@ export class Game {
                     if (!this.grid.isValidPos(nx, ny)) continue;
                     const nk = key(nx, ny);
                     if (inGroup.has(nk) || eligibleSet.has(nk)) continue;
+                    if (defender.spatial) {
+                        for (const offset of footprintOf({ loc: { x: 0, y: 0 }, spatial: defender.spatial })) {
+                            const anchor = { x: nx - offset.x, y: ny - offset.y };
+                            if (canPlaceSquareCloneAt(this, defender, anchor)
+                                && footprintOf({ loc: anchor, spatial: defender.spatial }).every(p => !inGroup.has(key(p.x, p.y)) && !monsterBlinkAvoids(this, defender, p))) eligibleSet.add(key(anchor.x, anchor.y));
+                        }
+                        continue;
+                    }
                     const cell = this.grid.getCell(nx, ny);
                     if (!cell || monsterBlinkAvoids(this, defender, { x: nx, y: ny })) continue;
                     if (footprintContains(this.player, { x: nx, y: ny })) continue;
@@ -8602,26 +8664,31 @@ export class Game {
             && (footprintSome(m, p => !!this.grid.getCell(p.x, p.y)?.isVisible) || monsterRevealed(this.player, m));
     }
 
-    private triggerDeathFeatures(target?: Monster): void {
+    private triggerDeathFeatures(target?: Monster, independent = false): void {
+        if (!independent && squareListUsers(this.monsters)) return withSquareContactScope(this.grid, new Set(), () => this.triggerDeathFeatures(target, true));
+        const spawn = (m: Monster, feature: DF) => {
+            if (independent) spawnDungeonFeature(this.grid, m.x, m.y, catalogFeature(feature), false, { independentContacts: true });
+            else spawnDungeonFeature(this.grid, m.x, m.y, catalogFeature(feature), false);
+        };
         for (const m of target ? [target] : [...this.monsters]) {
             if (m.hp > 0 || m.falling || m.administrativeDeath) continue;
             if (m.deathEffectTriggered || !m.hasAbility('MA_DF_ON_DEATH')) continue;
             m.deathEffectTriggered = true;
             if (m.deathDFType !== undefined) {
-                if (m.deathDFType > 0) spawnDungeonFeature(this.grid, m.x, m.y, catalogFeature(m.deathDFType as DF), false);
+                if (m.deathDFType > 0) spawn(m, m.deathDFType as DF);
             } else if (m.mutation?.id === 'infested') {
-                spawnDungeonFeature(this.grid, m.x, m.y, catalogFeature(DF.DF_MUTATION_LICHEN), false);
+                spawn(m, DF.DF_MUTATION_LICHEN);
             } else if (m.mutation?.id === 'explosive') {
-                spawnDungeonFeature(this.grid, m.x, m.y, catalogFeature(DF.DF_MUTATION_EXPLOSION), false);
+                spawn(m, DF.DF_MUTATION_EXPLOSION);
             } else if (m.typeId === 'bloat') {
                 // DF_BLOAT_DEATH is a single-cell GAS DF with 2000 volume.
                 this.environment.addGas(m.x, m.y, GasType.POISON, 2000);
             } else if (m.typeId === 'explosive_bloat') {
-                spawnDungeonFeature(this.grid, m.x, m.y, catalogFeature(DF.DF_BLOAT_EXPLOSION), false);
+                spawn(m, DF.DF_BLOAT_EXPLOSION);
             } else if (m.typeId === 'pit_bloat') {
-                spawnDungeonFeature(this.grid, m.x, m.y, catalogFeature(DF.DF_HOLE_POTION), false);
+                spawn(m, DF.DF_HOLE_POTION);
             } else if (m.typeId === 'vampire') {
-                spawnDungeonFeature(this.grid, m.x, m.y, catalogFeature(DF.DF_BLOOD_EXPLOSION), false);
+                spawn(m, DF.DF_BLOOD_EXPLOSION);
             }
             // CE uses species DFMessage even when a mutation replaced the DF.
             if (this.canSeeMonsterAtDeath(m)) {
@@ -8720,6 +8787,7 @@ export class Game {
     /** CE Movement.c:1440-1461: relocate before monsterAvoids, including its
      * current-terrain exceptions. No monster turn/entry effects during a swap. */
     private movePlayerPastAlly(x: number, y: number, ally?: Monster): boolean {
+        if (ally?.spatial) return false;
         const origin = { ...this.player.loc };
         commitCreatureAnchor(this.player, { x, y });
         if (ally?.isAlly && !ally.hasStatus('discordant')) {
@@ -8864,7 +8932,10 @@ export class Game {
     private creatureShouldFall(entity: Player | Monster): boolean {
         assertNativeSpatial(entity);
         if (entity.hasStatus('levitating')) return false;
-        const { x, y } = nativeContactOf(entity);
+        if (entity.spatial) return !(entity instanceof Monster && entity.preplaced) && footprintExposure(this.grid, entity).allUnsupported;
+        const contact = entity.spatial ? footprintExposure(this.grid, entity).contacts.find(c => c.flags & T_CAUSES_EXPLOSIVE_DAMAGE)?.at : nativeContactOf(entity);
+        if (!contact) return false;
+        const { x, y } = contact;
         const cell = this.grid.getCell(x, y);
         if (!cell) return false;
         let flags = 0;
@@ -8980,6 +9051,7 @@ export class Game {
      * this.monsters 快照后过滤——结果集相同）。
      */
     private monstersFall(): void {
+        this.retrySquareLandings();
         const fellOut = new Set<Monster>();
         for (const m of [...this.monsters]) {
             if (m.hp <= 0 || fellOut.has(m)) continue;
@@ -9018,7 +9090,11 @@ export class Game {
                     fellOut.add(m);
                     const targetDepth = this.depth + 1;
                     const cached = this.levels.get(targetDepth);
-                    if (cached) {
+                    if (cached && m.spatial) {
+                        const spot = this.squarePublicationFits(m, cached.monsters, cached.dormantMonsters ?? []) ? travelPlacement({ grid: cached.grid, player: { hp: 0 } as Creature, monsters: cached.monsters, dormantMonsters: cached.dormantMonsters }, m, m.loc, true, true, true) : null;
+                        if (spot) { commitCreatureAnchor(m, spot); cached.monsters.push(m); }
+                        else this.deferSquareLanding(m, targetDepth);
+                    } else if (cached) {
                         cached.monsters.push(m);
                     } else if (targetDepth <= CE_DEEPEST_LEVEL) {
                         const q = this.pendingFallenByDepth.get(targetDepth);
@@ -9035,6 +9111,41 @@ export class Game {
         if (fellOut.size > 0) {
             this.monsters = this.monsters.filter((m) => !fellOut.has(m));
         }
+    }
+
+    private deferSquareLanding(monster: Monster, depth: number): void {
+        if (depth < 1 || depth > CE_DEEPEST_LEVEL) return;
+        const queue = this.pendingFallenByDepth.get(depth) ?? [];
+        if (!queue.includes(monster)) queue.push(monster);
+        this.pendingFallenByDepth.set(depth, queue);
+        monster.preplaced = true;
+        if (depth === this.depth) this.monsters = this.monsters.filter(c => c !== monster);
+    }
+    declare private squareLandingRetry: { grid: Grid; revision: number; occupancy: string; pending: string } | undefined;
+    private clearSquareLandingRetry(): void {
+        if (this.squareLandingRetry) { releaseSpatialTerrain(this.squareLandingRetry); delete this.squareLandingRetry; }
+    }
+    /** At most one finite search per pending entity per objective block/entry.
+     * Fall damage/status cleanup happened at departure and is never repeated. */
+    private retrySquareLandings(): void {
+        const queue = this.pendingFallenByDepth?.get(this.depth);
+        if (!queue?.some(c => c.spatial)) { this.clearSquareLandingRetry(); return; }
+        if (this.squareLandingRetry?.grid !== this.grid) this.clearSquareLandingRetry();
+        const retry = this.squareLandingRetry ??= { grid: this.grid, revision: -1, occupancy: '', pending: '' };
+        const revision = spatialTerrainRevision(this.grid, retry);
+        const occupancy = JSON.stringify([this.player, ...this.monsters, ...this.dormantMonsters].map(c => [c.id, c.x, c.y, c.hp > 0, c.spatial?.footprintId]));
+        const pending = JSON.stringify(queue.map(c => c.id).sort((a, b) => a - b));
+        if (retry.revision === revision && retry.occupancy === occupancy && retry.pending === pending) return;
+        Object.assign(retry, { revision, occupancy, pending });
+        for (const monster of [...queue].sort((a, b) => a.id - b.id)) {
+            if (!monster.spatial || monster.hp <= 0) continue;
+            if (!this.squarePublicationFits(monster)) continue;
+            const spot = travelPlacement(this, monster, monster.loc, true, true, true);
+            if (!spot) continue;
+            commitCreatureAnchor(monster, spot); monster.preplaced = false;
+            queue.splice(queue.indexOf(monster), 1); this.monsters.push(monster);
+        }
+        if (!queue.length) { this.pendingFallenByDepth.delete(this.depth); this.clearSquareLandingRetry(); }
     }
 
     /**
@@ -9056,7 +9167,8 @@ export class Game {
                 // (T_PATHING_BLOCKER & ~T_IS_DEEP_WATER)：深水可落。
                 if ((flags & T_PATHING_BLOCKER) && !(flags & T_IS_DEEP_WATER)) return false;
             }
-            if (this.getMonsterAt(x, y)) return false;
+        if (this.getMonsterAt(x, y)) return false;
+        if (squareListUsers(this.dormantMonsters) && this.dormantMonsters.some(m => m.spatial && m.hp > 0 && footprintContains(m, { x, y }))) return false;
             if (cell.layers.includes(TerrainType.STAIRS_UP)
                 || cell.layers.includes(TerrainType.STAIRS_DOWN) || cell.layers.includes(TerrainType.DUNGEON_PORTAL)) return false;
             if (this.items.some((it) => it.loc.x === x && it.loc.y === y)) return false;
@@ -9265,19 +9377,23 @@ export class Game {
             const passenger = m.carriedMonster;
             m.carriedMonster = null;
             if (passenger && passenger !== m && !passenger.deathProcessed && !this.monsters.includes(passenger)) {
-                commitCreatureAnchor(passenger, { ...m.loc });
-                passenger.ticksUntilTurn = 200;
-                this.monsters.unshift(passenger);
-                this.needsRender = true;
-                if (this.grid.getCell(passenger.x, passenger.y)?.isVisible) {
-                    logger.log(i18next.t('monster.carried_appears', {
-                        name: this.monsterDisplayName(passenger), defaultValue: '{{name}} appears',
-                    }), '#ffffff');
+                const landing = passenger.spatial ? travelPlacement(this, passenger, m.loc, true, false, true) : m.loc;
+                if (!landing) { passenger.ticksUntilTurn = 200; this.deferSquareLanding(passenger, this.depth); }
+                else {
+                    commitCreatureAnchor(passenger, { ...landing });
+                    passenger.ticksUntilTurn = 200;
+                    this.monsters.unshift(passenger);
+                    this.needsRender = true;
+                    if (this.grid.getCell(passenger.x, passenger.y)?.isVisible) {
+                        logger.log(i18next.t('monster.carried_appears', {
+                            name: this.monsterDisplayName(passenger), defaultValue: '{{name}} appears',
+                        }), '#ffffff');
+                    }
+                    if (!passenger.spatial) this.applyDisplacementTileEntry(passenger);
+                    // CE applies instant contact, not a second gradual gas tick.
+                    this.applyEnvironmentalEffects(passenger, true);
+                    if (passenger.hp <= 0) this.killMonster(passenger);
                 }
-                this.applyDisplacementTileEntry(passenger);
-                // CE applies instant contact, not a second gradual gas tick.
-                this.applyEnvironmentalEffects(passenger, true);
-                if (passenger.hp <= 0) this.killMonster(passenger);
             }
             anyoneWantABite(this, m);
         }
@@ -10190,6 +10306,8 @@ export class Game {
         } catch { return false; }
         const levelRows = [snapshot, ...snapshot.levels];
 
+        if (this.squareMotion) { this.squareMotion.spatial.dispose(); delete this.squareMotion; }
+        this.clearSquareLandingRetry();
         resetPresentation(this);
         this.discardInFlightAdvancement();
         if (this.extensionRuntime) this.extensionRuntime.unload();
@@ -10386,10 +10504,10 @@ export class Game {
         if (entity.hp <= 0 || isSubmerged(entity)) return;
         if (entity.hasStatus('immune_fire')) return;
         if (entity !== this.player && (entity as Monster).isInvulnerable()) return;
-        const contact = nativeContactOf(entity);
+        const contact = entity.spatial ? entity.loc : nativeContactOf(entity);
         const cell = this.grid?.getCell(contact.x, contact.y);
         if (!cell) return;
-        if (!entity.hasStatus('levitating') && this.cellExtinguishesFire(entity.loc.x, entity.loc.y)) return;
+        if (!entity.hasStatus('levitating') && footprintEvery(entity, p => this.cellExtinguishesFire(p.x, p.y))) return;
 
         const current = this.burningDuration(entity);
         if (current === 0) {
@@ -10495,7 +10613,9 @@ export class Game {
             return effects.withOrigin(effects.terrainOrigin, () => this.resolveExplosionDamage(entity));
         }
         if (entity.hp <= 0 || isSubmerged(entity)) return false;
-        const { x, y } = nativeContactOf(entity);
+        const contact = entity.spatial ? footprintExposure(this.grid, entity).contacts.find(c => c.flags & T_CAUSES_EXPLOSIVE_DAMAGE)?.at : nativeContactOf(entity);
+        if (!contact) return false;
+        const { x, y } = contact;
         const cell = this.grid.getCell(x, y);
         if (!cell) return false;
         if (!(cellTerrainFlags(this.grid, x, y) & T_CAUSES_EXPLOSIVE_DAMAGE)) return false;
@@ -10551,14 +10671,14 @@ export class Game {
     public applyEntanglementFromTerrain(entity: Creature): void {
         assertNativeSpatial(entity);
         if (entity.hp <= 0 || isSubmerged(entity) || entity.hasStatus('stuck')
-            || !(cellTerrainFlags(this.grid, entity.x, entity.y) & T_ENTANGLES)
+            || !footprintSome(entity, p => !!(cellTerrainFlags(this.grid, p.x, p.y) & T_ENTANGLES))
             || (entity instanceof Monster && (entity.hasCEBehavior('MONST_IMMUNE_TO_WEBS') || entity.isInvulnerable()))) return;
         entity.applyStatus('stuck', rng.randRange(3, 7));
     }
 
     /** CE decrement*Status: lost terrain clears STUCK without decrementing it. */
     private clearDisplacedEntanglement(entity: Creature): void {
-        if (!(cellTerrainFlags(this.grid, entity.x, entity.y) & T_ENTANGLES)) entity.setStatusDuration('stuck', 0);
+        if (!footprintSome(entity, p => !!(cellTerrainFlags(this.grid, p.x, p.y) & T_ENTANGLES))) entity.setStatusDuration('stuck', 0);
     }
 
     private playerStruggle(dx: number, dy: number, control?: ControlledPlayerAction): boolean {
@@ -10581,7 +10701,7 @@ export class Game {
     /** CE Time.c:421-439: submerged, inanimate and invulnerable creatures are immune. */
     private applyNauseaFromTerrain(entity: Creature): void {
         assertNativeSpatial(entity);
-        if (entity.hp <= 0 || isSubmerged(entity) || !(cellTerrainFlags(this.grid, entity.x, entity.y) & T_CAUSES_NAUSEA)) return;
+        if (entity.hp <= 0 || isSubmerged(entity) || !footprintSome(entity, p => !!(cellTerrainFlags(this.grid, p.x, p.y) & T_CAUSES_NAUSEA))) return;
         if (entity instanceof Monster && (entity.hasBehavior('MONST_INANIMATE') || entity.isInvulnerable())) return;
         if (entity === this.player && this.player.equippedArmor?.runicType === 'respiration') {
             if (!this.player.equippedArmor.runicKnown) logger.log(i18next.t('runic.armor.respiration_gas', { defaultValue: 'Your armor trembles and a pocket of clean air swirls around you.' }), '#66ffff');
@@ -10599,7 +10719,7 @@ export class Game {
     /** CE Time.c:498–523: grounded contact refreshes five turns, without stacking doses. */
     private applyLichenPoison(entity: Creature): void {
         assertNativeSpatial(entity);
-        if (!(cellTerrainFlags(this.grid, entity.x, entity.y) & T_CAUSES_POISON)
+        if (!footprintSome(entity, p => !!(cellTerrainFlags(this.grid, p.x, p.y) & T_CAUSES_POISON))
             || entity.hasStatus('levitating') || entity.hasStatus('flying')
             || (entity instanceof Monster && (entity.hasBehavior('MONST_INANIMATE') || entity.isInvulnerable()))) return;
         const first = !entity.hasStatus('poisoned');
@@ -10610,15 +10730,26 @@ export class Game {
         }
     }
 
-    private applyEnvironmentalEffects(instantTarget?: Creature, deferPlayerNausea = false): void {
+    private applyEnvironmentalEffects(instantTarget?: Creature, deferPlayerNausea = false, scope?: Set<string>, previousBody?: readonly Readonly<Pos>[]): void {
         // Terrain never inherits an attack. Only the immediate lethal leaves below
         // consult the separately bounded displacement/death-explosion evidence.
         if (this.extensionRuntime && this.extensionRuntime.causality.current !== null) {
-            return this.extensionRuntime.causality.withOrigin(null, () => this.applyEnvironmentalEffects(instantTarget, deferPlayerNausea));
+            return this.extensionRuntime.causality.withOrigin(null, () => this.applyEnvironmentalEffects(instantTarget, deferPlayerNausea, scope, previousBody));
         }
-        const checkEntity = (entity: any, name: string) => {
+        const checkEntity = (entity: any, name: string): void => {
             if (entity.hp <= 0) return;
-            const { x, y } = nativeContactOf(entity);
+            if (entity.spatial && !squareContactScope(this.grid)) return withSquareContactScope(this.grid, scope ?? new Set(), () => checkEntity(entity, name));
+            let exposure = entity.spatial ? footprintExposure(this.grid, entity) : undefined;
+            const shape = entity.spatial;
+            const anchorRevision = shape ? squareAnchorRevision(entity) : 0;
+            const changed = () => entity.hp <= 0 || entity.x !== x || entity.y !== y || entity.spatial !== shape || (shape && squareAnchorRevision(entity) !== anchorRevision);
+            const effect = (kind: string, present: boolean) => {
+                if (!exposure || !scope || !present) return true;
+                const key = `${entity.id}:${kind}`;
+                if (scope.has(key)) return false;
+                scope.add(key); return true;
+            };
+            const { x, y } = exposure?.anchor ?? nativeContactOf(entity);
 
             const cell = this.grid?.getCell(x, y);
             if (!cell) return;
@@ -10644,11 +10775,11 @@ export class Game {
             const isFlying = entity.hasStatus('flying') || entity.hasStatus('levitating') || (entity.abilities && entity.abilities.has('flying'));
             // F-1 跨层判定：火盖在深水/岩浆上不改变致死地形判据
             //（CE applyInstantTileEffectsToCreature 的 cellHasTerrainFlag 是全层 OR）
-            if ((cellTerrainFlags(this.grid, x, y) & T_LAVA_INSTA_DEATH) && !isFlying
+            if ((exposure ? exposure.contacts.some(c => (c.flags & T_LAVA_INSTA_DEATH) && (!instantTarget || (!(c.flags & (T_ENTANGLES | T_OBSTRUCTS_PASSABILITY)) && !this.cellExtinguishesFire(c.at.x, c.at.y)))) : !!(cellTerrainFlags(this.grid, x, y) & T_LAVA_INSTA_DEATH)) && !isFlying
                 && !entity.hasStatus('immune_fire')
                 && !(entity.abilities && entity.abilities.has('immune_fire'))
                 && !(entity.isInvulnerable && entity.isInvulnerable())
-                && (!instantTarget || (!(cellTerrainFlags(this.grid, x, y) & T_ENTANGLES)
+                && (exposure || !instantTarget || (!(cellTerrainFlags(this.grid, x, y) & T_ENTANGLES)
                     && !(cellTerrainFlags(this.grid, x, y) & T_OBSTRUCTS_PASSABILITY)
                     && !this.cellExtinguishesFire(x, y)))) {
                 // 熔岩豁免对齐 CE applyInstantTileEffectsToCreature（Time.c:183-190）：
@@ -10672,21 +10803,32 @@ export class Game {
             // CE Time.c:240: grounded creatures also depress CE traps during
             // ordinary movement/wait contact, not just magical displacement.
             // Legacy TRAP/pressure-plate entry remains handled by its existing path.
-            if (instantTarget || ((cellTerrainFlags(this.grid, x, y) & T_IS_DF_TRAP)
+            if (exposure || instantTarget || ((cellTerrainFlags(this.grid, x, y) & T_IS_DF_TRAP)
                 && !cell.layers.includes(TerrainType.TRAP) && !cell.layers.includes(TerrainType.PRESSURE_PLATE))) {
-                this.applyDisplacementTileEntry(entity);
+                if (exposure) {
+                    for (const c of exposure.contacts) {
+                        const entered = !previousBody?.some(p => p.x === c.at.x && p.y === c.at.y);
+                        const trigger = instantTarget ? entered : !!(c.flags & T_IS_DF_TRAP) && !c.cell.layers.includes(TerrainType.TRAP) && !c.cell.layers.includes(TerrainType.PRESSURE_PLATE);
+                        this.applyDisplacementTileEntry(entity, c.at, trigger);
+                        if (changed()) return;
+                    }
+                } else this.applyDisplacementTileEntry(entity);
                 // A teleport trap already committed and evaluated its new cell.
                 if (entity.loc.x !== x || entity.loc.y !== y) return;
+                if (exposure) exposure = footprintExposure(this.grid, entity);
             }
 
             // CE Time.c:301-312: sacrifice entry is independent of levitation.
             // The DF refresh re-enters this function after replacing the altar
             // with lava; the new terrain no longer has this activation bit.
-            if (entity instanceof Monster && entity.markedForSacrifice
-                && entity.machineHome === cell.machineNumber
-                && (cellTerrainMechFlags(this.grid, x, y) & TM_PROMOTES_ON_SACRIFICE_ENTRY)) {
-                promoteLayersWithMechFlag(this.grid, x, y, TM_PROMOTES_ON_SACRIFICE_ENTRY);
-                if (entity.hp <= 0) return;
+            if (entity instanceof Monster && entity.markedForSacrifice) {
+                for (const contact of exposure?.contacts ?? [{ at: { x, y }, cell }]) {
+                    if (entity.machineHome !== contact.cell.machineNumber
+                        || !(cellTerrainMechFlags(this.grid, contact.at.x, contact.at.y) & TM_PROMOTES_ON_SACRIFICE_ENTRY)) continue;
+                    promoteLayersWithMechFlag(this.grid, contact.at.x, contact.at.y, TM_PROMOTES_ON_SACRIFICE_ENTRY);
+                    if (changed()) return;
+                }
+                if (exposure) exposure = footprintExposure(this.grid, entity);
             }
 
             // Fire
@@ -10700,13 +10842,14 @@ export class Game {
             if (this.burningDuration(entity) > 0
                 && !entity.hasStatus('levitating')
                 && !(entity !== this.player && (entity as Monster).hasBehavior('MONST_FIERY'))
-                && this.cellExtinguishesFire(x, y)) {
+                && (exposure ? exposure.contacts.every(c => this.cellExtinguishesFire(c.at.x, c.at.y)) : this.cellExtinguishesFire(x, y))) {
                 // CE :229 MONST_ATTACKABLE_THRU_WALLS 守卫：web 无该旗标载体，登记退化。
                 this.extinguishCreatureFire(entity);
             }
 
             const applyContactFire = () => {
-                if (cell.isBurning) {
+                if (!effect('fire', !!(exposure?.flags && (exposure.flags & T_IS_FIRE)))) return;
+                if (exposure ? exposure.contacts.some(c => c.cell.isBurning) : cell.isBurning) {
                     // CE Time.c:527-528：踩 T_IS_FIRE → exposeCreatureToFire。
                     // 豁免（MB_IS_DYING / IMMUNE_TO_FIRE / MONST_INVULNERABLE /
                     // MB_SUBMERGED / 非悬浮+灭火层）全在 exposeCreatureToFire 内。
@@ -10716,7 +10859,8 @@ export class Game {
                     // 所踩的可燃非火格——alwaysIgnite 直燃（Gas.ignite 即 CE :539
                     // exposeTileToFire(x,y,true)，可燃性与 12 次暴露封顶由其自守）。
                     // CE :538 的 MB_SUBMERGED|MB_IS_FALLING 守卫在此消费实际运行态。
-                    this.environment.ignite(x, y);
+                    if (exposure) { for (const c of exposure.contacts) this.environment.ignite(c.at.x, c.at.y); }
+                    else this.environment.ignite(x, y);
                 }
             };
             if (!instantTarget) applyContactFire();
@@ -10725,16 +10869,16 @@ export class Game {
             // 之后、毒气段 :411 之前的同一函数内——web 对应插在火段与气段
             // 之间）。守卫与免疫窗都在 resolveExplosionDamage 内；落格瞬间的
             // DF 逐格接触与普通地形结算共用此伤害出口。
-            this.applyEntanglementFromTerrain(entity);
-            this.resolveExplosionDamage(entity);
+            if (effect('web', !!(exposure && (exposure.flags & T_ENTANGLES)))) this.applyEntanglementFromTerrain(entity);
+            if (effect('explosion', !!(exposure && (exposure.flags & T_CAUSES_EXPLOSIVE_DAMAGE)))) this.resolveExplosionDamage(entity);
             // CE Time.c:370/392 returns on lethal contact before gas statuses.
             if (entity.hp <= 0) return;
 
-            if (entity !== this.player || !deferPlayerNausea) this.applyNauseaFromTerrain(entity);
+            if ((entity !== this.player || !deferPlayerNausea) && effect('nausea', !!(exposure && (exposure.flags & T_CAUSES_NAUSEA)))) this.applyNauseaFromTerrain(entity);
 
             // CE Time.c:592-640: all layers, once, in layer order. U08 vines
             // share gradual damage with gas; contact itself does not deal it.
-            const damagingTile = cell.layers.find(tile => TERRAIN_FLAGS[tile].flags & T_CAUSES_DAMAGE);
+            const damagingTile = (exposure ? exposure.contacts.flatMap(c => c.cell.layers) : cell.layers).find(tile => TERRAIN_FLAGS[tile].flags & T_CAUSES_DAMAGE);
             if (!instantTarget && damagingTile !== undefined && !isSubmerged(entity)) {
                 const exempt = entity instanceof Monster && (entity.hasBehavior('MONST_INANIMATE') || entity.isInvulnerable());
                 const armor = entity === this.player ? this.player.equippedArmor : null;
@@ -10759,8 +10903,8 @@ export class Game {
             if (entity.hp <= 0) return;
             // CE Time.c:645-657: gradual exposure only, once per 100-tick block.
             if (!instantTarget) {
-                const healing = terrainHealingAmount(cell, entity.hp, entity.maxHp, 100,
-                    entity instanceof Monster && entity.hasBehavior('MONST_INANIMATE'), isSubmerged(entity));
+                const healing = exposure ? Math.max(...exposure.contacts.map(c => terrainHealingAmount(c.cell, entity.hp, entity.maxHp, 100, entity instanceof Monster && entity.hasBehavior('MONST_INANIMATE'), isSubmerged(entity))))
+                    : terrainHealingAmount(cell, entity.hp, entity.maxHp, 100, entity instanceof Monster && entity.hasBehavior('MONST_INANIMATE'), isSubmerged(entity));
                 if (healing > 0) {
                     entity.hp += healing;
                     if (entity === this.player) logger.log(worldHealingText());
@@ -10782,8 +10926,8 @@ export class Game {
             // 无关）；CREEPING_DEATH 分支是 D2 留痕（无层载体，不可达）。
             if (this.environment) {
                 const gasTile = cell.layers[DungeonLayer.GAS]!;
-                if (gasTile !== TerrainType.NOTHING) {
-                    const gasFlags = TERRAIN_FLAGS[gasTile].flags;
+                if (exposure || gasTile !== TerrainType.NOTHING) {
+                    const gasFlags = exposure?.gasFlags ?? TERRAIN_FLAGS[gasTile].flags;
                     // CE Time.c:411-424 的 respiration 判定以
                     // `cellHasTerrainFlag(T_RESPIRATION_IMMUNITIES)` 为前置
                     // （:409-412）——甲烷等无该组旗标的气体不进豁免块，
@@ -10801,7 +10945,7 @@ export class Game {
                     // STATUS_CONFUSED = max(…, 25)，豁免 MONST_INANIMATE /
                     // MONST_INVULNERABLE；玩家看得见且首次上状态时惊醒
                     // 睡眠怪（:448-452，creatureState → TRACKING_SCENT）。
-                    if ((gasFlags & T_CAUSES_CONFUSION) !== 0 && !respirationImmune) {
+                    if ((gasFlags & T_CAUSES_CONFUSION) !== 0 && !respirationImmune && effect('confusion', true)) {
                         const exempt = entity !== this.player
                             && ((entity as Monster).hasBehavior('MONST_INANIMATE')
                                 || (entity as Monster).isInvulnerable());
@@ -10828,7 +10972,7 @@ export class Game {
                     // 麻痹气体（T_CAUSES_PARALYSIS，Time.c:471-497）：
                     // STATUS_PARALYZED = max(…, 20)，豁免同混乱 + 潜水
                     // （X2g 的 submerged 运行态）。CE 不惊醒睡眠怪。
-                    if ((gasFlags & T_CAUSES_PARALYSIS) !== 0 && !respirationImmune && !isSubmerged(entity)) {
+                    if ((gasFlags & T_CAUSES_PARALYSIS) !== 0 && !respirationImmune && !isSubmerged(entity) && effect('paralysis', true)) {
                         const exempt = entity !== this.player
                             && ((entity as Monster).hasBehavior('MONST_INANIMATE')
                                 || (entity as Monster).isInvulnerable());
@@ -10856,11 +11000,14 @@ export class Game {
                     }
                 }
             }
-            this.applyLichenPoison(entity);
+            if (effect('lichen', !!(exposure && (exposure.flags & T_CAUSES_POISON)))) this.applyLichenPoison(entity);
             // CE instantaneous order: promotion -> entanglement/explosion ->
             // gas statuses -> ignition. Dead creatures cannot be ignited.
             if (instantTarget && entity.hp > 0) applyContactFire();
-            if (entity.hp > 0) this.useContactKeyAt(entity.loc.x, entity.loc.y);
+            if (entity.hp > 0) {
+                if (exposure) { for (const c of exposure.contacts) { this.useContactKeyAt(c.at.x, c.at.y); if (changed()) return; } }
+                else this.useContactKeyAt(entity.loc.x, entity.loc.y);
+            }
         };
 
         if (instantTarget) {
@@ -10900,7 +11047,8 @@ export class Game {
         const entity = typeof actor !== 'number' ? actor : actor === this.player.id ? this.player
             : this.monsters.find(c => c.id === actor) ?? this.dormantMonsters.find(c => c.id === actor);
         if (!entity) throw new Error('Unknown spatial actor');
-        assertNativeSpatial(entity); return entity;
+        if (entity === this.player) assertSingleCellPlayer(entity); else assertNativeSpatial(entity);
+        return entity;
     }
     public footprintOf(actor: number | Creature) { return this.spatialOf(actor).cells; }
     public nearestContact(a: number | Creature, b: number | Creature) { return nearestContact(this.spatialActor(a), this.spatialActor(b)); }
@@ -10909,6 +11057,65 @@ export class Game {
         return collectBodyTargets({ ...this.spatialWorldPort(), inDeathWindow: c => c instanceof Monster && dyingMonsters.has(c) && !c.deathProcessed }, cells, policy, scope);
     }
     private spatialWorldPort() { return { grid: this.grid, player: this.player, monsters: this.monsters, dormantMonsters: this.dormantMonsters }; }
+    /** Optional derived session: no own field, table, scan or counter in a
+     * world which has never requested square motion. */
+    declare private squareMotion: { spatial: CreatureSpatial; pathing: FootprintPathing; cohort: Creature[] } | undefined;
+    public planSquareStep(actor: Monster, goal: FootprintGoal, distanceOnly = false) {
+        const world = this.spatialWorldPort();
+        const cohort = [this.player, ...this.monsters, ...this.dormantMonsters];
+        let session = this.squareMotion;
+        if (!session) {
+            const spatial = new CreatureSpatial(world);
+            session = this.squareMotion = { spatial, pathing: new FootprintPathing(spatial), cohort };
+        } else if (session.spatial.grid !== this.grid || session.cohort.length !== cohort.length
+            || session.cohort.some((c, i) => c !== cohort[i])) {
+            session.spatial.replaceWorld(world); session.cohort = cohort;
+        }
+        let forbiddenFlags = avoidedFlagsForCaster(actor);
+        if (actor.hasStatus('levitating') || actor.hasStatus('flying')) forbiddenFlags &= ~(T_AUTO_DESCENT | T_IS_DF_TRAP | T_IS_DEEP_WATER | T_LAVA_INSTA_DEATH | T_CAUSES_POISON);
+        if (actor.hasStatus('immune_fire')) forbiddenFlags &= ~(T_LAVA_INSTA_DEATH | T_IS_FIRE | T_SPONTANEOUSLY_IGNITES);
+        if (actor.hasCEBehavior('MONST_IMMUNE_TO_WEBS')) forbiddenFlags &= ~T_ENTANGLES;
+        if (footprintSome(actor, p => !!(cellTerrainFlags(this.grid, p.x, p.y) & T_IS_DEEP_WATER))) forbiddenFlags &= ~T_IS_DEEP_WATER;
+        const here = actor.spatial ? footprintExposure(this.grid, actor).flags : cellTerrainFlags(this.grid, actor.x, actor.y);
+        forbiddenFlags &= ~(here & (T_HARMFUL_TERRAIN | T_SPONTANEOUSLY_IGNITES));
+        if (!actor.isAlly && actor.state === MonsterState.HUNTING && actor.hp >= 10) forbiddenFlags &= ~T_CAUSES_POISON;
+        if (!actor.isAlly && actor.state !== MonsterState.WANDERING) forbiddenFlags &= ~T_IS_DF_TRAP;
+        return session.pathing.planStep(actor, goal, { forbiddenFlags, requiresSubmergible: actor.hasBehavior('MONST_RESTRICTED_TO_LIQUID'), allowSecretDoors: true }, distanceOnly);
+    }
+    public squareDistanceValues(actor: Monster, goal: FootprintGoal): (at: Readonly<Pos>) => number {
+        return this.planSquareStep(actor, goal, true).distanceAt!;
+    }
+    public monsterListsChanged(): void {
+        if (this.squareMotion && !squareListUsers(this.monsters) && !squareListUsers(this.dormantMonsters)) {
+            this.squareMotion.spatial.dispose(); delete this.squareMotion;
+        }
+    }
+    /** Checked diagnostic/native publication; ordinary content keeps its CE
+     * construction path. No constructor, ID or RNG is used for the preflight. */
+    public publishSquareMonster(monster: Monster): boolean {
+        assertNativeSpatial(monster);
+        if (!monster.spatial || this.monsters.includes(monster) || this.dormantMonsters.includes(monster)
+            || !this.squarePublicationFits(monster) || !canPlaceCreature(this, monster, monster.loc)) return false;
+        if (monster.hasBehavior('MONST_RESTRICTED_TO_LIQUID') && !footprintEvery(monster, p => !!(cellTerrainMechFlags(this.grid, p.x, p.y) & TM_ALLOWS_SUBMERGING))) return false;
+        (monster.isDormant ? this.dormantMonsters : this.monsters).push(monster);
+        if (!monster.isDormant) this.applyEnvironmentalEffects(monster);
+        return true;
+    }
+    public createSquareMonster(data: MonsterData, size: 2 | 3, at: Pos): Monster | null {
+        const spatial = { schema: 1 as const, footprintId: `builtin:square-${size}`, pose: 'r0' as const };
+        const candidate = { loc: at, spatial, hp: 1 } as Creature;
+        const aquatic = data.behaviorFlags?.includes('MONST_RESTRICTED_TO_LIQUID');
+        if (!this.squarePublicationFits(candidate) || !canFitAt(this, candidate, at, { allowsTerrain: p => !(cellTerrainFlags(this.grid, p.x, p.y) & speciesForbiddenFlags(data))
+            && (!aquatic || !!(cellTerrainMechFlags(this.grid, p.x, p.y) & TM_ALLOWS_SUBMERGING)) })) return null;
+        const monster = new Monster(at.x, at.y, data); monster.spatial = spatial;
+        if (!this.publishSquareMonster(monster)) throw new Error('Square birth changed during synchronous construction');
+        return monster;
+    }
+    private squarePublicationFits(candidate: Creature, monsters = this.monsters, dormantMonsters = this.dormantMonsters): boolean {
+        const squares = [...monsters, ...dormantMonsters].filter(c => c.spatial && c !== candidate);
+        return squares.length < SPATIAL_LIMITS.entities && squares.reduce((n, c) => n + footprintOf(c).length, footprintOf(candidate).length) <= SPATIAL_LIMITS.occupiedCells;
+    }
+    public squarePathingStats() { return this.squareMotion?.pathing.stats ?? { terrainBuilds: 0, distanceBuilds: 0, dynamicReplans: 0, cacheHits: 0, visitedNodes: 0, cachedGraphs: 0 }; }
     public creatureAtCell(at: Pos, policy: Parameters<typeof creatureAtCell>[2] = 'active') {
         return creatureAtCell({ ...this.spatialWorldPort(), inDeathWindow: c => c instanceof Monster && dyingMonsters.has(c) && !c.deathProcessed }, at, policy);
     }
@@ -10936,9 +11143,11 @@ export class Game {
     }
 
     private bindDungeonFeatureEffects(): void {
+        if (this.squareMotion && this.squareMotion.spatial.grid !== this.grid) { this.squareMotion.spatial.dispose(); delete this.squareMotion; }
+        if (this.squareLandingRetry && this.squareLandingRetry.grid !== this.grid) this.clearSquareLandingRetry();
         setDungeonFeatureEffects(this.grid, {
             creatures: () => [this.player, ...this.monsters.filter(m => !m.isDormant)]
-                .filter(c => c.hp > 0).map(c => ({ loc: c.loc, occupies: (at: Pos) => footprintContains(c, at), commitPosition: (at: Pos) => commitCreatureAnchor(c, at, 'mutate'), forbiddenTerrain:
+                .filter(c => c.hp > 0).map(c => ({ loc: c.loc, occupies: (at: Pos) => footprintContains(c, at), ...(c.spatial ? { canPlace: (at: Pos, excluded: (p: Pos) => boolean) => canPlaceCreature(this, c, at) && this.footprintOf(c).every(p => !excluded({ x: p.x + at.x - c.x, y: p.y + at.y - c.y }) && !(cellTerrainFlags(this.grid, p.x + at.x - c.x, p.y + at.y - c.y) & (c instanceof Monster ? speciesForbiddenFlags(c.snapshotForm()) : T_PATHING_BLOCKER))) } : {}), commitPosition: (at: Pos) => commitCreatureAnchor(c, at, 'mutate'), forbiddenTerrain:
                     c instanceof Monster ? speciesForbiddenFlags({ behaviorFlags: [...c.behaviorFlags] }) : T_PATHING_BLOCKER })),
             refreshCell: pos => this.refreshDungeonFeatureCell(pos),
             flavor: pos => {
@@ -10947,10 +11156,11 @@ export class Game {
                     this.updateFlavorText();
                 }
             },
-            instantEffects: pos => {
+            spatialContacts: () => squareListUsers(this.monsters) > 0,
+            instantEffects: (pos, scope) => {
                 const creature = this.player.hp > 0 && footprintContains(this.player, pos)
                     ? this.player : this.monsters.find(m => m.hp > 0 && !m.isDormant && footprintContains(m, pos));
-                if (creature) this.applyDungeonFeatureContact(creature);
+                if (creature) this.applyDungeonFeatureContact(creature, scope);
             },
             burnItems: pos => this.burnFloorItemsAt(pos),
             caughtFire: pos => {
@@ -10985,8 +11195,9 @@ export class Game {
 
     /** A lethal instantaneous DF contact ends the fill immediately (CE Time.c:369-370).
      * Ordinary gradual/status deaths keep their existing turn-boundary cleanup. */
-    private applyDungeonFeatureContact(creature: Creature): void {
-        this.applyEnvironmentalEffects(creature);
+    private applyDungeonFeatureContact(creature: Creature, scope?: Set<string>): void {
+        if (creature.spatial && scope) this.applyEnvironmentalEffects(creature, false, scope);
+        else this.applyEnvironmentalEffects(creature);
         if (creature === this.player && creature.hp <= 0 && !this.isGameOver) {
             this.triggerGameOver(false, this.lastDamageSource === 'violent explosion'
                 ? i18next.t('death.explosion', { defaultValue: 'Killed by a violent explosion.' })
@@ -11123,8 +11334,10 @@ export class Game {
         const candidate = [...this.purgatory].sort((a, b) =>
             b.totalPowerCount - a.totalPowerCount || speciesOrder(b) - speciesOrder(a))[0];
         if (!candidate) return false;
-        const ties = qualifyingPathCandidates(this.grid, origin, T_PATHING_BLOCKER | T_HARMFUL_TERRAIN, 0,
-            (x, y) => !!this.getMonsterAt(x, y) || (footprintContains(this.player, { x, y })));
+        if (candidate.spatial && !this.squarePublicationFits(candidate)) return false;
+        const ties = candidate.spatial ? squarePlacementCandidates(this, candidate, origin, T_PATHING_BLOCKER | T_HARMFUL_TERRAIN)
+            : qualifyingPathCandidates(this.grid, origin, T_PATHING_BLOCKER | T_HARMFUL_TERRAIN, 0,
+                (x, y) => !!this.getMonsterAt(x, y) || (footprintContains(this.player, { x, y })));
         const loc = ties.length ? ties[rng.randRange(0, ties.length - 1)]! : null;
         if (!loc) return false;
         this.purgatory.splice(this.purgatory.indexOf(candidate), 1);
@@ -11186,10 +11399,16 @@ export class Game {
     public toggleMonsterDormancy(monst: Monster): void {
         const dormantIdx = this.dormantMonsters.indexOf(monst);
         if (dormantIdx !== -1) {
+            const dormantOrigin = monst.loc;
+            if (monst.spatial || squareListUsers(this.monsters) || squareListUsers(this.dormantMonsters)) {
+                const spot = travelPlacement(this, monst, monst.loc, true, false, true);
+                if (!spot) return;
+                commitCreatureAnchor(monst, spot);
+            }
             // —— 醒来（CE :4158-4198）——
             this.dormantMonsters.splice(dormantIdx, 1);
             monst.isDormant = false; // CE :4195 清 MB_IS_DORMANT
-            const fromCell = this.grid.getCell(monst.loc.x, monst.loc.y);
+            const fromCell = this.grid.getCell(dormantOrigin.x, dormantOrigin.y);
             if (fromCell) fromCell.hasDormantMonster = false; // CE :4165
             // CE :4168-4181：`pmap.flags & (HAS_MONSTER | HAS_PLAYER)` → 占用
             const occupied = !!this.getMonsterAt(monst.loc.x, monst.loc.y)
@@ -11715,6 +11934,7 @@ export class Game {
                 this.environment.addGas(x, y, GasType.POISON, 1000);
                 break;
             case 'teleport':
+                if (target.spatial) consumeTrapTile(this.grid, x, y, TerrainType.CHARRED_FLOOR);
                 logger.log(i18next.t('trap.teleport', { defaultValue: 'You step on a teleport trap! You are whisked away!' }), '#ff88ff');
                 this.teleportCreature(target);
                 break;
@@ -11751,7 +11971,7 @@ export class Game {
      * machine; spatially nearby traps with another machine number are unrelated. */
     private triggerPressurePlate(px: number, py: number, target: Creature = this.player) {
         this.logPressurePlate(px, py, target);
-        triggerCreatureTrapLayers(this.grid, px, py);
+        triggerCreatureTrapLayers(this.grid, px, py, !!target.spatial);
         this.needsRender = true;
     }
 
@@ -11762,10 +11982,12 @@ export class Game {
      */
     private finishBlink(result: BoltResult): boolean {
         const caster = result.caster, landing = result.landingPos;
+        if (caster?.spatial && landing && !canPlaceCreature(this, caster, landing)) return false;
         if (!caster || !landing || caster.hp <= 0
             || (caster.x === landing.x && caster.y === landing.y)) return false;
         const occupant = this.getMonsterAt(landing.x, landing.y);
         if (occupant && occupant !== caster && occupant.submerged) {
+            if (occupant.spatial || caster.spatial) return false;
             // CE Items.c:5516-5535: blink displaces a submerged occupant first.
             if (!canPlaceCreature({ grid: this.grid, player: this.player, monsters: this.monsters.filter(m => m !== occupant), dormantMonsters: this.dormantMonsters }, caster, landing)) return false;
             let home: Pos | null = null;
@@ -11808,6 +12030,25 @@ export class Game {
         const distance = distanceBetweenFootprints(target, caster);
         if (distance <= 1) return false;
         const seenBefore = this.canObserveBoltTarget(target);
+        if (target.spatial) {
+            const previousBody = this.footprintOf(target);
+            let moved = false;
+            for (let i = 0; i < Math.min(distance - 1, this.grid.width + this.grid.height); i++) {
+                const contact = nearestContact(target, caster);
+                if (contact.distance <= 1) break;
+                const next = { x: target.x + Math.sign(contact.to.x - contact.from.x), y: target.y + Math.sign(contact.to.y - contact.from.y) };
+                if (!this.canStepFootprint(target, next)) break;
+                if (!moved) {
+                    if (target instanceof Monster && target.isCaged) this.freeCaptive(target);
+                    target.setStatusDuration('stuck', 0);
+                    if (target instanceof Monster) target.submerged = false;
+                }
+                commitCreatureAnchor(target, next, 'mutate'); moved = true;
+            }
+            if (moved) { this.applyEnvironmentalEffects(target, false, undefined, previousBody); this.updateVision(); this.needsRender = true; }
+            target.ticksUntilTurn = Math.max(target.ticksUntilTurn, this.player.attackSpeed + 1);
+            return seenBefore || this.canObserveBoltTarget(target);
+        }
         if (target instanceof Monster && target.isCaged) this.freeCaptive(target);
         const blink: BoltConfig = {
             id: 'beckoning_blink', name: '', ceType: CEBoltType.BLINKING, effect: BoltEffect.BLINKING,
@@ -11831,17 +12072,26 @@ export class Game {
     }
 
     public placeCreature(target: Creature, destination: Pos, options: { pickupBeforeVision?: boolean; walkingSecretDoor?: boolean } = {}): boolean {
+        if (target === this.player) assertSingleCellPlayer(target);
         if (!this.canDisplaceCreature(target, destination, options.walkingSecretDoor)) return false;
+        const previousBody = target.spatial ? this.footprintOf(target) : undefined;
+        if (target.spatial && options.walkingSecretDoor) {
+            for (const p of this.footprintOf(target)) {
+                const x = p.x + destination.x - target.x, y = p.y + destination.y - target.y;
+                if (this.grid.getCell(x, y)?.isVisible) this.discoverSecretAt(x, y);
+            }
+        }
         if (options.walkingSecretDoor && this.grid.getCell(destination.x, destination.y)?.isVisible) {
             this.discoverSecretAt(destination.x, destination.y);
         }
         commitCreatureAnchor(target, { x: destination.x, y: destination.y }, 'mutate');
         this.needsRender = true;
+        const contactEffects = () => target.spatial ? this.applyEnvironmentalEffects(target, false, undefined, previousBody) : this.applyEnvironmentalEffects(target);
         if (this.extensionRuntime) {
             const effects = this.extensionRuntime.causality, source = effects.current;
             const origin = source ? effects.create('displacement', source.actorId, source.creditActorId, source.creditPartyId) : null;
-            effects.withImmediateTerrain(origin, () => this.applyEnvironmentalEffects(target));
-        } else this.applyEnvironmentalEffects(target);
+            effects.withImmediateTerrain(origin, contactEffects);
+        } else contactEffects();
         const pickUp = () => {
             if (target === this.player && target.hp > 0 && !this.isGameOver) this.pickUpItemAfterDisplacement();
         };
@@ -11856,11 +12106,12 @@ export class Game {
     }
 
     /** CE teleport(..., INVALID_POS, false); no fallback after the final filter. */
-    private teleportCreature(target: Creature, respectTerrainAvoidancePreferences = false): boolean {
+    private teleportCreature(target: Creature, respectTerrainAvoidancePreferences = false, releaseSquareCaptive = false): boolean {
         const candidates = teleportCandidates({ grid: this.grid, player: this.player, monsters: this.monsters, dormantMonsters: this.dormantMonsters }, target, respectTerrainAvoidancePreferences);
         if (candidates.length === 0) return false;
         const destination = candidates[rng.randRange(0, candidates.length - 1)]!;
         if (!this.canDisplaceCreature(target, destination)) return false;
+        if (releaseSquareCaptive && target instanceof Monster && target.isCaged) this.freeCaptive(target);
         target.setStatusDuration('stuck', 0); // CE teleport: release before setMonsterLocation
         if (!this.placeCreature(target, destination)) return false;
         // SEIZED/SEIZING are deliberately retained, as in CE teleport.
@@ -11950,12 +12201,14 @@ export class Game {
     }
 
     /** Entry promotions/traps only; periodic damage remains in objective time. */
-    private applyDisplacementTileEntry(target: Creature): void {
-        const { x, y } = target.loc;
+    private applyDisplacementTileEntry(target: Creature, contact?: Readonly<Pos>, trigger = true): void {
+        const origin = { ...target.loc };
+        const anchorRevision = target.spatial ? squareAnchorRevision(target) : 0;
+        const { x, y } = contact ?? origin;
         const cell = this.grid.getCell(x, y)!;
         // CE Time.c:241-245: even a surfaced aquatic creature does not press
         // a plate in terrain where its form can submerge.
-        if (!target.hasStatus('levitating') && !isSubmerged(target)
+        if (trigger && !target.hasStatus('levitating') && !isSubmerged(target)
             && !(target instanceof Monster && target.hasBehavior('MONST_SUBMERGES')
                 && (cellTerrainMechFlags(this.grid, x, y) & TM_ALLOWS_SUBMERGING))) {
             if (cell.layers.includes(TerrainType.TRAP)) this.triggerTrap(x, y, cell, target);
@@ -11976,14 +12229,14 @@ export class Game {
                         this.discoverSecretAt(x, y);
                     }
                     this.logPressurePlate(x, y, target);
-                    triggerCreatureTrapLayers(this.grid, x, y);
+                    triggerCreatureTrapLayers(this.grid, x, y, !!target.spatial);
                 }
             }
         }
         // A nested teleport already handled its own destination entry.
-        if (target.loc.x !== x || target.loc.y !== y) return;
+        if ((target.spatial && (target.hp <= 0 || squareAnchorRevision(target) !== anchorRevision)) || target.loc.x !== origin.x || target.loc.y !== origin.y) return;
         const mask = TM_PROMOTES_ON_CREATURE | (target === this.player ? TM_PROMOTES_ON_PLAYER_ENTRY : 0);
-        promoteLayersWithMechFlag(this.grid, target.loc.x, target.loc.y, mask);
+        promoteLayersWithMechFlag(this.grid, x, y, mask);
     }
 
     private logPickup(item: Item): void {

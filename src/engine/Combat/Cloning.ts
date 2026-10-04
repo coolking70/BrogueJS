@@ -1,15 +1,16 @@
-import { footprintContains } from '../Movement/CreatureSpatial';
+import { squarePlacementCandidates } from '../Movement/SquarePlacement';
+import { footprintContains, footprintOf } from '../Movement/CreatureSpatial';
 /** W-20: CE cloneMonster's placement policy, separate from splitMonster's
  * contiguous-group edge policy. No generation calls or catalog draws. */
 import { Monster } from '../../entities/Monster';
 import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
-import { type PlacementWorld, teleportForbiddenFlags } from '../Movement/CreaturePlacement';
-import { cellTerrainFlags } from '../Map/DungeonFeature';
+import { type PlacementWorld, teleportForbiddenFlags, canPlaceCreature } from '../Movement/CreaturePlacement';
+import { cellTerrainFlags, cellTerrainMechFlags } from '../Map/DungeonFeature';
 import { TerrainType } from '../Map/Grid';
 import { T_DIVIDES_LEVEL, T_HARMFUL_TERRAIN, T_SACRED, T_IS_DF_TRAP,
     T_CAUSES_POISON, T_CAUSES_DAMAGE, T_CAUSES_PARALYSIS, T_CAUSES_CONFUSION,
-    T_IS_FIRE, T_OBSTRUCTS_DIAGONAL_MOVEMENT } from '../Map/TerrainCatalog';
+    T_IS_FIRE, T_OBSTRUCTS_DIAGONAL_MOVEMENT, TM_ALLOWS_SUBMERGING } from '../Map/TerrainCatalog';
 import { rng } from '../Random';
 
 export function cloneAvoidedFlags(source: Creature): number {
@@ -23,12 +24,25 @@ export function cloneAvoidedFlags(source: Creature): number {
     return flags;
 }
 
+export function canPlaceSquareCloneAt(world: PlacementWorld, source: Creature, at: Pos): boolean {
+    if (!canPlaceCreature(world, source, at)) return false;
+    const forbidden = cloneAvoidedFlags(source);
+    return footprintOf({ loc: at, spatial: source.spatial }).every(p => !footprintContains(source, p)
+        && !(cellTerrainFlags(world.grid, p.x, p.y) & forbidden)
+        && (!(source instanceof Monster && source.hasBehavior('MONST_RESTRICTED_TO_LIQUID')) || !!(cellTerrainMechFlags(world.grid, p.x, p.y) & TM_ALLOWS_SUBMERGING))
+        && !world.grid.getCell(p.x, p.y)!.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL));
+}
+
 /** Grid.c:287-360: eight-way path distance, x-major random nearest ties;
  * HAS_PLAYER blocks paths, HAS_MONSTER/HAS_STAIRS only block destinations.
  * Terrain uses info flags, not temporary statuses. If paths fail, scan rings
  * through walls. CE returns INVALID_POS if both searches fail; return null. */
 export function cloneLocation(world: Pick<PlacementWorld, 'grid' | 'player' | 'monsters'>, source: Creature): Pos | null {
     const { grid } = world, origin = source.loc;
+    if (source.spatial) {
+        const candidates = squarePlacementCandidates(world, source, origin, cloneAvoidedFlags(source), p => footprintContains(source, p) || !!grid.getCell(p.x, p.y)?.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL));
+        return candidates.length ? candidates[rng.randRange(0, candidates.length - 1)]! : null;
+    }
     if (!grid.isValidPos(origin.x, origin.y)) return null;
     const forbidden = cloneAvoidedFlags(source), blocking = forbidden & T_DIVIDES_LEVEL;
     const flags = (p: Pos) => cellTerrainFlags(grid, p.x, p.y);

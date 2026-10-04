@@ -1,5 +1,5 @@
-import { assertNativeSpatial, CreatureSpatial } from '../Movement/CreatureSpatial';
-import { keys, SpatialValidationError, validateSpatialComponent, type SpatialCatalog, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
+import { assertNativeSpatial, assertSingleCellPlayer, CreatureSpatial } from '../Movement/CreatureSpatial';
+import { keys, nativeSpatialCatalog, SpatialValidationError, SPATIAL_LIMITS, validateSpatialComponent, type SpatialCatalog, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
 /** Pure whole-run projection and world reconstruction. The live Game supplies
  * only the state and services consumed here; neither function receives Game. */
 import { Item } from '../Items/Item';
@@ -152,7 +152,7 @@ export interface WholeRunProjection {
 
 export function toWholeRunSnapshot(source: WholeRunProjection): GameSnapshot {
     if (source.isAdvancing) throw new Error('Cannot save during turn advancement');
-    const spatialWorld = source.nativeSpatial ? snapshotNativeSpatialWorld(source.nativeSpatial) : undefined;
+    assertSingleCellPlayer(source.player);
     const levels = [...source.levels].filter(([depth]) => depth !== source.currentLevelDepth)
         .sort(([a], [b]) => a - b);
     const levelRoots = levels.flatMap(([, l]) => [...l.monsters, ...(l.dormantMonsters ?? [])]);
@@ -167,6 +167,7 @@ export function toWholeRunSnapshot(source: WholeRunProjection): GameSnapshot {
         ...source.visibleItems, ...levels.flatMap(([, l]) => [...l.visibleItems]),
         ...[source.player.equippedWeapon, source.player.equippedArmor, source.player.ringLeft, source.player.ringRight, source.travelTargetItem]
             .filter((item): item is Item => item != null)]);
+    const spatialWorld = source.nativeSpatial ? snapshotNativeSpatialWorld(source.nativeSpatial) : snapshotSquareWorld(graph.monsters);
     return {
         ...source.snapshotLevel(source.depth, source.active),
         version: 3, schema: WHOLE_RUN_SCHEMA, savedAt: Date.now(),
@@ -197,7 +198,7 @@ export function toWholeRunSnapshot(source: WholeRunProjection): GameSnapshot {
 }
 
 export function decodePlayer(saved: GameSnapshot['player'], items: Map<number, Item>): Player {
-    assertNativeSpatial(saved as unknown as Player);
+    assertSingleCellPlayer(saved);
     const player = new Player(saved.loc.x, saved.loc.y);
     Object.assign(player, copyFields(saved, PLAYER_FIELDS));
     player.statusImmunities = new Set(saved.statusImmunities);
@@ -218,7 +219,6 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
     spatialLevels?: Map<number, CreatureSpatial>;
 } {
     if (Object.prototype.hasOwnProperty.call(snapshot.run, 'spatialWorld') && snapshot.run.spatialWorld === undefined) throw new SpatialValidationError('Spatial world absence must omit the property');
-    if (Object.prototype.hasOwnProperty.call(snapshot.run, 'spatialWorld') && !deps.spatialCatalog?.fixture) throw new SpatialValidationError('Spatial production capability is not open in 4a0');
     const levelRows = [snapshot, ...snapshot.levels];
     const entityGraph = restoreEntityGraph(
         [...levelRows.flatMap(l => [...l.monsters, ...l.dormantMonsters]),
@@ -247,9 +247,64 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
         }];
     }));
     const result = { entityGraph, restored };
-    if (snapshot.run.spatialWorld !== undefined) return { ...result, spatialLevels: decodeNativeSpatialWorld(snapshot, entityGraph, restored, deps.spatialCatalog!) };
+    if (snapshot.run.spatialWorld !== undefined) {
+        if (!deps.spatialCatalog?.fixture) {
+            const expected = snapshotSquareWorld([...entityGraph.monsters.values()]);
+            if (canonicalSpatial(snapshot.run.spatialWorld) !== canonicalSpatial(expected)) throw new SpatialValidationError('Invalid square definition closure');
+            const player = decodePlayer(snapshot.player, entityGraph.items);
+            // Validate physical ownership and full footprints on each independent
+            // layer. Pending/carry/purgatory retain component truth, with no index.
+            const owned = new Set<number>();
+            for (const [depth, level] of restored) {
+                const cohort = [...level.monsters, ...(level.dormantMonsters ?? [])];
+                for (const c of cohort) { if (owned.has(c.id)) throw new SpatialValidationError('Multiple square ownership'); owned.add(c.id); }
+                if (!cohort.some(c => c.spatial)) continue;
+                const service = new CreatureSpatial({ grid: level.grid, monsters: level.monsters, dormantMonsters: level.dormantMonsters,
+                    ...(depth === snapshot.depth ? { player } : {}) });
+                try {
+                    for (const c of cohort) if (c.hp > 0 && !service.canFitAt(c, c.loc, { allowsTerrain: () => true })) throw new SpatialValidationError('Overlapping square footprints');
+                } finally { service.dispose(); }
+            }
+            for (const queue of snapshot.pendingFallenByDepth) {
+                if (!Number.isInteger(queue.depth) || queue.depth < 1 || queue.depth > CE_DEEPEST_LEVEL) throw new SpatialValidationError('Invalid pending square layer');
+                const squares = queue.monsters.filter(c => c.spatial);
+                if (squares.length > SPATIAL_LIMITS.entities || squares.reduce((n, c) => n + nativeSpatialCatalog.cells(c.spatial!.footprintId, 'r0').length, 0) > SPATIAL_LIMITS.occupiedCells) throw new SpatialValidationError('Pending square budget exceeded');
+                for (const row of queue.monsters) {
+                    if (row.spatial) {
+                        const cells = nativeSpatialCatalog.cells(row.spatial.footprintId, 'r0');
+                        if (cells.some(p => row.loc.x + p.x < 0 || row.loc.y + p.y < 0 || row.loc.x + p.x >= snapshot.width || row.loc.y + p.y >= snapshot.height)) throw new SpatialValidationError('Pending square anchor outside world');
+                    }
+                    if (owned.has(row.id)) throw new SpatialValidationError('Multiple pending square ownership'); owned.add(row.id);
+                }
+            }
+            const claim = (c: Monster) => {
+                if (!c.spatial) return;
+                if (owned.has(c.id)) throw new SpatialValidationError('Multiple closed square ownership');
+                owned.add(c.id);
+            };
+            for (const row of snapshot.purgatory) claim(entityGraph.monsters.get(row.id)!);
+            for (const parent of entityGraph.monsters.values()) if (parent.carriedMonster) claim(parent.carriedMonster);
+            if ([...entityGraph.monsters.values()].some(c => c.spatial && c.hp > 0 && !owned.has(c.id))) throw new SpatialValidationError('Unowned living square');
+            return result;
+        }
+        return { ...result, spatialLevels: decodeNativeSpatialWorld(snapshot, entityGraph, restored, deps.spatialCatalog) };
+    }
     if ([...entityGraph.monsters.values()].some(c => c.spatial)) throw new SpatialValidationError('Missing spatial world root');
     return result;
+}
+
+const canonicalSpatial = (v: unknown): string | undefined => JSON.stringify(v, (_key, value) => value && typeof value === 'object' && !Array.isArray(value)
+    ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value);
+/** Production uses only independently initialized builtin definitions. A saved
+ * closure describes used geometry; it cannot grant capabilities or install data. */
+function snapshotSquareWorld(monsters: readonly Monster[]): SpatialWorldSnapshot | undefined {
+    const shapeIds = new Set<string>();
+    for (const c of monsters) {
+        assertNativeSpatial(c);
+        if (c.spatial) shapeIds.add(c.spatial.footprintId);
+    }
+    if (!shapeIds.size) return undefined;
+    return { schema: 1, definitions: nativeSpatialCatalog.definitionClosure([...shapeIds].sort(), []), groups: [] };
 }
 
 /** Merge only used native definitions. Ordinary worlds omit the root entirely. */
@@ -364,13 +419,18 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
     if (items.some(item => !Array.isArray(item.knownStaffUses) || item.knownStaffUses.length > 3
         || item.knownStaffUses.some((turn, i, uses) => !Number.isSafeInteger(turn) || turn < 0
             || (i > 0 && turn > uses[i - 1]!)))) return false;
-    if (Object.prototype.hasOwnProperty.call(s.run, 'spatialWorld') && (!spatialCatalog?.fixture || s.run.spatialWorld === undefined)) return false;
+    if (Object.prototype.hasOwnProperty.call(s.run, 'spatialWorld') && s.run.spatialWorld === undefined) return false;
     const rows = [...s.monsters, ...s.dormantMonsters, ...(s.purgatory ?? []), ...s.entityGraph.monsters,
         ...s.levels.flatMap(l => [...l.monsters, ...l.dormantMonsters]), ...s.pendingFallenByDepth.flatMap(l => l.monsters)];
     try {
-        assertNativeSpatial(s.player as unknown as Player);
-        for (const row of rows) if (Object.prototype.hasOwnProperty.call(row, 'spatial')) validateSpatialComponent(row.spatial, spatialCatalog, !spatialCatalog?.fixture);
+        assertSingleCellPlayer(s.player);
+        for (const row of rows) if (Object.prototype.hasOwnProperty.call(row, 'spatial')) {
+            if (spatialCatalog?.fixture) validateSpatialComponent(row.spatial, spatialCatalog, false);
+            else assertNativeSpatial(row as unknown as Monster);
+        }
         if (rows.some(row => row.spatial) && !s.run.spatialWorld) return false;
+        if (s.run.spatialWorld && !spatialCatalog?.fixture
+            && canonicalSpatial(s.run.spatialWorld) !== canonicalSpatial(snapshotSquareWorld(rows as unknown as Monster[]))) return false;
     } catch { return false; }
     if (rows.some(m => !Number.isInteger(m.entersLevelIn) || m.entersLevelIn < 0 || m.entersLevelIn > 150
         || !Number.isInteger(m.approaching) || m.approaching < 0 || m.approaching > 7)) return false;

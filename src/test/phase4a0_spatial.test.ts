@@ -155,7 +155,7 @@ describe('4a0 strict schema and unopened capabilities', () => {
         const unopened = structuredClone(saved); unopened.run.spatialWorld = { schema: 1, definitions: { footprints: [], bodies: [] }, groups: [] }; expect(g.loadSnapshot(unopened)).toBe(false);
         const old = structuredClone(saved); old.version = 2; expect(g.loadSnapshot(old)).toBe(false);
         const recording = g.exportRecording(); expect(recording.version).toBe(3); recording.version = 2; expect(g.loadReplay(recording)).toBe(false);
-        const m = rat(); m.spatial = { schema: 1, footprintId: 'builtin:square-2', pose: 'r0' }; expect(() => g.monsters.push(m)).toThrow('not open'); expect(g.monsters).not.toContain(m);
+        const m = rat(); m.spatial = { schema: 1, footprintId: 'builtin:square-2', pose: 'r0', actionLockInTicks: 0 }; expect(() => g.monsters.push(m)).toThrow('not open'); expect(g.monsters).not.toContain(m);
         g.player.spatial = m.spatial; const tick = g.absoluteTurnNumber; expect(() => g.executeCommand('wait')).toThrow('not open'); expect(g.absoluteTurnNumber).toBe(tick); delete g.player.spatial;
         expect(Object.prototype.hasOwnProperty.call(g.toSnapshot().run, 'spatialWorld')).toBe(false);
     });
@@ -171,7 +171,8 @@ describe('4a0 strict schema and unopened capabilities', () => {
         expect(game.extensionRuntime).toBeNull();
         const saved = JSON.parse(JSON.stringify(game.toSnapshot()));
         const catalog = new SpatialCatalog(true), a = rat(20, 10), b = rat(20, 10);
-        for (const c of [a, b]) c.spatial = { schema: 1, footprintId: 'builtin:square-2', pose: 'r0' };
+        catalog.registerFootprint(shape('fixture-square', [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]));
+        for (const c of [a, b]) c.spatial = { schema: 1, footprintId: 'fixture-square', pose: 'r0' };
         const f = new CreatureSpatial({ grid: game.grid, monsters: [a] }, catalog);
         const cached = new CreatureSpatial({ grid: game.grid, monsters: [b] }, catalog);
         saved.monsters = [serializeMonsterRow(a)]; saved.dormantMonsters = [];

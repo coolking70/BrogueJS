@@ -1,4 +1,12 @@
 {
+  "squareLandingRetry": {
+    "kind": "derived",
+    "contract": "4a-1：仅本层存在 pending square 时创建，记录地形 token 与实体占位资格/锚点及 pending ID 值；入层或相关空间变化重试，开局/读档/离层/无 pending 时释放，不持久化。"
+  },
+  "squareMotion": {
+    "kind": "derived",
+    "contract": "4a-1：仅 square NPC 请求时创建的空间占位/地形距离缓存；实体 spatial 与 loc 是真相，换层重绑，开局/读档释放，不进存档/录像。普通局不创建字段。"
+  },
   "onCommandConfirmRequest": {
     "kind": "session",
     "contract": "D2：可选会话呈现通知；续体/token 在 WeakMap，重建场景丢弃，不写存档或录像。"

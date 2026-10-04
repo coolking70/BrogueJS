@@ -1,4 +1,5 @@
-import { SpatialValidationError, validateSpatialComponent, type SpatialCatalog } from '../Movement/SpatialSchema';
+import { SpatialValidationError, integer, validateSpatialComponent, type SpatialCatalog } from '../Movement/SpatialSchema';
+import { assertNativeSpatial } from '../Movement/CreatureSpatial';
 /** U01: explicit instance contract. These lists are audited against declarations
  * and live own properties in u_01_instance_snapshot.test.ts. No catalog inference
  * or legacy defaults: optional values retain their actual undefined semantics. */
@@ -138,7 +139,11 @@ export function restoreEntityGraph(rows: readonly GameSnapshotMonster[], itemRow
     const saved = new Map<number, GameSnapshotMonster>();
     const items = new Map(existingItems.map(i => [i.id, i]));
     const read = (row: GameSnapshotMonster): void => {
-        if (Object.prototype.hasOwnProperty.call(row, 'spatial')) validateSpatialComponent(row.spatial, deps.spatialCatalog, !deps.spatialCatalog?.fixture);
+        if (Object.prototype.hasOwnProperty.call(row, 'spatial')) {
+            if (!integer(row.loc?.x, -32768, 32767) || !integer(row.loc?.y, -32768, 32767)) throw new SpatialValidationError('Invalid square anchor');
+            if (deps.spatialCatalog?.fixture) validateSpatialComponent(row.spatial, deps.spatialCatalog, false);
+            else assertNativeSpatial(row as unknown as Monster);
+        }
         if (saved.has(row.id)) return;
         saved.set(row.id, row);
         row.graph?.items.forEach(i => { if (!items.has(i.id)) items.set(i.id, deserializeItem(i, deps)); });

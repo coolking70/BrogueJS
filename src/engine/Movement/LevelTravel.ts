@@ -1,3 +1,7 @@
+import { squarePlacementCandidates } from './SquarePlacement';
+import { CreatureSpatial } from './CreatureSpatial';
+import { squareListUsers } from '../Core/MonsterLifecycle';
+import { FootprintPathing } from '../Map/FootprintPathing';
 import { commitCreatureAnchor, footprintContains } from './CreatureSpatial';
 /** U03b: RogueMain.startLevel / Time.monsterEntersLevel and Architect.restoreMonster. */
 import { Monster, MonsterState } from '../../entities/Monster';
@@ -55,7 +59,10 @@ export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[],
             .find(p=>grid.isValidPos(p.x,p.y) && !(cellTerrainFlags(grid,p.x,p.y)&T_PATHING_BLOCKER));
         if (neighbor) origin=neighbor;
     }
-    for (const flying of [false,true]) {
+    let spatial: CreatureSpatial | undefined, pathing: FootprintPathing | undefined;
+    // Query-only point target; it does not construct/allocate a live entity.
+    let target: Creature | undefined;
+    try { for (const flying of [false,true]) {
         const map=travelDistanceMap(grid,monsters,origin,(flying?T_OBSTRUCTS_PASSABILITY:T_PATHING_BLOCKER)|T_SACRED);
         for (const m of monsters) {
             const levitating=m.hasStatus('levitating'), flags=cellTerrainFlags(grid,m.x,m.y);
@@ -66,12 +73,19 @@ export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[],
             if (flying!==!!(levitating || (flags&T_PATHING_BLOCKER) || (cellTerrainFlags(grid,origin.x,origin.y)&T_AUTO_DESCENT))) continue;
             if (m.isCaged || m.hasCEBehavior('MONST_WILL_NOT_USE_STAIRS') || m.hasCEBehavior('MONST_RESTRICTED_TO_LIQUID')
                 || (flags&T_OBSTRUCTS_PASSABILITY) || m.hasStatus('entranced') || m.hasStatus('paralyzed')) continue;
-            const distance=map[m.x]?.[m.y]??30000;
+            let distance=map[m.x]?.[m.y]??30000;
+            if (m.spatial) {
+                target ??= { id: Number.MAX_SAFE_INTEGER, hp: 1, loc: origin } as Creature;
+                spatial ??= new CreatureSpatial({ grid, player: target, monsters });
+                pathing ??= new FootprintPathing(spatial);
+                distance = pathing.planStep(m, { kind: 'contact', target }, { forbiddenFlags: (flying ? T_OBSTRUCTS_PASSABILITY : T_PATHING_BLOCKER) | T_SACRED, allowSecretDoors: true }, true).distance ?? Infinity;
+                if (!Number.isFinite(distance)) distance = 30000;
+            }
             if (distance>=30000 && !ally) continue;
             m.entersLevelIn=Math.max(1,Math.min(150,Math.floor(distance*m.movementSpeed/100)+1));
             m.approaching |= direction===1?APPROACHING_DOWNSTAIRS:direction===-1?APPROACHING_UPSTAIRS:APPROACHING_PIT;
         }
-    }
+    } } finally { spatial?.dispose(); }
 }
 
 /** Uses permanent info flags, as CE does, independent of temporary statuses. */
@@ -88,12 +102,20 @@ export function travelAvoidedFlags(target: Creature): number {
 export function travelPlacement(world: PlacementWorld, target: Creature, origin: Pos,
     occupied: boolean, machines: boolean, deterministic: boolean, excludeOrigin = false): Pos | null {
     const {grid}=world, forbidden=travelAvoidedFlags(target), blocking=forbidden&T_DIVIDES_LEVEL;
+    if (target.spatial) {
+        const candidates = squarePlacementCandidates(world, target, origin, forbidden, p => {
+            const cell = grid.getCell(p.x, p.y)!;
+            return !!(excludeOrigin && p.x === origin.x && p.y === origin.y) || (machines && cell.machineNumber !== 0)
+                || cell.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL);
+        });
+        return candidates.length ? candidates[deterministic ? Math.floor(candidates.length / 2) : rng.randRange(0, candidates.length - 1)]! : null;
+    }
     const qualifies=(p:Pos)=> {
         const cell=grid.getCell(p.x,p.y);
         return !!cell && !(excludeOrigin && p.x === origin.x && p.y === origin.y) && !(cellTerrainFlags(grid,p.x,p.y)&(forbidden|blocking))
             && !cell.layers.includes(TerrainType.STAIRS_UP) && !cell.layers.includes(TerrainType.STAIRS_DOWN) && !cell.layers.includes(TerrainType.DUNGEON_PORTAL)
             && (!machines || cell.machineNumber===0)
-            && (!occupied || ![world.player,...world.monsters].some(c=>c!==target && c.hp>0 && footprintContains(c, p)));
+            && (!occupied || ![world.player,...world.monsters, ...(squareListUsers(world.dormantMonsters ?? []) ? world.dormantMonsters!.filter(c => c.spatial) : [])].some(c=>c!==target && c.hp>0 && footprintContains(c, p)));
     };
     if (qualifies(origin)) return {...origin};
     const map=travelDistanceMap(grid,[],origin,blocking,false,true);
@@ -129,4 +151,23 @@ export function restoreTravelPosition(grid: Grid, m: Monster, map: number[][]): 
         }
         if(!next) break;commitCreatureAnchor(m, next);
     }
+}
+
+/** Square equivalent of Architect.restoreMonster's elapsed journey. A body
+ * contact map replaces the point map; each skipped action still checks the
+ * complete conservative edge against current reservations, without RNG. */
+export function restoreSquareTravelPosition(world: PlacementWorld, m: Monster, exit: Pos): void {
+    const target = { id: Number.MAX_SAFE_INTEGER, hp: 1, loc: exit } as Creature;
+    const spatial = new CreatureSpatial({ grid: world.grid, player: target, monsters: world.monsters, dormantMonsters: world.dormantMonsters });
+    try {
+        const pathing = new FootprintPathing(spatial), policy = { forbiddenFlags: travelAvoidedFlags(m), allowSecretDoors: true };
+        const distance = pathing.planStep(m, { kind: 'contact', target }, policy, true).distance ?? Infinity;
+        if (!Number.isFinite(distance)) return;
+        const count = Math.min(world.grid.width * world.grid.height, Math.max(0, distance - Math.trunc(m.entersLevelIn * 100 / m.movementSpeed)));
+        for (let i = 0; i < count; i++) {
+            const step = pathing.planStep(m, { kind: 'contact', target }, policy);
+            if (!step.at) break;
+            commitCreatureAnchor(m, { ...step.at });
+        }
+    } finally { spatial.dispose(); }
 }

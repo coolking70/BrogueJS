@@ -121,6 +121,8 @@
     "src/test/perf_2_replay_cadence.test.ts",
     "src/test/phase4a0_spatial.test.ts",
     "src/test/phase4a0_spatial_differential.test.ts",
+    "src/test/phase4a1_game_perf.test.ts",
+    "src/test/phase4a1_game_square.test.ts",
     "src/test/phase4a1_pathing_perf.test.ts",
     "src/test/phase4a1_square_pathing.test.ts",
     "src/test/presentation_timeline.test.ts",

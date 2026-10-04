@@ -10,9 +10,12 @@ interface DeathOwner {
     monsters: Monster[];
     dormantMonsters: Monster[];
     killMonster(monster: Monster): void;
+    monsterListsChanged?(): void;
 }
 const owners = new WeakMap<Monster, DeathOwner>();
 const lists = new WeakMap<Monster[], { raw: Monster[]; owner: DeathOwner }>();
+const squareCounts = new WeakMap<Monster[], number>();
+export function squareListUsers(list: readonly Monster[]): number { return squareCounts.get(list as Monster[]) ?? 0; }
 // Like ownership, DYING is a runtime association, not an opaque Game field.
 // Persisted deathProcessed carries HAS_DIED; revival explicitly clears DYING.
 export const dyingMonsters = new WeakSet<Monster>();
@@ -33,22 +36,36 @@ export function ownedMonsterList(input: Monster[], owner: DeathOwner): Monster[]
     const old = lists.get(input);
     if (old?.owner === owner) return input;
     const raw = old?.raw ?? input;
+    let squares = 0;
     for (const monster of raw) {
         assertNativeSpatial(monster);
         owners.set(monster, owner);
         if (owner.extensionRuntime) owner.extensionRuntime.attachCreature(monster);
+        if (monster.spatial) squares++;
     }
     const list = new Proxy(raw, {
         set(target, key, value, receiver) {
+            let nextSquares = squares;
             if (typeof key === 'string' && /^\d+$/.test(key)) {
                 assertNativeSpatial(value);
                 owners.set(value, owner);
                 if (owner.extensionRuntime) owner.extensionRuntime.attachCreature(value);
+                nextSquares += Number(!!value.spatial) - Number(!!target[Number(key)]?.spatial);
             }
-            return Reflect.set(target, key, value, receiver);
+            if (key === 'length' && value < target.length && squares) nextSquares -= target.slice(value).filter(m => m?.spatial).length;
+            const result = Reflect.set(target, key, value, receiver);
+            if (result) { squares = nextSquares; squareCounts.set(list, squares); owner.monsterListsChanged?.(); }
+            return result;
+        },
+        deleteProperty(target, key) {
+            const square = typeof key === 'string' && /^\d+$/.test(key) && !!target[Number(key)]?.spatial;
+            const result = Reflect.deleteProperty(target, key);
+            if (result && square) { squares--; squareCounts.set(list, squares); owner.monsterListsChanged?.(); }
+            return result;
         },
     });
     lists.set(list, { raw, owner });
+    squareCounts.set(list, squares);
     return list;
 }
 

@@ -105,11 +105,12 @@ import { TM_PROMOTES_ON_CREATURE } from './TerrainCatalog';
 /** CE owns a world, not a return-value event queue. Ports are scoped to a grid;
  * recursion (including promotion during fill) sees the same live transaction. */
 export interface DungeonFeatureEffects {
-    creatures?(): readonly { loc: Pos; forbiddenTerrain: number; occupies?(at: Pos): boolean; commitPosition?(at: Pos): void }[];
+    creatures?(): readonly { loc: Pos; forbiddenTerrain: number; occupies?(at: Pos): boolean; canPlace?(at: Pos, excluded: (p: Pos) => boolean): boolean; commitPosition?(at: Pos): void }[];
     occupied?(pos: Pos): boolean;
     refreshCell?(pos: Pos): void;
     flavor?(pos: Pos): void;
-    instantEffects?(pos: Pos): void;
+    spatialContacts?(): boolean;
+    instantEffects?(pos: Pos, scope?: Set<string>): void;
     burnItems?(pos: Pos): void;
     caughtFire?(pos: Pos): void;
     playerFireOrDescent?(): void;
@@ -124,9 +125,10 @@ export interface DungeonFeatureEffects {
 export interface DungeonFeatureOptions {
     refreshSideEffects?: boolean;
     effects?: DungeonFeatureEffects;
+    independentContacts?: boolean;
 }
 const featureEffects = new WeakMap<Grid, DungeonFeatureEffects>();
-type FeatureTransaction = DungeonFeatureOptions & { caughtFire: Pos[] };
+type FeatureTransaction = DungeonFeatureOptions & { caughtFire: Pos[]; contactScope?: Set<string>; parent?: FeatureTransaction };
 const activeOptions = new WeakMap<Grid, FeatureTransaction>();
 const displayedMessages = new WeakMap<Grid, Set<DF | DungeonFeature>>();
 export function setDungeonFeatureEffects(grid: Grid, effects: DungeonFeatureEffects | null): void {
@@ -147,6 +149,7 @@ function evacuateCreatures(grid: Grid, map: SpawnMap, effects: DungeonFeatureEff
         if (!creature) continue;
         const next = qualifyingNear(grid, { x, y }, (nx, ny) =>
             !map[ny * grid.width + nx]
+            && (!creature.canPlace || creature.canPlace({ x: nx, y: ny }, p => !!map[p.y * grid.width + p.x]))
             && !(cellTerrainFlags(grid, nx, ny) & creature.forbiddenTerrain)
             && !creatures.some(c => c.occupies?.({ x: nx, y: ny }) ?? (c.loc.x === nx && c.loc.y === ny)));
         // CE assumes a destination exists. On a fully sealed synthetic map,
@@ -162,7 +165,13 @@ function refreshFeatureCell(grid: Grid, pos: Pos, tile: TerrainType, effects: Du
     refreshDungeonCellTerrain(grid, pos.x, pos.y);
     effects.refreshCell?.(pos);
     effects.flavor?.(pos);
-    if (effects.instantEffects) effects.instantEffects(pos);
+    if (effects.instantEffects) {
+        let transaction = activeOptions.get(grid);
+        while (transaction?.parent) transaction = transaction.parent;
+        if (transaction && effects.spatialContacts?.()) transaction.contactScope ??= new Set();
+        if (transaction?.contactScope) effects.instantEffects(pos, transaction.contactScope);
+        else effects.instantEffects(pos);
+    }
     else if (effects.occupied?.(pos)) {
         // Entity-free terrain clients can still supply CE occupancy. The same
         // recursive refresh handles every ON_CREATURE tile, including crystals.
@@ -904,6 +913,7 @@ export function spawnDungeonFeature(
         refreshSideEffects: requested?.refreshSideEffects ?? inherited.refreshSideEffects ?? true,
         effects: { ...featureEffects.get(grid), ...inherited.effects, ...requested?.effects },
         caughtFire: previous?.caughtFire ?? [],
+        ...(previous && !requested?.independentContacts ? { parent: previous } : {}),
     };
     activeOptions.set(grid, transaction);
     try {

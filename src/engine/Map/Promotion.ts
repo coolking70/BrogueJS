@@ -134,6 +134,7 @@ import {
     cellTerrainMechFlags,
     type SpawnFeatureResult,
 } from './DungeonFeature';
+import { squareContactScope } from '../Movement/SpatialContactScope';
 import { DUNGEON_FEATURE_CATALOG, DF, type DungeonFeatureEntry } from './DungeonFeatureCatalog';
 
 /** CE nbDirs 前 4 项（GlobalsBase.c:38）——驱动邻居累加用，顺序与 CE 一致。 */
@@ -283,6 +284,11 @@ export function activateMachine(grid: Grid, machineNumber: number): WiredActivat
         poweredCells: [],
         promotions: [],
     };
+    const scope = squareContactScope(grid), key = `machine:${machineNumber}`;
+    if (scope && machineNumber > 0) {
+        if (scope.has(key)) return result;
+        scope.add(key);
+    }
 
     // CE :1177-1180：fillSequentialList(sCols/sRows) + shuffleList 各一次
     // ——列先、行后；顺序即 RNG 消耗顺序，不得对调。
@@ -383,7 +389,8 @@ export function promoteTile(
     x: number,
     y: number,
     layer: DungeonLayer,
-    useFireDF: boolean
+    useFireDF: boolean,
+    independentContacts = false
 ): PromoteTileResult {
     const cell = grid.getCell(x, y);
     if (!cell) {
@@ -466,7 +473,7 @@ export function promoteTile(
     // 它会静默拒绝 CE 会执行的晋升。
     if (df !== null) {
         const feat = catalogFeature(df);
-        result.spawn = spawnDungeonFeature(grid, x, y, feat, false);
+        result.spawn = independentContacts ? spawnDungeonFeature(grid, x, y, feat, false, { independentContacts: true }) : spawnDungeonFeature(grid, x, y, feat, false);
         // 无地形 DF（CE tile=0，如 DF_REPEL_CREATURES）footprint 只登记原点、
         // 不写地形——不计入 mutated（渲染与测量口径）。
         if (
@@ -934,7 +941,7 @@ export function runFireUpdate(
  * Emit each layer's fire DF before its ordinary promotion (including wiring).
  * Kept in the terrain module alongside all other catalog field interpretation.
  */
-export function triggerCreatureTrapLayers(grid: Grid, x: number, y: number): PromoteTileResult[] {
+export function triggerCreatureTrapLayers(grid: Grid, x: number, y: number, independentContacts = false): PromoteTileResult[] {
     const cell = grid.getCell(x, y);
     if (!cell) return [];
     const results: PromoteTileResult[] = [];
@@ -942,8 +949,11 @@ export function triggerCreatureTrapLayers(grid: Grid, x: number, y: number): Pro
         const entry = TERRAIN_FLAGS[cell.layers[layer]!]!;
         if (!(entry.flags & T_IS_DF_TRAP)) continue;
         const df = resolveDFName(entry.fireType);
-        if (df !== null) spawnDungeonFeature(grid, x, y, catalogFeature(df), false);
-        results.push(promoteTile(grid, x, y, layer, false));
+        if (df !== null) {
+            if (independentContacts) spawnDungeonFeature(grid, x, y, catalogFeature(df), false, { independentContacts: true });
+            else spawnDungeonFeature(grid, x, y, catalogFeature(df), false);
+        }
+        results.push(independentContacts ? promoteTile(grid, x, y, layer, false, true) : promoteTile(grid, x, y, layer, false));
     }
     return results;
 }

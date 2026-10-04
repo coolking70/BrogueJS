@@ -1,5 +1,5 @@
-import { assertNativeSpatial, commitCreatureAnchor, footprintContains, distanceBetweenFootprints, distanceToFootprint } from '../engine/Movement/CreatureSpatial';
-import { notifyMonsterDeath } from '../engine/Core/MonsterLifecycle';
+import { assertNativeSpatial, commitCreatureAnchor, footprintContains, footprintOf, footprintSome, distanceBetweenFootprints, distanceToFootprint } from '../engine/Movement/CreatureSpatial';
+import { notifyMonsterDeath, squareListUsers } from '../engine/Core/MonsterLifecycle';
 import { creatureFeatureInfo, emitCreatureFeature } from '../engine/Combat/CreatureFeatures';
 import { updateMonsterState, wanderTowardLastSeen } from '../engine/Combat/MonsterAI';
 /**
@@ -743,9 +743,13 @@ export class Monster extends Creature {
 
     /** CE Items.c:4572-4631. Replace info IN PLACE; never construct/spawn or
      * copy an entity. Only captives demote their leadership, after status reset. */
-    public polymorph(demote: () => void): boolean {
+    public polymorph(demote: () => void, prepareSquare?: (data: MonsterData) => Pos | null): boolean {
         assertNativeSpatial(this);
         if ((!knownPolymorphSpecies(this.typeId) && !(this.isClone && this.typeId === 'player_clone')) || this.hasBehavior('MONST_INANIMATE') || this.hasBehavior('MONST_TURRET') || this.isInvulnerable()) return false;
+        if (this.spatial && !prepareSquare) throw new Error('Square polymorph requires placement preflight');
+        const preparedData = this.spatial ? polymorphSpecies(this.typeId, rng) : undefined;
+        const preparedLocation = preparedData ? prepareSquare!(preparedData) : undefined;
+        if (preparedData && !preparedLocation) return false;
         // Preserve C operator precedence: stealing resets state even if not fleeing.
         if ((this.state === MonsterState.FLEEING && (this.hasBehavior('MONST_MAINTAINS_DISTANCE')
             || this.hasBehavior('MONST_FLEES_NEAR_DEATH'))) || this.hasAbility('MA_HIT_STEAL_FLEE')) {
@@ -763,7 +767,7 @@ export class Monster extends Creature {
         this.mutation = undefined;
         delete this.deathDFType;
         this.carriedMonster = null; // CE freeCreature, not killCreature.
-        const data = polymorphSpecies(this.typeId, rng);
+        const data = preparedData ?? polymorphSpecies(this.typeId, rng);
         if (this.extensionHooks?.nativeMaximumBase) {
             const combinedMaximum = this.maxHp;
             this.maxHp = this.extensionHooks.nativeMaximumBase(this);
@@ -825,6 +829,7 @@ export class Monster extends Creature {
         }
         this.seized = this.seizing = false;
         this.ticksUntilTurn = Math.max(this.ticksUntilTurn, 101);
+        if (preparedLocation) { delete this.spatial; commitCreatureAnchor(this, { ...preparedLocation }, 'mutate'); }
         return true;
     }
 
@@ -1188,6 +1193,13 @@ export class Monster extends Creature {
             || this.hasStatus('paralyzed') || this.isCaged || (!dx && !dy)) return;
         if (this.hasStatus('stuck')) return;
         const to = { x: this.loc.x + dx, y: this.loc.y + dy };
+        if (this.spatial) {
+            if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
+            if (game.canStepFootprint(this, to, { allowsTerrain: p => entrancementPassable(game.grid, p)
+                && (!this.hasBehavior('MONST_RESTRICTED_TO_LIQUID') || !!(cellTerrainMechFlags(game.grid, p.x, p.y) & TM_ALLOWS_SUBMERGING)) })
+                && game.placeCreature(this, to, { walkingSecretDoor: true })) this.ticksUntilTurn = this.movementSpeed;
+            return;
+        }
         if (!game.grid.isValidPos(to.x, to.y)) return;
         if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
         if (this.hasBehavior('MONST_RESTRICTED_TO_LIQUID')
@@ -1587,6 +1599,7 @@ export class Monster extends Creature {
         if (isImmobile) {
             return;
         }
+        if (this.spatial && this.takeSquareMovementTurn(game, normalAlly, blinkEnemy)) return;
 
         if (normalAlly) {
             if (blinkAlly && blinkAllyAfterMagic(game, this, blinkEnemy)) return;
@@ -2117,6 +2130,49 @@ export class Monster extends Creature {
      * 占格排除比 CE 保守（CE 靠 moveMonster 处理阻挡/交换，web 的 tryMoveTo
      * 不会，不排除会叠怪）。count==0 时先于 randRange 返回（CE 同款防 OOS）。
      */
+    private takeSquareMovementTurn(game: Game, normalAlly: boolean, allyEnemy: Monster | null): boolean {
+        const threat = normalAlly ? allyEnemy : game.player;
+        const distance = threat ? distanceBetweenFootprints(this, threat) : Infinity;
+        // Contact attack selection stays with the existing combat branch (4a-2).
+        if (threat && distance <= 1 && this.state !== MonsterState.FLEEING) return false;
+        if (normalAlly && blinkAllyAfterMagic(game, this, allyEnemy)) return true;
+        if (!normalAlly && this.state === MonsterState.HUNTING && blinkChance(this)
+            && monsterBlinkToPreferenceMap(game, this, game.squareDistanceValues(this, { kind: 'contact', target: game.player }), false)) return true;
+        if (this.hasStatus('confused') && rng.randPercent(70)) {
+            const direction = this.randFlittingDirection(game);
+            if (direction) this.tryMoveTo(this.x + direction[0], this.y + direction[1], game);
+            return true;
+        }
+        let step;
+        if (this.state === MonsterState.FLEEING || (this.hasBehavior('MONST_MAINTAINS_DISTANCE') && distance < 3)) {
+            step = game.planSquareStep(this, { kind: 'escape', target: threat ?? game.player });
+        } else if (normalAlly || this.state === MonsterState.HUNTING) {
+            if (this.hasBehavior('MONST_MAINTAINS_DISTANCE') && distance === 3) return true;
+            step = game.planSquareStep(this, { kind: 'contact', target: threat ?? this.leader ?? game.player });
+        } else {
+            const wp = game.waypoints;
+            if (wp.count) {
+                wp.ensureVisitedInitialized(this);
+                const start = Math.max(0, this.targetWaypointIndex);
+                for (let i = 0; i < wp.count; i++) {
+                    const index = (start + i) % wp.count;
+                    const at = wp.coordinates[index];
+                    if (!at) continue;
+                    step = game.planSquareStep(this, { kind: 'anchors', anchors: [at] });
+                    if (step.kind === 'step' || step.kind === 'blocked') { this.targetWaypointIndex = index; break; }
+                    this.waypointAlreadyVisited![index] = true;
+                }
+            }
+            if (!step || step.kind !== 'step') {
+                const direction = this.randFlittingDirection(game);
+                if (direction) this.tryMoveTo(this.x + direction[0], this.y + direction[1], game);
+                return true;
+            }
+        }
+        if (step.at) this.tryMoveTo(step.at.x, step.at.y, game);
+        return true;
+    }
+
     private randFlittingDirection(game: Game): readonly [number, number] | null {
         const dirs: ReadonlyArray<readonly [number, number]> =
             [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]];
@@ -2124,6 +2180,10 @@ export class Monster extends Creature {
         for (const [dx, dy] of dirs) {
             const nx = this.loc.x + dx!;
             const ny = this.loc.y + dy!;
+            if (this.spatial) {
+                if (game.canStepFootprint(this, { x: nx, y: ny }, { allowsTerrain: p => this.canEnterMovementTerrain(game, p.x, p.y) })) valid.push([dx, dy]);
+                continue;
+            }
             const c = game.grid.getCell(nx, ny);
             if (!c) continue;
             const canEnter = this.canEnterMovementTerrain(game, nx, ny);
@@ -2170,7 +2230,9 @@ export class Monster extends Creature {
         if (this.hasBehavior('MONST_RESTRICTED_TO_LIQUID')
             && !(cellTerrainMechFlags(game.grid, x, y) & TM_ALLOWS_SUBMERGING)) return false;
         const target = cellTerrainFlags(game.grid, x, y);
-        if (!(target & T_IS_DEEP_WATER) || (cellTerrainFlags(game.grid, this.x, this.y) & T_IS_DEEP_WATER)) return true;
+        if (!(target & T_IS_DEEP_WATER) || (this.spatial
+            ? footprintSome(this, p => !!(cellTerrainFlags(game.grid, p.x, p.y) & T_IS_DEEP_WATER))
+            : !!(cellTerrainFlags(game.grid, this.x, this.y) & T_IS_DEEP_WATER))) return true;
         if (this.hasBehavior('MONST_IMMUNE_TO_WATER') || this.hasBehavior('MONST_FLIES')
             || this.hasStatus('levitating') || this.hasStatus('flying')) return true;
         if ((target & T_ENTANGLES) && this.hasBehavior('MONST_IMMUNE_TO_WEBS')) return true;
@@ -2178,6 +2240,11 @@ export class Monster extends Creature {
     }
 
     private tryCorpseMove(p: Pos, game: Game): boolean {
+        if (this.spatial) {
+            const step = game.planSquareStep(this, { kind: 'anchors', anchors: [this.targetCorpseLoc ?? p] });
+            if (!step.at) return false;
+            this.tryMoveTo(step.at.x, step.at.y, game); return true;
+        }
         // The existing movement implementation never swaps friendly blockers;
         // in particular an absorbing blocker must not be displaced (CE canPass).
         if (game.getMonsterAt(p.x, p.y) || entrancementDiagonalBlocked(game.grid, this.loc, p)) return false;
@@ -2187,6 +2254,19 @@ export class Monster extends Creature {
 
     private tryMoveTo(nx: number, ny: number, game: Game) {
         if (nx === this.x && ny === this.y || !game.grid.getCell(nx, ny)) return;
+        if (squareListUsers(game.dormantMonsters) && game.dormantMonsters.some(c => c.spatial && c.hp > 0 && footprintContains(c, { x: nx, y: ny }))) return;
+        if (this.spatial) {
+            if (!game.canStepFootprint(this, { x: nx, y: ny }, { allowsTerrain: p => this.canEnterMovementTerrain(game, p.x, p.y) })) return;
+            if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
+            if (this.hasStatus('stuck') && footprintSome(this, p => !!(cellTerrainFlags(game.grid, p.x, p.y) & T_ENTANGLES))
+                && !this.hasCEBehavior('MONST_IMMUNE_TO_WEBS')) {
+                if (!this.isInvulnerable()) this.setStatusDuration('stuck', this.getStatusDuration('stuck') - 1);
+                if (this.hasStatus('stuck')) { this.ticksUntilTurn = this.movementSpeed; return; }
+                for (const p of footprintOf(this)) breakEntanglingTerrain(game.grid, p.x, p.y);
+            }
+            game.placeCreature(this, { x: nx, y: ny }, { walkingSecretDoor: true });
+            return;
+        }
         if (!this.canEnterWaterTerrain(game, nx, ny)) return;
         if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
         const occupied = game.getMonsterAt(nx, ny) || (footprintContains(game.player, { x: nx, y: ny }));
