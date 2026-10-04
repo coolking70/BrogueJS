@@ -1,0 +1,9 @@
+{
+  "test": [
+    "tests/combat_schema.test.ts",
+    "tests/combat_planner.test.ts",
+    "tests/combat_runtime.test.ts"
+  ],
+  "gen": [],
+  "drift": []
+}

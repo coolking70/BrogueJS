@@ -1,0 +1,19 @@
+{
+  "ext.combat.module.name": "战斗规则",
+  "ext.combat.module.description": "独立战斗定义与纯动作计划；当前不启用实际招式。",
+  "ext.combat.attack.slash.name": "试式·扇锋",
+  "ext.combat.attack.stomp.name": "试式·震环",
+  "ext.combat.attack.double-thrust.name": "试式·续刺",
+  "ext.combat.error.INVALID_JSON": "数据不是安全JSON",
+  "ext.combat.error.INVALID_TYPE": "字段类型错误",
+  "ext.combat.error.UNKNOWN_KEY": "包含未声明字段",
+  "ext.combat.error.INVALID_INTEGER": "必须为安全整数",
+  "ext.combat.error.INVALID_RANGE": "数值超出范围",
+  "ext.combat.error.INVALID_ID": "标识格式错误",
+  "ext.combat.error.INVALID_VERSION": "版本不受支持",
+  "ext.combat.error.INVALID_TEXT": "文本不合法或缺失",
+  "ext.combat.error.DUPLICATE_ID": "标识或格子重复",
+  "ext.combat.error.UNKNOWN_REFERENCE": "引用不存在",
+  "ext.combat.error.INVALID_STATE": "数据包未经校验",
+  "ext.combat.error.BUDGET": "数据超出预算"
+}

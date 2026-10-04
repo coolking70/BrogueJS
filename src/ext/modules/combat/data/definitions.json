@@ -1,0 +1,642 @@
+{
+  "schema": 1,
+  "moduleId": "combat",
+  "moduleVersion": "1.0.0",
+  "rulesVersion": "1.0.0",
+  "resourcePolicies": [
+    {
+      "id": "fixture.resources",
+      "staminaCapacity": 24,
+      "initialStamina": 24,
+      "regenPerTickNumerator": 1,
+      "regenPerTickDenominator": 20,
+      "regenDelayTicks": 40,
+      "poiseCapacity": 12,
+      "poiseRecoveryNumerator": 1,
+      "poiseRecoveryDenominator": 30
+    }
+  ],
+  "attacks": [
+    {
+      "id": "fixture.slash",
+      "nameKey": "ext.combat.attack.slash.name",
+      "cost": 4,
+      "windupTicks": 50,
+      "recoveryTicks": 40,
+      "interruptPolicy": "cancel-pending",
+      "segments": [
+        {
+          "delayTicks": 0,
+          "shape": {
+            "kind": "footprint-offset-union",
+            "offsets": {
+              "n": [
+                {
+                  "x": -1,
+                  "y": -1
+                },
+                {
+                  "x": 0,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": -1
+                }
+              ],
+              "ne": [
+                {
+                  "x": 0,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": 0
+                }
+              ],
+              "e": [
+                {
+                  "x": 1,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": 0
+                },
+                {
+                  "x": 1,
+                  "y": 1
+                }
+              ],
+              "se": [
+                {
+                  "x": 1,
+                  "y": 0
+                },
+                {
+                  "x": 1,
+                  "y": 1
+                },
+                {
+                  "x": 0,
+                  "y": 1
+                }
+              ],
+              "s": [
+                {
+                  "x": 1,
+                  "y": 1
+                },
+                {
+                  "x": 0,
+                  "y": 1
+                },
+                {
+                  "x": -1,
+                  "y": 1
+                }
+              ],
+              "sw": [
+                {
+                  "x": 0,
+                  "y": 1
+                },
+                {
+                  "x": -1,
+                  "y": 1
+                },
+                {
+                  "x": -1,
+                  "y": 0
+                }
+              ],
+              "w": [
+                {
+                  "x": -1,
+                  "y": 1
+                },
+                {
+                  "x": -1,
+                  "y": 0
+                },
+                {
+                  "x": -1,
+                  "y": -1
+                }
+              ],
+              "nw": [
+                {
+                  "x": -1,
+                  "y": 0
+                },
+                {
+                  "x": -1,
+                  "y": -1
+                },
+                {
+                  "x": 0,
+                  "y": -1
+                }
+              ]
+            },
+            "selfExclusion": "whole-group",
+            "occlusion": "line-of-effect"
+          },
+          "locationPolicy": "locked-world",
+          "targetPolicy": "part",
+          "damageProfile": "native-melee",
+          "poiseDamage": 2,
+          "parryable": true,
+          "dodgeable": true,
+          "friendlyFire": false
+        }
+      ]
+    },
+    {
+      "id": "fixture.stomp",
+      "nameKey": "ext.combat.attack.stomp.name",
+      "cost": 7,
+      "windupTicks": 100,
+      "recoveryTicks": 70,
+      "interruptPolicy": "cancel-pending",
+      "segments": [
+        {
+          "delayTicks": 0,
+          "shape": {
+            "kind": "footprint-offset-union",
+            "offsets": {
+              "n": [
+                {
+                  "x": -1,
+                  "y": -1
+                },
+                {
+                  "x": 0,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": -1
+                },
+                {
+                  "x": -1,
+                  "y": 0
+                },
+                {
+                  "x": 1,
+                  "y": 0
+                },
+                {
+                  "x": -1,
+                  "y": 1
+                },
+                {
+                  "x": 0,
+                  "y": 1
+                },
+                {
+                  "x": 1,
+                  "y": 1
+                }
+              ],
+              "ne": [
+                {
+                  "x": -1,
+                  "y": -1
+                },
+                {
+                  "x": 0,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": -1
+                },
+                {
+                  "x": -1,
+                  "y": 0
+                },
+                {
+                  "x": 1,
+                  "y": 0
+                },
+                {
+                  "x": -1,
+                  "y": 1
+                },
+                {
+                  "x": 0,
+                  "y": 1
+                },
+                {
+                  "x": 1,
+                  "y": 1
+                }
+              ],
+              "e": [
+                {
+                  "x": -1,
+                  "y": -1
+                },
+                {
+                  "x": 0,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": -1
+                },
+                {
+                  "x": -1,
+                  "y": 0
+                },
+                {
+                  "x": 1,
+                  "y": 0
+                },
+                {
+                  "x": -1,
+                  "y": 1
+                },
+                {
+                  "x": 0,
+                  "y": 1
+                },
+                {
+                  "x": 1,
+                  "y": 1
+                }
+              ],
+              "se": [
+                {
+                  "x": -1,
+                  "y": -1
+                },
+                {
+                  "x": 0,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": -1
+                },
+                {
+                  "x": -1,
+                  "y": 0
+                },
+                {
+                  "x": 1,
+                  "y": 0
+                },
+                {
+                  "x": -1,
+                  "y": 1
+                },
+                {
+                  "x": 0,
+                  "y": 1
+                },
+                {
+                  "x": 1,
+                  "y": 1
+                }
+              ],
+              "s": [
+                {
+                  "x": -1,
+                  "y": -1
+                },
+                {
+                  "x": 0,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": -1
+                },
+                {
+                  "x": -1,
+                  "y": 0
+                },
+                {
+                  "x": 1,
+                  "y": 0
+                },
+                {
+                  "x": -1,
+                  "y": 1
+                },
+                {
+                  "x": 0,
+                  "y": 1
+                },
+                {
+                  "x": 1,
+                  "y": 1
+                }
+              ],
+              "sw": [
+                {
+                  "x": -1,
+                  "y": -1
+                },
+                {
+                  "x": 0,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": -1
+                },
+                {
+                  "x": -1,
+                  "y": 0
+                },
+                {
+                  "x": 1,
+                  "y": 0
+                },
+                {
+                  "x": -1,
+                  "y": 1
+                },
+                {
+                  "x": 0,
+                  "y": 1
+                },
+                {
+                  "x": 1,
+                  "y": 1
+                }
+              ],
+              "w": [
+                {
+                  "x": -1,
+                  "y": -1
+                },
+                {
+                  "x": 0,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": -1
+                },
+                {
+                  "x": -1,
+                  "y": 0
+                },
+                {
+                  "x": 1,
+                  "y": 0
+                },
+                {
+                  "x": -1,
+                  "y": 1
+                },
+                {
+                  "x": 0,
+                  "y": 1
+                },
+                {
+                  "x": 1,
+                  "y": 1
+                }
+              ],
+              "nw": [
+                {
+                  "x": -1,
+                  "y": -1
+                },
+                {
+                  "x": 0,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": -1
+                },
+                {
+                  "x": -1,
+                  "y": 0
+                },
+                {
+                  "x": 1,
+                  "y": 0
+                },
+                {
+                  "x": -1,
+                  "y": 1
+                },
+                {
+                  "x": 0,
+                  "y": 1
+                },
+                {
+                  "x": 1,
+                  "y": 1
+                }
+              ]
+            },
+            "selfExclusion": "whole-group",
+            "occlusion": "line-of-effect"
+          },
+          "locationPolicy": "locked-world",
+          "targetPolicy": "part",
+          "damageProfile": "native-melee",
+          "poiseDamage": 5,
+          "parryable": false,
+          "dodgeable": true,
+          "friendlyFire": false
+        }
+      ]
+    },
+    {
+      "id": "fixture.double-thrust",
+      "nameKey": "ext.combat.attack.double-thrust.name",
+      "cost": 6,
+      "windupTicks": 40,
+      "recoveryTicks": 60,
+      "interruptPolicy": "cancel-pending",
+      "segments": [
+        {
+          "delayTicks": 0,
+          "shape": {
+            "kind": "footprint-offset-union",
+            "offsets": {
+              "n": [
+                {
+                  "x": 0,
+                  "y": -1
+                }
+              ],
+              "ne": [
+                {
+                  "x": 1,
+                  "y": -1
+                }
+              ],
+              "e": [
+                {
+                  "x": 1,
+                  "y": 0
+                }
+              ],
+              "se": [
+                {
+                  "x": 1,
+                  "y": 1
+                }
+              ],
+              "s": [
+                {
+                  "x": 0,
+                  "y": 1
+                }
+              ],
+              "sw": [
+                {
+                  "x": -1,
+                  "y": 1
+                }
+              ],
+              "w": [
+                {
+                  "x": -1,
+                  "y": 0
+                }
+              ],
+              "nw": [
+                {
+                  "x": -1,
+                  "y": -1
+                }
+              ]
+            },
+            "selfExclusion": "whole-group",
+            "occlusion": "line-of-effect"
+          },
+          "locationPolicy": "locked-world",
+          "targetPolicy": "part",
+          "damageProfile": "native-melee",
+          "poiseDamage": 2,
+          "parryable": true,
+          "dodgeable": true,
+          "friendlyFire": false
+        },
+        {
+          "delayTicks": 30,
+          "shape": {
+            "kind": "footprint-offset-union",
+            "offsets": {
+              "n": [
+                {
+                  "x": 0,
+                  "y": -1
+                },
+                {
+                  "x": 0,
+                  "y": -2
+                }
+              ],
+              "ne": [
+                {
+                  "x": 1,
+                  "y": -1
+                },
+                {
+                  "x": 2,
+                  "y": -2
+                }
+              ],
+              "e": [
+                {
+                  "x": 1,
+                  "y": 0
+                },
+                {
+                  "x": 2,
+                  "y": 0
+                }
+              ],
+              "se": [
+                {
+                  "x": 1,
+                  "y": 1
+                },
+                {
+                  "x": 2,
+                  "y": 2
+                }
+              ],
+              "s": [
+                {
+                  "x": 0,
+                  "y": 1
+                },
+                {
+                  "x": 0,
+                  "y": 2
+                }
+              ],
+              "sw": [
+                {
+                  "x": -1,
+                  "y": 1
+                },
+                {
+                  "x": -2,
+                  "y": 2
+                }
+              ],
+              "w": [
+                {
+                  "x": -1,
+                  "y": 0
+                },
+                {
+                  "x": -2,
+                  "y": 0
+                }
+              ],
+              "nw": [
+                {
+                  "x": -1,
+                  "y": -1
+                },
+                {
+                  "x": -2,
+                  "y": -2
+                }
+              ]
+            },
+            "selfExclusion": "whole-group",
+            "occlusion": "line-of-effect"
+          },
+          "locationPolicy": "locked-world",
+          "targetPolicy": "part",
+          "damageProfile": "native-melee",
+          "poiseDamage": 2,
+          "parryable": true,
+          "dodgeable": true,
+          "friendlyFire": false
+        }
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "id": "fixture.profile",
+      "resourcePolicyId": "fixture.resources",
+      "attackIds": [
+        "fixture.slash",
+        "fixture.stomp",
+        "fixture.double-thrust"
+      ]
+    }
+  ]
+}
