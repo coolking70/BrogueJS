@@ -1,3 +1,4 @@
+import { bodyAttackContactOf, nearestLegalMeleeContact, withBodyAttackContact } from './BodyCombat';
 import { distanceBetweenFootprints } from '../Movement/CreatureSpatial';
 import { ringTransferencePercent } from '../Items/ItemEffectFormulas';
 import { stealFromPlayer } from './MonsterTheft';
@@ -74,7 +75,7 @@ export class CombatSystem {
     /** Extended detail prediction: pure native facts, the same probability port,
      * no attack hooks, temporary-effect consumption, state changes or random draws. */
     public static previewHitChance(attacker: Creature, defender: Creature, opts?: {
-        lungeAttack?: boolean; isWeaponAttack?: boolean;
+        lungeAttack?: boolean; isWeaponAttack?: boolean; grid?: Grid;
     }): number {
         let accuracy = 100, defense = 0, enchant: number | undefined;
         if (attacker instanceof Player) {
@@ -89,7 +90,9 @@ export class CombatSystem {
         if (attacker instanceof Monster && attacker.hasAbility('MA_KAMIKAZE')) return 100;
         if (opts?.isWeaponAttack !== false && attacker instanceof Monster && attacker.hasBehavior('MONST_RESTRICTED_TO_LIQUID')
             && (defender.hasStatus('levitating') || defender.hasStatus('flying'))) return 0;
-        if (attacker instanceof Monster && attacker.hasAbility('MA_SEIZES') && (!attacker.seizing || !defender.seized)) return 0;
+        if (attacker instanceof Monster && attacker.hasAbility('MA_SEIZES') && (!attacker.seizing || !defender.seized)
+            && (!(attacker.spatial || defender.spatial) || (distanceBetweenFootprints(attacker, defender) === 1
+                && (!opts?.grid || !!nearestLegalMeleeContact(opts.grid, attacker, defender, { allowThroughWalls: false, requirePassableTerrain: false }))))) return 0;
         const inanimate = defender instanceof Monster && defender.hasBehavior('MONST_INANIMATE');
         const autoHit = opts?.lungeAttack === true || defender.hasStatus('paralyzed') || defender.hasStatus('stuck')
             || (defender instanceof Monster && (defender.isCaged || (!inanimate && (defender.state === MonsterState.ASLEEP
@@ -111,6 +114,12 @@ export class CombatSystem {
      * Implements CE-accurate hit probability and damage formulas.
      */
     public static attack(attacker: Creature, defender: Creature, opts?: Parameters<typeof CombatSystem.resolveAttack>[2]): AttackResult {
+        if (!attacker.spatial && !defender.spatial) return CombatSystem.attackAtContact(attacker, defender, opts);
+        return withBodyAttackContact(attacker, defender, bodyAttackContactOf(attacker, defender),
+            () => CombatSystem.attackAtContact(attacker, defender, opts));
+    }
+
+    private static attackAtContact(attacker: Creature, defender: Creature, opts?: Parameters<typeof CombatSystem.resolveAttack>[2]): AttackResult {
         const hooks = attacker.extensionHooks ?? defender.extensionHooks;
         if (!hooks) return CombatSystem.resolveAttack(attacker, defender, opts);
         const effects = hooks.causality;
@@ -279,7 +288,9 @@ export class CombatSystem {
         // 已经相邻，距离判定由各调用点的 distToPlayer<=1 保证，对应 CE 的
         // distanceBetween==1 检查）。
         if (attacker instanceof Monster && attacker.hasAbility('MA_SEIZES') &&
-            (!attacker.seizing || !defender.seized)) {
+            (!attacker.seizing || !defender.seized)
+            && (!(attacker.spatial || defender.spatial) || (distanceBetweenFootprints(attacker, defender) === 1
+                && (!opts?.grid || !!nearestLegalMeleeContact(opts.grid, attacker, defender, { allowThroughWalls: false, requirePassableTerrain: false }))))) {
             attacker.seizing = true;
             defender.seized = true;
             if (defender instanceof Player && attacker.submerged && opts?.grid
@@ -576,7 +587,9 @@ export class CombatSystem {
         // 已经相邻，距离判定由各调用点的 distToPlayer<=1 保证，对应 CE 的
         // distanceBetween==1 检查）。
         if (attacker instanceof Monster && attacker.hasAbility('MA_SEIZES') &&
-            (!attacker.seizing || !defender.seized)) {
+            (!attacker.seizing || !defender.seized)
+            && (!(attacker.spatial || defender.spatial) || (distanceBetweenFootprints(attacker, defender) === 1
+                && (!opts?.grid || !!nearestLegalMeleeContact(opts.grid, attacker, defender, { allowThroughWalls: false, requirePassableTerrain: false }))))) {
             attacker.seizing = true;
             defender.seized = true;
             if (defender instanceof Player && attacker.submerged && opts?.grid

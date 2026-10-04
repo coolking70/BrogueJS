@@ -1,3 +1,4 @@
+import { physicalContactOf } from '../engine/Combat/BodyCombat';
 /**
  * src/entities/Creature.ts
  * Base class for all living things (Player and Monsters)
@@ -334,7 +335,7 @@ export class Creature implements Entity {
 
     public takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: DamageKind = 'other') {
         const damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
-        if (grid) spawnCreatureBlood(grid, this.loc, this.bloodType, damage, this.hp, this.bloodInvulnerable());
+        if (grid) spawnCreatureBlood(grid, physicalContactOf(this), this.bloodType, damage, this.hp, this.bloodInvulnerable());
         // CE Combat.c:1827-1878: blood precedes transference, including self-hits.
         beforeHpLoss?.(damage);
         const hpBefore = this.hp;

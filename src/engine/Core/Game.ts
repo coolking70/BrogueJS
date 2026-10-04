@@ -1,3 +1,4 @@
+import { nearestLegalMeleeContact, bodyRayContact, bodyAttackContactOf, physicalContactOf, withBodyAttackContact, type BodyAttackContact } from '../Combat/BodyCombat';
 import { footprintExposure } from '../Movement/FootprintExposure';
 import { CreatureSpatial } from '../Movement/CreatureSpatial';
 import { FootprintPathing, type FootprintGoal } from '../Map/FootprintPathing';
@@ -3272,7 +3273,7 @@ export class Game {
             monsters: monsters.map(monster => ({ id: monster.id, loc: monster.loc, hp: monster.hp,
                 ally: monster.isAlly, captive: monster.isCaged, type: monster.typeId,
                 statuses: monster.statusDurations, state: monster.state, submerged: monster.submerged,
-                seizing: monster.seizing, behaviors: [...monster.behaviorFlags], abilities: [...monster.abilityFlags] })),
+                seizing: monster.seizing, ...(monster.spatial ? { spatial: monster.spatial, spatialRevision: squareAnchorRevision(monster) } : {}), behaviors: [...monster.behaviorFlags], abilities: [...monster.abilityFlags] })),
             cells: positions.map(({ x, y }) => {
                 const cell = grid.getCell(x, y);
                 return [cell?.layers, cell?.hasMemory, cell?.isVisible, cell?.isClairvoyantVisible,
@@ -3423,7 +3424,8 @@ export class Game {
         const target = request.target;
         if (request.action === 'attack' && target.kind === 'creature') {
             const primary = this.monsters.find(monster => monster.id === target.id)!;
-            const dx = primary.x - this.player.x, dy = primary.y - this.player.y;
+            const contact = primary.spatial ? this.meleeContact(this.player, primary)! : nearestContact(this.player, primary);
+            const dx = contact.to.x - contact.from.x, dy = contact.to.y - contact.from.y;
             const flags = this.player.equippedWeapon?.flags ?? [];
             const whip = flags.includes('ITEM_ATTACKS_EXTEND') ? this.preparePlayerWhipAttack(dx, dy) : null;
             const spear = !whip && flags.includes('ITEM_ATTACKS_PENETRATE') ? this.preparePlayerSpearAttack(dx, dy) : null;
@@ -3750,10 +3752,10 @@ export class Game {
             const defender = this.monsters.find(actor => actor.id === target.id && actor.hp > 0);
             return !!defender && this.canObserveBoltTarget(defender) && !defender.isCaged
                 && (!defender.isAlly || defender.hasStatus('discordant'))
-                && distanceBetweenFootprints(defender, this.player) === 1
+                && (defender.spatial ? !!this.meleeContact(this.player, defender) : (distanceBetweenFootprints(defender, this.player) === 1
                 && (!playerTravelDiagonalBlocked(this.grid, this.player.loc, defender.loc, false)
                     || defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))
-                && (!!this.grid.getCell(defender.x, defender.y)?.isPassable || defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'));
+                && (!!this.grid.getCell(defender.x, defender.y)?.isPassable || defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))));
         }
         if (target.kind !== 'cell' || Object.keys(target).sort().join(',') !== 'kind,x,y'
             || !Number.isSafeInteger(target.x) || !Number.isSafeInteger(target.y)
@@ -3793,7 +3795,8 @@ export class Game {
         const target = request.target;
         if (request.action === 'attack' && target.kind === 'creature') {
             const monster = this.monsters.find(actor => actor.id === target.id)!;
-            this.performPlayerAction('move', { x: monster.x - this.player.x, y: monster.y - this.player.y }, 'system', control);
+            const contact = monster.spatial ? this.meleeContact(this.player, monster)! : nearestContact(this.player, monster);
+            this.performPlayerAction('move', { x: contact.to.x - contact.from.x, y: contact.to.y - contact.from.y }, 'system', control);
         } else if (request.action === 'move' && target.kind === 'cell') {
             this.performPlayerAction('move', { x: target.x - this.player.x, y: target.y - this.player.y }, 'system', control);
         } else this.performPlayerAction(request.action, undefined, 'system', control);
@@ -4070,7 +4073,8 @@ export class Game {
                 // before attacks, key use or hazard confirmation. Bump promotions
                 // above retain their CE ordering; through-wall targets are exempt.
                 if (playerTravelDiagonalBlocked(this.grid, origin, { x: newX, y: newY }, false)
-                    && !blockingMonster?.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')) return;
+                    && !blockingMonster?.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')
+                    && !(blockingMonster?.spatial && this.meleeContact(this.player, blockingMonster))) return;
 
                 // CE Movement.c:1175-1186: try whip/spear before normal movement.
                 const destCell = this.grid.getCell(newX, newY);
@@ -4109,6 +4113,7 @@ export class Game {
                     // （sweep = 武器带 ITEM_ATTACKS_ALL_ADJACENT，Combat.c:2049-2090）
                     // + 攻击循环（循环内复查目标存活，对应 CE MB_IS_DYING 复查）。
                     const hitList = this.buildPlayerMeleeHitList(blockingMonster);
+                    if (!hitList.length) return;
                     const targetsUnchanged = control ? this.captureControlledAttackTargets(hitList) : null;
                     if ((yield* this.abortPlayerAttackStages(hitList))) return;
                     if (targetsUnchanged && !targetsUnchanged()) return;
@@ -7606,8 +7611,8 @@ export class Game {
         if (visible) weapon.runicKnown = true;
         if (!isSubmerged(target)) {
             if (runicType === 'speed') this.createFlare(this.player.x, this.player.y, LightKind.SCROLL_ENCHANTMENT_LIGHT);
-            else if (runicType === 'quietus') this.createFlare(target.x, target.y, LightKind.QUIETUS_FLARE_LIGHT);
-            else if (runicType === 'slaying') this.createFlare(target.x, target.y, LightKind.SLAYING_FLARE_LIGHT);
+            else if (runicType === 'quietus') this.createFlare(physicalContactOf(target).x, physicalContactOf(target).y, LightKind.QUIETUS_FLARE_LIGHT);
+            else if (runicType === 'slaying') this.createFlare(physicalContactOf(target).x, physicalContactOf(target).y, LightKind.SLAYING_FLARE_LIGHT);
         }
         const enchant = netEnchant(weapon.enchantment, this.player.effectiveStrength, weapon.strengthRequired ?? 0);
 
@@ -7620,7 +7625,7 @@ export class Game {
                 target.maxStatus.paralyzed = target.getStatusDuration('paralyzed');
                 if (visible) {
                     logger.log(i18next.t('runic.weapon.paralyzing', { target: this.monsterDisplayName(target), defaultValue: `Runic power paralyzes the ${this.monsterDisplayName(target)}!` }), '#99ccff');
-                    this.spawnFloatingText(i18next.t('status.float.paralyzed', { defaultValue: 'Paralyzed' }), target.loc.x, target.loc.y, 0x99ccff);
+                    this.spawnFloatingText(i18next.t('status.float.paralyzed', { defaultValue: 'Paralyzed' }), physicalContactOf(target).x, physicalContactOf(target).y, 0x99ccff);
                 }
                 break;
             }
@@ -7707,16 +7712,16 @@ export class Game {
                 target.maxStatus.confused = target.getStatusDuration('confused');
                 if (visible) {
                     logger.log(i18next.t('runic.weapon.confusion', { target: this.monsterDisplayName(target), defaultValue: `The ${this.monsterDisplayName(target)} is confused by your strike!` }), '#cc99ff');
-                    this.spawnFloatingText(i18next.t('status.float.confused', { defaultValue: 'Confused' }), target.loc.x, target.loc.y, 0x99ccff);
+                    this.spawnFloatingText(i18next.t('status.float.confused', { defaultValue: 'Confused' }), physicalContactOf(target).x, physicalContactOf(target).y, 0x99ccff);
                 }
                 break;
             }
             case 'force': {
                 const dist = weaponForceDistance(enchant);
                 logger.log(i18next.t('runic.weapon.force', { target: this.monsterDisplayName(target), dist, defaultValue: `Your blow launches the ${this.monsterDisplayName(target)} backward ${dist} tiles!` }), '#ffffff');
-                this.spawnFloatingText(i18next.t('runic.force_float', { defaultValue: 'Force!' }), target.loc.x, target.loc.y, 0xffffff);
+                this.spawnFloatingText(i18next.t('runic.force_float', { defaultValue: 'Force!' }), physicalContactOf(target).x, physicalContactOf(target).y, 0xffffff);
                 // Apply knockback
-                const contact = target.spatial ? nearestContact(this.player, target) : undefined;
+                const contact = target.spatial ? bodyAttackContactOf(this.player, target) : undefined;
                 const dx = contact ? contact.to.x - contact.from.x : target.loc.x - this.player.loc.x;
                 const dy = contact ? contact.to.y - contact.from.y : target.loc.y - this.player.loc.y;
                 const ndx = Math.sign(dx);
@@ -7922,7 +7927,7 @@ export class Game {
                         defaultValue: `Your armor retaliates with ${reprisalDmg} damage to ${attacker.name}!`
                     }), '#ff8844');
             }
-            this.spawnFloatingText(`-${reprisalDmg}`, attacker.loc.x, attacker.loc.y, 0xff8844);
+            this.spawnFloatingText(`-${reprisalDmg}`, physicalContactOf(attacker).x, physicalContactOf(attacker).y, 0xff8844);
             return remainingDamage;
         }
 
@@ -8119,7 +8124,7 @@ export class Game {
         const ux = Math.sign(dx);
         const uy = Math.sign(dy);
         if (ux === 0 && uy === 0) return [];
-        const hitList: Monster[] = [];
+        const hitList: Monster[] = [], scope = new Set<string>();
         const canStrike = (m: Monster, cell: { isPassable: boolean } | null | undefined): boolean =>
             !!cell &&
             this.playerWillAttackTarget(m) &&
@@ -8132,7 +8137,7 @@ export class Game {
             const ty = this.player.loc.y + 2 * uy;
             const cell = this.grid.getCell(tx, ty);   // CE coordinatesAreInMap
             const m = cell ? this.getMonsterAt(tx, ty) : undefined;
-            if (m && canStrike(m, cell)) hitList.push(m);
+            if (m && canStrike(m, cell) && this.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length) hitList.push(m);
         }
         // 连枷：同时与移动前、移动后两格相邻（Movement.c:1025-1048）
         if (flags.includes('ITEM_PASS_ATTACKS')) {
@@ -8140,7 +8145,12 @@ export class Game {
                 if (hitList.includes(m)) continue;
                 if (distanceBetweenFootprints(m, this.player) !== 1) continue;
                 if (distanceToFootprint(m, { x: newX, y: newY }) !== 1) continue;
-                if (canStrike(m, this.grid.getCell(m.loc.x, m.loc.y))) hitList.push(m);
+                if (m.spatial) {
+                    const before = this.meleeContact(this.player, m), after = nearestLegalMeleeContact(this.grid, { loc: { x: newX, y: newY } }, m);
+                    if (before && after && canStrike(m, this.grid.getCell(before.to.x, before.to.y))
+                        && this.collectBodyTargets([before.to], { effect: 'geometry' }, scope).length) hitList.push(m);
+                } else if (canStrike(m, this.grid.getCell(m.loc.x, m.loc.y))
+                    && this.collectBodyTargets([m.loc], { effect: 'geometry' }, scope).length) hitList.push(m);
             }
         }
         return hitList;
@@ -8157,15 +8167,17 @@ export class Game {
      */
     private buildPlayerMeleeHitList(primary: Monster): Monster[] {
         if (!this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_ALL_ADJACENT')) {
-            return [primary];
+            return primary.spatial && !this.meleeContact(this.player, primary) ? [] : [primary];
         }
         const dirs8: ReadonlyArray<readonly [number, number]> =
             [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]];
-        const dx = Math.sign(primary.loc.x - this.player.loc.x);
-        const dy = Math.sign(primary.loc.y - this.player.loc.y);
+        const contact = primary.spatial ? this.meleeContact(this.player, primary) : nearestContact(this.player, primary);
+        if (!contact) return [];
+        const dx = Math.sign(contact.to.x - contact.from.x);
+        const dy = Math.sign(contact.to.y - contact.from.y);
         let dir = dirs8.findIndex(d => d[0] === dx && d[1] === dy);
         if (dir < 0) dir = 0; // CE：dir==NO_DIRECTION 时取 UP（主目标必相邻，实际不可达）
-        const hitList: Monster[] = [];
+        const hitList: Monster[] = [], scope = new Set<string>();
         for (let i = 0; i < 8; i++) {
             const d = dirs8[(dir + i) % 8]!;
             const tx = this.player.loc.x + d[0];
@@ -8175,7 +8187,8 @@ export class Game {
             const defender = this.getMonsterAt(tx, ty);
             if (!defender || !this.playerWillAttackTarget(defender)) continue;
             if (!cell.isPassable && !defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')) continue;
-            hitList.push(defender);
+            if (defender.spatial && !this.meleeContact(this.player, defender)) continue;
+            if (this.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length) hitList.push(defender);
         }
         return hitList;
     }
@@ -8212,12 +8225,14 @@ export class Game {
     /** A confirmation may change the world. Never resolve a stale approved hit list. */
     private captureControlledAttackTargets(targets: readonly Monster[]): () => boolean {
         const origin = { ...this.player.loc };
-        const locations = targets.map(actor => ({ actor, x: actor.x, y: actor.y }));
-        return () => this.player.x === origin.x && this.player.y === origin.y && locations.every(({ actor, x, y }) =>
-            actor.hp > 0 && actor.x === x && actor.y === y && this.getMonsterAt(x, y) === actor
+        const locations = targets.map(actor => ({ actor, x: actor.x, y: actor.y, spatial: JSON.stringify(actor.spatial), revision: squareAnchorRevision(actor) }));
+        return () => this.player.x === origin.x && this.player.y === origin.y && locations.every(({ actor, x, y, spatial, revision }) =>
+            actor.hp > 0 && actor.x === x && actor.y === y && JSON.stringify(actor.spatial) === spatial && squareAnchorRevision(actor) === revision && this.getMonsterAt(x, y) === actor
             && this.playerWillAttackTarget(actor)
-            && (!!this.grid.getCell(x, y)?.isPassable || actor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))
-            && (this.hasLineOfSight(origin.x, origin.y, x, y) || actor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')));
+            && (actor.spatial ? footprintSome(actor, p => !!this.grid.getCell(p.x, p.y)?.isPassable
+                && this.hasLineOfSight(origin.x, origin.y, p.x, p.y)) || actor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')
+                : (!!this.grid.getCell(x, y)?.isPassable || actor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))
+                && (this.hasLineOfSight(origin.x, origin.y, x, y) || actor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))));
     }
 
     private preparePlayerWhipAttack(dirX: number, dirY: number): Monster | null {
@@ -8227,6 +8242,10 @@ export class Game {
             const ty = this.player.loc.y + (1 + i) * dirY;
             const cell = this.grid.getCell(tx, ty);
             if (!cell) break; // CE isPosInMap：射线出图
+            const contactActor = this.getMonsterAt(tx, ty);
+            if (contactActor?.spatial && playerTravelDiagonalBlocked(this.grid,
+                { x: tx - dirX, y: ty - dirY }, { x: tx, y: ty }, false)
+                && !contactActor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')) break;
             const c = this.getMonsterAt(tx, ty);
             if (c && !c.hasStatus('invisible') && !hiddenBySubmersion(this.grid, c, this.player)) {
                 // 未隐藏的活物挡弹（CE getImpactLoc 的 monster 分支，隐藏者被穿过）
@@ -8250,7 +8269,7 @@ export class Game {
         if (targetsUnchanged && !targetsUnchanged()) return 'aborted';
         if (control && !control.beforeCommit()) return 'aborted';
         if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
-        this.resolvePlayerMeleeAttackOn(strike);
+        this.resolvePlayerMeleeAttackOn(strike, false, bodyRayContact(this.player, strike, dirX, dirY, 5));
         return true;
     }
 
@@ -8264,18 +8283,22 @@ export class Game {
      *   force can send both monsters flying."——照实现，测试锁死。
      */
     private preparePlayerSpearAttack(dirX: number, dirY: number): Monster[] | null {
-        const hitList: Monster[] = [];
+        const hitList: Monster[] = [], scope = new Set<string>();
         let proceed = false;
         for (let i = 0; i < 2; i++) {
             const tx = this.player.loc.x + (1 + i) * dirX;
             const ty = this.player.loc.y + (1 + i) * dirY;
             const cell = this.grid.getCell(tx, ty);
             if (!cell) break; // CE isPosInMap
+            const contactActor = this.getMonsterAt(tx, ty);
+            if (contactActor?.spatial && playerTravelDiagonalBlocked(this.grid,
+                { x: tx - dirX, y: ty - dirY }, { x: tx, y: ty }, false)
+                && !contactActor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')) break;
             const defender = this.getMonsterAt(tx, ty);
             if (defender &&
                 (cell.isPassable || defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')) &&
                 this.playerWillAttackTarget(defender)) {
-                hitList.push(defender);
+                if (this.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length) hitList.push(defender);
                 if (i === 0 || (!defender.hasStatus('invisible') && !hiddenBySubmersion(this.grid, defender, this.player))) {
                     proceed = true;
                 }
@@ -8298,7 +8321,7 @@ export class Game {
         if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
         // CE Movement.c:1007-1009：先打远的、后打近的（倒序）
         for (let i = hitList.length - 1; i >= 0; i--) {
-            this.resolvePlayerMeleeAttackOn(hitList[i]!);
+            this.resolvePlayerMeleeAttackOn(hitList[i]!, false, bodyRayContact(this.player, hitList[i]!, dirX, dirY, 2));
         }
         return true;
     }
@@ -8339,11 +8362,17 @@ export class Game {
      * CE 对突进命中追加"（猛烈突刺）"措辞（Combat.c:1298），web 复用普通
      * 命中文案——补专用文案需新增 zh_CN.json 键，在本轮文件边界外（见报告）。
      */
-    private resolvePlayerMeleeAttackOn(target: Monster, lungeAttack = false): boolean {
+    private resolvePlayerMeleeAttackOn(target: Monster, lungeAttack = false, contact?: BodyAttackContact): boolean {
+        if (target.hp <= 0) return false;
+        const pair = contact ?? this.meleeContact(this.player, target) ?? nearestContact(this.player, target);
+        return withBodyAttackContact(this.player, target, pair, () => this.resolvePlayerMeleeAttackAt(target, lungeAttack));
+    }
+
+    private resolvePlayerMeleeAttackAt(target: Monster, lungeAttack: boolean): boolean {
         if (this.extensionRuntime && this.extensionRuntime.causality.current?.kind !== 'melee') {
             const effects = this.extensionRuntime.causality;
             return effects.withOrigin(effects.create('melee', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
-                () => this.resolvePlayerMeleeAttackOn(target, lungeAttack));
+                () => this.resolvePlayerMeleeAttackAt(target, lungeAttack));
         }
         const res = CombatSystem.attack(this.player, target, { grid: this.grid, lungeAttack });
         if (this.player.hasStatus('invisible')) {
@@ -8358,7 +8387,7 @@ export class Game {
         if (res.hit) {
             if (res.damage === 0) this.disturbed = true; // CE Combat.c:1295
             this.reportAttack(this.player, target, res);
-            this.spawnFloatingText(`-${res.damage}`, target.loc.x, target.loc.y, 0xff5555);
+            this.spawnFloatingText(`-${res.damage}`, physicalContactOf(target).x, physicalContactOf(target).y, 0xff5555);
             // Handle runic trigger (enchantment-scaled chance computed in Combat.ts)
             if (res.triggeredRunic) {
                 this.applyWeaponRunicEffect(target, res.damage, res.triggeredRunic);
@@ -8367,7 +8396,7 @@ export class Game {
             this.trySplitMonster(target, this.player);
         } else {
             this.reportAttack(this.player, target, res);
-            this.spawnFloatingText(i18next.t('combat.miss_float', { defaultValue: 'Miss' }), target.loc.x, target.loc.y, 0xaaaaaa);
+            this.spawnFloatingText(i18next.t('combat.miss_float', { defaultValue: 'Miss' }), physicalContactOf(target).x, physicalContactOf(target).y, 0xaaaaaa);
         }
 
         // UI-2：CE Combat.c:1432-1450——玩家近战命中带 MONST_DEFEND_DEGRADE_WEAPON
@@ -8536,7 +8565,7 @@ export class Game {
         return this.monsters.find(m =>
             m.hp > 0 && m.seizing && !m.hasStatus('entranced') &&
             monstersAreEnemies(m, this.player) &&
-            distanceBetweenFootprints(m, this.player) === 1
+            distanceBetweenFootprints(m, this.player) === 1 && (!m.spatial || !!this.meleeContact(m, this.player))
         );
     }
 
@@ -8558,7 +8587,7 @@ export class Game {
         }
         if (cellTerrainFlags(this.grid, defender.x, defender.y) & T_OBSTRUCTS_PASSABILITY) return;
         const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
-        const contact = defender.spatial || attacker.spatial ? nearestContact(attacker, defender) : undefined;
+        const contact = defender.spatial || attacker.spatial ? bodyAttackContactOf(attacker, defender) : undefined;
         const newX = clamp1(contact ? contact.to.x - contact.from.x : defender.loc.x - attacker.loc.x) + defender.loc.x;
         const newY = clamp1(contact ? contact.to.y - contact.from.y : defender.loc.y - attacker.loc.y) + defender.loc.y;
         if (defender.spatial && !this.canStepFootprint(defender, { x: newX, y: newY })) return;
@@ -11097,6 +11126,7 @@ export class Game {
         return entity;
     }
     public footprintOf(actor: number | Creature) { return this.spatialOf(actor).cells; }
+    public meleeContact(a: Creature, b: Creature) { return nearestLegalMeleeContact(this.grid, a, b); }
     public nearestContact(a: number | Creature, b: number | Creature) { return nearestContact(this.spatialActor(a), this.spatialActor(b)); }
     public canStepFootprint(actor: number | Creature, at: Pos, options?: Parameters<typeof canStepFootprint>[3]) { return canStepFootprint(this, this.spatialActor(actor), at, options); }
     public collectBodyTargets(cells: readonly Pos[], policy?: Parameters<typeof collectBodyTargets>[2], scope?: Set<string>) {

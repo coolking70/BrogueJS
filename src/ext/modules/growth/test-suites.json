@@ -27,6 +27,7 @@
     "tests/ext_growth_skills_movement.test.ts",
     "tests/ext_growth_skills_slot_order.test.ts",
     "tests/ext_growth_sources.test.ts",
+    "tests/ext_growth_square_melee.test.ts",
     "tests/ext_growth_target_knowledge.test.ts",
     "tests/ext_growth_templates.test.ts",
     "tests/ext_growth_templates_runtime.test.ts",
