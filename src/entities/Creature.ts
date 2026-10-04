@@ -55,9 +55,12 @@ export function ensureEntityIdAbove(maxInUseId: number): void {
 
 import type { CreatureExtensionHooks } from '../ext/types';
 import type { DamageKind } from '../ext/causality';
+import type { CreatureSpatialComponent } from '../engine/Movement/SpatialSchema';
 const extensionCreatureHooks = new WeakMap<Creature, CreatureExtensionHooks>();
 
 export class Creature implements Entity {
+    /** Absent on ordinary creatures; 4a0 native geometry fixtures only. */
+    declare public spatial?: CreatureSpatialComponent;
     /** Extension-only session callbacks; excluded from the explicit entity codec. */
     public get extensionHooks(): CreatureExtensionHooks | undefined { return extensionCreatureHooks.get(this); }
     public set extensionHooks(value: CreatureExtensionHooks | undefined) {

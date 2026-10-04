@@ -1,3 +1,4 @@
+import { assertNativeSpatial, footprintContains, canFitAt } from './CreatureSpatial';
 import { DijkstraMap, MAX_DISTANCE } from '../Map/Pathfinding';
 /** W-11: destination policy is separate from the displacement commit.
  * CE Monsters.c:650-670,1155-1204; Dijkstra.c:209-255; Grid.c:224-244.
@@ -28,11 +29,9 @@ export interface PlacementWorld {
  * Dormant living creatures count as occupied too (stronger than CE HAS_MONSTER).
  */
 export function canPlaceCreature(world: Pick<PlacementWorld, 'grid' | 'player' | 'monsters' | 'dormantMonsters'>, target: Creature, at: Pos, walkingSecretDoor = false): boolean {
-    if (!Number.isInteger(at.x) || !Number.isInteger(at.y) || !world.grid.isValidPos(at.x, at.y)) return false;
-    if ((cellTerrainFlags(world.grid, at.x, at.y) & T_OBSTRUCTS_PASSABILITY)
-        && !(walkingSecretDoor && world.grid.getCell(at.x, at.y)?.layers.includes(TerrainType.SECRET_DOOR))) return false;
-    return ![world.player, ...world.monsters, ...(world.dormantMonsters ?? [])].some(c => c !== target && c.hp > 0
-        && c.loc.x === at.x && c.loc.y === at.y);
+    assertNativeSpatial(target);
+    return canFitAt(world, target, at, { allowsTerrain: p => !(cellTerrainFlags(world.grid, p.x, p.y) & T_OBSTRUCTS_PASSABILITY)
+        || !!(walkingSecretDoor && world.grid.getCell(p.x, p.y)?.layers.includes(TerrainType.SECRET_DOOR)) });
 }
 
 /** CE uses info.flags, NOT temporary levitation/fire immunity statuses. */
@@ -52,6 +51,7 @@ export function teleportForbiddenFlags(target: Creature): number {
  * CE's all-ones fallback occurs BEFORE terrain/map/FOV filtering, never after.
  */
 export function teleportCandidates(world: PlacementWorld, target: Creature, respectTerrainAvoidancePreferences = false): Pos[] {
+    assertNativeSpatial(target); // actor-native path/FOV maps remain unopened for spatial fixtures
     const { grid } = world;
     const forbidden = teleportForbiddenFlags(target);
     const destinationFlags = respectTerrainAvoidancePreferences
@@ -62,7 +62,7 @@ export function teleportCandidates(world: PlacementWorld, target: Creature, resp
     const costs = Array.from({ length: grid.width }, () => new Array<boolean>(grid.height).fill(false));
     for (let x = 1; x < grid.width - 1; x++) for (let y = 1; y < grid.height - 1; y++) {
         const cell = grid.getCell(x, y)!;
-        const stationary = world.monsters.some(m => !m.isDormant && m.hp > 0 && m.loc.x === x && m.loc.y === y
+        const stationary = world.monsters.some(m => !m.isDormant && m.hp > 0 && footprintContains(m, { x, y })
             && (m.hasBehavior('MONST_IMMUNE_TO_WEAPONS') || m.hasBehavior('MONST_INVULNERABLE'))
             && (m.hasBehavior('MONST_IMMOBILE') || m.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')));
         // The current catalog's only passable-on-discovery secret is SECRET_DOOR.
@@ -111,7 +111,7 @@ export function captiveItemDropCandidates(world: Pick<PlacementWorld, 'grid' | '
     const qualifies = (x: number, y: number) => {
         const cell = grid.getCell(x, y);
         return !!cell && !(flags(x, y) & T_OBSTRUCTS_ITEMS)
-            && !(world.player.loc.x === x && world.player.loc.y === y)
+            && !(footprintContains(world.player, { x, y }))
             && !cell.layers.includes(TerrainType.STAIRS_UP) && !cell.layers.includes(TerrainType.STAIRS_DOWN) && !cell.layers.includes(TerrainType.DUNGEON_PORTAL)
             && !items.some(item => item.loc.x === x && item.loc.y === y);
     };
@@ -125,8 +125,8 @@ export function captiveItemDropCandidates(world: Pick<PlacementWorld, 'grid' | '
 export function allySwapCandidates(world: PlacementWorld, ally: Monster): Pos[] {
     return qualifyingPathCandidates(world.grid, world.player.loc, teleportForbiddenFlags(ally), 0, (x, y) => {
         const cell = world.grid.getCell(x, y)!;
-        return (world.player.x === x && world.player.y === y)
-            || world.monsters.some(m => m !== ally && !m.isDormant && !m.deathProcessed && m.hp > 0 && m.x === x && m.y === y)
+        return (footprintContains(world.player, { x, y }))
+            || world.monsters.some(m => m !== ally && !m.isDormant && !m.deathProcessed && m.hp > 0 && footprintContains(m, { x, y }))
             || cell.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL);
     });
 }

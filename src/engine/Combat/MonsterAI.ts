@@ -1,3 +1,4 @@
+import { distanceBetweenFootprints } from '../Movement/CreatureSpatial';
 /** CE Monsters.c:1591–1827. Allegiance is separate from creatureState in web. */
 import { Monster, MonsterMode, MonsterState, monstersAreEnemies, monstersAreTeammates } from '../../entities/Monster';
 import { Player } from '../../entities/Player';
@@ -7,7 +8,7 @@ import { iterateCreatures } from '../Core/MonsterLifecycle';
 import { ScentMap } from '../Map/Scent';
 import { blinkTraversiblePath, openCreaturePath, playerTraversiblePath } from './MonsterBlink';
 
-const distance = (a: Creature, b: Creature) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+const distance = (a: Creature, b: Creature) => distanceBetweenFootprints(a, b);
 const allyState = (m: Monster) => m.isAlly && m.state !== MonsterState.FLEEING;
 const immobile = (m: Monster) => m.hasBehavior('MONST_IMMOBILE') || m.hasBehavior('MONST_TURRET');
 

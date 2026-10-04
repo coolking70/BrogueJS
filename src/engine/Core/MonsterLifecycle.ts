@@ -1,3 +1,4 @@
+import { assertNativeSpatial } from '../Movement/CreatureSpatial';
 import type { Monster } from '../../entities/Monster';
 
 // Runtime ownership is deliberately outside the serialized creature graph.
@@ -33,12 +34,14 @@ export function ownedMonsterList(input: Monster[], owner: DeathOwner): Monster[]
     if (old?.owner === owner) return input;
     const raw = old?.raw ?? input;
     for (const monster of raw) {
+        assertNativeSpatial(monster);
         owners.set(monster, owner);
         if (owner.extensionRuntime) owner.extensionRuntime.attachCreature(monster);
     }
     const list = new Proxy(raw, {
         set(target, key, value, receiver) {
             if (typeof key === 'string' && /^\d+$/.test(key)) {
+                assertNativeSpatial(value);
                 owners.set(value, owner);
                 if (owner.extensionRuntime) owner.extensionRuntime.attachCreature(value);
             }

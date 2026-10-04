@@ -70,14 +70,14 @@ describe('EXT-3a1 inert combat installed contract', () => {
         expect(discovered).toBeDefined();
         expect(discovered.defaultEnabled).toBe(false);
         expect(catalog.DEFAULT_EXTENSIONS).not.toContain('combat');
-        expect(discovered.foundation).toBe(3);
+        expect(discovered.foundation).toBe(4);
         expect(discovered.version).toBe(COMBAT_VERSION);
         expect(discovered.rules).toEqual(getCombatPackIdentity());
         expect(discovered.locales!.zh_CN![discovered.labelKey]).toBeTypeOf('string');
         expect(discovered.locales!.zh_CN![discovered.descriptionKey!]).toBeTypeOf('string');
         expect(Object.keys(discovered.locales!.zh_CN!).every(key => key.startsWith('ext.combat.'))).toBe(true);
         const registry = catalog.createExtensionRegistry();
-        expect(registry.manifest(['combat'])).toEqual({ schema: 1, foundation: 3,
+        expect(registry.manifest(['combat'])).toEqual({ schema: 1, foundation: 4,
             modules: [{ id: 'combat', version: COMBAT_VERSION, rules: getCombatPackIdentity() }] });
         expect(registry.create(registry.manifest(['combat']))).toHaveLength(1);
         const ui = getInstalledModuleUiContributions().find(entry => entry.moduleId === 'combat')!;

@@ -1,3 +1,4 @@
+import { SpatialValidationError, validateSpatialComponent, type SpatialCatalog } from '../Movement/SpatialSchema';
 /** U01: explicit instance contract. These lists are audited against declarations
  * and live own properties in u_01_instance_snapshot.test.ts. No catalog inference
  * or legacy defaults: optional values retain their actual undefined semantics. */
@@ -16,7 +17,7 @@ export const ITEM_FIELDS = [
     'originDepth', 'identityId', 'consumableId', 'description', 'spawnTurnNumber', 'inscription',
 ] as const satisfies readonly (keyof Item)[];
 export const CREATURE_FIELDS = [
-    'id', 'loc', 'hp', 'maxHp', 'name', 'color', 'char', 'statusDurations',
+    'spatial', 'id', 'loc', 'hp', 'maxHp', 'name', 'color', 'char', 'statusDurations',
     'poisonAmount', 'weaknessAmount', 'maxStatus', 'maxShield', 'ticksUntilTurn', 'seized', 'seizing',
     'movementSpeed', 'attackSpeed', 'mapToMe',
 ] as const satisfies readonly (keyof Creature)[];
@@ -47,7 +48,8 @@ function copyValue<T>(value: T): T {
     return value;
 }
 export function copyFields<T, K extends keyof T>(source: T, fields: readonly K[]): Pick<T, K> {
-    return Object.fromEntries(fields.map(key => [key, copyValue(source[key])])) as Pick<T, K>;
+    if (fields.some(key => key === 'spatial') && Object.prototype.hasOwnProperty.call(source, 'spatial') && (source as any).spatial === undefined) throw new SpatialValidationError('Spatial absence must omit the property');
+    return Object.fromEntries(fields.filter(key => key !== 'spatial' || Object.prototype.hasOwnProperty.call(source, key)).map(key => [key, copyValue(source[key])])) as Pick<T, K>;
 }
 export type GameSnapshotItem = Pick<Item, typeof ITEM_FIELDS[number]>;
 export type GameSnapshotMonster = Pick<Monster, typeof MONSTER_FIELDS[number]> & {
@@ -81,6 +83,8 @@ export type GameSnapshotPlayer = Pick<Player, typeof PLAYER_FIELDS[number]> & {
  * consumers compatible; Game supplies this port explicitly. No catalog lookup
  * or RNG draw occurs during restore because the row contains its full form. */
 export interface EntityCodecDeps {
+    /** Native fixture initialization only, never read definitions from a save. */
+    spatialCatalog?: SpatialCatalog;
     allocateItem: () => Item;
     allocateMonster: (form: MonsterData) => Monster;
     ensureIdAbove: (id: number) => void;
@@ -134,6 +138,7 @@ export function restoreEntityGraph(rows: readonly GameSnapshotMonster[], itemRow
     const saved = new Map<number, GameSnapshotMonster>();
     const items = new Map(existingItems.map(i => [i.id, i]));
     const read = (row: GameSnapshotMonster): void => {
+        if (Object.prototype.hasOwnProperty.call(row, 'spatial')) validateSpatialComponent(row.spatial, deps.spatialCatalog, !deps.spatialCatalog?.fixture);
         if (saved.has(row.id)) return;
         saved.set(row.id, row);
         row.graph?.items.forEach(i => { if (!items.has(i.id)) items.set(i.id, deserializeItem(i, deps)); });

@@ -1,3 +1,4 @@
+import { distanceToFootprint, footprintSome } from '../Movement/CreatureSpatial';
 /**
  * src/engine/Map/SafetyMap.ts — P4-9：safety map（怪物逃跑寻路）
  *
@@ -217,11 +218,11 @@ export interface SafetyMapMonster {
  * （切比雪夫 ≤ 1，CE distanceBetween = max(|dx|,|dy|)，Monsters.c:1587-1589）
  * 才算察觉；否则看"怪物所在格"是否在玩家 FOV 内（IN_FIELD_OF_VIEW）。
  */
-export function fleeingMonsterAwareOfPlayer(host: SafetyMapHost, monst: { loc: { x: number; y: number } }): boolean {
+export function fleeingMonsterAwareOfPlayer(host: SafetyMapHost, monst: Pick<import('../../entities/Creature').Creature, 'loc' | 'spatial'>): boolean {
     if (host.player.hasStatus('invisible')) {
-        return Math.max(Math.abs(monst.loc.x - host.player.loc.x), Math.abs(monst.loc.y - host.player.loc.y)) <= 1;
+        return distanceToFootprint(monst, host.player.loc) <= 1;
     }
-    return host.grid.getCell(monst.loc.x, monst.loc.y)?.isVisible ?? false;
+    return footprintSome(monst, p => host.grid.getCell(p.x, p.y)?.isVisible ?? false);
 }
 
 /**

@@ -1,3 +1,4 @@
+import { footprintContains } from '../Movement/CreatureSpatial';
 import { playerTravelTerrainAllowed } from '../Movement/PlayerTravel';
 import type { Player } from '../../entities/Player';
 import { hiddenBySubmersion, isSubmerged } from '../Movement/Submersion';
@@ -31,7 +32,7 @@ export const MONSTER_BLINK: BoltConfig = { id: 'monster_blink', name: 'BLINKING'
 const sight: BoltConfig = { ...MONSTER_BLINK, ceType: CEBoltType.NONE, effect: BoltEffect.NONE };
 const distance = (a: Pos, b: Pos) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 const flags = (g: Game, p: Pos) => cellTerrainFlags(g.grid, p.x, p.y);
-const at = (g: Game, p: Pos): Creature | undefined => g.player.hp > 0 && distance(g.player.loc, p) === 0
+const at = (g: Game, p: Pos): Creature | undefined => g.player.hp > 0 && footprintContains(g.player, p)
     ? g.player : g.getMonsterAt(p.x, p.y);
 const alliedState = (m: Monster) => m.isAlly && m.state !== MonsterState.FLEEING && !m.hasStatus('magical_fear');
 const flying = (m: Creature) => m.hasStatus('levitating') || m.hasStatus('flying');

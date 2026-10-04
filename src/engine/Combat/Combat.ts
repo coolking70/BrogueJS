@@ -1,3 +1,4 @@
+import { distanceBetweenFootprints } from '../Movement/CreatureSpatial';
 import { ringTransferencePercent } from '../Items/ItemEffectFormulas';
 import { stealFromPlayer } from './MonsterTheft';
 /**
@@ -100,7 +101,7 @@ export class CombatSystem {
         const rule = opts?.isWeaponAttack === false ? undefined : (attacker.extensionHooks ?? defender.extensionHooks)?.rule;
         if (!rule) return autoHit ? 100 : probability;
         const result = Math.floor(rule('hitChance', { actorId: attacker.id, targetId: defender.id, baseValue: probability * 100,
-            attackKind: 'melee', adjacent: Math.max(Math.abs(attacker.x - defender.x), Math.abs(attacker.y - defender.y)) === 1,
+            attackKind: 'melee', adjacent: distanceBetweenFootprints(attacker, defender) === 1,
             rollMode: autoHit ? 'skip-guaranteed-hit' : probability >= 100 ? 'roll-guaranteed' : 'roll-probability' }) / 100);
         return autoHit ? 100 : result;
     }
@@ -592,7 +593,7 @@ export class CombatSystem {
             ? 100 : hitProbability(attackerAccuracy, defenderDefense, weaponEnchant);
         const adjustedProbability = Math.floor(rule('hitChance', {
             actorId: attacker.id, targetId: defender.id, baseValue: probability * 100, attackKind: 'melee',
-            adjacent: Math.max(Math.abs(attacker.x - defender.x), Math.abs(attacker.y - defender.y)) === 1,
+            adjacent: distanceBetweenFootprints(attacker, defender) === 1,
             rollMode: autoHit ? 'skip-guaranteed-hit' : probability >= 100 ? 'roll-guaranteed' : 'roll-probability',
         }) / 100);
         if (trace) trace.probabilityRolled = !autoHit;
@@ -920,7 +921,7 @@ export class CombatSystem {
         const rule = (thrower.extensionHooks ?? defender.extensionHooks)!.rule!;
         const adjustedProbability = Math.floor(rule('hitChance', {
             actorId: thrower.id, targetId: defender.id, baseValue: probability * 100, attackKind: 'thrown',
-            adjacent: Math.max(Math.abs(thrower.x - defender.x), Math.abs(thrower.y - defender.y)) === 1,
+            adjacent: distanceBetweenFootprints(thrower, defender) === 1,
             rollMode: autoHit ? 'skip-guaranteed-hit' : probability >= 100 ? 'roll-guaranteed' : 'roll-probability',
         }) / 100);
         if (trace) trace.probabilityRolled = !autoHit;
