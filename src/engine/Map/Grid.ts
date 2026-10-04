@@ -1,4 +1,4 @@
-import { invalidateSpatialTerrain } from '../Movement/SpatialRevision';
+import { notifySpatialCellRefresh } from '../Movement/SpatialRevision';
 /**
  * src/engine/Map/Grid.ts
  * Grid and Cell structures reflecting Brogue's 2D map.
@@ -868,6 +868,7 @@ export class Cell {
         }
         this.isPassable = !(flags & T_OBSTRUCTS_PASSABILITY);
         this.isOpaque = !!(flags & T_OBSTRUCTS_VISION);
+        notifySpatialCellRefresh(this);
     }
 
     // Environmental states
@@ -1007,7 +1008,6 @@ export class Grid {
         if (cell) {
             cell.layers[layer] = terrain;
             cell.refreshTerrainProperties();
-            invalidateSpatialTerrain(this);
         }
     }
 
@@ -1024,7 +1024,6 @@ export class Grid {
                 }
             }
             writeTerrainHome(cell, terrain);
-            invalidateSpatialTerrain(this);
             cell.char = char;
             cell.color = color;
         }

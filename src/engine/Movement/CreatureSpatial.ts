@@ -1,4 +1,4 @@
-import { spatialTerrainRevision } from './SpatialRevision';
+import { spatialTerrainRevision, releaseSpatialTerrain } from './SpatialRevision';
 import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
 import type { Grid } from '../Map/Grid';
@@ -40,6 +40,27 @@ export function commitCreatureAnchor(creature: Creature, at: Pos, mode: 'replace
 }
 export function assertNativeSpatial(creature: Creature): void {
     if (Object.prototype.hasOwnProperty.call(creature, 'spatial')) validateSpatialComponent(creature.spatial);
+}
+/** Explicitly scoped square movement capability, NOT a replacement for the
+ * production gate. Arbitrary fixture masks, zones/groups/locks/regions and
+ * explicit single-cell components are not executable square bodies. */
+export function squareMovementSize(creature: Creature, catalog = nativeSpatialCatalog): number {
+    if (!Object.prototype.hasOwnProperty.call(creature, 'spatial')) return 1;
+    validateSpatialComponent(creature.spatial, catalog, false);
+    const s = creature.spatial!;
+    if (!['builtin:square-2', 'builtin:square-3'].includes(s.footprintId) || s.pose !== 'r0'
+        || Object.keys(s).some(k => !['schema', 'footprintId', 'pose'].includes(k))) {
+        throw new SpatialValidationError('Square movement capability requires an independent unzoned r0 square');
+    }
+    return s.footprintId === 'builtin:square-2' ? 2 : 3;
+}
+/** Shared graph/live-motion edge; fit includes the caller's terrain, region and
+ * (for a live step) occupancy policy. Swept intermediate poses never trigger
+ * environmental effects themselves. */
+export function conservativeSquareStep(from: Pos, to: Pos, fit: (at: Pos) => boolean): boolean {
+    const dx = to.x - from.x, dy = to.y - from.y;
+    return Math.max(Math.abs(dx), Math.abs(dy)) === 1 && fit(to)
+        && (!(dx && dy) || (fit({ x: from.x + dx, y: from.y }) && fit({ x: from.x, y: from.y + dy })));
 }
 /** Ordinary 1x1 queries retain the old constant geometry path, without a
  * compiled shape lookup, index, group record or scan for capability users. */
@@ -100,6 +121,7 @@ export class CreatureSpatial {
     private revision = 0;
     private cohort: Creature[] = [];
     private readonly plans = new WeakSet<PlacementPlan>();
+    private readonly stepPlans = new WeakMap<PlacementPlan, Readonly<Pos>>();
     private readonly invalidate = () => { this.revision++; this.activeIndex = this.reservedIndex = undefined; };
     readonly groups: BodyGroupState[] = [];
     constructor(private world: SpatialWorld, readonly catalog = nativeSpatialCatalog) { this.replaceWorld(world); }
@@ -125,6 +147,7 @@ export class CreatureSpatial {
             if (footprintOf(c, this.catalog).some(p => !world.grid.isValidPos(p.x, p.y))) throw new SpatialValidationError('Spatial footprint outside its layer');
         }
         if (users > SPATIAL_LIMITS.entities || occupiedCells > SPATIAL_LIMITS.occupiedCells) throw new SpatialValidationError('Spatial layer budget exceeded');
+        if (this.world.grid !== world.grid || (this.users > 0 && users === 0)) releaseSpatialTerrain(this);
         for (const c of this.cohort) listeners.get(c)?.delete(this.invalidate);
         this.world = world; this.cohort = cohort; this.users = users;
         for (const c of cohort) {
@@ -144,6 +167,10 @@ export class CreatureSpatial {
     }
     get hasIndex(): boolean { return this.activeIndex !== undefined; }
     get capabilityUsers(): number { return this.users; }
+    get grid(): Grid { return this.world.grid; }
+    get occupancyRevision(): number { return this.revision; }
+    get terrainRevision(): number { return spatialTerrainRevision(this.world.grid, this); }
+    isActive(c: Creature): boolean { return c.hp > 0 && (c === this.world.player || this.world.monsters.includes(c)); }
     footprintOf(c: Creature): readonly FootprintCell[] { return footprintOf(c, this.catalog); }
     spatialOf(id: number | Creature): CreatureSpatialView {
         const c = typeof id === 'number' ? this.cohort.find(c => c.id === id) : id;
@@ -191,24 +218,49 @@ export class CreatureSpatial {
         }
         return Object.freeze(out);
     }
-    canFitAt(c: Creature, at: Pos, options: FitOptions = {}, pose = c.spatial?.pose): boolean {
+    /** Static graph predicate: no index/occupancy reads. Live moves additionally
+     * use canFitAt; a moving small creature never becomes a cached wall. */
+    canFitTerrainAt(c: Creature, at: Pos, options: FitOptions = {}, pose = c.spatial?.pose): boolean {
         const offsets = c.spatial ? this.catalog.cells(c.spatial.footprintId, pose!) : [{ x: 0, y: 0, zoneId: 'body' }];
         if (!integer(at.x, -32768, 32767) || !integer(at.y, -32768, 32767)) return false;
         for (const offset of offsets) {
             const p = { x: at.x + offset.x, y: at.y + offset.y };
             if (!this.world.grid.isValidPos(p.x, p.y) || !(options.allowsTerrain?.(p) ?? !(flagsAt(this.world.grid, p) & T_OBSTRUCTS_PASSABILITY))) return false;
             if (c.spatial?.movementRegionId !== undefined && !options.inRegion?.(c.spatial.movementRegionId, p)) return false;
-            if (this.occupantsAtCell(p, options.policy ?? 'active-or-reserved').some(hit => hit.entity !== c && !options.ignore?.has(hit.entity))) return false;
         }
         return true;
     }
+    canFitAt(c: Creature, at: Pos, options: FitOptions = {}, pose = c.spatial?.pose): boolean {
+        if (!this.canFitTerrainAt(c, at, options, pose)) return false;
+        const offsets = c.spatial ? this.catalog.cells(c.spatial.footprintId, pose!) : [{ x: 0, y: 0 }];
+        return offsets.every(p => !this.occupantsAtCell({ x: at.x + p.x, y: at.y + p.y }, options.policy ?? 'active-or-reserved')
+            .some(hit => hit.entity !== c && !options.ignore?.has(hit.entity)));
+    }
     canStepFootprint(c: Creature, at: Pos, options: FitOptions = {}): boolean {
-        const dx = at.x - c.x, dy = at.y - c.y;
+        return this.canStepBetween(c, c.loc, at, options);
+    }
+    /** Hypothetical graph edge without temporarily moving a live entity. For
+     * multi-cell bodies BOTH orthogonal intermediate anchors must fit, including
+     * dynamic occupancy. The native single-cell diagonal flags remain unchanged. */
+    canStepBetween(c: Creature, from: Pos, at: Pos, options: FitOptions = {}): boolean {
+        const dx = at.x - from.x, dy = at.y - from.y;
+        if (this.footprintOf(c).length > 1) return conservativeSquareStep(from, at, p => this.canFitAt(c, p, options));
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== 1 || !this.canFitAt(c, at, options)) return false;
-        if (dx && dy) for (const p of this.footprintOf(c)) {
-            if ((flagsAt(this.world.grid, { x: p.x + dx, y: p.y }) | flagsAt(this.world.grid, { x: p.x, y: p.y + dy })) & T_OBSTRUCTS_DIAGONAL_MOVEMENT) return false;
+        if (dx && dy) {
+            if ((flagsAt(this.world.grid, { x: from.x + dx, y: from.y }) | flagsAt(this.world.grid, { x: from.x, y: from.y + dy })) & T_OBSTRUCTS_DIAGONAL_MOVEMENT) return false;
         }
         return true;
+    }
+    /** 4a-1 movement submilestone: an actual checked one-anchor square step in
+     * the native fixture world. Game's production capability gate stays closed
+     * until all displacement/environment/persistence entrances are migrated. */
+    planStepPlacement(c: Creature, at: Pos, options: FitOptions = {}): PlacementPlan | null {
+        squareMovementSize(c, this.catalog);
+        if (!this.isActive(c)) return null;
+        if (!this.canStepFootprint(c, at, options)) return null;
+        const plan = this.planPlacement([{ creature: c, at }], options);
+        if (plan) this.stepPlans.set(plan, Object.freeze({ ...c.loc }));
+        return plan;
     }
     planPlacement(changes: readonly PlacementChange[], options: FitOptions = {}): PlacementPlan | null {
         if (changes.some(change => change.creature.spatial?.bodyMember)) throw new SpatialValidationError('Composite body action capability is not open in 4a0');
@@ -225,13 +277,16 @@ export class CreatureSpatial {
         }
         const plan: PlacementPlan = Object.freeze({ changes: Object.freeze(changes.map(c => Object.freeze({ ...c, at: Object.freeze({ ...c.at }) }))),
             previous: Object.freeze(changes.map(({ creature }) => Object.freeze({ creature, loc: creature.loc, x: creature.x, y: creature.y, spatial: JSON.stringify(creature.spatial) }))),
-            revision: this.revision, terrainRevision: spatialTerrainRevision(this.world.grid), grid: this.world.grid, options: Object.freeze({ ...options, ignore: options.ignore ? new Set(options.ignore) : undefined }) });
+            revision: this.revision, terrainRevision: this.terrainRevision, grid: this.world.grid, options: Object.freeze({ ...options, ignore: options.ignore ? new Set(options.ignore) : undefined }) });
         this.plans.add(plan); return plan;
     }
     commitPlacement(plan: PlacementPlan): boolean {
         const options = plan.options;
-        if (!this.plans.delete(plan) || plan.revision !== this.revision || plan.grid !== this.world.grid || plan.terrainRevision !== spatialTerrainRevision(this.world.grid)
+        if (!this.plans.delete(plan) || plan.revision !== this.revision || plan.grid !== this.world.grid || plan.terrainRevision !== this.terrainRevision
             || plan.previous.some(p => p.creature.loc !== p.loc || p.creature.x !== p.x || p.creature.y !== p.y || JSON.stringify(p.creature.spatial) !== p.spatial)) return false;
+        const from = this.stepPlans.get(plan);
+        if (from && (!this.isActive(plan.changes[0]!.creature)
+            || !this.canStepBetween(plan.changes[0]!.creature, from, plan.changes[0]!.at, options))) return false;
         const recheck = this.planPlacement(plan.changes, options);
         if (!recheck) return false;
         this.plans.delete(recheck);
