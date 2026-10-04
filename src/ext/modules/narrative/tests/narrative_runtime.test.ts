@@ -19,6 +19,8 @@ import type { NarrativeState } from '../state';
 
 const clone = <T>(value: T): T => structuredClone(value);
 const acknowledge = () => { while (logger.pendingAcknowledgment) logger.acknowledgeNext(); };
+const firstFloorNpcIds = loadNarrativeDefinitionPack().npcs.filter(npc => npc.placements
+    .some(placement => placement.minDepth <= 1 && placement.maxDepth >= 1)).map(npc => npc.id).sort();
 function start(ids: string[], seed = 8201): Game {
     const game = createHeadlessGame(seed, 'test');
     const registry = catalog.createExtensionRegistry();
@@ -181,9 +183,11 @@ describe('EXT-2b narrative installed contract', () => {
         expect(withNarrative.player).toEqual(empty.player);
         expect(withNarrative.turn).toEqual(empty.turn);
         expect(withNarrative.tick).toEqual(empty.tick);
-        const state = withNarrative.extensions!.modules.narrative as unknown as { placementReceipts: unknown[]; npcBindings: object; active: null };
-        expect(state.placementReceipts).toHaveLength(1);
-        expect(Object.keys(state.npcBindings)).toHaveLength(1);
+        const state = withNarrative.extensions!.modules.narrative as unknown as NarrativeState;
+        expect(state.placementReceipts.map(receipt => receipt.npcId).sort()).toEqual(firstFloorNpcIds);
+        expect(state.placementReceipts.every(receipt => receipt.result === 'placed' && receipt.depth === 1)).toBe(true);
+        expect(Object.values(state.npcBindings).map(binding => binding.npcId).sort()).toEqual(firstFloorNpcIds);
+        expect(state.pendingPlacements).toEqual([]);
         expect(state.active).toBeNull();
     }, 30000);
 });
@@ -205,7 +209,7 @@ function frozenWorld(game: Game) {
 describe.each(conversationCombinations)('EXT-2b actual Game dialogue with %j', (...ids: string[]) => {
     it('uses a natural nearby NPC and freezes resources while preserving active-save, continuation, replay and seek checkpoints', () => {
         const game = start(ids, 8201); acknowledge();
-        const target = game.extensionRuntime!.snapshot().foundation.world.entities.find(entity => entity.owner === 'narrative')!;
+        const target = game.extensionRuntime!.snapshot().foundation.world.entities.find(entity => entity.owner === 'narrative' && entity.contentId === 'archive.keeper')!;
         expect(target).toBeDefined();
         expect(Math.max(Math.abs(target.x - game.player.x), Math.abs(target.y - game.player.y))).toBeLessThanOrEqual(target.interactionDistance);
         const stable = frozenWorld(game), origin = clone(game.toSaveSnapshot().run.recordingOrigin!.initial);
@@ -316,7 +320,8 @@ describe('EXT-2b actual normal-world cache and terminal lifecycle', () => {
         const game = startNaturalNarrative();
         const initialWorld = clone(game.extensionRuntime!.snapshot().foundation.world.entities);
         const initialReceipts = clone(narrative(game).placementReceipts);
-        expect(initialWorld).toHaveLength(1); expect(initialWorld[0]!.depth).toBe(1);
+        expect(initialWorld.map(entity => entity.contentId).sort()).toEqual(firstFloorNpcIds);
+        expect(initialWorld.every(entity => entity.depth === 1)).toBe(true);
         enterWorldOnly(game, 2);
         expect(game.extensionRuntime!.snapshot().foundation.world.entities).toEqual(initialWorld);
         expect(narrative(game).placementReceipts).toEqual(initialReceipts);
@@ -329,7 +334,7 @@ describe('EXT-2b actual normal-world cache and terminal lifecycle', () => {
         enterWorldOnly(game, 1); enterWorldOnly(game, 2); enterWorldOnly(game, 1);
         expect(game.extensionRuntime!.snapshot().foundation.world.entities).toEqual(initialWorld);
         expect(narrative(game).placementReceipts).toEqual(initialReceipts);
-        expect(Object.keys(narrative(game).npcBindings)).toEqual([String(initialWorld[0]!.id)]);
+        expect(Object.keys(narrative(game).npcBindings).sort()).toEqual(initialWorld.map(entity => String(entity.id)).sort());
         const revisitedSave = clone(game.toSaveSnapshot());
         expect(game.loadSnapshot(revisitedSave)).toBe(true);
         expect(game.extensionRuntime!.snapshot().foundation.world.entities).toEqual(initialWorld);

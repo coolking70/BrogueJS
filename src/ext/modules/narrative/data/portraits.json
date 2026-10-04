@@ -1,16 +1,36 @@
 {
   "schema": 1,
-  "displayVersion": "1.0.0",
+  "displayVersion": "1.1.0",
   "portraits": [
     {
       "id": "archive.keeper.neutral",
-      "asset": null,
-      "width": 240,
-      "height": 320,
+      "asset": "archive-keeper.png",
+      "width": 288,
+      "height": 384,
       "fit": "contain",
       "anchor": "bottom-center",
       "altKey": "ext.narrative.portrait.keeper",
       "fallbackGlyph": "人"
+    },
+    {
+      "id": "bell.mender.neutral",
+      "asset": "bell-mender.png",
+      "width": 288,
+      "height": 384,
+      "fit": "contain",
+      "anchor": "bottom-center",
+      "altKey": "ext.narrative.portrait.bell.mender",
+      "fallbackGlyph": "钟"
+    },
+    {
+      "id": "wick.listener.neutral",
+      "asset": "wick-listener.png",
+      "width": 288,
+      "height": 384,
+      "fit": "contain",
+      "anchor": "bottom-center",
+      "altKey": "ext.narrative.portrait.wick.listener",
+      "fallbackGlyph": "烬"
     }
   ]
 }

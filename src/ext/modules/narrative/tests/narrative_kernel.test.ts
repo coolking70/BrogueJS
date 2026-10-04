@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import definitions from '../data/definitions.json';
+import { keeperOnlyContentFixture } from './contentFixture';
 import portraits from '../data/portraits.json';
 import locales from '../locales/zh_CN.json';
 import { loadNarrativePack } from '../schema';
@@ -10,14 +10,14 @@ import { initialNarrativeState, isNarrativeState, validateNarrativeState } from 
 import { validateNarrativeInput } from '../input';
 import type { NarrativePack, Trigger } from '../types';
 
-const sample = () => loadNarrativePack(definitions, portraits, locales);
+const sample = () => loadNarrativePack(keeperOnlyContentFixture(), portraits, locales);
 const entry = (factId = 1, depth = 1, turn = 0) => ({ kind: 'entered-level', firstVisit: true, factId, depth, turn } as const);
 function error(run: () => unknown, code: string, path?: string) {
     try { run(); throw new Error('Expected narrative rejection'); }
     catch (caught) { expect(caught).toBeInstanceOf(NarrativeError); expect((caught as NarrativeError).code).toBe(code); if (path) expect((caught as NarrativeError).path).toBe(path); }
 }
 function fixture(change: (raw: any) => void): NarrativePack {
-    const raw = structuredClone(definitions); change(raw); return loadNarrativePack(raw, portraits, locales);
+    const raw = keeperOnlyContentFixture(); change(raw); return loadNarrativePack(raw, portraits, locales);
 }
 const trigger = (id: string, priority = 0, extra: Partial<Trigger> = {}): Trigger => ({ id, priority, on: { kind: 'entered-level' }, condition: { op: 'true' }, repeat: { kind: 'once-per-run' }, effects: [], ...extra });
 
@@ -233,7 +233,7 @@ describe('narrative 2a1 detached execution kernel', () => {
         expect(getter).not.toHaveBeenCalled();
     });
     it('executes renamed and expanded content entirely from data', () => {
-        const raw: any = JSON.parse(JSON.stringify(definitions).split('archive.').join('new.'));
+        const raw: any = JSON.parse(JSON.stringify(keeperOnlyContentFixture()).split('archive.').join('new.'));
         const art = JSON.parse(JSON.stringify(portraits).split('archive.').join('new.'));
         raw.flags.push({ id: 'second.flag', type: 'boolean', initial: false, min: null, max: null, values: null });
         raw.npcs.push({ ...structuredClone(raw.npcs[0]), id: 'second.npc', placements: [{ ...raw.npcs[0].placements[0], id: 'second.placement' }] });

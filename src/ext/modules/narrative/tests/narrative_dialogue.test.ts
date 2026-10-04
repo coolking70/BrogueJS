@@ -58,12 +58,22 @@ beforeAll(async () => {
 afterEach(() => { for (const app of mounted.splice(0)) app.unmount(); });
 
 describe('EXT-2d pure portrait presentation', () => {
-    it('uses the validated display manifest separately from simulation identity and resolves local placeholders', () => {
+    it('uses the validated display manifest separately from simulation identity and resolves installed assets and placeholders', () => {
         const before = rng.getState();
-        const portrait = resolveNarrativePortrait('archive.keeper.neutral');
-        expect(narrativePortraitDisplayVersion).toBe('1.0.0');
-        expect(portrait).toMatchObject({ id: 'archive.keeper.neutral', url: null, fallbackGlyph: '人', width: 240, height: 320 });
-        expect(Object.isFrozen(portrait)).toBe(true);
+        const bundledAssets = import.meta.glob<string>('../assets/portraits/**/*.{png,webp}', { eager: true, query: '?url', import: 'default' });
+        expect(narrativePortraitDisplayVersion).toBe(manifest.displayVersion);
+        for (const entry of manifest.portraits) {
+            const url = bundledAssets[`../assets/portraits/${entry.asset}`];
+            expect(url).toBeTypeOf('string');
+            const portrait = resolveNarrativePortrait(entry.id);
+            expect(portrait).toEqual({ id: entry.id, url, fallbackGlyph: entry.fallbackGlyph, width: entry.width, height: entry.height,
+                fit: entry.fit, anchor: entry.anchor, altKey: entry.altKey });
+            expect(Object.isFrozen(portrait)).toBe(true);
+        }
+        const placeholder = { ...manifest, portraits: manifest.portraits.map(entry => ({ ...entry, asset: null })) };
+        expect(createNarrativePortraitResolver(placeholder).resolve('archive.keeper.neutral')).toMatchObject({
+            id: 'archive.keeper.neutral', url: null, fallbackGlyph: '人', width: manifest.portraits[0]!.width, height: manifest.portraits[0]!.height,
+        });
         expect(resolveNarrativePortrait('unknown')).toBe(resolveNarrativePortrait(null));
         expect(rng.getState()).toEqual(before);
     });
@@ -81,14 +91,15 @@ describe('EXT-2d pure portrait presentation', () => {
         expect(rng.getState()).toEqual(before);
     });
     it('resolves only finite local assets and preserves missing-file fallback without weakening manifest validation', () => {
-        const data = structuredClone(manifest); data.portraits[0]!.asset = 'keeper/neutral.webp' as any;
+        const data = { ...manifest, portraits: manifest.portraits.map(entry => ({ ...entry, asset: entry.asset as string | null })) };
+        data.portraits[0]!.asset = 'keeper/neutral.webp';
         const path = '../assets/portraits/keeper/neutral.webp';
         const available = createNarrativePortraitResolver(data, { [path]: '/assets/neutral-hash.webp' });
         expect(available.resolve('archive.keeper.neutral').url).toBe('/assets/neutral-hash.webp');
         expect(createNarrativePortraitResolver(data, { '../assets/elsewhere/neutral.webp': '/wrong.webp' }).resolve('archive.keeper.neutral').url).toBeNull();
         expect(Object.isFrozen(available.manifest)).toBe(true);
         for (const invalid of ['https://example.test/keeper.png', '../keeper.png', '/keeper.png', 'data:image/png;base64,a', 'keeper.svg']) {
-            data.portraits[0]!.asset = invalid as any;
+            data.portraits[0]!.asset = invalid;
             expect(() => createNarrativePortraitResolver(data, {}), invalid).toThrow();
         }
         data.portraits[0]!.asset = null;
@@ -100,7 +111,7 @@ describe('EXT-2d pure portrait presentation', () => {
         const portrait = ref<NarrativePortraitView>({ ...resolveNarrativePortrait('archive.keeper.neutral'), url: '/assets/a.webp' });
         const root = mount(Portrait, () => ({ portrait: portrait.value }));
         const oldImage = all(root).find(n => n.type === 'img')!;
-        expect(oldImage.props).toMatchObject({ src: '/assets/a.webp', width: 240, height: 320, draggable: 'false' });
+        expect(oldImage.props).toMatchObject({ src: '/assets/a.webp', width: manifest.portraits[0]!.width, height: manifest.portraits[0]!.height, draggable: 'false' });
         expect(oldImage.props.alt).toBe(locale['ext.narrative.portrait.keeper']);
         portrait.value = { ...portrait.value, url: '/assets/b.png' }; await nextTick();
         oldImage.props.onError(); await nextTick();

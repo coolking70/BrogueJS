@@ -31,7 +31,8 @@
     "tests/ext_growth_templates.test.ts",
     "tests/ext_growth_templates_runtime.test.ts",
     "tests/ext_growth_ui.test.ts",
-    "tests/ext_growth_view.test.ts"
+    "tests/ext_growth_view.test.ts",
+    "tests/ext_growth_content_rewards.test.ts"
   ],
   "gen": [],
   "drift": []

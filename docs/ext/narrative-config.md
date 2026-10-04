@@ -9,7 +9,7 @@
 | `src/ext/modules/narrative/data/definitions.json` | 唯一机械内容包：预算、标记、计数器、NPC、放置、对话图、日志定义、事件与触发器 |
 | `src/ext/modules/narrative/locales/zh_CN.json` | 扁平的 `ext.narrative.*` 文本键到中文字符串映射；包括名字、对白、选项、禁用原因、日志与立绘替代文本 |
 | `src/ext/modules/narrative/data/portraits.json` | 独立显示清单：立绘 ID、本地图片相对路径、尺寸、占位字形 |
-| `src/ext/modules/narrative/assets/portraits/` | 新增图片的实际目录；当前只有字形占位，尚无真实立绘资产，需要接图时创建目录 |
+| `src/ext/modules/narrative/assets/portraits/` | 新增图片的实际目录；当前包含三位NPC的原创GPT生成PNG立绘 |
 | `src/ext/modules/narrative/schema.ts`、`types.ts` | 结构、范围、引用、退出路径、循环与版本校验的实际依据 |
 | `conditions.ts`、`effects.ts`、`triggers.ts`、`placement.ts` | 位于同一模块目录；条件、效果、事件顺序、收据及放置语义 |
 | `state.ts`、`input.ts`、`sessions.ts` | 持久状态与命令合同；内容作者不要手改存档或自行造会话 ID |
@@ -28,12 +28,12 @@
 |---|---|---|
 | `definitions.json.schema` | `1` | 数据结构版本 |
 | `moduleId` | `"narrative"` | 稳定模块 ID |
-| `moduleVersion`、`rulesVersion` | 均为 `"1.2.0"` | 当前加载器只接受此精确值，并非任意 semver |
+| `moduleVersion`、`rulesVersion` | 均为 `"1.3.0"` | 当前加载器只接受此精确值，并非任意 semver |
 | `stateVersion` | `3` | 模块私有持久状态 `schema: 3` |
 | `inputVersion` | `2` | open/choose/close 的 payload 必须带 `v: 2` |
 | `descriptor.ts.foundation` | `3` | 底座要求；不是内容开关 |
 | `portraits.json.schema` | `1` | 显示清单结构 |
-| `portraits.json.displayVersion` | `"1.0.0"` | 独立显示版本，格式为三段数字 |
+| `portraits.json.displayVersion` | `"1.1.0"` | 独立显示版本，格式为三段数字 |
 
 模块持久状态保存在 `extensions.modules.narrative`，不会另建顶层 narrative 存档；包括 flags/counters、日志、触发/奖励/放置收据、NPC 绑定和当前会话。内容定义不写入该状态来替代版本校验。
 
@@ -50,8 +50,11 @@
 - 对话 `archive.greeting`，入口 `hello`；阅读残页只在 `archive.read === false` 时可用，不满足时禁用并显示“已经读过这张残页”
 - 阅读依次设置 `archive.read=true`、公开日志 `archive.note`、发出 `archive.read-done`；`next:null` 结束交谈。另一项 `leave` 恒可用、无效果、结束交谈
 - 触发器 `archive.reward` 监听该 story 事件，每局一次，尝试 `growth.story-reward.v1` 的 `rewardId: archive.read`；不是固定发放经验
-- growth 的默认配置 `config.experience.sources.story=false` 且 `config.experience.story.rewards=[]`，所以默认组合也不会给这个样例经验。缺席/关闭/未知报价均走有记录的 skip，见 §7
-- 当前立绘清单只有 `archive.keeper.neutral`：`asset:null`、240×320、contain、bottom-center、占位字形 `人`
+- growth 的默认配置 `config.experience.sources.story=false` ，已配置 `bell.settled` / `wick.settled` 各5XP报价，所以默认组合也不会给这个样例经验。缺席/关闭/未知报价均走有记录的 skip，见 §7
+- 新增 `bell.mender`（缄钟匠）与 `wick.listener`（听烬人）：各六节点、两个互斥结局，D1–D2首访可放置，无位置defer。具体路径见本轮报告
+- `bell.verdict` 的值为 unresolved/toll/hush，`wick.verdict` 为 unresolved/keep/release；结局生成独立日志并发出各自 settled 事件，触发各自一次性奖励收据。已结局时开场改为可选回顾路径，不再次发奖
+- 缄钟匠的残页旁支以 `archive.read=true` 为条件；未读时禁用并解释原因，叙事单独启用仍可走全部两个结局
+- 三张立绘清单绑定真实PNG，288×384、contain、bottom-center；UI依照原72×96/48×64展示合同缩放。缺图/失败降级仍保留，但不是本轮实际资产的替代
 
 这些都是文件里实际保存的样例，不是省略字段时由加载器补出的默认值。
 

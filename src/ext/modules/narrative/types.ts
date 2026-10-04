@@ -70,7 +70,7 @@ export interface NarrativeLimits {
     readonly maxJournalEntries: number; readonly maxReceipts: number;
 }
 export interface NarrativePack {
-    readonly schema: 1; readonly moduleId: 'narrative'; readonly moduleVersion: '1.2.0'; readonly rulesVersion: '1.2.0';
+    readonly schema: 1; readonly moduleId: 'narrative'; readonly moduleVersion: '1.3.0'; readonly rulesVersion: '1.3.0';
     readonly stateVersion: 3; readonly inputVersion: 2;
     readonly config: { readonly timePolicy: 'free-frozen'; readonly closePolicy: 'close-session'; readonly limits: NarrativeLimits };
     readonly flags: readonly FlagDefinition[]; readonly counters: readonly CounterDefinition[];

@@ -162,7 +162,7 @@ export function loadNarrativePack(raw: unknown, portraitData: unknown, locales: 
     if (root.stateVersion !== 3) fail('INVALID_VERSION', '$.stateVersion');
     if (root.inputVersion !== 2) fail('INVALID_VERSION', '$.inputVersion');
     if (root.moduleId !== 'narrative') fail('INVALID_ID', '$.moduleId');
-    for (const key of ['moduleVersion', 'rulesVersion']) if (root[key] !== '1.2.0') fail('INVALID_VERSION', `$.${key}`);
+    for (const key of ['moduleVersion', 'rulesVersion']) if (root[key] !== '1.3.0') fail('INVALID_VERSION', `$.${key}`);
     const config = object(root.config, ['timePolicy', 'closePolicy', 'limits'], '$.config');
     enumeration(config.timePolicy, ['free-frozen'], '$.config.timePolicy');
     enumeration(config.closePolicy, ['close-session'], '$.config.closePolicy');

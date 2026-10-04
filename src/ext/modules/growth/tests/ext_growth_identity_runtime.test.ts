@@ -178,8 +178,10 @@ describe('EXT-1e selected identity engine creation and durable commands',()=> {
         const game=scene(selection('guardian','stoneborn','watch'));command(game,'use-skill',{skillId:'growth.skill.brace',target:{kind:'self'}});
         const saved=game.toSaveSnapshot(),recording=game.exportRecording(),before=projection(game),player=game.player,runtime=game.extensionRuntime;
         const events=structuredClone(game.recordedInputEvents), original=saved.extensions!.manifest.modules.find(module=>module.id==='growth')!;
-        expect(original.version).toBe('1.5.0');expect(original.rules!.version).toBe('1.5.0');
+        expect(original.version).toBe(data.moduleVersion);expect(original.rules!.version).toBe(data.rulesVersion);
         const mutations: ((module: ExtensionVersion)=>void)[]=[
+            module=>{module.version='1.5.0';},module=>{module.rules!.version='1.5.0';},
+            module=>{module.version='1.5.0';module.rules!.version='1.5.0';},
             module=>{module.version='1.4.0';},module=>{module.rules!.version='1.4.0';},
             module=>{module.version='1.4.0';module.rules!.version='1.4.0';},
             module=>{module.version='1.3.0';},module=>{module.rules!.version='1.3.0';},

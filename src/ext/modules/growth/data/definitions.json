@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "moduleId": "growth",
-  "moduleVersion": "1.5.0",
-  "rulesVersion": "1.5.0",
+  "moduleVersion": "1.6.0",
+  "rulesVersion": "1.6.0",
   "config": {
     "experience": {
       "sources": {
@@ -381,7 +381,18 @@
         ]
       },
       "story": {
-        "rewards": []
+        "rewards": [
+          {
+            "id": "bell.settled",
+            "amount": 5,
+            "reasonKey": "ext.growth.story.bell_settled"
+          },
+          {
+            "id": "wick.settled",
+            "amount": 5,
+            "reasonKey": "ext.growth.story.wick_settled"
+          }
+        ]
       },
       "allySplit": {
         "playerBasisPoints": 8000,
