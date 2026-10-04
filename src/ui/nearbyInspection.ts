@@ -1,6 +1,7 @@
 /** UI-4: the sidebar opens the same display models used by right-click/long
  * press inspection. Return a detail without assigning Game.inspectTarget,
  * issuing a command, changing knowledge, or consuming either random stream. */
+import { presentationTimeline } from './presentationTimeline';
 import type { Game } from '../engine/Core/Game';
 import { CombatSystem } from '../engine/Combat/Combat';
 import { sidebarEntityRows, type SidebarEntityRow } from '../engine/UI/MonsterSidebar';
@@ -9,6 +10,7 @@ import { createItemDetailContext } from '../engine/UI/ItemDetailContext';
 import { describeTerrain } from '../engine/UI/TerrainTextCatalog';
 
 export function nearbyDetail(game: Game, requested: SidebarEntityRow): DetailInfo | null {
+    if (presentationTimeline(game)?.busy) return null;
     // Recheck the polled row against current visibility and identity. A moved,
     // removed or newly hidden entity must not reveal its replacement/location.
     const row = sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth)

@@ -694,3 +694,7 @@ interface PortraitManifest {
 2b 已验收，本轮只推进剧情事实、收据、日志与可选 XP。2c 具体底座协议/版本/失败回滚见 [架构 §20](architecture.md#20-阶段-2c-剧情事实与可选奖励提交)，实际门禁见 [报告](phase2c.report.md)。上文“拟新增”和2a/2b状态保留历史设计背景，不替代本次实现证据。
 
 2d 获准后必须核对 main `dc0b78b` 的 DialogService/DialogHost/DialogInput 以及 blur 修复 `26ad9c4`。当前 `Input.ts` 自定义物理释放屏障必须移除或统一进主线 DialogInput，不长期保留两套屏障；本次2c不开始输入/UI迁移、不合main。
+
+## 14 2d 候选接线
+
+维护者已授权2d与2c联合验收，并明确批准按main设计§4.5加入限定的纯数据受控命令准备接口。上节的“本次2c不开始”仅描述2c当时边界；现行范围以README当前工作为准。正式对话/占位立绘、统一DialogInput、只读回放与纯准备接口的实际实现、版本边界、独立审查及门禁分列于[2d报告](phase2d.report.md)与[架构§21](architecture.md#21-阶段-2d-共用对话层与受控命令准备)。报告尚未填写证据的项目不视为通过，不自动启动2e。

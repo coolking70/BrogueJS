@@ -1,10 +1,8 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
-import * as translation from 'i18next-vue';
 import I18NextVue from 'i18next-vue';
 import i18next from 'i18next';
-import { parse, compileScript, compileStyle } from '@vue/compiler-sfc';
-import ts from 'typescript';
+import { parse, compileStyle } from '@vue/compiler-sfc';
 import postcss from 'postcss';
 import { readFileSync } from 'node:fs';
 import baseZhCN from '../../../../locales/zh_CN.json';
@@ -14,6 +12,7 @@ import { Game, activeGame as game } from '../../../../engine/Core/Game';
 import { rng } from '../../../../engine/Random';
 import { logger } from '../../../../engine/Systems/Logger';
 import { displaySettings } from '../../../../engine/Settings';
+import { createSfcHarness } from '../../../../test/support/sfcHarness';
 import data from '../data/definitions.json';
 import type { GrowthDefinitionPack, GrowthSkill } from '../types';
 import { createGrowthGameplay } from '../module';
@@ -21,13 +20,19 @@ import { parseGrowthDefinitionPack } from '../definitions';
 import { extensionDataFingerprint } from '../../../../ext/fingerprint';
 import { ExtensionRegistry } from '../../../../ext/registry';
 import * as catalog from '../../../../ext/catalog';
+import { HUNGER_THRESHOLD } from '../../../../entities/Player';
+import { presentationTimeline } from '../../../../ui/presentationTimeline';
+import { observePresentation } from '../../../../engine/Core/PresentationObserver';
+import type { DialogService } from '../../../../ui/dialogService';
+import * as growthView from '../view';
 import { readGrowthCharacterView, createGrowthAllocationDraft, buildGrowthAllocateCommand } from '../view';
 
 // Real App, HUD, command bar and character SFC lifecycle/templates mounted to a
 // deterministic Vue renderer. Pixel/viewport acceptance remains browser work.
 interface Node {
     type: string; text: string; props: Record<string, any>; children: Node[]; parent: Node | null; isConnected: boolean;
-    focus(): void; blur(): void; contains(target: Node): boolean; getBoundingClientRect(): object;
+    closest(selector: string): Node | null; hasAttribute(name: string): boolean; getAttribute(name: string): string | null;
+    querySelectorAll<T>(selector: string): T[]; focus(): void; blur(): void; contains(target: Node): boolean; getBoundingClientRect(): object;
 }
 const all = (n: Node): Node[] => [n, ...n.children.flatMap(all)];
 const text = (n: Node): string => n.text + n.children.map(text).join('');
@@ -35,8 +40,22 @@ const hasClass = (n: Node, cls: string) => String(n.props.class).split(' ').incl
 const doc = { activeElement: null as Node | null, addEventListener: vi.fn(), removeEventListener: vi.fn(), hidden: false,
     querySelector: (selector: string) => selector === '.game-view' ? all(root).find(n => hasClass(n, 'game-view')) : body,
     documentElement: { dataset: {}, style: { setProperty() {} } } };
-const node = (type: string, text = ''): Node => Vue.markRaw({ type, text, props: {}, children: [], parent: null, isConnected: true,
-    focus() { doc.activeElement = this; }, blur() { if (doc.activeElement === this) doc.activeElement = null; },
+const node = (type: string, text = ''): Node => Vue.markRaw({ type, text, props: {} as Record<string, any>, children: [], parent: null, isConnected: true,
+    closest(selector) {
+        if (selector === '[role="dialog"], [role="alertdialog"]' && ['dialog', 'alertdialog'].includes(this.props.role)) return this;
+        if (selector === '[style*="display: none"]' && this.props.style?.display === 'none') return this;
+        return this.parent?.closest(selector) ?? null;
+    },
+    hasAttribute(name) { return this.props[name] !== undefined && this.props[name] !== false; },
+    getAttribute(name) { return this.props[name] ?? null; },
+    querySelectorAll<T>(selector: string) { return all(this).filter(item => selector === 'button, [tabindex="0"]' ? item.type === 'button' || item.props.tabindex === '0'
+        : selector === '[data-dialog-scroll]' ? !!item.props['data-dialog-scroll'] : item.type === selector) as T[]; },
+    focus() {
+        doc.activeElement = this;
+        // Propagate native focusin capture, including an attempted Host restore
+        // into a portal that is still hidden by an ACK-following display delay.
+        for (let ancestor: Node | null = this; ancestor; ancestor = ancestor.parent) ancestor.props.onFocusinCapture?.({ target: this });
+    }, blur() { if (doc.activeElement === this) doc.activeElement = null; },
     contains(target) { return all(this).includes(target); }, getBoundingClientRect() { return { top: 650, right: 1200 }; } });
 const body = node('body'); let root = node('root');
 const renderer = Vue.createRenderer<Node, Node>({
@@ -115,6 +134,8 @@ let App: Vue.Component, Hud: Vue.Component, GrowthHud: Vue.Component, app: Retur
 let input: typeof import('../../../../engine/Input').inputManager;
 let held: typeof import('../../../../ui/heldInput');
 let viewport: typeof import('../../../../ui/layout').viewport;
+let realDialogs = false, mountedDialogs: DialogService;
+let moduleSessions: import('../../../ui/types').ModuleUiSession[] = [];
 let ruleSet: 'classic' | 'extended' = 'extended';
 const con = 'growth.attribute.constitution', str = 'growth.attribute.strength-training';
 function configured(change?: (pack: GrowthDefinitionPack) => void) {
@@ -144,45 +165,33 @@ beforeAll(async () => {
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
     input = (await import('../../../../engine/Input')).inputManager; held = await import('../../../../ui/heldInput');
     const layout = await import('../../../../ui/layout'); viewport = layout.viewport;
-    const empty = { default: { render: () => null }, __esModule: true };
-    const { contribution, hud } = (await import('./uiFixture')).growthUiFixture();
+    const empty = { render: () => null };
+    const { contribution: originalContribution, hud } = (await import('./uiFixture')).growthUiFixture();
+    const contribution = { ...originalContribution, useSession: (host: import('../../../ui/types').ModuleUiHost) => {
+        const session = originalContribution.useSession!(host); moduleSessions.push(session); return session;
+    } };
     const genericUi = await import('../../../../ext/ui/useModuleUi');
-    const genericCreation = await import('../../../../ext/ui/creation');
-
-    const modules: Record<string, unknown> = {
-        './ext/ui/useModuleUi': { useModuleUi: (host: import('../../../ui/types').ModuleUiHost) => genericUi.useModuleUi(host, [contribution]) },
-        '../ext/catalog': await import('../../../../ext/catalog'),
-        '../ext/ui/defaults': await import('../../../../ext/ui/defaults'),
-        '../ext/ui/creation': { ...genericCreation, prepareModuleCreation: (ids: readonly string[]) => genericCreation.prepareModuleCreation(ids, [contribution]) },
-        './ui/heldInput': await import('../../../../ui/heldInput'),
-
-        vue: Vue, 'i18next-vue': translation, i18next: { default: i18next, __esModule: true },
-        './engine/Settings': await import('../../../../engine/Settings'), './engine/Input': { inputManager: input },
-        '../engine/Input': { inputManager: input }, '../../engine/Input': { inputManager: input },
-        './engine/Systems/Logger': { logger }, './engine/Core/Game': { activeGame: game },
-        './engine/Core/SaveStorage': await import('../../../../engine/Core/SaveStorage'), './ui/layout': layout,
-        './ui/immersiveMode': await import('../../../../ui/immersiveMode'), './ui/recordingExport': await import('../../../../ui/recordingExport'),
-        '../../ui/useGameHud': await import('../../../../ui/useGameHud'), '../../entities/Player': await import('../../../../entities/Player'),
-        '../ui/commands': await import('../../../../ui/commands'),
+    const stubs = {
+        '../../../../ext/ui/useModuleUi': { useModuleUi: (host: import('../../../ui/types').ModuleUiHost) => genericUi.useModuleUi(host, [contribution]) },
     };
-    const compile = (path: string): Vue.Component => {
-        const script = compileScript(parse(source(path)).descriptor, { id: path, inlineTemplate: true });
-        const code = ts.transpileModule(script.content, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText;
-        const exports: any = {};
-        new Function('require', 'exports', code)((key: string) => { if (!(key in modules)) throw new Error(`Unresolved growth UI import: ${key}`); return modules[key]; }, exports);
-        return exports.default;
-    };
-    for (const name of ['ContextPanel', 'MessageJournal', 'MessageAcknowledgment', 'InventoryOverlay', 'GameEndOverlay', 'ReplayControls', 'AgentControls', 'DetailPanel', 'ReferenceOverlay', 'MapZoomControls', 'SideDrawer', 'DPad', 'TargetBar']) modules[`./components/${name}.vue`] = empty;
-    for (const name of ['ThemeLog', 'ThemeNearby', 'RadialCommands']) modules[`./components/theme/${name}.vue`] = empty;
-    modules['./components/MainMenu.vue'] = { default: { emits: ['new-game'], setup(_props: unknown, { emit }: any) { return () => Vue.h('button', { 'data-start': 'game', onClick: () => emit('new-game', { seed: '6721', mode: 'test', ruleSet }) }); } }, __esModule: true };
-    modules['./components/GameCanvas.vue'] = { default: { props: ['displayModalOpen'], render() { return Vue.h('div'); } }, __esModule: true };
-    modules['./components/CommandBar.vue'] = { default: compile('components/CommandBar.vue'), __esModule: true };
-    Hud = compile('components/theme/ThemeHud.vue');
+    const harness = createSfcHarness({ baseURL: import.meta.url, stubs });
+    const DialogHost = await harness.load('../../../../components/DialogHost.vue');
+    Hud = await harness.load('../../../../components/theme/ThemeHud.vue');
     GrowthHud = hud;
-    modules['./components/theme/ThemeHud.vue'] = { default: Hud, __esModule: true };
-    App = compile('App.vue');
+    // Mount the same real HUD/command bar/module panels while leaving unrelated
+    // shell components and Pixi outside this deterministic custom renderer.
+    const appHarness = createSfcHarness({ baseURL: import.meta.url, stubs, stubComponents: empty, components: {
+        '../../../../components/DialogHost.vue': { props: ['service', 'epoch'], setup(props: any) { mountedDialogs = props.service; return () => realDialogs ? Vue.h(DialogHost, props) : null; } },
+        '../../../../components/MainMenu.vue': { emits: ['new-game'], setup(_props: unknown, { emit }: any) {
+            return () => Vue.h('button', { 'data-start': 'game', onClick: () => emit('new-game', { seed: '6721', mode: 'test', ruleSet }) });
+        } },
+        '../../../../components/GameCanvas.vue': { props: ['displayModalOpen'], render() { return Vue.h('div'); } },
+        '../../../../components/CommandBar.vue': await harness.load('../../../../components/CommandBar.vue'),
+        '../../../../components/theme/ThemeHud.vue': Hud,
+    } });
+    App = await appHarness.load('../../../../App.vue');
 });
-beforeEach(() => { vi.useFakeTimers(); ruleSet = 'extended'; viewport.mode = 'desktop'; viewport.coarsePointer = false; displaySettings.immersiveMode = false; doc.activeElement = null; logger.reset(); input.setCallback(vi.fn()); input.setUnboundKeyCallback(vi.fn()); });
+beforeEach(() => { vi.useFakeTimers(); realDialogs = false; moduleSessions = []; ruleSet = 'extended'; viewport.mode = 'desktop'; viewport.coarsePointer = false; displaySettings.immersiveMode = false; doc.activeElement = null; logger.reset(); input.setCallback(vi.fn()); input.setUnboundKeyCallback(vi.fn()); });
 afterEach(() => { app?.unmount(); app = undefined; body.children = []; root.children = []; logger.presentAcknowledgments(null); vi.useRealTimers(); vi.restoreAllMocks(); });
 afterAll(() => vi.unstubAllGlobals());
 
@@ -460,6 +469,35 @@ describe('EXT-1d mounted skill learning, loadout, targeting and display', () => 
         expect(event).toMatchObject({ action: 'equip-skills', payload: { active: [skillId('brace')], passive: [] } });
         expect(find('data-action', 'use-skill', actions('brace')).props.disabled).toBe(false);
     });
+    it.each(['yes', 'no', 'stale'] as const)('tracks a pending skill confirmation without premature rejection (%s)', async outcome => {
+        await prepared(); await skills(); await press('learn-skill', 'brace'); await press('equip-skill', 'brace');
+        const original = game.executeCommand.bind(game), before = game.extensionRuntime!.snapshot(), random = rng.getState();
+        const count = game.recordedInputEvents.length;
+        let pending: import('../../../../engine/Core/Game').CommandConfirmation | null = null;
+        let command = '';
+        vi.spyOn(game, 'pendingCommandConfirmation', 'get').mockImplementation(() => pending);
+        const execute = vi.spyOn(game, 'executeCommand').mockImplementation((_action, data) => {
+            command = String(data); pending = { token: {}, ownerCommandId: 71, message: 'UI fixture confirmation' };
+        });
+        await press('use-skill', 'brace');
+        expect(find('data-action', 'use-skill', actions('brace')).props.disabled).toBe(true);
+        expect(cls('growth-error')).toBeUndefined(); expect(cls('growth-success')).toBeUndefined();
+        expect(game.extensionRuntime!.snapshot()).toEqual(before); expect(rng.getState()).toEqual(random);
+        expect(game.recordedInputEvents).toHaveLength(count);
+        // This is a UI pending/completion fixture; real risk, No and recorder
+        // semantics are covered separately by the prepared-command engine tests.
+        pending = null; execute.mockRestore();
+        if (outcome === 'yes') original('ext:command', command);
+        if (outcome === 'no') game.recordedInputEvents.push({ index: count, tick: 0, depth: game.depth,
+            player: { ...game.player.loc }, action: 'ext:command', data: command, decisions: [false] });
+        vi.advanceTimersByTime(100); await tick();
+        expect(cls('growth-error')).toBeUndefined();
+        if (outcome === 'yes') expect(text(cls('growth-success'))).toBe(i18next.t('ext.growth.ui.skill_used'));
+        else if (outcome === 'no') {
+            expect(text(cls('growth-success'))).toBe(i18next.t('ext.growth.ui.skill_cancelled'));
+            expect(game.extensionRuntime!.snapshot()).toEqual(before); expect(rng.getState()).toEqual(random);
+        } else expect(cls('growth-success')).toBeUndefined();
+    });
     it('keeps action positions stable when the second physical click arrives after a Vue rerender', async () => {
         await prepared(); await skills();
         const buttons = () => all(actions('measured-strike')).filter(node => node.type === 'button');
@@ -543,6 +581,98 @@ describe('EXT-1d mounted skill learning, loadout, targeting and display', () => 
         click(button); click(button); await tick(); await tick();
         expect(game.recordedInputEvents).toHaveLength(count + 1); expect(game.stats.turns).toBe(turns + 1);
         expect(cls('growth-panel')).toBeTruthy();
+    });
+    it('withholds real future growth output through a skill hunger ACK and delay, then restores immediately without remounting', async () => {
+        realDialogs = true;
+        await prepared(); await skills(); await press('learn-skill', 'brace'); await press('equip-skill', 'brace');
+        const panel = cls('growth-panel'), overlay = cls('growth-overlay'), hud = cls('th-growth', root), bar = cls('growth-skill-bar', root);
+        const session = moduleSessions[0], count = moduleSessions.length;
+        const button = find('data-action', 'use-skill', actions('brace')); button.focus();
+        game.player.inventory.items = []; game.player.nutrition = HUNGER_THRESHOLD + 1;
+        game.player.setStatusDuration('slowed', 20); game.animationEnabled = true;
+        click(button); await tick();
+        for (let index = 0; index < 100 && game.isAdvancing; index++) game.tickAdvancement(16);
+        expect(game.isAdvancing).toBe(false); await tick();
+        const timeline = presentationTimeline(game)!;
+        expect(mountedDialogs.current?.kind).toBe('acknowledgment');
+        expect(timeline.pendingEvents.some(event => event.kind === 'animation-delay')).toBe(true);
+        vi.advanceTimersByTime(100); await tick();
+        for (const surface of [hud, bar, overlay]) {
+            expect(surface.props.style.visibility).toBe('hidden');
+            expect(surface.props.inert).toBe(true); expect(surface.props['aria-hidden']).toBe(true);
+        }
+        expect(doc.activeElement).toBe(find('data-dialog-action', 'more'));
+        expect(cls('growth-panel')).toBe(panel); expect(moduleSessions).toHaveLength(count); expect(moduleSessions[0]).toBe(session);
+        const final = readGrowthCharacterView(game)!, snapshot = game.extensionRuntime!.snapshot(), random = rng.getState(), events = game.recordedInputEvents.length;
+        expect(final.skills.find(skill => skill.id === skillId('brace'))!.cooldownRemaining).toBeGreaterThan(0);
+        mountedDialogs.answer(mountedDialogs.current!.token, 'more'); await tick();
+        expect(mountedDialogs.current).toBeUndefined(); expect(timeline.busy).toBe(true);
+        expect(overlay.props.style.visibility).toBe('hidden'); expect(panel.contains(doc.activeElement!)).toBe(false);
+        // No shell timer tick: the timeline's existing service source restores
+        // fresh model output on the exact idle transition.
+        for (let index = 0; index < 1000 && timeline.busy; index++) timeline.tick(16);
+        await tick(); expect(timeline.busy).toBe(false);
+        expect(cls('growth-panel')).toBe(panel); expect(moduleSessions[0]).toBe(session);
+        for (const surface of [hud, bar, overlay]) {
+            expect(surface.props.style?.visibility).not.toBe('hidden'); expect(surface.props.inert).toBeUndefined();
+        }
+        expect(text(cls('growth-bar-focus', root))).toBe(i18next.t('ext.growth.ui.focus_compact', { current: final.focus.current, capacity: final.focus.capacity }));
+        expect(text(actions('brace').parent!)).toContain(i18next.t('ext.growth.ui.cooldown_remaining', { count: final.skills.find(skill => skill.id === skillId('brace'))!.cooldownRemaining }));
+        expect(doc.activeElement).toBe(panel); // the original use button is now disabled
+        expect(game.extensionRuntime!.snapshot()).toEqual(snapshot); expect(rng.getState()).toEqual(random); expect(game.recordedInputEvents).toHaveLength(events);
+    });
+    it('preserves controller, allocation draft, selected tab and focus across display-only suspension', async () => {
+        realDialogs = true; configured(); await start();
+        const draft = vi.spyOn(growthView, 'createGrowthAllocationDraft');
+        await open(); await step(con); const panel = cls('growth-panel'), session = moduleSessions[0];
+        click(find('data-tab', 'identities')); await tick();
+        const selected = find('data-tab', 'identities'); selected.focus();
+        const created = draft.mock.results.map(result => result.value), snapshot = game.extensionRuntime!.snapshot(), random = rng.getState();
+        logger.log('display-only interruption', '#fff', { acknowledge: true });
+        observePresentation(game, 'animation-delay', 40); await tick();
+        expect(cls('growth-overlay').props.style.visibility).toBe('hidden');
+        mountedDialogs.answer(mountedDialogs.current!.token, 'more'); await tick();
+        expect(panel.contains(doc.activeElement!)).toBe(false);
+        presentationTimeline(game)!.tick(40); await tick();
+        expect(cls('growth-panel')).toBe(panel); expect(moduleSessions[0]).toBe(session);
+        expect(draft.mock.results.map(result => result.value)).toEqual(created);
+        expect(find('data-tab', 'identities')).toBe(selected); expect(selected.props.class).toContain('selected'); expect(doc.activeElement).toBe(selected);
+        click(find('data-tab', 'attributes')); await tick();
+        expect(text(find('data-attribute', con))).toContain('→');
+        expect((session!.panel.value!.props.model as growthView.GrowthCharacterViewModel).allocation.attributes).toEqual({ [con]: 1 });
+        expect(game.extensionRuntime!.snapshot()).toEqual(snapshot); expect(rng.getState()).toEqual(random);
+    });
+    it('does not steal focus from a shared alertdialog when display presentation becomes idle', async () => {
+        realDialogs = true; configured(); await start(); await open();
+        const panel = cls('growth-panel'); find('data-tab', 'attributes').focus();
+        logger.log('display-only interruption', '#fff', { acknowledge: true });
+        observePresentation(game, 'animation-delay', 40); await tick();
+        mountedDialogs.answer(mountedDialogs.current!.token, 'more'); await tick();
+        mountedDialogs.request({ kind: 'confirm', owner: 'test:next-confirm', text: 'Next decision', defaultAction: 'no', onAnswer() {} });
+        await tick(); const no = find('data-dialog-action', 'no');
+        // The next shared dialog owns keyboard focus while the display suffix
+        // finishes; restoring the suspended character must not take it back.
+        no.focus(); expect(doc.activeElement).toBe(no);
+        presentationTimeline(game)!.tick(40); await tick();
+        expect(cls('growth-overlay').props.style?.visibility).not.toBe('hidden');
+        expect(cls('growth-panel')).toBe(panel); expect(doc.activeElement).toBe(no);
+    });
+    it('restores visible read-only module browsing after replay load and seek replace a busy live timeline', async () => {
+        realDialogs = true; await prepared(); await skills(); await press('learn-skill', 'brace'); await press('equip-skill', 'brace');
+        const recording = game.exportRecording(); click(cls('growth-back')); await tick();
+        logger.log('abandoned live warning', '#fff', { acknowledge: true });
+        observePresentation(game, 'animation-delay', 40); await tick();
+        expect(cls('growth-skill-bar', root).props.style.visibility).toBe('hidden');
+        expect(game.loadReplay(recording)).toBe(true);
+        game.replaySeek(recording.events.length); vi.advanceTimersByTime(100); await tick();
+        expect(presentationTimeline(game)!.busy).toBe(false); expect(game.replayError).toBeNull();
+        expect(cls('growth-skill-bar', root).props.style?.visibility).not.toBe('hidden');
+        await skills(); expect(cls('growth-overlay').props.style?.visibility).not.toBe('hidden');
+        expect(text(body)).toContain('录像回放');
+        expect(all(body).filter(node => ['learn-skill', 'equip-skill', 'unequip-skill', 'use-skill'].includes(node.props['data-action'])).every(node => node.props.disabled)).toBe(true);
+        const snapshot = game.extensionRuntime!.snapshot(), random = rng.getState(), cursor = game.replayCursor;
+        click(find('data-tab', 'identities')); await tick(); click(find('data-tab', 'skills')); await tick();
+        expect(game.extensionRuntime!.snapshot()).toEqual(snapshot); expect(rng.getState()).toEqual(random); expect(game.replayCursor).toBe(cursor);
     });
     it('executes wait/search skills exactly once and disables cooldown repeat while browsing is pure', async () => {
         await prepared(); await skills(); await press('learn-skill', 'brace'); await press('equip-skill', 'brace');

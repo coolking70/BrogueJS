@@ -3,7 +3,7 @@ import { Player } from '../entities/Player';
 import { allocateEntityId, getNextEntityId, restoreNextEntityId } from '../entities/Creature';
 import { validWorldPlacement, validWorldSnapshot, publicInteractable, sortInteractables, WORLD_INTERACTABLE_LIMIT, type WorldInteractable, type WorldInteractablePlacement, type WorldInteractablePlacementResult, type WorldInteractionSnapshot, type WorldInteractionValidation } from './world';
 import type { ExtensionRegistry } from './registry';
-import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json, ActorFacts, ResourceCommit, CharacterResources, CharacterResourceCommit, ExtensionRuleContext, ExtensionRuleInput, ExtensionRulePolicies, ItemGrowthInput, ExtensionViewDescriptor, ExtensionModuleView, ExtensionCreationResources } from './types';
+import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json, ActorFacts, ResourceCommit, CharacterResources, CharacterResourceCommit, ExtensionRuleContext, ExtensionRuleInput, ExtensionRulePolicies, ItemGrowthInput, ExtensionViewDescriptor, ExtensionModuleView, ExtensionCreationResources, ControlledCommandPreparationContext, PreparedControlledCommand } from './types';
 import { creatureView } from './types';
 import { readCreatureBirth } from './birth';
 import { canonical, cloneJson, isJson, validId } from './json';
@@ -735,6 +735,38 @@ export class ExtensionRuntime {
             this.pendingStoryFacts.push(pending);
         }
     }
+    /** Pure preparation has no transaction, command handler, RNG or write capability.
+     * Every context accessor is revoked before the detached plan can reach a UI wait. */
+    prepareControlledCommand(data: unknown): PreparedControlledCommand | null {
+        if (this.disposed || this.activeScope || this.commandModule || this.pureProviderPhase)
+            throw new Error('Controlled preparation outside safe boundary');
+        if (!this.hasRegisteredCommand(data) || typeof data !== 'string') throw new Error('Invalid extension command');
+        const input = JSON.parse(data) as { module: string; action: string; payload: Json };
+        const module = this.modules.find(entry => entry.id === input.module)!;
+        if (!module.prepareControlledCommand) return null;
+        let open = true;
+        const read = (): void => { if (!open || this.disposed) throw new Error('Closed controlled preparation context'); };
+        const source = this.context(module, null);
+        const context: ControlledCommandPreparationContext = Object.freeze({
+            get playerId() { read(); return source.playerId; },
+            get state() { read(); return source.state; },
+            getComponent(id: number, name: string) { read(); return source.getComponent(id, name); },
+            creature(id: number) { read(); return source.creature(id); },
+            canManageCharacter() { read(); return source.canManageCharacter(); },
+            validateAction(request: ControlledActionRequest) { read(); return source.validateAction(request); },
+        });
+        this.pureProviderPhase = true;
+        try {
+            const result = module.prepareControlledCommand(input.action, cloneJson(input.payload), context);
+            requireSynchronous(result);
+            if (result === null) return null;
+            if (!isJson(result) || Object.keys(result).sort().join(',') !== 'request,revision'
+                || !Number.isSafeInteger(result.revision) || result.revision < 0
+                || !this.ports.validateAction?.(result.request)) throw new Error('Invalid controlled command preparation');
+            return freezeView(structuredClone({ command: data, revision: result.revision, request: result.request }));
+        } finally { open = false; this.pureProviderPhase = false; }
+    }
+
     command(data: unknown, settle?: () => void): void {
         if (this.world.gate && !this.allowsInput('ext:command', data)) throw new Error('Interaction gate rejects command');
         if (typeof data !== 'string') throw new Error('Extension command requires JSON string');

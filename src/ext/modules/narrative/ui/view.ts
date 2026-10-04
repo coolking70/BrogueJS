@@ -11,20 +11,25 @@ export interface NarrativeActiveView {
     readonly choices: readonly { readonly id: string; readonly textKey: string; readonly enabled: boolean; readonly unavailableKey: string | null }[];
     readonly transitionLimitReached: boolean;
 }
+export interface NarrativeJournalEntry {
+    readonly entryId: string; readonly order: number; readonly titleKey: string; readonly textKey: string;
+}
 export interface NarrativeUiView {
     readonly session: object; readonly revision: number; readonly readOnly: boolean;
     readonly nearby: readonly NarrativeNearbyTarget[];
     readonly active: NarrativeActiveView | null;
+    readonly journal: readonly NarrativeJournalEntry[];
 }
 /** The module's projection already filters visibility and choice conditions.
  * Rendering never loads mechanical definitions or evaluates story effects. */
 export function readNarrativeUiView(game: Game): NarrativeUiView | null {
     const source = game.extensionRuntime?.readModuleView('narrative');
     if (!source) return null;
-    return { session: source.session, revision: source.state.revision as number,
+    return Object.freeze({ session: source.session, revision: source.state.revision as number,
         nearby: source.state.nearby as unknown as readonly NarrativeNearbyTarget[],
         active: source.state.active as unknown as NarrativeActiveView | null,
-        readOnly: !!game.replayRecording || game.isGameOver };
+        journal: source.state.journal as unknown as readonly NarrativeJournalEntry[],
+        readOnly: !!game.replayRecording || game.isGameOver });
 }
 export function buildNarrativeUiCommand(game: Game, expected: NarrativeUiView, action: 'open' | 'choose' | 'close', id?: number | string): string | null {
     const current = readNarrativeUiView(game);

@@ -1,5 +1,6 @@
 import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
 import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
+import { observePresentation, presentationBlocked, resetPresentation } from './PresentationObserver';
 import { DISPLAY_FRAME_MS, stepCadence } from '../UI/ActionCadence';
 import { staffHealingPercent, staffHasteDuration, staffDiscordDuration, armorStealthAdjustment, ringStealthAdjustment, ringAwarenessBonus, ringClairvoyanceRadius } from '../Items/ItemEffectFormulas';
 import { emitCreatureFeature } from '../Combat/CreatureFeatures';
@@ -130,7 +131,7 @@ import {
 import { FloatingText } from '../Visuals/FloatingText';
 import { STATUS_CONFIG } from '../Status/statusConfig';
 import { exposeBoltPathToElectricity, getBoltForItem, boltPath, createBoltResult, BoltEffect, BOLT_EFFECT_CE_EFFECT, MONSTER_BOLT_TABLE, type BoltConfig, type BoltFrame, type BoltResult, type BoltReflection, type MonsterBoltMeta } from '../Combat/Bolt';
-import { traceBolt, type BoltWorld } from '../Combat/BoltTrajectory';
+import { boltLine, traceBolt, type BoltWorld } from '../Combat/BoltTrajectory';
 import { CE_BOLT_CATALOG, CEBoltEffect, CEBoltType, resolveCEBoltMagnitude } from '../Combat/BoltCatalog';
 import { rollStaffDamage } from '../Combat/StaffDamage';
 import { canPlaceCreature, teleportCandidates, captiveItemDropCandidates, qualifyingPathCandidates, allySwapCandidates } from '../Movement/CreaturePlacement';
@@ -223,7 +224,7 @@ import { ExtensionRuntime } from '../../ext/runtime';
 import { formatExtensionCompatibilityError } from '../../ext/compatibility';
 import { createExtensionRegistry, DEFAULT_EXTENSIONS } from '../../ext/catalog';
 import { canonical } from '../../ext/json';
-import { creatureView, itemView, type ExtensionManifest, type ExtensionSnapshot, type RuleSet, type ControlledActionRequest, type ControlledActionOutcome } from '../../ext/types';
+import { creatureView, itemView, type ExtensionManifest, type ExtensionSnapshot, type RuleSet, type PreparedControlledCommand, type ControlledActionRequest, type ControlledActionOutcome } from '../../ext/types';
 import { markCreatureBirth, type CreationReason } from '../../ext/birth';
 
 export type GameRunSnapshot = ReturnType<Game['snapshotRunState']> & { recordingOrigin?: RecordingOrigin };
@@ -272,10 +273,48 @@ export interface RecordingOrigin {
     };
 }
 
+/** The UI sees a read-only capability, never a continuation or live entity. */
+export interface CommandConfirmation {
+    readonly token: object;
+    readonly ownerCommandId: number;
+    readonly message: string;
+}
+/** Engine-owned risk facts; no entity, module context or callback survives preparation. */
+interface ControlledActionRisk {
+    readonly kind: 'acid' | 'ally' | 'chasm' | 'fire' | 'gas' | 'plate';
+    readonly target: { readonly kind: 'creature'; readonly id: number } | { readonly kind: 'cell'; readonly x: number; readonly y: number };
+    readonly message: string;
+}
+interface PreparedControlledCommandPlan extends PreparedControlledCommand {
+    readonly risks: readonly ControlledActionRisk[];
+}
+interface SuppliedCommandAnswers {
+    readonly request: ControlledActionRequest;
+    readonly answers: readonly { risk: ControlledActionRisk; decision: boolean }[];
+    cursor: number;
+}
+interface ConfirmationBoundary { message: string; recordDecision?: boolean }
+type CommandStages<T> = Generator<ConfirmationBoundary, T, boolean>;
+interface CommandExecution {
+    id: number;
+    action: string;
+    data: unknown;
+    decisions: boolean[];
+    stages: CommandStages<void>;
+    pending: CommandConfirmation | null;
+    pendingRecordsDecision: boolean;
+    valid: (() => boolean) | null;
+    autoStep: boolean;
+    blockCombatText: boolean;
+}
 type ReplayStatus = 'idle' | 'loaded' | 'playing' | 'finished';
 interface RecordingRuntime {
+    execution: CommandExecution | null;
+    nextCommandId: number;
+    drivingStages: number;
     replayError: string | null;
     commandDecisions: boolean[] | null;
+    suppliedAnswers: SuppliedCommandAnswers | null;
     replayDecisionCursor: number;
     recordingFromNewGame: boolean;
     origin: RecordingOrigin | null;
@@ -286,7 +325,7 @@ const recordingRuntime = new WeakMap<Game, RecordingRuntime>();
 function recordingState(game: Game): RecordingRuntime {
     let state = recordingRuntime.get(game);
     if (!state) {
-        state = { replayError: null, commandDecisions: null, replayDecisionCursor: 0, recordingFromNewGame: true, origin: null, pendingCommand: null };
+        state = { execution: null, nextCommandId: 1, drivingStages: 0, replayError: null, commandDecisions: null, suppliedAnswers: null, replayDecisionCursor: 0, recordingFromNewGame: true, origin: null, pendingCommand: null };
         recordingRuntime.set(game, state);
     }
     return state;
@@ -480,12 +519,12 @@ export class Game {
     // Callback to trigger re-renders
     public onRenderRequested: (() => void) | null = null;
 
-    /**
-     * C-5：CE confirm(char *prompt, boolean defaultAnswer)（IO.c）的引擎侧钩子——
-     * 跳入已知深渊前的确认（Movement.c:1303-1322）。UI 轮把确认对话框接到
-     * onConfirmRequest 上；钩子为 null（headless/未接线）时按"确认"处理，
-     * 与 CE defaultAnswer 分支的差异登记在 C-5 报告。
-     */
+    /** Session observer; failures cannot change rule execution or recording. */
+    public onCommandConfirmRequest: ((notice?: string) => void) | null = null;
+
+    /** Legacy synchronous resolver for headless helpers and the D4 blink
+     * exception. CE confirm's second argument is alsoDuringPlayback, not a
+     * default answer. Null retains the existing headless approval behavior. */
     public onConfirmRequest: ((message: string) => boolean) | null = null;
 
     /**
@@ -665,7 +704,7 @@ export class Game {
     public get hasCompleteRecording(): boolean { return this.recordingFromNewGame && !this.replayRecording; }
     /** UI may wait for this without cancelling an in-flight command or its forced turns. */
     public get canExportRecording(): boolean {
-        return this.hasCompleteRecording && !this.isAdvancing && !recordingState(this).pendingCommand;
+        return this.hasCompleteRecording && !this.isAdvancing && !recordingState(this).pendingCommand && !recordingState(this).execution;
     }
     public signTexts = new Map<string, string>();
     public resetPlateRoomByPos = new Map<string, number>();
@@ -692,6 +731,7 @@ export class Game {
         const initialCommands = options?.initialCommands === undefined ? undefined : [...options.initialCommands];
         if (initialCommands !== undefined && (!preparedExtensions || !preparedExtensions.validateInitialCommands(initialCommands,options?.mode === 'easy' || options?.mode === 'wizard' ? PLAYER_MODE_RESOURCES[options.mode] : PLAYER_STARTING_RESOURCES)))
             throw new Error('Invalid extension creation commands');
+        resetPresentation(this);
         // U00: retire the old run before seeding/allocating the next one. Returning
         // the iterator must not run an old turn's epilogue against the new world.
         this.discardInFlightAdvancement();
@@ -3027,35 +3067,211 @@ export class Game {
 
     /** Every user command, including inventory and modal choices, crosses this boundary. */
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
-        if (this.replayRecording || this.isAdvancing || this.isInputLocked() || logger.pendingAcknowledgment) return;
+        if (recordingState(this).execution || this.replayRecording || this.isAdvancing
+            || this.isInputLocked() || logger.pendingAcknowledgment || presentationBlocked(this)) return;
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data)) {
             const disturbed = this.disturbed;
             try { logger.log(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }), '#ff6666'); }
             finally { this.disturbed = disturbed; }
             return;
         }
-        const decisions: boolean[] = [];
-        this.commandDecisions = decisions;
+        const state = recordingState(this);
+        const execution: CommandExecution = {
+            id: state.nextCommandId++, action,
+            data: typeof data === 'object' && data !== null ? { ...data } : data,
+            decisions: [], stages: this.applyCommandStages(action, data, perform), pending: null, pendingRecordsDecision: true,
+            valid: null, autoStep: false, blockCombatText: logger.blockCombatText,
+        };
+        state.execution = execution;
+        this.advanceCommand(execution);
+    }
+
+    public get pendingCommandConfirmation(): CommandConfirmation | null {
+        return recordingState(this).execution?.pending ?? null;
+    }
+    public get hasPendingConfirmation(): boolean { return this.pendingCommandConfirmation !== null; }
+
+    /** Answers resume this command, and never enter applyCommand a second time. */
+    public resolveCommandDecision(token: object, decision: boolean): boolean {
+        const execution = recordingState(this).execution;
+        if (!execution?.pending || execution.pending.token !== token || typeof decision !== 'boolean') return false;
+        execution.pending = null;
+        if (!execution.valid?.()) {
+            // The already-run prefix is retained, but cannot become a complete
+            // replay event for an externally modified world. No stale approval.
+            this.cancelPendingCommand();
+            this.notifyCommandConfirmation(i18next.t('dialog.command_changed', {
+                defaultValue: 'The situation has changed. Please enter the command again.',
+            }));
+            return true;
+        }
+        if (execution.pendingRecordsDecision) execution.decisions.push(decision);
+        this.advanceCommand(execution, decision);
+        return true;
+    }
+
+    public cancelPendingCommand(token?: object): void {
+        const state = recordingState(this), execution = state.execution;
+        if (!execution || (token && execution.pending?.token !== token)) return;
+        state.execution = null;
+        this.recordingFromNewGame = false;
+        this.commandDecisions = null;
+        // Closing a suspended generator runs only its lexical cleanup, never
+        // the unapproved suffix or a turn epilogue.
+        const oldBlock = logger.blockCombatText, oldAuto = this.inAutoTravelStep;
+        try { execution.stages.return(); }
+        finally { logger.blockCombatText = oldBlock; this.inAutoTravelStep = oldAuto; }
+        this.notifyCommandConfirmation();
+    }
+
+    private notifyCommandConfirmation(notice?: string): void {
+        try { this.onCommandConfirmRequest?.(notice); } catch { /* presentation is optional */ }
+    }
+
+    private advanceCommand(execution: CommandExecution, answer?: boolean): void {
+        const state = recordingState(this);
+        const oldBlock = logger.blockCombatText, oldAuto = this.inAutoTravelStep;
+        this.commandDecisions = execution.decisions;
+        this.inAutoTravelStep = execution.autoStep;
+        logger.blockCombatText = execution.blockCombatText;
+        state.drivingStages++;
         try {
-            this.applyCommand(action, data, perform);
-            if (this.extensionRuntime) this.collectExtensionComponents();
-            // Keep collecting accepted input after an interrupted command for
-            // diagnostics. Only recordingFromNewGame authorizes full-run export.
-            if (recordingState(this).origin) {
-                const event = this.recordInputEvent(action, data, [...decisions]);
-                if (this.isAdvancing) recordingState(this).pendingCommand = { kind: 'record', event };
+            let result = execution.stages.next(answer!);
+            while (!result.done) {
+                if ((this.onCommandConfirmRequest || result.value.recordDecision === false) && !this.replayRecording) {
+                    execution.pending = Object.freeze({ token: Object.freeze({}),
+                        ownerCommandId: execution.id, message: result.value.message });
+                    execution.pendingRecordsDecision = result.value.recordDecision !== false;
+                    execution.valid = this.confirmationGuard(execution.data);
+                    execution.autoStep = this.inAutoTravelStep;
+                    execution.blockCombatText = logger.blockCombatText;
+                    return;
+                }
+                const decision = this.confirmationDecision(result.value.message, result.value.recordDecision !== false);
+                result = execution.stages.next(decision);
             }
+            state.execution = null;
+            if (this.extensionRuntime) this.collectExtensionComponents();
+            // A pending confirmation creates no provisional event or index.
+            if (state.origin) {
+                const event = this.recordInputEvent(execution.action, execution.data, [...execution.decisions]);
+                if (this.isAdvancing) state.pendingCommand = { kind: 'record', event };
+            }
+            if (!this.isAdvancing) observePresentation(this, 'command-complete');
         } catch (error) {
-            // An exception may leave a changed world without a committed command.
+            state.execution = null;
             this.recordingFromNewGame = false;
             throw error;
         } finally {
+            state.drivingStages--;
             this.commandDecisions = null;
+            logger.blockCombatText = oldBlock;
+            this.inAutoTravelStep = oldAuto;
+            this.notifyCommandConfirmation();
         }
+    }
+
+    /** Legacy direct/headless helpers and replay drain the identical stages. */
+    private runSynchronousStages<T>(stages: CommandStages<T>): T {
+        const state = recordingState(this);
+        state.drivingStages++;
+        try {
+            let result = stages.next();
+            while (!result.done) {
+                if (result.value.recordDecision === false) throw new Error('Prepared confirmation requires executeCommand');
+                result = stages.next(this.confirmationDecision(result.value.message));
+            }
+            return result.value;
+        } catch (error) {
+            stages.return(undefined as T);
+            throw error;
+        } finally { state.drivingStages--; }
+    }
+
+    private confirmationDecision(message: string, recordDecision = true): boolean {
+        if (this.replayRecording) {
+            const decision = this.commandDecisions?.[this.replayDecisionCursor++];
+            if (typeof decision !== 'boolean') throw new Error('missing confirmation decision');
+            return decision;
+        }
+        const decision = this.onConfirmRequest ? this.onConfirmRequest(message) : true;
+        if (recordDecision) this.commandDecisions?.push(decision);
+        return decision;
+    }
+
+    /** Validate identities and the facts used by suspended movement/attack/item
+     * stages. Read raw native fields and detached extension/RNG state only;
+     * never run world projection, formatting, vision or random draws. */
+    private confirmationGuard(data: unknown): () => boolean {
+        const player = this.player, grid = this.grid, depth = this.depth;
+        const runtime = this.extensionRuntime;
+        const extensionState = runtime ? canonical(runtime.snapshot()) : null;
+        const randomState = canonical(rng.getState());
+        const items = [...player.inventory.items];
+        const equipment = [player.equippedWeapon, player.equippedArmor, player.ringLeft, player.ringRight];
+        const monsters = [...iterateCreatures(this.monsters)];
+        const positions: Pos[] = [];
+        for (let dx = -5; dx <= 5; dx++) for (let dy = -5; dy <= 5; dy++) {
+            if (grid.isValidPos(player.x + dx, player.y + dy)) positions.push({ x: player.x + dx, y: player.y + dy });
+        }
+        if (typeof data === 'object' && data !== null && 'x' in data && 'y' in data) {
+            const target = data as Pos;
+            if (grid.isValidPos(target.x, target.y)) positions.push(...boltPath(player.loc, target));
+        }
+        const arcana = this.pendingArcana;
+        // Unknown blink range examines the whole ray, including beyond the aim.
+        // Guard the same knowledge/selection facts across the UI wait.
+        if (arcana) positions.push(...boltLine(grid, player.loc, arcana.cursor,
+            getBoltForItem((arcana.item as Item & { identityId?: string }).identityId ?? ''), this.boltWorld(player)));
+        const facts = () => JSON.stringify({
+            loc: player.loc, hp: player.hp, nutrition: player.nutrition, statuses: player.statusDurations,
+            tick: timeSystem.currentTick, turn: this.absoluteTurnNumber, ticks: player.ticksUntilTurn,
+            movementSpeed: player.movementSpeed, attackSpeed: player.attackSpeed,
+            seized: player.seized, strength: player.strength, gameOver: this.isGameOver,
+            arcana: this.pendingArcana ? { cursor: this.pendingArcana.cursor,
+                item: this.pendingArcana.item.id,
+                kindKnown: ItemLoader.identifiedItems.has((this.pendingArcana.item as Item & { identityId?: string }).identityId ?? '') } : null,
+            items: [...new Set([...items, ...equipment].filter((item): item is Item => !!item))].map(item => ({
+                id: item.id, letter: item.inventoryLetter, quantity: item.quantity, category: item.category,
+                enchantment: item.enchantment, timesEnchanted: item.timesEnchanted, charges: item.charges,
+                cursed: item.isCursed, protected: item.isProtected, identified: item.isIdentified,
+                runic: item.runicType, known: item.runicKnown, vorpal: item.vorpalEnemy, flags: item.flags,
+                identity: (item as Item & { identityId?: string }).identityId,
+                maxChargesKnown: item.maxChargesKnown,
+                keyLoc: item.keyLoc, originDepth: item.originDepth,
+            })),
+            monsters: monsters.map(monster => ({ id: monster.id, loc: monster.loc, hp: monster.hp,
+                ally: monster.isAlly, captive: monster.isCaged, type: monster.typeId,
+                statuses: monster.statusDurations, state: monster.state, submerged: monster.submerged,
+                seizing: monster.seizing, behaviors: [...monster.behaviorFlags], abilities: [...monster.abilityFlags] })),
+            cells: positions.map(({ x, y }) => {
+                const cell = grid.getCell(x, y);
+                return [cell?.layers, cell?.hasMemory, cell?.isVisible, cell?.isClairvoyantVisible,
+                    cell?.isMagicMapped, cell?.isDiscovered, cell?.machineNumber,
+                    this.displacementTrapDepressions?.get(grid)?.has(y * grid.width + x)];
+            }),
+        });
+        const before = facts();
+        return () => this.player === player && this.grid === grid && this.depth === depth
+            && this.extensionRuntime === runtime && canonical(rng.getState()) === randomState
+            && (!runtime || canonical(runtime.snapshot()) === extensionState)
+            && this.pendingArcana === arcana
+            && items.length === player.inventory.items.length
+            && items.every((item, index) => player.inventory.items[index] === item)
+            && equipment.every((item, index) => [player.equippedWeapon, player.equippedArmor, player.ringLeft, player.ringRight][index] === item)
+            && (() => {
+                const current = [...iterateCreatures(this.monsters)];
+                return monsters.length === current.length && monsters.every((monster, index) => current[index] === monster);
+            })() && facts() === before;
     }
 
     /** Shared by live input, replay/seek and autonomous steps, before any dispatch. */
     private applyCommand(action: string, data?: unknown, perform?: () => void): void {
+        if (this.hasPendingConfirmation) return undefined;
+        return this.runSynchronousStages(this.applyCommandStages(action, data, perform));
+    }
+
+    private *applyCommandStages(action: string, data?: unknown, perform?: () => void): CommandStages<void> {
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data))
             throw new Error(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }));
         logger.onDisturb = () => { this.disturbed = true; };
@@ -3070,7 +3286,10 @@ export class Game {
         }
         if (action === 'ext:command') {
             if (!this.extensionRuntime) throw new Error('Extension command in classic mode');
-            this.extensionRuntime.command(data, () => this.collectExtensionComponents());
+            // §4.5: only detached data crosses the wait. Runtime.command and its
+            // controlled callbacks remain entirely synchronous, including refusals.
+            if (this.onCommandConfirmRequest && !this.replayRecording) yield* this.executePreparedExtensionCommandStages(data);
+            else this.extensionRuntime.command(data, () => this.collectExtensionComponents());
         } else if (action.startsWith('item:')) {
             const [operation, letter, ...rest] = String(data ?? '').split('|');
             const item = this.player.inventory.items.find(i => i.inventoryLetter === letter);
@@ -3083,7 +3302,7 @@ export class Game {
                 case 'quaff': this.quaffItem(item!); break;
                 case 'read': this.readItem(item!); break;
                 case 'throw': this.enterThrowMode(item!); break;
-                case 'eat': this.eatItem(item!); break;
+                case 'eat': (yield* this.eatItemStages(item!)); break;
                 case 'use': this.useArcanaItem(item!); break;
                 case 'identify': this.chooseIdentifyTarget(item!); break;
                 case 'enchant': this.chooseEnchantTarget(item!); break;
@@ -3094,14 +3313,73 @@ export class Game {
                 case 'cancel': this.cancelPendingUse(); break;
                 default: throw new Error(`Unknown item command ${operation}`);
             }
-        } else if (action === 'mouse_travel') {
+        } else if (action === 'mouse_travel'
+            || (action === 'arcana:risk-confirm' && data !== null && typeof data === 'object')) {
+            // A risk event with coordinates came from map selection. Retain
+            // that entry's prefix (e.g. justRested), rather than keyboard input.
             const pos = data as Pos;
-            this.handleMouseTravel(pos.x, pos.y);
+            (yield* this.handleMouseTravelStages(pos.x, pos.y, action === 'arcana:risk-confirm'));
         } else if (action === 'auto_step') {
-            this.performAutoPathStep();
+            (yield* this.performAutoPathStepStages());
         } else {
-            this.performPlayerAction(action, data, 'system');
+            (yield* this.performPlayerActionStages(action, data, 'system'));
         }
+    }
+
+    private prepareControlledCommand(data: unknown): PreparedControlledCommandPlan | null {
+        const prepared = this.extensionRuntime!.prepareControlledCommand(data);
+        if (!prepared) return null;
+        const risks = this.prepareControlledActionRisks(prepared.request);
+        return Object.freeze({ ...prepared, risks: Object.freeze(risks.map(risk => Object.freeze({
+            ...risk, target: Object.freeze({ ...risk.target }),
+        }))) });
+    }
+
+    private *executePreparedExtensionCommandStages(data: unknown): CommandStages<void> {
+        const runtime = this.extensionRuntime!, plan = this.prepareControlledCommand(data);
+        if (!plan) { runtime.command(data, () => this.collectExtensionComponents()); return; }
+        const suppliedAnswers: { risk: ControlledActionRisk; decision: boolean }[] = [];
+        for (const risk of plan.risks) {
+            // Answers are not recorder decisions yet. The original requestConfirm
+            // records each answer exactly once during the one real execution.
+            const decision = yield { message: risk.message, recordDecision: false };
+            suppliedAnswers.push({ risk, decision });
+            if (!decision) break;
+        }
+        if (this.extensionRuntime !== runtime || !runtime.allowsInput('ext:command', plan.command)
+            || canonical(this.prepareControlledCommand(plan.command)) !== canonical(plan))
+            throw new Error('Stale controlled command preparation');
+        const state = recordingState(this);
+        state.suppliedAnswers = { request: plan.request, answers: suppliedAnswers, cursor: 0 };
+        try {
+            runtime.command(plan.command, () => {
+                if (state.suppliedAnswers!.cursor !== suppliedAnswers.length) throw new Error('Unused supplied confirmation decision');
+                this.collectExtensionComponents();
+            });
+        } finally { state.suppliedAnswers = null; }
+    }
+
+    /** Same predicates and hit-list preparation as ordinary native movement/attack. */
+    private prepareControlledActionRisks(request: ControlledActionRequest): ControlledActionRisk[] {
+        if (!this.validateControlledAction(request)) throw new Error('Invalid controlled action preparation');
+        const target = request.target;
+        if (request.action === 'attack' && target.kind === 'creature') {
+            const primary = this.monsters.find(monster => monster.id === target.id)!;
+            const dx = primary.x - this.player.x, dy = primary.y - this.player.y;
+            const flags = this.player.equippedWeapon?.flags ?? [];
+            const whip = flags.includes('ITEM_ATTACKS_EXTEND') ? this.preparePlayerWhipAttack(dx, dy) : null;
+            const spear = !whip && flags.includes('ITEM_ATTACKS_PENETRATE') ? this.preparePlayerSpearAttack(dx, dy) : null;
+            const hitList = whip ? [whip] : spear ?? this.buildPlayerMeleeHitList(primary);
+            if (!hitList.some(monster => monster.id === target.id)) return [];
+            return this.preparePlayerAttackRisks(hitList);
+        }
+        if (request.action !== 'move' || target.kind !== 'cell') return [];
+        // A seized struggle commits without entering the destination or asking.
+        if (this.player.seized && this.findLiveSeizer()) return [];
+        const move = this.preparePlayerMoveRisks(target.x, target.y);
+        if (move.certainDeath) return [];
+        const dx = target.x - this.player.x, dy = target.y - this.player.y;
+        return [...move.risks, ...this.preparePlayerAttackRisks(this.buildLungeFlailHitList(dx, dy, target.x, target.y))];
     }
 
     public executeItemCommand(operation: string, item?: Item, title?: string, perform?: () => void): void {
@@ -3111,6 +3389,7 @@ export class Game {
     public exportRecording(): GameRecording {
         if (!this.hasCompleteRecording) throw new Error('Recording requires a fresh new game or a save with a complete recording prefix');
         if (this.isAdvancing) throw new Error('Recording cannot be exported while a turn is advancing');
+        if (this.hasPendingConfirmation) throw new Error('Recording cannot be exported during a command');
         return {
             version: 2,
             recordedAt: Date.now(),
@@ -3293,7 +3572,7 @@ export class Game {
         this.commandDecisions = event.decisions ?? [];
         this.replayDecisionCursor = 0;
         try {
-            this.applyCommand(event.action, this.decodeRecordedInputData(event.data));
+            this.runSynchronousStages(this.applyCommandStages(event.action, this.decodeRecordedInputData(event.data)));
             if (this.isAdvancing) {
                 recordingState(this).pendingCommand = { kind: 'replay', event, silent };
                 return;
@@ -3382,7 +3661,12 @@ export class Game {
 
     public handlePlayerAction(action: string, data?: unknown, source: 'player' | 'system' = 'player') {
         if (source === 'player') this.executeCommand(action, data);
-        else this.applyCommand(action, data);
+        else if (!this.hasPendingConfirmation && (recordingState(this).drivingStages > 0 || !presentationBlocked(this))) {
+            // Automatic movement keeps the public shared entry (and its
+            // observers), while its parent command owns the yielded stages.
+            if (this.inAutoTravelStep && recordingState(this).drivingStages > 0) return this.applyCommandStages(action, data);
+            this.applyCommand(action, data);
+        }
     }
 
     /** Pure input/world preflight: no prompts, writes, dice or hidden target discovery. */
@@ -3426,6 +3710,8 @@ export class Game {
 
     private executeControlledAction(request: ControlledActionRequest,
         callbacks: { beforeCommit(): void; afterResolve(outcome: ControlledActionOutcome): void }): boolean {
+        const supplied = recordingState(this).suppliedAnswers;
+        if (supplied && canonical(request) !== canonical(supplied.request)) throw new Error('Unplanned controlled action');
         if (!this.validateControlledAction(request)) return false;
         let committed = false, resolved = false, moved = false;
         const control: ControlledPlayerAction = {
@@ -3434,6 +3720,7 @@ export class Game {
             recordDisplacement: () => { moved = true; },
             beforeCommit: () => {
                 if (committed) return true;
+                if (supplied && supplied.cursor !== supplied.answers.length) throw new Error('Unused supplied confirmation decision');
                 // Confirm callbacks can expose new state; repeat pure eligibility at commit.
                 if (!this.validateControlledAction(request)) return false;
                 this.extensionRuntime!.notifyCommittedAction({ actorId: this.player.id, action: request.action });
@@ -3455,7 +3742,12 @@ export class Game {
         return committed;
     }
 
-    private performPlayerAction(action: string, data?: unknown, source: 'player' | 'system' = 'system', control?: ControlledPlayerAction) {
+    private performPlayerAction(action: string, data?: unknown, source: 'player' | 'system' = 'system', control?: ControlledPlayerAction): void {
+        if (this.hasPendingConfirmation || this.interactionActive) return;
+        this.runSynchronousStages(this.performPlayerActionStages(action, data, source, control));
+    }
+
+    private *performPlayerActionStages(action: string, data?: unknown, source: 'player' | 'system' = 'system', control?: ControlledPlayerAction): CommandStages<void> {
         if (this.interactionActive) return;
         if (action === 'discoveries' || action === 'help') {
             this.referenceScreen = this.referenceScreen === action ? null : action;
@@ -3484,7 +3776,9 @@ export class Game {
 
         if (this.pendingArcana) {
             if (action === 'escape' || action === 'cancel_target') this.cancelArcanaSelection();
-            else if (action === 'confirm_target') this.confirmArcanaTarget();
+            else if (action === 'confirm_target' || action === 'arcana:risk-confirm') {
+                yield* this.confirmArcanaTargetStages(action === 'arcana:risk-confirm');
+            }
             else if (action === 'cycle_target') this.cycleArcanaTarget(data === -1);
             else if (action === 'move') {
                 const delta = typeof data === 'number' ? this.directionToVec(data as Direction) : data as Pos | undefined;
@@ -3558,7 +3852,7 @@ export class Game {
         }
 
         if (action === 'auto_explore') {
-            this.handleAutoExplore();
+            (yield* this.handleAutoExploreStages());
             return;
         }
 
@@ -3623,7 +3917,7 @@ export class Game {
             return;
         }
         if (action === 'auto_rest' || action === 'search_long' || action === 'run') {
-            if (!this.isThrowing) this.beginAutoAction(action, data);
+            if (!this.isThrowing) (yield* this.beginAutoActionStages(action, data));
             return;
         }
 
@@ -3678,7 +3972,7 @@ export class Game {
                         return cell.hasMemory && cell.layers.includes(TerrainType.LAVA)
                             && !(cellTerrainFlags(this.grid, this.player.loc.x+x, this.player.loc.y+y) & T_ENTANGLES)
                             && !this.getMonsterAt(this.player.loc.x+x, this.player.loc.y+y);
-                    }) && !this.requestConfirm(i18next.t('bolt.confused_lava', { defaultValue: 'Risk stumbling into lava?' }))) return;
+                    }) && !(yield* this.requestConfirm(i18next.t('bolt.confused_lava', { defaultValue: 'Risk stumbling into lava?' })))) return;
                 [dx,dy] = choices[rng.randRange(0, choices.length-1)]!;
             }
 
@@ -3725,7 +4019,7 @@ export class Game {
                     ? this.keyInPackFor(newX, newY, destCell) : null;
                 const moveNotBlocked = (!!destCell && !(cellTerrainFlags(this.grid, newX, newY) & T_OBSTRUCTS_PASSABILITY)) || !!destinationKey ||
                     (!!blockingMonster && blockingMonster.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'));
-                const geometryAttack = moveNotBlocked && (control?.action === 'move' ? false : this.tryPlayerWeaponGeometryAttack(dx, dy, control));
+                const geometryAttack = moveNotBlocked && (control?.action === 'move' ? false : (yield* this.tryPlayerWeaponGeometryAttackStages(dx, dy, control)));
                 if (geometryAttack === 'aborted') return;
                 if (geometryAttack) {
                     this.needsRender = true;
@@ -3737,9 +4031,9 @@ export class Game {
                     // CE Movement.c:1193-1215: a captive is released, never
                     // attacked. Confusion has already committed the direction.
                     if (!moveNotBlocked) return;
-                    if (!this.player.hasStatus('confused') && !this.requestConfirm(i18next.t('cage.free_confirm', {
+                    if (!this.player.hasStatus('confused') && !(yield* this.requestConfirm(i18next.t('cage.free_confirm', {
                         monster: this.monsterDisplayName(blockingMonster), defaultValue: 'Free the captive {{monster}}?'
-                    }))) return;
+                    })))) return;
                     if (destinationKey) {
                         const disposable = this.keyMatchingEntry(destinationKey, newX, newY, destCell ?? undefined)?.disposableHere ?? true;
                         promoteLayersWithMechFlag(this.grid, newX, newY, TM_PROMOTES_WITH_KEY);
@@ -3757,7 +4051,7 @@ export class Game {
                     // + 攻击循环（循环内复查目标存活，对应 CE MB_IS_DYING 复查）。
                     const hitList = this.buildPlayerMeleeHitList(blockingMonster);
                     const targetsUnchanged = control ? this.captureControlledAttackTargets(hitList) : null;
-                    if (this.abortPlayerAttack(hitList)) return;
+                    if ((yield* this.abortPlayerAttackStages(hitList))) return;
                     if (targetsUnchanged && !targetsUnchanged()) return;
                     if (control && !control.beforeCommit()) return;
                     if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
@@ -3795,7 +4089,7 @@ export class Game {
                     spentTurn = true;
                     timeSystem.currentTick += this.player.movementSpeed;
                     this.moveEntrancedMonsters(dx, dy);
-                } else if (moveNotBlocked && !this.confirmPlayerMove(newX, newY)) {
+                } else if (moveNotBlocked && !(yield* this.confirmPlayerMoveStages(newX, newY))) {
                     return;
                 } else if (this.grid.getCell(newX, newY)?.layers.includes(TerrainType.LOCKED_DOOR) // F-1 跨层判定
                     || this.grid.getCell(newX, newY)?.layers.includes(TerrainType.MONSTER_CAGE_CLOSED)
@@ -3913,7 +4207,7 @@ export class Game {
                     // attack before struggling, nausea RNG or displacement.
                     const specialTargets = this.buildLungeFlailHitList(dx, dy, newX, newY);
                     const targetsUnchanged = control ? this.captureControlledAttackTargets(specialTargets) : null;
-                    if (this.abortPlayerAttack(specialTargets)) return;
+                    if ((yield* this.abortPlayerAttackStages(specialTargets))) return;
                     if (targetsUnchanged && !targetsUnchanged()) return;
                     if (control && !control.beforeCommit()) return;
                     if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'move' });
@@ -3937,7 +4231,8 @@ export class Game {
                     if (descending || ascending) {
                         const origin = { ...this.player.loc }, oldDepth = this.depth;
                         this.player.loc = { x: newX, y: newY };
-                        this.handlePlayerAction(descending ? 'stairs_down' : 'stairs_up', undefined, 'system');
+                        const stairStages = this.handlePlayerAction(descending ? 'stairs_down' : 'stairs_up', undefined, 'system');
+                        if (stairStages) yield* stairStages;
                         if (this.depth === oldDepth) this.player.loc = origin;
                         return;
                     }
@@ -4519,10 +4814,15 @@ export class Game {
     }
 
     public eatItem(item: Item): void {
+        if (this.hasPendingConfirmation) return undefined;
+        return this.runSynchronousStages(this.eatItemStages(item));
+    }
+
+    private *eatItemStages(item: Item): CommandStages<void> {
         if (this.interactionActive) return;
         if (this.isInputLocked() || this.isGameOver || this.player.hp <= 0
             || this.player.hasStatus('paralyzed')) return;
-        if (!this.consumeFood(item, true)) return;
+        if (!(yield* this.consumeFoodStages(item, true))) return;
         // CE Items.c:7633 apply()：FOOD 分支后统一 playerTurnEnded()。
         timeSystem.currentTick += this.player.movementSpeed;
         this.playerTurnEnded();
@@ -4530,16 +4830,23 @@ export class Game {
 
     /** CE Items.c:7477-7505; automatic eating uses the same nutrition and message path. */
     private consumeFood(item: Item, confirm: boolean): boolean {
+        if (this.hasPendingConfirmation) return false;
+        return this.runSynchronousStages(this.consumeFoodStages(item, confirm));
+    }
+
+    private *consumeFoodStages(item: Item, confirm: boolean): CommandStages<boolean> {
         if (item.category !== ItemCategory.FOOD || !this.player.inventory.items.includes(item)) return false;
         const trueId = (item as Item & { consumableId?: string }).consumableId;
         const data = ItemLoader.food.find(f => f.id === trueId);
         if (!data) return false;
         const nutrition = data.nutrition ?? 0;
         if (confirm && STOMACH_SIZE - this.player.nutrition < nutrition
-            && !this.requestConfirm(i18next.t('food.not_hungry_confirm', {
-                food: trueId === 'ration_of_food' ? 'food' : 'mango',
+            && !(yield* this.requestConfirm(i18next.t('food.not_hungry_confirm', {
+                food: trueId === 'ration_of_food'
+                    ? i18next.t('name.Ration of Food', { defaultValue: 'food' })
+                    : i18next.t('name.Mango', { defaultValue: 'mango' }),
                 defaultValue: `You're not hungry enough to fully enjoy the ${trueId === 'ration_of_food' ? 'food' : 'mango'}. Eat it anyway?`,
-            }))) return false;
+            })))) return false;
 
         if (!this.player.inventory.consumeOne(item)) return false;
         this.player.nutrition = Math.min(STOMACH_SIZE, this.player.nutrition + nutrition);
@@ -4813,10 +5120,15 @@ export class Game {
     /** CE Items.c:7368-7440: choose -> resolve/autoID -> spend existing charge
      * -> one movement-speed turn. Initial charges and recharge remain W-5/W-6. */
     public confirmArcanaTarget(): BoltResult | null {
+        if (this.hasPendingConfirmation) return null;
+        return this.runSynchronousStages(this.confirmArcanaTargetStages());
+    }
+
+    private *confirmArcanaTargetStages(recordedRisk = false): CommandStages<BoltResult | null> {
         if (this.interactionActive) return null;
         const pending = this.pendingArcana;
         if (!pending || this.isInputLocked()) return null;
-        const { item, cursor } = pending;
+        const item = pending.item, cursor = { ...pending.cursor };
         if (this.isGameOver || this.player.hp <= 0 || this.player.hasStatus('paralyzed')
             || !this.player.inventory.items.includes(item)) {
             this.cancelArcanaSelection();
@@ -4835,11 +5147,19 @@ export class Game {
             this.cancelArcanaSelection();
             return null;
         }
-        if (this.replayStatus !== 'playing' && preview?.risk === 'possible' && !(this.onConfirmRequest?.(i18next.t('arcana.blink_unknown_lava', {
-            defaultValue: 'Blink across lava with unknown range?'
-        })) ?? false)) {
-            this.cancelArcanaSelection();
-            return null;
+        // CE Items.c:7261-7319 / 7370-7376: ask before charge/effect/time.
+        // Historical confirm_target (and map-click) events never recorded this
+        // answer. Preserve their approved playback interpretation without UI or
+        // a fabricated decision; old cancellations remain an information gap.
+        if (preview?.risk === 'possible' && (!this.replayRecording || recordedRisk)) {
+            const execution = recordingState(this).execution;
+            if (execution) execution.action = 'arcana:risk-confirm';
+            if (!(yield* this.requestConfirm(i18next.t('arcana.blink_unknown_lava', {
+                defaultValue: 'Blink across lava with unknown range?'
+            })))) {
+                this.cancelArcanaSelection();
+                return null;
+            }
         }
         this.cancelArcanaSelection(); // Consume the pending transaction exactly once.
         if (!bolt) return null;
@@ -6652,7 +6972,12 @@ export class Game {
         return !!effect && Game.THROWN_FUNCTIONAL_POTION_EFFECTS.has(effect);
     }
 
-    public throwItemAt(item: Item, tx: number, ty: number) {
+    public throwItemAt(item: Item, tx: number, ty: number): void {
+        if (this.hasPendingConfirmation) return undefined;
+        return this.runSynchronousStages(this.throwItemAtStages(item, tx, ty));
+    }
+
+    private *throwItemAtStages(item: Item, tx: number, ty: number): CommandStages<void> {
         if (this.interactionActive) return;
         this.isThrowing = false;
         this.throwItemTarget = null;
@@ -6667,9 +6992,9 @@ export class Game {
             const name = Object.assign(Object.create(item) as Item, {
                 identified: false, runicKnown: false, maxChargesKnown: false, timesUsed: 0,
             }).displayName;
-            if (!this.requestConfirm(i18next.t('throw.confirm_valuable', {
+            if (!(yield* this.requestConfirm(i18next.t('throw.confirm_valuable', {
                 name, defaultValue: 'Are you sure you want to throw your {{name}}?'
-            }))) return;
+            })))) return;
             const cursedMessage = i18next.t('throw.cursed_equipped', {
                 name, defaultValue: 'You cannot unequip your {{name}}; it appears to be cursed.'
             });
@@ -7783,17 +8108,17 @@ export class Game {
      * 合，不落回普通移动）。斧不在其中：CE 的横扫只挂在"目标格有怪"的普通
      * 近战分支（buildHitList sweep）。dx/dy 统一取符号归一成 8 向单位步。
      */
-    private tryPlayerWeaponGeometryAttack(dx: number, dy: number, control?: ControlledPlayerAction): boolean | 'aborted' {
+    private *tryPlayerWeaponGeometryAttackStages(dx: number, dy: number, control?: ControlledPlayerAction): CommandStages<boolean | 'aborted'> {
         const flags = this.player.equippedWeapon?.flags;
         if (!flags?.length) return false;
         const ux = Math.sign(dx);
         const uy = Math.sign(dy);
         if (ux === 0 && uy === 0) return false;
         if (flags.includes('ITEM_ATTACKS_EXTEND')) {
-            const result = this.playerWhipAttack(ux, uy, control);
+            const result = (yield* this.playerWhipAttackStages(ux, uy, control));
             if (result) return result;
         }
-        if (flags.includes('ITEM_ATTACKS_PENETRATE')) return this.playerSpearAttack(ux, uy, control);
+        if (flags.includes('ITEM_ATTACKS_PENETRATE')) return (yield* this.playerSpearAttackStages(ux, uy, control));
         return false;
     }
 
@@ -7817,7 +8142,7 @@ export class Game {
             && (this.hasLineOfSight(origin.x, origin.y, x, y) || actor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')));
     }
 
-    private playerWhipAttack(dirX: number, dirY: number, control?: ControlledPlayerAction): boolean | 'aborted' {
+    private preparePlayerWhipAttack(dirX: number, dirY: number): Monster | null {
         let strike: Monster | undefined;
         for (let i = 0; i < 5; i++) {
             const tx = this.player.loc.x + (1 + i) * dirX;
@@ -7835,10 +8160,15 @@ export class Game {
                 break;
             }
         }
+        return strike && this.playerWillAttackTarget(strike) ? strike : null;
+    }
+
+    private *playerWhipAttackStages(dirX: number, dirY: number, control?: ControlledPlayerAction): CommandStages<boolean | 'aborted'> {
+        const strike = this.preparePlayerWhipAttack(dirX, dirY);
         if (!strike || !this.playerWillAttackTarget(strike)) return false;
         if (control?.targetId !== undefined && control.targetId !== null && strike.id !== control.targetId) return 'aborted';
         const targetsUnchanged = control ? this.captureControlledAttackTargets([strike]) : null;
-        if (this.abortPlayerAttack([strike])) return 'aborted';
+        if ((yield* this.abortPlayerAttackStages([strike]))) return 'aborted';
         if (targetsUnchanged && !targetsUnchanged()) return 'aborted';
         if (control && !control.beforeCommit()) return 'aborted';
         if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
@@ -7855,7 +8185,7 @@ export class Game {
      *   "Artificially reverse the order of the attacks, so that spears of
      *   force can send both monsters flying."——照实现，测试锁死。
      */
-    private playerSpearAttack(dirX: number, dirY: number, control?: ControlledPlayerAction): boolean | 'aborted' {
+    private preparePlayerSpearAttack(dirX: number, dirY: number): Monster[] | null {
         const hitList: Monster[] = [];
         let proceed = false;
         for (let i = 0; i < 2; i++) {
@@ -7876,10 +8206,15 @@ export class Game {
                 break;
             }
         }
-        if (!proceed) return false;
+        return proceed ? hitList : null;
+    }
+
+    private *playerSpearAttackStages(dirX: number, dirY: number, control?: ControlledPlayerAction): CommandStages<boolean | 'aborted'> {
+        const hitList = this.preparePlayerSpearAttack(dirX, dirY);
+        if (!hitList) return false;
         if (control?.targetId !== undefined && control.targetId !== null && !hitList.some(target => target.id === control.targetId)) return 'aborted';
         const targetsUnchanged = control ? this.captureControlledAttackTargets(hitList) : null;
-        if (this.abortPlayerAttack(hitList)) return 'aborted';
+        if ((yield* this.abortPlayerAttackStages(hitList))) return 'aborted';
         if (targetsUnchanged && !targetsUnchanged()) return 'aborted';
         if (control && !control.beforeCommit()) return 'aborted';
         if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
@@ -8329,36 +8664,59 @@ export class Game {
     private static readonly FALL_DAMAGE_MAX = 10;
 
     /** CE confirm() 的 web 钩子转发；未接线时按"确认"处理（见字段注记）。 */
-    private requestConfirm(message: string): boolean {
-        // CE's automationActive is distinct from autoPlayingLevel. Stop before
-        // consulting either the live UI or recorded decision, even on Yes.
+    private *requestConfirm(message: string, risk?: ControlledActionRisk): CommandStages<boolean> {
+        // P2 occurs once, at the real boundary, before consulting either resolver.
         if (this.isAutoTraveling()) {
             this.stopAutoTravel();
             this.inAutoTravelStep = false;
         }
-        if (this.replayRecording) {
-            const decision = this.commandDecisions?.[this.replayDecisionCursor++];
-            if (typeof decision !== 'boolean') throw new Error('missing confirmation decision');
-            return decision;
+        const supplied = recordingState(this).suppliedAnswers;
+        if (supplied) {
+            const answer = supplied.answers[supplied.cursor];
+            if (!answer || !risk || answer.risk.message !== message || canonical(answer.risk) !== canonical(risk))
+                throw new Error('Unplanned or missing supplied confirmation decision');
+            supplied.cursor++;
+            this.commandDecisions?.push(answer.decision);
+            return answer.decision;
         }
-        const decision = this.onConfirmRequest ? this.onConfirmRequest(message) : true;
-        this.commandDecisions?.push(decision);
-        return decision;
+        if (this.onCommandConfirmRequest && !this.replayRecording && recordingState(this).drivingStages > 1)
+            throw new Error('Controlled confirmation requires pure command preparation');
+        return yield { message };
     }
 
     /** CE Movement.c:812-850: acid first, then the first visible discordant
      * ally. Confirm the whole hit list before any damage, nausea or attack RNG. */
-    private abortPlayerAttack(hitList: Monster[]): boolean {
-        if (this.player.hasStatus('confused')
-            || (this.player.hasStatus('hallucinating') && !this.player.hasStatus('telepathy'))) return false;
-        if (this.abortAcidicAttack(hitList)) return true;
+    protected abortPlayerAttack(hitList: Monster[]): boolean {
+        if (this.hasPendingConfirmation) return false;
+        return this.runSynchronousStages(this.abortPlayerAttackStages(hitList));
+    }
+
+    private preparePlayerAllyAttackRisk(hitList: Monster[]): ControlledActionRisk | null {
         const target = hitList.find(monster => monster.isAlly && monster.hasStatus('discordant')
             && (canSeeMonster(this.player, this.grid, monster)
                 || (!monsterHidden(this.grid, monster, this.player)
                     && this.grid.getCell(monster.x, monster.y)?.isClairvoyantVisible)));
-        return !!target && !this.requestConfirm(i18next.t('combat.attack_ally_confirm', {
-            monster: this.monsterDisplayName(target), defaultValue: 'Are you sure you want to attack {{monster}}?'
-        }));
+        return target ? { kind: 'ally', target: { kind: 'creature', id: target.id },
+            message: i18next.t('combat.attack_ally_confirm', {
+                monster: this.monsterDisplayName(target), defaultValue: 'Are you sure you want to attack {{monster}}?',
+            }) } : null;
+    }
+
+    private preparePlayerAttackRisks(hitList: Monster[]): ControlledActionRisk[] {
+        if (this.player.hasStatus('confused')
+            || (this.player.hasStatus('hallucinating') && !this.player.hasStatus('telepathy'))) return [];
+        return [this.prepareAcidicAttackRisk(hitList), this.preparePlayerAllyAttackRisk(hitList)]
+            .filter((risk): risk is ControlledActionRisk => risk !== null);
+    }
+
+    private *abortPlayerAttackStages(hitList: Monster[]): CommandStages<boolean> {
+        if (this.player.hasStatus('confused')
+            || (this.player.hasStatus('hallucinating') && !this.player.hasStatus('telepathy'))) return false;
+        if (yield* this.abortAcidicAttackStages(hitList)) return true;
+        // Preserve the existing synchronous callback's timing: an acid answer
+        // may change ally facts. Prepared execution has no callback at this point.
+        const ally = this.preparePlayerAllyAttackRisk(hitList);
+        return !!ally && !(yield* this.requestConfirm(ally.message, ally));
     }
 
     /** CE Movement.c:1440-1461: relocate before monsterAvoids, including its
@@ -8386,25 +8744,42 @@ export class Game {
 
     /** CE Movement.c:778-806,837-852: one question for the first visible
      * acidic target, before any attack RNG or side effect. */
-    private abortAcidicAttack(hitList: Monster[]): boolean {
+    protected abortAcidicAttack(hitList: Monster[]): boolean {
+        if (this.hasPendingConfirmation) return false;
+        return this.runSynchronousStages(this.abortAcidicAttackStages(hitList));
+    }
+
+    private prepareAcidicAttackRisk(hitList: Monster[]): ControlledActionRisk | null {
         const weapon = this.player.equippedWeapon;
         if (!weapon || weapon.isProtected || this.player.hasStatus('confused')
-            || (this.player.hasStatus('hallucinating') && !this.player.hasStatus('telepathy'))) return false;
+            || (this.player.hasStatus('hallucinating') && !this.player.hasStatus('telepathy'))) return null;
         const target = hitList.find(monster => monster.hasBehavior('MONST_DEFEND_DEGRADE_WEAPON')
             && (canSeeMonster(this.player, this.grid, monster)
                 || (!monsterHidden(this.grid, monster, this.player)
                     && this.grid.getCell(monster.x, monster.y)?.isClairvoyantVisible))
             && !(weapon.runicKnown && weapon.runicType === 'slaying'
                 && monsterIsInClass(monster.typeId, weapon.vorpalEnemy)));
-        return !!target && !this.requestConfirm(i18next.t('combat.degrade_weapon_confirm', {
+        return target ? { kind: 'acid', target: { kind: 'creature', id: target.id }, message: i18next.t('combat.degrade_weapon_confirm', {
             weapon: weapon.displayName, monster: this.monsterDisplayName(target),
             defaultValue: 'Degrade your {{weapon}} by attacking {{monster}}?'
-        }));
+        }) } : null;
+    }
+
+    private *abortAcidicAttackStages(hitList: Monster[]): CommandStages<boolean> {
+        const risk = this.prepareAcidicAttackRisk(hitList);
+        return !!risk && !(yield* this.requestConfirm(risk.message, risk));
     }
 
     /** CE Movement.c:1297-1365. Knowledge, durations and flags are read only;
      * refusing a move never enters the turn/terrain/attack pipeline. */
-    private confirmPlayerMove(x: number, y: number): boolean {
+    protected confirmPlayerMove(x: number, y: number): boolean {
+        if (this.hasPendingConfirmation) return false;
+        return this.runSynchronousStages(this.confirmPlayerMoveStages(x, y));
+    }
+
+    /** Latched ordinary-move inputs. Native references stay within this read or
+     * the existing classic continuation; prepared DTOs contain only risk data. */
+    private playerMoveRiskInputs(x: number, y: number) {
         const cell = this.grid.getCell(x, y)!;
         const flags = cellTerrainFlags(this.grid, x, y);
         const mech = cellTerrainMechFlags(this.grid, x, y);
@@ -8414,26 +8789,51 @@ export class Game {
         const visible = cell.isVisible || cell.isClairvoyantVisible;
         const respiration = this.player.equippedArmor?.runicType === 'respiration'
             && this.player.equippedArmor.runicKnown;
-        if ((cell.hasMemory || cell.isMagicMapped) && grounded && !confused && fireVulnerable
-            && (flags & T_LAVA_INSTA_DEATH) && !(flags & T_ENTANGLES) && !(mech & TM_IS_SECRET)) {
+        const certainDeath = !!((cell.hasMemory || cell.isMagicMapped) && grounded && !confused && fireVulnerable
+            && (flags & T_LAVA_INSTA_DEATH) && !(flags & T_ENTANGLES) && !(mech & TM_IS_SECRET));
+        return { x, y, cell, flags, mech, confused, grounded, fireVulnerable, visible, respiration, certainDeath };
+    }
+
+    private preparePlayerMoveRisk(kind: 'chasm' | 'fire' | 'gas' | 'plate', input: ReturnType<Game['playerMoveRiskInputs']>): ControlledActionRisk | null {
+        const { x, y, cell, flags, mech, confused, grounded, fireVulnerable, visible, respiration } = input;
+        let message: string | null = null;
+        if (kind === 'chasm' && this.diveConfirmationNeeded(x, y))
+            message = i18next.t('fall.confirm', { defaultValue: 'Dive into the depths?' });
+        if (kind === 'fire' && visible && !confused && !this.burningDuration(this.player) && fireVulnerable
+            && (flags & T_IS_FIRE) && !(mech & TM_EXTINGUISHES_FIRE))
+            message = i18next.t('move.flame_confirm', { defaultValue: 'Venture into flame?' });
+        if (kind === 'gas' && visible && !confused && !this.burningDuration(this.player)
+            && (flags & (T_CAUSES_CONFUSION | T_CAUSES_PARALYSIS)) && !respiration)
+            message = i18next.t('move.gas_confirm', { defaultValue: 'Venture into dangerous gas?' });
+        if (kind === 'plate') {
+            const depressed = this.displacementTrapDepressions?.get(this.grid)?.has(y * this.grid.width + x);
+            const respirationTrap = cell.layers.some(t => t === TerrainType.GAS_TRAP_POISON
+                || t === TerrainType.GAS_TRAP_PARALYSIS || t === TerrainType.GAS_TRAP_CONFUSION);
+            if ((visible || cell.isMagicMapped) && grounded && !confused && (flags & T_IS_DF_TRAP)
+                && !depressed && !(mech & TM_IS_SECRET) && !(respiration && respirationTrap))
+                message = i18next.t('move.plate_confirm', { defaultValue: 'Step onto the pressure plate?' });
+        }
+        return message === null ? null : { kind, target: { kind: 'cell', x, y }, message };
+    }
+
+    private preparePlayerMoveRisks(x: number, y: number): { certainDeath: boolean; risks: ControlledActionRisk[] } {
+        const input = this.playerMoveRiskInputs(x, y);
+        return { certainDeath: input.certainDeath, risks: input.certainDeath ? []
+            : (['chasm', 'fire', 'gas', 'plate'] as const).map(kind => this.preparePlayerMoveRisk(kind, input))
+                .filter((risk): risk is ControlledActionRisk => risk !== null) };
+    }
+
+    private *confirmPlayerMoveStages(x: number, y: number): CommandStages<boolean> {
+        const input = this.playerMoveRiskInputs(x, y);
+        if (input.certainDeath) {
             this.stopAutoTravel();
             logger.log(i18next.t('move.certain_death', { defaultValue: 'that would be certain death!' }), '#ff8888');
             return false;
         }
-        if (this.diveConfirmationNeeded(x, y)
-            && !this.requestConfirm(i18next.t('fall.confirm', { defaultValue: 'Dive into the depths?' }))) return false;
-        if (visible && !confused && !this.burningDuration(this.player) && fireVulnerable
-            && (flags & T_IS_FIRE) && !(mech & TM_EXTINGUISHES_FIRE)
-            && !this.requestConfirm(i18next.t('move.flame_confirm', { defaultValue: 'Venture into flame?' }))) return false;
-        if (visible && !confused && !this.burningDuration(this.player)
-            && (flags & (T_CAUSES_CONFUSION | T_CAUSES_PARALYSIS)) && !respiration
-            && !this.requestConfirm(i18next.t('move.gas_confirm', { defaultValue: 'Venture into dangerous gas?' }))) return false;
-        const depressed = this.displacementTrapDepressions?.get(this.grid)?.has(y * this.grid.width + x);
-        const respirationTrap = cell.layers.some(t => t === TerrainType.GAS_TRAP_POISON
-            || t === TerrainType.GAS_TRAP_PARALYSIS || t === TerrainType.GAS_TRAP_CONFUSION);
-        if ((visible || cell.isMagicMapped) && grounded && !confused && (flags & T_IS_DF_TRAP)
-            && !depressed && !(mech & TM_IS_SECRET) && !(respiration && respirationTrap)
-            && !this.requestConfirm(i18next.t('move.plate_confirm', { defaultValue: 'Step onto the pressure plate?' }))) return false;
+        for (const kind of ['chasm', 'fire', 'gas', 'plate'] as const) {
+            const risk = this.preparePlayerMoveRisk(kind, input);
+            if (risk && !(yield* this.requestConfirm(risk.message, risk))) return false;
+        }
         return true;
     }
 
@@ -9177,6 +9577,7 @@ export class Game {
                 beginAdvancement: (stealthRange) => game.beginAdvancement(stealthRange),
                 advancementLoop: (stealthRange) => game.advancementLoop(stealthRange),
                 finishTurnEpilogue: () => game.finishTurnEpilogue(),
+                observeAnimationDelay: milliseconds => observePresentation(game, 'animation-delay', milliseconds),
                 triggerGameOver: (victory, reason) => game.triggerGameOver(victory, reason),
             },
         };
@@ -9314,6 +9715,7 @@ export class Game {
         this.checkShoreWarning();
         logger.endCombatTurn();
         if (this.extensionRuntime) this.extensionRuntime.emit('playerTurnEnded', { turn: this.stats.turns });
+        observePresentation(this, 'turn', this.animationEnabled ? Game.ANIMATION_PAUSE_MS : 0);
     }
 
     /** CE Time.c:2878-2911. Recomputed from current layers; no RNG or path changes. */
@@ -9510,10 +9912,12 @@ export class Game {
             }
         }
         this.update();
+        observePresentation(this, 'command-complete');
     }
 
     /** 场景重建（新游戏/读档/回放）时丢弃可能在途的推进，避免继承卡死的输入锁。 */
     public discardInFlightAdvancement(): void {
+        this.cancelPendingCommand();
         if (this.isAdvancing || recordingState(this).pendingCommand) this.recordingFromNewGame = false;
         recordingState(this).pendingCommand = null;
         this.commandDecisions = null;
@@ -9663,6 +10067,7 @@ export class Game {
     public toSaveSnapshot(): GameSnapshot {
         if (this.extensionRuntime && !this.extensionRuntime.readyToSave) throw new Error(i18next.t('ext.command.creation_required', { defaultValue: 'Complete module initialization before saving.' }));
         if (this.isAdvancing || recordingState(this).pendingCommand) throw new Error('Cannot save during turn advancement');
+        if (recordingState(this).execution) throw new Error('Cannot save during a command');
         const snapshot = this.toSnapshot();
         const origin = recordingState(this).origin;
         if (this.hasCompleteRecording && origin) {
@@ -9788,6 +10193,7 @@ export class Game {
         } catch { return false; }
         const levelRows = [snapshot, ...snapshot.levels];
 
+        resetPresentation(this);
         this.discardInFlightAdvancement();
         if (this.extensionRuntime) this.extensionRuntime.unload();
         this.extensionRuntime = null;
@@ -10913,7 +11319,12 @@ export class Game {
             && (!playerTravelDiagonalBlocked(this.grid, this.player.loc, m.loc) || m.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')));
     }
 
-    private handleAutoExplore() {
+    protected handleAutoExplore(): void {
+        if (this.hasPendingConfirmation) return undefined;
+        return this.runSynchronousStages(this.handleAutoExploreStages());
+    }
+
+    private *handleAutoExploreStages(): CommandStages<void> {
         if (this.isInventoryOpen) return;
         this.stopAutoTravel();
         if (!this.exploreAllowed()) return;
@@ -10927,7 +11338,7 @@ export class Game {
         if (enemy) {
             this.autoPath = [{ ...enemy.loc }];
             // Already inside auto_explore's command: no nested recorded event.
-            this.performAutoPathStep();
+            (yield* this.performAutoPathStepStages());
         } else {
             if (ENTRANCEMENT_DIRECTIONS.some(([dx, dy]) => {
                 const cell = this.grid.getCell(this.player.x + dx, this.player.y + dy);
@@ -10978,10 +11389,15 @@ export class Game {
         this.stopAutoTravel();
     }
 
-    public handleMouseTravel(x: number, y: number) {
+    public handleMouseTravel(x: number, y: number): void {
+        if (this.hasPendingConfirmation) return undefined;
+        return this.runSynchronousStages(this.handleMouseTravelStages(x, y));
+    }
+
+    private *handleMouseTravelStages(x: number, y: number, recordedRisk = false): CommandStages<void> {
         if (this.interactionActive) return;
         if (this.pendingArcana) {
-            if (this.setArcanaTarget(x, y)) this.confirmArcanaTarget();
+            if (this.setArcanaTarget(x, y)) yield* this.confirmArcanaTargetStages(recordedRisk);
             return;
         }
         if (this.isInventoryOpen) return;
@@ -10989,7 +11405,7 @@ export class Game {
         if (this.isInputLocked()) return;
 
         if (this.isThrowing && this.throwItemTarget) {
-            this.throwItemAt(this.throwItemTarget, x, y);
+            (yield* this.throwItemAtStages(this.throwItemTarget, x, y));
             return;
         }
 
@@ -11743,7 +12159,7 @@ export class Game {
         this.executeCommand('auto_step');
     }
 
-    private performAutoPathStep() {
+    private *performAutoPathStepStages(): CommandStages<void> {
         if ((!this.autoPath.length && !this.autoAction) || this.isInventoryOpen) return;
         // P2-2 输入锁：怪物行动动画播完之前，自动探索/寻路不得推进下一步
         // （GameCanvas 的 ticker 会持续重试，解锁后自然继续）
@@ -11753,8 +12169,8 @@ export class Game {
         // 异常路径也复位。
         this.inAutoTravelStep = true;
         try {
-            if (this.autoAction) this.stepAutoAction();
-            else this.stepAutoPathInner();
+            if (this.autoAction) (yield* this.stepAutoActionStages());
+            else (yield* this.stepAutoPathInner());
         } finally {
             this.inAutoTravelStep = false;
         }
@@ -11807,7 +12223,7 @@ export class Game {
                 .some(status => this.player.hasStatus(status));
     }
 
-    private beginAutoAction(kind: 'auto_rest' | 'search_long' | 'run', data: unknown): void {
+    private *beginAutoActionStages(kind: 'auto_rest' | 'search_long' | 'run', data: unknown): CommandStages<void> {
         this.stopAutoTravel();
         if (this.isGameOver) return;
         if (kind === 'run' && (typeof data !== 'number' || !Number.isInteger(data)
@@ -11831,7 +12247,7 @@ export class Game {
             initiallyEmbedded,
         };
         // First turn belongs to the initiating command; later turns to auto_step.
-        this.performAutoPathStep();
+        (yield* this.performAutoPathStepStages());
     }
 
     /** CE Movement.c:2419-2436: nearby items and observable non-allies stop runs. */
@@ -11841,13 +12257,13 @@ export class Game {
             || Array.from(iterateCreatures(this.visibleMonsters)).some(monster => monster.hp > 0 && !monster.isAlly && adjacent(monster.loc));
     }
 
-    private stepAutoAction(): void {
+    private *stepAutoActionStages(): CommandStages<void> {
         if (this.autoTravelDisturbed() || !this.autoAction) return;
         const state = this.autoAction;
         const origin = { ...this.player.loc }, depth = this.depth, turn = this.stats.turns;
         const delta = state.kind === 'run' ? this.directionToVec(state.direction!) : { x: 0, y: 0 };
-        this.handlePlayerAction(state.kind === 'run' ? 'move' : state.kind === 'search_long' ? 'search' : 'wait',
-            state.kind === 'run' ? state.direction : undefined, 'system');
+        yield* this.handlePlayerAction(state.kind === 'run' ? 'move' : state.kind === 'search_long' ? 'search' : 'wait',
+            state.kind === 'run' ? state.direction : undefined, 'system') as CommandStages<void>;
         // Pickup, rejected confirmations and terrain effects may have ended it.
         if (this.autoAction !== state) return;
         if (this.depth !== depth || this.isGameOver || this.stats.turns === turn
@@ -11886,7 +12302,11 @@ export class Game {
             tillDeath: this.player.hasStatus('hallucinating') };
     }
 
-    private stepAutoPathInner() {
+    private stepAutoPathInner(): CommandStages<void> {
+        return this.stepAutoPathInnerStages();
+    }
+
+    private *stepAutoPathInnerStages(): CommandStages<void> {
         if (this.isAutoExploring && !this.exploreAllowed()) {
             this.stopAutoTravel();
             return;
@@ -11920,7 +12340,7 @@ export class Game {
         const oldBlock = logger.blockCombatText;
         logger.blockCombatText = !!fight;
         try {
-            this.handlePlayerAction('move', { x: next.x - this.player.x, y: next.y - this.player.y }, 'system');
+            yield* this.handlePlayerAction('move', { x: next.x - this.player.x, y: next.y - this.player.y }, 'system') as CommandStages<void>;
         } finally {
             logger.blockCombatText = oldBlock;
         }
@@ -11996,6 +12416,7 @@ export class Game {
         }
 
         this.needsRender = true;
+        observePresentation(this, 'terminal');
     }
 }
 

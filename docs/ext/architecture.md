@@ -340,3 +340,17 @@ NPC 测试除纯求值外，还使用真实攻击、AI 响应和确定性测试�
 2d 必须核对并复用main `dc0b78b`/blur修复`26ad9c4`，移除或统一当前Input.ts自定义物理释放屏障到DialogInput。本轮不开始这项迁移。实际测试、已验证/未验证项见[2c报告](phase2c.report.md)。
 
 当前只有narrative消费storyFact并原子预留根事实和派生范围；将来若多个模块消费同一根事实，必须先增加明确的共享根/分模块派生ID分配规则，不把当前单消费者接口当作已完成的多消费协议。
+
+## 21 阶段 2d 共用对话层与受控命令准备
+
+本节记录2d候选实现；实际验收状态及未验证项见[2d报告](phase2d.report.md)，不将候选等同维护者验收。2c与2d联合验收，不自动进入2e。
+
+- 选择性吸收main `dc0b78b` 的D1–D4、blur修复和共享SFC harness。App只有一个DialogService/DialogHost，module UI host提供同一service及纯显示可见/竞争端口；narrative只贡献无Game能力的当前公开DTO与内容组件。
+- DialogInput独占物理按键/指针所有权，包括开启、关闭、Host卸载、失焦和相邻指针cluster。InputManager保留转发方法，不保留第二套pressed/release账本；模块适配器不再装window屏障。
+- 叙事机械active状态/0tick世界gate维持2b/2c合同。live选择通过ext:command提交；日志/大图仅为同Host内容页。replay公开当前只读节点/日志/头像，不进入显示等待；未来timeline帧未播完时不提前显示实时附近对象/日志。
+- D3忙态通过通用isPresentationBusy/presentationHidden端口暂隐但不卸载模块HUD/bar/portal，显示恢复前刷新模型。Teleport/multi-root插槽须在实际显示根接受presentationHidden；旧ACK后不能露出未来focus/CD或让已提交显示延迟被角色页早退阻塞。replay不因此等待，控制器/草稿保持。
+- D3公开显示帧增加通用可见交互实体投影，保持模块可删除。Logger显示checkpoint与timeline队列/游标共同回滚，已回滚事务不能留下可见消息事件；显示observer不参与规则随机数。
+- `prepareControlledCommand`为可选纯端口，按main设计§4.5提供{command,revision,request}，Game添加共享原生风险谓词产生的{kind,target,message}列表。窄context只有playerId/state/getComponent/creature/canManageCharacter/validateAction，全部在准备结束撤销；无业务回调/可写context跨等待。
+- 当前growth只为use-skill及耗时equip-skills提供纯计划。外层命令一次归一化，答案暂存suppliedAnswers而非decisions；通过runtime/扩展快照/双RNG/原生事实guard后，原同步Runtime.command恰好执行一次。requestConfirm逐条核对并消费答案，且只在此处向原命令记录一次。No仍执行原同步拒绝路径，成本、冷却、actionId和效果提交点不变。
+- 未消费/未提供/错序答案、错误动作原语、陈旧revision/目标均不能默认为Yes；不能把旧同步辅助drain用作prepared命令的UI等待通道。未来模块必须提供相同纯合同或另有明确续体，不允许先执行后回滚作预检。
+- 桥接不增加持久格式。foundation3、narrative module/rules1.2.0/state3/input2、growth1.5.0维持；立绘manifest的displayVersion1.0.0独立于规则指纹。main的D4新`arcana:risk-confirm`录像动作仍需要支持该动作的引擎，不能把格式号不变称为任意旧程序都能读取。

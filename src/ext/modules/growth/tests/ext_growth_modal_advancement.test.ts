@@ -13,6 +13,11 @@ import * as catalog from '../../../../ext/catalog';
 import { logger } from '../../../../engine/Systems/Logger';
 import { rng } from '../../../../engine/Random';
 import type { Game } from '../../../../engine/Core/Game';
+import { displayedFrame, presentationTimeline } from '../../../../ui/presentationTimeline';
+import { HUNGER_THRESHOLD } from '../../../../entities/Player';
+import { DialogService } from '../../../../ui/dialogService';
+import { bindDialogAcknowledgments } from '../../../../ui/dialogAcknowledgments';
+import { dialogInput } from '../../../../ui/dialogInput';
 
 /** Execute GameCanvas's actual displayFrame closure, not a duplicate timing helper.
  * PIXI rasterization is replaced with a render sink; native Game advancement is real. */
@@ -21,9 +26,9 @@ function modalDisplayLoop(game: Game) {
     const start = source.indexOf('    let pathingTimer = 0;'), end = source.indexOf('    const resetDisplayClock =', start);
     expect(start).toBeGreaterThan(0); expect(end).toBeGreaterThan(start);
     const code = ts.transpileModule(source.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS } }).outputText;
-    const render = vi.fn(), syncHeld = vi.fn(), flush = vi.fn((paint: () => void) => paint());
-    const loop = new Function('game', 'props', 'logger', 'syncHeldInputContext', 'renders', 'render', 'frameProfile', 'document',
-        `${code}; return displayFrame;`)(game, { displayModalOpen: true }, logger, syncHeld, { flush }, render, null, { hidden: false }) as (elapsedMs: number, animationMs?: number) => void;
+    const render = vi.fn(), request = vi.fn(), syncHeld = vi.fn(), flush = vi.fn((paint: () => void) => paint());
+    const loop = new Function('game', 'props', 'logger', 'syncHeldInputContext', 'renders', 'render', 'frameProfile', 'document', 'displayedFrame', 'presentationTimeline', 'dialogInput',
+        `${code}; return displayFrame;`)(game, { displayModalOpen: true }, logger, syncHeld, { flush, request }, render, null, { hidden: false }, displayedFrame, presentationTimeline, dialogInput) as (elapsedMs: number, animationMs?: number) => void;
     return { loop, render, flush, syncHeld };
 }
 function setup() {
@@ -72,6 +77,29 @@ describe('EXT-1d actual canvas display loop while the skill modal remains open',
         expect(game.stats.turns).toBe(turns + 1); expect(game.recordedInputEvents).toHaveLength(count + 1);
         expect(game.recordedInputEvents[count]!.extensions).toEqual(game.extensionRuntime!.snapshot());
         expect(replay).not.toHaveBeenCalled(); expect(auto).not.toHaveBeenCalled();
+    });
+    it('drains native hunger ACK-following display delays while the character panel stays open', () => {
+        const { game, command } = setup();
+        command('equip-skills', { active: ['growth.skill.brace'], passive: [] });
+        const service = new DialogService(), unbind = bindDialogAcknowledgments(service, game, logger);
+        try {
+            const timeline = presentationTimeline(game)!;
+            game.player.inventory.items = []; game.player.nutrition = HUNGER_THRESHOLD + 1;
+            game.player.setStatusDuration('slowed', 20); game.animationEnabled = true;
+            const frames = modalDisplayLoop(game), replay = vi.spyOn(game, 'tickReplay'), auto = vi.spyOn(game, 'stepAutoPath');
+            command('use-skill', { skillId: 'growth.skill.brace', target: { kind: 'self' } });
+            for (let index = 0; index < 100 && game.isAdvancing; index++) frames.loop(16, 16);
+            expect(game.isAdvancing).toBe(false); expect(service.current?.kind).toBe('acknowledgment');
+            expect(timeline.pendingEvents.some(event => event.kind === 'animation-delay')).toBe(true);
+            const snapshot = game.extensionRuntime!.snapshot(), random = rng.getState(), events = game.recordedInputEvents.length;
+            service.answer(service.current!.token, 'more');
+            expect(service.current).toBeUndefined(); expect(timeline.busy).toBe(true);
+            for (let index = 0; index < 1000 && timeline.busy; index++) frames.loop(16, 16);
+            expect(timeline.busy).toBe(false);
+            expect(game.extensionRuntime!.snapshot()).toEqual(snapshot); expect(rng.getState()).toEqual(random);
+            expect(game.recordedInputEvents).toHaveLength(events);
+            expect(replay).not.toHaveBeenCalled(); expect(auto).not.toHaveBeenCalled();
+        } finally { unbind(); service.dispose(); }
     });
     it('does not advance a read-only replay, even if it has a pending native action', () => {
         const { game } = setup(); game.animationEnabled = true; game.executeCommand('wait'); expect(game.isAdvancing).toBe(true);

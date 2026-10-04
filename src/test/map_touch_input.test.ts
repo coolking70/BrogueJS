@@ -1,9 +1,9 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { bindMapTouchInput } from '../ui/mapTouchInput';
 import { cancelHeldInputs, registerHeldInputContext, syncHeldInputContext } from '../ui/heldInput';
 import type { GestureEvent } from '../ui/touchGestures';
-import type { Game } from '../engine/Core/Game';
+import { commandConfirmationFixture } from './support/commandConfirmation';
 
 class Canvas extends EventTarget {
     setPointerCapture = vi.fn();
@@ -12,11 +12,6 @@ class Canvas extends EventTarget {
 }
 let win: EventTarget, doc: EventTarget & { hidden: boolean };
 let canvas: Canvas, output: GestureEvent[], remove: () => void;
-let wireConfirmRequest: (game: Game) => void;
-beforeAll(async () => {
-    vi.stubGlobal('window', new EventTarget());
-    ({ wireConfirmRequest } = await import('../App.vue'));
-});
 beforeEach(() => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'performance'] });
     win = Object.assign(new EventTarget(), { setInterval: globalThis.setInterval, clearInterval: globalThis.clearInterval });
@@ -41,10 +36,12 @@ describe('map touch hold lifecycle', () => {
     });
     it.each([false, true])('确认返回 %s 前停止地图长按，迟到抬起不产生 tap', answer => {
         pointer('pointerdown'); vi.advanceTimersByTime(100);
-        const confirm = vi.fn(() => { expect(vi.getTimerCount()).toBe(0); return answer; });
-        Object.assign(win, { confirm });
-        const game = { replayStatus: 'idle', onConfirmRequest: null } as unknown as Game;
-        wireConfirmRequest(game); expect(game.onConfirmRequest!('flame?')).toBe(answer);
+        const confirm = commandConfirmationFixture();
+        confirm.publish('flame?');
+        expect(vi.getTimerCount()).toBe(0);
+        expect(confirm.answer(answer)).toBe(true);
+        expect(confirm.resolved).toHaveBeenCalledWith('flame?', answer);
+        confirm.dispose();
         pointer('pointerup'); vi.advanceTimersByTime(5000);
         expect(output).toEqual([]); expect(vi.getTimerCount()).toBe(0);
         pointer('pointerdown'); vi.advanceTimersByTime(450); expect(output).toHaveLength(1);

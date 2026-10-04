@@ -1,85 +1,96 @@
 import { computed, defineAsyncComponent, nextTick, onScopeDispose, ref, shallowRef } from 'vue';
 import type { ModuleUiHost, ModuleUiSession } from '../../../ui/types';
-import { cancelHeldInputs } from '../../../../ui/heldInput';
+import { presentationTimeline, type DialogAction, type DialogRequest } from '../../../../ui/dialogService';
 import { buildNarrativeUiCommand, readNarrativeUiView, type NarrativeUiView } from './view';
 const NarrativeInteractionBar = defineAsyncComponent(() => import('./NarrativeInteractionBar.vue'));
+const NarrativeDialogue = defineAsyncComponent(() => import('./NarrativeDialogue.vue'));
 
-/** Temporary 2b inline controls. No modal host or display pause: the engine's
- * active interaction owns the zero-tick world gate, including headless runs. */
+/** The adapter alone owns command capability. The component sees the current
+ * public projection, never Game, definitions, effects or future story state.
+ * DialogInput owns all physical release/pointer arbitration; no local barriers. */
 export function useNarrativeUi(host: ModuleUiHost): ModuleUiSession {
-    const game = host.game(), runtime = game.extensionRuntime;
-    let retired = false, escapeHeld = false;
+    const game = host.game(), runtime = game.extensionRuntime, service = host.dialogs;
+    let retired = false, reconciling = false, request: DialogRequest | undefined;
+    let page: 'dialogue' | 'journal' | 'portrait' = 'dialogue';
     const live = () => !retired && host.game() === game && game.extensionRuntime === runtime;
     const view = shallowRef<NarrativeUiView | null>(null), submitting = ref(false), error = ref<'ext.narrative.ui.command_rejected' | null>(null);
-    const cancelHeld = () => { cancelHeldInputs(); host.cancelHeldKeys?.(); };
+    let shown: NarrativeUiView | null = null;
+    let shownError: typeof error.value = null;
+    function retireRequest() { request?.cancel(); request = undefined; shown = null; }
     function refresh() {
-        if (!live()) return;
+        if (reconciling) return;
+        reconciling = true;
+        try { refreshCurrent(); } finally { reconciling = false; }
+    }
+    function refreshCurrent() {
+        if (!live()) { retireRequest(); return; }
         const next = readNarrativeUiView(game);
-        if (next?.active && next.active.sessionId !== view.value?.active?.sessionId) cancelHeld();
+        if (next?.active?.sessionId !== view.value?.active?.sessionId) page = 'dialogue';
         view.value = next;
+        // Replay has an inline read-only projection. A display wait must never
+        // pause playback or block seek, even if the mechanical session is open.
+        if (!next?.active || next.readOnly || host.canPresentInteraction?.() === false) { retireRequest(); return; }
+        if (shown && (shown.session !== next.session || shown.revision !== next.revision || shownError !== error.value)) retireRequest();
+        syncDialog();
     }
-    // A closing button may disappear before a physical double-click's second
-    // pointerup. Swallow only that same-position gesture, never another run.
-    let removeDismissal: (() => void) | undefined;
-    function guardDismissal(event?: MouseEvent | KeyboardEvent) {
-        removeDismissal?.();
-        if (!event || !('clientX' in event) || !Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) return;
-        const names = ['pointerdown', 'pointerup', 'click', 'dblclick'] as const;
-        const stop = (candidate: Event) => {
-            const pointer = candidate as MouseEvent;
-            if (!live() || Math.abs(pointer.clientX - event.clientX) > 6 || Math.abs(pointer.clientY - event.clientY) > 6) return;
-            candidate.preventDefault(); candidate.stopImmediatePropagation();
-        };
-        const clear = () => { for (const name of names) window.removeEventListener(name, stop, true); window.clearTimeout(timer); removeDismissal = undefined; };
-        for (const name of names) window.addEventListener(name, stop, true);
-        const timer = window.setTimeout(clear, 500);
-        removeDismissal = clear;
-    }
-    async function submit(expected: NarrativeUiView, action: 'open' | 'choose' | 'close', id?: number | string, event?: MouseEvent | KeyboardEvent) {
-        if (!live() || submitting.value || (event?.detail ?? 0) > 1 || (action === 'open' && !host.canOpenPanel())) return;
+    function submit(expected: NarrativeUiView, action: 'open' | 'choose' | 'close', id?: number | string): boolean {
+        if (!live() || submitting.value || (action === 'open' && (!host.canOpenPanel() || host.canOpenInteraction?.() === false || !!service?.current))) return false;
         const command = buildNarrativeUiCommand(game, expected, action, id);
-        if (!command) return;
-        if (event && 'key' in event && event.key === 'Escape') escapeHeld = true;
+        if (!command) return false;
         submitting.value = true; error.value = null;
-        cancelHeld();
         try {
             game.executeCommand('ext:command', command);
-            refresh();
-            if (view.value?.revision === expected.revision) error.value = 'ext.narrative.ui.command_rejected';
-            if (expected.active && !view.value?.active) {
-                guardDismissal(event);
-                host.afterClosePanel();
-            }
-        } catch { if (live()) { error.value = 'ext.narrative.ui.command_rejected'; refresh(); } }
-        finally { await nextTick(); if (live()) submitting.value = false; }
+            const current = readNarrativeUiView(game);
+            if (current?.revision === expected.revision) { error.value = 'ext.narrative.ui.command_rejected'; return false; }
+            if (expected.active && !current?.active) host.afterClosePanel();
+            return true;
+        } catch { if (live()) error.value = 'ext.narrative.ui.command_rejected'; return false; }
+        finally {
+            // Answer settles its token before source sync creates the next node.
+            void nextTick(() => { if (live()) { submitting.value = false; refresh(); } });
+        }
     }
-    const releaseEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') escapeHeld = false; };
-    window.addEventListener('keyup', releaseEscape, true);
-    const removeKeyboard = host.registerKeyHandler?.(event => {
-        if (!live() || game.replayRecording || event.key !== 'Escape') return false;
-        if (escapeHeld && event.repeat) { event.preventDefault(); return true; }
-        refresh();
-        if (!view.value?.active) return false;
-        event.preventDefault(); escapeHeld = true;
-        if (!event.repeat) void submit(view.value, 'close');
-        return true;
-    }, 550) ?? (() => {});
-    onScopeDispose(() => { retired = true; removeKeyboard(); removeDismissal?.(); window.removeEventListener('keyup', releaseEscape, true); });
+    function syncDialog() {
+        if (!service || !live()) return;
+        const expected = view.value;
+        if (!expected?.active || expected.readOnly || host.canPresentInteraction?.() === false || submitting.value || presentationTimeline(game)?.busy) return;
+        if (request && service.isPending(request.token)) return;
+        const actions: DialogAction[] = page === 'dialogue'
+            ? ['close', 'journal', 'portrait', ...expected.active.choices.filter(choice => choice.enabled).map(choice => `choice:${choice.id}` as const)]
+            : ['back', 'close'];
+        const choices = page === 'dialogue' ? expected.active.choices.map(choice => ({ action: `choice:${choice.id}` as const, enabled: choice.enabled })) : [];
+        shown = expected; shownError = error.value;
+        request = service.request({ kind: 'dialogue', owner: 'narrative', text: '',
+            content: { component: NarrativeDialogue, props: { model: expected, page, submitting: false, error: error.value } },
+            actions, choices, defaultAction: page === 'dialogue' ? choices.find(choice => choice.enabled)?.action ?? 'close' : 'back',
+            onAnswer: action => {
+                if (!live() || shown !== expected) return false;
+                if (action === 'journal' || action === 'portrait' || action === 'back') {
+                    page = action === 'back' ? 'dialogue' : action;
+                    request = undefined; shown = null;
+                    return true;
+                }
+                const accepted = action === 'close' ? submit(expected, 'close')
+                    : action.startsWith('choice:') && submit(expected, 'choose', action.slice(7));
+                if (accepted) { request = undefined; shown = null; }
+                return accepted;
+            } });
+    }
+    const removeSource = service?.registerSource(refresh, -10) ?? (() => {});
+    onScopeDispose(() => { retired = true; removeSource(); retireRequest(); });
     refresh();
     return {
         hud: computed(() => null), panel: computed(() => null), commands: computed(() => []),
-        panelOpen: computed(() => false), refresh,
-        // Host display cleanup must never silently submit a mechanical close.
-        close: () => { if (live()) { cancelHeld(); error.value = null; } },
+        panelOpen: computed(() => !!view.value?.active && !view.value.readOnly && host.canPresentInteraction?.() !== false), refresh,
+        // Lifecycle cleanup never silently records a mechanical close.
+        close: () => { reconciling = true; try { retireRequest(); error.value = null; } finally { reconciling = false; } },
         bar: computed(() => {
             host.tick.value;
             const expected = view.value;
-            if (!expected || (!expected.active && !expected.nearby.length)) return null;
+            if (!expected || (!expected.readOnly && presentationTimeline(game)?.busy) || (!expected.readOnly && expected.active) || (!expected.active && !expected.nearby.length && !expected.journal.length)) return null;
             return { component: NarrativeInteractionBar, props: { model: expected, submitting: submitting.value, error: error.value,
-                blocked: !expected.active && !host.canOpenPanel(),
-                onOpen: (id: number, event?: MouseEvent) => submit(expected, 'open', id, event),
-                onChoose: (id: string, event?: MouseEvent) => submit(expected, 'choose', id, event),
-                onClose: (event?: MouseEvent | KeyboardEvent) => submit(expected, 'close', undefined, event),
+                blocked: !host.canOpenPanel() || host.canOpenInteraction?.() === false || !!service?.current,
+                onOpen: (id: number, event?: MouseEvent) => { if ((event?.detail ?? 0) <= 1) submit(expected, 'open', id); },
             } };
         }),
     };

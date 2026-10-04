@@ -20,9 +20,19 @@ export const MESSAGE_ARCHIVE_ENTRIES = 34 * 10 * 4;
 export const MAX_MESSAGE_REPEATS = 100;
 const disturbanceCallbacks = new WeakMap<Logger, () => void>();
 // UI wiring and pending clicks must never enter snapshots or recording hashes.
-const presentations = new WeakMap<Logger, { enabled: () => boolean; pending: LogMessage[] }>();
+const presentations = new WeakMap<Logger, {
+    enabled: () => boolean; pending: LogMessage[]; unread: LogMessage[]; terminalShown: boolean;
+    changed?: () => void;
+}>();
+// UI notifications cannot alter the result of an engine command.
+function notifyPresentation(log: Logger): void {
+    try { presentations.get(log)?.changed?.(); } catch { /* presentation is optional */ }
+}
 const combatBuffers = new WeakMap<Logger, { text: string; color: string }[]>();
 const heardCombat = new WeakSet<Logger>();
+type MessageObserver = (message: Readonly<LogMessage>, acknowledge: boolean, occurrence?: Readonly<LogMessage>) => void;
+const messageObservers = new WeakMap<Logger, MessageObserver>();
+const messageCheckpoints = new WeakMap<Logger, () => () => void>();
 
 /** CE FOLDABLE presentation: preserve the individual archive entries/repeats. */
 export function foldCombatMessages(messages: readonly LogMessage[], width = 100): LogMessage[] {
@@ -40,6 +50,13 @@ export function foldCombatMessages(messages: readonly LogMessage[], width = 100)
 }
 
 export class Logger {
+    /** After archiving, before the caller's next effect. Never flushes combat. */
+    public observeMessages(observer: MessageObserver | null, checkpoint?: () => () => void): void {
+        if (observer) messageObservers.set(this, observer);
+        else messageObservers.delete(this);
+        if (observer && checkpoint) messageCheckpoints.set(this, checkpoint);
+        else messageCheckpoints.delete(this);
+    }
     public messages: LogMessage[] = [];
     public turn = 0;
     private nextId = 0;
@@ -52,19 +69,38 @@ export class Logger {
     public disturb(): void { this.onDisturb?.(); }
 
     /** Mounted UI opts in; headless and replay never wait for a human. */
-    public presentAcknowledgments(enabled: (() => boolean) | null): void {
-        if (enabled) presentations.set(this, { enabled, pending: [] });
+    public presentAcknowledgments(enabled: (() => boolean) | null, changed?: () => void): void {
+        if (enabled) presentations.set(this, { enabled, pending: [], unread: [], terminalShown: false, changed });
         else presentations.delete(this);
     }
     public get pendingAcknowledgment(): LogMessage | undefined {
         const display = presentations.get(this);
-        if (display && !display.enabled()) display.pending = [];
+        if (display && !display.enabled()) this.clearAcknowledgments();
         return display?.pending[0];
     }
-    public acknowledgeNext(): void { presentations.get(this)?.pending.shift(); }
+    public get pendingAcknowledgments(): readonly Readonly<LogMessage>[] {
+        this.pendingAcknowledgment; // Preserve the existing replay bypass.
+        return presentations.get(this)?.pending.slice() ?? [];
+    }
+    /** Presentation copies in occurrence order, including folded duplicates. */
+    public get unreadAcknowledgments(): LogMessage[] {
+        return presentations.get(this)?.unread.map(message => ({ ...message })) ?? [];
+    }
+    public showTerminalAcknowledgments(): void {
+        const display = presentations.get(this);
+        if (!display) return;
+        display.terminalShown = true;
+        display.unread.push(...display.pending);
+        display.pending = [];
+        notifyPresentation(this);
+    }
+    public acknowledgeNext(): void { presentations.get(this)?.pending.shift(); notifyPresentation(this); }
     public clearAcknowledgments(): void {
         const display = presentations.get(this);
-        if (display) display.pending = [];
+        if (display) {
+            display.pending = []; display.unread = []; display.terminalShown = false;
+            notifyPresentation(this);
+        }
     }
 
     public combat(text: string, color = '#ffffff', lethal = false): void {
@@ -98,7 +134,13 @@ export class Logger {
         const nextId = this.nextId, turn = this.turn, blockCombatText = this.blockCombatText;
         const combat = combatBuffers.get(this)?.map(message => ({ ...message }));
         const heard = heardCombat.has(this), display = presentations.get(this);
-        const pending = display?.pending.map(message => ({ ...message }));
+        // D3 occurrences are immutable capabilities shared with the timeline.
+        // Rollback preserves their identities as well as their occurrence order.
+        const pending = display?.pending.slice();
+        const unread = display?.unread.slice();
+        let restoreObservation: (() => void) | undefined;
+        try { restoreObservation = messageCheckpoints.get(this)?.(); } catch { /* optional UI */ }
+        const terminalShown = display?.terminalShown;
         const disturb = disturbanceCallbacks.get(this);
         return () => {
             this.messages = messages.map(message => ({ ...message }));
@@ -106,9 +148,11 @@ export class Logger {
             if (combat) combatBuffers.set(this, combat.map(message => ({ ...message })));
             else combatBuffers.delete(this);
             if (heard) heardCombat.add(this); else heardCombat.delete(this);
-            if (display) presentations.set(this, { enabled: display.enabled, pending: pending!.map(message => ({ ...message })) });
+            if (display) presentations.set(this, { enabled: display.enabled, pending: pending!.slice(),
+                unread: unread!.slice(), terminalShown: terminalShown!, changed: display.changed });
             else presentations.delete(this);
             if (disturb) disturbanceCallbacks.set(this, disturb); else disturbanceCallbacks.delete(this);
+            try { restoreObservation?.(); } catch { /* optional UI cannot break rollback */ }
         };
     }
     public getState() {
@@ -157,12 +201,19 @@ export class Logger {
             this.messages.push(entry);
             if (this.messages.length > MESSAGE_ARCHIVE_ENTRIES) this.messages.shift();
         }
+        let occurrence: Readonly<LogMessage> | undefined;
         if (options.acknowledge) {
             entry.acknowledge = true;
             const display = presentations.get(this);
             // Each occurrence still needs acknowledgment, even at count 100.
-            if (display?.enabled()) display.pending.push({ ...entry, text, color });
+            if (display?.enabled()) {
+                occurrence = Object.freeze({ ...entry, text, color });
+                (display.terminalShown ? display.unread : display.pending).push(occurrence as LogMessage);
+            }
         }
+        try { messageObservers.get(this)?.(Object.freeze({ ...entry, text, color }), !!options.acknowledge, occurrence); }
+        catch { /* observation cannot enter an engine error path */ }
+        notifyPresentation(this);
     }
 }
 export const logger = new Logger();

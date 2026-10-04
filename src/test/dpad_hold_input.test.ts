@@ -1,14 +1,11 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
-import * as translation from 'i18next-vue';
 import I18NextVue from 'i18next-vue';
 import i18next from 'i18next';
-import { parse, compileScript } from '@vue/compiler-sfc';
-import ts from 'typescript';
-import { readFileSync } from 'node:fs';
+import { createSfcHarness } from './support/sfcHarness';
 import zhCN from '../locales/zh_CN.json';
 import { Direction } from '../types';
-import type { Game } from '../engine/Core/Game';
+import { commandConfirmationFixture } from './support/commandConfirmation';
 
 // Compile the real client template and invoke its bound pointer handlers.
 // This host exercises timers/lifecycles without claiming browser acceptance.
@@ -37,76 +34,54 @@ const renderer = Vue.createRenderer<Node, Node>({
 const all = (n: Node): Node[] => [n, ...n.children.flatMap(all)];
 const moves = vi.fn();
 const mounted: Array<ReturnType<typeof renderer.createApp>> = [];
-let win: EventTarget & { confirm: ReturnType<typeof vi.fn> };
+let win: EventTarget;
 let doc: EventTarget & { hidden: boolean };
 let DPad: Vue.Component;
 let App: Vue.Component, Bar: Vue.Component, Radial: Vue.Component;
 const settings = Vue.reactive({ immersiveMode: false, sidebarWidthMode: 'fixed' });
-const gameStub = { replayStatus: 'idle', replayRecording: null, isGameOver: false, currentSeed: 123,
+const saveSnapshot = vi.fn();
+const toSaveSnapshot = vi.fn();
+const gameStub = { hasPendingConfirmation: false, toSaveSnapshot, replayStatus: 'idle', replayRecording: null, isGameOver: false, currentSeed: 123,
     hasCompleteRecording: false, onConfirmRequest: null, startNewGame() {}, isAutoTraveling: () => false };
-let wireConfirmRequest: (game: Game) => void;
 let heldInput: typeof import('../ui/heldInput');
 
 beforeAll(async () => {
     vi.stubGlobal('window', new EventTarget());
-    ({ wireConfirmRequest } = await import('../App.vue'));
+    await import('./harness');
     heldInput = await import('../ui/heldInput');
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
-    const modules: Record<string, unknown> = {
-        './ext/ui/useModuleUi': await import('../ext/ui/useModuleUi'),
-        '../ext/catalog': await import('../ext/catalog'),
-        '../ext/ui/defaults': await import('../ext/ui/defaults'),
-        '../ext/ui/creation': await import('../ext/ui/creation'),
- vue: Vue, 'i18next-vue': translation,
-        i18next: { default: i18next, __esModule: true }, '../types': { Direction },
-        '../ui/commands': { dispatch: moves }, '../../ui/commands': { dispatch: moves },
-        '../ui/heldInput': heldInput, './ui/heldInput': heldInput,
-        '../engine/Input': { inputManager: { registerModalKeyHandler: () => () => {} } },
-        '../../engine/Input': { inputManager: { registerModalKeyHandler: () => () => {} } },
-        './engine/Input': { inputManager: { triggerAction: moves } },
-        './engine/Settings': { displaySettings: settings }, './engine/Core/Game': { activeGame: gameStub },
-        './engine/Systems/Logger': await import('../engine/Systems/Logger'),
-        './engine/Core/SaveStorage': { readSaveSummary: async () => null },
-        './ui/immersiveMode': { registerImmersiveShortcut: () => () => {} }, './ui/recordingExport': {},
-        './ui/layout': { viewport: { mode: 'portrait', coarsePointer: true }, startViewportTracking() {}, shouldShowTouchControls: () => true },
-        './CmdIcon.vue': { default: { render: () => null }, __esModule: true },
-    };
-    function compile(file: string) {
-        const source = readFileSync(new URL('../' + file, import.meta.url), 'utf8');
-        const { descriptor } = parse(source);
-        const script = compileScript(descriptor, { id: file, inlineTemplate: true });
-        const code = ts.transpileModule(script.content, { compilerOptions: {
-            target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, esModuleInterop: true,
-        } }).outputText;
-        const exports: any = {};
-        new Function('require', 'exports', code)((key: string) => {
-            if (!(key in modules)) throw new Error(`Unresolved hold-test import: ${key}`);
-            return modules[key];
-        }, exports);
-        return exports.default;
-    }
-    DPad = compile('components/DPad.vue'); Bar = compile('components/CommandBar.vue'); Radial = compile('components/theme/RadialCommands.vue');
-    for (const key of readFileSync('src/App.vue', 'utf8').matchAll(/from '(\.\/components\/[^']+\.vue)'/g)) {
-        modules[key[1]!] = { default: { render: () => null }, __esModule: true };
-    }
-    const emitter = (type: string, event: string, payload?: unknown) => ({ default: Vue.defineComponent({
+    const stubs = { '../ui/commands': { dispatch: moves } };
+    const harness = createSfcHarness({ baseURL: import.meta.url, stubs: {
+        ...stubs, '../engine/Input': { inputManager: { registerModalKeyHandler: () => () => {} } },
+    }, components: { '../components/theme/CmdIcon.vue': { render: () => null } } });
+    DPad = await harness.load('../components/DPad.vue'); Bar = await harness.load('../components/CommandBar.vue');
+    Radial = await harness.load('../components/theme/RadialCommands.vue');
+    const emitter = (type: string, event: string, payload?: unknown) => Vue.defineComponent({
         emits: [event], setup(_props, { emit }) { return () => Vue.h(type, { onActivate: () => emit(event, payload) }); },
-    }), __esModule: true });
-    modules['./components/MainMenu.vue'] = emitter('start', 'new-game', { mode: 'test' });
-    modules['./components/theme/ThemeHud.vue'] = { default: Vue.defineComponent({ emits: ['menu', 'panel'], setup(_props, { emit }) {
-        return () => Vue.h('hud', { onMenu: () => emit('menu'), onPanel: () => emit('panel') });
-    } }), __esModule: true };
-    modules['./components/theme/ThemeLog.vue'] = emitter('journal', 'open-journal');
-    modules['./components/theme/ThemeNearby.vue'] = emitter('nearby', 'inspect', { name: 'detail' });
-    modules['./components/DPad.vue'] = { default: DPad, __esModule: true };
-    modules['./components/CommandBar.vue'] = emitter('commands', 'modal-open');
-    modules['./components/theme/RadialCommands.vue'] = emitter('radial', 'modal-open');
-    App = compile('App.vue');
+    });
+    const appHarness = createSfcHarness({ baseURL: import.meta.url, stubComponents: { render: () => null }, stubs: {
+        ...stubs, '../engine/Input': { inputManager: { triggerAction: moves } },
+        '../engine/Settings': { displaySettings: settings }, '../engine/Core/Game': { activeGame: gameStub },
+        '../engine/Core/SaveStorage': { readSaveSummary: async () => null, saveSnapshot },
+        '../ui/immersiveMode': { registerImmersiveShortcut: () => () => {} }, '../ui/recordingExport': {},
+        '../ui/layout': { viewport: { mode: 'portrait', coarsePointer: true }, startViewportTracking() {}, shouldShowTouchControls: () => true },
+    }, components: {
+        '../components/MainMenu.vue': emitter('start', 'new-game', { mode: 'test' }),
+        '../components/theme/ThemeHud.vue': Vue.defineComponent({ emits: ['menu', 'panel'], setup(_props, { emit }) {
+            return () => Vue.h('hud', { onMenu: () => emit('menu'), onPanel: () => emit('panel') });
+        } }),
+        '../components/theme/ThemeLog.vue': emitter('journal', 'open-journal'),
+        '../components/theme/ThemeNearby.vue': emitter('nearby', 'inspect', { name: 'detail' }),
+        '../components/DPad.vue': DPad,
+        '../components/CommandBar.vue': emitter('commands', 'modal-open'),
+        '../components/theme/RadialCommands.vue': emitter('radial', 'modal-open'),
+    } });
+    App = await appHarness.load('../App.vue');
 });
 beforeEach(() => {
-    vi.useFakeTimers(); moves.mockReset();
+    vi.useFakeTimers(); moves.mockReset(); saveSnapshot.mockReset(); toSaveSnapshot.mockReset(); gameStub.hasPendingConfirmation = false;
     settings.immersiveMode = false;
-    win = Object.assign(new EventTarget(), { confirm: vi.fn(() => false),
+    win = Object.assign(new EventTarget(), {
         setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout,
         setInterval: globalThis.setInterval, clearInterval: globalThis.clearInterval });
     doc = Object.assign(new EventTarget(), { hidden: false });
@@ -125,9 +100,11 @@ function press(button: Node) {
     button.props.onPointerdown({ preventDefault() {}, currentTarget: button, pointerId: 7, clientX: 20, clientY: 20 });
 }
 function confirmation(answer: boolean, atMove: number) {
-    const game = { replayStatus: 'idle', onConfirmRequest: null } as unknown as Game;
-    wireConfirmRequest(game); win.confirm.mockReturnValue(answer);
-    moves.mockImplementation(() => { if (moves.mock.calls.length === atMove) game.onConfirmRequest!('flame?'); });
+    const confirm = commandConfirmationFixture();
+    moves.mockImplementation(() => {
+        if (moves.mock.calls.length === atMove) { confirm.publish('flame?'); confirm.answer(answer); }
+    });
+    return confirm;
 }
 
 describe('DPad held input', () => {
@@ -137,15 +114,17 @@ describe('DPad held input', () => {
         vi.advanceTimersByTime(281); expect(moves).toHaveBeenCalledTimes(4);
         button.props.onPointerup(); vi.advanceTimersByTime(5000); expect(moves).toHaveBeenCalledTimes(4);
     });
-    it.each([false, true])('首条 move 同步确认返回 %s 后不重新创建计时器', answer => {
-        const button = pad(); confirmation(answer, 1); press(button);
-        expect(win.confirm).toHaveBeenCalledTimes(1);
+    it.each([false, true])('首条 move 受控确认返回 %s 后不重新创建计时器', answer => {
+        const button = pad(); const confirm = confirmation(answer, 1); press(button);
+        expect(confirm.resolved).toHaveBeenCalledTimes(1);
+        confirm.dispose();
         vi.advanceTimersByTime(5000); expect(moves).toHaveBeenCalledTimes(1);
         moves.mockReset(); press(button); vi.advanceTimersByTime(490); expect(moves).toHaveBeenCalledTimes(2);
     });
     it.each([false, true])('重复 move 确认返回 %s 后永久停止旧按住', answer => {
-        const button = pad(); confirmation(answer, 2); press(button); vi.advanceTimersByTime(490);
-        expect(win.confirm).toHaveBeenCalledTimes(1);
+        const button = pad(); const confirm = confirmation(answer, 2); press(button); vi.advanceTimersByTime(490);
+        expect(confirm.resolved).toHaveBeenCalledTimes(1);
+        confirm.dispose();
         vi.advanceTimersByTime(5000); expect(moves).toHaveBeenCalledTimes(2);
     });
     it.each(['blur', 'visibilitychange'])('%s 在延迟及重复阶段都停止，恢复焦点不重启', event => {
@@ -213,6 +192,17 @@ describe('DPad held input', () => {
         if (kind === 'menu' || kind === 'panel') all(root).find(n => n.type === 'hud')!.props[kind === 'menu' ? 'onMenu' : 'onPanel']();
         else all(root).find(n => n.type === kind)!.props.onActivate();
         vi.advanceTimersByTime(5000); expect(moves).toHaveBeenCalledTimes(2);
+    });
+    it('actual App menu gives pending confirmation feedback before invoking any save projection/storage', async () => {
+        const root = node('root'); const app = renderer.createApp(App); app.use(I18NextVue, { i18next });
+        app.mount(root); mounted.push(app);
+        all(root).find(n => n.type === 'start')!.props.onActivate(); await Vue.nextTick();
+        gameStub.hasPendingConfirmation = true;
+        all(root).find(n => n.type === 'hud')!.props.onMenu(); await Vue.nextTick();
+        const menu = all(root).find(n => n.type === 'start')!;
+        await menu.props.onSaveGame(); await Vue.nextTick();
+        expect(toSaveSnapshot).not.toHaveBeenCalled(); expect(saveSnapshot).not.toHaveBeenCalled();
+        expect(menu.props['replay-feedback']).toBe('请先回答当前确认，再保存或导出。');
     });
     it.each(['bar', 'radial'])('实际 %s 展开通知同步取消旧按住', kind => {
         const button = pad(); press(button);

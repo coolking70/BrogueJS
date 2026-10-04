@@ -115,6 +115,17 @@ export interface CharacterResourceCommit extends CharacterResources { expectedSt
 /** Data-only native primitives; the engine owns eligibility, confirmations and time. */
 export type ControlledActionTarget = { kind: 'self' } | { kind: 'creature'; id: number } | { kind: 'cell'; x: number; y: number };
 export interface ControlledActionRequest { actorId: number; action: 'attack' | 'move' | 'wait' | 'search'; target: ControlledActionTarget }
+/** Pure, revocable preparation access: never a lifecycle/command context. */
+export type ControlledCommandPreparationContext = Pick<ExtensionContext,
+    'playerId' | 'state' | 'getComponent' | 'creature' | 'canManageCharacter' | 'validateAction'>;
+export interface ControlledCommandPreparation {
+    readonly revision: number;
+    readonly request: ControlledActionRequest;
+}
+/** Session-only data, never written to a save or recording. */
+export interface PreparedControlledCommand extends ControlledCommandPreparation {
+    readonly command: string;
+}
 export interface PhysicalResolutionFact {
     resolutionId: number; attacker: CreatureView; defender: CreatureView;
     attackKind: 'melee' | 'thrown'; result: Readonly<AttackResult>;
@@ -230,6 +241,8 @@ export interface ExtensionModule extends ExtensionVersion {
     validateComponents?(state: Json, components: ExtensionSnapshot['components'], foundation: ExtensionSnapshot['foundation']): boolean;
     validateRecording?(events: readonly { action: string; data: unknown; extensions?: ExtensionSnapshot }[]): boolean;
     validateWorld?(state: Json, components: ExtensionSnapshot['components'], actors: readonly ActorFacts[], world: WorldInteractionValidation): boolean;
+    /** Must only inspect the narrow context and return JSON; called before any writable command scope. */
+    prepareControlledCommand?(action: string, payload: Json, context: ControlledCommandPreparationContext): ControlledCommandPreparation | null;
     commands?: Record<string, (payload: Json, context: ExtensionContext) => void>;
 }
 /** Session-only wiring. Never serialized as part of a creature. */

@@ -1,10 +1,9 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
-import * as translation from 'i18next-vue';
 import I18NextVue from 'i18next-vue';
 import i18next from 'i18next';
-import { parse, compileScript } from '@vue/compiler-sfc';
-import ts from 'typescript';
+import { createSfcHarness } from './support/sfcHarness';
+import { parse } from '@vue/compiler-sfc';
 import postcss from 'postcss';
 import { readFileSync } from 'node:fs';
 import { computeMapCamera } from '../ui/mapCamera';
@@ -162,52 +161,22 @@ beforeAll(async () => {
     });
     vi.stubGlobal('document', { activeElement: null, addEventListener() {}, removeEventListener() {},
         documentElement: { dataset: {}, style: { setProperty() {} } } });
-    const empty = { default: { render: () => null }, __esModule: true };
-    const modules: Record<string, unknown> = {
-        './ext/ui/useModuleUi': await import('../ext/ui/useModuleUi'),
-        '../ext/catalog': await import('../ext/catalog'),
-        '../ext/ui/defaults': await import('../ext/ui/defaults'),
-        '../ext/ui/creation': await import('../ext/ui/creation'),
-
-        vue: Vue, 'i18next-vue': translation, i18next: { default: i18next, __esModule: true },
-        '../engine/Input': await import('../engine/Input'), './engine/Input': await import('../engine/Input'),
-        '../engine/Settings': await import('../engine/Settings'), './engine/Settings': await import('../engine/Settings'),
-        '../engine/Seed': await import('../engine/Seed'), '../ui/mapTiles': await import('../ui/mapTiles'),
-        '../../ui/useGameHud': await import('../ui/useGameHud'), '../ui/commands': await import('../ui/commands'),
-        '../types': await import('../types'), './ui/layout': await import('../ui/layout'),
-        './ui/immersiveMode': await import('../ui/immersiveMode'), './ui/recordingExport': await import('../ui/recordingExport'),
-        './ui/heldInput': await import('../ui/heldInput'), '../ui/heldInput': await import('../ui/heldInput'),
-        './engine/Core/Game': await import('../engine/Core/Game'), './engine/Core/SaveStorage': await import('../engine/Core/SaveStorage'),
-        './MapTileLegend.vue': { default: { emits: ['close'], render: () => Vue.h('section', { class: 'map-legend' }) }, __esModule: true },
-        './theme/TitleFx.vue': empty,
-    };
-    const compile = (file: string): Vue.Component => {
-        const { descriptor } = parse(source(file));
-        const script = compileScript(descriptor, { id: file, inlineTemplate: true });
-        const code = ts.transpileModule(script.content, { compilerOptions: {
-            target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, esModuleInterop: true,
-        } }).outputText;
-        const exports: any = {};
-        new Function('require', 'exports', code)((key: string) => {
-            if (!(key in modules)) throw new Error(`Unresolved component import: ${key}`);
-            return modules[key];
-        }, exports);
-        return exports.default;
-    };
-    Menu = compile('components/MainMenu.vue'); Log = compile('components/theme/ThemeLog.vue'); Pad = compile('components/DPad.vue');
-    for (const component of ['ContextPanel', 'MessageJournal', 'MessageAcknowledgment', 'InventoryOverlay', 'GameEndOverlay',
-        'ReplayControls', 'AgentControls', 'DetailPanel', 'ReferenceOverlay', 'MapZoomControls', 'SideDrawer', 'CommandBar', 'TargetBar']) {
-        modules[`./components/${component}.vue`] = empty;
-    }
-    modules['./components/DPad.vue'] = { default: Pad, __esModule: true };
-    modules['./components/GameCanvas.vue'] = { default: { setup() { canvasMounts++; return () => Vue.h('canvas'); } }, __esModule: true };
-    modules['./components/MainMenu.vue'] = { default: { emits: ['new-game'], setup(_props: unknown, { emit }: any) {
-        return () => Vue.h('button', { class: 'start-fixture', onClick: () => emit('new-game', { seed: '12345', mode: 'wizard' }) });
-    } }, __esModule: true };
-    for (const component of ['ThemeHud', 'ThemeNearby', 'RadialCommands']) modules[`./components/theme/${component}.vue`] = empty;
-    modules['./components/theme/ThemeLog.vue'] = { default: Log, __esModule: true };
-    modules['./engine/Systems/Logger'] = await import('../engine/Systems/Logger');
-    App = compile('App.vue');
+    const empty = { render: () => null };
+    const harness = createSfcHarness({ baseURL: import.meta.url, components: {
+        '../components/MapTileLegend.vue': { emits: ['close'], render: () => Vue.h('section', { class: 'map-legend' }) },
+        '../components/theme/TitleFx.vue': empty,
+    } });
+    Menu = await harness.load('../components/MainMenu.vue'); Log = await harness.load('../components/theme/ThemeLog.vue');
+    Pad = await harness.load('../components/DPad.vue');
+    const appHarness = createSfcHarness({ baseURL: import.meta.url, stubComponents: empty, components: {
+        '../components/DPad.vue': Pad,
+        '../components/GameCanvas.vue': { setup() { canvasMounts++; return () => Vue.h('canvas'); } },
+        '../components/MainMenu.vue': { emits: ['new-game'], setup(_props: unknown, { emit }: any) {
+            return () => Vue.h('button', { class: 'start-fixture', onClick: () => emit('new-game', { seed: '12345', mode: 'wizard' }) });
+        } },
+        '../components/theme/ThemeLog.vue': Log,
+    } });
+    App = await appHarness.load('../App.vue');
 });
 afterEach(() => {
     for (const app of mounted.splice(0)) app.unmount();

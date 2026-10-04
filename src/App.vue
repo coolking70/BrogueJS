@@ -1,36 +1,16 @@
-<script lang="ts">
-// UI-1 第 6 条：Game.onConfirmRequest（C-5 落下的钩子，Game.ts:408）的生产侧接线。
-// 引擎的 requestConfirm 是**同步**契约（CE confirm() 在文本框里自旋等键，IO.c:2946-2975），
-// 所以这里用浏览器原生 confirm()——它是 web 平台唯一能同步阻塞等答案的模态，
-// 且按键语义与 CE 完全同构：Enter = OK = Yes（CE RETURN_KEY 挂在 Yes 钮，
-// IO.c:2956）、Esc = Cancel = No（CE ESCAPE_KEY 挂在 No 钮，IO.c:2966；
-// ACKNOWLEDGE_KEY = ' ' 同样映射 No，Rogue.h:1179）。
-// 纯逻辑（回放旁路）拆成可单测的导出函数；测试见 ui_1_rendering.test.ts。
-import type { Game } from './engine/Core/Game';
-import { cancelHeldInputs } from './ui/heldInput';
-
-export function wireConfirmRequest(game: Game): void {
-    game.onConfirmRequest = (message: string): boolean => {
-        cancelHeldInputs();
-        // CE IO.c:2944：autoPlayingLevel 是自动演示，不是旅行/探索。
-        // 引擎在提问前停止自动行进；回放决策由 requestConfirm 消费。
-        if (game.replayStatus === 'playing') return true;
-        return window.confirm(message);
-    };
-}
-</script>
-
 <script setup lang="ts">
-import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { computed, ref, watch, nextTick, provide, onMounted, onUnmounted } from 'vue';
+import { cancelHeldInputs } from './ui/heldInput';
 import { displaySettings } from './engine/Settings';
 import { inputManager } from './engine/Input';
-import { logger } from './engine/Systems/Logger';
 import { saveSnapshot, readSnapshot, readSaveSummary, deleteSnapshot, type SaveSummary } from './engine/Core/SaveStorage';
 import i18next from 'i18next';
 import GameCanvas from './components/GameCanvas.vue';
 import ContextPanel from './components/ContextPanel.vue';
 import MessageJournal from './components/MessageJournal.vue';
-import MessageAcknowledgment from './components/MessageAcknowledgment.vue';
+import DialogHost from './components/DialogHost.vue';
+import { DialogService, dialogServiceKey, presentationTimeline } from './ui/dialogService';
+import { logger } from './engine/Systems/Logger';
 import InventoryOverlay from './components/InventoryOverlay.vue';
 import GameEndOverlay from './components/GameEndOverlay.vue';
 import MainMenu from './components/MainMenu.vue';
@@ -55,6 +35,8 @@ import type { DetailInfo } from './engine/UI/DetailGenerator';
 import { useModuleUi } from './ext/ui/useModuleUi';
 
 const REPLAY_KEY = 'brogue-web-replay-v1';
+const dialogs = new DialogService();
+provide(dialogServiceKey, dialogs);
 
 // FE-1：布局模式（desktop / portrait / landscape）按视口尺寸判定，纯显示。
 startViewportTracking();
@@ -74,13 +56,13 @@ function clearCreationTransition() {
 }
 function beginCreationTransition() {
   clearCreationTransition(); cancelHeldInputs(); creationTransition.value = true;
-  const epoch = runEpoch;
+  const epoch = runEpoch.value;
   removeCreationKeyboard = inputManager.registerModalKeyHandler(event => { event.preventDefault(); return true; }, 2500);
   // Presentation-only protection against the second pointerup of a physical
   // double click landing on the map after the creation dialog unmounts.
   creationTransitionTimer = globalThis.setTimeout(() => {
     clearCreationTransition(); cancelHeldInputs();
-    if (runEpoch === epoch && !menuOpen.value) void nextTick(() => document.querySelector<HTMLElement>('.game-view')?.focus({ preventScroll: true }));
+    if (runEpoch.value === epoch && !menuOpen.value) void nextTick(() => document.querySelector<HTMLElement>('.game-view')?.focus({ preventScroll: true }));
   }, 600);
 }
 const nearbyInspection = ref<DetailInfo | null>(null);
@@ -109,19 +91,17 @@ onMounted(() => {
   if (activeGame.isGameOver && !endFeedbackCleared) { endFeedbackCleared = true; replayFeedback.value = ''; }
   else if (!activeGame.isGameOver) endFeedbackCleared = false;
 }, 100); });
-onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTimer); clearCreationTransition(); runEpoch++; });
+onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTimer); clearCreationTransition(); runEpoch.value++; });
 /** 触控命令栏 + 方向键：紧凑模式或粗指针设备显示；回放期间让位给录像控制条。 */
 const showTouch = computed(() => (shouldShowTouchControls(viewport.coarsePointer, viewport.mode)
   || (displaySettings.immersiveMode && compact.value)) && !replayActive.value);
 const showCommands = computed(() => (compact.value || showTouch.value) && !replayActive.value);
 
-// UI-1 第 6 条：把引擎确认钩子接到本组件（headless/测试环境不挂载 App，
-// 钩子保持 null → requestConfirm 按"确认"处理，与 C-5 申报一致）。
-wireConfirmRequest(activeGame);
-
 const gameStarted = ref(false);
 const menuOpen = ref(true);
 const moduleUi = useModuleUi({
+  dialogs,
+  isPresentationBusy: () => !!presentationTimeline(activeGame)?.busy || !!logger.pendingAcknowledgment,
   game: () => activeGame, tick: replayTick, immersive: computed(() => displaySettings.immersiveMode),
   registerKeyHandler: (handler, priority) => inputManager.registerModalKeyHandler(handler, priority),
   cancelHeldKeys: () => inputManager.cancelHeldKeys(),
@@ -129,6 +109,10 @@ const moduleUi = useModuleUi({
     || activeGame.pendingEnchantment || activeGame.pendingIdentify || activeGame.pendingUseConfirm
     || logger.pendingAcknowledgment || activeGame.referenceScreen || activeGame.isGameOver
     || activeGame.isAdvancing || activeGame.isInputLocked()),
+  canPresentInteraction: () => gameStarted.value && !menuOpen.value && !creationTransition.value
+    && !activeGame.isInventoryOpen && !activeGame.referenceScreen && !activeGame.pendingArcana,
+  canOpenInteraction: () => !(panelOpen.value || journalOpen.value || themePanelOpen.value || modulePanelOpen.value
+    || dialogs.current || presentationTimeline(activeGame)?.busy),
   beforeOpenPanel: () => {
     cancelHeldInputs(); moduleUi.closePanels();
     panelOpen.value = false; journalOpen.value = false; themePanelOpen.value = false;
@@ -153,7 +137,7 @@ const storageTick = ref(0);
 const runAvailable = ref(false);
 const replayBusy = ref(false);
 const replayFeedback = ref('');
-let runEpoch = 0;
+const runEpoch = ref(0);
 const canSaveReplay = computed(() => {
   replayTick.value;
   return runAvailable.value && (activeGame.hasCompleteRecording || !!activeGame.replayRecording);
@@ -193,7 +177,7 @@ const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "class
   } catch {
     replayFeedback.value = i18next.t('ext.creation.start_failed'); payload.onRejected?.(); return;
   }
-  clearCreationTransition(); runEpoch++;
+  clearCreationTransition(); runEpoch.value++;
   if (payload.initialCommands) beginCreationTransition();
   cancelHeldInputs();
   moduleUi.closePanels();
@@ -213,6 +197,10 @@ const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "class
 
 const saveGame = async () => {
   if (!gameStarted.value) return;
+  if (activeGame.hasPendingConfirmation) {
+    replayMessage(i18next.t('menu.command.waiting', { defaultValue: 'Please answer the current confirmation before saving or exporting.' }));
+    return;
+  }
   try {
     saveInfo.value = await saveSnapshot(activeGame.toSaveSnapshot());
     storageTick.value++;
@@ -232,7 +220,7 @@ const continueGame = async () => {
       return;
     }
     replayMessage(i18next.t('menu.log.save_loaded', { defaultValue: 'Save loaded.' }));
-    clearCreationTransition(); runEpoch++;
+    clearCreationTransition(); runEpoch.value++;
     runAvailable.value = true;
     replayFeedback.value = '';
     storageTick.value++;
@@ -256,15 +244,20 @@ const deleteSave = async () => {
 };
 
 // Menu feedback is presentation-only: Logger.log disturbs automatic actions.
-const replayMessage = (message: string) => { replayFeedback.value = message; };
+const replayMessage = (message: string) => {
+  replayFeedback.value = message + (presentationTimeline(activeGame)?.busy
+    ? ' ' + i18next.t('menu.presentation.pending', { defaultValue: 'Presentation is still playing; saves and exports use the completed turn.' }) : '');
+};
 
 const currentReplayJson = async (): Promise<string> => {
   if (activeGame.replayRecording) return JSON.stringify(activeGame.replayRecording);
-  const epoch = runEpoch;
+  const epoch = runEpoch.value;
   if (!activeGame.canExportRecording) {
-    replayFeedback.value = i18next.t('menu.replay.waiting', { defaultValue: 'Waiting for the current turn to finish…' });
+    replayFeedback.value = activeGame.hasPendingConfirmation
+      ? i18next.t('menu.command.waiting', { defaultValue: 'Please answer the current confirmation before saving or exporting.' })
+      : i18next.t('menu.replay.waiting', { defaultValue: 'Waiting for the current turn to finish…' });
   }
-  return recordingJsonAtBoundary(activeGame, () => runEpoch === epoch);
+  return recordingJsonAtBoundary(activeGame, () => runEpoch.value === epoch);
 };
 
 const saveReplay = async () => {
@@ -303,7 +296,7 @@ const loadReplay = () => {
     gameStarted.value = true;
     menuOpen.value = false;
     replayMessage(i18next.t('menu.log.replay_loaded', { defaultValue: 'Replay loaded.' }));
-    clearCreationTransition(); runEpoch++;
+    clearCreationTransition(); runEpoch.value++;
     runAvailable.value = true;
     replayFeedback.value = '';
   } catch {
@@ -335,11 +328,11 @@ const replayStep = () => {
 };
 
 const replayRestart = () => {
-  activeGame.replayRestart(); moduleUi.refresh();
+  runEpoch.value++; activeGame.replayRestart(); moduleUi.refresh();
 };
 
 const replaySeek = (index: number) => {
-  activeGame.replaySeek(index); moduleUi.refresh();
+  runEpoch.value++; activeGame.replaySeek(index); moduleUi.refresh();
 };
 
 const downloadReplayJson = (raw: string) => {
@@ -380,7 +373,7 @@ const importReplayJson = async (file: File) => {
       replayMessage(diagnostic ?? i18next.t('menu.log.replay_import_failed', { defaultValue: 'Replay JSON import failed.' }));
       return;
     }
-    clearCreationTransition(); runEpoch++;
+    clearCreationTransition(); runEpoch.value++;
     runAvailable.value = true;
     replayFeedback.value = i18next.t('menu.replay.imported_unsaved', { defaultValue: 'Recording imported. Save it to keep it in this browser.' });
     moduleUi.refresh();
@@ -395,6 +388,9 @@ const importReplayJson = async (file: File) => {
 
 const handleReturnToTitle = async () => {
     clearCreationTransition();
+    activeGame.cancelPendingCommand();
+    logger.clearAcknowledgments();
+    runEpoch.value++;
     // Return to menu logic
     gameStarted.value = false;
     menuOpen.value = true;
@@ -449,7 +445,7 @@ const handleReturnToTitle = async () => {
 
     <div v-if="creationTransition" class="module-creation-transition" data-testid="creation-transition" aria-hidden="true"
       @pointerdown.prevent.stop @pointerup.prevent.stop @touchstart.prevent.stop @touchend.prevent.stop @click.prevent.stop @dblclick.prevent.stop @keydown.prevent.stop @keyup.prevent.stop></div>
-    <MessageAcknowledgment />
+    <DialogHost :service="dialogs" :epoch="runEpoch" />
     <MainMenu
       v-if="menuOpen"
       :has-save="hasSave"

@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import type { ControlledActionRequest, ControlledActionResult, ActorFacts, ExtensionContext, ExtensionModule, ExtensionCreationResources, ExtensionRuleContext, ExtensionRuleInput, Json, ReadonlyJson, OptionalRewardRequest, OptionalRewardPrepareContext, OptionalQueryProvider } from '../../types';
+import type { ControlledActionRequest, ControlledActionResult, ControlledCommandPreparationContext, ActorFacts, ExtensionContext, ExtensionModule, ExtensionCreationResources, ExtensionRuleContext, ExtensionRuleInput, Json, ReadonlyJson, OptionalRewardRequest, OptionalRewardPrepareContext, OptionalQueryProvider } from '../../types';
 import type { CreatureBirth } from '../../birth';
 import { canonical, isJson, validId } from '../../json';
 import type { DeepReadonly } from './definitions';
@@ -17,7 +17,7 @@ import { initialGrowthIdentityBuild, createGrowthIdentityBuild, growthIdentityAt
 import { selectGrowthMonsterTemplate, initializeGrowthTemplate, initializeGrowthClone, autoAllocateGrowthAlly, type GrowthActorBuild } from './templates';
 import { initialGrowthItemLedger, resolveGrowthItemGain, type GrowthItemLedger } from './items';
 
-const getState = (context: ExtensionContext): GrowthState => context.state as GrowthState;
+const getState = (context: Pick<ExtensionContext, 'state'>): GrowthState => context.state as GrowthState;
 const saveState = (context: ExtensionContext, state: GrowthState): void => context.setState(state as Json);
 const component = <T>(context: Pick<ExtensionContext, 'getComponent'>, id: number, name: string): T => context.getComponent(id,name) as T;
 const put = (context: ExtensionContext,id: number,name: string,value: unknown): void => context.setComponent(id,name,value as Json);
@@ -74,7 +74,7 @@ export function commitFirstVisitResource(context: ExtensionContext, state: Growt
 export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, identity: ExtensionModule['rules']): ExtensionModule {
     const config = pack.config;
     const rejected = (): Error => new Error(i18next.t('ext.growth.command.rejected', {defaultValue:'Character command is not available in the current state.'}));
-    const actorIdentity = (context: ExtensionContext | ExtensionRuleContext,id: number): GrowthIdentityBuild =>
+    const actorIdentity = (context: ExtensionRuleContext,id: number): GrowthIdentityBuild =>
         context.getComponent(id,'identity') as GrowthIdentityBuild | undefined ?? initialGrowthIdentityBuild();
     function creationBuild(payload: Json, native?: ExtensionCreationResources): GrowthActorBuild {
         // The original explicit neutral contract remains useful to programmatic callers; the opening UI sends full selections.
@@ -100,14 +100,14 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         return progression ? {progression,attributes:component<GrowthAttributes>(context,id,'attributes'),
             build:component<GrowthSkillBuild>(context,id,'skill-build'),identity:actorIdentity(context,id)} : undefined;
     }
-    function view(context: ExtensionContext | ExtensionRuleContext, id: number): GrowthRuleActor {
+    function view(context: ExtensionRuleContext, id: number): GrowthRuleActor {
         const progression = context.getComponent(id,'progression') as GrowthProgression | undefined;
         const attributes = context.getComponent(id,'attributes') as GrowthAttributes | undefined;
         return growthRuleActor(id,progression ?? initialGrowthProgression(config.levels),attributes ?? initialGrowthAttributes(pack));
     }
-    const skillBuild = (context: ExtensionContext | ExtensionRuleContext, id: number): GrowthSkillBuild =>
+    const skillBuild = (context: ExtensionRuleContext, id: number): GrowthSkillBuild =>
         context.getComponent(id,'skill-build') as GrowthSkillBuild | undefined ?? initialGrowthSkillBuild();
-    function scopes(context: ExtensionContext | ExtensionRuleContext, id: number, owner: 'actor'|'target' = 'actor'): readonly GrowthScopedModifiers[] {
+    function scopes(context: ExtensionRuleContext, id: number, owner: 'actor'|'target' = 'actor'): readonly GrowthScopedModifiers[] {
         return growthSkillScopes(pack,skillBuild(context,id),(context.state as unknown as GrowthState).objectiveClock,owner,actorIdentity(context,id));
     }
     function policyScopes(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): readonly GrowthScopedModifiers[] {
@@ -341,7 +341,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         const focus = component<GrowthFocus>(context,id,'focus');
         put(context,id,'focus',advanceGrowthFocus(pack,{...focus,current:Math.min(focus.current,capacity)},capacity,interval,actor.hp > 0 ? recoverBlocks : 0));
     }
-    function planSkillCommand(action: string, payload: Json, context: ExtensionContext, actorId: number) {
+    function planSkillCommand(action: string, payload: Json, context: ControlledCommandPreparationContext, actorId: number) {
         const state = getState(context), actor = context.creature(actorId);
         const keys = action === 'equip-skills' ? 'active,passive,revision' : action === 'use-skill' ? 'revision,skillId,target' : 'revision,skillId';
         if (!state.created || !actor || actor.hp <= 0 || !context.canManageCharacter() || !payload || typeof payload !== 'object'
@@ -598,6 +598,11 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                 else return false;
                 return true;
             } catch { return false; }
+        },
+        prepareControlledCommand(action, payload, context) {
+            if (action !== 'use-skill' && action !== 'equip-skills') return null;
+            const plan = planSkillCommand(action, payload, context, context.playerId);
+            return plan.request ? { revision: plan.state.revision, request: plan.request } : null;
         },
         readyToSave: context => getState(context).created && getState(context).pending.length === 0 && !openAction,
         creditParty: (actor,context) => growthPartyId(getState(context),actor.id),

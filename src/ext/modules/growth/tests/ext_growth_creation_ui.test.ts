@@ -1,9 +1,8 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
-import * as translation from 'i18next-vue';
 import I18NextVue from 'i18next-vue';
 import i18next from 'i18next';
-import { compileScript, compileStyle, parse } from '@vue/compiler-sfc';
+import { compileStyle, parse } from '@vue/compiler-sfc';
 import ts from 'typescript';
 import postcss from 'postcss';
 import { readFileSync } from 'node:fs';
@@ -15,6 +14,9 @@ import { rng } from '../../../../engine/Random';
 import * as view from '../view';
 import { logger } from '../../../../engine/Systems/Logger';
 import { displaySettings } from '../../../../engine/Settings';
+import { createSfcHarness } from '../../../../test/support/sfcHarness';
+import { displayedFrame, presentationTimeline } from '../../../../ui/presentationTimeline';
+import { dialogInput } from '../../../../ui/dialogInput';
 
 interface Node {
     tag: string; tagName: string; type: string; text: string; value: string | number; selected: boolean; selectedIndex: number;
@@ -53,40 +55,26 @@ beforeAll(async () => {
     vi.stubGlobal('document', doc);
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
     input = (await import('../../../../engine/Input')).inputManager;
-    const empty = { default: { render: () => null }, __esModule: true };
+    const empty = { render: () => null };
     const { contribution } = (await import('./uiFixture')).growthUiFixture();
     const genericUi = await import('../../../../ext/ui/useModuleUi');
     const genericCreation = await import('../../../../ext/ui/creation');
-
-    const modules: Record<string, unknown> = {
-        './ext/ui/useModuleUi': { useModuleUi: (host: import('../../../ui/types').ModuleUiHost) => genericUi.useModuleUi(host, [contribution]) },
-        '../ext/catalog': await import('../../../../ext/catalog'),
-        '../ext/ui/defaults': await import('../../../../ext/ui/defaults'),
-        '../ext/ui/creation': { ...genericCreation, prepareModuleCreation: (ids: readonly string[]) => genericCreation.prepareModuleCreation(ids, [contribution]) },
-        './ui/heldInput': await import('../../../../ui/heldInput'),
- vue: Vue, 'i18next-vue': translation, '../engine/Input': { inputManager: input }, '../../engine/Input': { inputManager: input },
-        './MapTileLegend.vue': empty, './theme/TitleFx.vue': empty, '../ui/mapTiles': await import('../../../../ui/mapTiles'),
-        '../engine/Seed': await import('../../../../engine/Seed'), '../engine/Settings': await import('../../../../engine/Settings'), '../view': view };
-    const compile = (file: string) => {
-        const script = compileScript(parse(source(file)).descriptor, { id: file, inlineTemplate: true });
-        const code = ts.transpileModule(script.content, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText;
-        const exports: any = {};
-        new Function('require', 'exports', code)((key: string) => { if (!(key in modules)) throw new Error(`Missing creation SFC import: ${key}`); return modules[key]; }, exports);
-        return exports.default;
+    const stubs = {
+        '../../../../ext/ui/useModuleUi': { useModuleUi: (host: import('../../../ui/types').ModuleUiHost) => genericUi.useModuleUi(host, [contribution]) },
+        '../../../../ext/ui/creation': { ...genericCreation, prepareModuleCreation: (ids: readonly string[]) => genericCreation.prepareModuleCreation(ids, [contribution]) },
     };
-    MainMenu = compile('components/MainMenu.vue');
-    Object.assign(modules, {
-        i18next: { default: i18next, __esModule: true }, './engine/Settings': await import('../../../../engine/Settings'),
-        './engine/Input': { inputManager: input }, './engine/Systems/Logger': await import('../../../../engine/Systems/Logger'),
-        './engine/Core/Game': { activeGame }, './engine/Core/SaveStorage': await import('../../../../engine/Core/SaveStorage'),
-        './ui/layout': await import('../../../../ui/layout'), './ui/immersiveMode': await import('../../../../ui/immersiveMode'),
-        './ui/recordingExport': await import('../../../../ui/recordingExport'), './ui/heldInput': await import('../../../../ui/heldInput'),
-        './components/MainMenu.vue': { default: MainMenu, __esModule: true },
-        './components/GameCanvas.vue': { default: { props: ['displayModalOpen'], setup: (props: any) => () => Vue.h('div', { 'data-canvas-modal': props.displayModalOpen }) }, __esModule: true },
-    });
-    for (const name of ['ContextPanel', 'MessageJournal', 'MessageAcknowledgment', 'InventoryOverlay', 'GameEndOverlay', 'ReplayControls', 'AgentControls', 'DetailPanel', 'ReferenceOverlay', 'MapZoomControls', 'SideDrawer', 'CommandBar', 'DPad', 'TargetBar']) modules[`./components/${name}.vue`] = empty;
-    for (const name of ['ThemeHud', 'ThemeLog', 'ThemeNearby', 'RadialCommands']) modules[`./components/theme/${name}.vue`] = empty;
-    App = compile('App.vue');
+    const harness = createSfcHarness({ baseURL: import.meta.url, stubs, components: {
+        '../../../../components/MapTileLegend.vue': empty,
+        '../../../../components/theme/TitleFx.vue': empty,
+    } });
+    MainMenu = await harness.load('../../../../components/MainMenu.vue');
+    // Keep unrelated shell/Pixi components isolated as in the original mounted
+    // creation fixture; ordinary TS imports now resolve through the shared harness.
+    const appHarness = createSfcHarness({ baseURL: import.meta.url, stubs, stubComponents: empty, components: {
+        '../../../../components/MainMenu.vue': MainMenu,
+        '../../../../components/GameCanvas.vue': { props: ['displayModalOpen'], setup: (props: any) => () => Vue.h('div', { 'data-canvas-modal': props.displayModalOpen }) },
+    } });
+    App = await appHarness.load('../../../../App.vue');
 });
 afterEach(() => { app?.unmount(); app = undefined; root.children = []; body.children = []; input.setCallback(vi.fn()); vi.restoreAllMocks(); vi.useRealTimers(); displaySettings.immersiveMode = false; });
 afterAll(() => vi.unstubAllGlobals());
@@ -230,8 +218,8 @@ describe('EXT-1e mounted new-game identity chooser', () => {
         const canvas = all(root).find(n => 'data-canvas-modal' in n.props)!;
         const canvasSource = source('components/GameCanvas.vue'), begin = canvasSource.indexOf('    let pathingTimer = 0;'), end = canvasSource.indexOf('    const resetDisplayClock =', begin);
         const loopCode = ts.transpileModule(canvasSource.slice(begin, end), { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText;
-        const frame = new Function('game', 'props', 'logger', 'syncHeldInputContext', 'renders', 'render', 'frameProfile', 'document', `${loopCode}; return displayFrame;`)
-            (activeGame, { get displayModalOpen() { return canvas.props['data-canvas-modal']; } }, logger, () => {}, { flush: (paint: () => void) => paint() }, () => {}, null, { hidden: false });
+        const frame = new Function('game', 'props', 'logger', 'syncHeldInputContext', 'renders', 'render', 'frameProfile', 'document', 'displayedFrame', 'presentationTimeline', 'dialogInput', `${loopCode}; return displayFrame;`)
+            (activeGame, { get displayModalOpen() { return canvas.props['data-canvas-modal']; } }, logger, () => {}, { flush: (paint: () => void) => paint() }, () => {}, null, { hidden: false }, displayedFrame, presentationTimeline, dialogInput);
         for (let index = 0; index < 20; index++) frame(30, 30);
         const pointer = event(shield); shield.props.onPointerup(pointer);
         expect(pointer.preventDefault).toHaveBeenCalled(); expect(pointer.stopPropagation).toHaveBeenCalled();

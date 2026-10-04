@@ -2,7 +2,8 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { activeGame } from '../engine/Core/Game';
 import { readHighScores, type HighScoreEntry } from '../engine/Core/HighScores';
-import { logger } from '../engine/Systems/Logger';
+import { logger, type LogMessage } from '../engine/Systems/Logger';
+import { terminalPresentationReady } from '../ui/dialogAcknowledgments';
 import { inputManager } from '../engine/Input';
 
 withDefaults(defineProps<{
@@ -13,6 +14,7 @@ withDefaults(defineProps<{
 
 const isGameOver = ref(false);
 const hasAcknowledgment = ref(false);
+const unreadMessages = ref<LogMessage[]>([]);
 const won = ref(false);
 const reason = ref('');
 const stats = ref({
@@ -33,7 +35,9 @@ onMounted(() => {
     removeKeyboard = inputManager.registerModalKeyHandler(() => activeGame.isGameOver, 100);
     // Polling is fine here since game over is a rare, one-time boundary event
     timer = window.setInterval(() => {
-        hasAcknowledgment.value = !!logger.pendingAcknowledgment;
+        hasAcknowledgment.value = !!logger.pendingAcknowledgment || !terminalPresentationReady(activeGame);
+        if (activeGame.isGameOver && !hasAcknowledgment.value) logger.showTerminalAcknowledgments();
+        unreadMessages.value = logger.unreadAcknowledgments;
         if (activeGame.isGameOver && !isGameOver.value) {
             isGameOver.value = true;
             won.value = activeGame.gameOverWon;
@@ -53,6 +57,7 @@ onUnmounted(() => { clearInterval(timer); removeKeyboard?.(); });
 const emit = defineEmits(['return-to-title', 'save-replay', 'export-replay-json']);
 
 const handleReturn = () => {
+    logger.clearAcknowledgments();
     isGameOver.value = false;
     emit('return-to-title');
 };
@@ -72,8 +77,7 @@ function enchantLabel(ench: number): string {
 </script>
 
 <template>
-    <!-- Acknowledgments keep their original order and are never discarded by
-         death. Present the result after their last confirmation, not underneath. -->
+    <!-- Default warning order remains; explicit results retain unread occurrences. -->
     <div v-if="isGameOver && !hasAcknowledgment" class="game-end-overlay">
         <div class="end-panel">
             <h1 :class="won ? 'title-win' : 'title-loss'">
@@ -84,6 +88,11 @@ function enchantLabel(ench: number): string {
             </h1>
 
             <p class="reason">{{ reason }}</p>
+
+            <section v-if="unreadMessages.length" class="unread-messages">
+                <h2>{{ $t('messages.unread', { defaultValue: 'Unread Messages' }) }}</h2>
+                <ol><li v-for="(message, index) in unreadMessages" :key="index" :style="{ color: message.color }">{{ message.text }}</li></ol>
+            </section>
 
             <div class="score-display">
                 <span class="score-label">{{ $t('endgame.score', { defaultValue: 'Score' }) }}</span>
@@ -224,6 +233,8 @@ function enchantLabel(ench: number): string {
 }
 
 .high-scores h2 { color: #ffd700; font-size: 1rem; text-align: center; }
+.unread-messages { max-height: 180px; overflow-y: auto; text-align: left; overflow-wrap: anywhere; }
+.unread-messages h2 { color: #ffd700; font-size: 1rem; }
 .high-scores ol { padding-left: 2.5rem; }
 .high-scores li { margin: 5px 0; color: #ccc; }
 .high-scores li span, .high-scores li time { margin-right: 10px; }

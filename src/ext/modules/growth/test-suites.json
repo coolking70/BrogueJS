@@ -18,6 +18,7 @@
     "tests/ext_growth_modal_advancement.test.ts",
     "tests/ext_growth_npc_replay.test.ts",
     "tests/ext_growth_optional_rewards.test.ts",
+    "tests/ext_growth_prepared_commands.test.ts",
     "tests/ext_growth_progression.test.ts",
     "tests/ext_growth_public_effects.test.ts",
     "tests/ext_growth_runtime.test.ts",

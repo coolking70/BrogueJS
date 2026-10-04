@@ -1,20 +1,31 @@
 import type { Component, Ref } from 'vue';
 import type { Game } from '../../engine/Core/Game';
 import type { ModalKeyHandler } from '../../ui/modalKeyboard';
+import type { DialogService } from '../../ui/dialogService';
 
 /** Display-only services supplied by the shell; simulation changes use commands. */
 export interface ModuleUiHost {
     readonly game: () => Game;
     readonly tick: Readonly<Ref<number>>;
     readonly immersive: Readonly<Ref<boolean>>;
+    /** The shell owns the sole modal host; modules contribute display-only content. */
+    readonly dialogs?: DialogService;
     /** Optional display input ports; descriptor discovery must not initialize a
      * browser singleton. The application supplies its existing input owner. */
     registerKeyHandler?(handler: ModalKeyHandler, priority?: number): () => void;
     cancelHeldKeys?(): void;
+    /** Live display lag only; replay/seek must keep their read-only module UI. */
+    isPresentationBusy?(): boolean;
     canOpenPanel(): boolean;
+    /** Additional shell-only modal competition guard for world interactions. */
+    canOpenInteraction?(): boolean;
+    /** Suppress a persisted interaction view during shell/lifecycle transitions. */
+    canPresentInteraction?(): boolean;
     beforeOpenPanel(): void;
     afterClosePanel(): void;
 }
+/** Slots stay mounted during display lag. Teleported/multi-root components must
+ * honor the reserved presentationHidden prop on their actual presentation root. */
 export interface ModuleUiSlot {
     readonly component: Component;
     readonly props: Record<string, unknown>;

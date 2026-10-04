@@ -25,7 +25,7 @@
  *    LIGHT_SMOOTHING_THRESHOLD=150）。
  */
 
-import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { TerrainType, Cell } from '../engine/Map/Grid';
 import { GasType, type GasCell } from '../engine/Environment/Gas';
@@ -54,18 +54,8 @@ import {
 import { isSidebarVisibleStatus, CE_EMPTY_NAME_STATUSES } from '../engine/Status/statusConfig';
 import { Item, ItemCategory } from '../engine/Items/Item';
 import { MonsterState, type Monster } from '../entities/Monster';
-import type { Game } from '../engine/Core/Game';
+import { commandConfirmationFixture } from './support/commandConfirmation';
 import ceTerrainGoldens from './fixtures/u21c-ce-terrain.json';
-
-// App.vue 的模块依赖链（GameCanvas → Input 单例）在模块加载期访问 window——
-// headless 下先 stub 再动态导入（p2_0 同款做法）。wireConfirmRequest 是纯逻辑，
-// 不依赖 window 存在；各用例按需重 stub 带 confirm 的 window。
-let wireConfirmRequest: (game: Game) => void;
-beforeAll(async () => {
-    vi.stubGlobal('window', { addEventListener: () => {}, removeEventListener: () => {} });
-    const mod = await import('../App.vue');
-    wireConfirmRequest = mod.wireConfirmRequest;
-});
 
 // ════════════════════════ 工具 ════════════════════════
 
@@ -396,48 +386,54 @@ describe('UI-1 第 6 条：Game.onConfirmRequest 生产侧接线', () => {
         vi.restoreAllMocks();
     });
 
-    function stubGame(overrides: Partial<Pick<Game, 'replayStatus'>> & { autoTraveling?: boolean } = {}): Game {
-        return {
-            onConfirmRequest: null,
-            replayStatus: overrides.replayStatus ?? 'idle',
-            isAutoTraveling: () => overrides.autoTraveling ?? false,
-        } as unknown as Game;
-    }
-
-    it('常规对局：问题原样转给模态框，答案映射为返回值（Enter=Yes/Esc=No 由原生 confirm 承载，≙ CE RETURN/ESCAPE_KEY）', () => {
-        const confirmSpy = vi.fn(() => true);
-        vi.stubGlobal('window', { confirm: confirmSpy });
-        const game = stubGame();
-        wireConfirmRequest(game);
-        expect(game.onConfirmRequest).not.toBeNull();
-        expect(game.onConfirmRequest!('潜入深渊？')).toBe(true);
-        expect(confirmSpy).toHaveBeenCalledWith('潜入深渊？');
-
-        confirmSpy.mockReturnValue(false);
-        expect(game.onConfirmRequest!('潜入深渊？')).toBe(false);
+    it('常规对局：问题原样转给 Host，受控答案映射到引擎（CE Enter=Yes/Esc=No）', () => {
+        const confirm = commandConfirmationFixture();
+        confirm.publish('潜入深渊？');
+        expect(confirm.service.current?.text).toBe('潜入深渊？');
+        expect(confirm.answer(true)).toBe(true);
+        expect(confirm.resolved).toHaveBeenCalledWith('潜入深渊？', true);
+        confirm.publish('潜入深渊？');
+        expect(confirm.answer(false)).toBe(true);
+        expect(confirm.resolved).toHaveBeenLastCalledWith('潜入深渊？', false);
+        confirm.dispose();
     });
 
-    it('回放期间直接放行且**不弹框**（CE IO.c:2941-2943 "oh yes he did"；弹框会卡死回放）', () => {
-        const confirmSpy = vi.fn(() => true);
-        vi.stubGlobal('window', { confirm: confirmSpy });
-        const game = stubGame({ replayStatus: 'playing' });
-        wireConfirmRequest(game);
-        expect(game.onConfirmRequest!('潜入深渊？')).toBe(true);
-        expect(confirmSpy).not.toHaveBeenCalled();
+    it('回放期间不弹 Host（CE IO.c:2941-2943；答案由引擎消费）', () => {
+        const confirm = commandConfirmationFixture(true);
+        confirm.publish('潜入深渊？');
+        expect(confirm.service.current).toBeUndefined();
+        expect(confirm.resolved).not.toHaveBeenCalled();
+        confirm.dispose();
     });
 
     it('自动寻路仍询问（CE autoPlayingLevel 是自动演示；X3-U1 D10）', () => {
-        const confirmSpy = vi.fn(() => false);
-        vi.stubGlobal('window', { confirm: confirmSpy });
-        const game = stubGame({ autoTraveling: true });
-        wireConfirmRequest(game);
-        expect(game.onConfirmRequest!('潜入深渊？')).toBe(false);
-        expect(confirmSpy).toHaveBeenCalledWith('潜入深渊？');
+        const confirm = commandConfirmationFixture();
+        confirm.publish('潜入深渊？');
+        expect(confirm.service.current?.text).toBe('潜入深渊？');
+        confirm.answer(false);
+        expect(confirm.resolved).toHaveBeenCalledWith('潜入深渊？', false);
+        confirm.dispose();
     });
 
-    it('结构守卫：App.vue 挂载时真的接线（谁把 wireConfirmRequest(activeGame) 删了谁红）', () => {
+    // D4 replaces the explicitly deferred native resolver with the same Host
+    // capability. Keep the original question/both answers/replay-no-UI contract.
+    it('D4 闪现风险使用界面内确认、两分支与回放免询问', () => {
+        const confirm = commandConfirmationFixture();
+        confirm.publish('blink?'); expect(confirm.service.current?.text).toBe('blink?');
+        expect(confirm.answer(false)).toBe(true);
+        expect(confirm.resolved).toHaveBeenCalledWith('blink?', false);
+        confirm.publish('blink?'); expect(confirm.answer(true)).toBe(true);
+        expect(confirm.resolved).toHaveBeenLastCalledWith('blink?', true);
+        confirm.dispose();
+        const replay = commandConfirmationFixture(true); replay.publish('blink?');
+        expect(replay.service.current).toBeUndefined(); expect(replay.resolved).not.toHaveBeenCalled(); replay.dispose();
+    });
+
+    it('结构守卫：App.vue 常驻 Host，Host 真的绑定引擎命令确认', () => {
         const src = readFileSync(new URL('../App.vue', import.meta.url), 'utf8');
-        expect(src).toMatch(/wireConfirmRequest\(activeGame\)/);
+        const host = readFileSync(new URL('../components/DialogHost.vue', import.meta.url), 'utf8');
+        expect(src).toMatch(/<DialogHost\s/);
+        expect(host).toMatch(/bindDialogCommands\(service, activeGame\)/);
     });
 });
 

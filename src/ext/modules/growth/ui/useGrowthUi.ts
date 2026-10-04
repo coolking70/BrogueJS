@@ -20,6 +20,24 @@ const { view: growthView, poll: pollGrowth } = useGrowthCharacter(growthDraft, (
 const growthSubmitting = ref(false);
 const growthError = ref<string | null>(null);
 const growthNotice = ref<string | null>(null);
+type SkillUiAction = 'learn' | 'equip' | 'unequip' | 'use';
+// Display-only tracking, never a module context or commit continuation.
+let pendingSkill: { ownerCommandId: number; command: string; eventOffset: number; action: SkillUiAction } | null = null;
+const skillNotice = (action: SkillUiAction) => action === 'learn' ? 'ext.growth.ui.skill_learned' : action === 'use' ? 'ext.growth.ui.skill_used' : 'ext.growth.ui.skill_equipped';
+function refresh() {
+  if (!live()) return;
+  pollGrowth();
+  const pending = pendingSkill;
+  if (!pending || game.pendingCommandConfirmation?.ownerCommandId === pending.ownerCommandId) return;
+  pendingSkill = null; growthSubmitting.value = false;
+  const event = game.recordedInputEvents.slice(pending.eventOffset).find(entry => entry.action === 'ext:command' && entry.data === pending.command);
+  // A stale/lifecycle-cancelled plan has no event; the shared Host owns its
+  // changed-state notice. Never infer success from an unrelated revision.
+  if (!event) return;
+  const cancelled = event.decisions?.includes(false);
+  growthNotice.value = cancelled ? 'ext.growth.ui.skill_cancelled' : skillNotice(pending.action);
+  if (!cancelled && growthView.value) growthDraft.value = createGrowthAllocationDraft(growthView.value);
+}
 const growthInitialTab = ref<'attributes' | 'skills'>('attributes');
 const growthTargetDraft = shallowRef<{ view: GrowthCharacterViewModel; skillId: string } | null>(null);
 const growthTargets = computed(() => live() && growthTargetDraft.value && growthView.value
@@ -100,7 +118,7 @@ async function submitGrowth(kind: 'allocate' | 'respec') {
     await nextTick(); growthSubmitting.value = false;
   }
 }
-async function submitGrowthSkill(action: 'learn' | 'equip' | 'unequip' | 'use', skillId: string, target?: GrowthSkillTarget) {
+async function submitGrowthSkill(action: SkillUiAction, skillId: string, target?: GrowthSkillTarget) {
   if (!live() || growthSubmitting.value) return;
   if (!characterOpen.value && !await openCharacter('skills')) return;
   if (!live() || growthSubmitting.value || !characterOpen.value || !growthView.value || growthView.value.readOnly) return;
@@ -122,17 +140,21 @@ async function submitGrowthSkill(action: 'learn' | 'equip' | 'unequip' | 'use', 
     const view = growthTargetDraft.value?.view ?? growthView.value;
     const command = buildGrowthSkillCommand(view, game, action, skillId, target);
     if (!command) { growthError.value = 'ext.growth.ui.command_rejected'; pollGrowth(); return; }
-    const revision = view.revision;
+    const revision = view.revision, eventOffset = game.recordedInputEvents.length;
     game.executeCommand('ext:command', command);
     pollGrowth();
+    if (game.pendingCommandConfirmation) {
+      pendingSkill = { ownerCommandId: game.pendingCommandConfirmation.ownerCommandId, command, eventOffset, action };
+      return;
+    }
     if (growthView.value?.revision === revision) { growthError.value = 'ext.growth.ui.command_rejected'; return; }
     growthDraft.value = createGrowthAllocationDraft(growthView.value!);
-    growthNotice.value = action === 'learn' ? 'ext.growth.ui.skill_learned' : action === 'use' ? 'ext.growth.ui.skill_used' : 'ext.growth.ui.skill_equipped';
+    growthNotice.value = skillNotice(action);
   } catch {
     growthError.value = 'ext.growth.ui.command_rejected'; pollGrowth();
   } finally {
     growthTargetDraft.value = null;
-    await nextTick(); growthSubmitting.value = false;
+    await nextTick(); growthSubmitting.value = pendingSkill !== null;
   }
 }
 function confirmGrowthTarget(target: GrowthSkillTarget) {
@@ -140,7 +162,7 @@ function confirmGrowthTarget(target: GrowthSkillTarget) {
 }
 return {
   panelOpen: characterOpen,
-  refresh: pollGrowth,
+  refresh,
   close: closeCharacter,
   commands: computed(() => growthView.value ? [{ id: 'growth:character', label: panelLoading.value ? i18next.t('ext.growth.ui.loading_panel') : panelLoadFailed.value ? i18next.t('ext.growth.ui.load_panel_failed') : i18next.t('ext.growth.ui.character'), glyph: growthView.value.hasUnspentPoints ? '●' : '', disabled: growthBlocked.value, invoke: () => openCharacter() }] : []),
   hud: computed(() => growthView.value ? { component: GrowthHud, props: { model: growthView.value, blocked: growthBlocked.value, immersive: host.immersive.value, loadStatus: panelLoadStatus.value, onOpen: () => openCharacter() } } : null),

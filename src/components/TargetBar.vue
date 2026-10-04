@@ -1,21 +1,16 @@
 <script setup lang="ts">
 // FE-1：目标选择条（投掷 / 法杖 / 魔杖 / 护符瞄准期间出现，桌面与触屏通用）。
 // 确认/下一个/取消都经 ui/commands（录制边界）；瞄准格本身是纯 UI 状态。
-import { computed, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useTranslation } from 'i18next-vue';
-import { activeGame } from '../engine/Core/Game';
 import { useGameHud } from '../ui/useGameHud';
 import { dispatch, travelTo } from '../ui/commands';
 import { clearAim, targetingState } from '../ui/targeting';
 
 const { t } = useTranslation();
-const { targeting } = useGameHud();
-const itemName = ref('');
+const { targeting, targetName: itemName, targetAim } = useGameHud();
 
 watch(targeting, (mode) => {
-  itemName.value = mode === 'arcana'
-    ? activeGame.pendingArcana?.item.displayName ?? ''
-    : mode === 'throw' ? activeGame.throwItemTarget?.displayName ?? '' : '';
   if (mode !== 'throw') {
     clearAim();
   }
@@ -23,12 +18,12 @@ watch(targeting, (mode) => {
 
 const prompt = computed(() => {
   if (targeting.value === 'arcana') return t('mobile.target.arcana_prompt', { name: itemName.value, interpolation: { escapeValue: false } });
-  return targetingState.aim
+  return targetAim.value
     ? t('mobile.target.throw_confirm_prompt', { name: itemName.value, interpolation: { escapeValue: false } })
     : t('mobile.target.throw_prompt', { name: itemName.value, interpolation: { escapeValue: false } });
 });
 
-const canConfirm = computed(() => targeting.value === 'arcana' || !!targetingState.aim);
+const canConfirm = computed(() => targeting.value === 'arcana' || !!targetAim.value);
 
 const confirm = () => {
   if (targeting.value === 'arcana') {

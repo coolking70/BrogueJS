@@ -354,5 +354,6 @@
   "ext.growth.module.name": "RPG 成长",
   "ext.growth.module.description": "经验、属性、技能与角色身份",
   "ext.growth.ui.loading_panel": "正在加载角色页（点击取消）",
-  "ext.growth.ui.load_panel_failed": "角色页加载失败（点击重试）"
+  "ext.growth.ui.load_panel_failed": "角色页加载失败（点击重试）",
+  "ext.growth.ui.skill_cancelled": "已取消技能行动"
 }

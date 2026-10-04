@@ -5,10 +5,9 @@
 
 import { Direction } from '../types';
 import { isTextEntry, ModalKeyboard, type ModalKeyHandler } from '../ui/modalKeyboard';
+import { dialogInput } from '../ui/dialogInput';
 
 export class InputManager {
-    private keybMap: Record<string, boolean> = {};
-    private readonly blockedUntilRelease = new Set<string>();
     private onActionCallback: ((action: string, data?: any) => void) | null = null;
     /** CE: any keystroke interrupts automation (Movement.c:2345-2351, IO.c:2366-2375).
      *  Unbound keys are not game commands (P1-46); the host decides whether an
@@ -17,23 +16,14 @@ export class InputManager {
     private modalKeyboard = new ModalKeyboard();
 
     constructor() {
-        // Physical key bookkeeping runs in capture: an inline control may stop
-        // bubbling without hiding its eventual release from the input barrier.
-        window.addEventListener('keydown', event => {
-            const key = event.code || event.key;
-            // A fresh physical press also recovers a release lost on window
-            // blur. Do this before any handler can cancel this very event.
-            if (!event.repeat) this.blockedUntilRelease.delete(key);
-            this.keybMap[key] = true;
-        }, true);
+        dialogInput.install(window);
         window.addEventListener('keydown', this.handleKeyDown.bind(this));
-        window.addEventListener('keyup', this.handleKeyUp.bind(this), true);
     }
 
     /** Display transition barrier, never a simulated action. A key held across
      * a dialogue must be released before it can resume world movement. */
     public cancelHeldKeys(): void {
-        for (const [key, down] of Object.entries(this.keybMap)) if (down) this.blockedUntilRelease.add(key);
+        dialogInput.cancelHeldKeys();
     }
 
     public setCallback(cb: (action: string, data?: any) => void) {
@@ -49,18 +39,19 @@ export class InputManager {
     }
 
     public triggerAction(action: string, data?: any) {
+        if (dialogInput.busy()) return;
         if (this.onActionCallback) {
             this.onActionCallback(action, data);
+            dialogInput.sync();
         }
     }
 
     private handleKeyDown(e: KeyboardEvent) {
-        if (this.blockedUntilRelease.has(e.code || e.key)) {
-            e.preventDefault?.(); e.stopImmediatePropagation(); return;
-        }
+        if (dialogInput.busy()) return;
         // Text entry (e.g. call-item nickname) must not become a game command.
         if (e.defaultPrevented || isTextEntry(e.target)) return;
         if (this.modalKeyboard.handle(e)) {
+            dialogInput.sync();
             e.stopImmediatePropagation();
             return;
         }
@@ -83,11 +74,13 @@ export class InputManager {
             if (direction !== undefined) {
                 e.preventDefault?.();
                 this.onActionCallback(e.shiftKey || e.ctrlKey ? 'run' : 'move', direction);
+                dialogInput.sync();
                 return;
             }
             if (e.code === 'Numpad5') {
                 e.preventDefault?.();
                 this.onActionCallback('wait');
+                dialogInput.sync();
                 return;
             }
             switch (e.key) {
@@ -175,13 +168,10 @@ export class InputManager {
                     break;
                 // null dir means rest
             }
+            dialogInput.sync();
         }
     }
 
-    private handleKeyUp(e: KeyboardEvent) {
-        const key = e.code || e.key;
-        this.keybMap[key] = false; this.blockedUntilRelease.delete(key);
-    }
 }
 
 export const inputManager = new InputManager();

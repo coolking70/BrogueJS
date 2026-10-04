@@ -5,6 +5,7 @@ import { ExtensionRegistry } from '../ext/registry';
 import type { ExtensionModule } from '../ext/types';
 import { prepareModuleCreation, buildModuleCreationCommands } from '../ext/ui/creation';
 import { collectModuleUiContributions } from '../ext/ui/registry';
+import { DialogService } from '../ui/dialogService';
 import { useModuleUi } from '../ext/ui/useModuleUi';
 import type { ModuleUiContribution, ModuleUiHost, ModuleUiSession } from '../ext/ui/types';
 
@@ -77,6 +78,37 @@ describe('module UI selection and creation ownership', () => {
         command.invoke(); submit(); expect(called).not.toHaveBeenCalled();
         ui.refresh(); const nextCommand = ui.commands.value[0]!, nextSubmit = ui.panelSlots.value[0]!.props.onSubmit as () => void;
         scope.stop(); nextCommand.invoke(); nextSubmit(); expect(called).not.toHaveBeenCalled();
+    });
+    it('suspends all generic slots without replacing sessions or drafts and immediately resumes the latest view', () => {
+        const dialogs = new DialogService(), tick = ref(0), scope = effectScope();
+        let busy = false, current = 1;
+        const game = { extensionRuntime: { manifest: { modules: [{ id: 'alpha' }] } }, replayRecording: null } as unknown as Game;
+        const invoke = vi.fn(), dispose = vi.fn(), draft = { selection: 'kept' }, model = ref({ value: current });
+        const slot = ref({ component, props: { model, draft, onSubmit: invoke, style: { color: 'red' } } });
+        const factory = vi.fn((): ModuleUiSession => {
+            onScopeDispose(dispose);
+            return { hud: slot, bar: slot, panel: slot, panelOpen: ref(true), commands: ref([{ id: 'alpha:open', label: 'open', glyph: '●', invoke }]),
+                refresh() { model.value = { value: current }; }, close: vi.fn() };
+        });
+        const ui = scope.run(() => useModuleUi({ dialogs, game: () => game, tick, immersive: ref(false),
+            isPresentationBusy: () => busy, canOpenPanel: () => true, beforeOpenPanel() {}, afterClosePanel() {},
+        }, [{ moduleId: 'alpha', useSession: factory }]))!;
+        ui.refresh(); const submit = ui.panelSlots.value[0]!.props.onSubmit as () => void;
+        busy = true; current = 2; dialogs.sync();
+        for (const slots of [ui.hudSlots, ui.barSlots, ui.panelSlots]) expect(slots.value[0]!.props.presentationHidden).toBe(true);
+        expect(ui.hudSlots.value[0]!.props.style).toEqual([{ color: 'red' }, { visibility: 'hidden' }]);
+        expect(ui.hudSlots.value[0]!.props.inert).toBe(true); expect(ui.barSlots.value[0]!.props['aria-hidden']).toBe(true);
+        expect(ui.commands.value[0]).toMatchObject({ disabled: true, glyph: '' });
+        submit(); ui.commands.value[0]!.invoke(); expect(invoke).not.toHaveBeenCalled();
+        expect(ui.panelOpen.value).toBe(true); expect(factory).toHaveBeenCalledTimes(1); expect(dispose).not.toHaveBeenCalled();
+        const sameDraft = ui.panelSlots.value[0]!.props.draft;
+        busy = false; dialogs.sync();
+        expect(tick.value).toBe(0); expect(model.value.value).toBe(2); expect(ui.panelSlots.value[0]!.props.draft).toBe(sameDraft);
+        expect(ui.panelSlots.value[0]!.props.presentationHidden).toBe(false); submit(); expect(invoke).toHaveBeenCalledTimes(1);
+        // Replay/seek inspection cannot be suppressed by a stale live gate.
+        busy = true; Object.defineProperty(game, 'replayRecording', { value: {}, configurable: true }); dialogs.sync();
+        expect(ui.hudSlots.value[0]!.props.presentationHidden).toBe(false); expect(ui.commands.value[0]!.disabled).toBe(false);
+        scope.stop(); expect(dispose).toHaveBeenCalledTimes(1); dialogs.dispose();
     });
     it('starts only enabled UI sessions and disposes on manifest runtime replacement and unmount', () => {
         const tick = ref(0), dispose = vi.fn(), refresh = vi.fn(), factory = vi.fn((): ModuleUiSession => {

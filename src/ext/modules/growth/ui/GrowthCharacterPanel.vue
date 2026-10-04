@@ -4,7 +4,7 @@ import { useTranslation } from 'i18next-vue';
 import { inputManager } from '../../../../engine/Input';
 import type { GrowthCharacterViewModel, GrowthPortPreview, GrowthResourcePreview, GrowthTargetChoice, GrowthSkillTarget } from '../view';
 
-const props = defineProps<{ model: GrowthCharacterViewModel; submitting: boolean; error: string | null; notice: string | null; initialTab?: 'attributes' | 'skills'; targetSkillId?: string | null; targets?: readonly GrowthTargetChoice[] }>();
+const props = defineProps<{ model: GrowthCharacterViewModel; presentationHidden?: boolean; submitting: boolean; error: string | null; notice: string | null; initialTab?: 'attributes' | 'skills'; targetSkillId?: string | null; targets?: readonly GrowthTargetChoice[] }>();
 const emit = defineEmits<{ close: []; reset: []; adjust: [id: string, amount: number]; submit: []; respec: []; skill: [action: 'learn' | 'equip' | 'unequip' | 'use', id: string]; target: [target: GrowthSkillTarget]; cancelTarget: [] }>();
 const { t } = useTranslation();
 // Names and descriptions have been validated against the pack's localization keys.
@@ -28,6 +28,24 @@ const tab = ref<'attributes' | 'skills' | 'identities'>(props.initialTab ?? 'att
 const respecConfirm = ref(false);
 watch(() => props.model.revision, () => { respecConfirm.value = false; });
 const panel = ref<HTMLElement>();
+let suspendedFocus: HTMLElement | null = null;
+function suppressHiddenFocus(event: FocusEvent) {
+    if (props.presentationHidden) (event.target as HTMLElement | null)?.blur();
+}
+watch(() => props.presentationHidden, hidden => {
+    if (hidden) {
+        const active = document.activeElement as HTMLElement | null;
+        if (active && panel.value?.contains(active)) { suspendedFocus = active; active.blur(); }
+    } else if (suspendedFocus) {
+        const target = suspendedFocus; suspendedFocus = null;
+        void nextTick(() => {
+            if (props.presentationHidden || !panel.value) return;
+            const otherDialog = document.activeElement?.closest?.('[role="dialog"], [role="alertdialog"]');
+            if (otherDialog && otherDialog !== panel.value) return;
+            (target.isConnected && !target.hasAttribute?.('disabled') ? target : panel.value).focus({ preventScroll: true });
+        });
+    }
+}, { flush: 'sync' });
 const tabs = computed(() => [
     { id: 'attributes' as const, label: t('ext.growth.ui.attributes') },
     { id: 'skills' as const, label: t('ext.growth.ui.skills') },
@@ -50,20 +68,22 @@ const recoveryText = computed(() => ({
     none: t('ext.growth.ui.recovery_none'), increase: t('ext.growth.ui.recovery_increase'), full: t('ext.growth.ui.recovery_full'),
 }));
 let removeKeyboard: (() => void) | undefined;
-function close() { if (!props.submitting) { if (props.targetSkillId) emit('cancelTarget'); else emit('close'); } }
+function close() { if (!props.presentationHidden && !props.submitting) { if (props.targetSkillId) emit('cancelTarget'); else emit('close'); } }
 onMounted(async () => {
     removeKeyboard = inputManager.registerModalKeyHandler(event => {
+        if (props.presentationHidden) return false;
         if (event.key === 'Escape') { event.preventDefault(); close(); }
         return true;
     }, 600);
-    await nextTick(); panel.value?.focus({ preventScroll: true });
+    await nextTick(); if (!props.presentationHidden) panel.value?.focus({ preventScroll: true });
 });
 onUnmounted(() => removeKeyboard?.());
 </script>
 
 <template>
   <Teleport to="body">
-    <div class="growth-overlay" @click.self="close" @pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop>
+    <div class="growth-overlay" :style="presentationHidden ? { visibility: 'hidden' } : undefined"
+         :inert="presentationHidden || undefined" :aria-hidden="presentationHidden || undefined" @focusin.capture="suppressHiddenFocus" @click.self="close" @pointerdown.stop @pointerup.stop @touchstart.stop @touchend.stop>
       <section ref="panel" class="growth-panel" role="dialog" aria-modal="true" :aria-label="$t('ext.growth.ui.character')" tabindex="-1"
                @keydown.stop @keyup.stop @keydown.esc.prevent="close">
         <header class="growth-header">
