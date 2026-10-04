@@ -1,5 +1,6 @@
 /** CE objective time and environment scheduling. No Game instance crosses this boundary. */
 import type { Game } from './Game';
+import type { ActorActionSchedulerPort } from './ActorActionScheduler';
 import type { Grid } from '../Map/Grid';
 import type { Pos } from '../../types';
 import type { PromotionUpdateResult } from '../Map/Promotion';
@@ -99,16 +100,23 @@ export interface EffectsPort {
     observeAnimationDelay?(milliseconds: number): void;
 }
 
-export interface TimePorts { world: WorldPort; clock: ClockPort; effects: EffectsPort }
+export interface TimePorts {
+    world: WorldPort; clock: ClockPort; effects: EffectsPort;
+    /** Opt-in foundation scheduling; absence retains the native iteration/order. */
+    actions?: ActorActionSchedulerPort;
+}
 
 export function* advancementLoop(ports: TimePorts, stealthRange: number): Generator<number, void, void> {
         // CE Time.c:2471：fastForward 是 playerTurnEnded 内的局部变量，
         // 置位后本回合不再进入暂停分支（E1-修订：锁存，至多暂停一次）
         let fastForward = false;
         while (ports.world.player.ticksUntilTurn > 0) {
+            const actions = ports.actions;
+            actions?.cancelDeadActions();
+            const playerWasBusy = actions?.isBusy(ports.world.player.id) ?? false;
             let soonestTurn = ports.world.player.ticksUntilTurn;
             for (const m of ports.world.monsters) {
-                if (m.hp > 0 && m.ticksUntilTurn < soonestTurn) {
+                if (m.hp > 0 && (!actions || actions.isDecisionOwner(m.id)) && m.ticksUntilTurn < soonestTurn) {
                     soonestTurn = m.ticksUntilTurn;
                 }
             }
@@ -117,9 +125,17 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 soonestTurn = ports.clock.ticksTillUpdateEnvironment;
             }
 
+            const actionBoundary = actions?.nextActionBoundary();
+            if (actionBoundary != null && actionBoundary < soonestTurn) soonestTurn = actionBoundary;
+            // Native readiness may start at zero (or overdue). It consumes no new elapsed time.
+            if (actions) soonestTurn = Math.max(0, soonestTurn);
             for (const m of ports.world.monsters) {
-                if (m.hp > 0) m.ticksUntilTurn -= soonestTurn;
+                if (m.hp > 0 && (!actions || (actions.isDecisionOwner(m.id) && !actions.isBusy(m.id)))) {
+                    m.ticksUntilTurn -= soonestTurn;
+                }
             }
+            // Busy native timers are mirrors written by this one countdown owner.
+            if (actions && soonestTurn > 0) actions.advanceActionTime(soonestTurn);
 
             let completeObjective: (() => number) | undefined;
             let suspended = false;
@@ -130,6 +146,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                     ports.clock.ticksTillUpdateEnvironment += 100;
                     completeObjective = ports.effects.beginObjectiveTime?.();
                     ports.effects.objectiveTimeBlock();
+                    actions?.cancelDeadActions();
                     // C-5：CE Time.c:2866-2871——客观块内（环境瞬时结算）置位的
                     // 玩家坠落旗标在本圈循环立即结算（CE 的 do-while 每圈在
                     // applyInstantTileEffectsToCreature(&player) 之后检查）。
@@ -162,23 +179,31 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 // 依赖此语义），重算反而会覆盖外部写入。
                 // E1-修订：怪物行动不 yield——常规动作一次性跑完后统一渲染
                 // （CE 连"豺狼 50 tick 走两步"也不单独成帧）。
-                for (const m of [...ports.world.monsters]) {
+                const dueActors = actions
+                    ? [...ports.world.monsters, ...(playerWasBusy ? [ports.world.player] : [])]
+                        .filter(actor => actions.isDecisionOwner(actor.id)).sort((a, b) => a.id - b.id)
+                    : [...ports.world.monsters];
+                for (const actor of dueActors) {
                     if (ports.clock.isGameOver) break; // CE Time.c:2721 的 gameHasEnded 守卫
-                    if (m.hp > 0 && m.ticksUntilTurn <= 0) {
-                        // CE Time.c:2725-2733 withholds the action BEFORE
-                        // monstersTurn/absorption, even though that inner function
-                        // updates absorption before its own status checks.
-                        if (m.isCaged && m.carriedItem) ports.effects.monsterDropItem(m);
-                        if (!m.hasStatus('entranced') && !m.hasStatus('paralyzed') && !m.isCaged
-                            && !m.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')) ports.effects.monsterTakeTurn(m, stealthRange);
-                        if (m.ticksUntilTurn <= 0) {
-                            m.ticksUntilTurn = m.movementSpeed;
+                    if (!(actor.hp > 0 && actor.ticksUntilTurn <= 0)) continue;
+                    if (actions) {
+                        const result = actions.dispatchActorBoundary(actor.id);
+                        if (result !== 'native-fallback') {
+                            if (actor.hp > 0 && actor.ticksUntilTurn <= 0) throw new Error('Actor action boundary must establish a positive timer');
+                            continue;
                         }
-                        if (m.hp > 0) ports.effects.sweepDeepWaterItem(m, m.ticksUntilTurn);
                     }
+                    if (actor.hp <= 0 || actor === ports.world.player) continue; // All same-tick actors resolve before input resumes.
+                    const m = actor as Monster;
+                    // Only a free decision reaches native prelude/behavior and its one sweep.
+                    if (m.isCaged && m.carriedItem) ports.effects.monsterDropItem(m);
+                    if (!m.hasStatus('entranced') && !m.hasStatus('paralyzed') && !m.isCaged
+                        && !m.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')) ports.effects.monsterTakeTurn(m, stealthRange);
+                    if (m.ticksUntilTurn <= 0) m.ticksUntilTurn = m.movementSpeed;
+                    if (m.hp > 0 && !actions?.isBusy(m.id)) ports.effects.sweepDeepWaterItem(m, m.ticksUntilTurn);
                 }
 
-                ports.world.player.ticksUntilTurn -= soonestTurn;
+                if (!playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
                 if (ports.clock.isGameOver) return; // CE Time.c:2756-2758
             } finally {
                 // Same-tick monster resolutions still see effects valid through this block.
@@ -478,7 +503,9 @@ export function playerTurnEnded(ports: TimePorts, continuingParalysis = false): 
 
             // CE Time.c:2635: gradual terrain follows search/scent/safety setup,
             // immediately before the objective-time advancement loop.
-            ports.effects.sweepDeepWaterItem(ports.world.player, ports.world.player.ticksUntilTurn);
+            if (!ports.actions?.isBusy(ports.world.player.id)) {
+                ports.effects.sweepDeepWaterItem(ports.world.player, ports.world.player.ticksUntilTurn);
+            }
             if (ports.clock.animationEnabled && !ports.effects.isAutoTraveling()
                 && !ports.world.player.hasStatus('paralyzed')) {
                 ports.effects.beginAdvancement(stealthRange);
