@@ -10,7 +10,7 @@ describe('U27 command recording', () => {
         expect(food).toBeDefined();
         game.executeItemCommand('eat', food!);
         const recording = game.exportRecording();
-        expect(recording.version).toBe(2);
+        expect(recording.version).toBe(3);
         expect(recording.events.every(e => e.rng && e.turn !== undefined && e.decisions)).toBe(true);
         expect(game.loadReplay(recording)).toBe(true);
         while (game.replayCursor < recording.events.length && !game.replayError) game.replayStep();

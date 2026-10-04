@@ -93,7 +93,7 @@ describe('D4 blink command continuation and protocol', () => {
         const { g } = scene(true); g.onCommandConfirmRequest = () => {};
         g.executeCommand('confirm_target'); answer(g, decision); drain(g);
         const expected = world(g), recording = g.exportRecording(), save = g.toSaveSnapshot();
-        expect(recording.version).toBe(2); expect(save.version).toBe(2);
+        expect(recording.version).toBe(3); expect(save.version).toBe(3);
         reconstruct(g);
         g.onCommandConfirmRequest = () => { expect(g.pendingCommandConfirmation).toBeNull(); };
         g.onConfirmRequest = () => { throw new Error('replay resolver'); };

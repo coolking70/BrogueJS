@@ -1,3 +1,4 @@
+import { footprintContains } from '../Movement/CreatureSpatial';
 /** W-20: CE cloneMonster's placement policy, separate from splitMonster's
  * contiguous-group edge policy. No generation calls or catalog draws. */
 import { Monster } from '../../entities/Monster';
@@ -31,9 +32,9 @@ export function cloneLocation(world: Pick<PlacementWorld, 'grid' | 'player' | 'm
     if (!grid.isValidPos(origin.x, origin.y)) return null;
     const forbidden = cloneAvoidedFlags(source), blocking = forbidden & T_DIVIDES_LEVEL;
     const flags = (p: Pos) => cellTerrainFlags(grid, p.x, p.y);
-    const playerAt = (p: Pos) => world.player.x === p.x && world.player.y === p.y;
+    const playerAt = (p: Pos) => footprintContains(world.player, p);
     const qualifies = (p: Pos) => grid.isValidPos(p.x, p.y) && !(flags(p) & forbidden)
-        && !playerAt(p) && !world.monsters.some(m => !m.isDormant && m.hp > 0 && m.x === p.x && m.y === p.y)
+        && !playerAt(p) && !world.monsters.some(m => !m.isDormant && m.hp > 0 && footprintContains(m, p))
         && !grid.getCell(p.x, p.y)!.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL);
     if (qualifies(origin)) return { ...origin };
     const distances = Array.from({ length: grid.width }, () => Array<number>(grid.height).fill(Infinity));

@@ -105,7 +105,7 @@ import { TM_PROMOTES_ON_CREATURE } from './TerrainCatalog';
 /** CE owns a world, not a return-value event queue. Ports are scoped to a grid;
  * recursion (including promotion during fill) sees the same live transaction. */
 export interface DungeonFeatureEffects {
-    creatures?(): readonly { loc: Pos; forbiddenTerrain: number }[];
+    creatures?(): readonly { loc: Pos; forbiddenTerrain: number; occupies?(at: Pos): boolean; commitPosition?(at: Pos): void }[];
     occupied?(pos: Pos): boolean;
     refreshCell?(pos: Pos): void;
     flavor?(pos: Pos): void;
@@ -143,15 +143,18 @@ function evacuateCreatures(grid: Grid, map: SpawnMap, effects: DungeonFeatureEff
     for (let x = 0; x < grid.width; x++) for (let y = 0; y < grid.height; y++) {
         if (!map[y * grid.width + x]) continue;
         const creatures = effects.creatures?.() ?? [];
-        const creature = creatures.find(c => c.loc.x === x && c.loc.y === y);
+        const creature = creatures.find(c => c.occupies?.({ x, y }) ?? (c.loc.x === x && c.loc.y === y));
         if (!creature) continue;
         const next = qualifyingNear(grid, { x, y }, (nx, ny) =>
             !map[ny * grid.width + nx]
             && !(cellTerrainFlags(grid, nx, ny) & creature.forbiddenTerrain)
-            && !creatures.some(c => c.loc.x === nx && c.loc.y === ny));
+            && !creatures.some(c => c.occupies?.({ x: nx, y: ny }) ?? (c.loc.x === nx && c.loc.y === ny)));
         // CE assumes a destination exists. On a fully sealed synthetic map,
         // preserve the entity instead of copying C's uninitialized newLoc.
-        if (next) Object.assign(creature.loc, next);
+        if (next) {
+            if (creature.commitPosition) creature.commitPosition(next);
+            else Object.assign(creature.loc, next); // legacy point-only test ports, no live Creature
+        }
     }
 }
 

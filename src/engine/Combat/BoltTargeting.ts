@@ -1,3 +1,4 @@
+import { distanceBetweenFootprints, footprintContains, nearestContact } from '../Movement/CreatureSpatial';
 import { Monster, monstersAreTeammates } from '../../entities/Monster';
 import type { Player } from '../../entities/Player';
 import type { Creature } from '../../entities/Creature';
@@ -32,19 +33,19 @@ export function arcanaTargetCandidates(player: Player, grid: Grid, monsters: rea
     return monsters.filter(m => {
         if (m.hp <= 0 || m.submerged || !canObserveBoltCreature(player, grid, m)) return false;
         // CE openPathBetween also rejects creatures and terrain in intervening cells.
-        const line = boltLine(grid, player.loc, m.loc);
-        const aimIndex = line.findIndex(p => p.x === m.loc.x && p.y === m.loc.y);
+        const line = boltLine(grid, player.loc, nearestContact(player, m).to);
+        const aimIndex = line.findIndex(p => footprintContains(m, p));
         if (line.slice(0, aimIndex).some(p =>
             (cellTerrainFlags(grid, p.x, p.y) & (T_OBSTRUCTS_PASSABILITY | T_OBSTRUCTS_VISION))
             || monsters.some(other => other !== m && other.hp > 0 && !other.isDormant && !other.submerged
-                && (other.isAlly || (!other.isTrulyInvisible() && !other.hasStatus('invisible'))) && other.loc.x === p.x && other.loc.y === p.y))) return false;
+                && (other.isAlly || (!other.isTrulyInvisible() && !other.hasStatus('invisible'))) && footprintContains(other, p)))) return false;
         if (player.hasStatus('hallucinating') && !player.hasStatus('telepathy')
             && !m.hasBehavior('MONST_INANIMATE') && !m.isInvulnerable()) return false;
         const ally = monstersAreTeammates(player, m) || m.isCaged;
         if (!ally && m.hasAbility('MA_REFLECT_100')) return false;
         if (known && bolt) {
             if (bolt.forbiddenMonsterFlags.some(flag => m.hasBehavior(flag))) return false;
-            const distance = Math.max(Math.abs(m.loc.x - player.loc.x), Math.abs(m.loc.y - player.loc.y));
+            const distance = distanceBetweenFootprints(m, player);
             if (bolt.effect === CEBoltEffect.DOMINATION
                 && (m.hasBehavior('MONST_TURRET') || (!ally && wandDominate(m) <= 0))) return false;
             if (!ally && bolt.effect === CEBoltEffect.BECKONING && distance <= 1) return false;
@@ -57,7 +58,7 @@ export function arcanaTargetCandidates(player: Player, grid: Grid, monsters: rea
         if (polarity) return ally ? polarity < 0 : polarity > 0;
         return !ally;
     }).sort((a, b) => {
-        const distance = (m: Monster) => Math.max(Math.abs(m.loc.x - player.loc.x), Math.abs(m.loc.y - player.loc.y));
+        const distance = (m: Monster) => distanceBetweenFootprints(m, player);
         return distance(a) - distance(b) || a.id - b.id;
     });
 }

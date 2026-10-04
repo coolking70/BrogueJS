@@ -1,3 +1,4 @@
+import { footprintContains } from '../Movement/CreatureSpatial';
 import { enchantedEquipment } from './ItemEffectFormulas';
 import { Item, ItemCategory } from './Item';
 import { ItemLoader } from './ItemLoader';
@@ -207,8 +208,8 @@ export function boltWorldFor(caster: Creature | null, player: Player, monsters: 
     return {
         caster, hideDetails,
         creatureAt: pos => {
-            if (player.hp > 0 && player.loc.x === pos.x && player.loc.y === pos.y) return player;
-            return monsters.find(m => m.hp > 0 && !m.isDormant && m.loc.x === pos.x && m.loc.y === pos.y);
+            if (player.hp > 0 && footprintContains(player, pos)) return player;
+            return monsters.find(m => m.hp > 0 && !m.isDormant && footprintContains(m, pos));
         },
     };
 }

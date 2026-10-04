@@ -1,3 +1,4 @@
+import { footprintContains } from '../Movement/CreatureSpatial';
 import type { Pos } from '../../types';
 import { DungeonLayer, type Grid } from '../Map/Grid';
 import type { Item } from '../Items/Item';
@@ -20,7 +21,7 @@ export function blinkTargetPreview(grid: Grid, player: Player, monsters: readonl
     const known = ItemLoader.identifiedItems.has(id);
     const maxDistance = item.identified || item.maxChargesKnown ? staffBlinkDistance(item.enchantment) : null;
     const world = { caster: player, hideDetails: !known, creatureAt: (p: Pos) =>
-        monsters.find(m => m.hp > 0 && !m.isDormant && m.x === p.x && m.y === p.y
+        monsters.find(m => m.hp > 0 && !m.isDormant && footprintContains(m, p)
             && (m.isAlly || (!m.isTrulyInvisible() && !m.hasStatus('invisible')) || grid.getCell(p.x,p.y)!.layers[DungeonLayer.GAS])) };
     const path = boltLine(grid, player.loc, aim, getBoltForItem(id), world);
     const limited = path.slice(0, maxDistance ?? grid.width);

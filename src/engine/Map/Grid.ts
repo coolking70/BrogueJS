@@ -1,3 +1,4 @@
+import { invalidateSpatialTerrain } from '../Movement/SpatialRevision';
 /**
  * src/engine/Map/Grid.ts
  * Grid and Cell structures reflecting Brogue's 2D map.
@@ -1006,6 +1007,7 @@ export class Grid {
         if (cell) {
             cell.layers[layer] = terrain;
             cell.refreshTerrainProperties();
+            invalidateSpatialTerrain(this);
         }
     }
 
@@ -1022,6 +1024,7 @@ export class Grid {
                 }
             }
             writeTerrainHome(cell, terrain);
+            invalidateSpatialTerrain(this);
             cell.char = char;
             cell.color = color;
         }

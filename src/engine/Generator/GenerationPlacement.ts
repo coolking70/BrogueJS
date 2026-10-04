@@ -1,3 +1,4 @@
+import { footprintContains } from '../Movement/CreatureSpatial';
 /** U18a-3: generation policies, separate from runtime monsterAvoids.
  * CE Monsters.c:650-670,705-740; Grid.c:287-360; Dijkstra.c:209-248. */
 import type { MonsterData } from '../../entities/Monster';
@@ -43,7 +44,7 @@ export function minionPlacement(world: PlacementWorld, origin: Pos, species: Mon
     const forbidden=speciesForbiddenFlags(species) & ~(spawnsIn === undefined ? 0 : TERRAIN_FLAGS[spawnsIn].flags);
     const blocking=T_DIVIDES_LEVEL & forbidden;
     const mapBlocked=(x:number,y:number)=>(world.player.x===x && world.player.y===y)||stairs(grid,x,y);
-    const occupied=(x:number,y:number)=>[...world.monsters,...(world.dormantMonsters??[])].some(m=>m.hp>0&&m.x===x&&m.y===y);
+    const occupied=(x:number,y:number)=>[...world.monsters,...(world.dormantMonsters??[])].some(m=>m.hp>0&&footprintContains(m, { x, y }));
     const valid=(x:number,y:number)=>!(cellTerrainFlags(grid,x,y)&forbidden)&&!occupied(x,y)
         &&(summoned||passableArcCount(grid,x,y)<=1);
     if (!(cellTerrainFlags(grid,origin.x,origin.y)&blocking) && !mapBlocked(origin.x,origin.y) && valid(origin.x,origin.y)) return {...origin};
@@ -70,7 +71,7 @@ export function generationDistances(world: PlacementWorld, origin: Pos, blocking
     const {grid}=world,cost=matrix(grid,1),dist=matrix(grid,30000);
     for(let x=0;x<grid.width;x++)for(let y=0;y<grid.height;y++) {
         const cell=grid.getCell(x,y)!,flags=cellTerrainFlags(grid,x,y);
-        if(world.monsters.some(m=>m.hp>0&&m.x===x&&m.y===y
+        if(world.monsters.some(m=>m.hp>0&&footprintContains(m, { x, y })
             &&(m.hasCEBehavior('MONST_IMMUNE_TO_WEAPONS')||m.hasCEBehavior('MONST_INVULNERABLE'))
             &&(m.hasCEBehavior('MONST_IMMOBILE')||m.hasCEBehavior('MONST_GETS_TURN_ON_ACTIVATION'))))cost[x]![y]=-1;
         else if((terrainMechFlagsOfCell(cell)&TM_IS_SECRET)&&(flags&T_OBSTRUCTS_PASSABILITY)

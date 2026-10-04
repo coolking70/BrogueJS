@@ -1,3 +1,4 @@
+import { assertNativeSpatial, commitCreatureAnchor, footprintContains, distanceBetweenFootprints, distanceToFootprint } from '../engine/Movement/CreatureSpatial';
 import { notifyMonsterDeath } from '../engine/Core/MonsterLifecycle';
 import { creatureFeatureInfo, emitCreatureFeature } from '../engine/Combat/CreatureFeatures';
 import { updateMonsterState, wanderTowardLastSeen } from '../engine/Combat/MonsterAI';
@@ -226,7 +227,7 @@ export function specificallyValidBoltTarget(caster: Monster, target: Creature, c
             if (target instanceof Monster && (target.hasBehavior('MONST_IMMOBILE') || target.hasBehavior('MONST_TURRET'))) {
                 return false;
             }
-            const dist = Math.max(Math.abs(caster.loc.x - target.loc.x), Math.abs(caster.loc.y - target.loc.y));
+            const dist = distanceBetweenFootprints(caster, target);
             if (dist <= 1) return false;
             break;
         }
@@ -238,7 +239,7 @@ export function specificallyValidBoltTarget(caster: Monster, target: Creature, c
 
 /** P4-6：CE monsterAtLoc 的 web 等价（含玩家）：该格上的玩家或存活怪物。 */
 function creatureAtLoc(game: Game, x: number, y: number): Creature | undefined {
-    if (game.player.hp > 0 && game.player.loc.x === x && game.player.loc.y === y) {
+    if (game.player.hp > 0 && footprintContains(game.player, { x, y })) {
         return game.player;
     }
     return game.getMonsterAt(x, y);
@@ -653,7 +654,8 @@ export class Monster extends Creature {
     public copyForClone(): Monster {
         const clone: Monster = Object.assign(Object.create(Monster.prototype), this);
         clone.id = allocateEntityId();
-        clone.loc = { ...this.loc };
+        if (this.spatial) clone.spatial = structuredClone(this.spatial);
+        commitCreatureAnchor(clone, { ...this.loc }, 'replace', true); // unpublished clone container
         clone.spawnLoc = { ...this.spawnLoc };
         clone.targetCorpseLoc = this.targetCorpseLoc ? { ...this.targetCorpseLoc } : null;
         clone.statusDurations = { ...this.statusDurations };
@@ -742,6 +744,7 @@ export class Monster extends Creature {
     /** CE Items.c:4572-4631. Replace info IN PLACE; never construct/spawn or
      * copy an entity. Only captives demote their leadership, after status reset. */
     public polymorph(demote: () => void): boolean {
+        assertNativeSpatial(this);
         if ((!knownPolymorphSpecies(this.typeId) && !(this.isClone && this.typeId === 'player_clone')) || this.hasBehavior('MONST_INANIMATE') || this.hasBehavior('MONST_TURRET') || this.isInvulnerable()) return false;
         // Preserve C operator precedence: stealing resets state even if not fleeing.
         if ((this.state === MonsterState.FLEEING && (this.hasBehavior('MONST_MAINTAINS_DISTANCE')
@@ -1193,7 +1196,7 @@ export class Monster extends Creature {
         if (!defender) {
             if (this.seized && game.monsters.some(m => m !== this && m.hp > 0 && m.seizing
                 && monstersAreEnemies(this, m)
-                && Math.max(Math.abs(m.loc.x-this.loc.x), Math.abs(m.loc.y-this.loc.y)) === 1
+                && distanceBetweenFootprints(m, this) === 1
                 && !entrancementDiagonalBlocked(game.grid, this.loc, m.loc))) {
                 this.ticksUntilTurn = this.movementSpeed;
                 return;
@@ -1518,6 +1521,7 @@ export class Monster extends Creature {
     }
 
     public takeTurn(game: Game, stealthRange: number) {
+        assertNativeSpatial(this);
         if (this.hp <= 0) return;
         // CE monstersTurn runs this before its own status/AI gates. Time.c's
         // outer scheduler separately withholds actions from disabled monsters.
@@ -1593,11 +1597,11 @@ export class Monster extends Creature {
             const independentBlade = this.typeId === 'spectral_blade' && this.doesNotTrackLeader;
             const canBladeStep = (p: { x: number; y: number }) => !(p.x === this.loc.x && p.y === this.loc.y)
                 && !bladeAvoids(game.grid, p) && !bladeDiagonalBlocked(game.grid, this.loc, p)
-                && !game.getMonsterAt(p.x, p.y) && !(game.player.loc.x === p.x && game.player.loc.y === p.y);
+                && !game.getMonsterAt(p.x, p.y) && !(footprintContains(game.player, p));
             // CE selects by the ally's traversible path, even outside player FOV.
             // The leash and futile-attack gates apply after selecting the closest enemy.
             const target = allyShouldPursue(game, this, blinkEnemy) ? blinkEnemy : null;
-            const minDist = target ? Math.max(Math.abs(this.x - target.x), Math.abs(this.y - target.y)) : Infinity;
+            const minDist = target ? distanceBetweenFootprints(this, target) : Infinity;
 
             if (target) {
                 // We have an enemy
@@ -1683,13 +1687,13 @@ export class Monster extends Creature {
                 }
                 // CE moveAlly: near the player, mill about; farther away, follow
                 // scent until it fails, then path toward the leader.
-                const distToPlayer = Math.max(Math.abs(this.x - game.player.x), Math.abs(this.y - game.player.y));
+                const distToPlayer = distanceBetweenFootprints(this, game.player);
                 if (this.doesNotTrackLeader || (distToPlayer < 3 && game.grid.getCell(this.x, this.y)?.isVisible)) {
                     this.givenUpOnScent = false;
                     if (rng.randPercent(30)) {
                         const steps = BLADE_DIRECTIONS.map(([dx, dy]) => ({ x: this.x + dx, y: this.y + dy }))
                             .filter(p => this.canEnterMovementTerrain(game, p.x, p.y) && !game.getMonsterAt(p.x, p.y)
-                                && !(game.player.x === p.x && game.player.y === p.y));
+                                && !(footprintContains(game.player, p)));
                         if (steps.length) {
                             const step = steps[rng.randRange(0, steps.length - 1)]!;
                             this.tryMoveTo(step.x, step.y, game);
@@ -1698,7 +1702,7 @@ export class Monster extends Creature {
                 } else {
                     const dir = this.givenUpOnScent ? null : game.scent.stepDirection(game.grid, this.x, this.y, {
                         canEnter: (x, y) => this.canEnterMovementTerrain(game, x, y) && !game.getMonsterAt(x, y)
-                            && !(game.player.x === x && game.player.y === y),
+                            && !(footprintContains(game.player, { x, y })),
                     });
                     if (dir) this.tryMoveTo(this.x + dir[0], this.y + dir[1], game);
                     else {
@@ -1712,7 +1716,7 @@ export class Monster extends Creature {
             return;
         }
 
-        const distToPlayer = Math.max(Math.abs(this.loc.x - game.player.loc.x), Math.abs(this.loc.y - game.player.loc.y));
+        const distToPlayer = distanceBetweenFootprints(this, game.player);
         const canSeePlayer = game.hasLineOfSight(this.loc.x, this.loc.y, game.player.loc.x, game.player.loc.y);
         if (this.hasStatus('confused')) {
             if (rng.randPercent(70)) {
@@ -1721,7 +1725,7 @@ export class Monster extends Creature {
                 const nx = this.loc.x + dir[0]!;
                 const ny = this.loc.y + dir[1]!;
                 const c = game.grid.getCell(nx, ny);
-                if (c && this.canEnterMovementTerrain(game, nx, ny) && !game.getMonsterAt(nx, ny) && !(game.player.loc.x === nx && game.player.loc.y === ny)) {
+                if (c && this.canEnterMovementTerrain(game, nx, ny) && !game.getMonsterAt(nx, ny) && !(footprintContains(game.player, { x: nx, y: ny }))) {
                     this.tryMoveTo(nx, ny, game);
                 }
                 return;
@@ -1740,7 +1744,7 @@ export class Monster extends Creature {
                     const c = game.grid.getCell(x, y);
                     if (!c) return false;
                     if (!this.canEnterMovementTerrain(game, x, y)) return false;
-                    return !game.getMonsterAt(x, y) && !(game.player.loc.x === x && game.player.loc.y === y);
+                    return !game.getMonsterAt(x, y) && !(footprintContains(game.player, { x, y }));
                 };
                 const map = getSafetyMapForMonster(game, this);
                 const dir = safetyNextStep(map, game.grid, this.loc.x, this.loc.y);
@@ -1816,7 +1820,7 @@ export class Monster extends Creature {
             && (this.state !== MonsterState.HUNTING || distToPlayer > 1
                 || bladeDiagonalBlocked(game.grid, this.loc, game.player.loc))) {
             const blade = game.monsters.find(m => ((m.typeId === 'spectral_blade' && m.boundToPlayer) || (m.dominated && m.isAlly))
-                && this.willAttackTarget(m) && Math.max(Math.abs(m.x - this.x), Math.abs(m.y - this.y)) === 1
+                && this.willAttackTarget(m) && distanceBetweenFootprints(m, this) === 1
                 && !bladeDiagonalBlocked(game.grid, this.loc, m.loc)
                 && (!m.hasStatus('invisible') || rng.randPercent(33)));
             if (blade) {
@@ -1983,8 +1987,8 @@ export class Monster extends Creature {
                             const nx = this.loc.x + dx;
                             const ny = this.loc.y + dy;
                             const c = game.grid.getCell(nx, ny);
-                            if (c && this.canEnterMovementTerrain(game, nx, ny) && !game.getMonsterAt(nx, ny) && !(game.player.loc.x === nx && game.player.loc.y === ny)) {
-                                const dist = Math.max(Math.abs(nx - game.player.loc.x), Math.abs(ny - game.player.loc.y));
+                            if (c && this.canEnterMovementTerrain(game, nx, ny) && !game.getMonsterAt(nx, ny) && !(footprintContains(game.player, { x: nx, y: ny }))) {
+                                const dist = distanceToFootprint(game.player, { x: nx, y: ny });
                                 if (dist > bestScore) {
                                     bestScore = dist;
                                     bestCell = { x: nx, y: ny };
@@ -2016,7 +2020,7 @@ export class Monster extends Creature {
                     const c = game.grid.getCell(x, y);
                     if (!c) return false;
                     if (!this.canEnterWaterTerrain(game, x, y)) return false;
-                    return this.canEnterMovementTerrain(game, x, y) && !game.getMonsterAt(x, y) && !(game.player.loc.x === x && game.player.loc.y === y);
+                    return this.canEnterMovementTerrain(game, x, y) && !game.getMonsterAt(x, y) && !(footprintContains(game.player, { x, y }));
                 };
 
                 if (!canSeePlayer && !(this.hasBehavior('MONST_ALWAYS_HUNTING') && this.givenUpOnScent)) {
@@ -2067,7 +2071,7 @@ export class Monster extends Creature {
         } else if (this.state === MonsterState.WANDERING) {
             // CE :3591-3594: wandering followers stay with their own pack.
             if (blinkReady && this.leader
-                && Math.max(Math.abs(this.x - this.leader.x), Math.abs(this.y - this.leader.y)) > 2
+                && distanceBetweenFootprints(this, this.leader) > 2
                 && blinkTowardCreature(game, this, this.leader)) return;
             // P4-10：CE Monsters.c:3602-3615——游荡 = 朝目标 waypoint 的距离图
             // 下坡走（nextStep(map, loc, monst, false)，正向对角优先级）；目标
@@ -2124,7 +2128,7 @@ export class Monster extends Creature {
             if (!c) continue;
             const canEnter = this.canEnterMovementTerrain(game, nx, ny);
             if (canEnter && !game.getMonsterAt(nx, ny) &&
-                !(game.player.loc.x === nx && game.player.loc.y === ny)) {
+                !(footprintContains(game.player, { x: nx, y: ny }))) {
                 valid.push([dx!, dy!]);
             }
         }
@@ -2185,7 +2189,7 @@ export class Monster extends Creature {
         if (nx === this.x && ny === this.y || !game.grid.getCell(nx, ny)) return;
         if (!this.canEnterWaterTerrain(game, nx, ny)) return;
         if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
-        const occupied = game.getMonsterAt(nx, ny) || (game.player.x === nx && game.player.y === ny);
+        const occupied = game.getMonsterAt(nx, ny) || (footprintContains(game.player, { x: nx, y: ny }));
         if (this.hasStatus('stuck') && !occupied
             && (cellTerrainFlags(game.grid, this.x, this.y) & T_ENTANGLES)
             && !this.hasCEBehavior('MONST_IMMUNE_TO_WEBS')) {
@@ -2219,8 +2223,7 @@ export class Monster extends Creature {
         const destination = game.grid.getCell(nx, ny)!;
         if (!terrainPassableOrSecretDoor(destination)) return;
         if (destination.isVisible && !destination.isPassable) discoverTerrain(game.grid, nx, ny);
-        this.loc.x = nx;
-        this.loc.y = ny;
+        commitCreatureAnchor(this, { x: nx, y: ny }, 'mutate');
         surfaceOnDryLand(this, game.grid);
         if (!(cellTerrainFlags(game.grid, nx, ny) & T_ENTANGLES)) this.setStatusDuration('stuck', 0);
         game.applyEntanglementFromTerrain(this);

@@ -1,3 +1,4 @@
+import { commitCreatureAnchor, footprintContains } from './CreatureSpatial';
 /** U03b: RogueMain.startLevel / Time.monsterEntersLevel and Architect.restoreMonster. */
 import { Monster, MonsterState } from '../../entities/Monster';
 import type { Creature } from '../../entities/Creature';
@@ -24,7 +25,7 @@ export function travelDistanceMap(grid: Grid, monsters: readonly Monster[], orig
     for (let x=0;x<grid.width;x++) for (let y=0;y<grid.height;y++) {
         const flags=cellTerrainFlags(grid,x,y);
         if (x===0 || y===0 || x===grid.width-1 || y===grid.height-1) cost[x]![y]=-2;
-        else if (!placement && monsters.some(m=>m.hp>0 && m.x===x && m.y===y
+        else if (!placement && monsters.some(m=>m.hp>0 && footprintContains(m, { x, y })
             && (m.hasCEBehavior('MONST_IMMUNE_TO_WEAPONS') || m.hasCEBehavior('MONST_INVULNERABLE'))
             && (m.hasCEBehavior('MONST_IMMOBILE') || m.hasCEBehavior('MONST_GETS_TURN_ON_ACTIVATION')))) cost[x]![y]=-1;
         else if (secretDoors && grid.getCell(x,y)!.layers.includes(TerrainType.SECRET_DOOR)) cost[x]![y]=1;
@@ -92,7 +93,7 @@ export function travelPlacement(world: PlacementWorld, target: Creature, origin:
         return !!cell && !(excludeOrigin && p.x === origin.x && p.y === origin.y) && !(cellTerrainFlags(grid,p.x,p.y)&(forbidden|blocking))
             && !cell.layers.includes(TerrainType.STAIRS_UP) && !cell.layers.includes(TerrainType.STAIRS_DOWN) && !cell.layers.includes(TerrainType.DUNGEON_PORTAL)
             && (!machines || cell.machineNumber===0)
-            && (!occupied || ![world.player,...world.monsters].some(c=>c!==target && c.hp>0 && c.x===p.x && c.y===p.y));
+            && (!occupied || ![world.player,...world.monsters].some(c=>c!==target && c.hp>0 && footprintContains(c, p)));
     };
     if (qualifies(origin)) return {...origin};
     const map=travelDistanceMap(grid,[],origin,blocking,false,true);
@@ -126,6 +127,6 @@ export function restoreTravelPosition(grid: Grid, m: Monster, map: number[][]): 
             if(drop<=best || (dx && dy && ((cellTerrainFlags(grid,m.x+dx,m.y)|cellTerrainFlags(grid,m.x,m.y+dy))&T_OBSTRUCTS_DIAGONAL_MOVEMENT))) continue;
             best=drop;next={x,y};
         }
-        if(!next) break;m.loc=next;
+        if(!next) break;commitCreatureAnchor(m, next);
     }
 }

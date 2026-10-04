@@ -1,3 +1,4 @@
+import { commitCreatureAnchor, footprintContains } from '../Movement/CreatureSpatial';
 import { monsterCanSubmergeNow } from '../Movement/Submersion';
 /**
  * Floor generation transaction. Ports are live accessors and bound callbacks:
@@ -208,12 +209,12 @@ export function createMachineRuntime(ports: GenerationPorts, depth: number): Mac
                 return abort;
             },
             hasItem: (x, y) => ports.items.some(i => i.x === x && i.y === y),
-            hasMonster: (x, y) => ports.monsters.some(m => m.hp > 0 && m.x === x && m.y === y),
+            hasMonster: (x, y) => ports.monsters.some(m => m.hp > 0 && footprintContains(m, { x, y })),
             spawn: (spawn, machineNumber) => {
                 const made: Monster[] = [];
                 // Both CE spawnHorde and the explicit monsterID branch quietly
                 // replace an occupant. Do not run combat/death-drop callbacks.
-                const old = ports.monsters.find(m => m.hp > 0 && m.x === spawn.pos.x && m.y === spawn.pos.y);
+                const old = ports.monsters.find(m => m.hp > 0 && footprintContains(m, spawn.pos));
                 if (spawn.hordeFlags) {
                     ports.spawnHordeAtFeature(spawn, depth, machineNumber, made);
                     if (made.length && old) remove(old);
@@ -334,7 +335,7 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
                         ports.dormantMonsters = [];
                         ports.items = [];
                         ports.grid = new Grid(DCOLS, DROWS);
-                        ports.player.loc = {x: 0, y: 0}; // CE removes the player during digDungeon.
+                        commitCreatureAnchor(ports.player, {x: 0, y: 0}); // CE removes the player during digDungeon.
                         ports.pendingCaughtFireCells = [];
                         ports.bindDormantAwakener(); // Later machine DFs see already-created entities.
                         architect = new Architect(ports.grid, ports.createMachineRuntime(ports.depth));
@@ -389,8 +390,7 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
                     for (const m of fallen) {
                         const spot = ports.findQualifyingPathLocNear(m.loc);
                         if (spot) {
-                            m.loc.x = spot.x;
-                            m.loc.y = spot.y;
+                            commitCreatureAnchor(m, { x: spot.x, y: spot.y }, 'mutate');
                         }
                         m.preplaced = false; // CE :3548 清 MB_PREPLACED
                         ports.monsters.push(m);
@@ -401,7 +401,7 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
             } finally {
                 // Generation borrows the off-map position; environment catch-up
                 // owns its own borrow, and level entry owns the final placement.
-                ports.player.loc = { ...exit };
+                commitCreatureAnchor(ports.player, { ...exit });
                 // This is reseeding from oldSeed, not restoring the pre-entry state tuple.
                 rng.seedRandomGenerator(oldSeed);
             }
@@ -789,7 +789,7 @@ export function populateLevel(ports: GenerationPorts,
                         && cell.layers[DungeonLayer.LIQUID] === TerrainType.NOTHING
                         && !(cellTerrainFlags(ports.grid, pos.x, pos.y) & T_OBSTRUCTS_ITEMS)
                         && !ports.getMonsterAt(pos.x, pos.y)
-                        && !ports.dormantMonsters.some(m => m.hp > 0 && m.x === pos.x && m.y === pos.y)
+                        && !ports.dormantMonsters.some(m => m.hp > 0 && footprintContains(m, pos))
                         && !ports.items.some(item => item.x === pos.x && item.y === pos.y)) {
                         hData = cand;
                         centerPos = pos;

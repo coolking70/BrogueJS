@@ -1,3 +1,4 @@
+import { footprintSome } from '../Movement/CreatureSpatial';
 import type { Creature } from '../../entities/Creature';
 import { hiddenBySubmersion } from '../Movement/Submersion';
 import type { Player } from '../../entities/Player';
@@ -17,18 +18,20 @@ export function monsterHidden(grid: Grid, monster: Monster, observer?: Creature)
 }
 
 export function monsterInGas(grid: Grid, monster: Monster): boolean {
-    const gas = grid.getCell(monster.loc.x, monster.loc.y)?.layers[DungeonLayer.GAS];
-    return gas !== undefined && gas !== TerrainType.NOTHING;
+    return footprintSome(monster, p => {
+        const gas = grid.getCell(p.x, p.y)?.layers[DungeonLayer.GAS];
+        return gas !== undefined && gas !== TerrainType.NOTHING;
+    });
 }
 
 export function canSeeMonster(player: Player, grid: Grid, monster: Monster): boolean {
     if (monster.hp <= 0 || monsterHidden(grid, monster, player)) return false;
-    return !!grid.getCell(monster.loc.x, monster.loc.y)?.isVisible || monsterRevealed(player, monster);
+    return footprintSome(monster, p => !!grid.getCell(p.x, p.y)?.isVisible) || monsterRevealed(player, monster);
 }
 
 export function canDirectlySeeMonster(player: Player, grid: Grid, monster: Monster): boolean {
     return monster.hp > 0 && !monsterHidden(grid, monster, player)
-        && !!grid.getCell(monster.loc.x, monster.loc.y)?.isVisible;
+        && footprintSome(monster, p => !!grid.getCell(p.x, p.y)?.isVisible);
 }
 
 /** A revealed but hidden creature has a location marker, never an identity. */

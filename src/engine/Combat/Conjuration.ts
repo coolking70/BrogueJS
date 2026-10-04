@@ -1,3 +1,4 @@
+import { footprintContains } from '../Movement/CreatureSpatial';
 /** W-16: CE PowerTables.c:54, Items.c:5494-5514, Grid.c:287-360.
  * Dedicated to conjuration; P4-2 horde placement and P4-4 cloning are unchanged.
  */
@@ -18,7 +19,6 @@ export const BLADE_DIRECTIONS = [[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[-1,1],[1,-1]
 // avoidedFlagsForMonster(INANIMATE | FLIES), excluding SPONTANEOUSLY_IGNITES
 // for the detonation only. Flying blades may occupy water, lava, pits and traps.
 const SPAWN_FORBIDDEN = T_OBSTRUCTS_PASSABILITY | T_IS_FIRE | T_CAUSES_EXPLOSIVE_DAMAGE | T_SACRED;
-const same = (a: Pos, b: Pos) => a.x === b.x && a.y === b.y;
 const stairs = (grid: Grid, p: Pos) => grid.getCell(p.x, p.y)?.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL);
 
 export function bladeDiagonalBlocked(grid: Grid, from: Pos, to: Pos): boolean {
@@ -35,7 +35,7 @@ export function bladeSpawnLocation(world: Pick<PlacementWorld, 'grid' | 'player'
     if (!grid.isValidPos(origin.x, origin.y)) return null;
     const qualifies = (p: Pos) => grid.isValidPos(p.x, p.y)
         && !(cellTerrainFlags(grid, p.x, p.y) & avoidedFlags) && !stairs(grid, p)
-        && !same(world.player.loc, p) && !world.monsters.some(m => m.hp > 0 && !m.isDormant && same(m.loc, p));
+        && !footprintContains(world.player, p) && !world.monsters.some(m => m.hp > 0 && !m.isDormant && footprintContains(m, p));
     if (qualifies(origin)) return { ...origin };
     const distances = Array.from({ length: grid.width }, () => Array<number>(grid.height).fill(Infinity));
     distances[origin.x]![origin.y] = 0;
@@ -45,7 +45,7 @@ export function bladeSpawnLocation(world: Pick<PlacementWorld, 'grid' | 'player'
         for (const [dx, dy] of BLADE_DIRECTIONS) {
             const q = { x: p.x + dx, y: p.y + dy };
             if (!grid.isValidPos(q.x, q.y) || distances[q.x]![q.y] !== Infinity
-                || same(world.player.loc, q) || (cellTerrainFlags(grid, q.x, q.y) & (T_DIVIDES_LEVEL & avoidedFlags))
+                || footprintContains(world.player, q) || (cellTerrainFlags(grid, q.x, q.y) & (T_DIVIDES_LEVEL & avoidedFlags))
                 || bladeDiagonalBlocked(grid, p, q)) continue;
             distances[q.x]![q.y] = distances[p.x]![p.y]! + 1;
             queue.push(q);

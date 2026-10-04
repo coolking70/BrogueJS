@@ -1,3 +1,5 @@
+import type { SpatialWorldSnapshot } from '../Movement/SpatialSchema';
+import { assertNativeSpatial, nativeContactOf, footprintSome, commitCreatureAnchor, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
 import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
 import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
 import { observePresentation, presentationBlocked, resetPresentation } from './PresentationObserver';
@@ -227,7 +229,7 @@ import { canonical } from '../../ext/json';
 import { creatureView, itemView, type ExtensionManifest, type ExtensionSnapshot, type RuleSet, type PreparedControlledCommand, type ControlledActionRequest, type ControlledActionOutcome } from '../../ext/types';
 import { markCreatureBirth, type CreationReason } from '../../ext/birth';
 
-export type GameRunSnapshot = ReturnType<Game['snapshotRunState']> & { recordingOrigin?: RecordingOrigin };
+export type GameRunSnapshot = ReturnType<Game['snapshotRunState']> & { recordingOrigin?: RecordingOrigin; spatialWorld?: SpatialWorldSnapshot };
 
 export type RecordedInputData = number | { x: number; y: number } | string | null;
 
@@ -431,7 +433,7 @@ export class Game {
             && !this.pendingIdentify && !this.pendingEnchantment && !this.pendingArcana && !this.pendingUseConfirm
             && !this.isInventoryOpen && !this.isThrowing && !this.throwItemTarget && !this.referenceScreen
             && this.stableInteractionVisibility(entity)
-            && Math.max(Math.abs(entity.x-this.player.x), Math.abs(entity.y-this.player.y)) <= entity.interactionDistance
+            && distanceToFootprint(this.player, entity) <= entity.interactionDistance
             && hasInteractionLine(this.grid,this.player.loc,entity);
     }
 
@@ -1565,10 +1567,10 @@ export class Game {
             m.preplaced = true;
         }
         const cell = this.grid.getCell(m.x, m.y);
-        if (m.preplaced || (m.x === this.player.x && m.y === this.player.y)
+        if (m.preplaced || (footprintContains(m, this.player.loc))
             || cell?.layers.includes(TerrainType.STAIRS_UP) || cell?.layers.includes(TerrainType.STAIRS_DOWN) || cell?.layers.includes(TerrainType.DUNGEON_PORTAL)) {
             const spot = travelPlacement(this, m, m.loc, true, true, true);
-            if (spot) m.loc = spot;
+            if (spot) commitCreatureAnchor(m, spot);
         }
         m.preplaced = false;
         m.entersLevelIn = m.approaching = 0;
@@ -1607,15 +1609,15 @@ export class Game {
         const origin = pit ? source.playerExitedVia : this.levelStair(m.approaching & APPROACHING_DOWNSTAIRS
             ? TerrainType.STAIRS_UP : TerrainType.STAIRS_DOWN);
         if (!origin) throw new Error('Missing level travel exit');
-        m.loc = { ...origin };
+        commitCreatureAnchor(m, { ...origin });
         m.clearCorpseTargetOnLevelChange();
         if (!pit) {
             const spot = travelPlacement(this, m, m.loc, false, false, false);
-            if (spot) m.loc = spot;
-            const occupant = [this.player, ...this.monsters].find(c => c.hp > 0 && c.x === m.x && c.y === m.y);
+            if (spot) commitCreatureAnchor(m, spot);
+            const occupant = [this.player, ...this.monsters].find(c => c.hp > 0 && footprintContains(c, m.loc));
             if (occupant) {
                 const displaced = travelPlacement(this, occupant, m.loc, true, false, false, true);
-                if (displaced) occupant.loc = displaced;
+                if (displaced) commitCreatureAnchor(occupant, displaced);
             }
         }
         source.monsters.splice(source.monsters.indexOf(m), 1);
@@ -1658,23 +1660,20 @@ export class Game {
      *（deterministic=false），web 同样走 rng——仅在病态地形触发。
      */
     private placePlayerOnLevelEntry(target: Pos): void {
-        this.player.loc.x = target.x;
-        this.player.loc.y = target.y;
+        commitCreatureAnchor(this.player, { x: target.x, y: target.y }, 'mutate');
         const DIRS4: ReadonlyArray<readonly [number, number]> =
             [[0, -1], [0, 1], [-1, 0], [1, 0]]; // CE UP/DOWN/LEFT/RIGHT
         for (const [dx, dy] of DIRS4) {
             const x = target.x + dx!;
             const y = target.y + dy!;
             if (this.entryQualifiesForPlacement(x, y)) {
-                this.player.loc.x = x;
-                this.player.loc.y = y;
+                commitCreatureAnchor(this.player, { x: x, y: y }, 'mutate');
                 return;
             }
         }
         const loc = this.findQualifyingPathLocNear(target);
         if (loc) {
-            this.player.loc.x = loc.x;
-            this.player.loc.y = loc.y;
+            commitCreatureAnchor(this.player, { x: loc.x, y: loc.y }, 'mutate');
         }
         // 无解：维持楼梯位。CE 在 Grid.c:347-356 还有路径无关的
         // getQualifyingLocNear 第二重兜底（web 的环形近似见
@@ -1911,9 +1910,9 @@ export class Game {
                 if (!cell || !cell.layers.includes(target)) continue; // F-1 跨层判定
                 if (cell.machineNumber !== 0) continue; // CE IS_IN_MACHINE
                 if (cell.layers.includes(TerrainType.STAIRS_UP) || cell.layers.includes(TerrainType.STAIRS_DOWN) || cell.layers.includes(TerrainType.DUNGEON_PORTAL)) continue;
-                if (this.dormantMonsters.some(m => m.hp > 0 && m.x === x && m.y === y)) continue;
+                if (this.dormantMonsters.some(m => m.hp > 0 && footprintContains(m, { x, y }))) continue;
                 if (this.getMonsterAt(x, y)) continue; // CE HAS_MONSTER
-                if (this.player.loc.x === x && this.player.loc.y === y) continue; // CE HAS_PLAYER
+                if (footprintContains(this.player, { x, y })) continue; // CE HAS_PLAYER
                 if (this.items.some(it => it.loc.x === x && it.loc.y === y)) continue; // CE HAS_ITEM
                 // 与 FLOOR 池同一玩家距离口径（"Don't spawn right on top of player"）
                 if (Math.abs(x - this.player.loc.x) <= 5 && Math.abs(y - this.player.loc.y) <= 5) continue;
@@ -1999,7 +1998,7 @@ export class Game {
                     mon = new Monster(pos.x, pos.y, memberMData);
                     this.applyRandomMutation(mon, depth);
                 } else {
-                    mon.loc = {...pos};
+                    commitCreatureAnchor(mon, {...pos});
                     mon.spawnLoc = {...pos};
                     mon.state = leaderMon.state;
                 }
@@ -2053,7 +2052,7 @@ export class Game {
                     if (!cell || (cellTerrainFlags(this.grid, nx, ny) & forbidden)) continue;
                     if (cell.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL)) continue;
                     if (this.getMonsterAt(nx, ny)) continue;
-                    if (this.player.loc.x === nx && this.player.loc.y === ny) continue;
+                    if (footprintContains(this.player, { x: nx, y: ny })) continue;
                     return { x: nx, y: ny };
                 }
             }
@@ -2077,7 +2076,7 @@ export class Game {
             const cell = this.grid.getCell(x, y)!;
             if (d < 1 || d > Math.floor(DCOLS / 2) || cell.isVisible
                 || (cellTerrainFlags(this.grid, x, y) & (T_PATHING_BLOCKER | T_HARMFUL_TERRAIN))
-                || this.getMonsterAt(x, y) || (this.player.x === x && this.player.y === y)) continue;
+                || this.getMonsterAt(x, y) || (footprintContains(this.player, { x, y }))) continue;
             result.push({ x, y });
         }
         return result;
@@ -2152,7 +2151,7 @@ export class Game {
                 if (pool.length === 0) break;
                 const idx = rng.randRange(0, pool.length - 1);
                 const dest = pool.splice(idx, 1)[0]!;
-                mon.loc = { x: dest.x, y: dest.y };
+                commitCreatureAnchor(mon, { x: dest.x, y: dest.y });
             }
         }
 
@@ -2201,7 +2200,7 @@ export class Game {
                 if (cell.layers.includes(TerrainType.LAVA) || cell.layers.includes(TerrainType.CHASM)) continue;
                 if (cell.layers.includes(TerrainType.STAIRS_UP) || cell.layers.includes(TerrainType.STAIRS_DOWN) || cell.layers.includes(TerrainType.DUNGEON_PORTAL)) continue;
                 if (this.getMonsterAt(x, y)) continue;
-                if (this.player.loc.x === x && this.player.loc.y === y) continue;
+                if (footprintContains(this.player, { x, y })) continue;
                 const distance = distances[x]![y]!;
                 const isFar = distance >= minFarDist && distance < 30000;
                 // CE 回退池的 IS_IN_MACHINE 排除：远格池不排，无远格可退时
@@ -2418,8 +2417,7 @@ export class Game {
             }
         }
 
-        this.player.loc.x = entryX;
-        this.player.loc.y = entryY;
+        commitCreatureAnchor(this.player, { x: entryX, y: entryY }, 'mutate');
 
         if (this.depth > 1) {
             this.grid.setTerrain(entryX - 1, entryY, TerrainType.STAIRS_UP, '<', 0xffaa00);
@@ -2758,8 +2756,8 @@ export class Game {
 
     /** CE getFOVMask 的 HAS_MONSTER|HAS_PLAYER 遮挡谓词（Light.c:85）。 */
     private hasCreatureAtForLight(x: number, y: number): boolean {
-        if (this.player.loc.x === x && this.player.loc.y === y) return true;
-        return this.monsters.some((m) => m.hp > 0 && m.loc.x === x && m.loc.y === y);
+        if (footprintContains(this.player, { x, y })) return true;
+        return this.monsters.some((m) => m.hp > 0 && footprintContains(m, { x, y }));
     }
 
     /**
@@ -2924,14 +2922,14 @@ export class Game {
                     if (this.isAutoTraveling()) {
                         const name = this.monsterDisplayName(monster);
                         const directlySeen = canDirectlySeeMonster(this.player, this.grid, monster)
-                            && !this.grid.getCell(monster.x, monster.y)?.isClairvoyantVisible;
+                            && !footprintSome(monster, p => !!this.grid.getCell(p.x, p.y)?.isClairvoyantVisible);
                         logger.log(directlySeen
                             ? i18next.t('vision.see_monster', { monster: name, defaultValue: 'You see a {{monster}}.' })
                             : i18next.t('vision.sense_monster', { monster: name, defaultValue: 'You sense a {{monster}}.' }), '#ffccaa');
                     }
                 }
                 if (canDirectlySeeMonster(this.player, this.grid, monster)
-                    && !this.grid.getCell(monster.x, monster.y)?.isClairvoyantVisible) this.hintRunicEquipment(monster);
+                    && !footprintSome(monster, p => !!this.grid.getCell(p.x, p.y)?.isClairvoyantVisible)) this.hintRunicEquipment(monster);
                 // Retain captive sightings for this automatic command.
                 if (monster.isCaged) this.everSeenMonsters.add(monster);
             }
@@ -2965,7 +2963,7 @@ export class Game {
             const monster = creature as Monster;
             // canSeeMonster excludes corpses; combat names use the sight at impact.
             const visible = !monsterHidden(this.grid, monster, this.player)
-                && (!!this.grid.getCell(monster.x, monster.y)?.isVisible || monsterRevealed(this.player, monster));
+                && (footprintSome(monster, p => !!this.grid.getCell(p.x, p.y)?.isVisible) || monsterRevealed(this.player, monster));
             return { player: false, name: monster.name, visible, ally: monster.isAlly,
                 typeId: monster.typeId, inanimate: monster.hasBehavior('MONST_INANIMATE'),
                 gender: monster.hasBehavior('MONST_MALE') ? 'male' : monster.hasBehavior('MONST_FEMALE') ? 'female' : undefined };
@@ -3006,7 +3004,7 @@ export class Game {
         if (monster === this.player) return monster.name;
         const target = monster as Monster;
         const visibleAtDeath = target.hp <= 0 && !monsterHidden(this.grid, target, this.player)
-            && !!this.grid.getCell(target.loc.x, target.loc.y)?.isVisible;
+            && footprintSome(target, p => !!this.grid.getCell(p.x, p.y)?.isVisible);
         return canSeeMonster(this.player, this.grid, target) || visibleAtDeath ? target.name : '某个生物';
     }
 
@@ -3067,6 +3065,7 @@ export class Game {
 
     /** Every user command, including inventory and modal choices, crosses this boundary. */
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
+        assertNativeSpatial(this.player);
         if (recordingState(this).execution || this.replayRecording || this.isAdvancing
             || this.isInputLocked() || logger.pendingAcknowledgment || presentationBlocked(this)) return;
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data)) {
@@ -3391,7 +3390,7 @@ export class Game {
         if (this.isAdvancing) throw new Error('Recording cannot be exported while a turn is advancing');
         if (this.hasPendingConfirmation) throw new Error('Recording cannot be exported during a command');
         return {
-            version: 2,
+            version: 3,
             recordedAt: Date.now(),
             seed: this.currentSeed,
             mode: this.mode,
@@ -3457,7 +3456,7 @@ export class Game {
             } catch (error) { onExtensionError?.(error); return false; }
         } else if (r.events?.some(event => event?.extensions !== undefined || event?.action === 'ext:command')) return false;
         const validSeed = isSeed(r.seed) || (typeof r.seed === 'number' && Number.isSafeInteger(r.seed) && r.seed >= 0);
-        return r.version === 2
+        return r.version === 3
             && validSeed
             && (r.mode === 'normal' || r.mode === 'easy' || r.mode === 'wizard' || r.mode === 'test')
             && r.startDepth === 1
@@ -3492,7 +3491,7 @@ export class Game {
             return false;
         }
         const safeRecording: GameRecording = {
-            version: 2,
+            version: 3,
             recordedAt: recording.recordedAt ?? Date.now(),
             seed: normalizeSeed(recording.seed),
             mode: recording.mode,
@@ -3691,14 +3690,14 @@ export class Game {
             const defender = this.monsters.find(actor => actor.id === target.id && actor.hp > 0);
             return !!defender && this.canObserveBoltTarget(defender) && !defender.isCaged
                 && (!defender.isAlly || defender.hasStatus('discordant'))
-                && Math.max(Math.abs(defender.x - this.player.x), Math.abs(defender.y - this.player.y)) === 1
+                && distanceBetweenFootprints(defender, this.player) === 1
                 && (!playerTravelDiagonalBlocked(this.grid, this.player.loc, defender.loc, false)
                     || defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))
                 && (!!this.grid.getCell(defender.x, defender.y)?.isPassable || defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'));
         }
         if (target.kind !== 'cell' || Object.keys(target).sort().join(',') !== 'kind,x,y'
             || !Number.isSafeInteger(target.x) || !Number.isSafeInteger(target.y)
-            || Math.max(Math.abs(target.x - this.player.x), Math.abs(target.y - this.player.y)) !== 1
+            || distanceToFootprint(this.player, target) !== 1
             || this.getMonsterAt(target.x, target.y)
             || playerTravelDiagonalBlocked(this.grid, this.player.loc, target, false)) return false;
         const cell = this.grid.getCell(target.x, target.y);
@@ -4130,7 +4129,7 @@ export class Game {
                         if (isCage) for (const m of iterateCreatures(this.monsters)) {
                             if (m.isCaged) {
                                 // Cage interior is 1 step away from the door
-                                const dist = Math.max(Math.abs(m.loc.x - newX), Math.abs(m.loc.y - newY));
+                                const dist = distanceToFootprint(m, { x: newX, y: newY });
                                 if (dist <= 2) {
                                     this.freeCaptive(m);
                                     this.spawnFloatingText(i18next.t('combat.ally_float', { defaultValue: 'Ally!' }), m.loc.x, m.loc.y, 0x88ff88);
@@ -4230,10 +4229,10 @@ export class Game {
                         && destination.layers.includes(TerrainType.STAIRS_UP);
                     if (descending || ascending) {
                         const origin = { ...this.player.loc }, oldDepth = this.depth;
-                        this.player.loc = { x: newX, y: newY };
+                        commitCreatureAnchor(this.player, { x: newX, y: newY });
                         const stairStages = this.handlePlayerAction(descending ? 'stairs_down' : 'stairs_up', undefined, 'system');
                         if (stairStages) yield* stairStages;
-                        if (this.depth === oldDepth) this.player.loc = origin;
+                        if (this.depth === oldDepth) commitCreatureAnchor(this.player, origin);
                         return;
                     }
                     // Move
@@ -5105,7 +5104,7 @@ export class Game {
         if (!pending || this.isInputLocked()) return;
         const candidates = this.getArcanaCandidates(pending.item);
         if (!candidates.length) return;
-        const index = candidates.findIndex(m => m.loc.x === pending.cursor.x && m.loc.y === pending.cursor.y);
+        const index = candidates.findIndex(m => footprintContains(m, pending.cursor));
         const next = index < 0 ? (reverse ? candidates.length - 1 : 0)
             : (index + (reverse ? -1 : 1) + candidates.length) % candidates.length;
         this.setArcanaTarget(candidates[next]!.loc.x, candidates[next]!.loc.y);
@@ -5749,7 +5748,7 @@ export class Game {
         const at = bladeSpawnLocation(this, this.player.loc,
             avoidedFlagsForCaster(guardian) & ~T_SPONTANEOUSLY_IGNITES);
         if (!at) return;
-        guardian.loc = at;
+        commitCreatureAnchor(guardian, at);
         guardian.isAlly = true;
         guardian.state = MonsterState.HUNTING;
         guardian.boundToPlayer = true;
@@ -7166,7 +7165,7 @@ export class Game {
         // including empty ground and the thrower's cell. Never lands as loot.
         if (resolveIncendiaryDart(thrown, { x, y }, {
             grid: this.grid,
-            creatureAt: pos => this.player.hp > 0 && this.player.x === pos.x && this.player.y === pos.y
+            creatureAt: pos => this.player.hp > 0 && footprintContains(this.player, pos)
                 ? this.player : this.getMonsterAt(pos.x, pos.y),
             exposeToFire: creature => {
                 if (creature instanceof Player || creature instanceof Monster) {
@@ -7650,8 +7649,7 @@ export class Game {
                     const ny = target.loc.y + ndy;
                     const cell = this.grid.getCell(nx, ny);
                     if (!cell || !cell.isPassable || cell.isOpaque || this.getMonsterAt(nx, ny)) break;
-                    target.loc.x = nx;
-                    target.loc.y = ny;
+                    commitCreatureAnchor(target, { x: nx, y: ny }, 'mutate');
                     traveled++;
                 }
                 if (traveled > 0) {
@@ -7755,8 +7753,7 @@ export class Game {
                 !m.isAlly &&
                 !m.hasBehavior('MONST_IMMUNE_TO_WEAPONS') &&
                 !m.hasBehavior('MONST_INVULNERABLE') &&
-                Math.abs(m.loc.x - this.player.loc.x) <= 1 &&
-                Math.abs(m.loc.y - this.player.loc.y) <= 1
+                distanceBetweenFootprints(m, this.player) <= 1
             );
             const count = hitList.length;
             if (count > 0 && incomingDamage > 0) {
@@ -8060,8 +8057,8 @@ export class Game {
         if (flags.includes('ITEM_PASS_ATTACKS')) {
             for (const m of this.monsters) {
                 if (hitList.includes(m)) continue;
-                if (Math.max(Math.abs(m.loc.x - this.player.loc.x), Math.abs(m.loc.y - this.player.loc.y)) !== 1) continue;
-                if (Math.max(Math.abs(m.loc.x - newX), Math.abs(m.loc.y - newY)) !== 1) continue;
+                if (distanceBetweenFootprints(m, this.player) !== 1) continue;
+                if (distanceToFootprint(m, { x: newX, y: newY }) !== 1) continue;
                 if (canStrike(m, this.grid.getCell(m.loc.x, m.loc.y))) hitList.push(m);
             }
         }
@@ -8458,7 +8455,7 @@ export class Game {
         return this.monsters.find(m =>
             m.hp > 0 && m.seizing && !m.hasStatus('entranced') &&
             monstersAreEnemies(m, this.player) &&
-            Math.max(Math.abs(m.loc.x - this.player.loc.x), Math.abs(m.loc.y - this.player.loc.y)) === 1
+            distanceBetweenFootprints(m, this.player) === 1
         );
     }
 
@@ -8490,12 +8487,13 @@ export class Game {
      * CE's unchecked INVALID_POS and leaves source/HP/world intact on failure. */
     public cloneMonster(source: Creature, splitLocation?: Pos,
         birth?: { creationReason: CreationReason; initiallyAllied?: boolean }): Monster | null {
+        assertNativeSpatial(source);
         if (source.hp <= 0 || (!(source instanceof Monster) && source !== this.player)) return null;
         const spot = splitLocation ?? cloneLocation(this, source);
         if (!spot) return null;
         const clone = source instanceof Monster ? source.copyForClone() : Monster.copyPlayerForClone(this.player);
         if (source instanceof Monster && source.isCaged) this.becomeAllyWith(clone);
-        clone.loc = { ...spot };
+        commitCreatureAnchor(clone, { ...spot });
         if (this.extensionRuntime) {
             // Armor phantoms become allied as part of creation. Capture that
             // initial faction without advancing the mechanical assignment.
@@ -8524,7 +8522,7 @@ export class Game {
         //    （CE 注释：让果冻能在走廊里分裂到玩家背后）。
         const inGroup = new Set<string>();
         inGroup.add(key(defender.loc.x, defender.loc.y));
-        const dist = Math.max(Math.abs(defender.loc.x - attacker.loc.x), Math.abs(defender.loc.y - attacker.loc.y));
+        const dist = distanceBetweenFootprints(defender, attacker);
         if (dist <= 1 && this.grid.isValidPos(attacker.loc.x, attacker.loc.y)) {
             inGroup.add(key(attacker.loc.x, attacker.loc.y));
         }
@@ -8557,7 +8555,7 @@ export class Game {
                     if (inGroup.has(nk) || eligibleSet.has(nk)) continue;
                     const cell = this.grid.getCell(nx, ny);
                     if (!cell || monsterBlinkAvoids(this, defender, { x: nx, y: ny })) continue;
-                    if (this.player.loc.x === nx && this.player.loc.y === ny) continue;
+                    if (footprintContains(this.player, { x: nx, y: ny })) continue;
                     if (this.getMonsterAt(nx, ny)) continue;
                     eligibleSet.add(nk);
                 }
@@ -8601,7 +8599,7 @@ export class Game {
      * and administrative death suppress it; mutation DF overrides species. */
     private canSeeMonsterAtDeath(m: Monster): boolean {
         return !monsterHidden(this.grid, m, this.player)
-            && (!!this.grid.getCell(m.x, m.y)?.isVisible || monsterRevealed(this.player, m));
+            && (footprintSome(m, p => !!this.grid.getCell(p.x, p.y)?.isVisible) || monsterRevealed(this.player, m));
     }
 
     private triggerDeathFeatures(target?: Monster): void {
@@ -8723,20 +8721,20 @@ export class Game {
      * current-terrain exceptions. No monster turn/entry effects during a swap. */
     private movePlayerPastAlly(x: number, y: number, ally?: Monster): boolean {
         const origin = { ...this.player.loc };
-        this.player.loc = { x, y };
+        commitCreatureAnchor(this.player, { x, y });
         if (ally?.isAlly && !ally.hasStatus('discordant')) {
             const allyOrigin = { ...ally.loc };
-            ally.loc = origin;
+            commitCreatureAnchor(ally, origin);
             if (monsterBlinkAvoids(this, ally, origin)) {
                 const candidates = allySwapCandidates(this, ally);
                 // CE returns INVALID_POS on a pathological map with no legal
                 // cell. Keep both entities in bounds instead of overlapping.
                 if (!candidates.length) {
-                    this.player.loc = origin;
-                    ally.loc = allyOrigin;
+                    commitCreatureAnchor(this.player, origin);
+                    commitCreatureAnchor(ally, allyOrigin);
                     return false;
                 }
-                ally.loc = candidates[rng.randRange(0, candidates.length - 1)]!;
+                commitCreatureAnchor(ally, candidates[rng.randRange(0, candidates.length - 1)]!);
             }
         }
         return true;
@@ -8864,9 +8862,9 @@ export class Game {
      * MB_PREPLACED（刚坠下来的幸存者）不坠。
      */
     private creatureShouldFall(entity: Player | Monster): boolean {
+        assertNativeSpatial(entity);
         if (entity.hasStatus('levitating')) return false;
-        const x = entity.loc.x;
-        const y = entity.loc.y;
+        const { x, y } = nativeContactOf(entity);
         const cell = this.grid.getCell(x, y);
         if (!cell) return false;
         let flags = 0;
@@ -9103,8 +9101,7 @@ export class Game {
             }
         }
 
-        this.player.loc.x = loc.x;
-        this.player.loc.y = loc.y;
+        commitCreatureAnchor(this.player, { x: loc.x, y: loc.y }, 'mutate');
     }
 
     /**
@@ -9200,7 +9197,7 @@ export class Game {
 
     private matchingKeyOnTileAt(x: number, y: number): Item | null {
         const cell = this.grid.getCell(x, y) ?? undefined;
-        const packKey = this.player.x === x && this.player.y === y ? this.keyInPackFor(x, y, cell) : null;
+        const packKey = footprintContains(this.player, { x, y }) ? this.keyInPackFor(x, y, cell) : null;
         if (packKey) return packKey;
         const floorKey = this.items.find(item => item.x === x && item.y === y && this.keyMatchesLocation(item, x, y, cell));
         if (floorKey) return floorKey;
@@ -9268,7 +9265,7 @@ export class Game {
             const passenger = m.carriedMonster;
             m.carriedMonster = null;
             if (passenger && passenger !== m && !passenger.deathProcessed && !this.monsters.includes(passenger)) {
-                passenger.loc = { ...m.loc };
+                commitCreatureAnchor(passenger, { ...m.loc });
                 passenger.ticksUntilTurn = 200;
                 this.monsters.unshift(passenger);
                 this.needsRender = true;
@@ -9686,7 +9683,7 @@ export class Game {
      * put the player in limbo, then restore both even if an update throws. */
     private catchUpEnvironment(timeAway: number): void {
         const position = { ...this.player.loc }, now = this.absoluteTurnNumber;
-        this.player.loc = { x: 0, y: 0 };
+        commitCreatureAnchor(this.player, { x: 0, y: 0 });
         try {
             for (let remaining = Math.max(0, Math.min(100, Math.trunc(timeAway))) - 1; remaining >= 0; remaining--) {
                 this.absoluteTurnNumber = Math.max(now, remaining) - remaining;
@@ -9694,7 +9691,7 @@ export class Game {
             }
         } finally {
             this.absoluteTurnNumber = now;
-            this.player.loc = position;
+            commitCreatureAnchor(this.player, position);
         }
         if (this.ticksTillUpdateEnvironment <= 0) this.ticksTillUpdateEnvironment += 100;
     }
@@ -10098,7 +10095,7 @@ export class Game {
             || origin.initial.end !== undefined || !Random.isState(origin.initial.rng)
             || !Number.isInteger(origin.initial.player?.x) || !Number.isInteger(origin.initial.player?.y)
             || !Number.isSafeInteger(run.recordedInputIndex) || run.recordedInputIndex !== run.recordedInputEvents?.length
-            || !this.isValidRecording({ version: 2, seed: snapshot.seed, mode: snapshot.mode, startDepth: 1,
+            || !this.isValidRecording({ version: 3, seed: snapshot.seed, mode: snapshot.mode, startDepth: 1,
                 recordedAt: snapshot.savedAt, events: run.recordedInputEvents,
                 ...(snapshot.extensions ? { extensions: snapshot.extensions.manifest } : {}) })) return false;
         const input = origin.inputState;
@@ -10184,7 +10181,7 @@ export class Game {
                     const target = world.entities.find(entity => entity.id === world.gate!.targetEntityId), activeGrid = restored.get(snapshot.depth)!.grid;
                     if (snapshot.run.isGameOver || decodedPlayer.hp <= 0 || decodedPlayer.hasStatus('paralyzed')
                         || !target || target.depth !== snapshot.depth || !activeGrid.getCell(target.x,target.y)?.isVisible
-                        || Math.max(Math.abs(target.x-decodedPlayer.x),Math.abs(target.y-decodedPlayer.y)) > target.interactionDistance
+                        || distanceToFootprint(decodedPlayer, target) > target.interactionDistance
                         || !hasInteractionLine(activeGrid,decodedPlayer.loc,target)) throw new Error('Invalid saved interaction gate');
                 }
                 extensions.validateWorld([decodedPlayer, ...extensionCreatures], { depth: snapshot.depth, turn: snapshot.run.absoluteTurnNumber,
@@ -10389,7 +10386,8 @@ export class Game {
         if (entity.hp <= 0 || isSubmerged(entity)) return;
         if (entity.hasStatus('immune_fire')) return;
         if (entity !== this.player && (entity as Monster).isInvulnerable()) return;
-        const cell = this.grid?.getCell(entity.loc.x, entity.loc.y);
+        const contact = nativeContactOf(entity);
+        const cell = this.grid?.getCell(contact.x, contact.y);
         if (!cell) return;
         if (!entity.hasStatus('levitating') && this.cellExtinguishesFire(entity.loc.x, entity.loc.y)) return;
 
@@ -10491,13 +10489,13 @@ export class Game {
      * 返回是否实际结算了一次伤害（测试与调用方判据）。
      */
     private resolveExplosionDamage(entity: Player | Monster): boolean {
+        assertNativeSpatial(entity);
         if (this.extensionRuntime && this.extensionRuntime.causality.current !== this.extensionRuntime.causality.terrainOrigin) {
             const effects = this.extensionRuntime.causality;
             return effects.withOrigin(effects.terrainOrigin, () => this.resolveExplosionDamage(entity));
         }
         if (entity.hp <= 0 || isSubmerged(entity)) return false;
-        const x = entity.loc.x;
-        const y = entity.loc.y;
+        const { x, y } = nativeContactOf(entity);
         const cell = this.grid.getCell(x, y);
         if (!cell) return false;
         if (!(cellTerrainFlags(this.grid, x, y) & T_CAUSES_EXPLOSIVE_DAMAGE)) return false;
@@ -10551,6 +10549,7 @@ export class Game {
     /** CE Time.c:313-333: flying/inanimate creatures can still be caught.
      * No refresh and no RNG when already stuck or web-immune. */
     public applyEntanglementFromTerrain(entity: Creature): void {
+        assertNativeSpatial(entity);
         if (entity.hp <= 0 || isSubmerged(entity) || entity.hasStatus('stuck')
             || !(cellTerrainFlags(this.grid, entity.x, entity.y) & T_ENTANGLES)
             || (entity instanceof Monster && (entity.hasCEBehavior('MONST_IMMUNE_TO_WEBS') || entity.isInvulnerable()))) return;
@@ -10581,6 +10580,7 @@ export class Game {
 
     /** CE Time.c:421-439: submerged, inanimate and invulnerable creatures are immune. */
     private applyNauseaFromTerrain(entity: Creature): void {
+        assertNativeSpatial(entity);
         if (entity.hp <= 0 || isSubmerged(entity) || !(cellTerrainFlags(this.grid, entity.x, entity.y) & T_CAUSES_NAUSEA)) return;
         if (entity instanceof Monster && (entity.hasBehavior('MONST_INANIMATE') || entity.isInvulnerable())) return;
         if (entity === this.player && this.player.equippedArmor?.runicType === 'respiration') {
@@ -10598,6 +10598,7 @@ export class Game {
 
     /** CE Time.c:498–523: grounded contact refreshes five turns, without stacking doses. */
     private applyLichenPoison(entity: Creature): void {
+        assertNativeSpatial(entity);
         if (!(cellTerrainFlags(this.grid, entity.x, entity.y) & T_CAUSES_POISON)
             || entity.hasStatus('levitating') || entity.hasStatus('flying')
             || (entity instanceof Monster && (entity.hasBehavior('MONST_INANIMATE') || entity.isInvulnerable()))) return;
@@ -10617,8 +10618,7 @@ export class Game {
         }
         const checkEntity = (entity: any, name: string) => {
             if (entity.hp <= 0) return;
-            const x = entity.loc.x;
-            const y = entity.loc.y;
+            const { x, y } = nativeContactOf(entity);
 
             const cell = this.grid?.getCell(x, y);
             if (!cell) return;
@@ -10892,9 +10892,30 @@ export class Game {
         this.burnFloorItems(true);
     }
 
-    public getMonsterAt(x: number, y: number): Monster | undefined {
+    /** 4a0 production facade: implicit single-member groups, immutable geometry. */
+    public spatialOf(actor: number | Creature) {
+        return spatialOf(this.spatialActor(actor));
+    }
+    private spatialActor(actor: number | Creature): Creature {
+        const entity = typeof actor !== 'number' ? actor : actor === this.player.id ? this.player
+            : this.monsters.find(c => c.id === actor) ?? this.dormantMonsters.find(c => c.id === actor);
+        if (!entity) throw new Error('Unknown spatial actor');
+        assertNativeSpatial(entity); return entity;
+    }
+    public footprintOf(actor: number | Creature) { return this.spatialOf(actor).cells; }
+    public nearestContact(a: number | Creature, b: number | Creature) { return nearestContact(this.spatialActor(a), this.spatialActor(b)); }
+    public canStepFootprint(actor: number | Creature, at: Pos, options?: Parameters<typeof canStepFootprint>[3]) { return canStepFootprint(this, this.spatialActor(actor), at, options); }
+    public collectBodyTargets(cells: readonly Pos[], policy?: Parameters<typeof collectBodyTargets>[2], scope?: Set<string>) {
+        return collectBodyTargets({ ...this.spatialWorldPort(), inDeathWindow: c => c instanceof Monster && dyingMonsters.has(c) && !c.deathProcessed }, cells, policy, scope);
+    }
+    private spatialWorldPort() { return { grid: this.grid, player: this.player, monsters: this.monsters, dormantMonsters: this.dormantMonsters }; }
+    public creatureAtCell(at: Pos, policy: Parameters<typeof creatureAtCell>[2] = 'active') {
+        return creatureAtCell({ ...this.spatialWorldPort(), inDeathWindow: c => c instanceof Monster && dyingMonsters.has(c) && !c.deathProcessed }, at, policy);
+    }
+
+    public getMonsterAt(x: number, y: number, ignore?: Creature): Monster | undefined {
         // CE clears HAS_MONSTER only after item placement and the death DF.
-        return this.monsters.find(m => m.loc.x === x && m.loc.y === y
+        return this.monsters.find(m => m !== ignore && footprintContains(m, { x, y })
             && (m.hp > 0 || (dyingMonsters.has(m) && !m.deathProcessed)));
     }
 
@@ -10917,18 +10938,18 @@ export class Game {
     private bindDungeonFeatureEffects(): void {
         setDungeonFeatureEffects(this.grid, {
             creatures: () => [this.player, ...this.monsters.filter(m => !m.isDormant)]
-                .filter(c => c.hp > 0).map(c => ({ loc: c.loc, forbiddenTerrain:
+                .filter(c => c.hp > 0).map(c => ({ loc: c.loc, occupies: (at: Pos) => footprintContains(c, at), commitPosition: (at: Pos) => commitCreatureAnchor(c, at, 'mutate'), forbiddenTerrain:
                     c instanceof Monster ? speciesForbiddenFlags({ behaviorFlags: [...c.behaviorFlags] }) : T_PATHING_BLOCKER })),
             refreshCell: pos => this.refreshDungeonFeatureCell(pos),
             flavor: pos => {
-                if (this.player.x === pos.x && this.player.y === pos.y && !this.player.hasStatus('levitating')) {
+                if (footprintContains(this.player, pos) && !this.player.hasStatus('levitating')) {
                     // CE Architect.c:3252: flavorMessage, never message/archive.
                     this.updateFlavorText();
                 }
             },
             instantEffects: pos => {
-                const creature = this.player.hp > 0 && this.player.x === pos.x && this.player.y === pos.y
-                    ? this.player : this.monsters.find(m => m.hp > 0 && !m.isDormant && m.x === pos.x && m.y === pos.y);
+                const creature = this.player.hp > 0 && footprintContains(this.player, pos)
+                    ? this.player : this.monsters.find(m => m.hp > 0 && !m.isDormant && footprintContains(m, pos));
                 if (creature) this.applyDungeonFeatureContact(creature);
             },
             burnItems: pos => this.burnFloorItemsAt(pos),
@@ -11103,11 +11124,11 @@ export class Game {
             b.totalPowerCount - a.totalPowerCount || speciesOrder(b) - speciesOrder(a))[0];
         if (!candidate) return false;
         const ties = qualifyingPathCandidates(this.grid, origin, T_PATHING_BLOCKER | T_HARMFUL_TERRAIN, 0,
-            (x, y) => !!this.getMonsterAt(x, y) || (this.player.x === x && this.player.y === y));
+            (x, y) => !!this.getMonsterAt(x, y) || (footprintContains(this.player, { x, y })));
         const loc = ties.length ? ties[rng.randRange(0, ties.length - 1)]! : null;
         if (!loc) return false;
         this.purgatory.splice(this.purgatory.indexOf(candidate), 1);
-        candidate.loc = loc;
+        commitCreatureAnchor(candidate, loc);
         dyingMonsters.delete(candidate);
         delete candidate.administrativeDeath;
         candidate.restoreDeathAppearance();
@@ -11135,8 +11156,8 @@ export class Game {
     private awakenDormantMonstersAt(origin: Pos, builtCells: readonly Pos[]): void {
         const built = new Set(builtCells.map(p => p.y * DCOLS + p.x));
         for (const monst of iterateCreatures([...this.dormantMonsters])) {
-            const atOrigin = monst.loc.x === origin.x && monst.loc.y === origin.y;
-            if (!atOrigin && !built.has(monst.loc.y * DCOLS + monst.loc.x)) continue;
+            const atOrigin = footprintContains(monst, origin);
+            if (!atOrigin && !footprintSome(monst, p => built.has(p.y * DCOLS + p.x))) continue;
             this.toggleMonsterDormancy(monst);
         }
     }
@@ -11173,8 +11194,7 @@ export class Game {
             // CE :4168-4181：`pmap.flags & (HAS_MONSTER | HAS_PLAYER)` → 占用
             const occupied = !!this.getMonsterAt(monst.loc.x, monst.loc.y)
                 || (this.player.hp > 0
-                    && this.player.loc.x === monst.loc.x
-                    && this.player.loc.y === monst.loc.y);
+                    && footprintContains(monst, this.player.loc));
             if (occupied) {
                 // CE :4169-4177 getQualifyingPathLocNear（"路径距离最小 + 并列
                 // 随机"，HAS_PLAYER / HAS_MONSTER / HAS_STAIRS 一并回避）。web
@@ -11186,8 +11206,7 @@ export class Game {
                 // entryQualifiesForPlacement 不查玩家坐标（它只服务玩家落位，
                 // 玩家不会把自己选进自己），这里补上同一回避。
                 if (relocated
-                    && this.player.loc.x === relocated.x
-                    && this.player.loc.y === relocated.y) {
+                    && footprintContains(this.player, relocated)) {
                     relocated = null;
                 }
                 // CE Grid.c:347-356 的路径无关兜底（getQualifyingLocNear）——
@@ -11195,7 +11214,7 @@ export class Game {
                 // 怪/玩家/不可走）。
                 if (!relocated) relocated = this.findNearbySpawnSpot(monst.loc, monst);
                 if (relocated) {
-                    monst.loc = relocated;
+                    commitCreatureAnchor(monst, relocated);
                     const toCell = this.grid.getCell(relocated.x, relocated.y);
                     if (toCell) toCell.hasDormantMonster = false;
                 }
@@ -11315,7 +11334,7 @@ export class Game {
     private adjacentExploreEnemy(): Monster | undefined {
         return Array.from(iterateCreatures(this.visibleMonsters)).find(m =>
             m.hp > 0 && !m.isAlly && !m.hasBehavior('MONST_IMMUNE_TO_WEAPONS') && !m.hasBehavior('MONST_INVULNERABLE')
-            && Math.max(Math.abs(m.x - this.player.x), Math.abs(m.y - this.player.y)) === 1
+            && distanceBetweenFootprints(m, this.player) === 1
             && (!playerTravelDiagonalBlocked(this.grid, this.player.loc, m.loc) || m.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')));
     }
 
@@ -11749,10 +11768,8 @@ export class Game {
         if (occupant && occupant !== caster && occupant.submerged) {
             // CE Items.c:5516-5535: blink displaces a submerged occupant first.
             if (!canPlaceCreature({ grid: this.grid, player: this.player, monsters: this.monsters.filter(m => m !== occupant), dormantMonsters: this.dormantMonsters }, caster, landing)) return false;
-            const origin = { ...caster.loc };
-            caster.loc = { x: -1, y: -1 }; // CE temporarily removes the caster from occupancy.
             let home: Pos | null = null;
-            try {
+            {
                 // CE Monsters.c:3927-3954: shuffle columns, then rows, once;
                 // first acceptable cell in expanding Manhattan distance.
                 const columns = Array.from({ length: this.grid.width }, (_, i) => i);
@@ -11761,15 +11778,15 @@ export class Game {
                 search: for (let distance = 1; distance < Math.max(this.grid.width, this.grid.height); distance++) {
                     for (const x of columns) for (const y of rows) {
                         const d = Math.abs(x - occupant.x) + Math.abs(y - occupant.y);
-                        if (d > 0 && d <= distance && !this.getMonsterAt(x, y)
-                            && !(this.player.x === x && this.player.y === y)
+                        if (d > 0 && d <= distance && !this.getMonsterAt(x, y, caster)
+                            && !(this.player !== caster && footprintContains(this.player, { x, y }))
                             && !monsterBlinkAvoids(this, occupant, { x, y })) {
                             home = { x, y }; break search;
                         }
                     }
                 }
-            } finally { caster.loc = origin; }
-            if (home) occupant.loc = home; // CE relocation has no terrain-entry callback.
+            }
+            if (home) commitCreatureAnchor(occupant, home); // CE relocation has no terrain-entry callback.
             else {
                 // CE administrative death: no blood, death DF, loot or passenger.
                 this.killMonster(occupant, true);
@@ -11788,7 +11805,7 @@ export class Game {
      */
     private beckonCreature(target: Creature, caster: Creature | null): boolean {
         if (!caster || target.hp <= 0 || (target instanceof Monster && target.hasBehavior('MONST_IMMOBILE'))) return false;
-        const distance = Math.max(Math.abs(target.loc.x - caster.loc.x), Math.abs(target.loc.y - caster.loc.y));
+        const distance = distanceBetweenFootprints(target, caster);
         if (distance <= 1) return false;
         const seenBefore = this.canObserveBoltTarget(target);
         if (target instanceof Monster && target.isCaged) this.freeCaptive(target);
@@ -11818,8 +11835,7 @@ export class Game {
         if (options.walkingSecretDoor && this.grid.getCell(destination.x, destination.y)?.isVisible) {
             this.discoverSecretAt(destination.x, destination.y);
         }
-        target.loc.x = destination.x;
-        target.loc.y = destination.y;
+        commitCreatureAnchor(target, { x: destination.x, y: destination.y }, 'mutate');
         this.needsRender = true;
         if (this.extensionRuntime) {
             const effects = this.extensionRuntime.causality, source = effects.current;
@@ -11891,7 +11907,7 @@ export class Game {
                 : randomMatchingLocation(this.grid, {
                     dungeonType: TerrainType.FLOOR, liquidType: TerrainType.NOTHING,
                     isOccupied: (x, y) => !!this.getMonsterAt(x, y)
-                        || (this.player.loc.x === x && this.player.loc.y === y)
+                        || (footprintContains(this.player, { x, y }))
                         || this.items.some(item => item.loc.x === x && item.loc.y === y)
                         || !!this.grid.getCell(x, y)?.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL),
                     isMachineCell: (x, y) => (this.grid.getCell(x, y)?.machineNumber ?? 0) !== 0,
@@ -12057,7 +12073,7 @@ export class Game {
         }
 
         // Check player
-        if (this.player.loc.x === x && this.player.loc.y === y && cell.isVisible) {
+        if (footprintContains(this.player, { x, y }) && cell.isVisible) {
             entities.push(i18next.t('hover.you', { defaultValue: 'you' }));
         }
 
@@ -12252,7 +12268,7 @@ export class Game {
 
     /** CE Movement.c:2419-2436: nearby items and observable non-allies stop runs. */
     private runIsDisturbed(): boolean {
-        const adjacent = (pos: Pos) => Math.max(Math.abs(pos.x - this.player.x), Math.abs(pos.y - this.player.y)) === 1;
+        const adjacent = (pos: Pos) => distanceToFootprint(this.player, pos) === 1;
         return this.items.some(item => adjacent(item.loc))
             || Array.from(iterateCreatures(this.visibleMonsters)).some(monster => monster.hp > 0 && !monster.isAlly && adjacent(monster.loc));
     }
