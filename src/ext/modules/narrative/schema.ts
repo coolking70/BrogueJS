@@ -4,16 +4,17 @@ import type { Condition, FlagDefinition, NarrativeLimits, NarrativePack, Portrai
 
 /** Implementation ceilings, independent of a content author's smaller per-pack budgets.
  * The shared JSON bound must cover state/plan as well as content: at most 65,536
- * receipts (six visited JSON values each), 2 * 4,096 flag/counter values, 4,096
- * journal entries (three each), and bounded plan traces total fewer than 425,000
- * values. 1,000,000 leaves headroom without allowing unbounded objects/arrays.
+ * shared receipts (a pending slot has at most 45 visited JSON values, including
+ * 40 attempted depths), 2 * 4,096 flags/counters, 4,096 journal entries, 256
+ * bindings and bounded plan traces total fewer than 3,100,000 values. The
+ * 4,000,000-value ceiling leaves bounded headroom for all legal state/plan trees.
  */
 export const NARRATIVE_LIMITS = Object.freeze({
     conditionDepth: 16, conditionOpsPerCommand: 1024, effectsPerCommand: 256,
     eventsPerCommand: 128, transitionsPerSession: 1024, maxActiveNpcs: 256,
     maxJournalEntries: 4096, maxReceipts: 65536,
-    maxWorldDepth: 40, maxDefinitions: 4096, maxJsonDepth: 64, maxJsonValues: 1_000_000,
-    maxStringLength: 16384, maxPortraitDimension: 8192, maxDistance: 1024,
+    maxWorldDepth: 40, maxDefinitions: 4096, maxJsonDepth: 64, maxJsonValues: 4_000_000,
+    maxStringLength: 16384, maxPortraitDimension: 8192, maxDistance: 256, maxInteractionDistance: 16,
 });
 const fail = (code: NarrativeErrorCode, path: string): never => { throw new NarrativeError(code, path); };
 const forbiddenKeys = new Set(['__proto__', 'constructor', 'prototype']);
@@ -111,7 +112,7 @@ function localeChecker(raw: unknown): (value: unknown, path: string) => void {
     assertNarrativeJson(raw, '$locales');
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) fail('INVALID_TYPE', '$locales');
     const locales = raw as Record<string, unknown>;
-    const validTextKey = (key: string): boolean => /^ext\.narrative\.[a-zA-Z0-9_.-]+$/.test(key);
+    const validTextKey = (key: string): boolean => key.length <= 256 && /^ext\.narrative\.[a-zA-Z0-9_.-]+$/.test(key);
     for (const [key, value] of Object.entries(locales)) {
         if (!validTextKey(key) || typeof value !== 'string' || !value.trim()) fail('INVALID_TEXT', `$locales.${key}`);
     }
@@ -157,9 +158,10 @@ export function loadNarrativePack(raw: unknown, portraitData: unknown, locales: 
     };
     const root = object(raw, ['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'stateVersion', 'inputVersion',
         'config', 'flags', 'counters', 'npcs', 'dialogues', 'journal', 'storyEvents', 'triggers'], '$');
-    for (const key of ['schema', 'stateVersion', 'inputVersion']) if (root[key] !== 1) fail('INVALID_VERSION', `$.${key}`);
+    if (root.schema !== 1) fail('INVALID_VERSION', '$.schema');
+    for (const key of ['stateVersion', 'inputVersion']) if (root[key] !== 2) fail('INVALID_VERSION', `$.${key}`);
     if (root.moduleId !== 'narrative') fail('INVALID_ID', '$.moduleId');
-    for (const key of ['moduleVersion', 'rulesVersion']) if (root[key] !== '1.0.0') fail('INVALID_VERSION', `$.${key}`);
+    for (const key of ['moduleVersion', 'rulesVersion']) if (root[key] !== '1.1.0') fail('INVALID_VERSION', `$.${key}`);
     const config = object(root.config, ['timePolicy', 'closePolicy', 'limits'], '$.config');
     enumeration(config.timePolicy, ['free-frozen'], '$.config.timePolicy');
     enumeration(config.closePolicy, ['close-session'], '$.config.closePolicy');
@@ -305,7 +307,7 @@ export function loadNarrativePack(raw: unknown, portraitData: unknown, locales: 
         if (typeof npc.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(npc.color)) fail('INVALID_TYPE', `${path}.color`);
         portraitRef(npc.portraitId, `${path}.portraitId`); reference(npc.dialogueId, dialogues, `${path}.dialogueId`);
         enumeration(npc.presence, ['stationary-interactable'], `${path}.presence`);
-        integer(npc.interactionDistance, `${path}.interactionDistance`, 0, NARRATIVE_LIMITS.maxDistance);
+        integer(npc.interactionDistance, `${path}.interactionDistance`, 0, NARRATIVE_LIMITS.maxInteractionDistance);
         list(npc.placements, `${path}.placements`).forEach((placement, pi) => {
             const pp = `${path}.placements[${pi}]`;
             const p = object(placement, ['id', 'minDepth', 'maxDepth', 'maxPerRun', 'maxPerDepth', 'minStairDistance', 'maxEntranceDistance', 'onNoSpace'], pp);
@@ -323,9 +325,12 @@ export function loadNarrativePack(raw: unknown, portraitData: unknown, locales: 
         const nodeIds = new Set(nodes.map(n => n.id as string)); reference(dialogue.entry, nodeIds, `${path}.entry`);
         nodes.forEach((node, ni) => {
             const np = `${path}.nodes[${ni}]`; text(node.textKey, `${np}.textKey`); portraitRef(node.portraitId, `${np}.portraitId`);
+            // A complete public node is one bounded preview, including hidden choices.
+            // Count worst-case AST visits rather than relying on dynamic short-circuiting.
+            const previewBudget = { count: 0 };
             (node.choices as Record<string, unknown>[]).forEach((choice, ci) => {
                 const cp = `${np}.choices[${ci}]`; text(choice.textKey, `${cp}.textKey`);
-                condition(choice.condition, `${cp}.condition`, { kind: 'dialogue-choice', dialogueId: dialogue.id as string, choiceId: choice.id as string });
+                condition(choice.condition, `${cp}.condition`, { kind: 'dialogue-choice', dialogueId: dialogue.id as string, choiceId: choice.id as string }, 1, previewBudget);
                 enumeration(choice.unavailable, ['hide', 'disable'], `${cp}.unavailable`);
                 if (choice.unavailableKey !== null) text(choice.unavailableKey, `${cp}.unavailableKey`);
                 effects(choice.effects, `${cp}.effects`); if (choice.next !== null) reference(choice.next, nodeIds, `${cp}.next`);
@@ -375,7 +380,7 @@ export function loadNarrativePack(raw: unknown, portraitData: unknown, locales: 
         estimatedReceipts += kind === 'once-per-depth' ? NARRATIVE_LIMITS.maxWorldDepth : 1;
         effects(trigger.effects, `${path}.effects`);
     });
-    estimatedReceipts += receiptIds.size;
+    estimatedReceipts += receiptIds.size + (raw as NarrativePack).npcs.reduce((total, npc) => total + npc.placements.reduce((count, placement) => count + placement.maxPerRun, 0), 0);
     if (estimatedReceipts > limits.maxReceipts) fail('RECEIPT_LIMIT', '$.config.limits.maxReceipts');
     const pack = raw as NarrativePack;
     // Condition-independent graph analysis: false guards/repeat limits never excuse an automatic cycle.

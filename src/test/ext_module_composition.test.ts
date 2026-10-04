@@ -157,7 +157,7 @@ describe('EXT-2a0 descriptor contract', () => {
         const good = { ...descriptor, create: factory };
         expect(() => validateModuleDescriptors([good, good])).toThrow();
         for (const patch of [
-            { id: '../alpha' }, { version: 'next' }, { foundation: 2 }, { create: null },
+            { id: '../alpha' }, { version: 'next' }, { foundation: 1 }, { create: null },
             { labelKey: '' }, { labelKey: 'ext.beta.name' }, { defaultEnabled: 'yes' },
             { locales: { en: { 'ext.beta.name': 'Other owner' } } },
             { rules: { ...good.rules!, version: '9.0.0' } },

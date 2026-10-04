@@ -4,7 +4,7 @@ import { GROWTH_VERSION, getGrowthPackIdentity } from './definitions';
 import zhCN from './locales/zh_CN.json';
 
 export const descriptor: ModuleDescriptor = {
-    id: 'growth', version: GROWTH_VERSION, foundation: 1, rules: getGrowthPackIdentity(),
+    id: 'growth', version: GROWTH_VERSION, foundation: 2, rules: getGrowthPackIdentity(),
     create: createGrowthModule, defaultEnabled: true,
     labelKey: 'ext.growth.module.name', descriptionKey: 'ext.growth.module.description',
     locales: { zh_CN: zhCN },

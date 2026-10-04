@@ -8,6 +8,7 @@ import { isTextEntry, ModalKeyboard, type ModalKeyHandler } from '../ui/modalKey
 
 export class InputManager {
     private keybMap: Record<string, boolean> = {};
+    private readonly blockedUntilRelease = new Set<string>();
     private onActionCallback: ((action: string, data?: any) => void) | null = null;
     /** CE: any keystroke interrupts automation (Movement.c:2345-2351, IO.c:2366-2375).
      *  Unbound keys are not game commands (P1-46); the host decides whether an
@@ -16,8 +17,23 @@ export class InputManager {
     private modalKeyboard = new ModalKeyboard();
 
     constructor() {
+        // Physical key bookkeeping runs in capture: an inline control may stop
+        // bubbling without hiding its eventual release from the input barrier.
+        window.addEventListener('keydown', event => {
+            const key = event.code || event.key;
+            // A fresh physical press also recovers a release lost on window
+            // blur. Do this before any handler can cancel this very event.
+            if (!event.repeat) this.blockedUntilRelease.delete(key);
+            this.keybMap[key] = true;
+        }, true);
         window.addEventListener('keydown', this.handleKeyDown.bind(this));
-        window.addEventListener('keyup', this.handleKeyUp.bind(this));
+        window.addEventListener('keyup', this.handleKeyUp.bind(this), true);
+    }
+
+    /** Display transition barrier, never a simulated action. A key held across
+     * a dialogue must be released before it can resume world movement. */
+    public cancelHeldKeys(): void {
+        for (const [key, down] of Object.entries(this.keybMap)) if (down) this.blockedUntilRelease.add(key);
     }
 
     public setCallback(cb: (action: string, data?: any) => void) {
@@ -39,13 +55,15 @@ export class InputManager {
     }
 
     private handleKeyDown(e: KeyboardEvent) {
+        if (this.blockedUntilRelease.has(e.code || e.key)) {
+            e.preventDefault?.(); e.stopImmediatePropagation(); return;
+        }
         // Text entry (e.g. call-item nickname) must not become a game command.
         if (e.defaultPrevented || isTextEntry(e.target)) return;
         if (this.modalKeyboard.handle(e)) {
             e.stopImmediatePropagation();
             return;
         }
-        this.keybMap[e.key] = true;
 
         if (this.onActionCallback) {
             // CE IO.c:2700-2711: modifiers run in all eight directions.
@@ -161,7 +179,8 @@ export class InputManager {
     }
 
     private handleKeyUp(e: KeyboardEvent) {
-        this.keybMap[e.key] = false;
+        const key = e.code || e.key;
+        this.keybMap[key] = false; this.blockedUntilRelease.delete(key);
     }
 }
 

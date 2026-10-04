@@ -117,6 +117,7 @@ import type { GestureEvent } from '../ui/touchGestures';
 import { bindMapTouchInput } from '../ui/mapTouchInput';
 import { registerHeldInputContext, syncHeldInputContext } from '../ui/heldInput';
 import { normalizeMapGlyph } from '../ui/mapGlyph';
+import { readInteractableMapMarkers } from '../ui/worldInteractableMap';
 import { RetainedBackgroundLayer, RetainedVectorLayer, VectorGeometryCache } from '../ui/retainedMapDrawing';
 import { RenderRequests } from '../ui/renderRequests';
 import { FrameProfile } from '../ui/frameProfile';
@@ -562,6 +563,22 @@ onMounted(async () => {
             }
         }
 
+        // Generic visible world markers remain subordinate to hazards, items
+        // and actors. Their source is a detached engine DTO, never module state.
+        const interactables = game.readVisibleInteractables();
+        if (interactables.length) {
+            const occupied = new Set([
+                ...game.items.filter(item => game.grid.getCell(item.loc.x, item.loc.y)?.isVisible)
+                    .map(item => `${item.loc.x},${item.loc.y}`),
+                ...game.monsters.filter(monster => canDisplayMonster(game.player, game.grid, monster))
+                    .map(monster => `${monster.loc.x},${monster.loc.y}`),
+            ]);
+            for (const marker of readInteractableMapMarkers(interactables, {
+                depth: game.depth, player: game.player.loc, occupied,
+                cellAt: (x, y) => game.grid.getCell(x, y),
+            })) placeEntity(marker.glyph, marker.color, marker.x, marker.y, true, marker.semantic);
+        }
+
         // Monsters
         for (const m of game.monsters) {
             const cell = game.grid.getCell(m.loc.x, m.loc.y);
@@ -718,6 +735,7 @@ onMounted(async () => {
             autoPathLength: game.autoPath.length,
             monsters: visibleMonsters,
             revealedLocations,
+            interactables: game.readVisibleInteractables(),
             items: visibleItems
         });
     };

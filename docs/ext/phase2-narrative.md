@@ -1,10 +1,10 @@
 # 阶段 2 独立叙事模块设计
 
-> 状态：维护者已确认 P2-D01/02/03/04 全 A；2a0 已验收，本轮仅批准实施、独立验收 2a1。2b–2e 尚未授权自动开工。设计原始事实基线为阶段 1 验收提交 `0f0dfc1`；2a0 实施基线为 `2c27ab1`，完成证据见 [2a0 报告](phase2a0.report.md)。2a1 的实际范围见 [本步报告](phase2a1.report.md)；下文完整阶段目标中超出纯包/执行计划的 NPC、世界输入 gate、全局事实与奖励 flush、UI 仍为后续设计，不代表已实现。总原则以 [路线](README.md) 与 [底座架构](architecture.md) 的新产品合同为准。
+> 状态：维护者已确认 P2-D01/02/03/04 全 A；2a0 已验收，2a1 已验收，本轮仅批准从 `71eac53` 实施、独立验收 2b 通用交互实体与开口。2c–2e 尚未授权自动开工。设计原始事实基线为阶段 1 验收提交 `0f0dfc1`；2a0 实施基线为 `2c27ab1`，历史证据见 [2a0 报告](phase2a0.report.md)、[2a1 报告](phase2a1.report.md)。下文是完整阶段目标；2b 负责世界对象、放置、open/choose/close、输入 gate 与存读录像，全局剧情事实/奖励 flush、正式对话 UI 仍属后续步骤，不因本次授权被记为已实现。总原则以 [路线](README.md) 与 [底座架构](architecture.md) 的新产品合同为准。
 
 ## 1 结论与范围
 
-先做可单独验收的 **2a0 模块组合与物理可移除底座**，再做 `narrative`。不能在现有“扩展模式等于 growth”菜单上继续叠叙事，再把能关闭开关称为独立模块。2a0 已独立验收，2a1 已另获实施授权；本步交付后仍须等待维护者批准，不能自动进入 2b 或其它后续步骤。
+先做可单独验收的 **2a0 模块组合与物理可移除底座**，再做 `narrative`。不能在“扩展模式等于 growth”菜单上继续叠叙事，再把能关闭开关称为独立模块。2a0 已独立验收，2a1 纯内核已交付，维护者现已另行授权 2b；本步交付后仍须等待维护者批准，不能自动进入 2c、2d 或其它后续步骤。
 
 阶段 2 的最小完整交付为：可交互的中立 NPC、条件与效果驱动的对话图、立绘占位展示、可重复验证的剧情事件、自己的存档块和录像输入版本。只硬依赖底座；独立启用时不安装、不初始化、不调用 growth 也能开局、游玩、存读、录像、seek 与续录。
 
@@ -26,7 +26,7 @@
 
 ## 2 已核对的实际接口与缺口
 
-以下是对基线代码的核对，后文标为“拟新增”的接口不能当作现成功能。历史资料 [phase1e.report.md](phase1e.report.md)、[growth-config.md](growth-config.md) 描述阶段 1 实现与旧验收，不覆盖本次新原则。
+以下表格保留对原始设计基线代码的核对，并非 2b 当前候选的能力清单。2a0/2a1 已完成的发现、所有权和纯内核改造以各步报告为准；后文标为“拟新增”的接口不能当作现成功能。历史资料 [phase1e.report.md](phase1e.report.md)、[growth-config.md](growth-config.md) 描述阶段 1 实现与旧验收，不覆盖本次新原则。
 
 | 实际位置 | 已有能力 | 阶段 2 要处理的缺口 |
 |---|---|---|
@@ -97,16 +97,18 @@ src/ext/
 3. 生成“发现文件集合 vs 已登记测试集合”比对；未登记或重复登记直接失败。不得用 catch import error、skip、宽泛 exclude 把真实剩余测试藏掉
 4. npm test、ext 专项与测试清单守卫共同使用一份发现结果；保留底座/非模块测试。静态 gen/drift 清单无需因删除模块大改，但不能残留模块路径
 
-物理移除脚本必须在**独立临时副本**执行，复制当前候选树而不是只取旧 HEAD，排除 .git、dist、构建缓存；记录候选输入 hash。不得在工作树删目录。每个用例先实际移除所有权清单中的目录与数据，再清理 TS/Vite 缓存，随后重新发现、typecheck、build、ext 适用测试、npm test，并用生成的构建完成启动/存读/录像冒烟。node_modules 可复用只读依赖；不得复用旧 dist 或旧 tsbuildinfo。
+物理移除脚本必须在**独立临时副本**执行，复制当前候选树而不是只取旧 HEAD，排除 .git、dist、构建缓存；记录候选输入 hash。不得在工作树删目录。每个用例先实际移除所有权清单中的目录与数据，再清理 TS/Vite 缓存，随后重新发现，并运行 boundary、typecheck、build、全部剩余 ext 测试及全部剩余模块子集的新局/save/load/replay/seek/续录 smoke。**从 2b 起真实删除行不再重复完整 npm test；正常候选树仍必须完整跑一次。** node_modules 可复用只读依赖；不得复用旧 dist 或旧 tsbuildinfo，也不隐藏已有 CE 缓存。2a0/2a1 的旧完整删除门禁结果保留原样。
+
+脚本 `--profile=auto` 默认枚举全部目录保留子集，对未删目录行用 full，对实际删除行用 removal；显式 `--profile=full` 或 `--profile=removal` 只选对应行，与 `--retain` 不匹配即报错。full 包含完整 `npm test`，与 CE `test:full` 无关。正常 full 已单独执行时运行 removal 档，不再在删除副本重复完整 npm test。`--plan` 与最终 evidence 按行列档位和真实门禁命令，并单列正常 full 的 required/是否包含/实际状态；没有运行的完整测试不能记为通过。`--prepare-only` 仍只算准备，`--engine-only` 仍保留浏览器未验证标记。
 
 ### 3.4 删除矩阵与预期
 
 | 临时副本实际保留的阶段目录 | 对应正式新局 | 必须成功 | 必须拒绝 |
 |---|---|---|---|
-| growth、narrative 都保留 | 空集、growth-only、narrative-only、两者 | 四种组合的全部标准门禁与存读/录像 | 未选择模块的命令 |
-| 删 growth 整目录与专属数据/测试 | 空集、narrative-only | 编译、构建、底座+narrative 全测试；无需 growth 初始化/资源 | manifest 明确要求 growth 的旧档/录像 |
-| 删 narrative 整目录与专属数据/测试 | 空集、growth-only | 编译、构建、底座+growth 全测试；无叙事资产请求 | manifest 明确要求 narrative 的旧档/录像 |
-| 两者全删 | 空集 | 底座/引擎编译构建与自身测试；空模块新局可玩可保存录像 | 要求任一缺失模块的输入 |
+| growth、narrative 都保留 | 空集、growth-only、narrative-only、两者 | 正常 full 门禁一次，含完整 npm test；四种组合各自真实新局/save/load/replay/seek/续录 | 未选择模块的命令 |
+| 删 growth 整目录与专属数据/测试 | 空集、narrative-only | removal 门禁；底座+narrative 全部 ext 测试与两种组合 smoke；无需 growth 初始化/资源 | manifest 明确要求 growth 的旧档/录像 |
+| 删 narrative 整目录与专属数据/测试 | 空集、growth-only | removal 门禁；底座+growth 全部 ext 测试与两种组合 smoke；无叙事资产请求 | manifest 明确要求 narrative 的旧档/录像 |
+| 两者全删 | 空集 | removal 门禁；底座全部 ext 测试与空模块真实新局/save/load/replay/seek/续录 | 要求任一缺失模块的输入 |
 | 阶段 3–5 后续存在 | 已安装集合的任意子集 | 每删一个阶段的余下编译与自测；全保留时 32 种启动/存读/录像；发布候选扩展为所有目录保留子集 | 要求已删除模块的输入，及未实现的能力版本 |
 
 当前只验证软件中启用/禁用的测试不算物理可移除证据。删除某模块后读取**要求该模块的旧存档**应明确不兼容；这与新建无该模块的合法局、叙事可选联动缺席正常是两个合同。不得静默剥除旧档块或把缺席模块重置后读入。
@@ -124,7 +126,7 @@ src/ext/
 
 `narrative@1.0.0` 是建议的首个发布版本。自己的包具有 schema、moduleVersion、rulesVersion；自己的状态具有 state schema；自己的命令 payload 带 input version。注册使用现有精确 `rules: {schema,version,fingerprint}` 思路，版本升级不能借用 growth 版本。
 
-当前 manifest/底座包络固定 schema/foundation=1。2a0 若只改发现/UI 不一定改变存档；第 5 节新增通用交互对象或第 8 节新增持久字段时，须升级底座包络/读取器与对应 manifest 标识（建议新合同为 2），明确拒绝旧格式。不能在现有 validator 不接受时提前写成可读取。模块自身仍用 `extensions.modules.narrative` 与 `narrative:*` 命名空间，不另造顶层 narrative 存档。
+2a1 基线 manifest/底座包络为 schema/foundation=1。2a0 只改发现/UI 未改变该版本；2b 按第 5 节新增通用交互对象或第 8 节新增持久字段时，须升级底座包络/读取器与对应 manifest 标识（建议新合同为 2），明确拒绝旧格式。不能在现有 validator 不接受时提前写成可读取；实施版本与验证结果在 2b 报告登记。模块自身仍用 `extensions.modules.narrative` 与 `narrative:*` 命名空间，不另造顶层 narrative 存档。
 
 ### 4.2 能力协商草图
 
@@ -511,11 +513,11 @@ UI 专用焦点、滚动、绘图资源、opaque token、输入去重锁不入�
 
 读模型须新增只读公开叙事投影：当前会话的名字/正文/立绘ID、可见选项ID/文案/已知禁用原因、revision与只读状态，以及已公开日志。当前通用ExtensionViewDescriptor可把完整definitions暴露给UI，不能原样把叙事完整包、条件AST、未来节点或隐藏flags交过去；应由模块纯投影配合底座可见事实生成当前视图，不获得活Game/写能力。地图只取可见交互对象DTO。这里约束的是游戏内信息展示，不宣称前端打包内容可以防止玩家自行查看源码。
 
-沿刻符现有深色石面、细金线、正文高对比风格，不另开浏览器窗口。目标为游戏界面内单一 overlay host；与 main 未来统一界面内弹窗层对齐，但本次核对的基线仍 `window.confirm`，没有可直接复用的已验证服务。
+沿刻符现有深色石面、细金线、正文高对比风格，不另开浏览器窗口。目标为游戏界面内单一 overlay host；本分支尚未集成 main 的统一界面内弹窗层，不能把主线服务已完成写成本分支已复用。
 
-到 2d 实施前核对 main 的准确提交：如果 D1 DialogService/DialogHost 统一仲裁已完成，按需 merge/cherry-pick 复用其通用 host/input capture/focus 契约并扩展 dialogue；如果尚未完成，必须先询问维护者。禁止在本分支另造一套弹窗容器。本轮 2a1 不拉入 main 无关改动、不提前实施 2d，也不把整个原生确认/所有背包菜单的改造塞入叙事。不得直接把同步 `onConfirmRequest` 改成返回 Promise；native confirm 迁移需要自己的显式命令续体、同命令决策与取消录像测试。
+维护者提供的 main 进展记录：`dc0b78b` 已含 D1–D4 的 DialogService/DialogHost、显式输入续体、presentation timeline 与 SFC harness。到 2d 获准实施前核对该准确提交与后续变化，按需复用通用 host/input capture/focus 契约并扩展 dialogue；若实际接口或范围不符，先询问维护者。禁止在本分支另造一套弹窗容器。本轮 2b 只登记依赖方向，不 merge/cherry-pick main、不提前实施 2d，也不把整个原生确认/所有背包菜单的改造塞入叙事。不得直接把同步 `onConfirmRequest` 改成返回 Promise；native confirm 迁移需要自己的显式命令续体、同命令决策与取消录像测试。
 
-已只读核对 main 固定提交 `1c9c337f3e430774b3f9555c6a238efd5fe19e25` 的[界面内弹窗层设计](https://github.com/coolking70/BrogueJS/blob/1c9c337f3e430774b3f9555c6a238efd5fe19e25/docs/design/in-app-dialogs.md)：维护者确认采用显式命令续体、presentation timeline及死亡时“查看结算”，但各步仍待实施，dialogue也仅为预留类型。该文头部已排除D5/D6扩展适配与合并；后文§7.3残留的合并、classic parity及CE门禁不成为本原型义务。按本分支需要选择性参考，不合并main或扩大本次实现范围。
+历史设计核对基于 main 固定提交 `1c9c337f3e430774b3f9555c6a238efd5fe19e25` 的[界面内弹窗层设计](https://github.com/coolking70/BrogueJS/blob/1c9c337f3e430774b3f9555c6a238efd5fe19e25/docs/design/in-app-dialogs.md)：当时显式命令续体、presentation timeline及死亡时“查看结算”尚待实施，dialogue仅为预留类型；该历史状态不覆盖上面的 `dc0b78b` 进展记录。该文头部已排除D5/D6扩展适配与合并；后文§7.3残留的合并、classic parity及CE门禁不成为本原型义务。按本分支需要选择性参考，不合并main或扩大本次实现范围。
 
 三类流程只共享Host、输入capture、token/epoch、防重复/穿透、只读DTO与自动化选择器，状态所有权不能混用：
 
@@ -627,7 +629,7 @@ interface PortraitManifest {
 
 ## 11 分步实施方案 每步验收后停止
 
-2a1 范围澄清：本步提供可安装包、纯条件/效果/触发计划与 state/input 校验。第 8 节的完整 state 是阶段 2 目标；2a1 仅有 schema/revision/lastFactId/flags/counters/triggerReceipts/rewardReceipts/journal，没有 NPC 绑定、活动会话或放置字段。第 7 节 open/choose/close 只定义并校验 v1 语法，不作为可执行的 Game 命令；2b 接入世界后再按实际字段与语义升级版本。第 4.4 节全局事实/boot-ready/意图 flush 不因纯 trigger planner 已存在就视为已实现，仍属后续授权。
+2a1 历史范围：该步提供可安装包、纯条件/效果/触发计划与 state/input 校验。第 8 节的完整 state 是阶段 2 目标；2a1 仅有 schema/revision/lastFactId/flags/counters/triggerReceipts/rewardReceipts/journal，没有 NPC 绑定、活动会话或放置字段。第 7 节 open/choose/close 当时只定义并校验 v1 语法，不作为可执行的 Game 命令。本轮 2b 已获准接入世界，并须按实际字段与语义升级版本；初始放置的安全完成点与录像归属必须同时证明。第 4.4 节完整全局剧情事实/奖励意图 flush 不因纯 trigger planner 已存在就视为已实现，仍留 2c。
 
 | 步骤 | 实现边界 | 必须交付的验收结果 |
 |---|---|---|
@@ -635,7 +637,7 @@ interface PortraitManifest {
 | 2a1 叙事包与执行内核 | narrative目录/版本、纯schema/条件/效果计划/触发器、state/input校验、严格错误码；先无正式NPC UI | 增删NPC/节点/选项/flags只改数据；坏引用/环/预算/伪造输入负例；narrative-only可实例化；全禁用无状态与RNG副作用 |
 | 2b 通用交互实体与开口 | 底座world-interactable、位置/可见性/缓存/codec/GC、数据放置、open/choose/close、引擎gate | 真实新局遇NPC、不同目标/遮挡/无空位、重复入层、取消/重复命令、NPC-only存读/回放；若改生成加drift。新增持久字段与底座版本全部登记 |
 | 2c 剧情事件与可选奖励 | 分阶段事实/意图提交、receipt去重、日志、growth可选能力adapter；不引入其它重世界效果 | 无growth、growth关闭story、无报价、合法报价四种；不滞后一命令、不重复奖励；后续效果失败不半提交；反向注册顺序与重复checkpoint不改变结果 |
-| 2d 刻符对话与立绘占位 | 复用已完成的 main D1 DialogService/DialogHost 并扩展 dialogue；未完成先问维护者，禁止另造容器；桌面/390/320、普通/沉浸、键鼠触控与焦点 | 三尺寸六布局真实像素；滚动/关闭/Escape/外点/快速重复点击；无穿透；录像只读展示不阻塞seek；图片加载失败不影响模拟。无真实手机时明确“触摸未实测” |
+| 2d 刻符对话与立绘占位 | 获准后核对并复用 main `dc0b78b` 已有 D1–D4 通用能力，再扩展 dialogue；禁止另造容器；桌面/390/320、普通/沉浸、键鼠触控与焦点 | 三尺寸六布局真实像素；滚动/关闭/Escape/外点/快速重复点击；无穿透；录像只读展示不阻塞seek；图片加载失败不影响模拟。无真实手机时明确“触摸未实测” |
 | 2e 收尾与独立性验收 | 四子集、四目录删除矩阵、真实持久/录像/续录、配置手册、报告 | 第12节清单全过；明确仍未提供素材/重联动；同一候选最终门禁后停交维护者，不自动进入阶段3/合main/部署 |
 
 说明：2a0 若发现底座事务/事实队列改造无法安全与UI解耦，可拆 2a0-1（发现/所有权）与2a0-2（通用提交能力），每小步仍完整门禁并停止。不是允许把高风险改动隐藏进纯文档或通过中间绿灯跳过最终候选复验。
@@ -644,15 +646,19 @@ interface PortraitManifest {
 
 ### 12.1 每小步固定门禁
 
-在最终候选树运行并保留退出码、文件/用例数、时长、已知skip/todo：
+在同一最终正常候选树运行 full 档，保留输入 hash、退出码、文件/用例数、时长、已知skip/todo；统一 Node 24.19.0、`NODE_OPTIONS=--max-old-space-size=3072`、测试命令 `--maxWorkers=2`：
 
-1. `npx vue-tsc -b`
-2. `npm run build`
-3. 全部扩展测试，包括底座、所有已安装阶段及适用组合；2a0 已提供 `npm run test:ext` 与共用防漏发现清单。实施报告必须给真实执行结果，不能把仅配置成功称作通过
-4. `npm test`
-5. 涉及地图生成的改动另跑 `npm run test:drift`；确认有意差异后可按原捕获方法重录，报告变化范围、原因与结果，不能把所有漂移称预期
+1. `node scripts/check-module-boundaries.mjs`
+2. `npx vue-tsc -b`
+3. `npm run build`
+4. 全部扩展测试，包括底座、所有已安装阶段及适用组合；2a0 已提供 `npm run test:ext` 与共用防漏发现清单。实施报告必须给真实执行结果，不能把仅配置成功称作通过
+5. 完整 `npm test` 一次
+6. 全部已安装模块子集的真实新局/游玩/save/load/replay/seek/续录 smoke
+7. 涉及地图生成的改动另跑 `npm run test:drift`；确认有意差异后可按原捕获方法重录，报告变化范围、原因与结果，不能把所有漂移称预期
 
-不要求 `ce:fetch`、`test:full` 或强制CE `test:gen`。本轮获准的 2a0 按 [README当前门禁](README.md#当前验收门禁) 统一执行上述类型、构建、全部现有ext和完整npm test；这不表示批准后续叙事实施。本文本身不将待执行检查写成通过。实施每步仍遵守以上四项，不拿单测代替npm test、不用旧候选测试结果冒充新树绿灯。
+2b 起每个**真实删除副本**按第 3 节 removal 档重新跑 boundary、typecheck、build、全部剩余 ext 与全部剩余子集 smoke，不再运行完整 npm test。正常 full 与 removal 结果独立记录，删除前后 hash、owner测试差集及准确命令必须保留；只有模块目录确实删除才能移除其自有测试，不能更改剩余测试清单/筛选来制造通过。单跑 removal 不能代替正常 full。
+
+不要求 `ce:fetch`、`test:full` 或强制CE `test:gen`，不隐藏原有 CE 缓存。当前授权与门禁以 [README当前门禁](README.md#当前验收门禁) 为准，只推进 2b，不授权后续叙事实施。本文不将待执行检查写成通过；不拿定向测试替代正常树完整 npm test、不用旧候选测试结果冒充新树绿灯。2a0/2a1 历史报告保留原命令与结果，不按当前 removal 政策改写。
 
 ### 12.2 核心逻辑与恶意输入
 

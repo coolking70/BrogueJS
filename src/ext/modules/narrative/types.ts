@@ -38,7 +38,7 @@ export interface NpcPlacement {
     readonly maxPerRun: number; readonly maxPerDepth: number; readonly minStairDistance: number;
     readonly maxEntranceDistance: number; readonly onNoSpace: 'skip' | 'defer';
 }
-/** Data-only in 2a1. No placement or world-entity binding is installed by this package. */
+/** Content binding for a stationary, passable foundation interactable. */
 export interface NpcDefinition {
     readonly id: Id; readonly nameKey: TextKey; readonly descriptionKey: TextKey;
     readonly glyph: string; readonly color: string; readonly portraitId: Id | null; readonly dialogueId: Id;
@@ -70,8 +70,8 @@ export interface NarrativeLimits {
     readonly maxJournalEntries: number; readonly maxReceipts: number;
 }
 export interface NarrativePack {
-    readonly schema: 1; readonly moduleId: 'narrative'; readonly moduleVersion: '1.0.0'; readonly rulesVersion: '1.0.0';
-    readonly stateVersion: 1; readonly inputVersion: 1;
+    readonly schema: 1; readonly moduleId: 'narrative'; readonly moduleVersion: '1.1.0'; readonly rulesVersion: '1.1.0';
+    readonly stateVersion: 2; readonly inputVersion: 2;
     readonly config: { readonly timePolicy: 'free-frozen'; readonly closePolicy: 'close-session'; readonly limits: NarrativeLimits };
     readonly flags: readonly FlagDefinition[]; readonly counters: readonly CounterDefinition[];
     readonly npcs: readonly NpcDefinition[]; readonly dialogues: readonly DialogueDefinition[];

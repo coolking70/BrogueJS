@@ -101,6 +101,123 @@ describe('P1-30 模块包本地化引用：有限数据与错误词汇，不豁�
         });
     });
 
+    it('Vue script、相邻插值和条件属性逐个扫描，注释与普通属性不冒充调用', () => {
+        withPack((root, moduleDir) => {
+            writeFileSync(join(moduleDir, 'Panel.vue'), [
+                '<script setup lang="ts">',
+                'import { useTranslation } from "i18next-vue";',
+                'const { t } = useTranslation();',
+                'const label = t("ext.fixture.ui.script");',
+                'const props = defineProps<{ error: "ext.fixture.ui.rejected" | null }>();',
+                '</script>',
+                '<template>',
+                '<!-- {{ $t("ext.fixture.ui.UNUSED") }} -->',
+                `<p title="$t('ext.fixture.ui.UNUSED')">`,
+                '  {{ t("ext.fixture.ui.first") }}</p><p>{{ $t("ext.fixture.ui.second") }} · {{ $t("ext.fixture.ui.open") }}',
+                `</p><button :title="true ? $t('ext.fixture.ui.title') : undefined">`,
+                '{{ $t("ext.fixture.ui.button") }}</button>',
+                '<p v-if="error">{{ $t(error) }}</p>',
+                '</template>',
+            ].join('\n'));
+            const keys = ['script', 'rejected', 'first', 'second', 'open', 'title', 'button'].map(key => `ext.fixture.ui.${key}`);
+            const result = scanI18nUsage(root, { ...resource, ...Object.fromEntries([...keys, 'ext.fixture.ui.UNUSED'].map(key => [key, '文案'])) });
+            expect(result.unresolved).toEqual([]);
+            expect(result.missing).toEqual([]);
+            expect(result.prefixes.size).toBe(0);
+            expect(keys.every(key => result.literals.has(key))).toBe(true);
+            expect(result.unreferenced).toEqual(['ext.fixture.error.UNUSED', 'ext.fixture.ui.UNUSED']);
+            expect(result.literals.get('ext.fixture.ui.open')).toMatchObject([{ file: 'ext/modules/fixture/Panel.vue', line: 10 }]);
+            expect(result.literals.get('ext.fixture.ui.title')).toMatchObject([{ file: 'ext/modules/fixture/Panel.vue', line: 11 }]);
+        });
+    });
+
+    it('动态模块字段仅取实际 data JSON 词汇，投影别名需有真实转发', () => {
+        withPack((root, moduleDir) => {
+            writeFileSync(join(moduleDir, 'consumer.ts'), [
+                'const project = npc => ({ speakerNameKey: npc.nameKey });',
+                'function publish(message) { i18next.t(message.textKey); }',
+            ].join('\n'));
+            writeFileSync(join(moduleDir, 'Panel.vue'), [
+                '<template><p>{{ $t(model.active.speakerNameKey) }} {{ $t(model.active.textKey) }}</p>',
+                '<button :title="choice.unavailableKey ? $t(choice.unavailableKey) : undefined">{{ $t(choice.textKey) }}</button>',
+                '<span :title="$t(target.descriptionKey)">{{ $t(target.nameKey) }}</span></template>',
+            ].join('\n'));
+            const result = scanI18nUsage(root, resource);
+            expect(result.unresolved).toEqual([]);
+            expect(result.missing).toEqual([]);
+            expect(result.prefixes.size).toBe(0);
+            expect(result.unreferenced).toEqual(['ext.fixture.error.UNUSED']);
+            expect(result.literals.get('ext.fixture.data.nameKey')?.map(loc => loc.file)).toContain('ext/modules/fixture/Panel.vue');
+            expect(result.literals.get('ext.fixture.data.textKey')?.map(loc => loc.file)).toContain('ext/modules/fixture/consumer.ts');
+            // Removing the source data must revoke the dynamic vocabulary even
+            // though the consumer, projection and locale still exist.
+            rmSync(join(moduleDir, 'data'), { recursive: true });
+            const withoutData = scanI18nUsage(root, resource);
+            expect(withoutData.unresolved).toHaveLength(7);
+            expect(dataFields.every(field => withoutData.unreferenced.includes(`ext.fixture.data.${field}`))).toBe(true);
+        });
+    });
+
+    it('动态字段不能借用其它模块、未证实别名或任意表达式的词汇', () => {
+        withPack((root, moduleDir) => {
+            writeFileSync(join(moduleDir, 'consumer.ts'), [
+                'i18next.t(model.unknownKey);',
+                'i18next.t(model.unprovenNameKey);',
+                'i18next.t(loadTextKey());',
+                'i18next.t(model["textKey"]);',
+            ].join('\n'));
+            const foreign = join(root, 'ext', 'modules', 'foreign');
+            mkdirSync(foreign, { recursive: true });
+            writeFileSync(join(foreign, 'descriptor.ts'), 'export {};');
+            writeFileSync(join(foreign, 'consumer.ts'), 'i18next.t(message.textKey);');
+            writeFileSync(join(root, 'outside.ts'), 'i18next.t(message.textKey);');
+            const result = scanI18nUsage(root, resource);
+            expect(result.unresolved).toHaveLength(6);
+            expect(result.prefixes.size).toBe(0);
+            expect(result.unreferenced).toEqual(['ext.fixture.error.UNUSED']);
+        });
+    });
+
+    it('新增数据键、属性末尾调用与有限 prop 缺失均亮红，同组死键仍亮红', () => {
+        withPack((root, moduleDir) => {
+            writeFileSync(join(moduleDir, 'data', 'injected.json'), JSON.stringify({ textKey: 'ext.fixture.data.MISSING' }));
+            writeFileSync(join(moduleDir, 'projection.ts'), [
+                'const broken = { nameKey: "ext.fixture.data.MISSING_SOURCE" };',
+                'const view = { unavailableKey: flag ? "ext.fixture.data.MISSING_FALLBACK" : choice.unavailableKey };',
+            ].join('\n'));
+            writeFileSync(join(moduleDir, 'Panel.vue'), [
+                '<script setup lang="ts">',
+                'defineProps<{ error: "ext.fixture.ui.MISSING_PROP" | null }>();',
+                '</script>',
+                `<template><p>{{ $t(row.textKey) }}</p><button :title="ready && $t('ext.fixture.ui.MISSING_ATTRIBUTE')">`,
+                '{{ $t("ext.fixture.static") }} · {{ $t("ext.fixture.ui.MISSING_LAST") }}</button><p v-if="error">{{ $t(error) }}</p></template>',
+            ].join('\n'));
+            const result = scanI18nUsage(root, { ...resource, 'ext.fixture.ui.UNUSED': '死键' });
+            expect(result.unresolved).toEqual([]);
+            expect(result.missing.map(entry => entry.key).sort()).toEqual([
+                'ext.fixture.data.MISSING', 'ext.fixture.data.MISSING_FALLBACK', 'ext.fixture.data.MISSING_SOURCE', 'ext.fixture.ui.MISSING_ATTRIBUTE', 'ext.fixture.ui.MISSING_LAST', 'ext.fixture.ui.MISSING_PROP',
+            ]);
+            expect(result.unreferenced).toEqual(['ext.fixture.error.UNUSED', 'ext.fixture.ui.UNUSED']);
+            expect(result.prefixes.size).toBe(0);
+        });
+    });
+
+    it('开放 string prop 与 script 局部参数仍拒绝，未消费的有限 prop 不算引用', () => {
+        withPack((root, moduleDir) => {
+            writeFileSync(join(moduleDir, 'Panel.vue'), [
+                '<script setup lang="ts">',
+                'defineProps<{ finite: "ext.fixture.ui.finite" | null; open: string | null; unused: "ext.fixture.ui.unused" }>();',
+                'function display(finite: string) { i18next.t(finite); }',
+                '</script>',
+                '<template><p v-if="finite">{{ $t(finite) }}</p><p v-if="open">{{ $t(open) }}</p></template>',
+            ].join('\n'));
+            const result = scanI18nUsage(root, { ...resource, 'ext.fixture.ui.finite': '文案', 'ext.fixture.ui.unused': '死键' });
+            expect(result.unresolved).toHaveLength(2);
+            expect(result.literals.has('ext.fixture.ui.finite')).toBe(true);
+            expect(result.unreferenced).toEqual(['ext.fixture.error.UNUSED', 'ext.fixture.ui.unused']);
+        });
+    });
+
     it('数据引用及有限模板缺失资源均亮红，不能由同前缀其它翻译掩盖', () => {
         withPack(root => {
             const missing = ['ext.fixture.data.altKey', 'ext.fixture.error.B'];
@@ -144,6 +261,8 @@ describe('P1-30 模块包本地化引用：有限数据与错误词汇，不豁�
 
     it('删除模块后数据及错误词汇均自然移除，不留硬导入或测试引用', () => {
         withPack((root, moduleDir) => {
+            writeFileSync(join(moduleDir, 'consumer.ts'), 'i18next.t(message.textKey);');
+            expect(scanI18nUsage(root, resource).unresolved).toEqual([]);
             rmSync(moduleDir, { recursive: true });
             const result = scanI18nUsage(root, {});
             expect(result.filesScanned).toEqual([]);

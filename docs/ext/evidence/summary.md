@@ -467,3 +467,19 @@ QA_BUILD_BYTES_UNCHANGED=true
 ```
 
 每组完整npm test均为8个原有skip与5个原有todo；没有新增skip/todo，没有FATAL/OOM/未处理错误或worker异常。保留Vite大chunk/npm代理配置提示。无fetch/full/gen/drift。engine-only不冒充浏览器，Mac同字节四构建小QA与明确限制见报告；原始日志、完整散列、隔离副本与截图不提交。
+
+
+## 阶段2b：通用交互实体与开口
+
+2026-10-03第三冻结树（21:08–22:03 UTC），Node24.19/3072MiB/2workers，源输入hash `5be0e4d066b168778a28840ccd4bfa70dd5382f453b6590915390ad72994129c`（2053文件），正常及各删除副本前后同字节。
+
+- `npx vue-tsc -b` / `npm run build` / `node scripts/check-module-boundaries.mjs`：exit0
+- `npm run test:ext -- --maxWorkers=2`：Test Files 59 passed (59)；Tests 1156 passed (1156)；Duration272.90s；exit0
+- `npm test -- --maxWorkers=2`：Test Files 304 passed (304)；Tests 5575 passed | 8 skipped | 5 todo (5588)；Duration2126.60s；exit0
+- `node scripts/check-module-removal.mjs --profile=removal --engine-only --maxWorkers=2 --output=…`：exit0。真删narrative/growth/两者；各自boundary/type/build/ext/smoke全过，ext分别54文件1007项 / 29文件608项 / 24文件462项；删除副本不跑完整npm test
+- 正常4加删除2/2/1，共9组engine new/play/save/load/replay/seek/续录与missing-module拒绝通过；重建84份dist与QA包一致。engine-only保持浏览器未验证标记
+- 无ce:fetch/full/gen；生成后非阻挡放置，无地图生成修改，不跑drift、不重录。首树type exit2（Array.at与当前ES lib）；次树ext exit1（1147项过、1套件纯descriptor提前触发window）；均真实保留，修复后第三树完整复跑
+- 初轮Mac连接失败后，同一任务恢复完成同字节静态QA，最终 `passed_with_tool_coverage_limits`，无产品阻塞；包与84份dist逐项前后hash通过。自然NPC/零时间冻结、活动对话存读、只读回放/续录、三尺寸和9组合真实UI链路通过；active-save页内夹具辅助验证另列，不冒称界面操作
+- 真正按住方向跨关闭、真实touch、路由中断未覆盖；DPR未记录，IAB调用长延迟单列。9张截图仅Mac本地。临时状态、viewport、4tab及5个本次服务清理确认，生产树未改；远程发布另行验证。实现、门禁细表、前两失败候选、浏览器类别与限制见[2b报告](../phase2b.report.md)。日志/截图等原始证据不提交
+
+收尾新文件 staged diff 检查另有一条格式警告（exit2）：`narrative_ui.test.ts:221` 末尾多一空行。保留冻结测试字节并如实登记；LF/无冲突标记/无大证据检查通过，不将格式检查记为通过。

@@ -57,6 +57,8 @@
     "src/test/ext_optional_queries.test.ts",
     "src/test/ext_slaying_alignment.test.ts",
     "src/test/ext_validation.test.ts",
+    "src/test/ext_world_display.test.ts",
+    "src/test/ext_world_interactables.test.ts",
     "src/test/f_1_fire_as_terrain.test.ts",
     "src/test/f_2a_fire_mechanics.test.ts",
     "src/test/f_2b_creature_burning.test.ts",

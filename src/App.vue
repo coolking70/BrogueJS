@@ -123,7 +123,9 @@ const gameStarted = ref(false);
 const menuOpen = ref(true);
 const moduleUi = useModuleUi({
   game: () => activeGame, tick: replayTick, immersive: computed(() => displaySettings.immersiveMode),
-  canOpenPanel: () => !(creationTransition.value || menuOpen.value || activeGame.isInventoryOpen || activeGame.isThrowing || activeGame.pendingArcana
+  registerKeyHandler: (handler, priority) => inputManager.registerModalKeyHandler(handler, priority),
+  cancelHeldKeys: () => inputManager.cancelHeldKeys(),
+  canOpenPanel: () => !(activeGame.interactionActive || creationTransition.value || menuOpen.value || activeGame.isInventoryOpen || activeGame.isThrowing || activeGame.pendingArcana
     || activeGame.pendingEnchantment || activeGame.pendingIdentify || activeGame.pendingUseConfirm
     || logger.pendingAcknowledgment || activeGame.referenceScreen || activeGame.isGameOver
     || activeGame.isAdvancing || activeGame.isInputLocked()),

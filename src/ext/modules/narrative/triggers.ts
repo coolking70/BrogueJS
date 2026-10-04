@@ -2,7 +2,7 @@ import { NarrativeError } from './errors';
 import { assertLoadedNarrativePack } from './schema';
 import type { NarrativeFact } from './conditions';
 import type { NarrativePack, Trigger } from './types';
-import type { NarrativeState, TriggerReceipt } from './state';
+import { narrativeReceiptCount, type NarrativeState, type TriggerReceipt } from './state';
 
 export function narrativeTriggerMatches(trigger: Trigger, fact: NarrativeFact): boolean {
     const on = trigger.on;
@@ -41,7 +41,7 @@ export function recordNarrativeTrigger(state: NarrativeState, pack: NarrativePac
         existing.lastFactId = fact.factId;
         return;
     }
-    if (state.triggerReceipts.length + state.rewardReceipts.length >= pack.config.limits.maxReceipts) throw new NarrativeError('RECEIPT_LIMIT', '$state.triggerReceipts');
+    if (narrativeReceiptCount(state) >= pack.config.limits.maxReceipts) throw new NarrativeError('RECEIPT_LIMIT', '$state.triggerReceipts');
     const receipt: TriggerReceipt = { triggerId: trigger.id, scopeKey, firings: 1, lastTurn: fact.turn, lastFactId: fact.factId };
     state.triggerReceipts.push(receipt);
     state.triggerReceipts.sort((a, b) => {

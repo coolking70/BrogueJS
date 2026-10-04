@@ -1,6 +1,6 @@
 {
   "ext.narrative.npc.keeper.name": "档案守卫",
-  "ext.narrative.npc.keeper.description": "一位守着残页的旅人。",
+  "ext.narrative.npc.keeper.description": "一位守着残页的旅人。可穿行，不参与战斗。",
   "ext.narrative.dialogue.keeper.hello": "这张残页记着旧通道的位置。",
   "ext.narrative.choice.read": "阅读残页",
   "ext.narrative.choice.already_read": "已经读过这张残页",
@@ -8,8 +8,8 @@
   "ext.narrative.journal.note.title": "旧通道的线索",
   "ext.narrative.journal.note.body": "守卫让我读到一条旧通道的线索。",
   "ext.narrative.portrait.keeper": "档案守卫立绘占位",
-  "ext.narrative.module.name": "叙事内核",
-  "ext.narrative.module.description": "2a1：独立叙事数据与纯执行计划，尚未接入世界NPC交互。",
+  "ext.narrative.module.name": "叙事交互",
+  "ext.narrative.module.description": "2b：中立驻点NPC与免费冻结对话，正式对话界面尚未接入。",
   "ext.narrative.error.INVALID_JSON": "数据不是安全JSON",
   "ext.narrative.error.UNKNOWN_KEY": "包含未声明字段",
   "ext.narrative.error.INVALID_TYPE": "字段类型错误",
@@ -44,5 +44,10 @@
   "ext.narrative.error.REWARD_COMMIT_REQUIRED": "奖励意图尚未提交",
   "ext.narrative.error.INVALID_CHOICE": "选项不合法",
   "ext.narrative.error.CONDITION_UNAVAILABLE": "选项条件不满足",
-  "ext.narrative.error.INVALID_TRIGGER": "触发器不合法"
+  "ext.narrative.error.INVALID_TRIGGER": "触发器不合法",
+  "ext.narrative.ui.nearby": "附近的人",
+  "ext.narrative.ui.open": "交谈",
+  "ext.narrative.ui.close": "结束交谈",
+  "ext.narrative.ui.read_only": "录像回放中",
+  "ext.narrative.ui.command_rejected": "交谈状态已变化，请重试"
 }

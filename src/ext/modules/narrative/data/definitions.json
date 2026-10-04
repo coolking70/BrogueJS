@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "moduleId": "narrative",
-  "moduleVersion": "1.0.0",
-  "rulesVersion": "1.0.0",
-  "stateVersion": 1,
-  "inputVersion": 1,
+  "moduleVersion": "1.1.0",
+  "rulesVersion": "1.1.0",
+  "stateVersion": 2,
+  "inputVersion": 2,
   "config": {
     "timePolicy": "free-frozen",
     "closePolicy": "close-session",

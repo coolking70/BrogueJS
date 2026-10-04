@@ -1,3 +1,4 @@
+import type { WorldInteractable, WorldInteractablePlacement, WorldInteractablePlacementResult, WorldInteractionSnapshot, WorldInteractionValidation, ExtensionProjectionContext } from './world';
 import type { Creature } from '../entities/Creature';
 import type { AttackResult } from '../engine/Combat/Combat';
 import type { Item } from '../engine/Items/Item';
@@ -23,13 +24,13 @@ export interface ExtensionModuleView {
 }
 export interface ExtensionRulesIdentity { schema: number; version: string; fingerprint: string }
 export interface ExtensionVersion { id: string; version: string; rules?: ExtensionRulesIdentity }
-export interface ExtensionManifest { schema: 1; foundation?: 1; modules: ExtensionVersion[] }
+export interface ExtensionManifest { schema: 1; foundation?: 2; modules: ExtensionVersion[] }
 export interface ExtensionSnapshot {
     manifest: ExtensionManifest;
     modules: Record<string, Json>;
     /** Run-local creature ID -> module-qualified component ID -> JSON. */
     components: Record<string, Record<string, Json>>;
-    foundation: { version: 1; causality: CausalitySnapshot; deaths: Record<string, DeathFact> };
+    foundation: { version: 2; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
 }
 export interface DeathFact { creature: CreatureView; origin: EffectOrigin | null; administrative: boolean; }
 export interface GenerationToken { readonly label: string; }
@@ -110,6 +111,8 @@ export interface ControlledActionCallbacks {
     afterResolve(result: Readonly<ControlledActionResult>, context: ExtensionContext): void;
 }
 export interface HookEvents {
+    interactionClosed: { owner: string; targetEntityId: number; sessionId: number; reason: 'game-over' | 'target-removed' };
+    interactablesRemoved: { owner: string; entityIds: number[] };
     actorObserved: { actor: ActorFacts };
     objectiveTime: { ticks: number; mode: 'realtime'; actorIds: number[] };
     committedAction: { actorId: number; action: 'attack' | 'throw' | 'cast' | 'move' | 'wait' | 'search' };
@@ -139,6 +142,11 @@ export type HookName = keyof HookEvents;
 export interface ExtensionContext {
     readonly moduleId: string;
     readonly depth: number;
+    readonly turn: number;
+    interactables(): readonly WorldInteractable[];
+    interactionTarget(id: number): WorldInteractable | null;
+    placeInteractables(requests: readonly WorldInteractablePlacement[]): readonly WorldInteractablePlacementResult[];
+    interactionGate(active: { targetEntityId: number; sessionId: number } | null): void;
     readonly playerId: number;
     readonly state: Json;
     /** Pure recognition of a selected module's declared creation command.
@@ -168,6 +176,9 @@ export interface ExtensionModule extends ExtensionVersion {
     dependencies?: readonly string[];
     readonly optionalQueries?: Readonly<Record<string, OptionalQueryProvider>>;
     readonly view?: ExtensionViewDescriptor;
+    readonly worldInteractables?: true;
+    readonly interactionCommands?: readonly string[];
+    projectView?(context: ExtensionProjectionContext): Json;
     /** Pure projection receives only a detached selected player component, never a world/context capability. */
     projectPlayerComponent?(name: string, value: ReadonlyJson): Json;
     initialState(): Json;
@@ -190,7 +201,7 @@ export interface ExtensionModule extends ExtensionVersion {
     creditParty?(actor: ActorFacts, context: ExtensionContext): string | null;
     validateComponents?(state: Json, components: ExtensionSnapshot['components'], foundation: ExtensionSnapshot['foundation']): boolean;
     validateRecording?(events: readonly { action: string; data: unknown; extensions?: ExtensionSnapshot }[]): boolean;
-    validateWorld?(state: Json, components: ExtensionSnapshot['components'], actors: readonly ActorFacts[]): boolean;
+    validateWorld?(state: Json, components: ExtensionSnapshot['components'], actors: readonly ActorFacts[], world: WorldInteractionValidation): boolean;
     commands?: Record<string, (payload: Json, context: ExtensionContext) => void>;
 }
 /** Session-only wiring. Never serialized as part of a creature. */
@@ -214,3 +225,5 @@ export function creatureView(creature: Creature, playerId: number): CreatureView
 export function itemView(item: Item): ItemView {
     return Object.freeze({ id: item.id, category: item.category, quantity: item.quantity });
 }
+
+export type { WorldInteractable, WorldInteractablePlacement, WorldInteractablePlacementResult, WorldInteractableView, WorldInteractionSnapshot, WorldInteractionValidation, ExtensionProjectionContext } from './world';

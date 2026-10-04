@@ -2,7 +2,9 @@
   "test": [
     "tests/narrative_schema.test.ts",
     "tests/narrative_kernel.test.ts",
-    "tests/narrative_runtime.test.ts"
+    "tests/narrative_runtime.test.ts",
+    "tests/narrative_sessions.test.ts",
+    "tests/narrative_ui.test.ts"
   ],
   "gen": [],
   "drift": []

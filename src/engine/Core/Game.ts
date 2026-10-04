@@ -1,3 +1,5 @@
+import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
+import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
 import { DISPLAY_FRAME_MS, stepCadence } from '../UI/ActionCadence';
 import { staffHealingPercent, staffHasteDuration, staffDiscordDuration, armorStealthAdjustment, ringStealthAdjustment, ringAwarenessBonus, ringClairvoyanceRadius } from '../Items/ItemEffectFormulas';
 import { emitCreatureFeature } from '../Combat/CreatureFeatures';
@@ -335,8 +337,13 @@ export class Game {
     private createExtensionRuntime(manifest: ExtensionManifest, snapshot?: ExtensionSnapshot): ExtensionRuntime {
         return new ExtensionRuntime(createExtensionRegistry(), manifest, {
             depth: () => this.depth,
+            turn: () => this.absoluteTurnNumber,
+            interactableCandidates: request => interactablePlacementCells(this.grid, this.player.loc,
+                [this.player, ...this.monsters, ...this.dormantMonsters, ...this.items].map(entity => entity.loc), request),
+            isInteractableVisible: entity => entity.depth === this.depth && !!this.grid.getCell(entity.x,entity.y)?.isVisible,
+            canInteractWith: entity => this.canInteractWith(entity),
             playerId: () => this.player.id,
-            canManageCharacter: () => !this.isGameOver && this.player.hp > 0 && !this.player.hasStatus('paralyzed')
+            canManageCharacter: () => !this.interactionActive && !this.isGameOver && this.player.hp > 0 && !this.player.hasStatus('paralyzed')
                 && !this.isAdvancing && !this.isInputLocked() && !logger.pendingAcknowledgment && !this.pendingIdentify
                 && !this.pendingEnchantment && !this.pendingArcana && !this.throwItemTarget && !this.pendingUseConfirm,
             validateAction: request => this.validateControlledAction(request),
@@ -359,6 +366,33 @@ export class Game {
                     .sort((a, b) => a.id.localeCompare(b.id));
             },
         }, snapshot);
+    }
+
+    /** Pure public world projection, filtered by actual ordinary visibility. */
+    public readVisibleInteractables(): readonly WorldInteractableView[] {
+        return this.extensionRuntime?.visibleInteractables() ?? [];
+    }
+    public get interactionActive(): boolean { return this.extensionRuntime?.interactionActive ?? false; }
+    private stableInteractionVisibility(entity: WorldInteractable): boolean {
+        const cell = this.grid.getCell(entity.x,entity.y);
+        if (!cell?.isVisible) return false;
+        if (!this.flareLightMap && !this.activeFlares?.length) return true;
+        // Commands clear transient flare frames before dispatch. Never accept an
+        // open from frame-only light and then fail after that display cleanup.
+        if (this.lightMap.lightSumAt(entity.x,entity.y) > VISIBILITY_THRESHOLD) return true;
+        const clairvoyance = ringBonus(this.player.rings(), 'ring_of_clairvoyance');
+        const radius = ringClairvoyanceRadius(clairvoyance), dx = entity.x-this.player.x, dy = entity.y-this.player.y;
+        return clairvoyance > 0 && dx*dx+dy*dy < radius*radius+radius
+            && (cell.layers[DungeonLayer.DUNGEON] !== TerrainType.GRANITE || cell.isExplored);
+    }
+    private canInteractWith(entity: WorldInteractable): boolean {
+        return entity.depth === this.depth && !this.isGameOver && this.player.hp > 0 && !this.player.hasStatus('paralyzed')
+            && !this.isAdvancing && !this.isInputLocked() && !logger.pendingAcknowledgment
+            && !this.pendingIdentify && !this.pendingEnchantment && !this.pendingArcana && !this.pendingUseConfirm
+            && !this.isInventoryOpen && !this.isThrowing && !this.throwItemTarget && !this.referenceScreen
+            && this.stableInteractionVisibility(entity)
+            && Math.max(Math.abs(entity.x-this.player.x), Math.abs(entity.y-this.player.y)) <= entity.interactionDistance
+            && hasInteractionLine(this.grid,this.player.loc,entity);
     }
 
     /** Select session adapters once; classic calls retain the original method bodies. */
@@ -2969,6 +3003,7 @@ export class Game {
             ...[...this.levels.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]),
             ...[...this.pendingFallenByDepth.values()].flat()];
         const reachable = [this.player, ...collectEntityGraph(roots).monsters];
+        this.extensionRuntime.collectWorld([this.depth, ...this.levels.keys()], this.isGameOver);
         this.extensionRuntime.settle(reachable);
         this.extensionRuntime.collectComponents(reachable);
     }
@@ -2990,7 +3025,9 @@ export class Game {
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
         if (this.replayRecording || this.isAdvancing || this.isInputLocked() || logger.pendingAcknowledgment) return;
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data)) {
-            logger.log(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }), '#ff6666');
+            const disturbed = this.disturbed;
+            try { logger.log(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }), '#ff6666'); }
+            finally { this.disturbed = disturbed; }
             return;
         }
         const decisions: boolean[] = [];
@@ -3125,7 +3162,12 @@ export class Game {
         if (r.extensions !== undefined) {
             try {
                 const runtime = this.createExtensionRuntime(r.extensions);
-                for (const event of r.events ?? []) runtime.validateSnapshot(event.extensions!);
+                for (const event of r.events ?? []) {
+                    runtime.validateSnapshot(event.extensions!);
+                    const world = event.extensions!.foundation.world;
+                    if (world.gate && (event.end || !world.entities.some(entity => entity.id === world.gate!.targetEntityId && entity.depth === event.depth)))
+                        throw new Error('Invalid recording interaction gate');
+                }
                 if (!runtime.validateRecording(r.events ?? [])) return false;
             } catch (error) { onExtensionError?.(error); return false; }
         } else if (r.events?.some(event => event?.extensions !== undefined || event?.action === 'ext:command')) return false;
@@ -3344,7 +3386,7 @@ export class Game {
             || !Number.isSafeInteger(request.actorId) || request.actorId !== this.player.id
             || !['attack', 'move', 'wait', 'search'].includes(request.action)
             || !request.target || typeof request.target !== 'object'
-            || this.isGameOver || this.player.hp <= 0 || this.player.hasStatus('paralyzed')
+            || this.interactionActive || this.isGameOver || this.player.hp <= 0 || this.player.hasStatus('paralyzed')
             || this.isAdvancing || this.isInputLocked() || logger.pendingAcknowledgment
             || this.pendingIdentify || this.pendingEnchantment || this.pendingArcana || this.pendingUseConfirm
             || this.isInventoryOpen || this.isThrowing || this.throwItemTarget || this.referenceScreen) return false;
@@ -3408,6 +3450,7 @@ export class Game {
     }
 
     private performPlayerAction(action: string, data?: unknown, source: 'player' | 'system' = 'system', control?: ControlledPlayerAction) {
+        if (this.interactionActive) return;
         if (action === 'discoveries' || action === 'help') {
             this.referenceScreen = this.referenceScreen === action ? null : action;
             return;
@@ -4004,6 +4047,7 @@ export class Game {
     /** CE equip() rejects repeated commands; internal equipItem() can refresh
      * weapon/armor state (Items.c:4005-4008 vs 8538-8561). */
     public equipItem(item: Item, replacement?: Item | null, fromCommand = false) {
+        if (this.interactionActive) return;
         const equipped = [this.player.equippedWeapon, this.player.equippedArmor, this.player.ringLeft, this.player.ringRight]
             .some(slot => slot?.id === item.id);
         if (equipped && (fromCommand || item.category === ItemCategory.RING)) {
@@ -4065,6 +4109,7 @@ export class Game {
 
     /** Internal equip/drop/throw removal shares the gate but spends no extra turn. */
     public unequipItem(item: Item, endTurn = true, cursedMessage?: string): boolean {
+        if (this.interactionActive) return false;
         const equipped = [this.player.equippedWeapon, this.player.equippedArmor, this.player.ringLeft, this.player.ringRight]
             .some(slot => slot?.id === item.id);
         if (!equipped) {
@@ -4098,6 +4143,7 @@ export class Game {
     }
 
     public dropItem(item: Item) {
+        if (this.interactionActive) return;
         if (this.player.inventory.items.includes(item)) {
             const equipped = [this.player.equippedWeapon, this.player.equippedArmor, this.player.ringLeft, this.player.ringRight]
                 .some(slot => slot?.id === item.id);
@@ -4182,6 +4228,7 @@ export class Game {
 
     /** 玩家点"确认"：重入使用路径（CE confirm() 返回 true 后继续原函数）。 */
     public confirmPendingUse(): boolean {
+        if (this.interactionActive) return false;
         const target = this.pendingUseConfirm;
         if (!target) return false;
         this.pendingUseConfirm = null;
@@ -4195,6 +4242,7 @@ export class Game {
 
     /** 玩家点"取消"：CE `return false`——不消耗物品、不推进回合。 */
     public cancelPendingUse(): void {
+        if (this.interactionActive) return;
         this.pendingUseConfirm = null;
     }
 
@@ -4270,6 +4318,7 @@ export class Game {
     }
 
     public quaffItem(item: Item, confirmed: boolean = false) {
+        if (this.interactionActive) return;
         if (item.category !== ItemCategory.POTION) return;
         // B-1c：CE Items.c:8050-8060——恶意且玩家已知时先 confirm，取消即
         // `return false`（不消耗药水、不推进回合）。
@@ -4464,6 +4513,7 @@ export class Game {
     }
 
     public eatItem(item: Item): void {
+        if (this.interactionActive) return;
         if (this.isInputLocked() || this.isGameOver || this.player.hp <= 0
             || this.player.hasStatus('paralyzed')) return;
         if (!this.consumeFood(item, true)) return;
@@ -4497,6 +4547,7 @@ export class Game {
     }
 
     public readItem(item: Item, confirmed: boolean = false) {
+        if (this.interactionActive) return;
         if (this.pendingEnchantment) return;
         if (item.category !== ItemCategory.SCROLL) return;
         if (!this.player.inventory.items.includes(item)) return;
@@ -4662,6 +4713,7 @@ export class Game {
     }
 
     public useArcanaItem(item: Item) {
+        if (this.interactionActive) return;
         if (this.isInputLocked() || this.isGameOver || this.player.hp <= 0 || this.player.hasStatus('paralyzed')
             || this.pendingIdentify || this.pendingEnchantment || this.pendingArcana || !this.player.inventory.items.includes(item)) return;
         if (
@@ -4726,6 +4778,7 @@ export class Game {
     }
 
     public setArcanaTarget(x: number, y: number): boolean {
+        if (this.interactionActive) return false;
         if (!this.pendingArcana || this.isInputLocked() || !Number.isInteger(x) || !Number.isInteger(y)
             || !this.grid.isValidPos(x, y)) return false;
         this.pendingArcana.cursor = { x, y };
@@ -4734,6 +4787,7 @@ export class Game {
     }
 
     public cycleArcanaTarget(reverse = false) {
+        if (this.interactionActive) return;
         const pending = this.pendingArcana;
         if (!pending || this.isInputLocked()) return;
         const candidates = this.getArcanaCandidates(pending.item);
@@ -4745,6 +4799,7 @@ export class Game {
     }
 
     public cancelArcanaSelection() {
+        if (this.interactionActive) return;
         this.pendingArcana = null;
         this.needsRender = true;
     }
@@ -4752,6 +4807,7 @@ export class Game {
     /** CE Items.c:7368-7440: choose -> resolve/autoID -> spend existing charge
      * -> one movement-speed turn. Initial charges and recharge remain W-5/W-6. */
     public confirmArcanaTarget(): BoltResult | null {
+        if (this.interactionActive) return null;
         const pending = this.pendingArcana;
         if (!pending || this.isInputLocked()) return null;
         const { item, cursor } = pending;
@@ -4801,6 +4857,7 @@ export class Game {
     /** Execute an explicit aim. Direct engine callers can retain the candidate/
      * last-direction fallback; inventory use always goes through confirmation. */
     public zapBoltFromPlayer(bolt: BoltConfig, item: Item, aim?: Pos): BoltResult {
+        if (this.interactionActive) throw new Error('Player action blocked by interaction gate');
         this.bindDungeonFeatureEffects();
         const first = aim ? undefined : this.getArcanaCandidates(item)[0];
         const dir = this.directionToVec(this.player.lastMoveDirection ?? Direction.RIGHT);
@@ -5959,6 +6016,7 @@ export class Game {
      * （CE 在读卷轴的同一回合内同步完成）。
      */
     public chooseIdentifyTarget(item: Item): boolean {
+        if (this.interactionActive) return false;
         if (!this.pendingIdentify) return false;
         if (!canIdentifyChosenItem(this.player, item)) return false;
         this.pendingIdentify = false;
@@ -5987,6 +6045,7 @@ export class Game {
     }
 
     public inscribeItem(item: Item, text: string): boolean {
+        if (this.interactionActive) return false;
         if (!this.player.inventory.items.includes(item) || !['inscribe', 'choice'].includes(this.itemCallMode(item) ?? '')) return false;
         // CE getInputTextString: at most 29 characters, no control characters.
         item.inscription = Array.from(text.replace(/[\u0000-\u001f\u007f]/g, '')).slice(0, 29).join('');
@@ -5998,6 +6057,7 @@ export class Game {
 
     /** CE Items.c:7176-7233: occupied letters swap, with zero turn/RNG cost. */
     public relabelItem(item: Item, label: string): boolean {
+        if (this.interactionActive) return false;
         if (!this.player.inventory.items.includes(item) || !item.inventoryLetter) return false;
         const letter = label.toLowerCase();
         if (!/^[a-z]$/.test(letter)) return false;
@@ -6021,6 +6081,7 @@ export class Game {
 
     /** Name an unidentified kind; inscribeItem names only the selected instance. */
     public callItem(item: Item, title: string): boolean {
+        if (this.interactionActive) return false;
         const kindId = ((item as any).consumableId ?? (item as any).identityId) as string | undefined;
         const hasKindTable = item.category === ItemCategory.POTION || item.category === ItemCategory.SCROLL
             || item.category === ItemCategory.WAND || item.category === ItemCategory.STAFF
@@ -6055,6 +6116,7 @@ export class Game {
     }
 
     public chooseEnchantTarget(item: Item): boolean {
+        if (this.interactionActive) return false;
         if (!this.pendingEnchantment || this.isInputLocked() || this.isGameOver
             || this.player.hp <= 0) return false;
         if (!this.canEnchantTarget(item)) {
@@ -6493,6 +6555,7 @@ export class Game {
     }
 
     public enterThrowMode(item: Item) {
+        if (this.interactionActive) return;
         this.isThrowing = true;
         this.throwItemTarget = item;
         logger.log(i18next.t('throw.select_target', { name: item.displayName, defaultValue: `Select a target to throw the ${item.displayName}.` }), '#ffffff');
@@ -6584,6 +6647,7 @@ export class Game {
     }
 
     public throwItemAt(item: Item, tx: number, ty: number) {
+        if (this.interactionActive) return;
         this.isThrowing = false;
         this.throwItemTarget = null;
 
@@ -9113,7 +9177,7 @@ export class Game {
     }
 
     private playerTurnEnded() {
-        if (this.isGameOver) return;
+        if (this.isGameOver || this.interactionActive) return;
         return playerTurnEnded(this.timePorts());
     }
 
@@ -9169,6 +9233,7 @@ export class Game {
      * 保证两条路径的调度语义永不漂移）。
      */
     private *advancementLoop(stealthRange: number): Generator<number, void, void> {
+        if (this.interactionActive) return;
         return yield* advancementLoop(this.timePorts(), stealthRange);
     }
 
@@ -9198,12 +9263,14 @@ export class Game {
      *   普通跨梯跟随接入块尾。
      */
     private objectiveTimeBlock(): void {
+        if (this.interactionActive) return;
         return objectiveTimeBlock(this.timePorts());
     }
 
     /** CE Time.updateEnvironment. No player/monster status tick, regeneration,
      * nutrition, charging, spawning, scent, approach timer or action accounting. */
     private updateEnvironment(): void {
+        if (this.interactionActive) return;
         return updateEnvironment(this.timePorts());
     }
 
@@ -9333,6 +9400,7 @@ export class Game {
 
     /** 动画模式入口：建立分步推进并锁输入。收尾在 finishAdvancement。 */
     private beginAdvancement(stealthRange: number): void {
+        if (this.interactionActive) return;
         this.advancementIter = this.advancementLoop(stealthRange);
         this.isAdvancing = true;
         this.lastAdvancementError = null;
@@ -9692,7 +9760,26 @@ export class Game {
         extensionRoots.push(...(snapshot.purgatory ?? []).map(monster => entityGraph.monsters.get(monster.id)!));
         extensionRoots.push(...snapshot.pendingFallenByDepth.flatMap(queue => queue.monsters.map(monster => entityGraph.monsters.get(monster.id)!)));
         const extensionCreatures = collectEntityGraph(extensionRoots).monsters;
-        try { extensions?.validateWorld([decodedPlayer, ...extensionCreatures]); } catch { return false; }
+        try {
+            if (extensions) {
+                const world = snapshot.extensions!.foundation.world;
+                const nativeIds = new Set([snapshot.player.id, ...entityGraph.monsters.keys(), ...entityGraph.items.keys()]);
+                for (const entity of world.entities) {
+                    const level = restored.get(entity.depth);
+                    if (!level?.grid.getCell(entity.x,entity.y) || nativeIds.has(entity.id) || entity.id >= snapshot.run.nextEntityId)
+                        throw new Error('Invalid world entity root or allocator');
+                }
+                if (world.gate) {
+                    const target = world.entities.find(entity => entity.id === world.gate!.targetEntityId), activeGrid = restored.get(snapshot.depth)!.grid;
+                    if (snapshot.run.isGameOver || decodedPlayer.hp <= 0 || decodedPlayer.hasStatus('paralyzed')
+                        || !target || target.depth !== snapshot.depth || !activeGrid.getCell(target.x,target.y)?.isVisible
+                        || Math.max(Math.abs(target.x-decodedPlayer.x),Math.abs(target.y-decodedPlayer.y)) > target.interactionDistance
+                        || !hasInteractionLine(activeGrid,decodedPlayer.loc,target)) throw new Error('Invalid saved interaction gate');
+                }
+                extensions.validateWorld([decodedPlayer, ...extensionCreatures], { depth: snapshot.depth, turn: snapshot.run.absoluteTurnNumber,
+                    isGameOver: snapshot.run.isGameOver, nextEntityId: snapshot.run.nextEntityId });
+            }
+        } catch { return false; }
         const levelRows = [snapshot, ...snapshot.levels];
 
         this.discardInFlightAdvancement();
@@ -10886,6 +10973,7 @@ export class Game {
     }
 
     public handleMouseTravel(x: number, y: number) {
+        if (this.interactionActive) return;
         if (this.pendingArcana) {
             if (this.setArcanaTarget(x, y)) this.confirmArcanaTarget();
             return;
@@ -11612,6 +11700,7 @@ export class Game {
     }
 
     public setAutoPath(x: number, y: number) {
+        if (this.interactionActive) return;
         this.disturbed = false;
         this.autoFight = null;
         this.autoAction = null;
@@ -11643,6 +11732,7 @@ export class Game {
     }
 
     public stepAutoPath() {
+        if (this.interactionActive) return;
         if ((!this.autoPath.length && !this.autoAction) || this.isInventoryOpen) return;
         this.executeCommand('auto_step');
     }
@@ -11856,6 +11946,7 @@ export class Game {
     public triggerGameOver(won: boolean, reason?: string, superVictory: boolean = false) {
         if (this.isGameOver) return;
         this.isGameOver = true;
+        if (this.extensionRuntime?.interactionActive) this.extensionRuntime.collectWorld([this.depth,...this.levels.keys()], true);
         if (this.extensionRuntime && !won) {
             const fact = this.extensionRuntime.captureDeath(this.player, false, this.extensionRuntime.causality.deathOrigin(this.player.id));
             this.extensionRuntime.emit('playerDied', fact);

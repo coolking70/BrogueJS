@@ -3,7 +3,8 @@
  *
  * P1-30 引入，见 docs/archive/dev-history/p1_30_i18n_gate_report.md。职责：
  *  1. 找出 src/ 下 i18next.t(...) / $t(...) 及 useTranslation() 的 t(...) 调用点，解析第一个实参；
- *  2. 扫描已安装模块 data JSON 的明确文本字段，以及源码 textKey 的有限字面量模板；
+ *  2. 扫描已安装模块 data JSON 的明确文本字段，以及源码语义文本字段的有限字面量模板；
+ *     模块字段消费只使用所属 data 的精确词汇与真实投影别名，Vue 按独立表达式解析；
  *  3. 与 zh_CN.json 比对，产出「缺失键」（红灯依据）与「从未被引用的键」（归档依据）。
  *
  * 动态键的处理（防漏报与误报的核心设计）：
@@ -21,6 +22,8 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import ts from 'typescript';
+import { parse as parseSfc } from '@vue/compiler-sfc';
+import { NodeTypes, type RootNode, type TemplateChildNode } from '@vue/compiler-core';
 
 export interface KeyLocation {
     file: string;
@@ -47,7 +50,7 @@ export interface ScanResult {
     literals: Map<string, KeyLocation[]>;
     /** 动态键的静态前缀 → 出现位置 */
     prefixes: Map<string, KeyLocation[]>;
-    /** 无法解析首参或有限 textKey 模板的位置（测试视为红灯） */
+    /** 无法解析首参或有限语义字段模板的位置（测试视为红灯） */
     unresolved: (KeyLocation & { reason: string })[];
     /** 被代码引用但资源文件里不存在的键 */
     missing: { key: string; locs: KeyLocation[] }[];
@@ -70,11 +73,18 @@ const DATA_TEXT_FIELDS = new Set([
 ]);
 const MAX_FINITE_TEXT_KEYS = 256;
 
+interface ModuleTextReferences {
+    files: string[];
+    /** Exact data-owned field vocabularies, indexed by their installed owner. */
+    fields: Map<string, Map<string, Set<string>>>;
+}
+
 function scanModuleTextReferences(srcDir: string, files: readonly string[],
     literals: Map<string, KeyLocation[]>, unresolved: ScanResult['unresolved'],
-): string[] {
+): ModuleTextReferences {
     const moduleRoot = join(srcDir, 'ext', 'modules');
-    if (!existsSync(moduleRoot)) return [];
+    const fields: ModuleTextReferences['fields'] = new Map();
+    if (!existsSync(moduleRoot)) return { files: [], fields };
     const moduleDirs = readdirSync(moduleRoot).map(name => join(moduleRoot, name))
         .filter(dir => statSync(dir).isDirectory() && existsSync(join(dir, 'descriptor.ts')));
     const extraFiles: string[] = [];
@@ -90,12 +100,12 @@ function scanModuleTextReferences(srcDir: string, files: readonly string[],
     };
     const fieldName = (node: ts.PropertyName): string | undefined =>
         ts.isIdentifier(node) || ts.isStringLiteral(node) ? node.text : undefined;
-    const scanData = (dir: string): void => {
+    const scanData = (dir: string, vocabulary: Map<string, Set<string>>): void => {
         if (!existsSync(dir)) return;
         for (const entry of readdirSync(dir)) {
             const file = join(dir, entry);
             if (statSync(file).isDirectory()) {
-                if (entry !== 'test' && entry !== 'tests') scanData(file);
+                if (entry !== 'test' && entry !== 'tests') scanData(file, vocabulary);
             } else if (entry.endsWith('.json')) {
                 const code = readFileSync(file, 'utf-8');
                 JSON.parse(code); // Fail closed on malformed pack data.
@@ -105,6 +115,10 @@ function scanModuleTextReferences(srcDir: string, files: readonly string[],
                     if (ts.isPropertyAssignment(node) && DATA_TEXT_FIELDS.has(fieldName(node.name) ?? '')
                         && ts.isStringLiteral(node.initializer)) {
                         add(node.initializer.text, location(source, node));
+                        const field = fieldName(node.name)!;
+                        const keys = vocabulary.get(field) ?? new Set<string>();
+                        keys.add(node.initializer.text);
+                        vocabulary.set(field, keys);
                     }
                     ts.forEachChild(node, visit);
                 };
@@ -112,25 +126,64 @@ function scanModuleTextReferences(srcDir: string, files: readonly string[],
             }
         }
     };
-    for (const dir of moduleDirs) scanData(join(dir, 'data'));
+    for (const dir of moduleDirs) {
+        const vocabulary = new Map<string, Set<string>>();
+        fields.set(dir, vocabulary);
+        scanData(join(dir, 'data'), vocabulary);
+        // UI projections can rename semantic fields (speakerNameKey: npc.nameKey).
+        // Accept only a real property-to-property forwarding assignment in this
+        // owner, terminating in a field actually present in its data JSON.
+        const aliases: [string, string][] = [];
+        for (const file of files.filter(file => file.startsWith(dir + sep) && /\.tsx?$/.test(file)
+            && !/(?:^|\/)(?:test|tests)\//.test(relative(dir, file).split(sep).join('/')))) {
+            const source = ts.createSourceFile(file, readFileSync(file, 'utf-8'), ts.ScriptTarget.Latest, true);
+            const visit = (node: ts.Node): void => {
+                if (ts.isPropertyAssignment(node) && ts.isPropertyAccessExpression(node.initializer)) {
+                    const field = fieldName(node.name);
+                    if (field?.endsWith('Key')) aliases.push([field, node.initializer.name.text]);
+                }
+                ts.forEachChild(node, visit);
+            };
+            visit(source);
+        }
+        for (let remaining = aliases.length; remaining > 0; remaining--) {
+            let changed = false;
+            for (const [field, from] of aliases) {
+                const sourceKeys = vocabulary.get(from);
+                if (!sourceKeys) continue;
+                const keys = vocabulary.get(field) ?? new Set<string>();
+                for (const key of sourceKeys) if (!keys.has(key)) { keys.add(key); changed = true; }
+                vocabulary.set(field, keys);
+            }
+            if (!changed) break;
+        }
+    }
 
-    // Diagnostics may expose a finite localized textKey without calling t().
-    // Resolve only actual string/template assignments to that field. Re-exported
+    // Diagnostics and projections can expose localized fields without calling t().
+    // Resolve actual string/template assignments so a source-level missing key
+    // cannot hide behind a data-owned field vocabulary. Re-exported
     // types and readonly enum arrays are handled by the checker, not regexes or
     // evaluation of module code. Ordinary forwarded fields remain data-owned.
     const textValues = (source: ts.SourceFile): ts.Expression[] => {
         const values: ts.Expression[] = [];
+        const owner = moduleDirs.find(dir => source.fileName.startsWith(dir + sep));
+        const semanticField = (field: string): boolean => DATA_TEXT_FIELDS.has(field) || !!(owner && fields.get(owner)?.has(field));
+        const collect = (value: ts.Expression): void => {
+            if (ts.isStringLiteralLike(value) || ts.isTemplateExpression(value)) values.push(value);
+            else if (ts.isConditionalExpression(value)) { collect(value.whenTrue); collect(value.whenFalse); }
+            else if (ts.isParenthesizedExpression(value)) collect(value.expression);
+        };
         const visit = (node: ts.Node): void => {
             let value: ts.Expression | undefined;
             if ((ts.isPropertyAssignment(node) || ts.isPropertyDeclaration(node))
-                && fieldName(node.name) === 'textKey') value = node.initializer;
+                && semanticField(fieldName(node.name) ?? '')) value = node.initializer;
             if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
                 const left = node.left;
-                if ((ts.isPropertyAccessExpression(left) && left.name.text === 'textKey')
+                if ((ts.isPropertyAccessExpression(left) && semanticField(left.name.text))
                     || (ts.isElementAccessExpression(left) && ts.isStringLiteral(left.argumentExpression)
-                        && left.argumentExpression.text === 'textKey')) value = node.right;
+                        && semanticField(left.argumentExpression.text))) value = node.right;
             }
-            if (value && (ts.isStringLiteralLike(value) || ts.isTemplateExpression(value))) values.push(value);
+            if (value) collect(value);
             ts.forEachChild(node, visit);
         };
         visit(source);
@@ -140,9 +193,9 @@ function scanModuleTextReferences(srcDir: string, files: readonly string[],
         .filter(file => moduleDirs.some(dir => file.startsWith(dir + sep)))
         .filter(file => !/(?:^|\/)(?:test|tests)\//.test(relative(srcDir, file).split(sep).join('/')))
         .filter(file => textValues(ts.createSourceFile(file, readFileSync(file, 'utf-8'), ts.ScriptTarget.Latest, true)).length > 0);
-    if (roots.length === 0) return extraFiles;
+    if (roots.length === 0) return { files: extraFiles, fields };
     const program = ts.createProgram(roots, {
-        lib: ['lib.es5.d.ts'], types: [], strict: true, target: ts.ScriptTarget.ESNext,
+        lib: ['lib.esnext.d.ts'], types: [], strict: true, target: ts.ScriptTarget.ESNext,
         module: ts.ModuleKind.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler,
     });
     const checker = program.getTypeChecker();
@@ -164,12 +217,12 @@ function scanModuleTextReferences(srcDir: string, files: readonly string[],
                 keys = keys.flatMap(key => variants.map(part => key + (part as ts.StringLiteralType).value + span.literal.text));
             }
             if (keys.length === 0) unresolved.push({ ...loc,
-                reason: `textKey template must have a finite string-literal vocabulary (at most ${MAX_FINITE_TEXT_KEYS} keys)`,
+                reason: `Localized field template must have a finite string-literal vocabulary (at most ${MAX_FINITE_TEXT_KEYS} keys)`,
             });
             else for (const key of new Set(keys)) add(key, loc);
         }
     }
-    return extraFiles;
+    return { files: extraFiles, fields };
 }
 
 // ---------------------------------------------------------------------------
@@ -297,12 +350,88 @@ function findCallStarts(code: string, callee: RegExp, firstChars: string): numbe
     return hits;
 }
 
-function findCallSites(code: string): number[] {
+function findCallSites(code: string, hasLocalTranslation = code.includes('useTranslation')): number[] {
     const sites = findCallStarts(code, CALL_START, 'i$');
     // useTranslation() supplies a local t() in Vue components. Without this,
     // MainMenu's English defaultValue bypassed the key gate entirely.
-    if (code.includes('useTranslation')) sites.push(...findCallStarts(code, /(?<![.$\w])t\s*\(/y, 't'));
+    if (hasLocalTranslation) sites.push(...findCallStarts(code, /(?<![.$\w])t\s*\(/y, 't'));
     return sites.sort((a, b) => a - b);
+}
+
+/** Parse Vue as Vue, never as one JavaScript string. A closing HTML tag can
+ * otherwise look like a regex and swallow subsequent interpolations; directive
+ * expressions also live inside HTML quotes, not JavaScript string literals. */
+function translationRegions(file: string, code: string): { code: string; offset: number; template?: boolean }[] {
+    if (!file.endsWith('.vue')) return [{ code, offset: 0 }];
+    const { descriptor, errors } = parseSfc(code, { filename: file });
+    if (errors.length) throw new Error(`Cannot scan malformed Vue component ${file}: ${errors.join('; ')}`);
+    const regions: { code: string; offset: number; template?: boolean }[] = [descriptor.script, descriptor.scriptSetup].filter(block => block !== null)
+        .map(block => ({ code: block.content, offset: block.loc.start.offset }));
+    const visit = (node: RootNode | TemplateChildNode): void => {
+        if (node.type === NodeTypes.INTERPOLATION) {
+            regions.push({ code: node.content.loc.source, offset: node.content.loc.start.offset, template: true });
+        }
+        if (node.type === NodeTypes.ELEMENT) {
+            for (const prop of node.props) {
+                if (prop.type === NodeTypes.DIRECTIVE && prop.exp) {
+                    regions.push({ code: prop.exp.loc.source, offset: prop.exp.loc.start.offset, template: true });
+                }
+            }
+        }
+        if (node.type === NodeTypes.ROOT || node.type === NodeTypes.ELEMENT) for (const child of node.children) visit(child);
+    };
+    if (descriptor.template?.ast) visit(descriptor.template.ast);
+    return regions;
+}
+
+/** Inline defineProps finite unions represent actual UI inputs, not a list of
+ * unrelated source strings. Open string/unknown types remain unresolved. Null
+ * is allowed as the absent-prop state; it never contributes a translation key. */
+function finiteVueProps(file: string, code: string): Map<string, KeyCandidate[]> {
+    const out = new Map<string, KeyCandidate[]>();
+    if (!file.endsWith('.vue')) return out;
+    const block = parseSfc(code, { filename: file }).descriptor.scriptSetup;
+    if (!block) return out;
+    const source = ts.createSourceFile(file + '.ts', block.content, ts.ScriptTarget.Latest, true);
+    const finite = (type: ts.TypeNode): string[] | undefined => {
+        if (ts.isParenthesizedTypeNode(type)) return finite(type.type);
+        if (ts.isLiteralTypeNode(type)) {
+            if (ts.isStringLiteral(type.literal)) return [type.literal.text];
+            if (type.literal.kind === ts.SyntaxKind.NullKeyword) return [];
+        }
+        if (type.kind === ts.SyntaxKind.UndefinedKeyword) return [];
+        if (!ts.isUnionTypeNode(type)) return undefined;
+        const parts = type.types.map(finite);
+        if (parts.some(part => part === undefined)) return undefined;
+        return parts.flatMap(part => part!);
+    };
+    const visit = (node: ts.Node): void => {
+        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'defineProps') {
+            const type = node.typeArguments?.[0];
+            if (type && ts.isTypeLiteralNode(type)) for (const member of type.members) {
+                if (!ts.isPropertySignature(member) || !member.type || !ts.isIdentifier(member.name)) continue;
+                const keys = finite(member.type);
+                if (keys?.length && keys.length <= MAX_FINITE_TEXT_KEYS) {
+                    out.set(member.name.text, keys.map(key => ({ kind: 'literal', key })));
+                }
+            }
+        }
+        ts.forEachChild(node, visit);
+    };
+    visit(source);
+    return out;
+}
+
+function moduleFieldCandidates(file: string, expression: string, references: ModuleTextReferences): KeyCandidate[] {
+    // Only a complete property path, never calls, concatenation, computed fields
+    // or arbitrary identifiers. A spelling error must remain a visible failure.
+    const path = /^[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)+$/.exec(expression);
+    if (!path) return [];
+    const parts = expression.split('.');
+    const field = parts[parts.length - 1]!.trim();
+    const owner = [...references.fields.keys()].find(dir => file.startsWith(dir + sep));
+    const keys = owner ? references.fields.get(owner)?.get(field) : undefined;
+    return keys ? [...keys].map(key => ({ kind: 'literal', key })) : [];
 }
 
 // ---------------------------------------------------------------------------
@@ -684,70 +813,64 @@ export function scanI18nUsage(srcDir: string, resource: Record<string, string>, 
     const prefixes = new Map<string, KeyLocation[]>();
     const unresolved: (KeyLocation & { reason: string })[] = [];
 
+    const moduleReferences = scanModuleTextReferences(srcDir, files, literals, unresolved);
     for (const file of files) {
         const rel = relative(srcDir, file).split(sep).join('/');
-        const code = readFileSync(file, 'utf-8');
-        for (const paren of findCallSites(code)) {
-            const line = code.slice(0, paren).split('\n').length;
-            const snippet = code.slice(Math.max(0, paren - 60), paren + 40).replace(/\s+/g, ' ').trim();
-            const loc: KeyLocation = { file: rel, line, snippet };
-            let parsed = parseStringExpr(code, paren, [',', ')']);
-            const declared = declaredLookups.find(lookup => lookup.file === rel
-                && code.slice(paren).trimStart().startsWith(lookup.expression)
-                && /^\s*[,)]/.test(code.slice(paren).trimStart().slice(lookup.expression.length)));
-            if (declared) parsed = { candidates: declared.keys.map(key => ({ kind: 'literal' as const, key })), endIndex: paren };
-            if ('unresolved' in parsed) {
-                // 首参若以裸标识符开头，尝试同文件追踪（局部 const / 函数参数实参）
-                const ident = /^\s*([A-Za-z_$][\w$]*)/.exec(code.slice(paren, paren + 200))?.[1];
-                if (ident) {
-                    const traced = resolveIdentifierCandidates(code, ident);
-                    if (traced.length > 0) {
-                        parsed = { candidates: traced, endIndex: paren };
+        const originalCode = readFileSync(file, 'utf-8');
+        const props = finiteVueProps(file, originalCode);
+        for (const region of translationRegions(file, originalCode)) {
+            const code = region.code;
+            for (const paren of findCallSites(code, originalCode.includes('useTranslation'))) {
+                const line = originalCode.slice(0, region.offset + paren).split('\n').length;
+                const snippet = code.slice(Math.max(0, paren - 60), paren + 40).replace(/\s+/g, ' ').trim();
+                const loc: KeyLocation = { file: rel, line, snippet };
+                let parsed = parseStringExpr(code, paren, [',', ')']);
+                const argument = splitCallArgs(code, paren - 1)[0];
+                const expression = argument ? code.slice(argument.start, argument.end).trim() : '';
+                const declared = declaredLookups.find(lookup => lookup.file === rel
+                    && code.slice(paren).trimStart().startsWith(lookup.expression)
+                    && /^\s*[,)]/.test(code.slice(paren).trimStart().slice(lookup.expression.length)));
+                if (declared) parsed = { candidates: declared.keys.map(key => ({ kind: 'literal' as const, key })), endIndex: paren };
+                if ('unresolved' in parsed) {
+                    const finite = (region.template ? props.get(expression) : undefined)
+                        ?? moduleFieldCandidates(file, expression, moduleReferences);
+                    if (finite.length > 0) parsed = { candidates: finite, endIndex: paren };
+                }
+                if ('unresolved' in parsed) {
+                    // 首参若以裸标识符开头，尝试同文件追踪（局部 const / 函数参数实参）
+                    const ident = /^\s*([A-Za-z_$][\w$]*)/.exec(code.slice(paren, paren + 200))?.[1];
+                    if (ident) {
+                        const traced = resolveIdentifierCandidates(originalCode, ident);
+                        if (traced.length > 0) {
+                            parsed = { candidates: traced, endIndex: paren };
+                        } else {
+                            unresolved.push({
+                                ...loc,
+                                reason: `首参变量 "${ident}" 追踪不到字面量候选（既无同文件 const 赋值，参数实参也解析不出）`,
+                            });
+                            continue;
+                        }
                     } else {
-                        unresolved.push({
-                            ...loc,
-                            reason: `首参变量 "${ident}" 追踪不到字面量候选（既无同文件 const 赋值，参数实参也解析不出）`,
-                        });
+                        unresolved.push({ ...loc, reason: parsed.unresolved });
                         continue;
                     }
-                } else {
-                    unresolved.push({ ...loc, reason: parsed.unresolved });
-                    continue;
                 }
-            }
-            for (const cand of parsed.candidates) {
-                if (cand.kind === 'literal') {
-                    const arr = literals.get(cand.key) ?? [];
-                    arr.push(loc);
-                    literals.set(cand.key, arr);
-                } else {
-                    const arr = prefixes.get(cand.prefix) ?? [];
-                    arr.push(loc);
-                    prefixes.set(cand.prefix, arr);
+                for (const cand of parsed.candidates) {
+                    if (cand.kind === 'literal') {
+                        const arr = literals.get(cand.key) ?? [];
+                        arr.push(loc);
+                        literals.set(cand.key, arr);
+                    } else {
+                        const arr = prefixes.get(cand.prefix) ?? [];
+                        arr.push(loc);
+                        prefixes.set(cand.prefix, arr);
+                    }
                 }
-            }
-        }
-        // Vue bind expressions live inside quoted HTML attributes, which the
-        // lexical code scanner intentionally skips. Account for literal keys
-        // there so aria labels and placeholders cannot become silent fallbacks.
-        if (file.endsWith('.vue')) {
-            const attrCall = /:[\w-]+="(?:\$t|t|i18next\.t)\('([^']+)'/g;
-            for (const match of code.matchAll(attrCall)) {
-                const key = match[1]!;
-                const pos = match.index ?? 0;
-                const loc: KeyLocation = {
-                    file: rel,
-                    line: code.slice(0, pos).split('\n').length,
-                    snippet: match[0],
-                };
-                const arr = literals.get(key) ?? [];
-                arr.push(loc);
-                literals.set(key, arr);
             }
         }
     }
 
-    files.push(...scanModuleTextReferences(srcDir, files, literals, unresolved));
+    files.push(...moduleReferences.files);
     files.sort();
     const resourceKeys = Object.keys(resource);
     const isReferenced = (k: string) =>

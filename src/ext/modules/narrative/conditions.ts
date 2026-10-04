@@ -5,7 +5,7 @@ import { assertNarrativeJson, assertLoadedNarrativePack, freezeNarrative, NARRAT
 import { narrativeInteger, narrativeRecord, validFlagValue, type NarrativeState } from './state';
 import type { Condition, NarrativePack } from './types';
 
-/** Explicit pure-kernel facts. These IDs are not subscribed to the engine's event stream in 2a1. */
+/** Explicit module-local causal facts. They do not use a global engine fact stream. */
 export type NarrativeFact = { readonly factId: number; readonly depth: number; readonly turn: number } & (
     { readonly kind: 'entered-level'; readonly firstVisit: boolean }
     | { readonly kind: 'npc-interacted'; readonly npcId: string }

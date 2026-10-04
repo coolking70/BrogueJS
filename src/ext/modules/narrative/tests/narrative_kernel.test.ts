@@ -33,7 +33,7 @@ describe('narrative 2a1 detached execution kernel', () => {
         expect(plan.events.map(event => event.factId)).toEqual([1,2]);
         const committed = commitNarrativePlan(pack, state, plan);
         expect(committed.lastFactId).toBe(2); expect(committed.revision).toBe(1); expect(isNarrativeState(committed, pack)).toBe(true);
-        expect(Object.isFrozen(plan.nextState.flags)).toBe(true); expect(Object.keys(state)).not.toContain('active');
+        expect(Object.isFrozen(plan.nextState.flags)).toBe(true); expect(plan.nextState.active).toBeNull(); expect(plan.nextState.npcBindings).toEqual({});
         expect(state).toEqual(before);
     });
     it('orders triggers by priority descending then ID ascending, independent of registration order', () => {
@@ -79,6 +79,8 @@ describe('narrative 2a1 detached execution kernel', () => {
         const state = initialNarrativeState(pack);
         for (const [limit, value, code] of [['effectsPerCommand',1,'EFFECT_LIMIT'], ['conditionOpsPerCommand',1,'CONDITION_LIMIT'], ['eventsPerCommand',1,'EVENT_LIMIT']] as const) {
             const raw = structuredClone(pack) as any; raw.config.limits[limit] = value;
+            // This fixture isolates causal trigger budgets, not node-preview budgets.
+            raw.npcs = []; raw.dialogues = [];
             const limited = loadNarrativePack(raw, portraits, locales);
             error(() => planNarrativeFact(limited, state, entry()), code); expect(state).toEqual(initialNarrativeState(pack));
         }
@@ -123,14 +125,14 @@ describe('narrative 2a1 detached execution kernel', () => {
     it('validates state and future input strictly without creating executable game commands', () => {
         const pack = sample(), state = initialNarrativeState(pack);
         expect(validateNarrativeState(state, pack)).toEqual(state);
-        for (const corrupt of [{ ...state, active: null }, { ...state, flags: {} }, { ...state, flags: { 'archive.read': 1 } }, { ...state, lastFactId: 1 }]) {
+        for (const corrupt of [{ ...state, active: {} }, { ...state, flags: {} }, { ...state, flags: { 'archive.read': 1 } }, { ...state, lastFactId: 1 }]) {
             expect(isNarrativeState(corrupt, pack)).toBe(false); error(() => planNarrativeFact(pack, corrupt, entry()), 'INVALID_STATE');
         }
         error(() => validateNarrativeState({ ...state, revision: 0.5 }, pack), 'INVALID_INTEGER', '$state.revision');
-        const input = { module: 'narrative', action: 'choose', payload: { v: 1, revision: 0, sessionId: 1, nodeId: 'hello', choiceId: 'read-note' } };
+        const input = { module: 'narrative', action: 'choose', payload: { v: 2, revision: 0, sessionId: 1, nodeId: 'hello', choiceId: 'read-note' } };
         expect(validateNarrativeInput(input)).toEqual(input);
         error(() => validateNarrativeInput({ ...input, payload: { ...input.payload, effects: [] } }), 'INVALID_INPUT');
-        error(() => validateNarrativeInput({ ...input, payload: { ...input.payload, v: 2 } }), 'INVALID_VERSION');
+        error(() => validateNarrativeInput({ ...input, payload: { ...input.payload, v: 1 } }), 'INVALID_VERSION');
         error(() => validateNarrativeInput({ ...input, payload: { ...input.payload, sessionId: -1 } }), 'INVALID_INPUT');
         error(() => validateNarrativeFact({ ...entry(), actorId: 4 }, pack), 'INVALID_FACT');
         expect(state).toEqual(initialNarrativeState(pack));
@@ -139,7 +141,7 @@ describe('narrative 2a1 detached execution kernel', () => {
         const pack = sample(), state = initialNarrativeState(pack);
         error(() => planNarrativeChoice(pack, state, { kind: 'dialogue-choice', dialogueId: 'archive.greeting', choiceId: 'leave', factId: 1, depth: 1, turn: 0 },
             { dialogueId: 'archive.greeting', nodeId: 'hello', choiceId: 'leave', transitions: pack.config.limits.transitionsPerSession }), 'TRANSITION_LIMIT');
-        expect(validateNarrativeInput({ module: 'narrative', action: 'close', payload: { v: 1, revision: 1, sessionId: 1 } }).action).toBe('close');
+        expect(validateNarrativeInput({ module: 'narrative', action: 'close', payload: { v: 2, revision: 1, sessionId: 1 } }).action).toBe('close');
         error(() => planNarrativeEffects(pack, state, entry(), [{ kind: 'set-flag', id: 'archive.read', value: false }]), 'UNKNOWN_REFERENCE');
     });
     it('snapshots external effect aliases and provider function references before callbacks', () => {

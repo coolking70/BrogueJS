@@ -1,11 +1,16 @@
 import type { Component, Ref } from 'vue';
 import type { Game } from '../../engine/Core/Game';
+import type { ModalKeyHandler } from '../../ui/modalKeyboard';
 
 /** Display-only services supplied by the shell; simulation changes use commands. */
 export interface ModuleUiHost {
     readonly game: () => Game;
     readonly tick: Readonly<Ref<number>>;
     readonly immersive: Readonly<Ref<boolean>>;
+    /** Optional display input ports; descriptor discovery must not initialize a
+     * browser singleton. The application supplies its existing input owner. */
+    registerKeyHandler?(handler: ModalKeyHandler, priority?: number): () => void;
+    cancelHeldKeys?(): void;
     canOpenPanel(): boolean;
     beforeOpenPanel(): void;
     afterClosePanel(): void;

@@ -56,7 +56,7 @@ describe('narrative 2a1 pure schema', () => {
         expect(Object.isFrozen(loadPortraitManifest(portraits, locale).portraits[0])).toBe(true);
     });
     it.each(['schema', 'moduleVersion', 'rulesVersion', 'stateVersion', 'inputVersion'])('rejects unsupported %s', key => {
-        const raw = fixture(); Object.assign(raw, { [key]: key.endsWith('Version') && key !== 'stateVersion' && key !== 'inputVersion' ? '2.0.0' : 2 });
+        const raw = fixture(); Object.assign(raw, { [key]: key.endsWith('Version') && key !== 'stateVersion' && key !== 'inputVersion' ? '2.0.0' : 999 });
         rejects(raw, 'INVALID_VERSION', `$.${key}`);
     });
     it('rejects a different module owner', () => { const raw = fixture(); Object.assign(raw, { moduleId: 'growth' }); rejects(raw, 'INVALID_ID', '$.moduleId'); });
@@ -202,9 +202,9 @@ describe('narrative 2a1 pure schema', () => {
         choice(raw).condition = { op: 'not', arg: choice(raw).condition }; rejects(raw, 'CONDITION_DEPTH');
     });
     it('checks static condition/effect/event budgets including exact boundaries', () => {
-        const raw = fixture(); raw.config.limits.conditionOpsPerCommand = 3;
+        const raw = fixture(); raw.config.limits.conditionOpsPerCommand = 4;
         choice(raw).condition = { op: 'all', args: [{ op: 'true' }, { op: 'true' }] }; expect(load(raw)).toBeDefined();
-        raw.config.limits.conditionOpsPerCommand = 2; rejects(raw, 'CONDITION_LIMIT');
+        raw.config.limits.conditionOpsPerCommand = 3; rejects(raw, 'CONDITION_LIMIT');
         bad(p => { p.config.limits.effectsPerCommand = 2; }, 'EFFECT_LIMIT');
         const effects = fixture(); effects.config.limits.effectsPerCommand = 3; expect(load(effects)).toBeDefined();
         effects.config.limits.eventsPerCommand = 1; choice(effects).effects = [
@@ -237,11 +237,11 @@ describe('narrative 2a1 pure schema', () => {
         bad(p => { trigger(p).effects.push(structuredClone(trigger(p).effects[0]!)); }, 'DUPLICATE_RECEIPT');
     });
     it('estimates once/per-depth scope storage and shared reward receipt capacity', () => {
-        const raw = fixture(); raw.config.limits.maxReceipts = 2; expect(load(raw)).toBeDefined();
-        raw.config.limits.maxReceipts = 1; rejects(raw, 'RECEIPT_LIMIT');
-        trigger(raw).repeat = { kind: 'once-per-depth' }; raw.config.limits.maxReceipts = 41; expect(load(raw)).toBeDefined();
-        raw.config.limits.maxReceipts = 40; rejects(raw, 'RECEIPT_LIMIT');
-        trigger(raw).repeat = { kind: 'bounded', maxFirings: 2, cooldownTurns: 0 }; raw.config.limits.maxReceipts = 2; expect(load(raw)).toBeDefined();
+        const raw = fixture(); raw.config.limits.maxReceipts = 3; expect(load(raw)).toBeDefined();
+        raw.config.limits.maxReceipts = 2; rejects(raw, 'RECEIPT_LIMIT');
+        trigger(raw).repeat = { kind: 'once-per-depth' }; raw.config.limits.maxReceipts = 42; expect(load(raw)).toBeDefined();
+        raw.config.limits.maxReceipts = 41; rejects(raw, 'RECEIPT_LIMIT');
+        trigger(raw).repeat = { kind: 'bounded', maxFirings: 2, cooldownTurns: 0 }; raw.config.limits.maxReceipts = 3; expect(load(raw)).toBeDefined();
         trigger(raw).repeat = { kind: 'bounded', maxFirings: 0, cooldownTurns: 0 }; rejects(raw, 'INVALID_RANGE');
     });
     it('requires adequate journal capacity without silent truncation', () => {
@@ -250,13 +250,13 @@ describe('narrative 2a1 pure schema', () => {
     });
 
     it('keeps shared JSON capacity above the maximum legal state and bounded plan traces', () => {
-        // Every receipt shares one cap: trigger objects have 5 scalar fields (6 visits),
-        // reward objects have 4 (5 visits), so the all-trigger case is the upper bound.
-        const stateBound = 1 + 3 + (1 + 4096) * 2 + 2 + 65536 * 6 + 1 + 4096 * 3;
+        // Every receipt shares one cap; deferred slots have at most 40 depth integers
+        // plus their binding and array/object nodes (45 visits), the conservative upper bound.
+        const stateBound = 1 + 4 + (1 + 4096) * 2 + 4 + 65536 * 45 + 1 + 256 * 4 + 7 + 1 + 4096 * 3;
         const planBound = 1 + 2 + stateBound + (1 + 256 * 4) + (1 + 129 * 7)
             + (1 + 1024 * 3) + (1 + 256 * 9) + 4 + 4;
-        expect(stateBound).toBe(413705);
-        expect(planBound).toBe(421023);
+        expect(stateBound).toBeLessThan(3_000_000);
+        expect(planBound).toBeLessThan(3_100_000);
         expect(planBound).toBeLessThan(NARRATIVE_LIMITS.maxJsonValues);
         const raw = fixture();
         raw.config.limits.maxReceipts = 65536;
@@ -290,7 +290,7 @@ describe('narrative 2a1 pure schema', () => {
             id: `bulk.trigger-${String(i).padStart(3, '0')}`, on: { kind: 'entered-level' }, priority: 0,
             condition: { op: 'true' }, repeat: { kind: 'once-per-depth' }, effects: [],
         }));
-        raw.config.limits.maxReceipts = 32000; raw.config.limits.conditionOpsPerCommand = 1024;
+        raw.config.limits.maxReceipts = 32001; raw.config.limits.conditionOpsPerCommand = 1024;
         const pack = load(raw); const state = initialNarrativeState(pack);
         state.revision = 20; state.lastFactId = 20;
         state.triggerReceipts = pack.triggers.flatMap(t => Array.from({ length: 20 }, (_, i) => ({ triggerId: t.id, scopeKey: `depth.${i + 1}`, firings: 1, lastTurn: 0, lastFactId: i + 1 })));
@@ -309,6 +309,14 @@ describe('narrative 2a1 pure schema', () => {
         try { assertNarrativeJson(value); } catch (error) { expect((error as NarrativeError).code).toBe('INVALID_JSON'); }
     });
 
+    it('matches the world text-key ceiling at 256 characters and rejects 257 before placement', () => {
+        const prefix = 'ext.narrative.';
+        const key = prefix + 'x'.repeat(256 - prefix.length);
+        const data = fixture(); data.npcs[0]!.nameKey = key;
+        expect(load(data, portraitData, { ...locale, [key]: '长名称' })).toBeDefined();
+        data.npcs[0]!.nameKey = key + 'x';
+        rejects(data, 'INVALID_TEXT', undefined, portraitData, { ...locale, [key + 'x']: '长名称' });
+    });
     it('requires nonempty namespaced localized text and rejects absent keys', () => {
         bad(p => { choice(p).textKey = 'outside.key'; }, 'INVALID_TEXT');
         bad(p => { choice(p).textKey = 'ext.narrative.missing'; }, 'INVALID_TEXT');

@@ -3,7 +3,7 @@ import { NarrativeError } from './errors';
 import { assertNarrativeJson, freezeNarrative, assertLoadedNarrativePack } from './schema';
 import { createNarrativeBudget, evaluateNarrativeCondition, validateNarrativeFact, queryNarrativePlayer, requireNarrativeSynchronous,
     type NarrativeBudgetUsage, type NarrativeConditionContext, type NarrativeFact, type NarrativePlayerResult, type NarrativeQuery } from './conditions';
-import { initialNarrativeState, narrativeInteger, narrativeRecord, narrativeRewardInstance, validateNarrativeState, validFlagValue, type NarrativeState } from './state';
+import { initialNarrativeState, narrativeReceiptCount, narrativeInteger, narrativeRecord, narrativeRewardInstance, validateNarrativeState, validFlagValue, type NarrativeState } from './state';
 import { narrativeTriggerEligible, orderedNarrativeTriggers, recordNarrativeTrigger } from './triggers';
 import type { Condition, Effect, NarrativePack } from './types';
 
@@ -15,7 +15,7 @@ export type NarrativeRewardPreparation = { readonly status: 'ready' }
     | { readonly status: 'skipped'; readonly reason: 'absent' | 'disabled' | 'unsupported-key' };
 export interface NarrativePlanOptions {
     readonly queryOptional?: NarrativeQuery;
-    /** Pure preflight only; 2a1 has no external reward commit adapter. */
+    /** Pure preflight only; a real external reward commit adapter is a later phase. */
     readonly prepareReward?: (intent: Readonly<NarrativeRewardIntent>) => NarrativeRewardPreparation;
 }
 export interface NarrativeChoiceSelection { readonly dialogueId: string; readonly nodeId: string; readonly choiceId: string; readonly transitions: number }
@@ -119,7 +119,7 @@ function buildPlan(pack: NarrativePack, rawState: unknown, rawFact: unknown, eff
                 case 'optional-reward': {
                     if (state.rewardReceipts.some(receipt => receipt.id === effect.receiptId) || rewardIntents.some(intent => intent.receiptId === effect.receiptId)) break;
                     // Prepared receipts also reserve capacity, although they cannot yet become persistent state.
-                    if (state.triggerReceipts.length + state.rewardReceipts.length + rewardIntents.length >= pack.config.limits.maxReceipts) throw new NarrativeError('RECEIPT_LIMIT', '$state.rewardReceipts');
+                    if (narrativeReceiptCount(state) + rewardIntents.length >= pack.config.limits.maxReceipts) throw new NarrativeError('RECEIPT_LIMIT', '$state.rewardReceipts');
                     const intent: NarrativeRewardIntent = { capability: effect.capability, rewardId: effect.rewardId, receiptId: effect.receiptId,
                         instanceKey: narrativeRewardInstance(effect.receiptId), recipient: 'player', factId: fact.factId, effectIndex: index };
                     const result = prepareReward(intent, providers.prepareReward);
@@ -145,7 +145,7 @@ function buildPlan(pack: NarrativePack, rawState: unknown, rawFact: unknown, eff
             const triggerPath = `$pack.triggers[${pack.triggers.indexOf(trigger)}]`;
             if (!condition(trigger.condition, fact, `${triggerPath}.condition`)) continue;
             recordNarrativeTrigger(state, pack, trigger, fact);
-            if (state.triggerReceipts.length + state.rewardReceipts.length + rewardIntents.length > pack.config.limits.maxReceipts) throw new NarrativeError('RECEIPT_LIMIT', '$state');
+            if (narrativeReceiptCount(state) + rewardIntents.length > pack.config.limits.maxReceipts) throw new NarrativeError('RECEIPT_LIMIT', '$state');
             triggered.push({ triggerId: trigger.id, factId: fact.factId });
             apply(trigger.effects, fact, `${triggerPath}.effects`);
         }

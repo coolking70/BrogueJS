@@ -2,7 +2,7 @@
 
 ## 当前政策与阅读范围
 
-`ext/foundation` 是独立新产品原型，阶段 1e 已验收、阶段 1 已完成，阶段 2 四项 A 已确认，2a0 已验收，本轮只实施并独立验收 2a1，后续仍待确认，暂不合并 main。玩法、内容与数值可在后续彻底重设计。最新开发原则与门禁以 [README](README.md) 为准，并覆盖阶段 0/1 旧验收原则及 `AGENTS.md`、主线文档和历史报告中的冲突要求。
+`ext/foundation` 是独立新产品原型，阶段 1e 已验收、阶段 1 已完成，阶段 2 四项 A 已确认，2a0/2a1 已验收，本轮只实施并独立验收 2b，后续仍待确认，暂不合并 main。玩法、内容与数值可在后续彻底重设计。最新开发原则与门禁以 [README](README.md) 为准，并覆盖阶段 0/1 旧验收原则及 `AGENTS.md`、主线文档和历史报告中的冲突要求。
 
 - 允许直接修改引擎，不要求 classic 逐字节不变、零扩展调用或中性战斗对等；不用为了这些旧目标复制求值器或绕策略端口。现有 `resolveAttackExtended` / `resolveThrownWeaponExtended` 等可在后续按需合并重构，2a0迁移模块所有权与组合接入，本次2a1仅纯叙事内核，均不重构战斗求值器
 - 经典隔离/零调用与中性对等测试不再有长期维护义务；有意改规则可改删已失效的相关测试，报告原因和覆盖即可，无需逐项请示或单变量反事实。其余有效测试继续维护，2a0按所有权迁移并保留功能覆盖，旧UI结构前提的精确调整见报告
@@ -310,3 +310,19 @@ NPC 测试除纯求值外，还使用真实攻击、AI 响应和确定性测试�
 执行计划采用冻结数据/事实、稳定短路与共享预算，完成整条因果链后才返回下一份 state；提交需匹配原 state，不发布半条消息。自有 flags/counters/journal/收据与局部事实计数不依赖成长组件。可选玩家查询采用底座 `queryOptional` 的结构与冻结 DTO；缺席走配置分支，非法 provider 数据报错。可选奖励只形成 skip 或 prepared 意图；带未兑现意图的计划不能提交，未实现真实 growth adapter/XP/全局事实 flush。`lastFactId` 仅是纯内核的局部事实序号，不能当作尚未实施的底座全局事实 ID。
 
 底座同时补齐所有录像扩展命令的纯结构/启用模块/own command 注册检查，坏输入在退休旧局前拒绝。missing/version/state-invalid 结构化错误使读档/录像提示点名具体模块；不改变精确版本合同、不迁移或剥除模块。详细语义、测试、真实物理删除与门禁以 [2a1 报告](phase2a1.report.md) 为准。
+
+
+## 19 阶段 2b 通用世界交互与零时间会话
+
+底座包络/foundation 与已安装 descriptor 要求均升为 **2**；manifest.schema仍为1，旧foundation=1精确拒绝、不迁移。growth机械包仍1.4.0，仅声明支持底座2。narrative module/rules升1.1.0、state/input各升2，实际指纹及验证结果见[2b报告](phase2b.report.md)。
+
+- `src/ext/world.ts` 定义独立于Creature/Monster/growth的固定、可穿行、非战斗对象；模块须显式声明 `worldInteractables`。底座持有共享run-local entity ID、owner、depth、位置、实例标识和显示字段；narrative只持内容绑定/放置收据/活动会话，不复制坐标。`foundation.world`统一覆盖当前层与缓存层，GC按两者根集合而非可见历史；死局保留可检查对象并确定性清gate。
+- 放置只允许在完成原生地图生成/恢复后的enteredLevel提交钩子，先校验整个batch、稳定候选、对象与ID预算再落地；既有floor生成事务包含模块状态、对象以及此次放置消耗的ID回滚。候选只读地图，按入口Chebyshev距离/y/x排序，排除楼梯距离不足、非地板、陷阱/危险/气体、机器、原生实体及批次内已占位置；无RNG、无重生成、无地图写入。
+- 通用对象不会进入战斗/移动/射线占位列表。公开地图DTO仅含实际当前层可见对象，不保留fog记忆；可交互还需玩家资格、配置距离和相交线（双墙斜角拒绝）。同格目标可从附近列表选择。稳定实例收据防重访/load重复放置；defer只在新 eligible depth 重试，超过范围确定性终结。
+- `open/choose/close`通过ext命令进入同一live/replay/seek入口。每次输入严格v/revision/session/node校验；可预见拒绝在执行前返回false、不记录输入，运行期异常则保留原有录制失效策略。choice效果先完整纯计划后提交；无真实XP adapter或全局事实flush，奖励仍为显式skip。
+- 持久gate归底座，声明的owner continuation命令才可通过。移动/等待/物品/成长/自动行动及公开玩家物品入口在变更前拒绝；直接时钟入口也不得推进。open/choose/close均不耗tick/turn，关闭不恢复旧自动行动。UI显示暂停与此gate独立，replay不因展示会话停住。
+- 读档在退休旧局前校验owner/绑定/收据/gate、完整世界实体ID冲突与分配计数、当前或缓存层根，以及活动目标的当前层/可见/距离/交互线/存活资格。录像按前一checkpoint gate限制下一输入，模块进一步校验session转换；load只恢复，不重新触发放置/open。
+- 新增纯 `projectView` 接口仅接本模块冻结state、通用可见/附近DTO与纯optional查询。叙事投影只有当前节点、当前选项和已公开日志；定义AST、未来节点、flags及收据不外泄。首次加载前校验节点全部选项预览的静态最坏条件成本，避免活动会话显示超预算。
+- 临时呈现使用现有通用bar插槽；地图标记属于通用显示helper，无独立弹窗容器。会话identity/revision防旧回调；键盘释放屏障和指针关闭保护属于session/UI状态，不入存档。正式dialogue/portrait/UI仲裁留2d，届时复用维护者指定main `dc0b78b` 的D1–D4，不在2b合入。
+
+本步没有新增Game实例字段：世界/gate通过原extensionRuntime快照保存，Game只新增访问器与方法，因此U03字段清单无新项。实际引擎改动、测试前提调整、冻结/正常完整档/删除轻档、浏览器限制与交付边界逐项列于2b报告。

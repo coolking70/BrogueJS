@@ -1,7 +1,9 @@
 /** Physically delete module packages in isolated copies of the CURRENT tree.
  * Usage: npm run check:module-removal -- --plan
- *        npm run check:module-removal -- --retain=none --output=/tmp/evidence
- * Default execution covers every installed-directory subset; no worktree deletion.
+ *        npm run check:module-removal -- --profile=removal --output=/tmp/evidence
+ *        npm run check:module-removal -- --profile=full --output=/tmp/full-evidence
+ * Default auto profile covers every installed-directory subset; no worktree deletion.
+ * Normal copies use full gates; physically deleted copies omit only complete npm test.
  */
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
@@ -45,6 +47,21 @@ export function removalMatrix(modules) {
         retained, removed: modules.filter(module => !retained.includes(module.id)).map(module => module.id),
     }));
 }
+/** One command source for both planned and executed gates. "full" means complete
+ * npm test, never the CE-only npm run test:full command. */
+export function removalGates(row, { maxWorkers = 2, engineOnly = false, output = '<evidence>' } = {}) {
+    const profile = row.removed.length ? 'removal' : 'full';
+    const commands = [
+        { id: 'boundaries', command: [process.execPath, 'scripts/check-module-boundaries.mjs'] },
+        { id: 'typecheck', command: [process.execPath, 'node_modules/vue-tsc/bin/vue-tsc.js', '-b'] },
+        { id: 'build', command: ['npm', 'run', 'build'] },
+        { id: 'extension-tests', command: ['npm', 'run', 'test:ext', '--', `--maxWorkers=${maxWorkers}`] },
+        ...(profile === 'full' ? [{ id: 'complete-npm-test', command: ['npm', 'test', '--', `--maxWorkers=${maxWorkers}`] }] : []),
+        { id: 'composition-smoke', command: [process.execPath, 'scripts/check-module-composition-smoke.mjs', '--output', join(output, `${row.id}-smoke.json`),
+            ...(engineOnly ? ['--engine-only'] : []), ...(row.removed.length ? ['--removed-modules', row.removed.join(',')] : [])] },
+    ];
+    return { profile, commands };
+}
 /** Shared package content, separate writable caches. Never link node_modules wholesale. */
 function linkDependencies(source, destination) {
     const directory = join(source, 'node_modules');
@@ -70,11 +87,15 @@ function cleanCaches(root) {
     visit(root);
 }
 function parseArguments(argv) {
-    const options = { plan: false, prepareOnly: false, engineOnly: false, maxWorkers: 2, root: repositoryRoot, output: null, retain: null };
+    const options = { plan: false, prepareOnly: false, engineOnly: false, profile: 'auto', maxWorkers: 2, root: repositoryRoot, output: null, retain: null };
     for (const argument of argv) {
         if (argument === '--plan' || argument === '--dry-run') options.plan = true;
         else if (argument === '--prepare-only') options.prepareOnly = true;
         else if (argument === '--engine-only') options.engineOnly = true;
+        else if (argument.startsWith('--profile=')) {
+            options.profile = argument.slice(10);
+            if (!['auto', 'full', 'removal'].includes(options.profile)) throw new Error(`Invalid gate profile: ${options.profile}`);
+        }
         else if (/^--maxWorkers=[1-9][0-9]*$/.test(argument)) options.maxWorkers = Number(argument.slice(13));
         else if (argument.startsWith('--root=')) options.root = resolve(argument.slice(7));
         else if (argument.startsWith('--output=')) options.output = resolve(argument.slice(9));
@@ -100,10 +121,19 @@ export async function checkModuleRemoval(argv = process.argv.slice(2)) {
         if (new Set(options.retain).size !== options.retain.length || options.retain.some(id => !modules.some(module => module.id === id))) throw new Error(`Invalid retained module set: ${options.retain.join(',')}`);
         matrix = matrix.filter(row => [...row.retained].sort().join(',') === options.retain.join(','));
     }
+    if (options.profile !== 'auto') matrix = matrix.filter(row => (row.removed.length ? 'removal' : 'full') === options.profile);
+    if (!matrix.length) throw new Error(`No directory subsets match profile=${options.profile} and the requested retained modules`);
+    matrix = matrix.map(row => {
+        const { profile, commands } = removalGates(row, { ...options, output: options.output ?? '<evidence>' });
+        return { ...row, profile, plannedGates: commands };
+    });
     const fixtureDirectory = join(root, 'src/test/fixtures');
-    const plan = { source: root, foundationFixtureDirectories: existsSync(fixtureDirectory) ? readdirSync(fixtureDirectory, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => `src/test/fixtures/${entry.name}`).sort() : [], preservedCeReference: existsSync(join(root, '.ce-reference')), installedModules: modules.map(module => module.id), matrix,
+    const plan = { source: root, requestedProfile: options.profile, foundationFixtureDirectories: existsSync(fixtureDirectory) ? readdirSync(fixtureDirectory, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => `src/test/fixtures/${entry.name}`).sort() : [], preservedCeReference: existsSync(join(root, '.ce-reference')), installedModules: modules.map(module => module.id), matrix,
         ownedRoots: modules.map(module => module.root), tests: Object.fromEntries(Object.entries(discovery.suites).map(([name, files]) => [name, files.length])),
-        gates: ['node scripts/check-module-boundaries.mjs', 'npx vue-tsc -b', 'npm run build', `npm run test:ext -- --maxWorkers=${options.maxWorkers}`, `npm test -- --maxWorkers=${options.maxWorkers}`, 'node scripts/check-module-composition-smoke.mjs'],
+        normalTreeFullGate: { required: true, includedInMatrix: matrix.some(row => row.profile === 'full'), status: 'not-run',
+            note: 'A full normal-tree gate remains required for this candidate. A removal-only run does not verify or replace it.' },
+        removalPolicy: 'Physical-deletion copies run boundaries, typecheck, build, all remaining extension tests and every remaining module subset smoke; complete npm test runs only on the normal tree.',
+        smokeScope: 'Every remaining installed module subset: real Game new/play/save/load/replay/seek/continued recording; removed-module input rejection.',
         caveat: modules.length === 1 ? 'Only the currently installed module is assessed. Absent future modules are not claimed as verified.' : 'Matrix covers only currently installed module directories.' };
     if (options.plan) { console.log(JSON.stringify(plan, null, 2)); return plan; }
     const output = options.output ?? mkdtempSync(join(tmpdir(), 'brogue-module-removal-evidence-'));
@@ -124,7 +154,9 @@ export async function checkModuleRemoval(argv = process.argv.slice(2)) {
         const copied = hashCandidate(copy), unchanged = hashCandidate(root);
         if (copied.sha256 !== input.sha256 || unchanged.sha256 !== input.sha256) throw new Error('Candidate changed while creating removal copy; freeze the candidate before retrying');
         linkDependencies(root, copy);
-        const caseEvidence = { ...row, temporaryCopy: copy, beforeDeletionHash: copied.sha256, deleted: [], gates: [], status: 'running' };
+        const { commands } = removalGates(row, { ...options, output });
+        const caseEvidence = { ...row, plannedGates: commands, temporaryCopy: copy, beforeDeletionHash: copied.sha256, deleted: [], gates: [],
+            completeNpmTest: row.profile === 'full' ? 'not-run' : 'not-required-in-removal-profile', status: 'running' };
         evidence.cases.push(caseEvidence); record();
         for (const id of row.removed) {
             const owner = modules.find(module => module.id === id), path = join(copy, owner.root);
@@ -146,19 +178,15 @@ export async function checkModuleRemoval(argv = process.argv.slice(2)) {
         if (JSON.stringify([...row.retained].sort()) !== JSON.stringify(caseEvidence.remainingModules)) throw new Error('Physical package set differs from requested retention');
         record();
         if (options.prepareOnly) { caseEvidence.status = 'prepared-not-verified'; record(); continue; }
-        const commands = [
-            [process.execPath, ['scripts/check-module-boundaries.mjs']],
-            [process.execPath, ['node_modules/vue-tsc/bin/vue-tsc.js', '-b']],
-            ['npm', ['run', 'build']], ['npm', ['run', 'test:ext', '--', `--maxWorkers=${options.maxWorkers}`]], ['npm', ['test', '--', `--maxWorkers=${options.maxWorkers}`]],
-            [process.execPath, ['scripts/check-module-composition-smoke.mjs', '--output', join(output, `${row.id}-smoke.json`), ...(options.engineOnly ? ['--engine-only'] : []), ...(row.removed.length ? ['--removed-modules', row.removed.join(',')] : [])]],
-        ];
         for (let index = 0; index < commands.length; index++) {
-            const [command, args] = commands[index], logPath = join(output, `${row.id}-${index + 1}.log`);
+            const { id, command: [command, ...args] } = commands[index], logPath = join(output, `${row.id}-${index + 1}.log`);
             console.log(`[${row.id}] ${command} ${args.join(' ')} (log: ${logPath})`);
             const log = openSync(logPath, 'w');
             let gate;
             try { gate = execute(command, args, copy, log); } finally { closeSync(log); }
-            caseEvidence.gates.push({ ...gate, log: logPath }); record();
+            caseEvidence.gates.push({ id, ...gate, log: logPath });
+            if (id === 'complete-npm-test') caseEvidence.completeNpmTest = gate.exitCode === 0 ? 'passed' : 'failed';
+            record();
             if (gate.exitCode !== 0) { caseEvidence.status = 'failed'; break; }
         }
         if (caseEvidence.status === 'running') caseEvidence.status = 'passed';
@@ -171,6 +199,9 @@ export async function checkModuleRemoval(argv = process.argv.slice(2)) {
     } catch (error) { evidence.error = error.stack ?? error.message; }
     evidence.endedAt = new Date().toISOString();
     evidence.sourceFinalHash = hashCandidate(root).sha256;
+    const normalCase = evidence.cases.find(row => row.profile === 'full');
+    evidence.normalTreeFullGate.status = normalCase?.status === 'passed' ? 'passed'
+        : normalCase?.status === 'failed' ? 'failed' : 'not-run';
     evidence.status = !evidence.error && evidence.sourceFinalHash === evidence.inputHash
         && evidence.cases.length === matrix.length && evidence.cases.every(row => row.status === (options.prepareOnly ? 'prepared-not-verified' : 'passed'))
         ? (options.prepareOnly ? 'prepared-not-verified' : options.engineOnly ? 'partial-browser-not-verified' : 'passed') : 'failed';

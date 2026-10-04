@@ -1,5 +1,7 @@
 import type { Creature } from '../entities/Creature';
 import { Player } from '../entities/Player';
+import { allocateEntityId, getNextEntityId, restoreNextEntityId } from '../entities/Creature';
+import { validWorldPlacement, validWorldSnapshot, publicInteractable, sortInteractables, WORLD_INTERACTABLE_LIMIT, type WorldInteractable, type WorldInteractablePlacement, type WorldInteractablePlacementResult, type WorldInteractionSnapshot, type WorldInteractionValidation } from './world';
 import type { ExtensionRegistry } from './registry';
 import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json, ActorFacts, ResourceCommit, CharacterResources, CharacterResourceCommit, ExtensionRuleContext, ExtensionRuleInput, ExtensionRulePolicies, ItemGrowthInput, ExtensionViewDescriptor, ExtensionModuleView, ExtensionCreationResources } from './types';
 import { creatureView } from './types';
@@ -18,6 +20,10 @@ function isCreatureView(value: unknown): boolean {
 }
 export interface ExtensionPorts {
     depth(): number;
+    turn?(): number;
+    interactableCandidates?(request: WorldInteractablePlacement): readonly { x: number; y: number }[];
+    isInteractableVisible?(entity: WorldInteractable): boolean;
+    canInteractWith?(entity: WorldInteractable): boolean;
     playerId(): number;
     canManageCharacter?(): boolean;
     validateAction?(request: ControlledActionRequest): boolean;
@@ -50,6 +56,8 @@ function requireSynchronous(result: unknown): void {
 interface BufferedFact { name: HookName; event: HookEvents[HookName]; readonly?: boolean }
 interface GenerationFrame {
     token: GenerationToken;
+    world: WorldInteractionSnapshot;
+    placementNextEntityId: number | null;
     states: Record<string, Json>;
     components: ExtensionSnapshot['components'];
     causality: ReturnType<EffectCausality['snapshot']>;
@@ -82,6 +90,8 @@ export class ExtensionRuntime {
     private deaths: Record<string, DeathFact> = {};
     private readonly generations: GenerationFrame[] = [];
     private publishingGeneration = false;
+    private world: WorldInteractionSnapshot = { entities: [], gate: null };
+    private currentHook: HookName | null = null;
     constructor(registry: ExtensionRegistry, manifest: ExtensionManifest, private readonly ports: ExtensionPorts, snapshot?: ExtensionSnapshot) {
         this.manifest = structuredClone(manifest);
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
@@ -93,6 +103,10 @@ export class ExtensionRuntime {
             if (this.optionalQueries.has(capability)) throw new Error(`Conflicting optional query providers: ${capability}`);
             this.optionalQueries.set(capability, { module, provider });
         }
+        for (const module of this.modules) if (module.interactionCommands && (!Array.isArray(module.interactionCommands)
+            || new Set(module.interactionCommands).size !== module.interactionCommands.length
+            || module.interactionCommands.some(action => !validId(action) || typeof module.commands?.[action] !== 'function')))
+            throw new Error('Invalid interaction command declaration');
         for (const module of this.modules) if (module.view) {
             if (!isJson(module.view.definitions) || !module.view.stateFields.every(safeStateField)
                 || !module.view.playerComponents.every(validId)) throw new Error('Invalid extension display descriptor');
@@ -113,6 +127,7 @@ export class ExtensionRuntime {
         if (snapshot) {
             this.causality.restore(snapshot.foundation.causality);
             this.deaths = structuredClone(snapshot.foundation.deaths);
+            this.world = structuredClone(snapshot.foundation.world);
         }
         this.validateSnapshot(this.snapshot());
     }
@@ -130,6 +145,33 @@ export class ExtensionRuntime {
         return {
             moduleId: module.id,
             get depth() { return runtime.ports.depth(); },
+            get turn() { return runtime.ports.turn?.() ?? 0; },
+            interactables() { return freezeView(structuredClone(runtime.world.entities.filter(entity => entity.owner === module.id))); },
+            interactionTarget(id) {
+                const entity = runtime.world.entities.find(entity => entity.id === id && entity.owner === module.id);
+                return entity && runtime.ports.canInteractWith?.(entity) ? freezeView(structuredClone(entity)) : null;
+            },
+            placeInteractables(requests) {
+                writable();
+                if (!module.worldInteractables || runtime.currentHook !== 'enteredLevel' || !runtime.publishingGeneration) throw new Error('World placement outside committed level entry');
+                return runtime.placeInteractables(module.id, requests);
+            },
+            interactionGate(active) {
+                writable();
+                if (runtime.commandModule !== module || runtime.activeScope !== runtime.commandScope) throw new Error('Interaction gate outside module command');
+                if (active === null) {
+                    if (runtime.world.gate && runtime.world.gate.owner !== module.id) throw new Error('Interaction gate owner mismatch');
+                    runtime.world.gate = null; return;
+                }
+                if (!active || Object.keys(active).sort().join(',') !== 'sessionId,targetEntityId'
+                    || !Number.isSafeInteger(active.sessionId) || active.sessionId < 1
+                    || !Number.isSafeInteger(active.targetEntityId) || !module.interactionCommands?.length
+                    || (runtime.world.gate && (runtime.world.gate.owner !== module.id
+                        || runtime.world.gate.sessionId !== active.sessionId || runtime.world.gate.targetEntityId !== active.targetEntityId))) throw new Error('Invalid interaction gate');
+                const entity = runtime.world.entities.find(entity => entity.id === active.targetEntityId && entity.owner === module.id);
+                if (!entity || !runtime.ports.canInteractWith?.(entity)) throw new Error('Unavailable interaction target');
+                runtime.world.gate = { owner: module.id, ...active };
+            },
             get playerId() { return runtime.ports.playerId(); },
             get state() { return cloneJson(runtime.states[module.id]!); },
             isInitialCommand(action, data) { return runtime.isInitialCommand(action, data); },
@@ -331,12 +373,37 @@ export class ExtensionRuntime {
         } catch { return false; }
     }
     allowsInput(action: string, data?: unknown): boolean {
+        if (this.disposed) return false;
+        if (this.world.gate) {
+            try {
+                if (action !== 'ext:command' || typeof data !== 'string') return false;
+                const input = JSON.parse(data), owner = this.modules.find(module => module.id === this.world.gate!.owner);
+                if (!owner || input.module !== owner.id || !owner.interactionCommands?.includes(input.action)) return false;
+            } catch { return false; }
+        }
         if (action === 'ext:command' && !this.hasRegisteredCommand(data)) return false;
         return this.modules.every(module => module.allowInput?.(action, data, this.context(module, null)) !== false);
     }
     get readyToSave(): boolean { return this.modules.every(module => module.readyToSave?.(this.context(module, null)) !== false); }
     validateRecording(events: readonly {action:string;data:unknown;extensions?:ExtensionSnapshot}[]): boolean {
         if (events.some(event => event.action === 'ext:command' && !this.hasRegisteredCommand(event.data))) return false;
+        // Check historical gates against their own previous checkpoint, never
+        // against the live run. A forged ordinary input cannot close a gate and
+        // retire the old run before replay discovers the mismatch.
+        let previousGate: WorldInteractionSnapshot['gate'] = null;
+        for (const event of events) {
+            const currentGate = event.extensions?.foundation.world.gate ?? null;
+            let input: {module?:string;action?:string} | null = null;
+            if (event.action === 'ext:command' && typeof event.data === 'string') {
+                try { input = JSON.parse(event.data); } catch { return false; }
+            }
+            if (previousGate) {
+                const owner = this.modules.find(module => module.id === previousGate!.owner);
+                if (input?.module !== owner?.id || !owner?.interactionCommands?.includes(input?.action ?? '')) return false;
+                if (currentGate && canonical(currentGate) !== canonical(previousGate)) return false;
+            } else if (currentGate && input?.module !== currentGate.owner) return false;
+            previousGate = currentGate;
+        }
         const count = this.modules.filter(module => module.initialCommand).length;
         if (events.length < count || !events.slice(0, count).every(event => event.action === 'ext:command' && typeof event.data === 'string')
             || !this.validateInitialCommands(events.slice(0, count).map(event => event.data as string))
@@ -423,10 +490,10 @@ export class ExtensionRuntime {
             throw error;
         }
     }
-    validateWorld(creatures: readonly Creature[]): void {
+    validateWorld(creatures: readonly Creature[], world?: Omit<WorldInteractionValidation, 'entities' | 'gate'>): void {
         for (const actor of creatures) this.nativeMaximumBase(actor);
         const actors = creatures.map(actor => this.actorFacts(actor,creatures[0]!.id));
-        for (const module of this.modules) if (module.validateWorld && !module.validateWorld(this.states[module.id]!, this.components, actors))
+        for (const module of this.modules) if (module.validateWorld && !module.validateWorld(this.states[module.id]!, this.components, actors, freezeView({ ...world, depth: world?.depth ?? this.ports.depth(), turn: world?.turn ?? this.ports.turn?.() ?? 0, isGameOver: world?.isGameOver ?? false, nextEntityId: world?.nextEntityId ?? getNextEntityId(), entities: structuredClone(this.world.entities), gate: structuredClone(this.world.gate) })))
             throw new Error('Invalid extension world references');
     }
     private invoke(module: ExtensionModule, callback: (context: ExtensionContext) => void, command = false): void {
@@ -470,12 +537,14 @@ export class ExtensionRuntime {
                 else {
                     const prior = this.resourcePhase;
                     this.resourcePhase = ['creatureSpawned','simulationSettled','nativeMaximumReset','objectiveTime','committedAction','physicalResolved'].includes(name);
-                    try { this.invoke(module, context => handler(input, context)); } finally { this.resourcePhase = prior; }
+                    const priorHook = this.currentHook; this.currentHook = name;
+                    try { this.invoke(module, context => handler(input, context)); } finally { this.resourcePhase = prior; this.currentHook = priorHook; }
                 }
             }
         }
     }
     command(data: unknown): void {
+        if (this.world.gate && !this.allowsInput('ext:command', data)) throw new Error('Interaction gate rejects command');
         if (typeof data !== 'string') throw new Error('Extension command requires JSON string');
         const input = JSON.parse(data) as { module: string; action: string; payload: Json };
         if (!isJson(input) || !input || typeof input !== 'object' || Array.isArray(input)
@@ -489,11 +558,12 @@ export class ExtensionRuntime {
         const states = structuredClone(this.states), components = structuredClone(this.components);
         const resources = [...this.creatures].map(actor => ({ actor, hp: actor.hp, maxHp: actor.maxHp,
             strength: actor instanceof Player ? actor.strength : null, gold: actor instanceof Player ? this.ports.gold?.() ?? 0 : null }));
+        const priorWorld = structuredClone(this.world);
         const priorCommandModule = this.commandModule, priorActionUsed = this.commandActionUsed;
         this.commandModule = module; this.commandActionUsed = false;
         try { this.invoke(module, context => handler(input.payload, context), true); }
         catch (error) {
-            this.states = states; this.components = components;
+            this.states = states; this.components = components; this.world = priorWorld;
             for (const saved of resources) {
                 saved.actor.hp = saved.hp; saved.actor.maxHp = saved.maxHp;
                 if (saved.actor instanceof Player) { saved.actor.strength = saved.strength!; this.ports.setGold?.(saved.gold!); }
@@ -552,7 +622,7 @@ export class ExtensionRuntime {
     beginGeneration(label: string): GenerationToken {
         if (this.disposed || this.publishingGeneration || !label.length) throw new Error('Invalid generation transaction');
         const token = Object.freeze({ label });
-        this.generations.push({ token, states: structuredClone(this.states), components: structuredClone(this.components),
+        this.generations.push({ token, world: structuredClone(this.world), placementNextEntityId: null, states: structuredClone(this.states), components: structuredClone(this.components),
             causality: this.causality.snapshot(), deaths: structuredClone(this.deaths), creatures: new Set(this.creatures), facts: [], births: new Set() });
         return token;
     }
@@ -584,7 +654,8 @@ export class ExtensionRuntime {
     }
     rollbackGeneration(token: GenerationToken): void {
         const frame = this.generation(token);
-        this.states = frame.states; this.components = frame.components;
+        this.states = frame.states; this.components = frame.components; this.world = frame.world;
+        if (frame.placementNextEntityId !== null) restoreNextEntityId(frame.placementNextEntityId);
         this.causality.restore(frame.causality); this.deaths = frame.deaths;
         for (const creature of this.creatures) if (!frame.creatures.has(creature)) {
             creature.extensionHooks = undefined; this.spawned.delete(creature); this.creatures.delete(creature);
@@ -603,6 +674,62 @@ export class ExtensionRuntime {
         this.deaths[String(creature.id)] = fact;
         return structuredClone(fact);
     }
+    /** World capability is inert unless a selected module actually owns objects. */
+    get interactionActive(): boolean { return !this.disposed && this.world.gate !== null; }
+    visibleInteractables(owner?: string) {
+        if (this.disposed) return [];
+        return Object.freeze(sortInteractables(this.world.entities.filter(entity => (!owner || entity.owner === owner)
+            && entity.depth === this.ports.depth() && this.ports.isInteractableVisible?.(entity))).map(publicInteractable));
+    }
+    nearbyInteractables(owner?: string) {
+        if (this.disposed) return [];
+        return Object.freeze(sortInteractables(this.world.entities.filter(entity => (!owner || entity.owner === owner)
+            && entity.depth === this.ports.depth() && this.ports.canInteractWith?.(entity))).map(publicInteractable));
+    }
+    private placeInteractables(owner: string, requests: readonly WorldInteractablePlacement[]): readonly WorldInteractablePlacementResult[] {
+        if (!Array.isArray(requests) || requests.length > 256 || !requests.every(request => validWorldPlacement(request, owner))
+            || new Set(requests.map(request => request.instanceKey)).size !== requests.length) throw new Error('Invalid world placement batch');
+        if (requests.length && !this.ports.interactableCandidates) throw new Error('World placement capability unavailable');
+        const depth = this.ports.depth(), occupied = new Set(this.world.entities.filter(entity => entity.depth === depth).map(entity => `${entity.x},${entity.y}`));
+        const selected = requests.map(request => {
+            const existing = this.world.entities.find(entity => entity.owner === owner && entity.instanceKey === request.instanceKey);
+            if (existing) throw new Error('Duplicate world placement instance');
+            const candidates = this.ports.interactableCandidates!(freezeView(structuredClone(request)));
+            const cell = candidates.find(cell => !occupied.has(`${cell.x},${cell.y}`));
+            if (cell) occupied.add(`${cell.x},${cell.y}`);
+            return { request, cell };
+        });
+        const count = selected.filter(row => row.cell).length;
+        if (this.world.entities.length + count > WORLD_INTERACTABLE_LIMIT || !Number.isSafeInteger(getNextEntityId() + count)) throw new Error('World entity budget exceeded');
+        const frame = this.generations[this.generations.length - 1];
+        if (count && frame && frame.placementNextEntityId === null) frame.placementNextEntityId = getNextEntityId();
+        const results = selected.map(({request,cell}) => {
+            if (!cell) return { instanceKey: request.instanceKey, entity: null };
+            const { minStairDistance: _stairs, maxEntranceDistance: _entrance, ...content } = request;
+            const entity: WorldInteractable = { ...content, id: allocateEntityId(), owner, depth, x: cell.x, y: cell.y };
+            this.world.entities.push(entity);
+            return { instanceKey: request.instanceKey, entity };
+        });
+        return freezeView(structuredClone(results));
+    }
+    /** Rooted by both active and cached levels, never by observation history.
+     * Terminal runs keep their objects for inspection/save; only their gate closes. */
+    collectWorld(depths: readonly number[], isGameOver: boolean): void {
+        if (this.generations.length || this.activeScope) throw new Error('World collection outside safe boundary');
+        const removed = this.world.entities.filter(entity => !depths.includes(entity.depth));
+        const gate = this.world.gate;
+        if (!removed.length && !(gate && isGameOver)) return;
+        const beforeWorld = structuredClone(this.world), beforeStates = structuredClone(this.states), beforeComponents = structuredClone(this.components);
+        try {
+            this.world.entities = this.world.entities.filter(entity => depths.includes(entity.depth));
+            if (gate && (isGameOver || removed.some(entity => entity.id === gate.targetEntityId))) {
+                this.world.gate = null;
+                this.emit('interactionClosed', { ...gate, reason: isGameOver ? 'game-over' : 'target-removed' });
+            }
+            for (const owner of [...new Set(removed.map(entity => entity.owner))].sort())
+                this.emit('interactablesRemoved', { owner, entityIds: removed.filter(entity => entity.owner === owner).map(entity => entity.id) });
+        } catch (error) { this.world = beforeWorld; this.states = beforeStates; this.components = beforeComponents; throw error; }
+    }
     /** Mechanical roots only: observation/history sets must not pin dead components. */
     collectComponents(reachable: Iterable<Creature>): void {
         if (this.generations.length || this.activeScope) throw new Error('Component collection outside safe boundary');
@@ -618,8 +745,17 @@ export class ExtensionRuntime {
     get sourceId(): number | null { return this.attacks[this.attacks.length - 1] ?? null; }
     /** Pure player-only projection. Never snapshots causal ledgers, NPCs, rewards, or the world. */
     readModuleView(moduleId: string): ExtensionModuleView | null {
-        const descriptor = this.views.get(moduleId);
-        if (this.disposed || !descriptor) return null;
+        const descriptor = this.views.get(moduleId), module = this.modules.find(entry => entry.id === moduleId);
+        if (this.disposed || !module) return null;
+        if (module.projectView) {
+            const projection = module.projectView(freezeView({ queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), state: cloneJson(this.states[moduleId]!), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
+                visibleInteractables: this.visibleInteractables(moduleId), nearbyInteractables: this.nearbyInteractables(moduleId) }));
+            requireSynchronous(projection);
+            if (!isJson(projection) || !projection || typeof projection !== 'object' || Array.isArray(projection)) throw new Error('Invalid module display projection');
+            return freezeView({ session: this.viewSession, definitions: {}, playerId: this.ports.playerId(), state: cloneJson(projection) as Record<string, Json>, components: {},
+                canManageCharacter: this.ports.canManageCharacter?.() ?? true });
+        }
+        if (!descriptor) return null;
         const state = this.states[moduleId], playerId = this.ports.playerId();
         const projector = this.modules.find(module=>module.id === moduleId)?.projectPlayerComponent;
         const fields: Record<string, Json> = {}, components: Record<string, Json> = {};
@@ -647,7 +783,7 @@ export class ExtensionRuntime {
     snapshot(): ExtensionSnapshot {
         if (this.generations.length) throw new Error('Cannot snapshot an open generation transaction');
         return structuredClone({ manifest: this.manifest, modules: this.states, components: this.components,
-            foundation: { version: 1, causality: this.causality.snapshot(), deaths: this.deaths } });
+            foundation: { version: 2, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
     }
     validateSnapshot(value: ExtensionSnapshot): void {
         if (!value || !isJson(value) || canonical(value.manifest) !== canonical(this.manifest)
@@ -656,9 +792,13 @@ export class ExtensionRuntime {
             || Object.keys(value).some(key => !['manifest', 'modules', 'components', 'foundation'].includes(key))
             || canonical(Object.keys(value.modules).sort()) !== canonical(this.modules.map(module => module.id).sort())) throw new Error('Invalid extension snapshot');
         const foundation = value.foundation;
-        if (!foundation || foundation.version !== 1 || Object.keys(foundation).some(key => !['version', 'causality', 'deaths'].includes(key))
+        if (!foundation || foundation.version !== 2 || Object.keys(foundation).sort().join(',') !== 'causality,deaths,version,world'
+            || !validWorldSnapshot(foundation.world, this.modules.map(module => module.id))
             || !EffectCausality.validateSnapshot(foundation.causality) || !foundation.deaths || Array.isArray(foundation.deaths)
             || typeof foundation.deaths !== 'object') throw new Error('Invalid extension foundation snapshot');
+        if (foundation.world.entities.some(entity => !this.modules.find(module => module.id === entity.owner)?.worldInteractables)
+            || (foundation.world.gate && !this.modules.find(module => module.id === foundation.world.gate!.owner)?.interactionCommands?.length))
+            throw new Error('Undeclared world interaction capability');
         for (const [id, fact] of Object.entries(foundation.deaths)) {
             if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id)) || !fact || fact.creature?.id !== Number(id)
                 || typeof fact.administrative !== 'boolean' || !Object.prototype.hasOwnProperty.call(fact, 'origin')
