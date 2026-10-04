@@ -1,4 +1,4 @@
-# Growth 数据配置合同（2c，schema 1 / rules 1.5.0）
+# Growth 数据配置合同（内容扩充，schema 1 / rules 1.6.0）
 
 本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。1d 已接技能动作/效果消费/客观时钟；1e 接通身份选择/授予/誓约、怪物模板与盟友自动分配。§1.1–1.6 保留逐步交付历史，2c 新增可选能力见 §1.7。
 
@@ -120,7 +120,7 @@
 
 ### 1.7 2c 可选剧情奖励与公开玩家查询
 
-数据 schema 仍为 1；可选能力接线改变规则语义，因此 growth moduleVersion/rulesVersion 同升 `1.5.0`，descriptor 要求 foundation 3。旧 `1.4.0` 存档/录像按精确 manifest 拒绝，不自动迁移。现有 `story` 配置形状不变，默认仍关闭且 rewards 为空。
+数据 schema 仍为 1；2c可选能力接线曾升级到1.5.0。本轮新增两项报价，growth moduleVersion/rulesVersion 同升 `1.6.0`，descriptor 要求 foundation 3。旧包存档/录像按精确 manifest 拒绝，不自动迁移。`story` 配置形状不变、来源默认仍关闭；rewards 已包含 `bell.settled` 和 `wick.settled` 各5XP，启用来源后另开新局才会发放。
 
 - `growth.story-reward.v1` 接受底座生成的 issuerId、rewardId、instanceId 与固定 `recipient: 'player'`。调用者不能传经验数额或本地化理由；growth 自己从 `config.experience.story.rewards` 取 amount/reasonKey
 - story 关闭返回 `skipped/disabled`；开启但没有对应报价返回 `skipped/unsupported-key`。两者不创建 growth 收据或经验。模块缺席由底座返回 `skipped/absent`，由剧情模块处理自己的 skip 收据
@@ -161,8 +161,8 @@
 | `$` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1a0 |
 | `$.schema` | 枚举 `1` | `1` | 1a0 |
 | `$.moduleId` | 枚举 `"growth"` | `"growth"` | 1a0 |
-| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.5.0"` | 1a0；2c升级 |
-| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.5.0"` | 1a0；2c升级 |
+| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.6.0"` | 1a0；内容扩充升级 |
+| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.6.0"` | 1a0；内容扩充升级 |
 | `$.config` | object；全部配置子组必填，见以下各节 | 对象 | 1a–1e |
 | `$.definitions` | array；元素为Skill或Identity，完整结构见对应节 | 24项：12技能/4职业/4血统/4信仰 | 1d/1e |
 
@@ -203,11 +203,11 @@
 | `$.config.experience.identification.categories` | array，长度≥0；元素唯一 | 样例长度6；见元素字段 | 1a |
 | `$.config.experience.identification.categories[]` | 外部ID（字母起始；字母/数字/_.:-） | `"potion" / "scroll" / "wand" / "staff" …` | 1a |
 | `$.config.experience.story` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1a |
-| `$.config.experience.story.rewards` | array，长度≥0 | `[]` | 1a |
-| `$.config.experience.story.rewards[]` | object；所有列出子键必填，未知键拒绝 | 样例未选此变体/无元素 | 1a |
-| `$.config.experience.story.rewards[].id` | 稳定ID（小写；`.`/`-`分段） | 样例未选此变体/无元素 | 1a |
-| `$.config.experience.story.rewards[].amount` | 安全整数 [0,MAX] | 样例未选此变体/无元素 | 1a |
-| `$.config.experience.story.rewards[].reasonKey` | 本地化键 `ext.growth.*`，且词条必须存在 | 样例未选此变体/无元素 | 1a |
+| `$.config.experience.story.rewards` | array，长度≥0 | 两项5XP报价 | 1a |
+| `$.config.experience.story.rewards[]` | object；所有列出子键必填，未知键拒绝 | 两个独立报价对象 | 1a |
+| `$.config.experience.story.rewards[].id` | 稳定ID（小写；`.`/`-`分段） | `bell.settled` / `wick.settled` | 1a |
+| `$.config.experience.story.rewards[].amount` | 安全整数 [0,MAX] | `5` | 1a |
+| `$.config.experience.story.rewards[].reasonKey` | 本地化键 `ext.growth.*`，且词条必须存在 | `ext.growth.story.bell_settled` / `ext.growth.story.wick_settled` | 1a |
 | `$.config.experience.allySplit` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1a |
 | `$.config.experience.allySplit.playerBasisPoints` | 安全整数 [0,10000] | `8000` | 1a |
 | `$.config.experience.allySplit.remainder` | 枚举 `"credited-actor"` | `"credited-actor"` | 1a |

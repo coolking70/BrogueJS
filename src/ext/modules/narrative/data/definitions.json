@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "moduleId": "narrative",
-  "moduleVersion": "1.2.0",
-  "rulesVersion": "1.2.0",
+  "moduleVersion": "1.3.0",
+  "rulesVersion": "1.3.0",
   "stateVersion": 3,
   "inputVersion": 2,
   "config": {
@@ -27,6 +27,30 @@
       "min": null,
       "max": null,
       "values": null
+    },
+    {
+      "id": "bell.verdict",
+      "type": "string",
+      "initial": "unresolved",
+      "min": null,
+      "max": null,
+      "values": [
+        "unresolved",
+        "toll",
+        "hush"
+      ]
+    },
+    {
+      "id": "wick.verdict",
+      "type": "string",
+      "initial": "unresolved",
+      "min": null,
+      "max": null,
+      "values": [
+        "unresolved",
+        "keep",
+        "release"
+      ]
     }
   ],
   "counters": [],
@@ -51,6 +75,52 @@
           "minStairDistance": 1,
           "maxEntranceDistance": 8,
           "onNoSpace": "skip"
+        }
+      ]
+    },
+    {
+      "id": "bell.mender",
+      "nameKey": "ext.narrative.npc.bell.mender.name",
+      "descriptionKey": "ext.narrative.npc.bell.mender.description",
+      "glyph": "钟",
+      "color": "#bda078",
+      "portraitId": "bell.mender.neutral",
+      "dialogueId": "bell.mender.greeting",
+      "presence": "stationary-interactable",
+      "interactionDistance": 1,
+      "placements": [
+        {
+          "id": "bell.mender.first",
+          "minDepth": 1,
+          "maxDepth": 2,
+          "maxPerRun": 1,
+          "maxPerDepth": 1,
+          "minStairDistance": 1,
+          "maxEntranceDistance": 8,
+          "onNoSpace": "defer"
+        }
+      ]
+    },
+    {
+      "id": "wick.listener",
+      "nameKey": "ext.narrative.npc.wick.listener.name",
+      "descriptionKey": "ext.narrative.npc.wick.listener.description",
+      "glyph": "烬",
+      "color": "#9bafbb",
+      "portraitId": "wick.listener.neutral",
+      "dialogueId": "wick.listener.greeting",
+      "presence": "stationary-interactable",
+      "interactionDistance": 1,
+      "placements": [
+        {
+          "id": "wick.listener.first",
+          "minDepth": 1,
+          "maxDepth": 2,
+          "maxPerRun": 1,
+          "maxPerDepth": 1,
+          "minStairDistance": 1,
+          "maxEntranceDistance": 8,
+          "onNoSpace": "defer"
         }
       ]
     }
@@ -106,6 +176,446 @@
           ]
         }
       ]
+    },
+    {
+      "id": "bell.mender.greeting",
+      "entry": "hello",
+      "nodes": [
+        {
+          "id": "hello",
+          "textKey": "ext.narrative.dialogue.bell.hello",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "ask-bell",
+              "textKey": "ext.narrative.choice.bell.ask",
+              "condition": {
+                "op": "flag",
+                "id": "bell.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.choice.bell.settled",
+              "effects": [],
+              "next": "decision"
+            },
+            {
+              "id": "recall-bell",
+              "textKey": "ext.narrative.choice.bell.recall",
+              "condition": {
+                "op": "not",
+                "arg": {
+                  "op": "flag",
+                  "id": "bell.verdict",
+                  "equals": "unresolved"
+                }
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "remember"
+            },
+            {
+              "id": "leave-bell",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "decision",
+          "textKey": "ext.narrative.dialogue.bell.decision",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "read-inscription",
+              "textKey": "ext.narrative.choice.bell.inscription",
+              "condition": {
+                "op": "flag",
+                "id": "archive.read",
+                "equals": true
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.choice.bell.need_archive",
+              "effects": [],
+              "next": "inscription"
+            },
+            {
+              "id": "bell-toll",
+              "textKey": "ext.narrative.choice.bell.toll",
+              "condition": {
+                "op": "flag",
+                "id": "bell.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.choice.bell.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "bell.verdict",
+                  "value": "toll"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "bell.toll.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "bell.settled"
+                }
+              ],
+              "next": "toll-ending"
+            },
+            {
+              "id": "bell-hush",
+              "textKey": "ext.narrative.choice.bell.hush",
+              "condition": {
+                "op": "flag",
+                "id": "bell.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.choice.bell.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "bell.verdict",
+                  "value": "hush"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "bell.hush.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "bell.settled"
+                }
+              ],
+              "next": "hush-ending"
+            },
+            {
+              "id": "leave-decision",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "inscription",
+          "textKey": "ext.narrative.dialogue.bell.inscription",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "return-decision",
+              "textKey": "ext.narrative.choice.bell.return",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "decision"
+            },
+            {
+              "id": "leave-inscription",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "toll-ending",
+          "textKey": "ext.narrative.dialogue.bell.toll",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "finish-toll",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "hush-ending",
+          "textKey": "ext.narrative.dialogue.bell.hush",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "finish-hush",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "remember",
+          "textKey": "ext.narrative.dialogue.bell.remember",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "finish-remember",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wick.listener.greeting",
+      "entry": "hello",
+      "nodes": [
+        {
+          "id": "hello",
+          "textKey": "ext.narrative.dialogue.wick.hello",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "listen-wick",
+              "textKey": "ext.narrative.choice.wick.listen",
+              "condition": {
+                "op": "flag",
+                "id": "wick.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.choice.wick.settled",
+              "effects": [],
+              "next": "memory"
+            },
+            {
+              "id": "recall-wick",
+              "textKey": "ext.narrative.choice.wick.recall",
+              "condition": {
+                "op": "not",
+                "arg": {
+                  "op": "flag",
+                  "id": "wick.verdict",
+                  "equals": "unresolved"
+                }
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "remember"
+            },
+            {
+              "id": "leave-wick",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "memory",
+          "textKey": "ext.narrative.dialogue.wick.memory",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "ask-listener",
+              "textKey": "ext.narrative.choice.wick.ask",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "reason"
+            },
+            {
+              "id": "wick-keep",
+              "textKey": "ext.narrative.choice.wick.keep",
+              "condition": {
+                "op": "flag",
+                "id": "wick.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.choice.wick.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "wick.verdict",
+                  "value": "keep"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "wick.keep.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "wick.settled"
+                }
+              ],
+              "next": "keep-ending"
+            },
+            {
+              "id": "wick-release",
+              "textKey": "ext.narrative.choice.wick.release",
+              "condition": {
+                "op": "flag",
+                "id": "wick.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.choice.wick.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "wick.verdict",
+                  "value": "release"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "wick.release.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "wick.settled"
+                }
+              ],
+              "next": "release-ending"
+            },
+            {
+              "id": "leave-memory",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "reason",
+          "textKey": "ext.narrative.dialogue.wick.reason",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "return-memory",
+              "textKey": "ext.narrative.choice.wick.return",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "memory"
+            },
+            {
+              "id": "leave-reason",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "keep-ending",
+          "textKey": "ext.narrative.dialogue.wick.keep",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "finish-keep",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "release-ending",
+          "textKey": "ext.narrative.dialogue.wick.release",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "finish-release",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "remember",
+          "textKey": "ext.narrative.dialogue.wick.remember",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "finish-wick-remember",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        }
+      ]
     }
   ],
   "journal": [
@@ -113,11 +623,37 @@
       "id": "archive.note",
       "titleKey": "ext.narrative.journal.note.title",
       "textKey": "ext.narrative.journal.note.body"
+    },
+    {
+      "id": "bell.toll.note",
+      "titleKey": "ext.narrative.journal.bell.toll.title",
+      "textKey": "ext.narrative.journal.bell.toll.body"
+    },
+    {
+      "id": "bell.hush.note",
+      "titleKey": "ext.narrative.journal.bell.hush.title",
+      "textKey": "ext.narrative.journal.bell.hush.body"
+    },
+    {
+      "id": "wick.keep.note",
+      "titleKey": "ext.narrative.journal.wick.keep.title",
+      "textKey": "ext.narrative.journal.wick.keep.body"
+    },
+    {
+      "id": "wick.release.note",
+      "titleKey": "ext.narrative.journal.wick.release.title",
+      "textKey": "ext.narrative.journal.wick.release.body"
     }
   ],
   "storyEvents": [
     {
       "id": "archive.read-done"
+    },
+    {
+      "id": "bell.settled"
+    },
+    {
+      "id": "wick.settled"
     }
   ],
   "triggers": [
@@ -140,6 +676,62 @@
           "capability": "growth.story-reward.v1",
           "rewardId": "archive.read",
           "receiptId": "archive.reward",
+          "onUnavailable": "skip"
+        }
+      ]
+    },
+    {
+      "id": "bell.reward",
+      "on": {
+        "kind": "story",
+        "eventId": "bell.settled"
+      },
+      "priority": 0,
+      "condition": {
+        "op": "not",
+        "arg": {
+          "op": "flag",
+          "id": "bell.verdict",
+          "equals": "unresolved"
+        }
+      },
+      "repeat": {
+        "kind": "once-per-run"
+      },
+      "effects": [
+        {
+          "kind": "optional-reward",
+          "capability": "growth.story-reward.v1",
+          "rewardId": "bell.settled",
+          "receiptId": "bell.reward",
+          "onUnavailable": "skip"
+        }
+      ]
+    },
+    {
+      "id": "wick.reward",
+      "on": {
+        "kind": "story",
+        "eventId": "wick.settled"
+      },
+      "priority": 0,
+      "condition": {
+        "op": "not",
+        "arg": {
+          "op": "flag",
+          "id": "wick.verdict",
+          "equals": "unresolved"
+        }
+      },
+      "repeat": {
+        "kind": "once-per-run"
+      },
+      "effects": [
+        {
+          "kind": "optional-reward",
+          "capability": "growth.story-reward.v1",
+          "rewardId": "wick.settled",
+          "receiptId": "wick.reward",
           "onUnavailable": "skip"
         }
       ]

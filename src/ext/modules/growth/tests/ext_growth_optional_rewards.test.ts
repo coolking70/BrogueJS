@@ -258,7 +258,7 @@ function projected(game: Game) {
 describe.each(compositionCases)('EXT-2c discovered narrative and growth %s',kind=> {
     it.each([false,true])('keeps choice, rewards, saves, replay and seek coherent with reverse registration=%s',reversed=> {
         const game = realComposition(kind,reversed), origin = structuredClone(game.toSaveSnapshot().run.recordingOrigin!.initial);
-        const target = game.extensionRuntime!.snapshot().foundation.world.entities.find(entity=>entity.owner === 'narrative')!;
+        const target = game.extensionRuntime!.snapshot().foundation.world.entities.find(entity=>entity.owner === 'narrative' && entity.contentId === 'archive.keeper')!;
         expect(target).toBeDefined();
         expect(Math.max(Math.abs(target.x-game.player.x),Math.abs(target.y-game.player.y))).toBeLessThanOrEqual(target.interactionDistance);
         const random = rng.getState(), turn = game.absoluteTurnNumber, tick = timeSystem.currentTick;

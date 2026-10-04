@@ -60,7 +60,7 @@ describe.each(combinations)('EXT-2e natural normal-game persistence with %j', (.
         const game = createHeadlessGame(seed, 'normal');
         game.startNewGame({ seed, mode: 'normal', ruleSet: 'extended', extensions: ids, initialCommands });
         game.animationEnabled = false; acknowledge();
-        const target = game.extensionRuntime!.snapshot().foundation.world.entities.find(entity => entity.owner === 'narrative')!;
+        const target = game.extensionRuntime!.snapshot().foundation.world.entities.find(entity => entity.owner === 'narrative' && entity.contentId === 'archive.keeper')!;
         expect(target).toBeDefined();
         expect(Math.max(Math.abs(target.x - game.player.x), Math.abs(target.y - game.player.y))).toBeLessThanOrEqual(target.interactionDistance);
         const origin = clone(game.toSaveSnapshot().run.recordingOrigin!.initial);

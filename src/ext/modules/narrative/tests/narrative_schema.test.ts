@@ -7,9 +7,10 @@ import { assertLoadedNarrativePack, assertNarrativeJson, freezeNarrative, loadNa
 import type { Condition, NarrativePack } from '../types';
 import { initialNarrativeState, validateNarrativeState } from '../state';
 import { planNarrativeFact } from '../effects';
+import { keeperOnlyContentFixture } from './contentFixture';
 
 type Mutable<T> = T extends readonly (infer U)[] ? Mutable<U>[] : T extends object ? { -readonly [K in keyof T]: Mutable<T[K]> } : T;
-const fixture = (): Mutable<NarrativePack> => structuredClone(definitions) as Mutable<NarrativePack>;
+const fixture = (): Mutable<NarrativePack> => keeperOnlyContentFixture() as Mutable<NarrativePack>;
 const load = (value: unknown = fixture(), portraits: unknown = portraitData, locales: unknown = locale) => loadNarrativePack(value, portraits, locales);
 function rejects(value: unknown, code: NarrativeErrorCode, path?: string, portraits: unknown = portraitData, locales: unknown = locale): void {
     let caught: unknown;
@@ -28,8 +29,8 @@ const trigger = (pack: Mutable<NarrativePack>) => pack.triggers[0]!;
 const text = 'ext.narrative.choice.leave';
 
 describe('narrative 2a1 pure schema', () => {
-    it('loads the complete original sample as isolated recursively frozen JSON', () => {
-        const raw = fixture(); const result = load(raw);
+    it('loads the complete installed content as isolated recursively frozen JSON', () => {
+        const raw = structuredClone(definitions); const result = load(raw);
         expect(result).toEqual(raw); expect(result).not.toBe(raw);
         expect(result.npcs[0]!.id).toBe('archive.keeper');
         expect(result.npcs[0]!.presence).toBe('stationary-interactable');
@@ -51,7 +52,7 @@ describe('narrative 2a1 pure schema', () => {
     it('keeps display version and asset changes outside mechanical package identity', () => {
         const portraits = structuredClone(portraitData); portraits.displayVersion = '2.3.4'; portraits.portraits[0]!.width = 1024;
         Object.assign(portraits.portraits[0]!, { asset: 'art/keeper-new.webp' });
-        expect(load(definitions, portraits)).toEqual(load());
+        expect(load(definitions, portraits)).toEqual(load(definitions));
         expect(loadPortraitManifest(portraits, locale).displayVersion).toBe('2.3.4');
         expect(Object.isFrozen(loadPortraitManifest(portraits, locale).portraits[0])).toBe(true);
     });

@@ -13,7 +13,7 @@ import { createNarrativeModuleFromPack } from '../module';
 import { loadNarrativePack } from '../schema';
 import { validateNarrativeState, type NarrativeState } from '../state';
 import type { Effect, NarrativePack, Trigger } from '../types';
-import rawPack from '../data/definitions.json';
+import { keeperOnlyContentFixture } from './contentFixture';
 import portraits from '../data/portraits.json';
 import locale from '../locales/zh_CN.json';
 
@@ -29,7 +29,7 @@ const entryTrigger = (id: string, effects: readonly Effect[], priority = 0): Tri
     id, on: { kind: 'entered-level' }, priority, condition: { op: 'true' }, repeat: { kind: 'once-per-run' }, effects,
 });
 function pack(change?: (data: Mutable<NarrativePack>) => void): NarrativePack {
-    const data = clone(rawPack) as unknown as Mutable<NarrativePack>;
+    const data = keeperOnlyContentFixture() as unknown as Mutable<NarrativePack>;
     change?.(data);
     return loadNarrativePack(data, portraits, locale);
 }

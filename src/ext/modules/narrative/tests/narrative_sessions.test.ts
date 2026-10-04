@@ -1,19 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ExtensionContext, Json, WorldInteractable } from '../../../types';
 import { createNarrativeModuleFromPack } from '../module';
-import { loadNarrativeDefinitionPack } from '../definitions';
 import { loadNarrativePack } from '../schema';
 import { validateNarrativeState, type NarrativeState } from '../state';
 import { validateNarrativeWorldBindings, validateNarrativeRecording } from '../validation';
 import { projectNarrativeView } from '../view';
-import raw from '../data/definitions.json';
+import { keeperOnlyContentFixture } from './contentFixture';
 import portraits from '../data/portraits.json';
 import locale from '../locales/zh_CN.json';
 import type { NarrativePack } from '../types';
 
 type Mutable<T> = { -readonly [P in keyof T]: T[P] extends readonly (infer U)[] ? Mutable<U>[] : T[P] extends object ? Mutable<T[P]> : T[P] };
 const clone = <T>(value: T): T => structuredClone(value);
-function fixture(pack = loadNarrativeDefinitionPack()) {
+const raw = keeperOnlyContentFixture();
+function fixture(pack = loadNarrativePack(keeperOnlyContentFixture(), portraits, locale)) {
     const module = createNarrativeModuleFromPack(pack);
     let state = module.initialState() as unknown as NarrativeState, depth = 1, nextId = 10;
     let gate: { owner: string; targetEntityId: number; sessionId: number } | null = null;
