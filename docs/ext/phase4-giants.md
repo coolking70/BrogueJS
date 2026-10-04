@@ -1,16 +1,20 @@
-# 阶段 4：大型敌人设计稿
+# 阶段 4：通用多格与复合体敌人设计稿
 
-> **设计稿待审，未授权实施。** 审计分支 `ext/phase4`，基线 `6f837dbf094b42571cd4072ea6ff578a923d7b84`，日期 2026-10-05。本文按[阶段 4 任务书](phase4-design.task.md)编写，所有“拟新增”接口、数值和验收均为计划，不代表已经实现或通过。阶段 3 由另一设计任务推进，本文没有审查其尚未提供的设计稿。
+> **r2：按维护者 2026-10-05 要求修订。设计稿待审，未授权实施。** 分支 `ext/phase4`，初稿源码审计基线 `6f837dbf094b42571cd4072ea6ff578a923d7b84`；r2 修订起点 `124256793397ffe58d6af80fe88d1536574fe394`，两者之间仅有文档提交，源码与初稿审计相同。本文执行[修订任务书](phase4-design-r2.task.md)，保留[初稿任务书](phase4-design.task.md)中仍有效的合同。所有“拟新增”接口、数值和验收均为计划，不代表已经实现或通过。阶段 3 由另一设计任务推进，本工作树没有其设计稿，软接口仍需维护者对照确认。
 >
-> 本轮仅新增本文与 README 的两个审阅链接，不改代码、测试、数据或脚本，不 commit。任务书明确要求纯文档不运行长门禁，覆盖 README 对一般纯文档交付的 full 要求；本轮仅做只读源码审计和文档检查。未来实施各步仍按 [README 当前政策](README.md#当前验收门禁)执行，不能用本轮文档检查代替实施门禁。
+> 本轮仅修订本文，不改其他文档、代码、测试、数据或脚本，不 commit。沿用初稿任务书“纯文档，不运行长门禁”的交付约束，本轮仅做只读源码审计和文档检查；未来实施各步仍按 [README 当前政策](README.md#当前验收门禁)执行，不能用本轮文档检查代替实施门禁。
 
 ## 1 范围与设计主张
 
-一个大型敌人仍是一个 `Monster`、一个实体 ID、一份 HP/状态、一个调度项，方形身体占 N×N 格。先用 2×2 完成底座闭环，再在同一实现上开放 3×3；首版数据校验拒绝 4×4，保留扩大尺寸上限的接口。玩家固定 1×1。本阶段不做分段身体、旋转长方形、身体弱点或每格独立生命。
+底座一次迁移为两个正交原语：**刚体足迹**以整数相对格掩码描述一个实体的身体，可附朝向与命中区；**复合体**由核心和若干成员实体组成，共享行动决策，但成员有独立位置、轨迹、攻击、HP 和局部状态。方形 N×N 只是刚体的预编译特例；刚体上的固定弱点用命中区，独立移动的腿、触手、头或身体段用成员。二者可以组合，例如 2×2 核心加八条 1×1 腿。
 
-底座提供空间能力，正式模块建议使用稳定 ID **`giants`**，只依赖底座。模块目录删除后，底座仍能用自有多格 fixture 验证所有空间规则；正式大型敌人、场地数据、血条及专属行为随模块删除。不开启多格能力时，当前模拟、机械状态和双 RNG 调用保持一致；这是一项新的空间能力合同，不把扩展原型重新冻结为 CE 规则。
+推荐采纳修订任务书的拆分，补上三项底座合同：显式实体／部位／群体三种命中键；核心唯一调度、成员子动作；覆盖身体拓扑变化的受控原子事务。理由见 §2.3。第一次迁移就携带这些身份和 schema，之后按能力逐步开放；不再先把数十处入口改成 `size`，以后再改成群体。玩家仍是独立 1×1 生物，不加入复合体。
 
-技术方案采用左上锚点、整体占位与原子位移、按体型的锚点距离图、按实体去重的效果命中。产品选择集中在 §12；正文依推荐项展开可实施方案，维护者确认前不把推荐项视为批准。
+底座提供空间、群体生命周期与部位规则，正式模块建议使用稳定 ID **`giants`**，只依赖底座。模块目录删除后，底座仍能用自有多格／复合体 fixture 验证已交付能力；正式敌人、场地数据、血条及专属行为随模块删除。未使用这些能力时，当前模拟、机械状态和双 RNG 调用保持一致；这是一项新的能力合同，不把扩展原型重新冻结为 CE 规则。
+
+**P4-D07 已决定 A**：Boss 不因身份获得额外免疫，可被变形、复制等；主动换形／换体型、单体与复合体互转、分裂、复制和召唤自身副本也走同一转换底座。是否编写某项招式、具体传伤比例等仍是产品选择，不能以 Boss 身份免疫省略底座路径。其他待决项集中在 §12；正文按推荐项展开，批准前不视为已授权内容。
+
+实施顺序改为：通用底座迁移 → 方形大型敌人可玩纵切 → 任意形状与朝向 → 命中区与部位破坏 → 复合体 → 主动形态变化／分裂／复制 → 收尾。每步有完整闭环，可验收后停下；schema 中尚未开放的能力在创建、读档与命令预检明确拒绝，不作为“占位字段已存在所以功能已实现”。
 
 机制启发只来自[Lost Flame 笔记 §3 与 §5](references/lost-flame-notes.md#3-大型敌人阶段-4-参考)中的占格、场地和血条观察。下列空间模型、接口及场地参数自行设计，不读取或复制其商业代码、数据、文本和素材。本设计不生成美术资产。
 
@@ -37,7 +41,7 @@
 | 分类 | 实际文件 / 函数与现状 | 必须改造的部分 |
 |---|---|---|
 | 生物位置 | `src/entities/Creature.ts:60–75,144–158`：`loc` 是单个 Pos，x/y 是访问器；`mapToMe` 是目标所属的一张图。`Monster.ts:264` 的 `MonsterData` 没有运行时尺寸 | 保留 loc 为锚点，增加底座足迹；不能从字形、HP 或模块 ID 猜尺寸 |
-| 定义元数据 | `src/ext/definitions.ts:18,78–79`：enemy 的 footprint 宽高允许 1–3，但没有多格运行器；`Monster` 构造仍是单格；`CreatureFeatures.creatureFeatureInfo` 的特征表只来自原怪物数据 | 接入经过验证的原生创建/形态贡献计划；已有 metadata 合法不等于已支持多格。方形首版额外约束宽高相等 |
+| 定义元数据 | `src/ext/definitions.ts:18,78–79`：enemy 的 footprint 宽高允许 1–3，但没有多格运行器；`Monster` 构造仍是单格；`CreatureFeatures.creatureFeatureInfo` 的特征表只来自原怪物数据 | 接入经过验证的通用形状／身体与形态贡献；旧宽高 metadata 只是矩形宏，不能成为新的运行时 size 模型 |
 | 活跃占位 | `Game.ts:10895 getMonsterAt` 按 loc 扫描 `monsters`，包括 hp>0 或死亡处理中尚未 deathProcessed 的对象；`Monster.ts:240 creatureAtLoc` 另查玩家 | 尾格查询、玩家/怪物统一 facade；保留死亡效果期间的生命周期语义 |
 | 休眠占位 | `Grid.ts` 的 `hasDormantMonster` 与 `Game.awakenDormantMonstersAt`；`CreaturePlacement.canPlaceCreature` 排除存活休眠者，`Conjuration.bladeSpawnLocation` 则不把休眠者当活跃占位 | 区分活跃占位、休眠预留与落点策略。不能把现有不同查询统一成一个无条件 occupied 布尔值 |
 | 普通移动/堵路 | `Game.performPlayerActionStages` 的 move 分支（约 3984）、`Monster.tryMoveTo:2184`、`moveEntranced`、`randFlittingDirection`；多个目的地只查一个格 | 整体 fit、对角边、与自身旧格重叠、抓持与挣扎；所有真正生物位置写入改走统一提交 |
@@ -45,7 +49,7 @@
 | 击退/拉拽 | `Game.processStaggerHit:8470`、`applyWeaponRunicEffect` 中力场位移（约 7652）、`beckonCreature:11789`、`placeCreature:11816` | 推进完整 footprint、接触点与方向、逐步碰撞/落地；不能只检查锚点路径 |
 | 闪现/传送 | `Game.finishBlink:11743` 临时把 caster 移到 -1/-1 并搬走潜水者；`teleportCreature` 与 `teleportCandidates`；`MonsterBlink` 多张单格图 | 显式忽略实体的占位预检替代临时假位置；完整落点过滤、同格命中与传送候选规则 |
 | 召唤/克隆/分裂 | `Game.spawnHordeAt`、`summonMinionsFor`、`cloneMonster`、`trySplitMonster`；`Conjuration.bladeSpawnLocation`、`Cloning.cloneLocation` | 不仅大型者的出生，也要防小召唤物落到大型者尾格；批量预留、防重复 ID 和预算 |
-| 变形/关系 | `Monster.polymorph:744` 先改状态/关系再改形；`Polymorph.polymorphSpecies` 仅原目录；`Domination.ts`、`Game.freeCaptive`、`resurrectAlly` | 变形尺寸变化须先求落点，再提交；大体型转换为盟友等按 §12 产品选项集中拒绝或支持，不留半转换 |
+| 变形/关系 | `Monster.polymorph:744` 先改状态/关系再改形；`Polymorph.polymorphSpecies` 仅原目录；`Domination.ts`、`Game.freeCaptive`、`resurrectAlly` | 形态／拓扑变化先求全体落点再提交；按D07支持通用关系转换，不留半组盟友；自然俘虏内容范围另由D03决定 |
 | 楼层转移/坠落 | `Game.monstersFall:8984`、`restoreLevelResident`、`monsterEntersLevel`；`GenerationCoordinator.generateDepth:241`；`LevelTravel.scheduleLevelFollowers/travelPlacement/restoreTravelPosition` | 大型坠落和恢复不能用单格 qualifyingNear；当前层、缓存层、pending 队列的空间所有权一起改 |
 | 地形/气体接触 | `Game.applyEnvironmentalEffects:10612` 从 entity.loc 取一个 cell；`resolveExplosionDamage`、`applyEntanglementFromTerrain`、`creatureShouldFall`、`applyNauseaFromTerrain`、`applyLichenPoison` | 改为足迹暴露摘要；同一生物只结算一次每种效果，不能对各格重复调用整套函数 |
 | 门/机关/陷阱 | `Game.handleSpecialTileEntry:11515` 是玩家入口；`applyDisplacementTileEntry`、`triggerCreatureTrapLayers`、`Promotion.promoteOnStep/promoteLayersWithMechFlag`；`TimeCoordinator.objectiveTimeBlock` 有玩家踩门晋升 | 增加普通 NPC 的多格进入/驻留事件；区分每个机关的世界触发与对生物的去重效果，保留玩家专属标志 |
@@ -62,108 +66,236 @@
 
 不是所有 x/y 都应替换：地图格、物品、楼梯、鼠标光标和世界交互对象仍是点；Creature 的 loc 作为锚点也仍可合法读取。必须消除的是“锚点等同于整个身体”的碰撞、接触、距离和可见性推断。
 
-## 3 底座能力与 `giants` 模块
+### 2.3 r2 补充审计与方案裁决
 
-### 3.1 所有权和接口草图
+初稿 §2.1 的统计口径和入口表仍有效，数量是匹配候选而非实施清单。本轮另核对以下实际执行路径，未重新把历史搜索数写成精确改动数：
 
-拟新增底座文件 `src/engine/Movement/CreatureSpatial.ts`（原生几何、占位和提交）、`src/engine/Map/FootprintPathing.ts`（锚点通行与图缓存）、`src/ext/spatial.ts`（冻结 DTO 与受控请求）、`src/ui/creatureFootprint.ts`（公开身体呈现）。文件名在审阅时可调整，能力归属不变。
+| 现状证据 | r2 设计结论 |
+|---|---|
+| `Creature.ts:60–75,169–206,305–343`：HP／状态属每个对象，tickStatuses 按对象递减，takeDamage 可直接 die；没有命中区或共享状态所有者 | zone/成员受击需路由入口，先截获部位 HP=0，不能让原生 die 自动发布普通击杀；状态必须先解析归属再递减 |
+| `TimeCoordinator.ts:104–181`：soonestTurn、递减和行动遍历全部 monsters；攻击由 `Monster.endTurnWithAttack:962` 写耗时，移动／跳过由推进循环兜底 | 核心唯一调度比成员各自调度改动可控；三处遍历都过滤成员，不仅 takeTurn 早退，否则 0 tick 成员会卡住循环 |
+| `TimeCoordinator.ts:191–235`／`Game.tickCreatureStatuses:7916`：环境→状态递减→环境演化；`Game.ts:9533` 发 objectiveTime，现 actorIds 无群体区分 | 群状态一次、局部状态各一次；新增群体资格 DTO 和群预算归属，不把过滤调度等同过滤所有状态／被动 |
+| `Systems/Time.ts:10–17`／`Game.ts:3798` 等：currentTick 是玩家动作累计簿记，不是 NPC 子事件绝对时刻 | 成员冷却推荐剩余 tick，随 advancementLoop 实际 soonestTurn 递减；不借 currentTick 定时。阶段3若统一真实模拟时钟再共用其协议 |
+| `Monster.polymorph:744–825`／`Game.polymorphBoltTarget:5691`：先取消关系、mutation、携带者等，再抽形态和改 HP，最后更新视野 | 不能包一个事后 canFit 检查；拆成纯转换计划、落点预留和原子提交，失败保留旧形态／关系／状态 |
+| `Monster.copyForClone:653–685` 是浅复制加显式容器复制；`Game.cloneMonster:8491` 只计划一个格；`trySplitMonster:8515–8580` 先减 HP 再 clone | 新 spatial／zone／群表不能被浅共享；复制整组并重映射成员引用，分裂先验全部结果，再改 HP／分配 ID |
+| `Creature.constructor:144–158` 分配ID，`Monster.constructor:597–646` 还可能掷睡眠骰；`copyForClone:655,681–684` 分配ID／可能掷性别骰 | 不能用现有构造／clone调用做纯预检；显式准备创建属性及随机结果，暂存对象不分配真实ID／不再取骰 |
+| `Game.killMonster:9235–9287` 即使 administrative 也 captureDeath／emit kill／demote；`MonsterLifecycle.ts:25–56` 仅管理实体生命周期与列表 owner | 用行政死亡删旧部位仍会发 kill；必须新增 retirePart/replaceBody 的无死亡路径，核心终结才发整体击杀 |
+| `EntitySnapshot.ts:18–50,103–116` 明列字段、copyFields 可写 undefined，实体图只跟 leader／carried 引用 | codec 需保存可选 zone/spatial 和群表，完整图额外遍历成员边；群体根不能仅靠 leader 边或当前 monsters 列表 |
+| `src/ext/worldSpatial.ts:7–31` 是可见、非阻挡交互对象放置；`definitions.ts:16–21,76–83` 的 enemy metadata 没有身体运行器 | 不拿 worldInteractables 当战斗部位，不借已有 width/height 验证冒称任意形状已支持 |
+
+因此采纳“刚体 + 复合体”，不把所有腿编码成一个可变大掩码，也不把群体当既有 leader/follower：前者无法独立 HP／行动轨迹，后者是关系指针，不保证调度、连接、原子迁层或单次奖励。群体管理属原生底座；仅模块内容依赖 ExtensionRuntime，通用 fixture 可在无模块情况下运行。
+
+## 3 通用底座模型与 `giants` 模块
+
+### 3.1 身份、所有权与 schema 草图
+
+拟新增 `src/engine/Movement/CreatureSpatial.ts`（几何／占位／提交）、`src/engine/Map/FootprintPathing.ts`（位姿图）、`src/engine/Core/BodyGroup.ts`（群体生命周期／调度）、`src/engine/Combat/BodyDamage.ts`（命中区／伤害路由）、`src/ext/spatial.ts`（冻结 DTO／有限声明）、`src/ui/creatureFootprint.ts`（公开呈现）。名称可审阅调整，能力归底座，不导入 giants。
+
+三个身份必须区分：entityId 指 Creature；partKey 指 `(entityId, zoneId)`，无命中区时用该实体的保留标签 `body`；groupId 指整体，复合体固定等于 coreId，普通单体查询时隐式等于 entityId，**不分配群体 ID、不新建群体记录**。partId 是群内稳定槽名（如 left-leg-1），便于定义、再生和形态映射，不代替运行时命中键。成员均有独立实体 ID；核心也是成员之一，不另造不可受击的“脑实体”。
+
+以下均为拟新增 schema，省略引用和数值校验器；字段从 4a0 就定为通用形状，功能按 §14 解锁：
 
 ```ts
-// 拟新增；schema 与尺寸上限是校验规则，不由模块任意扩张。
+type Pose = 'r0' | 'r90' | 'r180' | 'r270'
+  | 'm0' | 'm90' | 'm180' | 'm270';
+interface FootprintDefinition {
+  id: string; owner: 'foundation' | string;
+  geometry: { kind: 'rect'; width: number; height: number }
+    | { kind: 'mask'; cells: readonly { x: number; y: number }[] };
+  poses: readonly Pose[];
+  zoneCells?: readonly { x: number; y: number; zoneId: string }[];
+  zones?: readonly HitZoneDefinition[];
+}
+interface HitZoneDefinition {
+  id: string; nameKey: string;
+  health: { kind: 'native' } | { kind: 'local'; maxHp: number;
+    ownerTransfer: { numerator: number; denominator: number } };
+  armor: number; damageMultiplier: { numerator: number; denominator: number };
+  breakRuleId: string;
+}
 interface CreatureSpatialComponent {
   schema: 1;
-  size: 1 | 2 | 3;
-  movementRegionId?: number; // 可选底座区域引用，不复制矩形
+  footprintId: string; pose: Pose;
+  movementRegionId?: number;
+  bodyMember?: { groupId: number; partId: string };
+  actionLockInTicks?: number; // 缺可选硬直模块时的有界行动抑制。
+  zoneState?: { zoneId: string; hp: number; broken: boolean;
+    generation: number; regenerateInTicks?: number }[];
 }
-// Creature.spatial?: CreatureSpatialComponent
-// 不使用能力的 1×1 实体不创建此属性；查询默认 size=1。
-interface CreatureFootprintView {
-  id: number;
-  anchor: Readonly<{ x: number; y: number }>;
-  size: 1 | 2 | 3;
-  cells: readonly Readonly<{ x: number; y: number }>[];
+interface BodyConstraint {
+  childPartId: string; parentPartId: string;
+  kind: 'tether' | 'chain';
+  minDistance: number; maxDistance: number;
+  maxStepPerAction: number; requiresClearLink: boolean;
+}
+interface PartDefinition {
+  partId: string; role: 'core' | 'support' | 'weapon' | 'segment';
+  providesSupport: boolean;
+  formId: string; preferredOffset: { x: number; y: number };
+  attackProfileIds: readonly string[];
+  coreTransfer: { numerator: number; denominator: number };
+  breakRuleId: string; statusProfileId: string;
+}
+interface PartBreakRule {
+  id: string; trigger: 'hp-zero';
+  disposition: 'keep-zone' | 'remove' | 'inert-body' | 'debris';
+  replacementFootprintId?: string; // 固定zone破坏后可声明形状变体。
+  childrenOnBreak?: 'retire-subtree' | { reparentTo: string };
+  modifiers: readonly (
+    | { kind: 'move-ticks-multiplier'; numerator: number; denominator: number }
+    | { kind: 'disable-attack'; attackId: string }
+    | { kind: 'expose-zone'; partId: string; zoneId: string }
+    | { kind: 'balance-loss'; amount: number; fallbackStunTicks: number }
+    | { kind: 'locomotion'; mode: 'ground' | 'water' | 'flying' | 'immobile' }
+  )[];
+  regenerate?: { delayTicks: number; formId: string; maxCycles: number };
+}
+interface BodyDefinition {
+  id: string; owner: string; parts: readonly PartDefinition[];
+  constraints: readonly BodyConstraint[];
+  minSupportParts: number;
+  noSupport: 'immobile' | 'collapse' | 'die';
+  coreDeath: 'remove-members' | 'debris-members';
+  statusProfileId: string;
+}
+interface BodyGroupState {
+  schema: 1; groupId: number; coreId: number; bodyDefinitionId: string;
+  members: { partId: string; entityId: number | null;
+    life: 'active' | 'broken' | 'removed'; generation: number;
+    readyInTicks: number; regenerateInTicks?: number }[];
+  appliedBreaks: { partId: string; zoneId: string; generation: number }[];
+  // HP、位置、状态在 Creature；本表不再复制。
+}
+interface CreatureSpatialView {
+  entityId: number; groupId: number; partId: string | null;
+  anchor: Readonly<{ x: number; y: number }>; footprintId: string; pose: Pose;
+  cells: readonly Readonly<{ x: number; y: number; zoneId: string }>[];
 }
 ```
 
-`movementRegionId` 引用可选的通用移动边界，不代表“Boss 房间”概念。下文的 movementBounds 指从该区域解析出的只读矩形。若选择场地约束方案，由底座创建计划设置引用并持久保存；几何真相只有 `foundation.world.regions` 一份，`giants` 保存 arenaId 和绑定，不复制怪物坐标、HP 或矩形。变小后可保留 size=1 与区域引用，能力仍被使用；普通 1×1 生物没有此组件。只有足迹、不用区域的底座 fixture 不要求模块或扩展 runtime。
+整数锚点 `Creature.loc` 是形状的局部原点／旋转支点；原点必须是掩码内一格。初稿方形的原点仍为左上角，builtin square-2／square-3 只用 r0，战斗面向另有 8 方向，不因“转身”改变方形占位。任意形状的 offset 可为负，旋转／镜像绕原点变换，原点世界位置不漂移；不把每个旋转结果重新挪到包围盒左上。对称且占格／命中区标签一致的位姿可共用编译表。方形宏只预编译一次偏移和矩形快速公式，不实例化 N² 个实体／zone；普通 1×1 没有 spatial 属性，默认 builtin single/r0。UI 的宽高是派生信息，不再把 size 当机械真相。
+
+形状格唯一、整数、4 邻接连通，允许凹形和孔洞；包围盒空洞不占位／阻路／命中。命中区一格一个标签，未标注用保留body；zoneId唯一，native zone HP引用Creature.hp、不保存zoneState HP，local zone才存独立HP。定义maxHp／装甲／倍率不重复写状态，zone可破坏／再生时才创建对应记录。坏掩码／孤立格／重复zone/part／零分母／循环约束／超预算拒绝；同一身体恰有一个core角色，全部form/shape/profile/break/attack引用合法、coreId与groupId一致。
+
+约束首批限定为有根树，父亲先于孩子求解；九头蛇用星形，长蛇用chain，蜘蛛／章鱼用核心加支链。距离为父子footprint最短切比雪夫格距，clearLink用确定接触对查墙／连接路径。连接边默认不占格、不受击；可攻击触手全长用实际segment成员，不用显示线代替身体。循环拓扑留版本化扩展，不无界求解；partId群内唯一，禁止多群共享实体、跨层拆散、成员重叠或玩家入组。
+
+群体 HP 只有核心的原生 HP；各成员的原生 HP 和 local zone HP 分别保存。群体精神状态／关系由核心持有，成员查询通过 status profile 路由到核心；局部状态留在成员，不拷贝整份核心状态。由成员数和 appliedBreaks 派生的速度、可用攻击与支撑能力不重复保存。核心背包是整体携带物所有者；成员不自动获得同一份装备、掉落或成长余额。
+
+### 3.2 通用接口与占位索引
 
 | 拟新增底座 API | 合同 |
 |---|---|
-| `footprintOf(id)` / `footprintCells(id)` / `containsCell(id,p)` | 内部可信查询，冻结只读；当前层存在实体才返回；格集合按 y/x 排序，最多 9 格，无 RNG |
-| `creatureAtCell(p, policy)` | facade；策略显式区分 active、active-or-reserved、原有死亡接触资格。`getMonsterAt` 保留为只返回 Monster 的兼容入口 |
-| `distanceBetweenFootprints(a,b,metric)` / `nearestContact(a,b,linePolicy)` | 切比雪夫/欧氏平方/既有感知尺度分别保留；相同距离按源格 y/x、目标格 y/x 决定，不能混用距离单位 |
-| `canFitAt(actor,anchor,policy)` / `canStepFootprint(actor,from,to,policy)` | 整体地图界限、地形、占位、空间边界、对角规则；允许忽略自己的旧占格；返回拒绝原因而非写世界 |
-| `planPlacement(request)` / `commitPlacement(plan)` | 预检后提交，复核实体/形态/地图/占位 revision；修改锚点、组件和索引原子可见，再执行接触。适用于单体与批量出生，不是任意世界事务 |
-| `collectCreatureTargets(cells,scope)` | 格集合→唯一实体，稳定接触顺序；资格/隐藏知识由调用方策略决定；去重出口覆盖成长逐命中消费 |
-| `readKnownCreatureSpatial(id)` | 玩家公开投影只给已允许显示的格、可瞄准格、公开尺寸/名称，不能把完整机械 footprint DTO 直接发 UI |
+| `spatialOf(id)` / `footprintCells(id)` / `membersOf(groupId)` | 冻结可信 DTO；单体也给隐式 groupId／body 标签；格按 y/x 稳定排序，无 RNG |
+| `occupantAtCell(p,policy)` | 返回 `{entityId,groupId,partId,zoneId}`，可解析实体；显式 active、active-or-reserved、死亡接触资格；getMonsterAt 兼容入口只返回实际占该格的 Monster，不偷偷返回核心 |
+| `distanceBetweenFootprints` / `nearestContact` | 实体格对几何；另有显式 group union 视图，保留每种距离单位和墙角政策；不能把尾腿位置当核心锚点 |
+| `canFitPose` / `canStepFootprint` / `canRotateFootprint` | 完整形状／扫掠、地形、区域、动态占位；忽略本次计划自己的旧占格，不忽略未参与搬移的同群成员 |
+| `planSpatialChange` / `commitSpatialChange` | 单体／多体落点、转向、出生、移层共同计划；复核实体／形态／地图／占位 revision 后原子发布，再按新旧足迹差处理接触 |
+| `collectBodyTargets(cells,policy,scope)` | 输出实体／部位／群体及真实接触格，明确 dedupKey；顺序遵循子段接触顺序，无方向时 y/x、entityId、zoneId |
+| `planBodyTransition` / `commitBodyTransition` | §4.4 的身体拓扑事务；ID、形态、关系、组件、群组、计划、事实一起提交，不是任意脚本世界事务 |
+| `readKnownBodyTarget` | 玩家投影另裁切已公开格／部位；不直接交完整机械 DTO，不给隐藏连接拓扑或未见部位 HP |
 
-原生引擎接 Game/Creature 实对象；模块只接冻结空间 DTO 和有限的创建/行动计划。普通 hook、`queryOptional`、UI contribution 无权改 Creature.spatial、loc 或地图。`queryOptional` 现有 narrow context 不是任意 NPC 空间查询器；空间能力通过新的底座只读端口进入 runtime/context，按 actor 资格与目标知识授权。
+格→占位引用是派生索引，不写 Cell、不存档；物理活跃层一格最多一个实体，包括同群成员也不叠格。索引编号映射到实体及命中区，群体身份从原生组件解析；去重键从 4a0 已可表达三种，不让各消费点自己猜。休眠预留另表，射线不把休眠者当活跃目标；按旧规则允许的预留／活跃重叠由策略返回预留集合。复合体唤醒需全组合法落点，不能只抢核心格。
 
-### 3.2 占位索引与生命周期
+真相仍是实体 loc、spatial、群表及楼层／活跃／休眠／死亡所有权。出生、位移、变形、部位破坏、再生、移层、唤醒和列表替换都走发布点；死亡 DF／掉落期间保留原 `getMonsterAt` 可查询窗，deathProcessed 后去除对应资格。部位移除另走 retirePart，不套用死亡窗。携带、purgatory、pending 不占当前层；群体进入这些状态时全组同步迁出。
 
-- **真相**是实体的锚点、足迹组件、所属楼层和活跃/休眠/死亡生命周期；占位索引是派生缓存，不写入 Cell，也不存档。一个格最多一个物理活跃实体，返回同一实体的所有身体格不制造新 ID。
-- 当前层有多格实体或空间约束使用者时，懒建格→实体索引，同时索引普通生物；休眠预留分开维护，按入口策略查。不把休眠者放进射线/战斗活跃列表。若预留与活跃占格按旧规则重叠，策略返回预留集合；唤醒必须重新求合法完整落点，不能直接抢占。
-- 出生、移动、形态变化、死亡资格变化、移层、休眠/唤醒、列表替换都更新索引。死亡 DF/掉落完成前，保留现有 `getMonsterAt` 的可查询时间窗；进入 deathProcessed 后即不再作为该查询的占位者。携带乘客、purgatory、pending 落层者不占当前层格。
-- 所有活世界位置写入经提交原语；构造、解码、生成期间借用玩家离图位置等例外须显式有“索引未发布”作用域。`ownedMonsterList` 的 Proxy 只处理列表所有权，**不会**拦截 loc 修改，不能靠它自动维护索引。
-- 新局/load/grid 替换清理旧缓存；恢复/回滚后从实体真相重建。缓存可放 Game 键控 WeakMap，不藏机械状态。`checkpointGenerationWorld` 会跳过 WeakMap/WeakSet，所以必须登记 `restoreSession` 重建/失效，不能期待现有深拷贝自动回滚。
+构造／解码／生成临时离图位置只准存在于“索引未发布”作用域；`ownedMonsterList` Proxy 不拦截 loc，不能靠它保正确。load/grid 替换、回滚后从真相重建缓存；WeakMap 仅藏派生服务，`checkpointGenerationWorld` 跳过 WeakMap/WeakSet，restoreSession 必须主动失效／重建。机械群表、成员冷却、破坏与再生记录不能放 WeakMap 逃避 codec／写集。
 
 ### 3.3 未使用能力时的零影响合同
 
-1. 普通实体不添加 spatial 属性；codec 特别按“属性缺席”处理，不能因 `copyFields` 在恢复时写出 `spatial: undefined`，改变完整对象图。基础存档/录像版本升级是兼容包络变化，比较机械状态时仅排除版本标识、savedAt 和明确派生缓存，不能排除 HP、坐标、tick、组件、队列或实体计数。
-2. 空集合、growth-only、narrative-only、growth+narrative 的原生场景没有空间组件、占位表、体型图、额外 FOV 掩码或新增规则 RNG；`getMonsterAt` 和 1×1 几何保留原轻路径，不每步扫描所有实体去“检查有没有巨人”。使用者计数在生命周期变更时维护。
-3. 新 native 几何 facade 不创建 ExtensionRuntime，不向未启用 giants 的 manifest/state 注入 giants 块。底座格式的新版本元数据必须如实列出，不能声称序列化 JSON 逐字节未变。
-4. 以本基线实际捕获的真实 Game 场景作空间改造前后差分：新局、走路/战斗/位移/召唤/机关/换层/存读/录像，比较完整机械对象图、消息、双流状态及调用数。该比较只证明未使用空间能力的组合无回归，不要求与 CE 同种子逐骰一致。
-5. 显示、保存、校验、索引重建和纯几何查询不取实质 RNG；显示相同实体不按身体格反复取幻觉外观随机值。最后一个空间使用者离层后释放该层派生缓存，不持久记录“曾经激活过索引”。
+1. 普通实体不添加 spatial、空 zoneState、默认 bodyMember 或群表；codec 按“属性缺席”处理，不写 spatial:undefined。基础格式升级仅是包络变化，差分只排除版本、savedAt 和明确派生缓存，不能排除 HP、坐标、tick、组件、队列或实体计数。
+2. 空集合、growth-only、narrative-only、growth+narrative 的原场景没有占位表、位姿图、群调度过滤表、额外 FOV mask 或新增规则 RNG；1×1 几何与 getMonsterAt 保留轻路径。能力使用者计数在生命周期更新，不每步全局扫描“有没有巨人”。
+3. 原生空间／群体 fixture 不需要 ExtensionRuntime；不向未启用 giants 的 manifest/state 注入 giants 块。格式变化如实列出，不能声称序列化 JSON 逐字节不变。
+4. 以初稿源码基线真实 Game 场景做新局、移动、战斗、位移、召唤、机关、换层、存读与录像差分，比较完整机械对象图／引用、消息、双流状态与调用数。此证明针对未使用新能力的组合，不要求 CE 同种子逐骰。
+5. 显示／保存／校验／索引重建／纯几何不取实质 RNG；同一实体幻觉外观一次采样，不能按格或部位重复随机。最后一个使用者离层释放派生缓存，不保存“曾激活”标记；核心同源判断、被动和费用不因成员数自动倍增。
 
-### 3.4 模块自有内容
+### 3.4 模块内容与受控声明
 
-`src/ext/modules/giants/` 拥有 descriptor/module、schema/types、原创 `data/definitions.json`、场地模板、状态与 codec 校验、locales、AI 声明、UI/descriptor、Boss 血条和 tests/test-suites。机械包进入自有 rules 指纹，显示资产版本单独管理。正式敌人通过底座 Monster 创建计划提供经过白名单校验的 `MonsterData` 与 spatial，不改 `src/data/monsters.json` 和原 horde 表，也不要求 growth 的敌人模板运行器。
+`src/ext/modules/giants/` 自有 descriptor/module、schema/types、原创 definitions、形状／身体／部位／转换／招式数据、场地模板、state codec、locales、AI 声明、UI/Boss 血条及 tests/test-suites。机械定义进自有 rules 指纹，显示资产版本独立。底座创建计划白名单接收 MonsterData 与空间／身体定义，不改原 monsters.json/horde 表，不依赖 growth 模板运行器。nameKey/descriptionKey 通过通用创建适配器纯解析，ItemLoader.translateName 现只查 name.*，不能在共享原词条表塞 Boss 文本或为取名取骰。
 
-还需底座通用的原生形态目录贡献：当前 `Polymorph.knownPolymorphSpecies/polymorphSpecies` 只查原 monsters JSON，`CreatureFeatures.creatureFeatureInfo` 对未知 typeId 返回零血迹/DF。不能只成功 new Monster 就声称正式巨人所有路径可用。由当前启用模块提供冻结的、带 owner 的形态/特征声明，底座按稳定限定 ID 查形态、出生、变形候选与 snapshot.form 校验，未启用时不追加候选或取骰；缺特征沿明确的默认值，原创血迹/死亡DF如需启用须显式声明。禁止在这些共享函数中 import giants 数据。P4-D07=A 时把已启用的大型形态加入受控变形目录，旧形态抽样在无能力组合保持原范围和顺序。
+通用形态目录贡献包含 owner 限定 formId、native 属性／速度／特征、rigid footprintId 或 composite bodyDefinitionId、合法转换配置。当前 Polymorph 仅原目录，CreatureFeatures 对未知 typeId 给零血迹／DF；启用模块的冻结贡献须一起接到出生、被动变形抽样、主动转换与 snapshot.form 校验。缺特征有明确默认，原创血迹／死亡 DF 需声明；共享函数不得 import giants。未使用能力时原形态抽样范围、顺序与 RNG 不变。
 
-敌人定义至少包含限定ID、nameKey/descriptionKey、native属性/速度/行为与攻击声明、squareSize、可选特征、arena模板引用与内容转换资格；校验有限JSON、唯一ID、引用、整数/数值预算、方形尺寸和locale归属，不接受脚本。`ItemLoader.translateName` 当前只查 `name.*`（该文件:18–20,962）；模块的 `ext.giants.*` 词条应由通用创建适配器纯解析为原生显示名/描述，保留内容ID用于后续投影，不在共享原词条表塞具体Boss中文，也不为取名消耗RNG。
+P4-D07=A 不新增 boss/size 免疫谓词；材料／技能已有通用资格仍适用并在检视说明。正式内容初次只开放一个方形敌人，之后逐步提供不规则刚体、带核心弱点的石像、蜘蛛／章鱼、九头蛇或长蛇等原创样例；这些是可选验收载体，不承诺全部编写。底座成员移动／攻击／受击完整时无阶段3也可玩；成长与叙事缺席不影响存活、战斗、破坏或整体死亡。
 
-底座拥有多格移动、攻击几何和调度；模块 AI 首版只提供“守场/追击/回归”的有限声明与家园目标，不接受任意脚本。原生 `Monster.takeTurn` 仍执行行动与提交耗时。启用 growth 时沿其已有通用出生/伤害事实自然工作；没有 growth 时 native HP/攻击/速度足以游玩。XP、剧情门、魂系招式均不是 giants 单独开启的条件。
+内容 AI 仅给有限“守场／追击／回归、支撑落脚、可用攻击、条件转换”的声明，不接受脚本。成员级成长属性若需要由通用出生配置显式授予，群体共享预算默认只属核心；任何共享修正用底座请求／软能力接入，不复制核心组件制造多个 XP／资源账户。
 
-## 4 空间与位移规则
+## 4 空间、群体行动与身体转换
 
-### 4.1 锚点、移动与邻接
+### 4.1 刚体移动、旋转与邻接
 
-锚点定为整数左上角 `(x,y)`，占据 `{(x+i,y+j) | 0≤i,j<N}`。地图坐标沿用现有方向，屏幕中心仅用于呈现。左上锚点便于 2×2 偶数体型、序列化、矩形检验和障碍膨胀，避免半格中心。方向不是持久空间字段；方形转身不改变占格，不挤缩、不旋转穿过窄道。
+刚体足迹是 `anchor + compiledOffsets(footprintId,pose)`，整体原子移动；包围盒仅作早排除。正常平移锚点一格，消耗一次 movementSpeed，不按格数增加 tick。目的全部占格满足该 actor 通行／区域／占位策略；自己的旧新身体重叠合法，不允许盖住别人。多格对角推荐目的位姿及两个正交中间位姿均 fit，图边用同一谓词；1×1 保留各入口原墙角语义。
 
-一次正常移动是锚点移动一格，整体消耗一次 movementSpeed，绝不按 N² 增加回合。目的 footprint 的所有格都须满足该 actor 的通行策略、空间边界与占位约束；旧身体与新身体的自重叠合法，其他实体不能被覆盖。NPC 找路抵达目标身体旁的攻击锚点集合，而不是进入玩家格。
+物理朝向与攻击面向分开。4a 方形只 r0；4b 开放 r0/r90/r180/r270，镜像作为已建模但默认不开放的可选位姿。转 180° 必须经过两个明确的 90° 原语，不能只验起终掩码；每个 90° 使用预编译保守扫掠格集合（格方块绕整数支点的整个旋转轨迹所触格），检查地形、地图、区域及其他实体。镜像不是瞬时“翻身穿墙”，需显式转换能力和其扫掠／落点规则，首批不能通过换 pose 绕检查。
 
-多格对角移动推荐采用保守合同：目的锚点以及两个正交中间锚点都可 fit，移动边检查与距离图一致，禁止穿墙角或擦过其他生物。该规则仅用于多格；保留当前 1×1 各入口既有墙角语义。不能给所有 NPC 顺便改一套对角规则，违反零影响合同。
+扫掠只用于运动碰撞，不让扫到的每个格触发踩板、气体伤害或一次近战；实体实际驻留／进入格才触发环境。旋转默认花 movementSpeed，同一子动作不兼作平移；以后显式转向招式可给正整数耗时，不能免费反复旋转触发世界。窄道终态放得下但旋转弧碰墙就拒绝／找可转空间；不缩身体、不挤墙。足迹标签随旋转同步，命中区不能留在旧世界格。
 
-几何距离是任意身体格对的最短距离；非重叠的生物近战可邻接 iff 切比雪夫距离=1，且至少一对相邻接触格通过本次攻击的墙角/墙穿规则。矩形之间可 O(1) 求距离，再按稳定顺序找合法接触对。纯“距离=1”不能让隔双墙斜角的双方打到彼此。
+几何距离取任意身体格对最短距离；近战邻接要求切比雪夫距=1 且有合法接触对，双墙斜角不能仅凭距离打到。矩形用 O(1) 下界／距离，掩码枚举有界格对，平局按源 y/x、目标 y/x；欧氏平方与气味尺度仍各自保留。群体 union 查询是显式选项；实际出手、受击与推力必须落到成员和接触格。
 
-### 4.2 位移与无落点合同
+### 4.2 落点与位移失败合同
 
-所有推荐的新多格落点搜索有界、确定性：原锚点先验 → 合法锚点图上最近路径距离 → 允许跨障碍的原因才可回退方环/全图；同距按 y/x 选首个。**行走不回退到不可达区域**。随机传送是例外：稳定完整候选表上一次原生 RNG 抽取，无候选零次；1×1 保留原候选次序与随机调用。寻路/搜索自身均不取骰。
+新能力落点搜索有界、确定性：原位先验 → 合法位姿图上的最近路径距 → 只有允许越障的原因可回退方环／全图；同距按 pose 声明次序、y/x。行走不回退不可达区。原生随机传送仍在稳定完整候选上一次抽取，无候选零次；无能力 1×1 的原候选次序／随机调用不变。
 
-| 原因 | 多格规则决定 / 推荐方案 | 失败与理由 |
+| 原因 | 新空间规则 | 失败与费用 |
 |---|---|---|
-| 生成/自然出生 | 完整 footprint fit，排除楼梯、危险、机器冲突及已预留实体；批次计划逐体预留后提交 | 没有合格场地就不放 Boss，写 placed/skipped 收据；不把大怪缩水，不反复随机试到成功 |
-| 普通交换/推挤 | 首版任一参与者多格时禁止自动交换；其他生物选择绕路；两个 1×1 的原交换不变 | 避免把 1 格玩家与 4/9 格身体做不对称互换；未来可增加全批次原子交换，但不能递归无界挤人 |
-| 击退/力场 | 以实际接触对求八方向推进，每格锚点步都验整体；旧路径允许的墙碰撞伤害只结算一次，以首个阻挡前沿为接触点 | 遇墙/其他生物/场地边界停止，不连锁推动。不按身体格复制撞击伤害；保留原施法/攻击费用 |
-| 拉拽 | 以双方最近合法接触对指向施法者，每一步整体验证，最远停在距离=1 | 阻挡即停；合法施放但无移动保留原效果耗时，不退回技能费用 |
-| 瞬移/闪现 | 穿越过程遵循原技能是否允许穿障碍的语义；落点一定完整 fit。多格不搬走/杀掉落点上的生物，改搜最近合法落点 | 没位置则效果不位移；不会通过临时 -1/-1 暴露错误索引。普通 1×1 的潜水者搬移规则仍保留 |
-| 随机传送 | 所有占格都符合效果的危险/楼梯/机器等约束；距离与“视野外”按 footprint 判断，候选一次随机选取 | 若启用场地边界，候选只在该边界；无候选不改位置、不取选址骰。已合法施放的消耗沿原入口 |
-| 召唤/克隆 | 以召唤者外围为搜索起点，大型复制保留尺寸，逐体预留；小召唤物也查尾格；形态/关系策略先预检 | 无位跳过该体；合法的整次召唤仍按原调用者付费。禁止用失败实体消耗 ID，禁止大怪复制成隐式 1×1 |
-| polymorph | 单独生成候选形态计划，保留实体 ID，按旧规则计算 HP；同锚点不 fit 时搜最近合法锚点，成功才原子提交形态/关系/足迹/位置 | 无位则整次变形无机械效果，原形/HP/关系/状态不半改。形态抽样若已消耗 RNG 保留，不循环重掷直到找到小体型 |
-| 坠落 | 推荐非飞行者全部身体格均无支撑且带下降地形才落；部分踩渊不落。伤害与落层一次，进入下层重新搜索完整安全落点 | 未生成下层继续使用 pending；已生成下层也先计划。全图无落点时保留有界 pending，不叠格、不删除实体、不补造场地 |
-| 换层/追楼梯 | giants 首版守场生物不主动追楼梯；底座 fixture 仍验证跨层多格恢复。若未来允许跟随，需 N 宽出入口和接收楼层 fit | 通道不合格不转层；不会用普通单格 follower map 偷带过去 |
-| 休眠唤醒/复活/乘客释放 | 先建原生候选体型与关系计划，找完整落点，成功后发布活跃索引 | 无位保持休眠/待放置，失败不从旧所有者摘除；不先恢复 HP 再留在墙内 |
+| 生成／自然出生 | 刚体完整 fit；复合体先核心再按 partId／约束拓扑预留全组，排除楼梯、危险、机器和批次占位 | 全组不放置，写 placed/skipped；不缩水、不留半只、不用失败实例消耗 ID |
+| 交换／推挤 | 4a 首批多格参与不自动交换，盟友绕行；普通 1×1 原交换不变。后续只允许显式完整多对象计划 | 不递归挤人；魅惑成功不能因无法交换而被撤销或变成额外免疫 |
+| 击退／力场／拉拽 | 实际接触对确定方向。刚体逐格整体预检；复合体推荐推整体，成员命中将力路由到核心，重新规划全组姿态 | 墙／实体／约束／区域阻挡即停；碰撞伤害一次、不连锁推人。只移动一条腿须独立局部招式，不继承整体击退 |
+| 瞬移／闪现／随机传送 | 穿越遵守原技能；落点刚体／全组 fit，复合体保留原相对姿态先验，不足时有界重布。多格不搬走／杀掉落点生物 | 效果不位移，合法施放费用保留；不临时写 -1/-1。未使用能力的 1×1 潜水者搬移规则保留 |
+| 召唤／复制／分裂 | 先声明确定数量／形态，再预留全批身体，见 §4.4；成员和小召唤物都查实际足迹 | 新能力批次整体无效，不逐成员跳过；原生未使用能力的召唤语义不顺带重写 |
+| 变形／换体型 | 同一转换底座，形态／关系／状态修改前找到完整位姿与全组落点 | 无位无机械转换，不循环重掷到小体型；已发生形态抽样的 RNG 留存，费用按调用入口处理 |
+| 坠落 | 刚体推荐全部占格无支撑才落；群体按核心与有效 support 的支撑联合判断，任一有效支撑可维持整体 | 落层／伤害一次，全组进同一 pending；下层无空间保持有界待放置，不分散成员／反复落伤／补造场地 |
+| 换层／追楼梯 | 首批自然 Boss 守场，受控转换成盟友后可有界跟随尝试；接收层预检完整身体／组约束 | 无位留原层并显示原因，不偷偷带单格核心过去。群组缓存／恢复／pending 全部一起迁移 |
+| 休眠唤醒／复活／乘客释放 | 原生候选形态、关系和全组落点预检，成功才发布占位；死亡释放乘客也是批次 | 无位保留原所有权／待放置，失败不先回 HP；区域引用需随移层清理／重绑定 |
 
-pending 落层实体不进当前层索引/调度，保留于现有 `pendingFallenByDepth` 的持久实体图；补充显式“等待空间”的有限元数据，按实体 ID 排序，仅在入层或相关空间 revision 改变后重试。恢复者成功进入索引后才行动和触发接触；等待期间不反复结算坠落伤害、不反复消耗 RNG。队列数量沿实体预算约束；到底层无法下降沿原终局边界处理，不创造第 41 层。
+pending 属现有 `pendingFallenByDepth` 的持久实体图，新增元数据以 groupId 关联全组并记录单次坠落／等待空间；按 ID 稳定重试，只在入层或相关空间 revision 改变时触发，不靠 UI／每帧轮询。全组等待时不进当前层索引或调度，也不凭空推进成员冷却／再生。到底层沿原终局边界，不创第 41 层。缓存层补算按原离层时钟合同推进一次，不能因成员数倍算。
 
-§12 若不选择守场约束，所有搜索去掉 movementBounds 过滤，其余安全规则相同。基础 fixture 无模块也能测试任意尺寸变化；Boss 是否可变形、盟友化和复制属于内容策略，不能令底座形态转换一直缺实现。
+movementRegionId 引用 `extensions.foundation.world.regions` 的唯一几何真相，不复制矩形；原生 fixture 可不使用区域。选择守场时计划中所有成员占格都在边界，形态变大或复制也如此；未选择守场则只去掉该过滤。坠落清旧 depth 区域，模块记 escaped/lost，不在下一层凭 arenaId 复造场地。
+
+### 4.3 核心调度与成员轨迹规划
+
+**推荐核心一个调度项，成员作为群体回合内子动作**。核心共享大脑、阵营／主要目标／睡眠／精神决策；成员保持自己的几何、HP、局部资格与攻击冷却。不采用各成员独立 takeTurn：当前 soonestTurn／状态／攻击耗时分散，独立调度会放大 AI／感知骰、改变同 tick 顺序，并难以保证“核心带着身体整体走”和阶段3的预警取消。
+
+1. 三处调度遍历（找最早、减 ticksUntilTurn、执行）都只包含独立生物和群核心；成员仍在原生实体列表以支持受击、环境和 codec，不用 hp=0／isDormant 假装免调度。普通生物原列表顺序不变，核心继承所在槽；新群按创建计划次序追加。成员残留 ticksUntilTurn 不作为调度权威，save validator 和调试守卫禁止直接把成员耗时提交到全局。
+2. 群每次行动先冻结成员资格／目标，选择“核心移动 + 落脚”或“有界攻击子段束”，不默认移动再让每腿免费攻击。攻击束最多 4 子段，每个有独立发起成员／scope；默认耗时为各已执行子动作耗时最大值（并行动作），核心只提交一次正 tick。串行连段须显式给合计耗时。成员 readyInTicks 随真实 soonestTurn 递减一次，结束时各自设置冷却；不能按成员调用 playerTurnEnded、endTurnWithAttack 或嵌套 executeCommand。
+3. 空动作／麻痹／无合法落脚至少花核心 movementSpeed，不留 0 tick 自旋。成员被禁用、核心死亡、部位破坏时剩余子段及时取消，不能继续使用起初冻结的死亡部位。原生攻击适配器返回结果与耗时，由群协调器落账；同源命中／成长逐次消费仍按每个独立子段实际命中一次处理。
+4. 阶段3的蓄力／预警计划可在不同核心激活中推进，成员攻击计划标注发起实体／partId／generation／足迹 revision；就绪成员不自行创建调度项。持久冷却、待执行计划与取消事实同一安全边界保存，跨玩家命令不保存半执行攻击束。§11.3 约定软联动，缺阶段3用即时攻击。
+
+移动规划先确定候选核心一步，再按约束树与 partId 稳定顺序选落脚点。候选围绕“新核心 + preferredOffset”及合法父成员足迹生成，依次最小化偏好距、移动路径长、y/x／pose；不取随机骰，不按 JS 容器偶然顺序。每成员最多 32 候选，maxStepPerAction 首批≤2，逐步扫掠检查；给每个子步预留格／边，禁止腿交换时交叉穿过另一腿或核心。移动中的足迹与连接也须满足约束，不只验终态。
+
+先尝试保留旧落脚点，再尝试重落脚；允许留一条未动的腿，只要全路径牵引距离和 minSupportParts 成立。支撑／连接不够则核心移动拒绝，可花一次移动行动原地调整合法成员，或等待；不把腿隔墙瞬移到新核心旁。有限回溯预算≤128 个分支节点／核心移动尝试，预算耗尽返回 blocked，最多重新选一次核心邻步；不以无解等同残疾／死亡。长蛇链沿核心路径与父段旧位置生成候选，仍走同一验证，不能用无碰撞约束的“把尾段 loc 直接改成头的旧格”。
+
+路径图只对核心刚体给乐观可达，下一个动作的完整成员解算才是通行证据；连续受阻按有限重规划／等待／回归处理，不能声称求出了最短全身构型路径。该有界局部算法可能漏掉需要复杂换脚的路线，这是首版取舍；场地样例必须保证验收路线可解，复杂全局构型规划另行授权。
+
+### 4.4 主动与被动身体转换的原子事务
+
+所有身体拓扑变化共用 `BodyTransitionRequest`：reason（polymorph／phase／split／clone／summon／regrow）、sourceGroupId、目标形态和数量、成员映射、HP／状态／关系／预算继承政策、区域与落点政策。提交计划保存原实体／群／定义／占位 revision，目标 DTO、ID 预留数、无死亡退休集、取消计划与缓冲事实；模块只能交有限声明，不能任意修改世界。
+
+| 转换 | 身份与状态 | 完整落点／事实 |
+|---|---|---|
+| 被玩家变形、主动换形／阶段换体型 | 主体保留原 core/entity ID；旧单体的隐式 groupId 也等于它，新复合体沿用。复合体→单体移除群表，隐式 groupId 仍相同；按 partId 显式映射保留成员 ID，其余新建／退休 | 单体与整组都先求位。玩家打任一成员的普通 polymorph 推荐作用于整体，不先单独变一条腿；“只变部位”须另有局部转换招式与约束计划 |
+| 分裂一分为二或多体 | 第一结果保留核心 ID／主群身份，其他结果分配新核心与全部成员 ID；原成员保留／转属只准显式一对一映射，不能被两组共有 | 一次预留全部结果；HP 默认守恒地分配、余额／掉落／XP 权利不复制。原 Boss encounter 绑定所有分裂后裔，全部实际终结才算击败一次 |
+| 复制或召唤自身副本 | 源 ID／组不变；副本所有实体新 ID，partId 槽映射而非复制 bodyMember.groupId；容器深复制，不共享 zone/status/成员可写对象 | 副本保留形状／成员数，深度／阵营／区域按声明。默认不复制掉落／奖励权利，不借“Boss 可复制”制造无限奖励；独立副本不自动变成原场地胜负绑定 |
+| 召唤其他单位／多体批次 | 每结果新 ID；加入自身身体还是独立生物必须显式声明，普通 follower 不是 bodyMember | 数量在规划前确定，批次全 fit 才提交；允许内容定义先用预算确定较少数量，再形成原子计划，不提交后逐体跳过 |
+| 减成员／再生长 | 同槽再生 generation+1，新实体 ID；破坏历史收据保留，已有部位不能用复用旧 ID 冒充从未坏过 | 少掉的部位用 retirePart/replaceBody，**不调用 killMonster（即使 administrative=true）**；不发 kill／掉落／经验／死亡 DF。再生先验位置，失败按有界时钟等待 |
+
+HP 政策必须是声明枚举：被动 polymorph 继续既有 polymorphHP 主体比例／伤量规则，群形态只读核心 HP，不把所有腿 HP 相加治疗主体；新 local／成员 HP 默认用同一存活比例，缺失的旧槽按目标形态重建，不复用外部死亡收据。主动阶段转换可配置保持比例／伤量／显式模板，但不默认满血；分裂守恒、复制模板或当前比例另声明。状态、抓持／leader／携带、成长组件和计划分别声明 preserve／clear／remap，不能 shallow-copy 获得未授权资源。普通物品资格沿通用规则，Boss 身份不参与免疫判定。
+
+退休成员的入边也纳入计划：抓持两端清理，leader默认改指存活核心或清空，携带者按原所有权处理，预备／蓄力／检视目标失效。不能只删monsters数组而让别的实体继续引用旧腿，或把无死亡退休的腿留作GC根。chain父段破坏默认连其子树无死亡退休；要保留末端须声明childrenOnBreak重接到存活父段并全体验约束，否则拒绝定义。核心死亡移除所有成员不触发多次后裔kill。
+
+计划顺序：纯校验形态与预算 → 必需随机抽样（明确次数／顺序）→ 虚拟 ID 与全结果足迹、约束、区域及动态占位预留 → 纯验证 HP／关系／状态与软 provider 意图 → 暂存新对象并深复制／映射 → 复核 revision → 同步提交实体、群表、索引、预算／模块绑定、计划取消和事实。真实 ID 计数只在成功提交推进；计划无解不修改原生状态／收据，已发生的形态或数量抽样 RNG 不倒退，不能重抽直到 fit。
+
+暂存创建使用无分配／无RNG的原生装配端口（可沿allocateForSnapshot的构造方式扩展），不直接new Monster或copyForClone；睡眠／性别／突变等确需随机的出生属性在计划中显式抽取并携结果，装配不再抽第二遍。新ID按结果序号、核心先、约束拓扑／partId次序一次提交；失败的虚拟ID不推进nextEntityId。此端口只有可信底座能调用，模块没有任意原生对象写权限。
+
+受控输入可预见拒绝沿现有 prepare 协议不扣费／不录命令；已命中物品的被动变形无位属于效果失败，物品原费用保留；已承诺的主动阶段／施法无位默认保留其行动耗时与已付费用，并记录无效果，不能同 tick 无限重试。主动纯预检不能先调用 takeDamage／polymorph 再回滚作“预览”。
+
+结构提交一次发布，之后环境／陷阱依据真实进入格和 §5.2 顺序处理；新身体当场遇险死亡是后续合法因果，不说明转换未原子。不把回调插在群表半更新时。预期之外异常必须回滚已登记的窄写集（对象图与引用、列表、ID、群表、扩展资源／事实／消息、两流及缓存恢复），验证完整图；接触若会改地图，写集必须包含实际地图修改。现有生成／2c 奖励事务不能直接声称已覆盖此动作，实施需单独登记边界；失败不得发布出生／破坏／转换事实后再留半体。
+
+Boss encounter／奖励权利由模块或可选 provider 保存，底座只给可信 group-terminal、part-broken、body-replaced、clone/split 事实及来源。部位破坏没有 kill XP，整体死亡按核心 groupId 一次；分裂让已有奖励池分给结果，复制默认新零权利，具体数额不由 giants 硬编码 growth。原形失去 Boss 外观但同一主体还活着时不算击败，不靠变老鼠触发死亡奖励。
 
 ## 5 地形、气体、机关与物品
 
 ### 5.1 一份足迹暴露摘要
 
-多格路径先读取身体格的四层地形/气体，生成冻结 `FootprintExposure`，再按现有主时序结算生物；1×1 保持原路径。不能对每个格直接调用 `applyEnvironmentalEffects`。状态时钟、燃烧/中毒伤害、恢复与成长客观块只按实体一次推进。
+多格路径先读取身体格的四层地形/气体，生成冻结 `FootprintExposure`，再按现有主时序结算生物；1×1 保持原路径。不能对每个格直接调用 `applyEnvironmentalEffects`。刚体每实体一次；复合体先各成员暴露，再按 §5.3 数据归属路由，群体状态／整体携带物只推进一次，成员局部伤害与状态各一次，不按占格或 zone 数增加时钟。
 
 | 类别 | 多格推荐规则 | 一次性与混合情形 |
 |---|---|---|
@@ -174,87 +306,143 @@ pending 落层实体不进当前层索引/调度，保留于现有 `pendingFalle
 | 气体浓度 | 现代码按 GAS tile flags 判效果，**不以 volume 设置阈值**；保持此规则。任一占格含某气体效果即暴露，同类状态用一次 max 刷新 | 暴露摘要可携带每种气体最大 volume 供将来公式使用，首版不将浓度平均/累加乘伤。不同气体种类各自生效；同种腐蚀/蒸汽等渐进伤害类别取最强一次 |
 | 蛛网/毒苔/荆棘 | 任一格接触即可缠绕/中毒；同种效果一次抽样或刷新；只有全部身体离开对应地形才清接触状态 | 挣扎消耗一次行动；破网时按身体接触格稳定处理，不为每格再投挣扎骰 |
 | 地形治疗/渐进损伤 | 该结算类别在身体内取最大有效强度一次；伤害与治疗作为两个既有类别按原时序 | 不把覆盖面积变成倍增器，也不提前给移动瞬间补一个气体伤害 tick |
-| 爆炸 | 同一个爆炸/DF 因果作用域内，同一实体一次命中；现有免疫窗继续处理跨作用域的连续爆炸 | 不靠长免疫窗掩盖尾格重复调用；死亡 DF 不反复触发死亡/XP。独立后续爆炸是否伤害仍按原免疫规则 |
-| 陷阱/压力板 | 任一新进入身体格可触发**该格**符合资格的机关；每个真实机关一次，玩家专属 ENTRY 标志不施加给怪物 | 多个独立陷阱可各触发，不能“整只巨人只踩一块板”；同一机器激活由机器去重，同一范围伤害由实体去重 |
+| 爆炸 | 同一爆炸/DF scope内，刚体一次，复合体默认group一次核心伤；part切断效果须显式声明。原免疫窗继续处理跨scope连续爆炸 | 不靠免疫窗掩盖尾格重复；死亡DF不重发XP，独立后续爆炸按原免疫规则 |
+| 陷阱/压力板 | 任一新进入身体格触发**该格**合资格机关，每个真实机关一次，玩家专属ENTRY不施加给怪物 | 独立陷阱各触发，机器激活按机器去重，伤害按效果的实体／部位／群键去重，不把一组脚当同一块板 |
 | 门/地形晋升 | 身体碰到的通用 creature-step 门格分别开启；目的地整体开门预计划后才验 fit/移动。正常不会撞碎墙或挤过 1 格门 | 多格驻留格维持通用踩门晋升；改变地形后通知缓存。不能无条件把玩家专属晋升复制给 NPC |
 | 钥匙/物品/掉落 | 玩家拾取仍 1×1；携带匹配钥匙可作用于任一身体接触的机关，同一消耗物一次；普通怪物不新增扫地拾取能力 | 死亡/携带物掉落以实际死亡接触格起搜，再按 footprint 附近稳定单格候选；只掉一份。物品仍可在身体下方存在，UI 由遮挡优先级决定 |
 
-整体 flags OR 仅适合“任一格”存在性；不能拿 OR 同时替代支撑、全身潜水、灭火、免疫与每种气体的实际采样。首版上述推荐共同组成一个底座版本化规则集，不开放每个 Boss 自写任意 reducer。
+整体 flags OR 仅适合“任一格”存在性；不能拿 OR 同时替代支撑、全身潜水、灭火、免疫与每种气体的实际采样。上表首先规定每个刚体的摘要，群体额外聚合见 §5.3，成员着火不自动让另一条干腿着火。首版上述推荐共同组成底座版本化规则集；可配置点是经过校验的分类／归属枚举，不接受任意 reducer 脚本。
 
 ### 5.2 重入、触发顺序与随机边界
 
-移动提交后按新进入格 y/x 处理通用机关；旧驻留格不伪造重新进入。原有需驻留检测的 DF/地形按客观块检查全身体。触发使实体死亡、瞬移、坠落或形态变化时，停止旧占格列表处理，再使用新真相结算；不能拿旧 `loc`/exposure 继续触发另一格。
+移动提交后按新进入格y/x处理通用机关，复合体的成员格在同一稳定接触序列；旧驻留格不伪造进入。需驻留的DF／地形按客观块查全身体。实体死亡／瞬移／坠落／换形，或部位破坏改变群拓扑时停止旧列表，用新真相续算；同一contact scope保留已处理进入格／机关记录，不能重启列表重复踩板／掷骰。
 
-DF 可逐格回调，并嵌套触发新的 DF。底座提供短命 effect/contact scope，记录 `(scopeId, creatureId, effectKind)`；内层同源面积接触共享作用域，不按格重新分配 effect ID；不同独立陷阱/动作子段获得自己的作用域。被杀实体的死亡爆炸是新的子效果作用域，继承可信因果来源但不与杀死它的那次爆炸共享命中账本。作用域在同步提交边界排空，不进存档，不由 UI 创建，不从墙钟或装饰 RNG 取 ID。存在跨命令延迟效果时必须单独定义持久 plan，而非保存一个半开的作用域。
+DF 可逐格回调，并嵌套触发新的 DF。底座提供短命 effect/contact scope，记录 `(scopeId, effectKind, dedupKind, targetKey)`；targetKey 按 §6 是实体／部位／群体。内层同源面积接触共享作用域，不按格重新分配 effect ID；不同独立陷阱／攻击子段获得独立作用域。被杀整体的死亡爆炸是新子效果作用域，继承因果来源但不共用杀死它的命中账本；普通部位破坏不自动生成死亡爆炸。作用域同步排空，不存档，不由 UI／墙钟／装饰 RNG 创建；跨命令延迟效果保存独立持久 plan。
 
-每种生物效果按唯一实体采样一次；世界格的既有火焰/晋升/气体 RNG 仍按真实地形变化执行，启用大型者可以有意影响环境后续 RNG。报告区分“单位效果去重”与“真实多格地形变化”，不能把所有 RNG 漂移笼统归于体型。没有空间使用者时不建立这些新作用域或改变原调用次序。
+每种生物效果按其唯一目标键采样一次，群精神／整体爆炸不是每成员一骰；世界格既有火焰／晋升／气体RNG仍按真实地形变化，启用新身体可有意改变环境后续RNG。报告分清目标去重与真实多格地形变化，不把所有漂移笼统归体型。无使用者不建立新scope或改变原调用次序。
 
-## 6 攻击、弹道与目标
+### 5.3 状态归属与群体环境
 
-1. 普通近战从最近合法接触对出手；命中任一身体格就是命中该实体，防御、伤害、符文、抓持、反伤、击杀、日志与成长 `physicalResolved` 全部一次。被击退方向和血迹/浮字使用实际接触格，不能总落在左上角。
-2. 横扫的格集合是攻击者 footprint 外围的 8 邻接并集，扣除自己的身体；矛/鞭/穿刺由底座“相对形状”产生格集合。首版大型普通攻击只打一名相邻敌人，不因为有多个身体格获得多次攻击。多头/连段必须显式声明多个独立攻击子段，属于以后内容。
-3. 单个攻击子段/单次范围效果内，以 creatureId 去重。命中顺序取该子段的首次接触序，格枚举无方向语义时用 y/x、再实体 ID；保留现有矛从远到近等明确的解算顺序。不会因面积更大多触发一次成长临时效果消费。范围伤害、否定/纷争、成长动作复用同一目标收集器，不在模块中复制一套半径筛选。
-4. **弹道碰撞**发生在第一格身体接触。非穿透投掷/射线当场停，撞到未被看见的尾格仍有机械碰撞，但消息不得泄漏身份。穿透弹道继续对后续地形逐格作用，对同一多格实体仅解算一次生物效果；反射概率也只在该实体首次碰撞采样，不能沿身体重复掷反射骰。
-5. 本基线 `traceBolt` 保留反射后重复访问同一 1×1 实体的 hits，这是现状语义。新去重规则只折叠多格实体在该次 projectile scope 内的重复接触；普通 1×1 的重访仍保留。混合场景必须有“巨人 1 次、普通反射目标按原重访次数”的测试。若阶段 3 将来要统一弹道语义，应另行评审，不借本次迁移修改。
-6. AoE 必须用形状格集合与 footprint 的交集，而非锚点是否在半径内。先按原技能所用距离度量生成格，再收集实体；障碍/LOS、敌我/免疫/目标知识继续由效果自己的策略复核。不存在的通用成长 AoE 只留该底座接口，不在本阶段增加新成长技能。
-7. 自动目标按唯一实体 ID 列表、最近合法公开接触格排序；手动瞄准保持格点，命令/录像记录玩家真实点击格。目标选择 UI 为同一实体高亮所有**可公开格**。ID 目标的成长 attack 验证/准备/提交用同一 footprint 接触规则，取消和陈旧目标不扣费，已有 prepared 风险确认协议继续使用。
+底座提供 StatusProfile 数据行 `{statusId, owner:'group'|'entity', merge:'max'|'stack'|'replace', disables:[…]}`，实际叠加／免疫／伤害仍调用该状态的既有规则。群体默认 profile 可由身体定义引用，特定技能可声明经白名单允许的局部覆盖；不在代码写“蜘蛛精神免疫”或为每种怪物分支。group owner 存核心，entity owner 存实际成员，单体两者均落在自身。
 
-碰撞与知识是两套查询：规则可以撞上隐藏生物，UI/自动选敌不可以凭占位表发现它。确认前的纯预检与实际提交使用相同几何，但提交再次核对形态、锚点、空间 revision；prepare 期间不先移动/伤害再回滚。
+| 状态／资格类别 | 推荐归属与效果 | 可配置边界 |
+|---|---|---|
+| 魅惑／支配关系、纷争、恐惧、睡眠、入迷 | group；全组阵营／目标选择一致，只作一次精神／关系判定。入迷的受控移动执行全组空间计划 | 支配是关系变化而非另造 status；不得因打中腿只把一腿变盟友。剧情局部叛离需显式拆组转换 |
+| 麻痹、混乱 | 默认 group；麻痹禁核心及子动作，混乱一次方向选择后整组预检 | 明示“局部麻痹”的部位招式可 entity，仅禁该肢体；核心不因此失去大脑，但支撑数可能不足 |
+| 燃烧、中毒、局部腐蚀／缠绕 | entity；腿的毒／火计时和伤害只在该成员一次，传核心遵循传伤政策。缠绕阻止该成员改落脚 | group 毒素须技能显式声明，写核心一次；不向全体拷贝 poisoned，也不反复写核心加 8 层毒 |
+| 加速／减速、整体飞行、隐身、免火等 | 身体 profile 明确 group 或 entity。默认加减速与主动隐身属 group；局部飞行／免火是成员资格 | 一个头会飞不能让全组跨渊；group 资格从核心路由，资格变化失效通行／暴露图 |
+
+objectiveTimeBlock 中先各实体／成员读暴露，按状态 owner 合并相同施加，再执行每个状态所有者一次计时／伤害，保持原环境→状态→环境演化主序。核心群状态可被所有成员查询，但不能被所有成员 tick。成长的客观效果若是核心预算只执行一次；已明确授予成员的被动各自有效。缺 profile、未知状态归属或冲突定义在载入数据时拒绝，不用默默套群体默认隐藏错误。
+
+群体支撑只计 providesSupport=true 的活跃成员（核心同样声明），武器触手可显式兼任；支撑者任一合法支撑即保持组不坠落，全部无支撑才整组坠落。维持正常行走另需 minSupportParts，不能把一脚撑住不坠落等同可正常跑动。全组潜水／水下隐藏要求所有活跃身体满足条件，部分腿露干地就不全隐；各成员的火／水暴露仍局部处理。掉落、涉水冲刷核心携带物和整体熔岩致死按归属路由：核心接触致死整体，肢体接触致死该部位并触发破坏，不因一只耐热触手覆盖核心免疫，也不把每腿当独立掉落袋。
+
+### 5.4 部位破坏、传伤与再生
+
+受击定位实体／zone，走独立命中／防护／整数伤害，再扣实际HP（native或local）；zone装甲／弱点倍率只解算一次。local zone按ownerTransfer传所属实体原生HP，非核心成员再按coreTransfer传核心；每段基数=min(防护后伤量,受击者本次命中前正HP)，不传过量伤害，逐段向下取整。比例默认在[0,1]内，不允许反向／循环／自传。沿同一resolutionId保留来源，不重投命中／重复装甲，也不重新触发符文／吸血／临时效果；额外传导防护须明示并进入规则指纹。
+
+推荐固定local命中区传导1:1、外围成员1:4（P4-D09）；直接核心native HP只扣一次，不自传。数值可配置0或1:1等；成员有local zone时先传给该成员，再按成员政策传核心，不额外沿zone→核心旁路重复传导。横扫两腿的两次局部伤害／传导是有意结果，同腿多格仍一次。同scope核心直接受击后，外围独立命中的派生伤量仍有效，不伪造第二次核心攻击；贡献统计不把同份伤两次计入击杀。
+
+local HP到0发布唯一 `(groupId,partId,zoneId,generation)` 破坏收据；单体partId使用保留self，收据由zoneState.broken/generation承载，不为它创建群表。native zone共享实体HP，到0时非核心成员按PartDefinition破坏一次、核心／单体按真正死亡一次，不让每个native zone各触发破坏。zone默认keep-zone，不移身体格，只失攻／防护或暴露其他zone；掉石甲须声明replacementFootprintId并按§4.4换合法变体，不任意删格断开。成员默认remove，释放占位、保留槽墓碑；inert-body不可行动／再受击，仍由群管理，其资格排除普通hp<=0 death sweep。默认随群保留相对偏移、整体搬移／迁层，剔除活支撑／攻击但保留牵引／碰撞；固定原地残体转独立非战斗世界对象，不让同群残体跨层分裂。
+
+debris 转地形是可选声明，需预检地形／机器／连通性、写集和缓存失效；4c 首批不开放阻路残骸，以免截断玩家唯一出口。remove／debris 均不发成员 kill／死亡 DF／掉落／XP。整体核心 HP=0 才终结全组一次，成员按 coreDeath 批次无死亡退休／残骸；有意部位爆炸可声明独立 break effect，不能借普通死亡回调重复奖励。
+
+破坏修正从唯一破坏集与仍有效成员派生：腿少→movementSpeed的tick倍率增大（速度变慢）；头毁→禁对应攻击；甲毁→核心zone弱点开放；有效支撑数低于minSupportParts→noSupport的immobile／collapse／die，不仅在计数恰好0才判断。平衡损失可请求阶段3韧性／硬直，缺席用声明短行动抑制和取消子段（§11.3）。重载／收据重入不累乘速度或重复清攻击；规则修正／再生恢复需重算并失效通行／动作资格。
+
+schema 预留 regenerateInTicks、generation 和 maxCycles，首批产品推荐不启用再生（P4-D13）；后续在实际客观时钟安全边界计划 regrow，合法落点才创建新成员／恢复 zone 与撤回对应派生修正。无位只等待下一次有效重试／期限，不占一格无实体残影、不每帧循环生长；再生的旧破坏收据和生成次数持久保存，读档不送免费新腿。
+
+## 6 攻击、弹道、目标与去重键
+
+### 6.1 效果类别决定目标粒度
+
+占位查询只交事实，**底座的版本化 EffectTargetPolicy 按效果类别给默认，招式／效果数据可显式覆盖**，不是 UI、getMonsterAt 或某种怪物自己决定。同一子段定义 `dedup:'entity'|'part'|'group'` 及明确的 damage/status recipient：entity 是实际成员，part 是成员＋zone，group 是 coreId（单体隐式 groupId）。覆盖需静态校验且进入 rules 指纹，未声明用下表；不能随机挑键，不能用增长倍增／帧顺序决定键。
+
+| 效果类别 | 推荐默认与命中接收者 | 可配置点／理由 |
+|---|---|---|
+| 单点近战／投掷／定向射线 | part；第一次碰到的真实成员／zone，只有一个目标 | 可瞄弱点、每腿独立受击；普通无 zone 单体仍只有 body，N 个身体格不多投骰 |
+| 横扫／矛／鞭等局部几何武器 | part；每个相交部位一次 | **横扫同时扫两条蜘蛛腿各一次**，多格同腿一次；可显式 entity 将该腿多个固定 zone 合并，或 group 作整体冲击，但须说明 HP 路由 |
+| 爆炸／全身范围伤害、整体治疗 | group；相交身体命中整体一次，伤害／治疗到核心 | 默认不因八腿站在同一火球中放大 8 次核心伤；“区域切断肢体”招式可 part，承担逐部位命中／传导预算 |
+| 否定／纷争／魅惑／恐惧等精神或整体身份效果 | group；由 profile 路由一次到核心并影响全组 | 局部状态招式必须 entity/part 明示；ordinary polymorph 对整体一次，不各腿重抽形态 |
+| 地形／气体／持续伤害 | exposure 先按 entity，施加按状态 owner 合并；不是强行全部 group | 成员燃烧各自一 tick，群毒只一 tick；世界机关按格／机器去重独立于身体命中键 |
+| 击杀／XP／整体 defeat 事实 | group，核心终结一次 | part-broken 另事实；不可配置为每腿一份普通击杀奖励 |
+
+群键命中保留实际 contact 的成员／格供命中位置、血迹／反射方向和消息，但用核心防御／整体资格解算，不先扣腿再额外扣核心。部位键命中走 §5.4 局部与传导；entity 键合并多个 zone 时以首次合法接触 zone 解算，而非各 zone 伤量相加。同一实际局部命中只消费一次成长逐命中效果、符文、抓持、反伤、吸血与 physicalResolved；传导是其派生事实，不重新触发这些出口。攻者部位可独立 HP／装备，共享资源的费用仍由声明的核心预算支付一次，不能由每条腿重复扣同一费用。
+
+### 6.2 几何、弹道与知识
+
+普通近战从发起成员到目标部位的最近合法接触对出手；大型单体普通攻击仍只打一个目标，不按身体格免费多攻。攻击束中的不同头／腿属于显式子段，新 scope 可再命中同一目标，不能因为同一 Boss 合并连段。横扫外围取发起成员 footprint 的 8 邻接并集扣自身；矛／鞭／触手相对形状按底座原语产生，保留原矛从远到近等解算顺序，无方向枚举按 y/x、entityId、zoneId。
+
+非穿透弹道在第一格身体接触停，隐藏尾格有机械碰撞但不能泄漏身份。穿透默认一 projectile scope 对每个 part 一次；对于无 zone 的刚体仍只一次，显式整体射线可 group，切割射线可 part 多次。反射按同一有效碰撞键首次采样，不能在同腿的第二格又掷一次；有多个明确不同部位的可反射资格时依稳定接触序分别处理，并受弹道本身反射上限约束。
+
+现 `traceBolt` 允许反射后重复访问同一普通 1×1 实体，保留该无能力语义。只有启用 spatial/zone/bodyMember 的目标按新键折叠 scope 内重复接触；混合场景须验证“巨人单部位一次、普通反射目标按原重访次数”。不借此次迁移统一所有旧弹道；若阶段3要改，另定规则与版本。
+
+AoE 先用原距离度量／LOS 生成格集合，再与实际掩码交集收集目标，不能仅测锚点半径或矩形包围盒；L 形空角不挨打，蛇段在范围里而头不在也能命中。资格、敌我、隐藏知识与免疫仍由效果政策复核；默认 group 火球即使碰两腿也只一次核心伤，part 横扫会两次局部伤。成长已有技能是受控动作＋效果，不冒称已有通用 AoE，几何复用底座。
+
+自动选敌先 group 一条候选，再列公开可打部位；手动瞄准仍记玩家真实点击格，须解析当时 contact。部位命令可带实体／zone／generation 与 revision 作为验证信息，不能让玩家提交群核心 actorId 或伪造 hidden part。prepared 等待后再次核对知识、形态、位置、部位存活与接触规则，陈旧目标取消不扣费，沿既有风险确认协议；prepare 不先移动／伤害再回滚。
 
 ## 7 视野、潜行、感知和关系
 
-- **玩家看见大型者**：任一占格满足当前直接可见性且该实体未按对应隐藏规则隐匿，即成为一个可见实体。身份门槛继续复用 `MonsterVisibility`。实际展示只画可见/被允许感知的身体格；看见脚不自动把整块未探索墙后地图变成可见。
-- **大型者看见目标**：至少一个身体观察格与至少一个目标占格有合法 LOS，且在该观察格对应的原距离范围内。可信 NPC 查询最多 9×9 格对，先最近/边界候选，再短路；不把 NPC 多源 FOV 写进玩家的 Cell.isVisible/isExplored。需要范围掩码的技能才懒建纯 mask 并集。
-- **隐身/气体**：隐身是一份实体状态，不是九个独立隐身骰。气体接触可显影的可见身体格；气体外、墙后格不因同一实体显影而全部画出。telepathy/entranced 的已知位置沿现有身份/位置区别，只输出被规则允许的标记，不直接曝光所有隐藏身体边界。
-- **潜行/气味**：最近 footprint 距离与身体采样的最小 awarenessDistance 作为感知摘要，沿 Scent 原有尺度，不直接用欧氏距离替代。先合并摘要，再执行一次原概率决策；一只 3×3 不能投九次 25% 警觉骰。气味梯度用于选择合法锚点邻居，不能逐格 scent.stepDirection 后多数投票穿窄门。
-- **噪声/警报**：`aggravateMonsters` 的现有路径距离图对每只生物取占格最小值，只唤醒一次；底座公开这种距离 reducer，不新造全局声音系统。身体遮挡光的谓词覆盖全部占格，普通地形 LOS 是否阻挡生物仍按该查询原策略。发光生物采用确定的身体中央合法格作为发光原点，1×1 原点不变，不按面积复制光源/RNG。
-- **关系**：推荐首版 giants 正式内容只生成敌对者，不生成大型盟友/俘虏，也不允许魅惑/支配把它变为大型盟友（P4-D03）。集中内容资格检查覆盖 domination、复活、友方复制/召唤、笼子群落、关系改变事实；“entranced 跟随位移”和 discord 等现有状态不等同成为盟友，仍按 footprint 支持。拒绝必须本地化说明，不能静默缩水。
+- 任一占格满足直接可见／既有隐藏资格即可公开该实体，复合体附近列表聚合为一个整体，但只给已知成员／部位。看见一条腿不公开墙后的核心位置、隐藏连接、未见部位数或 HP；完整身体轮廓仅逐格公开。纯机械 group 查询与玩家知识分开。
+- 看见目标的可信几何按声明观察成员与其身体格求 LOS；核心默认观察者，头等可声明额外观察者。先最近／边界候选短路，不把 NPC 多源 FOV 写进玩家探索；若能力需要 mask 则懒建并集。独立感知判定默认群体一次，不能八眼投八次警觉骰。局部机关感应另有显式状态 profile／能力，不是任意成员自动全知。
+- 隐身按 profile 归属；气体只显影实际可公开接触格，其他腿／墙后核心不一起画出。telepathy/entranced 沿现有身份与位置知识区分，不能直接曝光完整拓扑。全组潜水隐藏用 §5.3 的 all 谓词，不把一条触手潜水当作全组消失。
+- 气味／潜行取相关 footprint 最近距离及 awarenessDistance 摘要，再一次原概率决策；保留 Scent 尺度。合法核心邻步／落脚方案用同一可通行谓词，不让每腿 scent 投票越墙。噪声／警报图对组内相关格取 min，只唤醒核心一次，不创建新全局声音系统。
+- 光遮挡覆盖实际实体足迹，孔洞不挡。默认全组一个发光原点，取核心稳定合法格；局部发光部位需明示光源且预算化，不按面积复制 RNG。普通 1×1 原点与采样保持。
+- D07=A 下支配／魅惑等不因 Boss 或体型额外拒绝：成功时原子改变整体关系，成员保持一队。P4-D03 现只决定是否**自然生成**大型盟友／俘虏与相关内容，不再提供 Boss 身份免疫。首批推荐只自然生成敌对者；被玩家转成盟友后仍能即时战斗／待命，遇窄道绕行或停留，不强行交换／追层；应明确提示无法跟随的空间原因。
 
-底座不把 faction、isAlly 和尺寸绑定，测试 fixture 可构造大型盟友验证目标/占位；首版只限制模块内容与转换策略。将来放开时需补 NPC 主动动作、全批次交换、跟随楼梯/下层落位、锁链/救援、友方确认和数据策略版本，并复用同一空间能力。
+底座 faction/isAlly 不与尺寸绑定，关系事实一次发整体语义并让成员查询一致。后续自然盟友、全部成员锁链／救援与宽入口跟随内容需补独立验收；原生 leader/follower 保留其用途，不拿它们兼任 bodyGroup。受控 entranced 位移、discord 与普通盟友 AI 均使用已交付空间计划，不能留一条腿被迫走出区域的半转换。
 
-## 8 按体型寻路与性能
+## 8 形状 × 朝向寻路与性能
 
-### 8.1 锚点图与现有路径的关系
+### 8.1 位姿图与缓存
 
-对尺寸 N 的合法左上锚点 A 建图：`fit(A) = AND(tilePolicy(A+offset))`，物理障碍等效向左/上膨胀 N−1 格。通行格网可用行滑窗/坏格前缀和构建，O(W×H)；处理需要状态/液体/边界的策略也可首版直接 O(W×H×N²)，先正确再测量。目的锚点代价取身体格最大地形代价，禁止用总和悄悄放大移动耗时；行动 tick 仍由原速度决定。
+对每个 `(anchor,pose)` 建合法节点，`fit = AND(tilePolicy(anchor+offset))`；平移八邻边按 §4.1 检查，旋转边按编译扫掠 mask 检查并给明确正代价。单朝向方形仍为原锚点图；矩形可滑窗／前缀和 O(WH)，一般 mask 直接 O(WHKA)，K 是实际占格数、A 是有效位姿数；不把凹形的整个包围盒当实体。危险路径代价取占格最大有效代价，不把面积和代价相加默默倍增行动 tick。
 
-距离图以多个“可与目标 footprint 合法攻击”的锚点为零源，执行确定的 BFS（等权）或 Dijkstra（正权）。对角边使用 §4.1 的同一 canStep，不能只用一个 -2 格标志近似多格墙角。实现可给现有 scanner 增加邻边谓词，保留 1×1 原 scanner 路径；NPC 的 A*、逃跑安全图、游荡 waypoint、闪现候选与跨层落点一起迁移到体型视图。
-
-`Creature.mapToMe` 现在不含 traveller 体型/通行策略，`getBlinkTargetMap` 只看目标是否走离原图值≤3的区域；这不能给 2×2/3×3 共用。新多格缓存独立按 key 管理，不覆盖原 `mapToMe`，也不把旧单格 waypoint/safety 图当成正确的多格图。
-
-### 8.2 缓存、动态占位和失效
-
-推荐每个当前层 SpatialService 懒持有两级缓存，最多 **8 个**大型查询图，LRU 顺序仅影响性能，不能影响路径结果：
+目标是可合法攻击目标 footprint 的多个位姿零源；等权 BFS，有旋转／地形权重用 Dijkstra/A*。NPC 逃跑、安全、waypoint、闪现／跨层落点均接位姿图；玩家仍1×1，只修新障碍输入。`Creature.mapToMe` 不含 traveller 形状，MonsterBlink 的“目标离开原图值≤3才刷新”也不足用；新图独立缓存，不覆盖原图，不拿单格 safety/waypoint 偷代替。
 
 | 缓存 | key | 失效 |
 |---|---|---|
-| 地形 fit/代价图 | grid 身份、N、locomotion/免疫/状态通行指纹、movementBounds、terrainRevision | 地形/门/DF 晋升、液体边界、影响避险的气体变化、尺寸/状态资格/边界变化 |
-| 距离/目标图 | 上述 key + 目标 ID/footprint revision、目的类型、危险评估 revision | 目标移动/死亡/变形、风险地图变化；首版不沿用“移出值3才更新”的近似 |
-| 动态局部规划 | 上述 key + occupancyRevision、被忽略 actorId、阵营/阻挡策略 | 任何参与占位变化；通常只在共享地形图上临时修正并验下一步，不永久为每 actor 缓存全图 |
+| 地形 fit／代价／旋转边表 | grid 身份、形状及 zone/pose 指纹、通行／免疫／状态指纹、区域、terrainRevision | 门／DF／晋升／液体／影响避险的气体类型、形态／位姿资格／边界变更 |
+| 距离／目标图 | 上项＋目标实体或群体 footprint revision、目标类别、危险 revision | 目标成员移动／破坏／再生／变形／死亡；不用旧“值3”近似 |
+| 动态规划／成员局部解 | 上项＋occupancyRevision、参与搬移集、约束／群体能力 revision | 占位、支撑／连接变化；通常临时检查，不为每腿永久缓存全图 |
 
-共享静态图不把移动小怪永久膨胀成墙。下一步必须实时验整体占位；被挡后在同一体型图上做有界动态路径搜索，动态目标若完全封死则等待/按当前 AI 换目标。静态图可以跨 actor 共享，临时图忽略自身全部身体；不能误让自己的旧格阻断自己。不可达搜索扩展最多合法锚点数，不新增随机“脱困”；路径平局按现有方向次序固定。
+每当前层最多 8 组缓存（整组含 A 个姿态切片），LRU 只影响速度、不影响选路／平局。共享静态图不把移动小怪永久变墙；下一步验动态完整身体并作一次有界重规划。组路径只保证核心乐观通行，成员解在 §4.3，不能为其全部排列建指数级距离图。
 
-现 `invalidatePathing` 只在 DF callback 中更新 loopMap/safety，尚无统一 terrainRevision。实施必须加通用 mutation 通知，并覆盖 `Promotion`、门与钥匙、`Grid.setTerrain` 以及直接改 layers 后 `refreshTerrainProperties` 的写入；`TimeCoordinator.updateEnvironment` 汇总实际变更，不每块无条件重建体型图。影响多格避险的气体 type/资格改变要失效，不因 volume 每次随机舍入都无条件使无浓度公式的图失效。
+现 invalidatePathing 仅局部 loopMap/safety；必须接统一地形 mutation 通知，覆盖 Grid.setTerrain、直接 layers 写＋refreshTerrainProperties、门／钥匙／Promotion/DF、部位残骸和环境。volume 变化没有浓度公式时不无条件刷新图；type／危险资格改变才刷新。成员移动只推进动态占位与相关目标 revision，不重建全部静态表。load／换层／rollback 丢缓存，revision 不持久，恢复真相后选路应一致。无能力使用者时不启用数组、计数或失效扫描。
 
-出生/死亡/位移/休眠→活跃推进 occupancyRevision；只清动态规划和目标相关项，不让一只小怪走路重建所有静态 fit 图。换层/load/生成回滚直接丢弃缓存。revision 不存档；按真相重建并保证读档后选路完全一样。无能力使用者时这些计数、数组、图构建和失效扫描都不启用。
+### 8.2 建议硬上限与退化策略
 
-### 8.3 成本估算与实施验证
+| 项目 | 推荐上限（P4-D12） | 超界行为 |
+|---|---:|---|
+| 单实体实际形状格数 K／包围盒边 | K≤16，单边≤16 | 校验拒绝；容纳长条／L／十字，正式内容仍先2×2、3×3 |
+| 物理位姿 A／旋转扫掠格 | 通常 A≤4；含镜像最多8；单边旋转 sweep≤256格 | 数据预编译检查，过大拒绝，不截断旋转弧 |
+| 每组成员数／总物理占格 | 核心＋外围≤17（外围≤16）；总格≤64 | 创建／转换／读档全部拒绝；足够八腿、九头、16节蛇样例 |
+| local zone／组总 zone | 每实体≤8，整组≤32 | 拒绝，不把每像素自动升成部位 |
+| 成员候选／约束回溯／攻击束 | 每成员≤32候选，≤128回溯节点，≤4攻击子段／激活 | bounded blocked／减少预先声明的束，不执行一半后跳过 |
+| 活动层新能力实体／占格总预算 | ≤128实体、≤512格，仍受原生实体全局预算 | 防复制／召唤指数膨胀；失败不抢 ID，不缩成员 |
+| 群体观察 LOS 工作 | 每感知摘要最多128候选格对 | 观察成员／格从定义稳定选定，预算不足不改变选集；必要时下一激活重试，不能随机抽眼 |
 
-当前 `src/types/index.ts:46–53` 给出 **79×29=2291 格**。不考虑边墙的候选锚点上界：2×2 为 78×28=2184，3×3 为 77×27=2079。直接逐锚点检查身体分别约 8736/18711 次格判定；每张图最多约 1.75 万/1.66 万条八邻边，BFS O(V+E)，正权堆 Dijkstra O(E log V)。对角检查预先读取 fit 图即可，不每条边重新扫九格。
+上限是推荐，确认后成为版本化校验而非运行时随机器速度裁掉身体。128 格对的观察策略须在感知定义就固定候选集／采样规则，不能按帧耗时提前放弃导致不同设备敌人视野不同。一般刚体≤16格对玩家只有16对；组对组最坏64×64，先空间下界与固定观察集合裁减，需另验极端场景。
 
-格→ID 用 Int32Array 约 9 KiB，预留另算；单组 fit Uint8 + cost Uint16 + distance Int32 约 16 KiB，8 组原始数组约 125 KiB，加占位与临时图约 **150–250 KiB/活动楼层**，不含 JS 容器、堆和 FOV mask。上述是操作量/数组字节估算，**不是实测毫秒或 FPS**。若实体 ID 超出 Int32 范围须校验或换索引编号，不截断共享 entityId。
+4a 的内容／运行开放只限 square-2／square-3，4a0 fixture 可有任意掩码；4b 后 K≤16 的通用 mask 可表示4×4，但本阶段无正式4×4场地／内容。此处取代初稿全底座拒绝4×4的限制，理由是通用格数预算更合适；不能把任意形状支持写成首批已提供4×4敌人。
 
-实施时记录同候选真实 Game 的无大型局、1/4/8 个 2×2、1/4 个 3×3，追击/动态堵路/开门/气体/不可达场景的命令耗时 P50/P95、图构建次数、命中率、分配量与渲染帧。未使用局要求新增体型图/索引构建计数为 0、实质 RNG 增量为 0、机械状态一致；耗时与基线重复测量比较，不能只凭均值宣布零成本。多格局暂以 P95 单命令额外空间计算≤5 ms 为调优目标，最终预算需维护者按设备实测确认，未达时仍报告正确性和瓶颈，不放宽测试制造通过。
+### 8.3 成本估算与实测要求
+
+地图仍79×29=2291格。方形 r0 快路径的候选上界2×2为2184、3×3为2079，直接格判定8736／18711次，八邻图约1.75万／1.66万边。一般 K=16/A=4 上界9164节点，fit约14.7万格判定，平移＋左右旋转≤约9.2万边；A=8 最多18328节点，操作量约翻倍，旋转 sweep 需编译／缓存，不能每边实时浮点动画采样。BFS O(V+E)，正权堆 Dijkstra O(E log V)，这是估算，非毫秒／FPS。
+
+占位索引用 Int32 索引编号＋zone标签数组约14 KiB／层，编号查稳定 entityId／groupId，不能截断超Int32的实体 ID。fit Uint8＋cost Uint16＋distance Int32 每pose约16 KiB；8组×4pose原始数组约500 KiB，8pose约1 MiB，另有旋转边表、JS堆、临时规划和渲染。初稿150–250 KiB只适合单朝向方形，不再当通用上界。群约束每次最多128分支×有界成员／候选检测，不承诺线性求得全构型最短路。
+
+实测无能力局、1/4/8个2×2、1/4个3×3、4种L／十字／长条姿态、1/4个8腿组与16段蛇；覆盖追击、堵路、开门、气体、旋转、不可达、断腿／再生与分裂。报告命令P50/P95、索引／图构建数、缓存命中、约束节点、RNG、分配量和渲染帧；无能力新增索引／图／约束求解为0、实质RNG增量0、机械图相同。新增空间计算P95≤5ms仍只是调优目标，最终设备预算待确认，不能为达标改随机／跳伤害或放宽正确性断言。
 
 ## 9 刻符渲染、目标与移动端
 
-推荐 **逐格轮廓 + 身体内一个主字形**（P4-D05）：2×2/3×3 是一个实体绘图组，身体边缘细线、低亮填充，中央一个实体字形；局部可见时只裁切到公开格，主字形可移到稳定的已见格。不要把九个相同怪物字形画成九只怪，也不要放大到遮住足迹外的危险格。ASCII/汉字/图块四种地图共用占位几何；地图模式影响主字形，不影响命中。
+推荐 **实际掩码轮廓 + 每个刚体一个主字形**（P4-D05）：刚体绘图组按实际格边画细线／低亮填充，中央稳定合法格放一个字形；L形缺角、十字凹边、长条和孔洞都保留地形，不画包围盒填充。局部可见裁切到公开格，主字形移至稳定已见格；不能放大到遮住足迹外危险。四种地图共用几何，模式只影响字形，不影响命中。
+
+复合体用核心主字形＋成员的小字形／端点标记，连接线仅在两端及路径均可公开时绘制，不能跨黑雾暴露核心。脚步／触手轨迹来自已提交历史帧的成员路径；动画可插值但不提前移动机械占位。固定 zone 选中时用局部细框，破坏用残缺边／破坏标记，颜色之外保留文本标签；小尺寸屏幕不在每格叠 HP 数字。
 
 未完全看见时不画完整矩形外框或未见尾格；选中目标边框也被公开格遮罩裁切。相邻火/气/机关仍可辨认，接触格局部闪烁表示本次受击；HP 浮字每实体/效果一次。轮廓属底座呈现，Boss 内容色彩/字形/血条属模块。首版不需要图片资产或图生视频。
 
-- **侧栏/附近列表**：一只大型者一条 row，显示公开体型（如“2×2”）和原状态/HP；排序取玩家到身体的最短同类距离，focus 落在任一可检视占格即选中。row.loc 使用稳定公开检视格，不能把隐藏锚点当点击目的地。共用 Sidebar、ThemeNearby、ContextPanel 消费同一 row DTO。
-- **Boss 血条**：由 giants 的通用 hud contribution 提供“名称 + 当前/最大 HP + 条”，只读取当前公开帧的 Boss DTO。建议当前目标优先，其次最近可见 Boss，最多一条；未见/失去知识时隐藏，不能提前显示墙后 HP。若多个 Boss，附近列表可以切目标，不占用全屏堆叠。数字/名称全部走模块 locale。
-- **桌面与手机**：血条跟随现有 HUD 流式排布，不固定遮住地图；390 宽显示两行，320 宽允许名称省略、HP 紧凑显示，保留一条条形进度，不强制改镜头缩放。320/390 下每个 body 格可点选，长按尾格检视同一实体；投掷/法杖沿原“瞄准→确认”，不得因点击同一个实体的另一格直接确认。
+- **侧栏／附近列表**：一个 group 一条 row（单体即自身），显示公开形状简述／整体状态；展开仅列已知部位。排序用已知身体最短距离，row.loc 是稳定公开检视格，不给隐藏锚点。共享 Sidebar、ThemeNearby、ContextPanel 同一 DTO；若只见腿，名称／主 HP 仍受知识门槛，不用“聚合”泄漏核心。
+- **Boss 血条／部位检视**：giants HUD 贡献一条名称＋核心 HP 条，当前目标优先、其次最近已知 Boss；看不见且未获准知道核心血量时只给已知目标标记，隐藏主 HP。选中部位可加一条局部 HP／护甲／弱点／破坏状态及对整体影响；其他已知部位用紧凑摘要（如“已知腿 3，已毁 1”），不透露未见总数。桌面检视可展开列表，手机默认只显示当前部位并可循环切换；字段缺权限则不显示，数字／名称全走 locale。
+- **桌面与手机**：血条沿 HUD 流式排布，390宽两行、320宽名称省略／HP紧凑、保留条形进度，不强制镜头缩放。实际部位格可点选，右键／长按直接检视当前部位＋整体公开摘要；窄屏用附近部位列表辅助选择1格腿。投掷／法杖保持“瞄准→确认”，同组另一格或另一部位是改目标，不能直接确认；破坏／再生后旧焦点清理或迁到合法公开部位。
 - **显示时序**：`displayProjection`/`DisplayFrame` 捕获公开 bodies 与模块 hud DTO，`presentationTimeline` 使用同一历史帧；不能在旧伤害消息等待期间用 game.monsters 的新 HP/新坐标画血条。忙态沿 D3 presentationHidden 约定，不新造弹窗或输入屏障。
 - **录像/seek**：回放同样读取当前回放世界投影，无等待动画的机械要求；seek 清旧 body 绘图组、血条、hover、目标描边，再投影目标 checkpoint。显示缩放、绘图资源与血条焦点不进入机械存档。
 
@@ -270,7 +458,7 @@ DF 可逐格回调，并嵌套触发新的 DF。底座提供短命 effect/contac
 |---|---:|---|---|
 | 2×2 | 12×10 | ≥3 格宽、门洞同宽；不能用一扇普通门卡掉第三列 | Boss 出生离边≥2 格；玩家有连续绕行空间，锚点图可达到入口内侧与主要战斗区 |
 | 3×3 | 16×12 | ≥4 格宽、门洞同宽 | 同上；用 3×3 图实际验证，不能以玩家 flood fill 代替 |
-| 4×4 | 不提供正式模板 | 模板 schema 预留尺寸参数；运行校验仍拒绝 4 | 将来另扩上限、预算与图/视觉测试，不能仅把数据 size 改为4 |
+| 4×4／其他形状／复合体 | 不提供首批正式模板 | 4b后通用掩码可表达4×4；任意形状以实际位姿可达图验证，复合体另验落脚／约束 | 后续 authored 模板须验证旋转空间、成员活动范围与玩家绕行；仅面积够大不成立 |
 
 场地边界和出生/巡游锚点区分：净空矩形保证 fit，spawn 周围至少两格缓冲，玩家出生/楼梯不能落在 Boss 身体或直接相邻杀伤区。计算玩家出口连通、Boss 锚点可达集合、可绕行的玩家格带和无堵死楼梯，不仅检查房间面积。装饰柱/水/陷阱只能放在验算后仍满足合同的模板变体，失败不用缩水通道。
 
@@ -283,8 +471,8 @@ DF 可逐格回调，并嵌套触发新的 DF。底座提供短命 effect/contac
 拟新增底座 `GenerationContribution` 声明与有限空间创建计划：
 
 1. 启用模块登记纯模板/候选规则声明，按 priority、owner ID、template ID 排序；静态发现不挖图、不取 RNG。多个模块同时贡献场地时按同一预算/预留规则处理，重叠候选拒绝或选下一个，不按加载顺序抢格。
-2. floor-attempt 内，基础地形完成后、陷阱/机器放置前选可附接侧室并保留其 mask。模板挖掘、入口连通与 N 图验算由底座执行；traps、机器、autogen、楼梯、populate 均尊重预留区，不能后续填柱或把楼梯放进身体。必要时在 `Architect.generateTerrain` 的房间阶段增加可附接净空，不事后覆盖已有机器。
-3. 在同一 generation transaction 内，成功模板形成底座 owned region 结果和受控出生意图；楼梯与基础填充成功、恢复坠落者及首次环境补算完成后，再验完整落点，发布 Boss 到原生列表/占位。出生只派发一次可信 creatureSpawned，之后才对外发 committed/enteredLevel。
+2. floor-attempt 内，基础地形完成后、陷阱／机器放置前选可附接侧室并保留 mask。模板挖掘、入口连通与实际形状／位姿图验算由底座执行；复合体还要验核心轨迹、各成员落脚与约束，不能以核心可达图声称整组可达。traps、机器、autogen、楼梯、populate 均尊重预留，不填柱或把楼梯放进身体。必要时在 Architect.generateTerrain 房间阶段加可附接净空，不事后覆盖机器。
+3. 同一 generation transaction 内，成功模板形成底座 owned region 和受控出生意图；楼梯／填充／坠落恢复／首次环境补算后再验全体落点，发布 Boss 与成员到原生列表／占位。每个实际实体有一次可信 creatureSpawned，并携 groupId／partId／奖励归属；整体有一次 body-created，不能给每腿重授核心预算。之后才发 committed/enteredLevel。
 4. 最终一遍验证区域及落点；模板失败在本次候选预算内确定性换下一候选，预算耗尽 skip，并记录原因。建议每层≤1 场地、≤16 候选尝试作为首版性能预算（待数据确认）。不为 Boss 无限重生成楼层；若将来强制 Boss 主路，失败须显式生成失败/回滚，而不能悄悄 skip。
 5. 生成写集覆盖 grid/layers/masks、owned region、怪物/列表/组件、module state/收据、entity/effect 计数、两流、缓存与显示队列；继承现有事务并扩 `checkpointGenerationWorld` 显式 roots/restoreSession，测试完整对象图及身份恢复。2c 奖励事务不是通用地图事务，不能直接拿来 spawn/挖场地。
 
@@ -294,84 +482,101 @@ owned region 的几何/owner/深度在底座持久世界中保存，giants 的�
 
 未启用 giants 时，不产生 generation contribution、区域/mask、收据或额外取骰；空能力分支沿原生成流程，现有场景的地图、实体、ID 和双 RNG 应完全一致。启用 giants 后可改变房间、楼梯、机器/人口可放置空间和后续随机消耗，这是有意的生成变化，需报告而非保证原地图不变。
 
-4d 必跑 `test:drift`：保留未启用组合的原基线，另建立 giants 开启的原创场地夹具与固定种子 trace。若公共生成调整使未开启也漂移，先查清是否违背零影响合同，不能统称“Boss 生成所以重录”。只有符合已批准设计的实际变化才按原捕获入口重录并逐项说明；遵循扩展 README 当前政策，不强制 CE 源码或旧 CE 全量档。
+4a 方形纵切接场地时及后续任何生成改变均跑 `test:drift`：保留未使用能力组合原基线，另建 giants 开启的原创场地夹具与固定种子 trace。公共生成让未开启组合漂移，先查是否违反零影响，不笼统称“Boss生成所以重录”。按扩展 README 当前政策记录批准变化／重录原因与结果，不强制 CE 源码、旧 CE 全量档或单变量反事实。
 
-## 11 持久化、录像与阶段 3 协议
+## 11 持久化、录像与阶段 3／5 接口
 
-### 11.1 持久位置与版本
+### 11.1 真相的保存位置与版本
 
-| 内容 | 保存位置 / 归属 |
+| 内容 | 保存位置／归属 |
 |---|---|
-| 原生 spatial、锚点、形态与待落层元数据 | `EntitySnapshot` 的生物 codec；完整实体图覆盖当前/缓存/休眠/携带/pending/purgatory。空间组件是底座字段，不塞入 `giants:*` 或 `growth:*` |
-| 区域几何、owner、深度、稳定 instanceKey | `extensions.foundation.world` 的新增 regions（未使用时省略该能力块）；底座验证，缓存层同样覆盖 |
-| 场地生成收据、Boss ID/定义/arena 绑定、defeated/escaped 等内容进度 | `extensions.modules.giants`，state schema=1；可选 `giants:boss` 自有组件只保存模块内容引用/公开标记，不复制空间/HP |
-| 占位表、尺寸距离图、空间 revision、contact scope、绘图组 | 派生会话状态，不保存；新局/load/rollback/seek 清理后重建 |
-| 模块规则身份 | 录像与存档 manifest 中 `giants@1.0.0`、rules `{schema:1,version:'1.0.0',fingerprint:…}`；只有启用时列入 |
+| loc／form／HP／成员局部状态、可选 spatial／pose／zoneState／bodyMember／actionLockInTicks | EntitySnapshot 生物 codec，覆盖当前／缓存／休眠／携带／pending／purgatory；底座字段不塞 giants:* 或 growth:* |
+| 群组、成员 ID／槽位／generation／冷却／破坏／再生记录及所用通用定义 | 拟新增可选 `WholeRunSnapshot.run.spatialWorld`（schema=1，groups＋definitions）；原生根，无 ExtensionRuntime 也可保存 fixture。未使用省略，不存全局索引／revision |
+| 区域几何、owner／depth／instanceKey | 保留 `extensions.foundation.world.regions` 作为唯一真相；仅使用模块 owned region 才需要扩展包络，spatial 只保存引用 |
+| 生成收据、Boss encounter／主体与分裂后裔绑定、defeated/escaped/lost | `extensions.modules.giants`，state schema=1；giants:boss 只存内容／公开标记，不复制 HP、坐标、zone 或群表 |
+| 形状／身体／破坏／状态／转换定义身份 | 当前启用模块 rules 指纹或 foundation 内建规则版本；snapshot 的所用定义表为 codec 解析而非绕过 manifest 的替代品 |
+| 占位、位姿图、空间 revision、contact scope、暂存计划、绘图与检视焦点 | 派生会话状态，不保存；load／rollback／seek 清理重建。跨命令阶段3攻击计划是它的持久状态，不放入此行 |
 
-模块 state 草图（拟新增，均有上限；无玩家命令时不虚设 input schema）：
+原生 spatialWorld 根是 r2 对初稿的补充：群体必须在没有扩展 runtime 的底座 fixture 中工作，也不能只靠模块私有状态救回实体成员；区域仍保持原所有权路径，不重复迁移。定义表每 ID 一份，覆盖实际使用的 footprint/body/profile/break 引用闭包，按预算规范排序；foundation fixture 的定义必须来自测试原生目录／确定性初始化端口。模块 owner 的定义必须与已启用目录和 rules 指纹一致，未知／缺模块形态不能只靠 snapshot 内自带 JSON 偷载。旧形态暂时不用但待再生／计划有引用也纳入闭包。
 
 ```ts
 interface GiantsState {
-  schema: 1;
-  revision: number;
+  schema: 1; revision: number;
   placements: { instanceKey: string; templateId: string; depth: number;
     result: 'placed' | 'skipped'; regionId: number | null;
     reason: 'no-space' | 'budget' | null }[];
-  bosses: { creatureId: number; definitionId: string; instanceKey: string;
-    regionId: number; status: 'alive' | 'defeated' | 'escaped' | 'lost' }[];
+  bosses: { encounterKey: string; primaryId: number; spawnDefinitionId: string;
+    instanceKey: string; regionId: number | null;
+    subjects: { groupId: number; status: 'alive' | 'dead' | 'lost' }[];
+    status: 'alive' | 'defeated' | 'escaped' | 'lost' }[];
 }
 ```
 
-首版建议placement/Boss记录各≤128条，每个instanceKey唯一，region/creature引用与状态相容；击败记录只存历史ID，不把死者对象作为GC保活根。生成收据和状态变化在同一受控提交中更新，普通death事实只能更新模块自有内容状态。`escaped` 表示已离开家园、实体仍可存在，`lost` 表示行政移除等不算击败的终结；重访/load不把这两者重新生成成Boss。将来若新增玩家可发的giants命令，再独立定义严格payload版本和纯prepare合同。
+推荐 placement／Boss记录各≤128，subjects受实体与后裔预算；instanceKey／encounterKey唯一。分裂原 encounter subjects 增加结果，复制不默认加入；变形保留主体身份与 spawnDefinitionId，不能因变老鼠视为死亡。defeated 只在所有绑定主体实际死亡时一次成立；行政退休／永久丢失记 lost，不能算击败。escaped 是仍活但离场，重访/load不再生新Boss。历史死亡ID不是GC保活根，live成员必须由群体根和实际机械所有权共同可达。无玩家giants命令时不虚设 input schema，未来再加严格版本与 prepare。
 
-建议第一次原生空间格式落地统一升 **实体/whole-run version 2→3、whole-run schema v2→v3、录像 version 2→3、extension foundation 3→4**；manifest.schema 仍1。这是计划版本，不是本轮变更。若阶段 3 先占用版本号，由维护者合并时统一分配下一版本，不能两边各把不同布局都叫 foundation4。升级所有保留 descriptor 的底座兼容要求；模块自有规则/数据变动才升各自 module/rules/schema，不以更新兼容声明假称其内容变更。
+第一次底座迁移建议实体／whole-run version2→3、whole-run schema v2→v3、录像 version2→3、foundation3→4，manifest.schema仍1；第一次就包含通用 mask、pose、zone、group 身份与可选群表布局，之后能力开启不重迁入口。未实施的能力先显式 capability 拒绝；后来改变模拟／新增已开放布局仍升级对应规则／格式版本，不能承诺预留字段使任何后版旧录像兼容。若阶段3先占号，合并时统一下一版本，不能两份不同foundation4。
 
-兼容版本标识例外不削弱 §3.3 的机械状态合同：未使用能力的实体不新增默认 spatial 或空区域机械记录。旧档/录像不迁移、版本不符明确拒绝；要求 giants 的输入遇到其物理缺失、禁用、版本/指纹不符也拒绝，不能剥掉模块继续载入。提示沿兼容错误 i18n，拒绝在退休旧局前完成。
+giants正式首版拟为1.0.0，rules `{schema:1,version:'1.0.0',fingerprint:…}`；只有启用列入manifest。保留descriptor声明底座兼容，各模块自身规则／数据变化才升其module/rules，不以兼容声明假称内容升级。旧档/录像不迁移，旧版本／缺模块／禁用／错误指纹在退休旧局前 i18n 明确拒绝，不剥状态继续读。
 
-新增 Game 实例字段必须登记 `scripts/u03-state-contract.json`；本案优先会话 SpatialService，若没有新增 Game 字段则不空改该清单。生物 codec/字段清单、schema 校验和 U01 仍须同步登记可选 spatial 的缺席语义。若区域移入 Game 持久根或新增队列，则对应 U03 登记不可省略。
+新增Game机械实例字段必须登记 `scripts/u03-state-contract.json`；原生空间世界若由Game持有就登记初始化／清理／save合同，不能因服务在WeakMap而漏登其真实机械根。生物显式字段清单／copyForClone／codec／U01同步可选字段缺席语义；新局、死亡、移层、purgatory、load、回滚和seek的群引用清理一起覆盖。
 
-### 11.2 读档与录像完整性
+### 11.2 读档、确定性与篡改拒绝
 
-读取顺序：纯验证版本/manifest/JSON/预算 → 解码所有实体与引用 → 按机械所有权分层 → 校验尺寸、整数锚点、身体边界、玩家1×1、ID/owner/模块绑定/区域一致性与活跃重叠 → 构建候选当前层索引 → 完整校验成功才退休旧局并绑定候选世界。load 不执行出生、生成、机关或死亡事实，不消耗 RNG。
+纯验证版本／manifest／JSON／预算 → 解码完整实体与定义引用 → 构建群表和实体ID边 → 按当前／缓存／休眠／携带／pending所有权分层 → 验mask／pose／zone HP、核心、每成员唯一群、约束树／槽位／generation／破坏收据／非负成员冷却与有界正行动耗时、玩家1×1、区域、活跃重叠 → 建候选索引／调度视图 → 全部成功才退休旧局。load不发出生／破坏／转换／死亡事实，不消费RNG。
 
-缓存层分别验，不让旧的同一层缓存数组与当前列表重复索引。休眠预留和乘客/pending 分别用其合法状态合同，不把未放置实体强行验为当前层 footprint。地形可能在原生环境过程中变成阻挡/危险，合法存档不能一律以“当前 canFit=false”拒绝；读取强校验位置界限/活跃重叠/所有权，通行状态与待接触标志按原生合法状态验证。可预见的出生/位移失败则始终禁止提交非法 fit。
+群所有活跃成员与核心同层同生命周期；破坏墓碑允许 entityId=null，但不能有悬空活引用；inert-body有显式物理残体资格，不能被普通死亡 sweep重结算。缓存层分别验，当前镜像缓存不重复索引；pending全组保存未放置状态，不强验为当前层fit。环境可改变地形使既有合法身体暂时受阻，读取必须验证位置／所有权／重叠及允许的机械状态，不能一概拿当前canFit=false拒绝；预期位移／出生仍不得提交非法fit。
 
-每条输入仍经 `executeCommand/executeItemCommand`，NPC 在原 `advancementLoop` 内行动，不能嵌套玩家命令。保存等待现有安全回合边界；扩展 checkpoint 继续保存完整包络，同时以有界、规范实体 ID 顺序的原生 spatial 世界摘要覆盖尺寸/位置/所属层/区域与 pending 状态，防止只有玩家位置相同而漏掉巨人分歧。无空间使用者时不添加空间机械摘要。随机/生物状态与现有录制来源校验保持，格式升级同时改 origin 最终检查点校验。
+NPC仍在advancementLoop内，玩家每输入经executeCommand/executeItemCommand，不能为每条腿录虚构玩家命令。保存只在现有安全回合边界，无半执行子动作束。扩展checkpoint保存包络，原生空间摘要按entityId／groupId／zoneId规范排序，含shape/pose/层/区域/成员拓扑、HP／局部状态、破坏generation、readyInTicks/actionLock、pending；可用有界规范hash和诊断片段，不把完整未见机械表给UI。无能力不添加摘要；续录origin最终检查点同时校验。
 
-逐条 replay 与 seek 均通过原新局+命令执行重建占位，不从 UI footprint 猜世界。用巨人移动前后、受击、形态改变、坠落 pending、死亡、入层收据等切点做 save/load→续录；最终完整机械图、双 RNG 和模块收据等价，OOS 必须能指到空间摘要。篡改尺寸/重叠/owner/孤儿绑定/错误规则哈希在旧局退休前拒绝。空间能力 fixture 不依赖 giants 安装。
+逐条replay与seek通过真实命令重建，成员顺序、目标去重、约束求解、抽样、ID和回滚全部确定，LRU不改结果。切点覆盖旋转、断腿、蓄力来源被毁、再生等待、单体↔群体、分裂、多体复制、pending／死亡／入层收据，save-load→续录最终完整机械图／引用／两流／收据一致。篡改mask／pose／共享成员／循环连接／错误owner／zoneHP／收据generation／超预算／规则hash在旧局退休前拒绝。fixture用相同测试原生初始化／生成端口确定重建初始世界，不把调试注入后的录像冒称默认生产新局能重放。
 
-### 11.3 期望阶段 3 使用的可选接口
+### 11.3 与阶段 3 的软接口
 
-两个模块只依赖底座。本文建议的协议需维护者与阶段 3 设计对照确认；没有 phase3 实现时 giants 仍用原生即时攻击完整游玩。
+两模块只硬依赖底座；阶段3不import giants、不假设size=1或每个Monster都有独立调度。以下协议为待对照设计，无阶段3时即时攻击／断部位照常可玩。
 
-| 阶段 4 提供 / 期望 | 约定与缺席行为 |
+| 提供／期望接口 | 语义、归属与缺席行为 |
 |---|---|
-| 底座只读 footprint 查询 | 可信攻击计划给定 actorId 得占格集合/锚点/size/revision；玩家公开投影另行裁切。阶段3不 import giants，也不假设 size=1 |
-| 相对攻击形状 | 预警格 = `(攻击者 footprint ⊕ 朝向变换后的相对偏移集合) − 自身身体`，再按技能 LOS/范围政策裁切；同源重叠格去重。形状原点/是否包含自身必须显式，不用左上锚点硬编码9份攻击 |
-| 方向与射线出发点 | shape 使用固定8方向；定向单射线从 `nearestContact` 对应身体边缘出发，Minkowski 并集适用于面积形状。两者是不同 shape 原语，不能把九条独立射线无意变成九次攻击 |
-| 目标收集/命中 scope | 阶段3的一次攻击子段交格集合，由底座按 footprint 收集实体、按该 scope 去重。独立后续子段显式新 scope，不因“同一只Boss”合并所有连段 |
-| 计划与空间变化 | 准备时记 footprint revision；蓄力后移动/变形/强制位移由阶段3决定 cancel/重定位/重算政策并保存计划。它负责让预警与实际攻击一致，底座不替魂系模块猜时序 |
-| actor-native 行动/耗时 | 在 `Monster.takeTurn` 选择行为、`tryMoveTo/CombatSystem.attack` 执行动作、原 endTurn/advancementLoop 提交耗时。当前 ControlledActionRequest 公开适配器仅支持玩家；阶段3若补NPC主动施放需共建原生actor接口，不能宣称已现成可用 |
-| 可选魂系招式描述 | 后续可用版本化软能力查询（如 `combat.attack-profile.v1`，最终ID由阶段3提案确认）给冻结攻击描述；缺provider跳过并用即时 native attack。多provider冲突在注册预检拒绝，不能由加载顺序决定 |
-| 身体/预警显示层 | 共用公开 footprint/render layer DTO，UI 只画已公开格。阶段3拥有预警配色/时序与技能提示，giants 仅贡献身体与血条 |
+| 可信发起成员几何 | actorId→entityId/groupId/partId/generation、足迹／pose/revision；玩家公开DTO另裁切。多头攻击必须指定发起头，腿砸指定腿，不总从核心左上发射 |
+| 相对攻击形状 | 预警格=`(发起成员足迹 ⊕ 攻击面向变换的相对格集) − 声明的自身排除集`，再按LOS／范围裁切。source mask只取该成员；射线从合法边缘接触格发出，不自动为每占格造独立射线／攻击 |
+| 命中键与作用域 | 阶段3交子段格集合＋EffectTargetPolicy，底座按 §6 收集；多次挥击显式新scope，成员束中独立头也各有scope。共享费用／成长消费不按预警格数增长 |
+| 计划绑定与取消 | 持久计划记发起成员ID／generation／footprint revision、groupId和阶段；破坏／退休必取消对应来源计划，不能改由核心补射。移动／旋转／换形时阶段3选择cancel／重新预警／锁定世界格，计划与实际命中使用同一政策 |
+| 调度／actor-native耗时 | 阶段3在核心激活推进子动作，不额外调成员、不调用playerTurnEnded。需扩现有玩家专用ControlledAction适配器，返回不落账的NPC原生结果，群协调器唯一落账；currentTick不是NPC精细模拟钟 |
+| 可选攻击profile／硬直provider | 版本化冻结profile（拟combat.attack-profile.v1）缺席用native攻击；拟combat.part-break.v1接resolution／破坏收据／balance-loss，可给韧性损失或硬直意图。多provider在注册预检拒绝，不依赖加载顺序 |
+| 部位破坏平衡降级 | provider缺席用数据fallbackStunTicks写核心actionLockInTicks（一次收据，真实soonestTurn递减），取消被毁来源攻击／必要时剩余束；不虚设韧性槽、不持久阶段3字段。纯部位移除／无balance-loss时只取消自身子段 |
+| 同帧呈现 | 身体／部位HP／预警/来源标记共用公开DisplayFrame；只画获准知道格。阶段3拥有预警颜色／时序，giants拥有内容血条／部位摘要，不另造弹窗／输入屏障 |
 
-阶段 4 不实现预警、多回合计划、体力、闪避、韧性/硬直、弹反、篝火、掉魂或复活循环；不为缺阶段3报错，不把阶段3字段写进 giants schema。叙事可选 Boss 击败事实/成长可选奖励未来通过底座事实或协议接入，本阶段不扩目前单 storyFact 消费者协议，不让击败 Boss 默认成为剧情必需状态。
+若预警期间成员位移改变发起足迹，阶段3必须明确新预警的时机与是否重新给反应时间，不能临命中无提示重定位。阶段4提供revision与取消事实，不替阶段3猜蓄力规则。软provider只读计划＋有界受控提交，失败与body transition同边界回滚；不能用2c奖励adapter改地图或推进一次额外时间。
 
-## 12 待维护者决定的产品问题
+本阶段不实现体力、闪避、弹反、篝火、掉魂／复活循环；韧性联动缺席有上述明确替代行为。叙事／成长可选Boss事实／奖励仍走底座事实或协议，不扩现有单storyFact消费者为未设计的多消费者总线，不把Boss defeat变为剧情必需。
 
-以下编号供答复“P4-D01=A”等。每项先给推荐，批准之前正文所述内容政策均是推荐设计，不代表自行裁定。空间原子性、按实体去重、确定性、只硬依赖底座等技术安全合同不是可关闭的产品选项。
+### 11.4 阶段 5 复用扩展点
 
-| 编号 | 选项 | 推荐与影响 |
+部队编队可复用形状／位姿图、group身份、核心统一计划、成员目标与伤害粒度、约束和部位损耗修正；刚体表示整体占格，复合体表示分散兵员／队列。编队可引用不同约束profile，而非在giants里复制空间系统。阶段5是否需要跨地图尺度、独立士兵调度／士气／更大成员预算仍需单独设计，当前17成员／64格预算不承诺军队规模。只记录复用方向，不定义阶段5模块、战场或世界模拟。
+
+## 12 产品待决与已决定事项
+
+编号可答“P4-D08=A”。**D07=A 已由维护者决定**，不再征询Boss免疫；其余正文按推荐假设展开。原子性、明确去重键、唯一机械真相、确定性和只硬依赖底座是技术合同；可选的是分类默认／数值／内容边界，不能关掉合同。
+
+| 编号 | 选项 | 推荐与理由 |
 |---|---|---|
-| **P4-D01 首次授权边界** | A 先独立做4a0，验收后逐步授权；B 连续授权4a0–4b | **A**：占位迁移涉及大量旧入口，先证明1×1无回归与删除模块后底座可用。B可加速，但每小步仍完整full并交报告 |
-| **P4-D02 场地与追击** | A 可绕开侧室、硬守场（普通/强制位移均受边界）；B 侧室出生、自由追击可通行区域；C 主路必经场地与封门 | **A**：首版生成可控、失败可skip；B需额外防堵走廊/跨层，C需严格必达及锁门/撤退产品设计，不自动引入 |
-| **P4-D03 大型者关系** | A 首版敌对，拒绝大型盟友/俘虏/支配/友方复制；B 允许盟友和支配，仍无大型俘虏；C 三者全部支持 | **A**：完整交付敌人而不扩救援/跟随范围；B/C必须增加交换、追层落位和相应UI验收，底座不硬编码敌对 |
-| **P4-D04 危险边缘** | A 任一熔岩/火/气体接触生效，全部无支撑才坠落；B 同类接触生效，任一渊格就坠落；C 所有环境仅主格决定 | **A**：攻击尾格与环境尾格一致，大身体可以跨小裂隙；B更危险并需防场地边缘秒落，C会让可见身体踩危险却无效果，不推荐 |
-| **P4-D05 刻符身体显示** | A 逐格轮廓+一个主字形；B 跨格放大字形且严格可见裁切；C 自有拼图字形/图块素材 | **A**：无需新美术，320宽和部分可见都清楚；B字形可能压住地形，C要另定资产制作/授权与四种地图降级 |
-| **P4-D06 内容规模/生成密度** | A 先一个2×2原创敌人和侧室模板，再一个3×3；B 首次内容交付就两体型多模板；C 稀有普通大怪进入常规horde | **A**：先验完整闭环；具体名称、深度、属性、奖励与出现率仍由维护者在4d前定稿。B增内容调试，C扩大地图通行和生成普查范围 |
-| **P4-D07 Boss 非尺寸免疫** | A 不按Boss身份额外免疫，变形/敌对克隆使用通用空间规则；B Boss拒绝变形与复制，位移仍可；C 连强制位移也免疫 | **A**：保留现有物品交互，体型变化有实测覆盖；B/C作为内容明示抗性可选，不用“占不下”代替免疫说明。无论选择哪项，底座仍须测试形态/落点能力 |
+| **P4-D01 首次授权边界** | A 先4a0，验收后逐步授权；B 连续授权4a0–4a方形纵切 | **A**：先通用身份／入口迁移再内容，4a0未开放功能明确拒绝。B可加速，每步仍独立full／报告，可在4a停下 |
+| **P4-D02 场地与追击** | A 可绕开侧室、全身体硬守场；B 侧室出生，自由追击；C 主路必经与封门 | **A**：模板／落脚可控、失败skip。边界适用于转换结果但不是免疫；B要验长条转弯／成员追层，C要定撤退／必达设计 |
+| **P4-D03 自然关系内容（r2更新）** | A 只自然敌对，无自然大型盟友／俘虏；B 加自然盟友，无俘虏；C 三者都生成 | **A**：保留内容取舍，**所有项都支持D07要求的通用支配／关系转换**，不再提供Boss额外免疫。B/C扩大跟随／锁链／救援与UI验收 |
+| **P4-D04 危险边缘** | A 任一格环境接触，全部有效支撑无地才坠落；B 任一核心／支撑格跨渊就整组落；C 环境只看核心主格 | **A**：身体接触有意义且可跨小裂隙；复合体局部火／熔岩可毁腿，核心致死仍终结。B更危险；C忽略可见肢体危险不推荐 |
+| **P4-D05 刻符身体显示** | A 实际掩码轮廓＋刚体主字形，复合体核心＋部位标记；B 可见裁切的放大字形；C 自有拼图／图块素材 | **A**：凹形／断腿与320宽清楚，无新美术；B易盖地形，C需资产和四地图降级方案 |
+| **P4-D06 首批规模／密度** | A 4a先一个2×2＋侧室，再独立3×3；B 4a一次两体型多模板；C 常规horde生成大怪 | **A**：纵切可验可停；名称／深度／属性／奖励／出现率在4a内容实施前定稿，不沿旧4d延后。复合体样例另随4d授权，不默认全做 |
+| **P4-D07 Boss转换资格：已决定A** | A 不因Boss身份额外免疫；含被动变形／复制，以及主动换形／换体型、单体↔群体、分裂／复制／召唤自身副本 | **已定**：能力走通用原子计划；无空间是明确失败，不是假免疫。招式是否编写和数值另授权，不保留B/C免疫备选 |
+| **P4-D08 效果默认去重键** | A 局部武器part、整体AoE/精神group、暴露entity；B 所有攻击group；C 所有伤害part | **A**：可砍两腿，火球不八倍传伤；允许招式显式覆盖并写接收者。B弱化部位，C大身体吃爆炸倍增需重调数值 |
+| **P4-D09 部位伤害传核心** | A 固定local zone1:1、外围成员1:4；B 所有外围0，主要靠破坏修正；C 所有外围1:1 | **A**：打腿推进整体战斗，仍鼓励打核心；直接核心HP不自传，有理数数据可配置。B易成纯拆件耗时，C横扫多腿削核心快，需重调HP |
+| **P4-D10 破坏后的成员** | A 默认remove＋槽位墓碑；B 默认inert-body占位；C 默认debris地形 | **A**：占位和手机最清楚，固定zone默认保留身体。B/C作为显式扩展；B需残体移动规则，C需连通／机器写集和drift |
+| **P4-D11 物理朝向** | A 4b支持4向旋转、暂不开放镜像；B 形状均固定朝向；C 同时开放镜像姿态 | **A**：长条窄道有真实转身，扫掠明确；方形仍r0无额外成本。B省功能但内容受限，C需另定翻身动作而非免费换pose |
+| **P4-D12 预算** | A 采用§8.2上限（16格／4或8姿态／17成员／64组格等）；B 首版外围≤8、总组格≤32；C 放大到32外围／128组格 | **A**：覆盖八腿、九头、长蛇且有界；B调试更小但少扩展样例，C应先有实测，不仅改数字放行 |
+| **P4-D13 部位再生** | A schema预留，首批不启用；B 4d就交有次数上限再生；C 所有部位无限再生 | **A**：断部位闭环先完成，未来新槽generation／ID有合同。B需正式再生时钟／落点／录像验收，C不推荐且仍受实体预算 |
+| **P4-D14 多部位攻击节奏** | A 核心激活最多4子段，并行束耗时取max；B 同样唯一核心但全部串行求和；C 首个复合体只允许一个部位出手 | **A**：支持九头蛇多头威胁且上限明确，成员冷却独立；B总回合慢，C内容保守但底座仍接受有界束。独立成员全局调度不是本版选项 |
+| **P4-D15 全部支撑部位被毁** | A 默认immobile，保留可用攻击；B collapse＋短硬直后匍匐减速；C 整体死亡 | **A**：破坏收益可理解且无必需阶段3；可按身体定义覆盖。B需匍匐姿态／移动与落位内容，C容易用断一脚秒杀需明确检视 |
+| **P4-D16 打成员的普通变形** | A 对整体变形；B 只变命中成员并维持约束；C 每个招式显式选择，无默认 | **A**：沿既有物品“变一只怪物”，单体↔群体统一；B需要局部替换/断连接/HP政策，不能初次就留下半组。C作者负担高，可后续局部招式明示覆盖 |
 
-开局默认是否勾选 giants 沿模块选择器现有“可配置默认”的产品入口，本设计建议开发验收期间默认不勾选；正式默认组合与内容数值留维护者后续统一决定，不顺带改菜单默认。
+giants开局默认是否勾选仍用模块选择器可配置入口，建议开发验收默认不勾选；正式组合／数值留维护者后续统一定，不顺带改菜单。D07不会自动授权全部复合体内容或后续步骤实施。
 
 ## 13 与阶段 3 对照用的共享文件触碰清单
 
@@ -379,69 +584,76 @@ interface GiantsState {
 
 | 共享文件 / 范围 | 改动性质与规模 | 与阶段3的协调点 |
 |---|---|---|
-| `src/entities/Creature.ts`、`Monster.ts` | Creature新增可选spatial，小；Monster数据/构造、移动、近战、AI入口迁移，大 | 共用actor状态/朝向需求；不由本阶段加魂系字段 |
+| `src/entities/Creature.ts`、`Monster.ts` | 可选通用spatial／成员身份／zone与状态路由，中；Monster构造／移动／受击／复制／变形／AI迁移，大 | 共用actor／part来源资格，takeDamage/die先截获局部破坏，copyForClone不得共享新容器；不加魂系私有字段 |
 | `src/engine/Core/Game.ts` | 空间服务接线、查询/位移/武器/地形/目标/生成/持久，多处大改；预计数百行至千行级迁移，应按函数拆步 | **最高冲突**：受控行动、风险预检、近战几何、击退、NPC决策、录像checkpoint；先抽空间接口再分别接内容 |
-| `Core/TimeCoordinator.ts` | 端口/接触摘要/环境失效，小至中；保留单实体调度 | 阶段3改蓄力/客观时序时共用一次耗时提交，禁止双推进 |
-| `Core/MonsterLifecycle.ts` | 生命周期通知和死亡占位资格，小至中 | 暂停/死亡/重生时清计划与占位的先后 |
+| `Core/TimeCoordinator.ts`、`Systems/Time.ts` | 调度三处改核心视图、成员剩余冷却／actionLock递减、群与局部客观块，中至大；Time仅核对簿记不当NPC绝对钟 | **高冲突**：同tick子段／多回合计划／暂停，核心一次耗时提交，成员不能0tick卡循环 |
+| `Core/MonsterLifecycle.ts` | 群拥有关系、part-retire／残体资格、核心单次终结，中至大 | 破坏／形态退休与真正死亡分流，取消来源计划顺序一致，不能administrative kill代替移除 |
 | `Movement/CreaturePlacement.ts`、`LevelTravel.ts`、`Entrancement.ts`、`Submersion.ts` | 整体落点/恢复/水下判据，中至大；`PlayerTravel.ts`只修大型障碍端口，小 | 闪避/冲刺与击退共用canStep/commit；不能两方重写placeCreature |
-| `Combat/Combat.ts` | 邻接/接触上下文、命中出口去重，小至中 | 命中/反伤/抓持/韧性等共同结算顺序，现存双解算器都覆盖；不顺便合并两套实现 |
+| `Combat/Combat.ts` | 邻接／成员与zone接触上下文、实体／部位／群键命中、原始／传导事实与费用，中至大 | 命中／反伤／抓持／韧性同序；现存两解算器消费点均覆盖，不顺便合并；传导不多消费一次攻击 |
 | `Combat/MonsterAI.ts`、`MonsterBlink.ts`、`MonsterAbsorption.ts` | footprint距离、可达、感知、缓存，中至大 | NPC选技与原生行动适配；巨人无phase3使用同一native AI |
-| `Combat/BoltTrajectory.ts`、`Bolt.ts`、`BoltTargeting.ts`、`Cloning.ts`、`Conjuration.ts`、`Polymorph.ts`、`Domination.ts`、`CreatureFeatures.ts` | 占位/接触去重/落点与资格、通用形态特征贡献，中；轨迹纯几何尽量保留 | 远程招式和effect scope；1×1反射重访特例明确，模块形态不得硬导入 |
-| `Map/Pathfind.ts`、`Pathfinding.ts`、`SafetyMap.ts`、`Scent.ts`、`WaypointMap.ts` | 增边谓词/体型视图，中至大；旧1×1路径不批量换算法 | 冲刺路径、威胁图、撤退/预警影响的可选代价 |
+| `Combat/BoltTrajectory.ts`、`Bolt.ts`、`BoltTargeting.ts`、`BoltReflection.ts`、`Cloning.ts`、`Conjuration.ts`、`Polymorph.ts`、`Domination.ts`、`CreatureFeatures.ts` | 占位／三种目标键、整组复制／分裂、纯形态计划／关系路由，中至大；轨迹纯几何保留 | 远程来源部位／反射scope／D07共同资格，1×1旧重访明确；模块形态不得硬导入 |
+| `Map/Pathfind.ts`、`Pathfinding.ts`（含DijkstraMap）、`SafetyMap.ts`、`Scent.ts`、`WaypointMap.ts` | 形状×位姿边／旋转代价、目标集合／群感知，中至大；旧1×1路径保留 | 冲刺／成员落脚／威胁图／预警可选代价；核心乐观图不能替代全组约束解 |
 | `Map/Grid.ts`、`Promotion.ts`、`DungeonFeature.ts`、`Environment/Gas.ts` | 变更通知、DF作用域/身体暴露接口，中；不新增生物真相Cell位 | 破坏地形与范围技能必须通知同一revision |
 | `Lighting/FOV.ts`、`LightMap.ts`、`UI/MonsterVisibility.ts` | 足迹LOS/遮挡/隐藏摘要，小至中 | 预警可见裁切与目标知识，勿把NPC FOV写玩家探索 |
 | `UI/MonsterSidebar.ts`、`Appearance.ts` | 唯一entity row、公开格外观，小至中 | 状态图标/韧性条各模块贡献，底座row保持通用 |
-| `Core/GenerationCoordinator.ts`、`Generator/Architect.ts`、`BlueprintEngine.ts`、`GenerationPlacement.ts`、`Stairs.ts`、`Map/AutoGenerator.ts` | 通用贡献/净空mask/楼梯填充过滤/事务写集，大；`Items/ItemSpawnHeatMap.ts`仅空间排除端口，小 | 篝火或其他场地共同预留、生成次序/预算冲突，不各自覆盖房间 |
-| `Core/EntitySnapshot.ts`、`WholeRunSnapshot.ts`、`LevelSnapshot.ts` | 可选字段codec、分层验证、版本、pending元数据，中至大 | 统一格式升级；尸体/复活/计划持久必须同版 |
-| `src/ext/types.ts`、`runtime.ts`、`world.ts` | 原生空间DTO/创建与区域能力、快照/验证/GC/事务，中至大 | 不混入某模块规则，不把已存在2c奖励事务当任意世界事务 |
+| `Core/GenerationCoordinator.ts`、`Generator/Architect.ts`、`BlueprintEngine.ts`、`GenerationPlacement.ts`、`Stairs.ts`、`Map/AutoGenerator.ts` | 通用贡献／掩码／全组出生／预留、实体图写集与restoreSession，大；`Items/ItemSpawnHeatMap.ts`只排除端口 | 篝火／场地共预留；群表、定义根、成员引用与缓冲事实纳入checkpointGenerationWorld，不能只比较存档投影 |
+| `Core/EntitySnapshot.ts`、`WholeRunSnapshot.ts`、`LevelSnapshot.ts` | 通用字段／成员图codec、原生spatialWorld根、分层／拓扑／预算验证、版本、pending群元数据，大 | **高冲突**：阶段3攻击计划／来源generation／格式号；同一组恢复、取消和续录一致 |
+| `src/ext/types.ts`、`runtime.ts`、`world.ts`、`causality.ts`、`birth.ts`、`definitions.ts` | body／part／group DTO、状态／原始与传导来源、单次终结／无死亡退休／出生归属、通用定义、区域／GC／窄事务，大 | 当前因果状态以entity为键需显式扩路由；软硬直与共享奖励预算不得重复，2c事务不是任意地图事务 |
 | `src/ext/descriptor.ts`、`catalog.ts`、`registry.ts`、`compatibility.ts` | 底座版本与通用能力登记/精确校验，小；保持glob发现 | 不加giants/phase3硬导入；模块版本独立 |
-| `src/ui/displayProjection.ts`、`presentationTimeline.ts`、`engine/Core/PresentationObserver.ts` | 历史帧body/hud公共投影，中；observer仅在确需新观察点时小改 | HP/位置/预警同帧，不暴露模拟未来 |
+| `src/ui/displayProjection.ts`、`presentationTimeline.ts`、`engine/Core/PresentationObserver.ts` | 历史帧mask／成员轨迹／公开zone／破坏／再生及HUD投影，中至大 | 位置／部位HP／来源预警同帧，旧ACK不露未来，物理隐藏与群聚合不泄漏核心 |
 | `src/components/GameCanvas.vue`、`src/ui/retainedMapDrawing.ts`、`mapTileDrawing.ts`、`mapPointer.ts`、`targeting.ts`、`mapTileSemantics.ts`、`nearbyInspection.ts` | 身体组/遮罩/目标交互，中至大 | 身体/预警/目标层、缩放与触控点击协议；不加新物理输入屏障 |
 | `components/Sidebar.vue`、`ContextPanel.vue`、`theme/ThemeNearby.vue`、`TargetBar.vue` | 若新row字段需接线，小；优先保持通用消费 | 不在共享组件按模块ID写Boss专用UI |
 | `src/ext/ui/types.ts`、`ui/registry.ts`、`ui/useModuleUi.ts`、`App.vue` | 仅当前HUD插槽不足或历史帧DTO接线时增加通用插槽/展示端口，小至中 | Boss与阶段3资源条的并排/窄屏排布；不能必选另一模块UI |
-| `src/ext/modules/growth/module.ts`、`skills.ts`、相关view/UI | 尽量只让底座validateAction自动支持；确有锚点假设时改为底座查询，小至中 | **只改该模块消费点，不让底座import growth**；它物理删除时这些改动随目录消失 |
+| `src/ext/modules/growth/module.ts`、`skills.ts`、相关view/UI | 空间目标／成员资格、共享预算／出生／击杀／传导贡献消费、中；数额仍归该模块 | **只改消费点，不让底座import growth**；没有growth仍破坏／变形／死亡可玩，删目录改动随之消失 |
 | `src/ext/modules/growth/descriptor.ts`、`narrative/descriptor.ts` | 兼容新版底座声明，小；narrative无新增剧情内容 | 与阶段3统一兼容版本，不改历史报告 |
 | `src/locales/zh_CN.json`、`content`通用词条 | 底座体型/空间失败提示，小；giants文本在自有locale | 玩家可见文本全部i18n；独立发现/删除仍成立 |
 | `scripts/u03-state-contract.json`、`scripts/test-suites.json`、底座ext测试清单与 `src/test/…` | 仅新增Game字段时登记U03；登记底座测试/fixture，中 | 共用状态/录像/生成守卫，不借前提调整削弱有效断言 |
 | `scripts/check-module-composition-smoke.mjs`、`check-module-removal.mjs` | 扩真实空间/新模块smoke与通用fixture，小至中；发现式矩阵保留 | 各模块子集及物理删除矩阵自动扩大，不只验两模块同开 |
 
-**新增但不归模块的文件**：§3.1 四类空间文件、通用生成/形态贡献、footprint exposure辅助、底座测试fixture，随底座保留。**模块新增文件**：仅 `src/ext/modules/giants/**`。共享生产触碰候选约70–80个文件，包括可能只需核对或端口转接的文件；最终实改数量以逐步审计清单为准。生产数据不需改原目录，测试/格式清单变更另计。这里列候选触碰面，不建议一次改完，也不把“可能无需改”的文件当已承诺实施。
+**新增但不归模块的文件**：§3.1六类文件，另含通用形状编译／旋转sweep、成员约束规划／body transition事务、状态profile／部位破坏修正、生成／形态贡献、footprint exposure、底座fixture与测试。机械群表属于原生持久根而非giants，shape编译表只是缓存。**模块新增文件**仅 `src/ext/modules/giants/**`。r2共享生产候选约80–100个文件，是新增触碰面后的估计，含可能只核对／转接者；最终实改按每步审计清单，不承诺一次改完。原生产目录无须塞原创怪物，测试／格式清单另计。
 
 ## 14 分步实施与验收计划
 
-### 14.1 每小步固定门禁
+### 14.1 每步门禁与停点
 
-实施获准后，每一步在同一最终正常候选树执行 **full（扩展政策）**：boundary → vue-tsc → build → 全部 `test:ext` → 完整 `npm test` 一次 → 所有已安装模块子集的真实 Game 新局/游玩/save-load/逐条 replay/seek/存档续录 smoke。Node 24.19.0、3 GiB堆、2 workers；准确命令、hash、退出码、数量、skip/todo、耗时入报告。不需要 `ce:fetch/test:full/test:gen`，不隐藏已有CE缓存。涉及实际生成变化另跑 `test:drift`。
+获准实施后，每一步最终正常候选树执行 **full（扩展政策）**：`node scripts/check-module-boundaries.mjs` → `npx vue-tsc -b` → `npm run build` → 全部 `npm run test:ext` → 完整 `npm test` 一次 → 所有已安装模块子集真实Game新局／游玩／save-load／逐条replay／seek／存档续录smoke。统一Node24.19.0、3GiB堆、2workers；hash、实际命令／退出码／数量／skip/todo／耗时入报告。不要求ce:fetch/test:full/test:gen，不隐藏已有CE缓存。**改变生成另加 `npm run test:drift`**。
 
-真实删除副本用 **removal**：删除完整模块自有目录/数据/自有测试，清缓存，再 boundary/typecheck/build/全部剩余ext/所有剩余子集真实smoke/缺模块输入拒绝，不重复完整npm test；正常full单独必需。`--plan`、软件禁用、`--prepare-only` 和 `--engine-only` 均不能冒充已实际删除且已浏览器验收。
+每步另执行实际删除副本 **removal**：删整个所属模块目录／数据／自有测试，清TS/Vite缓存，boundary/typecheck/build/全部剩余test:ext/全部剩余子集真实smoke/缺模块旧输入拒绝；不重复完整npm test，正常full仍必需。沿现有 `check-module-removal.mjs --profile=removal`，证据目录在仓库外；plan、prepare-only、软件禁用、engine-only不冒充物理删除／浏览器实测。首次4a0尚无giants就跑当前已安装目录矩阵，模块加入时自动扩展，不保留空壳模拟删除。
 
-当前模块 growth/narrative 加入 giants 后，正常启用子集是8种，目录保留子集也是8种，其中7种实际删除行；phase3若届时安装，自动扩大到16/16，不预先假定其ID。模块自有测试归模块的 `test-suites.json`，底座footprint测试归共用底座清单，删除giants仍要运行。每小步完成停交维护者，不自动推进下一步、合main、部署或commit。
+growth/narrative/giants安装后，启用子集8种、目录保留子集8种（7行真实删除）；阶段3若届时安装自动扩16/16，不假定其ID。模块测试归自有test-suites，通用空间／群体fixture归底座并在删giants后保留。每步结束停交维护者，不自动进入下一步／合main／部署／commit。
 
-### 14.2 分步交付矩阵
+“可停下”表示已开放能力无占位／行动／保存半成品，已有内容完整可玩；尚未开放的schema变体在创建／输入／读档明确拒绝。4a0仅基础接口和单格生产规则完整，不声称生产多格战斗可用；4a之后每新增能力有独立样例闭环，不用“未来4e会补”解释当前损坏的出生／复制／变形／录像路径。
 
-| 步骤 | 实施范围 | 验收标准与有意义的新增测试 | 档位 / 浏览器人工验证 |
+### 14.2 推荐分步矩阵（替代初稿按子系统横切）
+
+| 步骤 | 交付与可停下边界 | 验收标准／新增测试 | 门禁档位／浏览器人工验证 |
 |---|---|---|---|
-| **4a0 底座占位入口迁移** | 原生足迹/空间facade、生命周期索引、受控位置提交、codec与版本预留；正式内容未接入。先以1×1验证，底座2×2 fixture仅测索引 | 查询四尾格同ID、自重叠、无覆盖、死亡DF窗口、休眠策略差异；所有活写出口登记；故障回滚完整对象图/引用/索引一致；无能力真实Game差分机械状态/消息/双RNG相同。底座fixture可保存/读回并重建，不声称已有巨人寻路 | **full**；现有桌面/320/390普通与沉浸游玩无界面回归，尾格检视可先由诊断fixture验；无自然巨人内容 |
-| **4a 移动、落点、寻路与环境** | 2×2完整行走/推退/传送/出生/跨层/变形；地形exposure与缓存。几何以N参数实现，3×3暂只做底座边界fixture，正式全链路推广留4d-2 | 窄道拒绝、足够宽通过、保守对角、自旧格重叠、动态堵路、门/DF/气体失效、无位失败不半提交；任一熔岩/气体一次、全身体无支撑坠落、多个独立陷阱、触发瞬移后不处理旧格；pending无空间存读续录；固定场景性能报告 | **full**；若修改生成落点/公共生成实质影响追加drift。人工移动/击退/部分身体遇火水/开门；可用底座诊断层，不冒称自然生成 |
-| **4b 攻击、目标与视野** | 几何武器、射线/投掷/爆炸/范围收集、成长validateAction消费、LOS/感知/隐身 | 鞭/矛/横扫/闪电/爆炸多格只一次，独立子段仍多次；真实符文/抓持/反伤/击杀/成长消费一次；混合1×1反射重访保持；从尾格命中/选中，隔墙/斜角不合法；感知只一骰、身体部分显影不露隐藏格 | **full**；桌面右键、手机长按/瞄准确认/目标切换、隐身气体、部分可见、自动行进打断；成长关闭和开启都试玩 |
-| **4c 身体呈现与通用UI投影** | 四地图身体组、公共row、历史DisplayFrame、目标层；底座假Boss DTO展示通用HUD接线，正式血条在模块步骤 | 一体一row/浮字；碰撞格与高亮一致；隐藏身体裁切；显示反复刷新不改变规则两流；旧ACK帧与未来HP/位置隔离，seek清旧绘图/目标；无giants也编译/渲染fixture | **full**；1440×900、390×844、320×844 × 普通/沉浸六布局，四地图模式、缩放、部分遮挡、快速瞄准/取消、横竖切换；触控未实测需明示 |
-| **4d giants模块与场地** | 自有schema/敌人/场地数据、descriptor、AI声明、生成/形态贡献/区域、收据/绑定、正式Boss血条；4d-1先完成2×2自然生成全链路，验收后4d-2推广3×3并重跑同等覆盖 | giants-only真实新局自然生成/交战/击败；无growth无phase3可玩；区域净空/入口/玩家与Boss可达/绕行验证；失败skip、重访不复生、批次ID预算、生成异常回滚；内容换名/合法换尺寸无需硬编码；所有8子集save-load/replay/seek/续录，其中含giants子集须有自然巨人 | 每次交付**full + drift**；各体型真实生成场地、追击/回归/边界与血条消失、320/390长名称/气体/伤害消息；正式包生成后验，不只fixture |
-| **4e 收尾、可移除与配置手册** | 补所有生成/位移/关系遗漏、格式攻击负例、组合与删除矩阵、内容配置说明/最终报告 | 全部目录子集实际删除+剩余smoke，giants删掉底座2×2/3×3仍全过；依赖giants旧档拒绝、未选giants新局正常；离层缓存/pending/变形/死亡切点续录；如phase3已安装再验可选provider缺席/非法/顺序与16子集；明确未支持4×4/多段身体 | 正常**full**，删除**removal**；若有生成收尾则drift；最终构建真实浏览器复验六布局、native与可选魂系场景，截图只存仓库外 |
+| **4a0 通用底座一次迁移** | shapeId／mask／pose／zone／group身份、三种目标键、占位facade、所有位置写出口／codec／版本／窄事务接口。生产仍单实体，方形与任意mask只在原生fixture测已开放索引／几何，不解锁复合体行动 | 四尾格同entity/body；L形缺角空／十字／孔洞不占位，part/group键稳定；自重叠／休眠预留／死亡DF窗；实例缺席语义与完整机械图／消息／双RNG无能力差分；clone容器不共享；fixture save/load索引重建；未知未开放能力拒绝；迁移清单逐项判定且消费点不再只拿size／裸loc推整个身体 | **full＋removal**；如公共生成落点行为变更加drift。桌面／320／390普通与沉浸单格游玩无回归；诊断页面查方形／mask尾格与孔洞，不声称已可自然大型战斗 |
+| **4a 方形敌人纵切** | 把初稿移动／环境／攻击／视野／渲染／模块场地合成首个2×2可玩闭环：自然生成、即时战斗、血条、通用被动变形／复制／支配、死亡及save/replay。验收后可独立4a-2推广3×3，未交4b也完整可玩 | 宽窄道／对角／自重叠／动态堵路，击退／闪现／拉拽／传送／召唤全落点；环境一次、独立陷阱各触发、重入停止旧格；几何武器／射线／AoE各默认键一次，1×1反射混合原语义；尾格可见／气体显影、感知一骰；2×2↔普通形态无位原子失败；支配不新增免疫；场地净空／绕行／收据／故障完整图回滚，giants-only自然种子击败／存读／续录 | 每个内容交付 **full＋drift＋removal**；当次构建1440×900、390×844、320×844×普通／沉浸，四地图／缩放／部分可见／手机尾格瞄准与确认；自然生成守场、遇火水、击退、复制／变形／支配及血条，不只调试注入 |
+| **4b 任意刚体形状与朝向** | 开放通用mask和4向物理旋转、扫掠与位姿图；选一个L／十字或长条原创样例贯通占位／环境／攻击／显示／存档，方形不增加姿态成本 | 凹角／孔洞真实空格，长条窄道转身／墙边rotation终态可fit但sweep不fit拒绝，180°两段验证，标签同步；转向正耗时；目标／图缓存pose失效／LRU不改路径；变形／复制保形状与朝向、save/load/replay/seek；shapeK/A/sweep预算及性能负例 | **full＋removal**，生成模板／自然形状落点改变加drift；四地图轮廓／凹角地形可读，320/390触点一致，旋转与击退反馈、部分可见不画包围盒；纯底座fixture和正式样例分别注明 |
+| **4c 固定命中区与部位破坏** | 单刚体的local zone HP／装甲／弱点、破坏表／来源事实／coreTransfer，部位选择和公开摘要；原创带核心区样例可完整战斗，暂不必支持独立移动成员／再生 | 区格多次接触去重、横扫两zone政策、zone HP=0仅破坏一次；直接核心不自传、local传导不重投／重复符文消费／反伤／贡献；弱点暴露与速度修正幂等、破坏不kill/XP/DF；旧prepared目标破坏取消，软韧性provider缺席actionLock有效；zone状态读档／seek/续录、坏HP/标签拒绝 | **full＋removal**，改变形状变体／生成或残骸地形追加drift；桌面精确选弱点、320/390当前部位HP／破坏／摘要不遮地图，旧ACK帧不露新弱点／HP，破坏后选中清理；无growth无阶段3仍可击败 |
+| **4d 复合体独立成员** | 核心唯一调度、成员HP／状态／位置／受击／攻击，树约束落脚、有限攻击束、支撑／破坏后整体修正。选一个蜘蛛／章鱼式或九头蛇／长蛇样例；**被动**整组复制／变形／支配同步支持，不能新增Boss免疫 | 8腿／多头／链fixture确定移动轨迹，墙／其他腿／扫掠／牵引受阻及128节点退化、无0tick死循环／重复推进；多成员攻击独立scope／冷却，腿毒火与群精神各一次；两腿横扫各一次、group火球一次；全腿毁／核心死各政策、XP终结一次；老鼠↔复合体保核心ID／无位全回滚，整组clone全新ID／深拷贝／无奖励复制；移层／pending／残体／破坏时save/replay/续录 | **full＋removal**，自然复合体生成／落点与场地变化加drift；当次构建核心＋腿轨迹、两腿各被击中与攻击、断腿减速／失招／全部断腿、320/390列表选腿／隐藏核心不泄漏；存在阶段3时另验来源部位破坏取消预警 |
+| **4e 主动换形、分裂、复制与召唤** | 开放主动转换声明／阶段条件，在此前完整敌人基础上追加换体型／单体↔群体、全批分裂／副本召唤；同一事务复用而非新的size迁移。选有限原创转换招式，非承诺全部内容 | shape/member数量变化、显式保留／映射／退休ID，减少成员无kill；多结果预留其中一体无位全无效、ID／HP／群表／费用／RNG/消息故障回滚；split HP／奖励权利守恒、原encounter一次击败；clone/summon不共享状态、限额阻指数膨胀；已有计划正确取消／重预警；主动失败正耗时；转换前后／等待时save/load/逐条replay/seek/续录 | **full＋removal**，自然出生规则改变加drift；真实战斗触发换形／分裂／副本、窄场失败、Boss条主体与后裔状态、部位减少／增加、长名称窄屏；无阶段3即时行为和可选预警行为分别验证 |
+| **4f 收尾与配置手册** | 仅补漏／文档／独立性，不把先前遗漏玩法推迟到此；作者手册列mask/pose/zone/group/constraint/status/break/transition schema、预算和实际开放能力 | 全目录保留子集真实删除，剩余子集新局／save/replay/seek/续录；删giants后全部已交底座fixture仍过，含giants旧输入拒绝；格式篡改／隐知识／不可达性能／缓存层／pending／关系／缺软provider最终矩阵；有阶段3再验16组合及非法/重复provider；再生若未授权明确未开放 | 正常 **full**、删除 **removal**，生成收尾变化加drift；最终当次构建复验六布局／四地图／触控／native与可选魂系，截图与>1MiB原始证据在仓库外，报告设备实测和触摸模拟区别 |
 
-4a 的环境迁移较大，可由维护者拆为4a-1几何/位移、4a-2环境/缓存、4a-3体型推广；每个小步同样full、独立报告，不能用拆步规避最终真实Game验收。4a0若将纯codec升级与所有位置迁移难以安全同交，可先交协议/预检，再迁移写出口；不提前宣称多格能力完成。
+每步可再拆小步，但不能先向正常菜单发布只有占位却不能攻击／保存的敌人。4a2／4b等已开放形态的旧完整链路需继续有效；复杂内容尚未授权就不登记成可随机变出的形态。若4d授权再生（D13=B），该步同时交时钟／无位等待／generation／HP恢复／取消修正／seek负例和浏览器验证；否则在数据和读档能力预检拒绝regenerate声明，不留可输入但无运行器的正式规则。
 
-### 14.3 每步真实 Game smoke 的最低内容
+已有原生能力的组合也算当步闭环：例如4a的Boss被变成果冻后受击分裂，仍要完整预留结果、正确保留／分配ID与绑定终结，不能推迟到4e或增加变形免疫。4e解锁的是新编写的主动转换招式与复杂多体结果，不替早期已有复制／分裂调用补落点安全。
 
-正常树所有已安装子集都用真实 `Game.startNewGame`、公开 `executeCommand`/`executeItemCommand` 驱动；至少游玩移动、等待、一次合法战斗/物品行为，保存→加载继续，导出→loadReplay逐条到底，seek 0/中段/终点，存档→继续→导出续录。比较机械世界、消息/时间、双 RNG 与适用模块收据，不只检查“没抛异常”。
+### 14.3 真实 Game smoke 与专项场景
 
-底座步骤尚无正式giants自然出生时，多格专项由原生fixture建立并明确标为fixture；无能力组合仍跑真实新局。4d之后giants每个含giants的子集必须另有固定种子**自然新局场地**闭环，不能每次调试注入Boss替代自然生成；测试fixture不作为正常模块出现在菜单/manifest。缺可选模块的场景须触发实际替代行为，不仅开关一次。
+所有正常安装子集均用真实Game.startNewGame及公开executeCommand/executeItemCommand驱动：至少移动、等待、一次合法战斗／物品；保存→加载继续；导出→loadReplay逐条到底；seek0／中段／终点；存档→继续→导出续录。比较机械世界／引用、消息／时间、双RNG和适用收据，不只断言“没抛异常”。
 
-真实删除矩阵优先沿现有 `scripts/check-module-removal.mjs` 和 composition smoke 发现器扩展，所有保留子集照跑；移除giants的副本仍跑底座多格fixture，同时拒绝要求giants的保存输入。浏览器操作必须使用当次构建包，报告版本/包hash与设备；没有真手机只能报告触摸模拟，不能宣称设备实测。
+4a0尚无正式giants自然出生时，新增空间专项用确定原生fixture并标明能力边界；不是菜单模块，也不写假manifest。**4a起**每个含giants的子集另有固定种子自然场地闭环；后续新形状／zone／成员／转换分别有专项fixture与授权样例闭环，不能仅注入实体替代正式生成。软能力缺席须实际触发替代行为，不只开关一次。
 
-### 14.4 必须保留的异常与交付证据
+每步重点边界还覆盖：尾格DF重入、机关导致死亡／瞬移后停旧列表；生成中途throw、乘客释放、无空间坠落；确认等待后成员被毁／形态改变；同一腿多格与两腿相交不同键；core/part伤害归属及真实符文；核心0HP、成员0HP与行政退休不同事实；重复入层／seek不再发XP／收据。
 
-- 坏尺寸（0/负数/小数/4/非方形）、超界/负锚点、重叠、ID重复、假owner、孤儿arena/Boss绑定、player多格、未知模块/错误版本/指纹、超预算区域/实体全部明确拒绝。
-- prepared目标在确认等待中移动/变形、机关重入造成死亡/瞬移、DF发生在尾格、生成中途throw、死亡乘客释放、无位坠落等待、重复入层与seek收据均有专门场景。
-- 每份实施报告列共享文件实改清单、版本/机械规则改变、仍有效测试覆盖及任何前提调整的依据、基线变化原因、正常full/removal各自结果、性能与浏览器未验证项。不把静态审计、估算或本设计的验收计划写成运行证据。
+删除脚本／组合smoke发现式扩展，保留底座所有登记fixture，不给删除矩阵额外skip。浏览器使用当次构建，记包hash／视口／设备；没有真手机只标触摸模拟，不能称设备实测；engine-only结果明确未验证浏览器。
 
-本轮交付边界止于设计与审阅链接；上述实施和产品选择需维护者另行裁定。
+### 14.4 交付证据与明确负例
+
+- 坏mask（重复／断开／非整数／无原点／超K）、坏pose/sweep、zone不在身体／重复标签、零分母、超HP／次数、过多成员／group格、循环／跨层／多群共享成员、孤儿核心、重叠、ID/owner冲突、假arena／encounter绑定、player多格、未开放能力、未知模块／版本／指纹均明确拒绝。
+- 新原生群根／definition／组件／成员引用全部登记写集与codec；故障验证完整对象图／身份／双RNG／消息恢复，不能只比较save投影。能力未使用局的源基线差分与新能力性能实测分开列，不声称新规则与CE逐骰一致。
+- 每份报告列共享实改文件、版本／规则变化、有效测试及任何前提修订理由、基线／trace变化原因、正常full／删除removal的实际结果、性能与浏览器未验证项。未运行长门禁、估算、静态审计或设计验收标准均不能写成通过证据。
+
+本轮只交r2设计稿；上述实施、内容与未决产品选项须维护者另行授权，不修改其他文档，也不commit。
