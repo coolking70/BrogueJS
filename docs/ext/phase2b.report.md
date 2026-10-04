@@ -64,7 +64,7 @@ Vitest实际耗时：正常ext272.90s、正常完整2126.60s；三个删除ext23
 | without-growth | 18 | `4d0de5b035820f9e12316ed3b2825c5f9688e569566790c5d08bf13e2f6ae597` |
 | without-modules | 16 | `24f1a33c4037084f1db732ce435de8911541bebc0911dabf544443378eabd2f4` |
 
-最终门禁结束后仅补交付文档/证据摘要，生产/测试/配置字节继续与第三冻结树相同。收尾首次将新增文件纳入 `git diff --cached --check` 时另报 `narrative_ui.test.ts:221: new blank line at EOF`（exit2）；此前未暂存diff未涵盖该新增文件。该文件保持冻结测试原字节，不把此次格式检查写成通过；没有CRLF、尾随空格、冲突标记或新增大证据。此项只涉及末尾多一空行，不改变已运行的功能门禁结果。原始日志、完整hash、物理副本和QA归档保留仓库外 `cloud-extension-evidence/phase2b-final-candidate3/`；前两失败候选与开发日志分别保留，不提交原始大证据或截图。
+最终门禁结束后补交付文档/证据摘要；生产与配置字节继续与第三冻结树相同。收尾首次将新增文件纳入 `git diff --cached --check` 时另报 `narrative_ui.test.ts:221: new blank line at EOF`（exit2）；此前未暂存diff未涵盖该新增文件。随后按维护者要求仅删除该测试文件末尾1个LF（16,401→16,400字节），其余字节不变。原文件SHA256为 `201291e4c7cfdb5b5d90bae80067fab8e91a51f55d3aba9995b1d9015a1e0413`，清理后为 `a9ad858a159741b016d43c7c355545521e22fd3984a9f39ec2c213bcf1b9cd28`。2026-10-04 02:58 UTC补跑 `NODE_OPTIONS=--max-old-space-size=3072 npx vitest run src/ext/modules/narrative/tests/narrative_ui.test.ts --maxWorkers=2`，1文件11项通过、828ms、exit0；最终基线到交付的diff检查通过，无CRLF/冲突标记/新增大证据。完整npm test与删除矩阵仍对应修前等义测试文本，未冒称在清理后重跑；维护者明确无需因单字节测试空白重跑完整门禁。生产构建未改变，原84份dist及Mac QA继续适用。原始日志、完整hash、物理副本和QA归档保留仓库外 `cloud-extension-evidence/phase2b-final-candidate3/`；前两失败候选与开发日志分别保留，不提交原始大证据或截图。
 
 ## 实际实现与版本
 
@@ -129,7 +129,7 @@ active-save通过页内加载夹具补验：session精确恢复，sessionId=1、
 
 最终QA线程 `01a103cc-fdd2-736d-9a75-93facaed401e`、完成turn `01a1049e-5381-757f-8d06-1583e92ba1e5`。归档报告在Mac `/Users/coolking70/Documents/Codex/2026-10-04/task-2/mac-qa-2b/evidence/report.json`，截图索引同目录 `screenshot-index.json`；9张截图只保留本地，不入仓库。本段据已归档报告回收结果填写，不把云端未材料化截图说成已独立看图。
 
-QA临时页内状态已清除，viewport恢复，immersive/settings未改变；本次4个tab与按PID归属确认的5个服务已关闭，端口无监听，未触旧tab或源码。生产/测试/配置仍与第三冻结树相同，仅补交付文档。
+QA临时页内状态已清除，viewport恢复，immersive/settings未改变；本次4个tab与按PID归属确认的5个服务已关闭，端口无监听，未触旧tab或源码。生产/配置仍与第三冻结树相同；测试仅有上文已专项复验的末尾1个LF清理，其余后续变更为交付文档。
 
 本步交付foundation commit和相对 `71eac53a588b6b5e4781c7bfaa2e027cc70817f3` 的verified git bundle，供Mac轻量发布。云端已知无GitHub认证，没有重试push；远程发布另行验证，不写成已经完成。没有main合并、tag或部署；交付后停在2b，不启动2c/2d。
 

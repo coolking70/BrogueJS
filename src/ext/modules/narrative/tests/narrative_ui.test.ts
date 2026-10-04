@@ -218,4 +218,3 @@ describe('EXT-2b real inline component', () => {
         close.props.onClick(event()); expect(onClose).not.toHaveBeenCalled(); app.unmount();
     });
 });
-

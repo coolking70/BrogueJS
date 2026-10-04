@@ -482,4 +482,4 @@ QA_BUILD_BYTES_UNCHANGED=true
 - 初轮Mac连接失败后，同一任务恢复完成同字节静态QA，最终 `passed_with_tool_coverage_limits`，无产品阻塞；包与84份dist逐项前后hash通过。自然NPC/零时间冻结、活动对话存读、只读回放/续录、三尺寸和9组合真实UI链路通过；active-save页内夹具辅助验证另列，不冒称界面操作
 - 真正按住方向跨关闭、真实touch、路由中断未覆盖；DPR未记录，IAB调用长延迟单列。9张截图仅Mac本地。临时状态、viewport、4tab及5个本次服务清理确认，生产树未改；远程发布另行验证。实现、门禁细表、前两失败候选、浏览器类别与限制见[2b报告](../phase2b.report.md)。日志/截图等原始证据不提交
 
-收尾新文件 staged diff 检查另有一条格式警告（exit2）：`narrative_ui.test.ts:221` 末尾多一空行。保留冻结测试字节并如实登记；LF/无冲突标记/无大证据检查通过，不将格式检查记为通过。
+收尾新文件 staged diff 首检exit2：`narrative_ui.test.ts:221` 末尾多一空行。随后仅删末尾1个LF（16,401→16,400字节），相关单文件11项/828ms/exit0，最终基线至交付diff检查通过。原完整门禁对应修前等义测试文本；按维护者裁决不重跑完整npm test。生产/配置及84份dist未变；精确修前/修后hash见2b报告。
