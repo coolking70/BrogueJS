@@ -4,6 +4,7 @@
     "tests/combat_bonfire_definitions.test.ts",
     "tests/combat_bonfire_runtime.test.ts",
     "tests/combat_bonfire_ui.test.ts",
+    "tests/combat_combinations.test.ts",
     "tests/combat_defense_state.test.ts",
     "tests/combat_display.test.ts",
     "tests/combat_dodge.test.ts",

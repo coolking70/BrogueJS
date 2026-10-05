@@ -18,6 +18,7 @@ import monsters from '../../../../data/monsters.json';
 import { rng } from '../../../../engine/Random';
 import { timeSystem } from '../../../../engine/Systems/Time';
 import { logger } from '../../../../engine/Systems/Logger';
+import { observeDisplayFrame } from '../../../../ui/displayProjection';
 import * as catalog from '../../../catalog';
 import type { WorldInteractable } from '../../../types';
 import type { ProductionActorAttackState } from '../../../actorActions';
@@ -166,7 +167,13 @@ describe('3e real bonfire preparation and native command boundary', () => {
         expect(resource(game).stamina).toBeLessThan(24); expect(resource(game).poise).toBeLessThan(12);
         game.player.setStatusDuration('weakened', 20);
         const before = facts(game), world = json(game.extensionRuntime!.snapshot().foundation.world), nextAction = state(game).nextActionId;
+        const messageTurn = logger.turn;
         rest(game);
+        // The HUD intentionally counts CE player commands, separately from objective blocks.
+        expect(logger.turn - messageTurn).toBe(1);
+        const afterRest = facts(game), frame = observeDisplayFrame(game, logger);
+        expect(frame.messageTurn).toBe(logger.turn); expect(frame.displayTurn).toBe(game.absoluteTurnNumber);
+        expect(facts(game)).toEqual(afterRest);
         expect(timeSystem.currentTick - before.tick).toBe(500); expect(game.absoluteTurnNumber - before.turn).toBe(5);
         expect(game.player.nutrition).toBe(before.player.nutrition - 5); expect(game.player.getStatusDuration('weakened')).toBe(15);
         expect(game.player.hp).toBe(game.player.maxHp); expect(resource(game)).toMatchObject({ stamina: 24, poise: 12 });
