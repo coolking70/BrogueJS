@@ -1,4 +1,4 @@
-import type { MissionCommand, MissionHost, MissionMarker, MissionRuntime, MissionView } from '../../../engine/Simulation/MissionRuntime';
+import type { MissionActivity, MissionCommand, MissionHost, MissionMarker, MissionRuntime, MissionView } from '../../../engine/Simulation/MissionRuntime';
 import { canonical } from '../../json';
 import { MISSION_DATA as d } from './definitions';
 import { validateMissionState, type MissionState } from './state';
@@ -45,6 +45,26 @@ export function createMission(host: MissionHost, restored?: unknown): MissionRun
         state.status = status; state.reason = reason; state.terminalTick = host.tick(); state.demolition = null;
         if (status === 'success') state.reward = missionReward(state, host.stats().kills);
     }
+    function activity(evac: Pick<MissionView, 'extraction' | 'extractionRemaining'>): MissionActivity | null {
+        if (state.status !== 'active') return null;
+        const player = host.player();
+        if (state.demolition) {
+            const def = d.nodes.find(n => n.id === state.demolition!.id)!;
+            return { kind: 'demolition', labelKey: def.labelKey, progress: d.demolitionTicks - state.demolition.remaining, total: d.demolitionTicks, paused: false };
+        }
+        const regions = d.nodes.filter(def => ['scan', 'rescue', 'uplink'].includes(def.kind)
+            && state.nodes.some(n => n.id === def.id && n.started && !n.completeTick))
+            .sort((a, b) => (player.pose.x - a.pose.x) ** 2 + (player.pose.y - a.pose.y) ** 2
+                - (player.pose.x - b.pose.x) ** 2 - (player.pose.y - b.pose.y) ** 2 || a.id.localeCompare(b.id, 'en'));
+        const region = regions[0], inside = !!region && !!player.hp && within(player.pose, region.pose, region.radius);
+        const e = d.nodes.find(n => n.kind === 'extraction')!;
+        if (!inside && evac.extraction === 'inbound') return { kind: 'arrival', labelKey: e.labelKey,
+            progress: d.extractionDelayTicks - evac.extractionRemaining, total: d.extractionDelayTicks, paused: false };
+        if (!inside && evac.extraction === 'boarding') return { kind: 'boarding', labelKey: e.labelKey,
+            progress: state.boardingProgress, total: e.ticks, paused: !player.hp || !within(player.pose, e.pose, e.radius) };
+        return region ? { kind: 'region', labelKey: region.labelKey, progress: state.nodes.find(n => n.id === region.id)!.progress,
+            total: region.ticks, paused: !inside } : null;
+    }
     return {
         targetActive,
         isFinished: () => state.status !== 'active',
@@ -83,7 +103,8 @@ export function createMission(host: MissionHost, restored?: unknown): MissionRun
             }
             const e = d.nodes.find(n => n.kind === 'extraction')!, n = state.nodes.find(n => n.id === e.id)!;
             if (state.extractionCallTick && host.tick() >= state.extractionCallTick + d.extractionDelayTicks) {
-                state.boardingProgress = player.hp && within(player.pose, e.pose, e.radius) ? state.boardingProgress + 1 : 0;
+                if (player.hp && within(player.pose, e.pose, e.radius)) state.boardingProgress++;
+                else if (d.boardingMode === 'continuous') state.boardingProgress = 0;
                 n.progress = state.boardingProgress;
                 if (state.boardingProgress === e.ticks) { completeObjective(state, e.id, host.tick()); finish('success', 'extracted'); }
             }
@@ -92,7 +113,7 @@ export function createMission(host: MissionHost, restored?: unknown): MissionRun
         view(): MissionView {
             const evac = extractionView(state, host.tick(), objectiveReady(state, extractionId));
             return { titleKey: d.titleKey, status: state.status, reason: state.reason, remaining: Math.max(0, d.deadlineTicks - host.tick()),
-                lives: Math.max(0, d.deathLimit - host.stats().deaths), markers: markers(), nearby: nearby(), ...evac, samples: gatheredSamples(state), reward: state.reward && { ...state.reward },
+                lives: Math.max(0, d.deathLimit - host.stats().deaths), markers: markers(), nearby: nearby(), ...evac, activity: activity(evac), samples: gatheredSamples(state), reward: state.reward && { ...state.reward },
                 reinforcements: pressure() };
         },
     };

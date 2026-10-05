@@ -8,7 +8,7 @@ export interface WeaponDefinition {
     ballistic: 'hitscan' | 'projectile'; pellets: number; range: number; damage: number; spread: number; movingSpread: number;
     recoilKick: number; recoilRecovery: number; recoilMax: number; speed: number; fuseTicks: number; blastRadius: number; friendlyFire: FriendlyFire;
 }
-export const FIREARMS_VERSION = '1.0.0';
+export const FIREARMS_VERSION = '1.1.0';
 export function loadWeapons(value: unknown): readonly Readonly<WeaponDefinition>[] {
     if (!record(value, ['schema', 'weapons']) || value.schema !== 1 || !dataArray(value.weapons, 4) || value.weapons.length !== 4)
         throw new Error('Invalid firearms pack');

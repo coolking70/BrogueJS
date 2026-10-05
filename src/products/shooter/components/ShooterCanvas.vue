@@ -7,11 +7,14 @@ import { createScenarioArena } from '../ShooterArena';
 import type { ShooterSnapshot } from '../ShooterSession';
 import { getRealtimeModules } from '../../../ext/realtimeCatalog';
 import { mouseAim } from '../input/AimAdapters';
+import PlayerProgress from './PlayerProgress.vue';
 
 const props = defineProps<{ previous: ShooterSnapshot; current: ShooterSnapshot; alpha: number; disabled: boolean }>();
 const emit = defineEmits<{ aim: [angle: number, moved: boolean]; fire: [held: boolean] }>();
 let pointer: number | null = null, mouse: { x: number; y: number } | null = null;
 const surface = ref<HTMLDivElement>();
+const progressDisplay = ref<HTMLDivElement>();
+const progressAnchor = ref({ x: 0, y: 0 });
 let app: Application | null = null, world: Container | null = null, actors: Graphics | null = null, overview: Graphics | null = null;
 const labels = new Map<string, Text>();
 let resize: ResizeObserver | null = null, disposed = false;
@@ -40,6 +43,12 @@ function draw(): void {
         { scaleX: 16 / TILE, scaleY: 16 / TILE, offsetX: 0, offsetY: 0 },
         ARENA_WIDTH, ARENA_HEIGHT, TILE, { x: focus.x / TILE - .5, y: focus.y / TILE - .5 }, 2, { x: 0, y: 0 }, false);
     world.scale.set(camera.scaleX, camera.scaleY); world.position.set(camera.offsetX, camera.offsetY);
+    // Fixed screen size, anchored to the same interpolated body as the canvas.
+    progressAnchor.value = {
+        x: Math.max(96, Math.min(app.screen.width - 96, focus.x * camera.scaleX + camera.offsetX)),
+        y: Math.max((progressDisplay.value?.offsetHeight ?? 0) + 8,
+            (focus.y - props.current.actors[0]!.radius - 245) * camera.scaleY + camera.offsetY - 8),
+    };
     actors.clear();
     for (const label of labels.values()) label.visible = false;
     for (const marker of props.current.mission?.markers ?? []) {
@@ -155,9 +164,15 @@ onBeforeUnmount(() => { disposed = true; resize?.disconnect(); app?.destroy(true
 </script>
 
 <template><div ref="surface" class="scope-canvas" data-testid="movement-canvas"
-  @pointermove="pointerMove" @pointerdown="pointerDown" @pointerup="release" @pointercancel="release" @lostpointercapture="release" @contextmenu.prevent /></template>
+  @pointermove="pointerMove" @pointerdown="pointerDown" @pointerup="release" @pointercancel="release" @lostpointercapture="release" @contextmenu.prevent>
+  <div ref="progressDisplay" class="progress-anchor" :style="{ left: progressAnchor.x + 'px', top: progressAnchor.y + 'px' }">
+    <PlayerProgress v-if="current.damage.actors[0]!.hp > 0" :reload-remaining="current.ranged?.reloadRemaining ?? 0"
+      :reload-total="current.ranged?.reloadTotal ?? 0" :activity="current.mission?.activity ?? null" :paused="disabled" />
+  </div>
+</div></template>
 <style scoped>
-.scope-canvas { width: 100%; height: 440px; cursor: crosshair; touch-action: none; overflow: hidden; border: 1px solid #34443a; border-radius: 12px; }
+.scope-canvas { position: relative; width: 100%; height: 440px; cursor: crosshair; touch-action: none; overflow: hidden; border: 1px solid #34443a; border-radius: 12px; }
+.progress-anchor { position: absolute; z-index: 1; transform: translate(-50%, -100%); pointer-events: none; }
 .scope-canvas :deep(canvas) { display: block; }
 @media (max-width: 600px) { .scope-canvas { height: min(36vh, 300px); } }
 </style>

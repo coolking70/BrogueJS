@@ -26,11 +26,16 @@ export interface MissionMarker {
     pose: WorldPoint; radius: number; status: 'locked' | 'ready' | 'active' | 'complete'; progress: number; total: number;
 }
 export interface MissionReward { credits: number; samples: number; optional: boolean; killBonus: number }
+/** Read-only activity nearest the player; clocks remain owned by the mission. */
+export interface MissionActivity {
+    kind: 'region' | 'demolition' | 'arrival' | 'boarding'; labelKey: string;
+    progress: number; total: number; paused: boolean;
+}
 export interface MissionView {
     titleKey: string; status: 'active' | 'success' | 'failed'; reason: 'extracted' | 'timeout' | 'lives' | 'aborted' | null;
     remaining: number; lives: number; markers: MissionMarker[]; nearby: string | null;
     extraction: 'locked' | 'ready' | 'inbound' | 'boarding' | 'complete'; extractionRemaining: number;
-    samples: number; reward: MissionReward | null; reinforcements: PopulationReinforcementPolicy;
+    activity: MissionActivity | null; samples: number; reward: MissionReward | null; reinforcements: PopulationReinforcementPolicy;
 }
 export interface MissionRuntime {
     advance(commands: readonly MissionCommand[]): void;

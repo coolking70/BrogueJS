@@ -4,6 +4,7 @@
   "deadlineTicks": 27000,
   "deathLimit": 6,
   "extractionDelayTicks": 5400,
+  "boardingMode": "cumulative",
   "demolitionTicks": 90,
   "reward": {
     "credits": 100,

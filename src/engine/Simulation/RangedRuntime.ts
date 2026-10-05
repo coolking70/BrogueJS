@@ -11,7 +11,7 @@ export type ShooterCommand = WeaponCommand | MissionCommand;
 export interface FireControl { tick: number; actorId: number; aimAngle: number; fire: boolean; moving: boolean }
 export interface CombatEffect { tick: number; kind: 'tracer' | 'impact' | 'explosion'; from: WorldPoint; to: WorldPoint; radius: number; hit: boolean }
 export interface WeaponView { id: string; labelKey: string; slot: number; ammo: number; capacity: number; selected: boolean }
-export interface RangedView { weapons: WeaponView[]; reloadRemaining: number; cooldownRemaining: number; recoil: number; shots: number; projectiles: { id: number; pose: WorldPoint; radius: number }[] }
+export interface RangedView { weapons: WeaponView[]; reloadRemaining: number; reloadTotal: number; cooldownRemaining: number; recoil: number; shots: number; projectiles: { id: number; pose: WorldPoint; radius: number }[] }
 /** All reads are detached. Modules request damage, never receive writable HP. */
 export interface RangedHost {
     readonly seed: number;

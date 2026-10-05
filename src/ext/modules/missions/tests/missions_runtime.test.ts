@@ -27,28 +27,44 @@ describe('data-driven mission graph, POIs and extraction', () => {
     it('validates graph ownership, cycles, duration bounds and malformed data', () => {
         expect(loadMission(d)).toEqual(d); expect(Object.isFrozen(d.nodes[0]!.pose)).toBe(true);
         for (const change of [(v: any) => v.nodes[0].depends = ['uplink'], (v: any) => v.nodes[1].id = v.nodes[0].id,
-            (v: any) => v.deadlineTicks = 17, (v: any) => v.scenario.targets[0].key = 'foreign', (v: any) => v.nodes[0].ticks = Infinity]) {
+            (v: any) => v.deadlineTicks = 17, (v: any) => v.boardingMode = 'foreign', (v: any) => v.scenario.targets[0].key = 'foreign', (v: any) => v.nodes[0].ticks = Infinity]) {
             const bad = structuredClone(d); change(bad); expect(() => loadMission(bad)).toThrow();
         }
     });
     it('locks dependent facilities and records region progress, pauses outside and restores without restarting', () => {
         const r = room(); r.move('uplink'); r.step(1, true); expect((r.runtime().snapshot() as MissionState).nodes[5]!.started).toBe(false);
         r.move('scan-a'); r.step(100, true); const before = r.runtime().snapshot(); r.restore(); expect(r.runtime().snapshot()).toEqual(before);
+        expect(r.runtime().view().activity).toEqual({ kind: 'region', labelKey: 'ext.missions.site.scan-a', progress: 100, total: 3600, paused: false });
         r.player.pose = { ...d.scenario.spawn, facing: 0 }; r.step(100); expect((r.runtime().snapshot() as MissionState).nodes[0]!.progress).toBe(100);
+        expect(r.runtime().view().activity).toMatchObject({ progress: 100, paused: true });
         r.move('scan-a'); r.player.hp = 0; r.step(20); expect((r.runtime().snapshot() as MissionState).nodes[0]!.progress).toBe(100);
+        expect(r.runtime().view().activity?.paused).toBe(true);
         r.player.hp = 100; r.step(3500); expect(r.runtime().targetActive('nest-a')).toBe(false);
     });
-    it('collects two POI types once, keeps optional progress, checks arrival and boarding reset, and awards exactly once', () => {
+    it('collects POIs once, preserves cumulative boarding outside and on death/restore, and awards exactly once', () => {
         const r = room(); r.move('supply-a'); r.step(1, true); expect((r.runtime().snapshot() as MissionState).collected).toEqual([]);
         r.player.hp = 12; r.step(1, true); expect(r.player.hp).toBe(100); r.player.hp = 15; r.step(1, true); expect(r.player.hp).toBe(15); r.player.hp = 100;
         for (const id of ['sample-a', 'sample-b']) { r.move(id); r.step(2, true); r.step(1, true); }
         r.move('rescue'); r.step(1800, true); r.restore(); expect(r.runtime().view().samples).toBe(8);
         mains(r); r.move('extraction'); r.step(1, true); expect(r.runtime().view().extraction).toBe('inbound');
+        expect(r.runtime().view().activity).toMatchObject({ kind: 'arrival', progress: 0, total: 5400, paused: false });
         r.step(5399); expect(r.runtime().view().extraction).toBe('inbound'); r.step(1); expect(r.runtime().view().extraction).toBe('boarding');
-        r.step(50); r.player.pose = { ...d.scenario.spawn, facing: 0 }; r.step(); expect(r.runtime().view().extractionRemaining).toBe(900);
-        r.move('extraction'); r.step(899); r.restore(); r.step(); const result = r.runtime().view();
+        r.step(50); r.player.pose = { ...d.scenario.spawn, facing: 0 }; r.step(60); expect(r.runtime().view().extractionRemaining).toBe(849);
+        expect(r.runtime().view().activity).toMatchObject({ kind: 'boarding', progress: 51, total: 900, paused: true }); r.restore();
+        r.move('extraction'); r.player.hp = 0; r.death(); r.step(90); r.restore(); expect(r.runtime().view().extractionRemaining).toBe(849);
+        r.player.hp = 100; r.step(848); r.restore(); expect(r.runtime().view().activity).toMatchObject({ progress: 899, paused: false });
+        r.step(); const result = r.runtime().view(); expect(result.activity).toBeNull();
         expect(result.status).toBe('success'); expect(result.reward).toEqual({ credits: 153, samples: 8, optional: true, killBonus: 3 });
         const before = r.runtime().snapshot(); expect(() => r.step()).toThrow('finished'); expect(r.runtime().snapshot()).toEqual(before);
+    });
+    it('derives demolition progress from its real timer and retires it when leaving the nest', () => {
+        const r = room(); expect(r.runtime().view().activity).toBeNull();
+        for (const id of ['scan-a', 'scan-b']) { r.move(id); r.step(3600, true); }
+        r.move('nest-a', -1100); r.step(15, true); r.restore();
+        expect(r.runtime().view().activity).toEqual({ kind: 'demolition', labelKey: 'ext.missions.site.nest-a', progress: 15, total: 90, paused: false });
+        r.move('scan-a'); r.step(); expect(r.runtime().view().activity).toBeNull();
+        r.move('nest-a', -1100); r.step(89, true); expect(r.runtime().view().activity?.progress).toBe(89);
+        r.step(); expect(r.runtime().view().activity).toBeNull(); expect(r.targets[0]!.hp).toBe(0);
     });
     it('finishes on deadline, exhausted lives or abort, without dispensing unextracted samples', () => {
         const timeout = room(); timeout.setTick(26999); timeout.step(); expect(timeout.runtime().view()).toMatchObject({ status: 'failed', reason: 'timeout', reward: null });

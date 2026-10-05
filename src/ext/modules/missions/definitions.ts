@@ -9,15 +9,15 @@ export interface ObjectiveDefinition {
 }
 export interface MissionDefinition {
     schema: 1; id: string; titleKey: string;
-    reinforcements: { cycleTicks: number; activeTicks: number; stages: readonly { after: readonly string[]; limits: PopulationLimits; batch: number }[] }; deadlineTicks: number; deathLimit: number; extractionDelayTicks: number; demolitionTicks: number;
+    reinforcements: { cycleTicks: number; activeTicks: number; stages: readonly { after: readonly string[]; limits: PopulationLimits; batch: number }[] }; deadlineTicks: number; deathLimit: number; extractionDelayTicks: number; boardingMode: 'continuous' | 'cumulative'; demolitionTicks: number;
     reward: { credits: number; optionalCredits: number; samplesPerCache: number; rescueSamples: number; maxKillBonus: number };
     scenario: MissionScenario; nodes: readonly ObjectiveDefinition[]; pois: readonly ObjectiveDefinition[];
 }
 export function loadMission(value: unknown): Readonly<MissionDefinition> {
     const bad = () => { throw new Error('Invalid mission data'); };
-    if (!record(value, ['schema','id','titleKey','reinforcements','deadlineTicks','deathLimit','extractionDelayTicks','demolitionTicks','reward','scenario','nodes','pois'])
+    if (!record(value, ['schema','id','titleKey','reinforcements','deadlineTicks','deathLimit','extractionDelayTicks','boardingMode','demolitionTicks','reward','scenario','nodes','pois'])
         || value.schema !== 1 || !validId(value.id) || value.titleKey !== 'ext.missions.title' || !integer(value.deadlineTicks, 18000, 27000) || !integer(value.deathLimit, 1, 20)
-        || !integer(value.extractionDelayTicks, 30, 9000) || !integer(value.demolitionTicks, 1, 300)
+        || !integer(value.extractionDelayTicks, 30, 9000) || !['continuous', 'cumulative'].includes(value.boardingMode as string) || !integer(value.demolitionTicks, 1, 300)
         || !record(value.reward, ['credits','optionalCredits','samplesPerCache','rescueSamples','maxKillBonus'])
         || !Object.values(value.reward).every(n => integer(n, 0, 10000)) || !dataArray(value.nodes, 32) || !dataArray(value.pois, 32)) return bad();
     const s = value.scenario;
@@ -56,4 +56,4 @@ export function loadMission(value: unknown): Readonly<MissionDefinition> {
     return freeze(structuredClone(value)) as unknown as Readonly<MissionDefinition>;
 }
 export const MISSION_DATA = loadMission(data);
-export const MISSION_RULES = Object.freeze({ schema: 1, version: '1.0.0', fingerprint: extensionDataFingerprint(data) });
+export const MISSION_RULES = Object.freeze({ schema: 1, version: '1.1.0', fingerprint: extensionDataFingerprint(data) });

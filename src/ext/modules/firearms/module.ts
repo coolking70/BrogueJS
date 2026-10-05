@@ -41,6 +41,7 @@ export function createFirearms(host: RangedHost, restored?: unknown): RangedRunt
         return { weapons: state.weapons.map((v, slot) => ({ id: WEAPONS[slot]!.id, labelKey: WEAPON_LABEL_KEYS[slot]!,
             slot, ammo: v.ammo, capacity: WEAPONS[slot]!.magazineSize, selected: slot === state.selected })),
             reloadRemaining: state.action?.kind === 'reload' ? state.timer : 0, cooldownRemaining: state.action?.kind === 'cooldown' ? state.timer : 0,
+            reloadTotal: state.action?.kind === 'reload' ? WEAPONS[state.action.slot]!.reloadTicks : 0,
             recoil: state.weapons[state.selected]!.recoil, shots: state.weapons.reduce((sum, w) => sum + w.shotSequence, 0),
             projectiles: state.projectiles.map(p => ({ id: p.id, pose: { ...p.pose }, radius: 64 })) };
     }

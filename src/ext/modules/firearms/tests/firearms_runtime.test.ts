@@ -54,6 +54,7 @@ describe('Firearms scheduler, magazine and trigger lifecycle', () => {
         expect(f.effects.filter(e => e.kind === 'tracer').map(e => e.tick)).toEqual(Array.from({ length: 30 }, (_, i) => 1 + i * 3));
         expect(f.runtime.view().weapons[1]!.ammo).toBe(0);
         f.step(true, [{ tick: 121, kind: 'reload' }]); expect(f.runtime.view().reloadRemaining).toBe(59);
+        expect(f.runtime.view().reloadTotal).toBe(60);
         for (let t = 122; t <= 179; t++) f.step(true);
         expect(f.runtime.view().weapons[1]!.ammo).toBe(0); f.restore(); f.step(true);
         expect(f.runtime.view().weapons[1]!.ammo).toBe(30); f.step(true); expect(f.runtime.view().shots).toBe(31);
@@ -69,6 +70,7 @@ describe('Firearms scheduler, magazine and trigger lifecycle', () => {
         expect(f.runtime.view().shots).toBe(1); for (let t = 4; t <= 9; t++) f.step(false);
         f.step(false, [{ tick: 10, kind: 'equip', slot: 0 }, { tick: 10, kind: 'reload' }]); expect(f.runtime.view().reloadRemaining).toBe(35);
         f.step(false, [{ tick: 11, kind: 'equip', slot: 2 }]); expect(f.runtime.view().reloadRemaining).toBe(0);
+        expect(f.runtime.view().reloadTotal).toBe(0);
         expect(f.runtime.view().weapons[0]!.ammo).toBe(11); f.restore(); f.step(true); expect(f.runtime.view().shots).toBe(2);
     });
     it('fires eight distinct shotgun pellets for one round and recovers recoil', () => {
