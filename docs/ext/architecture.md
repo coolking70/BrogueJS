@@ -388,3 +388,13 @@ NPC 测试除纯求值外，还使用真实攻击、AI 响应和确定性测试�
 - `DisplayFrame.actorTags` 是仅有声明模块时才出现的通用公开字段，随已知实体行一起冻结为历史帧。giants HUD 只读 `readDisplayFrame`，目标优先/其次最近直接可见 Boss/最多一条；未知、失去直接知识、幻觉或终局隐藏。显示没有机械写口或规则随机调用，文字与留场原因全部进模块 locale。
 
 没有新增 Game 机械字段或新存档包络，不做旧档迁移。物理删除与浏览器最终验收按任务书留维护者/收尾；本轮的底座 fixture 不 import 正式模块。自然验收、实际门禁与内容可调字段见 [完整 4a-4 报告](phase4a4.report.md)。
+
+## 25 4b-0 子里程碑：fixture 连续扫掠、旋转计划与位姿图
+
+本节只描述底座 fixture 能力，**生产任意 mask / 旋转仍未开放**。`squareMovementSize`、原生形态数据、Game/NPC 与生产读档继续保持 4a 的 square-2/3、r0 合同。完整 4b 剩余接线见 [报告](phase4b.report.md)。
+
+- `Movement/RigidFootprint.ts`：在完整空间 schema 校验后，把可执行位姿收窄为一个固定方向或全部四个旋转，拒绝镜像、部分旋转集合和局部 zone HP。整数锚点是原点格的中心；单位格方块围绕该中心连续转动。预编译使用 vertex/edge 接触临界角与 SAT，覆盖区间内相交及中途切触，不以动画采样或包围盒代替扫掠；相邻旋转边最多 256 格，超界拒绝。定义缓存、只读 cells/sweep 表都是派生数据，不入存档。
+- `CreatureSpatial.planRotationPlacement`：只接 fixture 独立刚体，90°/180° 分别含一个/两个有方向的 90° 原语，逐段验证终态 fit、扫掠地形、区域、边界与其他生物；忽略自己的旧身体。返回不可伪造的一次性计划和正 `actionCost`，90° 为 movementSpeed，180° 为两倍。提交复核身体、所有权、速度、地形 revision 与动态资格，固定锚点、发布 pose 并失效占位与接触 revision。**调用者仍须向自己的 actor 时钟提交耗时与驻留环境，当前没有 NPC/公开命令接线。** 普通 `planPlacement` 不允许以 pose 参数绕过旋转计划。
+- `Map/RigidPosePathing.ts`：独立 fixture 服务，节点为锚点×有效位姿，平移边按整体 fit/对角中间身体，旋转边按预编译 sweep。反向 Dijkstra、接触多目标、逃跑目标和指定 pose 的落点目标；地形代价取实际格的最大值。key 含完整定义/标签、位姿集合、区域 ID 和值策略；地形 revision 清缓存、动态占位每次复核，受阻最多一次全图重规划。LRU 8 组，淘汰只重建完整结果；单次扫描最多 W×H×A 节点，A≤4，不按墙钟时间截断路线。返回的 distanceAt 捕获当次距离表。普通无能力生物不读格、不建图；原生产 `FootprintPathing` 未改。
+
+fixture 测试覆盖 L/十字/孔洞/长条空格、轮廓原语、标签与 codec；它们不代表已完成任意 mask 的生产环境/攻击/显示/复制变形/存读录像闭环。`RigidPosePathing` 冷建图同步耗时仍较高，后续生产接线须评估冷启动与动态重规划成本。

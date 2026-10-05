@@ -104,3 +104,7 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 2026-10-05 4a-4 续轮：从维护者已提交的 ext/phase4 `eef51e6` 继续，完成有限 GenerationContribution/侧室挖掘与 reservation、原生形态目录与创建适配器、默认关闭的 giants 原创岩脊兽、守场/追击/回归、原层盟友留场 locale、遇敌收据与公开历史 Boss HUD。采用 develop-web-game 小步验证，浏览器验收留维护者。自然 seed7306 经152条真实命令到D3（玩家HP26、BossHP120），新增 trace 捕获；无调试注入、地图/HP修改的自然来源。发现并修复 spawnLoc 未设、load runtime 安装后 resolver 未重绑和贡献生成异常机器编号未回滚。两种独立全图/显式写集回滚保险通过，最终49文件相关回归、16组合 engine smoke、3份 drift 进行中。遵守开发期测试政策，不 commit/push。
 
 - 4a-4 续轮最终完成：冻结后 type/build/boundary、49文件816项相关回归、地形白名单1项、16子集engine smoke、3文件3项drift全部exit0；838输入SHA前后一致。两旧guard的首次失败保留证据：动态t键改为精确资源读取；HEAD Creature单变量仍红后，生产保留单格原位/多格真实接触双路径，旧守卫未改。独立HEAD对照全部8个未启用giants组合自然D1/D2/D3/续玩4点的地图、实体、双流/计数与扩展state完全相同。报告已完整补齐并保留原子里程碑历史；验收seed7306 D3。浏览器/320-390与物理removal按任务书留维护者/收尾，本次授权实现无剩余项。未commit、暂存或push。
+
+- 2026-10-05 当前授权（4b）：请阅读并执行 docs/ext/phase4b.task.md，不 commit，报告用中文。本轮选择任务书允许的干净子里程碑 4b-0：连续旋转扫掠预编译、fixture 受控旋转和位姿图；生产任意 mask 能力门及正式敌人/场地/Game 全链路接线保持未开放，验收与剩余项见 phase4b.report.md。
+
+- 2026-10-05 4b-0 子里程碑完成：连续 sweep 编译、fixture 原子旋转（90/180 正 actionCost 声明）与独立四 pose 图；生产 mask/旋转仍关闭，正式样例/Game 全链路尚未实现。最终 boundary/type/build、34文件433项相关回归、地形白名单1项、16组合engine-only smoke、drift3文件4项全部exit0；839输入前后一致，SHA集合de390ab446a9edc46898467e1609427f142d986d3ac39314b556c5d706b38a4b。长条/L 冷图79.875/56.401ms，暖P95 0.161/0.114ms，仅fixture。浏览器Vite/Chromium权限受限，无截图；旧测试/trace/基线未改，未暂存/commit/push。报告docs/ext/phase4b.report.md列明完整4b剩余六项。

@@ -1,5 +1,6 @@
 import { spatialTerrainRevision, releaseSpatialTerrain } from './SpatialRevision';
 import { inMovementRegion } from './MovementRegions';
+import { rigidFootprint, rotationStages, type CompiledRigidFootprint, type QuarterTurns, type RigidPose } from './RigidFootprint';
 import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
 import type { Grid } from '../Map/Grid';
@@ -78,6 +79,15 @@ export function squareMovementSize(creature: Creature, catalog = nativeSpatialCa
     }
     return s.footprintId === 'builtin:single' ? 1 : s.footprintId === 'builtin:square-2' ? 2 : 3;
 }
+/** 4b-0 fixture capability. Production still uses squareMovementSize until
+ * every native placement/AI/save/render path has shipped its 4b integration. */
+export function rigidMovementFootprint(creature: Creature, catalog = nativeSpatialCatalog): CompiledRigidFootprint {
+    if (!catalog.fixture) throw new SpatialValidationError('Rigid production capability is not open');
+    validateSpatialComponent(creature.spatial, catalog, false);
+    if (Object.keys(creature.spatial!).some(k => !['schema', 'footprintId', 'pose', 'movementRegionId'].includes(k)))
+        throw new SpatialValidationError('Rigid movement requires an independent body without locks or local health');
+    return rigidFootprint(catalog, creature.spatial!.footprintId);
+}
 /** Shared graph/live-motion edge; fit includes the caller's terrain, region and
  * (for a live step) occupancy policy. Swept intermediate poses never trigger
  * environmental effects themselves. */
@@ -134,6 +144,9 @@ export interface PlacementPlan {
     readonly changes: readonly PlacementChange[];
     readonly previous: readonly { creature: Creature; loc: Pos; x: number; y: number; spatial: string }[];
     readonly revision: number; readonly terrainRevision: number; readonly grid: Grid; readonly options: FitOptions;
+    /** Rotation caller MUST submit this positive cost to its actor clock.
+     * A half turn contains two quarter actions and pays both. */
+    readonly actionCost?: number;
 }
 /** Derived facade is owned by the session. Mechanical groups live in this
  * explicit world instance, never in a hidden WeakMap, Cell or module state.
@@ -146,6 +159,7 @@ export class CreatureSpatial {
     private cohort: Creature[] = [];
     private readonly plans = new WeakSet<PlacementPlan>();
     private readonly stepPlans = new WeakMap<PlacementPlan, Readonly<Pos>>();
+    private readonly rotationPlans = new WeakMap<PlacementPlan, QuarterTurns>();
     private readonly invalidate = () => { this.revision++; this.activeIndex = this.reservedIndex = undefined; };
     readonly groups: BodyGroupState[] = [];
     constructor(private world: SpatialWorld, readonly catalog = nativeSpatialCatalog) { this.replaceWorld(world); }
@@ -278,10 +292,10 @@ export class CreatureSpatial {
     /** Hypothetical graph edge without temporarily moving a live entity. For
      * multi-cell bodies BOTH orthogonal intermediate anchors must fit, including
      * dynamic occupancy. The native single-cell diagonal flags remain unchanged. */
-    canStepBetween(c: Creature, from: Pos, at: Pos, options: FitOptions = {}): boolean {
+    canStepBetween(c: Creature, from: Pos, at: Pos, options: FitOptions = {}, pose = c.spatial?.pose): boolean {
         const dx = at.x - from.x, dy = at.y - from.y;
-        if (this.footprintOf(c).length > 1) return conservativeSquareStep(from, at, p => this.canFitAt(c, p, options));
-        if (Math.max(Math.abs(dx), Math.abs(dy)) !== 1 || !this.canFitAt(c, at, options)) return false;
+        if (this.footprintOf(c).length > 1) return conservativeSquareStep(from, at, p => this.canFitAt(c, p, options, pose));
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== 1 || !this.canFitAt(c, at, options, pose)) return false;
         if (dx && dy) {
             if ((flagsAt(this.world.grid, { x: from.x + dx, y: from.y }) | flagsAt(this.world.grid, { x: from.x, y: from.y + dy })) & T_OBSTRUCTS_DIAGONAL_MOVEMENT) return false;
         }
@@ -297,22 +311,68 @@ export class CreatureSpatial {
         if (plan) this.stepPlans.set(plan, Object.freeze({ ...c.loc }));
         return plan;
     }
+    planRigidStepPlacement(c: Creature, at: Pos, options: FitOptions = {}): PlacementPlan | null {
+        rigidMovementFootprint(c, this.catalog);
+        if (!this.isActive(c) || !this.canStepFootprint(c, at, options)) return null;
+        const plan = this.planPlacement([{ creature: c, at }], options);
+        if (plan) this.stepPlans.set(plan, Object.freeze({ ...c.loc }));
+        return plan;
+    }
+    /** Hypothetical rotation edge. No temporary pose/anchor changes, no contact
+     * effects. Half turns validate BOTH quarter sweeps and intermediate fits. */
+    canRotateBetween(c: Creature, at: Pos, from: RigidPose, turns: QuarterTurns, options: FitOptions = {}, terrainOnly = false): boolean {
+        const shape = rigidMovementFootprint(c, this.catalog);
+        const stages = rotationStages(from, turns);
+        if (!shape.poses.includes(from)) return false;
+        let previous = from;
+        for (const pose of stages) {
+            const sweep = shape.sweeps.get(`${previous}:${pose}`);
+            if (!sweep || !(terrainOnly ? this.canFitTerrainAt(c, at, options, pose) : this.canFitAt(c, at, options, pose))) return false;
+            for (const offset of sweep) {
+                const p = { x: at.x + offset.x, y: at.y + offset.y };
+                if (!this.world.grid.isValidPos(p.x, p.y) || !(options.allowsTerrain?.(p) ?? !(flagsAt(this.world.grid, p) & T_OBSTRUCTS_PASSABILITY))
+                    || c.spatial?.movementRegionId !== undefined && !(options.inRegion?.(c.spatial.movementRegionId, p)
+                        ?? this.world.inRegion?.(c.spatial.movementRegionId, p) ?? inMovementRegion(this.world.grid, c.spatial.movementRegionId, p))
+                    || !terrainOnly && this.occupantsAtCell(p, options.policy ?? 'active-or-reserved')
+                        .some(hit => hit.entity !== c && !options.ignore?.has(hit.entity))) return false;
+            }
+            previous = pose;
+        }
+        return true;
+    }
+    canRotateFootprint(c: Creature, turns: QuarterTurns, options: FitOptions = {}): boolean {
+        return this.canRotateBetween(c, c.loc, c.spatial?.pose as RigidPose, turns, options);
+    }
+    planRotationPlacement(c: Creature, turns: QuarterTurns, options: FitOptions = {}): PlacementPlan | null {
+        rigidMovementFootprint(c, this.catalog);
+        const stages = rotationStages(c.spatial!.pose, turns);
+        if (!this.isActive(c) || !Object.getOwnPropertyDescriptor(c.spatial, 'pose')?.writable
+            || !integer(c.movementSpeed, 1, 1000000) || !this.canRotateFootprint(c, turns, options)) return null;
+        const plan = this.preparePlacement([{ creature: c, at: c.loc, pose: stages[stages.length - 1]! }], options, c.movementSpeed * stages.length);
+        if (plan) this.rotationPlans.set(plan, turns);
+        return plan;
+    }
     planPlacement(changes: readonly PlacementChange[], options: FitOptions = {}): PlacementPlan | null {
+        return this.preparePlacement(changes, options);
+    }
+    private preparePlacement(changes: readonly PlacementChange[], options: FitOptions, actionCost?: number): PlacementPlan | null {
         if (changes.some(change => change.creature.spatial?.bodyMember)) throw new SpatialValidationError('Composite body action capability is not open in 4a0');
         if (options.ignore && [...options.ignore].some(c => !changes.some(change => change.creature === c))) return null;
         if (!changes.length || changes.some(p => !this.cohort.includes(p.creature) || ['x', 'y'].some(k => !Object.getOwnPropertyDescriptor(p.creature.loc, k)?.writable)) || new Set(changes.map(p => p.creature)).size !== changes.length) return null;
         const ignore = new Set([...(options.ignore ?? []), ...changes.map(p => p.creature)]), occupied = new Set<string>();
         for (const change of changes) {
-            if (change.pose !== undefined && change.pose !== change.creature.spatial?.pose) throw new SpatialValidationError('Rotation action capability is not open in 4a0');
-            if (!this.canFitAt(change.creature, change.at, { ...options, ignore })) return null;
-            for (const p of this.footprintOf(change.creature)) {
-                const key = `${p.x + change.at.x - change.creature.x},${p.y + change.at.y - change.creature.y}`;
+            if (actionCost === undefined && change.pose !== undefined && change.pose !== change.creature.spatial?.pose) throw new SpatialValidationError('Rotation requires an explicit checked action plan');
+            if (!this.canFitAt(change.creature, change.at, { ...options, ignore }, change.pose ?? change.creature.spatial?.pose)) return null;
+            const cells = change.creature.spatial ? this.catalog.cells(change.creature.spatial.footprintId, change.pose ?? change.creature.spatial.pose) : [{ x: 0, y: 0 }];
+            for (const p of cells) {
+                const key = `${p.x + change.at.x},${p.y + change.at.y}`;
                 if (occupied.has(key)) return null; occupied.add(key);
             }
         }
         const plan: PlacementPlan = Object.freeze({ changes: Object.freeze(changes.map(c => Object.freeze({ ...c, at: Object.freeze({ ...c.at }) }))),
             previous: Object.freeze(changes.map(({ creature }) => Object.freeze({ creature, loc: creature.loc, x: creature.x, y: creature.y, spatial: JSON.stringify(creature.spatial) }))),
-            revision: this.revision, terrainRevision: this.terrainRevision, grid: this.world.grid, options: Object.freeze({ ...options, ignore: options.ignore ? new Set(options.ignore) : undefined }) });
+            revision: this.revision, terrainRevision: this.terrainRevision, grid: this.world.grid, options: Object.freeze({ ...options, ignore: options.ignore ? new Set(options.ignore) : undefined }),
+            ...(actionCost !== undefined ? { actionCost } : {}) });
         this.plans.add(plan); return plan;
     }
     commitPlacement(plan: PlacementPlan): boolean {
@@ -322,10 +382,20 @@ export class CreatureSpatial {
         const from = this.stepPlans.get(plan);
         if (from && (!this.isActive(plan.changes[0]!.creature)
             || !this.canStepBetween(plan.changes[0]!.creature, from, plan.changes[0]!.at, options))) return false;
-        const recheck = this.planPlacement(plan.changes, options);
+        const turns = this.rotationPlans.get(plan);
+        if (plan.actionCost !== undefined && turns === undefined) return false;
+        if (turns !== undefined) {
+            const actor = plan.changes[0]!.creature;
+            if (!this.isActive(actor) || !Object.getOwnPropertyDescriptor(actor.spatial, 'pose')?.writable
+                || plan.actionCost !== actor.movementSpeed * Math.abs(turns) || !this.canRotateFootprint(actor, turns, options)) return false;
+        }
+        const recheck = this.preparePlacement(plan.changes, options, plan.actionCost);
         if (!recheck) return false;
         this.plans.delete(recheck);
-        for (const c of plan.changes) commitCreatureAnchor(c.creature, { ...c.at }, 'mutate', this.catalog.fixture);
+        for (const c of plan.changes) {
+            if (turns !== undefined) c.creature.spatial!.pose = c.pose!;
+            commitCreatureAnchor(c.creature, { ...c.at }, 'mutate', this.catalog.fixture);
+        }
         return true;
     }
     /** Decode definitions against an independently initialized native catalog;
