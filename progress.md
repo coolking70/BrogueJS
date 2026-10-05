@@ -135,3 +135,16 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 2026-10-05 4d-2续轮：4d-1已提交并合入dot 3d，开工HEAD8f7ab26、工作树干净。已接真实≤4多来源phased束（core唯一owner、每源generation0/profile/付款/scope/冷却、min边界/max收束）、可信冻结member证明与真实combat part-break provider/fallback互斥、事务内延后取消及3d checkpoint回滚、成员直接物理/弹反的核心poise和max恢复。新增20项诊断生产专项通过；旧测试/守卫/黄金trace未改。尚未完整4d：环境/状态关系/转换迁移/正式内容/UI及真实自然录像仍缺，报告按1–8列明并逐字保留4d-1/4d-0。未暂存/commit/push。
 
 - 4d-2最终：同一冻结候选boundary/type/build、84文件1799项相关回归、地形白名单1项、16/16 engine-only组合、drift4文件5项全部exit0；896输入各门前后一致，清单SHA256 c4ba31f08a5c514da4a3701d5b260b401c646de75fe5ecb65b519772de282708，结束UTC2026-10-05T11:40:42Z。17实体诊断追击20条真实wait均移动，冷22.030ms、暖P50 19.241ms/P95 22.658ms，仅Node诊断、非手机或自然验收。报告已填写实际门禁与剩余1–8，历史逐字保留；在任务书允许的干净子里程碑收束，不宣称完整4d完成。未暂存/commit/push。
+
+
+- 2026-10-05 4d-3续轮：维护者已提交4d-2，开工HEAD0f89227、工作树干净。按本轮建议优先正式页岩织兽（2×2 core+8岩足）、已安装body生成引用、真实整组场地/入口/绕行验算与自然批量出生；公开核心HP/成员focus和局部可见历史DTO。仅giants seed7309/wizard D15，经2175事件抵达，2200首次断足，2435核心击败、8腿退休，实际save-load后缀/逐事件replay/seek/续录通过（356.16s）。真实成员破坏统计/熟悉度误计与致命传伤核心漏计已先红后绿修生产；四组合双腿横扫/多腿公开焚烧、单腿毒与独立generation全对象图audit及SFC专项通过。尚未完整4d，报告按剩余1–8列明并原字节保留历史。
+
+- 4d-3验收准备：两轮definitions.json单变量反事实确认旧内容数量/指纹前提，以及诊断fixture覆盖base body而破坏generation引用的前提；只更新3个精确内容数量、保留base声明后追加诊断定义，原守卫/容差/deadline/skip未改。原入口重录三份giants trace，各仅extensionsHash一叶，普通基线/UR2–4未动。自然1项+新16项生产/2项客户端渲染，共19新增；最终候选冻结boundary/type/build、87文件相关集合、terrain白名单、16 engine-only组合与drift运行中。Vite EPERM/Chromium MachPort权限拒绝，浏览器inventory空，真实320/390触控/像素未验。未暂存/commit/push。
+
+- 4d-3最终v1废弃：相关集合的旧巨像竞争用例仍要求D15无场地。只回退本轮definitions.json，原用例新数据1红、HEAD数据1绿；更新D15正式场地前提并补D21空边界，其余竞争/预算断言保持。v1主动终止，不拼接已过boundary/type/build；v2同一候选从头冻结重跑全部七项开发门禁。
+
+- 4d-3最终v2相关集合86文件1817项通过，唯一失败为新自然用例超480s（实际556.615s；同步函数完成后Vitest判超时），900输入前后一致。未放宽新旧deadline/断言；v3同代码冻结，把该长文件与其余86文件串行运行（仍maxWorkers=2），从头跑boundary/type/build/两段相关/terrain/组合/drift，v2失败独立保留。
+
+- 4d-3最终v3单独自然整链仍超480s（494.342s），其余后续门未运行。v4只重构本轮新增自然文件为5个独立功能用例（真实断足save续跑、逐事件replay、3个新Game独立seek并比较各点完整世界）；共享脱离对象的真实公开开局捕获JSON，保留每项480s和全部原断言/旧deadline。生产代码/其余输入不变，新增共23项；新900输入SHA集合5730fa722480299c500786990f3230644903161af1d5a98a166c4297fdff5231。v4从头冻结运行，不拼接v2/v3结果。
+
+- 4d-3最终：v4同一900输入候选boundary/type/build、自然5项与其余86文件1817项（合计87文件1822项/23新增）、白名单1项、16/16 engine-only组合、drift4文件5项全部exit0；输入前后与报告补写时相同，SHA集合5730fa722480299c500786990f3230644903161af1d5a98a166c4297fdff5231，结束UTC2026-10-05T13:29:35Z。新自然测试拆为五个独立功能用例（每项480s、完整原断言及更强seek快照）后与其余相关串行；生产/旧测试和deadline不变，不拼接失败候选结果。17实体20wait全移动，冷38.875ms/暖P50 34.025ms/P95 39.933ms，仅Node诊断。正式页岩内容/真实整组arena/仅giants自然7309-wizard-D15断足击败与真实录像闭环、公开群HUD完成；完整4d仍缺状态/环境/AI/关系/整体生命周期及全组合，报告原1–8清楚列明、历史原字节保留。浏览器CSS/触控仍受权限限制；在任务书允许的干净4d-3子里程碑收束，未暂存/commit/push。

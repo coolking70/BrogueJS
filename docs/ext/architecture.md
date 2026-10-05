@@ -425,7 +425,7 @@ fixture 测试覆盖 L/十字/孔洞/长条空格、轮廓原语、标签与 cod
 
 ## 28 4d-1：生产群根、核心轮转和成员无死亡退休
 
-本节保留4d-1历史状态；当前3b/3d组合接线见第29节。
+本节保留4d-1历史状态；3b/3d组合接线见第29节，当前正式生成与公开视图见第30节。
 
 已安装模块的 `nativeBodies` 声明通过独立 member-break seam 注册；普通固定 zone 的 keep-zone 门不放宽。生产成员在几何门之外还必须匹配接收 Game 的真实槽位。Game 的可选 bodyGroups 是全物理层唯一机械真相，写在原 spatialWorld 根；局部 CreatureSpatial 只引用本层记录。声明闭包、form/typeId、树约束、墓碑、共享/孤儿/跨层分裂均在加载发布前检查。普通局无群字段。
 
@@ -437,8 +437,19 @@ BodyMemberHealth 接中央 post-shield HP 出口，成员实际正HP损失按1:4
 
 ## 29 4d-2：真实多来源phased与可信成员破坏
 
+本节记录4d-2历史状态；当前正式内容、群UI与自然录像见第30节。
+
 核心唯一prelude后通过既有selectNativeActorAction选择最多4个真实就绪来源。来源持entityId/partId/sourceGeneration=0/足迹指纹及捕获profile；各自资源付款、scope、locked shape与冷却，核心只镜像最早边界，整束按最长耗时收束。字段只在group束出现，独立actor原对象形状与dodge白名单保持。候选加载通过全层群根核验来源，codec本身不能赋予成员权限。外围出生的睡眠AI状态不成为另一份决策门；成员局部锁仅取消自己的待段，核心韧性耗尽才取消整体。
 
 combat.part-break.v1仍以核心actorId/groupId请求。非self额外需要Game从真实owned活动槽生成、runtime与attach实体复核的冻结member证明；combat provider必须匹配该证明。provider handled与原生fallback互斥。成员机械回调用独立memberBroken，不借固定zone的self回调；事务内记录取消通知，成功后无死亡退休时结算，失败沿合入3d的checkpointZoneBreak与原生/provider checkpoint恢复时钟和对象图。直接物理冲击/成员被弹反的poise归核心，即时攻击恢复取max且停止其余来源，成员原生timer不写。
 
 无zone/固定pose的生产门保持；整组环境、完整状态关系、转换/clone/迁移/pending、正式内容、群UI与真实自然录像尚未完成。新增20项诊断生产专项，存读续跑的机械确定性不代替真实开局replay/seek/续录。详见[当前4d报告](phase4d.report.md)。
+
+
+## 30 4d-3：正式复合体生成与公开群视图
+
+Giants的可选bodies沿已安装SpatialCatalog声明注册；GenerationContribution可引用同模块bodyId且formId须为唯一core。SideChamber在原生catch-up后以每部位真实足迹/固定pose/偏好配置、约束、整个可拟合锚点图、入口与玩家绕行复核场地；Game复用纯整组preflight与原generation出生事务，九实体一次发布，placement/Boss marker仍仅核心一份。正式页岩织兽位于D15–20侧室，只有giants也能走自然断足/击败/存读和录像链路。
+
+退休成员保留的bodyMember原身份用于原生近战/投掷/毒出口，不再增加击杀、熟悉度或掉落；1:4传伤致核心死亡时只在finishBodyMemberDamage补一次统计。死亡事实/XP仍沿既有核心终结，没有另建账本。publicMonsterGroups捕获核心可见时的可见成员值/格；隐藏成员不提供位置/HP，精确破坏概况须完整可见，否则只给可见数。历史DisplayFrame冻结群DTO，Boss HUD成员focus映射到core HP；普通帧无群字段，显示不消耗RNG。
+
+完整4d仍缺逐段环境/状态分类与关系、整体polymorph/clone/移层pending及全部phased组合，真实320/390浏览器验收未完成；当前4d报告列明剩余1–8，不能把受限转换门当作最终Boss免疫。

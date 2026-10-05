@@ -1,3 +1,105 @@
+# 4d-3 执行报告：正式复合体内容与自然可玩闭环
+
+基于维护者已提交4d-2的 `ext/phase4` HEAD `0f89227f6626b59a77d3513bc6da91ffbc0b4067`，开工工作树干净。按本轮授权优先完成项1、8的内容闭环，交付可独立审阅的 **4d-3 子里程碑，完整4d仍未完成**。正式页岩织兽、整组场地验算、仅giants自然击败/断足存读/真实录像链路和公开核心HUD已接通；其余状态、生命周期和跨模块组合缺口仍逐项列在下方。未暂存、commit或push。4d-2/4d-1/4d-0历史报告原字节保留在后方。
+
+## 正式内容、生成与公开显示
+
+正式数据为 `src/ext/modules/giants/data/definitions.json` 的 `giants.shale-weaver`、`giants.shale-weaver-leg` 与 `giants.shale-weaver-body`，模板为 `giants.shale-chamber`。页岩织兽为2×2核心、8个1×1独立支撑成员，共9实体/12格，固定r0、generation0、无local zone。核心HP96、移动150/攻击150tick，岩足HP12/攻击200tick，伤害临时为3–6与1–3；断足remove-subtree、唯一收据派生移动倍率9/8与balance-loss4/fallback30，1:4传伤、全支撑毁immobile但核心仍可攻击。无新增硬依赖、Boss额外免疫声明或脚本AI；原尚未开放的整体转换门仍待后续接通，不能把它当作最终免疫策略。
+
+侧室在D15–20、chance100，16×12、入口5格、候选≤16；只在giants开启时参与生成。位于原D3/D7/D11验收内容之后。`GenerationContribution.bodyId` 是可选已安装声明引用，`formId`必须匹配该body唯一核心；runtime在模块自己的nativeBodies闭包中复核，保存数据不能授权身体。giants pack增加可选bodies，沿既有SpatialCatalog注册/校验有限部位树和member-break规则，指纹包含正式声明。
+
+`compositeSideChamberValid` 使用每个真实form的足迹/pose与preferredOffset，检查重叠、树约束、清洁地形、核心周围两格余量、整个房间所有可拟合整组锚点的连通、真实入口及玩家绕行空间。证明范围是固定preferred formation的单位平移；没有用核心面积代替整组，也没有把它当作任意变形落脚/远路AI证明。生成在原生放置/catch-up后复核场地，按整组格筛出有限锚点，再调用纯 `canCreateCompositeMonster`；通过后安装原owned region、用现有generation事务一次发布九实体自然出生，placement/encounter/Boss component仅核心一份。出生后各部位仍走现有4d-1移动/中央HP与4d-2多来源调度能力。
+
+公开地图沿既有4a-3独立实体足迹路径绘制：核心W、岩足w，各自可命中/瞄准/检视；没有画出隐藏格。新增纯 `publicMonsterGroups` 为历史DisplayFrame捕获已见核心及已见成员ID/part/HP/裁切格。核心不可见或幻觉不发布群身份；成员未见不发布其位置/HP；完整当前可见配置及缺槽偏好格可见时才给精确破坏数，否则HUD只报可见外围数。HUD选择成员focus/aim时仍显示核心HP，历史帧不读未来对象，显示不消耗RNG。新增文本全部在giants locale；320/390客户端渲染主持测试通过，真实CSS布局/触控仍待浏览器验收。
+
+## 共享文件函数级改动与原生击败出口
+
+| 文件/函数 | 本轮改动 |
+| --- | --- |
+| ext/generation.validGenerationContribution | 可选bodyId的精确字段/同模块命名空间校验，旧声明对象形状保留 |
+| runtime构造声明校验 | generation body属于本模块已安装闭包且form为其唯一核心 |
+| giants types/schema/module | 可选bodies声明、纯SpatialCatalog闭包验证、安装nativeBodies；旧pack仍可读 |
+| SideChamber.compositeSideChamberValid | 实际九部位配置的锚点图、约束/入口/玩家绕行验算 |
+| Game.makeGenerationPorts.publishSideChambers | body-aware场地、整组锚点纯预验与自然批量出生；placement仍按core一次 |
+| Game.preflightCompositeMonster/canCreateCompositeMonster/createCompositeMonster | 提取原整组纯预验供生成复用，构造/发布仍走原原子出生事务 |
+| Game投掷/resolvePoisonDamage/玩家近战终结出口 | 退休成员不计击杀、熟悉度或掉落；用退休对象的原groupId身份判断，不依赖已清除活槽 |
+| Game.finishBodyMemberDamage | 成员传伤使核心致死时，核心终结和统计一次；直接成员出口不重复计数 |
+| UI/MonsterGroups.publicMonsterGroups、observeDisplayFrame | 按公开知识捕获可选群DTO，普通帧不增加群字段 |
+| giants ui/view.selectBossHud、BossHud.vue | 可见成员focus映射到core HP；完整/局部外围概况与历史隐藏 |
+
+新专项发现真实玩家击断一条腿虽无deathCaptured，却仍增加原生kills/武器熟悉度。修正近战、投掷和毒死亡出口后，又用先红后绿用例确认致命1:4传伤原先漏算核心击败；该唯一终结由finishBodyMemberDamage计数。成员仍无die/kill事实、死亡DF/掉落/独立XP，核心仍发一次原生死亡事实。这里验证统计和事实次数；尚未宣称所有XP数值/成长消费/各类死因组合完成。
+
+## 自然验收与新增专项
+
+**自然验收：seed7309、wizard模式、仅giants、D15。** 2175条记录事件经实际move/search/stairs及正常物品命令抵达，核心ID482、9实体自然出生；第2200事件保存首次断足，第2435事件击败核心，8条岩足均破坏退休。未生成注入、改图、改HP、重定位或加载诊断arena；wizard为真实开局选项，本轮不把其999HP当作normal平衡验收。路径选择只读地图，变化经公开命令；前11层用原路线助手，后段采用避开可选大型敌人且检查真实对角规则的路线。击败过程通过公开物品卸鞭和近战进行。
+
+`giants_composite_natural.test.ts` 从真实开局捕获自然出生、击败与首次断足存档，最终拆为五个功能用例：新Game加载断足save后执行精确命令后缀并续录；新Game从开局每事件replay不OOS；三个新Game分别seek断足/抵达/最终，额外逐一比较该点原捕获的完整机械快照。共享的仅为公开命令生成后的脱离对象JSON，不共享活Game或诊断arena。机械快照比较只归一化savedAt与输入日志字段，未排除recordingOrigin或成员机械状态；与4d-2诊断存档不同，这次录像来源为实际开局链路。原始验收元数据 `/private/tmp/p4d3-natural-acceptance.json`；早期开发自然整链1项通过，实际356.16s；后续并发及单独运行分别超480s，见下方。最终五项各保持480s，既有测试deadline未改。
+
+新增共**23项**：`giants_composite.test.ts` 16项、`giants_composite_sfc.test.ts` 2项、自然5项。覆盖安装闭包正反例、腿格挡墙时核心可拟合而整组失败/零ID-RNG、实际入口/场地拒绝、已有群根时正式generation发布失败的独立全对象图audit、四组合真实双腿横扫各一次/中央传伤、四组合公开投掷焚烧药剂多腿按part各一次、单腿毒伤每客观块一次/不推进成员原生timer、真实玩家腿破坏与core终结/致命传伤统计，以及公开DTO局部可见/历史HP和客户端HUD。投掷焚烧用例明确隔离物品/DF子段，客观毒伤另跑真实wait；它不是全部火球/精神/群环境组合验收。
+
+开发途中修新夹具的非法runtime.setComponent调用、误用不存在的毒方法、readonly数组赋值及audit捕获时点/spy安装顺序；typecheck的Object.hasOwn改为项目现有lib可用的hasOwnProperty，没有改编译目标。自然路线初次2000命令预算停D14，后续route拒绝/卡住仅调整新的只读选路；最终公开2435事件完整通过。没有改旧守卫、容差、deadline、skip或原断言语义。
+
+## 旧内容前提与trace逐字段登记
+
+先保留失败，再只回退本轮生产 `definitions.json`，其他生产/locale/测试均保持候选：
+
+- 原内容合同与三份原trace：新数据3文件6项中4失败/2通过；仅HEAD数据后3文件6项全过。原因分别是原3 form/3 template固定数量前提，及新声明指纹。仅把旧合同的精确数量前提改为5 form、4 template、5个唯一nameKey；原旧物种、字段、关闭默认、依赖、校验与唯一性语义保持。
+- 4d-1/4d-2诊断：新数据使旧support覆盖nativeBodies而留下正式generation引用，两文件41项失败；仅HEAD数据后41项全过。support改为保留base的nativeBodies并追加诊断定义/规则，不改测试断言，也不放松生产可信声明校验。
+
+- 最终v1相关集合发现原巨像用例要求D15无任何场地，与本轮D15–20正式声明冲突。先保留失败，只回退同一生产definitions.json：原用例在新数据下1项失败（5.984s），HEAD数据下1项通过（6.346s）。恢复新数据后仅将D15前提更新为页岩场地，并补D21无场地边界；D7/8/9竞争顺序、预算及每层最多一次成功断言保持。v1在该失败后主动终止，不拼接其已过门禁；冻结v2从头重跑。
+
+证据分别为 `/private/tmp/p4d3-counterfactual.json`、`/private/tmp/p4d3-body-counterfactual.json`、`/private/tmp/p4d3-colossus-counterfactual.json` 及各同前缀log。恢复新数据后，经原入口 `BROGUE_CAPTURE_GIANTS_TRACE=1 npx vitest run giants_trace/giants_spine_trace --maxWorkers=2` 重录，2文件3项通过；三份trace各仅1叶 `$.extensionsHash` 变化：
+
+| trace | 原值 | 新值 |
+| --- | --- | --- |
+| natural-trace | `631af57c013a929cd03dc284489a64fe145e3751dba6cedc593c7778a57320aa` | `5bc704bcddb8a049d6e120f4ed243e60d4093dd37306f2a33446da3129cea1b1` |
+| colossus-natural-trace | `582cd61cbb0dffeed27a100be0eed709e0d646aa541aaa44123614d624e10b11` | `44f1ccf5d1beeabad8b7f1b02c38e328f51ca1665352d1761ba6b8f9c9d0d8cb` |
+| spine-natural-trace | `e113aa7232c2eebcee47555ebb65cec5e742302c22dda4865065be70121f13f2` | `2aa0b596cc96edc954fc2500462419082b46051622947606bc3ed06ccf3a3ade` |
+
+原因均为giants正式数据声明闭包改变；D3/D7/D11的命令、地图/实体、两个RNG与计数、placement/Boss事实均原字节不变。逐叶原始证据 `/private/tmp/p4d3-trace-leaf-changes.json`；普通生成基线和UR2/3/4未重录。
+
+## 开发期最终门禁、性能与浏览器边界
+
+最终v4同一冻结候选的以下命令全部exit0。Node24.19.0、3GiB堆、Vitest至多2workers；相关范围为原84文件+本轮3文件，共**87文件1822项全部通过**，其中新增23项。新增自然长文件单独运行，其余86文件另跑，两次都保留maxWorkers=2与原deadline，结果不重复计数。按开发期政策不跑完整npm test/全部test:ext/removal/CE full/gen。新增Game方法/派生显示DTO，无新增Game持久字段，状态合同无需变更。
+
+v2同一900输入的完整相关集合为86文件/1817项通过，唯一失败为新增自然用例超480s（实际556.615s），runner945.277s后exit1；未进入terrain/组合/drift。v3在单独运行整链时仍超480s（494.342s，runner495.994s），未进入后续门禁。v4只把本轮新增自然测试拆为五个独立功能用例，保持每项480s和全部原断言，额外逐点比较三个新Game独立seek的完整机械快照；生产代码、旧测试和deadline不变。自然文件与其余86文件串行，从头重跑下表，不拼接v2/v3结果。原始失败证据 `/private/tmp/p4d3-final-v2-gates.json`、`/private/tmp/p4d3-final-v3-gates.json` 及各log保留；v1旧D15前提失败/主动终止另见上方反事实与 `/private/tmp/p4d3-final-v1-aborted.json`。
+
+| 门禁 | 实际结果 | runner耗时 |
+| --- | --- | ---: |
+| `node scripts/check-module-boundaries.mjs` | 模块边界及唯一测试归属通过 | 1.697s |
+| `npx vue-tsc -b` | 通过 | 7.438s |
+| `npm run build` | 通过；保留既有大chunk提示 | 10.362s |
+| 正式自然录像专项，单独运行 | **1/1文件、5/5项通过**；每项480s门限不变 | 477.439s |
+| 其余86文件相关Vitest集合 | **86/86文件、1817/1817项通过** | 843.732s |
+| terrain catalog白名单定向守卫 | 1项通过；名字选择外29项未运行，未新增skip | 2.198s |
+| `check-module-composition-smoke.mjs --engine-only` | **16/16引擎组合通过**，`requestedScopePassed=true` | 98.238s |
+| `npm run test:drift -- --maxWorkers=2` | **4/4文件、5/5项通过** | 107.121s |
+
+相关集合包含4a0全对象差分、4a–4c、giants、combat/3a0/3b/3c/3d、growth近战消费、出生/破坏回滚、原生弹道/护盾/环境、whole-run/移层/录像及UR2/3/4、仓库源码守卫。组合报告browser为not-run、整体passed=false，只认明确请求的engine-only范围通过；不是正式复合体的16组合自然击败验收。
+
+冻结输入覆盖src/、scripts/、package/tsconfig/vite，共**900文件**。每个门后changedInputs=[]，开始/结束/报告补写时完全相同。按路径排序的紧凑JSON路径→SHA256清单再取SHA256为 `5730fa722480299c500786990f3230644903161af1d5a98a166c4297fdff5231`；开始/结束UTC `2026-10-05T13:03:47Z` / `2026-10-05T13:29:35Z`。原命令、清单与耗时为 `/private/tmp/p4d3-final-v4-gates.json`，各日志为 `/private/tmp/p4d3-final-v4-*.log`，组合详情为 `/private/tmp/p4d3-final-v4-composition.json`。原始证据不入库。
+
+17实体诊断追击沿旧arena运行20条真实executeCommand(wait)，20条均发生整组移动；计时仅包命令，不含建场/保存/断言。冷次**38.875ms**，其余19条暖样本**P50 34.025ms / P95 39.933ms**，最大**39.933ms**。原始记录 `/private/tmp/p4d3-final-v4-command-performance.json`。这是Node诊断，不是自然种子/浏览器/手机基准；没有在相同宿主负载下做前后对照，不据此声称改善或回退。
+
+使用 [develop-web-game技能](/Users/coolking70/.codex/skills/develop-web-game/SKILL.md) 尝试浏览器小步验证；其步骤7要求“You must run `$WEB_GAME_CLIENT` after each meaningful change”。已执行现有客户端，Vite监听127.0.0.1:5413返回EPERM，Chromium启动报MachPortRendezvous Permission denied，CUA浏览器inventory为空；未绕过限制，没有截图。日志 `/private/tmp/p4d3-vite.log`、`/private/tmp/p4d3-playwright.log`。320/390 SFC主持无CSS布局/真实触控引擎，因此真实像素/触控与ACK切换仍待验收。
+
+## 完整4d剩余项（当前，按原1–8）
+
+1. **正式声明/生成内容已接，完整群环境仍缺。** 正式body/真实足迹约束/生成闭包/整组arena和自然出生完成。核心/成员fixed-zone、攻击profile与完整StatusProfile分类闭包、移动逐子步环境接触/窄事务回滚仍缺，固定pose门保持。
+2. **近邻即时/真实多来源phased保持，完整群AI仍缺。** 有界远路、逃跑/原生生存、盟友/关系与施法优先级尚未完整接线；当前近邻选择不代替完整AI。
+3. **组合部分已补。** 四种giants/growth/combat组合的真实双腿横扫、公开焚烧药剂多腿按part一次及1:4中央传伤已验。仍需实际火球、多源成长逐次消费全部条件、精神效果群路由等完整组合。
+4. **原生击败出口与正式断足已补。** 成员不计统计/熟悉度/掉落、致命传伤核心一次计数、自然断足/唯一核心事实完成；4d-2 provider/fallback合同保持。仍缺完整攻击profile失攻派生、全部关系/目标引用清理、XP数值/各类死因的组合验证。
+5. **单腿毒客观tick已补；完整状态归属仍缺。** 群精神/关系统一一tick、全状态分类/路由、毒火网全部环境资格、支配/纷争、整组坠落与潜水仍未完成。
+6. **正式自然破坏存读/replay/seek/续录已补；整体生命周期仍缺。** 保coreID的单体↔复合体polymorph、整组clone新ID/深拷贝/无奖励、实际移层/pending仍缺。已有外围留场不能当作整体迁移完成。
+7. **真实自然即时群录像已补；生产多源phased跨生命周期组合仍缺。** 4d-2的gen0/付款/scope/取消与存读保持；仍需整体转换/移层及正式profile生成后的真实phased录像组合。成员再生/非零generation按D13继续关闭。
+8. **正式原创敌人/场地/自然击败及公开群HUD已接。** 独立成员地图/瞄准/检视沿既有路径可用，核心HP、可见外围与历史隔离专项通过。仍缺完整成员关系/检视状态展示、320/390真实CSS/触屏/ACK验收及normal平衡验收。
+
+本轮在任务书允许的干净子里程碑收束，优先内容闭环与历史报告中的原顺序不同，依据本轮维护者明确的优先建议。下一步应以数据分类的群状态/关系和整体生命周期为主，再做跨模块完整组合；不能把当前受限门当作完整4d最终玩法。
+
+## 保留的4d-2/4d-1/4d-0历史报告
+
+以下为维护者已提交的历史报告原文，描述各历史子里程碑当时状态。
+
 # 4d-2 执行报告：复合体多来源 phased 与 3d 可信成员破坏
 
 基于维护者已提交4d-1并合入dot 3d后的 `ext/phase4` HEAD `8f7ab26974a509821ad2f40e48e018a2878a87f5`。本轮继续原剩余1–8，交付可独立审阅的 **4d-2 子里程碑，尚未完成完整4d**；重点补齐真实3b多来源束与3d provider的成员身份/取消/时钟合同。未暂存、commit、push。下方为当前剩余范围，后方逐字保留4d-1/4d-0历史报告，不把历史门禁当作本轮结果。

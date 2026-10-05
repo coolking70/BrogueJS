@@ -1,6 +1,6 @@
 {
   "ext.giants.module.name": "巨兽",
-  "ext.giants.module.description": "在可绕开的地下侧室中遭遇岩脊兽、沉渊巨像与棘脊爬兽。",
+  "ext.giants.module.description": "在可绕开的地下侧室中遭遇岩脊兽、沉渊巨像、棘脊爬兽与页岩织兽。",
   "ext.giants.ridgeback.name": "岩脊兽",
   "ext.giants.ridgeback.description": "地下的厚甲兽，背脊隆起如碎岩。它缓慢转动沉重的身体，守着宽阔的石室；离开场地便能摆脱追击。",
   "ext.giants.ui.hp": "{{current}} / {{maximum}}",
@@ -11,5 +11,11 @@
   "ext.giants.spine_crawler.name": "棘脊爬兽",
   "ext.giants.spine_crawler.description": "这头巨兽的四节脊骨覆着石质棘甲。它围绕头部转动长躯，挤过通道时会先寻找转身的空间。棘甲破裂后，它的脚步变慢，头部也失去掩护。",
   "ext.giants.spine_crawler.shell": "棘甲",
-  "ext.giants.spine_crawler.head": "头部"
+  "ext.giants.spine_crawler.head": "头部",
+  "ext.giants.shale_weaver.name": "页岩织兽",
+  "ext.giants.shale_weaver.description": "八条细长的岩足牵着沉重的页岩躯干。每条腿都能独立落脚和攻击；击断岩足会伤及躯干，并使它的移动变慢。退到石室之外便能避开追击。",
+  "ext.giants.shale_weaver_leg.name": "织兽岩足",
+  "ext.giants.shale_weaver_leg.description": "页岩织兽的一条岩足。它有独立的生命值，折断后留下空位，不会单独掉落战利品。",
+  "ext.giants.ui.members": "外围：{{alive}} 存活 / {{broken}} 折断",
+  "ext.giants.ui.members_visible": "可见外围：{{alive}}"
 }

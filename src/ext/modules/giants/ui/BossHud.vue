@@ -21,6 +21,9 @@ defineProps<{ model: BossHudModel; presentationHidden?: boolean }>();
       />
     </div>
     <div v-if="model.zone" class="boss-zone">{{ zoneStatusText(model.zone) }}</div>
+    <div v-if="model.members" class="boss-members">{{ model.members.broken === undefined
+      ? i18next.t('ext.giants.ui.members_visible', { alive: model.members.alive })
+      : i18next.t('ext.giants.ui.members', { alive: model.members.alive, broken: model.members.broken }) }}</div>
   </div>
 </template>
 <style scoped>
@@ -59,7 +62,7 @@ defineProps<{ model: BossHudModel; presentationHidden?: boolean }>();
 .boss-health > div {
   height: 100%;
 }
-.boss-zone {
+.boss-zone, .boss-members {
   margin-top: 0.2rem;
   font-size: 0.75rem;
   line-height: 1.2;

@@ -13,6 +13,8 @@ export interface GenerationContribution {
   readonly entranceWidth: number;
   readonly candidateLimit: number;
   readonly formId: string;
+  /** Optional installed body; formId must be its unique core form. */
+  readonly bodyId?: string;
   readonly guard: 'return-to-spawn';
 }
 export interface GenerationPlacementFact {
@@ -35,7 +37,7 @@ export function validGenerationContribution(
     !value ||
     typeof value !== 'object' ||
     Array.isArray(value) ||
-    Object.keys(value).sort().join(',') !==
+    Object.keys(value).filter(k => k !== 'bodyId').sort().join(',') !==
       'candidateLimit,chance,entranceWidth,formId,guard,height,id,maxDepth,minDepth,priority,width'
   )
     return false;
@@ -46,6 +48,7 @@ export function validGenerationContribution(
     v.id.startsWith(`${owner}.`) &&
     validId(v.formId) &&
     v.formId.startsWith(`${owner}.`) &&
+    (v.bodyId === undefined ? !Object.prototype.hasOwnProperty.call(v, 'bodyId') : validId(v.bodyId) && v.bodyId.startsWith(`${owner}.`)) &&
     n(v.priority, -100, 100) &&
     n(v.minDepth, 1, 40) &&
     n(v.maxDepth, v.minDepth, 40) &&

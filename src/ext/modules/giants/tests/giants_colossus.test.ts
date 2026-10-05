@@ -169,7 +169,10 @@ describe('giants original 3x3 colossus', () => {
       'giants.spine-chamber'
     ]);
     expect(game.extensionRuntime!.generationContributions(14)).toHaveLength(2);
-    expect(game.extensionRuntime!.generationContributions(15)).toEqual([]);
+    expect(game.extensionRuntime!.generationContributions(15).map((t) => t.id)).toEqual([
+      'giants.shale-chamber'
+    ]);
+    expect(game.extensionRuntime!.generationContributions(21)).toEqual([]);
     for (const depth of new Set(state.placements.map((p) => p.depth)))
       expect(
         state.placements.filter((p) => p.depth === depth && p.result === 'placed').length

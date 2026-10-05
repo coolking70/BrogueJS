@@ -1,7 +1,7 @@
 import { canCommitNativeAttack, commitNativeAttackCost, withNativeAttackAction, withPrepaidNativeAttack } from './NativeAttackTransaction';
 import { nativeSpatialCatalog, type SpatialCatalog } from '../Movement/SpatialSchema';
 import { rigidFootprint } from '../Movement/RigidFootprint';
-import { rigidSideChamberValid } from '../Generator/SideChamber';
+import { rigidSideChamberValid, compositeSideChamberValid } from '../Generator/SideChamber';
 import { RigidPosePathing, type RigidPoseGoal } from '../Map/RigidPosePathing';
 import { type RigidPose } from '../Movement/RigidFootprint';
 import { bindSpatialCatalog, isSquareFootprint } from '../Movement/CreatureSpatial';
@@ -1386,22 +1386,26 @@ export class Game {
                     const form=runtime.nativeForms().find(f=>f.id===t.formId)!;
                     let plan=draft.plan;
                     let regionId: number|null=null, actorId: number|null=null;
-                    if(plan && (form.size ? sideChamberValid(thisGame.grid,plan,form.size) : rigidSideChamberValid(thisGame.grid,plan,rigidFootprint(runtime.spatialCatalog,form.id)))) {
+                    if(plan && (t.bodyId ? compositeSideChamberValid(thisGame.grid,plan,runtime.spatialCatalog,t.bodyId)
+                        : form.size ? sideChamberValid(thisGame.grid,plan,form.size) : rigidSideChamberValid(thisGame.grid,plan,rigidFootprint(runtime.spatialCatalog,form.id)))) {
                         // Native catch-up or fallen residents may occupy the reserved
                         // scene. Try a finite, deterministic set before allocating
                         // a region or actor; an exhausted birth is a skip receipt.
                         const { bounds: b, spawn } = plan;
                         const anchors: Pos[] = [];
-                        const offsets=runtime.spatialCatalog.cells(nativeFormSpatial(form).footprintId,nativeFormSpatial(form).pose);
+                        const offsets=t.bodyId ? runtime.spatialCatalog.body(t.bodyId).parts.flatMap(p => {
+                            const fp = runtime.spatialCatalog.form(p.formId).footprintId;
+                            return runtime.spatialCatalog.cells(fp,runtime.spatialCatalog.definition(fp).poses[0]!).map(c => ({x:c.x+p.preferredOffset.x,y:c.y+p.preferredOffset.y}));
+                        }) : runtime.spatialCatalog.cells(nativeFormSpatial(form).footprintId,nativeFormSpatial(form).pose);
                         for (let y=b.y+2;y<b.y+b.height-2;y++) for (let x=b.x+2;x<b.x+b.width-2;x++)
                             if(offsets.every(o=>x+o.x>=b.x+2&&y+o.y>=b.y+2&&x+o.x<b.x+b.width-2&&y+o.y<b.y+b.height-2))anchors.push({x,y});
                         anchors.sort((a,b)=>Math.max(Math.abs(a.x-spawn.x),Math.abs(a.y-spawn.y))
                             -Math.max(Math.abs(b.x-spawn.x),Math.abs(b.y-spawn.y)) || a.y-b.y || a.x-b.x);
-                        const at=anchors.slice(0,t.candidateLimit).find(at=>thisGame.canCreateModuleMonster(form.id,at));
+                        const at=anchors.slice(0,t.candidateLimit).find(at=>t.bodyId ? thisGame.canCreateCompositeMonster(t.bodyId,at) : thisGame.canCreateModuleMonster(form.id,at));
                         if(at) {
                             plan={...plan,spawn:at};
                             const region=runtime.installOwnedRegions(contributionToken,t.owner,[{instanceKey,bounds:plan.bounds,guard:t.guard}],thisGame.grid)[0]!;
-                        const actor=thisGame.createModuleMonster(form.id,plan.spawn,region.id,'natural');
+                        const actor=t.bodyId ? thisGame.createCompositeMonster(t.bodyId,plan.spawn,region.id,'natural') : thisGame.createModuleMonster(form.id,plan.spawn,region.id,'natural');
                             if(!actor) throw new Error('Side chamber birth changed after synchronous preflight');
                             regionId=region.id; actorId=actor.id;
                         }
@@ -7394,7 +7398,7 @@ export class Game {
                                 weapon: thrown.displayName, monster: monst.name,
                                 defaultValue: `The thrown ${thrown.displayName} killed the ${monst.name}!`
                             }), '#ffaa00');
-                            this.stats.kills++;
+                            if (!this.isPeripheralBodyMember(monst)) this.stats.kills++;
                         } else {
                             logger.log(i18next.t('throw.hit', {
                                 weapon: thrown.displayName, monster: monst.name, damage: res.damage,
@@ -8251,7 +8255,7 @@ export class Game {
         } else entity.takeDamage(Math.max(1, entity.poisonAmount), true, this.grid);
         if (entity === this.player) {
             this.lastDamageSource = 'poison';
-        } else if (entity.hp <= 0) {
+        } else if (entity.hp <= 0 && !this.isPeripheralBodyMember(entity)) {
             if (this.canObserveBoltTarget(entity)) logger.log(i18next.t('env.poison_death', {
                 name: entity.name, defaultValue: `The ${entity.name} dies of poison.`
             }), '#88aa88');
@@ -8723,7 +8727,7 @@ export class Game {
         }
 
         // Check if monster died
-        if (target.hp <= 0) {
+        if (target.hp <= 0 && !this.isPeripheralBodyMember(target)) {
             this.stats.kills++;
 
             // B-1a：CE Combat.c:1427-1430——玩家近战击杀非无生命怪
@@ -11547,6 +11551,12 @@ export class Game {
         return !!group && !!part && actor.typeId === part.formId && group.members.some(s => s.entityId === actor.id
             && s.partId === part.partId && s.life === 'active' && s.generation === 0);
     }
+    /** Retirement keeps the source identity on the detached member; checking
+     * the current live table here would incorrectly award a kill afterwards. */
+    private isPeripheralBodyMember(actor: Creature): boolean {
+        const member = actor.spatial?.bodyMember;
+        return !!member && member.groupId !== actor.id;
+    }
     public isBodyDecisionOwner(id: number): boolean {
         const actor = this.monsters.find(c => c.id === id);
         const identity = actor?.spatial?.bodyMember;
@@ -11595,7 +11605,12 @@ export class Game {
         if (!group || actor.id === group.coreId) return;
         this.retireBrokenBodyMembers(group);
         const core = [...this.monsters, ...this.dormantMonsters].find(c => c.id === group.coreId);
-        if (core && core.hp <= 0) this.killMonster(core);
+        if (core && core.hp <= 0) {
+            this.killMonster(core);
+            // The direct member exits never award a kill. A terminal transfer
+            // therefore owns the one core defeat here, before any later sweep.
+            this.stats.kills++;
+        }
     }
     private retireBrokenBodyMembers(group: BodyGroupState): void {
         this.retireBodyEntities(group, retiredBodyParts(this.spatialCatalog.body(group.bodyDefinitionId), group));
@@ -11681,7 +11696,7 @@ export class Game {
     }
     /** Preferred formation is checked as a whole before constructing any actor,
      * consuming any ID/RNG, or dispatching a birth. Publication is one batch. */
-    public createCompositeMonster(bodyId: string, at: Pos, movementRegionId?: number, reason: CreationReason = 'scripted'): Monster | null {
+    private preflightCompositeMonster(bodyId: string, at: Pos, movementRegionId?: number) {
         const runtime = this.extensionRuntime;
         if (!runtime || !this.spatialCatalog.hasBodies) throw new Error('Unavailable composite body');
         this.bindMovementRegionSession();
@@ -11704,6 +11719,15 @@ export class Game {
             || existing.reduce((n, c) => n + footprintOf(c).length, occupied.size) > SPATIAL_LIMITS.occupiedCells
             || !bodyConstraintsSatisfied(this.spatialCatalog, definition,
                 new Map(candidates.map(c => [c.partId, { anchor: c.candidate.loc, footprintId: c.candidate.spatial!.footprintId, pose: c.candidate.spatial!.pose }])), this.grid)) return null;
+        return candidates;
+    }
+    public canCreateCompositeMonster(bodyId: string, at: Pos, movementRegionId?: number): boolean {
+        return this.preflightCompositeMonster(bodyId, at, movementRegionId) !== null;
+    }
+    public createCompositeMonster(bodyId: string, at: Pos, movementRegionId?: number, reason: CreationReason = 'scripted'): Monster | null {
+        const candidates = this.preflightCompositeMonster(bodyId, at, movementRegionId);
+        if (!candidates) return null;
+        const runtime = this.extensionRuntime!;
         const random = rng.getState(), allocator = getNextEntityId();
         const restore = checkpointGenerationWorld(() => ({ shallow: [this], deep: [this.bodyGroups, this.monsters, this.dormantMonsters],
             references: [...this.monsters, ...this.dormantMonsters] }));

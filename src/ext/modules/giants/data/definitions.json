@@ -160,6 +160,49 @@
           ]
         }
       ]
+    },
+    {
+      "id": "giants.shale-weaver",
+      "nameKey": "ext.giants.shale_weaver.name",
+      "descriptionKey": "ext.giants.shale_weaver.description",
+      "size": 2,
+      "char": "W",
+      "color": 11965276,
+      "hp": 96,
+      "accuracy": 75,
+      "defense": 20,
+      "damage": "3-6",
+      "moveSpeed": 150,
+      "attackSpeed": 150,
+      "bloodType": 0,
+      "DFChance": 0,
+      "DFType": 0
+    },
+    {
+      "id": "giants.shale-weaver-leg",
+      "nameKey": "ext.giants.shale_weaver_leg.name",
+      "descriptionKey": "ext.giants.shale_weaver_leg.description",
+      "char": "w",
+      "color": 11965276,
+      "hp": 12,
+      "accuracy": 75,
+      "defense": 10,
+      "damage": "1-3",
+      "moveSpeed": 150,
+      "attackSpeed": 200,
+      "bloodType": 0,
+      "DFChance": 0,
+      "DFType": 0,
+      "footprint": {
+        "geometry": {
+          "kind": "rect",
+          "width": 1,
+          "height": 1
+        },
+        "poses": [
+          "r0"
+        ]
+      }
     }
   ],
   "templates": [
@@ -201,6 +244,282 @@
       "candidateLimit": 16,
       "formId": "giants.spine-crawler",
       "guard": "return-to-spawn"
+    },
+    {
+      "id": "giants.shale-chamber",
+      "priority": 2,
+      "minDepth": 15,
+      "maxDepth": 20,
+      "chance": 100,
+      "width": 16,
+      "height": 12,
+      "entranceWidth": 5,
+      "candidateLimit": 16,
+      "formId": "giants.shale-weaver",
+      "bodyId": "giants.shale-weaver-body",
+      "guard": "return-to-spawn"
     }
-  ]
+  ],
+  "bodies": {
+    "definitions": [
+      {
+        "id": "giants.shale-weaver-body",
+        "owner": "giants",
+        "minSupportParts": 1,
+        "noSupport": "immobile",
+        "coreDeath": "remove-members",
+        "statusProfileId": "foundation:native",
+        "parts": [
+          {
+            "partId": "core",
+            "role": "core",
+            "providesSupport": false,
+            "formId": "giants.shale-weaver",
+            "preferredOffset": {
+              "x": 0,
+              "y": 0
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 0,
+              "denominator": 1
+            },
+            "breakRuleId": "foundation:keep-zone",
+            "statusProfileId": "foundation:native"
+          },
+          {
+            "partId": "leg00",
+            "role": "support",
+            "providesSupport": true,
+            "formId": "giants.shale-weaver-leg",
+            "preferredOffset": {
+              "x": -1,
+              "y": -1
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 1,
+              "denominator": 4
+            },
+            "breakRuleId": "giants.shale-leg-retire",
+            "statusProfileId": "foundation:native"
+          },
+          {
+            "partId": "leg01",
+            "role": "support",
+            "providesSupport": true,
+            "formId": "giants.shale-weaver-leg",
+            "preferredOffset": {
+              "x": 0,
+              "y": -1
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 1,
+              "denominator": 4
+            },
+            "breakRuleId": "giants.shale-leg-retire",
+            "statusProfileId": "foundation:native"
+          },
+          {
+            "partId": "leg02",
+            "role": "support",
+            "providesSupport": true,
+            "formId": "giants.shale-weaver-leg",
+            "preferredOffset": {
+              "x": 2,
+              "y": -1
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 1,
+              "denominator": 4
+            },
+            "breakRuleId": "giants.shale-leg-retire",
+            "statusProfileId": "foundation:native"
+          },
+          {
+            "partId": "leg03",
+            "role": "support",
+            "providesSupport": true,
+            "formId": "giants.shale-weaver-leg",
+            "preferredOffset": {
+              "x": 2,
+              "y": 0
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 1,
+              "denominator": 4
+            },
+            "breakRuleId": "giants.shale-leg-retire",
+            "statusProfileId": "foundation:native"
+          },
+          {
+            "partId": "leg04",
+            "role": "support",
+            "providesSupport": true,
+            "formId": "giants.shale-weaver-leg",
+            "preferredOffset": {
+              "x": 2,
+              "y": 2
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 1,
+              "denominator": 4
+            },
+            "breakRuleId": "giants.shale-leg-retire",
+            "statusProfileId": "foundation:native"
+          },
+          {
+            "partId": "leg05",
+            "role": "support",
+            "providesSupport": true,
+            "formId": "giants.shale-weaver-leg",
+            "preferredOffset": {
+              "x": 1,
+              "y": 2
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 1,
+              "denominator": 4
+            },
+            "breakRuleId": "giants.shale-leg-retire",
+            "statusProfileId": "foundation:native"
+          },
+          {
+            "partId": "leg06",
+            "role": "support",
+            "providesSupport": true,
+            "formId": "giants.shale-weaver-leg",
+            "preferredOffset": {
+              "x": -1,
+              "y": 2
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 1,
+              "denominator": 4
+            },
+            "breakRuleId": "giants.shale-leg-retire",
+            "statusProfileId": "foundation:native"
+          },
+          {
+            "partId": "leg07",
+            "role": "support",
+            "providesSupport": true,
+            "formId": "giants.shale-weaver-leg",
+            "preferredOffset": {
+              "x": -1,
+              "y": 1
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 1,
+              "denominator": 4
+            },
+            "breakRuleId": "giants.shale-leg-retire",
+            "statusProfileId": "foundation:native"
+          }
+        ],
+        "constraints": [
+          {
+            "childPartId": "leg00",
+            "parentPartId": "core",
+            "kind": "tether",
+            "minDistance": 1,
+            "maxDistance": 3,
+            "maxStepPerAction": 2,
+            "requiresClearLink": true
+          },
+          {
+            "childPartId": "leg01",
+            "parentPartId": "core",
+            "kind": "tether",
+            "minDistance": 1,
+            "maxDistance": 3,
+            "maxStepPerAction": 2,
+            "requiresClearLink": true
+          },
+          {
+            "childPartId": "leg02",
+            "parentPartId": "core",
+            "kind": "tether",
+            "minDistance": 1,
+            "maxDistance": 3,
+            "maxStepPerAction": 2,
+            "requiresClearLink": true
+          },
+          {
+            "childPartId": "leg03",
+            "parentPartId": "core",
+            "kind": "tether",
+            "minDistance": 1,
+            "maxDistance": 3,
+            "maxStepPerAction": 2,
+            "requiresClearLink": true
+          },
+          {
+            "childPartId": "leg04",
+            "parentPartId": "core",
+            "kind": "tether",
+            "minDistance": 1,
+            "maxDistance": 3,
+            "maxStepPerAction": 2,
+            "requiresClearLink": true
+          },
+          {
+            "childPartId": "leg05",
+            "parentPartId": "core",
+            "kind": "tether",
+            "minDistance": 1,
+            "maxDistance": 3,
+            "maxStepPerAction": 2,
+            "requiresClearLink": true
+          },
+          {
+            "childPartId": "leg06",
+            "parentPartId": "core",
+            "kind": "tether",
+            "minDistance": 1,
+            "maxDistance": 3,
+            "maxStepPerAction": 2,
+            "requiresClearLink": true
+          },
+          {
+            "childPartId": "leg07",
+            "parentPartId": "core",
+            "kind": "tether",
+            "minDistance": 1,
+            "maxDistance": 3,
+            "maxStepPerAction": 2,
+            "requiresClearLink": true
+          }
+        ]
+      }
+    ],
+    "breakRules": [
+      {
+        "id": "giants.shale-leg-retire",
+        "owner": "giants",
+        "trigger": "hp-zero",
+        "disposition": "remove",
+        "childrenOnBreak": "retire-subtree",
+        "modifiers": [
+          {
+            "kind": "move-ticks-multiplier",
+            "numerator": 9,
+            "denominator": 8
+          },
+          {
+            "kind": "balance-loss",
+            "amount": 4,
+            "fallbackStunTicks": 30
+          }
+        ]
+      }
+    ]
+  }
 }

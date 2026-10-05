@@ -25,6 +25,7 @@ export function createGiantsModuleFromPack(input: GiantsPack): ExtensionModule {
     },
     ownedRegions: true,
     nativeForms: pack.forms,
+    ...(pack.bodies ? { nativeBodies: pack.bodies } : {}),
     generationContributions: pack.templates,
     publicActorTags: [{ component: 'boss', tag: 'boss' }],
     initialState: () => initialGiantsState() as unknown as Json,

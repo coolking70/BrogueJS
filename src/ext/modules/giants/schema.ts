@@ -1,5 +1,6 @@
 import { isJson } from '../../json';
-import { validNativeForm } from '../../nativeForms';
+import { validNativeForm, nativeFormFootprint, nativeFormSpatial } from '../../nativeForms';
+import { SpatialCatalog } from '../../../engine/Movement/SpatialSchema';
 import { validGenerationContribution } from '../../generation';
 import type { GiantsPack } from './types';
 export function isGiantsPack(value: unknown): value is GiantsPack {
@@ -8,11 +9,11 @@ export function isGiantsPack(value: unknown): value is GiantsPack {
     !value ||
     typeof value !== 'object' ||
     Array.isArray(value) ||
-    Object.keys(value).sort().join(',') !== 'forms,moduleVersion,rulesVersion,schema,templates'
+    Object.keys(value).filter(k => k !== 'bodies').sort().join(',') !== 'forms,moduleVersion,rulesVersion,schema,templates'
   )
     return false;
   const v = value as unknown as GiantsPack;
-  return (
+  const valid = (
     v.schema === 1 &&
     v.moduleVersion === '1.0.0' &&
     v.rulesVersion === '1.0.0' &&
@@ -33,6 +34,24 @@ export function isGiantsPack(value: unknown): value is GiantsPack {
         )
     )
   );
+  if (!valid) return false;
+  try {
+    const catalog = new SpatialCatalog(false, ['giants']);
+    for (const f of v.forms) {
+      for (const rule of f.breakRules ?? []) catalog.registerBreakRule(rule);
+      const footprint = nativeFormFootprint(f, 'giants');
+      if (footprint) catalog.registerFootprint(footprint);
+      catalog.registerForm({ id: f.id, owner: 'giants', footprintId: nativeFormSpatial(f).footprintId });
+    }
+    if (v.bodies !== undefined) {
+      if (!v.bodies || Object.keys(v.bodies).sort().join(',') !== 'breakRules,definitions'
+          || !Array.isArray(v.bodies.definitions) || !v.bodies.definitions.length || v.bodies.definitions.length > 16
+          || !Array.isArray(v.bodies.breakRules) || v.bodies.breakRules.length > 16) return false;
+      for (const rule of v.bodies.breakRules) catalog.registerMemberBreakRule(rule);
+      for (const body of v.bodies.definitions) catalog.registerBody(body);
+    } else if (Object.prototype.hasOwnProperty.call(v, 'bodies')) return false;
+    return v.templates.every(t => t.bodyId === undefined || catalog.body(t.bodyId).parts.find(p => p.role === 'core')?.formId === t.formId);
+  } catch { return false; }
 }
 export function assertGiantsPack(value: unknown): asserts value is GiantsPack {
   if (!isGiantsPack(value)) throw new Error('Invalid giants pack');

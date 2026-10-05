@@ -1,5 +1,8 @@
 {
   "test": [
+    "tests/giants_composite_sfc.test.ts",
+    "tests/giants_composite.test.ts",
+    "tests/giants_composite_natural.test.ts",
     "tests/giants_contract.test.ts",
     "tests/giants_rigid.test.ts",
     "tests/giants_runtime.test.ts",
