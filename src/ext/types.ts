@@ -216,6 +216,7 @@ export interface ExtensionModule extends ExtensionVersion {
     dependencies?: readonly string[];
     readonly optionalRewards?: Readonly<Record<string, OptionalRewardProvider>>;
     readonly optionalQueries?: Readonly<Record<string, OptionalQueryProvider>>;
+    readonly optionalPartBreaks?: Readonly<Partial<Record<'combat.part-break.v1', import('./partBreak').PartBreakProvider>>>;
     readonly view?: ExtensionViewDescriptor;
     readonly worldInteractables?: true;
     /** Only the native generation owner may install declared owned regions. */
