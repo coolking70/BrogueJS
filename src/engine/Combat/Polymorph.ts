@@ -9,12 +9,13 @@ export function knownPolymorphSpecies(id: string, extra: readonly MonsterData[] 
 /** Existing CE species projection: JSON rows are monsterCatalog[1..67],
  * excluding MK_YOU. Keep the full draw range and rejection sampling, including
  * MONST_TURRET's composite INANIMATE bit (Rogue.h:2093). No depth/horde filter. */
-export function polymorphSpecies(original: string, random: { randRange(min: number, max: number): number }, extra: readonly MonsterData[] = []): MonsterData {
+export function polymorphSpecies(original: string, random: { randRange(min: number, max: number): number }, extra: readonly MonsterData[] = [],
+    permitted: (id: string) => boolean = () => true): MonsterData {
     const catalog = extra.length ? [...monsters, ...extra] : monsters;
     let next: MonsterData;
     do {
         next = catalog[random.randRange(1, catalog.length) - 1] as MonsterData;
-    } while (next.id === original || next.behaviorFlags?.some(flag =>
+    } while (next.id === original || !permitted(next.id) || next.behaviorFlags?.some(flag =>
         flag === 'MONST_INANIMATE' || flag === 'MONST_TURRET' || flag === 'MONST_NO_POLYMORPH'));
     return next;
 }

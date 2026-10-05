@@ -393,6 +393,11 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
                     ports.pendingFallenByDepth.delete(ports.depth);
                     const arrivals = fallen.some(m => m.spatial) ? [...fallen].sort((a, b) => a.id - b.id) : fallen;
                     for (const m of arrivals) {
+                        if (m.spatial?.bodyMember) {
+                            const pending = ports.pendingFallenByDepth.get(ports.depth) ?? [];
+                            pending.push(m); ports.pendingFallenByDepth.set(ports.depth, pending);
+                            continue; // whole groups publish only through the engine batch
+                        }
                         if (m.spatial) {
                             const spot = travelPlacement(ports, m, m.loc, true, true, true);
                             if (spot) { commitCreatureAnchor(m, spot); m.preplaced = false; ports.monsters.push(m); }
@@ -409,6 +414,7 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
                         m.preplaced = false; // CE :3548 清 MB_PREPLACED
                         ports.monsters.push(m);
                     }
+                    ports.restorePendingBodyGroups();
                 }
                 ports.rebuildWaypoints(); // CE: inside the new level stream, before oldSeed.
                 level.visited = true;

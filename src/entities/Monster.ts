@@ -623,8 +623,8 @@ export class Monster extends Creature {
     // Track original spawn loc for wandering logic
     public spawnLoc: { x: number, y: number } = { x: 0, y: 0 };
 
-    constructor(x: number, y: number, data: MonsterData) {
-        super(x, y, ItemLoader.translateName(data.name), data.char, data.color);
+    constructor(x: number, y: number, data: MonsterData, prepared?: { id: number; state: MonsterState }) {
+        super(x, y, ItemLoader.translateName(data.name), data.char, data.color, prepared?.id);
         this.maxHp = data.hp;
         this.hp = data.hp;
         this.damageString = data.damage;
@@ -672,7 +672,9 @@ export class Monster extends Creature {
         this.typeId = data.id;
         // 70% chance to start asleep, otherwise wandering
         // CE logic: MONST_NEVER_SLEEPS or MONST_ALWAYS_HUNTING means they never start asleep.
-        if (this.hasBehavior('MONST_NEVER_SLEEPS') || this.hasBehavior('MONST_ALWAYS_HUNTING')) {
+        if (prepared) {
+            this.state = prepared.state;
+        } else if (this.hasBehavior('MONST_NEVER_SLEEPS') || this.hasBehavior('MONST_ALWAYS_HUNTING')) {
             this.state = MonsterState.WANDERING; // Or EXPLORING/HUNTING based on other logic
         } else {
             this.state = rng.randPercent(70) ? MonsterState.ASLEEP : MonsterState.WANDERING;
@@ -682,9 +684,9 @@ export class Monster extends Creature {
     /** CE Monsters.c:568: copy current values, NOT catalog defaults. The explicit
      * container list is guarded by W-20's own-property audit and mutation tests.
      * leader is a creature pointer; carried payloads and safetyMap are cleared. */
-    public copyForClone(): Monster {
+    private copyNativeValue(id: number): Monster {
         const clone: Monster = Object.assign(Object.create(Monster.prototype), this);
-        clone.id = allocateEntityId();
+        clone.id = id;
         if (this.spatial) { clone.spatial = structuredClone(this.spatial); bindSpatialCatalog(clone, spatialCatalogFor(this)); }
         if (nativeFormsFor(this).length) bindNativeForms(clone, nativeFormsFor(this), nativeFormCatalogFor(this));
         commitCreatureAnchor(clone, { ...this.loc }, 'replace', true); // unpublished clone container
@@ -700,6 +702,20 @@ export class Monster extends Creature {
         clone.bolts = [...this.bolts];
         clone.waypointAlreadyVisited = this.waypointAlreadyVisited ? [...this.waypointAlreadyVisited] : null;
         clone.mutation = this.mutation ? structuredClone(this.mutation) : undefined;
+        return clone;
+    }
+
+    /** Unpublished conversion value: preserve native fields, detach hooks and
+     * group identity. No allocator, gender/sleep draw, or live mutation. */
+    public copyForBodyPlan(): Monster {
+        const value = this.copyNativeValue(this.id);
+        delete value.extensionHooks;
+        if (value.spatial) delete value.spatial.bodyMember;
+        return value;
+    }
+
+    public copyForClone(prepared?: { id: number; removeGender?: 'MONST_MALE' | 'MONST_FEMALE' }): Monster {
+        const clone = this.copyNativeValue(prepared?.id ?? allocateEntityId());
         clone.safetySnapshot = null;
         clone.mapToMe = null;
         clone.carriedItem = null;
@@ -714,7 +730,7 @@ export class Monster extends Creature {
         // W-16/W-17 represent &player as isAlly + leader=null.
         clone.leader = this.leader ?? (this.isAlly ? null : this);
         if (clone.behaviorFlags.has('MONST_MALE') && clone.behaviorFlags.has('MONST_FEMALE')) {
-            clone.behaviorFlags.delete(rng.randPercent(50) ? 'MONST_MALE' : 'MONST_FEMALE');
+            clone.behaviorFlags.delete(prepared ? prepared.removeGender! : rng.randPercent(50) ? 'MONST_MALE' : 'MONST_FEMALE');
         }
         return clone;
     }
@@ -775,12 +791,12 @@ export class Monster extends Creature {
 
     /** CE Items.c:4572-4631. Replace info IN PLACE; never construct/spawn or
      * copy an entity. Only captives demote their leadership, after status reset. */
-    public polymorph(demote: () => void, prepareSquare?: (data: MonsterData) => Pos | null): boolean {
+    public polymorph(demote: () => void, prepareSquare?: (data: MonsterData) => Pos | null, selectedData?: MonsterData): boolean {
         assertNativeSpatial(this);
         const forms = nativeFormsFor(this).map(nativeFormData);
         if ((!knownPolymorphSpecies(this.typeId, forms) && !(this.isClone && this.typeId === 'player_clone')) || this.hasBehavior('MONST_INANIMATE') || this.hasBehavior('MONST_TURRET') || this.isInvulnerable()) return false;
         if ((this.spatial || forms.length) && !prepareSquare) throw new Error('Square polymorph requires placement preflight');
-        const preparedData = this.spatial || forms.length ? polymorphSpecies(this.typeId, rng, forms) : undefined;
+        const preparedData = selectedData ?? (this.spatial || forms.length ? polymorphSpecies(this.typeId, rng, forms) : undefined);
         const preparedLocation = preparedData ? prepareSquare!(preparedData) : undefined;
         if (preparedData && !preparedLocation) return false;
         // Preserve C operator precedence: stealing resets state even if not fleeing.

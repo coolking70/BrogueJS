@@ -147,8 +147,8 @@ export class Creature implements Entity {
         this.attackSpeed = atk;
     }
 
-    constructor(x: number, y: number, name: string, char: string, color: number) {
-        this.id = allocateEntityId();
+    constructor(x: number, y: number, name: string, char: string, color: number, preparedId?: number) {
+        this.id = preparedId ?? allocateEntityId();
         this.loc = { x, y };
         this.name = name;
         this.char = char;

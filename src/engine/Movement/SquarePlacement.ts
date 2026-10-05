@@ -10,7 +10,8 @@ import { inMovementRegion } from './MovementRegions';
 /** Bounded square anchor search. Native 1x1 CE searches stay at their existing
  * callers. Destination restrictions never become cached traversal walls. */
 export function squarePlacementCandidates(world: SpatialWorld, target: Creature, origin: Pos,
-    forbidden: number, forbiddenCell: (p: Pos) => boolean = () => false): Pos[] {
+    forbidden: number, forbiddenCell: (p: Pos) => boolean = () => false,
+    destinationFits: (anchor: Pos) => boolean = () => true): Pos[] {
     const offsets = footprintOf(target).map(p => ({ x: p.x - target.loc.x, y: p.y - target.loc.y })), { grid } = world;
     const aquatic = target instanceof Monster && target.hasBehavior('MONST_RESTRICTED_TO_LIQUID');
     const cellsFit = (p: Pos, destination: boolean): boolean => {
@@ -23,7 +24,7 @@ export function squarePlacementCandidates(world: SpatialWorld, target: Creature,
         }
         return !destination || canFitAt(world, target, p);
     };
-    const qualifies = (p: Pos) => cellsFit(p, true);
+    const qualifies = (p: Pos) => cellsFit(p, true) && destinationFits(p);
     if (qualifies(origin)) return [{ ...origin }];
     const distances = new Int32Array(grid.width * grid.height).fill(-1), queue: Pos[] = [];
     if (grid.isValidPos(origin.x, origin.y)) {

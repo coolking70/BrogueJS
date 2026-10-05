@@ -50,6 +50,15 @@ const actorSourceRevisions = new WeakMap<Creature, number>();
 const bodyAnchorPublications = new WeakSet<Creature>();
 /** Derived source identity for a live action only. Never saved or compared across load. */
 export function actorSourceRevision(creature: Creature): number { return actorSourceRevisions.get(creature) ?? 0; }
+/** Native transition rollback must also restore the off-graph revisions used
+ * by an already paid action. Reverting loc alone would invalidate its source. */
+export function checkpointSpatialActorRevisions(actors: readonly Creature[]): () => void {
+    const rows = actors.map(actor => ({ actor, source: actorSourceRevisions.get(actor), anchor: squareAnchorRevisions.get(actor) }));
+    return () => { for (const row of rows) {
+        if (row.source === undefined) actorSourceRevisions.delete(row.actor); else actorSourceRevisions.set(row.actor, row.source);
+        if (row.anchor === undefined) squareAnchorRevisions.delete(row.actor); else squareAnchorRevisions.set(row.actor, row.anchor);
+    } };
+}
 /** Short-lived contact sequences can detect even a nested out-and-back move.
  * Derived, square-only bookkeeping; ordinary creatures never get an entry. */
 export function squareAnchorRevision(creature: Creature): number { return squareAnchorRevisions.get(creature) ?? 0; }

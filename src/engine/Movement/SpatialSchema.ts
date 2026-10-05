@@ -240,6 +240,13 @@ export class SpatialCatalog {
     statusProfile(id: string): SpatialStatusProfileDefinition { return this.statusProfiles.get(id) ?? fail('Unknown or unopened spatial status profile'); }
     body(id: string): BodyDefinition { return this.bodies.get(id) ?? fail('Unknown body'); }
     get hasBodies(): boolean { return this.bodies.size > 0; }
+    bodyForCoreForm(formId: string): BodyDefinition | undefined {
+        return [...this.bodies.values()].find(d => d.parts.some(p => p.role === 'core' && p.formId === formId));
+    }
+    isPeripheralForm(formId: string): boolean {
+        return [...this.bodies.values()].some(d => d.parts.some(p => p.role !== 'core' && p.formId === formId))
+            && !this.bodyForCoreForm(formId);
+    }
     /** Registered part declarations grant geometry, never group ownership. */
     permitsMember(footprintId: string, partId: string): boolean {
         return [...this.bodies.values()].some(d => d.parts.some(p => p.partId === partId && this.form(p.formId).footprintId === footprintId));
@@ -266,6 +273,7 @@ export class SpatialCatalog {
                     || this.breakRule(p.breakRuleId).childrenOnBreak !== 'retire-subtree'))) fail('Invalid production member lifecycle');
         }
         const core = d.parts.filter(p => p.role === 'core'); if (core.length !== 1) fail('Body requires one core');
+        if (!this.fixture && this.bodyForCoreForm(core[0]!.formId)) fail('Ambiguous body core form');
         if (!this.fixture && (core[0]!.preferredOffset.x !== 0 || core[0]!.preferredOffset.y !== 0)) fail('Body core must use the group anchor');
         const parents = new Map<string, string>();
         for (const c of d.constraints) {

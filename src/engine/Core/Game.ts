@@ -7,17 +7,18 @@ import { RigidPosePathing, type RigidPoseGoal } from '../Map/RigidPosePathing';
 import { type RigidPose } from '../Movement/RigidFootprint';
 import { bindSpatialCatalog, isSquareFootprint } from '../Movement/CreatureSpatial';
 import { publicZoneAt, zoneStatusText } from '../UI/MonsterZones';
-import { nativeFormSpatial } from '../../ext/nativeForms';
+import { nativeFormSpatial, bindNativeForms } from '../../ext/nativeForms';
+import { knownPolymorphSpecies, polymorphSpecies } from '../Combat/Polymorph';
 import { bodyLightOrigin } from '../Combat/BodyPerception';
 import { collectAreaBodyTargets } from '../Combat/BodyEffects';
 import { nearestLegalMeleeContact, legalMeleeContactAt, hasDeclaredZones, bodyRayContact, bodyAttackContactOf, physicalContactOf, withBodyContact, withBodyAttackContact, appendBodyHit, bodyHitContact, withWholeBodyDamage, type BodyAttackContact } from '../Combat/BodyCombat';
 import { footprintExposure } from '../Movement/FootprintExposure';
-import { CreatureSpatial } from '../Movement/CreatureSpatial';
+import { CreatureSpatial, commitCompositeAnchors, checkpointSpatialActorRevisions, type SpatialWorld } from '../Movement/CreatureSpatial';
 import { CompositeMovement, type CompositeMovePlan } from '../Movement/CompositeMovement';
 import { bodyConstraintOrder, bodyConstraintsSatisfied } from '../Movement/BodyConstraints';
 import { bodyMoveTicks, retiredBodyParts } from '../Movement/BodyGroups';
 import { resolveBodyMemberHit } from '../Combat/BodyMemberHealth';
-import type { BodyGroupState } from '../Movement/SpatialSchema';
+import type { BodyGroupState, BodyDefinition } from '../Movement/SpatialSchema';
 import type { PartBreakRequest } from '../../ext/partBreak';
 import { withActorActionScope } from './ActorActionScope';
 import { FootprintPathing, type FootprintGoal } from '../Map/FootprintPathing';
@@ -32,7 +33,7 @@ import { SPATIAL_LIMITS, type SpatialWorldSnapshot } from '../Movement/SpatialSc
 import { assertNativeSpatial, assertSingleCellPlayer, nativeContactOf, footprintOf, footprintEvery, footprintSome, commitCreatureAnchor, squareAnchorRevision, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canFitAt, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
 import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction, isProductionActorActionRunInvalid, restoreProductionActorActionValidity } from './ActorActionSession';
 import { checkpointProductionActorActions, consumeProductionActorActionResume, disposeProductionActorActionSession, markProductionActorActionResume, notifyProductionActorSourceChanged, productionActorActionInputLocked, reconcileProductionActorActions, resumeProductionActorActions, suspendProductionActorActions, validateProductionActorActionSession, validateProductionActorActionState, type ActorActionProductionWorld } from './ActorActionProduction';
-import { bindPhasedAttackProduction, isActorStaggered, reconcileActorNativeRecovery, isActorParryCommand, prepareActorParryCommand, commitActorParryCommand, isActorDodgeCommand, prepareActorDodgeCommand, commitActorDodgeCommand, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, retirePhasedAttackSource, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
+import { bindPhasedAttackProduction, checkpointPhasedAttackSources, isActorStaggered, reconcileActorNativeRecovery, isActorParryCommand, prepareActorParryCommand, commitActorParryCommand, isActorDodgeCommand, prepareActorDodgeCommand, commitActorDodgeCommand, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, retirePhasedAttackSource, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
 import { assertActorActionScope, type ActorActionScope } from './ActorActionScope';
 import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
 import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
@@ -55,7 +56,7 @@ import { buildHordeMachine, checkpointGenerationWorld, createMachineRuntime, gen
 import { itemIsSwappable, enchantLevelKnown, swapItemToEnchantLevel } from '../Items/Commutation';
 import { generateQualifiedMachineItem } from '../Items/MachineItemGeneration';
 import { minionPlacement, generationDistances, speciesForbiddenFlags } from '../Generator/GenerationPlacement';
-import { travelDistanceMap, travelPlacement, restoreTravelPosition, restoreSquareTravelPosition, APPROACHING_DOWNSTAIRS, APPROACHING_UPSTAIRS, APPROACHING_PIT } from '../Movement/LevelTravel';
+import { travelDistanceMap, travelPlacement, travelAvoidedFlags, restoreTravelPosition, restoreSquareTravelPosition, APPROACHING_DOWNSTAIRS, APPROACHING_UPSTAIRS, APPROACHING_PIT } from '../Movement/LevelTravel';
 import { snapshotLevel as projectLevel, projectRunState, toWholeRunSnapshot,
     decodeWholeRunWorld, decodePlayer, isWholeRunSnapshot, type LevelSnapshot, type GameSnapshot } from './WholeRunSnapshot';
 import { memoryTerrainAppearance } from '../UI/Appearance';
@@ -63,7 +64,7 @@ import { initializeLevelSeeds, copyLevelSeeds, type LevelSeed } from './LevelSee
 import type { LevelState } from './LevelState';
 export type { LevelState } from './LevelState';
 import { NEGATABLE_TRAITS, NON_NEGATABLE_ABILITIES, NEGATABLE_MUTATIONS, hasNegatableBolt, negateBolts, negateCreatureStatusEffects } from '../Combat/Negation';
-import { cloneLocation, canPlaceSquareCloneAt } from '../Combat/Cloning';
+import { cloneLocation, canPlaceSquareCloneAt, cloneAvoidedFlags } from '../Combat/Cloning';
 import { advancementLoop, objectiveTimeBlock, updateEnvironment, playerTurnEnded, finishTurnEpilogue, type TimePorts } from './TimeCoordinator';
 import { anyoneWantABite } from '../Combat/MonsterAbsorption';
 /**
@@ -1530,6 +1531,7 @@ export class Game {
             rebuildWaypoints: this.rebuildWaypoints.bind(this),
             resolveBlueprintMonster: this.resolveBlueprintMonster.bind(this),
             restoreFallenItems: this.restoreFallenItems.bind(this),
+            restorePendingBodyGroups: this.retrySquareLandings.bind(this),
             restoreLevelResidents: this.restoreLevelResidents.bind(this),
             rollSpawnDepth: this.rollSpawnDepth.bind(this),
             spawnBlueprintItem: this.spawnBlueprintItem.bind(this),
@@ -1728,6 +1730,25 @@ export class Game {
 
     /** CE Architect.restoreMonster; JSON decoding never invokes this lifecycle. */
     private restoreLevelResident(m: Monster, map?: number[][]): void {
+        if (m.spatial?.bodyMember) {
+            if (!this.isBodyDecisionOwner(m.id)) return;
+            const group = this.bodyGroups!.find(g => g.coreId === m.id)!;
+            const actors = this.orderedBodyActors(group, this.monsters);
+            const definition = this.spatialCatalog.body(group.bodyDefinitionId);
+            const places = this.wholeBodyPlacement(actors, m.preplaced ? m.loc : m.entersLevelIn ? this.player.loc : m.loc,
+                definition, actors, false, undefined, this.spatialWorldPort(), true);
+            if (!places.length) {
+                for (const actor of actors) this.deferSquareLanding(actor, this.depth);
+                return;
+            }
+            this.translateBodyActors(actors, places[Math.floor(places.length / 2)]!);
+            for (const actor of actors) {
+                actor.preplaced = false; actor.entersLevelIn = actor.approaching = 0;
+                actor.isAbsorbing = false; actor.corpseAbsorptionCounter = 0;
+                if (actor.leader && !this.monsters.includes(actor.leader)) actor.leader = null;
+            }
+            return;
+        }
         if (m.spatial) {
             if (m.entersLevelIn > 0 && !m.preplaced) restoreSquareTravelPosition(this, m, m.approaching & APPROACHING_PIT ? this.currentLevelExitedVia : this.player.loc);
             const spot = travelPlacement(this, m, m.loc, true, true, true);
@@ -5993,7 +6014,7 @@ export class Game {
     }
 
     private polymorphBoltTarget(target: Creature | undefined): boolean {
-        if (target?.spatial?.bodyMember) return false; // whole-body conversion is a later closed vertical slice
+        if (this.spatialCatalog.hasBodies) return this.polymorphWholeBody(target);
         const square = !!target?.spatial || !!this.extensionRuntime?.nativeForms().length;
         if (!(target instanceof Monster) || !target.polymorph(() => this.demoteMonsterFromLeadership(target), data => {
             // Unpublished value candidate: no constructor, allocator, generation,
@@ -6016,6 +6037,152 @@ export class Game {
         this.updateVision();
         this.needsRender = true;
         return autoID;
+    }
+
+    /** D16: one native rejection-sampling pass and one whole-body destination.
+     * Peripheral forms keep their catalog slots but cannot be independent species. */
+    private polymorphWholeBody(contact: Creature | undefined): boolean {
+        const target = contact && bodyDecisionActor(contact);
+        if (!(target instanceof Monster) || !this.monsters.includes(target) || target.hp <= 0
+            || target.hasBehavior('MONST_INANIMATE') || target.hasBehavior('MONST_TURRET') || target.isInvulnerable()) return false;
+        const runtime = this.extensionRuntime!, forms = runtime.nativeForms().map(nativeFormData);
+        if (!knownPolymorphSpecies(target.typeId, forms) && !(target.isClone && target.typeId === 'player_clone')) return false;
+        const beforeRandom = rng.getState();
+        const data = polymorphSpecies(target.typeId, rng, forms, id => !this.spatialCatalog.isPeripheralForm(id));
+        const oldGroup = this.bodyGroups?.find(g => g.coreId === target.id);
+        const oldActors = oldGroup ? this.monsters.filter(m => m.spatial?.bodyMember?.groupId === oldGroup.groupId) : [target];
+        const definition = this.spatialCatalog.bodyForCoreForm(data.id), value = target.copyForBodyPlan();
+        // Match nativeMaximumBase's CE injury/proportion calculation without
+        // invoking live growth hooks on an unpublished conversion value.
+        if (target.extensionHooks?.nativeMaximumBase) {
+            const combined = value.maxHp;
+            value.maxHp = target.extensionHooks.nativeMaximumBase(target);
+            value.hp = Math.min(value.hp, value.maxHp) + Math.max(0, value.hp - combined);
+        }
+        if (!value.polymorph(() => {}, () => ({ ...target.loc }), data)) return false;
+        value.mapToMe = null; value.safetySnapshot = null;
+        const next = getNextEntityId(), order = definition ? bodyConstraintOrder(definition) : [];
+        const staged = [value, ...order.slice(1).map((partId, i) => {
+            const part = definition!.parts.find(p => p.partId === partId)!, form = runtime.nativeForms().find(f => f.id === part.formId)!;
+            const actor = new Monster(target.x + part.preferredOffset.x, target.y + part.preferredOffset.y,
+                nativeFormData(form), { id: next + i, state: value.state });
+            actor.spatial = nativeFormSpatial(form, target.spatial?.movementRegionId);
+            actor.hp = Math.max(1, Math.trunc(actor.maxHp * value.hp / value.maxHp));
+            actor.isClone = target.isClone;
+            actor.leader = value.leader;
+            actor.behaviorFlags.add('MONST_WILL_NOT_USE_STAIRS');
+            bindNativeForms(actor, runtime.nativeForms(), this.spatialCatalog);
+            return actor;
+        })];
+        const places = this.wholeBodyPlacement(staged, target.loc, definition, oldActors, false);
+        if (!places.length) return false; // the species draw stays consumed; no ID/state writes
+        const at = places[Math.floor(places.length / 2)]!, wasCaged = target.isCaged, wasAllied = target.isAlly;
+        this.commitBodyTransition('body-polymorph', () => {
+            if (oldGroup) {
+                this.retireBodyEntities(oldGroup, new Set(oldGroup.members.filter(s => s.entityId !== oldGroup.coreId).map(s => s.partId)));
+                this.bodyGroups!.splice(this.bodyGroups!.indexOf(oldGroup), 1);
+                if (!this.bodyGroups!.length) delete this.bodyGroups;
+            }
+            const hooks = target.extensionHooks;
+            for (const key of Object.keys(target)) if (key !== 'extensionHooks' && !(key in value)) Reflect.deleteProperty(target, key);
+            for (const [key, field] of Object.entries(value)) if (key !== 'loc' && key !== 'extensionHooks') Reflect.set(target, key, field);
+            target.extensionHooks = hooks;
+            if (target.leader && oldActors.includes(target.leader)) target.leader = null;
+            commitCreatureAnchor(target, { ...at });
+            const created = staged.slice(1);
+            for (const actor of created) {
+                commitCreatureAnchor(actor, { x: at.x + actor.x - value.x, y: at.y + actor.y - value.y });
+                actor.spawnLoc = { ...actor.loc };
+                if (actor.leader && oldActors.includes(actor.leader)) actor.leader = target;
+                markCreatureBirth(actor, 'summoned', target.id, undefined, false);
+            }
+            if (created.length) ensureEntityIdAbove(next + created.length - 1);
+            if (definition) {
+                const actors = [target, ...created];
+                const group: BodyGroupState = { schema: 1, groupId: target.id, coreId: target.id, bodyDefinitionId: definition.id,
+                    members: actors.map((actor, i) => ({ partId: order[i]!, entityId: actor.id, life: 'active', generation: 0, readyInTicks: 0 })), appliedBreaks: [] };
+                actors.forEach((actor, i) => { actor.spatial!.bodyMember = { groupId: target.id, partId: order[i]! }; });
+                (this.bodyGroups ??= []).push(group);
+            }
+            this.monsters = [...this.monsters, ...created];
+            if (wasCaged) this.demoteMonsterFromLeadership(target);
+            if (wasAllied) hooks?.relationshipChanged?.(target);
+            hooks?.causality.clearStatus(target.id, 'poisoned'); hooks?.causality.clearStatus(target.id, 'burning');
+            hooks?.nativeMaximumReset?.(target, true);
+            notifyProductionActorSourceChanged(this, target.id);
+        }, beforeRandom);
+        for (const actor of [target, ...staged.slice(1)]) if (actor.hp > 0 && this.monsters.includes(actor)) this.applyEnvironmentalEffects(actor);
+        this.updateVision(); this.needsRender = true;
+        return !target.hasStatus('invisible');
+    }
+
+    /** Finite native nearest-path/ring search; destination qualification uses
+     * every actual member, its own terrain/region policy and the whole tree.
+     * Existing clone formations (including tombstones) translate unchanged. */
+    private wholeBodyPlacement(actors: readonly Monster[], origin: Pos, definition: BodyDefinition | undefined,
+        excluded: readonly Monster[], clone: boolean, explicit?: Pos, destinationWorld: SpatialWorld = this.spatialWorldPort(), travel = false): Pos[] {
+        const core = actors[0]!, world = { ...destinationWorld, player: destinationWorld.player ?? { hp: 0, loc: { x: -1, y: -1 } } as Creature,
+            monsters: destinationWorld.monsters.filter(m => !excluded.includes(m as Monster)) as Monster[],
+            dormantMonsters: (destinationWorld.dormantMonsters?.filter(m => !excluded.includes(m as Monster)) ?? []) as Monster[] };
+        const existing = [...world.monsters, ...world.dormantMonsters].filter(c => c.spatial);
+        if (existing.length + actors.filter(a => a.spatial).length > SPATIAL_LIMITS.entities
+            || [...existing, ...actors].reduce((sum, a) => sum + (a.spatial ? footprintOf(a).length : 0), 0) > SPATIAL_LIMITS.occupiedCells) return [];
+        const fits = (at: Pos) => {
+            const locations = actors.map(a => ({ x: a.x + at.x - core.x, y: a.y + at.y - core.y })), occupied = new Set<string>();
+            for (let i = 0; i < actors.length; i++) {
+                const actor = actors[i]!, loc = locations[i]!;
+                if (clone ? !canPlaceSquareCloneAt(world, actor, loc) : !canFitAt(world, actor, loc, {
+                    allowsTerrain: p => !(cellTerrainFlags(world.grid, p.x, p.y) & travelAvoidedFlags(actor))
+                        && (!actor.hasBehavior('MONST_RESTRICTED_TO_LIQUID') || !!(cellTerrainMechFlags(world.grid, p.x, p.y) & TM_ALLOWS_SUBMERGING)) })) return false;
+                for (const p of footprintOf({ loc, spatial: actor.spatial })) {
+                    const cell = world.grid.getCell(p.x, p.y)!;
+                    if (travel && cell.machineNumber || cell.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL)) return false;
+                    const key = `${p.x},${p.y}`; if (occupied.has(key)) return false; occupied.add(key);
+                }
+            }
+            return !definition || bodyConstraintsSatisfied(this.spatialCatalog, definition, new Map(actors.map((a, i) => [
+                a.spatial?.bodyMember?.partId ?? bodyConstraintOrder(definition)[i]!,
+                { anchor: locations[i]!, footprintId: a.spatial!.footprintId, pose: a.spatial!.pose } ])), world.grid);
+        };
+        if (explicit) return fits(explicit) ? [{ ...explicit }] : [];
+        return squarePlacementCandidates(world, core, origin, clone ? cloneAvoidedFlags(core) : travelAvoidedFlags(core), () => false, fits);
+    }
+
+    /** Body transition write set, distinct from floor generation: live native
+     * values/relationships, group tables, owned lists and public knowledge;
+     * hooks/resources/facts use the runtime buffer, action state its checkpoint.
+     * Map/environment effects run only AFTER a complete structural commit. */
+    private commitBodyTransition(label: string, commit: () => void, random = rng.getState()): void {
+        const runtime = this.extensionRuntime!, allocator = getNextEntityId();
+        const creatures = collectEntityGraph([...this.monsters, ...this.dormantMonsters, ...this.purgatory,
+            ...[...this.levels.values()].flatMap(l => [...l.monsters, ...(l.dormantMonsters ?? [])]),
+            ...[...this.pendingFallenByDepth.values()].flat()]).monsters;
+        const actionState = runtime.actorActionBinding()?.state, restoreBindingIdentity = runtime.checkpointActorActionBindingIdentity();
+        const restore = checkpointGenerationWorld(() => ({ shallow: [this],
+            deep: [this.player, creatures, this.monsters, this.dormantMonsters, this.bodyGroups, this.stats,
+                this.everSeenMonsters, this.visibleMonsters, this.examinedEntityIds, actionState],
+            references: [runtime, runtime.causality, ...(this.squareMotion ? [this.squareMotion] : []),
+                ...creatures.flatMap(m => [m.mapToMe, m.safetySnapshot])] }));
+        const restoreLog = logger.checkpoint(), restoreActions = checkpointProductionActorActions(this);
+        const restoreRevisions = checkpointSpatialActorRevisions([this.player, ...creatures]), restoreDefense = checkpointPhasedAttackSources(this);
+        const invalid = isProductionActorActionRunInvalid(this);
+        // Conversion deletes optional native fields. Restore their original
+        // own-key order as well as descriptors/values (the floor checkpoint
+        // only needs replacement/appended fields on its existing write set).
+        const actorDescriptors = [this.player, ...creatures].map(actor => ({ actor, descriptors: Object.getOwnPropertyDescriptors(actor) }));
+        const token = runtime.beginGeneration(label);
+        try { commit(); runtime.commitGeneration(token); }
+        catch (error) {
+            restore();
+            for (const { actor, descriptors } of actorDescriptors) {
+                for (const key of Reflect.ownKeys(actor)) if (Object.getOwnPropertyDescriptor(actor, key)?.configurable) Reflect.deleteProperty(actor, key);
+                Object.defineProperties(actor, descriptors);
+            }
+            restoreRevisions(); restoreDefense(); restoreActions(); restoreProductionActorActionValidity(this, invalid); restoreLog();
+            try { runtime.rollbackGeneration(token); restoreBindingIdentity(); }
+            finally { restoreNextEntityId(allocator); rng.setState(random); }
+            throw error;
+        }
     }
 
     /** Items.c:5274-5300 always allies to the player, even for a hostile caster. */
@@ -6203,10 +6370,11 @@ export class Game {
             }
 
             case BoltEffect.PLENTY: {
-                if (target && this.boltLivingTarget(target) && !(target instanceof Monster && target.hasBehavior('MONST_TURRET'))) {
-                    const clone = this.cloneMonster(target);
+                const recipient = target && bodyDecisionActor(target);
+                if (recipient && this.boltLivingTarget(recipient) && !(recipient instanceof Monster && recipient.hasBehavior('MONST_TURRET'))) {
+                    const clone = this.cloneMonster(recipient);
                     if (clone) {
-                        target.hp = Math.floor((target.hp + 1) / 2);
+                        recipient.hp = Math.floor((recipient.hp + 1) / 2);
                         clone.hp = Math.floor((clone.hp + 1) / 2);
                         if (this.canObserveBoltTarget(clone)) logger.log(i18next.t('bolt.plenty_clone', {
                             target: clone.name, defaultValue: 'Another {{target}} appears!',
@@ -8917,7 +9085,7 @@ export class Game {
      * CE's unchecked INVALID_POS and leaves source/HP/world intact on failure. */
     public cloneMonster(source: Creature, splitLocation?: Pos,
         birth?: { creationReason: CreationReason; initiallyAllied?: boolean }): Monster | null {
-        if (source.spatial?.bodyMember) return null;
+        if (source.spatial?.bodyMember) return splitLocation || birth?.creationReason === 'split' ? null : this.cloneWholeBody(source);
         assertNativeSpatial(source);
         if (source.hp <= 0 || (!(source instanceof Monster) && source !== this.player)) return null;
         if (source.spatial && !this.squarePublicationFits(source)) return null;
@@ -8937,6 +9105,53 @@ export class Game {
         else this.monsters.push(clone);
         this.needsRender = true;
         return clone;
+    }
+
+    /** Passive clone copies the complete surviving group and its removed slots.
+     * No inherited encounter, budget or reward component is copied to new IDs. */
+    private cloneWholeBody(contact: Creature): Monster | null {
+        const core = bodyDecisionActor(contact);
+        if (!(core instanceof Monster) || core.hp <= 0 || !this.monsters.includes(core)) return null;
+        const sourceGroup = this.bodyGroups?.find(g => g.coreId === core.id);
+        if (!sourceGroup) return null;
+        const definition = this.spatialCatalog.body(sourceGroup.bodyDefinitionId), order = bodyConstraintOrder(definition);
+        const actors = order.flatMap(partId => {
+            const slot = sourceGroup.members.find(s => s.partId === partId)!;
+            const actor = this.monsters.find(m => m.id === slot.entityId);
+            return slot.life === 'active' && actor ? [actor] : [];
+        });
+        if (actors[0] !== core || actors.some(a => !this.ownsBodyMember(a))) return null;
+        const locations = this.wholeBodyPlacement(actors, core.loc, definition, [], true);
+        if (!locations.length) return null;
+        const beforeRandom = rng.getState(), at = locations[rng.randRange(0, locations.length - 1)]!, next = getNextEntityId();
+        let clones: Monster[] = [];
+        this.commitBodyTransition('body-clone', () => {
+            clones = actors.map((actor, i) => {
+                const removeGender = actor.behaviorFlags.has('MONST_MALE') && actor.behaviorFlags.has('MONST_FEMALE')
+                    ? rng.randPercent(50) ? 'MONST_MALE' as const : 'MONST_FEMALE' as const : undefined;
+                const clone = actor.copyForClone({ id: next + i, removeGender });
+                delete clone.spatial!.bodyMember;
+                commitCreatureAnchor(clone, { x: actor.x + at.x - core.x, y: actor.y + at.y - core.y });
+                return clone;
+            });
+            const remap = new Map(actors.map((a, i) => [a.id, clones[i]!]));
+            clones.forEach((clone, i) => {
+                const source = actors[i]!;
+                clone.leader = source.leader && remap.get(source.leader.id) || (i ? clones[0]! : clone.leader);
+                if (core.isCaged) { clone.isAlly = true; clone.state = MonsterState.WANDERING; clone.leader = null; }
+                clone.spatial!.bodyMember = { groupId: clones[0]!.id, partId: source.spatial!.bodyMember!.partId };
+                markCreatureBirth(clone, 'clone', source.id, undefined, true);
+            });
+            const group = structuredClone(sourceGroup);
+            group.groupId = group.coreId = clones[0]!.id;
+            for (const slot of group.members) if (slot.entityId !== null) slot.entityId = remap.get(slot.entityId)!.id;
+            ensureEntityIdAbove(next + clones.length - 1);
+            (this.bodyGroups ??= []).push(group);
+            this.monsters = [...this.monsters, ...clones];
+            this.needsRender = true;
+        }, beforeRandom);
+        for (const clone of clones) if (clone.hp > 0 && this.monsters.includes(clone)) this.applyEnvironmentalEffects(clone);
+        return clones[0]!;
     }
 
     /** CE Combat.c:222-327: select a contiguous-group edge, halve HP, clone,
@@ -9311,6 +9526,15 @@ export class Game {
      */
     private creatureShouldFall(entity: Player | Monster): boolean {
         assertNativeSpatial(entity);
+        if (entity.spatial?.bodyMember) {
+            if (!(entity instanceof Monster) || !this.isBodyDecisionOwner(entity.id) || entity.preplaced) return false;
+            const group = this.bodyGroups!.find(g => g.coreId === entity.id)!, definition = this.spatialCatalog.body(group.bodyDefinitionId);
+            const supports = group.members.filter(s => s.life === 'active' && (s.entityId === entity.id || definition.parts.find(p => p.partId === s.partId)!.providesSupport));
+            return supports.every(s => {
+                const actor = this.monsters.find(a => a.id === s.entityId)!;
+                return !actor.hasStatus('levitating') && footprintExposure(this.grid, actor).allUnsupported;
+            });
+        }
         if (entity.hasStatus('levitating')) return false;
         if (entity.spatial) return !(entity instanceof Monster && entity.preplaced) && footprintExposure(this.grid, entity).allUnsupported;
         const contact = entity.spatial ? footprintExposure(this.grid, entity).contacts.find(c => c.flags & T_CAUSES_EXPLOSIVE_DAMAGE)?.at : nativeContactOf(entity);
@@ -9435,8 +9659,11 @@ export class Game {
         const fellOut = new Set<Monster>();
         for (const m of [...this.monsters]) {
             if (m.hp <= 0 || fellOut.has(m)) continue;
+            if (m.spatial?.bodyMember) {
+                if (this.isBodyDecisionOwner(m.id) && (m.falling || this.creatureShouldFall(m))) this.fallWholeBody(m);
+                continue;
+            }
             if (!m.falling && !this.creatureShouldFall(m)) continue;
-            if (m.spatial?.bodyMember) throw new Error('Composite whole-group fall capability is not open');
             m.falling = true;
             const fallOrigin = this.extensionRuntime?.causality.consumeDisplacement(m.id) ?? null;
 
@@ -9495,6 +9722,66 @@ export class Game {
         }
     }
 
+    /** One core fall injury; all surviving parts leave together. No landing
+     * space publishes none of them, and preplaced is the persisted fall receipt. */
+    private fallWholeBody(core: Monster): void {
+        const group = this.bodyGroups!.find(g => g.coreId === core.id)!, actors = this.orderedBodyActors(group, this.monsters);
+        const origin = this.extensionRuntime?.causality.consumeDisplacement(core.id) ?? null;
+        if (footprintOf(core).some(p => this.grid.getCell(p.x, p.y)?.isVisible)) logger.log(i18next.t('fall.monster_plunges', { name: this.monsterDisplayName(core) }), '#aaaaaa');
+        if (core.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')) { this.extensionRuntime!.causality.terminal(core.id, origin); this.killMonster(core); return; }
+        if (!core.isInvulnerable()) {
+            const damage = rng.randClumpedRange(6, 12, 2);
+            this.extensionRuntime!.causality.withOrigin(origin, () => core.takeDamage(damage, false, this.grid, undefined, 'physical'));
+            if (core.hp <= 0) { this.killMonster(core); return; }
+        }
+        for (const actor of actors) {
+            actor.clearCorpseTargetOnLevelChange(); actor.setStatusDuration('entranced', 0);
+            actor.seized = actor.seizing = actor.falling = false; actor.preplaced = true;
+            actor.entersLevelIn = actor.approaching = 0;
+            this.extensionRuntime!.releaseFallenMovementRegion(actor, this.depth);
+            notifyProductionActorSourceChanged(this, actor.id); // living travellers retain their paid resource ledger
+        }
+        this.player.seized = this.player.seized && this.monsters.some(m => !actors.includes(m) && m.seizing);
+        this.monsters = this.monsters.filter(m => !actors.includes(m));
+        const targetDepth = this.depth + 1;
+        if (targetDepth > CE_DEEPEST_LEVEL) {
+            // Match unreachable native depth-41 disappearance without dangling
+            // a live group graph or inventing a new playable floor.
+            for (const actor of actors) { actor.hp = 0; actor.deathProcessed = true; actor.administrativeDeath = true; }
+            this.bodyGroups!.splice(this.bodyGroups!.indexOf(group), 1); if (!this.bodyGroups!.length) delete this.bodyGroups;
+            reconcileProductionActorActions(this);
+            return;
+        }
+        const cached = this.levels.get(targetDepth);
+        const world: SpatialWorld | undefined = cached && { grid: cached.grid, monsters: cached.monsters, dormantMonsters: cached.dormantMonsters };
+        const places = world ? this.wholeBodyPlacement(actors, core.loc, this.spatialCatalog.body(group.bodyDefinitionId), [], false, undefined, world, true) : [];
+        if (places.length) {
+            this.translateBodyActors(actors, places[Math.floor(places.length / 2)]!);
+            for (const actor of actors) actor.preplaced = false;
+            cached!.monsters.push(...actors);
+        } else {
+            const queue = this.pendingFallenByDepth.get(targetDepth) ?? [];
+            queue.push(...actors); this.pendingFallenByDepth.set(targetDepth, queue);
+        }
+        reconcileProductionActorActions(this); // rebind recovery depth after whole ownership moves
+        this.needsRender = true;
+    }
+
+    private orderedBodyActors(group: BodyGroupState, pool: readonly Monster[]): Monster[] {
+        return bodyConstraintOrder(this.spatialCatalog.body(group.bodyDefinitionId)).flatMap(partId => {
+            const slot = group.members.find(s => s.partId === partId)!;
+            if (slot.life !== 'active') return [];
+            const actor = pool.find(a => a.id === slot.entityId);
+            if (!actor) throw new Error('Incomplete whole-body ownership');
+            return [actor];
+        });
+    }
+    private translateBodyActors(actors: readonly Monster[], at: Pos): void {
+        const core = actors.find(a => a.id === a.spatial?.bodyMember?.groupId)!;
+        const dx = at.x - core.x, dy = at.y - core.y;
+        commitCompositeAnchors(actors.map(creature => ({ creature, at: { x: creature.x + dx, y: creature.y + dy } })));
+    }
+
     private deferSquareLanding(monster: Monster, depth: number): void {
         if (depth < 1 || depth > CE_DEEPEST_LEVEL) return;
         const queue = this.pendingFallenByDepth.get(depth) ?? [];
@@ -9521,6 +9808,16 @@ export class Game {
         Object.assign(retry, { revision, occupancy, pending });
         for (const monster of [...queue].sort((a, b) => a.id - b.id)) {
             if (!monster.spatial || monster.hp <= 0) continue;
+            if (monster.spatial.bodyMember) {
+                if (monster.id !== monster.spatial.bodyMember.groupId) continue;
+                const group = this.bodyGroups!.find(g => g.coreId === monster.id)!, actors = this.orderedBodyActors(group, queue);
+                const places = this.wholeBodyPlacement(actors, monster.loc, this.spatialCatalog.body(group.bodyDefinitionId), [], false, undefined, this.spatialWorldPort(), true);
+                if (!places.length) continue;
+                this.translateBodyActors(actors, places[Math.floor(places.length / 2)]!);
+                for (const actor of actors) { actor.preplaced = false; queue.splice(queue.indexOf(actor), 1); }
+                this.monsters = [...this.monsters, ...actors];
+                continue;
+            }
             if (!this.squarePublicationFits(monster)) continue;
             const spot = travelPlacement(this, monster, monster.loc, true, true, true);
             if (!spot) continue;

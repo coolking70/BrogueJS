@@ -1235,6 +1235,16 @@ export class ExtensionRuntime {
         const module = this.modules.find(value => value.actorActions);
         return module ? { moduleId: module.id, state: this.states[module.id]! as unknown as import('./actorActions').ProductionActorAttackState, definition: module.actorActions!.definitions as unknown as import('./actorActions').ActorAttackDefinitions } : null;
     }
+    /** Engine body rollback captures this ledger's complete value graph. After
+     * buffered rollback restores equal JSON, retain the old live clock identity
+     * so its paid scheduler/session cannot keep a discarded mutated ledger. */
+    checkpointActorActionBindingIdentity(): () => void {
+        const binding = this.actorActionBinding(); if (!binding) return () => {};
+        return () => {
+            if (canonical(this.states[binding.moduleId]) !== canonical(binding.state)) throw new Error('Incomplete body action rollback');
+            this.states[binding.moduleId] = binding.state as unknown as Json;
+        };
+    }
     get sourceId(): number | null { return this.attacks[this.attacks.length - 1] ?? null; }
     /** Pure player-only projection. Never snapshots causal ledgers, NPCs, rewards, or the world. */
     readModuleView(moduleId: string): ExtensionModuleView | null {

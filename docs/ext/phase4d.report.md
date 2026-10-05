@@ -1,3 +1,99 @@
+# 4d-5 执行报告：整体被动变形、复制与坠落等待
+
+基于维护者已提交4d-4并合入dot 3d追踪诊断的 `ext/phase4` HEAD `a2b58f83a9e4255b4f3be9499efd3b9399301202`，开工工作树干净。本轮交付 **4d-5 可独立验收子里程碑，完整4d仍未完成**：推进原剩余项5–7的整体被动polymorph、clone/plenty、坠落/缓存层/pending与已付款phased动作的交叉。按任务书允许的干净子里程碑收束，当前未完成范围仍逐项列为1–8。未暂存、commit或push。后方保留HEAD中4d-4/4d-3/4d-2/4d-1/4d-0历史报告原字节。
+
+维护者已浏览器确认4d-4“两只织兽两行、成员概况正确”，并完成提交；这份确认沿本轮用户指令登记。本轮遵照“浏览器验收由维护者执行，不必尝试启动浏览器”，没有启动浏览器、Vite服务器或Playwright，不重复此前受限尝试。
+
+## 整体被动变形与复制
+
+任一真实活腿命中普通polymorph时，经可信群路由只转换核心一次；没有Boss身份额外免疫。只采用当前安装声明授权的目标身体，核心form必须唯一对应一个body，生产目录拒绝歧义；外围形态不作为独立变形结果。抽样保持原目录顺序和完整范围，外围条目与原生MONST_NO_POLYMORPH条目一样拒绝后继续抽样；同形/原生不可变形结果沿原有拒绝规则。不循环重抽到能塞进去的小身体。落脚沿既有polymorph确定性最近路径/环搜索，整个网格有限；每个候选同时核验全部真实部位的footprint、地形/水生、区域、重叠、连接树及128实体/512格全局预算。新目标采用声明preferred formation，复制则保留当前formation。尚未开放主动转换、非r0复合体pose、镜像或成员再生。
+
+单体↔群体均先准备独立未发布值，再求完整落点，主体原对象/core ID不变。原生polymorph的关系、mutation、状态、抓持、携带生物清除、速度缓存及至少101tick仍由原routine执行；HP沿CE `Items.c:4572–4631` 的比例/保留伤量取较大值，并沿既有growth nativeMaximumBase去除增长最大值部分。新成员HP取转换后核心存活比例，不把腿HP相加治疗核心；原槽墓碑不继承到新身体。消失成员走无死亡退休，核心仍存活时保留原奖励主体，不发击败/成员死亡事实。新成员先用预备ID和明确群行为构造，无真实ID分配或睡眠骰；全体结构提交后才登记ID、出生与新的可信群身份。无位不改旧实体、关系、状态、群表或ID；已发生的形态抽样保留，真实魔杖原充能仍消费。
+
+被动clone命中任一腿时复制整组活部位和独立深拷贝的removed槽/破坏收据/冷却，全部新ID；每个原生可变容器独立，内部leader引用重映射。沿CE `Monsters.c:568–628` 的copy例外清携带物、标记clone、至少101tick及性别选择，原encounter/Boss/成长及奖励组件不搬移到新ID；新成长组件仍由既有birth政策初始化。新birth为clone、对应各原来源，当前四种giants/growth/combat组合实际杀复制核心均没有增加XP，成员退休不发死亡。这是无正XP报价诊断原型的默认组合验证，不代替有价原型的复制奖励抑制验收。无位时不取随机、不分ID、不减原HP。
+
+真实plenty魔杖命中腿时，资格和HP接收者路由核心；先整组复制成功，再沿CE `Items.c:5367–5399` 对两个核心ceil折半，腿当前HP保持复制值。没有把被命中的腿当成独立复制对象或错误折半。原生符文plenty调用同一整组clone，不额外套魔杖的HP折半政策。默认配置的出生标记/组件与零XP变化已验证；有价原型以及自定义growth clone奖励策略仍待验证。
+
+## 整组坠落、缓存层与pending
+
+坠落资格合并核心和活跃有效providesSupport成员，任一支撑或悬浮可维持整组；外围不独立坠落。一次真实环境推进只对核心结算一次原生6–12 clumped伤害与因果；核心致死整体终结一次，成员无死亡退休。存活则全体同时清旧层区域、抓持/入迷、旧corpse目标与原旅行标记，进入下层缓存或同一个现有pendingFallenByDepth队列，preplaced作为已结算的坠落收据。底层边界不创第41层或悬空群表。
+
+下层完整配置无位时一个部位都不发布；pending不进当前空间索引/调度，不推进精神计时、HP/成员冷却，也不重复落伤。已有缓存层恢复及GenerationCoordinator入层沿同一整组批量预验；普通到达者先处理，群体由新端口restorePendingBodyGroups调用已有有界重试入口。仅入层或相关grid/occupancy/pending revision变化时按核心ID稳定重试，仍按完整实际配置求位；成功一次移动并发布全组。楼梯盟友followers整体跟随仍未接通。坠落/落脚本轮验证的是完整批量成功及无位等待路径，未将区域退出/入层异常纳入polymorph/clone的窄回滚承诺。
+
+WholeRunSnapshot写入与纯解码均核验全组只能属一个当前/缓存/休眠世界或同一个pending队列。pending必须所有活成员齐全、preplaced一致、没有独立旅行/坠落标记，并满足几何/树距离；未访问下层没有地形，不能虚构clear-link或落脚许可。实际落脚仍提供真实grid进行全部连接/地形检验。篡改队列缺成员在旧局退休前拒绝；原ID/墓碑/gen0/分类/预算校验保持，没有新存档迁移、Game持久字段或U03登记变化。
+
+## 窄事务与3b/3d已付款动作
+
+polymorph/clone调用的commitBodyTransition为本轮独立登记的身体结构写集：原实体/玩家完整值图和引用、全层owned实体闭包、群表、列表、统计/公开知识、actor-action binding状态图、ID、两RNG、logger、runtime缓冲的资源/事实/消息，以及source/anchor WeakMap revision、production action checkpoint和phased defense bindings。借用既有对象图捕获原语，不声称floor-generation事务天然覆盖身体转换。polymorph删除可选字段时还恢复原own-key顺序/descriptor，完整图oracle不只比较存档投影。结构失败恢复原值、原对象关系和派生动作入口；所有环境接触在完整结构成功之后处理，合法新身体遇险不回滚成旧身体。移动逐子步接触/地图修改的窄回滚是独立剩余项，未在本轮宣称完成。
+
+本轮发现runtime回滚JSON会更换模块状态对象，已付款live scheduler/session仍可能持有丢弃的突变ledger；新增checkpointActorActionBindingIdentity在原状态值图恢复、runtime rollback后核验规范JSON相等，再保留原binding对象身份。故障专项实际改变核心落点/形态后抛错，完整原生图、资源、ID/两流均恢复；随后的真实wait结果与从保存点新load的同后缀相同。没有重建并取消已经付款的原束来掩盖失败。
+
+成功polymorph取消旧核心/成员来源geometry，活核心resource ledger保留，旧腿随行政退休清来源；成功坠落的活旅行者也保留ledger，在空间所有权移动完成后reconcileProductionActorActions重绑定恢复所属深度。旧windup变惰性并清locked cells，保留正的已付款恢复，不再释放攻击；pending期间冻结。clone不继承任何原paid bundle/payment/locked plan，原组已付款束继续。核心仍是唯一decision/time owner，成员不takeTurn、不推进原生timer，无嵌套executeCommand。未改3d可信member证明、part-break provider/fallback互斥、checkpointZoneBreak或3c dodge白名单。
+
+| 共享文件/函数 | 本轮改动 |
+| --- | --- |
+| Game.polymorphBoltTarget/polymorphWholeBody/wholeBodyPlacement/commitBodyTransition | 一次整体抽样、全部位纯落脚、主体ID保留、独立结构写集/回滚 |
+| Game.cloneMonster/cloneWholeBody、PLENTY分支 | 整组深复制/新ID/关系映射，核心一次折半，无主动split开放 |
+| Game.creatureShouldFall/fallWholeBody/orderedBodyActors/translateBodyActors | 支撑联合、一伤、整组迁出、批量空间提交 |
+| Game.restoreLevelResident/retrySquareLandings、GenerationCoordinator.generateDepth | 当前/缓存/新层恢复与无位pending统一整组发布 |
+| WholeRunSnapshot.toWholeRunSnapshot/decodeWholeRunWorld/validateProductionGroupOwnership | pending全组所有权/收据/几何纯验证 |
+| SpatialCatalog.bodyForCoreForm/isPeripheralForm/registerBody、Polymorph.polymorphSpecies | 唯一核心身体与外围抽样资格，保留原生完整目录范围的拒绝抽样 |
+| SquarePlacement.squarePlacementCandidates、BodyConstraints.bodyConstraintsSatisfied | 全组候选资格先于最近选择；仅pending无地形几何验证 |
+| Creature/Monster构造、copyNativeValue/copyForBodyPlan/copyForClone/polymorph | 未发布准备值不取ID/睡眠骰，容器深拷贝，复用原生polymorph数据输入 |
+| CreatureSpatial.checkpointSpatialActorRevisions、PhasedAttackProduction.checkpointPhasedAttackSources | 原有已付款来源/防御的图外派生身份回滚 |
+| ExtensionRuntime.checkpointActorActionBindingIdentity | 值图/JSON回滚后恢复原paid ledger对象身份 |
+
+## 专项与旧测试前提裁决
+
+新增 `src/test/phase4d_body_lifecycle.test.ts` **21项**，登记常规core组。真实玩家操作经executeItemCommand/executeCommand；private helper探针和诊断建场明确只作结构/故障功能验证，未冒充默认新局自然录像。覆盖真实魔杖腿→老鼠、老鼠→九部位且比例HP/ID；无位完整对象图/关系/状态；受损clone的墓碑/冷却/容器/内部leader/存读；clone与polymorph发布异常；支撑联合；真实wait的一伤pending/冻结/坏档拒绝；缓存层无位→入层等待→空间变化批量落脚；致命fall唯一死亡；四组合真实plenty与实际杀clone零XP；已付款windup的polymorph/fall取消、惰性正恢复、深度/存读同后缀；clone不继承paid plan；改变落点后失败的完整图及live后续行动恢复。最终新增项数见下方门禁。
+
+只修订一项旧负例的夹具前提：phase4d_production_body.test.ts原“registered member geometry alone cannot grant an orphan publication or clone a slot”用真实owned腿断言cloneMonster返回null，依赖4d此前整组clone关闭。先仅回退生产Game.ts至HEAD，其他候选生产文件/原测试不动，该项通过（2.337s）；恢复候选Game原项失败（2.056s）。然后只把clone目标换为该用例已有orphan，仍断言返回null，未翻转断言、降低可信身份限制或改其他断言。证据 `/private/tmp/p4d5-counterfactual-head-game.log`、`/private/tmp/p4d5-counterfactual-candidate-game.log`及对应JSON；反事实脚本finally恢复候选文件。
+
+开发失败均保留并修正：新wand夹具ID、flatMap索引误当catalog、CErat比例HP/物品ID预期、rollback字段顺序、pending writer遗漏队列、类型收窄、活fall来源ledger误退休、runtime live binding身份，以及最初故障墙位侵犯旧tether的诊断布景。最后一种将墙移至旧tether外而只阻挡新四格body，不放松合法旧图。最终v1相关集合另发现既有三项polymorph及三项dodge预备动作守卫失败：新增落脚多掷骰及抽样范围缩短；改生产代码恢复确定性落脚/原范围拒绝抽样，六项旧测试原文保持。追加外围拒绝抽样专项。没有修改旧容差、deadline、skip，未改守卫来接受新增偏差；最终门禁从新冻结候选重新开始，不拼接v1已过结果。
+
+正式giants definitions/locale、生成基线及黄金trace不变，无重录。所有新增可见提示复用现有i18n的fall/plenty消息，无新裸显示文案。正式自然内容仍为seed7309/wizard/仅giants/D15；真实自然断足/击败、独立load后缀、逐条replay、三点seek与续录在最终候选重跑。其事件元数据及结果见下方；这不是normal平衡验收，新增转换/clone/fall专项的save/load后缀不替代这些生命周期的真实自然replay/seek证明。
+
+## 最终开发期验收与性能
+
+最终v2同一冻结候选的8项门全部exit0。Node24.19.0、3GiB堆、Vitest最多2workers；正式自然长文件与其余相关文件串行，合计 **125文件2793项全部通过**，其中本轮新增21项。按用户开发期功能测试政策，不跑完整npm test/全部test:ext/removal/CE full/gen；没有新增Game持久字段，U03状态合同未变。
+
+| 门禁 | 实际结果 | runner耗时 |
+| --- | --- | ---: |
+| `node scripts/check-module-boundaries.mjs` | 通过，含唯一测试归属 | 1.662s |
+| `npx vue-tsc -b` | 通过 | 7.478s |
+| `npm run build` | 通过；保留既有大chunk提示 | 10.422s |
+| 正式自然录像，单独运行 | 1文件、5项全部通过，各480s门限不变 | 423.292s |
+| 其余124文件相关Vitest | 124文件、2788项全部通过 | 883.304s |
+| terrain catalog白名单定向守卫 | 1项通过；名字选择外29项未运行，未新增skip | 2.153s |
+| `check-module-composition-smoke.mjs --engine-only` | 16/16引擎组合通过，requestedScopePassed=true | 92.552s |
+| `npm run test:drift -- --maxWorkers=2` | 4文件、5项全部通过 | 71.937s |
+
+v1不是全绿：相关124文件2787项中6失败/2781通过（runner811.797s），在该门exit1后结束，terrain/组合/drift未运行；源码输入未漂移。修正生产代码后，生命周期21项和4文件定向7项通过（其余47项是名字选择外未运行，未新增skip），随后冻结v2重新串行执行上表全部门，不拼接v1结果。失败证据 `/private/tmp/p4d5-final-v1-gates.json`及相关log，定向结果 `/private/tmp/p4d5-v2-focus-lifecycle.log`、`/private/tmp/p4d5-v2-focus-old-guards.log`保留。
+
+组合报告browser=not-run、整体passed=false，只认明确请求的engine-only范围通过；其中giants自然样例是原D3路径，不声称这份16组合报告验证了全部D15复合体生命周期。相关集合为原4d-4范围加本轮生命周期、W19/20/21/23/C5、原生战斗与growth生命周期/来源/clone overhealth等回归。全部原命令/文件清单见gate JSON。
+
+正式自然元数据仍为 **seed7309 / wizard / 仅giants / D15**：2175事件抵达、2200首次断足、2435最终击败、coreId482、8足退休、核心HP0，与历史相同；原记录 `/private/tmp/p4d3-natural-acceptance.json`由既有专项捕获。新变形/clone/fall没有新增默认新局自然录像，不据上述旧自然链路宣称新生命周期replay/seek已齐。
+
+冻结输入覆盖src/、scripts/、package/tsconfig/vite，共 **910文件**，所有门changedInputs=[]，开始/结束及报告写入前均相同。路径排序的紧凑JSON路径→SHA256再取SHA256为 `73a8ed9cb2453216fb4876bbe327eaccc72f164d36b9c25bfe00a0bda79e65bd`；开始/结束UTC `2026-10-05T16:18:49Z` / `2026-10-05T16:43:42Z`。原始证据为 `/private/tmp/p4d5-final-v2-gates.json`、同前缀各日志及composition JSON，不入库。
+
+17实体诊断追击运行20条真实executeCommand(wait)，20条均整组移动；仅计命令，不含建场/断言。冷次 **37.341ms**，其余19条暖样本 **P50 33.619ms / P95 39.329ms**，最大 **39.329ms**。原始数据 `/private/tmp/p4d5-final-v2-command-performance.json`；另保留仅plan+commit的fixture计时 `/private/tmp/p4d5-final-v2-fixture-performance.json`，不把它当每命令耗时。这是Node诊断，不是自然局/浏览器/手机性能，未控制宿主负载，不据此声称改善或回退。
+
+
+## 完整4d剩余项（当前，仍按原1–8）
+
+1. **声明与群环境仍缺。** 正式原创身体/整组场地、27原生状态分类/可信路由保持，本轮补唯一核心body和纯整组转换落脚。仍缺核心/成员fixed-zone、攻击profile声明闭包、自定义/局部status profile覆盖、移动逐子步环境接触及相应地图/机械窄回滚；复合体fixed r0门保持。
+2. **完整群AI仍缺。** 恐惧合法邻步、混乱唯一方向、催眠一次反向群落脚保持；有界远路、安全图/原生生存、盟友跟随/逃跑/施法完整优先级、受控攻击/恶心/抓取等全部移动出口仍待接线。新转换的有限最近落脚不是远路AI。
+3. **攻击/效果的完整组合仍缺。** 双腿横扫、公开焚烧与1:4中央传伤保持；本轮追加四组合真实plenty核心路由/整组clone。仍需实际火球、多源growth/combat逐次消费全部条件、精神射线/面积效果及全部被动/治疗组合。
+4. **完整破坏派生、引用与奖励组合仍缺。** 可信part-break provider/fallback、正式断足/自然核心击败保持；本轮补复制核心实际杀零XP、致命fall核心一次与旧腿无死亡退休。仍缺攻击profile失攻派生、全部外部关系/目标引用清理、原组实际XP数值、有正报价原型的clone奖励抑制和所有死因组合，不把内部clone leader remap当作全部引用清理完成。
+5. **完整环境资格仍缺。** 核心唯一精神计时、全组支配/关系/纷争和局部毒火网保持；本轮核心/有效支撑联合坠落与一伤收据已接。仍需全套受击惊醒/原生被动/核心预算作用、全组飞行/潜水all谓词、核心携带物/熔岩/水流及其他环境组合。
+6. **主要被动生命周期已推进，换层与真实录像仍缺。** 保core ID的单体↔群体原子polymorph、全新ID/深状态/无原奖励权利的整组clone、真实整组fall/缓存层/pending/入层重试及全组同队列/收据/树距离codec已接。仍缺整体楼梯盟友followers、fall/落脚区域退出等异常的窄写集回滚、pending部位叠位等全部坏档矩阵、其他迁层/瞬移/拉拽等完整出口，以及这些生命周期的真实命令save/replay/seek/续录交叉；原正式自然断足录像保持，本轮诊断后缀不冒充新自然转换录像。
+7. **已付款跨生命周期诊断已补，正式完整组合仍缺。** gen0、每源付款/scope、来源破坏取消保持；本轮补windup整体poly/fall惰性正恢复、pending时钟冻结、clone不继承plan、失败live行动续跑。仍需完整群精神中断、正式profile声明后真实自然phased录像，以及楼梯跟随/所有生命周期交叉。D13成员再生/非零generation继续关闭。
+8. **侧栏归并已由维护者浏览器确认，其他显示/平衡验收仍缺。** 当前/历史群行、核心HP/可见成员概况/详情、单腿命中瞄准检视和320/390客户端专项保持。隐藏核心的更完整既知群呈现策略、normal平衡仍缺；320/390真实CSS/触屏/ACK及本轮被动生命周期页面验收由维护者执行，本轮不启动浏览器。
+
+## 保留的4d-4/4d-3/4d-2/4d-1/4d-0历史报告
+
+以下为HEAD维护者已提交历史报告原文；其当时“当前剩余项”不覆盖本轮上方的新清单。
+
 # 4d-4 执行报告：周围实体归并、群状态与关系路由
 
 基于维护者已提交4d-3并合入dot 3d修复的 `ext/phase4` HEAD `81c82a023c4052f73f41c503d822dc6a8898e7ef`，开工工作树干净。本轮交付 **4d-4 可独立验收子里程碑；完整4d仍未完成**。维护者反馈的周围实体逐腿铺满侧栏已修复，并推进原剩余项1、2、3、5、8中的原生状态归属、群关系与显示链路。整体变形、clone、迁层等尚未开放，剩余项仍按原1–8列在下方。未暂存、commit或push。后方保留HEAD中4d-3/4d-2/4d-1/4d-0历史报告原字节。

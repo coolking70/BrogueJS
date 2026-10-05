@@ -46,7 +46,7 @@ export function clearBodyLink(grid: Grid, from: Pos, to: Pos): boolean {
 /** Check the nearest, stable y/x contact pair, not anchor distance. A missing
  * child is a retired subtree; a live child with a missing parent is invalid. */
 export function bodyConstraintsSatisfied(catalog: SpatialCatalog, definition: Pick<BodyDefinition, 'constraints'>,
-    poses: ReadonlyMap<string, BodyPose>, grid: Grid): boolean {
+    poses: ReadonlyMap<string, BodyPose>, grid?: Grid): boolean {
     for (const constraint of definition.constraints) {
         const child = poses.get(constraint.childPartId), parent = poses.get(constraint.parentPartId);
         if (!child) continue;
@@ -58,7 +58,7 @@ export function bodyConstraintsSatisfied(catalog: SpatialCatalog, definition: Pi
             if (!nearest || distance < nearest.distance) nearest = { from, to, distance };
         }
         if (!nearest || nearest.distance < constraint.minDistance || nearest.distance > constraint.maxDistance
-            || constraint.requiresClearLink && !clearBodyLink(grid, nearest.from, nearest.to)) return false;
+            || grid && constraint.requiresClearLink && !clearBodyLink(grid, nearest.from, nearest.to)) return false;
     }
     return true;
 }

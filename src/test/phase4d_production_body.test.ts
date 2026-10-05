@@ -72,7 +72,7 @@ describe('4d production composite birth, native owner, member damage and tombsto
         orphan.spatial.bodyMember = {groupId: 999999, partId: 'leg00'};
         expect(() => game.monsters.push(orphan)).toThrow('Unowned');
         expect(game.publishSquareMonster(orphan)).toBe(false);
-        expect(game.cloneMonster(game.monsters[1]!)).toBeNull();
+        expect(game.cloneMonster(orphan)).toBeNull();
         const member = game.monsters[1]!, before = {...member.loc};
         expect(() => commitCreatureAnchor(member, {x:member.x + 1,y:member.y})).toThrow('whole-group');
         expect(member.loc).toEqual(before);

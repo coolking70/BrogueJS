@@ -23,6 +23,12 @@ import { TerrainType } from '../Map/Grid';
 
 type Session={state:ProductionActorAttackState;definitions:ActorAttackDefinitions;scheduler:ActorActionScheduler;runtime:object;moduleId:string;sessionRevision:number;defenseSources:Map<number,{actor:Creature;revision:number;depth:number}>};
 const sessions=new WeakMap<Game,Session>();
+/** Body rollback retains live defense bindings, independently of the saved ledger. */
+export function checkpointPhasedAttackSources(game: Game): () => void {
+    const session = sessions.get(game); if (!session) return () => {};
+    const entries = [...session.defenseSources];
+    return () => { session.defenseSources.clear(); for (const [id, value] of entries) session.defenseSources.set(id, value); };
+}
 let nextSessionRevision=1;
 function bumpRevision(state:ProductionActorAttackState):void {
     if(!Number.isSafeInteger(state.revision)||state.revision>=Number.MAX_SAFE_INTEGER-1)throw new Error('Action revision exhausted');

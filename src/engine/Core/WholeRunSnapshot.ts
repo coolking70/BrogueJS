@@ -3,6 +3,7 @@ import { assertNativeSpatial, assertSingleCellPlayer, CreatureSpatial, footprint
 import { regionContains, validOwnedRegions } from '../../ext/regions';
 import { keys, nativeSpatialCatalog, SpatialValidationError, SPATIAL_LIMITS, validateSpatialComponent, type SpatialCatalog, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
 import { validateBodyGroup } from '../Movement/BodyGroups';
+import { bodyConstraintsSatisfied } from '../Movement/BodyConstraints';
 import type { BodyGroupState } from '../Movement/SpatialSchema';
 /** Pure whole-run projection and world reconstruction. The live Game supplies
  * only the state and services consumed here; neither function receives Game. */
@@ -178,7 +179,7 @@ export function toWholeRunSnapshot(source: WholeRunProjection): GameSnapshot {
     if (source.bodyGroups?.length) validateProductionGroupOwnership(source.bodyGroups, source.spatialCatalog!, [
         { grid: source.active.grid, monsters: source.monsters, dormantMonsters: source.dormantMonsters, player: source.player },
         ...levels.map(([, level]) => ({ grid: level.grid, monsters: level.monsters, dormantMonsters: level.dormantMonsters })),
-    ]);
+    ], [...source.pendingFallenByDepth.values()]);
     return {
         ...source.snapshotLevel(source.depth, source.active),
         version: 3, schema: WHOLE_RUN_SCHEMA, savedAt: Date.now(),
@@ -291,7 +292,8 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
             const player = decodePlayer(snapshot.player, entityGraph.items);
             if (snapshot.run.spatialWorld.groups.length) validateProductionGroupOwnership(snapshot.run.spatialWorld.groups, deps.spatialCatalog!,
                 [...restored].map(([depth, level]) => ({ grid: level.grid, monsters: level.monsters, dormantMonsters: level.dormantMonsters,
-                    ...(depth === snapshot.depth ? { player } : {}), inRegion: (id: number, at: Readonly<Pos>) => inRegion(id, depth, at) })));
+                    ...(depth === snapshot.depth ? { player } : {}), inRegion: (id: number, at: Readonly<Pos>) => inRegion(id, depth, at) })),
+                snapshot.pendingFallenByDepth.map(q => q.monsters.map(m => resolve(entityGraph.monsters, m.id))));
             // Validate physical ownership and full footprints on each independent
             // layer. Pending/carry/purgatory retain component truth, with no index.
             const owned = new Set<number>();
@@ -369,10 +371,20 @@ function snapshotSquareWorld(monsters: readonly Monster[], catalog?: SpatialCata
 }
 
 function validateProductionGroupOwnership(groups: readonly BodyGroupState[], catalog: SpatialCatalog,
-    worlds: readonly import('../Movement/CreatureSpatial').SpatialWorld[]): void {
+    worlds: readonly import('../Movement/CreatureSpatial').SpatialWorld[], pending: readonly (readonly Monster[])[] = []): void {
     for (const group of groups) {
         const owners = worlds.filter(world => world.monsters.some(c => c.id === group.coreId) || world.dormantMonsters?.some(c => c.id === group.coreId));
-        if (owners.length !== 1) throw new SpatialValidationError('Missing or multiply owned group core');
+        const queues = pending.filter(q => q.some(c => c.id === group.coreId));
+        if (owners.length + queues.length !== 1) throw new SpatialValidationError('Missing or multiply owned group core');
+        if (queues.length) {
+            const cohort = queues[0]!, definition = catalog.body(group.bodyDefinitionId);
+            const actors = group.members.flatMap(s => s.entityId === null ? [] : [cohort.find(c => c.id === s.entityId)]);
+            if (actors.some(a => !a || !a.preplaced || a.falling || a.entersLevelIn || a.approaching)
+                || !bodyConstraintsSatisfied(catalog, definition, new Map(actors.map(a => [a!.spatial!.bodyMember!.partId,
+                    { anchor: a!.loc, footprintId: a!.spatial!.footprintId, pose: a!.spatial!.pose }]))))
+                throw new SpatialValidationError('Invalid pending group ownership or geometry');
+            continue; // pending has no terrain/index and no independent member clocks
+        }
         const world = owners[0]!;
         const service = new CreatureSpatial(world, catalog);
         try {
