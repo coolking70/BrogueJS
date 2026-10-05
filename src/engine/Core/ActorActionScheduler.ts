@@ -17,6 +17,8 @@ export interface ActorActionPhase {
 export interface ActorSubactionDefinition {
     sourceEntityId: number;
     sourcePartId: string;
+    /** Present only for a registered composite slot; generation zero is live. */
+    sourceGeneration?: number;
     sourceFootprintVersion: string;
     phases: ActorActionPhase[];
 }
@@ -50,6 +52,7 @@ export interface ActorActionBoundary {
     readonly sourceSubactionId: number;
     readonly sourceEntityId: number;
     readonly sourcePartId: string;
+    readonly sourceGeneration?: number;
     readonly segmentIndex: number;
     readonly elapsedActionTicks: number;
 }
@@ -172,8 +175,10 @@ export function validateActorActionSchedulerState(value: unknown, dueBoundaries:
         let unfinished = false;
         let previous: ActorSubactionDefinition | undefined;
         for (const [index, child] of bundle.subactions.entries()) {
-            if (!record(child, ['sourceEntityId', 'sourcePartId', 'sourceFootprintVersion', 'phases', 'sourceSubactionId', 'phaseIndex', 'phaseRemainingTicks', 'cancelled'])
+            if (!record(child, ['sourceEntityId', 'sourcePartId', 'sourceFootprintVersion', 'phases', 'sourceSubactionId', 'phaseIndex', 'phaseRemainingTicks', 'cancelled',
+                ...(Object.prototype.hasOwnProperty.call(child, 'sourceGeneration') ? ['sourceGeneration'] : [])])
                 || !integer(child.sourceEntityId, 1) || typeof child.sourcePartId !== 'string'
+                || (Object.prototype.hasOwnProperty.call(child, 'sourceGeneration') && child.sourceGeneration !== 0)
                 || typeof child.sourceFootprintVersion !== 'string' || child.sourceFootprintVersion.length < 1 || child.sourceFootprintVersion.length > 65536
                 || child.sourcePartId.length < 1 || child.sourcePartId.length > 128
                 || parts.has(child.sourcePartId) || child.sourceSubactionId !== index + 1
@@ -215,8 +220,10 @@ export function createActorActionBundle(definition: ActorActionBundleDefinition)
     if (!record(definition, ['actionId', 'depth', 'decisionOwnerId', 'timeChargeOwnerId', 'subactions'])
         || !dataArray(definition.subactions) || definition.subactions.length > MAX_PARALLEL_ACTOR_ACTIONS) fail('invalid action definition');
     for (const child of definition.subactions) {
-        if (!record(child, ['sourceEntityId', 'sourcePartId', 'sourceFootprintVersion', 'phases'])
+        if (!record(child, ['sourceEntityId', 'sourcePartId', 'sourceFootprintVersion', 'phases',
+            ...(Object.prototype.hasOwnProperty.call(child, 'sourceGeneration') ? ['sourceGeneration'] : [])])
             || !integer(child.sourceEntityId, 1) || typeof child.sourcePartId !== 'string'
+            || (Object.prototype.hasOwnProperty.call(child, 'sourceGeneration') && child.sourceGeneration !== 0)
             || !dataArray(child.phases) || child.phases.length > MAX_ACTOR_ACTION_PHASES
             || child.phases.some(phase => !record(phase, ['kind', 'durationTicks', 'segmentIndex']))) fail('invalid subaction definition');
     }
@@ -225,6 +232,7 @@ export function createActorActionBundle(definition: ActorActionBundleDefinition)
         timeChargeOwnerId: definition.timeChargeOwnerId, elapsedActionTicks: 0,
         subactions: [...definition.subactions].sort(comparePart).map((child, index) => ({
             sourceEntityId: child.sourceEntityId, sourcePartId: child.sourcePartId,
+            ...(child.sourceGeneration !== undefined ? { sourceGeneration: child.sourceGeneration } : {}),
             sourceFootprintVersion: child.sourceFootprintVersion, phases: child.phases.map(phase => ({ ...phase })), sourceSubactionId: index + 1,
             phaseIndex: 0, phaseRemainingTicks: child.phases[0]?.durationTicks ?? 0, cancelled: false,
         })),
@@ -377,6 +385,7 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
                         actionId: bundle.actionId, depth: bundle.depth, decisionOwnerId: ownerId, timeChargeOwnerId: bundle.timeChargeOwnerId,
                         sourceSubactionId: child.sourceSubactionId, sourceEntityId: child.sourceEntityId,
                         sourcePartId: child.sourcePartId, segmentIndex: releasingSegment,
+                        ...(child.sourceGeneration !== undefined ? { sourceGeneration: child.sourceGeneration } : {}),
                         elapsedActionTicks: bundle.elapsedActionTicks,
                     })));
                     if (!host.readActor(ownerId)?.alive) { abandon(bundle); return 'handled'; }

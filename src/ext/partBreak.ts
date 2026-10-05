@@ -19,6 +19,15 @@ export interface PartBreakRequest extends PartBreakReceipt {
 }
 export interface PartBreakPrepareContext extends ExtensionRuleContext {
     readonly actor: Readonly<ActorFacts>;
+    /** Foundation-attested live slot. A request alone cannot authorize members. */
+    readonly member?: Readonly<PartBreakMemberIdentity>;
+}
+export interface PartBreakMemberIdentity {
+    readonly entityId: number;
+    readonly groupId: number;
+    readonly partId: string;
+    readonly generation: number;
+    readonly bodyDefinitionId: string;
 }
 export type PartBreakPreparation = { status: 'ready'; plan: Json }
     | { status: 'unsupported'; reason: 'disabled' | 'unsupported-target' };

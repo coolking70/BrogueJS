@@ -425,6 +425,8 @@ fixture 测试覆盖 L/十字/孔洞/长条空格、轮廓原语、标签与 cod
 
 ## 28 4d-1：生产群根、核心轮转和成员无死亡退休
 
+本节保留4d-1历史状态；当前3b/3d组合接线见第29节。
+
 已安装模块的 `nativeBodies` 声明通过独立 member-break seam 注册；普通固定 zone 的 keep-zone 门不放宽。生产成员在几何门之外还必须匹配接收 Game 的真实槽位。Game 的可选 bodyGroups 是全物理层唯一机械真相，写在原 spatialWorld 根；局部 CreatureSpatial 只引用本层记录。声明闭包、form/typeId、树约束、墓碑、共享/孤儿/跨层分裂均在加载发布前检查。普通局无群字段。
 
 createCompositeMonster 先纯预验整组 preferred formation，再构造并一次替换 owned 列表，利用现有 generation token 缓冲出生事件；失败按显式 Game/列表/群表写集、runtime、ID/RNG回滚。单锚点提交不得移动生产成员，只有完整群 planner 的 commitCompositeAnchors 能发布平移。TimeCoordinator 的候选、减时、决策只含独立生物/群核心；成员 readyInTicks 按真实 elapsed 减时，原生成员 ticks 不写。即时攻击最多4源，各自原生 scope，组耗时取 max；blocked 保持正时钟。
@@ -432,3 +434,11 @@ createCompositeMonster 先纯预验整组 preferred formation，再构造并一�
 BodyMemberHealth 接中央 post-shield HP 出口，成员实际正HP损失按1:4直接传核心，不再走核心伤害/解算 hooks；仅补核心致死因果。直接破坏给唯一 part/body/generation=0 收据，provider与fallback互斥回滚；伤害 hook 完成后 remove+墓碑并无死亡退休子树，只有直接收据影响减速。核心才终结整组一次。ActorActionProduction 已按 bodyMember 映射 core owner，真实多来源 phased 束尚未接线。
 
 当前只开放无zone、固定当前pose、remove-subtree和immobile的诊断生产群体，不加入正式生成内容。逐子步环境、群状态/关系、转换/clone/迁移/pending、生产多源phased、群UI/自然种子仍待后续。完整列表与门禁见[4d报告](phase4d.report.md)。
+
+## 29 4d-2：真实多来源phased与可信成员破坏
+
+核心唯一prelude后通过既有selectNativeActorAction选择最多4个真实就绪来源。来源持entityId/partId/sourceGeneration=0/足迹指纹及捕获profile；各自资源付款、scope、locked shape与冷却，核心只镜像最早边界，整束按最长耗时收束。字段只在group束出现，独立actor原对象形状与dodge白名单保持。候选加载通过全层群根核验来源，codec本身不能赋予成员权限。外围出生的睡眠AI状态不成为另一份决策门；成员局部锁仅取消自己的待段，核心韧性耗尽才取消整体。
+
+combat.part-break.v1仍以核心actorId/groupId请求。非self额外需要Game从真实owned活动槽生成、runtime与attach实体复核的冻结member证明；combat provider必须匹配该证明。provider handled与原生fallback互斥。成员机械回调用独立memberBroken，不借固定zone的self回调；事务内记录取消通知，成功后无死亡退休时结算，失败沿合入3d的checkpointZoneBreak与原生/provider checkpoint恢复时钟和对象图。直接物理冲击/成员被弹反的poise归核心，即时攻击恢复取max且停止其余来源，成员原生timer不写。
+
+无zone/固定pose的生产门保持；整组环境、完整状态关系、转换/clone/迁移/pending、正式内容、群UI与真实自然录像尚未完成。新增20项诊断生产专项，存读续跑的机械确定性不代替真实开局replay/seek/续录。详见[当前4d报告](phase4d.report.md)。

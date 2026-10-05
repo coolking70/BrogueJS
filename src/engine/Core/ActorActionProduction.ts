@@ -4,6 +4,7 @@ import { actorSourceRevision, spatialOf } from '../Movement/CreatureSpatial';
 import { sourceFootprintVersion } from '../Movement/AttackShape';
 import type { Game } from './Game';
 import type { ActorActionScope } from './ActorActionScope';
+import type { BodyGroupState } from '../Movement/SpatialSchema';
 import { bindProductionActorActionSession, invalidateProductionActorActionSession, isProductionActorActionRunInvalid, unbindProductionActorActionSession } from './ActorActionSession';
 import {
     actorSubactionHasPendingSegments, createActorActionScheduler, validateActorActionSchedulerBinding, validateActorActionSchedulerState,
@@ -15,6 +16,7 @@ export interface ActorActionProductionWorld {
     depth: number;
     player: Creature;
     levels: readonly { depth: number; actors: readonly Creature[] }[];
+    bodyGroups?: readonly BodyGroupState[];
 }
 export type ActorActionInterruptionReason = 'source-changed' | 'incapacitated' | 'layer-change';
 export interface ProductionActorActionOptions {
@@ -47,10 +49,16 @@ function aliveSource(actor: Creature): boolean {
 }
 function incapacitatedSource(actor: Creature): boolean {
     return (actor.spatial?.actionLockInTicks ?? 0) > 0 || actor.hasStatus('paralyzed') || actor.hasStatus('entranced')
-        || (actor instanceof Monster && (actor.isCaged || actor.state === MonsterState.ASLEEP));
+        || (actor instanceof Monster && (actor.isCaged || actor.state === MonsterState.ASLEEP
+            && (!actor.spatial?.bodyMember || actor.spatial.bodyMember.groupId === actor.id)));
 }
-function validSource(actor: Creature, source: Readonly<ActorSubaction>): boolean {
+function validSource(actor: Creature, source: Readonly<ActorSubaction>, world: ActorActionProductionWorld): boolean {
     const view = spatialOf(actor);
+    if (actor.spatial?.bodyMember) {
+        const group = world.bodyGroups?.find(g => g.groupId === view.groupId);
+        if (!group?.members.some(slot => slot.partId === view.partId && slot.entityId === actor.id && slot.life === 'active'
+            && slot.generation === source.sourceGeneration)) return false;
+    } else if (source.sourceGeneration !== undefined) return false;
     return (view.partId ?? 'body') === source.sourcePartId && sourceFootprintVersion(view) === source.sourceFootprintVersion;
 }
 /** Candidate-world-only validation. It never reads or mutates the previous Game. */
@@ -63,7 +71,7 @@ export function validateProductionActorActionState(state: unknown, world: ActorA
         writeOwnerTicks: () => { throw new Error('Validation cannot write action clocks'); },
         resolveSegment: () => { throw new Error('Validation cannot resolve actions'); },
         finishAction: () => { throw new Error('Validation cannot finish actions'); },
-        isSourceValid: (source, depth) => { const row = actors.get(source.sourceEntityId); return !!row && row.depth === depth && validSource(row.actor, source); },
+        isSourceValid: (source, depth) => { const row = actors.get(source.sourceEntityId); return !!row && row.depth === depth && validSource(row.actor, source, world); },
         onFault: error => { throw error; },
     };
     validateActorActionSchedulerBinding(state, host);
@@ -78,7 +86,7 @@ export function validateProductionActorActionState(state: unknown, world: ActorA
                 throw new Error('Action source identity mismatch');
             if (actorSubactionHasPendingSegments(source)) {
                 if (bundle.depth !== world.depth) throw new Error('Cached action contains an unreleased attack');
-                if (incapacitatedSource(entity.actor)) throw new Error('Incapacitated source contains an unreleased attack');
+                if (incapacitatedSource(entity.actor) || incapacitatedSource(actors.get(bundle.decisionOwnerId)!.actor)) throw new Error('Incapacitated source contains an unreleased attack');
             }
         }
     }
@@ -92,7 +100,7 @@ export function createProductionActorActionSession(game: Game, options: Producti
     const liveSourceValid = (source: Readonly<ActorSubaction>, actor: Creature): boolean => {
         let baseline = sourceBindings.get(source);
         if (!baseline) { baseline = { actor, revision: actorSourceRevision(actor) }; sourceBindings.set(source, baseline); }
-        return baseline.actor === actor && baseline.revision === actorSourceRevision(actor) && validSource(actor, source);
+        return baseline.actor === actor && baseline.revision === actorSourceRevision(actor) && validSource(actor, source, game.actorActionWorld());
     };
     const host: ActorActionSchedulerHost = {
         decisionOwnerId: id => row(id)?.actor.spatial?.bodyMember?.groupId ?? id,
@@ -120,7 +128,7 @@ export function createProductionActorActionSession(game: Game, options: Producti
             const entity = row(source.sourceEntityId);
             let reason: ActorActionInterruptionReason | null = null;
             if (binding.suspendedDepth === bundle.depth || entity?.depth !== bundle.depth) reason = 'layer-change';
-            else if (entity && incapacitatedSource(entity.actor)) reason = 'incapacitated';
+            else if (entity && (incapacitatedSource(entity.actor) || !!row(bundle.decisionOwnerId) && incapacitatedSource(row(bundle.decisionOwnerId)!.actor))) reason = 'incapacitated';
             else if (binding.changedSources.has(source.sourceEntityId) || (entity && actorSubactionHasPendingSegments(source) && !liveSourceValid(source, entity.actor))) reason = 'source-changed';
             if (!reason) return null;
             binding.interruption = reason;
@@ -159,14 +167,14 @@ export function reconcileProductionActorActions(game: Game): void {
 }
 /** Called after a native displacement/identity change commits. Nested native
  * hits defer cancellation only until their indivisible resolver returns. */
-export function notifyProductionActorSourceChanged(game: Game, sourceEntityId: number): void {
+export function notifyProductionActorSourceChanged(game: Game, sourceEntityId: number, defer = false): void {
     const binding = bindings.get(game); if (!binding) return;
     binding.options.sourceChanged?.(sourceEntityId);
     const source = binding.options.state.bundles.flatMap(bundle => bundle.subactions)
         .find(child => child.sourceEntityId === sourceEntityId && child.phaseIndex < child.phases.length);
     if (!source) return;
     if (source.phases[source.phaseIndex]?.kind !== 'break-recovery') binding.changedSources.add(sourceEntityId);
-    if (!binding.resolving) binding.scheduler.cancelDeadActions();
+    if (!defer && !binding.resolving) binding.scheduler.cancelDeadActions();
 }
 export function validateProductionActorActionSession(game: Game): void { bindings.get(game)?.scheduler.snapshot(); }
 export function suspendProductionActorActions(game: Game, fromDepth: number): void {

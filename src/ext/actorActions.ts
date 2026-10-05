@@ -44,7 +44,7 @@ export interface ActorAttackDefinitions {
 }
 export interface ActorAttackMetadata {
     actionId:number; profileId:string; paidCost:number; suppressTerminalSweep?:true;
-    subactions: {sourceSubactionId:number;attackId:string;facing:ActorAttackFacing;lockedCells:{x:number;y:number}[];
+    subactions: {sourceSubactionId:number;profileId?:string;attackId:string;facing:ActorAttackFacing;lockedCells:{x:number;y:number}[];
         shape:AttackShapeRequest;approvedRisks:{targetId:number;risks:ControlledActionRisk[]}[]}[];
 }
 export interface ProductionActorAttackState {

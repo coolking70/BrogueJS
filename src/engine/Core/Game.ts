@@ -31,7 +31,7 @@ import { SPATIAL_LIMITS, type SpatialWorldSnapshot } from '../Movement/SpatialSc
 import { assertNativeSpatial, assertSingleCellPlayer, nativeContactOf, footprintOf, footprintEvery, footprintSome, commitCreatureAnchor, squareAnchorRevision, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canFitAt, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
 import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction, isProductionActorActionRunInvalid, restoreProductionActorActionValidity } from './ActorActionSession';
 import { checkpointProductionActorActions, consumeProductionActorActionResume, disposeProductionActorActionSession, markProductionActorActionResume, notifyProductionActorSourceChanged, productionActorActionInputLocked, reconcileProductionActorActions, resumeProductionActorActions, suspendProductionActorActions, validateProductionActorActionSession, validateProductionActorActionState, type ActorActionProductionWorld } from './ActorActionProduction';
-import { bindPhasedAttackProduction, isActorStaggered, reconcileActorNativeRecovery, isActorParryCommand, prepareActorParryCommand, commitActorParryCommand, isActorDodgeCommand, prepareActorDodgeCommand, commitActorDodgeCommand, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
+import { bindPhasedAttackProduction, isActorStaggered, reconcileActorNativeRecovery, isActorParryCommand, prepareActorParryCommand, commitActorParryCommand, isActorDodgeCommand, prepareActorDodgeCommand, commitActorDodgeCommand, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, retirePhasedAttackSource, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
 import { assertActorActionScope, type ActorActionScope } from './ActorActionScope';
 import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
 import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
@@ -416,7 +416,7 @@ export class Game {
 
     /** Read-only world index for the optional persistent action executor. */
     public actorActionWorld(): ActorActionProductionWorld {
-        return { depth: this.depth, player: this.player, levels: [
+        return { depth: this.depth, player: this.player, ...(this.bodyGroups?.length ? { bodyGroups: this.bodyGroups } : {}), levels: [
             { depth: this.currentLevelDepth ?? this.depth, actors: [...this.monsters, ...this.dormantMonsters] },
             ...[...this.levels].map(([depth, level]) => ({ depth, actors: [...level.monsters, ...(level.dormantMonsters ?? [])] })),
             ...[...this.pendingFallenByDepth].map(([depth, actors]) => ({ depth, actors })),
@@ -441,6 +441,18 @@ export class Game {
             memberDamage: (actor, damage, kind) => this.applyBodyMemberDamage(actor, damage, kind),
             memberDamageCommitted: actor => this.finishBodyMemberDamage(actor),
             validateMemberBreak: request => this.validateMemberBreak(request),
+            memberBroken: (core, member) => {
+                reconcileActorNativeRecovery(this, core.id);
+                const group = this.bodyGroups!.find(g => g.groupId === member.groupId)!;
+                const retired = retiredBodyParts(this.spatialCatalog.body(group.bodyDefinitionId), group);
+                for (const slot of group.members) if (retired.has(slot.partId) && slot.entityId !== null) {
+                    const actor = this.monsters.find(c => c.id === slot.entityId);
+                    if (actor) cancelPhasedAttacksAtZone(this, actor, 'body', true);
+                }
+                if ((core.spatial?.actionLockInTicks ?? 0) > 0) for (const slot of group.members)
+                    if (slot.entityId !== null) notifyProductionActorSourceChanged(this, slot.entityId, true);
+                this.hoveredCell = null; this.hoveredText = '';
+            },
             checkpointZoneBreak: () => {
                 const world=this.actorActionWorld(),actors=[world.player,...world.levels.flatMap(level=>level.actors)];
                 const clocks=[...new Set(actors)].map(actor=>({actor,ticks:actor.ticksUntilTurn,move:actor.movementSpeed,attack:actor.attackSpeed}));
@@ -10030,7 +10042,12 @@ export class Game {
                 monsterTakeTurn: (monster, stealthRange) => {
                     const carried = monster.carriedItem;
                     if (monster.spatial?.bodyMember) {
-                        if (!monster.prepareNativeDecision(game, stealthRange)) game.takeBodyDecision(monster);
+                        if (!monster.prepareNativeDecision(game, stealthRange)) {
+                            const result = selectNativeActorAction(game, monster.id);
+                            if (result === 'native-fallback') game.takeBodyDecision(monster);
+                            else if (!['handled', 'blocked'].includes(result) || monster.ticksUntilTurn <= 0)
+                                throw new Error('Composite selection must establish a positive timer');
+                        }
                     } else if (actorActionSchedulerFor(game)) {
                         // One shared prelude per FREE decision; busy phase boundaries
                         // never enter this path. Native fallback runs only its remainder.
@@ -10713,6 +10730,7 @@ export class Game {
                     new Set([decodedPlayer.id,...(restored.get(snapshot.depth)?.monsters??[]).map(actor=>actor.id)]));
                 if (actionBinding) validateProductionActorActionState(actionBinding.state && typeof actionBinding.state === 'object' && !Array.isArray(actionBinding.state) ? actionBinding.state.scheduler : null, {
                     depth: snapshot.depth, player: decodedPlayer,
+                    ...(snapshot.run.spatialWorld?.groups.length ? { bodyGroups: snapshot.run.spatialWorld.groups } : {}),
                     levels: [
                         ...[...restored].map(([depth, level]) => ({ depth, actors: [...level.monsters, ...(level.dormantMonsters ?? [])] })),
                         ...snapshot.pendingFallenByDepth.map(queue => ({ depth: queue.depth,
@@ -11538,11 +11556,15 @@ export class Game {
         for (const group of this.bodyGroups ?? []) if (foreground.has(group.coreId))
             for (const slot of group.members) if (slot.life === 'active') slot.readyInTicks = Math.max(0, slot.readyInTicks - ticks);
     }
-    private validateMemberBreak(request: PartBreakRequest): boolean {
+    private validateMemberBreak(request: PartBreakRequest): import('../../ext/partBreak').PartBreakMemberIdentity | false {
         const group = this.bodyGroups?.find(g => g.groupId === request.groupId);
-        return !!group && request.actorId === group.coreId && request.zoneId === 'body'
-            && group.members.some(s => s.partId === request.partId && s.entityId !== group.coreId && s.life === 'active'
-                && s.entityId !== null && s.generation === request.generation);
+        const slot = group?.members.find(s => s.partId === request.partId && s.entityId !== group.coreId && s.life === 'active'
+            && s.entityId !== null && s.generation === request.generation);
+        const actor = [...this.monsters, ...this.dormantMonsters].find(c => c.id === slot?.entityId);
+        if (!group || request.actorId !== group.coreId || request.zoneId !== 'body' || !slot || !actor
+            || actor.hp <= 0 || !this.ownsBodyMember(actor)) return false;
+        return { entityId: actor.id, groupId: group.groupId, partId: slot.partId, generation: slot.generation,
+            bodyDefinitionId: group.bodyDefinitionId };
     }
     private applyBodyMemberDamage(actor: Creature, damage: number, kind: import('../../ext/causality').DamageKind): number | undefined {
         const group = this.bodyGroups?.find(g => g.groupId === actor.spatial?.bodyMember?.groupId);
@@ -11589,6 +11611,7 @@ export class Game {
             actor.seized = actor.seizing = false;
             this.demoteMonsterFromLeadership(actor);
             notifyProductionActorSourceChanged(this, actor.id);
+            retirePhasedAttackSource(this, actor.id);
             this.extensionRuntime?.causality.clearCreature(actor.id);
             this.everSeenMonsters.delete(actor); this.visibleMonsters.delete(actor); this.examinedEntityIds.delete(actor.id);
         }
@@ -11613,7 +11636,7 @@ export class Game {
         if (!target) return;
         let count = 0, maxTicks = 0;
         for (const partId of order) {
-            if (count === 4 || core.hp <= 0 || target.hp <= 0) break;
+            if (count === 4 || core.hp <= 0 || target.hp <= 0 || isActorStaggered(this, core.id)) break;
             const slot = group.members.find(s => s.partId === partId)!;
             const source = this.monsters.find(c => c.id === slot.entityId);
             if (!source || slot.life !== 'active' || slot.readyInTicks > 0 || source.hasStatus('paralyzed') || source.hasStatus('entranced')
@@ -11625,7 +11648,7 @@ export class Game {
             slot.readyInTicks = source.attackSpeed;
             maxTicks = Math.max(maxTicks, source.attackSpeed); count++;
         }
-        if (count) { core.ticksUntilTurn = maxTicks; return; }
+        if (count) { core.ticksUntilTurn = maxTicks; reconcileActorNativeRecovery(this, core.id); return; }
         const spatial = new CreatureSpatial(this.spatialWorldPort(), this.spatialCatalog);
         spatial.groups.push(group);
         try {

@@ -257,7 +257,8 @@ export class ActorCombatResolutionAuthority {
         const view = this.game.spatialOf(source), locked = new Set(segment.lockedCells.map(p => `${p.x},${p.y}`));
         // Projection may shrink when a wall appears, but a removed wall never
         // grows the hit area beyond cells that were actually telegraphed.
-        return projectAttackShape(view, view.cells, segment.shape, {
+        const groupCells=source.spatial?.bodyMember?this.game.monsters.filter(c=>c.hp>0&&c.spatial?.bodyMember?.groupId===view.groupId).flatMap(c=>footprintOf(c)):view.cells;
+        return projectAttackShape(view, groupCells, segment.shape, {
             contains: p => this.game.grid.isValidPos(p.x, p.y),
             lineOfEffect: (a, b) => this.game.hasLineOfSight(a.x, a.y, b.x, b.y),
         }).filter(p => locked.has(`${p.x},${p.y}`));
@@ -295,14 +296,17 @@ export class ActorCombatResolutionAuthority {
         const a = this.liveActor(intent.sourceEntityId), d = this.liveActor(intent.targetEntityId);
         if (!a || !d || a === d || a.hp <= 0 || d.hp <= 0 || (a.spatial?.actionLockInTicks ?? 0) > 0 || a.hasStatus('paralyzed') || a.hasStatus('entranced')
             || a.hasStatus('confused') || (this.defense(a.id)?.staggerRemainingTicks ?? 0) > 0) return null;
-        // Independent native bodies include rigid masks and authorized fixed
-        // zones. Composite members remain rejected, never point-reduced.
+        // Registered members retain their own physical source, with the core
+        // owning sleep/decision state and the production action clock.
         assertNativeSpatial(a); assertNativeSpatial(d);
-        if (a instanceof Monster && (a.isDormant || a.deathProcessed || a.isCaged || a.state === MonsterState.ASLEEP
-            || a.hasBehavior('MONST_IMMOBILE') || a.hasBehavior('MONST_TURRET')
-            || a.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION'))) return null;
+        const owner=a.spatial?.bodyMember?this.liveActor(a.spatial.bodyMember.groupId):a;
+        if (!owner || owner.hp<=0 || (owner.spatial?.actionLockInTicks??0)>0 || owner.hasStatus('paralyzed') || owner.hasStatus('entranced')) return null;
+        if (a instanceof Monster && (a.spatial?.bodyMember && !this.game.ownsBodyMember(a) || a.isDormant || a.deathProcessed || a.isCaged
+            || owner instanceof Monster && owner.state === MonsterState.ASLEEP
+            || !a.spatial?.bodyMember && (a.hasBehavior('MONST_IMMOBILE') || a.hasBehavior('MONST_TURRET')
+                || a.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')))) return null;
         if (d instanceof Monster && (d.isDormant || d.deathProcessed || d.isCaged)) return null;
-        if (!monstersAreEnemies(a, d)) return null;
+        if (!monstersAreEnemies(owner, d) || a.spatial?.bodyMember && d.spatial?.bodyMember?.groupId===a.spatial.bodyMember.groupId) return null;
         if (!segment && !this.game.meleeContact(a, d)) return null;
         if (segment && this.sourceVersion(a) !== segment.sourceFootprintVersion) return null;
         if (a instanceof Player) {

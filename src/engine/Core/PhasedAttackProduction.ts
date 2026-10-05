@@ -36,17 +36,21 @@ function shapeFor(attack:ActorAttackDefinition,index:number,facing:ActorAttackFa
 }
 function cellsFor(game:Game,source:Creature,shape:AttackShapeRequest) {
     const view=game.spatialOf(source);
-    return projectAttackShape(view,view.cells,shape,{contains:p=>game.grid.isValidPos(p.x,p.y),lineOfEffect:(a,b)=>game.hasLineOfSight(a.x,a.y,b.x,b.y)}).map(p=>({...p}));
+    const groupCells=source.spatial?.bodyMember?game.monsters.filter(c=>c.hp>0&&c.spatial?.bodyMember?.groupId===view.groupId).flatMap(c=>game.footprintOf(c)):view.cells;
+    return projectAttackShape(view,groupCells,shape,{contains:p=>game.grid.isValidPos(p.x,p.y),lineOfEffect:(a,b)=>game.hasLineOfSight(a.x,a.y,b.x,b.y)}).map(p=>({...p}));
 }
 function eligible(game:Game,source:Creature,session:Session):boolean {
-    if (game.isGameOver||game.interactionActive||source.hp<=0||source.ticksUntilTurn>0||session.scheduler.isBusy(source.id)
+    const owner=source.spatial?.bodyMember?actor(game,source.spatial.bodyMember.groupId):source;
+    const slot=source.spatial?.bodyMember?game.bodyGroups?.find(g=>g.coreId===owner?.id)?.members.find(s=>s.entityId===source.id):undefined;
+    if (!owner||owner.hp<=0 || source.spatial?.bodyMember && (!(source instanceof Monster) || !game.ownsBodyMember(source) || !slot || slot.readyInTicks>0)) return false;
+    if (game.isGameOver||game.interactionActive||source.hp<=0||owner.ticksUntilTurn>0||session.scheduler.isBusy(owner.id)
         || isActorStaggered(game,source.id) || nativeRecovery(session.state.actors.find(row=>row.actorId===source.id))>0
         || (source.spatial?.actionLockInTicks ?? 0) > 0
         ||['paralyzed','entranced','confused'].some(status=>source.hasStatus(status as 'paralyzed'))) return false;
-    if (source instanceof Monster && (source.isCaged||source.isDormant||source.deathProcessed||source.state===MonsterState.ASLEEP
-        ||source.state===MonsterState.FLEEING||source.hasBehavior('MONST_IMMOBILE')||source.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION'))) return false;
-    const view=game.spatialOf(source);
-    return view.groupId===source.id; // Current production bodies are independent native/square actors.
+    if (source instanceof Monster && (source.isCaged||source.isDormant||source.deathProcessed
+        ||owner instanceof Monster&&(owner.state===MonsterState.ASLEEP||owner.state===MonsterState.FLEEING)
+        ||!source.spatial?.bodyMember&&(source.hasBehavior('MONST_IMMOBILE')||source.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')))) return false;
+    return true;
 }
 function profileId(session:Session,game:Game,source:Creature):string|undefined {
     return source===game.player?session.definitions.playerProfileId:source instanceof Monster?
@@ -109,7 +113,7 @@ function advanceResources(game:Game,session:Session,delta:number):void {
     session.state.actors.sort((a,b)=>a.actorId-b.actorId);
     for(const row of session.state.actors){
         const source=actor(game,row.actorId);if(!source||source.hp<=0)continue; // Cached layers freeze.
-        const bundle=session.state.scheduler.bundles.find(b=>b.decisionOwnerId===source.id&&b.depth===game.depth);
+        const bundle=session.state.scheduler.bundles.find(b=>(b.decisionOwnerId===source.id||b.subactions.some(s=>s.sourceEntityId===source.id&&s.phaseIndex<s.phases.length))&&b.depth===game.depth);
         const current=resourcesFor(game,session,source);
         if(!bundle&&row.profileId!==current.profile.id){
             row.profileId=current.profile.id;row.stamina=Math.min(row.stamina,current.policy.staminaCapacity);
@@ -117,7 +121,7 @@ function advanceResources(game:Game,session:Session,delta:number):void {
             row.poise=Math.min(row.poise,current.policy.poiseCapacity);row.poiseRecoveryRemainder=0;row.poiseRecoveryDelayRemaining=Math.min(row.poiseRecoveryDelayRemaining,current.policy.poiseRecoveryDelayTicks);
         }
         const policy=session.definitions.resourcePolicies.find(p=>p.id===session.definitions.profiles.find(p=>p.id===row.profileId)!.resourcePolicyId)!;
-        const phases:ActorResourcePhase[]=bundle?bundle.subactions.flatMap(s=>s.phases[s.phaseIndex]?[s.phases[s.phaseIndex]!.kind]:[]):[];
+        const phases:ActorResourcePhase[]=bundle?bundle.subactions.filter(s=>s.sourceEntityId===source.id||bundle.decisionOwnerId===source.id).flatMap(s=>s.phases[s.phaseIndex]?[s.phases[s.phaseIndex]!.kind]:[]):[];
         if(!defenseSourceValid(game,session,source)){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}
         // Native status/catch-up clocks may exceed dodge recovery. Split the
         // resource interval so differing idle/recovery policies stay additive.
@@ -186,6 +190,62 @@ function commit(game:Game,plan:PhasedAttackPlan,scope:ActorActionScope):boolean 
     game.extensionRuntime?.notifyCommittedAction({actorId:source.id,action:'attack'});
     return true;
 }
+/** One core decision, independent source payments and scopes, one max-duration
+ * bundle. All sources are revalidated before the first mechanical write. */
+function commitBody(game:Game,core:Monster,plans:readonly PhasedAttackPlan[],scope:ActorActionScope):void {
+    const session=sessions.get(game)!;
+    assertNativeActorDecisionScope(scope,game,core.id);
+    if (!plans.length||plans.length>4||!plans.every(plan=>{
+        const source=actor(game,plan.sourceEntityId);
+        return source?.spatial?.bodyMember?.groupId===core.id&&canonical(prepare(game,source,plan.attackId,plan.facing))===canonical(plan);
+    })) throw new Error('Stale composite attack preparation');
+    const group=game.bodyGroups!.find(g=>g.coreId===core.id)!,{state,definitions}=session;
+    if(state.nextActionId>=Number.MAX_SAFE_INTEGER||state.revision>=Number.MAX_SAFE_INTEGER-6)throw new Error('Phased attack identity exhausted');
+    const bundle=createActorActionBundle({actionId:state.nextActionId,depth:game.depth,decisionOwnerId:core.id,timeChargeOwnerId:core.id,
+        subactions:plans.map(plan=>{const attack=definitions.attacks.find(a=>a.id===plan.attackId)!;
+            return {sourceEntityId:plan.sourceEntityId,sourcePartId:game.spatialOf(actor(game,plan.sourceEntityId)!).partId!,sourceGeneration:0,sourceFootprintVersion:plan.sourceVersion,
+                phases:[{kind:'windup' as const,durationTicks:attack.windupTicks+attack.segments[0]!.delayTicks,segmentIndex:0},
+                    ...attack.segments.slice(1).map((segment,index)=>({kind:'inter-segment' as const,durationTicks:segment.delayTicks,segmentIndex:index+1})),
+                    {kind:'recovery' as const,durationTicks:attack.recoveryTicks,segmentIndex:null}]};})});
+    const own=resourcesFor(game,session,core),missing=new Set([core.id,...plans.map(p=>p.sourceEntityId)].filter(id=>!state.actors.some(r=>r.actorId===id)));
+    if(state.actors.length+missing.size>4096)throw new Error('Actor resource budget exhausted');
+    const metadata:ActorAttackMetadata={actionId:bundle.actionId,profileId:own.profile.id,paidCost:plans.reduce((n,p)=>n+p.cost,0),
+        subactions:bundle.subactions.map(child=>{const plan=plans.find(p=>p.sourceEntityId===child.sourceEntityId)!;
+            return {sourceSubactionId:child.sourceSubactionId,profileId:plan.profileId,attackId:plan.attackId,facing:plan.facing,
+                shape:structuredClone(plan.shape),lockedCells:structuredClone(plan.cells),approvedRisks:[]};})};
+    const before=structuredClone(state),cooldowns=group.members.map(s=>s.readyInTicks);
+    try {
+        if(!own.row)state.actors.push(initialResource(core.id,own.profile.id,own.policy));
+        for(const plan of plans)if(!pay(game,session,actor(game,plan.sourceEntityId)!,plan.cost))throw new Error('Insufficient source stamina');
+        state.actors.sort((a,b)=>a.actorId-b.actorId);
+        state.nextActionId++;state.actions.push(metadata);
+        session.scheduler.commitBundle(bundle);
+        for(const child of bundle.subactions)group.members.find(s=>s.entityId===child.sourceEntityId)!.readyInTicks=
+            child.phases.reduce((sum,phase)=>sum+phase.durationTicks,0);
+    }catch(error){Object.assign(state,before);group.members.forEach((s,i)=>{s.readyInTicks=cooldowns[i]!;});
+        invalidateProductionActorActionSession(game);game.invalidateActorActionRun(error instanceof Error?error:new Error(String(error)));throw error;}
+    for(const plan of plans)game.extensionRuntime!.notifyCommittedAction({actorId:plan.sourceEntityId,action:'attack'});
+}
+function selectBody(game:Game,session:Session,core:Monster,scope:ActorActionScope):'handled'|'native-fallback' {
+    if(!eligible(game,core,session)||core.hasStatus('magical_fear')||core.state!==MonsterState.HUNTING&&!core.isAlly)return 'native-fallback';
+    const group=game.bodyGroups!.find(g=>g.coreId===core.id)!,plans:PhasedAttackPlan[]=[];
+    const targets=[game.player,...game.monsters].filter(target=>target.hp>0&&target.spatial?.bodyMember?.groupId!==core.id&&monstersAreEnemies(core,target));
+    targets.sort((a,b)=>game.nearestContact(core,a).distance-game.nearestContact(core,b).distance||a.id-b.id);
+    for(const slot of [...group.members].sort((a,b)=>a.partId<b.partId?-1:a.partId>b.partId?1:0)){
+        if(plans.length===4)break;
+        const source=actor(game,slot.entityId??0);if(!source||slot.life!=='active'||!eligible(game,source,session))continue;
+        const profile=session.definitions.profiles.find(p=>p.id===profileId(session,game,source));if(!profile)continue;
+        for(const target of targets){
+            if(!bodySightContact(game.grid,source,target,(x,y,tx,ty)=>game.hasLineOfSight(x,y,tx,ty)))continue;
+            const contact=game.nearestContact(source,target);if(!contact)continue;
+            const dx=Math.sign(contact.to.x-contact.from.x),dy=Math.sign(contact.to.y-contact.from.y);
+            const facing=facings.find(f=>directionVectors[f].x===dx&&directionVectors[f].y===dy);if(!facing)continue;
+            const plan=profile.attackIds.map(id=>prepare(game,source,id,facing)).find(plan=>plan&&game.collectBodyTargets(plan.cells,{effect:'area-damage'},new Set()).some(hit=>hit.entity===target));
+            if(plan){plans.push(plan);break;}
+        }
+    }
+    if(!plans.length)return 'native-fallback';commitBody(game,core,plans,scope);return 'handled';
+}
 function resolve(game:Game,session:Session,boundary:Readonly<ActorActionBoundary>):void {
     const source=actor(game,boundary.sourceEntityId),metadata=session.state.actions.find(a=>a.actionId===boundary.actionId);
     const sub=metadata?.subactions.find(s=>s.sourceSubactionId===boundary.sourceSubactionId);
@@ -215,7 +275,9 @@ export function bindPhasedAttackProduction(game:Game):void {
         elapsed:delta=>advanceResources(game,session,delta),
         inputLocked:()=>session.state.actors.some(row=>row.actorId===game.player.id&&nativeRecovery(row)>0),
         resumeResources:()=>{for(const row of session.state.actors){const source=actor(game,row.actorId);if(source&&nativeRecovery(row)>0)source.ticksUntilTurn=nativeRecovery(row);}},
-        sourceChanged:id=>{const row=session.state.actors.find(r=>r.actorId===id);if(row&&(row.dodgeRemainingTicks||row.parryRemainingTicks)){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;bumpRevision(session.state);}},
+        sourceChanged:id=>{const row=session.state.actors.find(r=>r.actorId===id);if(row&&(row.dodgeRemainingTicks||row.parryRemainingTicks)){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;bumpRevision(session.state);}
+            if(!actor(game,id)||actor(game,id)!.hp<=0)for(const bundle of session.state.scheduler.bundles)
+                for(const child of bundle.subactions)if(child.sourceEntityId===id){const sub=session.state.actions.find(a=>a.actionId===bundle.actionId)?.subactions.find(s=>s.sourceSubactionId===child.sourceSubactionId);if(sub)sub.lockedCells=[];}},
         leftDepth:()=>{bumpRevision(session.state);for(const row of session.state.actors){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}},
         interrupted:(source,bundle,reason)=>{bumpRevision(session.state);const metadata=session.state.actions.find(a=>a.actionId===bundle.actionId);if(metadata&&reason==='layer-change')metadata.suppressTerminalSweep=true;const sub=metadata?.subactions.find(s=>s.sourceSubactionId===source.sourceSubactionId);if(sub)sub.lockedCells=[];},
         shouldSweep:bundle=>!session.state.actions.find(action=>action.actionId===bundle.actionId)?.suppressTerminalSweep,
@@ -223,6 +285,7 @@ export function bindPhasedAttackProduction(game:Game):void {
             if(row&&row.poise===0&&bundle.subactions.some(child=>child.phases.some(phase=>phase.kind==='break-recovery'))){const source=actor(game,row.actorId);if(source){const policy=resourcesFor(game,session,source).policy;row.poise=policy.poiseBreakRecoveryValue;row.poiseRecoveryRemainder=0;}}bumpRevision(session.state);session.state.actions=session.state.actions.filter(a=>a.actionId!==bundle.actionId);},
         select:(id,scope)=>{
             const source=actor(game,id);if(!(source instanceof Monster)||!eligible(game,source,session))return 'native-fallback';
+            if(source.spatial?.bodyMember)return selectBody(game,session,source,scope);
             // Native survival, corpse learning and spells keep their existing priority.
             if (source.bolts.length || source.hasAbility('MA_CAST_SUMMON') || source.targetCorpseLoc
                 || source.hasStatus('magical_fear') || (!source.isAlly && source.state!==MonsterState.HUNTING)
@@ -262,7 +325,7 @@ export function bindPhasedAttackProduction(game:Game):void {
     for(const row of session.state.actors){const source=actor(game,row.actorId);if(source&&(row.dodgeRemainingTicks||row.parryRemainingTicks))session.defenseSources.set(source.id,{actor:source,revision:actorSourceRevision(source),depth:game.depth});}
 }
 /** Whole-body sources use every zone; targets use only pending locked cells. */
-export function cancelPhasedAttacksAtZone(game: Game, target: Creature, zoneId: string): void {
+export function cancelPhasedAttacksAtZone(game: Game, target: Creature, zoneId: string, defer = false): void {
     const session = sessions.get(game); if (!session) return;
     reconcileActorNativeRecovery(game,target.id);
     const cells = new Set(game.footprintOf(target).filter(p => p.zoneId === zoneId).map(p => `${p.x},${p.y}`));
@@ -274,7 +337,7 @@ export function cancelPhasedAttacksAtZone(game: Game, target: Creature, zoneId: 
             if (sub?.lockedCells.some(p => cells.has(`${p.x},${p.y}`))) sources.add(child.sourceEntityId);
         }
     }
-    for (const id of sources) notifyProductionActorSourceChanged(game, id);
+    for (const id of sources) notifyProductionActorSourceChanged(game, id, defer);
 }
 export function isPhasedAttackCommand(game:Game,data:unknown):boolean {
     if(typeof data!=='string')return false;
@@ -304,12 +367,20 @@ export function collectPhasedAttackActors(game:Game,reachable:readonly Creature[
         if(row.parryRemainingTicks&&(!source||!defenseSourceValid(game,session,source))){row.parryRemainingTicks=0;row.parryFacing=null;}
         if(source&&source.hp<=0){row.dodgeRemainingTicks=0;row.dodgeRecoveryRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;row.parryRecoveryRemainingTicks=0;row.staggerRemainingTicks=0;row.poise=resourcesFor(game,session,source).policy.poiseBreakRecoveryValue;row.poiseRecoveryRemainder=0;}
         const next=source && (profileId(session,game,source)??session.definitions.playerProfileId);
-        if(!next || next===row.profileId || session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===row.actorId))continue;
+        if(!next || next===row.profileId || session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===row.actorId
+            || bundle.subactions.some(child=>child.sourceEntityId===row.actorId&&child.phaseIndex<child.phases.length)))continue;
         const profile=session.definitions.profiles.find(profile=>profile.id===next)!;
         const policy=session.definitions.resourcePolicies.find(policy=>policy.id===profile.resourcePolicyId)!;
         bumpRevision(session.state);row.profileId=next;row.stamina=Math.min(row.stamina,policy.staminaCapacity);row.regenRemainder=0;row.regenDelayRemaining=Math.min(row.regenDelayRemaining,policy.regenDelayTicks);
         row.poise=Math.min(row.poise,policy.poiseCapacity);row.poiseRecoveryRemainder=0;row.poiseRecoveryDelayRemaining=Math.min(row.poiseRecoveryDelayRemaining,policy.poiseRecoveryDelayTicks);
     }
+}
+/** Administrative retirement removes the source's ledger only after its child
+ * is inert. An indivisible resolver may defer that cancellation to its return. */
+export function retirePhasedAttackSource(game:Game,id:number):void {
+    const session=sessions.get(game);if(!session||session.state.scheduler.bundles.some(bundle=>bundle.subactions.some(child=>child.sourceEntityId===id&&child.phaseIndex<child.phases.length)))return;
+    if(session.state.actors.some(row=>row.actorId===id)){session.state.actors=session.state.actors.filter(row=>row.actorId!==id);bumpRevision(session.state);}
+    session.defenseSources.delete(id);
 }
 
 /** Candidate-world geometry validation ignores current occlusion (a wall may
@@ -330,10 +401,12 @@ export function validatePhasedAttackGeometry(state:ProductionActorAttackState, d
         if(!metadata)throw new Error('Missing action metadata');
         for(const child of bundle.subactions) {
             const sub=metadata.subactions.find(sub=>sub.sourceSubactionId===child.sourceSubactionId),source=actors.get(child.sourceEntityId);
-            if(!sub||!source)throw new Error('Invalid action source metadata');
+            if(!sub)throw new Error('Invalid action source metadata');
+            if(child.cancelled&&child.phaseIndex===child.phases.length){if(sub.lockedCells.length)throw new Error('Retired source retains attack cells');continue;}
+            if(!source)throw new Error('Invalid action source metadata');
             const pending=child.phases.slice(child.phaseIndex).some(phase=>phase.segmentIndex!==null);
             const expected=source instanceof Monster?definitions.nativeProfiles.find(binding=>binding.monsterId===source.typeId)?.profileId:definitions.playerProfileId;
-            if(pending && (expected!==metadata.profileId || source.hasStatus('paralyzed') || source.hasStatus('entranced') || (source instanceof Monster && source.isCaged)))
+            if(pending && (expected!==(sub.profileId??metadata.profileId) || source.hasStatus('paralyzed') || source.hasStatus('entranced') || (source instanceof Monster && source.isCaged)))
                 throw new Error('Invalid pending source profile or eligibility');
             if(!sub.lockedCells.length)continue;
             const footprint=spatialOf(source).cells, own=new Set(footprint.map(cell=>`${cell.x},${cell.y}`));
@@ -424,9 +497,11 @@ function defenseSourceValid(game:Game,session:Session,source:Creature):boolean {
 /** Shared core-owned stagger eligibility, with the scheduler owning bundle recovery. */
 export function isActorStaggered(game:Game,actorId:number):boolean {
     const session=sessions.get(game);if(!session)return false;
+    const sourceId=actorId,member=actor(game,actorId)?.spatial?.bodyMember;
+    actorId=member?.groupId??actorId;
     const row=session.state.actors.find(row=>row.actorId===actorId);
     return (row?.staggerRemainingTicks??0)>0 || (!!row&&row.poise===0)
-        ||session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===actorId&&bundle.subactions.some(child=>child.phases[child.phaseIndex]?.kind==='break-recovery'));
+        ||session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===actorId&&bundle.subactions.some(child=>(!member||child.sourceEntityId===sourceId)&&child.phases[child.phaseIndex]?.kind==='break-recovery'));
 }
 export function nativeActorPoiseDamage(game:Game,actorId:number):number {
     const session=sessions.get(game),source=actor(game,actorId);
@@ -434,7 +509,9 @@ export function nativeActorPoiseDamage(game:Game,actorId:number):number {
 }
 /** Once per positive physical strike. No status/DOT, invented hit or extra die. */
 export function applyActorPoiseDamage(game:Game,targetId:number,amount:number):void {
-    const session=sessions.get(game),source=actor(game,targetId);
+    const session=sessions.get(game);if(!session)return;
+    targetId=actor(game,targetId)?.spatial?.bodyMember?.groupId??targetId;
+    const source=actor(game,targetId);
     if(!session||!source||source.hp<=0||!Number.isSafeInteger(amount)||amount<=0||amount>1_000_000)return;
     const current=resourcesFor(game,session,source),existing=current.row;
     const busy=session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===source.id);
@@ -459,7 +536,8 @@ export function applyActorPoiseDamage(game:Game,targetId:number,amount:number):v
         if(session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===source.id)){
             // Existing production interruption is deferred through the indivisible
             // native hit; pending later segments cannot resume after this strike.
-            notifyProductionActorSourceChanged(game,source.id);
+            const bundle=session.state.scheduler.bundles.find(bundle=>bundle.decisionOwnerId===source.id)!;
+            for(const child of bundle.subactions)notifyProductionActorSourceChanged(game,child.sourceEntityId);
         }else{row.staggerRemainingTicks=Math.max(source.ticksUntilTurn,recovery);source.ticksUntilTurn=row.staggerRemainingTicks;}
     }
     bumpRevision(session.state);
@@ -487,7 +565,7 @@ export interface ActorParryPlan {
 export function prepareActorParry(game:Game,sourceId:number,facing:ActorAttackFacing):ActorParryPlan|null {
     bindPhasedAttackProduction(game);
     const session=sessions.get(game),source=actor(game,sourceId);
-    if(!session||!source||!facings.includes(facing)||!eligible(game,source,session))return null;
+    if(!session||!source||source.spatial?.bodyMember&&source.spatial.bodyMember.groupId!==source.id||!facings.includes(facing)||!eligible(game,source,session))return null;
     const {policy,row}=resourcesFor(game,session,source);
     if((!row&&session.state.actors.length>=4096)||Math.min(row?.stamina??policy.initialStamina,policy.staminaCapacity)<session.definitions.parry.cost)return null;
     return deepFreeze({moduleId:session.moduleId,sourceEntityId:source.id,facing,revision:session.state.revision,
