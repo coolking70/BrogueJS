@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "version": "1.0.0",
+  "swarm": { "count": 200, "radius": 240, "hp": 40, "speed": 54, "damage": 5, "attackInterval": 36, "respawnDelay": 120 },
+  "elite": { "count": 8, "radius": 360, "hp": 260, "speed": 65, "damage": 16, "range": 1900, "blastRadius": 850, "windup": 24, "recovery": 42, "respawnDelay": 240 },
+  "boss": { "count": 1, "radius": 1024, "hp": 2200, "speed": 42, "damage": 28, "range": 3400, "blastRadius": 1900, "windup": 42, "recovery": 72, "respawnDelay": 360 },
+  "director": { "interval": 45, "batch": 8, "minimumDistance": 8192 },
+  "stagger": { "threshold": 70, "duration": 15 }
+}

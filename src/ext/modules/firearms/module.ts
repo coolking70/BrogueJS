@@ -62,7 +62,7 @@ export function createFirearms(host: RangedHost, restored?: unknown): RangedRunt
             state.projectiles = advanceProjectiles(host, state.projectiles);
             if (!host.health(state.ownerId)?.hp) state.pendingReload = null;
             const definition = WEAPONS[state.selected]!, weapon = state.weapons[state.selected]!;
-            const source = host.bodies().find(b => b.id === state.ownerId);
+            const source = host.body ? host.body(state.ownerId) : host.bodies().find(b => b.id === state.ownerId);
             if (source?.hp && control.fire && (definition.trigger === 'auto' || !state.held)
                 && !actions.isBusy(state.ownerId) && weapon.ammo > 0) {
                 weapon.ammo--; weapon.shotSequence++;

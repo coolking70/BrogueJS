@@ -27,13 +27,13 @@ function run(s: ShooterSession, until: number) { while (s.tick < until) { const 
 
 describe('S2 real Shooter gunplay persistence', () => {
     it.each([1, 7, 25, 87, 125, 306, 393, 613, 907, 916])('roundtrips full world and weapon continuation from tick %i', at => {
-        const a = new ShooterSession(919); run(a, at);
+        const a = new ShooterSession(919, { modules: ['firearms'] }); run(a, at);
         const checkpoint = JSON.parse(JSON.stringify(a.snapshot())), b = ShooterSession.fromSnapshot(checkpoint);
         expect(b.snapshot()).toEqual(checkpoint); run(a, at + 120); run(b, at + 120);
         expect(b.snapshot()).toEqual(a.snapshot()); expect(replayShooter(b.exportReplay()).snapshot()).toEqual(a.snapshot());
     });
     it('keeps reload movement active and saves a grenade in flight', () => {
-        const s = new ShooterSession(); s.advanceTick({ ...idleInput(1), buttons: 1 });
+        const s = new ShooterSession(7301, { modules: ['firearms'] }); s.advanceTick({ ...idleInput(1), buttons: 1 });
         for (let tick = 2; tick <= 9; tick++) s.advanceTick(idleInput(tick));
         const before = s.snapshot().actors[0]!.pose;
         s.advanceTick({ ...idleInput(10), moveY: 127 }, [{ tick: 10, kind: 'reload' }]);
@@ -45,7 +45,7 @@ describe('S2 real Shooter gunplay persistence', () => {
         expect(b.snapshot()).toEqual(s.snapshot());
     });
     it('respawns at a deterministic free fallback when a frozen enemy occupies the player spawn', () => {
-        const snapshot = new ShooterSession().snapshot(), enemy = snapshot.actors[1]!;
+        const snapshot = new ShooterSession(7301, { modules: ['firearms'] }).snapshot(), enemy = snapshot.actors[1]!;
         snapshot.damage.actors[0]!.hp = 0; snapshot.damage.actors[0]!.revision = 1;
         snapshot.actors[0]!.respawnTick = 90; snapshot.stats.deaths = 1;
         enemy.pose = { ...snapshot.actors[0]!.pose }; enemy.loc = worldToCell(enemy.pose);
@@ -57,7 +57,7 @@ describe('S2 real Shooter gunplay persistence', () => {
         expect(replayShooter(s.exportReplay()).snapshot()).toEqual(s.snapshot());
     });
     it('rejects missing/version-changed rules, incompatible S1 saves and tampered command streams', () => {
-        const s = new ShooterSession(); run(s, 400); const before = s.snapshot();
+        const s = new ShooterSession(7301, { modules: ['firearms'] }); run(s, 400); const before = s.snapshot();
         expect(() => ShooterSession.fromSnapshot(before, [])).toThrow('Missing');
         for (const mutate of [(v: any) => v.version = 2, (v: any) => v.modules[0].rules.fingerprint = 'foreign',
             (v: any) => v.modules[0].version = '99.0.0', (v: any) => v.ranged.shots++, (v: any) => v.moduleStates.unknown = {}]) {
@@ -70,7 +70,7 @@ describe('S2 real Shooter gunplay persistence', () => {
         expect(s.snapshot()).toEqual(before);
     });
     it('rejects malformed commands before mutation and supports the empty runtime subset', () => {
-        const s = new ShooterSession(), before = s.snapshot();
+        const s = new ShooterSession(7301, { modules: ['firearms'] }), before = s.snapshot();
         for (const commands of [[{ tick: 2, kind: 'reload' }], [{ tick: 1, kind: 'equip', slot: 99 }], [{ tick: 1, kind: 'reload', extra: true }]])
             expect(() => s.advanceTick(idleInput(1), commands as WeaponCommand[])).toThrow();
         expect(s.snapshot()).toEqual(before);
@@ -82,7 +82,7 @@ describe('S2 real Shooter gunplay persistence', () => {
 
 describe('S2 five-minute combat / rendering independence', () => {
     let replay: ShooterReplay;
-    beforeAll(() => { const s = new ShooterSession(123); run(s, 9000); replay = s.exportReplay(); });
+    beforeAll(() => { const s = new ShooterSession(123, { modules: ['firearms'] }); run(s, 9000); replay = s.exportReplay(); });
     it.each([30, 60, 144])('matches every state at %i render FPS including command timing and projectiles', fps => {
         const s = ShooterSession.fromSnapshot(replay.initial); let cursor = 0;
         const host = new SimulationHost({ get tick() { return s.tick; }, snapshot: () => s.snapshot(), advanceTick: (frame: typeof replay.frames[number]) => {
@@ -96,7 +96,7 @@ describe('S2 five-minute combat / rendering independence', () => {
         const states = replay.final.moduleStates.firearms as any; expect(states.weapons.every((w: any) => w.shotSequence > 0)).toBe(true);
     });
     it('replays independently of global RNG, wall clocks, and a second interleaved room', () => {
-        const before = rng.getState(), a = new ShooterSession(123), b = new ShooterSession(5);
+        const before = rng.getState(), a = new ShooterSession(123, { modules: ['firearms'] }), b = new ShooterSession(5, { modules: ['firearms'] });
         const date = vi.spyOn(Date, 'now').mockImplementation(() => { throw new Error('Wall clock'); });
         const perf = vi.spyOn(performance, 'now').mockImplementation(() => { throw new Error('Performance clock'); });
         try {

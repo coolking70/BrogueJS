@@ -14,7 +14,7 @@ import { KeyboardMovement, gamepadMovement } from './input/MovementAdapters';
 import { gamepadAim, gamepadButton } from './input/AimAdapters';
 
 const { t } = useTranslation();
-const STORAGE_KEY = 'broguejs-shooter-s2-checkpoint-v3';
+const STORAGE_KEY = 'broguejs-shooter-s3-checkpoint-v4';
 const modules = getRealtimeModules(), selectedModules = ref(modules.map(d => d.id));
 const input = new InputFrameAssembler(), keyboard = new KeyboardMovement();
 let session = new ShooterSession();
@@ -83,7 +83,7 @@ function verify(): void {
 }
 function exportReplay(): void {
     const url = URL.createObjectURL(new Blob([JSON.stringify(session.exportReplay())], { type: 'application/json' })), link = document.createElement('a');
-    link.href = url; link.download = 'broguejs-shooter-s2-replay.json'; link.click(); URL.revokeObjectURL(url);
+    link.href = url; link.download = 'broguejs-shooter-s3-replay.json'; link.click(); URL.revokeObjectURL(url);
 }
 async function importReplay(event: Event): Promise<void> {
     const element = event.target as HTMLInputElement, file = element.files?.[0]; if (!file) return;
@@ -142,6 +142,10 @@ onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListe
       <span v-else-if="selected?.ammo === 0">{{ t('shooter.emptyMagazine') }}</span>
       <span v-else>{{ combat ? t('shooter.ready') : t('shooter.noModule') }}</span>
       <span>{{ t('shooter.deaths', { count: snapshots.current.stats.deaths }) }}</span>
+    </div>
+    <div v-if="snapshots.current.population" class="population-hud" data-testid="population">
+      <span>{{ t('shooter.hordeCounts', { ...snapshots.current.population }) }}</span>
+      <span>{{ t('shooter.reinforcements', { count: snapshots.current.population.pending }) }}</span>
     </div>
     <ShooterCanvas :previous="snapshots.previous" :current="snapshots.current" :alpha="clock.alpha" :disabled="disabled"
       @aim="aimMouse" @fire="fire" />
@@ -209,6 +213,7 @@ footer { color: #748c7b; font-size: 11px; line-height: 1.8; margin-top: 26px; }
 
 .combat-hud { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 24px 0 16px; }
 .combat-hud label { display: block; font-size: 11px; color: #9aac9c; margin-bottom: 6px; }.combat-hud strong { white-space: nowrap; font: 30px ui-monospace, monospace; }.combat-hud small { font-size: 13px; color: #8aa08f; }
+.population-hud { display: flex; justify-content: space-between; gap: 8px; color: #c6abc8; font-size: 11px; margin: 8px 2px; flex-wrap: wrap; }
 .battle-status { display: flex; justify-content: space-between; font-size: 12px; color: #d2ef9b; margin: 12px 2px; min-height: 18px; }
 .weapons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }.weapons button { text-align: left; padding: 12px; }.weapons small { display: block; margin-top: 6px; color: #9aac9c; }.weapons .selected { border-color: #d2ef9b; background: #2a3b27; }
 .twin-controls { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 18px 0; }.combat-buttons { display: flex; gap: 10px; }.movement-help { font-size: 12px; line-height: 1.8; }.diagnostics { margin-top: 22px; color: #95a995; font-size: 12px; }.diagnostics summary { cursor: pointer; }.diagnostics .metrics strong { font-size: 24px; }

@@ -28,11 +28,12 @@ export function mayDamage(source: Pick<HealthActor, 'id' | 'team'>, target: Pick
  * S2 opens entity damage only; body/group targeting needs its own future port. */
 export class DamageResolutionAuthority {
     private readonly state: DamageState;
+    private readonly actors: Map<number, HealthActor>;
     private readonly plans = new WeakMap<PreparedDamage, { source: number; target: number }>();
-    constructor(state: DamageState) { validateDamageState(state); this.state = structuredClone(state); }
+    constructor(state: DamageState) { validateDamageState(state); this.state = structuredClone(state); this.actors = new Map(this.state.actors.map(a => [a.id, a])); }
     snapshot(): DamageState { return structuredClone(this.state); }
     read(id: number): Readonly<HealthActor> | undefined {
-        const a = this.state.actors.find(a => a.id === id); return a ? Object.freeze({ ...a }) : undefined;
+        const a = this.actors.get(id); return a ? Object.freeze({ ...a }) : undefined;
     }
     prepareDamageResolution(value: unknown): PreparedDamage | null {
         if (!record(value, ['sourceId', 'targetId', 'amount', 'kind', 'friendlyFire'])
@@ -48,7 +49,7 @@ export class DamageResolutionAuthority {
         const binding = this.plans.get(plan);
         if (!binding) throw new Error('Unknown or consumed damage plan');
         this.plans.delete(plan);
-        const s = this.read(plan.intent.sourceId), t = this.state.actors.find(a => a.id === plan.intent.targetId);
+        const s = this.read(plan.intent.sourceId), t = this.actors.get(plan.intent.targetId);
         if (!s || !t || t.hp === 0 || s.revision !== binding.source || t.revision !== binding.target) return null;
         const applied = Math.min(t.hp, plan.intent.amount);
         t.hp -= applied; t.revision++;
@@ -56,7 +57,7 @@ export class DamageResolutionAuthority {
     }
     /** Explicit training/respawn lifecycle, never exposed to rule modules. */
     restoreHealth(id: number): void {
-        const a = this.state.actors.find(a => a.id === id);
+        const a = this.actors.get(id);
         if (!a) throw new Error('Unknown health actor');
         a.hp = a.maxHp; a.revision++;
     }

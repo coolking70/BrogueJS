@@ -2,6 +2,7 @@ import type { DamageState } from '../../engine/Combat/DamageResolution';
 import type { KinematicPose, WorldPoint } from '../../engine/Movement/WorldUnits';
 import type { EnvironmentContact } from '../../engine/Movement/KinematicSpatial';
 import type { CombatEffect, RangedView, RuntimeManifest, WeaponCommand } from '../../engine/Simulation/RangedRuntime';
+import type { PopulationView } from '../../engine/Simulation/PopulationRuntime';
 import type { InputFrame } from './input/InputFrame';
 
 export const MAX_SHOOTER_TICKS = 108_000;
@@ -9,18 +10,18 @@ export const SHOOTER_BODY_RADIUS = 280;
 export const SHOOTER_MOVE_SPEED = 160;
 export const SPAWNS = [[5.5, 10.5], [10.5, 10.5], [6.5, 5.5], [5.5, 22.5], [16.5, 5.5], [17.5, 15.5], [32.5, 20.5]] as const;
 export interface ShooterActor {
-    id: number; pose: KinematicPose; loc: WorldPoint; radius: number; motionCredit: WorldPoint;
+    id: number; kind: 'player' | 'target' | 'swarm' | 'elite' | 'boss'; pose: KinematicPose; loc: WorldPoint; radius: number; motionCredit: WorldPoint;
     contacts: EnvironmentContact[]; contactTicks: { water: number; fire: number; gas: number };
     respawnTick: number; attackReadyTick: number; lastHitTick: number;
 }
 export interface ShooterSnapshot {
-    format: 'broguejs-shooter-s2'; version: 3; product: string; simulation: string; ticksPerSecond: number; arena: string;
+    format: 'broguejs-shooter-s3'; version: 4; product: string; simulation: string; ticksPerSecond: number; arena: string;
     modules: RuntimeManifest[]; moduleStates: Record<string, unknown>; seed: number; tick: number;
-    actors: ShooterActor[]; damage: DamageState; effects: CombatEffect[]; ranged: RangedView | null;
+    actors: ShooterActor[]; damage: DamageState; effects: CombatEffect[]; ranged: RangedView | null; population: PopulationView | null;
     stats: { kills: number; deaths: number; damageDealt: number; damageTaken: number };
 }
 export interface ShooterReplay {
-    format: 'broguejs-shooter-s2-replay'; version: 3; initial: ShooterSnapshot; frames: InputFrame[];
+    format: 'broguejs-shooter-s3-replay'; version: 4; initial: ShooterSnapshot; frames: InputFrame[];
     commands: WeaponCommand[]; final: ShooterSnapshot;
 }
 /** Property insertion order has no mechanical significance. */

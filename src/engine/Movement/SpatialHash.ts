@@ -24,7 +24,7 @@ export class SpatialHash {
         assertWorldPoint(body.pose);
         if (!Number.isSafeInteger(body.id) || body.id < 1 || !Number.isSafeInteger(body.radius)
             || body.radius < 1 || body.radius > WORLD_UNITS_PER_TILE) throw new Error('Invalid circle body');
-        const copy = structuredClone(body);
+        const copy: CircleBody = { id: body.id, radius: body.radius, pose: { ...body.pose } };
         const keys = this.keys(this.bounds(copy));
         this.remove(body.id);
         this.bodies.set(body.id, copy);
@@ -43,6 +43,6 @@ export class SpatialHash {
         const ids = new Set<number>();
         for (const key of this.keys(bounds)) for (const id of this.buckets.get(key) ?? []) ids.add(id);
         return [...ids].sort((a, b) => a - b).map(id => this.bodies.get(id)!)
-            .filter(body => circleTouchesAabb(body.pose, body.radius, bounds)).map(body => structuredClone(body));
+            .filter(body => circleTouchesAabb(body.pose, body.radius, bounds)).map(body => ({ id: body.id, radius: body.radius, pose: { ...body.pose } }));
     }
 }

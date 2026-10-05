@@ -44,9 +44,18 @@ function draw(): void {
         if (e.kind === 'impact' && age < 6) actors.circle(e.to.x, e.to.y, 80 + age * 20).stroke({ color, width: 30, alpha: 1 - age / 6 });
         if (e.kind === 'explosion' && age < 12) actors.circle(e.to.x, e.to.y, e.radius * (.5 + age / 24)).fill({ color: 0xf7a653, alpha: .18 * (1 - age / 12) }).stroke({ color: 0xffc579, width: 50, alpha: 1 - age / 12 });
     }
+    for (const warning of props.current.population?.telegraphs ?? []) {
+        actors.circle(warning.center.x, warning.center.y, warning.radius).fill({ color: 0xff615c, alpha: .12 })
+            .stroke({ color: 0xff9686, width: 40, alpha: .8 });
+        actors.circle(warning.center.x, warning.center.y, warning.radius * Math.max(.12, 1 - warning.remaining / 42))
+            .stroke({ color: 0xffc0a7, width: 22, alpha: .65 });
+    }
+    const viewLeft = -camera.offsetX / camera.scaleX, viewTop = -camera.offsetY / camera.scaleY;
+    const viewRight = viewLeft + app.screen.width / camera.scaleX, viewBottom = viewTop + app.screen.height / camera.scaleY;
     for (const [index, actor] of props.current.actors.entries()) {
         const p = interpolated(index), health = props.current.damage.actors[index]!, alive = health.hp > 0;
-        const color = actor.lastHitTick > 0 && displayTick - actor.lastHitTick < 5 ? 0xffffff : index === 0 ? 0xd2ef9b : 0xeb8e73;
+        if (p.x + actor.radius < viewLeft || p.x - actor.radius > viewRight || p.y + actor.radius < viewTop || p.y - actor.radius > viewBottom) continue;
+        const color = actor.lastHitTick > 0 && displayTick - actor.lastHitTick < 5 ? 0xffffff : index === 0 ? 0xd2ef9b : actor.kind === 'boss' ? 0xc48df2 : actor.kind === 'elite' ? 0xf5bd64 : 0xeb8e73;
         actors.circle(p.x, p.y, actor.radius).fill({ color, alpha: alive ? .3 : .05 }).stroke({ color, width: 45, alpha: alive ? 1 : .2 });
         if (!alive) continue;
         actors.circle(p.x, p.y, 80).fill(color);
@@ -57,8 +66,11 @@ function draw(): void {
             for (const side of [-1, 1]) actors.moveTo(p.x + Math.cos(angle + side * spread) * 750, p.y + Math.sin(angle + side * spread) * 750)
                 .lineTo(p.x + Math.cos(angle + side * spread) * 1450, p.y + Math.sin(angle + side * spread) * 1450).stroke({ color, width: 20, alpha: .4 });
         }
-        actors.rect(p.x - 300, p.y - 480, 600, 65).fill(0x14231a);
-        actors.rect(p.x - 300, p.y - 480, 600 * health.hp / health.maxHp, 65).fill(color);
+        if (actor.kind !== 'swarm' || health.hp < health.maxHp) {
+            const width = Math.max(600, actor.radius * 2), y = p.y - actor.radius - 180;
+            actors.rect(p.x - width / 2, y, width, 65).fill(0x14231a);
+            actors.rect(p.x - width / 2, y, width * health.hp / health.maxHp, 65).fill(color);
+        }
     }
     for (const p of props.current.ranged?.projectiles ?? []) actors.circle(p.pose.x, p.pose.y, 95).fill(0xffc579).stroke({ color: 0xffedbf, width: 30 });
     overview.clear();
@@ -66,6 +78,10 @@ function draw(): void {
     overview.rect(left - 4, top - 4, ARENA_WIDTH * scale + 8, ARENA_HEIGHT * scale + 8).fill({ color: 0x08100c, alpha: .8 });
     for (let y = 0; y < ARENA_HEIGHT; y++) for (let x = 0; x < ARENA_WIDTH; x++)
         overview.rect(left + x * scale, top + y * scale, scale, scale).fill(terrainColor(x, y));
+    for (const [i, a] of props.current.actors.entries()) if (i && props.current.damage.actors[i]!.hp) {
+        overview.circle(left + a.pose.x / TILE * scale, top + a.pose.y / TILE * scale, a.kind === 'boss' ? 2.8 : a.kind === 'elite' ? 1.8 : .8)
+            .fill(a.kind === 'boss' ? 0xc48df2 : a.kind === 'elite' ? 0xf5bd64 : 0xc77c65);
+    }
     overview.circle(left + focus.x / TILE * scale, top + focus.y / TILE * scale, 2.8).fill(0xd2ef9b);
     const viewX = -camera.offsetX / camera.scaleX / TILE, viewY = -camera.offsetY / camera.scaleY / TILE;
     overview.rect(left + viewX * scale, top + viewY * scale, app.screen.width / camera.scaleX / TILE * scale,

@@ -1,6 +1,6 @@
 import { Grid, DungeonLayer, TerrainType } from '../../engine/Map/Grid';
 
-export const SHOOTER_ARENA_ID = 's2-gunplay-lab-v1';
+export const SHOOTER_ARENA_ID = 's3-horde-lab-v1';
 export const ARENA_WIDTH = 40;
 export const ARENA_HEIGHT = 28;
 /** Authored diagnostic fixture, not a replacement for Brogue generation.

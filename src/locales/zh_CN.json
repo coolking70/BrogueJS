@@ -1456,10 +1456,10 @@
   "ext.creation.cancel": "取消创建",
   "ext.creation.retry": "重试加载",
   "menu.presentation.pending": "演示尚未看完；保存或导出使用本回合已结算的最终状态。",
-    "shooter.title": "火力试验场",
+    "shooter.title": "尸潮压力场",
     "shooter.eyebrow": "BROGUEJS / RUNTIME LAB",
-    "shooter.stage": "S2 · 枪械切片",
-    "shooter.intro": "四种武器，一张试验场。边移动边射击，利用墙体和射程保持距离。敌人和角色倒下后会重生，便于持续试用。",
+    "shooter.stage": "S3 · HORDE",
+    "shooter.intro": "在持续涌来的敌群中移动射击。橙色是感染者，金色是精英，紫色是巨型感染体；红圈是即将落下的攻击，及时移开。",
     "shooter.running": "运行中",
     "shooter.paused": "已暂停",
     "shooter.tick": "机械 Tick",
@@ -1486,7 +1486,7 @@
     "shooter.imported": "录像已验证并恢复至末尾，当前处于暂停状态。",
     "shooter.error": "操作失败：{{reason}}",
     "shooter.limit": "已达到单局一小时上限，请导出录像并重新开始。",
-    "shooter.scope": "S2 测试场 · 30 Hz 机械 Tick。基础敌人使用简单追击，重生补满生命；换弹使用无限练习备弹。尚无尸潮、任务或多人。触屏与手柄手感需要在真实设备上试用。",
+    "shooter.scope": "尸潮测试场 · 倒下后自动重生 · 尚无任务结算、支援和多人",
     "shooter.moveStick": "移动",
     "shooter.gamepadConnected": "标准手柄已连接 · 右杆瞄准 / RT 射击 / X 换弹 / Y 切枪。",
     "shooter.gamepadHint": "手柄：左杆移动、右杆瞄准、RT 射击、X 换弹、Y 切枪。",
@@ -1507,5 +1507,7 @@
     "shooter.gunplayHelp": "WASD 移动 · 鼠标瞄准 / 左键射击 · 1–4 切换武器 · R 换弹。步枪可按住连发，手枪、霰弹枪与榴弹每次按下射击一次。榴弹爆炸也会伤到自己。",
     "shooter.touchFireHelp": "触屏：左杆移动，右杆拖动瞄准并射击；半自动武器松开右杆后再次拖动。",
     "shooter.diagnostics": "运行诊断与重开",
-    "shooter.moduleSelection": "下一次重开启用的模块"
+    "shooter.moduleSelection": "下一次重开启用的模块",
+  "shooter.hordeCounts": "感染者 {{swarm}} · 精英 {{elites}} · 巨型 {{bosses}}",
+  "shooter.reinforcements": "待增援 {{count}}"
 }

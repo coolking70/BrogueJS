@@ -74,8 +74,10 @@ beforeEach(() => { vi.restoreAllMocks(); rng.seedRandomGenerator(4101); });
 it('field coverage: declarations (including private/optional) AND runtime own fields are all registered', () => {
     const files = { Item:'src/engine/Items/Item.ts', Creature:'src/entities/Creature.ts', Monster:'src/entities/Monster.ts', Player:'src/entities/Player.ts' };
     for (const name of Object.keys(files) as (keyof typeof files)[]) {
-        const fields = declarations(files[name],name);
-        const all = name==='Monster'||name==='Player' ? [...declarations(files.Creature,'Creature'),...fields] : fields;
+        const baseFields = declarations('src/entities/CreatureBase.ts', 'CreatureBase');
+        const creatureFields = [...baseFields, ...declarations(files.Creature, 'Creature')];
+        const fields = name === 'Creature' ? creatureFields : declarations(files[name],name);
+        const all = name==='Monster'||name==='Player' ? [...creatureFields,...fields] : fields;
         expect([...registered[name]].sort(),name).toEqual(all.sort());
     }
     const entities = {Item:ItemLoader.spawnStaff('staff_of_fire',0,0)!,Creature:new Creature(0,0,'c','c',1),Monster:rich(new Monster(0,0,data())),Player:new Player(0,0)};

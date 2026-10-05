@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** S2 combat benchmark and actual built-product keyboard/mouse, standard-pad
+/** S3 combat benchmark and actual built-product keyboard/mouse, standard-pad
  * polling and two simultaneous CDP touch pointers. Physical feel is not certified. */
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
@@ -7,9 +7,9 @@ import { performance } from 'node:perf_hooks';
 import assert from 'node:assert/strict';
 import { createServer, preview } from 'vite';
 import { chromium } from 'playwright';
-const args = process.argv.slice(2), directory = resolve(args.includes('--output') ? args[args.indexOf('--output') + 1] : '../shooter-s2-evidence');
+const args = process.argv.slice(2), directory = resolve(args.includes('--output') ? args[args.indexOf('--output') + 1] : '../shooter-s3-evidence');
 mkdirSync(directory, { recursive: true });
-const report = { schema: 2, node: process.version, scenario: 'S2: four weapons, six respawning enemies, moving/aimed combat for 600 simulated seconds', engine: {}, browser: {} };
+const report = { schema: 2, node: process.version, scenario: 'S3: four weapons, 200 swarm + 8 full elite + 1 diameter-two-tile Boss, moving/aimed combat for 600 simulated seconds', engine: {}, browser: {} };
 let source, server, browser;
 try {
     source = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error', optimizeDeps: { noDiscovery: true, include: [] } });
@@ -17,8 +17,9 @@ try {
     const { SimulationHost } = await source.ssrLoadModule('/src/engine/Simulation/SimulationHost.ts');
     const { RealtimeSimulationDriver } = await source.ssrLoadModule('/src/engine/Simulation/RealtimeSimulationDriver.ts');
     if (!args.includes('--browser-only')) {
-        const session = new ShooterSession(7301, { modules: ['firearms'] }), durations = [];
-        assert.ok(session.snapshot().ranged, 'S2 benchmark requires an installed ranged runtime');
+        const session = new ShooterSession(7301), durations = [];
+        assert.ok(session.snapshot().ranged, 'S3 benchmark requires an installed ranged runtime');
+        assert.deepEqual(Object.fromEntries(['swarm','elites','bosses'].map(k => [k, session.snapshot().population[k]])), {swarm:200,elites:8,bosses:1});
         for (let tick = 1; tick <= 18000; tick++) {
             const state = session.snapshot(), player = state.actors[0], slot = Math.floor((tick - 1) / 300) % 4;
             const enemies = state.actors.slice(1).filter(a => state.damage.actors[a.id - 1].hp > 0).sort((a, b) =>
@@ -46,7 +47,7 @@ try {
             assert.equal(canonicalState(other.snapshot()), expected); assert.equal(peakBacklog, 0); cadences.push({ fps, ticks: other.tick, peakBacklog, exactState: true });
         }
         const final = session.snapshot();
-        report.engine = { status: 'passed', ticks: session.tick, stats: final.stats, shots: final.ranged.shots,
+        report.engine = { status: 'passed', ticks: session.tick, population: final.population, fullActors: final.moduleStates.hordes.full.length, fullActionsStarted: final.moduleStates.hordes.nextActionId - 1, stats: final.stats, shots: final.ranged.shots,
             weaponShots: final.moduleStates[final.modules[0].id].weapons.map((w, i) => ({ id: final.ranged.weapons[i].id, shots: w.shotSequence })),
             replayBytes: Buffer.byteLength(JSON.stringify(replay)), cadences,
             tickCpuMs: Object.fromEntries([50, 95, 99].map(p => [`p${p}`, durations[Math.floor(durations.length * p / 100)]])) };
@@ -62,8 +63,8 @@ try {
             const page = await browser.newPage({ viewport, hasTouch: viewport.width < 600 }), errors = [];
             page.on('pageerror', error => errors.push(String(error)));
             await page.goto(url, { waitUntil: 'networkidle' }); await page.waitForSelector('canvas');
+            assert.match(await page.getByTestId('population').textContent(), /200/);
             await page.locator('summary').click();
-            const hordeToggle = page.getByTestId('module-hordes'); if (await hordeToggle.count()) await hordeToggle.setChecked(false);
             await page.getByTestId('restart').click();
             const ticks = async n => { const at = Number(await page.getByTestId('tick').textContent()); await page.waitForFunction(t => Number(document.querySelector('[data-testid="tick"]').textContent) >= t, at + n, { timeout: 15000 }); };
             const position = async () => (await page.getByTestId('position').textContent()).match(/-?\d+/g).map(Number);
