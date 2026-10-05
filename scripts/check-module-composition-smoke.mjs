@@ -67,7 +67,10 @@ function exerciseGame(game, plans, unavailableIds) {
     };
     const results = [];
     for (const plan of plans) {
-        game.startNewGame({ seed: plan.naturalDepth ? 7306 : 7301, mode: plan.naturalDepth ? 'normal' : 'test', ruleSet: 'extended', extensions: plan.ids, initialCommands: plan.initialCommands });
+        // With real combat telegraphs active, the blind stair route is a serialization
+        // probe, not an AI that reads warnings; use the public wizard mode there (no HP edits).
+        const naturalMode = plan.ids.includes('combat') ? 'wizard' : 'normal';
+        game.startNewGame({ seed: plan.naturalDepth ? 7306 : 7301, mode: plan.naturalDepth ? naturalMode : 'test', ruleSet: 'extended', extensions: plan.ids, initialCommands: plan.initialCommands });
         game.animationEnabled = false;
         equal(game.extensionRuntime.manifest, plan.manifest, 'Startup manifest mismatch');
         equal(game.recordedInputEvents.map(event => event.data), plan.initialCommands, 'Incomplete or reordered initial batch');

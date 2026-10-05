@@ -1,6 +1,6 @@
 import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
-import { CreatureSpatial, conservativeSquareStep, footprintOf, squareMovementSize } from '../Movement/CreatureSpatial';
+import { CreatureSpatial, assertNativeSpatial, conservativeSquareStep, footprintOf, squareMovementSize } from '../Movement/CreatureSpatial';
 import { SpatialValidationError, integer } from '../Movement/SpatialSchema';
 import type { Grid } from './Grid';
 import { TerrainType } from './Grid';
@@ -198,7 +198,7 @@ export class FootprintPathing {
             }
         } else if (goal.kind === 'contact' || goal.kind === 'escape') {
             if (!this.spatial.isActive(goal.target) || goal.target === actor) return [];
-            squareMovementSize(goal.target, this.spatial.catalog);
+            assertNativeSpatial(goal.target, this.spatial.catalog);
             const targets = footprintOf(goal.target, this.spatial.catalog);
             const targetCells = new Set(targets.map(p => `${p.x},${p.y}`));
             const offsets = this.spatial.catalog.cells(actor.spatial!.footprintId, 'r0');

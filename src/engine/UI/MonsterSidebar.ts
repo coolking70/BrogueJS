@@ -59,6 +59,7 @@ export function visibleMonsterRows(player: Player, grid: Grid, monsters: readonl
                 loc: { ...(body?.glyph ?? monster.loc) },
                 direct: directCells.length > 0,
                 ...(monster.spatial ? { bodyCells: cells, bodySize: body?.size ?? null,
+                    ...(body?.cellCount !== undefined ? { bodyCellCount: body.cellCount } : {}),
                     distanceSquared: Math.min(...(directCells.length ? directCells : cells).map(p => distanceSquared(p, player.loc))),
                     distance: Math.min(...cells.map(p => Math.max(Math.abs(p.x - player.x), Math.abs(p.y - player.y)))) } : {}),
                 focused: false,

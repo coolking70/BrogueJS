@@ -1,5 +1,6 @@
+import { RigidPosePathing } from '../Map/RigidPosePathing';
 import { squarePlacementCandidates } from './SquarePlacement';
-import { CreatureSpatial } from './CreatureSpatial';
+import { CreatureSpatial, isSquareFootprint } from './CreatureSpatial';
 import { squareListUsers } from '../Core/MonsterLifecycle';
 import { FootprintPathing } from '../Map/FootprintPathing';
 import { commitCreatureAnchor, footprintContains } from './CreatureSpatial';
@@ -60,7 +61,7 @@ export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[],
             .find(p=>grid.isValidPos(p.x,p.y) && !(cellTerrainFlags(grid,p.x,p.y)&T_PATHING_BLOCKER));
         if (neighbor) origin=neighbor;
     }
-    let spatial: CreatureSpatial | undefined, pathing: FootprintPathing | undefined;
+    let spatial: CreatureSpatial | undefined, pathing: FootprintPathing | undefined, rigid: RigidPosePathing | undefined;
     // Query-only point target; it does not construct/allocate a live entity.
     let target: Creature | undefined;
     let notified: Set<number> | undefined;
@@ -87,8 +88,8 @@ export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[],
             if (m.spatial) {
                 target ??= { id: Number.MAX_SAFE_INTEGER, hp: 1, loc: origin } as Creature;
                 spatial ??= new CreatureSpatial({ grid, player: target, monsters });
-                pathing ??= new FootprintPathing(spatial);
-                distance = pathing.planStep(m, { kind: 'contact', target }, { forbiddenFlags: (flying ? T_OBSTRUCTS_PASSABILITY : T_PATHING_BLOCKER) | T_SACRED, allowSecretDoors: true }, true).distance ?? Infinity;
+                const service = isSquareFootprint(m) ? (pathing ??= new FootprintPathing(spatial)) : (rigid ??= new RigidPosePathing(spatial));
+                distance = service.planStep(m, { kind: 'contact', target }, { forbiddenFlags: (flying ? T_OBSTRUCTS_PASSABILITY : T_PATHING_BLOCKER) | T_SACRED, allowSecretDoors: true }, true).distance ?? Infinity;
                 if (!Number.isFinite(distance)) distance = 30000;
             }
             if (distance>=30000 && !ally) continue;
@@ -170,14 +171,17 @@ export function restoreSquareTravelPosition(world: PlacementWorld, m: Monster, e
     const target = { id: Number.MAX_SAFE_INTEGER, hp: 1, loc: exit } as Creature;
     const spatial = new CreatureSpatial({ grid: world.grid, player: target, monsters: world.monsters, dormantMonsters: world.dormantMonsters });
     try {
-        const pathing = new FootprintPathing(spatial), policy = { forbiddenFlags: travelAvoidedFlags(m), allowSecretDoors: true };
+        const pathing = isSquareFootprint(m) ? new FootprintPathing(spatial) : new RigidPosePathing(spatial), policy = { forbiddenFlags: travelAvoidedFlags(m), allowSecretDoors: true };
         const distance = pathing.planStep(m, { kind: 'contact', target }, policy, true).distance ?? Infinity;
         if (!Number.isFinite(distance)) return;
         const count = Math.min(world.grid.width * world.grid.height, Math.max(0, distance - Math.trunc(m.entersLevelIn * 100 / m.movementSpeed)));
         for (let i = 0; i < count; i++) {
             const step = pathing.planStep(m, { kind: 'contact', target }, policy);
             if (!step.at) break;
-            commitCreatureAnchor(m, { ...step.at });
+            if (step.kind === 'rotate' && 'quarterTurns' in step) {
+                const plan = spatial.planRotationPlacement(m, step.quarterTurns!, { allowsTerrain: p => !(cellTerrainFlags(world.grid,p.x,p.y)&policy.forbiddenFlags) || world.grid.getCell(p.x,p.y)!.layers.includes(TerrainType.SECRET_DOOR) });
+                if (!plan || !spatial.commitPlacement(plan)) break;
+            } else commitCreatureAnchor(m, { ...step.at });
         }
     } finally { spatial.dispose(); }
 }

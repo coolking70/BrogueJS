@@ -4,7 +4,7 @@
 
 ## 阶段 3c：体力与一格闪避候选
 
-基于已验收 3b `c7561e6`，combat 1.2.0 增加统一原生/招式费用、定点体力恢复、NPC 同资源规则、growth 双资源同事务和一格闪避。保护仅限可闪避直接物理，环境伤害不变；single/r0 方形 capability gate 不随 4b 自动扩大。范围、严格存读、实际测试与待完成像素 QA 见 [3c 报告](phase3c.report.md)。止于 3c，3d 及之后仍须另行批准；giants 默认数据不变，不合 main、不打 tag。
+基于已验收 3b `c7561e6`，combat 1.2.0 增加统一原生/招式费用、定点体力恢复、NPC 同资源规则、growth 双资源同事务和一格闪避。保护仅限可闪避直接物理，环境伤害不变；single/r0 方形 capability gate 不随 4b 自动扩大。现整合 hosted 4b foundation `2eb3181`，仍拒绝 mask/旋转体闪避，不包含 phase4-only 4c0。范围、严格存读、实际测试与待完成像素 QA 见 [3c 报告](phase3c.report.md)。止于 3c，3d 及之后仍须另行批准；giants 默认数据不变，不合 main、不打 tag。
 
 ## 阶段 3b：预警与多段攻击候选
 

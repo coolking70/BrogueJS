@@ -150,3 +150,43 @@ export function sideChamberValid(grid: Grid, plan: SideChamberPlan, size: number
   );
   return player.size === b.width * b.height - size * size;
 }
+
+/** Complete reachable anchor×pose component, with the same compiled sweep
+ * volume as live rotations. A room cannot be accepted on bounding-box area. */
+export function rigidSideChamberValid(grid: Grid, plan: SideChamberPlan, shape: import('../Movement/RigidFootprint').CompiledRigidFootprint): boolean {
+  const b = plan.bounds, poses = shape.poses;
+  const inside = (p: Pos) => p.x >= b.x && p.y >= b.y && p.x < b.x + b.width && p.y < b.y + b.height;
+  const clean = (p: Pos) => { const c = grid.getCell(p.x, p.y); return !!c && c.layers[0] === T.FLOOR && c.layers.slice(1).every(t => t === T.NOTHING) && !c.machineNumber; };
+  if (!plan.carve.every(clean)) return false;
+  const cells = (at: Pos, p: number) => shape.cells.get(poses[p]!)!.map(o => ({x:at.x+o.x,y:at.y+o.y}));
+  const body = cells(plan.spawn,0);
+  if (!body.every(p => p.x >= b.x+2 && p.y >= b.y+2 && p.x < b.x+b.width-2 && p.y < b.y+b.height-2)) return false;
+  const area = b.width*b.height, fit = new Uint8Array(area*poses.length), key = (at: Pos,p:number) => p*area+(at.y-b.y)*b.width+at.x-b.x;
+  const at = (i:number):Pos => ({x:b.x+i%area%b.width,y:b.y+Math.floor(i%area/b.width)});
+  let count = 0;
+  for(let p=0;p<poses.length;p++) for(let y=b.y;y<b.y+b.height;y++) for(let x=b.x;x<b.x+b.width;x++) {
+    if(cells({x,y},p).every(o=>inside(o)&&clean(o))) { fit[key({x,y},p)]=1; count++; }
+  }
+  const seen = new Set<number>(), queue = [key(plan.spawn,0)];
+  for(let i=0;i<queue.length;i++) {
+    const n=queue[i]!; if(seen.has(n)||!fit[n])continue; seen.add(n);
+    const origin=at(n),p=Math.floor(n/area);
+    for(const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+      const dest={x:origin.x+dx!,y:origin.y+dy!}; if(inside(dest)&&fit[key(dest,p)])queue.push(key(dest,p));
+    }
+    for(const turn of [-1,1]) {
+      const to=(p+turn+poses.length)%poses.length, sweep=shape.sweeps.get(`${poses[p]}:${poses[to]}`);
+      if(sweep&&fit[key(origin,to)]&&sweep.every(o=>{const tile={x:origin.x+o.x,y:origin.y+o.y};return inside(tile)&&clean(tile);})) queue.push(key(origin,to));
+    }
+  }
+  if(seen.size!==count) return false;
+  // Entrance must admit a declared real pose. The player can walk around the
+  // actual resting mask, including concave gaps, without a square exclusion.
+  if(!poses.some((_,p)=>plan.entry.some(e=>cells(e,p).every(clean))))return false;
+  const occupied=new Set(body.map(p=>`${p.x},${p.y}`)), player=new Set<string>(), q=[{x:b.x,y:b.y}];
+  for(let i=0;i<q.length;i++) {
+    const p=q[i]!,k=`${p.x},${p.y}`;if(player.has(k)||!inside(p)||!clean(p)||occupied.has(k))continue;player.add(k);
+    for(const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]])q.push({x:p.x+dx!,y:p.y+dy!});
+  }
+  return player.size===area-body.length;
+}

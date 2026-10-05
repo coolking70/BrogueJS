@@ -1,3 +1,6 @@
+import { compileRigidFootprint, type RigidPose } from '../engine/Movement/RigidFootprint';
+import { type FootprintDefinition, type CreatureSpatialComponent, type SpatialCatalog } from '../engine/Movement/SpatialSchema';
+import { bindSpatialCatalog } from '../engine/Movement/CreatureSpatial';
 import i18next from 'i18next';
 import type { MonsterData } from '../entities/Monster';
 import type { Creature } from '../entities/Creature';
@@ -9,7 +12,8 @@ export interface NativeFormDefinition {
   readonly id: string;
   readonly nameKey: string;
   readonly descriptionKey: string;
-  readonly size: 2 | 3;
+  readonly size?: 2 | 3;
+  readonly footprint?: Pick<FootprintDefinition, 'geometry' | 'poses'>;
   readonly char: string;
   readonly color: number;
   readonly hp: number;
@@ -28,12 +32,18 @@ export function validNativeForm(value: unknown, owner: string): value is NativeF
     !value ||
     typeof value !== 'object' ||
     Array.isArray(value) ||
-    Object.keys(value).sort().join(',') !==
-      'DFChance,DFType,accuracy,attackSpeed,bloodType,char,color,damage,defense,descriptionKey,hp,id,moveSpeed,nameKey,size'
+    !['size', 'footprint'].some(shape => Object.keys(value).sort().join(',') ===
+      ['DFChance','DFType','accuracy','attackSpeed','bloodType','char','color','damage','defense','descriptionKey','hp','id','moveSpeed','nameKey',shape].sort().join(','))
   )
     return false;
   const v = value as unknown as NativeFormDefinition;
   const n = (x: number, a: number, b: number) => Number.isSafeInteger(x) && x >= a && x <= b;
+  if (v.footprint !== undefined) {
+    try {
+      if (Object.keys(v.footprint).sort().join(',') !== 'geometry,poses') return false;
+      compileRigidFootprint(nativeFormFootprint(v, owner)!);
+    } catch { return false; }
+  }
   return (
     validId(v.id) &&
     v.id.startsWith(`${owner}.`) &&
@@ -41,7 +51,7 @@ export function validNativeForm(value: unknown, owner: string): value is NativeF
     v.nameKey.startsWith(`ext.${owner}.`) &&
     typeof v.descriptionKey === 'string' &&
     v.descriptionKey.startsWith(`ext.${owner}.`) &&
-    (v.size === 2 || v.size === 3) &&
+    (v.footprint !== undefined || v.size === 2 || v.size === 3) &&
     typeof v.char === 'string' &&
     [...v.char].length === 1 &&
     n(v.color, 0, 0xffffff) &&
@@ -59,6 +69,14 @@ export function validNativeForm(value: unknown, owner: string): value is NativeF
     v.DFChance === 0 &&
     v.DFType === 0
   );
+}
+export function nativeFormFootprint(form: NativeFormDefinition, owner = form.id.slice(0, form.id.lastIndexOf('.'))): FootprintDefinition | undefined {
+  return form.footprint ? { id: form.id, owner, ...form.footprint } : undefined;
+}
+export function nativeFormSpatial(form: NativeFormDefinition, region?: number, previousPose?: RigidPose): CreatureSpatialComponent {
+  const poses = form.footprint?.poses ?? ['r0'];
+  return { schema: 1, footprintId: form.footprint ? form.id : `builtin:square-${form.size}`,
+    pose: previousPose && poses.includes(previousPose) ? previousPose : poses[0]!, ...(region !== undefined ? { movementRegionId: region } : {}) };
 }
 export function nativeFormData(form: NativeFormDefinition): MonsterData {
   // Names/descriptions are plain data-owned strings. Their exact keys are
@@ -94,10 +112,13 @@ export function nativeFormData(form: NativeFormDefinition): MonsterData {
 }
 /** Derived per-actor session binding. Definitions remain the enabled module's
  * immutable declarations, never a global catalog or serialized second truth. */
+const spatialCatalogs = new WeakMap<Creature, SpatialCatalog>();
+export function nativeFormCatalogFor(actor: Creature): SpatialCatalog | undefined { return spatialCatalogs.get(actor); }
 const catalogs = new WeakMap<Creature, readonly NativeFormDefinition[]>();
-export function bindNativeForms(actor: Creature, forms?: readonly NativeFormDefinition[]): void {
+export function bindNativeForms(actor: Creature, forms?: readonly NativeFormDefinition[], spatialCatalog?: SpatialCatalog): void {
+  if (spatialCatalog) { spatialCatalogs.set(actor, spatialCatalog); bindSpatialCatalog(actor, spatialCatalog); }
   if (forms?.length) catalogs.set(actor, forms);
-  else catalogs.delete(actor);
+  else { bindSpatialCatalog(actor); catalogs.delete(actor); spatialCatalogs.delete(actor); }
 }
 export function nativeFormsFor(actor: Creature): readonly NativeFormDefinition[] {
   return catalogs.get(actor) ?? [];

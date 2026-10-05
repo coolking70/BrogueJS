@@ -104,3 +104,12 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 2026-10-05 4a-4 续轮：从维护者已提交的 ext/phase4 `eef51e6` 继续，完成有限 GenerationContribution/侧室挖掘与 reservation、原生形态目录与创建适配器、默认关闭的 giants 原创岩脊兽、守场/追击/回归、原层盟友留场 locale、遇敌收据与公开历史 Boss HUD。采用 develop-web-game 小步验证，浏览器验收留维护者。自然 seed7306 经152条真实命令到D3（玩家HP26、BossHP120），新增 trace 捕获；无调试注入、地图/HP修改的自然来源。发现并修复 spawnLoc 未设、load runtime 安装后 resolver 未重绑和贡献生成异常机器编号未回滚。两种独立全图/显式写集回滚保险通过，最终49文件相关回归、16组合 engine smoke、3份 drift 进行中。遵守开发期测试政策，不 commit/push。
 
 - 4a-4 续轮最终完成：冻结后 type/build/boundary、49文件816项相关回归、地形白名单1项、16子集engine smoke、3文件3项drift全部exit0；838输入SHA前后一致。两旧guard的首次失败保留证据：动态t键改为精确资源读取；HEAD Creature单变量仍红后，生产保留单格原位/多格真实接触双路径，旧守卫未改。独立HEAD对照全部8个未启用giants组合自然D1/D2/D3/续玩4点的地图、实体、双流/计数与扩展state完全相同。报告已完整补齐并保留原子里程碑历史；验收seed7306 D3。浏览器/320-390与物理removal按任务书留维护者/收尾，本次授权实现无剩余项。未commit、暂存或push。
+
+- 2026-10-05 当前授权（4b）：请阅读并执行 docs/ext/phase4b.task.md，不 commit，报告用中文。本轮选择任务书允许的干净子里程碑 4b-0：连续旋转扫掠预编译、fixture 受控旋转和位姿图；生产任意 mask 能力门及正式敌人/场地/Game 全链路接线保持未开放，验收与剩余项见 phase4b.report.md。
+
+- 2026-10-05 4b-0 子里程碑完成：连续 sweep 编译、fixture 原子旋转（90/180 正 actionCost 声明）与独立四 pose 图；生产 mask/旋转仍关闭，正式样例/Game 全链路尚未实现。最终 boundary/type/build、34文件433项相关回归、地形白名单1项、16组合engine-only smoke、drift3文件4项全部exit0；839输入前后一致，SHA集合de390ab446a9edc46898467e1609427f142d986d3ac39314b556c5d706b38a4b。长条/L 冷图79.875/56.401ms，暖P95 0.161/0.114ms，仅fixture。浏览器Vite/Chromium权限受限，无截图；旧测试/trace/基线未改，未暂存/commit/push。报告docs/ext/phase4b.report.md列明完整4b剩余六项。
+
+
+- 2026-10-05 完整 4b 续轮授权：4b-0 已由维护者提交，HEAD 6f71e0e；继续剩余 1–6，不 commit，开发期功能政策。现已接入可信会话目录、生产 NPC 旋转时钟/环境、全 mask 落点/复制变形/跨层及 codec、实际公开行/四地图轮廓与原创棘脊爬兽。冷建用整数表和单位代价 BFS，保持完整 sweep/动态复核/LRU；实际 Game 长条/L 冷样本已低于20ms。自然 seed7309/wizard 经1174命令在D11生成，真实逐事件replay/seek/续录专项通过。只回退 definitions.json，旧合同和D3/D7 trace反事实通过；原入口重录后两个旧trace仅extensionsHash变化，UR2/3/4未动。冻结候选最终开发期门禁运行中，报告将在结果确定后更新并保留4b-0原文。
+
+- 完整 4b 最终完成：生产可信 mask+四向、NPC正耗时旋转/终态环境、通用落点/全层codec/显示与原创棘脊场地闭环；自然seed7309/wizard D11，1174公开命令，真实save-load/replay/seek/续录。最终v4同一冻结候选 boundary/type/build、37文件462项相关回归、地形白名单1项、16/16 engine-only组合、drift4文件5项均exit0；843输入SHA集合95468a9701695c0a1b050caa01092d332b68732da3e9e77fe8817d17279e8298前后一致，结束UTC05:59:15。实际Game长条/L/16格冷规划14.694/9.672/9.541ms；暖规划P95 0.198/0.086/0.466ms，另列整命令与堵路重规划，碰撞/sweep预算未放宽。报告docs/ext/phase4b.report.md已更新完整并原文保留4b-0。仅两旧内容前提经definitions单变量反事实修订，两旧giants trace原入口重录且仅extensionsHash变；普通生成/UR2-4原字节未动。浏览器/触屏/GPU及手机性能未验，权限限制明列；本轮功能范围无剩余项，无暂存/commit/push。

@@ -1,11 +1,13 @@
 {
   "ext.giants.module.name": "巨兽",
-  "ext.giants.module.description": "在可绕开的地下侧室中遭遇岩脊兽与沉渊巨像。",
+  "ext.giants.module.description": "在可绕开的地下侧室中遭遇岩脊兽、沉渊巨像与棘脊爬兽。",
   "ext.giants.ridgeback.name": "岩脊兽",
   "ext.giants.ridgeback.description": "地下的厚甲兽，背脊隆起如碎岩。它缓慢转动沉重的身体，守着宽阔的石室；离开场地便能摆脱追击。",
   "ext.giants.ui.hp": "{{current}} / {{maximum}}",
   "ext.giants.ui.health": "{{name}}的生命值",
   "ext.giants.follow_blocked": "受到石室边界限制，{{name}}留在原层。",
   "ext.giants.abyssal_colossus.name": "沉渊巨像",
-  "ext.giants.abyssal_colossus.description": "远古遗迹中苏醒的石质守卫，体躯如崩塌的殿柱。它拖着斑驳的石身缓步巡视空旷的遗室，关节间落下细碎尘砂；退到石室之外便能避开它的追击。"
+  "ext.giants.abyssal_colossus.description": "远古遗迹中苏醒的石质守卫，体躯如崩塌的殿柱。它拖着斑驳的石身缓步巡视空旷的遗室，关节间落下细碎尘砂；退到石室之外便能避开它的追击。",
+  "ext.giants.spine_crawler.name": "棘脊爬兽",
+  "ext.giants.spine_crawler.description": "这头巨兽的四节脊骨覆着石质棘甲。它围绕头部转动长躯，挤过通道时会先寻找转身的空间。"
 }

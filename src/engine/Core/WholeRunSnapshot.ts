@@ -1,4 +1,5 @@
-import { assertNativeSpatial, assertSingleCellPlayer, CreatureSpatial, footprintOf } from '../Movement/CreatureSpatial';
+import { getNextEntityId, restoreNextEntityId } from '../../entities/Creature';
+import { assertNativeSpatial, assertSingleCellPlayer, CreatureSpatial, footprintOf, spatialCatalogFor } from '../Movement/CreatureSpatial';
 import { regionContains, validOwnedRegions } from '../../ext/regions';
 import { keys, nativeSpatialCatalog, SpatialValidationError, SPATIAL_LIMITS, validateSpatialComponent, type SpatialCatalog, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
 /** Pure whole-run projection and world reconstruction. The live Game supplies
@@ -200,7 +201,12 @@ export function toWholeRunSnapshot(source: WholeRunProjection): GameSnapshot {
 
 export function decodePlayer(saved: GameSnapshot['player'], items: Map<number, Item>): Player {
     assertSingleCellPlayer(saved);
-    const player = new Player(saved.loc.x, saved.loc.y);
+    const nextId = getNextEntityId();
+    let player: Player;
+    // Detached validation must not advance the live allocator, including a
+    // rejection later in pending/cached-layer footprint validation.
+    try { player = new Player(saved.loc.x, saved.loc.y); }
+    finally { restoreNextEntityId(nextId); }
     Object.assign(player, copyFields(saved, PLAYER_FIELDS));
     player.statusImmunities = new Set(saved.statusImmunities);
     player.restoreHungerTransition(saved.hungerTransition);
@@ -271,7 +277,7 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
     }
     if (snapshot.run.spatialWorld !== undefined) {
         if (!deps.spatialCatalog?.fixture) {
-            const expected = snapshotSquareWorld([...entityGraph.monsters.values()]);
+            const expected = snapshotSquareWorld([...entityGraph.monsters.values()], deps.spatialCatalog);
             if (canonicalSpatial(snapshot.run.spatialWorld) !== canonicalSpatial(expected)) throw new SpatialValidationError('Invalid square definition closure');
             const player = decodePlayer(snapshot.player, entityGraph.items);
             // Validate physical ownership and full footprints on each independent
@@ -282,7 +288,7 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
                 for (const c of cohort) { if (owned.has(c.id)) throw new SpatialValidationError('Multiple square ownership'); owned.add(c.id); }
                 if (!cohort.some(c => c.spatial)) continue;
                 const service = new CreatureSpatial({ grid: level.grid, monsters: level.monsters, dormantMonsters: level.dormantMonsters, inRegion: (id, at) => inRegion(id, depth, at),
-                    ...(depth === snapshot.depth ? { player } : {}) });
+                    ...(depth === snapshot.depth ? { player } : {}) }, deps.spatialCatalog);
                 try {
                     for (const c of cohort) if (c.hp > 0 && !service.canFitAt(c, c.loc, { allowsTerrain: () => true, inRegion: (id, at) => inRegion(id, depth, at) })) throw new SpatialValidationError('Overlapping square footprints');
                 } finally { service.dispose(); }
@@ -290,10 +296,10 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
             for (const queue of snapshot.pendingFallenByDepth) {
                 if (!Number.isInteger(queue.depth) || queue.depth < 1 || queue.depth > CE_DEEPEST_LEVEL) throw new SpatialValidationError('Invalid pending square layer');
                 const squares = queue.monsters.filter(c => c.spatial);
-                if (squares.length > SPATIAL_LIMITS.entities || squares.reduce((n, c) => n + nativeSpatialCatalog.cells(c.spatial!.footprintId, 'r0').length, 0) > SPATIAL_LIMITS.occupiedCells) throw new SpatialValidationError('Pending square budget exceeded');
+                if (squares.length > SPATIAL_LIMITS.entities || squares.reduce((n, c) => n + (deps.spatialCatalog ?? nativeSpatialCatalog).cells(c.spatial!.footprintId, c.spatial!.pose).length, 0) > SPATIAL_LIMITS.occupiedCells) throw new SpatialValidationError('Pending square budget exceeded');
                 for (const row of queue.monsters) {
                     if (row.spatial) {
-                        const cells = nativeSpatialCatalog.cells(row.spatial.footprintId, 'r0');
+                        const cells = (deps.spatialCatalog ?? nativeSpatialCatalog).cells(row.spatial.footprintId, row.spatial.pose);
                         if (cells.some(p => row.loc.x + p.x < 0 || row.loc.y + p.y < 0 || row.loc.x + p.x >= snapshot.width || row.loc.y + p.y >= snapshot.height)) throw new SpatialValidationError('Pending square anchor outside world');
                     }
                     if (owned.has(row.id)) throw new SpatialValidationError('Multiple pending square ownership'); owned.add(row.id);
@@ -317,16 +323,17 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
 
 const canonicalSpatial = (v: unknown): string | undefined => JSON.stringify(v, (_key, value) => value && typeof value === 'object' && !Array.isArray(value)
     ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value);
-/** Production uses only independently initialized builtin definitions. A saved
+/** Production uses only independently initialized installed definitions. A saved
  * closure describes used geometry; it cannot grant capabilities or install data. */
-function snapshotSquareWorld(monsters: readonly Monster[]): SpatialWorldSnapshot | undefined {
-    const shapeIds = new Set<string>();
+function snapshotSquareWorld(monsters: readonly Monster[], catalog?: SpatialCatalog): SpatialWorldSnapshot | undefined {
+    const definitions = new Map<string, ReturnType<SpatialCatalog['definition']>>();
     for (const c of monsters) {
-        assertNativeSpatial(c);
-        if (c.spatial) shapeIds.add(c.spatial.footprintId);
+        const trusted = catalog ?? spatialCatalogFor(c);
+        assertNativeSpatial(c, trusted);
+        if (c.spatial) definitions.set(c.spatial.footprintId, trusted.definition(c.spatial.footprintId));
     }
-    if (!shapeIds.size) return undefined;
-    return { schema: 1, definitions: nativeSpatialCatalog.definitionClosure([...shapeIds].sort(), []), groups: [] };
+    if (!definitions.size) return undefined;
+    return { schema: 1, definitions: { footprints: [...definitions.values()].sort((a,b) => a.id.localeCompare(b.id)), bodies: [] }, groups: [] };
 }
 
 /** Merge only used native definitions. Ordinary worlds omit the root entirely. */
@@ -448,11 +455,11 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
         assertSingleCellPlayer(s.player);
         for (const row of rows) if (Object.prototype.hasOwnProperty.call(row, 'spatial')) {
             if (spatialCatalog?.fixture) validateSpatialComponent(row.spatial, spatialCatalog, false);
-            else assertNativeSpatial(row as unknown as Monster);
+            else assertNativeSpatial(row as unknown as Monster, spatialCatalog);
         }
         if (rows.some(row => row.spatial) && !s.run.spatialWorld) return false;
         if (s.run.spatialWorld && !spatialCatalog?.fixture
-            && canonicalSpatial(s.run.spatialWorld) !== canonicalSpatial(snapshotSquareWorld(rows as unknown as Monster[]))) return false;
+            && canonicalSpatial(s.run.spatialWorld) !== canonicalSpatial(snapshotSquareWorld(rows as unknown as Monster[], spatialCatalog))) return false;
     } catch { return false; }
     if (rows.some(m => !Number.isInteger(m.entersLevelIn) || m.entersLevelIn < 0 || m.entersLevelIn > 150
         || !Number.isInteger(m.approaching) || m.approaching < 0 || m.approaching > 7)) return false;

@@ -1,5 +1,5 @@
 import { SpatialValidationError, integer, validateSpatialComponent, type SpatialCatalog } from '../Movement/SpatialSchema';
-import { assertNativeSpatial } from '../Movement/CreatureSpatial';
+import { assertNativeSpatial, bindSpatialCatalog } from '../Movement/CreatureSpatial';
 /** U01: explicit instance contract. These lists are audited against declarations
  * and live own properties in u_01_instance_snapshot.test.ts. No catalog inference
  * or legacy defaults: optional values retain their actual undefined semantics. */
@@ -142,7 +142,10 @@ export function restoreEntityGraph(rows: readonly GameSnapshotMonster[], itemRow
         if (Object.prototype.hasOwnProperty.call(row, 'spatial')) {
             if (!integer(row.loc?.x, -32768, 32767) || !integer(row.loc?.y, -32768, 32767)) throw new SpatialValidationError('Invalid square anchor');
             if (deps.spatialCatalog?.fixture) validateSpatialComponent(row.spatial, deps.spatialCatalog, false);
-            else assertNativeSpatial(row as unknown as Monster);
+            else {
+                assertNativeSpatial(row as unknown as Monster, deps.spatialCatalog);
+                if (!row.spatial!.footprintId.startsWith('builtin:') && row.spatial!.footprintId !== row.typeId) throw new SpatialValidationError('Native form body identity mismatch');
+            }
         }
         if (saved.has(row.id)) return;
         saved.set(row.id, row);
@@ -156,6 +159,7 @@ export function restoreEntityGraph(rows: readonly GameSnapshotMonster[], itemRow
         if (monsters.has(s.id)) continue;
         if ((s.typeId.includes('.') || s.form.id.includes('.')) && s.typeId!==s.form.id) throw new Error('Native form identity mismatch');
         const m = Object.assign(deps.allocateMonster(s.form), copyFields(s, MONSTER_FIELDS));
+        bindSpatialCatalog(m, deps.spatialCatalog);
         // Saves written before creatureMode existed contain only creatureState.
         if (m.creatureMode === undefined) m.creatureMode = MonsterMode.NORMAL;
         m.statusImmunities = new Set(s.statusImmunities);

@@ -36,6 +36,51 @@
       "bloodType": 0,
       "DFChance": 0,
       "DFType": 0
+    },
+    {
+      "id": "giants.spine-crawler",
+      "nameKey": "ext.giants.spine_crawler.name",
+      "descriptionKey": "ext.giants.spine_crawler.description",
+      "char": "S",
+      "color": 11965276,
+      "hp": 150,
+      "accuracy": 90,
+      "defense": 30,
+      "damage": "5-10",
+      "moveSpeed": 100,
+      "attackSpeed": 100,
+      "bloodType": 0,
+      "DFChance": 0,
+      "DFType": 0,
+      "footprint": {
+        "geometry": {
+          "kind": "mask",
+          "cells": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 2,
+              "y": 0
+            },
+            {
+              "x": 3,
+              "y": 0
+            }
+          ]
+        },
+        "poses": [
+          "r0",
+          "r90",
+          "r180",
+          "r270"
+        ]
+      }
     }
   ],
   "templates": [
@@ -63,6 +108,19 @@
       "entranceWidth": 4,
       "candidateLimit": 16,
       "formId": "giants.abyssal-colossus",
+      "guard": "return-to-spawn"
+    },
+    {
+      "id": "giants.spine-chamber",
+      "priority": 1,
+      "minDepth": 9,
+      "maxDepth": 14,
+      "chance": 100,
+      "width": 16,
+      "height": 12,
+      "entranceWidth": 5,
+      "candidateLimit": 16,
+      "formId": "giants.spine-crawler",
       "guard": "return-to-spawn"
     }
   ]

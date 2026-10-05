@@ -5,7 +5,7 @@
   },
   "squareMotion": {
     "kind": "derived",
-    "contract": "4a-1：仅 square NPC 请求时创建的空间占位/地形距离缓存；实体 spatial 与 loc 是真相，换层重绑，开局/读档释放，不进存档/录像。普通局不创建字段。"
+    "contract": "4b：仅多格 NPC 请求时创建的空间占位/地形距离缓存；r0 方形使用原路径，任意形状按需创建四向位姿图（LRU 8）；实体 spatial 与 loc 是真相，换层重绑，开局/读档释放，不进存档/录像。普通局不创建字段。"
   },
   "onCommandConfirmRequest": {
     "kind": "session",

@@ -67,3 +67,25 @@
 - 最终明确 fetch/merge hosted foundation 仍是 c7561e6，Already up to date，4b 尚未到达；发布前如上游前进仍须再合入并补跑实际受影响门禁。
 
 最终截图 QA 仍待验收方，不能在本报告中提前宣称通过。
+
+## 4b foundation 集成与第二次 QA 候选
+
+Mac 对第一份 3c QA 包只观察到自然测试局初始体力 24/24；后续官方状态读取等待 3607.5 秒后停止，未完成闪避操作/像素验收，不能据此接受 3c。5398 服务已关闭，标签页关闭/视口重置未确认。后续有界恢复检查发现原任务没有暴露官方 CUA/IAB 工具，没有发出新的浏览器调用或收到新的浏览器拒绝；这不是已确认的产品故障。旧 QA 包不作为本次整合后的验收对象。
+
+按维护者要求重新核对实际 GitHub：hosted foundation 为 **2eb3181e67c9e7650b538b08af76ba2759c75710**，含已发布的 4b 任意刚体 mask / 四向旋转；phase4 的 **dba3c5875d085c2fec82e4a036cef56cb6176cf5** 属于尚未进入 foundation 的 4c0，本次不合入、不实现其 prepare/commit 合同。
+
+整合采用保留双方历史的 merge，不覆盖 4b。只有 Game.ts / Monster.ts 顶部 import 块冲突，合并保留两边所有 import；其余增量三方自动合并。底座的新空间目录、实际 mask/pose、native form、原生 NPC 位姿路径、保存/恢复绑定与 squareMotion 契约完全保留。giants 的新增正式内容和 trace 来自上游，合并后相对 hosted foundation 的 giants 目录差异为零，没有另改默认生成或平衡。
+
+3c 的 `dodgeBodySupported` 白名单和收费/窗口实现不变。有效且已安装的 `giants.spine-crawler` 即使可以原生移动/旋转，仍不能用 3c dodge；有效 r0 任意 mask 也不因 pose 为 r0 被误当成 builtin square。新增整合专项直接覆盖可信已安装四姿态、免费拒绝、陈旧 square→mask 计划、伪造恢复坏档拒绝、原生移动/旋转与费用/恢复共存；不以未知非法形状拒绝冒充生产能力边界验证。
+
+### 4b 整合实际门禁与保留缺口
+
+- boundary / vue-tsc / production build / diff-check：均 **exit0**。新 integration 用例与平台输出路径修订后再次运行；保留已有 chunk 大小提示。
+- 原 3c49 文件加8个直接受影响4b/giants文件：**57 文件，54 文件通过 / 3 文件失败，1139 passed / 3 failed / 8 历史 skipped，exit1，640.30s**。日志 `/tmp/phase3c-4b-related-first.log`，清单 `/tmp/phase3c-4b-related-files.txt`。这不是57文件一次全绿。
+- 两项失败来自上游测试将性能证据写到 `/private/tmp`，云环境实际 `ENOENT`；单独原样运行也重现。仅把两个证据路径改为 `join(tmpdir(), filename)`，没有改断言/种子/耗时阈值或生产代码。修订后的两份完整4b测试加新 integration 文件：**3文件 / 61 passed / 0 skipped，exit0**，日志 `/tmp/phase3c-4b-focused-final.log`。其中新 integration 本身 **27/27** 通过；不把重叠结果相加声称唯一测试总数。
+- 其余一项是上游 `giants_rigid.test.ts` 的自然1174命令存读/回放/seek/续录超过原 **120000ms** 阈值。整合集合中166.20s；原阈值/同种子/单worker隔离复跑仍 **153.33s、exit1**。随后在隔离副本只使用真实 hosted foundation `2eb3181` 原样源码与同一环境，亦 **152.02s、exit1**。两次未报告其它断言差异；这证明该超时也存在于上游云环境，不把它当成已通过或已解决。日志 `phase3c-4b-natural-isolated.log` / `phase3c-4b-natural-foundation-control.log`。未延长阈值、删用例、改路线、加skip或重录trace。
+- 5个相关真实组合 smoke：**5 passed / 26名称过滤，exit0，13.15s**，日志 `/tmp/phase3c-4b-composition.log`。不是全子集矩阵。
+- 独立只读 merge 审查无源码 blocker；确认3c实现与5309542相同、giants目录与hosted foundation完全相同，只有冲突import整合、新测试/文档和两个测试输出路径属于本次集成调整；提交前另清理上游 rigidScene fixture 的一个多余文件末尾空行，以通过整段 merge diff-check。
+- 当前876个src/scripts/public/package/config输入集合 SHA-256：**7fbfc34373e6978080b15a4e1f0ad01c4a60a9f39f51a7e0ee7df2f5ba80a3b4**。相对旧QA源集合新增10文件、修改31文件、删除0；详细源记录和 diff 随更新QA包提供。
+
+本次不运行完整 npm test、全部 ext、removal 或 CE full/gen，不主动重录上游 trace。旧3c的1049/8、额外254和5smoke证据保留为前一候选历史，不冒充全部在4b整合后重跑。**自然长录像120秒门限和Mac像素验收仍是明确未通过/未完成项，需维护者决定覆盖方式；更新包只是可复核候选，不是最终验收通过。**

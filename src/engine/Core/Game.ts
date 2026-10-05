@@ -1,4 +1,11 @@
 import { canCommitNativeAttack, commitNativeAttackCost, withNativeAttackAction, withPrepaidNativeAttack } from './NativeAttackTransaction';
+import { nativeSpatialCatalog, type SpatialCatalog } from '../Movement/SpatialSchema';
+import { rigidFootprint } from '../Movement/RigidFootprint';
+import { rigidSideChamberValid } from '../Generator/SideChamber';
+import { RigidPosePathing, type RigidPoseGoal } from '../Map/RigidPosePathing';
+import { type RigidPose } from '../Movement/RigidFootprint';
+import { bindSpatialCatalog, isSquareFootprint } from '../Movement/CreatureSpatial';
+import { nativeFormSpatial } from '../../ext/nativeForms';
 import { bodyLightOrigin } from '../Combat/BodyPerception';
 import { collectAreaBodyTargets } from '../Combat/BodyEffects';
 import { nearestLegalMeleeContact, bodyRayContact, bodyAttackContactOf, physicalContactOf, withBodyContact, withBodyAttackContact, type BodyAttackContact } from '../Combat/BodyCombat';
@@ -389,8 +396,12 @@ const extensionRulePrototypes = new WeakMap<Game, object>();
 /** CE Rogue.h:1123 TURNS_FOR_FULL_REGEN (autoRest recovery cap). */
 const TURNS_FOR_FULL_REGEN = 300;
 
+// Detached load preflight already compiled this trusted installed catalog.
+// During publication it supplies authority before session hooks are attached.
+const loadingSpatialCatalogs = new WeakMap<Game, SpatialCatalog>();
 export class Game {
     public extensionRuntime: ExtensionRuntime | null = null;
+    public get spatialCatalog(): SpatialCatalog { return this.extensionRuntime?.spatialCatalog ?? loadingSpatialCatalogs.get(this) ?? nativeSpatialCatalog; }
     public get ruleSet(): RuleSet { return this.extensionRuntime ? 'extended' : 'classic'; }
 
     /** Read-only world index for the optional persistent action executor. */
@@ -1325,18 +1336,18 @@ export class Game {
                     const form=runtime.nativeForms().find(f=>f.id===t.formId)!;
                     let plan=draft.plan;
                     let regionId: number|null=null, actorId: number|null=null;
-                    if(plan && sideChamberValid(thisGame.grid,plan,form.size)) {
+                    if(plan && (form.size ? sideChamberValid(thisGame.grid,plan,form.size) : rigidSideChamberValid(thisGame.grid,plan,rigidFootprint(runtime.spatialCatalog,form.id)))) {
                         // Native catch-up or fallen residents may occupy the reserved
                         // scene. Try a finite, deterministic set before allocating
                         // a region or actor; an exhausted birth is a skip receipt.
                         const { bounds: b, spawn } = plan;
                         const anchors: Pos[] = [];
-                        for (let y=b.y+2;y+form.size<=b.y+b.height-2;y++)
-                            for (let x=b.x+2;x+form.size<=b.x+b.width-2;x++) anchors.push({x,y});
+                        const offsets=runtime.spatialCatalog.cells(nativeFormSpatial(form).footprintId,nativeFormSpatial(form).pose);
+                        for (let y=b.y+2;y<b.y+b.height-2;y++) for (let x=b.x+2;x<b.x+b.width-2;x++)
+                            if(offsets.every(o=>x+o.x>=b.x+2&&y+o.y>=b.y+2&&x+o.x<b.x+b.width-2&&y+o.y<b.y+b.height-2))anchors.push({x,y});
                         anchors.sort((a,b)=>Math.max(Math.abs(a.x-spawn.x),Math.abs(a.y-spawn.y))
                             -Math.max(Math.abs(b.x-spawn.x),Math.abs(b.y-spawn.y)) || a.y-b.y || a.x-b.x);
-                        const data=nativeFormData(form);
-                        const at=anchors.slice(0,t.candidateLimit).find(at=>thisGame.canCreateSquareMonster(data,form.size,at));
+                        const at=anchors.slice(0,t.candidateLimit).find(at=>thisGame.canCreateModuleMonster(form.id,at));
                         if(at) {
                             plan={...plan,spawn:at};
                             const region=runtime.installOwnedRegions(contributionToken,t.owner,[{instanceKey,bounds:plan.bounds,guard:t.guard}],thisGame.grid)[0]!;
@@ -5922,7 +5933,8 @@ export class Game {
             const shape = this.extensionRuntime?.nativeForms().find(f=>f.id===data.id);
             const candidate = Object.assign(Object.create(Monster.prototype), Object.fromEntries(Object.entries(target).filter(([key]) => key !== 'spatial')),
                 { typeId: data.id, behaviorFlags: new Set(data.behaviorFlags ?? []), abilityFlags: new Set(data.abilityFlags ?? []), statusDurations: {},
-                    ...(shape || target.spatial?.movementRegionId !== undefined ? { spatial: { schema: 1, footprintId: shape ? `builtin:square-${shape.size}` : 'builtin:single', pose: 'r0', ...(target.spatial?.movementRegionId !== undefined ? { movementRegionId: target.spatial.movementRegionId } : {}) } } : {}) }) as Monster;
+                    ...(shape || target.spatial?.movementRegionId !== undefined ? { spatial: shape ? nativeFormSpatial(shape, target.spatial?.movementRegionId, target.spatial?.pose as RigidPose) : { schema: 1, footprintId: 'builtin:single', pose: 'r0', ...(target.spatial?.movementRegionId !== undefined ? { movementRegionId: target.spatial.movementRegionId } : {}) } } : {}) }) as Monster;
+            bindSpatialCatalog(candidate, this.extensionRuntime?.spatialCatalog);
             return travelPlacement({ ...this.spatialWorldPort(), monsters: this.monsters.filter(c => c !== target), dormantMonsters: this.dormantMonsters.filter(c => c !== target) }, candidate, target.loc, true, false, true);
         })) return false;
         // A component-to-single transition retires every derived body cache and
@@ -10549,7 +10561,7 @@ export class Game {
 
     public loadSnapshot(snapshot: GameSnapshot, onExtensionError?: (message: string) => void): boolean {
         assertNoActorActionFixture(this);
-        if (!Game.isSnapshot(snapshot)) return false;
+        if (!snapshot || typeof snapshot !== 'object' || !snapshot.run) return false;
         // Check history before extension/provenance inspection or retiring the live run.
         if (!Array.isArray(snapshot.run.recordedInputEvents)
             || snapshot.run.recordedInputEvents.some(event => !event || typeof event !== 'object' || Array.isArray(event))) return false;
@@ -10564,17 +10576,18 @@ export class Game {
                 return false;
             }
         }
+        if (!isWholeRunSnapshot(snapshot, extensions?.spatialCatalog)) return false;
         // Decode the entire world before retiring the live one.
         let decoded: ReturnType<typeof decodeWholeRunWorld>;
         try {
             const forms=extensions?.nativeForms()??[];
-            decoded = decodeWholeRunWorld(snapshot, { ...entityCodecDeps, allocateMonster: form => {
+            decoded = decodeWholeRunWorld(snapshot, { ...entityCodecDeps, spatialCatalog: extensions?.spatialCatalog, allocateMonster: form => {
                 if(form.id.includes('.') && !forms.some(f=>f.id===form.id)) throw new Error('Unavailable saved native form');
                 return entityCodecDeps.allocateMonster(form);
             } });
             for(const actor of decoded.entityGraph.monsters.values()) {
                 const form=forms.find(f=>f.id===actor.typeId);
-                if(actor.typeId.includes('.') && !form || form && (actor.spatial?.footprintId!==`builtin:square-${form.size}` || actor.spatial?.pose!=='r0')) throw new Error('Invalid saved native form body');
+                if(actor.typeId.includes('.') && !form || form && (actor.spatial?.footprintId !== nativeFormSpatial(form).footprintId || !(form.footprint?.poses ?? ['r0']).includes(actor.spatial?.pose!))) throw new Error('Invalid saved native form body');
             }
         } catch { return false; }
         const { entityGraph, restored } = decoded;
@@ -10643,6 +10656,7 @@ export class Game {
         this.ticksTillUpdateEnvironment = snapshot.ticksTillUpdateEnvironment;
         const active = restored.get(this.depth)!;
         this.grid = active.grid; this.environment = active.environment; this.fov = active.fov; this.lightMap = active.lightMap;
+        if (extensions) loadingSpatialCatalogs.set(this, extensions.spatialCatalog);
         this.monsters = active.monsters; this.dormantMonsters = active.dormantMonsters!; this.items = active.items;
         this.visibleMonsters = active.visibleMonsters; this.visibleItems = active.visibleItems;
         this.machineCells = active.machineCells!; this.scent = active.scent!; this.waypoints = active.waypoints!;
@@ -10745,6 +10759,7 @@ export class Game {
         this.updateFlavorText();
         rng.setState(snapshot.rngState);
         this.extensionRuntime = extensions;
+        loadingSpatialCatalogs.delete(this);
         if(extensions?.hasOwnedRegions)this.bindMovementRegionSession();
         this.configureExtensionRuleAdapters();
         ItemLoader.onKnowledgeChanged = extensions ? kindId => extensions.emit('itemKnowledgeChanged',{kindId}) : null;
@@ -11402,15 +11417,15 @@ export class Game {
         else ignite();
     }
     private spatialWorldPort() { return { grid: this.grid, player: this.player, monsters: this.monsters, dormantMonsters: this.dormantMonsters }; }
-    /** Optional derived session: no own field, table, scan or counter in a
-     * world which has never requested square motion. */
-    declare private squareMotion: { spatial: CreatureSpatial; pathing: FootprintPathing; cohort: Creature[] } | undefined;
-    public planSquareStep(actor: Monster, goal: FootprintGoal, distanceOnly = false) {
+    /** Optional derived session. Squares retain their r0 service; rigid graphs
+     * are created only when a registered non-square actor requests a route. */
+    declare private squareMotion: { spatial: CreatureSpatial; pathing: FootprintPathing; rigid?: RigidPosePathing; cohort: Creature[] } | undefined;
+    public planSquareStep(actor: Monster, goal: RigidPoseGoal, distanceOnly = false) {
         const world = this.spatialWorldPort();
         const cohort = [this.player, ...this.monsters, ...this.dormantMonsters];
         let session = this.squareMotion;
         if (!session) {
-            const spatial = new CreatureSpatial(world);
+            const spatial = new CreatureSpatial(world, this.spatialCatalog);
             session = this.squareMotion = { spatial, pathing: new FootprintPathing(spatial), cohort };
         } else if (session.spatial.grid !== this.grid || session.cohort.length !== cohort.length
             || session.cohort.some((c, i) => c !== cohort[i])) {
@@ -11425,11 +11440,44 @@ export class Game {
         forbiddenFlags &= ~(here & (T_HARMFUL_TERRAIN | T_SPONTANEOUSLY_IGNITES));
         if (!actor.isAlly && actor.state === MonsterState.HUNTING && actor.hp >= 10) forbiddenFlags &= ~T_CAUSES_POISON;
         if (!actor.isAlly && actor.state !== MonsterState.WANDERING) forbiddenFlags &= ~T_IS_DF_TRAP;
-        return session.pathing.planStep(actor, goal, { forbiddenFlags, requiresSubmergible: actor.hasBehavior('MONST_RESTRICTED_TO_LIQUID'), allowSecretDoors: true }, distanceOnly);
+        const policy = { forbiddenFlags, requiresSubmergible: actor.hasBehavior('MONST_RESTRICTED_TO_LIQUID'), allowSecretDoors: true };
+        if (isSquareFootprint(actor)) return session.pathing.planStep(actor, goal, policy, distanceOnly);
+        session.rigid ??= new RigidPosePathing(session.spatial);
+        return session.rigid.planStep(actor, goal, policy, distanceOnly);
     }
     public squareDistanceValues(actor: Monster, goal: FootprintGoal): (at: Readonly<Pos>) => number {
-        return this.planSquareStep(actor, goal, true).distanceAt!;
+        const result = this.planSquareStep(actor, goal, true);
+        if (isSquareFootprint(actor)) return result.distanceAt as (at: Readonly<Pos>) => number;
+        const distance = result.distanceAt as (at: Readonly<Pos>, pose: RigidPose) => number;
+        return at => distance(at, actor.spatial!.pose as RigidPose);
     }
+    /** NPC intent is reached from the existing executeCommand actor clock.
+     * No animation or display caller can manufacture a placement plan. */
+    public rotateSpatialActor(actor: Monster, turns: -1 | 1): boolean {
+        const session = this.squareMotion;
+        if (!session) return false;
+        const cohort = [this.player, ...this.monsters, ...this.dormantMonsters];
+        if (session.spatial.grid !== this.grid || session.cohort.length !== cohort.length || session.cohort.some((c,i) => c !== cohort[i])) {
+            session.spatial.replaceWorld(this.spatialWorldPort()); session.cohort = cohort;
+        }
+        if (!session.spatial.isActive(actor)) return false;
+        const options = { allowsTerrain: (p: Pos) => actor.canEnterMovementTerrain(this, p.x, p.y) };
+        const previousBody = footprintOf(actor);
+        const plan = session.spatial.planRotationPlacement(actor, turns, options);
+        if (!plan || !session.spatial.commitPlacement(plan)) return false;
+        actor.ticksUntilTurn = plan.actionCost!;
+        for (const p of footprintOf(actor)) if (this.grid.getCell(p.x,p.y)?.isVisible) this.discoverSecretAt(p.x,p.y);
+        const contactEffects = () => this.applyEnvironmentalEffects(actor, false, undefined, previousBody);
+        if (this.extensionRuntime) {
+            const effects = this.extensionRuntime.causality, source = effects.current;
+            const origin = source ? effects.create('displacement', source.actorId, source.creditActorId, source.creditPartyId) : null;
+            effects.withImmediateTerrain(origin, contactEffects);
+        } else contactEffects();
+        this.updateVision();
+        this.needsRender = true;
+        return true;
+    }
+    public rigidPathingStats() { return this.squareMotion?.rigid?.stats; }
     public monsterListsChanged(): void {
         if (this.squareMotion && !squareListUsers(this.monsters) && !squareListUsers(this.dormantMonsters)) {
             this.squareMotion.spatial.dispose(); delete this.squareMotion;
@@ -11438,7 +11486,7 @@ export class Game {
     /** Checked diagnostic/native publication; ordinary content keeps its CE
      * construction path. No constructor, ID or RNG is used for the preflight. */
     public publishSquareMonster(monster: Monster): boolean {
-        assertNativeSpatial(monster);
+        assertNativeSpatial(monster, this.spatialCatalog);
         if (!monster.spatial || this.monsters.includes(monster) || this.dormantMonsters.includes(monster)
             || !this.squarePublicationFits(monster) || !canPlaceCreature(this, monster, monster.loc)) return false;
         if (monster.hasBehavior('MONST_RESTRICTED_TO_LIQUID') && !footprintEvery(monster, p => !!(cellTerrainMechFlags(this.grid, p.x, p.y) & TM_ALLOWS_SUBMERGING))) return false;
@@ -11446,12 +11494,21 @@ export class Game {
         if (!monster.isDormant) this.applyEnvironmentalEffects(monster);
         return true;
     }
-    /** Enabled native form creation; preflight and publication stay in the
-     * same square-body path as foundation fixtures. */
+    /** Enabled native form creation, with pure full-mask preflight before allocation. */
     public createModuleMonster(formId: string, at: Pos, movementRegionId?: number, reason: CreationReason = 'scripted'): Monster | null {
         const form=this.extensionRuntime?.nativeForms().find(f=>f.id===formId);
         if(!form) throw new Error('Unavailable native form');
-        return this.createSquareMonster(nativeFormData(form),form.size,at,movementRegionId,reason);
+        if (form.size) return this.createSquareMonster(nativeFormData(form),form.size,at,movementRegionId,reason);
+        this.bindMovementRegionSession();
+        const data = nativeFormData(form), spatial = nativeFormSpatial(form, movementRegionId);
+        const candidate = { loc: at, spatial, hp: 1 } as Creature;
+        bindSpatialCatalog(candidate, this.extensionRuntime!.spatialCatalog);
+        if (!this.canCreateNativeCandidate(data, candidate)) return null;
+        const monster = new Monster(at.x, at.y, data); monster.spatial = spatial; monster.spawnLoc = { ...at };
+        bindSpatialCatalog(monster, this.extensionRuntime!.spatialCatalog);
+        markCreatureBirth(monster, reason);
+        if (!this.publishSquareMonster(monster)) throw new Error('Rigid birth changed during synchronous construction');
+        return monster;
     }
     public createSquareMonster(data: MonsterData, size: 2 | 3, at: Pos, movementRegionId?: number, reason?: CreationReason): Monster | null {
         this.bindMovementRegionSession();
@@ -11470,6 +11527,19 @@ export class Game {
         const candidate = { loc: at, spatial, hp: 1 } as Creature;
         const aquatic = data.behaviorFlags?.includes('MONST_RESTRICTED_TO_LIQUID');
         return this.squarePublicationFits(candidate) && canFitAt(this, candidate, at, { allowsTerrain: p => !(cellTerrainFlags(this.grid, p.x, p.y) & speciesForbiddenFlags(data))
+            && (!aquatic || !!(cellTerrainMechFlags(this.grid, p.x, p.y) & TM_ALLOWS_SUBMERGING)) });
+    }
+    public canCreateModuleMonster(formId: string, at: Pos, movementRegionId?: number): boolean {
+        const form = this.extensionRuntime?.nativeForms().find(f => f.id === formId);
+        if (!form) return false;
+        if (form.size) return this.canCreateSquareMonster(nativeFormData(form), form.size, at, movementRegionId);
+        const candidate = { loc: at, spatial: nativeFormSpatial(form, movementRegionId), hp: 1 } as Creature;
+        bindSpatialCatalog(candidate, this.extensionRuntime!.spatialCatalog);
+        return this.canCreateNativeCandidate(nativeFormData(form), candidate);
+    }
+    private canCreateNativeCandidate(data: MonsterData, candidate: Creature): boolean {
+        const aquatic = data.behaviorFlags?.includes('MONST_RESTRICTED_TO_LIQUID');
+        return this.squarePublicationFits(candidate) && canFitAt(this, candidate, candidate.loc, { allowsTerrain: p => !(cellTerrainFlags(this.grid, p.x, p.y) & speciesForbiddenFlags(data))
             && (!aquatic || !!(cellTerrainMechFlags(this.grid, p.x, p.y) & TM_ALLOWS_SUBMERGING)) });
     }
     private squarePublicationFits(candidate: Creature, monsters = this.monsters, dormantMonsters = this.dormantMonsters): boolean {
