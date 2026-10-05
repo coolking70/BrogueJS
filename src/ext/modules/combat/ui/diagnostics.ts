@@ -1,3 +1,4 @@
+import { createCombatDiagnosticTrace } from './diagnosticTrace';
 import type { Game } from '../../../../engine/Core/Game';
 import { Monster, MonsterState, type MonsterData } from '../../../../entities/Monster';
 import type { Creature } from '../../../../entities/Creature';
@@ -92,8 +93,19 @@ export function placeCombatTelegraphFixture(game: Game, attack: 'parryable' | 's
 
 export function installCombatDiagnostics(game: Game): () => void {
     if (!import.meta.env.DEV || typeof window === 'undefined') return () => {};
-    const target = window as Window & { debug_combat_telegraphs?: (attack?: 'parryable' | 'stomp') => ReturnType<typeof placeCombatTelegraphFixture> };
+    let trace: ReturnType<typeof createCombatDiagnosticTrace> | undefined;
+    const target = window as Window & { debug_combat_trace?: (operation?: 'start' | 'read' | 'stop') => unknown; debug_combat_telegraphs?: (attack?: 'parryable' | 'stomp') => ReturnType<typeof placeCombatTelegraphFixture> };
     const run = (attack?: 'parryable' | 'stomp') => placeCombatTelegraphFixture(game, attack);
     target.debug_combat_telegraphs = run;
-    return () => { if (target.debug_combat_telegraphs === run) delete target.debug_combat_telegraphs; };
+    const traceCommand = (operation: 'start' | 'read' | 'stop' = 'read') => {
+        if (operation === 'start') { trace?.stop(); trace = createCombatDiagnosticTrace(game); }
+        if (operation === 'stop') return trace?.stop() ?? null;
+        return trace?.read() ?? null;
+    };
+    target.debug_combat_trace = traceCommand;
+    return () => {
+        trace?.stop();
+        if (target.debug_combat_telegraphs === run) delete target.debug_combat_telegraphs;
+        if (target.debug_combat_trace === traceCommand) delete target.debug_combat_trace;
+    };
 }
