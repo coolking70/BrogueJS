@@ -551,5 +551,35 @@
         "providerProfileId": "combat.fan-edge"
       }
     ]
-  }
+  },
+  "transitions": [
+    {
+      "id": "giants.colossus-fracture",
+      "sourceFormId": "giants.abyssal-colossus",
+      "condition": {
+        "kind": "hp-at-most",
+        "numerator": 1,
+        "denominator": 2
+      },
+      "ticks": 200,
+      "hpCost": 0,
+      "transition": {
+        "reason": "split",
+        "results": [
+          {
+            "formId": "giants.ridgeback",
+            "memberMap": []
+          },
+          {
+            "formId": "giants.ridgeback",
+            "memberMap": []
+          }
+        ],
+        "hp": "conserve",
+        "statuses": "preserve",
+        "relationships": "preserve",
+        "placement": "nearest"
+      }
+    }
+  ]
 }

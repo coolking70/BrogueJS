@@ -37,18 +37,15 @@ export function validateGiantsBindings(
         !isGiantsBossMarker(m) ||
         !s.bosses.some(
           (b) =>
-            b.primaryId === +actor &&
+            b.subjects.some(s => s.groupId === +actor && s.status === 'alive') &&
             b.encounterKey === m.encounterKey &&
-            b.spawnDefinitionId === m.spawnDefinitionId &&
-            b.subjects[0]!.status === 'alive'
+            b.spawnDefinitionId === m.spawnDefinitionId
         )
       )
         return false;
     }
   return s.bosses.every(
-    (b) =>
-      b.subjects[0]!.status !== 'alive' ||
-      isGiantsBossMarker(components[String(b.primaryId)]?.['giants:boss'])
+    b => b.subjects.every(s => s.status !== 'alive' || isGiantsBossMarker(components[String(s.groupId)]?.['giants:boss']))
   );
 }
 export function validateGiantsWorld(
@@ -61,16 +58,14 @@ export function validateGiantsWorld(
   if (!validateGiantsBindings(pack, state, components, world)) return false;
   return (
     (state as unknown as GiantsState).bosses.every(
-      (b) =>
-        b.subjects[0]!.status !== 'alive' ||
-        actors.some(
+      b => b.subjects.every(s => s.status !== 'alive' || actors.some(
           (a) =>
-            a.id === b.primaryId &&
+            a.id === s.groupId &&
             a.hp > 0 &&
             (b.status === 'alive'
               ? a.movementRegionId === b.regionId
-              : a.movementRegionId === undefined)
-        )
-    ) && (state as unknown as GiantsState).bosses.every((b) => b.primaryId < world.nextEntityId)
+              : a.movementRegionId === undefined || a.movementRegionId === b.regionId)
+        ))
+    ) && (state as unknown as GiantsState).bosses.every(b => b.subjects.every(s => s.groupId < world.nextEntityId))
   );
 }

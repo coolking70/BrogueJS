@@ -23,7 +23,7 @@ export const CREATURE_FIELDS = [
     'movementSpeed', 'attackSpeed', 'mapToMe',
 ] as const satisfies readonly (keyof Creature)[];
 export const MONSTER_FIELDS = [
-    ...CREATURE_FIELDS, 'state', 'creatureMode', 'damageString', 'damageClumping', 'goldDropChance', 'itemDropChance',
+    ...CREATURE_FIELDS, 'bodyTransitionHistory', 'bodyTransitionRewardless', 'state', 'creatureMode', 'damageString', 'damageClumping', 'goldDropChance', 'itemDropChance',
     'onHitStatus', 'onHitChance', 'onHitDuration', 'statusResistTurns', 'isAlly',
     'dominated', 'boundToLeader', 'leaderlessAfterDemotion', 'isCaged', 'mutation', 'polymorphed', 'isClone',
     'wasNegated', 'newPowerCount', 'totalPowerCount', 'polymorphKeepsSpeed',
@@ -50,7 +50,7 @@ function copyValue<T>(value: T): T {
 }
 export function copyFields<T, K extends keyof T>(source: T, fields: readonly K[]): Pick<T, K> {
     if (fields.some(key => key === 'spatial') && Object.prototype.hasOwnProperty.call(source, 'spatial') && (source as any).spatial === undefined) throw new SpatialValidationError('Spatial absence must omit the property');
-    return Object.fromEntries(fields.filter(key => key !== 'spatial' || Object.prototype.hasOwnProperty.call(source, key)).map(key => [key, copyValue(source[key])])) as Pick<T, K>;
+    return Object.fromEntries(fields.filter(key => !['spatial','bodyTransitionHistory','bodyTransitionRewardless'].includes(String(key)) || Object.prototype.hasOwnProperty.call(source, key)).map(key => [key, copyValue(source[key])])) as Pick<T, K>;
 }
 export type GameSnapshotItem = Pick<Item, typeof ITEM_FIELDS[number]>;
 export type GameSnapshotMonster = Pick<Monster, typeof MONSTER_FIELDS[number]> & {
@@ -139,6 +139,12 @@ export function restoreEntityGraph(rows: readonly GameSnapshotMonster[], itemRow
     const saved = new Map<number, GameSnapshotMonster>();
     const items = new Map(existingItems.map(i => [i.id, i]));
     const read = (row: GameSnapshotMonster): void => {
+        if (Object.prototype.hasOwnProperty.call(row, 'bodyTransitionHistory') && (!Array.isArray(row.bodyTransitionHistory)
+            || !row.bodyTransitionHistory.length || row.bodyTransitionHistory.length > 64
+            || row.bodyTransitionHistory.some(id => typeof id !== 'string') || new Set(row.bodyTransitionHistory).size !== row.bodyTransitionHistory.length))
+            throw new SpatialValidationError('Invalid body transition history');
+        if (Object.prototype.hasOwnProperty.call(row, 'bodyTransitionRewardless') && row.bodyTransitionRewardless !== true)
+            throw new SpatialValidationError('Invalid body transition reward entitlement');
         if (Object.prototype.hasOwnProperty.call(row, 'spatial')) {
             if (!integer(row.loc?.x, -32768, 32767) || !integer(row.loc?.y, -32768, 32767)) throw new SpatialValidationError('Invalid square anchor');
             if (deps.spatialCatalog?.fixture) validateSpatialComponent(row.spatial, deps.spatialCatalog, false);

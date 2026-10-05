@@ -17,5 +17,8 @@
   "ext.giants.shale_weaver_leg.name": "织兽岩足",
   "ext.giants.shale_weaver_leg.description": "页岩织兽的一条岩足。它有独立的生命值，折断后留下空位，不会单独掉落战利品。",
   "ext.giants.ui.members": "外围：{{alive}} 存活 / {{broken}} 折断",
-  "ext.giants.ui.members_visible": "可见外围：{{alive}}"
+  "ext.giants.ui.members_visible": "可见外围：{{alive}}",
+  "ext.giants.transition.applied": "沉渊巨像崩解，裂成两具岩脊碎像！",
+  "ext.giants.transition.no_effect": "碎岩挤作一团，巨像的崩解未能成形。",
+  "ext.giants.ui.descendants": "可见后裔：{{count}}"
 }

@@ -8,6 +8,7 @@ export interface BossHudModel {
   color: string;
   zone?: PublicMonsterZone;
   members?: { alive: number; broken?: number };
+  descendants?: number;
 }
 /** Public historical DTO only: tags, identity, current/max HP and focus are
  * captured with the rows. No live actors, module state or RNG access. */
@@ -15,9 +16,9 @@ export function selectBossHud(frame: DisplayFrame): BossHudModel | null {
   if (frame.terminal || frame.player.statuses.hallucinating) return null;
   const aim = frame.arcana?.cursor ?? frame.throwAim;
   const rows = frame.rows.filter(
-    (r) =>
+    (r): r is Extract<typeof r, { kind: 'monster' }> =>
       r.kind === 'monster' &&
-      frame.actorTags?.[r.id]?.includes('giants.boss') &&
+      !!frame.actorTags?.[r.id]?.includes('giants.boss') &&
       r.direct &&
       r.hp > 0
   );
@@ -40,6 +41,8 @@ export function selectBossHud(frame: DisplayFrame): BossHudModel | null {
     );
   });
   const row = rows[0];
+  const encounter = row && frame.actorGroups?.[row.id];
+  const descendants = encounter ? rows.filter(r => frame.actorGroups?.[r.id] === encounter) : [];
   const group = frame.bodyGroups?.find(g => g.coreId === row?.id);
   const members = group ? { alive: group.members.filter(m => m.entityId !== group.coreId).length,
     ...(group.broken !== undefined ? { broken: group.broken } : {}) } : undefined;
@@ -47,6 +50,8 @@ export function selectBossHud(frame: DisplayFrame): BossHudModel | null {
   const zone = row?.kind === 'monster' ? row.zones?.find(z => !z.broken && !!at && z.cells.some(p => p.x === at.x && p.y === at.y))
     ?? row.zones?.find(z => z.broken) ?? row.zones?.[0] : undefined;
   return row?.kind === 'monster'
-    ? { id: row.id, name: row.name, hp: row.hp, maxHp: row.maxHp, color: row.color, ...(zone ? { zone } : {}), ...(members ? { members } : {}) }
+    ? { id: row.id, name: row.name, hp: descendants.length > 1 ? descendants.reduce((n,r)=>n+r.hp,0) : row.hp,
+        maxHp: descendants.length > 1 ? descendants.reduce((n,r)=>n+r.maxHp,0) : row.maxHp, color: row.color,
+        ...(descendants.length > 1 ? { descendants: descendants.length } : {}), ...(zone ? { zone } : {}), ...(members ? { members } : {}) }
     : null;
 }

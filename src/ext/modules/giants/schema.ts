@@ -1,3 +1,4 @@
+import { validActiveBodyTransitions } from '../../bodyTransitions';
 import { isJson } from '../../json';
 import { validNativeForm, nativeFormFootprint, nativeFormSpatial } from '../../nativeForms';
 import { SpatialCatalog } from '../../../engine/Movement/SpatialSchema';
@@ -9,7 +10,7 @@ export function isGiantsPack(value: unknown): value is GiantsPack {
     !value ||
     typeof value !== 'object' ||
     Array.isArray(value) ||
-    Object.keys(value).filter(k => k !== 'bodies').sort().join(',') !== 'forms,moduleVersion,rulesVersion,schema,templates'
+    Object.keys(value).filter(k => !['bodies','transitions'].includes(k)).sort().join(',') !== 'forms,moduleVersion,rulesVersion,schema,templates'
   )
     return false;
   const v = value as unknown as GiantsPack;
@@ -54,6 +55,8 @@ export function isGiantsPack(value: unknown): value is GiantsPack {
       for (const rule of v.bodies.breakRules) catalog.registerMemberBreakRule(rule);
       for (const body of v.bodies.definitions) catalog.registerBody(body);
     } else if (Object.prototype.hasOwnProperty.call(v, 'bodies')) return false;
+    if (v.transitions !== undefined && !validActiveBodyTransitions(v.transitions, 'giants', v.forms, v.bodies?.definitions ?? [])) return false;
+    if (Object.prototype.hasOwnProperty.call(v, 'transitions') && v.transitions === undefined) return false;
     return v.templates.every(t => t.bodyId === undefined || catalog.body(t.bodyId).parts.find(p => p.role === 'core')?.formId === t.formId);
   } catch { return false; }
 }

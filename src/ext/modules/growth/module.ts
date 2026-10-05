@@ -669,8 +669,8 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                     maxHp:addGrowthIntegers(actor.maxHp,derived.appliedMaxHp)});
             },
             actorObserved({actor},context) { const state = getState(context); observe(state,actor); saveState(context,state); },
-            deathCaptured({actor,origin,administrative},context) {
-                if (actor.player) return;
+            deathCaptured({actor,origin,administrative,rewardEligible},context) {
+                if (actor.player || rewardEligible === false) return;
                 const state = getState(context); state.pending.push({kind:'kill',actor:{...actor},origin,administrative}); saveState(context,state);
             },
             enteredLevel({depth,firstVisit,actorIds},context) {

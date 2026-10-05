@@ -153,7 +153,8 @@ export interface HookEvents {
     nativeMaximumReset: { actor: ActorFacts; preserveOverhealth?: boolean };
     itemKnowledgeChanged: { kindId: string };
     rewardGranted: { issuerId: string; recipientId: number; rewardId: string; instanceId: string };
-    deathCaptured: { actor: ActorFacts; origin: EffectOrigin | null; administrative: boolean };
+    deathCaptured: { actor: ActorFacts; origin: EffectOrigin | null; administrative: boolean; rewardEligible?: false };
+    bodyTransition: import('./bodyTransitions').BodyTransitionFact;
     simulationSettled: { knownKinds: { id: string; category: string }[]; reachableIds: number[]; sourceIds: number[] };
 
     generationPlacement: import('./generation').GenerationPlacementFact;
@@ -225,13 +226,14 @@ export interface ExtensionModule extends ExtensionVersion {
     /** One discovered data-only owner for persistent phased attacks. */
     readonly actorActions?: { readonly stateField: 'scheduler'; readonly definitions: Json };
     readonly nativeForms?: readonly import('./nativeForms').NativeFormDefinition[];
+    readonly bodyTransitions?: readonly import('./bodyTransitions').ActiveBodyTransition[];
     /** Data-only composite declarations; foundation owns entities and clocks. */
     readonly nativeBodies?: { readonly definitions: readonly import('../engine/Movement/SpatialSchema').BodyDefinition[];
         readonly breakRules: readonly import('../engine/Movement/SpatialSchema').PartBreakRule[];
         readonly statusProfiles?: readonly import('../engine/Movement/SpatialSchema').SpatialStatusProfileDefinition[];
         readonly attackProfiles?: readonly import('../engine/Movement/SpatialSchema').SpatialAttackProfileDefinition[] };
     readonly generationContributions?: readonly import('./generation').GenerationContribution[];
-    readonly publicActorTags?: readonly { readonly component: string; readonly tag: string }[];
+    readonly publicActorTags?: readonly { readonly component: string; readonly tag: string; readonly groupKey?: string }[];
     readonly interactionCommands?: readonly string[];
     projectView?(context: ExtensionProjectionContext): Json;
     /** Pure projection receives only a detached selected player component, never a world/context capability. */

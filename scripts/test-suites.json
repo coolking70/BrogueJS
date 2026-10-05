@@ -158,6 +158,8 @@
     "src/test/phase4d_rest_relations.test.ts",
     "src/test/phase4d_terminal_identity.test.ts",
     "src/test/phase4d_travel_ai.test.ts",
+    "src/test/phase4e_body_transition.test.ts",
+    "src/test/phase4e_recording.test.ts",
     "src/test/presentation_timeline.test.ts",
     "src/test/r_1_appearance.test.ts",
     "src/test/repo_hygiene.test.ts",

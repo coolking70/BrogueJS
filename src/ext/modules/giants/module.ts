@@ -25,15 +25,34 @@ export function createGiantsModuleFromPack(input: GiantsPack): ExtensionModule {
     },
     ownedRegions: true,
     nativeForms: pack.forms,
+    ...(pack.transitions ? { bodyTransitions: pack.transitions } : {}),
     ...(pack.bodies ? { nativeBodies: pack.bodies } : {}),
     generationContributions: pack.templates,
-    publicActorTags: [{ component: 'boss', tag: 'boss' }],
+    publicActorTags: [{ component: 'boss', tag: 'boss', groupKey: 'encounterKey' }],
     initialState: () => initialGiantsState() as unknown as Json,
     validateState: (v): v is Json => isGiantsState(v, pack),
     componentValidators: { boss: isGiantsBossMarker },
     validateComponents: (s, c, f) => validateGiantsBindings(pack, s, c, f.world),
     validateWorld: (s, c, a, w) => validateGiantsWorld(pack, s, c, a, w),
     hooks: {
+      bodyTransition(event, context) {
+        if (event.outcome !== 'applied') {
+          if (pack.transitions?.some(move => move.id === event.moveId))
+            context.message(i18next.t('ext.giants.transition.no_effect'));
+          return;
+        }
+        if (event.reason === 'split') change(context, s => {
+          const boss = s.bosses.find(b => b.subjects.some(subject => subject.groupId === event.sourceGroupId && subject.status === 'alive'));
+          if (!boss) return false;
+          for (const groupId of event.resultGroupIds) {
+            if (!boss.subjects.some(subject => subject.groupId === groupId)) boss.subjects.push({ groupId, status: 'alive' });
+            context.setComponent(groupId, 'boss', { schema: 1, encounterKey: boss.encounterKey, spawnDefinitionId: boss.spawnDefinitionId });
+          }
+          return true;
+        });
+        if (pack.transitions?.some(move => move.id === event.moveId))
+          context.message(i18next.t('ext.giants.transition.applied'));
+      },
       generationPlacement(event, context) {
         if (event.owner !== 'giants') return;
         change(context, (s) => {
@@ -70,11 +89,12 @@ export function createGiantsModuleFromPack(input: GiantsPack): ExtensionModule {
       deathCaptured(event, context) {
         change(context, (s) => {
           const b = s.bosses.find(
-            (b) => b.primaryId === event.actor.id && b.subjects[0]!.status === 'alive'
+            (b) => b.subjects.some(subject => subject.groupId === event.actor.id && subject.status === 'alive')
           );
           if (!b) return false;
-          b.subjects[0]!.status = event.administrative ? 'lost' : 'dead';
-          b.status = event.administrative ? 'lost' : 'defeated';
+          b.subjects.find(subject => subject.groupId === event.actor.id)!.status = event.administrative ? 'lost' : 'dead';
+          if (b.subjects.every(subject => subject.status === 'dead')) b.status = 'defeated';
+          else if (!b.subjects.some(subject => subject.status === 'alive')) b.status = 'lost';
           context.removeComponent(event.actor.id, 'boss');
           return true;
         });
@@ -83,7 +103,7 @@ export function createGiantsModuleFromPack(input: GiantsPack): ExtensionModule {
         change(context, (s) => {
           const b = s.bosses.find(
             (b) =>
-              b.primaryId === event.actor.id &&
+              b.subjects.some(subject => subject.groupId === event.actor.id && subject.status === 'alive') &&
               b.regionId === event.regionId &&
               b.status === 'alive'
           );
@@ -100,11 +120,11 @@ export function createGiantsModuleFromPack(input: GiantsPack): ExtensionModule {
       simulationSettled(event, context) {
         change(context, (s) => {
           let changed = false;
-          for (const b of s.bosses)
-            if (b.subjects[0]!.status === 'alive' && !event.reachableIds.includes(b.primaryId)) {
-              b.subjects[0]!.status = 'lost';
-              b.status = 'lost';
-              context.removeComponent(b.primaryId, 'boss');
+          for (const b of s.bosses) for (const subject of b.subjects)
+            if (subject.status === 'alive' && !event.reachableIds.includes(subject.groupId)) {
+              subject.status = 'lost';
+              if (!b.subjects.some(s => s.status === 'alive')) b.status = 'lost';
+              context.removeComponent(subject.groupId, 'boss');
               changed = true;
             }
           return changed;
