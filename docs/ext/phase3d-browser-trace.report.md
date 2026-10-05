@@ -71,3 +71,26 @@ JSON.stringify(window.debug_combat_trace('stop'))
 - 完成前重新fetch并merge foundation为Already up to date；远程foundation/phase3仍98f9d15，phase4仍980600c。
 
 原始最终日志：browser-defense-final-gates.log、browser-defense-final-build.log、browser-defense-smoke.log。数值诊断与引用专项日志：browser-defense-exact700.log、browser-defense-retained-reference.log。之前的smoke过滤表达式曾只选中1项，因此重新选择并实际完成上述9项；不把首次1项误报为全部组合。
+
+## 发布前底座更新（取代前节的远程版本记录）
+
+首次候选cecb2fb交付后，实际foundation前进到81c82a023c4052f73f41c503d822dc6a8898e7ef（4d-3 Shale Weaver里程碑和原98f9d15的合并）。已在隔离分支以真正merge保留双方历史，合并提交7c62e48；无冲突。新增上游包含整组生成预检、外围成员击杀计数、公开组投影/HUD与数据/回归；本次诊断相关文件没有被覆盖。相对新foundation的候选变更仍仅为诊断、测试和本报告。
+
+需要连续两次动作证据时，可将起始与结束副本都保留在变量中：
+
+```js
+const beforeDefense = window.debug_combat_trace('start')
+// 用正常UI完成第一次防御；等待展示结束，再正常完成第二次。
+const afterDefense = window.debug_combat_trace('stop')
+JSON.stringify({ before: beforeDefense, after: afterDefense })
+```
+
+stop已经解除观察。afterDefense是独立JSON数据，可稍后重复导出，不会继续被游戏改写。256帧环形缓冲只保留最近帧；起始副本与累计成功次数仍可用于判断两次攻击身份，不必把采样间隔当作模拟tick。
+
+### 新底座合并后的最终门禁
+
+- 18个完整相关文件：190通过、0跳过，exit0，158.07秒。除原15文件外，补跑上游giants_composite、giants_composite_sfc、giants_contract三个完整文件。
+- 真实Game组合smoke：9通过、22项名称过滤，exit0，23.67秒。
+- 新底座module boundary/唯一归属、vue-tsc+build、diff-check通过；生产包再次确认不含DEV trace。仍只存在既有大chunk提示。
+- 最后ls-remote确认foundation/phase4均81c82a0、phase3仍98f9d15。没有推送。完整保留81c82a0及原诊断提交cecb2fb两条祖先历史。
+- 新门禁日志为browser-defense-merge-gates.log、browser-defense-merge-build.log、browser-defense-merge-smoke.log；旧日志保留为合并前证据，不与新底座结果混称。
