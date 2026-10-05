@@ -390,7 +390,7 @@ export class CombatSystem {
         const applyTo = defender;
         if (damage > 0) {
             const hpDamage = applyTo.absorbShieldDamage(damage);
-            const transfer = () => CombatSystem.transferMonsterHealth(attacker, applyTo, hpDamage);
+            const transfer = (actual: number) => CombatSystem.transferMonsterHealth(attacker, applyTo, actual);
             if (applyTo instanceof Player) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
             else applyTo.takeDamage(hpDamage, true, opts?.grid, transfer, 'physical'); // shield applied exactly once
             if (poisonDuration > 0) applyTo.addPoison(poisonDuration, 1);
@@ -703,7 +703,7 @@ export class CombatSystem {
         if (damage > 0) {
             const hpDamage = applyTo.absorbShieldDamage(damage);
             const hpBefore = applyTo.hp;
-            const transfer = () => CombatSystem.transferMonsterHealth(attacker, applyTo, hpDamage);
+            const transfer = (actual: number) => CombatSystem.transferMonsterHealth(attacker, applyTo, actual);
             if (applyTo instanceof Player) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
             else applyTo.takeDamage(hpDamage, true, opts?.grid, transfer, 'physical'); // shield applied exactly once
             if (trace) trace.hpLost = Math.max(0, hpBefore - applyTo.hp);
@@ -888,7 +888,7 @@ export class CombatSystem {
         }
 
         const hpDamage = defender.absorbShieldDamage(damage);
-        defender.takeDamage(hpDamage, true, grid, () => CombatSystem.transferMonsterHealth(thrower, defender, hpDamage), 'physical');
+        defender.takeDamage(hpDamage, true, grid, actual => CombatSystem.transferMonsterHealth(thrower, defender, actual), 'physical');
         const killed = defender.hp <= 0;
         // CE thrown hit calls moralAttack after the separate pre-hit aggro gate.
         // A permanent thief keeps its mode, but a surviving hit still shortens fear.
@@ -960,7 +960,7 @@ export class CombatSystem {
         if (trace) trace.positivePhysicalDamage = damage > 0 && !immune;
         const hpBefore = defender.hp;
         const hpDamage = defender.absorbShieldDamage(damage);
-        defender.takeDamage(hpDamage, true, grid, () => CombatSystem.transferMonsterHealth(thrower, defender, hpDamage), 'physical');
+        defender.takeDamage(hpDamage, true, grid, actual => CombatSystem.transferMonsterHealth(thrower, defender, actual), 'physical');
         if (trace) trace.hpLost = Math.max(0, hpBefore - defender.hp);
         const killed = defender.hp <= 0;
         // CE thrown hit calls moralAttack after the separate pre-hit aggro gate.

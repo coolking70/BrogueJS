@@ -12,6 +12,9 @@ import { creatureView } from './types';
 import { readCreatureBirth } from './birth';
 import { OWNED_REGION_LIMIT, validRegionPlacement, regionContains, regionsOverlap, type OwnedRegion, type OwnedRegionPlacement } from './regions';
 import { clearMovementRegion } from '../engine/Movement/CreatureSpatial';
+import { footprintOf } from '../engine/Movement/CreatureSpatial';
+import { hasBodyContact, physicalContactOf, isWholeBodyDamage } from '../engine/Combat/BodyCombat';
+import { resolveFixedZoneContact } from '../engine/Combat/FixedZoneHealth';
 import { canonical, cloneJson, isJson, validId } from './json';
 import { EffectCausality, validEffectOrigin, type EffectOrigin } from './causality';
 import { ExtensionCompatibilityError } from './compatibility';
@@ -24,6 +27,7 @@ import type { DeathFact, GenerationToken, ControlledActionRequest, ControlledAct
 const spatialCatalogs = new WeakMap<ExtensionRuntime, SpatialCatalog>();
 // No new own runtime field in existing worlds (4a0 full-object differential).
 const partBreakProviders = new WeakMap<ExtensionRuntime, { module: ExtensionModule; provider: PartBreakProvider }>();
+const zoneBreakHandlers = new WeakMap<ExtensionRuntime, NonNullable<ExtensionPorts['zoneBroken']>>();
 function isCreatureView(value: unknown): boolean {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
     const v = value as Record<string, unknown>;
@@ -32,6 +36,7 @@ function isCreatureView(value: unknown): boolean {
         && (v.id as number) > 0 && (v.maxHp as number) >= 0;
 }
 export interface ExtensionPorts {
+    zoneBroken?(actor: Creature, zoneId: string): void;
     depth(): number;
     turn?(): number;
     interactableCandidates?(request: WorldInteractablePlacement): readonly { x: number; y: number }[];
@@ -130,6 +135,11 @@ export class ExtensionRuntime {
     private readonly messageBuffers: string[][] = [];
     get spatialCatalog(): SpatialCatalog { return spatialCatalogs.get(this) ?? nativeSpatialCatalog; }
     constructor(registry: ExtensionRegistry, manifest: ExtensionManifest, private readonly ports: ExtensionPorts, snapshot?: ExtensionSnapshot) {
+        if (ports.zoneBroken) {
+            zoneBreakHandlers.set(this, ports.zoneBroken);
+            const { zoneBroken: _handler, ...existingPorts } = ports;
+            this.ports = existingPorts;
+        }
         this.manifest = structuredClone(manifest);
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
         Object.freeze(this.manifest.modules); Object.freeze(this.manifest);
@@ -159,6 +169,7 @@ export class ExtensionRuntime {
         if (this.modules.some(m => m.nativeForms?.some(f => f.footprint))) spatialCatalogs.set(this, new SpatialCatalog(false, this.modules.map(m => m.id)));
         for (const module of this.modules) for (const form of module.nativeForms ?? []) {
             const definition = nativeFormFootprint(form, module.id);
+            for (const rule of form.breakRules ?? []) this.spatialCatalog.registerBreakRule(rule);
             if (definition) { this.spatialCatalog.registerFootprint(definition); rigidFootprint(this.spatialCatalog, definition.id); }
         }
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalQueries ?? {})) {
@@ -407,7 +418,8 @@ export class ExtensionRuntime {
     /** Engine-only atomic seam. No public input/context can issue a break. The
      * caller owns native HP/zone/plan rollback; this runtime owns provider state,
      * components, buffered messages and RNG. Unsupported and absent providers
-     * select fallback, never both. 4c-0 has no live production caller yet. */
+     * select fallback, never both. Native callers cancel plans only after this
+     * transaction succeeds, so failed providers leave prepared work intact. */
     commitPartBreak<T>(request: PartBreakRequest, native: PartBreakNativeCommit<T>): T {
         if (this.disposed || this.pureProviderPhase || this.rewardProviderPhase) throw new Error('Unavailable or recursive part break commit');
         validatePartBreakRequest(request);
@@ -900,6 +912,21 @@ export class ExtensionRuntime {
         const forms = this.nativeForms();
         if (forms.length) bindNativeForms(creature, forms, this.spatialCatalog);
         creature.extensionHooks = {
+            zoneDamage: (target, amount, kind) => {
+                if (!target.spatial || !hasBodyContact(target) || isWholeBodyDamage(target) || target.hp <= 0
+                    || !this.spatialCatalog.definition(target.spatial.footprintId).zones?.length
+                    || ['administrative','negation','transference','reprisal','status'].includes(this.causality.current?.kind ?? '')) return undefined;
+                const contact = physicalContactOf(target), zoneId = footprintOf(target).find(p => p.x === contact.x && p.y === contact.y)?.zoneId;
+                if (!zoneId) throw new Error('Invalid native zone contact');
+                const origin = this.causality.current;
+                const result = resolveFixedZoneContact(this.spatialCatalog, { entity: target, entityId: target.id, groupId: target.id,
+                    partId: null, zoneId, contact, dedupKey: `part:${target.id}:${zoneId}` }, {
+                    resolutionId: origin?.effectId ?? this.causality.create('administrative', null).effectId,
+                    sourceId: origin?.actorId ?? null, hit: true, damage: amount, kind: kind === 'physical' ? 'physical' : 'other',
+                }, (request, native) => this.commitPartBreak(request, native));
+                if (result.breakReceipt) zoneBreakHandlers.get(this)?.(target, zoneId);
+                return result.nativeHpLost;
+            },
             causality: this.causality,
             partyId: actor => this.creditParty(actor),
             relationshipChanged: actor => this.observeCreature(actor),

@@ -97,11 +97,15 @@ export function squareMovementSize(creature: Creature, catalog = spatialCatalogF
     return s.footprintId === 'builtin:single' ? 1 : s.footprintId === 'builtin:square-2' ? 2 : 3;
 }
 /** Registered independent rigid capability. Catalog authority comes from the
- * installed session; mirrors, groups, locks and local health remain closed. */
+ * installed session. Fixed zone HP/locks require declared zones; mirrors and
+ * composite groups remain closed. */
 export function rigidMovementFootprint(creature: Creature, catalog = spatialCatalogFor(creature)): CompiledRigidFootprint {
     try { validateSpatialComponent(creature.spatial, catalog, false); }
     catch (error) { if (!catalog.fixture) throw new SpatialValidationError(`Spatial capability is not open: ${(error as Error).message}`); throw error; }
-    if (Object.keys(creature.spatial!).some(k => !['schema', 'footprintId', 'pose', 'movementRegionId'].includes(k)))
+    const definition = catalog.definition(creature.spatial!.footprintId), zoned = !!definition.zones?.length;
+    if (catalog.fixture && definition.zones?.some(z => z.health.kind === 'local')) throw new SpatialValidationError('Fixture local zones are not open for native actions');
+    if (Object.keys(creature.spatial!).some(k => !['schema', 'footprintId', 'pose', 'movementRegionId',
+        ...(zoned && !catalog.fixture ? ['zoneState', 'actionLockInTicks'] : [])].includes(k)))
         throw new SpatialValidationError('Rigid movement requires an independent body without locks or local health');
     return rigidFootprint(catalog, creature.spatial!.footprintId);
 }

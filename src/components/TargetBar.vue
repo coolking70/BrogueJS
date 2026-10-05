@@ -8,7 +8,7 @@ import { dispatch, travelTo } from '../ui/commands';
 import { clearAim, targetingState } from '../ui/targeting';
 
 const { t } = useTranslation();
-const { targeting, targetName: itemName, targetAim } = useGameHud();
+const { targeting, targetName: itemName, targetZone, targetAim } = useGameHud();
 
 watch(targeting, (mode) => {
   if (mode !== 'throw') {
@@ -48,6 +48,7 @@ const cancel = () => {
 <template>
   <div v-if="targeting !== 'none'" class="target-bar" role="toolbar" :aria-label="$t('mobile.target.title')">
     <div class="target-prompt">{{ prompt }}</div>
+    <div v-if="targetZone" class="target-zone">{{ targetZone }}</div>
     <div class="target-actions">
       <button class="tb-btn primary" :disabled="!canConfirm" @click="confirm">{{ $t('mobile.target.confirm') }}</button>
       <button v-if="targeting === 'arcana'" class="tb-btn" @click="next">{{ $t('mobile.target.next') }}</button>
@@ -75,6 +76,13 @@ const cancel = () => {
   color: #fde68a;
   font-size: 0.9rem;
   line-height: 1.35;
+}
+.target-zone {
+  color: #fde68a;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .target-actions { display: flex; gap: 8px; }
 .tb-btn {

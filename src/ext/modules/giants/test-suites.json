@@ -4,8 +4,14 @@
     "tests/giants_rigid.test.ts",
     "tests/giants_runtime.test.ts",
     "tests/giants_colossus.test.ts",
-    "tests/giants_ui.test.ts"
+    "tests/giants_ui.test.ts",
+    "tests/giants_zones.test.ts",
+    "tests/giants_zones_natural.test.ts",
+    "tests/giants_zones_sfc.test.ts"
   ],
   "gen": [],
-  "drift": ["tests/giants_trace.test.ts", "tests/giants_spine_trace.test.ts"]
+  "drift": [
+    "tests/giants_trace.test.ts",
+    "tests/giants_spine_trace.test.ts"
+  ]
 }

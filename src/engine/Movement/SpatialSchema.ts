@@ -155,6 +155,8 @@ export class SpatialCatalog {
         const cells = compileFootprint(d);
         if (this.footprints.has(d.id) || !(d.owner === 'foundation' && (this.fixture || d.id.startsWith('builtin:')) || !this.fixture && this.owners.includes(d.owner) && d.id.startsWith(`${d.owner}.`))) fail('Unknown or duplicate footprint owner');
         for (const zone of d.zones ?? []) {
+            if (!this.fixture && zone.health.kind === 'local'
+                && zone.health.ownerTransfer.numerator !== zone.health.ownerTransfer.denominator) fail('Fixed local zone transfer must be 1:1');
             const rule = this.breakRule(zone.breakRuleId);
             for (const modifier of rule.modifiers) if (modifier.kind === 'expose-zone'
                 && (modifier.partId !== 'self' || !d.zones?.some(z => z.id === modifier.zoneId))) fail('Invalid fixed zone exposure reference');
@@ -170,11 +172,12 @@ export class SpatialCatalog {
     }
     form(id: string): SpatialFormDefinition { return this.forms.get(id) ?? fail('Unknown spatial form'); }
     breakRule(id: string): PartBreakRule { return this.breakRules.get(id) ?? fail('Unknown or unopened spatial break rule'); }
-    /** 4c-0: fixed-zone fixture rules only. Production declarations remain
-     * closed until native damage, action cancellation and public UI ship. */
+    /** Fixed-zone rules: fixture foundation or an installed module's own
+     * namespace. Only finite keep-zone consequences are authorized. */
     registerBreakRule(d: PartBreakRule): void {
         keys(d, ['id', 'owner', 'trigger', 'disposition', 'modifiers']);
-        if (!this.fixture || d.owner !== 'foundation' || !identity(d.id) || this.breakRules.has(d.id)
+        if (!(this.fixture && d.owner === 'foundation' || !this.fixture && this.owners.includes(d.owner) && d.id.startsWith(`${d.owner}.`))
+            || !identity(d.id) || this.breakRules.has(d.id)
             || d.trigger !== 'hp-zero' || d.disposition !== 'keep-zone' || !Array.isArray(d.modifiers)
             || d.modifiers.length > 8) fail('Invalid or unopened fixed zone break rule');
         const seen = new Set<string>();

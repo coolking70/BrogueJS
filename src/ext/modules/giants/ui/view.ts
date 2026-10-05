@@ -1,10 +1,12 @@
 import type { DisplayFrame } from '../../../../ui/displayProjection';
+import type { PublicMonsterZone } from '../../../../engine/UI/MonsterZones';
 export interface BossHudModel {
   id: number;
   name: string;
   hp: number;
   maxHp: number;
   color: string;
+  zone?: PublicMonsterZone;
 }
 /** Public historical DTO only: tags, identity, current/max HP and focus are
  * captured with the rows. No live actors, module state or RNG access. */
@@ -34,7 +36,10 @@ export function selectBossHud(frame: DisplayFrame): BossHudModel | null {
     );
   });
   const row = rows[0];
+  const at = aim ?? frame.hoverCell;
+  const zone = row?.kind === 'monster' ? row.zones?.find(z => !z.broken && !!at && z.cells.some(p => p.x === at.x && p.y === at.y))
+    ?? row.zones?.find(z => z.broken) ?? row.zones?.[0] : undefined;
   return row?.kind === 'monster'
-    ? { id: row.id, name: row.name, hp: row.hp, maxHp: row.maxHp, color: row.color }
+    ? { id: row.id, name: row.name, hp: row.hp, maxHp: row.maxHp, color: row.color, ...(zone ? { zone } : {}) }
     : null;
 }

@@ -117,3 +117,9 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 2026-10-05 4c 当前授权：执行 docs/ext/phase4c.task.md，不 commit、中文报告。按任务书允许的干净子里程碑选择 4c-0：固定 zone 的 fixture schema/HP/唯一破坏/幂等修正、底座 combat.part-break.v1 原子软接口与 fallback。生产原生战斗、动作计划取消、UI 和正式内容能力保持关闭；不会声称已完成完整4c。
 
 - 4c-0 最终交付：固定 local zone fixture 的 HP/1:1 截断传伤、唯一 keep-zone 破坏、派生速度/失攻/暴露和 fixture actionLock；底座 combat.part-break.v1 provider 互斥事务/异常回滚。生产 zone/原生解算/计划取消/UI/正式敌人保持未开放，剩余项详列 docs/ext/phase4c.report.md。Node24.19.0/3GiB/2workers最终 boundary/type/build、50文件983项、16组合engine-only、drift4文件5项均exit0；866输入SHA集合 f78fc11e522b496c97492b6a355eff65b30c16daa3bcd7cd5de1f06efe4f334c 前后一致。旧测试/基线/trace未改，浏览器监听和MachPort权限拒绝，无截图；未暂存/commit/push。
+
+- 2026-10-05 完整 4c 续轮：维护者已提交 4c-0（HEAD dba3c58），工作树保留完整 4c 接线中的改动，继续开发期功能验收、不 commit。已接可信 nativeForm zone/破坏表、中央原生 post-shield HP 出口、近战/投掷/弹道/几何真实接触与爆炸按 part、fallback 客观 tick、3b 源/目标计划取消、可见 zone DTO/检视/历史 Boss HUD、棘脊爬兽 shell/head 正式数据。专项发现并修正多 zone 风险批准列表重复实体、生产快照漏破坏定义闭包。当前专项 17 项最后待验证取消读档；仍待真实录像/seek/续录、自然击败、320/390 浏览器与最终全组开发门禁和报告。
+
+- 完整 4c 续轮复核：自然7309/wizard仅giants，1174命令抵达D11，公开卸鞭后破甲并击败；真实save/replay/seek/续录专项通过。新增25项生产、1项自然、4项SFC。边界拒绝跨模块测试导入后改用底座安装声明；4a0全图新回调对象形状差分改为派生WeakMap，4b默认local编译守卫保持关闭、生产可信目录显式授权，原native标签fixture保留。局部98项全过，最终v3冻结门禁运行；旧guard/test未改。报告保留4c-0原文，待最终数字；浏览器EPERM/MachPort与空Browser inventory使320/390像素/触控验收仍不可用。
+
+- 完整 4c 最终：v3冻结候选 boundary/type/build、63文件1236项（30新增）、白名单1项、16/16 engine-only组合、drift4文件5项全部exit0；870输入前后一致，SHA集合a06c91d966d9b0807e733f8b935948d6ca8de13295086a0ca4026cac3a2db5bd，结束UTC2026-10-05T08:09:33Z。正式棘脊棘甲local30/armor2/1:1，毁后move×1.5、头部×2、fallback50ticks；3bprepared/来源与目标windup取消、provider异常含pre-takeDamage护盾回滚、真实自然7309单giants击败及save/replay/seek/续录通过。定义+locale内容单变量反事实旧3trace精确通过，原入口重录仅8叶新增/变化，普通基线与UR2-4未动。完整报告已更新并保留4c-0原文；唯一剩余验收为320/390真实浏览器CSS布局/截图/触控/ACK切换，沙箱EPERM/MachPort及空Browser inventory原因明列。未暂存/commit/push。

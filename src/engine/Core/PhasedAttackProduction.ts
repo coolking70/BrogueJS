@@ -8,11 +8,12 @@ import { canonical } from '../../ext/json';
 import { projectAttackShape,sourceFootprintVersion,type AttackShapeRequest } from '../Movement/AttackShape';
 import { createActorActionBundle,type ActorActionScheduler,type ActorActionBoundary } from './ActorActionScheduler';
 import { invalidateProductionActorActionSession } from './ActorActionSession';
-import { createProductionActorActionSession, productionActorActionScheduler } from './ActorActionProduction';
+import { createProductionActorActionSession, productionActorActionScheduler, notifyProductionActorSourceChanged } from './ActorActionProduction';
 import { assertActorActionScope,assertNativeActorDecisionScope,withActorActionScope,type ActorActionScope } from './ActorActionScope';
 import { ActorCombatResolutionAuthority } from '../Combat/ActorCombatResolution';
 import { actorSourceRevision, spatialOf } from '../Movement/CreatureSpatial';
 import { deepFreeze } from '../Movement/SpatialSchema';
+import { nativeZoneAttackAvailable } from '../Combat/FixedZoneHealth';
 import { blinkAllyFlees, allyShouldPursue, monsterBlinkAvoids } from '../Combat/MonsterBlink';
 import { bodySightContact } from '../Combat/BodyPerception';
 
@@ -35,6 +36,7 @@ function cellsFor(game:Game,source:Creature,shape:AttackShapeRequest) {
 }
 function eligible(game:Game,source:Creature,session:Session):boolean {
     if (game.isGameOver||game.interactionActive||source.hp<=0||source.ticksUntilTurn>0||session.scheduler.isBusy(source.id)
+        || (source.spatial?.actionLockInTicks ?? 0) > 0
         ||['paralyzed','entranced','confused'].some(status=>source.hasStatus(status as 'paralyzed'))) return false;
     if (source instanceof Monster && (source.isCaged||source.isDormant||source.deathProcessed||source.state===MonsterState.ASLEEP
         ||source.state===MonsterState.FLEEING||source.hasBehavior('MONST_IMMOBILE')||source.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION'))) return false;
@@ -54,7 +56,7 @@ function prepare(game:Game,source:Creature,attackId:string,facing:ActorAttackFac
     const session=sessions.get(game); if (!session||!eligible(game,source,session)) return null;
     const profile=session.definitions.profiles.find(p=>p.id===profileId(session,game,source));
     const attack=session.definitions.attacks.find(a=>a.id===attackId);
-    if (!profile||!attack||!profile.attackIds.includes(attackId)||!facings.includes(facing)) return null;
+    if (!profile||!attack||!profile.attackIds.includes(attackId)||!facings.includes(facing)||!nativeZoneAttackAvailable(source,attackId)) return null;
     const policy=session.definitions.resourcePolicies.find(p=>p.id===profile.resourcePolicyId)!;
     const resource=session.state.actors.find(a=>a.actorId===source.id);
     if (Math.min(resource?.stamina??policy.initialStamina,policy.staminaCapacity)<attack.cost || (!resource && session.state.actors.length>=4096)) return null;
@@ -63,7 +65,7 @@ function prepare(game:Game,source:Creature,attackId:string,facing:ActorAttackFac
     if(source===game.player) {
         const allCells=attack.segments.flatMap((_,index)=>cellsFor(game,source,shapeFor(attack,index,facing)));
         for(const target of game.collectBodyTargets(allCells,{effect:'area-damage'},new Set())) {
-            if(target.entity===source) continue;
+            if(target.entity===source || approvedRisks.some(approval => approval.targetId === target.entityId)) continue;
             const risks=game.prepareActorAttackRisks(source.id,[target.contact]).filter(risk=>risk.target.kind==='creature'&&risk.target.id===target.entity.id);
             approvedRisks.push({targetId:target.entity.id,risks:structuredClone(risks) as ControlledActionRisk[]});
         }
@@ -71,7 +73,7 @@ function prepare(game:Game,source:Creature,attackId:string,facing:ActorAttackFac
     return deepFreeze({moduleId:session.moduleId,sessionRevision:session.sessionRevision,sourceEntityId:source.id,attackId,facing,revision:session.state.revision,
         sourceVersion:sourceFootprintVersion(game.spatialOf(source)),profileId:profile.id,cost:attack.cost,shape,cells,
         facts:canonical({resource:resource??null,weapon:game.player.equippedWeapon,armor:game.player.equippedArmor,depth:game.depth,grid:game.grid.width,sourceHp:source.hp,status:source.statusDurations,
-            actors:[game.player,...game.monsters].map(a=>({id:a.id,form:a instanceof Monster?a.typeId:'player',hp:a.hp,loc:a.loc,sourceRevision:actorSourceRevision(a),status:a.statusDurations,spatial:sourceFootprintVersion(game.spatialOf(a))}))}),
+            actors:[game.player,...game.monsters].map(a=>({id:a.id,form:a instanceof Monster?a.typeId:'player',hp:a.hp,loc:a.loc,sourceRevision:actorSourceRevision(a),status:a.statusDurations,spatial:sourceFootprintVersion(game.spatialOf(a)),...(a.spatial?.zoneState?{zones:a.spatial.zoneState}:{})}))}),
         risks:approvedRisks.flatMap(target=>target.risks),approvedRisks});
 }
 function commit(game:Game,plan:PhasedAttackPlan,scope:ActorActionScope):boolean {
@@ -153,6 +155,20 @@ export function bindPhasedAttackProduction(game:Game):void {
             return 'native-fallback';
         }});
     sessions.set(game,session);
+}
+/** Whole-body sources use every zone; targets use only pending locked cells. */
+export function cancelPhasedAttacksAtZone(game: Game, target: Creature, zoneId: string): void {
+    const session = sessions.get(game); if (!session) return;
+    const cells = new Set(game.footprintOf(target).filter(p => p.zoneId === zoneId).map(p => `${p.x},${p.y}`));
+    const sources = new Set<number>([target.id]);
+    for (const bundle of session.state.scheduler.bundles) {
+        const metadata = session.state.actions.find(a => a.actionId === bundle.actionId);
+        for (const child of bundle.subactions) {
+            const sub = metadata?.subactions.find(s => s.sourceSubactionId === child.sourceSubactionId);
+            if (sub?.lockedCells.some(p => cells.has(`${p.x},${p.y}`))) sources.add(child.sourceEntityId);
+        }
+    }
+    for (const id of sources) notifyProductionActorSourceChanged(game, id);
 }
 export function isPhasedAttackCommand(game:Game,data:unknown):boolean {
     if(typeof data!=='string')return false;

@@ -79,8 +79,87 @@
           "r90",
           "r180",
           "r270"
+        ],
+        "zones": [
+          {
+            "id": "shell",
+            "nameKey": "ext.giants.spine_crawler.shell",
+            "health": {
+              "kind": "local",
+              "maxHp": 30,
+              "ownerTransfer": {
+                "numerator": 1,
+                "denominator": 1
+              }
+            },
+            "armor": 2,
+            "damageMultiplier": {
+              "numerator": 1,
+              "denominator": 1
+            },
+            "breakRuleId": "giants.spine-shell-break"
+          },
+          {
+            "id": "head",
+            "nameKey": "ext.giants.spine_crawler.head",
+            "health": {
+              "kind": "native"
+            },
+            "armor": 0,
+            "damageMultiplier": {
+              "numerator": 1,
+              "denominator": 1
+            },
+            "breakRuleId": "foundation:keep-zone"
+          }
+        ],
+        "zoneCells": [
+          {
+            "x": 0,
+            "y": 0,
+            "zoneId": "head"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "zoneId": "shell"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "zoneId": "shell"
+          }
         ]
-      }
+      },
+      "breakRules": [
+        {
+          "id": "giants.spine-shell-break",
+          "owner": "giants",
+          "trigger": "hp-zero",
+          "disposition": "keep-zone",
+          "modifiers": [
+            {
+              "kind": "move-ticks-multiplier",
+              "numerator": 3,
+              "denominator": 2
+            },
+            {
+              "kind": "expose-zone",
+              "partId": "self",
+              "zoneId": "head",
+              "damageMultiplier": {
+                "numerator": 2,
+                "denominator": 1
+              }
+            },
+            {
+              "kind": "balance-loss",
+              "amount": 6,
+              "fallbackStunTicks": 50
+            }
+          ]
+        }
+      ]
     }
   ],
   "templates": [

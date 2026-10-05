@@ -4,10 +4,11 @@ import { rigidSideChamberValid } from '../Generator/SideChamber';
 import { RigidPosePathing, type RigidPoseGoal } from '../Map/RigidPosePathing';
 import { type RigidPose } from '../Movement/RigidFootprint';
 import { bindSpatialCatalog, isSquareFootprint } from '../Movement/CreatureSpatial';
+import { publicZoneAt, zoneStatusText } from '../UI/MonsterZones';
 import { nativeFormSpatial } from '../../ext/nativeForms';
 import { bodyLightOrigin } from '../Combat/BodyPerception';
 import { collectAreaBodyTargets } from '../Combat/BodyEffects';
-import { nearestLegalMeleeContact, bodyRayContact, bodyAttackContactOf, physicalContactOf, withBodyContact, withBodyAttackContact, type BodyAttackContact } from '../Combat/BodyCombat';
+import { nearestLegalMeleeContact, legalMeleeContactAt, hasDeclaredZones, bodyRayContact, bodyAttackContactOf, physicalContactOf, withBodyContact, withBodyAttackContact, appendBodyHit, bodyHitContact, withWholeBodyDamage, type BodyAttackContact } from '../Combat/BodyCombat';
 import { footprintExposure } from '../Movement/FootprintExposure';
 import { CreatureSpatial } from '../Movement/CreatureSpatial';
 import { FootprintPathing, type FootprintGoal } from '../Map/FootprintPathing';
@@ -22,7 +23,7 @@ import { SPATIAL_LIMITS, type SpatialWorldSnapshot } from '../Movement/SpatialSc
 import { assertNativeSpatial, assertSingleCellPlayer, nativeContactOf, footprintOf, footprintEvery, footprintSome, commitCreatureAnchor, squareAnchorRevision, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canFitAt, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
 import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction } from './ActorActionSession';
 import { consumeProductionActorActionResume, disposeProductionActorActionSession, markProductionActorActionResume, notifyProductionActorSourceChanged, productionActorActionInputLocked, reconcileProductionActorActions, resumeProductionActorActions, suspendProductionActorActions, validateProductionActorActionSession, validateProductionActorActionState, type ActorActionProductionWorld } from './ActorActionProduction';
-import { bindPhasedAttackProduction, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, validatePhasedAttackGeometry } from './PhasedAttackProduction';
+import { bindPhasedAttackProduction, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
 import { assertActorActionScope, type ActorActionScope } from './ActorActionScope';
 import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
 import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
@@ -427,6 +428,17 @@ export class Game {
 
     private createExtensionRuntime(manifest: ExtensionManifest, snapshot?: ExtensionSnapshot): ExtensionRuntime {
         return new ExtensionRuntime(createExtensionRegistry(), manifest, {
+            zoneBroken: (actor, zoneId) => {
+                actor.refreshSpeeds();
+                cancelPhasedAttacksAtZone(this, actor, zoneId);
+                const at = this.hoveredCell;
+                if (at && footprintOf(actor).some(p => p.zoneId === zoneId && p.x === at.x && p.y === at.y)) {
+                    this.hoveredCell = null; this.hoveredText = '';
+                }
+                const cursor = this.pendingArcana?.cursor;
+                if (cursor && actor instanceof Monster && publicZoneAt(this.player, this.grid, actor, cursor)?.id === zoneId)
+                    this.pendingArcana!.cursor = { ...this.player.loc };
+            },
             depth: () => this.depth,
             turn: () => this.absoluteTurnNumber,
             interactableCandidates: request => interactablePlacementCells(this.grid, this.player.loc,
@@ -2484,6 +2496,9 @@ export class Game {
                     ? CombatSystem.previewHitChance(monster, this.player) : CombatSystem.previewHitChance(this.player, monster) : undefined,
                 this.player.equippedWeapon
             );
+            const zone = publicZoneAt(this.player, this.grid, monster, { x, y });
+            if (zone) this.inspectTarget.sections.unshift({ lines: [{ text: zoneStatusText(zone),
+                progress: { value: zone.hp, max: zone.maxHp } }] });
             return;
         }
 
@@ -4231,7 +4246,7 @@ export class Game {
                     // Attack —— P4-7：CE Movement.c:1216-1247，buildHitList
                     // （sweep = 武器带 ITEM_ATTACKS_ALL_ADJACENT，Combat.c:2049-2090）
                     // + 攻击循环（循环内复查目标存活，对应 CE MB_IS_DYING 复查）。
-                    const hitList = this.buildPlayerMeleeHitList(blockingMonster);
+                    const hitList = this.buildPlayerMeleeHitList(blockingMonster, { x: newX, y: newY });
                     if (!hitList.length) return;
                     const targetsUnchanged = control ? this.captureControlledAttackTargets(hitList) : null;
                     if ((yield* this.abortPlayerAttackStages(hitList))) return;
@@ -4240,9 +4255,10 @@ export class Game {
                     if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
                     if (this.playerVomitAttempt(control)) return;
                     let anyAttackHit = false;
-                    for (const target of hitList) {
+                    for (let index = 0; index < hitList.length; index++) {
+                        const target = hitList[index]!;
                         if (target.hp <= 0) continue;
-                        if (this.resolvePlayerMeleeAttackOn(target)) anyAttackHit = true;
+                        if (this.resolvePlayerMeleeAttackOn(target, false, bodyHitContact(hitList, index))) anyAttackHit = true;
                     }
 
                     this.needsRender = true;
@@ -4435,9 +4451,10 @@ export class Game {
                         // lungeAttack 形参按武器旗标传入（CE Movement.c:1483）。
                         const lungeWeapon = !!this.player.equippedWeapon?.flags?.includes('ITEM_LUNGE_ATTACKS');
                         let anySpecialHit = false;
-                        for (const target of specialTargets) {
+                        for (let index = 0; index < specialTargets.length; index++) {
+                            const target = specialTargets[index]!;
                             if (target.hp <= 0) continue;
-                            if (this.resolvePlayerMeleeAttackOn(target, lungeWeapon)) anySpecialHit = true;
+                            if (this.resolvePlayerMeleeAttackOn(target, lungeWeapon, bodyHitContact(specialTargets, index, this.player.loc))) anySpecialHit = true;
                         }
                         // CE 的突进/连枷回合没有独立的 movementSpeed 开销：
                         // playerTurnEnded 只在 ticksUntilTurn==0 时补 movementSpeed，
@@ -5748,8 +5765,8 @@ export class Game {
             kind: 'staff', enchantment: item.enchantment,
         }).value, rng) : result.magnitude;
         const hpDamage = target.absorbShieldDamage(damage);
-        target.takeDamage(hpDamage, true, this.grid, () => {
-            if (result.caster) CombatSystem.transferMonsterHealth(result.caster, target, hpDamage);
+        target.takeDamage(hpDamage, true, this.grid, actual => {
+            if (result.caster) CombatSystem.transferMonsterHealth(result.caster, target, actual);
         }, result.effect === BoltEffect.FIRE ? 'fire' : 'other');
         if (this.finishLethalBoltHit(target, result.caster,
             result.bolt.ceType === null ? result.bolt.name : CE_BOLT_CATALOG[result.bolt.ceType].name)) return damage;
@@ -6371,7 +6388,7 @@ export class Game {
                 // CE inflictDamage transfers after shielding and before death,
                 // including when reflection makes caster and victim identical.
                 target.takeDamage(hpDamage, true, this.grid,
-                    () => CombatSystem.transferMonsterHealth(caster, target, hpDamage), meta.fiery ? 'fire' : 'other'); // shield already consumed once.
+                    actual => CombatSystem.transferMonsterHealth(caster, target, actual), meta.fiery ? 'fire' : 'other'); // shield already consumed once.
                 if (hpDamage > 0 && isPlayer) this.lastDamageSource = caster.name;
                 if (this.finishLethalBoltHit(target, caster, ceBoltName)) return autoID;
                 if (hpDamage > 0) {
@@ -7785,13 +7802,13 @@ export class Game {
                 break;
             }
             case 'quietus': {
-                target.takeDamage(9999, true, this.grid);
+                withWholeBodyDamage(target, () => target.takeDamage(9999, true, this.grid));
                 weapon.runicKnown = true;
                 logger.log(i18next.t('runic.weapon.quietus', { target: this.monsterDisplayName(target), defaultValue: `Runic magic instantly slays the ${this.monsterDisplayName(target)}!` }), '#ccaaff');
                 break;
             }
             case 'slaying': {
-                target.takeDamage(9999, true, this.grid);
+                withWholeBodyDamage(target, () => target.takeDamage(9999, true, this.grid));
                 weapon.runicKnown = true;
                 logger.log(i18next.t('runic.weapon.slaying', { target: this.monsterDisplayName(target), defaultValue: `Your weapon of slaying destroys the ${this.monsterDisplayName(target)}!` }), '#ff6666');
                 break;
@@ -8284,7 +8301,7 @@ export class Game {
             const ty = this.player.loc.y + 2 * uy;
             const cell = this.grid.getCell(tx, ty);   // CE coordinatesAreInMap
             const m = cell ? this.getMonsterAt(tx, ty) : undefined;
-            if (m && canStrike(m, cell) && this.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length) hitList.push(m);
+            if (m && canStrike(m, cell) && this.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length) appendBodyHit(hitList, m, this.player.loc, { x: tx, y: ty });
         }
         // 连枷：同时与移动前、移动后两格相邻（Movement.c:1025-1048）
         if (flags.includes('ITEM_PASS_ATTACKS')) {
@@ -8295,7 +8312,7 @@ export class Game {
                 if (m.spatial) {
                     const before = this.meleeContact(this.player, m), after = nearestLegalMeleeContact(this.grid, { loc: { x: newX, y: newY } }, m);
                     if (before && after && canStrike(m, this.grid.getCell(before.to.x, before.to.y))
-                        && this.collectBodyTargets([before.to], { effect: 'geometry' }, scope).length) hitList.push(m);
+                        && this.collectBodyTargets([before.to], { effect: 'geometry' }, scope).length) appendBodyHit(hitList, m, this.player.loc, before.to);
                 } else if (canStrike(m, this.grid.getCell(m.loc.x, m.loc.y))
                     && this.collectBodyTargets([m.loc], { effect: 'geometry' }, scope).length) hitList.push(m);
             }
@@ -8312,9 +8329,12 @@ export class Game {
      * X3-U2：普通盟友和俘虏在调用前已分流；不再为不可攻击的主目标
      * 回退到 [primary]。discordant 盟友由共同的 abortPlayerAttack 确认。
      */
-    private buildPlayerMeleeHitList(primary: Monster): Monster[] {
+    private buildPlayerMeleeHitList(primary: Monster, aimed?: Pos): Monster[] {
         if (!this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_ALL_ADJACENT')) {
-            return primary.spatial && !this.meleeContact(this.player, primary) ? [] : [primary];
+            if (primary.spatial && !this.meleeContact(this.player, primary)) return [];
+            const list: Monster[] = [];
+            appendBodyHit(list, primary, this.player.loc, aimed ?? this.meleeContact(this.player, primary)?.to ?? primary.loc);
+            return list;
         }
         const dirs8: ReadonlyArray<readonly [number, number]> =
             [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]];
@@ -8334,8 +8354,8 @@ export class Game {
             const defender = this.getMonsterAt(tx, ty);
             if (!defender || !this.playerWillAttackTarget(defender)) continue;
             if (!cell.isPassable && !defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')) continue;
-            if (defender.spatial && !this.meleeContact(this.player, defender)) continue;
-            if (this.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length) hitList.push(defender);
+            if (defender.spatial && !(hasDeclaredZones(defender) ? legalMeleeContactAt(this.grid, this.player.loc, defender, { x: tx, y: ty }) : this.meleeContact(this.player, defender))) continue;
+            if (this.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length) appendBodyHit(hitList, defender, this.player.loc, { x: tx, y: ty });
         }
         return hitList;
     }
@@ -8445,7 +8465,7 @@ export class Game {
             if (defender &&
                 (cell.isPassable || defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')) &&
                 this.playerWillAttackTarget(defender)) {
-                if (this.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length) hitList.push(defender);
+                if (this.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length) appendBodyHit(hitList, defender, this.player.loc, { x: tx, y: ty });
                 if (i === 0 || (!defender.hasStatus('invisible') && !hiddenBySubmersion(this.grid, defender, this.player))) {
                     proceed = true;
                 }
@@ -8468,7 +8488,7 @@ export class Game {
         if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
         // CE Movement.c:1007-1009：先打远的、后打近的（倒序）
         for (let i = hitList.length - 1; i >= 0; i--) {
-            this.resolvePlayerMeleeAttackOn(hitList[i]!, false, bodyRayContact(this.player, hitList[i]!, dirX, dirY, 2));
+            this.resolvePlayerMeleeAttackOn(hitList[i]!, false, bodyHitContact(hitList, i) ?? bodyRayContact(this.player, hitList[i]!, dirX, dirY, 2));
         }
         return true;
     }
@@ -10872,25 +10892,38 @@ export class Game {
      */
     private resolveExplosionDamage(entity: Player | Monster): boolean {
         if (!entity.spatial) return this.resolveExplosionDamageAt(entity);
+        if (hasDeclaredZones(entity)) {
+            const scope = squareContactScope(this.grid) ?? new Set<string>(), receipt = `zone-explosion:${entity.id}`;
+            if (this.explosionImmunityDuration(entity) > 0 && !scope.has(receipt)) return false;
+            const contacts = footprintExposure(this.grid, entity).contacts.filter(c => c.flags & T_CAUSES_EXPLOSIVE_DAMAGE).map(c => c.at);
+            const targets = this.collectBodyTargets(contacts, { effect: 'area-damage' }, scope).filter(t => t.entity === entity);
+            let applied = false;
+            for (const target of targets) {
+                if (entity.hp <= 0) break;
+                scope.add(receipt);
+                applied = withBodyContact(entity, target.contact, () => this.resolveExplosionDamageAt(entity, target.contact, true)) || applied;
+            }
+            return applied;
+        }
         const contact = footprintExposure(this.grid, entity).contacts.find(c => c.flags & T_CAUSES_EXPLOSIVE_DAMAGE)?.at;
         if (!contact || !this.collectBodyTargets([contact], { effect: 'area-damage' }, squareContactScope(this.grid) ?? new Set()).length) return false;
         return withBodyContact(entity, contact, () => this.resolveExplosionDamageAt(entity));
     }
 
-    private resolveExplosionDamageAt(entity: Player | Monster): boolean {
+    private resolveExplosionDamageAt(entity: Player | Monster, at?: Readonly<Pos>, sharedExplosion = false): boolean {
         assertNativeSpatial(entity);
         if (this.extensionRuntime && this.extensionRuntime.causality.current !== this.extensionRuntime.causality.terrainOrigin) {
             const effects = this.extensionRuntime.causality;
-            return effects.withOrigin(effects.terrainOrigin, () => this.resolveExplosionDamageAt(entity));
+            return effects.withOrigin(effects.terrainOrigin, () => this.resolveExplosionDamageAt(entity, at, sharedExplosion));
         }
         if (entity.hp <= 0 || isSubmerged(entity)) return false;
-        const contact = entity.spatial ? footprintExposure(this.grid, entity).contacts.find(c => c.flags & T_CAUSES_EXPLOSIVE_DAMAGE)?.at : nativeContactOf(entity);
+        const contact = at ?? (entity.spatial ? footprintExposure(this.grid, entity).contacts.find(c => c.flags & T_CAUSES_EXPLOSIVE_DAMAGE)?.at : nativeContactOf(entity));
         if (!contact) return false;
         const { x, y } = contact;
         const cell = this.grid.getCell(x, y);
         if (!cell) return false;
         if (!(cellTerrainFlags(this.grid, x, y) & T_CAUSES_EXPLOSIVE_DAMAGE)) return false;
-        if (this.explosionImmunityDuration(entity) > 0) return false;
+        if (!sharedExplosion && this.explosionImmunityDuration(entity) > 0) return false;
 
         let damage = rng.randRange(15, 20);
         damage = Math.max(damage, Math.floor(entity.maxHp / 2));
@@ -11015,6 +11048,7 @@ export class Game {
             const anchorRevision = shape ? squareAnchorRevision(entity) : 0;
             const changed = () => entity.hp <= 0 || entity.x !== x || entity.y !== y || entity.spatial !== shape || (shape && squareAnchorRevision(entity) !== anchorRevision);
             const effect = (kind: string, present: boolean) => {
+                if (kind === 'explosion' && hasDeclaredZones(entity)) return true;
                 if (!exposure || !scope || !present) return true;
                 const key = `${entity.id}:${kind}`;
                 if (scope.has(key)) return false;
@@ -12686,6 +12720,8 @@ export class Game {
             const label = m.displaysNegation && !this.player.hasStatus('hallucinating')
                 ? i18next.t('negation.label', { defaultValue: 'Negated' }) : '';
             entities.push(label ? `${m.name} (${label})` : m.name);
+            const zone = publicZoneAt(this.player, this.grid, m, { x, y });
+            if (zone) entities.push(zoneStatusText(zone));
         } else if (m && canDisplayMonsterAt(this.player, this.grid, m, { x, y })) {
             entities.push('x');
         }

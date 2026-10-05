@@ -260,6 +260,8 @@ export interface ExtensionModule extends ExtensionVersion {
 }
 /** Session-only wiring. Never serialized as part of a creature. */
 export interface CreatureExtensionHooks {
+    /** Engine-only post-shield zone commit; undefined preserves native damage. */
+    zoneDamage?(creature: Creature, amount: number, damageKind: DamageKind): number | undefined;
     beforeAttack(attacker: Creature, defender: Creature): void;
     afterAttack(attacker: Creature, defender: Creature, result?: AttackResult): void;
     wantsPhysicalResolution?(): boolean;

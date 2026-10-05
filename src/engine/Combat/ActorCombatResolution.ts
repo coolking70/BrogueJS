@@ -163,6 +163,8 @@ type PreparedBinding = {
     sourceVersion: string; targetVersion: string; sourceRevision: number; targetRevision: number;
     sourceForm: string; targetForm: string;
     contact: BodyAttackContact; segment?: Readonly<LockedBodySegmentIntent>;
+    sourceBreaks?: string;
+    targetZoneId?: string;
 };
 
 export class ActorCombatResolutionAuthority {
@@ -211,6 +213,8 @@ export class ActorCombatResolutionAuthority {
         contact: BodyAttackContact, segment?: Readonly<LockedBodySegmentIntent>): PreparedNativeMelee {
         const plan = immutable({ intent: { ...intent } });
         this.plans.set(plan, { attacker, defender, ...(segment ? { segment } : { state: JSON.stringify(this.state) }),
+            ...(attacker.spatial?.zoneState ? { sourceBreaks: JSON.stringify(attacker.spatial.zoneState.filter(z => z.broken).map(z => z.zoneId)) } : {}),
+            ...(defender.spatial?.zoneState ? { targetZoneId: footprintOf(defender).find(p => p.x === contact.to.x && p.y === contact.to.y)?.zoneId } : {}),
             sourceVersion: this.sourceVersion(attacker), targetVersion: this.sourceVersion(defender),
             sourceForm: this.formIdentity(attacker), targetForm: this.formIdentity(defender),
             sourceRevision: squareAnchorRevision(attacker), targetRevision: squareAnchorRevision(defender), contact });
@@ -287,10 +291,10 @@ export class ActorCombatResolutionAuthority {
         if (this.game.isGameOver || this.game.player !== this.player || this.game.grid !== this.grid
             || this.game.depth !== this.depth || intent.depth !== this.game.depth) return null;
         const a = this.liveActor(intent.sourceEntityId), d = this.liveActor(intent.targetEntityId);
-        if (!a || !d || a === d || a.hp <= 0 || d.hp <= 0 || a.hasStatus('paralyzed') || a.hasStatus('entranced')
+        if (!a || !d || a === d || a.hp <= 0 || d.hp <= 0 || (a.spatial?.actionLockInTicks ?? 0) > 0 || a.hasStatus('paralyzed') || a.hasStatus('entranced')
             || a.hasStatus('confused') || (this.defense(a.id)?.staggerRemainingTicks ?? 0) > 0) return null;
-        // The full independent native/square body is open; masks, zones and
-        // composite members remain explicitly rejected, never point-reduced.
+        // Independent native bodies include rigid masks and authorized fixed
+        // zones. Composite members remain rejected, never point-reduced.
         assertNativeSpatial(a); assertNativeSpatial(d);
         if (a instanceof Monster && (a.isDormant || a.deathProcessed || a.isCaged || a.state === MonsterState.ASLEEP
             || a.hasBehavior('MONST_IMMOBILE') || a.hasBehavior('MONST_TURRET')
@@ -318,6 +322,8 @@ export class ActorCombatResolutionAuthority {
         const pair = this.eligible(plan.intent, saved.segment);
         this.plans.delete(plan);
         if (!pair || pair[0] !== saved.attacker || pair[1] !== saved.defender
+            || (saved.sourceBreaks !== undefined && saved.sourceBreaks !== JSON.stringify(pair[0].spatial?.zoneState?.filter(z => z.broken).map(z => z.zoneId)))
+            || (saved.targetZoneId !== undefined && pair[1].spatial?.zoneState?.some(z => z.zoneId === saved.targetZoneId && z.broken))
             || (saved.state !== undefined && JSON.stringify(this.state) !== saved.state)
             || this.sourceVersion(pair[0]) !== saved.sourceVersion || this.sourceVersion(pair[1]) !== saved.targetVersion
             || this.formIdentity(pair[0]) !== saved.sourceForm || this.formIdentity(pair[1]) !== saved.targetForm

@@ -1,14 +1,14 @@
 import type { Creature } from '../../entities/Creature';
-import { type BodyTarget, type CreatureSpatial } from '../Movement/CreatureSpatial';
+import { footprintOf, spatialCatalogFor, type BodyTarget, type CreatureSpatial } from '../Movement/CreatureSpatial';
 import { deepFreeze, integer, SpatialValidationError, validateSpatialComponent, type CreatureSpatialComponent,
     type FootprintDefinition, type HitZoneDefinition, type Ratio, type SpatialCatalog } from '../Movement/SpatialSchema';
 import { type PartBreakCommitter, type PartBreakNativeCommit, type PartBreakReceipt, type PartBreakRequest } from '../../ext/partBreak';
 
-/** 4c-0 fixture vertical boundary. This is NOT a second native attack resolver:
+/** Post-protection commit shared by native attacks and diagnostic fixtures:
  * callers supply a single already resolved actor-level hit/damage. Zone armor
  * (physical damage points), then its multiplier, are applied exactly once.
  * No roll, takeDamage(), extension hook, kill, death DF, drop or XP is called.
- * The production caller/cancellation/public knowledge layer stays closed. */
+ * Native callers retain their original hooks, causality and death ordering. */
 export interface FixedZoneHit {
     readonly resolutionId: number;
     readonly sourceId: number | null;
@@ -29,7 +29,6 @@ export interface FixedZoneHitResult {
 export type LocalZoneState = NonNullable<CreatureSpatialComponent['zoneState']>[number];
 
 function fixedDefinition(catalog: SpatialCatalog, footprintId: string): FootprintDefinition {
-    if (!catalog.fixture) throw new SpatialValidationError('Fixed zone production damage capability is not open');
     const d = catalog.definition(footprintId);
     if (d.poses.some(p => p.startsWith('m'))) throw new SpatialValidationError('Fixed zone mirrors are not open');
     for (const z of d.zones ?? []) {
@@ -73,6 +72,12 @@ export function fixedZoneMoveTicks(actor: Creature, nativeTicks: number, catalog
     if (ticks < 1n || ticks > 1000000n) throw new SpatialValidationError('Broken zone movement cost budget exceeded');
     return Number(ticks);
 }
+export function nativeZoneMoveTicks(actor: Creature, ticks: number): number {
+    return actor.spatial?.zoneState ? fixedZoneMoveTicks(actor, ticks, spatialCatalogFor(actor)) : ticks;
+}
+export function nativeZoneAttackAvailable(actor: Creature, attackId: string): boolean {
+    return !actor.spatial?.zoneState || fixedZoneAttackAvailable(actor, attackId, spatialCatalogFor(actor));
+}
 function zoneDefinition(actor: Creature, zoneId: string, catalog: SpatialCatalog): HitZoneDefinition | undefined {
     return actor.spatial ? catalog.definition(actor.spatial.footprintId).zones?.find(z => z.id === zoneId) : undefined;
 }
@@ -91,23 +96,33 @@ export function fixedZoneDamageMultiplier(actor: Creature, zoneId: string, catal
 
 export function resolveFixedZoneHit(spatial: CreatureSpatial, target: BodyTarget, hit: FixedZoneHit,
     commitBreak?: PartBreakCommitter): Readonly<FixedZoneHitResult> {
-    if (!spatial.catalog.fixture) throw new SpatialValidationError('Fixed zone production damage capability is not open');
+    if (!spatial.catalog.fixture && target.entity.spatial) {
+        try { spatial.catalog.definition(target.entity.spatial.footprintId); }
+        catch { throw new SpatialValidationError('Fixed zone production catalog contact unavailable'); }
+    }
+    const current = spatial.occupantsAtCell(target.contact).find(t => t.entity === target.entity);
+    if (!current || current.zoneId !== target.zoneId) throw new SpatialValidationError('Stale or invalid fixed zone contact');
+    return resolveFixedZoneContact(spatial.catalog, target, hit, commitBreak);
+}
+/** Production and fixture share the same post-protection, no-roll commit. */
+export function resolveFixedZoneContact(catalog: SpatialCatalog, target: BodyTarget, hit: FixedZoneHit,
+    commitBreak?: PartBreakCommitter): Readonly<FixedZoneHitResult> {
     if (!integer(hit.resolutionId, 1) || !integer(hit.damage, 0, 1000000) || typeof hit.hit !== 'boolean'
         || (hit.sourceId !== null && !integer(hit.sourceId, 1)) || !['physical', 'other'].includes(hit.kind)
         || (!hit.hit && hit.damage !== 0)) throw new SpatialValidationError('Invalid fixed zone hit');
-    const actor = target.entity, current = spatial.occupantsAtCell(target.contact).find(t => t.entity === actor);
-    if (!current || current.entityId !== target.entityId || current.groupId !== actor.id || target.groupId !== actor.id
+    const actor = target.entity, current = footprintOf(actor, catalog).find(p => p.x === target.contact.x && p.y === target.contact.y);
+    if (!current || actor.id !== target.entityId || target.groupId !== actor.id
         || target.partId !== null || current.zoneId !== target.zoneId || target.dedupKey !== `part:${actor.id}:${target.zoneId}`)
         throw new SpatialValidationError('Stale or invalid fixed zone contact');
     if (!integer(actor.hp, 1)) throw new SpatialValidationError('Invalid native HP');
     if (actor.spatial) {
-        fixedDefinition(spatial.catalog, actor.spatial.footprintId);
-        validateSpatialComponent(actor.spatial, spatial.catalog, false);
+        fixedDefinition(catalog, actor.spatial.footprintId);
+        validateSpatialComponent(actor.spatial, catalog, false);
         if (actor.spatial.bodyMember) throw new SpatialValidationError('Fixed zones require an independent body');
     }
-    const zone = zoneDefinition(actor, target.zoneId, spatial.catalog);
+    const zone = zoneDefinition(actor, target.zoneId, catalog);
     const state = zone?.health.kind === 'local' ? actor.spatial!.zoneState!.find(z => z.zoneId === zone.id)! : undefined;
-    const multiplier = fixedZoneDamageMultiplier(actor, target.zoneId, spatial.catalog);
+    const multiplier = fixedZoneDamageMultiplier(actor, target.zoneId, catalog);
     const damage = !hit.hit || state?.broken ? 0 : Math.floor(Math.max(0, hit.damage - (hit.kind === 'physical' ? zone?.armor ?? 0 : 0))
         * multiplier.numerator / multiplier.denominator);
     const localHpLost = state ? Math.min(damage, state.hp) : 0;
@@ -122,7 +137,7 @@ export function resolveFixedZoneHit(spatial: CreatureSpatial, target: BodyTarget
         actor.hp -= nativeHpLost;
         return result(null);
     }
-    const balance = spatial.catalog.breakRule(zone!.breakRuleId).modifiers.find(m => m.kind === 'balance-loss');
+    const balance = catalog.breakRule(zone!.breakRuleId).modifiers.find(m => m.kind === 'balance-loss');
     const request: PartBreakRequest = deepFreeze({ ...receipt!, schema: 1, resolutionId: hit.resolutionId,
         actorId: actor.id, sourceId: hit.sourceId, balanceLoss: balance?.amount ?? 0, fallbackStunTicks: balance?.fallbackStunTicks ?? 0 });
     const s = actor.spatial!, hp = actor.hp, zoneHp = state!.hp, broken = state!.broken;
@@ -149,8 +164,8 @@ export function resolveFixedZoneHit(spatial: CreatureSpatial, target: BodyTarget
     catch (error) { native.rollback(); throw error; }
 }
 
-/** Fixture clock only. Production TimeCoordinator must own the eventual
- * objective-block integration; this helper never changes native speed/ticks. */
+/** Diagnostic clock helper. Production uses TimeCoordinator's elapsed native
+ * ticks; this helper never changes native speed/ticks. */
 export function advanceFixedZoneLock(actor: Creature, elapsedTicks: number, catalog: SpatialCatalog): void {
     if (!integer(elapsedTicks, 0, 1000000)) throw new SpatialValidationError('Invalid fixed zone clock');
     fixedZoneBreaks(actor, catalog);

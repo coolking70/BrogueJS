@@ -108,16 +108,18 @@ export function compileQuarterSweep(cells: readonly Readonly<Pos>[], limit: numb
     return deepFreeze([...found.values()].sort((a, b) => a.y - b.y || a.x - b.x));
 }
 
-/** Executable 4b rigid geometry. Schema still models later mirrors/zone HP;
- * this narrower capability compiler refuses those unopened actions. Fixed
+/** Executable rigid geometry with authorized fixed zones. This narrower
+ * capability compiler refuses unopened mirrors/composite actions. Fixed
  * shapes have one declared rotation and allocate no sweep tables. */
-export function compileRigidFootprint(definition: FootprintDefinition): CompiledRigidFootprint {
+export function compileRigidFootprint(definition: FootprintDefinition, capability?: { readonly fixedZones: true }): CompiledRigidFootprint {
     const cells = compileFootprint(definition);
     if (definition.poses.some(p => !RIGID_POSES.includes(p as RigidPose))
         || (definition.poses.length !== 1 && (definition.poses.length !== 4 || RIGID_POSES.some(p => !cells.has(p)))))
         throw new SpatialValidationError('Rigid poses require a fixed orientation or four rotations; mirrors are not open');
-    if (definition.zones?.some(z => z.health.kind !== 'native'))
+    if (!capability?.fixedZones && definition.zones?.some(z => z.health.kind === 'local'))
         throw new SpatialValidationError('Rigid local zone health capability is not open');
+    if (definition.zones?.some(z => z.health.kind === 'local' && z.health.ownerTransfer.numerator !== z.health.ownerTransfer.denominator))
+        throw new SpatialValidationError('Fixed local zone transfer must be 1:1');
     const poses = RIGID_POSES.filter(p => cells.has(p));
     const sweeps = new Map<string, readonly Readonly<Pos>[]>();
     if (poses.length > 1) {
@@ -140,6 +142,6 @@ export function rigidFootprint(catalog: SpatialCatalog, id: string): CompiledRig
     let cache = compiled.get(catalog);
     if (!cache) { cache = new Map(); compiled.set(catalog, cache); }
     let result = cache.get(definition);
-    if (!result) { result = compileRigidFootprint(definition); cache.set(definition, result); }
+    if (!result) { result = compileRigidFootprint(definition, catalog.fixture ? undefined : { fixedZones: true }); cache.set(definition, result); }
     return result;
 }

@@ -1,3 +1,133 @@
+# 4c 执行报告：固定命中区与部位破坏
+
+本轮基于维护者已经审阅并提交的 **4c-0 / `ext/phase4` HEAD `dba3c58`**，先检查并保留上次中断留下的未完成改动，再继续 `phase4c.task.md` 的完整剩余项。未暂存、commit、push；未改 combat 模块生产文件、旧测试断言或守卫。本文后半部完整保留 4c-0 原报告；其中“生产关闭”和剩余项列表描述当时的历史停点，当前状态以本节为准。
+
+## 本轮范围与完成情况
+
+| 原剩余项 | 本轮结果 |
+|---|---|
+| 生产能力门 | 安装模块自有 namespace 的 nativeForm 可声明固定 zone、逐格标签与 keep-zone 破坏表；可信会话目录负责授权，存档中的定义不能自行安装能力。矩形方形与任意 mask 均走独立刚体路径。普通点实体和既有未声明 zone 的身体保持原路径。 |
+| 原生战斗接线 | 在单次原生命中/护盾之后，经 `Creature.takeDamage` 的引擎内部 zone 出口提交局部 HP 和原生 HP；近战、鞭/矛/横扫/突进/连枷、投掷、原生弹道与爆炸范围保留真实接触格，D08 以实体＋zone 去重。3b 锁定范围仍逐 part 调用一次原生攻击。 |
+| 破坏与取消 | 唯一收据仍来自 zoneState 的 broken/generation。速度、失攻、暴露从破坏集派生。fallback 接 TimeCoordinator 的实际 elapsed ticks 和原生 NPC readiness。准备的原生计划检查来源破坏集与目标 zone；蓄力计划按来源/锁定目标格进入既有 break-recovery，清空尚未释放的预警，不重新付费。 |
+| 公开 UI | 当前可见且身份已知的 zone 提供脱离 live actor 的 DTO；瞄准条、hover、检视进度条、Boss HUD 显示名称、HP、已破坏/弱点。旧 ACK/历史帧读取自己的 DTO；隐藏兄弟区、telepathy-only 和幻觉不公开 zone。破坏后清理 hover、弧法光标和公开投掷选中显示；Canvas 清理投掷 UI aim。 |
+| 正式内容与持久化 | 给既有棘脊爬兽添加数据驱动棘甲/头部方案。真实命令覆盖 save/load、逐事件 replay、前后 seek 和读档续录；坏 HP/标签/再生/定义闭包失败保持旧世界。自然种子 7309 仅启用 giants 可破甲并击败。 |
+| 320/390 | 两种 host 尺寸的真实 Vue client render 函数通过，新增行流式限宽、单行省略，沿用独立 HUD/target grid 区域。**真实浏览器 CSS 布局、截图与触控仍未验**，详见最后的验收缺口；不将无 CSS 的 renderer 测试当作像素证据。 |
+
+没有新增 Game 字段、第二份破坏 ledger、模块导入依赖或 RNG/时钟真相源。没有启用再生、成员、镜像、形状替换、残骸或主动换形能力；4d/4e 仍在范围外。
+
+## 单次伤害与事务顺序
+
+原生攻击仍决定命中、防护、伤害骰、符文/反伤/吸血及事件。真实接触作用域携带 zone 标签；已解析的 post-shield 数值只进入一次 `resolveFixedZoneContact`。物理伤害扣 zone armor，再乘当前倍率并向下取整；local 损失为 `min(伤量, 命中前 local 正 HP)`，这份数值以 1:1 截到所属实体剩余原生 HP。溢出不传，已毁区再接触不传伤；直接 body/native 区不自传。
+
+`takeDamage` 不再次扣这一份原生 HP；blood 与 beforeHpLoss/原生吸血继续使用 CE 次序，反射自击在原 HP 上结算吸血后只失去一次实际伤量。传伤回调收到实际 HP 损失，普通未声明 zone 的旧路径不改。原生的逐击事件和 physicalResolved 各一次；局部破坏没有 kill、XP、死亡 DF 或掉落。quietus/slaying 身份效果用整体作用域，仍杀死所属实体一次。
+
+破坏事务先执行可选 provider prepare → native apply → provider commit。ready 与 fallback 互斥；异常恢复 HP、同一 zone 对象、锁、provider namespace 状态/组件/缓冲消息/事务内 RNG。外层真实接触作用域也恢复已经在 takeDamage 之前消耗的护盾及 corpse absorption。**速度刷新、hover/瞄准清理、3b 取消在 provider 成功返回后才执行**，因此失败时计划不曾被取消。原生攻击在此前已经投出的骰和创建的因果 origin 不属于破坏事务，不声称整次攻击的任意副作用都可重试；3b 原有失败失效合同保留。
+
+同一爆炸 wave 的实体 explosion immunity 不再误挡第二个不同 zone；已有其他 wave 的 immunity 仍阻挡。两区各一次，重复覆盖同区不再次解算。精神/身份/治疗等整体效果保持 group 粒度。
+
+## 共享文件函数级改动
+
+| 文件 | 本轮实改 |
+|---|---|
+| `ext/nativeForms.ts` | `NativeFormDefinition` 增加 footprint zones/zoneCells 与有限 breakRules；`validNativeForm` 验证自有规则和 zone locale namespace；`nativeFormSpatial` 初始化 local HP，非 zoned 形态不增加字段。全部为 native 的标签也能按 part 解算范围并公开显示，不要求 local ledger。 |
+| `engine/Movement/SpatialSchema.ts` | `registerBreakRule/registerFootprint` 开放安装模块自有固定 keep-zone 声明并限制 1:1。基础 fixture 和关闭能力的守卫保留。 |
+| `engine/Movement/RigidFootprint.ts`、`CreatureSpatial.ts` | 刚体编译默认仍拒绝 local zone，可信生产目录/已核验声明显式开启固定 zone；`rigidMovementFootprint` 只有已授权 zoned 定义才接纳 zoneState/actionLock，fixture local zone 不能冒充原生能力；4b 的纯 native 标签 fixture 路径保留。 |
+| `engine/Combat/FixedZoneHealth.ts` | 抽出共享无骰 `resolveFixedZoneContact`；旧 fixture 入口仍验证当前占格；增加原生派生速度/攻击可用查询。 |
+| `engine/Combat/BodyCombat.ts` | 精确接触标签、按数组索引保留 zoned 几何目标格、整体身份效果作用域、实际选中格的合法近战检查，以及接触层护盾失败回滚。作用域用 WeakMap/WeakSet，不保存。 |
+| `entities/Creature.ts`、`Combat/Combat.ts` | 中央 zoneDamage 接线、避免二次原生扣血、吸血回调采用实际传伤并保留自击次序；命中/伤害取骰与原生符文出口沿用。 |
+| `entities/Monster.ts` | 矛/横扫保留 zoned 实际接触；`prepareNativeDecision` 尊重短 actionLock。 |
+| `ext/types.ts`、`ext/runtime.ts` | 引擎内部可选 zoneDamage hook/zoneBroken port；安装自有破坏定义；新取消回调用 WeakMap 派生绑定，不改变旧 Runtime ports 的对象形状；attachCreature 将显式局部接触路由到共享出口，provider 成功后通知取消。模块 context 不获得这些引擎写端口。 |
+| `engine/Core/Game.ts` | 玩家普通/特殊武器几何的接触列表、投掷/法器/怪物 bolt 实际传伤、按 zone 的爆炸 wave、整体 slaying；成功破坏时刷新速度/取消计划/清理公开选中；zone hover/检视。 |
+| `engine/Combat/ActorCombatResolution.ts` | prepared 原生计划记录来源破坏集和真实目标 zone；提交拒绝已毁来源/目标，未毁兄弟 zone 仍可命中。 |
+| `engine/Core/ActorActionProduction.ts`、`PhasedAttackProduction.ts` | lock readiness、禁用声明 attack ID、确认前 zone facts、防止多 part 重复同实体风险批准；`cancelPhasedAttacksAtZone` 联动既有 source-changed/break-recovery 合同。 |
+| `engine/Core/TimeCoordinator.ts` | 从实际 soonestTurn 递减并删除短锁，不新增独立时钟或随机消耗。 |
+| `engine/Core/WholeRunSnapshot.ts` | 收集实际使用 zone 的 breakRule 定义闭包；解码继续与已安装可信目录精确比对。 |
+| `engine/UI/MonsterZones.ts`（新增）、`MonsterSidebar.ts` | 公开且脱离 live 的 zone 名称/HP/格集/破坏/弱点 DTO，精确 data-owned locale 资源读取。 |
+| `ui/displayProjection.ts`、`useGameHud.ts`、`components/TargetBar.vue`、`GameCanvas.vue` | 捕获历史 targetZone、公开破坏后的目标过滤、client target 文本/确认门、Canvas aim 清理；旧帧不读新机械状态。 |
+| giants `ui/view.ts`、`BossHud.vue`、两份 locale | Boss HUD 只消费 DisplayFrame 的公开 zone；单行限宽状态；新增 i18n 文本。 |
+| giants `data/definitions.json`、`test-suites.json` | 正式 zone 方案和新增三份专项的唯一归属登记。没有改 combat 模块文件。 |
+
+## `combat.part-break.v1` 最终对接
+
+**与维护者已提交的 4c-0 签名一致，没有协议改版。** 权威类型为 `src/ext/partBreak.ts`，下面保留完整签名说明。请求仍是 schema 1、resolutionId、actorId/sourceId、groupId=actorId、partId=`self`、zoneId、generation=0、balanceLoss、fallbackStunTicks。provider 同步 `prepare(request, readonly actor/state/component context)` 返回 ready(plan) 或 unsupported(disabled/unsupported-target)；`commit(request, frozen plan, own state/component/message context)` 必须返回 void。
+
+生产 caller 是 runtime.attachCreature 的 post-shield zoneDamage。commit 准备中的 actor facts 是命中前冻结视图；provider 未安装/unsupported 由底座取声明的短锁，ready 时不加 fallback。来源/目标取消发生在协议成功后；取消的 break-recovery 是 3b 既有恢复合同，和 provider 的韧性处理不共用第二份底座账本。实际 combat provider 仍由 dot 后续接入，本轮仅以生产 fixture provider 验证，不修改 combat 模块代码。
+
+## 正式数据、可调数值与自然验收
+
+`src/ext/modules/giants/data/definitions.json` 的 `giants.spine-crawler` 仍为原来的四格长刚体与四向旋转。r0：原点 `(0,0)` 为 native 头部，`(1,0)/(2,0)` 为同一 local 棘甲，末格 `(3,0)` 为 body。keep-zone 破坏后格子与碰撞不变。
+
+| 参数 | 当前临时值 |
+|---|---:|
+| 所属实体 native HP | 150 |
+| shell local maxHp / armor / 初始倍率 | 30 / 2 / 1:1 |
+| ownerTransfer | 固定 1:1，其他比例拒绝 |
+| `giants.spine-shell-break` 移动 tick 倍率 | 3:2，原生 100 → 150 |
+| 破坏后 head 倍率 | 2:1，取派生暴露最大值，不累乘 |
+| balanceLoss / fallbackStunTicks | 6 / 50 |
+
+可调位置是 zones 的 maxHp/armor/damageMultiplier、zoneCells、breakRuleId 与破坏表有限 modifiers。native HP 与原生攻击数值仍在 nativeForm；不应通过模块自建伤害或重复调用 takeDamage 调平衡。
+
+自然验收：**seed 7309 / wizard / extensions=[giants] / D11**。沿既有只读 BFS 选择路线，通过公开 move/search/stairs、原生物品拾取装备恢复；抵达 1174 个真实输入事件，birth 标记 natural。之后只用公开原生命令破甲与击败，不注入怪、改 HP/位置/地形或随机流，不启用 growth/combat。自然捡到的鞭子会先远程攻击已毁棘甲、阻挡继续走近头部，所以验收在破甲后通过 `executeItemCommand('unequip')` 卸鞭，再绕到头部贴身攻击。
+
+验收断言保证破甲时 native HP仍为正、模块 Boss仍为alive，之后在抵达事件数＋600以内完成击败，状态为defeated。wizard 是可复现功能验收模式；不声称此种子的 normal 平衡/玩家存活或手机战斗性能已验。新增专项同时用显式诊断场景覆盖giants 单模块/有 growth/有 combat 的一次事件、真正投掷/bolt/双区横扫/爆炸、来源与目标取消、失攻、provider 异常、矩形 square、坏档和历史 DTO；诊断布景与自然生成证据严格分开。
+
+## trace 归因与重录
+
+先保持所有新战斗/持久化代码，只将 **giants `data/definitions.json` 与 `locales/zh_CN.json`** 两份生产内容恢复到 HEAD；不改旧测试/夹具。原两份捕获测试（D3/D7/D11 三项）全部通过，exit0 / 18.29s。初次只回退 definitions 时 D11 的 nativeWorldHash 仍变化；独立世界逐叶比较准确发现 `.monsters[30].description` 和 `.monsters[30].form.description` 的新中文描述，locale 一并回退后精确通过。普通未 zoned 内容的命令、实体机械状态与双随机流没有差异。
+
+恢复新内容后按原入口运行 `BROGUE_CAPTURE_GIANTS_TRACE=1 npx vitest run ...giants_trace.test.ts ...giants_spine_trace.test.ts --maxWorkers=2`，三项通过。旧 UR2/3/4 与普通生成基线未重录；任何旧测试和守卫未修订。
+
+| trace | 变化字段 | 原因 |
+|---|---|---|
+| `natural-trace.json`（D3） | `extensionsHash` 1项 | 安装的 giants 内容指纹变化，未出现棘脊内容。 |
+| `colossus-natural-trace.json`（D7） | `extensionsHash` 1项 | 同上。 |
+| `spine-natural-trace.json`（D11） | `boss.spatial.zoneState` 新记录、`extensionsHash`、`nativeWorldHash` 3项 | 自然生成 shell HP30；内容指纹；monster zoneState 和上述两份中文 description 进入 native world。命令数/commandsHash、boss HP/位置、模块状态与双流/计数均未变。 |
+
+D11 新增 zoneState 记录的叶字段为 `zoneId=shell / hp=30 / broken=false / generation=0` 四项，另改两份哈希，共6个新增/变化叶字段；D3/D7各1项，全组三份合计8项。
+
+| trace 文件 | HEAD SHA-256 | 本轮 SHA-256 |
+|---|---|---|
+| `natural-trace.json` | `b3e79e43b0cb4bc38ee25e2c0ce1cdd326a5ac0e2188f0e4dd29f1c77a1b05b8` | `72689bf8c91bead46b023cb0c0bdbfaf098670e585baa9f8bd8ff643bc147fdf` |
+| `spine-natural-trace.json` | `46e777177526404be4c0e653b82fe7bf91be4dbf052161affdc866b10afe3d7b` | `092ad82b1803feefba28c6028b3a75c1d0d3966a14130931f099161e72e20b4f` |
+| `colossus-natural-trace.json` | `0cb73aa6e39ca14191276943ed82fe2556905e85a5fac9ab2694f6566b0c0a9f` | `2445dcb570e502abc944fea8081998e7aef4f545229c42fabe758e58b6ee8a98` |
+
+具体哈希值和新增记录保存在逐字段 JSON 中。原始归因/capture 与逐字段 JSON：`/private/tmp/p4c-trace-counterfactual.{json,log}`、`p4c-trace-capture.log`、`p4c-trace-diff.json`；>1MB 世界证据仅在 `/private/tmp/p4c-world-*.json`，没有进入仓库。
+
+## 实际测试与结果
+
+使用任务书的开发期功能政策：Node 24.19.0，PATH 前置指定 runtime，`NODE_OPTIONS=--max-old-space-size=3072`，Vitest `--maxWorkers=2`。未跑完整 npm test / 全部 test:ext / removal / CE full/gen，未新增 skip/todo。
+
+**最终v3同一冻结候选全部 exit0：**
+
+| 门禁 | 实际结果 | 耗时 |
+|---|---|---:|
+| `node scripts/check-module-boundaries.mjs` | 边界及唯一测试归属通过 | 1.53s |
+| `npx vue-tsc -b` | 通过 | 6.52s |
+| `npm run build` | 通过；既有 >500KB chunk 提示保留 | 9.05s |
+| 63文件相关 Vitest 集合 | **63/63文件、1236/1236项通过，0 skipped/todo**；含新增30项、原4c-0的78项、4a0零影响、4a/4b、giants/combat/3b/growth逐击、原生几何/弹道/护盾/爆炸、UR2/3/4、存档录像与源码守卫 | 392.36s |
+| `c_4a_terrain_catalog -t 白名单` | 1项通过，29项因选择表达式未选；未跑重型普查 | 1.69s |
+| `check-module-composition-smoke.mjs --engine-only` | **16/16子集通过**，真实新局/自然贡献/save-load/replay/seek/续录 | 66.81s |
+| `npm run test:drift -- --maxWorkers=2` | **4/4文件、5/5项通过**，含两份普通生成基线与D3/D7/D11自然trace | 55.48s |
+
+冻结输入 **870份**，每项后及最终变化列表均为空；路径排序紧凑JSON散列集合 SHA-256 **`a06c91d966d9b0807e733f8b935948d6ca8de13295086a0ca4026cac3a2db5bd`**。最终结束UTC **`2026-10-05T08:09:33Z`**。随后仅更新报告与progress文档。
+
+精确清单 `/private/tmp/p4c-related-files.json`，runner `/private/tmp/p4c-final-v3-gates.py`，每项命令/退出码/时间/逐文件散列 `/private/tmp/p4c-final-v3-gates.json`，原始日志 `p4c-final-v3-*.log`。组合报告 `p4c-final-v3-composition.json` 的 engine.status=passed、requestedScopePassed=true；browser=not-run、整体passed=false明确表示没有浏览器验收，不能冒充完整browser smoke。SSR HMR监听EPERM日志保留，engine-only实际exit0。
+
+首轮 boundary 精确拒绝了新诊断测试跨模块导入 combat 内部文件，已按守卫改测试为读取底座的安装声明，保留原攻击/配置与断言，未修改守卫或 combat 模块。第二候选63文件1235项中1229通过/6失败：4a0四项对象图差分定位到新增 ports.zoneBroken 属性，改为 WeakMap 派生绑定；4b两项分别暴露默认编译过早开放 local HP 与误拒既有 native 标签 fixture，改为可信目录显式授权、保留旧标签路径。零影响四项与修正后98项定向回归通过，旧测试与守卫未改。其他开发失败为新测试的布景/API 与重复风险批准、快照缺闭包等生产问题；修正后进入冻结复核。原4c-0 的78项继续原样验证。
+
+## 已知限制与唯一剩余验收项
+
+功能接线、正式内容、原生计划取消和持久化剩余项已实现。giants内容指纹已变化，旧giants存档/录像严格拒绝，不做迁移。尚需维护者在可启动浏览器的环境中验证 **320/390 实际 CSS 布局不遮地图、真实触控瞄准/长按检视和历史 ACK 帧切换截图**。本环境 Vite `127.0.0.1:4177` 监听 EPERM；标准 develop-web-game Playwright 客户端 Chromium 被 MachPort Permission denied 拒绝；会话 Browser inventory 为空。没有取得截图，不能以构建或 host renderer 代替此项。
+
+日志：`/private/tmp/p4c-browser-{vite,client}.log`。现有字号/限宽/省略与 HUD/target 独立区域已实现，SFC 在320/390 host尺寸各覆盖真实模板更新；该 renderer 没有 CSS layout engine，不证明像素布局/GPU/手机 FPS。验收步骤：种子7309生成棘脊后，在两宽度分别点棘甲瞄准、检视，观察30/30；破甲后观察0/30已破坏与头部弱点，旧ACK帧仍显示原30/30；退出目标模式确认地图未被新增HUD遮盖。
+
+---
+
+# 历史保留：4c-0 原报告
+
+以下原文完整保留维护者已提交的底座子里程碑报告。
+
 # 4c-0 执行报告：固定 zone 健康与破坏软接口底座
 
 本轮执行 `docs/ext/phase4c.task.md`，基于 `ext/phase4` / `2eb3181e67c9e7650b538b08af76ba2759c75710`。按任务书“可在干净子里程碑停下并列剩余项”，交付 **4c-0**，不是完整 4c。未 commit、暂存、push；未修改 combat 模块代码。
