@@ -43,7 +43,14 @@ function fixture(pack = loadNarrativePack(keeperOnlyContentFixture(), portraits,
         interactionGate(active: { targetEntityId: number; sessionId: number } | null) { gate = active ? { owner: 'narrative', ...active } : null; },
         message, randomInt,
     } as unknown as ExtensionContext;
-    function enter(value = 1, firstVisit = true) { depth = value; module.hooks!.enteredLevel!({ depth, firstVisit }, context); module.hooks!.storyFact!({ kind: 'entered-level', depth, firstVisit, turn: 0, factId: nextFactId }, context); }
+    function enter(value = 1, firstVisit = true) {
+        depth = value; module.hooks!.enteredLevel!({ depth, firstVisit }, context);
+        const consumer = module.committedFacts!['foundation.story.v1']!;
+        const first = nextFactId; nextFactId += 1 + consumer.maxDerivedFacts;
+        const plan = consumer.prepare({ kind: 'entered-level', depth, firstVisit, turn: 0, factId: first },
+            { firstDerivedFactId: first + 1, maxDerivedFacts: consumer.maxDerivedFacts }, context);
+        consumer.commit(plan, context);
+    }
     function input(action: string, payload: object) { return JSON.stringify({ module: 'narrative', action, payload: { v: 2, revision: state.revision, ...payload } }); }
     function execute(data: string) {
         if (!module.allowInput!('ext:command', data, context)) return false;

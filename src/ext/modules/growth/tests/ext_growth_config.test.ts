@@ -175,7 +175,7 @@ describe('EXT-1a0 growth data contract, isolated from gameplay', () => {
         expect(pack.config.itemGrowth.rules.find(rule => rule.itemId === 'potion_of_life')!.conversion).toBe(1);
     });
     it('permits removing every attribute when data references and disabled training are removed consistently', () => {
-        const pack = fresh(); pack.config.attributes = []; pack.config.strengthTraining.enabled = false; pack.config.strengthTraining.attributeId = null;
+        const pack = fresh(); pack.config.attributes = []; pack.config.combatStats = null; pack.config.strengthTraining.enabled = false; pack.config.strengthTraining.attributeId = null;
         const clearSources = (effects: GrowthEffect[]): GrowthEffect[] => effects.filter(effect => !('magnitude' in effect) || effect.magnitude.source.kind !== 'attribute');
         for (const def of pack.definitions) {
             def.effects = clearSources(def.effects);

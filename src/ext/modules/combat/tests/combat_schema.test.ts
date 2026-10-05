@@ -18,7 +18,7 @@ const facings = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const;
 describe('combat strict inert fixture package', () => {
     it('loads three original attacks, explicit native profiles, and part targeting', () => {
         const pack = loadCombatDefinitionPack();
-        expect(COMBAT_VERSION).toBe('1.4.0');
+        expect(COMBAT_VERSION).toBe('1.5.0');
         expect(pack.attacks.map(a => a.id)).toEqual(['fixture.slash', 'fixture.stomp', 'fixture.double-thrust']);
         expect(pack.profiles[0]).toEqual({ id: 'fixture.profile', resourcePolicyId: 'fixture.resources',
             attackIds: ['fixture.slash', 'fixture.stomp', 'fixture.double-thrust'] });
@@ -265,7 +265,7 @@ describe('combat hostile JSON boundary', () => {
 describe('combat canonical mechanical identity', () => {
     it('uses the foundation SHA-256 canonical helper and pins version/schema', () => {
         const identity = getCombatPackIdentity();
-        expect(identity).toEqual({ schema: 1, version: '1.4.0', fingerprint: extensionDataFingerprint(definitions) });
+        expect(identity).toEqual({ schema: 1, version: '1.5.0', fingerprint: extensionDataFingerprint(definitions) });
         expect(identity.fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/); expect(Object.isFrozen(identity)).toBe(true);
     });
     it('ignores object insertion order but retains mechanical arrays and values', () => {

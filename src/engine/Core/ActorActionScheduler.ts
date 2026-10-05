@@ -67,6 +67,9 @@ export interface ActorActionSchedulerPort {
 }
 export interface ActorActionClock { readonly ticksUntilTurn: number; readonly alive: boolean }
 export interface ActorActionSchedulerHost {
+    /** Optional native outer commit: includes phase transitions and fault state,
+     * not only the resolver callback halfway through a segment release. */
+    transaction?<T>(work:()=>T):T;
     /** Independent creatures map to themselves; composite members map to their core. */
     decisionOwnerId(entityId: number): number;
     readActor(entityId: number): ActorActionClock | null;
@@ -269,7 +272,10 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
     let fault: Error | null = null;
     let executing = false;
     function check(): void { if (fault) throw fault; }
-    function run<T>(operation: () => T): T {
+    function run<T>(operation: () => T, publishes = false): T {
+        return publishes && host.transaction ? host.transaction(()=>runOperation(operation)) : runOperation(operation);
+    }
+    function runOperation<T>(operation: () => T): T {
         check();
         if (executing) fail('reentrant scheduler mutation');
         executing = true;
@@ -412,7 +418,7 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
                 }
                 mirror(bundle);
                 return 'handled';
-            });
+            }, true);
         },
         commitBundle(bundle) {
             // Reject an invalid plan before invoking any world writes.

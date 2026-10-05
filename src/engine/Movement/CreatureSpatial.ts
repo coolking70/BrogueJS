@@ -53,8 +53,11 @@ export function actorSourceRevision(creature: Creature): number { return actorSo
 /** Native transition rollback must also restore the off-graph revisions used
  * by an already paid action. Reverting loc alone would invalidate its source. */
 export function checkpointSpatialActorRevisions(actors: readonly Creature[]): () => void {
-    const rows = actors.map(actor => ({ actor, source: actorSourceRevisions.get(actor), anchor: squareAnchorRevisions.get(actor) }));
+    const rows = actors.map(actor => ({ actor, source: actorSourceRevisions.get(actor), anchor: squareAnchorRevisions.get(actor),
+        listenerSet:listeners.get(actor), callbacks:[...(listeners.get(actor)??[])], spatial:actor.spatial,catalog:actor.spatial?catalogs.get(actor.spatial):undefined }));
     return () => { for (const row of rows) {
+        if(row.listenerSet){row.listenerSet.clear();row.callbacks.forEach(callback=>row.listenerSet!.add(callback));listeners.set(row.actor,row.listenerSet);}else listeners.delete(row.actor);
+        if(row.spatial){if(row.catalog)catalogs.set(row.spatial,row.catalog);else catalogs.delete(row.spatial);}
         if (row.source === undefined) actorSourceRevisions.delete(row.actor); else actorSourceRevisions.set(row.actor, row.source);
         if (row.anchor === undefined) squareAnchorRevisions.delete(row.actor); else squareAnchorRevisions.set(row.actor, row.anchor);
     } };

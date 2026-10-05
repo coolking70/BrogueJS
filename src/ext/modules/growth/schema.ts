@@ -61,6 +61,8 @@ const prerequisite = union(object({ kind: literal('level'), min: integer(1) }),
     object({ kind: literal('attribute'), attributeId: id, min: integer() }),
     ...(['skill', 'profession', 'lineage', 'faith'] as const).map(kind => object({ kind: literal(kind), [`${kind}Id`]: id })));
 const named = { id, nameKey: textKey, descriptionKey: textKey };
+const combatCapacity = object({ attributeId: id, baseline: integer(), coefficient: integer(), denominator: integer(1),
+    rounding: literal('floor'), min: integer(1, 1000000), max: integer(1, 1000000) });
 const attributeGrant = object({ attributeId: id, amount: integer() });
 const action = union(object({ kind: literal('attack'), target: literal('adjacent-creature'), attackKind: literal('melee'), time: literal('native-attack') }),
     object({ kind: literal('move'), target: literal('adjacent-cell'), occupied: literal('reject'), time: literal('native-move') }),
@@ -108,6 +110,7 @@ return object({ schema: literal(1), moduleId: literal('growth'), moduleVersion: 
             lockMode, prerequisites: literal('all'), equipPreservesCooldowns: bool, equipPreservesFocus: bool }),
         focus: object({ base: integer(), min: integer(), cap: integer(), recoveryAmount: integer(), recoveryInterval: integer(1),
             objectiveTicksPerBlock: integer(1), resetRemainderWhenFull: bool }),
+        combatStats: nullable(object({ playerEnabled: bool, allowedTemplateIds: ids, stamina: combatCapacity, poise: combatCapacity })),
         rules: object({ budgets: list(object({ id, min: number(), max: number() }), 1),
             ports: object(Object.fromEntries(GROWTH_RULE_PORTS.map(key => [key, port]))),
             taggedProperties: object({ duration: port, intensity: port, cooldown: port }),
@@ -243,6 +246,20 @@ export function validateGrowthDefinitionPack(value: unknown, options: GrowthVali
             || config.strengthTraining.pointCost !== training.pointCost) fail('range', '$.config.strengthTraining');
     }
     if (config.attributeTotalCap !== null && config.attributes.reduce((sum, attr) => sum + attr.initial, 0) > config.attributeTotalCap) fail('budget', '$.config.attributeTotalCap');
+    if (config.combatStats) {
+        for (const templateId of config.combatStats.allowedTemplateIds) if (!templates.has(templateId))
+            fail('reference', '$.config.combatStats.allowedTemplateIds', templateId);
+        for (const resource of ['stamina','poise'] as const) {
+            const map = config.combatStats[resource], path = `$.config.combatStats.${resource}`;
+            const attr = attribute(map.attributeId, `${path}.attributeId`);
+            range(map.min, map.max, path);
+            if (map.baseline < attr.min || map.baseline > attr.cap) fail('range', `${path}.baseline`);
+            const rule = config.rules.ports[resource === 'stamina' ? 'staminaCapacity' : 'poiseCapacity'];
+            if (Math.ceil(Math.max(map.min,rule.globalClamp.min)) > Math.floor(Math.min(map.max,rule.globalClamp.max))
+                || rule.minimumPositive !== null && Math.ceil(rule.minimumPositive) > Math.floor(Math.min(map.max,rule.globalClamp.max)))
+                fail('range', path, 'no integer result within combat capacity bounds');
+        }
+    }
     const tags = new Set<string>();
     const durationTags = new Set<string>(), intensityTags = new Set<string>(), cooldownTags = new Set<string>();
     const timedIds = new Set<string>();

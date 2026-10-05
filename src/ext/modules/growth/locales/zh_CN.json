@@ -357,5 +357,9 @@
   "ext.growth.ui.load_panel_failed": "角色页加载失败（点击重试）",
   "ext.growth.ui.skill_cancelled": "已取消技能行动",
   "ext.growth.story.bell_settled": "倾听缄钟匠",
-  "ext.growth.story.wick_settled": "倾听听烬人"
+  "ext.growth.story.wick_settled": "倾听听烬人",
+  "ext.growth.view.port.staminaCapacity": "体力上限",
+  "ext.growth.view.port.poiseCapacity": "韧性上限",
+  "ext.growth.describe.port.staminaCapacity": "体力上限",
+  "ext.growth.describe.port.poiseCapacity": "韧性上限"
 }

@@ -28,10 +28,10 @@
 |---|---|---|
 | `definitions.json.schema` | `1` | 数据结构版本 |
 | `moduleId` | `"narrative"` | 稳定模块 ID |
-| `moduleVersion`、`rulesVersion` | 均为 `"1.3.0"` | 当前加载器只接受此精确值，并非任意 semver |
-| `stateVersion` | `3` | 模块私有持久状态 `schema: 3` |
+| `moduleVersion`、`rulesVersion` | 均为 `"1.4.0"` | 当前加载器只接受此精确值，并非任意 semver |
+| `stateVersion` | `4` | 模块私有持久状态 `schema: 4` |
 | `inputVersion` | `2` | open/choose/close 的 payload 必须带 `v: 2` |
-| `descriptor.ts.foundation` | `3` | 底座要求；不是内容开关 |
+| `descriptor.ts.foundation` | `5` | 底座要求；不是内容开关 |
 | `portraits.json.schema` | `1` | 显示清单结构 |
 | `portraits.json.displayVersion` | `"1.1.0"` | 独立显示版本，格式为三段数字 |
 
@@ -51,9 +51,10 @@
 - 阅读依次设置 `archive.read=true`、公开日志 `archive.note`、发出 `archive.read-done`；`next:null` 结束交谈。另一项 `leave` 恒可用、无效果、结束交谈
 - 触发器 `archive.reward` 监听该 story 事件，每局一次，尝试 `growth.story-reward.v1` 的 `rewardId: archive.read`；不是固定发放经验
 - growth 的默认配置 `config.experience.sources.story=false` ，已配置 `bell.settled` / `wick.settled` 各5XP报价，所以默认组合也不会给这个样例经验。缺席/关闭/未知报价均走有记录的 skip，见 §7
-- 新增 `bell.mender`（缄钟匠）与 `wick.listener`（听烬人）：各六节点、两个互斥结局，D1–D2首访可放置，无位置defer。具体路径见本轮报告
+- 新增 `bell.mender`（缄钟匠）与 `wick.listener`（听烬人）：分别六/七节点、各两个互斥结局，D1–D2首访可放置，无位置defer。具体路径见本轮报告
 - `bell.verdict` 的值为 unresolved/toll/hush，`wick.verdict` 为 unresolved/keep/release；结局生成独立日志并发出各自 settled 事件，触发各自一次性奖励收据。已结局时开场改为可选回顾路径，不再次发奖
 - 缄钟匠的残页旁支以 `archive.read=true` 为条件；未读时禁用并解释原因，叙事单独启用仍可走全部两个结局
+- 3g新增 `bonfire.rested`：玩家第一次真正完成篝火休息后置为true，解锁听烬人开场的“灰烬余温”旁支。不会自动打开对话、发消息、日志或奖励；未启用combat时旁支保持隐藏
 - 三张立绘清单绑定真实PNG，288×384、contain、bottom-center；UI依照原72×96/48×64展示合同缩放。缺图/失败降级仍保留，但不是本轮实际资产的替代
 
 这些都是文件里实际保存的样例，不是省略字段时由加载器补出的默认值。
@@ -188,7 +189,7 @@ NPC 对象完整字段如下：
 
 ### 6.2 triggers[]
 
-每项都有 `id,on,priority,condition,repeat,effects`：
+每项都有 `id,on,priority,condition,repeat,effects`；combat-event另须提供`receiptId`：
 
 | `on.kind` | on 的其余字段 | 实际时机 |
 |---|---|---|
@@ -196,6 +197,7 @@ NPC 对象完整字段如下：
 | `npc-interacted` | `npcId` | 成功 open 时，进入对话入口前 |
 | `dialogue-choice` | `dialogueId,choiceId` | 成功选择指定对话的指定选项；choice 自身 effects 先执行 |
 | `story` | `eventId` | 消费匹配的 emit-story 事件 |
+| `combat-event` | `eventKind,actorRole,actorTags` | 只消费已提交的公开战斗事实，效果限制与收据见§6.3 |
 
 `priority` 是 −1000000 至 1000000 的整数。同一事实的触发器按 priority 降序、ID 字典升序执行；不是 JSON 数组先后。派生 story 事件按 FIFO 处理，继承产生它的 depth/turn。较后触发器可以读到同计划内较前效果设置的叙事 flag/counter。
 
@@ -208,6 +210,44 @@ repeat 完整变体：
 冷却不随打开/选择/关闭对话推进，因为它们不耗回合；`cooldownTurns:0` 才允许不同事实在同一 turn 再次触发。收据让同事实不重复执行。load 恢复收据；replay/seek 按相同命令与事实序号在重建状态中重演，不在还原结果之外累积重复奖励。
 
 自动 `story → trigger → emit-story` 图必须无环，包括自环；即使 guard 永假、repeat 为 once 或 maxFirings 很小，也不放行自动环。人工 next 循环与此不同，受会话转移上限控制。
+
+### 6.3 `combat.event.v1` 有界订阅（3g）
+
+叙事仅消费底座已经提交的战斗事实；不读取combat私有状态、不导入combat模块，不监听动作尝试。支持四类 `eventKind`：
+
+- `attack-resolved`：一个招式段已经解算，actor为攻击者
+- `staggered`：硬直真正开始，actor为进入硬直者
+- `parried`：弹反已经成功，actor为成功弹反者，带真实 `resolutionId`
+- `rest-completed`：篝火休息和恢复已经提交，actor为休息者；失败或中断不会发布此事实
+
+在原有 `triggers[]` 中使用下面形状。此例已写入实际默认包：
+
+```json
+{
+  "id": "bonfire.first-rest",
+  "on": {
+    "kind": "combat-event",
+    "eventKind": "rest-completed",
+    "actorRole": "player",
+    "actorTags": []
+  },
+  "priority": 0,
+  "condition": { "op": "flag", "id": "bonfire.rested", "equals": false },
+  "repeat": { "kind": "once-per-run" },
+  "receiptId": "bonfire.first-rest.receipt",
+  "effects": [{ "kind": "set-flag", "id": "bonfire.rested", "value": true }]
+}
+```
+
+`on` 的四个字段和顶层 `receiptId` 必须提供。`actorRole` 为 `player`、`ally`、`hostile`、`neutral` 或 `any`；指事件已经公开的参与者角色，不允许填写任意actor ID。`actorTags` 是0–32个不同的合法公开标签ID，全部命中才触发；空数组不限制标签。标签不提供隐藏位置、名字、未来招式或未揭示NPC资料。
+
+条件继续使用§5的有界flag/counter/depth/optional-player等表达式；combat事实没有额外 `event-field` 白名单。`repeat` 沿用 once-per-run、once-per-depth 或 bounded（显式最大次数和冷却回合）；优先级相同按trigger ID的稳定ASCII顺序执行。`receiptId` 在整个包的订阅和optional-reward收据中必须唯一，持久收据还包含trigger、作用域、次数、回合和根fact ID。读取存档、回放seek、重复同ID事实不补发或重复执行。
+
+订阅效果仅允许 `set-flag` 和 `add-counter`。旁支资格由现有对话choice条件读取这些值。`message`、`journal`、`emit-story`、`optional-reward`和自动开对话均拒绝，不能借派生story间接发奖励。计数溢出或预算不足使整个原生事务回滚，不能截断执行部分效果。
+
+底座先为一个共享根fact及按模块ID排序的消费者派生范围做预算，再统一准备和提交；narrative不自行占用其他消费者的范围。combat订阅派生预算为0。entered-level改用 `foundation.story.v1`；只有可能直接发出story的入口trigger才预留 `eventsPerCommand` 的有界派生区间。直接玩家交谈命令继续由本模块按原合同提交连续的本地因果范围。
+
+narrative缺席，或内容包没有combat订阅时，不注册combat消费者，也不为叙事保留历史事件队列。combat缺席时既有NPC、对话和日志照常工作，篝火旁支保持隐藏，不补发旧事实。3g精确要求module/rules 1.4.0、state 4和foundation 5；旧版本或规则指纹不匹配直接拒绝，不迁移。
 
 ## 7. growth 可选联动
 
@@ -413,4 +453,4 @@ NODE_OPTIONS=--max-old-space-size=3072 npx vitest run src/ext/modules/narrative/
 
 交付时按 README 当前 full 档，在同一最终正常树完整运行 boundary、vue-tsc、build、全部 test:ext、完整 npm test 以及所有已安装模块子集真实 Game 新局/游玩/save-load/逐条 replay/seek/续录 smoke。需要独立性验收时另在真实删除副本跑 removal 档，不能用关闭开关冒充删除。正常树完整 npm test 与删除副本 removal 不互相替代。
 
-本页示例是教学片段，未写入默认生产数据；片段合并后的 schema 和纯内核验证结果由本轮报告登记。所有实际门禁、浏览器覆盖和未覆盖项以当轮报告为准，不从本手册的操作说明推断已经通过。
+除§6.3首休订阅外，本页其余示例是教学片段，未写入默认生产数据；片段合并后的 schema 和纯内核验证结果由本轮报告登记。所有实际门禁、浏览器覆盖和未覆盖项以当轮报告为准，不从本手册的操作说明推断已经通过。

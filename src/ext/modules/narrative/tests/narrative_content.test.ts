@@ -94,7 +94,7 @@ const endings = [
 type Ending = typeof endings[number];
 function assertEnding(game: Game, ending: Ending, reason: 'absent' | 'disabled'): void {
     const state = narrative(game);
-    expect(state.flags).toEqual({ 'archive.read': false, 'bell.verdict': ending.prefix === 'bell' ? ending.verdict : 'unresolved',
+    expect(state.flags).toEqual({ 'bonfire.rested': false, 'archive.read': false, 'bell.verdict': ending.prefix === 'bell' ? ending.verdict : 'unresolved',
         'wick.verdict': ending.prefix === 'wick' ? ending.verdict : 'unresolved' });
     expect(state.counters).toEqual({});
     expect(state.journal).toEqual([{ entryId: `${ending.prefix}.${ending.verdict}.note`, order: 1 }]);
@@ -247,7 +247,7 @@ describe.each(combinations)('CONTENT-1 default narrative endings with %j', (...i
         for (const ending of [endings[0], endings[3]]) {
             open(game, ending.npc); choose(game, ending.intro); choose(game, ending.settle); choose(game, ending.finish);
         }
-        expect(narrative(game).flags).toEqual({ 'archive.read': false, 'bell.verdict': 'toll', 'wick.verdict': 'release' });
+        expect(narrative(game).flags).toEqual({ 'archive.read': false, 'bell.verdict': 'toll', 'wick.verdict': 'release', 'bonfire.rested': false });
         expect(narrative(game).journal).toEqual([{ entryId: 'bell.toll.note', order: 1 }, { entryId: 'wick.release.note', order: 2 }]);
         expect(narrative(game).rewardReceipts.map(receipt => receipt.id)).toEqual(['bell.reward', 'wick.reward']);
         expect(narrative(game).triggerReceipts.map(receipt => [receipt.triggerId, receipt.firings])).toEqual([['bell.reward', 1], ['wick.reward', 1]]);

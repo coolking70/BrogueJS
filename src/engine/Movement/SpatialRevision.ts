@@ -47,3 +47,18 @@ export function invalidateSpatialTerrain(grid: object): void {
     const value = revisions.get(grid);
     if (value !== undefined && owners.has(grid as Grid)) revisions.set(grid, value + 1);
 }
+
+/** A failed native fact transaction restores the watcher epoch as well as grid
+ * values, so retained placement/scheduler sources do not observe a false move. */
+export function checkpointSpatialTerrain(grids:readonly Grid[]):()=>void {
+    const saved=[...new Set(grids)].map(grid=>({grid,revision:revisions.get(grid),ownerSet:owners.get(grid),
+        subscribers:[...(owners.get(grid)??[])],entries:Array.from({length:grid.height},(_,y)=>
+            Array.from({length:grid.width},(_,x)=>{const cell=grid.getCell(x,y)!,entry=cells.get(cell);return {cell,entry,types:entry?[...entry.observedTypes]:null};})).flat()}));
+    return()=>{for(const row of saved){
+        for(const owner of owners.get(row.grid)??[])if(!row.subscribers.includes(owner))ownerGrids.delete(owner);
+        if(row.revision===undefined)revisions.delete(row.grid);else revisions.set(row.grid,row.revision);
+        if(row.ownerSet){row.ownerSet.clear();row.subscribers.forEach(owner=>{row.ownerSet!.add(owner);if(owner!==row.grid)ownerGrids.set(owner,row.grid);});owners.set(row.grid,row.ownerSet);}
+        else owners.delete(row.grid);
+        for(const {cell,entry,types} of row.entries)if(entry){entry.observedTypes=types!;cells.set(cell,entry);}else cells.delete(cell);
+    }};
+}

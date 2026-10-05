@@ -2,6 +2,7 @@
 export const GROWTH_RULE_PORTS = [
     'hitChance', 'physicalDamage', 'receivedPhysicalDamage', 'stealthRange', 'searchStrength',
     'strengthBonus', 'maxHpBonus', 'focusCapacity', 'focusRecoveryInterval', 'cooldownDuration',
+    'staminaCapacity', 'poiseCapacity',
 ] as const;
 export type GrowthRulePort = typeof GROWTH_RULE_PORTS[number];
 export type GrowthRounding = 'floor' | 'ceil' | 'nearest' | 'truncate';
@@ -88,6 +89,11 @@ export interface GrowthTemplate extends GrowthNamed {
     skills: string[]; activeSlots: string[]; passiveSlots: string[];
     unspentAttributePoints: number; unspentSkillPoints: number;
 }
+/** 3g: independent bounded additive maps; investment includes granted and purchased ranks above baseline. */
+export interface GrowthCombatCapacityMap {
+    attributeId: string; baseline: number; coefficient: number; denominator: number;
+    rounding: 'floor'; min: number; max: number;
+}
 export interface GrowthDefinitionPack {
     schema: 1; moduleId: 'growth'; moduleVersion: string; rulesVersion: string;
     config: {
@@ -122,6 +128,8 @@ export interface GrowthDefinitionPack {
             lockMode: GrowthLockMode; prerequisites: 'all'; equipPreservesCooldowns: boolean; equipPreservesFocus: boolean };
         focus: { base: number; min: number; cap: number; recoveryAmount: number; recoveryInterval: number;
             objectiveTicksPerBlock: number; resetRemainderWhenFull: boolean };
+        combatStats: { playerEnabled: boolean; allowedTemplateIds: string[];
+            stamina: GrowthCombatCapacityMap; poise: GrowthCombatCapacityMap } | null;
         rules: { budgets: ({ id: string } & GrowthBounds)[]; ports: Record<GrowthRulePort, GrowthRuleConfig>;
             taggedProperties: Record<'duration' | 'intensity' | 'cooldown', GrowthRuleConfig>;
             order: ['add', 'multiply', 'global-clamp', 'round'];
@@ -177,6 +185,8 @@ export interface GrowthRulePolicies {
     focusCapacity(input: Readonly<GrowthRuleInput>): number;
     focusRecoveryInterval(input: Readonly<GrowthRuleInput>): number;
     cooldownDuration(input: Readonly<GrowthCooldownInput>): number;
+    staminaCapacity(input: Readonly<GrowthRuleInput>): number;
+    poiseCapacity(input: Readonly<GrowthRuleInput>): number;
 }
 export interface GrowthActionResult {
     readonly actionId: number; readonly resolutionId: number; readonly actorId: number; readonly targetId: number | null;

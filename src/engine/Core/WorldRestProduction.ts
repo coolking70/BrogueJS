@@ -162,6 +162,16 @@ function interruption(game: Game): BonfireInterruptReason | null {
 /** Called after ALL due native actors and environment, and again at the terminal
  * command boundary. No UI callback or wall-clock can complete or cancel a rest. */
 export function settleWorldRest(game: Game, allowRecovery = true): void {
+    const active=binding(game)?.state.bonfires?.active;
+    if(!active)return;
+    const work=()=>settleWorldRestCommitted(game,allowRecovery);
+    // Only successful final settlement can publish a fact. Resting/interrupted
+    // checks keep their original narrow transaction and do not snapshot the world.
+    if(game.extensionRuntime&&active.phase==='settling'&&!active.interrupted&&allowRecovery)
+        game.extensionRuntime.withCommittedFacts(work,['rest-completed']);
+    else work();
+}
+function settleWorldRestCommitted(game: Game, allowRecovery: boolean): void {
     const selected = binding(game), ledger = selected?.state.bonfires, active = ledger?.active;
     if (!selected || !ledger || !active) return;
     const reason = interruption(game);
@@ -186,6 +196,8 @@ export function settleWorldRest(game: Game, allowRecovery = true): void {
         const row=selected.state.actors.find(row=>row.actorId===active.actorId);
         if(row&&row.poise===0){row.staggerRemainingTicks=selected.definition.breakRecoveryTicks;game.player.ticksUntilTurn=row.staggerRemainingTicks;}
         revision(game);
+        if(!interrupted)game.extensionRuntime!.commitCombatEvent(game.player,{eventKind:'rest-completed',actionId:active.actionId,
+            sourceSubactionId:null,segmentIndex:null,resolutionId:null,bonfireId:active.bonfireId,visit:active.visit,hitCount:0,hpLost:0});
     } catch (error) {
         checkpoint.restore(); game.player.hp = hp;game.player.ticksUntilTurn=ticks;
         invalidateProductionActorActionSession(game);game.invalidateActorActionRun(error instanceof Error?error:new Error(String(error)));

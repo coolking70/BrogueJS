@@ -235,9 +235,12 @@ export function evaluateGrowthPort(pack: GrowthEvaluationPack, port: GrowthRuleP
     const modifiers = collectModifiers(pack, input, effects, owners.map(owner => ({ port, owner })), facts);
     const configured = pack.config.rules.ports[port];
     // Capacity has one answer for read-only policies and persisted resource ownership alike.
-    const rule = port === 'focusCapacity' ? { ...configured, globalClamp: {
-        min: Math.max(configured.globalClamp.min, pack.config.focus.min),
-        max: Math.min(configured.globalClamp.max, pack.config.focus.cap),
+    const bounds = port === 'focusCapacity' ? {min:pack.config.focus.min,max:pack.config.focus.cap}
+        : port === 'staminaCapacity' ? pack.config.combatStats?.stamina
+        : port === 'poiseCapacity' ? pack.config.combatStats?.poise : undefined;
+    const rule = bounds ? { ...configured, globalClamp: {
+        min: Math.max(configured.globalClamp.min, bounds.min),
+        max: Math.min(configured.globalClamp.max, bounds.max),
     } } : configured;
     let value = evaluateGrowthModifiers(pack.config.rules, rule, input.baseValue, modifiers,
         port === 'cooldownDuration' ? input.baseCooldown ?? input.baseValue : input.baseValue);
@@ -287,5 +290,7 @@ export function createGrowthRulePolicies(pack: GrowthEvaluationPack): GrowthRule
         focusCapacity: input => evaluateGrowthPort(pack, 'focusCapacity', input),
         focusRecoveryInterval: input => evaluateGrowthPort(pack, 'focusRecoveryInterval', input),
         cooldownDuration: input => evaluateGrowthPort(pack, 'cooldownDuration', input),
+        staminaCapacity: input => evaluateGrowthPort(pack, 'staminaCapacity', input),
+        poiseCapacity: input => evaluateGrowthPort(pack, 'poiseCapacity', input),
     } satisfies GrowthRulePolicies);
 }

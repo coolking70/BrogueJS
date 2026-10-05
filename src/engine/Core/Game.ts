@@ -1,3 +1,6 @@
+import { checkpointSpatialTerrain } from '../Movement/SpatialRevision';
+import { validateActorCombatCapacities } from './PhasedAttackProduction';
+import { resolveActorQueryScope } from '../../ext/actorQuery';
 import { isWorldRestCommand, prepareWorldRest, commitWorldRest, settleWorldRest, worldRestDamage, worldRestUnavailable } from './WorldRestProduction';
 import { canCommitNativeAttack, commitNativeAttackCost, withNativeAttackAction, withPrepaidNativeAttack } from './NativeAttackTransaction';
 import { bodyDecisionActor, bodyStatusOwner, type BodyStatusContext } from '../Status/BodyStatuses';
@@ -50,7 +53,7 @@ import { worldHealingText, worldFeatureText } from '../UI/WorldCatalogText';
 import { createItemDetailContext } from '../UI/ItemDetailContext';
 import { getTerrainDescription, describeTerrain, tileFlavor, selectTerrainTextLayer } from '../UI/TerrainTextCatalog';
 import { formatMonsterSummonMessage } from '../UI/MonsterTextCatalog';
-import { ownedMonsterList, squareListUsers, dyingMonsters, iterateCreatures } from './MonsterLifecycle';
+import { checkpointOwnedMonsterLists, ownedMonsterList, squareListUsers, dyingMonsters, iterateCreatures } from './MonsterLifecycle';
 import { alertMonster, wakeMonster } from '../Combat/MonsterAI';
 import { type MachineEntityRuntime } from '../Generator/BlueprintEngine';
 import { buildHordeMachine, checkpointGenerationWorld, createMachineRuntime, generateDepth, placeStairs, populateLevel } from './GenerationCoordinator';
@@ -440,8 +443,48 @@ export class Game {
         if (this.replayRecording) this.replayError = error.message;
     }
 
+    /** Combat fact transactions explicitly own native contact/rest writes, not
+     * an arbitrary save/load round trip. Retained actor and scheduler identities survive. */
+    private checkpointCombatFactWorld(): () => void {
+        const runtime=this.extensionRuntime!, cached=[...this.levels.values()];
+        const creatures=collectEntityGraph([...this.monsters,...this.dormantMonsters,...this.purgatory,
+            ...cached.flatMap(level=>[...level.monsters,...(level.dormantMonsters??[])]),
+            ...[...this.pendingFallenByDepth.values()].flat()]).monsters;
+        const actors=[this.player,...creatures], actionState=runtime.actorActionBinding()?.state;
+        const grids=[this.grid,...cached.map(level=>level.grid)],restoreFeatures=checkpointDungeonFeatureState(grids),restoreTerrain=checkpointSpatialTerrain(grids);
+        const traps=grids.map(grid=>{const cells=this.displacementTrapDepressions?.get(grid);return {grid,cells,values:[...(cells??[])]};});
+        const restoreLists=checkpointOwnedMonsterLists([this.monsters,this.dormantMonsters,...cached.flatMap(level=>[level.monsters,...(level.dormantMonsters?[level.dormantMonsters]:[])])]);
+        const display=[this.lightMap,...cached.map(level=>level.lightMap)].map(light=>light.checkpointRenderState());
+        const restore=checkpointGenerationWorld(()=>({shallow:[this],
+            deep:[this.player,creatures,this.squareMotion,this.grid,this.environment,this.fov,this.scent,this.waypoints,
+                this.monsters,this.dormantMonsters,this.purgatory,this.items,this.levels,this.pendingFallenByDepth,
+                this.pendingFallenItemsByDepth,this.bodyGroups,this.stats,this.visibleMonsters,this.visibleItems,
+                this.everSeenMonsters,this.everSeenItems,this.examinedEntityIds,this.pendingCaughtFireCells,
+                this.floatingTexts,this.activeFlares,this.terrainFlashes,this.pendingDiscoveryMessages,actionState,
+                ItemLoader.identifiedItems,ItemLoader.callTitles,ItemLoader.magicPolarityRevealed],
+            references:[runtime,runtime.causality,...display.flatMap(state=>state.references)],
+            restoreSession:display.map(state=>state.restore)}));
+        const descriptors=actors.map(actor=>({actor,descriptors:Object.getOwnPropertyDescriptors(actor)}));
+        const restoreActions=checkpointProductionActorActions(this), restoreDefense=checkpointPhasedAttackSources(this),
+            restoreRevisions=checkpointSpatialActorRevisions(actors), restoreLog=logger.checkpoint();
+        const invalid=isProductionActorActionRunInvalid(this), origin=recordingState(this).origin;
+        const dying=creatures.map(actor=>[actor,dyingMonsters.has(actor)] as const);
+        return()=>{restore();for(const {actor,descriptors:saved} of descriptors){
+            for(const key of Reflect.ownKeys(actor))if(Object.getOwnPropertyDescriptor(actor,key)?.configurable)Reflect.deleteProperty(actor,key);
+            Object.defineProperties(actor,saved);
+        }
+            restoreLists();restoreFeatures();restoreTerrain();
+            for(const {grid,cells,values} of traps){if(cells){cells.clear();values.forEach(value=>cells.add(value));this.displacementTrapDepressions?.set(grid,cells);}else this.displacementTrapDepressions?.delete(grid);}
+            restoreActions();restoreDefense();restoreRevisions();restoreLog();restoreProductionActorActionValidity(this,invalid);
+            recordingState(this).origin=origin;
+            for(const [actor,wasDying] of dying)if(wasDying)dyingMonsters.add(actor);else dyingMonsters.delete(actor);
+        };
+    }
+
     private createExtensionRuntime(manifest: ExtensionManifest, snapshot?: ExtensionSnapshot): ExtensionRuntime {
         return new ExtensionRuntime(createExtensionRegistry(), manifest, {
+            actorQueryScope: actor => {const world=this.actorActionWorld();return resolveActorQueryScope({...world,levels:[...world.levels,{depth:this.depth,actors:this.purgatory}]},actor);},
+            checkpointCommittedFacts: () => this.checkpointCombatFactWorld(),
             memberDamage: (actor, damage, kind) => this.applyBodyMemberDamage(actor, damage, kind),
             memberDamageCommitted: actor => this.finishBodyMemberDamage(actor),
             nativeDamageCommitted: (actor, hpLost) => worldRestDamage(this, actor, hpLost),
@@ -11059,6 +11102,15 @@ export class Game {
                 extensions.validateWorld([decodedPlayer, ...extensionCreatures], { depth: snapshot.depth, turn: snapshot.run.absoluteTurnNumber,
                     isGameOver: snapshot.run.isGameOver, nextEntityId: snapshot.run.nextEntityId });
                 const actionBinding = extensions.actorActionBinding();
+                if (actionBinding) {
+                    const candidateWorld:ActorActionProductionWorld={depth:snapshot.depth,player:decodedPlayer,
+                        ...(snapshot.run.spatialWorld?.groups.length?{bodyGroups:snapshot.run.spatialWorld.groups}:{}),
+                        levels:[...[...restored].map(([depth,level])=>({depth,actors:[...level.monsters,...(level.dormantMonsters??[])]})),
+                            {depth:snapshot.depth,actors:(snapshot.purgatory??[]).map(monster=>entityGraph.monsters.get(monster.id)!)},
+                            ...snapshot.pendingFallenByDepth.map(queue=>({depth:queue.depth,actors:queue.monsters.map(monster=>entityGraph.monsters.get(monster.id)!)}))]};
+                    validateActorCombatCapacities(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
+                        (actor,input)=>extensions!.queryOptionalActorInWorld('growth.combat-stats.v1',actor,input,candidateWorld));
+                }
                 if (actionBinding) validatePhasedAttackGeometry(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
                     (depth,x,y)=>restored.get(depth)?.grid.isValidPos(x,y)===true,
                     new Set([decodedPlayer.id,...(restored.get(snapshot.depth)?.monsters??[]).map(actor=>actor.id)]));

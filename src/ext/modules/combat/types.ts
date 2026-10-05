@@ -35,7 +35,7 @@ export interface ResourcePolicy {
 }
 export interface CombatProfile { id: string; resourcePolicyId: string; attackIds: string[] }
 export interface CombatPack {
-    schema: 1; moduleId: 'combat'; moduleVersion: '1.4.0'; rulesVersion: '1.4.0';
+    schema: 1; moduleId: 'combat'; moduleVersion: '1.5.0'; rulesVersion: '1.5.0';
     bonfires: BonfireConfig;
     dodge: ActorDodgeDefinition;
     parry: ActorParryDefinition;

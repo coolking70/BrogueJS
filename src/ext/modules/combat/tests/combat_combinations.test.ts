@@ -106,6 +106,14 @@ describe('3f independently installed combat combinations on a natural normal run
             play('ext:command', command('rest', { bonfireId: target.id }));
             expect(last(state(game).bonfires!.receipts)).toMatchObject({ bonfireId: target.id, visit: 1, result: 'completed' });
             expect(game.player.hp).toBe(game.player.maxHp);
+            if(ids.includes('narrative')){
+                const narrative=game.extensionRuntime!.snapshot().modules.narrative as unknown as {
+                    flags:Record<string,boolean>;triggerReceipts:{triggerId:string;receiptId:string;firings:number}[];active:unknown};
+                expect(narrative.flags['bonfire.rested']).toBe(true);
+                expect(narrative.triggerReceipts.filter(receipt=>receipt.triggerId==='bonfire.first-rest'))
+                    .toMatchObject([{triggerId:'bonfire.first-rest',receiptId:'bonfire.first-rest.receipt',firings:1}]);
+                expect(narrative.active).toBeNull();
+            }
             // Exercise all three shipped attacks. Natural positive damage is
             // required below; successful parry/dodge avoidance remains a separate
             // claim covered by the dedicated defense runtime tests.
@@ -187,5 +195,15 @@ describe('3f independently installed combat combinations on a natural normal run
             }
             const duplicate = json(saved.extensions!.manifest); duplicate.modules.push(json(duplicate.modules[0]!)); reject(duplicate);
             const missing = json(saved.extensions!.manifest); missing.modules.push({ id: 'missing-combat-combination', version: '1.0.0' }); reject(missing);
+            if(ids.includes('narrative')){
+                for(let repeat=0;repeat<2;repeat++)expect(loaded.loadSnapshot(json(saved))).toBe(true);
+                acknowledge();loaded.executeCommand('ext:command',command('rest',{bonfireId:target.id}));
+                expect(last(state(loaded).bonfires!.receipts)).toMatchObject({visit:2,result:'completed'});
+                const narrative=loaded.extensionRuntime!.snapshot().modules.narrative as unknown as {
+                    flags:Record<string,boolean>;triggerReceipts:{triggerId:string;receiptId:string;firings:number}[];active:unknown};
+                const receipts=narrative.triggerReceipts.filter(receipt=>receipt.triggerId==='bonfire.first-rest');
+                expect(receipts).toHaveLength(1);expect(receipts[0]).toMatchObject({receiptId:'bonfire.first-rest.receipt',firings:1});
+                expect(narrative.flags['bonfire.rested']).toBe(true);expect(narrative.active).toBeNull();
+            }
         }, 60000);
 });

@@ -150,7 +150,7 @@ export function loadCombatPack(input: unknown, locale: unknown): CombatPack {
     assertCombatJson(input);
     const text = localeChecker(locale);
     const root = record(input, ['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'resourcePolicies', 'attacks', 'profiles', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks', 'dodge', 'parry', 'bonfires']);
-    if (root.schema !== 1 || root.moduleId !== 'combat' || root.moduleVersion !== '1.4.0' || root.rulesVersion !== '1.4.0') fail('INVALID_VERSION');
+    if (root.schema !== 1 || root.moduleId !== 'combat' || root.moduleVersion !== '1.5.0' || root.rulesVersion !== '1.5.0') fail('INVALID_VERSION');
     const policies = list(root.resourcePolicies, 1, COMBAT_LIMITS.maxDefinitions);
     const attacks = list(root.attacks, 1, COMBAT_LIMITS.maxDefinitions);
     const profiles = list(root.profiles, 1, COMBAT_LIMITS.maxDefinitions);

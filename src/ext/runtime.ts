@@ -1,3 +1,6 @@
+import { resolveActorQueryScope } from './actorQuery';
+import type { ActorActionProductionWorld } from '../engine/Core/ActorActionProduction';
+import type { OptionalActorQueryProvider, CommittedFact, CombatEventFact, CombatEventPayload, CombatEventActor, CommittedFactConsumer, CombatEventKind } from './types';
 import { validateProductionActorAttackTransactionState } from './actorActionValidation';
 import type { ActorAttackDefinitions, ProductionActorAttackState } from './actorActions';
 import { SpatialCatalog, nativeSpatialCatalog } from '../engine/Movement/SpatialSchema';
@@ -33,6 +36,10 @@ const partBreakProviders = new WeakMap<ExtensionRuntime, { module: ExtensionModu
 const zoneBreakCheckpoints = new WeakMap<ExtensionRuntime, () => () => void>();
 const zoneBreakHandlers = new WeakMap<ExtensionRuntime, NonNullable<ExtensionPorts['zoneBroken']>>();
 const bodyHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts, 'memberDamage' | 'memberDamageCommitted' | 'validateMemberBreak' | 'memberBroken'>>();
+const actorQueryProviders = new WeakMap<ExtensionRuntime, Map<string, {module: ExtensionModule; provider: OptionalActorQueryProvider}>>();
+const committedTransactions = new WeakMap<ExtensionRuntime, { events: Omit<CombatEventFact,'factId'>[]; publishing: boolean; allocated:number; actors:Map<Creature,{depth:number;actor:CombatEventActor}> }>();
+const allocatingFacts = new WeakSet<ExtensionRuntime>();
+const factConsumers = new WeakMap<ExtensionRuntime, Map<string, readonly {module:ExtensionModule;consumer:CommittedFactConsumer}[]>>();
 function isCreatureView(value: unknown): boolean {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
     const v = value as Record<string, unknown>;
@@ -41,6 +48,9 @@ function isCreatureView(value: unknown): boolean {
         && (v.id as number) > 0 && (v.maxHp as number) >= 0;
 }
 export interface ExtensionPorts {
+    /** Engine verifies native identity, owned depth, and active group slot. */
+    actorQueryScope?(actor: Creature): { depth: number; partId: string | null; generation: number | null } | null;
+    checkpointCommittedFacts?(): () => void;
     nativeDamageCommitted?(actor: Creature, hpLost: number): void;
     worldRestUnavailable?(bonfireId: number): import('./worldRest').WorldRestUnavailableReason | null;
     zoneBroken?(actor: Creature, zoneId: string): void;
@@ -110,6 +120,18 @@ function validPendingStoryFact(value: unknown): value is PendingStoryFact {
     return Object.keys(fact).sort().join(',') === 'depth,firstVisit,kind,turn' && fact.kind === 'entered-level'
         && Number.isSafeInteger(fact.depth) && fact.depth >= 1 && typeof fact.firstVisit === 'boolean'
         && Number.isSafeInteger(fact.turn) && fact.turn >= 0;
+}
+function validateCombatPayload(value: CombatEventPayload): void {
+    if (!isJson(value) || Object.keys(value).sort().join(',') !== 'actionId,bonfireId,eventKind,hitCount,hpLost,resolutionId,segmentIndex,sourceSubactionId,visit'
+        || !['attack-resolved','staggered','parried','rest-completed'].includes(value.eventKind)
+        || !Number.isSafeInteger(value.actionId) || value.actionId < 0
+        || !Number.isSafeInteger(value.hitCount) || value.hitCount < 0 || value.hitCount > 4096
+        || !Number.isSafeInteger(value.hpLost) || value.hpLost < 0) throw new Error('Invalid combat event');
+    for (const key of ['sourceSubactionId','segmentIndex','resolutionId','bonfireId','visit'] as const)
+        if (value[key] !== null && (!Number.isSafeInteger(value[key]) || value[key]! < 0)) throw new Error('Invalid combat event identity');
+    if (value.eventKind === 'attack-resolved' && (value.actionId < 1 || value.sourceSubactionId === null || value.segmentIndex === null)
+        || value.eventKind === 'parried' && (value.resolutionId === null || value.resolutionId < 1)
+        || value.eventKind === 'rest-completed' && (value.actionId < 1 || !value.bonfireId || !value.visit)) throw new Error('Missing combat event identity');
 }
 export class ExtensionRuntime {
     private readonly modules: ExtensionModule[];
@@ -210,6 +232,25 @@ export class ExtensionRuntime {
             if (!module.nativeBodies?.definitions.some(b => b.id === t.bodyId
                 && b.parts.find(p => p.role === 'core')?.formId === t.formId)) throw new Error('Invalid generation body ownership');
         }
+        for (const module of this.modules) for (const [capability, consumer] of Object.entries(module.committedFacts ?? {})) {
+            if (!['foundation.story.v1', 'combat.event.v1'].includes(capability) || !consumer
+                || !Number.isSafeInteger(consumer.maxDerivedFacts) || consumer.maxDerivedFacts < 0 || consumer.maxDerivedFacts > 4095
+                || typeof consumer.prepare !== 'function' || typeof consumer.commit !== 'function'
+                || consumer.eventKinds !== undefined && (capability !== 'combat.event.v1' || !Array.isArray(consumer.eventKinds)
+                    || consumer.eventKinds.length<1 || consumer.eventKinds.length>4 || new Set(consumer.eventKinds).size!==consumer.eventKinds.length
+                    || consumer.eventKinds.some(kind=>!['attack-resolved','staggered','parried','rest-completed'].includes(kind)))) throw new Error('Invalid committed fact consumer');
+            let registry=factConsumers.get(this);if(!registry)factConsumers.set(this,registry=new Map());
+            const entry={module,consumer:Object.freeze({maxDerivedFacts:consumer.maxDerivedFacts,prepare:consumer.prepare,commit:consumer.commit,...(consumer.eventKinds?{eventKinds:Object.freeze([...consumer.eventKinds])}:{})})};
+            registry.set(capability,Object.freeze([...(registry.get(capability)??[]),entry].sort((a,b)=>a.module.id<b.module.id?-1:a.module.id>b.module.id?1:0)));
+        }
+        for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalActorQueries ?? {})) {
+            if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
+                || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid actor query provider');
+            let providers = actorQueryProviders.get(this);
+            if (!providers) actorQueryProviders.set(this, providers = new Map());
+            if (providers.has(capability)) throw new Error('Conflicting actor query providers');
+            providers.set(capability, {module, provider});
+        }
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalQueries ?? {})) {
             if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
                 || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid optional query provider');
@@ -272,6 +313,7 @@ export class ExtensionRuntime {
             get nextFactId() { return runtime.nextFactId; },
             commitFactRange(first, count) {
                 ordinaryCapability();
+                if (allocatingFacts.has(runtime)) throw new Error('Fact range already assigned by foundation');
                 if (!Number.isSafeInteger(first) || first !== runtime.nextFactId || !Number.isSafeInteger(count) || count < 1
                     || !Number.isSafeInteger(first + count)) throw new Error('Invalid story fact range');
                 runtime.nextFactId += count;
@@ -435,6 +477,117 @@ export class ExtensionRuntime {
                 return value === undefined ? undefined : freeze(cloneJson(value));
             } });
     }
+    /** Trusted native reference, never a module/UI supplied actor ID. */
+    queryOptionalActor(capability: string, actor: Creature, input: Json): OptionalQueryResult {
+        if(this.disposed||!validId(capability)||!/\.v[1-9]\d*$/.test(capability)||!isJson(input))throw new Error('Invalid optional actor query');
+        // No provider means no actor data is read or transmitted. Fixture/native
+        // callers without this optional seam retain the original template path.
+        if(!actorQueryProviders.get(this)?.has(capability))return Object.freeze({status:'unavailable',reason:'absent'});
+        if (!this.creatures.has(actor) || !this.ports.actorQueryScope?.(actor)) throw new Error('Untrusted actor query scope');
+        return this.queryActorProvider(capability,actor,input,this.ports.playerId());
+    }
+    queryOptionalActorInWorld(capability:string,actor:Creature,input:Json,world:ActorActionProductionWorld):OptionalQueryResult {
+        if (!resolveActorQueryScope(world,actor)) throw new Error('Untrusted candidate actor query scope');
+        return this.queryActorProvider(capability,actor,input,world.player.id);
+    }
+    private queryActorProvider(capability:string,actor:Creature,input:Json,playerId:number):OptionalQueryResult {
+        if (this.disposed || this.pureProviderPhase || !validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !isJson(input))
+            throw new Error('Invalid optional actor query');
+        const entry = actorQueryProviders.get(this)?.get(capability);
+        if (!entry) return Object.freeze({status: 'unavailable', reason: 'absent'});
+        const {module, provider} = entry, value = freezeView(cloneJson(input));
+        let open = true; this.pureProviderPhase = true;
+        try {
+            const accepted = provider.accepts(value); requireSynchronous(accepted);
+            if (typeof accepted !== 'boolean') throw new Error('Invalid actor query acceptance');
+            if (!accepted) return Object.freeze({status:'unavailable',reason:'unsupported-input'});
+            const result = provider.query(value, Object.freeze({playerId, actor:freezeView(this.actorFacts(actor,playerId)),
+                state:freezeView(cloneJson(this.states[module.id]!)), getActorComponent: (name: string) => {
+                    if (!open || !validId(name)) throw new Error('Closed or invalid actor component scope');
+                    const component = this.components[String(actor.id)]?.[`${module.id}:${name}`];
+                    return component === undefined ? undefined : freezeView(cloneJson(component));
+                }}));
+            requireSynchronous(result);
+            if (!isJson(result)) throw new Error('Invalid actor query result');
+            const valid = provider.validate(result); requireSynchronous(valid);
+            if (valid !== true) throw new Error('Invalid actor query result');
+            return freezeView({status:'available' as const,value:cloneJson(result)});
+        } finally {open = false; this.pureProviderPhase = false;}
+    }
+    hasCommittedFactConsumer(capability: string,eventKind?:CombatEventKind): boolean { return (factConsumers.get(this)?.get(capability)??[]).some(({consumer})=>!eventKind||!consumer.eventKinds||consumer.eventKinds.includes(eventKind)); }
+    private publishCommittedFact(capability: string, pending: Omit<CombatEventFact, 'factId'> | PendingStoryFact): void {
+        const consumers = (factConsumers.get(this)?.get(capability)??[]).filter(({consumer})=>pending.kind!=='combat-event'||!consumer.eventKinds||consumer.eventKinds.includes(pending.eventKind));
+        if (!consumers.length) return;
+        const count = 1 + consumers.reduce((sum,{consumer})=>sum+consumer.maxDerivedFacts,0);
+        if (count > STORY_FACT_LIMIT || !Number.isSafeInteger(this.nextFactId + count)) throw new Error('Committed fact budget exhausted');
+        const frame=committedTransactions.get(this);
+        if(frame && frame.allocated+count>STORY_FACT_LIMIT)throw new Error('Committed transaction fact budget exhausted');
+        if(frame)frame.allocated+=count;
+        const fact = freezeView({...pending,factId:this.nextFactId}) as Readonly<CommittedFact>;
+        let next = this.nextFactId + 1;
+        const plans = consumers.map(({module,consumer}) => {
+            const allocation = Object.freeze({firstDerivedFactId:next,maxDerivedFacts:consumer.maxDerivedFacts});
+            next += consumer.maxDerivedFacts;
+            let open = true;
+            const read = () => { if (!open) throw new Error('Closed committed fact preparation'); };
+            const priorPure=this.pureProviderPhase;this.pureProviderPhase=true;
+            try {
+                const plan = consumer.prepare(fact,allocation,Object.freeze({playerId:this.ports.playerId(),state:freezeView(cloneJson(this.states[module.id]!)),
+                    queryOptional:(capability:string,input:Json)=>{read();return this.queryOptional(capability,input);},
+                    prepareOptionalReward:(capability:string,rewardId:string,instanceId:string)=>{read();this.pureProviderPhase=false;try{return this.prepareOptionalReward(module.id,capability,rewardId,instanceId);}finally{this.pureProviderPhase=true;}}}));
+                requireSynchronous(plan); return {module,consumer,plan};
+            } finally {open=false;this.pureProviderPhase=priorPure;}
+        });
+        this.nextFactId = next;
+        allocatingFacts.add(this);
+        try { for (const {module,consumer,plan} of plans) this.invoke(module,context=>consumer.commit(plan,context)); }
+        finally {allocatingFacts.delete(this);}
+    }
+    /** Native writes and all consumers commit as one synchronous outer transaction. */
+    withCommittedFacts<T>(work: () => T,eventKinds:readonly CombatEventKind[]=['attack-resolved','staggered','parried','rest-completed']): T {
+        if (this.disposed || this.pureProviderPhase) throw new Error('Unavailable committed fact transaction');
+        if (committedTransactions.has(this) || !eventKinds.some(kind=>this.hasCommittedFactConsumer('combat.event.v1',kind))) {
+            const result=work();requireSynchronous(result);return result;
+        }
+        const restoreNative = this.ports.checkpointCommittedFacts?.();
+        if (!restoreNative) throw new Error('Missing native committed fact checkpoint');
+        const identities=new Map<Creature,{depth:number;actor:CombatEventActor}>();
+        for(const actor of this.creatures){const identity=this.combatFactActor(actor);if(identity)identities.set(actor,identity);}
+        const frame = {events:[] as Omit<CombatEventFact,'factId'>[],publishing:false,allocated:0,actors:identities};
+        committedTransactions.set(this,frame);
+        const causes = this.causality.snapshot(), deaths = structuredClone(this.deaths), allocator = getNextEntityId(), restoreRandom = this.ports.checkpointRandom?.();
+        const members=new Map([...this.creatures].map(actor=>[actor,{hooks:actor.extensionHooks,spawned:this.spawned.has(actor)}]));
+        const nativeRevision=this.nativeActionRevision;
+        try { return this.transaction(()=>{
+            const result = work(); requireSynchronous(result); frame.publishing=true;
+            for (const event of frame.events) this.publishCommittedFact('combat.event.v1',event);
+            return result;
+        }); } catch(error) {
+            restoreNative();this.causality.restore(causes);this.deaths=deaths;this.nativeActionRevision=nativeRevision;
+            for(const actor of this.creatures)if(!members.has(actor)){bindNativeForms(actor);actor.extensionHooks=undefined;this.spawned.delete(actor);this.creatures.delete(actor);}
+            for(const [actor,entry] of members){this.creatures.add(actor);actor.extensionHooks=entry.hooks;if(entry.spawned)this.spawned.add(actor);else this.spawned.delete(actor);}
+            restoreNextEntityId(allocator);restoreRandom?.();throw error;
+        }
+        finally {committedTransactions.delete(this);}
+    }
+    commitCombatEvent(actor: Creature, payload: CombatEventPayload): void {
+        if (!this.hasCommittedFactConsumer('combat.event.v1',payload.eventKind)) return;
+        const frame = committedTransactions.get(this);
+        if (!frame || frame.publishing) throw new Error('Combat fact outside native transaction');
+        if (frame.events.length >= STORY_FACT_LIMIT) throw new Error('Combat fact event budget exhausted');
+        validateCombatPayload(payload);
+        const identity=frame.actors.get(actor)??this.combatFactActor(actor);
+        if (!identity) throw new Error('Untrusted combat event actor');
+        frame.events.push(freezeView({...structuredClone(payload),kind:'combat-event',depth:identity.depth,turn:this.ports.turn?.()??0,
+            actor:structuredClone(identity.actor)}));
+    }
+    private combatFactActor(actor:Creature):{depth:number;actor:CombatEventActor}|null {
+        const scope=this.ports.actorQueryScope?.(actor);
+        if(!scope||!this.creatures.has(actor))return null;
+        const facts=this.actorFacts(actor);
+        return {depth:scope.depth,actor:{entityId:actor.id,role:facts.player?'player':facts.allied?'ally':facts.hostile?'hostile':'neutral',
+            tags:[...this.publicActorTags(actor.id)].sort(),partId:scope.partId,generation:scope.generation}};
+    }
     /** Pure engine adapter: one provider per slot, finite synchronous bounded scalars. */
     queryOptional(capability: string, input: Json): OptionalQueryResult {
         if (this.disposed) throw new Error('Extension runtime unloaded');
@@ -467,6 +620,10 @@ export class ExtensionRuntime {
      * transaction succeeds, so failed providers leave prepared work intact. */
     commitPartBreak<T>(request: PartBreakRequest, native: PartBreakNativeCommit<T>): T {
         if (this.disposed || this.pureProviderPhase || this.rewardProviderPhase) throw new Error('Unavailable or recursive part break commit');
+        return this.actorActionBinding()?this.withCommittedFacts(()=>this.commitPartBreakWithin(request,native),['staggered']):this.commitPartBreakWithin(request,native);
+    }
+    private commitPartBreakWithin<T>(request: PartBreakRequest, native: PartBreakNativeCommit<T>): T {
+        if (this.disposed || this.pureProviderPhase || this.rewardProviderPhase) throw new Error('Unavailable or recursive part break commit');
         validatePartBreakRequest(request);
         const actor = [...this.creatures].find(c => c.id === request.actorId);
         if (!actor || actor.hp <= 0) throw new Error('Unavailable part break actor');
@@ -478,6 +635,9 @@ export class ExtensionRuntime {
             throw new Error('Unavailable member break identity');
         const value = freezeView(structuredClone(request)), entry = partBreakProviders.get(this);
         const actionBinding=this.actorActionBinding();
+        const oldBundle=actionBinding?.state.scheduler.bundles.find(bundle=>bundle.decisionOwnerId===actor.id);
+        const oldStagger=(actionBinding?.state.actors.find(row=>row.actorId===actor.id)?.staggerRemainingTicks??0)>0
+            ||!!oldBundle?.subactions.some(child=>child.phases[child.phaseIndex]?.kind==='break-recovery');
         const actionState=actionBinding?.state as unknown as Json|undefined;
         const liveState = entry?.module.actorActions ? this.states[entry.module.id] : undefined;
         const identityCheckpoint = actionState ? actorActionIdentityCheckpoint(actionState) : undefined;
@@ -497,6 +657,8 @@ export class ExtensionRuntime {
                     this.pureProviderPhase = true;
                     try {
                         preparation = entry.provider.prepare(value, Object.freeze({ ...context, actor: this.actorFacts(actor), getComponent,
+                            queryActor:(capability:string,input:Json)=>{if(!active)throw new Error('Expired part break actor query');
+                                this.pureProviderPhase=false;try{return this.queryOptionalActor(capability,actor,input);}finally{this.pureProviderPhase=true;}},
                             ...(member ? { member: freezeView(structuredClone(member)) } : {}) }));
                         requireSynchronous(preparation);
                         if (!isJson(preparation) || !preparation || typeof preparation !== 'object' || Array.isArray(preparation)
@@ -538,6 +700,11 @@ export class ExtensionRuntime {
                 }
                 if (member) bodyHandlers.get(this)?.memberBroken?.(actor, member);
                 else zoneBreakHandlers.get(this)?.(actor, request.zoneId);
+                const nextState=this.actorActionBinding()?.state;
+                const nowStagger=(nextState?.actors.find(row=>row.actorId===actor.id)?.staggerRemainingTicks??0)>0
+                    ||!!nextState?.scheduler.bundles.find(bundle=>bundle.decisionOwnerId===actor.id)?.subactions.some(child=>child.phases[child.phaseIndex]?.kind==='break-recovery');
+                if(actor.hp>0&&!oldStagger&&nowStagger)this.commitCombatEvent(actor,{eventKind:'staggered',actionId:oldBundle?.actionId??0,
+                    sourceSubactionId:null,segmentIndex:null,resolutionId:request.resolutionId,bonfireId:null,visit:null,hitCount:0,hpLost:0});
                 return result;
             });
         } catch (error) {
@@ -684,7 +851,8 @@ export class ExtensionRuntime {
             while (this.pendingStoryFacts.length) {
                 if (++count > STORY_FACT_LIMIT) throw new Error('Story fact flush budget exceeded');
                 const pending = this.pendingStoryFacts[0]!, first = this.nextFactId;
-                this.dispatch('storyFact', { ...pending, factId: first });
+                if (this.hasCommittedFactConsumer('foundation.story.v1')) this.publishCommittedFact('foundation.story.v1',pending);
+                else this.dispatch('storyFact', { ...pending, factId: first });
                 // A consumer can reserve root + derived facts as one atomic range.
                 // Even an uninterested subscriber consumes the native root once.
                 if (this.nextFactId === first) {
@@ -904,9 +1072,10 @@ export class ExtensionRuntime {
         if (this.hasHook('committedAction')) this.emit('committedAction', event);
     }
     /** A defense has a unique causal identity but no hit/damage/growth resolution. */
-    notifyActorParried(sourceEntityId:number,targetEntityId:number,depth:number):void {
+    notifyActorParried(sourceEntityId:number,targetEntityId:number,depth:number):number | void {
         const origin=this.causality.create('melee',sourceEntityId,null,null);
         if(this.hasHook('defended'))this.emit('defended',{resolutionId:origin.effectId,depth,sourceEntityId,targetEntityId,defense:'parry'});
+        return origin.effectId;
     }
     emit<K extends HookName>(name: K, event: HookEvents[K]): void {
         if (this.generations.length && !this.publishingGeneration) {
@@ -933,7 +1102,7 @@ export class ExtensionRuntime {
                 }
             }
         }
-        if (name === 'enteredLevel' && !readOnly && this.hasHook('storyFact')) {
+        if (name === 'enteredLevel' && !readOnly && (this.hasHook('storyFact') || this.hasCommittedFactConsumer('foundation.story.v1'))) {
             const entered = event as HookEvents['enteredLevel'];
             const pending: PendingStoryFact = { kind: 'entered-level', depth: entered.depth, firstVisit: entered.firstVisit, turn: this.ports.turn?.() ?? 0 };
             if (!validPendingStoryFact(pending) || this.pendingStoryFacts.length >= STORY_FACT_LIMIT) throw new Error('Invalid pending story fact');
@@ -1321,7 +1490,7 @@ export class ExtensionRuntime {
     snapshot(): ExtensionSnapshot {
         if (this.generations.length) throw new Error('Cannot snapshot an open generation transaction');
         return structuredClone({ manifest: this.manifest, modules: this.states, components: this.components,
-            foundation: { version: 4, nextFactId: this.nextFactId, pendingStoryFacts: this.pendingStoryFacts, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
+            foundation: { version: 5, nextFactId: this.nextFactId, pendingStoryFacts: this.pendingStoryFacts, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
     }
     validateSnapshot(value: ExtensionSnapshot): void {
         if (!value || !isJson(value) || canonical(value.manifest) !== canonical(this.manifest)
@@ -1330,7 +1499,7 @@ export class ExtensionRuntime {
             || Object.keys(value).some(key => !['manifest', 'modules', 'components', 'foundation'].includes(key))
             || canonical(Object.keys(value.modules).sort()) !== canonical(this.modules.map(module => module.id).sort())) throw new Error('Invalid extension snapshot');
         const foundation = value.foundation;
-        if (!foundation || foundation.version !== 4 || Object.keys(foundation).sort().join(',') !== 'causality,deaths,nextFactId,pendingStoryFacts,version,world'
+        if (!foundation || foundation.version !== 5 || Object.keys(foundation).sort().join(',') !== 'causality,deaths,nextFactId,pendingStoryFacts,version,world'
             || !Number.isSafeInteger(foundation.nextFactId) || foundation.nextFactId < 1
             || !Array.isArray(foundation.pendingStoryFacts) || foundation.pendingStoryFacts.length > STORY_FACT_LIMIT
             || !foundation.pendingStoryFacts.every(validPendingStoryFact)

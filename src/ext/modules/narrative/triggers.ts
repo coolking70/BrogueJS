@@ -12,6 +12,9 @@ export function narrativeTriggerMatches(trigger: Trigger, fact: NarrativeFact): 
         case 'npc-interacted': return fact.kind === 'npc-interacted' && on.npcId === fact.npcId;
         case 'dialogue-choice': return fact.kind === 'dialogue-choice' && on.dialogueId === fact.dialogueId && on.choiceId === fact.choiceId;
         case 'story': return fact.kind === 'story' && on.eventId === fact.eventId;
+        case 'combat-event': return fact.kind === 'combat-event' && on.eventKind === fact.eventKind
+            && (on.actorRole === 'any' || on.actorRole === fact.actor.role)
+            && on.actorTags.every(tag => fact.actor.tags.includes(tag));
     }
 }
 /** Never relies on array/registration order or locale collation. */
@@ -42,7 +45,8 @@ export function recordNarrativeTrigger(state: NarrativeState, pack: NarrativePac
         return;
     }
     if (narrativeReceiptCount(state) >= pack.config.limits.maxReceipts) throw new NarrativeError('RECEIPT_LIMIT', '$state.triggerReceipts');
-    const receipt: TriggerReceipt = { triggerId: trigger.id, scopeKey, firings: 1, lastTurn: fact.turn, lastFactId: fact.factId };
+    const receipt: TriggerReceipt = { triggerId: trigger.id, scopeKey, firings: 1, lastTurn: fact.turn, lastFactId: fact.factId,
+        ...(trigger.on.kind === 'combat-event' ? { receiptId: trigger.receiptId! } : {}) };
     state.triggerReceipts.push(receipt);
     state.triggerReceipts.sort((a, b) => {
         const left = `${a.triggerId}:${a.scopeKey}`, right = `${b.triggerId}:${b.scopeKey}`;

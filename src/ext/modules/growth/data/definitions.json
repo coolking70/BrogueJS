@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "moduleId": "growth",
-  "moduleVersion": "1.6.0",
-  "rulesVersion": "1.6.0",
+  "moduleVersion": "1.7.0",
+  "rulesVersion": "1.7.0",
   "config": {
     "experience": {
       "sources": {
@@ -778,6 +778,16 @@
           "id": "growth.budget.tag-cooldown",
           "min": -9007199254740991,
           "max": 9007199254740991
+        },
+        {
+          "id": "growth.budget.staminacapacity",
+          "min": -1000000,
+          "max": 1000000
+        },
+        {
+          "id": "growth.budget.poisecapacity",
+          "min": -1000000,
+          "max": 1000000
         }
       ],
       "ports": {
@@ -970,6 +980,44 @@
           "preserveZero": true,
           "minimumPositive": null,
           "minimumBaseRatio": 0.75
+        },
+        "staminaCapacity": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.staminacapacity",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 1,
+            "max": 1000000
+          },
+          "rounding": "floor",
+          "preserveZero": false,
+          "minimumPositive": null,
+          "minimumBaseRatio": null
+        },
+        "poiseCapacity": {
+          "additiveMode": "flat",
+          "budgetId": "growth.budget.poisecapacity",
+          "multiplierSlots": [
+            {
+              "id": "growth.slot.final",
+              "min": 0,
+              "max": 4
+            }
+          ],
+          "globalClamp": {
+            "min": 1,
+            "max": 1000000
+          },
+          "rounding": "floor",
+          "preserveZero": false,
+          "minimumPositive": null,
+          "minimumBaseRatio": null
         }
       },
       "order": [
@@ -1123,7 +1171,31 @@
       ],
       "depthTemplates": []
     },
-    "attributeTotalCap": 36
+    "attributeTotalCap": 36,
+    "combatStats": {
+      "playerEnabled": true,
+      "allowedTemplateIds": [
+        "growth.template.neutral"
+      ],
+      "stamina": {
+        "attributeId": "growth.attribute.constitution",
+        "baseline": 0,
+        "coefficient": 2,
+        "denominator": 1,
+        "rounding": "floor",
+        "min": 1,
+        "max": 1000000
+      },
+      "poise": {
+        "attributeId": "growth.attribute.will",
+        "baseline": 0,
+        "coefficient": 1,
+        "denominator": 1,
+        "rounding": "floor",
+        "min": 1,
+        "max": 1000000
+      }
+    }
   },
   "definitions": [
     {

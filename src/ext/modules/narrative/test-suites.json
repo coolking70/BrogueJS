@@ -8,7 +8,8 @@
     "tests/narrative_rewards.test.ts",
     "tests/narrative_dialogue.test.ts",
     "tests/narrative_persistence.test.ts",
-    "tests/narrative_content.test.ts"
+    "tests/narrative_content.test.ts",
+    "tests/narrative_combat.test.ts"
   ],
   "gen": [],
   "drift": []

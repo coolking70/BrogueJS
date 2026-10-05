@@ -1,4 +1,5 @@
 import { canonical } from '../../json';
+import type { CommittedFactAllocation } from '../../types';
 import { NarrativeError } from './errors';
 import { assertNarrativeJson, freezeNarrative, assertLoadedNarrativePack } from './schema';
 import { createNarrativeBudget, evaluateNarrativeCondition, validateNarrativeFact, queryNarrativePlayer, requireNarrativeSynchronous,
@@ -15,6 +16,8 @@ export type NarrativeRewardPreparation = { readonly status: 'ready' }
     | { readonly status: 'skipped'; readonly reason: 'absent' | 'disabled' | 'unsupported-key' };
 export interface NarrativePlanOptions {
     readonly queryOptional?: NarrativeQuery;
+    /** Reserved by the foundation before any consumer commits; commands omit it. */
+    readonly factAllocation?: Readonly<CommittedFactAllocation>;
     /** Pure preflight: ready is not an applied receipt. */
     readonly prepareReward?: (intent: Readonly<NarrativeRewardIntent>) => NarrativeRewardPreparation;
 }
@@ -51,11 +54,18 @@ function buildPlan(pack: NarrativePack, rawState: unknown, rawFact: unknown, eff
     const state = validateNarrativeState(rawState, pack), base = canonical(state), root = validateNarrativeFact(rawFact, pack);
     assertNarrativeJson(effects, '$effects');
     const plannedEffects = freezeNarrative(structuredClone(effects));
+    if (root.kind === 'combat-event' && plannedEffects.some(effect => effect.kind !== 'set-flag' && effect.kind !== 'add-counter'))
+        throw new NarrativeError('INVALID_TRIGGER', '$effects');
     const providers = { queryOptional: options.queryOptional, prepareReward: options.prepareReward };
     if (providers.queryOptional !== undefined && typeof providers.queryOptional !== 'function' || providers.prepareReward !== undefined && typeof providers.prepareReward !== 'function') throw new NarrativeError('INVALID_OPTIONAL_RESULT', '$optional');
     const knownEffects = declaredEffects(pack);
     plannedEffects.forEach((effect, index) => { if (!knownEffects.has(canonical(effect))) throw new NarrativeError('UNKNOWN_REFERENCE', `$effects[${index}]`); });
     if (root.factId < state.lastFactId) throw new NarrativeError('INVALID_FACT', '$fact.factId');
+    const allocation = options.factAllocation;
+    if (allocation && (!narrativeInteger(allocation.firstDerivedFactId, root.factId + 1)
+        || !narrativeInteger(allocation.maxDerivedFacts, 0, pack.config.limits.eventsPerCommand)
+        || !narrativeInteger(allocation.firstDerivedFactId + allocation.maxDerivedFacts, 1)))
+        throw new NarrativeError('INVALID_FACT', '$allocation');
     const baseRevision = state.revision;
     const usage = createNarrativeBudget(), messages: { textKey: string; factId: number; effectIndex: number }[] = [], events: NarrativeFact[] = [];
     const triggered: { triggerId: string; factId: number }[] = [], rewardIntents: (NarrativeRewardIntent & { status: 'prepared' })[] = [];
@@ -79,7 +89,7 @@ function buildPlan(pack: NarrativePack, rawState: unknown, rawFact: unknown, eff
         return evaluateNarrativeCondition(condition, context, usage, path);
     }
     function enqueue(fact: NarrativeFact, derived = true): void {
-        if (derived && ++usage.events > pack.config.limits.eventsPerCommand) throw new NarrativeError('EVENT_LIMIT', '$plan.events');
+        if (derived && ++usage.events > (allocation?.maxDerivedFacts ?? pack.config.limits.eventsPerCommand)) throw new NarrativeError('EVENT_LIMIT', '$plan.events');
         events.push(freezeNarrative(fact));
         state.lastFactId = fact.factId;
     }
@@ -111,11 +121,13 @@ function buildPlan(pack: NarrativePack, rawState: unknown, rawFact: unknown, eff
                     }
                     break;
                 case 'message': messages.push({ textKey: effect.textKey, factId: fact.factId, effectIndex: usage.effects - 1 }); break;
-                case 'emit-story':
+                case 'emit-story': {
                     if (!pack.storyEvents.some(event => event.id === effect.eventId)) throw new NarrativeError('UNKNOWN_REFERENCE', `${effectPath}.eventId`);
-                    if (!narrativeInteger(state.lastFactId + 1, 1)) throw new NarrativeError('INVALID_FACT', '$fact.factId');
-                    enqueue({ factId: state.lastFactId + 1, depth: fact.depth, turn: fact.turn, kind: 'story', eventId: effect.eventId });
+                    const factId = allocation ? allocation.firstDerivedFactId + usage.events : state.lastFactId + 1;
+                    if (!narrativeInteger(factId, 1)) throw new NarrativeError('INVALID_FACT', '$fact.factId');
+                    enqueue({ factId, depth: fact.depth, turn: fact.turn, kind: 'story', eventId: effect.eventId });
                     break;
+                }
                 case 'optional-reward': {
                     if (state.rewardReceipts.some(receipt => receipt.id === effect.receiptId) || rewardIntents.some(intent => intent.receiptId === effect.receiptId)) break;
                     // Prepared receipts also reserve capacity, although they cannot yet become persistent state.

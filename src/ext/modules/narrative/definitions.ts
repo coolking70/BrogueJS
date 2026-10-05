@@ -6,7 +6,7 @@ import locale from './locales/zh_CN.json';
 import { loadNarrativePack } from './schema';
 import type { NarrativePack } from './types';
 
-export const NARRATIVE_VERSION = '1.3.0';
+export const NARRATIVE_VERSION = '1.4.0';
 /** Mechanical data alone identifies replay rules. Display assets have their own
  * version and do not silently change the simulation's identity. */
 export function getNarrativePackIdentity(): ExtensionRulesIdentity {

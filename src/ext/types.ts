@@ -24,17 +24,44 @@ export interface ExtensionModuleView {
 }
 export interface ExtensionRulesIdentity { schema: number; version: string; fingerprint: string }
 export interface ExtensionVersion { id: string; version: string; rules?: ExtensionRulesIdentity }
-export interface ExtensionManifest { schema: 1; foundation?: 4; modules: ExtensionVersion[] }
+export interface ExtensionManifest { schema: 1; foundation?: 5; modules: ExtensionVersion[] }
 export interface ExtensionSnapshot {
     manifest: ExtensionManifest;
     modules: Record<string, Json>;
     /** Run-local creature ID -> module-qualified component ID -> JSON. */
     components: Record<string, Record<string, Json>>;
-    foundation: { version: 4; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
+    foundation: { version: 5; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
 }
 /** Native facts wait for run initialization; sequence numbers are reserved on commit. */
 export interface PendingStoryFact { kind: 'entered-level'; depth: number; firstVisit: boolean; turn: number }
 export interface StoryFact extends PendingStoryFact { factId: number }
+/** Public, committed combat results; no positions, hidden names or future plans. */
+export type CombatEventKind = 'attack-resolved' | 'staggered' | 'parried' | 'rest-completed';
+export interface CombatEventActor {
+    entityId: number; role: 'player' | 'ally' | 'hostile' | 'neutral'; tags: readonly string[];
+    partId: string | null; generation: number | null;
+}
+export interface CombatEventPayload {
+    eventKind: CombatEventKind; actionId: number; sourceSubactionId: number | null; segmentIndex: number | null;
+    resolutionId: number | null; bonfireId: number | null; visit: number | null; hitCount: number; hpLost: number;
+}
+export interface CombatEventFact extends CombatEventPayload {
+    kind: 'combat-event'; factId: number; depth: number; turn: number; actor: CombatEventActor;
+}
+export type CommittedFact = StoryFact | CombatEventFact;
+export interface CommittedFactAllocation { readonly firstDerivedFactId: number; readonly maxDerivedFacts: number }
+export interface CommittedFactPrepareContext {
+    readonly playerId: number; readonly state: ReadonlyJson;
+    queryOptional(capability: string, input: Json): OptionalQueryResult;
+    prepareOptionalReward(capability: string, rewardId: string, instanceId: string): OptionalRewardPrepareResult;
+}
+export interface CommittedFactConsumer {
+    /** Absent means every kind; declarations avoid work for unobserved facts. */
+    readonly eventKinds?: readonly CombatEventKind[];
+    readonly maxDerivedFacts: number;
+    prepare(fact: Readonly<CommittedFact>, allocation: Readonly<CommittedFactAllocation>, context: CommittedFactPrepareContext): unknown;
+    commit(plan: unknown, context: ExtensionContext): void;
+}
 export interface DeathFact { creature: CreatureView; origin: EffectOrigin | null; administrative: boolean; }
 export interface GenerationToken { readonly label: string; }
 export type RuleSet = 'classic' | 'extended';
@@ -66,6 +93,16 @@ export interface OptionalQueryContext {
 export interface OptionalQueryProvider {
     accepts(input: ReadonlyJson): boolean;
     query(input: ReadonlyJson, context: OptionalQueryContext): Json;
+    validate(value: unknown): value is Json;
+}
+/** Engine resolves this actor before granting only the provider's own components. */
+export interface OptionalActorQueryContext {
+    readonly playerId: number; readonly actor: Readonly<ActorFacts>; readonly state: ReadonlyJson;
+    getActorComponent(name: string): ReadonlyJson | undefined;
+}
+export interface OptionalActorQueryProvider {
+    accepts(input: ReadonlyJson): boolean;
+    query(input: ReadonlyJson, context: OptionalActorQueryContext): Json;
     validate(value: unknown): value is Json;
 }
 export type OptionalQueryResult = { readonly status: 'unavailable'; readonly reason: 'absent' | 'unsupported-input' }
@@ -216,6 +253,8 @@ export interface ExtensionCreationResources { readonly maxHp: number; readonly s
 export interface ExtensionModule extends ExtensionVersion {
     dependencies?: readonly string[];
     readonly optionalRewards?: Readonly<Record<string, OptionalRewardProvider>>;
+    readonly optionalActorQueries?: Readonly<Record<string, OptionalActorQueryProvider>>;
+    readonly committedFacts?: Readonly<Record<string, CommittedFactConsumer>>;
     readonly optionalQueries?: Readonly<Record<string, OptionalQueryProvider>>;
     readonly optionalPartBreaks?: Readonly<Partial<Record<'combat.part-break.v1', import('./partBreak').PartBreakProvider>>>;
     readonly view?: ExtensionViewDescriptor;

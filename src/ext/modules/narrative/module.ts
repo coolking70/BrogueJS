@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import type { ExtensionModule, Json } from '../../types';
+import type { CommittedFactConsumer, ExtensionModule, Json } from '../../types';
 import { extensionDataFingerprint } from '../../fingerprint';
 import { initialNarrativeState, isNarrativeState, validateNarrativeState, type NarrativeState } from './state';
 import type { NarrativePack } from './types';
@@ -8,7 +8,7 @@ import { enterNarrativeLevel } from './placement';
 import { narrativeCommandInput, narrativeNextRevision, planNarrativeCommand } from './sessions';
 import { projectNarrativeView } from './view';
 import { commitNarrativeStoryPlan } from './commit';
-import { planNarrativeFact, stagedNarrativeState } from './effects';
+import { planNarrativeFact, stagedNarrativeState, type NarrativePlan } from './effects';
 import { narrativeActiveWorldValid, validateNarrativeRecording, validateNarrativeWorldBindings } from './validation';
 
 /** Plans every effect first, then commits optional rewards and local state in one foundation transaction. */
@@ -21,6 +21,21 @@ export function createNarrativeModuleFromPack(pack: NarrativePack): ExtensionMod
         context.interactionGate(plan.nextState.active ? { targetEntityId: plan.nextState.active.targetEntityId, sessionId: plan.nextState.active.sessionId } : null);
         for (const message of plan.messages) context.message(i18next.t(message.textKey));
     };
+    const consumer = (kind: 'entered-level' | 'combat-event', maxDerivedFacts: number): CommittedFactConsumer => ({
+        maxDerivedFacts,
+        ...(kind==='combat-event'?{eventKinds:[...new Set(pack.triggers.flatMap(trigger=>trigger.on.kind==='combat-event'?[trigger.on.eventKind]:[]))]}:{}),
+        prepare(event, allocation, context) {
+            if (event.kind !== kind) throw new Error('Invalid narrative committed fact capability');
+            return planNarrativeFact(pack, context.state, event, { queryOptional: context.queryOptional, factAllocation: allocation,
+                prepareReward: intent => context.prepareOptionalReward(intent.capability, intent.rewardId, intent.instanceKey) });
+        },
+        commit(rawPlan, context) {
+            const plan = rawPlan as NarrativePlan;
+            const next = stagedNarrativeState(pack, context.state, plan);
+            commitNarrativeStoryPlan(pack, plan, next, context, true);
+            for (const message of plan.messages) context.message(i18next.t(message.textKey));
+        },
+    });
     return {
         id: 'narrative', version: pack.moduleVersion,
         rules: { schema: pack.schema, version: pack.rulesVersion, fingerprint: extensionDataFingerprint(pack) },
@@ -44,14 +59,13 @@ export function createNarrativeModuleFromPack(pack: NarrativePack): ExtensionMod
                 return true;
             } catch { return false; }
         },
+        committedFacts: {
+            'foundation.story.v1': consumer('entered-level', pack.triggers.some(trigger => trigger.on.kind === 'entered-level'
+                && trigger.effects.some(effect => effect.kind === 'emit-story')) ? pack.config.limits.eventsPerCommand : 0),
+            ...(pack.triggers.some(trigger => trigger.on.kind === 'combat-event') ? { 'combat.event.v1': consumer('combat-event', 0) } : {}),
+        },
         hooks: {
             enteredLevel: (event, context) => enterNarrativeLevel(pack, event, context),
-            storyFact(event, context) {
-                const plan = planNarrativeFact(pack, context.state, event, { queryOptional: context.queryOptional,
-                    prepareReward: intent => context.prepareOptionalReward(intent.capability, intent.rewardId, intent.instanceKey) });
-                commitNarrativeStoryPlan(pack, plan, stagedNarrativeState(pack, context.state, plan), context);
-                for (const message of plan.messages) context.message(i18next.t(message.textKey));
-            },
             interactionClosed(event, context) {
                 if (event.owner !== 'narrative') return;
                 const state = validateNarrativeState(context.state, pack);

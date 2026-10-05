@@ -45,13 +45,19 @@ export interface NpcDefinition {
     readonly presence: 'stationary-interactable'; readonly interactionDistance: number;
     readonly placements: readonly NpcPlacement[];
 }
+export type NarrativeCombatEventKind = 'attack-resolved' | 'staggered' | 'parried' | 'rest-completed';
+export type NarrativeCombatActorRole = 'player' | 'ally' | 'hostile' | 'neutral';
 export type TriggerEvent =
     | { readonly kind: 'entered-level' }
     | { readonly kind: 'npc-interacted'; readonly npcId: Id }
     | { readonly kind: 'dialogue-choice'; readonly dialogueId: Id; readonly choiceId: Id }
-    | { readonly kind: 'story'; readonly eventId: Id };
+    | { readonly kind: 'story'; readonly eventId: Id }
+    | { readonly kind: 'combat-event'; readonly eventKind: NarrativeCombatEventKind;
+        readonly actorRole: NarrativeCombatActorRole | 'any'; readonly actorTags: readonly Id[] };
 export interface Trigger {
     readonly id: Id; readonly on: TriggerEvent; readonly priority: number; readonly condition: Condition;
+    /** Required only for combat subscriptions; unique across all receipt-bearing definitions. */
+    readonly receiptId?: Id;
     readonly repeat: { readonly kind: 'once-per-run' } | { readonly kind: 'once-per-depth' }
         | { readonly kind: 'bounded'; readonly maxFirings: number; readonly cooldownTurns: number };
     readonly effects: readonly Effect[];
@@ -70,8 +76,8 @@ export interface NarrativeLimits {
     readonly maxJournalEntries: number; readonly maxReceipts: number;
 }
 export interface NarrativePack {
-    readonly schema: 1; readonly moduleId: 'narrative'; readonly moduleVersion: '1.3.0'; readonly rulesVersion: '1.3.0';
-    readonly stateVersion: 3; readonly inputVersion: 2;
+    readonly schema: 1; readonly moduleId: 'narrative'; readonly moduleVersion: '1.4.0'; readonly rulesVersion: '1.4.0';
+    readonly stateVersion: 4; readonly inputVersion: 2;
     readonly config: { readonly timePolicy: 'free-frozen'; readonly closePolicy: 'close-session'; readonly limits: NarrativeLimits };
     readonly flags: readonly FlagDefinition[]; readonly counters: readonly CounterDefinition[];
     readonly npcs: readonly NpcDefinition[]; readonly dialogues: readonly DialogueDefinition[];

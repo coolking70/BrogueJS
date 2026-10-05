@@ -1,5 +1,6 @@
 {
   "test": [
+    "tests/combat_adapters.test.ts",
     "tests/combat_animated_defense.test.ts",
     "tests/combat_bonfire_definitions.test.ts",
     "tests/combat_bonfire_runtime.test.ts",

@@ -21,7 +21,9 @@ export function projectCombatView(value?: ReadonlyJson, definitions?: ActorAttac
     const profile=definitions.profiles.find(profile=>profile.id===definitions.playerProfileId)!;
     const policy=definitions.resourcePolicies.find(policy=>policy.id===profile.resourcePolicyId)!;
     const actor=state.actors.find(actor=>actor.actorId===playerId);
-    const stamina=actor?.stamina??policy.initialStamina;
+    const capacity=actor?.combatStats?.staminaCapacity??policy.staminaCapacity;
+    const poiseCapacity=actor?.combatStats?.poiseCapacity??policy.poiseCapacity;
+    const stamina=Math.min(actor?.stamina??policy.initialStamina,capacity);
     const busy=state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===playerId)
         || (actor?.dodgeRecoveryRemainingTicks??0)>0 || (actor?.parryRecoveryRemainingTicks??0)>0 || (actor?.staggerRemainingTicks??0)>0;
     const availability=(cost:number)=>({cost,canUse:!busy&&stamina>=cost,
@@ -35,9 +37,9 @@ export function projectCombatView(value?: ReadonlyJson, definitions?: ActorAttac
             return entry?[{entityId:entity.id,nameKey:entry.nameKey,descriptionKey:entry.descriptionKey,restTicks:entry.restTicks,canUse:!reason,
                 ...(reason?{unavailableKey:reasonKeys[reason]}:{})}]:[];}),
         rest:rest&&definition?{bonfireId:rest.bonfireId,remainingTicks:state.scheduler.bundles.find(bundle=>bundle.actionId===rest.actionId)?.subactions[0]?.phaseRemainingTicks??0,status:rest.interrupted?'interrupted':'resting'}:null,
-        resources:{stamina,capacity:policy.staminaCapacity,regenDelayRemaining:actor?.regenDelayRemaining??0,
+        resources:{stamina,capacity,regenDelayRemaining:actor?.regenDelayRemaining??0,
             dodgeRemainingTicks:actor?.dodgeRemainingTicks??0,dodgeRecoveryRemainingTicks:actor?.dodgeRecoveryRemainingTicks??0,
-            poise:actor?.poise??policy.poiseCapacity,poiseCapacity:policy.poiseCapacity,poiseRecoveryDelayRemaining:actor?.poiseRecoveryDelayRemaining??0,
+            poise:Math.min(actor?.poise??policy.poiseCapacity,poiseCapacity),poiseCapacity,poiseRecoveryDelayRemaining:actor?.poiseRecoveryDelayRemaining??0,
             parryRemainingTicks:actor?.parryRemainingTicks??0,parryRecoveryRemainingTicks:actor?.parryRecoveryRemainingTicks??0,
             staggerRemainingTicks:Math.max(actor?.staggerRemainingTicks??0,...state.scheduler.bundles.filter(bundle=>bundle.decisionOwnerId===playerId).flatMap(bundle=>bundle.subactions.map(child=>child.phases[child.phaseIndex]?.kind==='break-recovery'?child.phaseRemainingTicks:0)))},
         actions:[...profile.attackIds.map(id=>{

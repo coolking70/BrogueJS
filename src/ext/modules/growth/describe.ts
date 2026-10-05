@@ -71,8 +71,11 @@ export function describeGrowthPortConstraints(pack: GrowthPack, port: GrowthRule
     };
     const result: string[] = [], budgetBounds = bounds(budget.min, budget.max, additive);
     if (budgetBounds) result.push(describeText('shared_budget', { ports: siblings, bounds: budgetBounds }));
-    const minimum = port === 'focusCapacity' ? Math.max(config.globalClamp.min, pack.config.focus.min) : config.globalClamp.min;
-    const maximum = port === 'focusCapacity' ? Math.min(config.globalClamp.max, pack.config.focus.cap) : config.globalClamp.max;
+    const capacityBounds = port === 'focusCapacity' ? {min:pack.config.focus.min,max:pack.config.focus.cap}
+        : port === 'staminaCapacity' ? pack.config.combatStats?.stamina
+        : port === 'poiseCapacity' ? pack.config.combatStats?.poise : undefined;
+    const minimum = capacityBounds ? Math.max(config.globalClamp.min,capacityBounds.min) : config.globalClamp.min;
+    const maximum = capacityBounds ? Math.min(config.globalClamp.max,capacityBounds.max) : config.globalClamp.max;
     const finalBounds = bounds(minimum, maximum, final);
     if (finalBounds) result.push(describeText(port === 'hitChance' ? 'probability_bounds' : 'final_bounds', { port: i18next.t(`ext.growth.view.port.${port}`), bounds: finalBounds }));
     if (config.minimumBaseRatio !== null) result.push(describeText('base_ratio', { port: i18next.t(`ext.growth.view.port.${port}`), percent: config.minimumBaseRatio * 100 }));

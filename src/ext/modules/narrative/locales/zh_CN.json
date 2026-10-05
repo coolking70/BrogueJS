@@ -103,5 +103,7 @@
   "ext.narrative.journal.wick.keep.title": "听见阿禾",
   "ext.narrative.journal.wick.keep.body": "我记下灯芯里留下的名字：阿禾。听烬人没有替她续写故事。",
   "ext.narrative.journal.wick.release.title": "空下来的灯",
-  "ext.narrative.journal.wick.release.body": "听烬人让灰烬落入石缝。我们没有替陌生人续写等待。"
+  "ext.narrative.journal.wick.release.body": "听烬人让灰烬落入石缝。我们没有替陌生人续写等待。",
+  "ext.narrative.choice.wick.warm_ashes": "我在篝火旁歇过，灰烬还有余温",
+  "ext.narrative.dialogue.wick.warm_ashes": "听烬人看了看你袖口的灰。“你也知道了，火熄下去以后，石头还记得热。歇一歇不等于停在原地。带着这点暖意继续走吧。”"
 }

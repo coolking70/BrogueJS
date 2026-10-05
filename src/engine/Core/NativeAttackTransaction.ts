@@ -38,13 +38,14 @@ function scoped<T>(value: Credential, work: () => T): T {
 export function withNativeAttackAction<T>(game: Game, actor: Creature, work: () => T): T {
     bindNativeAttackWorld(game);
     if (current(game, actor)) return synchronous(work);
-    return scoped({ game, actor, costOwner: 'native', charged: false, defenseOwner: 'native' }, () => {
+    const commit = () => scoped({ game, actor, costOwner: 'native', charged: false, defenseOwner: 'native' }, () => {
         const result = synchronous(work);
         // Native epilogues may assign their CE recovery after a parry stagger.
         // Reconcile once after the entire action, never inside prepaid phases.
         reconcileActorNativeRecovery(game, actor.id);
         return result;
     });
+    return game.extensionRuntime?.actorActionBinding() ? game.extensionRuntime.withCommittedFacts(commit,['staggered','parried']) : commit();
 }
 export function withPrepaidNativeAttack<T>(scope: ActorActionScope, game: Game, actor: Creature, work: () => T, poiseDamage?: number): T {
     assertActorActionScope(scope, game, actor.id, actor === game.player ? 'player-command' : 'npc-scheduler');

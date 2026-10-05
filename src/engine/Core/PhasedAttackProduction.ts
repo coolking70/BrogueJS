@@ -22,9 +22,20 @@ import { advanceActorResources, chargeActorResources, initialActorResources } fr
 import { bindNativeAttackWorld } from './NativeAttackTransaction';
 import type { ActorResourcePhase } from '../../ext/actorActions';
 import { TerrainType } from '../Map/Grid';
+import { resolveCombatStats, combatCapacityPolicy } from '../../ext/combatStats';
+import type { ActorCombatStats } from '../../ext/actorActions';
+import type { Json, OptionalQueryResult, CombatEventPayload } from '../../ext/types';
 
 type Session={state:ProductionActorAttackState;definitions:ActorAttackDefinitions;scheduler:ActorActionScheduler;runtime:object;moduleId:string;sessionRevision:number;defenseSources:Map<number,{actor:Creature;revision:number;depth:number}>};
 const sessions=new WeakMap<Game,Session>();
+function combatEvent(game:Game,source:Creature,eventKind:CombatEventPayload['eventKind'],detail:Partial<Omit<CombatEventPayload,'eventKind'>>={}):void {
+    game.extensionRuntime?.commitCombatEvent(source,{eventKind,actionId:0,sourceSubactionId:null,segmentIndex:null,
+        resolutionId:null,bonfireId:null,visit:null,hitCount:0,hpLost:0,...detail});
+}
+function committed<T>(game:Game,work:()=>T,eventKinds:readonly CombatEventPayload['eventKind'][]):T {
+    return game.extensionRuntime&&sessions.has(game)?game.extensionRuntime.withCommittedFacts(work,eventKinds):work();
+}
+
 /** Body rollback retains live defense bindings, independently of the saved ledger. */
 export function checkpointPhasedAttackSources(game: Game): () => void {
     const session = sessions.get(game); if (!session) return () => {};
@@ -65,19 +76,55 @@ function profileId(session:Session,game:Game,source:Creature):string|undefined {
         session.definitions.nativeProfiles.find(binding=>binding.monsterId===source.typeId)?.profileId:undefined;
 }
 /** Resource policy is independent of whether the actor has a phased attack profile. */
-function resourcesFor(game:Game, session:Session, source:Creature) {
-    const profile=session.definitions.profiles.find(p=>p.id===(profileId(session,game,source)??session.definitions.playerProfileId))!;
-    const policy=session.definitions.resourcePolicies.find(p=>p.id===profile.resourcePolicyId)!;
-    const row=session.state.actors.find(a=>a.actorId===source.id);
-    return {profile,policy,row};
+function capacities(game:Game,source:Creature,base:ActorResourcePolicy):ActorCombatStats|undefined {
+    const result=game.extensionRuntime!.queryOptionalActor('growth.combat-stats.v1',source,
+        {v:1,baseStaminaCapacity:base.staminaCapacity,basePoiseCapacity:base.poiseCapacity});
+    return resolveCombatStats(result);
 }
-function initialResource(actorId:number,profileId:string,policy:ActorResourcePolicy):ProductionActorAttackState['actors'][number] {
-    return {actorId,profileId,...initialActorResources(policy)};
+function resourcesFor(game:Game, session:Session, source:Creature, pinnedProfileId?:string) {
+    const profile=session.definitions.profiles.find(p=>p.id===(pinnedProfileId??profileId(session,game,source)??session.definitions.playerProfileId))!;
+    const base=session.definitions.resourcePolicies.find(p=>p.id===profile.resourcePolicyId)!;
+    const stats=capacities(game,source,base),policy=combatCapacityPolicy(base,stats);
+    const row=session.state.actors.find(a=>a.actorId===source.id);
+    return {profile,base,policy,stats,row};
+}
+/** First materialization retains the template's initial absolute balances. */
+function initialResource(actorId:number,profileId:string,base:ActorResourcePolicy,stats?:ActorCombatStats):ProductionActorAttackState['actors'][number] {
+    const policy=combatCapacityPolicy(base,stats),result={actorId,profileId,...initialActorResources(base)};
+    result.stamina=Math.min(result.stamina,policy.staminaCapacity);result.poise=Math.min(result.poise,policy.poiseCapacity);
+    return {...result,...(stats?{combatStats:stats}:{})};
+}
+function synchronizeResource(row:ProductionActorAttackState['actors'][number],profile:string,policy:ActorResourcePolicy,stats?:ActorCombatStats):boolean {
+    const before=canonical(row);
+    if(row.profileId!==profile){
+        row.profileId=profile;row.regenRemainder=0;row.regenDelayRemaining=Math.min(row.regenDelayRemaining,policy.regenDelayTicks);
+        row.poiseRecoveryRemainder=0;row.poiseRecoveryDelayRemaining=Math.min(row.poiseRecoveryDelayRemaining,policy.poiseRecoveryDelayTicks);
+    }
+    row.stamina=Math.min(row.stamina,policy.staminaCapacity);row.poise=Math.min(row.poise,policy.poiseCapacity);
+    if(stats)row.combatStats={...stats};else delete row.combatStats;
+    // Capacity-only changes retain delays, fractional balances and accepted
+    // windows. A later real resource tick/payment owns normal full-pool clearing.
+    return canonical(row)!==before;
+}
+/** Candidate-load verification: a decoded, trusted actor world supplies the
+ * query. No attach/load/query may normalize or fill a saved resource pool. */
+export function validateActorCombatCapacities(state:ProductionActorAttackState,definitions:ActorAttackDefinitions,
+    creatures:readonly Creature[],query:(actor:Creature,input:Json)=>OptionalQueryResult):void {
+    for(const row of state.actors){
+        const source=creatures.find(actor=>actor.id===row.actorId);
+        if(!source)throw new Error('Unknown combat resource actor');
+        const profile=definitions.profiles.find(profile=>profile.id===row.profileId)!;
+        const base=definitions.resourcePolicies.find(policy=>policy.id===profile.resourcePolicyId)!;
+        const stats=resolveCombatStats(query(source,{v:1,baseStaminaCapacity:base.staminaCapacity,basePoiseCapacity:base.poiseCapacity}));
+        if(canonical(row.combatStats)!==canonical(stats))throw new Error('Stale combat capacity revision');
+        const policy=combatCapacityPolicy(base,stats);
+        if(row.stamina>policy.staminaCapacity||row.poise>policy.poiseCapacity)throw new Error('Invalid effective combat resource balance');
+    }
 }
 function pay(game:Game,session:Session,source:Creature,cost:number):boolean {
-    const {profile,policy,row}=resourcesFor(game,session,source);
+    const {profile,base,policy,stats,row}=resourcesFor(game,session,source);
     if(!row&&session.state.actors.length>=4096)return false;
-    const resource=row??initialResource(source.id,profile.id,policy);
+    const resource=row??initialResource(source.id,profile.id,base,stats);
     // A form can change during a native turn, before settlement/GC. Normalize
     // the old pool against the new policy at this same payment commit.
     const input=resource.profileId===profile.id?resource:{...resource,stamina:Math.min(resource.stamina,policy.staminaCapacity),
@@ -85,6 +132,7 @@ function pay(game:Game,session:Session,source:Creature,cost:number):boolean {
         poise:Math.min(resource.poise,policy.poiseCapacity),poiseRecoveryRemainder:0,poiseRecoveryDelayRemaining:Math.min(resource.poiseRecoveryDelayRemaining,policy.poiseRecoveryDelayTicks)};
     const next=chargeActorResources(input,policy,cost);if(!next)return false;
     Object.assign(resource,next);resource.profileId=profile.id;
+    if(stats)resource.combatStats={...stats};else delete resource.combatStats;
     if(!row){session.state.actors.push(resource);session.state.actors.sort((a,b)=>a.actorId-b.actorId);}
     bumpRevision(session.state);return true;
 }
@@ -108,27 +156,32 @@ export function isActorDodgeProtected(game:Game,actorId:number):boolean {
         &&!!bound&&bound.actor===source&&bound.depth===game.depth&&bound.revision===actorSourceRevision(source);
 }
 function advanceResources(game:Game,session:Session,delta:number):void {
+    const resolved=new Map<Creature,ReturnType<typeof resourcesFor>>([game.player,...game.monsters].filter(source=>source.hp>0).map(source=>{
+        const row=session.state.actors.find(row=>row.actorId===source.id);
+        const busy=session.state.scheduler.bundles.some(bundle=>bundle.depth===game.depth&&(bundle.decisionOwnerId===source.id
+            ||bundle.subactions.some(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length)));
+        return [source,resourcesFor(game,session,source,busy?row?.profileId:undefined)] as const;
+    }));
+    const missing=[...resolved].filter(([source,current])=>!(source instanceof Monster&&(source.isDormant||source.deathProcessed))
+        &&!current.row&&(current.policy.initialStamina<current.policy.staminaCapacity||!!current.stats)).length;
+    if(session.state.actors.length+missing>4096)throw new Error('Actor resource budget exhausted');
     // An implicit initial pool is equivalent to a stored pool. Materialize it
     // when elapsed recovery can change it, including an initially empty NPC.
     for(const source of [game.player,...game.monsters]){
         if(source.hp<=0||(source instanceof Monster&&(source.isDormant||source.deathProcessed)))continue;
-        const {profile,policy,row}=resourcesFor(game,session,source);
-        if(!row&&policy.initialStamina<policy.staminaCapacity){
+        const {profile,base,policy,stats,row}=resolved.get(source)!;
+        if(!row&&(policy.initialStamina<policy.staminaCapacity||!!stats)){
             if(session.state.actors.length>=4096)throw new Error('Actor resource budget exhausted');
-            session.state.actors.push(initialResource(source.id,profile.id,policy));
+            session.state.actors.push(initialResource(source.id,profile.id,base,stats));
         }
     }
     session.state.actors.sort((a,b)=>a.actorId-b.actorId);
     for(const row of session.state.actors){
         const source=actor(game,row.actorId);if(!source||source.hp<=0)continue; // Cached layers freeze.
         const bundle=session.state.scheduler.bundles.find(b=>(b.decisionOwnerId===source.id||b.subactions.some(s=>s.sourceEntityId===source.id&&s.phaseIndex<s.phases.length))&&b.depth===game.depth);
-        const current=resourcesFor(game,session,source);
-        if(!bundle&&row.profileId!==current.profile.id){
-            row.profileId=current.profile.id;row.stamina=Math.min(row.stamina,current.policy.staminaCapacity);
-            row.regenRemainder=0;row.regenDelayRemaining=Math.min(row.regenDelayRemaining,current.policy.regenDelayTicks);
-            row.poise=Math.min(row.poise,current.policy.poiseCapacity);row.poiseRecoveryRemainder=0;row.poiseRecoveryDelayRemaining=Math.min(row.poiseRecoveryDelayRemaining,current.policy.poiseRecoveryDelayTicks);
-        }
-        const policy=session.definitions.resourcePolicies.find(p=>p.id===session.definitions.profiles.find(p=>p.id===row.profileId)!.resourcePolicyId)!;
+        const current=resolved.get(source)!;
+        synchronizeResource(row,current.profile.id,current.policy,current.stats);
+        const policy=current.policy;
         const phases:ActorResourcePhase[]=bundle?bundle.subactions.filter(s=>s.sourceEntityId===source.id||bundle.decisionOwnerId===source.id).flatMap(s=>s.phases[s.phaseIndex]?[s.phases[s.phaseIndex]!.kind]:[]):[];
         if(!defenseSourceValid(game,session,source)){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}
         // Native status/catch-up clocks may exceed dodge recovery. Split the
@@ -149,7 +202,7 @@ function prepare(game:Game,source:Creature,attackId:string,facing:ActorAttackFac
     const profile=session.definitions.profiles.find(p=>p.id===profileId(session,game,source));
     const attack=session.definitions.attacks.find(a=>a.id===attackId);
     if (!profile||!attack||!profile.attackIds.includes(attackId)||!facings.includes(facing)||!nativeZoneAttackAvailable(source,attackId)) return null;
-    const policy=session.definitions.resourcePolicies.find(p=>p.id===profile.resourcePolicyId)!;
+    const {policy}=resourcesFor(game,session,source);
     const resource=session.state.actors.find(a=>a.actorId===source.id);
     if (Math.min(resource?.stamina??policy.initialStamina,policy.staminaCapacity)<attack.cost || (!resource && session.state.actors.length>=4096)) return null;
     const shape=shapeFor(attack,0,facing),cells=cellsFor(game,source,shape);
@@ -164,7 +217,7 @@ function prepare(game:Game,source:Creature,attackId:string,facing:ActorAttackFac
     }
     return deepFreeze({moduleId:session.moduleId,sessionRevision:session.sessionRevision,sourceEntityId:source.id,attackId,facing,revision:session.state.revision,
         sourceVersion:sourceFootprintVersion(game.spatialOf(source)),profileId:profile.id,cost:attack.cost,shape,cells,
-        facts:canonical({resource:resource??null,weapon:game.player.equippedWeapon,armor:game.player.equippedArmor,depth:game.depth,grid:game.grid.width,sourceHp:source.hp,status:source.statusDurations,
+        facts:canonical({resource:resource??null,capacities:capacities(game,source,session.definitions.resourcePolicies.find(p=>p.id===profile.resourcePolicyId)!)??null,weapon:game.player.equippedWeapon,armor:game.player.equippedArmor,depth:game.depth,grid:game.grid.width,sourceHp:source.hp,status:source.statusDurations,
             actors:[game.player,...game.monsters].map(a=>({id:a.id,form:a instanceof Monster?a.typeId:'player',hp:a.hp,loc:a.loc,sourceRevision:actorSourceRevision(a),status:a.statusDurations,spatial:sourceFootprintVersion(game.spatialOf(a)),...(a.spatial?.zoneState?{zones:a.spatial.zoneState}:{})}))}),
         risks:approvedRisks.flatMap(target=>target.risks),approvedRisks});
 }
@@ -223,7 +276,7 @@ function commitBody(game:Game,core:Monster,plans:readonly PhasedAttackPlan[],sco
                 shape:structuredClone(plan.shape),lockedCells:structuredClone(plan.cells),approvedRisks:[]};})};
     const before=structuredClone(state),cooldowns=group.members.map(s=>s.readyInTicks);
     try {
-        if(!own.row)state.actors.push(initialResource(core.id,own.profile.id,own.policy));
+        if(!own.row)state.actors.push(initialResource(core.id,own.profile.id,own.base,own.stats));
         for(const plan of plans)if(!pay(game,session,actor(game,plan.sourceEntityId)!,plan.cost))throw new Error('Insufficient source stamina');
         state.actors.sort((a,b)=>a.actorId-b.actorId);
         state.nextActionId++;state.actions.push(metadata);
@@ -255,6 +308,9 @@ function selectBody(game:Game,session:Session,core:Monster,scope:ActorActionScop
     if(!plans.length)return 'native-fallback';commitBody(game,core,plans,scope);return 'handled';
 }
 function resolve(game:Game,session:Session,boundary:Readonly<ActorActionBoundary>):void {
+    committed(game,()=>resolveCommitted(game,session,boundary),['attack-resolved','staggered','parried']);
+}
+function resolveCommitted(game:Game,session:Session,boundary:Readonly<ActorActionBoundary>):void {
     const source=actor(game,boundary.sourceEntityId),metadata=session.state.actions.find(a=>a.actionId===boundary.actionId);
     const sub=metadata?.subactions.find(s=>s.sourceSubactionId===boundary.sourceSubactionId);
     if(!source||!sub)return;
@@ -264,12 +320,23 @@ function resolve(game:Game,session:Session,boundary:Readonly<ActorActionBoundary
     const plans=authority.prepareLockedBodySegment({kind:'locked-body-segment',depth:boundary.depth,sourceEntityId:source.id,
         sourceFootprintVersion:child.sourceFootprintVersion,shape:sub.shape,lockedCells:sub.lockedCells,
         approvedRisks:sub.approvedRisks,dodgeable:segment.dodgeable,parryable:segment.parryable});
+    let hitCount=0,hpLost=0;
     withActorActionScope(game,source===game.player?'player-command':'npc-scheduler',source.id,scope=>{
-        for(const plan of plans){if(source.hp<=0||game.isGameOver||isActorStaggered(game,source.id))break;authority.commitNativeMelee(scope,plan);}
+        for(const plan of plans){
+            if(source.hp<=0||game.isGameOver||isActorStaggered(game,source.id))break;
+            const target=actor(game,plan.intent.targetEntityId);
+            const healthOwners=[...new Set([target,target?.spatial?.bodyMember?actor(game,target.spatial.bodyMember.groupId):undefined])]
+                .filter((value):value is Creature=>!!value).map(actor=>({actor,hp:actor.hp}));
+            const result=authority.commitNativeMelee(scope,plan);
+            if(result?.kind==='native'&&result.attack.hit)hitCount++;
+            hpLost=Math.min(1_000_000,hpLost+healthOwners.reduce((sum,{actor,hp})=>sum+Math.max(0,hp-actor.hp),0));
+        }
     });
     if(boundary.segmentIndex+1<attack.segments.length&&source.hp>0&&!isActorStaggered(game,source.id)&&sourceFootprintVersion(game.spatialOf(source))===child.sourceFootprintVersion){
         sub.shape=shapeFor(attack,boundary.segmentIndex+1,sub.facing);sub.lockedCells=cellsFor(game,source,sub.shape);
     }else sub.lockedCells=[];
+    combatEvent(game,source,'attack-resolved',{actionId:boundary.actionId,sourceSubactionId:boundary.sourceSubactionId,
+        segmentIndex:boundary.segmentIndex,hitCount,hpLost});
 }
 export function bindPhasedAttackProduction(game:Game):void {
     bindNativeAttackWorld(game);
@@ -370,19 +437,32 @@ export function commitPhasedAttackCommand(game:Game,plan:PhasedAttackPlan):boole
 export function collectPhasedAttackActors(game:Game,reachable:readonly Creature[]):void {
     const session=sessions.get(game);if(!session)return;
     const keep=new Set(reachable.filter(actor=>actor.hp>0||actor===game.player).map(actor=>actor.id));
+    const resolved=new Map(reachable.filter(source=>keep.has(source.id)).map(source=>{
+        const row=session.state.actors.find(row=>row.actorId===source.id);
+        const busy=session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===source.id
+            ||bundle.subactions.some(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length));
+        return [source,resourcesFor(game,session,source,busy?row?.profileId:undefined)] as const;
+    }));
+    const missing=[...resolved].filter(([source,current])=>source.hp>0&&!!current.stats&&!current.row).length;
+    if(session.state.actors.filter(row=>keep.has(row.actorId)).length+missing>4096)throw new Error('Actor resource budget exhausted');
     session.state.actors=session.state.actors.filter(row=>keep.has(row.actorId));
+    for(const source of reachable){
+        if(source.hp<=0||session.state.actors.some(row=>row.actorId===source.id))continue;
+        const current=resolved.get(source)!;
+        if(!current.stats)continue;
+        if(session.state.actors.length>=4096)throw new Error('Actor resource budget exhausted');
+        session.state.actors.push(initialResource(source.id,current.profile.id,current.base,current.stats));
+        bumpRevision(session.state);
+    }
+    session.state.actors.sort((a,b)=>a.actorId-b.actorId);
     for (const row of session.state.actors) {
         if(row.dodgeRemainingTicks&&!isActorDodgeProtected(game,row.actorId))row.dodgeRemainingTicks=0;
         const source=reachable.find(actor=>actor.id===row.actorId);
         if(row.parryRemainingTicks&&(!source||!defenseSourceValid(game,session,source))){row.parryRemainingTicks=0;row.parryFacing=null;}
         if(source&&source.hp<=0){row.dodgeRemainingTicks=0;row.dodgeRecoveryRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;row.parryRecoveryRemainingTicks=0;row.staggerRemainingTicks=0;row.poise=resourcesFor(game,session,source).policy.poiseBreakRecoveryValue;row.poiseRecoveryRemainder=0;}
-        const next=source && (profileId(session,game,source)??session.definitions.playerProfileId);
-        if(!next || next===row.profileId || session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===row.actorId
-            || bundle.subactions.some(child=>child.sourceEntityId===row.actorId&&child.phaseIndex<child.phases.length)))continue;
-        const profile=session.definitions.profiles.find(profile=>profile.id===next)!;
-        const policy=session.definitions.resourcePolicies.find(policy=>policy.id===profile.resourcePolicyId)!;
-        bumpRevision(session.state);row.profileId=next;row.stamina=Math.min(row.stamina,policy.staminaCapacity);row.regenRemainder=0;row.regenDelayRemaining=Math.min(row.regenDelayRemaining,policy.regenDelayTicks);
-        row.poise=Math.min(row.poise,policy.poiseCapacity);row.poiseRecoveryRemainder=0;row.poiseRecoveryDelayRemaining=Math.min(row.poiseRecoveryDelayRemaining,policy.poiseRecoveryDelayTicks);
+        if(!source)continue;
+        const current=resolved.get(source)!;
+        if(synchronizeResource(row,current.profile.id,current.policy,current.stats))bumpRevision(session.state);
     }
 }
 /** Administrative retirement removes the source's ledger only after its child
@@ -453,7 +533,7 @@ export function prepareActorDodge(game:Game,sourceId:number,facing:ActorAttackFa
     const session=sessions.get(game),source=actor(game,sourceId);
     if(!session||!source||!facings.includes(facing)||!dodgeBodySupported(source)||!eligible(game,source,session)
         ||source.hasStatus('stuck')||source.hasStatus('nauseous'))return null;
-    const {row,policy}=resourcesFor(game,session,source),dodge=session.definitions.dodge;
+    const {row,policy,stats}=resourcesFor(game,session,source),dodge=session.definitions.dodge;
     if((!row&&session.state.actors.length>=4096)||Math.min(row?.stamina??policy.initialStamina,policy.staminaCapacity)<dodge.cost
         ||(row?.dodgeRecoveryRemainingTicks??0)>0)return null;
     const direction=directionVectors[facing],to={x:source.x+direction.x,y:source.y+direction.y};
@@ -463,7 +543,7 @@ export function prepareActorDodge(game:Game,sourceId:number,facing:ActorAttackFa
     const movement=game.prepareActorDodgeRisks(source.id,to);if(movement.certainDeath)return null;
     return deepFreeze({moduleId:session.moduleId,sourceEntityId:source.id,facing,to,revision:session.state.revision,
         sessionRevision:session.sessionRevision,sourceRevision:actorSourceRevision(source),risks:structuredClone(movement.risks),
-        facts:canonical({row:row??null,hp:source.hp,status:source.statusDurations,depth:game.depth,
+        facts:canonical({row:row??null,policy,combatStats:stats??null,hp:source.hp,status:source.statusDurations,depth:game.depth,
             footprint:sourceFootprintVersion(game.spatialOf(source)),cells:cells.map(p=>game.grid.getCell(p.x,p.y)?.layers)})});
 }
 /** Caller supplies only a trusted synchronous authority, never a module callback. */
@@ -528,23 +608,20 @@ export function nativeActorPoiseDamage(game:Game,actorId:number):number {
 }
 /** Once per positive physical strike. No status/DOT, invented hit or extra die. */
 export function applyActorPoiseDamage(game:Game,targetId:number,amount:number):void {
+    committed(game,()=>applyActorPoiseDamageCommitted(game,targetId,amount),['staggered']);
+}
+function applyActorPoiseDamageCommitted(game:Game,targetId:number,amount:number):void {
     const session=sessions.get(game);if(!session)return;
     targetId=actor(game,targetId)?.spatial?.bodyMember?.groupId??targetId;
     const source=actor(game,targetId);
     if(!session||!source||source.hp<=0||!Number.isSafeInteger(amount)||amount<=0||amount>1_000_000)return;
-    const current=resourcesFor(game,session,source),existing=current.row;
+    const existing=session.state.actors.find(row=>row.actorId===source.id);
     const busy=session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===source.id);
-    const profile=busy&&existing?session.definitions.profiles.find(profile=>profile.id===existing.profileId)!:current.profile;
-    const policy=session.definitions.resourcePolicies.find(policy=>policy.id===profile.resourcePolicyId)!;
-    if(existing&&existing.profileId!==profile.id){
-        existing.profileId=profile.id;existing.stamina=Math.min(existing.stamina,policy.staminaCapacity);existing.regenRemainder=0;
-        existing.regenDelayRemaining=Math.min(existing.regenDelayRemaining,policy.regenDelayTicks);
-        existing.poise=Math.min(existing.poise,policy.poiseCapacity);existing.poiseRecoveryRemainder=0;
-        existing.poiseRecoveryDelayRemaining=Math.min(existing.poiseRecoveryDelayRemaining,policy.poiseRecoveryDelayTicks);bumpRevision(session.state);
-    }
+    const {profile,base,policy,stats}=resourcesFor(game,session,source,busy?existing?.profileId:undefined);
+    if(existing&&synchronizeResource(existing,profile.id,policy,stats))bumpRevision(session.state);
     if(policy.poiseImmune||isActorStaggered(game,targetId))return;
     if(!existing&&session.state.actors.length>=4096)throw new Error('Actor resource budget exhausted');
-    const row=existing??initialResource(source.id,profile.id,policy);
+    const row=existing??initialResource(source.id,profile.id,base,stats);
     if(!existing){session.state.actors.push(row);session.state.actors.sort((a,b)=>a.actorId-b.actorId);}
     row.poise=Math.max(0,Math.min(row.poise,policy.poiseCapacity)-amount);
     row.poiseRecoveryDelayRemaining=policy.poiseRecoveryDelayTicks;row.poiseRecoveryRemainder=0;
@@ -560,9 +637,14 @@ export function applyActorPoiseDamage(game:Game,targetId:number,amount:number):v
         }else{row.staggerRemainingTicks=Math.max(source.ticksUntilTurn,recovery);source.ticksUntilTurn=row.staggerRemainingTicks;}
     }
     bumpRevision(session.state);
+    if(row.poise===0)combatEvent(game,source,'staggered',{
+        actionId:session.state.scheduler.bundles.find(bundle=>bundle.decisionOwnerId===source.id)?.actionId??0});
 }
 /** Deterministic exact-facing contact, consumed before any native probability roll. */
 export function tryActorParry(game:Game,attackerId:number,defenderId:number,contact:{from:{x:number;y:number};to:{x:number;y:number}}):boolean {
+    return committed(game,()=>tryActorParryCommitted(game,attackerId,defenderId,contact),['parried','staggered']);
+}
+function tryActorParryCommitted(game:Game,attackerId:number,defenderId:number,contact:{from:{x:number;y:number};to:{x:number;y:number}}):boolean {
     const session=sessions.get(game),defender=actor(game,defenderId),attacker=actor(game,attackerId);
     if(!session||!defender||!attacker||!defenseSourceValid(game,session,defender)||isActorStaggered(game,defenderId))return false;
     const row=session.state.actors.find(row=>row.actorId===defenderId);
@@ -573,7 +655,12 @@ export function tryActorParry(game:Game,attackerId:number,defenderId:number,cont
     row.parryRemainingTicks=0;row.parryFacing=null;bumpRevision(session.state);
     try {
         applyActorPoiseDamage(game,attackerId,session.definitions.parry.poiseDamage);
-        game.extensionRuntime?.notifyActorParried(attackerId,defenderId,game.depth);
+        const resolutionId=game.extensionRuntime!.notifyActorParried(attackerId,defenderId,game.depth);
+        if(game.extensionRuntime!.hasCommittedFactConsumer('combat.event.v1')){
+            if(typeof resolutionId!=='number'||!Number.isSafeInteger(resolutionId)||resolutionId<1)throw new Error('Missing real parry resolution identity');
+            combatEvent(game,defender,'parried',{resolutionId,
+                actionId:session.state.scheduler.bundles.find(bundle=>bundle.subactions.some(child=>child.sourceEntityId===attackerId))?.actionId??0});
+        }
     }catch(error){invalidateProductionActorActionSession(game);game.invalidateActorActionRun(error instanceof Error?error:new Error(String(error)));throw error;}
     return true;
 }
@@ -585,11 +672,11 @@ export function prepareActorParry(game:Game,sourceId:number,facing:ActorAttackFa
     bindPhasedAttackProduction(game);
     const session=sessions.get(game),source=actor(game,sourceId);
     if(!session||!source||source.spatial?.bodyMember&&source.spatial.bodyMember.groupId!==source.id||!facings.includes(facing)||!eligible(game,source,session))return null;
-    const {policy,row}=resourcesFor(game,session,source);
+    const {policy,row,stats}=resourcesFor(game,session,source);
     if((!row&&session.state.actors.length>=4096)||Math.min(row?.stamina??policy.initialStamina,policy.staminaCapacity)<session.definitions.parry.cost)return null;
     return deepFreeze({moduleId:session.moduleId,sourceEntityId:source.id,facing,revision:session.state.revision,
         sessionRevision:session.sessionRevision,sourceRevision:actorSourceRevision(source),
-        facts:canonical({row:row??null,hp:source.hp,status:source.statusDurations,depth:game.depth,
+        facts:canonical({row:row??null,policy,combatStats:stats??null,hp:source.hp,status:source.statusDurations,depth:game.depth,
             footprint:sourceFootprintVersion(game.spatialOf(source))})});
 }
 export function commitActorParry(game:Game,plan:ActorParryPlan,scope:ActorActionScope):boolean {
@@ -635,12 +722,12 @@ export function reconcileActorNativeRecovery(game:Game,actorId:number):void {
 /** Trusted completed-rest resource commit, with current authoritative policy. */
 export function restoreActorRestResources(game:Game,restore:{stamina:string;poise:string}):void {
     const session=sessions.get(game);if(!session)throw new Error('Missing rest resource session');
-    const {profile,policy,row}=resourcesFor(game,session,game.player);
+    const {profile,base,policy,stats,row}=resourcesFor(game,session,game.player);
     // An unchanged implicit full pool remains implicit; no budget slot is needed.
-    if(!row&&(restore.stamina!=='full'||policy.initialStamina===policy.staminaCapacity))return;
+    if(!row&&!stats&&(restore.stamina!=='full'||policy.initialStamina===policy.staminaCapacity))return;
     if(!row&&session.state.actors.length>=4096)throw new Error('Actor resource budget exhausted');
-    const resource=row??initialResource(game.player.id,profile.id,policy);
-    resource.profileId=profile.id;
+    const resource=row??initialResource(game.player.id,profile.id,base,stats);
+    synchronizeResource(resource,profile.id,policy,stats);
     if(restore.stamina==='full'){resource.stamina=policy.staminaCapacity;resource.regenRemainder=0;resource.regenDelayRemaining=0;}
     if(restore.poise==='full'){resource.poise=policy.poiseCapacity;resource.poiseRecoveryRemainder=0;resource.poiseRecoveryDelayRemaining=0;}
     if(!row){session.state.actors.push(resource);session.state.actors.sort((a,b)=>a.actorId-b.actorId);}

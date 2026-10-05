@@ -14,7 +14,7 @@ export const NARRATIVE_LIMITS = Object.freeze({
     eventsPerCommand: 128, transitionsPerSession: 1024, maxActiveNpcs: 256,
     maxJournalEntries: 4096, maxReceipts: 65536,
     maxWorldDepth: 40, maxDefinitions: 4096, maxJsonDepth: 64, maxJsonValues: 4_000_000,
-    maxStringLength: 16384, maxPortraitDimension: 8192, maxDistance: 256, maxInteractionDistance: 16,
+    maxPublicActorTags: 32, maxStringLength: 16384, maxPortraitDimension: 8192, maxDistance: 256, maxInteractionDistance: 16,
 });
 const fail = (code: NarrativeErrorCode, path: string): never => { throw new NarrativeError(code, path); };
 const forbiddenKeys = new Set(['__proto__', 'constructor', 'prototype']);
@@ -159,10 +159,10 @@ export function loadNarrativePack(raw: unknown, portraitData: unknown, locales: 
     const root = object(raw, ['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'stateVersion', 'inputVersion',
         'config', 'flags', 'counters', 'npcs', 'dialogues', 'journal', 'storyEvents', 'triggers'], '$');
     if (root.schema !== 1) fail('INVALID_VERSION', '$.schema');
-    if (root.stateVersion !== 3) fail('INVALID_VERSION', '$.stateVersion');
+    if (root.stateVersion !== 4) fail('INVALID_VERSION', '$.stateVersion');
     if (root.inputVersion !== 2) fail('INVALID_VERSION', '$.inputVersion');
     if (root.moduleId !== 'narrative') fail('INVALID_ID', '$.moduleId');
-    for (const key of ['moduleVersion', 'rulesVersion']) if (root[key] !== '1.3.0') fail('INVALID_VERSION', `$.${key}`);
+    for (const key of ['moduleVersion', 'rulesVersion']) if (root[key] !== '1.4.0') fail('INVALID_VERSION', `$.${key}`);
     const config = object(root.config, ['timePolicy', 'closePolicy', 'limits'], '$.config');
     enumeration(config.timePolicy, ['free-frozen'], '$.config.timePolicy');
     enumeration(config.closePolicy, ['close-session'], '$.config.closePolicy');
@@ -359,19 +359,41 @@ export function loadNarrativePack(raw: unknown, portraitData: unknown, locales: 
         }
         nodes.forEach((node, ni) => { if (!escapable.has(node.id as string)) fail('MISSING_EXIT', `${path}.nodes[${ni}].choices`); });
     });
-    let estimatedReceipts = 0;
+    let estimatedReceipts = 0, subscriptionReceipts = 0;
     arrays.get('triggers')!.forEach((entry, i) => {
-        const path = `$.triggers[${i}]`; const trigger = object(entry, ['id', 'on', 'priority', 'condition', 'repeat', 'effects'], path);
+        const path = `$.triggers[${i}]`;
+        const combat = !!entry && typeof entry === 'object' && !Array.isArray(entry)
+            && (entry as { on?: { kind?: string } }).on?.kind === 'combat-event';
+        const trigger = object(entry, ['id', 'on', 'priority', 'condition', 'repeat', 'effects', ...(combat ? ['receiptId'] : [])], path);
         define(trigger.id, `${path}.id`); integer(trigger.priority, `${path}.priority`, -1000000, 1000000);
         if (!trigger.on || typeof trigger.on !== 'object' || Array.isArray(trigger.on)) fail('INVALID_TRIGGER', `${path}.on`);
         const onKind = (trigger.on as Record<string, unknown>).kind;
         const shape = onKind === 'entered-level' ? ['kind'] : onKind === 'npc-interacted' ? ['kind', 'npcId']
-            : onKind === 'dialogue-choice' ? ['kind', 'dialogueId', 'choiceId'] : onKind === 'story' ? ['kind', 'eventId'] : null;
+            : onKind === 'dialogue-choice' ? ['kind', 'dialogueId', 'choiceId'] : onKind === 'story' ? ['kind', 'eventId']
+                : onKind === 'combat-event' ? ['kind', 'eventKind', 'actorRole', 'actorTags'] : null;
         if (!shape) fail('INVALID_TRIGGER', `${path}.on.kind`);
         const on = object(trigger.on, shape!, `${path}.on`);
         if (onKind === 'npc-interacted') reference(on.npcId, npcs, `${path}.on.npcId`);
         if (onKind === 'dialogue-choice') { reference(on.dialogueId, dialogues, `${path}.on.dialogueId`); reference(on.choiceId, dialogues.get(on.dialogueId as string)!, `${path}.on.choiceId`); }
         if (onKind === 'story') reference(on.eventId, events, `${path}.on.eventId`);
+        if (combat) {
+            enumeration(on.eventKind, ['attack-resolved', 'staggered', 'parried', 'rest-completed'], `${path}.on.eventKind`);
+            enumeration(on.actorRole, ['any', 'player', 'ally', 'hostile', 'neutral'], `${path}.on.actorRole`);
+            const tags = list(on.actorTags, `${path}.on.actorTags`, 0, NARRATIVE_LIMITS.maxPublicActorTags);
+            const seen = new Set<string>();
+            tags.forEach((tag, index) => {
+                const key = id(tag, `${path}.on.actorTags[${index}]`);
+                if (seen.has(key)) fail('DUPLICATE_ID', `${path}.on.actorTags[${index}]`);
+                seen.add(key);
+            });
+            const receipt = id(trigger.receiptId, `${path}.receiptId`);
+            if (receiptIds.has(receipt)) fail('DUPLICATE_RECEIPT', `${path}.receiptId`);
+            receiptIds.add(receipt); subscriptionReceipts++;
+            list(trigger.effects, `${path}.effects`).forEach((effect, index) => {
+                if (!effect || typeof effect !== 'object' || !['set-flag', 'add-counter'].includes((effect as { kind: string }).kind))
+                    fail('INVALID_TRIGGER', `${path}.effects[${index}]`);
+            });
+        }
         condition(trigger.condition, `${path}.condition`, trigger.on as TriggerEvent);
         if (!trigger.repeat || typeof trigger.repeat !== 'object' || Array.isArray(trigger.repeat)) fail('INVALID_TRIGGER', `${path}.repeat`);
         const kind = (trigger.repeat as Record<string, unknown>).kind;
@@ -381,7 +403,7 @@ export function loadNarrativePack(raw: unknown, portraitData: unknown, locales: 
         estimatedReceipts += kind === 'once-per-depth' ? NARRATIVE_LIMITS.maxWorldDepth : 1;
         effects(trigger.effects, `${path}.effects`);
     });
-    estimatedReceipts += receiptIds.size + (raw as NarrativePack).npcs.reduce((total, npc) => total + npc.placements.reduce((count, placement) => count + placement.maxPerRun, 0), 0);
+    estimatedReceipts += receiptIds.size - subscriptionReceipts + (raw as NarrativePack).npcs.reduce((total, npc) => total + npc.placements.reduce((count, placement) => count + placement.maxPerRun, 0), 0);
     if (estimatedReceipts > limits.maxReceipts) fail('RECEIPT_LIMIT', '$.config.limits.maxReceipts');
     const pack = raw as NarrativePack;
     // Condition-independent graph analysis: false guards/repeat limits never excuse an automatic cycle.

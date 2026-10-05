@@ -1,6 +1,7 @@
 import i18next from 'i18next';
 import type { ControlledActionRequest, ControlledActionResult, ControlledCommandPreparationContext, ActorFacts, ExtensionContext, ExtensionModule, ExtensionCreationResources, ExtensionRuleContext, ExtensionRuleInput, Json, ReadonlyJson, OptionalRewardRequest, OptionalRewardPrepareContext, OptionalQueryProvider } from '../../types';
 import type { CreatureBirth } from '../../birth';
+import { createGrowthCombatStatsProvider } from './combatStats';
 import { canonical, isJson, validId } from '../../json';
 import type { DeepReadonly } from './definitions';
 import type { GrowthDamageInput, GrowthDefinitionPack, GrowthResourceEffect, GrowthRuleActor, GrowthRulePort } from './types';
@@ -506,6 +507,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         id: 'growth',version: pack.moduleVersion,rules: identity,resourceCommits: true,
         initializationReady: context => getState(context).created,
         optionalQueries: {'growth.public-character.v1':publicCharacter},
+        optionalActorQueries: {'growth.combat-stats.v1':createGrowthCombatStatsProvider(pack)},
         optionalRewards: {'growth.story-reward.v1': {
             prepare(request,context) {
                 const prepared = prepareStoryReward(request,context);

@@ -292,7 +292,8 @@ describe('EXT-2c narrative optional reward transactions', () => {
             expect(provider.commit.mock.calls.map(([request]) => request.instanceId)).toEqual([
                 'narrative.receipt.first.run', 'narrative.receipt.second.run', 'narrative.receipt.last.run', 'narrative.receipt.derived.run',
             ]);
-            expect(f.runtime.snapshot().foundation.nextFactId).toBe(3);
+            // One shared root plus the narrative consumer’s complete reserved derived interval.
+            expect(f.runtime.snapshot().foundation.nextFactId).toBe(2 + content.config.limits.eventsPerCommand);
             const expected = f.checkpoint(); f.settle(); f.runtime.loaded(); f.runtime.snapshot(); f.settle();
             expect(f.checkpoint()).toEqual(expected); expect(provider.commit).toHaveBeenCalledTimes(4);
             return expected;

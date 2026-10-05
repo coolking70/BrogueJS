@@ -45,10 +45,10 @@ describe('extension compatibility diagnostics', () => {
     it('reports required and installed versions, missing IDs and a stable first mismatch without constructing modules', () => {
         const registry = new ExtensionRegistry(), factory = vi.fn(() => moduleFixture());
         registry.register('alpha', '1.0.0', factory);
-        expect(() => registry.validateManifest({ schema: 1, foundation: 4,
+        expect(() => registry.validateManifest({ schema: 1, foundation: 5,
             modules: [{ id: 'zeta', version: '3.0.0' }, { id: 'alpha', version: '2.0.0' }] }))
             .toThrow(expect.objectContaining({ code: 'version', moduleId: 'alpha', expected: '2.0.0', actual: '1.0.0' }));
-        expect(() => registry.validateManifest({ schema: 1, foundation: 4, modules: [{ id: 'zeta', version: '3.0.0' }] }))
+        expect(() => registry.validateManifest({ schema: 1, foundation: 5, modules: [{ id: 'zeta', version: '3.0.0' }] }))
             .toThrow(expect.objectContaining({ code: 'missing', moduleId: 'zeta', expected: '3.0.0', actual: null }));
         expect(factory).not.toHaveBeenCalled();
     });

@@ -1,16 +1,17 @@
-import type { ExtensionContext, OptionalQueryResult } from '../../types';
+import type { CombatEventFact, ExtensionContext, OptionalQueryResult } from '../../types';
 import { validId } from '../../json';
 import { NarrativeError } from './errors';
 import { assertNarrativeJson, assertLoadedNarrativePack, freezeNarrative, NARRATIVE_LIMITS } from './schema';
 import { narrativeInteger, narrativeRecord, validFlagValue, type NarrativeState } from './state';
 import type { Condition, NarrativePack } from './types';
 
-/** Explicit module-local causal facts. They do not use a global engine fact stream. */
+/** Committed foundation facts and module-local causal facts share the reserved fact sequence. */
 export type NarrativeFact = { readonly factId: number; readonly depth: number; readonly turn: number } & (
     { readonly kind: 'entered-level'; readonly firstVisit: boolean }
     | { readonly kind: 'npc-interacted'; readonly npcId: string }
     | { readonly kind: 'dialogue-choice'; readonly dialogueId: string; readonly choiceId: string }
-    | { readonly kind: 'story'; readonly eventId: string });
+    | { readonly kind: 'story'; readonly eventId: string }
+    | CombatEventFact);
 export type NarrativeQuery = ExtensionContext['queryOptional'];
 export interface NarrativeBudgetUsage { conditions: number; effects: number; events: number }
 export function createNarrativeBudget(): NarrativeBudgetUsage { return { conditions: 0, effects: 0, events: 0 }; }
@@ -27,11 +28,13 @@ export function validateNarrativeFact(raw: unknown, pack: NarrativePack): Narrat
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new NarrativeError('INVALID_FACT', '$fact');
     const kind = (raw as Record<string, unknown>).kind;
     const specific = kind === 'entered-level' ? ['firstVisit'] : kind === 'npc-interacted' ? ['npcId']
-        : kind === 'dialogue-choice' ? ['dialogueId','choiceId'] : kind === 'story' ? ['eventId'] : null;
+        : kind === 'dialogue-choice' ? ['dialogueId','choiceId'] : kind === 'story' ? ['eventId']
+            : kind === 'combat-event' ? ['eventKind','actor','actionId','sourceSubactionId','segmentIndex','resolutionId','bonfireId','visit','hitCount','hpLost'] : null;
     if (!specific) throw new NarrativeError('INVALID_FACT', '$fact.kind');
     const value = narrativeRecord(raw, ['factId','depth','turn','kind',...specific], '$fact', 'INVALID_FACT');
     for (const [key, min, max] of [['factId',1,Number.MAX_SAFE_INTEGER], ['depth',1,NARRATIVE_LIMITS.maxWorldDepth], ['turn',0,Number.MAX_SAFE_INTEGER]] as const)
         if (!narrativeInteger(value[key], min, max)) throw new NarrativeError('INVALID_FACT', `$fact.${key}`);
+    if (kind === 'combat-event') validateNarrativeCombatFact(value);
     if (kind === 'entered-level' && typeof value.firstVisit !== 'boolean') throw new NarrativeError('INVALID_FACT', '$fact.firstVisit');
     if (kind === 'npc-interacted' && !pack.npcs.some(npc => npc.id === value.npcId)) throw new NarrativeError('UNKNOWN_REFERENCE', '$fact.npcId');
     if (kind === 'story' && !pack.storyEvents.some(event => event.id === value.eventId)) throw new NarrativeError('UNKNOWN_REFERENCE', '$fact.eventId');
@@ -42,6 +45,37 @@ export function validateNarrativeFact(raw: unknown, pack: NarrativePack): Narrat
     }
     return freezeNarrative(structuredClone(raw) as NarrativeFact);
 }
+
+/** Validate the complete public DTO independently; consumers never inspect combat's private state. */
+function validateNarrativeCombatFact(value: Record<string, unknown>): void {
+    const fail = (path: string): never => { throw new NarrativeError('INVALID_FACT', `$fact.${path}`); };
+    if (!['attack-resolved','staggered','parried','rest-completed'].includes(value.eventKind as string)) fail('eventKind');
+    const actor = narrativeRecord(value.actor, ['entityId','role','tags','partId','generation'], '$fact.actor', 'INVALID_FACT');
+    if (!narrativeInteger(actor.entityId, 1)) fail('actor.entityId');
+    if (!['player','ally','hostile','neutral'].includes(actor.role as string)) fail('actor.role');
+    if (!Array.isArray(actor.tags) || actor.tags.length > NARRATIVE_LIMITS.maxPublicActorTags
+        || actor.tags.some(tag => !validId(tag) || tag.length > 128) || new Set(actor.tags).size !== actor.tags.length) fail('actor.tags');
+    if (actor.partId !== null && (!validId(actor.partId) || actor.partId.length > 128)) fail('actor.partId');
+    if (actor.generation !== null && !narrativeInteger(actor.generation, 0)) fail('actor.generation');
+    if ((actor.partId === null) !== (actor.generation === null)) fail('actor.generation');
+    if (!narrativeInteger(value.actionId, value.eventKind === 'parried' || value.eventKind === 'staggered' ? 0 : 1)) fail('actionId');
+    for (const field of ['sourceSubactionId','resolutionId','bonfireId','visit'])
+        if (value[field] !== null && !narrativeInteger(value[field], 1)) fail(field);
+    if (value.segmentIndex !== null && !narrativeInteger(value.segmentIndex, 0)) fail('segmentIndex');
+    if (!narrativeInteger(value.hitCount, 0, 4096)) fail('hitCount');
+    if (!narrativeInteger(value.hpLost, 0)) fail('hpLost');
+    if (value.eventKind === 'attack-resolved') {
+        if (value.sourceSubactionId === null || value.segmentIndex === null || value.resolutionId !== null
+            || value.bonfireId !== null || value.visit !== null) fail('eventKind');
+    } else if (value.eventKind === 'rest-completed') {
+        if (value.bonfireId === null || value.visit === null || value.sourceSubactionId !== null || value.segmentIndex !== null
+            || value.resolutionId !== null || value.hitCount !== 0 || value.hpLost !== 0) fail('eventKind');
+    } else {
+        if (value.bonfireId !== null || value.visit !== null || value.hitCount !== 0 || value.hpLost !== 0) fail('eventKind');
+        if (value.eventKind === 'parried' && value.resolutionId === null) fail('resolutionId');
+    }
+}
+
 /** Reject and retire asynchronous providers so a rejected promise cannot escape as unhandled. */
 export function requireNarrativeSynchronous(value: unknown, path: string): void {
     if (!value || typeof value !== 'object' && typeof value !== 'function') return;

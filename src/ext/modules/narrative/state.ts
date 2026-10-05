@@ -3,7 +3,7 @@ import { NarrativeError, type NarrativeErrorCode } from './errors';
 import { assertNarrativeJson, assertLoadedNarrativePack, NARRATIVE_LIMITS } from './schema';
 import type { FlagDefinition, NarrativePack, Scalar } from './types';
 
-export type TriggerReceipt = { triggerId: string; scopeKey: string; firings: number; lastTurn: number; lastFactId: number };
+export type TriggerReceipt = { triggerId: string; scopeKey: string; firings: number; lastTurn: number; lastFactId: number; receiptId?: string };
 /** Only successful provider commits produce applied receipts; skips never retry. */
 export type RewardReceipt = { id: string; instanceKey: string; result: 'applied'; reason: null }
     | { id: string; instanceKey: string; result: 'skipped'; reason: 'absent' | 'disabled' | 'unsupported-key' };
@@ -12,7 +12,7 @@ export type PlacementReceipt = NpcBinding & { depth: number; result: 'placed' | 
 export type PendingPlacement = NpcBinding & { attemptedDepths: number[] };
 export type NarrativeSession = { sessionId: number; targetEntityId: number; dialogueId: string; nodeId: string; transitions: number };
 export type NarrativeState = {
-    schema: 3; revision: number; nextSessionId: number;
+    schema: 4; revision: number; nextSessionId: number;
     npcBindings: Record<string, NpcBinding>;
     placementReceipts: PlacementReceipt[]; pendingPlacements: PendingPlacement[];
     active: NarrativeSession | null;
@@ -39,7 +39,7 @@ export function validFlagValue(definition: FlagDefinition, value: unknown): valu
 export function narrativeRewardInstance(receiptId: string): string { return `narrative.${receiptId}.run`; }
 export function initialNarrativeState(pack: NarrativePack): NarrativeState {
     assertLoadedNarrativePack(pack);
-    return { schema: 3, revision: 0, lastFactId: 0, nextSessionId: 1,
+    return { schema: 4, revision: 0, lastFactId: 0, nextSessionId: 1,
         npcBindings: {}, placementReceipts: [], pendingPlacements: [], active: null,
         flags: Object.fromEntries(pack.flags.map(flag => [flag.id, flag.initial])),
         counters: Object.fromEntries(pack.counters.map(counter => [counter.id, counter.initial])),
@@ -55,7 +55,7 @@ export function validateNarrativeState(raw: unknown, pack: NarrativePack): Narra
     assertNarrativeJson(raw, '$state');
     const value = narrativeRecord(raw, ['schema','revision','lastFactId','nextSessionId','npcBindings','placementReceipts','pendingPlacements','active','flags','counters','triggerReceipts','rewardReceipts','journal'], '$state', 'INVALID_STATE');
     const fail = (path: string): never => { throw new NarrativeError('INVALID_STATE', path); };
-    if (value.schema !== 3) fail('$state.schema');
+    if (value.schema !== 4) fail('$state.schema');
     if (!narrativeInteger(value.revision, 0)) fail('$state.revision');
     if (!narrativeInteger(value.lastFactId, 0) || value.revision === 0 && value.lastFactId !== 0) fail('$state.lastFactId');
     if (!narrativeInteger(value.nextSessionId, 1) || (value.nextSessionId as number) - 1 > (value.revision as number)) fail('$state.nextSessionId');
@@ -71,9 +71,12 @@ export function validateNarrativeState(raw: unknown, pack: NarrativePack): Narra
     let previous = '';
     for (let index = 0; index < triggers.length; index++) {
         const path = `$state.triggerReceipts[${index}]`;
-        const receipt = narrativeRecord(triggers[index], ['triggerId','scopeKey','firings','lastTurn','lastFactId'], path, 'INVALID_STATE');
-        const trigger = pack.triggers.find(trigger => trigger.id === receipt.triggerId);
+        const triggerId = (triggers[index] as { triggerId?: unknown } | null)?.triggerId;
+        const trigger = pack.triggers.find(trigger => trigger.id === triggerId);
         if (!trigger) fail(`${path}.triggerId`);
+        const receipt = narrativeRecord(triggers[index], ['triggerId','scopeKey','firings','lastTurn','lastFactId',
+            ...(trigger!.on.kind === 'combat-event' ? ['receiptId'] : [])], path, 'INVALID_STATE');
+        if (trigger!.on.kind === 'combat-event' && receipt.receiptId !== trigger!.receiptId) fail(`${path}.receiptId`);
         const repeat = trigger!.repeat;
         if (typeof receipt.scopeKey !== 'string') fail(`${path}.scopeKey`);
         if (repeat.kind === 'once-per-depth') {

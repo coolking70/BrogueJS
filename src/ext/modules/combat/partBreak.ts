@@ -1,6 +1,7 @@
 import type { ActorAttackDefinitions, ActorResourcePolicy, ProductionActorAttackState } from '../../actorActions';
 import { validateProductionActorAttackTransactionState } from '../../actorActionValidation';
 import { canonical } from '../../json';
+import { resolveCombatStats, combatCapacityPolicy } from '../../combatStats';
 import { validatePartBreakRequest, type PartBreakProvider } from '../../partBreak';
 import type { Json, ReadonlyJson } from '../../types';
 
@@ -40,8 +41,17 @@ export function createCombatPartBreakProvider(definitions: ActorAttackDefinition
                 : definitions.nativeProfiles.find(binding => binding.monsterId === context.actor.monsterId)?.profileId
                     ?? definitions.playerProfileId);
             const profile = definitions.profiles.find(candidate => candidate.id === profileId)!;
-            const policy = definitions.resourcePolicies.find(candidate => candidate.id === profile.resourcePolicyId)!;
+            const base = definitions.resourcePolicies.find(candidate => candidate.id === profile.resourcePolicyId)!;
+            const stats = context.queryActor ? resolveCombatStats(context.queryActor('growth.combat-stats.v1',
+                {v:1,baseStaminaCapacity:base.staminaCapacity,basePoiseCapacity:base.poiseCapacity})) : row?.combatStats;
+            const policy = combatCapacityPolicy(base,stats);
             let changed = false;
+            if(row){
+                const before=canonical(row);
+                row.stamina=Math.min(row.stamina,policy.staminaCapacity);row.poise=Math.min(row.poise,policy.poiseCapacity);
+                if(stats)row.combatStats={...stats};else delete row.combatStats;
+                changed=canonical(row)!==before;
+            }
             if (row && row.profileId !== profile.id) {
                 // A new native form takes effect at this safe, non-bundle boundary.
                 // Pool growth never refills; elapsed defense/stagger stays intact.
@@ -58,7 +68,9 @@ export function createCombatPartBreakProvider(definitions: ActorAttackDefinition
                 || bundle?.subactions.some(child => child.phases[child.phaseIndex]?.kind === 'break-recovery');
             if (request.balanceLoss > 0 && !policy.poiseImmune && !staggered) {
                 if (!row && next.actors.length >= MAX_ACTORS) throw new Error('Actor resource budget exhausted');
-                const resource = row ?? initialRow(request.actorId, profile.id, policy);
+                const resource = row ?? initialRow(request.actorId, profile.id, base);
+                resource.stamina=Math.min(resource.stamina,policy.staminaCapacity);resource.poise=Math.min(resource.poise,policy.poiseCapacity);
+                if(stats)resource.combatStats={...stats};else delete resource.combatStats;
                 if (!row) {
                     next.actors.push(resource);
                     next.actors.sort((a, b) => a.actorId - b.actorId);

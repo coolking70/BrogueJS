@@ -453,3 +453,11 @@ Giants的可选bodies沿已安装SpatialCatalog声明注册；GenerationContribu
 退休成员保留的bodyMember原身份用于原生近战/投掷/毒出口，不再增加击杀、熟悉度或掉落；1:4传伤致核心死亡时只在finishBodyMemberDamage补一次统计。死亡事实/XP仍沿既有核心终结，没有另建账本。publicMonsterGroups捕获核心可见时的可见成员值/格；隐藏成员不提供位置/HP，精确破坏概况须完整可见，否则只给可见数。历史DisplayFrame冻结群DTO，Boss HUD成员focus映射到core HP；普通帧无群字段，显示不消耗RNG。
 
 完整4d仍缺逐段环境/状态分类与关系、整体polymorph/clone/移层pending及全部phased组合，真实320/390浏览器验收未完成；当前4d报告列明剩余1–8，不能把受限转换门当作最终Boss免疫。
+
+## 3g：可信 actor 属性查询与共享已提交事实
+
+`growth.combat-stats.v1` 使用底座 `queryOptionalActor` 的原生对象作用域；`queryOptionalActorInWorld` 仅用于引擎解码候选世界的纯校验。两者不进入 `ExtensionContext`，公共 actorId 不授予读取另一 actor 组件的权限。provider 只可读自己命名空间的冻结 DTO。容量只在机械事务/安全结算同步，load/面板只校验/显示，不补值。
+
+foundation 5 的 `committedFacts` 为 `foundation.story.v1` 和 `combat.event.v1` 提供共享根、按稳定 module ID 排序的有界派生区间，先 prepare 后 commit，总预算与失败共同回滚。combat 的原生/段/休息执行用 `withCommittedFacts` 包住完整机械提交；Game 的显式 native checkpoint 和各生命周期 checkpoint 恢复对象身份、RNG、ID、消息、DF/陷阱和空间监听状态。来源在外层提交开始时取得可信公开 identity，避免同 tick 源退休丢失 part/generation。无消费者无队列、无 ID；load/seek 纯重建不补发。
+
+具体版本、写集、测试与独立审查见 [3g 报告](phase3g.report.md)。完整 4f 门禁尚待维护者统一通知。

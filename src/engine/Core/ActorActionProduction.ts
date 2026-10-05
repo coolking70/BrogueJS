@@ -105,6 +105,8 @@ export function createProductionActorActionSession(game: Game, options: Producti
         return baseline.actor === actor && baseline.revision === actorSourceRevision(actor) && validSource(actor, source, game.actorActionWorld());
     };
     const host: ActorActionSchedulerHost = {
+        transaction:work=>game.extensionRuntime?game.extensionRuntime.withCommittedFacts(work,
+            game.extensionRuntime.actorActionBinding()?.state.bonfires?.active?undefined:['attack-resolved','staggered','parried']):work(),
         decisionOwnerId: id => row(id)?.actor.spatial?.bodyMember?.groupId ?? id,
         readActor: id => { const actor = row(id)?.actor; return actor ? { ticksUntilTurn: actor.ticksUntilTurn, alive: aliveSource(actor) } : null; },
         writeOwnerTicks: (id, ticks) => { const actor = row(id)?.actor; if (actor?.hp && actor.hp > 0) actor.ticksUntilTurn = ticks; },

@@ -18,7 +18,7 @@ interface DeathOwner {
     bodyStatusContext?(monster: Monster): BodyStatusContext | undefined;
 }
 const owners = new WeakMap<Monster, DeathOwner>();
-const lists = new WeakMap<Monster[], { raw: Monster[]; owner: DeathOwner }>();
+const lists = new WeakMap<Monster[], { raw: Monster[]; owner: DeathOwner; restoreSquareCount(value:number):void }>();
 const squareCounts = new WeakMap<Monster[], number>();
 export function squareListUsers(list: readonly Monster[]): number { return squareCounts.get(list as Monster[]) ?? 0; }
 // Like ownership, DYING is a runtime association, not an opaque Game field.
@@ -79,9 +79,16 @@ export function ownedMonsterList(input: Monster[], owner: DeathOwner): Monster[]
             return result;
         },
     });
-    lists.set(list, { raw, owner });
+    lists.set(list, { raw, owner, restoreSquareCount(value) { squares=value;squareCounts.set(list,value); } });
     squareCounts.set(list, squares);
     return list;
+}
+
+/** Restores list-owned derived counters after an in-place native graph rollback.
+ * No insertion hooks, spawn facts, constructors or new list identity are run. */
+export function checkpointOwnedMonsterLists(values:readonly Monster[][]):()=>void {
+    const entries=[...new Set(values)].map(list=>({binding:lists.get(list),count:squareListUsers(list)}));
+    return()=>{for(const {binding,count} of entries)binding?.restoreSquareCount(count);};
 }
 
 export function notifyMonsterDeath(monster: Monster): void {

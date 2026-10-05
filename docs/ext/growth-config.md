@@ -1,6 +1,6 @@
-# Growth 数据配置合同（内容扩充，schema 1 / rules 1.6.0）
+# Growth 数据配置合同（3g 战斗 adapter，schema 1 / rules 1.7.0）
 
-本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。1d 已接技能动作/效果消费/客观时钟；1e 接通身份选择/授予/誓约、怪物模板与盟友自动分配。§1.1–1.6 保留逐步交付历史，2c 新增可选能力见 §1.7。
+本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。1d 已接技能动作/效果消费/客观时钟；1e 接通身份选择/授予/誓约、怪物模板与盟友自动分配。§1.1–1.6 保留逐步交付历史，2c 新增可选能力见 §1.7；3g 可信 actor 容量查询见 §1.8。
 
 ## 1. 实际文件与边界
 
@@ -8,6 +8,7 @@
 |---|---|
 | `src/ext/modules/growth/index.ts` | 生产 growth 工厂校验真实目录并创建 1e 运行器；保留显式合同探针工厂供底座测试 |
 | `src/ext/modules/growth/module.ts`、`state.ts` | XP 事实队列/安全点结算、角色创建、收据/来源摘要与跨组件/世界校验 |
+| `src/ext/modules/growth/combatStats.ts` | 3g 只读 actor-scope DTO、精确有界属性换算、有效输入 fingerprint |
 | `src/ext/modules/growth/identities.ts`、`templates.ts` | 纯身份/选择/赠技/誓约与出生模板、确定性盟友分配 |
 | `src/ext/modules/growth/experience.ts`、`components.ts` | 精确整数等级/发点/自动 HP、资源提交基础、严格组件校验 |
 | `src/ext/modules/growth/types.ts` | 配置类型、判别联合、有限规则端口/动作词汇 |
@@ -18,7 +19,7 @@
 | `src/ext/modules/growth/text.ts` | 样例定义与校验错误的本地化词条 |
 | `src/ext/registry.ts`、`src/ext/types.ts` | 模块数据合同与阶段0精确版本校验衔接 |
 
-不复用阶段0 `src/ext/definitions.ts` 的示例三属性/简单effects冒充正式成长schema。旧 example 包与测试保持原合同；growth包通过数据校验不等于引擎支持其中所有动作。默认扩展集合为 `growth`；`example` 仍可显式选择，保留原合同。`createGrowthContractModule()` 是显式测试探针；生产目录注册 `createGrowthModule()`。1e 当时的门禁见 [1e 报告](phase1e.report.md)；当前验收政策以 [扩展 README](README.md) 为准。下列1a–1e段落保留阶段历史，2c 新增可选能力见 §1.7。
+不复用阶段0 `src/ext/definitions.ts` 的示例三属性/简单effects冒充正式成长schema。旧 example 包与测试保持原合同；growth包通过数据校验不等于引擎支持其中所有动作。默认扩展集合为 `growth`；`example` 仍可显式选择，保留原合同。`createGrowthContractModule()` 是显式测试探针；生产目录注册 `createGrowthModule()`。1e 当时的门禁见 [1e 报告](phase1e.report.md)；当前验收政策以 [扩展 README](README.md) 为准。下列1a–1e段落保留阶段历史，2c 新增可选能力见 §1.7；3g 可信 actor 容量查询见 §1.8。
 
 
 ### 1.1 已验收 1a 的历史运行状态（1b 新增接线见 §1.3）
@@ -131,6 +132,19 @@
 
 新测试 `ext_growth_optional_rewards.test.ts` 同时覆盖 provider 纯预检、整数溢出、默认/未知报价 skip、同命令连发、零值/重复收据，以及发现式安装组合中的真实 narrative 对话、存读、逐条 replay 和 seek；不通过导入 narrative 私有实现建立依赖。
 
+### 1.8 3g 可信 actor 容量查询（1.7.0 / foundation 5）
+
+`growth.combat-stats.v1` 经独立 `optionalActorQueries` 注册。仅引擎凭已验证的当前/缓存世界 Creature 引用选择 actor；provider 收到冻结的 actor 事实、growth 自身状态与 `getActorComponent(name)`，不能以请求 actorId 选择目标，也不能借玩家 UI 查询读取 NPC。请求精确为 `{v:1,baseStaminaCapacity,basePoiseCapacity}`，两项基础容量由 combat 模板所有者提供，范围均为 [1,1000000] 的安全整数。
+
+- 支持结果精确为 `{status:'supported',staminaCapacity,poiseCapacity,revision}`；revision 是有效配置、actor、模板、基值、属性、等级及仍有效的容量效果作用域的 SHA-256 fingerprint。它不含 HP、恢复余额或单纯流逝的时钟；重复零 tick 查询稳定，无状态写入、RNG 或效果消费
+- 缺 progression 的合法无成长角色、配置 `combatStats:null`、关闭 playerEnabled 或 NPC 模板未列在 allowedTemplateIds 时返回 `{status:'unsupported'}`，由消费端使用 combat 原模板。缺少 provider 则是底座 absent。非法请求/输出与部分损坏的成长构筑必须拒绝，不能伪装缺席
+- `investment=max(0,attribute.values[attributeId]-baseline)`；赠予/身份/模板与购买属性均按同一值解释。每池先算 `clamp(base+floor(investment*coefficient/denominator),min,max)`，中间使用 bigint 精确整数，不浮点溢出。两池映射独立，当前临时样例为体质→体力每点 +2、意志→韧性每点 +1，基准0，最终 [1,1000000]，不是最终平衡结论
+- 新增 growth 自身 `staminaCapacity` / `poiseCapacity` 纯规则端口，允许既有属性、身份、被动及临时实例按现有有限预算/槽位/标签规则修正映射容量；最终仍取端口范围与映射硬范围的交集。临时效果按既有施加快照、消费、中断与客观到期生效，查询本身不创建/移除效果；反复施加/到期不能累加基值
+- provider 只给容量，不给恢复量、间隔、延迟或当前余额。消费端按批准的余额 A 在合法机械事务中执行 `newCurrent=min(oldCurrent,newCapacity)`，不自动补新增容量，也不改变已付费动作或既有硬直。load/replay/seek 只重建与校验，不以查询发恢复
+- moduleVersion/rulesVersion 同升 1.7.0；完整定义 JSON 继续精确指纹绑定，descriptor 要求 foundation 5。旧1.6.0或旧指纹直接拒绝，无迁移。`ext_growth_combat_stats.test.ts` 覆盖精确数学、非法 DTO、NPC/unsupported、临时效果重复切换、纯查询及实际分配/洗点/重复存读/回放/seek
+
+旧配置守卫唯一前提扩展：删除全部属性的夹具同时设置 `combatStats:null`，移除本轮新增引用，原“不抛异常”断言不变。隔离原 HEAD 生产反事实通过，新生产原夹具仅因 dangling combatStats 属性引用失败；未在共享工作区反转生产文件。
+
 ## 2. 固定技术合同与可调数据
 
 固定A：D02确定致死来源、D04有界环境/持续伤害因果、D16经典隔离和窄纯端口、D17嵌套生成事务、D18安全点可达性回收、D19每命令完整checkpoint、D20最后有效状态施加者、D22首世界动作前create-character命令。这些不能靠改JSON关闭。
@@ -161,8 +175,8 @@
 | `$` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1a0 |
 | `$.schema` | 枚举 `1` | `1` | 1a0 |
 | `$.moduleId` | 枚举 `"growth"` | `"growth"` | 1a0 |
-| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.6.0"` | 1a0；内容扩充升级 |
-| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.6.0"` | 1a0；内容扩充升级 |
+| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.7.0"` | 3g；actor-scope 容量合同升级 |
+| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.7.0"` | 3g；actor-scope 容量合同升级 |
 | `$.config` | object；全部配置子组必填，见以下各节 | 对象 | 1a–1e |
 | `$.definitions` | array；元素为Skill或Identity，完整结构见对应节 | 24项：12技能/4职业/4血统/4信仰 | 1d/1e |
 
@@ -334,6 +348,7 @@
 | `$.config.rules.ports.focusCapacity` | `RulePort`；完整结构见共用类型 | 对象；见子字段 | 1b |
 | `$.config.rules.ports.focusRecoveryInterval` | `RulePort`；完整结构见共用类型 | 对象；见子字段 | 1b |
 | `$.config.rules.ports.cooldownDuration` | `RulePort`；完整结构见共用类型 | 对象；见子字段 | 1b |
+| `$.config.rules.ports.staminaCapacity` / `$.config.rules.ports.poiseCapacity` | `RulePort`；与各 combatStats 映射硬范围取交集 | 独立体力/韧性容量 | 3g |
 | `$.config.rules.taggedProperties` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1b |
 | `$.config.rules.taggedProperties.duration` | `RulePort`；完整结构见共用类型 | 对象；见子字段 | 1b |
 | `$.config.rules.taggedProperties.intensity` | `RulePort`；完整结构见共用类型 | 对象；见子字段 | 1b |
@@ -556,7 +571,7 @@
 | `Effect` | oneOf（必须恰好匹配一个变体） | 对象；见子字段 | 1b求值/1d执行/1e身份 |
 | `Effect{kind=modifier}` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1b |
 | `Effect{kind=modifier}.kind` | 枚举 `"modifier"` | `"modifier"` | 1b |
-| `Effect{kind=modifier}.port` | 枚举 `"hitChance"`,`"physicalDamage"`,`"receivedPhysicalDamage"`,`"stealthRange"`,`"searchStrength"`,`"strengthBonus"`,`"maxHpBonus"`,`"focusCapacity"`,`"focusRecoveryInterval"`,`"cooldownDuration"` | `"strengthBonus" / "hitChance" / "stealthRange" / "maxHpBonus" …` | 1b |
+| `Effect{kind=modifier}.port` | 枚举 `"hitChance"`,`"physicalDamage"`,`"receivedPhysicalDamage"`,`"stealthRange"`,`"searchStrength"`,`"strengthBonus"`,`"maxHpBonus"`,`"focusCapacity"`,`"focusRecoveryInterval"`,`"cooldownDuration"`,`"staminaCapacity"`,`"poiseCapacity"` | `"strengthBonus" / "hitChance" / "stealthRange" / "maxHpBonus" …` | 1b |
 | `Effect{kind=modifier}.operation` | 枚举 `"add"`,`"multiply"` | `"add"` | 1b |
 | `Effect{kind=modifier}.slot` | 可为null；否则 稳定ID（小写；`.`/`-`分段） | `null` | 1b |
 | `Effect{kind=modifier}.magnitude` | `Magnitude`；完整结构见共用类型 | 对象；见子字段 | 1b |
@@ -614,7 +629,7 @@
 |---|---|---|---|
 | `Modifier` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1b；效果提交1d |
 | `Modifier.kind` | 枚举 `"modifier"` | `"modifier"` | 1b；效果提交1d |
-| `Modifier.port` | 枚举 `"hitChance"`,`"physicalDamage"`,`"receivedPhysicalDamage"`,`"stealthRange"`,`"searchStrength"`,`"strengthBonus"`,`"maxHpBonus"`,`"focusCapacity"`,`"focusRecoveryInterval"`,`"cooldownDuration"` | `"strengthBonus" / "hitChance" / "stealthRange" / "maxHpBonus" …` | 1b；效果提交1d |
+| `Modifier.port` | 枚举 `"hitChance"`,`"physicalDamage"`,`"receivedPhysicalDamage"`,`"stealthRange"`,`"searchStrength"`,`"strengthBonus"`,`"maxHpBonus"`,`"focusCapacity"`,`"focusRecoveryInterval"`,`"cooldownDuration"`,`"staminaCapacity"`,`"poiseCapacity"` | `"strengthBonus" / "hitChance" / "stealthRange" / "maxHpBonus" …` | 1b；效果提交1d |
 | `Modifier.operation` | 枚举 `"add"`,`"multiply"` | `"add"` | 1b；效果提交1d |
 | `Modifier.slot` | 可为null；否则 稳定ID（小写；`.`/`-`分段） | `null` | 1b；效果提交1d |
 | `Modifier.magnitude` | `Magnitude`；完整结构见共用类型 | 对象；见子字段 | 1b；效果提交1d |
@@ -728,6 +743,8 @@
 | `focusCapacity` | flat / `growth.budget.focuscapacity` | growth.slot.final[0,4] | [0,13] / floor | false / null / null |
 | `focusRecoveryInterval` | flat / `growth.budget.focusrecoveryinterval` | growth.slot.final[0,4] | [1,9007199254740991] / floor | false / null / null |
 | `cooldownDuration` | flat / `growth.budget.cooldownduration` | growth.slot.final[0,4] | [0,9007199254740991] / ceil | true / null / 0.75 |
+| `staminaCapacity` | flat / `growth.budget.staminacapacity` | growth.slot.final[0,4] | [1,1000000] / floor | false / null / null |
+| `poiseCapacity` | flat / `growth.budget.poisecapacity` | growth.slot.final[0,4] | [1,1000000] / floor | false / null / null |
 | `taggedProperties.duration` | flat / `growth.budget.tag-duration` | growth.slot.final[0,4] | [1,9007199254740991] / floor | false / null / null |
 | `taggedProperties.intensity` | flat / `growth.budget.tag-intensity` | growth.slot.final[0,4] | [-9007199254740991,9007199254740991] / floor | false / null / null |
 | `taggedProperties.cooldown` | flat / `growth.budget.tag-cooldown` | growth.slot.final[0,4] | [0,9007199254740991] / floor | false / null / null |
@@ -842,3 +859,24 @@ focusCapacity在同一纯求值器内取`config.focus[min,cap]`与端口globalCl
 | 1e | 身份选择/赠予/誓约、怪物模板与盟友自动分配；收齐实际字段、样例和运行限制 |
 
 当前原型门禁按 [README](README.md#当前验收门禁)：正常候选类型/构建/边界/全部ext/完整npm test一次，真实删除副本只跑removal档；不要求CE对齐、ce:fetch、test:full或test:gen。阶段1历史门禁仍见其原报告。此配置文档不代替实际测试结果，不把尚未执行的检查写成通过。
+
+
+### 4.16 config.combatStats（3g）
+
+对象可为 null（整体禁用）；非 null 时以下字段全部必填，未知键拒绝。
+
+| 字段 | 结构/范围 | 当前临时样例 |
+|---|---|---|
+| `$.config.combatStats` | null 或严格对象 | 对象 |
+| `$.config.combatStats.playerEnabled` | boolean | true |
+| `$.config.combatStats.allowedTemplateIds` | 唯一已有 growth 模板 ID 数组；可为空 | growth.template.neutral |
+| `$.config.combatStats.stamina` | 独立 CapacityMap | constitution，2/1 |
+| `$.config.combatStats.poise` | 独立 CapacityMap | will，1/1 |
+| `CapacityMap.attributeId` | 现有属性 ID | 体力用 growth.attribute.constitution；韧性用 growth.attribute.will |
+| `CapacityMap.baseline` | 属性 min..cap 内安全整数 | 0 |
+| `CapacityMap.coefficient` | [0,MAX] 安全整数 | 体力2；韧性1 |
+| `CapacityMap.denominator` | [1,MAX] 安全整数 | 1 |
+| `CapacityMap.rounding` | 固定 floor | floor |
+| `CapacityMap.min` / `CapacityMap.max` | [1,1000000] 安全整数；min≤max，与端口须有整数交集 | 1 / 1000000 |
+
+`config.rules.ports` 另含 `staminaCapacity`、`poiseCapacity`，结构沿用 GrowthRuleConfig。两池默认独立预算 `growth.budget.staminacapacity` / `growth.budget.poisecapacity`（各 ±1000000），flat、floor，最终 [1,1000000]；不新增恢复端口。默认包未给既有技能添加容量 buff，合法自定义内容可用这两项有限端口。

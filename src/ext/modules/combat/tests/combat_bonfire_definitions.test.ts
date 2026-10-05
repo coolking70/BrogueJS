@@ -35,7 +35,7 @@ function fixture(options: { mutate?: (pack: CombatPack) => void; fail?: boolean;
     const services: ExtensionPorts = { depth: () => depth, playerId: () => 1,
         randomInt: vi.fn(() => { throw new Error('placement must not draw RNG'); }), message: vi.fn(),
         interactableCandidates: vi.fn(() => candidates), isInteractableVisible: () => true, canInteractWith: () => true };
-    const module: ExtensionModule = { id: 'combat', version: '1.4.0', worldInteractables: true,
+    const module: ExtensionModule = { id: 'combat', version: '1.5.0', worldInteractables: true,
         initialState: () => ({ revision: 0, nextActionId: 1, bonfires: initialBonfireState() as unknown as Json }),
         validateState: (value): value is Json => {
             try { validateBonfireState((value as {bonfires:unknown}).bonfires, definitionPack.bonfires, 1); return true; } catch { return false; }
@@ -57,7 +57,7 @@ function fixture(options: { mutate?: (pack: CombatPack) => void; fail?: boolean;
 
 describe('3e finite bonfire definitions', () => {
     it('declares versioned safe placement, 500-tick completion-only full recovery and no world reset', () => {
-        const value = pack(); expect(value.moduleVersion).toBe('1.4.0'); expect(value.rulesVersion).toBe('1.4.0');
+        const value = pack(); expect(value.moduleVersion).toBe('1.5.0'); expect(value.rulesVersion).toBe('1.5.0');
         expect(value.bonfires.definitions).toHaveLength(1);
         expect(value.bonfires.definitions[0]).toMatchObject({ restTicks: 500, interactionDistance: 1,
             restorePolicy: { hp: 'full', stamina: 'full', poise: 'full' }, resetPolicy: 'none',

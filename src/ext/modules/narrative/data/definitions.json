@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "moduleId": "narrative",
-  "moduleVersion": "1.3.0",
-  "rulesVersion": "1.3.0",
-  "stateVersion": 3,
+  "moduleVersion": "1.4.0",
+  "rulesVersion": "1.4.0",
+  "stateVersion": 4,
   "inputVersion": 2,
   "config": {
     "timePolicy": "free-frozen",
@@ -51,6 +51,14 @@
         "keep",
         "release"
       ]
+    },
+    {
+      "id": "bonfire.rested",
+      "type": "boolean",
+      "initial": false,
+      "min": null,
+      "max": null,
+      "values": null
     }
   ],
   "counters": [],
@@ -437,6 +445,19 @@
               "next": "remember"
             },
             {
+              "id": "ask-warm-ashes",
+              "textKey": "ext.narrative.choice.wick.warm_ashes",
+              "condition": {
+                "op": "flag",
+                "id": "bonfire.rested",
+                "equals": true
+              },
+              "unavailable": "hide",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "warm-ashes"
+            },
+            {
               "id": "leave-wick",
               "textKey": "ext.narrative.choice.leave",
               "condition": {
@@ -614,6 +635,24 @@
               "next": null
             }
           ]
+        },
+        {
+          "id": "warm-ashes",
+          "textKey": "ext.narrative.dialogue.wick.warm_ashes",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-warm-ashes",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
         }
       ]
     }
@@ -733,6 +772,32 @@
           "rewardId": "wick.settled",
           "receiptId": "wick.reward",
           "onUnavailable": "skip"
+        }
+      ]
+    },
+    {
+      "id": "bonfire.first-rest",
+      "on": {
+        "kind": "combat-event",
+        "eventKind": "rest-completed",
+        "actorRole": "player",
+        "actorTags": []
+      },
+      "priority": 0,
+      "condition": {
+        "op": "flag",
+        "id": "bonfire.rested",
+        "equals": false
+      },
+      "repeat": {
+        "kind": "once-per-run"
+      },
+      "receiptId": "bonfire.first-rest.receipt",
+      "effects": [
+        {
+          "kind": "set-flag",
+          "id": "bonfire.rested",
+          "value": true
         }
       ]
     }

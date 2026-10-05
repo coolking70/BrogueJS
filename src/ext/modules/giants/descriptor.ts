@@ -5,7 +5,7 @@ import zhCN from './locales/zh_CN.json';
 export const descriptor: ModuleDescriptor = {
   id: 'giants',
   version: GIANTS_VERSION,
-  foundation: 4,
+  foundation: 5,
   rules: getGiantsPackIdentity(),
   create: createGiantsModule,
   defaultEnabled: false,

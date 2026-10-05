@@ -344,7 +344,17 @@ describe('3e optional modules and durable rest identity', () => {
             expect(a.resourceReceipts).toEqual(b.resourceReceipts); expect(a.storyReceipts).toEqual(b.storyReceipts);
             expect(after.components[game.player.id]!['growth:skills']).toEqual(before.components[game.player.id]!['growth:skills']);
         }
-        if (ids.includes('narrative')) expect(after.modules.narrative).toEqual(before.modules.narrative);
+        if (ids.includes('narrative')) {
+            // 3g adds exactly one declared first-rest flag/receipt. The prior
+            // ledger-preservation assertion still covers every other field.
+            const expected = json(before.modules.narrative) as unknown as { revision: number; lastFactId: number;
+                flags: Record<string, unknown>; triggerReceipts: { triggerId: string; receiptId: string; scopeKey: string; firings: number; lastTurn: number; lastFactId: number }[] };
+            expected.revision++; expected.lastFactId = before.foundation.nextFactId;
+            expected.flags['bonfire.rested'] = true;
+            expected.triggerReceipts.push({ triggerId: 'bonfire.first-rest', receiptId: 'bonfire.first-rest.receipt', scopeKey: 'run',
+                firings: 1, lastTurn: game.absoluteTurnNumber, lastFactId: before.foundation.nextFactId });
+            expect(after.modules.narrative).toEqual(expected);
+        }
         if (ids.includes('giants')) expect(after.modules.giants).toEqual(before.modules.giants);
     });
     it('saves an in-flight scheduler rest, resumes only on update and never applies recovery twice after load', () => {

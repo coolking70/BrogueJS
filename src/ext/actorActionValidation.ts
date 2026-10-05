@@ -1,4 +1,5 @@
 import { validateBonfireConfig, validateBonfireState } from './worldRest';
+import { validateActorCombatStats, combatCapacityPolicy } from './combatStats';
 /** Pure, module-independent codecs for the trusted phased attack executor.
  * The scheduler is the only clock. Metadata may describe its current geometry,
  * but cannot carry an additional countdown or change the declared attack. */
@@ -261,10 +262,12 @@ export function validateProductionActorAttackState(value: unknown, definitions: 
     for (const actor of value.actors) {
         actorActionRecord(actor, ['actorId', 'profileId', 'stamina', 'regenRemainder', 'regenDelayRemaining',
             'dodgeRemainingTicks', 'dodgeRecoveryRemainingTicks', 'poise', 'poiseRecoveryRemainder',
-            'poiseRecoveryDelayRemaining', 'parryRemainingTicks', 'parryRecoveryRemainingTicks', 'parryFacing', 'staggerRemainingTicks']);
+            'poiseRecoveryDelayRemaining', 'parryRemainingTicks', 'parryRecoveryRemainingTicks', 'parryFacing', 'staggerRemainingTicks',
+            ...(Object.prototype.hasOwnProperty.call(actor, 'combatStats') ? ['combatStats'] : [])]);
         const actorId = integer(actor.actorId, 1), profile = profiles.get(id(actor.profileId));
         if (actors.has(actorId) || !profile) fail('duplicate actor or unknown profile');
-        const policy = policies.get(profile.resourcePolicyId)!;
+        if ('combatStats' in actor) validateActorCombatStats(actor.combatStats);
+        const policy = combatCapacityPolicy(policies.get(profile.resourcePolicyId)!, actor.combatStats as import('./actorActions').ActorCombatStats | undefined);
         integer(actor.stamina, 0, policy.staminaCapacity);
         integer(actor.regenRemainder, 0, policy.regenPerTickDenominator - 1);
         integer(actor.regenDelayRemaining, 0, policy.regenDelayTicks);
@@ -273,11 +276,11 @@ export function validateProductionActorAttackState(value: unknown, definitions: 
         if (dodgeRemaining > dodgeRecoveryRemaining
             || (dodgeRemaining > 0 && dodgeRemaining !== dodgeRecoveryRemaining
                 - (definitions.dodge.recoveryTicks - definitions.dodge.windowTicks))
-            || (actor.stamina === policy.staminaCapacity && actor.regenRemainder !== 0)) fail('invalid resource remainder or dodge clock');
+            || (!('combatStats' in actor) && actor.stamina === policy.staminaCapacity && actor.regenRemainder !== 0)) fail('invalid resource remainder or dodge clock');
         integer(actor.poise, 0, policy.poiseCapacity);
         integer(actor.poiseRecoveryRemainder, 0, policy.poiseRecoveryDenominator - 1);
         integer(actor.poiseRecoveryDelayRemaining, 0, policy.poiseRecoveryDelayTicks);
-        if (actor.poise === policy.poiseCapacity && actor.poiseRecoveryRemainder !== 0) fail('invalid full poise remainder');
+        if (!('combatStats' in actor) && actor.poise === policy.poiseCapacity && actor.poiseRecoveryRemainder !== 0) fail('invalid full poise remainder');
         const parryRemaining = integer(actor.parryRemainingTicks, 0, definitions.parry.windowTicks);
         const parryRecoveryRemaining = integer(actor.parryRecoveryRemainingTicks, 0, definitions.parry.recoveryTicks);
         const staggerRemaining = integer(actor.staggerRemainingTicks, 0, MAX_ACTOR_ACTION_TICKS);

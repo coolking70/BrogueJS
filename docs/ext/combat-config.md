@@ -21,9 +21,9 @@
 |---|---|
 | `schema` | `1`，combat 数据包结构 |
 | `moduleId` | `"combat"` |
-| `moduleVersion`、`rulesVersion`、`COMBAT_VERSION` | 均为 `"1.4.0"`；加载器接受精确值，不是任意 semver |
-| descriptor 的 `foundation` | `4` |
-| 扩展 manifest / foundation snapshot | manifest `schema: 1`，foundation 版本 `4` |
+| `moduleVersion`、`rulesVersion`、`COMBAT_VERSION` | 均为 `"1.5.0"`；加载器接受精确值，不是任意 semver |
+| descriptor 的 `foundation` | `5` |
+| 扩展 manifest / foundation snapshot | manifest `schema: 1`，foundation 版本 `5` |
 | 原生整局存档 / 录像 | `version: 3`；整局 schema 为 `brogue-web-whole-run-v3` |
 | 正式 combat 持久状态 | `schema: 3`，位于 `extensions.modules.combat` |
 | 内嵌 scheduler / 只读模块 view | 各为 `schema: 1`，与数据包版本分别校验 |
@@ -258,11 +258,11 @@ profile 精确字段为 `id / resourcePolicyId / attackIds`。资源策略和每
 
 正 HP 损失、死亡、位移/空间来源变化、失能、离层、目标移除或新可见敌情会中断篝火奖励。盾完全吸收而 HP 未减不伪称受伤；源 revision 能检测移出再移回。关闭说明框只能取消未开始的输入，不是已经开始休息的取消命令。
 
-完成奖励等到同 tick 敌人/环境及原生回合收尾（包括饥饿死亡和最后视野）之后，按**当前** HP 上限、体力/韧性模板容量应用所选 `full`。中断没有这笔完成奖励，但经过时间本来发生的普通回血/资源恢复不会倒退。篝火完成奖励不清毒/饥饿，不额外补充 growth 专注或重置技能冷却；若 growth 启用，其正常专注恢复、冷却及状态时钟仍随实际时间推进。篝火也不重置敌人、死亡/任务收据或世界时间，不复活玩家。
+完成奖励等到同 tick 敌人/环境及原生回合收尾（包括饥饿死亡和最后视野）之后，按**当前** HP 上限、体力/韧性当前有效容量应用所选 `full`。中断没有这笔完成奖励，但经过时间本来发生的普通回血/资源恢复不会倒退。篝火完成奖励不清毒/饥饿，不额外补充 growth 专注或重置技能冷却；若 growth 启用，其正常专注恢复、冷却及状态时钟仍随实际时间推进。篝火也不重置敌人、死亡/任务收据或世界时间，不复活玩家。
 
 `bindings / placements / pending / active / receipts` 保存实例、次数和结果；倒计时只在 scheduler。`active.phase: settling` 是同步结算中的短暂安全点，不能保存/载入；合法 resting 可按严格源身份与时钟恢复。完成收据精确一次，读档/更新不重复发奖；旧收据被滚动淘汰也不清访问/完成总数。
 
-## 7. 已存在的软接口与尚未实现的提案
+## 7. 可选软接口与 3g adapters
 
 ### 7.1 `combat.part-break.v1`：已接线
 
@@ -283,18 +283,32 @@ provider 的 prepare 返回 ready 计划或明确 unsupported；commit 只能写
 
 成功 handled 与底座 fallback 互斥。combat 缺席、禁用或明确不支持时，底座才按身体数据 `fallbackStunTicks` 施加行动抑制；poise 免疫、正在硬直等合法 handled 情况不会再追加 fallback。provider 抛错会使同一破坏事务回滚，不以捕获错误后改走 fallback 来重复提交。局部破坏不发 kill、不额外给 XP、不触发成员死亡掉落；核心死亡沿原生终结路径处理。
 
-### 7.2 以下仍是设计方向
+### 7.2 3g 受信属性容量 adapter
 
-后续属性换算、容量变化、事件种类与剧情订阅的选项见[可选战斗 adapter 设计稿](phase3-adapters.proposal.md)。该稿只供独立决策，不在当前内容包中增加字段、不分配版本；现有 HUD 的玩家行动计数仍沿 `logger.turn` 口径，不在本轮改成 elapsed ticks 或子段数。
+`growth.combat-stats.v1` 通过底座 `queryOptionalActor` 查询真实 actor。请求仅含 `v: 1 / baseStaminaCapacity / basePoiseCapacity`；actor 的身份、当前/缓存层和群体归属由底座核验，payload actorId 不能授予权限。provider 只读自己模块允许的冻结 actor 组件。缺 provider 或显式 unsupported 回退 combat 模板；provider 异常、非法 DTO、越界整数直接拒绝，不能伪装缺席。
 
-| 协议名 | 当前状态 |
-|---|---|
-| `growth.combat-stats.v1` | 未实现；成长属性不经此修改体力容量/恢复/韧性，当前使用 combat 基础模板 |
-| `combat.attack-profile.v1` | 未实现为可选查询/provider；当前用 combat 自有 `nativeProfiles` 绑定已安装的原生物种/形态 |
-| `combat.event.v1` | 未实现；没有可在 narrative 数据中订阅的 attack/stagger/parry/rest 统一事件流 |
-| `combat.public-state.v1` | 未实现为可选模块查询协议；已有 UI `readModuleView('combat')` 不等于叙事条件协议 |
+成长模块解释它自己的数据映射与临时效果，combat 只消费 `status: supported / staminaCapacity / poiseCapacity / revision`。两容量均为 1–1,000,000 整数；revision 为 `sha256:` 加 64 位小写十六进制。当前成长换算选择 A：基础容量加属性投入的受限整数加值，再应用成长已声明的容量效果；实际绑定、整数系数/分母与上下限在成长包配置。恢复速率、费用、恢复相位与动作时钟仍为 combat 模板值。
 
-原生 `physicalResolved`、死亡及现有 `committedAction / defended` hook 已有各自职责；例如成功弹反通过底座 `notifyActorParried` 分配因果身份。这些不代表 `combat.event.v1`、多消费者剧情事实事务或 rest-completed 触发器已经存在。不要在内容里写虚构的 adapter ID/字段，也不要直接 import growth/narrative 实现来绕过缺失能力。篝火和部位破坏都不依赖 growth/narrative 存在。
+- 容量更新选择 A：`newCurrent = min(oldCurrent, newCapacity)`。容量增加不补值，下降截断溢出，反复开关效果不能刷满
+- 容量同步保留原恢复延迟、定点余数、防御窗口与已付费动作。仅后续真实恢复 tick/付款按原 full-pool 规则处理余数；提高韧性不解除已经开始的硬直
+- 支持成长 adapter 的已物化资源行保存 `combatStats: { staminaCapacity, poiseCapacity, revision }`。精确加载必须与候选世界 actor 的纯查询一致，删除/伪造 DTO 或过期 revision 拒绝；attach/load/预览不补值、不修档
+- 同步仅发生于付款、权威 elapsed 或机械结算。新行从模板初始绝对余额开始；只有正常恢复或实际成功休息可填新增容量
+- 群体成员独立支付自己的体力；decision/time 与 poise-break 仍归核心。NPC 使用同一可信协议，且只支持成长配置批准的模板
+
+### 7.3 3g 已提交战斗事实
+
+`combat.event.v1` 提供四种事实：`attack-resolved / staggered / parried / rest-completed`。所有事实都有底座 factId、depth、turn 与公开 actor 身份；没有位置、未来招式或未公开 NPC 资料。
+
+- `attack-resolved` 每个真实解算子段一次，以 actionId/sourceSubactionId/segmentIndex 唯一标识，含有界 hitCount/hpLost 摘要；windup 不发布，原生逐击 physicalResolved 保持原职责
+- `staggered` 仅韧性真正耗尽并开始硬直时发布；已有硬直的后续命中不重复发布
+- `parried` 引用原有 defended hook 分配的真实 resolutionId；同次成功弹反可以另产生攻击者 staggered，这是不同事实
+- `rest-completed` 在恢复、完成计数与收据全部成功提交后发布，含 actor/action/bonfire/visit；中断休息不伪造成功
+
+底座按稳定模块 ID 排序，每个根事实只分配一次 ID，并为消费者预留互不碰撞的有界派生范围。原生改变、模块 state、事实计数、消息及两 RNG 处于同一提交事务；任意消费者或预算失败一起回滚。没有消费者时不产生队列或额外事实 ID。读取、重复加载与 replay/seek 不补发旧事实。narrative 用数据声明事件、公开 actor 角色/标签、条件、次数与唯一收据键，在安全点只应用 flag/计数/旁支资格，不允许订阅发奖励；不会自动打开对话。订阅种类在注册时冻结，未订阅的事件不分配队列/ID或执行原生事实检查点。
+
+原生没有 phased action 的 stagger/parry 使用 actionId=0；群成员 generation 从0开始，来源同 tick 退休仍保留事务开始时的可信来源身份。具体写集、独立审查与开发期验证见 [3g 报告](phase3g.report.md)。完整收尾门禁仍等4f统一通知。
+
+以下仍未实现：`combat.attack-profile.v1`（仍使用 combat 自有 nativeProfiles）、`combat.public-state.v1`（已有 UI view 不等于剧情查询协议）。内容不得直接 import growth/narrative 实现；篝火、部位破坏及 combat 独立启用不依赖它们存在。现有 HUD 玩家行动计数保持 logger.turn 口径。
 
 ## 8. 公开输入、只读显示与确定性
 

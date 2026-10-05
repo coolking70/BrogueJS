@@ -1,4 +1,4 @@
-import type { ActorFacts, ExtensionRuleContext, Json, ReadonlyJson } from './types';
+import type { ActorFacts, ExtensionRuleContext, Json, ReadonlyJson, OptionalQueryResult } from './types';
 import { integer, identity, keys } from '../engine/Movement/SpatialSchema';
 
 /** Foundation-owned protocol; no import of a content/combat module. */
@@ -19,6 +19,8 @@ export interface PartBreakRequest extends PartBreakReceipt {
 }
 export interface PartBreakPrepareContext extends ExtensionRuleContext {
     readonly actor: Readonly<ActorFacts>;
+    /** Query bound to this foundation-attested actor, never another payload ID. */
+    queryActor?(capability:string,input:Json):OptionalQueryResult;
     /** Foundation-attested live slot. A request alone cannot authorize members. */
     readonly member?: Readonly<PartBreakMemberIdentity>;
 }

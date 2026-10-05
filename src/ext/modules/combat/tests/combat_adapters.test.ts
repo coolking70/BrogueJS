@@ -1,0 +1,281 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createHeadlessGame } from '../../../../test/harness';
+import { installProductionBody, emptyProductionArena, PRODUCTION_BODY_ID } from '../../../../test/support/productionComposite';
+import { selectNativeActorAction } from '../../../../engine/Core/ActorActionSession';
+import { Item, ItemCategory } from '../../../../engine/Items/Item';
+import { withBodyContact } from '../../../../engine/Combat/BodyCombat';
+import type { Game } from '../../../../engine/Core/Game';
+import { chargeNativeActorAttack, collectPhasedAttackActors, prepareActorParryCommand, commitActorParryCommand,
+    preparePhasedAttackCommand, commitPhasedAttackCommand, applyActorPoiseDamage, tryActorParry,
+    validateActorCombatCapacities } from '../../../../engine/Core/PhasedAttackProduction';
+import { productionActorActionScheduler } from '../../../../engine/Core/ActorActionProduction';
+import { prepareWorldRest, commitWorldRest, settleWorldRest, interruptWorldRest } from '../../../../engine/Core/WorldRestProduction';
+import { Monster, MonsterState, type MonsterData } from '../../../../entities/Monster';
+import type { Creature } from '../../../../entities/Creature';
+import monsters from '../../../../data/monsters.json';
+import { TerrainType, DungeonLayer } from '../../../../engine/Map/Grid';
+import { commitCreatureAnchor } from '../../../../engine/Movement/CreatureSpatial';
+import { EnvironmentManager } from '../../../../engine/Environment/Gas';
+import { WaypointSystem } from '../../../../engine/Map/WaypointMap';
+import { logger } from '../../../../engine/Systems/Logger';
+import { rng } from '../../../../engine/Random';
+import * as catalog from '../../../catalog';
+import { registryFromDescriptors } from '../../../descriptor';
+import { extensionDataFingerprint } from '../../../fingerprint';
+import { isJson } from '../../../json';
+import type { CombatEventFact, ExtensionModule, Json, OptionalQueryResult } from '../../../types';
+import { resolveCombatStats } from '../../../combatStats';
+import { loadCombatDefinitionPack } from '../definitions';
+import { combatAttackDefinitions } from '../production';
+import { validateProductionActorAttackState } from '../../../actorActionValidation';
+
+const state=(game:Game)=>game.extensionRuntime!.actorActionBinding()!.state;
+const row=(game:Game,id=game.player.id)=>state(game).actors.find(value=>value.actorId===id)!;
+const command=(action:string,payload:object)=>JSON.stringify({module:'combat',action,payload});
+const revision=(capacity:number)=>extensionDataFingerprint({capacity});
+const supported=(staminaCapacity=30,poiseCapacity=18)=>({status:'supported',staminaCapacity,poiseCapacity,revision:revision(staminaCapacity)}) as Json;
+const events=(game:Game)=>(game.extensionRuntime!.snapshot().modules.narrative as unknown as {events:CombatEventFact[]}).events;
+const installed=new Set(catalog.getInstalledModuleDescriptors().map(module=>module.id));
+function setup(options:{query?:(actorId:number,playerId:number)=>Json;events?:boolean;fail?:()=>boolean;bodyAttacks?:boolean}={}) {
+    const previous=catalog.createExtensionRegistry();
+    const descriptors=catalog.getInstalledModuleDescriptors().map(descriptor=>{
+        const module=previous.create(previous.manifest([descriptor.id]))[0]!;
+        if(descriptor.id==='combat'){
+            const actorActions=structuredClone(module.actorActions!);
+            if(options.bodyAttacks)(actorActions.definitions as unknown as import('../../../actorActions').ActorAttackDefinitions).nativeProfiles.push({monsterId:'giants.fixture-leg',profileId:'combat.follow-thrust'});
+            const rules=options.bodyAttacks?{...module.rules!,fingerprint:extensionDataFingerprint(actorActions.definitions)}:module.rules;
+            return {...descriptor,rules,create:()=>({...module,rules,actorActions,optionalActorQueries:options.query?{'growth.combat-stats.v1':{
+                accepts:()=>true,query:(_input,context)=>options.query!(context.actor.id,context.playerId),validate:isJson,
+            }}:undefined} as ExtensionModule)};
+        }
+        if(descriptor.id==='narrative'&&options.events)return {...descriptor,create:()=>({id:descriptor.id,version:descriptor.version,rules:descriptor.rules,
+            initialState:()=>({events:[]}),validateState:isJson,committedFacts:{'combat.event.v1':{maxDerivedFacts:0,
+                prepare:fact=>structuredClone(fact),commit:(fact,context)=>{
+                    if(options.fail?.())throw new Error('fixture consumer failure');
+                    const value=structuredClone(context.state) as {events:Json[]};value.events.push(fact as Json);context.setState(value);
+                }}}} as ExtensionModule)};
+        return {...descriptor,rules:module.rules,create:()=>module};
+    });
+    vi.spyOn(catalog,'createExtensionRegistry').mockReturnValue(registryFromDescriptors(descriptors));
+}
+function scene(eventConsumer=false){
+    const game=createHeadlessGame(8201,'test');
+    game.startNewGame({seed:8201,mode:'test',ruleSet:'extended',extensions:eventConsumer?['combat','narrative']:['combat']});
+    game.animationEnabled=false;game.monsters=[];game.dormantMonsters=[];game.items=[];
+    for(let y=0;y<game.grid.height;y++)for(let x=0;x<game.grid.width;x++){
+        game.grid.setTerrain(x,y,x===0||y===0||x===game.grid.width-1||y===game.grid.height-1?TerrainType.WALL:TerrainType.FLOOR);
+        for(const layer of [DungeonLayer.LIQUID,DungeonLayer.SURFACE,DungeonLayer.GAS])game.grid.setTerrainLayer(x,y,layer,TerrainType.NOTHING);
+        game.grid.getCell(x,y)!.machineNumber=0;
+    }
+    game.environment=new EnvironmentManager(game.grid);game.waypoints=new WaypointSystem();
+    commitCreatureAnchor(game.player,{x:20,y:15});game.player.hp=game.player.maxHp=1000;game.player.ticksUntilTurn=0;
+    (game as any).updateVision();while(logger.pendingAcknowledgment)logger.acknowledgeNext();return game;
+}
+function npc(game:Game){
+    const actor=new Monster(21,15,monsters.find(value=>value.id==='rat')! as unknown as MonsterData);
+    actor.state=MonsterState.HUNTING;actor.ticksUntilTurn=10000;actor.hp=actor.maxHp=1000;actor.defense=-10000;
+    game.monsters.push(actor);game.extensionRuntime!.attachCreature(actor);(game as any).updateVision();return actor;
+}
+function sync(game:Game){collectPhasedAttackActors(game,[game.player,...game.monsters]);}
+function parry(game:Game){const plan=prepareActorParryCommand(game,command('parry',{facing:'e'}));expect(plan).not.toBeNull();commitActorParryCommand(game,plan!);}
+function release(game:Game){const scheduler=productionActorActionScheduler(game)!;scheduler.advanceActionTime(scheduler.nextActionBoundary()!);scheduler.dispatchActorBoundary(game.player.id);}
+afterEach(()=>{vi.restoreAllMocks();logger.reset();logger.onDisturb=null;});
+
+describe('3g strict optional combat capacity consumer',()=>{
+    it.each([{status:'unavailable',reason:'absent'},{status:'available',value:{status:'unsupported'}}])('falls back only for explicit %j',result=>{
+        expect(resolveCombatStats(result as OptionalQueryResult)).toBeUndefined();
+    });
+    it.each([
+        {status:'supported',staminaCapacity:0,poiseCapacity:12,revision:revision(0)},
+        {status:'supported',staminaCapacity:24.5,poiseCapacity:12,revision:revision(24)},
+        {status:'supported',staminaCapacity:24,poiseCapacity:1_000_001,revision:revision(24)},
+        {status:'supported',staminaCapacity:24,poiseCapacity:12,revision:'old'},
+        {status:'unsupported',staminaCapacity:24},
+    ])('rejects malformed available DTO %j',value=>{
+        expect(()=>resolveCombatStats({status:'available',value:value as Json})).toThrow();
+    });
+    it('rejects accessors without invoking them',()=>{
+        const getter=vi.fn(()=>30),value={status:'supported',poiseCapacity:12,revision:revision(30)};
+        Object.defineProperty(value,'staminaCapacity',{get:getter,enumerable:true});
+        expect(()=>resolveCombatStats({status:'available',value:value as Json})).toThrow();expect(getter).not.toHaveBeenCalled();
+    });
+    it('applies repeated up/down temporary capacities without refill, clock change, or fractional loss',()=>{
+        let capacity=30;setup({query:()=>supported(capacity,capacity/2)});const game=scene();
+        expect(chargeNativeActorAttack(game,game.player.id)).toBe(true);
+        const resource=row(game);Object.assign(resource,{stamina:18,poise:9,regenRemainder:13,poiseRecoveryRemainder:17,
+            regenDelayRemaining:20,poiseRecoveryDelayRemaining:30});
+        for(const next of [60,10,40,10,60]){
+            const before=structuredClone(resource),random=rng.getState();capacity=next;
+            prepareActorParryCommand(game,command('parry',{facing:'e'}));game.extensionRuntime!.readModuleView('combat');
+            expect(resource).toEqual(before);expect(rng.getState()).toEqual(random);
+            sync(game);
+            expect(resource.stamina).toBe(Math.min(before.stamina,next));expect(resource.poise).toBe(Math.min(before.poise,next/2));
+            expect(resource).toMatchObject({regenRemainder:13,poiseRecoveryRemainder:17,regenDelayRemaining:20,poiseRecoveryDelayRemaining:30});
+            expect(resource.combatStats).toEqual({staminaCapacity:next,poiseCapacity:next/2,revision:revision(next)});
+            expect(()=>validateProductionActorAttackState(state(game),combatAttackDefinitions(loadCombatDefinitionPack()))).not.toThrow();
+        }
+    });
+    it('keeps accepted paid plan and defense window stable across capacity change',()=>{
+        let capacity=30;setup({query:()=>supported(capacity,12)});const game=scene();
+        parry(game);const before=structuredClone(row(game));capacity=50;sync(game);
+        expect(row(game)).toMatchObject({stamina:before.stamina,poise:before.poise,parryRemainingTicks:60,parryRecoveryRemainingTicks:100,parryFacing:'e'});
+        game.player.ticksUntilTurn=0;Object.assign(row(game),{parryRemainingTicks:0,parryRecoveryRemainingTicks:0,parryFacing:null});
+        const plan=preparePhasedAttackCommand(game,command('attack',{attackId:'fixture.double-thrust',facing:'e'}))!;commitPhasedAttackCommand(game,plan);
+        const actions=structuredClone(state(game).actions),scheduler=structuredClone(state(game).scheduler),balance=row(game).stamina;
+        capacity=8;sync(game);expect(state(game).actions).toEqual(actions);expect(state(game).scheduler).toEqual(scheduler);
+        expect(row(game).stamina).toBe(Math.min(balance,8));
+    });
+    it('retains a begun stagger when capacities rise and never restores poise through the adapter',()=>{
+        let capacity=24;setup({query:()=>supported(capacity,12)});const game=scene();applyActorPoiseDamage(game,game.player.id,12);
+        const ticks=row(game).staggerRemainingTicks;capacity=60;sync(game);
+        expect(row(game)).toMatchObject({poise:0,staggerRemainingTicks:ticks});expect(game.player.ticksUntilTurn).toBe(ticks);
+    });
+    it('uses real NPC scope and falls back for an unsupported actor independently',()=>{
+        let npcSupported=true;const seen:number[]=[];
+        setup({query:(id,playerId)=>{seen.push(id);return id===playerId?supported(30,18):npcSupported?supported(40,20):{status:'unsupported'};}});
+        const game=scene(),target=npc(game);chargeNativeActorAttack(game,target.id);
+        expect(row(game,target.id)).toMatchObject({stamina:22,poise:12,combatStats:{staminaCapacity:40,poiseCapacity:20}});
+        expect(seen).toContain(target.id);npcSupported=false;sync(game);
+        expect(row(game,target.id).combatStats).toBeUndefined();expect(row(game,target.id).stamina).toBe(22);
+        expect(row(game).combatStats?.staminaCapacity).toBe(30);
+    });
+    it('rejects stale saved revision and inflated capacity without changing the candidate',()=>{
+        setup({query:()=>supported()});const game=scene();chargeNativeActorAttack(game,game.player.id);
+        const binding=game.extensionRuntime!.actorActionBinding()!,copy=structuredClone(binding.state);
+        const query=(_actor:Creature,_input:Json):OptionalQueryResult=>({status:'available',value:supported()});
+        expect(()=>validateActorCombatCapacities(copy,binding.definition,[game.player],query)).not.toThrow();
+        copy.actors[0]!.combatStats!.revision=revision(999);const before=structuredClone(copy);
+        expect(()=>validateActorCombatCapacities(copy,binding.definition,[game.player],query)).toThrow('Stale');expect(copy).toEqual(before);
+        delete copy.actors[0]!.combatStats;
+        expect(()=>validateActorCombatCapacities(copy,binding.definition,[game.player],query)).toThrow('Stale');
+        copy.actors[0]!.combatStats={staminaCapacity:999,poiseCapacity:999,revision:revision(30)};
+        expect(()=>validateActorCombatCapacities(copy,binding.definition,[game.player],query)).toThrow('Stale');
+    });
+    it('propagates provider exceptions and invalid available values before charging',()=>{
+        let invalid=false;setup({query:()=>{if(invalid)throw new Error('provider broken');return supported();}});const game=scene();
+        const before=structuredClone(state(game));invalid=true;
+        expect(()=>chargeNativeActorAttack(game,game.player.id)).toThrow('provider broken');expect(state(game)).toEqual(before);
+    });
+});
+
+describe.skipIf(!installed.has('narrative'))('3g four committed combat fact producers',()=>{
+    it('emits one fact per resolved segment, with no fact during windup',()=>{
+        setup({events:true});const game=scene(true),target=npc(game);
+        const plan=preparePhasedAttackCommand(game,command('attack',{attackId:'fixture.double-thrust',facing:'e'}))!;commitPhasedAttackCommand(game,plan);
+        expect(events(game)).toEqual([]);release(game);release(game);
+        const facts=events(game).filter(fact=>fact.eventKind==='attack-resolved');
+        expect(facts.map(fact=>[fact.actionId,fact.sourceSubactionId,fact.segmentIndex])).toEqual([[1,1,0],[1,1,1]]);
+        expect(facts.every(fact=>fact.actor.entityId===game.player.id&&fact.hitCount===1&&fact.hpLost>0)).toBe(true);
+        expect(target.hp).toBeLessThan(1000);expect(new Set(facts.map(fact=>fact.factId)).size).toBe(2);
+    });
+    it('emits a stagger start once and a parry with the actual defended resolution identity',()=>{
+        setup({events:true});const game=scene(true),target=npc(game);parry(game);
+        const method=game.extensionRuntime!.notifyActorParried.bind(game.extensionRuntime!),ids:number[]=[];
+        vi.spyOn(game.extensionRuntime!,'notifyActorParried').mockImplementation((...args)=>{const id=method(...args);ids.push(id as number);return id;});
+        expect(tryActorParry(game,target.id,game.player.id,game.meleeContact(target,game.player)!)).toBe(true);
+        applyActorPoiseDamage(game,target.id,20);
+        expect(events(game).map(fact=>fact.eventKind)).toEqual(['staggered','parried']);
+        expect(events(game)[1]!.resolutionId).toBe(ids[0]);expect(events(game)[1]!.actor.entityId).toBe(game.player.id);
+    });
+    it.each([false,true])('rest completion publishes only after final recovery (interrupted=%s)',interrupted=>{
+        setup({events:true});const game=scene(true),fire=game.extensionRuntime!.snapshot().foundation.world.entities.find(entity=>entity.owner==='combat')!;
+        commitCreatureAnchor(game.player,{x:fire.x,y:fire.y});(game as any).updateVision();game.player.hp=100;
+        const plan=prepareWorldRest(game,command('rest',{bonfireId:fire.id}))!;expect(plan).not.toBeNull();commitWorldRest(game,plan);
+        expect(events(game)).toEqual([]);if(interrupted)interruptWorldRest(game,'damage');
+        release(game);expect(events(game)).toEqual([]);settleWorldRest(game);
+        expect(events(game)).toHaveLength(interrupted?0:1);
+        if(!interrupted){expect(game.player.hp).toBe(game.player.maxHp);expect(events(game)[0]).toMatchObject({eventKind:'rest-completed',actionId:1,bonfireId:fire.id,visit:1});}
+    });
+    it('rolls back successful parry, stagger, native time, IDs and both RNGs if a consumer fails',()=>{
+        let fail=false;setup({events:true,fail:()=>fail});const game=scene(true),target=npc(game);parry(game);
+        const before=game.extensionRuntime!.snapshot(),random=rng.getState(),ticks=[game.player.ticksUntilTurn,target.ticksUntilTurn];fail=true;
+        expect(()=>tryActorParry(game,target.id,game.player.id,game.meleeContact(target,game.player)!)).toThrow('fixture consumer failure');
+        expect(game.extensionRuntime!.snapshot()).toEqual(before);expect(rng.getState()).toEqual(random);
+        expect([game.player.ticksUntilTurn,target.ticksUntilTurn]).toEqual(ticks);
+    });
+    it('rolls back an entire segment boundary and permits one clean retry after consumer failure',()=>{
+        let fail=false;setup({events:true,fail:()=>fail});const game=scene(true),target=npc(game);
+        const plan=preparePhasedAttackCommand(game,command('attack',{attackId:'fixture.double-thrust',facing:'e'}))!;commitPhasedAttackCommand(game,plan);
+        const scheduler=productionActorActionScheduler(game)!;scheduler.advanceActionTime(scheduler.nextActionBoundary()!);
+        const before=game.extensionRuntime!.snapshot(),hp=target.hp,random=rng.getState(),bundle=state(game).scheduler.bundles[0]!,child=bundle.subactions[0]!;
+        fail=true;expect(()=>scheduler.dispatchActorBoundary(game.player.id)).toThrow('fixture consumer failure');
+        expect(game.extensionRuntime!.snapshot()).toEqual(before);expect(target.hp).toBe(hp);expect(rng.getState()).toEqual(random);
+        expect(state(game).scheduler.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);
+        fail=false;expect(()=>scheduler.dispatchActorBoundary(game.player.id)).not.toThrow();
+        expect(events(game).filter(event=>event.eventKind==='attack-resolved')).toHaveLength(1);expect(target.hp).toBeLessThan(hp);
+    });
+    it('rolls back final rest recovery and receipt, then completes the same visit once',()=>{
+        let fail=false;setup({events:true,fail:()=>fail});const game=scene(true),fire=game.extensionRuntime!.snapshot().foundation.world.entities.find(entity=>entity.owner==='combat')!;
+        commitCreatureAnchor(game.player,{x:fire.x,y:fire.y});(game as any).updateVision();game.player.hp=100;
+        commitWorldRest(game,prepareWorldRest(game,command('rest',{bonfireId:fire.id}))!);release(game);
+        const before=game.extensionRuntime!.snapshot(),random=rng.getState();fail=true;
+        expect(()=>settleWorldRest(game)).toThrow('fixture consumer failure');expect(game.extensionRuntime!.snapshot()).toEqual(before);
+        expect(game.player.hp).toBe(100);expect(rng.getState()).toEqual(random);fail=false;settleWorldRest(game);
+        expect(events(game)).toHaveLength(1);expect(state(game).bonfires!.receipts.filter(receipt=>receipt.result==='completed')).toHaveLength(1);
+    });
+
+});
+
+
+describe.skipIf(!installed.has('giants')||!installed.has('narrative'))('3g composite capacity and event ownership',()=>{
+    function body(realGrowth=false,fail?:()=>boolean){
+        installProductionBody(8,undefined,undefined,true);setup({query:realGrowth?undefined:()=>supported(40,20),events:true,bodyAttacks:true,fail});
+        const ids=realGrowth?['combat','giants','growth','narrative']:['combat','giants','narrative'];
+        const registry=catalog.createExtensionRegistry(),initialCommands=registry.create(registry.manifest(ids)).flatMap(module=>module.initialCommand?[JSON.stringify({module:module.id,...module.initialCommand})]:[]);
+        const game=createHeadlessGame(7307,'test');game.startNewGame({seed:7307,mode:'wizard',ruleSet:'extended',extensions:ids,initialCommands});
+        emptyProductionArena(game);const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!;
+        core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');core.givenUpOnScent=true;
+        commitCreatureAnchor(game.player,{x:14,y:10});(game as any).updateVision();while(logger.pendingAcknowledgment)logger.acknowledgeNext();
+        return {game,core,legs:game.monsters.filter(actor=>actor!==core)};
+    }
+    it('keeps core decision/time/poise ownership and makes each attacking member pay its own stamina',()=>{
+        const {game,core,legs}=body();core.ticksUntilTurn=0;
+        expect(selectNativeActorAction(game,core.id)).toBe('handled');
+        const bundle=state(game).scheduler.bundles[0]!;expect(bundle).toMatchObject({decisionOwnerId:core.id,timeChargeOwnerId:core.id});
+        expect(bundle.subactions.length).toBeGreaterThan(0);expect(row(game,core.id).stamina).toBe(24);
+        for(const sub of bundle.subactions)expect(row(game,sub.sourceEntityId)).toMatchObject({stamina:18,combatStats:{staminaCapacity:40,poiseCapacity:20}});
+        const member=legs.find(actor=>bundle.subactions.some(sub=>sub.sourceEntityId===actor.id))!;
+        const before=row(game,member.id).poise;applyActorPoiseDamage(game,member.id,3);
+        expect(row(game,core.id).poise).toBe(9);expect(row(game,member.id).poise).toBe(before);
+    });
+    it('publishes the resolved member identity after real armor reprisal retires its source',()=>{
+        const {game,core,legs}=body(),armor=new Item('fixture armor',']',0xcccccc,ItemCategory.ARMOR);
+        armor.armor=0;armor.enchantment=20;armor.strengthRequired=0;armor.runicType='reprisal';game.player.equippedArmor=armor;game.player.inventory.addItem(armor);
+        game.player.strength=30;
+        for(const leg of legs){leg.hp=1;leg.accuracy=10000;leg.damageString='20';}
+        core.ticksUntilTurn=0;expect(selectNativeActorAction(game,core.id)).toBe('handled');
+        const scheduler=productionActorActionScheduler(game)!,sourceIds=state(game).scheduler.bundles[0]!.subactions.map(sub=>sub.sourceEntityId);
+        scheduler.advanceActionTime(scheduler.nextActionBoundary()!);expect(()=>scheduler.dispatchActorBoundary(core.id)).not.toThrow();
+        const resolved=events(game).filter(event=>event.eventKind==='attack-resolved');expect(resolved.length).toBeGreaterThan(0);
+        expect(resolved.every(event=>sourceIds.includes(event.actor.entityId)&&event.actor.partId?.startsWith('leg')&&event.actor.generation===0)).toBe(true);
+        expect(sourceIds.some(id=>!game.monsters.some(actor=>actor.id===id))).toBe(true);
+    });
+    it.skipIf(!installed.has('growth'))('part-break consumes actual growth actor stats and publishes one core stagger after committed retirement',()=>{
+        const {game,core,legs}=body(true),leg=legs[0]!;
+        const before=game.extensionRuntime!.queryOptionalActor('growth.combat-stats.v1',core,{v:1,baseStaminaCapacity:24,basePoiseCapacity:12});
+        expect(before).toMatchObject({status:'available',value:{status:'supported'}});
+        withBodyContact(leg,leg.loc,()=>leg.takeDamage(100,true,game.grid,undefined,'physical'));
+        expect(row(game,core.id)).toMatchObject({poise:0,combatStats:{staminaCapacity:24,poiseCapacity:12}});
+        const stagger=events(game).filter(event=>event.eventKind==='staggered');expect(stagger).toHaveLength(1);
+        expect(stagger[0]!.actor.entityId).toBe(core.id);expect(stagger[0]!.actor.partId).toBe('core');
+        withBodyContact(legs[1]!,legs[1]!.loc,()=>legs[1]!.takeDamage(100,true,game.grid,undefined,'physical'));
+        expect(events(game).filter(event=>event.eventKind==='staggered')).toHaveLength(1);
+    });
+    it('part-break consumer failure restores retired member, core pool, receipt and original native identities',()=>{
+        let fail=false;const {game,core,legs}=body(false,()=>fail),leg=legs[0]!;
+        const before=game.extensionRuntime!.snapshot(),native=structuredClone(game.bodyGroups),hp=leg.hp,random=rng.getState();fail=true;
+        expect(()=>withBodyContact(leg,leg.loc,()=>leg.takeDamage(100,true,game.grid,undefined,'physical'))).toThrow('fixture consumer failure');
+        expect(game.extensionRuntime!.snapshot()).toEqual(before);expect(game.monsters).toContain(leg);expect(leg.hp).toBe(hp);
+        expect(game.bodyGroups).toEqual(native);expect(rng.getState()).toEqual(random);expect(row(game,core.id)).toBeUndefined();
+        fail=false;expect(()=>withBodyContact(leg,leg.loc,()=>leg.takeDamage(100,true,game.grid,undefined,'physical'))).not.toThrow();
+        expect(events(game).filter(event=>event.eventKind==='staggered')).toHaveLength(1);
+    });
+
+    it('does not publish staggered when the same member-breaking contact kills its core',()=>{
+        const {game,core,legs}=body(),leg=legs[0]!;core.hp=1;
+        expect(()=>withBodyContact(leg,leg.loc,()=>leg.takeDamage(100,true,game.grid,undefined,'physical'))).not.toThrow();
+        expect(core.hp).toBe(0);expect(game.monsters).not.toContain(leg);
+        expect(events(game).filter(event=>event.eventKind==='staggered')).toEqual([]);
+    });
+
+});

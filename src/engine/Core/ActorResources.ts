@@ -15,7 +15,7 @@ function validatePolicy(policy: Readonly<ActorResourcePolicy>): void {
     integer(policy.regenPerTickNumerator, 0, MAX_RESOURCE);
     integer(policy.regenPerTickDenominator, 1, MAX_RESOURCE);
     integer(policy.regenDelayTicks, 0, MAX_ACTOR_ACTION_TICKS);
-    integer(policy.nativeAttackCost, 0, policy.staminaCapacity);
+    integer(policy.nativeAttackCost, 0, MAX_RESOURCE);
     integer(policy.poiseCapacity, 1, MAX_RESOURCE);
     integer(policy.poiseRecoveryNumerator, 0, MAX_RESOURCE);
     integer(policy.poiseRecoveryDenominator, 1, MAX_RESOURCE);

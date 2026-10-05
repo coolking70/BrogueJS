@@ -7,7 +7,7 @@ import { isJson, validId } from './json';
 export interface ModuleDescriptor {
     readonly id: string;
     readonly version: string;
-    readonly foundation: 4;
+    readonly foundation: 5;
     readonly rules?: ExtensionRulesIdentity;
     readonly create: () => ExtensionModule;
     readonly labelKey: string;
@@ -28,7 +28,7 @@ export function validateModuleDescriptors(values: readonly ModuleDescriptor[]): 
     const result = values.map(value => {
         if (!value || typeof value !== 'object' || Array.isArray(value)
             || Object.keys(value).some(key => !['id', 'version', 'foundation', 'rules', 'create', 'labelKey', 'descriptionKey', 'defaultEnabled', 'locales'].includes(key))
-            || !validId(value.id) || value.foundation !== 4 || typeof value.create !== 'function'
+            || !validId(value.id) || value.foundation !== 5 || typeof value.create !== 'function'
             || (value.defaultEnabled !== undefined && typeof value.defaultEnabled !== 'boolean')) throw new Error('Invalid module descriptor');
         const prefix = `ext.${value.id}.`;
         if (typeof value.labelKey !== 'string' || !value.labelKey.startsWith(prefix)
