@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "moduleVersion": "1.0.0",
+  "rulesVersion": "1.0.0",
+  "forms": [
+    {
+      "id": "giants.ridgeback",
+      "nameKey": "ext.giants.ridgeback.name",
+      "descriptionKey": "ext.giants.ridgeback.description",
+      "size": 2,
+      "char": "R",
+      "color": 11965276,
+      "hp": 120,
+      "accuracy": 90,
+      "defense": 40,
+      "damage": "4-9",
+      "moveSpeed": 100,
+      "attackSpeed": 100,
+      "bloodType": 0,
+      "DFChance": 0,
+      "DFType": 0
+    }
+  ],
+  "templates": [
+    {
+      "id": "giants.stone-chamber",
+      "priority": 0,
+      "minDepth": 3,
+      "maxDepth": 8,
+      "chance": 50,
+      "width": 12,
+      "height": 10,
+      "entranceWidth": 3,
+      "candidateLimit": 16,
+      "formId": "giants.ridgeback",
+      "guard": "return-to-spawn"
+    }
+  ]
+}

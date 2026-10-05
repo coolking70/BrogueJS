@@ -1,3 +1,4 @@
+import { generationReserved } from '../Generator/GenerationReservation';
 /**
  * src/engine/Map/AutoGenerator.ts — CE runAutogenerators（C-6）
  *
@@ -575,7 +576,7 @@ export function randomMatchingLocation(
         x = rng.randRange(0, grid.width - 1);
         y = rng.randRange(0, grid.height - 1);
         const cell = grid.getCell(x, y)!;
-        const rejected =
+        const rejected = generationReserved(grid,x,y) ||
             cell.layers[DungeonLayer.DUNGEON] !== requiredDungeonFoundationType
             || cell.layers[DungeonLayer.LIQUID] !== requiredLiquidFoundationType
             || cell.machineNumber !== 0

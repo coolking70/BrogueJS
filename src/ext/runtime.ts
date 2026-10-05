@@ -1,3 +1,5 @@
+import { bindNativeForms, validNativeForm, type NativeFormDefinition } from './nativeForms';
+import { validGenerationContribution } from './generation';
 import type { Creature } from '../entities/Creature';
 import { Player } from '../entities/Player';
 import { allocateEntityId, getNextEntityId, restoreNextEntityId } from '../entities/Creature';
@@ -122,6 +124,16 @@ export class ExtensionRuntime {
         Object.freeze(this.manifest.modules); Object.freeze(this.manifest);
         this.modules = registry.create(manifest);
         for (const module of this.modules) if (module.ownedRegions !== undefined && module.ownedRegions !== true) throw new Error('Invalid owned region declaration');
+        for (const module of this.modules) {
+            if (module.nativeForms && (!Array.isArray(module.nativeForms) || !module.nativeForms.length || module.nativeForms.length > 16
+                || new Set(module.nativeForms.map(f => f.id)).size !== module.nativeForms.length || !module.nativeForms.every(f => validNativeForm(f, module.id)))) throw new Error('Invalid native form declarations');
+            if (module.generationContributions && (!module.ownedRegions || !Array.isArray(module.generationContributions) || !module.generationContributions.length || module.generationContributions.length > 16
+                || new Set(module.generationContributions.map(t => t.id)).size !== module.generationContributions.length
+                || !module.generationContributions.every(t => validGenerationContribution(t, module.id) && module.nativeForms?.some(f => f.id === t.formId && (f.size === 2 || t.width >= 16 && t.height >= 12))))) throw new Error('Invalid generation declarations');
+            if (module.publicActorTags && (!Array.isArray(module.publicActorTags) || module.publicActorTags.length > 8 || module.publicActorTags.some(t => !validId(t.component) || !validId(t.tag) || !module.componentValidators?.[t.component]))) throw new Error('Invalid public actor tags');
+            if (module.nativeForms) Object.defineProperty(module, 'nativeForms', { value: freezeView(structuredClone(module.nativeForms)), writable: false });
+            if (module.generationContributions) Object.defineProperty(module, 'generationContributions', { value: freezeView(structuredClone(module.generationContributions)), writable: false });
+        }
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalQueries ?? {})) {
             if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
                 || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid optional query provider');
@@ -292,7 +304,8 @@ export class ExtensionRuntime {
     private actorFacts(creature: Creature, playerId = this.ports.playerId()): ActorFacts {
         const player = creature.id === playerId;
         const allied = player || ('isAlly' in creature && creature.isAlly === true);
-        return Object.freeze({ ...creatureView(creature, playerId), allied,
+        return Object.freeze({ ...creatureView(creature, playerId),
+            ...(creature.spatial?.movementRegionId!==undefined?{movementRegionId:creature.spatial.movementRegionId}:{}), allied,
             hostile: !player && !allied && !('isCaged' in creature && creature.isCaged === true),
             monsterId: 'typeId' in creature && typeof creature.typeId === 'string' ? creature.typeId : null });
     }
@@ -795,6 +808,8 @@ export class ExtensionRuntime {
     attachCreature(creature: Creature, notifySpawn = true): void {
         if (this.disposed || this.creatures.has(creature)) return;
         this.creatures.add(creature);
+        const forms = this.nativeForms();
+        if (forms.length) bindNativeForms(creature, forms);
         creature.extensionHooks = {
             causality: this.causality,
             partyId: actor => this.creditParty(actor),
@@ -880,7 +895,7 @@ export class ExtensionRuntime {
         if (frame.placementNextEntityId !== null) restoreNextEntityId(frame.placementNextEntityId);
         this.causality.restore(frame.causality); this.deaths = frame.deaths;
         for (const creature of this.creatures) if (!frame.creatures.has(creature)) {
-            creature.extensionHooks = undefined; this.spawned.delete(creature); this.creatures.delete(creature);
+            bindNativeForms(creature); creature.extensionHooks = undefined; this.spawned.delete(creature); this.creatures.delete(creature);
         }
         this.generations.pop();
         const fact: BufferedFact = { name: 'generationRolledBack', event: { label: token.label }, readonly: true };
@@ -895,6 +910,21 @@ export class ExtensionRuntime {
         const fact = { creature: creatureView(creature, this.ports.playerId()), origin: structuredClone(origin), administrative };
         this.deaths[String(creature.id)] = fact;
         return structuredClone(fact);
+    }
+    nativeForms(): readonly NativeFormDefinition[] { return this.disposed ? [] : this.modules.flatMap(module => module.nativeForms ?? []); }
+    generationContributions(depth: number) {
+        return freezeView(this.disposed ? [] : this.modules.flatMap(module => (module.generationContributions ?? [])
+            .filter(t => depth >= t.minDepth && depth <= t.maxDepth).map(t => ({ ...t, owner: module.id })))
+            .sort((a,b) => a.priority-b.priority || (a.owner<b.owner?-1:a.owner>b.owner?1:0) || (a.id<b.id?-1:a.id>b.id?1:0)));
+    }
+    /** Only an active native transaction may opt into full allocator rollback. */
+    reserveGenerationAllocator(token: GenerationToken): void {
+        this.generation(token);
+        for (const frame of this.generations) frame.placementNextEntityId ??= getNextEntityId();
+    }
+    get hasPublicActorTags(): boolean { return this.modules.some(module=>module.publicActorTags?.length); }
+    publicActorTags(id: number): readonly string[] {
+        return this.modules.flatMap(module => (module.publicActorTags ?? []).filter(t => this.components[String(id)]?.[`${module.id}:${t.component}`] !== undefined).map(t => `${module.id}.${t.tag}`));
     }
     get hasOwnedRegions(): boolean { return !this.disposed && this.modules.some(module => module.ownedRegions); }
     /** Native generation-only capability; not exposed to hook/command contexts.
@@ -938,6 +968,11 @@ export class ExtensionRuntime {
         if (creature.hp <= 0 || !this.creatures.has(creature) || !this.ownedRegion(regionId, depth)) throw new Error('Invalid falling movement region');
         clearMovementRegion(creature);
         this.emit('movementRegionExited', { actor: this.actorFacts(creature), regionId, depth, reason: 'fell' });
+    }
+    reportRegionFollowBlocked(creature: Creature, depth: number): void {
+        const regionId=creature.spatial?.movementRegionId;
+        if (regionId===undefined || !this.ownedRegion(regionId,depth)) return;
+        this.emit('movementRegionFollowBlocked', { actor:this.actorFacts(creature),regionId,depth,reason:'hard-boundary' });
     }
     /** World capability is inert unless a selected module actually owns objects. */
     get interactionActive(): boolean { return !this.disposed && this.world.gate !== null; }
@@ -1003,7 +1038,7 @@ export class ExtensionRuntime {
         for (const id of Object.keys(this.deaths)) if (!keep.has(Number(id))) delete this.deaths[id];
         this.causality.retainCreatures(keep);
         for (const creature of this.creatures) if (!keep.has(creature.id)) {
-            creature.extensionHooks = undefined; this.creatures.delete(creature);
+            bindNativeForms(creature); creature.extensionHooks = undefined; this.creatures.delete(creature);
         }
         // Module-owned reward receipts are deliberately not collected with bodies.
     }
@@ -1099,6 +1134,6 @@ export class ExtensionRuntime {
         if (this.disposed) return;
         this.disposed = true;
         try { for (const module of [...this.modules].reverse()) requireSynchronous(module.onUnload?.()); }
-        finally { for (const creature of this.creatures) creature.extensionHooks = undefined; this.creatures.clear(); }
+        finally { for (const creature of this.creatures) { bindNativeForms(creature); creature.extensionHooks = undefined; } this.creatures.clear(); }
     }
 }

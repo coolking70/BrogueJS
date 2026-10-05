@@ -37,6 +37,7 @@ import { bladeAvoids, bladeDiagonalBlocked, bladeStepToward, BLADE_DIRECTIONS } 
 import { hasBlink, blinkChance, monsterBlinkToPreferenceMap, monsterBlinkToSafety, blinkFromHarmfulTerrain,
     closestBlinkEnemy, blinkAllyFlees, blinkAllyAfterMagic, blinkTowardCreature, blinkTowardCaptiveLeader, allyShouldPursue, monsterAvoidsCorridor, monsterBlinkAvoids } from '../engine/Combat/MonsterBlink';
 import { updateMonsterCorpseAbsorption, moveAllyToCorpse, corpseAllyBeforeMagic, passiveCorpseStep } from '../engine/Combat/MonsterAbsorption';
+import { nativeFormsFor, nativeFormFor, nativeFormData } from '../ext/nativeForms';
 import { entrancementDiagonalBlocked, entrancementPassable } from '../engine/Movement/Entrancement';
 import { burnedTerrainFlagsOfCell, cellTerrainFlags, cellTerrainMechFlags } from '../engine/Map/DungeonFeature';
 import { T_ENTANGLES, TM_ALLOWS_SUBMERGING, T_LAVA_INSTA_DEATH, T_IS_DEEP_WATER, T_AUTO_DESCENT, T_PATHING_BLOCKER, T_HARMFUL_TERRAIN, T_SACRED, T_IS_FIRE, T_SPONTANEOUSLY_IGNITES, T_IS_DF_TRAP, T_CAUSES_POISON, T_CAUSES_DAMAGE, T_CAUSES_PARALYSIS, T_CAUSES_CONFUSION } from '../engine/Map/TerrainCatalog';
@@ -762,9 +763,10 @@ export class Monster extends Creature {
      * copy an entity. Only captives demote their leadership, after status reset. */
     public polymorph(demote: () => void, prepareSquare?: (data: MonsterData) => Pos | null): boolean {
         assertNativeSpatial(this);
-        if ((!knownPolymorphSpecies(this.typeId) && !(this.isClone && this.typeId === 'player_clone')) || this.hasBehavior('MONST_INANIMATE') || this.hasBehavior('MONST_TURRET') || this.isInvulnerable()) return false;
-        if (this.spatial && !prepareSquare) throw new Error('Square polymorph requires placement preflight');
-        const preparedData = this.spatial ? polymorphSpecies(this.typeId, rng) : undefined;
+        const forms = nativeFormsFor(this).map(nativeFormData);
+        if ((!knownPolymorphSpecies(this.typeId, forms) && !(this.isClone && this.typeId === 'player_clone')) || this.hasBehavior('MONST_INANIMATE') || this.hasBehavior('MONST_TURRET') || this.isInvulnerable()) return false;
+        if ((this.spatial || forms.length) && !prepareSquare) throw new Error('Square polymorph requires placement preflight');
+        const preparedData = this.spatial || forms.length ? polymorphSpecies(this.typeId, rng, forms) : undefined;
         const preparedLocation = preparedData ? prepareSquare!(preparedData) : undefined;
         if (preparedData && !preparedLocation) return false;
         // Preserve C operator precedence: stealing resets state even if not fleeing.
@@ -784,7 +786,7 @@ export class Monster extends Creature {
         this.mutation = undefined;
         delete this.deathDFType;
         this.carriedMonster = null; // CE freeCreature, not killCreature.
-        const data = preparedData ?? polymorphSpecies(this.typeId, rng);
+        const data = preparedData ?? polymorphSpecies(this.typeId, rng, forms);
         if (this.extensionHooks?.nativeMaximumBase) {
             const combinedMaximum = this.maxHp;
             this.maxHp = this.extensionHooks.nativeMaximumBase(this);
@@ -849,7 +851,8 @@ export class Monster extends Creature {
         if (preparedLocation) {
             const movementRegionId = this.spatial?.movementRegionId;
             delete this.spatial;
-            if (movementRegionId !== undefined) this.spatial = { schema: 1, footprintId: 'builtin:single', pose: 'r0', movementRegionId };
+            const shape = nativeFormFor(this,data.id);
+            if (shape || movementRegionId !== undefined) this.spatial = { schema: 1, footprintId: shape ? `builtin:square-${shape.size}` : 'builtin:single', pose: 'r0', ...(movementRegionId !== undefined ? { movementRegionId } : {}) };
             commitCreatureAnchor(this, { ...preparedLocation }, 'mutate');
         }
         return true;
@@ -1699,6 +1702,7 @@ export class Monster extends Creature {
         if (isImmobile) {
             return;
         }
+        if (this.takeRegionGuardTurn(game)) return;
         if (this.spatial && this.takeSquareMovementTurn(game, normalAlly, blinkEnemy)) return;
 
         if (normalAlly) {
@@ -2234,6 +2238,18 @@ export class Monster extends Creature {
      * 占格排除比 CE 保守（CE 靠 moveMonster 处理阻挡/交换，web 的 tryMoveTo
      * 不会，不排除会叠怪）。count==0 时先于 randRange 返回（CE 同款防 OOS）。
      */
+    private takeRegionGuardTurn(game: Game): boolean {
+        const id=this.spatial?.movementRegionId;
+        const region=id===undefined?null:game.extensionRuntime?.ownedRegion(id,game.depth);
+        if(!region || region.guard!=='return-to-spawn' || this.isAlly || this.state===MonsterState.FLEEING
+            || this.hasStatus('discordant') || this.hasStatus('confused') || this.hasStatus('magical_fear'))return false;
+        const b=region.bounds,inside=game.player.x>=b.x&&game.player.y>=b.y&&game.player.x<b.x+b.width&&game.player.y<b.y+b.height;
+        if((inside && this.state===MonsterState.HUNTING) || game.meleeContact(this,game.player))return false;
+        const step=game.planSquareStep(this,{kind:'anchors',anchors:[this.spawnLoc]});
+        if(step.at) this.tryMoveTo(step.at.x,step.at.y,game);
+        if(this.ticksUntilTurn<=0)this.ticksUntilTurn=this.movementSpeed;
+        return true;
+    }
     private takeSquareMovementTurn(game: Game, normalAlly: boolean, allyEnemy: Monster | null): boolean {
         if (this.hasStatus('discordant') && !this.hasStatus('magical_fear')) {
             const cells = footprintOf(this).flatMap(p => [[0,-1], [0,1], [-1,0], [1,0], [-1,-1], [-1,1], [1,-1], [1,1]]

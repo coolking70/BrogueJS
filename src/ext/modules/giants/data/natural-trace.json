@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "seed": 7306,
+  "depth": 3,
+  "commands": 152,
+  "commandsHash": "9d69be4c68abbfe097b0c4b118fdf15fe9104df072a30ebd72e00c080c94fe70",
+  "nativeWorldHash": "4ba05dba1b37d982339a77cd1e345833212e0db6f7581a76b3e531538ca0f125",
+  "extensionsHash": "40a6affc0fb16944adf50df3d810926cb338687c28eac19698140cf914e91c05",
+  "rng": {
+    "version": 2,
+    "algorithm": "brogue-web-ranval32-uint64-level-v2",
+    "streams": [
+      {
+        "a": 1682859513,
+        "b": 3057119382,
+        "c": 3892612344,
+        "d": 3589685941
+      },
+      {
+        "a": 3459876219,
+        "b": 1517813164,
+        "c": 3529874670,
+        "d": 4176910288
+      }
+    ],
+    "currentRNG": 0,
+    "randomNumbersGenerated": 280199,
+    "cosmeticNumbersGenerated": 162
+  },
+  "region": {
+    "instanceKey": "giants.stone-chamber.depth-3",
+    "bounds": {
+      "x": 18,
+      "y": 2,
+      "width": 12,
+      "height": 10
+    },
+    "guard": "return-to-spawn",
+    "id": 54,
+    "owner": "giants",
+    "depth": 3
+  },
+  "state": {
+    "schema": 1,
+    "revision": 1,
+    "placements": [
+      {
+        "instanceKey": "giants.stone-chamber.depth-3",
+        "templateId": "giants.stone-chamber",
+        "depth": 3,
+        "result": "placed",
+        "regionId": 54,
+        "reason": null
+      }
+    ],
+    "bosses": [
+      {
+        "encounterKey": "giants.stone-chamber.depth-3.encounter",
+        "primaryId": 55,
+        "spawnDefinitionId": "giants.ridgeback",
+        "instanceKey": "giants.stone-chamber.depth-3",
+        "regionId": 54,
+        "subjects": [
+          {
+            "groupId": 55,
+            "status": "alive"
+          }
+        ],
+        "status": "alive"
+      }
+    ]
+  },
+  "boss": {
+    "id": 55,
+    "typeId": "giants.ridgeback",
+    "loc": {
+      "x": 23,
+      "y": 6
+    },
+    "hp": 120,
+    "maxHp": 120,
+    "spatial": {
+      "schema": 1,
+      "footprintId": "builtin:square-2",
+      "pose": "r0",
+      "movementRegionId": 54
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { generationReserved } from './GenerationReservation';
 /** U04: Architect.c:3604-3759. Queries are separate from preparation/commit. */
 import type {Pos} from '../../types';
 import {Grid, TerrainType as T, DungeonLayer as L} from '../Map/Grid';
@@ -10,13 +11,13 @@ export const CARDINALS=[[0,-1],[0,1],[-1,0],[1,0]] as const;
 
 export function stairFallbackQualifies(grid: Grid, x: number, y: number, occupied: ReadonlySet<number>): boolean {
     const c=grid.getCell(x,y);
-    return !!c && !c.machineNumber && !occupied.has(y*grid.width+x)
+    return !!c && !generationReserved(grid,x,y) && !c.machineNumber && !occupied.has(y*grid.width+x)
         && !(cellTerrainFlags(grid,x,y)&STAIR_FALLBACK_FLAGS)
         && c.layers[L.LIQUID]===T.NOTHING && passableArcCount(grid,x,y)<2;
 }
 export function validStairLoc(grid: Grid, x: number, y: number, occupied: ReadonlySet<number>): boolean {
     const c=grid.getCell(x,y);
-    if(x<1||y<1||x>=grid.width-1||y>=grid.height-1||c?.layers[L.DUNGEON]!==T.WALL
+    if(generationReserved(grid,x,y)||x<1||y<1||x>=grid.width-1||y>=grid.height-1||c?.layers[L.DUNGEON]!==T.WALL
         ||c.machineNumber||occupied.has(y*grid.width+x))return false;
     for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)if((dx||dy)&&grid.getCell(x+dx,y+dy)!.machineNumber)return false;
     let walls=0;

@@ -3,6 +3,7 @@ import { isJson, validId } from './json';
 /** Foundation-owned geometry. Creatures only retain its ID, never a second
  * copy of the bounds. The first executable region capability is rectangular. */
 export interface OwnedRegionPlacement {
+    readonly guard?: 'return-to-spawn';
     readonly instanceKey: string;
     readonly bounds: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
 }
@@ -14,7 +15,7 @@ const integer = (v: unknown, min: number, max: number): v is number => Number.is
 const keys = (v: unknown, names: readonly string[]): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
     && Object.keys(v).sort().join(',') === [...names].sort().join(',');
 export function validRegionPlacement(v: unknown): v is OwnedRegionPlacement {
-    if (!isJson(v) || !keys(v, ['instanceKey', 'bounds']) || !validId(v.instanceKey) || !keys(v.bounds, ['x', 'y', 'width', 'height'])) return false;
+    if (!isJson(v) || !v || typeof v !== 'object' || !keys(v, ['instanceKey', 'bounds', ...(Object.prototype.hasOwnProperty.call(v, 'guard') ? ['guard'] : [])]) || ('guard' in v && v.guard !== 'return-to-spawn') || !validId(v.instanceKey) || !keys(v.bounds, ['x', 'y', 'width', 'height'])) return false;
     const b = v.bounds;
     return integer(b.x, 0, 1023) && integer(b.y, 0, 1023) && integer(b.width, 1, 1024) && integer(b.height, 1, 1024)
         && b.x + b.width <= 1024 && b.y + b.height <= 1024;
@@ -33,7 +34,7 @@ export function validOwnedRegions(value: unknown, owners: readonly string[]): va
     const instances = new Set<string>();
     const seen: OwnedRegion[] = [];
     for (const row of value) {
-        if (!keys(row, ['id', 'owner', 'depth', 'instanceKey', 'bounds']) || !integer(row.id, previous + 1, Number.MAX_SAFE_INTEGER)
+        if (!row || typeof row !== 'object' || !keys(row, ['id', 'owner', 'depth', 'instanceKey', 'bounds', ...(Object.prototype.hasOwnProperty.call(row, 'guard') ? ['guard'] : [])]) || ('guard' in row && row.guard !== 'return-to-spawn') || !integer(row.id, previous + 1, Number.MAX_SAFE_INTEGER)
             || typeof row.owner !== 'string' || !owners.includes(row.owner) || !integer(row.depth, 1, 40)
             || !validRegionPlacement({ instanceKey: row.instanceKey, bounds: row.bounds })) return false;
         const region = row as unknown as OwnedRegion, instance = `${region.owner}:${region.instanceKey}`;

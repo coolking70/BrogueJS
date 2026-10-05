@@ -45,6 +45,7 @@ export interface CreatureView {
 export interface ItemView { readonly id: number; readonly category: number; readonly quantity: number }
 /** Narrow detached facts; no live object or arbitrary field-write capability. */
 export interface ActorFacts extends CreatureView {
+    readonly movementRegionId?: number;
     readonly monsterId: string | null; readonly allied: boolean; readonly hostile: boolean;
 }
 export interface ResourceCommit { expectedHp: number; expectedMaxHp: number; hp: number; maxHp: number }
@@ -154,6 +155,7 @@ export interface HookEvents {
     deathCaptured: { actor: ActorFacts; origin: EffectOrigin | null; administrative: boolean };
     simulationSettled: { knownKinds: { id: string; category: string }[]; reachableIds: number[]; sourceIds: number[] };
 
+    generationPlacement: import('./generation').GenerationPlacementFact;
     beforeLevelGeneration: { depth: number };
     afterLevelGeneration: { depth: number };
     creatureSpawned: { creature: CreatureView; birth?: import('./birth').CreatureBirth };
@@ -170,6 +172,7 @@ export interface HookEvents {
     enteredLevel: { depth: number; firstVisit: boolean; actorIds?: number[] };
     /** A local movement binding is cleared before a surviving actor falls. */
     movementRegionExited: { actor: ActorFacts; regionId: number; depth: number; reason: 'fell' };
+    movementRegionFollowBlocked: { actor: ActorFacts; regionId: number; depth: number; reason: 'hard-boundary' };
 }
 export type HookName = keyof HookEvents;
 export interface ExtensionContext {
@@ -217,6 +220,9 @@ export interface ExtensionModule extends ExtensionVersion {
     readonly worldInteractables?: true;
     /** Only the native generation owner may install declared owned regions. */
     readonly ownedRegions?: true;
+    readonly nativeForms?: readonly import('./nativeForms').NativeFormDefinition[];
+    readonly generationContributions?: readonly import('./generation').GenerationContribution[];
+    readonly publicActorTags?: readonly { readonly component: string; readonly tag: string }[];
     readonly interactionCommands?: readonly string[];
     projectView?(context: ExtensionProjectionContext): Json;
     /** Pure projection receives only a detached selected player component, never a world/context capability. */

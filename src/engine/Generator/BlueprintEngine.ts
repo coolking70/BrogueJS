@@ -1,3 +1,4 @@
+import { generationReserved, generationReservedCells } from './GenerationReservation';
 import { computeMachineView } from './MachineView';
 import { genericPathCost } from '../Map/TerrainRules';
 /**
@@ -933,6 +934,7 @@ export class BlueprintEngine {
                 room = { cells: interior, center: areaOrigin, door: null };
             }
 
+            if (room.cells.some(p=>generationReserved(this.grid,p.x,p.y)) || generationReserved(this.grid,room.center.x,room.center.y)) continue;
             // —— point of no return（CE :1222）：备份整层，动手。 ——
             const backup = this.backupLevel();
             const result = this.applyBlueprint(bp, room, { adoptiveItem });
@@ -1031,7 +1033,7 @@ export class BlueprintEngine {
             for (let x = 0; x < DCOLS && candidates.length < CE_GATE_CANDIDATE_CAP; x++) {
                 for (let y = 0; y < DROWS && candidates.length < CE_GATE_CANDIDATE_CAP; y++) {
                     if (!analysis.gateSite[x]![y]) continue;
-                    if ((this.grid.getCell(x, y)?.machineNumber ?? 0) !== 0) continue; // CE !IS_IN_MACHINE
+                    if (generationReserved(this.grid,x,y) || (this.grid.getCell(x, y)?.machineNumber ?? 0) !== 0) continue; // CE !IS_IN_MACHINE
                     const choke = analysis.chokeMap[x]![y]!;
                     if (choke < bp.roomSize[0] || choke > bp.roomSize[1]) continue;
                     candidates.push({ x, y });
@@ -1204,16 +1206,19 @@ export class BlueprintEngine {
         room: { cells: Pos[]; center: Pos; door: Pos | null },
         ctx: { adoptiveItem?: MachineItemSpawn | null } = {}
     ): MachineResult | null {
-        const backup = this.entities ? this.backupLevel() : null;
+        const reservedCells = generationReservedCells(this.grid);
+        const backup = this.entities || reservedCells.length ? this.backupLevel() : null;
         const abort = this.entities?.checkpoint();
         let rolledBack = false;
         try {
-            const result = this.applyBlueprintContents(bp, room, ctx);
-            if (!result && backup) { this.restoreLevel(backup); rolledBack = true; abort!(); }
+            const reserved = reservedCells.map(i=>({i, value: JSON.stringify(this.grid.getCell(i%this.grid.width,Math.floor(i/this.grid.width)))}));
+            let result = this.applyBlueprintContents(bp, room, ctx);
+            if (reserved.some(r=>JSON.stringify(this.grid.getCell(r.i%this.grid.width,Math.floor(r.i/this.grid.width)))!==r.value)) result=null;
+            if (!result && backup) { this.restoreLevel(backup); rolledBack = true; abort?.(); }
             else if (result) abort?.commit?.();
             return result;
         } catch (error) {
-            if (backup && !rolledBack) { this.restoreLevel(backup); abort!(); }
+            if (backup && !rolledBack) { this.restoreLevel(backup); abort?.(); }
             throw error;
         }
     }

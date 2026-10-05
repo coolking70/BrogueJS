@@ -1,3 +1,4 @@
+import { generationReserved } from './GenerationReservation';
 import { footprintContains } from '../Movement/CreatureSpatial';
 /** U18a-3: generation policies, separate from runtime monsterAvoids.
  * CE Monsters.c:650-670,705-740; Grid.c:287-360; Dijkstra.c:209-248. */
@@ -45,7 +46,7 @@ export function minionPlacement(world: PlacementWorld, origin: Pos, species: Mon
     const blocking=T_DIVIDES_LEVEL & forbidden;
     const mapBlocked=(x:number,y:number)=>(world.player.x===x && world.player.y===y)||stairs(grid,x,y);
     const occupied=(x:number,y:number)=>[...world.monsters,...(world.dormantMonsters??[])].some(m=>m.hp>0&&footprintContains(m, { x, y }));
-    const valid=(x:number,y:number)=>!(cellTerrainFlags(grid,x,y)&forbidden)&&!occupied(x,y)
+    const valid=(x:number,y:number)=>!generationReserved(grid,x,y)&&!(cellTerrainFlags(grid,x,y)&forbidden)&&!occupied(x,y)
         &&(summoned||passableArcCount(grid,x,y)<=1);
     if (!(cellTerrainFlags(grid,origin.x,origin.y)&blocking) && !mapBlocked(origin.x,origin.y) && valid(origin.x,origin.y)) return {...origin};
     const cost=matrix(grid,1),dist=matrix(grid,30000);

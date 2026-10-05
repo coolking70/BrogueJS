@@ -3,6 +3,9 @@
  * Porting Brogue's procedural dungeon generation logic
  */
 
+import { bindGenerationReservation, generationReserved } from './GenerationReservation';
+import { sideChamberCandidates, sideChamberValid, type SideChamberPlan } from './SideChamber';
+import type { GenerationContribution } from '../../ext/generation';
 import { Grid, TerrainType, DungeonLayer, DCOLS, DROWS } from '../Map/Grid';
 import { captiveManaclePlacements } from '../Map/CaptiveManacles';
 import { cellTerrainFlags, cellTerrainMechFlags } from '../Map/DungeonFeature';
@@ -279,7 +282,10 @@ export class Architect {
     public autogenNonMachine: AutoGeneratorRunStats | null = null;
     public autogenMachine: AutoGeneratorRunStats | null = null;
 
-    constructor(grid: Grid = new Grid(DCOLS, DROWS), private machineEntities?: MachineEntityRuntime) {
+    private chamberKeepout?: { x:number; y:number; width:number; height:number };
+    public readonly sideChambers: { contribution: GenerationContribution & { owner: string }; plan: SideChamberPlan | null; reason: 'no-space' | 'budget' | null }[] = [];
+    constructor(grid: Grid = new Grid(DCOLS, DROWS), private machineEntities?: MachineEntityRuntime,
+        private contributions: readonly (GenerationContribution & { owner: string })[] = []) {
         this.grid = grid;
     }
 
@@ -456,6 +462,16 @@ export class Architect {
             }
         }
 
+        if(this.contributions.length) {
+            const t=this.contributions[0]!,candidates: {x:number;y:number;width:number;height:number;distance:number}[]=[];
+            const floors:Pos[]=[];for(let x=1;x<DCOLS-1;x++)for(let y=1;y<DROWS-1;y++)if(work[x]![y])floors.push({x,y});
+            for(let y=2;y+t.height+2<DROWS-2;y++)for(let x=2;x+t.width+2<DCOLS-2;x++){
+                let empty=true;for(let i=x;i<x+t.width+2&&empty;i++)for(let j=y;j<y+t.height+2;j++)if(work[i]![j]){empty=false;break;}
+                if(empty)candidates.push({x,y,width:t.width+2,height:t.height+2,distance:Math.min(...floors.map(p=>Math.max(x-p.x,0,p.x-(x+t.width+1))+Math.max(y-p.y,0,p.y-(y+t.height+1))))});
+            }
+            candidates.sort((a,b)=>a.distance-b.distance||a.y-b.y||a.x-b.x);
+            const c=candidates[0];if(c)this.chamberKeepout={x:c.x,y:c.y,width:c.width,height:c.height};
+        }
         this.attachRooms(work, theDP, CE_ROOM_ATTACH_ATTEMPTS, CE_MAX_ROOM_COUNT);
         return work;
     }
@@ -480,6 +496,27 @@ export class Architect {
         }
     }
 
+    private planSideChambers(): void {
+        const mask = new Set<number>();
+        for (const contribution of this.contributions) {
+            if (!rng.randPercent(contribution.chance)) continue;
+            if (this.sideChambers.some(p => p.plan)) { this.sideChambers.push({ contribution, plan: null, reason: 'budget' }); continue; }
+            const candidates = sideChamberCandidates(this.grid, contribution);
+            const offset = candidates.length ? rng.randRange(0, candidates.length - 1) : 0;
+            let plan: SideChamberPlan | null = null;
+            for (let i=0;i<Math.min(contribution.candidateLimit,candidates.length);i++) {
+                const candidate=candidates[(offset+i)%candidates.length]!;
+                // Only rock is written by this generation terrain owner.
+                const before=candidate.carve.map(p=>({p,layers:[...this.grid.getCell(p.x,p.y)!.layers]}));
+                for(const p of candidate.carve) this.grid.setTerrain(p.x,p.y,TerrainType.FLOOR,'.',0x888888);
+                if(sideChamberValid(this.grid,candidate,2)) { plan=candidate; break; }
+                for(const row of before) row.layers.forEach((tile,layer)=>this.grid.setTerrainLayer(row.p.x,row.p.y,layer,tile));
+            }
+            if(plan) for(const p of plan.reserve) mask.add(p.y*this.grid.width+p.x);
+            bindGenerationReservation(this.grid,mask);
+            this.sideChambers.push({contribution,plan,reason:plan?null:'no-space'});
+        }
+    }
     public generateLevel(depth: number): Grid {
         this.generateTerrain(depth);
 
@@ -536,7 +573,7 @@ export class Architect {
         for (let x = 2; x < DCOLS - 2; x++) {
             for (let y = 2; y < DROWS - 2; y++) {
                 const c = this.grid.getCell(x, y);
-                if (c && c.terrain === TerrainType.FLOOR) {
+                if (c && c.terrain === TerrainType.FLOOR && !generationReserved(this.grid,x,y)) {
                     floorTiles.push({ x, y });
                 }
             }
@@ -573,7 +610,7 @@ export class Architect {
                 const rx = rng.randRange(1, DCOLS - 2);
                 const ry = rng.randRange(1, DROWS - 2);
                 const cell = this.grid.getCell(rx, ry);
-                if (cell?.terrain !== TerrainType.WALL) continue;
+                if (cell?.terrain !== TerrainType.WALL || generationReserved(this.grid,rx,ry)) continue;
 
                 // Check that there is a FLOOR on two opposite sides (horizontal or vertical)
                 const left = this.grid.getCell(rx - 1, ry)?.terrain === TerrainType.FLOOR;
@@ -630,6 +667,11 @@ export class Architect {
                 if (doorSites[oppDir]!.x === -1) continue;
                 const offX = x - doorSites[oppDir]!.x;
                 const offY = y - doorSites[oppDir]!.y;
+                if(this.chamberKeepout) {
+                    const b=this.chamberKeepout;let touches=false;
+                    for(let i=0;i<DCOLS&&!touches;i++)for(let j=0;j<DROWS;j++)if(roomMap[i]![j] && i+offX>=b.x-1&&j+offY>=b.y-1&&i+offX<b.x+b.width+1&&j+offY<b.y+b.height+1){touches=true;break;}
+                    if(touches)continue;
+                }
                 if (!this.workRoomFitsAt(work, roomMap, offX, offY)) continue;
 
                 // Room fits here.
@@ -936,6 +978,7 @@ export class Architect {
         //（Architect.c:2933：fillLakes 之后、removeDiagonalOpenings 之前）。
         // 非机器条目（草/树/装饰 DF 等）；未接条目在 AutoGenerator 内先于
         // 任何 RNG 消耗跳过（载体盘点见 AutoGenerator.ts 头注）。
+        if (this.contributions.length) this.planSideChambers();
         this.autogenNonMachine = runAutogenerators(this.grid, depth, false);
 
         // C-3：removeDiagonalOpenings（CE digDungeon 第 8 步，Architect.c:2936：

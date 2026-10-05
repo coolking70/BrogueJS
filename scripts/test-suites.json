@@ -133,6 +133,7 @@
     "src/test/phase4a2_body_effects.test.ts",
     "src/test/phase4a3_body_display.test.ts",
     "src/test/phase4a3_body_sfc.test.ts",
+    "src/test/phase4a4_generation_contributions.test.ts",
     "src/test/phase4a4_movement_regions.test.ts",
     "src/test/presentation_timeline.test.ts",
     "src/test/r_1_appearance.test.ts",

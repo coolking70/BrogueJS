@@ -57,6 +57,7 @@
  * recursive promotion/subsequent calls inherit the transaction. Catalog gaps
  * still fail explicitly; this round does not activate the five missing families.
  */
+import { generationReserved, generationReservedCells } from '../Generator/GenerationReservation';
 import type { Pos } from '../../types';
 import { rng } from '../Random';
 import { terrainAllowsMove } from './Connectivity';
@@ -945,6 +946,7 @@ function executeDungeonFeature(
         touchesShoreMap: false,
     };
 
+    if (generationReserved(grid,x,y)) return result;
     if ((feat.flags & DFF_RESURRECT_ALLY) && !allyResurrectors.get(grid)?.({ x, y })) return result;
 
     // CE description precedes the blocking veto and is independent of refresh.
@@ -994,6 +996,7 @@ function executeDungeonFeature(
                 blockingMap
             );
 
+            for (const i of generationReservedCells(grid)) blockingMap[i]=0;
             // C-8：连通性否决 = CE 判据 与 web 移动图判据 **并列加严**——
             // 任一判切断即放弃本次放置（两查都是纯泛洪，零 RNG 消耗；
             // 未切断的层上行为与判定成本之外零差异，生成基线不受影响）。

@@ -1,3 +1,4 @@
+import { generationReserved } from '../Generator/GenerationReservation';
 /**
  * src/engine/Items/ItemSpawnHeatMap.ts — B-4b：物品落位热力图。
  *
@@ -307,7 +308,7 @@ export class ItemSpawnHeatMap {
                 const idx = y * DCOLS + x;
                 const cell = grid.getCell(x, y);
                 const blocked =
-                    !cell
+                    generationReserved(grid,x,y) || !cell
                     || (cellTerrainFlagUnion(cell) & (T_OBSTRUCTS_ITEMS | T_PATHING_BLOCKER)) !== 0
                     || chokepoint[x]![y]
                     || loop[x]![y]

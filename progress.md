@@ -99,3 +99,8 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 续轮定向验收已完成：typecheck/build/26 文件 447 项相关测试/UR2-UR3-UR4 三文件三项均 exit0，日志 targeted-final/；冻结前后清单 SHA256 0c1b349f8d5bb8a5b214e1a3872cd33e83aff54939e697de675de97e18859dbc 一致，变化路径为空。五份基线/trace 字节与 HEAD 完全相同，未重录。报告已补齐；完整 CE 门禁及生成 drift 由 Claude 本地执行，本轮不再启动完整套件。未 commit/push。
 
 - 2026-10-03 UTC EXT-1e完成：先合main1ff39a8新分档，交付4职业/4血统/4信仰开局与授予/誓约、NPC开关/深度模板/职业盟友分配、身份/效果公开投影与全配置文档。growth1.4.0精确拒绝旧档；玩家L1余额保持，NPC模板余额显式。获准旧夹具/占位/依赖前提逐项反事实，原对等/trace/基线不变。Mac双击越页发现后修复，第二候选三视口18次双击与自然7事件0OOS；原生食物取消/真实触摸/导出剪贴板及既有菜单焦点限制明列。新全量类型/build/cefetch/full288文件5314pass（8历史skip/5todo）/强制CE gen27文件436pass/drift2文件2pass全部exit0，08:21:16–10:18:46 UTC；652冻结输入SHA25655e2ab92d5291176f31812c417b1b96ae09469c003f7cd7a12179dbfc5c45792前后相同。报告docs/ext/phase1e.report.md末附阶段1总结。只交ext/foundation，停止待维护者验收，不自动合main/部署/阶段2。
+
+
+- 2026-10-05 4a-4 续轮：从维护者已提交的 ext/phase4 `eef51e6` 继续，完成有限 GenerationContribution/侧室挖掘与 reservation、原生形态目录与创建适配器、默认关闭的 giants 原创岩脊兽、守场/追击/回归、原层盟友留场 locale、遇敌收据与公开历史 Boss HUD。采用 develop-web-game 小步验证，浏览器验收留维护者。自然 seed7306 经152条真实命令到D3（玩家HP26、BossHP120），新增 trace 捕获；无调试注入、地图/HP修改的自然来源。发现并修复 spawnLoc 未设、load runtime 安装后 resolver 未重绑和贡献生成异常机器编号未回滚。两种独立全图/显式写集回滚保险通过，最终49文件相关回归、16组合 engine smoke、3份 drift 进行中。遵守开发期测试政策，不 commit/push。
+
+- 4a-4 续轮最终完成：冻结后 type/build/boundary、49文件816项相关回归、地形白名单1项、16子集engine smoke、3文件3项drift全部exit0；838输入SHA前后一致。两旧guard的首次失败保留证据：动态t键改为精确资源读取；HEAD Creature单变量仍红后，生产保留单格原位/多格真实接触双路径，旧守卫未改。独立HEAD对照全部8个未启用giants组合自然D1/D2/D3/续玩4点的地图、实体、双流/计数与扩展state完全相同。报告已完整补齐并保留原子里程碑历史；验收seed7306 D3。浏览器/320-390与物理removal按任务书留维护者/收尾，本次授权实现无剩余项。未commit、暂存或push。

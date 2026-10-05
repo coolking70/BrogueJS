@@ -335,7 +335,13 @@ export class Creature implements Entity {
 
     public takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: DamageKind = 'other') {
         const damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
-        if (grid) spawnCreatureBlood(grid, physicalContactOf(this), this.bloodType, damage, this.hp, this.bloodInvulnerable());
+        if (grid) {
+            const contact = physicalContactOf(this);
+            // Ordinary CE damage uses the actor location; body scopes retain
+            // their actual contact through nested damage/death effects.
+            if (contact === this.loc) spawnCreatureBlood(grid, this.loc, this.bloodType, damage, this.hp, this.bloodInvulnerable());
+            else spawnCreatureBlood(grid, contact, this.bloodType, damage, this.hp, this.bloodInvulnerable());
+        }
         // CE Combat.c:1827-1878: blood precedes transference, including self-hits.
         beforeHpLoss?.(damage);
         const hpBefore = this.hp;

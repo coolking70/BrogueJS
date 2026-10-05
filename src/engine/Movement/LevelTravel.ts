@@ -52,7 +52,8 @@ export function travelDistanceMap(grid: Grid, monsters: readonly Monster[], orig
     return distance;
 }
 
-export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[], exit: Pos, direction: -1|0|1): void {
+export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[], exit: Pos, direction: -1|0|1,
+    onRegionBlocked?: (actor: Monster) => void): void {
     let origin={...exit};
     if (cellTerrainFlags(grid,exit.x,exit.y)&T_AUTO_DESCENT) {
         const neighbor=TRAVEL_DIRECTIONS.map(([dx,dy])=>({x:exit.x+dx,y:exit.y+dy}))
@@ -62,6 +63,7 @@ export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[],
     let spatial: CreatureSpatial | undefined, pathing: FootprintPathing | undefined;
     // Query-only point target; it does not construct/allocate a live entity.
     let target: Creature | undefined;
+    let notified: Set<number> | undefined;
     try { for (const flying of [false,true]) {
         const map=travelDistanceMap(grid,monsters,origin,(flying?T_OBSTRUCTS_PASSABILITY:T_PATHING_BLOCKER)|T_SACRED);
         for (const m of monsters) {
@@ -70,7 +72,13 @@ export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[],
             const ally=m.isAlly && m.state!==MonsterState.FLEEING;
             // A hard local region never schedules a staircase departure. A
             // future explicit allegiance transition may release/rebind it first.
-            if (m.spatial?.movementRegionId !== undefined || m.hp<=0 || m.isDormant || !(ally || (m.state===MonsterState.HUNTING && (direction!==0 || levitating)))) continue;
+            if (m.spatial?.movementRegionId !== undefined) {
+                if (onRegionBlocked && ally && m.hp>0 && !m.isDormant && !notified?.has(m.id)) {
+                    (notified ??= new Set()).add(m.id); onRegionBlocked(m);
+                }
+                continue;
+            }
+            if (m.hp<=0 || m.isDormant || !(ally || (m.state===MonsterState.HUNTING && (direction!==0 || levitating)))) continue;
             if (direction===0 && m.hp<=10 && !levitating) continue;
             if (flying!==!!(levitating || (flags&T_PATHING_BLOCKER) || (cellTerrainFlags(grid,origin.x,origin.y)&T_AUTO_DESCENT))) continue;
             if (m.isCaged || m.hasCEBehavior('MONST_WILL_NOT_USE_STAIRS') || m.hasCEBehavior('MONST_RESTRICTED_TO_LIQUID')

@@ -363,14 +363,28 @@ NPC 测试除纯求值外，还使用真实攻击、AI 响应和确定性测试�
 
 ## 23 4a-4 底座子里程碑：owned region 与 movementBounds
 
-本节只记录已实现的区域底座。`GenerationContribution`、侧室挖掘/预留、正式 giants 内容、守场/追击/回归 AI 和 Boss HUD 尚未实现，不能据此宣称 4a-4 可玩闭环已经完成。
+本节记录已由维护者提交至 `eef51e6` 的区域底座；随后完成的侧室、原生形态贡献、giants 和 Boss HUD 见 §24。
 
 - `src/ext/regions.ts` 定义矩形 `OwnedRegion`：共享实体 ID、owner、depth、instanceKey、bounds。唯一几何真相在可选 `extensions.foundation.world.regions`；普通局省略字段，拒绝空数组/undefined、重叠区域、重复身份、未知 owner 和非法几何。原 `WorldInteractable` 内容/行为保持独立。
 - 模块显式声明 `ownedRegions: true`；底座生成所有者通过 `ExtensionRuntime.installOwnedRegions(token, owner, requests, dimensions)` 安装。必须使用栈顶真实 generation token，发布 hook/普通模块 context 没有此写口。整批预检后才分配 ID；generation frame 的 world 保存区域，区域分配器检查点贯穿外层/内层事务。没有区域请求就不创建 regions 字段。
 - 生物仅保存 `spatial.movementRegionId`。`canFitAt`、`CreatureSpatial.canFitTerrainAt` 和 `squarePlacementCandidates` 逐身体格检查边界；`FootprintPathing` 的缓存键包括 region ID。原多格行走、闪现、随机传送、拉拽、击退/力场、克隆及 DF 安全重定位因此共用约束。不能仅验锚点在矩形内。
 - `MovementRegions.ts` 的 WeakMap 仅保存 Grid→只读 ledger resolver，既不保存几何也不保存机械收据；同一 Grid 的临时 world ports 不能遗漏边界。新局/换层/读档沿 `bindDormantAwakener` 重建关联；失败生成的显式 restoreSession 清理多格派生缓存，完整恢复深度和 runtime 账本后再重绑旧层 resolver。没有给 Game 增加实例字段。
 - 原生方形变形成单格时，保留带 region ID 的 `builtin:single/r0`；无区域的显式 single、任意 mask/zone/group/action lock 继续拒绝。普通无 spatial 生物的 CE 路径不改。所有带本地边界的生物暂不调度楼梯跟随；关系转换本身不增加免疫。
-- 生存坠落者在转层前清除旧绑定，底座发出 `movementRegionExited`（reason=fell）事实；若是 bounded single，恢复 spatial 属性缺席。giants 后续负责据此记录 escaped/lost。区域仍可保留为历史场地几何，下一层不会复造场地。
-- `decodeWholeRunWorld` 在退休旧局之前核验区域真实层、尺寸、allocator/实体 ID 冲突和生物绑定；pending 坠落者禁止携带旧 region。生产解码使用脱离 live Grid 的 ledger resolver，不取随机。正式模块内容/形态/收据的跨引用验证仍属于下一子里程碑。
+- 生存坠落者在转层前清除旧绑定，底座发出 `movementRegionExited`（reason=fell）事实；若是 bounded single，恢复 spatial 属性缺席。giants 通过自有收据记录 escaped/lost（见 §24）。区域仍可保留为历史场地几何，下一层不会复造场地。
+- `decodeWholeRunWorld` 在退休旧局之前核验区域真实层、尺寸、allocator/实体 ID 冲突和生物绑定；pending 坠落者禁止携带旧 region。生产解码使用脱离 live Grid 的 ledger resolver，不取随机。正式模块内容/形态/收据的跨引用验证由 §24 的模块 schema/validation 完成。
 
 专项为 `src/test/phase4a4_movement_regions.test.ts`，使用独立 `region-fixture` 注册表和底座原生老鼠，未 import 任一正式模块。这里的手工区域场景只用于能力测试，不能充当自然巨人生成或其录像来源证明。交付范围、实际门禁与剩余项见 [4a-4 报告](phase4a4.report.md)。
+
+
+## 24 4a-4 可玩闭环：有限生成贡献、原生形态与 giants
+
+- `GenerationContribution` 是严格数据声明：owner 限定 ID/形态、深度/概率、优先级、净空/入口、候选预算和有限 `return-to-spawn` 策略。Runtime 冻结声明并按 priority/owner/id 排序；hook/command 没有挖图、修改原生目录或任意 AI 脚本口。
+- 开启贡献的深度在 room attachment 阶段留一块候选岩石净空；基础地形之后、非机器 autogen/陷阱/机器之前，由 Architect 选择并挖掘附接侧室。矩形与墙圈、至少三格宽的入口/直廊及连接邻域构成当前楼层尝试的派生 reservation mask。Stairs、机器选址及外扩回滚、DF、autogen、原生人口/物品投放尊重它。未启用贡献时不留净空、不追加形态抽样、不取新增生成骰。
+- 侧室在实际 square anchor 图和避开 Boss 的玩家图上验净空、连通与绕行；整层预算一个成功场地，候选与最终出生预检均有界。入口恢复/居民与环境补算后才安装区域和出生，失败写 no-space/budget 收据；不会因可选场地失败无限重生楼层。发布前释放 mask，不写存档。严重生成/发布异常仍走整个原生生成事务，贡献开启时实体/机器编号一并恢复，派生服务失效后重绑。
+- `NativeFormDefinition` 为 owner 限定的冻结原生目录贡献；首版只接方形 2/3、普通原生数值和显式零血迹/DF，不接受任意能力脚本。`createModuleMonster` 用启用目录解析 i18n，再经纯完整足迹预检与 `createSquareMonster` 发布；自然理由由原生生成调用显式提供，默认 scripted。模块不改 monsters.json/horde 表。
+- 原生 polymorph 在启用时追加合法形态，并先为候选完整身体找位置，失败保留已抽样的 RNG 而不改实体/分配 ID。关闭模块保持原 CE 候选范围与顺序。存档在退休旧局前拒绝未知/禁用形态、type/form 身份不一致和不匹配的刚体形状；加载后的区域 resolver 在 runtime 安装后重绑。
+- 守场 AI 从 region 的有限声明和原生 spawnLoc 派生，敌对者场内追击/近战、场外回归；原生混乱/恐惧/关系/免疫规则仍优先。受支配盟友保留硬边界，在原层活动；换层发通用 `movementRegionFollowBlocked`，模块提供 locale 原因。坠落只清旧绑定，不造下一层场地。
+- 正式可删除包在 `src/ext/modules/giants/`，默认不启用，仅依赖 foundation 4。原创 `giants.ridgeback` 与 `giants.stone-chamber` 机械数据进 rules 指纹，placements/bosses/subjects/身份 marker 只保存实例与存活收据，不复制原生 HP/坐标。复制后裔不自动成为新 Boss 收据，变形保原遇敌身份，死亡/行政退休/离场分别落 defeated/lost/escaped；重访沿原楼层缓存不复生。没有额外 XP 或硬依赖 growth。
+- `DisplayFrame.actorTags` 是仅有声明模块时才出现的通用公开字段，随已知实体行一起冻结为历史帧。giants HUD 只读 `readDisplayFrame`，目标优先/其次最近直接可见 Boss/最多一条；未知、失去直接知识、幻觉或终局隐藏。显示没有机械写口或规则随机调用，文字与留场原因全部进模块 locale。
+
+没有新增 Game 机械字段或新存档包络，不做旧档迁移。物理删除与浏览器最终验收按任务书留维护者/收尾；本轮的底座 fixture 不 import 正式模块。自然验收、实际门禁与内容可调字段见 [完整 4a-4 报告](phase4a4.report.md)。

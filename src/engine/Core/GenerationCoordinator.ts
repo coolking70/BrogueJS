@@ -1,3 +1,4 @@
+import { generationReserved, bindGenerationReservation } from '../Generator/GenerationReservation';
 import { commitCreatureAnchor, footprintContains } from '../Movement/CreatureSpatial';
 import { monsterCanSubmergeNow } from '../Movement/Submersion';
 import { travelPlacement } from '../Movement/LevelTravel';
@@ -263,7 +264,7 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
 
         if (ports.currentLevelDepth !== null && ports.currentLevelDepth !== ports.depth) {
             if (fell) ports.currentLevelExitedVia = { ...exit };
-            scheduleLevelFollowers(ports.grid, ports.monsters, exit, fell ? 0 : isGoingUp ? -1 : 1);
+            scheduleLevelFollowers(ports.grid, ports.monsters, exit, fell ? 0 : isGoingUp ? -1 : 1, ports.onRegionFollowerBlocked);
         }
         // The active layer is already visited even before it has a detached cache entry.
         // Track its real depth; test harnesses can jump depths or re-enter the current map.
@@ -291,6 +292,7 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
         }
         const scentTurnNumber = ports.scent.turnNumber;
         const cached = ports.levels.get(ports.depth);
+        let sideChambers: Architect['sideChambers'] = [];
 
         if (cached) {
             // Restore from cache
@@ -339,7 +341,7 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
                         commitCreatureAnchor(ports.player, {x: 0, y: 0}); // CE removes the player during digDungeon.
                         ports.pendingCaughtFireCells = [];
                         ports.bindDormantAwakener(); // Later machine DFs see already-created entities.
-                        architect = new Architect(ports.grid, ports.createMachineRuntime(ports.depth));
+                        architect = new Architect(ports.grid, ports.createMachineRuntime(ports.depth), ports.generationContributions());
                         ports.grid = architect.generateLevel(ports.depth);
                         if (ports.placeStairs(architect.machineResults)) {
                             transaction?.commit();
@@ -352,6 +354,7 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
                     }
                     transaction?.rollback();
                 }
+                sideChambers = architect.sideChambers;
                 if (!stairsPlaced) throw new Error(`Failed to place stairs at depth ${ports.depth} after 50 attempts`);
                 ports.environment = new EnvironmentManager(ports.grid);
                 ports.fov = new FOVSys(ports.grid);
@@ -432,6 +435,8 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
             if (entry) ports.placePlayerOnLevelEntry(entry);
         }
         ports.restoreLevelResidents();
+        if (!cached && sideChambers.length) ports.publishSideChambers?.(sideChambers);
+        bindGenerationReservation(ports.grid);
         ports.currentLevelDepth = ports.depth;
         // Active ownership is never duplicated by a stale cached array.
         ports.levels.delete(ports.depth);
@@ -505,7 +510,7 @@ export function populateLevel(ports: GenerationPorts,
             for (let y = 1; y < DROWS - 1; y++) {
                 const cell = ports.grid.getCell(x, y);
                 if (!cell || !cell.layers.includes(TerrainType.FLOOR)) continue; // F-1 跨层判定
-                if (cell.machineNumber !== 0) continue; // CE IS_IN_MACHINE
+                if (cell.machineNumber !== 0 || generationReserved(ports.grid,x,y)) continue; // CE IS_IN_MACHINE
                 // Don't spawn right on top of player
                 if (Math.abs(x - generationOrigin.x) > 5 || Math.abs(y - generationOrigin.y) > 5) {
                     floorTiles.push({ x, y });
@@ -890,7 +895,7 @@ export function populateLevel(ports: GenerationPorts,
                         dungeonType: TerrainType.FLOOR,
                         liquidType: TerrainType.NOTHING,
                         isOccupied: (x, y) => {
-                            if (ports.getMonsterAt(x, y)) return true;
+                            if (generationReserved(ports.grid,x,y) || ports.getMonsterAt(x, y)) return true;
                             if (ports.items.some(it => it.loc.x === x && it.loc.y === y)) return true;
                             const c = ports.grid.getCell(x, y);
                             if (c && (c.terrain === TerrainType.STAIRS_UP || c.terrain === TerrainType.STAIRS_DOWN || c.terrain === TerrainType.DUNGEON_PORTAL)) return true;

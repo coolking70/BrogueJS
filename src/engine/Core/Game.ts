@@ -5,6 +5,9 @@ import { footprintExposure } from '../Movement/FootprintExposure';
 import { CreatureSpatial } from '../Movement/CreatureSpatial';
 import { FootprintPathing, type FootprintGoal } from '../Map/FootprintPathing';
 import { releaseSpatialTerrain, spatialTerrainRevision } from '../Movement/SpatialRevision';
+import type { Architect } from '../Generator/Architect';
+import { nativeFormData } from '../../ext/nativeForms';
+import { sideChamberValid } from '../Generator/SideChamber';
 import { squarePlacementCandidates } from '../Movement/SquarePlacement';
 import { bindMovementRegions } from '../Movement/MovementRegions';
 import { squareContactScope, withSquareContactScope } from '../Movement/SpatialContactScope';
@@ -1277,15 +1280,50 @@ export class Game {
      * Birth policy: floor population explicitly supplies natural; a horde camp
      * inherits its horde's reason (including periodic) through all submachines.
      * Standalone machine callers are scripted unless they supply a reason. */
-    private makeGenerationPorts(creationReason: CreationReason = 'scripted') {
+    private makeGenerationPorts(creationReason: CreationReason = 'scripted', contributionToken?: import('../../ext/types').GenerationToken) {
         const thisGame = this;
         return {
+            generationContributions: () => thisGame.extensionRuntime?.generationContributions(thisGame.depth) ?? [],
+            onRegionFollowerBlocked: this.extensionRuntime?.hasOwnedRegions
+                ? (actor: Monster) => thisGame.extensionRuntime!.reportRegionFollowBlocked(actor, thisGame.currentLevelDepth!) : undefined,
+            publishSideChambers: contributionToken ? (drafts: Architect['sideChambers']) => {
+                const runtime=thisGame.extensionRuntime!;
+                for(const draft of drafts) {
+                    const t=draft.contribution, instanceKey=`${t.id}.depth-${thisGame.depth}`;
+                    const form=runtime.nativeForms().find(f=>f.id===t.formId)!;
+                    let plan=draft.plan;
+                    let regionId: number|null=null, actorId: number|null=null;
+                    if(plan && sideChamberValid(thisGame.grid,plan,form.size)) {
+                        // Native catch-up or fallen residents may occupy the reserved
+                        // scene. Try a finite, deterministic set before allocating
+                        // a region or actor; an exhausted birth is a skip receipt.
+                        const { bounds: b, spawn } = plan;
+                        const anchors: Pos[] = [];
+                        for (let y=b.y+2;y+form.size<=b.y+b.height-2;y++)
+                            for (let x=b.x+2;x+form.size<=b.x+b.width-2;x++) anchors.push({x,y});
+                        anchors.sort((a,b)=>Math.max(Math.abs(a.x-spawn.x),Math.abs(a.y-spawn.y))
+                            -Math.max(Math.abs(b.x-spawn.x),Math.abs(b.y-spawn.y)) || a.y-b.y || a.x-b.x);
+                        const data=nativeFormData(form);
+                        const at=anchors.slice(0,t.candidateLimit).find(at=>thisGame.canCreateSquareMonster(data,form.size,at));
+                        if(at) {
+                            plan={...plan,spawn:at};
+                            const region=runtime.installOwnedRegions(contributionToken,t.owner,[{instanceKey,bounds:plan.bounds,guard:t.guard}],thisGame.grid)[0]!;
+                        const actor=thisGame.createModuleMonster(form.id,plan.spawn,region.id,'natural');
+                            if(!actor) throw new Error('Side chamber birth changed after synchronous preflight');
+                            regionId=region.id; actorId=actor.id;
+                        }
+                    }
+                    runtime.emit('generationPlacement',{owner:t.owner,instanceKey,templateId:t.id,depth:thisGame.depth,formId:t.formId,
+                        result:actorId===null?'skipped':'placed',reason:actorId===null?draft.reason??'no-space':null,regionId,actorId});
+                }
+            } : undefined,
             markCreatureBirth: this.extensionRuntime
                 ? (creature: Monster) => markCreatureBirth(creature, creationReason) : undefined,
             generationTransactions: this.extensionRuntime ? {
                 begin: (label: string) => {
                     const runtime = thisGame.extensionRuntime!;
                     const token = runtime.beginGeneration(label);
+                    if(runtime.generationContributions(thisGame.depth).length)runtime.reserveGenerationAllocator(token);
                     return {
                         commit: () => {
                             const before = rng.getState(), restoreMessages = logger.checkpoint();
@@ -1519,6 +1557,9 @@ export class Game {
             const previousRewards = getRewardRoomsGenerated();
             const restoreMessages = logger.checkpoint();
             const previousRng = rng.getState();
+            // Existing CE generation retries retain their allocator behavior.
+            // A fatal contributed-floor transaction restores both allocators.
+            const previousMachine = runtime.generationContributions(this.depth).length ? getNextMachineNumber() : undefined;
             const grids = [this.grid, ...[...this.levels.values()].map(level => level.grid)];
             const restoreFeatureState = checkpointDungeonFeatureState(grids);
             const previousTraps = grids
@@ -1527,12 +1568,13 @@ export class Game {
                     return [grid, traps, traps ? [...traps] : []] as const;
                 });
             const token = runtime.beginGeneration('floor');
+            if (runtime.generationContributions(this.depth).length) runtime.reserveGenerationAllocator(token);
             try {
                 this.monsterPathCache = { safeTerrain: null, allySafety: null };
                 for (const m of this.monsters) m.mapToMe = null;
                 const firstVisit = !this.levelSeeds[this.depth - 1]?.visited;
                 if (firstVisit) runtime.emit('beforeLevelGeneration', { depth: this.depth });
-                generateDepth(this.makeGenerationPorts('natural'), isGoingUp, isFirstLevel, fell);
+                generateDepth(this.makeGenerationPorts('natural', token), isGoingUp, isFirstLevel, fell);
                 if (firstVisit) runtime.emit('afterLevelGeneration', { depth: this.depth });
                 runtime.emit('enteredLevel', { depth: this.depth, firstVisit, actorIds: [...new Set([this.player.id,...this.monsters.map(actor=>actor.id),...this.dormantMonsters.map(actor=>actor.id)])].sort((a,b)=>a-b) });
                 // Mutable module hooks only see the completed world and the run
@@ -1558,6 +1600,7 @@ export class Game {
                 // blueprint/stair retries retain every original engine draw;
                 // only this extension failure path restores the old run stream.
                 rng.setState(previousRng);
+                if (previousMachine !== undefined) restoreNextMachineNumber(previousMachine);
                 restoreFeatureState();
                 runtime.rollbackGeneration(token);
                 // The caller requested another depth before capture. Rebind
@@ -5764,13 +5807,14 @@ export class Game {
     }
 
     private polymorphBoltTarget(target: Creature | undefined): boolean {
-        const square = !!target?.spatial;
+        const square = !!target?.spatial || !!this.extensionRuntime?.nativeForms().length;
         if (!(target instanceof Monster) || !target.polymorph(() => this.demoteMonsterFromLeadership(target), data => {
             // Unpublished value candidate: no constructor, allocator, generation,
             // hook or mutation of the live creature before a destination exists.
+            const shape = this.extensionRuntime?.nativeForms().find(f=>f.id===data.id);
             const candidate = Object.assign(Object.create(Monster.prototype), Object.fromEntries(Object.entries(target).filter(([key]) => key !== 'spatial')),
                 { typeId: data.id, behaviorFlags: new Set(data.behaviorFlags ?? []), abilityFlags: new Set(data.abilityFlags ?? []), statusDurations: {},
-                    ...(target.spatial?.movementRegionId !== undefined ? { spatial: { schema: 1, footprintId: 'builtin:single', pose: 'r0', movementRegionId: target.spatial.movementRegionId } } : {}) }) as Monster;
+                    ...(shape || target.spatial?.movementRegionId !== undefined ? { spatial: { schema: 1, footprintId: shape ? `builtin:square-${shape.size}` : 'builtin:single', pose: 'r0', ...(target.spatial?.movementRegionId !== undefined ? { movementRegionId: target.spatial.movementRegionId } : {}) } } : {}) }) as Monster;
             return travelPlacement({ ...this.spatialWorldPort(), monsters: this.monsters.filter(c => c !== target), dormantMonsters: this.dormantMonsters.filter(c => c !== target) }, candidate, target.loc, true, false, true);
         })) return false;
         // A component-to-single transition retires every derived body cache and
@@ -10381,7 +10425,17 @@ export class Game {
         }
         // Decode the entire world before retiring the live one.
         let decoded: ReturnType<typeof decodeWholeRunWorld>;
-        try { decoded = decodeWholeRunWorld(snapshot, entityCodecDeps); } catch { return false; }
+        try {
+            const forms=extensions?.nativeForms()??[];
+            decoded = decodeWholeRunWorld(snapshot, { ...entityCodecDeps, allocateMonster: form => {
+                if(form.id.includes('.') && !forms.some(f=>f.id===form.id)) throw new Error('Unavailable saved native form');
+                return entityCodecDeps.allocateMonster(form);
+            } });
+            for(const actor of decoded.entityGraph.monsters.values()) {
+                const form=forms.find(f=>f.id===actor.typeId);
+                if(actor.typeId.includes('.') && !form || form && (actor.spatial?.footprintId!==`builtin:square-${form.size}` || actor.spatial?.pose!=='r0')) throw new Error('Invalid saved native form body');
+            }
+        } catch { return false; }
         const { entityGraph, restored } = decoded;
         // Player's decoder constructs a temporary instance. Growth preflight may
         // reject it, so that read-only phase cannot consume the live ID allocator.
@@ -10537,6 +10591,7 @@ export class Game {
         this.updateFlavorText();
         rng.setState(snapshot.rngState);
         this.extensionRuntime = extensions;
+        if(extensions?.hasOwnedRegions)this.bindMovementRegionSession();
         this.configureExtensionRuleAdapters();
         ItemLoader.onKnowledgeChanged = extensions ? kindId => extensions.emit('itemKnowledgeChanged',{kindId}) : null;
         if (extensions) {
@@ -11235,17 +11290,31 @@ export class Game {
         if (!monster.isDormant) this.applyEnvironmentalEffects(monster);
         return true;
     }
-    public createSquareMonster(data: MonsterData, size: 2 | 3, at: Pos, movementRegionId?: number): Monster | null {
+    /** Enabled native form creation; preflight and publication stay in the
+     * same square-body path as foundation fixtures. */
+    public createModuleMonster(formId: string, at: Pos, movementRegionId?: number, reason: CreationReason = 'scripted'): Monster | null {
+        const form=this.extensionRuntime?.nativeForms().find(f=>f.id===formId);
+        if(!form) throw new Error('Unavailable native form');
+        return this.createSquareMonster(nativeFormData(form),form.size,at,movementRegionId,reason);
+    }
+    public createSquareMonster(data: MonsterData, size: 2 | 3, at: Pos, movementRegionId?: number, reason?: CreationReason): Monster | null {
         this.bindMovementRegionSession();
+        if (!this.canCreateSquareMonster(data, size, at, movementRegionId)) return null;
+        const spatial = { schema: 1 as const, footprintId: `builtin:square-${size}`, pose: 'r0' as const,
+            ...(movementRegionId !== undefined ? { movementRegionId } : {}) };
+        const monster = new Monster(at.x, at.y, data); monster.spatial = spatial; monster.spawnLoc = { ...at };
+        if(reason) markCreatureBirth(monster,reason);
+        if (!this.publishSquareMonster(monster)) throw new Error('Square birth changed during synchronous construction');
+        return monster;
+    }
+    /** Pure birth preflight: no constructor, entity ID, state write or draw. */
+    public canCreateSquareMonster(data: MonsterData, size: 2 | 3, at: Pos, movementRegionId?: number): boolean {
         const spatial = { schema: 1 as const, footprintId: `builtin:square-${size}`, pose: 'r0' as const,
             ...(movementRegionId !== undefined ? { movementRegionId } : {}) };
         const candidate = { loc: at, spatial, hp: 1 } as Creature;
         const aquatic = data.behaviorFlags?.includes('MONST_RESTRICTED_TO_LIQUID');
-        if (!this.squarePublicationFits(candidate) || !canFitAt(this, candidate, at, { allowsTerrain: p => !(cellTerrainFlags(this.grid, p.x, p.y) & speciesForbiddenFlags(data))
-            && (!aquatic || !!(cellTerrainMechFlags(this.grid, p.x, p.y) & TM_ALLOWS_SUBMERGING)) })) return null;
-        const monster = new Monster(at.x, at.y, data); monster.spatial = spatial;
-        if (!this.publishSquareMonster(monster)) throw new Error('Square birth changed during synchronous construction');
-        return monster;
+        return this.squarePublicationFits(candidate) && canFitAt(this, candidate, at, { allowsTerrain: p => !(cellTerrainFlags(this.grid, p.x, p.y) & speciesForbiddenFlags(data))
+            && (!aquatic || !!(cellTerrainMechFlags(this.grid, p.x, p.y) & TM_ALLOWS_SUBMERGING)) });
     }
     private squarePublicationFits(candidate: Creature, monsters = this.monsters, dormantMonsters = this.dormantMonsters): boolean {
         const squares = [...monsters, ...dormantMonsters].filter(c => c.spatial && c !== candidate);

@@ -154,6 +154,7 @@ export function restoreEntityGraph(rows: readonly GameSnapshotMonster[], itemRow
     const monsters = new Map(existingMonsters.map(m => [m.id, m]));
     for (const s of saved.values()) {
         if (monsters.has(s.id)) continue;
+        if ((s.typeId.includes('.') || s.form.id.includes('.')) && s.typeId!==s.form.id) throw new Error('Native form identity mismatch');
         const m = Object.assign(deps.allocateMonster(s.form), copyFields(s, MONSTER_FIELDS));
         // Saves written before creatureMode existed contain only creatureState.
         if (m.creatureMode === undefined) m.creatureMode = MonsterMode.NORMAL;

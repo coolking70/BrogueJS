@@ -46,13 +46,33 @@ function exerciseGame(game, plans, unavailableIds) {
             equal(checkpoint(), fromEvent(event), 'Replay exact checkpoint/RNG mismatch');
         }
     };
+    const walkNatural = (plan) => {
+        for (let commands=0; commands<600 && game.depth<plan.naturalDepth && !game.isGameOver; commands++) {
+            const grid=game.grid,key=p=>p.y*grid.width+p.x,target=game.levelSeeds[game.depth-1].downStairsLoc,start={...game.player.loc};
+            const queue=[start],previous=new Map([[key(start),null]]);
+            const valid=p=>{const c=grid.getCell(p.x,p.y);return c&&(c.isPassable||plan.routeTerrain.doors.includes(c.terrain))&&!c.layers.some(t=>plan.routeTerrain.hazards.includes(t));};
+            for(let i=0;i<queue.length;i++){
+                const p=queue[i];if(p.x===target.x&&p.y===target.y)break;
+                for(const [dx,dy]of[[0,-1],[0,1],[-1,0],[1,0]]){const n={x:p.x+dx,y:p.y+dy};if(valid(n)&&!previous.has(key(n))){previous.set(key(n),p);queue.push(n);}}
+            }
+            assert(previous.has(key(target)),'No natural stair route');let at=target,next=target;
+            while(previous.get(key(at))){next=at;at=previous.get(key(at));}
+            if(grid.getCell(next.x,next.y).terrain===plan.routeTerrain.secret)game.executeCommand('search');
+            else if(next.x===game.player.x&&next.y===game.player.y)game.executeCommand('stairs_down');
+            else game.executeCommand('move',{x:next.x-game.player.x,y:next.y-game.player.y});
+            if(game.pendingCommandConfirmation)game.resolveCommandDecision(game.pendingCommandConfirmation.token,true);
+        }
+        assert(game.depth===plan.naturalDepth&&!game.isGameOver,'Natural play did not reach contribution depth');
+        assert(game.monsters.some(m=>plan.forms.includes(m.typeId)),'No natural contributed creature');
+    };
     const results = [];
     for (const plan of plans) {
-        game.startNewGame({ seed: 7301, mode: 'test', ruleSet: 'extended', extensions: plan.ids, initialCommands: plan.initialCommands });
+        game.startNewGame({ seed: plan.naturalDepth ? 7306 : 7301, mode: plan.naturalDepth ? 'normal' : 'test', ruleSet: 'extended', extensions: plan.ids, initialCommands: plan.initialCommands });
         game.animationEnabled = false;
         equal(game.extensionRuntime.manifest, plan.manifest, 'Startup manifest mismatch');
         equal(game.recordedInputEvents.map(event => event.data), plan.initialCommands, 'Incomplete or reordered initial batch');
         const origin = clone(game.toSaveSnapshot().run.recordingOrigin.initial);
+        if(plan.naturalDepth)walkNatural(plan);
         play(); play();
         const saved = clone(game.toSaveSnapshot()), expected = checkpoint(), recording = clone(game.exportRecording());
         assert(saved.run.recordingOrigin, 'Save lost recording provenance');
@@ -85,7 +105,7 @@ function exerciseGame(game, plans, unavailableIds) {
             assert(game.player === player && game.extensionRuntime === runtime, 'Failed input retired old run');
             equal(checkpoint(), before, 'Failed input changed checkpoint/RNG');
         }
-        results.push({ modules: plan.ids, events: recording.events.length, continuationEvents: continuation.events.length,
+        results.push({ modules: plan.ids, ...(plan.naturalDepth ? {naturalDepth:game.depth,naturalContributedBirth:true}:{}), events: recording.events.length, continuationEvents: continuation.events.length,
             exactCheckpoints: true, saveLoad: true, replaySeek: true, continuation: true, missingModuleRejected: unavailableIds });
     }
     return results;
@@ -100,11 +120,14 @@ try {
     const unavailable = [...new Set([...removed, 'composition-unavailable'])].filter(id => !report.installed.includes(id));
     const subsets = report.installed.reduce((sets, id) => [...sets, ...sets.map(set => [...set, id])], [[]]);
     const registry = catalog.createExtensionRegistry();
+    const { TerrainType } = await sourceServer.ssrLoadModule('/src/engine/Map/Grid.ts');
     const plans = subsets.map(ids => {
         const manifest = registry.manifest(ids);
         const initialCommands = registry.create(manifest).flatMap(module => module.initialCommand
             ? [JSON.stringify({ module: module.id, ...module.initialCommand })] : []);
-        return { ids, manifest, initialCommands };
+        const modules=registry.create(manifest),contributions=modules.flatMap(m=>m.generationContributions??[]);
+        return { ids, manifest, initialCommands, naturalDepth:contributions.length?Math.min(...contributions.map(t=>t.minDepth)):null,
+            forms:modules.flatMap(m=>m.nativeForms??[]).map(f=>f.id),routeTerrain:{doors:[TerrainType.DOOR,TerrainType.SECRET_DOOR],secret:TerrainType.SECRET_DOOR,hazards:[TerrainType.LAVA,TerrainType.WATER_DEEP,TerrainType.CHASM]} };
     });
     try { report.engine = { status: 'passed', combinations: exerciseGame(createHeadlessGame(7301, 'test'), plans, unavailable) }; }
     catch (error) { report.engine = { status: 'failed', error: String(error?.stack ?? error) }; }
