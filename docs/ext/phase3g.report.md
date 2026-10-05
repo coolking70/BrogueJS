@@ -4,7 +4,7 @@
 
 2026-10-05 维护者明确批准 `phase3-adapters.proposal.md` 的 A/A/A/A，提案已先标记“已决定”。开工从 `fe76575baa60bffad969180688519638a786835e` 干净工作树出发，实查 GitHub 后先快进合入 `ext/foundation` 的 `312e9eb05deb5e8cc82964da6a1b628fb6f1fa41`（含 4d-5）。本步只实施 3g，不含 4e/4f，不改 main、tag 或部署。
 
-最终门禁前再次实查并合入维护者完成的 4d-6 `80640d1f0aa701d71e34758403bf18967fbff097`。3g checkpoint 为 `78a969f`；最终门禁尚未填入前不是验收完成声明。
+最终门禁前再次实查并合入维护者完成的 4d-6 `80640d1f0aa701d71e34758403bf18967fbff097`。3g checkpoint 为 `78a969f`。之后按维护者要求再合入4e `97988d5`，最终生产候选为 `e6ad385dd7807b6eaae2c689b0d4a65dbecff35a`，合并后门禁结果见下文。
 
 ## 协议与持久化
 
@@ -43,9 +43,9 @@ provider 只读取自己命名空间下该 actor 的深冻结组件与冻结状�
 
 ## 验证状态
 
-开发期独立模块结果：growth 35 文件/641 项通过；其余最终合并候选结果待下表填入。3g 不重录原生生成基线或 UR 黄金 trace；giants 三份 trace 仅因 foundation 版本信封变更重录 extensionsHash，见后文。完整 npm test、全部 test:ext、实际删除矩阵、CE full/gen 依维护者指示保留给 4f 统一收尾，不能以本步功能集合冒充全量通过。
+开发期独立模块结果：growth 35 文件/641 项通过；最终合并候选限定范围154文件/2914项通过，包含一次原期限下的单文件串行复跑，详见最终表。3g 不重录原生生成基线或 UR 黄金 trace；giants 三份 trace 仅因 foundation 版本信封变更重录 extensionsHash，见后文。完整 npm test、全部 test:ext、实际删除矩阵、CE full/gen 依维护者指示保留给 4f 统一收尾，不能以本步功能集合冒充全量通过。
 
-最终候选、逐命令退出码/耗时、相关文件清单、组合范围和散列：待最终冻结门禁。
+最终候选、逐命令退出码/耗时、941份输入散列、154个相关文件清单与复跑原因：`evidence/phase3g-final-gates.json`。
 
 
 ## 4d-6 合并逐项核对
@@ -115,3 +115,23 @@ v4统一运行全部8门通过，933份源码输入每门前后一致。139相�
 三份giants trace不能选任一侧旧hash。暂用97988d5原fixture，在不可变合并index树`a284120c8ec1b8c2db9c256fed72bc9ee2cb8e31`隔离审计：原测试仅三个extensionsHash失败；只改12处foundation5→4字面量后原trace＋contract3文件6项全绿。恢复5、原捕获入口重录后独立无capture重放与边界守卫全绿。实际只有三个extensionsHash叶子变化，原生世界/命令/RNG/遭遇/区域逐字段不变。精确命令、退出码、源树与新hash见`phase3g-4e-trace-version-evidence.json`；后续Game checkpoint补丁由最终完整门禁再验证。
 
 交叉修复最终专项：`npx vitest run src/test/ext_combat_transition_facts.test.ts src/test/ext_combat_adapter_foundation.test.ts src/test/phase4e_body_transition.test.ts --maxWorkers=1`，3文件66项通过，exit0，40.71s；vue-tsc与diff检查通过。独立合并复核确认6个共享生产文件完整保留两侧增量、22个上游独占文件逐字一致、清单并集无重复、foundation5保持、最小checkpoint修复与4个新回归无阻断。
+
+## 最终合并后开发期门禁
+
+候选 `e6ad385dd7807b6eaae2c689b0d4a65dbecff35a` 已包含 foundation `97988d5cb94196d388f0a53ccac25bf5b1b5ff57`。Node v24.19.0；NODE_OPTIONS=--max-old-space-size=3072；相关批maxWorkers=2，长自然项maxWorkers=1。941份生产/测试/脚本/配置输入每门前后相同，输入映射散列 `79d15959c13f66f518125299a4911fa026f0bbaf44503939f204f2ba0e84f32d`。最终补报告也逐文件核对，无源码改动。
+
+| 门禁 | 实际结果 | exit | 秒 |
+| --- | --- | --- | --- |
+| module boundaries | 通过 | 0 | 3.917 |
+| vue-tsc -b | 通过 | 0 | 22.600 |
+| npm run build | 通过 | 0 | 29.582 |
+| 153文件相关批 | 152文件/2908项通过，1项原240秒期限超时 | 1 | 1295.077 |
+| 原giants_zones_natural单文件串行复跑 | 1/1通过，原240秒期限未改 | 0 | 233.740总时长；测试230.520 |
+| terrain白名单 | 1项通过；29项因明确过滤不选 | 0 | 3.559 |
+| engine-only组合烟测 | 16/16；requestedScopePassed=true | 0 | 160.253 |
+| drift | 4文件5项通过 | 0 | 100.778 |
+| giants_composite_natural | 5/5；原480秒单项期限不变 | 0 | 925.887 |
+
+相关范围包括所有growth/narrative/combat/giants模块test清单、全部phase4d_*、全部giants_composite*、4e两份共享专项及3g/4e交叉回滚。最终去重154文件2914项通过，0 skip/todo；drift另计。不能称首轮零失败：`giants_zones_natural.test.ts`在并发相关批实际250.854s超原240s期限，同一候选串行测试230.520s通过，未修改源码/断言/种子/门限。只复跑该项，保留其他152个已绿文件同一冻结输入证据，并继续未执行的后续门；未把4e合并前结果替代合并后结果。
+
+自然D15 seed7309／wizard／only giants 完整杀死原身、broken save续录、逐事件replay和三个fresh seek均通过。engine-only报告的browser=not-run；本轮不声明浏览器/CSS/触控、实际删除矩阵、完整npm/all test:ext或CE full/gen通过。完整联合收尾继续等待4f维护者通知。
