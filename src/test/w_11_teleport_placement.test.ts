@@ -316,6 +316,18 @@ describe('W-11 generic placement and C-5 entry effects', () => {
         expect(damage).toHaveBeenCalledExactlyOnceWith(6, 12, 2);
         (g as any).monstersFall(); expect(damage).toHaveBeenCalledTimes(1);
     });
+    it('a legacy fire trap under the player fires once: its own flames do not re-trigger it', () => {
+        // Regression: the fire DF reached the player's cell before the trap was
+        // consumed, and the DF contact re-entered triggerTrap until the stack overflowed.
+        const g = createHeadlessGame(11014); g.monsters = [];
+        g.player.applyStatus('immune_fire', 100);
+        const at = { x: g.player.loc.x + 1, y: g.player.loc.y };
+        g.grid.setTerrain(at.x, at.y, T.TRAP); g.grid.getCell(at.x, at.y)!.trapType = 'fire';
+        const trap = vi.spyOn(g as any, 'triggerTrap');
+        expect(() => g.placeCreature(g.player, at)).not.toThrow();
+        expect(trap).toHaveBeenCalledTimes(1);
+        expect(g.grid.getCell(at.x, at.y)!.layers).not.toContain(T.TRAP);
+    });
     it('player automatically collects the destination item without spending an extra turn', () => {
         const g = scene(), item = ItemLoader.spawnFood('ration_of_food', 13, 1)!; g.items.push(item);
         const before = timeSystem.currentTick;
