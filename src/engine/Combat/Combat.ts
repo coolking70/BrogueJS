@@ -413,11 +413,12 @@ export class CombatSystem {
         const applyTo = defender;
         if (damage > 0) {
             const hpDamage = applyTo.absorbShieldDamage(damage);
-            const transfer = (actual: number) => CombatSystem.transferMonsterHealth(attacker, applyTo, actual);
+            let effectivePhysicalDamage = 0;
+            const transfer = (actual: number) => { effectivePhysicalDamage = actual; CombatSystem.transferMonsterHealth(attacker, applyTo, actual); };
             if (applyTo instanceof Player) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
             else applyTo.takeDamage(hpDamage, true, opts?.grid, transfer, 'physical'); // shield applied exactly once
             if (isNativeMeleeAttack(attacker, defender, opts))
-                settleNativeMeleePoise(opts?.grid, attacker, defender, { hit: true, damage: hpDamage });
+                settleNativeMeleePoise(opts?.grid, attacker, defender, { hit: true, damage: effectivePhysicalDamage });
             if (poisonDuration > 0) applyTo.addPoison(poisonDuration, 1);
         } else {
             // CE inflictDamage still applies the ring's minimum ±1 on a hit
@@ -728,12 +729,13 @@ export class CombatSystem {
         if (damage > 0) {
             const hpDamage = applyTo.absorbShieldDamage(damage);
             const hpBefore = applyTo.hp;
-            const transfer = (actual: number) => CombatSystem.transferMonsterHealth(attacker, applyTo, actual);
+            let effectivePhysicalDamage = 0;
+            const transfer = (actual: number) => { effectivePhysicalDamage = actual; CombatSystem.transferMonsterHealth(attacker, applyTo, actual); };
             if (applyTo instanceof Player) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
             else applyTo.takeDamage(hpDamage, true, opts?.grid, transfer, 'physical'); // shield applied exactly once
             if (trace) trace.hpLost = Math.max(0, hpBefore - applyTo.hp);
             if (isNativeMeleeAttack(attacker, defender, opts))
-                settleNativeMeleePoise(opts?.grid, attacker, defender, { hit: true, damage: hpDamage });
+                settleNativeMeleePoise(opts?.grid, attacker, defender, { hit: true, damage: effectivePhysicalDamage });
             if (poisonDuration > 0) applyTo.addPoison(poisonDuration, 1);
         } else {
             // CE inflictDamage still applies the ring's minimum ±1 on a hit

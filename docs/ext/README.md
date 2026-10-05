@@ -4,7 +4,7 @@
 
 ## 阶段 3d：韧性、硬直、确定弹反候选
 
-基于已验收3c `a34b0c2`，combat1.3.0 / state3 实现数据驱动 poise、一次确定弹反、共享NPC防御与硬直取消；没有免费反击。战斗按钮只保留在模块栏，解决底部完整重复动作行。3c dodge 白名单保持；4c part-break provider 等待正式 foundation 协议合入，不提前实现底座。范围、严格存读、实际验证和浏览器缺口见 [3d报告](phase3d.report.md)。止于3d，不做篝火、不合main、不tag。
+基于已验收3c `a34b0c2`，combat1.3.0 / state3 实现数据驱动 poise、一次确定弹反、共享NPC防御与硬直取消；没有免费反击。战斗按钮只保留在模块栏，解决底部完整重复动作行。3c dodge 白名单保持；已先合入正式4c foundation `315fd8c`，再按原协议接入 core poise provider，与fallback互斥，保持取消回滚。范围、严格存读、实际验证和浏览器缺口见 [3d报告](phase3d.report.md)。止于3d，不做篝火、不合main、不tag。
 
 ## 阶段 3c：体力与一格闪避候选
 

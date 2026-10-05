@@ -100,6 +100,8 @@ export interface ActorActionScheduler extends ActorActionSchedulerPort {
     refreshMirrors(): void;
     /** Read-only validation precedes replacing the binding; load emits no effects. */
     rebind(state: ActorActionSchedulerState): void;
+    /** Internal synchronous native transaction checkpoint; no state codec relaxation. */
+    checkpointTransaction(): () => void;
 }
 
 function fail(message: string): never { throw new Error(`Actor action scheduler: ${message}`); }
@@ -152,7 +154,7 @@ function frozen(bundle: ActorActionBundle): ReadonlyActorActionBundle {
 }
 
 /** Pure codec validation. It does not repair mirrors, invoke providers or consume RNG. */
-export function validateActorActionSchedulerState(value: unknown): asserts value is ActorActionSchedulerState {
+export function validateActorActionSchedulerState(value: unknown, dueBoundaries: ReadonlySet<string> = new Set()): asserts value is ActorActionSchedulerState {
     if (!record(value, ['schema', 'bundles']) || value.schema !== 1 || !dataArray(value.bundles)
         || value.bundles.length > MAX_ACTOR_ACTION_BUNDLES) fail('invalid state');
     const actionIds = new Set<number>();
@@ -201,7 +203,7 @@ export function validateActorActionSchedulerState(value: unknown): asserts value
                 if (typed.cancelled) fail('cancelled subaction still active');
                 const consumed = typed.phases.slice(0, typed.phaseIndex).reduce((sum, phase) => sum + phase.durationTicks, 0)
                     + typed.phases[typed.phaseIndex]!.durationTicks - typed.phaseRemainingTicks;
-                if (typed.phaseRemainingTicks < 1 || typed.phaseRemainingTicks > typed.phases[typed.phaseIndex]!.durationTicks
+                if ((typed.phaseRemainingTicks < 1 && !dueBoundaries.has(`${bundle.actionId}:${typed.sourceSubactionId}:${typed.phaseIndex}`)) || typed.phaseRemainingTicks > typed.phases[typed.phaseIndex]!.durationTicks
                     || consumed !== bundle.elapsedActionTicks) fail('inconsistent phase clock');
             }
         }
@@ -358,6 +360,7 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
                 }
             });
         },
+        checkpointTransaction() { const previousFault=fault; return () => { fault=previousFault; }; },
         cancelDeadActions() { run(cancelDead); },
         dispatchActorBoundary(ownerId) {
             return run(() => {
@@ -369,14 +372,17 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
                     if (!active(child) || child.phaseRemainingTicks !== 0) continue;
                     if (!host.readActor(ownerId)?.alive) { abandon(bundle); return 'handled'; }
                     if (actorSubactionHasPendingSegments(child) && !sourceValid(child, bundle.depth)) { child.phaseIndex = child.phases.length; child.phaseRemainingTicks = 0; child.cancelled = true; continue; }
-                    const phase = child.phases[child.phaseIndex]!;
-                    if (phase.segmentIndex !== null) synchronous(host.resolveSegment(Object.freeze({
+                    const phase = child.phases[child.phaseIndex]!, releasingSegment = phase.segmentIndex;
+                    if (releasingSegment !== null) synchronous(host.resolveSegment(Object.freeze({
                         actionId: bundle.actionId, depth: bundle.depth, decisionOwnerId: ownerId, timeChargeOwnerId: bundle.timeChargeOwnerId,
                         sourceSubactionId: child.sourceSubactionId, sourceEntityId: child.sourceEntityId,
-                        sourcePartId: child.sourcePartId, segmentIndex: phase.segmentIndex,
+                        sourcePartId: child.sourcePartId, segmentIndex: releasingSegment,
                         elapsedActionTicks: bundle.elapsedActionTicks,
                     })));
                     if (!host.readActor(ownerId)?.alive) { abandon(bundle); return 'handled'; }
+                    // A committed part-break provider may replace this release tail in
+                    // the shared scheduler graph. Do not consume its new recovery.
+                    if (releasingSegment !== null && child.phases[child.phaseIndex]?.kind === 'break-recovery') continue;
                     // Resolution may move/disable its own source. Observe that fact
                     // before selecting the next delayed segment, without retrying damage.
                     const interruption = host.sourceInterruption?.(child, frozen(bundle));

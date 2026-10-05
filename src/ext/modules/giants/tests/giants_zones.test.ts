@@ -49,11 +49,14 @@ function configure(twoZones = false, provider?: import('../../../partBreak').Par
     const module = () => ({ ...createGiantsModuleFromPack(pack), ...(provider ? { optionalPartBreaks: { 'combat.part-break.v1': provider } } : {}) });
     const registry = registryFromDescriptors(catalog.getInstalledModuleDescriptors().map(d => {
         if (d.id === 'giants') return { ...d, create: module, rules: module().rules };
-        if (!sourceProfile || d.id !== 'combat') return d;
+        if (d.id !== 'combat') return d;
+        // An explicit fixture provider replaces the installed combat provider,
+        // never registers a competing second owner.
+        if (!sourceProfile) return provider ? { ...d, create: () => ({ ...d.create(), optionalPartBreaks: undefined }) } : d;
         // Use the foundation's installed declaration rather than importing
         // another module's implementation. The existing attack/profile stays
         // unchanged; only this diagnostic source binding is added.
-        const base = d.create(), definitions = json(base.actorActions!.definitions) as unknown as import('../../../actorActions').ActorAttackDefinitions;
+        const original = d.create(), base = provider ? { ...original, optionalPartBreaks: undefined } : original, definitions = json(base.actorActions!.definitions) as unknown as import('../../../actorActions').ActorAttackDefinitions;
         (definitions.nativeProfiles as { monsterId: string; profileId: string }[]).push({ monsterId: 'giants.spine-crawler', profileId: 'combat.shock-ring' });
         const rules = { ...base.rules!, fingerprint: extensionDataFingerprint(definitions) };
         return { ...d, rules, create: () => ({ ...base, rules, actorActions: { ...base.actorActions!, definitions: definitions as unknown as import('../../../types').Json } }) };
@@ -120,7 +123,7 @@ describe('4c production fixed zones', () => {
         expect(transfer).toHaveBeenCalledTimes(1); expect(transfer.mock.calls[0]![2]).toBe(30);
         expect(effects).toHaveBeenCalledTimes(1); expect(roll).toHaveBeenCalledTimes(1); expect(death).not.toHaveBeenCalled();
         expect(boss.deathProcessed).toBe(false); expect(game.stats.kills).toBe(0);
-        expect(boss.movementSpeed).toBe(150); expect(boss.spatial!.actionLockInTicks).toBe(50);
+        expect(boss.movementSpeed).toBe(150); expect(boss.spatial!.actionLockInTicks).toBe(ids.includes('combat') ? undefined : 50);
         const before = boss.hp; hit(game, boss, 60); expect(boss.hp).toBe(before); expect(fixedZoneBreaks(boss, game.extensionRuntime!.spatialCatalog)).toHaveLength(1);
         hit(game, boss, 6, 'head'); expect(boss.hp).toBe(108); expect(boss.spatial!.zoneState![0]!.hp).toBe(0);
     });
@@ -212,7 +215,9 @@ describe('4c production fixed zones', () => {
     it('prepared phased confirmation becomes stale on zone changes before payment', () => {
         const { game, boss } = scene(['giants', 'combat']); const plan = preparePhasedAttackCommand(game, command)!;
         hit(game, boss, 60); expect(() => commitPhasedAttackCommand(game, plan)).toThrow('Stale');
-        expect(state(game).actors).toEqual([]); expect(state(game).scheduler.bundles).toEqual([]);
+        expect(state(game).actors.filter(actor => actor.actorId === game.player.id)).toEqual([]);
+        expect(state(game).actors.find(actor => actor.actorId === boss.id)).toMatchObject({ stamina: 24, poise: 6 });
+        expect(state(game).scheduler.bundles).toEqual([]);
     });
     it('a broken source cancels its pending native windup and disables its declared attack after fallback ends', () => {
         configure(false, undefined, true); const { game, boss } = scene(['giants', 'combat']);

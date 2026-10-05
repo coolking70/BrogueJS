@@ -225,13 +225,13 @@ function risks(value: unknown): void {
     }
 }
 
-export function validateProductionActorAttackState(value: unknown, definitions: ActorAttackDefinitions): asserts value is ProductionActorAttackState {
+export function validateProductionActorAttackState(value: unknown, definitions: ActorAttackDefinitions, dueBoundaries: ReadonlySet<string> = new Set()): asserts value is ProductionActorAttackState {
     validateActorAttackDefinitions(definitions);
     plainJson(value);
     actorActionRecord(value, ['schema', 'revision', 'nextActionId', 'scheduler', 'actions', 'actors']);
     if (value.schema !== 3) fail('invalid schema');
     integer(value.revision, 0); const nextActionId = integer(value.nextActionId, 1);
-    validateActorActionSchedulerState(value.scheduler);
+    validateActorActionSchedulerState(value.scheduler,dueBoundaries);
     actorActionArray(value.actions, 0, MAX_ACTOR_ACTION_BUNDLES);
     actorActionArray(value.actors, 0, MAX_ACTOR_ACTION_BUNDLES);
     if (value.actions.length !== value.scheduler.bundles.length) fail('metadata and scheduler bundle mismatch');
@@ -317,4 +317,13 @@ export function validateProductionActorAttackState(value: unknown, definitions: 
         }
         if (action.paidCost !== paid || paid > policies.get(profile.resourcePolicyId)!.staminaCapacity) fail('incorrect paid action cost');
     }
+}
+
+/** Existing synchronous release boundaries may be zero while the native resolver
+ * commits a provider. Only the exact already-due identities are permitted;
+ * loading/saving always uses the strict default codec above. */
+export function validateProductionActorAttackTransactionState(value:unknown,definitions:ActorAttackDefinitions,current:ProductionActorAttackState):asserts value is ProductionActorAttackState {
+    const due=new Set(current.scheduler.bundles.flatMap(bundle=>bundle.subactions.filter(child=>child.phaseRemainingTicks===0&&child.phaseIndex<child.phases.length)
+        .map(child=>`${bundle.actionId}:${child.sourceSubactionId}:${child.phaseIndex}`)));
+    validateProductionActorAttackState(value,definitions,due);
 }

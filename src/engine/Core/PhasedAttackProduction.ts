@@ -264,6 +264,7 @@ export function bindPhasedAttackProduction(game:Game):void {
 /** Whole-body sources use every zone; targets use only pending locked cells. */
 export function cancelPhasedAttacksAtZone(game: Game, target: Creature, zoneId: string): void {
     const session = sessions.get(game); if (!session) return;
+    reconcileActorNativeRecovery(game,target.id);
     const cells = new Set(game.footprintOf(target).filter(p => p.zoneId === zoneId).map(p => `${p.x},${p.y}`));
     const sources = new Set<number>([target.id]);
     for (const bundle of session.state.scheduler.bundles) {
@@ -435,7 +436,16 @@ export function nativeActorPoiseDamage(game:Game,actorId:number):number {
 export function applyActorPoiseDamage(game:Game,targetId:number,amount:number):void {
     const session=sessions.get(game),source=actor(game,targetId);
     if(!session||!source||source.hp<=0||!Number.isSafeInteger(amount)||amount<=0||amount>1_000_000)return;
-    const {profile,policy,row:existing}=resourcesFor(game,session,source);
+    const current=resourcesFor(game,session,source),existing=current.row;
+    const busy=session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===source.id);
+    const profile=busy&&existing?session.definitions.profiles.find(profile=>profile.id===existing.profileId)!:current.profile;
+    const policy=session.definitions.resourcePolicies.find(policy=>policy.id===profile.resourcePolicyId)!;
+    if(existing&&existing.profileId!==profile.id){
+        existing.profileId=profile.id;existing.stamina=Math.min(existing.stamina,policy.staminaCapacity);existing.regenRemainder=0;
+        existing.regenDelayRemaining=Math.min(existing.regenDelayRemaining,policy.regenDelayTicks);
+        existing.poise=Math.min(existing.poise,policy.poiseCapacity);existing.poiseRecoveryRemainder=0;
+        existing.poiseRecoveryDelayRemaining=Math.min(existing.poiseRecoveryDelayRemaining,policy.poiseRecoveryDelayTicks);bumpRevision(session.state);
+    }
     if(policy.poiseImmune||isActorStaggered(game,targetId))return;
     if(!existing&&session.state.actors.length>=4096)throw new Error('Actor resource budget exhausted');
     const row=existing??initialResource(source.id,profile.id,policy);

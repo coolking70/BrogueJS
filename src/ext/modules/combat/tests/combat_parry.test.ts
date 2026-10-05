@@ -186,3 +186,23 @@ describe('3d native scheduling and visible defensive decisions',()=>{
         expect(physical).not.toHaveBeenCalled();expect(runtime.causality.snapshot().nextEffectId).toBe(next+1);
     });
 });
+
+describe('3d defended facts replay through native NPC windups',()=>{
+    it('successful parries retain exact causal IDs, RNG, checkpoints and saved continuation',()=>{
+        const original=Game.prototype.startNewGame;
+        vi.spyOn(Game.prototype,'startNewGame').mockImplementation(function(this:Game,...args){
+            original.apply(this,args);if(this.extensionRuntime?.actorActionBinding()){arena(this);npc(this,1,{x:21,y:15});}
+        });
+        const game=start(),expected:ReturnType<typeof mechanical>[]=[],saves:ReturnType<Game['toSaveSnapshot']>[]=[];
+        const firstFact=game.extensionRuntime!.causality.snapshot().nextEffectId,parries=vi.spyOn(game.extensionRuntime!,'notifyActorParried');
+        for(let index=0;index<3;index++){acknowledge();game.executeCommand('ext:command',command('e'));expected.push(mechanical(game));saves.push(json(game.toSaveSnapshot()));}
+        expect(parries).toHaveBeenCalledTimes(3);expect(game.player.hp).toBe(1000);expect(game.extensionRuntime!.causality.snapshot().nextEffectId).toBeGreaterThan(firstFact);
+        expect(state(game).actors.some(actor=>actor.actorId!==game.player.id)).toBe(true);
+        const recording=json(game.exportRecording()),replay=createHeadlessGame(143,'test');expect(replay.loadReplay(recording)).toBe(true);replay.animationEnabled=false;
+        for(const checkpoint of expected){replay.replayStep(true);expect(replay.replayError).toBeNull();expect(mechanical(replay)).toEqual(checkpoint);}
+        for(const index of [2,1,3]){replay.replaySeek(index);expect(replay.replayError).toBeNull();expect(mechanical(replay)).toEqual(expected[index-1]);}
+        const loaded=createHeadlessGame(144,'test');expect(loaded.loadSnapshot(saves[0]!)).toBe(true);loaded.animationEnabled=false;
+        for(let index=0;index<2;index++){acknowledge();loaded.executeCommand('ext:command',command('e'));}
+        expect(mechanical(loaded)).toEqual(expected[2]);expect(loaded.exportRecording().events).toEqual(recording.events);
+    });
+});

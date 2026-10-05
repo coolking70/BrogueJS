@@ -8,7 +8,7 @@
 
 combat module/rules **1.3.0**，生产状态 **schema 3**。模块数据 schema 仍为1；精确 manifest/指纹和状态校验拒绝旧版本，不迁移。foundation/native/whole-run/replay 格式版本没有新增全局字段。所有新增机械数据仍在 combat 的唯一 actor ledger；未加 Game 实例字段。
 
-开工与开发末段核对时，阶段4分支 `413303d5225dfa4139ed8f329aa51ac506624cad` 的 4c 固定部位仍未进入 foundation。已阅读 `phase4c.report.md` 了解已发布 prepare/native apply/provider commit、fallback 互斥和回滚合同，但本步**不提前实现/替代底座协议**。若最终 foundation 不含4c，则 combat part-break provider 明确延后，不能把现有独立实体 poise 叫作复合核心或部位破坏联动。
+开工时4c仍在阶段4分支；开发中实际 GitHub 的 foundation/phase4 均前进到 `315fd8cb2e570d26f6cc23692f650e19b71005e7`。先保留3d检查点 `62382e7`，再以 merge `6e0e71c` 纳入完整4c历史，之后才实施 combat provider。冲突仅为 Game import 与资格条件，保留两边增量。正式 giants 数据/locale 与 hosted foundation 完全相同，维护者已调整的长录像门限原样纳入，没有另改门限或主动重跑该1174命令测试。
 
 ## 数据、费用与唯一时钟
 
@@ -54,4 +54,38 @@ NPC 只对已经提交、可见、打中自身足迹、将在有效窗口内落�
 - 独立只读审查指出恢复层错误写 dodge timer、零poise缺恢复 owner、原生epilogue覆盖硬直；均已修复并新增精确回归。没有通过删用例、skip或放宽阈值消除问题。
 - 旧 UI 断言修订做单变量反事实：旧重复command的disabled断言在原组件通过，新组件移除重复command后失败；将同一disabled断言移到唯一bar。旧 projection 精确形状/最后动作前提在原 view 通过，新 additive DTO 后失败；保留旧 stamina/dodge 值，新增完整字段并按 ID 找 dodge。
 
-最终相关集合、构建、组合 smoke、最终 foundation 检查和源散列在交付时追加。浏览器真实像素/触控目前未验；SSR和CSS源码回归不能冒称320px实际布局通过。
+### 4c 合入前的广域相关运行
+
+58文件集合完整执行：**56文件通过/2文件失败，1427 passed /5 failed /8历史 skipped，exit1，393.29s**。三项为新的恢复 helper 在无 combat 的最小原生测试世界中提前读 player；修为先检查 session，未改原测试。两项旧3b生命周期夹具把NPC放在已提交预警中，新AI合理选parry而非attack；隔离副本仅移除新AI选择块，原两项通过。新夹具把NPC移到预警外，仍验证原多段攻击的换形/离层取消和精确恢复。修订后的3个完整相关文件 **55/55 passed**。这是失败后定向复核，不冒充58文件一次全绿。
+
+### 4c provider 和原子接线
+
+注册 **唯一** `optionalPartBreaks['combat.part-break.v1']`，直接使用已发布 `src/ext/partBreak.ts`；该协议文件/签名未改。prepare 仅克隆自身 namespace，检查原始 canonical state 和 receipt；commit 再验后提交同一 next-state。原生 zoneState/broken/generation 是唯一收据账本，重复接触已毁区不再消费，没有第二个破坏 ledger。独立body的 actorId=groupId 是当前 CORE；不宣称4d复合体已经实现。
+
+balanceLoss 按 core policy 扣poise；免疫/已在恢复中/零损失返回handled但不追加冲击。破防才清保护并转入同一50tick恢复；不会额外设置原生 fallbackStun。缺失或明确unsupported仍只用原生fallback。无bundle换形使用当前profile，钳制容量/延迟并清不兼容余数，不回满；busy bundle保持捕获profile。一次规范化和冲击只增一次revision。
+
+为安全消费已发布的窄 setState，本次补齐其与正在解析的生产 scheduler 的接线：
+- narrow actor-action provider 写入保持 root/scheduler/bundle/child/phase 对象身份；因果事务失败后恢复原引用及原值，不能留下指向旧state的活跃scheduler
+- 捕获 actorActionBinding 独立于 provider，故 absent/unsupported/其它provider的失败也恢复combat图，而非只恢复有provider的情况
+- mechanical zoneBroken（速度、3b取消、原生timer镜像、hover/瞄准清理）进入同一既有 commitPartBreak 事务，Game内部checkpoint恢复native时钟/速度、派生changedSources/scheduler fault和录制有效性；不新增Game字段
+- 两个同tick owner可能都处于0边界。仅同步事务校验允许**原状态已经到期的同一 action/child/phase 标识**，不能制造新0边界；持久化codec默认仍拒绝0，load/save没有放宽
+- dispatch在native resolver后保留provider插入的正break-recovery，不能再把它推进掉。原生单击poise采用4c实际传导的post-shield/post-zone数值，局部装甲完全吸收也不额外扣poise
+
+新增provider41项和defense-state51项 **92/92通过**。真实生产接线16项、现有giants zone25项与底座协议31项合计 **72/72通过**：包含part-break耗尽核心poise、排斥fallback、原生receipt一次、未付费prepared plan回滚、active图引用回滚、provider在setState后throw/错误返回/Promise、过期capability、机械取消后revision预算失败（combat安装但provider缺失/unsupported）、两个同时到期原生owner及当前解析source插入恢复。诊断场景与自然生成证据分开，不把它们叫作自然boss通关。
+
+开发中的接线初次90项运行88通过/2失败：一个过期capability错误字符串改变，恢复包含旧`outside`约定；一个新load夹具在捕获旧局快照前创建了另一个headless Game、重置全局entity allocator，改为先捕获再建新Game。随后旧giants集合有3项设计前提失败；隔离副本仅取消combat provider注册后，5个原相关用例通过。最终夹具按已安装combat判断fallback/poise、只断言未支付玩家资源，显式fixture provider替换默认provider而不注册两个竞争者。没有削弱原一次命中/传导/事件、护盾/取消回滚和坏档断言。
+
+最终64文件相关集合、构建、组合smoke、最终foundation检查和源散列在交付时追加。浏览器真实像素/触控目前未验；SSR和CSS源码回归不能冒称320px实际布局通过。
+
+## 最终交付门禁与剩余范围
+
+- 4c整合后的64个相关文件：**64/64通过，1596 passed /8历史 skipped，exit0，416.34s**。清单 `/tmp/phase3d-4c-related-files.txt`，日志 `/tmp/phase3d-4c-related-stable.log`。该集合的893个源/config输入 SHA-256 为 **e086adf35d45b62b9f894e66212728e9ff06c2c1883c7a4a39e126a186a337f8**，运行期间未变。
+- 随后自行发现 checkpoint 未包含 dormant/pending cohort。新 dormant 回滚反例在旧实现明确失败（速度150未回到100），改用既有 `actorActionWorld()` 权威实体集合后，5个完整直接相关文件 **107/107 passed，exit0，48.49s**。新增实际NPC成功弹反的录制用例明确断言3次defended事实，并验证causal ID/RNG、逐事件checkpoint、双向seek及保存后续录；整个 parry 文件 **22/22 passed，exit0，18.61s**。
+- 上述最后修改只涉及 Game 内部checkpoint的一行实体集合选择和两个测试文件，没有更改任何其它运行机制。最后源集合893文件 SHA-256 为 **edd3e4e6aff9c9cf7c0303a69dd09b694f872b51456a2a583e14c5aaf19b89dc**。64文件结果属于前一冻结集合，最后的直接受影响复核、type/build/组合smoke属于最终集合；不混称全部在最后字节上一次重跑，不把重叠结果相加称唯一测试总数。
+- 最终 boundary / vue-tsc / production build / diff-check：**exit0**。构建只有既有大chunk提示。一次并行build工具会话在审批审核环节被取消，日志停在启动，没有编译错误也没有完成结果；该次是未完成，不算通过，已在最后候选完整重跑成功。
+- 最终5个真实Game相关子集 smoke（combat、combat+growth、combat+giants、combat+growth+narrative、全部四模块）：**5 passed /26名称过滤，exit0，13.27s**。不是全子集矩阵、不是浏览器。
+- 完成前再次使用完整refspec fetch、实际 `git ls-remote` 和 merge，hosted foundation仍为 **315fd8cb2e570d26f6cc23692f650e19b71005e7**，merge Already up to date，已是本分支祖先。正式giants数据/locale相对它无差异。保留tmpdir可移植性修复和上游历史。
+- 独立只读审查覆盖最后delta，无剩余源码blocker。未跑完整npm test、全部test:ext、物理删除、CE full/gen或drift；未重跑giants_rigid1174命令长测试，未自行改其门限。没有宣称这些未跑项通过。
+- **浏览器像素和触控仍未验证。** 将提供唯一稳定轻量DEV QA包和指南；真实320/390/桌面普通/沉浸验证由支持的浏览器执行。截图只留QA本地，包内不含截图。若父任务后续完成浏览器验收，记录应另列实际布局/模式和结果，不能用SSR/引擎检查补称像素成功。
+
+停止在3d。下一步篝火/3e、完整3f收尾、main/tag/部署均未执行。

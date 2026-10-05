@@ -22,8 +22,8 @@ import { bindMovementRegions } from '../Movement/MovementRegions';
 import { squareContactScope, withSquareContactScope } from '../Movement/SpatialContactScope';
 import { SPATIAL_LIMITS, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
 import { assertNativeSpatial, assertSingleCellPlayer, nativeContactOf, footprintOf, footprintEvery, footprintSome, commitCreatureAnchor, squareAnchorRevision, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canFitAt, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
-import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction } from './ActorActionSession';
-import { consumeProductionActorActionResume, disposeProductionActorActionSession, markProductionActorActionResume, notifyProductionActorSourceChanged, productionActorActionInputLocked, reconcileProductionActorActions, resumeProductionActorActions, suspendProductionActorActions, validateProductionActorActionSession, validateProductionActorActionState, type ActorActionProductionWorld } from './ActorActionProduction';
+import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction, isProductionActorActionRunInvalid, restoreProductionActorActionValidity } from './ActorActionSession';
+import { checkpointProductionActorActions, consumeProductionActorActionResume, disposeProductionActorActionSession, markProductionActorActionResume, notifyProductionActorSourceChanged, productionActorActionInputLocked, reconcileProductionActorActions, resumeProductionActorActions, suspendProductionActorActions, validateProductionActorActionSession, validateProductionActorActionState, type ActorActionProductionWorld } from './ActorActionProduction';
 import { bindPhasedAttackProduction, isActorStaggered, reconcileActorNativeRecovery, isActorParryCommand, prepareActorParryCommand, commitActorParryCommand, isActorDodgeCommand, prepareActorDodgeCommand, commitActorDodgeCommand, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
 import { assertActorActionScope, type ActorActionScope } from './ActorActionScope';
 import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
@@ -429,6 +429,19 @@ export class Game {
 
     private createExtensionRuntime(manifest: ExtensionManifest, snapshot?: ExtensionSnapshot): ExtensionRuntime {
         return new ExtensionRuntime(createExtensionRegistry(), manifest, {
+            checkpointZoneBreak: () => {
+                const world=this.actorActionWorld(),actors=[world.player,...world.levels.flatMap(level=>level.actors)];
+                const clocks=[...new Set(actors)].map(actor=>({actor,ticks:actor.ticksUntilTurn,move:actor.movementSpeed,attack:actor.attackSpeed}));
+                const restoreActions=checkpointProductionActorActions(this),invalid=isProductionActorActionRunInvalid(this);
+                const origin=recordingState(this).origin,fromNew=this.recordingFromNewGame,error=this.lastAdvancementError,replayError=this.replayError;
+                const hover=this.hoveredCell,text=this.hoveredText,arcana=this.pendingArcana,cursor=arcana?.cursor;
+                return()=>{
+                    restoreActions();restoreProductionActorActionValidity(this,invalid);
+                    for(const row of clocks){row.actor.ticksUntilTurn=row.ticks;row.actor.movementSpeed=row.move;row.actor.attackSpeed=row.attack;}
+                    recordingState(this).origin=origin;this.recordingFromNewGame=fromNew;this.lastAdvancementError=error;this.replayError=replayError;
+                    this.hoveredCell=hover;this.hoveredText=text;if(arcana&&cursor)arcana.cursor=cursor;
+                };
+            },
             zoneBroken: (actor, zoneId) => {
                 actor.refreshSpeeds();
                 cancelPhasedAttacksAtZone(this, actor, zoneId);
