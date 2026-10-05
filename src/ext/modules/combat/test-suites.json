@@ -1,5 +1,6 @@
 {
   "test": [
+    "tests/combat_animated_defense.test.ts",
     "tests/combat_defense_state.test.ts",
     "tests/combat_display.test.ts",
     "tests/combat_dodge.test.ts",
