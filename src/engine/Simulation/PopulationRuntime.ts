@@ -1,3 +1,4 @@
+import type { PopulationReinforcementPolicy, PopulationLimits } from './MissionRuntime';
 import type { WorldPoint } from '../Movement/WorldUnits';
 import type { RangedHost, RuntimeManifest } from './RangedRuntime';
 
@@ -11,6 +12,8 @@ export interface PopulationHost extends RangedHost {
     /** Movement and revival remain engine-owned validated writes. */
     move(id: number, x: number, y: number, speed: number): void;
     revive(id: number, at: WorldPoint): boolean;
+    initialPopulation?(): PopulationLimits | undefined;
+    reinforcementPolicy?(): PopulationReinforcementPolicy;
 }
 export interface PopulationView {
     swarm: number; elites: number; bosses: number; pending: number; spawned: number;

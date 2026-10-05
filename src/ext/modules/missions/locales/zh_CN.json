@@ -1,0 +1,16 @@
+{
+  "ext.missions.module.name": "任务行动",
+  "ext.missions.title": "隔离区 · 信号清除",
+  "ext.missions.site.scan-a": "扫描站 A",
+  "ext.missions.site.scan-b": "扫描站 B",
+  "ext.missions.site.nest-a": "巢穴 A",
+  "ext.missions.site.nest-b": "巢穴 B",
+  "ext.missions.site.nest-c": "巢穴 C",
+  "ext.missions.site.uplink": "通信中继",
+  "ext.missions.site.extraction": "撤离区",
+  "ext.missions.site.rescue": "救援信标",
+  "ext.missions.site.supply-a": "医疗补给 A",
+  "ext.missions.site.supply-b": "医疗补给 B",
+  "ext.missions.site.sample-a": "样本箱 A",
+  "ext.missions.site.sample-b": "样本箱 B"
+}

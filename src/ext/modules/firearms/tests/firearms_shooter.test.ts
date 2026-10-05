@@ -5,7 +5,7 @@ import { mouseAim } from '../../../../products/shooter/input/AimAdapters';
 import { SimulationHost } from '../../../../engine/Simulation/SimulationHost';
 import { RealtimeSimulationDriver } from '../../../../engine/Simulation/RealtimeSimulationDriver';
 import { getRealtimeModules } from '../../../realtimeCatalog';
-import type { WeaponCommand } from '../../../../engine/Simulation/RangedRuntime';
+import type { WeaponCommand, ShooterCommand } from '../../../../engine/Simulation/RangedRuntime';
 import { rng } from '../../../../engine/Random';
 import { createShooterArena } from '../../../../products/shooter/ShooterArena';
 import { gridEnvironmentContacts } from '../../../../engine/Movement/KinematicSpatial';
@@ -86,7 +86,7 @@ describe('S2 five-minute combat / rendering independence', () => {
     it.each([30, 60, 144])('matches every state at %i render FPS including command timing and projectiles', fps => {
         const s = ShooterSession.fromSnapshot(replay.initial); let cursor = 0;
         const host = new SimulationHost({ get tick() { return s.tick; }, snapshot: () => s.snapshot(), advanceTick: (frame: typeof replay.frames[number]) => {
-            const batch: WeaponCommand[] = []; while (replay.commands[cursor]?.tick === frame.tick) batch.push(replay.commands[cursor++]!); s.advanceTick(frame, batch);
+            const batch: ShooterCommand[] = []; while (replay.commands[cursor]?.tick === frame.tick) batch.push(replay.commands[cursor++]!); s.advanceTick(frame, batch);
         } });
         const driver = new RealtimeSimulationDriver({ id: 'test', ticksPerSecond: 30 }, () => host.step(replay.frames[host.tick]!));
         driver.pump(0); let peak = 0;
@@ -102,7 +102,7 @@ describe('S2 five-minute combat / rendering independence', () => {
         try {
             let cursor = 0;
             for (const frame of replay.frames) {
-                const batch: WeaponCommand[] = []; while (replay.commands[cursor]?.tick === frame.tick) batch.push(replay.commands[cursor++]!);
+                const batch: ShooterCommand[] = []; while (replay.commands[cursor]?.tick === frame.tick) batch.push(replay.commands[cursor++]!);
                 a.advanceTick(frame, batch); b.advanceTick(idleInput(frame.tick));
             }
             expect(a.snapshot()).toEqual(replay.final); expect(rng.getState()).toEqual(before);

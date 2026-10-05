@@ -17,7 +17,7 @@ try {
     const { SimulationHost } = await source.ssrLoadModule('/src/engine/Simulation/SimulationHost.ts');
     const { RealtimeSimulationDriver } = await source.ssrLoadModule('/src/engine/Simulation/RealtimeSimulationDriver.ts');
     if (!args.includes('--browser-only')) {
-        const session = new ShooterSession(7301), durations = [];
+        const session = new ShooterSession(7301, { modules: ['firearms', 'hordes'] }), durations = [];
         assert.ok(session.snapshot().ranged, 'S3 benchmark requires an installed ranged runtime');
         assert.deepEqual(Object.fromEntries(['swarm','elites','bosses'].map(k => [k, session.snapshot().population[k]])), {swarm:200,elites:8,bosses:1});
         for (let tick = 1; tick <= 18000; tick++) {
@@ -64,7 +64,8 @@ try {
             page.on('pageerror', error => errors.push(String(error)));
             await page.goto(url, { waitUntil: 'networkidle' }); await page.waitForSelector('canvas');
             assert.match(await page.getByTestId('population').textContent(), /200/);
-            await page.locator('summary').click();
+            await page.locator('.diagnostics summary').click();
+            await page.getByTestId('module-missions').setChecked(false);
             await page.getByTestId('restart').click();
             const ticks = async n => { const at = Number(await page.getByTestId('tick').textContent()); await page.waitForFunction(t => Number(document.querySelector('[data-testid="tick"]').textContent) >= t, at + n, { timeout: 15000 }); };
             const position = async () => (await page.getByTestId('position').textContent()).match(/-?\d+/g).map(Number);
@@ -98,7 +99,7 @@ try {
             assert.equal(await shots(), released); assert.deepEqual(await position(), releasePosition);
             await page.getByTestId('reload').click(); await page.waitForFunction(() => document.querySelector('[data-testid="battle-status"]').textContent.includes('换弹中'));
             await ticks(4); await page.getByTestId('toggle').click(); await page.getByTestId('save').click();
-            const checkpoint = JSON.parse(await page.evaluate(() => localStorage.getItem('broguejs-shooter-s3-checkpoint-v4')));
+            const checkpoint = JSON.parse(await page.evaluate(() => localStorage.getItem('broguejs-shooter-s4-checkpoint-v5')));
             assert.ok(checkpoint.ranged.reloadRemaining > 0); assert.ok(checkpoint.ranged.reloadRemaining < 60);
             const event = page.waitForEvent('download'); await page.getByTestId('export').click(); const download = await event;
             const destination = join(directory, `browser-replay-${viewport.width}.json`); await download.saveAs(destination);

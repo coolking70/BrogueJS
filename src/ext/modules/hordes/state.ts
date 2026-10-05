@@ -12,10 +12,10 @@ export interface HordeState {
     schema: 1; nextActionId: number; nextSpawnTick: number; spawned: number;
     units: SwarmUnitState[]; full: FullActorState[]; actions: ActorActionSchedulerState;
 }
-export function validateHordeState(value: unknown, tick: number): asserts value is HordeState {
+export function validateHordeState(value: unknown, tick: number, initialCount = HORDE_ACTORS.length): asserts value is HordeState {
     if (!record(value, ['schema', 'nextActionId', 'nextSpawnTick', 'spawned', 'units', 'full', 'actions']) || value.schema !== 1
         || !integer(value.nextActionId, 1, tick * HORDE_FULL_ACTORS.length + 2) || !integer(value.nextSpawnTick, tick, tick + HORDE_DATA.director.interval)
-        || !integer(value.spawned, HORDE_ACTORS.length, HORDE_ACTORS.length + tick * HORDE_DATA.director.batch)
+        || !integer(value.spawned, initialCount, initialCount + tick * HORDE_DATA.director.batch)
         || !dataArray(value.units, HORDE_ACTORS.length) || value.units.length !== HORDE_ACTORS.length
         || !dataArray(value.full, HORDE_FULL_ACTORS.length) || value.full.length !== HORDE_FULL_ACTORS.length) throw new Error('Invalid horde state');
     for (const [i, unit] of value.units.entries()) {
@@ -26,7 +26,7 @@ export function validateHordeState(value: unknown, tick: number): asserts value 
             || (unit.hp === 0) !== (unit.readyTick > 0)) throw new Error('Invalid swarm slot');
     }
     const units = value.units as unknown as SwarmUnitState[];
-    if (value.spawned !== HORDE_ACTORS.length + units.reduce((n, u) => n + u.generation, 0)) throw new Error('Invalid spawn accounting');
+    if (value.spawned !== initialCount + units.reduce((n, u) => n + u.generation, 0)) throw new Error('Invalid spawn accounting');
     for (const [i, full] of value.full.entries()) {
         const d = HORDE_FULL_ACTORS[i]!, rule = d.kind === 'boss' ? HORDE_DATA.boss : HORDE_DATA.elite;
         if (!record(full, ['id', 'creature', 'poiseDamage', 'action']) || full.id !== d.id || !integer(full.poiseDamage, 0, HORDE_DATA.stagger.threshold - 1))

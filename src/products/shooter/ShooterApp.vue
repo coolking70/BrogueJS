@@ -14,7 +14,7 @@ import { KeyboardMovement, gamepadMovement } from './input/MovementAdapters';
 import { gamepadAim, gamepadButton } from './input/AimAdapters';
 
 const { t } = useTranslation();
-const STORAGE_KEY = 'broguejs-shooter-s3-checkpoint-v4';
+const STORAGE_KEY = 'broguejs-shooter-s4-checkpoint-v5';
 const modules = getRealtimeModules(), selectedModules = ref(modules.map(d => d.id));
 const input = new InputFrameAssembler(), keyboard = new KeyboardMovement();
 let session = new ShooterSession();
@@ -24,11 +24,11 @@ let host = makeHost();
 type Stick = { x: number; y: number; active: boolean; angle?: number | null };
 let touch: Stick = { x: 0, y: 0, active: false }, touchAim: Stick = { x: 0, y: 0, active: false };
 let aimDevice: 'mouse' | 'stick' = 'mouse';
-let mouseFire = false, padReload = false, padEquip = false;
+let mouseFire = false, padReload = false, padEquip = false, padInteract = false;
 const padConnected = ref(false);
 function clearInput(): void {
     input.clear(); keyboard.clear(); touch = { x: 0, y: 0, active: false }; touchAim = { x: 0, y: 0, active: false };
-    mouseFire = false; padReload = false; padEquip = false;
+    mouseFire = false; padReload = false; padEquip = false; padInteract = false;
 }
 function sampleControls(): void {
     const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : [];
@@ -39,21 +39,26 @@ function sampleControls(): void {
     const aim = touchAim.active ? touchAim.angle ?? null : gamepadAim(pad);
     if (aim !== null) { aimDevice = 'stick'; input.setAim(aim); }
     input.setFire(mouseFire || (touchAim.active && !!(touchAim.x || touchAim.y)) || gamepadButton(pad, 7));
-    const reload = gamepadButton(pad, 2), equip = gamepadButton(pad, 3);
+    const reload = gamepadButton(pad, 2), equip = gamepadButton(pad, 3), interact = gamepadButton(pad, 0);
+    if (interact && !padInteract && snapshots.value.current.mission) input.requestInteract();
+    padInteract = interact;
     if (reload && !padReload && snapshots.value.current.ranged) input.requestReload();
     if (equip && !padEquip && snapshots.value.current.ranged) input.requestEquip(((snapshots.value.current.ranged.weapons.find(w => w.selected)?.slot ?? 0) + 1) % 4);
     padReload = reload; padEquip = equip;
 }
-const makeDriver = () => new RealtimeSimulationDriver(SHOOTER_PROFILE.simulation, () => { sampleControls(); host.step(input.next(host.tick + 1)); });
-let driver = makeDriver();
+const makeDriver = () => new RealtimeSimulationDriver(SHOOTER_PROFILE.simulation, () => { sampleControls(); host.step(input.next(host.tick + 1)); }, 8, () => session.finished);
+let driver = makeDriver(); driver.pause();
 const snapshots = shallowRef(host.snapshots()), clock = shallowRef(driver.sample());
 const message = ref(''), failed = ref(false), saved = ref(false), seed = ref(7301);
 let frameId = 0;
 const elapsed = computed(() => (snapshots.value.current.tick / 30).toFixed(2));
 const combat = computed(() => snapshots.value.current.ranged);
 const health = computed(() => snapshots.value.current.damage.actors[0]!);
+const mission = computed(() => snapshots.value.current.mission);
+const nearby = computed(() => mission.value?.markers.find(m => m.id === mission.value?.nearby));
+const timer = (ticks: number) => { const seconds = Math.ceil(ticks / 30); return Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0'); };
 const selected = computed(() => combat.value?.weapons.find(w => w.selected));
-const disabled = computed(() => clock.value.paused || failed.value || host.tick >= MAX_SHOOTER_TICKS);
+const disabled = computed(() => clock.value.paused || failed.value || session.finished || host.tick >= MAX_SHOOTER_TICKS);
 function publish(): void { snapshots.value = host.snapshots(); clock.value = driver.sample(); }
 function fail(error: unknown): void {
     try { driver.pause(); } catch { /* Already stopped on a permanent clock fault. */ }
@@ -63,7 +68,7 @@ function fail(error: unknown): void {
 function replace(next: ShooterSession): void {
     session = next; host = makeHost(); driver = makeDriver(); driver.pause(); clearInput(); failed.value = false; publish();
 }
-function toggle(): void { if (driver.paused) driver.resume(); else driver.pause(); clearInput(); publish(); }
+function toggle(): void { if (session.finished) return; if (driver.paused) driver.resume(); else driver.pause(); clearInput(); publish(); }
 function step(): void { try { host.step(input.next(host.tick + 1)); publish(); } catch (error) { fail(error); } }
 function restart(): void { try { replace(new ShooterSession(seed.value, { modules: selectedModules.value })); message.value = ''; } catch (error) { fail(error); } }
 function save(): void {
@@ -83,7 +88,7 @@ function verify(): void {
 }
 function exportReplay(): void {
     const url = URL.createObjectURL(new Blob([JSON.stringify(session.exportReplay())], { type: 'application/json' })), link = document.createElement('a');
-    link.href = url; link.download = 'broguejs-shooter-s3-replay.json'; link.click(); URL.revokeObjectURL(url);
+    link.href = url; link.download = 'broguejs-shooter-s4-replay.json'; link.click(); URL.revokeObjectURL(url);
 }
 async function importReplay(event: Event): Promise<void> {
     const element = event.target as HTMLInputElement, file = element.files?.[0]; if (!file) return;
@@ -102,6 +107,7 @@ function keyEvent(event: KeyboardEvent): void {
     const target = event.target as HTMLElement | null;
     if (target?.closest('input, textarea, select, [contenteditable]') || disabled.value || event.metaKey || event.ctrlKey || event.altKey) return;
     if (keyboard.key(event.code, true)) event.preventDefault();
+    if (!event.repeat && event.code === 'KeyE' && snapshots.value.current.mission) { input.requestInteract(); event.preventDefault(); }
     if (!event.repeat && combat.value) {
         if (event.code === 'KeyR') { input.requestReload(); event.preventDefault(); }
         if (/^Digit[1-4]$/.test(event.code)) { input.requestEquip(Number(event.code.slice(-1)) - 1); event.preventDefault(); }
@@ -137,7 +143,8 @@ onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListe
       <div><label>{{ t('shooter.shots') }}</label><strong data-testid="shots">{{ combat?.shots ?? 0 }}</strong></div>
     </section>
     <div class="battle-status" data-testid="battle-status">
-      <span v-if="health.hp === 0">{{ t('shooter.respawning') }}</span>
+      <span v-if="mission && mission.status !== 'active'">{{ t('shooter.result.' + mission.status) }}</span>
+      <span v-else-if="health.hp === 0">{{ t('shooter.respawning') }}</span>
       <span v-else-if="combat?.reloadRemaining">{{ t('shooter.reloading', { seconds: (combat.reloadRemaining / 30).toFixed(1) }) }}</span>
       <span v-else-if="selected?.ammo === 0">{{ t('shooter.emptyMagazine') }}</span>
       <span v-else>{{ combat ? t('shooter.ready') : t('shooter.noModule') }}</span>
@@ -145,9 +152,29 @@ onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListe
     </div>
     <div v-if="snapshots.current.population" class="population-hud" data-testid="population">
       <span>{{ t('shooter.hordeCounts', { ...snapshots.current.population }) }}</span>
-      <span>{{ t('shooter.reinforcements', { count: snapshots.current.population.pending }) }}</span>
+      <span v-if="mission">{{ mission.reinforcements.enabled ? t('shooter.waveActive') : t('shooter.waveQuiet') }}</span><span v-else>{{ t('shooter.reinforcements', { count: snapshots.current.population.pending }) }}</span>
     </div>
-    <ShooterCanvas :previous="snapshots.previous" :current="snapshots.current" :alpha="clock.alpha" :disabled="disabled"
+    <section v-if="mission" class="mission-panel" data-testid="mission">
+      <div class="mission-heading"><div><span class="eyebrow">{{ t('shooter.missionLabel') }}</span><h2>{{ t(mission.titleKey) }}</h2></div>
+        <div class="mission-clock"><strong data-testid="mission-time">{{ timer(mission.remaining) }}</strong><small>{{ t('shooter.lives', { count: mission.lives }) }}</small></div></div>
+      <div v-if="mission.status !== 'active'" class="mission-result" :class="mission.status" data-testid="mission-result">
+        <h2>{{ t('shooter.result.' + mission.status) }}</h2><p>{{ t('shooter.reason.' + mission.reason) }}</p>
+        <p v-if="mission.reward" data-testid="mission-reward">{{ t('shooter.reward', { ...mission.reward }) }}</p><p v-else>{{ t('shooter.noReward') }}</p>
+        <button class="primary" data-testid="mission-restart" @click="restart">{{ t('shooter.newMission') }}</button>
+      </div>
+      <template v-else>
+        <details class="mission-objectives"><summary>{{ t('shooter.objectives') }}</summary><div class="objective-grid"><article v-for="site in mission.markers.filter(m => !['supply', 'sample'].includes(m.kind))" :key="site.id" :class="site.status" :data-testid="'objective-' + site.id">
+          <div><strong>{{ mission.markers.indexOf(site) + 1 }} · {{ t(site.labelKey) }}</strong><span>{{ t('shooter.objectiveStatus.' + site.status) }}</span></div>
+          <progress :value="site.progress" :max="site.total" /><small>{{ site.kind === 'nest' ? t('shooter.destroyHint') : t('shooter.holdProgress', { time: timer(site.total - site.progress) }) }}</small>
+        </article></div></details>
+        <p class="active-goal" data-testid="active-goal">{{ t('shooter.nextGoal') }} <span v-for="site in mission.markers.filter(m => ['ready', 'active'].includes(m.status) && !['rescue', 'sample', 'supply'].includes(m.kind))" :key="site.id">{{ mission.markers.indexOf(site) + 1 }} · {{ t(site.labelKey) }} <small>{{ Math.floor(site.pose.x / 1024) }},{{ Math.floor(site.pose.y / 1024) }}</small> </span></p>
+        <p class="mission-extraction" data-testid="extraction-status">{{ t('shooter.extraction.' + mission.extraction, { time: timer(mission.extractionRemaining) }) }}</p>
+        <div class="mission-actions"><button class="primary" data-testid="interact" :disabled="disabled || !nearby" @click="input.requestInteract()">{{ nearby ? t('shooter.interactSite', { site: t(nearby.labelKey) }) : t('shooter.interact') }}</button>
+          <span>{{ t('shooter.carriedSamples', { count: mission.samples }) }}</span></div>
+        <p class="mission-help">{{ t('shooter.missionHelp') }} <span v-if="!combat">{{ t('shooter.demolitionHelp') }}</span></p>
+      </template>
+    </section>
+    <ShooterCanvas :key="snapshots.current.arena" :previous="snapshots.previous" :current="snapshots.current" :alpha="clock.alpha" :disabled="disabled"
       @aim="aimMouse" @fire="fire" />
     <section v-if="combat" class="weapons">
       <button v-for="weapon in combat.weapons" :key="weapon.id" :data-testid="'weapon-' + weapon.slot" :class="{ selected: weapon.selected }"
@@ -156,7 +183,8 @@ onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListe
     <section class="twin-controls">
       <MovementStick :disabled="disabled" @move="touch = $event" />
       <div class="combat-buttons"><button class="primary" data-testid="reload" :disabled="disabled || !combat" @click="input.requestReload()">{{ t('shooter.reload') }}</button>
-        <button data-testid="toggle" :disabled="failed || host.tick >= MAX_SHOOTER_TICKS" @click="toggle">{{ clock.paused ? t('shooter.resume') : t('shooter.pause') }}</button></div>
+        <button v-if="mission?.status === 'active'" data-testid="interact-control" :disabled="disabled || !nearby" @click="input.requestInteract()">{{ t('shooter.interact') }}</button>
+        <button data-testid="toggle" :disabled="failed || session.finished || host.tick >= MAX_SHOOTER_TICKS" @click="toggle">{{ clock.paused ? t('shooter.resume') : t('shooter.pause') }}</button></div>
       <MovementStick :disabled="disabled || !combat" aim @move="aimTouch" />
     </section>
     <p class="movement-help">{{ t('shooter.gunplayHelp') }}</p>
@@ -170,8 +198,9 @@ onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListe
       </section>
       <p data-testid="position">{{ t('shooter.position', { x: snapshots.current.actors[0]!.pose.x, y: snapshots.current.actors[0]!.pose.y }) }}</p>
       <p data-testid="environment">{{ t('shooter.environment', snapshots.current.actors[0]!.contactTicks) }}</p>
+      <button v-if="mission?.status === 'active'" data-testid="abort" :disabled="disabled" @click="input.requestAbort()">{{ t('shooter.abort') }}</button>
       <p>{{ t('shooter.moduleSelection') }}</p><label v-for="module in modules" :key="module.id" class="module-option"><input v-model="selectedModules" :data-testid="'module-' + module.id" type="checkbox" :value="module.id" /> {{ t(module.labelKey) }}</label>
-      <div class="controls"><button data-testid="step" :disabled="!clock.paused || failed || host.tick >= MAX_SHOOTER_TICKS" @click="step">{{ t('shooter.step') }}</button>
+      <div class="controls"><button data-testid="step" :disabled="!clock.paused || failed || session.finished || host.tick >= MAX_SHOOTER_TICKS" @click="step">{{ t('shooter.step') }}</button>
         <label class="seed">{{ t('shooter.seed') }}<input v-model.number="seed" type="number" min="1" max="4294967295" /></label><button data-testid="restart" @click="restart">{{ t('shooter.restart') }}</button></div>
     </details>
     <section class="persistence">
@@ -218,4 +247,13 @@ footer { color: #748c7b; font-size: 11px; line-height: 1.8; margin-top: 26px; }
 .weapons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }.weapons button { text-align: left; padding: 12px; }.weapons small { display: block; margin-top: 6px; color: #9aac9c; }.weapons .selected { border-color: #d2ef9b; background: #2a3b27; }
 .twin-controls { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 18px 0; }.combat-buttons { display: flex; gap: 10px; }.movement-help { font-size: 12px; line-height: 1.8; }.diagnostics { margin-top: 22px; color: #95a995; font-size: 12px; }.diagnostics summary { cursor: pointer; }.diagnostics .metrics strong { font-size: 24px; }
 @media (max-width: 600px) { .lab { padding: 12px; }h1 { font-size: 26px; margin: 14px 0 12px; }h1 span { display: inline; font-size: 12px; margin-left: 10px; }.intro { display: none; }.combat-hud { margin: 12px 0; }.combat-hud small { font-size: 11px; }.battle-status { margin: 8px 2px; }.twin-controls { margin: 14px 0; }.combat-hud strong { font-size: 25px; }.weapons { grid-template-columns: repeat(2, 1fr); }.weapons button { padding: 9px 10px; }.combat-buttons { flex-direction: column; gap: 6px; }.combat-buttons button { padding: 10px 9px; }.twin-controls { gap: 4px; }.intro { font-size: 12px; } }
+</style>
+
+<style scoped>
+.mission-panel { border: 1px solid #3b5143; background: #15241c; padding: 18px; border-radius: 12px; margin: 16px 0; }
+.active-goal { font-size: 12px; color: #c8ddb9; line-height: 1.8; }.active-goal small { color: #829887; }.active-goal span { display: inline-block; margin-right: 12px; }.mission-objectives summary { font-size: 12px; cursor: pointer; color: #91aa99; margin-bottom: 8px; }
+.mission-heading { display: flex; justify-content: space-between; gap: 12px; }.mission-heading h2 { font-size: 18px; margin: 8px 0 16px; }.mission-clock { text-align: right; }.mission-clock strong { font: 24px ui-monospace, monospace; }.mission-clock small { display: block; color: #9aac9c; margin-top: 5px; font-size: 11px; }
+.objective-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }.objective-grid article { padding: 10px; background: #1c2e23; border-radius: 6px; min-width: 0; }.objective-grid article.locked { opacity: .45; }.objective-grid article.active { box-shadow: inset 0 0 0 1px #c2de88; }.objective-grid article.complete { color: #8ecbb0; }.objective-grid article div { display: flex; justify-content: space-between; gap: 4px; font-size: 11px; }.objective-grid article span, .objective-grid small { font-size: 10px; color: #9aac9c; }.objective-grid progress { width: 100%; height: 5px; accent-color: #c2de88; margin: 9px 0 5px; }
+.mission-extraction { color: #d9d7a0; font-size: 12px; }.mission-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }.mission-actions span, .mission-help { color: #9aac9c; font-size: 11px; line-height: 1.7; }.mission-help { margin-bottom: 0; }.mission-result h2 { font-size: 26px; color: #d2ef9b; }.mission-result.failed h2 { color: #e7a88c; }.mission-result p { font-size: 13px; color: #becbb9; }
+@media (max-width: 600px) { .mission-panel { padding: 13px; }.objective-grid { grid-template-columns: repeat(2, 1fr); }.mission-heading h2 { font-size: 15px; }.mission-clock strong { font-size: 20px; } }
 </style>

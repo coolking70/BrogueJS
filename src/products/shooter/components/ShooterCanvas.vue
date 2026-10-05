@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Application, Container, Graphics } from 'pixi.js';
+import { Application, Container, Graphics, Text } from 'pixi.js';
 import { computeMapCamera } from '../../../ui/mapCamera';
 import { TerrainType } from '../../../engine/Map/Grid';
-import { createShooterArena, ARENA_WIDTH, ARENA_HEIGHT } from '../ShooterArena';
+import { createScenarioArena } from '../ShooterArena';
 import type { ShooterSnapshot } from '../ShooterSession';
+import { getRealtimeModules } from '../../../ext/realtimeCatalog';
 import { mouseAim } from '../input/AimAdapters';
 
 const props = defineProps<{ previous: ShooterSnapshot; current: ShooterSnapshot; alpha: number; disabled: boolean }>();
@@ -12,8 +13,11 @@ const emit = defineEmits<{ aim: [angle: number, moved: boolean]; fire: [held: bo
 let pointer: number | null = null, mouse: { x: number; y: number } | null = null;
 const surface = ref<HTMLDivElement>();
 let app: Application | null = null, world: Container | null = null, actors: Graphics | null = null, overview: Graphics | null = null;
+const labels = new Map<string, Text>();
 let resize: ResizeObserver | null = null, disposed = false;
-const TILE = 1024, grid = createShooterArena();
+const scenario = getRealtimeModules().find(d => d.kind === 'mission' && d.scenario.id === props.current.arena);
+const TILE = 1024, grid = createScenarioArena(scenario?.kind === 'mission' ? scenario.scenario : undefined);
+const ARENA_WIDTH = grid.width, ARENA_HEIGHT = grid.height;
 function terrainColor(x: number, y: number): number {
     const cell = grid.getCell(x, y)!;
     if (!cell.isPassable) return 0x4e6256;
@@ -37,6 +41,18 @@ function draw(): void {
         ARENA_WIDTH, ARENA_HEIGHT, TILE, { x: focus.x / TILE - .5, y: focus.y / TILE - .5 }, 2, { x: 0, y: 0 }, false);
     world.scale.set(camera.scaleX, camera.scaleY); world.position.set(camera.offsetX, camera.offsetY);
     actors.clear();
+    for (const label of labels.values()) label.visible = false;
+    for (const marker of props.current.mission?.markers ?? []) {
+        const label = labels.get(marker.id); if (label) { label.visible = marker.status !== 'complete'; label.alpha = marker.status === 'locked' ? .3 : .85; }
+
+        if (marker.status === 'complete') continue;
+        const color = marker.kind === 'nest' ? 0xf69b83 : marker.kind === 'extraction' ? 0xebd38e : marker.kind === 'supply' ? 0x8bddd0 : marker.kind === 'sample' ? 0xc1a2ef : marker.kind === 'rescue' ? 0xe7b5dc : 0x9dbce8;
+        const alpha = marker.status === 'locked' ? .2 : .7, p = marker.pose;
+        actors.circle(p.x, p.y, marker.radius).stroke({ color, width: 22, alpha: alpha * .35 });
+        if (marker.kind === 'supply') actors.rect(p.x - 110, p.y - 350, 220, 700).fill({ color, alpha }).rect(p.x - 350, p.y - 110, 700, 220).fill({ color, alpha });
+        else if (marker.kind === 'nest') actors.poly([p.x - 550, p.y, p.x - 280, p.y - 480, p.x + 280, p.y - 480, p.x + 550, p.y, p.x + 280, p.y + 480, p.x - 280, p.y + 480]).stroke({ color, width: 70, alpha });
+        else actors.poly([p.x, p.y - 420, p.x + 420, p.y, p.x, p.y + 420, p.x - 420, p.y]).fill({ color, alpha: alpha * .3 }).stroke({ color, width: 60, alpha });
+    }
     const displayTick = props.previous.tick + (props.current.tick - props.previous.tick) * props.alpha;
     for (const e of props.current.effects) {
         const age = Math.max(0, displayTick - e.tick), color = e.hit ? 0xffefb2 : 0xc9d39a;
@@ -82,6 +98,10 @@ function draw(): void {
         overview.circle(left + a.pose.x / TILE * scale, top + a.pose.y / TILE * scale, a.kind === 'boss' ? 2.8 : a.kind === 'elite' ? 1.8 : .8)
             .fill(a.kind === 'boss' ? 0xc48df2 : a.kind === 'elite' ? 0xf5bd64 : 0xc77c65);
     }
+    for (const marker of props.current.mission?.markers ?? []) if (marker.status !== 'complete') {
+        const color = marker.kind === 'nest' ? 0xf69b83 : marker.kind === 'extraction' ? 0xebd38e : marker.kind === 'supply' ? 0x8bddd0 : marker.kind === 'sample' ? 0xc1a2ef : 0x9dbce8;
+        overview.rect(left + marker.pose.x / TILE * scale - 2, top + marker.pose.y / TILE * scale - 2, 4, 4).fill({ color, alpha: marker.status === 'locked' ? .4 : 1 });
+    }
     overview.circle(left + focus.x / TILE * scale, top + focus.y / TILE * scale, 2.8).fill(0xd2ef9b);
     const viewX = -camera.offsetX / camera.scaleX / TILE, viewY = -camera.offsetY / camera.scaleY / TILE;
     overview.rect(left + viewX * scale, top + viewY * scale, app.screen.width / camera.scaleX / TILE * scale,
@@ -122,6 +142,10 @@ onMounted(async () => {
         if (!grid.getCell(x, y)!.isPassable) terrain.rect(x * TILE + 80, y * TILE + 80, TILE - 160, 70).fill(0x6c8070);
     }
     world.addChild(terrain); actors = new Graphics(); world.addChild(actors);
+    for (const [i, marker] of (props.current.mission?.markers ?? []).entries()) {
+        const label = new Text({ text: String(i + 1), style: { fontFamily: 'sans-serif', fontSize: 500, fill: 0xe4ead6 } });
+        label.anchor.set(.5); label.position.set(marker.pose.x, marker.pose.y - 850); labels.set(marker.id, label); world.addChild(label);
+    }
     overview = new Graphics(); app.stage.addChild(overview);
     resize = new ResizeObserver(() => { if (app && surface.value) { app.renderer.resize(surface.value.clientWidth, surface.value.clientHeight); render(); } });
     resize.observe(surface.value!); render();

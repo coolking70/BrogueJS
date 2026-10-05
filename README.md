@@ -1,6 +1,6 @@
 # BrogueJS — Brogue CE 中文网页版
 
-> `product/shooter-prototype` 分支包含 Shooter S3 尸潮压力场：四种武器、200 个普通敌人、8 个精英和 1 个巨型感染体，支持键鼠、手柄与触屏双摇杆。打开 `/shooter.html`；范围、操作与验收见 [S3 开发说明](docs/shooter/S3.md)。下方公开试玩仍是既有 Brogue 产品。
+> `product/shooter-prototype` 分支已进入 Shooter S4 完整任务：扫描、巢穴清除、上传、可选救援、补给/样本探索及撤离奖励，支持键鼠、手柄与触屏双摇杆。打开 `/shooter.html`；范围、操作与验收见 [S4 开发说明](docs/shooter/S4.md)。下方公开试玩仍是既有 Brogue 产品。
 
 [Brogue: Community Edition](https://github.com/tmewett/BrogueCE) 的 TypeScript + Vue 3 网页移植，完整中文界面，支持桌面与手机触屏。
 

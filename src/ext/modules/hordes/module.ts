@@ -12,12 +12,14 @@ import { validateHordeState, type HordeState } from './state';
 
 export function createHordes(host: PopulationHost, restored?: unknown): PopulationRuntime {
     if (!host.body) throw new Error('Hordes requires indexed body reads');
+    const initial = host.initialPopulation?.();
+    const initialCount = initial ? HORDE_ACTORS.filter((d, i, all) => all.slice(0, i + 1).filter(a => a.kind === d.kind).length <= initial[d.kind]).length : HORDE_ACTORS.length;
     const state: HordeState = restored === undefined ? {
-        schema: 1, nextActionId: 1, nextSpawnTick: HORDE_DATA.director.interval, spawned: HORDE_ACTORS.length,
-        units: HORDE_ACTORS.map(d => ({ id: d.id, generation: 0, readyTick: 0, attackReadyTick: 0, hp: host.health(d.id)!.hp })),
+        schema: 1, nextActionId: 1, nextSpawnTick: HORDE_DATA.director.interval, spawned: initialCount,
+        units: HORDE_ACTORS.map(d => ({ id: d.id, generation: 0, readyTick: host.health(d.id)!.hp ? 0 : 1, attackReadyTick: 0, hp: host.health(d.id)!.hp })),
         full: HORDE_ACTORS.filter(d => d.kind !== 'swarm').map(d => ({ id: d.id, poiseDamage: 0, action: null,
             creature: snapshotActor(fullActor(d, host.body!(d.id)!)) })), actions: { schema: 1, bundles: [] },
-    } : (() => { validateHordeState(restored, host.tick()); return structuredClone(restored); })();
+    } : (() => { validateHordeState(restored, host.tick(), initialCount); return structuredClone(restored); })();
     const full = new Map(state.full.map(f => [f.id, f])), creatures = new Map<number, CreatureBase>();
     for (const d of HORDE_ACTORS) {
         const unit = state.units[d.id - 2]!, body = host.body(d.id), hp = host.health(d.id);
@@ -65,10 +67,14 @@ export function createHordes(host: PopulationHost, restored?: unknown): Populati
     function reinforce(): void {
         if (host.tick() < state.nextSpawnTick) return;
         state.nextSpawnTick = host.tick() + HORDE_DATA.director.interval;
-        let budget = HORDE_DATA.director.batch;
+        const policy = host.reinforcementPolicy?.();
+        if (policy && !policy.enabled) return;
+        let budget = Math.min(HORDE_DATA.director.batch, policy?.batch ?? HORDE_DATA.director.batch);
         for (const unit of state.units) {
             if (!budget || unit.hp || host.tick() < unit.readyTick) continue;
-            const d = HORDE_ACTORS[unit.id - 2]!, at = findReinforcement(host, d.id, unit.generation + 1, d.radius);
+            const d = HORDE_ACTORS[unit.id - 2]!;
+            if (policy?.limits && HORDE_ACTORS.filter(a => a.kind === d.kind && host.health(a.id)!.hp > 0).length >= policy.limits[d.kind]) continue;
+            const at = findReinforcement(host, d.id, unit.generation + 1, d.radius);
             if (!at || !host.revive(d.id, at)) continue;
             unit.generation++; unit.readyTick = 0; unit.hp = d.maxHp; unit.attackReadyTick = host.tick() + 30; state.spawned++; budget--;
             if (full.has(d.id)) {

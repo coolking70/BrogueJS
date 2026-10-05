@@ -13,7 +13,7 @@ const server = await createServer({ server: { middlewareMode: true }, appType: '
 try {
     const { ShooterSession } = await server.ssrLoadModule('/src/products/shooter/ShooterSession.ts');
     const { RealtimeSimulationDriver } = await server.ssrLoadModule('/src/engine/Simulation/RealtimeSimulationDriver.ts');
-    const session = new ShooterSession(7301), durations = []; let snapshot = session.snapshot();
+    const session = new ShooterSession(7301, { modules: ['firearms', 'hordes'] }), durations = []; let snapshot = session.snapshot();
     assert.deepEqual([snapshot.population.swarm, snapshot.population.elites, snapshot.population.bosses], [200, 8, 1]);
     let pumps = 0, peakBacklog = 0, latePumps = 0, minimum = 209;
     const driver = new RealtimeSimulationDriver({ id: 'shooter-realtime-30', ticksPerSecond: 30 }, () => {

@@ -21,7 +21,7 @@ export class RealtimeSimulationDriver {
     private fault: Error | null = null;
     private readonly hz: number;
 
-    constructor(profile: SimulationProfile, private readonly step: () => void, readonly maxTicksPerPump = 8) {
+    constructor(profile: SimulationProfile, private readonly step: () => void, readonly maxTicksPerPump = 8, private readonly stopAfterTick?: () => boolean) {
         assertSimulationProfile(profile);
         if (!Number.isSafeInteger(maxTicksPerPump) || maxTicksPerPump < 1 || maxTicksPerPump > 1000)
             throw new Error('Invalid tick pump budget');
@@ -65,6 +65,9 @@ export class RealtimeSimulationDriver {
                 if (result && typeof result === 'object' && 'then' in result) throw new Error('Asynchronous clock callback');
                 this.credit -= MICROSECONDS_PER_SECOND;
                 steps++;
+                // A completed mission is a deliberate terminal boundary. Stop
+                // inside the pump so catch-up never attempts another world tick.
+                if (this.stopAfterTick?.()) { this.stopped = true; this.lastUs = null; this.credit = 0; break; }
             }
         } catch (error) {
             this.fault = error instanceof Error ? error : new Error(String(error));
