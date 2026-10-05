@@ -1,5 +1,6 @@
 import { configDefaults, defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
+import { fileURLToPath } from 'node:url'
 import { getTestDiscovery } from './scripts/test-discovery.mjs'
 
 const discovery = getTestDiscovery()
@@ -36,5 +37,9 @@ export default defineConfig({
     hookTimeout: 120_000,
   },
 
+  build: { rollupOptions: { input: {
+    main: fileURLToPath(new URL('./index.html', import.meta.url)),
+    shooter: fileURLToPath(new URL('./shooter.html', import.meta.url)),
+  } } },
   plugins: [vue()],
 })

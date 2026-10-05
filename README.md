@@ -1,5 +1,7 @@
 # BrogueJS — Brogue CE 中文网页版
 
+> `product/shooter-prototype` 分支包含 Shooter S0 实时运行时诊断场。运行开发服务器后打开 `/shooter.html`；实现范围、验收与后续边界见 [S0 开发说明](docs/shooter/S0.md)。下方公开试玩仍是既有 Brogue 产品。
+
 [Brogue: Community Edition](https://github.com/tmewett/BrogueCE) 的 TypeScript + Vue 3 网页移植，完整中文界面，支持桌面与手机触屏。
 
 **[在线试玩](https://coolking70.github.io/BrogueJS/)**
