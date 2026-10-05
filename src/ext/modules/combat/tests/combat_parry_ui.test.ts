@@ -81,8 +81,28 @@ describe('EXT-3d sole combat toolbar and public parry/poise UI', () => {
             expect(html).toContain('消耗 13 体力'); expect(html).toContain('保护窗口 41 时间刻 · 恢复 137 时间刻');
             expect(html).toContain(facing ? '确认朝这个方向架起弹反？' : '选择弹反朝向');
             expect(html).toContain('不自动反击'); expect(html).not.toContain('ext.combat.');
+            expect(html).toContain('开始弹反及其他行动都会推进时间');
+            expect(html).toContain('攻击必须在窗口归零前命中，归零当刻已失效');
             expect([...html.matchAll(/data-dialog-action="choice:confirm"/g)]).toHaveLength(facing ? 1 : 0);
         }
+    });
+    it('shows explicit current-segment parry properties and tick countdowns without promising success', async () => {
+        for (const [parryable, label] of [[true, '可弹反'], [false, '不可弹反'], [undefined, '弹反属性未知']] as const) {
+            const html = await render(CombatTelegraphHud, { resources: null, focused: false,
+                entries: [{ key: '1:1', name: '预警来源', phase: 'windup', parryable, remainingTicks: 50 }] });
+            const text = html.match(/class="windup"[^>]*>([^<]+)<\/span>/)![1]!.replace(/\s+/g, ' ').trim();
+            expect(text).toBe(`预警来源 · 即将释放 · ${label} · 距本段释放 50 时间刻`);
+            expect(html).toContain('可弹反仅指本段属性，成功还需朝向、接触范围与时机符合');
+            expect(html).toContain('行动会推进时间，弹反窗口归零当刻已失效');
+            expect(html).not.toContain('ext.combat.');
+        }
+        const old = await render(CombatTelegraphHud, { resources: null, focused: true,
+            entries: [{ key: '1:1', name: null, phase: 'inter-segment' }] });
+        const oldText = old.match(/class="inter-segment"[^>]*>([^<]+)<\/span>/)![1]!.replace(/\s+/g, ' ').trim();
+        expect(oldText).toBe('已现身的攻击来源 · 后续段预警 · 弹反属性未知 · 释放时间未知');
+        const due = await render(CombatTelegraphHud, { resources: null, focused: false,
+            entries: [{ key: '1:1', name: null, phase: 'inter-segment', parryable: false, remainingTicks: 0 }] });
+        expect(due).toContain('距本段释放 0 时间刻'); expect(due).not.toContain('释放时间未知');
     });
     it.each(combatDirections)('confirms $facing parry exactly once through the original command boundary', async direction => {
         const f = session(), before = { state: JSON.stringify(f.state), rng: rng.getState() }; f.open();
@@ -174,5 +194,32 @@ describe('EXT-3d sole combat toolbar and public parry/poise UI', () => {
         expect(html).not.toContain('韧性 17'); expect(html).not.toContain('弹反窗口 7');
         f.host.readDisplayFrame = () => ({ telegraphs: [], rows: [], hoverCell: null, moduleViews: {} }) as unknown as DisplayFrame;
         f.ui.refresh(); expect(f.ui.hud.value).toBeNull(); expect(f.runtime.readModuleView).toHaveBeenCalledTimes(reads);
+    });
+    it('uses captured warning metadata and leaves older warnings unknown without a live lookup during ACK', async () => {
+        const f = session();
+        const captured = { actionId: 1, sourceSubactionId: 1, sourceEntityId: 10, phase: 'windup',
+            cells: [{ x: 11, y: 10 }], parryable: false, remainingTicks: 50 };
+        Object.assign(f.state, { telegraphs: [{ ...captured, parryable: true, remainingTicks: 1 }] });
+        f.host.readDisplayFrame = () => ({ telegraphs: [captured], rows: [{ kind: 'monster', id: 10, name: '预警来源' }],
+            hoverCell: null, moduleViews: {} }) as unknown as DisplayFrame;
+        f.host.isPresentationBusy = () => true;
+        const reads = f.runtime.readModuleView.mock.calls.length, random = rng.getState();
+        f.ui.refresh();
+        expect(f.ui.hud.value!.props.entries).toEqual([{ key: '1:1', name: '预警来源', phase: 'windup',
+            parryable: false, remainingTicks: 50 }]);
+        const html = await render(CombatTelegraphHud, f.ui.hud.value!.props);
+        expect(html).toContain('不可弹反'); expect(html).toContain('距本段释放 50 时间刻');
+        expect(html).not.toContain('距本段释放 1 时间刻');
+        const old = { actionId: 1, sourceSubactionId: 1, sourceEntityId: 10, phase: 'windup', cells: captured.cells };
+        f.host.readDisplayFrame = () => ({ telegraphs: [old], rows: [], hoverCell: null,
+            moduleViews: {} }) as unknown as DisplayFrame;
+        f.ui.refresh();
+        const entries = f.ui.hud.value!.props.entries as { parryable?: boolean; remainingTicks?: number }[];
+        expect(entries[0]!.parryable).toBeUndefined(); expect(entries[0]!.remainingTicks).toBeUndefined();
+        const unknown = await render(CombatTelegraphHud, f.ui.hud.value!.props);
+        expect(unknown).toContain('弹反属性未知'); expect(unknown).toContain('释放时间未知');
+        expect(unknown).not.toContain('不可弹反'); expect(unknown).not.toContain('距本段释放');
+        expect(f.runtime.readModuleView).toHaveBeenCalledTimes(reads);
+        expect(f.raw.executeCommand).not.toHaveBeenCalled(); expect(rng.getState()).toEqual(random);
     });
 });

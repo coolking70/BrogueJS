@@ -10,6 +10,32 @@ const CombatAttackBar = defineAsyncComponent(() => import('./CombatAttackBar.vue
 const CombatAttackDialog = defineAsyncComponent(() => import('./CombatAttackDialog.vue'));
 const CombatTelegraphHud = defineAsyncComponent(() => import('./CombatTelegraphHud.vue'));
 
+/** This is a bearing/metadata advisory, not a prediction of contact or success.
+ * Warning cells are attack destinations, so direction comes from the captured
+ * public source mask instead. Missing historical geometry/metadata is unknown;
+ * never consult live actors, definitions or future segments to fill the gap. */
+function facesOnlyUnparryableWarnings(frame: DisplayFrame | null, facing: Facing): boolean {
+    const validCell = (cell: { x: number; y: number } | undefined) =>
+        !!cell && Number.isSafeInteger(cell.x) && Number.isSafeInteger(cell.y);
+    if (!frame || !validCell(frame.player)) return false;
+    const dx = facing.includes('e') ? 1 : facing.includes('w') ? -1 : 0;
+    const dy = facing.includes('s') ? 1 : facing.includes('n') ? -1 : 0;
+    let found = false;
+    for (const warning of frame.telegraphs) {
+        const body = frame.map?.bodies?.find(entry => entry.entityId === warning.sourceEntityId);
+        const row = frame.rows.find(entry => entry.kind === 'monster' && entry.id === warning.sourceEntityId);
+        const cells = body?.cells ?? (row?.kind === 'monster' ? row.bodyCells ?? [row.loc] : null);
+        // An unlocated source could also lie in this direction; an "only"
+        // claim would be too strong when part of the displayed set is unknown.
+        if (!cells?.length || cells.some(cell => !validCell(cell))) return false;
+        if (!cells.some(cell => Math.sign(cell.x - frame.player.x) === dx
+            && Math.sign(cell.y - frame.player.y) === dy)) continue;
+        if (warning.parryable !== false) return false;
+        found = true;
+    }
+    return found;
+}
+
 /** DialogHost/DialogInput own pointer and held-key barriers for every transition. */
 export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
     const game = host.game(), runtime = game.extensionRuntime, service = host.dialogs;
@@ -69,7 +95,11 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
         const actions: DialogAction[] = ['close', ...(pending.facing ? ['back' as const] : []), ...choices.map(choice => choice.action)];
         request = service.request({ kind: 'dialogue', owner: 'combat', text: '', actions, choices,
             defaultAction: pending.facing ? 'back' : 'close',
-            content: { component: CombatAttackDialog, props: { attack, facing: pending.facing } },
+            content: { component: CombatAttackDialog, props: { attack, facing: pending.facing,
+                get unparryableWarning() {
+                    return pending.attackId === 'parry' && !!pending.facing
+                        && facesOnlyUnparryableWarnings(frame.value, pending.facing);
+                } } },
             onAnswer: action => {
                 if (!live() || selected.value !== pending) return false;
                 request = undefined;
@@ -108,7 +138,7 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
             return { component: CombatTelegraphHud, props: { resources, focused: inspected.length > 0,
                 entries: threats.map(threat => ({ key: `${threat.actionId}:${threat.sourceSubactionId}`,
                     name: current?.rows.find(row => row.kind === 'monster' && row.id === threat.sourceEntityId)?.name ?? null,
-                    phase: threat.phase })) } };
+                    phase: threat.phase, parryable: threat.parryable, remainingTicks: threat.remainingTicks })) } };
         }), panel: computed(() => null), panelOpen: computed(() => !!selected.value),
         refresh, close,
         // The module bar owns combat actions. Repeating them in the shell's

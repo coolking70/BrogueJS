@@ -10364,13 +10364,17 @@ export class Game {
      */
     public stepAdvancement(): boolean {
         if (!this.isAdvancing || !this.advancementIter) return false;
-        if (Date.now() >= this.animationLockDeadline) {
-            // 保底①：锁超时——快进剩余调度并立即收尾解锁
-            this.recordingFromNewGame = false;
-            this.finishAdvancement();
-            return false;
-        }
         try {
+            if (Date.now() >= this.animationLockDeadline) {
+                // A delayed browser frame expires presentation waiting, not the
+                // accepted action. Drain the same scheduler before finalizing its
+                // one checkpoint; abandoning it strands native defense recovery
+                // and leaves NPC phases frozen after the command was paid for.
+                let step = this.advancementIter.next();
+                while (!step.done) step = this.advancementIter.next();
+                this.finishAdvancement();
+                return false;
+            }
             const r = this.advancementIter.next();
             if (r.done) {
                 this.finishAdvancement();
@@ -10393,7 +10397,7 @@ export class Game {
     /**
      * 收束一次分步推进：三条路径（正常完成/超时快进/异常）全部汇入这里，
      * 释放输入锁并恰好执行一次回合收尾。若推进被中止（收尾时玩家仍欠 tick，
-     * 即超时快进或异常路径），放弃本回合剩余调度、玩家行动权立即交还；
+     * 即异常或坠落路径），放弃本回合剩余调度、玩家行动权立即交还；
      * 未行动的怪物保留各自剩余 tick，随后续回合自然结算。
      */
     private finishAdvancement(): void {
