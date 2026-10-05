@@ -72,6 +72,36 @@ describe('EXT-3b public telegraph projection and drawing', () => {
         expect(displayedFrame(game)).toBeUndefined(); expect(observeDisplayFrame(game, logger).telegraphs).toEqual([]);
         expect(historical.telegraphs[0]!.phase).toBe('windup');
     });
+    it('captures detached public module resources in old ACK frames without future stamina or session capabilities', () => {
+        const game = new Game(); game.startNewGame({ seed: 403003, mode: 'test', ruleSet: 'extended', extensions: ['combat'] });
+        squareDisplayScene(game); game.monsters = []; game.monsterListsChanged();
+        const binding = game.extensionRuntime!.actorActionBinding()!;
+        const row = { actorId: game.player.id, profileId: binding.definition.playerProfileId, stamina: 17,
+            regenRemainder: 0, regenDelayRemaining: 13, dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 };
+        binding.state.actors.push(row);
+        logger.presentAcknowledgments(() => true);
+        const timeline = new PresentationTimeline(game, logger); disposers.push(() => timeline.dispose());
+        logger.log('stamina history fixture', '#fff', { acknowledge: true });
+        const historical = displayedFrame(game)!;
+        expect(historical.moduleViews.combat!.resources).toMatchObject({ stamina: 17, capacity: 24, regenDelayRemaining: 13 });
+        expect(Object.isFrozen(historical.moduleViews.combat!.resources)).toBe(true);
+        expect(Object.keys(historical.moduleViews.combat!)).not.toContain('session');
+        expect(Object.keys(historical.moduleViews.combat!)).not.toContain('actors');
+        const dialogs = new DialogService(), scope = effectScope();
+        disposers.push(() => { scope.stop(); dialogs.dispose(); });
+        const ui = scope.run(() => useCombatUi({ game: () => game, dialogs, tick: ref(0), immersive: ref(false),
+            readDisplayFrame: () => displayedFrame(game) ?? observeDisplayFrame(game, logger),
+            isPresentationBusy: () => timeline.busy, canOpenPanel: () => true, beforeOpenPanel: () => {}, afterClosePanel: () => {},
+        }))!;
+        row.stamina = 2; row.regenDelayRemaining = 35; observePresentation(game, 'command-complete');
+        const read = vi.spyOn(game.extensionRuntime!, 'readModuleView'); ui.refresh();
+        expect(read).not.toHaveBeenCalled();
+        expect(ui.hud.value!.props.resources).toMatchObject({ stamina: 17, regenDelayRemaining: 13 });
+        expect(displayedFrame(game)).toBe(historical);
+        expect(timeline.acknowledge(timeline.acknowledgment!)).toBe(true); ui.refresh();
+        expect(ui.hud.value!.props.resources).toMatchObject({ stamina: 2, regenDelayRemaining: 35 });
+        expect(historical.moduleViews.combat!.resources).toMatchObject({ stamina: 17, regenDelayRemaining: 13 });
+    });
     it('stable overlap priority draws once per cell and retains the ordered inspection list', () => {
         const later = warning(8, 'inter-segment'), first = warning(9, 'windup'), next = warning(1, 'windup');
         const traces: unknown[] = [];

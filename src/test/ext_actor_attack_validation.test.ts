@@ -12,14 +12,16 @@ function definitions(): ActorAttackDefinitions {
                     selfExclusion: 'whole-group', occlusion: 'line-of-effect' },
                 locationPolicy: 'locked-world', targetPolicy: 'part', damageProfile: 'native-melee', dodgeable: true, parryable: false })) }],
         profiles: [{ id: 'fixture.profile', resourcePolicyId: 'fixture.resource', attackIds: ['fixture.attack'] }],
-        resourcePolicies: [{ id: 'fixture.resource', initialStamina: 24, staminaCapacity: 24 }],
+        resourcePolicies: [{ id: 'fixture.resource', initialStamina: 24, staminaCapacity: 24, regenPerTickNumerator: 1,
+            regenPerTickDenominator: 20, regenDelayTicks: 40, nativeAttackCost: 2, regenPhases: ['idle', 'recovery', 'break-recovery'] }],
         nativeProfiles: [{ monsterId: 'rat', profileId: 'fixture.profile' }], playerProfileId: 'fixture.profile', breakRecoveryTicks: 50,
+        dodge: { cost: 4, windowTicks: 40, recoveryTicks: 80 },
     };
 }
 function fixture(): { definitions: ActorAttackDefinitions; state: ProductionActorAttackState } {
     const pack = definitions();
     return { definitions: pack, state: {
-        schema: 1, revision: 1, nextActionId: 2,
+        schema: 2, revision: 1, nextActionId: 2,
         scheduler: { schema: 1, bundles: [createActorActionBundle({ actionId: 1, depth: 1, decisionOwnerId: 10, timeChargeOwnerId: 10,
             subactions: [{ sourceEntityId: 10, sourcePartId: 'body', sourceFootprintVersion: 'fixture:source-v1', phases: [
                 { kind: 'windup', durationTicks: 10, segmentIndex: 0 },
@@ -29,7 +31,8 @@ function fixture(): { definitions: ActorAttackDefinitions; state: ProductionActo
         actions: [{ actionId: 1, profileId: 'fixture.profile', paidCost: 4,
             subactions: [{ sourceSubactionId: 1, attackId: 'fixture.attack', facing: 'e', lockedCells: [{ x: 11, y: 10 }],
                 shape: { schema: 1, kind: 'footprint-offset-union', offsets: [{ x: 1, y: 0 }], selfExclusion: 'whole-group' }, approvedRisks: [] }] }],
-        actors: [{ actorId: 10, profileId: 'fixture.profile', stamina: 20 }],
+        actors: [{ actorId: 10, profileId: 'fixture.profile', stamina: 20, regenRemainder: 0, regenDelayRemaining: 40,
+            dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 }],
     } };
 }
 function check(state: ProductionActorAttackState, pack = definitions()): void { validateProductionActorAttackState(state, pack); }
@@ -38,10 +41,43 @@ describe('generic production attack state codec', () => {
     it('validates declarations and a lazy empty binding without module state or a second clock', () => {
         const pack = definitions();
         expect(() => validateActorAttackDefinitions(pack)).not.toThrow();
-        expect(() => check({ schema: 1, revision: 0, nextActionId: 1, scheduler: { schema: 1, bundles: [] }, actions: [], actors: [] }, pack)).not.toThrow();
+        expect(() => check({ schema: 2, revision: 0, nextActionId: 1, scheduler: { schema: 1, bundles: [] }, actions: [], actors: [] }, pack)).not.toThrow();
         const { state } = fixture(), before = structuredClone(state);
         expect(() => check(state, pack)).not.toThrow();
         expect(state).toEqual(before);
+    });
+
+    it('rejects the previous production schema and incomplete resource rows', () => {
+        const { state } = fixture();
+        expect(() => validateProductionActorAttackState({ ...state, schema: 1 }, definitions())).toThrow(/schema/);
+        const actor = { ...state.actors[0]! } as Partial<ProductionActorAttackState['actors'][number]>;
+        delete actor.regenRemainder;
+        expect(() => validateProductionActorAttackState({ ...state, actors: [actor] }, definitions())).toThrow();
+    });
+
+    it('validates dodge remaining time without accepting an attack scheduler bundle', () => {
+        const { state } = fixture(), row = state.actors[0]!;
+        row.dodgeRemainingTicks = 40; row.dodgeRecoveryRemainingTicks = 80;
+        expect(() => check(state)).toThrow(/dodge cannot share/);
+        state.scheduler.bundles = []; state.actions = [];
+        expect(() => check(state)).not.toThrow();
+        row.dodgeRemainingTicks = 20; row.dodgeRecoveryRemainingTicks = 60;
+        expect(() => check(state)).not.toThrow();
+        row.dodgeRecoveryRemainingTicks = 40;
+        expect(() => check(state)).toThrow(/dodge clock/);
+        // A displacement may cancel protection early while paid recovery persists.
+        row.dodgeRemainingTicks = 0;
+        expect(() => check(state)).not.toThrow();
+    });
+
+    it.each([
+        { regenRemainder: -1 }, { regenRemainder: 20 }, { stamina: 24, regenRemainder: 1 },
+        { regenDelayRemaining: -1 }, { regenDelayRemaining: 41 }, { dodgeRemainingTicks: -1 },
+        { dodgeRemainingTicks: 41 }, { dodgeRecoveryRemainingTicks: -1 }, { dodgeRecoveryRemainingTicks: 81 },
+    ])('rejects invalid fixed-point resource fields %j', patch => {
+        const { state } = fixture();
+        Object.assign(state.actors[0]!, patch);
+        expect(() => check(state)).toThrow();
     });
 
     it('cross-checks the current segment shape and keeps recovery previews empty', () => {
@@ -167,6 +203,16 @@ describe('generic production attack state codec', () => {
         (pack: ActorAttackDefinitions) => { pack.attacks[0]!.cost = 25; },
         (pack: ActorAttackDefinitions) => { pack.resourcePolicies[0]!.initialStamina = 25; },
         (pack: ActorAttackDefinitions) => { pack.breakRecoveryTicks = 0; },
+        (pack: ActorAttackDefinitions) => { pack.resourcePolicies[0]!.nativeAttackCost = 25; },
+        (pack: ActorAttackDefinitions) => { pack.resourcePolicies[0]!.regenPerTickNumerator = -1; },
+        (pack: ActorAttackDefinitions) => { pack.resourcePolicies[0]!.regenPerTickDenominator = 0; },
+        (pack: ActorAttackDefinitions) => { pack.resourcePolicies[0]!.regenDelayTicks = 1_000_001; },
+        (pack: ActorAttackDefinitions) => { pack.resourcePolicies[0]!.regenPhases = ['idle', 'idle']; },
+        (pack: ActorAttackDefinitions) => { pack.dodge.cost = 25; },
+        (pack: ActorAttackDefinitions) => { pack.dodge.windowTicks = 0; },
+        (pack: ActorAttackDefinitions) => { pack.dodge.windowTicks = 81; },
+        (pack: ActorAttackDefinitions) => { pack.dodge.recoveryTicks = 1_000_001; },
+
     ])('rejects malformed declaration references, timing and geometry %#', mutate => {
         const pack = definitions(); mutate(pack); expect(() => validateActorAttackDefinitions(pack)).toThrow();
     });

@@ -578,6 +578,8 @@ export class ExtensionRuntime {
                 || Object.keys(input).sort().join(',') !== 'action,module,payload' || typeof input.module !== 'string'
                 || typeof input.action !== 'string' || !validId(input.module)) return false;
             const module = this.modules.find(module => module.id === input.module);
+            if (module?.actorActions && input.action === 'dodge') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
+                && Object.keys(input.payload).join(',') === 'facing' && typeof input.payload.facing === 'string';
             if (module?.actorActions && input.action === 'attack') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
                 && Object.keys(input.payload).sort().join(',') === 'attackId,facing' && typeof input.payload.attackId === 'string' && typeof input.payload.facing === 'string';
             return !!module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action)

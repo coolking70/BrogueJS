@@ -1,6 +1,9 @@
 {
   "test": [
     "tests/combat_display.test.ts",
+    "tests/combat_dodge.test.ts",
+    "tests/combat_dodge_ui.test.ts",
+    "tests/combat_native_stamina.test.ts",
     "tests/combat_planner.test.ts",
     "tests/combat_runtime.test.ts",
     "tests/combat_schema.test.ts",

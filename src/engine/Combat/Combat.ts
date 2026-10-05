@@ -1,3 +1,4 @@
+import { guardNativeMelee } from '../Core/NativeAttackTransaction';
 import { bodyAttackContactOf, nearestLegalMeleeContact, withBodyAttackContact } from './BodyCombat';
 import { distanceBetweenFootprints } from '../Movement/CreatureSpatial';
 import { ringTransferencePercent } from '../Items/ItemEffectFormulas';
@@ -41,6 +42,9 @@ export interface AttackResult {
     /** Presentation metadata captured before wake/status changes; no RNG. */
     text?: { percentile: number; circumstance: AttackCircumstance };
     damage: number;
+    /** Rejected before native hit/damage RNG and physical-resolution facts. */
+    staminaBlocked?: true;
+    dodged?: true;
     weaponName?: string;
     /** True if the attack hit, including a fully shielded hit */
     hit: boolean;
@@ -120,6 +124,13 @@ export class CombatSystem {
      * Implements CE-accurate hit probability and damage formulas.
      */
     public static attack(attacker: Creature, defender: Creature, opts?: Parameters<typeof CombatSystem.resolveAttack>[2]): AttackResult {
+        const current = (attacker.extensionHooks ?? defender.extensionHooks)?.causality.current;
+        const origin = current?.actorId === attacker.id ? current : undefined;
+        if (opts?.delivery !== 'bolt' && opts?.isWeaponAttack !== false && origin?.kind !== 'bolt' && origin?.kind !== 'reflection') {
+            const result = guardNativeMelee(opts?.grid, attacker, defender);
+            if (result !== 'allow') return { damage: 0, hit: false, backstab: false,
+                ...(result === 'dodge' ? { dodged: true as const } : { staminaBlocked: true as const }) };
+        }
         if (!attacker.spatial && !defender.spatial) return CombatSystem.attackAtContact(attacker, defender, opts);
         return withBodyAttackContact(attacker, defender, bodyAttackContactOf(attacker, defender),
             () => CombatSystem.attackAtContact(attacker, defender, opts));
@@ -163,6 +174,8 @@ export class CombatSystem {
          * （CE inflictDamage 本身只认 MONST_INVULNERABLE，不检查 IMMUNE_TO_WEAPONS）。
          */
         isWeaponAttack?: boolean;
+        /** Trusted native delivery classification; BE_ATTACK bolts are not melee. */
+        delivery?: 'bolt';
         grid?: Grid;
         itemGenerationDepth?: number;
         /** CE armor adjustment precedes contact poison and shield absorption. */

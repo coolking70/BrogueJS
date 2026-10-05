@@ -40,6 +40,7 @@
     "src/test/dialog_service_input.test.ts",
     "src/test/dpad_hold_input.test.ts",
     "src/test/ext_actor_attack_validation.test.ts",
+    "src/test/ext_actor_resources.test.ts",
     "src/test/ext_births.test.ts",
     "src/test/ext_bolt_causality.test.ts",
     "src/test/ext_causality.test.ts",

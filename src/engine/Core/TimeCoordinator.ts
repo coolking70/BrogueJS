@@ -61,6 +61,8 @@ export interface EffectsPort {
     /** Extension-only completed block fact; native environment/status order stays unchanged. */
     beginObjectiveTime?(): () => number;
     playerFalls(): void;
+    /** Accepted resource-backed recovery can outlive a level transition. */
+    hasPendingPlayerAction?(): boolean;
     isAutoTraveling(): boolean;
     sweepDeepWaterItem(creature: Game['player'] | Monster, ticks: number): void;
     monsterDropItem(monster: Monster): void;
@@ -157,7 +159,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                         // A phased owner carries only recovery to the landing
                         // layer. Finish that same accepted action without a new
                         // command/prelude or a native timer overwrite.
-                        if (actions?.isBusy(ports.world.player.id) && !ports.clock.isGameOver && ports.world.player.hp > 0) {
+                        if ((actions?.isBusy(ports.world.player.id) || ports.effects.hasPendingPlayerAction?.()) && !ports.clock.isGameOver && ports.world.player.hp > 0) {
                             stealthRange = ports.effects.calculateStealthRange();
                             continue;
                         }
@@ -415,7 +417,7 @@ export function playerTurnEnded(ports: TimePorts, continuingParalysis = false): 
             // 坠落回合没有气味刷新、没有怪物推进。
             if (ports.clock.playerFalling) {
                 ports.effects.playerFalls();
-                if (!ports.actions?.isBusy(ports.world.player.id) || ports.clock.isGameOver || ports.world.player.hp <= 0) return;
+                if (!(ports.actions?.isBusy(ports.world.player.id) || ports.effects.hasPendingPlayerAction?.()) || ports.clock.isGameOver || ports.world.player.hp <= 0) return;
             }
 
             // C-5：CE Time.c:2486-2492——每个玩家回合末怪物坠落（注释原文：

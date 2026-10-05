@@ -27,6 +27,10 @@ export interface ProductionActorActionOptions {
     breakRecoveryTicks: (source: ReadonlyActorActionBundle['subactions'][number], bundle: ReadonlyActorActionBundle) => number;
     interrupted?: (source: ReadonlyActorActionBundle['subactions'][number], bundle: ReadonlyActorActionBundle, reason: ActorActionInterruptionReason) => void;
     elapsed?: (delta: number, depth: number) => void;
+    sourceChanged?: (sourceEntityId:number) => void;
+    leftDepth?: (depth:number) => void;
+    inputLocked?: () => boolean;
+    resumeResources?: () => void;
 }
 interface ProductionBinding { options: ProductionActorActionOptions; scheduler: ActorActionScheduler; suspendedDepth: number | null; interruption: ActorActionInterruptionReason; resolving: boolean; changedSources: Set<number>; resumePending: boolean }
 const bindings = new WeakMap<Game, ProductionBinding>();
@@ -136,7 +140,7 @@ export function createProductionActorActionSession(game: Game, options: Producti
 }
 export function productionActorActionScheduler(game: Game): ActorActionScheduler | undefined { return bindings.get(game)?.scheduler; }
 export function productionActorActionInputLocked(game: Game): boolean {
-    return isProductionActorActionRunInvalid(game) || !!bindings.get(game)?.options.state.bundles.some(bundle => bundle.decisionOwnerId === game.player.id && bundle.depth === game.depth);
+    return isProductionActorActionRunInvalid(game) || !!bindings.get(game)?.options.inputLocked?.() || !!bindings.get(game)?.options.state.bundles.some(bundle => bundle.decisionOwnerId === game.player.id && bundle.depth === game.depth);
 }
 /** Load binds only; the first explicit simulation update resumes the pending work. */
 export function markProductionActorActionResume(game: Game): void {
@@ -157,6 +161,7 @@ export function reconcileProductionActorActions(game: Game): void {
  * hits defer cancellation only until their indivisible resolver returns. */
 export function notifyProductionActorSourceChanged(game: Game, sourceEntityId: number): void {
     const binding = bindings.get(game); if (!binding) return;
+    binding.options.sourceChanged?.(sourceEntityId);
     const source = binding.options.state.bundles.flatMap(bundle => bundle.subactions)
         .find(child => child.sourceEntityId === sourceEntityId && child.phaseIndex < child.phases.length);
     if (!source) return;
@@ -166,6 +171,7 @@ export function notifyProductionActorSourceChanged(game: Game, sourceEntityId: n
 export function validateProductionActorActionSession(game: Game): void { bindings.get(game)?.scheduler.snapshot(); }
 export function suspendProductionActorActions(game: Game, fromDepth: number): void {
     const binding = bindings.get(game); if (!binding) return;
+    binding.options.leftDepth?.(fromDepth);
     binding.suspendedDepth = fromDepth;
     binding.scheduler.interruptDepth(fromDepth);
 }
@@ -185,4 +191,5 @@ export function resumeProductionActorActions(game: Game): void {
     // Native cached-level catch-up may update native timers, but must never
     // consume combat recovery or make it a second independent clock.
     binding.scheduler.refreshMirrors();
+    binding.options.resumeResources?.();
 }

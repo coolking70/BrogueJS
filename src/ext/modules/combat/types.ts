@@ -1,5 +1,7 @@
 /** Module-owned data only. Spatial identities/geometry are supplied by the future
  * foundation adapter; these DTOs do not grant world or scheduling authority. */
+import type { ActorDodgeDefinition, ActorResourcePhase } from '../../actorActions';
+
 export type Facing = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
 export interface Cell { x: number; y: number }
 export interface AttackShape {
@@ -26,11 +28,13 @@ export interface AttackDefinition {
 export interface ResourcePolicy {
     id: string; staminaCapacity: number; initialStamina: number;
     regenPerTickNumerator: number; regenPerTickDenominator: number; regenDelayTicks: number;
+    nativeAttackCost: number; regenPhases: ActorResourcePhase[];
     poiseCapacity: number; poiseRecoveryNumerator: number; poiseRecoveryDenominator: number;
 }
 export interface CombatProfile { id: string; resourcePolicyId: string; attackIds: string[] }
 export interface CombatPack {
-    schema: 1; moduleId: 'combat'; moduleVersion: '1.1.0'; rulesVersion: '1.1.0';
+    schema: 1; moduleId: 'combat'; moduleVersion: '1.2.0'; rulesVersion: '1.2.0';
+    dodge: ActorDodgeDefinition;
     playerProfileId: string; breakRecoveryTicks: number; nativeProfiles: {monsterId:string;profileId:string}[];
     resourcePolicies: ResourcePolicy[]; attacks: AttackDefinition[]; profiles: CombatProfile[];
 }

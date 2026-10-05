@@ -5,10 +5,12 @@ export function combatAttackDefinitions(pack: CombatPack): ActorAttackDefinition
         attacks: pack.attacks.map(({id,nameKey,cost,windupTicks,recoveryTicks,segments}) => ({id,nameKey,cost,windupTicks,recoveryTicks,
             segments: segments.map(({delayTicks,shape,locationPolicy,targetPolicy,damageProfile,dodgeable,parryable}) =>
                 ({delayTicks,shape,locationPolicy,targetPolicy,damageProfile,dodgeable,parryable}))})),
-        profiles: pack.profiles, resourcePolicies: pack.resourcePolicies.map(({id,initialStamina,staminaCapacity})=>({id,initialStamina,staminaCapacity})),
-        nativeProfiles: pack.nativeProfiles,playerProfileId:pack.playerProfileId,breakRecoveryTicks:pack.breakRecoveryTicks,
+        profiles: pack.profiles, resourcePolicies: pack.resourcePolicies.map(({id,initialStamina,staminaCapacity,regenPerTickNumerator,
+            regenPerTickDenominator,regenDelayTicks,nativeAttackCost,regenPhases})=>({id,initialStamina,staminaCapacity,
+            regenPerTickNumerator,regenPerTickDenominator,regenDelayTicks,nativeAttackCost,regenPhases})),
+        nativeProfiles: pack.nativeProfiles,playerProfileId:pack.playerProfileId,breakRecoveryTicks:pack.breakRecoveryTicks,dodge:pack.dodge,
     };
 }
 export function initialProductionCombatState(): ProductionActorAttackState {
-    return {schema:1,revision:0,nextActionId:1,scheduler:{schema:1,bundles:[]},actions:[],actors:[]};
+    return {schema:2,revision:0,nextActionId:1,scheduler:{schema:1,bundles:[]},actions:[],actors:[]};
 }

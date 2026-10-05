@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "moduleId": "combat",
-  "moduleVersion": "1.1.0",
-  "rulesVersion": "1.1.0",
+  "moduleVersion": "1.2.0",
+  "rulesVersion": "1.2.0",
   "resourcePolicies": [
     {
       "id": "fixture.resources",
@@ -13,7 +13,13 @@
       "regenDelayTicks": 40,
       "poiseCapacity": 12,
       "poiseRecoveryNumerator": 1,
-      "poiseRecoveryDenominator": 30
+      "poiseRecoveryDenominator": 30,
+      "nativeAttackCost": 2,
+      "regenPhases": [
+        "idle",
+        "recovery",
+        "break-recovery"
+      ]
     }
   ],
   "attacks": [
@@ -675,5 +681,10 @@
       "monsterId": "ogre",
       "profileId": "combat.shock-ring"
     }
-  ]
+  ],
+  "dodge": {
+    "cost": 4,
+    "windowTicks": 40,
+    "recoveryTicks": 80
+  }
 }

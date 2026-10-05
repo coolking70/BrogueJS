@@ -50,7 +50,8 @@ describe('3b production combat lifecycle',()=>{
   acknowledge();const hp=monster.hp;monster.defense=-10000;
   game.executeCommand('ext:command',command(id));
   expect(monster.hp).toBeLessThan(hp);expect(state(game).nextActionId).toBe(2);
-  expect(state(game).actors.find(a=>a.actorId===game.player.id)!.stamina).toBe(24-attack.cost);
+  // 3c now regenerates during the declared recovery after the paid windup.
+  expect(state(game).actors.find(a=>a.actorId===game.player.id)!.stamina).toBe(24-attack.cost+Math.floor(attack.recoveryTicks/20));
   expect(state(game).scheduler.bundles).toEqual([]);expect(state(game).actions).toEqual([]);expect(game.player.ticksUntilTurn).toBe(0);
   expect(()=>game.toSaveSnapshot()).not.toThrow();expect(()=>game.exportRecording()).not.toThrow();
  });
