@@ -23,6 +23,7 @@ function fractured() {
 it('natural D7 seed7309 enters its data-driven half-HP split through the real native clock, preserving encounter and movement bounds',()=>{
   const {game,boss,id,region,descendants,encounter}=fractured();
   expect(boss.id).toBe(id);expect(descendants.map(m=>m.hp)).toEqual([65,64]);expect(descendants.every(m=>m.typeId==='giants.ridgeback')).toBe(true);
+  expect(logger.messages.some(m=>m.text===`沉渊巨像崩解，裂成2具${descendants[0]!.name}！`)).toBe(true);
   expect(descendants.every(m=>m.spatial!.movementRegionId===region&&m.bodyTransitionHistory?.includes('giants.colossus-fracture'))).toBe(true);
   const bounds=game.extensionRuntime!.ownedRegion(region,7)!.bounds;
   for(const p of descendants.flatMap(m=>footprintOf(m)))expect(p.x>=bounds.x&&p.y>=bounds.y&&p.x<bounds.x+bounds.width&&p.y<bounds.y+bounds.height).toBe(true);

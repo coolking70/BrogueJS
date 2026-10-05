@@ -15,33 +15,33 @@ import { rng } from '../engine/Random';
 import { logger } from '../engine/Systems/Logger';
 import type { ExtensionModule } from '../ext/types';
 afterEach(() => { vi.restoreAllMocks(); logger.reset(); });
-const request = (sourceGroupId: number, reason: BodyTransitionRequest['reason'], formId = 'giants.fixture-core', count = reason === 'split' ? 2 : 1): BodyTransitionRequest => ({
+const request = (sourceGroupId: number, reason: BodyTransitionRequest['reason'], formId = 'body-fixture.fixture-core', count = reason === 'split' ? 2 : 1): BodyTransitionRequest => ({
   sourceGroupId, reason, results: Array.from({length:count},()=>({formId,memberMap:[]})), hp: reason === 'split' ? 'conserve' : ['clone','summon'].includes(reason) ? 'current' : 'ratio',
   statuses:'preserve',relationships:'preserve',placement:'nearest'
 });
 function installActive(reason: 'phase'|'split'|'clone'|'summon' = 'split', hook?: (module: ExtensionModule) => void) {
   installProductionBody();
   const installed = catalog.createExtensionRegistry(), descriptors = catalog.getInstalledModuleDescriptors();
-  const base = installed.create(installed.manifest(['giants']))[0]!;
-  const move: ActiveBodyTransition = { id:'giants.fixture-once',sourceFormId:'giants.fixture-core',condition:{kind:'hp-at-most',numerator:1,denominator:2},ticks:175,hpCost:3,
+  const base = installed.create(installed.manifest(['body-fixture']))[0]!;
+  const move: ActiveBodyTransition = { id:'body-fixture.fixture-once',sourceFormId:'body-fixture.fixture-core',condition:{kind:'hp-at-most',numerator:1,denominator:2},ticks:175,hpCost:3,
     transition:{...request(1,reason), results:request(1,reason).results} as ActiveBodyTransition['transition'] };
   // sourceGroupId belongs to the runtime request, never the module declaration.
   delete (move.transition as unknown as Record<string,unknown>).sourceGroupId;
   const module: ExtensionModule = {...base,bodyTransitions:[move]};
   hook?.(module);
   const rules={...base.rules!,fingerprint:extensionDataFingerprint({base:base.rules,transitions:module.bodyTransitions,forms:module.nativeForms,bodies:module.nativeBodies})};
-  const registry=registryFromDescriptors(descriptors.map(d=>d.id==='giants'?{...d,rules,create:()=>({...module,rules})}:d));
+  const registry=registryFromDescriptors(descriptors.map(d=>d.id==='body-fixture'?{...d,rules,create:()=>({...module,rules})}:d));
   vi.mocked(catalog.createExtensionRegistry).mockReturnValue(registry);
   return {module,move};
 }
 function activeScene(reason: 'phase'|'split'|'clone'|'summon'='split', hook?: (module: ExtensionModule) => void, combat=false) {
-  const installed=installActive(reason,hook),game=startProductionGame(combat?['giants','combat']:['giants']);emptyProductionArena(game);
+  const installed=installActive(reason,hook),game=startProductionGame(combat?['body-fixture','combat']:['body-fixture']);emptyProductionArena(game);
   const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!;core.state=MonsterState.HUNTING;core.hp=79;
   return {...installed,game,core};
 }
 it('finite active declarations reject scripts, regrow, invalid costs, quantity, HP policy, cross-owner and duplicate slot maps',()=>{
   const {module,move}=installActive();
-  const valid=(v:unknown)=>validActiveBodyTransitions(v,'giants',module.nativeForms!,module.nativeBodies!.definitions);
+  const valid=(v:unknown)=>validActiveBodyTransitions(v,'body-fixture',module.nativeForms!,module.nativeBodies!.definitions);
   expect(valid([move])).toBe(true);
   for(const bad of [{...move,script:'run()'},{...move,ticks:0},{...move,hpCost:-1},{...move,id:'other.move'},
     {...move,condition:{...move.condition,denominator:0}}, {...move,transition:{...move.transition,reason:'regrow'}},
@@ -54,7 +54,7 @@ it('split HP is an exact positive partition including remainder and refuses heal
   expect(bodyTransitionHp(r,1,160,[160,160])).toBeNull();expect(bodyTransitionHp(r,79,160,[20,20])).toBeNull();
 });
 it.each(['clone','summon'] as const)('%s uses all fresh IDs, deeply detached local containers and remapped group/leader pointers without source rewards or spent moves',reason=>{
-  const {game,core,actors,group}=productionBodyScene();core.hp=79;core.bodyTransitionHistory=['giants.colossus-fracture'];
+  const {game,core,actors,group}=productionBodyScene();core.hp=79;core.bodyTransitionHistory=['body-fixture.colossus-fracture'];
   actors[1]!.leader=core;actors[1]!.addPoison(3,2);group.members[1]!.readyInTicks=37;
   const before=rng.getState(),next=getNextEntityId(),fact=game.transitionBody(request(core.id,reason));expect(fact.outcome).toBe('applied');
   const clone=game.monsters.find(m=>m.id===fact.resultGroupIds[0])!, copies=game.monsters.filter(m=>m.spatial?.bodyMember?.groupId===clone.id);
@@ -70,7 +70,7 @@ it.each((['phase','split','clone','summon'] as const).flatMap(reason=>(['hasted'
   const {game,core,actors}=productionBodyScene(),speeds=actors.map(a=>[a.movementSpeed,a.attackSpeed]);core.hp=80;
   core.applyStatus(status,9);const altered=status==='hasted'?Math.floor(speeds[0]![0]!/2):speeds[0]![0]!*2;
   expect(core.movementSpeed).toBe(altered);
-  const copy=reason==='clone'||reason==='summon',fact=game.transitionBody({...request(core.id,reason,copy?'giants.fixture-core':'giants.ridgeback'),statuses:'clear'});
+  const copy=reason==='clone'||reason==='summon',fact=game.transitionBody({...request(core.id,reason,copy?'body-fixture.fixture-core':'body-fixture.ridgeback'),statuses:'clear'});
   expect(fact.outcome).toBe('applied');
   const results=copy?game.monsters.filter(m=>m.spatial?.bodyMember?.groupId===fact.resultGroupIds[0]):fact.resultGroupIds.map(id=>game.monsters.find(m=>m.id===id)!);
   expect(results.map(a=>[a.movementSpeed,a.attackSpeed])).toEqual(copy?speeds:fact.resultGroupIds.map(()=>[100,100]));
@@ -80,14 +80,14 @@ it.each((['phase','split','clone','summon'] as const).flatMap(reason=>(['hasted'
 it('active clear publishes retained-actor status causality and relationship cleanup after structural replacement',()=>{
   const {game,core}=productionBodyScene();core.isAlly=true;core.dominated=true;core.addPoison(3,2);
   const status=vi.spyOn(core.extensionHooks!.causality,'clearStatus'),relation=vi.spyOn(core.extensionHooks!,'relationshipChanged');
-  const fact=game.transitionBody({...request(core.id,'phase','giants.ridgeback'),statuses:'clear',relationships:'clear'});
+  const fact=game.transitionBody({...request(core.id,'phase','body-fixture.ridgeback'),statuses:'clear',relationships:'clear'});
   expect(fact.outcome).toBe('applied');expect(core.isAlly).toBe(false);expect(core.dominated).toBe(false);expect(core.hasStatus('poisoned')).toBe(false);
   expect(status).toHaveBeenCalledWith(core.id,'poisoned');expect(status).toHaveBeenCalledWith(core.id,'burning');
   expect(relation).toHaveBeenCalledTimes(1);expect(relation).toHaveBeenCalledWith(core);expect(game.loadSnapshot(game.toSaveSnapshot())).toBe(true);
 });
 it('one-to-three split keeps only the original core entitlement, exact total HP and reserves complete non-overlapping bodies',()=>{
   const {game,core}=productionBodyScene();core.hp=83;const id=core.id,next=getNextEntityId();
-  const fact=game.transitionBody(request(id,'split','giants.fixture-core',3));expect(fact.outcome).toBe('applied');
+  const fact=game.transitionBody(request(id,'split','body-fixture.fixture-core',3));expect(fact.outcome).toBe('applied');
   const cores=fact.resultGroupIds.map(id=>game.monsters.find(m=>m.id===id)!);expect(cores.map(m=>m.hp)).toEqual([28,28,27]);expect(cores[0]).toBe(core);
   expect(cores.slice(1).every(m=>m.bodyTransitionRewardless&&m.isClone)).toBe(true);
   expect(readCreatureBirth(cores[1]!)).toMatchObject({sourceId:id,nativeStatsCopied:false});expect(core.bodyTransitionRewardless).toBeUndefined();
@@ -97,13 +97,13 @@ it('one-to-three split keeps only the original core entitlement, exact total HP 
 it('a member map preserves explicit IDs across a reduced body, retires every omitted part without kill and cleans external incoming references',()=>{
   const {module}=installActive('phase',module=>{
     const body=structuredClone(module.nativeBodies!.definitions.find(b=>b.id===PRODUCTION_BODY_ID)!);
-    body.id='giants.fixture-reduced';body.parts=[{...body.parts[0]!,formId:'giants.fixture-reduced-core'},body.parts[1]!,body.parts[2]!];body.constraints=body.constraints.slice(0,2);
-    Object.assign(module,{nativeForms:[...module.nativeForms!,{...module.nativeForms!.find(f=>f.id==='giants.fixture-core')!,id:'giants.fixture-reduced-core',hp:80}]});
+    body.id='body-fixture.fixture-reduced';body.parts=[{...body.parts[0]!,formId:'body-fixture.fixture-reduced-core'},body.parts[1]!,body.parts[2]!];body.constraints=body.constraints.slice(0,2);
+    Object.assign(module,{nativeForms:[...module.nativeForms!,{...module.nativeForms!.find(f=>f.id==='body-fixture.fixture-core')!,id:'body-fixture.fixture-reduced-core',hp:80}]});
     Object.assign(module,{nativeBodies:{...module.nativeBodies!,definitions:[...module.nativeBodies!.definitions,body]}});
   });
   const game=startProductionGame();emptyProductionArena(game);const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!,old=[...game.monsters],next=getNextEntityId();core.hp=80;
   const external=new Monster(30,10,{...core.snapshotForm(),id:'rat'});external.leader=old[3]!;external.carriedMonster=old[3]!;game.monsters.push(external);
-  const death=vi.spyOn(game.extensionRuntime!,'captureDeath');const r=request(core.id,'phase','giants.fixture-reduced-core');
+  const death=vi.spyOn(game.extensionRuntime!,'captureDeath');const r=request(core.id,'phase','body-fixture.fixture-reduced-core');
   (r.results[0] as unknown as {memberMap:{from:string;to:string}[]}).memberMap=[{from:'leg00',to:'leg00'},{from:'leg01',to:'leg01'}];
   expect(game.transitionBody(r).outcome).toBe('applied');expect(core.hp).toBe(40);expect(core.id).toBe(old[0]!.id);expect(game.monsters).toEqual([core,old[1],old[2],external]);
   expect(game.bodyGroups![0]!.members.map(m=>m.entityId)).toEqual(old.slice(0,3).map(m=>m.id));expect(getNextEntityId()).toBe(next+1);
@@ -113,8 +113,8 @@ it('a member map preserves explicit IDs across a reduced body, retires every omi
 });
 it('group to rigid and rigid to group retain the principal ID and never revive retired members',()=>{
   const {game,core,actors}=productionBodyScene();const id=core.id;
-  expect(game.transitionBody(request(id,'phase','giants.ridgeback')).outcome).toBe('applied');expect(core.id).toBe(id);expect(game.bodyGroups).toBeUndefined();
-  expect(game.transitionBody(request(id,'phase','giants.fixture-core')).outcome).toBe('applied');expect(core.id).toBe(id);
+  expect(game.transitionBody(request(id,'phase','body-fixture.ridgeback')).outcome).toBe('applied');expect(core.id).toBe(id);expect(game.bodyGroups).toBeUndefined();
+  expect(game.transitionBody(request(id,'phase','body-fixture.fixture-core')).outcome).toBe('applied');expect(core.id).toBe(id);
   expect(game.monsters.slice(1).every(a=>!actors.includes(a))).toBe(true);expect(game.loadSnapshot(game.toSaveSnapshot())).toBe(true);
 });
 it('when any one result lacks space the entire batch preserves ID/HP/group/list/relations/RNG',()=>{
@@ -126,18 +126,18 @@ it('when any one result lacks space the entire batch preserves ID/HP/group/list/
 });
 it.each(['entities','cells'] as const)('the activity-layer %s budget rejects all results before allocating IDs',kind=>{
   const {game,core}=productionBodyScene();core.hp=80;
-  const form=game.extensionRuntime!.nativeForms().find(f=>f.id==='giants.abyssal-colossus')!;
+  const form=game.extensionRuntime!.nativeForms().find(f=>f.id==='body-fixture.abyssal-colossus')!;
   // Budget-only stress fixture: off-map diagnostic entities are not published
   // through the production constructor, and cannot masquerade as a valid save.
   const extra=kind==='entities'?120:56;
-  for(let i=0;i<extra;i++){const m=new Monster(40+i%20,15+Math.floor(i/20),{...core.snapshotForm(),id:kind==='entities'?'giants.fixture-leg':form.id});m.spatial={schema:1,footprintId:kind==='entities'?'giants.fixture-leg':'builtin:square-3',pose:'r0'};game.monsters.push(m);}
+  for(let i=0;i<extra;i++){const m=new Monster(40+i%20,15+Math.floor(i/20),{...core.snapshotForm(),id:kind==='entities'?'body-fixture.fixture-leg':form.id});m.spatial={schema:1,footprintId:kind==='entities'?'body-fixture.fixture-leg':'builtin:square-3',pose:'r0'};game.monsters.push(m);}
   const before=getNextEntityId();expect(game.transitionBody(request(core.id,'split')).outcome).toBe('budget');expect(getNextEntityId()).toBe(before);expect(core.hp).toBe(80);
 });
 it.each(['phase','split','clone','summon'] as const)('active %s pays once on failure, establishes positive ticks and never retries on another tick',reason=>{
   const {game,core}=activeScene(reason);
   for(let x=0;x<game.grid.width;x++)for(let y=0;y<game.grid.height;y++)game.grid.setTerrain(x,y,T.WALL);
   const next=getNextEntityId();expect((game as any).tryActiveBodyTransition(core)).toBe(true);expect(core.hp).toBe(76);expect(core.ticksUntilTurn).toBeGreaterThanOrEqual(175);
-  expect(core.bodyTransitionHistory).toEqual(['giants.fixture-once']);expect((game as any).tryActiveBodyTransition(core)).toBe(false);expect(getNextEntityId()).toBe(next);
+  expect(core.bodyTransitionHistory).toEqual(['body-fixture.fixture-once']);expect((game as any).tryActiveBodyTransition(core)).toBe(false);expect(getNextEntityId()).toBe(next);
 });
 it.each(['birth','fact','environment','message'] as const)('active transaction restores fees, full graph, source revisions, IDs, groups, facts, messages and both RNG on %s fault',fault=>{
   let fail=false;const {game,core}=activeScene('split',m=>{
@@ -152,13 +152,13 @@ it.each(['birth','fact','environment','message'] as const)('active transaction r
 it('spent declaration and reward-right bad saves are rejected without replacing the running world',()=>{
   const {game,core}=activeScene('clone');expect((game as any).tryActiveBodyTransition(core)).toBe(true);
   const save=game.toSaveSnapshot();expect(game.loadSnapshot(save)).toBe(true);
-  for(const history of [[],['giants.fixture-once','giants.fixture-once'],['giants.uninstalled']]){const bad=structuredClone(save);bad.monsters[0]!.bodyTransitionHistory=history;expect(game.loadSnapshot(bad)).toBe(false);}
+  for(const history of [[],['body-fixture.fixture-once','body-fixture.fixture-once'],['body-fixture.uninstalled']]){const bad=structuredClone(save);bad.monsters[0]!.bodyTransitionHistory=history;expect(game.loadSnapshot(bad)).toBe(false);}
   const bad=structuredClone(save);(bad.monsters[0] as unknown as Record<string,unknown>).bodyTransitionRewardless=false;expect(game.loadSnapshot(bad)).toBe(false);
 });
 it('all descendants inherit the once-only receipt and cannot repeat their source summon',()=>{
   const {game,core}=activeScene('summon');expect((game as any).tryActiveBodyTransition(core)).toBe(true);
   const roots=game.bodyGroups!.map(g=>game.monsters.find(m=>m.id===g.coreId)!);expect(roots).toHaveLength(2);
-  for(const actor of roots){expect(actor.bodyTransitionHistory).toEqual(['giants.fixture-once']);expect((game as any).tryActiveBodyTransition(actor)).toBe(false);}
+  for(const actor of roots){expect(actor.bodyTransitionHistory).toEqual(['body-fixture.fixture-once']);expect((game as any).tryActiveBodyTransition(actor)).toBe(false);}
 });
 it('repeated whole copies stop at the activity-layer budget without a partial group or duplicated ID',()=>{
   const {game,core}=productionBodyScene();let outcome='applied',attempts=0;
@@ -181,7 +181,7 @@ it('same-body phases cannot regenerate broken parts while a copy retains the rem
 it('innate active shape replacement can change an inanimate form without weakening incoming CE polymorph qualification',()=>{
   const {game,core}=productionBodyScene();core.behaviorFlags.add('MONST_INANIMATE');core.behaviorFlags.add('MONST_TURRET');core.behaviorFlags.add('MONST_INVULNERABLE');
   expect((game as any).polymorphBoltTarget(core)).toBe(false);
-  expect(game.transitionBody(request(core.id,'phase','giants.ridgeback')).outcome).toBe('applied');expect(core.typeId).toBe('giants.ridgeback');
+  expect(game.transitionBody(request(core.id,'phase','body-fixture.ridgeback')).outcome).toBe('applied');expect(core.typeId).toBe('body-fixture.ridgeback');
 });
 
 it('copy placement uses real part labels after a removed slot, including heterogeneous tether constraints',()=>{

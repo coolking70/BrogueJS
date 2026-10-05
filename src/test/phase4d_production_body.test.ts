@@ -30,7 +30,7 @@ describe('4d production composite birth, native owner, member damage and tombsto
     });
     it('rejects a member using fixed-zone self identity at declaration and invalid live HP at group validation', () => {
         const {game, core, group} = productionBodyScene();
-        const definition = json(game.spatialCatalog.body(PRODUCTION_BODY_ID)); definition.id = 'giants.invalid-self';
+        const definition = json(game.spatialCatalog.body(PRODUCTION_BODY_ID)); definition.id = 'body-fixture.invalid-self';
         definition.parts[1]!.partId = 'self'; definition.constraints[0]!.childPartId = 'self';
         expect(() => game.spatialCatalog.registerBody(definition)).toThrow('Reserved');
         const hp = core.hp; core.hp = NaN;
@@ -40,7 +40,7 @@ describe('4d production composite birth, native owner, member damage and tombsto
     it('preflights the whole formation before IDs/RNG and rolls failed birth publication back atomically', () => {
         let fail = false;
         installProductionBody(8, undefined, () => { if (fail) throw new Error('birth rejection'); });
-        const game = startProductionGame(['giants'], 7307, 'wizard'); emptyProductionArena(game);
+        const game = startProductionGame(['body-fixture'], 7307, 'wizard'); emptyProductionArena(game);
         game.grid.setTerrain(13, 11, T.WALL);
         const id = getNextEntityId(), random = rng.getState(), ext = json(game.extensionRuntime!.snapshot());
         expect(game.createCompositeMonster(PRODUCTION_BODY_ID, { x: 14, y: 12 })).toBeNull();
@@ -67,7 +67,7 @@ describe('4d production composite birth, native owner, member damage and tombsto
     });
     it('registered member geometry alone cannot grant an orphan publication or clone a slot', () => {
         const {game} = productionBodyScene();
-        const form = game.extensionRuntime!.nativeForms().find(f => f.id === 'giants.fixture-leg')!;
+        const form = game.extensionRuntime!.nativeForms().find(f => f.id === 'body-fixture.fixture-leg')!;
         const orphan = new Monster(30, 12, nativeFormData(form)); orphan.spatial = nativeFormSpatial(form);
         orphan.spatial.bodyMember = {groupId: 999999, partId: 'leg00'};
         expect(() => game.monsters.push(orphan)).toThrow('Unowned');
@@ -130,7 +130,7 @@ describe('4d production composite birth, native owner, member damage and tombsto
         const around = [{x:3,y:-1},{x:4,y:-1},{x:5,y:-1},{x:3,y:0},{x:5,y:0},{x:3,y:1},{x:4,y:1},{x:5,y:1}];
         data.definition.parts.forEach((part, i) => { if (i) part.preferredOffset = around[i - 1]!; });
         data.definition.constraints.forEach(edge => { edge.maxDistance = 6; });
-        const game = startProductionGame(['giants'], 7307, 'wizard'); emptyProductionArena(game);
+        const game = startProductionGame(['body-fixture'], 7307, 'wizard'); emptyProductionArena(game);
         const core = game.createCompositeMonster(PRODUCTION_BODY_ID, {x:14,y:12})!;
         core.behaviorFlags.add('MONST_ALWAYS_HUNTING'); core.state = MonsterState.HUNTING;
         commitCreatureAnchor(game.player, {x:18,y:12});
@@ -146,7 +146,7 @@ describe('4d production composite birth, native owner, member damage and tombsto
         const prepare = vi.fn((_request: import('../ext/partBreak').PartBreakRequest) => mode === 'fallback' ? { status: 'unsupported' as const, reason: 'unsupported-target' as const }
             : { status: 'ready' as const, plan: {} });
         installProductionBody(8, { prepare, commit }, undefined, true);
-        const game = startProductionGame(['giants'], 7307, 'wizard'); emptyProductionArena(game);
+        const game = startProductionGame(['body-fixture'], 7307, 'wizard'); emptyProductionArena(game);
         const core = game.createCompositeMonster(PRODUCTION_BODY_ID, {x:14,y:12})!, leg = game.monsters[1]!;
         leg.statusDurations.shielded = 40; leg.maxShield = 40;
         const before = mechanical(game), extension = json(game.extensionRuntime!.snapshot());

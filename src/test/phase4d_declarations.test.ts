@@ -17,15 +17,15 @@ afterEach(() => { vi.restoreAllMocks(); logger.reset(); });
 function declaration(options: {zones?:boolean;profiles?:boolean;statuses?:boolean} = {}) {
     const data = installProductionBody(), bodies = data.nativeBodies as NonNullable<ExtensionModule['nativeBodies']>;
     if (options.profiles) {
-        Object.assign(bodies, { attackProfiles: [...(bodies.attackProfiles ?? []), {id:'giants.fixture-profile',owner:'giants',providerProfileId:'combat.follow-thrust'}] });
-        for (const part of data.definition.parts) if (part.role !== 'core') part.attackProfileIds = ['giants.fixture-profile'];
+        Object.assign(bodies, { attackProfiles: [...(bodies.attackProfiles ?? []), {id:'body-fixture.fixture-profile',owner:'body-fixture',providerProfileId:'combat.follow-thrust'}] });
+        for (const part of data.definition.parts) if (part.role !== 'core') part.attackProfileIds = ['body-fixture.fixture-profile'];
     }
     if (options.zones) for (const [form, size, key] of [[data.core,2,'core'],[data.leg,1,'leg']] as const) {
-        const rule = {id:`giants.${key}-zone-break`,owner:'giants',trigger:'hp-zero' as const,disposition:'keep-zone' as const,
+        const rule = {id:`body-fixture.${key}-zone-break`,owner:'body-fixture',trigger:'hp-zero' as const,disposition:'keep-zone' as const,
             modifiers:[{kind:'balance-loss' as const,amount:20,fallbackStunTicks:40},{kind:'disable-attack' as const,attackId:'fixture.double-thrust'}]};
         delete (form as {size?:number}).size;
         Object.assign(form, { breakRules:[rule], footprint:{geometry:{kind:'rect',width:size,height:size},poses:['r0'],
-            zones:[{id:'socket',nameKey:'ext.giants.shale_weaver.name',health:{kind:'local',maxHp:8,ownerTransfer:{numerator:1,denominator:1}},armor:0,
+            zones:[{id:'socket',nameKey:'ext.body-fixture.shale_weaver.name',health:{kind:'local',maxHp:8,ownerTransfer:{numerator:1,denominator:1}},armor:0,
                 damageMultiplier:{numerator:1,denominator:1},breakRuleId:rule.id}],zoneCells:[{x:0,y:0,zoneId:'socket'}]} });
     }
     if (options.statuses) {
@@ -36,15 +36,15 @@ function declaration(options: {zones?:boolean;profiles?:boolean;statuses?:boolea
             if (['paralyzed','confused','entranced'].includes(row.statusId)) { row.owner = 'entity'; row.merge = 'replace'; }
             if (row.statusId === 'magical_fear') row.merge = 'stack';
         }
-        Object.assign(bodies, {statusProfiles:[{id:'giants.fixture-group-status',owner:'giants',kind:'native',rows:coreRows},
-            {id:'giants.fixture-local-status',owner:'giants',kind:'native',rows}]});
-        data.definition.statusProfileId = 'giants.fixture-group-status';
-        for (const part of data.definition.parts) part.statusProfileId = part.role === 'core' ? 'giants.fixture-group-status' : 'giants.fixture-local-status';
+        Object.assign(bodies, {statusProfiles:[{id:'body-fixture.fixture-group-status',owner:'body-fixture',kind:'native',rows:coreRows},
+            {id:'body-fixture.fixture-local-status',owner:'body-fixture',kind:'native',rows}]});
+        data.definition.statusProfileId = 'body-fixture.fixture-group-status';
+        for (const part of data.definition.parts) part.statusProfileId = part.role === 'core' ? 'body-fixture.fixture-group-status' : 'body-fixture.fixture-local-status';
     }
     return data;
 }
 function scene(combat:boolean, options:Parameters<typeof declaration>[0]) {
-    const data = declaration(options), game = startProductionGame(combat?['giants','combat']:['giants']); emptyProductionArena(game);
+    const data = declaration(options), game = startProductionGame(combat?['body-fixture','combat']:['body-fixture']); emptyProductionArena(game);
     const core = game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!, leg = game.monsters[1]!;
     core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');
     return {game,core,leg,data,group:game.bodyGroups![0]!};
@@ -94,14 +94,14 @@ describe('4d declared fixed zones, finite statuses and optional member profiles'
         leg.applyStatus('magical_fear',3);other.applyStatus('magical_fear',4);
         expect(core.getStatusDuration('magical_fear')).toBe(7);expect(leg.statusDurations.magical_fear).toBeUndefined();
         const saved=json(game.toSaveSnapshot());expect(game.loadSnapshot(saved)).toBe(true);
-        const bad=json(saved);bad.run.spatialWorld!.definitions.statusProfiles!.find(p=>p.id==='giants.fixture-local-status')!.rows[0]!.owner='group';
+        const bad=json(saved);bad.run.spatialWorld!.definitions.statusProfiles!.find(p=>p.id==='body-fixture.fixture-local-status')!.rows[0]!.owner='group';
         expect(game.loadSnapshot(bad)).toBe(false);
         expect(game.monsters.find(m=>m.id===leg.id)!.getStatusDuration('paralyzed')).toBe(2);
     });
     it('a broken socket disables the declared provider profile without retiring the living member',()=>{
         const data=declaration({zones:true,profiles:true});
-        for (const rule of data.leg.breakRules!) rule.modifiers = [{kind:'disable-attack',attackId:'giants.fixture-profile'}];
-        const game=startProductionGame(['giants','combat']);emptyProductionArena(game);
+        for (const rule of data.leg.breakRules!) rule.modifiers = [{kind:'disable-attack',attackId:'body-fixture.fixture-profile'}];
+        const game=startProductionGame(['body-fixture','combat']);emptyProductionArena(game);
         const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!,leg=game.monsters[1]!;
         withBodyContact(leg,leg.loc,()=>leg.takeDamage(8,true,game.grid,undefined,'physical'));
         expect(leg.hp).toBe(12);expect(nativeZoneAttackAvailable(leg,'combat.follow-thrust')).toBe(false);
@@ -110,8 +110,8 @@ describe('4d declared fixed zones, finite statuses and optional member profiles'
     });
     it.each([false,true])('all disabled declared profiles cannot regain attacks through immediate fallback (combat=%s)',combat=>{
         const data=declaration({zones:true,profiles:true});
-        for(const rule of data.leg.breakRules!)rule.modifiers=[{kind:'disable-attack',attackId:'giants.fixture-profile'}];
-        const game=startProductionGame(combat?['giants','combat']:['giants']);emptyProductionArena(game);
+        for(const rule of data.leg.breakRules!)rule.modifiers=[{kind:'disable-attack',attackId:'body-fixture.fixture-profile'}];
+        const game=startProductionGame(combat?['body-fixture','combat']:['body-fixture']);emptyProductionArena(game);
         const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!;
         for(const leg of game.monsters.slice(1))withBodyContact(leg,leg.loc,()=>leg.takeDamage(8,true));
         core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');commitCreatureAnchor(game.player,{x:14,y:10});
@@ -120,10 +120,10 @@ describe('4d declared fixed zones, finite statuses and optional member profiles'
     });
     it('a disabled first profile permits the next declared profile and pays that actual source policy',()=>{
         const data=declaration({zones:true,profiles:true});
-        data.nativeBodies.attackProfiles=[...data.nativeBodies.attackProfiles!,{id:'giants.fixture-second',owner:'giants',providerProfileId:'combat.fan-edge'}];
-        for(const part of data.definition.parts)if(part.role!=='core')part.attackProfileIds=[...part.attackProfileIds,'giants.fixture-second'];
-        for(const rule of data.leg.breakRules!)rule.modifiers=[{kind:'disable-attack',attackId:'giants.fixture-profile'}];
-        const game=startProductionGame(['giants','combat']);emptyProductionArena(game);
+        data.nativeBodies.attackProfiles=[...data.nativeBodies.attackProfiles!,{id:'body-fixture.fixture-second',owner:'body-fixture',providerProfileId:'combat.fan-edge'}];
+        for(const part of data.definition.parts)if(part.role!=='core')part.attackProfileIds=[...part.attackProfileIds,'body-fixture.fixture-second'];
+        for(const rule of data.leg.breakRules!)rule.modifiers=[{kind:'disable-attack',attackId:'body-fixture.fixture-profile'}];
+        const game=startProductionGame(['body-fixture','combat']);emptyProductionArena(game);
         const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!,leg=game.monsters[1]!;
         withBodyContact(leg,leg.loc,()=>leg.takeDamage(8,true));core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');
         commitCreatureAnchor(game.player,{x:14,y:10});game.executeCommand('wait');
@@ -135,7 +135,7 @@ describe('4d declared fixed zones, finite statuses and optional member profiles'
     it('a failed member zone provider restores a declared group shield on its core owner',()=>{
         const data=declaration({zones:true,statuses:true});
         for(const profile of data.nativeBodies.statusProfiles!)profile.rows.find(row=>row.statusId==='shielded')!.owner='group';
-        const game=startProductionGame(['giants','combat']);emptyProductionArena(game);const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!,leg=game.monsters[1]!;
+        const game=startProductionGame(['body-fixture','combat']);emptyProductionArena(game);const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!,leg=game.monsters[1]!;
         leg.applyShield(10);expect(core.getStatusDuration('shielded')).toBe(10);expect(leg.statusDurations.shielded).toBeUndefined();
         const before=json(game.toSaveSnapshot()),commit=game.extensionRuntime!.commitPartBreak.bind(game.extensionRuntime!);
         vi.spyOn(game.extensionRuntime!,'commitPartBreak').mockImplementation((request,native)=>{commit(request,native);throw new Error('group shield rollback');});

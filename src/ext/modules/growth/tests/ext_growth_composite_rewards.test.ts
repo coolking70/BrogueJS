@@ -13,13 +13,13 @@ afterEach(()=>{vi.restoreAllMocks();logger.reset();});
 function positiveQuoteScene(combat:boolean) {
     installProductionBody();const installed=catalog.createExtensionRegistry(),descriptors=catalog.getInstalledModuleDescriptors();
     const pack=structuredClone(loadGrowthDefinitionPack({hasText:()=>true})) as GrowthDefinitionPack;
-    pack.config.experience.kills.monsterQuotes.push({monsterId:'giants.fixture-core',threatRank:6,amount:27},{monsterId:'giants.fixture-leg',threatRank:6,amount:13});
+    pack.config.experience.kills.monsterQuotes.push({monsterId:'body-fixture.fixture-core',threatRank:6,amount:27},{monsterId:'body-fixture.fixture-leg',threatRank:6,amount:13});
     const parsed=parseGrowthDefinitionPack(pack,{moduleVersion:pack.moduleVersion,hasText:()=>true});
     const registry=registryFromDescriptors(descriptors.map(d=>{
         const base=installed.create(installed.manifest([d.id]))[0]!;if(d.id!=='growth')return {...d,rules:base.rules,create:()=>base};
         const rules={...base.rules!,fingerprint:extensionDataFingerprint(pack)};return {...d,rules,create:()=>createGrowthGameplay(parsed,rules)};
     }));vi.mocked(catalog.createExtensionRegistry).mockReturnValue(registry);
-    const game=startProductionGame(combat?['giants','growth','combat']:['giants','growth']);emptyProductionArena(game);
+    const game=startProductionGame(combat?['body-fixture','growth','combat']:['body-fixture','growth']);emptyProductionArena(game);
     const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12},undefined,'natural')!;core.applyStatus('paralyzed',1000);const weapon=ItemLoader.spawnWeapon('dagger',-1,-1)!;game.player.inventory.addItem(weapon);game.player.equippedWeapon=weapon;game.player.strength=30;
     return {game,core,xp:()=>((game.extensionRuntime!.snapshot().components[game.player.id]!['growth:progression']) as {experience:number}).experience};
 }

@@ -19,8 +19,8 @@ function scene() {
   const { game } = productionBodyScene();
   // Exercise installed formal content, including the reported two-body case.
   game.monsters = []; game.bodyGroups = [];
-  const a = game.createCompositeMonster('giants.shale-weaver-body', { x: 14, y: 12 })!;
-  const b = game.createCompositeMonster('giants.shale-weaver-body', { x: 24, y: 12 })!;
+  const a = game.createCompositeMonster('body-fixture.shale-weaver-body', { x: 14, y: 12 })!;
+  const b = game.createCompositeMonster('body-fixture.shale-weaver-body', { x: 24, y: 12 })!;
   for (let x = 0; x < game.grid.width; x++) for (let y = 0; y < game.grid.height; y++) {
     const c = game.grid.getCell(x, y)!; c.isVisible = c.isDiscovered = true; c.isClairvoyantVisible = false;
   }

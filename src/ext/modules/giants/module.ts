@@ -5,6 +5,7 @@ import type { GiantsPack, GiantsState } from './types';
 import { assertGiantsPack } from './schema';
 import { initialGiantsState, isGiantsState, isGiantsBossMarker } from './state';
 import { validateGiantsBindings, validateGiantsWorld } from './validation';
+import { nativeFormData } from '../../nativeForms';
 export function createGiantsModuleFromPack(input: GiantsPack): ExtensionModule {
   assertGiantsPack(input);
   const pack = structuredClone(input);
@@ -36,9 +37,11 @@ export function createGiantsModuleFromPack(input: GiantsPack): ExtensionModule {
     validateWorld: (s, c, a, w) => validateGiantsWorld(pack, s, c, a, w),
     hooks: {
       bodyTransition(event, context) {
+        const move = pack.transitions?.find(move => move.id === event.moveId);
+        const name = move ? nativeFormData(pack.forms.find(form => form.id === move.sourceFormId)!).name : '';
         if (event.outcome !== 'applied') {
-          if (pack.transitions?.some(move => move.id === event.moveId))
-            context.message(i18next.t('ext.giants.transition.no_effect'));
+          if (move)
+            context.message(i18next.t('ext.giants.transition.no_effect', { name }));
           return;
         }
         if (event.reason === 'split') change(context, s => {
@@ -50,8 +53,20 @@ export function createGiantsModuleFromPack(input: GiantsPack): ExtensionModule {
           }
           return true;
         });
-        if (pack.transitions?.some(move => move.id === event.moveId))
-          context.message(i18next.t('ext.giants.transition.applied'));
+        if (move) {
+          const counts = new Map<string, number>();
+          for (const result of move.transition.results) counts.set(result.formId, (counts.get(result.formId) ?? 0) + 1);
+          const results = [...counts].map(([formId, count]) => i18next.t('ext.giants.transition.result', {
+            count, name: nativeFormData(pack.forms.find(form => form.id === formId)!).name
+          })).join(i18next.t('ext.giants.transition.separator'));
+          const values = { name, results };
+          switch (move.transition.reason) {
+            case 'split': context.message(i18next.t('ext.giants.transition.split', values)); break;
+            case 'phase': context.message(i18next.t('ext.giants.transition.phase', values)); break;
+            case 'clone': context.message(i18next.t('ext.giants.transition.clone', values)); break;
+            case 'summon': context.message(i18next.t('ext.giants.transition.summon', values)); break;
+          }
+        }
       },
       generationPlacement(event, context) {
         if (event.owner !== 'giants') return;

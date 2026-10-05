@@ -4,6 +4,7 @@ import { footprintOf, nearestContact, type FootprintActor } from '../Movement/Cr
 import { entrancementDiagonalBlocked } from '../Movement/Entrancement';
 
 export type SightLine = (x0: number, y0: number, x1: number, y1: number) => boolean;
+export const BODY_SIGHT_PAIR_LIMIT = 128;
 
 /** Trusted native geometry only; never writes player discovery or builds a
  * multi-source player FOV. Ordinary sight retains its existing exact path. */
@@ -14,7 +15,9 @@ export function bodySightContact(grid: Grid, observer: FootprintActor, target: F
     const pairs = footprintOf(observer).flatMap(from => footprintOf(target).map(to => ({ from, to,
         distance: Math.max(Math.abs(from.x - to.x), Math.abs(from.y - to.y)) })));
     pairs.sort((a, b) => a.distance - b.distance); // stable footprint order for ties
-    return pairs.find(p => !grid.getCell(p.from.x, p.from.y)?.isOpaque && !grid.getCell(p.to.x, p.to.y)?.isOpaque
+    // The observation set is fixed before LOS calls, independent of device
+    // timing and early successes. Never expand it by retrying failed pairs.
+    return pairs.slice(0, BODY_SIGHT_PAIR_LIMIT).find(p => !grid.getCell(p.from.x, p.from.y)?.isOpaque && !grid.getCell(p.to.x, p.to.y)?.isOpaque
         && line(p.from.x, p.from.y, p.to.x, p.to.y) && bodySightCornerClear(grid, p.from, p.to)) ?? null;
 }
 

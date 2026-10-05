@@ -11,8 +11,9 @@ const args = process.argv.slice(2);
 const option = name => { const index = args.indexOf(name); return index < 0 ? undefined : args[index + 1]; };
 const output = option('--output');
 const engineOnly = args.includes('--engine-only');
+const planOnly = args.includes('--plan');
 const removed = (option('--removed-modules') ?? '').split(',').filter(Boolean);
-const report = { schema: 1, cwd: process.cwd(), requestedScope: engineOnly ? 'engine-only' : 'engine-and-built-browser', removed, installed: [], engine: { status: 'not-run' }, browser: { status: 'not-run' } };
+const report = { schema: 1, cwd: process.cwd(), requestedScope: planOnly ? 'plan' : engineOnly ? 'engine-only' : 'engine-and-built-browser', removed, installed: [], engine: { status: 'not-run' }, browser: { status: 'not-run' } };
 let sourceServer, productServer, browser;
 
 // Self-contained so exactly the same real-Game checks can run against built JS.
@@ -117,7 +118,6 @@ function exerciseGame(game, plans, unavailableIds) {
 try {
     sourceServer = await createServer({ configFile: false, root: process.cwd(), server: { middlewareMode: true, watch: null, hmr: false }, appType: 'custom' });
     const catalog = await sourceServer.ssrLoadModule('/src/ext/catalog.ts');
-    const { createHeadlessGame } = await sourceServer.ssrLoadModule('/src/test/harness.ts');
     const descriptors = catalog.getInstalledModuleDescriptors();
     report.installed = descriptors.map(descriptor => descriptor.id);
     const unavailable = [...new Set([...removed, 'composition-unavailable'])].filter(id => !report.installed.includes(id));
@@ -132,11 +132,16 @@ try {
         return { ids, manifest, initialCommands, naturalDepth:contributions.length?Math.min(...contributions.map(t=>t.minDepth)):null,
             forms:modules.flatMap(m=>m.nativeForms??[]).map(f=>f.id),routeTerrain:{doors:[TerrainType.DOOR,TerrainType.SECRET_DOOR],secret:TerrainType.SECRET_DOOR,hazards:[TerrainType.LAVA,TerrainType.WATER_DEEP,TerrainType.CHASM]} };
     });
-    try { report.engine = { status: 'passed', combinations: exerciseGame(createHeadlessGame(7301, 'test'), plans, unavailable) }; }
+    if (planOnly) report.plan = { status: 'planned-not-verified', combinations: plans, unavailable };
+    else try {
+        const { createHeadlessGame } = await sourceServer.ssrLoadModule('/src/test/harness.ts');
+        report.engine = { status: 'passed', combinations: exerciseGame(createHeadlessGame(7301, 'test'), plans, unavailable) };
+    }
     catch (error) { report.engine = { status: 'failed', error: String(error?.stack ?? error) }; }
     await sourceServer.close(); sourceServer = undefined;
 
-    if (engineOnly) report.browser = { status: 'not-run', reason: 'Explicit --engine-only: built-product browser validation is a separate required gate' };
+    if (planOnly) report.browser = { status: 'not-run', reason: 'Explicit --plan: no Game or browser verification executed' };
+    else if (engineOnly) report.browser = { status: 'not-run', reason: 'Explicit --engine-only: built-product browser validation is a separate required gate' };
     else try {
         if (!existsSync(resolve('dist/index.html'))) throw new Error('Fresh dist/index.html is required; run build first');
         const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
@@ -168,5 +173,5 @@ try {
     report.requestedScopePassed = report.engine.status === 'passed' && (engineOnly || report.browser.status === 'passed');
     if (output) { mkdirSync(dirname(resolve(output)), { recursive: true }); writeFileSync(resolve(output), `${JSON.stringify(report, null, 2)}\n`); }
     console.log(JSON.stringify(report, null, 2));
-    if (!report.requestedScopePassed) process.exitCode = 1;
+    if (planOnly ? report.plan?.status !== 'planned-not-verified' : !report.requestedScopePassed) process.exitCode = 1;
 }
