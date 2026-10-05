@@ -98,6 +98,8 @@ export interface EffectsPort {
     finishTurnEpilogue(): void;
     triggerGameOver(victory: boolean, reason: string): void;
     observeAnimationDelay?(milliseconds: number): void;
+    /** Detached display capture after all same-tick action/AI resolutions. */
+    observeActorActionBoundary?(): void;
 }
 
 export interface TimePorts {
@@ -152,6 +154,13 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                     // applyInstantTileEffectsToCreature(&player) 之后检查）。
                     if (ports.clock.playerFalling) {
                         ports.effects.playerFalls();
+                        // A phased owner carries only recovery to the landing
+                        // layer. Finish that same accepted action without a new
+                        // command/prelude or a native timer overwrite.
+                        if (actions?.isBusy(ports.world.player.id) && !ports.clock.isGameOver && ports.world.player.hp > 0) {
+                            stealthRange = ports.effects.calculateStealthRange();
+                            continue;
+                        }
                         return;
                     }
                     // CE Time.c:2713-2715：岩浆/毒气等致死后立即退出推进
@@ -204,6 +213,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 }
 
                 if (!playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
+                if (actions) ports.effects.observeActorActionBoundary?.();
                 if (ports.clock.isGameOver) return; // CE Time.c:2756-2758
             } finally {
                 // Same-tick monster resolutions still see effects valid through this block.
@@ -405,7 +415,7 @@ export function playerTurnEnded(ports: TimePorts, continuingParalysis = false): 
             // 坠落回合没有气味刷新、没有怪物推进。
             if (ports.clock.playerFalling) {
                 ports.effects.playerFalls();
-                return;
+                if (!ports.actions?.isBusy(ports.world.player.id) || ports.clock.isGameOver || ports.world.player.hp <= 0) return;
             }
 
             // C-5：CE Time.c:2486-2492——每个玩家回合末怪物坠落（注释原文：

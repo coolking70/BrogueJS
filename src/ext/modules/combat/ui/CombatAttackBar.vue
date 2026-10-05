@@ -1,0 +1,20 @@
+<script setup lang="ts">
+import type { CombatUiView } from './view';
+defineProps<{ model: CombatUiView; blocked: boolean; error: string | null }>();
+const emit = defineEmits<{ attack: [id: string, event: MouseEvent] }>();
+</script>
+<template>
+  <section class="combat-attack-bar" data-testid="combat-attack-bar" @keydown.stop @keyup.stop @pointerdown.stop @touchstart.stop>
+    <span class="combat-label">{{ $t('ext.combat.ui.attacks') }}</span>
+    <div class="combat-attacks">
+      <button v-for="action in model.actions" :key="action.id" type="button" :data-combat-attack="action.id"
+        :disabled="blocked || model.readOnly || !action.canUse"
+        :title="model.readOnly ? $t('ext.combat.ui.read_only') : blocked || !action.canUse ? $t('ext.combat.ui.unavailable') : $t('ext.combat.ui.choose_direction')"
+        @click="emit('attack', action.id, $event)">{{ $t(action.nameKey) }}</button>
+    </div>
+    <span v-if="error" class="combat-error">{{ $t('ext.combat.ui.command_rejected') }}</span>
+  </section>
+</template>
+<style scoped>
+.combat-attack-bar{display:flex;align-items:center;gap:6px;min-width:0;padding:4px 8px;border-top:1px solid var(--th-line,#615638);background:var(--th-panel,#171913);color:var(--th-fg,#d8c9a1);font:12px var(--th-font,monospace);box-sizing:border-box}.combat-label{flex:0 0 auto;color:var(--th-dim,#a5a18e)}.combat-attacks{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:thin}button{flex:0 0 auto;min-height:44px;padding:6px 9px;border:1px solid var(--th-line,#615638);background:var(--th-raised,#282b21);color:inherit;font:inherit;white-space:nowrap;touch-action:manipulation;cursor:pointer}button:disabled{opacity:.48;cursor:default}button:focus-visible{outline:2px solid var(--color-accent,#d8b86a);outline-offset:-3px}.combat-error{color:var(--color-danger,#db7878);overflow-wrap:anywhere}@media(max-width:700px){.combat-attack-bar{gap:4px;padding:3px 6px;font-size:11px}.combat-attacks{gap:4px}button{padding:5px 7px}.combat-label{display:none}}
+</style>

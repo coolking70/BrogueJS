@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "moduleId": "combat",
-  "moduleVersion": "1.0.0",
-  "rulesVersion": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "rulesVersion": "1.1.0",
   "resourcePolicies": [
     {
       "id": "fixture.resources",
@@ -637,6 +637,43 @@
         "fixture.stomp",
         "fixture.double-thrust"
       ]
+    },
+    {
+      "id": "combat.fan-edge",
+      "resourcePolicyId": "fixture.resources",
+      "attackIds": [
+        "fixture.slash"
+      ]
+    },
+    {
+      "id": "combat.follow-thrust",
+      "resourcePolicyId": "fixture.resources",
+      "attackIds": [
+        "fixture.double-thrust"
+      ]
+    },
+    {
+      "id": "combat.shock-ring",
+      "resourcePolicyId": "fixture.resources",
+      "attackIds": [
+        "fixture.stomp"
+      ]
+    }
+  ],
+  "playerProfileId": "fixture.profile",
+  "breakRecoveryTicks": 50,
+  "nativeProfiles": [
+    {
+      "monsterId": "rat",
+      "profileId": "combat.fan-edge"
+    },
+    {
+      "monsterId": "kobold",
+      "profileId": "combat.follow-thrust"
+    },
+    {
+      "monsterId": "ogre",
+      "profileId": "combat.shock-ring"
     }
   ]
 }

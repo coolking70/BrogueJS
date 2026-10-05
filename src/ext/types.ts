@@ -220,6 +220,8 @@ export interface ExtensionModule extends ExtensionVersion {
     readonly worldInteractables?: true;
     /** Only the native generation owner may install declared owned regions. */
     readonly ownedRegions?: true;
+    /** One discovered data-only owner for persistent phased attacks. */
+    readonly actorActions?: { readonly stateField: 'scheduler'; readonly definitions: Json };
     readonly nativeForms?: readonly import('./nativeForms').NativeFormDefinition[];
     readonly generationContributions?: readonly import('./generation').GenerationContribution[];
     readonly publicActorTags?: readonly { readonly component: string; readonly tag: string }[];

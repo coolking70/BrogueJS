@@ -1,25 +1,29 @@
 import type { ExtensionModule, Json } from '../../types';
 import { extensionDataFingerprint } from '../../fingerprint';
+import { validateProductionActorAttackState } from '../../actorActionValidation';
 import { assertLoadedCombatPack } from './schema';
-import { initialCombatState, isInactiveCombatState } from './state';
-import { isCombatAction, isCombatResources } from './components';
 import { projectCombatView } from './view';
+import { combatAttackDefinitions, initialProductionCombatState } from './production';
+import type { ProductionActorAttackState } from '../../actorActions';
 import type { CombatPack } from './types';
 
-/** Inert installation only. The pure planners are deliberately NOT commands or
- * optional providers until the foundation action/world transaction exists. */
+/** Data-only declaration; foundation owns scheduling, geometry and native effects. */
 export function createCombatModuleFromPack(pack: CombatPack): ExtensionModule {
     assertLoadedCombatPack(pack);
+    const definitions = combatAttackDefinitions(pack);
     return {
-        id: 'combat', version: pack.moduleVersion,
-        rules: { schema: pack.schema, version: pack.rulesVersion, fingerprint: extensionDataFingerprint(pack) },
-        initialState: () => initialCombatState() as unknown as Json,
-        validateState: (value): value is Json => isInactiveCombatState(value),
-        componentValidators: { resources: value => isCombatResources(value, pack), action: value => isCombatAction(value, pack) },
-        // Well-formed library fixtures are not executable save data. Without 3a0,
-        // accepting these on load would strand actors outside any scheduler.
-        validateComponents: (_state, components) => Object.values(components).every(values =>
-            Object.keys(values).every(name => !name.startsWith('combat:'))),
-        projectView: () => projectCombatView(),
+        id:'combat',version:pack.moduleVersion,
+        rules:{schema:pack.schema,version:pack.rulesVersion,fingerprint:extensionDataFingerprint(pack)},
+        actorActions:{stateField:'scheduler',definitions:definitions as unknown as Json},
+        initialState:()=>initialProductionCombatState() as unknown as Json,
+        validateState:(value):value is Json=>{try {validateProductionActorAttackState(value,definitions);return true;}catch{return false;}},
+        // Mechanical actor state is one module-owned ledger; no second component clock.
+        validateComponents:(_state,components)=>Object.values(components).every(values=>Object.keys(values).every(name=>!name.startsWith('combat:'))),
+        validateWorld:(value,_components,actors,world)=>{
+            const state=value as unknown as ProductionActorAttackState;
+            return state.actors.every(row=>row.actorId<world.nextEntityId && actors.some(actor=>actor.id===row.actorId))
+                && state.actions.every(action=>action.subactions.every(sub=>sub.approvedRisks.every(approval=>approval.targetId<world.nextEntityId)));
+        },
+        projectView:context=>projectCombatView(context.state,definitions,context.depth,context.playerId),
     };
 }

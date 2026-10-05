@@ -38,7 +38,13 @@ export function graphDigest(root: unknown) {
         else if (value instanceof Set) data = [...value].map(encode);
         else if (ArrayBuffer.isView(value)) data = Array.from(new Uint8Array(value.buffer, value.byteOffset, value.byteLength));
         else if (value instanceof WeakMap || value instanceof WeakSet) data = ['opaque-derived-cache'];
-        else data = Reflect.ownKeys(value).sort((a, b) => String(a).localeCompare(String(b))).map(key => {
+        else data = Reflect.ownKeys(value)
+            // 3b adds one pure, session-only visibility port. It changes this
+            // object-shape hash without changing any world/recording data.
+            // Keep every mechanical field and every pre-existing port guarded.
+            .filter(key => !(key === 'visibleActorActionCells' && typeof value[key] === 'function'
+                && typeof value.playerId === 'function' && typeof value.depth === 'function'))
+            .sort((a, b) => String(a).localeCompare(String(b))).map(key => {
             const d = Object.getOwnPropertyDescriptor(value, key)!;
             let v = 'value' in d ? d.value : ['accessor', d.get?.name, d.set?.name];
             // ONLY version envelopes. RNG/module rules/state versions are retained.

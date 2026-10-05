@@ -28,6 +28,7 @@ export interface ExtensionPorts {
     interactableCandidates?(request: WorldInteractablePlacement): readonly { x: number; y: number }[];
     isInteractableVisible?(entity: WorldInteractable): boolean;
     canInteractWith?(entity: WorldInteractable): boolean;
+    visibleActorActionCells?(sourceEntityId: number, cells: readonly {x:number;y:number}[]): {x:number;y:number}[];
     playerId(): number;
     canManageCharacter?(): boolean;
     validateAction?(request: ControlledActionRequest): boolean;
@@ -123,6 +124,8 @@ export class ExtensionRuntime {
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
         Object.freeze(this.manifest.modules); Object.freeze(this.manifest);
         this.modules = registry.create(manifest);
+        if (this.modules.filter(module => module.actorActions).length > 1) throw new Error('Conflicting actor action providers');
+        for (const module of this.modules) if (module.actorActions && (module.actorActions.stateField !== 'scheduler' || !isJson(module.actorActions.definitions))) throw new Error('Invalid actor action declaration');
         for (const module of this.modules) if (module.ownedRegions !== undefined && module.ownedRegions !== true) throw new Error('Invalid owned region declaration');
         for (const module of this.modules) {
             if (module.nativeForms && (!Array.isArray(module.nativeForms) || !module.nativeForms.length || module.nativeForms.length > 16
@@ -575,6 +578,8 @@ export class ExtensionRuntime {
                 || Object.keys(input).sort().join(',') !== 'action,module,payload' || typeof input.module !== 'string'
                 || typeof input.action !== 'string' || !validId(input.module)) return false;
             const module = this.modules.find(module => module.id === input.module);
+            if (module?.actorActions && input.action === 'attack') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
+                && Object.keys(input.payload).sort().join(',') === 'attackId,facing' && typeof input.payload.attackId === 'string' && typeof input.payload.facing === 'string';
             return !!module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action)
                 && typeof module.commands[input.action] === 'function';
         } catch { return false; }
@@ -1042,17 +1047,30 @@ export class ExtensionRuntime {
         }
         // Module-owned reward receipts are deliberately not collected with bodies.
     }
+    /** Trusted engine-only binding. Never exposed through module contexts or views. */
+    actorActionBinding(): { moduleId: string; state: import('./actorActions').ProductionActorAttackState; definition: import('./actorActions').ActorAttackDefinitions } | null {
+        if (this.disposed) return null;
+        const module = this.modules.find(value => value.actorActions);
+        return module ? { moduleId: module.id, state: this.states[module.id]! as unknown as import('./actorActions').ProductionActorAttackState, definition: module.actorActions!.definitions as unknown as import('./actorActions').ActorAttackDefinitions } : null;
+    }
     get sourceId(): number | null { return this.attacks[this.attacks.length - 1] ?? null; }
     /** Pure player-only projection. Never snapshots causal ledgers, NPCs, rewards, or the world. */
     readModuleView(moduleId: string): ExtensionModuleView | null {
         const descriptor = this.views.get(moduleId), module = this.modules.find(entry => entry.id === moduleId);
         if (this.disposed || !module) return null;
         if (module.projectView) {
-            const projection = module.projectView(freezeView({ queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), state: cloneJson(this.states[moduleId]!), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
+            const projection = module.projectView(freezeView({ queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
                 visibleInteractables: this.visibleInteractables(moduleId), nearbyInteractables: this.nearbyInteractables(moduleId) }));
             requireSynchronous(projection);
             if (!isJson(projection) || !projection || typeof projection !== 'object' || Array.isArray(projection)) throw new Error('Invalid module display projection');
-            return freezeView({ session: this.viewSession, definitions: {}, playerId: this.ports.playerId(), state: cloneJson(projection) as Record<string, Json>, components: {},
+            const publicProjection = cloneJson(projection) as Record<string, Json>;
+            if (module.actorActions && Array.isArray(publicProjection.telegraphs)) publicProjection.telegraphs = publicProjection.telegraphs.flatMap(value => {
+                if (!value || typeof value !== 'object' || Array.isArray(value) || typeof value.sourceEntityId !== 'number' || !Array.isArray(value.cells)) return [];
+                const cells = value.cells.filter((cell): cell is {x:number;y:number} => !!cell && typeof cell === 'object' && !Array.isArray(cell) && typeof cell.x === 'number' && typeof cell.y === 'number');
+                const visible = this.ports.visibleActorActionCells?.(value.sourceEntityId,cells) ?? [];
+                return visible.length ? [{...value,cells:visible}] : [];
+            });
+            return freezeView({ session: this.viewSession, definitions: {}, playerId: this.ports.playerId(), state: publicProjection, components: {},
                 canManageCharacter: this.ports.canManageCharacter?.() ?? true });
         }
         if (!descriptor) return null;

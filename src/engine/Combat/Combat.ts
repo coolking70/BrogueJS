@@ -70,6 +70,13 @@ export interface AttackResult {
     seized?: boolean;
 }
 
+/** CE Combat.c:1212-1237 checks actual adjacency before a seize. Phased
+ * native-melee shapes may reach beyond one cell, including native 1x1 pairs. */
+function legalSeizeContact(attacker: Creature, defender: Creature, grid?: Grid): boolean {
+    return distanceBetweenFootprints(attacker, defender) === 1
+        && (!grid || !!nearestLegalMeleeContact(grid, attacker, defender, { allowThroughWalls: false, requirePassableTerrain: false }));
+}
+
 export class CombatSystem {
 
     /** Extended detail prediction: pure native facts, the same probability port,
@@ -91,8 +98,7 @@ export class CombatSystem {
         if (opts?.isWeaponAttack !== false && attacker instanceof Monster && attacker.hasBehavior('MONST_RESTRICTED_TO_LIQUID')
             && (defender.hasStatus('levitating') || defender.hasStatus('flying'))) return 0;
         if (attacker instanceof Monster && attacker.hasAbility('MA_SEIZES') && (!attacker.seizing || !defender.seized)
-            && (!(attacker.spatial || defender.spatial) || (distanceBetweenFootprints(attacker, defender) === 1
-                && (!opts?.grid || !!nearestLegalMeleeContact(opts.grid, attacker, defender, { allowThroughWalls: false, requirePassableTerrain: false }))))) return 0;
+            && legalSeizeContact(attacker, defender, opts?.grid)) return 0;
         const inanimate = defender instanceof Monster && defender.hasBehavior('MONST_INANIMATE');
         const autoHit = opts?.lungeAttack === true || defender.hasStatus('paralyzed') || defender.hasStatus('stuck')
             || (defender instanceof Monster && (defender.isCaged || (!inanimate && (defender.state === MonsterState.ASLEEP
@@ -179,7 +185,7 @@ export class CombatSystem {
         let clumping: number | undefined;
 
         if (attacker instanceof Monster && opts?.isWeaponAttack !== false
-            && !(attacker.hasAbility('MA_SEIZES') && !attacker.seizing)) attacker.submerged = false;
+            && !(attacker.hasAbility('MA_SEIZES') && !attacker.seizing && legalSeizeContact(attacker, defender, opts?.grid))) attacker.submerged = false;
         // --- Determine attacker stats ---
         if (attacker instanceof Player) {
             if (!attacker.equippedWeapon) attackerAccuracy = monsterAccuracyAdjusted(100, attacker.weaknessAmount);
@@ -284,13 +290,11 @@ export class CombatSystem {
         // CE 条件：attacker 带 MA_SEIZES，且"不是（attacker 已经在抓 && defender
         // 已经被抓）"——即两个标记还没有同时置位时，这一下贴脸就是"抓住"而不是
         // 攻击：双方标记置位，伤害恒 0，直接 return false，不参与 attackHit 命中
-        // 掷骰（比下面的命中率计算更早）。调用方（web 假定进 attack() 时双方
-        // 已经相邻，距离判定由各调用点的 distToPlayer<=1 保证，对应 CE 的
-        // distanceBetween==1 检查）。
+        // 掷骰（比下面的命中率计算更早）。相位攻击可超过贴身距离，因此所有
+        // 尺寸都在此复核 CE distanceBetween==1 与合法斜角接触。
         if (attacker instanceof Monster && attacker.hasAbility('MA_SEIZES') &&
             (!attacker.seizing || !defender.seized)
-            && (!(attacker.spatial || defender.spatial) || (distanceBetweenFootprints(attacker, defender) === 1
-                && (!opts?.grid || !!nearestLegalMeleeContact(opts.grid, attacker, defender, { allowThroughWalls: false, requirePassableTerrain: false }))))) {
+            && legalSeizeContact(attacker, defender, opts?.grid)) {
             attacker.seizing = true;
             defender.seized = true;
             if (defender instanceof Player && attacker.submerged && opts?.grid
@@ -478,7 +482,7 @@ export class CombatSystem {
         let clumping: number | undefined;
 
         if (attacker instanceof Monster && opts?.isWeaponAttack !== false
-            && !(attacker.hasAbility('MA_SEIZES') && !attacker.seizing)) attacker.submerged = false;
+            && !(attacker.hasAbility('MA_SEIZES') && !attacker.seizing && legalSeizeContact(attacker, defender, opts?.grid))) attacker.submerged = false;
         // --- Determine attacker stats ---
         if (attacker instanceof Player) {
             if (!attacker.equippedWeapon) attackerAccuracy = monsterAccuracyAdjusted(100, attacker.weaknessAmount);
@@ -583,13 +587,11 @@ export class CombatSystem {
         // CE 条件：attacker 带 MA_SEIZES，且"不是（attacker 已经在抓 && defender
         // 已经被抓）"——即两个标记还没有同时置位时，这一下贴脸就是"抓住"而不是
         // 攻击：双方标记置位，伤害恒 0，直接 return false，不参与 attackHit 命中
-        // 掷骰（比下面的命中率计算更早）。调用方（web 假定进 attack() 时双方
-        // 已经相邻，距离判定由各调用点的 distToPlayer<=1 保证，对应 CE 的
-        // distanceBetween==1 检查）。
+        // 掷骰（比下面的命中率计算更早）。相位攻击可超过贴身距离，因此所有
+        // 尺寸都在此复核 CE distanceBetween==1 与合法斜角接触。
         if (attacker instanceof Monster && attacker.hasAbility('MA_SEIZES') &&
             (!attacker.seizing || !defender.seized)
-            && (!(attacker.spatial || defender.spatial) || (distanceBetweenFootprints(attacker, defender) === 1
-                && (!opts?.grid || !!nearestLegalMeleeContact(opts.grid, attacker, defender, { allowThroughWalls: false, requirePassableTerrain: false }))))) {
+            && legalSeizeContact(attacker, defender, opts?.grid)) {
             attacker.seizing = true;
             defender.seized = true;
             if (defender instanceof Player && attacker.submerged && opts?.grid

@@ -4,6 +4,7 @@ import { cellAppearance, itemAppearance, rememberedItemAppearance, playerAppeara
 import { publicMonsterMapCells } from '../engine/UI/MonsterBody';
 import { observeDisplayMonster } from './monsterDisplay';
 import type { DisplayBody } from './bodyDrawing';
+import { readPublicCombatTelegraphs } from './combatDrawing';
 import { sidebarEntityRows, sidebarPlayerStats } from '../engine/UI/MonsterSidebar';
 import { displayRandom } from '../engine/Lighting/CosmeticLight';
 import { terrainRandomValues } from '../engine/UI/DancingColors';
@@ -121,6 +122,7 @@ export function observeDisplayFrame(game: Game, log: Logger, previous?: { map: D
         arcana: game.pendingArcana ? { name: game.pendingArcana.item.displayName, cursor: { ...game.pendingArcana.cursor },
             path: preview?.path.map(pos => ({ ...pos })) ?? [], maxDistance: preview?.maxDistance ?? null } : null,
         interactables,
+        telegraphs: readPublicCombatTelegraphs(game),
         map: observeDisplayMap(game, previous?.map, interactables),
         bolt: game.getCurrentBoltFrame() ? { ...game.getCurrentBoltFrame()! } : null,
         floatingTexts: game.floatingTexts.map(ft => ({ text: ft.text, color: ft.color, x: ft.x, y: ft.y, life: ft.life })),

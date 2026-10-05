@@ -2,6 +2,10 @@
 
 `ext/foundation` 现定位为基于 BrogueJS 的**独立新产品原型分支**，暂不合并 `main`。允许按新产品目标彻底修改玩法与引擎；现有内容、数值和阶段样例均可在后续重新设计，不以继续兼容经典 CE 为前提。
 
+## 阶段 3b：预警与多段攻击候选
+
+在已接受 3a0 与 hosted 4a4 foundation 上，combat 1.1.0 开放三个原创招式、原生 NPC 绑定、locked-world 警示、共用 native body 结算和生产阶段存读/录像。详细范围、实际门禁、独立审查修复和像素验收边界见 [3b 报告](phase3b.report.md)。只做到 3b；3c 体力恢复/闪避及之后仍待批准。giants 默认数据不变，当前只开放 independent native / r0 方形身体；任意 mask/zone/复合体仍未开放。
+
 ## 当前工作：原创 NPC 与立绘内容扩充
 
 阶段2e已由维护者验收；本轮从 `6f837dbf094b42571cd4072ea6ff578a923d7b84` 扩充两位原创NPC、多节点分支与真实GPT生成立绘。仅使用已存在的数据驱动内核，新增内容、版本与本轮实际门禁见[内容扩充报告](content-expansion.report.md)，配置入口仍为[叙事配置手册](narrative-config.md)。不合回main、不打tag、不部署。维护者已另授权完成并报告本项后，在新 `ext/phase3` 分支仅做阶段3设计；本次内容提交不包含阶段3实现或设计。

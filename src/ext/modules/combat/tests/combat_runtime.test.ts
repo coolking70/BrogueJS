@@ -1,314 +1,135 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ref } from 'vue';
-import { descriptor } from '../descriptor';
-import { createCombatModule } from '../index';
-import { COMBAT_VERSION, getCombatPackIdentity, loadCombatDefinitionPack } from '../definitions';
-import { attackTiming, initialCombatResources } from '../components';
-import { projectCombatView } from '../view';
-import { ExtensionRuntime, type ExtensionPorts } from '../../../runtime';
-import { registryFromDescriptors } from '../../../descriptor';
-import * as catalog from '../../../catalog';
-import { getInstalledModuleUiContributions } from '../../../ui/registry';
-import type { ModuleUiHost } from '../../../ui/types';
-import type { ExtensionSnapshot, Json } from '../../../types';
-import type { CombatAction } from '../types';
 import { createHeadlessGame } from '../../../../test/harness';
-import { Creature, getNextEntityId } from '../../../../entities/Creature';
+import { createExtensionRegistry } from '../../../catalog';
+import { createCombatModule } from '../index';
+import { loadCombatDefinitionPack } from '../definitions';
+import { combatAttackDefinitions } from '../production';
+import { validateProductionActorAttackState } from '../../../actorActionValidation';
+import { preparePhasedAttackCommand } from '../../../../engine/Core/PhasedAttackProduction';
+import type { ProductionActorAttackState } from '../../../actorActions';
 import { rng } from '../../../../engine/Random';
 import { logger } from '../../../../engine/Systems/Logger';
+import { Monster, MonsterState, type MonsterData } from '../../../../entities/Monster';
+import monsters from '../../../../data/monsters.json';
+import { TerrainType } from '../../../../engine/Map/Grid';
+import { commitCreatureAnchor } from '../../../../engine/Movement/CreatureSpatial';
 import type { Game } from '../../../../engine/Core/Game';
-
-const clone = <T>(value: T): T => structuredClone(value);
-const emptyView = { schema: 1, telegraphs: [], resources: null, actions: [] };
-const acknowledge = () => { while (logger.pendingAcknowledgment) logger.acknowledgeNext(); };
-
-function start(ids: string[], seed = 8201): Game {
-    const game = createHeadlessGame(seed, 'test');
-    const registry = catalog.createExtensionRegistry();
-    const initialCommands = registry.create(registry.manifest(ids)).flatMap(module => module.initialCommand
-        ? [JSON.stringify({ module: module.id, ...module.initialCommand })] : []);
-    game.startNewGame({ seed, mode: 'test', ruleSet: 'extended', extensions: ids, initialCommands });
-    game.animationEnabled = false;
-    return game;
+const command=(attackId='fixture.slash',facing='e')=>JSON.stringify({module:'combat',action:'attack',payload:{attackId,facing}});
+function start(ids=['combat'],seed=8201){
+ const game=createHeadlessGame(seed,'test'),registry=createExtensionRegistry();
+ const initialCommands=registry.create(registry.manifest(ids)).flatMap(module=>module.initialCommand?[JSON.stringify({module:module.id,...module.initialCommand})]:[]);
+ game.startNewGame({seed,mode:'test',ruleSet:'extended',extensions:ids,initialCommands});game.animationEnabled=false;return game;
 }
-function play(game: Game): void { acknowledge(); game.executeCommand('wait'); }
-function checkpoint(game: Game) {
-    const snap = game.toSnapshot();
-    return {
-        turn: snap.run.absoluteTurnNumber, tick: snap.run.currentTick, depth: snap.depth,
-        player: snap.player, monsters: snap.monsters, dormantMonsters: snap.dormantMonsters,
-        items: snap.items, levels: snap.levels, pendingFallenByDepth: snap.pendingFallenByDepth,
-        rng: snap.rngState, extensions: snap.extensions,
-    };
+function acknowledge(){while(logger.pendingAcknowledgment)logger.acknowledgeNext();}
+function state(game:Game){return game.extensionRuntime!.actorActionBinding()!.state;}
+function scene(type='rat'){
+ const game=start();game.monsters=[];game.items=[];
+ commitCreatureAnchor(game.player,{x:20,y:15});
+ for(let x=15;x<=25;x++)for(let y=10;y<=20;y++)game.grid.setTerrain(x,y,TerrainType.FLOOR);
+ const data=monsters.find(m=>m.id===type)! as unknown as MonsterData;
+ const monster=new Monster(21,15,data);monster.state=MonsterState.HUNTING;monster.ticksUntilTurn=1000;monster.hp=monster.maxHp=1000;
+ game.monsters.push(monster);(game as any).updateVision();return {game,monster};
 }
-function expectNoCombatComponents(snapshot: ExtensionSnapshot): void {
-    expect(Object.values(snapshot.components).flatMap(values => Object.keys(values))
-        .filter(name => name.startsWith('combat:'))).toEqual([]);
-}
-function actionFixture(entityId: number): CombatAction {
-    const pack = loadCombatDefinitionPack(), profile = pack.profiles[0]!;
-    const attack = pack.attacks.find(item => item.id === profile.attackIds[0])!;
-    return {
-        schema: 1, actionId: 1, decisionOwnerId: entityId, timeChargeOwnerId: entityId,
-        groupId: entityId, profileId: profile.id, depth: 1, paidCost: attack.cost,
-        subactions: [{
-            sourceSubactionId: 1,
-            source: { entityId, partId: 'body', generation: 1, footprintId: 'fixture.single', pose: 'r0',
-                sourceFootprintVersion: `sha256:${'0'.repeat(64)}` },
-            attackId: attack.id, facing: 'n', phase: 'windup',
-            phaseRemainingTicks: attackTiming(attack).releases[0]!, elapsedTicks: 0,
-            nextSegmentIndex: 0, lockedCells: [{ x: 1, y: 1 }],
-        }],
-    };
-}
-afterEach(() => vi.restoreAllMocks());
-
-describe('EXT-3a1 inert combat installed contract', () => {
-    it('discovers its opt-in descriptor, localized labels, identity and empty UI contribution', () => {
-        const before = rng.getState();
-        const discovered = catalog.getInstalledModuleDescriptors().find(module => module.id === 'combat')!;
-        expect(discovered).toBeDefined();
-        expect(discovered.defaultEnabled).toBe(false);
-        expect(catalog.DEFAULT_EXTENSIONS).not.toContain('combat');
-        expect(discovered.foundation).toBe(4);
-        expect(discovered.version).toBe(COMBAT_VERSION);
-        expect(discovered.rules).toEqual(getCombatPackIdentity());
-        expect(discovered.locales!.zh_CN![discovered.labelKey]).toBeTypeOf('string');
-        expect(discovered.locales!.zh_CN![discovered.descriptionKey!]).toBeTypeOf('string');
-        expect(Object.keys(discovered.locales!.zh_CN!).every(key => key.startsWith('ext.combat.'))).toBe(true);
-        const registry = catalog.createExtensionRegistry();
-        expect(registry.manifest(['combat'])).toEqual({ schema: 1, foundation: 4,
-            modules: [{ id: 'combat', version: COMBAT_VERSION, rules: getCombatPackIdentity() }] });
-        expect(registry.create(registry.manifest(['combat']))).toHaveLength(1);
-        const ui = getInstalledModuleUiContributions().find(entry => entry.moduleId === 'combat')!;
-        expect(ui).toBeDefined();
-        expect(ui.creationStep).toBeUndefined();
-        expect(ui.loadCreationStep).toBeUndefined();
-        if (ui.useSession) {
-            const unexpected = vi.fn(() => { throw new Error('inert UI accessed engine/input capability'); });
-            const host: ModuleUiHost = { game: unexpected, tick: ref(0), immersive: ref(false),
-                canOpenPanel: unexpected, beforeOpenPanel: unexpected, afterClosePanel: unexpected,
-                registerKeyHandler: unexpected, cancelHeldKeys: unexpected };
-            const session = ui.useSession(host);
-            expect(session.hud.value).toBeNull(); expect(session.bar.value).toBeNull();
-            expect(session.panel.value).toBeNull(); expect(session.commands.value).toEqual([]);
-            expect(session.panelOpen.value).toBe(false);
-            session.refresh(); session.close();
-            expect(unexpected).not.toHaveBeenCalled();
-        }
-        expect(rng.getState()).toEqual(before);
-    });
-
-    it('registers validators and pure projection without lifecycle, commands, providers or native resource authority', () => {
-        const before = rng.getState(), module = createCombatModule();
-        expect(module.id).toBe('combat'); expect(module.version).toBe(COMBAT_VERSION);
-        expect(module.rules).toEqual(getCombatPackIdentity());
-        expect(module.initialState()).toEqual({ schema: 1, revision: 0, nextActionId: 1 });
-        expect(module.validateState(module.initialState())).toBe(true);
-        expect(Object.keys(module.componentValidators!).sort()).toEqual(['action', 'resources']);
-        expect(module.projectView).toBeTypeOf('function');
-        for (const capability of ['dependencies', 'hooks', 'commands', 'optionalQueries', 'optionalRewards',
-            'initialCommand', 'validateInitialCommand', 'onNewGame', 'onLoad', 'onUnload', 'resourceCommits',
-            'rulePolicies', 'commitItemGrowth', 'prepareControlledCommand', 'worldInteractables',
-            'interactionCommands', 'view', 'projectPlayerComponent'] as const) {
-            expect(module[capability], capability).toBeUndefined();
-        }
-        const first = module.initialState() as Record<string, Json>; first.revision = 42;
-        expect(module.initialState()).toEqual({ schema: 1, revision: 0, nextActionId: 1 });
-        expect(rng.getState()).toEqual(before);
-    });
-
-    it('runs independently without RNG, components or resource changes through birth, load and unload', () => {
-        const creature = new Creature(2, 2, 'fixture', '@', 0xffffff);
-        const services: ExtensionPorts = { depth: () => 1, playerId: () => creature.id,
-            randomInt: vi.fn(() => { throw new Error('unexpected RNG'); }), message: vi.fn(),
-            executeAction: vi.fn(() => { throw new Error('unexpected action'); }),
-            setGold: vi.fn(() => { throw new Error('unexpected resource commit'); }) };
-        const registry = registryFromDescriptors([descriptor]);
-        const runtime = new ExtensionRuntime(registry, registry.manifest(['combat']), services);
-        const before = runtime.snapshot(), random = rng.getState();
-        const native = { hp: creature.hp, maxHp: creature.maxHp, ticks: creature.ticksUntilTurn };
-        runtime.newGame(); runtime.attachCreature(creature); runtime.loaded();
-        runtime.emit('playerTurnEnded', { turn: 1 });
-        runtime.emit('objectiveTime', { ticks: 100, mode: 'realtime', actorIds: [creature.id] });
-        runtime.emit('committedAction', { actorId: creature.id, action: 'wait' });
-        const token = runtime.beginGeneration('inert-combat');
-        runtime.emit('enteredLevel', { depth: 1, firstVisit: true }); runtime.commitGeneration(token);
-        expect(runtime.snapshot()).toEqual(before);
-        expect(before.modules).toEqual({ combat: { schema: 1, revision: 0, nextActionId: 1 } });
-        expect(before.components).toEqual({}); expect(before.foundation.world.entities).toEqual([]);
-        expect(runtime.queryOptional('combat.public-state.v1', {})).toEqual({ status: 'unavailable', reason: 'absent' });
-        runtime.unload(); runtime.unload();
-        expect(creature.extensionHooks).toBeUndefined();
-        expect(runtime.snapshot()).toEqual(before);
-        expect({ hp: creature.hp, maxHp: creature.maxHp, ticks: creature.ticksUntilTurn }).toEqual(native);
-        expect(rng.getState()).toEqual(random);
-        for (const callback of [services.randomInt, services.message, services.executeAction, services.setGold])
-            expect(callback).not.toHaveBeenCalled();
-        const loaded = new ExtensionRuntime(registry, registry.manifest(['combat']), services, before);
-        loaded.attachCreature(creature, false); loaded.loaded();
-        expect(loaded.snapshot()).toEqual(before); loaded.unload();
-        expect(rng.getState()).toEqual(random);
-        for (const callback of [services.randomInt, services.message, services.executeAction, services.setGold])
-            expect(callback).not.toHaveBeenCalled();
-    });
-
-    it('repeatedly projects only detached empty public data without changing state or either random stream', () => {
-        const services: ExtensionPorts = { depth: () => 1, playerId: () => 1,
-            randomInt: vi.fn(() => { throw new Error('unexpected RNG'); }), message: vi.fn() };
-        const registry = registryFromDescriptors([descriptor]);
-        const runtime = new ExtensionRuntime(registry, registry.manifest(['combat']), services);
-        const before = runtime.snapshot(), random = rng.getState(), first = runtime.readModuleView('combat')!;
-        for (let i = 0; i < 25; i++) {
-            const view = runtime.readModuleView('combat')!;
-            expect(view.state).toEqual(emptyView); expect(view.components).toEqual({}); expect(view.definitions).toEqual({});
-            expect(view.session).toBe(first.session); expect(Object.isFrozen(view.state)).toBe(true);
-            expect(Object.isFrozen(view.state.telegraphs)).toBe(true);
-            expect(runtime.snapshot()).toEqual(before); expect(rng.getState()).toEqual(random);
-        }
-        const detached = projectCombatView() as { telegraphs: Json[] };
-        detached.telegraphs.push('not-a-telegraph');
-        expect(projectCombatView()).toEqual(emptyView);
-        expect(services.randomInt).not.toHaveBeenCalled(); expect(services.message).not.toHaveBeenCalled();
-        runtime.unload(); expect(runtime.readModuleView('combat')).toBeNull();
-    });
-
-    it('keeps disabled runs free of combat state and leaves real native waits and both RNG streams unchanged', () => {
-        const disabled = start([]); play(disabled); play(disabled);
-        const empty = checkpoint(disabled);
-        expect(empty.extensions!.modules).toEqual({}); expect(empty.extensions!.components).toEqual({});
-        expect(disabled.extensionRuntime!.readModuleView('combat')).toBeNull();
-        const enabled = start(['combat']); play(enabled); play(enabled);
-        const actual = checkpoint(enabled);
-        expect({ ...actual, extensions: undefined }).toEqual({ ...empty, extensions: undefined });
-        expect(actual.extensions!.modules).toEqual({ combat: { schema: 1, revision: 0, nextActionId: 1 } });
-        expect(actual.extensions!.components).toEqual({});
-        expect(actual.extensions!.foundation).toEqual(empty.extensions!.foundation);
-        expect(enabled.exportRecording().events.every(event => event.action === 'wait')).toBe(true);
-    }, 30000);
-
-    it('rejects missing-module saves and recordings before retiring the current Game', () => {
-        const game = start(['combat']); play(game);
-        const saved = clone(game.toSaveSnapshot()), recording = clone(game.exportRecording());
-        const player = game.player, runtime = game.extensionRuntime!, before = checkpoint(game), nextId = getNextEntityId();
-        const unload = vi.spyOn(runtime, 'unload'), onError = vi.fn();
-        const available = registryFromDescriptors(catalog.getInstalledModuleDescriptors().filter(module => module.id !== 'combat'));
-        vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(available);
-        expect(game.loadSnapshot(saved, onError)).toBe(false);
-        expect(game.loadReplay(recording, onError)).toBe(false);
-        expect(onError).toHaveBeenCalledTimes(2);
-        for (const [message] of onError.mock.calls) { expect(message).toContain('combat'); expect(message).toContain('not installed'); }
-        expect(unload).not.toHaveBeenCalled(); expect(game.player).toBe(player); expect(game.extensionRuntime).toBe(runtime);
-        expect(checkpoint(game)).toEqual(before); expect(getNextEntityId()).toBe(nextId);
-    }, 30000);
-
-    it('rejects malformed or progressed state, incompatible identity and even valid fixture components before retirement', () => {
-        const game = start(['combat']); play(game);
-        const saved = clone(game.toSaveSnapshot()), recording = clone(game.exportRecording());
-        const player = game.player, runtime = game.extensionRuntime!;
-        const before = checkpoint(game), nextId = getNextEntityId(), unload = vi.spyOn(runtime, 'unload');
-        const invalid = [null, {}, { schema: 2, revision: 0, nextActionId: 1 },
-            { schema: 1, revision: 0, nextActionId: 1, extra: true },
-            { schema: 1, revision: Number.MAX_SAFE_INTEGER + 1, nextActionId: 1 },
-            { schema: 1, revision: 1, nextActionId: 2 }];
-        const badSnapshots = invalid.map(state => {
-            const bad = clone(saved); bad.extensions!.modules.combat = state as Json; return bad;
-        });
-        const pack = loadCombatDefinitionPack(), module = createCombatModule();
-        const fixtures = { resources: initialCombatResources(pack, pack.resourcePolicies[0]!.id), action: actionFixture(player.id) };
-        for (const [name, value] of Object.entries(fixtures)) {
-            expect(module.componentValidators![name]!(value), `${name} fixture must be structurally valid`).toBe(true);
-            const bad = clone(saved);
-            bad.extensions!.components[String(player.id)] = { [`combat:${name}`]: value as unknown as Json };
-            badSnapshots.push(bad);
-        }
-        for (const field of ['version', 'fingerprint'] as const) {
-            const bad = clone(saved), identity = bad.extensions!.manifest.modules.find(module => module.id === 'combat')!;
-            if (field === 'version') identity.version = '9.0.0';
-            else identity.rules!.fingerprint = `sha256:${'f'.repeat(64)}`;
-            badSnapshots.push(bad);
-        }
-        for (const bad of badSnapshots) {
-            expect(game.loadSnapshot(bad)).toBe(false);
-            const badRecording = clone(recording);
-            badRecording.extensions = clone(bad.extensions!.manifest);
-            badRecording.events[0]!.extensions = clone(bad.extensions!);
-            expect(game.loadReplay(badRecording)).toBe(false);
-            expect(game.player).toBe(player); expect(game.extensionRuntime).toBe(runtime);
-            expect(checkpoint(game)).toEqual(before); expect(getNextEntityId()).toBe(nextId);
-            expect(unload).not.toHaveBeenCalled();
-        }
-    }, 30000);
-
-    it('rejects unknown combat player commands without recording, action IDs, resources or RNG and rejects their replays', () => {
-        const game = start(['combat']); play(game);
-        const before = checkpoint(game), recording = clone(game.exportRecording());
-        const player = game.player, runtime = game.extensionRuntime!, unload = vi.spyOn(runtime, 'unload');
-        for (const action of ['attack', 'start', 'dodge', 'parry', 'rest', 'toString', '__proto__']) {
-            const data = JSON.stringify({ module: 'combat', action, payload: { v: 1, revision: 0, attackId: 'fixture.slash' } });
-            acknowledge(); game.executeCommand('ext:command', data);
-            expect(game.exportRecording().events).toEqual(recording.events);
-            expect(checkpoint(game)).toEqual(before); expectNoCombatComponents(game.extensionRuntime!.snapshot());
-            const bad = clone(recording); bad.events[0]!.action = 'ext:command'; bad.events[0]!.data = data;
-            expect(game.loadReplay(bad)).toBe(false);
-            expect(game.player).toBe(player); expect(game.extensionRuntime).toBe(runtime);
-            expect(checkpoint(game)).toEqual(before); expect(unload).not.toHaveBeenCalled();
-        }
-    }, 30000);
-});
-
-// This small 3a1 smoke deliberately is not the full installed-module subset matrix.
-// Companion modules are obtained through discovery only, so deleting their folders
-// never leaves imports or requires this package's own tests to be edited.
-const installedIds = new Set(catalog.getInstalledModuleDescriptors().map(module => module.id));
-const smokeCombinations = [['combat'],
-    ...(['growth', 'narrative'].every(id => installedIds.has(id)) ? [['combat', 'growth', 'narrative']] : [])];
-describe.each(smokeCombinations)('EXT-3a1 actual Game with %j', (...ids: string[]) => {
-    it('preserves exact save/load, every replay checkpoint, seek and continued recording while combat stays inert', () => {
-        const game = start(ids), origin = clone(game.toSaveSnapshot().run.recordingOrigin!.initial);
-        const expected = new Map<number, ReturnType<typeof checkpoint>>();
-        const capture = () => {
-            expected.set(game.exportRecording().events.length, checkpoint(game));
-            const extensions = game.extensionRuntime!.snapshot();
-            expect(extensions.modules.combat).toEqual({ schema: 1, revision: 0, nextActionId: 1 });
-            expectNoCombatComponents(extensions);
-            const random = rng.getState(), before = checkpoint(game);
-            for (let i = 0; i < 5; i++) expect(game.extensionRuntime!.readModuleView('combat')!.state).toEqual(emptyView);
-            expect(checkpoint(game)).toEqual(before); expect(rng.getState()).toEqual(random);
-        };
-        capture(); play(game); capture(); play(game); capture();
-        const saved = clone(game.toSaveSnapshot()), savedCheckpoint = checkpoint(game), firstRecording = clone(game.exportRecording());
-        expect(Object.keys(saved.extensions!.modules).sort()).toEqual([...ids].sort());
-        expect(game.loadSnapshot(saved)).toBe(true); game.animationEnabled = false;
-        expect(checkpoint(game)).toEqual(savedCheckpoint); expect(game.hasCompleteRecording).toBe(true);
-        play(game); capture();
-        const continued = checkpoint(game), recording = clone(game.exportRecording());
-        expect(recording.events.slice(0, firstRecording.events.length)).toEqual(firstRecording.events);
-        expect(recording.events.filter(event => event.action === 'wait')).toHaveLength(3);
-        expect(recording.events.some(event => event.action === 'ext:command'
-            && typeof event.data === 'string' && JSON.parse(event.data).module === 'combat')).toBe(false);
-        expect(game.loadReplay(recording)).toBe(true); game.animationEnabled = false;
-        for (const [index, event] of recording.events.entries()) {
-            game.replayStep(true);
-            expect(game.replayError).toBeNull(); expect(game.replayCursor).toBe(index + 1);
-            const actual = checkpoint(game);
-            expect(actual.rng).toEqual(event.rng); expect(actual.extensions).toEqual(event.extensions);
-            expect(actual.turn).toBe(event.turn); expect(actual.tick).toBe(event.tick); expect(actual.depth).toBe(event.depth);
-            if (expected.has(index + 1)) expect(actual).toEqual(expected.get(index + 1));
-            expectNoCombatComponents(actual.extensions!);
-        }
-        expect(checkpoint(game)).toEqual(continued);
-        for (const index of [0, 1, recording.events.length - 1, recording.events.length]) {
-            game.replaySeek(index);
-            expect(game.replayError).toBeNull(); expect(game.replayCursor).toBe(index);
-            const target = index ? recording.events[index - 1]! : origin;
-            expect(game.toSnapshot().rngState).toEqual(target.rng);
-            expect(game.extensionRuntime!.snapshot()).toEqual(target.extensions);
-            if (expected.has(index)) expect(checkpoint(game)).toEqual(expected.get(index));
-        }
-        expect(game.loadSnapshot(saved)).toBe(true); game.animationEnabled = false;
-        play(game);
-        expect(checkpoint(game)).toEqual(continued);
-        expect(game.exportRecording().events).toEqual(recording.events);
-    }, 30000);
+afterEach(()=>{vi.restoreAllMocks();logger.reset();});
+describe('3b production combat lifecycle',()=>{
+ it('declares independent data-only production capabilities and exact compatible state',()=>{
+  const module=createCombatModule();expect(module.actorActions).toBeDefined();expect(module.dependencies).toBeUndefined();
+  expect(module.validateState(module.initialState())).toBe(true);
+  expect(()=>validateProductionActorAttackState(module.initialState(),combatAttackDefinitions(loadCombatDefinitionPack()))).not.toThrow();
+ });
+ it('prepares all three attacks without either RNG, fee, timer, ID, or state write',()=>{
+  const {game}=scene(),before=structuredClone(state(game)),random=rng.getState(),ticks=game.player.ticksUntilTurn;
+  for(const id of ['fixture.slash','fixture.stomp','fixture.double-thrust'])expect(preparePhasedAttackCommand(game,command(id))).not.toBeNull();
+  expect(state(game)).toEqual(before);expect(rng.getState()).toEqual(random);expect(game.player.ticksUntilTurn).toBe(ticks);
+ });
+ it.each(['fixture.slash','fixture.stomp','fixture.double-thrust'])('executes %s through native damage, one fee and the complete phase clock',(id)=>{
+  const {game,monster}=scene(),attack=loadCombatDefinitionPack().attacks.find(a=>a.id===id)!;
+  acknowledge();const hp=monster.hp;monster.defense=-10000;
+  game.executeCommand('ext:command',command(id));
+  expect(monster.hp).toBeLessThan(hp);expect(state(game).nextActionId).toBe(2);
+  expect(state(game).actors.find(a=>a.actorId===game.player.id)!.stamina).toBe(24-attack.cost);
+  expect(state(game).scheduler.bundles).toEqual([]);expect(state(game).actions).toEqual([]);expect(game.player.ticksUntilTurn).toBe(0);
+  expect(()=>game.toSaveSnapshot()).not.toThrow();expect(()=>game.exportRecording()).not.toThrow();
+ });
+ it.each([false,true])('records one asynchronous risk decision %s with no premature writes',(answer)=>{
+  const {game,monster}=scene();monster.isAlly=true;monster.setStatusDuration('discordant',1000);
+  game.grid.getCell(monster.x,monster.y)!.isVisible=true;
+  const before=structuredClone(state(game)),random=rng.getState(),turn=game.absoluteTurnNumber;
+  game.onCommandConfirmRequest=()=>{};game.onConfirmRequest=()=>{throw new Error('Unexpected synchronous dialog');};
+  acknowledge();game.executeCommand('ext:command',command());expect(game.pendingCommandConfirmation).not.toBeNull();
+  expect(state(game)).toEqual(before);expect(rng.getState()).toEqual(random);
+  game.resolveCommandDecision(game.pendingCommandConfirmation!.token,answer);
+  expect(game.recordedInputEvents[game.recordedInputEvents.length-1]!.decisions).toEqual([answer]);
+  if(!answer){expect(state(game)).toEqual(before);expect(rng.getState()).toEqual(random);expect(game.absoluteTurnNumber).toBe(turn);}
+  else expect(state(game).nextActionId).toBe(2);
+ });
+ it('shows an NPC windup across player decisions and saves/rebinds its same clock',()=>{
+  const {game,monster}=scene('ogre');monster.ticksUntilTurn=50;
+  acknowledge();game.executeCommand('wait');
+  const busy=state(game).scheduler.bundles.find(b=>b.decisionOwnerId===monster.id);expect(busy).toBeDefined();
+  const saved=game.toSaveSnapshot(),before=structuredClone(state(game)),random=rng.getState();
+  const loaded=createHeadlessGame(17,'test');expect(loaded.loadSnapshot(saved)).toBe(true);loaded.animationEnabled=false;
+  expect(state(loaded)).toEqual(before);expect(rng.getState()).toEqual(random);
+  acknowledge();loaded.executeCommand('wait');expect(state(loaded).revision).toBeGreaterThan(before.revision);
+ });
+ it('rejects corrupt scheduler mirrors before retiring the active run',()=>{
+  const {game,monster}=scene('ogre');monster.ticksUntilTurn=50;acknowledge();game.executeCommand('wait');
+  const saved=game.toSaveSnapshot(),before=game.player,runtime=game.extensionRuntime;
+  const ledger=saved.extensions!.modules.combat as unknown as ProductionActorAttackState;
+  ledger.scheduler.bundles[0]!.subactions[0]!.phaseRemainingTicks++;
+  expect(game.loadSnapshot(saved)).toBe(false);expect(game.player).toBe(before);expect(game.extensionRuntime).toBe(runtime);
+ });
+ it('rejects future actor risk approvals while retaining historical dead target IDs',()=>{
+  const {game,monster}=scene('ogre');
+  const oldTarget=new Monster(24,15,monsters.find(data=>data.id==='rat')! as unknown as MonsterData);
+  game.monsters.push(oldTarget);oldTarget.hp=0;game.monsters=game.monsters.filter(actor=>actor!==oldTarget);
+  monster.ticksUntilTurn=50;acknowledge();game.executeCommand('wait');
+  const saved=game.toSaveSnapshot(),player=game.player,runtime=game.extensionRuntime;
+  const sub=(saved.extensions!.modules.combat as unknown as ProductionActorAttackState).actions[0]!.subactions[0]!;
+  const future=saved.run.nextEntityId;
+  sub.approvedRisks=[{targetId:future,risks:[{kind:'acid',target:{kind:'creature',id:future},message:'fixture approved risk'}]}];
+  expect(game.loadSnapshot(saved)).toBe(false);expect(game.player).toBe(player);expect(game.extensionRuntime).toBe(runtime);
+  sub.approvedRisks=[{targetId:oldTarget.id,risks:[{kind:'acid',target:{kind:'creature',id:oldTarget.id},message:'fixture historical risk'}]}];
+  expect(game.loadSnapshot(saved)).toBe(true);
+ });
+ it.each([{x:999999,y:0},{x:5,y:5}])('rejects forged locked geometry %j before replacing the old world',(cell)=>{
+  const {game,monster}=scene('ogre');monster.ticksUntilTurn=50;acknowledge();game.executeCommand('wait');
+  const saved=game.toSaveSnapshot(),player=game.player,runtime=game.extensionRuntime;
+  (saved.extensions!.modules.combat as unknown as ProductionActorAttackState).actions[0]!.subactions[0]!.lockedCells=[cell];
+  expect(game.loadSnapshot(saved)).toBe(false);expect(game.player).toBe(player);expect(game.extensionRuntime).toBe(runtime);
+ });
+ it.each([['combat'],['combat','growth'],['combat','narrative'],['combat','growth','narrative']].map(ids=>[ids]))('plays and reloads enabled subset %j',(ids)=>{
+  const game=start(ids as string[]);acknowledge();game.executeCommand('ext:command',command());
+  const saved=game.toSaveSnapshot();expect(game.loadSnapshot(saved)).toBe(true);acknowledge();game.executeCommand('wait');
+  expect(()=>game.exportRecording()).not.toThrow();
+ });
+ it('replays, seeks and continues genuine attack commands with both RNG streams and module checkpoints',()=>{
+  const game=start();
+  for(const attack of ['fixture.slash','fixture.stomp','fixture.double-thrust']){acknowledge();game.executeCommand('ext:command',command(attack));}
+  const recording=structuredClone(game.exportRecording()),saved=game.toSaveSnapshot();
+  const expected=structuredClone(state(game)),random=rng.getState();
+  const replay=createHeadlessGame(81,'test');expect(replay.loadReplay(recording)).toBe(true);replay.animationEnabled=false;
+  for(const event of recording.events){replay.replayStep(true);expect(replay.replayError).toBeNull();expect(replay.extensionRuntime!.snapshot()).toEqual(event.extensions);}
+  expect(state(replay)).toEqual(expected);expect(rng.getState()).toEqual(random);
+  for(const index of [0,1,recording.events.length]){replay.replaySeek(index);expect(replay.replayError).toBeNull();expect(replay.replayCursor).toBe(index);}
+  const loaded=createHeadlessGame(82,'test');expect(loaded.loadSnapshot(saved)).toBe(true);loaded.animationEnabled=false;
+  acknowledge();loaded.executeCommand('ext:command',command('fixture.slash'));
+  expect(loaded.exportRecording().events.slice(0,recording.events.length)).toEqual(recording.events);
+ });
+ it('records bounded real-command performance samples without claiming renderer FPS',()=>{
+  const elapsed:number[]=[],cells:number[]=[];
+  for(let i=0;i<9;i++){
+   const {game}=scene();const id=['fixture.slash','fixture.stomp','fixture.double-thrust'][i%3]!;
+   cells.push(preparePhasedAttackCommand(game,command(id))!.cells.length);acknowledge();
+   const began=performance.now();game.executeCommand('ext:command',command(id));elapsed.push(performance.now()-began);
+  }
+  elapsed.sort((a,b)=>a-b);
+  console.log('3b engine command performance',JSON.stringify({samples:elapsed.length,p50Ms:elapsed[4],p95Ms:elapsed[8],maxPreviewCells:Math.max(...cells)}));
+  expect(elapsed.every(value=>Number.isFinite(value)&&value>=0)).toBe(true);
+ },30000);
+ it('keeps disabled runs without scheduler, declarations, components or combat views',()=>{
+  const game=start([]);expect(game.extensionRuntime!.actorActionBinding()).toBeNull();
+  expect(game.extensionRuntime!.readModuleView('combat')).toBeNull();acknowledge();game.executeCommand('wait');
+  expect(game.toSaveSnapshot().extensions!.modules.combat).toBeUndefined();
+ });
 });

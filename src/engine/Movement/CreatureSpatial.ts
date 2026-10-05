@@ -31,6 +31,9 @@ export interface BodyTarget {
 export type FootprintActor = Pick<Creature, 'loc' | 'spatial'>;
 const listeners = new WeakMap<Creature, Set<() => void>>();
 const squareAnchorRevisions = new WeakMap<Creature, number>();
+const actorSourceRevisions = new WeakMap<Creature, number>();
+/** Derived source identity for a live action only. Never saved or compared across load. */
+export function actorSourceRevision(creature: Creature): number { return actorSourceRevisions.get(creature) ?? 0; }
 /** Short-lived contact sequences can detect even a nested out-and-back move.
  * Derived, square-only bookkeeping; ordinary creatures never get an entry. */
 export function squareAnchorRevision(creature: Creature): number { return squareAnchorRevisions.get(creature) ?? 0; }
@@ -41,6 +44,8 @@ export function squareAnchorRevision(creature: Creature): number { return square
 export function commitCreatureAnchor(creature: Creature, at: Pos, mode: 'replace' | 'mutate' = 'replace', fixture = false): void {
     if (!integer(at.x, -32768, 32767) || !integer(at.y, -32768, 32767)) throw new SpatialValidationError('Invalid creature anchor');
     if (!fixture) assertNativeSpatial(creature);
+    if (creature.loc.x !== at.x || creature.loc.y !== at.y)
+        actorSourceRevisions.set(creature, actorSourceRevision(creature) + 1);
     if (mode === 'mutate') { creature.loc.x = at.x; creature.loc.y = at.y; }
     else creature.loc = at;
     if (creature.spatial) squareAnchorRevisions.set(creature, squareAnchorRevision(creature) + 1);
