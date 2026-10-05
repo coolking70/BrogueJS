@@ -1,0 +1,173 @@
+[
+  {
+    "statusId": "paralyzed",
+    "owner": "group",
+    "merge": "max",
+    "disables": [
+      "decision",
+      "attacks",
+      "movement"
+    ]
+  },
+  {
+    "statusId": "invisible",
+    "owner": "group",
+    "merge": "max",
+    "disables": []
+  },
+  {
+    "statusId": "telepathy",
+    "owner": "entity",
+    "merge": "replace",
+    "disables": []
+  },
+  {
+    "statusId": "levitating",
+    "owner": "entity",
+    "merge": "replace",
+    "disables": []
+  },
+  {
+    "statusId": "hallucinating",
+    "owner": "group",
+    "merge": "max",
+    "disables": []
+  },
+  {
+    "statusId": "confused",
+    "owner": "group",
+    "merge": "max",
+    "disables": []
+  },
+  {
+    "statusId": "regenerating",
+    "owner": "group",
+    "merge": "max",
+    "disables": []
+  },
+  {
+    "statusId": "haste",
+    "owner": "group",
+    "merge": "max",
+    "disables": []
+  },
+  {
+    "statusId": "poisoned",
+    "owner": "entity",
+    "merge": "stack",
+    "disables": []
+  },
+  {
+    "statusId": "slowed",
+    "owner": "group",
+    "merge": "max",
+    "disables": []
+  },
+  {
+    "statusId": "hasted",
+    "owner": "group",
+    "merge": "max",
+    "disables": []
+  },
+  {
+    "statusId": "weakened",
+    "owner": "entity",
+    "merge": "replace",
+    "disables": []
+  },
+  {
+    "statusId": "flying",
+    "owner": "entity",
+    "merge": "replace",
+    "disables": []
+  },
+  {
+    "statusId": "immune_fire",
+    "owner": "entity",
+    "merge": "replace",
+    "disables": []
+  },
+  {
+    "statusId": "discordant",
+    "owner": "group",
+    "merge": "max",
+    "disables": []
+  },
+  {
+    "statusId": "shielded",
+    "owner": "entity",
+    "merge": "replace",
+    "disables": []
+  },
+  {
+    "statusId": "entranced",
+    "owner": "group",
+    "merge": "max",
+    "disables": [
+      "decision",
+      "attacks"
+    ]
+  },
+  {
+    "statusId": "nauseous",
+    "owner": "entity",
+    "merge": "replace",
+    "disables": []
+  },
+  {
+    "statusId": "darkness",
+    "owner": "group",
+    "merge": "max",
+    "disables": []
+  },
+  {
+    "statusId": "magical_fear",
+    "owner": "group",
+    "merge": "max",
+    "disables": []
+  },
+  {
+    "statusId": "stuck",
+    "owner": "entity",
+    "merge": "replace",
+    "disables": [
+      "movement"
+    ]
+  },
+  {
+    "statusId": "donning",
+    "owner": "entity",
+    "merge": "replace",
+    "disables": []
+  },
+  {
+    "statusId": "enraged",
+    "owner": "group",
+    "merge": "max",
+    "disables": []
+  },
+  {
+    "statusId": "lifespan_remaining",
+    "owner": "group",
+    "merge": "max",
+    "disables": []
+  },
+  {
+    "statusId": "aggravating",
+    "owner": "entity",
+    "merge": "replace",
+    "disables": []
+  },
+  {
+    "statusId": "burning",
+    "owner": "entity",
+    "merge": "replace",
+    "disables": []
+  },
+  {
+    "statusId": "explosion_immunity",
+    "owner": "entity",
+    "merge": "replace",
+    "disables": []
+  }
+]

@@ -80,6 +80,8 @@ html[data-ui-concept=glyph] .theme-nearby .tn-hp i{position:absolute;inset:0 aut
 html[data-ui-concept=glyph] .theme-nearby .tn-hpnum{grid-column:3;grid-row:2;font-size:11px;color:var(--th-dim)}
 html[data-ui-concept=glyph] .theme-nearby .tn-dist{grid-column:3;grid-row:1;font-size:11px;color:var(--th-dim)}
 html[data-ui-concept=glyph] .theme-nearby .tn-statuses{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px;font-size:11px}
+html[data-ui-concept=glyph] .theme-nearby .tn-members{grid-column:2/-1;min-width:0;white-space:normal;overflow-wrap:anywhere;font-size:11px;color:var(--th-dim)}
+html[data-ui-concept=glyph] .context-members{font-size:11px;color:var(--th-dim);overflow-wrap:anywhere}
 html[data-ui-concept=glyph] .theme-nearby .tn-empty{margin:6px 0;color:var(--th-dim);font-size:12px}
 html[data-ui-concept=glyph] .theme-nearby .tn-count{color:var(--th-dim)}
 

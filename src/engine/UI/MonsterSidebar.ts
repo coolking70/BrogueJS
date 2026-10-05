@@ -13,6 +13,7 @@ import { creatureStatusRows, isSidebarVisibleStatus } from '../Status/statusConf
 import { publicMonsterBody, bodyContains } from './MonsterBody';
 import { canSeeMonster, publicMonsterCells } from './MonsterVisibility';
 import { publicMonsterZones } from './MonsterZones';
+import { bodyDecisionActor } from '../Status/BodyStatuses';
 
 const colorString = (color: string | number) => typeof color === 'number'
     ? `#${color.toString(16).padStart(6, '0')}` : color;
@@ -30,19 +31,20 @@ export function monsterBehaviorLabel(player: Player, grid: Grid, monster: Monste
         && !grid.getCell(monster.x, monster.y)?.layers.some(t => TERRAIN_FLAGS[t].mechFlags & TM_ALLOWS_SUBMERGING)) {
         return i18next.t('sidebar.behavior.helpless', { defaultValue: '(Helpless)' });
     }
-    if (monster.state === MonsterState.ASLEEP) return i18next.t('sidebar.behavior.sleeping', { defaultValue: '(Sleeping)' });
+    const decision = bodyDecisionActor(monster);
+    if (decision.state === MonsterState.ASLEEP) return i18next.t('sidebar.behavior.sleeping', { defaultValue: '(Sleeping)' });
     // isAlly is web's separate carrier of CE MONSTER_ALLY (state may remain WANDERING).
-    if (monster.isAlly) return i18next.t('sidebar.behavior.ally', { defaultValue: '(Ally)' });
-    if (monster.state === MonsterState.FLEEING) return i18next.t('sidebar.behavior.fleeing', { defaultValue: '(Fleeing)' });
-    if (monster.state === MonsterState.WANDERING) {
-        if (monster.leader?.hasBehavior('MONST_IMMOBILE')) return i18next.t('sidebar.behavior.worshiping', { defaultValue: '(Worshiping)' });
-        if (monster.leader?.isCaged) return i18next.t('sidebar.behavior.guarding', { defaultValue: '(Guarding)' });
+    if (decision.isAlly) return i18next.t('sidebar.behavior.ally', { defaultValue: '(Ally)' });
+    if (decision.state === MonsterState.FLEEING) return i18next.t('sidebar.behavior.fleeing', { defaultValue: '(Fleeing)' });
+    if (decision.state === MonsterState.WANDERING) {
+        if (decision.leader?.hasBehavior('MONST_IMMOBILE')) return i18next.t('sidebar.behavior.worshiping', { defaultValue: '(Worshiping)' });
+        if (decision.leader?.isCaged) return i18next.t('sidebar.behavior.guarding', { defaultValue: '(Guarding)' });
         return i18next.t('sidebar.behavior.wandering', { defaultValue: '(Wandering)' });
     }
-    if (monster.ticksUntilTurn > Math.max(0, player.ticksUntilTurn) + player.movementSpeed) {
+    if (decision.ticksUntilTurn > Math.max(0, player.ticksUntilTurn) + player.movementSpeed) {
         return i18next.t('sidebar.behavior.off_balance', { defaultValue: '(Off balance)' });
     }
-    if (monster.state === MonsterState.HUNTING) return i18next.t('sidebar.behavior.hunting', { defaultValue: '(Hunting)' });
+    if (decision.state === MonsterState.HUNTING) return i18next.t('sidebar.behavior.hunting', { defaultValue: '(Hunting)' });
     return '';
 }
 

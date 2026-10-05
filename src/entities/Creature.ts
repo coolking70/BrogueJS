@@ -1,4 +1,5 @@
 import { physicalContactOf } from '../engine/Combat/BodyCombat';
+import { bodyStatusOwner, bodyStatusStackMode } from '../engine/Status/BodyStatuses';
 /**
  * src/entities/Creature.ts
  * Base class for all living things (Player and Monsters)
@@ -80,7 +81,7 @@ export class Creature implements Entity {
     public char: string;
     public statusDurations: Partial<Record<StatusId, number>>;
     public statusImmunities: Set<StatusId>;
-    public hasStatusImmunity(id: StatusId): boolean { return this.statusImmunities.has(id); }
+    public hasStatusImmunity(id: StatusId): boolean { return bodyStatusOwner(this, id).statusImmunities.has(id); }
     /** CE creature.poisonAmount: damage per objective poison tick. */
     public poisonAmount = 0;
     /** CE creature.weaknessAmount, independent of the weakened countdown. */
@@ -163,14 +164,16 @@ export class Creature implements Entity {
     get y(): number { return this.loc.y; }
 
     public hasStatus(id: StatusId): boolean {
-        return (this.statusDurations[id] ?? 0) > 0;
+        return (bodyStatusOwner(this, id).statusDurations[id] ?? 0) > 0;
     }
 
     public getStatusDuration(id: StatusId): number {
-        return this.statusDurations[id] ?? 0;
+        return bodyStatusOwner(this, id).statusDurations[id] ?? 0;
     }
 
     public setStatusDuration(id: StatusId, duration: number) {
+        const owner = bodyStatusOwner(this, id);
+        if (owner !== this) { owner.setStatusDuration(id, duration); return; }
         if (this.extensionHooks && id === 'immune_fire' && duration > 0) this.extensionHooks.causality.clearStatus(this.id, 'burning');
         if (this.extensionHooks && (id === 'poisoned' || (id as string) === 'burning')) {
             this.extensionHooks.causality.statusChanged(this.id, id as 'poisoned' | 'burning', this.getStatusDuration(id), duration);
@@ -186,6 +189,9 @@ export class Creature implements Entity {
     }
 
     public applyStatus(id: StatusId, duration: number, stackMode: StatusStackMode = 'refresh'): boolean {
+        const owner = bodyStatusOwner(this, id);
+        if (owner !== this) return owner.applyStatus(id, duration, bodyStatusStackMode(this, id, stackMode));
+        stackMode = bodyStatusStackMode(this, id, stackMode);
         if (id === 'weakened') return this.weaken(duration);
         if (id === 'shielded') return this.applyShield(duration);
         if (id === 'poisoned') return this.addPoison(duration, 1);

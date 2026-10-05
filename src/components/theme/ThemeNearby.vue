@@ -2,13 +2,13 @@
 // UI-4：周围实体。可见性与详情都通过只读显示模型；不派发游戏命令。
 import { ref, onMounted, onUnmounted } from 'vue';
 import { activeGame } from '../../engine/Core/Game';
-import { sidebarEntityRows } from '../../engine/UI/MonsterSidebar';
+import { publicSidebarEntityRows, bodyMemberSummary } from '../../engine/UI/MonsterGroups';
 import { normalizeMapGlyph } from '../../ui/mapGlyph';
 import { nearbyDetail } from '../../ui/nearbyInspection';
 import { displayedFrame } from '../../ui/useGameHud';
 import type { DetailInfo } from '../../engine/UI/DetailGenerator';
 const emit = defineEmits<{ inspect: [detail: DetailInfo] }>();
-type Row = ReturnType<typeof sidebarEntityRows>[number] & { distance: number };
+type Row = ReturnType<typeof publicSidebarEntityRows>[number] & { distance: number };
 const rows = ref<Row[]>([]);
 let timer = 0;
 function poll() {
@@ -16,7 +16,7 @@ function poll() {
   if (!game?.player) return;
   const frame = displayedFrame(game);
   const p = frame?.player ?? game.player;
-  rows.value = (frame?.rows ?? sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth))
+  rows.value = (frame?.rows ?? publicSidebarEntityRows(game))
     .map(row => ({ ...row, distance: row.kind === 'monster' && row.distance !== undefined ? row.distance : Math.max(Math.abs(row.loc.x - p.x), Math.abs(row.loc.y - p.y)) }));
 }
 onMounted(() => { poll(); timer = window.setInterval(poll, 100); });
@@ -42,6 +42,7 @@ function inspect(row: Row, event: MouseEvent) {
         <span v-if="row.kind === 'monster'" class="tn-hp"><i :style="{ width: `${pct(row)}%`, background: row.ally ? 'var(--th-ok)' : 'var(--th-hp)' }"></i></span>
         <span v-if="row.kind === 'monster'" class="tn-hpnum th-num">{{ row.hp }}/{{ row.maxHp }}</span>
         <span class="tn-dist th-num">{{ row.distance }}</span>
+        <span v-if="row.kind === 'monster' && row.bodyGroup" class="tn-members">{{ bodyMemberSummary(row.bodyGroup) }}</span>
         <span v-if="row.kind === 'monster' && row.statuses.length" class="tn-statuses"><span v-for="s in row.statuses" :key="s.id" :style="{ color: s.color }">{{ s.label }} {{ s.value }}</span></span>
        </button>
       </li>

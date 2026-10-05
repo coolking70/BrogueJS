@@ -1,4 +1,5 @@
 import type { Creature, StatusId } from '../../entities/Creature';
+import { bodyStatusEntries, bodyStatusOwner } from './BodyStatuses';
 
 /**
  * F-2b：键联合扩入 'burning'。CE STATUS_BURNING（Rogue.h:2000）的载体走
@@ -74,11 +75,11 @@ export function isSidebarVisibleStatus(id: string): boolean {
 
 /** Shared visible status presentation for sidebar and creature details. */
 export function creatureStatusRows(creature: Creature, visible = isSidebarVisibleStatus) {
-    return Object.entries(creature.statusDurations)
+    return bodyStatusEntries(creature)
         .filter(([id, turns]) => (turns ?? 0) > 0 && visible(id))
         .map(([id, turns]) => {
             const meta = STATUS_CONFIG[id as BurningStatusId] ?? { label: id, color: '#dbeafe' };
-            const maximum = (creature.maxStatus as Record<string, number>)[id];
+            const maximum = (bodyStatusOwner(creature, id).maxStatus as Record<string, number>)[id];
             return { id, color: meta.color,
                 label: id === 'weakened' ? `${meta.label} -${creature.weaknessAmount}` : meta.label,
                 value: id === 'shielded' ? `${turns / 10} HP` : maximum ? `${turns}/${maximum}` : `${turns}`,

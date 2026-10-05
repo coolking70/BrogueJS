@@ -227,7 +227,7 @@ function commitBody(game:Game,core:Monster,plans:readonly PhasedAttackPlan[],sco
     for(const plan of plans)game.extensionRuntime!.notifyCommittedAction({actorId:plan.sourceEntityId,action:'attack'});
 }
 function selectBody(game:Game,session:Session,core:Monster,scope:ActorActionScope):'handled'|'native-fallback' {
-    if(!eligible(game,core,session)||core.hasStatus('magical_fear')||core.state!==MonsterState.HUNTING&&!core.isAlly)return 'native-fallback';
+    if(!eligible(game,core,session)||core.hasStatus('confused')||core.hasStatus('magical_fear')||core.state!==MonsterState.HUNTING&&!core.isAlly)return 'native-fallback';
     const group=game.bodyGroups!.find(g=>g.coreId===core.id)!,plans:PhasedAttackPlan[]=[];
     const targets=[game.player,...game.monsters].filter(target=>target.hp>0&&target.spatial?.bodyMember?.groupId!==core.id&&monstersAreEnemies(core,target));
     targets.sort((a,b)=>game.nearestContact(core,a).distance-game.nearestContact(core,b).distance||a.id-b.id);

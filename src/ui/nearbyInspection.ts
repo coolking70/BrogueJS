@@ -5,6 +5,7 @@ import { presentationTimeline } from './presentationTimeline';
 import type { Game } from '../engine/Core/Game';
 import { CombatSystem } from '../engine/Combat/Combat';
 import { sidebarEntityRows, type SidebarEntityRow } from '../engine/UI/MonsterSidebar';
+import { appendPublicBodyDetail } from '../engine/UI/MonsterGroups';
 import { generateMonsterDetail, generateItemDetail, type DetailInfo } from '../engine/UI/DetailGenerator';
 import { createItemDetailContext } from '../engine/UI/ItemDetailContext';
 import { describeTerrain } from '../engine/UI/TerrainTextCatalog';
@@ -21,14 +22,14 @@ export function nearbyDetail(game: Game, requested: SidebarEntityRow): DetailInf
         const monster = game.monsters.find(monster => monster.id === row.id)!;
         const player = game.player;
         const [n, d] = (player.equippedWeapon?.damage ?? '1d2').split('d').map(Number);
-        return generateMonsterDetail(monster, player.hp, player.effectiveStrength, 0,
+        return appendPublicBodyDetail(game, monster.id, generateMonsterDetail(monster, player.hp, player.effectiveStrength, 0,
             [n || 1, (n || 1) * (d || 2)], player.equippedWeapon?.enchantment ?? 0,
             player.equippedWeapon?.strengthRequired ?? 12, player.equippedArmor?.armor ?? 0,
             player.equippedArmor?.enchantment ?? 0, player.equippedArmor?.strengthRequired ?? 0,
             player.hasStatus('hallucinating'), player.getStatusDuration('donning'), player.hasStatus('stuck'),
             game.extensionRuntime ? direction => direction === 'incoming'
                 ? CombatSystem.previewHitChance(monster, player) : CombatSystem.previewHitChance(player, monster) : undefined,
-            player.equippedWeapon);
+            player.equippedWeapon));
     }
     if (row.kind === 'item') {
         const item = game.items.find(item => item.id === row.id)!;

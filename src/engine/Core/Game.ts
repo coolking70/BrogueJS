@@ -1,4 +1,5 @@
 import { canCommitNativeAttack, commitNativeAttackCost, withNativeAttackAction, withPrepaidNativeAttack } from './NativeAttackTransaction';
+import { bodyDecisionActor, bodyStatusOwner, type BodyStatusContext } from '../Status/BodyStatuses';
 import { nativeSpatialCatalog, type SpatialCatalog } from '../Movement/SpatialSchema';
 import { rigidFootprint } from '../Movement/RigidFootprint';
 import { rigidSideChamberValid, compositeSideChamberValid } from '../Generator/SideChamber';
@@ -12,7 +13,7 @@ import { collectAreaBodyTargets } from '../Combat/BodyEffects';
 import { nearestLegalMeleeContact, legalMeleeContactAt, hasDeclaredZones, bodyRayContact, bodyAttackContactOf, physicalContactOf, withBodyContact, withBodyAttackContact, appendBodyHit, bodyHitContact, withWholeBodyDamage, type BodyAttackContact } from '../Combat/BodyCombat';
 import { footprintExposure } from '../Movement/FootprintExposure';
 import { CreatureSpatial } from '../Movement/CreatureSpatial';
-import { CompositeMovement } from '../Movement/CompositeMovement';
+import { CompositeMovement, type CompositeMovePlan } from '../Movement/CompositeMovement';
 import { bodyConstraintOrder, bodyConstraintsSatisfied } from '../Movement/BodyConstraints';
 import { bodyMoveTicks, retiredBodyParts } from '../Movement/BodyGroups';
 import { resolveBodyMemberHit } from '../Combat/BodyMemberHealth';
@@ -120,6 +121,7 @@ import { Direction, type Pos } from '../../types';
 import { ensureEntityIdAbove, resetEntityIds, getNextEntityId, restoreNextEntityId, type StatusId, type Creature } from '../../entities/Creature';
 import { timeSystem } from '../Systems/Time';
 import { generateMonsterDetail, generateItemDetail, type DetailInfo } from '../UI/DetailGenerator';
+import { appendPublicBodyDetail } from '../UI/MonsterGroups';
 import { logger } from '../Systems/Logger';
 import { buildMapToShore, SHORE_HAZARDS, shoreWarning } from '../Map/MapToShore';
 import { Pathfind } from '../Map/Pathfind';
@@ -2539,6 +2541,7 @@ export class Game {
                     ? CombatSystem.previewHitChance(monster, this.player) : CombatSystem.previewHitChance(this.player, monster) : undefined,
                 this.player.equippedWeapon
             );
+            this.inspectTarget = appendPublicBodyDetail(this, monster.id, this.inspectTarget);
             const zone = publicZoneAt(this.player, this.grid, monster, { x, y });
             if (zone) this.inspectTarget.sections.unshift({ lines: [{ text: zoneStatusText(zone),
                 progress: { value: zone.hp, max: zone.maxHp } }] });
@@ -6017,6 +6020,7 @@ export class Game {
 
     /** Items.c:5274-5300 always allies to the player, even for a hostile caster. */
     private dominateBoltTarget(target: Creature | undefined): boolean {
+        if (target) target = bodyDecisionActor(target);
         let autoID = false;
         // CE Items.c:5274-5300: no writes until the roll succeeds.
         // Player, inanimate and invulnerable contacts cannot be dominated.
@@ -6026,6 +6030,7 @@ export class Game {
             target.setStatusDuration('discordant', 0);
             this.becomeAllyWith(target);
             target.dominated = true;
+            for (const member of this.bodyStatusContext(target)?.members() ?? []) (member as Monster).dominated = true;
         }
         // canSeeMonster is evaluated AFTER conversion; a newly allied
         // invisible creature on a visible tile can now be observed.
@@ -7152,7 +7157,8 @@ export class Game {
         const bodyTargets = squareListUsers(this.monsters) ? new Map(this.collectAreaBodyTargets(this.player.loc, DCOLS, 'mental').map(t => [t.entityId, t])) : null;
         for (const m of this.monsters) {
             if (m.hp <= 0) continue;
-            if (m.hasBehavior('MONST_INANIMATE') || m.hasAbility('MONST_INVULNERABLE')) continue;
+            const owner = bodyStatusOwner(m, 'discordant') as Monster;
+            if (owner.hasBehavior('MONST_INANIMATE') || owner.hasAbility('MONST_INVULNERABLE')) continue;
             if (bodyTargets) {
                 const target = bodyTargets.get(m.id);
                 if (target) withBodyContact(m, target.contact, () => this.applyStatusToMonster(m, 'discordant', DISCORD_DURATION));
@@ -7738,6 +7744,7 @@ export class Game {
     }
 
     private applyStatusToMonster(monster: Monster, status: StatusId, duration: number, source: 'magic' | 'gas' | 'runic' = 'magic'): boolean {
+        monster = bodyStatusOwner(monster, status) as Monster;
         // The natural JSON carries pre-CE generic immunity/resistance values.
         // Keep them on the instance for the established polymorph/snapshot shape,
         // but do not let those catalog defaults veto a CE status effect.
@@ -8862,6 +8869,12 @@ export class Game {
     private moveEntrancedMonsters(dx: number, dy: number): void {
         for (const monster of [...this.monsters]) {
             if (this.isGameOver) break;
+            if (monster.spatial?.bodyMember) {
+                if (this.isBodyDecisionOwner(monster.id) && monster.hp > 0 && !monster.isDormant && !monster.isCaged
+                    && monster.hasStatus('entranced') && !monster.hasStatus('paralyzed') && !monster.hasStatus('stuck') && (dx || dy))
+                    this.tryMoveBodyCore(monster, { x: monster.x - dx, y: monster.y - dy });
+                continue;
+            }
             monster.moveEntranced(this, -dx, -dy);
         }
     }
@@ -11418,9 +11431,10 @@ export class Game {
                     // MONST_INVULNERABLE；玩家看得见且首次上状态时惊醒
                     // 睡眠怪（:448-452，creatureState → TRACKING_SCENT）。
                     if ((gasFlags & T_CAUSES_CONFUSION) !== 0 && !respirationImmune && effect('confusion', true)) {
+                        const owner = bodyStatusOwner(entity, 'confused');
                         const exempt = entity !== this.player
-                            && ((entity as Monster).hasBehavior('MONST_INANIMATE')
-                                || (entity as Monster).isInvulnerable());
+                            && ((owner as Monster).hasBehavior('MONST_INANIMATE')
+                                || (owner as Monster).isInvulnerable());
                         if (!exempt) {
                             // CE :449 的惊醒判据是"本回合赋值前 STATUS_CONFUSED
                             // 为 0"（外层还有 canDirectlySeeMonster——web 对应
@@ -11435,8 +11449,8 @@ export class Game {
                             }
                             if (!wasConfused && applied && entity !== this.player
                                 && this.visibleMonsters.has(entity as Monster)
-                                && (entity as Monster).state === MonsterState.ASLEEP) {
-                                (entity as Monster).state = MonsterState.HUNTING;
+                                && (owner as Monster).state === MonsterState.ASLEEP) {
+                                (owner as Monster).state = MonsterState.HUNTING;
                             }
                         }
                     }
@@ -11445,9 +11459,10 @@ export class Game {
                     // STATUS_PARALYZED = max(…, 20)，豁免同混乱 + 潜水
                     // （X2g 的 submerged 运行态）。CE 不惊醒睡眠怪。
                     if ((gasFlags & T_CAUSES_PARALYSIS) !== 0 && !respirationImmune && !isSubmerged(entity) && effect('paralysis', true)) {
+                        const owner = bodyStatusOwner(entity, 'paralyzed');
                         const exempt = entity !== this.player
-                            && ((entity as Monster).hasBehavior('MONST_INANIMATE')
-                                || (entity as Monster).isInvulnerable());
+                            && ((owner as Monster).hasBehavior('MONST_INANIMATE')
+                                || (owner as Monster).isInvulnerable());
                         if (!exempt) {
                             if (entity === this.player) this.disturbed = true; // CE Time.c:492
                             const applied = entity === this.player
@@ -11551,6 +11566,20 @@ export class Game {
         return !!group && !!part && actor.typeId === part.formId && group.members.some(s => s.entityId === actor.id
             && s.partId === part.partId && s.life === 'active' && s.generation === 0);
     }
+    /** Revalidate current owned slots on every lookup. Cached layers remain
+     * bound, but retired entities and forged bodyMember values gain no route. */
+    public bodyStatusContext(actor: Monster): BodyStatusContext | undefined {
+        if (!actor.spatial?.bodyMember || !this.ownsBodyMember(actor)) return undefined;
+        const group = this.bodyGroups!.find(g => g.groupId === actor.spatial!.bodyMember!.groupId)!;
+        const find = (id: number): Monster | undefined => this.monsters.find(m => m.id === id)
+            ?? this.dormantMonsters.find(m => m.id === id)
+            ?? [...this.levels.values()].flatMap(l => [...l.monsters, ...(l.dormantMonsters ?? [])]).find(m => m.id === id)
+            ?? [...this.pendingFallenByDepth.values()].flat().find(m => m.id === id);
+        const core = find(group.coreId);
+        if (!core || core.hp <= 0) return undefined;
+        return { core, profile: this.spatialCatalog.statusProfile(this.spatialCatalog.body(group.bodyDefinitionId).statusProfileId),
+            members: () => group.members.flatMap(s => { const m = s.life === 'active' && s.entityId !== null ? find(s.entityId) : undefined; return m ? [m] : []; }) };
+    }
     /** Retirement keeps the source identity on the detached member; checking
      * the current live table here would incorrectly award a kill afterwards. */
     private isPeripheralBodyMember(actor: Creature): boolean {
@@ -11648,14 +11677,22 @@ export class Game {
         const definition = this.spatialCatalog.body(group.bodyDefinitionId), order = bodyConstraintOrder(definition);
         const cost = bodyMoveTicks(definition, group, this.spatialCatalog, core.movementSpeed);
         core.ticksUntilTurn = cost; // every blocked/empty selection pays positive time
+        // CE moveMonster selects one valid confused direction. Validate the
+        // whole formation; no foot runs a second confusion lottery.
+        if (core.hasStatus('confused')) {
+            const directions = [[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,1],[-1,1],[1,-1]];
+            this.tryMoveBodyCore(core, directions.map(([dx,dy]) => ({ x: core.x + dx!, y: core.y + dy! })), undefined, true);
+            return;
+        }
         const targets: Creature[] = [this.player, ...this.monsters].filter(c => c.hp > 0
             && c.spatial?.bodyMember?.groupId !== group.groupId && monstersAreEnemies(core, c));
         targets.sort((a, b) => distanceBetweenFootprints(core, a) - distanceBetweenFootprints(core, b) || a.id - b.id);
         const target = targets[0];
         if (!target) return;
+        const fleeing = core.state === MonsterState.FLEEING || core.hasStatus('magical_fear');
         let count = 0, maxTicks = 0;
         for (const partId of order) {
-            if (count === 4 || core.hp <= 0 || target.hp <= 0 || isActorStaggered(this, core.id)) break;
+            if (fleeing || count === 4 || core.hp <= 0 || target.hp <= 0 || isActorStaggered(this, core.id)) break;
             const slot = group.members.find(s => s.partId === partId)!;
             const source = this.monsters.find(c => c.id === slot.entityId);
             if (!source || slot.life !== 'active' || slot.readyInTicks > 0 || source.hasStatus('paralyzed') || source.hasStatus('entranced')
@@ -11668,30 +11705,43 @@ export class Game {
             maxTicks = Math.max(maxTicks, source.attackSpeed); count++;
         }
         if (count) { core.ticksUntilTurn = maxTicks; reconcileActorNativeRecovery(this, core.id); return; }
-        const spatial = new CreatureSpatial(this.spatialWorldPort(), this.spatialCatalog);
-        spatial.groups.push(group);
+        const candidates = Array.from({ length: 9 }, (_, i) => ({ x: core.x + i % 3 - 1, y: core.y + Math.floor(i / 3) - 1 }))
+                .filter(p => p.x !== core.x || p.y !== core.y)
+                .sort((a, b) => (fleeing ? -1 : 1) * (distanceToFootprint(target, a) - distanceToFootprint(target, b)) || a.y - b.y || a.x - b.x);
+        this.tryMoveBodyCore(core, candidates, fleeing ? at => distanceToFootprint(target, at) > distanceToFootprint(target, core.loc) : undefined);
+    }
+
+    /** One group placement for autonomous or entranced motion. Individual
+     * limb relocation is never an alternate movement path. */
+    private tryMoveBodyCore(core: Monster, destinations: Pos | readonly Pos[], accept?: (at: Pos) => boolean, confused = false): boolean {
+        const group = this.bodyGroups?.find(g => g.coreId === core.id);
+        if (!group) return false;
+        const spatial = new CreatureSpatial(this.spatialWorldPort(), this.spatialCatalog); spatial.groups.push(group);
         try {
             const movement = new CompositeMovement(spatial);
-            const candidates = Array.from({ length: 9 }, (_, i) => ({ x: core.x + i % 3 - 1, y: core.y + Math.floor(i / 3) - 1 }))
-                .filter(p => p.x !== core.x || p.y !== core.y)
-                .sort((a, b) => distanceToFootprint(target, a) - distanceToFootprint(target, b) || a.y - b.y || a.x - b.x);
-            for (const at of candidates) {
+            const plans: CompositeMovePlan[] = [];
+            for (const at of Array.isArray(destinations) ? destinations : [destinations as Pos]) {
+                if (accept && !accept(at)) continue;
                 const result = movement.planStep(group.groupId, at, { allowsTerrain: (id, p) => {
                     const actor = this.monsters.find(c => c.id === id)!;
                     return actor.canEnterMovementTerrain(this, p.x, p.y)
                         && !(cellTerrainFlags(this.grid, p.x, p.y) & (T_AUTO_DESCENT | T_IS_DF_TRAP));
                 } });
                 if (result.status !== 'planned') continue;
-                const previous = new Map(result.plan.trajectories.map(t => [t.entityId, footprintOf(this.monsters.find(c => c.id === t.entityId)!)]));
-                if (!movement.commit(result.plan)) continue;
-                core.ticksUntilTurn = result.plan.costTicks;
-                for (const trajectory of result.plan.trajectories) {
-                    const actor = this.monsters.find(c => c.id === trajectory.entityId);
-                    if (actor?.hp && actor.hp > 0) this.applyEnvironmentalEffects(actor, false, undefined, previous.get(actor.id));
-                }
-                this.needsRender = true;
-                return;
+                plans.push(result.plan);
+                if (!confused) break;
             }
+            if (!plans.length) return false;
+            const plan = plans[confused ? rng.randRange(0, plans.length - 1) : 0]!;
+            const previous = new Map(plan.trajectories.map(t => [t.entityId, footprintOf(this.monsters.find(c => c.id === t.entityId)!)]));
+            if (!movement.commit(plan)) return false;
+            core.ticksUntilTurn = plan.costTicks;
+            for (const trajectory of plan.trajectories) {
+                const actor = this.monsters.find(c => c.id === trajectory.entityId);
+                if (actor?.hp && actor.hp > 0) this.applyEnvironmentalEffects(actor, false, undefined, previous.get(actor.id));
+            }
+            this.needsRender = true;
+            return true;
         } finally { spatial.dispose(); }
     }
     /** Preferred formation is checked as a whole before constructing any actor,
@@ -12966,6 +13016,12 @@ export class Game {
     /** CE Movement.c:728-742. Shared by domination and W-11 magical rescue;
      * ordinary key/cage rescue keeps its existing V-2b-5 entry point. */
     public becomeAllyWith(monster: Monster): void {
+        monster = bodyDecisionActor(monster);
+        const members = this.bodyStatusContext(monster)?.members() ?? [monster];
+        for (const member of members) this.becomeSingleAllyWith(member as Monster);
+    }
+
+    private becomeSingleAllyWith(monster: Monster): void {
         this.demoteMonsterFromLeadership(monster);
         this.makeMonsterDropItem(monster);
 

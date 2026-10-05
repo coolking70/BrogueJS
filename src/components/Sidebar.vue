@@ -8,7 +8,8 @@ import { playerHudStatusRows, displayedFrame } from '../ui/useGameHud';
 import { isSidebarVisibleStatus } from '../engine/Status/statusConfig';
 import { STOMACH_SIZE, HUNGER_THRESHOLD, WEAK_THRESHOLD, FAINT_THRESHOLD } from '../entities/Player';
 import { computeSidebarWidth, displaySettings } from '../engine/Settings';
-import { sidebarEntityRows, sidebarPlayerStats } from '../engine/UI/MonsterSidebar';
+import { sidebarPlayerStats } from '../engine/UI/MonsterSidebar';
+import { publicSidebarEntityRows, bodyMemberSummary } from '../engine/UI/MonsterGroups';
 import { inputManager } from '../engine/Input';
 
 // P2-6：侧栏宽度模式（固定 340px / 按容器宽 20% 且不低于最小宽度）。
@@ -39,7 +40,7 @@ const playerNutrition = ref(STOMACH_SIZE);
 const logs = ref<LogMessage[]>([]);
 const hoverText = ref('');
 const playerStatuses = ref<ReturnType<typeof playerHudStatusRows>>([]);
-const entityRows = ref<ReturnType<typeof sidebarEntityRows>>([]);
+const entityRows = ref<ReturnType<typeof publicSidebarEntityRows>>([]);
 const playerStats = ref<ReturnType<typeof sidebarPlayerStats> | null>(null);
 const playerNumberLines = computed(() => {
   const stats = playerStats.value;
@@ -82,8 +83,7 @@ onMounted(() => {
       // UI-1 第 5 条：CE 有意不显示的状态（explosion_immunity 等，见
       // statusConfig.CE_EMPTY_NAME_STATUSES）不进侧栏（CE IO.c:4823 name[0] 门）。
       playerStatuses.value = playerHudStatusRows(activeGame, isSidebarVisibleStatus);
-      entityRows.value = sidebarEntityRows(activeGame.player, activeGame.grid, activeGame.monsters,
-        activeGame.items, activeGame.hoveredCell, activeGame.depth);
+      entityRows.value = publicSidebarEntityRows(activeGame);
       // Read the existing calculation without changing Game's rules/method visibility
       // (X3-U7's edit boundary excludes calculateStealthRange).
       playerStats.value = sidebarPlayerStats(activeGame.player, activeGame.stats.gold,
@@ -166,6 +166,7 @@ onUnmounted(() => {
         <template v-if="entity.kind === 'monster'">
           <div class="monster-hp-track"><div class="monster-hp-fill"
             :style="{ width: `${Math.max(0, Math.min(100, entity.hp / Math.max(1, entity.maxHp) * 100))}%`, background: entity.ally ? '#4ade80' : '#ef4444' }"></div></div>
+          <div v-if="entity.bodyGroup" class="monster-members">{{ bodyMemberSummary(entity.bodyGroup) }}</div>
           <div v-if="entity.negated || entity.behavior" class="monster-statuses">
             <span v-if="entity.negated" class="negated-label">{{ $t('negation.label', { defaultValue: 'Negated' }) }}</span>
             <span>{{ entity.behavior }}</span>
@@ -214,6 +215,7 @@ onUnmounted(() => {
 .monster-glyph { width: 1.2em; font-weight: bold; }
 .monster-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .monster-health { color: var(--text-secondary); }
+.monster-members { color: var(--text-secondary); font-size: .75rem; overflow-wrap: anywhere; }
 .monster-hp-track { height: 4px; background: #24242c; margin: .2rem 0; }
 .monster-hp-fill { height: 100%; }
 .monster-statuses { display: flex; gap: .4rem; flex-wrap: wrap; font-size: .7rem; }

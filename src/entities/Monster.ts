@@ -1,4 +1,5 @@
 import { canCommitNativeAttack, commitNativeAttackCost, withNativeAttackAction } from '../engine/Core/NativeAttackTransaction';
+import { bodyDecisionActor, bodyStatusOwner, refreshBodyMemberSpeeds } from '../engine/Status/BodyStatuses';
 import { bindSpatialCatalog, spatialCatalogFor } from '../engine/Movement/CreatureSpatial';
 import { type RigidPose } from '../engine/Movement/RigidFootprint';
 import { type RigidPoseStep } from '../engine/Map/RigidPosePathing';
@@ -60,6 +61,7 @@ import { T_ENTANGLES, TM_ALLOWS_SUBMERGING, T_LAVA_INSTA_DEATH, T_IS_DEEP_WATER,
 type Faction = 'player' | 'hostile';
 
 function factionOf(c: Creature): Faction {
+    c = bodyDecisionActor(c);
     if (c instanceof Player) return 'player';
     if (c instanceof Monster) return c.isAlly ? 'player' : 'hostile';
     return 'hostile';
@@ -68,6 +70,8 @@ function factionOf(c: Creature): Faction {
 /** CE Monsters.c:372: following relationships survive discord. */
 export function monstersAreTeammates(a: Creature, b: Creature): boolean {
     if (a === b) return false;
+    if (bodyDecisionActor(a) === bodyDecisionActor(b)) return true;
+    a = bodyDecisionActor(a); b = bodyDecisionActor(b);
     if (a instanceof Monster && a.leader === b) return true;
     if (b instanceof Monster && b.leader === a) return true;
     if (a instanceof Monster && b instanceof Monster && a.leader && a.leader === b.leader) return true;
@@ -77,6 +81,8 @@ export function monstersAreTeammates(a: Creature, b: Creature): boolean {
 /** CE Monsters.c:383: captive, discord, aquatic exception, then allegiance. */
 export function monstersAreEnemies(a: Creature, b: Creature): boolean {
     if (a === b) return false;
+    a = bodyDecisionActor(a); b = bodyDecisionActor(b);
+    if (a === b) return false;
     if ((a instanceof Monster && a.isCaged) || (b instanceof Monster && b.isCaged)) return false;
     if (a.hasStatus('discordant') || b.hasStatus('discordant')) return true;
     // Aquatic hostility depends on terrain; the bolt selector supplies the map below.
@@ -84,6 +90,7 @@ export function monstersAreEnemies(a: Creature, b: Creature): boolean {
 }
 
 function boltEnemies(a: Creature, b: Creature, game: Game): boolean {
+    if (bodyDecisionActor(a) === bodyDecisionActor(b)) return false;
     if (monstersAreEnemies(a, b)) return true;
     if (a === b || (a instanceof Monster && a.isCaged) || (b instanceof Monster && b.isCaged)) return false;
     const aquaticThreat = (liquid: Creature, victim: Creature) => liquid instanceof Monster
@@ -869,11 +876,15 @@ export class Monster extends Creature {
     /** Preserve CE's post-polymorph cached speed through unrelated statuses.
      * Explicit haste/slow writes and their expiration return to normal rules. */
     public override setStatusDuration(id: StatusId, duration: number): void {
+        const owner = bodyStatusOwner(this, id);
+        if (owner !== this) { owner.setStatusDuration(id, duration); return; }
         if (id === 'haste' || id === 'hasted' || id === 'slowed') this.polymorphKeepsSpeed = false;
         super.setStatusDuration(id, duration);
     }
 
     public override applyStatus(id: StatusId, duration: number, mode: 'refresh' | 'stack' = 'refresh'): boolean {
+        const owner = bodyStatusOwner(this, id);
+        if (owner !== this) return owner.applyStatus(id, duration, mode);
         const changed = super.applyStatus(id, duration, mode);
         if (id === 'magical_fear' && this.hasStatus(id)) this.state = MonsterState.FLEEING;
         return changed;
@@ -922,6 +933,7 @@ export class Monster extends Creature {
         if (this.polymorphKeepsSpeed && !this.hasStatus('hasted') && !this.hasStatus('haste') && !this.hasStatus('slowed')) return;
         this.polymorphKeepsSpeed = false;
         super.refreshSpeeds();
+        refreshBodyMemberSpeeds(this);
     }
 
     public hasBehavior(flag: string): boolean {

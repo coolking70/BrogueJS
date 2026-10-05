@@ -1,6 +1,7 @@
 import { SpatialValidationError, type SpatialCatalog } from '../Movement/SpatialSchema';
 import { assertNativeSpatial, isSquareFootprint } from '../Movement/CreatureSpatial';
 import type { Monster } from '../../entities/Monster';
+import { bindBodyStatuses, type BodyStatusContext } from '../Status/BodyStatuses';
 
 // Runtime ownership is deliberately outside the serialized creature graph.
 // Bind on array insertion/replacement so spawns, restored floors and passengers
@@ -14,6 +15,7 @@ interface DeathOwner {
     killMonster(monster: Monster): void;
     monsterListsChanged?(): void;
     ownsBodyMember?(monster: Monster): boolean;
+    bodyStatusContext?(monster: Monster): BodyStatusContext | undefined;
 }
 const owners = new WeakMap<Monster, DeathOwner>();
 const lists = new WeakMap<Monster[], { raw: Monster[]; owner: DeathOwner }>();
@@ -47,6 +49,7 @@ export function ownedMonsterList(input: Monster[], owner: DeathOwner): Monster[]
         if (monster.spatial?.bodyMember && !owner.ownsBodyMember?.(monster)) throw new SpatialValidationError('Unowned production body member');
         if (!isSquareFootprint(monster) && monster.spatial!.footprintId !== monster.typeId) throw new SpatialValidationError('Native form body identity mismatch');
         owners.set(monster, owner);
+        if (monster.spatial?.bodyMember) bindBodyStatuses(monster, () => owner.bodyStatusContext?.(monster));
         if (owner.extensionRuntime) owner.extensionRuntime.attachCreature(monster);
         if (monster.spatial) squares++;
     }
@@ -60,6 +63,7 @@ export function ownedMonsterList(input: Monster[], owner: DeathOwner): Monster[]
                 if (value.spatial?.bodyMember && !owner.ownsBodyMember?.(value)) throw new SpatialValidationError('Unowned production body member');
                 if (!isSquareFootprint(value) && value.spatial!.footprintId !== value.typeId) throw new SpatialValidationError('Native form body identity mismatch');
                 owners.set(value, owner);
+                if (value.spatial?.bodyMember) bindBodyStatuses(value, () => owner.bodyStatusContext?.(value));
                 if (owner.extensionRuntime) owner.extensionRuntime.attachCreature(value);
                 nextSquares += Number(!!value.spatial) - Number(!!target[Number(key)]?.spatial);
             }

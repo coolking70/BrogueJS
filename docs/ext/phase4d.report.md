@@ -1,3 +1,96 @@
+# 4d-4 执行报告：周围实体归并、群状态与关系路由
+
+基于维护者已提交4d-3并合入dot 3d修复的 `ext/phase4` HEAD `81c82a023c4052f73f41c503d822dc6a8898e7ef`，开工工作树干净。本轮交付 **4d-4 可独立验收子里程碑；完整4d仍未完成**。维护者反馈的周围实体逐腿铺满侧栏已修复，并推进原剩余项1、2、3、5、8中的原生状态归属、群关系与显示链路。整体变形、clone、迁层等尚未开放，剩余项仍按原1–8列在下方。未暂存、commit或push。后方保留HEAD中4d-3/4d-2/4d-1/4d-0历史报告原字节。
+
+## 侧栏、检视与公开知识
+
+普通主题侧栏、ContextPanel紧凑列表和Sidebar抽屉共用 `publicSidebarEntityRows`；DisplayFrame捕获同一投影。**两只完全可见的页岩织兽，18个真实实体归并为2行**。每行使用核心字形/名称、核心HP条和数值，附“成员存活8 · 破坏0”；断足更新为核心93/96、存活7/破坏1。聚合行沿第一个已排序的公开成员继承列表优先级，腿focus映射到所属核心，距离取已公开成员的最近距离。
+
+核心行点击详情、地图直接检视核心时，附当前可见成员清单，逐条给独立HP条/数值、行为关系和局部/共享状态。原 `sidebarEntityRows` 保留独立实体选择；地图命中、瞄准、单腿检视仍使用真实成员。列表不改实体表、hover、机械状态、输入日志或两个RNG。
+
+归并只使用原 `publicMonsterGroups` 的公开DTO；核心不公开或幻觉时不发布群身份，原可见腿仍可独立列出。隐藏成员不发布ID/HP/位置；不完全可见时仅报“可见成员N”，不猜精确破坏数。核心当前隐藏、成员隐藏或已移位的旧行不能通过点击获得新身份。历史帧保存脱离实体对象的行与群DTO，后续断足不改历史HP/概况；演出busy时详情入口仍由现有presentation barrier拒绝。没有扩大FOV、telepathy或隐身身份门。
+
+新增通用文案位于 `src/locales/zh_CN.json` 的四个sidebar键，全部经i18n。成员概况单独换行，主题侧栏跨剩余列、可折行；紧凑列表及抽屉用相同摘要。320/390的两个实际Vue组件已用客户端脚本/模板/生命周期主持测试验证；这些测试不实施浏览器CSS排版。
+
+## 原生状态分类、唯一存储与关系
+
+`src/data/body-status-profile.json` 为 `foundation:native` 提供27个已知原生状态（含burning/explosion_immunity逃生舱）的有限分类行：statusId、group/entity owner、merge、disables。SpatialCatalog校验完整集合、唯一ID、归属/合并/禁行枚举及精确字段，冻结后进入 `run.spatialWorld.definitions.statusProfiles[].rows` 已安装声明闭包。缺行、未知/重复行或脚本式禁行字段拒绝；不从保存数据创建新profile。本轮仅开放这份原生默认分类，未开放模块自定义profile/局部精神覆盖。disables描述沿原生状态资格执行，不能授权任意状态脚本。
+
+14个group状态为麻痹、主动隐身、幻觉、混乱、再生、haste/hasted、减速、纷争、入迷、黑暗、恐惧、激怒和寿命；另外13个状态留在实体，包括毒、火、网、盾、虚弱、局部漂浮/飞行/免火等。群状态存核心，成员查询和免疫/抵抗判定路由核心；计时仍只遍历实际存储，成员不拷贝精神计时器。group apply按max合并，多部位重复施加不叠8份；entity继续原生毒浓度、盾吸收和缠绕规则。成员显示可读共享状态但不复制机械字段。核心加减速及到期通过每个来源自己的native speed重算所有来源，断足倍率仍从收据派生。
+
+路由关联是ownedMonsterList验证真实群槽后绑定的WeakMap，每次读取复核当前群/part/form/活动generation0及核心。退休或伪造身份不能借序列化bodyMember获得群路由；当前、休眠、缓存与pending列表使用同一拥有者查询。pure群codec拒绝成员私藏群状态和任何实体的未知分类键，坏档不发布候选世界；读档发布后重建关联。没有新增Game持久字段或第二份状态表。
+
+支配射线命中腿时，原生资格与一次成功率掷骰用核心HP；成功后将整组原生阵营/被支配标记更新，仍只花一次魔杖充能。becomeAllyWith通过腿调用同样作用整组，沿原生demote/drop清理各实体；敌我和队友查询按群核心关系，纷争不令本组成员互为敌人。原生睡眠决策仍由核心prelude唯一持有；全套受击惊醒/原生被动组合尚未验完。
+
+催眠通过玩家移动的原入口，只让群核心作一次反向整组落脚，成员不各走一遍。恐惧的即时路径禁止足攻击，选合法且增加威胁距离的邻步；混乱移动只由核心在至多8个经过原128节点/32候选预算检验的整组计划中选择一次随机方向。这里没有复制旧TS单体70%分支：实际CE `Monsters.c:moveMonster`在非entranced的confused状态调用一次randValidDirectionFrom；`Movement.c:moveEntrancedMonsters`反向一次并排除麻痹/缠绕/俘虏。此轮仅实现合法整组移动出口，不宣称完整原生生存/施法/受控攻击优先级或远路AI。环境仍在整组终态结算，逐子步及窄回滚仍是缺口。
+
+## 与3a0/3b/3d的共享接线
+
+核心继续唯一decision/time owner；成员不takeTurn、无嵌套executeCommand、无成员原生timer推进。真实elapsed槽冷却、至多4来源max耗时、sourceEntityId/partId/generation0和每源付款/scope保持4d-2路径。共享hasStatus查询使原生资格/计划中断读到核心群状态；混乱/恐惧走native fallback。局部actionLock和毒火网仍属于具体成员。没有改combat part-break provider/fallback协议、可信member证明、poise owner、独立付款或恢复边界。
+
+| 共享文件/函数 | 本轮改动 |
+| --- | --- |
+| UI/MonsterGroups.publicSidebarEntityRows/bodyMemberSummary/appendPublicBodyDetail | 只读群归并、公开摘要与可见成员详情，保留原独立选择 |
+| displayProjection.observeDisplayFrame、三列表组件、nearbyDetail、Game.handleInspectAt | 同一当前/历史投影，fresh可见性重验，核心详情加成员 |
+| SpatialSchema.validateNativeBodyStatusRows/statusProfile | 有限完整原生分类、冻结并序列化声明闭包 |
+| MonsterLifecycle.ownedMonsterList、Game.bodyStatusContext | 真实owned成员验证后绑定可重建WeakMap，读取复核活槽 |
+| Creature.has/get/set/applyStatus/hasStatusImmunity | group存核心和共享查询，entity原生路径保持 |
+| Monster.apply/setStatus/refreshSpeeds、monstersAreEnemies/Teammates/boltEnemies | 核心精神效果/速度刷新及全组关系、自排除 |
+| BodyGroups.validateBodyGroup | pure拒绝未知分类及成员私藏群状态 |
+| Game.applyStatusToMonster/discordBlastFromPlayer/气体状态出口 | 群精神免疫/抵抗归核心，气体按实体暴露、核心max合并；混乱惊醒归核心 |
+| Game.dominateBoltTarget/becomeAllyWith | 真实腿命中用核心判定一次、全组阵营与支配标记 |
+| Game.moveEntrancedMonsters/takeBodyDecision/tryMoveBodyCore、PhasedAttackProduction.selectBody | 一次受控移动、恐惧邻步与混乱唯一方向；沿旧规划/终态环境及phased资格 |
+| statusConfig.creatureStatusRows、MonsterSidebar.monsterBehaviorLabel | 显示共享精神状态/核心行为，独立局部状态仍可见 |
+
+## 专项与开发问题
+
+新增两文件共 **26项**：`phase4d_group_sidebar.test.ts` 8项（含2组件×320/390的4项真实客户端渲染），`phase4d_body_status.test.ts` 18项。覆盖两正式织兽18→2行、核心HP/断足概况、核心/腿检视、隐藏/幻觉/旧行、历史冻结和零RNG/零命令点击；8种群状态经全部成员施加但只存核心/真实wait只减一次；各来源速度与到期；局部毒/免火/网；关系/纷争自排除；完整分类/坏档原局不替换、读档状态续跑；真实魔杖支配一次付款/核心成功率、催眠反向群移动、恐惧无足攻击；整组格麻痹气体一次状态变化和一次倒计时、单腿燃烧一次HP/1:4传伤。
+
+读档状态用例比较实体、群声明/机械表和RNG，不冒充新增精神状态的真实开局录像。真实开局录像另沿既有正式自然专项重跑：**seed7309 / wizard / 仅giants / D15**，2175事件抵达、2200首次断足、2435最终击败、coreId482、8足退休，与4d-3元数据相同；5个独立load后缀/全replay/3点seek用例通过，各保留480s原deadline。这仍不是normal平衡验收。
+
+开发中的失败都在本轮新增代码/夹具：最初observeDisplayFrame漏logger参数；新状态夹具把executeCommand第三参数误传true；拒绝坏档比较漏归一化savedAt；类型收窄需显式Array分支，Sidebar残留一处旧选择器引用。修正后新专项26项通过。未改旧测试/守卫、断言语义、容差、deadline或skip；无需旧行为反事实修订。giants正式definitions/locale内容、生成基线和黄金trace未改、未重录。原生状态profile的新增rows进入复合体存档声明闭包，旧存档不迁移，按项目既定决策由严格声明校验拒绝不相符数据。
+
+## 最终开发期验收、性能与环境边界
+
+最终v1同一冻结候选的8项门全部exit0。Node24.19.0、3GiB堆、Vitest最多2workers；自然长文件与其余相关串行，合计 **110文件2424项全部通过**，其中本轮新增26项。按用户开发期政策，不跑完整npm test/全部test:ext/removal/CE full/gen。无新增Game字段，U03状态登记不变。
+
+| 门禁 | 实际结果 | runner耗时 |
+| --- | --- | ---: |
+| `node scripts/check-module-boundaries.mjs` | 通过，含唯一测试归属 | 1.773s |
+| `npx vue-tsc -b` | 通过 | 8.095s |
+| `npm run build` | 通过；保留既有大chunk提示 | 11.337s |
+| 正式自然录像，单独运行 | 1文件、5项全部通过，各480s门限不变 | 438.114s |
+| 其余109文件相关Vitest（含合入3d） | 109文件、2419项全部通过 | 764.082s |
+| terrain catalog白名单定向守卫 | 1项通过；名字选择外29项未运行，未新增skip | 2.023s |
+| `check-module-composition-smoke.mjs --engine-only` | 16/16引擎组合通过，requestedScopePassed=true | 86.906s |
+| `npm run test:drift -- --maxWorkers=2` | 4文件、5项全部通过 | 81.889s |
+
+组合报告browser=not-run、整体passed=false；只认明确请求的engine-only范围通过。相关集合含4a0全对象差分、4a–4d、giants/growth/combat、3a0/3b/3c/3d（含本次合入动画/弹反提示修复）、状态/关系/侧栏/客户端UI、原生战斗/弹道/环境、whole-run/录像/UR2–4和仓库源码守卫。
+
+冻结输入覆盖src/、scripts/、package/tsconfig/vite，共**908文件**，各门changedInputs=[]；开始/结束及报告补写时均相同。按路径排序的紧凑JSON路径→SHA256清单再取SHA256为 `428166d8ef08da7667b56b48c4ba26a00481d07aae7161659e593364a20b373f`，UTC `2026-10-05T14:26:51Z` / `2026-10-05T14:50:05Z`。原命令、清单、耗时为 `/private/tmp/p4d4-final-v1-gates.json`，各日志同前缀，组合详情为 `/private/tmp/p4d4-final-v1-composition.json`；原始证据不入库。
+
+17实体诊断追击运行20条真实executeCommand(wait)，20条均整组移动；计时仅包命令，不含建场/断言。冷次**35.683ms**，19个暖样本**P50 33.738ms / P95 39.798ms**，最大**39.798ms**。原始数据 `/private/tmp/p4d4-final-v1-command-performance.json`。这是Node诊断，不是自然局/浏览器/手机性能；未控制宿主前后负载，不据此声称改善或回退。
+
+沿用 [develop-web-game技能](/Users/coolking70/.codex/skills/develop-web-game/SKILL.md) 步骤7的“You must run `$WEB_GAME_CLIENT` after each meaningful change”。UI改变及最终候选后均执行原客户端；Vite监听127.0.0.1:5414返回EPERM，Chromium MachPortRendezvousServer返回Permission denied(1100)，自动浏览器inventory为browsers=[]。额外查看现有Arc入口，当前窗口不是本地游戏页，未获得本候选的真实页面。未绕过权限限制，无截图或触控验收；真实320/390 CSS/触屏/ACK仍明确剩余。日志 `/private/tmp/p4d4-browser-server.log`、`/private/tmp/p4d4-browser-client.log`、`/private/tmp/p4d4-browser-final-client.log`。
+
+
+## 完整4d剩余项（当前，仍按原1–8）
+
+1. **分类/正式生成已推进，声明与群环境尚缺。** 原生27状态分类/可信路由及正式整组场地保留；仍缺核心/成员fixed-zone、攻击profile声明闭包、自定义/局部状态profile覆盖、移动逐子步环境与窄事务回滚，fixed pose门保持。
+2. **局部精神移动与关系已推进，完整群AI仍缺。** 新增恐惧合法邻步、混乱唯一方向、催眠一次反向群落脚；仍缺有界远路、安全图/原生生存、盟友跟随/逃跑/施法完整优先级、受控攻击/恶心/抓取等完整移动出口。邻步不能当作完整AI。
+3. **群精神存储/计时已接，完整组合仍缺。** 原四组合双腿横扫/公开焚烧/中央1:4保持；仍需实际火球、多源growth/combat逐次消费全部条件、精神射线/面积效果和被动/治疗的完整组合。
+4. **破坏/原生击败保持，完整派生与收据组合仍缺。** 仍缺攻击profile失攻派生、全部关系/目标引用清理、实际XP数值和所有死因组合验证；provider/fallback及3d可信身份/回滚未改。
+5. **群状态/支配/纷争、局部毒火网已推进；完整环境资格仍缺。** 已有核心唯一精神计时、全组支配/阵营查询、局部毒火与stationary网腿。仍缺受击惊醒/全部原生被动和核心预算效果、全组飞行/支撑坠落/潜水all谓词、携带物/熔岩/水流等完整资格和环境组合。分类表不等于全部效果出口完成。
+6. **整体生命周期仍缺。** 保coreID的单体↔复合体原子polymorph、整组clone新ID/深拷贝/无奖励、实际整组移层/pending仍关闭。正式破坏自然存读/replay/seek/续录保持，本轮另补状态诊断续跑，不替代转换/迁移录像。
+7. **3b多源路径保持，跨生命周期组合仍缺。** gen0/付款/scope/破坏取消/存读保持；仍需完整群精神中断与正式profile的真实phased录像、整体转换/迁层交叉验证。成员再生/非零generation按D13继续关闭。
+8. **维护者侧栏反馈已修复；真实设备/平衡仍缺。** 当前/历史三个列表按公开群体归并、核心HP/成员摘要/详情、单腿命中瞄准检视、公开裁切与320/390客户端专项完成。仍需320/390真实CSS像素/触屏/ACK切换、隐藏核心时的更完整既知群呈现策略及normal平衡验收。
+
+本轮按任务书允许的干净子里程碑收束，不把剩余生命周期和组合能力标为完整4d。继续工作的主要接缝是逐段环境/完整群AI、整体polymorph/clone/迁层与其phased/真实录像交叉，再收束全部组合和设备验收。
+
+## 保留的4d-3/4d-2/4d-1/4d-0历史报告
+
+以下为HEAD维护者已提交的历史报告原文，其当时状态不覆盖本轮当前剩余清单。
+
 # 4d-3 执行报告：正式复合体内容与自然可玩闭环
 
 基于维护者已提交4d-2的 `ext/phase4` HEAD `0f89227f6626b59a77d3513bc6da91ffbc0b4067`，开工工作树干净。按本轮授权优先完成项1、8的内容闭环，交付可独立审阅的 **4d-3 子里程碑，完整4d仍未完成**。正式页岩织兽、整组场地验算、仅giants自然击败/断足存读/真实录像链路和公开核心HUD已接通；其余状态、生命周期和跨模块组合缺口仍逐项列在下方。未暂存、commit或push。4d-2/4d-1/4d-0历史报告原字节保留在后方。

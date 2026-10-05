@@ -46,6 +46,10 @@ export function validateBodyGroup(group: BodyGroupState, catalog: SpatialCatalog
             || (actor as Creature & { typeId?: string }).typeId !== part.formId
             || part.role === 'core' && actor.id !== group.coreId) invalid();
         ids.add(slot.entityId);
+        for (const id of Object.keys(actor.statusDurations ?? {})) {
+            const row = catalog.statusProfile(definition.statusProfileId).rows.find(r => r.statusId === id);
+            if (!row || part.role !== 'core' && row.owner !== 'entity') invalid();
+        }
     }
 }
 /** Derive from immutable native speed and unique direct receipts on every read.

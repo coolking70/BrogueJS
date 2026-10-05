@@ -2,6 +2,7 @@
  * fixtures in 4a0; production body actions remain closed until their vertical
  * slices ship. No module ID, display glyph or HP can imply a shape. */
 import type { Pos } from '../../types';
+import bodyStatusRows from '../../data/body-status-profile.json';
 export type Pose = 'r0' | 'r90' | 'r180' | 'r270' | 'm0' | 'm90' | 'm180' | 'm270';
 export interface Ratio { numerator: number; denominator: number }
 export interface HitZoneDefinition {
@@ -50,8 +51,11 @@ export interface PartBreakRule {
     )[];
     regenerate?: { delayTicks: number; formId: string; maxCycles: number };
 }
-/** Only native routing is available before body status/action slices open. */
-export interface SpatialStatusProfileDefinition { id: string; owner: string; kind: 'native' }
+export interface SpatialStatusProfileDefinition {
+    id: string; owner: string; kind: 'native';
+    rows: readonly { statusId: string; owner: 'group' | 'entity'; merge: 'max' | 'stack' | 'replace';
+        disables: readonly ('decision' | 'attacks' | 'movement')[] }[];
+}
 export interface BodyGroupState {
     schema: 1; groupId: number; coreId: number; bodyDefinitionId: string;
     members: { partId: string; entityId: number | null; life: 'active' | 'broken' | 'removed'; generation: number;
@@ -95,6 +99,24 @@ export function transform(p: Pos, pose: Pose): Pos {
     for (let n = 0; n < turns; n++) [x, y] = [-y, x];
     return { x: x || 0, y: y || 0 };
 }
+/** The native profile is a complete, finite classification, not a reducer
+ * script or a guessed default for unknown status keys. */
+export function validateNativeBodyStatusRows(value: unknown): SpatialStatusProfileDefinition['rows'] {
+    const ids = new Set('paralyzed invisible telepathy levitating hallucinating confused regenerating haste poisoned slowed hasted weakened flying immune_fire discordant shielded entranced nauseous darkness magical_fear stuck donning enraged lifespan_remaining aggravating burning explosion_immunity'.split(' '));
+    const rows = Array.isArray(value) ? value : fail('Incomplete body status profile');
+    if (rows.length !== ids.size) fail('Incomplete body status profile');
+    const seen = new Set<string>();
+    for (const row of rows) {
+        keys(row, ['statusId', 'owner', 'merge', 'disables']);
+        if (!ids.has(row.statusId) || seen.has(row.statusId) || !['group','entity'].includes(row.owner)
+            || !['max','stack','replace'].includes(row.merge) || !Array.isArray(row.disables)
+            || new Set(row.disables).size !== row.disables.length || row.disables.some((d: string) => !['decision','attacks','movement'].includes(d))) fail('Invalid body status row');
+        seen.add(row.statusId);
+    }
+    return rows as SpatialStatusProfileDefinition['rows'];
+}
+const nativeBodyStatusProfile: SpatialStatusProfileDefinition = deepFreeze({ id: 'foundation:native', owner: 'foundation', kind: 'native',
+    rows: validateNativeBodyStatusRows(bodyStatusRows) });
 export function compileFootprint(value: unknown): ReadonlyMap<Pose, readonly FootprintCell[]> {
     keys(value, ['id', 'owner', 'geometry', 'poses', 'zoneCells', 'zones'], ['id', 'owner', 'geometry', 'poses']);
     const d = value as unknown as FootprintDefinition;
@@ -146,7 +168,7 @@ export class SpatialCatalog {
     private readonly bodies = new Map<string, BodyDefinition>();
     private readonly forms = new Map<string, SpatialFormDefinition>();
     private readonly breakRules = new Map<string, PartBreakRule>([['foundation:keep-zone', deepFreeze({ id: 'foundation:keep-zone', owner: 'foundation', trigger: 'hp-zero', disposition: 'keep-zone', modifiers: [] })]]);
-    private readonly statusProfiles = new Map<string, SpatialStatusProfileDefinition>([['foundation:native', deepFreeze({ id: 'foundation:native', owner: 'foundation', kind: 'native' })]]);
+    private readonly statusProfiles = new Map<string, SpatialStatusProfileDefinition>([['foundation:native', nativeBodyStatusProfile]]);
     constructor(readonly fixture = false, private readonly owners: readonly string[] = []) {
         for (const width of [1, 2, 3]) this.registerFootprint({ id: width === 1 ? 'builtin:single' : `builtin:square-${width}`,
             owner: 'foundation', geometry: { kind: 'rect', width, height: width }, poses: ['r0'] });
