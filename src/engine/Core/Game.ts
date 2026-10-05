@@ -29,9 +29,9 @@ import { bindMovementRegions } from '../Movement/MovementRegions';
 import { squareContactScope, withSquareContactScope } from '../Movement/SpatialContactScope';
 import { SPATIAL_LIMITS, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
 import { assertNativeSpatial, assertSingleCellPlayer, nativeContactOf, footprintOf, footprintEvery, footprintSome, commitCreatureAnchor, squareAnchorRevision, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canFitAt, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
-import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction } from './ActorActionSession';
-import { consumeProductionActorActionResume, disposeProductionActorActionSession, markProductionActorActionResume, notifyProductionActorSourceChanged, productionActorActionInputLocked, reconcileProductionActorActions, resumeProductionActorActions, suspendProductionActorActions, validateProductionActorActionSession, validateProductionActorActionState, type ActorActionProductionWorld } from './ActorActionProduction';
-import { bindPhasedAttackProduction, isActorDodgeCommand, prepareActorDodgeCommand, commitActorDodgeCommand, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
+import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction, isProductionActorActionRunInvalid, restoreProductionActorActionValidity } from './ActorActionSession';
+import { checkpointProductionActorActions, consumeProductionActorActionResume, disposeProductionActorActionSession, markProductionActorActionResume, notifyProductionActorSourceChanged, productionActorActionInputLocked, reconcileProductionActorActions, resumeProductionActorActions, suspendProductionActorActions, validateProductionActorActionSession, validateProductionActorActionState, type ActorActionProductionWorld } from './ActorActionProduction';
+import { bindPhasedAttackProduction, isActorStaggered, reconcileActorNativeRecovery, isActorParryCommand, prepareActorParryCommand, commitActorParryCommand, isActorDodgeCommand, prepareActorDodgeCommand, commitActorDodgeCommand, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
 import { assertActorActionScope, type ActorActionScope } from './ActorActionScope';
 import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
 import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
@@ -441,6 +441,19 @@ export class Game {
             memberDamage: (actor, damage, kind) => this.applyBodyMemberDamage(actor, damage, kind),
             memberDamageCommitted: actor => this.finishBodyMemberDamage(actor),
             validateMemberBreak: request => this.validateMemberBreak(request),
+            checkpointZoneBreak: () => {
+                const world=this.actorActionWorld(),actors=[world.player,...world.levels.flatMap(level=>level.actors)];
+                const clocks=[...new Set(actors)].map(actor=>({actor,ticks:actor.ticksUntilTurn,move:actor.movementSpeed,attack:actor.attackSpeed}));
+                const restoreActions=checkpointProductionActorActions(this),invalid=isProductionActorActionRunInvalid(this);
+                const origin=recordingState(this).origin,fromNew=this.recordingFromNewGame,error=this.lastAdvancementError,replayError=this.replayError;
+                const hover=this.hoveredCell,text=this.hoveredText,arcana=this.pendingArcana,cursor=arcana?.cursor;
+                return()=>{
+                    restoreActions();restoreProductionActorActionValidity(this,invalid);
+                    for(const row of clocks){row.actor.ticksUntilTurn=row.ticks;row.actor.movementSpeed=row.move;row.actor.attackSpeed=row.attack;}
+                    recordingState(this).origin=origin;this.recordingFromNewGame=fromNew;this.lastAdvancementError=error;this.replayError=replayError;
+                    this.hoveredCell=hover;this.hoveredText=text;if(arcana&&cursor)arcana.cursor=cursor;
+                };
+            },
             zoneBroken: (actor, zoneId) => {
                 actor.refreshSpeeds();
                 cancelPhasedAttacksAtZone(this, actor, zoneId);
@@ -3453,7 +3466,12 @@ export class Game {
             if (!this.extensionRuntime) throw new Error('Extension command in classic mode');
             // §4.5: only detached data crosses the wait. Runtime.command and its
             // controlled callbacks remain entirely synchronous, including refusals.
-            if (isActorDodgeCommand(this, data)) yield* this.executeActorDodgeCommandStages(data);
+            if (isActorParryCommand(this,data)) {
+                const plan=prepareActorParryCommand(this,data);
+                if(plan&&commitActorParryCommand(this,plan)){timeSystem.currentTick+=this.player.ticksUntilTurn;observePresentation(this,'turn',0);this.playerTurnEnded();}
+                this.collectExtensionComponents();
+            }
+            else if (isActorDodgeCommand(this, data)) yield* this.executeActorDodgeCommandStages(data);
             else if (isPhasedAttackCommand(this, data)) yield* this.executePhasedAttackCommandStages(data);
             else if (this.onCommandConfirmRequest && !this.replayRecording) yield* this.executePreparedExtensionCommandStages(data);
             else this.extensionRuntime.command(data, () => this.collectExtensionComponents());
@@ -8603,13 +8621,13 @@ export class Game {
     /** Trusted segment executor. Geometry/target/risk/defense validation belongs
      * to ActorCombatResolutionAuthority. This seam preserves the complete native
      * single-hit pipeline, without a second attack-speed charge or geometry fanout. */
-    public resolveActorNativeMelee(scope: ActorActionScope, source: Creature, target: Creature): AttackResult {
+    public resolveActorNativeMelee(scope: ActorActionScope, source: Creature, target: Creature, poiseDamage?: number): AttackResult {
         assertActorActionScope(scope, this, source.id, source === this.player ? 'player-command' : 'npc-scheduler');
         return withPrepaidNativeAttack(scope, this, source, () => {
             if (source === this.player && target instanceof Monster) return this.resolvePlayerMeleeAttackAt(target, false);
             if (source instanceof Monster) return source.resolveActorNativeMelee(scope, this, target);
             throw new Error('Unsupported actor native melee source');
-        });
+        }, poiseDamage);
     }
 
     /**
@@ -8733,6 +8751,12 @@ export class Game {
      */
     private playerRecoversFromAttacking(anAttackHit: boolean): void {
         if (this.player.ticksUntilTurn >= 0) {
+            if (isActorStaggered(this,this.player.id)) {
+                const nativeTicks=this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_STAGGER')&&anAttackHit?2*this.player.attackSpeed
+                    :this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_QUICKLY')?Math.floor(this.player.attackSpeed/2):this.player.attackSpeed;
+                this.player.ticksUntilTurn=Math.max(this.player.ticksUntilTurn,nativeTicks);
+                reconcileActorNativeRecovery(this,this.player.id);return;
+            }
             if (this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_STAGGER') && anAttackHit) {
                 this.player.ticksUntilTurn += 2 * this.player.attackSpeed;
             } else if (this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_QUICKLY')) {

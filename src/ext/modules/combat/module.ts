@@ -6,6 +6,7 @@ import { projectCombatView } from './view';
 import { combatAttackDefinitions, initialProductionCombatState } from './production';
 import type { ProductionActorAttackState } from '../../actorActions';
 import type { CombatPack } from './types';
+import { createCombatPartBreakProvider } from './partBreak';
 
 /** Data-only declaration; foundation owns scheduling, geometry and native effects. */
 export function createCombatModuleFromPack(pack: CombatPack): ExtensionModule {
@@ -15,6 +16,7 @@ export function createCombatModuleFromPack(pack: CombatPack): ExtensionModule {
         id:'combat',version:pack.moduleVersion,
         rules:{schema:pack.schema,version:pack.rulesVersion,fingerprint:extensionDataFingerprint(pack)},
         actorActions:{stateField:'scheduler',definitions:definitions as unknown as Json},
+        optionalPartBreaks:{'combat.part-break.v1':createCombatPartBreakProvider(definitions)},
         initialState:()=>initialProductionCombatState() as unknown as Json,
         validateState:(value):value is Json=>{try {validateProductionActorAttackState(value,definitions);return true;}catch{return false;}},
         // Mechanical actor state is one module-owned ledger; no second component clock.

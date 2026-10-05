@@ -1,5 +1,4 @@
 import { computed, defineAsyncComponent, nextTick, onScopeDispose, ref, shallowRef } from 'vue';
-import i18next from 'i18next';
 import type { ModuleUiHost, ModuleUiSession } from '../../../ui/types';
 import type { DialogAction, DialogRequest } from '../../../../ui/dialogService';
 import { buildCombatUiCommand, combatDirections, readCombatUiResources, readCombatUiView, type CombatUiView } from './view';
@@ -112,11 +111,9 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
                     phase: threat.phase })) } };
         }), panel: computed(() => null), panelOpen: computed(() => !!selected.value),
         refresh, close,
-        commands: computed(() => {
-            host.tick.value;
-            return view.value?.actions.map(action => ({ id: `combat:${action.id}`, label: i18next.t(action.nameKey),
-                disabled: blocked() || view.value!.readOnly || !action.canUse, invoke: () => open(action.id) })) ?? [];
-        }),
+        // The module bar owns combat actions. Repeating them in the shell's
+        // bottom command strip creates two toolbars and crowds narrow screens.
+        commands: computed(() => []),
         bar: computed(() => {
             host.tick.value;
             return view.value?.actions.length ? { component: CombatAttackBar, props: {

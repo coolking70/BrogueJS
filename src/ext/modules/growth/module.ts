@@ -634,6 +634,8 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                 }
             },
             committedAction({actorId,action},context) {
+                // Defense is a separate action; this pack declares no defense interruption.
+                if (action === 'parry') return;
                 const build = skillBuild(context,actorId), interruption = action === 'throw' ? 'projectile' : action;
                 const effects = build.effects.filter(instance=>!growthTimedDefinition(pack,instance)?.interruptions.includes(interruption));
                 if (effects.length !== build.effects.length) {put(context,actorId,'skill-build',{...build,effects});reconcileActor(context,actorId);}

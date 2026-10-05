@@ -2,6 +2,10 @@
 
 `ext/foundation` 现定位为基于 BrogueJS 的**独立新产品原型分支**，暂不合并 `main`。允许按新产品目标彻底修改玩法与引擎；现有内容、数值和阶段样例均可在后续重新设计，不以继续兼容经典 CE 为前提。
 
+## 阶段 3d：韧性、硬直、确定弹反候选
+
+基于已验收3c `a34b0c2`，combat1.3.0 / state3 实现数据驱动 poise、一次确定弹反、共享NPC防御与硬直取消；没有免费反击。战斗按钮只保留在模块栏，解决底部完整重复动作行。3c dodge 白名单保持；已先合入正式4c foundation `315fd8c`，再按原协议接入 core poise provider，与fallback互斥，保持取消回滚；条件交付前已同步 `2adaf6a`（4d-0仍仅fixture，生产群体关闭）。范围、严格存读、实际验证和浏览器缺口见 [3d报告](phase3d.report.md)。止于3d，不做篝火、不合main、不tag。
+
 ## 阶段 3c：体力与一格闪避候选
 
 基于已验收 3b `c7561e6`，combat 1.2.0 增加统一原生/招式费用、定点体力恢复、NPC 同资源规则、growth 双资源同事务和一格闪避。保护仅限可闪避直接物理，环境伤害不变；single/r0 方形 capability gate 不随 4b 自动扩大。现整合 hosted 4b foundation `2eb3181`，仍拒绝 mask/旋转体闪避，不包含 phase4-only 4c0。范围、严格存读、实际测试与待完成像素 QA 见 [3c 报告](phase3c.report.md)。止于 3c，3d 及之后仍须另行批准；giants 默认数据不变，不合 main、不打 tag。
@@ -91,7 +95,7 @@
 
 ## 当前审阅入口
 
-- [阶段3独立类魂战斗设计](phase3-combat.md)：已批准（P3-D01–D07=A），3a0–3b 已验收；3c 候选见本页与报告
+- [阶段3独立类魂战斗设计](phase3-combat.md)：已批准（P3-D01–D07=A），3a0–3c 已验收；3d 候选见本页与报告
 - [3a0 共用动作底座报告](phase3a0.report.md)：基于已合并 4a0 的有限动作/调度/防御 fixture；正式 combat 仍保持 inert，等待独立验收
 - [阶段4大型敌人设计](phase4-giants.md)：已批准（r3）；[4a0 报告](phase4a0.report.md)已验收并合入
 

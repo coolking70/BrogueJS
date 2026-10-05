@@ -193,3 +193,11 @@ export function resumeProductionActorActions(game: Game): void {
     binding.scheduler.refreshMirrors();
     binding.options.resumeResources?.();
 }
+
+/** Preserve derived interruption state if a native body/provider transaction fails. */
+export function checkpointProductionActorActions(game:Game):()=>void {
+    const binding=bindings.get(game);if(!binding)return()=>{};
+    const changed=new Set(binding.changedSources),interruption=binding.interruption;
+    const restoreScheduler=binding.scheduler.checkpointTransaction();
+    return()=>{binding.changedSources=new Set(changed);binding.interruption=interruption;restoreScheduler();};
+}

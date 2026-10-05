@@ -1,4 +1,4 @@
-import { guardNativeMelee } from '../Core/NativeAttackTransaction';
+import { guardNativeMelee, settleNativeMeleePoise } from '../Core/NativeAttackTransaction';
 import { bodyAttackContactOf, nearestLegalMeleeContact, withBodyAttackContact } from './BodyCombat';
 import { distanceBetweenFootprints } from '../Movement/CreatureSpatial';
 import { ringTransferencePercent } from '../Items/ItemEffectFormulas';
@@ -44,7 +44,9 @@ export interface AttackResult {
     damage: number;
     /** Rejected before native hit/damage RNG and physical-resolution facts. */
     staminaBlocked?: true;
+    staggerBlocked?: true;
     dodged?: true;
+    parried?: true;
     weaponName?: string;
     /** True if the attack hit, including a fully shielded hit */
     hit: boolean;
@@ -79,6 +81,14 @@ export interface AttackResult {
 function legalSeizeContact(attacker: Creature, defender: Creature, grid?: Grid): boolean {
     return distanceBetweenFootprints(attacker, defender) === 1
         && (!grid || !!nearestLegalMeleeContact(grid, attacker, defender, { allowThroughWalls: false, requirePassableTerrain: false }));
+}
+
+/** BE_ATTACK and reflected bolt delivery reuse the native resolver without
+ * becoming melee for stamina, active defenses, or poise. */
+function isNativeMeleeAttack(attacker: Creature, defender: Creature, opts?: { delivery?: 'bolt'; isWeaponAttack?: boolean }): boolean {
+    const current = (attacker.extensionHooks ?? defender.extensionHooks)?.causality.current;
+    const origin = current?.actorId === attacker.id ? current : undefined;
+    return opts?.delivery !== 'bolt' && opts?.isWeaponAttack !== false && origin?.kind !== 'bolt' && origin?.kind !== 'reflection';
 }
 
 export class CombatSystem {
@@ -124,12 +134,12 @@ export class CombatSystem {
      * Implements CE-accurate hit probability and damage formulas.
      */
     public static attack(attacker: Creature, defender: Creature, opts?: Parameters<typeof CombatSystem.resolveAttack>[2]): AttackResult {
-        const current = (attacker.extensionHooks ?? defender.extensionHooks)?.causality.current;
-        const origin = current?.actorId === attacker.id ? current : undefined;
-        if (opts?.delivery !== 'bolt' && opts?.isWeaponAttack !== false && origin?.kind !== 'bolt' && origin?.kind !== 'reflection') {
+        if (isNativeMeleeAttack(attacker, defender, opts)) {
             const result = guardNativeMelee(opts?.grid, attacker, defender);
             if (result !== 'allow') return { damage: 0, hit: false, backstab: false,
-                ...(result === 'dodge' ? { dodged: true as const } : { staminaBlocked: true as const }) };
+                ...(result === 'dodge' ? { dodged: true as const } : result === 'parry'
+                    ? { parried: true as const } : result === 'staggered'
+                        ? { staggerBlocked: true as const } : { staminaBlocked: true as const }) };
         }
         if (!attacker.spatial && !defender.spatial) return CombatSystem.attackAtContact(attacker, defender, opts);
         return withBodyAttackContact(attacker, defender, bodyAttackContactOf(attacker, defender),
@@ -403,9 +413,12 @@ export class CombatSystem {
         const applyTo = defender;
         if (damage > 0) {
             const hpDamage = applyTo.absorbShieldDamage(damage);
-            const transfer = (actual: number) => CombatSystem.transferMonsterHealth(attacker, applyTo, actual);
+            let effectivePhysicalDamage = 0;
+            const transfer = (actual: number) => { effectivePhysicalDamage = actual; CombatSystem.transferMonsterHealth(attacker, applyTo, actual); };
             if (applyTo instanceof Player) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
             else applyTo.takeDamage(hpDamage, true, opts?.grid, transfer, 'physical'); // shield applied exactly once
+            if (isNativeMeleeAttack(attacker, defender, opts))
+                settleNativeMeleePoise(opts?.grid, attacker, defender, { hit: true, damage: effectivePhysicalDamage });
             if (poisonDuration > 0) applyTo.addPoison(poisonDuration, 1);
         } else {
             // CE inflictDamage still applies the ring's minimum ±1 on a hit
@@ -716,10 +729,13 @@ export class CombatSystem {
         if (damage > 0) {
             const hpDamage = applyTo.absorbShieldDamage(damage);
             const hpBefore = applyTo.hp;
-            const transfer = (actual: number) => CombatSystem.transferMonsterHealth(attacker, applyTo, actual);
+            let effectivePhysicalDamage = 0;
+            const transfer = (actual: number) => { effectivePhysicalDamage = actual; CombatSystem.transferMonsterHealth(attacker, applyTo, actual); };
             if (applyTo instanceof Player) applyTo.takeCombatDamage(hpDamage, true, opts?.grid, transfer);
             else applyTo.takeDamage(hpDamage, true, opts?.grid, transfer, 'physical'); // shield applied exactly once
             if (trace) trace.hpLost = Math.max(0, hpBefore - applyTo.hp);
+            if (isNativeMeleeAttack(attacker, defender, opts))
+                settleNativeMeleePoise(opts?.grid, attacker, defender, { hit: true, damage: effectivePhysicalDamage });
             if (poisonDuration > 0) applyTo.addPoison(poisonDuration, 1);
         } else {
             // CE inflictDamage still applies the ring's minimum ±1 on a hit

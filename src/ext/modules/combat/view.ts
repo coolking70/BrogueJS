@@ -19,14 +19,17 @@ export function projectCombatView(value?: ReadonlyJson, definitions?: ActorAttac
     const actor=state.actors.find(actor=>actor.actorId===playerId);
     const stamina=actor?.stamina??policy.initialStamina;
     const busy=state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===playerId)
-        || (actor?.dodgeRecoveryRemainingTicks??0)>0;
+        || (actor?.dodgeRecoveryRemainingTicks??0)>0 || (actor?.parryRecoveryRemainingTicks??0)>0 || (actor?.staggerRemainingTicks??0)>0;
     const availability=(cost:number)=>({cost,canUse:!busy&&stamina>=cost,
         ...(!busy&&stamina>=cost?{}:{unavailableKey:busy?'ext.combat.ui.busy':'ext.combat.ui.insufficient_stamina'})});
     return {schema:1,revision:state.revision,telegraphs,
         resources:{stamina,capacity:policy.staminaCapacity,regenDelayRemaining:actor?.regenDelayRemaining??0,
-            dodgeRemainingTicks:actor?.dodgeRemainingTicks??0,dodgeRecoveryRemainingTicks:actor?.dodgeRecoveryRemainingTicks??0},
+            dodgeRemainingTicks:actor?.dodgeRemainingTicks??0,dodgeRecoveryRemainingTicks:actor?.dodgeRecoveryRemainingTicks??0,
+            poise:actor?.poise??policy.poiseCapacity,poiseCapacity:policy.poiseCapacity,poiseRecoveryDelayRemaining:actor?.poiseRecoveryDelayRemaining??0,
+            parryRemainingTicks:actor?.parryRemainingTicks??0,parryRecoveryRemainingTicks:actor?.parryRecoveryRemainingTicks??0,
+            staggerRemainingTicks:Math.max(actor?.staggerRemainingTicks??0,...state.scheduler.bundles.filter(bundle=>bundle.decisionOwnerId===playerId).flatMap(bundle=>bundle.subactions.map(child=>child.phases[child.phaseIndex]?.kind==='break-recovery'?child.phaseRemainingTicks:0)))},
         actions:[...profile.attackIds.map(id=>{
             const attack=definitions.attacks.find(attack=>attack.id===id)!;
             return {id,nameKey:attack.nameKey,...availability(attack.cost)};
-        }),{id:'dodge',nameKey:'ext.combat.dodge.name',...availability(definitions.dodge.cost)}]} as Json;
+        }),{id:'dodge',nameKey:'ext.combat.dodge.name',...availability(definitions.dodge.cost)},{id:'parry',nameKey:'ext.combat.parry.name',...availability(definitions.parry.cost),windowTicks:definitions.parry.windowTicks,recoveryTicks:definitions.parry.recoveryTicks}]} as Json;
 }

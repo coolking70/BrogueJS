@@ -1,3 +1,5 @@
+import { validateProductionActorAttackTransactionState } from './actorActionValidation';
+import type { ActorAttackDefinitions, ProductionActorAttackState } from './actorActions';
 import { SpatialCatalog, nativeSpatialCatalog } from '../engine/Movement/SpatialSchema';
 import { rigidFootprint } from '../engine/Movement/RigidFootprint';
 import { bindNativeForms, nativeFormFootprint, nativeFormSpatial, validNativeForm, type NativeFormDefinition } from './nativeForms';
@@ -16,6 +18,7 @@ import { footprintOf } from '../engine/Movement/CreatureSpatial';
 import { hasBodyContact, physicalContactOf, isWholeBodyDamage } from '../engine/Combat/BodyCombat';
 import { resolveFixedZoneContact } from '../engine/Combat/FixedZoneHealth';
 import { canonical, cloneJson, isJson, validId } from './json';
+import { actorActionIdentityCheckpoint, adoptActorActionJson } from './actorActionIdentity';
 import { EffectCausality, validEffectOrigin, type EffectOrigin } from './causality';
 import { ExtensionCompatibilityError } from './compatibility';
 import { PART_BREAK_CAPABILITY, validatePartBreakRequest, type PartBreakRequest, type PartBreakProvider,
@@ -27,6 +30,7 @@ import type { DeathFact, GenerationToken, ControlledActionRequest, ControlledAct
 const spatialCatalogs = new WeakMap<ExtensionRuntime, SpatialCatalog>();
 // No new own runtime field in existing worlds (4a0 full-object differential).
 const partBreakProviders = new WeakMap<ExtensionRuntime, { module: ExtensionModule; provider: PartBreakProvider }>();
+const zoneBreakCheckpoints = new WeakMap<ExtensionRuntime, () => () => void>();
 const zoneBreakHandlers = new WeakMap<ExtensionRuntime, NonNullable<ExtensionPorts['zoneBroken']>>();
 const bodyHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts, 'memberDamage' | 'memberDamageCommitted' | 'validateMemberBreak'>>();
 function isCreatureView(value: unknown): boolean {
@@ -41,6 +45,7 @@ export interface ExtensionPorts {
     memberDamage?(actor: Creature, amount: number, kind: import('./causality').DamageKind): number | undefined;
     memberDamageCommitted?(actor: Creature): void;
     validateMemberBreak?(request: PartBreakRequest): boolean;
+    checkpointZoneBreak?(): () => void;
     depth(): number;
     turn?(): number;
     interactableCandidates?(request: WorldInteractablePlacement): readonly { x: number; y: number }[];
@@ -141,7 +146,8 @@ export class ExtensionRuntime {
     constructor(registry: ExtensionRegistry, manifest: ExtensionManifest, private readonly ports: ExtensionPorts, snapshot?: ExtensionSnapshot) {
         if (ports.zoneBroken) {
             zoneBreakHandlers.set(this, ports.zoneBroken);
-            const { zoneBroken: _handler, ...existingPorts } = ports;
+            if (ports.checkpointZoneBreak) zoneBreakCheckpoints.set(this, ports.checkpointZoneBreak);
+            const { zoneBroken: _handler, checkpointZoneBreak: _checkpoint, ...existingPorts } = ports;
             this.ports = existingPorts;
         }
         if (ports.memberDamage || ports.memberDamageCommitted || ports.validateMemberBreak) {
@@ -452,6 +458,12 @@ export class ExtensionRuntime {
         if (!actor || actor.hp <= 0) throw new Error('Unavailable part break actor');
         if (request.partId !== 'self' && !bodyHandlers.get(this)?.validateMemberBreak?.(request)) throw new Error('Unavailable member break identity');
         const value = freezeView(structuredClone(request)), entry = partBreakProviders.get(this);
+        const actionBinding=this.actorActionBinding();
+        const actionState=actionBinding?.state as unknown as Json|undefined;
+        const liveState = entry?.module.actorActions ? this.states[entry.module.id] : undefined;
+        const identityCheckpoint = actionState ? actorActionIdentityCheckpoint(actionState) : undefined;
+        const restoreNative = zoneBreakCheckpoints.get(this)?.();
+        let providerCommitActive=false;
         let applied = false;
         try {
             return this.transaction(() => {
@@ -481,11 +493,20 @@ export class ExtensionRuntime {
                 requireSynchronous(result);
                 if (entry && preparation?.status === 'ready') {
                     const plan = preparation.plan;
-                    this.rewardProviderPhase = true;
+                    this.rewardProviderPhase = true;providerCommitActive=true;
                     try {
                         this.invoke(entry.module, context => {
                             const narrow: PartBreakCommitContext = {
-                                get state() { return context.state; }, setState: context.setState,
+                                get state() { return context.state; }, setState: next => {
+                                    if(!providerCommitActive)throw new Error('Expired part break commit outside synchronous scope');
+                                    if (liveState) {
+                                        // This narrow provider may run inside a native release,
+                                        // while other unchanged owners are also due at zero.
+                                        validateProductionActorAttackTransactionState(next,entry.module.actorActions!.definitions as unknown as ActorAttackDefinitions,
+                                            liveState as unknown as ProductionActorAttackState);
+                                        this.states[entry.module.id] = adoptActorActionJson(liveState,cloneJson(next));
+                                    } else context.setState(next);
+                                },
                                 getComponent: context.getComponent, setComponent: context.setComponent,
                                 removeComponent: context.removeComponent, message: context.message,
                             };
@@ -493,12 +514,15 @@ export class ExtensionRuntime {
                             requireSynchronous(committed);
                             if (committed !== undefined) throw new Error('Invalid part break commit result');
                         });
-                    } finally { this.rewardProviderPhase = false; }
+                    } finally { this.rewardProviderPhase = false;providerCommitActive=false; }
                 }
+                zoneBreakHandlers.get(this)?.(actor, request.zoneId);
                 return result;
             });
         } catch (error) {
             if (applied) native.rollback();
+            if (actionState && actionBinding) { identityCheckpoint!.restore(); this.states[actionBinding.moduleId] = actionState; }
+            restoreNative?.();
             throw error;
         }
     }
@@ -700,7 +724,7 @@ export class ExtensionRuntime {
                 || Object.keys(input).sort().join(',') !== 'action,module,payload' || typeof input.module !== 'string'
                 || typeof input.action !== 'string' || !validId(input.module)) return false;
             const module = this.modules.find(module => module.id === input.module);
-            if (module?.actorActions && input.action === 'dodge') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
+            if (module?.actorActions && (input.action === 'dodge' || input.action === 'parry')) return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
                 && Object.keys(input.payload).join(',') === 'facing' && typeof input.payload.facing === 'string';
             if (module?.actorActions && input.action === 'attack') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
                 && Object.keys(input.payload).sort().join(',') === 'attackId,facing' && typeof input.payload.attackId === 'string' && typeof input.payload.facing === 'string';
@@ -848,6 +872,11 @@ export class ExtensionRuntime {
     notifyCommittedAction(event: HookEvents['committedAction']): void {
         if (this.hasHook('committedAction')) this.emit('committedAction', event);
     }
+    /** A defense has a unique causal identity but no hit/damage/growth resolution. */
+    notifyActorParried(sourceEntityId:number,targetEntityId:number,depth:number):void {
+        const origin=this.causality.create('melee',sourceEntityId,null,null);
+        if(this.hasHook('defended'))this.emit('defended',{resolutionId:origin.effectId,depth,sourceEntityId,targetEntityId,defense:'parry'});
+    }
     emit<K extends HookName>(name: K, event: HookEvents[K]): void {
         if (this.generations.length && !this.publishingGeneration) {
             this.generations[this.generations.length - 1]!.facts.push({ name, event: structuredClone(event) });
@@ -954,7 +983,6 @@ export class ExtensionRuntime {
                     resolutionId: origin?.effectId ?? this.causality.create('administrative', null).effectId,
                     sourceId: origin?.actorId ?? null, hit: true, damage: amount, kind: kind === 'physical' ? 'physical' : 'other',
                 }, (request, native) => this.commitPartBreak(request, native));
-                if (result.breakReceipt) zoneBreakHandlers.get(this)?.(target, zoneId);
                 return result.nativeHpLost;
             },
             causality: this.causality,

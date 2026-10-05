@@ -10,18 +10,21 @@ function definitions(): ActorAttackDefinitions {
             segments: [1, 2].map((x, index) => ({ delayTicks: index === 0 ? 0 : 5,
                 shape: { kind: 'footprint-offset-union', offsets: Object.fromEntries(facings.map(facing => [facing, [{ x, y: 0 }]])) as Record<ActorAttackFacing, {x:number;y:number}[]>,
                     selfExclusion: 'whole-group', occlusion: 'line-of-effect' },
-                locationPolicy: 'locked-world', targetPolicy: 'part', damageProfile: 'native-melee', dodgeable: true, parryable: false })) }],
+                locationPolicy: 'locked-world', targetPolicy: 'part', damageProfile: 'native-melee', poiseDamage: 2, dodgeable: true, parryable: false })) }],
         profiles: [{ id: 'fixture.profile', resourcePolicyId: 'fixture.resource', attackIds: ['fixture.attack'] }],
         resourcePolicies: [{ id: 'fixture.resource', initialStamina: 24, staminaCapacity: 24, regenPerTickNumerator: 1,
-            regenPerTickDenominator: 20, regenDelayTicks: 40, nativeAttackCost: 2, regenPhases: ['idle', 'recovery', 'break-recovery'] }],
+            regenPerTickDenominator: 20, regenDelayTicks: 40, nativeAttackCost: 2, regenPhases: ['idle', 'recovery', 'break-recovery'],
+            poiseCapacity: 12, poiseRecoveryNumerator: 1, poiseRecoveryDenominator: 30, poiseRecoveryDelayTicks: 40,
+            poiseBreakRecoveryValue: 12, nativePoiseDamage: 2, poiseImmune: false }],
         nativeProfiles: [{ monsterId: 'rat', profileId: 'fixture.profile' }], playerProfileId: 'fixture.profile', breakRecoveryTicks: 50,
         dodge: { cost: 4, windowTicks: 40, recoveryTicks: 80 },
+        parry: { cost: 3, windowTicks: 60, recoveryTicks: 100, poiseDamage: 12, contactRange: 1 },
     };
 }
 function fixture(): { definitions: ActorAttackDefinitions; state: ProductionActorAttackState } {
     const pack = definitions();
     return { definitions: pack, state: {
-        schema: 2, revision: 1, nextActionId: 2,
+        schema: 3, revision: 1, nextActionId: 2,
         scheduler: { schema: 1, bundles: [createActorActionBundle({ actionId: 1, depth: 1, decisionOwnerId: 10, timeChargeOwnerId: 10,
             subactions: [{ sourceEntityId: 10, sourcePartId: 'body', sourceFootprintVersion: 'fixture:source-v1', phases: [
                 { kind: 'windup', durationTicks: 10, segmentIndex: 0 },
@@ -32,7 +35,9 @@ function fixture(): { definitions: ActorAttackDefinitions; state: ProductionActo
             subactions: [{ sourceSubactionId: 1, attackId: 'fixture.attack', facing: 'e', lockedCells: [{ x: 11, y: 10 }],
                 shape: { schema: 1, kind: 'footprint-offset-union', offsets: [{ x: 1, y: 0 }], selfExclusion: 'whole-group' }, approvedRisks: [] }] }],
         actors: [{ actorId: 10, profileId: 'fixture.profile', stamina: 20, regenRemainder: 0, regenDelayRemaining: 40,
-            dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 }],
+            dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0,
+            poise: 12, poiseRecoveryRemainder: 0, poiseRecoveryDelayRemaining: 0,
+            parryRemainingTicks: 0, parryRecoveryRemainingTicks: 0, parryFacing: null, staggerRemainingTicks: 0 }],
     } };
 }
 function check(state: ProductionActorAttackState, pack = definitions()): void { validateProductionActorAttackState(state, pack); }
@@ -41,7 +46,7 @@ describe('generic production attack state codec', () => {
     it('validates declarations and a lazy empty binding without module state or a second clock', () => {
         const pack = definitions();
         expect(() => validateActorAttackDefinitions(pack)).not.toThrow();
-        expect(() => check({ schema: 2, revision: 0, nextActionId: 1, scheduler: { schema: 1, bundles: [] }, actions: [], actors: [] }, pack)).not.toThrow();
+        expect(() => check({ schema: 3, revision: 0, nextActionId: 1, scheduler: { schema: 1, bundles: [] }, actions: [], actors: [] }, pack)).not.toThrow();
         const { state } = fixture(), before = structuredClone(state);
         expect(() => check(state, pack)).not.toThrow();
         expect(state).toEqual(before);
@@ -49,7 +54,7 @@ describe('generic production attack state codec', () => {
 
     it('rejects the previous production schema and incomplete resource rows', () => {
         const { state } = fixture();
-        expect(() => validateProductionActorAttackState({ ...state, schema: 1 }, definitions())).toThrow(/schema/);
+        expect(() => validateProductionActorAttackState({ ...state, schema: 2 }, definitions())).toThrow(/schema/);
         const actor = { ...state.actors[0]! } as Partial<ProductionActorAttackState['actors'][number]>;
         delete actor.regenRemainder;
         expect(() => validateProductionActorAttackState({ ...state, actors: [actor] }, definitions())).toThrow();

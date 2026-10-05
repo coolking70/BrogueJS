@@ -48,3 +48,8 @@ export function selectNativeActorAction(game: object, actorId: number): ActorAct
     const select = selectors.get(game);
     return select ? withNativeActorDecisionScope(game, actorId, scope => select(actorId, scope)) : 'native-fallback';
 }
+
+/** Used only by the encompassing native transaction's synchronous checkpoint. */
+export function restoreProductionActorActionValidity(game:object,invalid:boolean):void {
+    if(invalid)invalidProductionGames.add(game);else invalidProductionGames.delete(game);
+}

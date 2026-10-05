@@ -1,10 +1,16 @@
 {
   "test": [
+    "tests/combat_defense_state.test.ts",
     "tests/combat_display.test.ts",
     "tests/combat_dodge.test.ts",
     "tests/combat_dodge_ui.test.ts",
     "tests/combat_foundation_dodge_gate.test.ts",
+    "tests/combat_native_defense.test.ts",
     "tests/combat_native_stamina.test.ts",
+    "tests/combat_parry.test.ts",
+    "tests/combat_parry_ui.test.ts",
+    "tests/combat_part_break.test.ts",
+    "tests/combat_part_break_runtime.test.ts",
     "tests/combat_planner.test.ts",
     "tests/combat_runtime.test.ts",
     "tests/combat_schema.test.ts",

@@ -125,7 +125,7 @@ describe('3c production dodge preflight and shared footprint authority', () => {
 
     it('insufficient stamina, seizure and a positive native clock reject without normalizing or charging', () => {
         const game = scene(); state(game).actors.push({ actorId: game.player.id, profileId: 'fixture.profile', stamina: 3,
-            regenRemainder: 19, regenDelayRemaining: 4, dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 });
+            regenRemainder: 19, regenDelayRemaining: 4, dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0, poise:12,poiseRecoveryRemainder:0,poiseRecoveryDelayRemaining:0,parryRemainingTicks:0,parryRecoveryRemainingTicks:0,parryFacing:null,staggerRemainingTicks:0 });
         let before = unchangedFacts(game); expect(prepareActorDodgeCommand(game, command())).toBeNull(); expect(unchangedFacts(game)).toEqual(before);
         resource(game).stamina = 20; const holder=npc(game,1,{x:19,y:15});holder.seizing=true;game.player.seized = true; before = unchangedFacts(game);
         expect(prepareActorDodgeCommand(game, command())).toBeNull(); expect(unchangedFacts(game)).toEqual(before);
@@ -193,7 +193,7 @@ describe('3c command decisions, recovery and native defense boundaries', () => {
         if (!answer) expect(unchangedFacts(game)).toEqual(before);
         else {
             expect(game.player.loc).toEqual({ x: 21, y: 15 }); expect(resource(game).stamina).toBe(22);
-            expect(resource(game)).toMatchObject({ dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 });
+            expect(resource(game)).toMatchObject({ dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0, poise:12,poiseRecoveryRemainder:0,poiseRecoveryDelayRemaining:0,parryRemainingTicks:0,parryRecoveryRemainingTicks:0,parryFacing:null,staggerRemainingTicks:0 });
             // This eighty-tick action can finish before the next environment block.
             expect(game.pendingCommandConfirmation).toBeNull();
         }
@@ -204,8 +204,8 @@ describe('3c command decisions, recovery and native defense boundaries', () => {
         acknowledge(); game.executeCommand('ext:command', command());
         expect(game.player.loc).toEqual({ x: 21, y: 15 }); expect(timeSystem.currentTick - tick).toBe(80);
         expect(resource(game)).toMatchObject({ stamina: 22, regenRemainder: 0, regenDelayRemaining: 0,
-            dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 });
-        expect(state(game).schema).toBe(2); expect(state(game).nextActionId).toBe(1);
+            dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0, poise:12,poiseRecoveryRemainder:0,poiseRecoveryDelayRemaining:0,parryRemainingTicks:0,parryRecoveryRemainingTicks:0,parryFacing:null,staggerRemainingTicks:0 });
+        expect(state(game).schema).toBe(3); expect(state(game).nextActionId).toBe(1);
         expect(state(game).scheduler.bundles).toEqual([]); expect(game.player.ticksUntilTurn).toBe(0); expect(game.isInputLocked()).toBe(false);
     });
 
@@ -229,7 +229,7 @@ describe('3c command decisions, recovery and native defense boundaries', () => {
         productionActorActionScheduler(first)!.advanceActionTime(100);
         const expected = json(resource(first, source.id));
         expect(expected).toMatchObject({ stamina: phase === 'idle' ? 15 : 18, regenRemainder: 0,
-            regenDelayRemaining: 0, dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 });
+            regenDelayRemaining: 0, dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0, poise:12,poiseRecoveryRemainder:0,poiseRecoveryDelayRemaining:0,parryRemainingTicks:0,parryRecoveryRemainingTicks:0,parryFacing:null,staggerRemainingTicks:0 });
         const second = scene(), split = npc(second); dodgeNpc(second, split);
         for (const delta of [30, 49, 21]) productionActorActionScheduler(second)!.advanceActionTime(delta);
         expect(resource(second, split.id)).toEqual({ ...expected, actorId: split.id });
@@ -291,7 +291,7 @@ describe('3c dodge persistence, deterministic continuation and floor lifetime', 
         expect(state(loaded)).toEqual(before); expect(rng.getState()).toEqual(random); expect(loaded.isInputLocked()).toBe(true);
         const at = { ...loaded.player.loc }; loaded.executeCommand('move', { x: 1, y: 0 }); expect(loaded.player.loc).toEqual(at);
         loaded.update(); expect(loaded.isInputLocked()).toBe(false); expect(loaded.player.ticksUntilTurn).toBe(0);
-        expect(resource(loaded)).toMatchObject({ stamina: 22, dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 });
+        expect(resource(loaded)).toMatchObject({ stamina: 22, dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0, poise:12,poiseRecoveryRemainder:0,poiseRecoveryDelayRemaining:0,parryRemainingTicks:0,parryRecoveryRemainingTicks:0,parryFacing:null,staggerRemainingTicks:0 });
         expect(loaded.recordedInputEvents).toEqual(saved.run.recordedInputEvents);
     });
 
@@ -360,8 +360,8 @@ describe('3c dodge persistence, deterministic continuation and floor lifetime', 
         while (game.isAdvancing) game.tickAdvancement(1000);
         expect(game.depth).toBe(2); expect(game.player.hp).toBeLessThan(1000);
         expect({ locked: game.isInputLocked(), ticks: game.player.ticksUntilTurn, resource: resource(game) }).toMatchObject({ locked: false, ticks: 0,
-            resource: { dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 } });
-        expect(game.player.ticksUntilTurn).toBe(0); expect(resource(game)).toMatchObject({ dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 });
+            resource: { dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0, poise:12,poiseRecoveryRemainder:0,poiseRecoveryDelayRemaining:0,parryRemainingTicks:0,parryRecoveryRemainingTicks:0,parryFacing:null,staggerRemainingTicks:0 } });
+        expect(game.player.ticksUntilTurn).toBe(0); expect(resource(game)).toMatchObject({ dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0, poise:12,poiseRecoveryRemainder:0,poiseRecoveryDelayRemaining:0,parryRemainingTicks:0,parryRecoveryRemainingTicks:0,parryFacing:null,staggerRemainingTicks:0 });
         expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.decisions).toEqual([true]);
         expect(() => game.toSaveSnapshot()).not.toThrow(); expect(() => game.exportRecording()).not.toThrow();
     });

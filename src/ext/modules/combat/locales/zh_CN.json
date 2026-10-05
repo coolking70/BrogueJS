@@ -1,6 +1,6 @@
 {
   "ext.combat.module.name": "战斗规则",
-  "ext.combat.module.description": "独立多阶段战斗：观察危险格，管理体力，选择攻击或闪避。",
+  "ext.combat.module.description": "独立多阶段战斗：观察危险格，管理体力与韧性，选择攻击、闪避或弹反。",
   "ext.combat.attack.slash.name": "扇锋斩",
   "ext.combat.attack.stomp.name": "震环击",
   "ext.combat.attack.double-thrust.name": "续锋刺",
@@ -51,5 +51,18 @@
   "ext.combat.ui.dodge_active": "闪避保护中",
   "ext.combat.ui.dodge_recovery": "闪避恢复中",
   "ext.combat.ui.busy": "动作尚未恢复",
-  "ext.combat.ui.insufficient_stamina": "体力不足"
+  "ext.combat.ui.insufficient_stamina": "体力不足",
+  "ext.combat.parry.name": "弹反",
+  "ext.combat.ui.choose_parry_direction": "选择弹反朝向",
+  "ext.combat.ui.confirm_parry": "确认朝这个方向架起弹反？",
+  "ext.combat.ui.perform_parry": "开始弹反",
+  "ext.combat.ui.parry_hint": "朝向在开始时锁定。窗口内只弹反该方向符合接触范围的可弹反直接物理攻击，成功后窗口立即用尽；不自动反击。未成功仍消耗体力并进入恢复，环境伤害和投射物不受影响。",
+  "ext.combat.ui.defense_timing": "保护窗口 {{window}} 时间刻 · 恢复 {{recovery}} 时间刻",
+  "ext.combat.ui.poise_value": "韧性 {{current}} / {{capacity}}",
+  "ext.combat.ui.poise_hint": "受到有效物理冲击会损失韧性。韧性耗尽时进入硬直，当前动作可能被打断；恢复按战斗时间推进。",
+  "ext.combat.ui.poise_recovery": "韧性恢复延迟 {{ticks}}",
+  "ext.combat.ui.staggered": "硬直中，暂时不能行动",
+  "ext.combat.ui.stagger_active": "硬直 {{ticks}}",
+  "ext.combat.ui.parry_active": "弹反窗口 {{ticks}}",
+  "ext.combat.ui.parry_recovery": "弹反恢复 {{ticks}}"
 }

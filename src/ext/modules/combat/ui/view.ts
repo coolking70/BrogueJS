@@ -4,10 +4,14 @@ import type { Facing } from '../types';
 export interface CombatUiAction {
     readonly id: string; readonly nameKey: string; readonly canUse: boolean;
     readonly cost?: number; readonly unavailableKey?: string;
+    readonly windowTicks?: number; readonly recoveryTicks?: number;
 }
 export interface CombatUiResources {
     readonly stamina: number; readonly capacity: number; readonly regenDelayRemaining: number;
     readonly dodgeRemainingTicks: number; readonly dodgeRecoveryRemainingTicks: number;
+    /** Older captured frames may contain stamina only. Never invent future values. */
+    readonly poise?: number; readonly poiseCapacity?: number; readonly poiseRecoveryDelayRemaining?: number;
+    readonly parryRemainingTicks?: number; readonly parryRecoveryRemainingTicks?: number; readonly staggerRemainingTicks?: number;
 }
 /** Accept detached public resource DTOs from either a live view or an ACK frame. */
 export function readCombatUiResources(value: unknown): CombatUiResources | null {
@@ -16,7 +20,13 @@ export function readCombatUiResources(value: unknown): CombatUiResources | null 
     const fields = ['stamina', 'capacity', 'regenDelayRemaining', 'dodgeRemainingTicks', 'dodgeRecoveryRemainingTicks'] as const;
     if (fields.some(key => !Number.isSafeInteger(row[key]) || (row[key] as number) < 0)
         || (row.capacity as number) === 0 || (row.stamina as number) > (row.capacity as number)) return null;
-    return Object.freeze(Object.fromEntries(fields.map(key => [key, row[key]]))) as unknown as CombatUiResources;
+    const defenseFields = ['poise', 'poiseCapacity', 'poiseRecoveryDelayRemaining', 'parryRemainingTicks',
+        'parryRecoveryRemainingTicks', 'staggerRemainingTicks'] as const;
+    const hasDefense = defenseFields.some(key => row[key] !== undefined);
+    if (hasDefense && (defenseFields.some(key => !Number.isSafeInteger(row[key]) || (row[key] as number) < 0)
+        || (row.poiseCapacity as number) === 0 || (row.poise as number) > (row.poiseCapacity as number))) return null;
+    return Object.freeze(Object.fromEntries([...fields, ...(hasDefense ? defenseFields : [])]
+        .map(key => [key, row[key]]))) as unknown as CombatUiResources;
 }
 export interface CombatUiView {
     readonly session: object;
@@ -38,7 +48,8 @@ export const combatDirections: readonly { readonly facing: Facing; readonly name
 export function readCombatUiView(game: Game): CombatUiView | null {
     const source = game.extensionRuntime?.readModuleView('combat');
     if (!source || source.state.schema !== 1 || !Number.isSafeInteger(source.state.revision) || !Array.isArray(source.state.actions)) return null;
-    const actions = source.state.actions.filter((entry): entry is { id: string; nameKey: string; canUse: boolean; cost?: number; unavailableKey?: string } =>
+    const actions = source.state.actions.filter((entry): entry is { id: string; nameKey: string; canUse: boolean; cost?: number;
+        windowTicks?: number; recoveryTicks?: number; unavailableKey?: string } =>
         !!entry && typeof entry === 'object' && !Array.isArray(entry)
         && typeof entry.id === 'string' && typeof entry.nameKey === 'string' && typeof entry.canUse === 'boolean');
     return Object.freeze({ session: source.session, revision: source.state.revision as number,
@@ -46,6 +57,8 @@ export function readCombatUiView(game: Game): CombatUiView | null {
         resources: readCombatUiResources(source.state.resources),
         actions: Object.freeze(actions.map(action => Object.freeze({ id: action.id, nameKey: action.nameKey, canUse: action.canUse,
             ...(Number.isSafeInteger(action.cost) && action.cost! >= 0 ? { cost: action.cost } : {}),
+            ...(Number.isSafeInteger(action.windowTicks) && action.windowTicks! > 0 ? { windowTicks: action.windowTicks } : {}),
+            ...(Number.isSafeInteger(action.recoveryTicks) && action.recoveryTicks! >= 0 ? { recoveryTicks: action.recoveryTicks } : {}),
             ...(typeof action.unavailableKey === 'string' && action.unavailableKey.startsWith('ext.combat.')
                 ? { unavailableKey: action.unavailableKey } : {}) }))) });
 }
@@ -56,6 +69,6 @@ export function buildCombatUiCommand(game: Game, expected: CombatUiView, attackI
     if (!current || current.readOnly || expected.readOnly || current.session !== expected.session
         || current.revision !== expected.revision || !current.actions.some(action => action.id === attackId && action.canUse)
         || !combatDirections.some(direction => direction.facing === facing)) return null;
-    return attackId === 'dodge' ? JSON.stringify({ module: 'combat', action: 'dodge', payload: { facing } })
+    return attackId === 'dodge' || attackId === 'parry' ? JSON.stringify({ module: 'combat', action: attackId, payload: { facing } })
         : JSON.stringify({ module: 'combat', action: 'attack', payload: { attackId, facing } });
 }

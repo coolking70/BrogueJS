@@ -92,7 +92,7 @@ describe('3b production action lifetime',()=>{
     });
     it('cancels a native single-cell polymorph even when its spatial fingerprint is unchanged',()=>{
         const {game,state}=scene();
-        const monster=new Monster(game.player.x+1,game.player.y,(monsters as MonsterData[]).find(row=>row.id==='rat')!);
+        const monster=new Monster(game.player.x-1,game.player.y,(monsters as MonsterData[]).find(row=>row.id==='rat')!);
         monster.state=MonsterState.HUNTING;monster.ticksUntilTurn=0;game.monsters.push(monster);game.extensionRuntime!.attachCreature(monster);
         expect(selectNativeActorAction(game,monster.id)).toBe('handled');
         const bundle=state.scheduler.bundles.find(row=>row.decisionOwnerId===monster.id)!,child=bundle.subactions[0]!;
@@ -122,7 +122,7 @@ describe('3b production action lifetime',()=>{
     });
     it('cancels active releases on real floor departure and freezes cached recovery through return',()=>{
         const {game,state,scheduler}=scene('normal');
-        const monster=new Monster(game.player.x+1,game.player.y,(monsters as MonsterData[]).find(row=>row.id==='rat')!);
+        const monster=new Monster(game.player.x-1,game.player.y,(monsters as MonsterData[]).find(row=>row.id==='rat')!);
         monster.state=MonsterState.HUNTING;monster.ticksUntilTurn=0;game.monsters.push(monster);game.extensionRuntime!.attachCreature(monster);
         expect(selectNativeActorAction(game,monster.id)).toBe('handled');
         const bundle=state.scheduler.bundles.find(row=>row.decisionOwnerId===monster.id)!;

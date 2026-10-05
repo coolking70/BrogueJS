@@ -177,7 +177,9 @@ export class ActorCombatResolutionAuthority {
     private failed = false;
 
     constructor(private readonly game: Game, private readonly state: ActorCombatResolutionState,
-        private readonly options: { production: true; dodgeProtected?: (actorId:number)=>boolean } | undefined = undefined) {
+        private readonly options: { production: true; dodgeProtected?: (actorId:number)=>boolean;
+            tryParry?: (attackerId: number, defenderId: number, contact: { from: Readonly<Pos>; to: Readonly<Pos> }) => boolean;
+            poiseDamage?: number } | undefined = undefined) {
         if (options && !isProductionActorActionSession(game)) fail('production authority requires a bound engine session');
         validateActorCombatResolutionState(state);
         this.player = game.player; this.grid = game.grid; this.depth = game.depth;
@@ -337,17 +339,22 @@ export class ActorCombatResolutionAuthority {
             && !(defender instanceof Monster && (defender.isCaged || defender.state === MonsterState.ASLEEP))
             && (defense?.staggerRemainingTicks ?? 0) === 0;
         const dodged = defenseActive && plan.intent.dodgeable && ((defense?.dodgeRemainingTicks ?? 0) > 0 || this.options?.dodgeProtected?.(defender.id) === true);
-        const parried = !dodged && defenseActive && plan.intent.parryable && (defense?.parryRemainingTicks ?? 0) > 0
+        const fixtureParried = !this.options?.tryParry && !dodged && defenseActive && plan.intent.parryable && (defense?.parryRemainingTicks ?? 0) > 0
             && Math.sign(contact.from.x - contact.to.x) === defense!.parryFacing.x
             && Math.sign(contact.from.y - contact.to.y) === defense!.parryFacing.y;
-        if (parried && !this.defense(attacker.id) && (defense!.parryPoiseDamage > 0 || defense!.parryStaggerTicks > 0))
+        if (fixtureParried && !this.defense(attacker.id) && (defense!.parryPoiseDamage > 0 || defense!.parryStaggerTicks > 0))
             fail('parry consequence requires a bound source resource owner');
         const resolutionId = this.state.nextResolutionId;
         if (!this.options) markActorActionFixture(this.game);
         this.resolving = true;
         try {
+            // Production owns its live resources and source interruption. The
+            // local fixture ledger supplies only the defended fact identity.
+            const productionParried = !dodged && defenseActive && plan.intent.parryable
+                && this.options?.tryParry?.(attacker.id, defender.id, contact) === true;
+            const parried = productionParried || fixtureParried;
             if (dodged || parried) {
-                if (parried) {
+                if (parried && !productionParried) {
                     defense!.parryRemainingTicks = 0;
                     const source = this.defense(attacker.id);
                     if (source) {
@@ -361,13 +368,13 @@ export class ActorCombatResolutionAuthority {
                 this.state.nextResolutionId++;
                 return immutable({ kind: 'defended', fact: { kind: 'defended', resolutionId, depth: this.game.depth,
                     sourceEntityId: attacker.id, targetEntityId: defender.id, defense: dodged ? 'dodge' : 'parry' },
-                    ...(parried ? { sourceInterruption: { kind: 'cancel-pending-source' as const,
+                    ...(parried && !productionParried ? { sourceInterruption: { kind: 'cancel-pending-source' as const,
                         sourceEntityId: attacker.id, breakRecoveryTicks: defense!.parryStaggerTicks } } : {}) });
             }
             // Only native CombatSystem may run hit/damage/armor/shield/causality
             // and physicalResolved. A defended fact never enters this path.
             const attack = withBodyAttackContact(attacker, defender, contact, () => this.options
-                ? this.game.resolveActorNativeMelee(scope, attacker, defender)
+                ? this.game.resolveActorNativeMelee(scope, attacker, defender, this.options.poiseDamage)
                 : CombatSystem.attack(attacker, defender, { grid: this.game.grid, itemGenerationDepth: this.game.depth }));
             this.state.nextResolutionId++;
             return { kind: 'native', resolutionId, attack };
