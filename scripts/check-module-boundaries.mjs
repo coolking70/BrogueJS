@@ -220,6 +220,7 @@ function isImportMeta(node) {
 
 function isDiscoveryCall(node, sourceName) {
     const discoveryPattern = sourceName === 'src/ext/catalog.ts' ? './modules/*/descriptor.ts'
+        : sourceName === 'src/ext/realtimeCatalog.ts' ? './modules/*/runtime.ts'
         : sourceName === 'src/ext/ui/registry.ts' ? '../modules/*/ui/descriptor.ts' : undefined;
     if (!discoveryPattern || !ts.isCallExpression(node) || node.arguments.length !== 2) return false;
     if (!ts.isPropertyAccessExpression(node.expression) || node.expression.name.text !== 'glob' || !isImportMeta(node.expression.expression)) return false;

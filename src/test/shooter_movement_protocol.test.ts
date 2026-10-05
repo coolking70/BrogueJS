@@ -18,7 +18,7 @@ function relocate(session: ShooterSession, x: number, y: number) {
 }
 describe('S1 device adapters and input lifetime', () => {
     it('produces the same InputFrames and complete mechanical trajectory from keyboard, standard pad and touch', () => {
-        const sessions = [new ShooterSession(314), new ShooterSession(314), new ShooterSession(314)];
+        const sessions = [new ShooterSession(314, { modules: [] }), new ShooterSession(314, { modules: [] }), new ShooterSession(314, { modules: [] })];
         const assemblers = sessions.map(() => new InputFrameAssembler()), keyboard = new KeyboardMovement();
         for (let tick = 1; tick <= 1500; tick++) {
             const segment = Math.floor(tick / 31) % directions.length, vector = vectors[segment]!;
@@ -43,7 +43,7 @@ describe('S1 device adapters and input lifetime', () => {
         keyboard.clear(); expect(keyboard.sample()).toEqual({ x: 0, y: 0 });
     });
     it('holds movement across ticks while consuming a pulse once; clear removes both', () => {
-        const a = new InputFrameAssembler(); a.setMovement(80, -20); a.requestPulse();
+        const a = new InputFrameAssembler(); a.setMovement(80, -20); a.requestFireTap();
         expect(a.next(1)).toMatchObject({ moveX: 80, moveY: -20, buttons: 1 });
         expect(a.next(2)).toMatchObject({ moveX: 80, moveY: -20, buttons: 0 });
         a.clear(); expect(a.next(3)).toEqual(idleInput(3));
@@ -52,7 +52,7 @@ describe('S1 device adapters and input lifetime', () => {
 });
 describe('S1 exact position persistence and objective terrain clock', () => {
     it.each([1, 18, 47, 79, 113, 199])('saves fractional velocity, contacts, actions and exact position at tick %i', at => {
-        const a = new ShooterSession(518);
+        const a = new ShooterSession(518, { modules: [] });
         while (a.tick < at) a.advanceTick(frame(a.tick + 1));
         const snapshot = JSON.parse(JSON.stringify(a.snapshot())), b = ShooterSession.fromSnapshot(snapshot);
         expect(b.snapshot()).toEqual(snapshot);
@@ -61,7 +61,7 @@ describe('S1 exact position persistence and objective terrain clock', () => {
         expect(replayShooter(JSON.parse(JSON.stringify(b.exportReplay()))).snapshot()).toEqual(a.snapshot());
     });
     it('rejects old S0, invalid position mirrors, penetration, map revision and forged contacts', () => {
-        const session = new ShooterSession(); session.advanceTick(frame(1)); const before = session.snapshot();
+        const session = new ShooterSession(7301, { modules: [] }); session.advanceTick(frame(1)); const before = session.snapshot();
         for (const mutate of [
             (s: any) => { s.format = 'broguejs-shooter-s0'; s.version = 1; },
             (s: any) => { s.arena = 'foreign'; }, (s: any) => { s.actors[0].loc.x++; },
@@ -73,7 +73,7 @@ describe('S1 exact position persistence and objective terrain clock', () => {
         expect(session.snapshot()).toEqual(before);
     });
     it('rejects moved input or position/credit corruption in a recorded run', () => {
-        const session = new ShooterSession(); for (let tick = 1; tick <= 100; tick++) session.advanceTick(frame(tick));
+        const session = new ShooterSession(7301, { modules: [] }); for (let tick = 1; tick <= 100; tick++) session.advanceTick(frame(tick));
         for (const mutate of [
             (r: any) => { r.frames[0].moveX = -127; },
             (r: any) => { r.final.actors[0].pose.x++; },
@@ -81,7 +81,7 @@ describe('S1 exact position persistence and objective terrain clock', () => {
         ]) { const r = session.exportReplay(); mutate(r); expect(() => replayShooter(r)).toThrow(); }
     });
     it('applies water slowdown once and measures standing fire/gas per tick, independent of overlapping cell count', () => {
-        const base = new ShooterSession(), water = relocate(base, 8192, 11264), dry = relocate(base, 16384, 15360);
+        const base = new ShooterSession(7301, { modules: [] }), water = relocate(base, 8192, 11264), dry = relocate(base, 16384, 15360);
         water.advanceTick({ ...idleInput(1), moveX: 127 }); dry.advanceTick({ ...idleInput(1), moveX: 127 });
         expect(water.snapshot().actors[0]!.pose.x - 8192).toBe(80);
         expect(dry.snapshot().actors[0]!.pose.x - 16384).toBe(160);

@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createServer, preview } from 'vite';
 import { chromium } from 'playwright';
+import { shooterCompositionEngine, shooterCompositionBrowser } from './shooter-composition.mjs';
 
 const args = process.argv.slice(2);
 const option = name => { const index = args.indexOf(name); return index < 0 ? undefined : args[index + 1]; };
@@ -131,6 +132,8 @@ try {
     });
     try { report.engine = { status: 'passed', combinations: exerciseGame(createHeadlessGame(7301, 'test'), plans, unavailable) }; }
     catch (error) { report.engine = { status: 'failed', error: String(error?.stack ?? error) }; }
+    const shooter = await shooterCompositionEngine(sourceServer, removed);
+    report.realtime = { installed: shooter.installed, engine: shooter.cases, browser: [] };
     await sourceServer.close(); sourceServer = undefined;
 
     if (engineOnly) report.browser = { status: 'not-run', reason: 'Explicit --engine-only: built-product browser validation is a separate required gate' };
@@ -138,7 +141,7 @@ try {
         if (!existsSync(resolve('dist/index.html'))) throw new Error('Fresh dist/index.html is required; run build first');
         const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
             ?? (process.platform === 'linux' && existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined);
-        browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}) });
+        browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}), args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
         productServer = await preview({ configFile: false, root: process.cwd(), preview: { host: '127.0.0.1', port: 0, strictPort: false } });
         const address = productServer.httpServer.address();
         if (!address || typeof address === 'string') throw new Error('Built-product preview has no TCP address');
@@ -153,10 +156,11 @@ try {
             return run(window.activeGame, plans, unavailable);
         }, { source: exerciseGame.toString(), plans, unavailable });
         if (errors.length) throw new Error(`Built product page errors: ${errors.join('; ')}`);
+        report.realtime.browser = await shooterCompositionBrowser(browser, `http://127.0.0.1:${address.port}/shooter.html`, shooter);
         report.browser = { status: 'passed', engine: 'built dist JavaScript', combinations };
     } catch (error) { report.browser = { status: 'failed', error: String(error?.stack ?? error) }; }
 } catch (error) {
-    if (report.engine.status === 'not-run') report.engine = { status: 'failed', error: String(error?.stack ?? error) };
+    if (report.engine.status !== 'failed') report.engine = { status: 'failed', error: String(error?.stack ?? error) };
 } finally {
     if (browser) await browser.close();
     if (productServer) await new Promise(resolveClose => productServer.httpServer.close(resolveClose));

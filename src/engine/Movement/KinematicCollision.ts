@@ -6,7 +6,7 @@ export interface CollisionGrid {
     readonly width: number; readonly height: number;
     getCell(x: number, y: number): { readonly isPassable: boolean } | null;
 }
-export interface CollisionWorld { grid: CollisionGrid; bodies?: SpatialHash }
+export interface CollisionWorld { grid: CollisionGrid; bodies?: Pick<SpatialHash, 'queryAabb'> }
 export interface SweepHit { time: number; normal: WorldPoint; tile?: WorldPoint; bodyId?: number; plane?: { axis: 'x' | 'y'; coordinate: number } }
 export const SWEEP_TIME = 1 << 20;
 const TIME = BigInt(SWEEP_TIME);

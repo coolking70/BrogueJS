@@ -2,8 +2,9 @@
 import { computed, ref, watch } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import { touchMovement } from '../input/MovementAdapters';
-const props = defineProps<{ disabled: boolean }>();
-const emit = defineEmits<{ move: [value: { x: number; y: number; active: boolean }] }>();
+import { touchAim } from '../input/AimAdapters';
+const props = defineProps<{ disabled: boolean; aim?: boolean }>();
+const emit = defineEmits<{ move: [value: { x: number; y: number; active: boolean; angle: number | null }] }>();
 const { t } = useTranslation();
 const pad = ref<HTMLDivElement>();
 const knob = ref({ x: 0, y: 0 });
@@ -15,7 +16,7 @@ function update(event: PointerEvent): void {
     const dx = event.clientX - rect.left - rect.width / 2, dy = event.clientY - rect.top - rect.height / 2;
     const scale = Math.min(1, radius / Math.max(1, Math.hypot(dx, dy)));
     knob.value = { x: dx * scale, y: dy * scale };
-    emit('move', { ...touchMovement(dx, dy, radius), active: true });
+    emit('move', { ...touchMovement(dx, dy, radius), active: true, angle: touchAim(dx, dy, radius) });
 }
 function down(event: PointerEvent): void {
     if (props.disabled || pointer !== null || event.button !== 0) return;
@@ -25,16 +26,16 @@ function reset(event?: PointerEvent): void {
     if (event && pointer !== event.pointerId) return;
     const previous = pointer; pointer = null; knob.value = { x: 0, y: 0 };
     if (previous !== null && pad.value?.hasPointerCapture(previous)) pad.value.releasePointerCapture(previous);
-    emit('move', { x: 0, y: 0, active: false });
+    emit('move', { x: 0, y: 0, active: false, angle: null });
 }
 watch(() => props.disabled, disabled => { if (disabled) reset(); });
 </script>
 
 <template>
-  <div ref="pad" class="movement-stick" :class="{ disabled }" data-testid="movement-stick"
+  <div ref="pad" class="movement-stick" :class="{ disabled }" :data-testid="aim ? 'aim-stick' : 'movement-stick'"
     @pointerdown="down" @pointermove="update" @pointerup="reset" @pointercancel="reset" @lostpointercapture="reset">
     <span class="stick-cross horizontal" /><span class="stick-cross vertical" />
-    <span class="stick-knob" :style="knobStyle" /><span class="stick-label">{{ t('shooter.moveStick') }}</span>
+    <span class="stick-knob" :style="knobStyle" /><span class="stick-label">{{ aim ? t('shooter.aimStick') : t('shooter.moveStick') }}</span>
   </div>
 </template>
 

@@ -1,0 +1,8 @@
+{
+  "test": [
+    "tests/firearms_runtime.test.ts",
+    "tests/firearms_shooter.test.ts"
+  ],
+  "gen": [],
+  "drift": []
+}

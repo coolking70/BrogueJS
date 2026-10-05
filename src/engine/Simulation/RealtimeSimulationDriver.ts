@@ -43,8 +43,11 @@ export class RealtimeSimulationDriver {
         if (this.pumping) throw new Error('Reentrant clock operation');
     }
 
-    pump(nowUs: number): ClockSample {
+    /** A smaller per-pump budget lets a bounded recording stop exactly at its
+     * final tick, even when this render frame has accumulated catch-up debt. */
+    pump(nowUs: number, stepBudget = this.maxTicksPerPump): ClockSample {
         this.check();
+        if (!Number.isInteger(stepBudget) || stepBudget < 0 || stepBudget > this.maxTicksPerPump) throw new Error('Invalid pump step budget');
         if (!Number.isSafeInteger(nowUs) || nowUs < 0) throw new Error('Invalid monotonic timestamp');
         if (this.stopped) return this.sample();
         if (this.lastUs === null) { this.lastUs = nowUs; return this.sample(); }
@@ -57,7 +60,7 @@ export class RealtimeSimulationDriver {
         let steps = 0;
         this.pumping = true;
         try {
-            while (this.credit >= MICROSECONDS_PER_SECOND && steps < this.maxTicksPerPump) {
+            while (this.credit >= MICROSECONDS_PER_SECOND && steps < stepBudget) {
                 const result: unknown = this.step();
                 if (result && typeof result === 'object' && 'then' in result) throw new Error('Asynchronous clock callback');
                 this.credit -= MICROSECONDS_PER_SECOND;

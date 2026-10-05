@@ -1,8 +1,9 @@
 import type { ProductProfile } from '../../engine/Simulation/SimulationProfile';
+import { getRealtimeModules } from '../../ext/realtimeCatalog';
 
-/** S1 adds hybrid kinematics. S0 snapshots intentionally do not migrate. */
+/** Installed realtime modules are optional. Exact selected rules enter saves. */
 export const SHOOTER_PROFILE: ProductProfile = Object.freeze({
-    id: 'shooter-s1', version: 2,
+    id: 'shooter-s2', version: 3,
     simulation: Object.freeze({ id: 'shooter-realtime-30', ticksPerSecond: 30 }),
-    modules: Object.freeze([]), inputModel: 'input-frame', spatialModel: 'hybrid-kinematic',
+    modules: Object.freeze(getRealtimeModules().map(d => d.id)), inputModel: 'input-frame', spatialModel: 'hybrid-kinematic',
 });

@@ -1,0 +1,7 @@
+{
+  "ext.firearms.module.name": "枪械与交战",
+  "ext.firearms.weapon.pistol": "手枪",
+  "ext.firearms.weapon.rifle": "突击步枪",
+  "ext.firearms.weapon.shotgun": "霰弹枪",
+  "ext.firearms.weapon.grenade": "榴弹发射器"
+}

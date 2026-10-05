@@ -100,7 +100,11 @@ describe('module boundaries parse references and test ownership', () => {
         const f = fixture(); f.module('alpha');
         f.write('src/ext/catalog.ts', `const descriptors = import.meta.glob<unknown>('./modules/*/descriptor.ts', { eager: true });`);
         f.write('src/ext/ui/registry.ts', `const descriptors = import.meta.glob<unknown>('../modules/*/ui/descriptor.ts', { eager: true });`);
+        f.write('src/ext/realtimeCatalog.ts', `import.meta.glob('./modules/*/runtime.ts', { eager: true });`);
         expect(f.check()).toEqual([]);
+        f.write('src/ext/realtimeCatalog.ts', `import.meta.glob('./modules/alpha/runtime.ts', { eager: true });`);
+        expect(f.check()).toHaveLength(1);
+        f.write('src/ext/realtimeCatalog.ts', '');
         for (const expression of [
             `import.meta.glob('./modules/*/descriptor.ts', { eager: false })`,
             `import.meta.glob('./modules/alpha/descriptor.ts', { eager: true })`,

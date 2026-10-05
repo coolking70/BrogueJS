@@ -5,8 +5,11 @@ import { computeMapCamera } from '../../../ui/mapCamera';
 import { TerrainType } from '../../../engine/Map/Grid';
 import { createShooterArena, ARENA_WIDTH, ARENA_HEIGHT } from '../ShooterArena';
 import type { ShooterSnapshot } from '../ShooterSession';
+import { mouseAim } from '../input/AimAdapters';
 
-const props = defineProps<{ previous: ShooterSnapshot; current: ShooterSnapshot; alpha: number }>();
+const props = defineProps<{ previous: ShooterSnapshot; current: ShooterSnapshot; alpha: number; disabled: boolean }>();
+const emit = defineEmits<{ aim: [angle: number, moved: boolean]; fire: [held: boolean] }>();
+let pointer: number | null = null, mouse: { x: number; y: number } | null = null;
 const surface = ref<HTMLDivElement>();
 let app: Application | null = null, world: Container | null = null, actors: Graphics | null = null, overview: Graphics | null = null;
 let resize: ResizeObserver | null = null, disposed = false;
@@ -22,6 +25,7 @@ function terrainColor(x: number, y: number): number {
 }
 function interpolated(index: number) {
     const current = props.current.actors[index]!.pose, previous = props.previous.actors[index]!.pose;
+    if (Math.abs(current.x - previous.x) + Math.abs(current.y - previous.y) > 2048) return { ...current };
     return { x: previous.x + (current.x - previous.x) * props.alpha, y: previous.y + (current.y - previous.y) * props.alpha };
 }
 function draw(): void {
@@ -34,15 +38,29 @@ function draw(): void {
     world.scale.set(camera.scaleX, camera.scaleY); world.position.set(camera.offsetX, camera.offsetY);
     actors.clear();
     const displayTick = props.previous.tick + (props.current.tick - props.previous.tick) * props.alpha;
+    for (const e of props.current.effects) {
+        const age = Math.max(0, displayTick - e.tick), color = e.hit ? 0xffefb2 : 0xc9d39a;
+        if (e.kind === 'tracer' && age < 3) actors.moveTo(e.from.x, e.from.y).lineTo(e.to.x, e.to.y).stroke({ color, width: 30, alpha: 1 - age / 3 });
+        if (e.kind === 'impact' && age < 6) actors.circle(e.to.x, e.to.y, 80 + age * 20).stroke({ color, width: 30, alpha: 1 - age / 6 });
+        if (e.kind === 'explosion' && age < 12) actors.circle(e.to.x, e.to.y, e.radius * (.5 + age / 24)).fill({ color: 0xf7a653, alpha: .18 * (1 - age / 12) }).stroke({ color: 0xffc579, width: 50, alpha: 1 - age / 12 });
+    }
     for (const [index, actor] of props.current.actors.entries()) {
-        const p = interpolated(index), color = index === 0 ? 0xd2ef9b : 0x76bbde;
-        const age = Math.max(0, displayTick - actor.lastPulseTick);
-        if (actor.resolved && age < 18) actors.circle(p.x, p.y, actor.radius + age * 28).stroke({ color, width: 30, alpha: 1 - age / 18 });
-        actors.circle(p.x, p.y, actor.radius).fill({ color, alpha: .18 }).stroke({ color, width: 45 });
+        const p = interpolated(index), health = props.current.damage.actors[index]!, alive = health.hp > 0;
+        const color = actor.lastHitTick > 0 && displayTick - actor.lastHitTick < 5 ? 0xffffff : index === 0 ? 0xd2ef9b : 0xeb8e73;
+        actors.circle(p.x, p.y, actor.radius).fill({ color, alpha: alive ? .3 : .05 }).stroke({ color, width: 45, alpha: alive ? 1 : .2 });
+        if (!alive) continue;
         actors.circle(p.x, p.y, 80).fill(color);
         const angle = actor.pose.facing / 4096 * Math.PI * 2;
-        actors.moveTo(p.x, p.y).lineTo(p.x + Math.cos(angle) * 430, p.y + Math.sin(angle) * 430).stroke({ color, width: 48 });
+        if (index === 0) {
+            actors.moveTo(p.x, p.y).lineTo(p.x + Math.cos(angle) * 530, p.y + Math.sin(angle) * 530).stroke({ color, width: 70 });
+            const spread = (props.current.ranged?.recoil ?? 0) / 4096 * Math.PI * 2;
+            for (const side of [-1, 1]) actors.moveTo(p.x + Math.cos(angle + side * spread) * 750, p.y + Math.sin(angle + side * spread) * 750)
+                .lineTo(p.x + Math.cos(angle + side * spread) * 1450, p.y + Math.sin(angle + side * spread) * 1450).stroke({ color, width: 20, alpha: .4 });
+        }
+        actors.rect(p.x - 300, p.y - 480, 600, 65).fill(0x14231a);
+        actors.rect(p.x - 300, p.y - 480, 600 * health.hp / health.maxHp, 65).fill(color);
     }
+    for (const p of props.current.ranged?.projectiles ?? []) actors.circle(p.pose.x, p.pose.y, 95).fill(0xffc579).stroke({ color: 0xffedbf, width: 30 });
     overview.clear();
     const scale = 2.4, left = app.screen.width - ARENA_WIDTH * scale - 12, top = 12;
     overview.rect(left - 4, top - 4, ARENA_WIDTH * scale + 8, ARENA_HEIGHT * scale + 8).fill({ color: 0x08100c, alpha: .8 });
@@ -54,7 +72,28 @@ function draw(): void {
         app.screen.height / camera.scaleY / TILE * scale).stroke({ color: 0xb9c8b0, width: .6 });
     surface.value!.dataset.cameraX = String(camera.offsetX); surface.value!.dataset.cameraY = String(camera.offsetY);
 }
-function render(): void { draw(); app?.render(); }
+function updateAim(moved = false): void {
+    if (!mouse || props.disabled || !surface.value || !world) return;
+    const rect = surface.value.getBoundingClientRect(), focus = interpolated(0);
+    const angle = mouseAim(mouse.x - rect.left - world.x - focus.x * world.scale.x,
+        mouse.y - rect.top - world.y - focus.y * world.scale.y);
+    if (angle !== null) emit('aim', angle, moved);
+}
+function pointerMove(event: PointerEvent): void {
+    if (event.pointerType !== 'mouse') return;
+    mouse = { x: event.clientX, y: event.clientY }; updateAim(true);
+}
+function pointerDown(event: PointerEvent): void {
+    if (event.pointerType !== 'mouse' || event.button !== 0 || props.disabled) return;
+    pointer = event.pointerId; surface.value!.setPointerCapture(pointer); pointerMove(event); emit('fire', true);
+}
+function release(): void {
+    const old = pointer; pointer = null;
+    if (old !== null && surface.value?.hasPointerCapture(old)) surface.value.releasePointerCapture(old);
+    emit('fire', false);
+}
+function render(): void { draw(); updateAim(); app?.render(); }
+watch(() => props.disabled, disabled => { if (disabled) { mouse = null; release(); } });
 onMounted(async () => {
     const candidate = new Application();
     await candidate.init({ width: 880, height: 400, background: '#101b17', antialias: true, autoStart: false });
@@ -75,9 +114,10 @@ watch(() => [props.current, props.alpha], render);
 onBeforeUnmount(() => { disposed = true; resize?.disconnect(); app?.destroy(true, { children: true }); });
 </script>
 
-<template><div ref="surface" class="scope-canvas" data-testid="movement-canvas" /></template>
+<template><div ref="surface" class="scope-canvas" data-testid="movement-canvas"
+  @pointermove="pointerMove" @pointerdown="pointerDown" @pointerup="release" @pointercancel="release" @lostpointercapture="release" @contextmenu.prevent /></template>
 <style scoped>
-.scope-canvas { width: 100%; height: 400px; overflow: hidden; border: 1px solid #34443a; border-radius: 12px; }
+.scope-canvas { width: 100%; height: 440px; cursor: crosshair; touch-action: none; overflow: hidden; border: 1px solid #34443a; border-radius: 12px; }
 .scope-canvas :deep(canvas) { display: block; }
-@media (max-width: 600px) { .scope-canvas { height: 340px; } }
+@media (max-width: 600px) { .scope-canvas { height: min(36vh, 300px); } }
 </style>

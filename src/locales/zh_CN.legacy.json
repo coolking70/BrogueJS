@@ -2544,5 +2544,16 @@
   "lab.game_note": "独立试玩 · 地下城等待你的到来",
   "lab.js": "JS",
   "lab.real_game": "真实游戏，同局切换三套界面",
-  "lab.title": "第二轮设计"
+  "lab.title": "第二轮设计",
+    "shooter.manualActor": "01 / 手动角色",
+    "shooter.autoActor": "02 / 自动角色",
+    "shooter.actorStats": "阶段剩余 {{remaining}} Tick · 已结算 {{count}} 个动作段",
+    "shooter.pulse": "触发诊断动作",
+    "shooter.phase.idle": "空闲",
+    "shooter.phase.windup": "前摇",
+    "shooter.phase.inter-segment": "分段间隔",
+    "shooter.phase.recovery": "恢复",
+    "shooter.phase.break-recovery": "硬直恢复",
+    "shooter.movementHelp": "WASD / 方向键 · 左摇杆移动",
+    "shooter.legend": "青蓝：浅水减速　橙色：火焰　绿色：毒气　浅蓝圆：固定角色"
 }

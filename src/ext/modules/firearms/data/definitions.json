@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "weapons": [
+    { "id": "pistol", "trigger": "semi", "fireIntervalTicks": 9, "magazineSize": 12, "reloadTicks": 36, "ballistic": "hitscan", "pellets": 1, "range": 24576, "damage": 32, "spread": 3, "movingSpread": 18, "recoilKick": 20, "recoilRecovery": 3, "recoilMax": 80, "speed": 0, "fuseTicks": 0, "blastRadius": 0, "friendlyFire": "none" },
+    { "id": "rifle", "trigger": "auto", "fireIntervalTicks": 3, "magazineSize": 30, "reloadTicks": 60, "ballistic": "hitscan", "pellets": 1, "range": 28672, "damage": 15, "spread": 10, "movingSpread": 24, "recoilKick": 14, "recoilRecovery": 2, "recoilMax": 100, "speed": 0, "fuseTicks": 0, "blastRadius": 0, "friendlyFire": "none" },
+    { "id": "shotgun", "trigger": "semi", "fireIntervalTicks": 24, "magazineSize": 6, "reloadTicks": 72, "ballistic": "hitscan", "pellets": 8, "range": 11264, "damage": 14, "spread": 125, "movingSpread": 35, "recoilKick": 65, "recoilRecovery": 4, "recoilMax": 100, "speed": 0, "fuseTicks": 0, "blastRadius": 0, "friendlyFire": "none" },
+    { "id": "grenade", "trigger": "semi", "fireIntervalTicks": 24, "magazineSize": 3, "reloadTicks": 90, "ballistic": "projectile", "pellets": 1, "range": 17280, "damage": 95, "spread": 8, "movingSpread": 12, "recoilKick": 30, "recoilRecovery": 3, "recoilMax": 60, "speed": 480, "fuseTicks": 36, "blastRadius": 1900, "friendlyFire": "all" }
+  ]
+}
