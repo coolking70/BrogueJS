@@ -295,11 +295,17 @@ export function validateProductionActorAttackState(value: unknown, definitions: 
         if (action.subactions.length !== bundle.subactions.length) fail('metadata and scheduler subaction mismatch');
         let paid = 0;
         for (const [index, subaction] of action.subactions.entries()) {
-            actorActionRecord(subaction, ['sourceSubactionId', 'attackId', 'facing', 'lockedCells', 'shape', 'approvedRisks']);
+            actorActionRecord(subaction, ['sourceSubactionId', 'attackId', 'facing', 'lockedCells', 'shape', 'approvedRisks',
+                ...(Object.prototype.hasOwnProperty.call(subaction, 'profileId') ? ['profileId'] : [])]);
             const child = bundle.subactions[index]!, attack = attacks.get(id(subaction.attackId));
+            const sourceProfile = subaction.profileId === undefined ? profile : profiles.get(id(subaction.profileId));
+            if ((child.sourceGeneration !== undefined) !== (subaction.profileId !== undefined) || !sourceProfile
+                || child.sourceGeneration !== undefined && !child.cancelled && actors.get(child.sourceEntityId) !== sourceProfile.id)
+                fail('invalid source profile');
             if (subaction.sourceSubactionId !== child.sourceSubactionId || seenSources.has(child.sourceEntityId)
-                || !attack || !profile.attackIds.includes(attack.id) || !FACINGS.includes(subaction.facing as ActorAttackFacing))
+                || !attack || !sourceProfile.attackIds.includes(attack.id) || !FACINGS.includes(subaction.facing as ActorAttackFacing))
                 fail('invalid subaction identity, attack or facing');
+            if (attack.cost > policies.get(sourceProfile.resourcePolicyId)!.staminaCapacity) fail('incorrect source action cost');
             seenSources.add(child.sourceEntityId); paid += attack.cost;
             const broken = validatePhases(child, attack, definitions.breakRecoveryTicks);
             cells(subaction.lockedCells, 0, MAX_CELLS, MAX_COORDINATE, true);
@@ -315,7 +321,8 @@ export function validateProductionActorAttackState(value: unknown, definitions: 
                 fail('recovery cannot retain preview cells');
             risks(subaction.approvedRisks);
         }
-        if (action.paidCost !== paid || paid > policies.get(profile.resourcePolicyId)!.staminaCapacity) fail('incorrect paid action cost');
+        if (action.paidCost !== paid || (bundle.subactions.every(child => child.sourceGeneration === undefined)
+            && paid > policies.get(profile.resourcePolicyId)!.staminaCapacity)) fail('incorrect paid action cost');
     }
 }
 

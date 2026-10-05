@@ -1,3 +1,85 @@
+# 4d-2 执行报告：复合体多来源 phased 与 3d 可信成员破坏
+
+基于维护者已提交4d-1并合入dot 3d后的 `ext/phase4` HEAD `8f7ab26974a509821ad2f40e48e018a2878a87f5`。本轮继续原剩余1–8，交付可独立审阅的 **4d-2 子里程碑，尚未完成完整4d**；重点补齐真实3b多来源束与3d provider的成员身份/取消/时钟合同。未暂存、commit、push。下方为当前剩余范围，后方逐字保留4d-1/4d-0历史报告，不把历史门禁当作本轮结果。
+
+## 本轮范围与调度合同
+
+- 复合体在核心唯一原生 prelude 后，进入既有 `selectNativeActorAction`；没有调用成员 takeTurn、推进成员原生timer或嵌套executeCommand。来源按partId稳定排序，每次最多4个已拥有且就绪的槽；来源读取已安装actorActions的nativeProfile绑定，未安装combat/未绑定profile仍走原即时近战和移动路径。没有以模块布尔值赋予调度权限。
+- 一个束的decision/time owner均为核心，每个真实来源携带entityId、partId、**sourceGeneration=0**与足迹指纹。每源按自身profile/资源池付一次费用、拥有独立原生攻击scope/已付款凭据、独立locked shape与冷却；核心只镜像最早阶段边界，整束到最长子动作结束才退休。不同来源可用不同profile，不能拿核心余额支付所有来源。
+- `sourceGeneration`与每子动作metadata的`profileId`只在生产复合体出现；旧独立actor状态对象形状保持原样。pure codec拒绝非零generation，candidate world再对群表活动槽、真实实体/part/owner/深度核验。普通实体不能借generation字段伪装成员。无需新Game字段，未改whole-run或combat schema版本。
+- 成员出生时的原生睡眠AI状态不再成为额外决策/中断门，睡眠决策归核心；局部actionLock仍只中断对应成员。实际战斗解析器保留每源真实footprint，以核心判断来源敌我与群睡眠，不把成员缩成核心点。whole-group self exclusion按全部活成员格重验，不能打到本组其它成员。
+- 资源恢复读取本来源所在束的实际阶段，缓存层仍冻结；活束的捕获profile不在GC时被替换。来源无死亡退休后，取消子动作的locked cells清空，惰性metadata可留在束中直到整体收束，但不得恢复释放；对应资源row在子动作已经惰性后退休，不留下坏档中的孤儿ledger。
+
+## 3d provider与fallback的可信互斥
+
+请求继续采用 `actorId=groupId=核心ID`，fixed-zone仍为self/真实zone。成员请求为真实partId/body/generation0，**请求本身不构成身份授权**。Game从当前/休眠owned列表与唯一群表核验真实活动槽、实体/form/正HP；runtime再与已attach实体对照，生成冻结的 `context.member={entityId,groupId,partId,generation,bodyDefinitionId}`。combat provider在非self请求时必须收到相符证明，不能单靠字符串partId或传入一个member DTO获得能力。
+
+handled仅沿combat唯一core ledger扣poise/取消束，不设置fallback；absent或明确unsupported仅沿原生fallbackStun。真实provider的无束核心恢复由 `reconcileActorNativeRecovery` 在事务内镜像，busy束由已有scheduler唯一持有恢复。成员破坏不再误调用固定zone的 `zoneBroken(core,'body')`：独立`memberBroken`针对真实退休子树及其locked目标通知来源改变。取消通知在事务内记录、成功后的伤害hook/无死亡退休阶段结算；失败不提前终结束或触发终端sweep。
+
+沿合入3d的 `checkpointZoneBreak` 恢复原生时钟/速度、派生changedSources/fault、录像有效性与hover；沿原native commit恢复成员/核心HP、唯一收据与锁；沿provider事务恢复combat对象图、RNG和临时因果ID。throw、坏返回、Promise以及provider成功后的机械回调错误均不留下半次破坏。旧fixed-zone provider与self协议未放宽，3c dodge身体白名单未扩大。
+
+成员受到直接物理poise冲击或成功被弹反时，韧性/硬直属核心；局部子动作取消恢复不等于整个群体破防。即时近战被弹反破防后停止其余来源，并按max(原生攻击恢复,核心硬直)镜像，不能把成员timer变成第二个机械时钟。
+
+## 共享文件函数级改动
+
+| 文件/函数 | 本轮改动 |
+| --- | --- |
+| ActorActionScheduler: codec/createActorActionBundle/dispatch | 条件性的generation0字段，保留独立actor原形状；有界来源generation进入释放边界 |
+| ActorActionProduction: validSource/候选与live host/notifyProductionActorSourceChanged | 候选群表身份、核心资格、成员局部取消；事务内可延后结算通知 |
+| PhasedAttackProduction: eligible/cellsFor/commitBody/selectBody/resolve/advanceResources | 核心选真实多源束、全源先验后独立付款、min边界/max收束、完整群排除格与每源恢复 |
+| PhasedAttackProduction: retirePhasedAttackSource/validatePhasedAttackGeometry/isActorStaggered/applyActorPoiseDamage | 惰性来源与ledger退休、每源profile加载、局部/核心恢复区分、物理冲击归核心 |
+| ActorCombatResolution: eligible/currentSegmentCells | 真正成员来源的原生物理解析、核心决策关系与全群自排除 |
+| Game: actorActionWorld/timePorts/loadSnapshot/validateMemberBreak/成员退休与破坏回调/takeBodyDecision | 唯一群根进入候选动作验证；原生prelude后选束；可信证明及事务回调；即时束恢复不覆盖核心硬直 |
+| ext/partBreak/runtime.commitPartBreak | 底座证明类型、冻结证明生成及独立memberBroken，保留provider/fallback唯一选择 |
+| combat/partBreak.prepare | 非self需匹配底座证明；复用3d唯一ledger与原prepare/commit事务 |
+| actorActions/actorActionValidation | 条件性的每源profile；每源费用容量约束及旧独立束总额门保持 |
+| scripts/test-suites.json | 新生产专项唯一归属；旧测试/守卫未改 |
+
+## 数据与专项
+
+新增 `src/test/phase4d_body_actions.test.ts` **20项**，使用底座安装descriptor读取真实combat provider与数据，未导入任何模块实现。诊断nativeForms/body沿4d-1接缝注册；给诊断腿绑定正式数据中的follow-thrust/fan-edge profile，验证混合130/90tick来源、两段释放、四源上限和独立6/4费用。声明与arena均是诊断，不是正式内容或自然种子；无新增玩家UI文本、正式模块JSON/locale、生成基线或黄金trace。
+
+专项包括真实wait选择与释放、mixed min/max、generation/part/profile坏档不替换旧局、member proof的正反例、absent/unsupported/handled及busy fallback、局部成员锁与核心破防、真实玩家parry命令、provider throw/坏返回/Promise的对象图回滚、机械回调失败后的旧束继续，以及成员墓碑后save/load命令续跑。续跑比较全部持久机械字段和双方RNG，**只排除savedAt与输入日志/录像origin**：外部诊断创建/伤害没有真实开局命令来源，不能据此宣称新局replay/seek/续录完成。
+
+首轮2文件34项27过7失败，原4d-1的21项均过；新失败暴露外围出生睡眠被误当额外行动/中断门。修正后又定位原生resolver同一资格门和退休资源row残留，修生产。新save/load测试误把墙钟与不可重放诊断输入历史算作机械等价；逐叶证据仅为savedAt、recordedInputEvents/index、recordingOrigin，按上述明确边界修新夹具。未改任何旧测试前提、断言、守卫、容差或deadline。开发4文件76项通过；随后补busy fallback两项，新专项20项通过。最终统一冻结门禁另列，不把局部复核相加冒称唯一测试总数。
+
+## 开发期最终门禁与性能
+
+环境 Node24.19.0、`NODE_OPTIONS=--max-old-space-size=3072`、Vitest `--maxWorkers=2`。相关集合为原4d-1的77文件加新专项及3d的6个combat文件，共84文件。按开发期授权，不跑完整npm test/全部test:ext/removal/CE full/gen。**最终v1同一冻结候选，以下门禁全部exit0：**
+
+| 门禁 | 实际结果 | runner耗时 |
+| --- | --- | ---: |
+| `node scripts/check-module-boundaries.mjs` | 模块边界及唯一测试归属通过 | 1.741s |
+| `npx vue-tsc -b` | 通过 | 6.984s |
+| `npm run build` | 通过，保留既有大chunk提示 | 9.590s |
+| 84文件相关Vitest集合 | **84/84文件、1799/1799项通过**；含本轮20项专项及合入的3d相关测试 | 483.032s |
+| terrain catalog白名单定向守卫 | 1项通过；`-t 白名单`选择外的29项未运行，未新增skip | 1.652s |
+| `check-module-composition-smoke.mjs --engine-only` | **16/16引擎组合通过**，`requestedScopePassed=true` | 73.811s |
+| `npm run test:drift -- --maxWorkers=2` | **4/4文件、5/5项通过** | 68.031s |
+
+组合报告的browser为`not-run`、整体`passed=false`；本次仅明确请求的engine-only范围通过，不宣称浏览器或正式复合体自然录像通过。相关集合包含4a0差分、4a–4c、giants、combat/3a0/3b/3c/3d、growth近战消费、出生/破坏回滚、原生弹道/护盾/环境、whole-run/移层/录像与UR2/3/4及源码守卫。旧测试、守卫、生成基线和黄金trace未改。
+
+冻结清单覆盖`src/`、`scripts/`、package/tsconfig/vite输入，共**896文件**；每个门禁后`changedInputs=[]`，运行前后完全相同。按路径排序的紧凑JSON文件→SHA256清单再取SHA256，值为`c4ba31f08a5c514da4a3701d5b260b401c646de75fe5ecb65b519772de282708`。开始/结束UTC为`2026-10-05T11:29:57Z` / `2026-10-05T11:40:42Z`。清单、原命令及耗时见`/private/tmp/p4d2-final-v1-gates.json`，各门日志为`/private/tmp/p4d2-final-v1-*.log`，组合详情见`/private/tmp/p4d2-final-v1-composition.json`；原始证据不入库。
+
+本候选沿原17实体追击诊断，在核心+16外围的arena中运行20条真实`executeCommand(wait)`，20条均发生整组移动。计时只包命令，不含建场/保存/断言：冷次**22.030ms**、其余19条暖样本**P50 19.241ms / P95 22.658ms**、最大**22.658ms**。原始结果为`/private/tmp/p4d2-final-v1-command-performance.json`。这是Node功能测试的诊断结果，不是自然种子、浏览器或手机性能验收；未在相同宿主负载下做前后对照，不能据此声称性能改善或回退。
+
+## 完整4d剩余项（当前，仍按原1–8）
+
+1. **部分完成，仍缺完整声明/生成。** 4d-1群根/批量创建/当前缓存休眠codec保持；现有生产body仍无zone、固定当前pose。还缺核心/成员fixed-zone、攻击profile与状态分类完整声明闭包、正式generation/arena场地整组实算，以及逐子步环境接触和窄回滚。
+2. **多来源调度已补，完整AI仍缺。** 核心唯一轮转、真实elapsed冷却、≤4即时或phased束、每源scope/费用、min边界/max收束已接。仍缺有界远路、逃跑/关系/原生生存与施法优先级的完整群AI，不能以近邻攻击选择代替它。
+3. **中央1:4路径保持，完整组合仍缺。** 真实成员来源可用原生phased resolver；尚未补真实横扫两腿/火球多腿及growth/combat消费的全部组合，精神效果仍只有collect去重，没有完整群状态路由。
+4. **3d成员provider和取消已补，内容派生仍缺。** 可信身份、真实provider/fallback互斥、核心韧性/恢复与异常对象图回滚、破坏来源/locked目标取消已接。仍缺完整攻击profile失攻派生、全部关系/目标引用清理和实际XP收据组合验证。
+5. **仅核心睡眠决策与韧性归属已接。** 精神/关系群状态一tick，成员毒/火/网，支配/纷争及群坠落/潜水的完整生产路由未完成。
+6. **诊断phased存读续跑已补，整体生命周期仍缺。** 保coreID的单体↔群体原子polymorph、整组clone新ID/深拷贝/无奖励、实际移层/pending，以及通过真实开局命令生成群体的replay/seek/续录仍未完成。
+7. **生产3b多源接线已补，跨生命周期组合仍缺。** entityId/partId/generation0、每源profile与付款、成员破坏/局部锁/核心破防取消、存读与真实冷却已验证。仍需和未来整体转换/移层/正式生成录像组合验收；成员再生/非零generation仍按D13关闭。
+8. **未完成。** 群核心/成员公开绘制与检视身份、Boss coreHP及成员概况、部分可见/历史隔离、320/390真实布局触控、正式原创复合体/实算场地与仅giants自然击败种子。
+
+这些剩余能力继续保持门关闭；未把单体操作拒绝或诊断arena当作完整4d最终玩法。下一步首先应补整组逐段环境/状态关系和生命周期，再接正式内容与公开验收，不能先新增自然敌人掩盖这些缺口。
+
+## 保留的4d-1/4d-0历史报告
+
+以下为维护者已提交报告原文，描述各历史子里程碑当时的状态。
+
 # 4d-1 执行报告：生产群表、核心轮转与成员退休
 
 基于维护者已提交的 `ext/phase4` HEAD `2adaf6a`，继续执行报告原“完整4d剩余项”1–8。本轮收束到可单独审阅的 **4d-1 子里程碑，尚未完成完整4d**。未暂存、commit 或 push。下文逐项列出剩余范围；文末保留 4d-0 报告原文，历史能力门描述以当时状态为准。

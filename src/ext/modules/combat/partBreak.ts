@@ -25,6 +25,10 @@ export function createCombatPartBreakProvider(definitions: ActorAttackDefinition
             validatePartBreakRequest(request);
             if (context.actor.id !== request.actorId || context.actor.hp <= 0)
                 return { status: 'unsupported', reason: 'unsupported-target' };
+            if (request.partId !== 'self' && (!context.member || context.member.groupId !== request.groupId
+                || context.member.partId !== request.partId || context.member.generation !== request.generation
+                || context.member.entityId === request.actorId))
+                return { status: 'unsupported', reason: 'unsupported-target' };
             const current = context.state as unknown as ProductionActorAttackState;
             validateProductionActorAttackTransactionState(current, definitions, current);
             const expectedState = canonical(context.state);

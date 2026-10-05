@@ -131,3 +131,7 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 2026-10-05 4d 续轮授权：维护者已提交4d-0（HEAD 2adaf6a），继续原报告剩余1–8，开发期功能测试、不commit。当前交付4d-1子里程碑：已安装 nativeBodies、Game可选群根/生产闭包/全层实体归属、纯整组预验与generation出生批次回滚、核心唯一轮转/真实成员冷却、≤4即时攻击max耗时、中央1:4传伤/remove墓碑/链子树无死亡退休/核心一次终结与软provider回滚。独立全对象图audit含已有墓碑时第二群出生失败；原32项规划+新21项生产专项共53项最终通过。尚未完成完整4d；缺逐段环境、群状态关系、整体转换/clone/迁移/pending、真正3b多源phased、群UI及正式场地自然种子，报告按原1–8逐项列明并保留4d-0。生产测试跨模块实现导入被边界拒绝，已改用底座安装声明，未改守卫或旧测试。
 
 - 4d-1 最终：v1运行中复核补self保留身份与活成员HP校验，输入变化后废弃候选，不拼接门禁结果；v2同一冻结候选 boundary/type/build、77文件1609项、白名单1项、16/16 engine-only组合、drift4文件5项全部exit0。887输入各门前后一致，紧凑排序JSON哈希清单SHA256为3d90368d42653ea849d95b6cc0fdc3c6a6f23c265285d1a6c9fb4414dbb2fc21，结束UTC2026-10-05T10:46:13Z。17实体诊断追击20次真实wait命令均移动，冷17.213ms、暖P50 14.472ms/P95 16.709ms；不是自然种子或浏览器验收。报告保留4d-0原文并明确剩余1–8；未暂存/commit/push。
+
+- 2026-10-05 4d-2续轮：4d-1已提交并合入dot 3d，开工HEAD8f7ab26、工作树干净。已接真实≤4多来源phased束（core唯一owner、每源generation0/profile/付款/scope/冷却、min边界/max收束）、可信冻结member证明与真实combat part-break provider/fallback互斥、事务内延后取消及3d checkpoint回滚、成员直接物理/弹反的核心poise和max恢复。新增20项诊断生产专项通过；旧测试/守卫/黄金trace未改。尚未完整4d：环境/状态关系/转换迁移/正式内容/UI及真实自然录像仍缺，报告按1–8列明并逐字保留4d-1/4d-0。未暂存/commit/push。
+
+- 4d-2最终：同一冻结候选boundary/type/build、84文件1799项相关回归、地形白名单1项、16/16 engine-only组合、drift4文件5项全部exit0；896输入各门前后一致，清单SHA256 c4ba31f08a5c514da4a3701d5b260b401c646de75fe5ecb65b519772de282708，结束UTC2026-10-05T11:40:42Z。17实体诊断追击20条真实wait均移动，冷22.030ms、暖P50 19.241ms/P95 22.658ms，仅Node诊断、非手机或自然验收。报告已填写实际门禁与剩余1–8，历史逐字保留；在任务书允许的干净子里程碑收束，不宣称完整4d完成。未暂存/commit/push。

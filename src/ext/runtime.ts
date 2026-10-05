@@ -22,7 +22,7 @@ import { actorActionIdentityCheckpoint, adoptActorActionJson } from './actorActi
 import { EffectCausality, validEffectOrigin, type EffectOrigin } from './causality';
 import { ExtensionCompatibilityError } from './compatibility';
 import { PART_BREAK_CAPABILITY, validatePartBreakRequest, type PartBreakRequest, type PartBreakProvider,
-    type PartBreakPreparation, type PartBreakNativeCommit, type PartBreakChoice, type PartBreakCommitContext } from './partBreak';
+    type PartBreakPreparation, type PartBreakNativeCommit, type PartBreakChoice, type PartBreakCommitContext, type PartBreakMemberIdentity } from './partBreak';
 import type { DeathFact, GenerationToken, ControlledActionRequest, ControlledActionResult, ControlledActionOutcome, PhysicalResolutionFact, OptionalQueryResult, OptionalQueryProvider, OptionalRewardProvider, OptionalRewardRequest, OptionalRewardPreparation, OptionalRewardPrepareResult, OptionalRewardResult, PendingStoryFact } from './types';
 
 // Pure geometry authority is session-derived. No own field/catalog allocation
@@ -32,7 +32,7 @@ const spatialCatalogs = new WeakMap<ExtensionRuntime, SpatialCatalog>();
 const partBreakProviders = new WeakMap<ExtensionRuntime, { module: ExtensionModule; provider: PartBreakProvider }>();
 const zoneBreakCheckpoints = new WeakMap<ExtensionRuntime, () => () => void>();
 const zoneBreakHandlers = new WeakMap<ExtensionRuntime, NonNullable<ExtensionPorts['zoneBroken']>>();
-const bodyHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts, 'memberDamage' | 'memberDamageCommitted' | 'validateMemberBreak'>>();
+const bodyHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts, 'memberDamage' | 'memberDamageCommitted' | 'validateMemberBreak' | 'memberBroken'>>();
 function isCreatureView(value: unknown): boolean {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
     const v = value as Record<string, unknown>;
@@ -44,7 +44,8 @@ export interface ExtensionPorts {
     zoneBroken?(actor: Creature, zoneId: string): void;
     memberDamage?(actor: Creature, amount: number, kind: import('./causality').DamageKind): number | undefined;
     memberDamageCommitted?(actor: Creature): void;
-    validateMemberBreak?(request: PartBreakRequest): boolean;
+    validateMemberBreak?(request: PartBreakRequest): PartBreakMemberIdentity | false;
+    memberBroken?(core: Creature, member: Readonly<PartBreakMemberIdentity>): void;
     checkpointZoneBreak?(): () => void;
     depth(): number;
     turn?(): number;
@@ -150,9 +151,9 @@ export class ExtensionRuntime {
             const { zoneBroken: _handler, checkpointZoneBreak: _checkpoint, ...existingPorts } = ports;
             this.ports = existingPorts;
         }
-        if (ports.memberDamage || ports.memberDamageCommitted || ports.validateMemberBreak) {
-            const { memberDamage, memberDamageCommitted, validateMemberBreak, ...existingPorts } = this.ports;
-            bodyHandlers.set(this, { memberDamage, memberDamageCommitted, validateMemberBreak });
+        if (ports.memberDamage || ports.memberDamageCommitted || ports.validateMemberBreak || ports.memberBroken) {
+            const { memberDamage, memberDamageCommitted, validateMemberBreak, memberBroken, ...existingPorts } = this.ports;
+            bodyHandlers.set(this, { memberDamage, memberDamageCommitted, validateMemberBreak, memberBroken });
             this.ports = existingPorts;
         }
         this.manifest = structuredClone(manifest);
@@ -456,7 +457,12 @@ export class ExtensionRuntime {
         validatePartBreakRequest(request);
         const actor = [...this.creatures].find(c => c.id === request.actorId);
         if (!actor || actor.hp <= 0) throw new Error('Unavailable part break actor');
-        if (request.partId !== 'self' && !bodyHandlers.get(this)?.validateMemberBreak?.(request)) throw new Error('Unavailable member break identity');
+        const member = request.partId === 'self' ? undefined : bodyHandlers.get(this)?.validateMemberBreak?.(request);
+        if (request.partId !== 'self' && (!member || member.groupId !== request.groupId || member.partId !== request.partId
+            || member.generation !== request.generation || member.entityId === actor.id
+            || ![...this.creatures].some(c => c.id === member.entityId && c.hp > 0
+                && c.spatial?.bodyMember?.groupId === actor.id && c.spatial.bodyMember.partId === member.partId)))
+            throw new Error('Unavailable member break identity');
         const value = freezeView(structuredClone(request)), entry = partBreakProviders.get(this);
         const actionBinding=this.actorActionBinding();
         const actionState=actionBinding?.state as unknown as Json|undefined;
@@ -477,7 +483,8 @@ export class ExtensionRuntime {
                     };
                     this.pureProviderPhase = true;
                     try {
-                        preparation = entry.provider.prepare(value, Object.freeze({ ...context, actor: this.actorFacts(actor), getComponent }));
+                        preparation = entry.provider.prepare(value, Object.freeze({ ...context, actor: this.actorFacts(actor), getComponent,
+                            ...(member ? { member: freezeView(structuredClone(member)) } : {}) }));
                         requireSynchronous(preparation);
                         if (!isJson(preparation) || !preparation || typeof preparation !== 'object' || Array.isArray(preparation)
                             || (preparation.status === 'ready' ? Object.keys(preparation).sort().join(',') !== 'plan,status'
@@ -516,7 +523,8 @@ export class ExtensionRuntime {
                         });
                     } finally { this.rewardProviderPhase = false;providerCommitActive=false; }
                 }
-                zoneBreakHandlers.get(this)?.(actor, request.zoneId);
+                if (member) bodyHandlers.get(this)?.memberBroken?.(actor, member);
+                else zoneBreakHandlers.get(this)?.(actor, request.zoneId);
                 return result;
             });
         } catch (error) {
