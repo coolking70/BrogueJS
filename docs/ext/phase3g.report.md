@@ -89,3 +89,11 @@ Actual final capture: original `P4A0_CAPTURE=1 npx vitest run src/test/phase4a0_
 - v1：boundary/type/build通过，natural实跑3失败/2通过，exit1，1180.909s。三个失败全部为上游硬编码 `/private/tmp/p4d3-natural-acceptance.json` 在云环境不存在导致ENOENT，不是断言/timeout；源码933份输入始终不变，后续门未跑。经许可创建 `/private/tmp` 到可写 `/tmp` 的兼容映射并以非提升权限写入探针验证，没有改测试、种子或480s门限。修复后的后两项fresh seek通过，但不能与后续结果拼接。
 - v2：同候选boundary/type/build再次通过；确认后续drift三份fixture需要上述纯版本更新后主动中断natural，runner exit130，未算完成，没有拼接前后结果。源码在中断时仍完全相同。
 - v3：更新已归因的三个hash后重新冻结，先运行短门与全部相关测试/组合/drift，再独立运行自然长测，所有门顺序串行，仍各保留原deadline。最终结果见最终验证表。
+
+
+### v3 完整相关集合与修复
+
+v3 boundary/type/build均exit0；139相关文件完整跑完：137文件通过/2失败，2785项通过/2失败，0 skipped/todo，914.970s，源码输入changedInputs=[]。未继续terrain/组合/drift/natural；不算统一验收通过。
+
+- `ext_module_composition` 的16真实标准子集通过，只有附加任意alpha初始化模块失败。3g的snapshot校验遗漏了新`foundation.story.v1`消费者，仍只认旧storyFact hook，导致成长尚未初始化时的合法pending entered-level快照被拒绝并丢失recordingOrigin。修复生产条件同时识别两种注册形式；原组合守卫未改。新增合法pending消费者恢复、无消费者拒绝、仅combat消费者拒绝三个回归。隔离原生产的新正例先红，修复后原composition＋foundation专项＋旧optional rewards共74项及类型检查通过。
+- `ux_1d_recording_continuation` 的60秒墙钟负例在候选70d2844和干净80640d1都同样失败：hasCompleteRecording实际true而原断言期待false。98f9d15已明确修复为drain同一已接受iterator、保留完整机械checkpoint；3g没有修改该watchdog。隔离副本只回退98f9d15生产hunk，原测试字节保持相同，负例通过。不能回退该生产修复重引入已付款防御锁/NPC停滞。此旧夹具修订当前等待维护者限定授权；证据见`evidence/phase3g-recording-watchdog-diagnosis.json`。

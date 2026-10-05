@@ -1,0 +1,37 @@
+{
+  "candidate": "70d28442598d50cf155d953635d1d00dee494c86",
+  "upstream": "80640d1f0aa701d71e34758403bf18967fbff097",
+  "behavior_change": "98f9d151e84cbafaab5120b40e73c33a9450c5f0",
+  "test": "src/test/ux_1d_recording_continuation.test.ts",
+  "filter": "after an advancement timeout",
+  "maxWorkers": 1,
+  "results": {
+    "candidate": {
+      "exit_code": 1,
+      "log": "/tmp/p3g-recording-gate-diagnosis/candidate-timeout.log",
+      "original_test_sha256": "608f81f2ec5a8ad2dfd8e53d9d93362f6a17fc9103a6e6bfcfff2c0a5add3d13"
+    },
+    "upstream": {
+      "exit_code": 1,
+      "log": "/tmp/p3g-recording-gate-diagnosis/upstream-timeout.log",
+      "original_test_sha256": "608f81f2ec5a8ad2dfd8e53d9d93362f6a17fc9103a6e6bfcfff2c0a5add3d13"
+    },
+    "counterfactual": {
+      "exit_code": 0,
+      "log": "/tmp/p3g-recording-gate-diagnosis/counterfactual-timeout.log",
+      "original_test_sha256": "608f81f2ec5a8ad2dfd8e53d9d93362f6a17fc9103a6e6bfcfff2c0a5add3d13"
+    }
+  },
+  "assertion": {
+    "line": 40,
+    "expression": "game.hasCompleteRecording",
+    "expected": false,
+    "received": true
+  },
+  "counterfactual_changed_files": [
+    "src/engine/Core/Game.ts"
+  ],
+  "counterfactual_change": "Revert only the 98f9d15 stepAdvancement watchdog hunk; keep all current production code outside the hunk and all original tests.",
+  "classification": "Inherited upstream test premise conflict with intentional 3d delayed-frame completion; not introduced by 3g.",
+  "shared_checkout_changed": false
+}

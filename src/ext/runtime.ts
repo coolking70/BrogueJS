@@ -1536,7 +1536,7 @@ export class ExtensionRuntime {
             || !Number.isSafeInteger(foundation.nextFactId) || foundation.nextFactId < 1
             || !Array.isArray(foundation.pendingStoryFacts) || foundation.pendingStoryFacts.length > STORY_FACT_LIMIT
             || !foundation.pendingStoryFacts.every(validPendingStoryFact)
-            || (foundation.pendingStoryFacts.length > 0 && !this.hasHook('storyFact'))
+            || (foundation.pendingStoryFacts.length > 0 && !this.hasHook('storyFact') && !this.hasCommittedFactConsumer('foundation.story.v1'))
             || !validWorldSnapshot(foundation.world, this.modules.map(module => module.id))
             || !EffectCausality.validateSnapshot(foundation.causality) || !foundation.deaths || Array.isArray(foundation.deaths)
             || typeof foundation.deaths !== 'object') throw new Error('Invalid extension foundation snapshot');

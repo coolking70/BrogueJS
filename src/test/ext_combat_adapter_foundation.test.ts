@@ -43,6 +43,34 @@ describe('3g trusted actor query and committed fact transaction',()=>{
   const {runtime,actor}=setup([module('provider',{optionalActorQueries:{'growth.combat-stats.v1':{accepts:()=>true,query:()=>({bad}) as any,validate:(_v):_v is Json=>true}}})]);
   expect(()=>runtime.queryOptionalActor('growth.combat-stats.v1',actor,null)).toThrow('Invalid actor query result');
  });
+ it('roundtrips committed story queues between initialization commands and flushes them exactly once',()=>{
+  const prepare=vi.fn((fact:unknown)=>fact),commit=vi.fn();
+  const {runtime,registry,actor}=setup([
+   module('alpha',{initialState:()=>({ready:false}),initializationReady:context=>(context.state as {ready:boolean}).ready,
+    commands:{initialize:(_payload,context)=>context.setState({ready:true})}}),
+   module('story',{committedFacts:{'foundation.story.v1':{maxDerivedFacts:2,prepare,commit}}}),
+  ]);
+  runtime.emit('enteredLevel',{depth:1,firstVisit:true});runtime.settle([actor]);
+  const pending=runtime.snapshot();
+  expect(pending.foundation).toMatchObject({nextFactId:1,pendingStoryFacts:[{kind:'entered-level',depth:1,firstVisit:true,turn:4}]});
+  expect(()=>runtime.validateSnapshot(pending)).not.toThrow();
+  const loaded=new ExtensionRuntime(registry,pending.manifest,{depth:()=>1,turn:()=>4,playerId:()=>actor.id,randomInt:()=>1,message:()=>{}},pending);
+  expect(loaded.snapshot()).toEqual(pending);expect(prepare).not.toHaveBeenCalled();expect(commit).not.toHaveBeenCalled();
+  loaded.command(JSON.stringify({module:'alpha',action:'initialize',payload:null}));loaded.settle([]);
+  expect(loaded.snapshot().foundation).toMatchObject({nextFactId:4,pendingStoryFacts:[]});
+  expect(prepare).toHaveBeenCalledTimes(1);expect(commit).toHaveBeenCalledTimes(1);
+  expect(prepare.mock.calls[0]![0]).toEqual({kind:'entered-level',depth:1,firstVisit:true,turn:4,factId:1});
+  expect(()=>loaded.validateSnapshot(pending)).not.toThrow();
+  const invalid=structuredClone(pending);invalid.modules.alpha={ready:true};
+  expect(()=>loaded.validateSnapshot(invalid)).toThrow('initialized snapshot');
+ });
+ it.each([false,true])('rejects a persisted story queue without a story subscriber (combat subscriber=%s)',combat=>{
+  const {runtime}=setup([module('consumer',{initializationReady:()=>false,
+   ...(combat?{committedFacts:{'combat.event.v1':{maxDerivedFacts:0,prepare:()=>null,commit:()=>{}}}}:{}),
+  })]);
+  const invalid=runtime.snapshot();invalid.foundation.pendingStoryFacts=[{kind:'entered-level',depth:1,firstVisit:true,turn:4}];
+  expect(()=>runtime.validateSnapshot(invalid)).toThrow('foundation snapshot');
+ });
  it('sorts multiple consumers by stable module ID and reserves disjoint ranges under one root',()=>{
   const run=(reverse:boolean)=>{
    const seen:unknown[]=[];
