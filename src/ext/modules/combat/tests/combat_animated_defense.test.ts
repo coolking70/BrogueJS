@@ -11,6 +11,7 @@ import monsters from '../../../../data/monsters.json';
 import { rng } from '../../../../engine/Random';
 import * as catalog from '../../../catalog';
 import { placeCombatTelegraphFixture } from '../ui/diagnostics';
+import { createCombatDiagnosticTrace } from '../ui/diagnosticTrace';
 import { readPublicCombatTelegraphs } from '../../../../ui/combatDrawing';
 import { productionActorActionScheduler } from '../../../../engine/Core/ActorActionProduction';
 import { bindDialogAcknowledgments } from '../../../../ui/dialogAcknowledgments';
@@ -117,6 +118,8 @@ describe('animated defense uses the real UI command and frame advancement', () =
         const game = scene(seed);
         commitCreatureAnchor(game.player, { x: 38, y: 20 });
         game.player.hp = game.player.maxHp = 30;
+        // Reproduce the reported bookkeeping tick700 using ordinary commands.
+        for (let n = 0; n < 7; n++) game.executeCommand('wait');
         if (size === 1) {
             // A visible four-cell room admits only the diagnostic's supported 1x1
             // fallback, matching player(38,20)/source(37,19), without timer edits.
@@ -136,8 +139,12 @@ describe('animated defense uses the real UI command and frame advancement', () =
             expect(warning(game, source.id).phaseRemainingTicks).toBe(10);
             const defended = vi.spyOn(game.extensionRuntime!, 'notifyActorParried');
             const sourceHp = source.hp;
+            expect(timeSystem.currentTick).toBe(700);
+            expect(resource(game).stamina).toBe(22);
             for (let count = 1; count <= 2; count++) {
-                const old = json(state(game).scheduler.bundles.find(b => b.decisionOwnerId === source.id)!);
+                const retainedState = state(game), retainedSource = source;
+                const retainedBundle = retainedState.scheduler.bundles.find(b => b.decisionOwnerId === source.id)!;
+                const old = json(retainedBundle);
                 const scheduler = productionActorActionScheduler(game)!;
                 const advance = vi.spyOn(scheduler, 'advanceActionTime');
                 const tick = timeSystem.currentTick, turn = game.stats.turns, inputs = game.recordedInputEvents.length;
@@ -152,6 +159,12 @@ describe('animated defense uses the real UI command and frame advancement', () =
                 canvasFrames(game, timeline, count === 2); // Same in-flight path under an open shell modal.
                 expect(advance.mock.calls.reduce((sum, [delta]) => sum + delta, 0)).toBe(100);
                 advance.mockRestore();
+                expect(state(game)).toBe(retainedState);
+                expect(game.monsters.find(m => m.id === source.id)).toBe(retainedSource);
+                expect(state(game).scheduler.bundles).not.toContain(retainedBundle);
+                expect(old.subactions[0]!.phaseRemainingTicks).toBe(10); // Detached historical data stays unchanged.
+                expect(retainedBundle.subactions[0]!.phaseRemainingTicks).toBe(0); // Retired live bundle did advance.
+                expect(source.ticksUntilTurn).toBe(10);
                 expect(defended).toHaveBeenCalledTimes(count);
                 expect(defended).toHaveBeenLastCalledWith(source.id, game.player.id, game.depth);
                 expect(game.player.hp).toBe(30); expect(source.hp).toBe(sourceHp);
@@ -169,10 +182,12 @@ describe('animated defense uses the real UI command and frame advancement', () =
         } finally { ui.dispose(); timeline.dispose(); }
     });
     it.each(['parry', 'dodge'] as const)('%s has identical animated UI/headless results, RNG and final recording checkpoints', async action => {
-        async function run(animated: boolean, delayed = false) {
+        async function run(animated: boolean, delayed = false, traced = false) {
             const game = scene(), source = rat(game);
             game.animationEnabled = animated;
             const ui = uiSession(game), timeline = ui.timeline;
+            const originalNotify = game.extensionRuntime!.notifyActorParried;
+            const trace = traced ? createCombatDiagnosticTrace(game) : undefined;
             try {
                 acknowledge(); game.executeCommand('wait'); canvasFrames(game, timeline);
                 expect(warning(game, source.id).phaseRemainingTicks).toBe(50);
@@ -191,13 +206,83 @@ describe('animated defense uses the real UI command and frame advancement', () =
                 expect(game.stats.turns).toBe(turn + 1);
                 expect(resource(game)).toMatchObject({ parryRemainingTicks: 0, parryRecoveryRemainingTicks: 0,
                     dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 });
+                if (trace) {
+                    expect(trace.read().current.defendedCount).toBe(action === 'parry' ? 1 : 0);
+                    trace.stop();
+                    expect(game.extensionRuntime!.notifyActorParried).toBe(originalNotify);
+                }
                 const recording = json(game.exportRecording()); recording.recordedAt = 0;
                 return { world: mechanical(game), rng: json(rng.getState()), recording };
-            } finally { ui.dispose(); timeline.dispose(); }
+            } finally { trace?.stop(); ui.dispose(); timeline.dispose(); }
         }
         const baseline = await run(false);
         expect(await run(true)).toEqual(baseline);
         expect(await run(true, true)).toEqual(baseline);
+        expect(await run(true, false, true)).toEqual(baseline);
+    });
+    it('DEV observation is bounded, detached, restores callbacks, and never advances the game', () => {
+        const game = scene(), runtime = game.extensionRuntime!;
+        const source = game.createSquareMonster(monsters.find(monster => monster.id === 'rat')! as MonsterData, 2, { x: 21, y: 15 })!;
+        source.state = MonsterState.HUNTING; source.hp = source.maxHp = 1000;
+        (game as any).updateVision(); game.executeCommand('wait');
+        expect(source.spatial!.footprintId).toBe('builtin:square-2');
+        const original = runtime.notifyActorParried;
+        let callback: FrameRequestCallback | undefined;
+        let handle = 0;
+        vi.stubGlobal('requestAnimationFrame', (next: FrameRequestCallback) => { callback = next; return ++handle; });
+        const cancel = vi.fn(); vi.stubGlobal('cancelAnimationFrame', cancel);
+        const before = mechanical(game), random = json(rng.getState());
+        const trace = createCombatDiagnosticTrace(game);
+        try {
+            for (let n = 0; n < 300; n++) callback!(n * 16);
+            source.spatial!.footprintId = 'builtin:square-3';
+            expect(trace.read().samples[255].sources[0].spatial.footprintId).toBe('builtin:square-2');
+            source.spatial!.footprintId = 'builtin:square-2';
+            const result = trace.read();
+            expect(result.samples).toHaveLength(256);
+            expect(result.current.frame).toBe(300);
+            result.current.player.hp = -99;
+            expect(trace.read().current.player.hp).toBe(1000);
+            expect(mechanical(game)).toEqual(before); expect(rng.getState()).toEqual(random);
+            trace.stop(); expect(runtime.notifyActorParried).toBe(original);
+            expect(cancel).toHaveBeenCalledWith(handle);
+            callback!(9999); expect(trace.read().current.frame).toBe(300);
+        } finally { trace.stop(); vi.unstubAllGlobals(); }
+    });
+    it('repeated DEV start and out-of-order stop leave only the newest observer active', () => {
+        const game = scene(), runtime = game.extensionRuntime!, native = runtime.notifyActorParried;
+        const a = createCombatDiagnosticTrace(game), retired = runtime.notifyActorParried;
+        const b = createCombatDiagnosticTrace(game), current = runtime.notifyActorParried;
+        try {
+            expect(a.read().current.running).toBe(false);
+            a.stop(); expect(runtime.notifyActorParried).toBe(current);
+            retired.call(runtime, 21, 1, 1);
+            expect(a.read().current.defendedCount).toBe(0);
+            runtime.notifyActorParried(21, 1, 1);
+            expect(a.read().current.defendedCount).toBe(0);
+            expect(b.read().current.defendedCount).toBe(1);
+            b.stop(); expect(runtime.notifyActorParried).toBe(native);
+            a.stop(); b.stop(); expect(runtime.notifyActorParried).toBe(native);
+        } finally { a.stop(); b.stop(); }
+    });
+    it('DEV defense observer preserves the original receiver, arguments, result and exceptions', () => {
+        const game = scene(), runtime = game.extensionRuntime!;
+        const native = runtime.notifyActorParried;
+        const receiver = {} as typeof runtime, error = new Error('native observer test');
+        const original = vi.fn(function (this: typeof runtime, ...args: number[]) {
+            expect(this).toBe(receiver); expect(args).toEqual([21, 1, 1]);
+            if (original.mock.calls.length > 1) throw error;
+            return undefined;
+        });
+        runtime.notifyActorParried = original;
+        const trace = createCombatDiagnosticTrace(game);
+        try {
+            expect(runtime.notifyActorParried.call(receiver, 21, 1, 1)).toBeUndefined();
+            expect(trace.read().current.defendedCount).toBe(1);
+            expect(() => runtime.notifyActorParried.call(receiver, 21, 1, 1)).toThrow(error);
+            expect(trace.read().current.defendedCount).toBe(1);
+            trace.stop(); expect(runtime.notifyActorParried).toBe(original);
+        } finally { trace.stop(); runtime.notifyActorParried = native; }
     });
     it.each(['parry', 'dodge'] as const)('%s completes accepted work after a wall-clock-only six-second frame gap', async action => {
         const game = scene(), source = rat(game); game.animationEnabled = true;
