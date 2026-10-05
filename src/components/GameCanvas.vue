@@ -97,7 +97,7 @@ import { Application, Text, TextStyle, Graphics, Container } from 'pixi.js';
 // Appearance.ts 纯函数（ctx 显式注入），本组件只保留 Pixi 绘制。
 // 结构守卫（r_1_appearance.test.ts）钉死本文件不得再出现外观决策。
 import { ARCANA_TRAJECTORY_FILL, cellAppearance, itemAppearance, rememberedItemAppearance, monsterAppearance, playerAppearance, type CosmeticRng } from '../engine/UI/Appearance';
-import { canSeeMonster, canDirectlySeeMonster, canDisplayMonster, monsterInGas } from '../engine/UI/MonsterVisibility';
+import { canSeeMonster, canDirectlySeeMonster, canDisplayMonster, canSeeMonsterAt, monsterInGas } from '../engine/UI/MonsterVisibility';
 // DCOLS/DROWS 已在上方 <script lang="ts"> 模块块导入（computeMapOffset 用），
 // 同一模块内重复声明绑定会报错，这里只取 setup 独有的 Direction。
 import { Direction } from '../types';
@@ -121,6 +121,10 @@ import { normalizeMapGlyph } from '../ui/mapGlyph';
 import { readInteractableMapMarkers } from '../ui/worldInteractableMap';
 import { RetainedBackgroundLayer, RetainedVectorLayer, VectorGeometryCache } from '../ui/retainedMapDrawing';
 import { displayedFrame, presentationTimeline } from '../ui/presentationTimeline';
+import { publicMonsterBody, publicMonsterMapCells } from '../engine/UI/MonsterBody';
+import { observeDisplayMonster } from '../ui/monsterDisplay';
+import { paintBody, paintBodyOutline, selectedBodyCells } from '../ui/bodyDrawing';
+import { installSquareBodyDiagnostics } from '../ui/squareBodyDiagnostics';
 import type { DisplayFrame } from '../ui/displayProjection';
 import { RenderRequests } from '../ui/renderRequests';
 import { FrameProfile } from '../ui/frameProfile';
@@ -152,6 +156,7 @@ let removeOcclusionObserver: (() => void) | null = null;
 // FE-1：触屏手势监听的卸载函数
 let removeDisplayClockListener: (() => void) | null = null;
 let removeTouchListeners: (() => void) | null = null;
+let removeSquareBodyDiagnostics: (() => void) | null = null;
 let removeHeldInputContext: (() => void) | null = null;
 
 onMounted(async () => {
@@ -217,6 +222,8 @@ onMounted(async () => {
     // Fixed number of entity Text sprites (player + max ~30 entities)
     const MAX_ENTITY_SPRITES = 256;
     const entityLayer = new Container();
+    const bodyGraphics = new Graphics();
+    entityLayer.addChild(bodyGraphics);
     entityLayer.position.set(offsetX, offsetY);
 
     const vectorEntities = new RetainedVectorLayer(vectorGeometry);
@@ -255,20 +262,34 @@ onMounted(async () => {
 
     // A display-only overlay. CE cursor mode highlights its current cell
     // (IO.c:655-664); passive mouse hover is a Web affordance.
+    const selectionCells = (at: { x: number; y: number }, frame?: DisplayFrame) => {
+        if (frame) return selectedBodyCells(frame.map.bodies, at);
+        const monster = activeGame.getMonsterAt(at.x, at.y);
+        const body = monster && publicMonsterBody(activeGame.player, activeGame.grid, monster);
+        return body?.cells.some(p => p.x === at.x && p.y === at.y) ? body.cells : null;
+    };
     const drawHover = () => {
         hoverHighlight.clear();
-        const game = activeGame;
-        if (displayedFrame(game)) return;
-        const pos = game.hoveredCell;
-        if (!pos || game.isInventoryOpen || game.referenceScreen || game.pendingArcana
-            || game.isThrowing || game.isGameOver) return;
-        const cell = game.grid.getCell(pos.x, pos.y);
-        if (!shouldHighlightMapCell(cell)) return;
-        hoverHighlight.rect(pos.x * TILE_SIZE, pos.y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-            .fill({ color: MAP_HOVER_FILL, alpha: 0.14 });
-        hoverHighlight.rect(pos.x * TILE_SIZE + 0.75, pos.y * TILE_SIZE + 0.75,
-            TILE_SIZE - 1.5, TILE_SIZE - 1.5)
-            .stroke({ color: MAP_HOVER_STROKE, width: 1.5 });
+        const game = activeGame, frame = displayedFrame(game);
+        const pos = frame ? frame.hoverCell : game.hoveredCell;
+        if (!pos || (frame ? frame.targeting !== 'none' || frame.terminal : game.isInventoryOpen || game.referenceScreen
+            || game.pendingArcana || game.isThrowing || game.isGameOver)) return;
+        if (frame ? !frame.map.columns[pos.x]?.[pos.y] : !shouldHighlightMapCell(game.grid.getCell(pos.x, pos.y))) return;
+        const cells = selectionCells(pos, frame);
+        if (cells) {
+            for (const p of cells) hoverHighlight.rect(p.x * TILE_SIZE, p.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            hoverHighlight.fill({ color: MAP_HOVER_FILL, alpha: 0.14 });
+            paintBodyOutline(hoverHighlight, cells, TILE_SIZE, MAP_HOVER_STROKE);
+        } else {
+            hoverHighlight.rect(pos.x * TILE_SIZE, pos.y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                .fill({ color: MAP_HOVER_FILL, alpha: 0.14 });
+            hoverHighlight.rect(pos.x * TILE_SIZE + 0.75, pos.y * TILE_SIZE + 0.75,
+                TILE_SIZE - 1.5, TILE_SIZE - 1.5).stroke({ color: MAP_HOVER_STROKE, width: 1.5 });
+        }
+    };
+    const drawTargetBody = (at: { x: number; y: number }, color: number, frame?: DisplayFrame) => {
+        const cells = selectionCells(at, frame);
+        if (cells) paintBodyOutline(arcanaCursor, cells, TILE_SIZE, color, 1, 2);
     };
 
     // Floating text layer (max 8 floaters)
@@ -362,6 +383,7 @@ onMounted(async () => {
     stopCameraWatch = watch(() => [cameraState.zoom, cameraState.panX, cameraState.panY, cameraState.fit], () => applyLayout());
 
     const game = activeGame;
+    removeSquareBodyDiagnostics = installSquareBodyDiagnostics(game);
     removeHeldInputContext = registerHeldInputContext(() => [
         game.isInventoryOpen, game.referenceScreen, game.inspectTarget,
         game.pendingArcana, game.isThrowing, game.pendingEnchantment,
@@ -401,7 +423,8 @@ onMounted(async () => {
 
     const renders = new RenderRequests();
     const renderProjection = (frame: DisplayFrame) => {
-        bgGraphics.clear(); vectorTerrain.clear(); vectorEntities.clear(); arcanaCursor.clear();
+        bgGraphics.clear(); vectorTerrain.clear(); vectorEntities.clear(); arcanaCursor.clear(); bodyGraphics.clear();
+        for (const body of frame.map.bodies) paintBody(bodyGraphics, body, TILE_SIZE);
         arcanaPrompt.value = frame.arcana ? i18next.t('arcana.target_prompt', {
             interpolation: { escapeValue: false }, name: frame.arcana.name,
             defaultValue: '{{name}} — hjklyubn / arrows: aim · Tab: next · Enter / click: cast · Esc: cancel',
@@ -409,9 +432,11 @@ onMounted(async () => {
         if (frame.arcana) {
             if (frame.arcana.maxDistance !== null) arcanaPrompt.value += i18next.t('arcana.blink_range', { distance: frame.arcana.maxDistance });
             for (const p of frame.arcana.path) arcanaCursor.rect(p.x * TILE_SIZE, p.y * TILE_SIZE, TILE_SIZE, TILE_SIZE).fill(ARCANA_TRAJECTORY_FILL);
+            drawTargetBody(frame.arcana.cursor, arcanaCursorStroke.color, frame);
             arcanaCursor.rect(frame.arcana.cursor.x * TILE_SIZE, frame.arcana.cursor.y * TILE_SIZE, TILE_SIZE, TILE_SIZE).stroke(arcanaCursorStroke);
         }
         if (frame.throwAim && !frame.arcana) {
+            drawTargetBody(frame.throwAim, THROW_AIM_STROKE, frame);
             arcanaCursor.rect(frame.throwAim.x * TILE_SIZE, frame.throwAim.y * TILE_SIZE, TILE_SIZE, TILE_SIZE).fill(THROW_AIM_FILL);
             arcanaCursor.rect(frame.throwAim.x * TILE_SIZE, frame.throwAim.y * TILE_SIZE, TILE_SIZE, TILE_SIZE).stroke({ width: 2, color: THROW_AIM_STROKE });
         }
@@ -471,6 +496,7 @@ onMounted(async () => {
         vectorTerrain.clear();
         vectorEntities.clear();
         arcanaCursor.clear();
+        bodyGraphics.clear();
         const selection = game.pendingArcana;
         arcanaPrompt.value = selection ? i18next.t('arcana.target_prompt', {
             interpolation: { escapeValue: false }, // Vue renders text; keep charge slash readable.
@@ -486,6 +512,7 @@ onMounted(async () => {
                 arcanaCursor.rect(p.x * TILE_SIZE, p.y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
                     .fill(ARCANA_TRAJECTORY_FILL);
             }
+            drawTargetBody(selection.cursor, arcanaCursorStroke.color);
             arcanaCursor.rect(selection.cursor.x * TILE_SIZE, selection.cursor.y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
                 .stroke(arcanaCursorStroke);
         }
@@ -493,6 +520,7 @@ onMounted(async () => {
         const aim = targetingState.aim;
         if (aim && !game.isThrowing) clearAim();
         else if (aim && !selection) {
+            drawTargetBody(aim, THROW_AIM_STROKE);
             arcanaCursor.rect(aim.x * TILE_SIZE, aim.y * TILE_SIZE, TILE_SIZE, TILE_SIZE).fill(THROW_AIM_FILL);
             arcanaCursor.rect(aim.x * TILE_SIZE, aim.y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
                 .stroke({ width: 2, color: THROW_AIM_STROKE });
@@ -632,8 +660,7 @@ onMounted(async () => {
             const occupied = new Set([
                 ...game.items.filter(item => game.grid.getCell(item.loc.x, item.loc.y)?.isVisible)
                     .map(item => `${item.loc.x},${item.loc.y}`),
-                ...game.monsters.filter(monster => canDisplayMonster(game.player, game.grid, monster))
-                    .map(monster => `${monster.loc.x},${monster.loc.y}`),
+                ...game.monsters.flatMap(monster => publicMonsterMapCells(game.player, game.grid, monster).map(p => `${p.x},${p.y}`)),
             ]);
             for (const marker of readInteractableMapMarkers(interactables, {
                 depth: game.depth, player: game.player.loc, occupied,
@@ -643,6 +670,15 @@ onMounted(async () => {
 
         // Monsters
         for (const m of game.monsters) {
+            if (m.spatial) {
+                const display = observeDisplayMonster(game, m, cosmetic, gasBackgrounds);
+                if (display) {
+                    if (display.body) paintBody(bodyGraphics, display.body, TILE_SIZE);
+                    const entity = display.entity;
+                    placeEntity(entity.semantic.original, entity.color, entity.x, entity.y, entity.interactive, entity.semantic);
+                }
+                continue;
+            }
             const cell = game.grid.getCell(m.loc.x, m.loc.y);
             const direct = canDirectlySeeMonster(game.player, game.grid, m);
             const known = canSeeMonster(game.player, game.grid, m);
@@ -911,6 +947,11 @@ onMounted(async () => {
     const onMouseLeave = () => { game.clearHover(); drawHover(); };
     pixiApp.canvas.addEventListener('pointerleave', onMouseLeave);
 
+    const publicSquareAt = (x: number, y: number) => {
+        const monster = game.getMonsterAt(x, y);
+        return !!monster?.spatial && canSeeMonsterAt(game.player, game.grid, monster, { x, y });
+    };
+
     // FE-1：触屏目标选择的命令落地（全部经 ui/commands 的录制边界）。
     const runTapCommand = (cmd: TapCommand) => {
         if (cmd.kind === 'none') return;
@@ -932,14 +973,15 @@ onMounted(async () => {
      * 一次"点选地图格"的完整语义（鼠标左/右键与触屏单击共用）。
      * 鼠标路径与 v0.1.0 完全一致，仅一处修正：投掷模式下点相邻格原先会被当成
      * "移动"（审查 P-18），现在与点远处格一样经 mouse_travel 投掷。
-     * 触屏在投掷/法杖瞄准时改为"先瞄准、再确认"（ui/targeting.ts）。
+     * 触屏及公开 square 身体在投掷/法杖瞄准时使用"先瞄准、再确认"（ui/targeting.ts）。
      */
     const activateCell = (mapX: number, mapY: number, button: number, pointer: 'mouse' | 'touch') => {
         if (props.displayModalOpen) return;
         if (dialogInput.busy()) return;
         if (mapX < 0 || mapX >= DCOLS || mapY < 0 || mapY >= DROWS) return;
         if (game.pendingArcana) {
-            if (pointer === 'touch') {
+            if (pointer === 'touch' || publicSquareAt(mapX, mapY)) {
+                if (button === 2) { dispatchCommand('escape'); return; }
                 runTapCommand(targetingTapCommand('arcana', { x: mapX, y: mapY }, null, game.pendingArcana.cursor, game.player.loc));
                 return;
             }
@@ -957,7 +999,7 @@ onMounted(async () => {
         }
 
         if (game.isThrowing && game.throwItemTarget && !game.isInventoryOpen) {
-            if (pointer === 'touch') {
+            if (pointer === 'touch' || publicSquareAt(mapX, mapY)) {
                 runTapCommand(targetingTapCommand('throw', { x: mapX, y: mapY }, targetingState.aim, null, game.player.loc));
                 return;
             }
@@ -1165,6 +1207,8 @@ onUnmounted(() => {
   removeDisplayClockListener = null;
   removeTouchListeners?.();
   removeTouchListeners = null;
+  removeSquareBodyDiagnostics?.();
+  removeSquareBodyDiagnostics = null;
   removeHeldInputContext?.();
   removeHeldInputContext = null;
   clearAim();

@@ -17,7 +17,7 @@ function poll() {
   const frame = displayedFrame(game);
   const p = frame?.player ?? game.player;
   rows.value = (frame?.rows ?? sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth))
-    .map(row => ({ ...row, distance: Math.max(Math.abs(row.loc.x - p.x), Math.abs(row.loc.y - p.y)) }));
+    .map(row => ({ ...row, distance: row.kind === 'monster' && row.distance !== undefined ? row.distance : Math.max(Math.abs(row.loc.x - p.x), Math.abs(row.loc.y - p.y)) }));
 }
 onMounted(() => { poll(); timer = window.setInterval(poll, 100); });
 onUnmounted(() => window.clearInterval(timer));
@@ -38,7 +38,7 @@ function inspect(row: Row, event: MouseEvent) {
        <button type="button" class="tn-row" :class="[`kind-${row.kind}`, { focused: row.focused }]" :data-entity-kind="row.kind" :data-entity-id="row.id"
                :title="$t('theme.entity_inspect', { name: row.name })" @click="inspect(row, $event)" @keydown.stop @keyup.stop>
         <span class="tn-glyph" :style="{ color: row.color }">{{ normalizeMapGlyph(row.char) }}</span>
-        <span class="tn-name">{{ row.name }}<small v-if="row.kind === 'monster'" class="tn-behavior">{{ row.behavior }}</small></span>
+        <span class="tn-name">{{ row.name }}<small v-if="row.kind === 'monster' && row.bodySize" class="body-size">{{ $t('sidebar.body_size', { size: row.bodySize }) }}</small><small v-if="row.kind === 'monster'" class="tn-behavior">{{ row.behavior }}</small></span>
         <span v-if="row.kind === 'monster'" class="tn-hp"><i :style="{ width: `${pct(row)}%`, background: row.ally ? 'var(--th-ok)' : 'var(--th-hp)' }"></i></span>
         <span v-if="row.kind === 'monster'" class="tn-hpnum th-num">{{ row.hp }}/{{ row.maxHp }}</span>
         <span class="tn-dist th-num">{{ row.distance }}</span>

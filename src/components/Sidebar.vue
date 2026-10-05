@@ -160,7 +160,7 @@ onUnmounted(() => {
         :class="{ 'entity-focused': entity.focused }" :data-entity-kind="entity.kind" :data-entity-id="entity.id">
         <div class="monster-line">
           <span class="monster-glyph" :style="{ color: entity.color }">{{ entity.char }}</span>
-          <span class="monster-name">{{ entity.name }}</span>
+          <span class="monster-name">{{ entity.name }}<small v-if="entity.kind === 'monster' && entity.bodySize" class="body-size">{{ $t('sidebar.body_size', { size: entity.bodySize }) }}</small></span>
           <span v-if="entity.kind === 'monster'" class="monster-health">{{ entity.hp }}/{{ entity.maxHp }}</span>
         </div>
         <template v-if="entity.kind === 'monster'">

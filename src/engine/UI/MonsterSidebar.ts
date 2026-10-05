@@ -10,7 +10,8 @@ import type { Pos } from '../../types';
 import { ItemLoader } from '../Items/ItemLoader';
 import { playerDefense, strengthModifier } from '../Combat/CombatFormulas';
 import { creatureStatusRows, isSidebarVisibleStatus } from '../Status/statusConfig';
-import { canSeeMonster } from './MonsterVisibility';
+import { publicMonsterBody, bodyContains } from './MonsterBody';
+import { canSeeMonster, publicMonsterCells } from './MonsterVisibility';
 
 const colorString = (color: string | number) => typeof color === 'number'
     ? `#${color.toString(16).padStart(6, '0')}` : color;
@@ -48,24 +49,32 @@ export function monsterBehaviorLabel(player: Player, grid: Grid, monster: Monste
 export function visibleMonsterRows(player: Player, grid: Grid, monsters: readonly Monster[]) {
     return monsters.filter(monster => canSeeMonster(player, grid, monster)
         && !monster.hasBehavior('MONST_NOT_LISTED_IN_SIDEBAR'))
-        .sort((a, b) => Number(directlyVisible(grid.getCell(b.x, b.y))) - Number(directlyVisible(grid.getCell(a.x, a.y)))
-            || distanceSquared(a.loc, player.loc) - distanceSquared(b.loc, player.loc))
-        .map(monster => ({
-            kind: 'monster' as const,
-            id: monster.id,
-            loc: { ...monster.loc },
-            direct: directlyVisible(grid.getCell(monster.x, monster.y)),
-            focused: false,
-            char: monster.char,
-            name: monster.name,
-            hp: monster.hp,
-            maxHp: monster.maxHp,
-            color: colorString(monster.color),
-            ally: monster.isAlly,
-            behavior: monsterBehaviorLabel(player, grid, monster),
-            negated: monster.displaysNegation && !player.hasStatus('hallucinating'),
-            statuses: player.hasStatus('hallucinating') ? [] : creatureStatusRows(monster, isSidebarVisibleStatus),
-        }));
+        .map(monster => {
+            const body = publicMonsterBody(player, grid, monster);
+            const cells = monster.spatial ? publicMonsterCells(player, grid, monster) : [monster.loc];
+            const directCells = cells.filter(p => directlyVisible(grid.getCell(p.x, p.y)));
+            return {
+                kind: 'monster' as const,
+                id: monster.id,
+                loc: { ...(body?.glyph ?? monster.loc) },
+                direct: directCells.length > 0,
+                ...(monster.spatial ? { bodyCells: cells, bodySize: body?.size ?? null,
+                    distanceSquared: Math.min(...(directCells.length ? directCells : cells).map(p => distanceSquared(p, player.loc))),
+                    distance: Math.min(...cells.map(p => Math.max(Math.abs(p.x - player.x), Math.abs(p.y - player.y)))) } : {}),
+                focused: false,
+                char: monster.char,
+                name: monster.name,
+                hp: monster.hp,
+                maxHp: monster.maxHp,
+                color: colorString(monster.color),
+                ally: monster.isAlly,
+                behavior: monsterBehaviorLabel(player, grid, monster),
+                negated: monster.displaysNegation && !player.hasStatus('hallucinating'),
+                statuses: player.hasStatus('hallucinating') ? [] : creatureStatusRows(monster, isSidebarVisibleStatus),
+            };
+        })
+        .sort((a, b) => Number(b.direct) - Number(a.direct)
+            || rowDistanceSquared(a, player.loc) - rowDistanceSquared(b, player.loc));
 }
 
 type MonsterRow = ReturnType<typeof visibleMonsterRows>[number];
@@ -74,6 +83,11 @@ type OtherRow = {
     focused: boolean; char: string; name: string; color: string;
 };
 export type SidebarEntityRow = MonsterRow | OtherRow;
+
+const rowDistanceSquared = (row: { loc: Pos; distanceSquared?: number }, player: Pos): number =>
+    row.distanceSquared ?? distanceSquared(row.loc, player);
+const rowContains = (row: SidebarEntityRow, at: Pos | null) => !!at && (row.kind === 'monster' && row.bodyCells
+    ? bodyContains({ cells: row.bodyCells }, at) : sameLocation(row.loc, at));
 
 /** Player's stats card precedes these rows. CE IO.c:3797-3890 uses one row per
  * location, except for the item at the player's feet. Each vision pass groups
@@ -104,15 +118,16 @@ export function sidebarEntityRows(player: Player, grid: Grid, monsters: readonly
         const key = `${row.loc.x},${row.loc.y}`;
         if (added.has(key)) return;
         added.add(key);
-        rows.push({ ...row, focused: sameLocation(row.loc, focus) });
+        if (row.kind === 'monster' && row.bodyCells) for (const p of row.bodyCells) added.add(`${p.x},${p.y}`);
+        rows.push({ ...row, focused: rowContains(row, focus) });
     };
     const groups = [monsterRows, itemRows, terrainRows];
     // Focus uses creature > item > terrain precedence and cannot reveal unknown cells.
-    const focused = groups.flat().find(row => sameLocation(row.loc, focus));
+    const focused = groups.flat().find(row => rowContains(row, focus));
     if (focused) add(focused);
     for (const direct of [true, false]) for (const group of groups) {
         group.filter(row => row.direct === direct)
-            .sort((a, b) => distanceSquared(a.loc, player.loc) - distanceSquared(b.loc, player.loc))
+            .sort((a, b) => rowDistanceSquared(a, player.loc) - rowDistanceSquared(b, player.loc))
             .forEach(add);
     }
     return rows;

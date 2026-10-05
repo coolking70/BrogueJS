@@ -1,14 +1,16 @@
 import type { Game } from '../engine/Core/Game';
 import type { Logger } from '../engine/Systems/Logger';
-import { cellAppearance, itemAppearance, rememberedItemAppearance, monsterAppearance, playerAppearance, type CosmeticRng } from '../engine/UI/Appearance';
-import { canDirectlySeeMonster, canSeeMonster, canDisplayMonster, monsterInGas } from '../engine/UI/MonsterVisibility';
+import { cellAppearance, itemAppearance, rememberedItemAppearance, playerAppearance, type CosmeticRng } from '../engine/UI/Appearance';
+import { publicMonsterMapCells } from '../engine/UI/MonsterBody';
+import { observeDisplayMonster } from './monsterDisplay';
+import type { DisplayBody } from './bodyDrawing';
 import { sidebarEntityRows, sidebarPlayerStats } from '../engine/UI/MonsterSidebar';
 import { displayRandom } from '../engine/Lighting/CosmeticLight';
 import { terrainRandomValues } from '../engine/UI/DancingColors';
 import { playerHudStatusRows } from './playerHudStatus';
 import { targetingState } from './targeting';
 import { readInteractableMapMarkers } from './worldInteractableMap';
-import { terrainSemantic, rememberedItemSemantic, itemSemantic, monsterSemantic, playerSemantic, type TileSemantic } from './mapTileSemantics';
+import { terrainSemantic, rememberedItemSemantic, itemSemantic, playerSemantic, type TileSemantic } from './mapTileSemantics';
 
 export interface DisplayTile {
     readonly semantic: Readonly<TileSemantic>;
@@ -23,6 +25,7 @@ export interface DisplayEntity extends DisplayTile {
 export interface DisplayMap {
     readonly columns: readonly (readonly (DisplayTile | null)[])[];
     readonly entities: readonly DisplayEntity[];
+    readonly bodies: readonly DisplayBody[];
 }
 export function freezeDisplay<T>(value: T): T {
     if (value && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -66,6 +69,7 @@ export function observeDisplayMap(game: Game, previous?: DisplayMap,
             ? previous.columns[x]! : Object.freeze(column));
     }
     const entities: DisplayEntity[] = [];
+    const bodies: DisplayBody[] = [];
     const place = (visual: { color: string | number; interactive: boolean }, x: number, y: number, semantic: TileSemantic) => {
         entities.push({ x, y, semantic, color: visual.color, bgColor: null, interactive: visual.interactive });
     };
@@ -83,24 +87,18 @@ export function observeDisplayMap(game: Game, previous?: DisplayMap,
     // presentation must neither erase these markers nor query the future world.
     const occupied = new Set([
         ...game.items.filter(item => game.grid.getCell(item.x, item.y)?.isVisible).map(item => `${item.x},${item.y}`),
-        ...game.monsters.filter(monster => canDisplayMonster(game.player, game.grid, monster)).map(monster => `${monster.x},${monster.y}`),
+        ...game.monsters.flatMap(monster => publicMonsterMapCells(game.player, game.grid, monster).map(p => `${p.x},${p.y}`)),
     ]);
     for (const marker of readInteractableMapMarkers(interactables, {
         depth: game.depth, player: game.player.loc, occupied, cellAt: (x, y) => game.grid.getCell(x, y),
     })) place({ color: marker.color, interactive: true }, marker.x, marker.y, marker.semantic);
     for (const monster of game.monsters) {
-        const cell = game.grid.getCell(monster.x, monster.y);
-        const direct = canDirectlySeeMonster(game.player, game.grid, monster);
-        const known = canSeeMonster(game.player, game.grid, monster);
-        const visual = monsterAppearance(monster, { cellVisible: !!cell?.isVisible, cellHasMemory: !!cell?.hasMemory,
-            telepathy: telepathy || monster.hasStatus('entranced'), hallucinating, cosmetic,
-            monsterVisibility: direct ? 'direct' : known ? 'known' : canDisplayMonster(game.player, game.grid, monster) ? 'marker' : 'hidden',
-            gasBackground: monsterInGas(game.grid, monster) ? gasBackgrounds.get(`${monster.x},${monster.y}`) : undefined });
-        if (visual) place(visual, monster.x, monster.y, monsterSemantic(monster, visual.char, hallucinating, !direct && !known));
+        const display = observeDisplayMonster(game, monster, cosmetic, gasBackgrounds);
+        if (display) { entities.push(display.entity); if (display.body) bodies.push(display.body); }
     }
     const player = playerAppearance(game.player);
     place(player, game.player.x, game.player.y, playerSemantic(player.char));
-    return freezeDisplay({ columns: Object.freeze(columns), entities });
+    return freezeDisplay({ columns: Object.freeze(columns), entities, bodies });
 }
 
 export function observeDisplayFrame(game: Game, log: Logger, previous?: { map: DisplayMap }) {
@@ -115,6 +113,7 @@ export function observeDisplayFrame(game: Game, log: Logger, previous?: { map: D
         rows: sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth),
         logs: log.messages.map(message => ({ ...message })),
         hoverText: game.hoveredText || game.flavorText,
+        hoverCell: game.hoveredCell ? { ...game.hoveredCell } : null,
         targeting: game.pendingArcana ? 'arcana' as const : game.isThrowing ? 'throw' as const : 'none' as const,
         throwAim: targetingState.aim ? { ...targetingState.aim } : null,
         targetName: game.pendingArcana?.item.displayName ?? game.throwItemTarget?.displayName ?? '',

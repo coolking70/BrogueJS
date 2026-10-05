@@ -2,6 +2,7 @@ import type { Component, Ref } from 'vue';
 import type { Game } from '../../engine/Core/Game';
 import type { ModalKeyHandler } from '../../ui/modalKeyboard';
 import type { DialogService } from '../../ui/dialogService';
+import type { DisplayFrame } from '../../ui/displayProjection';
 
 /** Display-only services supplied by the shell; simulation changes use commands. */
 export interface ModuleUiHost {
@@ -16,6 +17,9 @@ export interface ModuleUiHost {
     cancelHeldKeys?(): void;
     /** Live display lag only; replay/seek must keep their read-only module UI. */
     isPresentationBusy?(): boolean;
+    /** Public, frozen display DTO: during MORE this is the historical frame.
+     * HUD contributors select names/HP from its rows, never future actors. */
+    readDisplayFrame?(): DisplayFrame;
     canOpenPanel(): boolean;
     /** Additional shell-only modal competition guard for world interactions. */
     canOpenInteraction?(): boolean;

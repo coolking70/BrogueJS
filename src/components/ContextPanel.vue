@@ -29,7 +29,7 @@ function inspect(entity: ReturnType<typeof sidebarEntityRows>[number], event: Mo
   <div class="context-entities">
    <button type="button" v-for="entity in rows" :key="`${entity.kind}:${entity.id}`" class="context-entity" :class="{ 'entity-focused': entity.focused }" :data-entity-kind="entity.kind" :data-entity-id="entity.id"
            :title="$t('theme.entity_inspect', { name: entity.name })" @click="inspect(entity, $event)" @keydown.stop @keyup.stop>
-    <div class="context-line"><span class="context-dot" :style="{ background: entity.color }"></span><span class="context-name">{{ entity.name }}</span></div>
+    <div class="context-line"><span class="context-dot" :style="{ background: entity.color }"></span><span class="context-name">{{ entity.name }}<small v-if="entity.kind === 'monster' && entity.bodySize" class="body-size">{{ $t('sidebar.body_size', { size: entity.bodySize }) }}</small></span></div>
     <template v-if="entity.kind === 'monster'">
      <div class="context-vital"><div class="context-hp"><i :style="{ width: `${Math.max(0, Math.min(100, entity.hp / Math.max(1, entity.maxHp) * 100))}%`, background: entity.ally ? '#75b89b' : '#be7161' }"></i></div><span>{{ entity.hp }}/{{ entity.maxHp }}</span></div>
      <div class="context-status"><span v-if="entity.negated">{{ $t('negation.label') }}</span>{{ entity.behavior }}<span v-for="status in entity.statuses" :key="status.id" :style="{ color: status.color }">{{ status.label }} {{ status.value }}</span></div>

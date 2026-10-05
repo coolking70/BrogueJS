@@ -1,3 +1,4 @@
+import { clearAim } from './targeting';
 import type { Game } from '../engine/Core/Game';
 import { bindPresentationObserver, type PresentationPoint } from '../engine/Core/PresentationObserver';
 import type { Logger, LogMessage } from '../engine/Systems/Logger';
@@ -145,6 +146,7 @@ export class PresentationTimeline {
         return true;
     }
     clear(): void {
+        clearAim();
         this.events = []; this.waiting = undefined; this.frame = this.lastCaptured = undefined;
         this.remainingMs = this.detailedFrames = this.suppressedFrames = 0;
         this.captureFailures = this.cursor = 0; this.nextSequence = 1;

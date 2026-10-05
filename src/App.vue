@@ -9,6 +9,8 @@ import GameCanvas from './components/GameCanvas.vue';
 import ContextPanel from './components/ContextPanel.vue';
 import MessageJournal from './components/MessageJournal.vue';
 import DialogHost from './components/DialogHost.vue';
+import { observeDisplayFrame } from './ui/displayProjection';
+import { displayedFrame } from './ui/presentationTimeline';
 import { DialogService, dialogServiceKey, presentationTimeline } from './ui/dialogService';
 import { logger } from './engine/Systems/Logger';
 import InventoryOverlay from './components/InventoryOverlay.vue';
@@ -101,6 +103,7 @@ const gameStarted = ref(false);
 const menuOpen = ref(true);
 const moduleUi = useModuleUi({
   dialogs,
+  readDisplayFrame: () => displayedFrame(activeGame) ?? observeDisplayFrame(activeGame, logger),
   isPresentationBusy: () => !!presentationTimeline(activeGame)?.busy || !!logger.pendingAcknowledgment,
   game: () => activeGame, tick: replayTick, immersive: computed(() => displaySettings.immersiveMode),
   registerKeyHandler: (handler, priority) => inputManager.registerModalKeyHandler(handler, priority),
