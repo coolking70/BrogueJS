@@ -21,6 +21,8 @@ import { squareContactScope, withSquareContactScope } from '../Movement/SpatialC
 import { SPATIAL_LIMITS, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
 import { assertNativeSpatial, assertSingleCellPlayer, nativeContactOf, footprintOf, footprintEvery, footprintSome, commitCreatureAnchor, squareAnchorRevision, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canFitAt, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
 import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction } from './ActorActionSession';
+import { consumeProductionActorActionResume, disposeProductionActorActionSession, markProductionActorActionResume, notifyProductionActorSourceChanged, productionActorActionInputLocked, reconcileProductionActorActions, resumeProductionActorActions, suspendProductionActorActions, validateProductionActorActionSession, validateProductionActorActionState, type ActorActionProductionWorld } from './ActorActionProduction';
+import { bindPhasedAttackProduction, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, validatePhasedAttackGeometry } from './PhasedAttackProduction';
 import { assertActorActionScope, type ActorActionScope } from './ActorActionScope';
 import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
 import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
@@ -401,6 +403,28 @@ export class Game {
     public get spatialCatalog(): SpatialCatalog { return this.extensionRuntime?.spatialCatalog ?? loadingSpatialCatalogs.get(this) ?? nativeSpatialCatalog; }
     public get ruleSet(): RuleSet { return this.extensionRuntime ? 'extended' : 'classic'; }
 
+    /** Read-only world index for the optional persistent action executor. */
+    public actorActionWorld(): ActorActionProductionWorld {
+        return { depth: this.depth, player: this.player, levels: [
+            { depth: this.currentLevelDepth ?? this.depth, actors: [...this.monsters, ...this.dormantMonsters] },
+            ...[...this.levels].map(([depth, level]) => ({ depth, actors: [...level.monsters, ...(level.dormantMonsters ?? [])] })),
+            ...[...this.pendingFallenByDepth].map(([depth, actors]) => ({ depth, actors })),
+        ] };
+    }
+    /** One terminal sweep for elapsed action time, only on the surviving foreground owner. */
+    public finishActorActionSweep(ownerId: number, depth: number, elapsedTicks: number): void {
+        if (depth !== this.depth || elapsedTicks <= 0) return;
+        const actor = ownerId === this.player.id ? this.player : this.monsters.find(monster => monster.id === ownerId);
+        if (actor && actor.hp > 0) this.sweepDeepWaterItem(actor, elapsedTicks);
+    }
+    /** A partially applied engine resolution may never become a resumable recording. */
+    public invalidateActorActionRun(error: Error): void {
+        this.recordingFromNewGame = false;
+        recordingState(this).origin = null;
+        this.lastAdvancementError = error;
+        if (this.replayRecording) this.replayError = error.message;
+    }
+
     private createExtensionRuntime(manifest: ExtensionManifest, snapshot?: ExtensionSnapshot): ExtensionRuntime {
         return new ExtensionRuntime(createExtensionRegistry(), manifest, {
             depth: () => this.depth,
@@ -409,6 +433,11 @@ export class Game {
                 [this.player, ...this.monsters, ...this.dormantMonsters, ...this.items].map(entity => entity.loc), request),
             isInteractableVisible: entity => entity.depth === this.depth && !!this.grid.getCell(entity.x,entity.y)?.isVisible,
             canInteractWith: entity => this.canInteractWith(entity),
+            visibleActorActionCells: (sourceId, cells) => {
+                const source = sourceId === this.player.id ? this.player : this.monsters.find(monster => monster.id === sourceId);
+                if (!source || source.hp <= 0 || (source instanceof Monster && !canDirectlySeeMonster(this.player,this.grid,source))) return [];
+                return cells.filter(cell=>this.grid.getCell(cell.x,cell.y)?.isVisible).map(cell=>({x:cell.x,y:cell.y}));
+            },
             playerId: () => this.player.id,
             canManageCharacter: () => !this.interactionActive && !this.isGameOver && this.player.hp > 0 && !this.player.hasStatus('paralyzed')
                 && !this.isAdvancing && !this.isInputLocked() && !logger.pendingAcknowledgment && !this.pendingIdentify
@@ -763,6 +792,7 @@ export class Game {
         // U00: retire the old run before seeding/allocating the next one. Returning
         // the iterator must not run an old turn's epilogue against the new world.
         this.discardInFlightAdvancement();
+        disposeProductionActorActionSession(this);
         if (this.extensionRuntime) this.extensionRuntime.unload();
         this.extensionRuntime = null;
         this.configureExtensionRuleAdapters();
@@ -947,6 +977,7 @@ export class Game {
             this.extensionRuntime.attachCreature(this.player);
         }
         this.generateDepth(false, true);
+        bindPhasedAttackProduction(this);
         this.needsRender = true;
         this.update();
         // Drain run-ready story facts before the recording origin; creation-gated
@@ -1585,7 +1616,9 @@ export class Game {
                 for (const m of this.monsters) m.mapToMe = null;
                 const firstVisit = !this.levelSeeds[this.depth - 1]?.visited;
                 if (firstVisit) runtime.emit('beforeLevelGeneration', { depth: this.depth });
+                if (!isFirstLevel) suspendProductionActorActions(this, previousDepth);
                 generateDepth(this.makeGenerationPorts('natural', token), isGoingUp, isFirstLevel, fell);
+                if (!isFirstLevel) resumeProductionActorActions(this);
                 if (firstVisit) runtime.emit('afterLevelGeneration', { depth: this.depth });
                 runtime.emit('enteredLevel', { depth: this.depth, firstVisit, actorIds: [...new Set([this.player.id,...this.monsters.map(actor=>actor.id),...this.dormantMonsters.map(actor=>actor.id)])].sort((a,b)=>a-b) });
                 // Mutable module hooks only see the completed world and the run
@@ -1617,6 +1650,8 @@ export class Game {
                 // The caller requested another depth before capture. Rebind
                 // only AFTER both that depth and the region ledger are restored.
                 if (runtime.hasOwnedRegions) this.bindMovementRegionSession();
+                disposeProductionActorActionSession(this);
+                bindPhasedAttackProduction(this);
                 throw error;
             }
             this.onRenderRequested?.();
@@ -3076,6 +3111,10 @@ export class Game {
     }
 
     public update() {
+        if (consumeProductionActorActionResume(this)) {
+            this.beginAdvancement(this.calculateStealthRange());
+            if (!this.animationEnabled) while (this.isAdvancing) this.stepAdvancement();
+        }
         // Run events until it's the player's turn
         // OR the queue is empty
 
@@ -3136,6 +3175,8 @@ export class Game {
 
     private collectExtensionComponents(): void {
         if (!this.extensionRuntime || this.isAdvancing) return;
+        bindPhasedAttackProduction(this);
+        reconcileProductionActorActions(this);
         const roots = [...this.monsters, ...this.dormantMonsters, ...this.purgatory,
             ...[...this.levels.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]),
             ...[...this.pendingFallenByDepth.values()].flat()];
@@ -3143,6 +3184,7 @@ export class Game {
         this.extensionRuntime.collectWorld([this.depth, ...this.levels.keys()], this.isGameOver);
         this.extensionRuntime.settle(reachable);
         this.extensionRuntime.collectComponents(reachable);
+        collectPhasedAttackActors(this, reachable);
     }
 
     private updateRecordedCheckpoint(event: RecordedInputEvent): void {
@@ -3382,7 +3424,8 @@ export class Game {
             if (!this.extensionRuntime) throw new Error('Extension command in classic mode');
             // §4.5: only detached data crosses the wait. Runtime.command and its
             // controlled callbacks remain entirely synchronous, including refusals.
-            if (this.onCommandConfirmRequest && !this.replayRecording) yield* this.executePreparedExtensionCommandStages(data);
+            if (isPhasedAttackCommand(this, data)) yield* this.executePhasedAttackCommandStages(data);
+            else if (this.onCommandConfirmRequest && !this.replayRecording) yield* this.executePreparedExtensionCommandStages(data);
             else this.extensionRuntime.command(data, () => this.collectExtensionComponents());
         } else if (action.startsWith('item:')) {
             const [operation, letter, ...rest] = String(data ?? '').split('|');
@@ -3418,6 +3461,18 @@ export class Game {
         } else {
             (yield* this.performPlayerActionStages(action, data, 'system'));
         }
+    }
+
+    private *executePhasedAttackCommandStages(data: unknown): CommandStages<void> {
+        const runtime = this.extensionRuntime, plan = preparePhasedAttackCommand(this, data);
+        if (!plan) return;
+        // The existing risk generator records exactly one answer in live and replay.
+        // No scope, ID, fee or clock is acquired while confirmation is suspended.
+        for (const risk of plan.risks) if (!(yield* this.requestConfirm(risk.message, risk))) return;
+        if (runtime !== this.extensionRuntime || canonical(preparePhasedAttackCommand(this, data)) !== canonical(plan))
+            throw new Error('Stale phased attack confirmation');
+        if (commitPhasedAttackCommand(this, plan)) { observePresentation(this, 'turn', 0); this.playerTurnEnded(); }
+        this.collectExtensionComponents();
     }
 
     private prepareControlledCommand(data: unknown): PreparedControlledCommandPlan | null {
@@ -5835,6 +5890,7 @@ export class Game {
             if (this.squareMotion) { this.squareMotion.spatial.dispose(); delete this.squareMotion; }
             this.monsters = [...this.monsters]; this.dormantMonsters = [...this.dormantMonsters];
         }
+        notifyProductionActorSourceChanged(this, target.id);
         const autoID = !target.hasStatus('invisible');
         this.updateVision();
         this.needsRender = true;
@@ -8438,6 +8494,16 @@ export class Game {
         }
     }
 
+    /** Trusted segment executor. Geometry/target/risk/defense validation belongs
+     * to ActorCombatResolutionAuthority. This seam preserves the complete native
+     * single-hit pipeline, without a second attack-speed charge or geometry fanout. */
+    public resolveActorNativeMelee(scope: ActorActionScope, source: Creature, target: Creature): AttackResult {
+        assertActorActionScope(scope, this, source.id, source === this.player ? 'player-command' : 'npc-scheduler');
+        if (source === this.player && target instanceof Monster) return this.resolvePlayerMeleeAttackAt(target, false);
+        if (source instanceof Monster) return source.resolveActorNativeMelee(scope, this, target);
+        throw new Error('Unsupported actor native melee source');
+    }
+
     /**
      * P4-7：玩家近战对单个目标的完整结算——从 handlePlayerAction 的既有
      * 内联块原样抽出（消息/隐身现形/漂浮文字/符文/血迹/分裂/击杀掉落），
@@ -8456,10 +8522,10 @@ export class Game {
     private resolvePlayerMeleeAttackOn(target: Monster, lungeAttack = false, contact?: BodyAttackContact): boolean {
         if (target.hp <= 0) return false;
         const pair = contact ?? this.meleeContact(this.player, target) ?? nearestContact(this.player, target);
-        return withBodyAttackContact(this.player, target, pair, () => this.resolvePlayerMeleeAttackAt(target, lungeAttack));
+        return withBodyAttackContact(this.player, target, pair, () => this.resolvePlayerMeleeAttackAt(target, lungeAttack).hit);
     }
 
-    private resolvePlayerMeleeAttackAt(target: Monster, lungeAttack: boolean): boolean {
+    private resolvePlayerMeleeAttackAt(target: Monster, lungeAttack: boolean): AttackResult {
         if (this.extensionRuntime && this.extensionRuntime.causality.current?.kind !== 'melee') {
             const effects = this.extensionRuntime.causality;
             return effects.withOrigin(effects.create('melee', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
@@ -8543,7 +8609,7 @@ export class Game {
             this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_STAGGER')) {
             this.processStaggerHit(this.player, target);
         }
-        return res.hit;
+        return res;
     }
 
     /**
@@ -9856,6 +9922,7 @@ export class Game {
                 advancementLoop: (stealthRange) => game.advancementLoop(stealthRange),
                 finishTurnEpilogue: () => game.finishTurnEpilogue(),
                 observeAnimationDelay: milliseconds => observePresentation(game, 'animation-delay', milliseconds),
+                observeActorActionBoundary: () => observePresentation(game, 'turn', game.animationEnabled ? Game.ANIMATION_PAUSE_MS : 0),
                 triggerGameOver: (victory, reason) => game.triggerGameOver(victory, reason),
             },
         };
@@ -10063,7 +10130,7 @@ export class Game {
      * 常规动作（≤100 tick）生成器零 yield，下一个渲染帧即解锁，玩家无感。
      */
     public isInputLocked(): boolean {
-        return this.isAdvancing && Date.now() < this.animationLockDeadline;
+        return productionActorActionInputLocked(this) || (this.isAdvancing && Date.now() < this.animationLockDeadline);
     }
 
     /**
@@ -10100,6 +10167,7 @@ export class Game {
      * 的 25ms——期间画面已渲染出暂停点状态），否则每个渲染帧消费一步。
      */
     public tickAdvancement(deltaMs: number): void {
+        if (consumeProductionActorActionResume(this)) this.beginAdvancement(this.calculateStealthRange());
         if (!this.isAdvancing || !this.advancementIter) return;
         this.animationAccumulatorMs += deltaMs;
         if (this.animationAccumulatorMs < this.pendingPauseMs) return;
@@ -10310,6 +10378,7 @@ export class Game {
      * encoded; callers may retry once its existing animation has completed. */
     public toSnapshot(): GameSnapshot {
         assertNoActorActionFixture(this);
+        validateProductionActorActionSession(this);
         if (this.isAdvancing) throw new Error('Cannot save during turn advancement');
         this.finishTransientDisplay(true);
         const snapshot = toWholeRunSnapshot({
@@ -10480,6 +10549,17 @@ export class Game {
                 }
                 extensions.validateWorld([decodedPlayer, ...extensionCreatures], { depth: snapshot.depth, turn: snapshot.run.absoluteTurnNumber,
                     isGameOver: snapshot.run.isGameOver, nextEntityId: snapshot.run.nextEntityId });
+                const actionBinding = extensions.actorActionBinding();
+                if (actionBinding) validatePhasedAttackGeometry(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
+                    (depth,x,y)=>restored.get(depth)?.grid.isValidPos(x,y)===true);
+                if (actionBinding) validateProductionActorActionState(actionBinding.state && typeof actionBinding.state === 'object' && !Array.isArray(actionBinding.state) ? actionBinding.state.scheduler : null, {
+                    depth: snapshot.depth, player: decodedPlayer,
+                    levels: [
+                        ...[...restored].map(([depth, level]) => ({ depth, actors: [...level.monsters, ...(level.dormantMonsters ?? [])] })),
+                        ...snapshot.pendingFallenByDepth.map(queue => ({ depth: queue.depth,
+                            actors: queue.monsters.map(monster => entityGraph.monsters.get(monster.id)!) })),
+                    ],
+                });
             }
         } catch { return false; }
         const levelRows = [snapshot, ...snapshot.levels];
@@ -10488,6 +10568,7 @@ export class Game {
         this.clearSquareLandingRetry();
         resetPresentation(this);
         this.discardInFlightAdvancement();
+        disposeProductionActorActionSession(this);
         if (this.extensionRuntime) this.extensionRuntime.unload();
         this.extensionRuntime = null;
         this.configureExtensionRuleAdapters();
@@ -10614,6 +10695,8 @@ export class Game {
             for (const creature of extensionCreatures) extensions.attachCreature(creature, false);
             extensions.loaded();
         }
+        bindPhasedAttackProduction(this);
+        markProductionActorActionResume(this);
         return true;
     }
 
@@ -12374,6 +12457,7 @@ export class Game {
             this.discoverSecretAt(destination.x, destination.y);
         }
         commitCreatureAnchor(target, { x: destination.x, y: destination.y }, 'mutate');
+        notifyProductionActorSourceChanged(this, target.id);
         this.needsRender = true;
         const contactEffects = () => target.spatial ? this.applyEnvironmentalEffects(target, false, undefined, previousBody) : this.applyEnvironmentalEffects(target);
         if (this.extensionRuntime) {

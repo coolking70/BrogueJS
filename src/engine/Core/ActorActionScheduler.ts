@@ -75,6 +75,15 @@ export interface ActorActionSchedulerHost {
     /** Read-only layer/generation/mechanical identity validation. False retires a
      * source; active displacement/interrupt recovery is a separate future capability. */
     isSourceValid(source: Readonly<ActorSubaction>, depth: number): boolean;
+    /** Production clock advances only the foreground layer; cached countdowns freeze. */
+    isDepthActive?(depth: number): boolean;
+    actorDepth?(entityId: number): number | null;
+    /** Source changes may cancel pending segments into bounded positive recovery. */
+    sourceInterruption?(source: Readonly<ActorSubaction>, bundle: ReadonlyActorActionBundle): { recoveryTicks: number } | null;
+    interrupted?(source: Readonly<ActorSubaction>, bundle: ReadonlyActorActionBundle): void;
+    leftDepth?(bundle: ReadonlyActorActionBundle): void;
+    abandoned?(bundle: ReadonlyActorActionBundle): void;
+    elapsed?(delta: number): void;
     /** Must invalidate the enclosing recording/run on an unrolled-back engine exception. */
     onFault(error: Error): void;
 }
@@ -86,6 +95,9 @@ export type ReadonlyActorActionBundle = Readonly<Omit<ActorActionBundle, 'subact
 export interface ActorActionScheduler extends ActorActionSchedulerPort {
     commitBundle(bundle: ActorActionBundle): void;
     snapshot(): ActorActionSchedulerState;
+    /** Engine lifecycle transition; callers may not supply a second clock. */
+    interruptDepth(depth: number): void;
+    refreshMirrors(): void;
     /** Read-only validation precedes replacing the binding; load emits no effects. */
     rebind(state: ActorActionSchedulerState): void;
 }
@@ -118,6 +130,9 @@ function dataArray(value: unknown): value is unknown[] {
 const comparePart = (a: ActorSubactionDefinition, b: ActorSubactionDefinition): number =>
     a.sourcePartId < b.sourcePartId ? -1 : a.sourcePartId > b.sourcePartId ? 1 : a.sourceEntityId - b.sourceEntityId;
 function active(child: ActorSubaction): boolean { return child.phaseIndex < child.phases.length; }
+export function actorSubactionHasPendingSegments(child: Readonly<ActorSubaction>): boolean {
+    return child.phases.slice(child.phaseIndex).some(phase => phase.segmentIndex !== null);
+}
 /** Zero is permitted only transiently inside a synchronous dispatch microstep. */
 function boundaryOf(bundle: ActorActionBundle): number {
     return Math.min(...bundle.subactions.filter(active).map(child => child.phaseRemainingTicks));
@@ -231,7 +246,7 @@ export function validateActorActionSchedulerBinding(state: ActorActionSchedulerS
         for (const child of bundle.subactions) {
             if (!active(child)) continue;
             if (host.decisionOwnerId(child.sourceEntityId) !== bundle.decisionOwnerId
-                || !host.readActor(child.sourceEntityId)?.alive || host.isSourceValid(child, bundle.depth) !== true) fail('invalid source binding');
+                || !host.readActor(child.sourceEntityId)?.alive || (actorSubactionHasPendingSegments(child) && host.isSourceValid(child, bundle.depth) !== true)) fail('invalid source binding');
         }
     }
 }
@@ -253,6 +268,7 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
             throw fault;
         } finally { executing = false; }
     }
+    function foreground(bundle: ActorActionBundle): boolean { return host.isDepthActive?.(bundle.depth) ?? true; }
     function bundleOf(ownerId: number): ActorActionBundle | undefined {
         return state.bundles.find(bundle => bundle.decisionOwnerId === ownerId);
     }
@@ -266,13 +282,51 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
         synchronous(host.writeOwnerTicks(bundle.timeChargeOwnerId, 0));
         synchronous(host.finishAction(frozen(bundle), reason));
     }
+    function abandon(bundle: ActorActionBundle): void {
+        remove(bundle);
+        synchronous(host.abandoned?.(frozen(bundle)));
+    }
+    function interrupt(child: ActorSubaction, bundle: ActorActionBundle, recoveryTicks: number): void {
+        if (!integer(recoveryTicks, 1, MAX_ACTOR_ACTION_TICKS)) fail('invalid break recovery');
+        const phase = child.phases[child.phaseIndex]!;
+        const consumed = phase.durationTicks - child.phaseRemainingTicks;
+        const remaining = phase.segmentIndex === null ? Math.max(child.phaseRemainingTicks, recoveryTicks) : recoveryTicks;
+        const duration = consumed + remaining;
+        const prefixDuration = child.phases.slice(0, child.phaseIndex).reduce((sum, item) => sum + item.durationTicks, 0);
+        if (prefixDuration + duration > MAX_ACTOR_ACTION_TICKS) fail('break recovery budget exceeded');
+        child.phases.splice(child.phaseIndex, child.phases.length - child.phaseIndex,
+            { kind: 'break-recovery', durationTicks: duration, segmentIndex: null });
+        child.phaseRemainingTicks = remaining;
+        synchronous(host.interrupted?.(Object.freeze({ ...child, phases: child.phases.map(phase => ({ ...phase })) }), frozen(bundle)));
+    }
     function cancelDead(): void {
         for (const bundle of [...state.bundles].sort((a, b) => a.decisionOwnerId - b.decisionOwnerId)) {
-            if (!host.readActor(bundle.decisionOwnerId)?.alive) { remove(bundle); continue; }
+            if (!host.readActor(bundle.decisionOwnerId)?.alive) { abandon(bundle); continue; }
+            const ownerDepth = host.actorDepth?.(bundle.decisionOwnerId);
+            if (ownerDepth != null && ownerDepth !== bundle.depth) {
+                synchronous(host.leftDepth?.(frozen(bundle)));
+                for (const child of bundle.subactions) if (active(child) && actorSubactionHasPendingSegments(child)) {
+                    const interruption = host.sourceInterruption?.(child, frozen(bundle));
+                    if (!interruption) fail('missing displaced-layer interruption policy');
+                    interrupt(child, bundle, interruption.recoveryTicks);
+                }
+                bundle.depth = ownerDepth;
+            }
             let cancelled = false;
             // An invalid source is retired without a delayed release or a native member turn.
             for (const child of bundle.subactions) {
-                if (active(child) && !sourceValid(child, bundle.depth)) {
+                if (!active(child)) continue;
+                if (!host.readActor(child.sourceEntityId)?.alive) {
+                    child.phaseIndex = child.phases.length;
+                    child.phaseRemainingTicks = 0;
+                    child.cancelled = true;
+                    cancelled = true;
+                    continue;
+                }
+                if (!foreground(bundle)) continue;
+                const interruption = host.sourceInterruption?.(child, frozen(bundle));
+                if (interruption) interrupt(child, bundle, interruption.recoveryTicks);
+                else if (actorSubactionHasPendingSegments(child) && !sourceValid(child, bundle.depth)) {
                     child.phaseIndex = child.phases.length;
                     child.phaseRemainingTicks = 0;
                     child.cancelled = true;
@@ -286,17 +340,18 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
     }
     return {
         isDecisionOwner(entityId) { check(); return host.decisionOwnerId(entityId) === entityId; },
-        isBusy(ownerId) { check(); return !!bundleOf(ownerId); },
+        isBusy(ownerId) { check(); const bundle = bundleOf(ownerId); return !!bundle && foreground(bundle); },
         nextActionBoundary() {
             check();
-            const boundaries = state.bundles.map(boundaryOf);
+            const boundaries = state.bundles.filter(foreground).map(boundaryOf);
             return boundaries.length ? Math.min(...boundaries) : null;
         },
         advanceActionTime(delta) {
             run(() => {
                 if (!integer(delta, 1, MAX_ACTOR_ACTION_TICKS)) fail('elapsed delta must be a positive integer');
-                if (state.bundles.some(bundle => boundaryOf(bundle) < delta)) fail('elapsed delta crosses an action boundary');
-                for (const bundle of state.bundles) {
+                if (state.bundles.some(bundle => foreground(bundle) && boundaryOf(bundle) < delta)) fail('elapsed delta crosses an action boundary');
+                synchronous(host.elapsed?.(delta));
+                for (const bundle of state.bundles.filter(foreground)) {
                     bundle.elapsedActionTicks += delta;
                     for (const child of bundle.subactions) if (active(child)) child.phaseRemainingTicks -= delta;
                     mirror(bundle);
@@ -308,12 +363,12 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
             return run(() => {
                 cancelDead();
                 const bundle = bundleOf(ownerId);
-                if (!bundle) return 'native-fallback';
+                if (!bundle || !foreground(bundle)) return 'native-fallback';
                 if (boundaryOf(bundle) > 0) return 'blocked';
                 for (const child of bundle.subactions) {
                     if (!active(child) || child.phaseRemainingTicks !== 0) continue;
-                    if (!host.readActor(ownerId)?.alive) { remove(bundle); return 'handled'; }
-                    if (!sourceValid(child, bundle.depth)) { child.phaseIndex = child.phases.length; child.cancelled = true; continue; }
+                    if (!host.readActor(ownerId)?.alive) { abandon(bundle); return 'handled'; }
+                    if (actorSubactionHasPendingSegments(child) && !sourceValid(child, bundle.depth)) { child.phaseIndex = child.phases.length; child.phaseRemainingTicks = 0; child.cancelled = true; continue; }
                     const phase = child.phases[child.phaseIndex]!;
                     if (phase.segmentIndex !== null) synchronous(host.resolveSegment(Object.freeze({
                         actionId: bundle.actionId, depth: bundle.depth, decisionOwnerId: ownerId, timeChargeOwnerId: bundle.timeChargeOwnerId,
@@ -321,9 +376,15 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
                         sourcePartId: child.sourcePartId, segmentIndex: phase.segmentIndex,
                         elapsedActionTicks: bundle.elapsedActionTicks,
                     })));
-                    if (!host.readActor(ownerId)?.alive) { remove(bundle); return 'handled'; }
-                    child.phaseIndex++;
-                    child.phaseRemainingTicks = child.phases[child.phaseIndex]?.durationTicks ?? 0;
+                    if (!host.readActor(ownerId)?.alive) { abandon(bundle); return 'handled'; }
+                    // Resolution may move/disable its own source. Observe that fact
+                    // before selecting the next delayed segment, without retrying damage.
+                    const interruption = host.sourceInterruption?.(child, frozen(bundle));
+                    if (interruption) interrupt(child, bundle, interruption.recoveryTicks);
+                    else {
+                        child.phaseIndex++;
+                        child.phaseRemainingTicks = child.phases[child.phaseIndex]?.durationTicks ?? 0;
+                    }
                 }
                 cancelDead();
                 if (!bundleOf(ownerId)) return 'native-fallback';
@@ -358,6 +419,20 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
                 }
             });
         },
+        interruptDepth(depth) {
+            run(() => {
+                for (const bundle of state.bundles.filter(bundle => bundle.depth === depth)) {
+                    synchronous(host.leftDepth?.(frozen(bundle)));
+                    for (const child of bundle.subactions) if (active(child) && actorSubactionHasPendingSegments(child)) {
+                        const interruption = host.sourceInterruption?.(child, frozen(bundle));
+                        if (!interruption) fail('missing layer interruption policy');
+                        interrupt(child, bundle, interruption.recoveryTicks);
+                    }
+                    mirror(bundle);
+                }
+            });
+        },
+        refreshMirrors() { run(() => { cancelDead(); for (const bundle of state.bundles) mirror(bundle); }); },
         snapshot() { check(); validateActorActionSchedulerBinding(state, host); return snapshotActorActionSchedulerState(state); },
         rebind(candidate) {
             check();

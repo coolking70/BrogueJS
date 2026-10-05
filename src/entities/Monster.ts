@@ -24,7 +24,8 @@ import { Pathfind } from '../engine/Map/Pathfind';
 import { terrainPassableOrSecretDoor } from '../engine/Map/TerrainRules';
 import { getSafetyMapForMonster, safetyNextStep } from '../engine/Map/SafetyMap';
 import type { WaypointSystem } from '../engine/Map/WaypointMap';
-import { CombatSystem } from '../engine/Combat/Combat';
+import { CombatSystem, type AttackResult } from '../engine/Combat/Combat';
+import { assertActorActionScope, type ActorActionScope } from '../engine/Core/ActorActionScope';
 import { logger } from '../engine/Systems/Logger';
 import i18next from 'i18next';
 import { ItemLoader } from '../engine/Items/ItemLoader';
@@ -1450,10 +1451,17 @@ export class Monster extends Creature {
     private resolveGeometryAttackOn(game: Game, target: Creature, voice: 'ally' | 'discordant' | 'hostile', contact?: BodyAttackContact): void {
         if (target.hp <= 0) return;
         const pair = contact ?? nearestLegalMeleeContact(game.grid, this, target) ?? bodyAttackContactOf(this, target);
-        return withBodyAttackContact(this, target, pair, () => this.resolveGeometryAttackAt(game, target, voice));
+        withBodyAttackContact(this, target, pair, () => this.resolveGeometryAttackAt(game, target, voice));
     }
 
-    private resolveGeometryAttackAt(game: Game, target: Creature, voice: 'ally' | 'discordant' | 'hostile'): void {
+    /** One authority-validated phased contact; the scheduler owns all timing.
+     * Ordinary melee and phased melee share native hit/on-hit/armor processing. */
+    public resolveActorNativeMelee(scope: ActorActionScope, game: Game, target: Creature): AttackResult {
+        assertActorActionScope(scope, game, this.id, 'npc-scheduler');
+        return this.resolveGeometryAttackAt(game, target, this.isAlly ? 'ally' : this.hasStatus('discordant') ? 'discordant' : 'hostile');
+    }
+
+    private resolveGeometryAttackAt(game: Game, target: Creature, voice: 'ally' | 'discordant' | 'hostile'): AttackResult {
         const result = CombatSystem.attack(this, target, { grid: game.grid, itemGenerationDepth: game.depth,
             beforeDamage: target === game.player ? damage => game.tryTriggerArmorRunic(this, damage, true) : undefined,
         });
@@ -1530,6 +1538,7 @@ export class Monster extends Creature {
             target.hp > 0 && this.hasAbility('MA_ATTACKS_STAGGER')) {
             (game as any).processStaggerHit(this, target);
         }
+        return result;
     }
 
     /**

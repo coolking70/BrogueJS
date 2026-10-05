@@ -5,7 +5,7 @@ import type { AttackDefinition, Cell, CombatPack, ResourcePolicy } from './types
 export const COMBAT_LIMITS = Object.freeze({
     maxSubactions: 4, maxSegments: 8, maxOffsets: 256, maxLockedCells: 1024,
     maxDefinitions: 128, maxTicks: 1_000_000, maxResource: 1_000_000,
-    maxCoordinate: 1_000_000, maxOffsetCoordinate: 256,
+    maxCoordinate: 1_000_000, maxOffsetCoordinate: 32,
     maxJsonDepth: 32, maxJsonValues: 1_000_000, maxJsonStringUnits: 8_000_000,
     maxStringLength: 4096, maxIdLength: 128,
 });
@@ -148,11 +148,13 @@ function localeChecker(locale: unknown): (value: unknown) => void {
 export function loadCombatPack(input: unknown, locale: unknown): CombatPack {
     assertCombatJson(input);
     const text = localeChecker(locale);
-    const root = record(input, ['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'resourcePolicies', 'attacks', 'profiles']);
-    if (root.schema !== 1 || root.moduleId !== 'combat' || root.moduleVersion !== '1.0.0' || root.rulesVersion !== '1.0.0') fail('INVALID_VERSION');
+    const root = record(input, ['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'resourcePolicies', 'attacks', 'profiles', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks']);
+    if (root.schema !== 1 || root.moduleId !== 'combat' || root.moduleVersion !== '1.1.0' || root.rulesVersion !== '1.1.0') fail('INVALID_VERSION');
     const policies = list(root.resourcePolicies, 1, COMBAT_LIMITS.maxDefinitions);
     const attacks = list(root.attacks, 1, COMBAT_LIMITS.maxDefinitions);
     const profiles = list(root.profiles, 1, COMBAT_LIMITS.maxDefinitions);
+    integer(root.breakRecoveryTicks, 1, COMBAT_LIMITS.maxTicks);
+    id(root.playerProfileId);
     if (policies.length + attacks.length + profiles.length > COMBAT_LIMITS.maxDefinitions) fail('BUDGET');
     const ids = new Set<string>(), policyById = new Map<string, ResourcePolicy>(), attackById = new Map<string, AttackDefinition>();
     const define = (value: unknown): string => {
@@ -213,6 +215,13 @@ export function loadCombatPack(input: unknown, locale: unknown): CombatPack {
             if (attack!.cost > policy!.staminaCapacity) fail('INVALID_RANGE');
         }
     }
+    const nativeIds = new Set<string>();
+    for (const binding of list(root.nativeProfiles, 0, COMBAT_LIMITS.maxDefinitions)) {
+        const entry = record(binding, ['monsterId','profileId']); id(entry.monsterId); id(entry.profileId);
+        if (nativeIds.has(entry.monsterId as string)) fail('DUPLICATE_ID'); nativeIds.add(entry.monsterId as string);
+        if (!(root.profiles as {id:string}[]).some(profile => profile.id === entry.profileId)) fail('UNKNOWN_REFERENCE');
+    }
+    if (!(root.profiles as {id:string}[]).some(profile => profile.id === root.playerProfileId)) fail('UNKNOWN_REFERENCE');
     const result = freezeTree(structuredClone(input as CombatPack));
     loadedPacks.add(result);
     return result;

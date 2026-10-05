@@ -101,10 +101,12 @@ describe('giants natural run and original encounter', () => {
       )
     ).toBe(true);
   }, 60000);
-  it.each(combinations.map((ids) => ({ ids })))(
-    'natural startup, commands, save/load, replay, seek and continuation: $ids',
-    ({ ids }) => {
-      const { game } = naturalGiants(ids);
+  it.each(combinations.map((ids) => ({ ids, mode: ids.includes('combat') ? 'wizard' as const : 'normal' as const })))(
+    'natural startup, commands, save/load, replay, seek and continuation: $ids ($mode)',
+    ({ ids, mode }) => {
+      // 3b is active: this fixed route is a serialization probe, not an AI
+      // that reads telegraphs. Use the public mode instead of editing HP.
+      const { game } = naturalGiants(ids, mode);
       const snapshot = json(game.toSaveSnapshot()),
         recording = json(game.exportRecording()),
         expected = mechanical(game);

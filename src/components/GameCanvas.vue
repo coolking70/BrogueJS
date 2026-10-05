@@ -124,6 +124,7 @@ import { displayedFrame, presentationTimeline } from '../ui/presentationTimeline
 import { publicMonsterBody, publicMonsterMapCells } from '../engine/UI/MonsterBody';
 import { observeDisplayMonster } from '../ui/monsterDisplay';
 import { paintBody, paintBodyOutline, selectedBodyCells } from '../ui/bodyDrawing';
+import { paintCombatTelegraphs, readPublicCombatTelegraphs } from '../ui/combatDrawing';
 import { installSquareBodyDiagnostics } from '../ui/squareBodyDiagnostics';
 import type { DisplayFrame } from '../ui/displayProjection';
 import { RenderRequests } from '../ui/renderRequests';
@@ -217,6 +218,10 @@ onMounted(async () => {
             tileSprites[x]![y] = t;
         }
     }
+
+    // Public combat warnings sit above terrain and below bodies/target outlines.
+    const telegraphGraphics = new Graphics();
+    tileLayer.addChild(telegraphGraphics);
 
     // ---------- Entity layer ----------
     // Fixed number of entity Text sprites (player + max ~30 entities)
@@ -423,6 +428,8 @@ onMounted(async () => {
 
     const renders = new RenderRequests();
     const renderProjection = (frame: DisplayFrame) => {
+        telegraphGraphics.clear();
+        paintCombatTelegraphs(telegraphGraphics, frame.telegraphs, TILE_SIZE);
         bgGraphics.clear(); vectorTerrain.clear(); vectorEntities.clear(); arcanaCursor.clear(); bodyGraphics.clear();
         for (const body of frame.map.bodies) paintBody(bodyGraphics, body, TILE_SIZE);
         arcanaPrompt.value = frame.arcana ? i18next.t('arcana.target_prompt', {
@@ -497,6 +504,8 @@ onMounted(async () => {
         vectorEntities.clear();
         arcanaCursor.clear();
         bodyGraphics.clear();
+        telegraphGraphics.clear();
+        paintCombatTelegraphs(telegraphGraphics, readPublicCombatTelegraphs(game), TILE_SIZE);
         const selection = game.pendingArcana;
         arcanaPrompt.value = selection ? i18next.t('arcana.target_prompt', {
             interpolation: { escapeValue: false }, // Vue renders text; keep charge slash readable.

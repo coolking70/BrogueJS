@@ -30,7 +30,8 @@ export interface ResourcePolicy {
 }
 export interface CombatProfile { id: string; resourcePolicyId: string; attackIds: string[] }
 export interface CombatPack {
-    schema: 1; moduleId: 'combat'; moduleVersion: '1.0.0'; rulesVersion: '1.0.0';
+    schema: 1; moduleId: 'combat'; moduleVersion: '1.1.0'; rulesVersion: '1.1.0';
+    playerProfileId: string; breakRecoveryTicks: number; nativeProfiles: {monsterId:string;profileId:string}[];
     resourcePolicies: ResourcePolicy[]; attacks: AttackDefinition[]; profiles: CombatProfile[];
 }
 export interface CombatState { schema: 1; revision: number; nextActionId: number }

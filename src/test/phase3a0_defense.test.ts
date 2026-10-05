@@ -179,8 +179,8 @@ describe('3a0 eligibility, stale preparation and synchronous scope', () => {
         expect(s.authority.snapshot()).toEqual(before); expect(rng.getState()).toEqual(random);
         expect(s.beforeAttack).not.toHaveBeenCalled();
     });
-    it('new spatial/body state remains explicitly unopened instead of using point fallback', () => {
-        const s = scene(); s.monster.spatial = { schema: 1, footprintId: 'builtin:square-2', pose: 'r0' };
+    it('unopened spatial/body state remains explicitly rejected instead of using point fallback', () => {
+        const s = scene(); s.monster.spatial = { schema: 1, footprintId: 'builtin:square-2', pose: 'r90' };
         expect(() => s.authority.prepareNativeMelee(s.intent)).toThrow('not open');
     });
     it.each(['position', 'death', 'defense', 'depth'] as const)('commit revalidates %s and consumes no defense or random on stale plan', change => {

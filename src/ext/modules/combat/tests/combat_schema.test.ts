@@ -16,13 +16,14 @@ const segment = (pack: CombatPack) => pack.attacks[0]!.segments[0]!;
 const facings = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const;
 
 describe('combat strict inert fixture package', () => {
-    it('loads exactly three original fixture attacks, one unbound profile, and part targeting', () => {
+    it('loads three original attacks, explicit native profiles, and part targeting', () => {
         const pack = loadCombatDefinitionPack();
-        expect(COMBAT_VERSION).toBe('1.0.0');
+        expect(COMBAT_VERSION).toBe('1.1.0');
         expect(pack.attacks.map(a => a.id)).toEqual(['fixture.slash', 'fixture.stomp', 'fixture.double-thrust']);
-        expect(pack.profiles).toEqual([{ id: 'fixture.profile', resourcePolicyId: 'fixture.resources',
-            attackIds: ['fixture.slash', 'fixture.stomp', 'fixture.double-thrust'] }]);
-        expect(Object.keys(pack).sort()).toEqual(['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'resourcePolicies', 'attacks', 'profiles'].sort());
+        expect(pack.profiles[0]).toEqual({ id: 'fixture.profile', resourcePolicyId: 'fixture.resources',
+            attackIds: ['fixture.slash', 'fixture.stomp', 'fixture.double-thrust'] });
+        expect(pack.nativeProfiles).toHaveLength(3);
+        expect(Object.keys(pack).sort()).toEqual(['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'resourcePolicies', 'attacks', 'profiles', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks'].sort());
         expect(pack.attacks.map(a => a.segments.length)).toEqual([1, 1, 2]);
         for (const attack of pack.attacks) for (const step of attack.segments) {
             expect(step.targetPolicy).toBe('part'); expect(step.locationPolicy).toBe('locked-world');
@@ -100,7 +101,7 @@ describe('combat strict inert fixture package', () => {
         while (p.resourcePolicies.length + p.attacks.length + p.profiles.length < COMBAT_LIMITS.maxDefinitions) {
             p.attacks.push({ ...structuredClone(p.attacks[0]!), id: `fixture.extra-${p.attacks.length}` });
         }
-        expect(load(p).attacks).toHaveLength(COMBAT_LIMITS.maxDefinitions - 2);
+        expect(load(p).attacks).toHaveLength(COMBAT_LIMITS.maxDefinitions - p.profiles.length - p.resourcePolicies.length);
         p.attacks.push({ ...structuredClone(p.attacks[0]!), id: 'fixture.too-many' }); expect(() => load(p)).toThrow();
     });
     it('requires globally unique IDs and unique typed references', () => {
@@ -162,8 +163,8 @@ describe('combat strict inert fixture package', () => {
         bad(p => { segment(p).shape.offsets.n[0]!.x = COMBAT_LIMITS.maxOffsetCoordinate + 1; });
         bad(p => { segment(p).shape.offsets.n[0]!.y = -COMBAT_LIMITS.maxOffsetCoordinate - 1; });
         bad(p => { segment(p).shape.offsets.n[0]!.x = 0.5; });
-        const p = fixture(); segment(p).shape.offsets.n = Array.from({ length: COMBAT_LIMITS.maxOffsets }, (_, x) => ({ x: x - 128, y: 0 }));
-        expect(load(p)).toBeDefined(); segment(p).shape.offsets.n.push({ x: 128, y: 0 }); expect(() => load(p)).toThrow();
+        const p = fixture(); segment(p).shape.offsets.n = Array.from({ length: COMBAT_LIMITS.maxOffsets }, (_, index) => ({ x: index % 16 - 8, y: Math.floor(index / 16) - 8 }));
+        expect(load(p)).toBeDefined(); segment(p).shape.offsets.n.push({ x: 8, y: 8 }); expect(() => load(p)).toThrow();
     });
     it('validates world-cell lists independently without treating them as map queries', () => {
         const valid = Array.from({ length: COMBAT_LIMITS.maxLockedCells }, (_, x) => ({ x, y: -COMBAT_LIMITS.maxCoordinate }));
@@ -264,7 +265,7 @@ describe('combat hostile JSON boundary', () => {
 describe('combat canonical mechanical identity', () => {
     it('uses the foundation SHA-256 canonical helper and pins version/schema', () => {
         const identity = getCombatPackIdentity();
-        expect(identity).toEqual({ schema: 1, version: '1.0.0', fingerprint: extensionDataFingerprint(definitions) });
+        expect(identity).toEqual({ schema: 1, version: '1.1.0', fingerprint: extensionDataFingerprint(definitions) });
         expect(identity.fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/); expect(Object.isFrozen(identity)).toBe(true);
     });
     it('ignores object insertion order but retains mechanical arrays and values', () => {
