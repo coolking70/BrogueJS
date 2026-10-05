@@ -360,3 +360,17 @@ NPC 测试除纯求值外，还使用真实攻击、AI 响应和确定性测试�
 2c+2d已由维护者联合验收；2e仅进行最终独立性/持久验收与文档交接，不重新设计§21输入和prepared命令合同。正常安装树的四种启用子集与正常/删growth/删narrative/全删四种目录状态是两条不同轴；未启用不等于物理删除，缺模块旧档拒绝不等于无该模块的新局不可玩。
 
 作者入口为[叙事配置手册](narrative-config.md)，阶段2已提供能力、版本与兼容界限、实际门禁和浏览器证据范围为[2e报告](phase2e.report.md)。不扩展任意脚本/背包给予/地形/传送/战斗NPC等重世界事务，不把现有单storyFact消费者协议声称为未来所有阶段已验证。
+
+## 23 4a-4 底座子里程碑：owned region 与 movementBounds
+
+本节只记录已实现的区域底座。`GenerationContribution`、侧室挖掘/预留、正式 giants 内容、守场/追击/回归 AI 和 Boss HUD 尚未实现，不能据此宣称 4a-4 可玩闭环已经完成。
+
+- `src/ext/regions.ts` 定义矩形 `OwnedRegion`：共享实体 ID、owner、depth、instanceKey、bounds。唯一几何真相在可选 `extensions.foundation.world.regions`；普通局省略字段，拒绝空数组/undefined、重叠区域、重复身份、未知 owner 和非法几何。原 `WorldInteractable` 内容/行为保持独立。
+- 模块显式声明 `ownedRegions: true`；底座生成所有者通过 `ExtensionRuntime.installOwnedRegions(token, owner, requests, dimensions)` 安装。必须使用栈顶真实 generation token，发布 hook/普通模块 context 没有此写口。整批预检后才分配 ID；generation frame 的 world 保存区域，区域分配器检查点贯穿外层/内层事务。没有区域请求就不创建 regions 字段。
+- 生物仅保存 `spatial.movementRegionId`。`canFitAt`、`CreatureSpatial.canFitTerrainAt` 和 `squarePlacementCandidates` 逐身体格检查边界；`FootprintPathing` 的缓存键包括 region ID。原多格行走、闪现、随机传送、拉拽、击退/力场、克隆及 DF 安全重定位因此共用约束。不能仅验锚点在矩形内。
+- `MovementRegions.ts` 的 WeakMap 仅保存 Grid→只读 ledger resolver，既不保存几何也不保存机械收据；同一 Grid 的临时 world ports 不能遗漏边界。新局/换层/读档沿 `bindDormantAwakener` 重建关联；失败生成的显式 restoreSession 清理多格派生缓存，完整恢复深度和 runtime 账本后再重绑旧层 resolver。没有给 Game 增加实例字段。
+- 原生方形变形成单格时，保留带 region ID 的 `builtin:single/r0`；无区域的显式 single、任意 mask/zone/group/action lock 继续拒绝。普通无 spatial 生物的 CE 路径不改。所有带本地边界的生物暂不调度楼梯跟随；关系转换本身不增加免疫。
+- 生存坠落者在转层前清除旧绑定，底座发出 `movementRegionExited`（reason=fell）事实；若是 bounded single，恢复 spatial 属性缺席。giants 后续负责据此记录 escaped/lost。区域仍可保留为历史场地几何，下一层不会复造场地。
+- `decodeWholeRunWorld` 在退休旧局之前核验区域真实层、尺寸、allocator/实体 ID 冲突和生物绑定；pending 坠落者禁止携带旧 region。生产解码使用脱离 live Grid 的 ledger resolver，不取随机。正式模块内容/形态/收据的跨引用验证仍属于下一子里程碑。
+
+专项为 `src/test/phase4a4_movement_regions.test.ts`，使用独立 `region-fixture` 注册表和底座原生老鼠，未 import 任一正式模块。这里的手工区域场景只用于能力测试，不能充当自然巨人生成或其录像来源证明。交付范围、实际门禁与剩余项见 [4a-4 报告](phase4a4.report.md)。

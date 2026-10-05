@@ -6,6 +6,7 @@ import { CreatureSpatial } from '../Movement/CreatureSpatial';
 import { FootprintPathing, type FootprintGoal } from '../Map/FootprintPathing';
 import { releaseSpatialTerrain, spatialTerrainRevision } from '../Movement/SpatialRevision';
 import { squarePlacementCandidates } from '../Movement/SquarePlacement';
+import { bindMovementRegions } from '../Movement/MovementRegions';
 import { squareContactScope, withSquareContactScope } from '../Movement/SpatialContactScope';
 import { SPATIAL_LIMITS, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
 import { assertNativeSpatial, assertSingleCellPlayer, nativeContactOf, footprintOf, footprintEvery, footprintSome, commitCreatureAnchor, squareAnchorRevision, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canFitAt, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
@@ -1504,7 +1505,10 @@ export class Game {
                     // Recording/replay events, UI detail trees and old animation
                     // payloads otherwise stay behind the shallow Game boundary.
                     appendOnly: [this.floatingTexts, this.pendingDiscoveryMessages, this.activeFlares, this.terrainFlashes],
-                    restoreSession: display.map(state => state.restore),
+                    restoreSession: [...display.map(state => state.restore), ...(runtime.hasOwnedRegions ? [() => {
+                        if (this.squareMotion) { this.squareMotion.spatial.dispose(); delete this.squareMotion; }
+                        this.clearSquareLandingRetry();
+                    }] : [])],
                 };
             });
             const roots = [...this.monsters, ...this.dormantMonsters, ...this.purgatory,
@@ -1556,6 +1560,9 @@ export class Game {
                 rng.setState(previousRng);
                 restoreFeatureState();
                 runtime.rollbackGeneration(token);
+                // The caller requested another depth before capture. Rebind
+                // only AFTER both that depth and the region ledger are restored.
+                if (runtime.hasOwnedRegions) this.bindMovementRegionSession();
                 throw error;
             }
             this.onRenderRequested?.();
@@ -5762,7 +5769,8 @@ export class Game {
             // Unpublished value candidate: no constructor, allocator, generation,
             // hook or mutation of the live creature before a destination exists.
             const candidate = Object.assign(Object.create(Monster.prototype), Object.fromEntries(Object.entries(target).filter(([key]) => key !== 'spatial')),
-                { typeId: data.id, behaviorFlags: new Set(data.behaviorFlags ?? []), abilityFlags: new Set(data.abilityFlags ?? []), statusDurations: {} }) as Monster;
+                { typeId: data.id, behaviorFlags: new Set(data.behaviorFlags ?? []), abilityFlags: new Set(data.abilityFlags ?? []), statusDurations: {},
+                    ...(target.spatial?.movementRegionId !== undefined ? { spatial: { schema: 1, footprintId: 'builtin:single', pose: 'r0', movementRegionId: target.spatial.movementRegionId } } : {}) }) as Monster;
             return travelPlacement({ ...this.spatialWorldPort(), monsters: this.monsters.filter(c => c !== target), dormantMonsters: this.dormantMonsters.filter(c => c !== target) }, candidate, target.loc, true, false, true);
         })) return false;
         // A component-to-single transition retires every derived body cache and
@@ -9175,6 +9183,7 @@ export class Game {
                     m.seized = m.seizing = false;
                     m.falling = false;
                     m.preplaced = true;
+                    this.extensionRuntime?.releaseFallenMovementRegion(m, this.depth);
                     fellOut.add(m);
                     const targetDepth = this.depth + 1;
                     const cached = this.levels.get(targetDepth);
@@ -11226,8 +11235,10 @@ export class Game {
         if (!monster.isDormant) this.applyEnvironmentalEffects(monster);
         return true;
     }
-    public createSquareMonster(data: MonsterData, size: 2 | 3, at: Pos): Monster | null {
-        const spatial = { schema: 1 as const, footprintId: `builtin:square-${size}`, pose: 'r0' as const };
+    public createSquareMonster(data: MonsterData, size: 2 | 3, at: Pos, movementRegionId?: number): Monster | null {
+        this.bindMovementRegionSession();
+        const spatial = { schema: 1 as const, footprintId: `builtin:square-${size}`, pose: 'r0' as const,
+            ...(movementRegionId !== undefined ? { movementRegionId } : {}) };
         const candidate = { loc: at, spatial, hp: 1 } as Creature;
         const aquatic = data.behaviorFlags?.includes('MONST_RESTRICTED_TO_LIQUID');
         if (!this.squarePublicationFits(candidate) || !canFitAt(this, candidate, at, { allowsTerrain: p => !(cellTerrainFlags(this.grid, p.x, p.y) & speciesForbiddenFlags(data))
@@ -11261,10 +11272,16 @@ export class Game {
      * 忘调的表现是：该层上任何 DFF_ACTIVATE_DORMANT_MONSTER 的 DF 静默不唤醒。
      */
     private bindDormantAwakener(): void {
+        this.bindMovementRegionSession();
         setDormantAwakener(this.grid, (origin, builtCells) =>
             this.awakenDormantMonstersAt(origin, builtCells));
         setAllyResurrector(this.grid, origin => this.resurrectAlly(origin));
         this.bindDungeonFeatureEffects();
+    }
+
+    private bindMovementRegionSession(): void {
+        const runtime = this.extensionRuntime, depth = this.depth;
+        bindMovementRegions(this.grid, runtime?.hasOwnedRegions ? (id, at) => runtime.containsOwnedRegion(id, depth, at) : undefined);
     }
 
     private bindDungeonFeatureEffects(): void {

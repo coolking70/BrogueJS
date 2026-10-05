@@ -5,6 +5,7 @@ import type { SpatialWorld } from './CreatureSpatial';
 import { canFitAt, conservativeSquareStep, squareMovementSize } from './CreatureSpatial';
 import { cellTerrainFlags, cellTerrainMechFlags } from '../Map/DungeonFeature';
 import { T_DIVIDES_LEVEL, T_OBSTRUCTS_PASSABILITY, TM_ALLOWS_SUBMERGING } from '../Map/TerrainCatalog';
+import { inMovementRegion } from './MovementRegions';
 
 /** Bounded square anchor search. Native 1x1 CE searches stay at their existing
  * callers. Destination restrictions never become cached traversal walls. */
@@ -16,6 +17,7 @@ export function squarePlacementCandidates(world: SpatialWorld, target: Creature,
         for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) {
             const at = { x: p.x + dx, y: p.y + dy };
             if (!grid.isValidPos(at.x, at.y) || (cellTerrainFlags(grid, at.x, at.y) & (destination ? forbidden | T_OBSTRUCTS_PASSABILITY : (forbidden & T_DIVIDES_LEVEL) | T_OBSTRUCTS_PASSABILITY))
+                || target.spatial?.movementRegionId !== undefined && !(world.inRegion?.(target.spatial.movementRegionId, at) ?? inMovementRegion(grid, target.spatial.movementRegionId, at))
                 || (aquatic && !(cellTerrainMechFlags(grid, at.x, at.y) & TM_ALLOWS_SUBMERGING))
                 || (destination && forbiddenCell(at))) return false;
         }

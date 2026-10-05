@@ -1,4 +1,5 @@
 import { isJson, validId } from './json';
+import { validOwnedRegions, type OwnedRegion } from './regions';
 
 /** Foundation-owned, non-blocking/non-combat world objects. No module-specific
  * rules or Creature lifecycle are implied by this capability. */
@@ -17,10 +18,11 @@ export interface WorldInteractablePlacement {
 }
 export interface WorldInteractablePlacementResult { readonly instanceKey: string; readonly entity: WorldInteractable | null }
 export interface InteractionGate { readonly owner: string; readonly targetEntityId: number; readonly sessionId: number }
-export interface WorldInteractionSnapshot { entities: WorldInteractable[]; gate: InteractionGate | null }
+export interface WorldInteractionSnapshot { entities: WorldInteractable[]; gate: InteractionGate | null; regions?: OwnedRegion[] }
 export interface WorldInteractionValidation {
     readonly entities: readonly WorldInteractable[]; readonly gate: InteractionGate | null;
     readonly depth: number; readonly turn: number; readonly isGameOver: boolean; readonly nextEntityId: number;
+    readonly regions?: readonly OwnedRegion[];
 }
 export interface ExtensionProjectionContext {
     queryOptional(capability: string, input: import('./types').Json): import('./types').OptionalQueryResult;
@@ -45,7 +47,9 @@ export function validWorldPlacement(value: unknown, owner: string): value is Wor
         && content(value, owner) && integer(value.minStairDistance, 0, 256) && integer(value.maxEntranceDistance, 0, 256);
 }
 export function validWorldSnapshot(value: unknown, owners: readonly string[]): value is WorldInteractionSnapshot {
-    if (!isJson(value) || !keys(value, ['entities','gate']) || !Array.isArray(value.entities) || value.entities.length > WORLD_INTERACTABLE_LIMIT) return false;
+    if (!isJson(value) || !keys(value, Object.prototype.hasOwnProperty.call(value ?? {}, 'regions') ? ['entities','gate','regions'] : ['entities','gate'])
+        || !Array.isArray(value.entities) || value.entities.length > WORLD_INTERACTABLE_LIMIT) return false;
+    if ('regions' in value && !validOwnedRegions(value.regions, owners)) return false;
     let previous = 0; const instances = new Set<string>();
     for (const raw of value.entities) {
         if (!keys(raw, ['id','owner','depth','x','y','instanceKey','contentId','nameKey','descriptionKey','glyph','color','interactionDistance','priority'])
@@ -55,6 +59,8 @@ export function validWorldSnapshot(value: unknown, owners: readonly string[]): v
         if (instances.has(instance)) return false;
         instances.add(instance); previous = raw.id;
     }
+    const entities = value.entities as unknown as WorldInteractable[];
+    if ((value.regions as OwnedRegion[] | undefined)?.some(region => entities.some(entity => entity.id === region.id))) return false;
     if (value.gate === null) return true;
     const gate = value.gate;
     return keys(gate, ['owner','targetEntityId','sessionId']) && typeof gate.owner === 'string' && owners.includes(gate.owner)

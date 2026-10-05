@@ -1,5 +1,8 @@
 Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工试玩问题；用户在 2026-09-29 明确要求停止定时任务并启动合适子进程开发。
 
+- 2026-10-05 当前授权：阅读并执行 docs/ext/phase4a4.task.md，不 commit，中文报告。按任务书允许的干净子里程碑推进 owned region / movementBounds 底座；giants 内容、侧室生成与 HUD 尚待后续实现。本轮浏览器验收按任务书由维护者执行。
+- 2026-10-05 4a-4 底座子里程碑完成：owned region 的受控事务安装、完整身体位移边界、变形保绑定、坠落清绑定、存读严格校验与生成失败恢复已交付；16 项新增专项纳入最终相关回归，37 文件/596 项全部通过（136.26s），type/build/boundary、现有 8 组合 engine-only smoke 与 drift 2/2（45.33s）均 exit0。回滚重绑时序问题经单变量反事实确认并修复后，整套相关门禁已重跑。14 个代码/测试/清单文件冻结前后 SHA256 一致；未暂存/commit/push。中文报告 docs/ext/phase4a4.report.md；完整 4a-4 的 giants 模块、自然侧室、守场 AI、Boss 血条与自然验收种子仍未实现，剩余项已逐项登记；没有宣称完整可玩闭环。
+
 - 2026-10-03 fix-search-progress-bar 已完成：按 docs/tasks/fix-search-progress-bar.md 增加只读搜索进度；分支 fix/search-progress-bar，基于 main 0ca1c67。旧生产新增回归 8/8 红，最终 14/14 绿；只新增 getter、共用状态行和刻符通用进度条，保留规则/存档/录像/RNG，旧测试与夹具未改。最终轻档 typecheck/build、24 文件 416 项相关测试、72 文件 107 项源码守卫、7 文件 12 项共享读取守卫全部退出 0，冻结前后 SHA256 相同；证据 /tmp/search-progress-gates/。报告 docs/reports/fix-search-progress-bar.report.md 已写；未 staging/commit/push，无 CRLF/截图/大证据。浏览器各布局尺寸与裁切验收仍由用户完成，本轮无需重复实施或启动门禁。
 - 2026-10-03 浏览器验收续修已完成：1280×800 状态区竖框由纵向 flex-wrap:wrap 与 flex-basis:100% 将栏高当状态高度造成。普通布局改为内容高度、全栏宽及纵向不换列，沉浸多状态单行内滚动。新增 5 项/10 布局场景先红后绿，最终搜索/排版共 19 项通过；两项“紧凑沉浸隐藏其它状态”期望按新用户要求及 CE IO.c:4823–4825 更新，固定原断言仅切 CSS 的反事实日志在 /tmp/search-progress-layout-counterfactual*。续修最终 typecheck/build、24 文件 421 项、72 文件 107 项源码守卫、7 文件 12 项共享读取守卫全绿，冻结前后哈希一致；证据 /tmp/search-progress-layout-gates/，报告已更新。未 staging/commit/push，无 CRLF/截图/大证据，浏览器尺寸/裁切待 Claude 复验。
 

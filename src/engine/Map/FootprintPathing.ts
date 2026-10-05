@@ -79,7 +79,7 @@ export class FootprintPathing {
             this.graphs.clear(); this.grid = grid; this.terrainRevision = revision;
         }
         const normalized = this.policy(policy);
-        const key = JSON.stringify([actor.spatial!.footprintId, actor.spatial!.pose, normalized]);
+        const key = JSON.stringify([actor.spatial!.footprintId, actor.spatial!.pose, ...(actor.spatial!.movementRegionId !== undefined ? [actor.spatial!.movementRegionId] : []), normalized]);
         let graph = this.graphs.get(key);
         if (graph) {
             this.cacheHits++; this.graphs.delete(key); this.graphs.set(key, graph);

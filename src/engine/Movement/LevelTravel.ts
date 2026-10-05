@@ -68,7 +68,9 @@ export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[],
             const levitating=m.hasStatus('levitating'), flags=cellTerrainFlags(grid,m.x,m.y);
             // Web separates allegiance from state; magical fear temporarily leaves CE ALLY.
             const ally=m.isAlly && m.state!==MonsterState.FLEEING;
-            if (m.hp<=0 || m.isDormant || !(ally || (m.state===MonsterState.HUNTING && (direction!==0 || levitating)))) continue;
+            // A hard local region never schedules a staircase departure. A
+            // future explicit allegiance transition may release/rebind it first.
+            if (m.spatial?.movementRegionId !== undefined || m.hp<=0 || m.isDormant || !(ally || (m.state===MonsterState.HUNTING && (direction!==0 || levitating)))) continue;
             if (direction===0 && m.hp<=10 && !levitating) continue;
             if (flying!==!!(levitating || (flags&T_PATHING_BLOCKER) || (cellTerrainFlags(grid,origin.x,origin.y)&T_AUTO_DESCENT))) continue;
             if (m.isCaged || m.hasCEBehavior('MONST_WILL_NOT_USE_STAIRS') || m.hasCEBehavior('MONST_RESTRICTED_TO_LIQUID')

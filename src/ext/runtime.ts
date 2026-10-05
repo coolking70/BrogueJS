@@ -6,6 +6,8 @@ import type { ExtensionRegistry } from './registry';
 import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json, ActorFacts, ResourceCommit, CharacterResources, CharacterResourceCommit, ExtensionRuleContext, ExtensionRuleInput, ExtensionRulePolicies, ItemGrowthInput, ExtensionViewDescriptor, ExtensionModuleView, ExtensionCreationResources, ControlledCommandPreparationContext, PreparedControlledCommand } from './types';
 import { creatureView } from './types';
 import { readCreatureBirth } from './birth';
+import { OWNED_REGION_LIMIT, validRegionPlacement, regionContains, regionsOverlap, type OwnedRegion, type OwnedRegionPlacement } from './regions';
+import { clearMovementRegion } from '../engine/Movement/CreatureSpatial';
 import { canonical, cloneJson, isJson, validId } from './json';
 import { EffectCausality, validEffectOrigin, type EffectOrigin } from './causality';
 import { ExtensionCompatibilityError } from './compatibility';
@@ -119,6 +121,7 @@ export class ExtensionRuntime {
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
         Object.freeze(this.manifest.modules); Object.freeze(this.manifest);
         this.modules = registry.create(manifest);
+        for (const module of this.modules) if (module.ownedRegions !== undefined && module.ownedRegions !== true) throw new Error('Invalid owned region declaration');
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalQueries ?? {})) {
             if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
                 || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid optional query provider');
@@ -679,7 +682,7 @@ export class ExtensionRuntime {
             throw new Error('Invalid pending story fact world references');
         for (const actor of creatures) this.nativeMaximumBase(actor);
         const actors = creatures.map(actor => this.actorFacts(actor,creatures[0]!.id));
-        for (const module of this.modules) if (module.validateWorld && !module.validateWorld(this.states[module.id]!, this.components, actors, freezeView({ ...world, depth: world?.depth ?? this.ports.depth(), turn: world?.turn ?? this.ports.turn?.() ?? 0, isGameOver: world?.isGameOver ?? false, nextEntityId: world?.nextEntityId ?? getNextEntityId(), entities: structuredClone(this.world.entities), gate: structuredClone(this.world.gate) })))
+        for (const module of this.modules) if (module.validateWorld && !module.validateWorld(this.states[module.id]!, this.components, actors, freezeView({ ...world, depth: world?.depth ?? this.ports.depth(), turn: world?.turn ?? this.ports.turn?.() ?? 0, isGameOver: world?.isGameOver ?? false, nextEntityId: world?.nextEntityId ?? getNextEntityId(), entities: structuredClone(this.world.entities), gate: structuredClone(this.world.gate), ...(this.world.regions ? { regions: structuredClone(this.world.regions) } : {}) })))
             throw new Error('Invalid extension world references');
     }
     private invoke(module: ExtensionModule, callback: (context: ExtensionContext) => void, command = false): void {
@@ -893,6 +896,49 @@ export class ExtensionRuntime {
         this.deaths[String(creature.id)] = fact;
         return structuredClone(fact);
     }
+    get hasOwnedRegions(): boolean { return !this.disposed && this.modules.some(module => module.ownedRegions); }
+    /** Native generation-only capability; not exposed to hook/command contexts.
+     * Full batch preflight precedes IDs and ledger writes. Nested aborts restore
+     * both geometry and allocator, even after an inner transaction commits. */
+    installOwnedRegions(token: GenerationToken, owner: string, requests: readonly OwnedRegionPlacement[], dimensions: { width: number; height: number }): readonly OwnedRegion[] {
+        this.generation(token);
+        const depth = this.ports.depth(), existing = this.world.regions ?? [];
+        if (this.disposed || this.publishingGeneration || !this.modules.find(module => module.id === owner)?.ownedRegions
+            || !Number.isSafeInteger(depth) || depth < 1 || depth > 40
+            || !Number.isSafeInteger(dimensions.width) || !Number.isSafeInteger(dimensions.height)
+            || dimensions.width < 1 || dimensions.width > 1024 || dimensions.height < 1 || dimensions.height > 1024
+            || !Array.isArray(requests) || existing.length + requests.length > OWNED_REGION_LIMIT
+            || !Number.isSafeInteger(getNextEntityId() + requests.length)
+            || requests.some((request, index) => !validRegionPlacement(request)
+                || request.bounds.x + request.bounds.width > dimensions.width || request.bounds.y + request.bounds.height > dimensions.height
+                || existing.some(region => region.owner === owner && region.instanceKey === request.instanceKey
+                    || region.depth === depth && regionsOverlap(region, request))
+                || requests.slice(0, index).some(prior => prior.instanceKey === request.instanceKey || regionsOverlap(prior, request)))) {
+            throw new Error('Invalid owned region generation batch');
+        }
+        if (!requests.length) return Object.freeze([]);
+        for (const frame of this.generations) frame.placementNextEntityId ??= getNextEntityId();
+        const placed = [...requests].sort((a, b) => a.instanceKey < b.instanceKey ? -1 : 1)
+            .map(request => ({ ...structuredClone(request), id: allocateEntityId(), owner, depth }));
+        this.world.regions = [...existing, ...placed].sort((a, b) => a.id - b.id);
+        return freezeView(structuredClone(placed));
+    }
+    ownedRegion(id: number, depth: number): Readonly<OwnedRegion> | null {
+        if (this.disposed) return null;
+        const region = this.world.regions?.find(region => region.id === id && region.depth === depth);
+        return region ? freezeView(structuredClone(region)) : null;
+    }
+    containsOwnedRegion(id: number, depth: number, at: { readonly x: number; readonly y: number }): boolean {
+        const region = !this.disposed && this.world.regions?.find(region => region.id === id && region.depth === depth);
+        return !!region && regionContains(region, at);
+    }
+    releaseFallenMovementRegion(creature: Creature, depth: number): void {
+        const regionId = creature.spatial?.movementRegionId;
+        if (regionId === undefined) return;
+        if (creature.hp <= 0 || !this.creatures.has(creature) || !this.ownedRegion(regionId, depth)) throw new Error('Invalid falling movement region');
+        clearMovementRegion(creature);
+        this.emit('movementRegionExited', { actor: this.actorFacts(creature), regionId, depth, reason: 'fell' });
+    }
     /** World capability is inert unless a selected module actually owns objects. */
     get interactionActive(): boolean { return !this.disposed && this.world.gate !== null; }
     visibleInteractables(owner?: string) {
@@ -1020,6 +1066,7 @@ export class ExtensionRuntime {
             || !EffectCausality.validateSnapshot(foundation.causality) || !foundation.deaths || Array.isArray(foundation.deaths)
             || typeof foundation.deaths !== 'object') throw new Error('Invalid extension foundation snapshot');
         if (foundation.world.entities.some(entity => !this.modules.find(module => module.id === entity.owner)?.worldInteractables)
+            || foundation.world.regions?.some(region => !this.modules.find(module => module.id === region.owner)?.ownedRegions)
             || (foundation.world.gate && !this.modules.find(module => module.id === foundation.world.gate!.owner)?.interactionCommands?.length))
             throw new Error('Undeclared world interaction capability');
         for (const [id, fact] of Object.entries(foundation.deaths)) {

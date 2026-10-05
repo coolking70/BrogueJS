@@ -168,6 +168,8 @@ export interface HookEvents {
     itemPickedUp: { creature: CreatureView; item: ItemView };
     itemUsed: { creature: CreatureView; item: ItemView; operation: string };
     enteredLevel: { depth: number; firstVisit: boolean; actorIds?: number[] };
+    /** A local movement binding is cleared before a surviving actor falls. */
+    movementRegionExited: { actor: ActorFacts; regionId: number; depth: number; reason: 'fell' };
 }
 export type HookName = keyof HookEvents;
 export interface ExtensionContext {
@@ -213,6 +215,8 @@ export interface ExtensionModule extends ExtensionVersion {
     readonly optionalQueries?: Readonly<Record<string, OptionalQueryProvider>>;
     readonly view?: ExtensionViewDescriptor;
     readonly worldInteractables?: true;
+    /** Only the native generation owner may install declared owned regions. */
+    readonly ownedRegions?: true;
     readonly interactionCommands?: readonly string[];
     projectView?(context: ExtensionProjectionContext): Json;
     /** Pure projection receives only a detached selected player component, never a world/context capability. */

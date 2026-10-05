@@ -1,4 +1,5 @@
-import { assertNativeSpatial, assertSingleCellPlayer, CreatureSpatial } from '../Movement/CreatureSpatial';
+import { assertNativeSpatial, assertSingleCellPlayer, CreatureSpatial, footprintOf } from '../Movement/CreatureSpatial';
+import { regionContains, validOwnedRegions } from '../../ext/regions';
 import { keys, nativeSpatialCatalog, SpatialValidationError, SPATIAL_LIMITS, validateSpatialComponent, type SpatialCatalog, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
 /** Pure whole-run projection and world reconstruction. The live Game supplies
  * only the state and services consumed here; neither function receives Game. */
@@ -247,6 +248,27 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
         }];
     }));
     const result = { entityGraph, restored };
+    const regions = snapshot.extensions?.foundation.world.regions;
+    if (regions !== undefined) {
+        if (!validOwnedRegions(regions, snapshot.extensions!.manifest.modules.map(module => module.id))) throw new SpatialValidationError('Invalid owned regions');
+        for (const region of regions) {
+            const grid = restored.get(region.depth)?.grid, b = region.bounds;
+            if (!grid || b.x + b.width > grid.width || b.y + b.height > grid.height || region.id >= snapshot.run.nextEntityId
+                || region.id === snapshot.player.id || entityGraph.monsters.has(region.id) || entityGraph.items.has(region.id)
+                || snapshot.extensions!.foundation.world.entities.some(entity => entity.id === region.id)) throw new SpatialValidationError('Invalid owned region layer or allocator');
+        }
+    }
+    const inRegion = (id: number, depth: number, at: Readonly<Pos>): boolean => {
+        const region = regions?.find(region => region.id === id && region.depth === depth);
+        return !!region && regionContains(region, at);
+    };
+    for (const monster of entityGraph.monsters.values()) if (monster.spatial?.movementRegionId !== undefined) {
+        const region = regions?.find(region => region.id === monster.spatial!.movementRegionId);
+        if (!region || snapshot.pendingFallenByDepth.some(queue => queue.monsters.some(row => row.id === monster.id))) throw new SpatialValidationError('Missing or stale movement region');
+        for (const [depth, level] of restored) if (level.monsters.includes(monster) || level.dormantMonsters?.includes(monster)) {
+            if (region.depth !== depth || !footprintOf(monster, deps.spatialCatalog ?? nativeSpatialCatalog).every(at => inRegion(region.id, depth, at))) throw new SpatialValidationError('Creature outside movement region');
+        }
+    }
     if (snapshot.run.spatialWorld !== undefined) {
         if (!deps.spatialCatalog?.fixture) {
             const expected = snapshotSquareWorld([...entityGraph.monsters.values()]);
@@ -259,10 +281,10 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
                 const cohort = [...level.monsters, ...(level.dormantMonsters ?? [])];
                 for (const c of cohort) { if (owned.has(c.id)) throw new SpatialValidationError('Multiple square ownership'); owned.add(c.id); }
                 if (!cohort.some(c => c.spatial)) continue;
-                const service = new CreatureSpatial({ grid: level.grid, monsters: level.monsters, dormantMonsters: level.dormantMonsters,
+                const service = new CreatureSpatial({ grid: level.grid, monsters: level.monsters, dormantMonsters: level.dormantMonsters, inRegion: (id, at) => inRegion(id, depth, at),
                     ...(depth === snapshot.depth ? { player } : {}) });
                 try {
-                    for (const c of cohort) if (c.hp > 0 && !service.canFitAt(c, c.loc, { allowsTerrain: () => true })) throw new SpatialValidationError('Overlapping square footprints');
+                    for (const c of cohort) if (c.hp > 0 && !service.canFitAt(c, c.loc, { allowsTerrain: () => true, inRegion: (id, at) => inRegion(id, depth, at) })) throw new SpatialValidationError('Overlapping square footprints');
                 } finally { service.dispose(); }
             }
             for (const queue of snapshot.pendingFallenByDepth) {

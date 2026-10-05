@@ -1,4 +1,5 @@
 import { spatialTerrainRevision, releaseSpatialTerrain } from './SpatialRevision';
+import { inMovementRegion } from './MovementRegions';
 import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
 import type { Grid } from '../Map/Grid';
@@ -20,6 +21,8 @@ export interface SpatialWorld {
     grid: Grid; player?: Creature; monsters: readonly Creature[]; dormantMonsters?: readonly Creature[];
     /** CE clears HAS_MONSTER after the death DF/drop window, not at zero HP. */
     inDeathWindow?: (creature: Creature) => boolean;
+    /** Pure decode/fixture port; live grids carry their session resolver. */
+    inRegion?: (regionId: number, at: Readonly<Pos>) => boolean;
 }
 export interface BodyTarget {
     readonly entity: Creature; readonly entityId: number; readonly groupId: number;
@@ -52,17 +55,28 @@ export function assertNativeSpatial(creature: Creature): void {
 export function assertSingleCellPlayer(creature: Pick<Creature, 'spatial'>): void {
     if (Object.prototype.hasOwnProperty.call(creature, 'spatial')) throw new SpatialValidationError('Player spatial capability is not open');
 }
-/** Explicitly scoped native square capability. Arbitrary fixture masks, zones/groups/locks/regions and
- * explicit single-cell components are not executable square bodies. */
+/** Ownership transfer retires a local movement binding. A polymorphed single
+ * body returns to ordinary absence semantics when its region is cleared. */
+export function clearMovementRegion(creature: Creature): number | undefined {
+    const id = creature.spatial?.movementRegionId;
+    if (id === undefined) return undefined;
+    if (creature.spatial!.footprintId === 'builtin:single') delete creature.spatial;
+    else delete creature.spatial!.movementRegionId;
+    listeners.get(creature)?.forEach(invalidate => invalidate());
+    return id;
+}
+/** Executable independent r0 squares, plus a bounded single body produced by
+ * polymorph. Unbounded explicit single, masks, zones, groups and locks stay closed. */
 export function squareMovementSize(creature: Creature, catalog = nativeSpatialCatalog): number {
     if (!Object.prototype.hasOwnProperty.call(creature, 'spatial')) return 1;
     validateSpatialComponent(creature.spatial, catalog, false);
     const s = creature.spatial!;
-    if (!['builtin:square-2', 'builtin:square-3'].includes(s.footprintId) || s.pose !== 'r0'
-        || Object.keys(s).some(k => !['schema', 'footprintId', 'pose'].includes(k))) {
+    const boundedSingle = s.footprintId === 'builtin:single' && s.movementRegionId !== undefined;
+    if (!(boundedSingle || ['builtin:square-2', 'builtin:square-3'].includes(s.footprintId)) || s.pose !== 'r0'
+        || Object.keys(s).some(k => !['schema', 'footprintId', 'pose', 'movementRegionId'].includes(k))) {
         throw new SpatialValidationError('Spatial capability is not open: Square movement requires an independent unzoned r0 square');
     }
-    return s.footprintId === 'builtin:square-2' ? 2 : 3;
+    return s.footprintId === 'builtin:single' ? 1 : s.footprintId === 'builtin:square-2' ? 2 : 3;
 }
 /** Shared graph/live-motion edge; fit includes the caller's terrain, region and
  * (for a live step) occupancy policy. Swept intermediate poses never trigger
@@ -150,9 +164,12 @@ export class CreatureSpatial {
             if (Object.prototype.hasOwnProperty.call(c, 'spatial')) {
                 if (this.catalog.fixture) validateSpatialComponent(c.spatial, this.catalog, false);
                 else assertNativeSpatial(c);
-                // Region geometry remains extension-owned. Native fixtures do
-                // not have a region resolver; never accept a dangling reference.
-                if (c.spatial!.movementRegionId !== undefined) throw new SpatialValidationError('Spatial region capability is not open in native fixtures');
+                // Unresolved regions are never implicit permission to move.
+                // Decode supplies a detached ledger; live grids share a resolver.
+                if (c.spatial!.movementRegionId !== undefined && !footprintOf(c, this.catalog).every(at =>
+                    world.inRegion?.(c.spatial!.movementRegionId!, at) ?? inMovementRegion(world.grid, c.spatial!.movementRegionId!, at))) {
+                    throw new SpatialValidationError('Missing movement region or body outside bounds');
+                }
                 users++; occupiedCells += footprintOf(c, this.catalog).length;
             }
             if (footprintOf(c, this.catalog).some(p => !world.grid.isValidPos(p.x, p.y))) throw new SpatialValidationError('Spatial footprint outside its layer');
@@ -244,7 +261,8 @@ export class CreatureSpatial {
         for (const offset of offsets) {
             const p = { x: at.x + offset.x, y: at.y + offset.y };
             if (!this.world.grid.isValidPos(p.x, p.y) || !(options.allowsTerrain?.(p) ?? !(flagsAt(this.world.grid, p) & T_OBSTRUCTS_PASSABILITY))) return false;
-            if (c.spatial?.movementRegionId !== undefined && !options.inRegion?.(c.spatial.movementRegionId, p)) return false;
+            if (c.spatial?.movementRegionId !== undefined && !(options.inRegion?.(c.spatial.movementRegionId, p) ?? this.world.inRegion?.(c.spatial.movementRegionId, p)
+                ?? inMovementRegion(this.world.grid, c.spatial.movementRegionId, p))) return false;
         }
         return true;
     }
@@ -377,6 +395,8 @@ export function canFitAt(world: SpatialWorld, c: Creature, at: Pos, options: Fit
         return nativeSpatialCatalog.cells(c.spatial.footprintId, 'r0').every(o => {
             const p = { x: at.x + o.x, y: at.y + o.y };
             return world.grid.isValidPos(p.x, p.y)
+                && (c.spatial!.movementRegionId === undefined || (options.inRegion?.(c.spatial!.movementRegionId, p) ?? world.inRegion?.(c.spatial!.movementRegionId, p)
+                    ?? inMovementRegion(world.grid, c.spatial!.movementRegionId, p)))
                 && (options.allowsTerrain?.(p) ?? !(flagsAt(world.grid, p) & T_OBSTRUCTS_PASSABILITY))
                 && !creatureAtCell(world, p, options.policy ?? 'active-or-reserved', ignore);
         });

@@ -846,7 +846,12 @@ export class Monster extends Creature {
         }
         this.seized = this.seizing = false;
         this.ticksUntilTurn = Math.max(this.ticksUntilTurn, 101);
-        if (preparedLocation) { delete this.spatial; commitCreatureAnchor(this, { ...preparedLocation }, 'mutate'); }
+        if (preparedLocation) {
+            const movementRegionId = this.spatial?.movementRegionId;
+            delete this.spatial;
+            if (movementRegionId !== undefined) this.spatial = { schema: 1, footprintId: 'builtin:single', pose: 'r0', movementRegionId };
+            commitCreatureAnchor(this, { ...preparedLocation }, 'mutate');
+        }
         return true;
     }
 
