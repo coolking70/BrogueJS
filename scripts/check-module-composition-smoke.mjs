@@ -133,6 +133,7 @@ try {
     try { report.engine = { status: 'passed', combinations: exerciseGame(createHeadlessGame(7301, 'test'), plans, unavailable) }; }
     catch (error) { report.engine = { status: 'failed', error: String(error?.stack ?? error) }; }
     const shooter = await shooterCompositionEngine(sourceServer, removed);
+    report.strategic={engine:shooter.strategic,browser:[]};
     report.realtime = { installed: shooter.installed, engine: shooter.cases, browser: [] };
     await sourceServer.close(); sourceServer = undefined;
 
@@ -156,6 +157,10 @@ try {
             return run(window.activeGame, plans, unavailable);
         }, { source: exerciseGame.toString(), plans, unavailable });
         if (errors.length) throw new Error(`Built product page errors: ${errors.join('; ')}`);
+        for(const entry of shooter.strategic){const p=await browser.newPage();const errors=[];p.on('pageerror',e=>errors.push(String(e)));await p.goto(`http://127.0.0.1:${address.port}/shooter.html`,{waitUntil:'networkidle'});
+            await p.evaluate(c=>localStorage.setItem('broguejs-shooter-s6-campaign-v1',JSON.stringify({campaign:c,ticket:null,battle:null})),entry.initial);await p.reload({waitUntil:'networkidle'});
+            if(await p.getByTestId('training').count())await p.getByTestId('training').click();await p.waitForSelector('canvas');await p.locator('.diagnostics summary').click();await p.getByTestId('step').click();await p.getByTestId('save').click();await p.reload({waitUntil:'networkidle'});
+            if(await p.getByTestId('training').count())await p.getByTestId('training').click();await p.waitForSelector('canvas');if(errors.length)throw new Error(errors.join(';'));report.strategic.browser.push({modules:entry.modules,restoreAndIndependentPlay:true,errors});await p.close();}
         report.realtime.browser = await shooterCompositionBrowser(browser, `http://127.0.0.1:${address.port}/shooter.html`, shooter);
         report.browser = { status: 'passed', engine: 'built dist JavaScript', combinations };
     } catch (error) { report.browser = { status: 'failed', error: String(error?.stack ?? error) }; }

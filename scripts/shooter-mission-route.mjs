@@ -64,8 +64,8 @@ export function missionPilot(session, grid, { optional = true, raycast, moveCirc
         alive.sort((a,b)=>(a.pose.x-p.pose.x)**2+(a.pose.y-p.pose.y)**2-((b.pose.x-p.pose.x)**2+(b.pose.y-p.pose.y)**2));
         const target=alive[0]&&alive[0].kind!=='objective'&&(alive[0].pose.x-p.pose.x)**2+(alive[0].pose.y-p.pose.y)**2<2000**2?alive[0]:marker.kind==='nest'&&targetBody&&state.damage.actors[targetBody.id-1].hp>0?targetBody:alive[0];
         const aimAngle=target?(Math.round(Math.atan2(target.pose.y-p.pose.y,target.pose.x-p.pose.x)*4096/(Math.PI*2))+4096)%4096:0;
-        if(state.ranged){const rifle=state.ranged.weapons[1];if(!rifle.selected)commands.push({tick,kind:'equip',slot:1});if(rifle.ammo===0&&!state.ranged.reloadRemaining)commands.push({tick,kind:'reload'});}
+        if(state.ranged){const rifle=state.ranged.weapons.find(w=>w.id==='rifle')??state.ranged.weapons[1]??state.ranged.weapons[0];if(!rifle.selected)commands.push({tick,kind:'equip',slot:rifle.slot});if(rifle.ammo===0&&!state.ranged.reloadRemaining)commands.push({tick,kind:'reload'});}
         if(previousPose&&Math.abs(p.pose.x-previousPose.x)+Math.abs(p.pose.y-previousPose.y)<5&&(moveX||moveY))stuck++;else stuck=0;previousPose={...p.pose};
-        return { frame:{tick,moveX,moveY,aimAngle,buttons:state.ranged&&target?1:0},commands };
+        return { frame:{tick,moveX,moveY,aimAngle,buttons:state.ranged&&target?(state.ranged.weapons.find(w=>w.selected)?.id==='rifle'?1:tick%2):0},commands };
     };
 }

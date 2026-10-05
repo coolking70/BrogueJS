@@ -23,7 +23,8 @@ const progressAnchor = ref({ x: 0, y: 0 });
 let app: Application | null = null, world: Container | null = null, actors: Graphics | null = null, overview: Graphics | null = null;
 const labels = new Map<string, Text>();
 let resize: ResizeObserver | null = null, disposed = false;
-const scenario = getRealtimeModules().find(d => d.kind === 'mission' && d.scenario.id === props.current.arena);
+const descriptor = props.current.mission ? getRealtimeModules().find(d=>d.kind==='mission') : undefined;
+const scenario = descriptor?.kind==='mission' && props.current.setup && descriptor.configure ? descriptor.configure(props.current.setup) : descriptor;
 const TILE = 1024, grid = createScenarioArena(scenario?.kind === 'mission' ? scenario.scenario : undefined);
 const ARENA_WIDTH = grid.width, ARENA_HEIGHT = grid.height;
 function terrainColor(x: number, y: number): number {
@@ -74,7 +75,7 @@ function draw(): void {
         }else if(d.slot===1){actors!.circle(p.x,p.y,300).fill({color,alpha:.5}).stroke({color,width:40});
             actors!.moveTo(p.x,p.y).lineTo(p.x+450,p.y).stroke({color,width:80});
         }else if(d.slot===3){actors!.circle(p.x,p.y,450).stroke({color,width:35}).circle(p.x,p.y,d.radius).stroke({color,width:25,alpha:.25});}
-        const a=support!.abilities[d.slot]!;
+        const a=support!.abilities.find(a=>a.slot===d.slot)!;
         return{id:d.id,x:p.x*camera.scaleX+camera.offsetX,y:(p.y-850)*camera.scaleY+camera.offsetY,danger:d.slot===2,
             text:d.phase==='inbound'?t('shooter.support.inbound',{name:t(a.labelKey),seconds:Math.ceil(d.remaining/30)}):d.slot===0?t('shooter.support.charges',{count:d.charges}):d.slot===1?t('shooter.support.rounds',{count:d.charges}):t('shooter.support.scanned',{count:support!.revealed.length})};
     }).filter(d=>d.x>=0&&d.x<=app!.screen.width&&d.y>=-120&&d.y<=app!.screen.height);

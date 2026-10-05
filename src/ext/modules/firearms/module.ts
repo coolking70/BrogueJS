@@ -9,9 +9,12 @@ import { shotAngle } from './firing';
 import { advanceProjectiles, hitscan } from './ballistics';
 
 export function createFirearms(host: RangedHost, restored?: unknown): RangedRuntime {
+    const slots=host.equipment?.weapons ?? [0,1,2,3];
     const state: FirearmsState = restored === undefined ? initialState(host.ownerId) : (() => {
         validateState(restored, host.ownerId, host.tick()); return structuredClone(restored);
     })();
+    if(restored===undefined)state.selected=slots[0]!;
+    if(!slots.includes(state.selected)||state.pendingReload!==null&&!slots.includes(state.pendingReload)||state.action&&!slots.includes(state.action.slot))throw new Error('Unequipped firearm state');
     if (state.projectiles.some(p => !circleIsFree(host.world, p.pose, 64, p.sourceId))) throw new Error('Invalid projectile binding');
     let fault: Error | null = null, replenishReload = false;
     const actions: ActorActionScheduler = createActorActionScheduler(state.actions, {
@@ -40,7 +43,7 @@ export function createFirearms(host: RangedHost, restored?: unknown): RangedRunt
     }
     function view(): RangedView {
         return { weapons: state.weapons.map((v, slot) => ({ id: WEAPONS[slot]!.id, labelKey: WEAPON_LABEL_KEYS[slot]!,
-            slot, ammo: v.ammo, capacity: WEAPONS[slot]!.magazineSize, selected: slot === state.selected })),
+            slot, ammo: v.ammo, capacity: WEAPONS[slot]!.magazineSize, selected: slot === state.selected })).filter(w=>slots.includes(w.slot)),
             reloadRemaining: state.action?.kind === 'reload' ? state.timer : 0, cooldownRemaining: state.action?.kind === 'cooldown' ? state.timer : 0,
             reloadTotal: state.action?.kind === 'reload' ? WEAPONS[state.action.slot]!.reloadTicks : 0,
             recoil: state.weapons[state.selected]!.recoil, shots: state.weapons.reduce((sum, w) => sum + w.shotSequence, 0),
@@ -52,7 +55,7 @@ export function createFirearms(host: RangedHost, restored?: unknown): RangedRunt
             if (control.actorId !== state.ownerId || control.tick !== host.tick()) throw new Error('Wrong firearm control owner/tick');
             state.weapons.forEach((w, slot) => { w.recoil = Math.max(0, w.recoil - WEAPONS[slot]!.recoilRecovery); });
             for (const command of commands) {
-                if (command.kind === 'equip') { state.selected = command.slot; state.pendingReload = null; actions.cancelDeadActions(); }
+                if (command.kind === 'equip') { if(!slots.includes(command.slot))continue; state.selected = command.slot; state.pendingReload = null; actions.cancelDeadActions(); }
                 else if (state.action?.kind !== 'reload' && host.health(state.ownerId)?.hp
                     && state.weapons[state.selected]!.ammo < WEAPONS[state.selected]!.magazineSize) state.pendingReload = state.selected;
             }

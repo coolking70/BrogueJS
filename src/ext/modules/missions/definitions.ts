@@ -56,4 +56,4 @@ export function loadMission(value: unknown): Readonly<MissionDefinition> {
     return freeze(structuredClone(value)) as unknown as Readonly<MissionDefinition>;
 }
 export const MISSION_DATA = loadMission(data);
-export const MISSION_RULES = Object.freeze({ schema: 1, version: '1.1.0', fingerprint: extensionDataFingerprint(data) });
+export const MISSION_RULES = Object.freeze({ schema: 1, version: '1.2.0', fingerprint: extensionDataFingerprint(data) });

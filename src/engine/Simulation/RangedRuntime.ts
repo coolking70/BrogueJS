@@ -1,3 +1,4 @@
+import type { BattleEquipment } from './BattleSetup';
 import type { DamageIntent, DamageReceipt, HealthActor } from '../Combat/DamageResolution';
 import type { CollisionWorld } from '../Movement/KinematicCollision';
 import type { CircleBody, WorldPoint } from '../Movement/WorldUnits';
@@ -16,6 +17,7 @@ export interface RangedView { weapons: WeaponView[]; reloadRemaining: number; re
 /** All reads are detached. Modules request damage, never receive writable HP. */
 export interface RangedHost {
     readonly seed: number;
+    readonly equipment?: BattleEquipment | null;
     readonly ownerId: number;
     readonly world: CollisionWorld;
     tick(): number;

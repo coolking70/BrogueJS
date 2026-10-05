@@ -47,26 +47,26 @@ try {
         const url=`http://127.0.0.1:${server.httpServer.address().port}/shooter.html`;
         for(const viewport of [{width:1440,height:1100},{width:390,height:844}]){
             const page=await browser.newPage({viewport,hasTouch:viewport.width<600}),errors=[];page.on('pageerror',e=>errors.push(String(e)));
-            await page.goto(url,{waitUntil:'networkidle'});await page.waitForSelector('canvas');
+            await page.goto(url,{waitUntil:'networkidle'});if(await page.getByTestId('training').count())await page.getByTestId('training').click(); await page.waitForSelector('canvas');
             await page.screenshot({path:join(output,`briefing-${viewport.width}.png`),fullPage:true});
             await page.locator('.diagnostics summary').click();
             await page.getByTestId('module-hordes').setChecked(false);await page.getByTestId('module-firearms').setChecked(false);await page.getByTestId('restart').click();
             const checkpoint=JSON.parse(readFileSync(join(output,'approach-1.json'),'utf8'));
             // Use an actual engine-produced checkpoint through the ordinary UI.
-            await page.evaluate(s=>localStorage.setItem('broguejs-shooter-s5-checkpoint-v6',JSON.stringify(s)),checkpoint);
+            await page.evaluate(s=>localStorage.setItem('broguejs-shooter-s6-checkpoint-v7',JSON.stringify(s)),checkpoint);
             await page.reload({waitUntil:'networkidle'});await page.getByTestId('load').click();await page.getByTestId('toggle').click();
             if(viewport.width>600)await page.keyboard.press('KeyE');else await page.getByTestId('interact').tap();
             const at=checkpoint.tick;await page.waitForFunction(t=>Number(document.querySelector('[data-testid="tick"]').textContent)>t+15,at);
             await page.getByTestId('toggle').click();
             if(viewport.width>600){
-                await page.evaluate(s=>localStorage.setItem('broguejs-shooter-s5-checkpoint-v6',JSON.stringify(s)),checkpoint);
+                await page.evaluate(s=>localStorage.setItem('broguejs-shooter-s6-checkpoint-v7',JSON.stringify(s)),checkpoint);
                 await page.getByTestId('load').click();
                 await page.evaluate(()=>{window.__missionPad={connected:true,mapping:'standard',axes:[0,0,0,0],buttons:Array.from({length:8},(_,i)=>({pressed:i===0,value:i===0?1:0}))};Object.defineProperty(navigator,'getGamepads',{configurable:true,value:()=>[window.__missionPad]});});
                 await page.getByTestId('toggle').click();await page.waitForFunction(t=>Number(document.querySelector('[data-testid="tick"]').textContent)>t+15,at);
                 await page.evaluate(()=>{window.__missionPad.connected=false;});await page.getByTestId('toggle').click();
             }
             await page.getByTestId('save').click();
-            const saved=JSON.parse(await page.evaluate(()=>localStorage.getItem('broguejs-shooter-s5-checkpoint-v6')));assert.ok(saved.moduleStates.missions.nodes[0].progress>checkpoint.moduleStates.missions.nodes[0].progress);
+            const saved=JSON.parse(await page.evaluate(()=>localStorage.getItem('broguejs-shooter-s6-checkpoint-v7')));assert.ok(saved.moduleStates.missions.nodes[0].progress>checkpoint.moduleStates.missions.nodes[0].progress);
             const download=page.waitForEvent('download');await page.getByTestId('export').click();const recording=JSON.parse(readFileSync(await(await download).path(),'utf8'));
             assert.equal(api.canonicalState(api.replayShooter(recording).snapshot()),api.canonicalState(saved));
             await page.getByTestId('verify').click();assert.match(await page.getByTestId('message').textContent(),/重放验证通过/);

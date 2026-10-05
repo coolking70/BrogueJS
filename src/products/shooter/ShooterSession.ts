@@ -1,3 +1,4 @@
+import { detachedEquipment, validateBattleSetup, type BattleSetup } from '../../engine/Simulation/BattleSetup';
 import type { SupportRuntime, SupportCommand } from '../../engine/Simulation/SupportRuntime';
 import { clearHazards, restoreClearedHazards } from './ShooterEnvironment';
 import type { MissionDescriptor, MissionRuntime, MissionCommand } from '../../engine/Simulation/MissionRuntime';
@@ -23,12 +24,13 @@ export { canonicalState, MAX_SHOOTER_TICKS, SHOOTER_BODY_RADIUS, SHOOTER_MOVE_SP
 export type { ShooterActor, ShooterReplay, ShooterSnapshot } from './ShooterState';
 
 const manifest = (d: RealtimeModuleDescriptor): RuntimeManifest => ({ id: d.id, version: d.version, rules: { ...d.rules } });
-function scenarioDescriptor(ids: readonly string[], installed: readonly RealtimeModuleDescriptor[]): MissionDescriptor | undefined {
-    return ids.map(id => installed.find(d => d.id === id)!).find((d): d is MissionDescriptor => d.kind === 'mission');
+function scenarioDescriptor(ids: readonly string[], installed: readonly RealtimeModuleDescriptor[], setup: BattleSetup | null = null): MissionDescriptor | undefined {
+    const d=ids.map(id => installed.find(d => d.id === id)!).find((d): d is MissionDescriptor => d.kind === 'mission');
+    return setup && d?.configure ? d.configure(setup) : d;
 }
-function actorDefinitions(ids: readonly string[], installed: readonly RealtimeModuleDescriptor[]) {
+function actorDefinitions(ids: readonly string[], installed: readonly RealtimeModuleDescriptor[], setup: BattleSetup | null = null) {
     const population = ids.map(id => installed.find(d => d.id === id)!).find(d => d.kind === 'population');
-    const mission = scenarioDescriptor(ids, installed);
+    const mission = scenarioDescriptor(ids, installed, setup);
     const player = { id: 1, kind: 'player' as const, radius: SHOOTER_BODY_RADIUS, maxHp: 100 };
     if (population && (population.actors.length > 500 || !population.actors.length || population.actors.some((a, i) => a.id !== i + 2
         || !['swarm', 'elite', 'boss'].includes(a.kind) || !integer(a.radius, 1, 1024) || !integer(a.maxHp, 1, 1_000_000)))) throw new Error('Invalid population definitions');
@@ -54,13 +56,14 @@ function finiteData(value: unknown, depth = 0, seen = new Set<object>()): boolea
 }
 function validateSnapshot(value: unknown, installed: readonly RealtimeModuleDescriptor[]): asserts value is ShooterSnapshot {
     if (!finiteData(value) || !record(value, ['format', 'version', 'product', 'simulation', 'ticksPerSecond', 'arena', 'modules', 'moduleStates',
-        'seed', 'tick', 'actors', 'damage', 'effects', 'ranged', 'population', 'mission', 'support', 'clearedHazards', 'stats'])
-        || value.format !== 'broguejs-shooter-s5' || value.version !== 6 || value.product !== SHOOTER_PROFILE.id
+        'seed', 'tick', 'actors', 'damage', 'effects', 'ranged', 'population', 'mission', 'setup', 'support', 'clearedHazards', 'stats'])
+        || value.format !== 'broguejs-shooter-s6' || value.version !== 7 || value.product !== SHOOTER_PROFILE.id
         || value.simulation !== SHOOTER_PROFILE.simulation.id || value.ticksPerSecond !== 30
         || !integer(value.seed, 1, 0xffffffff) || !integer(value.tick, 0, MAX_SHOOTER_TICKS)
         || !dataArray(value.modules, 4) || !dataArray(value.actors, 512)
         || !dataArray(value.effects, 512) || !record(value.stats, ['kills', 'deaths', 'damageDealt', 'damageTaken'])
-        || !Object.values(value.stats).every(n => integer(n, 0, MAX_SHOOTER_TICKS * 10000))) throw new Error('Invalid or incompatible S5 snapshot');
+        || !Object.values(value.stats).every(n => integer(n, 0, MAX_SHOOTER_TICKS * 10000))) throw new Error('Invalid or incompatible S6 snapshot');
+    if(value.setup!==null) validateBattleSetup(value.setup);
     const ids: string[] = [];
     for (const m of value.modules) {
         if (!record(m, ['id', 'version', 'rules']) || typeof m.id !== 'string' || ids.includes(m.id)) throw new Error('Invalid realtime manifest');
@@ -68,9 +71,9 @@ function validateSnapshot(value: unknown, installed: readonly RealtimeModuleDesc
         if (!d || canonicalState(m) !== canonicalState(manifest(d))) throw new Error('Missing or incompatible realtime module');
         ids.push(m.id);
     }
-    const missionDescriptor = scenarioDescriptor(ids, installed), scenario = missionDescriptor?.scenario;
+    const missionDescriptor = scenarioDescriptor(ids, installed, value.setup), scenario = missionDescriptor?.scenario;
     if (value.arena !== (scenario?.id ?? SHOOTER_ARENA_ID)) throw new Error('Invalid arena');
-    const definitions = actorDefinitions(ids, installed);
+    const definitions = actorDefinitions(ids, installed, value.setup);
     if (value.actors.length !== definitions.length) throw new Error('Invalid actor cohort');
     if (!record(value.moduleStates, ids)) throw new Error('Invalid module namespaces');
     validateDamageState(value.damage);
@@ -88,7 +91,7 @@ function validateSnapshot(value: unknown, installed: readonly RealtimeModuleDesc
             || !record(a.contactTicks, ['water', 'fire', 'gas']) || !Object.values(a.contactTicks).every(n => integer(n, 0, value.tick as number))
             || !integer(a.respawnTick, 0, value.tick + 90) || !integer(a.attackReadyTick, 0, value.tick + 30)
             || !integer(a.lastHitTick, 0, value.tick) || (hp.hp > 0 ? a.respawnTick !== 0 : a.respawnTick === 0)
-            || hp.id !== a.id || hp.team !== (i === 0 ? 0 : 1) || hp.maxHp !== definitions[i]!.maxHp) throw new Error('Invalid S5 actor');
+            || hp.id !== a.id || hp.team !== (i === 0 ? 0 : 1) || hp.maxHp !== definitions[i]!.maxHp) throw new Error('Invalid S6 actor');
     }
     for (const e of value.effects) {
         if (!record(e, ['tick', 'kind', 'from', 'to', 'radius', 'hit']) || !integer(e.tick, Math.max(0, value.tick - 11), value.tick)
@@ -125,24 +128,26 @@ export class ShooterSession implements SimulationCore<InputFrame, ShooterSnapsho
     private fault: Error | null = null;
     private advancing = false;
 
-    constructor(seed = 7301, options: { snapshot?: ShooterSnapshot; modules?: readonly string[]; installed?: readonly RealtimeModuleDescriptor[] } = {}) {
-        if (!integer(seed, 1, 0xffffffff)) throw new Error('S5 requires a nonzero uint32 seed');
+    constructor(seed = 7301, options: { snapshot?: ShooterSnapshot; setup?: BattleSetup; modules?: readonly string[]; installed?: readonly RealtimeModuleDescriptor[] } = {}) {
+        if (!integer(seed, 1, 0xffffffff)) throw new Error('S6 requires a nonzero uint32 seed');
+        if(options.setup) validateBattleSetup(options.setup);
+        const setup=options.snapshot?.setup ?? options.setup ?? null;
         const installed = options.installed ?? getRealtimeModules(), restored = options.snapshot;
         if (restored) validateSnapshot(restored, installed);
         const ids = restored?.modules.map(m => m.id) ?? options.modules ?? installed.map(d => d.id);
         if (ids.length > 4 || new Set(ids).size !== ids.length || ids.some(id => !installed.some(d => d.id === id))
             || new Set(ids.map(id => installed.find(d => d.id === id)!.kind)).size !== ids.length) throw new Error('Unavailable realtime module');
-        const missionDescriptor = scenarioDescriptor(ids, installed), scenario = missionDescriptor?.scenario;
+        const missionDescriptor = scenarioDescriptor(ids, installed, setup), scenario = missionDescriptor?.scenario;
         this.grid = createScenarioArena(scenario);
         if (restored) restoreClearedHazards(this.grid, restored.clearedHazards);
         this.spawn = scenario?.spawn ?? { x: 5632, y: 10752 };
-        const definitions = actorDefinitions(ids, installed);
+        const definitions = actorDefinitions(ids, installed, setup);
         const initialKinds = { swarm: 0, elite: 0, boss: 0 };
         const initialAlive = definitions.map(d => !scenario || !['swarm','elite','boss'].includes(d.kind)
             || ++initialKinds[d.kind as keyof typeof initialKinds] <= scenario.initialPopulation[d.kind as keyof typeof initialKinds]);
         for (const [i, t] of (scenario?.targets ?? []).entries()) this.targetIds.set(t.key, definitions.length - scenario!.targets.length + i + 1);
         this.state = restored ? structuredClone(restored) : {
-            format: 'broguejs-shooter-s5', version: 6, product: SHOOTER_PROFILE.id, simulation: SHOOTER_PROFILE.simulation.id,
+            format: 'broguejs-shooter-s6', version: 7, product: SHOOTER_PROFILE.id, simulation: SHOOTER_PROFILE.simulation.id,
             ticksPerSecond: 30, arena: scenario?.id ?? SHOOTER_ARENA_ID, modules: ids.map(id => manifest(installed.find(d => d.id === id)!)), moduleStates: {}, seed, tick: 0,
             actors: definitions.map((definition, i) => {
                 const [x, y] = SPAWNS[Math.min(i, SPAWNS.length - 1)]!;
@@ -155,7 +160,7 @@ export class ShooterSession implements SimulationCore<InputFrame, ShooterSnapsho
             }),
             damage: { schema: 1, nextResolutionId: 1, actors: definitions.map((definition, i) => ({ id: i + 1, team: i === 0 ? 0 : 1,
                 hp: initialAlive[i] ? definition.maxHp : 0, maxHp: definition.maxHp, revision: 0 })) },
-            effects: [], ranged: null, population: null, mission: null, support: null, clearedHazards: [], stats: { kills: 0, deaths: 0, damageDealt: 0, damageTaken: 0 },
+            setup: structuredClone(setup), effects: [], ranged: null, population: null, mission: null, support: null, clearedHazards: [], stats: { kills: 0, deaths: 0, damageDealt: 0, damageTaken: 0 },
         };
         if (!restored && ids.some(id => installed.find(d => d.id === id)?.kind === 'population')) {
             const player = this.state.actors[0]!; this.bodies.upsert(player);
@@ -174,7 +179,7 @@ export class ShooterSession implements SimulationCore<InputFrame, ShooterSnapsho
         }
         this.damage = new DamageResolutionAuthority(this.state.damage);
         this.state.actors.filter(a => this.damage.read(a.id)!.hp > 0).forEach(a => this.bodies.upsert(a));
-        const host: PopulationHost = { seed: this.state.seed, ownerId: 1, world: {
+        const host: PopulationHost = { equipment: detachedEquipment(this.state.setup), seed: this.state.seed, ownerId: 1, world: {
             grid: { width: this.grid.width, height: this.grid.height, getCell: (x, y) => {
                 const cell = this.grid.getCell(x, y); return cell ? Object.freeze({ isPassable: cell.isPassable }) : null;
             } }, bodies: { queryAabb: bounds => this.bodies.queryAabb(bounds) },
@@ -307,8 +312,8 @@ export class ShooterSession implements SimulationCore<InputFrame, ShooterSnapsho
     advanceTick(input: InputFrame, commands: readonly ShooterCommand[] = []): void {
         this.check();
         if (this.finished) throw new Error('Mission already finished');
-        if (this.advancing) throw new Error('Reentrant S5 tick');
-        if (this.tick >= MAX_SHOOTER_TICKS) throw new Error('S5 recording duration budget exhausted');
+        if (this.advancing) throw new Error('Reentrant S6 tick');
+        if (this.tick >= MAX_SHOOTER_TICKS) throw new Error('S6 recording duration budget exhausted');
         validateInputFrame(input, this.tick + 1);
         if (!dataArray(commands, 8)) throw new Error('Invalid command batch');
         commands.forEach(c => validateShooterCommand(c, input.tick));
@@ -339,7 +344,7 @@ export class ShooterSession implements SimulationCore<InputFrame, ShooterSnapsho
         finally { this.advancing = false; }
     }
     snapshot(): ShooterSnapshot {
-        this.check(); if (this.advancing) throw new Error('Snapshot during S5 tick');
+        this.check(); if (this.advancing) throw new Error('Snapshot during S6 tick');
         const { moduleStates: _modules, damage: _damage, ranged: _ranged, population: _population, mission: _mission, support: _support, ...core } = this.state;
         const moduleStates = Object.fromEntries([...this.runtimes].map(([id, runtime]) => [id, runtime.snapshot()]));
         if (this.population && this.populationId) moduleStates[this.populationId] = this.population.snapshot();
@@ -348,15 +353,15 @@ export class ShooterSession implements SimulationCore<InputFrame, ShooterSnapsho
         return { ...structuredClone(core), damage: this.damage.snapshot(), moduleStates, ranged: this.rangedView(), population: this.population?.view() ?? null, mission: this.mission?.view() ?? null, support: this.support?.view() ?? null };
     }
     exportReplay(): ShooterReplay {
-        return { format: 'broguejs-shooter-s5-replay', version: 6, initial: structuredClone(this.origin),
+        return { format: 'broguejs-shooter-s6-replay', version: 7, initial: structuredClone(this.origin),
             frames: structuredClone(this.frames), commands: structuredClone(this.commands), final: this.snapshot() };
     }
 }
 export function replayShooter(value: unknown, installed = getRealtimeModules()): ShooterSession {
-    if (!record(value, ['format', 'version', 'initial', 'frames', 'commands', 'final']) || value.format !== 'broguejs-shooter-s5-replay'
-        || value.version !== 6 || !dataArray(value.frames, MAX_SHOOTER_TICKS) || !dataArray(value.commands, MAX_SHOOTER_TICKS * 8)) throw new Error('Invalid S5 replay');
+    if (!record(value, ['format', 'version', 'initial', 'frames', 'commands', 'final']) || value.format !== 'broguejs-shooter-s6-replay'
+        || value.version !== 7 || !dataArray(value.frames, MAX_SHOOTER_TICKS) || !dataArray(value.commands, MAX_SHOOTER_TICKS * 8)) throw new Error('Invalid S6 replay');
     validateSnapshot(value.initial, installed); validateSnapshot(value.final, installed);
-    if (value.initial.tick + value.frames.length !== value.final.tick) throw new Error('Incomplete S5 replay');
+    if (value.initial.tick + value.frames.length !== value.final.tick) throw new Error('Incomplete S6 replay');
     const initialTick = value.initial.tick;
     value.frames.forEach((f, i) => validateInputFrame(f, initialTick + i + 1));
     let priorTick = initialTick + 1, count = 0;
@@ -372,6 +377,6 @@ export function replayShooter(value: unknown, installed = getRealtimeModules()):
         while (commands[cursor]?.tick === frame.tick) batch.push(commands[cursor++]!);
         session.advanceTick(frame, batch);
     }
-    if (canonicalState(session.snapshot()) !== canonicalState(value.final)) throw new Error('S5 replay state mismatch');
+    if (canonicalState(session.snapshot()) !== canonicalState(value.final)) throw new Error('S6 replay state mismatch');
     return session;
 }

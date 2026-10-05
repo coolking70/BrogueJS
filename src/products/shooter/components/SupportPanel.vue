@@ -16,7 +16,7 @@ const {t}=useTranslation();
       </button>
     </div>
     <div v-if="selected!==null" class="target-controls" data-testid="support-target-controls">
-      <span>{{ t('shooter.support.targetHelp') }} <b v-if="view.abilities[selected]!.dangerous">{{ t('shooter.support.danger') }}</b></span>
+      <span>{{ t('shooter.support.targetHelp') }} <b v-if="view.abilities.find(a=>a.slot===selected)?.dangerous">{{ t('shooter.support.danger') }}</b></span>
       <button class="primary" data-testid="support-confirm" :disabled="disabled || !valid" @click="emit('confirm')">{{ t('shooter.support.confirm') }}</button>
       <button data-testid="support-cancel" @click="emit('cancel')">{{ t('shooter.support.cancel') }}</button>
     </div>

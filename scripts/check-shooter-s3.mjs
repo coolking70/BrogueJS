@@ -62,7 +62,7 @@ try {
         for (const viewport of [{ width: 1440, height: 1100 }, { width: 390, height: 844 }]) {
             const page = await browser.newPage({ viewport, hasTouch: viewport.width < 600 }), errors = [];
             page.on('pageerror', error => errors.push(String(error)));
-            await page.goto(url, { waitUntil: 'networkidle' }); await page.waitForSelector('canvas');
+            await page.goto(url, { waitUntil: 'networkidle' }); if(await page.getByTestId('training').count())await page.getByTestId('training').click(); await page.waitForSelector('canvas');
             assert.match(await page.getByTestId('population').textContent(), /200/);
             await page.locator('.diagnostics summary').click();
             await page.getByTestId('module-missions').setChecked(false);
@@ -99,7 +99,7 @@ try {
             assert.equal(await shots(), released); assert.deepEqual(await position(), releasePosition);
             await page.getByTestId('reload').click(); await page.waitForFunction(() => document.querySelector('[data-testid="battle-status"]').textContent.includes('换弹中'));
             await ticks(4); await page.getByTestId('toggle').click(); await page.getByTestId('save').click();
-            const checkpoint = JSON.parse(await page.evaluate(() => localStorage.getItem('broguejs-shooter-s5-checkpoint-v6')));
+            const checkpoint = JSON.parse(await page.evaluate(() => localStorage.getItem('broguejs-shooter-s6-checkpoint-v7')));
             assert.ok(checkpoint.ranged.reloadRemaining > 0); assert.ok(checkpoint.ranged.reloadRemaining < 60);
             const event = page.waitForEvent('download'); await page.getByTestId('export').click(); const download = await event;
             const destination = join(directory, `browser-replay-${viewport.width}.json`); await download.saveAs(destination);

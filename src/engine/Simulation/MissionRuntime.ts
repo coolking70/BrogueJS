@@ -1,3 +1,4 @@
+import type { BattleSetup } from './BattleSetup';
 import type { WorldPoint } from '../Movement/WorldUnits';
 import type { CombatBody, RuntimeManifest } from './RangedRuntime';
 
@@ -47,6 +48,7 @@ export interface MissionRuntime {
 export interface MissionDescriptor extends RuntimeManifest {
     runtime: 'realtime'; kind: 'mission'; foundation: 4; labelKey: string; uiKeys: readonly string[];
     locales: Readonly<Record<string, Readonly<Record<string, string>>>>;
+    configure?(setup: BattleSetup): MissionDescriptor;
     scenario: MissionScenario;
     createMission(host: MissionHost, restored?: unknown): MissionRuntime;
 }

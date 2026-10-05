@@ -1,14 +1,14 @@
 import { dataArray, integer, record } from '../../../engine/Simulation/Protocol';
 import type { MissionReward, MissionView } from '../../../engine/Simulation/MissionRuntime';
-import { MISSION_DATA } from './definitions';
+import { MISSION_DATA, type MissionDefinition } from './definitions';
 export interface MissionState {
     schema: 1; status: MissionView['status']; reason: MissionView['reason']; terminalTick: number;
     nodes: { id: string; started: boolean; progress: number; completeTick: number }[];
     collected: string[]; extractionCallTick: number; boardingProgress: number;
     demolition: { id: string; remaining: number } | null; reward: MissionReward | null;
 }
-export function validateMissionState(v: unknown, tick: number): asserts v is MissionState {
-    const d = MISSION_DATA, bad = () => { throw new Error('Invalid mission state'); };
+export function validateMissionState(v: unknown, tick: number, d: Readonly<MissionDefinition> = MISSION_DATA): asserts v is MissionState {
+    const bad = () => { throw new Error('Invalid mission state'); };
     if (!record(v, ['schema','status','reason','terminalTick','nodes','collected','extractionCallTick','boardingProgress','demolition','reward']) || v.schema !== 1
         || !['active','success','failed'].includes(v.status as string) || !integer(v.terminalTick, 0, tick)
         || !dataArray(v.nodes, d.nodes.length) || v.nodes.length !== d.nodes.length || !dataArray(v.collected, d.pois.length)

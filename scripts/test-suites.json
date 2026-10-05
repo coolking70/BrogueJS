@@ -300,7 +300,8 @@
     "src/test/x4_r5_content_text.test.ts",
     "src/test/x4_r6_integration.test.ts",
     "src/test/x4a_movement_rendering.test.ts",
-    "src/test/x4b_flavor_text.test.ts"
+    "src/test/x4b_flavor_text.test.ts",
+    "src/test/shooter_campaign.test.ts"
   ],
   "gen": [
     "src/test/b1_retire_invented.test.ts",

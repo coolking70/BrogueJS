@@ -23,4 +23,4 @@ export function loadSupport(value: unknown): readonly Readonly<SupportDefinition
     return Object.freeze((value.abilities as unknown as SupportDefinition[]).map(a => Object.freeze({ ...a })));
 }
 export const SUPPORTS = loadSupport(data);
-export const SUPPORT_RULES = Object.freeze({ schema: 1, version: '1.0.0', fingerprint: extensionDataFingerprint(data) });
+export const SUPPORT_RULES = Object.freeze({ schema: 1, version: '1.1.0', fingerprint: extensionDataFingerprint(data) });

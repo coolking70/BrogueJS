@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "regions": [
+    {
+      "labelKey": "ext.operations.region.delta",
+      "x": 20,
+      "y": 30
+    },
+    {
+      "labelKey": "ext.operations.region.ridge",
+      "x": 52,
+      "y": 65
+    },
+    {
+      "labelKey": "ext.operations.region.basin",
+      "x": 80,
+      "y": 24
+    }
+  ],
+  "difficulties": [
+    {
+      "labelKey": "ext.operations.difficulty.patrol"
+    },
+    {
+      "labelKey": "ext.operations.difficulty.assault"
+    },
+    {
+      "labelKey": "ext.operations.difficulty.siege"
+    }
+  ],
+  "missions": 3,
+  "bonusCredits": 150,
+  "bonusSamples": 3
+}

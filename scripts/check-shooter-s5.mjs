@@ -39,7 +39,7 @@ try{
   browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
   for(const viewport of [{width:1440,height:1100},{width:390,height:844}]){
    const page=await browser.newPage({viewport,hasTouch:viewport.width<600}),errors=[];page.on('pageerror',e=>errors.push(String(e)));
-   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/shooter.html`,{waitUntil:'networkidle'});await page.waitForSelector('canvas');await page.locator('.diagnostics summary').click();
+   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/shooter.html`,{waitUntil:'networkidle'});if(await page.getByTestId('training').count())await page.getByTestId('training').click(); await page.waitForSelector('canvas');await page.locator('.diagnostics summary').click();
    // A support-only authored lab is selected through the ordinary module UI.
    for(const d of catalog.getRealtimeModules())await page.getByTestId('module-'+d.id).setChecked(d.kind==='support'||d.kind==='ranged');
    await page.getByTestId('restart').click();await page.getByTestId('toggle').click();
@@ -70,7 +70,7 @@ try{
    await page.waitForFunction(()=>!document.querySelector('[data-testid="support-target-controls"]'));await page.evaluate(()=>{window.__s5pad.connected=false;});
    await page.getByTestId('support-3').click();await page.getByTestId('support-confirm').click();await page.waitForTimeout(1150);
    assert.equal(overlap(await page.getByTestId('support-world-2').boundingBox(),await page.getByTestId('support-world-3').boundingBox()),false,'Coincident turret and scan labels must stack');
-   await page.getByTestId('toggle').click();await page.getByTestId('save').click();const saved=JSON.parse(await page.evaluate(()=>localStorage.getItem('broguejs-shooter-s5-checkpoint-v6')));
+   await page.getByTestId('toggle').click();await page.getByTestId('save').click();const saved=JSON.parse(await page.evaluate(()=>localStorage.getItem('broguejs-shooter-s6-checkpoint-v7')));
    assert.ok(saved.support.deployments.some(d=>d.slot===3));assert.equal(saved.support.deployments.find(d=>d.slot===0).charges,1);
    const download=page.waitForEvent('download');await page.getByTestId('export').click();const replay=JSON.parse(readFileSync(await(await download).path(),'utf8'));
    assert.equal(api.canonicalState(api.replayShooter(replay).snapshot()),api.canonicalState(saved));

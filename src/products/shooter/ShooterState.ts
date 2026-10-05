@@ -1,3 +1,4 @@
+import type { BattleSetup } from '../../engine/Simulation/BattleSetup';
 import type { DamageState } from '../../engine/Combat/DamageResolution';
 import type { KinematicPose, WorldPoint } from '../../engine/Movement/WorldUnits';
 import type { EnvironmentContact } from '../../engine/Movement/KinematicSpatial';
@@ -17,14 +18,14 @@ export interface ShooterActor {
     respawnTick: number; attackReadyTick: number; lastHitTick: number;
 }
 export interface ShooterSnapshot {
-    format: 'broguejs-shooter-s5'; version: 6; product: string; simulation: string; ticksPerSecond: number; arena: string;
+    format: 'broguejs-shooter-s6'; version: 7; product: string; simulation: string; ticksPerSecond: number; arena: string;
     modules: RuntimeManifest[]; moduleStates: Record<string, unknown>; seed: number; tick: number;
     actors: ShooterActor[]; damage: DamageState; effects: CombatEffect[]; ranged: RangedView | null; population: PopulationView | null; mission: MissionView | null;
-    support: SupportView | null; clearedHazards: WorldPoint[];
+    setup: BattleSetup | null; support: SupportView | null; clearedHazards: WorldPoint[];
     stats: { kills: number; deaths: number; damageDealt: number; damageTaken: number };
 }
 export interface ShooterReplay {
-    format: 'broguejs-shooter-s5-replay'; version: 6; initial: ShooterSnapshot; frames: InputFrame[];
+    format: 'broguejs-shooter-s6-replay'; version: 7; initial: ShooterSnapshot; frames: InputFrame[];
     commands: ShooterCommand[]; final: ShooterSnapshot;
 }
 /** Property insertion order has no mechanical significance. */

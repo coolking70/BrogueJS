@@ -7,7 +7,10 @@ import { InputFrameAssembler } from './input/InputFrameAssembler';
 import type { InputFrame } from './input/InputFrame';
 import { canonicalState, MAX_SHOOTER_TICKS, replayShooter, ShooterSession } from './ShooterSession';
 import { SHOOTER_PROFILE } from './profile';
-import { getRealtimeModules } from '../../ext/realtimeCatalog';
+import { getRealtimeModules, getStrategicModules } from '../../ext/realtimeCatalog';
+import { CampaignSession } from './CampaignSession';
+import type { MissionTicket } from '../../engine/Simulation/StrategicRuntime';
+import CommandCenter from './components/CommandCenter.vue';
 import ShooterCanvas from './components/ShooterCanvas.vue';
 import MovementStick from './components/MovementStick.vue';
 import SupportPanel from './components/SupportPanel.vue';
@@ -17,10 +20,18 @@ import { KeyboardMovement, gamepadMovement } from './input/MovementAdapters';
 import { gamepadAim, gamepadButton } from './input/AimAdapters';
 
 const { t } = useTranslation();
-const STORAGE_KEY = 'broguejs-shooter-s5-checkpoint-v6';
+const STORAGE_KEY = 'broguejs-shooter-s6-checkpoint-v7';
+const CAMPAIGN_KEY='broguejs-shooter-s6-campaign-v1';
+const strategic=getStrategicModules();
+let campaign=new CampaignSession();
+const campaignView=shallowRef(campaign.view()),commandMode=ref(strategic.length>0);
+let sortieTicket:MissionTicket|null=null;
+let persistedTick=-1;
+const operations=strategic.find(d=>d.kind==='operation')??null,armory=strategic.find(d=>d.kind==='meta')??null;
 const modules = getRealtimeModules(), selectedModules = ref(modules.map(d => d.id));
 const input = new InputFrameAssembler(), keyboard = new KeyboardMovement();
 let session = new ShooterSession();
+const catalogWeapons=session.snapshot().ranged?.weapons??[],catalogAbilities=session.snapshot().support?.abilities??[];
 const makeHost = () => new SimulationHost({ get tick() { return session.tick; },
     advanceTick: (frame: InputFrame) => session.advanceTick(frame, input.nextCommands(frame.tick)), snapshot: () => session.snapshot() });
 let host = makeHost();
@@ -50,7 +61,7 @@ function sampleControls(): void {
     if (interact && !padInteract && (snapshots.value.current.mission || snapshots.value.current.support?.nearbySupply)) input.requestInteract();
     padInteract = interact;
     if (reload && !padReload && snapshots.value.current.ranged) input.requestReload();
-    if (equip && !padEquip && snapshots.value.current.ranged) input.requestEquip(((snapshots.value.current.ranged.weapons.find(w => w.selected)?.slot ?? 0) + 1) % 4);
+    if (equip && !padEquip && snapshots.value.current.ranged) input.requestEquip(nextWeaponSlot());
     padReload = reload; padEquip = equip;
     const call=gamepadButton(pad,4),confirm=gamepadButton(pad,5),cancel=gamepadButton(pad,1);
     if(call && !padSupport && snapshots.value.current.support) cycleSupport();
@@ -70,23 +81,25 @@ const mission = computed(() => snapshots.value.current.mission);
 const support = computed(() => snapshots.value.current.support);
 const supplyNearby=computed(()=>support.value?.nearbySupply!==null && support.value?.nearbySupply!==undefined);
 const arenaId=computed(()=>snapshots.value.current.arena);
-const arenaGrid=computed(()=>{const descriptor=modules.find(d=>d.kind==='mission' && d.scenario.id===arenaId.value);
-    return createScenarioArena(descriptor?.kind==='mission'?descriptor.scenario:undefined);});
+const arenaGrid=computed(()=>{const descriptor=snapshots.value.current.mission ? modules.find(d=>d.kind==='mission' && (d.scenario.id===arenaId.value || !!snapshots.value.current.setup)) : undefined;
+    const d=snapshots.value.current.mission ? modules.find(d=>d.kind==='mission') : undefined;
+    const configured=d?.kind==='mission'&&snapshots.value.current.setup&&d.configure?d.configure(snapshots.value.current.setup):descriptor;
+    return createScenarioArena(configured?.kind==='mission'?configured.scenario:undefined);});
 const supportTarget=computed(()=>{
-    const a=support.value?.abilities[supportSlot.value??-1],p=supportPoint.value;
+    const a=support.value?.abilities.find(a=>a.slot===supportSlot.value),p=supportPoint.value;
     if(!a||!p)return null;
     const player=snapshots.value.current.actors[0]!.pose;
     const valid=(p.x-player.x)**2+(p.y-player.y)**2<=a.range**2 && !!arenaGrid.value.getCell(Math.floor(p.x/1024),Math.floor(p.y/1024))?.isPassable;
     return {pose:p,radius:a.radius,range:a.range,dangerous:a.dangerous,valid};
 });
 function pointAlongAim():void {const p=snapshots.value.current.actors[0]!.pose,d=angleVector(aimAngle,4096);supportPoint.value={x:Math.max(0,p.x+d.x),y:Math.max(0,p.y+d.y)};}
-function selectSupport(slot:number):void {if(disabled.value||!support.value||support.value.abilities[slot]!.remaining)return;supportSlot.value=slot;mouseFire=false;input.cancelFire();pointAlongAim();}
-function cycleSupport():void {const start=supportSlot.value??-1;for(let n=1;n<=4;n++){const slot=(start+n)%4;if(support.value?.abilities[slot]?.remaining===0){selectSupport(slot);return;}}}
+function selectSupport(slot:number):void {if(disabled.value||!support.value||(support.value.abilities.find(a=>a.slot===slot)?.remaining??-1))return;supportSlot.value=slot;mouseFire=false;input.cancelFire();pointAlongAim();}
+function cycleSupport():void {const start=supportSlot.value??-1;for(let n=1;n<=4;n++){const slot=(start+n)%4;if(support.value?.abilities.find(a=>a.slot===slot)?.remaining===0){selectSupport(slot);return;}}}
 function confirmSupport():void {if(disabled.value||supportSlot.value===null||!supportTarget.value?.valid)return;input.requestSupport(supportSlot.value,supportPoint.value!.x,supportPoint.value!.y);supportSlot.value=null;supportPoint.value=null;}
 const nearby = computed(() => mission.value?.markers.find(m => m.id === mission.value?.nearby));
 const timer = (ticks: number) => { const seconds = Math.ceil(ticks / 30); return Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0'); };
 const selected = computed(() => combat.value?.weapons.find(w => w.selected));
-const disabled = computed(() => clock.value.paused || failed.value || session.finished || host.tick >= MAX_SHOOTER_TICKS);
+const disabled = computed(() => commandMode.value || clock.value.paused || failed.value || session.finished || host.tick >= MAX_SHOOTER_TICKS);
 function publish(): void { snapshots.value = host.snapshots(); clock.value = driver.sample(); }
 function fail(error: unknown): void {
     try { driver.pause(); } catch { /* Already stopped on a permanent clock fault. */ }
@@ -98,13 +111,13 @@ function replace(next: ShooterSession): void {
 }
 function toggle(): void { if (session.finished) return; if (driver.paused) driver.resume(); else driver.pause(); clearInput(); publish(); }
 function step(): void { try { host.step(input.next(host.tick + 1)); publish(); } catch (error) { fail(error); } }
-function restart(): void { try { replace(new ShooterSession(seed.value, { modules: selectedModules.value })); message.value = ''; } catch (error) { fail(error); } }
+function restart(): void { if(sortieTicket) return; commandMode.value=false; try { replace(new ShooterSession(seed.value, { modules: selectedModules.value })); message.value = ''; } catch (error) { fail(error); } }
 function save(): void {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(session.snapshot())); saved.value = true; message.value = t('shooter.saved'); }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(session.snapshot())); persistCampaign(); saved.value = true; message.value = t('shooter.saved'); }
     catch (error) { message.value = t('shooter.error', { reason: String(error) }); }
 }
 function load(): void {
-    try { replace(ShooterSession.fromSnapshot(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null'))); message.value = t('shooter.loaded'); }
+    try { if(sortieTicket)throw new Error('Use the operation continuation to restore this sortie'); replace(ShooterSession.fromSnapshot(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null'))); message.value = t('shooter.loaded'); }
     catch (error) { message.value = t('shooter.error', { reason: String(error) }); }
 }
 function verify(): void {
@@ -116,14 +129,14 @@ function verify(): void {
 }
 function exportReplay(): void {
     const url = URL.createObjectURL(new Blob([JSON.stringify(session.exportReplay())], { type: 'application/json' })), link = document.createElement('a');
-    link.href = url; link.download = 'broguejs-shooter-s5-replay.json'; link.click(); URL.revokeObjectURL(url);
+    link.href = url; link.download = 'broguejs-shooter-s6-replay.json'; link.click(); URL.revokeObjectURL(url);
 }
 async function importReplay(event: Event): Promise<void> {
     const element = event.target as HTMLInputElement, file = element.files?.[0]; if (!file) return;
     driver.pause(); clearInput(); publish();
     try {
         if (file.size > 20 * 1024 * 1024) throw new Error('Replay exceeds 20 MiB');
-        replace(replayShooter(JSON.parse(await file.text()))); message.value = t('shooter.imported');
+        const replay=replayShooter(JSON.parse(await file.text())); if(sortieTicket)throw new Error('Finish or abort the sortie before importing a replay'); commandMode.value=false;replace(replay); message.value = t('shooter.imported');
     } catch (error) { message.value = t('shooter.error', { reason: String(error) }); }
     element.value = '';
 }
@@ -150,13 +163,41 @@ function keyEvent(event: KeyboardEvent): void {
 function blur(): void { if (!failed.value) { driver.pause(); clearInput(); publish(); } }
 function visibility(): void { if (document.hidden) blur(); }
 function animate(timestampMs: number): void {
-    if (!failed.value) try {
+    if (!failed.value && !commandMode.value) try {
         if (host.tick >= MAX_SHOOTER_TICKS) { driver.pause(); clearInput(); message.value = t('shooter.limit'); }
         clock.value = driver.pump(Math.round(timestampMs * 1000), Math.min(driver.maxTicksPerPump, MAX_SHOOTER_TICKS - host.tick)); snapshots.value = host.snapshots();
+        if(sortieTicket && host.tick!==persistedTick && (host.tick%300===0||session.finished))persistCampaign();
     } catch (error) { fail(error); }
     frameId = requestAnimationFrame(animate);
 }
+
+function nextWeaponSlot():number {const ws=combat.value?.weapons??[];const i=ws.findIndex(w=>w.selected);return ws[(i+1)%ws.length]?.slot??0;}
+function persistCampaign():void {localStorage.setItem(CAMPAIGN_KEY,JSON.stringify({campaign:campaign.snapshot(),ticket:sortieTicket,battle:sortieTicket?session.snapshot():null}));persistedTick=session.tick;campaignView.value=campaign.view();}
+function strategyAction(write:()=>void):void {try{write();persistCampaign();message.value='';}catch(error){message.value=t('shooter.error',{reason:String(error)});}}
+function startOperation(region:number,difficulty:number):void {strategyAction(()=>campaign.execute({kind:'start',region,difficulty}));}
+function purchase(type:'weapon'|'support',slot:number):void {strategyAction(()=>campaign.execute({kind:'purchase',type,slot}));}
+function equip(slots:number[]):void {strategyAction(()=>campaign.execute({kind:'equip',slots}));}
+function deploy():void {strategyAction(()=>{if(!selectedModules.value.some(id=>modules.find(d=>d.id===id)?.kind==='mission'))throw new Error('A mission module is required');
+    if(sortieTicket){commandMode.value=false;return;}
+    const before=campaign.snapshot();
+    const {ticket,setup}=campaign.deploy();try{replace(new ShooterSession(ticket.seed,{modules:selectedModules.value,setup}));}catch(error){campaign=CampaignSession.fromSnapshot(before);throw error;}sortieTicket=ticket;commandMode.value=false;
+});}
+function returnToCommand():void {strategyAction(()=>{driver.pause();clearInput();if(sortieTicket){
+    const m=session.snapshot().mission;if(!m||m.status==='active')throw new Error('Finish or abort this sortie first');
+    campaign.settle(sortieTicket,m);sortieTicket=null;
+}commandMode.value=true;});}
+function training():void {if(sortieTicket){commandMode.value=false;return;}commandMode.value=false;restart();}
+function restoreCampaign():void {
+    const raw=localStorage.getItem(CAMPAIGN_KEY);if(!raw)return;
+    const data=JSON.parse(raw),restored=CampaignSession.fromSnapshot(data.campaign),pending=restored.view().operation?.ticket??null;
+    if(canonicalState(pending)!==canonicalState(data.ticket)||!!pending!==!!data.battle)throw new Error('Invalid sortie binding');
+    const next=data.battle?ShooterSession.fromSnapshot(data.battle):null;
+    if(next && (!next.snapshot().setup || next.snapshot().seed!==pending!.seed || next.snapshot().setup!.variant!==pending!.variant || next.snapshot().setup!.difficulty!==pending!.difficulty))throw new Error('Invalid sortie setup');
+    campaign=restored;sortieTicket=pending;if(next)replace(next);persistedTick=next?.tick??-1;campaignView.value=campaign.view();commandMode.value=strategic.length>0;
+}
+
 onMounted(() => {
+    try{restoreCampaign();}catch(error){message.value=t('shooter.error',{reason:String(error)});}
     try { saved.value = localStorage.getItem(STORAGE_KEY) !== null; } catch { /* Storage is optional. */ }
     document.addEventListener('visibilitychange', visibility); window.addEventListener('keydown', keyEvent);
     window.addEventListener('keyup', keyEvent); window.addEventListener('blur', blur); frameId = requestAnimationFrame(animate);
@@ -170,6 +211,12 @@ onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListe
     <header><span class="eyebrow">{{ t('shooter.eyebrow') }}</span><span class="status" :class="{ paused: clock.paused }">{{ clock.paused ? t('shooter.paused') : t('shooter.running') }}</span></header>
     <h1>{{ t('shooter.title') }}<span>{{ t('shooter.stage') }}</span></h1>
     <p class="intro">{{ t('shooter.intro') }}</p>
+    <CommandCenter v-if="commandMode" :operation="campaignView.operation" :meta="campaignView.meta" :operations="operations" :armory="armory" :weapons="catalogWeapons" :abilities="catalogAbilities" :can-deploy="selectedModules.some(id=>modules.find(d=>d.id===id)?.kind==='mission')"
+      @start="startOperation" @deploy="deploy" @purchase="purchase" @equip="equip" @training="training" />
+    <template v-else>
+    <div class="strategy-toolbar" v-if="strategic.length"><span v-if="sortieTicket">{{ t('shooter.strategy.sortie',{index:(campaignView.operation?.index??0)+1}) }}</span>
+      <button data-testid="command-return" :disabled="!!sortieTicket && !session.finished" @click="returnToCommand">{{ t('shooter.strategy.return') }}</button>
+    </div>
     <section class="combat-hud">
       <div><label>{{ t('shooter.health') }}</label><strong data-testid="health">{{ health.hp }}<small>/ {{ health.maxHp }}</small></strong></div>
       <div><label>{{ t('shooter.ammo') }}</label><strong data-testid="ammo">{{ selected?.ammo ?? 0 }}<small>/ {{ selected?.capacity ?? 0 }}</small></strong></div>
@@ -194,7 +241,8 @@ onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListe
       <div v-if="mission.status !== 'active'" class="mission-result" :class="mission.status" data-testid="mission-result">
         <h2>{{ t('shooter.result.' + mission.status) }}</h2><p>{{ t('shooter.reason.' + mission.reason) }}</p>
         <p v-if="mission.reward" data-testid="mission-reward">{{ t('shooter.reward', { ...mission.reward }) }}</p><p v-else>{{ t('shooter.noReward') }}</p>
-        <button class="primary" data-testid="mission-restart" @click="restart">{{ t('shooter.newMission') }}</button>
+        <button v-if="sortieTicket" class="primary" data-testid="sortie-settle" @click="returnToCommand">{{ t('shooter.strategy.settle') }}</button>
+        <button v-else class="primary" data-testid="mission-restart" @click="restart">{{ t('shooter.newMission') }}</button>
       </div>
       <template v-else>
         <details class="mission-objectives"><summary>{{ t('shooter.objectives') }}</summary><div class="objective-grid"><article v-for="site in mission.markers.filter(m => !['supply', 'sample'].includes(m.kind))" :key="site.id" :class="site.status" :data-testid="'objective-' + site.id">
@@ -237,7 +285,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListe
       <button v-if="mission?.status === 'active'" data-testid="abort" :disabled="disabled" @click="input.requestAbort()">{{ t('shooter.abort') }}</button>
       <p>{{ t('shooter.moduleSelection') }}</p><label v-for="module in modules" :key="module.id" class="module-option"><input v-model="selectedModules" :data-testid="'module-' + module.id" type="checkbox" :value="module.id" /> {{ t(module.labelKey) }}</label>
       <div class="controls"><button data-testid="step" :disabled="!clock.paused || failed || session.finished || host.tick >= MAX_SHOOTER_TICKS" @click="step">{{ t('shooter.step') }}</button>
-        <label class="seed">{{ t('shooter.seed') }}<input v-model.number="seed" type="number" min="1" max="4294967295" /></label><button data-testid="restart" @click="restart">{{ t('shooter.restart') }}</button></div>
+        <label class="seed">{{ t('shooter.seed') }}<input v-model.number="seed" type="number" min="1" max="4294967295" /></label><button data-testid="restart" :disabled="!!sortieTicket" @click="restart">{{ t('shooter.restart') }}</button></div>
     </details>
     <section class="persistence">
       <div><h2>{{ t('shooter.checkpointTitle') }}</h2><p>{{ t('shooter.checkpointHelp') }}</p></div>
@@ -245,6 +293,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListe
         <button data-testid="verify" :disabled="failed" @click="verify">{{ t('shooter.verify') }}</button><button data-testid="export" :disabled="failed" @click="exportReplay">{{ t('shooter.export') }}</button>
         <label class="file-button">{{ t('shooter.import') }}<input type="file" accept=".json,application/json" @change="importReplay" /></label></div>
     </section>
+    </template>
     <p v-if="message" class="notice" data-testid="message">{{ message }}</p><footer>{{ t('shooter.scope') }}</footer>
   </main>
 </template>

@@ -23,7 +23,7 @@ import i18next, { type TOptions } from 'i18next';
 
 import zhCN from '../locales/zh_CN.json';
 import { getInstalledModuleDescriptors } from '../ext/catalog';
-import { getRealtimeModules } from '../ext/realtimeCatalog';
+import { getRealtimeModules, getStrategicModules } from '../ext/realtimeCatalog';
 import { scanI18nUsage } from './i18n_scan';
 import monstersJson from '../data/monsters.json';
 import weaponsJson from '../data/weapons.json';
@@ -38,7 +38,7 @@ import { createHeadlessGame, runTurns } from './harness';
 
 const REPO_SRC = join(dirname(fileURLToPath(import.meta.url)), '..');
 const descriptors = getInstalledModuleDescriptors();
-const RESOURCE: Record<string, string> = Object.assign({}, zhCN, ...[...descriptors, ...getRealtimeModules()].map(module => module.locales?.zh_CN ?? {}));
+const RESOURCE: Record<string, string> = Object.assign({}, zhCN, ...[...descriptors, ...getRealtimeModules(), ...getStrategicModules()].map(module => module.locales?.zh_CN ?? {}));
 
 // 本文件所有用例都用真实 zh_CN 资源。i18next 未初始化时（其他 test 文件的
 // 模块图与本文件隔离，vitest 默认 isolate）这里就是第一次也是唯一一次 init。
@@ -277,6 +277,8 @@ describe('P1-30 模块包本地化引用：有限数据与错误词汇，不豁�
 
 describe('P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json', () => {
     const result = scanI18nUsage(REPO_SRC, RESOURCE, [
+        ...['r.labelKey','d.labelKey','operations.regions[operation.region]!.labelKey','operations.difficulties[operation.difficulty]!.labelKey'].map(expression=>({file:'products/shooter/components/CommandCenter.vue',expression,keys:getStrategicModules().flatMap(d=>[...d.uiKeys])})),
+        ...['w.labelKey','a.labelKey'].map(expression=>({file:'products/shooter/components/CommandCenter.vue',expression,keys:getRealtimeModules().flatMap(d=>[...d.uiKeys])})),
         { file: 'products/shooter/ShooterApp.vue', expression: 'module.labelKey', keys: getRealtimeModules().map(module => module.labelKey) },
         { file: 'products/shooter/ShooterApp.vue', expression: 'weapon.labelKey', keys: getRealtimeModules().flatMap(module => [...module.uiKeys]) },
         { file: 'products/shooter/components/PlayerProgress.vue', expression: 'activity.labelKey', keys: getRealtimeModules().filter(module => module.kind === 'mission').flatMap(module => [...module.uiKeys]) },

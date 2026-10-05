@@ -1,0 +1,9 @@
+{
+  "ext.operations.module.name": "行动指挥",
+  "ext.operations.region.delta": "三角洲前哨",
+  "ext.operations.region.ridge": "灰岩山脊",
+  "ext.operations.region.basin": "孢雾盆地",
+  "ext.operations.difficulty.patrol": "巡逻",
+  "ext.operations.difficulty.assault": "突击",
+  "ext.operations.difficulty.siege": "围攻"
+}

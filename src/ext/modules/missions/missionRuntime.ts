@@ -1,35 +1,35 @@
 import type { MissionActivity, MissionCommand, MissionHost, MissionMarker, MissionRuntime, MissionView } from '../../../engine/Simulation/MissionRuntime';
 import { canonical } from '../../json';
-import { MISSION_DATA as d } from './definitions';
+import { MISSION_DATA, type MissionDefinition } from './definitions';
 import { validateMissionState, type MissionState } from './state';
 import { completeObjective, objectiveReady } from './objectiveGraph';
 import { within } from './poi';
 import { gatheredSamples, missionReward } from './rewards';
 import { extractionView } from './extraction';
 
-export function createMission(host: MissionHost, restored?: unknown): MissionRuntime {
+export function createMission(host: MissionHost, restored?: unknown, d: Readonly<MissionDefinition> = MISSION_DATA): MissionRuntime {
     const state: MissionState = restored === undefined ? { schema: 1, status: 'active', reason: null, terminalTick: 0,
         nodes: d.nodes.map(n => ({ id: n.id, started: false, progress: 0, completeTick: 0 })), collected: [],
         extractionCallTick: 0, boardingProgress: 0, demolition: null, reward: null }
-        : (() => { validateMissionState(restored, host.tick()); return structuredClone(restored); })();
+        : (() => { validateMissionState(restored, host.tick(), d); return structuredClone(restored); })();
     const extractionId = d.nodes.find(n => n.kind === 'extraction')!.id;
     function pressure() {
         const stage = [...d.reinforcements.stages].reverse().find(s => s.after.every(id => state.nodes.find(n => n.id === id)!.completeTick > 0))!;
         return { enabled: state.status === 'active' && (state.extractionCallTick > 0 || host.tick() % d.reinforcements.cycleTicks < d.reinforcements.activeTicks), batch: stage.batch, limits: { ...stage.limits } };
     }
-    function targetActive(key: string): boolean { return state.status === 'active' && objectiveReady(state, key) && !state.nodes.find(n => n.id === key)?.completeTick; }
+    function targetActive(key: string): boolean { return state.status === 'active' && objectiveReady(state, key, d) && !state.nodes.find(n => n.id === key)?.completeTick; }
     for (const t of d.scenario.targets) {
         const body = host.target(t.key), n = state.nodes.find(n => n.id === t.key)!;
-        if (body.hp === 0 !== (n.completeTick > 0) || !objectiveReady(state, t.key) && body.hp !== t.maxHp) throw new Error('Invalid mission target mirror');
+        if (body.hp === 0 !== (n.completeTick > 0) || !objectiveReady(state, t.key, d) && body.hp !== t.maxHp) throw new Error('Invalid mission target mirror');
     }
-    if (state.status === 'success' && canonical(state.reward) !== canonical(missionReward(state, host.stats().kills))) throw new Error('Invalid mission reward');
+    if (state.status === 'success' && canonical(state.reward) !== canonical(missionReward(state, host.stats().kills, d))) throw new Error('Invalid mission reward');
     if (state.status === 'active' && (host.tick() >= d.deadlineTicks || host.stats().deaths >= d.deathLimit)
         || state.reason === 'timeout' && host.tick() !== d.deadlineTicks || state.reason === 'lives' && host.stats().deaths < d.deathLimit) throw new Error('Invalid mission terminal state');
     function markers(): MissionMarker[] {
         return [...d.nodes.map((def, i) => {
             const n = state.nodes[i]!;
             return { id: def.id, labelKey: def.labelKey, kind: def.kind, pose: { ...def.pose }, radius: def.radius,
-                status: n.completeTick ? 'complete' as const : !objectiveReady(state, def.id) ? 'locked' as const : n.started ? 'active' as const : 'ready' as const,
+                status: n.completeTick ? 'complete' as const : !objectiveReady(state, def.id, d) ? 'locked' as const : n.started ? 'active' as const : 'ready' as const,
                 progress: n.progress, total: def.ticks };
         }), ...d.pois.map(p => ({ id: p.id, labelKey: p.labelKey, kind: p.kind, pose: { ...p.pose }, radius: p.radius,
             status: state.collected.includes(p.id) ? 'complete' as const : 'ready' as const, progress: state.collected.includes(p.id) ? 1 : 0, total: 1 }))];
@@ -43,7 +43,7 @@ export function createMission(host: MissionHost, restored?: unknown): MissionRun
     }
     function finish(status: 'success' | 'failed', reason: MissionView['reason']): void {
         state.status = status; state.reason = reason; state.terminalTick = host.tick(); state.demolition = null;
-        if (status === 'success') state.reward = missionReward(state, host.stats().kills);
+        if (status === 'success') state.reward = missionReward(state, host.stats().kills, d);
     }
     function activity(evac: Pick<MissionView, 'extraction' | 'extractionRemaining'>): MissionActivity | null {
         if (state.status !== 'active') return null;
@@ -73,7 +73,7 @@ export function createMission(host: MissionHost, restored?: unknown): MissionRun
             // Combat commits before this phase. Preserve target/graph mirrors
             // even when death, timeout or abort ends this very same tick.
             for (const def of d.nodes) if (def.kind === 'nest' && targetActive(def.id) && host.target(def.id).hp === 0)
-                completeObjective(state, def.id, host.tick());
+                completeObjective(state, def.id, host.tick(), d);
             if (host.stats().deaths >= d.deathLimit) { finish('failed', 'lives'); return; }
             if (host.tick() >= d.deadlineTicks) { finish('failed', 'timeout'); return; }
             if (commands.some(c => c.kind === 'abort')) { finish('failed', 'aborted'); return; }
@@ -94,11 +94,11 @@ export function createMission(host: MissionHost, restored?: unknown): MissionRun
             }
             for (const [i, def] of d.nodes.entries()) {
                 const n = state.nodes[i]!;
-                if (n.completeTick || !objectiveReady(state, n.id)) continue;
-                if (def.kind === 'nest') { if (host.target(n.id).hp === 0) completeObjective(state, n.id, host.tick()); continue; }
+                if (n.completeTick || !objectiveReady(state, n.id, d)) continue;
+                if (def.kind === 'nest') { if (host.target(n.id).hp === 0) completeObjective(state, n.id, host.tick(), d); continue; }
                 if (!n.started || def.kind === 'extraction') continue;
                 if (player.hp && within(player.pose, def.pose, def.radius)) {
-                    n.progress++; if (n.progress === def.ticks) completeObjective(state, n.id, host.tick());
+                    n.progress++; if (n.progress === def.ticks) completeObjective(state, n.id, host.tick(), d);
                 }
             }
             const e = d.nodes.find(n => n.kind === 'extraction')!, n = state.nodes.find(n => n.id === e.id)!;
@@ -106,14 +106,14 @@ export function createMission(host: MissionHost, restored?: unknown): MissionRun
                 if (player.hp && within(player.pose, e.pose, e.radius)) state.boardingProgress++;
                 else if (d.boardingMode === 'continuous') state.boardingProgress = 0;
                 n.progress = state.boardingProgress;
-                if (state.boardingProgress === e.ticks) { completeObjective(state, e.id, host.tick()); finish('success', 'extracted'); }
+                if (state.boardingProgress === e.ticks) { completeObjective(state, e.id, host.tick(), d); finish('success', 'extracted'); }
             }
         },
         snapshot() { return structuredClone(state); },
         view(): MissionView {
-            const evac = extractionView(state, host.tick(), objectiveReady(state, extractionId));
+            const evac = extractionView(state, host.tick(), objectiveReady(state, extractionId, d), d);
             return { titleKey: d.titleKey, status: state.status, reason: state.reason, remaining: Math.max(0, d.deadlineTicks - host.tick()),
-                lives: Math.max(0, d.deathLimit - host.stats().deaths), markers: markers(), nearby: nearby(), ...evac, activity: activity(evac), samples: gatheredSamples(state), reward: state.reward && { ...state.reward },
+                lives: Math.max(0, d.deathLimit - host.stats().deaths), markers: markers(), nearby: nearby(), ...evac, activity: activity(evac), samples: gatheredSamples(state, d), reward: state.reward && { ...state.reward },
                 reinforcements: pressure() };
         },
     };
