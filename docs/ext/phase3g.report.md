@@ -4,7 +4,7 @@
 
 2026-10-05 维护者明确批准 `phase3-adapters.proposal.md` 的 A/A/A/A，提案已先标记“已决定”。开工从 `fe76575baa60bffad969180688519638a786835e` 干净工作树出发，实查 GitHub 后先快进合入 `ext/foundation` 的 `312e9eb05deb5e8cc82964da6a1b628fb6f1fa41`（含 4d-5）。本步只实施 3g，不含 4e/4f，不改 main、tag 或部署。
 
-最终门禁前再次实查并合入维护者完成的 4d-6 `80640d1f0aa701d71e34758403bf18967fbff097`。3g checkpoint 为 `78a969f`。之后按维护者要求再合入4e `97988d5`，最终生产候选为 `e6ad385dd7807b6eaae2c689b0d4a65dbecff35a`，合并后门禁结果见下文。
+最终门禁前再次实查并合入维护者完成的 4d-6 `80640d1f0aa701d71e34758403bf18967fbff097`。3g checkpoint 为 `78a969f`。之后按维护者要求再合入4e `97988d5`，完整154文件门禁候选为 `e6ad385dd7807b6eaae2c689b0d4a65dbecff35a`。交付前再次并入最新9331104，最新生产候选为 `ba83835`，增量门禁另列于文末。
 
 ## 协议与持久化
 
@@ -143,3 +143,5 @@ v4统一运行全部8门通过，933份源码输入每门前后一致。139相�
 必要fixture适配仅三文件：新`bodyModule` foundation4→5；`combat_adapters`与`ext_combat_transition_facts`诊断声明/安装命名空间迁移到body-fixture。后者原合并后4/4因旧giants fixture不存在失败，适配后4/4通过10.60s，所有expect断言及真实giants四模块split→attack用例逐字保留。combat adapter专项30/30通过，socket zone的nameKey也必须符合新owner命名空间。未放宽生产验证、旧断言或期限，无新增skip。仅修正上游手册末尾多余空行，机械示例不改。
 
 独立审查指定增量范围34文件：全部13份phase4d、两份phase4e、4f audit、LOS直接效应、paid lifecycle、3g foundation/transition/adapters/combinations/parry/part-break、两份growth奖励、giants配置/contract/transition/SFC及所有权/源码/i18n守卫；另重跑boundary、type、build、terrain、真实16组合、drift。上游正式形态均不超过128对，新增audit直接覆盖256→128；未再无差别重跑刚完成的长自然项。完整旧候选证据和最新增量证据分开记录，不称旧输入等于新输入。
+
+最新候选`ba8383596b1043c7340b21d1e94ea2d9419d16fd`增量门禁全部通过：34文件442项，0失败/skip/todo；boundary 3.624s、vue-tsc 20.334s、build 28.365s、相关批 306.545s、terrain 3.829s、16真实engine组合 158.906s、drift4文件5项 102.904s，均exit0。另验证composition --plan正常产出16计划（不将计划算Game验证）。944份输入每门及报告补写前逐文件一致，汇总SHA-256 `e413f3e9c7b2eda7614aac926cf8c25c2afab2a8aee5c1a02c5cffb4c8c702d9`。完整命令/文件/输入散列见`evidence/phase3g-latest-foundation-gates.json`。这份增量证据与前述完整候选证据分别保存，不重复累加测试数。
