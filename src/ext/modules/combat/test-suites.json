@@ -8,6 +8,7 @@
     "tests/combat_native_defense.test.ts",
     "tests/combat_native_stamina.test.ts",
     "tests/combat_parry.test.ts",
+    "tests/combat_parry_decision.test.ts",
     "tests/combat_parry_ui.test.ts",
     "tests/combat_part_break.test.ts",
     "tests/combat_part_break_runtime.test.ts",

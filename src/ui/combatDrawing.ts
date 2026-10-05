@@ -3,13 +3,16 @@ import type { Game } from '../engine/Core/Game';
 import { canDirectlySeeMonster } from '../engine/UI/MonsterVisibility';
 import type { Pos } from '../types';
 
-/** Public, detached current-segment geometry only. No definitions or future cells. */
+/** Public, detached current-segment warning only. No definitions or future cells. */
 export interface DisplayTelegraph {
     readonly actionId: number;
     readonly sourceSubactionId: number;
     readonly sourceEntityId: number;
     readonly cells: readonly Readonly<Pos>[];
     readonly phase: 'windup' | 'inter-segment';
+    /** Optional for older display DTOs. Missing metadata is unknown, not false. */
+    readonly parryable?: boolean;
+    readonly remainingTicks?: number;
 }
 const record = (value: unknown): value is Record<string, unknown> =>
     !!value && typeof value === 'object' && !Array.isArray(value);
@@ -40,7 +43,10 @@ export function readPublicCombatTelegraphs(game: Game): readonly DisplayTelegrap
             seen.add(key); cells.push(Object.freeze({ x, y }));
         }
         if (cells.length) result.push(Object.freeze({ actionId: value.actionId, sourceSubactionId: value.sourceSubactionId,
-            sourceEntityId: value.sourceEntityId, phase: value.phase, cells: Object.freeze(cells.sort((a, b) => a.y - b.y || a.x - b.x)) }));
+            sourceEntityId: value.sourceEntityId, phase: value.phase, cells: Object.freeze(cells.sort((a, b) => a.y - b.y || a.x - b.x)),
+            ...(typeof value.parryable === 'boolean' ? { parryable: value.parryable } : {}),
+            ...(Number.isSafeInteger(value.remainingTicks) && (value.remainingTicks as number) >= 0
+                ? { remainingTicks: value.remainingTicks as number } : {}) }));
     }
     return Object.freeze(result.sort(order));
 }

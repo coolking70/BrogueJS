@@ -108,7 +108,7 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
             return { component: CombatTelegraphHud, props: { resources, focused: inspected.length > 0,
                 entries: threats.map(threat => ({ key: `${threat.actionId}:${threat.sourceSubactionId}`,
                     name: current?.rows.find(row => row.kind === 'monster' && row.id === threat.sourceEntityId)?.name ?? null,
-                    phase: threat.phase })) } };
+                    phase: threat.phase, parryable: threat.parryable, remainingTicks: threat.remainingTicks })) } };
         }), panel: computed(() => null), panelOpen: computed(() => !!selected.value),
         refresh, close,
         // The module bar owns combat actions. Repeating them in the shell's

@@ -10,8 +10,12 @@ export function projectCombatView(value?: ReadonlyJson, definitions?: ActorAttac
             const phase=source.phases[source.phaseIndex];
             const sub=metadata?.subactions.find(item=>item.sourceSubactionId===source.sourceSubactionId);
             if (!phase || !sub || (phase.kind!=='windup'&&phase.kind!=='inter-segment') || !sub.lockedCells.length) return [];
+            // Only the warned segment is public. Its countdown belongs to the
+            // scheduler; do not estimate from the attack's original duration.
+            const segment=phase.segmentIndex===null?undefined:definitions.attacks.find(attack=>attack.id===sub.attackId)?.segments[phase.segmentIndex];
             return [{actionId:bundle.actionId,sourceSubactionId:source.sourceSubactionId,sourceEntityId:source.sourceEntityId,
-                cells:sub.lockedCells.map(cell=>({...cell})),phase:phase.kind}];
+                cells:sub.lockedCells.map(cell=>({...cell})),phase:phase.kind,remainingTicks:source.phaseRemainingTicks,
+                ...(segment?{parryable:segment.parryable}:{})}];
         });
     });
     const profile=definitions.profiles.find(profile=>profile.id===definitions.playerProfileId)!;

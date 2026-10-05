@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CombatUiResources } from './view';
-defineProps<{ resources: CombatUiResources | null; entries: readonly { key: string; name: string | null; phase: 'windup' | 'inter-segment' }[]; focused: boolean }>();
+import type { DisplayTelegraph } from '../../../../ui/combatDrawing';
+defineProps<{ resources: CombatUiResources | null; entries: readonly (Pick<DisplayTelegraph, 'phase' | 'parryable' | 'remainingTicks'> & { key: string; name: string | null })[]; focused: boolean }>();
 </script>
 <template>
   <aside class="combat-telegraph-hud" data-testid="combat-telegraph-hud">
@@ -18,8 +19,10 @@ defineProps<{ resources: CombatUiResources | null; entries: readonly { key: stri
       <span v-else-if="(resources.parryRecoveryRemainingTicks ?? 0) > 0">{{ $t('ext.combat.ui.parry_recovery', { ticks: resources.parryRecoveryRemainingTicks }) }}</span>
     </div>
     <strong v-if="entries.length">{{ $t(focused ? 'ext.combat.ui.cell_threats' : 'ext.combat.ui.visible_threats') }}</strong>
-    <span v-for="entry in entries" :key="entry.key" :class="entry.phase">
+    <span v-for="entry in entries" :key="entry.key" :class="entry.phase" :title="$t('ext.combat.ui.telegraph_hint')">
       {{ entry.name ?? $t('ext.combat.ui.public_source') }} · {{ $t(entry.phase === 'windup' ? 'ext.combat.ui.phase.windup' : 'ext.combat.ui.phase.inter-segment') }}
+      · {{ $t(entry.parryable === true ? 'ext.combat.ui.telegraph_parryable' : entry.parryable === false ? 'ext.combat.ui.telegraph_unparryable' : 'ext.combat.ui.telegraph_parry_unknown') }}
+      · {{ entry.remainingTicks === undefined ? $t('ext.combat.ui.telegraph_timing_unknown') : $t('ext.combat.ui.telegraph_remaining', { ticks: entry.remainingTicks }) }}
     </span>
   </aside>
 </template>
