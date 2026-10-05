@@ -1,3 +1,4 @@
+import { bodyDecisionActor, bodyGroupActors } from '../Status/BodyStatuses';
 import { distanceBetweenFootprints } from '../Movement/CreatureSpatial';
 /** CE Monsters.c:1591–1827. Allegiance is separate from creatureState in web. */
 import { Monster, MonsterMode, MonsterState, monstersAreEnemies, monstersAreTeammates } from '../../entities/Monster';
@@ -13,15 +14,17 @@ const allyState = (m: Monster) => m.isAlly && m.state !== MonsterState.FLEEING;
 const immobile = (m: Monster) => m.hasBehavior('MONST_IMMOBILE') || m.hasBehavior('MONST_TURRET');
 
 export function alertMonster(g: Game, m: Monster): void {
+    m = bodyDecisionActor(m);
     m.state = m.creatureMode === MonsterMode.PERM_FLEEING ? MonsterState.FLEEING : MonsterState.HUNTING;
     m.lastSeenPlayerAt = { ...g.player.loc };
 }
 
 export function wakeMonster(g: Game, m: Monster, stealthRange: number): void {
+    m = bodyDecisionActor(m);
     if (!allyState(m)) alertMonster(g, m);
     m.ticksUntilTurn = 100;
     for (const mate of iterateCreatures(g.monsters)) {
-        if (mate.hp <= 0 || mate === m || !monstersAreTeammates(m, mate) || mate.creatureMode !== MonsterMode.NORMAL) continue;
+        if (mate.hp <= 0 || bodyDecisionActor(mate) !== mate || mate === m || !monstersAreTeammates(m, mate) || mate.creatureMode !== MonsterMode.NORMAL) continue;
         if (!allyState(mate) && (mate.state === MonsterState.ASLEEP || mate.state === MonsterState.WANDERING)) {
             mate.ticksUntilTurn = Math.max(100, mate.ticksUntilTurn);
         }
@@ -68,15 +71,19 @@ export function monsterFleesFrom(m: Monster, target: Creature): boolean {
 }
 
 export function updateMonsterState(g: Game, m: Monster, stealthRange: number): void {
+    m = bodyDecisionActor(m);
     if (m.hasBehavior('MONST_ALWAYS_HUNTING') && !allyState(m)) {
         m.state = MonsterState.HUNTING;
         return;
     }
     const scent = g.scent ??= new ScentMap(g.grid.width, g.grid.height);
-    const aware = scent.awareOfBodyTarget(g.grid, m, g.player, {
+    const awareness = {
         alwaysHunting: m.hasBehavior('MONST_ALWAYS_HUNTING'), immobile: immobile(m),
         tracking: !allyState(m) && m.state === MonsterState.HUNTING, stealthRange,
-    });
+    };
+    const cohort = bodyGroupActors(m);
+    const aware = cohort.length === 1 ? scent.awareOfBodyTarget(g.grid,m,g.player,awareness)
+        : scent.awareOfGroupTarget(g.grid,cohort,g.player,awareness);
     if (immobile(m) && !allyState(m)) {
         m.state = aware ? MonsterState.HUNTING : MonsterState.ASLEEP;
         return;

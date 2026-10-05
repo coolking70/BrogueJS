@@ -55,7 +55,7 @@ export class FootprintPathing {
     private dynamicReplans = 0;
     private cacheHits = 0;
     private visitedNodes = 0;
-    constructor(private readonly spatial: CreatureSpatial) {}
+    constructor(private readonly spatial: CreatureSpatial, private readonly formationFits?: (at: Readonly<Pos>)=>boolean) {}
 
     get stats(): Readonly<FootprintPathingStats> {
         return Object.freeze({ terrainBuilds: this.terrainBuilds, distanceBuilds: this.distanceBuilds,
@@ -177,7 +177,7 @@ export class FootprintPathing {
         const options = { allowsTerrain: (p: Pos) => this.allows(grid, p, policy) };
         for (let i = 0; i < length; i++) {
             const at = this.pos(grid, i);
-            if (!this.spatial.canFitTerrainAt(actor, at, options)) continue;
+            if (!this.spatial.canFitTerrainAt(actor, at, options) || this.formationFits && !this.formationFits(at)) continue;
             fit[i] = 1; cost[i] = 1;
             for (const p of offsets) {
                 const flags = cellTerrainFlags(grid, at.x + p.x, at.y + p.y);

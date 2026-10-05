@@ -1,11 +1,12 @@
 import { checkpointSpatialTerrain } from '../Movement/SpatialRevision';
 import { validateActorCombatCapacities } from './PhasedAttackProduction';
 import { resolveActorQueryScope } from '../../ext/actorQuery';
+import { resolveFixedZoneContact, nativeZoneAttackAvailable } from '../Combat/FixedZoneHealth';
 import { isWorldRestCommand, prepareWorldRest, commitWorldRest, settleWorldRest, worldRestDamage, worldRestUnavailable } from './WorldRestProduction';
 import { canCommitNativeAttack, commitNativeAttackCost, withNativeAttackAction, withPrepaidNativeAttack } from './NativeAttackTransaction';
-import { bodyDecisionActor, bodyStatusOwner, type BodyStatusContext } from '../Status/BodyStatuses';
+import { bodyStatusDisables, bodyDecisionActor, bodyStatusOwner, type BodyStatusContext } from '../Status/BodyStatuses';
 import { nativeSpatialCatalog, type SpatialCatalog } from '../Movement/SpatialSchema';
-import { rigidFootprint } from '../Movement/RigidFootprint';
+import { rotationStages, rigidFootprint } from '../Movement/RigidFootprint';
 import { rigidSideChamberValid, compositeSideChamberValid } from '../Generator/SideChamber';
 import { RigidPosePathing, type RigidPoseGoal } from '../Map/RigidPosePathing';
 import { type RigidPose } from '../Movement/RigidFootprint';
@@ -15,12 +16,12 @@ import { nativeFormSpatial, bindNativeForms } from '../../ext/nativeForms';
 import { knownPolymorphSpecies, polymorphSpecies } from '../Combat/Polymorph';
 import { bodyLightOrigin } from '../Combat/BodyPerception';
 import { collectAreaBodyTargets } from '../Combat/BodyEffects';
-import { nearestLegalMeleeContact, legalMeleeContactAt, hasDeclaredZones, bodyRayContact, bodyAttackContactOf, physicalContactOf, withBodyContact, withBodyAttackContact, appendBodyHit, bodyHitContact, withWholeBodyDamage, type BodyAttackContact } from '../Combat/BodyCombat';
+import { nearestLegalMeleeContact, legalMeleeContactAt, hasDeclaredZones, hasBodyContact, isWholeBodyDamage, bodyRayContact, bodyAttackContactOf, physicalContactOf, withBodyContact, withBodyAttackContact, appendBodyHit, bodyHitContact, withWholeBodyDamage, type BodyAttackContact } from '../Combat/BodyCombat';
 import { footprintExposure } from '../Movement/FootprintExposure';
 import { CreatureSpatial, commitCompositeAnchors, checkpointSpatialActorRevisions, type SpatialWorld } from '../Movement/CreatureSpatial';
 import { CompositeMovement, type CompositeMovePlan } from '../Movement/CompositeMovement';
-import { bodyConstraintOrder, bodyConstraintsSatisfied } from '../Movement/BodyConstraints';
-import { bodyMoveTicks, retiredBodyParts } from '../Movement/BodyGroups';
+import { clearBodyLink, bodyConstraintOrder, bodyConstraintsSatisfied, type BodyPose } from '../Movement/BodyConstraints';
+import { bodyMoveTicks, bodyPartAttackAvailable, retiredBodyParts } from '../Movement/BodyGroups';
 import { resolveBodyMemberHit } from '../Combat/BodyMemberHealth';
 import type { BodyGroupState, BodyDefinition } from '../Movement/SpatialSchema';
 import type { PartBreakRequest } from '../../ext/partBreak';
@@ -172,11 +173,11 @@ import {
 } from '../Map/LightCatalog';
 import { FloatingText } from '../Visuals/FloatingText';
 import { STATUS_CONFIG } from '../Status/statusConfig';
-import { exposeBoltPathToElectricity, getBoltForItem, boltPath, createBoltResult, BoltEffect, BOLT_EFFECT_CE_EFFECT, MONSTER_BOLT_TABLE, type BoltConfig, type BoltFrame, type BoltResult, type BoltReflection, type MonsterBoltMeta } from '../Combat/Bolt';
+import { exposeBoltPathToElectricity, getBoltForItem, boltPath, boltStatusId, createBoltResult, BoltEffect, BOLT_EFFECT_CE_EFFECT, MONSTER_BOLT_TABLE, type BoltConfig, type BoltFrame, type BoltResult, type BoltReflection, type MonsterBoltMeta } from '../Combat/Bolt';
 import { boltLine, traceBolt, type BoltWorld } from '../Combat/BoltTrajectory';
 import { CE_BOLT_CATALOG, CEBoltEffect, CEBoltType, resolveCEBoltMagnitude } from '../Combat/BoltCatalog';
 import { rollStaffDamage } from '../Combat/StaffDamage';
-import { canPlaceCreature, teleportCandidates, captiveItemDropCandidates, qualifyingPathCandidates, allySwapCandidates } from '../Movement/CreaturePlacement';
+import { canPlaceCreature, teleportForbiddenFlags, teleportCandidates, captiveItemDropCandidates, qualifyingPathCandidates, allySwapCandidates } from '../Movement/CreaturePlacement';
 
 import { blinkTargetPreview } from '../Combat/BlinkTargeting';
 import { MONSTER_BLINK, monsterBlinkAvoids } from '../Combat/MonsterBlink';
@@ -459,6 +460,7 @@ export class Game {
             deep:[this.player,creatures,this.squareMotion,this.grid,this.environment,this.fov,this.scent,this.waypoints,
                 this.monsters,this.dormantMonsters,this.purgatory,this.items,this.levels,this.pendingFallenByDepth,
                 this.pendingFallenItemsByDepth,this.bodyGroups,this.stats,this.visibleMonsters,this.visibleItems,
+                this.seenBodyCoreIds,this.machineCells,this.monsterPathCache,this.safetyMap,this.loopMap,this.minersLight,this.squareLandingRetry,
                 this.everSeenMonsters,this.everSeenItems,this.examinedEntityIds,this.pendingCaughtFireCells,
                 this.floatingTexts,this.activeFlares,this.terrainFlashes,this.pendingDiscoveryMessages,actionState,
                 ItemLoader.identifiedItems,ItemLoader.callTitles,ItemLoader.magicPolarityRevealed],
@@ -467,7 +469,7 @@ export class Game {
         const descriptors=actors.map(actor=>({actor,descriptors:Object.getOwnPropertyDescriptors(actor)}));
         const restoreActions=checkpointProductionActorActions(this), restoreDefense=checkpointPhasedAttackSources(this),
             restoreRevisions=checkpointSpatialActorRevisions(actors), restoreLog=logger.checkpoint();
-        const invalid=isProductionActorActionRunInvalid(this), origin=recordingState(this).origin;
+        const invalid=isProductionActorActionRunInvalid(this), origin=recordingState(this).origin,machine=getNextMachineNumber();
         const dying=creatures.map(actor=>[actor,dyingMonsters.has(actor)] as const);
         return()=>{restore();for(const {actor,descriptors:saved} of descriptors){
             for(const key of Reflect.ownKeys(actor))if(Object.getOwnPropertyDescriptor(actor,key)?.configurable)Reflect.deleteProperty(actor,key);
@@ -476,7 +478,7 @@ export class Game {
             restoreLists();restoreFeatures();restoreTerrain();
             for(const {grid,cells,values} of traps){if(cells){cells.clear();values.forEach(value=>cells.add(value));this.displacementTrapDepressions?.set(grid,cells);}else this.displacementTrapDepressions?.delete(grid);}
             restoreActions();restoreDefense();restoreRevisions();restoreLog();restoreProductionActorActionValidity(this,invalid);
-            recordingState(this).origin=origin;
+            recordingState(this).origin=origin;restoreNextMachineNumber(machine);
             for(const [actor,wasDying] of dying)if(wasDying)dyingMonsters.add(actor);else dyingMonsters.delete(actor);
         };
     }
@@ -593,6 +595,8 @@ export class Game {
 
     /** Select session adapters once; classic calls retain the original method bodies. */
     private configureExtensionRuleAdapters(): void {
+        if (this.spatialCatalog.hasBodies) this.seenBodyCoreIds ??= new Set();
+        else delete (this as Partial<Game>).seenBodyCoreIds;
         const original = extensionRulePrototypes.get(this);
         if (original) { Object.setPrototypeOf(this, original); extensionRulePrototypes.delete(this); }
         extensionManualSearch.delete(this);
@@ -729,6 +733,8 @@ export class Game {
     public isExamining: boolean = false;
     public inspectTarget: DetailInfo | null = null;
     public examinedEntityIds = new Set<string | number>();
+    /** Directly observed group cores; stores identity only, never hidden form/HP. */
+    declare public seenBodyCoreIds: Set<number>;
 
     public depth: number = 1;
     public mode: GameMode = 'normal';
@@ -985,6 +991,7 @@ export class Game {
         this.isExamining = false;
         this.inspectTarget = null;
         this.examinedEntityIds = new Set();
+        delete (this as Partial<Game>).seenBodyCoreIds;
         this.pendingBoltFrames = [];
         this.activeFlares = [];
         this.terrainFlashes = [];
@@ -1426,6 +1433,7 @@ export class Game {
         const thisGame = this;
         return {
             generationContributions: () => thisGame.extensionRuntime?.generationContributions(thisGame.depth) ?? [],
+            scheduleBodyFollower: (core: Monster,exit: Pos,direction: -1|0|1) => thisGame.scheduleBodyFollower(core,exit,direction),
             onRegionFollowerBlocked: this.extensionRuntime?.hasOwnedRegions
                 ? (actor: Monster) => thisGame.extensionRuntime!.reportRegionFollowBlocked(actor, thisGame.currentLevelDepth!) : undefined,
             publishSideChambers: contributionToken ? (drafts: Architect['sideChambers']) => {
@@ -1650,6 +1658,9 @@ export class Game {
     private generateDepth(isGoingUp: boolean = false, isFirstLevel: boolean = false, fell: boolean = false) {
         if (this.extensionRuntime) {
             const runtime = this.extensionRuntime;
+            const actionState = runtime.actorActionBinding()?.state, restoreBindingIdentity = runtime.checkpointActorActionBindingIdentity();
+            const restoreActions = checkpointProductionActorActions(this), restoreDefense = checkpointPhasedAttackSources(this);
+            const invalidActions = isProductionActorActionRunInvalid(this);
             const restoreWorld = checkpointGenerationWorld(() => {
                 const cached = [...this.levels.values()];
                 const target = this.mode !== 'test' && this.currentLevelDepth === this.depth
@@ -1672,7 +1683,7 @@ export class Game {
                     deep: [target, this.player, creatures, this.monsters, this.dormantMonsters, this.purgatory,
                         ...cached.flatMap(level => [level.monsters, level.dormantMonsters]),
                         this.items, this.pendingFallenByDepth, this.pendingFallenItemsByDepth,
-                        this.levelSeeds, this.meteredItems, this.stats, this.minersLight, this.bodyGroups,
+                        this.levelSeeds, this.meteredItems, this.stats, this.minersLight, this.bodyGroups, this.seenBodyCoreIds, actionState,
                         // Dig-time DF aggravation can still reach the departed
                         // scent/waypoint system before the new ones are installed.
                         this.scent, this.waypoints, this.pendingCaughtFireCells,
@@ -1699,6 +1710,7 @@ export class Game {
             const roots = [...this.monsters, ...this.dormantMonsters, ...this.purgatory,
                 ...[...this.levels.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]),
                 ...[...this.pendingFallenByDepth.values()].flat()];
+            const restoreActorRevisions = checkpointSpatialActorRevisions([this.player,...collectEntityGraph(roots).monsters]);
             const previousDying = collectEntityGraph(roots).monsters.map(monster => [monster, dyingMonsters.has(monster)] as const);
             const previousDepth = this.currentLevelDepth ?? this.depth;
             const previousRewards = getRewardRoomsGenerated();
@@ -1706,8 +1718,9 @@ export class Game {
             const previousRng = rng.getState();
             // Existing CE generation retries retain their allocator behavior.
             // A fatal contributed-floor transaction restores both allocators.
-            const previousMachine = runtime.generationContributions(this.depth).length ? getNextMachineNumber() : undefined;
+            const previousMachine = getNextMachineNumber();
             const grids = [this.grid, ...[...this.levels.values()].map(level => level.grid)];
+            const restoreSpatialTerrain = checkpointSpatialTerrain(grids);
             const restoreFeatureState = checkpointDungeonFeatureState(grids);
             const previousTraps = grids
                 .map(grid => {
@@ -1751,11 +1764,12 @@ export class Game {
                 rng.setState(previousRng);
                 if (previousMachine !== undefined) restoreNextMachineNumber(previousMachine);
                 restoreFeatureState();
+                restoreSpatialTerrain(); restoreActorRevisions();
                 runtime.rollbackGeneration(token);
+                restoreBindingIdentity(); restoreActions(); restoreDefense(); restoreProductionActorActionValidity(this,invalidActions);
                 // The caller requested another depth before capture. Rebind
                 // only AFTER both that depth and the region ledger are restored.
                 if (runtime.hasOwnedRegions) this.bindMovementRegionSession();
-                disposeProductionActorActionSession(this);
                 bindPhasedAttackProduction(this);
                 throw error;
             }
@@ -1838,18 +1852,51 @@ export class Game {
             const level = this.levels.get(depth);
             if (!level || !this.levelSeeds[depth - 1]?.visited) continue;
             for (const m of [...level.monsters]) {
-                if (m.hp <= 0) continue;
-                if (m.entersLevelIn > 1) m.entersLevelIn--;
+                if (m.hp <= 0 || m.spatial?.bodyMember && m.id !== m.spatial.bodyMember.groupId) continue;
+                if (m.entersLevelIn > 1) {
+                    m.entersLevelIn--;
+                    if(m.spatial?.bodyMember)for(const actor of this.orderedBodyActors(this.bodyGroups!.find(g=>g.coreId===m.id)!,level.monsters))actor.entersLevelIn=m.entersLevelIn;
+                }
                 else if (m.entersLevelIn === 1) this.monsterEntersLevel(m, level);
             }
         }
     }
 
+    private scheduleBodyFollower(core: Monster, exit: Pos, direction: -1|0|1): void {
+        const group=this.bodyGroups!.find(g=>g.coreId===core.id)!,actors=this.orderedBodyActors(group,this.monsters);
+        if(actors.some(m=>m.spatial?.movementRegionId!==undefined||m.hasStatus('paralyzed')||m.hasStatus('entranced')||m.isCaged))return;
+        const target={id:Number.MAX_SAFE_INTEGER,hp:1,loc:exit} as Creature;
+        const distance=this.planBodyCoreRoute(core,{kind:'anchors',anchors:[target.loc]},true).distance??Infinity;
+        if(!Number.isFinite(distance)&&!core.isAlly)return;
+        const turns=Math.max(1,Math.min(150,Math.floor(distance*bodyMoveTicks(this.spatialCatalog.body(group.bodyDefinitionId),group,this.spatialCatalog,core.movementSpeed)/100)+1));
+        for(const actor of actors){actor.entersLevelIn=turns;actor.approaching|=direction===1?APPROACHING_DOWNSTAIRS:direction===-1?APPROACHING_UPSTAIRS:APPROACHING_PIT;}
+    }
+    private enterWholeBodyFollower(core: Monster, source: LevelState, origin: Pos, pit: boolean): void {
+        const group=this.bodyGroups!.find(g=>g.coreId===core.id)!,actors=this.orderedBodyActors(group,source.monsters);
+        const places=this.wholeBodyPlacement(actors,origin,this.spatialCatalog.body(group.bodyDefinitionId),[],false,undefined,this.spatialWorldPort(),true);
+        if(!places.length){
+            if(core.isAlly)logger.log(i18next.t('movement.body_follow_no_space',{name:this.monsterDisplayName(core)}),'#aaaaaa');
+            return;
+        }
+        this.commitBodyTransition('body-follower-entry',()=>{
+            this.translateBodyActors(actors,places[Math.floor(places.length/2)]!);
+            source.monsters=source.monsters.filter(m=>!actors.includes(m));
+            for(const actor of actors){
+                source.visibleMonsters.delete(actor);actor.clearCorpseTargetOnLevelChange();actor.entersLevelIn=actor.approaching=0;
+                actor.preplaced=actor.falling=false;notifyProductionActorSourceChanged(this,actor.id);
+            }
+            core.ticksUntilTurn=bodyMoveTicks(this.spatialCatalog.body(group.bodyDefinitionId),group,this.spatialCatalog,core.movementSpeed);
+            this.monsters=[...actors,...this.monsters];
+            if(pit&&!core.hasStatus('levitating')&&!core.isInvulnerable())core.takeDamage(rng.randClumpedRange(6,12,2),false,this.grid);
+            reconcileProductionActorActions(this);this.needsRender=true;
+        },rng.getState(),true);
+    }
     private monsterEntersLevel(m: Monster, source: LevelState): void {
         const pit = !(m.approaching & (APPROACHING_DOWNSTAIRS | APPROACHING_UPSTAIRS));
         const origin = pit ? source.playerExitedVia : this.levelStair(m.approaching & APPROACHING_DOWNSTAIRS
             ? TerrainType.STAIRS_UP : TerrainType.STAIRS_DOWN);
         if (!origin) throw new Error('Missing level travel exit');
+        if(m.spatial?.bodyMember){this.enterWholeBodyFollower(m,source,origin,pit);return;}
         if (m.spatial || squareListUsers(this.monsters) || squareListUsers(this.dormantMonsters)) {
             const spot = travelPlacement(this, m, origin, true, true, true);
             if (!spot) return; // retain original ownership, anchor and countdown
@@ -3172,10 +3219,17 @@ export class Game {
      * only this simulation boundary publishes discoveries and commits sets. */
     private refreshVisibleEntities(announce = true): void {
         const current = visibleEntities(this.player, this.grid, this.monsters, this.items);
+        for (const group of this.bodyGroups ?? []) {
+            const core = this.monsters.find(m => m.id === group.coreId);
+            if (core && canDirectlySeeMonster(this.player, this.grid, core)
+                && !this.player.hasStatus('hallucinating')
+                && footprintSome(core, p => !!this.grid.getCell(p.x, p.y)?.isVisible && !this.grid.getCell(p.x, p.y)?.isClairvoyantVisible))
+                this.seenBodyCoreIds.add(core.id);
+        }
         if (announce) {
             for (const message of this.pendingDiscoveryMessages) logger.log(message.text, message.color);
             for (const monster of iterateCreatures(current.monsters)) {
-                if (!monster.isAlly && !this.visibleMonsters.has(monster) && !this.everSeenMonsters.has(monster)) {
+                if (!bodyDecisionActor(monster).isAlly && !this.visibleMonsters.has(monster) && !this.everSeenMonsters.has(monster)) {
                     this.disturbed = true;
                     if (this.isAutoTraveling()) {
                         const name = this.monsterDisplayName(monster);
@@ -5952,9 +6006,9 @@ export class Game {
         if (this.finishLethalBoltHit(target, result.caster,
             result.bolt.ceType === null ? result.bolt.name : CE_BOLT_CATALOG[result.bolt.ceType].name)) return damage;
         if (target.hp > 0) {
-            if (target instanceof Monster && target.creatureMode !== MonsterMode.PERM_FLEEING && (!target.isAlly || target.hasStatus('magical_fear'))
-                && (target.state !== MonsterState.FLEEING || target.hasStatus('magical_fear'))) {
-                target.state = MonsterState.HUNTING;
+            if (target instanceof Monster && bodyDecisionActor(target).creatureMode !== MonsterMode.PERM_FLEEING && (!target.isAlly || target.hasStatus('magical_fear'))
+                && (bodyDecisionActor(target).state !== MonsterState.FLEEING || target.hasStatus('magical_fear'))) {
+                bodyDecisionActor(target).state = MonsterState.HUNTING;
                 target.setStatusDuration('magical_fear', 0);
             }
             target.shortenMagicalFear();
@@ -5998,7 +6052,8 @@ export class Game {
         return JSON.stringify([...path, impact].map(p => this.grid.getCell(p.x, p.y)?.layers));
     }
 
-    private boltLivingTarget(target: Creature): boolean {
+    private boltLivingTarget(target: Creature, statusId?: StatusId): boolean {
+        if (target instanceof Monster) target = statusId ? bodyStatusOwner(target,statusId) : bodyDecisionActor(target);
         return !(target instanceof Monster) || (!target.hasCEBehavior('MONST_INANIMATE') && !target.isInvulnerable());
     }
 
@@ -6009,11 +6064,11 @@ export class Game {
      * scrolls, potions, gas and runics retain their existing status entry points. */
     private applyBasicBoltEffect(target: Creature, effect: BoltEffect, magnitude: number): { accepted: boolean; autoID: boolean; healed: number } {
         const seen = this.canObserveBoltTarget(target);
-        const living = this.boltLivingTarget(target);
+        const living = this.boltLivingTarget(target,boltStatusId(effect));
         let accepted = living, autoID = false, healed = 0;
         switch (effect) {
             case BoltEffect.HEALING:
-                healed = target.heal(staffHealingPercent(magnitude), false);
+                healed = (target instanceof Monster ? bodyDecisionActor(target) : target).heal(staffHealingPercent(magnitude), false);
                 accepted = true; // CE healing has no INANIMATE/INVULNERABLE gate.
                 autoID = seen; // Also at full health or when rounding yields zero.
                 break;
@@ -6127,8 +6182,7 @@ export class Game {
             actor.hp = Math.max(1, Math.trunc(actor.maxHp * value.hp / value.maxHp));
             actor.isClone = target.isClone;
             actor.leader = value.leader;
-            actor.behaviorFlags.add('MONST_WILL_NOT_USE_STAIRS');
-            bindNativeForms(actor, runtime.nativeForms(), this.spatialCatalog);
+                bindNativeForms(actor, runtime.nativeForms(), this.spatialCatalog);
             return actor;
         })];
         const places = this.wholeBodyPlacement(staged, target.loc, definition, oldActors, false);
@@ -6177,7 +6231,7 @@ export class Game {
      * every actual member, its own terrain/region policy and the whole tree.
      * Existing clone formations (including tombstones) translate unchanged. */
     private wholeBodyPlacement(actors: readonly Monster[], origin: Pos, definition: BodyDefinition | undefined,
-        excluded: readonly Monster[], clone: boolean, explicit?: Pos, destinationWorld: SpatialWorld = this.spatialWorldPort(), travel = false): Pos[] {
+        excluded: readonly Monster[], clone: boolean, explicit?: Pos, destinationWorld: SpatialWorld = this.spatialWorldPort(), travel = false, policy?: { allowsTerrain(actor: Monster, at: Pos): boolean; allowFeatures?: boolean }): Pos[] {
         const core = actors[0]!, world = { ...destinationWorld, player: destinationWorld.player ?? { hp: 0, loc: { x: -1, y: -1 } } as Creature,
             monsters: destinationWorld.monsters.filter(m => !excluded.includes(m as Monster)) as Monster[],
             dormantMonsters: (destinationWorld.dormantMonsters?.filter(m => !excluded.includes(m as Monster)) ?? []) as Monster[] };
@@ -6189,11 +6243,11 @@ export class Game {
             for (let i = 0; i < actors.length; i++) {
                 const actor = actors[i]!, loc = locations[i]!;
                 if (clone ? !canPlaceSquareCloneAt(world, actor, loc) : !canFitAt(world, actor, loc, {
-                    allowsTerrain: p => !(cellTerrainFlags(world.grid, p.x, p.y) & travelAvoidedFlags(actor))
+                    allowsTerrain: p => policy ? policy.allowsTerrain(actor,p) : !(cellTerrainFlags(world.grid, p.x, p.y) & travelAvoidedFlags(actor))
                         && (!actor.hasBehavior('MONST_RESTRICTED_TO_LIQUID') || !!(cellTerrainMechFlags(world.grid, p.x, p.y) & TM_ALLOWS_SUBMERGING)) })) return false;
                 for (const p of footprintOf({ loc, spatial: actor.spatial })) {
                     const cell = world.grid.getCell(p.x, p.y)!;
-                    if (travel && cell.machineNumber || cell.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL)) return false;
+                    if (!policy?.allowFeatures && (travel && cell.machineNumber || cell.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN || t === TerrainType.DUNGEON_PORTAL))) return false;
                     const key = `${p.x},${p.y}`; if (occupied.has(key)) return false; occupied.add(key);
                 }
             }
@@ -6209,17 +6263,30 @@ export class Game {
      * values/relationships, group tables, owned lists and public knowledge;
      * hooks/resources/facts use the runtime buffer, action state its checkpoint.
      * Map/environment effects run only AFTER a complete structural commit. */
-    private commitBodyTransition(label: string, commit: () => void, random = rng.getState()): void {
+    private commitBodyTransition(label: string, commit: () => void, random = rng.getState(), environment = false): void {
         const runtime = this.extensionRuntime!, allocator = getNextEntityId();
         const creatures = collectEntityGraph([...this.monsters, ...this.dormantMonsters, ...this.purgatory,
             ...[...this.levels.values()].flatMap(l => [...l.monsters, ...(l.dormantMonsters ?? [])]),
             ...[...this.pendingFallenByDepth.values()].flat()]).monsters;
         const actionState = runtime.actorActionBinding()?.state, restoreBindingIdentity = runtime.checkpointActorActionBindingIdentity();
-        const restore = checkpointGenerationWorld(() => ({ shallow: [this],
+        const grids = [this.grid, ...[...this.levels.values()].map(level => level.grid)];
+        const restoreTerrain = environment ? checkpointSpatialTerrain(grids) : () => {};
+        const restoreFeatures = environment ? checkpointDungeonFeatureState(grids) : () => {};
+        const displays = environment ? [this.lightMap,...[...this.levels.values()].map(l=>l.lightMap)].map(light=>light.checkpointRenderState()) : [];
+        const machine = environment ? getNextMachineNumber() : undefined;
+        const traps = environment ? grids.map(grid=>{const set=this.displacementTrapDepressions?.get(grid);return {grid,set,cells:set?[...set]:[]};}) : [];
+        const restore = checkpointGenerationWorld(() => ({ shallow: [this, ...(environment ? [...this.levels.values()] : [])],
             deep: [this.player, creatures, this.monsters, this.dormantMonsters, this.bodyGroups, this.stats,
-                this.everSeenMonsters, this.visibleMonsters, this.examinedEntityIds, actionState],
-            references: [runtime, runtime.causality, ...(this.squareMotion ? [this.squareMotion] : []),
-                ...creatures.flatMap(m => [m.mapToMe, m.safetySnapshot])] }));
+                this.everSeenMonsters, this.visibleMonsters, this.examinedEntityIds, this.seenBodyCoreIds, actionState,
+                ...(environment ? [grids, this.environment, this.items, this.levels, this.pendingFallenByDepth,
+                    this.pendingFallenItemsByDepth, this.purgatory, this.machineCells, this.squareMotion,
+                    this.scent,this.waypoints,this.monsterPathCache,this.safetyMap,this.loopMap,this.minersLight,
+                    this.pendingCaughtFireCells,this.squareLandingRetry,ItemLoader.identifiedItems,ItemLoader.callTitles,ItemLoader.magicPolarityRevealed,
+                    ...[...this.levels.values()].flatMap(level => [level.monsters, level.dormantMonsters, level.items])] : [])],
+            references: [runtime, runtime.causality, ...(!environment && this.squareMotion ? [this.squareMotion] : []),
+                ...displays.flatMap(state=>state.references), this.spatialCatalog,
+                ...creatures.flatMap(m => [m.mapToMe, m.safetySnapshot])],
+            appendOnly: environment ? [this.activeFlares,this.terrainFlashes,this.floatingTexts,this.pendingDiscoveryMessages] : [] }));
         const restoreLog = logger.checkpoint(), restoreActions = checkpointProductionActorActions(this);
         const restoreRevisions = checkpointSpatialActorRevisions([this.player, ...creatures]), restoreDefense = checkpointPhasedAttackSources(this);
         const invalid = isProductionActorActionRunInvalid(this);
@@ -6235,7 +6302,13 @@ export class Game {
                 for (const key of Reflect.ownKeys(actor)) if (Object.getOwnPropertyDescriptor(actor, key)?.configurable) Reflect.deleteProperty(actor, key);
                 Object.defineProperties(actor, descriptors);
             }
-            restoreRevisions(); restoreDefense(); restoreActions(); restoreProductionActorActionValidity(this, invalid); restoreLog();
+            restoreTerrain(); restoreFeatures(); restoreRevisions(); restoreDefense(); restoreActions(); restoreProductionActorActionValidity(this, invalid); restoreLog();
+            displays.forEach(state=>state.restore());
+            for (const {grid,set,cells} of traps) {
+                if (set) {set.clear();cells.forEach(cell=>set.add(cell));this.displacementTrapDepressions?.set(grid,set);}
+                else this.displacementTrapDepressions?.delete(grid);
+            }
+            if (machine !== undefined) restoreNextMachineNumber(machine);
             try { runtime.rollbackGeneration(token); restoreBindingIdentity(); }
             finally { restoreNextEntityId(allocator); rng.setState(random); }
             throw error;
@@ -6543,7 +6616,7 @@ export class Game {
             case BoltEffect.EMPOWERMENT: {
                 // CE Items.c:5311: player/INANIMATE/INVULNERABLE are untouched.
                 // Enemy and ally recipients use the same repeatable operation.
-                if (target instanceof Monster && target.empower()) {
+                if (target instanceof Monster && bodyDecisionActor(target).empower()) {
                     autoID = this.canObserveBoltTarget(target);
                     this.createFlare(target.x, target.y, LightKind.EMPOWERMENT_LIGHT);
                     if (autoID) {
@@ -6731,9 +6804,9 @@ export class Game {
                 if (target.hp > 0) {
                     // CE survivor/moralAttack effects, also on a fully shielded
                     // hit and on monster-origin reflected hits (Items.c:5195-5213).
-                    if (target instanceof Monster && target.creatureMode !== MonsterMode.PERM_FLEEING && (!target.isAlly || target.hasStatus('magical_fear'))
-                        && (target.state !== MonsterState.FLEEING || target.hasStatus('magical_fear'))) {
-                        target.state = MonsterState.HUNTING;
+                    if (target instanceof Monster && bodyDecisionActor(target).creatureMode !== MonsterMode.PERM_FLEEING && (!target.isAlly || target.hasStatus('magical_fear'))
+                        && (bodyDecisionActor(target).state !== MonsterState.FLEEING || target.hasStatus('magical_fear'))) {
+                        bodyDecisionActor(target).state = MonsterState.HUNTING;
                         target.setStatusDuration('magical_fear', 0);
                     }
                     if (meta.fiery && (target instanceof Player || target instanceof Monster)) this.exposeCreatureToFire(target);
@@ -7112,11 +7185,22 @@ export class Game {
     /** CE Items.c:4465 negate, shared by player bolts, reflected/monster
      * bolts and scroll blasts. The return is the CE effect/autoID boolean;
      * recovering learning slots and evaluating the tile alone do not set it. */
-    private negateCreatureMagic(target: Creature): boolean {
+    private negateCreatureMagic(target: Creature, partOperation = false): boolean {
         if (this.extensionRuntime && this.extensionRuntime.causality.current?.kind !== 'negation') {
             const effects = this.extensionRuntime.causality, parent = effects.current;
             const origin = effects.create('negation', parent?.actorId ?? null, parent?.creditActorId ?? null, parent?.creditPartyId ?? null);
-            return effects.withOrigin(origin, () => this.negateCreatureMagic(target));
+            return effects.withOrigin(origin, () => this.negateCreatureMagic(target, partOperation));
+        }
+        if (!partOperation && target instanceof Monster && target.spatial?.bodyMember) {
+            const core = bodyDecisionActor(target), group = this.bodyGroups!.find(g => g.coreId === core.id)!;
+            let affected = false;
+            // Identity effects select the body once. Apply the native operation
+            // to each surviving physical part so local traits/statuses also end.
+            for (const part of this.orderedBodyActors(group, this.monsters)) {
+                if (core.hp <= 0) break;
+                affected = this.negateCreatureMagic(part, true) || affected;
+            }
+            return affected;
         }
         if (target.hp <= 0) return false;
         const monster = target instanceof Monster ? target : undefined;
@@ -7379,7 +7463,7 @@ export class Game {
 
         const px = this.player.loc.x;
         const py = this.player.loc.y;
-        const bodyTargets = squareListUsers(this.monsters) ? new Map(this.collectAreaBodyTargets(this.player.loc, DCOLS, 'mental').map(t => [t.entityId, t])) : null;
+        const bodyTargets = squareListUsers(this.monsters) ? new Map(this.collectAreaBodyTargets(this.player.loc, DCOLS, 'mental', undefined, 'discordant').map(t => [t.entityId, t])) : null;
         for (const m of this.monsters) {
             if (m.hp <= 0) continue;
             const owner = bodyStatusOwner(m, 'discordant') as Monster;
@@ -7613,8 +7697,8 @@ export class Game {
                     // 未命中 → break，投掷物落在怪物所在格的合格邻格。
                     // CE pre-hit aggression preserves permanent flight; Combat
                     // owns the fear exception and release even on a missed throw.
-                    if (monst.creatureMode !== MonsterMode.PERM_FLEEING && !monst.isAlly && monst.state !== MonsterState.FLEEING) {
-                        monst.state = MonsterState.HUNTING;
+                    if (bodyDecisionActor(monst).creatureMode !== MonsterMode.PERM_FLEEING && !monst.isAlly && bodyDecisionActor(monst).state !== MonsterState.FLEEING) {
+                        bodyDecisionActor(monst).state = MonsterState.HUNTING;
                     }
                     const effects = this.extensionRuntime?.causality;
                     const projectileOrigin = effects ? effects.create('projectile', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null) : null;
@@ -8474,6 +8558,7 @@ export class Game {
      * HP transition owns poison death; later damage sees hp<=0 and cannot kill twice.
      * Poison bypasses physical armor/shields (CE inflictDamage(..., true)). */
     private resolvePoisonDamage(entity: Player | Monster): void {
+        if (bodyStatusOwner(entity, 'poisoned') !== entity) return;
         if (entity.hp <= 0 || !entity.hasStatus('poisoned')) return;
         if (entity === this.player) this.poisonedDuringTurn = true;
         if (!entity.canBePoisoned()) {
@@ -9586,10 +9671,12 @@ export class Game {
         if (entity.spatial?.bodyMember) {
             if (!(entity instanceof Monster) || !this.isBodyDecisionOwner(entity.id) || entity.preplaced) return false;
             const group = this.bodyGroups!.find(g => g.coreId === entity.id)!, definition = this.spatialCatalog.body(group.bodyDefinitionId);
+            const actors = this.orderedBodyActors(group,this.monsters);
+            if (actors.every(actor=>actor.hasStatus('levitating') || actor.hasStatus('flying'))) return false;
             const supports = group.members.filter(s => s.life === 'active' && (s.entityId === entity.id || definition.parts.find(p => p.partId === s.partId)!.providesSupport));
             return supports.every(s => {
                 const actor = this.monsters.find(a => a.id === s.entityId)!;
-                return !actor.hasStatus('levitating') && footprintExposure(this.grid, actor).allUnsupported;
+                return footprintExposure(this.grid, actor).allUnsupported;
             });
         }
         if (entity.hasStatus('levitating')) return false;
@@ -9782,6 +9869,9 @@ export class Game {
     /** One core fall injury; all surviving parts leave together. No landing
      * space publishes none of them, and preplaced is the persisted fall receipt. */
     private fallWholeBody(core: Monster): void {
+        this.commitBodyTransition('body-fall', () => this.commitWholeBodyFall(core), rng.getState(), true);
+    }
+    private commitWholeBodyFall(core: Monster): void {
         const group = this.bodyGroups!.find(g => g.coreId === core.id)!, actors = this.orderedBodyActors(group, this.monsters);
         const origin = this.extensionRuntime?.causality.consumeDisplacement(core.id) ?? null;
         if (footprintOf(core).some(p => this.grid.getCell(p.x, p.y)?.isVisible)) logger.log(i18next.t('fall.monster_plunges', { name: this.monsterDisplayName(core) }), '#aaaaaa');
@@ -9853,8 +9943,12 @@ export class Game {
     }
     /** At most one finite search per pending entity per objective block/entry.
      * Fall damage/status cleanup happened at departure and is never repeated. */
-    private retrySquareLandings(): void {
+    private retrySquareLandings(checkpointed = false): void {
         const queue = this.pendingFallenByDepth?.get(this.depth);
+        if (!checkpointed && queue?.some(c=>c.spatial?.bodyMember)) {
+            this.commitBodyTransition('body-landing-retry',()=>this.retrySquareLandings(true),rng.getState(),true);
+            return;
+        }
         if (!queue?.some(c => c.spatial)) { this.clearSquareLandingRetry(); return; }
         if (this.squareLandingRetry?.grid !== this.grid) this.clearSquareLandingRetry();
         const retry = this.squareLandingRetry ??= { grid: this.grid, revision: -1, occupancy: '', pending: '' };
@@ -9870,9 +9964,16 @@ export class Game {
                 const group = this.bodyGroups!.find(g => g.coreId === monster.id)!, actors = this.orderedBodyActors(group, queue);
                 const places = this.wholeBodyPlacement(actors, monster.loc, this.spatialCatalog.body(group.bodyDefinitionId), [], false, undefined, this.spatialWorldPort(), true);
                 if (!places.length) continue;
-                this.translateBodyActors(actors, places[Math.floor(places.length / 2)]!);
-                for (const actor of actors) { actor.preplaced = false; queue.splice(queue.indexOf(actor), 1); }
-                this.monsters = [...this.monsters, ...actors];
+                this.commitBodyTransition('body-pending-landing', () => {
+                    this.translateBodyActors(actors, places[Math.floor(places.length / 2)]!);
+                    for (const actor of actors) { actor.preplaced = false; queue.splice(queue.indexOf(actor), 1); }
+                    this.monsters = [...this.monsters, ...actors];
+                    const scope=new Set<string>();
+                    for (const actor of actors) {
+                        notifyProductionActorSourceChanged(this,actor.id);
+                        if (actor.hp>0 && this.monsters.includes(actor)) this.applyEnvironmentalEffects(actor,false,scope);
+                    }
+                },rng.getState(),true);
                 continue;
             }
             if (!this.squarePublicationFits(monster)) continue;
@@ -10089,6 +10190,10 @@ export class Game {
                 return;
             }
             this.retireBodyEntities(group, new Set(group.members.filter(s => s.entityId !== group.coreId).map(s => s.partId)));
+            const references=collectEntityGraph([...this.monsters,...this.dormantMonsters,...this.purgatory,
+                ...[...this.levels.values()].flatMap(level=>[...level.monsters,...(level.dormantMonsters??[])]),
+                ...[...this.pendingFallenByDepth.values()].flat()]).monsters;
+            for (const other of references) if(other.carriedMonster===m) other.carriedMonster=null;
             this.bodyGroups!.splice(this.bodyGroups!.indexOf(group), 1);
             if (!this.bodyGroups!.length) delete this.bodyGroups;
             delete m.spatial!.bodyMember;
@@ -10413,7 +10518,7 @@ export class Game {
                 monsterTakeTurn: (monster, stealthRange) => {
                     const carried = monster.carriedItem;
                     if (monster.spatial?.bodyMember) {
-                        if (!monster.prepareNativeDecision(game, stealthRange)) {
+                        if (!monster.prepareNativeDecision(game, stealthRange) && !monster.tryBodyNativePriority(game)) {
                             const result = selectNativeActorAction(game, monster.id);
                             if (result === 'native-fallback') game.takeBodyDecision(monster);
                             else if (!['handled', 'blocked'].includes(result) || monster.ticksUntilTurn <= 0)
@@ -10897,6 +11002,7 @@ export class Game {
             everSeenItemIds: [...this.everSeenItems].map(i => i.id),
             everSeenMonsterIds: [...this.everSeenMonsters].map(m => m.id),
             examinedEntityIds: [...this.examinedEntityIds],
+            ...(this.seenBodyCoreIds?.size ? { seenBodyCoreIds: [...this.seenBodyCoreIds] } : {}),
             autoPath: this.autoPath, isMouseTraveling: this.isMouseTraveling, travelTargetItemId: this.travelTargetItem?.id ?? null,
             isAutoExploring: this.isAutoExploring || undefined,
             disturbed: this.isAutoTraveling() ? this.disturbed : undefined,
@@ -11113,7 +11219,14 @@ export class Game {
                 }
                 if (actionBinding) validatePhasedAttackGeometry(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
                     (depth,x,y)=>restored.get(depth)?.grid.isValidPos(x,y)===true,
-                    new Set([decodedPlayer.id,...(restored.get(snapshot.depth)?.monsters??[]).map(actor=>actor.id)]));
+                    new Set([decodedPlayer.id,...(restored.get(snapshot.depth)?.monsters??[]).map(actor=>actor.id)]), (source,attackId) => {
+                        const identity = source.spatial?.bodyMember;
+                        const group = snapshot.run.spatialWorld?.groups.find(g => g.groupId === identity?.groupId);
+                        const part = group && extensions!.spatialCatalog.body(group.bodyDefinitionId).parts.find(p => p.partId === identity?.partId);
+                        return part?.attackProfileIds.length ? part.attackProfileIds.map(id => extensions!.spatialCatalog.attackProfile(id).providerProfileId)
+                            .filter(id=>bodyPartAttackAvailable(extensions!.spatialCatalog,group!,source,id)
+                                && bodyPartAttackAvailable(extensions!.spatialCatalog,group!,source,attackId)) : undefined;
+                    });
                 if (actionBinding) validateProductionActorActionState(actionBinding.state && typeof actionBinding.state === 'object' && !Array.isArray(actionBinding.state) ? actionBinding.state.scheduler : null, {
                     depth: snapshot.depth, player: decodedPlayer,
                     ...(snapshot.run.spatialWorld?.groups.length ? { bodyGroups: snapshot.run.spatialWorld.groups } : {}),
@@ -11187,6 +11300,8 @@ export class Game {
         this.everSeenItems = new Set(run.everSeenItemIds.map(id => entityGraph.items.get(id)!));
         this.everSeenMonsters = new Set(run.everSeenMonsterIds.map(id => entityGraph.monsters.get(id)!));
         this.examinedEntityIds = new Set(run.examinedEntityIds);
+        if (this.spatialCatalog.hasBodies) this.seenBodyCoreIds = new Set(run.seenBodyCoreIds ?? []);
+        else delete (this as Partial<Game>).seenBodyCoreIds;
         this.autoPath = run.autoPath; this.isMouseTraveling = run.isMouseTraveling;
         this.isAutoExploring = run.isAutoExploring ?? false;
         this.disturbed = run.disturbed ?? false;
@@ -11280,10 +11395,11 @@ export class Game {
     private static readonly BURNING_DURATION_TURNS = 7;
 
     private burningDuration(entity: Player | Monster | Creature): number {
-        return ((entity.statusDurations as unknown) as Record<string, number>)['burning'] ?? 0;
+        return (bodyStatusOwner(entity,'burning').statusDurations as Record<string,number>).burning ?? 0;
     }
 
     private setBurningDuration(entity: Player | Monster | Creature, turns: number): void {
+        entity = bodyStatusOwner(entity, 'burning');
         const durations = (entity.statusDurations as unknown) as Record<string, number>;
         if (this.extensionRuntime) this.extensionRuntime.causality.statusChanged(entity.id, 'burning', durations.burning ?? 0, turns);
         if (turns > 0) {
@@ -11362,6 +11478,7 @@ export class Game {
      * 同时 IMMUNE_TO_FIRE、永不入烧，该分支登记不实现（报告 §载体盘点）。
      */
     private resolveBurningDamage(entity: Player | Monster): void {
+        if (bodyStatusOwner(entity, 'burning') !== entity) return;
         if (entity.hp <= 0) return;
         if (this.burningDuration(entity) <= 0) return;
         const damage = rng.randRange(1, 3); // CE rand_range(1,3)，免疫者照掷
@@ -11490,8 +11607,8 @@ export class Game {
 
         const monst = entity as Monster;
         // CE :369-371：睡眠中的怪物被爆炸惊醒（→ TRACKING_SCENT，web 同义 HUNTING）。
-        if (monst.state === MonsterState.ASLEEP) {
-            monst.state = MonsterState.HUNTING;
+        if (bodyDecisionActor(monst).state === MonsterState.ASLEEP) {
+            bodyDecisionActor(monst).state = MonsterState.HUNTING;
         }
         const visible = cell.isVisible;
         if (!monst.isInvulnerable()) monst.takeDamage(damage, false, this.grid);
@@ -11561,7 +11678,7 @@ export class Game {
         if (entity === this.player) this.disturbed = true; // CE Time.c:425, even on a silent refresh.
         entity.applyStatus('nauseous', 20);
         if (first && entity instanceof Monster && this.visibleMonsters.has(entity)
-            && entity.state === MonsterState.ASLEEP) entity.state = MonsterState.HUNTING;
+            && bodyDecisionActor(entity).state === MonsterState.ASLEEP) bodyDecisionActor(entity).state = MonsterState.HUNTING;
         if (first && entity === this.player) logger.log(i18next.t('status.player.nauseous_on'), '#b7a26b');
     }
 
@@ -11574,7 +11691,7 @@ export class Game {
         const first = !entity.hasStatus('poisoned');
         entity.addPoison(Math.max(0, 5 - entity.getStatusDuration('poisoned')), 0);
         if (first && entity.hasStatus('poisoned') && (entity === this.player || canDirectlySeeMonster(this.player, this.grid, entity as Monster))) {
-            if (entity instanceof Monster && entity.state === MonsterState.ASLEEP) entity.state = MonsterState.HUNTING;
+            if (entity instanceof Monster && bodyDecisionActor(entity).state === MonsterState.ASLEEP) bodyDecisionActor(entity).state = MonsterState.HUNTING;
             logger.log(i18next.t('env.lichen_poison', { defaultValue: "The lichen's grasping tendrils poison {{name}}.", name: entity === this.player ? i18next.t('entity.you', { defaultValue: 'you' }) : this.monsterDisplayName(entity as Monster) }), '#88bb55');
         }
     }
@@ -11916,8 +12033,8 @@ export class Game {
     public collectBodyTargets(cells: readonly Pos[], policy?: Parameters<typeof collectBodyTargets>[2], scope?: Set<string>) {
         return collectBodyTargets({ ...this.spatialWorldPort(), inDeathWindow: c => c instanceof Monster && dyingMonsters.has(c) && !c.deathProcessed }, cells, policy, scope);
     }
-    public collectAreaBodyTargets(origin: Pos, radius: number, effect: Parameters<typeof collectAreaBodyTargets>[3], scope?: Set<string>) {
-        return collectAreaBodyTargets(this, origin, radius, effect, this.hasLineOfSight.bind(this), scope);
+    public collectAreaBodyTargets(origin: Pos, radius: number, effect: Parameters<typeof collectAreaBodyTargets>[3], scope?: Set<string>, statusId?: import('../../entities/Creature').StatusId) {
+        return collectAreaBodyTargets(this, origin, radius, effect, this.hasLineOfSight.bind(this), scope, statusId);
     }
     private igniteIncinerationCells(cells: readonly Pos[]): void {
         const ignite = () => { for (const at of cells) this.environment.igniteForced(at.x, at.y); };
@@ -11942,8 +12059,16 @@ export class Game {
             ?? [...this.pendingFallenByDepth.values()].flat().find(m => m.id === id);
         const core = find(group.coreId);
         if (!core || core.hp <= 0) return undefined;
-        return { core, profile: this.spatialCatalog.statusProfile(this.spatialCatalog.body(group.bodyDefinitionId).statusProfileId),
+        const part = this.spatialCatalog.body(group.bodyDefinitionId).parts.find(p => p.partId === actor.spatial!.bodyMember!.partId)!;
+        return { core, profile: this.spatialCatalog.statusProfile(part.statusProfileId),
+            attackAvailable: attackId => bodyPartAttackAvailable(this.spatialCatalog,group,actor,attackId),
             members: () => group.members.flatMap(s => { const m = s.life === 'active' && s.entityId !== null ? find(s.entityId) : undefined; return m ? [m] : []; }) };
+    }
+    public bodyAttackProfileIds(actor: Creature): readonly string[] | undefined {
+        if (!(actor instanceof Monster) || !actor.spatial?.bodyMember || !this.ownsBodyMember(actor)) return undefined;
+        const group = this.bodyGroups!.find(g => g.groupId === actor.spatial!.bodyMember!.groupId)!;
+        const part = this.spatialCatalog.body(group.bodyDefinitionId).parts.find(p => p.partId === actor.spatial!.bodyMember!.partId)!;
+        return part.attackProfileIds.map(id => this.spatialCatalog.attackProfile(id).providerProfileId);
     }
     /** Retirement keeps the source identity on the detached member; checking
      * the current live table here would incorrectly award a kill afterwards. */
@@ -11966,17 +12091,22 @@ export class Game {
     }
     private validateMemberBreak(request: PartBreakRequest): import('../../ext/partBreak').PartBreakMemberIdentity | false {
         const group = this.bodyGroups?.find(g => g.groupId === request.groupId);
-        const slot = group?.members.find(s => s.partId === request.partId && s.entityId !== group.coreId && s.life === 'active'
+        const slot = group?.members.find(s => s.partId === request.partId && s.life === 'active'
             && s.entityId !== null && s.generation === request.generation);
         const actor = [...this.monsters, ...this.dormantMonsters].find(c => c.id === slot?.entityId);
-        if (!group || request.actorId !== group.coreId || request.zoneId !== 'body' || !slot || !actor
-            || actor.hp <= 0 || !this.ownsBodyMember(actor)) return false;
+        if (!group || request.actorId !== group.coreId || !slot || !actor
+            || actor.hp <= 0 || !this.ownsBodyMember(actor) || request.zoneId === 'body' && actor.id === group.coreId
+            || request.zoneId !== 'body' && !this.spatialCatalog.definition(actor.spatial!.footprintId).zones?.some(z => z.id === request.zoneId && z.health.kind === 'local'
+                && actor.spatial!.zoneState?.some(s => s.zoneId === z.id && !s.broken))) return false;
         return { entityId: actor.id, groupId: group.groupId, partId: slot.partId, generation: slot.generation,
             bodyDefinitionId: group.bodyDefinitionId };
     }
     private applyBodyMemberDamage(actor: Creature, damage: number, kind: import('../../ext/causality').DamageKind): number | undefined {
         const group = this.bodyGroups?.find(g => g.groupId === actor.spatial?.bodyMember?.groupId);
-        if (!group || actor.id === group.coreId || actor.hp <= 0) return undefined;
+        if (!group || actor.hp <= 0 || !(actor instanceof Monster) || !this.ownsBodyMember(actor)) return undefined;
+        const zoned = hasBodyContact(actor) && !isWholeBodyDamage(actor) && hasDeclaredZones(actor)
+            && !['administrative','negation','transference','reprisal','status'].includes(this.extensionRuntime!.causality.current?.kind ?? '');
+        if (actor.id === group.coreId && !zoned) return undefined;
         const core = [...this.monsters, ...this.dormantMonsters].find(c => c.id === group.coreId);
         if (!core || core.hp <= 0) return undefined;
         const runtime = this.extensionRuntime!, origin = runtime.causality.current;
@@ -11984,15 +12114,32 @@ export class Game {
         const causalCheckpoint = origin ? null : runtime.causality.snapshot();
         let result: ReturnType<typeof resolveBodyMemberHit>;
         try {
-            result = resolveBodyMemberHit(this.spatialCatalog, group, actor, core, damage,
-                origin?.effectId ?? runtime.causality.create('administrative', null).effectId, origin?.actorId ?? null,
-                (request, native) => runtime.commitPartBreak(request, native));
+            const resolutionId = origin?.effectId ?? runtime.causality.create('administrative', null).effectId;
+            const resolve = () => {
+                let nativeDamage = damage;
+                if (zoned) {
+                    const contact = physicalContactOf(actor), zoneId = footprintOf(actor).find(p => p.x === contact.x && p.y === contact.y)!.zoneId;
+                    const hp = actor.hp;
+                    const zone = resolveFixedZoneContact(this.spatialCatalog, { entity: actor, entityId: actor.id, groupId: group.groupId,
+                        partId: actor.spatial!.bodyMember!.partId, zoneId, contact, dedupKey: `part:${actor.id}:${zoneId}` },
+                        { resolutionId, sourceId: origin?.actorId ?? null, hit: true, damage, kind: kind === 'physical' ? 'physical' : 'other' },
+                        (request, native) => runtime.commitPartBreak(request, native));
+                    if (actor.id === group.coreId) {
+                        result = { memberHpLost: zone.nativeHpLost, coreHpLost: 0, breakReceipt: zone.breakReceipt, breakHandling: zone.breakHandling };
+                        return;
+                    }
+                    actor.hp = hp; nativeDamage = zone.nativeHpLost;
+                }
+                result = resolveBodyMemberHit(this.spatialCatalog, group, actor, core, nativeDamage,
+                    resolutionId, origin?.actorId ?? null, (request, native) => runtime.commitPartBreak(request, native));
+            };
+            if (zoned) runtime.withCommittedFacts(()=>this.commitBodyTransition('body-zone-hit', resolve),['staggered']); else resolve();
         } catch (error) {
             if (causalCheckpoint) runtime.causality.restore(causalCheckpoint);
             throw error;
         }
-        if (result.coreHpLost > 0) runtime.causality.recordDamage(core.id, coreHpBefore, core.hp, kind);
-        return result.memberHpLost;
+        if (result!.coreHpLost > 0) runtime.causality.recordDamage(core.id, coreHpBefore, core.hp, kind);
+        return result!.memberHpLost;
     }
     private finishBodyMemberDamage(actor: Creature): void {
         const group = this.bodyGroups?.find(g => g.groupId === actor.spatial?.bodyMember?.groupId);
@@ -12018,6 +12165,10 @@ export class Game {
         }
         if (!ids.size) return;
         const actors = [...this.monsters, ...this.dormantMonsters].filter(c => ids.has(c.id));
+        const references=collectEntityGraph([...this.monsters,...this.dormantMonsters,...this.purgatory,
+            ...[...this.levels.values()].flatMap(level=>[...level.monsters,...(level.dormantMonsters??[])]),
+            ...[...this.pendingFallenByDepth.values()].flat()]).monsters;
+        for (const other of references) if(other.carriedMonster && ids.has(other.carriedMonster.id)) other.carriedMonster=null;
         for (const actor of actors) {
             actor.hp = 0; actor.deathProcessed = true; actor.administrativeDeath = true;
             actor.doesNotResurrect = true; actor.carriedItem = null; actor.carriedMonster = null;
@@ -12052,16 +12203,20 @@ export class Game {
         const targets: Creature[] = [this.player, ...this.monsters].filter(c => c.hp > 0
             && c.spatial?.bodyMember?.groupId !== group.groupId && monstersAreEnemies(core, c));
         targets.sort((a, b) => distanceBetweenFootprints(core, a) - distanceBetweenFootprints(core, b) || a.id - b.id);
-        const target = targets[0];
-        if (!target) return;
-        const fleeing = core.state === MonsterState.FLEEING || core.hasStatus('magical_fear');
+        const normalAlly = core.isAlly && core.state !== MonsterState.FLEEING && !core.hasStatus('magical_fear') && !core.hasStatus('discordant');
+        const target = normalAlly ? core.bodyAllyEnemy(this) ?? undefined : targets[0];
+        const fleeing = core.state === MonsterState.FLEEING || core.hasStatus('magical_fear') || !!(target && core.hasBehavior('MONST_MAINTAINS_DISTANCE') && distanceBetweenFootprints(core,target) < 3);
+        if (core.hasStatus('nauseous') && this.tryVomit(core)) return;
         let count = 0, maxTicks = 0;
         for (const partId of order) {
-            if (fleeing || count === 4 || core.hp <= 0 || target.hp <= 0 || isActorStaggered(this, core.id)) break;
+            if (!target || fleeing || count === 4 || core.hp <= 0 || target.hp <= 0 || isActorStaggered(this, core.id)) break;
             const slot = group.members.find(s => s.partId === partId)!;
             const source = this.monsters.find(c => c.id === slot.entityId);
-            if (!source || slot.life !== 'active' || slot.readyInTicks > 0 || source.hasStatus('paralyzed') || source.hasStatus('entranced')
+            if (!source || bodyStatusDisables(source,'attacks') || slot.life !== 'active' || slot.readyInTicks > 0 || source.hasStatus('paralyzed') || source.hasStatus('entranced')
+                || source.hasBehavior('MONST_IMMOBILE') || source.hasBehavior('MONST_TURRET')
                 || (source.spatial?.actionLockInTicks ?? 0) > 0) continue;
+            const profiles=this.bodyAttackProfileIds(source);
+            if(profiles?.length && profiles.every(id=>!nativeZoneAttackAvailable(source,id)))continue;
             const contact = nearestLegalMeleeContact(this.grid, source, target);
             if (!contact || !canCommitNativeAttack(this, source)) continue;
             withActorActionScope(this, 'npc-scheduler', source.id, scope => withNativeAttackAction(this, source,
@@ -12070,27 +12225,74 @@ export class Game {
             maxTicks = Math.max(maxTicks, source.attackSpeed); count++;
         }
         if (count) { core.ticksUntilTurn = maxTicks; reconcileActorNativeRecovery(this, core.id); return; }
+        if (core.hasBehavior('MONST_IMMOBILE') || core.hasBehavior('MONST_TURRET')) return;
+        if (!fleeing && target && core.hasBehavior('MONST_MAINTAINS_DISTANCE') && distanceBetweenFootprints(core,target) === 3) return;
+        const region = core.spatial?.movementRegionId === undefined ? null : this.extensionRuntime!.ownedRegion(core.spatial.movementRegionId,this.depth);
+        let goal: RigidPoseGoal;
+        if (region && region.guard === 'return-to-spawn' && !normalAlly && !fleeing && !targets.some(c => {
+            const b=region.bounds;return c.x>=b.x&&c.y>=b.y&&c.x<b.x+b.width&&c.y<b.y+b.height;
+        })) goal={kind:'anchors',anchors:[core.spawnLoc]};
+        else if (target) goal={kind:fleeing?'escape':'contact',target};
+        else if (normalAlly && !core.doesNotTrackLeader) {
+            const leader=core.leader??this.player;
+            if(distanceBetweenFootprints(core,leader)<3)return;
+            goal={kind:'contact',target:leader};
+        } else {
+            const at=this.waypoints.coordinates[core.targetWaypointIndex];
+            if(!at)return;goal={kind:'anchors',anchors:[at]};
+        }
         const candidates = Array.from({ length: 9 }, (_, i) => ({ x: core.x + i % 3 - 1, y: core.y + Math.floor(i / 3) - 1 }))
-                .filter(p => p.x !== core.x || p.y !== core.y)
-                .sort((a, b) => (fleeing ? -1 : 1) * (distanceToFootprint(target, a) - distanceToFootprint(target, b)) || a.y - b.y || a.x - b.x);
-        this.tryMoveBodyCore(core, candidates, fleeing ? at => distanceToFootprint(target, at) > distanceToFootprint(target, core.loc) : undefined);
+            .filter(p => p.x !== core.x || p.y !== core.y);
+        if(goal.kind==='contact') candidates.sort((a,b)=>distanceToFootprint(goal.target,a)-distanceToFootprint(goal.target,b)||a.y-b.y||a.x-b.x);
+        // Direct descent retains the inexpensive open-arena path. Obstructed
+        // routes get one finite native shape/pose graph, then every candidate
+        // is still certified by the complete formation planner.
+        if(goal.kind==='escape') {
+            candidates.sort((a,b)=>distanceToFootprint(goal.target,b)-distanceToFootprint(goal.target,a)||a.y-b.y||a.x-b.x);
+            if(this.tryMoveBodyCore(core,candidates,at=>distanceToFootprint(goal.target,at)>distanceToFootprint(goal.target,core.loc)))return;
+        }
+        if(goal.kind==='contact' && this.tryMoveBodyCore(core,candidates,at=>distanceToFootprint(goal.target,at)<distanceToFootprint(goal.target,core.loc)
+            && this.bodyPreferredFormationFits(core,at)))return;
+        const route=this.planSquareStep(core,goal);
+        if(route.kind==='rotate'){this.rotateSpatialActor(core,route.quarterTurns!);return;}
+        if(route.at && this.tryMoveBodyCore(core,route.at))return;
+        const values=this.squareDistanceValues(core,goal),current=values(core.loc);
+        candidates.sort((a,b)=>values(a)-values(b)||a.y-b.y||a.x-b.x);
+        this.tryMoveBodyCore(core,candidates,at=>Number.isFinite(values(at))&&values(at)<current);
     }
 
     /** One group placement for autonomous or entranced motion. Individual
      * limb relocation is never an alternate movement path. */
-    private tryMoveBodyCore(core: Monster, destinations: Pos | readonly Pos[], accept?: (at: Pos) => boolean, confused = false): boolean {
+    private tryMoveBodyCore(core: Monster, destinations: Pos | readonly Pos[], accept?: (at: Pos) => boolean, confused = false, forced = false, checkpointed = false): boolean {
         const group = this.bodyGroups?.find(g => g.coreId === core.id);
         if (!group) return false;
+        const active = this.orderedBodyActors(group,this.monsters);
+        if (!forced && !checkpointed && active.some(member => member.hasStatus('stuck'))) {
+            let moved = false;
+            this.commitBodyTransition('body-web-attempt', () => {
+                moved = this.tryMoveBodyCore(core, destinations, accept, confused, forced, true);
+            }, rng.getState(), true);
+            return moved;
+        }
+        const randomBeforePlanning = rng.getState();
+        if (!forced && active.some(member => member.seized && [this.player,...this.monsters].some(enemy => enemy.hp>0 && enemy.seizing && monstersAreEnemies(member,enemy)
+            && nearestLegalMeleeContact(this.grid,enemy,member)))) return false;
+        for (const member of active) {
+            if (forced || !member.hasStatus('stuck')) continue;
+            if (footprintSome(member,p=>!!(cellTerrainFlags(this.grid,p.x,p.y)&T_ENTANGLES)) && !member.hasBehavior('MONST_IMMUNE_TO_WEBS')) {
+                if (!member.isInvulnerable()) member.setStatusDuration('stuck',member.getStatusDuration('stuck')-1);
+                if (!member.hasStatus('stuck')) for (const p of footprintOf(member)) breakEntanglingTerrain(this.grid,p.x,p.y);
+            }
+        }
         const spatial = new CreatureSpatial(this.spatialWorldPort(), this.spatialCatalog); spatial.groups.push(group);
         try {
             const movement = new CompositeMovement(spatial);
             const plans: CompositeMovePlan[] = [];
             for (const at of Array.isArray(destinations) ? destinations : [destinations as Pos]) {
                 if (accept && !accept(at)) continue;
-                const result = movement.planStep(group.groupId, at, { allowsTerrain: (id, p) => {
+                const result = movement.planStep(group.groupId, at, { forced, preferFormation:true, allowsTerrain: (id, p) => {
                     const actor = this.monsters.find(c => c.id === id)!;
-                    return actor.canEnterMovementTerrain(this, p.x, p.y)
-                        && !(cellTerrainFlags(this.grid, p.x, p.y) & (T_AUTO_DESCENT | T_IS_DF_TRAP));
+                    return footprintContains(actor,p) || (forced ? !(cellTerrainFlags(this.grid,p.x,p.y)&T_OBSTRUCTS_PASSABILITY) : actor.canEnterMovementTerrain(this, p.x, p.y));
                 } });
                 if (result.status !== 'planned') continue;
                 plans.push(result.plan);
@@ -12098,13 +12300,21 @@ export class Game {
             }
             if (!plans.length) return false;
             const plan = plans[confused ? rng.randRange(0, plans.length - 1) : 0]!;
-            const previous = new Map(plan.trajectories.map(t => [t.entityId, footprintOf(this.monsters.find(c => c.id === t.entityId)!)]));
-            if (!movement.commit(plan)) return false;
-            core.ticksUntilTurn = plan.costTicks;
-            for (const trajectory of plan.trajectories) {
-                const actor = this.monsters.find(c => c.id === trajectory.entityId);
-                if (actor?.hp && actor.hp > 0) this.applyEnvironmentalEffects(actor, false, undefined, previous.get(actor.id));
-            }
+            let committed = false;
+            this.commitBodyTransition('body-step-environment', () => {
+                const scope = new Set<string>(), cohort = this.orderedBodyActors(group, this.monsters), identity = JSON.stringify(group.members);
+                if (!forced) core.ticksUntilTurn = plan.costTicks;
+                committed = movement.commit(plan, (actors, previous) => {
+                    const anchors = new Map(actors.map(actor => [actor, { ...actor.loc }]));
+                    for (const actor of actors) {
+                        if (actor.hp > 0) this.applyEnvironmentalEffects(actor, false, scope, previous.get(actor));
+                        if (core.hp <= 0 || !this.bodyGroups?.includes(group) || JSON.stringify(group.members) !== identity
+                            || cohort.some(member => !this.monsters.includes(member) || member.hp <= 0 || member.x !== anchors.get(member)!.x || member.y !== anchors.get(member)!.y)) return false;
+                    }
+                    return true;
+                });
+            }, randomBeforePlanning, true);
+            if (!committed) return false;
             this.needsRender = true;
             return true;
         } finally { spatial.dispose(); }
@@ -12153,8 +12363,7 @@ export class Game {
             created = candidates.map(({ candidate, form }) => {
                 const actor = new Monster(candidate.loc.x, candidate.loc.y, nativeFormData(form));
                 actor.spatial = candidate.spatial; actor.spawnLoc = { ...candidate.loc };
-                actor.behaviorFlags.add('MONST_WILL_NOT_USE_STAIRS');
-                markCreatureBirth(actor, reason); return actor;
+                        markCreatureBirth(actor, reason); return actor;
             });
             const core = created[0]!;
             const group: BodyGroupState = { schema: 1, groupId: core.id, coreId: core.id, bodyDefinitionId: bodyId,
@@ -12175,6 +12384,7 @@ export class Game {
      * are created only when a registered non-square actor requests a route. */
     declare private squareMotion: { spatial: CreatureSpatial; pathing: FootprintPathing; rigid?: RigidPosePathing; cohort: Creature[] } | undefined;
     public planSquareStep(actor: Monster, goal: RigidPoseGoal, distanceOnly = false) {
+        if (actor.spatial?.bodyMember) return this.planBodyCoreRoute(actor,goal,distanceOnly);
         const world = this.spatialWorldPort();
         const cohort = [this.player, ...this.monsters, ...this.dormantMonsters];
         let session = this.squareMotion;
@@ -12199,16 +12409,89 @@ export class Game {
         session.rigid ??= new RigidPosePathing(session.spatial);
         return session.rigid.planStep(actor, goal, policy, distanceOnly);
     }
+    private planBodyCoreRoute(actor: Monster, goal: RigidPoseGoal, distanceOnly = false) {
+        if (!this.ownsBodyMember(actor) || actor.id !== actor.spatial!.bodyMember!.groupId) throw new Error('Invalid composite path owner');
+        const query=actor.copyForBodyPlan();delete query.spatial!.bodyMember;bindSpatialCatalog(query,this.spatialCatalog);
+        const groupId=actor.id;
+        const spatial=new CreatureSpatial({...this.spatialWorldPort(),monsters:[query,...this.monsters.filter(m=>m.spatial?.bodyMember?.groupId!==groupId)]},this.spatialCatalog);
+        try {
+            let forbiddenFlags=avoidedFlagsForCaster(actor)|T_OBSTRUCTS_PASSABILITY;
+            const here=footprintExposure(this.grid,actor).flags;
+            forbiddenFlags &= ~(here & (T_HARMFUL_TERRAIN|T_SPONTANEOUSLY_IGNITES));
+            if(!actor.isAlly&&actor.state===MonsterState.HUNTING&&actor.hp>=10)forbiddenFlags&=~T_CAUSES_POISON;
+            const policy={forbiddenFlags,requiresSubmergible:actor.hasBehavior('MONST_RESTRICTED_TO_LIQUID'),allowSecretDoors:true};
+            const formationFits=(at:Readonly<Pos>,pose=query.spatial!.pose)=>this.bodyPreferredFormationFits(actor,at,pose,spatial);
+            return isSquareFootprint(query)?new FootprintPathing(spatial,at=>formationFits(at)).planStep(query,goal as FootprintGoal,policy,distanceOnly)
+                :new RigidPosePathing(spatial,formationFits).planStep(query,goal,policy,distanceOnly);
+        } finally {spatial.dispose();}
+    }
+    /** Conservative far-route clearance. The finite formation solver still
+     * certifies actual foot motion; this prevents core-only routes oscillating
+     * at a wall that admits the core but has no room for its preferred feet. */
+    private bodyPreferredFormationFits(core: Monster, at: Readonly<Pos>, pose=core.spatial!.pose, session?: CreatureSpatial): boolean {
+        const spatial=session??new CreatureSpatial(this.spatialWorldPort(),this.spatialCatalog);
+        try {
+            const group=this.bodyGroups!.find(g=>g.coreId===core.id)!,definition=this.spatialCatalog.body(group.bodyDefinitionId);
+            const positions=new Map<string,BodyPose>();
+            for(const part of this.orderedBodyActors(group,this.monsters)){
+                const declaration=definition.parts.find(p=>p.partId===part.spatial!.bodyMember!.partId)!;
+                const anchor={x:at.x+declaration.preferredOffset.x,y:at.y+declaration.preferredOffset.y};
+                const shape={...part.spatial!,pose:part===core?pose:part.spatial!.pose};
+                const candidate={loc:anchor,spatial:shape} as Creature;bindSpatialCatalog(candidate,this.spatialCatalog);
+                if(!spatial.canFitTerrainAt(candidate,anchor,{allowsTerrain:p=>part.canEnterMovementTerrain(this,p.x,p.y)}))return false;
+                positions.set(declaration.partId,{anchor,footprintId:shape.footprintId,pose:shape.pose});
+            }
+            return bodyConstraintsSatisfied(this.spatialCatalog,definition,positions,this.grid);
+        } finally {if(!session)spatial.dispose();}
+    }
     public squareDistanceValues(actor: Monster, goal: FootprintGoal): (at: Readonly<Pos>) => number {
         const result = this.planSquareStep(actor, goal, true);
         if (isSquareFootprint(actor)) return result.distanceAt as (at: Readonly<Pos>) => number;
         const distance = result.distanceAt as (at: Readonly<Pos>, pose: RigidPose) => number;
         return at => distance(at, actor.spatial!.pose as RigidPose);
     }
+    private rotateBodyPart(actor: Monster, turns: -1 | 1): boolean {
+        if (!this.ownsBodyMember(actor) || bodyStatusDisables(actor,'movement') || actor.hasStatus('stuck')) return false;
+        const group = this.bodyGroups!.find(g => g.groupId === actor.spatial!.bodyMember!.groupId)!;
+        const definition = this.spatialCatalog.body(group.bodyDefinitionId), actors = this.orderedBodyActors(group, this.monsters);
+        const core = actors[0]!, spatial = new CreatureSpatial(this.spatialWorldPort(), this.spatialCatalog);
+        try {
+            if (core.hasStatus('paralyzed') || core.spatial!.actionLockInTicks || bodyStatusDisables(core,'movement')
+                || bodyMoveTicks(definition,group,this.spatialCatalog,core.movementSpeed) <= 0
+                || definition.parts.filter(p=>p.providesSupport && group.members.some(s=>s.partId===p.partId && s.life==='active')).length < definition.minSupportParts) return false;
+            const from = actor.spatial!.pose as RigidPose, pose = rotationStages(from, turns)[0]!;
+            const options = { allowsTerrain: (at: Pos) => actor.canEnterMovementTerrain(this,at.x,at.y) };
+            if (!spatial.canRotateBetween(actor,actor.loc,from,turns,options)) return false;
+            const positions = new Map(actors.map(member => [member.spatial!.bodyMember!.partId,
+                {anchor:member.loc,footprintId:member.spatial!.footprintId,pose:member===actor?pose:member.spatial!.pose}]));
+            if (!bodyConstraintsSatisfied(this.spatialCatalog,definition,positions,this.grid)) return false;
+            const sweep = rigidFootprint(this.spatialCatalog,actor.spatial!.footprintId).sweeps.get(`${from}:${pose}`)!;
+            for (const edge of definition.constraints) {
+                if (![edge.parentPartId,edge.childPartId].includes(actor.spatial!.bodyMember!.partId)) continue;
+                const otherId = edge.parentPartId === actor.spatial!.bodyMember!.partId ? edge.childPartId : edge.parentPartId;
+                const other = actors.find(member => member.spatial!.bodyMember!.partId===otherId); if (!other) continue;
+                // Conservative continuous certificate: every swept cell stays
+                // within the link limits and clear of the stationary endpoint.
+                for (const offset of sweep) {
+                    const at = {x:actor.x+offset.x,y:actor.y+offset.y};
+                    const cells = footprintOf(other), nearest = Math.min(...cells.map(p=>Math.max(Math.abs(p.x-at.x),Math.abs(p.y-at.y))));
+                    if (nearest < edge.minDistance || nearest > edge.maxDistance || edge.requiresClearLink && cells.some(p=>!clearBodyLink(this.grid,at,p))) return false;
+                }
+            }
+            const previous = footprintOf(actor);
+            this.commitBodyTransition('body-rotation-environment',()=>{
+                commitCompositeAnchors(actors.map(member=>({creature:member,at:member.loc,...(member===actor?{pose}:{})})));
+                core.ticksUntilTurn = bodyMoveTicks(definition,group,this.spatialCatalog,core.movementSpeed);
+                this.applyEnvironmentalEffects(actor,false,new Set(),previous);
+                notifyProductionActorSourceChanged(this,actor.id); this.needsRender=true;
+            },rng.getState(),true);
+            return true;
+        } finally { spatial.dispose(); }
+    }
     /** NPC intent is reached from the existing executeCommand actor clock.
      * No animation or display caller can manufacture a placement plan. */
     public rotateSpatialActor(actor: Monster, turns: -1 | 1): boolean {
-        if (actor.spatial?.bodyMember) return false;
+        if (actor.spatial?.bodyMember) return this.rotateBodyPart(actor, turns);
         const session = this.squareMotion;
         if (!session) return false;
         const cohort = [this.player, ...this.monsters, ...this.dormantMonsters];
@@ -13183,7 +13466,7 @@ export class Game {
      */
     private finishBlink(result: BoltResult): boolean {
         const caster = result.caster, landing = result.landingPos;
-        if (caster?.spatial && landing && !canPlaceCreature(this, caster, landing)) return false;
+        if (caster?.spatial && landing && !this.canDisplaceCreature(caster,landing)) return false;
         if (!caster || !landing || caster.hp <= 0
             || (caster.x === landing.x && caster.y === landing.y)) return false;
         const occupant = this.getMonsterAt(landing.x, landing.y);
@@ -13227,10 +13510,12 @@ export class Game {
      * Monster BECKONING deliberately shares this implementation (W-12).
      */
     private beckonCreature(target: Creature, caster: Creature | null): boolean {
+        target = bodyDecisionActor(target);
         if (!caster || target.hp <= 0 || (target instanceof Monster && target.hasBehavior('MONST_IMMOBILE'))) return false;
         const distance = distanceBetweenFootprints(target, caster);
         if (distance <= 1) return false;
         const seenBefore = this.canObserveBoltTarget(target);
+        if (target.spatial?.bodyMember && target instanceof Monster) return this.beckonWholeBody(target,caster,seenBefore);
         if (target.spatial) {
             const previousBody = this.footprintOf(target);
             let moved = false;
@@ -13268,12 +13553,21 @@ export class Game {
      * obstruction/occupancy are rejected. Coordinates remain the occupancy source.
      */
     private canDisplaceCreature(target: Creature, destination: Pos, walkingSecretDoor = false): boolean {
+        if (target.spatial?.bodyMember && target instanceof Monster) {
+            if (!this.ownsBodyMember(target) || target.hp <= 0 || !this.monsters.includes(target)
+                || target.x === destination.x && target.y === destination.y) return false;
+            const core=bodyDecisionActor(target),group=this.bodyGroups!.find(g=>g.coreId===core.id)!,actors=this.orderedBodyActors(group,this.monsters);
+            const at={x:core.x+destination.x-target.x,y:core.y+destination.y-target.y};
+            return this.wholeBodyPlacement(actors,at,this.spatialCatalog.body(group.bodyDefinitionId),actors,false,at,this.spatialWorldPort(),false,{
+                allowFeatures:true,allowsTerrain:(_actor,p)=>!(cellTerrainFlags(this.grid,p.x,p.y)&T_OBSTRUCTS_PASSABILITY)
+                    || walkingSecretDoor&&this.grid.getCell(p.x,p.y)?.layers.includes(TerrainType.SECRET_DOOR)===true }).length>0;
+        }
         return target.hp > 0 && (target.x !== destination.x || target.y !== destination.y)
             && canPlaceCreature(this, target, destination, walkingSecretDoor);
     }
 
     public placeCreature(target: Creature, destination: Pos, options: { pickupBeforeVision?: boolean; walkingSecretDoor?: boolean } = {}): boolean {
-        if (target.spatial?.bodyMember) return false;
+        if (target.spatial?.bodyMember && target instanceof Monster) return this.placeWholeBody(target,destination,options.walkingSecretDoor);
         if (target === this.player) assertSingleCellPlayer(target);
         if (!this.canDisplaceCreature(target, destination, options.walkingSecretDoor)) return false;
         const previousBody = target.spatial ? this.footprintOf(target) : undefined;
@@ -13308,9 +13602,65 @@ export class Game {
         return true;
     }
 
+    private placeWholeBody(target: Monster, destination: Pos, walking = false): boolean {
+        if (!this.ownsBodyMember(target)) return false;
+        const core=bodyDecisionActor(target),at={x:core.x+destination.x-target.x,y:core.y+destination.y-target.y};
+        if (walking) return target===core && this.tryMoveBodyCore(core,at);
+        if (!this.canDisplaceCreature(target,destination)) return false;
+        const group=this.bodyGroups!.find(g=>g.coreId===core.id)!,actors=this.orderedBodyActors(group,this.monsters);
+        const previous=new Map(actors.map(actor=>[actor,footprintOf(actor)]));
+        this.commitBodyTransition('body-displacement',()=>{
+            this.translateBodyActors(actors,at);
+            for(const actor of actors)notifyProductionActorSourceChanged(this,actor.id);
+            const scope=new Set<string>(),anchor={...core.loc};
+            for(const actor of actors){
+                if(actor.hp>0)this.applyEnvironmentalEffects(actor,false,scope,previous.get(actor));
+                if(core.hp<=0||core.x!==anchor.x||core.y!==anchor.y||!this.bodyGroups?.includes(group))break;
+            }
+            this.needsRender=true;
+        },rng.getState(),true);
+        this.updateVision();return true;
+    }
+    private teleportWholeBody(core: Monster, respect: boolean, releaseCaptive: boolean): boolean {
+        const group=this.bodyGroups!.find(g=>g.coreId===core.id)!,actors=this.orderedBodyActors(group,this.monsters);
+        const world={...this.spatialWorldPort(),monsters:this.monsters.filter(m=>!actors.includes(m)||m===core)};
+        const candidates=teleportCandidates(world,core,respect).filter(at=>this.wholeBodyPlacement(actors,at,this.spatialCatalog.body(group.bodyDefinitionId),actors,false,at,this.spatialWorldPort(),true,{
+            allowsTerrain:(actor,p)=>!(cellTerrainFlags(this.grid,p.x,p.y)&(respect?avoidedFlagsForCaster(actor):teleportForbiddenFlags(actor)))
+        }).length>0);
+        if(!candidates.length)return false;
+        const random=rng.getState(),at=candidates[rng.randRange(0,candidates.length-1)]!;
+        this.commitBodyTransition('body-teleport',()=>{
+            if(releaseCaptive&&core.isCaged)this.freeCaptive(core);
+            for(const actor of actors)actor.setStatusDuration('stuck',0);
+            if(!this.placeWholeBody(core,at))throw new Error('Stale whole teleport');
+            if (this.waypoints) this.waypoints.chooseNewWanderDestination(core,this.wpContext());
+        },random,true);
+        return true;
+    }
+    private beckonWholeBody(core: Monster, caster: Creature, seenBefore: boolean): boolean {
+        const group=this.bodyGroups!.find(g=>g.coreId===core.id)!,actors=this.orderedBodyActors(group,this.monsters);
+        // The same full planner checks each swept step; hazards are physical
+        // endpoints, never permission to pull a single limb through a wall.
+        this.commitBodyTransition('body-beckoning',()=>{
+            for(const actor of actors)actor.setStatusDuration('stuck',0);
+            const limit=this.grid.width+this.grid.height;
+            for(let i=0;i<limit&&core.hp>0;i++){
+                const identity=JSON.stringify(group.members);
+                const contact=nearestContact(core,caster);if(contact.distance<=1)break;
+                const at={x:core.x+Math.sign(contact.to.x-contact.from.x),y:core.y+Math.sign(contact.to.y-contact.from.y)};
+                if(!this.tryMoveBodyCore(core,at,undefined,false,true))break;
+                for (const actor of actors) notifyProductionActorSourceChanged(this,actor.id);
+                if (core.hp <= 0 || !this.bodyGroups?.includes(group) || JSON.stringify(group.members)!==identity || core.x!==at.x || core.y!==at.y) break;
+                if(core.isCaged)this.freeCaptive(core);
+                for(const actor of actors){actor.setStatusDuration('stuck',0);actor.submerged=false;}
+            }
+            core.ticksUntilTurn=Math.max(core.ticksUntilTurn,this.player.attackSpeed+1);
+        },rng.getState(),true);
+        this.updateVision();return seenBefore||this.canObserveBoltTarget(core);
+    }
     /** CE teleport(..., INVALID_POS, false); no fallback after the final filter. */
     private teleportCreature(target: Creature, respectTerrainAvoidancePreferences = false, releaseSquareCaptive = false): boolean {
-        if (target.spatial?.bodyMember) return false;
+        if (target.spatial?.bodyMember && target instanceof Monster) return this.teleportWholeBody(bodyDecisionActor(target),respectTerrainAvoidancePreferences,releaseSquareCaptive);
         const candidates = teleportCandidates({ grid: this.grid, player: this.player, monsters: this.monsters, dormantMonsters: this.dormantMonsters }, target, respectTerrainAvoidancePreferences);
         if (candidates.length === 0) return false;
         const destination = candidates[rng.randRange(0, candidates.length - 1)]!;

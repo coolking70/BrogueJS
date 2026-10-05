@@ -1,5 +1,5 @@
 import { canCommitNativeAttack, commitNativeAttackCost, withNativeAttackAction } from '../engine/Core/NativeAttackTransaction';
-import { bodyDecisionActor, bodyStatusOwner, refreshBodyMemberSpeeds } from '../engine/Status/BodyStatuses';
+import { bodyStatusDisables, bodyDecisionActor, bodyGroupActors, bodyStatusOwner, refreshBodyMemberSpeeds } from '../engine/Status/BodyStatuses';
 import { bindSpatialCatalog, spatialCatalogFor } from '../engine/Movement/CreatureSpatial';
 import { type RigidPose } from '../engine/Movement/RigidFootprint';
 import { type RigidPoseStep } from '../engine/Map/RigidPosePathing';
@@ -427,11 +427,14 @@ export class Monster extends Creature {
     protected override bloodInvulnerable(): boolean { return this.isInvulnerable(); }
 
     public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: import('../ext/causality').DamageKind = 'other'): void {
-        this.interruptCorpseAbsorption(amount);
-        const damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
-        // Preserve the original CE damage/blood call in classic runs.
-        if (this.extensionHooks) super.takeDamage(damage, true, grid, beforeHpLoss, damageKind);
-        else super.takeDamage(damage, true, grid, beforeHpLoss);
+        const commit=()=>{
+            this.interruptCorpseAbsorption(amount);
+            const damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
+            // Preserve the original CE damage/blood call in classic runs.
+            if (this.extensionHooks) super.takeDamage(damage, true, grid, beforeHpLoss, damageKind);
+            else super.takeDamage(damage, true, grid, beforeHpLoss);
+        };
+        if(this.extensionHooks?.withNativeDamage)this.extensionHooks.withNativeDamage(commit);else commit();
     }
 
     public administrativeDeath?: boolean;
@@ -933,9 +936,10 @@ export class Monster extends Creature {
 
     /** CE decrementMonsterStatus: only eligible, surfaced monsters draw the 20% roll. */
     public updateSubmersion(grid: Grid): void {
+        if (bodyDecisionActor(this) !== this) return;
         if (this.hp <= 0 || this.submerged || !monsterCanSubmergeNow(this, grid)) return;
         if (rng.randPercent(20)) {
-            this.submerged = true;
+            for (const part of bodyGroupActors(this) as readonly Monster[]) part.submerged = true;
             if (!this.hasStatus('magical_fear') && this.state === MonsterState.FLEEING
                 && (!this.hasBehavior('MONST_FLEES_NEAR_DEATH') || this.hp >= Math.trunc(this.maxHp * 3 / 4))) {
                 this.state = MonsterState.HUNTING;
@@ -1716,7 +1720,10 @@ export class Monster extends Creature {
         emitCreatureFeature(game.grid, this, 'activation');
         surfaceOnDryLand(this, game.grid);
         game.applyEntanglementFromTerrain(this);
-        if (this.hasStatus('paralyzed') || this.hasStatus('entranced')) return true;
+        if (this.hasStatus('paralyzed') || this.hasStatus('entranced') || bodyStatusDisables(this,'decision')) {
+            if (this.spatial?.bodyMember && this.ticksUntilTurn <= 0) this.ticksUntilTurn = this.movementSpeed;
+            return true;
+        }
         if (this.isCaged) { game.makeMonsterDropItem(this); return true; }
 
         const wasAsleep = !this.isAlly && this.state === MonsterState.ASLEEP;
@@ -1733,6 +1740,22 @@ export class Monster extends Creature {
     /** Native fallback after prepareNativeDecision returned false for this
      * same decision. Preserve native survival, ally, magic and attack order;
      * do not repeat activation, perception, or corpse absorption here. */
+    /** The composite core keeps the native survival/ally/magic priorities;
+     * geometry and per-source attacks remain owned by the group executor. */
+    public tryBodyNativePriority(game: Game): boolean {
+        const normalAlly = this.isAlly && this.state !== MonsterState.FLEEING && !this.hasStatus('magical_fear') && !this.hasStatus('discordant');
+        if (hasBlink(this) && blinkFromHarmfulTerrain(game,this)) return true;
+        const enemy = normalAlly ? closestBlinkEnemy(game,this) : null;
+        if (normalAlly && corpseAllyBeforeMagic(game,this,enemy,p=>this.tryCorpseMove(p,game))) return true;
+        if (hasBlink(this) && (this.state === MonsterState.FLEEING || normalAlly && blinkAllyFlees(game,this,enemy))
+            && blinkChance(this) && monsterBlinkToSafety(game,this)) return true;
+        if (this.trySummon(game)) return true;
+        return this.state !== MonsterState.FLEEING && this.tryUseBolt(game);
+    }
+    public bodyAllyEnemy(game: Game): Monster | null {
+        const enemy = closestBlinkEnemy(game,this);
+        return allyShouldPursue(game,this,enemy) ? enemy : null;
+    }
     public takeNativeDecision(game: Game): void {
         withNativeAttackAction(game, this, () => this.takeNativeDecisionWithinAction(game));
     }

@@ -3,6 +3,7 @@ import type { Pos } from '../../types';
 import type { Grid } from '../Map/Grid';
 import { assertNativeSpatial, footprintOf, nearestContact, spatialCatalogFor, type FootprintActor } from '../Movement/CreatureSpatial';
 import { entrancementDiagonalBlocked, entrancementPassable } from '../Movement/Entrancement';
+import { bodyStatusOwner } from '../Status/BodyStatuses';
 
 export type BodyAttackContact = ReturnType<typeof nearestContact>;
 type MeleeActor = FootprintActor & { hasBehavior?(flag: string): boolean };
@@ -48,11 +49,12 @@ export function hasDeclaredZones(actor: Creature): boolean {
  * protection as well as the health transaction, without changing CE ordering. */
 function withZoneProtection<T>(actor: Creature, run: () => T): T {
     if (!hasDeclaredZones(actor) && !actor.spatial?.bodyMember) return run();
-    const shield = actor.statusDurations.shielded, maxShield = actor.maxShield;
+    const shieldOwner=bodyStatusOwner(actor,'shielded');
+    const shield = shieldOwner.statusDurations.shielded, maxShield = shieldOwner.maxShield;
     const absorber = actor as Creature & { isAbsorbing?: boolean }, absorbing = absorber.isAbsorbing;
     try { return run(); } catch (error) {
-        if (shield === undefined) delete actor.statusDurations.shielded; else actor.statusDurations.shielded = shield;
-        actor.maxShield = maxShield;
+        if (shield === undefined) delete shieldOwner.statusDurations.shielded; else shieldOwner.statusDurations.shielded = shield;
+        shieldOwner.maxShield = maxShield;
         if (absorbing !== undefined) absorber.isAbsorbing = absorbing;
         throw error;
     }

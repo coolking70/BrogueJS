@@ -4,6 +4,7 @@
     "tests/ext_growth_classic_isolation.test.ts",
     "tests/ext_growth_clone_overhealth.test.ts",
     "tests/ext_growth_combat_stats.test.ts",
+    "tests/ext_growth_composite_rewards.test.ts",
     "tests/ext_growth_config.test.ts",
     "tests/ext_growth_content_rewards.test.ts",
     "tests/ext_growth_creation_ui.test.ts",

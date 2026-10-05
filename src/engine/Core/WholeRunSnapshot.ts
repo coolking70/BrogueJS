@@ -383,6 +383,12 @@ function validateProductionGroupOwnership(groups: readonly BodyGroupState[], cat
                 || !bodyConstraintsSatisfied(catalog, definition, new Map(actors.map(a => [a!.spatial!.bodyMember!.partId,
                     { anchor: a!.loc, footprintId: a!.spatial!.footprintId, pose: a!.spatial!.pose }]))))
                 throw new SpatialValidationError('Invalid pending group ownership or geometry');
+            const occupied = new Set<string>();
+            for (const actor of actors) for (const cell of footprintOf(actor!, catalog)) {
+                const key = `${cell.x},${cell.y}`;
+                if (occupied.has(key)) throw new SpatialValidationError('Overlapping pending group');
+                occupied.add(key);
+            }
             continue; // pending has no terrain/index and no independent member clocks
         }
         const world = owners[0]!;
@@ -417,8 +423,9 @@ export function snapshotNativeSpatialWorld(levels: ReadonlyMap<number, CreatureS
     const forms = merge(snapshots.flatMap(s => s.definitions.forms ?? []));
     const breakRules = merge(snapshots.flatMap(s => s.definitions.breakRules ?? []));
     const statusProfiles = merge(snapshots.flatMap(s => s.definitions.statusProfiles ?? []));
+    const attackProfiles = merge(snapshots.flatMap(s => s.definitions.attackProfiles ?? []));
     return { schema: 1, definitions: { footprints: merge(snapshots.flatMap(s => s.definitions.footprints)), bodies: merge(snapshots.flatMap(s => s.definitions.bodies)),
-        ...(forms.length ? { forms } : {}), ...(breakRules.length ? { breakRules } : {}), ...(statusProfiles.length ? { statusProfiles } : {}) }, groups };
+        ...(forms.length ? { forms } : {}), ...(breakRules.length ? { breakRules } : {}), ...(statusProfiles.length ? { statusProfiles } : {}), ...(attackProfiles.length ? { attackProfiles } : {}) }, groups };
 }
 
 /** Decode each physical layer separately: cached layers may occupy the same
@@ -426,9 +433,9 @@ export function snapshotNativeSpatialWorld(levels: ReadonlyMap<number, CreatureS
  * carried and purgatory spatial lifecycles stay explicitly closed in 4a0. */
 function decodeNativeSpatialWorld(snapshot: GameSnapshot, graph: ReturnType<typeof restoreEntityGraph>, restored: Map<number, LevelState>, catalog: SpatialCatalog): Map<number, CreatureSpatial> {
     const root = snapshot.run.spatialWorld!;
-    keys(root, ['schema', 'definitions', 'groups']); keys(root.definitions, ['footprints', 'bodies', 'forms', 'breakRules', 'statusProfiles'], ['footprints', 'bodies']);
+    keys(root, ['schema', 'definitions', 'groups']); keys(root.definitions, ['footprints', 'bodies', 'forms', 'breakRules', 'statusProfiles', 'attackProfiles'], ['footprints', 'bodies']);
     if (!catalog.fixture || root.schema !== 1 || !Array.isArray(root.groups) || !Array.isArray(root.definitions.footprints) || !Array.isArray(root.definitions.bodies)
-        || ['forms', 'breakRules', 'statusProfiles'].some(k => (root.definitions as any)[k] !== undefined && !Array.isArray((root.definitions as any)[k]))) throw new SpatialValidationError('Invalid native spatial world');
+        || ['forms', 'breakRules', 'statusProfiles', 'attackProfiles'].some(k => (root.definitions as any)[k] !== undefined && !Array.isArray((root.definitions as any)[k]))) throw new SpatialValidationError('Invalid native spatial world');
     const owner = new Set<number>(), spatialLevels = new Map<number, CreatureSpatial>();
     const player = decodePlayer(snapshot.player, graph.items);
     for (const [depth, level] of restored) {
@@ -445,6 +452,7 @@ function decodeNativeSpatialWorld(snapshot: GameSnapshot, graph: ReturnType<type
         service.restoreWorld({ schema: 1, definitions: { footprints: root.definitions.footprints.filter(d => shapeIds.has(d.id)), bodies: root.definitions.bodies.filter(d => bodyIds.has(d.id)),
             ...(formIds.size ? { forms: (root.definitions.forms ?? []).filter(d => formIds.has(d.id)) } : {}),
             ...(closure.breakRules ? { breakRules: (root.definitions.breakRules ?? []).filter(d => closure.breakRules!.some(ref => ref.id === d.id)) } : {}),
+            ...(closure.attackProfiles ? { attackProfiles: (root.definitions.attackProfiles ?? []).filter(d => closure.attackProfiles!.some(ref => ref.id === d.id)) } : {}),
             ...(closure.statusProfiles ? { statusProfiles: (root.definitions.statusProfiles ?? []).filter(d => closure.statusProfiles!.some(ref => ref.id === d.id)) } : {}) }, groups });
         spatialLevels.set(depth, service);
     }
@@ -473,6 +481,9 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
         || !Number.isSafeInteger(s.run.nextEntityId) || s.run.nextEntityId < 1
         || !Number.isFinite(s.run.monsterSpawnFuse) || !Number.isFinite(s.run.absoluteTurnNumber)
         || typeof s.run.pendingIdentify !== 'boolean' || !s.run.logger
+        || (s.run.seenBodyCoreIds !== undefined && (!Array.isArray(s.run.seenBodyCoreIds)
+            || new Set(s.run.seenBodyCoreIds).size !== s.run.seenBodyCoreIds.length
+            || s.run.seenBodyCoreIds.some(id => !Number.isSafeInteger(id) || id < 1 || id >= s.run.nextEntityId)))
         || !Array.isArray(s.levels) || !Array.isArray(s.pendingFallenByDepth) || !Array.isArray(s.pendingFallenItemsByDepth)
         || (s.purgatory !== undefined && !Array.isArray(s.purgatory))) return false;
     const depths = new Set<number>();

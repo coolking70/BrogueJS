@@ -81,6 +81,19 @@ it('hallucination does not publish membership; stale limb rows remain independen
   expect(publicSidebarEntityRows(game).some(r => r.kind === 'monster' && r.bodyGroup)).toBe(false);
 });
 
+it('a previously observed hidden core collapses its visible limbs without publishing fresh HP, form or location',()=>{
+  const {game,a,leg}=scene();game.seenBodyCoreIds.add(a.id);
+  for(const p of footprintOf(a))game.grid.getCell(p.x,p.y)!.isVisible=false;
+  a.hp=17;
+  const random=rng.getState(), rows=publicSidebarEntityRows(game).filter(r=>r.kind==='monster');
+  expect(rows).toHaveLength(2);const row=rows.find(r=>r.bodyGroup?.coreId===a.id)!;
+  expect(row.bodyGroup!.coreVisible).toBe(false);expect(row.bodyGroup!.members.some(m=>m.entityId===a.id)).toBe(false);
+  expect(row.name).toBe('已见复合体（核心不可见）');expect(row.hp).toBe(0);expect(row.maxHp).toBe(0);
+  expect(row.loc).not.toEqual(a.loc);expect(bodyMemberSummary(row.bodyGroup!)).toBe('可见成员 8');
+  expect(game.getMonsterAt(leg.x,leg.y)).toBe(leg);expect(nearbyDetail(game,row)).not.toBeNull();expect(rng.getState()).toEqual(random);
+  const saved=JSON.parse(JSON.stringify(game.toSaveSnapshot()));expect(game.loadSnapshot(saved)).toBe(true);expect(game.seenBodyCoreIds.has(a.id)).toBe(true);
+});
+
 interface Node { type: string; text: string; props: Record<string, any>; children: Node[]; parent: Node | null; focus(): void }
 const node = (type: string, text = ''): Node => ({ type, text, props: {}, children: [], parent: null, focus() {} });
 const renderer = Vue.createRenderer<Node, Node>({

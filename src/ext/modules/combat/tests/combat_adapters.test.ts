@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import { installProductionBody, emptyProductionArena, PRODUCTION_BODY_ID } from '../../../../test/support/productionComposite';
+import { auditFullObjectGraph, fullGenerationRoots } from '../../../../test/support/fullGenerationCheckpointOracle';
 import { selectNativeActorAction } from '../../../../engine/Core/ActorActionSession';
 import { Item, ItemCategory } from '../../../../engine/Items/Item';
 import { withBodyContact } from '../../../../engine/Combat/BodyCombat';
@@ -11,14 +12,14 @@ import { chargeNativeActorAttack, collectPhasedAttackActors, prepareActorParryCo
 import { productionActorActionScheduler } from '../../../../engine/Core/ActorActionProduction';
 import { prepareWorldRest, commitWorldRest, settleWorldRest, interruptWorldRest } from '../../../../engine/Core/WorldRestProduction';
 import { Monster, MonsterState, type MonsterData } from '../../../../entities/Monster';
-import type { Creature } from '../../../../entities/Creature';
+import { getNextEntityId, type Creature } from '../../../../entities/Creature';
 import monsters from '../../../../data/monsters.json';
 import { TerrainType, DungeonLayer } from '../../../../engine/Map/Grid';
 import { commitCreatureAnchor } from '../../../../engine/Movement/CreatureSpatial';
 import { EnvironmentManager } from '../../../../engine/Environment/Gas';
 import { WaypointSystem } from '../../../../engine/Map/WaypointMap';
 import { logger } from '../../../../engine/Systems/Logger';
-import { rng } from '../../../../engine/Random';
+import { rng, RNGType } from '../../../../engine/Random';
 import * as catalog from '../../../catalog';
 import { registryFromDescriptors } from '../../../descriptor';
 import { extensionDataFingerprint } from '../../../fingerprint';
@@ -36,7 +37,8 @@ const revision=(capacity:number)=>extensionDataFingerprint({capacity});
 const supported=(staminaCapacity=30,poiseCapacity=18)=>({status:'supported',staminaCapacity,poiseCapacity,revision:revision(staminaCapacity)}) as Json;
 const events=(game:Game)=>(game.extensionRuntime!.snapshot().modules.narrative as unknown as {events:CombatEventFact[]}).events;
 const installed=new Set(catalog.getInstalledModuleDescriptors().map(module=>module.id));
-function setup(options:{query?:(actorId:number,playerId:number)=>Json;events?:boolean;fail?:()=>boolean;bodyAttacks?:boolean}={}) {
+type ConsumerObserver={prepare:()=>void;commit:()=>void};
+function setup(options:{observe?:ConsumerObserver;query?:(actorId:number,playerId:number)=>Json;events?:boolean;fail?:()=>boolean;bodyAttacks?:boolean}={}) {
     const previous=catalog.createExtensionRegistry();
     const descriptors=catalog.getInstalledModuleDescriptors().map(descriptor=>{
         const module=previous.create(previous.manifest([descriptor.id]))[0]!;
@@ -50,7 +52,8 @@ function setup(options:{query?:(actorId:number,playerId:number)=>Json;events?:bo
         }
         if(descriptor.id==='narrative'&&options.events)return {...descriptor,create:()=>({id:descriptor.id,version:descriptor.version,rules:descriptor.rules,
             initialState:()=>({events:[]}),validateState:isJson,committedFacts:{'combat.event.v1':{maxDerivedFacts:0,
-                prepare:fact=>structuredClone(fact),commit:(fact,context)=>{
+                prepare:fact=>{options.observe?.prepare();return structuredClone(fact);},commit:(fact,context)=>{
+                    options.observe?.commit();
                     if(options.fail?.())throw new Error('fixture consumer failure');
                     const value=structuredClone(context.state) as {events:Json[]};value.events.push(fact as Json);context.setState(value);
                 }}}} as ExtensionModule)};
@@ -218,8 +221,16 @@ describe.skipIf(!installed.has('narrative'))('3g four committed combat fact prod
 
 
 describe.skipIf(!installed.has('giants')||!installed.has('narrative'))('3g composite capacity and event ownership',()=>{
-    function body(realGrowth=false,fail?:()=>boolean){
-        installProductionBody(8,undefined,undefined,true);setup({query:realGrowth?undefined:()=>supported(40,20),events:true,bodyAttacks:true,fail});
+    function body(realGrowth=false,fail?:()=>boolean,sockets=false,observe?:ConsumerObserver){
+        const data=installProductionBody(8,undefined,undefined,true);
+        if(sockets){
+            const rule={id:'giants.fixture-socket-break',owner:'giants',trigger:'hp-zero' as const,disposition:'keep-zone' as const,
+                modifiers:[{kind:'balance-loss' as const,amount:4,fallbackStunTicks:40}]};
+            Object.assign(data.leg,{breakRules:[rule],footprint:{geometry:{kind:'rect',width:1,height:1},poses:['r0'],
+                zones:[{id:'socket',nameKey:'ext.giants.shale_weaver.name',health:{kind:'local',maxHp:8,ownerTransfer:{numerator:1,denominator:1}},armor:0,
+                    damageMultiplier:{numerator:1,denominator:1},breakRuleId:rule.id}],zoneCells:[{x:0,y:0,zoneId:'socket'}]}});
+        }
+        setup({query:realGrowth?undefined:()=>supported(40,20),events:true,bodyAttacks:true,fail,observe});
         const ids=realGrowth?['combat','giants','growth','narrative']:['combat','giants','narrative'];
         const registry=catalog.createExtensionRegistry(),initialCommands=registry.create(registry.manifest(ids)).flatMap(module=>module.initialCommand?[JSON.stringify({module:module.id,...module.initialCommand})]:[]);
         const game=createHeadlessGame(7307,'test');game.startNewGame({seed:7307,mode:'wizard',ruleSet:'extended',extensions:ids,initialCommands});
@@ -276,6 +287,50 @@ describe.skipIf(!installed.has('giants')||!installed.has('narrative'))('3g compo
         expect(()=>withBodyContact(leg,leg.loc,()=>leg.takeDamage(100,true,game.grid,undefined,'physical'))).not.toThrow();
         expect(core.hp).toBe(0);expect(game.monsters).not.toContain(leg);
         expect(events(game).filter(event=>event.eventKind==='staggered')).toEqual([]);
+    });
+
+    it('defers socket-break consumers through native damage epilogue and fully restores a post-transfer failure',()=>{
+        const consumer={prepare:vi.fn(),commit:vi.fn()}, {game,core,legs}=body(false,undefined,true,consumer),leg=legs[0]!;
+        applyActorPoiseDamage(game,core.id,11);expect(row(game,core.id).poise).toBe(1);
+        leg.applyShield(10);leg.isAbsorbing=true;
+        const runtime=game.extensionRuntime!,nativeEmit=runtime.emit.bind(runtime),members=game.monsters,group=game.bodyGroups![0]!,slot=group.members[1]!;
+        const pool=row(game,core.id),spatial=leg.spatial!,zone=spatial.zoneState![0]!,hp=core.hp,legHp=leg.hp;
+        const moduleBefore=runtime.snapshot(),random=rng.getState(),allocator=getNextEntityId(),log=logger.getState();
+        const audit=auditFullObjectGraph(fullGenerationRoots(game),[runtime]);let reached=false;
+        const fault=vi.spyOn(runtime,'emit').mockImplementation((name,event)=>{
+            if(name==='damage'&&(event as {creature?:{id:number}}).creature?.id===leg.id){
+                reached=true;expect(zone).toMatchObject({hp:0,broken:true});expect(leg.hp).toBe(legHp-8);expect(core.hp).toBe(hp-2);
+                expect(pool.poise).toBe(0);expect(leg.getStatusDuration('shielded')).toBe(0);expect(leg.isAbsorbing).toBe(false);
+                expect(consumer.prepare).not.toHaveBeenCalled();expect(consumer.commit).not.toHaveBeenCalled();
+                logger.log('fixture post-transfer damage failure');rng.randRange(1,9);rng.setRNG(RNGType.RNG_COSMETIC);rng.randRange(1,9);
+                throw new Error('fixture post-transfer damage failure');
+            }
+            nativeEmit(name,event);
+        });
+        expect(()=>withBodyContact(leg,leg.loc,()=>leg.takeDamage(100,false,game.grid,undefined,'physical'))).toThrow('fixture post-transfer damage failure');
+        fault.mockRestore();expect(reached).toBe(true);expect(consumer.prepare).not.toHaveBeenCalled();expect(consumer.commit).not.toHaveBeenCalled();
+        expect(audit.differences()).toEqual([]);expect(runtime.snapshot()).toEqual(moduleBefore);expect(rng.getState()).toEqual(random);
+        expect(getNextEntityId()).toBe(allocator);expect(logger.getState()).toEqual(log);expect(leg.getStatusDuration('shielded')).toBe(10);expect(leg.isAbsorbing).toBe(true);
+        expect(game.monsters).toBe(members);expect(game.bodyGroups![0]).toBe(group);expect(group.members[1]).toBe(slot);
+        expect(row(game,core.id)).toBe(pool);expect(leg.spatial).toBe(spatial);expect(spatial.zoneState![0]).toBe(zone);
+        expect(()=>withBodyContact(leg,leg.loc,()=>leg.takeDamage(100,false,game.grid,undefined,'physical'))).not.toThrow();
+        expect(consumer.prepare).toHaveBeenCalledOnce();expect(consumer.commit).toHaveBeenCalledOnce();
+        expect(events(game).filter(event=>event.eventKind==='staggered')).toHaveLength(1);
+        expect(leg.hp).toBe(legHp-8);expect(core.hp).toBe(hp-2);expect(pool.poise).toBe(0);expect(zone).toMatchObject({hp:0,broken:true});
+    });
+    it('suppresses a queued socket stagger when the subsequent same-contact transfer kills its core',()=>{
+        const consumer={prepare:vi.fn(),commit:vi.fn()},{game,core,legs}=body(false,undefined,true,consumer),leg=legs[0]!;
+        applyActorPoiseDamage(game,core.id,11);core.hp=1;const zone=leg.spatial!.zoneState![0]!;
+        const runtime=game.extensionRuntime!,publish=runtime.commitCombatEvent.bind(runtime),stagedAtHp:number[]=[];
+        vi.spyOn(runtime,'commitCombatEvent').mockImplementation((actor,payload)=>{
+            if(actor===core&&payload.eventKind==='staggered')stagedAtHp.push(core.hp);
+            publish(actor,payload);
+        });
+        expect(()=>withBodyContact(leg,leg.loc,()=>leg.takeDamage(8,true,game.grid,undefined,'physical'))).not.toThrow();
+        expect(stagedAtHp).toEqual([1]);
+        expect(zone).toMatchObject({hp:0,broken:true});expect(core.hp).toBe(0);expect(game.monsters).not.toContain(leg);
+        expect(events(game).filter(event=>event.eventKind==='staggered')).toEqual([]);
+        expect(consumer.prepare).not.toHaveBeenCalled();expect(consumer.commit).not.toHaveBeenCalled();
     });
 
 });

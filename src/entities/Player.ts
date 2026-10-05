@@ -64,14 +64,20 @@ export class Player extends Creature {
     public override get bloodType(): number { return PLAYER_BLOOD_TYPE; }
 
     public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: import('../ext/causality').DamageKind = 'other'): void {
-        if (amount > 0) logger.disturb();
-        super.takeDamage(amount, ignoresProtectionShield, grid, beforeHpLoss, damageKind);
+        const commit=()=>{
+            if (amount > 0) logger.disturb();
+            super.takeDamage(amount, ignoresProtectionShield, grid, beforeHpLoss, damageKind);
+        };
+        if(this.extensionHooks?.withNativeDamage)this.extensionHooks.withNativeDamage(commit);else commit();
     }
 
     /** Ordinary melee is the sole damage exception during CE startFighting. */
     public takeCombatDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void): void {
-        if (!logger.blockCombatText && amount > 0) logger.disturb();
-        super.takeDamage(amount, ignoresProtectionShield, grid, beforeHpLoss, 'physical');
+        const commit=()=>{
+            if (!logger.blockCombatText && amount > 0) logger.disturb();
+            super.takeDamage(amount, ignoresProtectionShield, grid, beforeHpLoss, 'physical');
+        };
+        if(this.extensionHooks?.withNativeDamage)this.extensionHooks.withNativeDamage(commit);else commit();
     }
     public restoreHungerTransition(value: HungerState | null): void { this.hungerTransition = value; }
 

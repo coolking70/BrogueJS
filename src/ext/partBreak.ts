@@ -38,6 +38,7 @@ export type PartBreakPreparation = { status: 'ready'; plan: Json }
  * are synchronous, cloned/frozen, consumed once and never leave this call. */
 export interface PartBreakCommitContext {
     readonly state: Json;
+    readonly member?: Readonly<PartBreakMemberIdentity>;
     setState(state: Json): void;
     getComponent(actorId: number, name: string): Json | undefined;
     setComponent(actorId: number, name: string, value: Json): void;
@@ -56,11 +57,13 @@ export interface PartBreakNativeCommit<T> {
     rollback(): void;
 }
 export type PartBreakCommitter = <T>(request: PartBreakRequest, native: PartBreakNativeCommit<T>) => T;
-export function validatePartBreakRequest(value: unknown): asserts value is PartBreakRequest {
+export function validatePartBreakRequest(value: unknown, member?: Readonly<PartBreakMemberIdentity>): asserts value is PartBreakRequest {
     keys(value, ['schema', 'resolutionId', 'actorId', 'sourceId', 'groupId', 'partId', 'zoneId', 'generation', 'balanceLoss', 'fallbackStunTicks']);
     if (value.schema !== 1 || !integer(value.resolutionId, 1) || !integer(value.actorId, 1)
         || value.groupId !== value.actorId || !identity(value.partId) || !identity(value.zoneId)
-        || (value.partId === 'self' ? value.zoneId === 'body' : value.zoneId !== 'body')
+        || (value.partId === 'self' && value.zoneId === 'body')
+        || value.partId !== 'self' && (!member || member.groupId !== value.groupId || member.partId !== value.partId
+            || member.generation !== value.generation || !integer(member.entityId,1) || !identity(member.bodyDefinitionId))
         || value.generation !== 0 || (value.sourceId !== null && !integer(value.sourceId, 1))
         || !integer(value.balanceLoss, 0, 1000000) || !integer(value.fallbackStunTicks, 0, 1000000))
         throw new Error('Invalid fixed zone break request');

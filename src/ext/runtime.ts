@@ -40,6 +40,9 @@ const actorQueryProviders = new WeakMap<ExtensionRuntime, Map<string, {module: E
 const committedTransactions = new WeakMap<ExtensionRuntime, { events: Omit<CombatEventFact,'factId'>[]; publishing: boolean; allocated:number; actors:Map<Creature,{depth:number;actor:CombatEventActor}> }>();
 const allocatingFacts = new WeakSet<ExtensionRuntime>();
 const factConsumers = new WeakMap<ExtensionRuntime, Map<string, readonly {module:ExtensionModule;consumer:CommittedFactConsumer}[]>>();
+const restHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts,'nativeDamageCommitted'|'worldRestUnavailable'>>();
+const actorQueryScopes=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['actorQueryScope']>>();
+const nativeFactCheckpoints=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['checkpointCommittedFacts']>>();
 function isCreatureView(value: unknown): boolean {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
     const v = value as Record<string, unknown>;
@@ -169,10 +172,19 @@ export class ExtensionRuntime {
     private readonly messageBuffers: string[][] = [];
     get spatialCatalog(): SpatialCatalog { return spatialCatalogs.get(this) ?? nativeSpatialCatalog; }
     constructor(registry: ExtensionRegistry, manifest: ExtensionManifest, private readonly ports: ExtensionPorts, snapshot?: ExtensionSnapshot) {
+        if(ports.actorQueryScope||ports.checkpointCommittedFacts){
+            if(ports.actorQueryScope)actorQueryScopes.set(this,ports.actorQueryScope);
+            if(ports.checkpointCommittedFacts)nativeFactCheckpoints.set(this,ports.checkpointCommittedFacts);
+            const {actorQueryScope:_scope,checkpointCommittedFacts:_checkpoint,...existingPorts}=this.ports;this.ports=existingPorts;
+        }
+        if (ports.nativeDamageCommitted || ports.worldRestUnavailable) {
+            const {nativeDamageCommitted,worldRestUnavailable,...existingPorts}=this.ports;
+            restHandlers.set(this,{nativeDamageCommitted,worldRestUnavailable});this.ports=existingPorts;
+        }
         if (ports.zoneBroken) {
             zoneBreakHandlers.set(this, ports.zoneBroken);
             if (ports.checkpointZoneBreak) zoneBreakCheckpoints.set(this, ports.checkpointZoneBreak);
-            const { zoneBroken: _handler, checkpointZoneBreak: _checkpoint, ...existingPorts } = ports;
+            const { zoneBroken: _handler, checkpointZoneBreak: _checkpoint, ...existingPorts } = this.ports;
             this.ports = existingPorts;
         }
         if (ports.memberDamage || ports.memberDamageCommitted || ports.validateMemberBreak || ports.memberBroken) {
@@ -214,10 +226,16 @@ export class ExtensionRuntime {
         }
         for (const module of this.modules) if (module.nativeBodies) {
             const declarations = module.nativeBodies;
-            if (!isJson(declarations) || Object.keys(declarations).sort().join(',') !== 'breakRules,definitions'
+            if (!isJson(declarations) || Object.keys(declarations).filter(k => !['statusProfiles', 'attackProfiles'].includes(k)).sort().join(',') !== 'breakRules,definitions'
                 || !Array.isArray(declarations.definitions) || !declarations.definitions.length || declarations.definitions.length > 16
                 || !Array.isArray(declarations.breakRules) || declarations.breakRules.length > 16 || !module.nativeForms?.length)
                 throw new Error('Invalid native body declarations');
+            if (declarations.statusProfiles !== undefined && (!Array.isArray(declarations.statusProfiles) || declarations.statusProfiles.length > 16)) throw new Error('Invalid status profile declarations');
+            if (declarations.attackProfiles !== undefined && (!Array.isArray(declarations.attackProfiles) || declarations.attackProfiles.length > 16)) throw new Error('Invalid attack profile declarations');
+            for (const profile of declarations.statusProfiles ?? []) this.spatialCatalog.registerStatusProfile(profile);
+            for (const profile of declarations.attackProfiles ?? []) this.spatialCatalog.registerAttackProfile(profile);
+            const provider = this.modules.find(m => m.actorActions)?.actorActions?.definitions as unknown as import('./actorActions').ActorAttackDefinitions | undefined;
+            if (provider && (declarations.attackProfiles ?? []).some(p => !provider.profiles.some(ref => ref.id === p.providerProfileId))) throw new Error('Unresolved body attack provider profile');
             for (const rule of declarations.breakRules) this.spatialCatalog.registerMemberBreakRule(rule);
             for (const form of module.nativeForms) this.spatialCatalog.registerForm({ id: form.id, owner: module.id,
                 footprintId: nativeFormSpatial(form).footprintId });
@@ -483,7 +501,7 @@ export class ExtensionRuntime {
         // No provider means no actor data is read or transmitted. Fixture/native
         // callers without this optional seam retain the original template path.
         if(!actorQueryProviders.get(this)?.has(capability))return Object.freeze({status:'unavailable',reason:'absent'});
-        if (!this.creatures.has(actor) || !this.ports.actorQueryScope?.(actor)) throw new Error('Untrusted actor query scope');
+        if (!this.creatures.has(actor) || !actorQueryScopes.get(this)?.(actor)) throw new Error('Untrusted actor query scope');
         return this.queryActorProvider(capability,actor,input,this.ports.playerId());
     }
     queryOptionalActorInWorld(capability:string,actor:Creature,input:Json,world:ActorActionProductionWorld):OptionalQueryResult {
@@ -549,7 +567,7 @@ export class ExtensionRuntime {
         if (committedTransactions.has(this) || !eventKinds.some(kind=>this.hasCommittedFactConsumer('combat.event.v1',kind))) {
             const result=work();requireSynchronous(result);return result;
         }
-        const restoreNative = this.ports.checkpointCommittedFacts?.();
+        const restoreNative = nativeFactCheckpoints.get(this)?.();
         if (!restoreNative) throw new Error('Missing native committed fact checkpoint');
         const identities=new Map<Creature,{depth:number;actor:CombatEventActor}>();
         for(const actor of this.creatures){const identity=this.combatFactActor(actor);if(identity)identities.set(actor,identity);}
@@ -560,7 +578,15 @@ export class ExtensionRuntime {
         const nativeRevision=this.nativeActionRevision;
         try { return this.transaction(()=>{
             const result = work(); requireSynchronous(result); frame.publishing=true;
-            for (const event of frame.events) this.publishCommittedFact('combat.event.v1',event);
+            for (const event of frame.events) {
+                const source=[...frame.actors].find(([,identity])=>identity.actor.entityId===event.actor.entityId)?.[0]
+                    ??[...this.creatures].find(actor=>actor.id===event.actor.entityId);
+                // A zone break can exhaust poise before the same contact's
+                // member-to-core transfer becomes lethal. Only committed live
+                // stagger starts are facts; death still owns its native fact.
+                if(event.eventKind==='staggered'&&source&&source.hp<=0)continue;
+                this.publishCommittedFact('combat.event.v1',event);
+            }
             return result;
         }); } catch(error) {
             restoreNative();this.causality.restore(causes);this.deaths=deaths;this.nativeActionRevision=nativeRevision;
@@ -582,9 +608,12 @@ export class ExtensionRuntime {
             actor:structuredClone(identity.actor)}));
     }
     private combatFactActor(actor:Creature):{depth:number;actor:CombatEventActor}|null {
-        const scope=this.ports.actorQueryScope?.(actor);
+        const scope=actorQueryScopes.get(this)?.(actor);
         if(!scope||!this.creatures.has(actor))return null;
-        const facts=this.actorFacts(actor);
+        const coreId=actor.spatial?.bodyMember?.groupId;
+        const roleActor=coreId?[...this.creatures].find(candidate=>candidate.id===coreId):actor;
+        if(!roleActor)return null;
+        const facts=this.actorFacts(roleActor);
         return {depth:scope.depth,actor:{entityId:actor.id,role:facts.player?'player':facts.allied?'ally':facts.hostile?'hostile':'neutral',
             tags:[...this.publicActorTags(actor.id)].sort(),partId:scope.partId,generation:scope.generation}};
     }
@@ -624,12 +653,13 @@ export class ExtensionRuntime {
     }
     private commitPartBreakWithin<T>(request: PartBreakRequest, native: PartBreakNativeCommit<T>): T {
         if (this.disposed || this.pureProviderPhase || this.rewardProviderPhase) throw new Error('Unavailable or recursive part break commit');
-        validatePartBreakRequest(request);
+        const member = request.partId === 'self' ? undefined : bodyHandlers.get(this)?.validateMemberBreak?.(request);
+        if(request.partId!=='self' && !member)throw new Error('Unavailable member break identity');
+        validatePartBreakRequest(request,member||undefined);
         const actor = [...this.creatures].find(c => c.id === request.actorId);
         if (!actor || actor.hp <= 0) throw new Error('Unavailable part break actor');
-        const member = request.partId === 'self' ? undefined : bodyHandlers.get(this)?.validateMemberBreak?.(request);
         if (request.partId !== 'self' && (!member || member.groupId !== request.groupId || member.partId !== request.partId
-            || member.generation !== request.generation || member.entityId === actor.id
+            || member.generation !== request.generation || member.entityId === actor.id && request.zoneId === 'body'
             || ![...this.creatures].some(c => c.id === member.entityId && c.hp > 0
                 && c.spatial?.bodyMember?.groupId === actor.id && c.spatial.bodyMember.partId === member.partId)))
             throw new Error('Unavailable member break identity');
@@ -690,6 +720,7 @@ export class ExtensionRuntime {
                                     } else context.setState(next);
                                 },
                                 getComponent: context.getComponent, setComponent: context.setComponent,
+                                ...(member ? { member: freezeView({ ...member }) } : {}),
                                 removeComponent: context.removeComponent, message: context.message,
                             };
                             const committed = entry.provider.commit(value, plan, Object.freeze(narrow));
@@ -698,7 +729,8 @@ export class ExtensionRuntime {
                         });
                     } finally { this.rewardProviderPhase = false;providerCommitActive=false; }
                 }
-                if (member) bodyHandlers.get(this)?.memberBroken?.(actor, member);
+                if (member && request.zoneId === 'body') bodyHandlers.get(this)?.memberBroken?.(actor, member);
+                else if (member) zoneBreakHandlers.get(this)?.([...this.creatures].find(c => c.id === member.entityId)!, request.zoneId);
                 else zoneBreakHandlers.get(this)?.(actor, request.zoneId);
                 const nextState=this.actorActionBinding()?.state;
                 const nowStagger=(nextState?.actors.find(row=>row.actorId===actor.id)?.staggerRemainingTicks??0)>0
@@ -1169,6 +1201,7 @@ export class ExtensionRuntime {
         const forms = this.nativeForms();
         if (forms.length) bindNativeForms(creature, forms, this.spatialCatalog);
         creature.extensionHooks = {
+            ...(this.actorActionBinding()&&this.hasCommittedFactConsumer('combat.event.v1','staggered')?{withNativeDamage:(work:()=>void)=>this.withCommittedFacts(work,['staggered'])}:{}),
             zoneDamage: (target, amount, kind) => {
                 const memberDamage = bodyHandlers.get(this)?.memberDamage?.(target, amount, kind);
                 if (memberDamage !== undefined) return memberDamage;
@@ -1212,7 +1245,7 @@ export class ExtensionRuntime {
             },
             damage: (target, amount, hpBefore, damageKind = 'other') => {
                 const fact = this.causality.recordDamage(target.id, hpBefore, target.hp, damageKind);
-                this.ports.nativeDamageCommitted?.(target, fact.hpLost);
+                restHandlers.get(this)?.nativeDamageCommitted?.(target, fact.hpLost);
                 this.emit('damage', { creature: creatureView(target, this.ports.playerId()), amount, hpBefore,
                     sourceId: this.sourceId, origin: fact.origin, hpLost: fact.hpLost, damageKind });
                 bodyHandlers.get(this)?.memberDamageCommitted?.(target);
@@ -1449,7 +1482,7 @@ export class ExtensionRuntime {
             const projection = module.projectView(freezeView({ queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
                 visibleInteractables: this.visibleInteractables(moduleId), nearbyInteractables: this.nearbyInteractables(moduleId),
                 worldRestUnavailable: id=>this.world.entities.some(entity=>entity.id===id&&entity.owner===moduleId)
-                    ?this.ports.worldRestUnavailable?.(id)??null:'unavailable' }));
+                    ?restHandlers.get(this)?.worldRestUnavailable?.(id)??null:'unavailable' }));
             requireSynchronous(projection);
             if (!isJson(projection) || !projection || typeof projection !== 'object' || Array.isArray(projection)) throw new Error('Invalid module display projection');
             const publicProjection = cloneJson(projection) as Record<string, Json>;

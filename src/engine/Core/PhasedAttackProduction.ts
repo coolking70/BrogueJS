@@ -1,3 +1,4 @@
+import { bodyStatusDisables } from '../Status/BodyStatuses';
 import { timeSystem } from '../Systems/Time';
 import { bindWorldRestSource, finishWorldRestClock, interruptWorldRest, settleWorldRest, worldRestSourceChanged } from './WorldRestProduction';
 /** Trusted data-driven executor. Optional content supplies finite definitions only. */
@@ -72,6 +73,9 @@ function eligible(game:Game,source:Creature,session:Session):boolean {
     return true;
 }
 function profileId(session:Session,game:Game,source:Creature):string|undefined {
+    const declared = game.bodyAttackProfileIds(source);
+    if (declared?.length) return declared.find(id => nativeZoneAttackAvailable(source,id)
+        && session.definitions.profiles.some(p => p.id === id));
     return source===game.player?session.definitions.playerProfileId:source instanceof Monster?
         session.definitions.nativeProfiles.find(binding=>binding.monsterId===source.typeId)?.profileId:undefined;
 }
@@ -198,10 +202,11 @@ export interface PhasedAttackPlan {
     risks:ControlledActionRisk[];approvedRisks:{targetId:number;risks:ControlledActionRisk[]}[];
 }
 function prepare(game:Game,source:Creature,attackId:string,facing:ActorAttackFacing):PhasedAttackPlan|null {
-    const session=sessions.get(game); if (!session||!eligible(game,source,session)) return null;
+    const session=sessions.get(game); if (!session||!eligible(game,source,session)||bodyStatusDisables(source,'attacks')) return null;
     const profile=session.definitions.profiles.find(p=>p.id===profileId(session,game,source));
     const attack=session.definitions.attacks.find(a=>a.id===attackId);
-    if (!profile||!attack||!profile.attackIds.includes(attackId)||!facings.includes(facing)||!nativeZoneAttackAvailable(source,attackId)) return null;
+    if (!profile||!attack||!profile.attackIds.includes(attackId)||!facings.includes(facing)
+        || !nativeZoneAttackAvailable(source,profile.id) || !nativeZoneAttackAvailable(source,attackId)) return null;
     const {policy}=resourcesFor(game,session,source);
     const resource=session.state.actors.find(a=>a.actorId===source.id);
     if (Math.min(resource?.stamina??policy.initialStamina,policy.staminaCapacity)<attack.cost || (!resource && session.state.actors.length>=4096)) return null;
@@ -475,7 +480,7 @@ export function retirePhasedAttackSource(game:Game,id:number):void {
 
 /** Candidate-world geometry validation ignores current occlusion (a wall may
  * legitimately have appeared since warning), but rejects invented/off-map cells. */
-export function validatePhasedAttackGeometry(state:ProductionActorAttackState, definitions:ActorAttackDefinitions, creatures:readonly Creature[], contains:(depth:number,x:number,y:number)=>boolean,activeActorIds?:ReadonlySet<number>):void {
+export function validatePhasedAttackGeometry(state:ProductionActorAttackState, definitions:ActorAttackDefinitions, creatures:readonly Creature[], contains:(depth:number,x:number,y:number)=>boolean,activeActorIds?:ReadonlySet<number>,bodyProfiles?:(source:Creature,attackId:string)=>readonly string[]|undefined):void {
     const actors=new Map(creatures.map(actor=>[actor.id,actor]));
     for(const row of state.actors){
         const source=actors.get(row.actorId);
@@ -504,8 +509,8 @@ export function validatePhasedAttackGeometry(state:ProductionActorAttackState, d
             if(child.cancelled&&child.phaseIndex===child.phases.length){if(sub.lockedCells.length)throw new Error('Retired source retains attack cells');continue;}
             if(!source)throw new Error('Invalid action source metadata');
             const pending=child.phases.slice(child.phaseIndex).some(phase=>phase.segmentIndex!==null);
-            const expected=source instanceof Monster?definitions.nativeProfiles.find(binding=>binding.monsterId===source.typeId)?.profileId:definitions.playerProfileId;
-            if(pending && (expected!==(sub.profileId??metadata.profileId) || source.hasStatus('paralyzed') || source.hasStatus('entranced') || (source instanceof Monster && source.isCaged)))
+            const expected=source instanceof Monster?(bodyProfiles?.(source,sub.attackId) ?? [definitions.nativeProfiles.find(binding=>binding.monsterId===source.typeId)?.profileId]):[definitions.playerProfileId];
+            if(pending && (!expected.includes(sub.profileId??metadata.profileId) || bodyStatusDisables(source,'attacks') || source.hasStatus('paralyzed') || source.hasStatus('entranced') || (source instanceof Monster && source.isCaged)))
                 throw new Error('Invalid pending source profile or eligibility');
             if(!sub.lockedCells.length)continue;
             const footprint=spatialOf(source).cells, own=new Set(footprint.map(cell=>`${cell.x},${cell.y}`));

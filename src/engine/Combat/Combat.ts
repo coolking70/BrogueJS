@@ -1,3 +1,4 @@
+import { bodyDecisionActor } from '../Status/BodyStatuses';
 import { guardNativeMelee, settleNativeMeleePoise } from '../Core/NativeAttackTransaction';
 import { bodyAttackContactOf, nearestLegalMeleeContact, withBodyAttackContact } from './BodyCombat';
 import { distanceBetweenFootprints } from '../Movement/CreatureSpatial';
@@ -115,8 +116,8 @@ export class CombatSystem {
             && legalSeizeContact(attacker, defender, opts?.grid)) return 0;
         const inanimate = defender instanceof Monster && defender.hasBehavior('MONST_INANIMATE');
         const autoHit = opts?.lungeAttack === true || defender.hasStatus('paralyzed') || defender.hasStatus('stuck')
-            || (defender instanceof Monster && (defender.isCaged || (!inanimate && (defender.state === MonsterState.ASLEEP
-                || (attacker instanceof Player && !defender.isAlly && defender.state === MonsterState.WANDERING)))));
+            || (defender instanceof Monster && (defender.isCaged || (!inanimate && (bodyDecisionActor(defender).state === MonsterState.ASLEEP
+                || (attacker instanceof Player && !bodyDecisionActor(defender).isAlly && bodyDecisionActor(defender).state === MonsterState.WANDERING)))));
         const probability = defender.seized && attacker.seizing
             || (attacker instanceof Player && defender instanceof Monster
                 && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId))
@@ -264,10 +265,10 @@ export class CombatSystem {
             defender.hasBehavior('MONST_INANIMATE');
         const defenderStuck = !inanimateDefender && defender.hasStatus('paralyzed');
         const defenderAsleep = !inanimateDefender && (defender instanceof Monster) &&
-            (defender.state === MonsterState.ASLEEP);
+            (bodyDecisionActor(defender).state === MonsterState.ASLEEP);
         const sneakAttack = !inanimateDefender && (attacker instanceof Player) &&
-            (defender instanceof Monster) && !defender.isAlly &&
-            defender.state === MonsterState.WANDERING;
+            (defender instanceof Monster) && !bodyDecisionActor(defender).isAlly &&
+            bodyDecisionActor(defender).state === MonsterState.WANDERING;
         const lungeAttack = opts?.lungeAttack === true;
 
         // Backstab: sleeping, paralyzed, or unaware targets take triple damage
@@ -358,8 +359,8 @@ export class CombatSystem {
         // CE :1248-1258: only the sneak set delays/wakes a monster, even on an
         // immune hit; lunge/captive/attackHit-only paralysis do not.
         if (backstab && defender instanceof Monster) {
-            defender.ticksUntilTurn += Math.max(defender.movementSpeed, defender.attackSpeed);
-            if (!defender.isAlly) defender.state = MonsterState.HUNTING;
+            bodyDecisionActor(defender).ticksUntilTurn += Math.max(defender.movementSpeed, defender.attackSpeed);
+            if (!bodyDecisionActor(defender).isAlly) bodyDecisionActor(defender).state = MonsterState.HUNTING;
         }
 
         // B-1：CE Combat.c:1259-1268 —— 偷袭触发集（sneakAttack || asleep ||
@@ -564,10 +565,10 @@ export class CombatSystem {
             defender.hasBehavior('MONST_INANIMATE');
         const defenderStuck = !inanimateDefender && defender.hasStatus('paralyzed');
         const defenderAsleep = !inanimateDefender && (defender instanceof Monster) &&
-            (defender.state === MonsterState.ASLEEP);
+            (bodyDecisionActor(defender).state === MonsterState.ASLEEP);
         const sneakAttack = !inanimateDefender && (attacker instanceof Player) &&
-            (defender instanceof Monster) && !defender.isAlly &&
-            defender.state === MonsterState.WANDERING;
+            (defender instanceof Monster) && !bodyDecisionActor(defender).isAlly &&
+            bodyDecisionActor(defender).state === MonsterState.WANDERING;
         const lungeAttack = opts?.lungeAttack === true;
 
         // Backstab: sleeping, paralyzed, or unaware targets take triple damage
@@ -665,8 +666,8 @@ export class CombatSystem {
         // CE :1248-1258: only the sneak set delays/wakes a monster, even on an
         // immune hit; lunge/captive/attackHit-only paralysis do not.
         if (backstab && defender instanceof Monster) {
-            defender.ticksUntilTurn += Math.max(defender.movementSpeed, defender.attackSpeed);
-            if (!defender.isAlly) defender.state = MonsterState.HUNTING;
+            bodyDecisionActor(defender).ticksUntilTurn += Math.max(defender.movementSpeed, defender.attackSpeed);
+            if (!bodyDecisionActor(defender).isAlly) bodyDecisionActor(defender).state = MonsterState.HUNTING;
         }
 
         // B-1：CE Combat.c:1259-1268 —— 偷袭触发集（sneakAttack || asleep ||
@@ -886,9 +887,9 @@ export class CombatSystem {
         { hit: boolean; damage: number; killed: boolean; triggeredRunic?: string } {
         // CE Items.c:6790: a thrown weapon attempt releases even on a miss.
         defender.setStatusDuration('entranced', 0);
-        if (defender.creatureMode !== MonsterMode.PERM_FLEEING && !defender.isCaged && (!defender.isAlly || defender.hasStatus('magical_fear'))
-            && (defender.state !== MonsterState.FLEEING || defender.hasStatus('magical_fear'))) {
-            defender.state = MonsterState.HUNTING;
+        if (bodyDecisionActor(defender).creatureMode !== MonsterMode.PERM_FLEEING && !defender.isCaged && (!bodyDecisionActor(defender).isAlly || defender.hasStatus('magical_fear'))
+            && (bodyDecisionActor(defender).state !== MonsterState.FLEEING || defender.hasStatus('magical_fear'))) {
+            bodyDecisionActor(defender).state = MonsterState.HUNTING;
             defender.shortenMagicalFear();
         }
         const strReq = item.strengthRequired || 0;
@@ -947,9 +948,9 @@ export class CombatSystem {
         { hit: boolean; damage: number; killed: boolean; triggeredRunic?: string } {
         // CE Items.c:6790: a thrown weapon attempt releases even on a miss.
         defender.setStatusDuration('entranced', 0);
-        if (defender.creatureMode !== MonsterMode.PERM_FLEEING && !defender.isCaged && (!defender.isAlly || defender.hasStatus('magical_fear'))
-            && (defender.state !== MonsterState.FLEEING || defender.hasStatus('magical_fear'))) {
-            defender.state = MonsterState.HUNTING;
+        if (bodyDecisionActor(defender).creatureMode !== MonsterMode.PERM_FLEEING && !defender.isCaged && (!bodyDecisionActor(defender).isAlly || defender.hasStatus('magical_fear'))
+            && (bodyDecisionActor(defender).state !== MonsterState.FLEEING || defender.hasStatus('magical_fear'))) {
+            bodyDecisionActor(defender).state = MonsterState.HUNTING;
             defender.shortenMagicalFear();
         }
         const strReq = item.strengthRequired || 0;

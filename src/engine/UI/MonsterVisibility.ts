@@ -1,3 +1,4 @@
+import { bodyDecisionActor } from '../Status/BodyStatuses';
 import { footprintOf, footprintSome } from '../Movement/CreatureSpatial';
 import type { Pos } from '../../types';
 import type { Creature } from '../../entities/Creature';
@@ -14,7 +15,7 @@ export function monsterRevealed(player: Player, monster: Monster): boolean {
 
 export function monsterHidden(grid: Grid, monster: Monster, observer?: Creature): boolean {
     if (monster.isDormant) return true;
-    if (monster.isAlly) return false;
+    if (bodyDecisionActor(monster).isAlly) return false;
     const inGas = monster.spatial && observer instanceof Player
         ? footprintSome(monster, p => !!grid.getCell(p.x, p.y)?.isVisible && hasGasAt(grid, p)) : monsterInGas(grid, monster);
     return (monster.hasStatus('invisible') && !inGas) || hiddenBySubmersion(grid, monster, observer);
@@ -30,7 +31,7 @@ function hasGasAt(grid: Grid, at: Pos): boolean {
  * location marker, not a full body topology. Pure, no RNG or memory writes. */
 export function publicMonsterCells(player: Player, grid: Grid, monster: Monster): readonly Pos[] {
     if (monster.hp <= 0 || monsterHidden(grid, monster, player)) return [];
-    const invisible = monster.hasStatus('invisible') && !monster.isAlly;
+    const invisible = monster.hasStatus('invisible') && !bodyDecisionActor(monster).isAlly;
     const visible = footprintOf(monster).filter(p => !!grid.getCell(p.x, p.y)?.isVisible && (!invisible || hasGasAt(grid, p)));
     return visible.length ? visible.map(p => ({ x: p.x, y: p.y })) : monsterRevealed(player, monster) ? [{ ...monster.loc }] : [];
 }

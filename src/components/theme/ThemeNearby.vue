@@ -39,8 +39,8 @@ function inspect(row: Row, event: MouseEvent) {
                :title="$t('theme.entity_inspect', { name: row.name })" @click="inspect(row, $event)" @keydown.stop @keyup.stop>
         <span class="tn-glyph" :style="{ color: row.color }">{{ normalizeMapGlyph(row.char) }}</span>
         <span class="tn-name">{{ row.name }}<small v-if="row.kind === 'monster' && row.bodySize" class="body-size">{{ $t('sidebar.body_size', { size: row.bodySize }) }}</small><small v-else-if="row.kind === 'monster' && row.bodyCellCount" class="body-size">{{ $t('sidebar.body_cells', { count: row.bodyCellCount }) }}</small><small v-if="row.kind === 'monster'" class="tn-behavior">{{ row.behavior }}</small></span>
-        <span v-if="row.kind === 'monster'" class="tn-hp"><i :style="{ width: `${pct(row)}%`, background: row.ally ? 'var(--th-ok)' : 'var(--th-hp)' }"></i></span>
-        <span v-if="row.kind === 'monster'" class="tn-hpnum th-num">{{ row.hp }}/{{ row.maxHp }}</span>
+        <span v-if="row.kind === 'monster' && row.bodyGroup?.coreVisible !== false" class="tn-hp"><i :style="{ width: `${pct(row)}%`, background: row.ally ? 'var(--th-ok)' : 'var(--th-hp)' }"></i></span>
+        <span v-if="row.kind === 'monster' && row.bodyGroup?.coreVisible !== false" class="tn-hpnum th-num">{{ row.hp }}/{{ row.maxHp }}</span>
         <span class="tn-dist th-num">{{ row.distance }}</span>
         <span v-if="row.kind === 'monster' && row.bodyGroup" class="tn-members">{{ bodyMemberSummary(row.bodyGroup) }}</span>
         <span v-if="row.kind === 'monster' && row.statuses.length" class="tn-statuses"><span v-for="s in row.statuses" :key="s.id" :style="{ color: s.color }">{{ s.label }} {{ s.value }}</span></span>

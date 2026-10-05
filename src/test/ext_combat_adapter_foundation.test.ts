@@ -204,12 +204,10 @@ describe('3g trusted actor query and committed fact transaction',()=>{
  });
  it('filters declared event kinds before allocating queues, ranges or native checkpoints',()=>{
   const prepare=vi.fn(()=>null),checkpoint=vi.fn(()=>()=>{});
-  const {runtime,actor}=setup([module('consumer',{committedFacts:{'combat.event.v1':{eventKinds:['rest-completed'],maxDerivedFacts:0,prepare,commit:()=>{}}}})]);
-  const original=(runtime as any).ports.checkpointCommittedFacts;(runtime as any).ports.checkpointCommittedFacts=checkpoint;
+  const {runtime,actor}=setup([module('consumer',{committedFacts:{'combat.event.v1':{eventKinds:['rest-completed'],maxDerivedFacts:0,prepare,commit:()=>{}}}})],{checkpointCommittedFacts:checkpoint});
   const before=runtime.snapshot();
   runtime.withCommittedFacts(()=>runtime.commitCombatEvent(actor,{...payload,eventKind:'staggered',actionId:0,bonfireId:null,visit:null}),['staggered']);
   expect(checkpoint).not.toHaveBeenCalled();expect(prepare).not.toHaveBeenCalled();expect(runtime.snapshot()).toEqual(before);
-  (runtime as any).ports.checkpointCommittedFacts=original;
   runtime.withCommittedFacts(()=>runtime.commitCombatEvent(actor,payload),['rest-completed']);expect(prepare).toHaveBeenCalledTimes(1);
  });
 

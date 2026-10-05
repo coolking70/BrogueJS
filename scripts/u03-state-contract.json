@@ -95,6 +95,10 @@
     "kind": "run",
     "contract": "run 中 ID 列表/目标 ID；全局图包含仍被这些集合引用的实体。"
   },
+  "seenBodyCoreIds": {
+    "kind": "run",
+    "contract": "4d：直接见过的群核心 ID，run.seenBodyCoreIds 非空时保存；新局清空、读档恢复。仅用于隐藏核心的匿名群归并，不保留隐藏 HP、形态或位置。"
+  },
   "flareElapsedMs": {
     "kind": "reset",
     "contract": "U21c：CE flare 为瞬时视觉效果（Light.c createFlare/animateFlares 按帧衰减），新局/读档清空，不写入世界快照。"

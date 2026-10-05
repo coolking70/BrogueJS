@@ -266,7 +266,9 @@ export interface ExtensionModule extends ExtensionVersion {
     readonly nativeForms?: readonly import('./nativeForms').NativeFormDefinition[];
     /** Data-only composite declarations; foundation owns entities and clocks. */
     readonly nativeBodies?: { readonly definitions: readonly import('../engine/Movement/SpatialSchema').BodyDefinition[];
-        readonly breakRules: readonly import('../engine/Movement/SpatialSchema').PartBreakRule[] };
+        readonly breakRules: readonly import('../engine/Movement/SpatialSchema').PartBreakRule[];
+        readonly statusProfiles?: readonly import('../engine/Movement/SpatialSchema').SpatialStatusProfileDefinition[];
+        readonly attackProfiles?: readonly import('../engine/Movement/SpatialSchema').SpatialAttackProfileDefinition[] };
     readonly generationContributions?: readonly import('./generation').GenerationContribution[];
     readonly publicActorTags?: readonly { readonly component: string; readonly tag: string }[];
     readonly interactionCommands?: readonly string[];
@@ -303,6 +305,8 @@ export interface ExtensionModule extends ExtensionVersion {
 }
 /** Session-only wiring. Never serialized as part of a creature. */
 export interface CreatureExtensionHooks {
+    /** Engine-only synchronous damage boundary; absent keeps native path unchanged. */
+    withNativeDamage?(work:()=>void):void;
     /** Engine-only post-shield zone commit; undefined preserves native damage. */
     zoneDamage?(creature: Creature, amount: number, damageKind: DamageKind): number | undefined;
     beforeAttack(attacker: Creature, defender: Creature): void;

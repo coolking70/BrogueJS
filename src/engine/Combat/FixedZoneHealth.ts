@@ -1,4 +1,5 @@
 import type { Creature } from '../../entities/Creature';
+import { bodyAttackAvailable, bodyDecisionActor } from '../Status/BodyStatuses';
 import { footprintOf, spatialCatalogFor, type BodyTarget, type CreatureSpatial } from '../Movement/CreatureSpatial';
 import { deepFreeze, integer, SpatialValidationError, validateSpatialComponent, type CreatureSpatialComponent,
     type FootprintDefinition, type HitZoneDefinition, type Ratio, type SpatialCatalog } from '../Movement/SpatialSchema';
@@ -51,9 +52,8 @@ export function fixedZoneBreaks(actor: Creature, catalog: SpatialCatalog): reado
     if (!actor.spatial) return Object.freeze([]);
     fixedDefinition(catalog, actor.spatial.footprintId);
     validateSpatialComponent(actor.spatial, catalog, false);
-    if (actor.spatial.bodyMember) throw new SpatialValidationError('Fixed zones require an independent body');
     return deepFreeze((actor.spatial.zoneState ?? []).filter(z => z.broken).map(z => ({
-        groupId: actor.id, partId: 'self' as const, zoneId: z.zoneId, generation: 0 as const,
+        groupId: actor.spatial!.bodyMember?.groupId ?? actor.id, partId: actor.spatial!.bodyMember?.partId ?? 'self', zoneId: z.zoneId, generation: 0 as const,
     })));
 }
 export function fixedZoneAttackAvailable(actor: Creature, attackId: string, catalog: SpatialCatalog): boolean {
@@ -76,7 +76,7 @@ export function nativeZoneMoveTicks(actor: Creature, ticks: number): number {
     return actor.spatial?.zoneState ? fixedZoneMoveTicks(actor, ticks, spatialCatalogFor(actor)) : ticks;
 }
 export function nativeZoneAttackAvailable(actor: Creature, attackId: string): boolean {
-    return !actor.spatial?.zoneState || fixedZoneAttackAvailable(actor, attackId, spatialCatalogFor(actor));
+    return bodyAttackAvailable(actor, attackId) && (!actor.spatial?.zoneState || fixedZoneAttackAvailable(actor, attackId, spatialCatalogFor(actor)));
 }
 function zoneDefinition(actor: Creature, zoneId: string, catalog: SpatialCatalog): HitZoneDefinition | undefined {
     return actor.spatial ? catalog.definition(actor.spatial.footprintId).zones?.find(z => z.id === zoneId) : undefined;
@@ -111,15 +111,14 @@ export function resolveFixedZoneContact(catalog: SpatialCatalog, target: BodyTar
         || (hit.sourceId !== null && !integer(hit.sourceId, 1)) || !['physical', 'other'].includes(hit.kind)
         || (!hit.hit && hit.damage !== 0)) throw new SpatialValidationError('Invalid fixed zone hit');
     const actor = target.entity, current = footprintOf(actor, catalog).find(p => p.x === target.contact.x && p.y === target.contact.y);
-    if (!current || actor.id !== target.entityId || target.groupId !== actor.id
-        || target.partId !== null || current.zoneId !== target.zoneId || target.dedupKey !== `part:${actor.id}:${target.zoneId}`)
+    if (!current || actor.id !== target.entityId || target.groupId !== (actor.spatial?.bodyMember?.groupId ?? actor.id)
+        || target.partId !== (actor.spatial?.bodyMember?.partId ?? null) || current.zoneId !== target.zoneId || target.dedupKey !== `part:${actor.id}:${target.zoneId}`)
         throw new SpatialValidationError('Stale or invalid fixed zone contact');
     if (!integer(actor.hp, 1)) throw new SpatialValidationError('Invalid native HP');
     if (actor.spatial) {
         fixedDefinition(catalog, actor.spatial.footprintId);
         validateSpatialComponent(actor.spatial, catalog, false);
-        if (actor.spatial.bodyMember) throw new SpatialValidationError('Fixed zones require an independent body');
-    }
+        }
     const zone = zoneDefinition(actor, target.zoneId, catalog);
     const state = zone?.health.kind === 'local' ? actor.spatial!.zoneState!.find(z => z.zoneId === zone.id)! : undefined;
     const multiplier = fixedZoneDamageMultiplier(actor, target.zoneId, catalog);
@@ -128,7 +127,7 @@ export function resolveFixedZoneContact(catalog: SpatialCatalog, target: BodyTar
     const localHpLost = state ? Math.min(damage, state.hp) : 0;
     const nativeHpLost = Math.min(actor.hp, state ? localHpLost : damage);
     const breaking = !!state && !state.broken && localHpLost > 0 && localHpLost === state.hp;
-    const receipt: PartBreakReceipt | null = breaking ? { groupId: actor.id, partId: 'self', zoneId: state!.zoneId, generation: 0 } : null;
+    const receipt: PartBreakReceipt | null = breaking ? { groupId: actor.spatial?.bodyMember?.groupId ?? actor.id, partId: actor.spatial?.bodyMember?.partId ?? 'self', zoneId: state!.zoneId, generation: 0 } : null;
     const result = (handling: FixedZoneHitResult['breakHandling']) => deepFreeze({ resolutionId: hit.resolutionId,
         entityId: actor.id, zoneId: target.zoneId, postProtectionDamage: damage, localHpLost, nativeHpLost,
         breakReceipt: receipt, breakHandling: handling });
@@ -139,9 +138,10 @@ export function resolveFixedZoneContact(catalog: SpatialCatalog, target: BodyTar
     }
     const balance = catalog.breakRule(zone!.breakRuleId).modifiers.find(m => m.kind === 'balance-loss');
     const request: PartBreakRequest = deepFreeze({ ...receipt!, schema: 1, resolutionId: hit.resolutionId,
-        actorId: actor.id, sourceId: hit.sourceId, balanceLoss: balance?.amount ?? 0, fallbackStunTicks: balance?.fallbackStunTicks ?? 0 });
+        actorId: actor.spatial?.bodyMember?.groupId ?? actor.id, sourceId: hit.sourceId, balanceLoss: balance?.amount ?? 0, fallbackStunTicks: balance?.fallbackStunTicks ?? 0 });
     const s = actor.spatial!, hp = actor.hp, zoneHp = state!.hp, broken = state!.broken;
-    const hadLock = Object.prototype.hasOwnProperty.call(s, 'actionLockInTicks'), lock = s.actionLockInTicks;
+    const lockOwner = bodyDecisionActor(actor).spatial ?? s;
+    const hadLock = Object.prototype.hasOwnProperty.call(lockOwner, 'actionLockInTicks'), lock = lockOwner.actionLockInTicks;
     let applied = false;
     const native: PartBreakNativeCommit<Readonly<FixedZoneHitResult>> = {
         apply(choice) {
@@ -150,13 +150,13 @@ export function resolveFixedZoneContact(catalog: SpatialCatalog, target: BodyTar
             applied = true;
             actor.hp -= nativeHpLost; state!.hp = 0; state!.broken = true;
             if (choice.status === 'fallback' && request.fallbackStunTicks > 0)
-                s.actionLockInTicks = Math.max(s.actionLockInTicks ?? 0, request.fallbackStunTicks);
+                lockOwner.actionLockInTicks = Math.max(lockOwner.actionLockInTicks ?? 0, request.fallbackStunTicks);
             return result(choice.status);
         },
         rollback() {
             if (!applied) return;
             actor.hp = hp; state!.hp = zoneHp; state!.broken = broken;
-            if (hadLock) s.actionLockInTicks = lock!; else delete s.actionLockInTicks;
+            if (hadLock) lockOwner.actionLockInTicks = lock!; else delete lockOwner.actionLockInTicks;
             applied = false;
         },
     };

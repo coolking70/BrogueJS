@@ -161,10 +161,10 @@ onUnmounted(() => {
         <div class="monster-line">
           <span class="monster-glyph" :style="{ color: entity.color }">{{ entity.char }}</span>
           <span class="monster-name">{{ entity.name }}<small v-if="entity.kind === 'monster' && entity.bodySize" class="body-size">{{ $t('sidebar.body_size', { size: entity.bodySize }) }}</small><small v-else-if="entity.kind === 'monster' && entity.bodyCellCount" class="body-size">{{ $t('sidebar.body_cells', { count: entity.bodyCellCount }) }}</small></span>
-          <span v-if="entity.kind === 'monster'" class="monster-health">{{ entity.hp }}/{{ entity.maxHp }}</span>
+          <span v-if="entity.kind === 'monster' && entity.bodyGroup?.coreVisible !== false" class="monster-health">{{ entity.hp }}/{{ entity.maxHp }}</span>
         </div>
         <template v-if="entity.kind === 'monster'">
-          <div class="monster-hp-track"><div class="monster-hp-fill"
+          <div v-if="entity.bodyGroup?.coreVisible !== false" class="monster-hp-track"><div class="monster-hp-fill"
             :style="{ width: `${Math.max(0, Math.min(100, entity.hp / Math.max(1, entity.maxHp) * 100))}%`, background: entity.ally ? '#4ade80' : '#ef4444' }"></div></div>
           <div v-if="entity.bodyGroup" class="monster-members">{{ bodyMemberSummary(entity.bodyGroup) }}</div>
           <div v-if="entity.negated || entity.behavior" class="monster-statuses">

@@ -1,3 +1,4 @@
+import { bodyDecisionActor } from '../Status/BodyStatuses';
 /** Foundation-owned timed rest. Content owns finite definitions/receipts; the
  * existing actor scheduler remains the sole mechanical clock. */
 import type { Game } from './Game';
@@ -42,7 +43,7 @@ function revision(game: Game): void {
 }
 function threat(game: Game): boolean {
     return game.monsters.some(monster => monster.hp > 0 && monstersAreEnemies(monster,game.player) && !monster.isDormant && !monster.deathProcessed
-        && !monster.isCaged && canDirectlySeeMonster(game.player, game.grid, monster));
+        && !bodyDecisionActor(monster).isCaged && canDirectlySeeMonster(game.player, game.grid, monster));
 }
 function incapacitated(game: Game): boolean {
     return game.player.seized || ['paralyzed', 'entranced', 'confused', 'stuck', 'nauseous'].some(status => game.player.hasStatus(status as 'paralyzed'))
