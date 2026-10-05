@@ -589,7 +589,7 @@ export class ExtensionRuntime {
                 || Object.keys(input).sort().join(',') !== 'action,module,payload' || typeof input.module !== 'string'
                 || typeof input.action !== 'string' || !validId(input.module)) return false;
             const module = this.modules.find(module => module.id === input.module);
-            if (module?.actorActions && input.action === 'dodge') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
+            if (module?.actorActions && (input.action === 'dodge' || input.action === 'parry')) return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
                 && Object.keys(input.payload).join(',') === 'facing' && typeof input.payload.facing === 'string';
             if (module?.actorActions && input.action === 'attack') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
                 && Object.keys(input.payload).sort().join(',') === 'attackId,facing' && typeof input.payload.attackId === 'string' && typeof input.payload.facing === 'string';
@@ -736,6 +736,11 @@ export class ExtensionRuntime {
     hasHook(name: HookName): boolean { return this.modules.some(module => typeof module.hooks?.[name] === 'function'); }
     notifyCommittedAction(event: HookEvents['committedAction']): void {
         if (this.hasHook('committedAction')) this.emit('committedAction', event);
+    }
+    /** A defense has a unique causal identity but no hit/damage/growth resolution. */
+    notifyActorParried(sourceEntityId:number,targetEntityId:number,depth:number):void {
+        const origin=this.causality.create('melee',sourceEntityId,null,null);
+        if(this.hasHook('defended'))this.emit('defended',{resolutionId:origin.effectId,depth,sourceEntityId,targetEntityId,defense:'parry'});
     }
     emit<K extends HookName>(name: K, event: HookEvents[K]): void {
         if (this.generations.length && !this.publishingGeneration) {

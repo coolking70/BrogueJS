@@ -9,18 +9,27 @@ export interface ActorResourcePolicy {
     id: string; initialStamina: number; staminaCapacity: number;
     regenPerTickNumerator: number; regenPerTickDenominator: number; regenDelayTicks: number;
     nativeAttackCost: number; regenPhases: ActorResourcePhase[];
+    poiseCapacity: number; poiseRecoveryNumerator: number; poiseRecoveryDenominator: number;
+    poiseRecoveryDelayTicks: number; poiseBreakRecoveryValue: number; nativePoiseDamage: number; poiseImmune: boolean;
 }
 /** Remaining values advance only through the foreground foundation elapsed delta.
- * Dodge recovery mirrors the native action timer, never an attack bundle. */
+ * Native defense/stagger recovery mirrors the native action timer, never an
+ * attack bundle. Scheduler-owned break recovery keeps staggerRemainingTicks=0. */
 export interface ActorResourceState {
     stamina: number; regenRemainder: number; regenDelayRemaining: number;
     dodgeRemainingTicks: number; dodgeRecoveryRemainingTicks: number;
+    poise: number; poiseRecoveryRemainder: number; poiseRecoveryDelayRemaining: number;
+    parryRemainingTicks: number; parryRecoveryRemainingTicks: number; parryFacing: ActorAttackFacing | null;
+    staggerRemainingTicks: number;
 }
 export interface ActorDodgeDefinition { cost: number; windowTicks: number; recoveryTicks: number }
+export interface ActorParryDefinition {
+    cost: number; windowTicks: number; recoveryTicks: number; poiseDamage: number; contactRange: number;
+}
 export interface ActorAttackDefinition {
     id: string; nameKey: string; cost: number; windupTicks: number; recoveryTicks: number;
     segments: { delayTicks: number; shape: {kind:'footprint-offset-union'; offsets:Record<ActorAttackFacing,{x:number;y:number}[]>; selfExclusion:'source-member'|'whole-group';occlusion:'line-of-effect'};
-        locationPolicy:'locked-world';targetPolicy:'part';damageProfile:'native-melee';dodgeable:boolean;parryable:boolean }[];
+        locationPolicy:'locked-world';targetPolicy:'part';damageProfile:'native-melee';poiseDamage:number;dodgeable:boolean;parryable:boolean }[];
 }
 export interface ActorAttackDefinitions {
     attacks: ActorAttackDefinition[];
@@ -31,6 +40,7 @@ export interface ActorAttackDefinitions {
     playerProfileId:string;
     breakRecoveryTicks:number;
     dodge: ActorDodgeDefinition;
+    parry: ActorParryDefinition;
 }
 export interface ActorAttackMetadata {
     actionId:number; profileId:string; paidCost:number; suppressTerminalSweep?:true;
@@ -38,7 +48,7 @@ export interface ActorAttackMetadata {
         shape:AttackShapeRequest;approvedRisks:{targetId:number;risks:ControlledActionRisk[]}[]}[];
 }
 export interface ProductionActorAttackState {
-    schema:2;revision:number;nextActionId:number;
+    schema:3;revision:number;nextActionId:number;
     scheduler:ActorActionSchedulerState;
     actions:ActorAttackMetadata[];
     actors:(ActorResourceState & {actorId:number;profileId:string})[];

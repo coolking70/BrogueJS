@@ -3,14 +3,16 @@ import type { CombatPack } from './types';
 export function combatAttackDefinitions(pack: CombatPack): ActorAttackDefinitions {
     return {
         attacks: pack.attacks.map(({id,nameKey,cost,windupTicks,recoveryTicks,segments}) => ({id,nameKey,cost,windupTicks,recoveryTicks,
-            segments: segments.map(({delayTicks,shape,locationPolicy,targetPolicy,damageProfile,dodgeable,parryable}) =>
-                ({delayTicks,shape,locationPolicy,targetPolicy,damageProfile,dodgeable,parryable}))})),
+            segments: segments.map(({delayTicks,shape,locationPolicy,targetPolicy,damageProfile,poiseDamage,dodgeable,parryable}) =>
+                ({delayTicks,shape,locationPolicy,targetPolicy,damageProfile,poiseDamage,dodgeable,parryable}))})),
         profiles: pack.profiles, resourcePolicies: pack.resourcePolicies.map(({id,initialStamina,staminaCapacity,regenPerTickNumerator,
-            regenPerTickDenominator,regenDelayTicks,nativeAttackCost,regenPhases})=>({id,initialStamina,staminaCapacity,
-            regenPerTickNumerator,regenPerTickDenominator,regenDelayTicks,nativeAttackCost,regenPhases})),
-        nativeProfiles: pack.nativeProfiles,playerProfileId:pack.playerProfileId,breakRecoveryTicks:pack.breakRecoveryTicks,dodge:pack.dodge,
+            regenPerTickDenominator,regenDelayTicks,nativeAttackCost,regenPhases,poiseCapacity,poiseRecoveryNumerator,
+            poiseRecoveryDenominator,poiseRecoveryDelayTicks,poiseBreakRecoveryValue,nativePoiseDamage,poiseImmune})=>({id,initialStamina,staminaCapacity,
+            regenPerTickNumerator,regenPerTickDenominator,regenDelayTicks,nativeAttackCost,regenPhases,poiseCapacity,poiseRecoveryNumerator,
+            poiseRecoveryDenominator,poiseRecoveryDelayTicks,poiseBreakRecoveryValue,nativePoiseDamage,poiseImmune})),
+        nativeProfiles: pack.nativeProfiles,playerProfileId:pack.playerProfileId,breakRecoveryTicks:pack.breakRecoveryTicks,dodge:pack.dodge,parry:pack.parry,
     };
 }
 export function initialProductionCombatState(): ProductionActorAttackState {
-    return {schema:2,revision:0,nextActionId:1,scheduler:{schema:1,bundles:[]},actions:[],actors:[]};
+    return {schema:3,revision:0,nextActionId:1,scheduler:{schema:1,bundles:[]},actions:[],actors:[]};
 }

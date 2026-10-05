@@ -148,8 +148,8 @@ function localeChecker(locale: unknown): (value: unknown) => void {
 export function loadCombatPack(input: unknown, locale: unknown): CombatPack {
     assertCombatJson(input);
     const text = localeChecker(locale);
-    const root = record(input, ['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'resourcePolicies', 'attacks', 'profiles', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks', 'dodge']);
-    if (root.schema !== 1 || root.moduleId !== 'combat' || root.moduleVersion !== '1.2.0' || root.rulesVersion !== '1.2.0') fail('INVALID_VERSION');
+    const root = record(input, ['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'resourcePolicies', 'attacks', 'profiles', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks', 'dodge', 'parry']);
+    if (root.schema !== 1 || root.moduleId !== 'combat' || root.moduleVersion !== '1.3.0' || root.rulesVersion !== '1.3.0') fail('INVALID_VERSION');
     const policies = list(root.resourcePolicies, 1, COMBAT_LIMITS.maxDefinitions);
     const attacks = list(root.attacks, 1, COMBAT_LIMITS.maxDefinitions);
     const profiles = list(root.profiles, 1, COMBAT_LIMITS.maxDefinitions);
@@ -158,6 +158,12 @@ export function loadCombatPack(input: unknown, locale: unknown): CombatPack {
     integer(dodge.cost, 0, COMBAT_LIMITS.maxResource);
     integer(dodge.recoveryTicks, 1, COMBAT_LIMITS.maxTicks);
     integer(dodge.windowTicks, 1, dodge.recoveryTicks as number);
+    const parry = record(root.parry, ['cost', 'windowTicks', 'recoveryTicks', 'poiseDamage', 'contactRange']);
+    integer(parry.cost, 0, COMBAT_LIMITS.maxResource);
+    integer(parry.recoveryTicks, 1, COMBAT_LIMITS.maxTicks);
+    integer(parry.windowTicks, 1, parry.recoveryTicks as number);
+    integer(parry.poiseDamage, 0, COMBAT_LIMITS.maxResource);
+    integer(parry.contactRange, 1, COMBAT_LIMITS.maxOffsetCoordinate);
     id(root.playerProfileId);
     if (policies.length + attacks.length + profiles.length > COMBAT_LIMITS.maxDefinitions) fail('BUDGET');
     const ids = new Set<string>(), policyById = new Map<string, ResourcePolicy>(), attackById = new Map<string, AttackDefinition>();
@@ -168,7 +174,8 @@ export function loadCombatPack(input: unknown, locale: unknown): CombatPack {
     };
     for (const item of policies) {
         const policy = record(item, ['id', 'staminaCapacity', 'initialStamina', 'regenPerTickNumerator', 'regenPerTickDenominator',
-            'regenDelayTicks', 'nativeAttackCost', 'regenPhases', 'poiseCapacity', 'poiseRecoveryNumerator', 'poiseRecoveryDenominator']);
+            'regenDelayTicks', 'nativeAttackCost', 'regenPhases', 'poiseCapacity', 'poiseRecoveryNumerator', 'poiseRecoveryDenominator',
+            'poiseRecoveryDelayTicks', 'poiseBreakRecoveryValue', 'nativePoiseDamage', 'poiseImmune']);
         const key = define(policy.id);
         integer(policy.staminaCapacity, 1, COMBAT_LIMITS.maxResource);
         integer(policy.initialStamina, 0, policy.staminaCapacity as number);
@@ -182,6 +189,10 @@ export function loadCombatPack(input: unknown, locale: unknown): CombatPack {
         integer(policy.poiseCapacity, 1, COMBAT_LIMITS.maxResource);
         integer(policy.poiseRecoveryNumerator, 0, COMBAT_LIMITS.maxResource);
         integer(policy.poiseRecoveryDenominator, 1, COMBAT_LIMITS.maxResource);
+        integer(policy.poiseRecoveryDelayTicks, 0, COMBAT_LIMITS.maxTicks);
+        integer(policy.poiseBreakRecoveryValue, 1, policy.poiseCapacity as number);
+        integer(policy.nativePoiseDamage, 0, COMBAT_LIMITS.maxResource);
+        enumeration(policy.poiseImmune, [true, false]);
         policyById.set(key, item as ResourcePolicy);
     }
     for (const item of attacks) {
@@ -213,7 +224,7 @@ export function loadCombatPack(input: unknown, locale: unknown): CombatPack {
         define(profile.id);
         const policy = policyById.get(id(profile.resourcePolicyId));
         if (!policy) fail('UNKNOWN_REFERENCE');
-        if ((dodge.cost as number) > policy!.staminaCapacity) fail('INVALID_RANGE');
+        if ((dodge.cost as number) > policy!.staminaCapacity || (parry.cost as number) > policy!.staminaCapacity) fail('INVALID_RANGE');
         const references = new Set<string>();
         for (const value of list(profile.attackIds, 1, COMBAT_LIMITS.maxDefinitions)) {
             const key = id(value), attack = attackById.get(key);

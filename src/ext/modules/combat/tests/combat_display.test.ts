@@ -77,7 +77,7 @@ describe('EXT-3b public telegraph projection and drawing', () => {
         squareDisplayScene(game); game.monsters = []; game.monsterListsChanged();
         const binding = game.extensionRuntime!.actorActionBinding()!;
         const row = { actorId: game.player.id, profileId: binding.definition.playerProfileId, stamina: 17,
-            regenRemainder: 0, regenDelayRemaining: 13, dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 };
+            regenRemainder: 0, regenDelayRemaining: 13, dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0, poise:12,poiseRecoveryRemainder:0,poiseRecoveryDelayRemaining:0,parryRemainingTicks:0,parryRecoveryRemainingTicks:0,parryFacing:null,staggerRemainingTicks:0 };
         binding.state.actors.push(row);
         logger.presentAcknowledgments(() => true);
         const timeline = new PresentationTimeline(game, logger); disposers.push(() => timeline.dispose());

@@ -1,6 +1,6 @@
 /** Module-owned data only. Spatial identities/geometry are supplied by the future
  * foundation adapter; these DTOs do not grant world or scheduling authority. */
-import type { ActorDodgeDefinition, ActorResourcePhase } from '../../actorActions';
+import type { ActorDodgeDefinition, ActorParryDefinition, ActorResourcePhase } from '../../actorActions';
 
 export type Facing = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
 export interface Cell { x: number; y: number }
@@ -30,11 +30,13 @@ export interface ResourcePolicy {
     regenPerTickNumerator: number; regenPerTickDenominator: number; regenDelayTicks: number;
     nativeAttackCost: number; regenPhases: ActorResourcePhase[];
     poiseCapacity: number; poiseRecoveryNumerator: number; poiseRecoveryDenominator: number;
+    poiseRecoveryDelayTicks: number; poiseBreakRecoveryValue: number; nativePoiseDamage: number; poiseImmune: boolean;
 }
 export interface CombatProfile { id: string; resourcePolicyId: string; attackIds: string[] }
 export interface CombatPack {
-    schema: 1; moduleId: 'combat'; moduleVersion: '1.2.0'; rulesVersion: '1.2.0';
+    schema: 1; moduleId: 'combat'; moduleVersion: '1.3.0'; rulesVersion: '1.3.0';
     dodge: ActorDodgeDefinition;
+    parry: ActorParryDefinition;
     playerProfileId: string; breakRecoveryTicks: number; nativeProfiles: {monsterId:string;profileId:string}[];
     resourcePolicies: ResourcePolicy[]; attacks: AttackDefinition[]; profiles: CombatProfile[];
 }

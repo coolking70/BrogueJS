@@ -5,11 +5,15 @@ import type { ActorResourcePhase, ActorResourcePolicy, ActorResourceState } from
 function policy(patch: Partial<ActorResourcePolicy> = {}): ActorResourcePolicy {
     return { id: 'fixture.resource', initialStamina: 24, staminaCapacity: 24,
         regenPerTickNumerator: 1, regenPerTickDenominator: 20, regenDelayTicks: 40,
-        nativeAttackCost: 2, regenPhases: ['idle', 'recovery', 'break-recovery'], ...patch };
+        nativeAttackCost: 2, regenPhases: ['idle', 'recovery', 'break-recovery'],
+        poiseCapacity: 12, poiseRecoveryNumerator: 1, poiseRecoveryDenominator: 30, poiseRecoveryDelayTicks: 40,
+        poiseBreakRecoveryValue: 12, nativePoiseDamage: 2, poiseImmune: false, ...patch };
 }
 function resource(patch: Partial<ActorResourceState> = {}): ActorResourceState {
     return { stamina: 20, regenRemainder: 0, regenDelayRemaining: 0,
-        dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0, ...patch };
+        dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0,
+        poise: 12, poiseRecoveryRemainder: 0, poiseRecoveryDelayRemaining: 0,
+        parryRemainingTicks: 0, parryRecoveryRemainingTicks: 0, parryFacing: null, staggerRemainingTicks: 0, ...patch };
 }
 
 describe('foundation actor resource arithmetic', () => {

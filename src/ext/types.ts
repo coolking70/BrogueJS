@@ -147,7 +147,8 @@ export interface HookEvents {
     interactablesRemoved: { owner: string; entityIds: number[] };
     actorObserved: { actor: ActorFacts };
     objectiveTime: { ticks: number; mode: 'realtime'; actorIds: number[] };
-    committedAction: { actorId: number; action: 'attack' | 'throw' | 'cast' | 'move' | 'wait' | 'search' };
+    committedAction: { actorId: number; action: 'attack' | 'throw' | 'cast' | 'move' | 'wait' | 'search' | 'parry' };
+    defended: { resolutionId:number; depth:number; sourceEntityId:number; targetEntityId:number; defense:'parry' };
     physicalResolved: PhysicalResolutionFact;
     nativeMaximumReset: { actor: ActorFacts; preserveOverhealth?: boolean };
     itemKnowledgeChanged: { kindId: string };

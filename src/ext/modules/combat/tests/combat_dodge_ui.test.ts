@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { effectScope, nextTick, ref, type EffectScope } from 'vue';
+import { createSSRApp, effectScope, nextTick, ref, type EffectScope } from 'vue';
+import { renderToString } from '@vue/server-renderer';
+import i18next from 'i18next';
+import { initialActorResources } from '../../../../engine/Core/ActorResources';
 import type { Game } from '../../../../engine/Core/Game';
 import type { ModuleUiHost } from '../../../ui/types';
 import type { ReadonlyJson } from '../../../types';
@@ -11,6 +14,8 @@ import { combatAttackDefinitions, initialProductionCombatState } from '../produc
 import { loadCombatDefinitionPack } from '../definitions';
 import { projectCombatView } from '../view';
 import { useCombatUi } from '../ui/useCombatUi';
+import CombatAttackBar from '../ui/CombatAttackBar.vue';
+import type { CombatUiView } from '../ui/view';
 import { buildCombatUiCommand, combatDirections, readCombatUiResources, readCombatUiView } from '../ui/view';
 
 const resources = (stamina = 20) => ({ stamina, capacity: 24, regenDelayRemaining: 30, dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 });
@@ -51,14 +56,16 @@ describe('EXT-3c public stamina and dodge controls', () => {
             schema: number; resources: ReturnType<typeof resources>; actions: { id: string; cost: number; canUse: boolean; unavailableKey?: string }[];
         };
         const before = { state: JSON.stringify(state), rng: rng.getState() }, initial = observe();
-        expect(initial.schema).toBe(1); expect(initial.resources).toEqual({ ...resources(policy.initialStamina), capacity: policy.staminaCapacity, regenDelayRemaining: 0 });
-        expect(initial.actions[initial.actions.length - 1]).toEqual({ id: 'dodge', nameKey: 'ext.combat.dodge.name', cost: definitions.dodge.cost, canUse: true });
+        expect(initial.schema).toBe(1); expect(initial.resources).toEqual({ ...resources(policy.initialStamina), capacity: policy.staminaCapacity, regenDelayRemaining: 0,
+            poise: policy.poiseCapacity, poiseCapacity: policy.poiseCapacity, poiseRecoveryDelayRemaining: 0,
+            parryRemainingTicks: 0, parryRecoveryRemainingTicks: 0, staggerRemainingTicks: 0 });
+        expect(initial.actions.find(action => action.id === 'dodge')).toEqual({ id: 'dodge', nameKey: 'ext.combat.dodge.name', cost: definitions.dodge.cost, canUse: true });
         expect({ state: JSON.stringify(state), rng: rng.getState() }).toEqual(before);
-        state.actors.push({ actorId: 7, profileId: definitions.playerProfileId, stamina: definitions.dodge.cost - 1,
+        state.actors.push({ ...initialActorResources(policy), actorId: 7, profileId: definitions.playerProfileId, stamina: definitions.dodge.cost - 1,
             regenRemainder: 3, regenDelayRemaining: 21, dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0 });
         const low = observe(); expect(low.resources.stamina).toBe(definitions.dodge.cost - 1);
         expect(low.resources.regenDelayRemaining).toBe(21);
-        expect(low.actions[low.actions.length - 1]).toMatchObject({ canUse: false, unavailableKey: 'ext.combat.ui.insufficient_stamina' });
+        expect(low.actions.find(action => action.id === 'dodge')).toMatchObject({ canUse: false, unavailableKey: 'ext.combat.ui.insufficient_stamina' });
         state.actors[0]!.stamina = policy.staminaCapacity; state.actors[0]!.dodgeRemainingTicks = 10; state.actors[0]!.dodgeRecoveryRemainingTicks = 20;
         const recovering = observe();
         expect(recovering.resources.dodgeRemainingTicks).toBe(10);
@@ -97,7 +104,7 @@ describe('EXT-3c public stamina and dodge controls', () => {
         expect(f.raw.executeCommand).not.toHaveBeenCalled();
         expect({ state: JSON.stringify(f.state), rng: rng.getState() }).toEqual(before);
     });
-    it('blocks insufficient stamina, stale capabilities, replay, terminal and retired dodge confirmations', () => {
+    it('blocks insufficient stamina, stale capabilities, replay, terminal and retired dodge confirmations', async () => {
         for (const change of ['revision', 'session', 'disabled', 'replay', 'terminal', 'retired'] as const) {
             const f = session(); f.open(); f.dialogs.answer(f.dialogs.current!.token, 'choice:n');
             const old = f.dialogs.current!.token;
@@ -110,7 +117,10 @@ describe('EXT-3c public stamina and dodge controls', () => {
             f.dialogs.answer(old, 'choice:confirm'); expect(f.raw.executeCommand).not.toHaveBeenCalled();
         }
         const f = session(); f.state.actions[1]!.canUse = false; f.ui.refresh(); f.open();
-        expect(f.dialogs.current).toBeUndefined(); expect(f.ui.commands.value.find(action => action.id === 'combat:dodge')!.disabled).toBe(true);
+        expect(f.dialogs.current).toBeUndefined();
+        const bar = createSSRApp(CombatAttackBar, { model: f.ui.bar.value!.props.model as CombatUiView, blocked: false, error: null });
+        bar.config.globalProperties.$t = i18next.t;
+        expect(await renderToString(bar)).toMatch(/<button[^>]+data-combat-action="dodge"[^>]+disabled/);
         expect(buildCombatUiCommand(f.game, readCombatUiView(f.game)!, 'dodge', 'n')).toBeNull();
     });
     it('honors competing dialogs, D3 busy, shell transitions and reset without reopening dodge', () => {

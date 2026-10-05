@@ -7,7 +7,8 @@ defineProps<{ attack: CombatUiAction; facing: Facing | null }>();
 <template>
   <section class="combat-attack-dialog" data-testid="combat-attack-dialog" :data-combat-step="facing ? 'confirm' : 'direction'">
     <header><h2>{{ $t(attack.nameKey) }}</h2><button type="button" data-dialog-action="close">{{ $t('ext.combat.ui.cancel') }}</button></header>
-    <p v-if="attack.id === 'dodge'">{{ $t(facing ? 'ext.combat.ui.confirm_dodge' : 'ext.combat.ui.choose_dodge_direction') }}</p>
+    <p v-if="attack.id === 'parry'">{{ $t(facing ? 'ext.combat.ui.confirm_parry' : 'ext.combat.ui.choose_parry_direction') }}</p>
+    <p v-else-if="attack.id === 'dodge'">{{ $t(facing ? 'ext.combat.ui.confirm_dodge' : 'ext.combat.ui.choose_dodge_direction') }}</p>
     <p v-else>{{ $t(facing ? 'ext.combat.ui.confirm_attack' : 'ext.combat.ui.choose_direction') }}</p>
     <div v-if="!facing" class="combat-directions">
       <button v-for="direction in combatDirections" :key="direction.facing" type="button"
@@ -17,10 +18,13 @@ defineProps<{ attack: CombatUiAction; facing: Facing | null }>();
     </div>
     <p v-else class="combat-facing"><template v-for="direction in combatDirections" :key="direction.facing"><span v-if="direction.facing === facing">{{ $t(direction.nameKey) }}</span></template></p>
     <p v-if="attack.cost !== undefined" class="combat-cost">{{ $t('ext.combat.ui.stamina_cost', { cost: attack.cost }) }}</p>
-    <p class="combat-note">{{ $t(attack.id === 'dodge' ? 'ext.combat.ui.dodge_hint' : 'ext.combat.ui.locked_world_hint') }}</p>
+    <p v-if="attack.windowTicks !== undefined && attack.recoveryTicks !== undefined" class="combat-timing">{{ $t('ext.combat.ui.defense_timing', { window: attack.windowTicks, recovery: attack.recoveryTicks }) }}</p>
+    <p v-if="attack.id === 'parry'" class="combat-note">{{ $t('ext.combat.ui.parry_hint') }}</p>
+    <p v-else class="combat-note">{{ $t(attack.id === 'dodge' ? 'ext.combat.ui.dodge_hint' : 'ext.combat.ui.locked_world_hint') }}</p>
     <footer>
       <button v-if="facing" type="button" data-dialog-action="back">{{ $t('ext.combat.ui.back') }}</button>
-      <button v-if="facing" type="button" data-dialog-action="choice:confirm">{{ $t(attack.id === 'dodge' ? 'ext.combat.ui.perform_dodge' : 'ext.combat.ui.release') }}</button>
+      <button v-if="facing && attack.id === 'parry'" type="button" data-dialog-action="choice:confirm">{{ $t('ext.combat.ui.perform_parry') }}</button>
+      <button v-else-if="facing" type="button" data-dialog-action="choice:confirm">{{ $t(attack.id === 'dodge' ? 'ext.combat.ui.perform_dodge' : 'ext.combat.ui.release') }}</button>
       <small>{{ $t('ext.combat.ui.keyboard_hint') }}</small>
     </footer>
   </section>
