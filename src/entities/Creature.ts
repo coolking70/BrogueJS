@@ -11,7 +11,7 @@ import type { Entity, Pos } from '../types';
 import { Direction } from '../types';
 
 export type StatusId = 'paralyzed' | 'invisible' | 'telepathy' | 'levitating' | 'hallucinating' | 'confused' | 'regenerating' | 'haste' | 'poisoned' | 'slowed' | 'hasted' | 'weakened' | 'flying' | 'immune_fire' | 'discordant' | 'shielded' | 'entranced' | 'nauseous' | 'darkness' | 'magical_fear' | 'stuck' | 'donning' | 'enraged' | 'lifespan_remaining' | 'aggravating';
-type StatusStackMode = 'refresh' | 'stack';
+type StatusStackMode = 'refresh' | 'stack' | 'replace';
 
 /**
  * CE 客观时间的周期基准（Time.c:2667 ticksTillUpdateEnvironment += 100）。
@@ -206,7 +206,7 @@ export class Creature implements Entity {
             return changed;
         }
         const current = this.statusDurations[id] ?? 0;
-        const next = stackMode === 'stack' ? current + duration : Math.max(current, duration);
+        const next = stackMode === 'stack' ? current + duration : stackMode === 'replace' ? duration : Math.max(current, duration);
         if (id === 'darkness') this.maxStatus.darkness = Math.max(this.maxStatus.darkness ?? 0, duration);
         if (id === 'nauseous' || id === 'magical_fear') this.maxStatus[id] = next;
         if (next === current) return false;
@@ -218,6 +218,8 @@ export class Creature implements Entity {
 
     /** CE Items.c:4558: each dose adds a layer even when the timer is unchanged. */
     public weaken(duration: number): boolean {
+        const owner = bodyStatusOwner(this, 'weakened');
+        if (owner !== this) return owner.weaken(duration);
         if (duration <= 0 || this.hasStatusImmunity('weakened')) return false;
         const before = this.weaknessAmount;
         this.weaknessAmount = Math.min(10, before + 1);
@@ -259,6 +261,8 @@ export class Creature implements Entity {
      * Keep the existing web poison immunity extension. A zero concentration increment
      * (lichen-style exposure) establishes one dose but never raises existing doses. */
     public addPoison(duration: number, concentration = 1): boolean {
+        const owner = bodyStatusOwner(this, 'poisoned');
+        if (owner !== this) return owner.addPoison(duration, concentration);
         if (duration <= 0 || !this.canBePoisoned()) return false;
         const oldDuration = this.getStatusDuration('poisoned');
         this.poisonAmount = Math.max(1, (oldDuration > 0 ? Math.max(1, this.poisonAmount) : 0) + concentration);
@@ -274,6 +278,8 @@ export class Creature implements Entity {
 
     /** CE Items.c:5405-5408: stronger of current/new, then ALWAYS reset max. */
     public applyShield(tenths: number): boolean {
+        const owner = bodyStatusOwner(this, 'shielded');
+        if (owner !== this) return owner.applyShield(tenths);
         const previous = this.getStatusDuration('shielded');
         const next = Math.max(previous, Math.trunc(tenths));
         const changed = previous !== next || this.maxShield !== next;
@@ -296,6 +302,8 @@ export class Creature implements Entity {
     /** CE Combat.c:1811-1819. Only reduces the shield and returns HP damage:
      * callers keep their own immunity, attribution and death ordering. */
     public absorbShieldDamage(amount: number): number {
+        const owner = bodyStatusOwner(this, 'shielded');
+        if (owner !== this) return owner.absorbShieldDamage(amount);
         const shield = this.getStatusDuration('shielded');
         if (amount <= 0 || shield <= 0) return amount;
         if (shield > amount * 10) {

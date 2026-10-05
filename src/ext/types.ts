@@ -227,7 +227,9 @@ export interface ExtensionModule extends ExtensionVersion {
     readonly nativeForms?: readonly import('./nativeForms').NativeFormDefinition[];
     /** Data-only composite declarations; foundation owns entities and clocks. */
     readonly nativeBodies?: { readonly definitions: readonly import('../engine/Movement/SpatialSchema').BodyDefinition[];
-        readonly breakRules: readonly import('../engine/Movement/SpatialSchema').PartBreakRule[] };
+        readonly breakRules: readonly import('../engine/Movement/SpatialSchema').PartBreakRule[];
+        readonly statusProfiles?: readonly import('../engine/Movement/SpatialSchema').SpatialStatusProfileDefinition[];
+        readonly attackProfiles?: readonly import('../engine/Movement/SpatialSchema').SpatialAttackProfileDefinition[] };
     readonly generationContributions?: readonly import('./generation').GenerationContribution[];
     readonly publicActorTags?: readonly { readonly component: string; readonly tag: string }[];
     readonly interactionCommands?: readonly string[];

@@ -260,7 +260,11 @@ export class ScentMap {
      * then ONE original decision. No per-cell warning or tracking dice. */
     public awareOfBodyTarget(grid: Grid, observer: FootprintActor, target: FootprintActor, p: AwareOfTargetParams): boolean {
         if (!observer.spatial && !target.spatial) return this.awareOfTarget(grid, observer.loc.x, observer.loc.y, target.loc.x, target.loc.y, p);
-        const origins = footprintOf(observer), targets = footprintOf(target);
+        return this.awareOfGroupTarget(grid,[observer],target,p);
+    }
+    /** One native awareness roll for the union of a core and its live parts. */
+    public awareOfGroupTarget(grid: Grid, observers: readonly FootprintActor[], target: FootprintActor, p: AwareOfTargetParams): boolean {
+        const origins = observers.flatMap(observer=>footprintOf(observer)), targets = footprintOf(target);
         let perceived = 1000, visible = false;
         for (const from of origins) {
             visible ||= !!grid.getCell(from.x, from.y)?.isVisible;

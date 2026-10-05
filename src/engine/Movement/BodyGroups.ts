@@ -14,6 +14,18 @@ export function retiredBodyParts(definition: BodyDefinition, group: BodyGroupSta
     }
     return retired;
 }
+/** The same receipt-derived attack qualification is used by live decisions
+ * and detached save validation, before trusted status bindings exist. */
+export function bodyPartAttackAvailable(catalog: SpatialCatalog, group: BodyGroupState, actor: Creature, attackId: string): boolean {
+    const body=catalog.body(group.bodyDefinitionId);
+    const matches=(declared:string)=>declared===attackId || body.parts.some(part=>part.attackProfileIds.some(id=>
+        id===declared && catalog.attackProfile(id).providerProfileId===attackId));
+    return !group.appliedBreaks.some(receipt=>catalog.breakRule(body.parts.find(p=>p.partId===receipt.partId)!.breakRuleId)
+        .modifiers.some(m=>m.kind==='disable-attack' && matches(m.attackId)))
+        && !(actor.spatial?.zoneState??[]).some(state=>state.broken && catalog.breakRule(
+            catalog.definition(actor.spatial!.footprintId).zones!.find(zone=>zone.id===state.zoneId)!.breakRuleId)
+            .modifiers.some(m=>m.kind==='disable-attack' && matches(m.attackId)));
+}
 /** Pure ownership/receipt validation shared by live planning and detached load.
  * Geometry and physical lane checks remain with the caller's spatial world. */
 export function validateBodyGroup(group: BodyGroupState, catalog: SpatialCatalog, entity: (id: number) => Creature | undefined): void {
@@ -47,7 +59,7 @@ export function validateBodyGroup(group: BodyGroupState, catalog: SpatialCatalog
             || part.role === 'core' && actor.id !== group.coreId) invalid();
         ids.add(slot.entityId);
         for (const id of Object.keys(actor.statusDurations ?? {})) {
-            const row = catalog.statusProfile(definition.statusProfileId).rows.find(r => r.statusId === id);
+            const row = catalog.statusProfile(part.statusProfileId).rows.find(r => r.statusId === id);
             if (!row || part.role !== 'core' && row.owner !== 'entity') invalid();
         }
     }

@@ -1,3 +1,232 @@
+# 完整4d执行报告
+
+基于维护者提交4d-5并合入3e篝火与3f文档准备的 `ext/phase4` HEAD `312e9eb`，开工工作树干净。本轮完整完成剩余项1–8，共46个具体子项，已完成46、未完成0。代码与相关功能测试全部完成；浏览器验收沿维护者安排。不暂存、commit或push。原4d-5至4d-0历史原字节保留于文末，历史“未完成”记录属于其各自里程碑。
+
+## 本轮具体子项清单
+
+下表“已完成”均含本轮实现或相关组合复验，证据名称对应后方实际测试文件及最终冻结门禁。
+
+### 1 声明与群环境
+
+| 子项 | 内容 | 本轮状态 | 证据 |
+| --- | --- | --- | --- |
+| 1.1 | 核心及成员固定zone：局部HP、原生HP、传伤、可信破坏请求与存读 | 已完成 | declarations：核心/腿各8点局部zone、1:1进部位HP后腿1:4传核心；combat有/无、shield异常、独立存读；fixed_zone_health旧专项复验。 |
+| 1.2 | 每部位攻击profile声明、安装闭包及combat缺席时即时fallback | 已完成 | declarations：实际付款束/无combat即时攻击；profile安装闭包；首项禁用选择次项并存读、全部禁用不得fallback。 |
+| 1.3 | 有限自定义status profile与局部精神覆盖：归属、合并、禁行和严格codec | 已完成 | declarations＋body_status：完整27行有限目录、局部replace精神、群stack一致、禁攻、篡改闭包拒绝；真实入迷法杖。 |
+| 1.4 | 已开放刚体pose用于复合体：核心/成员转向、扫掠与中间树约束 | 已完成 | movement_environment＋rigid_rotation：声明四pose，核心/成员实际r90组合及4b其他pose守卫；连续占位及连接扫掠、墙阻止、核心唯一时钟。 |
+| 1.5 | 整组移动逐子步环境：稳定接触、进入格去重、死亡/瞬移/断足停旧计划 | 已完成 | movement_environment：成员两个单位子步、真实蜘蛛网、进入格去重；破坏/瞬移停旧轨迹，下一步重新核验。 |
+| 1.6 | 移动环境异常的窄事务：实体、地图/机关、群表、事实、两流与派生缓存恢复 | 已完成 | movement_environment：独立完整图oracle；环境/机关放气DF故障后地图、机关号、气体、缓存、实体、两流、ID及原对象恢复，重试同fresh-load。 |
+
+
+### 2 群AI与篝火敌情
+
+| 子项 | 内容 | 本轮状态 | 证据 |
+| --- | --- | --- | --- |
+| 2.1 | 有界远路追击、不可达退化、安全图与正耗时 | 已完成 | travel_ai：13格宽墙真实50条wait绕行，封闭完整formation正耗时退化；composite_movement保留32候选/128节点守卫。 |
+| 2.2 | 核心原生睡眠/警觉/状态选择及可见成员敌情一致 | 已完成 | travel_ai＋rest_relations：成员视线并入一次原生警觉骰，核心惊醒/选状态，成员无独立prelude或计时。 |
+| 2.3 | 原生生存/逃跑/保持距离优先级与危险地形 | 已完成 | travel_ai保持3格/恐惧逃离；复用blinkFromHarmfulTerrain、monsterBlinkToSafety及原生危险图，native_prelude/x2j原守卫复验。 |
+| 2.4 | 盟友leader跟随、救援后关系与群目标排除 | 已完成 | travel_ai＋body_status：真实wait盟友追随，支配转全组、原生救援/leader路径；monstersAreEnemies排除本组。 |
+| 2.5 | 核心原生施法/远程和成员攻击束的行动优先级 | 已完成 | travel_ai：实际core FIRE施法先于成员束，仅付核心clock；body_actions复验最多4源、各自scope/付款、max耗时。 |
+| 2.6 | 催眠/混乱/恶心/抓持/缠绕/硬直的完整群移动出口 | 已完成 | body_status/travel_ai/movement_environment/body_actions：整体入迷反向移动、混乱一次方向、恶心原出口、真实web中途停、抓持阻行和硬直恢复。 |
+| 2.7 | 篝火prepare/确认/休息中：核心或成员可见敌情一致、出现即中断 | 已完成 | rest_relations＋playable_recording：成员可见阻止prepare，异步确认重检不收费；隐身到期真实休息于500tick前中断，一张receipt且可回放seek。 |
+
+
+### 3 伤害与效果组合
+
+| 子项 | 内容 | 本轮状态 | 证据 |
+| --- | --- | --- | --- |
+| 3.1 | 横扫及真实符文：两部位各一次、独立scope、中央1:4不重消费 | 已完成 | effects_rewards：四模块组合真实axe两腿横扫及paralysis符文，各命中一次；中央只减floor(各腿正HP损失/4)，不调用核心takeDamage。 |
+| 3.2 | CE真实火焰bolt与面积效果：多部位去重、防护后伤量/正HP限额 | 已完成 | effects_rewards＋terminal_identity：CE真实fire bolt、真实GAS_EXPLOSION两腿面积接触及lightning三腿；防护后正HP限额、单腿退休不再产死亡。 |
+| 3.3 | 精神射线/面积效果整体一次与局部覆盖 | 已完成 | effects_rewards真实discord staff/scroll群一次；declarations真实entrancement staff局部mind资格，核心inanimate仍可命中有生命的局部腿。 |
+| 3.4 | 否定/治疗/支配/纷争/丰饶的群身份与原生资格 | 已完成 | effects_rewards/body_status/body_lifecycle及w_15/17/19/20/21/23：真实治疗/强化/否定/支配/纷争/丰饶，核心原生资格和各局部清理。 |
+| 3.5 | giants×growth×combat逐次消费、反伤/弹反/阶段资源与fallback组合 | 已完成 | effects_rewards四种实际横扫/符文组合；body_actions真实parry与3d破坏；combat反射、防御、资源专项及16引擎组合。 |
+
+
+### 4 破坏、引用与奖励
+
+| 子项 | 内容 | 本轮状态 | 证据 |
+| --- | --- | --- | --- |
+| 4.1 | 成员/zone唯一破坏收据、3d可信身份及provider/fallback互斥 | 已完成 | body_actions＋declarations：可信群/part/gen/zone证明，retired/cross-group/伪身份拒绝；handled/absent/unsupported/故障独占，旧协议守卫原文通过。 |
+| 4.2 | 攻击profile失攻与支撑/移动修正从破坏集幂等派生 | 已完成 | declarations：profile及具体attack失攻，禁用首项选次项、无可用项不绕fallback；production_body支撑全毁仍允许核心攻击，倍率从收据派生。 |
+| 4.3 | 退休/转换/核心终结的外部leader、目标、抓持、携带和计划引用清理 | 已完成 | terminal_identity＋body_lifecycle/body_actions：外部carriedMonster/leader/抓持、hover/检视、已付来源退休清理；核心终结也清外部携带引用。 |
+| 4.4 | 正报价原型：原组一次XP、成员无XP、clone无原奖励权利 | 已完成 | growth/ext_growth_composite_rewards：固定正报价核心27/成员13，成员破坏0XP、整组clone杀死0XP、原核心实际杀死恰加27一次。 |
+| 4.5 | 近战/投掷/射线/毒火/气体/坠落/熔岩核心终结与成员无死亡事实 | 已完成 | terminal_identity八种真实路径：近战、dart投掷、fire staff、毒、火地形、爆炸、熔岩、fall；核心captureDeath/掉落调用各一次，外围只有无死亡退休。 |
+
+
+### 5 状态、被动与环境资格
+
+| 子项 | 内容 | 本轮状态 | 证据 |
+| --- | --- | --- | --- |
+| 5.1 | 群状态唯一存储/计时、局部精神覆盖及全来源速度更新 | 已完成 | body_status＋declarations：群唯一statusDurations、实际客观时间一次递减，local覆盖独立计时；每实体原生速度基础刷新及到期恢复。 |
+| 5.2 | 成员受击惊醒核心、盟友/敌情一致，与篝火受击中断组合 | 已完成 | rest_relations：睡眠腿即使盾吸尽伤也只惊醒并延时核心；成员敌情取核心关系；真实rest敌情中断及combat受击中断原专项。 |
+| 5.3 | 原生被动与核心预算归属，成员不复制核心成长/携带物 | 已完成 | effects_rewards/growth奖励、terminal_identity携带、combat原生passive守卫：预算/成长/携带物只属核心，腿不复制第二份核心权利。 |
+| 5.4 | 全组飞行/支撑联合、潜水all谓词与水下隐藏 | 已完成 | movement_environment：全组飞行谓词、支撑联合；潜水须全体有效格资格，核心一次20%骰，任一干脚全组上浮与隐藏一致。 |
+| 5.5 | 单腿毒/火/网/气体一次采样计时，局部免疫与群免疫 | 已完成 | body_status＋movement_environment：单腿真实毒/火/web，局部免疫/缠绕；跨全部身体麻痹气体只并到核心且一次tick；真实机关喷气。 |
+| 5.6 | 核心携带物、水流/涉水、熔岩/盾吸收及局部环境终结 | 已完成 | terminal_identity＋effects_rewards＋environment原专项：核心只一份carry，lava/fall沿CE销毁/掉落转层；盾先于quarter，水流/涉水按完整接触。 |
+
+
+### 6 生命周期、所有权与录像
+
+| 子项 | 内容 | 本轮状态 | 证据 |
+| --- | --- | --- | --- |
+| 6.1 | 整体被动polymorph/clone：主体ID、全新成员、深状态、无位与异常回滚 | 已完成 | body_lifecycle原21项复验：真实老鼠↔全组、核心ID保留/新腿、no-fit纯准备、poly/clone故障完整图和两RNG回滚。 |
+| 6.2 | 正报价clone/丰饶与独立奖励/预算/关系初始化 | 已完成 | growth正报价clone为0；body_lifecycle四组合真实plenty核心ceil折半，clone新ID/深状态/内部leader、不复制paid action。 |
+| 6.3 | 整组fall/缓存/pending/落脚：一伤、冻结、区域退出异常回滚 | 已完成 | body_lifecycle＋movement_environment：一次core落伤、同cache/pending冻结、完整落脚；实际fall区域退出和pending环境异常恢复完整图/旧绑定/收据，重试不再落伤。 |
+| 6.4 | 楼梯盟友followers整体求位/迁层，无位留原层与原因显示 | 已完成 | travel_ai：真实stairs_down调度全九实体、同entersLevelIn/approaching并实际迁入；无位全留源层正重试及中文原因；失败paid session续跑。 |
+| 6.5 | 整组teleport/blink/beckon/强制位移：区域、完整落脚及来源取消 | 已完成 | travel_ai＋movement_environment：瞄腿whole forced placement、全mask warp成功/无位/故障两流恢复、swept beckon、来源取消，区域/旧意图一致。 |
+| 6.6 | 坏档矩阵：同层同生命周期、队列齐全、叠位/边界/错误ID/树/墓碑/预算拒绝 | 已完成 | production_body/composite_movement/body_lifecycle/body_actions、U03：同层/生命周期/队列齐全、叠位/越界/错误ID/树/墓碑/预算及未付/错误profile坏档拒绝，不退休旧局。 |
+| 6.7 | 生命周期真实命令save/load/replay/seek/续录；固定初始化fixture与正式自然证据分别标明 | 已完成 | 自然giants_composite_natural真实D1→D15断足save续录/完整回放/三点seek；playable_recording固定开局fixture蓄力/断足/精神/rest存读与seek，证据分别标明。 |
+
+
+### 7 phased与跨模块验收
+
+| 子项 | 内容 | 本轮状态 | 证据 |
+| --- | --- | --- | --- |
+| 7.1 | 正式声明的成员phased来源、核心唯一时间、每源付款/scope/max耗时 | 已完成 | 正式definitions的core/leg provider profile；body_actions与declarations实际≤4独立来源，每源cost一次，decision/time owner只core，边界min与耗时max。 |
+| 7.2 | 群精神中断与局部禁攻，已付款正恢复、破坏/zone取消不重放 | 已完成 | body_actions群麻痹/局部lock/断足取消；declarations zone破坏变positive break-recovery，伪造重新激活坏档拒绝；playable_recording蓄力中断续跑。 |
+| 7.3 | poly/clone/fall/followers/位移与paid plan的保存恢复及失败续跑 | 已完成 | body_lifecycle paid poly/fall/clone；travel_ai paid stairs失败同fresh-load及成功followers整体迁层/旧形状取消；强制位移保留正恢复，源ledger身份回滚。 |
+| 7.4 | 真实phased录像、蓄力断足/群精神/篝火休息交叉与seek | 已完成 | playable_recording：真实executeCommand/executeItemCommand蓄力→断腿→discord→存读后缀，full replay及windup/broken/mental/final seek；rest确认receipt完整复放。 |
+| 7.5 | 四种战斗组合、16引擎组合、4a0差分/4a–4c/UR2–4/drift与性能 | 已完成 | 最终冻结门禁：boundary/type/build、自然、136相关文件、terrain写入白名单、16engine-only组合、drift、17实体真实命令与fixture性能；生产/测试/脚本前后hash相同。 |
+
+
+### 8 内容、显示与可玩验收
+
+| 子项 | 内容 | 本轮状态 | 证据 |
+| --- | --- | --- | --- |
+| 8.1 | 正式原创复合体/整组场地/自然出生击败种子，无growth/combat也能击败 | 已完成 | 正式giants.shale-weaver＋shale-web-arena声明、production整组通行及natural场地专项；仅giants的seed7309自然出生/击败/断足保存/回放，不注入生成。 |
+| 8.2 | 隐藏核心的既知群呈现、部分可见裁切，不泄漏新HP/形态/位置 | 已完成 | group_sidebar新增known-hidden core存读/匿名归并；只用可见腿代表位置，核心新HP/形态不公开，不明群和幻觉无成员身份。 |
+| 8.3 | 归并侧栏/核心HP/成员检视、320/390客户端/历史帧/触控命令/ACK；浏览器由维护者验收 | 已完成 | group_sidebar/composite_sfc旧客户端：两只织兽两行、320/390真实SFC、成员检视/瞄准、历史帧与触控ACK边界；沿维护者浏览器已确认归并，本轮不启动浏览器。 |
+| 8.4 | normal有限资源遭遇功能验收与临时数值说明 | 已完成 | playable_recording：normal 30HP、strength17、+3axe/+3chain mail、两瓶有限治疗，正式未改织兽，实际13命令击败、剩21HP/0用药；开遭遇布景而非自然深潜。 |
+| 8.5 | 中文完整报告、具体子项已完成/未完成逐项证据，原历史保留 | 已完成 | 本完整报告逐项46/46已完成；保留4d-5至4d-0历史90007字节及原SHA256，登记实际门禁/性能/trace单字段归因/已知边界；不commit。 |
+
+
+## 实现与规格裁决
+
+复合体继续沿用一个核心、真实独立成员、同一原生实体列表及持久群表。核心是唯一决策与时间所有者，成员保留HP、局部状态、位置、攻击来源及槽冷却；不存在第二套HP、模拟怪物列表或成员独立调度。所有玩家动作沿executeCommand/executeItemCommand。公开查询不取实质随机，成员破坏没有XP、死亡DF或掉落入口。新能力在安装声明闭包中开启，旧无扩展/无body世界保留原形状。
+
+有限声明现开放部位攻击profile（每部位最多4个、每模块最多16个）与完整27行原生status profile。status必须全部列出、owner/merge/disables有限且唯一，共享状态的合并规则与核心一致；局部精神覆盖按实际owner确定资格、命中去重、存储、计时和禁行。固定zone可位于核心或成员；局部zone的1:1伤量先进入该部位原生HP，成员再按中央1:4传核心。provider只得到底座验证的group/part/entity/generation/zone身份，self旧接口和伪造成员依旧拒绝。combat不在时走原生即时攻击及fallback；combat在时声明引用必须在实际provider目录解析。禁用profile/具体attack从破坏集派生，首项不可用可选后续声明，全部不可用不能绕即时fallback；存读验证使用相同派生资格。
+
+任务书“火球多腿”按CE执行路径验收：CE `Monsters.c:2623–2632` 的fireball措辞实际指 `BF_FIERY` bolt，`Items.c` 的 `BE_DAMAGE` 没有另一个固定圆形爆炸法杖。因此使用真实staff_of_fire命令验证火焰射线，并用真实lightning贯穿三个独立部位、原生GAS_EXPLOSION覆盖两个部位验证面积fanout；没有新增偏离CE的面积火球。GAS_EXPLOSION规格见 `Globals.c:496` 的 `T_CAUSES_EXPLOSIVE_DAMAGE`。治疗、入迷、纷争、否定、plenty与被动转换沿CE资格/顺序：如麻痹属原生不可否定状态，不能为了让测试“全清”而移除；入迷局部覆盖资格见 `Items.c:5342–5359` 的INANIMATE/INVULNERABLE检查。
+
+整组移动现按单位子步发布完整cohort，再以稳定核心/树/partId顺序应用环境；两步成员中途踩网、瞬移、断足或核心死亡会停旧轨迹，环境进入格共用一次scope，下一步重验地形/占位/连接。核心/成员已声明刚体转向使用连续扫掠和中间连接限制；成员旋转只付核心时钟。规划仍有每成员32候选/128节点预算，全组远路图有界，阻塞也付正tick。生产追击先选preferred formation，避免“原地脚优先”在墙边拖脚、预算耗尽后不再绕路；诊断规划器默认顺序保留，旧确定轨迹断言未改。
+
+群AI复用核心原生prelude、警觉、睡眠、生存blink、盟友/尸体优先和施法；可见任一部位并入一次原生警觉骰。原生施法先于成员束，逃跑/恐惧/保持距离、混乱一次方向、恶心、抓持、缠绕及硬直经群移动出口。关系判断规范到核心并排除自己群，外围原生isAlly的过时布尔值不授予另一份阵营。篝火prepare、异步确认和rest推进按相同核心关系检测任一可见实体，敌情出现立即停止；已付休息只产生一张interrupted receipt，不执行500tick治疗。盾完全吸收的成员受击仍沿原生wake规则惊醒核心，不推进成员原生计时器。
+
+全组飞行须所有活部位具备资格；否则支撑联合决定整个身体是否坠落，一个飞行脚不能让其余身体浮空。潜水同样是all谓词，核心只掷一次原生20%骰；任一干脚或抓持状态使全组上浮，隐藏查询与实体状态一致。毒、火、web及默认局部免疫按部位处理；共享气体状态只存核心并只tick一次。原生被动、成长、携带物、奖励及全组identity效果以核心为主体，局部清理作用于实际活成员，不复制第二份权利。
+
+整体poly/clone及fall承接4d-5，并完成forced placement、teleport/blink/beckon与楼梯followers：瞄准任一腿仍用完整真实身体落脚；所有部位、区域、连接、占位和预算须同时成立，无位保持原组。每一次强制子步会清旧phased几何，保留已付款正恢复。楼梯沿CE核心资格安排一个旅行者，所有成员共享entersLevelIn/approaching并整体迁移；无完整落脚全留旧层，付正重试并显示i18n原因。pending整组落脚先准备后一次发布，失败冻结且不重落伤。
+
+窄事务覆盖完整原生对象图/own-key顺序及descriptor、全层实体与关系、群表/owned lists、pending/cache、地图层/气体/DF/机关号/进入格ledger、资源/事实/消息、两RNG/ID与actor-action/source/terrain/landing/path/safety/light等派生状态。真正的web、压力板→机关喷气DF、fall区域退出、pending落脚、teleport及paid stairs故障均有专项。region-exit fixture用可信runtime安装区域并验证完整图回滚及一次落伤重试，属于故障布景，不声称其手工区域是giants自然Boss存读档。地图环境回滚与身体结构回滚分开登记；原floor-generation事务还补回actor/action派生checkpoint和无贡献时的原生机关allocator。
+
+## 与3a0/3b/3d/3e的对接
+
+核心只在原生prelude后选一次动作：生存/施法→phased声明→即时攻击或移动。phased的decisionOwnerId/timeChargeOwnerId都是core ID；sourceEntityId/sourcePartId/generation是实际部位，最多4个独立子动作，各自付款/attack scope/冷却，释放边界取min而整束耗时取max。成员不writeOwnerTicks、不takeTurn，也没有嵌套executeCommand。精神/局部禁攻、zone/腿破坏、poly/fall/位移/迁层取消旧source geometry；活旅行者资源ledger保留、死成员无死亡退休后GC、clone不复制paid plan。失败恢复原binding对象身份与live source revision，后缀命令与fresh load一致。旧parry/poise/recovery和dodge来源资格没有降低。
+
+combat.part-break.v1的成员身份由底座拥有列表与群槽证明；prepare/commit均得到不可变证明。成员body破坏和该成员固定zone破坏是不同收据，核心固定zone也不借用self伪身份。provider处理与fallback锁互斥，handler/异步/异常/后续来源取消故障统一恢复本次损伤、盾及已付款状态。组盾的回滚写到声明的核心owner，避免只把盾还给命中腿。3e的敌情与受击端口改放WeakMap派生绑定，修复合并后无body对象图新增两条端口的问题，保持篝火功能。
+
+## 共享文件及数据位置
+
+| 文件/函数 | 具体变化 |
+| --- | --- |
+| Game.bodyStatusContext/bodyAttackProfileIds/validateMemberBreak/routeBodyMemberDamage | 实际owner、攻击声明与可信member/zone证明；一次损伤/传导/破坏 |
+| Game.takeBodyDecision/tryMoveBodyCore/planBodyCoreRoute/bodyPreferredFormationFits | 群AI优先、有限远路、preferred formation、正等待与逐子步环境 |
+| Game.rotateSpatialActor/commitBodyTransition | 核心/成员刚体转向、中间树限制、独立环境写集及派生身份回滚 |
+| Game.placeCreature/teleportCreature/beckonCreature/scheduleBodyFollower/enterWholeBodyFollower | 完整whole落脚、强制扫掠、旧来源取消、CE楼梯关系与无位说明 |
+| Game.fallWholeBody/commitWholeBodyFall/retrySquareLandings | 区域退出窄事务、pending完整发布、无第二次落伤、故障重试 |
+| Game.killMonster/retireBodyEntities/boltLivingTarget/applyBasicBoltEffect/negateCreature | 外部carried/leader/seize清理、core一次终结、identity与局部mental资格 |
+| BodyGroups/SpatialSchema/CreatureSpatial/CompositeMovement/SpatialRevision | finite profiles、统一破坏资格、四pose、formation规划、完整schema/预算与WeakMap revision checkpoint |
+| BodyStatuses/Creature/Monster/MonsterAI/Scent/Submersion | 单群精神存储与计时、速度刷新、单次警觉、canonical阵营/睡眠、原生priority和all潜水 |
+| BodyCombat/Combat/FixedZoneHealth/BodyEffects/Bolt/BoltTrajectory | 真实接触、shield owner、native一次结算、fixedzone→成员→core、status-aware去重 |
+| ActorActionProduction/PhasedAttackProduction/GenerationCoordinator/WholeRunSnapshot/LevelTravel | paid来源取消/恢复、声明profile与几何codec、生成派生checkpoint、whole旅行和公开知识存档 |
+| ext/runtime/types/partBreak、combat/partBreak | 声明闭包、可信成员prepare/commit、provider/fallback独占及rest派生绑定 |
+| UI/MonsterGroups/MonsterSidebar/MonsterVisibility；Sidebar/ContextPanel/ThemeNearby | 既知隐藏核心匿名一行，不公开新HP/形态/位置；可见成员独立检视/瞄准 |
+| giants/data/definitions.json、giants/schema.ts/types.ts | 正式织兽core/leg profile声明及strict有限schema |
+| scripts/u03-state-contract.json | 仅body安装时存在的seenBodyCoreIds归whole-run，存读可见知识；无body不加字段 |
+| scripts/test-suites.json、growth/test-suites.json、zh_CN.json | 8新增相关文件的实际所有权登记；隐藏核心标签和followers无位文案i18n |
+
+正式内容继承4d-3：`src/ext/modules/giants/data/definitions.json` 的 `giants.shale-weaver` / `giants.shale-weaver-leg`（2×2核心96HP、8条1×1腿各12HP），`shale-web-arena` 整组场地声明及 `giants_composite_natural.test.ts` 种子7309。新增正式core→`combat.shock-ring`、leg→`combat.fan-edge` profile，combat不安装时仍可打即时原生攻击。数值是临时数据，不把有限场景胜利解释为D1→深层normal平衡已经定稿。
+
+## 显示与验收边界
+
+两只织兽仍归并为两行；核心可见时显示core HP和可见成员/完整观察下的破坏数，单腿瞄准与检视保持真实ID。新seenBodyCoreIds只记录玩家实际直接见过的核心（幻觉/千里眼不增加此知识），隐藏后的已知群用可见腿作为代表位置、匿名核心标题和未知HP，避免反查核心的新form/HP/loc。历史帧是脱离实时状态的public projection；320/390真实SFC host覆盖渲染/轮询/检视，触控/ACK继续走原输入门禁。SFC host不模拟浏览器CSS。维护者先前已浏览器确认归并；本轮依明确指令没有调用浏览器、前端dev启动命令、Playwright或CUA，新视觉仍由维护者验收。
+
+## 失败记录、反事实及基线裁决
+
+初次相关旧集合124文件有13项失败（116文件2778项通过，实际exit1），没有把部分通过拼成最终门禁。原生prelude的普通生物timer被群分支错误设80tick、忙碌楼层失败未还派生source/checkpoint、standalone part-break validator误接受未证明成员，都已修生产代码；旧断言原文保持。i18n新增未使用键删去。正报价fixture初次引用growth内部代码触碰所有权，移到growth自己的test目录，未改boundary守卫。后续新fixture修正原生terrain名称、staff类别、符文所需存活正HP、vent的DF绑定及normal真实30HP；没有扩大原timeout/容差/skip。
+
+4a0完整对象图差分的4项失败在干净HEAD `312e9eb` 也存在：完整差分指纹与候选一致。只移除Game的nativeDamageCommitted/worldRestUnavailable两条3e端口，其他生产文件和原4a0守卫/基线不动，4项立刻通过。主候选用runtime的restHandlers WeakMap保存端口，原stored ports own graph不增加字段；最终4a0原守卫全部通过，不重录零影响基线。证据 `p4d-complete-clean-head-baseline.log` / `p4d-complete-clean-head-port-counterfact.log` / `p4d-complete-port-v12.log` 位于/private/tmp。
+
+giants三份黄金trace只因新增正式攻击声明改变data fingerprint：隔离目录保持其余候选生产文件，只恢复giants/data/definitions.json到HEAD，原三份trace三项通过（18.10s）。按原BROGUE_CAPTURE_GIANTS_TRACE=1入口重录（17.75s），每份逐字段差分仅extensionsHash改变；commands、nativeWorldHash、RNG、状态、boss/region全部保持。其他UR/generation/4a0黄金或基线未重录，守卫未改。
+
+| trace | extensionsHash原值 | extensionsHash新值 | 其余字段 |
+| --- | --- | --- | --- |
+| spine-natural-trace.json | 2aa0b596cc96edc954fc2500462419082b46051622947606bc3ed06ccf3a3ade | 17b2e605c2b224c0e2399df4cfeb2cad3c56dff3ecb5603521109879dca8220b | 无变化 |
+| natural-trace.json | 5bc704bcddb8a049d6e120f4ed243e60d4093dd37306f2a33446da3129cea1b1 | deb56ea35e97751828efbca1312be782f191a106efe8b089ffcc77ade1deac7e | 无变化 |
+| colossus-natural-trace.json | 44f1ccf5d1beeabad8b7f1b02c38e328f51ca1665352d1761ba6b8f9c9d0d8cb | b6a806199e09ccca4cd2dbb67c8c6c6882c9690c29bc665a35b0d0bbcdf8fa79 | 无变化 |
+
+窄事务追加专项曾发现旧3b生成失败不恢复resolving/resumePending/source revision、以及无贡献旧楼层的machine allocator没有还原，已修生产checkpoint。本轮所有实际玩家输入都用命令边界；在故障抛出的命令后，通用录像策略会撤销recordingOrigin，所以stairs-fault专项对比完整机械存档仅剔除这一项provenance，不称它为正常录像。成功自然/固定初始化的录像另逐事件、确认决策、full replay/seek和续录严格验收。中途冻结批次因补组合或边界失败停止，最终全部门禁重新以同一份source/scripts输入hash执行，早批次结果只保留为诊断。
+
+16组合官方engine-only脚本内部用Vite SSR loader（middlewareMode、hmr:false）预加载引擎，stderr记录沙箱拒绝24678端口的EPERM；实际engine.status=passed、16组合全部通过、requestedScopePassed=true、exit0；总passed=false来自browser.status=not-run，按本轮明确的engine-only政策不冒充产品浏览器验收。未进行浏览器/UI验收，也没有把端口绑定错误当成游戏测试失败或要求放宽权限。
+
+## 本轮实际门禁
+
+遵循任务书及维护者开发期功能测试政策；Node `v24.19.0`，PATH前置Node24，`NODE_OPTIONS=--max-old-space-size=3072`、vitest `--maxWorkers=2`。未运行完整npm test/test:full/全部test:ext/removal或强制CE生成普查。最终批次 `2026-10-05T18:49:59Z` → `2026-10-05T19:12:18Z`（UTC），全部exit0；共926个src/scripts/package/tsconfig/vite输入前后SHA256逐项相同。
+
+| 门禁 | 实际命令/范围 | 结果 | 秒 |
+| --- | --- | --- | --- |
+| boundary | `node scripts/check-module-boundaries.mjs` | 通过，exit0 | 1.596 |
+| type | `npx vue-tsc -b` | 通过，exit0 | 7.169 |
+| build | `npm run build` | 通过，exit0 | 10.798 |
+| natural | `vitest giants_composite_natural.test.ts（only giants自然出生/击败/录像）` | Test Files  1 passed (1)；Tests  5 passed (5) | 432.274 |
+| related | `vitest 136文件（4a0/4a–4d、giants、combat 3a0–3e、相关growth、UR2–4、录像/状态/环境/所有权守卫）` | Test Files  136 passed (136)；Tests  2967 passed (2967) | 744.613 |
+| terrain-guard | `vitest c_4a_terrain_catalog.test.ts -t 白名单` | Test Files  1 passed (1)；Tests  1 passed | 29 skipped (30) | 1.637 |
+| composition | `node scripts/check-module-composition-smoke.mjs --engine-only` | 16/16 engine-only，exact checkpoints/save-load/replay-seek/续录全通过 | 73.467 |
+| drift | `npm run test:drift -- --maxWorkers=2` | Test Files  4 passed (4)；Tests  5 passed (5) | 67.307 |
+
+地形白名单命令用 `-t 白名单` 明确筛选1项，其余29项因过滤不执行，未新增skip。最终原始日志、退出码、输入hash清单与命令实参在 `/private/tmp/p4d-complete-final-gates.json` / `p4d-complete-final-*.log` / `p4d-complete-related-files.json`。这些是本机可复核临时证据，不提交截图或>1MB原始材料。最终实际结果与任何开发期失败/中断批次分列，不复用历史里程碑的旧通过数。
+
+## 新增功能测试及可玩证据
+
+| 文件 | 本轮新增项数 | 内容 |
+| --- | --- | --- |
+| [phase4d_declarations.test.ts](../../src/test/phase4d_declarations.test.ts) | 13 | 固定zone、profile、局部精神/组盾、provider故障、次profile存读、paid zone取消及坏档 |
+| [phase4d_movement_environment.test.ts](../../src/test/phase4d_movement_environment.test.ts) | 13 | 两子步、破坏/warp停旧轨迹、真实web/机关DF、rigid core/leg、窄环境/区域退出/pending回滚、all潜水/飞行 |
+| [phase4d_travel_ai.test.ts](../../src/test/phase4d_travel_ai.test.ts) | 12 | 远路、正等待、群原生AI/施法/盟友/警觉、全组forced warp/beckon、实际followers和paid stairs成功/失败 |
+| [phase4d_rest_relations.test.ts](../../src/test/phase4d_rest_relations.test.ts) | 5 | prepare/确认/rest成员敌情、真实隐身到期中断、盾吸尽成员受击只wake core |
+| [phase4d_effects_rewards.test.ts](../../src/test/phase4d_effects_rewards.test.ts) | 8 | 四战斗组合真实axe/runic、lightning三腿、原生面积爆炸、治疗/强化/否定/纷争 |
+| [ext_growth_composite_rewards.test.ts](../../src/ext/modules/growth/tests/ext_growth_composite_rewards.test.ts) | 2 | 真实正报价27/13、成员0XP、whole clone0XP、原core一次27，combat有/无 |
+| [phase4d_terminal_identity.test.ts](../../src/test/phase4d_terminal_identity.test.ts) | 9 | 8种真实terminal唯一core death/drop与外围无death事实，外部引用/carry清理 |
+| [phase4d_playable_recording.test.ts](../../src/test/phase4d_playable_recording.test.ts) | 3 | phased蓄力/断足/精神及bonfire真实命令录像/seek；normal有限资源击败 |
+| [phase4d_group_sidebar.test.ts](../../src/test/phase4d_group_sidebar.test.ts) | 1 | 已见隐藏core匿名归并、未知HP、不泄漏新形态/位置及知识存读 |
+
+新增8个文件65项、旧group_sidebar增加1项，共66项；原有4d-0～5及跨模块旧功能守卫在本轮复验。故障与结构布景明确用test helper/private探针，不称自然生成；正常玩家动作均真实命令。
+
+
+正式自然验收seed7309 / wizard / only giants：D15实际出生，core ID 482；到达事件2175、首次断足事件2201、最后事件2602，击败时HP0，8张成员破坏收据。整条D1→场地路线与战斗只有真实move/search/stairs/物品命令，没有注入身体、改生成或clearRecording；断足存档续录、full replay无OOS、arrived/broken/last三点fresh seek全部通过。诊断汇总 `/private/tmp/p4d3-natural-acceptance.json` 由本轮原捕获入口写入。
+
+
+有限normal功能验收seed7326 / only giants：开遭遇fixture使用正式未改织兽，玩家30HP、strength17、+3axe/+3chain mail、两瓶治疗药剂，仅初始布景准备；之后13条实际命令击败，剩21/30HP、用药0/2。这验证有限资源可玩闭环，不是无布景D1→D15的normal路线。录像专项的fixed-start fixture在Game.startNewGame同时用于首局和回放新局，命令/决策完整保留，不假称自然录像。
+
+## 性能
+
+| 场景 | 实际样本 | cold ms | warm P50 ms | warm P95 ms | 其他 |
+| --- | --- | --- | --- | --- | --- |
+| 1核心＋16成员，真实executeCommand wait追击 | 20条、移动20条 | 55.567 | 49.442 | 55.303 | max 55.567ms |
+| 17实体诊断plan+commit（不等同真实命令） | 20次 | 2.263 | 2.007 | 4.982 | planned 15 / blocked 5；max nodes 128 |
+
+在本机Node24、2worker相关集合中记录；不是浏览器帧率。原32/128预算和positive blocked合同保留。原始样本为 `/private/tmp/p4d-complete-final-command-performance.json` / `p4d-complete-final-fixture-performance.json`。
+
+## 完成边界与历史保留
+
+本轮剩余开发项：无（46/46完成）。4e主动转换/分裂/召唤、成员再生、镜像/残骸及旧存档迁移按原任务范围继续关闭，不作为4d遗漏；正式数值仍是临时数据。浏览器视觉验收由维护者执行，未冒充SFC host为浏览器截图。工作树保持未暂存、未commit、未push。
+
+
+历史段落原字节90007，SHA256 `70ce2c956e6fcd2f3091231e7ac437325c7c484769d74c1a68f15b37efea958b`；下方原4d-5～4d-0的阶段结论、当时剩余项、种子、证据和维护者确认全部保留，以上本轮完整清单才是当前状态。
+
+## 维护者已提交的4d-5及更早历史报告
+
+以下历史原字节保留。
+
 # 4d-5 执行报告：整体被动变形、复制与坠落等待
 
 基于维护者已提交4d-4并合入dot 3d追踪诊断的 `ext/phase4` HEAD `a2b58f83a9e4255b4f3be9499efd3b9399301202`，开工工作树干净。本轮交付 **4d-5 可独立验收子里程碑，完整4d仍未完成**：推进原剩余项5–7的整体被动polymorph、clone/plenty、坠落/缓存层/pending与已付款phased动作的交叉。按任务书允许的干净子里程碑收束，当前未完成范围仍逐项列为1–8。未暂存、commit或push。后方保留HEAD中4d-4/4d-3/4d-2/4d-1/4d-0历史报告原字节。

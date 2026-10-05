@@ -33,6 +33,7 @@ const partBreakProviders = new WeakMap<ExtensionRuntime, { module: ExtensionModu
 const zoneBreakCheckpoints = new WeakMap<ExtensionRuntime, () => () => void>();
 const zoneBreakHandlers = new WeakMap<ExtensionRuntime, NonNullable<ExtensionPorts['zoneBroken']>>();
 const bodyHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts, 'memberDamage' | 'memberDamageCommitted' | 'validateMemberBreak' | 'memberBroken'>>();
+const restHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts,'nativeDamageCommitted'|'worldRestUnavailable'>>();
 function isCreatureView(value: unknown): boolean {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
     const v = value as Record<string, unknown>;
@@ -147,10 +148,14 @@ export class ExtensionRuntime {
     private readonly messageBuffers: string[][] = [];
     get spatialCatalog(): SpatialCatalog { return spatialCatalogs.get(this) ?? nativeSpatialCatalog; }
     constructor(registry: ExtensionRegistry, manifest: ExtensionManifest, private readonly ports: ExtensionPorts, snapshot?: ExtensionSnapshot) {
+        if (ports.nativeDamageCommitted || ports.worldRestUnavailable) {
+            const {nativeDamageCommitted,worldRestUnavailable,...existingPorts}=this.ports;
+            restHandlers.set(this,{nativeDamageCommitted,worldRestUnavailable});this.ports=existingPorts;
+        }
         if (ports.zoneBroken) {
             zoneBreakHandlers.set(this, ports.zoneBroken);
             if (ports.checkpointZoneBreak) zoneBreakCheckpoints.set(this, ports.checkpointZoneBreak);
-            const { zoneBroken: _handler, checkpointZoneBreak: _checkpoint, ...existingPorts } = ports;
+            const { zoneBroken: _handler, checkpointZoneBreak: _checkpoint, ...existingPorts } = this.ports;
             this.ports = existingPorts;
         }
         if (ports.memberDamage || ports.memberDamageCommitted || ports.validateMemberBreak || ports.memberBroken) {
@@ -192,10 +197,16 @@ export class ExtensionRuntime {
         }
         for (const module of this.modules) if (module.nativeBodies) {
             const declarations = module.nativeBodies;
-            if (!isJson(declarations) || Object.keys(declarations).sort().join(',') !== 'breakRules,definitions'
+            if (!isJson(declarations) || Object.keys(declarations).filter(k => !['statusProfiles', 'attackProfiles'].includes(k)).sort().join(',') !== 'breakRules,definitions'
                 || !Array.isArray(declarations.definitions) || !declarations.definitions.length || declarations.definitions.length > 16
                 || !Array.isArray(declarations.breakRules) || declarations.breakRules.length > 16 || !module.nativeForms?.length)
                 throw new Error('Invalid native body declarations');
+            if (declarations.statusProfiles !== undefined && (!Array.isArray(declarations.statusProfiles) || declarations.statusProfiles.length > 16)) throw new Error('Invalid status profile declarations');
+            if (declarations.attackProfiles !== undefined && (!Array.isArray(declarations.attackProfiles) || declarations.attackProfiles.length > 16)) throw new Error('Invalid attack profile declarations');
+            for (const profile of declarations.statusProfiles ?? []) this.spatialCatalog.registerStatusProfile(profile);
+            for (const profile of declarations.attackProfiles ?? []) this.spatialCatalog.registerAttackProfile(profile);
+            const provider = this.modules.find(m => m.actorActions)?.actorActions?.definitions as unknown as import('./actorActions').ActorAttackDefinitions | undefined;
+            if (provider && (declarations.attackProfiles ?? []).some(p => !provider.profiles.some(ref => ref.id === p.providerProfileId))) throw new Error('Unresolved body attack provider profile');
             for (const rule of declarations.breakRules) this.spatialCatalog.registerMemberBreakRule(rule);
             for (const form of module.nativeForms) this.spatialCatalog.registerForm({ id: form.id, owner: module.id,
                 footprintId: nativeFormSpatial(form).footprintId });
@@ -467,12 +478,13 @@ export class ExtensionRuntime {
      * transaction succeeds, so failed providers leave prepared work intact. */
     commitPartBreak<T>(request: PartBreakRequest, native: PartBreakNativeCommit<T>): T {
         if (this.disposed || this.pureProviderPhase || this.rewardProviderPhase) throw new Error('Unavailable or recursive part break commit');
-        validatePartBreakRequest(request);
+        const member = request.partId === 'self' ? undefined : bodyHandlers.get(this)?.validateMemberBreak?.(request);
+        if(request.partId!=='self' && !member)throw new Error('Unavailable member break identity');
+        validatePartBreakRequest(request,member||undefined);
         const actor = [...this.creatures].find(c => c.id === request.actorId);
         if (!actor || actor.hp <= 0) throw new Error('Unavailable part break actor');
-        const member = request.partId === 'self' ? undefined : bodyHandlers.get(this)?.validateMemberBreak?.(request);
         if (request.partId !== 'self' && (!member || member.groupId !== request.groupId || member.partId !== request.partId
-            || member.generation !== request.generation || member.entityId === actor.id
+            || member.generation !== request.generation || member.entityId === actor.id && request.zoneId === 'body'
             || ![...this.creatures].some(c => c.id === member.entityId && c.hp > 0
                 && c.spatial?.bodyMember?.groupId === actor.id && c.spatial.bodyMember.partId === member.partId)))
             throw new Error('Unavailable member break identity');
@@ -528,6 +540,7 @@ export class ExtensionRuntime {
                                     } else context.setState(next);
                                 },
                                 getComponent: context.getComponent, setComponent: context.setComponent,
+                                ...(member ? { member: freezeView({ ...member }) } : {}),
                                 removeComponent: context.removeComponent, message: context.message,
                             };
                             const committed = entry.provider.commit(value, plan, Object.freeze(narrow));
@@ -536,7 +549,8 @@ export class ExtensionRuntime {
                         });
                     } finally { this.rewardProviderPhase = false;providerCommitActive=false; }
                 }
-                if (member) bodyHandlers.get(this)?.memberBroken?.(actor, member);
+                if (member && request.zoneId === 'body') bodyHandlers.get(this)?.memberBroken?.(actor, member);
+                else if (member) zoneBreakHandlers.get(this)?.([...this.creatures].find(c => c.id === member.entityId)!, request.zoneId);
                 else zoneBreakHandlers.get(this)?.(actor, request.zoneId);
                 return result;
             });
@@ -1043,7 +1057,7 @@ export class ExtensionRuntime {
             },
             damage: (target, amount, hpBefore, damageKind = 'other') => {
                 const fact = this.causality.recordDamage(target.id, hpBefore, target.hp, damageKind);
-                this.ports.nativeDamageCommitted?.(target, fact.hpLost);
+                restHandlers.get(this)?.nativeDamageCommitted?.(target, fact.hpLost);
                 this.emit('damage', { creature: creatureView(target, this.ports.playerId()), amount, hpBefore,
                     sourceId: this.sourceId, origin: fact.origin, hpLost: fact.hpLost, damageKind });
                 bodyHandlers.get(this)?.memberDamageCommitted?.(target);
@@ -1280,7 +1294,7 @@ export class ExtensionRuntime {
             const projection = module.projectView(freezeView({ queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
                 visibleInteractables: this.visibleInteractables(moduleId), nearbyInteractables: this.nearbyInteractables(moduleId),
                 worldRestUnavailable: id=>this.world.entities.some(entity=>entity.id===id&&entity.owner===moduleId)
-                    ?this.ports.worldRestUnavailable?.(id)??null:'unavailable' }));
+                    ?restHandlers.get(this)?.worldRestUnavailable?.(id)??null:'unavailable' }));
             requireSynchronous(projection);
             if (!isJson(projection) || !projection || typeof projection !== 'object' || Array.isArray(projection)) throw new Error('Invalid module display projection');
             const publicProjection = cloneJson(projection) as Record<string, Json>;

@@ -14,6 +14,13 @@ import { MonsterState } from '../../entities/Monster';
 import type { Game } from '../../engine/Core/Game';
 
 export const PRODUCTION_BODY_ID = 'giants.fixture-body';
+export function installProductionAttackBody() {
+    const data=installProductionBody();
+    Object.assign(data.nativeBodies,{attackProfiles:[...(data.nativeBodies.attackProfiles??[]),
+        {id:'giants.fixture-profile',owner:'giants',providerProfileId:'combat.follow-thrust'}]});
+    for(const part of data.definition.parts) if(part.role!=='core') part.attackProfileIds=['giants.fixture-profile'];
+    return data;
+}
 const eight = [{ x: -1, y: -1 }, { x: 0, y: -1 }, { x: 2, y: -1 }, { x: 2, y: 0 },
     { x: 2, y: 2 }, { x: 1, y: 2 }, { x: -1, y: 2 }, { x: -1, y: 1 }];
 /** Installed, immutable production authority, with diagnostic content only.
@@ -40,7 +47,7 @@ export function installProductionBody(count = 8, provider?: PartBreakProvider, f
             minDistance: 1, maxDistance: count === 8 ? 3 : 6, maxStepPerAction: 2, requiresClearLink: true })) };
     // Retain installed content referenced by the base generation declarations;
     // the diagnostic adds its own authority rather than replacing that closure.
-    const nativeBodies = { definitions: [...(base.nativeBodies?.definitions ?? []), definition],
+    const nativeBodies = { ...base.nativeBodies, definitions: [...(base.nativeBodies?.definitions ?? []), definition],
         breakRules: [...(base.nativeBodies?.breakRules ?? []), rule] };
     const forms = [...base.nativeForms!, core, leg], rules = { ...base.rules!, fingerprint: extensionDataFingerprint({ baseFingerprint: base.rules!.fingerprint, nativeBodies, forms }) };
     const module = () => ({ ...base, rules, nativeForms: forms, nativeBodies,
@@ -49,7 +56,7 @@ export function installProductionBody(count = 8, provider?: PartBreakProvider, f
     const registry = registryFromDescriptors(descriptors.map(d => d.id === 'giants'
         ? { ...d, rules, create: module } : d));
     vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(registry);
-    return { definition, core, leg, rule };
+    return { definition, core, leg, rule, nativeBodies };
 }
 export function emptyProductionArena(game: Game): void {
     game.animationEnabled = false; game.monsters = []; game.dormantMonsters = []; game.items = [];
@@ -59,6 +66,7 @@ export function emptyProductionArena(game: Game): void {
         game.grid.getCell(x, y)!.machineNumber = 0;
     }
     game.environment = new EnvironmentManager(game.grid); game.waypoints = new WaypointSystem();
+    (game as any).bindDungeonFeatureEffects();
     commitCreatureAnchor(game.player, { x: 40, y: 12 }); game.player.hp = game.player.maxHp = 100000;
 }
 export function productionBodyScene(count = 8, combat = false) {

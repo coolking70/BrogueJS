@@ -5,14 +5,18 @@ import i18next from 'i18next';
 import { sidebarEntityRows, type SidebarEntityRow } from './MonsterSidebar';
 import type { DetailInfo } from './DetailGenerator';
 
-/** Detached knowledge projection. Hidden cores publish no group identity;
+/** Detached knowledge projection. Unseen cores publish no group identity;
  * hidden limbs publish no IDs, positions or HP. Exact break counts require
  * all live shapes and all missing preferred slots to be in current view. */
 export function publicMonsterGroups(game: Game) {
   if (game.player.hasStatus('hallucinating')) return [];
   return (game.bodyGroups ?? []).flatMap(group => {
     const core = game.monsters.find(m => m.id === group.coreId);
-    if (!core || !publicMonsterBody(game.player, game.grid, core)) return [];
+    if (!core) return [];
+    const coreVisible = !!publicMonsterBody(game.player, game.grid, core)?.cells.some(p => {
+      const c=game.grid.getCell(p.x,p.y);return !!c?.isVisible && !c.isClairvoyantVisible;
+    });
+    if (!coreVisible && !game.seenBodyCoreIds.has(core.id)) return [];
     const definition = game.spatialCatalog.body(group.bodyDefinitionId);
     const visible = (p: { x: number; y: number }) => { const c = game.grid.getCell(p.x, p.y); return !!c?.isVisible && !c.isClairvoyantVisible; };
     const members = group.members.flatMap(s => {
@@ -21,14 +25,14 @@ export function publicMonsterGroups(game: Game) {
       const cells = body.cells.filter(visible);
       return cells.length ? [{ entityId: m.id, partId: s.partId, name: m.name, hp: m.hp, maxHp: m.maxHp, cells: cells.map(p => ({ ...p })) }] : [];
     });
-    if (!members.some(m => m.entityId === core.id)) return [];
-    const complete = group.members.every(s => {
+    if (!members.length) return [];
+    const complete = coreVisible && group.members.every(s => {
       const m = game.monsters.find(m => m.id === s.entityId), published = members.find(m => m.entityId === s.entityId);
       if (m) return !!published && published.cells.length === footprintOf(m).length;
       const part = definition.parts.find(p => p.partId === s.partId)!, fp = game.spatialCatalog.form(part.formId).footprintId;
       return game.spatialCatalog.cells(fp, game.spatialCatalog.definition(fp).poses[0]!).every(p => visible({ x: core.x + part.preferredOffset.x + p.x, y: core.y + part.preferredOffset.y + p.y }));
     });
-    return [{ groupId: group.groupId, coreId: core.id, members,
+    return [{ groupId: group.groupId, coreId: core.id, coreVisible, members,
       ...(complete ? { broken: group.members.filter(s => s.life === 'removed').length } : {}) }];
   });
 }
@@ -42,7 +46,7 @@ export type PublicSidebarEntityRow = Exclude<SidebarEntityRow, { kind: 'monster'
 export function publicSidebarEntityRows(game: Game): PublicSidebarEntityRow[] {
   const rows = sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth);
   if (!game.bodyGroups?.length) return rows;
-  const published = publicMonsterGroups(game).filter(g => rows.some(r => r.kind === 'monster' && r.id === g.coreId));
+  const published = publicMonsterGroups(game);
   const membership = new Map(published.flatMap(g => g.members.map(m => [m.entityId, g] as const)));
   const added = new Set<number>();
   return rows.flatMap((row): PublicSidebarEntityRow[] => {
@@ -50,9 +54,13 @@ export function publicSidebarEntityRows(game: Game): PublicSidebarEntityRow[] {
     if (!group) return [row];
     if (added.has(group.groupId)) return [];
     added.add(group.groupId);
-    const core = rows.find((r): r is Extract<SidebarEntityRow, { kind: 'monster' }> => r.kind === 'monster' && r.id === group.coreId)!;
+    const core = rows.find((r): r is Extract<SidebarEntityRow, { kind: 'monster' }> => r.kind === 'monster' && r.id === group.coreId);
     const memberRows = rows.filter((r): r is Extract<SidebarEntityRow, { kind: 'monster' }> => r.kind === 'monster' && membership.get(r.id) === group);
-    return [{ ...core, bodyGroup: group, focused: memberRows.some(r => r.focused),
+    const representative = core ?? memberRows[0]!;
+    const publicRow = group.coreVisible ? representative : { ...representative,
+      name: i18next.t('sidebar.body_core_hidden'), hp: 0, maxHp: 0, bodySize: null, bodyCellCount: null,
+      behavior: '', statuses: [], negated: false };
+    return [{ ...publicRow, bodyGroup: group, focused: memberRows.some(r => r.focused),
       distanceSquared: Math.min(...memberRows.map(r => r.distanceSquared ?? (r.loc.x - game.player.x) ** 2 + (r.loc.y - game.player.y) ** 2)),
       distance: Math.min(...memberRows.map(r => r.distance ?? Math.max(Math.abs(r.loc.x - game.player.x), Math.abs(r.loc.y - game.player.y)))) }];
   });

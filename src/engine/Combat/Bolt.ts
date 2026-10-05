@@ -72,6 +72,18 @@ export function boltTargetCategory(effect: BoltEffect): EffectTargetCategory {
         default: return 'direct';
     }
 }
+/** Status ownership can override the default group mental projection. */
+export function boltStatusId(effect: BoltEffect): import('../../entities/Creature').StatusId | undefined {
+    switch (effect) {
+        case BoltEffect.DISCORD: return 'discordant';
+        case BoltEffect.ENTRANCEMENT: return 'entranced';
+        case BoltEffect.SLOW: return 'slowed';
+        case BoltEffect.HASTE: return 'hasted';
+        case BoltEffect.SHIELDING: return 'shielded';
+        case BoltEffect.INVISIBILITY: return 'invisible';
+        default: return undefined;
+    }
+}
 
 /** Semantic aliases only. Presence here does not enable a dispatch branch. */
 export const BOLT_EFFECT_CE_EFFECT: Readonly<Record<BoltEffect, CEBoltEffect>> = {

@@ -47,3 +47,16 @@ export function invalidateSpatialTerrain(grid: object): void {
     const value = revisions.get(grid);
     if (value !== undefined && owners.has(grid as Grid)) revisions.set(grid, value + 1);
 }
+/** Narrow native transaction: preserve the existing watch epoch and per-cell
+ * observed types, so a restored map does not invalidate an already paid plan. */
+export function checkpointSpatialTerrain(grids: readonly Grid[]): () => void {
+    const saved = [...new Set(grids)].map(grid => ({ grid, revision: revisions.get(grid),
+        observed: Array.from({ length: grid.height }, (_, y) => Array.from({ length: grid.width }, (_, x) => {
+            const cell = grid.getCell(x,y)!, watch = cells.get(cell);
+            return { cell, watch: watch && { grid: watch.grid, observedTypes: [...watch.observedTypes] } };
+        })).flat() }));
+    return () => { for (const row of saved) {
+        if (row.revision !== undefined) revisions.set(row.grid, row.revision); else revisions.delete(row.grid);
+        for (const { cell, watch } of row.observed) { if (watch) cells.set(cell, watch); else cells.delete(cell); }
+    } };
+}

@@ -73,7 +73,7 @@ export function visibleMonsterRows(player: Player, grid: Grid, monsters: readonl
                 hp: monster.hp,
                 maxHp: monster.maxHp,
                 color: colorString(monster.color),
-                ally: monster.isAlly,
+                ally: bodyDecisionActor(monster).isAlly,
                 behavior: monsterBehaviorLabel(player, grid, monster),
                 negated: monster.displaysNegation && !player.hasStatus('hallucinating'),
                 statuses: player.hasStatus('hallucinating') ? [] : creatureStatusRows(monster, isSidebarVisibleStatus),

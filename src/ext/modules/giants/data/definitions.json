@@ -279,7 +279,9 @@
               "x": 0,
               "y": 0
             },
-            "attackProfileIds": [],
+            "attackProfileIds": [
+              "giants.weaver-core-profile"
+            ],
             "coreTransfer": {
               "numerator": 0,
               "denominator": 1
@@ -296,7 +298,9 @@
               "x": -1,
               "y": -1
             },
-            "attackProfileIds": [],
+            "attackProfileIds": [
+              "giants.weaver-leg-profile"
+            ],
             "coreTransfer": {
               "numerator": 1,
               "denominator": 4
@@ -313,7 +317,9 @@
               "x": 0,
               "y": -1
             },
-            "attackProfileIds": [],
+            "attackProfileIds": [
+              "giants.weaver-leg-profile"
+            ],
             "coreTransfer": {
               "numerator": 1,
               "denominator": 4
@@ -330,7 +336,9 @@
               "x": 2,
               "y": -1
             },
-            "attackProfileIds": [],
+            "attackProfileIds": [
+              "giants.weaver-leg-profile"
+            ],
             "coreTransfer": {
               "numerator": 1,
               "denominator": 4
@@ -347,7 +355,9 @@
               "x": 2,
               "y": 0
             },
-            "attackProfileIds": [],
+            "attackProfileIds": [
+              "giants.weaver-leg-profile"
+            ],
             "coreTransfer": {
               "numerator": 1,
               "denominator": 4
@@ -364,7 +374,9 @@
               "x": 2,
               "y": 2
             },
-            "attackProfileIds": [],
+            "attackProfileIds": [
+              "giants.weaver-leg-profile"
+            ],
             "coreTransfer": {
               "numerator": 1,
               "denominator": 4
@@ -381,7 +393,9 @@
               "x": 1,
               "y": 2
             },
-            "attackProfileIds": [],
+            "attackProfileIds": [
+              "giants.weaver-leg-profile"
+            ],
             "coreTransfer": {
               "numerator": 1,
               "denominator": 4
@@ -398,7 +412,9 @@
               "x": -1,
               "y": 2
             },
-            "attackProfileIds": [],
+            "attackProfileIds": [
+              "giants.weaver-leg-profile"
+            ],
             "coreTransfer": {
               "numerator": 1,
               "denominator": 4
@@ -415,7 +431,9 @@
               "x": -1,
               "y": 1
             },
-            "attackProfileIds": [],
+            "attackProfileIds": [
+              "giants.weaver-leg-profile"
+            ],
             "coreTransfer": {
               "numerator": 1,
               "denominator": 4
@@ -519,6 +537,18 @@
             "fallbackStunTicks": 30
           }
         ]
+      }
+    ],
+    "attackProfiles": [
+      {
+        "id": "giants.weaver-core-profile",
+        "owner": "giants",
+        "providerProfileId": "combat.shock-ring"
+      },
+      {
+        "id": "giants.weaver-leg-profile",
+        "owner": "giants",
+        "providerProfileId": "combat.fan-edge"
       }
     ]
   }

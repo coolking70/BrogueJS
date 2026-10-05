@@ -264,7 +264,7 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
 
         if (ports.currentLevelDepth !== null && ports.currentLevelDepth !== ports.depth) {
             if (fell) ports.currentLevelExitedVia = { ...exit };
-            scheduleLevelFollowers(ports.grid, ports.monsters, exit, fell ? 0 : isGoingUp ? -1 : 1, ports.onRegionFollowerBlocked);
+            scheduleLevelFollowers(ports.grid, ports.monsters, exit, fell ? 0 : isGoingUp ? -1 : 1, ports.onRegionFollowerBlocked, ports.scheduleBodyFollower);
         }
         // The active layer is already visited even before it has a detached cache entry.
         // Track its real depth; test harnesses can jump depths or re-enter the current map.

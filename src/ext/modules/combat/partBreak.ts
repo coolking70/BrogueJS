@@ -22,12 +22,12 @@ function initialRow(actorId: number, profileId: string, policy: ActorResourcePol
 export function createCombatPartBreakProvider(definitions: ActorAttackDefinitions): PartBreakProvider {
     return {
         prepare(request, context) {
-            validatePartBreakRequest(request);
+            validatePartBreakRequest(request,context.member);
             if (context.actor.id !== request.actorId || context.actor.hp <= 0)
                 return { status: 'unsupported', reason: 'unsupported-target' };
             if (request.partId !== 'self' && (!context.member || context.member.groupId !== request.groupId
                 || context.member.partId !== request.partId || context.member.generation !== request.generation
-                || context.member.entityId === request.actorId))
+                || context.member.entityId === request.actorId && request.zoneId === 'body'))
                 return { status: 'unsupported', reason: 'unsupported-target' };
             const current = context.state as unknown as ProductionActorAttackState;
             validateProductionActorAttackTransactionState(current, definitions, current);
@@ -105,7 +105,7 @@ export function createCombatPartBreakProvider(definitions: ActorAttackDefinition
                 next: next as unknown as Json } };
         },
         commit(request, plan, context) {
-            validatePartBreakRequest(request);
+            validatePartBreakRequest(request,context.member);
             if (!plan || typeof plan !== 'object' || Array.isArray(plan)
                 || Object.keys(plan).sort().join(',') !== 'expectedState,next,request,schema')
                 throw new Error('Invalid combat part break plan');

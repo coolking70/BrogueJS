@@ -45,7 +45,7 @@ export class RigidPosePathing {
     private dynamicReplans = 0;
     private cacheHits = 0;
     private visitedNodes = 0;
-    constructor(private readonly spatial: CreatureSpatial) {}
+    constructor(private readonly spatial: CreatureSpatial, private readonly formationFits?: (at: Readonly<Pos>,pose: RigidPose)=>boolean) {}
     get stats(): Readonly<FootprintPathingStats> {
         return Object.freeze({ terrainBuilds: this.terrainBuilds, distanceBuilds: this.distanceBuilds,
             dynamicReplans: this.dynamicReplans, cacheHits: this.cacheHits, visitedNodes: this.visitedNodes, cachedGraphs: this.graphs.size });
@@ -160,7 +160,7 @@ export class RigidPosePathing {
             const offsets = shape.cells.get(shape.poses[p]!)!, base = p * area;
             for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
                 const i = base + y * width + x;
-                if (!fits(x, y, offsets)) continue;
+                if (!fits(x, y, offsets) || this.formationFits && !this.formationFits({x,y},shape.poses[p]!)) continue;
                 graph.fit[i] = 1; graph.cost[i] = 1;
                 for (const o of offsets) graph.cost[i] = Math.max(graph.cost[i]!, costs[(y + o.y) * width + x + o.x]!);
                 if (graph.cost[i] !== 1) graph.uniform = false;

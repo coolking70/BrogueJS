@@ -209,6 +209,8 @@ export function resumeProductionActorActions(game: Game): void {
 export function checkpointProductionActorActions(game:Game):()=>void {
     const binding=bindings.get(game);if(!binding)return()=>{};
     const changed=new Set(binding.changedSources),interruption=binding.interruption;
+    const suspendedDepth=binding.suspendedDepth,resolving=binding.resolving,resumePending=binding.resumePending;
     const restoreScheduler=binding.scheduler.checkpointTransaction();
-    return()=>{binding.changedSources=new Set(changed);binding.interruption=interruption;restoreScheduler();};
+    return()=>{binding.changedSources=new Set(changed);binding.interruption=interruption;
+        binding.suspendedDepth=suspendedDepth;binding.resolving=resolving;binding.resumePending=resumePending;restoreScheduler();};
 }

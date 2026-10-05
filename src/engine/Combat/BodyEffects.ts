@@ -7,7 +7,7 @@ import type { SightLine } from './BodyPerception';
  * D08 routing stays with the caller; a new independent segment owns a new scope.
  * This is trusted mechanical geometry, never a source of public target knowledge. */
 export function collectAreaBodyTargets(world: SpatialWorld, origin: Pos, radius: number,
-    effect: EffectTargetCategory, line: SightLine, scope = new Set<string>()) {
+    effect: EffectTargetCategory, line: SightLine, scope = new Set<string>(), statusId?: import('../../entities/Creature').StatusId) {
     const cells: Pos[] = [];
     const grid: Grid = world.grid;
     for (let y = Math.max(0, origin.y - radius); y <= Math.min(grid.height - 1, origin.y + radius); y++) {
@@ -15,5 +15,5 @@ export function collectAreaBodyTargets(world: SpatialWorld, origin: Pos, radius:
             if ((x - origin.x) ** 2 + (y - origin.y) ** 2 <= radius ** 2 && line(origin.x, origin.y, x, y)) cells.push({ x, y });
         }
     }
-    return collectBodyTargets(world, cells, { effect }, scope);
+    return collectBodyTargets(world, cells, { effect, statusId }, scope);
 }

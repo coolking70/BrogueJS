@@ -44,9 +44,13 @@ export function isGiantsPack(value: unknown): value is GiantsPack {
       catalog.registerForm({ id: f.id, owner: 'giants', footprintId: nativeFormSpatial(f).footprintId });
     }
     if (v.bodies !== undefined) {
-      if (!v.bodies || Object.keys(v.bodies).sort().join(',') !== 'breakRules,definitions'
+      if (!v.bodies || Object.keys(v.bodies).filter(k => !['statusProfiles', 'attackProfiles'].includes(k)).sort().join(',') !== 'breakRules,definitions'
           || !Array.isArray(v.bodies.definitions) || !v.bodies.definitions.length || v.bodies.definitions.length > 16
           || !Array.isArray(v.bodies.breakRules) || v.bodies.breakRules.length > 16) return false;
+      if (v.bodies.statusProfiles !== undefined && (!Array.isArray(v.bodies.statusProfiles) || v.bodies.statusProfiles.length > 16)) throw new Error('Invalid status profile declarations');
+      if (v.bodies.attackProfiles !== undefined && (!Array.isArray(v.bodies.attackProfiles) || v.bodies.attackProfiles.length > 16)) throw new Error('Invalid attack profile declarations');
+      for (const profile of v.bodies.statusProfiles ?? []) catalog.registerStatusProfile(profile);
+      for (const profile of v.bodies.attackProfiles ?? []) catalog.registerAttackProfile(profile);
       for (const rule of v.bodies.breakRules) catalog.registerMemberBreakRule(rule);
       for (const body of v.bodies.definitions) catalog.registerBody(body);
     } else if (Object.prototype.hasOwnProperty.call(v, 'bodies')) return false;

@@ -56,6 +56,9 @@ export interface SpatialStatusProfileDefinition {
     rows: readonly { statusId: string; owner: 'group' | 'entity'; merge: 'max' | 'stack' | 'replace';
         disables: readonly ('decision' | 'attacks' | 'movement')[] }[];
 }
+/** A finite optional-provider reference. Its native fallback requires no
+ * combat installation; an installed provider must resolve the exact profile. */
+export interface SpatialAttackProfileDefinition { id: string; owner: string; providerProfileId: string }
 export interface BodyGroupState {
     schema: 1; groupId: number; coreId: number; bodyDefinitionId: string;
     members: { partId: string; entityId: number | null; life: 'active' | 'broken' | 'removed'; generation: number;
@@ -64,7 +67,7 @@ export interface BodyGroupState {
 }
 export interface SpatialWorldSnapshot {
     schema: 1; definitions: { footprints: FootprintDefinition[]; bodies: BodyDefinition[]; forms?: SpatialFormDefinition[];
-        breakRules?: PartBreakRule[]; statusProfiles?: SpatialStatusProfileDefinition[] }; groups: BodyGroupState[];
+        breakRules?: PartBreakRule[]; statusProfiles?: SpatialStatusProfileDefinition[]; attackProfiles?: SpatialAttackProfileDefinition[] }; groups: BodyGroupState[];
 }
 export interface FootprintCell extends Readonly<Pos> { readonly zoneId: string }
 export interface CreatureSpatialView {
@@ -169,6 +172,7 @@ export class SpatialCatalog {
     private readonly forms = new Map<string, SpatialFormDefinition>();
     private readonly breakRules = new Map<string, PartBreakRule>([['foundation:keep-zone', deepFreeze({ id: 'foundation:keep-zone', owner: 'foundation', trigger: 'hp-zero', disposition: 'keep-zone', modifiers: [] })]]);
     private readonly statusProfiles = new Map<string, SpatialStatusProfileDefinition>([['foundation:native', nativeBodyStatusProfile]]);
+    private readonly attackProfiles = new Map<string, SpatialAttackProfileDefinition>();
     constructor(readonly fixture = false, private readonly owners: readonly string[] = []) {
         for (const width of [1, 2, 3]) this.registerFootprint({ id: width === 1 ? 'builtin:single' : `builtin:square-${width}`,
             owner: 'foundation', geometry: { kind: 'rect', width, height: width }, poses: ['r0'] });
@@ -215,7 +219,7 @@ export class SpatialCatalog {
             || d.modifiers.length > 8) fail('Invalid or unopened fixed zone break rule');
         const seen = new Set<string>();
         for (const m of d.modifiers) {
-            if (member && !['move-ticks-multiplier', 'balance-loss'].includes(m.kind)) fail('Unopened member break modifier');
+            if (member && !['move-ticks-multiplier', 'balance-loss', 'disable-attack'].includes(m.kind)) fail('Unopened member break modifier');
             let key: string;
             switch (m.kind) {
                 case 'move-ticks-multiplier':
@@ -238,6 +242,20 @@ export class SpatialCatalog {
         this.breakRules.set(d.id, deepFreeze(structuredClone(d)));
     }
     statusProfile(id: string): SpatialStatusProfileDefinition { return this.statusProfiles.get(id) ?? fail('Unknown or unopened spatial status profile'); }
+    registerStatusProfile(d: SpatialStatusProfileDefinition): void {
+        keys(d, ['id', 'owner', 'kind', 'rows']);
+        if (!identity(d.id) || !this.owners.includes(d.owner) || !d.id.startsWith(`${d.owner}.`)
+            || d.kind !== 'native' || this.statusProfiles.has(d.id)) fail('Invalid body status profile');
+        validateNativeBodyStatusRows(d.rows);
+        this.statusProfiles.set(d.id, deepFreeze(structuredClone(d)));
+    }
+    registerAttackProfile(d: SpatialAttackProfileDefinition): void {
+        keys(d, ['id', 'owner', 'providerProfileId']);
+        if (!identity(d.id) || !identity(d.providerProfileId) || !this.owners.includes(d.owner)
+            || !d.id.startsWith(`${d.owner}.`) || this.attackProfiles.has(d.id)) fail('Invalid body attack profile');
+        this.attackProfiles.set(d.id, deepFreeze(structuredClone(d)));
+    }
+    attackProfile(id: string): SpatialAttackProfileDefinition { return this.attackProfiles.get(id) ?? fail('Unknown body attack profile'); }
     body(id: string): BodyDefinition { return this.bodies.get(id) ?? fail('Unknown body'); }
     get hasBodies(): boolean { return this.bodies.size > 0; }
     bodyForCoreForm(formId: string): BodyDefinition | undefined {
@@ -263,16 +281,21 @@ export class SpatialCatalog {
         for (const p of d.parts) {
             keys(p, ['partId', 'role', 'providesSupport', 'formId', 'preferredOffset', 'attackProfileIds', 'coreTransfer', 'breakRuleId', 'statusProfileId']);
             if (!identity(p.partId) || parts.has(p.partId) || !['core', 'support', 'weapon', 'segment'].includes(p.role) || typeof p.providesSupport !== 'boolean'
-                || !pos(p.preferredOffset) || !Array.isArray(p.attackProfileIds) || p.attackProfileIds.length || !identity(p.breakRuleId) || !identity(p.statusProfileId)) fail('Invalid part');
+                || !pos(p.preferredOffset) || !Array.isArray(p.attackProfileIds) || p.attackProfileIds.length > 4
+                || new Set(p.attackProfileIds).size !== p.attackProfileIds.length || !identity(p.breakRuleId) || !identity(p.statusProfileId)) fail('Invalid part');
             this.form(p.formId); this.breakRule(p.breakRuleId); this.statusProfile(p.statusProfileId); ratio(p.coreTransfer); parts.add(p.partId);
+            for (const id of p.attackProfileIds) if (this.attackProfile(id).owner !== d.owner) fail('Invalid body attack profile owner');
             if (!this.fixture && p.role !== 'core' && p.partId === 'self') fail('Reserved fixed-zone part identity');
             if (!this.fixture && (this.form(p.formId).owner !== d.owner
-                || this.definition(this.form(p.formId).footprintId).zones?.length
                 || p.role !== 'core' && (p.coreTransfer.numerator !== 1 || p.coreTransfer.denominator !== 4
                     || this.breakRule(p.breakRuleId).disposition !== 'remove'
                     || this.breakRule(p.breakRuleId).childrenOnBreak !== 'retire-subtree'))) fail('Invalid production member lifecycle');
         }
         const core = d.parts.filter(p => p.role === 'core'); if (core.length !== 1) fail('Body requires one core');
+        const coreStatuses = this.statusProfile(core[0]!.statusProfileId).rows;
+        for (const part of d.parts) for (const row of this.statusProfile(part.statusProfileId).rows)
+            if (row.owner === 'group' && coreStatuses.find(r => r.statusId === row.statusId)!.merge !== row.merge)
+                fail('Inconsistent group status merge');
         if (!this.fixture && this.bodyForCoreForm(core[0]!.formId)) fail('Ambiguous body core form');
         if (!this.fixture && (core[0]!.preferredOffset.x !== 0 || core[0]!.preferredOffset.y !== 0)) fail('Body core must use the group anchor');
         const parents = new Map<string, string>();
@@ -300,7 +323,8 @@ export class SpatialCatalog {
         const footprints = sorted([...footprintIds, ...forms.map(d => d.footprintId)]).map(id => this.definition(id));
         const breakRules = sorted([...footprints.flatMap(d => (d.zones ?? []).map(z => z.breakRuleId)), ...bodies.flatMap(d => d.parts.map(p => p.breakRuleId))]).map(id => this.breakRule(id));
         const statusProfiles = sorted(bodies.flatMap(d => [d.statusProfileId, ...d.parts.map(p => p.statusProfileId)])).map(id => this.statusProfile(id));
-        return { footprints, bodies, ...(forms.length ? { forms } : {}), ...(breakRules.length ? { breakRules } : {}), ...(statusProfiles.length ? { statusProfiles } : {}) };
+        const attackProfiles = sorted(bodies.flatMap(d => d.parts.flatMap(p => p.attackProfileIds))).map(id => this.attackProfile(id));
+        return { footprints, bodies, ...(forms.length ? { forms } : {}), ...(breakRules.length ? { breakRules } : {}), ...(statusProfiles.length ? { statusProfiles } : {}), ...(attackProfiles.length ? { attackProfiles } : {}) };
     }
 }
 export const nativeSpatialCatalog = new SpatialCatalog();

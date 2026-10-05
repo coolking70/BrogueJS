@@ -6,7 +6,7 @@ import { Player } from '../../entities/Player';
 import { DungeonLayer, type Grid } from '../Map/Grid';
 import { cellTerrainFlags, cellTerrainMechFlags } from '../Map/DungeonFeature';
 import { T_IS_FLAMMABLE, T_OBSTRUCTS_PASSABILITY, T_OBSTRUCTS_VISION, TM_REFLECTS_BOLTS } from '../Map/TerrainCatalog';
-import { BoltEffect, boltTargetCategory, createBoltResult, type BoltConfig, type BoltHit, type BoltReflection } from './Bolt';
+import { BoltEffect, boltStatusId, boltTargetCategory, createBoltResult, type BoltConfig, type BoltHit, type BoltReflection } from './Bolt';
 import { collectBodyTargets } from '../Movement/CreatureSpatial';
 import { projectileReflects, randomReflectionOffset } from './BoltReflection';
 import { CE_BOLT_CATALOG, CEBoltFlags as F } from './BoltCatalog';
@@ -93,7 +93,7 @@ export function boltLine(grid: Grid, from: Pos, to: Pos, bolt?: BoltConfig, worl
                 continue;
             }
             const firstCreature = !creature?.spatial || collectBodyTargets({ grid, monsters: [creature] }, [p],
-                { effect: boltTargetCategory(bolt.effect) }, scoredBodies).length > 0;
+                { effect: boltTargetCategory(bolt.effect), statusId: boltStatusId(bolt.effect) }, scoredBodies).length > 0;
             if (creature && firstCreature && (flags & F.TARGET_ENEMIES)) score += enemy ? 50 : -200;
             if (creature && firstCreature && (flags & F.TARGET_ALLIES)) score += ally ? 50 : -200;
             if (burning) score--;
@@ -193,7 +193,7 @@ export function traceBolt(grid: Grid, bolt: BoltConfig, from: Pos, aim: Pos, wor
         if (!path.length && bolt.effect === BoltEffect.BLINKING && (blocked || (creature && !piercing))) break;
         path.push(pos);
         const firstContact = !creature?.spatial || collectBodyTargets({ grid, monsters: [creature] }, [pos],
-            { effect: boltTargetCategory(bolt.effect) }, bodyScope).length > 0;
+            { effect: boltTargetCategory(bolt.effect), statusId: boltStatusId(bolt.effect) }, bodyScope).length > 0;
         if (creature && firstContact && canReflect && projectileReflects(creature, world.caster) && path.length - 1 < reflectionLimit) {
             reflect(creature, projectileReflects(creature, world.caster));
             continue; // CE :5704: no effect or path exposure on the reflector.
