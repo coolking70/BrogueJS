@@ -26,6 +26,7 @@ export interface WorldInteractionValidation {
 }
 export interface ExtensionProjectionContext {
     readonly playerId?: number;
+    worldRestUnavailable?(id:number):import('./worldRest').WorldRestUnavailableReason|null;
     queryOptional(capability: string, input: import('./types').Json): import('./types').OptionalQueryResult;
     readonly state: import('./types').ReadonlyJson; readonly depth: number; readonly turn: number;
     readonly visibleInteractables: readonly WorldInteractableView[];

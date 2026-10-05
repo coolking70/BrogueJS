@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import type { CombatUiResources } from './view';
+import type { CombatUiResources, CombatUiRest } from './view';
 import type { DisplayTelegraph } from '../../../../ui/combatDrawing';
-defineProps<{ resources: CombatUiResources | null; entries: readonly (Pick<DisplayTelegraph, 'phase' | 'parryable' | 'remainingTicks'> & { key: string; name: string | null })[]; focused: boolean }>();
+defineProps<{ resources: CombatUiResources | null; rest?: CombatUiRest | null; entries: readonly (Pick<DisplayTelegraph, 'phase' | 'parryable' | 'remainingTicks'> & { key: string; name: string | null })[]; focused: boolean }>();
 </script>
 <template>
   <aside class="combat-telegraph-hud" data-testid="combat-telegraph-hud">
+    <span v-if="rest" class="combat-rest" data-testid="combat-rest" :data-combat-rest-status="rest.status">
+      {{ $t(rest.status === 'resting' ? 'ext.combat.ui.rest_active' : 'ext.combat.ui.rest_interrupted', { ticks: rest.remainingTicks }) }}
+    </span>
     <div v-if="resources" class="combat-stamina" data-testid="combat-stamina" :title="$t('ext.combat.ui.stamina_hint')">
       <span>{{ $t('ext.combat.ui.stamina_value', { current: resources.stamina, capacity: resources.capacity }) }}</span>
       <span class="stamina-track"><span class="stamina-fill" :style="{ width: `${100 * resources.stamina / resources.capacity}%` }" /></span>

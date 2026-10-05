@@ -18,12 +18,12 @@ const facings = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const;
 describe('combat strict inert fixture package', () => {
     it('loads three original attacks, explicit native profiles, and part targeting', () => {
         const pack = loadCombatDefinitionPack();
-        expect(COMBAT_VERSION).toBe('1.3.0');
+        expect(COMBAT_VERSION).toBe('1.4.0');
         expect(pack.attacks.map(a => a.id)).toEqual(['fixture.slash', 'fixture.stomp', 'fixture.double-thrust']);
         expect(pack.profiles[0]).toEqual({ id: 'fixture.profile', resourcePolicyId: 'fixture.resources',
             attackIds: ['fixture.slash', 'fixture.stomp', 'fixture.double-thrust'] });
         expect(pack.nativeProfiles).toHaveLength(3);
-        expect(Object.keys(pack).sort()).toEqual(['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'resourcePolicies', 'attacks', 'profiles', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks', 'dodge', 'parry'].sort());
+        expect(Object.keys(pack).sort()).toEqual(['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'resourcePolicies', 'attacks', 'profiles', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks', 'dodge', 'parry', 'bonfires'].sort());
         expect(pack.attacks.map(a => a.segments.length)).toEqual([1, 1, 2]);
         for (const attack of pack.attacks) for (const step of attack.segments) {
             expect(step.targetPolicy).toBe('part'); expect(step.locationPolicy).toBe('locked-world');
@@ -98,10 +98,10 @@ describe('combat strict inert fixture package', () => {
     });
     it('bounds total definition count across categories and admits exactly the ceiling', () => {
         const p = fixture();
-        while (p.resourcePolicies.length + p.attacks.length + p.profiles.length < COMBAT_LIMITS.maxDefinitions) {
+        while (p.resourcePolicies.length + p.attacks.length + p.profiles.length + p.bonfires.definitions.length < COMBAT_LIMITS.maxDefinitions) {
             p.attacks.push({ ...structuredClone(p.attacks[0]!), id: `fixture.extra-${p.attacks.length}` });
         }
-        expect(load(p).attacks).toHaveLength(COMBAT_LIMITS.maxDefinitions - p.profiles.length - p.resourcePolicies.length);
+        expect(load(p).attacks).toHaveLength(COMBAT_LIMITS.maxDefinitions - p.profiles.length - p.resourcePolicies.length - p.bonfires.definitions.length);
         p.attacks.push({ ...structuredClone(p.attacks[0]!), id: 'fixture.too-many' }); expect(() => load(p)).toThrow();
     });
     it('requires globally unique IDs and unique typed references', () => {
@@ -265,7 +265,7 @@ describe('combat hostile JSON boundary', () => {
 describe('combat canonical mechanical identity', () => {
     it('uses the foundation SHA-256 canonical helper and pins version/schema', () => {
         const identity = getCombatPackIdentity();
-        expect(identity).toEqual({ schema: 1, version: '1.3.0', fingerprint: extensionDataFingerprint(definitions) });
+        expect(identity).toEqual({ schema: 1, version: '1.4.0', fingerprint: extensionDataFingerprint(definitions) });
         expect(identity.fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/); expect(Object.isFrozen(identity)).toBe(true);
     });
     it('ignores object insertion order but retains mechanical arrays and values', () => {

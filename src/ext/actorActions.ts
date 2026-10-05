@@ -32,6 +32,7 @@ export interface ActorAttackDefinition {
         locationPolicy:'locked-world';targetPolicy:'part';damageProfile:'native-melee';poiseDamage:number;dodgeable:boolean;parryable:boolean }[];
 }
 export interface ActorAttackDefinitions {
+    bonfires?: import('./worldRest').BonfireConfig;
     attacks: ActorAttackDefinition[];
     profiles: {id:string;resourcePolicyId:string;attackIds:string[]}[];
     resourcePolicies: ActorResourcePolicy[];
@@ -49,6 +50,7 @@ export interface ActorAttackMetadata {
 }
 export interface ProductionActorAttackState {
     schema:3;revision:number;nextActionId:number;
+    bonfires?: import('./worldRest').BonfireState;
     scheduler:ActorActionSchedulerState;
     actions:ActorAttackMetadata[];
     actors:(ActorResourceState & {actorId:number;profileId:string})[];

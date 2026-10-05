@@ -41,6 +41,8 @@ function isCreatureView(value: unknown): boolean {
         && (v.id as number) > 0 && (v.maxHp as number) >= 0;
 }
 export interface ExtensionPorts {
+    nativeDamageCommitted?(actor: Creature, hpLost: number): void;
+    worldRestUnavailable?(bonfireId: number): import('./worldRest').WorldRestUnavailableReason | null;
     zoneBroken?(actor: Creature, zoneId: string): void;
     memberDamage?(actor: Creature, amount: number, kind: import('./causality').DamageKind): number | undefined;
     memberDamageCommitted?(actor: Creature): void;
@@ -311,7 +313,14 @@ export class ExtensionRuntime {
                 ordinaryCapability();
                 return runtime.commitOptionalReward(module.id, capability, rewardId, instanceId);
             },
-            setState(value) { writable(); if (!module.validateState(value)) throw new Error(`Invalid module state: ${module.id}`); runtime.states[module.id] = cloneJson(value); },
+            setState(value) {
+                writable(); if (!module.validateState(value)) throw new Error(`Invalid module state: ${module.id}`);
+                // An entered-level/GC hook may update the same ledger while a
+                // native action carries recovery across floors. Preserve its
+                // scheduler/actor object graph just like a part-break commit.
+                const current=runtime.states[module.id]!;
+                runtime.states[module.id]=module.actorActions?adoptActorActionJson(current,value):cloneJson(value);
+            },
             getComponent(id, name) { const value = runtime.components[creatureKey(id)]?.[componentKey(name)]; return value === undefined ? undefined : cloneJson(value); },
             setComponent(id, name, value) { writable(); if (module.componentValidators?.[name] && !module.componentValidators[name]!(value)) throw new Error('Invalid component value'); const key = creatureKey(id); (runtime.components[key] ??= {})[componentKey(name)] = cloneJson(value); },
             removeComponent(id, name) { writable(); const key = creatureKey(id); delete runtime.components[key]?.[componentKey(name)]; if (runtime.components[key] && !Object.keys(runtime.components[key]!).length) delete runtime.components[key]; },
@@ -612,7 +621,15 @@ export class ExtensionRuntime {
         return result;
     }
     /** Extension-owned state and native resource ports form one synchronous commit. */
+    /** Generic hooks can update an actor ledger in place. Failed outer scopes
+     * must restore the retained native scheduler graph, not only its JSON copy. */
+    private checkpointActorStateIdentity():()=>void {
+        const binding=this.actorActionBinding();if(!binding)return()=>{};
+        const state=binding.state as unknown as Json,checkpoint=actorActionIdentityCheckpoint(state);
+        return()=>{checkpoint.restore();this.states[binding.moduleId]=state;};
+    }
     private transaction<T>(work: () => T): T {
+        const restoreActorState=this.checkpointActorStateIdentity();
         const states = structuredClone(this.states), components = structuredClone(this.components), world = structuredClone(this.world);
         const deaths = structuredClone(this.deaths), causes = this.causality.snapshot(), resources = this.resourceCheckpoint();
         const nextFactId = this.nextFactId, pending = structuredClone(this.pendingStoryFacts), nativeActionRevision = this.nativeActionRevision;
@@ -620,7 +637,7 @@ export class ExtensionRuntime {
         const restoreRandom = this.ports.checkpointRandom?.();
         try { return this.bufferMessages(work); }
         catch (error) {
-            this.states = states; this.components = components; this.world = world;
+            this.states = states; restoreActorState(); this.components = components; this.world = world;
             this.nextFactId = nextFactId; this.pendingStoryFacts = pending; this.restoreResources(resources);
             for (const [actor, hooks] of creatures) { this.creatures.add(actor); actor.extensionHooks = hooks; }
             // Controlled native actions are not full-world transactions. Never
@@ -736,6 +753,8 @@ export class ExtensionRuntime {
                 || Object.keys(input).sort().join(',') !== 'action,module,payload' || typeof input.module !== 'string'
                 || typeof input.action !== 'string' || !validId(input.module)) return false;
             const module = this.modules.find(module => module.id === input.module);
+            if (module?.actorActions && (module.actorActions.definitions as unknown as ActorAttackDefinitions).bonfires && input.action === 'rest') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
+                && Object.keys(input.payload).join(',') === 'bonfireId' && Number.isSafeInteger(input.payload.bonfireId) && (input.payload.bonfireId as number) > 0;
             if (module?.actorActions && (input.action === 'dodge' || input.action === 'parry')) return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
                 && Object.keys(input.payload).join(',') === 'facing' && typeof input.payload.facing === 'string';
             if (module?.actorActions && input.action === 'attack') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
@@ -1024,6 +1043,7 @@ export class ExtensionRuntime {
             },
             damage: (target, amount, hpBefore, damageKind = 'other') => {
                 const fact = this.causality.recordDamage(target.id, hpBefore, target.hp, damageKind);
+                this.ports.nativeDamageCommitted?.(target, fact.hpLost);
                 this.emit('damage', { creature: creatureView(target, this.ports.playerId()), amount, hpBefore,
                     sourceId: this.sourceId, origin: fact.origin, hpLost: fact.hpLost, damageKind });
                 bodyHandlers.get(this)?.memberDamageCommitted?.(target);
@@ -1161,6 +1181,11 @@ export class ExtensionRuntime {
         if (regionId===undefined || !this.ownedRegion(regionId,depth)) return;
         this.emit('movementRegionFollowBlocked', { actor:this.actorFacts(creature),regionId,depth,reason:'hard-boundary' });
     }
+    /** Trusted rest executor may inspect only its declared target, never mutate it. */
+    worldRestTarget(owner: string, id: number): Readonly<WorldInteractable> | null {
+        const entity = !this.disposed && this.world.entities.find(entity => entity.owner === owner && entity.id === id);
+        return entity ? Object.freeze({ ...entity }) : null;
+    }
     /** World capability is inert unless a selected module actually owns objects. */
     get interactionActive(): boolean { return !this.disposed && this.world.gate !== null; }
     visibleInteractables(owner?: string) {
@@ -1207,6 +1232,7 @@ export class ExtensionRuntime {
         const gate = this.world.gate;
         if (!removed.length && !(gate && isGameOver)) return;
         const beforeWorld = structuredClone(this.world), beforeStates = structuredClone(this.states), beforeComponents = structuredClone(this.components);
+        const restoreActorState=this.checkpointActorStateIdentity();
         try {
             this.world.entities = this.world.entities.filter(entity => depths.includes(entity.depth));
             if (gate && (isGameOver || removed.some(entity => entity.id === gate.targetEntityId))) {
@@ -1215,7 +1241,7 @@ export class ExtensionRuntime {
             }
             for (const owner of [...new Set(removed.map(entity => entity.owner))].sort())
                 this.emit('interactablesRemoved', { owner, entityIds: removed.filter(entity => entity.owner === owner).map(entity => entity.id) });
-        } catch (error) { this.world = beforeWorld; this.states = beforeStates; this.components = beforeComponents; throw error; }
+        } catch (error) { this.world = beforeWorld; this.states = beforeStates; restoreActorState(); this.components = beforeComponents; throw error; }
     }
     /** Mechanical roots only: observation/history sets must not pin dead components. */
     collectComponents(reachable: Iterable<Creature>): void {
@@ -1252,7 +1278,9 @@ export class ExtensionRuntime {
         if (this.disposed || !module) return null;
         if (module.projectView) {
             const projection = module.projectView(freezeView({ queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
-                visibleInteractables: this.visibleInteractables(moduleId), nearbyInteractables: this.nearbyInteractables(moduleId) }));
+                visibleInteractables: this.visibleInteractables(moduleId), nearbyInteractables: this.nearbyInteractables(moduleId),
+                worldRestUnavailable: id=>this.world.entities.some(entity=>entity.id===id&&entity.owner===moduleId)
+                    ?this.ports.worldRestUnavailable?.(id)??null:'unavailable' }));
             requireSynchronous(projection);
             if (!isJson(projection) || !projection || typeof projection !== 'object' || Array.isArray(projection)) throw new Error('Invalid module display projection');
             const publicProjection = cloneJson(projection) as Record<string, Json>;

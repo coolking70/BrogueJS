@@ -61,6 +61,24 @@ function hit(game:Game,boss:Monster){const cell=footprintOf(boss).find(p=>p.zone
 function pending(game:Game){const plan=preparePhasedAttackCommand(game,command)!;expect(plan).not.toBeNull();commitPhasedAttackCommand(game,plan);return state(game).scheduler.bundles[0]!;}
 afterEach(()=>{vi.restoreAllMocks();logger.reset();});
 describe('3d exact published part-break production integration',()=>{
+    it.each(['normal','throw'] as const)('3e successive rest receipts keep distinct identities through %s provider adoption',mode=>{
+        configure(mode);const {game,boss}=scene();boss.isAlly=true;boss.ticksUntilTurn=100000;
+        const camp=game.extensionRuntime!.snapshot().foundation.world.entities.find(entity=>entity.owner==='combat')!;
+        expect(camp).toBeDefined();commitCreatureAnchor(game.player,{x:camp.x,y:camp.y});(game as any).updateVision();
+        const rest=JSON.stringify({module:'combat',action:'rest',payload:{bonfireId:camp.id}});
+        for(let i=0;i<2;i++){while(logger.pendingAcknowledgment)logger.acknowledgeNext();game.executeCommand('ext:command',rest);}
+        const ledger=state(game).bonfires!,receipts=ledger.receipts,first=receipts[0]!,second=receipts[1]!;
+        expect(receipts.map(receipt=>receipt.visit)).toEqual([1,2]);expect(first).not.toBe(second);
+        const before=json(state(game));
+        if(mode==='throw'){expect(()=>hit(game,boss)).toThrow('after combat state');expect(state(game)).toEqual(before);}
+        else hit(game,boss);
+        expect(state(game).bonfires).toBe(ledger);expect(ledger.receipts).toBe(receipts);
+        expect(receipts[0]).toBe(first);expect(receipts[1]).toBe(second);
+        expect(receipts).toEqual(before.bonfires!.receipts);expect(()=>game.toSaveSnapshot()).not.toThrow();
+        const saved=json(game.toSaveSnapshot());expect(game.loadSnapshot(saved)).toBe(true);
+        expect(state(game).bonfires!.receipts).toEqual(before.bonfires!.receipts);
+    });
+
     it('core poise loss replaces fallback and native receipt prevents repeat consumption',()=>{
         const {game,boss}=scene();hit(game,boss);
         expect(boss.spatial!.actionLockInTicks).toBeUndefined();expect(row(game,boss.id)).toMatchObject({poise:6,staggerRemainingTicks:0});

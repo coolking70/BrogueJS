@@ -1,3 +1,4 @@
+import { validateBonfireConfig, validateBonfireState } from './worldRest';
 /** Pure, module-independent codecs for the trusted phased attack executor.
  * The scheduler is the only clock. Metadata may describe its current geometry,
  * but cannot carry an additional countdown or change the declared attack. */
@@ -79,7 +80,8 @@ function cells(value: unknown, minimum: number, maximum: number, coordinate: num
 
 export function validateActorAttackDefinitions(value: unknown): asserts value is ActorAttackDefinitions {
     plainJson(value);
-    actorActionRecord(value, ['attacks', 'profiles', 'resourcePolicies', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks', 'dodge', 'parry']);
+    actorActionRecord(value, ['attacks', 'profiles', 'resourcePolicies', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks', 'dodge', 'parry', ...(Object.prototype.hasOwnProperty.call(value, 'bonfires') ? ['bonfires'] : [])]);
+    if ('bonfires' in value) validateBonfireConfig(value.bonfires);
     actorActionArray(value.attacks, 1, MAX_DEFINITIONS);
     actorActionArray(value.profiles, 1, MAX_DEFINITIONS);
     actorActionArray(value.resourcePolicies, 1, MAX_DEFINITIONS);
@@ -228,14 +230,30 @@ function risks(value: unknown): void {
 export function validateProductionActorAttackState(value: unknown, definitions: ActorAttackDefinitions, dueBoundaries: ReadonlySet<string> = new Set()): asserts value is ProductionActorAttackState {
     validateActorAttackDefinitions(definitions);
     plainJson(value);
-    actorActionRecord(value, ['schema', 'revision', 'nextActionId', 'scheduler', 'actions', 'actors']);
+    actorActionRecord(value, ['schema', 'revision', 'nextActionId', 'scheduler', 'actions', 'actors', ...(definitions.bonfires ? ['bonfires'] : [])]);
     if (value.schema !== 3) fail('invalid schema');
     integer(value.revision, 0); const nextActionId = integer(value.nextActionId, 1);
     validateActorActionSchedulerState(value.scheduler,dueBoundaries);
     actorActionArray(value.actions, 0, MAX_ACTOR_ACTION_BUNDLES);
     actorActionArray(value.actors, 0, MAX_ACTOR_ACTION_BUNDLES);
-    if (value.actions.length !== value.scheduler.bundles.length) fail('metadata and scheduler bundle mismatch');
+    if (definitions.bonfires) validateBonfireState(value.bonfires, definitions.bonfires, nextActionId);
+    const rest = (value as unknown as ProductionActorAttackState).bonfires?.active;
+    if (value.actions.length + (rest?.phase === 'resting' ? 1 : 0) !== value.scheduler.bundles.length) fail('metadata and scheduler bundle mismatch');
+    if (rest) {
+        const bundle = value.scheduler.bundles.find(bundle => bundle.actionId === rest.actionId);
+        if (rest.phase === 'settling') { if (bundle) fail('settling rest still has a clock'); }
+        else {
+            const definition = definitions.bonfires!.definitions.find(definition => definition.id === rest.definitionId)!;
+            const child = bundle?.subactions[0];
+            if (!bundle || bundle.subactions.length !== 1 || bundle.decisionOwnerId !== rest.actorId || bundle.timeChargeOwnerId !== rest.actorId
+                || bundle.depth !== rest.depth || !child || child.sourceEntityId !== rest.actorId || child.sourceGeneration !== undefined
+                || child.phases.length !== 1 || child.phases[0]!.segmentIndex !== null || child.phases[0]!.kind !== 'recovery'
+                || child.phases[0]!.durationTicks !== definition.restTicks || child.cancelled) fail('invalid rest clock');
+        }
+        if ((value.actions as unknown as ProductionActorAttackState['actions']).some(action => action.actionId === rest.actionId)) fail('rest shares attack metadata');
+    }
     const bundles = new Map(value.scheduler.bundles.map(bundle => [bundle.actionId, bundle]));
+    if ((value as unknown as ProductionActorAttackState).bonfires?.receipts.some(receipt=>bundles.has(receipt.actionId))) fail('completed rest reuses active action identity');
     const attacks = new Map(definitions.attacks.map(attack => [attack.id, attack]));
     const profiles = new Map(definitions.profiles.map(profile => [profile.id, profile]));
     const policies = new Map(definitions.resourcePolicies.map(policy => [policy.id, policy]));
@@ -277,7 +295,7 @@ export function validateProductionActorAttackState(value: unknown, definitions: 
         const schedulerStagger = ownBundle?.subactions.some(child => child.phases[child.phaseIndex]?.kind === 'break-recovery') ?? false;
         // Zero poise can only persist while one authoritative recovery owns the
         // break. Idle/windup zero rows would otherwise skip the >0 -> 0 trigger.
-        if (actor.poise === 0 && staggerRemaining === 0 && !schedulerStagger) fail('zero poise without stagger recovery');
+        if (actor.poise === 0 && staggerRemaining === 0 && !schedulerStagger && !(rest?.actorId === actorId && rest.interrupted)) fail('zero poise without stagger recovery');
         if ((dodgeRemaining > 0 || dodgeRecoveryRemaining > 0) && hasBundle) fail('dodge cannot share an attack bundle');
         if ((parryRemaining > 0 || parryRecoveryRemaining > 0) && hasBundle) fail('parry cannot share an attack bundle');
         if (staggerRemaining > 0 && hasBundle) fail('stagger cannot share an attack bundle');

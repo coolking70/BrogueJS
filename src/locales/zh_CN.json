@@ -1453,6 +1453,7 @@
   "ext.modules.default_hint": "预选仅为当前可配置样例，可自由更改",
   "ext.creation.start_failed": "无法创建新局，请检查模块选项后重试",
   "ext.creation.unavailable": "所选模块的创建界面不可用",
+  "ext.command.rest_confirm": "确认在此休息 {{ticks}} 时间刻？完成后按休息点配置恢复；期间世界照常推进，休息可能被打断，不刷新敌人。",
   "ext.command.rejected": "当前状态无法执行模块命令",
   "ext.command.creation_required": "请先完成本局模块初始化再保存",
   "theme.panel_short": "周围",

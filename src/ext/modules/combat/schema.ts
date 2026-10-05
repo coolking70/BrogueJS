@@ -1,3 +1,4 @@
+import { validateBonfireConfig } from '../../worldRest';
 import type { AttackDefinition, Cell, CombatPack, ResourcePolicy } from './types';
 
 /** Independent hard ceilings. The aggregate JSON budgets also apply when several
@@ -148,8 +149,8 @@ function localeChecker(locale: unknown): (value: unknown) => void {
 export function loadCombatPack(input: unknown, locale: unknown): CombatPack {
     assertCombatJson(input);
     const text = localeChecker(locale);
-    const root = record(input, ['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'resourcePolicies', 'attacks', 'profiles', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks', 'dodge', 'parry']);
-    if (root.schema !== 1 || root.moduleId !== 'combat' || root.moduleVersion !== '1.3.0' || root.rulesVersion !== '1.3.0') fail('INVALID_VERSION');
+    const root = record(input, ['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'resourcePolicies', 'attacks', 'profiles', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks', 'dodge', 'parry', 'bonfires']);
+    if (root.schema !== 1 || root.moduleId !== 'combat' || root.moduleVersion !== '1.4.0' || root.rulesVersion !== '1.4.0') fail('INVALID_VERSION');
     const policies = list(root.resourcePolicies, 1, COMBAT_LIMITS.maxDefinitions);
     const attacks = list(root.attacks, 1, COMBAT_LIMITS.maxDefinitions);
     const profiles = list(root.profiles, 1, COMBAT_LIMITS.maxDefinitions);
@@ -164,14 +165,19 @@ export function loadCombatPack(input: unknown, locale: unknown): CombatPack {
     integer(parry.windowTicks, 1, parry.recoveryTicks as number);
     integer(parry.poiseDamage, 0, COMBAT_LIMITS.maxResource);
     integer(parry.contactRange, 1, COMBAT_LIMITS.maxOffsetCoordinate);
+    let bonfires: CombatPack['bonfires'];
+    try { bonfires = validateBonfireConfig(root.bonfires); } catch { return fail('INVALID_STATE', '$.bonfires'); }
     id(root.playerProfileId);
-    if (policies.length + attacks.length + profiles.length > COMBAT_LIMITS.maxDefinitions) fail('BUDGET');
+    if (policies.length + attacks.length + profiles.length + bonfires.definitions.length > COMBAT_LIMITS.maxDefinitions) fail('BUDGET');
     const ids = new Set<string>(), policyById = new Map<string, ResourcePolicy>(), attackById = new Map<string, AttackDefinition>();
     const define = (value: unknown): string => {
         const key = id(value);
         if (ids.has(key)) fail('DUPLICATE_ID');
         ids.add(key); return key;
     };
+    for (const bonfire of bonfires.definitions) {
+        define(bonfire.id); text(bonfire.nameKey); text(bonfire.descriptionKey);
+    }
     for (const item of policies) {
         const policy = record(item, ['id', 'staminaCapacity', 'initialStamina', 'regenPerTickNumerator', 'regenPerTickDenominator',
             'regenDelayTicks', 'nativeAttackCost', 'regenPhases', 'poiseCapacity', 'poiseRecoveryNumerator', 'poiseRecoveryDenominator',

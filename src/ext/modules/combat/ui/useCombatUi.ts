@@ -1,13 +1,15 @@
 import { computed, defineAsyncComponent, nextTick, onScopeDispose, ref, shallowRef } from 'vue';
 import type { ModuleUiHost, ModuleUiSession } from '../../../ui/types';
 import type { DialogAction, DialogRequest } from '../../../../ui/dialogService';
-import { buildCombatUiCommand, combatDirections, readCombatUiResources, readCombatUiView, type CombatUiView } from './view';
+import { buildCombatRestCommand, buildCombatUiCommand, combatDirections, readCombatUiBonfires, readCombatUiResources,
+    readCombatUiRest, readCombatUiView, type CombatUiView } from './view';
 import type { Facing } from '../types';
 import { telegraphsAt } from '../../../../ui/combatDrawing';
 import type { DisplayFrame } from '../../../../ui/displayProjection';
 import { installCombatDiagnostics } from './diagnostics';
 const CombatAttackBar = defineAsyncComponent(() => import('./CombatAttackBar.vue'));
 const CombatAttackDialog = defineAsyncComponent(() => import('./CombatAttackDialog.vue'));
+const CombatBonfireDialog = defineAsyncComponent(() => import('./CombatBonfireDialog.vue'));
 const CombatTelegraphHud = defineAsyncComponent(() => import('./CombatTelegraphHud.vue'));
 
 /** This is a bearing/metadata advisory, not a prediction of contact or success.
@@ -43,7 +45,8 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
     let retired = false, refreshing = false, request: DialogRequest | undefined;
     const view = shallowRef<CombatUiView | null>(null), submitting = ref(false), error = ref<string | null>(null);
     const frame = shallowRef<DisplayFrame | null>(null);
-    const selected = shallowRef<{ expected: CombatUiView; attackId: string; facing: Facing | null } | null>(null);
+    const selected = shallowRef<{ kind: 'attack'; expected: CombatUiView; attackId: string; facing: Facing | null }
+        | { kind: 'rest'; expected: CombatUiView; bonfireId: number } | null>(null);
     const blocked = () => !live() || !service || submitting.value || !!host.isPresentationBusy?.()
         || !host.canOpenPanel() || host.canOpenInteraction?.() === false || !!service.current;
     function close() {
@@ -62,7 +65,8 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
             view.value = readCombatUiView(game);
             const current = view.value, pending = selected.value;
             if (pending && (!current || current.readOnly || current.session !== pending.expected.session
-                || current.revision !== pending.expected.revision || host.canPresentInteraction?.() === false)) close();
+                || current.revision !== pending.expected.revision || host.canPresentInteraction?.() === false
+                || (pending.kind === 'rest' && !current.bonfires?.some(bonfire => bonfire.entityId === pending.bonfireId && bonfire.canUse)))) close();
             syncDialog();
         } finally { refreshing = false; }
     }
@@ -71,15 +75,22 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
         refresh(); const expected = view.value;
         if (!expected || expected.readOnly || !expected.actions.some(action => action.id === attackId && action.canUse)) return;
         host.beforeOpenPanel(); error.value = null;
-        selected.value = { expected, attackId, facing: null }; refresh();
+        selected.value = { kind: 'attack', expected, attackId, facing: null }; refresh();
     }
-    function submit(expected: CombatUiView, attackId: string, facing: Facing) {
-        const command = buildCombatUiCommand(game, expected, attackId, facing);
+    function openBonfire(bonfireId: number, event?: MouseEvent) {
+        if ((event?.detail ?? 0) > 1 || blocked()) return;
+        refresh(); const expected = view.value;
+        if (!expected || expected.readOnly || !expected.bonfires?.some(bonfire => bonfire.entityId === bonfireId && bonfire.canUse)) return;
+        host.beforeOpenPanel(); error.value = null;
+        selected.value = { kind: 'rest', expected, bonfireId }; refresh();
+    }
+    function submit(expected: CombatUiView, command: string | null) {
         if (!command || submitting.value || !live()) { error.value = 'ext.combat.ui.command_rejected'; return; }
         submitting.value = true;
         try {
             game.executeCommand('ext:command', command);
-            if (live() && !game.pendingCommandConfirmation && readCombatUiView(game)?.revision === expected.revision)
+            if (live() && !host.isPresentationBusy?.() && !game.pendingCommandConfirmation
+                && readCombatUiView(game)?.revision === expected.revision)
                 error.value = 'ext.combat.ui.command_rejected';
         }
         catch { error.value = 'ext.combat.ui.command_rejected'; }
@@ -89,6 +100,23 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
         const pending = selected.value;
         if (!live() || !service || !pending || submitting.value || host.isPresentationBusy?.()
             || (request && service.isPending(request.token))) return;
+        if (pending.kind === 'rest') {
+            const bonfire = pending.expected.bonfires!.find(entry => entry.entityId === pending.bonfireId)!;
+            // This is read-only explanation, not a recorded confirmation or an
+            // interaction gate. Game owns the canonical rest risk decision.
+            request = service.request({ kind: 'dialogue', owner: 'combat', text: '',
+                actions: ['close', 'choice:confirm'], choices: [{ action: 'choice:confirm', enabled: true }], defaultAction: 'close',
+                content: { component: CombatBonfireDialog, props: { bonfire } },
+                onAnswer: action => {
+                    if (!live() || selected.value !== pending) return false;
+                    request = undefined; selected.value = null; host.afterClosePanel();
+                    if (action === 'choice:confirm' && !host.isPresentationBusy?.() && host.canPresentInteraction?.() !== false)
+                        submit(pending.expected, buildCombatRestCommand(game, pending.expected, pending.bonfireId));
+                    return true;
+                },
+            });
+            return;
+        }
         const attack = pending.expected.actions.find(action => action.id === pending.attackId)!;
         const choices = pending.facing ? [{ action: 'choice:confirm' as const, enabled: true }]
             : combatDirections.map(direction => ({ action: `choice:${direction.facing}` as DialogAction, enabled: true }));
@@ -106,7 +134,8 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
                 if (action === 'close') { selected.value = null; host.afterClosePanel(); }
                 else if (action === 'back') selected.value = { ...pending, facing: null };
                 else if (action === 'choice:confirm' && pending.facing) {
-                    selected.value = null; host.afterClosePanel(); submit(pending.expected, pending.attackId, pending.facing);
+                    selected.value = null; host.afterClosePanel();
+                    submit(pending.expected, buildCombatUiCommand(game, pending.expected, pending.attackId, pending.facing));
                 } else {
                     const direction = combatDirections.find(entry => action === `choice:${entry.facing}`);
                     if (!direction) return false;
@@ -119,7 +148,12 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
     const removeDiagnostics = installCombatDiagnostics(game);
     const removeSource = service?.registerSource(refresh, -20) ?? (() => {});
     const removeReset = service?.onReset(close) ?? (() => {});
-    onScopeDispose(() => { retired = true; removeSource(); removeReset(); removeDiagnostics(); close(); });
+    // Lifecycle dismissal only. DialogInput remains the sole physical input
+    // arbiter; an already-started mechanical rest has no UI cancellation path.
+    const browser = typeof window === 'undefined' ? null : window;
+    const blur = (event: Event) => { if (event.target === browser && selected.value?.kind === 'rest') close(); };
+    browser?.addEventListener('blur', blur);
+    onScopeDispose(() => { retired = true; removeSource(); removeReset(); removeDiagnostics(); browser?.removeEventListener('blur', blur); close(); });
     refresh();
     return {
         hud: computed(() => {
@@ -128,14 +162,16 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
             // Do not fall back to future live state when a historical DTO lacks a resource.
             const resources = current ? readCombatUiResources(current.moduleViews?.combat?.resources)
                 : host.isPresentationBusy?.() ? null : view.value?.resources ?? null;
-            if (!current?.telegraphs.length && !resources) return null;
+            const rest = current ? readCombatUiRest(current.moduleViews?.combat?.rest)
+                : host.isPresentationBusy?.() ? null : view.value?.rest ?? null;
+            if (!current?.telegraphs.length && !resources && !rest) return null;
             // Hover is an optional inspection filter, never a condition for
             // showing danger. A stale ordinary/unknown cell must not erase the
             // overview after a direction dialog opens or is cancelled. While
             // aiming, keep the complete current-frame overview behind the dialog.
             const inspected = !selected.value && current?.hoverCell ? telegraphsAt(current.telegraphs, current.hoverCell) : [];
             const threats = inspected.length ? inspected : current?.telegraphs ?? [];
-            return { component: CombatTelegraphHud, props: { resources, focused: inspected.length > 0,
+            return { component: CombatTelegraphHud, props: { resources, rest, focused: inspected.length > 0,
                 entries: threats.map(threat => ({ key: `${threat.actionId}:${threat.sourceSubactionId}`,
                     name: current?.rows.find(row => row.kind === 'monster' && row.id === threat.sourceEntityId)?.name ?? null,
                     phase: threat.phase, parryable: threat.parryable, remainingTicks: threat.remainingTicks })) } };
@@ -146,8 +182,13 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
         commands: computed(() => []),
         bar: computed(() => {
             host.tick.value;
-            return view.value?.actions.length ? { component: CombatAttackBar, props: {
-                model: view.value, blocked: blocked(), error: error.value, onAttack: open,
+            // A historical ACK can describe a different location/bonfire.
+            // Never reveal the future nearby list behind that presentation.
+            const model = host.isPresentationBusy?.() && view.value
+                ? { ...view.value, readOnly: true, bonfires: readCombatUiBonfires(frame.value?.moduleViews?.combat?.bonfires) }
+                : view.value;
+            return model && (model.actions.length || model.bonfires?.length) ? { component: CombatAttackBar, props: {
+                model, blocked: blocked(), error: error.value, onAttack: open, onBonfire: openBonfire,
             } } : null;
         }),
     };

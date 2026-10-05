@@ -1,5 +1,6 @@
 /** Module-owned data only. Spatial identities/geometry are supplied by the future
  * foundation adapter; these DTOs do not grant world or scheduling authority. */
+import type { BonfireConfig } from '../../worldRest';
 import type { ActorDodgeDefinition, ActorParryDefinition, ActorResourcePhase } from '../../actorActions';
 
 export type Facing = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
@@ -34,7 +35,8 @@ export interface ResourcePolicy {
 }
 export interface CombatProfile { id: string; resourcePolicyId: string; attackIds: string[] }
 export interface CombatPack {
-    schema: 1; moduleId: 'combat'; moduleVersion: '1.3.0'; rulesVersion: '1.3.0';
+    schema: 1; moduleId: 'combat'; moduleVersion: '1.4.0'; rulesVersion: '1.4.0';
+    bonfires: BonfireConfig;
     dodge: ActorDodgeDefinition;
     parry: ActorParryDefinition;
     playerProfileId: string; breakRecoveryTicks: number; nativeProfiles: {monsterId:string;profileId:string}[];

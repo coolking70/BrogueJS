@@ -24,7 +24,9 @@ export function actorActionIdentityCheckpoint(value: Json): { restore(): void } 
 }
 function identity(value: Json): string | null {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-    for (const key of ['actorId', 'actionId', 'sourceSubactionId']) {
+    // A receipt can carry both actorId and actionId: successive actions by
+    // one actor remain distinct mechanical records.
+    for (const key of ['actionId', 'actorId', 'sourceSubactionId']) {
         if (typeof value[key] === 'number') return `${key}:${value[key]}`;
     }
     return null;

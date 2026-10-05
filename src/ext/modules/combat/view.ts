@@ -1,7 +1,7 @@
 import type { Json, ReadonlyJson } from '../../types';
 import type { ActorAttackDefinitions, ProductionActorAttackState } from '../../actorActions';
 /** Display projection is detached. The shell applies public visibility before rendering. */
-export function projectCombatView(value?: ReadonlyJson, definitions?: ActorAttackDefinitions, depth?:number, playerId?:number): Json {
+export function projectCombatView(value?: ReadonlyJson, definitions?: ActorAttackDefinitions, depth?:number, playerId?:number, nearby:readonly import('../../world').WorldInteractableView[]=[], unavailable?:(id:number)=>import('../../worldRest').WorldRestUnavailableReason|null): Json {
     if (!value || !definitions) return {schema:1,telegraphs:[],resources:null,actions:[]};
     const state=value as unknown as ProductionActorAttackState;
     const telegraphs=state.scheduler.bundles.filter(bundle=>bundle.depth===depth).flatMap(bundle=>{
@@ -26,7 +26,15 @@ export function projectCombatView(value?: ReadonlyJson, definitions?: ActorAttac
         || (actor?.dodgeRecoveryRemainingTicks??0)>0 || (actor?.parryRecoveryRemainingTicks??0)>0 || (actor?.staggerRemainingTicks??0)>0;
     const availability=(cost:number)=>({cost,canUse:!busy&&stamina>=cost,
         ...(!busy&&stamina>=cost?{}:{unavailableKey:busy?'ext.combat.ui.busy':'ext.combat.ui.insufficient_stamina'})});
+    const reasonKeys={unavailable:'ext.combat.ui.bonfire_unavailable',busy:'ext.combat.ui.bonfire_busy',gate:'ext.combat.ui.bonfire_gate',distance:'ext.combat.ui.bonfire_distance',threatened:'ext.combat.ui.bonfire_threatened'};
+    const rest=state.bonfires?.active;
+    const definition=rest&&definitions.bonfires?.definitions.find(entry=>entry.id===rest.definitionId);
     return {schema:1,revision:state.revision,telegraphs,
+        bonfires:nearby.flatMap(entity=>{const binding=state.bonfires?.bindings[String(entity.id)],entry=binding&&definitions.bonfires?.definitions.find(entry=>entry.id===binding.definitionId);
+            const reason=busy?'busy':unavailable?.(entity.id);
+            return entry?[{entityId:entity.id,nameKey:entry.nameKey,descriptionKey:entry.descriptionKey,restTicks:entry.restTicks,canUse:!reason,
+                ...(reason?{unavailableKey:reasonKeys[reason]}:{})}]:[];}),
+        rest:rest&&definition?{bonfireId:rest.bonfireId,remainingTicks:state.scheduler.bundles.find(bundle=>bundle.actionId===rest.actionId)?.subactions[0]?.phaseRemainingTicks??0,status:rest.interrupted?'interrupted':'resting'}:null,
         resources:{stamina,capacity:policy.staminaCapacity,regenDelayRemaining:actor?.regenDelayRemaining??0,
             dodgeRemainingTicks:actor?.dodgeRemainingTicks??0,dodgeRecoveryRemainingTicks:actor?.dodgeRecoveryRemainingTicks??0,
             poise:actor?.poise??policy.poiseCapacity,poiseCapacity:policy.poiseCapacity,poiseRecoveryDelayRemaining:actor?.poiseRecoveryDelayRemaining??0,

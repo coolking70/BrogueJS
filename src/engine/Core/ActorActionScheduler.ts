@@ -97,6 +97,8 @@ export type ReadonlyActorActionBundle = Readonly<Omit<ActorActionBundle, 'subact
 };
 export interface ActorActionScheduler extends ActorActionSchedulerPort {
     commitBundle(bundle: ActorActionBundle): void;
+    /** Trusted safe-boundary cancellation of an interruptible non-attack action. */
+    retireBundle(actionId: number): void;
     snapshot(): ActorActionSchedulerState;
     /** Engine lifecycle transition; callers may not supply a second clock. */
     interruptDepth(depth: number): void;
@@ -370,6 +372,7 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
         },
         checkpointTransaction() { const previousFault=fault; return () => { fault=previousFault; }; },
         cancelDeadActions() { run(cancelDead); },
+        retireBundle(actionId) { run(() => { const bundle = state.bundles.find(bundle => bundle.actionId === actionId); if (bundle) finish(bundle, 'source-invalid'); }); },
         dispatchActorBoundary(ownerId) {
             return run(() => {
                 cancelDead();
