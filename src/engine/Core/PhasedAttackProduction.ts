@@ -110,14 +110,48 @@ function synchronizeResource(row:ProductionActorAttackState['actors'][number],pr
     // windows. A later real resource tick/payment owns normal full-pool clearing.
     return canonical(row)!==before;
 }
+/** Native form/source transitions may retire the final bundle before ordinary
+ * command settlement runs. Canonicalize only an existing, now-idle pool there. */
+function synchronizeIdleResource(game:Game,session:Session,source:Creature):void {
+    const row=session.state.actors.find(row=>row.actorId===source.id);
+    if(!row||source.hp<=0||session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===source.id
+        ||bundle.subactions.some(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length)))return;
+    const current=resourcesFor(game,session,source);
+    if(synchronizeResource(row,current.profile.id,current.policy,current.stats))bumpRevision(session.state);
+}
 /** Candidate-load verification: a decoded, trusted actor world supplies the
  * query. No attach/load/query may normalize or fill a saved resource pool. */
 export function validateActorCombatCapacities(state:ProductionActorAttackState,definitions:ActorAttackDefinitions,
-    creatures:readonly Creature[],query:(actor:Creature,input:Json)=>OptionalQueryResult):void {
+    creatures:readonly Creature[],query:(actor:Creature,input:Json)=>OptionalQueryResult,
+    bodyProfiles?:(actor:Creature)=>{declared:readonly string[];available:readonly string[]}|undefined):void {
     for(const row of state.actors){
         const source=creatures.find(actor=>actor.id===row.actorId);
         if(!source)throw new Error('Unknown combat resource actor');
-        const profile=definitions.profiles.find(profile=>profile.id===row.profileId)!;
+        const profile=definitions.profiles.find(profile=>profile.id===row.profileId);
+        if(!profile)throw new Error('Unknown combat resource profile');
+        const declared=source instanceof Monster?bodyProfiles?.(source):undefined;
+        const currentProfile=declared?.declared.length
+            ?declared.available.find(id=>definitions.profiles.some(profile=>profile.id===id))??definitions.playerProfileId
+            :source instanceof Monster?definitions.nativeProfiles.find(binding=>binding.monsterId===source.typeId)?.profileId??definitions.playerProfileId
+                :definitions.playerProfileId;
+        if(row.profileId!==currentProfile){
+            const bundle=state.scheduler.bundles.find(bundle=>bundle.decisionOwnerId===source.id
+                ||bundle.subactions.some(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length));
+            const metadata=bundle&&state.actions.find(action=>action.actionId===bundle.actionId);
+            const ownChildren=bundle?.subactions.filter(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length)??[];
+            const bound=!!bundle&&!!metadata&&(bundle.decisionOwnerId===source.id?metadata.profileId===row.profileId
+                :ownChildren.length>0&&ownChildren.every(child=>{
+                    const sub=metadata.subactions.find(sub=>sub.sourceSubactionId===child.sourceSubactionId);
+                    return !!sub&&(sub.profileId??metadata.profileId)===row.profileId;
+                }));
+            const inert=!!bundle&&(ownChildren.length?ownChildren:bundle.subactions).every(child=>child.cancelled
+                ||child.phases.slice(child.phaseIndex).every(phase=>phase.segmentIndex===null));
+            // Accepted work retains its original policy through disabled body
+            // profiles and inert polymorph recovery. Idle or still-releasing
+            // actors cannot adopt another template merely by forging its DTO.
+            if(!(source instanceof Monster)||!bound||(!declared?.declared.includes(row.profileId)&&!inert))
+                throw new Error('Combat resource profile does not match actor template');
+        }
         const base=definitions.resourcePolicies.find(policy=>policy.id===profile.resourcePolicyId)!;
         const stats=resolveCombatStats(query(source,{v:1,baseStaminaCapacity:base.staminaCapacity,basePoiseCapacity:base.poiseCapacity}));
         if(canonical(row.combatStats)!==canonical(stats))throw new Error('Stale combat capacity revision');
@@ -357,13 +391,17 @@ export function bindPhasedAttackProduction(game:Game):void {
         inputLocked:()=>session.state.actors.some(row=>row.actorId===game.player.id&&nativeRecovery(row)>0),
         resumeResources:()=>{for(const row of session.state.actors){const source=actor(game,row.actorId);if(source&&nativeRecovery(row)>0)source.ticksUntilTurn=nativeRecovery(row);}},
         sourceChanged:id=>{worldRestSourceChanged(game,id);const row=session.state.actors.find(r=>r.actorId===id);if(row&&(row.dodgeRemainingTicks||row.parryRemainingTicks)){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;bumpRevision(session.state);}
-            if(!actor(game,id)||actor(game,id)!.hp<=0)for(const bundle of session.state.scheduler.bundles)
+            const source=actor(game,id);if(source)synchronizeIdleResource(game,session,source);
+            if(!source||source.hp<=0)for(const bundle of session.state.scheduler.bundles)
                 for(const child of bundle.subactions)if(child.sourceEntityId===id){const sub=session.state.actions.find(a=>a.actionId===bundle.actionId)?.subactions.find(s=>s.sourceSubactionId===child.sourceSubactionId);if(sub)sub.lockedCells=[];}},
         leftDepth:()=>{interruptWorldRest(game,'level-exit');settleWorldRest(game);bumpRevision(session.state);for(const row of session.state.actors){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}},
         interrupted:(source,bundle,reason)=>{bumpRevision(session.state);const metadata=session.state.actions.find(a=>a.actionId===bundle.actionId);if(metadata&&reason==='layer-change')metadata.suppressTerminalSweep=true;const sub=metadata?.subactions.find(s=>s.sourceSubactionId===source.sourceSubactionId);if(sub)sub.lockedCells=[];},
         shouldSweep:bundle=>!session.state.actions.find(action=>action.actionId===bundle.actionId)?.suppressTerminalSweep,
         finishAction:(bundle,reason)=>{if(finishWorldRestClock(game,bundle,reason))return;const row=session.state.actors.find(row=>row.actorId===bundle.decisionOwnerId);
-            if(row&&row.poise===0&&bundle.subactions.some(child=>child.phases.some(phase=>phase.kind==='break-recovery'))){const source=actor(game,row.actorId);if(source){const policy=resourcesFor(game,session,source).policy;row.poise=policy.poiseBreakRecoveryValue;row.poiseRecoveryRemainder=0;}}bumpRevision(session.state);session.state.actions=session.state.actions.filter(a=>a.actionId!==bundle.actionId);},
+            if(row&&row.poise===0&&bundle.subactions.some(child=>child.phases.some(phase=>phase.kind==='break-recovery'))){const source=actor(game,row.actorId);if(source){const policy=resourcesFor(game,session,source).policy;row.poise=policy.poiseBreakRecoveryValue;row.poiseRecoveryRemainder=0;}}bumpRevision(session.state);session.state.actions=session.state.actions.filter(a=>a.actionId!==bundle.actionId);
+            for(const id of new Set([bundle.decisionOwnerId,...bundle.subactions.map(child=>child.sourceEntityId)])){
+                const source=actor(game,id);if(source)synchronizeIdleResource(game,session,source);
+            }},
         select:(id,scope)=>{
             const source=actor(game,id);if(!(source instanceof Monster)||!eligible(game,source,session))return 'native-fallback';
             if(source.spatial?.bodyMember)return selectBody(game,session,source,scope);

@@ -56,3 +56,18 @@ provider 只读取自己命名空间下该 actor 的深冻结组件与冻结状�
 - ActorActionProduction保留4d suspendedDepth/resolving/resumePending恢复并加3g scheduler故障恢复；仅可能发布事实的完整dispatch进入checkpoint
 - body-zone-hit与完整takeDamage原子边界嵌套合并；保留4d部位到核心传伤、破坏证明和整组退休，只延后事实发布至全部伤害尾部成功
 - scripts/test-suites与growth test-suites取两侧并集；最终额外运行全部phase4d_*和giants_composite*，没有删4d测试或改其门限
+### 4a0 module-content baseline attribution
+
+The unchanged P4A0 guard reproduces 1 pass / 3 failures on the merged candidate (28.73s, exit 1). An isolated single-variable counterfactual restores only growth/narrative production to `80640d`, retains descriptor `foundation: 5`, and preserves every shared runtime/core file, original test and original fixture: 4/4 pass (29.27s, exit 0). Exactly 20 module production files differ between the copies, including removal of new growth/combatStats.ts. No shared repository file was edited for this audit.
+
+Diagnostic instrumentation was confined to the two temporary copies. All 104 counterfactual graph/snapshot digests exactly reproduce the old fixture. Semantic comparison covers all 52 checkpoints, matches every old object by property/map paths, and preserves all existing aliases, prototypes and property descriptors. Native world/entity state, both RNG streams/counts, messages, clocks and entity/machine allocators are unchanged.
+
+Raw snapshots contain only growth/narrative module version/rules-fingerprint changes, narrative schema 3→4 and added `bonfire.rested=false`, including their recording-origin/event copies. Exact changed-leaf totals are empty 0, growth 189, narrative 246, growth+narrative 490. Full graph changes additionally include growth combat-capacity config in its two definitions projections plus the optional actor-query provider (+30 objects), narrative committed-fact consumers replacing the old storyFact hook (+4), or both (+34). No unrelated native or shared-port drift exists in these checkpoints.
+
+Recapture is justified only for these intentional module changes and must use the original `P4A0_CAPTURE=1` entry after final production freezes. The guard/filter/assertions stay unchanged. Expected fixture delta: 117 leaves (39 graph hashes, 39 graph object counts, 39 snapshot hashes); snapshot object counts, RNG and messages are unchanged; the empty set is exact. Old fixture SHA-256 `3dd6e94c091c1d4d502e69d5d381f7702884c51227c9f34531c525e01986cfb8`; diagnostic predicted hash `1ef488d3fa2741d410faa363d431a264997f81a2a972cafec77b164eb47fe044`. The prediction is not a capture; verify the actual final capture independently.
+
+Compact evidence: `phase3g-p4a0-attribution.json` (52 checkpoint old/candidate hashes, changes, alias/native verdicts, source restoration and test commands/exit codes). Raw graphs remain outside the repository under `/tmp/p3g-p4a0-audit/`.
+
+Actual final capture: original `P4A0_CAPTURE=1 npx vitest run src/test/phase4a0_spatial_differential.test.ts --maxWorkers=1` passed 4/4 in26.29s, exit0. Independently verified exactly117 expected digest/count leaves changed, empty unchanged, and actual fixture SHA-256 equals the predicted `1ef488d3fa2741d410faa363d431a264997f81a2a972cafec77b164eb47fe044`. The original guard/filter/assertions remain byte-identical.
+
+追加严格profile校验后，原4d变形回归发现已闲置的rat仍残留旧fixture.profile且无bundle/action。修复在sourceChanged/finishAction机械边界同步已有闲置资源，保留有效已付款pin，不在load归一化；原生命周期断言保持，64项回归通过。跨grid terrain owner恢复改为先统一清理新增关联再恢复旧关联，防止后处理grid误删先前恢复的owner。独立最终审查未发现剩余阻断。

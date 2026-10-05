@@ -54,8 +54,11 @@ export function checkpointSpatialTerrain(grids:readonly Grid[]):()=>void {
     const saved=[...new Set(grids)].map(grid=>({grid,revision:revisions.get(grid),ownerSet:owners.get(grid),
         subscribers:[...(owners.get(grid)??[])],entries:Array.from({length:grid.height},(_,y)=>
             Array.from({length:grid.width},(_,x)=>{const cell=grid.getCell(x,y)!,entry=cells.get(cell);return {cell,entry,types:entry?[...entry.observedTypes]:null};})).flat()}));
-    return()=>{for(const row of saved){
-        for(const owner of owners.get(row.grid)??[])if(!row.subscribers.includes(owner))ownerGrids.delete(owner);
+    return()=>{
+        // Remove all post-checkpoint associations before restoring any old one:
+        // an owner can have moved from an earlier grid to a later grid.
+        for(const row of saved)for(const owner of owners.get(row.grid)??[])if(!row.subscribers.includes(owner))ownerGrids.delete(owner);
+        for(const row of saved){
         if(row.revision===undefined)revisions.delete(row.grid);else revisions.set(row.grid,row.revision);
         if(row.ownerSet){row.ownerSet.clear();row.subscribers.forEach(owner=>{row.ownerSet!.add(owner);if(owner!==row.grid)ownerGrids.set(owner,row.grid);});owners.set(row.grid,row.ownerSet);}
         else owners.delete(row.grid);

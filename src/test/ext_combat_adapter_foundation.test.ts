@@ -9,7 +9,7 @@ import { Monster } from '../entities/Monster';
 import { checkpointOwnedMonsterLists, ownedMonsterList, squareListUsers } from '../engine/Core/MonsterLifecycle';
 import { checkpointGenerationWorld } from '../engine/Core/GenerationCoordinator';
 import { CreatureSpatial, checkpointSpatialActorRevisions, commitCreatureAnchor } from '../engine/Movement/CreatureSpatial';
-import { checkpointSpatialTerrain } from '../engine/Movement/SpatialRevision';
+import { checkpointSpatialTerrain, spatialTerrainRevision, releaseSpatialTerrain } from '../engine/Movement/SpatialRevision';
 import { Grid, TerrainType } from '../engine/Map/Grid';
 import type { PartBreakPrepareContext, PartBreakRequest } from '../ext/partBreak';
 const payload:CombatEventPayload={eventKind:'rest-completed',actionId:1,sourceSubactionId:null,segmentIndex:null,resolutionId:null,bonfireId:9,visit:1,hitCount:0,hpLost:0};
@@ -217,6 +217,13 @@ describe('3g trusted actor query and committed fact transaction',()=>{
   const stale=structuredClone(snapshot);(stale.foundation as any).version=4;
   expect(()=>new ExtensionRuntime(registry,snapshot.manifest,{depth:()=>1,playerId:()=>actor.id,randomInt:()=>1,message:()=>{}},stale)).toThrow();
   expect(runtime.snapshot()).toEqual(snapshot);
+ });
+
+ it('restores terrain owner associations across two grids before later disposal',()=>{
+  const a=new Grid(3,3),b=new Grid(3,3),owner={};
+  const initial=spatialTerrainRevision(a,owner),restore=checkpointSpatialTerrain([a,b]);
+  spatialTerrainRevision(b,owner);restore();releaseSpatialTerrain(owner);
+  const replacement={};expect(spatialTerrainRevision(a,replacement)).toBe(initial+1);releaseSpatialTerrain(replacement);
  });
 
 });

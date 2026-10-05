@@ -11215,7 +11215,15 @@ export class Game {
                             {depth:snapshot.depth,actors:(snapshot.purgatory??[]).map(monster=>entityGraph.monsters.get(monster.id)!)},
                             ...snapshot.pendingFallenByDepth.map(queue=>({depth:queue.depth,actors:queue.monsters.map(monster=>entityGraph.monsters.get(monster.id)!)}))]};
                     validateActorCombatCapacities(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
-                        (actor,input)=>extensions!.queryOptionalActorInWorld('growth.combat-stats.v1',actor,input,candidateWorld));
+                        (actor,input)=>extensions!.queryOptionalActorInWorld('growth.combat-stats.v1',actor,input,candidateWorld),source=>{
+                            const identity=source.spatial?.bodyMember;
+                            const group=candidateWorld.bodyGroups?.find(group=>group.groupId===identity?.groupId);
+                            const part=group&&extensions!.spatialCatalog.body(group.bodyDefinitionId).parts.find(part=>part.partId===identity?.partId);
+                            if(!part?.attackProfileIds.length)return undefined;
+                            const declared=part.attackProfileIds.map(id=>extensions!.spatialCatalog.attackProfile(id).providerProfileId);
+                            return {declared,available:declared.filter(id=>nativeZoneAttackAvailable(source,id)
+                                &&bodyPartAttackAvailable(extensions!.spatialCatalog,group!,source,id))};
+                        });
                 }
                 if (actionBinding) validatePhasedAttackGeometry(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
                     (depth,x,y)=>restored.get(depth)?.grid.isValidPos(x,y)===true,

@@ -154,6 +154,38 @@ describe('3g strict optional combat capacity consumer',()=>{
         copy.actors[0]!.combatStats={staminaCapacity:999,poiseCapacity:999,revision:revision(30)};
         expect(()=>validateActorCombatCapacities(copy,binding.definition,[game.player],query)).toThrow('Stale');
     });
+    it('rejects another valid template profile even when its capacities and revision exactly match',()=>{
+        setup({query:()=>supported()});const game=scene();chargeNativeActorAttack(game,game.player.id);
+        const binding=game.extensionRuntime!.actorActionBinding()!,saved=game.toSaveSnapshot(),runtime=game.extensionRuntime!,player=game.player;
+        const query=(_actor:Creature,_input:Json):OptionalQueryResult=>({status:'available',value:supported()});
+        const candidate=structuredClone(binding.state);candidate.actors.find(actor=>actor.actorId===player.id)!.profileId='combat.follow-thrust';
+        expect(()=>validateProductionActorAttackState(candidate,binding.definition)).not.toThrow();
+        expect(()=>validateActorCombatCapacities(candidate,binding.definition,[player],query)).toThrow('actor template');
+        const corrupt=structuredClone(saved);
+        (corrupt.extensions!.modules.combat as unknown as typeof candidate).actors.find(actor=>actor.actorId===player.id)!.profileId='combat.follow-thrust';
+        expect(game.loadSnapshot(corrupt)).toBe(false);expect(game.player).toBe(player);expect(game.extensionRuntime).toBe(runtime);
+    });
+    it('attests idle native and declared profile selection while retaining only metadata-bound paid pins',()=>{
+        setup({query:()=>supported()});const game=scene(),target=npc(game);chargeNativeActorAttack(game,target.id);
+        const binding=game.extensionRuntime!.actorActionBinding()!,query=(_actor:Creature,_input:Json):OptionalQueryResult=>({status:'available',value:supported()});
+        const verify=(candidate=state(game),body?:{declared:readonly string[];available:readonly string[]})=>validateActorCombatCapacities(candidate,binding.definition,
+            [game.player,target],query,actor=>actor===target?body:undefined);
+        expect(row(game,target.id).profileId).toBe('combat.fan-edge');expect(()=>verify()).not.toThrow();
+        const forged=structuredClone(state(game));forged.actors.find(actor=>actor.actorId===target.id)!.profileId='combat.shock-ring';
+        expect(()=>verify(forged)).toThrow('actor template');
+        const body={declared:['combat.fan-edge','combat.shock-ring'],available:['combat.shock-ring']};
+        expect(()=>verify(state(game),body)).toThrow('actor template');
+        target.ticksUntilTurn=0;expect(selectNativeActorAction(game,target.id)).toBe('handled');
+        expect(()=>verify(state(game),body)).not.toThrow();
+        target.typeId='ogre';expect(()=>verify()).toThrow('actor template');
+        const bundle=state(game).scheduler.bundles.find(bundle=>bundle.decisionOwnerId===target.id)!;
+        const child=bundle.subactions[0]!,sub=state(game).actions.find(action=>action.actionId===bundle.actionId)!.subactions[0]!;
+        child.phases=[{kind:'break-recovery',durationTicks:50,segmentIndex:null}];child.phaseIndex=0;child.phaseRemainingTicks=50;sub.lockedCells=[];
+        expect(()=>validateProductionActorAttackState(state(game),binding.definition)).not.toThrow();
+        expect(()=>verify()).not.toThrow();
+        const mismatched=structuredClone(state(game));mismatched.actions.find(action=>action.actionId===bundle.actionId)!.profileId='combat.shock-ring';
+        expect(()=>verify(mismatched)).toThrow('actor template');
+    });
     it('propagates provider exceptions and invalid available values before charging',()=>{
         let invalid=false;setup({query:()=>{if(invalid)throw new Error('provider broken');return supported();}});const game=scene();
         const before=structuredClone(state(game));invalid=true;

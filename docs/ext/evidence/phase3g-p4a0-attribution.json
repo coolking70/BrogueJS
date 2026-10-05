@@ -1,0 +1,2260 @@
+{
+  "schema": 1,
+  "purpose": "Phase 3g growth/narrative intentional-content attribution for the unchanged Phase 4a0 full-graph baseline",
+  "scope": "Four module sets, thirteen original scenarios each; conclusions apply to these 52 original checkpoints only, not universal behavioral equivalence",
+  "repositoryHeadAtAuditRead": "4071b3b9c48e28cc8bc0b8b6fb2ecd3696a3ea93",
+  "counterfactualModuleSource": "80640d1f0aa701d71e34758403bf18967fbff097",
+  "candidate": "Isolated copy of the merged working candidate; all shared runtime/core, combat adapters, tests, original fixture and scenarios retained",
+  "frozenCandidateInputs": {
+    "count": 938,
+    "sha256OfPathSortedCompactJson": "07dce7171b54aef4e307324164e1ee88fcabd1d6155878ece31dc4884d7de76a",
+    "rawManifestOutsideRepository": "/tmp/p3g-p4a0-audit/frozen-candidate-input-hashes.json"
+  },
+  "guard": {
+    "path": "src/test/phase4a0_spatial_differential.test.ts",
+    "sha256": "c7a8dc7f5cdf4b12d815136f611284909445db18578e0d0d986a265923aef994",
+    "sharedRepositoryEdited": false,
+    "assertionsOrFiltersChanged": false
+  },
+  "baseline": {
+    "path": "src/test/fixtures/phase4a0-single-cell-baseline.json",
+    "oldSha256": "3dd6e94c091c1d4d502e69d5d381f7702884c51227c9f34531c525e01986cfb8",
+    "diagnosticPredictedSha256": "1ef488d3fa2741d410faa363d431a264997f81a2a972cafec77b164eb47fe044",
+    "sharedRepositoryEdited": false,
+    "predictionIsNotACapture": true,
+    "changedLeaves": 117,
+    "changes": {
+      "graph.sha256": 39,
+      "graph.objects": 39,
+      "snapshot.sha256": 39
+    },
+    "snapshotObjectCountChanges": 0,
+    "rngOrMessagesChanges": 0
+  },
+  "singleVariable": {
+    "onlyRevertedProductionModules": [
+      "growth",
+      "narrative"
+    ],
+    "changedProductionFiles": [
+      {
+        "path": "src/ext/modules/growth/combatStats.ts",
+        "action": "remove-new-production"
+      },
+      {
+        "path": "src/ext/modules/growth/data/definitions.json",
+        "before": "330e4946dd063118add451faf64e26bc5126f91ed8384cf4ad3aa4ad67df0215",
+        "after": "6f211e60398b1e1dc40b7696b2dbef1ed64f04ab021840bfb60b45840ba7820f"
+      },
+      {
+        "path": "src/ext/modules/growth/definitions.ts",
+        "before": "3886c75270ab488b4a3710fa1ce1fad8d692a657a4775a971898c3c30318e06a",
+        "after": "782055866946c93cf3acb81f0d3a98155814a57b1ff89744222fa2486a6e68e6"
+      },
+      {
+        "path": "src/ext/modules/growth/describe.ts",
+        "before": "7f3493bb9ea7c0ac9537945554fad8d1e56bedf14ba668a772d9fc1c80d3600b",
+        "after": "f483493762c0004cc4ac3e888176a0a8b0ab0de5a60616ad3e7eddda3a9e4e6e"
+      },
+      {
+        "path": "src/ext/modules/growth/evaluator.ts",
+        "before": "fcf1b48d84b69ead938a479087271e15eea2ba2b25629a1fded1bdfa81545ada",
+        "after": "3e917d01fe1f748e063e82ef779cf7c82a6d389efb98e02481b83fd243ab7942"
+      },
+      {
+        "path": "src/ext/modules/growth/locales/zh_CN.json",
+        "before": "eb279abac1f8dccc7941364220dc19cc725bc4e6cf1865a790c18e5fdd7ef5c2",
+        "after": "c39647605de720f9bcd94661621bcf99c410ef46f065595e9a1d2cd24b7d8a48"
+      },
+      {
+        "path": "src/ext/modules/growth/module.ts",
+        "before": "1dfb8e2d84ceb0815aa6a8e39e6f67f2f3ecd29c74d0e100b320805b80318072",
+        "after": "6c3106574ab94ef2a0e386438783e843c2809baa2481c406122ac29b24f1355c"
+      },
+      {
+        "path": "src/ext/modules/growth/schema.ts",
+        "before": "fd93a1cb8f97938190927e7316ccb607d935fe903f74124c168ecf9badb77e74",
+        "after": "3cb6b386d73f83d863d3d4caff73a141354bbb75516ef8180d84bb57122fba19"
+      },
+      {
+        "path": "src/ext/modules/growth/types.ts",
+        "before": "d5eb5d8da65254a9fb6fe4c2ceccc6093347f149c1eb6147b905984731ee20bb",
+        "after": "2b65a74ebc8d6a7c2da88d085b10360edbc8543ab13156758dc16390930bed0c"
+      },
+      {
+        "path": "src/ext/modules/narrative/commit.ts",
+        "before": "f42aebebd8f4932f0d652c91c45f8bd56a0cfc4133876f58186cb39358673244",
+        "after": "18c72202fb4765c7bd270d620e75bedb8ec517f08381d0f8fc05fad482f22c38"
+      },
+      {
+        "path": "src/ext/modules/narrative/conditions.ts",
+        "before": "3542d160776a8a3c82e6df09f46379f46d28f1a53e03409bc23f32b34dc68a2a",
+        "after": "b22936ff36c0b96c907a8a228597a45c04a4fc491fb3bf2221658d50de8c4b2c"
+      },
+      {
+        "path": "src/ext/modules/narrative/data/definitions.json",
+        "before": "41fc7e310dc1a9354f6043eab8f39bc6a69d2ea6af8d61fdafc365294b8bea79",
+        "after": "5c7b20c81dc4b0232b85832ec82869c5870a698f0cb59e576d25dcd46e055b5d"
+      },
+      {
+        "path": "src/ext/modules/narrative/definitions.ts",
+        "before": "a344363e7e428b998618d3042434be634401070d82e4ad4f27cc017c00af9e43",
+        "after": "40b3b09ec2746abe291b62c216ecf621e66d9ae7080e696aebbcdb8df7fa27aa"
+      },
+      {
+        "path": "src/ext/modules/narrative/effects.ts",
+        "before": "1872db4bc4cc7e7e3d7fd7bb06400d78980b3995d5829e00a7bcc32311738e56",
+        "after": "dc85c59e2ea74583d9107c2d67a4ba2454f8412a80f53f7a29318f1e0dd458b3"
+      },
+      {
+        "path": "src/ext/modules/narrative/locales/zh_CN.json",
+        "before": "2808928a45034bb271dc9515ec512f3ced920fb6d6828957f141f9ef26b40e58",
+        "after": "fbd99410b58d629a85cf4edce61e355a8279ff7ecfaf4aa3964514fcb974eb48"
+      },
+      {
+        "path": "src/ext/modules/narrative/module.ts",
+        "before": "2dc84963146c05db852ebee0c7f89f8004cb0cd48e509c454d66d86b5faf77a2",
+        "after": "85fb9ad67f57a8942c73724b467adc9b382831c68dbb1b54bef4d91e3a0f7160"
+      },
+      {
+        "path": "src/ext/modules/narrative/schema.ts",
+        "before": "a068fc4d918f160d6206f5a6a9a56171d1c87ad3a132b8a9917b511f9bc9df79",
+        "after": "406e6b6568088ec9b37d65ae5f7ee22849d853a6cbd8322286e51b89d901d744"
+      },
+      {
+        "path": "src/ext/modules/narrative/state.ts",
+        "before": "d448272fa29571d07d34bb7a31bd0046aaf1bd595eccbacee3efef1fcd2c3bdb",
+        "after": "378ffca691a9cc660a55cafc0d1d6e83c400253e6f3b243e0bcac541df6b176e"
+      },
+      {
+        "path": "src/ext/modules/narrative/triggers.ts",
+        "before": "b2cad4ae7ad9ecd0c3d2bb3bfe4c305c7679a617899a7419a154a36a294f9602",
+        "after": "f68d7083a04ee32d389d0910f29b8792115242c6cfdadc212500c2be4520f32d"
+      },
+      {
+        "path": "src/ext/modules/narrative/types.ts",
+        "before": "c1fa088a8e692c0652fc17f9acca4e69181ec1cf140cb7c37b18cb77ef636dc4",
+        "after": "b4483f5f0970316739b23f2a510db5de9310afd9c450377464014ad03a60d079"
+      }
+    ],
+    "allOtherProductionAndOriginalTestsByteIdentical": true,
+    "descriptorFoundationCompatibility": "Retained foundation: 5 in both descriptors, replacing the restored source literal 4; resulting descriptor bytes equal candidate",
+    "newProductionFileRemoved": "src/ext/modules/growth/combatStats.ts",
+    "fixtureAndGuardUntouchedDuringPrimaryRuns": true
+  },
+  "commands": [
+    {
+      "cwd": "/workspace/scratch/db2caf941a8f/BrogueJS-content-cloud",
+      "command": "tar --exclude=node_modules --exclude=.git --exclude=dist --exclude=.ce-reference -cf - . | tar -xf - -C /tmp/p3g-p4a0-audit/current; cp -a /tmp/p3g-p4a0-audit/current/. /tmp/p3g-p4a0-audit/counterfactual/",
+      "exitCode": 0,
+      "purpose": "Freeze current working candidate and identical counterfactual copy"
+    },
+    {
+      "cwd": "/workspace/scratch/db2caf941a8f/BrogueJS-content-cloud",
+      "command": "python3 - <<'PY'\nfrom pathlib import Path\nimport subprocess\nroot=Path('/tmp/p3g-p4a0-audit/counterfactual')\nfor mod in ('growth','narrative'):\n pref='src/ext/modules/'+mod+'/'\n current=subprocess.check_output(['git','ls-files',pref],text=True).splitlines()\n old=subprocess.check_output(['git','ls-tree','-r','--name-only','80640d',pref],text=True).splitlines()\n for path in sorted(set(current)|set(old)):\n  if '/tests/' in path or path.endswith('test-suites.json') or path.endswith('.md'):continue\n  p=root/path\n  try:after=subprocess.check_output(['git','show','80640d:'+path],stderr=subprocess.DEVNULL)\n  except subprocess.CalledProcessError:\n   if p.exists():p.unlink()\n   continue\n  if path.endswith('/descriptor.ts'):after=after.replace(b'foundation: 4',b'foundation: 5')\n  p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(after)\nPY",
+      "exitCode": 0,
+      "purpose": "Single-variable production rollback; exact changed paths and hashes listed in singleVariable.changedProductionFiles",
+      "note": "Executed restoration logic; the original invocation also emitted changed-file SHA evidence, preserved in singleVariable.changedProductionFiles"
+    },
+    {
+      "cwd": "/tmp/p3g-p4a0-audit/counterfactual",
+      "command": "npx vitest run src/test/phase4a0_spatial_differential.test.ts --maxWorkers=1",
+      "exitCode": 0,
+      "passed": 4,
+      "failed": 0,
+      "durationSeconds": 29.27,
+      "log": "/tmp/p3g-p4a0-audit/counterfactual-guard.log"
+    },
+    {
+      "cwd": "/tmp/p3g-p4a0-audit/current",
+      "command": "npx vitest run src/test/phase4a0_spatial_differential.test.ts --maxWorkers=1",
+      "exitCode": 1,
+      "passed": 1,
+      "failed": 3,
+      "durationSeconds": 28.73,
+      "log": "/tmp/p3g-p4a0-audit/current-guard.log"
+    },
+    {
+      "cwd": "/tmp/p3g-p4a0-audit/counterfactual",
+      "command": "npx vitest run src/test/phase4a0_spatial_differential.test.ts --maxWorkers=1 (isolated diagnostic instrumentation only)",
+      "vitestExitCode": 0,
+      "passed": 4,
+      "failed": 0,
+      "durationSeconds": 42.96,
+      "log": "/tmp/p3g-p4a0-audit/counterfactual-instrument.log"
+    },
+    {
+      "cwd": "/tmp/p3g-p4a0-audit/current",
+      "command": "npx vitest run src/test/phase4a0_spatial_differential.test.ts --maxWorkers=1 (isolated diagnostic instrumentation only)",
+      "vitestExitCode": 1,
+      "passed": 1,
+      "failed": 3,
+      "durationSeconds": 43.52,
+      "log": "/tmp/p3g-p4a0-audit/current-instrument.log"
+    }
+  ],
+  "instrumentation": {
+    "method": "Only in isolated copies, write the original graphDigest entry/nodes payload and unmodified toSaveSnapshot result to gzip files; original guard assertions retained",
+    "all104CounterfactualGraphDigestsMatchOriginalFixtureExactly": true,
+    "rawGraphsCopiedIntoRepository": false,
+    "noAddedNormalizationOrGraphExclusion": true,
+    "comparison": "Walk object property names and primitive map keys, preserve descriptors/prototypes, maintain a bijection of old/new object identities and check alias joins/splits; never compare shifted raw node IDs"
+  },
+  "moduleIdentities": {
+    "growth": {
+      "moduleAndRulesVersion": [
+        "1.6.0",
+        "1.7.0"
+      ],
+      "rulesFingerprint": [
+        "sha256:ad24bd465064ca67ea5cb1be633fb247bb8a23724d0e669cf1ca978d105b4bed",
+        "sha256:ac7108ce2bcbb775a317baa4bdc0db07f4f7513c10b5d84491c9086d85d952c2"
+      ]
+    },
+    "narrative": {
+      "moduleAndRulesVersion": [
+        "1.3.0",
+        "1.4.0"
+      ],
+      "rulesFingerprint": [
+        "sha256:6623f9b8478cb25a0fc937a2823697b1b4e3ac286cd60df646ba2f039019dc7c",
+        "sha256:9ea296bd831838437026abda8ffec6bacf9f4b2edd104e6667eeec3b7b7067e8"
+      ],
+      "stateSchema": [
+        3,
+        4
+      ],
+      "addedFlag": {
+        "bonfire.rested": false
+      }
+    }
+  },
+  "allowedSnapshotChangedPathCategories": [
+    {
+      "roots": [
+        "$.extensions.manifest",
+        "$.run.recordedInputEvents[i].extensions.manifest",
+        "$.run.recordingOrigin.extensions",
+        "$.run.recordingOrigin.initial.extensions.manifest"
+      ],
+      "suffixes": [
+        ".modules[moduleIndex].version",
+        ".modules[moduleIndex].rules.version",
+        ".modules[moduleIndex].rules.fingerprint"
+      ],
+      "moduleIndex": "resolve using module.id; growth is 0, narrative is 0 alone or 1 with growth",
+      "reason": "Explicit growth/narrative content and rules version/fingerprint change"
+    },
+    {
+      "roots": [
+        "$.extensions.modules.narrative",
+        "$.run.recordedInputEvents[i].extensions.modules.narrative",
+        "$.run.recordingOrigin.initial.extensions.modules.narrative"
+      ],
+      "suffixes": [
+        ".schema",
+        ".flags[\"bonfire.rested\"]"
+      ],
+      "values": {
+        "schema": [
+          3,
+          4
+        ],
+        "bonfire.rested": "absent -> false"
+      },
+      "reason": "Narrative state schema and new initial bonfire flag only"
+    }
+  ],
+  "graphOnlyChangedCategories": [
+    {
+      "module": "growth",
+      "paths": [
+        "$.game.extensionRuntime.modules[growthIndex].optionalActorQueries[\"growth.combat-stats.v1\"]",
+        "$.game.extensionRuntime.modules[growthIndex].view.definitions.config.combatStats",
+        "$.game.extensionRuntime.modules[growthIndex].view.definitions.config.rules.budgets[12,13]",
+        "$.game.extensionRuntime.modules[growthIndex].view.definitions.config.rules.ports.staminaCapacity",
+        "$.game.extensionRuntime.modules[growthIndex].view.definitions.config.rules.ports.poiseCapacity",
+        "$.game.extensionRuntime.views[Map:\"growth\"].definitions (same version/config fields)"
+      ],
+      "objectDelta": 30,
+      "breakdown": "14 added config objects in each of two distinct definitions projections (28), plus optionalActorQueries and its provider object (2)"
+    },
+    {
+      "module": "narrative",
+      "removedPath": "$.game.extensionRuntime.modules[narrativeIndex].hooks.storyFact",
+      "addedPath": "$.game.extensionRuntime.modules[narrativeIndex].committedFacts",
+      "addedMembers": [
+        "foundation.story.v1",
+        "combat.event.v1"
+      ],
+      "combatEventKinds": [
+        "rest-completed"
+      ],
+      "maxDerivedFacts": 0,
+      "objectDelta": 4,
+      "breakdown": "committedFacts object + two consumer objects + combat eventKinds array; removed hook is a function, not an object node"
+    },
+    {
+      "category": "module identity and narrative state copies",
+      "roots": [
+        "$.game.extensionRuntime.manifest",
+        "$.game.extensionRuntime.modules",
+        "$.game.extensionRuntime.states.narrative",
+        "$.game.recordedInputEvents",
+        "$.game.replayEvents",
+        "$.game.replayRecording"
+      ],
+      "reason": "Same version/fingerprint/schema/initial-flag changes as raw snapshots; existing aliases retained"
+    }
+  ],
+  "unchangedVerdicts": {
+    "nativeWorldAndEntityState": true,
+    "bothRngStreamsAndCallCounts": true,
+    "loggerStateAndMessages": true,
+    "timeSystemAndClocks": true,
+    "entityAndMachineAllocators": true,
+    "existingDescriptorsAndPrototypes": true,
+    "allOldReachableObjectIdentitiesMatched": true,
+    "aliasJoinsOrSplits": 0,
+    "emptySetEntireGraphAndRawSnapshots": true,
+    "snapshotFieldsOutsideExplicitCategories": 0,
+    "scope": "Across all 52 original checkpoints"
+  },
+  "summaryByModules": {
+    "empty": {
+      "graph": {
+        "checkpoints": 13,
+        "semanticEditRecords": 0,
+        "aliasChanges": 0,
+        "objectCountDeltas": [
+          0
+        ],
+        "allOldObjectsMatched": true
+      },
+      "raw-snapshot": {
+        "checkpoints": 13,
+        "semanticEditRecords": 0,
+        "aliasChanges": 0
+      },
+      "snapshot-graph": {
+        "checkpoints": 13,
+        "semanticEditRecords": 0,
+        "aliasChanges": 0,
+        "objectCountDeltas": [
+          0
+        ],
+        "allOldObjectsMatched": true
+      }
+    },
+    "growth": {
+      "graph": {
+        "checkpoints": 13,
+        "semanticEditRecords": 437,
+        "aliasChanges": 0,
+        "objectCountDeltas": [
+          30
+        ],
+        "allOldObjectsMatched": true
+      },
+      "raw-snapshot": {
+        "checkpoints": 13,
+        "semanticEditRecords": 189,
+        "aliasChanges": 0
+      },
+      "snapshot-graph": {
+        "checkpoints": 13,
+        "semanticEditRecords": 189,
+        "aliasChanges": 0,
+        "objectCountDeltas": [
+          0
+        ],
+        "allOldObjectsMatched": true
+      }
+    },
+    "narrative": {
+      "graph": {
+        "checkpoints": 13,
+        "semanticEditRecords": 291,
+        "aliasChanges": 0,
+        "objectCountDeltas": [
+          4
+        ],
+        "allOldObjectsMatched": true
+      },
+      "raw-snapshot": {
+        "checkpoints": 13,
+        "semanticEditRecords": 246,
+        "aliasChanges": 0
+      },
+      "snapshot-graph": {
+        "checkpoints": 13,
+        "semanticEditRecords": 246,
+        "aliasChanges": 0,
+        "objectCountDeltas": [
+          0
+        ],
+        "allOldObjectsMatched": true
+      }
+    },
+    "growth+narrative": {
+      "graph": {
+        "checkpoints": 13,
+        "semanticEditRecords": 793,
+        "aliasChanges": 0,
+        "objectCountDeltas": [
+          34
+        ],
+        "allOldObjectsMatched": true
+      },
+      "raw-snapshot": {
+        "checkpoints": 13,
+        "semanticEditRecords": 490,
+        "aliasChanges": 0
+      },
+      "snapshot-graph": {
+        "checkpoints": 13,
+        "semanticEditRecords": 490,
+        "aliasChanges": 0,
+        "objectCountDeltas": [
+          0
+        ],
+        "allOldObjectsMatched": true
+      }
+    }
+  },
+  "checkpoints": [
+    {
+      "modules": "empty",
+      "checkpoint": "newGame",
+      "old": {
+        "graph": {
+          "sha256": "85ee162c90bb332b4c4d35205f672cf6609801c79418b2622e1819959e01a11c",
+          "objects": 22987
+        },
+        "snapshot": {
+          "sha256": "26143ef9310a29da0fb999903875588ba8da4301ca62ca25a1a80e79c88a3094",
+          "objects": 11194
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "85ee162c90bb332b4c4d35205f672cf6609801c79418b2622e1819959e01a11c",
+          "objects": 22987
+        },
+        "snapshot": {
+          "sha256": "26143ef9310a29da0fb999903875588ba8da4301ca62ca25a1a80e79c88a3094",
+          "objects": 11194
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "empty",
+      "checkpoint": "commands",
+      "old": {
+        "graph": {
+          "sha256": "66129befff6a6ece7caabab4b470fe3decb5c6ccd8ada22ac2138bf9ffbde61b",
+          "objects": 23055
+        },
+        "snapshot": {
+          "sha256": "df59524020126e557cc65af8bdaaa0341f3f188eb97b24b78c854ef7bf2b85db",
+          "objects": 11258
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "66129befff6a6ece7caabab4b470fe3decb5c6ccd8ada22ac2138bf9ffbde61b",
+          "objects": 23055
+        },
+        "snapshot": {
+          "sha256": "df59524020126e557cc65af8bdaaa0341f3f188eb97b24b78c854ef7bf2b85db",
+          "objects": 11258
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "empty",
+      "checkpoint": "loaded",
+      "old": {
+        "graph": {
+          "sha256": "31e8f3b2b92d26a6c1dd8285a093e0e70016c67354888b08e581cf1052148332",
+          "objects": 20679
+        },
+        "snapshot": {
+          "sha256": "df59524020126e557cc65af8bdaaa0341f3f188eb97b24b78c854ef7bf2b85db",
+          "objects": 11258
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "31e8f3b2b92d26a6c1dd8285a093e0e70016c67354888b08e581cf1052148332",
+          "objects": 20679
+        },
+        "snapshot": {
+          "sha256": "df59524020126e557cc65af8bdaaa0341f3f188eb97b24b78c854ef7bf2b85db",
+          "objects": 11258
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "empty",
+      "checkpoint": "continued",
+      "old": {
+        "graph": {
+          "sha256": "379da73cbf7e0fb524e5e92b6e7d6987f351d8f7ff15f807636ea41cf13f04aa",
+          "objects": 23077
+        },
+        "snapshot": {
+          "sha256": "8edfd242422cfca8bee36bef67cff5980f9f93ec966da60049ec4c21d821e6bb",
+          "objects": 11279
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "379da73cbf7e0fb524e5e92b6e7d6987f351d8f7ff15f807636ea41cf13f04aa",
+          "objects": 23077
+        },
+        "snapshot": {
+          "sha256": "8edfd242422cfca8bee36bef67cff5980f9f93ec966da60049ec4c21d821e6bb",
+          "objects": 11279
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "empty",
+      "checkpoint": "replayed",
+      "old": {
+        "graph": {
+          "sha256": "2ade57fc19e29f90770a6e3852b74535a7ee6bea001b7be7051c8c99f2a17279",
+          "objects": 23058
+        },
+        "snapshot": {
+          "sha256": "f4ba3bb4c6710ceb6461ef695a2f4cc4569c2320f9f52b2f04b71c83a5d91e6d",
+          "objects": 11170
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "2ade57fc19e29f90770a6e3852b74535a7ee6bea001b7be7051c8c99f2a17279",
+          "objects": 23058
+        },
+        "snapshot": {
+          "sha256": "f4ba3bb4c6710ceb6461ef695a2f4cc4569c2320f9f52b2f04b71c83a5d91e6d",
+          "objects": 11170
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "empty",
+      "checkpoint": "seek",
+      "old": {
+        "graph": {
+          "sha256": "77edd5699fe17a454410bce601ca38dc2ebc7d1391e5789ddb8242e8895a0912",
+          "objects": 23058
+        },
+        "snapshot": {
+          "sha256": "74e227ee11883fd5f07cdd6f33fe01373268deea0a5c73aa438c6b5aef2b775d",
+          "objects": 11170
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "77edd5699fe17a454410bce601ca38dc2ebc7d1391e5789ddb8242e8895a0912",
+          "objects": 23058
+        },
+        "snapshot": {
+          "sha256": "74e227ee11883fd5f07cdd6f33fe01373268deea0a5c73aa438c6b5aef2b775d",
+          "objects": 11170
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "empty",
+      "checkpoint": "combat",
+      "old": {
+        "graph": {
+          "sha256": "d5f000942ebd33848a48a95048abcea788df62b68870dfa5d411719d08fb2465",
+          "objects": 22681
+        },
+        "snapshot": {
+          "sha256": "59e48d8bdeb34c601f6af11467c6993cae7bce2d7935c9559f7cab1c61eeae5f",
+          "objects": 5662
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "d5f000942ebd33848a48a95048abcea788df62b68870dfa5d411719d08fb2465",
+          "objects": 22681
+        },
+        "snapshot": {
+          "sha256": "59e48d8bdeb34c601f6af11467c6993cae7bce2d7935c9559f7cab1c61eeae5f",
+          "objects": 5662
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "empty",
+      "checkpoint": "knockback",
+      "old": {
+        "graph": {
+          "sha256": "b1a780a7bb97f0c575bd30d7a794ff538e2ae9c99ef6e9b2f71d1caef4079210",
+          "objects": 22681
+        },
+        "snapshot": {
+          "sha256": "b88b7b107a5c5cc6ef61adcb7f399d520b4d142ecf44a0eb974705003de4d2fa",
+          "objects": 5638
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "b1a780a7bb97f0c575bd30d7a794ff538e2ae9c99ef6e9b2f71d1caef4079210",
+          "objects": 22681
+        },
+        "snapshot": {
+          "sha256": "b88b7b107a5c5cc6ef61adcb7f399d520b4d142ecf44a0eb974705003de4d2fa",
+          "objects": 5638
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "empty",
+      "checkpoint": "blink",
+      "old": {
+        "graph": {
+          "sha256": "d0f74c0e1ffaae5e1dfdda3bb9071d818c6d83855cceaa7a3869541bc579bcd2",
+          "objects": 22761
+        },
+        "snapshot": {
+          "sha256": "12141fabf6ae9ab591f29156895a95db31423f05ee32b79524ef3f904b889e18",
+          "objects": 5740
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "d0f74c0e1ffaae5e1dfdda3bb9071d818c6d83855cceaa7a3869541bc579bcd2",
+          "objects": 22761
+        },
+        "snapshot": {
+          "sha256": "12141fabf6ae9ab591f29156895a95db31423f05ee32b79524ef3f904b889e18",
+          "objects": 5740
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "empty",
+      "checkpoint": "clone",
+      "old": {
+        "graph": {
+          "sha256": "e1137ea24b5e3ad0133f823f550a9f93f5d4fad750c63014738a6b46d14d858c",
+          "objects": 22772
+        },
+        "snapshot": {
+          "sha256": "33d7de6d12a7cc99c939866bfb43ca8eb6e6ff0ddc43c78bc05f8cc3f2d44b15",
+          "objects": 5735
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "e1137ea24b5e3ad0133f823f550a9f93f5d4fad750c63014738a6b46d14d858c",
+          "objects": 22772
+        },
+        "snapshot": {
+          "sha256": "33d7de6d12a7cc99c939866bfb43ca8eb6e6ff0ddc43c78bc05f8cc3f2d44b15",
+          "objects": 5735
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "empty",
+      "checkpoint": "summon",
+      "old": {
+        "graph": {
+          "sha256": "23cb6bf3f5df7e89e5365ded43b0e48e901c1cf59ce272151e51949b169b7c96",
+          "objects": 22816
+        },
+        "snapshot": {
+          "sha256": "885423f0138baf9734c128639e9e1cf38b881a6d58ab48f91fd8b6830af7e256",
+          "objects": 5807
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "23cb6bf3f5df7e89e5365ded43b0e48e901c1cf59ce272151e51949b169b7c96",
+          "objects": 22816
+        },
+        "snapshot": {
+          "sha256": "885423f0138baf9734c128639e9e1cf38b881a6d58ab48f91fd8b6830af7e256",
+          "objects": 5807
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "empty",
+      "checkpoint": "trap",
+      "old": {
+        "graph": {
+          "sha256": "bb4109b1899e8e91770209e36fa453f16edacba9a7ae2d432add2b256b157a0a",
+          "objects": 22817
+        },
+        "snapshot": {
+          "sha256": "516072192ff574494b98e5146051db6461a73a38d1a4982b28de416d6119c353",
+          "objects": 5807
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "bb4109b1899e8e91770209e36fa453f16edacba9a7ae2d432add2b256b157a0a",
+          "objects": 22817
+        },
+        "snapshot": {
+          "sha256": "516072192ff574494b98e5146051db6461a73a38d1a4982b28de416d6119c353",
+          "objects": 5807
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "empty",
+      "checkpoint": "level",
+      "old": {
+        "graph": {
+          "sha256": "d089414fe20552431d1da695eed23d511ae40b50b167cdba616b2fe7a677ef61",
+          "objects": 44777
+        },
+        "snapshot": {
+          "sha256": "7157976075f614cd506c6cf64f749c42f13ea356afc8db17995c646d67fa7930",
+          "objects": 21087
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "d089414fe20552431d1da695eed23d511ae40b50b167cdba616b2fe7a677ef61",
+          "objects": 44777
+        },
+        "snapshot": {
+          "sha256": "7157976075f614cd506c6cf64f749c42f13ea356afc8db17995c646d67fa7930",
+          "objects": 21087
+        }
+      },
+      "graphObjectDelta": 0,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 0,
+      "rawSnapshotChangedLeaves": 0,
+      "rawSnapshotChangedLeafCategories": {},
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "newGame",
+      "old": {
+        "graph": {
+          "sha256": "9707c8d82f06d780b00edbcdbf73f2335be498a29fa0064c12c6901cde374197",
+          "objects": 24428
+        },
+        "snapshot": {
+          "sha256": "1604e6e20d88dd3c00fbb9f481c78121bac11c207617744119002335bdc24c72",
+          "objects": 11294
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "88a29d1608772267ecfb03d10236ef88473a9af8e6c6c53a7c14688b28ec8485",
+          "objects": 24458
+        },
+        "snapshot": {
+          "sha256": "759b2cb5cd50a0b5d900a552e97534aebf5fa0366f93c60b57ad20b92782bc9e",
+          "objects": 11294
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 26,
+      "rawSnapshotChangedLeaves": 12,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 4,
+        "moduleRulesVersion": 4,
+        "moduleVersion": 4
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "commands",
+      "old": {
+        "graph": {
+          "sha256": "067764f1d56cd86127ad03480fa3fecfaf5377d8ac25c160c732583992700ed2",
+          "objects": 24592
+        },
+        "snapshot": {
+          "sha256": "f1c56bd2a4ad8d4bacab21a477fff47f0097654f695a051125db37824a3c9fa6",
+          "objects": 11454
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "85d262240cd80e6d9bc6ead91d173c0bad3c0092eeff7a5bccc9420c39f50a83",
+          "objects": 24622
+        },
+        "snapshot": {
+          "sha256": "31c06853ed943a2a5f11fd6129bec3a70592cfbb0689a8639d2e71a32d74708d",
+          "objects": 11454
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 35,
+      "rawSnapshotChangedLeaves": 21,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 7,
+        "moduleRulesVersion": 7,
+        "moduleVersion": 7
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "loaded",
+      "old": {
+        "graph": {
+          "sha256": "6ca7f7d7cc5feb1b375a36514ab14fbf4a76e581c4744f7b667f997bb8a72fbc",
+          "objects": 22216
+        },
+        "snapshot": {
+          "sha256": "f1c56bd2a4ad8d4bacab21a477fff47f0097654f695a051125db37824a3c9fa6",
+          "objects": 11454
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "000cb240bb9d4d930c6a2ec304be00dd254c660786466823f8d60d63953a4ecd",
+          "objects": 22246
+        },
+        "snapshot": {
+          "sha256": "31c06853ed943a2a5f11fd6129bec3a70592cfbb0689a8639d2e71a32d74708d",
+          "objects": 11454
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 35,
+      "rawSnapshotChangedLeaves": 21,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 7,
+        "moduleRulesVersion": 7,
+        "moduleVersion": 7
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "continued",
+      "old": {
+        "graph": {
+          "sha256": "aeda7f46365387be2366fad993ed903902973e59c9c7f1976083083aca801546",
+          "objects": 24646
+        },
+        "snapshot": {
+          "sha256": "6fdcbfadc5da85e34acc92b8020014dade9eecd6b3a46564a648d74821df5bed",
+          "objects": 11507
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "95f79b4e37aaafb50feb6da9dc712100b251db06350ebae21fe2b75cfae26530",
+          "objects": 24676
+        },
+        "snapshot": {
+          "sha256": "4086b6a9566e02fdb2ad13de0ddb00ba851979010eee351e5b603c11a7d6c2c9",
+          "objects": 11507
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 38,
+      "rawSnapshotChangedLeaves": 24,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 8,
+        "moduleRulesVersion": 8,
+        "moduleVersion": 8
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "replayed",
+      "old": {
+        "graph": {
+          "sha256": "aa62b8ce5364cd695d05493d87c5546aae1e2366cf6834847a648b031d422f4e",
+          "objects": 24597
+        },
+        "snapshot": {
+          "sha256": "b7601485ddd7341bb9226f85180042f4d616eef372e5cf6583e8215f043acdb0",
+          "objects": 11202
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "e603280b21c32a747a7a397bcf73ffe22d683915234fa36bbed29b96ecd64c83",
+          "objects": 24627
+        },
+        "snapshot": {
+          "sha256": "891c289dbcaa94f45ac0c2b3e42882a136d329ca386530e566b4ef72dd9de907",
+          "objects": 11202
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 38,
+      "rawSnapshotChangedLeaves": 3,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 1,
+        "moduleRulesVersion": 1,
+        "moduleVersion": 1
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "seek",
+      "old": {
+        "graph": {
+          "sha256": "4339a659612264890799fc2ee142f30ec78a91bd318159eb2ff31fd35f0ca73c",
+          "objects": 24593
+        },
+        "snapshot": {
+          "sha256": "b7e045e8f39ea0f0f71ce6df825009718ae3ac047b045a3de12e7dcad9f38574",
+          "objects": 11202
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "381d748f4463efef86f931f0e56dc3cd27f5b0f944eb6ebbf33968080ec359e7",
+          "objects": 24623
+        },
+        "snapshot": {
+          "sha256": "777f38049f6449c7bd3de6990305385327f28403198052da7247d4b8692774f6",
+          "objects": 11202
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 38,
+      "rawSnapshotChangedLeaves": 3,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 1,
+        "moduleRulesVersion": 1,
+        "moduleVersion": 1
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "combat",
+      "old": {
+        "graph": {
+          "sha256": "e3a825beb044a0cbaabc0778fcb32d7c0465bceb4f49f442b31a75a15aacd3e7",
+          "objects": 24198
+        },
+        "snapshot": {
+          "sha256": "c7d1267679812b6bc0f2b661cab23c611eacbd7aef142335416fca1a6b63fa26",
+          "objects": 5838
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "2b158f819943b5db1ac8d5ae6b60bb7b8ea94d27a4c7b55bceaff0299ff36325",
+          "objects": 24228
+        },
+        "snapshot": {
+          "sha256": "477734077b0b9da1704727e4d9bbc74f1b2b6749858b6fb167b20529ce3f2825",
+          "objects": 5838
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 29,
+      "rawSnapshotChangedLeaves": 15,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 5,
+        "moduleRulesVersion": 5,
+        "moduleVersion": 5
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "knockback",
+      "old": {
+        "graph": {
+          "sha256": "ea487a54ba73202c7be9fa1286bc3f049c9b76ba8ef1f250d9b42469c46d55b5",
+          "objects": 24198
+        },
+        "snapshot": {
+          "sha256": "56fc0785535720bc039b33c5985f3239ce86b2354d11dc1595f1cb87ed03678d",
+          "objects": 5799
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "1d863d22551374ba3d1eb9be5a74f9249fcdb7fec8f3127ec4144a3da7ff1e01",
+          "objects": 24228
+        },
+        "snapshot": {
+          "sha256": "ea52900f25f410309cf16b16002e09b8bd3e4f258dab4b746f6be593e11d34a5",
+          "objects": 5799
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 29,
+      "rawSnapshotChangedLeaves": 9,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 3,
+        "moduleRulesVersion": 3,
+        "moduleVersion": 3
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "blink",
+      "old": {
+        "graph": {
+          "sha256": "7aa242423abf742e1a77d8a03b5badc98dd574f93ed8003d75372d0e3a5c11f2",
+          "objects": 24386
+        },
+        "snapshot": {
+          "sha256": "bcf2d93085aad5dafa0f51d9757572dd03fa25110b0abb1e4d02a21db81e496c",
+          "objects": 6024
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "2f38d5c50d9c5c0b5a1022e68f8a71bd84613944a7735797a90b3db62be0de2d",
+          "objects": 24416
+        },
+        "snapshot": {
+          "sha256": "92e292454c33f4acda86e2fccad796fde0de9d85f8ff18b9cdcda71bd01ebced",
+          "objects": 6024
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 35,
+      "rawSnapshotChangedLeaves": 21,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 7,
+        "moduleRulesVersion": 7,
+        "moduleVersion": 7
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "clone",
+      "old": {
+        "graph": {
+          "sha256": "d0bccdc05741defa6fe860de56b8fcbc8b42a5d8b31304c027f76abfda9cd60f",
+          "objects": 24419
+        },
+        "snapshot": {
+          "sha256": "57448fb0fd5bdac01122bd413aad511d3ce2d61271863512cb147064ecf29bba",
+          "objects": 6026
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "722e9caf621b11b60f72beb5a52636901dd80c8abc6262c5ccf4079e2d01dc93",
+          "objects": 24449
+        },
+        "snapshot": {
+          "sha256": "f546471b7914972625e55e3b0ee48446b8517063669498b95780cbb89d0dc04b",
+          "objects": 6026
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 35,
+      "rawSnapshotChangedLeaves": 15,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 5,
+        "moduleRulesVersion": 5,
+        "moduleVersion": 5
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "summon",
+      "old": {
+        "graph": {
+          "sha256": "ce84d61e6f6db4e83198fd07b223146ff8621579736ba269cbbdad6d5592ac62",
+          "objects": 24551
+        },
+        "snapshot": {
+          "sha256": "b398c04ff94c4f8d4cd4eb7fc8f774e4b263b198a9fc2c1eec616ca21986b8bd",
+          "objects": 6186
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "5733fdf5bff9ddb4beff774993dceebb5442bfebb34a7d871e2da017254d7185",
+          "objects": 24581
+        },
+        "snapshot": {
+          "sha256": "6d50e81a1acca6441145208139c80833bff07e48b31b4cab3c9b20ad838e8bb0",
+          "objects": 6186
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 35,
+      "rawSnapshotChangedLeaves": 15,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 5,
+        "moduleRulesVersion": 5,
+        "moduleVersion": 5
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "trap",
+      "old": {
+        "graph": {
+          "sha256": "bdde84067d115dbf2f4a008d51ada73de87e7e99f0a67d357e38c2a37d358d27",
+          "objects": 24552
+        },
+        "snapshot": {
+          "sha256": "594301b39ee56358c4ae1ff909efce0af7819c1f898861fe03653b8596e7d713",
+          "objects": 6186
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "04451e262151704227cdb8d46f4641297f9106785cd383b022ba2325bcce97b0",
+          "objects": 24582
+        },
+        "snapshot": {
+          "sha256": "6999574896e00cfd5173583c35eb625fb50059a9babf4d7dc65700ec155fa5d5",
+          "objects": 6186
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 35,
+      "rawSnapshotChangedLeaves": 15,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 5,
+        "moduleRulesVersion": 5,
+        "moduleVersion": 5
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth",
+      "checkpoint": "level",
+      "old": {
+        "graph": {
+          "sha256": "f1cd7aff028e7a4e80e72de52bb3423442f8904f4ef49943e02d253ef73e01af",
+          "objects": 46977
+        },
+        "snapshot": {
+          "sha256": "7e0e261f7ad4830827938bee67e1e11103e7895af2a6611ca7f18555bfefe298",
+          "objects": 22100
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "77c2361fff5ab1d8a77b6220e463ea385ce7b0b9fdf771587bc0e136891b8c32",
+          "objects": 47007
+        },
+        "snapshot": {
+          "sha256": "9ed526bc24751260a6e2b48bbd1982ed862a6f34858adf2ddb3ad279f4ffaa6d",
+          "objects": 22100
+        }
+      },
+      "graphObjectDelta": 30,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 29,
+      "rawSnapshotChangedLeaves": 15,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 5,
+        "moduleRulesVersion": 5,
+        "moduleVersion": 5
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "newGame",
+      "old": {
+        "graph": {
+          "sha256": "ad0476b9399438d1751f32041f5236bbff6f3a814c35e12ec5136fb4f250619b",
+          "objects": 23012
+        },
+        "snapshot": {
+          "sha256": "1596db3dae8fcc47302dddbeb582662107e045a489556606e12650aa6f03228f",
+          "objects": 11236
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "e90f31471afff43c8f4600fa514cf291ceec62e2c5c8492f410753d913d934ed",
+          "objects": 23016
+        },
+        "snapshot": {
+          "sha256": "e7bed6591c7c0409eb2023ef343fe16f8c7f7f61cd8af6b1a93d160907a2b0e8",
+          "objects": 11236
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 10,
+      "rawSnapshotChangedLeaves": 13,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 3,
+        "moduleRulesVersion": 3,
+        "moduleVersion": 3,
+        "narrativeInitialFlag": 2,
+        "narrativeStateSchema": 2
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "commands",
+      "old": {
+        "graph": {
+          "sha256": "1ee70ae587f10121407e84a5db10591b64e620eb0f573ee7ed027c4661e61489",
+          "objects": 23140
+        },
+        "snapshot": {
+          "sha256": "bfb932f8346bfac9db2dd5210a0447ea4e308489427e0b6bcc9670232bf9d099",
+          "objects": 11360
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "d246740084857748c4f5128365aad431016f9a92b12f6d5e59f463c4f5360ca3",
+          "objects": 23144
+        },
+        "snapshot": {
+          "sha256": "e0431c82963512826cfb3e08865cf87ae9ff68b612c4d0e18b2e6e29a1117b84",
+          "objects": 11360
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 25,
+      "rawSnapshotChangedLeaves": 28,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 6,
+        "moduleRulesVersion": 6,
+        "moduleVersion": 6,
+        "narrativeInitialFlag": 5,
+        "narrativeStateSchema": 5
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "loaded",
+      "old": {
+        "graph": {
+          "sha256": "555b2fb2c6076264b5a6316482ad80c4678480d47f397141c4f4899c0e663319",
+          "objects": 20764
+        },
+        "snapshot": {
+          "sha256": "bfb932f8346bfac9db2dd5210a0447ea4e308489427e0b6bcc9670232bf9d099",
+          "objects": 11360
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "d94c3306ba565691296b84deb87603620ef801b326bde426c2a58f865eae6b65",
+          "objects": 20768
+        },
+        "snapshot": {
+          "sha256": "e0431c82963512826cfb3e08865cf87ae9ff68b612c4d0e18b2e6e29a1117b84",
+          "objects": 11360
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 25,
+      "rawSnapshotChangedLeaves": 28,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 6,
+        "moduleRulesVersion": 6,
+        "moduleVersion": 6,
+        "narrativeInitialFlag": 5,
+        "narrativeStateSchema": 5
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "continued",
+      "old": {
+        "graph": {
+          "sha256": "8b2098156a5c978876a1e730138793d65437fe16c3f43b5d8cd604ecb8619226",
+          "objects": 23182
+        },
+        "snapshot": {
+          "sha256": "1e1d45eee599df4aa2dbdd17c65b31455549ad54858af480b167cf5d6216c899",
+          "objects": 11401
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "5b06f49a743622a1aad049413e21a3dc11fdfd23d4fa97bfec3946a07d8bf1f0",
+          "objects": 23186
+        },
+        "snapshot": {
+          "sha256": "138c24e738b7583a821b04b9e57f43eeb703d9368c9bff2154880151b9ef2b29",
+          "objects": 11401
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 30,
+      "rawSnapshotChangedLeaves": 33,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 7,
+        "moduleRulesVersion": 7,
+        "moduleVersion": 7,
+        "narrativeInitialFlag": 6,
+        "narrativeStateSchema": 6
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "replayed",
+      "old": {
+        "graph": {
+          "sha256": "26fe3153bf44d233d46ef3266c9309662c9c1775c96bf929a1952829e347b418",
+          "objects": 23145
+        },
+        "snapshot": {
+          "sha256": "903a1dbd4f7bf017b3b85d19563789ff4f84c615a9160e0f0a631d6d54f54ab8",
+          "objects": 11190
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "2cecd51380677e7ea7e702665241450a1e061f9fd96e8be6c692ea4b469fcb5c",
+          "objects": 23149
+        },
+        "snapshot": {
+          "sha256": "ba3cd792b1ab50e85e582c26418f7bca4c543df48101c57fd9774fa951375af2",
+          "objects": 11190
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 28,
+      "rawSnapshotChangedLeaves": 5,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 1,
+        "moduleRulesVersion": 1,
+        "moduleVersion": 1,
+        "narrativeInitialFlag": 1,
+        "narrativeStateSchema": 1
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "seek",
+      "old": {
+        "graph": {
+          "sha256": "d6bd8739bb6bfdd72b56f07e9a33efaa9a3c1693ee8dead8818bacdb7aa899f8",
+          "objects": 23145
+        },
+        "snapshot": {
+          "sha256": "10ab95d7f0cf3abe790fa4cf716336f263e257c72d617f4f6b166666ef30bbf5",
+          "objects": 11190
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "e5f1c5e0a8cc0e2fdff04981441f879a03f984d2fd3b55d632ff934340d37281",
+          "objects": 23149
+        },
+        "snapshot": {
+          "sha256": "24f28fbbb8b08523215584725be97eff1cb1528c5c486a8bb993378be26f4ba4",
+          "objects": 11190
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 28,
+      "rawSnapshotChangedLeaves": 5,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 1,
+        "moduleRulesVersion": 1,
+        "moduleVersion": 1,
+        "narrativeInitialFlag": 1,
+        "narrativeStateSchema": 1
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "combat",
+      "old": {
+        "graph": {
+          "sha256": "8fb6a244709eea47ba933cc81b47c8adc257109f6f0cbb5c38a3f56e3a397982",
+          "objects": 22726
+        },
+        "snapshot": {
+          "sha256": "39dbf77c046240ed8bc57ed41e907c045f76f6baec0f674399db68274d601c9c",
+          "objects": 5724
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "c95c82254a084e96d7f5a744cb2b8d679289e93f93b439a48eddb0a8ef3da835",
+          "objects": 22730
+        },
+        "snapshot": {
+          "sha256": "eec8be9601acd016e0a886afcb6efd1dccb9eb98ee431e29df9ec74f1d08af0c",
+          "objects": 5724
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 15,
+      "rawSnapshotChangedLeaves": 18,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 4,
+        "moduleRulesVersion": 4,
+        "moduleVersion": 4,
+        "narrativeInitialFlag": 3,
+        "narrativeStateSchema": 3
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "knockback",
+      "old": {
+        "graph": {
+          "sha256": "324641108b2448a723f6a3f1a8423dd85580dffa6da9751dc42f7f0cbd0b2161",
+          "objects": 22726
+        },
+        "snapshot": {
+          "sha256": "4ba64afdc833e796d0a20d07f5d66fad772603c7db8be11975cf96c3106f9e5e",
+          "objects": 5678
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "20947abf2592cef2c7fd538c58ab06f5caad897d9e7c2e23dc96cf69766941aa",
+          "objects": 22730
+        },
+        "snapshot": {
+          "sha256": "64ba31ce8f167a2ee5dbd95f365d0b93742c791bd2eacd927c4038091ddf42a7",
+          "objects": 5678
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 15,
+      "rawSnapshotChangedLeaves": 10,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 2,
+        "moduleRulesVersion": 2,
+        "moduleVersion": 2,
+        "narrativeInitialFlag": 2,
+        "narrativeStateSchema": 2
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "blink",
+      "old": {
+        "graph": {
+          "sha256": "cbf5955b605127f048633c3d716f1e02569492d7ed8118318ce00c6c200380a7",
+          "objects": 22846
+        },
+        "snapshot": {
+          "sha256": "b9426b1b3448017141f3c32957effdd56c1da685319bef4185dd821ef82aa2fb",
+          "objects": 5842
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "e18a1f647207d4b82b474bf7967baf9048827cd3bdde38f312cfd873fcde6121",
+          "objects": 22850
+        },
+        "snapshot": {
+          "sha256": "28f49cce97e9aae11e3f9dfa0efc4b0ae4ba10db28cfcd3c6da19a2d8b9efc96",
+          "objects": 5842
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 25,
+      "rawSnapshotChangedLeaves": 28,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 6,
+        "moduleRulesVersion": 6,
+        "moduleVersion": 6,
+        "narrativeInitialFlag": 5,
+        "narrativeStateSchema": 5
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "clone",
+      "old": {
+        "graph": {
+          "sha256": "db77c96af17cc237e2ed221145be285731e9305d5c9b328c3e49ec0c7552ee8e",
+          "objects": 22857
+        },
+        "snapshot": {
+          "sha256": "bec993ad75d7b2ed471da2afecc4f885a11d32e29c37b7267be2467badb057ca",
+          "objects": 5815
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "a098af3294c37dba4405a9739e52c1799fe72e67f6c95207e88e5d867a9f37d2",
+          "objects": 22861
+        },
+        "snapshot": {
+          "sha256": "9544b88b1f397720d74f1a7de5c3d1d21db7544e86139b465c5db58e95e2d84f",
+          "objects": 5815
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 25,
+      "rawSnapshotChangedLeaves": 20,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 4,
+        "moduleRulesVersion": 4,
+        "moduleVersion": 4,
+        "narrativeInitialFlag": 4,
+        "narrativeStateSchema": 4
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "summon",
+      "old": {
+        "graph": {
+          "sha256": "9982c15e03bd54d8df7cdec650df63708346abb8231fc7b7f96be7f7f3e8cd61",
+          "objects": 22901
+        },
+        "snapshot": {
+          "sha256": "f0dd4d5a96ebd32221c91f8e6f53418ccd37c9c1dbd9fe7d426ef2ffe5eadf55",
+          "objects": 5887
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "f4cdcaf42ba123a5e747e45cef75dba90934d0d6cdf3372f9405b3edf1e62ab9",
+          "objects": 22905
+        },
+        "snapshot": {
+          "sha256": "8a72fecac6fb2c94bdf2894d62f96327492811dc45ab180359b28506c530a8bf",
+          "objects": 5887
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 25,
+      "rawSnapshotChangedLeaves": 20,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 4,
+        "moduleRulesVersion": 4,
+        "moduleVersion": 4,
+        "narrativeInitialFlag": 4,
+        "narrativeStateSchema": 4
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "trap",
+      "old": {
+        "graph": {
+          "sha256": "68de77b7ef910010ffed6381e27987409e9b08ede59053f0a846db0d9c3f8278",
+          "objects": 22902
+        },
+        "snapshot": {
+          "sha256": "57de1fe3a2161f9648f3f7049a68323c1b830838e469148cdd1b0e6d0734a2d0",
+          "objects": 5887
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "e0c337004a983c65f21241cebbf260989b0c2a2dc25164e6332038ec4ba9b8ab",
+          "objects": 22906
+        },
+        "snapshot": {
+          "sha256": "02d37d48a13b4283d1ed3734984ac77f56e2f98a5023283433145652d72e77ea",
+          "objects": 5887
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 25,
+      "rawSnapshotChangedLeaves": 20,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 4,
+        "moduleRulesVersion": 4,
+        "moduleVersion": 4,
+        "narrativeInitialFlag": 4,
+        "narrativeStateSchema": 4
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "narrative",
+      "checkpoint": "level",
+      "old": {
+        "graph": {
+          "sha256": "bcd2c0b9c4be6b288cb32614270992df8e4565f290426c0d927a0855b8160d91",
+          "objects": 44822
+        },
+        "snapshot": {
+          "sha256": "f599f588cac15aeb8d74aa5ab5ec5e994492f57bcaae370bc0f51b08d6f8c375",
+          "objects": 21149
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "0ad27426c716c2c317dadaccdf31bb04ecaa5154fade2bb2486c75765c0e01e3",
+          "objects": 44826
+        },
+        "snapshot": {
+          "sha256": "5af6b5113aac45ede4aef66654ec551f37a03d4a0abb3b2e19992554a6184cd7",
+          "objects": 21149
+        }
+      },
+      "graphObjectDelta": 4,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 15,
+      "rawSnapshotChangedLeaves": 18,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 4,
+        "moduleRulesVersion": 4,
+        "moduleVersion": 4,
+        "narrativeInitialFlag": 3,
+        "narrativeStateSchema": 3
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "newGame",
+      "old": {
+        "graph": {
+          "sha256": "86198a0c8ff42de63df8761385ed5539b0e4c8ca08d9fcb7ba729825a690b0a8",
+          "objects": 24473
+        },
+        "snapshot": {
+          "sha256": "390a1031e3ce14c15bcaf6973ca7434367834ce56f60c32edc48727ea4b1f19b",
+          "objects": 11357
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "1ef58b0c0f602975d796fb96a4e2744d23060fd276614c69a87f99beec8a53a5",
+          "objects": 24507
+        },
+        "snapshot": {
+          "sha256": "5b27f00edbba3ba55273f256394f7d8dee67b100c73b54ebf1cc1a9bb7cdf941",
+          "objects": 11357
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 41,
+      "rawSnapshotChangedLeaves": 30,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 8,
+        "moduleRulesVersion": 8,
+        "moduleVersion": 8,
+        "narrativeInitialFlag": 3,
+        "narrativeStateSchema": 3
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "commands",
+      "old": {
+        "graph": {
+          "sha256": "6aa596c19240fdee0c19dabd8c5e318dbe3ffa0ea5f97a3dfd79929120a0788f",
+          "objects": 24697
+        },
+        "snapshot": {
+          "sha256": "faaa00aad06b9a70863e0b01a833646666efa128f6664c2f72027919fc54755d",
+          "objects": 11577
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "efbde9c0c75ecbafc6d753ca8322268d10c8d61f2a2c3db2f95107992ceaa0fd",
+          "objects": 24731
+        },
+        "snapshot": {
+          "sha256": "e4e8fbce169387e5a5553c983f6aa2260fe6528801e6b8a70760bcf721f33a33",
+          "objects": 11577
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 65,
+      "rawSnapshotChangedLeaves": 54,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 14,
+        "moduleRulesVersion": 14,
+        "moduleVersion": 14,
+        "narrativeInitialFlag": 6,
+        "narrativeStateSchema": 6
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "loaded",
+      "old": {
+        "graph": {
+          "sha256": "05b1d9a43cd0f60e735e57d0fef73c0dc35966c5c049b5691eac3353e67e39ff",
+          "objects": 22321
+        },
+        "snapshot": {
+          "sha256": "faaa00aad06b9a70863e0b01a833646666efa128f6664c2f72027919fc54755d",
+          "objects": 11577
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "b2fa9554de651327e1d7888b53ddee7396dd510842a3997cac4fa8a78e0f1cd8",
+          "objects": 22355
+        },
+        "snapshot": {
+          "sha256": "e4e8fbce169387e5a5553c983f6aa2260fe6528801e6b8a70760bcf721f33a33",
+          "objects": 11577
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 65,
+      "rawSnapshotChangedLeaves": 54,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 14,
+        "moduleRulesVersion": 14,
+        "moduleVersion": 14,
+        "narrativeInitialFlag": 6,
+        "narrativeStateSchema": 6
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "continued",
+      "old": {
+        "graph": {
+          "sha256": "ea0b03a2ba74a85365cf34c69199ada09ea9712f13fe38d1df6547698e75ba46",
+          "objects": 24771
+        },
+        "snapshot": {
+          "sha256": "e44166fce75e99903ec5ffcc86769c8bf975cc14899c1a0a46bea0092b8e679e",
+          "objects": 11650
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "60bac0ce1e0c3078ee97340dcf70216d4adba86c9c1d2623657771147110989d",
+          "objects": 24805
+        },
+        "snapshot": {
+          "sha256": "e0cd4ca8223f24f7d0d1843148a6d7a1938c77f0ce6e8c8481df9b0e5f791acb",
+          "objects": 11650
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 73,
+      "rawSnapshotChangedLeaves": 62,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 16,
+        "moduleRulesVersion": 16,
+        "moduleVersion": 16,
+        "narrativeInitialFlag": 7,
+        "narrativeStateSchema": 7
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "replayed",
+      "old": {
+        "graph": {
+          "sha256": "c512f3625563555fc979247e6b84498f4b1a211ccec6cda03421fe13b94692c7",
+          "objects": 24704
+        },
+        "snapshot": {
+          "sha256": "8b77486a82646ce6cfd0e92e22bd4b67e7beca4701d5f55f2f9e73061256fa06",
+          "objects": 11222
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "dfcc57e5e112c3eae883b8acef2e7b822d00897b17b8f4eec199cbb8f3aa1470",
+          "objects": 24738
+        },
+        "snapshot": {
+          "sha256": "2f76efb8506d6498c59d419004ed3526218aa22cb7e960e0adfbe5cf64952935",
+          "objects": 11222
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 71,
+      "rawSnapshotChangedLeaves": 8,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 2,
+        "moduleRulesVersion": 2,
+        "moduleVersion": 2,
+        "narrativeInitialFlag": 1,
+        "narrativeStateSchema": 1
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "seek",
+      "old": {
+        "graph": {
+          "sha256": "ffc5472ba5526aec8b3dce58e1b770e533e7dd241c0071563a8c3c89d5259db3",
+          "objects": 24700
+        },
+        "snapshot": {
+          "sha256": "9aeabae45094896813c584c02ee22deb881abbb90386a7263a4abe6748adebd5",
+          "objects": 11222
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "eee6a5aed567d8c5e426a9f9da8edd65c5c1bf632c0d8620f3707e2f874be2e5",
+          "objects": 24734
+        },
+        "snapshot": {
+          "sha256": "07f883c344b348d87cd99efab02d9e0b413de8ee8dd8d6e8db779f98062c0dae",
+          "objects": 11222
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 71,
+      "rawSnapshotChangedLeaves": 8,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 2,
+        "moduleRulesVersion": 2,
+        "moduleVersion": 2,
+        "narrativeInitialFlag": 1,
+        "narrativeStateSchema": 1
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "combat",
+      "old": {
+        "graph": {
+          "sha256": "29ce8aaadad7a42a9fb4f6680cc39cb9fb40b60922450fcb52d22f8c4bb6f2a3",
+          "objects": 24263
+        },
+        "snapshot": {
+          "sha256": "0befd9bbf96b2dbae4505e9bccfb9cd3d633c18dc095ee9b6270ae34d4623005",
+          "objects": 5921
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "b2f956beb50a74c7fd97b86db9093779bd1919fd5749705e1ffccd858e6e1e15",
+          "objects": 24297
+        },
+        "snapshot": {
+          "sha256": "2de7ab2e484653b77c6c5193cc713a8afb22209cac0dc1ebd7c95f21ee99b5e0",
+          "objects": 5921
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 49,
+      "rawSnapshotChangedLeaves": 38,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 10,
+        "moduleRulesVersion": 10,
+        "moduleVersion": 10,
+        "narrativeInitialFlag": 4,
+        "narrativeStateSchema": 4
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "knockback",
+      "old": {
+        "graph": {
+          "sha256": "27549bc4bb743cba346e29ea0545e3e8633649885a739f4dd620693d4bf11ed8",
+          "objects": 24263
+        },
+        "snapshot": {
+          "sha256": "998119d9abd6a8492b42d7b3aa6ed47633a6acf729d16d07a5cfed1b9d0d8618",
+          "objects": 5859
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "2238d4dc1776a5041ffe2e82e7b3ff8a148746e651a97ac7e576d1b46fb5c244",
+          "objects": 24297
+        },
+        "snapshot": {
+          "sha256": "2686411bc03022d3ad6c50b309dff19e775d727267d3ef41dd6766366c737a9b",
+          "objects": 5859
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 49,
+      "rawSnapshotChangedLeaves": 24,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 6,
+        "moduleRulesVersion": 6,
+        "moduleVersion": 6,
+        "narrativeInitialFlag": 3,
+        "narrativeStateSchema": 3
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "blink",
+      "old": {
+        "graph": {
+          "sha256": "788a08a45ea41718f8b0ecce0911d6ebffe39669a7e10ad5f3263bcf8cf8d62d",
+          "objects": 24491
+        },
+        "snapshot": {
+          "sha256": "f114e51958dd690967651ddc8b680f615604e5425e3842868a54d8509b567de9",
+          "objects": 6147
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "165ddf0d2a48e9aa5147ffd7cfaf55e5260def005e614e57f218569994640628",
+          "objects": 24525
+        },
+        "snapshot": {
+          "sha256": "b25d05153f5aa8d472650931907b36689814d58d3ecd5c0248ef730cb6d9abfc",
+          "objects": 6147
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 65,
+      "rawSnapshotChangedLeaves": 54,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 14,
+        "moduleRulesVersion": 14,
+        "moduleVersion": 14,
+        "narrativeInitialFlag": 6,
+        "narrativeStateSchema": 6
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "clone",
+      "old": {
+        "graph": {
+          "sha256": "3cb318c69530c7f143f56d1f55c8770aa960c1ac760fa7456a49b03c17a56364",
+          "objects": 24524
+        },
+        "snapshot": {
+          "sha256": "98121eea2efcf26e7bea85e5cb4b0f3ed7a5518dcb31ae2f68c0440bf334a298",
+          "objects": 6126
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "31dc17ef08f8b9fd87f85b4e8a17ed43a0a53629f03a9f411177c913c614502d",
+          "objects": 24558
+        },
+        "snapshot": {
+          "sha256": "7c2153194aa00ddaf7fc76c80865ac01d916e2e83f7b2e8f586751528a476031",
+          "objects": 6126
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 65,
+      "rawSnapshotChangedLeaves": 40,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 10,
+        "moduleRulesVersion": 10,
+        "moduleVersion": 10,
+        "narrativeInitialFlag": 5,
+        "narrativeStateSchema": 5
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "summon",
+      "old": {
+        "graph": {
+          "sha256": "da60572aa08c5cba22522bd792a10de31baf9a9d604adc9f66e34b576e8bc9c8",
+          "objects": 24656
+        },
+        "snapshot": {
+          "sha256": "321a1f9d546a5356ed45d2b1f8152e1f62cf943ff41947506483149a3f977435",
+          "objects": 6286
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "510efe5b19af125fe93ca0a53a69889e35c22f0db0de83d730cde0964cef3541",
+          "objects": 24690
+        },
+        "snapshot": {
+          "sha256": "3348b8302ed643f6220a0c23afff6f896b58fbb722d4600c002764831ecadc79",
+          "objects": 6286
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 65,
+      "rawSnapshotChangedLeaves": 40,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 10,
+        "moduleRulesVersion": 10,
+        "moduleVersion": 10,
+        "narrativeInitialFlag": 5,
+        "narrativeStateSchema": 5
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "trap",
+      "old": {
+        "graph": {
+          "sha256": "eec7338b18a99887697c32c992f41d985f8e6d9a7ba2bb9c62eb13a768ba7e1b",
+          "objects": 24657
+        },
+        "snapshot": {
+          "sha256": "4d2efd4efc3b588d4ce3e697a67875909bbc5e6e8923db1aebe67a18caad230f",
+          "objects": 6286
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "74dd3852b991fa7aa0b21b7b7090d3d83476d400c5ca86f0f1f6d2afacbb2040",
+          "objects": 24691
+        },
+        "snapshot": {
+          "sha256": "e91fbca09e0e8932901b417420553b3c86ac586c0f8d0313aca112240f8b7309",
+          "objects": 6286
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 65,
+      "rawSnapshotChangedLeaves": 40,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 10,
+        "moduleRulesVersion": 10,
+        "moduleVersion": 10,
+        "narrativeInitialFlag": 5,
+        "narrativeStateSchema": 5
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    },
+    {
+      "modules": "growth+narrative",
+      "checkpoint": "level",
+      "old": {
+        "graph": {
+          "sha256": "de6d2230876c9f7d32f4abda60a42c844df44542c4c94b12da0fd71c5a7dc7a9",
+          "objects": 47042
+        },
+        "snapshot": {
+          "sha256": "fa86ec54ed5cfaf4c340d11eeba0cd5cef3dee0b4304e0208efb8460a9ff9418",
+          "objects": 22183
+        }
+      },
+      "candidate": {
+        "graph": {
+          "sha256": "e23220b16e6e0d62ea5f784d3482f26942c788614be16ab2730f84537f509c06",
+          "objects": 47076
+        },
+        "snapshot": {
+          "sha256": "bd0adf15b8985da9bd675c722a9d29680124331e7a8a498676528bfd8087669c",
+          "objects": 22183
+        }
+      },
+      "graphObjectDelta": 34,
+      "allOldGraphObjectsMatched": true,
+      "graphSemanticEditRecords": 49,
+      "rawSnapshotChangedLeaves": 38,
+      "rawSnapshotChangedLeafCategories": {
+        "moduleRulesFingerprint": 10,
+        "moduleRulesVersion": 10,
+        "moduleVersion": 10,
+        "narrativeInitialFlag": 4,
+        "narrativeStateSchema": 4
+      },
+      "aliasChanges": 0,
+      "unchangedNativeRngMessagesAllocators": true
+    }
+  ],
+  "recommendation": {
+    "recaptureJustified": true,
+    "command": "P4A0_CAPTURE=1 npx vitest run src/test/phase4a0_spatial_differential.test.ts --maxWorkers=1",
+    "condition": "Parent freezes final production first, runs the original capture and then original non-capture guard; verify actual changed fields and hashes against this audit",
+    "doNotChange": [
+      "graphDigest filters",
+      "assertion semantics",
+      "timeouts",
+      "scenario setup",
+      "RNG/message expectations"
+    ],
+    "contrastWithPrevious4dCase": "phase4d.report.md documents shared nativeDamageCommitted/worldRestUnavailable own-port drift fixed in production without recapture; this audit instead isolates intentional growth/narrative module configuration/state/identity changes and the empty set remains exact"
+  }
+}
