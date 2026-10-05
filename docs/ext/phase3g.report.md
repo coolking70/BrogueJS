@@ -43,7 +43,7 @@ provider 只读取自己命名空间下该 actor 的深冻结组件与冻结状�
 
 ## 验证状态
 
-开发期独立模块结果：growth 35 文件/641 项通过；其余最终合并候选结果待下表填入。生成基线/黄金 trace 不重录。完整 npm test、全部 test:ext、实际删除矩阵、CE full/gen 依维护者指示保留给 4f 统一收尾，不能以本步功能集合冒充全量通过。
+开发期独立模块结果：growth 35 文件/641 项通过；其余最终合并候选结果待下表填入。3g 不重录原生生成基线或 UR 黄金 trace；giants 三份 trace 仅因 foundation 版本信封变更重录 extensionsHash，见后文。完整 npm test、全部 test:ext、实际删除矩阵、CE full/gen 依维护者指示保留给 4f 统一收尾，不能以本步功能集合冒充全量通过。
 
 最终候选、逐命令退出码/耗时、相关文件清单、组合范围和散列：待最终冻结门禁。
 
@@ -71,3 +71,21 @@ Compact evidence: `phase3g-p4a0-attribution.json` (52 checkpoint old/candidate h
 Actual final capture: original `P4A0_CAPTURE=1 npx vitest run src/test/phase4a0_spatial_differential.test.ts --maxWorkers=1` passed 4/4 in26.29s, exit0. Independently verified exactly117 expected digest/count leaves changed, empty unchanged, and actual fixture SHA-256 equals the predicted `1ef488d3fa2741d410faa363d431a264997f81a2a972cafec77b164eb47fe044`. The original guard/filter/assertions remain byte-identical.
 
 追加严格profile校验后，原4d变形回归发现已闲置的rat仍残留旧fixture.profile且无bundle/action。修复在sourceChanged/finishAction机械边界同步已有闲置资源，保留有效已付款pin，不在load归一化；原生命周期断言保持，64项回归通过。跨grid terrain owner恢复改为先统一清理新增关联再恢复旧关联，防止后处理grid误删先前恢复的owner。独立最终审查未发现剩余阻断。
+
+
+## Foundation 版本与 giants trace 的单变量归因
+
+冻结 d964453 的原两份 trace 测试（3个场景）原样失败，差异只有 extensionsHash。隔离副本只将8个生产/descriptor文件中的12处 foundation 数字5改回4，其余全部候选代码、原测试、原fixture不动：原trace＋giants contract共3文件6项通过。恢复版本5后依原 `BROGUE_CAPTURE_GIANTS_TRACE=1` 捕获入口生成；再次关闭capture运行原guard＋contract，3文件6项通过，两侧模块边界检查均通过。
+
+实际合入的fixture补丁只有三个 `/extensionsHash` 叶子：
+- natural-trace：`deb56ea35e97751828efbca1312be782f191a106efe8b089ffcc77ade1deac7e` → `4c533f91ecec90fe61300c0227a691f7525c3a02a2c39c33a3614078afc2c1fb`
+- colossus-natural-trace：`b6a806199e09ccca4cd2dbb67c8c6c6882c9690c29bc665a35b0d0bbcdf8fa79` → `11ed15e6b36f5fcf9f25df660c4f746430c1ba13d9f0771b887c1dd52c07607e`
+- spine-natural-trace：`17b2e605c2b224c0e2399df4cfeb2cad3c56dff3ecb5603521109879dca8220b` → `604d53ba075efdb3d73ecc7768211311bfcc47a80d63fc336dafd1f742451bbe`
+
+所有 commands、commandsHash、nativeWorldHash、两RNG/计数、state、boss与适用region字段逐字段相同；不是新行为黄金化。原文件与继承80640d逐字节一致，测试和守卫未改。完整小型证据见 `evidence/phase3g-foundation-trace-audit.json`。
+
+## 冻结门禁早期运行记录（不算通过）
+
+- v1：boundary/type/build通过，natural实跑3失败/2通过，exit1，1180.909s。三个失败全部为上游硬编码 `/private/tmp/p4d3-natural-acceptance.json` 在云环境不存在导致ENOENT，不是断言/timeout；源码933份输入始终不变，后续门未跑。经许可创建 `/private/tmp` 到可写 `/tmp` 的兼容映射并以非提升权限写入探针验证，没有改测试、种子或480s门限。修复后的后两项fresh seek通过，但不能与后续结果拼接。
+- v2：同候选boundary/type/build再次通过；确认后续drift三份fixture需要上述纯版本更新后主动中断natural，runner exit130，未算完成，没有拼接前后结果。源码在中断时仍完全相同。
+- v3：更新已归因的三个hash后重新冻结，先运行短门与全部相关测试/组合/drift，再独立运行自然长测，所有门顺序串行，仍各保留原deadline。最终结果见最终验证表。

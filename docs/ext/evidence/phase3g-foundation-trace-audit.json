@@ -1,0 +1,162 @@
+{
+  "sourceCommit": "d964453e3113c93547a05eccdc25b1e1df52ad2a",
+  "auditRoot": "/tmp/giants-foundation-audit.HOXnir",
+  "captureMethod": "BROGUE_CAPTURE_GIANTS_TRACE=1 npx vitest run src/ext/modules/giants/tests/giants_trace.test.ts src/ext/modules/giants/tests/giants_spine_trace.test.ts --maxWorkers=1",
+  "counterfactual": "Exactly twelve foundation-version 5\u21924 numeric literal substitutions across eight production plumbing/descriptors; no other production change",
+  "candidateChangedTrackedFiles": [
+    {
+      "file": "src/ext/modules/giants/data/colossus-natural-trace.json",
+      "beforeSHA256": "c20f729d2b45c7a6084435c49bf5782748a8de970c8d2eb99815051c27fc240e",
+      "afterSHA256": "f0d0b82431ebae81db6db707975ea0e03be0498cee10ae2831a69b65742654cb"
+    },
+    {
+      "file": "src/ext/modules/giants/data/natural-trace.json",
+      "beforeSHA256": "76428d8f0229fcca62af07942e4cffc2a1f096ceabe6cbf64d9d31d740e1644f",
+      "afterSHA256": "3c85bc401f4617c515078a4be593c9b5b9e2feffbf89cffb886487c91f413357"
+    },
+    {
+      "file": "src/ext/modules/giants/data/spine-natural-trace.json",
+      "beforeSHA256": "ab7b9ef2e4df49ed5ccbba77344598763babdcde00ed853a5f8b7dda47aafcf1",
+      "afterSHA256": "ef37ed89ab3850825c9ecd6386bd3c15d55bc14be9ddf75879c6bc450ce17599"
+    }
+  ],
+  "counterfactualChangedTrackedFiles": [
+    {
+      "file": "src/ext/descriptor.ts",
+      "beforeSHA256": "f2ca013bd30a445be557eca0488be5a755dd3f5f9adc1b4f4e320bf01fc2db38",
+      "afterSHA256": "63a730ed136f094d399e2e0aeeaf21f55f052a9d8d87d72abdb0e83173d0aee1"
+    },
+    {
+      "file": "src/ext/modules/combat/descriptor.ts",
+      "beforeSHA256": "71c7f0c8b1565ca4b98f9bac94db3723398a75643a473c639c8494a7936efbbe",
+      "afterSHA256": "2807920ee6cb85cee81109465ad8111fda3305a90725b0f91475a3f8a02df647"
+    },
+    {
+      "file": "src/ext/modules/giants/descriptor.ts",
+      "beforeSHA256": "671cdfa425047aab5c43c4bc347abdb957133100f41520933e6ccb9e07a0427f",
+      "afterSHA256": "6b10f5c6728c19aec6a97caecd26241d56aa9818c62e85b31e7f4fcd04cbed07"
+    },
+    {
+      "file": "src/ext/modules/growth/descriptor.ts",
+      "beforeSHA256": "bae43e9c06548b0c0bd35df6884e374452fad49278a065980bbb2f0bc1563483",
+      "afterSHA256": "66ddd865359c269c72469f32fc52099ab2fe61bcad98da0b13e26d0493f4f73e"
+    },
+    {
+      "file": "src/ext/modules/narrative/descriptor.ts",
+      "beforeSHA256": "99c34b26f30d8fa65b486c72d9196b6bda249b7310f30525711112f34489cc17",
+      "afterSHA256": "76e3a4cbcf8aeebad43b97171c61c4b65603f274c2c423ef11b128b0c7736b78"
+    },
+    {
+      "file": "src/ext/registry.ts",
+      "beforeSHA256": "f718bfc3eaf80d76d3bc1a99b8d64def5f1823d6aaafa20721993ee63c405055",
+      "afterSHA256": "b73405fe0fe9e1c2bcdb4328b19f38ea4cd43ff0f30e66b2312e96faf2fa3136"
+    },
+    {
+      "file": "src/ext/runtime.ts",
+      "beforeSHA256": "6a84995a989c21668b88a87a9234e88fc013b0be9a6c088e58623150e19f5344",
+      "afterSHA256": "3d3dc0fd96216cc85d0043d601fb836b23cc246fa500eb8bec8a2e56c14e9565"
+    },
+    {
+      "file": "src/ext/types.ts",
+      "beforeSHA256": "852673c3babc75ca918efdfcd93ae87d5af8137440dd8023269e62187959ed1a",
+      "afterSHA256": "c38f3efe64a22a1730cba03ec0993181ac8e5ebfa2479657ff9210042679dc5f"
+    }
+  ],
+  "sharedStatusAtFinalRead": "",
+  "runs": {
+    "counterfactual-boundary-guard": 0,
+    "candidate-boundary-guard": 0,
+    "candidate-replay-no-capture": 0,
+    "candidate-capture": 0,
+    "original-tests-version4": 0,
+    "original-tests-candidate": 1
+  },
+  "fixtures": [
+    {
+      "fixture": "src/ext/modules/giants/data/natural-trace.json",
+      "candidatePath": "/tmp/giants-foundation-audit.HOXnir/candidate/src/ext/modules/giants/data/natural-trace.json",
+      "beforeSHA256": "76428d8f0229fcca62af07942e4cffc2a1f096ceabe6cbf64d9d31d740e1644f",
+      "afterSHA256": "3c85bc401f4617c515078a4be593c9b5b9e2feffbf89cffb886487c91f413357",
+      "changedLeaves": [
+        {
+          "path": "/extensionsHash",
+          "before": "deb56ea35e97751828efbca1312be782f191a106efe8b089ffcc77ade1deac7e",
+          "after": "4c533f91ecec90fe61300c0227a691f7525c3a02a2c39c33a3614078afc2c1fb"
+        }
+      ],
+      "unchangedTopLevelFields": [
+        "schema",
+        "seed",
+        "depth",
+        "commands",
+        "commandsHash",
+        "nativeWorldHash",
+        "rng",
+        "region",
+        "state",
+        "boss"
+      ],
+      "commands": 152,
+      "commandsHash": "9d69be4c68abbfe097b0c4b118fdf15fe9104df072a30ebd72e00c080c94fe70",
+      "nativeWorldHash": "4ba05dba1b37d982339a77cd1e345833212e0db6f7581a76b3e531538ca0f125"
+    },
+    {
+      "fixture": "src/ext/modules/giants/data/colossus-natural-trace.json",
+      "candidatePath": "/tmp/giants-foundation-audit.HOXnir/candidate/src/ext/modules/giants/data/colossus-natural-trace.json",
+      "beforeSHA256": "c20f729d2b45c7a6084435c49bf5782748a8de970c8d2eb99815051c27fc240e",
+      "afterSHA256": "f0d0b82431ebae81db6db707975ea0e03be0498cee10ae2831a69b65742654cb",
+      "changedLeaves": [
+        {
+          "path": "/extensionsHash",
+          "before": "b6a806199e09ccca4cd2dbb67c8c6c6882c9690c29bc665a35b0d0bbcdf8fa79",
+          "after": "11ed15e6b36f5fcf9f25df660c4f746430c1ba13d9f0771b887c1dd52c07607e"
+        }
+      ],
+      "unchangedTopLevelFields": [
+        "schema",
+        "seed",
+        "mode",
+        "depth",
+        "commands",
+        "commandsHash",
+        "nativeWorldHash",
+        "rng",
+        "region",
+        "state",
+        "boss"
+      ],
+      "commands": 402,
+      "commandsHash": "7ce36f0880ff9c7e9c26eb6ff4ace7216ca247b6ef73fababc147e3c27270d51",
+      "nativeWorldHash": "84d5a3103bf0d96151ffa1ae84fb6b582cfc20f0912ae665eafdd2b581edc93c"
+    },
+    {
+      "fixture": "src/ext/modules/giants/data/spine-natural-trace.json",
+      "candidatePath": "/tmp/giants-foundation-audit.HOXnir/candidate/src/ext/modules/giants/data/spine-natural-trace.json",
+      "beforeSHA256": "ab7b9ef2e4df49ed5ccbba77344598763babdcde00ed853a5f8b7dda47aafcf1",
+      "afterSHA256": "ef37ed89ab3850825c9ecd6386bd3c15d55bc14be9ddf75879c6bc450ce17599",
+      "changedLeaves": [
+        {
+          "path": "/extensionsHash",
+          "before": "17b2e605c2b224c0e2399df4cfeb2cad3c56dff3ecb5603521109879dca8220b",
+          "after": "604d53ba075efdb3d73ecc7768211311bfcc47a80d63fc336dafd1f742451bbe"
+        }
+      ],
+      "unchangedTopLevelFields": [
+        "schema",
+        "seed",
+        "mode",
+        "depth",
+        "commands",
+        "commandsHash",
+        "nativeWorldHash",
+        "rng",
+        "state",
+        "boss"
+      ],
+      "commands": 1174,
+      "commandsHash": "2937b269b0c94d16606dfff5bd65e846bd7d09c9389c97bc2f986af2f6852acb",
+      "nativeWorldHash": "e22be1ef55fedf188ff2b9fac73ab2103ff3b555abc3aaee09af9961b9a8854b"
+    }
+  ],
+  "changedLeafCount": 3
+}
