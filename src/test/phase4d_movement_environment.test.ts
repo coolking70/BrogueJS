@@ -118,7 +118,7 @@ it('a pending whole-body landing fault restores the queue and permits the next i
 });
 it('a real whole fall region-exit failure restores the old owned bindings before a one-injury retry',()=>{
     const {game,core,actors}=productionBodyScene(),runtime=game.extensionRuntime!,token=runtime.beginGeneration('fall-region-fixture');
-    const region=runtime.installOwnedRegions(token,'giants',[{instanceKey:'fall-region-fixture',bounds:{x:5,y:5,width:30,height:17}}],game.grid)[0]!;
+    const region=runtime.installOwnedRegions(token,'body-fixture',[{instanceKey:'fall-region-fixture',bounds:{x:5,y:5,width:30,height:17}}],game.grid)[0]!;
     runtime.commitGeneration(token);for(const actor of actors)actor.spatial!.movementRegionId=region.id;
     const hp=core.hp,random=rng.getState(),audit=auditFullObjectGraph(fullGenerationRoots(game),[runtime]);
     const native=runtime.releaseFallenMovementRegion.bind(runtime);let exited=false;

@@ -44,7 +44,7 @@ function setup(options:{observe?:ConsumerObserver;query?:(actorId:number,playerI
         const module=previous.create(previous.manifest([descriptor.id]))[0]!;
         if(descriptor.id==='combat'){
             const actorActions=structuredClone(module.actorActions!);
-            if(options.bodyAttacks)(actorActions.definitions as unknown as import('../../../actorActions').ActorAttackDefinitions).nativeProfiles.push({monsterId:'giants.fixture-leg',profileId:'combat.follow-thrust'});
+            if(options.bodyAttacks)(actorActions.definitions as unknown as import('../../../actorActions').ActorAttackDefinitions).nativeProfiles.push({monsterId:'body-fixture.fixture-leg',profileId:'combat.follow-thrust'});
             const rules=options.bodyAttacks?{...module.rules!,fingerprint:extensionDataFingerprint(actorActions.definitions)}:module.rules;
             return {...descriptor,rules,create:()=>({...module,rules,actorActions,optionalActorQueries:options.query?{'growth.combat-stats.v1':{
                 accepts:()=>true,query:(_input,context)=>options.query!(context.actor.id,context.playerId),validate:isJson,
@@ -256,14 +256,14 @@ describe.skipIf(!installed.has('giants')||!installed.has('narrative'))('3g compo
     function body(realGrowth=false,fail?:()=>boolean,sockets=false,observe?:ConsumerObserver){
         const data=installProductionBody(8,undefined,undefined,true);
         if(sockets){
-            const rule={id:'giants.fixture-socket-break',owner:'giants',trigger:'hp-zero' as const,disposition:'keep-zone' as const,
+            const rule={id:'body-fixture.fixture-socket-break',owner:'body-fixture',trigger:'hp-zero' as const,disposition:'keep-zone' as const,
                 modifiers:[{kind:'balance-loss' as const,amount:4,fallbackStunTicks:40}]};
             Object.assign(data.leg,{breakRules:[rule],footprint:{geometry:{kind:'rect',width:1,height:1},poses:['r0'],
-                zones:[{id:'socket',nameKey:'ext.giants.shale_weaver.name',health:{kind:'local',maxHp:8,ownerTransfer:{numerator:1,denominator:1}},armor:0,
+                zones:[{id:'socket',nameKey:'ext.body-fixture.socket.name',health:{kind:'local',maxHp:8,ownerTransfer:{numerator:1,denominator:1}},armor:0,
                     damageMultiplier:{numerator:1,denominator:1},breakRuleId:rule.id}],zoneCells:[{x:0,y:0,zoneId:'socket'}]}});
         }
         setup({query:realGrowth?undefined:()=>supported(40,20),events:true,bodyAttacks:true,fail,observe});
-        const ids=realGrowth?['combat','giants','growth','narrative']:['combat','giants','narrative'];
+        const ids=realGrowth?['combat','giants','body-fixture','growth','narrative']:['combat','giants','body-fixture','narrative'];
         const registry=catalog.createExtensionRegistry(),initialCommands=registry.create(registry.manifest(ids)).flatMap(module=>module.initialCommand?[JSON.stringify({module:module.id,...module.initialCommand})]:[]);
         const game=createHeadlessGame(7307,'test');game.startNewGame({seed:7307,mode:'wizard',ruleSet:'extended',extensions:ids,initialCommands});
         emptyProductionArena(game);const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!;

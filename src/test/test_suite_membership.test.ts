@@ -41,7 +41,7 @@ describe('test suite membership', () => {
         for (const suite of [...suiteNames, 'ext'] as const) {
             expect(testSuiteOptions(suite)).toEqual({ include: discovery.suites[suite], exclude: configDefaults.exclude });
         }
-        expect(discovery.suites.ext).toEqual(discovery.files.filter(file => discovery.owners[file]!.kind === 'module' || /^src\/test\/ext_/.test(file)));
+        expect(discovery.suites.ext).toEqual(discovery.files.filter(file => discovery.owners[file]!.kind === 'module' || /^src\/test\/(?:ext_|phase4)/.test(file)));
         expect(testSuiteOptions(undefined)).toEqual({ include: discovery.files, exclude: configDefaults.exclude });
         expect(() => testSuiteOptions('typo')).toThrow('Unknown test suite');
     });
@@ -54,13 +54,15 @@ describe('test suite membership', () => {
     });
 
     it('removes only owned tests after actual module-directory deletion', () => fixture(directory => {
+        writeFileSync(join(directory, 'src/test/phase4e_fixture.test.ts'), '');
+        writeFileSync(join(directory, 'scripts/test-suites.json'), JSON.stringify({ test: ['src/test/ext_base.test.ts', 'src/test/phase4e_fixture.test.ts'], gen: [], drift: [] }));
         const before = resolveTestSuites(directory);
-        expect(before.suites.test).toHaveLength(2);
+        expect(before.suites.test).toHaveLength(3);
         rmSync(join(directory, 'src/ext/modules/probe'), { recursive: true });
         const after = resolveTestSuites(directory);
         expect(after.modules).toEqual([]);
-        expect(after.suites.test).toEqual(['src/test/ext_base.test.ts']);
-        expect(after.suites.ext).toEqual(['src/test/ext_base.test.ts']);
+        expect(after.suites.test).toEqual(['src/test/ext_base.test.ts', 'src/test/phase4e_fixture.test.ts']);
+        expect(after.suites.ext).toEqual(['src/test/ext_base.test.ts', 'src/test/phase4e_fixture.test.ts']);
     }));
 
     it('uses the same stable module-ID grammar as the runtime registry', () => fixture(directory => {

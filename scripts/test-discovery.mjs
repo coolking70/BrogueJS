@@ -69,7 +69,9 @@ export function resolveTestSuites(root = repositoryRoot) {
     for (const path of files) if (!Object.hasOwn(owners, path)) errors.push(`Unregistered discovered test: ${path}`);
     if (errors.length) throw new Error(`Test ownership failed:\n${errors.map(error => `- ${error}`).join('\n')}`);
     for (const suite of suiteNames) suites[suite].sort();
-    suites.ext = files.filter(path => owners[path].kind === 'module' || /^src\/test\/ext_.*\.(?:test|spec)\.[cm]?[jt]sx?$/.test(path));
+    // Phase 4 spatial/body fixtures belong to the foundation, including when
+    // the content package is physically absent. Keep them in removal's ext gate.
+    suites.ext = files.filter(path => owners[path].kind === 'module' || /^src\/test\/(?:ext_|phase4).*\.(?:test|spec)\.[cm]?[jt]sx?$/.test(path));
     return { root, suites, files, modules, owners };
 }
 

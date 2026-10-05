@@ -18,7 +18,7 @@ function ack(){while(logger.pendingAcknowledgment)logger.acknowledgeNext();}
 function fixedStart(rest=false) {
     installProductionAttackBody();const native=Game.prototype.startNewGame;
     vi.spyOn(Game.prototype,'startNewGame').mockImplementation(function(this:Game,options){
-        native.call(this,options);if(!options?.extensions?.includes('giants'))return;
+        native.call(this,options);if(!options?.extensions?.includes('body-fixture'))return;
         emptyProductionArena(this);this.onConfirmRequest=()=>true;
         const fire=this.extensionRuntime!.snapshot().foundation.world.entities.find(e=>e.owner==='combat'&&e.depth===this.depth)!;
         const at=rest?{x:Math.min(Math.max(fire.x+4,5),this.grid.width-5),y:Math.min(Math.max(fire.y,5),this.grid.height-5)}:{x:14,y:12};
@@ -31,7 +31,7 @@ function fixedStart(rest=false) {
             const staff=ItemLoader.spawnStaff('staff_of_discord',-1,-1)!;this.player.inventory.addItem(staff);}
         (this as any).updateVision();ack();
     });
-    return ()=>startProductionGame(['giants','combat'],7318,rest?'normal':'wizard');
+    return ()=>startProductionGame(['body-fixture','combat'],7318,rest?'normal':'wizard');
 }
 function verifyReplay(fresh:()=>Game,recording:ReturnType<Game['exportRecording']>,points:Map<number,string>) {
     const replay=fresh();expect(replay.loadReplay(recording)).toBe(true);replay.animationEnabled=false;
@@ -61,12 +61,12 @@ it('a real bonfire rest interrupted by the emerging body records its decision an
     const recording=detached(game.exportRecording());expect(recording.events).toHaveLength(1);expect(recording.events[0]!.decisions).toEqual([true]);
     verifyReplay(fresh,recording,new Map([[1,mechanics(game)]]));
 });
-it('normal finite D15 equipment defeats the unmodified formal shale weaver through public commands',()=>{
+it('normal finite equipment defeats the independent weaver fixture through public commands',()=>{
     // Loadout and open encounter initialization are a functional fixture. The
-    // separate seed7309 test covers the real generated arena and natural birth.
-    const game=startProductionGame(['giants'],7326,'normal');emptyProductionArena(game);
+    // giants-owned seed7309 test covers the real generated arena and natural birth.
+    const game=startProductionGame(['body-fixture'],7326,'normal');emptyProductionArena(game);
     game.player.hp=game.player.maxHp=30;
-    const core=game.createCompositeMonster('giants.shale-weaver-body',{x:20,y:12})!;
+    const core=game.createCompositeMonster('body-fixture.shale-weaver-body',{x:20,y:12})!;
     core.state=MonsterState.HUNTING;core.givenUpOnScent=true;game.player.strength=17;
     const axe=ItemLoader.spawnWeapon('axe',-1,-1)!;axe.enchantment=3;game.player.inventory.addItem(axe);game.player.equippedWeapon=axe;
     const armor=ItemLoader.spawnArmor('chain_mail',-1,-1)!;armor.enchantment=3;game.player.inventory.addItem(armor);game.player.equippedArmor=armor;
@@ -79,6 +79,6 @@ it('normal finite D15 equipment defeats the unmodified formal shale weaver throu
         const target=contact??cells.sort((a,b)=>Math.max(Math.abs(a.x-at.x),Math.abs(a.y-at.y))-Math.max(Math.abs(b.x-at.x),Math.abs(b.y-at.y)))[0]!;
         game.executeCommand('move',{x:Math.sign(target.x-at.x),y:Math.sign(target.y-at.y)});ack();
     }
-    writeFileSync('/private/tmp/p4d-complete-normal-encounter.json',JSON.stringify({seed:7326,mode:game.mode,modules:['giants'],commands,remainingHp:game.player.hp,maxHp:game.player.maxHp,usedHealingPotions:used,totalHealingPotions:2,weapon:'+3 axe',armor:'+3 chain mail',coreHp:core.hp,breaks:core.spatial?.bodyMember?8:undefined},null,2)+'\n');
+    writeFileSync('/private/tmp/p4d-complete-normal-encounter.json',JSON.stringify({seed:7326,mode:game.mode,modules:['body-fixture'],commands,remainingHp:game.player.hp,maxHp:game.player.maxHp,usedHealingPotions:used,totalHealingPotions:2,weapon:'+3 axe',armor:'+3 chain mail',coreHp:core.hp,breaks:core.spatial?.bodyMember?8:undefined},null,2)+'\n');
     expect(game.isGameOver).toBe(false);expect(core.hp).toBe(0);expect(game.player.hp).toBeGreaterThan(0);expect(used).toBeLessThanOrEqual(2);expect(game.lastAdvancementError).toBeNull();
 });

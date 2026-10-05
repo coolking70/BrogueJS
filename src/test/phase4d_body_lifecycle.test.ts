@@ -68,8 +68,8 @@ it('a real wand converts rat to nine-part body with core ID and native HP policy
   installProductionBody(); const game = startProductionGame(); emptyProductionArena(game);
   const rat = new Monster(14, 12, monsters.find(m => m.id === 'rat') as MonsterData); game.monsters.push(rat);
   rat.hp = 1; rat.state = MonsterState.HUNTING; const id = rat.id;
-  selectSpecies(game, 'giants.fixture-core'); const next = polymorphWand(game, rat);
-  expect(rat.id).toBe(id); expect(rat.typeId).toBe('giants.fixture-core'); expect(rat.hp).toBe(155);
+  selectSpecies(game, 'body-fixture.fixture-core'); const next = polymorphWand(game, rat);
+  expect(rat.id).toBe(id); expect(rat.typeId).toBe('body-fixture.fixture-core'); expect(rat.hp).toBe(155);
   expect(game.bodyGroups![0]!.coreId).toBe(id); expect(game.monsters).toHaveLength(9);
   const legs = game.monsters.filter(m => m !== rat);
   expect(legs.map(m => m.id)).toEqual(Array.from({ length: 8 }, (_, i) => next + i));
@@ -87,7 +87,7 @@ it('whole polymorph no-fit preserves every old reachable value/identity, relatio
   const audit = auditFullObjectGraph(fullGenerationRoots(game), [game.extensionRuntime!]), next = getNextEntityId();
   expect((game as any).polymorphBoltTarget(actors[1])).toBe(false);
   expect(audit.differences()).toEqual([]); expect(getNextEntityId()).toBe(next);
-  expect(core.typeId).toBe('giants.fixture-core'); expect(core.isAlly).toBe(true);
+  expect(core.typeId).toBe('body-fixture.fixture-core'); expect(core.isAlly).toBe(true);
 });
 
 it('single-to-group fit checks the peripheral cells; a core-only cavity rejects without ID or entity mutation', () => {
@@ -95,7 +95,7 @@ it('single-to-group fit checks the peripheral cells; a core-only cavity rejects 
   const rat = new Monster(14, 12, monsters.find(m => m.id === 'rat') as MonsterData); game.monsters.push(rat);
   for (let x = 0; x < game.grid.width; x++) for (let y = 0; y < game.grid.height; y++) game.grid.setTerrain(x, y, T.WALL);
   for (let x = 14; x < 16; x++) for (let y = 12; y < 14; y++) game.grid.setTerrain(x, y, T.FLOOR);
-  selectSpecies(game, 'giants.fixture-core'); const next = getNextEntityId(), oldLoc = rat.loc;
+  selectSpecies(game, 'body-fixture.fixture-core'); const next = getNextEntityId(), oldLoc = rat.loc;
   expect((game as any).polymorphBoltTarget(rat)).toBe(false);
   expect(rat.typeId).toBe('rat'); expect(rat.loc).toBe(oldLoc); expect(game.monsters).toEqual([rat]);
   expect(game.bodyGroups).toBeUndefined(); expect(getNextEntityId()).toBe(next);
@@ -138,10 +138,10 @@ it('whole clone no-fit consumes no ID or RNG and retains full source object grap
 
 it.each(['clone','polymorph'] as const)('unexpected %s birth publication failure rolls back full native graph, runtime, allocator and both RNG streams', reason => {
   let fail = false; installProductionBody(8, undefined, () => { if (fail) throw new Error('body publication failure'); });
-  const game = startProductionGame(['giants','growth','combat']); emptyProductionArena(game);
+  const game = startProductionGame(['body-fixture','growth','combat']); emptyProductionArena(game);
   const core = game.createCompositeMonster(PRODUCTION_BODY_ID, { x: 14, y: 12 })!;
   core.applyStatus('paralyzed', 12); game.monsters[1]!.addPoison(4, 2);
-  if (reason === 'polymorph') selectSpecies(game, 'giants.shale-weaver');
+  if (reason === 'polymorph') selectSpecies(game, 'body-fixture.shale-weaver');
   const audit = auditFullObjectGraph(fullGenerationRoots(game), [game.extensionRuntime!]), ext = structuredClone(game.extensionRuntime!.snapshot());
   const random = rng.getState(), next = getNextEntityId(); fail = true;
   expect(() => reason === 'clone' ? game.cloneMonster(core) : (game as any).polymorphBoltTarget(game.monsters[1])).toThrow('body publication failure');
@@ -213,7 +213,7 @@ it('a fatal whole fall terminates the core once and retires every peripheral wit
   expect((game as any).pendingFallenByDepth.has(2)).toBe(false);
 });
 
-it.each([['giants'], ['giants','growth'], ['giants','combat'], ['giants','growth','combat']].map(ids => ({ ids })))
+it.each([['body-fixture'], ['body-fixture','growth'], ['body-fixture','combat'], ['body-fixture','growth','combat']].map(ids => ({ ids })))
 ('whole plenty wand clone and real core kill keep copied rewards at zero: $ids', ({ ids }) => {
   installProductionBody(); const game = startProductionGame(ids); emptyProductionArena(game);
   const core = game.createCompositeMonster(PRODUCTION_BODY_ID, { x: 14, y: 12 })!;
@@ -249,13 +249,13 @@ function bodyPhasedScene(coreSource = false) {
     const base = installed.create(installed.manifest([d.id]))[0]!;
     if (d.id !== 'combat') return { ...d, rules: base.rules, create: () => base };
     const definitions = structuredClone(base.actorActions!.definitions) as unknown as ActorAttackDefinitions;
-    definitions.nativeProfiles.push({ monsterId: 'giants.fixture-leg', profileId: 'combat.follow-thrust' });
-    if (coreSource) definitions.nativeProfiles.push({ monsterId: 'giants.fixture-core', profileId: 'combat.follow-thrust' });
+    definitions.nativeProfiles.push({ monsterId: 'body-fixture.fixture-leg', profileId: 'combat.follow-thrust' });
+    if (coreSource) definitions.nativeProfiles.push({ monsterId: 'body-fixture.fixture-core', profileId: 'combat.follow-thrust' });
     const rules = { ...base.rules!, fingerprint: extensionDataFingerprint({ definitions }) };
     return { ...d, rules, create: () => ({ ...base, rules, actorActions: { ...base.actorActions!, definitions: definitions as unknown as Json } }) };
   }));
   vi.mocked(catalog.createExtensionRegistry).mockReturnValue(registry);
-  const game = startProductionGame(['giants','combat']); emptyProductionArena(game);
+  const game = startProductionGame(['body-fixture','combat']); emptyProductionArena(game);
   const core = game.createCompositeMonster(PRODUCTION_BODY_ID, { x: 14, y: 12 })!;
   core.state = MonsterState.HUNTING; core.behaviorFlags.add('MONST_ALWAYS_HUNTING'); core.givenUpOnScent = true;
   commitCreatureAnchor(game.player, coreSource ? { x: 13, y: 12 } : { x: 14, y: 10 }); game.executeCommand('wait');
@@ -287,7 +287,7 @@ it('failed relocating polymorph restores live source revisions so the already pa
   const { game, core, state } = bodyPhasedScene(true);
   expect(state.scheduler.bundles[0]!.subactions.some(c => c.sourceEntityId === core.id)).toBe(true);
   game.grid.setTerrain(core.x + 3, core.y, T.WALL); // outside old tethers, inside the four-cell replacement
-  selectSpecies(game, 'giants.spine-crawler'); const saved = game.toSaveSnapshot(), random = rng.getState();
+  selectSpecies(game, 'body-fixture.spine-crawler'); const saved = game.toSaveSnapshot(), random = rng.getState();
   const audit = auditFullObjectGraph(fullGenerationRoots(game), [game.extensionRuntime!]);
   const fail = vi.spyOn(game.extensionRuntime!, 'commitGeneration').mockImplementation(() => { throw new Error('relocating commit failed'); });
   expect(() => (game as any).polymorphBoltTarget(core)).toThrow('relocating commit failed'); fail.mockRestore();

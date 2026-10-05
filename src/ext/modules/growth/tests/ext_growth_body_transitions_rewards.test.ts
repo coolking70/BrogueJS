@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { emptyProductionArena, startProductionGame } from '../../../../test/support/productionComposite';
+import { emptyProductionArena, startProductionGame, installBodyFixture } from '../../../../test/support/productionComposite';
 import { ItemLoader } from '../../../../engine/Items/ItemLoader';
 import { commitCreatureAnchor } from '../../../../engine/Movement/CreatureSpatial';
 import { logger } from '../../../../engine/Systems/Logger';
@@ -12,17 +12,18 @@ import type { GrowthDefinitionPack } from '../types';
 import { MonsterState } from '../../../../entities/Monster';
 afterEach(()=>{vi.restoreAllMocks();logger.reset();});
 it.each(['split','clone','summon'] as const)('%s retains one positive original reward even when ordinary copied-birth XP is explicitly enabled',reason=>{
+  installBodyFixture();
   const descriptors=catalog.getInstalledModuleDescriptors(),pack=structuredClone(loadGrowthDefinitionPack({hasText:()=>true})) as GrowthDefinitionPack;
-  pack.config.experience.kills.monsterQuotes.push({monsterId:'giants.abyssal-colossus',threatRank:6,amount:27},{monsterId:'giants.ridgeback',threatRank:6,amount:13});
+  pack.config.experience.kills.monsterQuotes.push({monsterId:'body-fixture.abyssal-colossus',threatRank:6,amount:27},{monsterId:'body-fixture.ridgeback',threatRank:6,amount:13});
   pack.config.experience.kills.eligibleCreationReasons=['natural','split','clone','summoned'];pack.config.monsters.clone.rewards=true;
   const parsed=parseGrowthDefinitionPack(pack,{moduleVersion:pack.moduleVersion,hasText:()=>true});
   const registry=registryFromDescriptors(descriptors.map(d=>{
     if(d.id!=='growth')return d;const base=d.create(),rules={...base.rules!,fingerprint:extensionDataFingerprint(pack)};
     return {...d,rules,create:()=>createGrowthGameplay(parsed,rules)};
   }));vi.spyOn(catalog,'createExtensionRegistry').mockReturnValue(registry);
-  const game=startProductionGame(['giants','growth'],7345);emptyProductionArena(game);
-  const core=game.createModuleMonster('giants.abyssal-colossus',{x:20,y:12},undefined,'natural')!;core.state=MonsterState.HUNTING;core.hp=129;
-  const fact=game.transitionBody({sourceGroupId:core.id,reason,results:Array.from({length:reason==='split'?2:1},()=>({formId:reason==='split'?'giants.ridgeback':core.typeId,memberMap:[]})),hp:reason==='split'?'conserve':'current',statuses:'preserve',relationships:'preserve',placement:'nearest'});
+  const game=startProductionGame(['body-fixture','growth'],7345);emptyProductionArena(game);
+  const core=game.createModuleMonster('body-fixture.abyssal-colossus',{x:20,y:12},undefined,'natural')!;core.state=MonsterState.HUNTING;core.hp=129;
+  const fact=game.transitionBody({sourceGroupId:core.id,reason,results:Array.from({length:reason==='split'?2:1},()=>({formId:reason==='split'?'body-fixture.ridgeback':core.typeId,memberMap:[]})),hp:reason==='split'?'conserve':'current',statuses:'preserve',relationships:'preserve',placement:'nearest'});
   expect(fact.outcome).toBe('applied');const copy=game.monsters.find(m=>m.id!==core.id)!;expect(copy.bodyTransitionRewardless).toBe(true);
   const weapon=ItemLoader.spawnWeapon('dagger',-1,-1)!;game.player.inventory.addItem(weapon);game.player.equippedWeapon=weapon;game.player.strength=30;
   const xp=()=>((game.extensionRuntime!.snapshot().components[game.player.id]!['growth:progression']) as {experience:number}).experience,before=xp();

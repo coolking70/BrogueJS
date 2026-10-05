@@ -135,3 +135,11 @@ v4统一运行全部8门通过，933份源码输入每门前后一致。139相�
 相关范围包括所有growth/narrative/combat/giants模块test清单、全部phase4d_*、全部giants_composite*、4e两份共享专项及3g/4e交叉回滚。最终去重154文件2914项通过，0 skip/todo；drift另计。不能称首轮零失败：`giants_zones_natural.test.ts`在并发相关批实际250.854s超原240s期限，同一候选串行测试230.520s通过，未修改源码/断言/种子/门限。只复跑该项，保留其他152个已绿文件同一冻结输入证据，并继续未执行的后续门；未把4e合并前结果替代合并后结果。
 
 自然D15 seed7309／wizard／only giants 完整杀死原身、broken save续录、逐事件replay和三个fresh seek均通过。engine-only报告的browser=not-run；本轮不声明浏览器/CSS/触控、实际删除矩阵、完整npm/all test:ext或CE full/gen通过。完整联合收尾继续等待4f维护者通知。
+
+## 最新foundation 4f第一部分（9331104）的交付前合并
+
+上述完整154文件门禁完成后再次实查远端，发现最新foundation为`93311044db4c63ea987ff0cf8d623a63d762287b`，因此交付前继续合并，未发布过时祖先。该上游增量不是只有文档：增加确定性的128对LOS预算、片段转换命名、底座自有群体fixture与删除准备。Game/runtime/3g checkpoint未被上游修改，保留完整两侧历史；不执行4f联合全量或实际删除矩阵。
+
+必要fixture适配仅三文件：新`bodyModule` foundation4→5；`combat_adapters`与`ext_combat_transition_facts`诊断声明/安装命名空间迁移到body-fixture。后者原合并后4/4因旧giants fixture不存在失败，适配后4/4通过10.60s，所有expect断言及真实giants四模块split→attack用例逐字保留。combat adapter专项30/30通过，socket zone的nameKey也必须符合新owner命名空间。未放宽生产验证、旧断言或期限，无新增skip。仅修正上游手册末尾多余空行，机械示例不改。
+
+独立审查指定增量范围34文件：全部13份phase4d、两份phase4e、4f audit、LOS直接效应、paid lifecycle、3g foundation/transition/adapters/combinations/parry/part-break、两份growth奖励、giants配置/contract/transition/SFC及所有权/源码/i18n守卫；另重跑boundary、type、build、terrain、真实16组合、drift。上游正式形态均不超过128对，新增audit直接覆盖256→128；未再无差别重跑刚完成的长自然项。完整旧候选证据和最新增量证据分开记录，不称旧输入等于新输入。

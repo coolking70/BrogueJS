@@ -13,7 +13,7 @@ const json = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 afterEach(() => { vi.restoreAllMocks(); logger.reset(); logger.onDisturb = null; });
 function scene() {
     installProductionBody();
-    const game = startProductionGame(['giants', 'combat'], 7307, 'normal'); emptyProductionArena(game);
+    const game = startProductionGame(['body-fixture', 'combat'], 7307, 'normal'); emptyProductionArena(game);
     const fire = game.extensionRuntime!.snapshot().foundation.world.entities.find(entity => entity.owner === 'combat' && entity.depth === game.depth)!;
     commitCreatureAnchor(game.player, { x: fire.x, y: fire.y });
     game.player.maxHp = 1000; game.player.hp = 300; game.player.ticksUntilTurn = 0; game.player.regenCarry = 0;

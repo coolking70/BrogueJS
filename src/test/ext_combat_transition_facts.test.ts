@@ -22,20 +22,20 @@ const attack: CombatEventPayload = { eventKind: 'attack-resolved', actionId: 1, 
     segmentIndex: 0, resolutionId: null, bonfireId: null, visit: null, hitCount: 1, hpLost: 1 };
 const acknowledge = () => { while (logger.pendingAcknowledgment) logger.acknowledgeNext(); };
 
-/** Diagnostic content is installed through the production registry. The real
+/** Foundation-owned diagnostic content uses the production registry. The real
  * four modules retain their state, validators, queries and native hooks. */
 function install(observer: (fact: CombatEventFact, context: ExtensionContext) => void = () => {}) {
     installProductionBody();
     const previous = catalog.createExtensionRegistry();
     const registry = registryFromDescriptors(catalog.getInstalledModuleDescriptors().map(descriptor => {
         const module = previous.create(previous.manifest([descriptor.id]))[0]!;
-        if (descriptor.id === 'giants') {
+        if (descriptor.id === 'body-fixture') {
             const reduced = structuredClone(module.nativeBodies!.definitions.find(body => body.id === PRODUCTION_BODY_ID)!);
-            reduced.id = 'giants.fixture-reduced';
-            reduced.parts = [{ ...reduced.parts[0]!, formId: 'giants.fixture-reduced-core' }, reduced.parts[1]!, reduced.parts[2]!];
+            reduced.id = 'body-fixture.fixture-reduced';
+            reduced.parts = [{ ...reduced.parts[0]!, formId: 'body-fixture.fixture-reduced-core' }, reduced.parts[1]!, reduced.parts[2]!];
             reduced.constraints = reduced.constraints.slice(0, 2);
-            const nativeForms = [...module.nativeForms!, { ...module.nativeForms!.find(form => form.id === 'giants.fixture-core')!,
-                id: 'giants.fixture-reduced-core', hp: 80 }];
+            const nativeForms = [...module.nativeForms!, { ...module.nativeForms!.find(form => form.id === 'body-fixture.fixture-core')!,
+                id: 'body-fixture.fixture-reduced-core', hp: 80 }];
             const nativeBodies = { ...module.nativeBodies!, definitions: [...module.nativeBodies!.definitions, reduced] };
             const rules = { ...module.rules!, fingerprint: extensionDataFingerprint({ base: module.rules, nativeForms, nativeBodies }) };
             return { ...descriptor, rules, create: () => ({ ...module, rules, nativeForms, nativeBodies }) };
@@ -59,7 +59,7 @@ function install(observer: (fact: CombatEventFact, context: ExtensionContext) =>
 
 function scene(observer?: (fact: CombatEventFact, context: ExtensionContext) => void, cached = false) {
     install(observer);
-    const game = startProductionGame(modules, 7349, 'normal');
+    const game = startProductionGame([...modules, 'body-fixture'], 7349, 'normal');
     if (cached) {
         // Stair location is fixture setup; caching/entry uses the public input.
         game.grid.setTerrain(game.player.x, game.player.y, TerrainType.STAIRS_DOWN);
@@ -70,7 +70,7 @@ function scene(observer?: (fact: CombatEventFact, context: ExtensionContext) => 
     const core = game.createCompositeMonster(PRODUCTION_BODY_ID, { x: 14, y: 12 })!;
     core.hp = 80; core.state = MonsterState.HUNTING;
     const actors = [...game.monsters], group = game.bodyGroups![0]!;
-    const external = game.createModuleMonster('giants.ridgeback', { x: 55, y: 12 })!;
+    const external = game.createModuleMonster('body-fixture.ridgeback', { x: 55, y: 12 })!;
     game.planSquareStep(external, { kind: 'anchors', anchors: [{ x: 50, y: 12 }] });
     collectPhasedAttackActors(game, [game.player, ...game.monsters]);
     (game as any).updateVision(); acknowledge();
@@ -80,8 +80,8 @@ function scene(observer?: (fact: CombatEventFact, context: ExtensionContext) => 
 function transition(groupId: number, reason: 'phase' | 'split'): BodyTransitionRequest {
     return { sourceGroupId: groupId, reason,
         results: reason === 'phase'
-            ? [{ formId: 'giants.fixture-reduced-core', memberMap: [{ from: 'leg07', to: 'leg00' }, { from: 'leg06', to: 'leg01' }] }]
-            : [{ formId: 'giants.ridgeback', memberMap: [] }, { formId: 'giants.ridgeback', memberMap: [] }],
+            ? [{ formId: 'body-fixture.fixture-reduced-core', memberMap: [{ from: 'leg07', to: 'leg00' }, { from: 'leg06', to: 'leg01' }] }]
+            : [{ formId: 'body-fixture.ridgeback', memberMap: [] }, { formId: 'body-fixture.ridgeback', memberMap: [] }],
         hp: reason === 'split' ? 'conserve' : 'ratio', statuses: 'preserve', relationships: 'preserve', placement: 'nearest' };
 }
 

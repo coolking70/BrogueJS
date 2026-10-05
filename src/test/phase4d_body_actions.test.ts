@@ -34,16 +34,16 @@ function configure(mode:Mode='normal', balance=20, mixed=false) {
     let seen:Readonly<PartBreakRequest>|undefined,proof:PartBreakPrepareContext['member'];
     const registry=registryFromDescriptors(descriptors.map(d=>{
         const base=installed.create(installed.manifest([d.id]))[0]!;
-        if(d.id==='giants'&&mixed){
-            data.definition.parts[2]!.formId='giants.fixture-claw';
-            const nativeForms=[...base.nativeForms!,{...data.leg,id:'giants.fixture-claw'}];
+        if(d.id==='body-fixture'&&mixed){
+            data.definition.parts[2]!.formId='body-fixture.fixture-claw';
+            const nativeForms=[...base.nativeForms!,{...data.leg,id:'body-fixture.fixture-claw'}];
             const rules={...base.rules!,fingerprint:extensionDataFingerprint({nativeForms,nativeBodies:base.nativeBodies})};
             return {...d,rules,create:()=>({...base,rules,nativeForms})};
         }
         if(d.id!=='combat')return {...d,rules:base.rules,create:()=>base};
         const definitions=json(base.actorActions!.definitions) as unknown as ActorAttackDefinitions;
-        definitions.nativeProfiles.push({monsterId:'giants.fixture-leg',profileId:'combat.follow-thrust'});
-        if(mixed)definitions.nativeProfiles.push({monsterId:'giants.fixture-claw',profileId:'combat.fan-edge'});
+        definitions.nativeProfiles.push({monsterId:'body-fixture.fixture-leg',profileId:'combat.follow-thrust'});
+        if(mixed)definitions.nativeProfiles.push({monsterId:'body-fixture.fixture-claw',profileId:'combat.fan-edge'});
         const original=base.optionalPartBreaks!['combat.part-break.v1']!;
         const provider:PartBreakProvider={prepare:(request,context)=>{
             seen=request;proof=context.member;
@@ -67,7 +67,7 @@ function scene(mode:Mode='normal',balance=20,mixed=false,dense=false) {
         evidence.data.definition.parts.forEach((part,i)=>{if(i)part.preferredOffset=offsets[i-1]!;});
         evidence.data.definition.constraints.forEach(edge=>{edge.maxDistance=6;});
     }
-    const game=startProductionGame(['giants','combat']);emptyProductionArena(game);
+    const game=startProductionGame(['body-fixture','combat']);emptyProductionArena(game);
     const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!;
     core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');core.givenUpOnScent=true;
     const group=game.bodyGroups![0]!,legs=game.monsters.slice(1);
@@ -223,7 +223,7 @@ describe('4d production body with 3b bundles and real 3d part-break provider',()
         expect(state(game).actors.find(r=>r.actorId===legs[0]!.id)).toBeUndefined();expect(legs[0]!.ticksUntilTurn).toBe(ticks);
     });
     it('a real parry of an immediate member attack breaks the core, stops the remaining sources and mirrors max recovery',()=>{
-        installProductionBody();const game=startProductionGame(['giants','combat']);emptyProductionArena(game);
+        installProductionBody();const game=startProductionGame(['body-fixture','combat']);emptyProductionArena(game);
         const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!,legs=game.monsters.slice(1);
         core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');core.ticksUntilTurn=50;
         commitCreatureAnchor(game.player,{x:14,y:10});const timers=legs.map(c=>c.ticksUntilTurn),hp=game.player.hp,attack=vi.spyOn(CombatSystem,'attack');

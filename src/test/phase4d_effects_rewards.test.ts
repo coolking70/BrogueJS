@@ -16,7 +16,7 @@ function equipped(game:Game,id:string) {
 function fire(game:Game,item:Item,target:{x:number;y:number}) {
     game.player.inventory.addItem(item);const charges=item.charges!;game.executeItemCommand('use',item);game.executeCommand('mouse_travel',target);expect(item.charges).toBe(charges-1);
 }
-it.each([['giants'],['giants','growth'],['giants','combat'],['giants','growth','combat']] as const)
+it.each([['body-fixture'],['body-fixture','growth'],['body-fixture','combat'],['body-fixture','growth','combat']] as const)
 ('real axe sweep and paralysis rune run once per leg, with one-quarter transfer and no core combat replay: %j',(...ids)=>{
     Object.assign(installProductionBody().leg,{hp:80});const game=startProductionGame(ids);emptyProductionArena(game);const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!,legs=game.monsters.slice(1);
     core.applyStatus('paralyzed',1000);legs.forEach(a=>{a.defense=0;});equipped(game,'axe').runicType='paralysis';
