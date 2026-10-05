@@ -3,6 +3,7 @@ import type { ReadonlyJson } from '../ext/types';
 import type { Logger } from '../engine/Systems/Logger';
 import { cellAppearance, itemAppearance, rememberedItemAppearance, playerAppearance, type CosmeticRng } from '../engine/UI/Appearance';
 import { publicMonsterMapCells } from '../engine/UI/MonsterBody';
+import { publicZoneAt, zoneStatusText } from '../engine/UI/MonsterZones';
 import { observeDisplayMonster } from './monsterDisplay';
 import type { DisplayBody } from './bodyDrawing';
 import { readPublicCombatTelegraphs } from './combatDrawing';
@@ -115,6 +116,9 @@ function observeModuleViews(game: Game): Readonly<Record<string, Readonly<Record
 
 export function observeDisplayFrame(game: Game, log: Logger, previous?: { map: DisplayMap }) {
     const preview = game.getArcanaPreview();
+    const aim = game.pendingArcana?.cursor ?? targetingState.aim;
+    const aimedMonster = aim ? game.getMonsterAt(aim.x, aim.y) : undefined;
+    const aimedZone = aim && aimedMonster ? publicZoneAt(game.player, game.grid, aimedMonster, aim) : undefined;
     const interactables = game.readVisibleInteractables().map(entity => ({ ...entity }));
     return freezeDisplay({
         displayTurn: game.absoluteTurnNumber, messageTurn: log.turn, depth: game.depth,
@@ -128,8 +132,9 @@ export function observeDisplayFrame(game: Game, log: Logger, previous?: { map: D
         hoverText: game.hoveredText || game.flavorText,
         hoverCell: game.hoveredCell ? { ...game.hoveredCell } : null,
         targeting: game.pendingArcana ? 'arcana' as const : game.isThrowing ? 'throw' as const : 'none' as const,
-        throwAim: targetingState.aim ? { ...targetingState.aim } : null,
+        throwAim: targetingState.aim && !aimedZone?.broken ? { ...targetingState.aim } : null,
         targetName: game.pendingArcana?.item.displayName ?? game.throwItemTarget?.displayName ?? '',
+        ...(aimedZone && !aimedZone.broken ? { targetZone: zoneStatusText(aimedZone) } : {}),
         arcana: game.pendingArcana ? { name: game.pendingArcana.item.displayName, cursor: { ...game.pendingArcana.cursor },
             path: preview?.path.map(pos => ({ ...pos })) ?? [], maxDistance: preview?.maxDistance ?? null } : null,
         interactables,

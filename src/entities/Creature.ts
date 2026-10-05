@@ -55,6 +55,7 @@ export function ensureEntityIdAbove(maxInUseId: number): void {
 }
 
 import type { CreatureExtensionHooks } from '../ext/types';
+import { nativeZoneMoveTicks } from '../engine/Combat/FixedZoneHealth';
 import type { DamageKind } from '../ext/causality';
 import type { CreatureSpatialComponent } from '../engine/Movement/SpatialSchema';
 const extensionCreatureHooks = new WeakMap<Creature, CreatureExtensionHooks>();
@@ -141,7 +142,7 @@ export class Creature implements Entity {
             move = move * 2;
             atk = atk * 2;
         }
-        this.movementSpeed = move;
+        this.movementSpeed = nativeZoneMoveTicks(this, move);
         this.attackSpeed = atk;
     }
 
@@ -334,19 +335,26 @@ export class Creature implements Entity {
     protected bloodInvulnerable(): boolean { return false; }
 
     public takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: DamageKind = 'other') {
-        const damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
+        const hpBefore = this.hp;
+        let damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
+        const zoneDamage = this.extensionHooks?.zoneDamage?.(this, damage, damageKind);
+        if (zoneDamage !== undefined) damage = zoneDamage;
         if (grid) {
             const contact = physicalContactOf(this);
             // Ordinary CE damage uses the actor location; body scopes retain
             // their actual contact through nested damage/death effects.
-            if (contact === this.loc) spawnCreatureBlood(grid, this.loc, this.bloodType, damage, this.hp, this.bloodInvulnerable());
-            else spawnCreatureBlood(grid, contact, this.bloodType, damage, this.hp, this.bloodInvulnerable());
+            if (contact === this.loc) spawnCreatureBlood(grid, this.loc, this.bloodType, damage, hpBefore, this.bloodInvulnerable());
+            else spawnCreatureBlood(grid, contact, this.bloodType, damage, hpBefore, this.bloodInvulnerable());
         }
         // CE Combat.c:1827-1878: blood precedes transference, including self-hits.
+        // The zone transaction already committed this one native HP loss.
+        // Temporarily undo that loss for CE's pre-loss transference callback;
+        // reflected self-hits must heal against the original HP, then lose it.
+        if (zoneDamage !== undefined && beforeHpLoss) this.hp += damage;
         beforeHpLoss?.(damage);
-        const hpBefore = this.hp;
-        this.hp -= damage;
-        if (this.extensionHooks) this.extensionHooks.damage(this, damage, hpBefore, damageKind);
+        const beforeNativeLoss = zoneDamage === undefined || beforeHpLoss ? this.hp : hpBefore;
+        if (zoneDamage === undefined || beforeHpLoss) this.hp -= damage;
+        if (this.extensionHooks) this.extensionHooks.damage(this, damage, beforeNativeLoss, damageKind);
         if (this.hp <= 0) {
             this.die();
         }

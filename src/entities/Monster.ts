@@ -3,7 +3,7 @@ import { bindSpatialCatalog, spatialCatalogFor } from '../engine/Movement/Creatu
 import { type RigidPose } from '../engine/Movement/RigidFootprint';
 import { type RigidPoseStep } from '../engine/Map/RigidPosePathing';
 import { nativeFormSpatial, nativeFormCatalogFor, bindNativeForms } from '../ext/nativeForms';
-import { nearestLegalMeleeContact, physicalContactOf, bodyAttackContactOf, withBodyAttackContact, bodyRayOrigin, bodyRayContact, type BodyAttackContact } from '../engine/Combat/BodyCombat';
+import { nearestLegalMeleeContact, legalMeleeContactAt, hasDeclaredZones, physicalContactOf, bodyAttackContactOf, withBodyAttackContact, appendBodyHit, bodyHitContact, bodyRayOrigin, bodyRayContact, type BodyAttackContact } from '../engine/Combat/BodyCombat';
 import { assertNativeSpatial, commitCreatureAnchor, footprintContains, footprintOf, footprintSome, nearestContact, distanceBetweenFootprints, distanceToFootprint } from '../engine/Movement/CreatureSpatial';
 import { bodySightContact } from '../engine/Combat/BodyPerception';
 import { notifyMonsterDeath, squareListUsers } from '../engine/Core/MonsterLifecycle';
@@ -1366,7 +1366,7 @@ export class Monster extends Creature {
                 (cell.isPassable ||
                     (defender instanceof Monster && defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))) &&
                 this.willAttackTarget(defender)) {
-                if (game.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length) hitList.push(defender);
+                if (game.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length) appendBodyHit(hitList, defender, origin, { x: tx, y: ty });
                 if (i === 0 || (!defender.hasStatus('invisible') && !hiddenBySubmersion(game.grid, defender, this))) {
                     proceed = true;
                 }
@@ -1381,7 +1381,7 @@ export class Monster extends Creature {
         withNativeAttackAction(game, this, () => {
             // CE Movement.c:1007-1009：先打远的、后打近的（倒序）
             for (let i = hitList.length - 1; i >= 0; i--) {
-                this.resolveGeometryAttackOn(game, hitList[i]!, voice, bodyRayContact(this, hitList[i]!, dirX, dirY, 2, origin));
+                this.resolveGeometryAttackOn(game, hitList[i]!, voice, bodyHitContact(hitList, i) ?? bodyRayContact(this, hitList[i]!, dirX, dirY, 2, origin));
             }
         });
         this.endTurnWithAttack();
@@ -1423,9 +1423,10 @@ export class Monster extends Creature {
                 if (!cell.isPassable &&
                     !(defender instanceof Monster && defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))) continue;
                 const pair = this.spatial || defender.spatial ? nearestLegalMeleeContact(game.grid, this, defender) : undefined;
-                if ((this.spatial || defender.spatial) && !pair) continue;
+                const zoned = hasDeclaredZones(this) || hasDeclaredZones(defender);
+                if ((this.spatial || defender.spatial) && (!pair || (zoned && !legalMeleeContactAt(game.grid, origin, defender, { x: tx, y: ty })))) continue;
                 if (game.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length)
-                    this.resolveGeometryAttackOn(game, defender, voice, pair ?? undefined);
+                    this.resolveGeometryAttackOn(game, defender, voice, zoned && pair ? { from: origin, to: footprintOf(defender).find(p => p.x === tx && p.y === ty)!, distance: 1 } : pair ?? undefined);
             }
         });
         this.endTurnWithAttack();
@@ -1677,6 +1678,10 @@ export class Monster extends Creature {
     public prepareNativeDecision(game: Game, stealthRange: number): boolean {
         assertNativeSpatial(this);
         if (this.hp <= 0) return true;
+        if ((this.spatial?.actionLockInTicks ?? 0) > 0) {
+            this.ticksUntilTurn = this.spatial!.actionLockInTicks!;
+            return true;
+        }
         // CE monstersTurn runs this before its own status/AI gates. Time.c's
         // outer scheduler separately withholds actions from disabled monsters.
         if (this.corpseAbsorptionCounter >= 0 && updateMonsterCorpseAbsorption(game, this)) return true;

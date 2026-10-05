@@ -1456,5 +1456,8 @@
   "ext.creation.loading": "正在加载模块创建界面…",
   "ext.creation.cancel": "取消创建",
   "ext.creation.retry": "重试加载",
-  "menu.presentation.pending": "演示尚未看完；保存或导出使用本回合已结算的最终状态。"
+  "menu.presentation.pending": "演示尚未看完；保存或导出使用本回合已结算的最终状态。",
+  "zone.summary": "{{name}} {{current}} / {{maximum}} {{state}}",
+  "zone.broken": "已破坏",
+  "zone.weak": "弱点"
 }

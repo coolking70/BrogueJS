@@ -44,7 +44,7 @@ export interface PartBreakRule {
     modifiers: readonly (
         | { kind: 'move-ticks-multiplier'; numerator: number; denominator: number }
         | { kind: 'disable-attack'; attackId: string }
-        | { kind: 'expose-zone'; partId: string; zoneId: string }
+        | { kind: 'expose-zone'; partId: string; zoneId: string; damageMultiplier: Ratio }
         | { kind: 'balance-loss'; amount: number; fallbackStunTicks: number }
         | { kind: 'locomotion'; mode: 'ground' | 'water' | 'flying' | 'immobile' }
     )[];
@@ -154,7 +154,13 @@ export class SpatialCatalog {
     registerFootprint(d: FootprintDefinition): void {
         const cells = compileFootprint(d);
         if (this.footprints.has(d.id) || !(d.owner === 'foundation' && (this.fixture || d.id.startsWith('builtin:')) || !this.fixture && this.owners.includes(d.owner) && d.id.startsWith(`${d.owner}.`))) fail('Unknown or duplicate footprint owner');
-        for (const zone of d.zones ?? []) this.breakRule(zone.breakRuleId);
+        for (const zone of d.zones ?? []) {
+            if (!this.fixture && zone.health.kind === 'local'
+                && zone.health.ownerTransfer.numerator !== zone.health.ownerTransfer.denominator) fail('Fixed local zone transfer must be 1:1');
+            const rule = this.breakRule(zone.breakRuleId);
+            for (const modifier of rule.modifiers) if (modifier.kind === 'expose-zone'
+                && (modifier.partId !== 'self' || !d.zones?.some(z => z.id === modifier.zoneId))) fail('Invalid fixed zone exposure reference');
+        }
         this.footprints.set(d.id, { definition: deepFreeze(structuredClone(d)), cells });
     }
     definition(id: string): FootprintDefinition { return this.footprints.get(id)?.definition ?? fail('Unknown footprint'); }
@@ -166,6 +172,37 @@ export class SpatialCatalog {
     }
     form(id: string): SpatialFormDefinition { return this.forms.get(id) ?? fail('Unknown spatial form'); }
     breakRule(id: string): PartBreakRule { return this.breakRules.get(id) ?? fail('Unknown or unopened spatial break rule'); }
+    /** Fixed-zone rules: fixture foundation or an installed module's own
+     * namespace. Only finite keep-zone consequences are authorized. */
+    registerBreakRule(d: PartBreakRule): void {
+        keys(d, ['id', 'owner', 'trigger', 'disposition', 'modifiers']);
+        if (!(this.fixture && d.owner === 'foundation' || !this.fixture && this.owners.includes(d.owner) && d.id.startsWith(`${d.owner}.`))
+            || !identity(d.id) || this.breakRules.has(d.id)
+            || d.trigger !== 'hp-zero' || d.disposition !== 'keep-zone' || !Array.isArray(d.modifiers)
+            || d.modifiers.length > 8) fail('Invalid or unopened fixed zone break rule');
+        const seen = new Set<string>();
+        for (const m of d.modifiers) {
+            let key: string;
+            switch (m.kind) {
+                case 'move-ticks-multiplier':
+                    keys(m, ['kind', 'numerator', 'denominator']); ratio({ numerator: m.numerator, denominator: m.denominator });
+                    if (!m.numerator) fail('Invalid movement multiplier'); key = m.kind; break;
+                case 'disable-attack':
+                    keys(m, ['kind', 'attackId']); if (!identity(m.attackId)) fail('Invalid disabled attack'); key = `${m.kind}:${m.attackId}`; break;
+                case 'expose-zone':
+                    keys(m, ['kind', 'partId', 'zoneId', 'damageMultiplier']); ratio(m.damageMultiplier);
+                    if (m.partId !== 'self' || !identity(m.zoneId) || m.zoneId === 'body') fail('Invalid fixed zone exposure');
+                    key = `${m.kind}:${m.zoneId}`; break;
+                case 'balance-loss':
+                    keys(m, ['kind', 'amount', 'fallbackStunTicks']);
+                    if (!integer(m.amount, 0, 1000000) || !integer(m.fallbackStunTicks, 0, 1000000)) fail('Invalid break balance loss');
+                    key = m.kind; break;
+                default: fail('Unopened break modifier');
+            }
+            if (seen.has(key!)) fail('Duplicate break modifier'); seen.add(key!);
+        }
+        this.breakRules.set(d.id, deepFreeze(structuredClone(d)));
+    }
     statusProfile(id: string): SpatialStatusProfileDefinition { return this.statusProfiles.get(id) ?? fail('Unknown or unopened spatial status profile'); }
     body(id: string): BodyDefinition { return this.bodies.get(id) ?? fail('Unknown body'); }
     registerBody(d: BodyDefinition): void {
@@ -224,7 +261,7 @@ export function validateSpatialComponent(v: unknown, catalog = nativeSpatialCata
             keys(z, ['zoneId', 'hp', 'broken', 'generation', 'regenerateInTicks'], ['zoneId', 'hp', 'broken', 'generation']);
             const zone = d.zones?.find(def => def.id === z.zoneId);
             if (!zone || zone.health.kind !== 'local' || seen.has(z.zoneId) || !integer(z.hp, 0, zone.health.maxHp)
-                || typeof z.broken !== 'boolean' || (z.hp === 0) !== z.broken || !integer(z.generation)
+                || typeof z.broken !== 'boolean' || (z.hp === 0) !== z.broken || z.generation !== 0
                 || z.regenerateInTicks !== undefined) fail('Invalid zone health');
             seen.add(z.zoneId);
         }

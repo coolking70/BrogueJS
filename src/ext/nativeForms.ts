@@ -1,5 +1,6 @@
 import { compileRigidFootprint, type RigidPose } from '../engine/Movement/RigidFootprint';
-import { type FootprintDefinition, type CreatureSpatialComponent, type SpatialCatalog } from '../engine/Movement/SpatialSchema';
+import { SpatialCatalog, type FootprintDefinition, type CreatureSpatialComponent, type PartBreakRule } from '../engine/Movement/SpatialSchema';
+import { initialLocalZoneState } from '../engine/Combat/FixedZoneHealth';
 import { bindSpatialCatalog } from '../engine/Movement/CreatureSpatial';
 import i18next from 'i18next';
 import type { MonsterData } from '../entities/Monster';
@@ -13,7 +14,8 @@ export interface NativeFormDefinition {
   readonly nameKey: string;
   readonly descriptionKey: string;
   readonly size?: 2 | 3;
-  readonly footprint?: Pick<FootprintDefinition, 'geometry' | 'poses'>;
+  readonly footprint?: Pick<FootprintDefinition, 'geometry' | 'poses' | 'zones' | 'zoneCells'>;
+  readonly breakRules?: readonly PartBreakRule[];
   readonly char: string;
   readonly color: number;
   readonly hp: number;
@@ -32,7 +34,7 @@ export function validNativeForm(value: unknown, owner: string): value is NativeF
     !value ||
     typeof value !== 'object' ||
     Array.isArray(value) ||
-    !['size', 'footprint'].some(shape => Object.keys(value).sort().join(',') ===
+    !['size', 'footprint'].some(shape => Object.keys(value).filter(k => k !== 'breakRules').sort().join(',') ===
       ['DFChance','DFType','accuracy','attackSpeed','bloodType','char','color','damage','defense','descriptionKey','hp','id','moveSpeed','nameKey',shape].sort().join(','))
   )
     return false;
@@ -40,10 +42,15 @@ export function validNativeForm(value: unknown, owner: string): value is NativeF
   const n = (x: number, a: number, b: number) => Number.isSafeInteger(x) && x >= a && x <= b;
   if (v.footprint !== undefined) {
     try {
-      if (Object.keys(v.footprint).sort().join(',') !== 'geometry,poses') return false;
-      compileRigidFootprint(nativeFormFootprint(v, owner)!);
+      if (Object.keys(v.footprint).some(k => !['geometry','poses','zones','zoneCells'].includes(k))) return false;
+      if (v.footprint.zones?.some(z => !z.nameKey.startsWith(`ext.${owner}.`))) return false;
+      const catalog = new SpatialCatalog(false, [owner]);
+      if (v.breakRules !== undefined && (!Array.isArray(v.breakRules) || v.breakRules.length > 16)) return false;
+      for (const rule of v.breakRules ?? []) catalog.registerBreakRule(rule);
+      catalog.registerFootprint(nativeFormFootprint(v, owner)!);
+      compileRigidFootprint(nativeFormFootprint(v, owner)!, { fixedZones: true });
     } catch { return false; }
-  }
+  } else if (v.breakRules !== undefined) return false;
   return (
     validId(v.id) &&
     v.id.startsWith(`${owner}.`) &&
@@ -75,8 +82,16 @@ export function nativeFormFootprint(form: NativeFormDefinition, owner = form.id.
 }
 export function nativeFormSpatial(form: NativeFormDefinition, region?: number, previousPose?: RigidPose): CreatureSpatialComponent {
   const poses = form.footprint?.poses ?? ['r0'];
+  let zoneState: CreatureSpatialComponent['zoneState'];
+  if (form.footprint?.zones?.some(z => z.health.kind === 'local')) {
+    const owner = form.id.slice(0, form.id.lastIndexOf('.')), catalog = new SpatialCatalog(false, [owner]);
+    for (const rule of form.breakRules ?? []) catalog.registerBreakRule(rule);
+    catalog.registerFootprint(nativeFormFootprint(form, owner)!);
+    zoneState = initialLocalZoneState(catalog, form.id);
+  }
   return { schema: 1, footprintId: form.footprint ? form.id : `builtin:square-${form.size}`,
-    pose: previousPose && poses.includes(previousPose) ? previousPose : poses[0]!, ...(region !== undefined ? { movementRegionId: region } : {}) };
+    pose: previousPose && poses.includes(previousPose) ? previousPose : poses[0]!, ...(region !== undefined ? { movementRegionId: region } : {}),
+    ...(zoneState ? { zoneState } : {}) };
 }
 export function nativeFormData(form: NativeFormDefinition): MonsterData {
   // Names/descriptions are plain data-owned strings. Their exact keys are

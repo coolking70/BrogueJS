@@ -5,6 +5,7 @@
  * 只读取玩家可见的显示信息，不调用任何改状态的方法。
  */
 import { targetingState } from './targeting';
+import { publicZoneAt, zoneStatusText } from '../engine/UI/MonsterZones';
 import type { Pos } from '../types';
 import { displayedFrame } from './presentationTimeline';
 export { displayedFrame } from './presentationTimeline';
@@ -41,6 +42,7 @@ export function useGameHud(logCount: MaybeRefOrGetter<number> = 3) {
     const replayActive = ref(false);
     const targeting = ref<'none' | 'throw' | 'arcana'>('none');
     const targetName = ref('');
+    const targetZone = ref('');
     const targetAim = ref<Pos | null>(null);
 
     const poll = () => {
@@ -55,6 +57,7 @@ export function useGameHud(logCount: MaybeRefOrGetter<number> = 3) {
             logs.value = all.slice(Math.max(0, all.length - toValue(logCount))).reverse();
             hoverText.value = frame.hoverText; replayActive.value = !!game.replayRecording;
             targeting.value = frame.targeting; targetName.value = frame.targetName; targetAim.value = frame.throwAim;
+            targetZone.value = frame.targetZone ?? '';
             return;
         }
         stats.value = sidebarPlayerStats(game.player, game.stats.gold, game['calculateStealthRange']());
@@ -72,6 +75,10 @@ export function useGameHud(logCount: MaybeRefOrGetter<number> = 3) {
         targeting.value = game.pendingArcana ? 'arcana' : game.isThrowing ? 'throw' : 'none';
         targetAim.value = targetingState.aim ? { ...targetingState.aim } : null;
         targetName.value = game.pendingArcana?.item.displayName ?? game.throwItemTarget?.displayName ?? '';
+        const aim = game.pendingArcana?.cursor ?? targetingState.aim, monster = aim ? game.getMonsterAt(aim.x, aim.y) : undefined;
+        const zone = aim && monster ? publicZoneAt(game.player, game.grid, monster, aim) : undefined;
+        targetZone.value = zone && !zone.broken ? zoneStatusText(zone) : '';
+        if (zone?.broken) targetAim.value = null;
     };
 
     let timer = 0;
@@ -81,5 +88,5 @@ export function useGameHud(logCount: MaybeRefOrGetter<number> = 3) {
     });
     onUnmounted(() => window.clearInterval(timer));
 
-    return { stats, hp, maxHp, depth, turns, nutrition, statuses, logs, hoverText, replayActive, targeting, targetName, targetAim, poll };
+    return { stats, hp, maxHp, depth, turns, nutrition, statuses, logs, hoverText, replayActive, targeting, targetName, targetZone, targetAim, poll };
 }

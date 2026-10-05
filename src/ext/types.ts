@@ -217,6 +217,7 @@ export interface ExtensionModule extends ExtensionVersion {
     dependencies?: readonly string[];
     readonly optionalRewards?: Readonly<Record<string, OptionalRewardProvider>>;
     readonly optionalQueries?: Readonly<Record<string, OptionalQueryProvider>>;
+    readonly optionalPartBreaks?: Readonly<Partial<Record<'combat.part-break.v1', import('./partBreak').PartBreakProvider>>>;
     readonly view?: ExtensionViewDescriptor;
     readonly worldInteractables?: true;
     /** Only the native generation owner may install declared owned regions. */
@@ -260,6 +261,8 @@ export interface ExtensionModule extends ExtensionVersion {
 }
 /** Session-only wiring. Never serialized as part of a creature. */
 export interface CreatureExtensionHooks {
+    /** Engine-only post-shield zone commit; undefined preserves native damage. */
+    zoneDamage?(creature: Creature, amount: number, damageKind: DamageKind): number | undefined;
     beforeAttack(attacker: Creature, defender: Creature): void;
     afterAttack(attacker: Creature, defender: Creature, result?: AttackResult): void;
     wantsPhysicalResolution?(): boolean;

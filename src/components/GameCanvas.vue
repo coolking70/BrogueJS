@@ -133,6 +133,7 @@ import { mapMode } from '../ui/mapTiles';
 import { terrainSemantic, itemSemantic, rememberedItemSemantic, monsterSemantic, playerSemantic, projectileSemantic, floatingHanzi, type TileSemantic } from '../ui/mapTileSemantics';
 import { paintMapText, paintVectorTile, HANZI_FONT } from '../ui/mapTileDrawing';
 import { targetingState, clearAim, targetingTapCommand, type TapCommand, THROW_AIM_FILL, THROW_AIM_STROKE } from '../ui/targeting';
+import { publicZoneAt } from '../engine/UI/MonsterZones';
 import { dispatch as dispatchCommand, travelTo } from '../ui/commands';
 
 const props = withDefaults(defineProps<{ displayModalOpen?: boolean }>(), { displayModalOpen: false });
@@ -527,7 +528,9 @@ onMounted(async () => {
         }
         // FE-1：触屏投掷的 UI 瞄准格（纯绘制；投掷模式结束即清除）
         const aim = targetingState.aim;
-        if (aim && !game.isThrowing) clearAim();
+        const aimedMonster = aim ? game.getMonsterAt(aim.x, aim.y) : undefined;
+        const brokenAim = aim && aimedMonster ? publicZoneAt(game.player, game.grid, aimedMonster, aim)?.broken : false;
+        if (aim && (!game.isThrowing || brokenAim)) clearAim();
         else if (aim && !selection) {
             drawTargetBody(aim, THROW_AIM_STROKE);
             arcanaCursor.rect(aim.x * TILE_SIZE, aim.y * TILE_SIZE, TILE_SIZE, TILE_SIZE).fill(THROW_AIM_FILL);

@@ -327,13 +327,19 @@ const canonicalSpatial = (v: unknown): string | undefined => JSON.stringify(v, (
  * closure describes used geometry; it cannot grant capabilities or install data. */
 function snapshotSquareWorld(monsters: readonly Monster[], catalog?: SpatialCatalog): SpatialWorldSnapshot | undefined {
     const definitions = new Map<string, ReturnType<SpatialCatalog['definition']>>();
+    const breaks = new Map<string, ReturnType<SpatialCatalog['breakRule']>>();
     for (const c of monsters) {
         const trusted = catalog ?? spatialCatalogFor(c);
         assertNativeSpatial(c, trusted);
-        if (c.spatial) definitions.set(c.spatial.footprintId, trusted.definition(c.spatial.footprintId));
+        if (c.spatial) {
+            const definition = trusted.definition(c.spatial.footprintId);
+            definitions.set(c.spatial.footprintId, definition);
+            for (const zone of definition.zones ?? []) breaks.set(zone.breakRuleId, trusted.breakRule(zone.breakRuleId));
+        }
     }
     if (!definitions.size) return undefined;
-    return { schema: 1, definitions: { footprints: [...definitions.values()].sort((a,b) => a.id.localeCompare(b.id)), bodies: [] }, groups: [] };
+    return { schema: 1, definitions: { footprints: [...definitions.values()].sort((a,b) => a.id.localeCompare(b.id)), bodies: [],
+        ...(breaks.size ? { breakRules: [...breaks.values()].sort((a,b) => a.id.localeCompare(b.id)) } : {}) }, groups: [] };
 }
 
 /** Merge only used native definitions. Ordinary worlds omit the root entirely. */

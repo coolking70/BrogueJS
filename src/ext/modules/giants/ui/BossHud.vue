@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import i18next from 'i18next';
 import type { BossHudModel } from './view';
+import { zoneStatusText } from '../../../../engine/UI/MonsterZones';
 defineProps<{ model: BossHudModel; presentationHidden?: boolean }>();
 </script>
 <template>
@@ -19,6 +20,7 @@ defineProps<{ model: BossHudModel; presentationHidden?: boolean }>();
         }"
       />
     </div>
+    <div v-if="model.zone" class="boss-zone">{{ zoneStatusText(model.zone) }}</div>
   </div>
 </template>
 <style scoped>
@@ -56,6 +58,14 @@ defineProps<{ model: BossHudModel; presentationHidden?: boolean }>();
 }
 .boss-health > div {
   height: 100%;
+}
+.boss-zone {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .presentation-hidden {
   visibility: hidden;

@@ -134,6 +134,10 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
             // Native readiness may start at zero (or overdue). It consumes no new elapsed time.
             if (actions) soonestTurn = Math.max(0, soonestTurn);
             for (const m of ports.world.monsters) {
+                if (soonestTurn > 0 && m.spatial?.actionLockInTicks !== undefined) {
+                    m.spatial.actionLockInTicks = Math.max(0, m.spatial.actionLockInTicks - soonestTurn);
+                    if (!m.spatial.actionLockInTicks) delete m.spatial.actionLockInTicks;
+                }
                 if (m.hp > 0 && (!actions || (actions.isDecisionOwner(m.id) && !actions.isBusy(m.id)))) {
                     m.ticksUntilTurn -= soonestTurn;
                 }

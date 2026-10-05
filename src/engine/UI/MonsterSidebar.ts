@@ -12,6 +12,7 @@ import { playerDefense, strengthModifier } from '../Combat/CombatFormulas';
 import { creatureStatusRows, isSidebarVisibleStatus } from '../Status/statusConfig';
 import { publicMonsterBody, bodyContains } from './MonsterBody';
 import { canSeeMonster, publicMonsterCells } from './MonsterVisibility';
+import { publicMonsterZones } from './MonsterZones';
 
 const colorString = (color: string | number) => typeof color === 'number'
     ? `#${color.toString(16).padStart(6, '0')}` : color;
@@ -53,12 +54,14 @@ export function visibleMonsterRows(player: Player, grid: Grid, monsters: readonl
             const body = publicMonsterBody(player, grid, monster);
             const cells = monster.spatial ? publicMonsterCells(player, grid, monster) : [monster.loc];
             const directCells = cells.filter(p => directlyVisible(grid.getCell(p.x, p.y)));
+            const zones = publicMonsterZones(player, grid, monster);
             return {
                 kind: 'monster' as const,
                 id: monster.id,
                 loc: { ...(body?.glyph ?? monster.loc) },
                 direct: directCells.length > 0,
                 ...(monster.spatial ? { bodyCells: cells, bodySize: body?.size ?? null,
+                    ...(zones.length ? { zones } : {}),
                     ...(body?.cellCount !== undefined ? { bodyCellCount: body.cellCount } : {}),
                     distanceSquared: Math.min(...(directCells.length ? directCells : cells).map(p => distanceSquared(p, player.loc))),
                     distance: Math.min(...cells.map(p => Math.max(Math.abs(p.x - player.x), Math.abs(p.y - player.y)))) } : {}),

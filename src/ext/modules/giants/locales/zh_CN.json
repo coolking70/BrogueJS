@@ -9,5 +9,7 @@
   "ext.giants.abyssal_colossus.name": "沉渊巨像",
   "ext.giants.abyssal_colossus.description": "远古遗迹中苏醒的石质守卫，体躯如崩塌的殿柱。它拖着斑驳的石身缓步巡视空旷的遗室，关节间落下细碎尘砂；退到石室之外便能避开它的追击。",
   "ext.giants.spine_crawler.name": "棘脊爬兽",
-  "ext.giants.spine_crawler.description": "这头巨兽的四节脊骨覆着石质棘甲。它围绕头部转动长躯，挤过通道时会先寻找转身的空间。"
+  "ext.giants.spine_crawler.description": "这头巨兽的四节脊骨覆着石质棘甲。它围绕头部转动长躯，挤过通道时会先寻找转身的空间。棘甲破裂后，它的脚步变慢，头部也失去掩护。",
+  "ext.giants.spine_crawler.shell": "棘甲",
+  "ext.giants.spine_crawler.head": "头部"
 }

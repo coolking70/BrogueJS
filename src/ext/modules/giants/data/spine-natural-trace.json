@@ -5,8 +5,8 @@
   "depth": 11,
   "commands": 1174,
   "commandsHash": "2937b269b0c94d16606dfff5bd65e846bd7d09c9389c97bc2f986af2f6852acb",
-  "nativeWorldHash": "5b1856c2437b51795b28d541163fed9e6ecbb96c4a20decfcc2e24af6392cff6",
-  "extensionsHash": "5643e9691af2982fe4323b55f9ef5869df5905bfc56758f894d0253bfce071c4",
+  "nativeWorldHash": "e22be1ef55fedf188ff2b9fac73ab2103ff3b555abc3aaee09af9961b9a8854b",
+  "extensionsHash": "e113aa7232c2eebcee47555ebb65cec5e742302c22dda4865065be70121f13f2",
   "rng": {
     "version": 2,
     "algorithm": "brogue-web-ranval32-uint64-level-v2",
@@ -213,7 +213,15 @@
       "schema": 1,
       "footprintId": "giants.spine-crawler",
       "pose": "r0",
-      "movementRegionId": 276
+      "movementRegionId": 276,
+      "zoneState": [
+        {
+          "zoneId": "shell",
+          "hp": 30,
+          "broken": false,
+          "generation": 0
+        }
+      ]
     }
   }
 }
