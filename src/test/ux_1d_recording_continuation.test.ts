@@ -21,7 +21,7 @@ function replayTo(game: Game, count: number) {
 }
 
 describe('UX-1D persistent complete recordings', () => {
-    it.each(['exception', 'timeout'])('keeps collecting accepted inputs after an advancement %s without restoring export provenance', failure => {
+    it.each(['exception', 'expired drain exception'])('keeps collecting accepted inputs after an advancement %s without restoring export provenance', failure => {
         const game = createHeadlessGame(424242);
         game.animationEnabled = true;
         game.executeCommand('wait');
@@ -32,8 +32,14 @@ describe('UX-1D persistent complete recordings', () => {
             try { game.stepAdvancement(); } finally { next.mockRestore(); }
             expect(game.lastAdvancementError).toBeInstanceOf(Error);
         } else {
+            // A frame gap alone completes accepted work. Fail the expired drain
+            // itself to retain this case's incomplete-recording premise.
+            const iterator = (game as unknown as { advancementIter: Generator<number, void, void> }).advancementIter;
+            const error = new Error('expired advancement drain fixture');
+            const next = vi.spyOn(iterator, 'next').mockImplementation(() => { throw error; });
             const now = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 60_000);
-            try { game.stepAdvancement(); } finally { now.mockRestore(); }
+            try { game.stepAdvancement(); } finally { now.mockRestore(); next.mockRestore(); }
+            expect(game.lastAdvancementError).toBe(error);
         }
         expect(game.isAdvancing).toBe(false);
         expect(game.isInputLocked()).toBe(false);
@@ -53,6 +59,39 @@ describe('UX-1D persistent complete recordings', () => {
         expect(game.recordedInputEvents).toHaveLength(count + 1);
         expect(game.hasCompleteRecording).toBe(false);
         expect(game.toSaveSnapshot().run.recordingOrigin).toBeUndefined();
+    });
+
+    it('completes accepted work after a normal sixty-second frame gap with a complete recording', () => {
+        const game = createHeadlessGame(424242);
+        game.animationEnabled = true;
+        const count = game.recordedInputEvents.length, turns = game.stats.turns;
+        game.executeCommand('wait');
+        expect(game.isAdvancing).toBe(true);
+        expect(game.hasCompleteRecording).toBe(true);
+        expect(game.canExportRecording).toBe(false);
+        const now = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 60_000);
+        try { game.stepAdvancement(); } finally { now.mockRestore(); }
+        expect(game.lastAdvancementError).toBeNull();
+        expect(game.isAdvancing).toBe(false);
+        expect(game.isInputLocked()).toBe(false);
+        expect(game.stats.turns).toBe(turns + 1);
+        expect(game.recordedInputEvents).toHaveLength(count + 1);
+        expect(game.recordedInputEvents[count]!.turn).toBe(game.absoluteTurnNumber);
+        expect(game.hasCompleteRecording).toBe(true);
+        expect(game.canExportRecording).toBe(true);
+        const snapshot = json(game.toSaveSnapshot());
+        expect(snapshot.run.recordingOrigin).toBeDefined();
+        expect(game.loadSnapshot(snapshot)).toBe(true);
+        expect(game.hasCompleteRecording).toBe(true);
+        game.animationEnabled = false;
+        game.executeCommand('wait');
+        expect(game.recordedInputEvents).toHaveLength(count + 2);
+        const complete = json(game.exportRecording()), expected = world(game), expectedRng = json(rng.getState());
+        const independent = createHeadlessGame(3);
+        expect(independent.loadReplay(complete)).toBe(true);
+        replayTo(independent, complete.events.length);
+        expect(world(independent)).toEqual(expected);
+        expect(rng.getState()).toEqual(expectedRng);
     });
 
     it.each(['mouse_travel', 'auto_explore', 'search_long', 'auto_rest'])('resumes queued %s steps with a complete independently replayable world', action => {

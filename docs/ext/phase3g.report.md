@@ -96,4 +96,8 @@ Actual final capture: original `P4A0_CAPTURE=1 npx vitest run src/test/phase4a0_
 v3 boundary/type/build均exit0；139相关文件完整跑完：137文件通过/2失败，2785项通过/2失败，0 skipped/todo，914.970s，源码输入changedInputs=[]。未继续terrain/组合/drift/natural；不算统一验收通过。
 
 - `ext_module_composition` 的16真实标准子集通过，只有附加任意alpha初始化模块失败。3g的snapshot校验遗漏了新`foundation.story.v1`消费者，仍只认旧storyFact hook，导致成长尚未初始化时的合法pending entered-level快照被拒绝并丢失recordingOrigin。修复生产条件同时识别两种注册形式；原组合守卫未改。新增合法pending消费者恢复、无消费者拒绝、仅combat消费者拒绝三个回归。隔离原生产的新正例先红，修复后原composition＋foundation专项＋旧optional rewards共74项及类型检查通过。
-- `ux_1d_recording_continuation` 的60秒墙钟负例在候选70d2844和干净80640d1都同样失败：hasCompleteRecording实际true而原断言期待false。98f9d15已明确修复为drain同一已接受iterator、保留完整机械checkpoint；3g没有修改该watchdog。隔离副本只回退98f9d15生产hunk，原测试字节保持相同，负例通过。不能回退该生产修复重引入已付款防御锁/NPC停滞。此旧夹具修订当前等待维护者限定授权；证据见`evidence/phase3g-recording-watchdog-diagnosis.json`。
+- `ux_1d_recording_continuation` 的60秒墙钟负例在候选70d2844和干净80640d1都同样失败：hasCompleteRecording实际true而原断言期待false。98f9d15已明确修复为drain同一已接受iterator、保留完整机械checkpoint；3g没有修改该watchdog。隔离副本只回退98f9d15生产hunk，原测试字节保持相同，负例通过。不能回退该生产修复重引入已付款防御锁/NPC停滞。维护者已明确授权限定夹具修订：仅让负例的expired drain自身抛错，全部原失效/继续记录断言逐字保留，另增正常60秒停帧保持完整录像、保存/加载继续、独立replay世界与RNG一致的正例。实际历史提交98f9d15的父提交a01a8927运行原测试通过、98f9d15运行同一原测试失败；两份原测试SHA-256均为608f81f2ec5a8ad2dfd8e53d9d93362f6a17fc9103a6e6bfcfff2c0a5add3d13。限定修订后完整UX＋animated-defense共32项通过，0 skipped，exit0，52.28s。原反事实证据见`evidence/phase3g-recording-watchdog-diagnosis.json`，实际历史命令/退出码及限定修订证据见`phase3g-recording-premise-evidence.json`。
+
+### 非阻塞查询开销观察
+
+隔离合成微基准通过真实可信actor查询路径测量DTO复制冻结开销：10次预热后200次查询，1行provider state为4.99ms，1000行约79KB state为272.03ms。该结果不是自然局/FPS结论。未采用实验缓存：虽然原型降低重复复制成本，通用正确性还依赖validateWorld回调纯读约定；本步保留直接冻结复制的安全语义，不引入未审计缓存。

@@ -1,0 +1,133 @@
+{
+  "recordedDateUtc": "2026-10-05",
+  "testFile": "src/test/ux_1d_recording_continuation.test.ts",
+  "authorization": {
+    "source": "User Sentinel_299b064801248191b8ed89b528fdbd15",
+    "scope": "Only repair the negative fixture to make resuming advancement genuinely fail, preserve all invalidation assertions, add a normal 60-second frame-gap complete-recording positive, and record attribution before/after 98f9d15."
+  },
+  "oldPremise": "The UX-1D timeout fixture assumed a 60-second wall-clock frame gap discards accepted mechanics and invalidates recording provenance.",
+  "intentionalProductionChange": {
+    "commit": "98f9d151e84cbafaab5120b40e73c33a9450c5f0",
+    "parent": "a01a8927dacb4946abff763c083a179fa5a160ac",
+    "behavior": "Game.stepAdvancement drains the same accepted iterator after the presentation deadline instead of discarding it; successful completion retains complete recording provenance.",
+    "reason": "Discarding accepted defense work left unconsumed defense recovery and frozen NPC phases after the action cost had been charged.",
+    "report": "docs/ext/phase3d-animation.report.md:8-12,33-44",
+    "productionDiff": "/tmp/p3g-recording-gate-diagnosis/historical-production-change.patch"
+  },
+  "unchangedOriginalFailure": {
+    "line": 40,
+    "expression": "game.hasCompleteRecording",
+    "expected": false,
+    "received": true,
+    "earlierAssertionsPassing": [
+      "game.isAdvancing === false",
+      "game.isInputLocked() === false"
+    ]
+  },
+  "archiveMethod": "git archive <exact commit> | tar -x -C <isolated directory>; symlink the existing node_modules; no source/test changes except the explicitly identified production-only counterfactual.",
+  "nodeVersion": "v24.19.0",
+  "vitestVersion": "4.1.11",
+  "maxWorkers": 1,
+  "originalRuns": [
+    {
+      "label": "before-fix",
+      "archiveCommit": "a01a8927dacb4946abff763c083a179fa5a160ac",
+      "cwd": "/tmp/p3g-recording-gate-diagnosis/before-fix",
+      "command": "NODE_OPTIONS=--max-old-space-size=3072 ./node_modules/.bin/vitest run src/test/ux_1d_recording_continuation.test.ts -t 'after an advancement timeout' --maxWorkers=1",
+      "exitCode": 0,
+      "passed": 1,
+      "failed": 0,
+      "nameFiltered": 17,
+      "originalTestSha256": "608f81f2ec5a8ad2dfd8e53d9d93362f6a17fc9103a6e6bfcfff2c0a5add3d13",
+      "log": "/tmp/p3g-recording-gate-diagnosis/before-fix-timeout.log",
+      "productionChanges": []
+    },
+    {
+      "label": "at-fix",
+      "archiveCommit": "98f9d151e84cbafaab5120b40e73c33a9450c5f0",
+      "cwd": "/tmp/p3g-recording-gate-diagnosis/at-fix",
+      "command": "NODE_OPTIONS=--max-old-space-size=3072 ./node_modules/.bin/vitest run src/test/ux_1d_recording_continuation.test.ts -t 'after an advancement timeout' --maxWorkers=1",
+      "exitCode": 1,
+      "passed": 0,
+      "failed": 1,
+      "nameFiltered": 17,
+      "originalTestSha256": "608f81f2ec5a8ad2dfd8e53d9d93362f6a17fc9103a6e6bfcfff2c0a5add3d13",
+      "log": "/tmp/p3g-recording-gate-diagnosis/at-fix-timeout.log",
+      "productionChanges": []
+    },
+    {
+      "label": "upstream",
+      "archiveCommit": "80640d1f0aa701d71e34758403bf18967fbff097",
+      "cwd": "/tmp/p3g-recording-gate-diagnosis/upstream",
+      "command": "NODE_OPTIONS=--max-old-space-size=3072 ./node_modules/.bin/vitest run src/test/ux_1d_recording_continuation.test.ts -t 'after an advancement timeout' --maxWorkers=1",
+      "exitCode": 1,
+      "passed": 0,
+      "failed": 1,
+      "nameFiltered": 17,
+      "originalTestSha256": "608f81f2ec5a8ad2dfd8e53d9d93362f6a17fc9103a6e6bfcfff2c0a5add3d13",
+      "log": "/tmp/p3g-recording-gate-diagnosis/upstream-timeout.log",
+      "productionChanges": []
+    },
+    {
+      "label": "candidate",
+      "archiveCommit": "70d28442598d50cf155d953635d1d00dee494c86",
+      "cwd": "/tmp/p3g-recording-gate-diagnosis/candidate",
+      "command": "NODE_OPTIONS=--max-old-space-size=3072 ./node_modules/.bin/vitest run src/test/ux_1d_recording_continuation.test.ts -t 'after an advancement timeout' --maxWorkers=1",
+      "exitCode": 1,
+      "passed": 0,
+      "failed": 1,
+      "nameFiltered": 17,
+      "originalTestSha256": "608f81f2ec5a8ad2dfd8e53d9d93362f6a17fc9103a6e6bfcfff2c0a5add3d13",
+      "log": "/tmp/p3g-recording-gate-diagnosis/candidate-timeout.log",
+      "productionChanges": []
+    },
+    {
+      "label": "counterfactual",
+      "archiveCommit": "70d28442598d50cf155d953635d1d00dee494c86",
+      "cwd": "/tmp/p3g-recording-gate-diagnosis/counterfactual",
+      "command": "NODE_OPTIONS=--max-old-space-size=3072 ./node_modules/.bin/vitest run src/test/ux_1d_recording_continuation.test.ts -t 'after an advancement timeout' --maxWorkers=1",
+      "exitCode": 0,
+      "passed": 1,
+      "failed": 0,
+      "nameFiltered": 17,
+      "originalTestSha256": "608f81f2ec5a8ad2dfd8e53d9d93362f6a17fc9103a6e6bfcfff2c0a5add3d13",
+      "log": "/tmp/p3g-recording-gate-diagnosis/counterfactual-timeout.log",
+      "productionChanges": [
+        "Only the 98f9d15 stepAdvancement watchdog hunk reverted; see counterfactual.patch."
+      ]
+    }
+  ],
+  "singleVariableCounterfactual": {
+    "patch": "/tmp/p3g-recording-gate-diagnosis/counterfactual.patch",
+    "changedFiles": [
+      "src/engine/Core/Game.ts"
+    ],
+    "fileComparison": "/tmp/p3g-recording-gate-diagnosis/counterfactual-files.json",
+    "originalTestUnmodified": true
+  },
+  "classification": "Inherited stale UX-1D failure premise, present at the exact 3d animation fix and clean upstream 80640d1; not introduced by 3g.",
+  "approvedRepair": {
+    "baseCommit": "31b53e2631fba841b8d5bee1cc82e66ac75ab6e7",
+    "productionFilesChanged": [],
+    "negativeFixture": "Rename timeout to expired drain exception; mock the real advancement iterator next() to throw while Date.now is 60 seconds later, then assert the exact recorded error.",
+    "originalInvalidationAndContinuedInputAssertions": "Byte-identical to the original block.",
+    "positiveFixture": "Normal 60-second gap completes exactly once, unlocks input, preserves complete/exportable recording and save origin, loads and continues, then independently replays to exact world and RNG equality.",
+    "testSha256": "d0a98fa3839610daa4b30f12d2521ffed629ff04aac0e2c41881c13110a38b3b",
+    "patch": "/tmp/p3g-recording-gate-diagnosis/approved-fixture-repair.patch",
+    "timeoutsSeedsTolerancesAndSkipsChanged": false
+  },
+  "repairValidation": {
+    "cwd": "/workspace/scratch/db2caf941a8f/BrogueJS-content-cloud",
+    "command": "NODE_OPTIONS=--max-old-space-size=3072 ./node_modules/.bin/vitest run src/test/ux_1d_recording_continuation.test.ts src/ext/modules/combat/tests/combat_animated_defense.test.ts --maxWorkers=1",
+    "exitCode": 0,
+    "filesPassed": 2,
+    "testsPassed": 32,
+    "skipped": 0,
+    "uxTestsPassed": 19,
+    "animatedDefenseTestsPassed": 13,
+    "durationSeconds": 52.28,
+    "log": "/tmp/p3g-recording-gate-diagnosis/repaired-related.log",
+    "scope": "Both complete requested files; not a full repository gate."
+  },
+  "ceReference": "The runs print the generic missing-CE-source notice. These selected cases and files executed without CE-dependent skips."
+}
