@@ -27,6 +27,17 @@ export function nearestLegalMeleeContact(grid: Grid, attacker: MeleeActor, defen
  * on exceptions. No entries are allocated for ordinary 1x1 attacks. */
 const contacts = new WeakMap<Creature, Readonly<Pos>>();
 export function physicalContactOf(creature: Creature): Readonly<Pos> { return contacts.get(creature) ?? creature.loc; }
+/** A projectile or area effect retains its first real body contact through the
+ * complete native effect pipeline, including blood and nested death effects. */
+export function withBodyContact<T>(creature: Creature, at: Readonly<Pos>, run: () => T): T {
+    if (!creature.spatial) return run();
+    assertNativeSpatial(creature);
+    const previous = contacts.get(creature);
+    contacts.set(creature, Object.freeze({ ...at }));
+    try { return run(); } finally {
+        if (previous) contacts.set(creature, previous); else contacts.delete(creature);
+    }
+}
 export function bodyAttackContactOf(attacker: Creature, defender: Creature): BodyAttackContact {
     const from = contacts.get(attacker), to = contacts.get(defender);
     return from && to ? Object.freeze({ from: { ...from, zoneId: 'body' }, to: { ...to, zoneId: 'body' },

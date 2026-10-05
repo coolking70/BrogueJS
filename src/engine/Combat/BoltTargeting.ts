@@ -1,4 +1,6 @@
-import { distanceBetweenFootprints, footprintContains, nearestContact } from '../Movement/CreatureSpatial';
+import { footprintContains } from '../Movement/CreatureSpatial';
+import type { Pos } from '../../types';
+import { bodySightCornerClear } from './BodyPerception';
 import { Monster, monstersAreTeammates } from '../../entities/Monster';
 import type { Player } from '../../entities/Player';
 import type { Creature } from '../../entities/Creature';
@@ -11,7 +13,25 @@ import { boltLine } from './BoltTrajectory';
 import { negationWillAffectMonster } from './Negation';
 import { wandDominate } from './Domination';
 import { CE_BOLT_CATALOG, CE_ITEM_BOLT_TYPES, CEBoltEffect, CEBoltFlags } from './BoltCatalog';
-import { canSeeMonster } from '../UI/MonsterVisibility';
+import { canSeeMonster, publicMonsterCells } from '../UI/MonsterVisibility';
+
+/** Nearest legal PUBLIC contact, separate from trusted mechanical occupancy.
+ * Ordinary 1x1 keeps the original line/open-path test and sorting. */
+export function automaticBoltContact(player: Player, grid: Grid, monsters: readonly Monster[], monster: Monster): Pos | null {
+    const cells = monster.spatial ? [...publicMonsterCells(player, grid, monster)] : [monster.loc];
+    const distance = (p: Pos) => Math.max(Math.abs(p.x - player.x), Math.abs(p.y - player.y));
+    cells.sort((a, b) => distance(a) - distance(b) || a.y - b.y || a.x - b.x);
+    for (const at of cells) {
+        const line = boltLine(grid, player.loc, at), aimIndex = line.findIndex(p => p.x === at.x && p.y === at.y);
+        if (aimIndex < 0 || (monster.spatial && !bodySightCornerClear(grid, player.loc, at))) continue;
+        if (line.slice(0, aimIndex).some(p =>
+            (cellTerrainFlags(grid, p.x, p.y) & (T_OBSTRUCTS_PASSABILITY | T_OBSTRUCTS_VISION))
+            || monsters.some(other => other !== monster && other.hp > 0 && !other.isDormant && !other.submerged
+                && (other.isAlly || (!other.isTrulyInvisible() && !other.hasStatus('invisible'))) && footprintContains(other, p)))) continue;
+        return { x: at.x, y: at.y };
+    }
+    return null;
+}
 
 /** CE IO.c canSeeMonster/monsterRevealed: use perception, not merely a lit tile.
  * No new submerged bookkeeping or clairvoyance is introduced here. */
@@ -30,22 +50,20 @@ export function arcanaTargetCandidates(player: Player, grid: Grid, monsters: rea
     const known = ItemLoader.identifiedItems.has(id);
     const polarityKnown = item.magicDetected || item.identified === true || ItemLoader.isPolarityRevealed(id);
     const polarity = polarityKnown ? ItemLoader.itemMagicPolarity(item) : 0;
-    return monsters.filter(m => {
+    const contacts = new Map<number, Pos>();
+    return [...new Set(monsters)].filter(m => {
         if (m.hp <= 0 || m.submerged || !canObserveBoltCreature(player, grid, m)) return false;
         // CE openPathBetween also rejects creatures and terrain in intervening cells.
-        const line = boltLine(grid, player.loc, nearestContact(player, m).to);
-        const aimIndex = line.findIndex(p => footprintContains(m, p));
-        if (line.slice(0, aimIndex).some(p =>
-            (cellTerrainFlags(grid, p.x, p.y) & (T_OBSTRUCTS_PASSABILITY | T_OBSTRUCTS_VISION))
-            || monsters.some(other => other !== m && other.hp > 0 && !other.isDormant && !other.submerged
-                && (other.isAlly || (!other.isTrulyInvisible() && !other.hasStatus('invisible'))) && footprintContains(other, p)))) return false;
+        const contact = automaticBoltContact(player, grid, monsters, m);
+        if (!contact) return false;
+        contacts.set(m.id, contact);
         if (player.hasStatus('hallucinating') && !player.hasStatus('telepathy')
             && !m.hasBehavior('MONST_INANIMATE') && !m.isInvulnerable()) return false;
         const ally = monstersAreTeammates(player, m) || m.isCaged;
         if (!ally && m.hasAbility('MA_REFLECT_100')) return false;
         if (known && bolt) {
             if (bolt.forbiddenMonsterFlags.some(flag => m.hasBehavior(flag))) return false;
-            const distance = distanceBetweenFootprints(m, player);
+            const distance = Math.max(Math.abs(contact.x - player.x), Math.abs(contact.y - player.y));
             if (bolt.effect === CEBoltEffect.DOMINATION
                 && (m.hasBehavior('MONST_TURRET') || (!ally && wandDominate(m) <= 0))) return false;
             if (!ally && bolt.effect === CEBoltEffect.BECKONING && distance <= 1) return false;
@@ -58,7 +76,7 @@ export function arcanaTargetCandidates(player: Player, grid: Grid, monsters: rea
         if (polarity) return ally ? polarity < 0 : polarity > 0;
         return !ally;
     }).sort((a, b) => {
-        const distance = (m: Monster) => distanceBetweenFootprints(m, player);
+        const distance = (m: Monster) => { const p = contacts.get(m.id)!; return Math.max(Math.abs(p.x - player.x), Math.abs(p.y - player.y)); };
         return distance(a) - distance(b) || a.id - b.id;
     });
 }

@@ -130,6 +130,7 @@
     "src/test/phase4a1_pathing_perf.test.ts",
     "src/test/phase4a1_square_pathing.test.ts",
     "src/test/phase4a2_body_combat.test.ts",
+    "src/test/phase4a2_body_effects.test.ts",
     "src/test/presentation_timeline.test.ts",
     "src/test/r_1_appearance.test.ts",
     "src/test/repo_hygiene.test.ts",

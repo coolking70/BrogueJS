@@ -73,7 +73,7 @@ export function updateMonsterState(g: Game, m: Monster, stealthRange: number): v
         return;
     }
     const scent = g.scent ??= new ScentMap(g.grid.width, g.grid.height);
-    const aware = scent.awareOfTarget(g.grid, m.x, m.y, g.player.x, g.player.y, {
+    const aware = scent.awareOfBodyTarget(g.grid, m, g.player, {
         alwaysHunting: m.hasBehavior('MONST_ALWAYS_HUNTING'), immobile: immobile(m),
         tracking: !allyState(m) && m.state === MonsterState.HUNTING, stealthRange,
     });
@@ -88,9 +88,9 @@ export function updateMonsterState(g: Game, m: Monster, stealthRange: number): v
     for (const target of [g.player, ...iterateCreatures(g.monsters)]) {
         if (!monsterFleesFrom(m, target) || distance(m, target) >= closest) continue;
         // CE tests traversibility from the feared enemy, then an open sight path.
-        const traversible = target instanceof Monster ? blinkTraversiblePath(g, target, m.loc)
-            : playerTraversiblePath(g, target as Player, m.loc);
-        if (traversible && openCreaturePath(g, m, target.loc)) closest = distance(m, target);
+        const traversible = target instanceof Monster ? blinkTraversiblePath(g, target, m)
+            : playerTraversiblePath(g, target as Player, m);
+        if (traversible && openCreaturePath(g, m, target)) closest = distance(m, target);
     }
     if (!allyState(m) && m.state === MonsterState.WANDERING && aware && g.grid.getCell(g.player.x, g.player.y)?.isVisible) {
         alertMonster(g, m);

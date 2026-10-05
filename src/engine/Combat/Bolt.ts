@@ -12,6 +12,7 @@ import { promoteLayersWithMechFlag } from '../Map/Promotion';
 import { TM_PROMOTES_ON_ELECTRICITY } from '../Map/TerrainCatalog';
 import { ItemLoader } from '../Items/ItemLoader';
 import type { Creature } from '../../entities/Creature';
+import type { EffectTargetCategory } from '../Movement/CreatureSpatial';
 import { CEBoltType, CEBoltEffect, CEBoltFlags, CE_BOLT_CATALOG, CE_ITEM_BOLT_TYPES } from './BoltCatalog';
 
 /** CE Items.c:5455-5465 -> Time.c:1289-1303. Also applies to SPARK
@@ -56,6 +57,20 @@ export enum BoltEffect {
     POISON_DART,
     POLYMORPH,       // W-19: in-place CE polymorph; wand identity/pool remains W-24
     PLENTY,          // W-20: CE clone; wand identity/pool remains W-24
+}
+
+/** D08 native effect routing. Spatial collision scopes use the same explicit
+ * part/group policy as area and geometry consumers; legacy 1x1 revisits remain. */
+export function boltTargetCategory(effect: BoltEffect): EffectTargetCategory {
+    switch (effect) {
+        case BoltEffect.NEGATION: case BoltEffect.DOMINATION: case BoltEffect.POLYMORPH:
+        case BoltEffect.PLENTY: case BoltEffect.EMPOWERMENT: case BoltEffect.INVISIBILITY:
+            return 'identity';
+        case BoltEffect.DISCORD: case BoltEffect.ENTRANCEMENT: return 'mental';
+        case BoltEffect.HEALING: case BoltEffect.SHIELDING: case BoltEffect.HASTE: return 'healing';
+        case BoltEffect.LIGHTNING: return 'area-damage';
+        default: return 'direct';
+    }
 }
 
 /** Semantic aliases only. Presence here does not enable a dispatch branch. */
@@ -289,7 +304,8 @@ export function buildBoltFrames(path: Pos[], bolt: BoltConfig): BoltFrame[] {
 
 /** A living, active recipient reached AFTER reflection, including the caster or
  * player. An effect attempt, not proof of HP loss (immunity/miss still count).
- * Reflectors are not hits. Repeat visits are separate hits. Snapshot the position:
+ * Reflectors are not hits. Ordinary 1x1 repeat visits are separate hits; spatial
+ * contacts use one projectile policy scope. Snapshot the position:
  * teleport/beckoning can move the recipient.
  * CE updateBolt (Items.c:5115-5132) separates caster from creature being hit. */
 export interface BoltHit {

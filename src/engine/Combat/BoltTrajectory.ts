@@ -6,7 +6,8 @@ import { Player } from '../../entities/Player';
 import { DungeonLayer, type Grid } from '../Map/Grid';
 import { cellTerrainFlags, cellTerrainMechFlags } from '../Map/DungeonFeature';
 import { T_IS_FLAMMABLE, T_OBSTRUCTS_PASSABILITY, T_OBSTRUCTS_VISION, TM_REFLECTS_BOLTS } from '../Map/TerrainCatalog';
-import { BoltEffect, createBoltResult, type BoltConfig, type BoltHit, type BoltReflection } from './Bolt';
+import { BoltEffect, boltTargetCategory, createBoltResult, type BoltConfig, type BoltHit, type BoltReflection } from './Bolt';
+import { collectBodyTargets } from '../Movement/CreatureSpatial';
 import { projectileReflects, randomReflectionOffset } from './BoltReflection';
 import { CE_BOLT_CATALOG, CEBoltFlags as F } from './BoltCatalog';
 
@@ -57,6 +58,7 @@ export function boltLine(grid: Grid, from: Pos, to: Pos, bolt?: BoltConfig, worl
     let bestScore = 0, best = offsetLine(grid, from, to, OFFSETS[0]);
     for (const offset of OFFSETS) {
         const path = offsetLine(grid, from, to, offset);
+        const scoredBodies = new Set<string>();
         let score = 0, unknown = false;
         for (const p of path) {
             const cell = grid.getCell(p.x, p.y)!;
@@ -90,8 +92,10 @@ export function boltLine(grid: Grid, from: Pos, to: Pos, bolt?: BoltConfig, worl
                 score += terrain & T_OBSTRUCTS_PASSABILITY ? 50 : terrain & T_OBSTRUCTS_VISION ? 10 : 0;
                 continue;
             }
-            if (creature && (flags & F.TARGET_ENEMIES)) score += enemy ? 50 : -200;
-            if (creature && (flags & F.TARGET_ALLIES)) score += ally ? 50 : -200;
+            const firstCreature = !creature?.spatial || collectBodyTargets({ grid, monsters: [creature] }, [p],
+                { effect: boltTargetCategory(bolt.effect) }, scoredBodies).length > 0;
+            if (creature && firstCreature && (flags & F.TARGET_ENEMIES)) score += enemy ? 50 : -200;
+            if (creature && firstCreature && (flags & F.TARGET_ALLIES)) score += ally ? 50 : -200;
             if (burning) score--;
             if (creature && (flags & F.PASSES_THRU_CREATURES)) continue;
             if (creature || (terrain & T_OBSTRUCTS_PASSABILITY) || ((terrain & T_OBSTRUCTS_VISION) && !burning)) break;
@@ -155,6 +159,7 @@ export function traceBolt(grid: Grid, bolt: BoltConfig, from: Pos, aim: Pos, wor
     const maxLength = grid.width * 10;
     const reflectionLimit = maxLength - Math.max(grid.width, grid.height);
     const path: Pos[] = [], hits: BoltHit[] = [], reflections: BoltReflection[] = [];
+    const bodyScope = new Set<string>(); // one projectile, including its reflected segments
     let pending = boltLine(grid, from, aim, bolt, world);
     if (options.reverseBlink && bolt.effect === BoltEffect.BLINKING) {
         // CE Items.c:5599-5624: tune FROM the beckoner, then reverse the
@@ -187,11 +192,13 @@ export function traceBolt(grid: Grid, bolt: BoltConfig, from: Pos, aim: Pos, wor
         const blocked = !!(cellTerrainFlags(grid, pos.x, pos.y) & BLOCKS);
         if (!path.length && bolt.effect === BoltEffect.BLINKING && (blocked || (creature && !piercing))) break;
         path.push(pos);
-        if (creature && canReflect && projectileReflects(creature, world.caster) && path.length - 1 < reflectionLimit) {
+        const firstContact = !creature?.spatial || collectBodyTargets({ grid, monsters: [creature] }, [pos],
+            { effect: boltTargetCategory(bolt.effect) }, bodyScope).length > 0;
+        if (creature && firstContact && canReflect && projectileReflects(creature, world.caster) && path.length - 1 < reflectionLimit) {
             reflect(creature, projectileReflects(creature, world.caster));
             continue; // CE :5704: no effect or path exposure on the reflector.
         }
-        const hit = creature ? { creature, pos: { ...pos } } : undefined;
+        const hit = creature && firstContact ? { creature, pos: { ...pos } } : undefined;
         if (hit) hits.push(hit);
         if (onCell?.(pos, hit) === false) break;
         if (creature && !piercing) break;

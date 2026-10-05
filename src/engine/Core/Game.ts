@@ -1,4 +1,6 @@
-import { nearestLegalMeleeContact, bodyRayContact, bodyAttackContactOf, physicalContactOf, withBodyAttackContact, type BodyAttackContact } from '../Combat/BodyCombat';
+import { bodyLightOrigin } from '../Combat/BodyPerception';
+import { collectAreaBodyTargets } from '../Combat/BodyEffects';
+import { nearestLegalMeleeContact, bodyRayContact, bodyAttackContactOf, physicalContactOf, withBodyContact, withBodyAttackContact, type BodyAttackContact } from '../Combat/BodyCombat';
 import { footprintExposure } from '../Movement/FootprintExposure';
 import { CreatureSpatial } from '../Movement/CreatureSpatial';
 import { FootprintPathing, type FootprintGoal } from '../Map/FootprintPathing';
@@ -65,7 +67,7 @@ import {
 import blueprintData from '../../data/blueprints.json';
 import { getMachineObservationHook, setMachineObservationSeed } from '../Generator/MachineObservation';
 import { PLAYER_STARTING_RESOURCES, Player, STOMACH_SIZE, type HungerState } from '../../entities/Player';
-import { Monster, monstersAreTeammates, monstersAreEnemies, avoidedFlagsForCaster } from '../../entities/Monster';
+import { monsterBoltContact, Monster, monstersAreTeammates, monstersAreEnemies, avoidedFlagsForCaster } from '../../entities/Monster';
 import { CombatSystem, type AttackResult } from '../Combat/Combat';
 import { formatCombatText, type CombatantText } from '../Combat/CombatText';
 import { displaySettings } from '../Settings';
@@ -149,9 +151,9 @@ import { canPlaceCreature, teleportCandidates, captiveItemDropCandidates, qualif
 
 import { blinkTargetPreview } from '../Combat/BlinkTargeting';
 import { MONSTER_BLINK, monsterBlinkAvoids } from '../Combat/MonsterBlink';
-import { arcanaTargetCandidates, canObserveBoltCreature } from '../Combat/BoltTargeting';
+import { automaticBoltContact, arcanaTargetCandidates, canObserveBoltCreature } from '../Combat/BoltTargeting';
 import { isSubmerged, monsterCanSubmergeNow, surfaceOnDryLand, hiddenBySubmersion } from '../Movement/Submersion';
-import { canSeeMonster, canDirectlySeeMonster, canDisplayMonster, monsterHidden, monsterRevealed } from '../UI/MonsterVisibility';
+import { canSeeMonster, canDirectlySeeMonster, canSeeMonsterAt, canDisplayMonsterAt, monsterHidden, monsterRevealed, publicMonsterCells } from '../UI/MonsterVisibility';
 
 export type GameMode = 'normal' | 'easy' | 'wizard' | 'test';
 const PLAYER_MODE_RESOURCES = Object.freeze({easy:Object.freeze({maxHp:45,strength:14}),wizard:Object.freeze({maxHp:999,strength:18})});
@@ -2303,8 +2305,9 @@ export class Game {
         if (visibleMonsters.length > 0) {
             // Sort by distance
             visibleMonsters.sort((a, b) => {
-                const da = Math.abs(a.loc.x - this.player.loc.x) + Math.abs(a.loc.y - this.player.loc.y);
-                const db = Math.abs(b.loc.x - this.player.loc.x) + Math.abs(b.loc.y - this.player.loc.y);
+                const distance = (m: Monster) => m.spatial ? Math.min(...publicMonsterCells(this.player, this.grid, m).map(p => Math.abs(p.x - this.player.x) + Math.abs(p.y - this.player.y)))
+                    : Math.abs(m.x - this.player.x) + Math.abs(m.y - this.player.y);
+                const da = distance(a), db = distance(b);
                 return da - db;
             });
             const m = visibleMonsters.find(mon => !this.examinedEntityIds.has(mon.id));
@@ -2364,7 +2367,7 @@ export class Game {
         if (!cell) return;
 
         const monster = this.getMonsterAt(x, y);
-        if (monster && canSeeMonster(this.player, this.grid, monster)) {
+        if (monster && canSeeMonsterAt(this.player, this.grid, monster, { x, y })) {
             const weaponDamageStr = this.player.equippedWeapon?.damage ?? '1d2';
             const [n, d] = weaponDamageStr.split('d').map(Number);
             this.inspectTarget = generateMonsterDetail(
@@ -2839,12 +2842,12 @@ export class Game {
             if (m.hp <= 0) continue;
             const kind = m.markedForSacrifice ? LightKind.SACRIFICE_MARK_LIGHT : MONSTER_INTRINSIC_LIGHT[m.typeId];
             if (kind !== undefined) lm.paintLight({
-                light: LIGHT_CATALOG[kind]!, x: m.loc.x, y: m.loc.y,
+                light: LIGHT_CATALOG[kind]!, ...bodyLightOrigin(m),
                 hasCreatureAt: creatureBlocker,
             });
             const mutationKind = m.mutation && MUTATION_LIGHT[m.mutation.id];
             if (mutationKind !== undefined) lm.paintLight({
-                light: LIGHT_CATALOG[mutationKind]!, x: m.loc.x, y: m.loc.y,
+                light: LIGHT_CATALOG[mutationKind]!, ...bodyLightOrigin(m),
                 hasCreatureAt: creatureBlocker,
             });
         }
@@ -2857,7 +2860,7 @@ export class Game {
             if (this.burningDuration(entity) > 0) {
                 lm.paintLight({
                     light: burningLight,
-                    x: entity.loc.x, y: entity.loc.y,
+                    ...bodyLightOrigin(entity),
                     hasCreatureAt: creatureBlocker,
                 });
             }
@@ -3424,7 +3427,7 @@ export class Game {
         const target = request.target;
         if (request.action === 'attack' && target.kind === 'creature') {
             const primary = this.monsters.find(monster => monster.id === target.id)!;
-            const contact = primary.spatial ? this.meleeContact(this.player, primary)! : nearestContact(this.player, primary);
+            const contact = primary.spatial ? this.publicMeleeContact(primary)! : nearestContact(this.player, primary);
             const dx = contact.to.x - contact.from.x, dy = contact.to.y - contact.from.y;
             const flags = this.player.equippedWeapon?.flags ?? [];
             const whip = flags.includes('ITEM_ATTACKS_EXTEND') ? this.preparePlayerWhipAttack(dx, dy) : null;
@@ -3752,7 +3755,7 @@ export class Game {
             const defender = this.monsters.find(actor => actor.id === target.id && actor.hp > 0);
             return !!defender && this.canObserveBoltTarget(defender) && !defender.isCaged
                 && (!defender.isAlly || defender.hasStatus('discordant'))
-                && (defender.spatial ? !!this.meleeContact(this.player, defender) : (distanceBetweenFootprints(defender, this.player) === 1
+                && (defender.spatial ? !!this.publicMeleeContact(defender) : (distanceBetweenFootprints(defender, this.player) === 1
                 && (!playerTravelDiagonalBlocked(this.grid, this.player.loc, defender.loc, false)
                     || defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))
                 && (!!this.grid.getCell(defender.x, defender.y)?.isPassable || defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))));
@@ -3795,7 +3798,7 @@ export class Game {
         const target = request.target;
         if (request.action === 'attack' && target.kind === 'creature') {
             const monster = this.monsters.find(actor => actor.id === target.id)!;
-            const contact = monster.spatial ? this.meleeContact(this.player, monster)! : nearestContact(this.player, monster);
+            const contact = monster.spatial ? this.publicMeleeContact(monster)! : nearestContact(this.player, monster);
             this.performPlayerAction('move', { x: contact.to.x - contact.from.x, y: contact.to.y - contact.from.y }, 'system', control);
         } else if (request.action === 'move' && target.kind === 'cell') {
             this.performPlayerAction('move', { x: target.x - this.player.x, y: target.y - this.player.y }, 'system', control);
@@ -4771,9 +4774,8 @@ export class Game {
                         // F-2a：CE 焚化类药水是 DF 生成家族（DF_INCINERATION_POTION
                         // {PLAIN_FIRE, SURFACE, 100, 37}，Globals.c:781——火地形
                         // 直接铺上，不看底下可不可燃），走 igniteForced。
-                        this.environment.igniteForced(this.player.loc.x, this.player.loc.y);
-                        this.environment.igniteForced(this.player.loc.x + 1, this.player.loc.y);
-                        this.environment.igniteForced(this.player.loc.x - 1, this.player.loc.y);
+                        this.igniteIncinerationCells([this.player.loc,
+                            { x: this.player.x + 1, y: this.player.y }, { x: this.player.x - 1, y: this.player.y }]);
                         break;
                     case 'poison_burst':
                         logger.log(i18next.t('potion.poison_burst', { defaultValue: 'A toxic cloud billows around you!' }), '#88ff88');
@@ -5135,7 +5137,7 @@ export class Game {
         }
         if (!getBoltForItem(identityId ?? '')) return;
         const first = this.getArcanaCandidates(item)[0];
-        this.pendingArcana = { item, cursor: { ...(first?.loc ?? this.player.loc) } };
+        this.pendingArcana = { item, cursor: { ...(first ? automaticBoltContact(this.player, this.grid, this.monsters, first) ?? this.player.loc : this.player.loc) } };
         this.isInventoryOpen = false;
         this.isThrowing = false;
         this.throwItemTarget = null;
@@ -5172,7 +5174,8 @@ export class Game {
         const index = candidates.findIndex(m => footprintContains(m, pending.cursor));
         const next = index < 0 ? (reverse ? candidates.length - 1 : 0)
             : (index + (reverse ? -1 : 1) + candidates.length) % candidates.length;
-        this.setArcanaTarget(candidates[next]!.loc.x, candidates[next]!.loc.y);
+        const contact = automaticBoltContact(this.player, this.grid, this.monsters, candidates[next]!);
+        if (contact) this.setArcanaTarget(contact.x, contact.y);
     }
 
     public cancelArcanaSelection() {
@@ -5251,7 +5254,7 @@ export class Game {
         this.bindDungeonFeatureEffects();
         const first = aim ? undefined : this.getArcanaCandidates(item)[0];
         const dir = this.directionToVec(this.player.lastMoveDirection ?? Direction.RIGHT);
-        const target = aim ?? (bolt.selfTargeting ? this.player.loc : first?.loc) ?? { x: this.player.loc.x + dir.x * 20, y: this.player.loc.y + dir.y * 20 };
+        const target = aim ?? (bolt.selfTargeting ? this.player.loc : first ? automaticBoltContact(this.player, this.grid, this.monsters, first) : undefined) ?? { x: this.player.loc.x + dir.x * 20, y: this.player.loc.y + dir.y * 20 };
         // Blink distance and tunneling budget are travel inputs, resolved from E.
         // W-25 connects both identities to the normal inventory entry.
         const travelBolt = bolt.effect === BoltEffect.BLINKING || bolt.effect === BoltEffect.TUNNELING ? {
@@ -5842,6 +5845,12 @@ export class Game {
     }
 
     private applyBoltEffect(result: BoltResult, item: Item, alreadyReflected = false): boolean {
+        const target = result.hits.find(h => h.pos.x === result.impactPos.x && h.pos.y === result.impactPos.y);
+        return target ? withBodyContact(target.creature, target.pos, () => this.applyBoltEffectAt(result, item, alreadyReflected))
+            : this.applyBoltEffectAt(result, item, alreadyReflected);
+    }
+
+    private applyBoltEffectAt(result: BoltResult, item: Item, alreadyReflected = false): boolean {
         const { effect, impactPos } = result;
         let autoID = false;
         // Consume the traced contact, not a new location lookup (which could
@@ -5866,7 +5875,7 @@ export class Game {
                         name: item.displayName, target: this.monsterDisplayName(target), damage,
                         defaultValue: `${item.displayName} scorches the ${this.monsterDisplayName(target)} for ${damage} damage!`
                     }), '#ff6600');
-                    this.spawnFloatingText(`-${damage}`, target.loc.x, target.loc.y, 0xff4400);
+                    this.spawnFloatingText(`-${damage}`, physicalContactOf(target).x, physicalContactOf(target).y, 0xff4400);
                     if (target.hp <= 0) {
                         logger.log(i18next.t('bolt.fire_kill', {
                             target: this.monsterDisplayName(target),
@@ -5897,7 +5906,7 @@ export class Game {
                         continue;
                     }
                     totalDamage += damage;
-                    this.spawnFloatingText(`-${damage}`, m.loc.x, m.loc.y, 0x33ccff);
+                    this.spawnFloatingText(`-${damage}`, physicalContactOf(m).x, physicalContactOf(m).y, 0x33ccff);
                     logger.log(i18next.t('bolt.lightning_hit', {
                         interpolation: { escapeValue: false },
                         name: item.displayName, target: this.monsterDisplayName(m), damage,
@@ -6005,7 +6014,7 @@ export class Game {
                     case BoltEffect.DISCORD: logger.log(i18next.t('bolt.discord_hit', { ...args, defaultValue: '{{name}} sows discord in the mind of {{target}}!' }), '#ff88ff'); break;
                     case BoltEffect.INVISIBILITY: logger.log(i18next.t('bolt.invisibility_hit', { ...args, defaultValue: '{{name}} makes {{target}} vanish!' }), '#aaaaff'); break;
                 }
-                if (effect === BoltEffect.HEALING) this.spawnFloatingText(`+${applied.healed}`, target.loc.x, target.loc.y, 0x44ff88);
+                if (effect === BoltEffect.HEALING) this.spawnFloatingText(`+${applied.healed}`, physicalContactOf(target).x, physicalContactOf(target).y, 0x44ff88);
                 break;
             }
 
@@ -6058,7 +6067,7 @@ export class Game {
                         ? { kind: 'staff', enchantment: item.enchantment } : { kind: 'wand' }).value;
                     target.applyShield(staffProtection(magnitude));
                     autoID = true; // CE Items.c:5412-5413: contact, even if hidden/unchanged.
-                    this.spawnFloatingText(this.getStatusLabel('shielded'), target.loc.x, target.loc.y, 0xffffaa);
+                    this.spawnFloatingText(this.getStatusLabel('shielded'), physicalContactOf(target).x, physicalContactOf(target).y, 0xffffaa);
                 }
                 break;
             }
@@ -6144,6 +6153,8 @@ export class Game {
         const meta = MONSTER_BOLT_TABLE[ceBoltName];
         if (!meta || meta.effect === null || meta.effect === BoltEffect.TUNNELING
             || meta.effect === BoltEffect.OBSTRUCTION) return; // CE monsters never cast these.
+        const contact = monsterBoltContact(caster, target, this);
+        if (!contact) return;
         if (this.extensionRuntime) this.extensionRuntime.notifyCommittedAction({ actorId: caster.id, action: 'cast' });
         this.bindDungeonFeatureEffects(); // Direct engine callers share the same world ports as player bolts.
 
@@ -6171,16 +6182,17 @@ export class Game {
         let autoID = false;
         const causality = this.extensionRuntime?.causality;
         let origin = causality?.create('bolt', caster.id, caster.id, caster.extensionHooks?.partyId(caster) ?? null) ?? null;
-        const boltResult = traceBolt(this.grid, visualBolt, caster.loc, target.loc, this.boltWorld(caster), {
+        const boltResult = traceBolt(this.grid, visualBolt, { x: contact.from.x, y: contact.from.y }, { x: contact.to.x, y: contact.to.y }, this.boltWorld(caster), {
             onReflection: reflection => {
                 if (causality) origin = causality.create('reflection', caster.id, reflection.creature?.id ?? null,
                     reflection.creature ? reflection.creature.extensionHooks?.partyId(reflection.creature) ?? null : null, origin);
                 this.observeBoltReflection(reflection);
             },
             onCell: (pos, hit) => {
-                if (hit) autoID = (causality
+                if (hit) autoID = withBodyAttackContact(caster, hit.creature, { from: contact.from, to: { ...hit.pos, zoneId: 'body' },
+                    distance: Math.max(Math.abs(hit.pos.x - contact.from.x), Math.abs(hit.pos.y - contact.from.y)) }, () => (causality
                     ? causality.withOrigin(origin, () => this.applyMonsterBoltHit(caster, hit.creature, ceBoltName, meta))
-                    : this.applyMonsterBoltHit(caster, hit.creature, ceBoltName, meta)) || autoID;
+                    : this.applyMonsterBoltHit(caster, hit.creature, ceBoltName, meta))) || autoID;
                 // CE Items.c:5168-5178: lethal player damage returns before
                 // tile exposure and terminates even a piercing spark.
                 if (this.player.hp <= 0 || this.isGameOver) return false;
@@ -6245,7 +6257,7 @@ export class Game {
                 if (hpDamage > 0) {
                     // CE monsterCastSpell: a reflected monster bolt still kills
                     // in the original caster's name, never in the reflector's.
-                    this.spawnFloatingText(`-${hpDamage}`, target.loc.x, target.loc.y, 0xff5555);
+                    this.spawnFloatingText(`-${hpDamage}`, physicalContactOf(target).x, physicalContactOf(target).y, 0xff5555);
                 }
                 logCast('bolt.monster_cast_hit', `${casterLabel} hits ${targetName} with ${ceBoltName} for ${hpDamage} damage!`, '#ff8866');
                 if (target.hp > 0) {
@@ -6291,7 +6303,7 @@ export class Game {
                 }
                 if (result.damage > 0) {
                     if (isPlayer) this.lastDamageSource = caster.name;
-                    this.spawnFloatingText(`-${result.damage}`, target.loc.x, target.loc.y, 0xff5555);
+                    this.spawnFloatingText(`-${result.damage}`, physicalContactOf(target).x, physicalContactOf(target).y, 0xff5555);
                     this.reportAttack(caster, target, result);
                     if (caster.hasEffectiveOnHitStatus() && rng.randPercent(Math.floor(caster.onHitChance * 100))) {
                         this.applyMonsterOnHitStatus(target, caster.name, caster.onHitStatus!, caster.onHitDuration);
@@ -6320,7 +6332,7 @@ export class Game {
                 const applied = this.applyBasicBoltEffect(target, meta.effect, meta.magnitude);
                 const healed = applied.healed;
                 autoID = applied.autoID;
-                this.spawnFloatingText(`+${healed}`, target.loc.x, target.loc.y, 0x44ff88);
+                this.spawnFloatingText(`+${healed}`, physicalContactOf(target).x, physicalContactOf(target).y, 0x44ff88);
                 logCast('bolt.monster_cast_heal', `${casterLabel} heals ${targetName} for ${healed} HP!`, '#44ff88');
                 break;
             }
@@ -6737,8 +6749,14 @@ export class Game {
 
         const px = this.player.loc.x;
         const py = this.player.loc.y;
+        const bodyTargets = squareListUsers(this.monsters) ? new Map(this.collectAreaBodyTargets(this.player.loc, distance, 'identity').map(t => [t.entityId, t])) : null;
         for (const m of [...this.monsters]) {
             if (m.hp <= 0) continue;
+            if (bodyTargets) {
+                const target = bodyTargets.get(m.id);
+                if (target) withBodyContact(m, target.contact, () => this.negateCreatureMagic(m));
+                continue;
+            }
             if (!this.hasLineOfSight(px, py, m.loc.x, m.loc.y)) continue;
             const distSq = (px - m.loc.x) * (px - m.loc.x) + (py - m.loc.y) * (py - m.loc.y);
             if (distSq > distance * distance) continue;
@@ -6890,9 +6908,15 @@ export class Game {
 
         const px = this.player.loc.x;
         const py = this.player.loc.y;
+        const bodyTargets = squareListUsers(this.monsters) ? new Map(this.collectAreaBodyTargets(this.player.loc, DCOLS, 'mental').map(t => [t.entityId, t])) : null;
         for (const m of this.monsters) {
             if (m.hp <= 0) continue;
             if (m.hasBehavior('MONST_INANIMATE') || m.hasAbility('MONST_INVULNERABLE')) continue;
+            if (bodyTargets) {
+                const target = bodyTargets.get(m.id);
+                if (target) withBodyContact(m, target.contact, () => this.applyStatusToMonster(m, 'discordant', DISCORD_DURATION));
+                continue;
+            }
             // CE 为 IN_FIELD_OF_VIEW（玩家 FOV）；web 用玩家→怪物的实时视线判定，
             // 等价且不依赖渲染流程的 FOV 缓存刷新
             if (!this.hasLineOfSight(px, py, m.loc.x, m.loc.y)) continue;
@@ -7122,9 +7146,11 @@ export class Game {
                     }
                     const effects = this.extensionRuntime?.causality;
                     const projectileOrigin = effects ? effects.create('projectile', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null) : null;
-                    const res = effects ? effects.withOrigin(projectileOrigin,
+                    const contact: BodyAttackContact = { from: { ...origin, zoneId: 'body' }, to: { x, y, zoneId: 'body' },
+                        distance: Math.max(Math.abs(x - origin.x), Math.abs(y - origin.y)) };
+                    const res = withBodyAttackContact(this.player, monst, contact, () => effects ? effects.withOrigin(projectileOrigin,
                         () => CombatSystem.resolveThrownWeapon(this.player, monst, thrown, this.grid))
-                        : CombatSystem.resolveThrownWeapon(this.player, monst, thrown, this.grid);
+                        : CombatSystem.resolveThrownWeapon(this.player, monst, thrown, this.grid));
                     if (res.hit) {
                         if (res.killed) {
                             logger.log(i18next.t('throw.killed', {
@@ -7140,8 +7166,10 @@ export class Game {
                             // CE Items.c:6845-6849：符文只在目标存活时触发
                             //（resolveThrownWeapon 同口径只在存活时掷）。
                             if (res.triggeredRunic) {
-                                if (effects) effects.withOrigin(projectileOrigin, () => this.applyWeaponRunicEffect(monst, res.damage, res.triggeredRunic!));
-                                else this.applyWeaponRunicEffect(monst, res.damage, res.triggeredRunic);
+                                withBodyAttackContact(this.player, monst, contact, () => {
+                                    if (effects) effects.withOrigin(projectileOrigin, () => this.applyWeaponRunicEffect(monst, res.damage, res.triggeredRunic!));
+                                    else this.applyWeaponRunicEffect(monst, res.damage, res.triggeredRunic!);
+                                });
                             }
                         }
                         this.needsRender = true;
@@ -7207,9 +7235,8 @@ export class Game {
 
                 if (effect === 'fire_burst') {
                     // F-2a：同 fire_burst 药水——CE 焚化类 = DF 生成家族。
-                    this.environment.igniteForced(x, y);
-                    const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, 1], [-1, 1], [1, -1]];
-                    for (const [dx, dy] of dirs) this.environment.igniteForced(x + dx!, y + dy!);
+                    const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, 1], [-1, 1], [1, -1]] as const;
+                    this.igniteIncinerationCells([{ x, y }, ...dirs.map(([dx, dy]) => ({ x: x + dx, y: y + dy }))]);
                 } else if (effect === 'poison_burst') {
                     // G-1 折算：DF_POISON_GAS_CLOUD_POTION startProbability 1000
                     //（Globals.c:779）。
@@ -8229,7 +8256,7 @@ export class Game {
         return () => this.player.x === origin.x && this.player.y === origin.y && locations.every(({ actor, x, y, spatial, revision }) =>
             actor.hp > 0 && actor.x === x && actor.y === y && JSON.stringify(actor.spatial) === spatial && squareAnchorRevision(actor) === revision && this.getMonsterAt(x, y) === actor
             && this.playerWillAttackTarget(actor)
-            && (actor.spatial ? footprintSome(actor, p => !!this.grid.getCell(p.x, p.y)?.isPassable
+            && (actor.spatial ? publicMonsterCells(this.player, this.grid, actor).some(p => !!this.grid.getCell(p.x, p.y)?.isPassable
                 && this.hasLineOfSight(origin.x, origin.y, p.x, p.y)) || actor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')
                 : (!!this.grid.getCell(x, y)?.isPassable || actor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))
                 && (this.hasLineOfSight(origin.x, origin.y, x, y) || actor.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))));
@@ -10682,10 +10709,17 @@ export class Game {
      * 返回是否实际结算了一次伤害（测试与调用方判据）。
      */
     private resolveExplosionDamage(entity: Player | Monster): boolean {
+        if (!entity.spatial) return this.resolveExplosionDamageAt(entity);
+        const contact = footprintExposure(this.grid, entity).contacts.find(c => c.flags & T_CAUSES_EXPLOSIVE_DAMAGE)?.at;
+        if (!contact || !this.collectBodyTargets([contact], { effect: 'area-damage' }, squareContactScope(this.grid) ?? new Set()).length) return false;
+        return withBodyContact(entity, contact, () => this.resolveExplosionDamageAt(entity));
+    }
+
+    private resolveExplosionDamageAt(entity: Player | Monster): boolean {
         assertNativeSpatial(entity);
         if (this.extensionRuntime && this.extensionRuntime.causality.current !== this.extensionRuntime.causality.terrainOrigin) {
             const effects = this.extensionRuntime.causality;
-            return effects.withOrigin(effects.terrainOrigin, () => this.resolveExplosionDamage(entity));
+            return effects.withOrigin(effects.terrainOrigin, () => this.resolveExplosionDamageAt(entity));
         }
         if (entity.hp <= 0 || isSubmerged(entity)) return false;
         const contact = entity.spatial ? footprintExposure(this.grid, entity).contacts.find(c => c.flags & T_CAUSES_EXPLOSIVE_DAMAGE)?.at : nativeContactOf(entity);
@@ -11127,10 +11161,25 @@ export class Game {
     }
     public footprintOf(actor: number | Creature) { return this.spatialOf(actor).cells; }
     public meleeContact(a: Creature, b: Creature) { return nearestLegalMeleeContact(this.grid, a, b); }
+    private publicMeleeContact(target: Monster) {
+        for (const at of publicMonsterCells(this.player, this.grid, target)) {
+            const contact = nearestLegalMeleeContact(this.grid, this.player, { loc: at, hasBehavior: flag => target.hasBehavior(flag) });
+            if (contact) return contact;
+        }
+        return null;
+    }
     public nearestContact(a: number | Creature, b: number | Creature) { return nearestContact(this.spatialActor(a), this.spatialActor(b)); }
     public canStepFootprint(actor: number | Creature, at: Pos, options?: Parameters<typeof canStepFootprint>[3]) { return canStepFootprint(this, this.spatialActor(actor), at, options); }
     public collectBodyTargets(cells: readonly Pos[], policy?: Parameters<typeof collectBodyTargets>[2], scope?: Set<string>) {
         return collectBodyTargets({ ...this.spatialWorldPort(), inDeathWindow: c => c instanceof Monster && dyingMonsters.has(c) && !c.deathProcessed }, cells, policy, scope);
+    }
+    public collectAreaBodyTargets(origin: Pos, radius: number, effect: Parameters<typeof collectAreaBodyTargets>[3], scope?: Set<string>) {
+        return collectAreaBodyTargets(this, origin, radius, effect, this.hasLineOfSight.bind(this), scope);
+    }
+    private igniteIncinerationCells(cells: readonly Pos[]): void {
+        const ignite = () => { for (const at of cells) this.environment.igniteForced(at.x, at.y); };
+        if (squareListUsers(this.monsters)) withSquareContactScope(this.grid, new Set(), ignite);
+        else ignite();
     }
     private spatialWorldPort() { return { grid: this.grid, player: this.player, monsters: this.monsters, dormantMonsters: this.dormantMonsters }; }
     /** Optional derived session: no own field, table, scan or counter in a
@@ -11272,7 +11321,8 @@ export class Game {
     /** A lethal instantaneous DF contact ends the fill immediately (CE Time.c:369-370).
      * Ordinary gradual/status deaths keep their existing turn-boundary cleanup. */
     private applyDungeonFeatureContact(creature: Creature, scope?: Set<string>): void {
-        if (creature.spatial && scope) this.applyEnvironmentalEffects(creature, false, scope);
+        const contactScope = creature.spatial ? squareContactScope(this.grid) ?? scope : scope;
+        if (creature.spatial && contactScope) this.applyEnvironmentalEffects(creature, false, contactScope);
         else this.applyEnvironmentalEffects(creature);
         if (creature === this.player && creature.hp <= 0 && !this.isGameOver) {
             this.triggerGameOver(false, this.lastDamageSource === 'violent explosion'
@@ -11379,7 +11429,9 @@ export class Game {
         this.waypoints.refreshWaypoint(0, this.wpContext());
         const distances = generationDistances(this, origin, T_PATHING_BLOCKER, false);
         for (const m of this.monsters) {
-            if (m.hp <= 0 || m.isDormant || distances[m.x]![m.y]! > radius) continue;
+            if (m.hp <= 0 || m.isDormant || (m.spatial
+                ? !footprintSome(m, p => { const d = distances[p.x]?.[p.y]; return d !== undefined && d >= 0 && d <= radius; })
+                : distances[m.x]![m.y]! > radius)) continue;
             if (m.state === MonsterState.ASLEEP) wakeMonster(this, m, this.calculateStealthRange());
             if (!m.isAlly && (m.leader as Creature | null) !== this.player) {
                 alertMonster(this, m);
@@ -11629,8 +11681,8 @@ export class Game {
     private adjacentExploreEnemy(): Monster | undefined {
         return Array.from(iterateCreatures(this.visibleMonsters)).find(m =>
             m.hp > 0 && !m.isAlly && !m.hasBehavior('MONST_IMMUNE_TO_WEAPONS') && !m.hasBehavior('MONST_INVULNERABLE')
-            && distanceBetweenFootprints(m, this.player) === 1
-            && (!playerTravelDiagonalBlocked(this.grid, this.player.loc, m.loc) || m.hasBehavior('MONST_ATTACKABLE_THRU_WALLS')));
+            && (m.spatial ? !!this.publicMeleeContact(m) : distanceBetweenFootprints(m, this.player) === 1
+            && (!playerTravelDiagonalBlocked(this.grid, this.player.loc, m.loc) || m.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))));
     }
 
     protected handleAutoExplore(): void {
@@ -11650,7 +11702,8 @@ export class Game {
         this.isAutoExploring = true;
         const enemy = this.adjacentExploreEnemy();
         if (enemy) {
-            this.autoPath = [{ ...enemy.loc }];
+            const contact = enemy.spatial ? this.publicMeleeContact(enemy)!.to : enemy.loc;
+            this.autoPath = [{ x: contact.x, y: contact.y }];
             // Already inside auto_explore's command: no nested recorded event.
             (yield* this.performAutoPathStepStages());
         } else {
@@ -12377,7 +12430,7 @@ export class Game {
 
         const sensedMonster = this.getMonsterAt(x, y);
         if (!cell || (!cell.hasMemory && !cell.isMagicMapped && !cell.isVisible
-            && !(sensedMonster && canDisplayMonster(this.player, this.grid, sensedMonster)))) {
+            && !(sensedMonster && canDisplayMonsterAt(this.player, this.grid, sensedMonster, { x, y })))) {
             return i18next.t('hover.unknown', { defaultValue: 'Unknown' });
         }
 
@@ -12385,11 +12438,11 @@ export class Game {
 
         // Check monster
         const m = this.getMonsterAt(x, y);
-        if (m && canSeeMonster(this.player, this.grid, m)) {
+        if (m && canSeeMonsterAt(this.player, this.grid, m, { x, y })) {
             const label = m.displaysNegation && !this.player.hasStatus('hallucinating')
                 ? i18next.t('negation.label', { defaultValue: 'Negated' }) : '';
             entities.push(label ? `${m.name} (${label})` : m.name);
-        } else if (m && canDisplayMonster(this.player, this.grid, m)) {
+        } else if (m && canDisplayMonsterAt(this.player, this.grid, m, { x, y })) {
             entities.push('x');
         }
 
@@ -12599,7 +12652,7 @@ export class Game {
     private runIsDisturbed(): boolean {
         const adjacent = (pos: Pos) => distanceToFootprint(this.player, pos) === 1;
         return this.items.some(item => adjacent(item.loc))
-            || Array.from(iterateCreatures(this.visibleMonsters)).some(monster => monster.hp > 0 && !monster.isAlly && adjacent(monster.loc));
+            || Array.from(iterateCreatures(this.visibleMonsters)).some(monster => monster.hp > 0 && !monster.isAlly && (monster.spatial ? publicMonsterCells(this.player, this.grid, monster).some(adjacent) : adjacent(monster.loc)));
     }
 
     private *stepAutoActionStages(): CommandStages<void> {
@@ -12660,7 +12713,8 @@ export class Game {
         const enemy = this.isAutoExploring ? this.adjacentExploreEnemy() : undefined;
         if (enemy) {
             this.beginAutoFight(enemy);
-            this.autoPath = [{ ...enemy.loc }];
+            const contact = enemy.spatial ? this.publicMeleeContact(enemy)!.to : enemy.loc;
+            this.autoPath = [{ x: contact.x, y: contact.y }];
         }
         else if (this.isAutoExploring) this.recomputeExplorePath();
         else {

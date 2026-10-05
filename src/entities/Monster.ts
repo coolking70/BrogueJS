@@ -1,5 +1,6 @@
 import { nearestLegalMeleeContact, physicalContactOf, bodyAttackContactOf, withBodyAttackContact, bodyRayOrigin, bodyRayContact, type BodyAttackContact } from '../engine/Combat/BodyCombat';
 import { assertNativeSpatial, commitCreatureAnchor, footprintContains, footprintOf, footprintSome, nearestContact, distanceBetweenFootprints, distanceToFootprint } from '../engine/Movement/CreatureSpatial';
+import { bodySightContact } from '../engine/Combat/BodyPerception';
 import { notifyMonsterDeath, squareListUsers } from '../engine/Core/MonsterLifecycle';
 import { creatureFeatureInfo, emitCreatureFeature } from '../engine/Combat/CreatureFeatures';
 import { updateMonsterState, wanderTowardLastSeen } from '../engine/Combat/MonsterAI';
@@ -144,10 +145,25 @@ export function generallyValidBoltTarget(caster: Monster, target: Creature, game
         return false;
     }
     if (target instanceof Monster && (target.isDormant || target.submerged)) return false;
+    if (caster.spatial || target.spatial) {
+        return !!monsterBoltContact(caster, target, game);
+    }
     const targetCell = game.grid.getCell(target.x, target.y);
     const outlinedByGas = !!targetCell && targetCell.layers[DungeonLayer.GAS] !== TerrainType.NOTHING;
     if (target.hasStatus('invisible') && !monstersAreTeammates(caster, target) && !outlinedByGas) return false;
     return game.hasLineOfSight(caster.loc.x, caster.loc.y, target.loc.x, target.loc.y);
+}
+
+/** Native caster knowledge: an invisible body can only be aimed at a gas
+ * contact which this observer can see. Trusted bodies are not player FOV. */
+export function monsterBoltContact(caster: Monster, target: Creature, game: Game) {
+    if (!caster.spatial && !target.spatial) return nearestContact(caster, target);
+    const outlined = target.hasStatus('invisible') && !monstersAreTeammates(caster, target);
+    if (!outlined) return bodySightContact(game.grid, caster, target, game.hasLineOfSight.bind(game));
+    const contacts = footprintOf(target).filter(p => !!game.grid.getCell(p.x, p.y)?.layers[DungeonLayer.GAS])
+        .map(p => bodySightContact(game.grid, caster, { loc: p }, game.hasLineOfSight.bind(game), true)).filter(c => c !== null);
+    contacts.sort((a, b) => a.distance - b.distance);
+    return contacts[0] ?? null;
 }
 
 /**
@@ -1810,7 +1826,7 @@ export class Monster extends Creature {
         }
 
         const distToPlayer = distanceBetweenFootprints(this, game.player);
-        const canSeePlayer = game.hasLineOfSight(this.loc.x, this.loc.y, game.player.loc.x, game.player.loc.y);
+        const canSeePlayer = !!bodySightContact(game.grid, this, game.player, game.hasLineOfSight.bind(game));
         if (this.hasStatus('confused')) {
             if (rng.randPercent(70)) {
                 const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, 1], [-1, 1], [1, -1]];

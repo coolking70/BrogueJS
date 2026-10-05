@@ -99,4 +99,21 @@ describe('4a-2 real growth native body target preparation/consumption', () => {
         (m as any).resolveBodyMeleeAdjacent(g, g.player, 'hostile'); expect(facts).toHaveBeenCalledTimes(1); expect(count()).toBe(1);
         (m as any).resolveBodyMeleeAdjacent(g, g.player, 'hostile'); expect(facts).toHaveBeenCalledTimes(2); expect(count()).toBeUndefined(); expect(g.player.hp).toBeLessThan(g.player.maxHp);
     });
+    it('a visible far body cell does not authorize an entity-targeted skill through an adjacent hidden tail', () => {
+        const { g, m, use } = setup(2, false);
+        for (const at of g.footprintOf(m)) g.grid.getCell(at.x, at.y)!.isVisible = false;
+        g.grid.getCell(m.x, m.y)!.isVisible = true; // two cells from the player; adjacent contacts remain hidden
+        const extension = g.extensionRuntime!.snapshot(), random = rng.getState(), tick = timeSystem.currentTick;
+        expect(g.validateControlledAction({ actorId: g.player.id, action: 'attack', target: { kind: 'creature', id: m.id } })).toBe(false);
+        use(); expect(g.extensionRuntime!.snapshot()).toEqual(extension); expect(rng.getState()).toEqual(random); expect(timeSystem.currentTick).toBe(tick);
+    });
+    it('losing public body contact during prepared confirmation invalidates Yes without charging or recording a stale command', () => {
+        const { g, m, use } = setup(); g.onCommandConfirmRequest = () => {};
+        const extension = g.extensionRuntime!.snapshot(), random = rng.getState(), tick = timeSystem.currentTick, count = g.recordedInputEvents.length;
+        use(); const token = g.pendingCommandConfirmation!.token;
+        for (const at of g.footprintOf(m)) g.grid.getCell(at.x, at.y)!.isVisible = false;
+        g.resolveCommandDecision(token, true);
+        expect(g.pendingCommandConfirmation).toBeNull(); expect(g.extensionRuntime!.snapshot()).toEqual(extension);
+        expect(rng.getState()).toEqual(random); expect(timeSystem.currentTick).toBe(tick); expect(g.recordedInputEvents).toHaveLength(count);
+    });
 });

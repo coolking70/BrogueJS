@@ -21,6 +21,7 @@
 import type { Grid } from './Grid';
 import { terrainBlocksMovement, terrainBlocksScent } from './TerrainRules';
 import { rng } from '../Random';
+import { footprintOf, type FootprintActor } from '../Movement/CreatureSpatial';
 
 /**
  * CE Time.c:756 scentDistance。注意这不是欧氏距离也不是切比雪夫距离：
@@ -252,6 +253,23 @@ export class ScentMap {
     public awareOfTarget(grid: Grid, ox: number, oy: number, px: number, py: number,
         p: AwareOfTargetParams): boolean {
         const perceivedDistance = this.awarenessDistance(grid, ox, oy, px, py);
+        return this.resolveAwareness(perceivedDistance, !!grid.getCell(ox, oy)?.isVisible, p);
+    }
+
+    /** CE awarenessDistance/awareOfTarget lifted to one footprint summary,
+     * then ONE original decision. No per-cell warning or tracking dice. */
+    public awareOfBodyTarget(grid: Grid, observer: FootprintActor, target: FootprintActor, p: AwareOfTargetParams): boolean {
+        if (!observer.spatial && !target.spatial) return this.awareOfTarget(grid, observer.loc.x, observer.loc.y, target.loc.x, target.loc.y, p);
+        const origins = footprintOf(observer), targets = footprintOf(target);
+        let perceived = 1000, visible = false;
+        for (const from of origins) {
+            visible ||= !!grid.getCell(from.x, from.y)?.isVisible;
+            for (const to of targets) perceived = Math.min(perceived, this.awarenessDistance(grid, from.x, from.y, to.x, to.y));
+        }
+        return this.resolveAwareness(perceived, visible, p);
+    }
+
+    private resolveAwareness(perceivedDistance: number, visible: boolean, p: AwareOfTargetParams): boolean {
         const awareness = p.stealthRange * 2;
 
         if (p.alwaysHunting) {
@@ -269,7 +287,7 @@ export class ScentMap {
             // 已感知：超出潜行半径时每回合 3% 概率丢目标
             return perceivedDistance > awareness ? rng.randPercent(97) : true;
         }
-        if (!grid.getCell(ox, oy)?.isVisible) {
+        if (!visible) {
             // CE：非追踪态且玩家不在观察者 FOV（pmapAt(observer)->IN_FIELD_OF_VIEW）
             return false;
         }
