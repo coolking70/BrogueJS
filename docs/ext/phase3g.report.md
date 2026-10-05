@@ -30,7 +30,7 @@ provider 只读取自己命名空间下该 actor 的深冻结组件与冻结状�
 
 ## 独立审查修复
 
-独立审查先发现并要求修复：新生实体在 runtime 私有集合残留、保留 carried/purgatory actor 错误拒绝、同 tick 退休来源失去 part/generation、DF/陷阱 WeakMap 状态、proxy 列表计数及空间监听 epoch。逐项修复并加入回归，最终复核结论另填。
+独立审查先发现并要求修复：新生实体在 runtime 私有集合残留、保留 carried/purgatory actor 错误拒绝、同 tick 退休来源失去 part/generation、DF/陷阱 WeakMap 状态、proxy 列表计数及空间监听 epoch。逐项修复并加入回归；共享运行时/群体伤害/跨grid恢复独立复核无剩余阻断。最终17af360的增量只读独立复核同样无阻断：已提交story消费者识别、旧夹具限定修订、版本/候选世界校验与§5覆盖均成立。
 
 ## 旧测试前提变更
 
@@ -66,7 +66,7 @@ Raw snapshots contain only growth/narrative module version/rules-fingerprint cha
 
 Recapture is justified only for these intentional module changes and must use the original `P4A0_CAPTURE=1` entry after final production freezes. The guard/filter/assertions stay unchanged. Expected fixture delta: 117 leaves (39 graph hashes, 39 graph object counts, 39 snapshot hashes); snapshot object counts, RNG and messages are unchanged; the empty set is exact. Old fixture SHA-256 `3dd6e94c091c1d4d502e69d5d381f7702884c51227c9f34531c525e01986cfb8`; diagnostic predicted hash `1ef488d3fa2741d410faa363d431a264997f81a2a972cafec77b164eb47fe044`. The prediction is not a capture; verify the actual final capture independently.
 
-Compact evidence: `phase3g-p4a0-attribution.json` (52 checkpoint old/candidate hashes, changes, alias/native verdicts, source restoration and test commands/exit codes). Raw graphs remain outside the repository under `/tmp/p3g-p4a0-audit/`.
+Compact evidence: `evidence/phase3g-p4a0-attribution.json` (52 checkpoint old/candidate hashes, changes, alias/native verdicts, source restoration and test commands/exit codes). Raw graphs remain outside the repository under `/tmp/p3g-p4a0-audit/`.
 
 Actual final capture: original `P4A0_CAPTURE=1 npx vitest run src/test/phase4a0_spatial_differential.test.ts --maxWorkers=1` passed 4/4 in26.29s, exit0. Independently verified exactly117 expected digest/count leaves changed, empty unchanged, and actual fixture SHA-256 equals the predicted `1ef488d3fa2741d410faa363d431a264997f81a2a972cafec77b164eb47fe044`. The original guard/filter/assertions remain byte-identical.
 
@@ -101,3 +101,7 @@ v3 boundary/type/build均exit0；139相关文件完整跑完：137文件通过/2
 ### 非阻塞查询开销观察
 
 隔离合成微基准通过真实可信actor查询路径测量DTO复制冻结开销：10次预热后200次查询，1行provider state为4.99ms，1000行约79KB state为272.03ms。该结果不是自然局/FPS结论。未采用实验缓存：虽然原型降低重复复制成本，通用正确性还依赖validateWorld回调纯读约定；本步保留直接冻结复制的安全语义，不引入未审计缓存。
+
+## 4e合并前完整冻结门禁（17af360）
+
+v4统一运行全部8门通过，933份源码输入每门前后一致。139相关文件2791项＋自然1文件5项全绿；16个engine-only组合通过；drift4文件5项通过；boundary/type/build/terrain白名单通过。自然长测938.869s，原期限未改。完整命令、耗时、源码散列与文件清单见`evidence/phase3g-pre-4e-gates.json`。维护者在自然长测进行中要求再合入4e的97988d5，因此这些是明确的合并前证据，不替代合并后交付门禁。
