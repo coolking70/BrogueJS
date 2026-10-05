@@ -47,7 +47,7 @@ export function hasDeclaredZones(actor: Creature): boolean {
  * pre-contact state in the surrounding scope so provider failure can restore
  * protection as well as the health transaction, without changing CE ordering. */
 function withZoneProtection<T>(actor: Creature, run: () => T): T {
-    if (!hasDeclaredZones(actor)) return run();
+    if (!hasDeclaredZones(actor) && !actor.spatial?.bodyMember) return run();
     const shield = actor.statusDurations.shielded, maxShield = actor.maxShield;
     const absorber = actor as Creature & { isAbsorbing?: boolean }, absorbing = absorber.isAbsorbing;
     try { return run(); } catch (error) {

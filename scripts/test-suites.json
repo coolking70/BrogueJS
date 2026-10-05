@@ -146,6 +146,7 @@
     "src/test/phase4b_rigid_rotation.test.ts",
     "src/test/phase4c_fixed_zone_health.test.ts",
     "src/test/phase4d_composite_movement.test.ts",
+    "src/test/phase4d_production_body.test.ts",
     "src/test/presentation_timeline.test.ts",
     "src/test/r_1_appearance.test.ts",
     "src/test/repo_hygiene.test.ts",

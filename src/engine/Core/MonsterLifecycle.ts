@@ -13,6 +13,7 @@ interface DeathOwner {
     dormantMonsters: Monster[];
     killMonster(monster: Monster): void;
     monsterListsChanged?(): void;
+    ownsBodyMember?(monster: Monster): boolean;
 }
 const owners = new WeakMap<Monster, DeathOwner>();
 const lists = new WeakMap<Monster[], { raw: Monster[]; owner: DeathOwner }>();
@@ -41,6 +42,9 @@ export function ownedMonsterList(input: Monster[], owner: DeathOwner): Monster[]
     let squares = 0;
     for (const monster of raw) {
         assertNativeSpatial(monster, owner.spatialCatalog);
+        if (monster.spatial?.bodyMember && owners.has(monster) && owners.get(monster) !== owner)
+            throw new SpatialValidationError('Cross-session body member');
+        if (monster.spatial?.bodyMember && !owner.ownsBodyMember?.(monster)) throw new SpatialValidationError('Unowned production body member');
         if (!isSquareFootprint(monster) && monster.spatial!.footprintId !== monster.typeId) throw new SpatialValidationError('Native form body identity mismatch');
         owners.set(monster, owner);
         if (owner.extensionRuntime) owner.extensionRuntime.attachCreature(monster);
@@ -51,6 +55,9 @@ export function ownedMonsterList(input: Monster[], owner: DeathOwner): Monster[]
             let nextSquares = squares;
             if (typeof key === 'string' && /^\d+$/.test(key)) {
                 assertNativeSpatial(value, owner.spatialCatalog);
+                if (value.spatial?.bodyMember && owners.has(value) && owners.get(value) !== owner)
+                    throw new SpatialValidationError('Cross-session body member');
+                if (value.spatial?.bodyMember && !owner.ownsBodyMember?.(value)) throw new SpatialValidationError('Unowned production body member');
                 if (!isSquareFootprint(value) && value.spatial!.footprintId !== value.typeId) throw new SpatialValidationError('Native form body identity mismatch');
                 owners.set(value, owner);
                 if (owner.extensionRuntime) owner.extensionRuntime.attachCreature(value);

@@ -158,6 +158,7 @@ export class SpatialCatalog {
             if (!this.fixture && zone.health.kind === 'local'
                 && zone.health.ownerTransfer.numerator !== zone.health.ownerTransfer.denominator) fail('Fixed local zone transfer must be 1:1');
             const rule = this.breakRule(zone.breakRuleId);
+            if (rule.disposition !== 'keep-zone') fail('Fixed zone topology capability is not open');
             for (const modifier of rule.modifiers) if (modifier.kind === 'expose-zone'
                 && (modifier.partId !== 'self' || !d.zones?.some(z => z.id === modifier.zoneId))) fail('Invalid fixed zone exposure reference');
         }
@@ -167,7 +168,8 @@ export class SpatialCatalog {
     cells(id: string, pose: Pose): readonly FootprintCell[] { return this.footprints.get(id)?.cells.get(pose) ?? fail('Unknown footprint or pose'); }
     registerForm(d: SpatialFormDefinition): void {
         keys(d, ['id', 'owner', 'footprintId']);
-        if (!this.fixture || !identity(d.id) || d.owner !== 'foundation' || this.forms.has(d.id)) fail('Invalid or unopened spatial form identity');
+        if (!identity(d.id) || !(this.fixture && d.owner === 'foundation' || !this.fixture && this.owners.includes(d.owner) && d.id.startsWith(`${d.owner}.`))
+            || this.forms.has(d.id)) fail('Invalid or unopened spatial form identity');
         this.definition(d.footprintId); this.forms.set(d.id, deepFreeze(structuredClone(d)));
     }
     form(id: string): SpatialFormDefinition { return this.forms.get(id) ?? fail('Unknown spatial form'); }
@@ -175,13 +177,23 @@ export class SpatialCatalog {
     /** Fixed-zone rules: fixture foundation or an installed module's own
      * namespace. Only finite keep-zone consequences are authorized. */
     registerBreakRule(d: PartBreakRule): void {
-        keys(d, ['id', 'owner', 'trigger', 'disposition', 'modifiers']);
+        this.registerBreak(d, false);
+    }
+    /** Separate declaration seam: a fixed zone cannot grant topology writes. */
+    registerMemberBreakRule(d: PartBreakRule): void {
+        this.registerBreak(d, true);
+    }
+    private registerBreak(d: PartBreakRule, member: boolean): void {
+        keys(d, ['id', 'owner', 'trigger', 'disposition', 'modifiers', ...(member ? ['childrenOnBreak'] : [])],
+            ['id', 'owner', 'trigger', 'disposition', 'modifiers']);
         if (!(this.fixture && d.owner === 'foundation' || !this.fixture && this.owners.includes(d.owner) && d.id.startsWith(`${d.owner}.`))
             || !identity(d.id) || this.breakRules.has(d.id)
-            || d.trigger !== 'hp-zero' || d.disposition !== 'keep-zone' || !Array.isArray(d.modifiers)
+            || d.trigger !== 'hp-zero' || d.disposition !== (member ? 'remove' : 'keep-zone') || !Array.isArray(d.modifiers)
+            || (d.childrenOnBreak !== undefined && (d.disposition !== 'remove' || d.childrenOnBreak !== 'retire-subtree'))
             || d.modifiers.length > 8) fail('Invalid or unopened fixed zone break rule');
         const seen = new Set<string>();
         for (const m of d.modifiers) {
+            if (member && !['move-ticks-multiplier', 'balance-loss'].includes(m.kind)) fail('Unopened member break modifier');
             let key: string;
             switch (m.kind) {
                 case 'move-ticks-multiplier':
@@ -205,33 +217,48 @@ export class SpatialCatalog {
     }
     statusProfile(id: string): SpatialStatusProfileDefinition { return this.statusProfiles.get(id) ?? fail('Unknown or unopened spatial status profile'); }
     body(id: string): BodyDefinition { return this.bodies.get(id) ?? fail('Unknown body'); }
+    get hasBodies(): boolean { return this.bodies.size > 0; }
+    /** Registered part declarations grant geometry, never group ownership. */
+    permitsMember(footprintId: string, partId: string): boolean {
+        return [...this.bodies.values()].some(d => d.parts.some(p => p.partId === partId && this.form(p.formId).footprintId === footprintId));
+    }
     registerBody(d: BodyDefinition): void {
         keys(d, ['id', 'owner', 'parts', 'constraints', 'minSupportParts', 'noSupport', 'coreDeath', 'statusProfileId']);
-        if (!this.fixture || !identity(d.id) || d.owner !== 'foundation' || this.bodies.has(d.id) || !Array.isArray(d.parts) || !d.parts.length
+        if (!identity(d.id) || !(this.fixture && d.owner === 'foundation' || !this.fixture && this.owners.includes(d.owner) && d.id.startsWith(`${d.owner}.`))
+            || this.bodies.has(d.id) || !Array.isArray(d.parts) || !d.parts.length
             || d.parts.length > SPATIAL_LIMITS.members || !Array.isArray(d.constraints) || !integer(d.minSupportParts, 0, d.parts.length)
             || !['immobile', 'collapse', 'die'].includes(d.noSupport) || !['remove-members', 'debris-members'].includes(d.coreDeath) || !identity(d.statusProfileId)) fail('Invalid body definition');
         this.statusProfile(d.statusProfileId);
+        if (!this.fixture && (d.noSupport !== 'immobile' || d.coreDeath !== 'remove-members')) fail('Unopened body lifecycle');
         const parts = new Set<string>();
         for (const p of d.parts) {
             keys(p, ['partId', 'role', 'providesSupport', 'formId', 'preferredOffset', 'attackProfileIds', 'coreTransfer', 'breakRuleId', 'statusProfileId']);
             if (!identity(p.partId) || parts.has(p.partId) || !['core', 'support', 'weapon', 'segment'].includes(p.role) || typeof p.providesSupport !== 'boolean'
                 || !pos(p.preferredOffset) || !Array.isArray(p.attackProfileIds) || p.attackProfileIds.length || !identity(p.breakRuleId) || !identity(p.statusProfileId)) fail('Invalid part');
             this.form(p.formId); this.breakRule(p.breakRuleId); this.statusProfile(p.statusProfileId); ratio(p.coreTransfer); parts.add(p.partId);
+            if (!this.fixture && p.role !== 'core' && p.partId === 'self') fail('Reserved fixed-zone part identity');
+            if (!this.fixture && (this.form(p.formId).owner !== d.owner
+                || this.definition(this.form(p.formId).footprintId).zones?.length
+                || p.role !== 'core' && (p.coreTransfer.numerator !== 1 || p.coreTransfer.denominator !== 4
+                    || this.breakRule(p.breakRuleId).disposition !== 'remove'
+                    || this.breakRule(p.breakRuleId).childrenOnBreak !== 'retire-subtree'))) fail('Invalid production member lifecycle');
         }
         const core = d.parts.filter(p => p.role === 'core'); if (core.length !== 1) fail('Body requires one core');
+        if (!this.fixture && (core[0]!.preferredOffset.x !== 0 || core[0]!.preferredOffset.y !== 0)) fail('Body core must use the group anchor');
         const parents = new Map<string, string>();
         for (const c of d.constraints) {
             keys(c, ['childPartId', 'parentPartId', 'kind', 'minDistance', 'maxDistance', 'maxStepPerAction', 'requiresClearLink']);
             if (!parts.has(c.childPartId) || !parts.has(c.parentPartId) || parents.has(c.childPartId) || c.childPartId === core[0]!.partId
                 || !['tether', 'chain'].includes(c.kind) || !integer(c.minDistance, 0, 64) || !integer(c.maxDistance, c.minDistance, 64)
                 || !integer(c.maxStepPerAction, 1, 32) || typeof c.requiresClearLink !== 'boolean') fail('Invalid body constraint');
+            if (!this.fixture && c.maxStepPerAction > 2) fail('Composite member step budget exceeded');
             parents.set(c.childPartId, c.parentPartId);
         }
         for (const part of parts) {
             const seen = new Set<string>(); let current = part;
             while (current !== core[0]!.partId) { if (seen.has(current)) fail('Cyclic body'); seen.add(current); current = parents.get(current) ?? fail('Disconnected body'); }
         }
-        const cells = d.parts.reduce((n, p) => n + this.cells(this.form(p.formId).footprintId, 'r0').length, 0);
+        const cells = d.parts.reduce((n, p) => { const id = this.form(p.formId).footprintId; return n + this.cells(id, this.definition(id).poses[0]!).length; }, 0);
         const zones = d.parts.reduce((n, p) => n + (this.definition(this.form(p.formId).footprintId).zones?.length ?? 0), 0);
         if (cells > SPATIAL_LIMITS.groupCells || zones > SPATIAL_LIMITS.groupZones) fail('Body budget exceeded');
         this.bodies.set(d.id, deepFreeze(structuredClone(d)));

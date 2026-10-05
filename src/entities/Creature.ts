@@ -355,7 +355,8 @@ export class Creature implements Entity {
         const beforeNativeLoss = zoneDamage === undefined || beforeHpLoss ? this.hp : hpBefore;
         if (zoneDamage === undefined || beforeHpLoss) this.hp -= damage;
         if (this.extensionHooks) this.extensionHooks.damage(this, damage, beforeNativeLoss, damageKind);
-        if (this.hp <= 0) {
+        if (this.hp <= 0 && !(zoneDamage !== undefined && this.spatial?.bodyMember
+            && this.spatial.bodyMember.groupId !== this.id)) {
             this.die();
         }
     }

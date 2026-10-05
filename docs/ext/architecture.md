@@ -413,6 +413,8 @@ fixture 测试覆盖 L/十字/孔洞/长条空格、轮廓原语、标签与 cod
 
 ## 27 4d-0 子里程碑：fixture 复合体落脚规划
 
+本节保留4d-0历史状态；当前生产底座接线见第28节，完整4d仍未完成。
+
 `Movement/CompositeMovement.ts` 只接 `SpatialCatalog.fixture`，生产 group 能力仍关闭。核心先确定一步，成员按约束树、partId 顺序选择最多32条候选路径；每次核心尝试最多128个候选分支，成员最多两个单位平移子步。保留旧落脚优先，之后按新核心加 preferredOffset、路径长、y/x排序；候选不足或回溯耗尽返回 blocked 和正costTicks。每个刚体保持当前pose，旋转与生命周期不在此子里程碑。
 
 `BodyTrajectory.ts` 将所有路径放在同一两子步时间轴，短路径随后驻留。单位格方块的相对平移使用区间相交，拒绝成员互换、对角交叉和运动期间重叠，允许链段平行跟进父段的旧格。父子距离按实际footprint计算：每对格子的距离许可区间并集须覆盖完整子步，不用端点合法冒充中间合法。clearLink采用保守扫掠包围矩形，可能拒绝狭窄弯道；静态连接仍用稳定最近格对与supercover。
@@ -420,3 +422,13 @@ fixture 测试覆盖 L/十字/孔洞/长条空格、轮廓原语、标签与 cod
 计划是不可伪造、只消费一次的派生凭据。提交重验实体/群表/局部资格、源revision、Grid地形/占位revision与所有路径，成功后同步发布最终锚点；没有环境回调插在半组位置之间，也不写核心或成员计时器。调用方须通过现有replaceWorld/位置原语发布实体列表和位置变化，离层或会话退休必须dispose；dispose现在也使旧计划失效。群表继续是CreatureSpatial.groups的唯一机械身份真相，不加Game字段或存档版本。
 
 `CreatureSpatial.restoreWorld` 在发布群表前新增实际footprint牵引距离/clearLink校验，拒绝活孩子引用已退休父槽或距离不合法的fixture图。codec只使用独立安装的定义目录，不以存档授予能力。本轮不接TimeCoordinator/ActorActionProduction、HP传导/成员破坏、状态归属、整体转换/clone/迁层、公开UI或正式敌人；完整4d剩余项和实际门禁见[4d报告](phase4d.report.md)。
+
+## 28 4d-1：生产群根、核心轮转和成员无死亡退休
+
+已安装模块的 `nativeBodies` 声明通过独立 member-break seam 注册；普通固定 zone 的 keep-zone 门不放宽。生产成员在几何门之外还必须匹配接收 Game 的真实槽位。Game 的可选 bodyGroups 是全物理层唯一机械真相，写在原 spatialWorld 根；局部 CreatureSpatial 只引用本层记录。声明闭包、form/typeId、树约束、墓碑、共享/孤儿/跨层分裂均在加载发布前检查。普通局无群字段。
+
+createCompositeMonster 先纯预验整组 preferred formation，再构造并一次替换 owned 列表，利用现有 generation token 缓冲出生事件；失败按显式 Game/列表/群表写集、runtime、ID/RNG回滚。单锚点提交不得移动生产成员，只有完整群 planner 的 commitCompositeAnchors 能发布平移。TimeCoordinator 的候选、减时、决策只含独立生物/群核心；成员 readyInTicks 按真实 elapsed 减时，原生成员 ticks 不写。即时攻击最多4源，各自原生 scope，组耗时取 max；blocked 保持正时钟。
+
+BodyMemberHealth 接中央 post-shield HP 出口，成员实际正HP损失按1:4直接传核心，不再走核心伤害/解算 hooks；仅补核心致死因果。直接破坏给唯一 part/body/generation=0 收据，provider与fallback互斥回滚；伤害 hook 完成后 remove+墓碑并无死亡退休子树，只有直接收据影响减速。核心才终结整组一次。ActorActionProduction 已按 bodyMember 映射 core owner，真实多来源 phased 束尚未接线。
+
+当前只开放无zone、固定当前pose、remove-subtree和immobile的诊断生产群体，不加入正式生成内容。逐子步环境、群状态/关系、转换/clone/迁移/pending、生产多源phased、群UI/自然种子仍待后续。完整列表与门禁见[4d报告](phase4d.report.md)。

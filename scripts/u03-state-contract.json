@@ -470,5 +470,9 @@
   "extensionRuntime": {
     "kind": "persist",
     "contract": "EXT-0：经典局 null，不创建/调用模块；扩展局运行期服务，仅 modules/components/manifest 深拷贝到独立顶层 extensions。新局卸载后重建；读档验证版本和模块状态后重建，绑定全部生物，不重播生成事件，不消耗 RNG。"
+  },
+  "bodyGroups": {
+    "kind": "run",
+    "contract": "4d-1：仅已安装 nativeBodies 实际创建群体时存在的机械群表；跨物理层唯一 owner，写入 run.spatialWorld.groups，成员 spatial 保存群/槽身份；创建失败按显式生成写集原位回滚，开局清除，读档先验证闭包/群约束/墓碑再发布。普通局无字段。"
   }
 }

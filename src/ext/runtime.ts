@@ -1,6 +1,6 @@
 import { SpatialCatalog, nativeSpatialCatalog } from '../engine/Movement/SpatialSchema';
 import { rigidFootprint } from '../engine/Movement/RigidFootprint';
-import { bindNativeForms, nativeFormFootprint, validNativeForm, type NativeFormDefinition } from './nativeForms';
+import { bindNativeForms, nativeFormFootprint, nativeFormSpatial, validNativeForm, type NativeFormDefinition } from './nativeForms';
 import { validGenerationContribution } from './generation';
 import type { Creature } from '../entities/Creature';
 import { Player } from '../entities/Player';
@@ -28,6 +28,7 @@ const spatialCatalogs = new WeakMap<ExtensionRuntime, SpatialCatalog>();
 // No new own runtime field in existing worlds (4a0 full-object differential).
 const partBreakProviders = new WeakMap<ExtensionRuntime, { module: ExtensionModule; provider: PartBreakProvider }>();
 const zoneBreakHandlers = new WeakMap<ExtensionRuntime, NonNullable<ExtensionPorts['zoneBroken']>>();
+const bodyHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts, 'memberDamage' | 'memberDamageCommitted' | 'validateMemberBreak'>>();
 function isCreatureView(value: unknown): boolean {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
     const v = value as Record<string, unknown>;
@@ -37,6 +38,9 @@ function isCreatureView(value: unknown): boolean {
 }
 export interface ExtensionPorts {
     zoneBroken?(actor: Creature, zoneId: string): void;
+    memberDamage?(actor: Creature, amount: number, kind: import('./causality').DamageKind): number | undefined;
+    memberDamageCommitted?(actor: Creature): void;
+    validateMemberBreak?(request: PartBreakRequest): boolean;
     depth(): number;
     turn?(): number;
     interactableCandidates?(request: WorldInteractablePlacement): readonly { x: number; y: number }[];
@@ -140,6 +144,11 @@ export class ExtensionRuntime {
             const { zoneBroken: _handler, ...existingPorts } = ports;
             this.ports = existingPorts;
         }
+        if (ports.memberDamage || ports.memberDamageCommitted || ports.validateMemberBreak) {
+            const { memberDamage, memberDamageCommitted, validateMemberBreak, ...existingPorts } = this.ports;
+            bodyHandlers.set(this, { memberDamage, memberDamageCommitted, validateMemberBreak });
+            this.ports = existingPorts;
+        }
         this.manifest = structuredClone(manifest);
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
         Object.freeze(this.manifest.modules); Object.freeze(this.manifest);
@@ -166,11 +175,27 @@ export class ExtensionRuntime {
             if (module.nativeForms) Object.defineProperty(module, 'nativeForms', { value: freezeView(structuredClone(module.nativeForms)), writable: false });
             if (module.generationContributions) Object.defineProperty(module, 'generationContributions', { value: freezeView(structuredClone(module.generationContributions)), writable: false });
         }
-        if (this.modules.some(m => m.nativeForms?.some(f => f.footprint))) spatialCatalogs.set(this, new SpatialCatalog(false, this.modules.map(m => m.id)));
+        if (this.modules.some(m => m.nativeBodies || m.nativeForms?.some(f => f.footprint))) spatialCatalogs.set(this, new SpatialCatalog(false, this.modules.map(m => m.id)));
         for (const module of this.modules) for (const form of module.nativeForms ?? []) {
             const definition = nativeFormFootprint(form, module.id);
             for (const rule of form.breakRules ?? []) this.spatialCatalog.registerBreakRule(rule);
             if (definition) { this.spatialCatalog.registerFootprint(definition); rigidFootprint(this.spatialCatalog, definition.id); }
+        }
+        for (const module of this.modules) if (module.nativeBodies) {
+            const declarations = module.nativeBodies;
+            if (!isJson(declarations) || Object.keys(declarations).sort().join(',') !== 'breakRules,definitions'
+                || !Array.isArray(declarations.definitions) || !declarations.definitions.length || declarations.definitions.length > 16
+                || !Array.isArray(declarations.breakRules) || declarations.breakRules.length > 16 || !module.nativeForms?.length)
+                throw new Error('Invalid native body declarations');
+            for (const rule of declarations.breakRules) this.spatialCatalog.registerMemberBreakRule(rule);
+            for (const form of module.nativeForms) this.spatialCatalog.registerForm({ id: form.id, owner: module.id,
+                footprintId: nativeFormSpatial(form).footprintId });
+            for (const body of declarations.definitions) {
+                if (body.owner !== module.id || body.parts.some((p: import('../engine/Movement/SpatialSchema').PartDefinition) => !module.nativeForms!.some(f => f.id === p.formId)))
+                    throw new Error('Invalid native body form ownership');
+                this.spatialCatalog.registerBody(body);
+            }
+            Object.defineProperty(module, 'nativeBodies', { value: freezeView(structuredClone(declarations)), writable: false });
         }
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalQueries ?? {})) {
             if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
@@ -425,6 +450,7 @@ export class ExtensionRuntime {
         validatePartBreakRequest(request);
         const actor = [...this.creatures].find(c => c.id === request.actorId);
         if (!actor || actor.hp <= 0) throw new Error('Unavailable part break actor');
+        if (request.partId !== 'self' && !bodyHandlers.get(this)?.validateMemberBreak?.(request)) throw new Error('Unavailable member break identity');
         const value = freezeView(structuredClone(request)), entry = partBreakProviders.get(this);
         let applied = false;
         try {
@@ -915,6 +941,8 @@ export class ExtensionRuntime {
         if (forms.length) bindNativeForms(creature, forms, this.spatialCatalog);
         creature.extensionHooks = {
             zoneDamage: (target, amount, kind) => {
+                const memberDamage = bodyHandlers.get(this)?.memberDamage?.(target, amount, kind);
+                if (memberDamage !== undefined) return memberDamage;
                 if (!target.spatial || !hasBodyContact(target) || isWholeBodyDamage(target) || target.hp <= 0
                     || !this.spatialCatalog.definition(target.spatial.footprintId).zones?.length
                     || ['administrative','negation','transference','reprisal','status'].includes(this.causality.current?.kind ?? '')) return undefined;
@@ -958,6 +986,7 @@ export class ExtensionRuntime {
                 const fact = this.causality.recordDamage(target.id, hpBefore, target.hp, damageKind);
                 this.emit('damage', { creature: creatureView(target, this.ports.playerId()), amount, hpBefore,
                     sourceId: this.sourceId, origin: fact.origin, hpLost: fact.hpLost, damageKind });
+                bodyHandlers.get(this)?.memberDamageCommitted?.(target);
             },
         };
         if (notifySpawn && !this.spawned.has(creature)) {
@@ -1265,6 +1294,6 @@ export class ExtensionRuntime {
         if (this.disposed) return;
         this.disposed = true;
         try { for (const module of [...this.modules].reverse()) requireSynchronous(module.onUnload?.()); }
-        finally { for (const creature of this.creatures) { bindNativeForms(creature); creature.extensionHooks = undefined; } this.creatures.clear(); }
+        finally { bodyHandlers.delete(this); for (const creature of this.creatures) { bindNativeForms(creature); creature.extensionHooks = undefined; } this.creatures.clear(); }
     }
 }

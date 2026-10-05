@@ -58,7 +58,7 @@ export function validateProductionActorActionState(state: unknown, world: ActorA
     validateActorActionSchedulerState(state);
     const actors = actorMap(world);
     const host: ActorActionSchedulerHost = {
-        decisionOwnerId: id => id,
+        decisionOwnerId: id => actors.get(id)?.actor.spatial?.bodyMember?.groupId ?? id,
         readActor: id => { const actor = actors.get(id)?.actor; return actor ? { ticksUntilTurn: actor.ticksUntilTurn, alive: aliveSource(actor) } : null; },
         writeOwnerTicks: () => { throw new Error('Validation cannot write action clocks'); },
         resolveSegment: () => { throw new Error('Validation cannot resolve actions'); },
@@ -95,7 +95,7 @@ export function createProductionActorActionSession(game: Game, options: Producti
         return baseline.actor === actor && baseline.revision === actorSourceRevision(actor) && validSource(actor, source);
     };
     const host: ActorActionSchedulerHost = {
-        decisionOwnerId: id => id,
+        decisionOwnerId: id => row(id)?.actor.spatial?.bodyMember?.groupId ?? id,
         readActor: id => { const actor = row(id)?.actor; return actor ? { ticksUntilTurn: actor.ticksUntilTurn, alive: aliveSource(actor) } : null; },
         writeOwnerTicks: (id, ticks) => { const actor = row(id)?.actor; if (actor?.hp && actor.hp > 0) actor.ticksUntilTurn = ticks; },
         resolveSegment: boundary => {

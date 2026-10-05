@@ -2,8 +2,9 @@ import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
 import { bodyConstraintOrder, bodyConstraintsSatisfied, type BodyPose } from './BodyConstraints';
 import { trajectoriesCollide, trajectoryConstraintSatisfied, type BodyTrajectory } from './BodyTrajectory';
-import { actorSourceRevision, commitCreatureAnchor, conservativeSquareStep, type CreatureSpatial, type FitOptions } from './CreatureSpatial';
+import { actorSourceRevision, commitCompositeAnchors, conservativeSquareStep, type CreatureSpatial, type FitOptions } from './CreatureSpatial';
 import { deepFreeze, integer, keys, SpatialValidationError, type BodyDefinition, type BodyGroupState } from './SpatialSchema';
+import { bodyMoveTicks, validateBodyGroup } from './BodyGroups';
 
 export const COMPOSITE_MOVEMENT_LIMITS = Object.freeze({ candidates: 32, branchNodes: 128, memberStep: 2 });
 export interface CompositeMovementOptions {
@@ -32,8 +33,9 @@ interface PlanBinding {
 const same = (a: Readonly<Pos>, b: Readonly<Pos>) => a.x === b.x && a.y === b.y;
 const distance = (a: Readonly<Pos>, b: Readonly<Pos>) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
-/** 4d-0 diagnostic capability only. No Game/TimeCoordinator/native AI entry
- * can obtain a production plan. Identity remains in CreatureSpatial.groups;
+/** Bounded 4d planner. Production requires an installed body declaration and
+ * a validated live group; legacy 4d-0 fixtures keep their active-only contract.
+ * Identity remains in the supplied CreatureSpatial.groups;
  * this planner owns only single-use, derived plans, never HP or group clocks.
  *
  * Planning chooses the core step first. Physical paths share two bounded unit
@@ -43,21 +45,24 @@ const distance = (a: Readonly<Pos>, b: Readonly<Pos>) => Math.max(Math.abs(a.x -
 export class CompositeMovement {
     private readonly plans = new WeakMap<CompositeMovePlan, PlanBinding>();
     constructor(readonly spatial: CreatureSpatial) {
-        if (!spatial.catalog.fixture) throw new SpatialValidationError('Composite movement production capability is not open');
+        if (!spatial.catalog.fixture && !spatial.catalog.hasBodies) throw new SpatialValidationError('Composite movement production capability is not open');
     }
     private cohort(groupId: number): Cohort {
         const group = this.spatial.groups.find(g => g.groupId === groupId);
         if (!group) throw new SpatialValidationError('Unknown composite group');
         keys(group, ['schema', 'groupId', 'coreId', 'bodyDefinitionId', 'members', 'appliedBreaks']);
-        const definition = this.spatial.catalog.body(group.bodyDefinitionId), order = bodyConstraintOrder(definition);
+        const definition = this.spatial.catalog.body(group.bodyDefinitionId);
+        const order = bodyConstraintOrder(definition).filter(id => group.members.some(s => s.partId === id && s.life === 'active'));
+        if (!this.spatial.catalog.fixture) validateBodyGroup(group, this.spatial.catalog, id => this.spatial.entityById(id));
         if (group.schema !== 1 || !integer(groupId, 1) || group.coreId !== groupId || !Array.isArray(group.members)
-            || group.members.length !== definition.parts.length || !Array.isArray(group.appliedBreaks) || group.appliedBreaks.length
+            || group.members.length !== definition.parts.length || !Array.isArray(group.appliedBreaks) || this.spatial.catalog.fixture && group.appliedBreaks.length
             || definition.noSupport !== 'immobile' || definition.coreDeath !== 'remove-members'
             || definition.constraints.some(c => c.maxStepPerAction > COMPOSITE_MOVEMENT_LIMITS.memberStep)) {
             throw new SpatialValidationError('Unopened composite movement lifecycle or step budget');
         }
         const actors = new Map<string, Creature>();
         for (const slot of group.members) {
+            if (!this.spatial.catalog.fixture && slot.life === 'removed') continue;
             keys(slot, ['partId', 'entityId', 'life', 'generation', 'readyInTicks']);
             const part = definition.parts.find(p => p.partId === slot.partId), actor = slot.entityId === null ? undefined : this.spatial.entityById(slot.entityId);
             if (!part || actors.has(slot.partId) || slot.life !== 'active' || slot.generation !== 0 || !integer(slot.readyInTicks, 0, 1000000)
@@ -67,7 +72,7 @@ export class CompositeMovement {
                 throw new SpatialValidationError('Invalid or unopened moving body member');
             }
             // A fixture may not borrow a member from another table or reserve a
-            // hidden duplicate entity. Native slot retirement comes in 4d-1.
+            // hidden duplicate entity. Production tombstones have no actor.
             if (this.spatial.groups.some(g => g !== group && g.members.some(m => m.entityId === actor.id))) throw new SpatialValidationError('Shared composite member');
             actors.set(slot.partId, actor);
         }
@@ -137,9 +142,10 @@ export class CompositeMovement {
             || !integer(core.movementSpeed, 1, 1000000)) throw new SpatialValidationError('Composite core needs one positive-cost step');
         const budget = options.branchBudget ?? COMPOSITE_MOVEMENT_LIMITS.branchNodes;
         if (!integer(budget, 1, COMPOSITE_MOVEMENT_LIMITS.branchNodes)) throw new SpatialValidationError('Composite branch budget exceeded');
+        const costTicks = bodyMoveTicks(cohort.definition, cohort.group, this.spatial.catalog, core.movementSpeed);
         const blocked = (reason: Extract<CompositeMoveResult, { status: 'blocked' }>['reason'], branchNodes = 0): CompositeMoveResult =>
-            Object.freeze({ status: 'blocked', reason, costTicks: core.movementSpeed, branchNodes });
-        if (cohort.definition.parts.filter(p => p.providesSupport).length < cohort.definition.minSupportParts
+            Object.freeze({ status: 'blocked', reason, costTicks, branchNodes });
+        if (cohort.definition.parts.filter(p => p.providesSupport && cohort.actors.has(p.partId)).length < cohort.definition.minSupportParts
             || core.spatial!.actionLockInTicks || core.hasStatus('stuck') || core.hasStatus('paralyzed')) return blocked('immobile');
         // Staying is a real candidate, not permission to skip terrain/region
         // qualification. Validate the whole published starting configuration.
@@ -162,7 +168,7 @@ export class CompositeMovement {
             return false;
         };
         if (!search(1)) return blocked(exhausted ? 'budget' : 'constraints', nodes);
-        const plan: CompositeMovePlan = deepFreeze({ groupId, costTicks: core.movementSpeed, branchNodes: nodes,
+        const plan: CompositeMovePlan = deepFreeze({ groupId, costTicks, branchNodes: nodes,
             trajectories: cohort.order.map(partId => ({ ...assigned.get(partId)!, entityId: cohort.actors.get(partId)!.id, partId })) });
         this.plans.set(plan, { cohort, fingerprint: this.fingerprint(cohort), revision: this.spatial.occupancyRevision,
             terrainRevision: this.spatial.terrainRevision, locations: new Map([...cohort.actors.values()].map(c => [c, c.loc])), options: Object.freeze({ ...options }) });
@@ -194,10 +200,8 @@ export class CompositeMovement {
         }
         // All writable destinations are preflighted. The anchor primitive only
         // updates loc and derived revisions/listeners; no arbitrary callbacks.
-        for (const trajectory of plan.trajectories) {
-            const actor = cohort.actors.get(trajectory.partId)!, target = trajectory.path[trajectory.path.length - 1]!;
-            if (!same(actor.loc, target)) commitCreatureAnchor(actor, { ...target }, 'mutate', true);
-        }
+        commitCompositeAnchors(plan.trajectories.map(trajectory => ({ creature: cohort.actors.get(trajectory.partId)!,
+            at: trajectory.path[trajectory.path.length - 1]! })), this.spatial.catalog.fixture);
         return true;
     }
 }

@@ -106,6 +106,7 @@ export interface EffectsPort {
 
 export interface TimePorts {
     world: WorldPort; clock: ClockPort; effects: EffectsPort;
+    bodies?: { isDecisionOwner(id: number): boolean; advanceElapsed(ticks: number): void };
     /** Opt-in foundation scheduling; absence retains the native iteration/order. */
     actions?: ActorActionSchedulerPort;
 }
@@ -120,7 +121,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
             const playerWasBusy = actions?.isBusy(ports.world.player.id) ?? false;
             let soonestTurn = ports.world.player.ticksUntilTurn;
             for (const m of ports.world.monsters) {
-                if (m.hp > 0 && (!actions || actions.isDecisionOwner(m.id)) && m.ticksUntilTurn < soonestTurn) {
+                if (m.hp > 0 && (!ports.bodies || ports.bodies.isDecisionOwner(m.id)) && (!actions || actions.isDecisionOwner(m.id)) && m.ticksUntilTurn < soonestTurn) {
                     soonestTurn = m.ticksUntilTurn;
                 }
             }
@@ -138,10 +139,11 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                     m.spatial.actionLockInTicks = Math.max(0, m.spatial.actionLockInTicks - soonestTurn);
                     if (!m.spatial.actionLockInTicks) delete m.spatial.actionLockInTicks;
                 }
-                if (m.hp > 0 && (!actions || (actions.isDecisionOwner(m.id) && !actions.isBusy(m.id)))) {
+                if (m.hp > 0 && (!ports.bodies || ports.bodies.isDecisionOwner(m.id)) && (!actions || (actions.isDecisionOwner(m.id) && !actions.isBusy(m.id)))) {
                     m.ticksUntilTurn -= soonestTurn;
                 }
             }
+            if (soonestTurn > 0) ports.bodies?.advanceElapsed(soonestTurn);
             // Busy native timers are mirrors written by this one countdown owner.
             if (actions && soonestTurn > 0) actions.advanceActionTime(soonestTurn);
 
@@ -199,6 +201,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                         .filter(actor => actions.isDecisionOwner(actor.id)).sort((a, b) => a.id - b.id)
                     : [...ports.world.monsters];
                 for (const actor of dueActors) {
+                    if (ports.bodies && !ports.bodies.isDecisionOwner(actor.id)) continue;
                     if (ports.clock.isGameOver) break; // CE Time.c:2721 的 gameHasEnded 守卫
                     if (!(actor.hp > 0 && actor.ticksUntilTurn <= 0)) continue;
                     if (actions) {

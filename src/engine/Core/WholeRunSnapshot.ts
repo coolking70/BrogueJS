@@ -2,6 +2,8 @@ import { getNextEntityId, restoreNextEntityId } from '../../entities/Creature';
 import { assertNativeSpatial, assertSingleCellPlayer, CreatureSpatial, footprintOf, spatialCatalogFor } from '../Movement/CreatureSpatial';
 import { regionContains, validOwnedRegions } from '../../ext/regions';
 import { keys, nativeSpatialCatalog, SpatialValidationError, SPATIAL_LIMITS, validateSpatialComponent, type SpatialCatalog, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
+import { validateBodyGroup } from '../Movement/BodyGroups';
+import type { BodyGroupState } from '../Movement/SpatialSchema';
 /** Pure whole-run projection and world reconstruction. The live Game supplies
  * only the state and services consumed here; neither function receives Game. */
 import { Item } from '../Items/Item';
@@ -113,6 +115,8 @@ export function snapshotLevel(depth: number, level: LevelState, trapDepressions:
 }
 
 export interface WholeRunProjection {
+    bodyGroups?: readonly BodyGroupState[];
+    spatialCatalog?: SpatialCatalog;
     /** Deterministically initialized native fixture port. Production omits it. */
     nativeSpatial?: ReadonlyMap<number, CreatureSpatial>;
     depth: number;
@@ -169,7 +173,12 @@ export function toWholeRunSnapshot(source: WholeRunProjection): GameSnapshot {
         ...source.visibleItems, ...levels.flatMap(([, l]) => [...l.visibleItems]),
         ...[source.player.equippedWeapon, source.player.equippedArmor, source.player.ringLeft, source.player.ringRight, source.travelTargetItem]
             .filter((item): item is Item => item != null)]);
-    const spatialWorld = source.nativeSpatial ? snapshotNativeSpatialWorld(source.nativeSpatial) : snapshotSquareWorld(graph.monsters);
+    const spatialWorld = source.nativeSpatial ? snapshotNativeSpatialWorld(source.nativeSpatial)
+        : snapshotSquareWorld(graph.monsters, source.spatialCatalog, source.bodyGroups);
+    if (source.bodyGroups?.length) validateProductionGroupOwnership(source.bodyGroups, source.spatialCatalog!, [
+        { grid: source.active.grid, monsters: source.monsters, dormantMonsters: source.dormantMonsters, player: source.player },
+        ...levels.map(([, level]) => ({ grid: level.grid, monsters: level.monsters, dormantMonsters: level.dormantMonsters })),
+    ]);
     return {
         ...source.snapshotLevel(source.depth, source.active),
         version: 3, schema: WHOLE_RUN_SCHEMA, savedAt: Date.now(),
@@ -277,9 +286,12 @@ export function decodeWholeRunWorld(snapshot: GameSnapshot, deps: EntityCodecDep
     }
     if (snapshot.run.spatialWorld !== undefined) {
         if (!deps.spatialCatalog?.fixture) {
-            const expected = snapshotSquareWorld([...entityGraph.monsters.values()], deps.spatialCatalog);
+            const expected = snapshotSquareWorld([...entityGraph.monsters.values()], deps.spatialCatalog, snapshot.run.spatialWorld.groups);
             if (canonicalSpatial(snapshot.run.spatialWorld) !== canonicalSpatial(expected)) throw new SpatialValidationError('Invalid square definition closure');
             const player = decodePlayer(snapshot.player, entityGraph.items);
+            if (snapshot.run.spatialWorld.groups.length) validateProductionGroupOwnership(snapshot.run.spatialWorld.groups, deps.spatialCatalog!,
+                [...restored].map(([depth, level]) => ({ grid: level.grid, monsters: level.monsters, dormantMonsters: level.dormantMonsters,
+                    ...(depth === snapshot.depth ? { player } : {}), inRegion: (id: number, at: Readonly<Pos>) => inRegion(id, depth, at) })));
             // Validate physical ownership and full footprints on each independent
             // layer. Pending/carry/purgatory retain component truth, with no index.
             const owned = new Set<number>();
@@ -325,7 +337,19 @@ const canonicalSpatial = (v: unknown): string | undefined => JSON.stringify(v, (
     ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value);
 /** Production uses only independently initialized installed definitions. A saved
  * closure describes used geometry; it cannot grant capabilities or install data. */
-function snapshotSquareWorld(monsters: readonly Monster[], catalog?: SpatialCatalog): SpatialWorldSnapshot | undefined {
+function snapshotSquareWorld(monsters: readonly Monster[], catalog?: SpatialCatalog, groups: readonly BodyGroupState[] = []): SpatialWorldSnapshot | undefined {
+    if (!Array.isArray(groups) || groups.length > SPATIAL_LIMITS.entities || new Set(groups.map(g => g.groupId)).size !== groups.length)
+        throw new SpatialValidationError('Invalid production group root');
+    const owned = new Set<number>();
+    for (const group of groups) {
+        if (!catalog || catalog.fixture) throw new SpatialValidationError('Unavailable production group catalog');
+        validateBodyGroup(group, catalog, id => monsters.find(c => c.id === id));
+        for (const slot of group.members) if (slot.entityId !== null) {
+            if (owned.has(slot.entityId)) throw new SpatialValidationError('Shared production member');
+            owned.add(slot.entityId);
+        }
+    }
+    if (monsters.some(c => c.spatial?.bodyMember && !owned.has(c.id))) throw new SpatialValidationError('Orphan production member');
     const definitions = new Map<string, ReturnType<SpatialCatalog['definition']>>();
     const breaks = new Map<string, ReturnType<SpatialCatalog['breakRule']>>();
     for (const c of monsters) {
@@ -338,8 +362,26 @@ function snapshotSquareWorld(monsters: readonly Monster[], catalog?: SpatialCata
         }
     }
     if (!definitions.size) return undefined;
+    if (groups.length) return { schema: 1, definitions: catalog!.definitionClosure([...definitions.keys()], groups.map(g => g.bodyDefinitionId)),
+        groups: structuredClone([...groups].sort((a, b) => a.groupId - b.groupId)) };
     return { schema: 1, definitions: { footprints: [...definitions.values()].sort((a,b) => a.id.localeCompare(b.id)), bodies: [],
         ...(breaks.size ? { breakRules: [...breaks.values()].sort((a,b) => a.id.localeCompare(b.id)) } : {}) }, groups: [] };
+}
+
+function validateProductionGroupOwnership(groups: readonly BodyGroupState[], catalog: SpatialCatalog,
+    worlds: readonly import('../Movement/CreatureSpatial').SpatialWorld[]): void {
+    for (const group of groups) {
+        const owners = worlds.filter(world => world.monsters.some(c => c.id === group.coreId) || world.dormantMonsters?.some(c => c.id === group.coreId));
+        if (owners.length !== 1) throw new SpatialValidationError('Missing or multiply owned group core');
+        const world = owners[0]!;
+        const service = new CreatureSpatial(world, catalog);
+        try {
+            const cohort = [...world.monsters, ...(world.dormantMonsters ?? [])];
+            const localGroups = groups.filter(g => cohort.some(c => c.id === g.coreId));
+            service.restoreWorld({ schema: 1, definitions: catalog.definitionClosure(cohort.flatMap(c => c.spatial ? [c.spatial.footprintId] : []),
+                localGroups.map(g => g.bodyDefinitionId)), groups: structuredClone(localGroups) });
+        } finally { service.dispose(); }
+    }
 }
 
 /** Merge only used native definitions. Ordinary worlds omit the root entirely. */
@@ -465,7 +507,7 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
         }
         if (rows.some(row => row.spatial) && !s.run.spatialWorld) return false;
         if (s.run.spatialWorld && !spatialCatalog?.fixture
-            && canonicalSpatial(s.run.spatialWorld) !== canonicalSpatial(snapshotSquareWorld(rows as unknown as Monster[], spatialCatalog))) return false;
+            && canonicalSpatial(s.run.spatialWorld) !== canonicalSpatial(snapshotSquareWorld(rows as unknown as Monster[], spatialCatalog, s.run.spatialWorld.groups))) return false;
     } catch { return false; }
     if (rows.some(m => !Number.isInteger(m.entersLevelIn) || m.entersLevelIn < 0 || m.entersLevelIn > 150
         || !Number.isInteger(m.approaching) || m.approaching < 0 || m.approaching > 7)) return false;

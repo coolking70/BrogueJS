@@ -224,6 +224,9 @@ export interface ExtensionModule extends ExtensionVersion {
     /** One discovered data-only owner for persistent phased attacks. */
     readonly actorActions?: { readonly stateField: 'scheduler'; readonly definitions: Json };
     readonly nativeForms?: readonly import('./nativeForms').NativeFormDefinition[];
+    /** Data-only composite declarations; foundation owns entities and clocks. */
+    readonly nativeBodies?: { readonly definitions: readonly import('../engine/Movement/SpatialSchema').BodyDefinition[];
+        readonly breakRules: readonly import('../engine/Movement/SpatialSchema').PartBreakRule[] };
     readonly generationContributions?: readonly import('./generation').GenerationContribution[];
     readonly publicActorTags?: readonly { readonly component: string; readonly tag: string }[];
     readonly interactionCommands?: readonly string[];

@@ -1,5 +1,6 @@
 import { spatialTerrainRevision, releaseSpatialTerrain } from './SpatialRevision';
 import { bodyConstraintsSatisfied, type BodyPose } from './BodyConstraints';
+import { validateBodyGroup } from './BodyGroups';
 import { inMovementRegion } from './MovementRegions';
 import { rigidFootprint, rotationStages, type CompiledRigidFootprint, type QuarterTurns, type RigidPose } from './RigidFootprint';
 import type { Creature } from '../../entities/Creature';
@@ -46,6 +47,7 @@ export function isSquareFootprint(c: Pick<Creature, 'spatial'>): boolean {
 const listeners = new WeakMap<Creature, Set<() => void>>();
 const squareAnchorRevisions = new WeakMap<Creature, number>();
 const actorSourceRevisions = new WeakMap<Creature, number>();
+const bodyAnchorPublications = new WeakSet<Creature>();
 /** Derived source identity for a live action only. Never saved or compared across load. */
 export function actorSourceRevision(creature: Creature): number { return actorSourceRevisions.get(creature) ?? 0; }
 /** Short-lived contact sequences can detect even a nested out-and-back move.
@@ -58,6 +60,8 @@ export function squareAnchorRevision(creature: Creature): number { return square
 export function commitCreatureAnchor(creature: Creature, at: Pos, mode: 'replace' | 'mutate' = 'replace', fixture = false): void {
     if (!integer(at.x, -32768, 32767) || !integer(at.y, -32768, 32767)) throw new SpatialValidationError('Invalid creature anchor');
     if (!fixture) assertNativeSpatial(creature);
+    if (!fixture && creature.spatial?.bodyMember && !bodyAnchorPublications.has(creature))
+        throw new SpatialValidationError('Composite anchors require a whole-group publication');
     if (creature.loc.x !== at.x || creature.loc.y !== at.y)
         actorSourceRevisions.set(creature, actorSourceRevision(creature) + 1);
     if (mode === 'mutate') { creature.loc.x = at.x; creature.loc.y = at.y; }
@@ -65,8 +69,32 @@ export function commitCreatureAnchor(creature: Creature, at: Pos, mode: 'replace
     if (creature.spatial) squareAnchorRevisions.set(creature, squareAnchorRevision(creature) + 1);
     listeners.get(creature)?.forEach(invalidate => invalidate());
 }
+/** Trusted planner primitive, after its complete trajectory/staleness preflight.
+ * Native single-actor displacement paths cannot tear one member off its body. */
+export function commitCompositeAnchors(changes: readonly { creature: Creature; at: Readonly<Pos> }[], fixture = false): void {
+    const groupId = changes[0]?.creature.spatial?.bodyMember?.groupId;
+    if (!groupId || !changes.some(c => c.creature.id === groupId) || new Set(changes.map(c => c.creature)).size !== changes.length
+        || changes.some(c => c.creature.spatial?.bodyMember?.groupId !== groupId
+            || !integer(c.at.x, -32768, 32767) || !integer(c.at.y, -32768, 32767)
+            || !Object.getOwnPropertyDescriptor(c.creature, 'loc')?.writable
+            || ['x', 'y'].some(k => !Object.getOwnPropertyDescriptor(c.creature.loc, k)?.writable)))
+        throw new SpatialValidationError('Invalid composite anchor publication');
+    if (!fixture) changes.forEach(c => assertNativeSpatial(c.creature));
+    const prior = new Set(changes.filter(c => bodyAnchorPublications.has(c.creature)).map(c => c.creature));
+    changes.forEach(c => bodyAnchorPublications.add(c.creature));
+    try { changes.forEach(c => { if (c.creature.x !== c.at.x || c.creature.y !== c.at.y) commitCreatureAnchor(c.creature, { ...c.at }, 'mutate', fixture); }); }
+    finally { changes.forEach(c => { if (!prior.has(c.creature)) bodyAnchorPublications.delete(c.creature); }); }
+}
 export function assertNativeSpatial(creature: Creature, catalog = spatialCatalogFor(creature)): void {
     if (Object.prototype.hasOwnProperty.call(creature, 'spatial')) {
+        if (creature.spatial?.bodyMember) {
+            validateSpatialComponent(creature.spatial, catalog, false);
+            const s = creature.spatial;
+            if (catalog.fixture || !catalog.permitsMember(s.footprintId, s.bodyMember!.partId)
+                || s.pose.startsWith('m') || Object.keys(s).some(k => !['schema', 'footprintId', 'pose', 'movementRegionId', 'bodyMember', 'actionLockInTicks'].includes(k)))
+                throw new SpatialValidationError('Composite member capability is not open');
+            return;
+        }
         try { if (isSquareFootprint(creature)) squareMovementSize(creature, catalog); else rigidMovementFootprint(creature, catalog); }
         catch (error) { throw new SpatialValidationError(`Spatial capability is not open: ${(error as Error).message}`); }
     }
@@ -436,7 +464,7 @@ export class CreatureSpatial {
     }
     restoreWorld(snapshot: SpatialWorldSnapshot): void {
         keys(snapshot, ['schema', 'definitions', 'groups']); keys(snapshot.definitions, ['footprints', 'bodies', 'forms', 'breakRules', 'statusProfiles'], ['footprints', 'bodies']);
-        if (!this.catalog.fixture || snapshot.schema !== 1 || !Array.isArray(snapshot.groups) || snapshot.groups.length > SPATIAL_LIMITS.entities
+        if ((!this.catalog.fixture && !this.catalog.hasBodies) || snapshot.schema !== 1 || !Array.isArray(snapshot.groups) || snapshot.groups.length > SPATIAL_LIMITS.entities
             || !Array.isArray(snapshot.definitions.footprints) || !Array.isArray(snapshot.definitions.bodies)
             || ['forms', 'breakRules', 'statusProfiles'].some(k => (snapshot.definitions as any)[k] !== undefined && !Array.isArray((snapshot.definitions as any)[k]))) throw new SpatialValidationError('Unopened spatial world');
         const canonical = (v: unknown): string => JSON.stringify(v, (_k, value) => value && typeof value === 'object' && !Array.isArray(value)
@@ -449,8 +477,9 @@ export class CreatureSpatial {
         for (const group of snapshot.groups) {
             keys(group, ['schema', 'groupId', 'coreId', 'bodyDefinitionId', 'members', 'appliedBreaks']);
             const def = this.catalog.body(group.bodyDefinitionId);
+            if (!this.catalog.fixture) validateBodyGroup(group, this.catalog, id => this.entityById(id));
             if (group.schema !== 1 || !integer(group.groupId, 1) || group.coreId !== group.groupId || groups.has(group.groupId)
-                || !Array.isArray(group.members) || group.members.length !== def.parts.length || !Array.isArray(group.appliedBreaks) || group.appliedBreaks.length) throw new SpatialValidationError('Invalid body group');
+                || !Array.isArray(group.members) || group.members.length !== def.parts.length || !Array.isArray(group.appliedBreaks) || this.catalog.fixture && group.appliedBreaks.length) throw new SpatialValidationError('Invalid body group');
             groups.add(group.groupId); const parts = new Set<string>();
             for (const m of group.members) {
                 keys(m, ['partId', 'entityId', 'life', 'generation', 'readyInTicks', 'regenerateInTicks'], ['partId', 'entityId', 'life', 'generation', 'readyInTicks']);
@@ -522,9 +551,9 @@ export function collectBodyTargets(world: SpatialWorld, cells: readonly Pos[], p
     const out: BodyTarget[] = [];
     for (const at of cells) {
         const c = creatureAtCell(world, at, policy.occupancy); if (!c) continue;
-        assertNativeSpatial(c); const groupId = c.id, zoneId = footprintOf(c).find(p => p.x === at.x && p.y === at.y)?.zoneId ?? 'body';
+        assertNativeSpatial(c); const groupId = c.spatial?.bodyMember?.groupId ?? c.id, zoneId = footprintOf(c).find(p => p.x === at.x && p.y === at.y)?.zoneId ?? 'body';
         const dedupKey = dedup === 'entity' ? `entity:${c.id}` : dedup === 'group' ? `group:${groupId}` : `part:${c.id}:${zoneId}`;
-        if (!scope.has(dedupKey)) { scope.add(dedupKey); out.push(Object.freeze({ entity: c, entityId: c.id, groupId, partId: null, zoneId, dedupKey, contact: Object.freeze({ ...at }) })); }
+        if (!scope.has(dedupKey)) { scope.add(dedupKey); out.push(Object.freeze({ entity: c, entityId: c.id, groupId, partId: c.spatial?.bodyMember?.partId ?? null, zoneId, dedupKey, contact: Object.freeze({ ...at }) })); }
     }
     return Object.freeze(out);
 }

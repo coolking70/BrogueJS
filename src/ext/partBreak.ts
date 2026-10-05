@@ -5,9 +5,9 @@ import { integer, identity, keys } from '../engine/Movement/SpatialSchema';
 export const PART_BREAK_CAPABILITY = 'combat.part-break.v1' as const;
 export interface PartBreakReceipt {
     readonly groupId: number;
-    readonly partId: 'self';
+    readonly partId: string;
     readonly zoneId: string;
-    readonly generation: 0;
+    readonly generation: number;
 }
 export interface PartBreakRequest extends PartBreakReceipt {
     readonly schema: 1;
@@ -48,7 +48,8 @@ export type PartBreakCommitter = <T>(request: PartBreakRequest, native: PartBrea
 export function validatePartBreakRequest(value: unknown): asserts value is PartBreakRequest {
     keys(value, ['schema', 'resolutionId', 'actorId', 'sourceId', 'groupId', 'partId', 'zoneId', 'generation', 'balanceLoss', 'fallbackStunTicks']);
     if (value.schema !== 1 || !integer(value.resolutionId, 1) || !integer(value.actorId, 1)
-        || value.groupId !== value.actorId || value.partId !== 'self' || !identity(value.zoneId) || value.zoneId === 'body'
+        || value.groupId !== value.actorId || !identity(value.partId) || !identity(value.zoneId)
+        || (value.partId === 'self' ? value.zoneId === 'body' : value.zoneId !== 'body')
         || value.generation !== 0 || (value.sourceId !== null && !integer(value.sourceId, 1))
         || !integer(value.balanceLoss, 0, 1000000) || !integer(value.fallbackStunTicks, 0, 1000000))
         throw new Error('Invalid fixed zone break request');
