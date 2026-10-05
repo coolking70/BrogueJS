@@ -43,5 +43,5 @@ export function publicZoneAt(player: Player, grid: Grid, monster: Monster, at: P
 }
 export function zoneStatusText(zone: PublicMonsterZone): string {
     return i18next.t('zone.summary', { defaultValue: '{{name}} {{current}} / {{maximum}} {{state}}', name: zone.name, current: zone.hp, maximum: zone.maxHp,
-        state: zone.broken ? i18next.t('zone.broken', { defaultValue: 'Destroyed' }) : zone.weak ? i18next.t('zone.weak', { defaultValue: 'Weak point' }) : '' });
+        state: zone.broken ? i18next.t('zone.broken', { defaultValue: 'Destroyed' }) : zone.weak ? i18next.t('zone.weak', { defaultValue: 'Weak point' }) : '' }).trim();
 }

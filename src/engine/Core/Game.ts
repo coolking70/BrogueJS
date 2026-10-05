@@ -12831,6 +12831,8 @@ export class Game {
         let baseText = '';
         if (entities.length > 0) {
             baseText = i18next.t('hover.entity_on_terrain', {
+                // Plain text (rendered by text bindings); zone summaries contain '/'.
+                interpolation: { escapeValue: false },
                 entities: entities.join(separator),
                 terrain: tName,
                 defaultValue: '{{entities}} on {{terrain}}'
