@@ -2,6 +2,7 @@
   "test": [
     "tests/giants_contract.test.ts",
     "tests/giants_runtime.test.ts",
+    "tests/giants_colossus.test.ts",
     "tests/giants_ui.test.ts"
   ],
   "gen": [],

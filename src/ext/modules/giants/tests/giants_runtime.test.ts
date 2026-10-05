@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { getInstalledModuleDescriptors, createExtensionRegistry } from '../../../catalog';
 import * as catalog from '../../../catalog';
+import { loadGiantsDefinitionPack } from '../definitions';
 import {
   naturalGiants,
   startGiants,
@@ -268,7 +269,7 @@ describe('giants natural run and original encounter', () => {
     expect(rat.typeId).toBe('giants.ridgeback');
     expect(rat.spatial?.footprintId).toBe('builtin:square-2');
     expect(getNextEntityId()).toBe(id);
-    expect(draw).toHaveBeenCalledWith(1, species.length + 1);
+    expect(draw).toHaveBeenCalledWith(1, species.length + loadGiantsDefinitionPack().forms.length);
     draw.mockRestore();
     const target = new Monster(
       b.x + 3,

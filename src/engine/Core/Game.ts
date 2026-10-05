@@ -12224,7 +12224,17 @@ export class Game {
 
     /** Trigger a trap at (x, y). Converts it to FLOOR after triggering. */
     private triggerTrap(x: number, y: number, cell: import('../Map/Grid').Cell, target: Creature = this.player) {
-        switch (cell.trapType) {
+        // One-time use: consume the trap layer BEFORE its effect, like CE's
+        // depress-then-spawn order. A fire trap ignites its own cell; the DF
+        // contact re-applies the entrant's tile effects, and a still-present
+        // trap layer would re-trigger itself until the stack overflowed.
+        // W-11: consume only the trap layer; keep the gas/fire about to be emitted.
+        const trapType = cell.trapType;
+        consumeTrapTile(this.grid, x, y, TerrainType.CHARRED_FLOOR);
+        cell.char = '.';
+        cell.color = 0x554433;
+        this.needsRender = true;
+        switch (trapType) {
             case 'poison_gas':
                 logger.log(i18next.t('trap.poison_gas', { defaultValue: 'You step on a poison gas trap! Toxic fumes billow out!' }), '#88ff88');
                 // G-1 折算：80 → 1000 = DF_POISON_GAS_CLOUD 的 startProbability
@@ -12247,12 +12257,6 @@ export class Game {
                 this.environment.igniteForced(x, y - 1);
                 break;
         }
-        // One-time use: convert to floor
-        // W-11: consume only the trap layer; keep the gas/fire just emitted.
-        consumeTrapTile(this.grid, x, y, TerrainType.CHARRED_FLOOR);
-        cell.char = '.';
-        cell.color = 0x554433;
-        this.needsRender = true;
     }
 
     private logPressurePlate(x: number, y: number, target: Creature): void {
