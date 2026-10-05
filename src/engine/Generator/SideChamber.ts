@@ -2,6 +2,8 @@ import { DungeonLayer, TerrainType as T, type Grid } from '../Map/Grid';
 import type { GenerationContribution } from '../../ext/generation';
 import type { Pos } from '../../types';
 import { generationReserved } from './GenerationReservation';
+import type { SpatialCatalog } from '../Movement/SpatialSchema';
+import { bodyConstraintsSatisfied } from '../Movement/BodyConstraints';
 export interface SideChamberPlan {
   readonly bounds: { x: number; y: number; width: number; height: number };
   readonly carve: readonly Pos[];
@@ -189,4 +191,43 @@ export function rigidSideChamberValid(grid: Grid, plan: SideChamberPlan, shape: 
     for(const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]])q.push({x:p.x+dx!,y:p.y+dy!});
   }
   return player.size===area-body.length;
+}
+
+/** A sufficient whole-body arena: the real preferred formation must traverse
+ * every fitting room anchor and an actual entrance. Uniform cardinal unit
+ * translations preserve the tree links and cannot cross any sibling paths.
+ * Uses installed shapes/poses, never a core bounding box or allocated actors. */
+export function compositeSideChamberValid(grid: Grid, plan: SideChamberPlan, catalog: SpatialCatalog, bodyId: string): boolean {
+  const definition = catalog.body(bodyId), b = plan.bounds;
+  const parts = definition.parts.map(p => {
+    const form = catalog.form(p.formId), pose = catalog.definition(form.footprintId).poses[0]!;
+    return { part: p, footprintId: form.footprintId, pose, cells: catalog.cells(form.footprintId, pose) };
+  });
+  const cellsAt = (at: Pos) => parts.flatMap(p => p.cells.map(c => ({ x: at.x + p.part.preferredOffset.x + c.x, y: at.y + p.part.preferredOffset.y + c.y })));
+  const clean = (p: Pos) => { const c = grid.getCell(p.x, p.y); return !!c && c.layers[0] === T.FLOOR && c.layers.slice(1).every(t => t === T.NOTHING) && !c.machineNumber; };
+  const inside = (p: Pos) => p.x >= b.x && p.y >= b.y && p.x < b.x + b.width && p.y < b.y + b.height;
+  const fit = (at: Pos, room: boolean) => {
+    const cells = cellsAt(at);
+    return cells.every(p => clean(p) && (!room || inside(p))) && new Set(cells.map(p => `${p.x},${p.y}`)).size === cells.length
+      && bodyConstraintsSatisfied(catalog, definition, new Map(parts.map(p => [p.part.partId, {
+        anchor: { x: at.x + p.part.preferredOffset.x, y: at.y + p.part.preferredOffset.y }, footprintId: p.footprintId, pose: p.pose
+      }])), grid);
+  };
+  if (!plan.carve.every(clean) || !fit(plan.spawn, true)
+      || !cellsAt(plan.spawn).every(p => p.x >= b.x + 2 && p.y >= b.y + 2 && p.x < b.x + b.width - 2 && p.y < b.y + b.height - 2)
+      || !plan.entry.some(e => fit(e, false))) return false;
+  const key = (p: Pos) => `${p.x},${p.y}`, anchors = new Set<string>();
+  for (let y = b.y; y < b.y + b.height; y++) for (let x = b.x; x < b.x + b.width; x++) if (fit({ x, y }, true)) anchors.add(key({ x, y }));
+  const seen = new Set<string>(), queue = [plan.spawn];
+  for (let i = 0; i < queue.length; i++) {
+    const p = queue[i]!, k = key(p); if (seen.has(k) || !anchors.has(k)) continue; seen.add(k);
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) queue.push({ x: p.x + dx!, y: p.y + dy! });
+  }
+  if (seen.size !== anchors.size) return false;
+  const occupied = new Set(cellsAt(plan.spawn).map(key)), reachable = new Set<string>(), player = [{ x: b.x, y: b.y }];
+  for (let i = 0; i < player.length; i++) {
+    const p = player[i]!, k = key(p); if (reachable.has(k) || !inside(p) || !clean(p) || occupied.has(k)) continue; reachable.add(k);
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) player.push({ x: p.x + dx!, y: p.y + dy! });
+  }
+  return reachable.size === b.width * b.height - occupied.size;
 }

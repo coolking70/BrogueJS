@@ -3,6 +3,7 @@ import type { ReadonlyJson } from '../ext/types';
 import type { Logger } from '../engine/Systems/Logger';
 import { cellAppearance, itemAppearance, rememberedItemAppearance, playerAppearance, type CosmeticRng } from '../engine/UI/Appearance';
 import { publicMonsterMapCells } from '../engine/UI/MonsterBody';
+import { publicMonsterGroups } from '../engine/UI/MonsterGroups';
 import { publicZoneAt, zoneStatusText } from '../engine/UI/MonsterZones';
 import { observeDisplayMonster } from './monsterDisplay';
 import type { DisplayBody } from './bodyDrawing';
@@ -127,6 +128,7 @@ export function observeDisplayFrame(game: Game, log: Logger, previous?: { map: D
         stats: sidebarPlayerStats(game.player, game.stats.gold, game['calculateStealthRange']()),
         statuses: playerHudStatusRows(game),
         rows: sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth),
+        ...(game.bodyGroups?.length ? { bodyGroups: publicMonsterGroups(game) } : {}),
         ...(game.extensionRuntime?.hasPublicActorTags ? { actorTags: Object.fromEntries(sidebarEntityRows(game.player,game.grid,game.monsters,[],null,game.depth).filter(r=>r.kind==='monster').map(r=>[r.id,game.extensionRuntime!.publicActorTags(Number(r.id))])) } : {}),
         logs: log.messages.map(message => ({ ...message })),
         hoverText: game.hoveredText || game.flavorText,

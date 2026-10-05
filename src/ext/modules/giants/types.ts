@@ -1,10 +1,12 @@
 import type { NativeFormDefinition } from '../../nativeForms';
 import type { GenerationContribution } from '../../generation';
+import type { BodyDefinition, PartBreakRule } from '../../../engine/Movement/SpatialSchema';
 export interface GiantsPack {
   schema: 1;
   moduleVersion: '1.0.0';
   rulesVersion: '1.0.0';
   forms: NativeFormDefinition[];
+  bodies?: { definitions: BodyDefinition[]; breakRules: PartBreakRule[] };
   templates: GenerationContribution[];
 }
 export interface GiantsPlacement {

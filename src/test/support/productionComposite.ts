@@ -38,7 +38,10 @@ export function installProductionBody(count = 8, provider?: PartBreakProvider, f
                 breakRuleId: rule.id, statusProfileId: 'foundation:native' })),
         ], constraints: offsets.map((_, i) => ({ childPartId: `leg${String(i).padStart(2, '0')}`, parentPartId: 'core', kind: 'tether',
             minDistance: 1, maxDistance: count === 8 ? 3 : 6, maxStepPerAction: 2, requiresClearLink: true })) };
-    const nativeBodies = { definitions: [definition], breakRules: [rule] };
+    // Retain installed content referenced by the base generation declarations;
+    // the diagnostic adds its own authority rather than replacing that closure.
+    const nativeBodies = { definitions: [...(base.nativeBodies?.definitions ?? []), definition],
+        breakRules: [...(base.nativeBodies?.breakRules ?? []), rule] };
     const forms = [...base.nativeForms!, core, leg], rules = { ...base.rules!, fingerprint: extensionDataFingerprint({ baseFingerprint: base.rules!.fingerprint, nativeBodies, forms }) };
     const module = () => ({ ...base, rules, nativeForms: forms, nativeBodies,
         ...(provider ? { optionalPartBreaks: { 'combat.part-break.v1': provider } } : {}),

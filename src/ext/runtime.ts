@@ -204,6 +204,10 @@ export class ExtensionRuntime {
             }
             Object.defineProperty(module, 'nativeBodies', { value: freezeView(structuredClone(declarations)), writable: false });
         }
+        for (const module of this.modules) for (const t of module.generationContributions ?? []) if (t.bodyId !== undefined) {
+            if (!module.nativeBodies?.definitions.some(b => b.id === t.bodyId
+                && b.parts.find(p => p.role === 'core')?.formId === t.formId)) throw new Error('Invalid generation body ownership');
+        }
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalQueries ?? {})) {
             if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
                 || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid optional query provider');
