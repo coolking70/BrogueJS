@@ -2,7 +2,7 @@ import { computed, defineAsyncComponent, nextTick, onScopeDispose, ref, shallowR
 import i18next from 'i18next';
 import type { ModuleUiHost, ModuleUiSession } from '../../../ui/types';
 import type { DialogAction, DialogRequest } from '../../../../ui/dialogService';
-import { buildCombatUiCommand, combatDirections, readCombatUiView, type CombatUiView } from './view';
+import { buildCombatUiCommand, combatDirections, readCombatUiResources, readCombatUiView, type CombatUiView } from './view';
 import type { Facing } from '../types';
 import { telegraphsAt } from '../../../../ui/combatDrawing';
 import type { DisplayFrame } from '../../../../ui/displayProjection';
@@ -95,16 +95,20 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
     return {
         hud: computed(() => {
             const current = frame.value;
-            if (!current?.telegraphs.length) return null;
+            // Resource labels and warning geometry share the same captured frame.
+            // Do not fall back to future live state when a historical DTO lacks a resource.
+            const resources = current ? readCombatUiResources(current.moduleViews?.combat?.resources)
+                : host.isPresentationBusy?.() ? null : view.value?.resources ?? null;
+            if (!current?.telegraphs.length && !resources) return null;
             // Hover is an optional inspection filter, never a condition for
             // showing danger. A stale ordinary/unknown cell must not erase the
             // overview after a direction dialog opens or is cancelled. While
             // aiming, keep the complete current-frame overview behind the dialog.
-            const inspected = !selected.value && current.hoverCell ? telegraphsAt(current.telegraphs, current.hoverCell) : [];
-            const threats = inspected.length ? inspected : current.telegraphs;
-            return { component: CombatTelegraphHud, props: { focused: inspected.length > 0,
+            const inspected = !selected.value && current?.hoverCell ? telegraphsAt(current.telegraphs, current.hoverCell) : [];
+            const threats = inspected.length ? inspected : current?.telegraphs ?? [];
+            return { component: CombatTelegraphHud, props: { resources, focused: inspected.length > 0,
                 entries: threats.map(threat => ({ key: `${threat.actionId}:${threat.sourceSubactionId}`,
-                    name: current.rows.find(row => row.kind === 'monster' && row.id === threat.sourceEntityId)?.name ?? null,
+                    name: current?.rows.find(row => row.kind === 'monster' && row.id === threat.sourceEntityId)?.name ?? null,
                     phase: threat.phase })) } };
         }), panel: computed(() => null), panelOpen: computed(() => !!selected.value),
         refresh, close,

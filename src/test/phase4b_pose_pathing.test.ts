@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { performance } from 'node:perf_hooks';
 import { writeFileSync } from 'node:fs';
@@ -192,5 +194,5 @@ it('records long-bar and L fixture pursuit costs separately from native Game sch
         expect(rng.getState()).toEqual(before);const sorted=samples.slice(1).sort((a,b)=>a-b);
         rows.push({name,commands:30,coldMs:samples[0],warmP50Ms:sorted[Math.floor(sorted.length*.5)],warmP95Ms:sorted[Math.floor(sorted.length*.95)],...pathing.stats,substantiveRngDelta:0,cosmeticRngDelta:0});
     }
-    writeFileSync('/private/tmp/p4b-pose-performance.json',JSON.stringify({scope:'fixture pose planning+checked commit, 79x29; excludes Game/AI/environment/render',node:process.version,nodeOptions:process.env.NODE_OPTIONS,rows},null,2)+'\n');
+    writeFileSync(join(tmpdir(), 'p4b-pose-performance.json'),JSON.stringify({scope:'fixture pose planning+checked commit, 79x29; excludes Game/AI/environment/render',node:process.version,nodeOptions:process.env.NODE_OPTIONS,rows},null,2)+'\n');
 });

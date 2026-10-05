@@ -26,4 +26,3 @@ export function rigidScene(cells: readonly Pos[] = MASKS.bar, width = 20, height
     const spatial = new CreatureSpatial(world,catalog);
     return { catalog, actor, world, spatial, grid };
 }
-

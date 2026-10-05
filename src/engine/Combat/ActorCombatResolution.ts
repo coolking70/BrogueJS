@@ -177,7 +177,7 @@ export class ActorCombatResolutionAuthority {
     private failed = false;
 
     constructor(private readonly game: Game, private readonly state: ActorCombatResolutionState,
-        private readonly options: { production: true } | undefined = undefined) {
+        private readonly options: { production: true; dodgeProtected?: (actorId:number)=>boolean } | undefined = undefined) {
         if (options && !isProductionActorActionSession(game)) fail('production authority requires a bound engine session');
         validateActorCombatResolutionState(state);
         this.player = game.player; this.grid = game.grid; this.depth = game.depth;
@@ -336,7 +336,7 @@ export class ActorCombatResolutionAuthority {
         const defenseActive = defender.hp > 0 && !defender.hasStatus('paralyzed') && !defender.hasStatus('entranced')
             && !(defender instanceof Monster && (defender.isCaged || defender.state === MonsterState.ASLEEP))
             && (defense?.staggerRemainingTicks ?? 0) === 0;
-        const dodged = defenseActive && plan.intent.dodgeable && (defense?.dodgeRemainingTicks ?? 0) > 0;
+        const dodged = defenseActive && plan.intent.dodgeable && ((defense?.dodgeRemainingTicks ?? 0) > 0 || this.options?.dodgeProtected?.(defender.id) === true);
         const parried = !dodged && defenseActive && plan.intent.parryable && (defense?.parryRemainingTicks ?? 0) > 0
             && Math.sign(contact.from.x - contact.to.x) === defense!.parryFacing.x
             && Math.sign(contact.from.y - contact.to.y) === defense!.parryFacing.y;

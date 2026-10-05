@@ -1,3 +1,4 @@
+import { canCommitNativeAttack, commitNativeAttackCost, withNativeAttackAction } from '../engine/Core/NativeAttackTransaction';
 import { bindSpatialCatalog, spatialCatalogFor } from '../engine/Movement/CreatureSpatial';
 import { type RigidPose } from '../engine/Movement/RigidFootprint';
 import { type RigidPoseStep } from '../engine/Map/RigidPosePathing';
@@ -994,11 +995,24 @@ export class Monster extends Creature {
     protected override get infoMovementSpeed(): number { return this.baseMoveSpeed; }
     protected override get infoAttackSpeed(): number { return this.baseAttackSpeed; }
 
+    /** Combat-enabled exhausted NPCs spend an ordinary wait instead of an uncharged attack. */
+    private waitForNativeAttackStamina(game: Game): boolean {
+        if (canCommitNativeAttack(game, this)) return false;
+        this.ticksUntilTurn = this.movementSpeed;
+        return true;
+    }
+
     /**
      * CE Monsters.c（monstersTurn 各攻击/施法出口）：行动耗时 = attackSpeed，
      * MONST_CAST_SPELLS_SLOWLY 者减半行动频率（×2）。移动出口不在此赋值——
      * 由 Game 推进循环统一置 movementSpeed（CE Time.c:2731 的跳过口径同源）。
      */
+    private commitNativeAttackOrWait(game: Game): boolean {
+        if (commitNativeAttackCost(game, this)) return true;
+        this.ticksUntilTurn = this.movementSpeed;
+        return false;
+    }
+
     private endTurnWithAttack(): void {
         this.ticksUntilTurn = this.attackSpeed * (this.hasBehavior('MONST_CAST_SPELLS_SLOWLY') ? 2 : 1);
     }
@@ -1221,6 +1235,10 @@ export class Monster extends Creature {
      * CE gates forced following on STATUS_STUCK, independent of terrain.
      */
     public moveEntranced(game: Game, dx: number, dy: number): void {
+        withNativeAttackAction(game, this, () => this.moveEntrancedWithinAction(game, dx, dy));
+    }
+
+    private moveEntrancedWithinAction(game: Game, dx: number, dy: number): void {
         if (this.hp <= 0 || this.isDormant || !this.hasStatus('entranced')
             || this.hasStatus('paralyzed') || this.isCaged || (!dx && !dy)) return;
         if (this.hasStatus('stuck')) return;
@@ -1266,7 +1284,7 @@ export class Monster extends Creature {
         if (!throughWall && (!entrancementPassable(game.grid, to) || !entrancementPassable(game.grid, this.loc)
             || entrancementDiagonalBlocked(game.grid, this.loc, to))) return;
         if (defender) {
-            if (!this.willAttackTarget(defender)) return;
+            if (!this.willAttackTarget(defender) || this.waitForNativeAttackStamina(game)) return;
             this.ticksUntilTurn = this.attackSpeed;
             if (this.hasAbility('MA_ATTACKS_ALL_ADJACENT')) this.performSweepAttack(game, defender);
             else this.resolveGeometryAttackOn(game, defender, 'hostile');
@@ -1312,6 +1330,7 @@ export class Monster extends Creature {
             }
         }
         if (!strike || !this.willAttackTarget(strike)) return false;
+        if (this.waitForNativeAttackStamina(game)) return true;
         this.resolveGeometryAttackOn(game, strike, voice, bodyRayContact(this, strike, dirX, dirY, 5, origin));
         this.endTurnWithAttack();
         return true;
@@ -1358,10 +1377,13 @@ export class Monster extends Creature {
             }
         }
         if (!proceed) return false;
-        // CE Movement.c:1007-1009：先打远的、后打近的（倒序）
-        for (let i = hitList.length - 1; i >= 0; i--) {
-            this.resolveGeometryAttackOn(game, hitList[i]!, voice, bodyHitContact(hitList, i) ?? bodyRayContact(this, hitList[i]!, dirX, dirY, 2, origin));
-        }
+        if (this.waitForNativeAttackStamina(game)) return true;
+        withNativeAttackAction(game, this, () => {
+            // CE Movement.c:1007-1009：先打远的、后打近的（倒序）
+            for (let i = hitList.length - 1; i >= 0; i--) {
+                this.resolveGeometryAttackOn(game, hitList[i]!, voice, bodyHitContact(hitList, i) ?? bodyRayContact(this, hitList[i]!, dirX, dirY, 2, origin));
+            }
+        });
         this.endTurnWithAttack();
         return true;
     }
@@ -1387,23 +1409,26 @@ export class Monster extends Creature {
         const dy = Math.sign(contact.to.y - contact.from.y);
         let dir = dirs8.findIndex(d => d[0] === dx && d[1] === dy);
         if (dir < 0) dir = 0; // CE：dir==NO_DIRECTION 时取 UP；primary 必相邻，实际不可达
+        if (this.waitForNativeAttackStamina(game)) return;
         const scope = new Set<string>();
-        for (const origin of footprintOf(this)) for (let i = 0; i < 8; i++) {
-            const d = dirs8[(dir + i) % 8]!;
-            const tx = origin.x + d[0];
-            const ty = origin.y + d[1];
-            const cell = game.grid.getCell(tx, ty);
-            if (!cell) continue; // CE coordinatesAreInMap
-            const defender = creatureAtLoc(game, tx, ty);
-            if (!defender || defender.hp <= 0 || !this.willAttackTarget(defender)) continue;
-            if (!cell.isPassable &&
-                !(defender instanceof Monster && defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))) continue;
-            const pair = this.spatial || defender.spatial ? nearestLegalMeleeContact(game.grid, this, defender) : undefined;
-            const zoned = hasDeclaredZones(this) || hasDeclaredZones(defender);
-            if ((this.spatial || defender.spatial) && (!pair || (zoned && !legalMeleeContactAt(game.grid, origin, defender, { x: tx, y: ty })))) continue;
-            if (game.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length)
-                this.resolveGeometryAttackOn(game, defender, voice, zoned && pair ? { from: origin, to: footprintOf(defender).find(p => p.x === tx && p.y === ty)!, distance: 1 } : pair ?? undefined);
-        }
+        withNativeAttackAction(game, this, () => {
+            for (const origin of footprintOf(this)) for (let i = 0; i < 8; i++) {
+                const d = dirs8[(dir + i) % 8]!;
+                const tx = origin.x + d[0];
+                const ty = origin.y + d[1];
+                const cell = game.grid.getCell(tx, ty);
+                if (!cell) continue; // CE coordinatesAreInMap
+                const defender = creatureAtLoc(game, tx, ty);
+                if (!defender || defender.hp <= 0 || !this.willAttackTarget(defender)) continue;
+                if (!cell.isPassable &&
+                    !(defender instanceof Monster && defender.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'))) continue;
+                const pair = this.spatial || defender.spatial ? nearestLegalMeleeContact(game.grid, this, defender) : undefined;
+                const zoned = hasDeclaredZones(this) || hasDeclaredZones(defender);
+                if ((this.spatial || defender.spatial) && (!pair || (zoned && !legalMeleeContactAt(game.grid, origin, defender, { x: tx, y: ty })))) continue;
+                if (game.collectBodyTargets([{ x: tx, y: ty }], { effect: 'geometry' }, scope).length)
+                    this.resolveGeometryAttackOn(game, defender, voice, zoned && pair ? { from: origin, to: footprintOf(defender).find(p => p.x === tx && p.y === ty)!, distance: 1 } : pair ?? undefined);
+            }
+        });
         this.endTurnWithAttack();
     }
 
@@ -1439,8 +1464,13 @@ export class Monster extends Creature {
      * 文件边界内）。
      */
     private resolveBodyMeleeAdjacent(game: Game, target: Creature, voice: 'ally' | 'discordant' | 'hostile'): boolean {
+        return withNativeAttackAction(game, this, () => this.resolveBodyMeleeWithinAction(game, target, voice));
+    }
+
+    private resolveBodyMeleeWithinAction(game: Game, target: Creature, voice: 'ally' | 'discordant' | 'hostile'): boolean {
         const contact = nearestLegalMeleeContact(game.grid, this, target);
         if (!contact) return true; // no hit/RNG; scheduler retains its ordinary idle cost
+        if (!this.commitNativeAttackOrWait(game)) return true;
         if (this.hasStatus('nauseous') && game.tryVomit(this)) return true;
         if (!this.tryGeometryMeleeAdjacent(game, target, voice)) {
             this.resolveGeometryAttackOn(game, target, voice, contact);
@@ -1450,7 +1480,7 @@ export class Monster extends Creature {
     }
 
     private resolveGeometryAttackOn(game: Game, target: Creature, voice: 'ally' | 'discordant' | 'hostile', contact?: BodyAttackContact): void {
-        if (target.hp <= 0) return;
+        if (target.hp <= 0 || this.waitForNativeAttackStamina(game)) return;
         const pair = contact ?? nearestLegalMeleeContact(game.grid, this, target) ?? bodyAttackContactOf(this, target);
         withBodyAttackContact(this, target, pair, () => this.resolveGeometryAttackAt(game, target, voice));
     }
@@ -1676,6 +1706,10 @@ export class Monster extends Creature {
      * same decision. Preserve native survival, ally, magic and attack order;
      * do not repeat activation, perception, or corpse absorption here. */
     public takeNativeDecision(game: Game): void {
+        withNativeAttackAction(game, this, () => this.takeNativeDecisionWithinAction(game));
+    }
+
+    private takeNativeDecisionWithinAction(game: Game): void {
         // U07: CE ally escape and fleeing blink precede ordinary magic. Only
         // blink-capable, awake, mobile monsters enter this dedicated schedule.
         const blinkReady = hasBlink(this) && !this.isDormant
@@ -1749,10 +1783,12 @@ export class Monster extends Creature {
                 // "30% 施法判定 miss 后又白嫖一次等效远程攻击"的双重远程，
                 // 与 CE monstUseBolt 的语义不符，故整段移除（详见报告）。
                 if (minDist <= 1) {
+                    if (this.waitForNativeAttackStamina(game)) return;
                     if ((this.spatial || target.spatial) && this.resolveBodyMeleeAdjacent(game, target, 'ally')) return;
                     if (independentBlade && bladeDiagonalBlocked(game.grid, this.loc, target.loc)) return;
                     // P4-6：斧/矛/鞭的相邻近战几何分发（CE moveMonster 在普通
                     // attack 之前先试鞭/矛，sweep 替换单体近战）。
+                    if (!this.commitNativeAttackOrWait(game)) return;
                     if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
                     if (this.tryGeometryMeleeAdjacent(game, target, 'ally')) {
                         return;
@@ -1908,7 +1944,9 @@ export class Monster extends Creature {
                 // 贴脸的其他怪物，web 无该目标谱系，见报告）。web 只处理贴脸
                 // 玩家：过几何分发后走标准近战。
                 if (distToPlayer <= 1 && !this.hasStatus('magical_fear')) {
+                    if (this.waitForNativeAttackStamina(game)) return;
                     if (this.spatial && this.resolveBodyMeleeAdjacent(game, game.player, 'hostile')) return;
+                    if (!this.commitNativeAttackOrWait(game)) return;
                     if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
                     if (this.tryGeometryMeleeAdjacent(game, game.player)) {
                         return;
@@ -1963,6 +2001,7 @@ export class Monster extends Creature {
                 && !bladeDiagonalBlocked(game.grid, this.loc, m.loc)
                 && (!m.hasStatus('invisible') || rng.randPercent(33)));
             if (blade) {
+                if (!this.commitNativeAttackOrWait(game)) return;
                 if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
                 if (!this.tryGeometryMeleeAdjacent(game, blade)) {
                     this.resolveGeometryAttackOn(game, blade, 'hostile');
@@ -1987,9 +2026,10 @@ export class Monster extends Creature {
                 for (const [dx, dy] of dirs8) {
                     const other = game.getMonsterAt(this.loc.x + dx!, this.loc.y + dy!);
                     if (other && other !== this && other.hp > 0 && (!other.submerged || this.submerged)) {
-                        if ((this.spatial || other.spatial) && this.resolveBodyMeleeAdjacent(game, other, 'discordant')) return;
+                        if (this.waitForNativeAttackStamina(game)) return;                        if ((this.spatial || other.spatial) && this.resolveBodyMeleeAdjacent(game, other, 'discordant')) return;
                         // P4-6：同 ally 分支——discordant 怪的近战同样先过几何分发
                         // （CE 同一条 moveMonster 路径，不区分阵营来源）。
+                        if (!this.commitNativeAttackOrWait(game)) return;
                         if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
                         if (this.tryGeometryMeleeAdjacent(game, other, 'discordant')) {
                             return;
@@ -2044,9 +2084,11 @@ export class Monster extends Creature {
 
             // Adjacent to player -> Melee Attack!
             if (distToPlayer <= 1) {
+                if (this.waitForNativeAttackStamina(game)) return;
                 if (this.spatial && this.resolveBodyMeleeAdjacent(game, game.player, 'hostile')) return;
                 // P4-6：同 ally 分支——怪物贴脸玩家的近战先过几何分发
                 // （矛会顺带打中玩家身后的目标，斧会扫掉全部相邻敌人）。
+                if (!this.commitNativeAttackOrWait(game)) return;
                 if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
                 if (this.tryGeometryMeleeAdjacent(game, game.player)) {
                     return;

@@ -48,7 +48,9 @@ describe('3b production action lifetime',()=>{
         const prelude=vi.spyOn(game as any,'playerTurnEnded');const sweep=vi.spyOn(game as any,'sweepDeepWaterItem');
         game.update();
         const loaded=game.extensionRuntime!.actorActionBinding()!.state as unknown as ProductionActorAttackState;
-        expect(loaded.scheduler.bundles).toEqual([]);expect(loaded.actors[0]!.stamina).toBe(stamina);expect(prelude).not.toHaveBeenCalled();
+        // 3c: the unchanged single payment is followed by 60 recovery ticks at 1/20.
+        expect(loaded.scheduler.bundles).toEqual([]);expect(loaded.actors[0]!.stamina).toBe(stamina+3);
+        expect(loaded.nextActionId).toBe(before.nextActionId);expect(prelude).not.toHaveBeenCalled();
         expect(game.stats.turns).toBe(turn+1);expect(sweep.mock.calls.filter(call=>call[0]===game.player)).toHaveLength(1);
         expect(game.isInputLocked()).toBe(false);game.update();expect(game.stats.turns).toBe(turn+1);
     });

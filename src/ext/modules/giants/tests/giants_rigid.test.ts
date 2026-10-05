@@ -121,6 +121,6 @@ describe('giants 4b original four-cell spine crawler',()=>{
     for(const i of [0,Math.floor(recording.events.length/2),recording.events.length]){game.replaySeek(i);expect(game.replayCursor).toBe(i);expect(game.replayError).toBeNull();}
     expect(game.loadReplay(continuation)).toBe(true);game.animationEnabled=false;
     while(game.replayCursor<continuation.events.length){game.replayStep(true);expect(game.replayError).toBeNull();}expect(world(game)).toEqual(continued);
-  },120000);
+  },300000); // 1174-command natural route; slower CI hosts measured ~152s
 
 });

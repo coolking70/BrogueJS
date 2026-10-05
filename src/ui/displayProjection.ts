@@ -1,4 +1,5 @@
 import type { Game } from '../engine/Core/Game';
+import type { ReadonlyJson } from '../ext/types';
 import type { Logger } from '../engine/Systems/Logger';
 import { cellAppearance, itemAppearance, rememberedItemAppearance, playerAppearance, type CosmeticRng } from '../engine/UI/Appearance';
 import { publicMonsterMapCells } from '../engine/UI/MonsterBody';
@@ -103,6 +104,16 @@ export function observeDisplayMap(game: Game, previous?: DisplayMap,
     return freezeDisplay({ columns: Object.freeze(columns), entities, bodies });
 }
 
+/** Only public module state crosses the history boundary. Session capabilities,
+ * definitions and mechanical ledgers are never attached to a display frame. */
+function observeModuleViews(game: Game): Readonly<Record<string, Readonly<Record<string, ReadonlyJson>>>> {
+    const runtime = game.extensionRuntime;
+    return Object.fromEntries((runtime?.manifest.modules ?? []).flatMap(({ id }) => {
+        const view = runtime!.readModuleView(id);
+        return view ? [[id, structuredClone(view.state)]] : [];
+    }));
+}
+
 export function observeDisplayFrame(game: Game, log: Logger, previous?: { map: DisplayMap }) {
     const preview = game.getArcanaPreview();
     const aim = game.pendingArcana?.cursor ?? targetingState.aim;
@@ -128,6 +139,7 @@ export function observeDisplayFrame(game: Game, log: Logger, previous?: { map: D
             path: preview?.path.map(pos => ({ ...pos })) ?? [], maxDistance: preview?.maxDistance ?? null } : null,
         interactables,
         telegraphs: readPublicCombatTelegraphs(game),
+        moduleViews: observeModuleViews(game),
         map: observeDisplayMap(game, previous?.map, interactables),
         bolt: game.getCurrentBoltFrame() ? { ...game.getCurrentBoltFrame()! } : null,
         floatingTexts: game.floatingTexts.map(ft => ({ text: ft.text, color: ft.color, x: ft.x, y: ft.y, life: ft.life })),

@@ -151,7 +151,7 @@ describe('3b production square actions, native effects and persistence', () => {
         game.resolveCommandDecision(game.pendingCommandConfirmation!.token, true);
         expect(weapon.enchantment).toBe(-2); expect(damage).toHaveBeenCalledTimes(2); expect(facts).toHaveBeenCalledTimes(2);
         expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.decisions).toEqual([true]);
-        expect(state(game).actors.find(a => a.actorId === game.player.id)!.stamina).toBe(18);
+        expect(state(game).actors.find(a => a.actorId === game.player.id)!.stamina).toBe(21); // 3c recovery restores three points after the single fee
     });
 
     it.each([2, 3] as const)('%s-square fixture rebinds every phase, replays each command, seeks and continues an identical saved prefix', size => {
@@ -294,7 +294,7 @@ describe('3b configured combat with an actual naturally generated optional squar
         expect(phase(game, boss.id)).toBe('recovery'); expect(game.isGameOver).toBe(false);
         expect(native.mock.calls.filter(call => call[1].id === boss.id && call[2].id === game.player.id)).toHaveLength(2);
         expect(game.player.hp).toBeLessThan(hpBefore);
-        expect(state(game).actors.find(actor => actor.actorId === boss.id)!.stamina).toBe(18);
+        expect(state(game).actors.find(actor => actor.actorId === boss.id)!.stamina).toBe(19); // 20 ticks of 3c recovery have elapsed
         const final = mechanical(game), recording = json(game.exportRecording());
         for (const checkpoint of snapshots) {
             const loaded = createHeadlessGame(9017, 'test');

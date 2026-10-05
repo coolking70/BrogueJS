@@ -4,6 +4,19 @@ import type { ActorActionSchedulerState } from '../engine/Core/ActorActionSchedu
 import type { ControlledActionRisk } from '../engine/Core/Game';
 import type { AttackShapeRequest } from '../engine/Movement/AttackShape';
 export type ActorAttackFacing = 'n'|'ne'|'e'|'se'|'s'|'sw'|'w'|'nw';
+export type ActorResourcePhase = 'idle' | 'windup' | 'inter-segment' | 'recovery' | 'break-recovery';
+export interface ActorResourcePolicy {
+    id: string; initialStamina: number; staminaCapacity: number;
+    regenPerTickNumerator: number; regenPerTickDenominator: number; regenDelayTicks: number;
+    nativeAttackCost: number; regenPhases: ActorResourcePhase[];
+}
+/** Remaining values advance only through the foreground foundation elapsed delta.
+ * Dodge recovery mirrors the native action timer, never an attack bundle. */
+export interface ActorResourceState {
+    stamina: number; regenRemainder: number; regenDelayRemaining: number;
+    dodgeRemainingTicks: number; dodgeRecoveryRemainingTicks: number;
+}
+export interface ActorDodgeDefinition { cost: number; windowTicks: number; recoveryTicks: number }
 export interface ActorAttackDefinition {
     id: string; nameKey: string; cost: number; windupTicks: number; recoveryTicks: number;
     segments: { delayTicks: number; shape: {kind:'footprint-offset-union'; offsets:Record<ActorAttackFacing,{x:number;y:number}[]>; selfExclusion:'source-member'|'whole-group';occlusion:'line-of-effect'};
@@ -12,11 +25,12 @@ export interface ActorAttackDefinition {
 export interface ActorAttackDefinitions {
     attacks: ActorAttackDefinition[];
     profiles: {id:string;resourcePolicyId:string;attackIds:string[]}[];
-    resourcePolicies: {id:string;initialStamina:number;staminaCapacity:number}[];
-    /** Explicit native species/profile binding; no optional module ID dependency. */
+    resourcePolicies: ActorResourcePolicy[];
+    /** Explicit native species/profile binding; other native attacks use the player default resource profile. */
     nativeProfiles: {monsterId:string;profileId:string}[];
     playerProfileId:string;
     breakRecoveryTicks:number;
+    dodge: ActorDodgeDefinition;
 }
 export interface ActorAttackMetadata {
     actionId:number; profileId:string; paidCost:number; suppressTerminalSweep?:true;
@@ -24,8 +38,8 @@ export interface ActorAttackMetadata {
         shape:AttackShapeRequest;approvedRisks:{targetId:number;risks:ControlledActionRisk[]}[]}[];
 }
 export interface ProductionActorAttackState {
-    schema:1;revision:number;nextActionId:number;
+    schema:2;revision:number;nextActionId:number;
     scheduler:ActorActionSchedulerState;
     actions:ActorAttackMetadata[];
-    actors:{actorId:number;profileId:string;stamina:number}[];
+    actors:(ActorResourceState & {actorId:number;profileId:string})[];
 }

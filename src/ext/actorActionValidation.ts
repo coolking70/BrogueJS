@@ -13,6 +13,7 @@ import type { ActorAttackDefinition, ActorAttackDefinitions, ActorAttackFacing, 
 const FACINGS: readonly ActorAttackFacing[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
 const MAX_DEFINITIONS = 128;
 const MAX_RESOURCE = 1_000_000;
+const RESOURCE_PHASES = ['idle', 'windup', 'inter-segment', 'recovery', 'break-recovery'] as const;
 const MAX_CELLS = 1024;
 const MAX_COORDINATE = 32767;
 const MAX_JSON_VALUES = 1_000_000;
@@ -78,12 +79,16 @@ function cells(value: unknown, minimum: number, maximum: number, coordinate: num
 
 export function validateActorAttackDefinitions(value: unknown): asserts value is ActorAttackDefinitions {
     plainJson(value);
-    actorActionRecord(value, ['attacks', 'profiles', 'resourcePolicies', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks']);
+    actorActionRecord(value, ['attacks', 'profiles', 'resourcePolicies', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks', 'dodge']);
     actorActionArray(value.attacks, 1, MAX_DEFINITIONS);
     actorActionArray(value.profiles, 1, MAX_DEFINITIONS);
     actorActionArray(value.resourcePolicies, 1, MAX_DEFINITIONS);
     actorActionArray(value.nativeProfiles, 0, MAX_DEFINITIONS);
     integer(value.breakRecoveryTicks, 1, MAX_ACTOR_ACTION_TICKS);
+    actorActionRecord(value.dodge, ['cost', 'windowTicks', 'recoveryTicks']);
+    const dodgeCost = integer(value.dodge.cost, 0, MAX_RESOURCE);
+    const dodgeRecovery = integer(value.dodge.recoveryTicks, 1, MAX_ACTOR_ACTION_TICKS);
+    integer(value.dodge.windowTicks, 1, dodgeRecovery);
     const policies = new Map<string, number>(), attacks = new Map<string, number>(), profiles = new Set<string>();
     const allIds = new Set<string>();
     const define = (candidate: unknown): string => {
@@ -92,9 +97,21 @@ export function validateActorAttackDefinitions(value: unknown): asserts value is
         allIds.add(key); return key;
     };
     for (const policy of value.resourcePolicies) {
-        actorActionRecord(policy, ['id', 'initialStamina', 'staminaCapacity']);
+        actorActionRecord(policy, ['id', 'initialStamina', 'staminaCapacity', 'regenPerTickNumerator',
+            'regenPerTickDenominator', 'regenDelayTicks', 'nativeAttackCost', 'regenPhases']);
         const key = define(policy.id), capacity = integer(policy.staminaCapacity, 1, MAX_RESOURCE);
-        integer(policy.initialStamina, 0, capacity); policies.set(key, capacity);
+        integer(policy.initialStamina, 0, capacity);
+        integer(policy.regenPerTickNumerator, 0, MAX_RESOURCE);
+        integer(policy.regenPerTickDenominator, 1, MAX_RESOURCE);
+        integer(policy.regenDelayTicks, 0, MAX_ACTOR_ACTION_TICKS);
+        integer(policy.nativeAttackCost, 0, capacity);
+        actorActionArray(policy.regenPhases, 0, RESOURCE_PHASES.length);
+        const phases = new Set<unknown>();
+        for (const phase of policy.regenPhases) {
+            if (!RESOURCE_PHASES.includes(phase as typeof RESOURCE_PHASES[number]) || phases.has(phase)) fail('invalid resource regeneration phase');
+            phases.add(phase);
+        }
+        policies.set(key, capacity);
     }
     for (const attack of value.attacks) {
         actorActionRecord(attack, ['id', 'nameKey', 'cost', 'windupTicks', 'recoveryTicks', 'segments']);
@@ -121,6 +138,7 @@ export function validateActorAttackDefinitions(value: unknown): asserts value is
         actorActionRecord(profile, ['id', 'resourcePolicyId', 'attackIds']);
         const key = define(profile.id), capacity = policies.get(id(profile.resourcePolicyId));
         if (capacity === undefined) fail('unknown resource policy');
+        if (dodgeCost > capacity) fail('dodge cost exceeds profile capacity');
         actorActionArray(profile.attackIds, 1, MAX_DEFINITIONS);
         const references = new Set<string>();
         for (const attackId of profile.attackIds) {
@@ -194,7 +212,7 @@ export function validateProductionActorAttackState(value: unknown, definitions: 
     validateActorAttackDefinitions(definitions);
     plainJson(value);
     actorActionRecord(value, ['schema', 'revision', 'nextActionId', 'scheduler', 'actions', 'actors']);
-    if (value.schema !== 1) fail('invalid schema');
+    if (value.schema !== 2) fail('invalid schema');
     integer(value.revision, 0); const nextActionId = integer(value.nextActionId, 1);
     validateActorActionSchedulerState(value.scheduler);
     actorActionArray(value.actions, 0, MAX_ACTOR_ACTION_BUNDLES);
@@ -206,10 +224,22 @@ export function validateProductionActorAttackState(value: unknown, definitions: 
     const policies = new Map(definitions.resourcePolicies.map(policy => [policy.id, policy]));
     const actors = new Map<number, string>();
     for (const actor of value.actors) {
-        actorActionRecord(actor, ['actorId', 'profileId', 'stamina']);
+        actorActionRecord(actor, ['actorId', 'profileId', 'stamina', 'regenRemainder', 'regenDelayRemaining',
+            'dodgeRemainingTicks', 'dodgeRecoveryRemainingTicks']);
         const actorId = integer(actor.actorId, 1), profile = profiles.get(id(actor.profileId));
         if (actors.has(actorId) || !profile) fail('duplicate actor or unknown profile');
-        integer(actor.stamina, 0, policies.get(profile.resourcePolicyId)!.staminaCapacity);
+        const policy = policies.get(profile.resourcePolicyId)!;
+        integer(actor.stamina, 0, policy.staminaCapacity);
+        integer(actor.regenRemainder, 0, policy.regenPerTickDenominator - 1);
+        integer(actor.regenDelayRemaining, 0, policy.regenDelayTicks);
+        const dodgeRemaining = integer(actor.dodgeRemainingTicks, 0, definitions.dodge.windowTicks);
+        const dodgeRecoveryRemaining = integer(actor.dodgeRecoveryRemainingTicks, 0, definitions.dodge.recoveryTicks);
+        if (dodgeRemaining > dodgeRecoveryRemaining
+            || (dodgeRemaining > 0 && dodgeRemaining !== dodgeRecoveryRemaining
+                - (definitions.dodge.recoveryTicks - definitions.dodge.windowTicks))
+            || (actor.stamina === policy.staminaCapacity && actor.regenRemainder !== 0)) fail('invalid resource remainder or dodge clock');
+        if ((dodgeRemaining > 0 || dodgeRecoveryRemaining > 0)
+            && value.scheduler.bundles.some(bundle => bundle.decisionOwnerId === actorId)) fail('dodge cannot share an attack bundle');
         actors.set(actorId, profile.id);
     }
     const seenActions = new Set<number>(), seenSources = new Set<number>();

@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { writeFileSync } from 'node:fs';
 import { createHeadlessGame } from './harness';
@@ -137,5 +139,5 @@ it('records actual Game cold/warm planning, spatial work and whole command separ
         expect(dynamic.replanned).toBe(true);expect(['step','rotate','blocked']).toContain(dynamic.kind);
         rows.push({name,commands:30,dynamicReplanMs,dynamicResult:dynamic.kind,coldPlanningMs:planning[0],warmPlanningP50Ms:q(planning.slice(1,30),.5),warmPlanningP95Ms:q(planning.slice(1,30),.95),coldCommandMs:commands[0],warmCommandP50Ms:q(commands.slice(1),.5),warmCommandP95Ms:q(commands.slice(1),.95),stats,dynamicStats:g.rigidPathingStats(),planning,command:commands});vi.restoreAllMocks();
     }
-    writeFileSync('/private/tmp/p4b-game-performance.json',JSON.stringify({scope:'actual Game executeCommand / NPC / environment; planning measured separately; excludes browser renderer',node:process.version,rows},null,2)+'\n');
+    writeFileSync(join(tmpdir(), 'p4b-game-performance.json'),JSON.stringify({scope:'actual Game executeCommand / NPC / environment; planning measured separately; excludes browser renderer',node:process.version,rows},null,2)+'\n');
 });

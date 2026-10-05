@@ -1,3 +1,4 @@
+import { canCommitNativeAttack, commitNativeAttackCost, withNativeAttackAction, withPrepaidNativeAttack } from './NativeAttackTransaction';
 import { nativeSpatialCatalog, type SpatialCatalog } from '../Movement/SpatialSchema';
 import { rigidFootprint } from '../Movement/RigidFootprint';
 import { rigidSideChamberValid } from '../Generator/SideChamber';
@@ -23,7 +24,7 @@ import { SPATIAL_LIMITS, type SpatialWorldSnapshot } from '../Movement/SpatialSc
 import { assertNativeSpatial, assertSingleCellPlayer, nativeContactOf, footprintOf, footprintEvery, footprintSome, commitCreatureAnchor, squareAnchorRevision, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canFitAt, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
 import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction } from './ActorActionSession';
 import { consumeProductionActorActionResume, disposeProductionActorActionSession, markProductionActorActionResume, notifyProductionActorSourceChanged, productionActorActionInputLocked, reconcileProductionActorActions, resumeProductionActorActions, suspendProductionActorActions, validateProductionActorActionSession, validateProductionActorActionState, type ActorActionProductionWorld } from './ActorActionProduction';
-import { bindPhasedAttackProduction, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
+import { bindPhasedAttackProduction, isActorDodgeCommand, prepareActorDodgeCommand, commitActorDodgeCommand, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
 import { assertActorActionScope, type ActorActionScope } from './ActorActionScope';
 import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
 import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
@@ -3439,7 +3440,8 @@ export class Game {
             if (!this.extensionRuntime) throw new Error('Extension command in classic mode');
             // §4.5: only detached data crosses the wait. Runtime.command and its
             // controlled callbacks remain entirely synchronous, including refusals.
-            if (isPhasedAttackCommand(this, data)) yield* this.executePhasedAttackCommandStages(data);
+            if (isActorDodgeCommand(this, data)) yield* this.executeActorDodgeCommandStages(data);
+            else if (isPhasedAttackCommand(this, data)) yield* this.executePhasedAttackCommandStages(data);
             else if (this.onCommandConfirmRequest && !this.replayRecording) yield* this.executePreparedExtensionCommandStages(data);
             else this.extensionRuntime.command(data, () => this.collectExtensionComponents());
         } else if (action.startsWith('item:')) {
@@ -3476,6 +3478,47 @@ export class Game {
         } else {
             (yield* this.performPlayerActionStages(action, data, 'system'));
         }
+    }
+
+    private *executeActorDodgeCommandStages(data:unknown):CommandStages<void> {
+        const runtime=this.extensionRuntime,plan=prepareActorDodgeCommand(this,data);if(!plan)return;
+        for(const risk of plan.risks)if(!(yield* this.requestConfirm(risk.message,risk)))return;
+        if(runtime!==this.extensionRuntime||canonical(prepareActorDodgeCommand(this,data))!==canonical(plan))throw new Error('Stale dodge confirmation');
+        if(commitActorDodgeCommand(this,plan)){
+            timeSystem.currentTick+=this.player.ticksUntilTurn;
+            observePresentation(this,'turn',0);this.playerTurnEnded();
+        }
+        this.collectExtensionComponents();
+    }
+    /** Pure native move risk vocabulary, reused without lunge or target substitution. */
+    public prepareActorDodgeRisks(actorId:number,to:Pos):{certainDeath:boolean;risks:ControlledActionRisk[]} {
+        return actorId===this.player.id?this.preparePlayerMoveRisks(to.x,to.y):{certainDeath:false,risks:[]};
+    }
+    /** Intrinsic aquatic bounds are not an AI preference and cannot be dodged out of. */
+    public canActorDodgeStep(source:Creature,to:Pos):boolean {
+        if(source.seized&&(source===this.player?!!this.findLiveSeizer():source instanceof Monster&&this.monsters.some(other=>other!==source&&other.hp>0&&other.seizing
+            &&monstersAreEnemies(source,other)&&!!this.meleeContact(other,source))))return false;
+        const aquatic=source instanceof Monster&&source.hasBehavior('MONST_RESTRICTED_TO_LIQUID');
+        return aquatic?this.canStepFootprint(source,to,{allowsTerrain:p=>!(cellTerrainFlags(this.grid,p.x,p.y)&T_OBSTRUCTS_PASSABILITY)
+            &&!!(cellTerrainMechFlags(this.grid,p.x,p.y)&TM_ALLOWS_SUBMERGING)}):this.canStepFootprint(source,to);
+    }
+    public commitActorDodgePosition(scope:ActorActionScope,actorId:number,to:Pos):void {
+        assertActorActionScope(scope,this,actorId,actorId===this.player.id?'player-command':'npc-scheduler');
+        const source=actorId===this.player.id?this.player:this.monsters.find(m=>m.id===actorId);
+        if(!source||!this.canActorDodgeStep(source,to))throw new Error('Dodge destination changed');
+        source.seized=false;source.seizing=false;
+        commitCreatureAnchor(source,{...to},'mutate');
+        notifyProductionActorSourceChanged(this,source.id);this.needsRender=true;
+    }
+    public finishActorDodgeEntry(scope:ActorActionScope,actorId:number):void {
+        assertActorActionScope(scope,this,actorId,actorId===this.player.id?'player-command':'npc-scheduler');
+        const source=actorId===this.player.id?this.player:this.monsters.find(m=>m.id===actorId);if(!source)return;
+        if(source===this.player){
+            this.handleSpecialTileEntry();
+            if(this.creatureShouldFall(this.player))this.playerFalling=true;
+            this.pickUpItemAfterDisplacement();
+        }else this.applyEnvironmentalEffects(source);
+        this.updateVision();
     }
 
     private *executePhasedAttackCommandStages(data: unknown): CommandStages<void> {
@@ -3881,6 +3924,7 @@ export class Game {
         // A specified skill target is not permission to substitute a random move/attack.
         if (this.player.hasStatus('confused')) return false;
         if (request.action === 'attack') {
+            if (!canCommitNativeAttack(this, this.player)) return false;
             if (target.kind !== 'creature' || Object.keys(target).sort().join(',') !== 'id,kind'
                 || !Number.isSafeInteger(target.id)) return false;
             const defender = this.monsters.find(actor => actor.id === target.id && actor.hp > 0);
@@ -3918,6 +3962,8 @@ export class Game {
                 if (supplied && supplied.cursor !== supplied.answers.length) throw new Error('Unused supplied confirmation decision');
                 // Confirm callbacks can expose new state; repeat pure eligibility at commit.
                 if (!this.validateControlledAction(request)) return false;
+                // Focus's beforeCommit and the native stamina charge share runtime.command's transaction.
+                if (request.action === 'attack' && !commitNativeAttackCost(this, this.player)) return false;
                 this.extensionRuntime!.notifyCommittedAction({ actorId: this.player.id, action: request.action });
                 callbacks.beforeCommit(); committed = true; return true;
             },
@@ -3926,14 +3972,16 @@ export class Game {
                 resolved = true; callbacks.afterResolve({ moved });
             },
         };
-        const target = request.target;
-        if (request.action === 'attack' && target.kind === 'creature') {
-            const monster = this.monsters.find(actor => actor.id === target.id)!;
-            const contact = monster.spatial ? this.publicMeleeContact(monster)! : nearestContact(this.player, monster);
-            this.performPlayerAction('move', { x: contact.to.x - contact.from.x, y: contact.to.y - contact.from.y }, 'system', control);
-        } else if (request.action === 'move' && target.kind === 'cell') {
-            this.performPlayerAction('move', { x: target.x - this.player.x, y: target.y - this.player.y }, 'system', control);
-        } else this.performPlayerAction(request.action, undefined, 'system', control);
+        withNativeAttackAction(this, this.player, () => {
+            const target = request.target;
+            if (request.action === 'attack' && target.kind === 'creature') {
+                const monster = this.monsters.find(actor => actor.id === target.id)!;
+                const contact = monster.spatial ? this.publicMeleeContact(monster)! : nearestContact(this.player, monster);
+                this.performPlayerAction('move', { x: contact.to.x - contact.from.x, y: contact.to.y - contact.from.y }, 'system', control);
+            } else if (request.action === 'move' && target.kind === 'cell') {
+                this.performPlayerAction('move', { x: target.x - this.player.x, y: target.y - this.player.y }, 'system', control);
+            } else this.performPlayerAction(request.action, undefined, 'system', control);
+        });
         if (committed && !resolved) throw new Error('Controlled action did not close before returning');
         return committed;
     }
@@ -4247,19 +4295,19 @@ export class Game {
                     // （sweep = 武器带 ITEM_ATTACKS_ALL_ADJACENT，Combat.c:2049-2090）
                     // + 攻击循环（循环内复查目标存活，对应 CE MB_IS_DYING 复查）。
                     const hitList = this.buildPlayerMeleeHitList(blockingMonster, { x: newX, y: newY });
-                    if (!hitList.length) return;
+                    if (!hitList.length || !canCommitNativeAttack(this, this.player)) return;
                     const targetsUnchanged = control ? this.captureControlledAttackTargets(hitList) : null;
                     if ((yield* this.abortPlayerAttackStages(hitList))) return;
                     if (targetsUnchanged && !targetsUnchanged()) return;
-                    if (control && !control.beforeCommit()) return;
-                    if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
-                    if (this.playerVomitAttempt(control)) return;
-                    let anyAttackHit = false;
-                    for (let index = 0; index < hitList.length; index++) {
-                        const target = hitList[index]!;
-                        if (target.hp <= 0) continue;
-                        if (this.resolvePlayerMeleeAttackOn(target, false, bodyHitContact(hitList, index))) anyAttackHit = true;
-                    }
+                    let anyAttackHit = false, vomited = false;
+                    if (!this.commitPlayerNativeAttack(control, () => {
+                        if (this.playerVomitAttempt(control)) { vomited = true; return; }
+                        for (let index = 0; index < hitList.length; index++) {
+                            const target = hitList[index]!;
+                            if (target.hp <= 0) continue;
+                            if (this.resolvePlayerMeleeAttackOn(target, false, bodyHitContact(hitList, index))) anyAttackHit = true;
+                        }
+                    }) || vomited) return;
 
                     this.needsRender = true;
                     // CE Time.c:2438：攻击耗时 = attackSpeed，在结算处累加；
@@ -4405,6 +4453,7 @@ export class Game {
                     // CE Movement.c:1368-1400: confirm the complete movement
                     // attack before struggling, nausea RNG or displacement.
                     const specialTargets = this.buildLungeFlailHitList(dx, dy, newX, newY);
+                    if (specialTargets.length && !canCommitNativeAttack(this, this.player)) return;
                     const targetsUnchanged = control ? this.captureControlledAttackTargets(specialTargets) : null;
                     if ((yield* this.abortPlayerAttackStages(specialTargets))) return;
                     if (targetsUnchanged && !targetsUnchanged()) return;
@@ -4442,7 +4491,6 @@ export class Game {
                     this.needsRender = true;
 
                     if (specialTargets.length > 0) {
-                        if (this.extensionRuntime) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
                         // B-1：CE Movement.c:1480-1492 —— 先移动后攻击；结算完
                         // 才 playerRecoversFromAttacking（攻击口径记进
                         // ticksUntilTurn，下方 playerTurnEnded 的 ==0 分支因此
@@ -4451,11 +4499,16 @@ export class Game {
                         // lungeAttack 形参按武器旗标传入（CE Movement.c:1483）。
                         const lungeWeapon = !!this.player.equippedWeapon?.flags?.includes('ITEM_LUNGE_ATTACKS');
                         let anySpecialHit = false;
-                        for (let index = 0; index < specialTargets.length; index++) {
-                            const target = specialTargets[index]!;
-                            if (target.hp <= 0) continue;
-                            if (this.resolvePlayerMeleeAttackOn(target, lungeWeapon, bodyHitContact(specialTargets, index, this.player.loc))) anySpecialHit = true;
-                        }
+                        withNativeAttackAction(this, this.player, () => {
+                            // Pure availability was checked before movement and its focus commit.
+                            if (!commitNativeAttackCost(this, this.player)) throw new Error('Native movement attack resource changed during commit');
+                            this.extensionRuntime?.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
+                            for (let index = 0; index < specialTargets.length; index++) {
+                                const target = specialTargets[index]!;
+                                if (target.hp <= 0) continue;
+                                if (this.resolvePlayerMeleeAttackOn(target, lungeWeapon, bodyHitContact(specialTargets, index, this.player.loc))) anySpecialHit = true;
+                            }
+                        });
                         // CE 的突进/连枷回合没有独立的 movementSpeed 开销：
                         // playerTurnEnded 只在 ticksUntilTurn==0 时补 movementSpeed，
                         // 攻击恢复已抢占该分支——currentTick 口径同步按攻击耗时记。
@@ -6425,7 +6478,7 @@ export class Game {
                 // Reflection already ran in travel and has no on-hit adjustment.
                 // Only install the armor hook when there is a runic effect to apply.
                 const armorRunic = isPlayer ? this.player.equippedArmor?.runicType : undefined;
-                const result = CombatSystem.attack(caster, target, { grid: this.grid,
+                const result = CombatSystem.attack(caster, target, { grid: this.grid, delivery: 'bolt',
                     isWeaponAttack: BOLT_EFFECT_CE_EFFECT[meta.effect] === CEBoltEffect.ATTACK,
                     ...(armorRunic && armorRunic !== 'reflection'
                         ? { beforeDamage: (damage: number) => this.tryTriggerArmorRunic(caster, damage, true) } : {}),
@@ -8430,13 +8483,14 @@ export class Game {
     private *playerWhipAttackStages(dirX: number, dirY: number, control?: ControlledPlayerAction): CommandStages<boolean | 'aborted'> {
         const strike = this.preparePlayerWhipAttack(dirX, dirY);
         if (!strike || !this.playerWillAttackTarget(strike)) return false;
+        if (!canCommitNativeAttack(this, this.player)) return 'aborted';
         if (control?.targetId !== undefined && control.targetId !== null && strike.id !== control.targetId) return 'aborted';
         const targetsUnchanged = control ? this.captureControlledAttackTargets([strike]) : null;
         if ((yield* this.abortPlayerAttackStages([strike]))) return 'aborted';
         if (targetsUnchanged && !targetsUnchanged()) return 'aborted';
-        if (control && !control.beforeCommit()) return 'aborted';
-        if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
-        this.resolvePlayerMeleeAttackOn(strike, false, bodyRayContact(this.player, strike, dirX, dirY, 5));
+        if (!this.commitPlayerNativeAttack(control, () => {
+            this.resolvePlayerMeleeAttackOn(strike, false, bodyRayContact(this.player, strike, dirX, dirY, 5));
+        })) return 'aborted';
         return true;
     }
 
@@ -8480,17 +8534,32 @@ export class Game {
     private *playerSpearAttackStages(dirX: number, dirY: number, control?: ControlledPlayerAction): CommandStages<boolean | 'aborted'> {
         const hitList = this.preparePlayerSpearAttack(dirX, dirY);
         if (!hitList) return false;
+        if (!canCommitNativeAttack(this, this.player)) return 'aborted';
         if (control?.targetId !== undefined && control.targetId !== null && !hitList.some(target => target.id === control.targetId)) return 'aborted';
         const targetsUnchanged = control ? this.captureControlledAttackTargets(hitList) : null;
         if ((yield* this.abortPlayerAttackStages(hitList))) return 'aborted';
         if (targetsUnchanged && !targetsUnchanged()) return 'aborted';
-        if (control && !control.beforeCommit()) return 'aborted';
-        if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
-        // CE Movement.c:1007-1009：先打远的、后打近的（倒序）
-        for (let i = hitList.length - 1; i >= 0; i--) {
-            this.resolvePlayerMeleeAttackOn(hitList[i]!, false, bodyHitContact(hitList, i) ?? bodyRayContact(this.player, hitList[i]!, dirX, dirY, 2));
-        }
+        if (!this.commitPlayerNativeAttack(control, () => {
+            // CE Movement.c:1007-1009：先打远的、后打近的（倒序）
+            for (let i = hitList.length - 1; i >= 0; i--) {
+                this.resolvePlayerMeleeAttackOn(hitList[i]!, false, bodyHitContact(hitList, i) ?? bodyRayContact(this.player, hitList[i]!, dirX, dirY, 2));
+            }
+        })) return 'aborted';
         return true;
+    }
+
+    /** Accepted native attacks charge once before any fanout or hit RNG. */
+    private commitPlayerNativeAttack(control: ControlledPlayerAction | undefined, resolve: () => void): boolean {
+        return withNativeAttackAction(this, this.player, () => {
+            if (control) {
+                if (!control.beforeCommit()) return false;
+            } else {
+                if (!commitNativeAttackCost(this, this.player)) return false;
+                this.extensionRuntime?.notifyCommittedAction({ actorId: this.player.id, action: 'attack' });
+            }
+            resolve();
+            return true;
+        });
     }
 
     /** Existing web loot rolls shared by melee and poison deaths. */
@@ -8519,9 +8588,11 @@ export class Game {
      * single-hit pipeline, without a second attack-speed charge or geometry fanout. */
     public resolveActorNativeMelee(scope: ActorActionScope, source: Creature, target: Creature): AttackResult {
         assertActorActionScope(scope, this, source.id, source === this.player ? 'player-command' : 'npc-scheduler');
-        if (source === this.player && target instanceof Monster) return this.resolvePlayerMeleeAttackAt(target, false);
-        if (source instanceof Monster) return source.resolveActorNativeMelee(scope, this, target);
-        throw new Error('Unsupported actor native melee source');
+        return withPrepaidNativeAttack(scope, this, source, () => {
+            if (source === this.player && target instanceof Monster) return this.resolvePlayerMeleeAttackAt(target, false);
+            if (source instanceof Monster) return source.resolveActorNativeMelee(scope, this, target);
+            throw new Error('Unsupported actor native melee source');
+        });
     }
 
     /**
@@ -9889,6 +9960,7 @@ export class Game {
                     };
                 } : undefined,
                 playerFalls: () => game.playerFalls(),
+                hasPendingPlayerAction: () => productionActorActionInputLocked(game),
                 isAutoTraveling: () => game.isAutoTraveling(),
                 sweepDeepWaterItem: (creature, ticks) => game.sweepDeepWaterItem(creature, ticks),
                 monsterDropItem: (monster) => game.makeMonsterDropItem(monster),
@@ -10571,7 +10643,8 @@ export class Game {
                     isGameOver: snapshot.run.isGameOver, nextEntityId: snapshot.run.nextEntityId });
                 const actionBinding = extensions.actorActionBinding();
                 if (actionBinding) validatePhasedAttackGeometry(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
-                    (depth,x,y)=>restored.get(depth)?.grid.isValidPos(x,y)===true);
+                    (depth,x,y)=>restored.get(depth)?.grid.isValidPos(x,y)===true,
+                    new Set([decodedPlayer.id,...(restored.get(snapshot.depth)?.monsters??[]).map(actor=>actor.id)]));
                 if (actionBinding) validateProductionActorActionState(actionBinding.state && typeof actionBinding.state === 'object' && !Array.isArray(actionBinding.state) ? actionBinding.state.scheduler : null, {
                     depth: snapshot.depth, player: decodedPlayer,
                     levels: [
