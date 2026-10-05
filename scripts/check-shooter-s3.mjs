@@ -99,7 +99,7 @@ try {
             assert.equal(await shots(), released); assert.deepEqual(await position(), releasePosition);
             await page.getByTestId('reload').click(); await page.waitForFunction(() => document.querySelector('[data-testid="battle-status"]').textContent.includes('换弹中'));
             await ticks(4); await page.getByTestId('toggle').click(); await page.getByTestId('save').click();
-            const checkpoint = JSON.parse(await page.evaluate(() => localStorage.getItem('broguejs-shooter-s4-checkpoint-v5')));
+            const checkpoint = JSON.parse(await page.evaluate(() => localStorage.getItem('broguejs-shooter-s5-checkpoint-v6')));
             assert.ok(checkpoint.ranged.reloadRemaining > 0); assert.ok(checkpoint.ranged.reloadRemaining < 60);
             const event = page.waitForEvent('download'); await page.getByTestId('export').click(); const download = await event;
             const destination = join(directory, `browser-replay-${viewport.width}.json`); await download.saveAs(destination);

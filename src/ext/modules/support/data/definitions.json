@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "abilities": [
+    {"id":"supply","labelKey":"ext.support.supply","delay":60,"cooldown":2700,"lifetime":2700,"radius":1200,"range":8192,"charges":2,"interval":0,"damage":0},
+    {"id":"turret","labelKey":"ext.support.turret","delay":90,"cooldown":1800,"lifetime":1350,"radius":8192,"range":8192,"charges":90,"interval":15,"damage":25},
+    {"id":"bombard","labelKey":"ext.support.bombard","delay":90,"cooldown":1350,"lifetime":0,"radius":3072,"range":12288,"charges":0,"interval":0,"damage":500},
+    {"id":"scan","labelKey":"ext.support.scan","delay":30,"cooldown":1200,"lifetime":600,"radius":14336,"range":8192,"charges":0,"interval":0,"damage":0}
+  ]
+}

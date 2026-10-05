@@ -13,7 +13,7 @@ export function createFirearms(host: RangedHost, restored?: unknown): RangedRunt
         validateState(restored, host.ownerId, host.tick()); return structuredClone(restored);
     })();
     if (state.projectiles.some(p => !circleIsFree(host.world, p.pose, 64, p.sourceId))) throw new Error('Invalid projectile binding');
-    let fault: Error | null = null;
+    let fault: Error | null = null, replenishReload = false;
     const actions: ActorActionScheduler = createActorActionScheduler(state.actions, {
         decisionOwnerId: id => id,
         // The wielding slot persists through training death, but pending work is
@@ -21,6 +21,7 @@ export function createFirearms(host: RangedHost, restored?: unknown): RangedRunt
         readActor: id => id === state.ownerId ? { alive: true, ticksUntilTurn: state.timer } : null,
         writeOwnerTicks: (_id, ticks) => { state.timer = ticks; },
         isSourceValid: source => !!host.health(state.ownerId)?.hp && source.sourceFootprintVersion === 'firearms-v1'
+            && !(replenishReload && source.sourcePartId.startsWith('reload:'))
             && (source.sourcePartId === 'cooldown' || source.sourcePartId === `reload:${state.selected}`),
         resolveSegment: () => { throw new Error('Firearms has no delayed damage segment'); },
         finishAction: (_bundle, reason) => {
@@ -81,5 +82,15 @@ export function createFirearms(host: RangedHost, restored?: unknown): RangedRunt
         },
         snapshot() { if (fault) throw fault; return { ...structuredClone(state), actions: actions.snapshot() }; },
         view,
+        replenish(): boolean {
+            if (fault) throw fault;
+            if (!host.health(state.ownerId)?.hp) return false;
+            const changed=state.weapons.some((w,i)=>w.ammo<WEAPONS[i]!.magazineSize);
+            if (!changed) return false;
+            replenishReload=true; actions.cancelDeadActions(); replenishReload=false;
+            state.pendingReload=null;
+            state.weapons.forEach((w,i)=>{w.ammo=WEAPONS[i]!.magazineSize;});
+            return true;
+        },
     };
 }

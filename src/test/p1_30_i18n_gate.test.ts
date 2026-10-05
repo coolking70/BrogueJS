@@ -280,6 +280,7 @@ describe('P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在�
         { file: 'products/shooter/ShooterApp.vue', expression: 'module.labelKey', keys: getRealtimeModules().map(module => module.labelKey) },
         { file: 'products/shooter/ShooterApp.vue', expression: 'weapon.labelKey', keys: getRealtimeModules().flatMap(module => [...module.uiKeys]) },
         { file: 'products/shooter/components/PlayerProgress.vue', expression: 'activity.labelKey', keys: getRealtimeModules().filter(module => module.kind === 'mission').flatMap(module => [...module.uiKeys]) },
+        ...['products/shooter/components/ShooterCanvas.vue', 'products/shooter/components/SupportPanel.vue'].map(file => ({ file, expression: 'a.labelKey', keys: getRealtimeModules().filter(module => module.kind === 'support').flatMap(module => [...module.uiKeys]) })),
         ...['mission.titleKey', 'site.labelKey', 'nearby.labelKey'].map(expression => ({ file: 'products/shooter/ShooterApp.vue', expression, keys: getRealtimeModules().flatMap(module => [...module.uiKeys]) })),
         { file: 'components/MainMenu.vue', expression: 'module.labelKey', keys: descriptors.map(module => module.labelKey) },
         { file: 'components/MainMenu.vue', expression: 'module.descriptionKey', keys: descriptors.flatMap(module => module.descriptionKey ? [module.descriptionKey] : []) },

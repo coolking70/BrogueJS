@@ -45,13 +45,15 @@ export async function shooterCompositionBrowser(browser, url, engine) {
         await page.waitForFunction(() => Number(document.querySelector('[data-testid="tick"]').textContent) >= 8);
         await page.keyboard.up('KeyD');
         if (ids.some(id => engine.rangedIds.includes(id))) {
-            await page.getByTestId('weapon-1').click(); const rect = await page.getByTestId('movement-canvas').boundingBox();
+            await page.getByTestId('weapon-1').click();
+            await page.getByTestId('movement-canvas').scrollIntoViewIfNeeded();
+            const rect = await page.getByTestId('movement-canvas').boundingBox();
             await page.mouse.move(rect.x + rect.width * .8, rect.y + rect.height * .5); await page.mouse.down();
             await page.waitForFunction(() => Number(document.querySelector('[data-testid="shots"]').textContent) >= 2);
             await page.mouse.up();
         }
         await page.getByTestId('toggle').click(); await page.getByTestId('save').click();
-        const checkpoint = JSON.parse(await page.evaluate(() => localStorage.getItem('broguejs-shooter-s4-checkpoint-v5')));
+        const checkpoint = JSON.parse(await page.evaluate(() => localStorage.getItem('broguejs-shooter-s5-checkpoint-v6')));
         assert.deepEqual(checkpoint.modules.map(m => m.id), ids); assert.notEqual(checkpoint.actors[0].pose.x, 5632);
         const download = page.waitForEvent('download'); await page.getByTestId('export').click();
         const replay = JSON.parse(readFileSync(await (await download).path(), 'utf8'));
@@ -65,7 +67,7 @@ export async function shooterCompositionBrowser(browser, url, engine) {
         assert.equal(Number(await page.getByTestId('tick').textContent()), checkpoint.tick);
         const bad = structuredClone(checkpoint), id = engine.unavailable[0];
         bad.modules = [{ id, version: '1.0.0', rules: { schema: 1, version: '1.0.0', fingerprint: `sha256:${'0'.repeat(64)}` } }]; bad.moduleStates = { [id]: {} };
-        await page.evaluate(value => localStorage.setItem('broguejs-shooter-s4-checkpoint-v5', value), JSON.stringify(bad));
+        await page.evaluate(value => localStorage.setItem('broguejs-shooter-s5-checkpoint-v6', value), JSON.stringify(bad));
         await page.getByTestId('load').click(); assert.match(await page.getByTestId('message').textContent(), /Missing/);
         assert.equal(Number(await page.getByTestId('tick').textContent()), checkpoint.tick); assert.deepEqual(errors, []);
         cases.push({ modules: ids, builtUiPlay: true, checkpoint: true, replay: true, continuedRecording: true, import: true, missingModuleRejected: true, errors });

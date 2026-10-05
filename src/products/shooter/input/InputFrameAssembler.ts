@@ -8,7 +8,7 @@ export class InputFrameAssembler {
     private held = false;
     private aim = 0;
     private movement = { x: 0, y: 0 };
-    private commands: ({ kind: 'reload' | 'interact' | 'abort' } | { kind: 'equip'; slot: number })[] = [];
+    private commands: ({ kind: 'reload' | 'interact' | 'abort' } | { kind: 'equip'; slot: number } | {kind:'support';slot:number;x:number;y:number})[] = [];
     setMovement(x: number, y: number): void {
         if (!Number.isInteger(x) || !Number.isInteger(y) || Math.abs(x) > 127 || Math.abs(y) > 127) throw new Error('Invalid movement sample');
         this.movement = { x, y };
@@ -18,10 +18,16 @@ export class InputFrameAssembler {
         this.aim = angle;
     }
     setFire(held: boolean): void { if (held && !this.held) this.press = true; this.held = held; }
+    cancelFire(): void { this.press=false;this.held=false; }
     requestFireTap(): void { this.press = true; }
     requestReload(): void { if (this.commands.length < 8) this.commands.push({ kind: 'reload' }); }
     requestInteract(): void { if (this.commands.length < 8) this.commands.push({ kind: 'interact' }); }
     requestAbort(): void { if (this.commands.length < 8) this.commands.push({ kind: 'abort' }); }
+    requestSupport(slot: number, x: number, y: number): void {
+        if (!Number.isInteger(slot) || slot<0 || slot>3 || !Number.isInteger(x) || !Number.isInteger(y)
+            || x<0 || y<0 || x>128*1024 || y>128*1024) throw new Error('Invalid support target');
+        if (this.commands.length<8) this.commands.push({kind:'support',slot,x,y});
+    }
     requestEquip(slot: number): void {
         if (!Number.isInteger(slot) || slot < 0 || slot > 3) throw new Error('Invalid weapon slot');
         if (this.commands.length < 8) this.commands.push({ kind: 'equip', slot });

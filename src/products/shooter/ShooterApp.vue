@@ -10,11 +10,14 @@ import { SHOOTER_PROFILE } from './profile';
 import { getRealtimeModules } from '../../ext/realtimeCatalog';
 import ShooterCanvas from './components/ShooterCanvas.vue';
 import MovementStick from './components/MovementStick.vue';
+import SupportPanel from './components/SupportPanel.vue';
+import { angleVector } from '../../engine/Movement/QuantizedAngle';
+import { createScenarioArena } from './ShooterArena';
 import { KeyboardMovement, gamepadMovement } from './input/MovementAdapters';
 import { gamepadAim, gamepadButton } from './input/AimAdapters';
 
 const { t } = useTranslation();
-const STORAGE_KEY = 'broguejs-shooter-s4-checkpoint-v5';
+const STORAGE_KEY = 'broguejs-shooter-s5-checkpoint-v6';
 const modules = getRealtimeModules(), selectedModules = ref(modules.map(d => d.id));
 const input = new InputFrameAssembler(), keyboard = new KeyboardMovement();
 let session = new ShooterSession();
@@ -24,11 +27,14 @@ let host = makeHost();
 type Stick = { x: number; y: number; active: boolean; angle?: number | null };
 let touch: Stick = { x: 0, y: 0, active: false }, touchAim: Stick = { x: 0, y: 0, active: false };
 let aimDevice: 'mouse' | 'stick' = 'mouse';
-let mouseFire = false, padReload = false, padEquip = false, padInteract = false;
+let mouseFire = false, padReload = false, padEquip = false, padInteract = false, padSupport = false, padConfirm = false, padCancel = false;
+const supportSlot = ref<number|null>(null), supportPoint = ref<{x:number;y:number}|null>(null);
+let aimAngle = 0;
 const padConnected = ref(false);
 function clearInput(): void {
     input.clear(); keyboard.clear(); touch = { x: 0, y: 0, active: false }; touchAim = { x: 0, y: 0, active: false };
     mouseFire = false; padReload = false; padEquip = false; padInteract = false;
+    padSupport=false; padConfirm=false; padCancel=false; supportSlot.value=null; supportPoint.value=null;
 }
 function sampleControls(): void {
     const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : [];
@@ -37,14 +43,20 @@ function sampleControls(): void {
     const keys = keyboard.sample(), movement = touch.active ? touch : keys.x || keys.y ? keys : gamepadMovement(pad);
     input.setMovement(movement.x, movement.y);
     const aim = touchAim.active ? touchAim.angle ?? null : gamepadAim(pad);
-    if (aim !== null) { aimDevice = 'stick'; input.setAim(aim); }
-    input.setFire(mouseFire || (touchAim.active && !!(touchAim.x || touchAim.y)) || gamepadButton(pad, 7));
+    if (aim !== null) { aimDevice = 'stick'; input.setAim(aim); aimAngle=aim; if(supportSlot.value!==null) pointAlongAim(); }
+    if(supportSlot.value!==null)input.cancelFire();
+    else input.setFire(mouseFire || (touchAim.active && !!(touchAim.x || touchAim.y)) || gamepadButton(pad, 7));
     const reload = gamepadButton(pad, 2), equip = gamepadButton(pad, 3), interact = gamepadButton(pad, 0);
-    if (interact && !padInteract && snapshots.value.current.mission) input.requestInteract();
+    if (interact && !padInteract && (snapshots.value.current.mission || snapshots.value.current.support?.nearbySupply)) input.requestInteract();
     padInteract = interact;
     if (reload && !padReload && snapshots.value.current.ranged) input.requestReload();
     if (equip && !padEquip && snapshots.value.current.ranged) input.requestEquip(((snapshots.value.current.ranged.weapons.find(w => w.selected)?.slot ?? 0) + 1) % 4);
     padReload = reload; padEquip = equip;
+    const call=gamepadButton(pad,4),confirm=gamepadButton(pad,5),cancel=gamepadButton(pad,1);
+    if(call && !padSupport && snapshots.value.current.support) cycleSupport();
+    if(confirm && !padConfirm && supportSlot.value!==null) confirmSupport();
+    if(cancel && !padCancel) {supportSlot.value=null;supportPoint.value=null;}
+    padSupport=call;padConfirm=confirm;padCancel=cancel;
 }
 const makeDriver = () => new RealtimeSimulationDriver(SHOOTER_PROFILE.simulation, () => { sampleControls(); host.step(input.next(host.tick + 1)); }, 8, () => session.finished);
 let driver = makeDriver(); driver.pause();
@@ -55,6 +67,22 @@ const elapsed = computed(() => (snapshots.value.current.tick / 30).toFixed(2));
 const combat = computed(() => snapshots.value.current.ranged);
 const health = computed(() => snapshots.value.current.damage.actors[0]!);
 const mission = computed(() => snapshots.value.current.mission);
+const support = computed(() => snapshots.value.current.support);
+const supplyNearby=computed(()=>support.value?.nearbySupply!==null && support.value?.nearbySupply!==undefined);
+const arenaId=computed(()=>snapshots.value.current.arena);
+const arenaGrid=computed(()=>{const descriptor=modules.find(d=>d.kind==='mission' && d.scenario.id===arenaId.value);
+    return createScenarioArena(descriptor?.kind==='mission'?descriptor.scenario:undefined);});
+const supportTarget=computed(()=>{
+    const a=support.value?.abilities[supportSlot.value??-1],p=supportPoint.value;
+    if(!a||!p)return null;
+    const player=snapshots.value.current.actors[0]!.pose;
+    const valid=(p.x-player.x)**2+(p.y-player.y)**2<=a.range**2 && !!arenaGrid.value.getCell(Math.floor(p.x/1024),Math.floor(p.y/1024))?.isPassable;
+    return {pose:p,radius:a.radius,range:a.range,dangerous:a.dangerous,valid};
+});
+function pointAlongAim():void {const p=snapshots.value.current.actors[0]!.pose,d=angleVector(aimAngle,4096);supportPoint.value={x:Math.max(0,p.x+d.x),y:Math.max(0,p.y+d.y)};}
+function selectSupport(slot:number):void {if(disabled.value||!support.value||support.value.abilities[slot]!.remaining)return;supportSlot.value=slot;mouseFire=false;input.cancelFire();pointAlongAim();}
+function cycleSupport():void {const start=supportSlot.value??-1;for(let n=1;n<=4;n++){const slot=(start+n)%4;if(support.value?.abilities[slot]?.remaining===0){selectSupport(slot);return;}}}
+function confirmSupport():void {if(disabled.value||supportSlot.value===null||!supportTarget.value?.valid)return;input.requestSupport(supportSlot.value,supportPoint.value!.x,supportPoint.value!.y);supportSlot.value=null;supportPoint.value=null;}
 const nearby = computed(() => mission.value?.markers.find(m => m.id === mission.value?.nearby));
 const timer = (ticks: number) => { const seconds = Math.ceil(ticks / 30); return Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0'); };
 const selected = computed(() => combat.value?.weapons.find(w => w.selected));
@@ -88,7 +116,7 @@ function verify(): void {
 }
 function exportReplay(): void {
     const url = URL.createObjectURL(new Blob([JSON.stringify(session.exportReplay())], { type: 'application/json' })), link = document.createElement('a');
-    link.href = url; link.download = 'broguejs-shooter-s4-replay.json'; link.click(); URL.revokeObjectURL(url);
+    link.href = url; link.download = 'broguejs-shooter-s5-replay.json'; link.click(); URL.revokeObjectURL(url);
 }
 async function importReplay(event: Event): Promise<void> {
     const element = event.target as HTMLInputElement, file = element.files?.[0]; if (!file) return;
@@ -99,15 +127,21 @@ async function importReplay(event: Event): Promise<void> {
     } catch (error) { message.value = t('shooter.error', { reason: String(error) }); }
     element.value = '';
 }
-function aimMouse(angle: number, moved: boolean): void { if (moved) aimDevice = 'mouse'; if (aimDevice === 'mouse') input.setAim(angle); }
-function aimTouch(value: Stick): void { touchAim = value; if (value.angle != null) { aimDevice = 'stick'; input.setAim(value.angle); } input.setFire(value.active && value.angle != null); }
-function fire(held: boolean): void { mouseFire = !disabled.value && held; input.setFire(mouseFire); }
+function aimMouse(angle: number, moved: boolean): void { if (moved) aimDevice = 'mouse'; if (aimDevice === 'mouse') {input.setAim(angle);aimAngle=angle;} }
+function aimTouch(value: Stick): void { touchAim = value; if (value.angle != null) { aimDevice = 'stick'; input.setAim(value.angle);aimAngle=value.angle;if(supportSlot.value!==null)pointAlongAim(); } input.setFire(supportSlot.value===null && value.active && value.angle != null); }
+function fire(held: boolean): void { mouseFire = !disabled.value && supportSlot.value===null && held; input.setFire(mouseFire); }
 function keyEvent(event: KeyboardEvent): void {
     if (event.type === 'keyup') { keyboard.key(event.code, false); return; }
     const target = event.target as HTMLElement | null;
     if (target?.closest('input, textarea, select, [contenteditable]') || disabled.value || event.metaKey || event.ctrlKey || event.altKey) return;
     if (keyboard.key(event.code, true)) event.preventDefault();
-    if (!event.repeat && event.code === 'KeyE' && snapshots.value.current.mission) { input.requestInteract(); event.preventDefault(); }
+    if (!event.repeat && event.code === 'KeyE' && (snapshots.value.current.mission || supplyNearby.value)) { input.requestInteract(); event.preventDefault(); }
+    if (!event.repeat && support.value) {
+        if(/^Digit[5-8]$/.test(event.code)){selectSupport(Number(event.code.slice(-1))-5);event.preventDefault();}
+        if(event.code==='KeyQ'){cycleSupport();event.preventDefault();}
+        if(event.code==='KeyF' || event.code==='Enter'){confirmSupport();event.preventDefault();}
+        if(event.code==='Escape'){supportSlot.value=null;supportPoint.value=null;event.preventDefault();}
+    }
     if (!event.repeat && combat.value) {
         if (event.code === 'KeyR') { input.requestReload(); event.preventDefault(); }
         if (/^Digit[1-4]$/.test(event.code)) { input.requestEquip(Number(event.code.slice(-1)) - 1); event.preventDefault(); }
@@ -169,13 +203,15 @@ onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListe
         </article></div></details>
         <p class="active-goal" data-testid="active-goal">{{ t('shooter.nextGoal') }} <span v-for="site in mission.markers.filter(m => ['ready', 'active'].includes(m.status) && !['rescue', 'sample', 'supply'].includes(m.kind))" :key="site.id">{{ mission.markers.indexOf(site) + 1 }} · {{ t(site.labelKey) }} <small>{{ Math.floor(site.pose.x / 1024) }},{{ Math.floor(site.pose.y / 1024) }}</small> </span></p>
         <p class="mission-extraction" data-testid="extraction-status">{{ t('shooter.extraction.' + mission.extraction, { time: timer(mission.extractionRemaining) }) }}</p>
-        <div class="mission-actions"><button class="primary" data-testid="interact" :disabled="disabled || !nearby" @click="input.requestInteract()">{{ nearby ? t('shooter.interactSite', { site: t(nearby.labelKey) }) : t('shooter.interact') }}</button>
+        <div class="mission-actions"><button class="primary" data-testid="interact" :disabled="disabled || (!nearby && !supplyNearby)" @click="input.requestInteract()">{{ supplyNearby ? t('shooter.support.takeSupply') : nearby ? t('shooter.interactSite', { site: t(nearby.labelKey) }) : t('shooter.interact') }}</button>
           <span>{{ t('shooter.carriedSamples', { count: mission.samples }) }}</span></div>
         <p class="mission-help">{{ t('shooter.missionHelp') }} <span v-if="!combat">{{ t('shooter.demolitionHelp') }}</span></p>
       </template>
     </section>
-    <ShooterCanvas :key="snapshots.current.arena" :previous="snapshots.previous" :current="snapshots.current" :alpha="clock.alpha" :disabled="disabled"
-      @aim="aimMouse" @fire="fire" />
+    <ShooterCanvas :key="snapshots.current.arena" :previous="snapshots.previous" :current="snapshots.current" :alpha="clock.alpha" :disabled="disabled" :support-target="supportTarget"
+      @aim="aimMouse" @fire="fire" @target="supportPoint=$event" />
+    <SupportPanel v-if="support" :view="support" :disabled="disabled" :selected="supportSlot" :valid="supportTarget?.valid??false"
+      @select="selectSupport" @confirm="confirmSupport" @cancel="supportSlot=null;supportPoint=null" />
     <section v-if="combat" class="weapons">
       <button v-for="weapon in combat.weapons" :key="weapon.id" :data-testid="'weapon-' + weapon.slot" :class="{ selected: weapon.selected }"
         :disabled="disabled" @click="input.requestEquip(weapon.slot)"><span>{{ weapon.slot + 1 }} · {{ t(weapon.labelKey) }}</span><small>{{ weapon.ammo }} / {{ weapon.capacity }}</small></button>
@@ -183,9 +219,9 @@ onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListe
     <section class="twin-controls">
       <MovementStick :disabled="disabled" @move="touch = $event" />
       <div class="combat-buttons"><button class="primary" data-testid="reload" :disabled="disabled || !combat" @click="input.requestReload()">{{ t('shooter.reload') }}</button>
-        <button v-if="mission?.status === 'active'" data-testid="interact-control" :disabled="disabled || !nearby" @click="input.requestInteract()">{{ t('shooter.interact') }}</button>
+        <button v-if="mission?.status === 'active' || supplyNearby" data-testid="interact-control" :disabled="disabled || (!nearby && !supplyNearby)" @click="input.requestInteract()">{{ supplyNearby?t('shooter.support.takeSupply'):t('shooter.interact') }}</button>
         <button data-testid="toggle" :disabled="failed || session.finished || host.tick >= MAX_SHOOTER_TICKS" @click="toggle">{{ clock.paused ? t('shooter.resume') : t('shooter.pause') }}</button></div>
-      <MovementStick :disabled="disabled || !combat" aim @move="aimTouch" />
+      <MovementStick :disabled="disabled || (!combat && supportSlot===null)" aim @move="aimTouch" />
     </section>
     <p class="movement-help">{{ t('shooter.gunplayHelp') }}</p>
     <p class="legend">{{ padConnected ? t('shooter.gamepadConnected') : t('shooter.gamepadHint') }} {{ t('shooter.touchFireHelp') }}</p>

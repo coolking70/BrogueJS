@@ -4,6 +4,7 @@ import type { EnvironmentContact } from '../../engine/Movement/KinematicSpatial'
 import type { CombatEffect, RangedView, RuntimeManifest, ShooterCommand } from '../../engine/Simulation/RangedRuntime';
 import type { MissionView } from '../../engine/Simulation/MissionRuntime';
 import type { PopulationView } from '../../engine/Simulation/PopulationRuntime';
+import type { SupportView } from '../../engine/Simulation/SupportRuntime';
 import type { InputFrame } from './input/InputFrame';
 
 export const MAX_SHOOTER_TICKS = 108_000;
@@ -16,13 +17,14 @@ export interface ShooterActor {
     respawnTick: number; attackReadyTick: number; lastHitTick: number;
 }
 export interface ShooterSnapshot {
-    format: 'broguejs-shooter-s4'; version: 5; product: string; simulation: string; ticksPerSecond: number; arena: string;
+    format: 'broguejs-shooter-s5'; version: 6; product: string; simulation: string; ticksPerSecond: number; arena: string;
     modules: RuntimeManifest[]; moduleStates: Record<string, unknown>; seed: number; tick: number;
     actors: ShooterActor[]; damage: DamageState; effects: CombatEffect[]; ranged: RangedView | null; population: PopulationView | null; mission: MissionView | null;
+    support: SupportView | null; clearedHazards: WorldPoint[];
     stats: { kills: number; deaths: number; damageDealt: number; damageTaken: number };
 }
 export interface ShooterReplay {
-    format: 'broguejs-shooter-s4-replay'; version: 5; initial: ShooterSnapshot; frames: InputFrame[];
+    format: 'broguejs-shooter-s5-replay'; version: 6; initial: ShooterSnapshot; frames: InputFrame[];
     commands: ShooterCommand[]; final: ShooterSnapshot;
 }
 /** Property insertion order has no mechanical significance. */

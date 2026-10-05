@@ -3,7 +3,7 @@ import { getRealtimeModules } from '../../ext/realtimeCatalog';
 
 /** Installed realtime modules are optional. Exact selected rules enter saves. */
 export const SHOOTER_PROFILE: ProductProfile = Object.freeze({
-    id: 'shooter-s4', version: 4,
+    id: 'shooter-s5', version: 5,
     simulation: Object.freeze({ id: 'shooter-realtime-30', ticksPerSecond: 30 }),
     modules: Object.freeze(getRealtimeModules().map(d => d.id)), inputModel: 'input-frame', spatialModel: 'hybrid-kinematic',
 });

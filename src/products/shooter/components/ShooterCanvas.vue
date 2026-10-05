@@ -8,9 +8,14 @@ import type { ShooterSnapshot } from '../ShooterSession';
 import { getRealtimeModules } from '../../../ext/realtimeCatalog';
 import { mouseAim } from '../input/AimAdapters';
 import PlayerProgress from './PlayerProgress.vue';
+import { useTranslation } from 'i18next-vue';
 
-const props = defineProps<{ previous: ShooterSnapshot; current: ShooterSnapshot; alpha: number; disabled: boolean }>();
-const emit = defineEmits<{ aim: [angle: number, moved: boolean]; fire: [held: boolean] }>();
+const props = defineProps<{ previous: ShooterSnapshot; current: ShooterSnapshot; alpha: number; disabled: boolean;
+    supportTarget: {pose:{x:number;y:number};radius:number;range:number;dangerous:boolean;valid:boolean}|null }>();
+const emit = defineEmits<{ aim: [angle: number, moved: boolean]; fire: [held: boolean];target:[pose:{x:number;y:number}] }>();
+const {t}=useTranslation();
+const supportTags=ref<{id:number;x:number;y:number;text:string;danger:boolean}[]>([]);
+let cleared=new Set<string>();
 let pointer: number | null = null, mouse: { x: number; y: number } | null = null;
 const surface = ref<HTMLDivElement>();
 const progressDisplay = ref<HTMLDivElement>();
@@ -24,8 +29,8 @@ const ARENA_WIDTH = grid.width, ARENA_HEIGHT = grid.height;
 function terrainColor(x: number, y: number): number {
     const cell = grid.getCell(x, y)!;
     if (!cell.isPassable) return 0x4e6256;
-    if (cell.layers.includes(TerrainType.PLAIN_FIRE)) return 0x783b28;
-    if (cell.layers.includes(TerrainType.POISON_GAS)) return 0x465d31;
+    if (!cleared.has(`${x},${y}`) && cell.layers.includes(TerrainType.PLAIN_FIRE)) return 0x783b28;
+    if (!cleared.has(`${x},${y}`) && cell.layers.includes(TerrainType.POISON_GAS)) return 0x465d31;
     if (cell.layers.includes(TerrainType.WATER_SHALLOW)) return 0x234c60;
     if (cell.layers.includes(TerrainType.OPEN_DOOR)) return 0x778057;
     return (x + y) % 2 ? 0x17271f : 0x192b22;
@@ -50,6 +55,41 @@ function draw(): void {
             (focus.y - props.current.actors[0]!.radius - 245) * camera.scaleY + camera.offsetY - 8),
     };
     actors.clear();
+    cleared=new Set(props.current.clearedHazards.map(p=>`${p.x},${p.y}`));
+    for(const p of props.current.clearedHazards) actors.rect(p.x*TILE,p.y*TILE,TILE,TILE).fill(terrainColor(p.x,p.y));
+    const support=props.current.support;
+    if(props.supportTarget){const target=props.supportTarget,color=!target.valid?0xee615a:target.dangerous?0xff986e:0x8bddd0;
+        actors.circle(target.pose.x,target.pose.y,target.radius).fill({color,alpha:.08}).stroke({color,width:36,alpha:.8});
+        actors.moveTo(focus.x,focus.y).lineTo(target.pose.x,target.pose.y).stroke({color,width:24,alpha:.5});
+        actors.circle(target.pose.x,target.pose.y,180).stroke({color,width:48});
+    }
+    const tags=(support?.deployments??[]).map(d=>{
+        const color=d.slot===2?0xff715f:d.slot===3?0x92b8f2:0x8bddd0,p=d.pose;
+        if(d.phase==='inbound'){
+            actors!.circle(p.x,p.y,d.slot===2?d.radius:650).fill({color,alpha:.1}).stroke({color,width:38,alpha:.8});
+            actors!.circle(p.x,p.y,(d.slot===2?d.radius:650)*Math.max(.05,1-d.remaining/d.total)).stroke({color,width:28,alpha:.7});
+        }else if(d.slot===0){actors!.rect(p.x-250,p.y-250,500,500).fill({color,alpha:.4}).stroke({color,width:40});
+            actors!.moveTo(p.x-150,p.y).lineTo(p.x+150,p.y).moveTo(p.x,p.y-150).lineTo(p.x,p.y+150).stroke({color,width:60});
+            actors!.circle(p.x,p.y,1200).stroke({color,width:20,alpha:.3});
+        }else if(d.slot===1){actors!.circle(p.x,p.y,300).fill({color,alpha:.5}).stroke({color,width:40});
+            actors!.moveTo(p.x,p.y).lineTo(p.x+450,p.y).stroke({color,width:80});
+        }else if(d.slot===3){actors!.circle(p.x,p.y,450).stroke({color,width:35}).circle(p.x,p.y,d.radius).stroke({color,width:25,alpha:.25});}
+        const a=support!.abilities[d.slot]!;
+        return{id:d.id,x:p.x*camera.scaleX+camera.offsetX,y:(p.y-850)*camera.scaleY+camera.offsetY,danger:d.slot===2,
+            text:d.phase==='inbound'?t('shooter.support.inbound',{name:t(a.labelKey),seconds:Math.ceil(d.remaining/30)}):d.slot===0?t('shooter.support.charges',{count:d.charges}):d.slot===1?t('shooter.support.rounds',{count:d.charges}):t('shooter.support.scanned',{count:support!.revealed.length})};
+    }).filter(d=>d.x>=0&&d.x<=app!.screen.width&&d.y>=-120&&d.y<=app!.screen.height);
+    const progressRows=props.current.damage.actors[0]!.hp>0?Number(!!props.current.ranged?.reloadRemaining)+Number(!!props.current.mission?.activity):0;
+    const progressHeight=Math.max(progressDisplay.value?.offsetHeight??0,progressRows*38+Math.max(0,progressRows-1)*4);
+    const placed:typeof tags=[];
+    for(const tag of tags){
+        tag.x=Math.max(90,Math.min(app.screen.width-90,tag.x));
+        if(progressRows && Math.abs(tag.x-progressAnchor.value.x)<180 && tag.y>progressAnchor.value.y-progressHeight-6 && tag.y<progressAnchor.value.y+24)
+            tag.y=progressAnchor.value.y-progressHeight-6;
+        while(placed.some(other=>Math.abs(other.x-tag.x)<160 && Math.abs(other.y-tag.y)<24))tag.y-=24;
+        if(tag.y<24){tag.y=Math.max(progressAnchor.value.y+26,focus.y*camera.scaleY+camera.offsetY+50);while(placed.some(other=>Math.abs(other.x-tag.x)<160 && Math.abs(other.y-tag.y)<24))tag.y+=24;}
+        placed.push(tag);
+    }
+    supportTags.value=placed;
     for (const label of labels.values()) label.visible = false;
     for (const marker of props.current.mission?.markers ?? []) {
         const label = labels.get(marker.id); if (label) { label.visible = marker.status !== 'complete'; label.alpha = marker.status === 'locked' ? .3 : .85; }
@@ -91,7 +131,8 @@ function draw(): void {
             for (const side of [-1, 1]) actors.moveTo(p.x + Math.cos(angle + side * spread) * 750, p.y + Math.sin(angle + side * spread) * 750)
                 .lineTo(p.x + Math.cos(angle + side * spread) * 1450, p.y + Math.sin(angle + side * spread) * 1450).stroke({ color, width: 20, alpha: .4 });
         }
-        if (actor.kind !== 'swarm' || health.hp < health.maxHp) {
+        if(support?.revealed.includes(actor.id))actors.circle(p.x,p.y,actor.radius+150).stroke({color:0x92b8f2,width:30,alpha:.85});
+        if (actor.kind !== 'swarm' || health.hp < health.maxHp || support?.revealed.includes(actor.id)) {
             const width = Math.max(600, actor.radius * 2), y = p.y - actor.radius - 180;
             actors.rect(p.x - width / 2, y, width, 65).fill(0x14231a);
             actors.rect(p.x - width / 2, y, width * health.hp / health.maxHp, 65).fill(color);
@@ -103,7 +144,8 @@ function draw(): void {
     overview.rect(left - 4, top - 4, ARENA_WIDTH * scale + 8, ARENA_HEIGHT * scale + 8).fill({ color: 0x08100c, alpha: .8 });
     for (let y = 0; y < ARENA_HEIGHT; y++) for (let x = 0; x < ARENA_WIDTH; x++)
         overview.rect(left + x * scale, top + y * scale, scale, scale).fill(terrainColor(x, y));
-    for (const [i, a] of props.current.actors.entries()) if (i && props.current.damage.actors[i]!.hp) {
+    for (const [i, a] of props.current.actors.entries()) if (i && props.current.damage.actors[i]!.hp
+        && (!support || a.kind==='objective' || (a.pose.x-focus.x)**2+(a.pose.y-focus.y)**2<=4096**2 || support.revealed.includes(a.id))) {
         overview.circle(left + a.pose.x / TILE * scale, top + a.pose.y / TILE * scale, a.kind === 'boss' ? 2.8 : a.kind === 'elite' ? 1.8 : .8)
             .fill(a.kind === 'boss' ? 0xc48df2 : a.kind === 'elite' ? 0xf5bd64 : 0xc77c65);
     }
@@ -116,6 +158,7 @@ function draw(): void {
     overview.rect(left + viewX * scale, top + viewY * scale, app.screen.width / camera.scaleX / TILE * scale,
         app.screen.height / camera.scaleY / TILE * scale).stroke({ color: 0xb9c8b0, width: .6 });
     surface.value!.dataset.cameraX = String(camera.offsetX); surface.value!.dataset.cameraY = String(camera.offsetY);
+    surface.value!.dataset.cameraScaleX=String(camera.scaleX);surface.value!.dataset.cameraScaleY=String(camera.scaleY);
 }
 function updateAim(moved = false): void {
     if (!mouse || props.disabled || !surface.value || !world) return;
@@ -129,6 +172,11 @@ function pointerMove(event: PointerEvent): void {
     mouse = { x: event.clientX, y: event.clientY }; updateAim(true);
 }
 function pointerDown(event: PointerEvent): void {
+    if(props.supportTarget && !props.disabled && surface.value && world){
+        const rect=surface.value.getBoundingClientRect();
+        emit('target',{x:Math.max(0,Math.round((event.clientX-rect.left-world.x)/world.scale.x)),y:Math.max(0,Math.round((event.clientY-rect.top-world.y)/world.scale.y))});
+        event.preventDefault();return;
+    }
     if (event.pointerType !== 'mouse' || event.button !== 0 || props.disabled) return;
     pointer = event.pointerId; surface.value!.setPointerCapture(pointer); pointerMove(event); emit('fire', true);
 }
@@ -159,7 +207,7 @@ onMounted(async () => {
     resize = new ResizeObserver(() => { if (app && surface.value) { app.renderer.resize(surface.value.clientWidth, surface.value.clientHeight); render(); } });
     resize.observe(surface.value!); render();
 });
-watch(() => [props.current, props.alpha], render);
+watch(() => [props.current, props.alpha, props.supportTarget], render);
 onBeforeUnmount(() => { disposed = true; resize?.disconnect(); app?.destroy(true, { children: true }); });
 </script>
 
@@ -169,10 +217,12 @@ onBeforeUnmount(() => { disposed = true; resize?.disconnect(); app?.destroy(true
     <PlayerProgress v-if="current.damage.actors[0]!.hp > 0" :reload-remaining="current.ranged?.reloadRemaining ?? 0"
       :reload-total="current.ranged?.reloadTotal ?? 0" :activity="current.mission?.activity ?? null" :paused="disabled" />
   </div>
+  <div v-for="tag in supportTags" :key="tag.id" class="support-tag" :class="{danger:tag.danger}" :style="{left:tag.x+'px',top:tag.y+'px'}" :data-testid="'support-world-'+tag.id">{{tag.text}}</div>
 </div></template>
 <style scoped>
 .scope-canvas { position: relative; width: 100%; height: 440px; cursor: crosshair; touch-action: none; overflow: hidden; border: 1px solid #34443a; border-radius: 12px; }
 .progress-anchor { position: absolute; z-index: 1; transform: translate(-50%, -100%); pointer-events: none; }
+.support-tag{position:absolute;z-index:1;transform:translate(-50%,-100%);font-size:11px;color:#b9ecdc;padding:3px 5px;background:#071912df;border:1px solid #517d69;border-radius:4px;pointer-events:none;white-space:nowrap}.support-tag.danger{color:#ffd1bf;border-color:#a35d4a;background:#321811ed}
 .scope-canvas :deep(canvas) { display: block; }
 @media (max-width: 600px) { .scope-canvas { height: min(36vh, 300px); } }
 </style>

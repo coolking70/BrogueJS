@@ -2555,5 +2555,6 @@
     "shooter.phase.recovery": "恢复",
     "shooter.phase.break-recovery": "硬直恢复",
     "shooter.movementHelp": "WASD / 方向键 · 左摇杆移动",
-    "shooter.legend": "青蓝：浅水减速　橙色：火焰　绿色：毒气　浅蓝圆：固定角色"
+    "shooter.legend": "青蓝：浅水减速　橙色：火焰　绿色：毒气　浅蓝圆：固定角色",
+    "shooter.support.active": "{{name}} · {{seconds}} 秒"
 }

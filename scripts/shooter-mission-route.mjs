@@ -53,6 +53,7 @@ export function missionPilot(session, grid, { optional = true, raycast, moveCirc
                 let s=(v[0]*desired.x+v[1]*desired.y)/length/127*4;
                 for(const a of enemies){const dist=Math.hypot(q.x-a.pose.x,q.y-a.pose.y)-p.radius-a.radius;if(dist<1800)s-=(1800-dist)/80;}
                 for(const warning of state.population.telegraphs){const dist=Math.hypot(q.x-warning.center.x,q.y-warning.center.y)-p.radius;if(dist<warning.radius+300)s-=(warning.radius+300-dist)/10;}
+                for(const warning of state.support?.deployments.filter(d=>d.slot===2&&d.phase==='inbound')??[]){const dist=Math.hypot(q.x-warning.pose.x,q.y-warning.pose.y)-p.radius;if(dist<warning.radius+500)s-=(warning.radius+500-dist)/10;}
                 // Keep the capture/boarding circle when there is room to dodge.
                 if(marker.status==='active'&&marker.kind!=='nest'&&Math.hypot(q.x-marker.pose.x,q.y-marker.pose.y)>marker.radius-200)s-=20;
                 return s;

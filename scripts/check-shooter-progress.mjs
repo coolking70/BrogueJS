@@ -64,7 +64,7 @@ try {
         await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/shooter.html`, { waitUntil: 'networkidle' });
         await page.waitForSelector('canvas'); await page.locator('.diagnostics summary').click(); await page.getByTestId('save').click();
         const load = async name => {
-            await page.evaluate(s => localStorage.setItem('broguejs-shooter-s4-checkpoint-v5', JSON.stringify(s)), checkpoints[name]);
+            await page.evaluate(s => localStorage.setItem('broguejs-shooter-s5-checkpoint-v6', JSON.stringify(s)), checkpoints[name]);
             await page.getByTestId('load').click(); assert.match(await page.getByTestId('message').textContent(), /已恢复/);
             await page.getByTestId('movement-canvas').scrollIntoViewIfNeeded();
         };
