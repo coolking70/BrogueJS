@@ -219,6 +219,35 @@ function naturalStep(game: Game, goal: (x: number, y: number) => boolean, exclud
     if (game.pendingCommandConfirmation) game.resolveCommandDecision(game.pendingCommandConfirmation.token, true);
 }
 
+describe('3b configured combat with the installed 3x3 form',()=>{
+    it.each(catalog.getInstalledModuleDescriptors().filter(module=>module.id==='giants'))('publishes the declared 3x3 species and persists its real phased native attack',descriptor=>{
+        const form=descriptor.create().nativeForms!.find(value=>value.size===3)!;
+        expect(form).toBeDefined();
+        const rules=json(descriptor.rules);
+        configuredCombat(pack=>{
+            pack.nativeProfiles=[{monsterId:form.id,profileId:'combat.follow-thrust'}];
+            const definition=pack.attacks.find(value=>value.id==='fixture.double-thrust')!;
+            definition.windupTicks=150;definition.segments[1]!.delayTicks=130;definition.recoveryTicks=150;
+        });
+        const game=start(['combat','giants']);arena(game);game.player.hp=game.player.maxHp=1000;
+        const source=game.createModuleMonster(form.id,{x:11,y:12})!;
+        expect(source).not.toBeNull();expect(footprintOf(source)).toHaveLength(9);expect(source.maxHp).toBe(form.hp);
+        expect(readCreatureBirth(source)?.creationReason).toBe('scripted');
+        source.state=MonsterState.HUNTING;source.ticksUntilTurn=1;(game as any).updateVision();
+        const native=vi.spyOn(CombatSystem,'attack');const hp=game.player.hp;
+        wait(game);expect(phase(game,source.id)).toBe('windup');
+        const saved=json(game.toSaveSnapshot());const expected=mechanical(game);
+        const restored=createHeadlessGame(729,'test');expect(restored.loadSnapshot(saved)).toBe(true);restored.animationEnabled=false;
+        expect(mechanical(restored)).toEqual(expected);
+        wait(restored);expect(phase(restored,source.id)).toBe('inter-segment');
+        wait(restored);expect(phase(restored,source.id)).toBe('recovery');
+        expect(native.mock.calls.filter(call=>call[0].id===source.id)).toHaveLength(2);
+        expect(restored.player.hp).toBeLessThan(hp);
+        expect(state(restored).actors.find(actor=>actor.actorId===source.id)!.stamina).toBe(18);
+        expect(catalog.getInstalledModuleDescriptors().find(module=>module.id===descriptor.id)!.rules).toEqual(rules);
+    });
+});
+
 describe('3b configured combat with an actual naturally generated optional square actor', () => {
     it.each(catalog.getInstalledModuleDescriptors().filter(module => module.id === 'giants'))('seed 7306 D3 ridgeback uses telegraphed native segments, each phase survives save/load, and the natural command recording replays', giantDescriptor => {
         expect(giantDescriptor).toBeDefined();

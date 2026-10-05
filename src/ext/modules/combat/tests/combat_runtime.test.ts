@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import { createExtensionRegistry } from '../../../catalog';
+import * as catalog from '../../../catalog';
+import { registryFromDescriptors } from '../../../descriptor';
+import { getNextEntityId } from '../../../../entities/Creature';
 import { createCombatModule } from '../index';
 import { loadCombatDefinitionPack } from '../definitions';
 import { combatAttackDefinitions } from '../production';
@@ -127,6 +130,38 @@ describe('3b production combat lifecycle',()=>{
   console.log('3b engine command performance',JSON.stringify({samples:elapsed.length,p50Ms:elapsed[4],p95Ms:elapsed[8],maxPreviewCells:Math.max(...cells)}));
   expect(elapsed.every(value=>Number.isFinite(value)&&value>=0)).toBe(true);
  },30000);
+ it('rejects missing combat saves and recordings before retiring any old-world state',()=>{
+  const game=start();acknowledge();game.executeCommand('wait');
+  const saved=structuredClone(game.toSaveSnapshot()),recording=structuredClone(game.exportRecording());
+  const player=game.player,runtime=game.extensionRuntime!,random=rng.getState(),nextId=getNextEntityId();
+  const before=game.toSnapshot();before.savedAt=0;
+  const unload=vi.spyOn(runtime,'unload');
+  const remaining=registryFromDescriptors(catalog.getInstalledModuleDescriptors().filter(descriptor=>descriptor.id!=='combat'));
+  vi.spyOn(catalog,'createExtensionRegistry').mockReturnValue(remaining);
+  const onError=vi.fn();
+  expect(game.loadSnapshot(saved,onError)).toBe(false);expect(game.loadReplay(recording,onError)).toBe(false);
+  expect(onError).toHaveBeenCalledTimes(2);
+  for(const [message] of onError.mock.calls){expect(message).toContain('combat');expect(message).toContain('not installed');}
+  const after=game.toSnapshot();after.savedAt=0;
+  // The refusal deliberately adds one coalesced error message; preserve the
+  // original mechanical-world assertion without pretending feedback is silent.
+  expect(after.run.logger.messages).toHaveLength(before.run.logger.messages.length+1);
+  expect(after.run.logger.messages[after.run.logger.messages.length-1]).toMatchObject({text:onError.mock.calls[0]![0],count:2});
+  after.run.logger=before.run.logger;
+  expect(after).toEqual(before);expect(rng.getState()).toEqual(random);expect(getNextEntityId()).toBe(nextId);
+  expect(game.player).toBe(player);expect(game.extensionRuntime).toBe(runtime);expect(unload).not.toHaveBeenCalled();
+ });
+ it('rejects unknown/deferred commands and their recordings without allocating or advancing',()=>{
+  const game=start();acknowledge();game.executeCommand('wait');
+  const recording=structuredClone(game.exportRecording()),before=structuredClone(state(game)),random=rng.getState(),turn=game.absoluteTurnNumber;
+  const player=game.player,runtime=game.extensionRuntime!,unload=vi.spyOn(runtime,'unload');
+  for(const action of ['start','dodge','parry','rest','toString','__proto__']){
+   const data=JSON.stringify({module:'combat',action,payload:{}});acknowledge();game.executeCommand('ext:command',data);
+   expect(game.exportRecording().events).toEqual(recording.events);expect(state(game)).toEqual(before);expect(rng.getState()).toEqual(random);expect(game.absoluteTurnNumber).toBe(turn);
+   const bad=structuredClone(recording);bad.events[0]!.action='ext:command';bad.events[0]!.data=data;
+   expect(game.loadReplay(bad)).toBe(false);expect(game.player).toBe(player);expect(game.extensionRuntime).toBe(runtime);expect(unload).not.toHaveBeenCalled();
+  }
+ });
  it('keeps disabled runs without scheduler, declarations, components or combat views',()=>{
   const game=start([]);expect(game.extensionRuntime!.actorActionBinding()).toBeNull();
   expect(game.extensionRuntime!.readModuleView('combat')).toBeNull();acknowledge();game.executeCommand('wait');

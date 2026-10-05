@@ -7,6 +7,7 @@ import { DialogInput } from '../../../../ui/dialogInput';
 import { useCombatUi } from '../ui/useCombatUi';
 import { buildCombatUiCommand, combatDirections, readCombatUiView } from '../ui/view';
 import { rng } from '../../../../engine/Random';
+import type { DisplayFrame } from '../../../../ui/displayProjection';
 
 function fixture() {
     const state = { schema: 1, revision: 0, actions: [
@@ -82,6 +83,66 @@ describe('EXT-3b shared combat direction/confirmation UI', () => {
         expect(buildCombatUiCommand(f.game, view, 'fixture.slash', 'bad' as never)).toBeNull();
         f.dialogs.request({ kind: 'confirm', owner: 'other', text: '', onAnswer: () => true }); f.open();
         expect(f.dialogs.queueLength).toBe(1); expect(f.dialogs.current!.owner).toBe('other');
+        expect(f.raw.executeCommand).not.toHaveBeenCalled();
+    });
+    it('keeps visible warnings through non-warning hover, direction selection, back and cancellation', () => {
+        const f = session(), before = { state: JSON.stringify(f.state), rng: rng.getState() };
+        let captured = { telegraphs: [
+            { actionId: 1, sourceSubactionId: 1, sourceEntityId: 21, phase: 'windup', cells: [{ x: 4, y: 5 }] },
+            { actionId: 2, sourceSubactionId: 1, sourceEntityId: 22, phase: 'inter-segment', cells: [{ x: 5, y: 5 }] },
+        ], rows: [{ kind: 'monster', id: 21, name: 'visible source one' }, { kind: 'monster', id: 22, name: 'visible source two' }],
+        hoverCell: null as { x: number; y: number } | null };
+        f.host.readDisplayFrame = () => captured as unknown as DisplayFrame; f.ui.refresh();
+        const warnings = f.ui.hud.value!.props.entries;
+        expect(f.ui.hud.value!.props.focused).toBe(false);
+        for (const direction of combatDirections) {
+            f.open();
+            // Mac QA: pointer crosses an ordinary/unknown cell on its way to the
+            // dialog, and that display-only hover remains when the modal closes.
+            captured = { ...captured, hoverCell: { x: 30, y: 25 } };
+            f.dialogs.answer(f.dialogs.current!.token, `choice:${direction.facing}`);
+            expect(f.ui.hud.value).not.toBeNull();
+            expect(f.ui.hud.value!.props.entries).toEqual(warnings);
+            expect(f.ui.hud.value!.props.focused).toBe(false);
+            f.dialogs.answer(f.dialogs.current!.token, 'back');
+            expect(f.ui.hud.value!.props.entries).toEqual(warnings);
+            f.dialogs.answer(f.dialogs.current!.token, 'close'); f.ui.refresh();
+            expect(f.ui.hud.value!.props.entries).toEqual(warnings);
+        }
+        expect(f.raw.executeCommand).not.toHaveBeenCalled();
+        expect({ state: JSON.stringify(f.state), rng: rng.getState() }).toEqual(before);
+    });
+    it('narrows inspection only on a threatened cell and clears retired warnings from the new frame', () => {
+        const f = session();
+        let captured = { telegraphs: [
+            { actionId: 1, sourceSubactionId: 1, sourceEntityId: 21, phase: 'windup', cells: [{ x: 4, y: 5 }] },
+            { actionId: 2, sourceSubactionId: 1, sourceEntityId: 22, phase: 'inter-segment', cells: [{ x: 5, y: 5 }] },
+        ], rows: [{ kind: 'monster', id: 21, name: 'visible source one' }, { kind: 'monster', id: 22, name: 'visible source two' }],
+        hoverCell: { x: 4, y: 5 } as { x: number; y: number } | null };
+        f.host.readDisplayFrame = () => captured as unknown as DisplayFrame; f.ui.refresh();
+        expect(f.ui.hud.value!.props.focused).toBe(true);
+        expect(f.ui.hud.value!.props.entries).toEqual([{ key: '1:1', name: 'visible source one', phase: 'windup' }]);
+        f.open(); expect(f.ui.hud.value!.props.focused).toBe(false);
+        expect(f.ui.hud.value!.props.entries).toHaveLength(2);
+        f.dialogs.answer(f.dialogs.current!.token, 'close');
+        expect(f.ui.hud.value!.props.focused).toBe(true);
+        expect(f.ui.hud.value!.props.entries).toHaveLength(1);
+        captured = { ...captured, hoverCell: { x: 31, y: 25 } }; f.ui.refresh();
+        expect(f.ui.hud.value!.props.focused).toBe(false);
+        expect(f.ui.hud.value!.props.entries).toHaveLength(2);
+        captured = { ...captured, telegraphs: [] }; f.ui.refresh();
+        expect(f.ui.hud.value).toBeNull();
+    });
+    it('warning inspection uses the historical frame for both cells and source names without querying future state', () => {
+        const f = session();
+        f.host.readDisplayFrame = () => ({ telegraphs: [
+            { actionId: 1, sourceSubactionId: 1, sourceEntityId: 21, phase: 'windup', cells: [{ x: 4, y: 5 }] },
+        ], rows: [{ kind: 'monster', id: 21, name: 'historical public source' }], hoverCell: { x: 30, y: 25 } }) as unknown as DisplayFrame;
+        f.host.isPresentationBusy = () => true;
+        const reads = f.runtime.readModuleView.mock.calls.length; f.ui.refresh();
+        expect(f.runtime.readModuleView).toHaveBeenCalledTimes(reads);
+        expect(f.ui.hud.value!.props.entries).toEqual([{ key: '1:1', name: 'historical public source', phase: 'windup' }]);
+        expect(f.ui.hud.value!.props.focused).toBe(false);
         expect(f.raw.executeCommand).not.toHaveBeenCalled();
     });
     it('historical presentation never reads live combat or keeps a targeting modal', () => {

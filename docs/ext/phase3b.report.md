@@ -4,7 +4,7 @@
 
 ## 基线和范围
 
-实际 GitHub `ext/phase3` 为已批准 `21aceeb0795c9cb91d349bd5745ef767f807f528`；明确从 `https://github.com/coolking70/BrogueJS.git` fetch hosted foundation 并合入 `ef2a0f2dbe734b14597db41ad662dc53e333b224`，保留 4a0–4a4 全部历史。旧脏树未触碰。交付前再次显式 fetch hosted foundation，结果仍为 ef2a0f2。
+实际 GitHub `ext/phase3` 为已批准 `21aceeb0795c9cb91d349bd5745ef767f807f528`；明确从 `https://github.com/coolking70/BrogueJS.git` fetch hosted foundation 并合入 `ef2a0f2dbe734b14597db41ad662dc53e333b224`，保留 4a0–4a4 全部历史。旧脏树未触碰。开发中复核仍为 ef2a0f2；最终复核发现 hosted foundation 前进至 b306f01，已按下节再次合并，不覆盖 4a 历史。
 
 - combat module/rules 从 1.0.0 升至 **1.1.0**；包 schema=1，由精确 manifest/rules 指纹拒绝旧 inert 包状态。foundation=4、native entity/whole-run/replay=3 不变，没有独立分配共享版本。
 - 保留三份原创形状 ID：fixture.slash / fixture.stomp / fixture.double-thrust，玩家名为扇锋斩、震环击、续锋刺。新增显式 rat/kobold/ogre profile 绑定。`fixture.*` 是稳定数据 ID，实际生产路径已开放；DEV 布景另有明确的 fixture 标记和导出拒绝。
@@ -27,6 +27,18 @@
 
 现有 generic scheduler 的 ≤4 成员、费用和/耗时 max/下一边界 min、稳定 member/subaction identity 仍保留。**当前生产空间准入是独立 native / r0 square 2×2、3×3；未开放任意 mask、zone、复合群或旋转体**。其未来阶段不能靠移除 guard 宣称支持。
 
+## 最新 foundation 整合
+
+3b 实现先提交为 `d5645f9`，随后明确 fetch 真正 GitHub 最新 foundation **b306f01d4a3e9e66f2fc9c0d5e394a4f3e2c2b9a**，通过 merge **071e8d8ea7b0cf59d5349ff6a5732cf115065b60** 保留两侧历史，无冲突、无整文件覆盖。
+
+上游差异仅包括 `45e7cd2` 的一次性陷阱先消费后触发修复，以及 `b306f01` 的 3×3 Abyssal Colossus 内容/场地/文本、trace 和测试。唯一引擎差异位于 Game.triggerTrap，与 3b 接线不重叠；没有 Vue/renderer/UI 生产改动。3b 不重做 4a5，也不改其默认生成或 combat 绑定。
+
+补充真实已安装 3×3 form 验证：通过 `Game.createModuleMonster` 发布该声明物种，确认 9 格及原 maxHp，再以显式 fixture combat 配置执行两段原生攻击、一次费用、windup 存读及后续 phase。此物种的出生标记为 scripted，不冒充自然 D7 出生；上游自己的自然 3×3 测试亦纳入整合门禁。
+
+整合集合首轮 20 文件：19 文件通过、1 文件失败，403 passed / 1 failed。失败是 `giants_runtime.test.ts` 原盲走路线在 combat 从 inert 变为真实威胁后 D2 死亡，并非存读/回放差异。仅对该文件启用 combat 的组合改用菜单公开 wizard 模式，`naturalFixture.ts` 增加默认仍为 normal 的显式参数；保留全部世界/RNG/存读/seek/续录断言。其余 giants-only normal 路线、combat 自有 normal 模式 seed7306 D3 自然 ridgeback + 167 命令 replay 及真实伤害覆盖保持。没有给原型生产角色加血、放松伤害或改平衡。四个修订后的组合案例独立通过。
+
+同时保留缺 combat 包与未开放 dodge/parry/rest/未知命令拒绝的有效旧合同。拒绝缺模块时仅允许原有两次错误反馈合并为一条日志；其它完整序列化世界、RNG、allocator、player/runtime 身份与未调用 unload 都保持。不是用安装禁用冒充实际目录删除。
+
 ## 身体命中和显示
 
 `ActorCombatResolution` 在消费 D08 part scope 前筛掉非法接触格，再调用既有 `Game.collectBodyTargets(cells,{effect:'area-damage'},scope)`。一个目标首个格不合法时允许后面的合法尾格；一段仍只命中同一 part 一次，后续段用新 scope。
@@ -40,7 +52,7 @@
 
 ## 验证与证据
 
-运行环境 Node 24.19.0，`NODE_OPTIONS=--max-old-space-size=3072`，Vitest `--maxWorkers=2`。仅运行本步/直接受影响功能，不运行完整 npm test、全部 test:ext、实际 removal、CE full/gen。没有地图生成改动，不运行 drift 或重录黄金。
+运行环境 Node 24.19.0，`NODE_OPTIONS=--max-old-space-size=3072`，Vitest `--maxWorkers=2`。仅运行本步/直接受影响功能，不运行完整 npm test、全部 test:ext、实际 removal、CE full/gen。3b 没有地图生成改动，不运行 drift 或重录黄金。最终整合继承的 4a5 内容/trace 是上游已验收改动，本步不重新捕获，不将上游 drift 结果算作本步执行。
 
 开发期已通过：combat runtime（真实命令/风险/save/replay/seek/续录）、纯 schema/planner、基础状态/调度、body/native、square 集成、公共历史帧/SFC/对话、相关原生战斗。独立审查的五个反例均已加入修复并重新验证：非法首接触吞掉合法尾格、away-and-back 陈旧准备、换种 profile 与余量不一致、离图锁格坏档后置崩溃、未分配目标的伪造风险凭据。
 
@@ -66,8 +78,26 @@ ef2a0f2 基线上的最终正常候选门禁：
 
 旧测试变更：combat inert-only 安装/无 UI/无状态断言已替换为生产功能与拒绝坏档/禁用覆盖；包版本/新增 profile 数量/形状上限按正式开放更新。原 square-unopened defense 测试只将布景改为仍未开放的 r90 square，拒绝断言保持；另做了仅回退 ActorCombatResolution 的单变量反事实。没有宽泛 skip/exclude 或降低超时。
 
+## 整合后与像素反馈后的最终门禁
+
+- 最新 foundation 整合后 20 文件相关集合最终 **20/20 文件、406/406 项通过、0 skipped，exit0，193.84s**（`/tmp/phase3b-post-foundation-final-pass.log`；清单 `phase3b-post-foundation-files.txt`）。包括全部相关 giants 功能、combat 功能、4a2/4a3、旧单格完整 graph、陷阱/传送/火焰直接回归。首轮的路线失败和精确 fixture 调整见上文，不将失败当作通过。
+- boundary、vue-tsc、production build 及 diff-check 均 exit0；日志 `phase3b-post-foundation-{boundary,type,build}.log`。production build 保留既有 chunk 大小提示。
+- Mac 像素发现 warning HUD 在方向→确认→Cancel 后消失（见下节）后，仅修改 `useCombatUi.ts` 的 hover 过滤。修复前3个回归重现失败；修复后 **6 文件 / 85 项通过**，包括新增真实 Game 零命令/完整机械状态与双 RNG 不变、历史帧、body SFC、i18n/硬编码文本守卫。随后 boundary/type/build/diff-check 全部 exit0。没有以先前20文件的旧 UI 结果代替此轮专测。
+
+## 性能与预算
+
+只计真实 `executeCommand` 的 9 次原生场景采样（开局生成在计时外）：P50 **8.26 ms**，P95 **19.25 ms**，该单格玩家样本最大预警 8 格。该小样本在本云环境执行，不是帧率、手机性能或通关平衡结论。原测试 console 输出未保留数值，因此用外部临时 Vite transform 将**同一既有计时探针的输出**写至 `/tmp/phase3b-performance-metrics.json`，未改仓库源文件、断言或生产求值器；1 项通过，其余18项由名称过滤。相关日志 `phase3b-performance-measured.log`。
+
+生产限制：每段最多1024投影格、每形状最多256整数偏移/坐标±32、每核心最多4个稳定子动作、正阶段与总动作tick预算；当前实际生产发起者仍为独立单成员 facade。状态/预算触顶明确拒绝，坏定义不静默降级。四成员并行和 max/min 时钟上界由基础 scheduler fixture 验证，不称为已开放自然复合敌人。
+
 ## 浏览器和明确边界
 
 官方 cloud browser 尝试 `http://127.0.0.1:5173/` 返回 **net::ERR_BLOCKED_BY_CLIENT**，未绕过限制，未声称拿到像素。DEV-only `window.debug_combat_telegraphs()` 安全选可见地板、优先放 2×2 ogre，真实 wait 开始前摇；显式标记 fixture，拒绝 save/replay 导出。Mac fallback QA 使用独立 QA-only 构建与精确源码散列；像素结果由验收方补充，截图只留本地。
+
+Mac v4 实际检查发现一个 UI blocker：1440×900 普通模式，combat-only test 局，真实 DEV 2×2 ogre 预警后，点击招式→东方→取消，警示格和身体仍在，左栏 warning HUD 消失。turn/input/玩家状态/展示帧队列没有变化。“未知”是原有消息日志入口的独立地形悬停文本，**不是 HUD 文本变成未知**。
+
+根因是 HUD 将任何非空 hoverCell 都当作缩小列表的条件，在普通/未知非警示格上得到空列表就隐藏全部警示。修复只在 hover 命中警示格时缩小列表；否则保留当前公开历史帧的全局警示，瞄准期间保留全览。旧警示真正退休后仍消失；没有缓存陈旧 source、读取未来世界或屏蔽合法未知地形文本。
+
+Mac v4 已实看17张截图，三招式真正释放→idle、重复点击、modal 上箭头隔离等通过；六布局仅有初始子项检查，320px 沉浸身体辨认曾不确定。未把这些算成最终全矩阵通过，未声称浏览器双 RNG、历史 MORE、触摸或自然录像已覆盖。v5 QA 包用于该精确方向/取消案例和窄屏回归；最终像素结果由维护者验收记录补充。
 
 未运行完整收尾/删除矩阵，未宣称所有安装子集、手机真触摸或 FPS 已验收。正式开局 UI 保存仍禁止进行中的 command/turn；测试中的 busy-player机械 checkpoint 恢复与普通玩家命令已完整排空后的 save/录制连续性分别验证，不混同为 UI 可中途导出完整命令录像。

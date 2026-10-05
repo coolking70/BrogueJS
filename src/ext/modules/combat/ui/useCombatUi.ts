@@ -96,9 +96,13 @@ export function useCombatUi(host: ModuleUiHost): ModuleUiSession {
         hud: computed(() => {
             const current = frame.value;
             if (!current?.telegraphs.length) return null;
-            const threats = current.hoverCell ? telegraphsAt(current.telegraphs, current.hoverCell) : current.telegraphs;
-            if (!threats.length) return null;
-            return { component: CombatTelegraphHud, props: { focused: !!current.hoverCell,
+            // Hover is an optional inspection filter, never a condition for
+            // showing danger. A stale ordinary/unknown cell must not erase the
+            // overview after a direction dialog opens or is cancelled. While
+            // aiming, keep the complete current-frame overview behind the dialog.
+            const inspected = !selected.value && current.hoverCell ? telegraphsAt(current.telegraphs, current.hoverCell) : [];
+            const threats = inspected.length ? inspected : current.telegraphs;
+            return { component: CombatTelegraphHud, props: { focused: inspected.length > 0,
                 entries: threats.map(threat => ({ key: `${threat.actionId}:${threat.sourceSubactionId}`,
                     name: current.rows.find(row => row.kind === 'monster' && row.id === threat.sourceEntityId)?.name ?? null,
                     phase: threat.phase })) } };

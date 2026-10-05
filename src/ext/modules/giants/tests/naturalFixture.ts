@@ -180,8 +180,8 @@ export function walkNaturalToDepth(game: Game, depth = 3, recover = false): void
 export function giantsState(game: Game): GiantsState {
   return game.toSnapshot().extensions!.modules.giants as unknown as GiantsState;
 }
-export function naturalGiants(ids: readonly string[] = ['giants']) {
-  const game = startGiants(ids);
+export function naturalGiants(ids: readonly string[] = ['giants'], mode: 'normal' | 'wizard' = 'normal') {
+  const game = startGiants(ids, GIANTS_ACCEPTANCE_SEED, mode);
   walkNaturalToDepth(game);
   const state = giantsState(game),
     boss = game.monsters.find((m) => m.id === state.bosses[0]?.primaryId);

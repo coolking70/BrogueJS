@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Graphics } from 'pixi.js';
+import { effectScope, ref } from 'vue';
+import { DialogService } from '../../../../ui/dialogService';
+import { useCombatUi } from '../ui/useCombatUi';
 import { Game } from '../../../../engine/Core/Game';
 import { squareDisplayScene } from '../../../../test/support/squareDisplayScene';
 import { logger } from '../../../../engine/Systems/Logger';
@@ -119,6 +122,34 @@ describe('EXT-3b development warning fixture', () => {
         expect(fixture.telegraphs[0]!.cells).toContainEqual({ ...game.player.loc });
         for (const name of ['toSnapshot', 'toSaveSnapshot', 'exportRecording'] as const) expect(() => game[name]()).toThrow('fixture');
         remove(); expect((window as unknown as Record<string, unknown>).debug_combat_telegraphs).toBeUndefined();
+    });
+    it('real active warning survives attack direction confirmation and Cancel with exact mechanical state and RNG', () => {
+        const game = new Game(); game.startNewGame({ seed: 403003, mode: 'test', ruleSet: 'extended', extensions: ['combat'] });
+        squareDisplayScene(game); game.monsters = []; game.monsterListsChanged();
+        const fixture = placeCombatTelegraphFixture(game); expect(fixture.telegraphs).toHaveLength(1);
+        const dialogs = new DialogService(), scope = effectScope();
+        disposers.push(() => { scope.stop(); dialogs.dispose(); });
+        const ui = scope.run(() => useCombatUi({ game: () => game, dialogs, tick: ref(0), immersive: ref(false),
+            readDisplayFrame: () => observeDisplayFrame(game, logger), isPresentationBusy: () => false,
+            canOpenPanel: () => true, beforeOpenPanel: () => {}, afterClosePanel: () => {},
+        }))!;
+        const checkpoint = () => ({ turn: game.absoluteTurnNumber, inputs: game.recordedInputEvents.length,
+            hp: game.player.hp, nutrition: game.player.nutrition, loc: { ...game.player.loc }, ticks: game.player.ticksUntilTurn,
+            state: JSON.stringify(game.extensionRuntime!.actorActionBinding()!.state), rng: rng.getState(),
+            pending: game.pendingCommandConfirmation, acknowledgment: logger.pendingAcknowledgment });
+        const before = checkpoint(), command = vi.spyOn(game, 'executeCommand');
+        const warnings = ui.hud.value!.props.entries;
+        (ui.bar.value!.props.onAttack as (id: string) => void)('fixture.slash');
+        expect(ui.hud.value!.props.entries).toEqual(warnings);
+        game.updateHover(30, 25); // A map cell outside this source's locked ring.
+        expect(fixture.telegraphs[0]!.cells).not.toContainEqual({ x: 30, y: 25 });
+        expect(dialogs.answer(dialogs.current!.token, 'choice:e')).toBe(true);
+        expect(ui.hud.value!.props.entries).toEqual(warnings);
+        expect(dialogs.answer(dialogs.current!.token, 'close')).toBe(true); ui.refresh();
+        expect(ui.hud.value!.props.entries).toEqual(warnings);
+        expect(ui.hud.value!.props.focused).toBe(false);
+        expect(command).not.toHaveBeenCalled(); expect(checkpoint()).toEqual(before);
+        expect(readPublicCombatTelegraphs(game)).toEqual(fixture.telegraphs);
     });
     it('rejects unavailable module and no-space before changing RNG or blocking exports', () => {
         const game = new Game(); game.startNewGame({ seed: 403003, mode: 'test', ruleSet: 'extended', extensions: [] });
