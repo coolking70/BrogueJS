@@ -6,14 +6,18 @@ import { ShooterSession } from '../products/shooter/ShooterSession';
 import { idleInput } from '../products/shooter/input/InputFrame';
 import { SHOOTER_PROFILE } from '../products/shooter/profile';
 
-const input = (tick: number) => ({ ...idleInput(tick), buttons: (tick - 1) % 60 === 0 ? 1 : 0 });
+const input = (tick: number) => {
+    const phase = Math.floor((tick - 1) % 480 / 120);
+    const direction = [[127, 0], [0, 127], [-127, 0], [0, -127]][phase]!;
+    return { ...idleInput(tick), moveX: direction[0]!, moveY: direction[1]!, buttons: (tick - 1) % 60 === 0 ? 1 : 0 };
+};
 const TICKS = 18_000;
 function reference() {
     const session = new ShooterSession(42);
     for (let tick = 1; tick <= TICKS; tick++) session.advanceTick(input(tick));
     return session.snapshot();
 }
-describe('S0 ten-minute mechanical determinism', () => {
+describe('S1 ten-minute movement and action determinism', () => {
     it.each([30, 60, 144])('matches headless after 600 simulated seconds at %i render FPS without backlog', fps => {
         const expected = reference(), session = new ShooterSession(42), host = new SimulationHost(session);
         const driver = new RealtimeSimulationDriver(SHOOTER_PROFILE.simulation, () => host.step(input(host.tick + 1)));

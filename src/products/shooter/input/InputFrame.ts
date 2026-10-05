@@ -6,7 +6,7 @@ export interface InputFrame {
     readonly buttons: number;
 }
 
-export const S0_PULSE_BUTTON = 1;
+export const PULSE_BUTTON = 1;
 export function validateInputFrame(value: unknown, expectedTick: number): asserts value is InputFrame {
     const frame = value as InputFrame | null;
     if (!frame || typeof frame !== 'object' || Array.isArray(frame)
@@ -20,10 +20,10 @@ export function validateInputFrame(value: unknown, expectedTick: number): assert
         || !Number.isInteger(frame.moveX) || Math.abs(frame.moveX) > 127
         || !Number.isInteger(frame.moveY) || Math.abs(frame.moveY) > 127
         || !Number.isInteger(frame.aimAngle) || frame.aimAngle < 0 || frame.aimAngle > 4095
-        || !Number.isInteger(frame.buttons) || frame.buttons < 0 || frame.buttons > S0_PULSE_BUTTON)
+        || !Number.isInteger(frame.buttons) || frame.buttons < 0 || frame.buttons > PULSE_BUTTON)
         throw new Error('Invalid or out-of-order input frame');
-    // Reserve the protocol fields without pretending that S1/S2 capabilities exist.
-    if (frame.moveX !== 0 || frame.moveY !== 0 || frame.aimAngle !== 0) throw new Error('S0 spatial input is not open');
+    // S1 opens movement only. Aiming/firearms belong to S2.
+    if (frame.aimAngle !== 0) throw new Error('S1 aiming input is not open');
 }
 
 export function idleInput(tick: number): InputFrame {

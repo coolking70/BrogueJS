@@ -146,6 +146,8 @@
     "src/test/search_progress_hud.test.ts",
     "src/test/sfc_harness.test.ts",
     "src/test/shooter_frame_independence.test.ts",
+    "src/test/shooter_kinematics.test.ts",
+    "src/test/shooter_movement_protocol.test.ts",
     "src/test/shooter_realtime_clock.test.ts",
     "src/test/shooter_replay_clock.test.ts",
     "src/test/slaying_melee_autohit.test.ts",

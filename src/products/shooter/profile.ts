@@ -1,8 +1,8 @@
 import type { ProductProfile } from '../../engine/Simulation/SimulationProfile';
 
-/** S0 is a versioned clock/action laboratory, not a firearm or spatial capability. */
+/** S1 adds hybrid kinematics. S0 snapshots intentionally do not migrate. */
 export const SHOOTER_PROFILE: ProductProfile = Object.freeze({
-    id: 'shooter-s0', version: 1,
+    id: 'shooter-s1', version: 2,
     simulation: Object.freeze({ id: 'shooter-realtime-30', ticksPerSecond: 30 }),
-    modules: Object.freeze([]), inputModel: 'input-frame', spatialModel: 'grid',
+    modules: Object.freeze([]), inputModel: 'input-frame', spatialModel: 'hybrid-kinematic',
 });

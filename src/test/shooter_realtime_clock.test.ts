@@ -94,7 +94,7 @@ describe('S0 production scheduler integration', () => {
         const session = new ShooterSession(), before = session.snapshot();
         const getter = vi.fn(() => 1), accessor = { ...idleInput(1) };
         Object.defineProperty(accessor, 'tick', { get: getter, enumerable: true });
-        for (const input of [idleInput(2), { ...idleInput(1), moveX: 1 }, { ...idleInput(1), buttons: 2 }, accessor]) {
+        for (const input of [idleInput(2), { ...idleInput(1), moveX: 128 }, { ...idleInput(1), buttons: 2 }, accessor]) {
             expect(() => session.advanceTick(input)).toThrow();
             expect(session.snapshot()).toEqual(before);
         }

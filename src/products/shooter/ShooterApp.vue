@@ -4,16 +4,30 @@ import { useTranslation } from 'i18next-vue';
 import { SimulationHost } from '../../engine/Simulation/SimulationHost';
 import { RealtimeSimulationDriver } from '../../engine/Simulation/RealtimeSimulationDriver';
 import { InputFrameAssembler } from './input/InputFrameAssembler';
-import { canonicalState, MAX_S0_TICKS, replayShooter, ShooterSession } from './ShooterSession';
+import { canonicalState, MAX_SHOOTER_TICKS, replayShooter, ShooterSession } from './ShooterSession';
 import { SHOOTER_PROFILE } from './profile';
 import ShooterCanvas from './components/ShooterCanvas.vue';
+import MovementStick from './components/MovementStick.vue';
+import { KeyboardMovement, gamepadMovement } from './input/MovementAdapters';
 
 const { t } = useTranslation();
-const STORAGE_KEY = 'broguejs-shooter-s0-checkpoint-v1';
+const STORAGE_KEY = 'broguejs-shooter-s1-checkpoint-v2';
 let session = new ShooterSession();
 let host = new SimulationHost(session);
 const input = new InputFrameAssembler();
-const makeDriver = () => new RealtimeSimulationDriver(SHOOTER_PROFILE.simulation, () => host.step(input.next(host.tick + 1)));
+const keyboard = new KeyboardMovement();
+let touch = { x: 0, y: 0, active: false };
+const padConnected = ref(false);
+function clearInput(): void { input.clear(); keyboard.clear(); touch = { x: 0, y: 0, active: false }; }
+function sampleMovement(): void {
+    const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : [];
+    const pad = Array.from(pads).find(value => value?.connected && value.mapping === 'standard');
+    padConnected.value = !!pad;
+    const keys = keyboard.sample();
+    const sample = touch.active ? touch : keys.x || keys.y ? keys : gamepadMovement(pad);
+    input.setMovement(sample.x, sample.y);
+}
+const makeDriver = () => new RealtimeSimulationDriver(SHOOTER_PROFILE.simulation, () => { sampleMovement(); host.step(input.next(host.tick + 1)); });
 let driver = makeDriver();
 const snapshots = shallowRef(host.snapshots());
 const clock = shallowRef(driver.sample());
@@ -45,11 +59,11 @@ function fail(error: unknown): void {
 }
 function replace(next: ShooterSession): void {
     session = next; host = new SimulationHost(session); driver = makeDriver(); driver.pause();
-    input.clear(); failed.value = false; publish();
+    clearInput(); failed.value = false; publish();
 }
 function toggle(): void {
     if (driver.paused) driver.resume(); else driver.pause();
-    input.clear(); publish();
+    clearInput(); publish();
 }
 function step(): void {
     try { host.step(input.next(host.tick + 1)); publish(); } catch (error) { fail(error); }
@@ -66,7 +80,7 @@ function load(): void {
     catch (error) { message.value = t('shooter.error', { reason: String(error) }); }
 }
 function verify(): void {
-    driver.pause(); input.clear();
+    driver.pause(); clearInput();
     try {
         const replayed = replayShooter(session.exportReplay());
         if (canonicalState(replayed.snapshot()) !== canonicalState(session.snapshot())) throw new Error('State mismatch');
@@ -76,23 +90,31 @@ function verify(): void {
 function exportReplay(): void {
     const blob = new Blob([JSON.stringify(session.exportReplay())], { type: 'application/json' });
     const url = URL.createObjectURL(blob), link = document.createElement('a');
-    link.href = url; link.download = 'broguejs-shooter-s0-replay.json'; link.click(); URL.revokeObjectURL(url);
+    link.href = url; link.download = 'broguejs-shooter-s1-replay.json'; link.click(); URL.revokeObjectURL(url);
 }
 async function importReplay(event: Event): Promise<void> {
     const element = event.target as HTMLInputElement, file = element.files?.[0];
     if (!file) return;
-    driver.pause(); input.clear(); publish();
+    driver.pause(); clearInput(); publish();
     try {
         if (file.size > 20 * 1024 * 1024) throw new Error('Replay exceeds 20 MiB');
         replace(replayShooter(JSON.parse(await file.text()))); message.value = t('shooter.imported');
     } catch (error) { message.value = t('shooter.error', { reason: String(error) }); }
     element.value = '';
 }
-function visibility(): void { if (document.hidden && !failed.value) { driver.pause(); input.clear(); publish(); } }
+function keyEvent(event: KeyboardEvent): void {
+    if (event.type === 'keyup') { keyboard.key(event.code, false); return; }
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('input, textarea, select, [contenteditable]')) return;
+    if (event.type === 'keydown' && (driver.paused || failed.value || event.metaKey || event.ctrlKey || event.altKey)) return;
+    if (keyboard.key(event.code, event.type === 'keydown')) event.preventDefault();
+}
+function blur(): void { if (!failed.value) { driver.pause(); clearInput(); publish(); } }
+function visibility(): void { if (document.hidden && !failed.value) { driver.pause(); clearInput(); publish(); } }
 function animate(timestampMs: number): void {
     if (!failed.value) {
         try {
-            if (host.tick >= MAX_S0_TICKS) { driver.pause(); message.value = t('shooter.limit'); }
+            if (host.tick >= MAX_SHOOTER_TICKS) { driver.pause(); message.value = t('shooter.limit'); }
             clock.value = driver.pump(Math.round(timestampMs * 1000)); snapshots.value = host.snapshots();
         } catch (error) { fail(error); }
     }
@@ -101,9 +123,11 @@ function animate(timestampMs: number): void {
 onMounted(() => {
     try { saved.value = localStorage.getItem(STORAGE_KEY) !== null; } catch { /* Storage is optional. */ }
     document.addEventListener('visibilitychange', visibility);
+    window.addEventListener('keydown', keyEvent); window.addEventListener('keyup', keyEvent); window.addEventListener('blur', blur);
     frameId = requestAnimationFrame(animate);
 });
-onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListener('visibilitychange', visibility); });
+onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListener('visibilitychange', visibility);
+    window.removeEventListener('keydown', keyEvent); window.removeEventListener('keyup', keyEvent); window.removeEventListener('blur', blur); });
 </script>
 
 <template>
@@ -118,6 +142,16 @@ onBeforeUnmount(() => { cancelAnimationFrame(frameId); document.removeEventListe
       <div><label>{{ t('shooter.backlog') }}</label><strong :class="{ warning: clock.backlogTicks > 0 }">{{ clock.backlogTicks }}</strong></div>
     </section>
     <ShooterCanvas :previous="snapshots.previous" :current="snapshots.current" :alpha="clock.alpha" />
+    <section class="movement-panel">
+      <MovementStick :disabled="clock.paused || failed" @move="touch = $event" />
+      <div class="movement-readout">
+        <p class="movement-help">{{ t('shooter.movementHelp') }}</p>
+        <p>{{ padConnected ? t('shooter.gamepadConnected') : t('shooter.gamepadHint') }}</p>
+        <p data-testid="position">{{ t('shooter.position', { x: snapshots.current.actors[0]!.pose.x, y: snapshots.current.actors[0]!.pose.y }) }}</p>
+        <p data-testid="environment">{{ t('shooter.environment', snapshots.current.actors[0]!.contactTicks) }}</p>
+      </div>
+    </section>
+    <p class="legend">{{ t('shooter.legend') }}</p>
     <section class="actors">
       <article v-for="(actor, index) in snapshots.current.actors" :key="actor.id">
         <h2>{{ index === 0 ? t('shooter.manualActor') : t('shooter.autoActor') }}<span>{{ phaseLabel(phases[index]) }}</span></h2>
@@ -159,6 +193,7 @@ h1 span { color: #91a586; font-size: 15px; letter-spacing: 0; display: inline-bl
 .metrics { display: grid; grid-template-columns: repeat(4, 1fr); margin: 28px 0 25px; gap: 16px; }
 .metrics div { border-left: 1px solid #3a4b3e; padding-left: 16px; }.metrics label { font-size: 12px; color: #9aac9c; display: block; margin-bottom: 8px; }
 .metrics strong { font: 32px ui-monospace, monospace; } .metrics small { font: 12px sans-serif; margin-left: 8px; color: #91a586; }.warning { color: #eaa573; }
+.movement-panel { display: flex; align-items: center; gap: 24px; margin: 16px 0 8px; }.movement-readout { min-width: 0; color: #9aac9c; font-size: 12px; line-height: 1.6; }.movement-readout p { margin: 5px 0; }.movement-help { color: #d2e5c4; }.legend { color: #879b8d; font-size: 12px; }
 .actors { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 14px 6px 12px; }
 h2 { font-size: 14px; font-weight: 500; margin: 10px 0; } .actors h2 span { color: #9dac90; float: right; font-size: 12px; }
 .actors article:nth-child(2) h2 { color: #8dc6e0; }.actors p, .persistence p { color: #879b8d; font-size: 12px; line-height: 1.7; }
@@ -170,5 +205,5 @@ button:hover, .file-button:hover { background: #293b2c; }button.primary { color:
 .persistence { margin-top: 26px; border-top: 1px solid #304134; padding: 15px 0 5px; }.file-button input { display: none; }
 .notice { border-left: 2px solid #d2ef9b; background: #1a271d; color: #cce3b7; padding: 12px; font-size: 13px; overflow-wrap: anywhere; }
 footer { color: #748c7b; font-size: 11px; line-height: 1.8; margin-top: 26px; }
-@media (max-width: 600px) { .lab { padding: 24px 18px; }.metrics { gap: 8px; }.metrics div { padding-left: 9px; }.metrics strong { font-size: 24px; }h1 span { display: block; margin: 10px 0 0; }.actors { gap: 18px; }.actors h2 span { float: none; display: block; margin-top: 8px; }.seed { margin-left: 0; } }
+@media (max-width: 600px) { .lab { padding: 24px 18px; }.movement-panel { gap: 14px; }.movement-readout { font-size: 11px; }.metrics { gap: 8px; }.metrics div { padding-left: 9px; }.metrics strong { font-size: 24px; }h1 span { display: block; margin: 10px 0 0; }.actors { gap: 18px; }.actors h2 span { float: none; display: block; margin-top: 8px; }.seed { margin-left: 0; } }
 </style>
