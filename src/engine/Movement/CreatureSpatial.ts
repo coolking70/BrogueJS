@@ -139,9 +139,10 @@ export function squareMovementSize(creature: Creature, catalog = spatialCatalogF
     if (!Object.prototype.hasOwnProperty.call(creature, 'spatial')) return 1;
     validateSpatialComponent(creature.spatial, catalog, false);
     const s = creature.spatial!;
+    const conversionLock = !catalog.fixture && !!(creature as Creature & { bodyTransitionHistory?: readonly string[] }).bodyTransitionHistory?.length;
     const boundedSingle = s.footprintId === 'builtin:single' && s.movementRegionId !== undefined;
     if (!(boundedSingle || ['builtin:square-2', 'builtin:square-3'].includes(s.footprintId)) || s.pose !== 'r0'
-        || Object.keys(s).some(k => !['schema', 'footprintId', 'pose', 'movementRegionId'].includes(k))) {
+        || Object.keys(s).some(k => !['schema', 'footprintId', 'pose', 'movementRegionId', ...(conversionLock ? ['actionLockInTicks'] : [])].includes(k))) {
         throw new SpatialValidationError('Spatial capability is not open: Square movement requires an independent unzoned r0 square');
     }
     return s.footprintId === 'builtin:single' ? 1 : s.footprintId === 'builtin:square-2' ? 2 : 3;
@@ -153,9 +154,10 @@ export function rigidMovementFootprint(creature: Creature, catalog = spatialCata
     try { validateSpatialComponent(creature.spatial, catalog, false); }
     catch (error) { if (!catalog.fixture) throw new SpatialValidationError(`Spatial capability is not open: ${(error as Error).message}`); throw error; }
     const definition = catalog.definition(creature.spatial!.footprintId), zoned = !!definition.zones?.length;
+    const conversionLock = !catalog.fixture && !!(creature as Creature & { bodyTransitionHistory?: readonly string[] }).bodyTransitionHistory?.length;
     if (catalog.fixture && definition.zones?.some(z => z.health.kind === 'local')) throw new SpatialValidationError('Fixture local zones are not open for native actions');
     if (Object.keys(creature.spatial!).some(k => !['schema', 'footprintId', 'pose', 'movementRegionId',
-        ...(zoned && !catalog.fixture ? ['zoneState', 'actionLockInTicks'] : [])].includes(k)))
+        ...(zoned && !catalog.fixture ? ['zoneState', 'actionLockInTicks'] : []), ...(conversionLock ? ['actionLockInTicks'] : [])].includes(k)))
         throw new SpatialValidationError('Rigid movement requires an independent body without locks or local health');
     return rigidFootprint(catalog, creature.spatial!.footprintId);
 }

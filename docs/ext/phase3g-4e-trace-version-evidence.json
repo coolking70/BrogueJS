@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "purpose": "Reconcile upstream phase4e natural giants traces with foundation version 5, without changing trace assertions or natural state",
+  "sourceIndexTree": "a284120c8ec1b8c2db9c256fed72bc9ee2cb8e31",
+  "upstreamFixtureCommit": "97988d5cb94196d388f0a53ccac25bf5b1b5ff57",
+  "upstreamFixturesByteIdentical": true,
+  "counterfactual": {
+    "onlyChange": "Twelve numeric foundation-version 5-to-4 literals across eight production descriptor, registry, runtime and type files",
+    "files": [
+      "src/ext/descriptor.ts",
+      "src/ext/modules/combat/descriptor.ts",
+      "src/ext/modules/giants/descriptor.ts",
+      "src/ext/modules/growth/descriptor.ts",
+      "src/ext/modules/narrative/descriptor.ts",
+      "src/ext/registry.ts",
+      "src/ext/runtime.ts",
+      "src/ext/types.ts"
+    ],
+    "patchSHA256": "df88400e69e5b426f40c0a49a2cbe72415b37f75fc3826b963f30efbabc3ef36",
+    "originalTraceTestsAndFixturesUnmodified": true
+  },
+  "commands": [
+    {
+      "copy": "candidate",
+      "command": "npx vitest run src/ext/modules/giants/tests/giants_trace.test.ts src/ext/modules/giants/tests/giants_spine_trace.test.ts --maxWorkers=1",
+      "exit": 1,
+      "testFiles": 2,
+      "tests": 3,
+      "log": "/tmp/giants-foundation-4e-audit.h2d0Ud/evidence/original-tests-candidate.log"
+    },
+    {
+      "copy": "counterfactual",
+      "command": "npx vitest run src/ext/modules/giants/tests/giants_trace.test.ts src/ext/modules/giants/tests/giants_spine_trace.test.ts src/ext/modules/giants/tests/giants_contract.test.ts --maxWorkers=1",
+      "exit": 0,
+      "testFiles": 3,
+      "tests": 6,
+      "log": "/tmp/giants-foundation-4e-audit.h2d0Ud/evidence/original-tests-version4.log"
+    },
+    {
+      "copy": "counterfactual",
+      "command": "npm run check:modules",
+      "exit": 0,
+      "log": "/tmp/giants-foundation-4e-audit.h2d0Ud/evidence/counterfactual-boundary-guard.log"
+    },
+    {
+      "copy": "candidate",
+      "command": "BROGUE_CAPTURE_GIANTS_TRACE=1 npx vitest run src/ext/modules/giants/tests/giants_trace.test.ts src/ext/modules/giants/tests/giants_spine_trace.test.ts --maxWorkers=1",
+      "exit": 0,
+      "testFiles": 2,
+      "tests": 3,
+      "log": "/tmp/giants-foundation-4e-audit.h2d0Ud/evidence/candidate-capture.log"
+    },
+    {
+      "copy": "candidate",
+      "command": "npx vitest run src/ext/modules/giants/tests/giants_trace.test.ts src/ext/modules/giants/tests/giants_spine_trace.test.ts src/ext/modules/giants/tests/giants_contract.test.ts --maxWorkers=1",
+      "exit": 0,
+      "testFiles": 3,
+      "tests": 6,
+      "log": "/tmp/giants-foundation-4e-audit.h2d0Ud/evidence/candidate-replay-no-capture.log"
+    },
+    {
+      "copy": "candidate",
+      "command": "npm run check:modules",
+      "exit": 0,
+      "log": "/tmp/giants-foundation-4e-audit.h2d0Ud/evidence/candidate-boundary-guard.log"
+    }
+  ],
+  "changedLeaves": 3,
+  "changedField": "extensionsHash",
+  "unchanged": "Every other JSON leaf, including nativeWorldHash, commands, commandsHash, full RNG, state, boss and region where present",
+  "fixtures": [
+    {
+      "path": "src/ext/modules/giants/data/natural-trace.json",
+      "beforeExtensionsHash": "07efe2dd34417e3e05f10be9bb76b44068f84098f527d32840a4c472305db9f2",
+      "afterExtensionsHash": "d6add3168e56d8e06c54114057dbbc84a6ac82b7d793310403cce472e9c3106e",
+      "beforeFileSHA256": "2f1ff7c83d851ba5a4f453296fef053eba3fa52c5610dd70410504360c258774",
+      "afterFileSHA256": "7b892bad55e66aceecfe50aef6583c3d20f8d994c2440d33767e31a7dce72714"
+    },
+    {
+      "path": "src/ext/modules/giants/data/colossus-natural-trace.json",
+      "beforeExtensionsHash": "250908fddb929fa40c632bb17379807b13ba3a42e511ef8aa2106a14881a1091",
+      "afterExtensionsHash": "1f13bb1522f8d419f449a20e4ad045ea86632d0883ae0bbee9ecd95b5ee07bae",
+      "beforeFileSHA256": "5a4c68a86bed5ee0f13c56cc59f270d87ae9842da317e3e155c59210c3c47f44",
+      "afterFileSHA256": "b15fb64db5141b45e20e9ae4799b2e64021905c7cd85a1dae26d768b07b12824"
+    },
+    {
+      "path": "src/ext/modules/giants/data/spine-natural-trace.json",
+      "beforeExtensionsHash": "450076d56e03b07559dcef909700a4c6f69b0b2cbbc24b827139d6895071fea4",
+      "afterExtensionsHash": "fc59ea17b3a145f597d00d6b0c1d3ffef0cff19a8c92e99872f69d637e4eae45",
+      "beforeFileSHA256": "dbb76c5ddcb81f3c0d06b9f99e0d632d4416c4f31613fd2a8974c4c3d5ad1568",
+      "afterFileSHA256": "11efe17b7bd664aff6df5025616400378878a7209415f641d76992523f66ea77"
+    }
+  ],
+  "fixturePatchSHA256": "2460f70954b031547a23821e044315b214941cb23f1638f902239bb474a887ea",
+  "rawEvidenceRoot": "/tmp/giants-foundation-4e-audit.h2d0Ud/evidence",
+  "scope": "Focused trace attribution and original guards only; not a replacement for final merged-source gates"
+}

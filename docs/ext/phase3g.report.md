@@ -105,3 +105,13 @@ v3 boundary/type/build均exit0；139相关文件完整跑完：137文件通过/2
 ## 4e合并前完整冻结门禁（17af360）
 
 v4统一运行全部8门通过，933份源码输入每门前后一致。139相关文件2791项＋自然1文件5项全绿；16个engine-only组合通过；drift4文件5项通过；boundary/type/build/terrain白名单通过。自然长测938.869s，原期限未改。完整命令、耗时、源码散列与文件清单见`evidence/phase3g-pre-4e-gates.json`。维护者在自然长测进行中要求再合入4e的97988d5，因此这些是明确的合并前证据，不替代合并后交付门禁。
+
+## 4e（97988d5）并入与交叉事务修复
+
+维护者要求交付前合入完整4e；先完成原冻结自然长测，再fetch并合并`97988d5`，不打断长测或混称前后结果。保留4e的主动phase/split/clone/summon、显式成员映射与无死亡退休、零奖励后裔、多subject遭遇与可见帧分组，foundation仍为3g分配的5。runtime冲突取已提交事实/actor查询与4e声明冻结/历史校验的并集；成长provider与rewardEligible:false拒奖同时保留，测试清单取并集。
+
+独立预审发现外层3g事实事务缺少4e窄事务已覆盖的光照深状态与Game自身属性顺序。新增真实4e换形成功、后置combat消费者抛错的全对象图回归先红：2291个既有光照颜色引用差异，以及bodyGroups删除/恢复后Game属性顺序变化。最小修复只在checkpointCombatFactWorld增加当前/缓存lightMap深写集，并把Game自身加入descriptor顺序恢复；不重写内部4e事务。新测试`src/test/ext_combat_transition_facts.test.ts`在四模块共同启用时覆盖phase/split、退休来源事实身份、显式成员映射后的可信/伪造引用、全图/原对象身份/动作行/两RNG/ID/模块/事实计数恢复、正常重试、真实stagger及真实玩家命令驱动的主动split后两段attack。
+
+三份giants trace不能选任一侧旧hash。暂用97988d5原fixture，在不可变合并index树`a284120c8ec1b8c2db9c256fed72bc9ee2cb8e31`隔离审计：原测试仅三个extensionsHash失败；只改12处foundation5→4字面量后原trace＋contract3文件6项全绿。恢复5、原捕获入口重录后独立无capture重放与边界守卫全绿。实际只有三个extensionsHash叶子变化，原生世界/命令/RNG/遭遇/区域逐字段不变。精确命令、退出码、源树与新hash见`phase3g-4e-trace-version-evidence.json`；后续Game checkpoint补丁由最终完整门禁再验证。
+
+交叉修复最终专项：`npx vitest run src/test/ext_combat_transition_facts.test.ts src/test/ext_combat_adapter_foundation.test.ts src/test/phase4e_body_transition.test.ts --maxWorkers=1`，3文件66项通过，exit0，40.71s；vue-tsc与diff检查通过。独立合并复核确认6个共享生产文件完整保留两侧增量、22个上游独占文件逐字一致、清单并集无重复、foundation5保持、最小checkpoint修复与4个新回归无阻断。

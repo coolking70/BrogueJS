@@ -21,6 +21,7 @@ defineProps<{ model: BossHudModel; presentationHidden?: boolean }>();
       />
     </div>
     <div v-if="model.zone" class="boss-zone">{{ zoneStatusText(model.zone) }}</div>
+    <div v-if="model.descendants" class="boss-members">{{ i18next.t('ext.giants.ui.descendants', { count: model.descendants }) }}</div>
     <div v-if="model.members" class="boss-members">{{ model.members.broken === undefined
       ? i18next.t('ext.giants.ui.members_visible', { alive: model.members.alive })
       : i18next.t('ext.giants.ui.members', { alive: model.members.alive, broken: model.members.broken }) }}</div>

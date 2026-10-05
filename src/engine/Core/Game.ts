@@ -1,3 +1,5 @@
+import { assertBodyTransitionRequest, bodyTransitionHp } from '../Movement/BodyTransition';
+import type { ActiveBodyTransition, BodyTransitionRequest, BodyTransitionFact } from '../../ext/bodyTransitions';
 import { checkpointSpatialTerrain } from '../Movement/SpatialRevision';
 import { validateActorCombatCapacities } from './PhasedAttackProduction';
 import { resolveActorQueryScope } from '../../ext/actorQuery';
@@ -458,6 +460,7 @@ export class Game {
         const display=[this.lightMap,...cached.map(level=>level.lightMap)].map(light=>light.checkpointRenderState());
         const restore=checkpointGenerationWorld(()=>({shallow:[this],
             deep:[this.player,creatures,this.squareMotion,this.grid,this.environment,this.fov,this.scent,this.waypoints,
+                this.lightMap,...cached.map(level=>level.lightMap),
                 this.monsters,this.dormantMonsters,this.purgatory,this.items,this.levels,this.pendingFallenByDepth,
                 this.pendingFallenItemsByDepth,this.bodyGroups,this.stats,this.visibleMonsters,this.visibleItems,
                 this.seenBodyCoreIds,this.machineCells,this.monsterPathCache,this.safetyMap,this.loopMap,this.minersLight,this.squareLandingRetry,
@@ -466,7 +469,9 @@ export class Game {
                 ItemLoader.identifiedItems,ItemLoader.callTitles,ItemLoader.magicPolarityRevealed],
             references:[runtime,runtime.causality,...display.flatMap(state=>state.references)],
             restoreSession:display.map(state=>state.restore)}));
-        const descriptors=actors.map(actor=>({actor,descriptors:Object.getOwnPropertyDescriptors(actor)}));
+        // A successful nested body transition may delete/reinsert Game fields
+        // before a later fact consumer fails. Preserve their own-key order too.
+        const descriptors=[this,...actors].map(actor=>({actor,descriptors:Object.getOwnPropertyDescriptors(actor)}));
         const restoreActions=checkpointProductionActorActions(this), restoreDefense=checkpointPhasedAttackSources(this),
             restoreRevisions=checkpointSpatialActorRevisions(actors), restoreLog=logger.checkpoint();
         const invalid=isProductionActorActionRunInvalid(this), origin=recordingState(this).origin,machine=getNextMachineNumber();
@@ -6126,7 +6131,7 @@ export class Game {
     }
 
     private polymorphBoltTarget(target: Creature | undefined): boolean {
-        if (this.spatialCatalog.hasBodies) return this.polymorphWholeBody(target);
+        if (this.extensionRuntime?.nativeForms().length) return this.polymorphWholeBody(target);
         const square = !!target?.spatial || !!this.extensionRuntime?.nativeForms().length;
         if (!(target instanceof Monster) || !target.polymorph(() => this.demoteMonsterFromLeadership(target), data => {
             // Unpublished value candidate: no constructor, allocator, generation,
@@ -6157,74 +6162,255 @@ export class Game {
         const target = contact && bodyDecisionActor(contact);
         if (!(target instanceof Monster) || !this.monsters.includes(target) || target.hp <= 0
             || target.hasBehavior('MONST_INANIMATE') || target.hasBehavior('MONST_TURRET') || target.isInvulnerable()) return false;
-        const runtime = this.extensionRuntime!, forms = runtime.nativeForms().map(nativeFormData);
+        const forms = this.extensionRuntime!.nativeForms().map(nativeFormData);
         if (!knownPolymorphSpecies(target.typeId, forms) && !(target.isClone && target.typeId === 'player_clone')) return false;
         const beforeRandom = rng.getState();
         const data = polymorphSpecies(target.typeId, rng, forms, id => !this.spatialCatalog.isPeripheralForm(id));
-        const oldGroup = this.bodyGroups?.find(g => g.coreId === target.id);
-        const oldActors = oldGroup ? this.monsters.filter(m => m.spatial?.bodyMember?.groupId === oldGroup.groupId) : [target];
-        const definition = this.spatialCatalog.bodyForCoreForm(data.id), value = target.copyForBodyPlan();
-        // Match nativeMaximumBase's CE injury/proportion calculation without
-        // invoking live growth hooks on an unpublished conversion value.
-        if (target.extensionHooks?.nativeMaximumBase) {
-            const combined = value.maxHp;
-            value.maxHp = target.extensionHooks.nativeMaximumBase(target);
-            value.hp = Math.min(value.hp, value.maxHp) + Math.max(0, value.hp - combined);
+        const result = this.transitionBody({ sourceGroupId: target.id, reason: 'polymorph', results: [{ formId: data.id, memberMap: [] }],
+            hp: 'polymorph', statuses: 'clear', relationships: 'native-polymorph', placement: 'nearest' }, null, beforeRandom);
+        return result.outcome === 'applied' && !target.hasStatus('invisible');
+    }
+
+    /** Engine-only topology transaction. Modules declare finite DTOs; they never
+     * receive this method, native actors, allocator or a mutable world port. */
+    public transitionBody(request: BodyTransitionRequest, moveId: string | null = null, rollbackRandom = rng.getState()): BodyTransitionFact {
+        let result!: BodyTransitionFact;
+        this.commitBodyTransition('body-transition-request', () => { result = this.prepareAndCommitBodyTransition(request, moveId, rollbackRandom); }, rollbackRandom, true);
+        return result;
+    }
+    private prepareAndCommitBodyTransition(request: BodyTransitionRequest, moveId: string | null, rollbackRandom: ReturnType<typeof rng.getState>): BodyTransitionFact {
+        assertBodyTransitionRequest(request);
+        const runtime = this.extensionRuntime, core = this.monsters.find(m => m.id === request.sourceGroupId);
+        if (!runtime || !core || core.hp <= 0 || core.isDormant || !this.isBodyDecisionOwner(core.id))
+            throw new Error('Invalid body transition source');
+        const sourceGroup = this.bodyGroups?.find(g => g.coreId === core.id);
+        const oldActors = sourceGroup ? this.orderedBodyActors(sourceGroup, this.monsters) : [core];
+        const previousBodies = new Map(oldActors.map(actor => [actor.id, footprintOf(actor)]));
+        const copy = request.reason === 'clone' || request.reason === 'summon';
+        const forms = runtime.nativeForms(), mapped = new Set<number>(), firstId = getNextEntityId();
+        let nextId = firstId;
+        const originalGrid = this.grid;
+        const revision = () => JSON.stringify({ depth: this.depth, groups: this.bodyGroups,
+            actors: [...this.monsters, ...this.dormantMonsters].map(a => [a.id,a.hp,a.typeId,a.loc,a.spatial]),
+            player: this.player.loc, allocator: getNextEntityId() });
+        // The terrain token observes actual layer writers; the object signature
+        // also catches dynamic occupancy, group/HP and allocator changes.
+        const terrain = spatialTerrainRevision(this.grid, this), before = revision();
+        const staged = request.results.map((result, resultIndex) => {
+            const native = forms.find(f => f.id === result.formId);
+            const data = native ? nativeFormData(native) : (monsterData as MonsterData[]).find(f => f.id === result.formId);
+            if (!data || request.reason !== 'polymorph' && !native || this.spatialCatalog.isPeripheralForm(result.formId))
+                throw new Error('Uninstalled transition form');
+            if (copy && (result.formId !== core.typeId || result.memberMap.length)) throw new Error('Copy must retain source topology');
+            const definition = copy && sourceGroup ? this.spatialCatalog.body(sourceGroup.bodyDefinitionId) : this.spatialCatalog.bodyForCoreForm(data.id);
+            if (request.reason === 'phase' && sourceGroup?.appliedBreaks.length && definition?.id === sourceGroup.bodyDefinitionId)
+                throw new Error('Same-body regeneration is not open');
+            const order = definition ? bodyConstraintOrder(definition) : ['self'];
+            const retained = !copy && resultIndex === 0;
+            const map = new Map<string, Monster>();
+            for (const entry of result.memberMap) {
+                if (!entry || Object.keys(entry).sort().join(',') !== 'from,to'
+                    || !definition?.parts.some(p => p.role !== 'core' && p.partId === entry.to) || map.has(entry.to)) throw new Error('Invalid member destination');
+                const slot = sourceGroup?.members.find(s => s.partId === entry.from && s.life === 'active' && s.entityId !== sourceGroup.coreId);
+                const actor = oldActors.find(a => a.id === slot?.entityId);
+                if (!actor || mapped.has(actor.id)) throw new Error('Invalid one-to-one member map');
+                mapped.add(actor.id); map.set(entry.to, actor);
+            }
+            const parts = copy ? oldActors.map(actor => ({ actor, partId: actor.spatial?.bodyMember?.partId ?? 'self', retained: false }))
+                : order.map((partId, i) => ({ actor: i === 0 ? core : map.get(partId), partId, retained: i === 0 ? retained : map.has(partId) }));
+            const values = parts.map((part, i) => {
+                const template = i === 0 ? data : nativeFormData(forms.find(f => f.id === definition!.parts.find(p => p.partId === part.partId)!.formId)!);
+                const id = part.retained ? part.actor!.id : nextId++;
+                let value: Monster;
+                if (copy) {
+                    // Gender is sampled only after whole-batch fit, below.
+                    value = part.actor!.copyForClone({ id, removeGender: 'MONST_MALE' });
+                    if (part.actor!.behaviorFlags.has('MONST_MALE') && part.actor!.behaviorFlags.has('MONST_FEMALE'))
+                        value.behaviorFlags = new Set(part.actor!.behaviorFlags);
+                    if (value.spatial) delete value.spatial.bodyMember;
+                    value.bodyTransitionRewardless = true;
+                } else if (part.actor) {
+                    value = part.actor.copyForBodyPlan(); value.id = id;
+                    if (request.reason === 'polymorph' && part.actor.extensionHooks?.nativeMaximumBase) {
+                        const combined = value.maxHp;
+                        value.maxHp = part.actor.extensionHooks.nativeMaximumBase(part.actor);
+                        value.hp = Math.min(value.hp, value.maxHp) + Math.max(0, value.hp - combined);
+                    }
+                    // CE's passive path still owns its original status/HP policy.
+                    // Active forms use the same native data replacement, then
+                    // explicitly restore declared state/relations and HP below.
+                    // Innate active replacement is not an incoming polymorph
+                    // spell. Remove only the passive spell qualification on the
+                    // detached value; the target template owns its new flags.
+                    if (request.reason !== 'polymorph') for (const flag of ['MONST_INANIMATE','MONST_TURRET','MONST_INVULNERABLE']) value.behaviorFlags.delete(flag);
+                    if (!value.polymorph(() => {}, () => ({ ...core.loc }), template)) throw new Error('Ineligible transition actor');
+                    if (request.statuses === 'preserve') {
+                        value.statusDurations = { ...part.actor.statusDurations }; value.maxStatus = { ...part.actor.maxStatus };
+                        value.poisonAmount = part.actor.poisonAmount; value.maxShield = part.actor.maxShield;
+                        value.weaknessAmount = part.actor.weaknessAmount; value.refreshSpeeds();
+                    }
+                    if (request.relationships === 'preserve') {
+                        value.isAlly = core.isAlly; value.dominated = core.dominated; value.leader = part.actor.leader;
+                        value.isCaged = core.isCaged; value.state = core.state;
+                    }
+                    if (part.actor.spatial?.zoneState && value.spatial && template.id === part.actor.typeId)
+                        value.spatial.zoneState = structuredClone(part.actor.spatial.zoneState);
+                    if (!part.retained) { value.isClone = true; value.bodyTransitionRewardless = true; value.carriedItem = null; }
+                } else {
+                    value = new Monster(core.x, core.y, template, { id, state: core.state });
+                    const form = forms.find(f => f.id === template.id)!;
+                    value.spatial = nativeFormSpatial(form, core.spatial?.movementRegionId);
+                    value.isAlly = request.relationships === 'preserve' && core.isAlly;
+                    value.dominated = request.relationships === 'preserve' && core.dominated;
+                    value.isClone = core.isClone; value.leader = value.isAlly ? null : core.leader;
+                    value.bodyTransitionRewardless = true;
+                }
+                if (request.statuses === 'clear' && request.reason !== 'polymorph') value.clearBodyPlanStatuses();
+                if (request.relationships === 'clear') { value.isAlly = false; value.dominated = false; value.leader = null; value.isCaged = false; }
+                value.seized = value.seizing = false; value.mapToMe = null; value.safetySnapshot = null;
+                if (!part.retained) { value.carriedItem = null; value.carriedMonster = null; value.goldDropChance = value.itemDropChance = 0; }
+                if (core.bodyTransitionHistory) value.bodyTransitionHistory = [...core.bodyTransitionHistory];
+                if (value.spatial) { delete value.spatial.bodyMember; bindNativeForms(value, forms, this.spatialCatalog); }
+                if (!copy) {
+                    const offset = i ? definition!.parts.find(p => p.partId === part.partId)!.preferredOffset : { x: 0, y: 0 };
+                    commitCreatureAnchor(value, { x: core.x + offset.x, y: core.y + offset.y });
+                }
+                return value;
+            });
+            return { values, definition, parts, retained, order };
+        });
+        const health = request.hp === 'polymorph' ? [staged[0]!.values[0]!.hp]
+            : bodyTransitionHp(request, core.hp, core.maxHp, staged.map(s => s.values[0]!.maxHp));
+        const fail = (outcome: 'no-space' | 'budget'): BodyTransitionFact => ({ sourceGroupId: core.id, reason: request.reason, moveId,
+            outcome, resultGroupIds: [], retiredIds: [] });
+        if (!health) return fail('no-space');
+        for (const [i, stage] of staged.entries()) {
+            const value = stage.values[0]!; value.hp = health[i]!;
+            if (!copy) for (const member of stage.values.slice(1)) member.hp = Math.max(1, Math.floor(member.maxHp * value.hp / value.maxHp));
         }
-        if (!value.polymorph(() => {}, () => ({ ...target.loc }), data)) return false;
-        value.mapToMe = null; value.safetySnapshot = null;
-        const next = getNextEntityId(), order = definition ? bodyConstraintOrder(definition) : [];
-        const staged = [value, ...order.slice(1).map((partId, i) => {
-            const part = definition!.parts.find(p => p.partId === partId)!, form = runtime.nativeForms().find(f => f.id === part.formId)!;
-            const actor = new Monster(target.x + part.preferredOffset.x, target.y + part.preferredOffset.y,
-                nativeFormData(form), { id: next + i, state: value.state });
-            actor.spatial = nativeFormSpatial(form, target.spatial?.movementRegionId);
-            actor.hp = Math.max(1, Math.trunc(actor.maxHp * value.hp / value.maxHp));
-            actor.isClone = target.isClone;
-            actor.leader = value.leader;
-                bindNativeForms(actor, runtime.nativeForms(), this.spatialCatalog);
-            return actor;
-        })];
-        const places = this.wholeBodyPlacement(staged, target.loc, definition, oldActors, false);
-        if (!places.length) return false; // the species draw stays consumed; no ID/state writes
-        const at = places[Math.floor(places.length / 2)]!, wasCaged = target.isCaged, wasAllied = target.isAlly;
-        this.commitBodyTransition('body-polymorph', () => {
-            if (oldGroup) {
-                this.retireBodyEntities(oldGroup, new Set(oldGroup.members.filter(s => s.entityId !== oldGroup.coreId).map(s => s.partId)));
-                this.bodyGroups!.splice(this.bodyGroups!.indexOf(oldGroup), 1);
+        const excluded = copy ? [] : oldActors;
+        const existing = [...this.monsters, ...this.dormantMonsters].filter(a => !excluded.includes(a));
+        const all = [...existing, ...staged.flatMap(s => s.values)];
+        if (all.filter(a => a.hp > 0).length > SPATIAL_LIMITS.entities
+            || all.reduce((n,a) => n + (a.spatial ? footprintOf(a).length : 0),0) > SPATIAL_LIMITS.occupiedCells) return fail('budget');
+        let virtualWorld: SpatialWorld = { ...this.spatialWorldPort(), monsters: this.monsters.filter(a => !excluded.includes(a)),
+            dormantMonsters: this.dormantMonsters.filter(a => !excluded.includes(a)) };
+        for (const stage of staged) {
+            // Retain actual slot labels while validating a surviving formation;
+            // tombstones make array-index inference incorrect for copies.
+            if (stage.definition) stage.values.forEach((actor, i) => { actor.spatial!.bodyMember = { groupId: stage.values[0]!.id, partId: stage.parts[i]!.partId }; });
+            const places = this.wholeBodyPlacement(stage.values, core.loc, stage.definition, [], copy, undefined, virtualWorld);
+            if (!places.length) return fail('no-space');
+            const at = request.placement === 'random-nearest' ? places[rng.randRange(0, places.length - 1)]! : places[Math.floor(places.length / 2)]!;
+            const anchor = { ...stage.values[0]!.loc };
+            for (const value of stage.values) {
+                if (value.spatial) delete value.spatial.bodyMember;
+                commitCreatureAnchor(value, { x: value.x + at.x - anchor.x, y: value.y + at.y - anchor.y });
+            }
+            virtualWorld = { ...virtualWorld, monsters: [...virtualWorld.monsters, ...stage.values] };
+        }
+        for (const stage of staged) if (copy) for (const value of stage.values)
+            if (value.behaviorFlags.has('MONST_MALE') && value.behaviorFlags.has('MONST_FEMALE')) value.behaviorFlags.delete(rng.randPercent(50) ? 'MONST_MALE' : 'MONST_FEMALE');
+        if (this.grid !== originalGrid || before !== revision() || terrain !== spatialTerrainRevision(this.grid, this)) throw new Error('Stale body transition revision');
+        const retiredIds = copy ? [] : oldActors.slice(1).filter(a => !mapped.has(a.id)).map(a => a.id);
+        const fact: BodyTransitionFact = { sourceGroupId: core.id, reason: request.reason, moveId, outcome: 'applied',
+            resultGroupIds: staged.map(s => s.values[0]!.id), retiredIds };
+        const wasAllied = core.isAlly, wasCaged = core.isCaged;
+        this.commitBodyTransition(`body-${request.reason}`, () => {
+            if (this.grid !== originalGrid || before !== revision() || terrain !== spatialTerrainRevision(this.grid, this)) throw new Error('Stale body transition commit');
+            if (!copy && sourceGroup) {
+                this.retireBodyEntities(sourceGroup, new Set(sourceGroup.members.filter(s => s.entityId !== null && retiredIds.includes(s.entityId)).map(s => s.partId)));
+                this.bodyGroups!.splice(this.bodyGroups!.indexOf(sourceGroup), 1);
                 if (!this.bodyGroups!.length) delete this.bodyGroups;
             }
-            const hooks = target.extensionHooks;
-            for (const key of Object.keys(target)) if (key !== 'extensionHooks' && !(key in value)) Reflect.deleteProperty(target, key);
-            for (const [key, field] of Object.entries(value)) if (key !== 'loc' && key !== 'extensionHooks') Reflect.set(target, key, field);
-            target.extensionHooks = hooks;
-            if (target.leader && oldActors.includes(target.leader)) target.leader = null;
-            commitCreatureAnchor(target, { ...at });
-            const created = staged.slice(1);
-            for (const actor of created) {
-                commitCreatureAnchor(actor, { x: at.x + actor.x - value.x, y: at.y + actor.y - value.y });
-                actor.spawnLoc = { ...actor.loc };
-                if (actor.leader && oldActors.includes(actor.leader)) actor.leader = target;
-                markCreatureBirth(actor, 'summoned', target.id, undefined, false);
-            }
-            if (created.length) ensureEntityIdAbove(next + created.length - 1);
-            if (definition) {
-                const actors = [target, ...created];
-                const group: BodyGroupState = { schema: 1, groupId: target.id, coreId: target.id, bodyDefinitionId: definition.id,
-                    members: actors.map((actor, i) => ({ partId: order[i]!, entityId: actor.id, life: 'active', generation: 0, readyInTicks: 0 })), appliedBreaks: [] };
-                actors.forEach((actor, i) => { actor.spatial!.bodyMember = { groupId: target.id, partId: order[i]! }; });
-                (this.bodyGroups ??= []).push(group);
-            }
+            const liveStages = staged.map(stage => {
+                const live = stage.values.map((value, i) => {
+                    const original = stage.parts[i]!.retained ? stage.parts[i]!.actor! : undefined;
+                    if (!original) return value;
+                    const hooks = original.extensionHooks;
+                    for (const key of Object.keys(original)) if (key !== 'extensionHooks' && !(key in value)) Reflect.deleteProperty(original,key);
+                    for (const [key, field] of Object.entries(value)) if (key !== 'loc' && key !== 'extensionHooks') Reflect.set(original,key,field);
+                    original.extensionHooks = hooks; commitCreatureAnchor(original, { ...value.loc });
+                    return original;
+                });
+                const remap = new Map(stage.parts.flatMap((part,i) => part.actor ? [[part.actor.id, live[i]!] as const] : []));
+                for (const [i, actor] of live.entries()) {
+                    actor.spawnLoc = { ...actor.loc };
+                    if (actor.leader && remap.has(actor.leader.id)) actor.leader = remap.get(actor.leader.id)!;
+                    if (actor.leader && retiredIds.includes(actor.leader.id)) actor.leader = live[0]!;
+                    if (copy && i && !actor.isAlly) actor.leader = live[0]!;
+                    if (copy && !i && !core.leader && !core.isAlly) actor.leader = core;
+                    if (stage.definition) actor.spatial!.bodyMember = { groupId: live[0]!.id, partId: stage.parts[i]!.partId };
+                }
+                if (stage.definition) {
+                    const group: BodyGroupState = copy && sourceGroup ? structuredClone(sourceGroup) : { schema: 1, groupId: live[0]!.id, coreId: live[0]!.id,
+                        bodyDefinitionId: stage.definition.id, members: stage.parts.map((part,i) => ({ partId: part.partId, entityId: live[i]!.id, life: 'active', generation: 0, readyInTicks: 0 })), appliedBreaks: [] };
+                    group.groupId = group.coreId = live[0]!.id;
+                    if (copy && sourceGroup) for (const slot of group.members) if (slot.entityId !== null) slot.entityId = remap.get(slot.entityId)!.id;
+                    (this.bodyGroups ??= []).push(group);
+                }
+                return live;
+            });
+            const created = liveStages.flat().filter(a => !oldActors.includes(a));
+            for (const [stageIndex, actors] of liveStages.entries()) for (const [partIndex, actor] of actors.entries()) if (created.includes(actor))
+                markCreatureBirth(actor, copy ? request.reason === 'summon' ? 'summoned' : 'clone' : request.reason === 'split' ? 'split' : 'summoned',
+                    copy ? staged[stageIndex]!.parts[partIndex]!.actor!.id : core.id, undefined, copy);
+            if (nextId > firstId) ensureEntityIdAbove(nextId - 1);
             this.monsters = [...this.monsters, ...created];
-            if (wasCaged) this.demoteMonsterFromLeadership(target);
-            if (wasAllied) hooks?.relationshipChanged?.(target);
-            hooks?.causality.clearStatus(target.id, 'poisoned'); hooks?.causality.clearStatus(target.id, 'burning');
-            hooks?.nativeMaximumReset?.(target, true);
-            notifyProductionActorSourceChanged(this, target.id);
-        }, beforeRandom);
-        for (const actor of [target, ...staged.slice(1)]) if (actor.hp > 0 && this.monsters.includes(actor)) this.applyEnvironmentalEffects(actor);
+            if (!copy) {
+                for (const actor of oldActors.filter(a => !retiredIds.includes(a.id))) {
+                    notifyProductionActorSourceChanged(this, actor.id);
+                    if (request.statuses === 'clear') {
+                        actor.extensionHooks?.causality.clearStatus(actor.id,'poisoned');
+                        actor.extensionHooks?.causality.clearStatus(actor.id,'burning');
+                    }
+                }
+                if (request.relationships === 'native-polymorph') {
+                    if (wasCaged) this.demoteMonsterFromLeadership(core);
+                }
+                if (wasAllied && !core.isAlly) core.extensionHooks?.relationshipChanged?.(core);
+                core.extensionHooks?.nativeMaximumReset?.(core,true);
+                const active = [this.player, ...this.monsters].filter(actor => actor.hp > 0);
+                for (const actor of active) {
+                    if (actor.seized && !active.some(other => other !== actor && other.seizing && nearestLegalMeleeContact(this.grid, other, actor))) actor.seized = false;
+                    if (actor.seizing && !active.some(other => other !== actor && other.seized && nearestLegalMeleeContact(this.grid, actor, other))) actor.seizing = false;
+                }
+                this.hoveredCell = null; this.hoveredText = '';
+            }
+            runtime.emit('bodyTransition', fact);
+            this.needsRender = true;
+        }, rollbackRandom);
+        // Complete structural publication precedes all tile effects.
+        const contactScope = new Set<string>();
+        for (const stage of staged) for (const value of stage.values) {
+            const actor = this.monsters.find(a => a.id === value.id);
+            if (actor && actor.hp > 0) this.applyEnvironmentalEffects(actor, false, contactScope, previousBodies.get(actor.id));
+        }
         this.updateVision(); this.needsRender = true;
-        return !target.hasStatus('invisible');
+        return fact;
+    }
+
+    private activeBodyTransitionFor(core: Monster): ActiveBodyTransition | undefined {
+        if (core.hp <= 0 || core.isCaged || !this.isBodyDecisionOwner(core.id) || bodyStatusDisables(core,'decision')) return undefined;
+        return this.extensionRuntime?.bodyTransitions().find(move => move.sourceFormId === core.typeId
+            && !core.bodyTransitionHistory?.includes(move.id) && core.hp > move.hpCost
+            && core.hp * move.condition.denominator <= core.maxHp * move.condition.numerator);
+    }
+    /** Attempted once, including no-space/budget. A legitimate failure retains
+     * the native fee and positive clock; an exception restores the whole attempt. */
+    private tryActiveBodyTransition(core: Monster): boolean {
+        const move = this.activeBodyTransitionFor(core);
+        if (!move) return false;
+        this.commitBodyTransition('active-body-attempt', () => {
+            core.bodyTransitionHistory = [...(core.bodyTransitionHistory ?? []), move.id];
+            core.hp -= move.hpCost;
+            const fact = this.transitionBody({ ...move.transition, sourceGroupId: core.id }, move.id);
+            if (actorActionSchedulerFor(this)?.isBusy(core.id)) {
+                if (core.spatial) core.spatial.actionLockInTicks = Math.max(move.ticks, core.spatial.actionLockInTicks ?? 0);
+            } else core.ticksUntilTurn = Math.max(move.ticks, core.ticksUntilTurn);
+            if (fact.outcome !== 'applied') this.extensionRuntime!.emit('bodyTransition', fact);
+        }, rng.getState(), true);
+        return true;
     }
 
     /** Finite native nearest-path/ring search; destination qualification uses
@@ -6280,7 +6466,8 @@ export class Game {
                 this.everSeenMonsters, this.visibleMonsters, this.examinedEntityIds, this.seenBodyCoreIds, actionState,
                 ...(environment ? [grids, this.environment, this.items, this.levels, this.pendingFallenByDepth,
                     this.pendingFallenItemsByDepth, this.purgatory, this.machineCells, this.squareMotion,
-                    this.scent,this.waypoints,this.monsterPathCache,this.safetyMap,this.loopMap,this.minersLight,
+                    this.scent,this.waypoints,this.monsterPathCache,this.safetyMap,this.loopMap,this.minersLight,this.lightMap,
+                    ...[...this.levels.values()].map(level=>level.lightMap),
                     this.pendingCaughtFireCells,this.squareLandingRetry,ItemLoader.identifiedItems,ItemLoader.callTitles,ItemLoader.magicPolarityRevealed,
                     ...[...this.levels.values()].flatMap(level => [level.monsters, level.dormantMonsters, level.items])] : [])],
             references: [runtime, runtime.causality, ...(!environment && this.squareMotion ? [this.squareMotion] : []),
@@ -6293,7 +6480,7 @@ export class Game {
         // Conversion deletes optional native fields. Restore their original
         // own-key order as well as descriptors/values (the floor checkpoint
         // only needs replacement/appended fields on its existing write set).
-        const actorDescriptors = [this.player, ...creatures].map(actor => ({ actor, descriptors: Object.getOwnPropertyDescriptors(actor) }));
+        const actorDescriptors = [this, this.player, ...creatures].map(actor => ({ actor, descriptors: Object.getOwnPropertyDescriptors(actor) }));
         const token = runtime.beginGeneration(label);
         try { commit(); runtime.commitGeneration(token); }
         catch (error) {
@@ -9228,6 +9415,12 @@ export class Game {
     public cloneMonster(source: Creature, splitLocation?: Pos,
         birth?: { creationReason: CreationReason; initiallyAllied?: boolean }): Monster | null {
         if (source.spatial?.bodyMember) return splitLocation || birth?.creationReason === 'split' ? null : this.cloneWholeBody(source);
+        if (source instanceof Monster && source.spatial && !splitLocation
+            && this.extensionRuntime?.nativeForms().some(form => form.id === source.typeId)) {
+            const fact = this.transitionBody({ sourceGroupId: source.id, reason: 'clone', results: [{ formId: source.typeId, memberMap: [] }],
+                hp: 'current', statuses: 'preserve', relationships: 'preserve', placement: 'random-nearest' });
+            return fact.outcome === 'applied' ? this.monsters.find(m => m.id === fact.resultGroupIds[0]) ?? null : null;
+        }
         assertNativeSpatial(source);
         if (source.hp <= 0 || (!(source instanceof Monster) && source !== this.player)) return null;
         if (source.spatial && !this.squarePublicationFits(source)) return null;
@@ -9253,47 +9446,10 @@ export class Game {
      * No inherited encounter, budget or reward component is copied to new IDs. */
     private cloneWholeBody(contact: Creature): Monster | null {
         const core = bodyDecisionActor(contact);
-        if (!(core instanceof Monster) || core.hp <= 0 || !this.monsters.includes(core)) return null;
-        const sourceGroup = this.bodyGroups?.find(g => g.coreId === core.id);
-        if (!sourceGroup) return null;
-        const definition = this.spatialCatalog.body(sourceGroup.bodyDefinitionId), order = bodyConstraintOrder(definition);
-        const actors = order.flatMap(partId => {
-            const slot = sourceGroup.members.find(s => s.partId === partId)!;
-            const actor = this.monsters.find(m => m.id === slot.entityId);
-            return slot.life === 'active' && actor ? [actor] : [];
-        });
-        if (actors[0] !== core || actors.some(a => !this.ownsBodyMember(a))) return null;
-        const locations = this.wholeBodyPlacement(actors, core.loc, definition, [], true);
-        if (!locations.length) return null;
-        const beforeRandom = rng.getState(), at = locations[rng.randRange(0, locations.length - 1)]!, next = getNextEntityId();
-        let clones: Monster[] = [];
-        this.commitBodyTransition('body-clone', () => {
-            clones = actors.map((actor, i) => {
-                const removeGender = actor.behaviorFlags.has('MONST_MALE') && actor.behaviorFlags.has('MONST_FEMALE')
-                    ? rng.randPercent(50) ? 'MONST_MALE' as const : 'MONST_FEMALE' as const : undefined;
-                const clone = actor.copyForClone({ id: next + i, removeGender });
-                delete clone.spatial!.bodyMember;
-                commitCreatureAnchor(clone, { x: actor.x + at.x - core.x, y: actor.y + at.y - core.y });
-                return clone;
-            });
-            const remap = new Map(actors.map((a, i) => [a.id, clones[i]!]));
-            clones.forEach((clone, i) => {
-                const source = actors[i]!;
-                clone.leader = source.leader && remap.get(source.leader.id) || (i ? clones[0]! : clone.leader);
-                if (core.isCaged) { clone.isAlly = true; clone.state = MonsterState.WANDERING; clone.leader = null; }
-                clone.spatial!.bodyMember = { groupId: clones[0]!.id, partId: source.spatial!.bodyMember!.partId };
-                markCreatureBirth(clone, 'clone', source.id, undefined, true);
-            });
-            const group = structuredClone(sourceGroup);
-            group.groupId = group.coreId = clones[0]!.id;
-            for (const slot of group.members) if (slot.entityId !== null) slot.entityId = remap.get(slot.entityId)!.id;
-            ensureEntityIdAbove(next + clones.length - 1);
-            (this.bodyGroups ??= []).push(group);
-            this.monsters = [...this.monsters, ...clones];
-            this.needsRender = true;
-        }, beforeRandom);
-        for (const clone of clones) if (clone.hp > 0 && this.monsters.includes(clone)) this.applyEnvironmentalEffects(clone);
-        return clones[0]!;
+        if (!(core instanceof Monster) || !this.bodyGroups?.some(g => g.coreId === core.id)) return null;
+        const fact = this.transitionBody({ sourceGroupId: core.id, reason: 'clone', results: [{ formId: core.typeId, memberMap: [] }],
+            hp: 'current', statuses: 'preserve', relationships: 'preserve', placement: 'random-nearest' });
+        return fact.outcome === 'applied' ? this.monsters.find(m => m.id === fact.resultGroupIds[0]) ?? null : null;
     }
 
     /** CE Combat.c:222-327: select a contiguous-group edge, halve HP, clone,
@@ -10518,20 +10674,20 @@ export class Game {
                 monsterTakeTurn: (monster, stealthRange) => {
                     const carried = monster.carriedItem;
                     if (monster.spatial?.bodyMember) {
-                        if (!monster.prepareNativeDecision(game, stealthRange) && !monster.tryBodyNativePriority(game)) {
+                        if (!monster.prepareNativeDecision(game, stealthRange) && !game.tryActiveBodyTransition(monster) && !monster.tryBodyNativePriority(game)) {
                             const result = selectNativeActorAction(game, monster.id);
                             if (result === 'native-fallback') game.takeBodyDecision(monster);
                             else if (!['handled', 'blocked'].includes(result) || monster.ticksUntilTurn <= 0)
                                 throw new Error('Composite selection must establish a positive timer');
                         }
-                    } else if (actorActionSchedulerFor(game)) {
+                    } else if (game.activeBodyTransitionFor(monster) || actorActionSchedulerFor(game)) {
                         // One shared prelude per FREE decision; busy phase boundaries
                         // never enter this path. Native fallback runs only its remainder.
-                        if (!monster.prepareNativeDecision(game, stealthRange)) {
+                        if (!monster.prepareNativeDecision(game, stealthRange) && !game.tryActiveBodyTransition(monster)) {
                             const result = selectNativeActorAction(game, monster.id);
                             if (!['handled', 'blocked', 'native-fallback'].includes(result)) throw new Error('Invalid actor selection result');
                             if (result === 'native-fallback') {
-                                if (actorActionSchedulerFor(game)!.isBusy(monster.id)) throw new Error('Busy actor cannot fall back to native decision');
+                                if (actorActionSchedulerFor(game)?.isBusy(monster.id)) throw new Error('Busy actor cannot fall back to native decision');
                                 monster.takeNativeDecision(game);
                             } else if (monster.ticksUntilTurn <= 0) throw new Error('Actor selection must establish a positive timer');
                         }

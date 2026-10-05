@@ -130,6 +130,8 @@ export function observeDisplayFrame(game: Game, log: Logger, previous?: { map: D
         rows: publicSidebarEntityRows(game),
         ...(game.bodyGroups?.length ? { bodyGroups: publicMonsterGroups(game) } : {}),
         ...(game.extensionRuntime?.hasPublicActorTags ? { actorTags: Object.fromEntries(sidebarEntityRows(game.player,game.grid,game.monsters,[],null,game.depth).filter(r=>r.kind==='monster').map(r=>[r.id,game.extensionRuntime!.publicActorTags(Number(r.id))])) } : {}),
+        ...(game.extensionRuntime?.hasPublicActorTags ? { actorGroups: Object.fromEntries(sidebarEntityRows(game.player,game.grid,game.monsters,[],null,game.depth)
+            .filter(r=>r.kind==='monster' && r.direct).flatMap(r=> { const group = game.extensionRuntime!.publicActorGroup(Number(r.id)); return group ? [[r.id,group]] : []; })) } : {}),
         logs: log.messages.map(message => ({ ...message })),
         hoverText: game.hoveredText || game.flavorText,
         hoverCell: game.hoveredCell ? { ...game.hoveredCell } : null,

@@ -1,0 +1,35 @@
+import { afterEach, expect, it, vi } from 'vitest';
+import { emptyProductionArena, startProductionGame } from '../../../../test/support/productionComposite';
+import { ItemLoader } from '../../../../engine/Items/ItemLoader';
+import { commitCreatureAnchor } from '../../../../engine/Movement/CreatureSpatial';
+import { logger } from '../../../../engine/Systems/Logger';
+import * as catalog from '../../../catalog';
+import { registryFromDescriptors } from '../../../descriptor';
+import { extensionDataFingerprint } from '../../../fingerprint';
+import { createGrowthGameplay } from '../module';
+import { loadGrowthDefinitionPack, parseGrowthDefinitionPack } from '../definitions';
+import type { GrowthDefinitionPack } from '../types';
+import { MonsterState } from '../../../../entities/Monster';
+afterEach(()=>{vi.restoreAllMocks();logger.reset();});
+it.each(['split','clone','summon'] as const)('%s retains one positive original reward even when ordinary copied-birth XP is explicitly enabled',reason=>{
+  const descriptors=catalog.getInstalledModuleDescriptors(),pack=structuredClone(loadGrowthDefinitionPack({hasText:()=>true})) as GrowthDefinitionPack;
+  pack.config.experience.kills.monsterQuotes.push({monsterId:'giants.abyssal-colossus',threatRank:6,amount:27},{monsterId:'giants.ridgeback',threatRank:6,amount:13});
+  pack.config.experience.kills.eligibleCreationReasons=['natural','split','clone','summoned'];pack.config.monsters.clone.rewards=true;
+  const parsed=parseGrowthDefinitionPack(pack,{moduleVersion:pack.moduleVersion,hasText:()=>true});
+  const registry=registryFromDescriptors(descriptors.map(d=>{
+    if(d.id!=='growth')return d;const base=d.create(),rules={...base.rules!,fingerprint:extensionDataFingerprint(pack)};
+    return {...d,rules,create:()=>createGrowthGameplay(parsed,rules)};
+  }));vi.spyOn(catalog,'createExtensionRegistry').mockReturnValue(registry);
+  const game=startProductionGame(['giants','growth'],7345);emptyProductionArena(game);
+  const core=game.createModuleMonster('giants.abyssal-colossus',{x:20,y:12},undefined,'natural')!;core.state=MonsterState.HUNTING;core.hp=129;
+  const fact=game.transitionBody({sourceGroupId:core.id,reason,results:Array.from({length:reason==='split'?2:1},()=>({formId:reason==='split'?'giants.ridgeback':core.typeId,memberMap:[]})),hp:reason==='split'?'conserve':'current',statuses:'preserve',relationships:'preserve',placement:'nearest'});
+  expect(fact.outcome).toBe('applied');const copy=game.monsters.find(m=>m.id!==core.id)!;expect(copy.bodyTransitionRewardless).toBe(true);
+  const weapon=ItemLoader.spawnWeapon('dagger',-1,-1)!;game.player.inventory.addItem(weapon);game.player.equippedWeapon=weapon;game.player.strength=30;
+  const xp=()=>((game.extensionRuntime!.snapshot().components[game.player.id]!['growth:progression']) as {experience:number}).experience,before=xp();
+  for(const actor of [core,copy])actor.applyStatus('paralyzed',1000);
+  copy.hp=1;copy.defense=0;commitCreatureAnchor(game.player,{x:copy.x-1,y:copy.y});
+  for(let i=0;i<12&&copy.hp>0;i++)game.executeCommand('move',{x:1,y:0});expect(copy.hp).toBe(0);expect(xp()).toBe(before);
+  core.hp=1;core.defense=0;commitCreatureAnchor(game.player,{x:core.x-1,y:core.y});
+  for(let i=0;i<12&&core.hp>0;i++)game.executeCommand('move',{x:1,y:0});expect(core.hp).toBe(0);expect(xp()).toBe(before+27);
+  game.killMonster(copy);game.killMonster(core);expect(xp()).toBe(before+27);expect(game.loadSnapshot(game.toSaveSnapshot())).toBe(true);
+});

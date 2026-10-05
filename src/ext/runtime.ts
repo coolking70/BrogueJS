@@ -6,6 +6,7 @@ import type { ActorAttackDefinitions, ProductionActorAttackState } from './actor
 import { SpatialCatalog, nativeSpatialCatalog } from '../engine/Movement/SpatialSchema';
 import { rigidFootprint } from '../engine/Movement/RigidFootprint';
 import { bindNativeForms, nativeFormFootprint, nativeFormSpatial, validNativeForm, type NativeFormDefinition } from './nativeForms';
+import { validActiveBodyTransitions } from './bodyTransitions';
 import { validGenerationContribution } from './generation';
 import type { Creature } from '../entities/Creature';
 import { Player } from '../entities/Player';
@@ -214,7 +215,7 @@ export class ExtensionRuntime {
             if (module.generationContributions && (!module.ownedRegions || !Array.isArray(module.generationContributions) || !module.generationContributions.length || module.generationContributions.length > 16
                 || new Set(module.generationContributions.map(t => t.id)).size !== module.generationContributions.length
                 || !module.generationContributions.every(t => validGenerationContribution(t, module.id) && module.nativeForms?.some(f => f.id === t.formId && (f.size === 2 || t.width >= 16 && t.height >= 12))))) throw new Error('Invalid generation declarations');
-            if (module.publicActorTags && (!Array.isArray(module.publicActorTags) || module.publicActorTags.length > 8 || module.publicActorTags.some(t => !validId(t.component) || !validId(t.tag) || !module.componentValidators?.[t.component]))) throw new Error('Invalid public actor tags');
+            if (module.publicActorTags && (!Array.isArray(module.publicActorTags) || module.publicActorTags.length > 8 || module.publicActorTags.some(t => !validId(t.component) || !validId(t.tag) || t.groupKey !== undefined && (typeof t.groupKey !== 'string' || !/^[a-zA-Z][a-zA-Z0-9]{0,63}$/.test(t.groupKey)) || !module.componentValidators?.[t.component]))) throw new Error('Invalid public actor tags');
             if (module.nativeForms) Object.defineProperty(module, 'nativeForms', { value: freezeView(structuredClone(module.nativeForms)), writable: false });
             if (module.generationContributions) Object.defineProperty(module, 'generationContributions', { value: freezeView(structuredClone(module.generationContributions)), writable: false });
         }
@@ -268,6 +269,11 @@ export class ExtensionRuntime {
             if (!providers) actorQueryProviders.set(this, providers = new Map());
             if (providers.has(capability)) throw new Error('Conflicting actor query providers');
             providers.set(capability, {module, provider});
+        }
+        for (const module of this.modules) if (module.bodyTransitions !== undefined) {
+            if (!validActiveBodyTransitions(module.bodyTransitions, module.id, module.nativeForms ?? [], module.nativeBodies?.definitions ?? []))
+                throw new Error('Invalid active body transition declarations');
+            Object.defineProperty(module, 'bodyTransitions', { value: freezeView(structuredClone(module.bodyTransitions)), writable: false });
         }
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalQueries ?? {})) {
             if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
@@ -1074,6 +1080,11 @@ export class ExtensionRuntime {
         });
     }
     validateWorld(creatures: readonly Creature[], world?: Omit<WorldInteractionValidation, 'entities' | 'gate'>): void {
+        const moves = this.bodyTransitions();
+        for (const creature of creatures) {
+            const history = (creature as Creature & { bodyTransitionHistory?: string[] }).bodyTransitionHistory;
+            if (history && history.some(id => !moves.some(move => move.id === id))) throw new Error('Uninstalled body transition history');
+        }
         const depth = world?.depth ?? this.ports.depth(), turn = world?.turn ?? this.ports.turn?.() ?? 0;
         if (this.pendingStoryFacts.some(fact => fact.depth !== depth || fact.turn > turn))
             throw new Error('Invalid pending story fact world references');
@@ -1315,12 +1326,14 @@ export class ExtensionRuntime {
     /** Capture before recursive death effects; a later kill notification cannot overwrite it. */
     captureDeath(creature: Creature, administrative: boolean, origin: EffectOrigin | null): DeathFact {
         this.observeCreature(creature);
-        if (this.modules.some(module => module.hooks?.deathCaptured)) this.emit('deathCaptured', { actor: this.actorFacts(creature), origin: structuredClone(origin), administrative });
+        if (this.modules.some(module => module.hooks?.deathCaptured)) this.emit('deathCaptured', { actor: this.actorFacts(creature), origin: structuredClone(origin), administrative,
+            ...((creature as Creature & { bodyTransitionRewardless?: true }).bodyTransitionRewardless ? { rewardEligible: false as const } : {}) });
         const fact = { creature: creatureView(creature, this.ports.playerId()), origin: structuredClone(origin), administrative };
         this.deaths[String(creature.id)] = fact;
         return structuredClone(fact);
     }
     nativeForms(): readonly NativeFormDefinition[] { return this.disposed ? [] : this.modules.flatMap(module => module.nativeForms ?? []); }
+    bodyTransitions(): readonly import('./bodyTransitions').ActiveBodyTransition[] { return this.disposed ? [] : this.modules.flatMap(module => module.bodyTransitions ?? []); }
     generationContributions(depth: number) {
         return freezeView(this.disposed ? [] : this.modules.flatMap(module => (module.generationContributions ?? [])
             .filter(t => depth >= t.minDepth && depth <= t.maxDepth).map(t => ({ ...t, owner: module.id })))
@@ -1332,6 +1345,14 @@ export class ExtensionRuntime {
         for (const frame of this.generations) frame.placementNextEntityId ??= getNextEntityId();
     }
     get hasPublicActorTags(): boolean { return this.modules.some(module=>module.publicActorTags?.length); }
+    publicActorGroup(id: number): string | null {
+        for (const module of this.modules) for (const tag of module.publicActorTags ?? []) if (tag.groupKey) {
+            const value = this.components[String(id)]?.[`${module.id}:${tag.component}`];
+            const key = value && typeof value === 'object' && !Array.isArray(value) ? value[tag.groupKey] : undefined;
+            if (typeof key === 'string') return `${module.id}:${key}`;
+        }
+        return null;
+    }
     publicActorTags(id: number): readonly string[] {
         return this.modules.flatMap(module => (module.publicActorTags ?? []).filter(t => this.components[String(id)]?.[`${module.id}:${t.component}`] !== undefined).map(t => `${module.id}.${t.tag}`));
     }

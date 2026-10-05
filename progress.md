@@ -152,3 +152,7 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 2026-10-05 4d-4续轮授权：开工HEAD81c82a0、工作树干净；已合入维护者审阅4d-3及dot3d修复。优先按浏览器反馈把周围实体按公开群体归并，核心HP与可见/破坏概况、核心详情列成员，保留单腿瞄准检视；继续原剩余1–8，开发期功能测试、中文报告、保留历史、不commit。
 
 - 4d-4最终：同一908输入候选boundary/type/build、自然5项与其余109文件2419项（合计110文件2424项、26新增）、白名单1项、16/16 engine-only组合、drift4文件5项全部exit0；各门输入一致，清单SHA256 428166d8ef08da7667b56b48c4ba26a00481d07aae7161659e593364a20b373f，结束UTC2026-10-05T14:50:05Z。周围列表两正式织兽18→2行、核心HP/成员概况与详情、原单腿检视瞄准/历史裁切；27原生状态分类、可信群存储/一次计时、源速度刷新、全组支配/纷争关系及催眠/恐惧局部移动已接。17实体20wait全移动，冷35.683ms/暖P50 33.738ms/P95 39.798ms，仅Node诊断。完整4d仍缺逐段环境/完整AI、整体转换clone迁层、全组合及真实设备验收；报告逐项列原1–8，并原字节保留4d-3/2/1/0。旧测试/trace/基线未改，浏览器EPERM/MachPort与无自动浏览器入口边界明列；未暂存/commit/push。
+
+- 2026-10-06 当前授权4e：执行docs/ext/phase4e.task.md，不commit，中文报告；统一BodyTransitionRequest、有限主动声明、HP守恒/新ID/明确成员映射、无死亡退休/深复制与整批落点、异常事务和多后裔encounter已实现，正在专项验证；浏览器按任务书由维护者验收，foundation保持4。
+
+- 2026-10-06 4e最终：统一有限主动转换声明与事务，核心/成员ID映射、无死亡退休、HP守恒分裂、新ID深复制/召唤与零奖励权利、预算/费用/正时钟/故障完整回滚、已付计划取消、四reason真实save/replay/seek/续录及篝火打断已完成；沉渊巨像半血→两个2×2岩脊形态，原encounter最后后裔死亡才击败，冻结帧可见后裔HUD/侧栏与320/390 SFC完成。最终同一933输入候选boundary/type/build、相关141文件3018项＋独立自然5项、白名单1项、16/16 engine-only组合、drift4文件5项全部exit0；SHA集合847e5ec184eb609cdf439af07bbdb4a3b7272a472bda6ace5ce907dda4d0aff6，结束UTC2026-10-05T21:17:56Z。最新完整补充专项4文件79项通过；旧movementRegions守卫只修生产路由，旧测试/断言未改。三份giants trace只改extensionsHash，单变量回退definitions后旧trace完整通过，再用原方法重录。中文报告docs/ext/phase4e.report.md列33/33完成与失败批次真实记录；foundation保持4。按任务书不跑完整npm test/test:ext/removal/CE full/gen，浏览器由维护者验收；未暂存/commit/push。

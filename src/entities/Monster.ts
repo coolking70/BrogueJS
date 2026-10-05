@@ -386,6 +386,11 @@ export class Monster extends Creature {
     public mutation?: MutationData;
     /** W-19: effect/save tag, not a species or generation flag. */
     public polymorphed = false;
+    /** Optional only on actors that have attempted an installed once-only move.
+     * Clones inherit the spent set, so a copied phase cannot grow exponentially. */
+    declare public bodyTransitionHistory?: string[];
+    /** Native copied/split descendants never own another reward entitlement. */
+    declare public bodyTransitionRewardless?: true;
     /** W-20: clones have no carried loot or CE MB_WEAPON_AUTO_ID entitlement. */
     public isClone = false;
     /** CE MB_DOES_NOT_RESURRECT, retained across whole-run saves. */
@@ -705,6 +710,7 @@ export class Monster extends Creature {
         clone.bolts = [...this.bolts];
         clone.waypointAlreadyVisited = this.waypointAlreadyVisited ? [...this.waypointAlreadyVisited] : null;
         clone.mutation = this.mutation ? structuredClone(this.mutation) : undefined;
+        if (this.bodyTransitionHistory) clone.bodyTransitionHistory = [...this.bodyTransitionHistory];
         return clone;
     }
 
@@ -715,6 +721,15 @@ export class Monster extends Creature {
         delete value.extensionHooks;
         if (value.spatial) delete value.spatial.bodyMember;
         return value;
+    }
+
+    /** Explicit active clear policy, distinct from CE passive polymorph's
+     * transient speed mirror. Called only on an unpublished transition value. */
+    public clearBodyPlanStatuses(): void {
+        this.statusDurations = {}; this.maxStatus = {};
+        this.poisonAmount = this.weaknessAmount = this.maxShield = 0;
+        this.polymorphKeepsSpeed = false;
+        this.refreshSpeeds();
     }
 
     public copyForClone(prepared?: { id: number; removeGender?: 'MONST_MALE' | 'MONST_FEMALE' }): Monster {

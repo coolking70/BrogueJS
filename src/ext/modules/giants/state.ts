@@ -76,7 +76,7 @@ export function isGiantsState(value: unknown, pack: GiantsPack): value is Giants
       encounters.has(b.encounterKey) ||
       !['alive', 'defeated', 'escaped', 'lost'].includes(b.status) ||
       !Array.isArray(b.subjects) ||
-      b.subjects.length !== 1 ||
+      !b.subjects.length || b.subjects.length > 64 ||
       b.subjects[0]?.groupId !== b.primaryId
     )
       return false;
@@ -92,8 +92,8 @@ export function isGiantsState(value: unknown, pack: GiantsPack): value is Giants
     }
     if (
       (b.status === 'defeated') !== b.subjects.every((s) => s.status === 'dead') ||
-      (b.status === 'lost' && !b.subjects.some((s) => s.status === 'lost')) ||
-      (['alive', 'escaped'].includes(b.status) && b.subjects.some((s) => s.status !== 'alive'))
+      (b.status === 'lost' && (b.subjects.some(s => s.status === 'alive') || !b.subjects.some((s) => s.status === 'lost'))) ||
+      (['alive', 'escaped'].includes(b.status) && !b.subjects.some((s) => s.status === 'alive'))
     )
       return false;
     encounters.add(b.encounterKey);

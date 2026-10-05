@@ -6,6 +6,7 @@ export interface GiantsPack {
   moduleVersion: '1.0.0';
   rulesVersion: '1.0.0';
   forms: NativeFormDefinition[];
+  transitions?: import('../../bodyTransitions').ActiveBodyTransition[];
   bodies?: { definitions: BodyDefinition[]; breakRules: PartBreakRule[];
     statusProfiles?: import('../../../engine/Movement/SpatialSchema').SpatialStatusProfileDefinition[];
     attackProfiles?: import('../../../engine/Movement/SpatialSchema').SpatialAttackProfileDefinition[] };
