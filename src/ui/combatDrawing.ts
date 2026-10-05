@@ -55,20 +55,39 @@ export function telegraphsAt(telegraphs: readonly DisplayTelegraph[], cell: Read
     return telegraphs.filter(entry => entry.cells.some(p => p.x === cell.x && p.y === cell.y)).sort(order);
 }
 
-/** One stable paint per cell, never stacked alpha implying extra damage. Both
- * phases have a border plus a distinct mark; terrain remains visible beneath. */
+/** One stable fill per cell, never stacked alpha implying extra damage. The
+ * highest-priority phase supplies the border/top mark. Independent bottom marks
+ * retain every public parry property at overlaps: shield (left), cross (right),
+ * hollow diamond (middle, unknown). These describe properties, not safe timing.
+ * Only the supplied detached DTOs are read, including during historical ACKs. */
 export function paintCombatTelegraphs(graphics: Graphics, telegraphs: readonly DisplayTelegraph[], tileSize: number): void {
-    const painted = new Set<string>();
+    const cells = new Map<string, { cell: Readonly<Pos>; phase: DisplayTelegraph['phase']; properties: Set<boolean | undefined> }>();
     for (const telegraph of [...telegraphs].sort(order)) for (const cell of telegraph.cells) {
         const key = `${cell.x},${cell.y}`;
-        if (painted.has(key)) continue;
-        painted.add(key);
+        let warning = cells.get(key);
+        if (!warning) {
+            warning = { cell, phase: telegraph.phase, properties: new Set() };
+            cells.set(key, warning);
+        }
+        warning.properties.add(telegraph.parryable === true ? true : telegraph.parryable === false ? false : undefined);
+    }
+    for (const { cell, phase, properties } of cells.values()) {
         const x = cell.x * tileSize, y = cell.y * tileSize;
-        const windup = telegraph.phase === 'windup', color = windup ? 0xe89b67 : 0xe2cc80;
+        const windup = phase === 'windup', color = windup ? 0xe89b67 : 0xe2cc80;
         graphics.rect(x + 1, y + 1, tileSize - 2, tileSize - 2).fill({ color, alpha: 0.13 });
         graphics.rect(x + 1.5, y + 1.5, tileSize - 3, tileSize - 3).stroke({ color, alpha: 0.85, width: 1 });
         if (windup) graphics.moveTo(x + tileSize * .5, y + 2).lineTo(x + tileSize * .5, y + 5);
         else graphics.moveTo(x + tileSize * .35, y + 3).lineTo(x + tileSize * .65, y + 3);
-        graphics.stroke({ color, alpha: 1, width: 1.5 });
+        if (properties.has(true)) graphics.moveTo(x + tileSize * .15, y + tileSize * .65)
+            .lineTo(x + tileSize * .35, y + tileSize * .65).lineTo(x + tileSize * .35, y + tileSize * .77)
+            .lineTo(x + tileSize * .25, y + tileSize * .86).lineTo(x + tileSize * .15, y + tileSize * .77)
+            .lineTo(x + tileSize * .15, y + tileSize * .65);
+        if (properties.has(false)) graphics.moveTo(x + tileSize * .65, y + tileSize * .65)
+            .lineTo(x + tileSize * .85, y + tileSize * .85).moveTo(x + tileSize * .85, y + tileSize * .65)
+            .lineTo(x + tileSize * .65, y + tileSize * .85);
+        if (properties.has(undefined)) graphics.moveTo(x + tileSize * .5, y + tileSize * .65)
+            .lineTo(x + tileSize * .58, y + tileSize * .755).lineTo(x + tileSize * .5, y + tileSize * .86)
+            .lineTo(x + tileSize * .42, y + tileSize * .755).lineTo(x + tileSize * .5, y + tileSize * .65);
+        graphics.stroke({ color, alpha: 1, width: Math.min(1.25, tileSize / 16) });
     }
 }

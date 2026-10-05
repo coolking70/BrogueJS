@@ -19,7 +19,7 @@ defineProps<{ resources: CombatUiResources | null; entries: readonly (Pick<Displ
       <span v-else-if="(resources.parryRecoveryRemainingTicks ?? 0) > 0">{{ $t('ext.combat.ui.parry_recovery', { ticks: resources.parryRecoveryRemainingTicks }) }}</span>
     </div>
     <strong v-if="entries.length">{{ $t(focused ? 'ext.combat.ui.cell_threats' : 'ext.combat.ui.visible_threats') }}</strong>
-    <span v-for="entry in entries" :key="entry.key" :class="entry.phase" :title="$t('ext.combat.ui.telegraph_hint')">
+    <span v-for="entry in entries" :key="entry.key" :class="entry.phase" :title="$t('ext.combat.ui.telegraph_hint') + ' ' + $t(entry.parryable === true ? 'ext.combat.ui.telegraph_map_parryable_legend' : entry.parryable === false ? 'ext.combat.ui.telegraph_map_unparryable_legend' : 'ext.combat.ui.telegraph_map_unknown_legend')">
       {{ entry.name ?? $t('ext.combat.ui.public_source') }} · {{ $t(entry.phase === 'windup' ? 'ext.combat.ui.phase.windup' : 'ext.combat.ui.phase.inter-segment') }}
       · {{ $t(entry.parryable === true ? 'ext.combat.ui.telegraph_parryable' : entry.parryable === false ? 'ext.combat.ui.telegraph_unparryable' : 'ext.combat.ui.telegraph_parry_unknown') }}
       · {{ entry.remainingTicks === undefined ? $t('ext.combat.ui.telegraph_timing_unknown') : $t('ext.combat.ui.telegraph_remaining', { ticks: entry.remainingTicks }) }}

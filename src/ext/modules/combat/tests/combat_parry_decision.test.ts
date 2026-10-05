@@ -41,7 +41,7 @@ function arena(game: Game) {
     game.environment = new EnvironmentManager(game.grid); game.waypoints = new WaypointSystem();
     (game as any).machineCells = new Set(); (game as any).bindDungeonFeatureEffects(); (game as any).updateVision();
 }
-function scene() { const game = start(); arena(game); return game; }
+function scene(seed = 73073) { const game = start(seed); arena(game); return game; }
 
 const json = <V>(value: V): V => JSON.parse(JSON.stringify(value));
 const resource = (game: Game, id = game.player.id) => state(game).actors.find(a => a.actorId === id)!;
@@ -86,8 +86,64 @@ describe('3d visible decisions use ordinary commands and real scheduler time', (
         expect(game.player.hp).toBe(hp); expect(source.hp).toBe(sourceHp);
         expect(resource(game).poise).toBe(12); expect(game.isInputLocked()).toBe(false);
     });
+    it('normal player slash reveals an ogre-profile windup before any strike, with original fifty-tick readiness', () => {
+        const game = scene();
+        const source = game.createSquareMonster({ ...monsters.find(m => m.id === 'ogre')!, id: 'rat', hp: 10000 } as MonsterData, 2, { x: 21, y: 15 })!;
+        source.state = MonsterState.HUNTING; source.ticksUntilTurn = 50; source.regenTurns = 0;
+        (game as any).updateVision();
+        const hp = game.player.hp;
+        acknowledge(); game.executeCommand('ext:command', attack());
+        expect(warning(game, source.id).phaseRemainingTicks).toBe(10);
+        expect(game.player.hp).toBe(hp);
+        const sourceHp = source.hp, defended = vi.spyOn(game.extensionRuntime!, 'notifyActorParried');
+        acknowledge(); game.executeCommand('ext:command', parry('e'));
+        expect(defended).toHaveBeenCalledExactlyOnceWith(source.id, game.player.id, game.depth);
+        expect(game.player.hp).toBe(hp); expect(source.hp).toBe(sourceHp);
+    });
+    it.each([73073, 73074, 73075])('DEV ogre first visible warning can be parried after a real paid setup attack, seed %s', seed => {
+        const game = scene(seed), execute = vi.spyOn(game, 'executeCommand'), fixture = placeCombatTelegraphFixture(game);
+        const source = game.monsters.find(m => m.id === fixture.sourceEntityId)!;
+        expect(fixture.attack).toBe('parryable'); expect(fixture.sourceInitialTicks).toBe(50);
+        expect(fixture.setup).toMatchObject({ action: 'attack', attackId: 'fixture.slash', cost: 4, durationTicks: 90 });
+        expect(fixture.setupHpLoss).toBe(0);
+        expect(source.typeId).toBe('rat'); // Existing fan-edge binding; ogre stats and native traits retained.
+        expect(source.hasAbility('MA_ATTACKS_STAGGER')).toBe(true);
+        expect(execute).toHaveBeenNthCalledWith(2, 'ext:command', JSON.stringify({ module: 'combat', action: 'attack',
+            payload: { attackId: 'fixture.slash', facing: fixture.setup.facing } }));
+        expect(fixture.telegraphs[0]).toMatchObject({ parryable: true, remainingTicks: 10 });
+        expect(warning(game, source.id).phaseRemainingTicks).toBe(10);
+        const contact = game.meleeContact(source, game.player)!;
+        const directions: Record<string, string> = { '0,-1': 'n', '1,-1': 'ne', '1,0': 'e', '1,1': 'se', '0,1': 's', '-1,1': 'sw', '-1,0': 'w', '-1,-1': 'nw' };
+        const facing = directions[`${Math.sign(contact.from.x-contact.to.x)},${Math.sign(contact.from.y-contact.to.y)}`];
+        const hp = game.player.hp, sourceHp = source.hp, defended = vi.spyOn(game.extensionRuntime!, 'notifyActorParried');
+        acknowledge(); game.executeCommand('ext:command', parry(facing));
+        expect(defended).toHaveBeenCalledExactlyOnceWith(source.id, game.player.id, game.depth);
+        expect(game.player.hp).toBe(hp); expect(source.hp).toBe(sourceHp);
+        for (const name of ['toSnapshot', 'toSaveSnapshot', 'exportRecording'] as const) expect(() => game[name]()).toThrow('fixture');
+    });
+    it('DEV setup leaves ordinary friendly-fire confirmation pending without paying or advancing time', () => {
+        const game = scene();
+        const create = game.createSquareMonster.bind(game);
+        vi.spyOn(game, 'createSquareMonster').mockImplementation((...args) => {
+            const source = create(...args);
+            if (source) { source.isAlly = true; source.setStatusDuration('discordant', 1000); }
+            return source;
+        });
+        game.onCommandConfirmRequest = vi.fn();
+        game.onConfirmRequest = () => { throw new Error('Diagnostic must not auto-confirm'); };
+        const hp = game.player.hp;
+        const fixture = placeCombatTelegraphFixture(game);
+        expect(fixture.setupPendingConfirmation).toBe(true);
+        expect(game.pendingCommandConfirmation).not.toBeNull();
+        expect(fixture.telegraphs).toEqual([]); expect(game.player.hp).toBe(hp);
+        expect(game.monsters.find(m => m.id === fixture.sourceEntityId)!.ticksUntilTurn).toBe(50);
+        expect(resource(game)?.stamina ?? 24).toBe(24);
+        game.resolveCommandDecision(game.pendingCommandConfirmation!.token, false);
+        expect(resource(game)?.stamina ?? 24).toBe(24);
+        expect(game.monsters.find(m => m.id === fixture.sourceEntityId)!.ticksUntilTurn).toBe(50);
+    });
     it('diagnostic ogre stomp remains non-parryable even while protection is still active', () => {
-        const game = scene(), fixture = placeCombatTelegraphFixture(game);
+        const game = scene(), fixture = placeCombatTelegraphFixture(game, 'stomp');
         const source = game.monsters.find(m => m.id === fixture.sourceEntityId)!;
         const contact = game.meleeContact(source, game.player)!;
         const directions: Record<string, string> = { '0,-1': 'n', '1,-1': 'ne', '1,0': 'e', '1,1': 'se', '0,1': 's', '-1,1': 'sw', '-1,0': 'w', '-1,-1': 'nw' };

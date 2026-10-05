@@ -10,17 +10,22 @@ import { logger } from '../../../../engine/Systems/Logger';
 import { presentationTimeline } from '../../../../ui/presentationTimeline';
 import { readPublicCombatTelegraphs } from '../../../../ui/combatDrawing';
 import type { Pos } from '../../../../types';
+import { readCombatUiView } from './view';
+import type { Facing } from '../types';
 
 /** DEV-only diagnostic placement, not natural content or save/replay evidence.
  * No terrain edits: reject before allocating IDs unless an adjacent floor fits. */
-export function placeCombatTelegraphFixture(game: Game) {
+export function placeCombatTelegraphFixture(game: Game, attack: 'parryable' | 'stomp' = 'parryable') {
     if (!import.meta.env.DEV) throw new Error('Combat diagnostics require a development build');
+    if (attack !== 'parryable' && attack !== 'stomp') throw new Error('Unknown combat diagnostic attack');
     if (!game.extensionRuntime?.actorActionBinding() || !game.extensionRuntime.readModuleView('combat'))
         throw new Error('Enable combat in a new extended run before using this fixture');
     if (game.isGameOver || game.replayRecording || game.isInputLocked() || presentationTimeline(game)?.busy
         || logger.pendingAcknowledgment || game.hasPendingConfirmation || game.isInventoryOpen || game.pendingArcana
         || game.isThrowing || game.referenceScreen || game.player.movementSpeed !== 100)
         throw new Error('Combat diagnostics require an idle live map with ordinary player speed');
+    if (attack === 'parryable' && !readCombatUiView(game)?.actions.some(action => action.id === 'fixture.slash' && action.canUse))
+        throw new Error('Combat parry diagnostics require an available player slash');
     const interactables = game.readVisibleInteractables();
     let location: { size: 1 | 2; at: Pos } | undefined;
     const positions: Pos[] = [];
@@ -49,23 +54,46 @@ export function placeCombatTelegraphFixture(game: Game) {
     markActorActionFixture(game);
     let source!: Monster;
     game.executeCommand('fixture:combat-telegraph-display', undefined, () => {
-        const data = { ...monsters.find(monster => monster.id === 'ogre')!, hp: 10000 } as MonsterData;
+        // Diagnostic-only ogre appearance/stats, using the existing rat-bound
+        // fan-edge profile when practicing parry. No profile or timing data is
+        // changed; the normal ogre catalog still selects non-parryable stomp.
+        const data = { ...monsters.find(monster => monster.id === 'ogre')!,
+            id: attack === 'parryable' ? 'rat' : 'ogre', hp: 10000 } as MonsterData;
         source = location!.size === 2 ? game.createSquareMonster(data, 2, location!.at)!
             : new Monster(location!.at.x, location!.at.y, data);
         if (!source) throw new Error('Combat fixture publication rejected');
         if (location!.size === 1) game.monsters.push(source);
         source.state = MonsterState.HUNTING; source.ticksUntilTurn = 50; source.regenTurns = 0;
     });
-    game.executeCommand('wait');
+    const hpBeforeSetup = game.player.hp, sourceInitialTicks = source.ticksUntilTurn;
+    const setup: { action: 'attack' | 'wait'; attackId: string | null; facing: Facing | null; cost: number; durationTicks: number } = {
+        action: 'wait', attackId: null, facing: null, cost: 0, durationTicks: game.player.movementSpeed,
+    };
+    if (attack === 'parryable') {
+        const contact = game.meleeContact(game.player, source);
+        if (!contact) throw new Error('Combat diagnostic source has no adjacent contact');
+        const directions: Record<string, Facing> = { '0,-1': 'n', '1,-1': 'ne', '1,0': 'e', '1,1': 'se',
+            '0,1': 's', '-1,1': 'sw', '-1,0': 'w', '-1,-1': 'nw' };
+        const facing = directions[`${Math.sign(contact.to.x - contact.from.x)},${Math.sign(contact.to.y - contact.from.y)}`]!;
+        const slash = game.extensionRuntime!.actorActionBinding()!.definition.attacks.find(entry => entry.id === 'fixture.slash')!;
+        Object.assign(setup, { action: 'attack', attackId: slash.id, facing, cost: slash.cost,
+            durationTicks: slash.windupTicks + slash.segments.reduce((sum, segment) => sum + segment.delayTicks, 0) + slash.recoveryTicks });
+        // A genuine paid player slash (50+40 ticks in the default pack) returns
+        // before the source's ordinary 50+50 windup completes. No clocks,
+        // native ogre traits, RNG, HP or definition durations are adjusted.
+        // Any ordinary risk confirmation remains with Game; never auto-accept.
+        game.executeCommand('ext:command', JSON.stringify({ module: 'combat', action: 'attack', payload: { attackId: slash.id, facing } }));
+    } else game.executeCommand('wait');
     game.update();
     return { sourceEntityId: source.id, size: location.size, sourceCells: footprintOf(source).map(p => ({ ...p })),
+        attack, sourceInitialTicks, setup, setupPendingConfirmation: game.hasPendingConfirmation, setupHpLoss: Math.max(0, hpBeforeSetup - game.player.hp),
         telegraphs: readPublicCombatTelegraphs(game).filter(telegraph => telegraph.sourceEntityId === source.id) };
 }
 
 export function installCombatDiagnostics(game: Game): () => void {
     if (!import.meta.env.DEV || typeof window === 'undefined') return () => {};
-    const target = window as Window & { debug_combat_telegraphs?: () => ReturnType<typeof placeCombatTelegraphFixture> };
-    const run = () => placeCombatTelegraphFixture(game);
+    const target = window as Window & { debug_combat_telegraphs?: (attack?: 'parryable' | 'stomp') => ReturnType<typeof placeCombatTelegraphFixture> };
+    const run = (attack?: 'parryable' | 'stomp') => placeCombatTelegraphFixture(game, attack);
     target.debug_combat_telegraphs = run;
     return () => { if (target.debug_combat_telegraphs === run) delete target.debug_combat_telegraphs; };
 }

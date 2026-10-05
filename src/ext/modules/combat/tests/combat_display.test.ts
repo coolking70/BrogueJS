@@ -207,8 +207,8 @@ describe('EXT-3b development warning fixture', () => {
         const game = new Game(); game.startNewGame({ seed: 403003, mode: 'test', ruleSet: 'extended', extensions: ['combat'] });
         squareDisplayScene(game); game.monsters = []; game.monsterListsChanged();
         vi.stubGlobal('window', {}); const remove = installCombatDiagnostics(game); disposers.push(remove);
-        const fixture = (window as unknown as { debug_combat_telegraphs: typeof run }).debug_combat_telegraphs();
-        function run() { return placeCombatTelegraphFixture(game); }
+        const fixture = (window as unknown as { debug_combat_telegraphs: typeof run }).debug_combat_telegraphs('stomp');
+        function run(attack?: 'parryable' | 'stomp') { return placeCombatTelegraphFixture(game, attack); }
         expect(fixture.size).toBe(2); expect(fixture.sourceCells).toHaveLength(4);
         expect(fixture.telegraphs).toHaveLength(1); expect(fixture.telegraphs[0]).toMatchObject({ sourceEntityId: fixture.sourceEntityId,
             phase: 'windup', parryable: false, remainingTicks: 50 });
@@ -219,7 +219,7 @@ describe('EXT-3b development warning fixture', () => {
     it('real active warning survives attack direction confirmation and Cancel with exact mechanical state and RNG', () => {
         const game = new Game(); game.startNewGame({ seed: 403003, mode: 'test', ruleSet: 'extended', extensions: ['combat'] });
         squareDisplayScene(game); game.monsters = []; game.monsterListsChanged();
-        const fixture = placeCombatTelegraphFixture(game); expect(fixture.telegraphs).toHaveLength(1);
+        const fixture = placeCombatTelegraphFixture(game, 'stomp'); expect(fixture.telegraphs).toHaveLength(1);
         const dialogs = new DialogService(), scope = effectScope();
         disposers.push(() => { scope.stop(); dialogs.dispose(); });
         const ui = scope.run(() => useCombatUi({ game: () => game, dialogs, tick: ref(0), immersive: ref(false),
