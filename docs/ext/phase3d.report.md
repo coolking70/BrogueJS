@@ -97,3 +97,25 @@ balanceLoss 按 core policy 扣poise；免疫/已在恢复中/零损失返回han
 这两次结果没有进入 HTTP 响应，不能据此声称链接过期、权限拒绝或浏览器阻止访问。Mac 未取得文件字节，故没有本机包哈希核验；没有打开本次候选画面、执行浏览器用例或生成截图。先前源码、引擎、类型和构建证据不受这项传输失败影响，但不能替代真实像素验收。
 
 已停止本轮 QA 和下载重试，没有改走其它路线规避限制。维护者已询问是否按与3c相同的条件方式交付；截至本补记，用户批准仍待取得，因此没有发布分支。本补记仅更新报告，不修改源码、数据、测试或稳定 QA 构建。最终源码散列仍为 `edd3e4e6aff9c9cf7c0303a69dd09b694f872b51456a2a583e14c5aaf19b89dc`。
+
+## 条件交付批准后：同步最新2adaf6a底座
+
+维护者已明确批准以“浏览器仍未覆盖”的条件交付3d。此前Mac的DNS失败、未取得字节/未核哈希/未执行像素用例/无截图全部保留；本次没有重新尝试QA或下载。该批准没有把缺口改成已通过，也没有进入3e。
+
+发布准备前使用完整refspec fetch及实际 `git ls-remote` 重新核验，hosted foundation为 `2adaf6ab1f8feef713f22f85cc0203a1602e419f`。已在干净的 `4a2b3f2` 上保留双方历史地合并为 `8043e40beb1d70a13123f5f47c57e4b282fd2ccd`；无冲突、无覆盖3d实现。独立只读merge审查无blocker。
+
+本次纳入的13个上游文件为：`docs/ext/architecture.md`、`docs/ext/phase4d.report.md`、`docs/ext/phase4d.task.md`、`progress.md`、`scripts/test-suites.json`、`src/engine/Core/Game.ts`、`src/engine/Movement/{BodyConstraints,BodyTrajectory,CompositeMovement,CreatureSpatial}.ts`、`src/test/native_bolt_delivery.test.ts`、`src/test/phase4d_composite_movement.test.ts`、`src/test/support/compositeScene.ts`。
+
+4d-0仅为fixture复合移动底座：生产group/bodyMember能力仍关闭，未接生产群体调度/伤害/再生。combat provider、`combat.part-break.v1` 的 self / generation0 / actorId=groupId约束、3c single/r0-square dodge白名单及3d资源/弹反/工具栏字节均未改变。Game唯一上游运行改动是BE_ATTACK的 `delivery:'bolt'` 仅在ExtensionRuntime存在时传入；经典调用形状恢复，扩展射线仍不走近战费用/防御。
+
+按本次增量只复核17个直接相关文件：新增composite/native-bolt；4a0 spatial及零影响差分；4a1 Game square；4b Game rigid；U03整局快照；W4反射；扩展bolt因果；combat原生体力、防御、parry、part-break runtime、foundation dodge gate、dodge；repo hygiene与suite membership。未重新跑64文件全相关集合，更未跑完整npm test、全部test:ext、removal或旧giants长录像。本次实际结果在下节记录。
+
+旧f8fc344轻量QA包只代表此前的历史构建；最新交付源码以包含本次merge的最终source bundle为准，没有把旧包宣称为最新候选的浏览器证据。
+
+### 2adaf6a合并结果的实际门禁
+
+Node24.19.0、3GiB堆、Vitest至多2 workers。boundary、vue-tsc、production build、diff-check均exit0；构建只保留既有大chunk提示。上述17个完整相关文件 **17/17通过，353/353项通过，0 skipped，exit0，121.68s**。5个相关真实Game子集（combat、combat+growth、combat+giants、combat+growth+narrative、四模块全开）**5通过、26名称过滤未跑，exit0，12.21s**；不是全子集矩阵或浏览器验收。
+
+本次899份生产/测试/脚本/config输入在门禁前后完全一致，SHA-256 **`e21d4d01cdec61d918a205ac8fd322d585d71dfcef24328c4f210b74dd86bc10`**。清单及本轮日志位于同一 `phase3d-2ada-integration` 验证目录。之后只补本报告/README。没有测试失败、断言修订、timeout变更、基线重录或额外产品改动。
+
+门禁后再次完整refspec fetch与实际ls-remote确认foundation仍为 **2adaf6ab1f8feef713f22f85cc0203a1602e419f**，已是交付分支祖先；远程phase3仍为a34b0c2。本执行任务只准备经verify/import校验的最新source bundle，不推送远程。维护者后续正常快进发布时仍应检查实际远端状态。条件交付的浏览器缺口继续保留。
