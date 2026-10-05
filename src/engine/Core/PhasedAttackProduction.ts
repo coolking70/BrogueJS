@@ -1,3 +1,5 @@
+import { timeSystem } from '../Systems/Time';
+import { bindWorldRestSource, finishWorldRestClock, interruptWorldRest, settleWorldRest, worldRestSourceChanged } from './WorldRestProduction';
 /** Trusted data-driven executor. Optional content supplies finite definitions only. */
 import type { Game, ControlledActionRisk } from './Game';
 import type { Creature } from '../../entities/Creature';
@@ -272,16 +274,17 @@ export function bindPhasedAttackProduction(game:Game):void {
     const session={state:binding.state,definitions:binding.definition,runtime:game.extensionRuntime!,moduleId:binding.moduleId,sessionRevision:nextSessionRevision++,defenseSources:new Map()} as unknown as Session;
     session.scheduler=createProductionActorActionSession(game,{state:session.state.scheduler,
         resolveSegment:boundary=>resolve(game,session,boundary),breakRecoveryTicks:()=>session.definitions.breakRecoveryTicks,
-        elapsed:delta=>advanceResources(game,session,delta),
+        elapsed:delta=>{if(session.state.bonfires?.active?.phase==='resting')timeSystem.currentTick+=delta;advanceResources(game,session,delta);},
+        handlesInterruption:bundle=>session.state.bonfires?.active?.actionId===bundle.actionId,
         inputLocked:()=>session.state.actors.some(row=>row.actorId===game.player.id&&nativeRecovery(row)>0),
         resumeResources:()=>{for(const row of session.state.actors){const source=actor(game,row.actorId);if(source&&nativeRecovery(row)>0)source.ticksUntilTurn=nativeRecovery(row);}},
-        sourceChanged:id=>{const row=session.state.actors.find(r=>r.actorId===id);if(row&&(row.dodgeRemainingTicks||row.parryRemainingTicks)){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;bumpRevision(session.state);}
+        sourceChanged:id=>{worldRestSourceChanged(game,id);const row=session.state.actors.find(r=>r.actorId===id);if(row&&(row.dodgeRemainingTicks||row.parryRemainingTicks)){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;bumpRevision(session.state);}
             if(!actor(game,id)||actor(game,id)!.hp<=0)for(const bundle of session.state.scheduler.bundles)
                 for(const child of bundle.subactions)if(child.sourceEntityId===id){const sub=session.state.actions.find(a=>a.actionId===bundle.actionId)?.subactions.find(s=>s.sourceSubactionId===child.sourceSubactionId);if(sub)sub.lockedCells=[];}},
-        leftDepth:()=>{bumpRevision(session.state);for(const row of session.state.actors){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}},
+        leftDepth:()=>{interruptWorldRest(game,'level-exit');settleWorldRest(game);bumpRevision(session.state);for(const row of session.state.actors){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}},
         interrupted:(source,bundle,reason)=>{bumpRevision(session.state);const metadata=session.state.actions.find(a=>a.actionId===bundle.actionId);if(metadata&&reason==='layer-change')metadata.suppressTerminalSweep=true;const sub=metadata?.subactions.find(s=>s.sourceSubactionId===source.sourceSubactionId);if(sub)sub.lockedCells=[];},
         shouldSweep:bundle=>!session.state.actions.find(action=>action.actionId===bundle.actionId)?.suppressTerminalSweep,
-        finishAction:bundle=>{const row=session.state.actors.find(row=>row.actorId===bundle.decisionOwnerId);
+        finishAction:(bundle,reason)=>{if(finishWorldRestClock(game,bundle,reason))return;const row=session.state.actors.find(row=>row.actorId===bundle.decisionOwnerId);
             if(row&&row.poise===0&&bundle.subactions.some(child=>child.phases.some(phase=>phase.kind==='break-recovery'))){const source=actor(game,row.actorId);if(source){const policy=resourcesFor(game,session,source).policy;row.poise=policy.poiseBreakRecoveryValue;row.poiseRecoveryRemainder=0;}}bumpRevision(session.state);session.state.actions=session.state.actions.filter(a=>a.actionId!==bundle.actionId);},
         select:(id,scope)=>{
             const source=actor(game,id);if(!(source instanceof Monster)||!eligible(game,source,session))return 'native-fallback';
@@ -322,6 +325,7 @@ export function bindPhasedAttackProduction(game:Game):void {
             return 'native-fallback';
         }});
     sessions.set(game,session);
+    bindWorldRestSource(game);
     for(const row of session.state.actors){const source=actor(game,row.actorId);if(source&&(row.dodgeRemainingTicks||row.parryRemainingTicks))session.defenseSources.set(source.id,{actor:source,revision:actorSourceRevision(source),depth:game.depth});}
 }
 /** Whole-body sources use every zone; targets use only pending locked cells. */
@@ -398,6 +402,15 @@ export function validatePhasedAttackGeometry(state:ProductionActorAttackState, d
     }
     for(const bundle of state.scheduler.bundles) {
         const metadata=state.actions.find(action=>action.actionId===bundle.actionId);
+        if(state.bonfires?.active?.actionId===bundle.actionId) {
+            const rest=state.bonfires.active,source=actors.get(rest.actorId);
+            if(rest.phase!=='resting'||!source||source.hp<=0||source.loc.x!==rest.anchor.x||source.loc.y!==rest.anchor.y
+                ||bundle.subactions[0]!.sourceFootprintVersion!==sourceFootprintVersion(spatialOf(source))
+                ||bundle.subactions[0]!.sourcePartId!==(spatialOf(source).partId??'body')
+                || source.hp<rest.startHp && !rest.interrupted || rest.actorId!==bundle.decisionOwnerId
+                || (activeActorIds&&!activeActorIds.has(rest.actorId)))throw new Error('Invalid rest source');
+            continue;
+        }
         if(!metadata)throw new Error('Missing action metadata');
         for(const child of bundle.subactions) {
             const sub=metadata.subactions.find(sub=>sub.sourceSubactionId===child.sourceSubactionId),source=actors.get(child.sourceEntityId);
@@ -611,4 +624,19 @@ export function reconcileActorNativeRecovery(game:Game,actorId:number):void {
     if(!source||!row||row.staggerRemainingTicks<=0)return;
     row.staggerRemainingTicks=Math.max(row.staggerRemainingTicks,source.ticksUntilTurn);
     source.ticksUntilTurn=row.staggerRemainingTicks;
+}
+
+/** Trusted completed-rest resource commit, with current authoritative policy. */
+export function restoreActorRestResources(game:Game,restore:{stamina:string;poise:string}):void {
+    const session=sessions.get(game);if(!session)throw new Error('Missing rest resource session');
+    const {profile,policy,row}=resourcesFor(game,session,game.player);
+    // An unchanged implicit full pool remains implicit; no budget slot is needed.
+    if(!row&&(restore.stamina!=='full'||policy.initialStamina===policy.staminaCapacity))return;
+    if(!row&&session.state.actors.length>=4096)throw new Error('Actor resource budget exhausted');
+    const resource=row??initialResource(game.player.id,profile.id,policy);
+    resource.profileId=profile.id;
+    if(restore.stamina==='full'){resource.stamina=policy.staminaCapacity;resource.regenRemainder=0;resource.regenDelayRemaining=0;}
+    if(restore.poise==='full'){resource.poise=policy.poiseCapacity;resource.poiseRecoveryRemainder=0;resource.poiseRecoveryDelayRemaining=0;}
+    if(!row){session.state.actors.push(resource);session.state.actors.sort((a,b)=>a.actorId-b.actorId);}
+    bumpRevision(session.state);
 }

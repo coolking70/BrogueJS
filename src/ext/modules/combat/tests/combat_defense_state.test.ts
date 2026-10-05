@@ -34,7 +34,7 @@ function attackState(): ProductionActorAttackState {
 describe('combat 3d data and strict defense state', () => {
     it('exposes versioned data-driven parry, poise policy and segment damage through the foundation DTO', () => {
         const pack = loadCombatDefinitionPack(), dto = combatAttackDefinitions(pack);
-        expect(COMBAT_VERSION).toBe('1.3.0'); expect(initialProductionCombatState().schema).toBe(3);
+        expect(COMBAT_VERSION).toBe('1.4.0'); expect(initialProductionCombatState().schema).toBe(3);
         expect(dto.parry).toEqual({ cost: 3, windowTicks: 60, recoveryTicks: 100, poiseDamage: 12, contactRange: 1 });
         expect(dto.resourcePolicies).toEqual(pack.resourcePolicies);
         expect(dto.attacks.map(attack => attack.segments.map(segment => segment.poiseDamage)))

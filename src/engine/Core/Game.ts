@@ -1,3 +1,4 @@
+import { isWorldRestCommand, prepareWorldRest, commitWorldRest, settleWorldRest, worldRestDamage, worldRestUnavailable } from './WorldRestProduction';
 import { canCommitNativeAttack, commitNativeAttackCost, withNativeAttackAction, withPrepaidNativeAttack } from './NativeAttackTransaction';
 import { bodyDecisionActor, bodyStatusOwner, type BodyStatusContext } from '../Status/BodyStatuses';
 import { nativeSpatialCatalog, type SpatialCatalog } from '../Movement/SpatialSchema';
@@ -442,6 +443,8 @@ export class Game {
         return new ExtensionRuntime(createExtensionRegistry(), manifest, {
             memberDamage: (actor, damage, kind) => this.applyBodyMemberDamage(actor, damage, kind),
             memberDamageCommitted: actor => this.finishBodyMemberDamage(actor),
+            nativeDamageCommitted: (actor, hpLost) => worldRestDamage(this, actor, hpLost),
+            worldRestUnavailable: id => worldRestUnavailable(this, id),
             validateMemberBreak: request => this.validateMemberBreak(request),
             memberBroken: (core, member) => {
                 reconcileActorNativeRecovery(this, core.id);
@@ -3238,11 +3241,13 @@ export class Game {
         if (!this.extensionRuntime || this.isAdvancing) return;
         bindPhasedAttackProduction(this);
         reconcileProductionActorActions(this);
+        settleWorldRest(this);
         const roots = [...this.monsters, ...this.dormantMonsters, ...this.purgatory,
             ...[...this.levels.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]),
             ...[...this.pendingFallenByDepth.values()].flat()];
         const reachable = [this.player, ...collectEntityGraph(roots).monsters];
         this.extensionRuntime.collectWorld([this.depth, ...this.levels.keys()], this.isGameOver);
+        bindPhasedAttackProduction(this);
         this.extensionRuntime.settle(reachable);
         this.extensionRuntime.collectComponents(reachable);
         collectPhasedAttackActors(this, reachable);
@@ -3485,7 +3490,8 @@ export class Game {
             if (!this.extensionRuntime) throw new Error('Extension command in classic mode');
             // §4.5: only detached data crosses the wait. Runtime.command and its
             // controlled callbacks remain entirely synchronous, including refusals.
-            if (isActorParryCommand(this,data)) {
+            if (isWorldRestCommand(this,data)) yield* this.executeWorldRestCommandStages(data);
+            else if (isActorParryCommand(this,data)) {
                 const plan=prepareActorParryCommand(this,data);
                 if(plan&&commitActorParryCommand(this,plan)){timeSystem.currentTick+=this.player.ticksUntilTurn;observePresentation(this,'turn',0);this.playerTurnEnded();}
                 this.collectExtensionComponents();
@@ -3528,6 +3534,14 @@ export class Game {
         } else {
             (yield* this.performPlayerActionStages(action, data, 'system'));
         }
+    }
+
+    private *executeWorldRestCommandStages(data:unknown):CommandStages<void> {
+        const runtime=this.extensionRuntime,plan=prepareWorldRest(this,data);if(!plan)return;
+        if(!(yield* this.requestConfirm(i18next.t('ext.command.rest_confirm',{ticks:plan.restTicks}))))return;
+        if(runtime!==this.extensionRuntime||canonical(prepareWorldRest(this,data))!==canonical(plan))throw new Error('Stale rest confirmation');
+        if(commitWorldRest(this,plan)){observePresentation(this,'turn',0);this.playerTurnEnded();}
+        this.collectExtensionComponents();
     }
 
     private *executeActorDodgeCommandStages(data:unknown):CommandStages<void> {
@@ -10113,6 +10127,7 @@ export class Game {
                 advancementLoop: (stealthRange) => game.advancementLoop(stealthRange),
                 finishTurnEpilogue: () => game.finishTurnEpilogue(),
                 observeAnimationDelay: milliseconds => observePresentation(game, 'animation-delay', milliseconds),
+                settleWorldRest: () => settleWorldRest(game, false),
                 observeActorActionBoundary: () => observePresentation(game, 'turn', game.animationEnabled ? Game.ANIMATION_PAUSE_MS : 0),
                 triggerGameOver: (victory, reason) => game.triggerGameOver(victory, reason),
             },
@@ -10251,6 +10266,7 @@ export class Game {
         this.checkShoreWarning();
         logger.endCombatTurn();
         if (this.extensionRuntime) this.extensionRuntime.emit('playerTurnEnded', { turn: this.stats.turns });
+        settleWorldRest(this);
         observePresentation(this, 'turn', this.animationEnabled ? Game.ANIMATION_PAUSE_MS : 0);
     }
 

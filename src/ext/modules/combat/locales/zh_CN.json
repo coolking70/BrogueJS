@@ -74,5 +74,21 @@
   "ext.combat.ui.staggered": "硬直中，暂时不能行动",
   "ext.combat.ui.stagger_active": "硬直 {{ticks}}",
   "ext.combat.ui.parry_active": "弹反窗口 {{ticks}}",
-  "ext.combat.ui.parry_recovery": "弹反恢复 {{ticks}}"
+  "ext.combat.ui.parry_recovery": "弹反恢复 {{ticks}}",
+  "ext.combat.bonfire.name": "篝火",
+  "ext.combat.bonfire.description": "在篝火旁休息。完成后恢复生命、体力与韧性；受伤或遭遇威胁会打断休息。",
+  "ext.combat.ui.inspect_bonfire": "查看篝火休息说明",
+  "ext.combat.ui.rest_duration": "休息 {{ticks}} 时间刻",
+  "ext.combat.ui.perform_rest": "开始休息",
+  "ext.combat.ui.rest_time_hint": "休息会推进游戏时间，敌人与环境照常行动。说明界面不消耗时间；开始后不能用关闭窗口取消休息。",
+  "ext.combat.ui.rest_interrupt_hint": "受伤、移动、死亡或出现敌情会打断休息。恢复仅在安全完成时一次生效，中途打断不会获得篝火恢复。",
+  "ext.combat.ui.rest_restore_hint": "完成后按篝火配置恢复生命、体力与韧性。不清除毒、饥饿等状态，不重置成长资源或刷新敌人，也不能复活。",
+  "ext.combat.ui.rest_keyboard_hint": "点击开始休息，或用 Tab 选择按钮并按 Enter；Esc 关闭说明。",
+  "ext.combat.ui.rest_active": "篝火休息中 · 剩余 {{ticks}} 时间刻",
+  "ext.combat.ui.rest_interrupted": "篝火休息已中断，未获得篝火恢复",
+  "ext.combat.ui.bonfire_threatened": "附近有敌情，不能休息",
+  "ext.combat.ui.bonfire_busy": "当前动作尚未结束，不能休息",
+  "ext.combat.ui.bonfire_gate": "其他交互尚未结束，不能休息",
+  "ext.combat.ui.bonfire_distance": "需要靠近并看见篝火",
+  "ext.combat.ui.bonfire_unavailable": "当前不能在此休息"
 }

@@ -58,6 +58,7 @@ export interface ClockPort {
 
 export interface EffectsPort {
     objectiveTimeBlock(): void;
+    settleWorldRest?(): void;
     /** Extension-only completed block fact; native environment/status order stays unchanged. */
     beginObjectiveTime?(): () => number;
     playerFalls(): void;
@@ -149,6 +150,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
 
             let completeObjective: (() => number) | undefined;
             let suspended = false;
+            let completedBoundary = false;
             try {
                 // CE Time.c:2653-2655：客观时间门推进，归零则 +100 并执行客观块。
                 ports.clock.ticksTillUpdateEnvironment -= soonestTurn;
@@ -222,12 +224,14 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 }
 
                 if (!playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
+                completedBoundary = true;
                 if (actions) ports.effects.observeActorActionBoundary?.();
                 if (ports.clock.isGameOver) return; // CE Time.c:2756-2758
             } finally {
                 // Same-tick monster resolutions still see effects valid through this block.
                 // A yielded block is incomplete: retiring that iterator must not publish it.
                 if (!suspended && completeObjective) stealthRange = completeObjective();
+                if (!suspended && completedBoundary) ports.effects.settleWorldRest?.();
             }
         }
     }

@@ -187,7 +187,7 @@ describe('combat published part-break provider', () => {
         before.actors[0]!.poise = poise;
         const result = apply(before, request({ resolutionId: 2, zoneId: 'leg', balanceLoss: 12 }));
         expect(result.current()).toBe(before); expect(result.setState).not.toHaveBeenCalled();
-        expect(Object.keys(result.current()).sort()).toEqual(['actions', 'actors', 'nextActionId', 'revision', 'scheduler', 'schema']);
+        expect(Object.keys(result.current()).sort()).toEqual(['actions', 'actors', 'bonfires', 'nextActionId', 'revision', 'scheduler', 'schema']);
     });
     it('does not rebind a busy profile to the actor monster mapping', () => {
         const pack = definitions();

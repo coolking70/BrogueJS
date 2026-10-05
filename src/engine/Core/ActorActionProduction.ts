@@ -30,6 +30,8 @@ export interface ProductionActorActionOptions {
     interrupted?: (source: ReadonlyActorActionBundle['subactions'][number], bundle: ReadonlyActorActionBundle, reason: ActorActionInterruptionReason) => void;
     elapsed?: (delta: number, depth: number) => void;
     sourceChanged?: (sourceEntityId:number) => void;
+    /** Non-attack actions may own interruption and settle at the shared safe point. */
+    handlesInterruption?: (bundle: ReadonlyActorActionBundle) => boolean;
     leftDepth?: (depth:number) => void;
     inputLocked?: () => boolean;
     resumeResources?: () => void;
@@ -124,6 +126,7 @@ export function createProductionActorActionSession(game: Game, options: Producti
         actorDepth: id => row(id)?.depth ?? null,
         isSourceValid: (source, depth) => { const entity = row(source.sourceEntityId); return !!entity && entity.depth === depth && liveSourceValid(source, entity.actor); },
         sourceInterruption: (source, bundle) => {
+            if (options.handlesInterruption?.(bundle)) return null;
             if (source.phases[source.phaseIndex]?.kind === 'break-recovery') return null;
             const entity = row(source.sourceEntityId);
             let reason: ActorActionInterruptionReason | null = null;

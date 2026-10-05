@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "moduleId": "combat",
-  "moduleVersion": "1.3.0",
-  "rulesVersion": "1.3.0",
+  "moduleVersion": "1.4.0",
+  "rulesVersion": "1.4.0",
   "resourcePolicies": [
     {
       "id": "fixture.resources",
@@ -697,5 +697,38 @@
     "recoveryTicks": 100,
     "poiseDamage": 12,
     "contactRange": 1
+  },
+  "bonfires": {
+    "definitions": [
+      {
+        "id": "combat.bonfire",
+        "nameKey": "ext.combat.bonfire.name",
+        "descriptionKey": "ext.combat.bonfire.description",
+        "glyph": "♨",
+        "color": "#E7A34B",
+        "interactionDistance": 1,
+        "placement": {
+          "minDepth": 1,
+          "maxDepth": 40,
+          "maxPerDepth": 1,
+          "maxPerRun": 40,
+          "minStairDistance": 2,
+          "maxEntranceDistance": 6,
+          "onNoSpace": "skip"
+        },
+        "restTicks": 500,
+        "restorePolicy": {
+          "hp": "full",
+          "stamina": "full",
+          "poise": "full"
+        },
+        "resetPolicy": "none"
+      }
+    ],
+    "limits": {
+      "maxActive": 40,
+      "maxPlacements": 40,
+      "maxRestReceipts": 128
+    }
   }
 }

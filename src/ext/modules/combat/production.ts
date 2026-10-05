@@ -1,7 +1,9 @@
+import { initialBonfireState } from '../../worldRest';
 import type { ActorAttackDefinitions, ProductionActorAttackState } from '../../actorActions';
 import type { CombatPack } from './types';
 export function combatAttackDefinitions(pack: CombatPack): ActorAttackDefinitions {
     return {
+        bonfires: pack.bonfires,
         attacks: pack.attacks.map(({id,nameKey,cost,windupTicks,recoveryTicks,segments}) => ({id,nameKey,cost,windupTicks,recoveryTicks,
             segments: segments.map(({delayTicks,shape,locationPolicy,targetPolicy,damageProfile,poiseDamage,dodgeable,parryable}) =>
                 ({delayTicks,shape,locationPolicy,targetPolicy,damageProfile,poiseDamage,dodgeable,parryable}))})),
@@ -14,5 +16,5 @@ export function combatAttackDefinitions(pack: CombatPack): ActorAttackDefinition
     };
 }
 export function initialProductionCombatState(): ProductionActorAttackState {
-    return {schema:3,revision:0,nextActionId:1,scheduler:{schema:1,bundles:[]},actions:[],actors:[]};
+    return {schema:3,revision:0,nextActionId:1,bonfires:initialBonfireState(),scheduler:{schema:1,bundles:[]},actions:[],actors:[]};
 }
