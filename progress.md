@@ -1,5 +1,9 @@
 Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工试玩问题；用户在 2026-09-29 明确要求停止定时任务并启动合适子进程开发。
 
+- 2026-10-05 当前授权 4d：执行 docs/ext/phase4d.task.md，不 commit，中文报告。按任务书允许的干净子里程碑交付 4d-0：fixture 复合体有界落脚规划与全路径约束/碰撞、原子位置发布、持久身份回归。生产 group 能力仍关闭；原生调度/战斗/状态/整体转换/迁层/UI/正式内容留完整4d接线。
+
+- 4d-0最终交付：8腿/多头/链/17成员fixture，树序/32候选/128分支/两平移子步、连续碰撞与牵引、一次性位置计划/原子最终锚点、静态群codec约束校验；生产group保持关闭。冻结v4 boundary/type/build、73文件1486项（34新增）、地形守卫1项、16/16 engine-only组合、drift4文件5项全exit0，883输入SHA集合1a548898b6219a572438a2077cfd415e2427155db9b2a9821d6c992b483da7bf前后一致，UTC2026-10-05T09:34:00结束。17成员20次fixture计划15成功/5预算blocked，冷1.803ms、暖P95 3.428ms，不冒充真实命令性能。原地保留成员地形/区域拒绝补先红后绿；前序3c经典射线delivery参数导致旧W4两失败，回退本轮CreatureSpatial仍同样失败后改Game适配器仅扩展传标记，旧测试未改，真实combat耗尽体力射线补保险。首次门禁主动中断130、v2 related exit1、v3新夹具字段type exit2原证据均保留，v4全链重新全绿。报告docs/ext/phase4d.report.md列完整4d剩余项；没有正式复合敌人/自然种子/生产UI，不声称完整4d。未暂存/commit/push，旧基线/trace未动。
+
 - 2026-10-05 当前授权：阅读并执行 docs/ext/phase4a4.task.md，不 commit，中文报告。按任务书允许的干净子里程碑推进 owned region / movementBounds 底座；giants 内容、侧室生成与 HUD 尚待后续实现。本轮浏览器验收按任务书由维护者执行。
 - 2026-10-05 4a-4 底座子里程碑完成：owned region 的受控事务安装、完整身体位移边界、变形保绑定、坠落清绑定、存读严格校验与生成失败恢复已交付；16 项新增专项纳入最终相关回归，37 文件/596 项全部通过（136.26s），type/build/boundary、现有 8 组合 engine-only smoke 与 drift 2/2（45.33s）均 exit0。回滚重绑时序问题经单变量反事实确认并修复后，整套相关门禁已重跑。14 个代码/测试/清单文件冻结前后 SHA256 一致；未暂存/commit/push。中文报告 docs/ext/phase4a4.report.md；完整 4a-4 的 giants 模块、自然侧室、守场 AI、Boss 血条与自然验收种子仍未实现，剩余项已逐项登记；没有宣称完整可玩闭环。
 
