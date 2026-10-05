@@ -34,10 +34,38 @@ describe('giants original content contract', () => {
     for (const key of [
       descriptor.labelKey,
       descriptor.descriptionKey,
-      pack.forms[0]!.nameKey,
-      pack.forms[0]!.descriptionKey
+      ...pack.forms.flatMap((f) => [f.nameKey, f.descriptionKey])
     ])
       expect(locale[key as keyof typeof locale]).toBeTruthy();
+    expect(pack.forms).toHaveLength(2);
+    expect(pack.templates).toHaveLength(2);
+    expect(pack.forms[1]).toMatchObject({
+      id: 'giants.abyssal-colossus',
+      size: 3,
+      hp: 260,
+      defense: 60,
+      accuracy: 95,
+      damage: '8-16',
+      moveSpeed: 200,
+      attackSpeed: 100,
+      bloodType: 0,
+      DFChance: 0,
+      DFType: 0
+    });
+    expect(pack.templates[1]).toEqual({
+      id: 'giants.abyssal-chamber',
+      priority: 0,
+      minDepth: 7,
+      maxDepth: 14,
+      chance: 40,
+      width: 16,
+      height: 12,
+      entranceWidth: 4,
+      candidateLimit: 16,
+      formId: 'giants.abyssal-colossus',
+      guard: 'return-to-spawn'
+    });
+    expect(new Set(pack.forms.map((f) => f.nameKey)).size).toBe(2);
     expect(m.commands).toBeUndefined();
     expect(m.rulePolicies).toBeUndefined();
     expect(m.optionalRewards).toBeUndefined();

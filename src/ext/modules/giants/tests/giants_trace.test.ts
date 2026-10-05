@@ -1,16 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
 import { writeFileSync, readFileSync } from 'node:fs';
-import { naturalGiants, GIANTS_ACCEPTANCE_SEED } from './naturalFixture';
+import {
+  naturalGiants,
+  naturalColossus,
+  GIANTS_ACCEPTANCE_SEED,
+  GIANTS_COLOSSUS_ACCEPTANCE_SEED
+} from './naturalFixture';
 import { canonical } from '../../../json';
 const hash = (v: unknown) => createHash('sha256').update(canonical(v)).digest('hex');
-export function captureGiantsNaturalTrace() {
-  const { game, boss, state } = naturalGiants(),
+export function captureGiantsNaturalTrace(colossus = false) {
+  const { game, boss, state } = colossus ? naturalColossus() : naturalGiants(),
     s = game.toSnapshot(),
     recording = game.exportRecording();
   return {
     schema: 1,
-    seed: GIANTS_ACCEPTANCE_SEED,
+    seed: colossus ? GIANTS_COLOSSUS_ACCEPTANCE_SEED : GIANTS_ACCEPTANCE_SEED,
+    ...(colossus ? { mode: game.mode } : {}),
     depth: game.depth,
     commands: recording.events.length,
     commandsHash: hash(
@@ -36,7 +42,9 @@ export function captureGiantsNaturalTrace() {
     }),
     extensionsHash: hash(s.extensions),
     rng: s.rngState,
-    region: s.extensions!.foundation.world.regions![0],
+    region: s.extensions!.foundation.world.regions!.find(
+      (r) => r.id === boss.spatial!.movementRegionId
+    ),
     state,
     boss: {
       id: boss.id,
@@ -52,6 +60,13 @@ describe('giants fixed natural command trace', () => {
   it('naturally recreates seed 7306 D3 world, encounter, bindings and both RNG streams', () => {
     const actual = captureGiantsNaturalTrace(),
       path = new URL('../data/natural-trace.json', import.meta.url);
+    if (process.env.BROGUE_CAPTURE_GIANTS_TRACE === '1')
+      writeFileSync(path, JSON.stringify(actual, null, 2) + '\n');
+    expect(actual).toEqual(JSON.parse(readFileSync(path, 'utf8')));
+  }, 60000);
+  it('naturally recreates the D7 colossus world, command route, bindings and both RNG streams', () => {
+    const actual = captureGiantsNaturalTrace(true),
+      path = new URL('../data/colossus-natural-trace.json', import.meta.url);
     if (process.env.BROGUE_CAPTURE_GIANTS_TRACE === '1')
       writeFileSync(path, JSON.stringify(actual, null, 2) + '\n');
     expect(actual).toEqual(JSON.parse(readFileSync(path, 'utf8')));

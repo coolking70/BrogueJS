@@ -19,6 +19,23 @@
       "bloodType": 0,
       "DFChance": 0,
       "DFType": 0
+    },
+    {
+      "id": "giants.abyssal-colossus",
+      "nameKey": "ext.giants.abyssal_colossus.name",
+      "descriptionKey": "ext.giants.abyssal_colossus.description",
+      "size": 3,
+      "char": "C",
+      "color": 7904156,
+      "hp": 260,
+      "accuracy": 95,
+      "defense": 60,
+      "damage": "8-16",
+      "moveSpeed": 200,
+      "attackSpeed": 100,
+      "bloodType": 0,
+      "DFChance": 0,
+      "DFType": 0
     }
   ],
   "templates": [
@@ -33,6 +50,19 @@
       "entranceWidth": 3,
       "candidateLimit": 16,
       "formId": "giants.ridgeback",
+      "guard": "return-to-spawn"
+    },
+    {
+      "id": "giants.abyssal-chamber",
+      "priority": 0,
+      "minDepth": 7,
+      "maxDepth": 14,
+      "chance": 40,
+      "width": 16,
+      "height": 12,
+      "entranceWidth": 4,
+      "candidateLimit": 16,
+      "formId": "giants.abyssal-colossus",
       "guard": "return-to-spawn"
     }
   ]
