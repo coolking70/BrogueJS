@@ -41,10 +41,11 @@ function walk(s: Scene, pathing: RigidPosePathing, goal: RigidPoseGoal) {
 /** Independent forward Dijkstra, no production terrain/distance tables,
  * index encoding, heap or reverse relaxation. Edges use the checked spatial
  * predicates so this specifically cross-checks graph/path/cache correctness. */
-function referenceDistance(s: Scene, target: Pos, targetPose: RigidPose, fireCost=1): number {
+function referenceDistance(s: Scene, target: Pos, targetPose: RigidPose, fireCost=1, dynamic=false): number {
     const key=(at:Pos,pose:RigidPose)=>`${at.x},${at.y},${pose}`;
     const open=[{at:{...s.actor.loc},pose:s.actor.spatial!.pose as RigidPose,cost:0}], best=new Map<string,number>([[key(s.actor.loc,s.actor.spatial!.pose as RigidPose),0]]);
     const allowsTerrain=(p:Pos)=>!(cellTerrainFlags(s.grid,p.x,p.y)&T_OBSTRUCTS_PASSABILITY);
+    const fit=(at:Pos,pose:RigidPose)=>dynamic?s.spatial.canFitAt(s.actor,at,{allowsTerrain},pose):s.spatial.canFitTerrainAt(s.actor,at,{allowsTerrain},pose);
     while(open.length) {
         open.sort((a,b)=>a.cost-b.cost);const current=open.shift()!;
         if(current.cost!==best.get(key(current.at,current.pose)))continue;
@@ -53,9 +54,9 @@ function referenceDistance(s: Scene, target: Pos, targetPose: RigidPose, fireCos
         for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++) {
             if(!dx&&!dy)continue;
             const at={x:current.at.x+dx,y:current.at.y+dy};
-            if(!s.spatial.canFitTerrainAt(s.actor,at,{allowsTerrain},current.pose))continue;
-            if(dx&&dy&&(!s.spatial.canFitTerrainAt(s.actor,{x:at.x,y:current.at.y},{allowsTerrain},current.pose)
-                ||!s.spatial.canFitTerrainAt(s.actor,{x:current.at.x,y:at.y},{allowsTerrain},current.pose)))continue;
+            if(!fit(at,current.pose))continue;
+            if(dx&&dy&&(!fit({x:at.x,y:current.at.y},current.pose)
+                ||!fit({x:current.at.x,y:at.y},current.pose)))continue;
             const cost=s.catalog.cells(s.actor.spatial!.footprintId,current.pose).some(o=>cellTerrainFlags(s.grid,at.x+o.x,at.y+o.y)&T_IS_FIRE)?fireCost:1;
             next.push({at,pose:current.pose,cost:current.cost+cost});
         }
@@ -94,6 +95,14 @@ describe('4b-0 bounded fixture pose graph', () => {
         const goal={kind:'anchors' as const,anchors:[{x:3,y:4,pose:'r0' as const}]};
         const cheap=pathing.planStep(s.actor,goal,{},true).distance!;
         expect(pathing.planStep(s.actor,goal,{costs:[{flags:T_IS_FIRE,cost:7}]},true).distance!).toBeGreaterThan(cheap);
+    });
+    it.each(Object.entries(MASKS))('%s occupancy replan equals independent live forward graph',(_name,cells)=>{
+        const s=rigidScene(cells),pathing=new RigidPosePathing(s.spatial),goal={kind:'anchors' as const,anchors:[{x:4,y:6,pose:'r0' as const}]};
+        const step=pathing.planStep(s.actor,goal);expect(step.kind).toBe('step');
+        const old=s.spatial.footprintOf(s.actor),future=s.catalog.cells(s.actor.spatial!.footprintId,step.pose!).map(o=>({x:step.at!.x+o.x,y:step.at!.y+o.y}));
+        const p=future.find(p=>!old.some(o=>o.x===p.x&&o.y===p.y))!;s.world.monsters.push(new Monster(p.x,p.y,(monsters as MonsterData[]).find(m=>m.id==='rat')!));s.spatial.replaceWorld(s.world);
+        const expected=referenceDistance(s,{x:4,y:6},'r0',1,true);expect(pathing.planStep(s.actor,goal).replanned).toBe(true);
+        expect(walk(s,pathing,goal)).toHaveLength(expected);
     });
     it('dynamic blockage rechecks sweep occupancy, replans once and permits a newly dead obstacle', () => {
         const s=rigidScene(), pathing=new RigidPosePathing(s.spatial), goal={kind:'anchors' as const,anchors:[{x:10,y:10,pose:'r90' as const}]};

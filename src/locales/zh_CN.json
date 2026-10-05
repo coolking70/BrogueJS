@@ -1,5 +1,6 @@
 {
     "sidebar.body_size": "{{size}}×{{size}}",
+    "sidebar.body_cells": "{{count}} 格",
   "dialog.command_changed": "情况已改变，请重新输入命令。",
   "menu.command.waiting": "请先回答当前确认，再保存或导出。",
   "messages.view_result": "查看结算",

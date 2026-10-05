@@ -2,7 +2,7 @@ import type { Creature } from '../../entities/Creature';
 import { Monster } from '../../entities/Monster';
 import type { Pos } from '../../types';
 import type { SpatialWorld } from './CreatureSpatial';
-import { canFitAt, conservativeSquareStep, squareMovementSize } from './CreatureSpatial';
+import { canFitAt, conservativeSquareStep, footprintOf } from './CreatureSpatial';
 import { cellTerrainFlags, cellTerrainMechFlags } from '../Map/DungeonFeature';
 import { T_DIVIDES_LEVEL, T_OBSTRUCTS_PASSABILITY, TM_ALLOWS_SUBMERGING } from '../Map/TerrainCatalog';
 import { inMovementRegion } from './MovementRegions';
@@ -11,11 +11,11 @@ import { inMovementRegion } from './MovementRegions';
  * callers. Destination restrictions never become cached traversal walls. */
 export function squarePlacementCandidates(world: SpatialWorld, target: Creature, origin: Pos,
     forbidden: number, forbiddenCell: (p: Pos) => boolean = () => false): Pos[] {
-    const size = squareMovementSize(target), { grid } = world;
+    const offsets = footprintOf(target).map(p => ({ x: p.x - target.loc.x, y: p.y - target.loc.y })), { grid } = world;
     const aquatic = target instanceof Monster && target.hasBehavior('MONST_RESTRICTED_TO_LIQUID');
     const cellsFit = (p: Pos, destination: boolean): boolean => {
-        for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) {
-            const at = { x: p.x + dx, y: p.y + dy };
+        for (const offset of offsets) {
+            const at = { x: p.x + offset.x, y: p.y + offset.y };
             if (!grid.isValidPos(at.x, at.y) || (cellTerrainFlags(grid, at.x, at.y) & (destination ? forbidden | T_OBSTRUCTS_PASSABILITY : (forbidden & T_DIVIDES_LEVEL) | T_OBSTRUCTS_PASSABILITY))
                 || target.spatial?.movementRegionId !== undefined && !(world.inRegion?.(target.spatial.movementRegionId, at) ?? inMovementRegion(grid, target.spatial.movementRegionId, at))
                 || (aquatic && !(cellTerrainMechFlags(grid, at.x, at.y) & TM_ALLOWS_SUBMERGING))

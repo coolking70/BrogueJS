@@ -1,4 +1,6 @@
-import { bindNativeForms, validNativeForm, type NativeFormDefinition } from './nativeForms';
+import { SpatialCatalog, nativeSpatialCatalog } from '../engine/Movement/SpatialSchema';
+import { rigidFootprint } from '../engine/Movement/RigidFootprint';
+import { bindNativeForms, nativeFormFootprint, validNativeForm, type NativeFormDefinition } from './nativeForms';
 import { validGenerationContribution } from './generation';
 import type { Creature } from '../entities/Creature';
 import { Player } from '../entities/Player';
@@ -15,6 +17,9 @@ import { EffectCausality, validEffectOrigin, type EffectOrigin } from './causali
 import { ExtensionCompatibilityError } from './compatibility';
 import type { DeathFact, GenerationToken, ControlledActionRequest, ControlledActionResult, ControlledActionOutcome, PhysicalResolutionFact, OptionalQueryResult, OptionalQueryProvider, OptionalRewardProvider, OptionalRewardRequest, OptionalRewardPreparation, OptionalRewardPrepareResult, OptionalRewardResult, PendingStoryFact } from './types';
 
+// Pure geometry authority is session-derived. No own field/catalog allocation
+// is added to a runtime with no arbitrary-shape declarations.
+const spatialCatalogs = new WeakMap<ExtensionRuntime, SpatialCatalog>();
 function isCreatureView(value: unknown): boolean {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
     const v = value as Record<string, unknown>;
@@ -118,6 +123,7 @@ export class ExtensionRuntime {
     private rewardProviderPhase = false;
     private pureProviderPhase = false;
     private readonly messageBuffers: string[][] = [];
+    get spatialCatalog(): SpatialCatalog { return spatialCatalogs.get(this) ?? nativeSpatialCatalog; }
     constructor(registry: ExtensionRegistry, manifest: ExtensionManifest, private readonly ports: ExtensionPorts, snapshot?: ExtensionSnapshot) {
         this.manifest = structuredClone(manifest);
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
@@ -133,6 +139,11 @@ export class ExtensionRuntime {
             if (module.publicActorTags && (!Array.isArray(module.publicActorTags) || module.publicActorTags.length > 8 || module.publicActorTags.some(t => !validId(t.component) || !validId(t.tag) || !module.componentValidators?.[t.component]))) throw new Error('Invalid public actor tags');
             if (module.nativeForms) Object.defineProperty(module, 'nativeForms', { value: freezeView(structuredClone(module.nativeForms)), writable: false });
             if (module.generationContributions) Object.defineProperty(module, 'generationContributions', { value: freezeView(structuredClone(module.generationContributions)), writable: false });
+        }
+        if (this.modules.some(m => m.nativeForms?.some(f => f.footprint))) spatialCatalogs.set(this, new SpatialCatalog(false, this.modules.map(m => m.id)));
+        for (const module of this.modules) for (const form of module.nativeForms ?? []) {
+            const definition = nativeFormFootprint(form, module.id);
+            if (definition) { this.spatialCatalog.registerFootprint(definition); rigidFootprint(this.spatialCatalog, definition.id); }
         }
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalQueries ?? {})) {
             if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
@@ -809,7 +820,7 @@ export class ExtensionRuntime {
         if (this.disposed || this.creatures.has(creature)) return;
         this.creatures.add(creature);
         const forms = this.nativeForms();
-        if (forms.length) bindNativeForms(creature, forms);
+        if (forms.length) bindNativeForms(creature, forms, this.spatialCatalog);
         creature.extensionHooks = {
             causality: this.causality,
             partyId: actor => this.creditParty(actor),

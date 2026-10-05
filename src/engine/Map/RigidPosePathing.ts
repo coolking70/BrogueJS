@@ -1,6 +1,6 @@
 import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
-import { CreatureSpatial, conservativeSquareStep, footprintOf, rigidMovementFootprint } from '../Movement/CreatureSpatial';
+import { CreatureSpatial, footprintOf, rigidMovementFootprint } from '../Movement/CreatureSpatial';
 import { type RigidPose, type CompiledRigidFootprint, turnedPose } from '../Movement/RigidFootprint';
 import { integer, SpatialValidationError } from '../Movement/SpatialSchema';
 import type { FootprintPathingStats, FootprintTraversalPolicy } from './FootprintPathing';
@@ -25,13 +25,14 @@ export interface RigidPoseStep {
 type Policy = { forbiddenFlags: number; requiresSubmergible: boolean; allowSecretDoors: boolean; costs: { flags: number; cost: number }[] };
 interface Graph {
     grid: Grid; shape: CompiledRigidFootprint; fit: Uint8Array; cost: Float64Array;
-    clockwise: Uint8Array; counterclockwise: Uint8Array;
+    clockwise: Uint8Array; counterclockwise: Uint8Array; movement: Uint8Array; uniform: boolean;
     targetKey?: string; distances?: Float64Array;
 }
+type Rotations = { clockwise: Uint8Array; counterclockwise: Uint8Array };
 const DIRS = [[-1,-1], [0,-1], [1,-1], [-1,0], [1,0], [-1,1], [0,1], [1,1]] as const;
 const MAX_GRAPHS = 8;
 
-/** 4b-0 fixture pose graph. Every scan visits at most W*H*A nodes (A<=4)
+/** Bounded rigid pose graph. Every scan visits at most W*H*A nodes (A<=4)
  * and ten edges per node; one bounded dynamic replan per call. LRU eviction
  * recomputes the same complete graph instead of changing routes or dropping
  * poses. Squares' production FootprintPathing remains its unchanged r0 path. */
@@ -73,12 +74,12 @@ export class RigidPosePathing {
         }
         let goals = this.goals(actor, goal, graph);
         if (goal.kind === 'escape') {
-            const threat = this.scan(actor, graph, goals, graph.fit), maximum = Math.max(...threat.filter(Number.isFinite));
+            const threat = this.scan(graph, goals, graph.fit), maximum = Math.max(...threat.filter(Number.isFinite));
             goals = Array.from(threat, (distance, i) => distance === maximum ? i : -1).filter(i => i >= 0);
         }
         const targetKey = JSON.stringify(goals);
         if (graph.targetKey !== targetKey) {
-            graph.targetKey = targetKey; graph.distances = this.scan(actor, graph, goals, graph.fit); this.distanceBuilds++;
+            graph.targetKey = targetKey; graph.distances = this.scan(graph, goals, graph.fit); this.distanceBuilds++;
         }
         const start = this.node(graph, actor.loc, actor.spatial!.pose as RigidPose);
         const capturedDistances = graph.distances!;
@@ -87,13 +88,13 @@ export class RigidPosePathing {
             distance: graph.distances![start] ?? Infinity, distanceAt, replanned: false };
         if (graph.distances![start] === 0) return { kind: 'arrived', replanned: false };
         const options = { allowsTerrain: (at: Pos) => this.allows(grid, at, normalized) };
-        const next = this.next(actor, graph, start, graph.distances!, graph.fit);
+        const next = this.next(graph, start, graph.distances!, graph.fit);
         if (next !== undefined && this.liveEdge(actor, graph, start, next, options)) return this.result(actor, graph, start, next, false);
         if (!Number.isFinite(graph.distances![start])) {
             // An environmental change can strand an origin outside its policy.
             // Preserve checked exits, without promoting it into a cached node.
             if (start >= 0 && !graph.fit[start]) {
-                const exits = this.neighbors(actor, graph, start, graph.fit)
+                const exits = this.neighbors(graph, start, graph.fit)
                     .filter(i => Number.isFinite(graph!.distances![i]))
                     .sort((a, b) => graph!.cost[a]! + graph!.distances![a]! - graph!.cost[b]! - graph!.distances![b]!);
                 const exit = exits.find(i => this.liveEdge(actor, graph!, start, i, options));
@@ -102,10 +103,9 @@ export class RigidPosePathing {
             return { kind: 'unreachable', replanned: false };
         }
         this.dynamicReplans++;
-        const usable = new Uint8Array(graph.fit.length);
-        for (let i = 0; i < usable.length; i++) if (graph.fit[i]) usable[i] = +this.spatial.canFitAt(actor, this.at(graph, i), options, this.pose(graph, i));
-        const distances = this.scan(actor, graph, goals.filter(i => usable[i]), usable, options);
-        const alternative = this.next(actor, graph, start, distances, usable, options);
+        const { usable, rotations } = this.dynamicTerrain(actor, graph);
+        const distances = this.scan(graph, goals.filter(i => usable[i]), usable, rotations);
+        const alternative = this.next(graph, start, distances, usable, rotations);
         if (alternative !== undefined && this.liveEdge(actor, graph, start, alternative, options)) return this.result(actor, graph, start, alternative, true);
         return { kind: 'blocked', replanned: true };
     }
@@ -137,24 +137,82 @@ export class RigidPosePathing {
     private at(graph: Graph, node: number): Pos { const i = node % this.area(graph); return { x: i % graph.grid.width, y: Math.floor(i / graph.grid.width) }; }
     private pose(graph: Graph, node: number): RigidPose { return graph.shape.poses[Math.floor(node / this.area(graph))]!; }
     private buildTerrain(actor: Creature, shape: CompiledRigidFootprint, policy: Policy): Graph {
-        const grid = this.spatial.grid, length = grid.width * grid.height * shape.poses.length;
-        const graph: Graph = { grid, shape, fit: new Uint8Array(length), cost: new Float64Array(length), clockwise: new Uint8Array(length), counterclockwise: new Uint8Array(length) };
-        const options = { allowsTerrain: (at: Pos) => this.allows(grid, at, policy) };
-        for (let i = 0; i < length; i++) {
-            const at = this.at(graph, i), pose = this.pose(graph, i);
-            if (!this.spatial.canFitTerrainAt(actor, at, options, pose)) continue;
-            graph.fit[i] = 1; graph.cost[i] = 1;
-            for (const offset of shape.cells.get(pose)!) {
-                const flags = cellTerrainFlags(grid, at.x + offset.x, at.y + offset.y);
-                for (const entry of policy.costs) if (flags & entry.flags) graph.cost[i] = Math.max(graph.cost[i]!, entry.cost);
+        const grid = this.spatial.grid, width = grid.width, height = grid.height, area = width * height, length = area * shape.poses.length;
+        const graph: Graph = { grid, shape, fit: new Uint8Array(length), cost: new Float64Array(length),
+            clockwise: new Uint8Array(length), counterclockwise: new Uint8Array(length), movement: new Uint8Array(length), uniform: true };
+        // Snapshot each terrain/region cell once. Sweep compilation still uses
+        // the exact continuous geometry; only repeated lookup work is removed.
+        const allowed = new Uint8Array(area), costs = new Float64Array(area), diagonal = new Uint8Array(area);
+        for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+            const at = { x, y }, i = y * width + x, flags = cellTerrainFlags(grid, x, y);
+            allowed[i] = +(this.allows(grid, at, policy) && this.spatial.allowsRegionAt(actor, at));
+            diagonal[i] = +(!!(flags & T_OBSTRUCTS_DIAGONAL_MOVEMENT)); costs[i] = 1;
+            for (const entry of policy.costs) if (flags & entry.flags) costs[i] = Math.max(costs[i]!, entry.cost);
+        }
+        const fits = (x: number, y: number, offsets: readonly Readonly<Pos>[]) => {
+            for (const o of offsets) {
+                const tx = x + o.x, ty = y + o.y;
+                if (tx < 0 || ty < 0 || tx >= width || ty >= height || !allowed[ty * width + tx]) return false;
             }
-            if (shape.poses.length > 1) {
-                graph.clockwise[i] = +this.spatial.canRotateBetween(actor, at, pose, 1, options, true);
-                graph.counterclockwise[i] = +this.spatial.canRotateBetween(actor, at, pose, -1, options, true);
+            return true;
+        };
+        for (let p = 0; p < shape.poses.length; p++) {
+            const offsets = shape.cells.get(shape.poses[p]!)!, base = p * area;
+            for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+                const i = base + y * width + x;
+                if (!fits(x, y, offsets)) continue;
+                graph.fit[i] = 1; graph.cost[i] = 1;
+                for (const o of offsets) graph.cost[i] = Math.max(graph.cost[i]!, costs[(y + o.y) * width + x + o.x]!);
+                if (graph.cost[i] !== 1) graph.uniform = false;
+            }
+        }
+        for (let p = 0; p < shape.poses.length; p++) {
+            const pose = shape.poses[p]!, base = p * area, multi = shape.cells.get(pose)!.length > 1;
+            const next = shape.poses.indexOf(turnedPose(pose, 1)), sweep = shape.sweeps.get(`${pose}:${turnedPose(pose, 1)}`);
+            for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+                const cell = y * width + x, i = base + cell;
+                for (let d = 0; d < DIRS.length; d++) {
+                    const [dx, dy] = DIRS[d]!, tx = x + dx, ty = y + dy;
+                    if (tx < 0 || ty < 0 || tx >= width || ty >= height || !graph.fit[base + ty * width + tx]) continue;
+                    if (dx && dy && (multi ? !graph.fit[base + y * width + tx] || !graph.fit[base + ty * width + x]
+                        : diagonal[y * width + tx] || diagonal[ty * width + x])) continue;
+                    graph.movement[i] = graph.movement[i]! | (1 << d);
+                }
+                if (sweep && graph.fit[i] && graph.fit[next * area + cell] && fits(x, y, sweep)) {
+                    graph.clockwise[i] = 1; graph.counterclockwise[next * area + cell] = 1;
+                }
             }
         }
         this.terrainBuilds++;
         return graph;
+    }
+    /** One occupancy snapshot per bounded replan. It removes repeated DTO,
+     * metadata and terrain work, not any cell of the exact collision volume. */
+    private dynamicTerrain(actor: Creature, graph: Graph): { usable: Uint8Array; rotations: Rotations } {
+        const grid = graph.grid, width = grid.width, area = this.area(graph), blocked = new Uint8Array(area);
+        for (let y = 0; y < grid.height; y++) for (let x = 0; x < width; x++) {
+            blocked[y * width + x] = +this.spatial.occupantsAtCell({ x,y }, 'active-or-reserved').some(hit => hit.entity !== actor);
+        }
+        const usable = new Uint8Array(graph.fit.length), rotations = { clockwise: new Uint8Array(graph.fit.length), counterclockwise: new Uint8Array(graph.fit.length) };
+        for (let p = 0; p < graph.shape.poses.length; p++) {
+            const offsets = graph.shape.cells.get(graph.shape.poses[p]!)!;
+            for (let cell = 0; cell < area; cell++) {
+                const i = p * area + cell;
+                if (graph.fit[i] && offsets.every(o => !blocked[cell + o.y * width + o.x])) usable[i] = 1;
+            }
+        }
+        for (let p = 0; p < graph.shape.poses.length; p++) {
+            const pose = graph.shape.poses[p]!, next = graph.shape.poses.indexOf(turnedPose(pose,1));
+            const sweep = graph.shape.sweeps.get(`${pose}:${turnedPose(pose,1)}`);
+            if (!sweep) continue;
+            for (let cell = 0; cell < area; cell++) {
+                const from = p * area + cell, to = next * area + cell;
+                if (graph.clockwise[from] && usable[from] && usable[to] && sweep.every(o => !blocked[cell + o.y * width + o.x])) {
+                    rotations.clockwise[from] = 1; rotations.counterclockwise[to] = 1;
+                }
+            }
+        }
+        return { usable, rotations };
     }
     private goals(actor: Creature, goal: RigidPoseGoal, graph: Graph): number[] {
         const result = new Set<number>();
@@ -186,30 +244,40 @@ export class RigidPosePathing {
         } else throw new SpatialValidationError('Unknown rigid target kind');
         return [...result].sort((a,b) => a-b);
     }
-    private neighbors(actor: Creature, graph: Graph, from: number, usable: Uint8Array, options?: { allowsTerrain: (at: Pos) => boolean }): number[] {
+    private neighbors(graph: Graph, from: number, usable: Uint8Array, rotations?: Rotations): number[] {
         if (from < 0) return [];
-        const at = this.at(graph, from), pose = this.pose(graph, from), result: number[] = [];
-        const fits = (p: Pos) => !!usable[this.node(graph, p, pose)];
-        for (const [dx, dy] of DIRS) {
-            const to = { x: at.x+dx, y: at.y+dy };
-            const edge = graph.shape.cells.get(pose)!.length > 1 ? conservativeSquareStep(at, to, fits)
-                : fits(to) && (!(dx && dy) || !((cellTerrainFlags(graph.grid, at.x+dx, at.y) | cellTerrainFlags(graph.grid, at.x, at.y+dy)) & T_OBSTRUCTS_DIAGONAL_MOVEMENT));
-            if (edge) result.push(this.node(graph, to, pose));
+        const area = this.area(graph), width = graph.grid.width, base = Math.floor(from / area) * area;
+        const cell = from - base, pose = this.pose(graph, from), result: number[] = [], mask = graph.movement[from]!;
+        for (let d = 0; d < DIRS.length; d++) if (mask & (1 << d)) {
+            const [dx, dy] = DIRS[d]!, to = from + dy * width + dx;
+            if (usable[to] && (!(dx && dy) || graph.shape.cells.get(pose)!.length === 1
+                || usable[from + dx] && usable[from + dy * width])) result.push(to);
         }
         for (const turn of [1, -1] as const) {
-            const to = this.node(graph, at, turnedPose(pose, turn));
-            if (usable[to] && (turn === 1 ? graph.clockwise[from] : graph.counterclockwise[from])
-                && (!options || this.spatial.canRotateBetween(actor, at, pose, turn, options))) result.push(to);
+            const p = graph.shape.poses.indexOf(turnedPose(pose, turn)), to = p * area + cell;
+            if (p >= 0 && usable[to] && (turn === 1 ? (rotations ?? graph).clockwise[from] : (rotations ?? graph).counterclockwise[from])) result.push(to);
         }
         return result;
     }
-    private scan(actor: Creature, graph: Graph, goals: readonly number[], usable: Uint8Array, options?: { allowsTerrain: (at: Pos) => boolean }): Float64Array {
+    private scan(graph: Graph, goals: readonly number[], usable: Uint8Array, rotations?: Rotations): Float64Array {
+        if (graph.uniform) {
+            const distances = new Float64Array(usable.length).fill(Infinity), queue = new Int32Array(usable.length);
+            let head = 0, tail = 0;
+            for (const i of goals) if (usable[i] && distances[i] !== 0) { distances[i] = 0; queue[tail++] = i; }
+            while (head < tail) {
+                const i = queue[head++]!; this.visitedNodes++;
+                for (const j of this.neighbors(graph, i, usable, rotations)) if (distances[j] === Infinity) {
+                    distances[j] = distances[i]! + 1; queue[tail++] = j;
+                }
+            }
+            return distances;
+        }
         const distances = new Float64Array(usable.length).fill(Infinity), queue = new PathFrontier();
         for (const i of goals) if (usable[i]) { distances[i] = 0; queue.improve(String(i), { x: i, y: 0 }, 0); }
         while (queue.length) {
             const i = queue.pop().x;
             this.visitedNodes++;
-            for (const j of this.neighbors(actor, graph, i, usable, options)) {
+            for (const j of this.neighbors(graph, i, usable, rotations)) {
                 // Reverse edges have the same swept geometry. Rotations cost
                 // one positive action; translation pays the entered terrain.
                 const rotation = this.pose(graph, i) !== this.pose(graph, j);
@@ -219,10 +287,10 @@ export class RigidPosePathing {
         }
         return distances;
     }
-    private next(actor: Creature, graph: Graph, from: number, distances: Float64Array, usable: Uint8Array, options?: { allowsTerrain: (at: Pos) => boolean }): number | undefined {
+    private next(graph: Graph, from: number, distances: Float64Array, usable: Uint8Array, rotations?: Rotations): number | undefined {
         const current = distances[from];
         if (!Number.isFinite(current) || current === 0) return undefined;
-        return this.neighbors(actor, graph, from, usable, options).find(i => (this.pose(graph, i) !== this.pose(graph, from) ? 1 : graph.cost[i]!) + distances[i]! === current);
+        return this.neighbors(graph, from, usable, rotations).find(i => (this.pose(graph, i) !== this.pose(graph, from) ? 1 : graph.cost[i]!) + distances[i]! === current);
     }
     private liveEdge(actor: Creature, graph: Graph, from: number, to: number, options: { allowsTerrain: (at: Pos) => boolean }): boolean {
         const a = this.pose(graph, from), b = this.pose(graph, to);

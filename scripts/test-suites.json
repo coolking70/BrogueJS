@@ -135,6 +135,7 @@
     "src/test/phase4a3_body_sfc.test.ts",
     "src/test/phase4a4_generation_contributions.test.ts",
     "src/test/phase4a4_movement_regions.test.ts",
+    "src/test/phase4b_game_rigid.test.ts",
     "src/test/phase4b_pose_pathing.test.ts",
     "src/test/phase4b_rigid_rotation.test.ts",
     "src/test/presentation_timeline.test.ts",

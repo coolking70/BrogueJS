@@ -147,13 +147,13 @@ export class SpatialCatalog {
     private readonly forms = new Map<string, SpatialFormDefinition>();
     private readonly breakRules = new Map<string, PartBreakRule>([['foundation:keep-zone', deepFreeze({ id: 'foundation:keep-zone', owner: 'foundation', trigger: 'hp-zero', disposition: 'keep-zone', modifiers: [] })]]);
     private readonly statusProfiles = new Map<string, SpatialStatusProfileDefinition>([['foundation:native', deepFreeze({ id: 'foundation:native', owner: 'foundation', kind: 'native' })]]);
-    constructor(readonly fixture = false) {
+    constructor(readonly fixture = false, private readonly owners: readonly string[] = []) {
         for (const width of [1, 2, 3]) this.registerFootprint({ id: width === 1 ? 'builtin:single' : `builtin:square-${width}`,
             owner: 'foundation', geometry: { kind: 'rect', width, height: width }, poses: ['r0'] });
     }
     registerFootprint(d: FootprintDefinition): void {
         const cells = compileFootprint(d);
-        if (d.owner !== 'foundation' || this.footprints.has(d.id) || (!this.fixture && !d.id.startsWith('builtin:'))) fail('Unknown or duplicate footprint owner');
+        if (this.footprints.has(d.id) || !(d.owner === 'foundation' && (this.fixture || d.id.startsWith('builtin:')) || !this.fixture && this.owners.includes(d.owner) && d.id.startsWith(`${d.owner}.`))) fail('Unknown or duplicate footprint owner');
         for (const zone of d.zones ?? []) this.breakRule(zone.breakRuleId);
         this.footprints.set(d.id, { definition: deepFreeze(structuredClone(d)), cells });
     }

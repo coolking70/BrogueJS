@@ -391,10 +391,22 @@ NPC 测试除纯求值外，还使用真实攻击、AI 响应和确定性测试�
 
 ## 25 4b-0 子里程碑：fixture 连续扫掠、旋转计划与位姿图
 
-本节只描述底座 fixture 能力，**生产任意 mask / 旋转仍未开放**。`squareMovementSize`、原生形态数据、Game/NPC 与生产读档继续保持 4a 的 square-2/3、r0 合同。完整 4b 剩余接线见 [报告](phase4b.report.md)。
+本节保留已提交的 4b-0 历史状态；完整生产接线见下一节。本节交付时，**生产任意 mask / 旋转仍未开放**。`squareMovementSize`、原生形态数据、Game/NPC 与生产读档继续保持 4a 的 square-2/3、r0 合同。完整 4b 剩余接线见 [报告](phase4b.report.md)。
 
 - `Movement/RigidFootprint.ts`：在完整空间 schema 校验后，把可执行位姿收窄为一个固定方向或全部四个旋转，拒绝镜像、部分旋转集合和局部 zone HP。整数锚点是原点格的中心；单位格方块围绕该中心连续转动。预编译使用 vertex/edge 接触临界角与 SAT，覆盖区间内相交及中途切触，不以动画采样或包围盒代替扫掠；相邻旋转边最多 256 格，超界拒绝。定义缓存、只读 cells/sweep 表都是派生数据，不入存档。
 - `CreatureSpatial.planRotationPlacement`：只接 fixture 独立刚体，90°/180° 分别含一个/两个有方向的 90° 原语，逐段验证终态 fit、扫掠地形、区域、边界与其他生物；忽略自己的旧身体。返回不可伪造的一次性计划和正 `actionCost`，90° 为 movementSpeed，180° 为两倍。提交复核身体、所有权、速度、地形 revision 与动态资格，固定锚点、发布 pose 并失效占位与接触 revision。**调用者仍须向自己的 actor 时钟提交耗时与驻留环境，当前没有 NPC/公开命令接线。** 普通 `planPlacement` 不允许以 pose 参数绕过旋转计划。
 - `Map/RigidPosePathing.ts`：独立 fixture 服务，节点为锚点×有效位姿，平移边按整体 fit/对角中间身体，旋转边按预编译 sweep。反向 Dijkstra、接触多目标、逃跑目标和指定 pose 的落点目标；地形代价取实际格的最大值。key 含完整定义/标签、位姿集合、区域 ID 和值策略；地形 revision 清缓存、动态占位每次复核，受阻最多一次全图重规划。LRU 8 组，淘汰只重建完整结果；单次扫描最多 W×H×A 节点，A≤4，不按墙钟时间截断路线。返回的 distanceAt 捕获当次距离表。普通无能力生物不读格、不建图；原生产 `FootprintPathing` 未改。
 
 fixture 测试覆盖 L/十字/孔洞/长条空格、轮廓原语、标签与 codec；它们不代表已完成任意 mask 的生产环境/攻击/显示/复制变形/存读录像闭环。`RigidPosePathing` 冷建图同步耗时仍较高，后续生产接线须评估冷启动与动态重规划成本。
+
+
+## 26 完整 4b：会话注册、生产旋转与任意 mask 闭环
+
+- `NativeFormDefinition` 的几何选择为原 `size: 2|3` 或 `footprint: { geometry, poses }`，两者互斥。安装先执行 `compileRigidFootprint` 的连通性、格数/跨度、固定或四向姿态、无镜像和 sweep 预算；`ExtensionRuntime.spatialCatalog` 只登记本局启用模块的不可变定义，普通局复用 builtin 目录。存档 closure 只描述使用的形状，不安装数据。按 component 的 WeakMap 绑定使假设锚点查询与 clone 使用同一目录，原生 owned list 额外按接收 Game 的目录与 typeId/body 身份校验，codec 同样拒绝把任意身体伪装为普通物种，不能跨局携带旧能力。
+- Game 的可选 `squareMotion` 保留 r0 方形快路径；非方形第一次请求才创建 `RigidPosePathing`。静态冷建按格汇总地形/区域/成本，再用整数偏移编 fit、平移边与精确 sweep 的旋转边；全 4 pose 图不剪裁，反向共用同一旋转体积。单位代价用有界 typed-array BFS，非单位仍用 Dijkstra。terrain revision、动态复核、最多一次动态重规划、LRU 8 与路线语义不变。动态重规划先作一次 active-or-reserved 占位快照，再按真实 offsets/sweep 编临时 fit/旋转表；返回动作和提交仍现场复核，临时占位不写进静态图。
+- 追击、逃跑、waypoint、守卫回归、尸体移动、blink 偏好和跨层距离/补旅程都读取实际 mask+pose。NPC 的 rotate 意图经 `rotateSpatialActor` 刷新本层 cohort，生成不可伪造计划、重验全 sweep 后提交；写入原 `ticksUntilTurn`，仅终态结算一次驻留环境/新旧格接触并更新视野。公开玩家输入仍经 `executeCommand`，没有新增玩家旋转或 4e 主动转换命令。
+- `SquarePlacement` 的名字保留兼容调用，搜索已改为当前 pose 的真实 offsets；创建、传送、击退、坠落、pending、缓存层、clone/被动 polymorph 沿原生落点规则复核全 mask。clone 深拷贝姿态并重绑目录；polymorph 保留新形状支持的旧姿态，否则使用其声明初态。世界 codec 对当前/缓存/休眠/携带/pending 的定义闭包、层预算、全 mask 边界和所有权校验；临时 Player 解码不消耗 live ID allocator，失败不退休旧局。
+- 环境、近战、弹道、感知、D08 和轮廓共享 `footprintOf` 的实际 cells；凹角/孔洞保留空格。显示只公开已见 cells，一个实体一行一主字形；非方形完整可见时显示格数，部分可见不泄露总数。Sidebar/ContextPanel/ThemeNearby 共用公开行与 i18n 格数，四地图共用实际边界绘制。
+- giants 新增原创 `giants.spine-crawler` 棘脊爬兽：端点锚定 1×4、四向、HP150；D9–14 的 `giants.spine-chamber` 为 16×12、入口5格，仍遵守每层至多一个场地。`rigidSideChamberValid` 现场枚举所有有效锚点×pose，以真实 sweep 做旋转边，检查完整可达分量、入口与玩家绕行；不能用矩形面积替代。自然验收 seed7309/wizard，经1174条真实命令在 D11 生成，独立 trace 在模块目录。
+
+能力上限与连续 SAT 未放宽。4c 局部 HP/破坏、4d 复合体、镜像及 4e 主动转换保持关闭；功能验收与性能记录见 [完整报告](phase4b.report.md)。

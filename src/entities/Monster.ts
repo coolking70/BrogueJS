@@ -1,3 +1,7 @@
+import { bindSpatialCatalog, spatialCatalogFor } from '../engine/Movement/CreatureSpatial';
+import { type RigidPose } from '../engine/Movement/RigidFootprint';
+import { type RigidPoseStep } from '../engine/Map/RigidPosePathing';
+import { nativeFormSpatial, nativeFormCatalogFor, bindNativeForms } from '../ext/nativeForms';
 import { nearestLegalMeleeContact, physicalContactOf, bodyAttackContactOf, withBodyAttackContact, bodyRayOrigin, bodyRayContact, type BodyAttackContact } from '../engine/Combat/BodyCombat';
 import { assertNativeSpatial, commitCreatureAnchor, footprintContains, footprintOf, footprintSome, nearestContact, distanceBetweenFootprints, distanceToFootprint } from '../engine/Movement/CreatureSpatial';
 import { bodySightContact } from '../engine/Combat/BodyPerception';
@@ -672,7 +676,8 @@ export class Monster extends Creature {
     public copyForClone(): Monster {
         const clone: Monster = Object.assign(Object.create(Monster.prototype), this);
         clone.id = allocateEntityId();
-        if (this.spatial) clone.spatial = structuredClone(this.spatial);
+        if (this.spatial) { clone.spatial = structuredClone(this.spatial); bindSpatialCatalog(clone, spatialCatalogFor(this)); }
+        if (nativeFormsFor(this).length) bindNativeForms(clone, nativeFormsFor(this), nativeFormCatalogFor(this));
         commitCreatureAnchor(clone, { ...this.loc }, 'replace', true); // unpublished clone container
         clone.spawnLoc = { ...this.spawnLoc };
         clone.targetCorpseLoc = this.targetCorpseLoc ? { ...this.targetCorpseLoc } : null;
@@ -849,10 +854,11 @@ export class Monster extends Creature {
         this.seized = this.seizing = false;
         this.ticksUntilTurn = Math.max(this.ticksUntilTurn, 101);
         if (preparedLocation) {
-            const movementRegionId = this.spatial?.movementRegionId;
+            const movementRegionId = this.spatial?.movementRegionId, previousPose = this.spatial?.pose as RigidPose;
             delete this.spatial;
             const shape = nativeFormFor(this,data.id);
-            if (shape || movementRegionId !== undefined) this.spatial = { schema: 1, footprintId: shape ? `builtin:square-${shape.size}` : 'builtin:single', pose: 'r0', ...(movementRegionId !== undefined ? { movementRegionId } : {}) };
+            if (shape || movementRegionId !== undefined) this.spatial = shape ? nativeFormSpatial(shape, movementRegionId, previousPose) : { schema: 1, footprintId: 'builtin:single', pose: 'r0', ...(movementRegionId !== undefined ? { movementRegionId } : {}) };
+            bindSpatialCatalog(this, nativeFormCatalogFor(this));
             commitCreatureAnchor(this, { ...preparedLocation }, 'mutate');
         }
         return true;
@@ -2246,7 +2252,7 @@ export class Monster extends Creature {
         const b=region.bounds,inside=game.player.x>=b.x&&game.player.y>=b.y&&game.player.x<b.x+b.width&&game.player.y<b.y+b.height;
         if((inside && this.state===MonsterState.HUNTING) || game.meleeContact(this,game.player))return false;
         const step=game.planSquareStep(this,{kind:'anchors',anchors:[this.spawnLoc]});
-        if(step.at) this.tryMoveTo(step.at.x,step.at.y,game);
+        this.applyPlannedBodyStep(game, step);
         if(this.ticksUntilTurn<=0)this.ticksUntilTurn=this.movementSpeed;
         return true;
     }
@@ -2288,20 +2294,30 @@ export class Monster extends Creature {
                     const at = wp.coordinates[index];
                     if (!at) continue;
                     step = game.planSquareStep(this, { kind: 'anchors', anchors: [at] });
-                    if (step.kind === 'step' || step.kind === 'blocked') { this.targetWaypointIndex = index; break; }
+                    if (step.kind === 'step' || step.kind === 'rotate' || step.kind === 'blocked') { this.targetWaypointIndex = index; break; }
                     this.waypointAlreadyVisited![index] = true;
                 }
             }
-            if (!step || step.kind !== 'step') {
+            if (!step || step.kind !== 'step' && step.kind !== 'rotate') {
                 const direction = this.randFlittingDirection(game);
                 if (direction) this.tryMoveTo(this.x + direction[0], this.y + direction[1], game);
                 return true;
             }
         }
-        if (step.at) this.tryMoveTo(step.at.x, step.at.y, game);
+        this.applyPlannedBodyStep(game, step);
         return true;
     }
 
+    private applyPlannedBodyStep(game: Game, step: RigidPoseStep): void {
+        if (step.kind !== 'rotate') { if (step.at) this.tryMoveTo(step.at.x, step.at.y, game); return; }
+        if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
+        if (this.hasStatus('stuck') && footprintSome(this, p => !!(cellTerrainFlags(game.grid, p.x, p.y) & T_ENTANGLES)) && !this.hasCEBehavior('MONST_IMMUNE_TO_WEBS')) {
+            if (!this.isInvulnerable()) this.setStatusDuration('stuck', this.getStatusDuration('stuck') - 1);
+            if (this.hasStatus('stuck')) { this.ticksUntilTurn = this.movementSpeed; return; }
+            for (const p of footprintOf(this)) breakEntanglingTerrain(game.grid, p.x, p.y);
+        }
+        game.rotateSpatialActor(this, step.quarterTurns!);
+    }
     private randFlittingDirection(game: Game): readonly [number, number] | null {
         const dirs: ReadonlyArray<readonly [number, number]> =
             [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]];
@@ -2349,7 +2365,7 @@ export class Monster extends Creature {
     /** CE monsterAvoids chooses terrain for walking; vision opacity is never
      * flight permission. The actual move still validates physical obstruction.
      */
-    private canEnterMovementTerrain(game: Game, x: number, y: number): boolean {
+    public canEnterMovementTerrain(game: Game, x: number, y: number): boolean {
         return this.canEnterWaterTerrain(game, x, y)
             && !monsterBlinkAvoids(game, this, { x, y });
     }
@@ -2372,7 +2388,7 @@ export class Monster extends Creature {
         if (this.spatial) {
             const step = game.planSquareStep(this, { kind: 'anchors', anchors: [this.targetCorpseLoc ?? p] });
             if (!step.at) return false;
-            this.tryMoveTo(step.at.x, step.at.y, game); return true;
+            this.applyPlannedBodyStep(game, step); return true;
         }
         // The existing movement implementation never swaps friendly blockers;
         // in particular an absorbing blocker must not be displaced (CE canPass).

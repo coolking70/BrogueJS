@@ -1,3 +1,99 @@
+# 4b 完整执行报告：任意刚体形状与四向旋转
+
+2026-10-05，分支 `ext/phase4`，起点/交付 HEAD 均为 `6f71e0e3c639bb7df5f599923c30ecd84fa7cd48`。维护者已提交 4b-0；本轮按 [任务书](phase4b.task.md) 与续轮授权，完成旧报告“完整 4b 剩余项”1–6 的生产实现和开发期功能验收。**生产开放可信注册的独立 mask 与四向旋转，未 commit、暂存或 push。** 文末保留 4b-0 报告原文，历史中的“生产未开放”描述只对应当时状态。
+
+## 本轮范围与共享代码
+
+| 文件/函数 | 本轮变化与合同 |
+|---|---|
+| `SpatialSchema.SpatialCatalog`、`nativeForms.validNativeForm/nativeFormSpatial` | 原 `size:2|3` 与新 `footprint:{geometry,poses}` 互斥；安装先编译连通性、原点、格数/跨度、固定或四向、无镜像及 sweep 预算；空/null/多余字段拒绝。创建从安装定义选初态，旧姿态若被新形状支持则保留。 |
+| `ExtensionRuntime.spatialCatalog/attachCreature`、`CreatureSpatial.bindSpatialCatalog` | 可信目录属本局启用模块；不可变注册定义与纯编译结果派生、不持久化。目录存外部 WeakMap，getter 在无任意形状声明时复用 builtin 目录，不给普通 runtime 加字段。component 绑定覆盖假设锚点 DTO、复制与 codec；卸载/退休清绑定。 |
+| `MonsterLifecycle.ownedMonsterList`、Game `spatialCatalog/createModuleMonster/canCreateModuleMonster` | 接收 Game 的目录再校验所有权入口与 typeId/body 身份，旧局可信对象也不能跨到未安装局。全 mask 创建预检在构造/ID/RNG 之前；方形继续调用原 `canCreateSquareMonster` 快路径与既有测试接缝。 |
+| `RigidPosePathing.buildTerrain/scan/dynamicTerrain` | 静态每格一次汇总地形/区域/成本，整数偏移编完整 fit/平移/精确 sweep 旋转表；逆转共享同一体积，单位成本用 typed-array BFS、非单位保留 Dijkstra。动态重规划只作一次 active-or-reserved 占位快照，再按实际 offsets/sweep 编临时表；仍现场复核返回动作及最终提交。没有剪 pose、截 sweep、按时间放弃路线或放宽碰撞。 |
+| Game `planSquareStep/rotateSpatialActor/squareDistanceValues`、Monster `applyPlannedBodyStep` | 方形仍 r0 原服务；注册非方形按需创建新图。追击、逃跑、waypoint、守卫回归、尸体移动与 blink 偏好统一读实际身体。NPC 转向在原 executeCommand 调度内提交检查计划，写入正 `ticksUntilTurn`；固定锚点，终态环境结算一次，新旧格接触与视野同步。提交前刷新 cohort，规划后新增生物也能挡住 sweep。恶心/蛛网等原生行动前提保留。 |
+| `SquarePlacement.squarePlacementCandidates`、`CreatureSpatial.canFitAt/collectBodyTargets`、`LevelTravel.scheduleLevelFollowers/restoreSquareTravelPosition` | 保留兼容函数名，方形双循环/r0 换为当前 pose 的真实 offsets；落点、传送、blink、击退/拉拽、坠落、重访、跨层与补旅程沿原生规则验全 mask。凹角/孔洞不占位。跨层距离及补旅程可含旋转边；历史补旅程沿原 CE 行为不重复即时环境。 |
+| `Monster.copyForClone/polymorph`、Game `polymorphBoltTarget` | clone 深拷贝组件与 pose 并重绑目录；被动 polymorph 先选新形态、用真实新身体找合法落点后才修改。新形态不支持旧 pose 时取其声明初态；失败不改身体/关系、不分配实体。没有新增主动转换命令。 |
+| `EntitySnapshot.restoreEntityGraph`、`WholeRunSnapshot.snapshotSquareWorld/decodeWholeRunWorld/isWholeRunSnapshot/decodePlayer`、Game `loadSnapshot` | 仅用已安装目录校验存档定义闭包，不从保存的 geometry 授权注册；当前/缓存/休眠/pending/携带/炼狱统一 shape+pose、层预算、边界和所有权检查。读档先构建 detached 候选，发布期间用派生目录绑定，最终才附加会话钩子。临时 Player 解码恢复 live ID 分配器，后续负例拒绝也不泄漏 ID。 |
+| `MonsterBody.publicMonsterBody`、`MonsterSidebar.visibleMonsterRows`、Sidebar/ContextPanel/ThemeNearby、基础 locale | 实际 mask 的公开可见 cells、一行一主字形；任意形状不再误显示 sqrt(K)×sqrt(K)。完整可见才公开总格数，部分可见隐藏总数；三个组件用 i18n `sidebar.body_cells`。四地图共用实际轮廓和空格，无新美术素材。 |
+| `SideChamber.rigidSideChamberValid`、Game `publishSideChambers` | 现场枚举所有有效锚点×pose，以完整 sweep 做旋转边，验证全部有效位姿可达、真实初态净空、入口和玩家绕行；原方形验证保留。 |
+| 测试清单、`u03-state-contract.json`、架构与 progress | 新专项登记唯一归属；既有可选 squareMotion 合同说明新增按需 rigid 图，无新增 Game 持久字段/存档包络。 |
+
+普通局全对象图零影响守卫保留原基线与原断言。玩家仍 1×1；镜像、部分旋转集、动作锁、复合体和局部 zone HP 关闭。固定形状不产生旋转边，builtin 方形继续只有 r0。几何围绕整数原点格中心转动；180° 仍逐段检查两个 90° sweep，动作成本为两倍 movementSpeed。空间标签随 pose 编译保留，为 4c 预留，不实现部位战斗。
+
+## 原创内容、自然种子与真实闭环
+
+`src/ext/modules/giants/data/definitions.json` 新增 **棘脊爬兽 `giants.spine-crawler`**：端点锚定 1×4，r0/r90/r180/r270，HP150、accuracy90、defense30、damage5–10、movement/attack100；中文原创名称/描述在模块 locale。`giants.spine-chamber` 为 D9–14、chance100、priority1、16×12、5格入口，保持每层至多一个成功场地及有限候选/跳过收据。没有移植商业数据或素材。
+
+自然验收 **seed7309、wizard、D11、1174 条真实命令**；Boss ID277，region276，初始锚点(25,9)、pose r0、HP150。`naturalSpine()` 从真实新局沿 move/search/item/stairs/wait 等公开入口到场，无地图揭示、HP/坐标修改或调试出生。D9 无适合场地、D10 被既有场地预算占用，D11 成功；不是保证每层必出。新自然 trace 为 `data/spine-natural-trace.json`，记录路线哈希、地图/实体、双 RNG、模块收据与身体状态。commandsHash=`2937b269b0c94d16606dfff5bd65e846bd7d09c9389c97bc2f986af2f6852acb`，新trace文件 SHA-256=`46e777177526404be4c0e653b82fe7bf91be4dbf052161affdc866b10afe3d7b`。
+
+该自然来源完成实际 Game save/load、逐事件 replay、seek(0/中点/结尾) 与续录。另有明确标为诊断的 **r270 原生样例**：通过真实 wait 命令验证每事件机械世界、存档前缀续玩、非顺序 seek 与追加录像。它证明非初态 pose 的 codec/调度闭环，不冒充自然生成证明。native birth、完整四 pose 净空/sweep、真实 Boss HUD 另有专项。
+
+## 测试证据与旧前提/trace 处理
+
+在 4b-0 原有 40 项基础上，新增/扩充独立正向动态寻路对照、真实 Game 四形状×四 pose 环境/孔洞、D08、近战/弹道首碰、四地图实际绘制、部分可见/尾格检查、clone/位移、NPC 正耗时与终态环境、原生数据/创建/跨局/读档负例、被动变形原子失败、r270 pending/缓存层及原生录像/自然 trace。新增文件 `phase4b_game_rigid.test.ts`、`giants_rigid.test.ts`、`giants_spine_trace.test.ts`，与扩充 pose 图共 **29 项**；4b 专项总计69项。
+
+连续 sweep 原有独立 polygon clipping 参照保留；静态四形状×四 pose×地形权重与新的四形状动态占位路线，均与独立正向 Dijkstra 比较，不读取生产 fit/旋转/距离表。新增预算负例包含17格、非连通、镜像/部分姿态、16格端点长条 sweep 超256；同一16格长条固定 r0 合法。null footprint 拒绝。
+
+只修订两份旧内容前提：
+
+| 旧测试 | 单变量反事实 | 前提修订 |
+|---|---|---|
+| `giants_contract.test.ts` | 仅回退 `definitions.json` 到 HEAD，旧合同与旧 trace 共5项通过，测试/其他生产文件保持新版。日志 `/private/tmp/p4b-content-counterfactual.log`。 | forms/templates/nameKey 个数2→3；原两物种数值、独立性、原模板等断言保留。 |
+| `giants_colossus.test.ts` 的 stable competition | 同样仅回退内容文件，原测试1项通过；日志 `/private/tmp/p4b-colossus-counterfactual.log`。 | D9 contributors 新增 spine-chamber，D14 数量1→2；D7/8排序、每层至多一个成功场地、budget收据全部原断言保留。 |
+
+没有修改零影响、i18n、模块边界、预算或其他守卫。首个候选的零影响4项失败来自 runtime 普通字段引入派生目录，改生产为外部 WeakMap/getter 后原基线通过；原方形 final-occupied 负例来自预检接缝绕过，恢复委托原 `canCreateSquareMonster` 后通过。新负例还发现并修复了旋转入口旧 cohort 索引、detached Player ID 泄漏，以及把 typeId/form 同时伪装为普通物种但保留任意身体的读档绕过。最终类型身份收紧后，四个新增环境测试暴露诊断物种仍继承 rat 的旧目录免疫；诊断定义显式清空该免疫/减免前提后保持原“一次混乱”断言，正式 native form 默认本就为空。最后校对修正了性能记录的暖样本切片：只取真实命令的29次暖规划，后续两次诊断规划单列。失败日志保留，首轮候选不算最终门禁通过。
+
+两份旧 giants trace 先单变量归因，后用原 `BROGUE_CAPTURE_GIANTS_TRACE=1` 捕获入口重录；**每份仅一个叶字段 extensionsHash 变化**，来源为新增内容的 rules fingerprint。commands/commandsHash/nativeWorldHash/双 RNG/region/state/Boss 均不变：
+
+| trace | extensionsHash 旧→新 | 文件 SHA-256 旧→新 |
+|---|---|---|
+| D3 natural-trace | 20c0b82b60b32144cdd91efdf26d76a3ca06c3a985cb2967b1eacc0b28492417 → 094006ecc8fbdb6a831e457ac12405be8b083a9ad7a5aa69a33815c89e2aaf3a | 00ec08b193e7a66f3e9d1f4197a8e4b680110eed7af6aa9af44215594c210901 → b3e79e43b0cb4bc38ee25e2c0ce1cdd326a5ac0e2188f0e4dd29f1c77a1b05b8 |
+| D7 colossus-natural-trace | 140654aa9ef02c45014199333b054035dbbba947961802778b0d6eb8ee4b2231 → 5996b34dc89f7aba9da68372689c02f7f948644677db8a063de486ffa0b96fdc | b1d44ad632256c2ee0f5c534820ed37de0ff829ff71d848d27e231bc60a29e3a → 0cb73aa6e39ca14191276943ed82fe2556905e85a5fac9ab2694f6566b0c0a9f |
+
+两个普通生成基线与 UR2/3/4 文件保持 HEAD 字节；不做旧存档迁移，旧 giants 指纹的档/录像按原兼容合同拒绝。
+
+## 最终开发期门禁
+
+统一 Node **24.19.0**，PATH 前置 `/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin`，`NODE_OPTIONS=--max-old-space-size=3072`，Vitest `--maxWorkers=2`。最终同一冻结候选以下七项全部 exit0：
+
+| 门禁 | 结果 | 命令耗时 |
+|---|---|---:|
+| `node scripts/check-module-boundaries.mjs` | 模块边界/唯一测试归属通过 | 1.56s |
+| `npx vue-tsc -b` | 通过 | 6.86s |
+| `npm run build` | 通过；原有 >500 KB chunk 提示保留 | 9.33s |
+| 直接相关 Vitest 集合 | **37 文件 / 462 项通过**；4b共69项、4a0零影响与全部4a专项、全部giants、UR2/3/4、U03/换层/录像、生成回滚、源码/i18n/卫生/归属守卫 | 251.60s |
+| `c_4a_terrain_catalog -t 白名单` | 1项通过、29项被选择表达式过滤；未跑重型普查 | 2.03s |
+| `check-module-composition-smoke.mjs --engine-only` | **16/16 子集通过**；真实 Game 新局/游玩/save-load/逐事件 replay/seek/续录 | 67.31s |
+| `npm run test:drift -- --maxWorkers=2` | **4 文件 / 5 项通过**；两个普通生成基线、原giants两trace、新棘脊trace | 55.74s |
+
+smoke installed 为 combat/giants/growth/narrative，`engine.status=passed`、`requestedScopePassed=true`；browser=not-run、整体 passed=false 是脚本对浏览器未验的口径。SSR HMR WebSocket 的监听 EPERM 日志保留，没有改脚本掩去它；engine-only 的实际退出码为0。
+
+843 份 src/scripts/构建配置输入在每项门禁前后完全相同，变化列表均为空；路径排序紧凑JSON散列集合 SHA-256 为 `95468a9701695c0a1b050caa01092d332b68732da3e9e77fe8817d17279e8298`。执行 runner `/private/tmp/p4b-complete-v4-gates.py`；精确命令、输入逐文件散列、耗时/退出码登记 `/private/tmp/p4b-complete-v4-gates.json`，相关清单 `/private/tmp/p4b-complete-v4-related-files.json`，门禁结束 UTC `2026-10-05T05:59:15Z`。随后只补文档，原始证据均在仓库外。HEAD 未变、暂存区空，交付 `git diff --check`、变更文本LF检查通过。
+
+依任务书没有跑完整 npm test、全部 test:ext、removal 或 CE full/gen。没有新增 skip/todo；上述 `-t` 的未选用例是定向选择，不冒充整套通过。
+
+## 实际 Game 性能与限制
+
+实际 Game 测量文件 `/private/tmp/p4b-game-performance.json`，Node24.19.0、79×29、两个worker专项环境。诊断注册形状运行真实 `executeCommand(wait)` 的NPC追击与环境，不是fixture单独提交：每形状30条命令，第一次单列冷样本，其余29次为暖P50/P95；另给出新增生物挡住下一步时一次完整动态重规划。规划时间包含冷建完整地形图、目标距离表与选步，命令时间额外包含Game/NPC/环境/视野；两者均不含浏览器绘制。
+
+| 形状 | 冷规划 | 暖规划 P50 / P95 | 冷整命令 | 暖整命令 P50 / P95 | 堵路重规划 |
+|---|---:|---:|---:|---:|---:|
+| bar | 14.694ms | 0.091 / 0.198ms | 21.839ms | 6.587 / 6.900ms | 8.594ms |
+| L | 9.672ms | 0.062 / 0.086ms | 16.044ms | 6.245 / 6.738ms | 5.037ms |
+| 16-cells | 9.541ms | 0.335 / 0.466ms | 16.384ms | 6.712 / 7.669ms | 10.502ms |
+
+三形状各静态图/距离表1/1、暖缓存命中29、正常追击动态重规划0；加入挡路生物后每形状恰好重规划1次，结果仍为合法step。16格用端点4×4完整四向，额外覆盖规模上限。本次实际 Game **长条/L及16格的冷规划均≤20ms，满足开发机单次冷建目标**。冷规划包含建图后额外工作，故同一调用里的建图成本也在20ms内。
+
+4b-0 的79.875/56.401ms是旧实现的fixture测量；本轮曾先修静态冷建，再发现动态重规划107/70/196ms，第二次去除逐节点重复元数据/地形查询后降到本表。保留完整图与检查的代价是有界typed-array内存和同步建立，而非分帧；本局按需懒建、静态表复用、逆旋转共享体积、单位成本BFS去堆开销是本轮取舍。地形revision和LRU8淘汰会再冷建，移动目标距离表仍会再扫描。
+
+没有以动画采样、包围盒、暖缓存平均或路线截断换取性能。完整有效姿态图仍同步建立、至多一次完整动态重规划；图静态成本与动态临时表有明确 W×H×A / K / sweep 上限。测量是开发机 Node CPU 单次样本与29次暖动作，不是冷分位数、手机帧率或 GPU 预算。
+
+功能实现剩余项：**无（本轮4b授权范围）**。4c/4d/4e、镜像与旧档迁移不在本轮。Vite/Chromium 在本环境先前实测受到监听/MachPort EPERM 限制；本轮以真实 Game、公开投影/实际绘制、SFC编译和 engine-only composition 验收，**没有浏览器截图、320/390触屏、GPU渲染或真实手机性能验收**，这些限制未以测试绿掩盖。大体积原始证据/截图不入库。
+
+---
+
+## 4b-0 历史报告（原文保留，以下均为当时状态）
+
 # 4b 执行报告：4b-0 扫掠、受控旋转与位姿图子里程碑
 
 2026-10-05，分支 `ext/phase4`，起点/交付 HEAD 均为 `b306f01d4a3e9e66f2fc9c0d5e394a4f3e2c2b9a`。执行 [任务书](phase4b.task.md)，采用其“可在干净子里程碑停下并列剩余项”的交付选项。**本轮完成 4b-0 底座 fixture；完整 4b 尚未完成，生产任意 mask / 旋转能力门仍关闭。** 没有 commit、暂存或 push。

@@ -198,3 +198,14 @@ export function naturalColossus() {
   if (!boss) throw new Error('Natural route did not generate the colossus');
   return { game, boss, state };
 }
+
+export const GIANTS_SPINE_ACCEPTANCE_SEED = 7309;
+export function naturalSpine() {
+  const game = startGiants(['giants'], GIANTS_SPINE_ACCEPTANCE_SEED, 'wizard');
+  for (let depth = 9; depth <= 14; depth++) {
+    walkNaturalToDepth(game, depth, true);
+    const boss = game.monsters.find(m => m.typeId === 'giants.spine-crawler');
+    if (boss) return { game, boss, state: giantsState(game) };
+  }
+  throw new Error('Natural route did not generate the spine crawler');
+}

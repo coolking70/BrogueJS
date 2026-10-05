@@ -8,7 +8,7 @@ import { T_OBSTRUCTS_PASSABILITY, T_OBSTRUCTS_DIAGONAL_MOVEMENT } from '../Map/T
 import { TERRAIN_FLAGS } from '../Map/TerrainCatalog';
 import { nativeSpatialCatalog, validateSpatialComponent, SpatialValidationError,
     deepFreeze, integer, keys, SPATIAL_LIMITS, type CreatureSpatialComponent, type CreatureSpatialView,
-    type FootprintCell, type BodyGroupState, type SpatialWorldSnapshot } from './SpatialSchema';
+    type SpatialCatalog, type FootprintCell, type BodyGroupState, type SpatialWorldSnapshot } from './SpatialSchema';
 
 export type OccupancyPolicy = 'active' | 'active-or-reserved' | 'death-contact';
 export type TargetKey = 'entity' | 'part' | 'group';
@@ -30,6 +30,18 @@ export interface BodyTarget {
     readonly partId: string | null; readonly zoneId: string; readonly dedupKey: string; readonly contact: Readonly<Pos>;
 }
 export type FootprintActor = Pick<Creature, 'loc' | 'spatial'>;
+// Session authority follows the component, including hypothetical anchor DTOs.
+// Saved geometry never creates an entry; decode binds only an installed catalog.
+const catalogs = new WeakMap<CreatureSpatialComponent, SpatialCatalog>();
+export function bindSpatialCatalog(c: Pick<Creature, 'spatial'>, catalog?: SpatialCatalog): void {
+    if (c.spatial) { if (catalog) catalogs.set(c.spatial, catalog); else catalogs.delete(c.spatial); }
+}
+export function spatialCatalogFor(c: Pick<Creature, 'spatial'>): SpatialCatalog {
+    return c.spatial && catalogs.get(c.spatial) || nativeSpatialCatalog;
+}
+export function isSquareFootprint(c: Pick<Creature, 'spatial'>): boolean {
+    return !c.spatial || c.spatial.footprintId.startsWith('builtin:');
+}
 const listeners = new WeakMap<Creature, Set<() => void>>();
 const squareAnchorRevisions = new WeakMap<Creature, number>();
 /** Short-lived contact sequences can detect even a nested out-and-back move.
@@ -47,9 +59,9 @@ export function commitCreatureAnchor(creature: Creature, at: Pos, mode: 'replace
     if (creature.spatial) squareAnchorRevisions.set(creature, squareAnchorRevision(creature) + 1);
     listeners.get(creature)?.forEach(invalidate => invalidate());
 }
-export function assertNativeSpatial(creature: Creature): void {
+export function assertNativeSpatial(creature: Creature, catalog = spatialCatalogFor(creature)): void {
     if (Object.prototype.hasOwnProperty.call(creature, 'spatial')) {
-        try { squareMovementSize(creature); }
+        try { if (isSquareFootprint(creature)) squareMovementSize(creature, catalog); else rigidMovementFootprint(creature, catalog); }
         catch (error) { throw new SpatialValidationError(`Spatial capability is not open: ${(error as Error).message}`); }
     }
 }
@@ -67,8 +79,8 @@ export function clearMovementRegion(creature: Creature): number | undefined {
     return id;
 }
 /** Executable independent r0 squares, plus a bounded single body produced by
- * polymorph. Unbounded explicit single, masks, zones, groups and locks stay closed. */
-export function squareMovementSize(creature: Creature, catalog = nativeSpatialCatalog): number {
+ * polymorph. This compatibility path accepts only the builtin square IDs. */
+export function squareMovementSize(creature: Creature, catalog = spatialCatalogFor(creature)): number {
     if (!Object.prototype.hasOwnProperty.call(creature, 'spatial')) return 1;
     validateSpatialComponent(creature.spatial, catalog, false);
     const s = creature.spatial!;
@@ -79,11 +91,11 @@ export function squareMovementSize(creature: Creature, catalog = nativeSpatialCa
     }
     return s.footprintId === 'builtin:single' ? 1 : s.footprintId === 'builtin:square-2' ? 2 : 3;
 }
-/** 4b-0 fixture capability. Production still uses squareMovementSize until
- * every native placement/AI/save/render path has shipped its 4b integration. */
-export function rigidMovementFootprint(creature: Creature, catalog = nativeSpatialCatalog): CompiledRigidFootprint {
-    if (!catalog.fixture) throw new SpatialValidationError('Rigid production capability is not open');
-    validateSpatialComponent(creature.spatial, catalog, false);
+/** Registered independent rigid capability. Catalog authority comes from the
+ * installed session; mirrors, groups, locks and local health remain closed. */
+export function rigidMovementFootprint(creature: Creature, catalog = spatialCatalogFor(creature)): CompiledRigidFootprint {
+    try { validateSpatialComponent(creature.spatial, catalog, false); }
+    catch (error) { if (!catalog.fixture) throw new SpatialValidationError(`Spatial capability is not open: ${(error as Error).message}`); throw error; }
     if (Object.keys(creature.spatial!).some(k => !['schema', 'footprintId', 'pose', 'movementRegionId'].includes(k)))
         throw new SpatialValidationError('Rigid movement requires an independent body without locks or local health');
     return rigidFootprint(catalog, creature.spatial!.footprintId);
@@ -98,25 +110,25 @@ export function conservativeSquareStep(from: Pos, to: Pos, fit: (at: Pos) => boo
 }
 /** Ordinary 1x1 queries retain the old constant geometry path, without a
  * compiled shape lookup, index, group record or scan for capability users. */
-export function footprintOf(creature: FootprintActor, catalog = nativeSpatialCatalog): readonly FootprintCell[] {
+export function footprintOf(creature: FootprintActor, catalog = spatialCatalogFor(creature)): readonly FootprintCell[] {
     if (!creature.spatial) return [{ x: creature.loc.x, y: creature.loc.y, zoneId: 'body' }];
     return catalog.cells(creature.spatial.footprintId, creature.spatial.pose).map(p => ({ x: p.x + creature.loc.x, y: p.y + creature.loc.y, zoneId: p.zoneId }));
 }
-export function footprintContains(creature: FootprintActor, at: Pos, catalog = nativeSpatialCatalog): boolean {
+export function footprintContains(creature: FootprintActor, at: Pos, catalog = spatialCatalogFor(creature)): boolean {
     if (!creature.spatial) return creature.loc.x === at.x && creature.loc.y === at.y;
     return catalog.cells(creature.spatial.footprintId, creature.spatial.pose).some(p => p.x + creature.loc.x === at.x && p.y + creature.loc.y === at.y);
 }
-export function distanceBetweenFootprints(a: FootprintActor, b: FootprintActor, catalog = nativeSpatialCatalog): number {
+export function distanceBetweenFootprints(a: FootprintActor, b: FootprintActor, catalog?: SpatialCatalog): number {
     if (!a.spatial && !b.spatial) return Math.max(Math.abs(a.loc.x - b.loc.x), Math.abs(a.loc.y - b.loc.y));
     return nearestContact(a, b, catalog).distance;
 }
-export function distanceToFootprint(creature: FootprintActor, at: Pos, catalog = nativeSpatialCatalog): number {
+export function distanceToFootprint(creature: FootprintActor, at: Pos, catalog = spatialCatalogFor(creature)): number {
     if (!creature.spatial) return Math.max(Math.abs(creature.loc.x - at.x), Math.abs(creature.loc.y - at.y));
     return Math.min(...footprintOf(creature, catalog).map(p => Math.max(Math.abs(p.x - at.x), Math.abs(p.y - at.y))));
 }
-export function nearestContact(a: FootprintActor, b: FootprintActor, catalog = nativeSpatialCatalog): Readonly<{ from: FootprintCell; to: FootprintCell; distance: number }> {
+export function nearestContact(a: FootprintActor, b: FootprintActor, catalog?: SpatialCatalog): Readonly<{ from: FootprintCell; to: FootprintCell; distance: number }> {
     let result: { from: FootprintCell; to: FootprintCell; distance: number } | undefined;
-    for (const from of footprintOf(a, catalog)) for (const to of footprintOf(b, catalog)) {
+    for (const from of footprintOf(a, catalog ?? spatialCatalogFor(a))) for (const to of footprintOf(b, catalog ?? spatialCatalogFor(b))) {
         const distance = Math.max(Math.abs(from.x - to.x), Math.abs(from.y - to.y));
         if (!result || distance < result.distance) result = { from, to, distance };
     }
@@ -162,7 +174,7 @@ export class CreatureSpatial {
     private readonly rotationPlans = new WeakMap<PlacementPlan, QuarterTurns>();
     private readonly invalidate = () => { this.revision++; this.activeIndex = this.reservedIndex = undefined; };
     readonly groups: BodyGroupState[] = [];
-    constructor(private world: SpatialWorld, readonly catalog = nativeSpatialCatalog) { this.replaceWorld(world); }
+    constructor(private world: SpatialWorld, readonly catalog = spatialCatalogFor(world.monsters.find(c => c.spatial) ?? {})) { this.replaceWorld(world); }
     replaceWorld(world: SpatialWorld): void {
         // Preflight before publishing ownership/listener/count changes.
         const ownership = [...(world.player ? [world.player] : []), ...world.monsters, ...(world.dormantMonsters ?? [])];
@@ -177,7 +189,7 @@ export class CreatureSpatial {
             if (c === world.player && Object.prototype.hasOwnProperty.call(c, 'spatial')) throw new SpatialValidationError('Player spatial capability is not open');
             if (Object.prototype.hasOwnProperty.call(c, 'spatial')) {
                 if (this.catalog.fixture) validateSpatialComponent(c.spatial, this.catalog, false);
-                else assertNativeSpatial(c);
+                else assertNativeSpatial(c, this.catalog);
                 // Unresolved regions are never implicit permission to move.
                 // Decode supplies a detached ledger; live grids share a resolver.
                 if (c.spatial!.movementRegionId !== undefined && !footprintOf(c, this.catalog).every(at =>
@@ -193,6 +205,7 @@ export class CreatureSpatial {
         for (const c of this.cohort) listeners.get(c)?.delete(this.invalidate);
         this.world = world; this.cohort = cohort; this.users = users;
         for (const c of cohort) {
+            if (c.spatial) bindSpatialCatalog(c, this.catalog);
             let ports = listeners.get(c); if (!ports) { ports = new Set(); listeners.set(c, ports); } ports.add(this.invalidate);
         }
         this.invalidate();
@@ -267,8 +280,12 @@ export class CreatureSpatial {
         }
         return Object.freeze(out);
     }
-    /** Static graph predicate: no index/occupancy reads. Live moves additionally
-     * use canFitAt; a moving small creature never becomes a cached wall. */
+    /** The same pure region predicate used by live fits and compiled graphs. */
+    allowsRegionAt(c: Creature, at: Pos): boolean {
+        const id = c.spatial?.movementRegionId;
+        return id === undefined || (this.world.inRegion?.(id, at) ?? inMovementRegion(this.world.grid, id, at));
+    }
+    /** Static graph predicate: no index/occupancy reads; live steps also recheck occupancy. */
     canFitTerrainAt(c: Creature, at: Pos, options: FitOptions = {}, pose = c.spatial?.pose): boolean {
         const offsets = c.spatial ? this.catalog.cells(c.spatial.footprintId, pose!) : [{ x: 0, y: 0, zoneId: 'body' }];
         if (!integer(at.x, -32768, 32767) || !integer(at.y, -32768, 32767)) return false;
@@ -446,7 +463,7 @@ export class CreatureSpatial {
     }
 }
 
-export function spatialOf(c: Creature, catalog = nativeSpatialCatalog): CreatureSpatialView {
+export function spatialOf(c: Creature, catalog = spatialCatalogFor(c)): CreatureSpatialView {
     return deepFreeze({ entityId: c.id, groupId: c.spatial?.bodyMember?.groupId ?? c.id,
         partId: c.spatial?.bodyMember?.partId ?? null, anchor: { ...c.loc }, footprintId: c.spatial?.footprintId ?? 'builtin:single',
         pose: c.spatial?.pose ?? 'r0', cells: footprintOf(c, catalog) });
@@ -462,7 +479,7 @@ export function canFitAt(world: SpatialWorld, c: Creature, at: Pos, options: Fit
     if (c.spatial) {
         if (!integer(at.x, -32768, 32767) || !integer(at.y, -32768, 32767)) return false;
         const ignore = new Set([c, ...(options.ignore ?? [])]);
-        return nativeSpatialCatalog.cells(c.spatial.footprintId, 'r0').every(o => {
+        return spatialCatalogFor(c).cells(c.spatial.footprintId, c.spatial.pose).every(o => {
             const p = { x: at.x + o.x, y: at.y + o.y };
             return world.grid.isValidPos(p.x, p.y)
                 && (c.spatial!.movementRegionId === undefined || (options.inRegion?.(c.spatial!.movementRegionId, p) ?? world.inRegion?.(c.spatial!.movementRegionId, p)
@@ -487,7 +504,7 @@ export function collectBodyTargets(world: SpatialWorld, cells: readonly Pos[], p
     const out: BodyTarget[] = [];
     for (const at of cells) {
         const c = creatureAtCell(world, at, policy.occupancy); if (!c) continue;
-        assertNativeSpatial(c); const groupId = c.id, zoneId = 'body';
+        assertNativeSpatial(c); const groupId = c.id, zoneId = footprintOf(c).find(p => p.x === at.x && p.y === at.y)?.zoneId ?? 'body';
         const dedupKey = dedup === 'entity' ? `entity:${c.id}` : dedup === 'group' ? `group:${groupId}` : `part:${c.id}:${zoneId}`;
         if (!scope.has(dedupKey)) { scope.add(dedupKey); out.push(Object.freeze({ entity: c, entityId: c.id, groupId, partId: null, zoneId, dedupKey, contact: Object.freeze({ ...at }) })); }
     }

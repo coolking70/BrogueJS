@@ -1,4 +1,5 @@
-import { assertNativeSpatial } from '../Movement/CreatureSpatial';
+import { SpatialValidationError, type SpatialCatalog } from '../Movement/SpatialSchema';
+import { assertNativeSpatial, isSquareFootprint } from '../Movement/CreatureSpatial';
 import type { Monster } from '../../entities/Monster';
 
 // Runtime ownership is deliberately outside the serialized creature graph.
@@ -7,6 +8,7 @@ import type { Monster } from '../../entities/Monster';
 import type { ExtensionRuntime } from '../../ext/runtime';
 interface DeathOwner {
     extensionRuntime?: ExtensionRuntime | null;
+    readonly spatialCatalog?: SpatialCatalog;
     monsters: Monster[];
     dormantMonsters: Monster[];
     killMonster(monster: Monster): void;
@@ -38,7 +40,8 @@ export function ownedMonsterList(input: Monster[], owner: DeathOwner): Monster[]
     const raw = old?.raw ?? input;
     let squares = 0;
     for (const monster of raw) {
-        assertNativeSpatial(monster);
+        assertNativeSpatial(monster, owner.spatialCatalog);
+        if (!isSquareFootprint(monster) && monster.spatial!.footprintId !== monster.typeId) throw new SpatialValidationError('Native form body identity mismatch');
         owners.set(monster, owner);
         if (owner.extensionRuntime) owner.extensionRuntime.attachCreature(monster);
         if (monster.spatial) squares++;
@@ -47,7 +50,8 @@ export function ownedMonsterList(input: Monster[], owner: DeathOwner): Monster[]
         set(target, key, value, receiver) {
             let nextSquares = squares;
             if (typeof key === 'string' && /^\d+$/.test(key)) {
-                assertNativeSpatial(value);
+                assertNativeSpatial(value, owner.spatialCatalog);
+                if (!isSquareFootprint(value) && value.spatial!.footprintId !== value.typeId) throw new SpatialValidationError('Native form body identity mismatch');
                 owners.set(value, owner);
                 if (owner.extensionRuntime) owner.extensionRuntime.attachCreature(value);
                 nextSquares += Number(!!value.spatial) - Number(!!target[Number(key)]?.spatial);
