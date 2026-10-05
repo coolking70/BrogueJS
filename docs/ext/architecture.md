@@ -410,3 +410,13 @@ fixture 测试覆盖 L/十字/孔洞/长条空格、轮廓原语、标签与 cod
 - giants 新增原创 `giants.spine-crawler` 棘脊爬兽：端点锚定 1×4、四向、HP150；D9–14 的 `giants.spine-chamber` 为 16×12、入口5格，仍遵守每层至多一个场地。`rigidSideChamberValid` 现场枚举所有有效锚点×pose，以真实 sweep 做旋转边，检查完整可达分量、入口与玩家绕行；不能用矩形面积替代。自然验收 seed7309/wizard，经1174条真实命令在 D11 生成，独立 trace 在模块目录。
 
 能力上限与连续 SAT 未放宽。4c 局部 HP/破坏、4d 复合体、镜像及 4e 主动转换保持关闭；功能验收与性能记录见 [完整报告](phase4b.report.md)。
+
+## 27 4d-0 子里程碑：fixture 复合体落脚规划
+
+`Movement/CompositeMovement.ts` 只接 `SpatialCatalog.fixture`，生产 group 能力仍关闭。核心先确定一步，成员按约束树、partId 顺序选择最多32条候选路径；每次核心尝试最多128个候选分支，成员最多两个单位平移子步。保留旧落脚优先，之后按新核心加 preferredOffset、路径长、y/x排序；候选不足或回溯耗尽返回 blocked 和正costTicks。每个刚体保持当前pose，旋转与生命周期不在此子里程碑。
+
+`BodyTrajectory.ts` 将所有路径放在同一两子步时间轴，短路径随后驻留。单位格方块的相对平移使用区间相交，拒绝成员互换、对角交叉和运动期间重叠，允许链段平行跟进父段的旧格。父子距离按实际footprint计算：每对格子的距离许可区间并集须覆盖完整子步，不用端点合法冒充中间合法。clearLink采用保守扫掠包围矩形，可能拒绝狭窄弯道；静态连接仍用稳定最近格对与supercover。
+
+计划是不可伪造、只消费一次的派生凭据。提交重验实体/群表/局部资格、源revision、Grid地形/占位revision与所有路径，成功后同步发布最终锚点；没有环境回调插在半组位置之间，也不写核心或成员计时器。调用方须通过现有replaceWorld/位置原语发布实体列表和位置变化，离层或会话退休必须dispose；dispose现在也使旧计划失效。群表继续是CreatureSpatial.groups的唯一机械身份真相，不加Game字段或存档版本。
+
+`CreatureSpatial.restoreWorld` 在发布群表前新增实际footprint牵引距离/clearLink校验，拒绝活孩子引用已退休父槽或距离不合法的fixture图。codec只使用独立安装的定义目录，不以存档授予能力。本轮不接TimeCoordinator/ActorActionProduction、HP传导/成员破坏、状态归属、整体转换/clone/迁层、公开UI或正式敌人；完整4d剩余项和实际门禁见[4d报告](phase4d.report.md)。

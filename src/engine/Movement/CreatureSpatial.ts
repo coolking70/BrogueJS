@@ -1,4 +1,5 @@
 import { spatialTerrainRevision, releaseSpatialTerrain } from './SpatialRevision';
+import { bodyConstraintsSatisfied, type BodyPose } from './BodyConstraints';
 import { inMovementRegion } from './MovementRegions';
 import { rigidFootprint, rotationStages, type CompiledRigidFootprint, type QuarterTurns, type RigidPose } from './RigidFootprint';
 import type { Creature } from '../../entities/Creature';
@@ -236,11 +237,14 @@ export class CreatureSpatial {
     dispose(): void {
         releaseSpatialTerrain(this);
         for (const c of this.cohort) listeners.get(c)?.delete(this.invalidate);
+        this.invalidate(); // plans from the retired session cannot publish anchors
     }
     get capabilityUsers(): number { return this.users; }
     get grid(): Grid { return this.world.grid; }
     get occupancyRevision(): number { return this.revision; }
     get terrainRevision(): number { return spatialTerrainRevision(this.world.grid, this); }
+    /** Trusted engine/fixture lookup. Never exposed through module contexts. */
+    entityById(id: number): Creature | undefined { return this.cohort.find(c => c.id === id); }
     isActive(c: Creature): boolean { return c.hp > 0 && (c === this.world.player || this.world.monsters.includes(c)); }
     footprintOf(c: Creature): readonly FootprintCell[] { return footprintOf(c, this.catalog); }
     spatialOf(id: number | Creature): CreatureSpatialView {
@@ -463,6 +467,11 @@ export class CreatureSpatial {
                         || (this.world.dormantMonsters?.includes(c) ?? false) !== (this.world.dormantMonsters?.includes(core) ?? false)) throw new SpatialValidationError('Split group ownership');
                 } else if (part.role === 'core') throw new SpatialValidationError('Missing core');
             }
+            const poses = new Map<string, BodyPose>(group.members.flatMap(m => {
+                const c = this.cohort.find(c => c.id === m.entityId);
+                return c ? [[m.partId, { anchor: c.loc, footprintId: c.spatial!.footprintId, pose: c.spatial!.pose }] as const] : [];
+            }));
+            if (!bodyConstraintsSatisfied(this.catalog, def, poses, this.world.grid)) throw new SpatialValidationError('Invalid body constraints');
         }
         if (this.cohort.some(c => c.spatial?.bodyMember && !used.has(c.id))) throw new SpatialValidationError('Orphan body member');
         const expected = this.catalog.definitionClosure(this.cohort.flatMap(c => c.spatial ? [c.spatial.footprintId] : []), snapshot.groups.map(g => g.bodyDefinitionId));

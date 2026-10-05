@@ -6496,7 +6496,10 @@ export class Game {
                 // Reflection already ran in travel and has no on-hit adjustment.
                 // Only install the armor hook when there is a runic effect to apply.
                 const armorRunic = isPlayer ? this.player.equippedArmor?.runicType : undefined;
-                const result = CombatSystem.attack(caster, target, { grid: this.grid, delivery: 'bolt',
+                const result = CombatSystem.attack(caster, target, { grid: this.grid,
+                    // Delivery metadata belongs to the extension stamina gate;
+                    // classic BE_ATTACK retains its original CE adapter call.
+                    ...(this.extensionRuntime ? { delivery: 'bolt' as const } : {}),
                     isWeaponAttack: BOLT_EFFECT_CE_EFFECT[meta.effect] === CEBoltEffect.ATTACK,
                     ...(armorRunic && armorRunic !== 'reflection'
                         ? { beforeDamage: (damage: number) => this.tryTriggerArmorRunic(caster, damage, true) } : {}),

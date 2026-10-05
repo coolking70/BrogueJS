@@ -1,0 +1,203 @@
+import type { Creature } from '../../entities/Creature';
+import type { Pos } from '../../types';
+import { bodyConstraintOrder, bodyConstraintsSatisfied, type BodyPose } from './BodyConstraints';
+import { trajectoriesCollide, trajectoryConstraintSatisfied, type BodyTrajectory } from './BodyTrajectory';
+import { actorSourceRevision, commitCreatureAnchor, conservativeSquareStep, type CreatureSpatial, type FitOptions } from './CreatureSpatial';
+import { deepFreeze, integer, keys, SpatialValidationError, type BodyDefinition, type BodyGroupState } from './SpatialSchema';
+
+export const COMPOSITE_MOVEMENT_LIMITS = Object.freeze({ candidates: 32, branchNodes: 128, memberStep: 2 });
+export interface CompositeMovementOptions {
+    /** Trusted engine predicates; no arbitrary ignored outsiders or target UI. */
+    allowsTerrain?: (entityId: number, at: Readonly<Pos>) => boolean;
+    inRegion?: (regionId: number, at: Readonly<Pos>) => boolean;
+    /** A lower diagnostic budget is allowed; the production ceiling is fixed. */
+    branchBudget?: number;
+}
+export interface CompositeMovePlan {
+    readonly groupId: number;
+    readonly costTicks: number;
+    readonly branchNodes: number;
+    readonly trajectories: readonly (Readonly<BodyTrajectory> & { readonly entityId: number; readonly partId: string })[];
+}
+export type CompositeMoveResult = { readonly status: 'planned'; readonly plan: CompositeMovePlan }
+    | { readonly status: 'blocked'; readonly reason: 'immobile' | 'terrain' | 'constraints' | 'budget'; readonly costTicks: number; readonly branchNodes: number };
+interface Cohort {
+    group: BodyGroupState; definition: BodyDefinition; order: readonly string[];
+    actors: Map<string, Creature>; ignore: ReadonlySet<Creature>;
+}
+interface PlanBinding {
+    cohort: Cohort; fingerprint: string; revision: number; terrainRevision: number;
+    locations: Map<Creature, Pos>; options: CompositeMovementOptions;
+}
+const same = (a: Readonly<Pos>, b: Readonly<Pos>) => a.x === b.x && a.y === b.y;
+const distance = (a: Readonly<Pos>, b: Readonly<Pos>) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+
+/** 4d-0 diagnostic capability only. No Game/TimeCoordinator/native AI entry
+ * can obtain a production plan. Identity remains in CreatureSpatial.groups;
+ * this planner owns only single-use, derived plans, never HP or group clocks.
+ *
+ * Planning chooses the core step first. Physical paths share two bounded unit
+ * substeps (a shorter path then stays still). Constraints and collisions are
+ * checked throughout each substep, allowing ordinary follow-the-parent motion
+ * without teleporting a member or checking only a final arrangement. */
+export class CompositeMovement {
+    private readonly plans = new WeakMap<CompositeMovePlan, PlanBinding>();
+    constructor(readonly spatial: CreatureSpatial) {
+        if (!spatial.catalog.fixture) throw new SpatialValidationError('Composite movement production capability is not open');
+    }
+    private cohort(groupId: number): Cohort {
+        const group = this.spatial.groups.find(g => g.groupId === groupId);
+        if (!group) throw new SpatialValidationError('Unknown composite group');
+        keys(group, ['schema', 'groupId', 'coreId', 'bodyDefinitionId', 'members', 'appliedBreaks']);
+        const definition = this.spatial.catalog.body(group.bodyDefinitionId), order = bodyConstraintOrder(definition);
+        if (group.schema !== 1 || !integer(groupId, 1) || group.coreId !== groupId || !Array.isArray(group.members)
+            || group.members.length !== definition.parts.length || !Array.isArray(group.appliedBreaks) || group.appliedBreaks.length
+            || definition.noSupport !== 'immobile' || definition.coreDeath !== 'remove-members'
+            || definition.constraints.some(c => c.maxStepPerAction > COMPOSITE_MOVEMENT_LIMITS.memberStep)) {
+            throw new SpatialValidationError('Unopened composite movement lifecycle or step budget');
+        }
+        const actors = new Map<string, Creature>();
+        for (const slot of group.members) {
+            keys(slot, ['partId', 'entityId', 'life', 'generation', 'readyInTicks']);
+            const part = definition.parts.find(p => p.partId === slot.partId), actor = slot.entityId === null ? undefined : this.spatial.entityById(slot.entityId);
+            if (!part || actors.has(slot.partId) || slot.life !== 'active' || slot.generation !== 0 || !integer(slot.readyInTicks, 0, 1000000)
+                || !actor || !this.spatial.isActive(actor) || actor.spatial?.bodyMember?.groupId !== groupId
+                || actor.spatial.bodyMember.partId !== slot.partId || actor.spatial.footprintId !== this.spatial.catalog.form(part.formId).footprintId
+                || part.role === 'core' && actor.id !== groupId || actor.spatial.pose.startsWith('m')) {
+                throw new SpatialValidationError('Invalid or unopened moving body member');
+            }
+            // A fixture may not borrow a member from another table or reserve a
+            // hidden duplicate entity. Native slot retirement comes in 4d-1.
+            if (this.spatial.groups.some(g => g !== group && g.members.some(m => m.entityId === actor.id))) throw new SpatialValidationError('Shared composite member');
+            actors.set(slot.partId, actor);
+        }
+        if (new Set(actors.values()).size !== actors.size) throw new SpatialValidationError('Duplicate composite entity');
+        const poses = new Map<string, BodyPose>([...actors].map(([partId, c]) => [partId, { anchor: c.loc, footprintId: c.spatial!.footprintId, pose: c.spatial!.pose }]));
+        if (!bodyConstraintsSatisfied(this.spatial.catalog, definition, poses, this.spatial.grid)) throw new SpatialValidationError('Invalid initial body constraints');
+        // Index validation also catches unrelated active overlaps. The planner
+        // cannot silently repair an invalid published world.
+        for (const actor of actors.values()) for (const cell of this.spatial.footprintOf(actor)) {
+            if (this.spatial.occupantsAtCell(cell, 'active-or-reserved').some(hit => hit.entity !== actor)) throw new SpatialValidationError('Overlapping composite member');
+        }
+        return { group, definition, order, actors, ignore: new Set(actors.values()) };
+    }
+    private options(actor: Creature, cohort: Cohort, options: CompositeMovementOptions): FitOptions {
+        return { ignore: cohort.ignore, policy: 'active-or-reserved',
+            ...(options.allowsTerrain ? { allowsTerrain: (at: Pos) => options.allowsTerrain!(actor.id, at) } : {}),
+            ...(options.inRegion ? { inRegion: options.inRegion } : {}) };
+    }
+    private canStep(actor: Creature, from: Readonly<Pos>, to: Readonly<Pos>, cohort: Cohort, options: CompositeMovementOptions): boolean {
+        // Conservatively sweep translations of all member shapes, including
+        // 1x1 legs. The two orthogonal anchors check diagonal terrain/outsiders.
+        return conservativeSquareStep(from, to, at => this.spatial.canFitAt(actor, at, this.options(actor, cohort, options)));
+    }
+    private trajectory(actor: Creature, path: readonly Readonly<Pos>[]): BodyTrajectory {
+        return { anchor: path[0]!, footprintId: actor.spatial!.footprintId, pose: actor.spatial!.pose, path };
+    }
+    private compatible(partId: string, candidate: BodyTrajectory, assigned: ReadonlyMap<string, BodyTrajectory>, cohort: Cohort): boolean {
+        for (const other of assigned.values()) if (trajectoriesCollide(this.spatial.catalog, candidate, other)) return false;
+        const constraint = cohort.definition.constraints.find(c => c.childPartId === partId);
+        return !constraint || !!assigned.get(constraint.parentPartId)
+            && trajectoryConstraintSatisfied(this.spatial.catalog, constraint, assigned.get(constraint.parentPartId)!, candidate, this.spatial.grid);
+    }
+    private candidates(partId: string, coreAt: Readonly<Pos>, cohort: Cohort, options: CompositeMovementOptions): readonly BodyTrajectory[] {
+        const actor = cohort.actors.get(partId)!, constraint = cohort.definition.constraints.find(c => c.childPartId === partId)!;
+        const paths: Readonly<Pos>[][] = [[{ ...actor.loc }]];
+        if (!(actor.spatial!.actionLockInTicks || actor.hasStatus('stuck') || actor.hasStatus('paralyzed'))) {
+            // Enumerate simple paths, rather than discarding an alternative
+            // two-step approach to the same anchor before crossing checks.
+            for (let i = 0; i < paths.length; i++) {
+                const path = paths[i]!;
+                if (path.length > constraint.maxStepPerAction) continue;
+                const from = path[path.length - 1]!;
+                for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+                    if (!dx && !dy) continue;
+                    const to = { x: from.x + dx, y: from.y + dy };
+                    if (!path.some(p => same(p, to)) && this.canStep(actor, from, to, cohort, options)) paths.push([...path, to]);
+                }
+            }
+        }
+        const part = cohort.definition.parts.find(p => p.partId === partId)!, preferred = { x: coreAt.x + part.preferredOffset.x, y: coreAt.y + part.preferredOffset.y };
+        paths.sort((a, b) => Number(b.length === 1) - Number(a.length === 1)
+            || distance(a[a.length - 1]!, preferred) - distance(b[b.length - 1]!, preferred)
+            || a.length - b.length || a[a.length - 1]!.y - b[b.length - 1]!.y || a[a.length - 1]!.x - b[b.length - 1]!.x
+            || a.reduce((out, p, i) => out || p.y - b[i]!.y || p.x - b[i]!.x, 0));
+        return paths.slice(0, COMPOSITE_MOVEMENT_LIMITS.candidates).map(path => this.trajectory(actor, path));
+    }
+    private fingerprint(cohort: Cohort): string {
+        return JSON.stringify({ group: cohort.group, actors: cohort.order.map(partId => {
+            const actor = cohort.actors.get(partId)!;
+            return { id: actor.id, loc: actor.loc, spatial: actor.spatial, hp: actor.hp, ticks: actor.ticksUntilTurn,
+                moveTicks: actor.movementSpeed, statuses: actor.statusDurations, sourceRevision: actorSourceRevision(actor) };
+        }) });
+    }
+    planStep(groupId: number, coreAt: Readonly<Pos>, options: CompositeMovementOptions = {}): CompositeMoveResult {
+        const cohort = this.cohort(groupId), corePart = cohort.order[0]!, core = cohort.actors.get(corePart)!;
+        if (!integer(coreAt.x, -32768, 32767) || !integer(coreAt.y, -32768, 32767) || distance(core.loc, coreAt) !== 1
+            || !integer(core.movementSpeed, 1, 1000000)) throw new SpatialValidationError('Composite core needs one positive-cost step');
+        const budget = options.branchBudget ?? COMPOSITE_MOVEMENT_LIMITS.branchNodes;
+        if (!integer(budget, 1, COMPOSITE_MOVEMENT_LIMITS.branchNodes)) throw new SpatialValidationError('Composite branch budget exceeded');
+        const blocked = (reason: Extract<CompositeMoveResult, { status: 'blocked' }>['reason'], branchNodes = 0): CompositeMoveResult =>
+            Object.freeze({ status: 'blocked', reason, costTicks: core.movementSpeed, branchNodes });
+        if (cohort.definition.parts.filter(p => p.providesSupport).length < cohort.definition.minSupportParts
+            || core.spatial!.actionLockInTicks || core.hasStatus('stuck') || core.hasStatus('paralyzed')) return blocked('immobile');
+        // Staying is a real candidate, not permission to skip terrain/region
+        // qualification. Validate the whole published starting configuration.
+        if ([...cohort.actors.values()].some(actor => !this.spatial.canFitAt(actor, actor.loc, this.options(actor, cohort, options)))) return blocked('terrain');
+        if (!this.canStep(core, core.loc, coreAt, cohort, options)) return blocked('terrain');
+        const assigned = new Map<string, BodyTrajectory>([[corePart, this.trajectory(core, [{ ...core.loc }, { ...coreAt }])]]);
+        let nodes = 0, exhausted = false;
+        const search = (index: number): boolean => {
+            if (index === cohort.order.length) return true;
+            const partId = cohort.order[index]!;
+            for (const candidate of this.candidates(partId, coreAt, cohort, options)) {
+                if (nodes === budget) { exhausted = true; return false; }
+                nodes++;
+                if (!this.compatible(partId, candidate, assigned, cohort)) continue;
+                assigned.set(partId, candidate);
+                if (search(index + 1)) return true;
+                assigned.delete(partId);
+                if (exhausted) return false;
+            }
+            return false;
+        };
+        if (!search(1)) return blocked(exhausted ? 'budget' : 'constraints', nodes);
+        const plan: CompositeMovePlan = deepFreeze({ groupId, costTicks: core.movementSpeed, branchNodes: nodes,
+            trajectories: cohort.order.map(partId => ({ ...assigned.get(partId)!, entityId: cohort.actors.get(partId)!.id, partId })) });
+        this.plans.set(plan, { cohort, fingerprint: this.fingerprint(cohort), revision: this.spatial.occupancyRevision,
+            terrainRevision: this.spatial.terrainRevision, locations: new Map([...cohort.actors.values()].map(c => [c, c.loc])), options: Object.freeze({ ...options }) });
+        return Object.freeze({ status: 'planned', plan });
+    }
+    /** Publish final anchors once, after replaying every unit trajectory against
+     * fresh terrain, outsiders, constraints and source identity. No environment
+     * callback runs between writes, and no native/member clock is written. */
+    commit(plan: CompositeMovePlan): boolean {
+        const binding = this.plans.get(plan);
+        if (!binding) return false;
+        this.plans.delete(plan);
+        if (binding.revision !== this.spatial.occupancyRevision || binding.terrainRevision !== this.spatial.terrainRevision
+            || this.spatial.groups.find(g => g.groupId === plan.groupId) !== binding.cohort.group
+            || binding.fingerprint !== this.fingerprint(binding.cohort)) return false;
+        try { this.cohort(plan.groupId); } catch { return false; }
+        const cohort = binding.cohort;
+        const assigned = new Map<string, BodyTrajectory>();
+        for (const trajectory of plan.trajectories) {
+            const actor = cohort.actors.get(trajectory.partId)!;
+            if (this.spatial.entityById(actor.id) !== actor || !this.spatial.isActive(actor) || actor.loc !== binding.locations.get(actor)
+                || !Object.getOwnPropertyDescriptor(actor, 'loc')?.writable || ['x', 'y'].some(k => !Object.getOwnPropertyDescriptor(actor.loc, k)?.writable)
+                || !this.spatial.canFitAt(actor, actor.loc, this.options(actor, cohort, binding.options))) return false;
+            for (let i = 1; i < trajectory.path.length; i++) {
+                if (!this.canStep(actor, trajectory.path[i - 1]!, trajectory.path[i]!, cohort, binding.options)) return false;
+            }
+            if (!this.compatible(trajectory.partId, trajectory, assigned, cohort)) return false;
+            assigned.set(trajectory.partId, trajectory);
+        }
+        // All writable destinations are preflighted. The anchor primitive only
+        // updates loc and derived revisions/listeners; no arbitrary callbacks.
+        for (const trajectory of plan.trajectories) {
+            const actor = cohort.actors.get(trajectory.partId)!, target = trajectory.path[trajectory.path.length - 1]!;
+            if (!same(actor.loc, target)) commitCreatureAnchor(actor, { ...target }, 'mutate', true);
+        }
+        return true;
+    }
+}
