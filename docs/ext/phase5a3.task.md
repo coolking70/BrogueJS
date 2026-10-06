@@ -3,6 +3,7 @@
 > 基线：**5A2 与 5A2-S 均已合入后的 `ext/phase5`（维护者开工时填写确切 commit：`________`）**。工作分支 `ext/phase5`。推荐顺序 5A2 → 5A2-S → 5A3（同一本地主笔顺序执行，共享 `Game.ts`/`runtime.ts`）；若维护者决定 5A3 先于 5A2-S，见 §1 R12。可与 dot 的 5B（只写 `src/ext/modules/crafting/**`）并行。
 > 依据（均已批准）：`docs/ext/phase5-settlement-world.md`（§6 结构/建造/房间全部、§7.3 通用 RestPoint 段、§12、§14.1 的 5A3 行）、`docs/ext/phase5a-contract.md`（C5-1 r2；本步读 §2、§4、§5.3、§5.5–§5.6、**§6、§7**、§10.1、§11 第 5 条）、`docs/ext/phase5a0.report.md`（§4 拆分表 5A3 行、§7 r2 修订）、`docs/ext/phase5a2.report.md`（“交接给 5A3”：`setOwnedRegions`、interactable 子预算余量、工作位/交互线实现位置）、`docs/ext/phase5a2s.report.md`（`native.regeneration` 用法）。
 > 本步只交付**底座能力 + foundation fixture**，不交付营地产品、不开放玩家公开建造命令（5C1 由 settlement 适配）。开发期门禁按 P5-D14=A。**不要 commit。**
+> 维护者 2026-10-06 对本任务书的全部预先裁定表态“全部按推荐”（记录见[阶段 5 设计 §15](phase5-settlement-world.md#15-待维护者决定推荐不是批准)）。
 
 ## 0 开工核对（不通过先停下报告）
 

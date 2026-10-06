@@ -1,6 +1,6 @@
 # 5B dot 任务包：独立 `crafting` 内容模块（整包一次派发）
 
-> 状态：**派发草稿，未派发**。由 Claude 依据已批准的[阶段5设计](phase5-settlement-world.md)（P5-D01–D14 全 A）、[C5-1 合同 r2](phase5a-contract.md)、[5A0 报告](phase5a0.report.md) §5.3–5.6 已批准数值及其 §7 r2 修订编写。维护者在填好 §A 检查清单的全部占位符、把本文件合入派发基线后，再把下方提示块转贴给 dot。**本包以合同 §9 冻结 SDK 名称编写；5A2 实际导出若有差异，派发前由维护者按 §A 一次性改正本文，dot 不负责猜测。**
+> 状态：**派发草稿，未派发**；本包的自行决定（§12.1 等）已由维护者 2026-10-06 表态“全部按推荐”批准。同日按已批准的[野外采食方向](phase5-foraging.md)修订：删除菌类节点、菌材料、口粮物品与“菌→口粮”配方，玩家不能自制食物（见 §1.4）。由 Claude 依据已批准的[阶段5设计](phase5-settlement-world.md)（P5-D01–D14 全 A）、[C5-1 合同 r2](phase5a-contract.md)、[5A0 报告](phase5a0.report.md) §5.3–5.6 已批准数值及其 §7 r2 修订编写。维护者在填好 §A 检查清单的全部占位符、把本文件合入派发基线后，再把下方提示块转贴给 dot。**本包以合同 §9 冻结 SDK 名称编写；5A2 实际导出若有差异，派发前由维护者按 §A 一次性改正本文，dot 不负责猜测。**
 
 ---
 
@@ -90,16 +90,16 @@
 在 `src/ext/modules/crafting/` 交付一个**只硬依赖底座**的独立内容模块，使“仅启用 crafting”的新局可以完整游玩以下闭环：
 
 1. 新局一次性启动礼包（木6、石4、纤维2）。
-2. D1 徒手采集木/石/纤维/菌类/皮革存料（每次 100 tick 得 1 单位）。
+2. D1 徒手采集木/石/纤维/皮革存料（每次 100 tick 得 1 单位）。
 3. 徒手做镐、桌套件、炉套件；在身边放置工作桌/火炉（用套件或原材料）。
 4. 下到 D2+ 用镐采金属。
-5. 桌上做 +0 已鉴定匕首、皮甲、床铺/储物箱套件；炉上做口粮。
+5. 桌上做 +0 已鉴定匕首、皮甲、床铺/储物箱套件。
 6. 多批制造（1…16 批）自动续作，可被敌情/伤害打断，未开始的批次精确退款一次。
 7. 全程真实命令录制，save/load/replay/seek/续录一致。
 
 ### 1.2 已批准的产品选择（不再讨论）
 
-手采 100 tick/1 单位；材料 stack 99；三类工位（手工/桌/炉）；固定普通材料、+0 已知简单装备、普通口粮、床/箱/桌/炉套件；单包配方 ≤128；配方输入只能是 material/kit；配方耗时保持短（单批 ≤1500 tick；一批 10000 tick 只回一次血，属既有语义，不补偿）；无生产 XP、随机品质、附魔、商店。
+手采 100 tick/1 单位；材料 stack 99；三类工位（手工/桌/炉）；固定普通材料、+0 已知简单装备、床/箱/桌/炉套件；**不制作任何食物**；单包配方 ≤128；配方输入只能是 material/kit；配方耗时保持短（单批 ≤1500 tick；一批 10000 tick 只回一次血，属既有语义，不补偿）；无生产 XP、随机品质、附魔、商店。
 
 ### 1.3 非目标（出现即越界）
 
@@ -109,6 +109,11 @@
 - 新的原生物品类、把 native 模板加入随机掉落、修改怪物掉落、修改原生饥饿/回血规则。
 - 任何 growth/narrative/combat/giants 联动（只做组合不报错的验证）。
 - 新的 window 级键盘屏障、新的弹窗系统、新字体/图片资源。
+- 任何食物、菌类材料或菌类资源点（归独立 `foraging` 模块与 settlement 厨师，见 §1.4）。
+
+### 1.4 2026-10-06 修订（维护者批准）
+
+按已批准的[野外采食方向](phase5-foraging.md)：菌丛节点改归独立 `foraging` 模块；只有 settlement 的厨师居民能把食材加工成口粮。本包因此删除 `crafting.fungus`、`crafting.ration`、`crafting.fungus-node`、`crafting.cook-ration`，物品 14→12、节点 6→5、配方 8→7、物品与工位定义 16→14，每层节点配置 10→8、整局 176→144；native 外观占位 6→4。火炉与火炉套件**保留**（其余已批准内容不变）：5B 内没有火炉配方，火炉仍可放置，并以公开标签 `station.hearth` 供 settlement 的炊事岗位软匹配。C5-1 SDK 的 `nativeTemplate` 与资源 `kind` 枚举仍含 `ration_of_food` / `fungus`（SDK 冻结，不改），本包 schema 不再使用它们。
 
 ---
 
@@ -199,7 +204,7 @@ interface CraftingPack {
 
 `toWorldDefinitionPack(pack)` 产出 `{ schema: 1, worldSdk: 1, items: [...materials, ...tools], resourceNodes, stations, recipes, startupItems }`（items 顺序固定为 materials 在前、tools 在后；其余数组原序）。`limits` 只留在 crafting 包内，不传给 SDK。
 
-### 5.2 物品（14 种）
+### 5.2 物品（12 种）
 
 ID 一律 `crafting.<短ID>`；`nameKey/descriptionKey` 一律 `ext.crafting.item.<短ID>.name|description`；`owner` 一律 `'crafting'`。
 
@@ -210,25 +215,23 @@ ID 一律 `crafting.<短ID>`；`nameKey/descriptionKey` 一律 `ext.crafting.ite
 | metal | material | 99 | `["basic.metal"]` | null | null | `%` | `#B7C3CF` |
 | fiber | material | 99 | `["basic.fiber"]` | null | null | `%` | `#8DB360` |
 | leather | material | 99 | `["basic.leather"]` | null | null | `%` | `#B0805A` |
-| fungus | material | 99 | `["basic.fungus"]` | null | null | `%` | `#C9A0DC` |
 | kit-bed | kit | 99 | `["kit.bed"]` | null | null | `▣` | `#A8B2C0` |
 | kit-chest | kit | 99 | `["kit.chest"]` | null | null | `▣` | `#A8B2C0` |
 | kit-table | kit | 99 | `["kit.station.table"]` | null | null | `▣` | `#A8B2C0` |
 | kit-hearth | kit | 99 | `["kit.station.hearth"]` | null | null | `▣` | `#A8B2C0` |
 | plain-dagger | native | 1 | `[]` | null | `dagger` | 原生外观 | 原生外观 |
 | plain-leather-armor | native | 1 | `[]` | null | `leather_armor` | 原生外观 | 原生外观 |
-| ration | native | 99 | `[]` | null | `ration_of_food` | 原生外观 | 原生外观 |
 | pick | tool | 1 | `["basic.pick"]` | `{tag:"basic.pick", maxDurability:40, durabilityPerBatch:1}` | null | `†` | `#D2D6D8` |
 
-- 前 13 行进 `materials`（表中顺序），`pick` 是 `tools` 唯一一行。
-- “原生外观”：取基线原生渲染对该模板所属类别（WEAPON/ARMOR/FOOD）实际使用的字形与 `#RRGGBB` 颜色（在 `src/engine`/`src/ui` 的物品显示代码里查找）；若原生颜色不是固定 hex，用其默认前景色换算的 hex。在 `crafting_schema.test.ts` 断言三行与原生显示常量一致，并在报告写出取值与来源行。
-- native 行的 `maxStack` 只用于单批输出上限校验，不改原生合并/背包规则；口粮按原生规则**每份占 1 背包格**（合同 §5.1）。
-- 制造出的 native 物品与自然生成的同模板物品不可区分（+0、已鉴定、无诅咒/符文、口粮 nutrition 1800），由 foundation 装配；crafting 不做任何装配。
+- 前 11 行进 `materials`（表中顺序），`pick` 是 `tools` 唯一一行。
+- “原生外观”：取基线原生渲染对该模板所属类别（WEAPON/ARMOR）实际使用的字形与 `#RRGGBB` 颜色（在 `src/engine`/`src/ui` 的物品显示代码里查找）；若原生颜色不是固定 hex，用其默认前景色换算的 hex。在 `crafting_schema.test.ts` 断言三行与原生显示常量一致，并在报告写出取值与来源行。
+- native 行的 `maxStack` 只用于单批输出上限校验，不改原生合并/背包规则（合同 §5.1）。
+- 制造出的 native 物品与自然生成的同模板物品不可区分（+0、已鉴定、无诅咒/符文），由 foundation 装配；crafting 不做任何装配。
 - 镐耐久：初始 40；每次成功采集要求 `basic.pick` 的节点（只有金属矿脉）扣 1；耐久 0 仍是同一件物品，不能再满足工具要求。会使耐久降到 0 的那次采集由 foundation 弹出 `tool-break` 确认（5A2 D6），答 No 记录一条命令、0 成本。
 - MATERIAL（材料/工具/套件）可拾取、丢弃，不可装备/投掷/使用（5A2 D9，foundation 处理）；crafting 不为它们增加任何使用入口。
 - 不存在 unitWeight 字段（合同 r2 已删除）。
 
-### 5.3 资源节点（6 种）
+### 5.3 资源节点（5 种）
 
 ID `crafting.<短ID>`；文本键 `ext.crafting.node.<短ID>.name|description`；全部 `harvestTicks: 100`、`unitsPerHarvest: 1`、`yield` 恰一项 count 1、`placement.site: null`。
 
@@ -239,9 +242,9 @@ ID `crafting.<短ID>`；文本键 `ext.crafting.node.<短ID>.name|description`�
 | fiber-node | fiber | crafting.fiber ×1 | 20 | periodic 1 / 1000 tick | null | 1…40 / 2 / 32 / skip | `草` | `#8DB360` |
 | metal-node | ore | crafting.metal ×1 | 20 | none | `basic.pick` | 2…40 / 1 / 24 / skip | `矿` | `#B7C3CF` |
 | hide-cache | fiber | crafting.leather ×1 | 12 | none | null | 1…20 / 1 / 24 / skip | `皮` | `#B0805A` |
-| fungus-node | fungus | crafting.fungus ×1 | 20 | periodic 1 / 2000 tick | null | 1…40 / 2 / 32 / skip | `菌` | `#C9A0DC` |
 
-- 每层配置合计 10 ≤ 32；整局合计 176 ≤ 512。
+- 每层配置合计 8 ≤ 32；整局合计 144 ≤ 512。
+- 本包不含菌类节点（`kind:'fungus'` 由独立 `foraging` 模块使用，见 §1.4）。
 - `hide-cache` 的 kind 是有限行为分类 `fiber`，显示名为“皮革存料”，不是动物尸体规则，也不改怪物掉落。
 - 放置、defer 重试、skip 收据、再生物化全部由 foundation 按合同 §9.1(e)、§5.4 执行；crafting 不调用任何放置接口、不写 `generationContributions`。
 
@@ -254,9 +257,9 @@ ID `crafting.<短ID>`；文本键 `ext.crafting.node.<短ID>.name|description`�
 | table | `["station.table"]` | wood 4 + stone 2 | crafting.kit-table | 300 | 1 | adjacent-passable | `桌` | `#B08D57` |
 | hearth | `["station.hearth"]` | stone 6 + wood 2 | crafting.kit-hearth | 300 | 1 | adjacent-passable | `炉` | `#E0703A` |
 
-ID `crafting.table` / `crafting.hearth`；文本键 `ext.crafting.station.<短ID>.name|description`。kit 与原材料等价、不叠加扣除；火炉不产生火/烟/氧气模拟；不需要房间或屋顶。5B 不提供拆除/回收。
+ID `crafting.table` / `crafting.hearth`；文本键 `ext.crafting.station.<短ID>.name|description`。kit 与原材料等价、不叠加扣除；火炉不产生火/烟/氧气模拟，5B 内没有火炉配方（§1.4），仅可放置并公开 `station.hearth` 标签；不需要房间或屋顶。5B 不提供拆除/回收。
 
-### 5.5 配方（8 条）
+### 5.5 配方（7 条）
 
 ID `crafting.<短ID>`；文本键 `ext.crafting.recipe.<短ID>.name|description`；`toolTag` 全部 null；batch 1…16。
 
@@ -267,7 +270,6 @@ ID `crafting.<短ID>`；文本键 `ext.crafting.recipe.<短ID>.name|description`
 | make-hearth-kit | stone 6, wood 2 | kit-hearth 1 | 500 | `[]` | false |
 | make-dagger | metal 4, wood 1 | plain-dagger 1 | 1000 | `["station.table"]` | false |
 | make-leather-armor | fiber 6, leather 4 | plain-leather-armor 1 | 1500 | `["station.table"]` | false |
-| cook-ration | fungus 3, fiber 1 | ration 1 | 500 | `["station.hearth"]` | true |
 | make-bed-kit | wood 4, fiber 2 | kit-bed 1 | 500 | `["station.table"]` | true |
 | make-chest-kit | wood 6 | kit-chest 1 | 500 | `["station.table"]` | true |
 
@@ -283,12 +285,12 @@ ID `crafting.<短ID>`；文本键 `ext.crafting.recipe.<短ID>.name|description`
   "overflow": "floor-then-skip" }
 ```
 
-礼包恰好够“镐 + 桌（或桌套件）”，不含金属/皮革/装备/口粮。由 foundation 在新局 D1 首次落位时发一次（合同 §9.1(f)），load/replay 不补发。
+礼包恰好够“镐 + 桌（或桌套件）”，不含金属/皮革/装备/食物。由 foundation 在新局 D1 首次落位时发一次（合同 §9.1(f)），load/replay 不补发。
 
 | limits 键 | 值 | 校验含义（schema 静态检查） |
 | --- | ---: | --- |
 | recipes | 128 | `recipes.length ≤` |
-| itemAndStationDefinitions | 128 | `materials+tools+stations ≤`（首包 16） |
+| itemAndStationDefinitions | 128 | `materials+tools+stations ≤`（首包 14） |
 | nodeDefinitions | 128 | `resourceNodes.length ≤` |
 | nodesPerLevel | 32 | 任一深度上可放置定义的 `maxPerDepth` 之和 ≤ |
 | nodesPerRun | 512 | 全部 `maxPerRun` 之和 ≤ |
@@ -307,7 +309,7 @@ ID `crafting.<短ID>`；文本键 `ext.crafting.recipe.<短ID>.name|description`
 - tags/stationTags 去重且按码点排序、≤16；工位 stationTags 非空。
 - ItemAmount 列表 1…8 项、count 1…99、同列表 ID 不重复，引用必须是本包物品。
 - 配方 inputs 只能引用 category material/kit；outputs 引用本包任何物品；workTicks 100…10000；stationTags 必须是本包某工位 tags 的子集（或空）。
-- native 行 nativeTemplate ∈ {dagger, leather_armor, ration_of_food} 且 tool=null；tool 行 maxStack=1、tool 非空、tool.tag ∈ 本行 tags；其他行 tool=null。
+- native 行 nativeTemplate ∈ {dagger, leather_armor}（不接受 `ration_of_food`）且 tool=null；tool 行 maxStack=1、tool 非空、tool.tag ∈ 本行 tags；其他行 tool=null。
 - 资源 yield 引用 material；requiredToolTag 为 null 或某 tool 行的 tool.tag；`regeneration`/`placement` 范围按合同 §10.1；`site` 必须 null（5B 不开放 site）。
 - 工位 kitDefinitionId 必须引用 category kit 且 placementCost 只含 material。
 - limits 全部 12 键存在，且每个值 ≤ 上表值（可以更严，不可更松），并按 §5.6 校验数据满足它。
@@ -324,14 +326,12 @@ ID `crafting.<短ID>`；文本键 `ext.crafting.recipe.<短ID>.name|description`
     {"owner":"crafting","id":"crafting.metal","nameKey":"ext.crafting.item.metal.name","descriptionKey":"ext.crafting.item.metal.description","category":"material","glyph":"%","color":"#B7C3CF","maxStack":99,"nativeTemplate":null,"tags":["basic.metal"],"tool":null},
     {"owner":"crafting","id":"crafting.fiber","nameKey":"ext.crafting.item.fiber.name","descriptionKey":"ext.crafting.item.fiber.description","category":"material","glyph":"%","color":"#8DB360","maxStack":99,"nativeTemplate":null,"tags":["basic.fiber"],"tool":null},
     {"owner":"crafting","id":"crafting.leather","nameKey":"ext.crafting.item.leather.name","descriptionKey":"ext.crafting.item.leather.description","category":"material","glyph":"%","color":"#B0805A","maxStack":99,"nativeTemplate":null,"tags":["basic.leather"],"tool":null},
-    {"owner":"crafting","id":"crafting.fungus","nameKey":"ext.crafting.item.fungus.name","descriptionKey":"ext.crafting.item.fungus.description","category":"material","glyph":"%","color":"#C9A0DC","maxStack":99,"nativeTemplate":null,"tags":["basic.fungus"],"tool":null},
     {"owner":"crafting","id":"crafting.kit-bed","nameKey":"ext.crafting.item.kit-bed.name","descriptionKey":"ext.crafting.item.kit-bed.description","category":"kit","glyph":"▣","color":"#A8B2C0","maxStack":99,"nativeTemplate":null,"tags":["kit.bed"],"tool":null},
     {"owner":"crafting","id":"crafting.kit-chest","nameKey":"ext.crafting.item.kit-chest.name","descriptionKey":"ext.crafting.item.kit-chest.description","category":"kit","glyph":"▣","color":"#A8B2C0","maxStack":99,"nativeTemplate":null,"tags":["kit.chest"],"tool":null},
     {"owner":"crafting","id":"crafting.kit-table","nameKey":"ext.crafting.item.kit-table.name","descriptionKey":"ext.crafting.item.kit-table.description","category":"kit","glyph":"▣","color":"#A8B2C0","maxStack":99,"nativeTemplate":null,"tags":["kit.station.table"],"tool":null},
     {"owner":"crafting","id":"crafting.kit-hearth","nameKey":"ext.crafting.item.kit-hearth.name","descriptionKey":"ext.crafting.item.kit-hearth.description","category":"kit","glyph":"▣","color":"#A8B2C0","maxStack":99,"nativeTemplate":null,"tags":["kit.station.hearth"],"tool":null},
     {"owner":"crafting","id":"crafting.plain-dagger","nameKey":"ext.crafting.item.plain-dagger.name","descriptionKey":"ext.crafting.item.plain-dagger.description","category":"native","glyph":"<NATIVE_WEAPON_GLYPH>","color":"<NATIVE_WEAPON_COLOR>","maxStack":1,"nativeTemplate":"dagger","tags":[],"tool":null},
-    {"owner":"crafting","id":"crafting.plain-leather-armor","nameKey":"ext.crafting.item.plain-leather-armor.name","descriptionKey":"ext.crafting.item.plain-leather-armor.description","category":"native","glyph":"<NATIVE_ARMOR_GLYPH>","color":"<NATIVE_ARMOR_COLOR>","maxStack":1,"nativeTemplate":"leather_armor","tags":[],"tool":null},
-    {"owner":"crafting","id":"crafting.ration","nameKey":"ext.crafting.item.ration.name","descriptionKey":"ext.crafting.item.ration.description","category":"native","glyph":"<NATIVE_FOOD_GLYPH>","color":"<NATIVE_FOOD_COLOR>","maxStack":99,"nativeTemplate":"ration_of_food","tags":[],"tool":null}
+    {"owner":"crafting","id":"crafting.plain-leather-armor","nameKey":"ext.crafting.item.plain-leather-armor.name","descriptionKey":"ext.crafting.item.plain-leather-armor.description","category":"native","glyph":"<NATIVE_ARMOR_GLYPH>","color":"<NATIVE_ARMOR_COLOR>","maxStack":1,"nativeTemplate":"leather_armor","tags":[],"tool":null}
   ],
   "tools": [
     {"owner":"crafting","id":"crafting.pick","nameKey":"ext.crafting.item.pick.name","descriptionKey":"ext.crafting.item.pick.description","category":"tool","glyph":"†","color":"#D2D6D8","maxStack":1,"nativeTemplate":null,"tags":["basic.pick"],"tool":{"tag":"basic.pick","maxDurability":40,"durabilityPerBatch":1}}
@@ -341,8 +341,7 @@ ID `crafting.<短ID>`；文本键 `ext.crafting.recipe.<短ID>.name|description`
     {"owner":"crafting","id":"crafting.stone-node","nameKey":"ext.crafting.node.stone-node.name","descriptionKey":"ext.crafting.node.stone-node.description","glyph":"石","color":"#9EA3A8","kind":"stone","yield":[{"itemDefinitionId":"crafting.stone","count":1}],"capacity":20,"harvestTicks":100,"unitsPerHarvest":1,"requiredToolTag":null,"regeneration":{"kind":"none"},"placement":{"dungeon":{"minDepth":1,"maxDepth":40,"maxPerDepth":2,"maxPerRun":32,"onNoSpace":"skip"},"site":null}},
     {"owner":"crafting","id":"crafting.fiber-node","nameKey":"ext.crafting.node.fiber-node.name","descriptionKey":"ext.crafting.node.fiber-node.description","glyph":"草","color":"#8DB360","kind":"fiber","yield":[{"itemDefinitionId":"crafting.fiber","count":1}],"capacity":20,"harvestTicks":100,"unitsPerHarvest":1,"requiredToolTag":null,"regeneration":{"kind":"periodic","units":1,"intervalTicks":1000},"placement":{"dungeon":{"minDepth":1,"maxDepth":40,"maxPerDepth":2,"maxPerRun":32,"onNoSpace":"skip"},"site":null}},
     {"owner":"crafting","id":"crafting.metal-node","nameKey":"ext.crafting.node.metal-node.name","descriptionKey":"ext.crafting.node.metal-node.description","glyph":"矿","color":"#B7C3CF","kind":"ore","yield":[{"itemDefinitionId":"crafting.metal","count":1}],"capacity":20,"harvestTicks":100,"unitsPerHarvest":1,"requiredToolTag":"basic.pick","regeneration":{"kind":"none"},"placement":{"dungeon":{"minDepth":2,"maxDepth":40,"maxPerDepth":1,"maxPerRun":24,"onNoSpace":"skip"},"site":null}},
-    {"owner":"crafting","id":"crafting.hide-cache","nameKey":"ext.crafting.node.hide-cache.name","descriptionKey":"ext.crafting.node.hide-cache.description","glyph":"皮","color":"#B0805A","kind":"fiber","yield":[{"itemDefinitionId":"crafting.leather","count":1}],"capacity":12,"harvestTicks":100,"unitsPerHarvest":1,"requiredToolTag":null,"regeneration":{"kind":"none"},"placement":{"dungeon":{"minDepth":1,"maxDepth":20,"maxPerDepth":1,"maxPerRun":24,"onNoSpace":"skip"},"site":null}},
-    {"owner":"crafting","id":"crafting.fungus-node","nameKey":"ext.crafting.node.fungus-node.name","descriptionKey":"ext.crafting.node.fungus-node.description","glyph":"菌","color":"#C9A0DC","kind":"fungus","yield":[{"itemDefinitionId":"crafting.fungus","count":1}],"capacity":20,"harvestTicks":100,"unitsPerHarvest":1,"requiredToolTag":null,"regeneration":{"kind":"periodic","units":1,"intervalTicks":2000},"placement":{"dungeon":{"minDepth":1,"maxDepth":40,"maxPerDepth":2,"maxPerRun":32,"onNoSpace":"skip"},"site":null}}
+    {"owner":"crafting","id":"crafting.hide-cache","nameKey":"ext.crafting.node.hide-cache.name","descriptionKey":"ext.crafting.node.hide-cache.description","glyph":"皮","color":"#B0805A","kind":"fiber","yield":[{"itemDefinitionId":"crafting.leather","count":1}],"capacity":12,"harvestTicks":100,"unitsPerHarvest":1,"requiredToolTag":null,"regeneration":{"kind":"none"},"placement":{"dungeon":{"minDepth":1,"maxDepth":20,"maxPerDepth":1,"maxPerRun":24,"onNoSpace":"skip"},"site":null}}
   ],
   "stations": [
     {"owner":"crafting","id":"crafting.table","nameKey":"ext.crafting.station.table.name","descriptionKey":"ext.crafting.station.table.description","glyph":"桌","color":"#B08D57","interactionDistance":1,"stationTags":["station.table"],"placementCost":[{"itemDefinitionId":"crafting.wood","count":4},{"itemDefinitionId":"crafting.stone","count":2}],"placementTicks":300,"workPositionPolicy":"adjacent-passable","kitDefinitionId":"crafting.kit-table"},
@@ -354,7 +353,6 @@ ID `crafting.<短ID>`；文本键 `ext.crafting.recipe.<短ID>.name|description`
     {"owner":"crafting","id":"crafting.make-hearth-kit","nameKey":"ext.crafting.recipe.make-hearth-kit.name","descriptionKey":"ext.crafting.recipe.make-hearth-kit.description","inputs":[{"itemDefinitionId":"crafting.stone","count":6},{"itemDefinitionId":"crafting.wood","count":2}],"outputs":[{"itemDefinitionId":"crafting.kit-hearth","count":1}],"stationTags":[],"toolTag":null,"workTicks":500,"offlineEligible":false},
     {"owner":"crafting","id":"crafting.make-dagger","nameKey":"ext.crafting.recipe.make-dagger.name","descriptionKey":"ext.crafting.recipe.make-dagger.description","inputs":[{"itemDefinitionId":"crafting.metal","count":4},{"itemDefinitionId":"crafting.wood","count":1}],"outputs":[{"itemDefinitionId":"crafting.plain-dagger","count":1}],"stationTags":["station.table"],"toolTag":null,"workTicks":1000,"offlineEligible":false},
     {"owner":"crafting","id":"crafting.make-leather-armor","nameKey":"ext.crafting.recipe.make-leather-armor.name","descriptionKey":"ext.crafting.recipe.make-leather-armor.description","inputs":[{"itemDefinitionId":"crafting.fiber","count":6},{"itemDefinitionId":"crafting.leather","count":4}],"outputs":[{"itemDefinitionId":"crafting.plain-leather-armor","count":1}],"stationTags":["station.table"],"toolTag":null,"workTicks":1500,"offlineEligible":false},
-    {"owner":"crafting","id":"crafting.cook-ration","nameKey":"ext.crafting.recipe.cook-ration.name","descriptionKey":"ext.crafting.recipe.cook-ration.description","inputs":[{"itemDefinitionId":"crafting.fungus","count":3},{"itemDefinitionId":"crafting.fiber","count":1}],"outputs":[{"itemDefinitionId":"crafting.ration","count":1}],"stationTags":["station.hearth"],"toolTag":null,"workTicks":500,"offlineEligible":true},
     {"owner":"crafting","id":"crafting.make-bed-kit","nameKey":"ext.crafting.recipe.make-bed-kit.name","descriptionKey":"ext.crafting.recipe.make-bed-kit.description","inputs":[{"itemDefinitionId":"crafting.wood","count":4},{"itemDefinitionId":"crafting.fiber","count":2}],"outputs":[{"itemDefinitionId":"crafting.kit-bed","count":1}],"stationTags":["station.table"],"toolTag":null,"workTicks":500,"offlineEligible":true},
     {"owner":"crafting","id":"crafting.make-chest-kit","nameKey":"ext.crafting.recipe.make-chest-kit.name","descriptionKey":"ext.crafting.recipe.make-chest-kit.description","inputs":[{"itemDefinitionId":"crafting.wood","count":6}],"outputs":[{"itemDefinitionId":"crafting.kit-chest","count":1}],"stationTags":["station.table"],"toolTag":null,"workTicks":500,"offlineEligible":true}
   ],
@@ -363,7 +361,7 @@ ID `crafting.<短ID>`；文本键 `ext.crafting.recipe.<短ID>.name|description`
 }
 ```
 
-`<NATIVE_*>` 六个占位按 §5.2“原生外观”规则由 dot 填入并在报告列出；这是本 JSON 中唯一允许 dot 填写的值。若 5A2 实际 `ItemDefinitionContribution`/`ResourceDefinition` 等多出或少了字段（§A 未改正时），以骨架示例为准增删该字段，**不改任何数值**，并在报告 SDK 差异节列出。
+`<NATIVE_*>` 四个占位按 §5.2“原生外观”规则由 dot 填入并在报告列出；这是本 JSON 中唯一允许 dot 填写的值。若 5A2 实际 `ItemDefinitionContribution`/`ResourceDefinition` 等多出或少了字段（§A 未改正时），以骨架示例为准增删该字段，**不改任何数值**，并在报告 SDK 差异节列出。
 
 ---
 
@@ -462,7 +460,7 @@ interface CraftingView {
 
 - `have` = 背包 `ItemRead` 中该 definitionId 的 `available` 之和（不扫描箱）。
 - 配方 `stationId`：stationTags 为空 → null；否则在 `stations` 中取 `inReach` 且 tags 覆盖配方 stationTags 的工位，按 `interactableId` 升序取第一个；找不到 → `stationId=null`、`maxBatch=0`、`reason='C5_GATE'`（UI 显示“需要{{station}}”）。
-- `maxBatch`：候选 = min(batchMax, 各输入 ⌊have/perBatch⌋)；从候选向下调用 `previewRecipe(recipeId, n, stationId, null)`，取第一个 `ok` 的 n；全不 ok → 0，`reason` = 候选批次（至少 1）preview 的 reason。单次投影 previewRecipe 调用总数 ≤ 8×16。
+- `maxBatch`：候选 = min(batchMax, 各输入 ⌊have/perBatch⌋)；从候选向下调用 `previewRecipe(recipeId, n, stationId, null)`，取第一个 `ok` 的 n；全不 ok → 0，`reason` = 候选批次（至少 1）preview 的 reason。单次投影 previewRecipe 调用总数 ≤ 7×16。
 - `inReach`：玩家与工位 Chebyshev 距离 ≤ 该工位 `interactionDistance`。
 - `placements[].source`：背包有对应 kit → `'kit'`；否则材料齐 → `'materials'`；都不够 → null。仅作 UI 预告，实际来源由 foundation 决定并确认（§A.3#1）。
 - 节点行 `canHarvest/reason` 来自 `readWorkContext({kind:'node', interactableId})`；失败的节点不列出。投影读到的是“最后已物化值”（5A2 D7），再生节点的剩余量可能偏低，提交时以 foundation 虚拟物化值为准；UI 不需要也不得自行推算再生。
@@ -508,29 +506,25 @@ interface CraftingView {
 | `item.metal` | 金属块 | 从矿脉凿出的粗金属，在工作桌上可以打成匕首。 |
 | `item.fiber` | 植物纤维 | 从洞穴苇丛剥下的纤维，可搓绳、缝甲、做床铺。 |
 | `item.leather` | 皮革 | 前人留下的鞣制皮料，缝制皮甲的主料。 |
-| `item.fungus` | 菌菇 | 生的菌菇，不能直接充饥；在火炉上可以做成口粮。 |
 | `item.kit-bed` | 床铺套件 | 拆散捆好的床架与铺垫，可以随身携带。 |
 | `item.kit-chest` | 储物箱套件 | 拆散捆好的木箱板材，可以随身携带。 |
 | `item.kit-table` | 工作桌套件 | 可以就地组装成一张工作桌。 |
 | `item.kit-hearth` | 火炉套件 | 可以就地垒成一座火炉。 |
 | `item.plain-dagger` | 匕首 | 在工作桌上打制的普通匕首，没有任何附魔。 |
 | `item.plain-leather-armor` | 皮甲 | 在工作桌上缝制的普通皮甲，没有任何附魔。 |
-| `item.ration` | 口粮 | 在火炉上烤制的普通口粮。 |
 | `item.pick` | 矿镐 | 木柄石头的粗制矿镐，能凿开金属矿脉；用久会坏。 |
 | `node.wood-node` | 朽木堆 | 倒伏的朽木，可以徒手劈下木材，过一段时间会再积起来。 |
 | `node.stone-node` | 碎石堆 | 坍落的碎石，可以徒手搬走，采完就没有了。 |
 | `node.fiber-node` | 洞穴苇丛 | 潮湿处生长的苇草，可以徒手剥取纤维，会慢慢长回来。 |
 | `node.metal-node` | 金属矿脉 | 岩壁中露出的金属矿脉，需要矿镐才能凿取。 |
 | `node.hide-cache` | 皮革存料 | 前人遗留的一捆鞣制皮料，取完就没有了。 |
-| `node.fungus-node` | 菌丛 | 一簇可食用的菌菇，过一段时间会重新长出。 |
 | `station.table` | 工作桌 | 简易工作桌，可以打制装备与家具套件。 |
-| `station.hearth` | 火炉 | 石砌火炉，可以烤制口粮。 |
+| `station.hearth` | 火炉 | 石砌火炉，可以作为烹饪的场所。 |
 | `recipe.make-pick` | 制作矿镐 | 用木材和石料做一把矿镐。 |
 | `recipe.make-table-kit` | 制作工作桌套件 | 把材料预先做成可携带的工作桌套件。 |
 | `recipe.make-hearth-kit` | 制作火炉套件 | 把材料预先做成可携带的火炉套件。 |
 | `recipe.make-dagger` | 打制匕首 | 在工作桌上把金属打成一把匕首。 |
 | `recipe.make-leather-armor` | 缝制皮甲 | 在工作桌上用皮革和纤维缝一件皮甲。 |
-| `recipe.cook-ration` | 烤制口粮 | 在火炉上把菌菇做成口粮。 |
 | `recipe.make-bed-kit` | 制作床铺套件 | 在工作桌上做一套床铺套件。 |
 | `recipe.make-chest-kit` | 制作储物箱套件 | 在工作桌上做一套储物箱套件。 |
 
@@ -541,7 +535,7 @@ interface CraftingView {
 | 键 | 文本 |
 | --- | --- |
 | `module.name` | 合成 |
-| `module.description` | 在地牢中采集木石、纤维与矿料，制作工具、工作台、普通装备与口粮。 |
+| `module.description` | 在地牢中采集木石、纤维与矿料，制作工具、工作台、普通装备与家具套件。 |
 | `ui.open` | 合成 |
 | `ui.title` | 合成 |
 | `ui.tab.harvest` / `ui.tab.craft` / `ui.tab.station` / `ui.tab.work` | 采集 / 制作 / 工作台 / 工作 |
@@ -606,14 +600,14 @@ locale 守卫：每个机械 nameKey/descriptionKey 都存在；所有 `ext.craf
 | # | 文件 | 用例 |
 | --- | --- | --- |
 | T1 | schema | §5.7 每条规则至少一个拒绝用例；未知键、缺键、非整数、越界、重复 ID、错误前缀、悬空引用、native 作输入、stationTags 不可满足、limits 放松、locale 缺键 |
-| T2 | schema | 指纹稳定（两次加载相同）；任一机械数组重排或任一数值变化 → 指纹变化；locale 文本变化 → 指纹不变；native 外观三行与原生显示常量一致 |
+| T2 | schema | 指纹稳定（两次加载相同）；任一机械数组重排或任一数值变化 → 指纹变化；locale 文本变化 → 指纹不变；native 外观两行与原生显示常量一致 |
 | T3 | data_tables | 逐项断言 §5.2–5.6 全部数值/ID/顺序（作为“改数值必须改此测试”的黄金表） |
 | T4 | module | descriptor 通过 `validateModuleDescriptors`；`toWorldDefinitionPack` 顺序与内容；state 初值/校验/拒绝；`applyFact` 幂等、滚动上限 512/128、饱和、非 crafting 事实忽略、绝不抛异常 |
 | T5 | commands | 四种 payload 严格键集与 `v`；成对 null 规则；batchCount 0/17/非整数；未知 recipe/工位；prepare 前后 state、两条 RNG、实体/计划 ID、消息均不变 |
 | T6 | projection | `available:false` 路径；have/maxBatch/stationId 选择/source 预告的确定规则；反复投影结果相同且无写入 |
-| T7 | runtime | 仅 crafting 新局：启动收据 granted 且背包恰为 木6/石4/纤维2；load/replay 不补发；满背包时 partial（落地）与全部 skipped；采集 100 tick 得 1；镐→桌（kit 与材料两种来源各一次，且不双扣）→炉；D2 金属需镐、每次耐久 −1、耐久 0 后拒绝；匕首/皮甲 +0 已鉴定无符文、与自然同模板物品 stacksWith 规则一致；口粮 nutrition 1800、N 份占 N 格；套件可堆叠 99 并能 save/load |
-| T8 | placement | D1 放置 wood/stone/fiber/fungus 各 ≤2、hide ≤1、无 metal；D2 起有 metal；D21 起无 hide；wood 达 32 后不再放；skip/defer 收据唯一；节点不在楼梯/giants 侧室/其他 interactable 上；放置与启动礼包不推进两条原生 RNG（与同种子 `[]` 模块局比较 D1–D3：地形、怪物种类/位置、原生物品种类/位置逐项相同；实体 ID 数值因节点/礼包占号允许不同，比较时忽略） |
-| T9 | regen | wood 每 2000、fiber 每 1000、fungus 每 2000 tick 回 1，满容量不积余；stone/metal/hide 不再生；只读查询不改变节点 revision；离层后返回按 elapsed 物化 |
+| T7 | runtime | 仅 crafting 新局：启动收据 granted 且背包恰为 木6/石4/纤维2；load/replay 不补发；满背包时 partial（落地）与全部 skipped；采集 100 tick 得 1；镐→桌（kit 与材料两种来源各一次，且不双扣）→炉；D2 金属需镐、每次耐久 −1、耐久 0 后拒绝；匕首/皮甲 +0 已鉴定无符文、与自然同模板物品 stacksWith 规则一致；新局与任何流程中都不出现 crafting 制造的食物；套件可堆叠 99 并能 save/load |
+| T8 | placement | D1 放置 wood/stone/fiber 各 ≤2、hide ≤1、无 metal、无任何 crafting 菌类节点；D2 起有 metal；D21 起无 hide；wood 达 32 后不再放；skip/defer 收据唯一；节点不在楼梯/giants 侧室/其他 interactable 上；放置与启动礼包不推进两条原生 RNG（与同种子 `[]` 模块局比较 D1–D3：地形、怪物种类/位置、原生物品种类/位置逐项相同；实体 ID 数值因节点/礼包占号允许不同，比较时忽略） |
+| T9 | regen | wood 每 2000、fiber 每 1000 tick 回 1，满容量不积余；stone/metal/hide 不再生；只读查询不改变节点 revision；离层后返回按 elapsed 物化 |
 | T10 | rejections | 合同 §4.3 每组至少一个：镐耐久 1 时采矿触发 `tool-break` 确认，Yes 采到且耐久 0、No 录制但零成本、陈旧 nodeRevision/inventoryStamp/stationRevision、伪造 actorId 字段、跨层/未见目标、距离、无工具/工具破损、节点空/已预留、满背包、输出无槽、工位每层 16 上限、batch 超限、unsafe 乘法；全部 0 tick/0 料/0 RNG/0 新 ID |
 | T11 | work | 多批（5 批）`auto_work`：每批一条录制命令；第 3 批前出现可见敌人 → 停止，已完成 2 批保留，未开始 3 批 escrow 恰退款一次；批中受伤 → 该批不产出、不扣耐久、剩余全部退款；批间 `cancel-work` 成功、bundle 存活时 `cancel-work` 被拒；工具中途破损停止续作；退款后背包与预期逐项相等 |
 | T12 | persistence | 在“批中（bundle 存活）/批间/放置后/确认 No 后/取消后/节点部分采空且有再生余数”各存一次档：load 后继续得到与不存档相同的结果；整局录像 replay 首个不一致为 null；seek 到上述各点再续录一致；面板反复打开/关闭/切页签前后 digest 与两 RNG 不变 |
@@ -623,7 +617,7 @@ locale 守卫：每个机械 nameKey/descriptionKey 都存在；所有 `ext.craf
 
 ### 8.3 自然公开命令 trace
 
-dot 选定一个固定种子（normal 模式），**只用公开命令**（原生移动/旅行/下楼 + 四个 crafting 命令 + 确认答案）从新局走完：启动礼包 → D1 采木/石/纤维/菌/皮 → 做镐 → 放桌（材料或套件）→ 放炉 → 烤口粮 → 做皮甲、床/箱套件 → 带一个桌套件下 D2 → 采 4 金属 → 在 D2 放桌 → 打匕首。若该种子 D1 某节点被 skip，换种子；最多尝试 64 个种子，记录选择过程。trace JSON 字段：`seed`、`mode`、`modules:['crafting']`、`commands:[{action,data,answers?,expect:{recorded,error}}]`、`final:{inventory,digest}`。T15 回放它。报告写明种子、命令数、总 tick、录像大小。
+dot 选定一个固定种子（normal 模式），**只用公开命令**（原生移动/旅行/下楼 + 四个 crafting 命令 + 确认答案）从新局走完：启动礼包 → D1 采木/石/纤维/皮 → 做镐 → 放桌（材料或套件）→ 放炉 → 做皮甲、床/箱套件 → 带一个桌套件下 D2 → 采 4 金属 → 在 D2 放桌 → 打匕首。若该种子 D1 某节点被 skip，换种子；最多尝试 64 个种子，记录选择过程。trace JSON 字段：`seed`、`mode`、`modules:['crafting']`、`commands:[{action,data,answers?,expect:{recorded,error}}]`、`final:{inventory,digest}`。T15 回放它。报告写明种子、命令数、总 tick、录像大小。
 
 5A2-S 若在 5B 之后合入，集成人会重跑此 trace 并逐字段归因（合同 §11.4）；dot 不需要预留兼容。
 
