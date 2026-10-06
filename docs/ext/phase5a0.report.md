@@ -1,5 +1,7 @@
 # 5A0 执行报告：合同冻结与体积探针
 
+> **维护者决定（2026-10-06）：§3 新版录像格式（2048 命令/64MiB 加速快照缓存/IndexedDB 录像库）与 §5.3–5.6 全部 crafting 数值、上限按提案批准。** 5A1 在阶段 3/4 收尾最终提交确定后开工；5B 待 5A2 交付 SDK 基线后派发 dot。
+
 日期：2026-10-06。执行分支 ext/phase5-design，HEAD 87d92c8；用户要求不改生产代码、不 commit，已遵守。交付 [C5-1 合同](phase5a-contract.md)、本文及 [只读探针](../../scripts/phase5a0-size-probe.mjs)。任务原文件 [phase5a0.task.md](phase5a0.task.md) 开工前已是未跟踪文件，本步保留。
 
 ## 1 结论与证据边界
