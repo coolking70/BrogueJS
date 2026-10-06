@@ -1,6 +1,6 @@
 # 5B dot 任务包：独立 `crafting` 内容模块（整包一次派发）
 
-> 状态：**派发草稿，未派发**；本包的自行决定（§12.1 等）已由维护者 2026-10-06 表态“全部按推荐”批准。同日按已批准的[野外采食方向](phase5-foraging.md)修订：删除菌类节点、菌材料、口粮物品与“菌→口粮”配方，玩家不能自制食物（见 §1.4）。由 Claude 依据已批准的[阶段5设计](phase5-settlement-world.md)（P5-D01–D14 全 A）、[C5-1 合同 r2](phase5a-contract.md)、[5A0 报告](phase5a0.report.md) §5.3–5.6 已批准数值及其 §7 r2 修订编写。维护者在填好 §A 检查清单的全部占位符、把本文件合入派发基线后，再把下方提示块转贴给 dot。**本包以合同 §9 冻结 SDK 名称编写；5A2 实际导出若有差异，派发前由维护者按 §A 一次性改正本文，dot 不负责猜测。**
+> 状态：**定稿，可派发**（2026-10-07 按冻结 worldSdk 1 的实际代码完成 §A 全部核对并改正本文；基线 `ext/phase5b-base`，代码 = `2d870a2`）。本包的自行决定（§12.1 等）已由维护者 2026-10-06 表态“全部按推荐”批准。同日按已批准的[野外采食方向](phase5-foraging.md)修订：删除菌类节点、菌材料、口粮物品与“菌→口粮”配方，玩家不能自制食物（见 §1.4）。由 Claude 依据已批准的[阶段5设计](phase5-settlement-world.md)（P5-D01–D14 全 A）、[C5-1 合同 r2](phase5a-contract.md)、[5A0 报告](phase5a0.report.md) §5.3–5.6 已批准数值及其 §7 r2 修订编写，并按 [5A2 报告](phase5a2.report.md) §7/§9 与独立审查的 5B 不符项清单定稿。维护者把下方提示块原样转贴给 dot 即可。**合同文字与基线实际 SDK 不一致之处已在本文改正为实际行为；仍有冲突时以基线代码为准（§12.2-1）。**
 
 ---
 
@@ -10,76 +10,91 @@
 你是 BrogueJS 扩展原型的 5B 执行者。任务：在独立模块目录 src/ext/modules/crafting/ 内实现完整的 crafting（资源采集与合成）内容模块，一次长块独立开发直到完成全部交付，期间不要向维护者提问。
 
 基线与分支：
-- 从 ext/phase5 的提交 <BASE_5A2_COMMIT> 新建分支 ext/phase5b（git switch -c ext/phase5b <BASE_5A2_COMMIT>）。
-- 只推 ext/phase5b；不推 ext/phase5、ext/foundation、main；不打 tag；不合并任何分支。
+- git fetch origin && git switch -c ext/phase5b origin/ext/phase5b-base
+- 该 tip = 代码基线 2d870a2（ext/phase5：5A1+5A1-R+5A2 含审查修复，冻结 worldSdk 1，FOUNDATION_PROTOCOL=7）+ 一个只改 docs/ext/phase5b.dot-package.md 的定稿提交。开工先确认 `git diff --stat 2d870a2 HEAD` 只列出该文件、`git status` 干净。
+- 只推 ext/phase5b；不推 ext/phase5、ext/phase5b-base、ext/foundation、main；不打 tag；不合并、不 rebase 任何分支。
+- 本地 5A2-S（属性读点调整，不改 worldSdk/harness/骨架）可能与你并行开发。你只在下面允许的路径内工作，不要碰任何共享文件；与 5A2-S 的集成 rebase 和 trace 重跑由维护者完成，你不需要预留兼容。
 
-唯一任务书：docs/ext/phase5b.dot-package.md（本提示与其冲突时以该文件为准）。先读 AGENTS.md、docs/ext/README.md，再完整读该任务书；它引用的 C5-1 合同（docs/ext/phase5a-contract.md §4.2、§5、§8、§9、§10.1）与 5A0 报告 §5、§7 只作背景，数值、ID、文案、版本均以任务书为准。
+唯一任务书：docs/ext/phase5b.dot-package.md（本提示与其冲突时以该文件为准；它的 §A 是维护者已完成的核对记录，可作背景）。先读 AGENTS.md、docs/ext/README.md，再完整读该任务书；它引用的 C5-1 合同（docs/ext/phase5a-contract.md §4.2、§5、§8、§9、§10.1）、5A0 报告 §5/§7、5A2 报告 §7/§9 只作背景，数值、ID、文案、版本均以任务书为准；合同文字与基线实际 SDK 冲突时以基线代码为准。
 
 硬规则（详见任务书 §11）：
-1. 只改 src/ext/modules/crafting/**、docs/ext/crafting-config.md、docs/ext/phase5b.report.md。其他任何文件（Game/引擎、src/ext/*.ts、src/ext/testing/**、src/ext/ui/**、其他模块、scripts/**、package.json、配置、基线/trace）一律不改。
-2. 不改任务书给定的 ID、数值、上限、版本号；不增加任务书非目标中的玩法。
-3. SDK 缺口/缺陷/与合同不符：不绕过、不在模块里另造调度器或补丁，记入报告“SDK 问题清单”（含最小复现），其余工作继续推进。
-4. 遇到任务书未写明的细节，按任务书 §12 的裁决规则自行决定并在报告“自行决定事项”列出，不要停下来问。
-5. 开发期每个里程碑只跑任务书 §9.1 的功能门禁；全部完成后跑一次 §9.2 收尾门禁。不跑完整 npm test、不跑全量删除矩阵、不跑 ce:fetch/test:full/test:gen。
+1. 只改 src/ext/modules/crafting/**、docs/ext/crafting-config.md、docs/ext/phase5b.report.md。其他任何文件（Game/引擎、src/ext/*.ts、src/ext/testing/**、src/ext/ui/**、其他模块、scripts/**、package.json、配置、基线/trace、其他文档）一律不改。
+2. 生产代码只可 import：src/ext/worldSdk、src/ext/types、src/ext/descriptor、src/ext/fingerprint、src/ext/world（仅 import type）、src/ext/ui/**、src/ui/** 与模块自有文件（边界脚本强制）；测试可另用 src/ext/testing/worldHarness 等。
+3. 不改任务书给定的 ID、数值、上限、版本号；不增加任务书非目标中的玩法。
+4. SDK 缺口/缺陷/与合同不符：不绕过、不在模块里另造调度器或补丁，记入报告“SDK 问题清单”（含最小复现），其余工作继续推进。基线既有失败（例如任务书 §9.2 写明的组合 smoke 失败）照实记录，不修共享脚本。
+5. 遇到任务书未写明的细节，按任务书 §12 的裁决规则自行决定并在报告“自行决定事项”列出，不要停下来问。
+6. 开发期每个里程碑只跑任务书 §9.1 的功能门禁；全部完成后跑一次 §9.2 收尾门禁。不跑完整 npm test、不跑全量删除矩阵、不跑 ce:fetch/test:full/test:gen。环境 Node 24.19.0、NODE_OPTIONS=--max-old-space-size=3072、vitest --maxWorkers=2。
 
 交付：按任务书 §10 写 docs/ext/phase5b.report.md，按逻辑分若干提交推到 ext/phase5b，最后回复一段 ≤30 行的中文摘要（最终 commit、报告路径、门禁结果一览、SDK 问题清单条数、未覆盖项）。
 ```
 
 ---
 
-## A 派发前维护者检查清单（dot 不读本节；全部打勾才可派发）
+## A 派发前维护者检查清单（已全部完成；dot 只作背景阅读，不需执行）
 
-5A2 尚未实现，本包按 C5-1 §9 写成。5A2 交付并合入 `ext/phase5` 后，逐项对照实际代码，有差异则**直接改本文对应段落**（不要让 dot 自己适配）。
+2026-10-07 由 Claude 按冻结 worldSdk 1 的实际代码逐项核对完毕，差异已**直接改入本文对应段落**（dot 不需自行适配）。核对树：`ext/phase5b-base` @ `2d870a2`（= `ext/phase5` = 5A1+5A1-R+5A2 含审查修复 H1–H3/M1–M5/L1–L11）；依据 [5A2 报告](phase5a2.report.md) §7、§9“SDK修订冻结清单”与独立审查 §5 的 5B 不符项清单。
 
-### A.1 占位符
+### A.1 占位符（已填）
 
-| 占位符 | 填写内容 | 出现位置 |
-| --- | --- | --- |
-| `<BASE_5A2_COMMIT>` | 5A2 合入 `ext/phase5` 后的精确 commit（含本文件） | §0、§2 |
-| `<FOUNDATION_PROTOCOL>` | 该 commit 中 `src/ext/descriptor.ts` 的 `FOUNDATION_PROTOCOL` 值（5A2 任务书 D1 预期 **7**） | §2 |
-| `<SDK_SHA256_*>` | `src/ext/worldSdk.ts`、`src/ext/testing/worldHarness.ts`、`src/ext/testing/fixtures/craftingSkeleton/` 下每个文件的 SHA-256 | §2 |
-| `<MODULE_VERSIONS>` | 基线中 growth/narrative/combat/giants 的 module 版本（5A2 任务书 D1 预期 growth 1.7.0、narrative 1.4.0、combat **1.6.0**、giants 1.0.0） | §2 |
-| `<5A2S_STATUS>` / `<5A3_STATUS>` | 5A2-S、5A3 是否已在基线中 | §2、§8.4 |
-
-### A.2 必须对照 5A2 实际导出的名称（合同 §9 → 本包用法）
-
-| # | 合同名称（C5-1 节） | 本包依赖方式 | 核对 |
+| 占位符 | 实际值 | 证据 | 状态 |
 | --- | --- | --- | --- |
-| 1 | 公开入口 `src/ext/worldSdk.ts`（§2） | crafting 只从此文件 `import type`/常量 | ☐ |
-| 2 | `WorldDefinitionPack`、`ItemDefinitionContribution`、`ResourceDefinition`、`StationDefinition`、`RecipeDefinition`、`StartupItemsDeclaration`、`ItemAmount`（§5、§9） | §5 数据字段逐字对应 | ☐ |
-| 3 | `WorldWorkCommand`、`WorldWorkPrepareSDK`（`readWorkContext/planTimedWork/planStationPlacement/planCancelWork`）、`TimedWorkRequest`、`StationPlacementRequest`、`CancelWorkRequest`、`KnownWorkQuery` | §6.3 prepare 实现 | ☐ |
-| 4 | `WorldWorkParticipant.onCommitted(fact, tx)`、`ModuleStateTransaction.{state,replaceState}`、`CommittedWorkFact`（operation 五值、result 三值） | §6.4 状态 | ☐ |
-| 5 | `WorldWorkReadSDK`（`readWorkContext/queryStations/queryContainers/previewRecipe/recentFacts`）、`ExtensionProjectionContext.worldWork` | §7.1 投影 | ☐ |
-| 6 | `WorkContext`、`RecipePreview`、`ItemRead`、`StationRead`、`ContainerRead`、`ResourceNodeRecord`、`WorkTicket` 字段名 | §7.1 投影 | ☐ |
-| 7 | 模块字段 `worldDefinitions` / `worldWorkCommands` / `worldWorkParticipant`（`ExtensionModule` 上） | §6.2 | ☐ |
-| 8 | descriptor 新键 `worldSdk: 1` 的**确切位置**（`ModuleDescriptor` 还是 `ExtensionModule`，或两者）与 `foundation: FOUNDATION_PROTOCOL` | §6.1 | ☐ |
-| 9 | `WorldResult` / `WorldErrorCode` 码全集（合同 §2.1 列出 33 个，5A2 任务书写“34 个”——以实际导出为准，核对 §7.4 映射）；模块 prepare 可否直接返回 `{ok:false,code,field}` 字面对象 | §6.3 | ☐ |
-| 10 | `C5_CONTRACT_VERSION`、`WORLD_SDK_VERSION` 常量名 | §6.1 | ☐ |
-| 11 | `CraftingCommand` 类型是否由 SDK 导出（否则模块自定义同形类型） | §6.3 | ☐ |
-| 12 | harness：`createWorldHarness`、`WorldHarnessOptions`、`WorldHarness` 各方法、fixture 名 `world-work-basic` / `crafting-skeleton`、骨架路径 `src/ext/testing/fixtures/craftingSkeleton/` | §8 测试 | ☐ |
-| 13 | foundation 错误文案键 `ext.foundation.world.error.<code 去前缀小写>`；确认文案 `ext.foundation.world.confirm.tool-break`（5A2 D6） | §7.4 i18n | ☐ |
-| 14 | autoAction kind `auto_work` 与续作命令 `auto_step` | §6.5、§8 | ☐ |
+| `<BASE_5A2_COMMIT>` | 代码基线 `2d870a2`；派发 tip = `origin/ext/phase5b-base`（`2d870a2` + 仅本文件的定稿文档提交） | `git log` / `git diff --stat 2d870a2 origin/ext/phase5b-base` 只应列出本文件 | ☑ |
+| `<FOUNDATION_PROTOCOL>` | **7** | `src/ext/descriptor.ts:5` `export const FOUNDATION_PROTOCOL = 7 as const;` | ☑ |
+| `<MODULE_VERSIONS>` | growth **1.7.0**、narrative **1.4.0**、combat **1.6.0**（state schema 4）、giants **1.0.0** | 各模块 `definitions.ts` 的 `*_VERSION` 常量 | ☑ |
+| `<SDK_SHA256_worldSdk>` | `e2f3cbbf06fa9afd939ec3a3a5f75193d47003a08410fd1c5d2e8899051da05f` | `shasum -a 256 src/ext/worldSdk.ts`，与 5A2 报告 §7 一致 | ☑ |
+| `<SDK_SHA256_harness>` | `0cc14ecd4cf734591616b291239b3ef23b99e451af6f954a3de6de3f3143ba26` | `src/ext/testing/worldHarness.ts`，同上 | ☑ |
+| `<SDK_SHA256_skeleton>` | 目录仅 `index.ts`：`f4d70fd3b9be75444f181448ced4005c20d546c0cff7ce11eef366bb4a1a5372`；聚合 `7da2f828d4363cb8c09e024be4ac1ca32d907298f00d8ec029ab87f7aad5c6ad`（排序的 `相对路径\t文件SHA\n` UTF-8 的 SHA-256） | 同上 | ☑ |
+| （补充）world-work-basic fixture | `src/ext/testing/fixtures/worldWorkBasic.ts`：`a0267454f15f1b3c90649ab1a4945ddf1e055d40dc0072e776ab74265ca61ee1` | 同上 | ☑ |
+| `<5A2S_STATUS>` / `<5A3_STATUS>` | 均**未合入**基线 | `git log 2d870a2` | ☑ |
 
-### A.3 必须对照 5A2 实际行为（影响本包规则的语义）
+### A.2 名称核对（合同 §9 → 实际导出）
 
-| # | 问题 | 本包当前假设 | 核对 |
-| --- | --- | --- | --- |
-| 1 | `place-station` 的 kit 优先：由 foundation 依据 `StationDefinition.kitDefinitionId` 选来源（5A2 D6 只有 `tool-break` 一种确认，来源选择不弹确认）？ | 是；crafting 只在 UI 预告来源，不在 payload 指定来源 | ☐ |
-| 2 | `WorkContext.stations` 范围：当前层全部已知工位，还是仅附近？ | 当前层全部已知工位（§6.3 每层上限检查依赖它）；若仅附近，改用 `queryStations()` | ☐ |
-| 3 | foundation 放置的节点/工位在 `nearbyInteractables` 中的 `owner` 为 `'crafting'`，且地图渲染/悬停由 foundation 完成 | 是 | ☐ |
-| 4 | 完成/中断时是否由 foundation 写日志消息（用 recipe/node 的 nameKey） | 是；crafting 不发日志 | ☐ |
-| 5 | native 行 `glyph/color` 是否被忽略（显示用原生模板外观） | 必填但仅作目录显示；dot 按 §5.2 规则取原生外观值 | ☐ |
-| 6 | prepare 回调拿不到模块 state（合同签名只有 payload+sdk） | 是；因此每局工位上限依赖 foundation 的 C5 工位子预算 128 | ☐ |
-| 7 | 5A2 fixture（D11 `c5fixture` 的 `world-work-basic`，含 1 个箱）能否与正式 `crafting` 同局启用，使 crafting 的 `sourceContainerId/destinationId` 可测 | 预期可以；若不能，相关用例列为“待本地集成”，不算失败 | ☐ |
-| 8 | harness 是否支持移动/旅行等原生命令（`command('move', …)`/`travel_to`）以走自然路线 | 是（§8.3 自然 trace 依赖） | ☐ |
-| 9 | `check-module-removal.mjs --profile=removal --retain=<列表>` 与 composition smoke 能自动发现新模块 | 是（§9.2） | ☐ |
-| 10 | 节点放置与启动礼包不触及原生两条 RNG 流（合同 §9.1 (e)(f)） | 是（§8.2 T9 断言） | ☐ |
+| # | 项目 | 实际（冻结 worldSdk 1） | 改动的本文段落 | 核对 |
+| --- | --- | --- | --- | --- |
+| 1 | 公开入口 | `src/ext/worldSdk.ts` 存在，但**不是唯一入口**：生产代码另需 `ext/types`（ExtensionModule、Json）、`ext/descriptor`（FOUNDATION_PROTOCOL、ModuleDescriptor）、`ext/fingerprint`（extensionDataFingerprint）、`ext/world`（仅 `import type`，ExtensionProjectionContext）；另可用 `src/ext/ui/**`、`src/ui/**`。`check-module-boundaries.mjs` 对 crafting 生产代码强制此白名单 | §6.0（新增） | ☑ |
+| 2 | 七个定义类型 | 名称与字段逐字一致；静态校验器 `assertWorldDefinitionPack`（`src/engine/Core/WorldDefinitions.ts`）严格键集、tags 码点升序、native 行 maxStack 恰 1（ration 为 99）、tool.tag ∈ tags | §5.8 已实测通过（见 A.5） | ☑ |
+| 3 | prepare SDK | 名称一致。请求对象严格键集：`planTimedWork` 必带 `kind` 且不带 `v`；`planStationPlacement` 用 `at:{x,y}`；句柄 `operation` 必须等于信封 action（否则 `C5_BAD_PAYLOAD`）；未知 recipe 由 foundation 返回 `C5_BAD_DEFINITION` | §6.3 | ☑ |
+| 4 | 参与者/事实 | `onCommitted(fact, tx)`；`tx.state` 深冻结，`replaceState` 写自身 JSON，同步、返回 void。`CommittedWorkFact.result` 为**四值** `accepted/completed/interrupted/skipped`；每次接单（harvest/craft/place-station）先发 `accepted`（completedBatches 0、completionOrdinal 0），完成再发 `completed`；取消发 `operation:'cancel'`、`interrupted`；启动礼包 `startup`、`completed/skipped`，definitionId 为礼包首个物品 | §6.4 | ☑ |
+| 5 | 读 SDK | `ExtensionProjectionContext.worldWork`（`src/ext/world.ts:28`）；仅在模块声明 worldDefinitions、world5 存在、包内有本 owner 的 items 行时提供 | §7.1 | ☑ |
+| 6 | DTO 字段 | 一致。`ItemRead.available` 恒等于 quantity（不扣预留）；`WorkContext.stations` = 本层自有全部 + 已见他人；`WorkContext.containers` = 本层已见 chest；`ResourceNodeRecord` 无 nameKey/glyph（取自本包定义）；节点查询**不**返回可采资格 | §7.1 | ☑ |
+| 7 | 模块字段 | `worldDefinitions` / `worldWorkCommands`（每项恰一个键 `prepare`，且不得与 `commands[action]` 同名）/ `worldWorkParticipant`（恰一个键 `onCommitted`） | §6.2 | ☑ |
+| 8 | `worldSdk: 1` 位置 | 只在 `ModuleDescriptor`（可选键）；ExtensionModule 上没有。声明世界字段却缺 worldSdk → 构造失败 `C5_BAD_VERSION` | §6.1 | ☑ |
+| 9 | 错误码 | **33** 个（5A2 任务书“34”有误）。prepare 可直接返回 `{ok:false,code,field}` 字面量，但 code 必须属于 33 码、field 为 null 或字符串，否则 foundation 降为 `C5_PROVIDER` | §6.3 | ☑ |
+| 10 | 常量 | `C5_CONTRACT_VERSION='1.0.0'`、`WORLD_SDK_VERSION=1`；worldSdk 另导出纯函数 `levelKey`/`compareLevelRefs`（来自无引擎依赖的 `worldBasics`） | §6.0 | ☑ |
+| 11 | `CraftingCommand` | 已由 worldSdk 导出（module 字面量 `'crafting'`），另有 `CraftingAction` | §6.3 | ☑ |
+| 12 | harness | `createWorldHarness`（`src/ext/testing/worldHarness.ts`）+ 测试专用 `worldHarnessGame(h)`；`WorldHarnessOptions`/`WorldHarness` 由 worldSdk 导出；fixture 名 `world-work-basic`（加入 `c5fixture`）、`crafting-skeleton`（加入 `craftskel`）。行为：被拒命令也 `recorded:true`；`error` = 最后一次世界工作错误，非世界命令不重置，接单成功但同命令内被中断时仍为 null；`replay()`/`seek()` **替换** harness 的活局；`world5().tickets` 只含活跃票据，终结票据见 `terminalTickets`（全 owner 共享最近 64 条），另有 `definitionsFingerprint` | §8 | ☑ |
+| 13 | i18n 键 | `ext.foundation.world.error.<去 C5_ 小写>`（如 `resource_empty`、`unknown_target`），zh_CN 中 33 键齐全；`ext.foundation.world.confirm.tool-break` ✓；另有 `ext.foundation.world.message.{completed,interrupted,startup}` | §7.4 | ☑ |
+| 14 | 续作 | autoAction `{kind:'auto_work',ticketId}`，续作命令 `auto_step`；harvest 与单批 craft 不写 auto_work；`runAutoUntilIdle` 覆盖 auto_work | §6.5 | ☑ |
+
+### A.3 行为核对
+
+| # | 问题 | 实际 | 本文处理 | 核对 |
+| --- | --- | --- | --- | --- |
+| 1 | kit 优先 | 是（5A2 D16）：背包有 kit 扣 1 个 kit，否则扣材料；不弹确认、不双扣 | 原假设成立 | ☑ |
+| 2 | `WorkContext.stations` 范围 | 当前层自有工位全部 + 已见他人工位；DTO 带 levelRef | 原假设成立；§6.3 计数仍按 `definitionId` 前缀过滤 | ☑ |
+| 3 | 地图对象 owner 与渲染 | interactable owner = 定义模块（`crafting`）；地图/悬停/详情归 foundation；节点交互距离固定 1；**工位资格看 `StationRead.workPositions`**（同时使用 interactionDistance） | §7.1 `inReach` 改为 workPositions | ☑ |
+| 4 | 日志 | foundation 写完成/中断/礼包日志（取配方/节点/工位 nameKey；礼包取首个物品）；玩家主动 cancel-work 也写“中断” | 原假设成立 | ☑ |
+| 5 | native glyph/color | 只做静态校验，产物外观沿原生模板 | 原假设成立 | ☑ |
+| 6 | prepare 无 state | 是 | 原假设成立 | ☑ |
+| 7 | `c5fixture` 同局 | 可以。fixture 在 D1 玩家附近放自己的节点、桌（tags `["table"]`，不满足本包 `station.table`）与一个容量 16 的箱（owner `c5fixture`）；crafting 可把该箱作来源/目标（同层、Chebyshev ≤1、交互线、hasMemory）；fixture 会占开局附近格子 | §8.2 T7/T10 说明 | ☑ |
+| 8 | harness 原生命令 | `command(action,data)` 直接调用原生 `executeCommand` | 原假设成立 | ☑ |
+| 9 | removal/composition/测试发现自动发现新模块 | 在 `/private/tmp` 副本加最小 crafting 实测：catalog 安装列表、`check-module-removal.mjs --plan --profile=removal --retain=…`（两行矩阵）、`scripts/test-discovery.mjs`、`check-module-boundaries.mjs` 均自动发现 crafting。**但** `check-module-composition-smoke.mjs` 在基线本身（不加 crafting）即失败：`recordingOrigin.initial` 为 undefined（录像来源已升 version 2，脚本未跟上） | §9.2 写明“基线既有失败”的处理 | ☑ |
+| 10 | 放置/礼包不碰原生 RNG | 是（c5-place-v1 SHA 拒绝抽样，不抽原生 RNG；固定向量见 `ext_world_work_boundaries`）；实体 ID 会被占用而偏移 | 原假设成立（T8 已允许 ID 偏移） | ☑ |
 
 ### A.4 合入与派发
 
-- ☐ 本文件（及 §A 改动）已合入 `<BASE_5A2_COMMIT>`；dot 读的是基线里的版本。
-- ☐ 若 5A2 改了任一 §5 数值相关的上限（例如材料 stack、batch 上限），先改本文再派发。
-- ☐ 提示块中的占位符已替换。
+- ☑ 本文件定稿提交于 `ext/phase5b-base`（父提交 `2d870a2`）并推送 `origin/ext/phase5b-base`；dot 读的是该分支里的版本。
+- ☑ 5A2 未改 §5 任何数值相关上限（material/kit stack ≤99、tool stack 1、batch 1…16、workTicks ≤10000、节点每层合计 ≤32/整局 ≤512、工位全局 ≤128、无 unitWeight）。
+- ☑ 提示块占位符已替换。
+- ☑ 5A2-S 可与 5B 并行（只改属性读点，不改 worldSdk/harness/骨架）；集成 rebase 由维护者做。
+
+### A.5 定义包实测（2026-10-07）
+
+把 §5.8 JSON（`<NATIVE_*>` 暂填 `(`/`[`/`#C0C0C0`，仅为通过外观格式校验）放入 `/private/tmp/p5b-validate`（`2d870a2` 的 `git archive` 副本）的最小 crafting 模块（骨架式 prepare、计数参与者），Node 25.2.1（本机无 24.19.0，仅影响运行器）：
+
+- `assertWorldDefinitionPack(pack,'crafting',localeKeys)` 通过；`validateModuleDescriptors` 通过（foundation 7、worldSdk 1）。
+- 真实 harness 新局（仅 crafting；以及 crafting+growth+narrative+combat+giants）：启动礼包 `granted`，背包恰 木6/石4/纤维2；D1 放置 wood×2、stone×2、fiber×2、hide×1、无 metal，7 条 placement 收据全 `completed`；`definitionsFingerprint.crafting` 存在；徒手 `make-table-kit` 在同一命令内 `accepted`→`completed`，命令后 bundles=0、tickets=0、terminalTickets=1；seed 1 的首批在同命令内因 `threat` 被 `cancel/interrupted`，而 harness `error` 仍为 null；save/load 与 replay（firstMismatch null）通过。
+- 结论：§5.8 数据**无需改动**即被冻结 SDK 接受。
 
 ---
 
@@ -121,16 +136,16 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 基线 | `ext/phase5` @ `<BASE_5A2_COMMIT>`（5A1+5A1-R+5A2 已合入；5A2-S：`<5A2S_STATUS>`；5A3：`<5A3_STATUS>`） |
-| 工作分支 | `git switch -c ext/phase5b <BASE_5A2_COMMIT>` |
-| foundation | `FOUNDATION_PROTOCOL = <FOUNDATION_PROTOCOL>`（只引用常量，不写字面量） |
-| 既有模块 | `<MODULE_VERSIONS>`；一个字节都不改 |
-| SDK 冻结文件 | `src/ext/worldSdk.ts` `<SDK_SHA256_worldSdk>`；`src/ext/testing/worldHarness.ts` `<SDK_SHA256_harness>`；`src/ext/testing/fixtures/craftingSkeleton/**` `<SDK_SHA256_skeleton>` |
+| 基线 | `origin/ext/phase5b-base`：代码 = `ext/phase5` @ `2d870a2`（5A1+5A1-R+5A2 含审查修复已合入；5A2-S：**未合入**，可能并行开发；5A3：**未合入**）+ 本文件定稿的纯文档提交 |
+| 工作分支 | `git switch -c ext/phase5b origin/ext/phase5b-base` |
+| foundation | `FOUNDATION_PROTOCOL = 7`（只引用常量，不写字面量） |
+| 既有模块 | growth 1.7.0、narrative 1.4.0、combat 1.6.0（state schema 4）、giants 1.0.0；一个字节都不改 |
+| SDK 冻结文件（SHA-256） | `src/ext/worldSdk.ts` `e2f3cbbf06fa9afd939ec3a3a5f75193d47003a08410fd1c5d2e8899051da05f`；`src/ext/testing/worldHarness.ts` `0cc14ecd4cf734591616b291239b3ef23b99e451af6f954a3de6de3f3143ba26`；`src/ext/testing/fixtures/craftingSkeleton/index.ts`（该目录唯一文件）`f4d70fd3b9be75444f181448ced4005c20d546c0cff7ce11eef366bb4a1a5372`；`src/ext/testing/fixtures/worldWorkBasic.ts` `a0267454f15f1b3c90649ab1a4945ddf1e055d40dc0072e776ab74265ca61ee1` |
 | 运行环境 | Node 24.19.0；`NODE_OPTIONS=--max-old-space-size=3072`；vitest `--maxWorkers=2`；不新增 npm 依赖 |
 
-开工第一件事：`git log -1`、`git status`（须干净）、`sha256sum` 上述 SDK 文件并与表比对，结果写入报告 §1。哈希不符**照常开工**，在报告记录差异并以基线实际代码为准。
+开工第一件事：`git log -1`、`git status`（须干净）、`git diff --stat 2d870a2 HEAD`（只应列出本任务书）、`shasum -a 256` 上述 SDK 文件并与表比对，结果写入报告 §2。哈希不符**照常开工**，在报告记录差异并以基线实际代码为准。
 
-开工前先完整阅读骨架示例 `src/ext/testing/fixtures/craftingSkeleton/`（测试专用模块 id `craftskel`，不进生产 catalog；它与正式 `crafting` 互不冲突，dot 不改它）：它是 5A2 交付的“最小可运行 crafting”，本模块的接入方式（descriptor、`worldDefinitions` 组装、四个 `worldWorkCommands`、参与者、投影）以它为模板扩展，不另起炉灶。
+开工前先完整阅读骨架示例 `src/ext/testing/fixtures/craftingSkeleton/`（测试专用模块 id `craftskel`，不进生产 catalog；它与正式 `crafting` 互不冲突，dot 不改它）：它是 5A2 交付的“最小可运行 crafting”，本模块的接入方式（descriptor、`worldDefinitions` 组装、四个 `worldWorkCommands`、参与者、投影）以它为模板扩展，不另起炉灶。**但不要照抄它的参与者与 state**：骨架把原始事实（含 `accepted`）整条追加进 `history`（`slice(-128)`），本模块必须按 §6.4 的形状、过滤与上限实现；骨架的 `prepare` 用 `as any` 省略了 payload 校验，本模块按 §6.3 严格校验。
 
 ---
 
@@ -138,7 +153,7 @@
 
 ```text
 src/ext/modules/crafting/
-  descriptor.ts            发现入口；id 'crafting'；foundation: FOUNDATION_PROTOCOL；worldSdk: 1（位置按 §A.2#8）
+  descriptor.ts            发现入口；id 'crafting'；foundation: FOUNDATION_PROTOCOL；worldSdk: 1（ModuleDescriptor 上）
   index.ts                 createCraftingModule()：loadCraftingPack() → createCraftingModuleFromPack(pack)
   module.ts                ExtensionModule：worldDefinitions / worldWorkCommands / worldWorkParticipant /
                            initialState / validateState / projectView
@@ -181,7 +196,7 @@ docs/ext/phase5b.report.md    执行报告（§10.1）
 | defaultEnabled | `false` | 新局默认不勾选，开局界面可选 |
 | 显示 | 无独立 displayVersion；locale 文本不进指纹；glyph/color 属于机械定义（SDK 要求），进入指纹 | |
 
-指纹覆盖数组顺序：`data/definitions.json` 中任何数组的重新排序都是规则变化。
+指纹覆盖数组顺序：`data/definitions.json` 中任何数组的重新排序都是规则变化。另外 foundation 会把每个 owner 的 SDK 定义包 canonical SHA-256 持久绑定在 `world5.definitionsFingerprint`（`sha256:` 前缀），load 时严格核对；这只是额外保险，crafting 的 rules 指纹仍必须覆盖整包（`limits` 只在 rules 指纹里）。
 
 ---
 
@@ -361,18 +376,22 @@ ID `crafting.<短ID>`；文本键 `ext.crafting.recipe.<短ID>.name|description`
 }
 ```
 
-`<NATIVE_*>` 四个占位按 §5.2“原生外观”规则由 dot 填入并在报告列出；这是本 JSON 中唯一允许 dot 填写的值。若 5A2 实际 `ItemDefinitionContribution`/`ResourceDefinition` 等多出或少了字段（§A 未改正时），以骨架示例为准增删该字段，**不改任何数值**，并在报告 SDK 差异节列出。
+`<NATIVE_*>` 四个占位按 §5.2“原生外观”规则由 dot 填入并在报告列出；这是本 JSON 中唯一允许 dot 填写的值（foundation 对 native 行的 glyph/color 只做格式校验：单字形、`#RRGGBB`；产物外观沿原生模板）。本 JSON 已于 2026-10-07 在基线副本上经 `assertWorldDefinitionPack` 与真实新局实测通过（§A.5），字段集与冻结 SDK 逐字一致，不需增删字段。
 
 ---
 
 ## 6 模块实现规则
+
+### 6.0 允许的导入（`check-module-boundaries.mjs` 强制）
+
+生产代码（`tests/` 以外）只可 import：`src/ext/worldSdk`（类型、`C5_CONTRACT_VERSION`/`WORLD_SDK_VERSION` 常量、纯函数 `levelKey`/`compareLevelRefs`）、`src/ext/types`（`ExtensionModule`、`Json` 等）、`src/ext/descriptor`（`FOUNDATION_PROTOCOL`、`ModuleDescriptor`）、`src/ext/fingerprint`（`extensionDataFingerprint`）、`src/ext/world`（**仅** `import type`，如 `ExtensionProjectionContext`）、共享 UI `src/ext/ui/**` 与 `src/ui/**`、模块自有文件和 npm 依赖（vue 等）。不得 import 任何 `src/engine/**`、`src/ext/testing/**`、其他模块。测试文件可另 import `src/ext/testing/worldHarness`（含测试专用 `worldHarnessGame(h)` 取真实 Game 做断言/布景）与引擎只读断言工具。
 
 ### 6.1 descriptor
 
 ```ts
 export const descriptor: ModuleDescriptor = {
   id: 'crafting', version: CRAFTING_VERSION, foundation: FOUNDATION_PROTOCOL,
-  worldSdk: 1,                                   // 位置以基线 ModuleDescriptor 为准（§A.2#8）
+  worldSdk: 1,                                   // 只在 ModuleDescriptor；ExtensionModule 上没有此键
   rules: getCraftingPackIdentity(), create: createCraftingModule,
   defaultEnabled: false,
   labelKey: 'ext.crafting.module.name', descriptionKey: 'ext.crafting.module.description',
@@ -384,7 +403,7 @@ export const descriptor: ModuleDescriptor = {
 
 ### 6.2 module
 
-`createCraftingModuleFromPack(pack)` 返回的 `ExtensionModule` 只含：`id/version/rules`（同 descriptor）、`worldDefinitions: toWorldDefinitionPack(pack)`、`worldWorkCommands: { harvest, craft, 'place-station', 'cancel-work' }`、`worldWorkParticipant`、`initialState`、`validateState`、`projectView`（以及基线骨架示例要求的必需字段）。**不实现** `commands`、`interactionCommands`、`actorActions`、`generationContributions`、`worldInteractables`、`ownedRegions`、钩子回调或任何可选 provider。
+`createCraftingModuleFromPack(pack)` 返回的 `ExtensionModule` 只含：`id/version/rules`（同 descriptor）、`worldDefinitions: toWorldDefinitionPack(pack)`、`worldWorkCommands: { harvest, craft, 'place-station', 'cancel-work' }`（每项对象恰一个键 `prepare`）、`worldWorkParticipant`（恰一个键 `onCommitted`）、`initialState`、`validateState`、`projectView`。foundation 构造时整包校验一次（`validateWorldModule`），任一不符整模块拒绝。**不实现** `commands`、`interactionCommands`、`actorActions`、`generationContributions`、`worldInteractables`、`ownedRegions`、钩子回调或任何可选 provider。
 
 ### 6.3 四个命令的 prepare（`commands.ts`）
 
@@ -394,11 +413,14 @@ export const descriptor: ModuleDescriptor = {
 | --- | --- | --- | --- |
 | harvest | `{v,nodeId,nodeRevision,inventoryStamp,destinationId,destinationRevision}` | 键集/类型/安全整数（`C5_BAD_PAYLOAD`）；`destinationId===null` ⇔ `destinationRevision===null` | `sdk.planTimedWork({kind:'harvest',…})` |
 | craft | `{v,recipeId,batchCount,stationId,stationRevision,sourceContainerId,sourceRevision,inventoryStamp}` | recipeId 为本包配方（否则 `C5_BAD_DEFINITION`）；`1 ≤ batchCount ≤ limits.batchMax`（`C5_BAD_PAYLOAD`）；配方 stationTags 为空 ⇔ `stationId===null`；id 与 revision 成对 null | `sdk.planTimedWork({kind:'craft',…})` |
-| place-station | `{v,definitionId,x,y,inventoryStamp}` | definitionId 为本包工位；x/y 安全整数；`sdk.readWorkContext({kind:'inventory'})` 中本层 crafting 工位数 ≥ `stationsPerLevel` → `C5_BUDGET` | `sdk.planStationPlacement({definitionId, at:{x,y}, inventoryStamp})` |
+| place-station | `{v,definitionId,x,y,inventoryStamp}` | definitionId 为本包工位；x/y 安全整数；`sdk.readWorkContext({kind:'inventory'})` 中本层 crafting 工位数 ≥ `stationsPerLevel` → `C5_BUDGET`（读失败原样返回其结果） | `sdk.planStationPlacement({definitionId, at:{x,y}, inventoryStamp})` |
 | cancel-work | `{v,ticketId,ticketRevision}` | 键集/类型 | `sdk.planCancelWork({ticketId,ticketRevision})` |
 
 - 模块不提交数量、输出、actorId、workTicks、来源选择；SDK 的所有资格/CAS/预算判断不重复实现，原样返回其 `WorldResult`。
-- 本层工位计数口径：`WorkContext.stations` 中 `definitionId` 以 `crafting.` 开头且 `levelRef` 等于当前 `levelRef` 的条数（若 §A.3#2 改正为 `queryStations()`，以本文改正后为准）。
+- 请求对象严格键集（foundation 拒绝多余键）：传给 SDK 的对象去掉 `v`；`planTimedWork` 必须带 `kind`（`'harvest'`/`'craft'`）；放置把 `x,y` 换成 `at:{x,y}`。每个 action 只能调用与自己对应的 plan（harvest→`planTimedWork({kind:'harvest'})`、craft→`planTimedWork({kind:'craft'})`、place-station→`planStationPlacement`、cancel-work→`planCancelWork`）；返回句柄的 `operation` 与信封 action 不符时 foundation 判 `C5_BAD_PAYLOAD`。
+- 模块自造的失败结果只用 worldSdk 的 33 个 `WorldErrorCode`，`field` 为 `null` 或简短字段名字符串；码不在 33 码内会被 foundation 降为 `C5_PROVIDER`。prepare 收到的 payload 已被 foundation 深冻结，不得修改。
+- 参考：外层可用 worldSdk 导出的 `CraftingCommand`/`CraftingAction` 类型；foundation 对“配方需工位却 `stationId:null`”与“工位标签不满足”返回 `C5_INPUT`，模块层的成对 null 检查在此之前返回 `C5_BAD_PAYLOAD`。
+- 本层工位计数口径：`WorkContext.stations` 中 `definitionId` 以 `crafting.` 开头且 `levelRef` 等于当前 `levelRef` 的条数（实际 `stations` 已含当前层全部自有工位 + 已见他人工位，§A.3#2 已核对）。整局 128 是 foundation 的**全 owner 共享** C5 工位预算（`world5.stations.length ≥ 128` → `C5_BUDGET`），crafting 不另计。
 
 ### 6.4 模块 state 与参与者（`state.ts`）
 
@@ -410,20 +432,25 @@ interface CraftingState {
   placements: PlacementReceipt[];          // ≤ limits.placementReceipts，满则丢最旧
   history: HistoryEntry[];                 // ≤ limits.workHistory，满则丢最旧
 }
-interface PlacementReceipt { factId: number; definitionId: string; result: 'completed'|'interrupted'|'skipped'; tick: number }
+interface PlacementReceipt { factId: number; definitionId: string; result: 'completed'|'interrupted'; tick: number }
 interface HistoryEntry { factId: number; operation: CommittedWorkFact['operation']; definitionId: string;
   completedBatches: number; result: 'completed'|'interrupted'|'skipped'; reason: string|null; tick: number }
 ```
 
 - `initialState()` = `{schema:1,lastFactId:0,totals:{全0},placements:[],history:[]}`。
-- `onCommitted(fact, tx)`：调用纯函数 `applyFact(tx.state, fact)` 后 `tx.replaceState(next)`。`fact.owner !== 'crafting'` 或 `fact.factId <= lastFactId` → 不调用 replaceState（幂等）。totals 对应 operation：`harvest`、`craft-batch`、`place-station`、`cancel`、`startup` 各 +1（`result==='completed'` 才计 harvest/craftBatches/placements；cancel/startup 任何 result 都计）；达到 `MAX_SAFE_INTEGER` 时饱和不再增加。place-station 事实另追加 PlacementReceipt。所有事实追加 HistoryEntry。
-- **参与者绝不抛异常**（异常会触发 foundation 的 provider 取消路径）；输入非预期时原样返回不变 state。
-- `validateState` 严格：键集、整数范围、数组上限、factId 严格递增、`lastFactId ≥` 数组中最大 factId、operation/result 枚举、definitionId 为本包 ID。
+- 事实形状（冻结 SDK 实际行为）：`fact.result` 四值 `accepted|completed|interrupted|skipped`。每次接单（harvest / craft / place-station）先发一条 `accepted`（operation 同接单种类，craft 为 `craft-batch`；`completedBatches 0`、`completionOrdinal 0`、`ticketId` 非 null），之后每完成一批发一条 `completed`（harvest 只有一条 completed）；取消/中断发 `operation:'cancel'`、`result:'interrupted'`、`reason` 为原因（`threat`/`damage`/`input`/`player` 等字符串），`definitionId` 为被取消工作的配方/节点/工位 ID；启动礼包发 `operation:'startup'`、`result:'completed'|'skipped'`、`ticketId:null`、`definitionId` 为礼包首个物品 ID。
+- `onCommitted(fact, tx)`：调用纯函数 `applyFact(tx.state, fact)` 后 `tx.replaceState(next)`。`tx.state` 深冻结，必须构造新对象；同步执行、返回 void；`next` 必须通过 `validateState`。`fact.owner !== 'crafting'` 或 `fact.factId <= lastFactId` → 不调用 replaceState（幂等；factId 可以跳号）。
+- `result === 'accepted'`：只把 `lastFactId` 推进到该 factId，**不**计 totals、不写 PlacementReceipt、不写 HistoryEntry（接收不是完成）。
+- 其余事实：totals 对应 operation：`harvest`、`craft-batch`、`place-station`、`cancel`、`startup` 各 +1（`result==='completed'` 才计 harvest/craftBatches/placements；cancel/startup 任何 result 都计）；达到 `MAX_SAFE_INTEGER` 时饱和不再增加。PlacementReceipt：`place-station` + `completed` 追加 `result:'completed'`；`cancel` 且 `definitionId` 为本包工位 ID 追加 `result:'interrupted'`。所有非 accepted 事实追加 HistoryEntry（result 只会是 completed/interrupted/skipped）。
+- **参与者绝不抛异常**：异常会被 foundation 归类为 `C5_PROVIDER` 并取消该工作，取消事实**仍会尝试送达**本参与者；只有那次送达再失败时，foundation 才不经参与者保留该事实（`recentFacts` 可见、state 不变）。因此输入非预期时原样返回不变 state，且 `lastFactId` 用 `<=` 判断以容忍跳号。
+- `validateState` 严格：键集、整数范围、数组上限（placements ≤512、history ≤128）、各数组内 factId 严格递增、`lastFactId ≥` 数组中最大 factId、operation 五值/result 枚举（history 三值、placements 两值）、definitionId 为本包 ID。
 - state 只能经参与者改变；投影/UI 只读。
 
 ### 6.5 时间与续作
 
 一切计时、bundle、`auto_work` 续作、中断谓词、退款、耐久扣减均由 foundation 执行（合同 §8）。crafting 的义务只是：数据给对；UI 正确显示 `activeTicket`；不在任何地方自行推进时间或调用 `auto_step`。
+
+实际时序（冻结 SDK）：玩家的工作 bundle **从不跨命令存活**——接单命令内同步跑完首批（或单批/采集/放置的全部），每条 `auto_step` 命令内跑完下一批；命令结束后 bundles=0。多批 craft 接单后写 autoAction `{kind:'auto_work',ticketId}`，批间票据为 `working` 且 `bundleActionId:null`；harvest、单批 craft 与放置不写 auto_work。中断（输入/威胁/伤害/移动/离层/失能/目标或工具失效）发生在执行该批的那条命令内部：该批不产出、未开始批次的 escrow 一次退款。tool-break 确认阈值为 `toolDurability ≤ durabilityPerBatch × batchCount`，采集与制作都适用。
 
 ---
 
@@ -431,7 +458,7 @@ interface HistoryEntry { factId: number; operation: CommittedWorkFact['operation
 
 ### 7.1 投影 `projectView(context)`（`view.ts`）
 
-纯函数，只用 `context.worldWork`（`WorldWorkReadSDK`）、`context.nearbyInteractables`、`context.state`。`worldWork` 缺席或 `readWorkContext({kind:'inventory'})` 失败 → 返回 `{v:1, available:false}`。成功时返回：
+纯函数，只用 `context.worldWork`（`WorldWorkReadSDK`）、`context.nearbyInteractables`（runtime 已按 owner=`crafting` 过滤）、`context.state` 与本包定义。`worldWork` 缺席或 `readWorkContext({kind:'inventory'})` 失败 → 返回 `{v:1, available:false}`。成功时返回：
 
 ```ts
 interface CraftingView {
@@ -461,9 +488,10 @@ interface CraftingView {
 - `have` = 背包 `ItemRead` 中该 definitionId 的 `available` 之和（不扫描箱）。
 - 配方 `stationId`：stationTags 为空 → null；否则在 `stations` 中取 `inReach` 且 tags 覆盖配方 stationTags 的工位，按 `interactableId` 升序取第一个；找不到 → `stationId=null`、`maxBatch=0`、`reason='C5_GATE'`（UI 显示“需要{{station}}”）。
 - `maxBatch`：候选 = min(batchMax, 各输入 ⌊have/perBatch⌋)；从候选向下调用 `previewRecipe(recipeId, n, stationId, null)`，取第一个 `ok` 的 n；全不 ok → 0，`reason` = 候选批次（至少 1）preview 的 reason。单次投影 previewRecipe 调用总数 ≤ 7×16。
-- `inReach`：玩家与工位 Chebyshev 距离 ≤ 该工位 `interactionDistance`。
-- `placements[].source`：背包有对应 kit → `'kit'`；否则材料齐 → `'materials'`；都不够 → null。仅作 UI 预告，实际来源由 foundation 决定并确认（§A.3#1）。
-- 节点行 `canHarvest/reason` 来自 `readWorkContext({kind:'node', interactableId})`；失败的节点不列出。投影读到的是“最后已物化值”（5A2 D7），再生节点的剩余量可能偏低，提交时以 foundation 虚拟物化值为准；UI 不需要也不得自行推算再生。
+- `inReach`：玩家当前位置（`WorkContext.at`）∈ 该工位 `StationRead.workPositions`（foundation 的工位资格同样只认 workPositions；只用 Chebyshev 距离会出现“UI 可做、提交得 `C5_DISTANCE`”）。`stations` 行来自 `WorkContext.stations` 中 `definitionId` 以 `crafting.` 开头者。
+- `placements[].source`：背包有对应 kit → `'kit'`；否则材料齐 → `'materials'`；都不够 → null。仅作 UI 预告，实际来源由 foundation 决定（有 kit 先扣 1 个 kit，否则扣材料；不弹确认、不双扣，§A.3#1）。
+- 节点行：对 `nearbyInteractables` 每个条目调用 `readWorkContext({kind:'node', interactableId})`，失败（例如它是工位）则不列出；成功时 `node` 为 `ResourceNodeRecord`，名称/字形/颜色/工具要求取本包定义。冻结 SDK 的节点查询**不返回可采资格**，`canHarvest/reason` 由投影按以下顺序确定性计算（第一个命中即为 reason，全不命中则 `canHarvest:true, reason:null`）：`!ctx.available` → `ctx.activeTicket ? 'C5_BUSY' : 'C5_GATE'`；玩家与节点 Chebyshev 距离 >1 → `C5_DISTANCE`；`remaining < unitsPerHarvest` → `C5_RESOURCE_EMPTY`；`remaining − reservedUnits < unitsPerHarvest` → `C5_RESERVED`；`requiredToolTag` 非 null 且背包无 `tags` 含该标签且 `toolDurability > 0` 的 ItemRead → `C5_TOOL`。威胁、交互线、背包容量只由提交时 foundation 判定，被拒后按 §7.4 显示。`available` = `remaining − reservedUnits`（下限 0）。投影读到的是“最后已物化值”（5A2 D7），再生节点的剩余量可能偏低，提交时以 foundation 虚拟物化值为准；UI 不需要也不得自行推算再生。
+- 配方无可用工位时投影 `reason='C5_GATE'` 是**投影自定的显示码**（UI 显示“需要{{station}}”）；若真的提交，foundation 返回 `C5_INPUT`。
 
 ### 7.2 UI 会话（`ui/useCraftingUi.ts`）
 
@@ -486,7 +514,7 @@ interface CraftingView {
 | 采集 | 附近节点卡片：字形+名称、`剩余 r / c`、工具要求（缺镐红字） | “采集（100 刻）”；不可用时显示原因 |
 | 制作 | 配方卡片（包内顺序）：名称、工位徽标（徒手/需要工作桌/需要火炉）、每项输入“需 n / 拥有 h”（不足红字）、输出、`t 刻/批` | 批量 −/数值/+（1…maxBatch，maxBatch=0 时整卡灰态并显示原因）、“共 k 批 · T 刻”、“开始制作” |
 | 工作台 | 桌/炉两张卡：费用或“使用套件 ×1”预告、`300 刻` | 先选方向（八方向 3×3 方格，中心为玩家），再“放置”；被拒显示原因 |
-| 工作 | `activeTicket` 详情与最近记录（≤8） | “停止工作”（仅当无 bundle 存活、ticket 未终结时可用，否则灰态并说明“本批完成后可停止”） |
+| 工作 | `activeTicket` 详情与最近记录（≤8） | “停止工作”（仅当 `activeTicket.status==='working'` 且 `bundleActionId===null` 时可用——玩家多批工作的批间正是此状态；否则灰态并说明“本批完成后可停止”） |
 
 视口要求（实测）：
 
@@ -595,6 +623,8 @@ locale 守卫：每个机械 nameKey/descriptionKey 都存在；所有 `ext.craf
 
 `test` 套件：`crafting_schema`、`crafting_data_tables`、`crafting_module`、`crafting_commands`、`crafting_projection`、`crafting_runtime`、`crafting_placement`、`crafting_regen`、`crafting_rejections`、`crafting_work`、`crafting_persistence`、`crafting_combinations`、`crafting_ui`（SFC 用仓库共享 harness）。`drift` 套件：`crafting_trace`。文件名均为 `tests/<名>.test.ts`。除 `crafting_schema/data_tables/module/commands/ui` 的纯单元部分外，**一律走真实 Game**（`createWorldHarness` 或等价的真实 `executeCommand`/录像路径），不 mock 底座。
 
+harness 实际语义（写断言前必读）：被拒的 `ext` 命令也 `recorded:true`（0 成本但录制）；`error` 是“最后一次世界工作错误”，非世界命令不会重置它，接单成功但同命令内被中断时仍为 `null`——判断完成/中断要看事实（`recentFacts`/`worldWorkFacts`）、背包与 `terminalTickets`，不能只看 `error`；`replay()`/`seek()` 会**替换** harness 当前活局（需要继续原局时先 `save()`，或另建 harness）；`world5().tickets` 只含活跃票据，终结票据只在 `terminalTickets`（全 owner 共享最近 64 条摘要）；需要布景（放怪、扣血、填满背包）时测试可用 `worldHarnessGame(h)` 取真实 Game，但被测动作本身必须走公开命令。
+
 ### 8.2 必须覆盖的用例
 
 | # | 文件 | 用例 |
@@ -602,24 +632,24 @@ locale 守卫：每个机械 nameKey/descriptionKey 都存在；所有 `ext.craf
 | T1 | schema | §5.7 每条规则至少一个拒绝用例；未知键、缺键、非整数、越界、重复 ID、错误前缀、悬空引用、native 作输入、stationTags 不可满足、limits 放松、locale 缺键 |
 | T2 | schema | 指纹稳定（两次加载相同）；任一机械数组重排或任一数值变化 → 指纹变化；locale 文本变化 → 指纹不变；native 外观两行与原生显示常量一致 |
 | T3 | data_tables | 逐项断言 §5.2–5.6 全部数值/ID/顺序（作为“改数值必须改此测试”的黄金表） |
-| T4 | module | descriptor 通过 `validateModuleDescriptors`；`toWorldDefinitionPack` 顺序与内容；state 初值/校验/拒绝；`applyFact` 幂等、滚动上限 512/128、饱和、非 crafting 事实忽略、绝不抛异常 |
+| T4 | module | descriptor 通过 `validateModuleDescriptors`；`toWorldDefinitionPack` 顺序与内容；state 初值/校验/拒绝；`applyFact` 幂等（含 factId 跳号）、`accepted` 只推进 lastFactId、cancel 工位事实写 interrupted 收据、滚动上限 512/128、饱和、非 crafting 事实忽略、绝不抛异常 |
 | T5 | commands | 四种 payload 严格键集与 `v`；成对 null 规则；batchCount 0/17/非整数；未知 recipe/工位；prepare 前后 state、两条 RNG、实体/计划 ID、消息均不变 |
 | T6 | projection | `available:false` 路径；have/maxBatch/stationId 选择/source 预告的确定规则；反复投影结果相同且无写入 |
-| T7 | runtime | 仅 crafting 新局：启动收据 granted 且背包恰为 木6/石4/纤维2；load/replay 不补发；满背包时 partial（落地）与全部 skipped；采集 100 tick 得 1；镐→桌（kit 与材料两种来源各一次，且不双扣）→炉；D2 金属需镐、每次耐久 −1、耐久 0 后拒绝；匕首/皮甲 +0 已鉴定无符文、与自然同模板物品 stacksWith 规则一致；新局与任何流程中都不出现 crafting 制造的食物；套件可堆叠 99 并能 save/load |
+| T7 | runtime | 仅 crafting 新局（新局 D1 开局可能有可见敌人导致 `C5_THREAT`，选种子时排除并记录）：启动收据 granted 且背包恰为 木6/石4/纤维2；load/replay 不补发；满背包时 partial（落地）与全部 skipped；采集 100 tick 得 1；镐→桌（kit 与材料两种来源各一次，且不双扣）→炉；D2 金属需镐、每次耐久 −1、耐久 0 后拒绝；匕首/皮甲 +0 已鉴定无符文、与自然同模板物品 stacksWith 规则一致；新局与任何流程中都不出现 crafting 制造的食物；套件可堆叠 99 并能 save/load |
 | T8 | placement | D1 放置 wood/stone/fiber 各 ≤2、hide ≤1、无 metal、无任何 crafting 菌类节点；D2 起有 metal；D21 起无 hide；wood 达 32 后不再放；skip/defer 收据唯一；节点不在楼梯/giants 侧室/其他 interactable 上；放置与启动礼包不推进两条原生 RNG（与同种子 `[]` 模块局比较 D1–D3：地形、怪物种类/位置、原生物品种类/位置逐项相同；实体 ID 数值因节点/礼包占号允许不同，比较时忽略） |
 | T9 | regen | wood 每 2000、fiber 每 1000 tick 回 1，满容量不积余；stone/metal/hide 不再生；只读查询不改变节点 revision；离层后返回按 elapsed 物化 |
-| T10 | rejections | 合同 §4.3 每组至少一个：镐耐久 1 时采矿触发 `tool-break` 确认，Yes 采到且耐久 0、No 录制但零成本、陈旧 nodeRevision/inventoryStamp/stationRevision、伪造 actorId 字段、跨层/未见目标、距离、无工具/工具破损、节点空/已预留、满背包、输出无槽、工位每层 16 上限、batch 超限、unsafe 乘法；全部 0 tick/0 料/0 RNG/0 新 ID |
-| T11 | work | 多批（5 批）`auto_work`：每批一条录制命令；第 3 批前出现可见敌人 → 停止，已完成 2 批保留，未开始 3 批 escrow 恰退款一次；批中受伤 → 该批不产出、不扣耐久、剩余全部退款；批间 `cancel-work` 成功、bundle 存活时 `cancel-work` 被拒；工具中途破损停止续作；退款后背包与预期逐项相等 |
-| T12 | persistence | 在“批中（bundle 存活）/批间/放置后/确认 No 后/取消后/节点部分采空且有再生余数”各存一次档：load 后继续得到与不存档相同的结果；整局录像 replay 首个不一致为 null；seek 到上述各点再续录一致；面板反复打开/关闭/切页签前后 digest 与两 RNG 不变 |
+| T10 | rejections | 合同 §4.3 每组至少一个（箱来源/目标类用例可与 `fixtures:['world-work-basic']` 同局，用 `c5fixture` 的容量 16 箱；其桌 tags 为 `table`，不满足本包配方）：镐耐久 1 时采矿触发 `tool-break` 确认，Yes 采到且耐久 0、No 录制但零成本、陈旧 nodeRevision/inventoryStamp/stationRevision、伪造 actorId 字段、跨层/未见目标、距离、无工具/工具破损、节点空/已预留、满背包、输出无槽、工位每层 16 上限、batch 超限、unsafe 乘法；全部 0 tick/0 料/0 RNG/0 新 ID（但仍各录制一条命令） |
+| T11 | work | 多批（5 批）`auto_work`：接单命令内完成第 1 批、此后每条 `auto_step` 完成一批，每批恰一条录制命令、命令后 bundles=0；第 2 批完成后（批间）布景一个可见敌人 → 下一条 `auto_step` 停止，已完成 2 批保留，未开始 3 批 escrow 恰退款一次；执行某批的命令内受伤（布景一个会在该批期间攻击的怪）→ 该批不产出、不扣耐久、剩余全部退款；批间 `cancel-work` 成功（事实 `cancel/interrupted`、reason 记录）；陈旧 `ticketRevision` → `C5_STALE`、他人/不存在票据 → `C5_UNKNOWN_TARGET`；工具中途破损停止续作；退款后背包与预期逐项相等。（“bundle 存活时 cancel-work → `C5_BUSY`”在玩家公开命令下构造不出来，由 foundation 测试覆盖，本包不要求。） |
+| T12 | persistence | 在“多批工作批间（autoAction=auto_work、票据 working）/放置后/确认 No 后/取消后/节点部分采空且有再生余数”各存一次档：load 后继续得到与不存档相同的结果；整局录像 replay 首个不一致为 null；seek 到上述各点再续录一致（注意 replay/seek 替换活局，对照组另建 harness）；面板反复打开/关闭/切页签前后 digest 与两 RNG 不变。玩家 bundle 不跨命令存活，不要求“批中存档”。 |
 | T13 | combinations | crafting + growth / narrative / combat / giants 各自，及五模块全开：新局、启动礼包、一次采集、一次制作、save/load/replay 成功；combat 动作存活时 craft → `C5_BUSY`；combat 伤害中断批次；giants 侧室内无节点。settlement 若已安装则加“仅 settlement”“crafting+settlement”两行，未安装则该行不存在（不得硬引用 settlement） |
 | T14 | ui | `ui/view.ts` 对畸形 DTO fail-closed；四页签渲染；批量步进边界；连点只提交一次；回放只读；seek 清草稿；`presentationBusy` 关闭面板；HUD 只在 activeTicket 时出现 |
-| T15 | trace（drift） | 重放 `data/natural-trace.json`：逐命令 `recorded/error` 与 trace 记录一致，终局背包/节点/state/digest 与 trace 末尾一致 |
+| T15 | trace（drift） | 重放 `data/natural-trace.json`：`ext` 命令逐条 `recorded/error` 与 trace 记录一致（被拒也是 `recorded:true`），原生命令逐条核对录制条数增量，终局背包/节点/state/digest 与 trace 末尾一致 |
 
 ### 8.3 自然公开命令 trace
 
-dot 选定一个固定种子（normal 模式），**只用公开命令**（原生移动/旅行/下楼 + 四个 crafting 命令 + 确认答案）从新局走完：启动礼包 → D1 采木/石/纤维/皮 → 做镐 → 放桌（材料或套件）→ 放炉 → 做皮甲、床/箱套件 → 带一个桌套件下 D2 → 采 4 金属 → 在 D2 放桌 → 打匕首。若该种子 D1 某节点被 skip，换种子；最多尝试 64 个种子，记录选择过程。trace JSON 字段：`seed`、`mode`、`modules:['crafting']`、`commands:[{action,data,answers?,expect:{recorded,error}}]`、`final:{inventory,digest}`。T15 回放它。报告写明种子、命令数、总 tick、录像大小。
+dot 选定一个固定种子（normal 模式），**只用公开命令**（原生移动/旅行/下楼 + 四个 crafting 命令 + 确认答案）从新局走完：启动礼包 → D1 采木/石/纤维/皮 → 做镐 → 放桌（材料或套件）→ 放炉 → 做皮甲、床/箱套件 → 带一个桌套件下 D2 → 采 4 金属 → 在 D2 放桌 → 打匕首。若该种子 D1 某节点被 skip，换种子；最多尝试 64 个种子，记录选择过程。trace JSON 字段：`seed`、`mode`、`modules:['crafting']`、`commands:[{action,data,answers?,expect}]`、`final:{inventory,digest}`；`ext:command` 条目的 `expect` 为 harness `ext()` 返回的 `{recorded,error}`，原生命令（含 `auto_step`）条目的 `expect` 为 `{recorded}`（由录制条数增量得出），不写 error（harness 的 error 不被原生命令重置）。T15 回放它。报告写明种子、命令数、总 tick、录像大小。
 
-5A2-S 若在 5B 之后合入，集成人会重跑此 trace 并逐字段归因（合同 §11.4）；dot 不需要预留兼容。
+5A2-S 与 5B 并行；集成时维护者会 rebase 并重跑此 trace、逐字段归因（合同 §11.4）；dot 不需要预留兼容。
 
 ---
 
@@ -649,11 +679,11 @@ dot 选定一个固定种子（normal 模式），**只用公开命令**（原�
 3. `npm run build`
 4. `npm run test:ext`（全部扩展测试一次，含其他模块与 foundation 的 ext 测试）
 5. `npm run test:drift`（一次；含 crafting trace）
-6. 组合 smoke：`node scripts/check-module-composition-smoke.mjs --output <仓库外目录>/smoke.json`（参数写法以基线脚本为准），覆盖全部已安装模块子集（5 模块 32 个子集），engine + 当次构建浏览器；浏览器不可用时记为 **blocked**，不得记为通过，并另跑 `--engine-only`
+6. 组合 smoke：`node scripts/check-module-composition-smoke.mjs --output <仓库外目录>/smoke.json`，覆盖全部已安装模块子集（5 模块 32 个子集），engine + 当次构建浏览器；浏览器不可用时记为 **blocked**，不得记为通过，并另跑 `--engine-only`。**已知基线既有失败**：在 `2d870a2` 不加 crafting 时 engine 段即失败（`SyntaxError: "undefined" is not valid JSON`，脚本第 78 行读取 `recordingOrigin.initial`，而录像来源已是 version 2，无此字段）。dot 不修该脚本：先在干净基线复现一次并在报告记录原文，再记录含 crafting 时是否为同一错误；若同一错误，标“基线既有失败（非 5B 引入）”，不算 5B 失败。
 7. 删除（removal 档，两行）：
    - 删 crafting：`NODE_OPTIONS=--max-old-space-size=3072 node scripts/check-module-removal.mjs --profile=removal --retain=combat,giants,growth,narrative --maxWorkers=2 --output=<仓库外目录>`
    - 只留 crafting：同上 `--retain=crafting`
-   - 参数名以基线脚本实际帮助为准（`--plan` 可先列计划）；若脚本拒绝该组合，报告原文错误并标未运行。
+   - 以上参数已在基线副本用 `--plan` 实测接受，且自动发现 crafting（两行矩阵分别 removed=[crafting] 与 removed=[combat,giants,growth,narrative]）。每行内含 composition-smoke 闸门，会遇到第 6 项的基线既有失败：照实记录各闸门结果，其余闸门（boundary/typecheck/build/test:ext）单独给出结论。
 8. 浏览器视口验收（§7.3）：1440×900、390×844、320×844 × 普通/沉浸 × 四种地图模式；覆盖长名称、满背包、取消、连点、blur、触摸、旧 ACK 帧与回放；真实设备与模拟分别标注；截图留仓库外，不提交。
 
 **不在 5B 范围**：完整 `npm test`、全量 64 行删除矩阵、5Z 体积/性能（留 5Z）。
@@ -677,7 +707,7 @@ dot 选定一个固定种子（normal 模式），**只用公开命令**（原�
 9. **组合与删除**：32 子集与两行删除的结果表。
 10. **浏览器与视口**：矩阵结果，真实/模拟分类，已知问题。
 11. **自行决定事项**：按 §12 规则作出的全部决定。
-12. **未覆盖 / 待本地集成**：例如箱来源/目标用例（若 fixture 不支持）、5A3 工位邻接回归、5A2-S 后 trace 重跑。
+12. **未覆盖 / 待本地集成**：例如 5A3 工位邻接回归、5A2-S 集成后 trace 重跑、组合 smoke 基线既有失败修复后的重跑。
 
 ### 10.2 `docs/ext/crafting-config.md`
 
