@@ -11,7 +11,7 @@
 
 基线与分支：
 - git fetch origin && git switch -c ext/phase5b origin/ext/phase5b-base
-- 该 tip = 代码基线 2d870a2（ext/phase5：5A1+5A1-R+5A2 含审查修复，冻结 worldSdk 1，FOUNDATION_PROTOCOL=7）+ 一个只改 docs/ext/phase5b.dot-package.md 的定稿提交。开工先确认 `git diff --stat 2d870a2 HEAD` 只列出该文件、`git status` 干净。
+- 该 tip = 代码基线 2d870a2（ext/phase5：5A1+5A1-R+5A2 含审查修复，冻结 worldSdk 1，FOUNDATION_PROTOCOL=7）+ 定稿提交（只改 docs/ext/phase5b.dot-package.md）+ 组合 smoke 脚本 v4 迁移提交。开工先确认 `git diff --stat 2d870a2 HEAD` 只列出这两个文件、`git status` 干净。
 - 只推 ext/phase5b；不推 ext/phase5、ext/phase5b-base、ext/foundation、main；不打 tag；不合并、不 rebase 任何分支。
 - 本地 5A2-S（属性读点调整，不改 worldSdk/harness/骨架）可能与你并行开发。你只在下面允许的路径内工作，不要碰任何共享文件；与 5A2-S 的集成 rebase 和 trace 重跑由维护者完成，你不需要预留兼容。
 
@@ -143,7 +143,7 @@
 | SDK 冻结文件（SHA-256） | `src/ext/worldSdk.ts` `e2f3cbbf06fa9afd939ec3a3a5f75193d47003a08410fd1c5d2e8899051da05f`；`src/ext/testing/worldHarness.ts` `0cc14ecd4cf734591616b291239b3ef23b99e451af6f954a3de6de3f3143ba26`；`src/ext/testing/fixtures/craftingSkeleton/index.ts`（该目录唯一文件）`f4d70fd3b9be75444f181448ced4005c20d546c0cff7ce11eef366bb4a1a5372`；`src/ext/testing/fixtures/worldWorkBasic.ts` `a0267454f15f1b3c90649ab1a4945ddf1e055d40dc0072e776ab74265ca61ee1` |
 | 运行环境 | Node 24.19.0；`NODE_OPTIONS=--max-old-space-size=3072`；vitest `--maxWorkers=2`；不新增 npm 依赖 |
 
-开工第一件事：`git log -1`、`git status`（须干净）、`git diff --stat 2d870a2 HEAD`（只应列出本任务书）、`shasum -a 256` 上述 SDK 文件并与表比对，结果写入报告 §2。哈希不符**照常开工**，在报告记录差异并以基线实际代码为准。
+开工第一件事：`git log -1`、`git status`（须干净）、`git diff --stat 2d870a2 HEAD`（只应列出本任务书与 scripts/check-module-composition-smoke.mjs）、`shasum -a 256` 上述 SDK 文件并与表比对，结果写入报告 §2。哈希不符**照常开工**，在报告记录差异并以基线实际代码为准。
 
 开工前先完整阅读骨架示例 `src/ext/testing/fixtures/craftingSkeleton/`（测试专用模块 id `craftskel`，不进生产 catalog；它与正式 `crafting` 互不冲突，dot 不改它）：它是 5A2 交付的“最小可运行 crafting”，本模块的接入方式（descriptor、`worldDefinitions` 组装、四个 `worldWorkCommands`、参与者、投影）以它为模板扩展，不另起炉灶。**但不要照抄它的参与者与 state**：骨架把原始事实（含 `accepted`）整条追加进 `history`（`slice(-128)`），本模块必须按 §6.4 的形状、过滤与上限实现；骨架的 `prepare` 用 `as any` 省略了 payload 校验，本模块按 §6.3 严格校验。
 
