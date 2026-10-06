@@ -17,8 +17,8 @@ html[data-ui-concept=glyph] .app-layout.theme-shell .target-prompt{color:var(--t
 html[data-ui-concept=glyph] .app-layout.theme-shell .tb-btn{border-radius:var(--th-r)}
 html[data-ui-concept=glyph] .app-layout.theme-shell .tb-btn.primary{background:var(--th-accent);color:var(--th-on-accent);border-color:transparent}
 html[data-ui-concept=glyph] .app-layout.theme-shell .tb-btn.primary:disabled{background:transparent;color:var(--th-dim);border:1px dashed var(--th-line)}
-html[data-ui-concept=glyph] .map-zoom{opacity:.72;gap:4px}
-html[data-ui-concept=glyph] .map-zoom button{width:34px;height:34px;border-radius:var(--th-r);font-size:1rem;background:color-mix(in srgb,var(--th-panel) 80%,transparent);border-color:var(--th-line)}
+html[data-ui-concept=glyph] .map-zoom{opacity:1;gap:4px}
+html[data-ui-concept=glyph] .map-zoom button{width:34px;height:34px;border-radius:var(--th-r);font-size:1rem;background:var(--th-raised);border-color:color-mix(in srgb,var(--th-fg) 45%,var(--th-line))}
 html[data-ui-concept=glyph] .has-touch-controls .map-zoom button{width:44px;height:44px}
 html[data-ui-concept=glyph] .app-layout.theme-shell .map-zoom{top:8px;right:8px}
 
@@ -73,13 +73,13 @@ html[data-ui-concept=glyph] .theme-nearby .tn-list{list-style:none;margin:0;padd
 html[data-ui-concept=glyph] .theme-nearby .tn-row{display:grid;grid-template-columns:1.4em minmax(0,1fr) auto;align-items:center;gap:2px 8px;padding:6px 0;font-size:13px;border-bottom:1px solid color-mix(in srgb,var(--th-line) 60%,transparent)}
 html[data-ui-concept=glyph] .theme-nearby .tn-row.focused{background:color-mix(in srgb,var(--th-accent) 10%,transparent)}
 html[data-ui-concept=glyph] .theme-nearby .tn-glyph{font-family:var(--th-num);text-align:center;font-weight:600}
-html[data-ui-concept=glyph] .theme-nearby .tn-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui-concept=glyph] .theme-nearby .tn-name{min-width:0;white-space:normal;overflow-wrap:anywhere}
 html[data-ui-concept=glyph] .theme-nearby .tn-behavior{color:var(--th-dim);margin-left:4px;font-size:11px}
 html[data-ui-concept=glyph] .theme-nearby .tn-hp{grid-column:2;height:3px;background:var(--th-hp-bg);position:relative;overflow:hidden}
 html[data-ui-concept=glyph] .theme-nearby .tn-hp i{position:absolute;inset:0 auto 0 0}
 html[data-ui-concept=glyph] .theme-nearby .tn-hpnum{grid-column:3;grid-row:2;font-size:11px;color:var(--th-dim)}
 html[data-ui-concept=glyph] .theme-nearby .tn-dist{grid-column:3;grid-row:1;font-size:11px;color:var(--th-dim)}
-html[data-ui-concept=glyph] .theme-nearby .tn-statuses{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px;font-size:11px}
+html[data-ui-concept=glyph] .theme-nearby .tn-statuses{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px;font-size:11px;min-width:0;overflow-wrap:anywhere}
 html[data-ui-concept=glyph] .theme-nearby .tn-members{grid-column:2/-1;min-width:0;white-space:normal;overflow-wrap:anywhere;font-size:11px;color:var(--th-dim)}
 html[data-ui-concept=glyph] .context-members{font-size:11px;color:var(--th-dim);overflow-wrap:anywhere}
 html[data-ui-concept=glyph] .theme-nearby .tn-empty{margin:6px 0;color:var(--th-dim);font-size:12px}
@@ -89,7 +89,7 @@ html[data-ui-concept=glyph] .theme-nearby .tn-count{color:var(--th-dim)}
 html[data-ui-concept=glyph] .app-layout.theme-shell .area-cmd{grid-area:cmd;margin:0;z-index:30;border-radius:var(--th-r);background:var(--th-panel);border:1px solid var(--th-line);padding:4px!important;gap:4px!important;box-shadow:none}
 html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn{background:var(--th-raised);color:var(--th-fg);border:1px solid transparent;border-radius:var(--th-r);font-family:var(--th-font)}
 html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-btn:hover{border-color:var(--th-accent);color:var(--th-accent);background:var(--th-raised)}
-html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-label{font-size:12px!important;white-space:nowrap!important;letter-spacing:0}
+html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-label{font-size:12px!important;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;max-width:100%;letter-spacing:0}
 html[data-ui-concept=glyph] .app-layout.theme-shell .cmd-key{font-family:var(--th-num);font-size:10px!important;color:var(--th-dim);opacity:.9}
 html[data-ui-concept=glyph] .app-layout.theme-shell .command-overflow{background:var(--th-panel);border-color:var(--th-line);border-radius:var(--th-r)}
 html[data-ui-concept=glyph] .app-layout.theme-shell.has-touch-controls .cmd-key,html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait .cmd-key,html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape .cmd-key{display:none}
@@ -324,7 +324,7 @@ html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hu
 /* Preserve intrinsic badge widths for scrolling; reserve more room for the first
  * search badge on narrow module HUDs without removing any vital information. */
 @media(max-width:420px){html[data-ui-concept=glyph] .app-layout.immersive-mode.layout-portrait .theme-hud.has-module-hud.has-search-progress{gap:2px!important}}
-html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .map-zoom{opacity:.45}
+html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode .map-zoom{opacity:1}
 /* Short landscape: keep the zoom tools above the left pad, away from the open ring. */
 html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.layout-landscape .map-zoom{flex-direction:row;left:8px;right:auto}
 html[data-ui-concept=glyph] .app-layout.immersive-mode.is-replaying{grid-template-rows:auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals' 'map' 'log' 'cmd'!important}

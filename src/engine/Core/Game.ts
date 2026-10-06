@@ -44,7 +44,7 @@ import { bindMovementRegions } from '../Movement/MovementRegions';
 import { squareContactScope, withSquareContactScope } from '../Movement/SpatialContactScope';
 import { SPATIAL_LIMITS, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
 import { assertNativeSpatial, assertSingleCellPlayer, nativeContactOf, footprintOf, footprintEvery, footprintSome, commitCreatureAnchor, squareAnchorRevision, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canFitAt, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
-import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction, isProductionActorActionRunInvalid, restoreProductionActorActionValidity } from './ActorActionSession';
+import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction, isProductionActorActionRunInvalid, restoreProductionActorActionValidity, retireActorActionFixtureForNewRun } from './ActorActionSession';
 import { checkpointProductionActorActions, consumeProductionActorActionResume, disposeProductionActorActionSession, markProductionActorActionResume, notifyProductionActorSourceChanged, productionActorActionInputLocked, reconcileProductionActorActions, resumeProductionActorActions, suspendProductionActorActions, validateProductionActorActionSession, validateProductionActorActionState, type ActorActionProductionWorld } from './ActorActionProduction';
 import { bindPhasedAttackProduction, checkpointPhasedAttackSources, isActorStaggered, reconcileActorNativeRecovery, isActorParryCommand, prepareActorParryCommand, commitActorParryCommand, isActorDodgeCommand, prepareActorDodgeCommand, commitActorDodgeCommand, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, retirePhasedAttackSource, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
 import { assertActorActionScope, type ActorActionScope } from './ActorActionScope';
@@ -901,6 +901,7 @@ export class Game {
         this.discardInFlightAdvancement();
         disposeProductionActorActionSession(this);
         if (this.extensionRuntime) this.extensionRuntime.unload();
+        retireActorActionFixtureForNewRun(this);
         this.extensionRuntime = null;
         this.configureExtensionRuleAdapters();
         ItemLoader.onKnowledgeChanged = null;

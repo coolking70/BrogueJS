@@ -196,6 +196,18 @@ describe('3e real bonfire preparation and native command boundary', () => {
 });
 
 describe('3e interruptions and native world continuation', () => {
+    it.each([false,true])('logs the settled rest once and never during partial rest (interrupted=%s)', interrupted => {
+        const { game } = scene(); begin(game);
+        const before = logger.messages.length;
+        productionActorActionScheduler(game)!.advanceActionTime(100); settleWorldRest(game);
+        expect(logger.messages).toHaveLength(before);
+        if (interrupted) { game.player.takeDamage(7, true, game.grid); settleWorldRest(game); }
+        else clockToEnd(game, 400);
+        const expected = interrupted ? 'Your bonfire rest is interrupted; you receive no bonfire recovery.' : 'Your bonfire rest is complete.';
+        expect(logger.messages.slice(before)).toEqual([expect.objectContaining({ text: expected, color: interrupted ? '#ffaa44' : '#88ccff', count: 1 })]);
+        settleWorldRest(game); game.update();
+        expect(logger.messages).toHaveLength(before + 1);
+    });
     it('positive native HP damage interrupts even when another effect heals it before settlement', () => {
         const { game } = scene(); begin(game); game.player.takeDamage(7, true, game.grid); game.player.hp = 300;
         settleWorldRest(game); expect(game.player.hp).toBe(300);

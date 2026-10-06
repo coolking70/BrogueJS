@@ -19,7 +19,7 @@ const usable = (event: MouseEvent) => !props.model.readOnly && !props.submitting
         {{ $t(choice.textKey) }}<small v-if="choice.unavailableKey">{{ $t(choice.unavailableKey) }}</small>
       </li></ul>
     </template>
-    <div v-else-if="!model.readOnly" class="narrative-nearby">
+    <div v-else-if="!model.readOnly && model.nearby.length" class="narrative-nearby">
       <strong>{{ $t('ext.narrative.ui.nearby') }}</strong>
       <button v-for="target in model.nearby" :key="target.targetEntityId" :data-narrative-target="target.targetEntityId"
         :disabled="blocked || submitting" :title="$t(target.descriptionKey)"

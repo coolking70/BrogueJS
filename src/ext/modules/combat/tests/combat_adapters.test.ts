@@ -230,6 +230,12 @@ describe('3g strict optional combat capacity consumer',()=>{
 });
 
 describe.skipIf(!installed.has('narrative'))('3g four committed combat fact producers',()=>{
+    it('rolls back the success log along with a parry when the committed consumer rejects it',()=>{
+        let fail=false;setup({events:true,fail:()=>fail});const game=scene(true),target=npc(game);parry(game);
+        const before=logger.getState();fail=true;
+        expect(()=>tryActorParry(game,target.id,game.player.id,game.meleeContact(target,game.player)!)).toThrow('fixture consumer failure');
+        expect(logger.getState()).toEqual(before);
+    });
     it('emits one fact per resolved segment, with no fact during windup',()=>{
         setup({events:true});const game=scene(true),target=npc(game);
         const plan=preparePhasedAttackCommand(game,command('attack',{attackId:'fixture.double-thrust',facing:'e'}))!;commitPhasedAttackCommand(game,plan);

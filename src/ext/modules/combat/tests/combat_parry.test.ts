@@ -59,6 +59,16 @@ function advance(game:Game,delta:number) { productionActorActionScheduler(game)!
 function mechanical(game:Game){const snap=json(game.toSnapshot());snap.savedAt=0;return snap;}
 afterEach(()=>{vi.restoreAllMocks();acknowledge();});
 describe('3d production deterministic parry and poise',()=>{
+    it('logs one successful player parry, with no message for failed or already-consumed contacts',()=>{
+        const game=scene(),east=npc(game,1,{x:21,y:15}),west=npc(game,1,{x:19,y:15});parry(game);
+        const before=logger.messages.length;
+        expect(tryActorParry(game,west.id,game.player.id,game.meleeContact(west,game.player)!)).toBe(false);
+        expect(logger.messages).toHaveLength(before);
+        expect(tryActorParry(game,east.id,game.player.id,game.meleeContact(east,game.player)!)).toBe(true);
+        expect(logger.messages.slice(before)).toEqual([expect.objectContaining({text:'You successfully parry the attack.',color:'#88ccff',count:1})]);
+        expect(tryActorParry(game,east.id,game.player.id,game.meleeContact(east,game.player)!)).toBe(false);
+        game.update();expect(logger.messages).toHaveLength(before+1);
+    });
     it('pure prepare and stale commit preserve both RNGs, resources and time',()=>{
         const game=scene(),before={state:json(state(game)),rng:rng.getState(),tick:timeSystem.currentTick};
         const plan=prepareActorParryCommand(game,command())!;expect(plan).not.toBeNull();

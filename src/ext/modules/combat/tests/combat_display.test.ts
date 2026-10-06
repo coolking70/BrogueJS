@@ -203,6 +203,25 @@ describe('EXT-3b public telegraph projection and drawing', () => {
 
 
 describe('EXT-3b development warning fixture', () => {
+    it('keeps the fixture export guard until a validated new run retires it, including a reused Game', () => {
+        const game = new Game(); game.startNewGame({ seed: 403003, mode: 'test', ruleSet: 'extended', extensions: ['combat'] });
+        squareDisplayScene(game); game.monsters = []; game.monsterListsChanged();
+        placeCombatTelegraphFixture(game, 'stomp');
+        expect(() => game.toSaveSnapshot()).toThrow('fixture');
+        expect(() => game.startNewGame({ ruleSet: 'extended', extensions: ['missing-module'] })).toThrow();
+        expect(() => game.exportRecording()).toThrow('fixture');
+
+        const fresh = new Game();
+        expect(() => fresh.startNewGame({ seed: 403004, mode: 'test', ruleSet: 'extended', extensions: ['combat'] })).not.toThrow();
+        expect(() => fresh.toSaveSnapshot()).not.toThrow();
+        expect(() => game.toSaveSnapshot()).toThrow('fixture');
+
+        expect(() => game.startNewGame({ seed: 403004, mode: 'test', ruleSet: 'extended', extensions: ['combat'] })).not.toThrow();
+        game.animationEnabled = false;
+        game.executeCommand('wait');
+        expect(() => game.toSaveSnapshot()).not.toThrow();
+        expect(() => game.exportRecording()).not.toThrow();
+    });
     it('places a real two-square source on safe floor, starts its genuine NPC windup and blocks exports', () => {
         const game = new Game(); game.startNewGame({ seed: 403003, mode: 'test', ruleSet: 'extended', extensions: ['combat'] });
         squareDisplayScene(game); game.monsters = []; game.monsterListsChanged();
