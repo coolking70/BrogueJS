@@ -1,4 +1,6 @@
 import { bodyDecisionActor } from '../Status/BodyStatuses';
+import i18next from 'i18next';
+import { logger } from '../Systems/Logger';
 /** Foundation-owned timed rest. Content owns finite definitions/receipts; the
  * existing actor scheduler remains the sole mechanical clock. */
 import type { Game } from './Game';
@@ -199,6 +201,9 @@ function settleWorldRestCommitted(game: Game, allowRecovery: boolean): void {
         revision(game);
         if(!interrupted)game.extensionRuntime!.commitCombatEvent(game.player,{eventKind:'rest-completed',actionId:active.actionId,
             sourceSubactionId:null,segmentIndex:null,resolutionId:null,bonfireId:active.bonfireId,visit:active.visit,hitCount:0,hpLost:0});
+        logger.log(interrupted
+            ? i18next.t('world_rest.interrupted', { defaultValue: 'Your bonfire rest is interrupted; you receive no bonfire recovery.' })
+            : i18next.t('world_rest.completed', { defaultValue: 'Your bonfire rest is complete.' }), interrupted ? '#ffaa44' : '#88ccff');
     } catch (error) {
         checkpoint.restore(); game.player.hp = hp;game.player.ticksUntilTurn=ticks;
         invalidateProductionActorActionSession(game);game.invalidateActorActionRun(error instanceof Error?error:new Error(String(error)));

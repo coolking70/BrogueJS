@@ -160,7 +160,7 @@ onUnmounted(() => {
         :class="{ 'entity-focused': entity.focused }" :data-entity-kind="entity.kind" :data-entity-id="entity.id">
         <div class="monster-line">
           <span class="monster-glyph" :style="{ color: entity.color }">{{ entity.char }}</span>
-          <span class="monster-name">{{ entity.name }}<small v-if="entity.kind === 'monster' && entity.bodySize" class="body-size">{{ $t('sidebar.body_size', { size: entity.bodySize }) }}</small><small v-else-if="entity.kind === 'monster' && entity.bodyCellCount" class="body-size">{{ $t('sidebar.body_cells', { count: entity.bodyCellCount }) }}</small></span>
+          <span class="monster-name" :title="entity.name">{{ entity.name }}<small v-if="entity.kind === 'monster' && entity.bodySize" class="body-size">{{ $t('sidebar.body_size', { size: entity.bodySize }) }}</small><small v-else-if="entity.kind === 'monster' && entity.bodyCellCount" class="body-size">{{ $t('sidebar.body_cells', { count: entity.bodyCellCount }) }}</small></span>
           <span v-if="entity.kind === 'monster' && entity.bodyGroup?.coreVisible !== false" class="monster-health">{{ entity.hp }}/{{ entity.maxHp }}</span>
         </div>
         <template v-if="entity.kind === 'monster'">
@@ -169,10 +169,10 @@ onUnmounted(() => {
           <div v-if="entity.bodyGroup" class="monster-members">{{ bodyMemberSummary(entity.bodyGroup) }}</div>
           <div v-if="entity.negated || entity.behavior" class="monster-statuses">
             <span v-if="entity.negated" class="negated-label">{{ $t('negation.label', { defaultValue: 'Negated' }) }}</span>
-            <span>{{ entity.behavior }}</span>
+            <span :title="entity.behavior">{{ entity.behavior }}</span>
           </div>
           <div v-if="entity.statuses.length" class="monster-statuses">
-            <span v-for="status in entity.statuses" :key="status.id" :style="{ color: status.color }">{{ status.label }} {{ status.value }}</span>
+            <span v-for="status in entity.statuses" :key="status.id" :style="{ color: status.color }" :title="`${status.label} ${status.value}`">{{ status.label }} {{ status.value }}</span>
           </div>
         </template>
       </div>
@@ -212,13 +212,14 @@ onUnmounted(() => {
 .monster-heading { font-size: .75rem; color: var(--text-secondary); margin-bottom: .5rem; }
 .monster-entry { margin-bottom: .55rem; font-family: var(--font-mono); font-size: .8rem; }
 .monster-line { display: flex; align-items: center; gap: .4rem; }
-.monster-glyph { width: 1.2em; font-weight: bold; }
-.monster-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.monster-health { color: var(--text-secondary); }
+.monster-glyph { width: 1.2em; flex-shrink: 0; font-weight: bold; }
+.monster-name { flex: 1; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.monster-health { flex-shrink: 0; color: var(--text-secondary); }
 .monster-members { color: var(--text-secondary); font-size: .75rem; overflow-wrap: anywhere; }
 .monster-hp-track { height: 4px; background: #24242c; margin: .2rem 0; }
 .monster-hp-fill { height: 100%; }
-.monster-statuses { display: flex; gap: .4rem; flex-wrap: wrap; font-size: .7rem; }
+.monster-statuses { display: flex; gap: .4rem; flex-wrap: wrap; font-size: .7rem; overflow-wrap: anywhere; }
+.monster-statuses > span { min-width: 0; }
 .sidebar {
   /* 宽度由 computeSidebarWidth 按设置（固定/按比例）以内联样式驱动，
      三值同步避免 flex 压缩或撑开；固定模式 = 原来的 340px 现状。 */

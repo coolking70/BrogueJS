@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { effectScope, nextTick, ref, type EffectScope } from 'vue';
+import { createSSRApp, effectScope, nextTick, ref, type EffectScope } from 'vue';
+import { renderToString } from '@vue/server-renderer';
+import i18next from 'i18next';
+import NarrativeInteractionBar from '../ui/NarrativeInteractionBar.vue';
+import locale from '../locales/zh_CN.json';
 import type { Game } from '../../../../engine/Core/Game';
 import type { ModuleUiHost } from '../../../ui/types';
 import { DialogService } from '../../../../ui/dialogService';
@@ -49,6 +53,23 @@ function pointer(action: string, extra: Record<string, unknown> = {}) {
 afterEach(() => { for (const scope of scopes.splice(0)) scope.stop(); for (const input of inputs.splice(0)) input.dispose(); for (const service of services.splice(0)) service.dispose(); vi.restoreAllMocks(); });
 
 describe('EXT-2d shared dialog adapter', () => {
+    it('hides the empty nearby block after leaving an NPC while retaining the journal', async () => {
+        const model = { session: {}, revision: 1, readOnly: false, nearby, active: null,
+            journal: [{ entryId: 'note', order: 1, titleKey: 'ext.narrative.ui.journal', textKey: 'ext.narrative.ui.nearby' }] };
+        const translation = i18next.createInstance();
+        await translation.init({ lng: 'zh_CN', resources: { zh_CN: { translation: locale } } });
+        async function render() {
+            const app = createSSRApp(NarrativeInteractionBar, { model, blocked: false, submitting: false, error: null });
+            app.config.globalProperties.$t = translation.t.bind(translation);
+            return renderToString(app);
+        }
+        expect(await render()).toContain('class="narrative-nearby"');
+        model.nearby = [];
+        const html = await render();
+        expect(html).not.toContain('class="narrative-nearby"');
+        expect(html).not.toContain(locale['ext.narrative.ui.nearby']);
+        expect(html).toContain('data-action="narrative-inline-journal"');
+    });
     it('opens through the public nearby bar, uses one host token and only strict module commands', async () => {
         const f = session(), old = f.ui.bar.value!.props, before = rng.getState();
         (old.onOpen as Function)(21); await nextTick(); (old.onOpen as Function)(21);

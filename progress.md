@@ -156,3 +156,7 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 2026-10-06 当前授权4e：执行docs/ext/phase4e.task.md，不commit，中文报告；统一BodyTransitionRequest、有限主动声明、HP守恒/新ID/明确成员映射、无死亡退休/深复制与整批落点、异常事务和多后裔encounter已实现，正在专项验证；浏览器按任务书由维护者验收，foundation保持4。
 
 - 2026-10-06 4e最终：统一有限主动转换声明与事务，核心/成员ID映射、无死亡退休、HP守恒分裂、新ID深复制/召唤与零奖励权利、预算/费用/正时钟/故障完整回滚、已付计划取消、四reason真实save/replay/seek/续录及篝火打断已完成；沉渊巨像半血→两个2×2岩脊形态，原encounter最后后裔死亡才击败，冻结帧可见后裔HUD/侧栏与320/390 SFC完成。最终同一933输入候选boundary/type/build、相关141文件3018项＋独立自然5项、白名单1项、16/16 engine-only组合、drift4文件5项全部exit0；SHA集合847e5ec184eb609cdf439af07bbdb4a3b7272a472bda6ace5ce907dda4d0aff6，结束UTC2026-10-05T21:17:56Z。最新完整补充专项4文件79项通过；旧movementRegions守卫只修生产路由，旧测试/断言未改。三份giants trace只改extensionsHash，单变量回退definitions后旧trace完整通过，再用原方法重录。中文报告docs/ext/phase4e.report.md列33/33完成与失败批次真实记录；foundation保持4。按任务书不跑完整npm test/test:ext/removal/CE full/gen，浏览器由维护者验收；未暂存/commit/push。
+
+- 2026-10-06 polish-3-4：执行八项DEV/UI/日志收尾，不commit；Node24.19.0、NODE_OPTIONS3072、Vitest2workers。复用Game夹具标记与三类缺失日志新增4项回归在旧生产全部失败；已按新局预检后退役清标记、成功结算日志及窄屏样式修复，待相关门禁/截图验收。
+
+- polish-3-4最终：八项DEV/UI/日志修复已实现；最终boundary/type/build、54相关文件1035项、terrain源码守卫1项全部exit0，960输入前后完全一致，结束UTC2026-10-06T08:45:12Z。6新增行为回归；旧守卫/断言/夹具/基线/trace未改。首轮新SSR翻译桩type/build exit2后改用真实i18next实例，保留原批次并从头复跑全绿；中文报告docs/ext/polish-3-4.report.md。Vite监听EPERM、Chromium MachPort权限失败、浏览器清单为空，320/390/桌面与亮暗真实截图仍待维护者复验；未暂存/commit/push，任务书政策下未跑完整npm test或删除矩阵。证据/tmp/brogue-polish-3-4/final/。

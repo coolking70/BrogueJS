@@ -111,7 +111,7 @@ const commands = computed<{ action: string; label: string; glyph?: string; data?
 <template>
   <nav ref="root" class="command-bar" :class="[`cmd-${mode}`, { expanded }]" @keydown.stop @keyup.stop @keydown.esc="expanded = false; ($event.target as HTMLElement)?.blur()" :aria-label="$t('controls.title')">
     <button v-for="cmd in commands.filter(c => (primary.has(c.action) || props.moduleCommands?.some(entry => entry.id === c.action)))" :key="cmd.action + (cmd.data ?? '')" class="cmd-btn" :data-action="cmd.action"
-            :data-direction="cmd.data" :disabled="cmd.disabled" @click="invoke(cmd.action, cmd.data)">
+            :data-direction="cmd.data" :title="cmd.label" :disabled="cmd.disabled" @click="invoke(cmd.action, cmd.data)">
       <span class="cmd-label">{{ cmd.label }}</span>
       <kbd v-if="cmd.glyph" class="cmd-key" aria-hidden="true">{{ cmd.glyph }}</kbd>
     </button>

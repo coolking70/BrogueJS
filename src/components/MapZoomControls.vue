@@ -26,8 +26,8 @@ button {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  border: 1px solid var(--panel-border, #ffffff26);
-  background: color-mix(in srgb, var(--btn-bg) 85%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 45%, var(--panel-border, #ffffff26));
+  background: var(--btn-bg);
   color: var(--text-primary);
   font-size: 1.2rem;
   line-height: 1;

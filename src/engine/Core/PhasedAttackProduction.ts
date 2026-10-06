@@ -1,4 +1,6 @@
 import { bodyStatusDisables } from '../Status/BodyStatuses';
+import i18next from 'i18next';
+import { logger } from '../Systems/Logger';
 import { timeSystem } from '../Systems/Time';
 import { bindWorldRestSource, finishWorldRestClock, interruptWorldRest, settleWorldRest, worldRestSourceChanged } from './WorldRestProduction';
 /** Trusted data-driven executor. Optional content supplies finite definitions only. */
@@ -704,6 +706,9 @@ function tryActorParryCommitted(game:Game,attackerId:number,defenderId:number,co
             combatEvent(game,defender,'parried',{resolutionId,
                 actionId:session.state.scheduler.bundles.find(bundle=>bundle.subactions.some(child=>child.sourceEntityId===attackerId))?.actionId??0});
         }
+        if(defender===game.player)logger.log(i18next.t('actor_action.parry_success', {
+            defaultValue: 'You successfully parry the attack.',
+        }), '#88ccff');
     }catch(error){invalidateProductionActorActionSession(game);game.invalidateActorActionRun(error instanceof Error?error:new Error(String(error)));throw error;}
     return true;
 }

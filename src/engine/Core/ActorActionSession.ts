@@ -24,6 +24,12 @@ export function unbindProductionActorActionSession(game: object): void {
 export function invalidateProductionActorActionSession(game: object): void { invalidProductionGames.add(game); }
 export function isProductionActorActionRunInvalid(game: object): boolean { return invalidProductionGames.has(game); }
 export function markActorActionFixture(game: object): void { fixtureGames.add(game); }
+/** Only a validated new run may retire the previous run's diagnostic taint.
+ * Unbinding a scheduler or loading a snapshot must not make a fixture exportable. */
+export function retireActorActionFixtureForNewRun(game: object): void {
+    fixtureGames.delete(game); invalidFixtures.delete(game);
+    if (!productionGames.has(game)) { sessions.delete(game); selectors.delete(game); }
+}
 export function actorActionSchedulerFor(game: object): ActorActionSchedulerPort | undefined { return sessions.get(game); }
 export function assertNoActorActionFixture(game: object): void {
     if ((sessions.has(game) && !productionGames.has(game)) || fixtureGames.has(game)) throw new Error('Actor action fixture is not a production save/replay capability');
