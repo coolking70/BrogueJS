@@ -16,7 +16,7 @@ export function createCombatModuleFromPack(pack: CombatPack): ExtensionModule {
     return {
         id:'combat',version:pack.moduleVersion,
         rules:{schema:pack.schema,version:pack.rulesVersion,fingerprint:extensionDataFingerprint(pack)},
-        actorActions:{stateField:'scheduler',definitions:definitions as unknown as Json},
+        actorActions:{definitions:definitions as unknown as Json},
         optionalPartBreaks:{'combat.part-break.v1':createCombatPartBreakProvider(definitions)},
         worldInteractables:true,
         hooks:{enteredLevel:(event,context)=>enterCombatLevel(pack,event,context),interactablesRemoved:(event,context)=>removeCombatBonfires(pack,event,context)},
@@ -38,6 +38,6 @@ export function createCombatModuleFromPack(pack: CombatPack): ExtensionModule {
                 && state.actors.every(row=>row.actorId<world.nextEntityId && actors.some(actor=>actor.id===row.actorId))
                 && state.actions.every(action=>action.subactions.every(sub=>sub.approvedRisks.every(approval=>approval.targetId<world.nextEntityId)));
         },
-        projectView:context=>projectCombatView(context.state,definitions,context.depth,context.playerId,context.nearbyInteractables,context.worldRestUnavailable),
+        projectView:context=>projectCombatView(context.state,definitions,context.depth,context.playerId,context.nearbyInteractables,context.worldRestUnavailable, context.actorActionBundles),
     };
 }

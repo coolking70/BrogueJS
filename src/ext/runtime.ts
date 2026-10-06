@@ -1,4 +1,7 @@
-import { isWorld5Fixture, world5FixtureConfiguration } from './world5Fixture';
+import { markRecordingRoot, recordingRootRevision } from './recordingRevisions';
+import { World5Error } from './world5';
+import { c5Hash } from './worldJson';
+import { isWorld5Fixture, isWorld5WorkFixture, world5FixtureConfiguration } from './world5Fixture';
 import { FOUNDATION_PROTOCOL } from './descriptor';
 import { resolveActorQueryScope } from './actorQuery';
 import type { ActorActionProductionWorld } from '../engine/Core/ActorActionProduction';
@@ -58,6 +61,7 @@ export interface ExtensionPorts {
     /** Engine verifies native identity, owned depth, and active group slot. */
     actorQueryScope?(actor: Creature): { depth: number; partId: string | null; generation: number | null } | null;
     checkpointCommittedFacts?(): () => void;
+    interruptActorAction?(actorId: number): void;
     nativeDamageCommitted?(actor: Creature, hpLost: number): void;
     worldRestUnavailable?(bonfireId: number): import('./worldRest').WorldRestUnavailableReason | null;
     zoneBroken?(actor: Creature, zoneId: string): void;
@@ -72,6 +76,8 @@ export interface ExtensionPorts {
     isInteractableVisible?(entity: WorldInteractable): boolean;
     canInteractWith?(entity: WorldInteractable): boolean;
     visibleActorActionCells?(sourceEntityId: number, cells: readonly {x:number;y:number}[]): {x:number;y:number}[];
+    actorActions?(): import('../engine/Core/ActorActionsRoot').ActorActionsRoot | undefined;
+    worldWorkRead?(owner:string): import('./worldSdk').WorldWorkReadSDK | undefined;
     playerId(): number;
     canManageCharacter?(): boolean;
     validateAction?(request: ControlledActionRequest): boolean;
@@ -215,7 +221,7 @@ export class ExtensionRuntime {
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
         Object.freeze(this.manifest.modules); Object.freeze(this.manifest);
         this.modules = registry.create(manifest);
-        if (this.modules.some(isWorld5Fixture)) world5Runtimes.add(this);
+        if (this.modules.some(m => isWorld5Fixture(m) || m.worldDefinitions)) world5Runtimes.add(this);
         for (const module of this.modules) if (module.optionalPartBreaks !== undefined) {
             const providers = module.optionalPartBreaks, names = Object.keys(providers);
             const provider = providers[PART_BREAK_CAPABILITY];
@@ -226,7 +232,7 @@ export class ExtensionRuntime {
             partBreakProviders.set(this, { module, provider });
         }
         if (this.modules.filter(module => module.actorActions).length > 1) throw new Error('Conflicting actor action providers');
-        for (const module of this.modules) if (module.actorActions && (module.actorActions.stateField !== 'scheduler' || !isJson(module.actorActions.definitions))) throw new Error('Invalid actor action declaration');
+        for (const module of this.modules) if (module.actorActions && (!isJson(module.actorActions.definitions))) throw new Error('Invalid actor action declaration');
         for (const module of this.modules) if (module.ownedRegions !== undefined && module.ownedRegions !== true) throw new Error('Invalid owned region declaration');
         for (const module of this.modules) {
             if (module.nativeForms && (!Array.isArray(module.nativeForms) || !module.nativeForms.length || module.nativeForms.length > 16
@@ -339,7 +345,7 @@ export class ExtensionRuntime {
     }
     private context(module: ExtensionModule, scope: object | null): ExtensionContext {
         const runtime = this;
-        const writable = (): void => { if (!scope || runtime.activeScope !== scope || runtime.disposed || runtime.pureProviderPhase) throw new Error('Extension mutation outside lifecycle/command/hook'); };
+        const writable = (): void => { if (!scope || runtime.activeScope !== scope || runtime.disposed || runtime.pureProviderPhase) throw new Error('Extension mutation outside lifecycle/command/hook'); markRecordingRoot(runtime); };
         const ordinaryCapability = (): void => { writable(); if (runtime.rewardProviderPhase) throw new Error('Capability forbidden in optional reward provider'); };
         const componentKey = (name: string): string => {
             if (!validId(name)) throw new Error('Invalid component name');
@@ -690,7 +696,7 @@ export class ExtensionRuntime {
             throw new Error('Unavailable member break identity');
         const value = freezeView(structuredClone(request)), entry = partBreakProviders.get(this);
         const actionBinding=this.actorActionBinding();
-        const oldBundle=actionBinding?.state.scheduler.bundles.find(bundle=>bundle.decisionOwnerId===actor.id);
+        const oldBundle=this.ports.actorActions?.()?.bundles.find(bundle=>bundle.owner==='combat'&&bundle.decisionOwnerId===actor.id);
         const oldStagger=(actionBinding?.state.actors.find(row=>row.actorId===actor.id)?.staggerRemainingTicks??0)>0
             ||!!oldBundle?.subactions.some(child=>child.phases[child.phaseIndex]?.kind==='break-recovery');
         const actionState=actionBinding?.state as unknown as Json|undefined;
@@ -711,7 +717,7 @@ export class ExtensionRuntime {
                     };
                     this.pureProviderPhase = true;
                     try {
-                        preparation = entry.provider.prepare(value, Object.freeze({ ...context, actor: this.actorFacts(actor), getComponent,
+                        preparation = entry.provider.prepare(value, Object.freeze({ ...context, actor: this.actorFacts(actor), getComponent, actorActionBundles: freezeView(structuredClone(this.ports.actorActions?.()?.bundles ?? [])),
                             queryActor:(capability:string,input:Json)=>{if(!active)throw new Error('Expired part break actor query');
                                 this.pureProviderPhase=false;try{return this.queryOptionalActor(capability,actor,input);}finally{this.pureProviderPhase=true;}},
                             ...(member ? { member: freezeView(structuredClone(member)) } : {}) }));
@@ -754,12 +760,14 @@ export class ExtensionRuntime {
                         });
                     } finally { this.rewardProviderPhase = false;providerCommitActive=false; }
                 }
+                if (this.actorActionBinding()?.state.actors.find(row => row.actorId === actor.id)?.poise === 0 && oldBundle)
+                    this.ports.interruptActorAction?.(actor.id);
                 if (member && request.zoneId === 'body') bodyHandlers.get(this)?.memberBroken?.(actor, member);
                 else if (member) zoneBreakHandlers.get(this)?.([...this.creatures].find(c => c.id === member.entityId)!, request.zoneId);
                 else zoneBreakHandlers.get(this)?.(actor, request.zoneId);
                 const nextState=this.actorActionBinding()?.state;
                 const nowStagger=(nextState?.actors.find(row=>row.actorId===actor.id)?.staggerRemainingTicks??0)>0
-                    ||!!nextState?.scheduler.bundles.find(bundle=>bundle.decisionOwnerId===actor.id)?.subactions.some(child=>child.phases[child.phaseIndex]?.kind==='break-recovery');
+                    ||!!this.ports.actorActions?.()?.bundles.find(bundle=>bundle.owner==='combat'&&bundle.decisionOwnerId===actor.id)?.subactions.some(child=>child.phases[child.phaseIndex]?.kind==='break-recovery');
                 if(actor.hp>0&&!oldStagger&&nowStagger)this.commitCombatEvent(actor,{eventKind:'staggered',actionId:oldBundle?.actionId??0,
                     sourceSubactionId:null,segmentIndex:null,resolutionId:request.resolutionId,bonfireId:null,visit:null,hitCount:0,hpLost:0});
                 return result;
@@ -872,7 +880,7 @@ export class ExtensionRuntime {
                 this.deaths = deaths; this.causality.restore(causes); restoreRandom?.();
             }
             throw error;
-        }
+        } finally { markRecordingRoot(this); }
     }
     private initializationReadyFor(snapshot?: ExtensionSnapshot): boolean {
         return this.modules.every(module => {
@@ -972,8 +980,7 @@ export class ExtensionRuntime {
      * consulting the current run's state-dependent allowInput gates. */
     private hasRegisteredCommand(data: unknown): boolean {
         try {
-            if (typeof data !== 'string') return false;
-            const input = JSON.parse(data);
+            const input = typeof data==='string'?JSON.parse(data):data;
             if (!isJson(input) || !input || typeof input !== 'object' || Array.isArray(input)
                 || Object.keys(input).sort().join(',') !== 'action,module,payload' || typeof input.module !== 'string'
                 || typeof input.action !== 'string' || !validId(input.module)) return false;
@@ -984,6 +991,7 @@ export class ExtensionRuntime {
                 && Object.keys(input.payload).join(',') === 'facing' && typeof input.payload.facing === 'string';
             if (module?.actorActions && input.action === 'attack') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
                 && Object.keys(input.payload).sort().join(',') === 'attackId,facing' && typeof input.payload.attackId === 'string' && typeof input.payload.facing === 'string';
+            if(module?.worldWorkCommands?.[input.action as import('./worldSdk').CraftingAction])return true;
             return !!module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action)
                 && typeof module.commands[input.action] === 'function';
         } catch { return false; }
@@ -1357,7 +1365,7 @@ export class ExtensionRuntime {
         if (this.modules.some(module => module.hooks?.deathCaptured)) this.emit('deathCaptured', { actor: this.actorFacts(creature), origin: structuredClone(origin), administrative,
             ...((creature as Creature & { bodyTransitionRewardless?: true }).bodyTransitionRewardless ? { rewardEligible: false as const } : {}) });
         const fact = { creature: creatureView(creature, this.ports.playerId()), origin: structuredClone(origin), administrative };
-        this.deaths[String(creature.id)] = fact;
+        this.deaths[String(creature.id)] = fact; markRecordingRoot(this);
         return structuredClone(fact);
     }
     nativeForms(): readonly NativeFormDefinition[] { return this.disposed ? [] : this.modules.flatMap(module => module.nativeForms ?? []); }
@@ -1485,6 +1493,7 @@ export class ExtensionRuntime {
         const beforeWorld = structuredClone(this.world), beforeStates = structuredClone(this.states), beforeComponents = structuredClone(this.components);
         const restoreActorState=this.checkpointActorStateIdentity();
         try {
+            markRecordingRoot(this);
             this.world.entities = this.world.entities.filter(entity => depths.includes(entity.depth));
             if (gate && (isGameOver || removed.some(entity => entity.id === gate.targetEntityId))) {
                 this.world.gate = null;
@@ -1498,8 +1507,8 @@ export class ExtensionRuntime {
     collectComponents(reachable: Iterable<Creature>): void {
         if (this.generations.length || this.activeScope) throw new Error('Component collection outside safe boundary');
         const keep = new Set([...reachable].map(creature => creature.id));
-        for (const id of Object.keys(this.components)) if (!keep.has(Number(id))) delete this.components[id];
-        for (const id of Object.keys(this.deaths)) if (!keep.has(Number(id))) delete this.deaths[id];
+        for (const id of Object.keys(this.components)) if (!keep.has(Number(id))) { delete this.components[id]; markRecordingRoot(this); }
+        for (const id of Object.keys(this.deaths)) if (!keep.has(Number(id))) { delete this.deaths[id]; markRecordingRoot(this); }
         this.causality.retainCreatures(keep);
         for (const creature of this.creatures) if (!keep.has(creature.id)) {
             bindNativeForms(creature); creature.extensionHooks = undefined; this.creatures.delete(creature);
@@ -1511,6 +1520,32 @@ export class ExtensionRuntime {
         if (this.disposed) return null;
         const module = this.modules.find(value => value.actorActions);
         return module ? { moduleId: module.id, state: this.states[module.id]! as unknown as import('./actorActions').ProductionActorAttackState, definition: module.actorActions!.definitions as unknown as import('./actorActions').ActorAttackDefinitions } : null;
+    }
+    isWorldWorkFixture(owner:string):boolean { const module=this.modules.find(m=>m.id===owner);return !!module&&isWorld5WorkFixture(module); }
+    worldDefinitionPacks(): readonly import('./worldSdk').WorldDefinitionPack[] { return this.modules.flatMap(m=>m.worldDefinitions?[m.worldDefinitions]:[]); }
+    worldDefinitionFingerprints():Record<string,string> {return Object.fromEntries(this.modules.filter(m=>m.worldDefinitions).map(m=>[m.id,`sha256:${c5Hash(m.worldDefinitions)}`]));}
+    worldWorkCommand(owner:string,action:string): import('./worldSdk').WorldWorkCommand | undefined { return this.modules.find(m=>m.id===owner)?.worldWorkCommands?.[action as import('./worldSdk').CraftingAction]; }
+    worldWorkTransaction<T>(work:()=>T):T { return this.transaction(work); }
+    worldWorkEntities(): readonly WorldInteractable[] { return this.world.entities; }
+    worldWorkPlacementProtected(at:{x:number;y:number},depth:number):boolean {
+        return !!this.world.regions?.some(r=>r.depth===depth && regionContains(r,at) && !!this.modules.find(m=>m.id===r.owner)?.generationContributions?.length);
+    }
+    worldWorkPlace(entity: Omit<WorldInteractable,'id'>): WorldInteractable {
+        if (!this.modules.some(m=>m.id===entity.owner&&m.worldDefinitions) || this.world.entities.length>=WORLD_INTERACTABLE_LIMIT) throw new Error('C5_BUDGET');
+        markRecordingRoot(this);const placed={...entity,id:allocateEntityId()};this.world.entities.push(placed);this.world.entities.sort((a,b)=>a.id-b.id);return placed;
+    }
+    worldWorkFact(value: Omit<import('./worldSdk').CommittedWorkFact,'factId'>, participant=true): import('./worldSdk').CommittedWorkFact {
+        if (this.nextFactId>=Number.MAX_SAFE_INTEGER) throw new Error('C5_OVERFLOW');
+        const fact=freezeView({...value,factId:this.nextFactId++});const module=this.modules.find(m=>m.id===fact.owner);
+        if(participant&&module?.worldWorkParticipant) {
+            let active=true;
+            try { const runtime=this; const result=module.worldWorkParticipant.onCommitted(fact,Object.freeze({
+                get state(){if(!active)throw new Error('Expired participant');return freezeView(cloneJson(runtime.states[module.id]!));},
+                replaceState(next:import('./worldSdk').JsonValue){if(!active||!isJson(next))throw new Error('Invalid participant state');runtime.invoke(module,context=>context.setState(cloneJson(next as Json)));}
+            }));requireSynchronous(result);if(result!==undefined)throw new Error('Invalid participant result'); }
+            catch {throw new World5Error('C5_PROVIDER');} finally {active=false;}
+        }
+        return fact;
     }
     /** Engine body rollback captures this ledger's complete value graph. After
      * buffered rollback restores equal JSON, retain the old live clock identity
@@ -1528,8 +1563,8 @@ export class ExtensionRuntime {
         const descriptor = this.views.get(moduleId), module = this.modules.find(entry => entry.id === moduleId);
         if (this.disposed || !module) return null;
         if (module.projectView) {
-            const projection = module.projectView(freezeView({ queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
-                visibleInteractables: this.visibleInteractables(moduleId), nearbyInteractables: this.nearbyInteractables(moduleId),
+            const projection = module.projectView(freezeView({ queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), ...(module.worldDefinitions ? {worldWork:this.ports.worldWorkRead?.(moduleId)} : {}), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
+                visibleInteractables: this.visibleInteractables(moduleId), actorActionBundles: structuredClone(this.ports.actorActions?.()?.bundles ?? []), nearbyInteractables: this.nearbyInteractables(moduleId),
                 worldRestUnavailable: id=>this.world.entities.some(entity=>entity.id===id&&entity.owner===moduleId)
                     ?restHandlers.get(this)?.worldRestUnavailable?.(id)??null:'unavailable' }));
             requireSynchronous(projection);
@@ -1569,6 +1604,11 @@ export class ExtensionRuntime {
         return freezeView({ session: this.viewSession, definitions: descriptor.definitions, playerId,
             state: fields, components, canManageCharacter: this.ports.canManageCharacter?.() ?? true });
     }
+    recordingDigestToken(): readonly unknown[] {
+        return [this, recordingRootRevision(this), recordingRootRevision(this.causality), this.nextFactId,
+            this.states, this.components, this.world, this.pendingStoryFacts.length,
+            this.actorActionBinding()?.state.revision];
+    }
     snapshot(): ExtensionSnapshot {
         if (this.generations.length) throw new Error('Cannot snapshot an open generation transaction');
         return structuredClone({ manifest: this.manifest, modules: this.states, components: this.components,
@@ -1589,7 +1629,7 @@ export class ExtensionRuntime {
             || !validWorldSnapshot(foundation.world, this.modules.map(module => module.id))
             || !EffectCausality.validateSnapshot(foundation.causality) || !foundation.deaths || Array.isArray(foundation.deaths)
             || typeof foundation.deaths !== 'object') throw new Error('Invalid extension foundation snapshot');
-        if (foundation.world.entities.some(entity => !this.modules.find(module => module.id === entity.owner)?.worldInteractables)
+        if (foundation.world.entities.some(entity => !this.modules.find(module => module.id === entity.owner)?.worldInteractables && !this.modules.find(module => module.id === entity.owner)?.worldDefinitions)
             || foundation.world.regions?.some(region => !this.modules.find(module => module.id === region.owner)?.ownedRegions)
             || (foundation.world.gate && !this.modules.find(module => module.id === foundation.world.gate!.owner)?.interactionCommands?.length))
             throw new Error('Undeclared world interaction capability');

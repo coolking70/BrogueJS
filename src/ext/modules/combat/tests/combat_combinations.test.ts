@@ -120,8 +120,8 @@ describe('3f independently installed combat combinations on a natural normal run
             for (const attackId of ['fixture.slash', 'fixture.stomp', 'fixture.double-thrust']) {
                 const data = command('attack', { attackId, facing: 'e' });
                 expect(preparePhasedAttackCommand(game, data)).not.toBeNull();
-                const before = state(game).nextActionId; play('ext:command', data);
-                expect(state(game).nextActionId).toBeGreaterThan(before);
+                const before = game.actorActions!.nextActionId; play('ext:command', data);
+                expect(game.actorActions!.nextActionId).toBeGreaterThan(before);
             }
             const parry = command('parry', { facing: 'e' });
             expect(prepareActorParryCommand(game, parry)).not.toBeNull();
@@ -139,7 +139,7 @@ describe('3f independently installed combat combinations on a natural normal run
             expect(worldRestUnavailable(game, target.id)).toBeNull();
             play('wait');
             expect(state(game).bonfires!.receipts).toHaveLength(1);
-            expect(state(game).scheduler.bundles.some(bundle => bundle.decisionOwnerId === game.player.id)).toBe(false);
+            expect(game.actorActions!.bundles.some(bundle => bundle.decisionOwnerId === game.player.id)).toBe(false);
             const recording = json(game.exportRecording());
             expect(game.hasCompleteRecording).toBe(true);
             expect(recording.events).toHaveLength(prefixLength + expected.length);

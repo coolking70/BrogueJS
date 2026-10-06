@@ -1,5 +1,6 @@
 {
   "test": [
+    "tests/giants_c5_placement.test.ts",
     "tests/giants_colossus.test.ts",
     "tests/giants_committed_transition.test.ts",
     "tests/giants_composite.test.ts",

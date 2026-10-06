@@ -68,7 +68,7 @@ function warning(game: Game, id: number) {
     expect(result).toBeDefined();
     expect(result.cells).toContainEqual({ ...game.player.loc });
     expect(game.isInputLocked()).toBe(false);
-    return state(game).scheduler.bundles.find(b => b.decisionOwnerId === id)!.subactions[0]!;
+    return game.actorActions!.bundles.find(b => b.decisionOwnerId === id)!.subactions[0]!;
 }
 function mechanical(game: Game) {
     const snapshot = json(game.toSnapshot()); snapshot.savedAt = 0;

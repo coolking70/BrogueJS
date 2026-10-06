@@ -457,7 +457,7 @@
   },
   "autoAction": {
     "kind": "run",
-    "contract": "X3-U5：逐步长休息/长搜索/奔跑的剩余回合、初始恢复/嵌墙与四邻通行状态；新局/停止清空，快照深拷贝并恢复。"
+    "contract": "X3-U5：逐步长休息/长搜索/奔跑的剩余回合、初始恢复/嵌墙与四邻通行状态；5A2 新增 auto_work 的 ticketId，取消仅在录制命令内；新局清空，快照深拷贝并原样恢复。"
   },
   "inventoryAction": {
     "kind": "reset",
@@ -482,5 +482,29 @@
   "world5": {
     "kind": "run",
     "contract": "C5-1 r2: run.world5 optional; manifest fixture determines lifetime; authority clock advances only at positive elapsed in advancementLoop; digest domain world5."
+  },
+  "actorActions": {
+    "kind": "run",
+    "contract": "5A2: 唯一中立动作账本，静态随 combat/world5 启用，bundle 唯一倒计时；所有 ID 跨 owner 单调。"
+  },
+  "worldContainerItems": {
+    "kind": "derived",
+    "contract": "5A2: 容器 Item ID 到实体图对象的派生索引；save 用容器根纳入实体图，load 从同图重建，无第二 owner。"
+  },
+  "worldWorkFacts": {
+    "kind": "run",
+    "contract": "5A2: foundation 已提交工作事实最近128条，用 runtime fact allocator，与参与者相同。"
+  },
+  "worldWorkDetails": {
+    "kind": "run",
+    "contract": "5A2: ticket guard与工位目标的foundation内部sidecar，不进入冻结C5 DTO。"
+  },
+  "executingRecordedCommand": {
+    "kind": "session",
+    "contract": "5A2: 命令执行栈自动恢复，auto_work取消事务断言。"
+  },
+  "worldWorkCommandEpoch": {
+    "kind": "session",
+    "contract": "5A2: 会话句柄scope时期，非持久 ID。"
   }
 }

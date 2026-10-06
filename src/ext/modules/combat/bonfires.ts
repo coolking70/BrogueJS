@@ -11,7 +11,7 @@ function rootState(context: ExtensionContext): Record<string, Json> {
     return context.state as Record<string, Json>;
 }
 function commit(pack: CombatPack, root: Record<string, Json>, state: BonfireState, context: ExtensionContext): void {
-    const next = validateBonfireState(state, pack.bonfires, root.nextActionId as number);
+    const next = validateBonfireState(state, pack.bonfires, Number.MAX_SAFE_INTEGER);
     context.setState({ ...root, revision: integer(root.revision, 0, Number.MAX_SAFE_INTEGER - 1) + 1, bonfires: next as unknown as Json });
 }
 /** The enteredLevel foundation transaction owns placement and rolls back both
@@ -21,7 +21,7 @@ export function enterCombatLevel(pack: CombatPack, event: Readonly<HookEvents['e
     if (!event.firstVisit) return;
     integer(event.depth, 1, 40);
     if (event.depth !== context.depth) fail('$event.depth');
-    const root = rootState(context), state = validateBonfireState(root.bonfires, pack.bonfires, root.nextActionId as number);
+    const root = rootState(context), state = validateBonfireState(root.bonfires, pack.bonfires, Number.MAX_SAFE_INTEGER);
     const before = JSON.stringify(state), depth = event.depth;
     const retained: BonfirePendingPlacement[] = [];
     for (const pending of state.pending) {
@@ -119,7 +119,7 @@ export function validateCombatBonfireWorldBindings(pack: CombatPack, raw: unknow
 export function removeCombatBonfires(pack: CombatPack, event: Readonly<HookEvents['interactablesRemoved']>, context: ExtensionContext): void {
     assertLoadedCombatPack(pack);
     if (event.owner !== 'combat') return;
-    const root = rootState(context), state = validateBonfireState(root.bonfires, pack.bonfires, root.nextActionId as number);
+    const root = rootState(context), state = validateBonfireState(root.bonfires, pack.bonfires, Number.MAX_SAFE_INTEGER);
     let changed = false;
     for (const entityId of event.entityIds) {
         if (!state.bindings[entityId]) continue;

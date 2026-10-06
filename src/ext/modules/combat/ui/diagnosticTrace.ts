@@ -37,7 +37,7 @@ export function createCombatDiagnosticTrace(game: Game) {
         // are detached evidence, never a live source of the next sample.
         const state = game.extensionRuntime?.actorActionBinding()?.state;
         const timeline = presentationTimeline(game);
-        const bundles = state?.scheduler.bundles ?? [];
+        const bundles = game.actorActions?.bundles ?? [];
         return {
             frame, running, activeGameMatches: typeof window === 'undefined' ? null
                 : (window as Window & { activeGame?: Game }).activeGame === game, sameRuntime: game.extensionRuntime === runtime,

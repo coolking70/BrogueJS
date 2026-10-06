@@ -94,7 +94,7 @@ it.each(['single','core','leg'] as const)('backstab of a busy %s survives schedu
     expect(selectNativeActorAction(game,owner.id)).toBe('handled');
     const target=kind==='leg'?game.monsters.find(m=>m.spatial?.bodyMember?.groupId===owner.id&&m!==owner)!:owner;
     owner.state=MonsterState.WANDERING;target.hp=target.maxHp=1000;
-    const bundle=state(game).scheduler.bundles.find(b=>b.decisionOwnerId===owner.id)!;
+    const bundle=game.actorActions!.bundles.find(b=>b.decisionOwnerId===owner.id)!;
     const before=owner.ticksUntilTurn,tails=bundle.subactions.map(c=>c.phases[c.phases.length - 1]!.durationTicks),delay=Math.max(target.movementSpeed,target.attackSpeed);
     game.executeCommand('fixture:backstab',undefined,()=>{
         expect(CombatSystem.attack(game.player,target,{grid:game.grid}).backstab).toBe(true);
@@ -106,8 +106,8 @@ it.each(['single','core','leg'] as const)('backstab of a busy %s survives schedu
     }
     const saved=game.toSaveSnapshot();
     for(const patch of ['receipt','duration'] as const){
-        const bad=structuredClone(saved),s=bad.extensions!.modules.combat as unknown as ReturnType<typeof state>;
-        const child=s.scheduler.bundles.find(b=>b.decisionOwnerId===owner.id)!.subactions[0]!;
+        const bad=structuredClone(saved);
+        const child=bad.run.actorActions!.bundles.find(b=>b.decisionOwnerId===owner.id)!.subactions[0]!;
         if(patch==='receipt')child.nativeRecoveryDelayTicks!++;else child.phases[child.phases.length - 1]!.durationTicks++;
         expect(game.loadSnapshot(bad)).toBe(false);
     }
@@ -115,7 +115,7 @@ it.each(['single','core','leg'] as const)('backstab of a busy %s survives schedu
     const loaded=game.monsters.find(m=>m.id===owner.id)!;
     game.executeCommand('wait');
     expect(productionActorActionScheduler(game)!.isBusy(loaded.id)).toBe(true);
-    expect(state(game).scheduler.bundles.find(b=>b.decisionOwnerId===loaded.id)!.elapsedActionTicks).toBe(100);
+    expect(game.actorActions!.bundles.find(b=>b.decisionOwnerId===loaded.id)!.elapsedActionTicks).toBe(100);
     if(kind==='single')expect(loaded.spatial).toBeUndefined();
     expect(game.lastAdvancementError).toBeNull();
 });
@@ -160,8 +160,8 @@ describe('3g strict optional combat capacity consumer',()=>{
         expect(row(game)).toMatchObject({stamina:before.stamina,poise:before.poise,parryRemainingTicks:60,parryRecoveryRemainingTicks:100,parryFacing:'e'});
         game.player.ticksUntilTurn=0;Object.assign(row(game),{parryRemainingTicks:0,parryRecoveryRemainingTicks:0,parryFacing:null});
         const plan=preparePhasedAttackCommand(game,command('attack',{attackId:'fixture.double-thrust',facing:'e'}))!;commitPhasedAttackCommand(game,plan);
-        const actions=structuredClone(state(game).actions),scheduler=structuredClone(state(game).scheduler),balance=row(game).stamina;
-        capacity=8;sync(game);expect(state(game).actions).toEqual(actions);expect(state(game).scheduler).toEqual(scheduler);
+        const actions=structuredClone(state(game).actions),scheduler=structuredClone(game.actorActions!),balance=row(game).stamina;
+        capacity=8;sync(game);expect(state(game).actions).toEqual(actions);expect(game.actorActions!).toEqual(scheduler);
         expect(row(game).stamina).toBe(Math.min(balance,8));
     });
     it('retains a begun stagger when capacities rise and never restores poise through the adapter',()=>{
@@ -205,7 +205,7 @@ describe('3g strict optional combat capacity consumer',()=>{
         setup({query:()=>supported()});const game=scene(),target=npc(game);chargeNativeActorAttack(game,target.id);
         const binding=game.extensionRuntime!.actorActionBinding()!,query=(_actor:Creature,_input:Json):OptionalQueryResult=>({status:'available',value:supported()});
         const verify=(candidate=state(game),body?:{declared:readonly string[];available:readonly string[]})=>validateActorCombatCapacities(candidate,binding.definition,
-            [game.player,target],query,actor=>actor===target?body:undefined);
+            [game.player,target],query,actor=>actor===target?body:undefined,game.actorActions);
         expect(row(game,target.id).profileId).toBe('combat.fan-edge');expect(()=>verify()).not.toThrow();
         const forged=structuredClone(state(game));forged.actors.find(actor=>actor.actorId===target.id)!.profileId='combat.shock-ring';
         expect(()=>verify(forged)).toThrow('actor template');
@@ -214,7 +214,7 @@ describe('3g strict optional combat capacity consumer',()=>{
         target.ticksUntilTurn=0;expect(selectNativeActorAction(game,target.id)).toBe('handled');
         expect(()=>verify(state(game),body)).not.toThrow();
         target.typeId='ogre';expect(()=>verify()).toThrow('actor template');
-        const bundle=state(game).scheduler.bundles.find(bundle=>bundle.decisionOwnerId===target.id)!;
+        const bundle=game.actorActions!.bundles.find(bundle=>bundle.decisionOwnerId===target.id)!;
         const child=bundle.subactions[0]!,sub=state(game).actions.find(action=>action.actionId===bundle.actionId)!.subactions[0]!;
         child.phases=[{kind:'break-recovery',durationTicks:50,segmentIndex:null}];child.phaseIndex=0;child.phaseRemainingTicks=50;sub.lockedCells=[];
         expect(()=>validateProductionActorAttackState(state(game),binding.definition)).not.toThrow();
@@ -274,10 +274,10 @@ describe.skipIf(!installed.has('narrative'))('3g four committed combat fact prod
         let fail=false;setup({events:true,fail:()=>fail});const game=scene(true),target=npc(game);
         const plan=preparePhasedAttackCommand(game,command('attack',{attackId:'fixture.double-thrust',facing:'e'}))!;commitPhasedAttackCommand(game,plan);
         const scheduler=productionActorActionScheduler(game)!;scheduler.advanceActionTime(scheduler.nextActionBoundary()!);
-        const before=game.extensionRuntime!.snapshot(),hp=target.hp,random=rng.getState(),bundle=state(game).scheduler.bundles[0]!,child=bundle.subactions[0]!;
+        const before=game.extensionRuntime!.snapshot(),hp=target.hp,random=rng.getState(),bundle=game.actorActions!.bundles[0]!,child=bundle.subactions[0]!;
         fail=true;expect(()=>scheduler.dispatchActorBoundary(game.player.id)).toThrow('fixture consumer failure');
         expect(game.extensionRuntime!.snapshot()).toEqual(before);expect(target.hp).toBe(hp);expect(rng.getState()).toEqual(random);
-        expect(state(game).scheduler.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);
+        expect(game.actorActions!.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);
         fail=false;expect(()=>scheduler.dispatchActorBoundary(game.player.id)).not.toThrow();
         expect(events(game).filter(event=>event.eventKind==='attack-resolved')).toHaveLength(1);expect(target.hp).toBeLessThan(hp);
     });
@@ -316,7 +316,7 @@ describe.skipIf(!installed.has('giants')||!installed.has('narrative'))('3g compo
     it('keeps core decision/time/poise ownership and makes each attacking member pay its own stamina',()=>{
         const {game,core,legs}=body();core.ticksUntilTurn=0;
         expect(selectNativeActorAction(game,core.id)).toBe('handled');
-        const bundle=state(game).scheduler.bundles[0]!;expect(bundle).toMatchObject({decisionOwnerId:core.id,timeChargeOwnerId:core.id});
+        const bundle=game.actorActions!.bundles[0]!;expect(bundle).toMatchObject({decisionOwnerId:core.id,timeChargeOwnerId:core.id});
         expect(bundle.subactions.length).toBeGreaterThan(0);expect(row(game,core.id).stamina).toBe(24);
         for(const sub of bundle.subactions)expect(row(game,sub.sourceEntityId)).toMatchObject({stamina:18,combatStats:{staminaCapacity:40,poiseCapacity:20}});
         const member=legs.find(actor=>bundle.subactions.some(sub=>sub.sourceEntityId===actor.id))!;
@@ -329,7 +329,7 @@ describe.skipIf(!installed.has('giants')||!installed.has('narrative'))('3g compo
         game.player.strength=30;
         for(const leg of legs){leg.hp=1;leg.accuracy=10000;leg.damageString='20';}
         core.ticksUntilTurn=0;expect(selectNativeActorAction(game,core.id)).toBe('handled');
-        const scheduler=productionActorActionScheduler(game)!,sourceIds=state(game).scheduler.bundles[0]!.subactions.map(sub=>sub.sourceEntityId);
+        const scheduler=productionActorActionScheduler(game)!,sourceIds=game.actorActions!.bundles[0]!.subactions.map(sub=>sub.sourceEntityId);
         scheduler.advanceActionTime(scheduler.nextActionBoundary()!);expect(()=>scheduler.dispatchActorBoundary(core.id)).not.toThrow();
         const resolved=events(game).filter(event=>event.eventKind==='attack-resolved');expect(resolved.length).toBeGreaterThan(0);
         expect(resolved.every(event=>sourceIds.includes(event.actor.entityId)&&event.actor.partId?.startsWith('leg')&&event.actor.generation===0)).toBe(true);

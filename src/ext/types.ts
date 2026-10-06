@@ -1,3 +1,4 @@
+import type { WorldModuleFields } from './worldSdk';
 import type { WorldInteractable, WorldInteractablePlacement, WorldInteractablePlacementResult, WorldInteractionSnapshot, WorldInteractionValidation, ExtensionProjectionContext } from './world';
 import type { Creature } from '../entities/Creature';
 import type { AttackResult } from '../engine/Combat/Combat';
@@ -24,13 +25,13 @@ export interface ExtensionModuleView {
 }
 export interface ExtensionRulesIdentity { schema: number; version: string; fingerprint: string }
 export interface ExtensionVersion { id: string; version: string; rules?: ExtensionRulesIdentity }
-export interface ExtensionManifest { schema: 1; foundation?: 6; modules: ExtensionVersion[] }
+export interface ExtensionManifest { schema: 1; foundation?: 7; modules: ExtensionVersion[] }
 export interface ExtensionSnapshot {
     manifest: ExtensionManifest;
     modules: Record<string, Json>;
     /** Run-local creature ID -> module-qualified component ID -> JSON. */
     components: Record<string, Record<string, Json>>;
-    foundation: { version: 6; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
+    foundation: { version: 7; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
 }
 /** Native facts wait for run initialization; sequence numbers are reserved on commit. */
 export interface PendingStoryFact { kind: 'entered-level'; depth: number; firstVisit: boolean; turn: number }
@@ -251,7 +252,7 @@ export interface ExtensionContext {
 export type HookHandlers = { [K in HookName]?: (event: Readonly<HookEvents[K]>, context: ExtensionContext) => void };
 /** Detached native newborn bases for safe composition before a current run is retired. */
 export interface ExtensionCreationResources { readonly maxHp: number; readonly strength: number }
-export interface ExtensionModule extends ExtensionVersion {
+export interface ExtensionModule extends ExtensionVersion, WorldModuleFields {
     dependencies?: readonly string[];
     readonly optionalRewards?: Readonly<Record<string, OptionalRewardProvider>>;
     readonly optionalActorQueries?: Readonly<Record<string, OptionalActorQueryProvider>>;
@@ -263,7 +264,7 @@ export interface ExtensionModule extends ExtensionVersion {
     /** Only the native generation owner may install declared owned regions. */
     readonly ownedRegions?: true;
     /** One discovered data-only owner for persistent phased attacks. */
-    readonly actorActions?: { readonly stateField: 'scheduler'; readonly definitions: Json };
+    readonly actorActions?: { readonly definitions: Json };
     readonly nativeForms?: readonly import('./nativeForms').NativeFormDefinition[];
     readonly bodyTransitions?: readonly import('./bodyTransitions').ActiveBodyTransition[];
     /** Data-only composite declarations; foundation owns entities and clocks. */

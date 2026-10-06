@@ -2,7 +2,8 @@ import { Monster, MonsterMode, MonsterState } from '../../entities/Monster';
 import type { Player } from '../../entities/Player';
 import { Item, ItemCategory } from '../Items/Item';
 import { ItemLoader } from '../Items/ItemLoader';
-import { copyFields, ITEM_FIELDS } from '../Core/EntitySnapshot';
+import { serializeItem } from '../Core/EntitySnapshot';
+import { bindWorldItem, worldItemDefinition } from '../Items/WorldItems';
 import { rng } from '../Random';
 import { monsterIsInClass } from './MonsterClass';
 import { logger } from '../Systems/Logger';
@@ -45,7 +46,8 @@ export function stealFromPlayer(m: Monster, p: Player, attackHit: () => boolean,
     const quantity = item.category === ItemCategory.WEAPON ? (item.quantity > 3 ? Math.trunc((item.quantity + 1) / 2) : item.quantity) : 1;
     if (quantity < item.quantity) {
         const split = allocateSplit(depth), id = split.id;
-        Object.assign(split, copyFields(item, ITEM_FIELDS), { id, quantity });
+        Object.assign(split, serializeItem(item), { id, quantity });
+        const definition=worldItemDefinition(item);if(definition)bindWorldItem(split,definition);
         item.quantity -= quantity;
         item = split;
     } else p.inventory.removeItem(item);

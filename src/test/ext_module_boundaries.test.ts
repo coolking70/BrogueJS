@@ -39,6 +39,19 @@ describe('module boundaries parse references and test ownership', () => {
         expect(f.check()).toEqual([]);
     });
 
+    it('restricts crafting to approved SDK/shared UI and keeps SDK values out of the engine graph', () => {
+        const f=fixture(); f.module('crafting');
+        f.write('src/ext/modules/crafting/index.ts', `import type { World } from '../../worldSdk'; import { FOUNDATION_PROTOCOL } from '../../descriptor'; import { panel } from '../../../ui/panel';`);
+        expect(f.check()).toEqual([]);
+        for (const path of ['../../../engine/Core/Game','../../world5','../../world5Fixture','../../runtime']) {
+            f.write('src/ext/modules/crafting/index.ts', `import value from '${path}';`);
+            expect(f.check().some(issue=>issue.includes('outside approved SDK'))).toBe(true);
+        }
+        f.write('src/ext/modules/crafting/index.ts','');
+        f.write('src/ext/worldSdk.ts', `export { validator } from '../engine/Core/WorldWorkValidation';`);
+        expect(f.check().some(issue=>issue.includes('pure world SDK leaf'))).toBe(true);
+    });
+
     it('finds import, export, type-only, dynamic, require and import-type dependencies even on deleted modules', () => {
         const f = fixture();
         f.write('src/global.ts', `

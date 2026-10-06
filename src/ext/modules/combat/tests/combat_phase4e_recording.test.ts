@@ -61,7 +61,7 @@ function replay(fresh:()=>Game,recording:ReturnType<Game['exportRecording']>,poi
 it('a paid core windup is cancelled by a body transition, keeps recovery/payment and never replays its old warning',()=>{
   const fresh=fixture('split',true),game=fresh(),core=game.monsters[0]!;core.hp=260;
   game.executeCommand('wait');game.executeCommand('wait');ack();
-  const state=game.extensionRuntime!.actorActionBinding()!.state,bundle=state.scheduler.bundles[0]!;expect(bundle).toBeTruthy();const paid=state.actions[0]!.paidCost;expect(paid).toBeGreaterThan(0);
+  const state=game.extensionRuntime!.actorActionBinding()!.state,bundle=game.actorActions!.bundles[0]!;expect(bundle).toBeTruthy();const paid=state.actions[0]!.paidCost;expect(paid).toBeGreaterThan(0);
   core.hp=129;expect((game as any).tryActiveBodyTransition(core)).toBe(true);
   expect(bundle.subactions.every(c=>c.cancelled||['break-recovery','recovery'].includes(c.phases[c.phaseIndex]?.kind??'')||c.phaseIndex===c.phases.length)).toBe(true);
   expect(state.actions[0]!.paidCost).toBe(paid);expect(state.actions.flatMap(a=>a.subactions).every(s=>s.lockedCells.length===0)).toBe(true);

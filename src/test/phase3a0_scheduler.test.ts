@@ -15,7 +15,7 @@ function child(sourceEntityId: number, sourcePartId = 'body', duration = phases(
     return { sourceEntityId, sourcePartId, sourceFootprintVersion: `fixture:${sourceEntityId}`, phases: duration };
 }
 function definition(owner: number, subactions = [child(owner)], actionId = owner): ActorActionBundleDefinition {
-    return { actionId, depth: 1, decisionOwnerId: owner, timeChargeOwnerId: owner, subactions };
+    return { owner: 'combat', actionId, depth: 1, decisionOwnerId: owner, timeChargeOwnerId: owner, subactions };
 }
 function actor(id: number, ticksUntilTurn: number): Monster {
     return { id, hp: 10, ticksUntilTurn, movementSpeed: 100, isCaged: false, carriedItem: null,

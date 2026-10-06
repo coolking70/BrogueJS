@@ -139,7 +139,7 @@ describe('3e real bonfire preparation and native command boundary', () => {
         const before = facts(game); expect(() => commitWorldRest(game, plan)).toThrow('Stale'); expect(facts(game)).toEqual(before);
         const current = prepare(game); commitWorldRest(game, current); const committed = facts(game);
         expect(() => commitWorldRest(game, current)).toThrow('Stale'); expect(facts(game)).toEqual(committed);
-        expect(ledger(game).placements[0]!.visits).toBe(1); expect(state(game).scheduler.bundles).toHaveLength(1);
+        expect(ledger(game).placements[0]!.visits).toBe(1); expect(game.actorActions!.bundles).toHaveLength(1);
     });
     it('asynchronous confirmation rejects changed HP without charging or recording an approved rest', () => {
         const { game } = scene(); game.onCommandConfirmRequest = () => {}; rest(game);
@@ -156,18 +156,18 @@ describe('3e real bonfire preparation and native command boundary', () => {
     });
     it('a scheduler commit fault rolls back the retained ledger graph and identity allocation, then fails closed', () => {
         const { game } = scene(), plan = prepare(game), before = facts(game), retained = state(game), fireState = ledger(game);
-        const placement = fireState.placements[0], placements = fireState.placements, bundles = retained.scheduler.bundles;
+        const placement = fireState.placements[0], placements = fireState.placements, bundles = game.actorActions!.bundles;
         vi.spyOn(productionActorActionScheduler(game)!, 'commitBundle').mockImplementation(() => { throw new Error('fixture scheduler commit fault'); });
         expect(() => commitWorldRest(game, plan)).toThrow('fixture scheduler commit fault');
         expect(facts(game)).toEqual(before); expect(state(game)).toBe(retained); expect(ledger(game)).toBe(fireState);
         expect(ledger(game).placements).toBe(placements); expect(ledger(game).placements[0]).toBe(placement);
-        expect(state(game).scheduler.bundles).toBe(bundles); expect(ledger(game).active).toBeNull(); expect(game.isInputLocked()).toBe(true);
+        expect(game.actorActions!.bundles).toBe(bundles); expect(ledger(game).active).toBeNull(); expect(game.isInputLocked()).toBe(true);
     });
     it('one accepted command advances 500 native ticks and hunger, then restores current capacities exactly once', () => {
         const { game, target } = scene(); chargeNativeActorAttack(game, game.player.id); applyActorPoiseDamage(game, game.player.id, 3);
         expect(resource(game).stamina).toBeLessThan(24); expect(resource(game).poise).toBeLessThan(12);
         game.player.setStatusDuration('weakened', 20);
-        const before = facts(game), world = json(game.extensionRuntime!.snapshot().foundation.world), nextAction = state(game).nextActionId;
+        const before = facts(game), world = json(game.extensionRuntime!.snapshot().foundation.world), nextAction = game.actorActions!.nextActionId;
         const messageTurn = logger.turn;
         rest(game);
         // The HUD intentionally counts CE player commands, separately from objective blocks.
@@ -179,7 +179,7 @@ describe('3e real bonfire preparation and native command boundary', () => {
         expect(game.player.nutrition).toBe(before.player.nutrition - 5); expect(game.player.getStatusDuration('weakened')).toBe(15);
         expect(game.player.hp).toBe(game.player.maxHp); expect(resource(game)).toMatchObject({ stamina: 24, poise: 12 });
         expect(game.extensionRuntime!.snapshot().foundation.world).toEqual(world); expect(getNextEntityId()).toBe(before.nextId);
-        expect(ledger(game).active).toBeNull(); expect(state(game).scheduler.bundles).toEqual([]); expect(game.isInputLocked()).toBe(false);
+        expect(ledger(game).active).toBeNull(); expect(game.actorActions!.bundles).toEqual([]); expect(game.isInputLocked()).toBe(false);
         expect(ledger(game).receipts).toEqual([expect.objectContaining({ actionId: nextAction, bonfireId: target.id, visit: 1, result: 'completed', reason: null })]);
         expect(ledger(game).placements[0]).toMatchObject({ visits: 1, completedRests: 1 });
         game.player.hp = 10; const complete = facts(game); settleWorldRest(game); game.update();
@@ -311,7 +311,7 @@ describe('3e bounded capacity preflight', () => {
         const { game } = scene();
         // Only occupancy is under test. These detached bundles are deliberately
         // not executed or serialized as a complete production attack world.
-        state(game).scheduler.bundles = Array.from({ length: 4096 }, (_, index) => createActorActionBundle({
+        game.actorActions!.bundles = Array.from({ length: 4096 }, (_, index) => createActorActionBundle({owner:'combat',
             actionId: index + 1, depth: game.depth, decisionOwnerId: index + 1000, timeChargeOwnerId: index + 1000,
             subactions: [{ sourceEntityId: index + 1000, sourcePartId: 'body', sourceFootprintVersion: 'capacity-fixture',
                 phases: [{ kind: 'recovery', durationTicks: 100, segmentIndex: null }] }],
@@ -373,7 +373,7 @@ describe('3e optional modules and durable rest identity', () => {
     it('saves an in-flight scheduler rest, resumes only on update and never applies recovery twice after load', () => {
         const { game } = scene(); begin(game); productionActorActionScheduler(game)!.advanceActionTime(123);
         const save = json(game.toSaveSnapshot()), random = rng.getState(), active = json(ledger(game).active);
-        expect(state(game).scheduler.bundles[0]!.elapsedActionTicks).toBe(123); expect(game.player.ticksUntilTurn).toBe(377);
+        expect(game.actorActions!.bundles[0]!.elapsedActionTicks).toBe(123); expect(game.player.ticksUntilTurn).toBe(377);
         const loaded = createHeadlessGame(913, 'test'); expect(loaded.loadSnapshot(save)).toBe(true); loaded.animationEnabled = false;
         expect(rng.getState()).toEqual(random); expect(ledger(loaded).active).toEqual(active); expect(loaded.player.hp).toBe(300);
         expect(loaded.isInputLocked()).toBe(true); loaded.update();
@@ -388,8 +388,8 @@ describe('3e optional modules and durable rest identity', () => {
         serialized.bonfires!.active!.actionId++;
         expect(game.loadSnapshot(wrongId)).toBe(false); expect(game.player).toBe(player); expect(facts(game)).toEqual(before);
         for (const field of ['sourceFootprintVersion', 'sourcePartId'] as const) {
-            const corrupt = json(save), combat = corrupt.extensions!.modules.combat as unknown as ProductionActorAttackState;
-            combat.scheduler.bundles[0]!.subactions[0]![field] = 'forged-source';
+            const corrupt = json(save);
+            corrupt.run.actorActions!.bundles[0]!.subactions[0]![field] = 'forged-source';
             expect(game.loadSnapshot(corrupt)).toBe(false); expect(game.player).toBe(player); expect(facts(game)).toEqual(before);
         }
         clockToEnd(game); const completed = json(game.toSaveSnapshot()), duplicate = completed.extensions!.modules.combat as unknown as ProductionActorAttackState;

@@ -15,7 +15,7 @@ export const ITEM_FIELDS = [
     'charges', 'identified', 'canBeIdentified', 'maxChargesKnown', 'magicDetected',
     'timesUsed', 'knownStaffUses', 'staffRechargeRemaining', 'rechargeTurns', 'rechargeCounter',
     'cooldownTurns', 'cooldownRemaining', 'quiverNumber', 'vorpalEnemy', 'keyLoc',
-    'originDepth', 'identityId', 'consumableId', 'description', 'spawnTurnNumber', 'inscription',
+    'worldItem', 'originDepth', 'identityId', 'consumableId', 'description', 'spawnTurnNumber', 'inscription',
 ] as const satisfies readonly (keyof Item)[];
 export const CREATURE_FIELDS = [
     'spatial', 'id', 'loc', 'hp', 'maxHp', 'name', 'color', 'char', 'statusDurations',
@@ -96,9 +96,9 @@ export const entityCodecDeps: EntityCodecDeps = {
     ensureIdAbove: ensureEntityIdAbove,
 };
 
-export function serializeItem(item: Item): GameSnapshotItem { return copyFields(item, ITEM_FIELDS); }
+export function serializeItem(item: Item): GameSnapshotItem { const row=copyFields(item, ITEM_FIELDS);if(!Object.prototype.hasOwnProperty.call(item,'worldItem'))delete row.worldItem;return row; }
 export function deserializeItem(saved: GameSnapshotItem, deps: EntityCodecDeps = entityCodecDeps): Item {
-    return Object.assign(deps.allocateItem(), copyFields(saved, ITEM_FIELDS));
+    const item=Object.assign(deps.allocateItem(), copyFields(saved, ITEM_FIELDS));if(!Object.prototype.hasOwnProperty.call(saved,'worldItem'))delete item.worldItem;return item;
 }
 export function serializeMonsterRow(m: Monster): GameSnapshotMonster {
     return { ...copyFields(m, MONSTER_FIELDS), form: m.snapshotForm(),

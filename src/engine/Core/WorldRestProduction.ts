@@ -56,7 +56,7 @@ export function worldRestUnavailable(game: Game, bonfireId: number): WorldRestUn
     const selected = binding(game), ledger = selected?.state.bonfires;
     if (!selected?.definition.bonfires || !ledger || !ledger.bindings[String(bonfireId)]) return 'unavailable';
     const placement=ledger.placements.find(row=>row.instanceKey===ledger.bindings[String(bonfireId)]!.instanceKey);
-    if(!placement||placement.visits>=Number.MAX_SAFE_INTEGER||selected.state.nextActionId>=Number.MAX_SAFE_INTEGER
+    if(!placement||placement.visits>=Number.MAX_SAFE_INTEGER||game.actorActions!.nextActionId>=Number.MAX_SAFE_INTEGER
         ||selected.state.revision>=Number.MAX_SAFE_INTEGER-1)return 'unavailable';
     // Elapsed resource recovery can materialize implicit partial pools for any
     // active actor. Reserve that bounded ledger room before accepting time.
@@ -68,12 +68,12 @@ export function worldRestUnavailable(game: Game, bonfireId: number): WorldRestUn
         const policy=selected.definition.resourcePolicies.find(row=>row.id===profile.resourcePolicyId)!;
         return policy.initialStamina<policy.staminaCapacity;
     }).length;
-    if(selected.state.scheduler.bundles.length>=MAX_ACTOR_ACTION_BUNDLES||selected.state.actors.length+needed>MAX_ACTOR_ACTION_BUNDLES)
+    if(game.actorActions!.bundles.length>=MAX_ACTOR_ACTION_BUNDLES||selected.state.actors.length+needed>MAX_ACTOR_ACTION_BUNDLES)
         return 'unavailable';
     if (game.isGameOver || game.player.hp <= 0 || incapacitated(game)) return 'unavailable';
     if (game.interactionActive) return 'gate';
     if (ledger.active || game.player.ticksUntilTurn > 0 || isActorStaggered(game, game.player.id)
-        || selected.state.scheduler.bundles.some(bundle => bundle.decisionOwnerId === game.player.id)
+        || game.actorActions!.bundles.some(bundle => bundle.decisionOwnerId === game.player.id)
         || selected.state.actors.some(actor => actor.actorId === game.player.id && (actor.dodgeRecoveryRemainingTicks || actor.parryRecoveryRemainingTicks || actor.staggerRemainingTicks)))
         return 'busy';
     if (!game.extensionRuntime!.nearbyInteractables(selected.moduleId).some(entity => entity.id === bonfireId)) return 'distance';
@@ -108,21 +108,21 @@ export function commitWorldRest(game: Game, plan: WorldRestPlan): boolean {
     const current = prepareWorldRest(game, JSON.stringify({ module: plan.moduleId, action: 'rest', payload: { bonfireId: plan.bonfireId } }));
     if (!current || canonical(current) !== canonical(plan)) throw new Error('Stale rest preparation');
     const selected = binding(game)!, state = selected.state, ledger = state.bonfires!, scheduler = productionActorActionScheduler(game)!;
-    if (state.nextActionId >= Number.MAX_SAFE_INTEGER || state.revision >= Number.MAX_SAFE_INTEGER - 1) throw new Error('Rest identity exhausted');
+    if (game.actorActions!.nextActionId >= Number.MAX_SAFE_INTEGER || state.revision >= Number.MAX_SAFE_INTEGER - 1) throw new Error('Rest identity exhausted');
     const placement = ledger.placements.find(entry => entry.instanceKey === plan.instanceKey)!;
     if (!placement || placement.visits >= Number.MAX_SAFE_INTEGER) throw new Error('Rest visit identity exhausted');
-    const bundle = createActorActionBundle({ actionId: state.nextActionId, depth: game.depth, decisionOwnerId: game.player.id, timeChargeOwnerId: game.player.id,
+    const bundle = createActorActionBundle({owner:'combat',  actionId: game.actorActions!.nextActionId, depth: game.depth, decisionOwnerId: game.player.id, timeChargeOwnerId: game.player.id,
         subactions: [{ sourceEntityId: game.player.id, sourcePartId: game.spatialOf(game.player).partId ?? 'body', sourceFootprintVersion: plan.sourceVersion,
             phases: [{ kind: 'recovery', durationTicks: plan.restTicks, segmentIndex: null }] }] });
-    const checkpoint = actorActionIdentityCheckpoint(state as unknown as Json), ticks = game.player.ticksUntilTurn;
+    const rootCheckpoint=actorActionIdentityCheckpoint(game.actorActions as unknown as Json);const checkpoint = actorActionIdentityCheckpoint(state as unknown as Json), ticks = game.player.ticksUntilTurn;
     return withActorActionScope(game, 'player-command', game.player.id, () => {
         try {
             placement.visits++;
-            ledger.active = { actionId: state.nextActionId++, bonfireId: plan.bonfireId, definitionId: plan.definitionId, instanceKey: plan.instanceKey,
+            ledger.active = { actionId: game.actorActions!.nextActionId++, bonfireId: plan.bonfireId, definitionId: plan.definitionId, instanceKey: plan.instanceKey,
                 visit: placement.visits, actorId: game.player.id, depth: game.depth, startHp: game.player.hp, anchor: { ...game.player.loc }, interrupted: null, phase: 'resting' };
             revision(game); scheduler.commitBundle(bundle); bindWorldRestSource(game); return true;
         } catch (error) {
-            checkpoint.restore(); game.player.ticksUntilTurn = ticks;
+            checkpoint.restore();rootCheckpoint.restore(); game.player.ticksUntilTurn = ticks;
             invalidateProductionActorActionSession(game);game.invalidateActorActionRun(error instanceof Error?error:new Error(String(error)));
             throw error;
         }

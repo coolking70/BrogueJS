@@ -42,7 +42,7 @@ function verifyReplay(fresh:()=>Game,recording:ReturnType<Game['exportRecording'
 it('actual paid member windup, axe break and shared discord save, continue, replay and seek with fixed initialization',()=>{
     const fresh=fixedStart(),game=fresh(),core=game.monsters[0]!,points=new Map<number,string>();
     game.executeCommand('wait');const state=game.extensionRuntime!.actorActionBinding()!.state;
-    expect(state.scheduler.bundles[0]!.subactions).toHaveLength(2);expect(state.actions[0]!.paidCost).toBeGreaterThan(0);
+    expect(game.actorActions!.bundles[0]!.subactions).toHaveLength(2);expect(state.actions[0]!.paidCost).toBeGreaterThan(0);
     points.set(game.exportRecording().events.length,mechanics(game));game.executeCommand('move',{x:0,y:1});ack();
     expect(game.bodyGroups![0]!.appliedBreaks.length).toBeGreaterThan(0);expect(core.hp).toBeGreaterThan(0);
     points.set(game.exportRecording().events.length,mechanics(game));const save=detached(game.toSaveSnapshot());

@@ -126,7 +126,7 @@ describe('3d production deterministic parry and poise',()=>{
         const game=scene(),plan=preparePhasedAttackCommand(game,JSON.stringify({module:'combat',action:'attack',payload:{attackId:'fixture.double-thrust',facing:'e'}}))!;
         expect(plan).not.toBeNull();commitPhasedAttackCommand(game,plan);
         applyActorPoiseDamage(game,game.player.id,12);
-        const bundle=state(game).scheduler.bundles[0]!;
+        const bundle=game.actorActions!.bundles[0]!;
         expect(bundle.subactions[0]!.phases[bundle.subactions[0]!.phaseIndex]!.kind).toBe('break-recovery');
         expect(resource(game).staggerRemainingTicks).toBe(0);expect(isActorStaggered(game,game.player.id)).toBe(true);
         expect(state(game).actions[0]!.subactions[0]!.lockedCells).toEqual([]);
@@ -173,10 +173,10 @@ describe('3d native scheduling and visible defensive decisions',()=>{
         commitPhasedAttackCommand(game,plan);const random=rng.getState();
         expect(selectNativeActorAction(game,source.id)).toBe('handled');
         expect(resource(game,source.id)).toMatchObject({stamina:21,parryRemainingTicks:60,parryFacing:'w'});expect(rng.getState()).toEqual(random);
-        expect(state(game).scheduler.bundles).toHaveLength(1);
+        expect(game.actorActions!.bundles).toHaveLength(1);
         advance(game,50);productionActorActionScheduler(game)!.dispatchActorBoundary(game.player.id);
         expect(resource(game).poise).toBe(0);expect(resource(game,source.id).parryRemainingTicks).toBe(0);
-        expect(state(game).scheduler.bundles[0]!.subactions[0]!.phases.slice(-1)[0]!.kind).toBe('break-recovery');
+        expect(game.actorActions!.bundles[0]!.subactions[0]!.phases.slice(-1)[0]!.kind).toBe('break-recovery');
         expect(()=>game.toSaveSnapshot()).not.toThrow();
     });
     it('NPC does not defend against uncommitted player intent or unseen warnings',()=>{

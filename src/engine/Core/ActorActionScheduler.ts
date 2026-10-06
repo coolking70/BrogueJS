@@ -32,6 +32,7 @@ export interface ActorSubaction extends ActorSubactionDefinition {
     cancelled: boolean;
 }
 export interface ActorActionBundle {
+    owner: 'combat' | 'foundation';
     actionId: number;
     depth: number;
     decisionOwnerId: number;
@@ -41,6 +42,7 @@ export interface ActorActionBundle {
 }
 export interface ActorActionSchedulerState { schema: 1; bundles: ActorActionBundle[] }
 export interface ActorActionBundleDefinition {
+    owner: 'combat' | 'foundation';
     actionId: number;
     depth: number;
     decisionOwnerId: number;
@@ -93,6 +95,8 @@ export interface ActorActionSchedulerHost {
     leftDepth?(bundle: ReadonlyActorActionBundle): void;
     abandoned?(bundle: ReadonlyActorActionBundle): void;
     elapsed?(delta: number): void;
+    advanced?():void;
+    changed?():void;
     /** Must invalidate the enclosing recording/run on an unrolled-back engine exception. */
     onFault(error: Error): void;
 }
@@ -168,13 +172,13 @@ function frozen(bundle: ActorActionBundle): ReadonlyActorActionBundle {
 
 /** Pure codec validation. It does not repair mirrors, invoke providers or consume RNG. */
 export function validateActorActionSchedulerState(value: unknown, dueBoundaries: ReadonlySet<string> = new Set()): asserts value is ActorActionSchedulerState {
-    if (!record(value, ['schema', 'bundles']) || value.schema !== 1 || !dataArray(value.bundles)
+    if (!record(value, ['schema', 'bundles', ...(Object.prototype.hasOwnProperty.call(value, 'nextActionId') ? ['nextActionId'] : [])]) || value.schema !== 1 || !dataArray(value.bundles)
         || value.bundles.length > MAX_ACTOR_ACTION_BUNDLES) fail('invalid state');
     const actionIds = new Set<number>();
     const owners = new Set<number>();
     for (const bundle of value.bundles) {
-        if (!record(bundle, ['actionId', 'depth', 'decisionOwnerId', 'timeChargeOwnerId', 'elapsedActionTicks', 'subactions'])
-            || !integer(bundle.actionId, 1) || !integer(bundle.depth, 1, 40) || !integer(bundle.decisionOwnerId, 1)
+        if (!record(bundle, ['owner', 'actionId', 'depth', 'decisionOwnerId', 'timeChargeOwnerId', 'elapsedActionTicks', 'subactions'])
+            || !['combat', 'foundation'].includes(bundle.owner as string) || !integer(bundle.actionId, 1) || !integer(bundle.depth, 1, 40) || !integer(bundle.decisionOwnerId, 1)
             || bundle.timeChargeOwnerId !== bundle.decisionOwnerId || !integer(bundle.elapsedActionTicks, 0, MAX_ACTOR_ACTION_TICKS)
             || !dataArray(bundle.subactions) || bundle.subactions.length < 1
             || bundle.subactions.length > MAX_PARALLEL_ACTOR_ACTIONS
@@ -231,7 +235,7 @@ export function validateActorActionSchedulerState(value: unknown, dueBoundaries:
 }
 
 export function createActorActionBundle(definition: ActorActionBundleDefinition): ActorActionBundle {
-    if (!record(definition, ['actionId', 'depth', 'decisionOwnerId', 'timeChargeOwnerId', 'subactions'])
+    if (!['combat','foundation'].includes(definition.owner) || !record(definition, ['owner', 'actionId', 'depth', 'decisionOwnerId', 'timeChargeOwnerId', 'subactions'])
         || !dataArray(definition.subactions) || definition.subactions.length > MAX_PARALLEL_ACTOR_ACTIONS) fail('invalid action definition');
     for (const child of definition.subactions) {
         if (!record(child, ['sourceEntityId', 'sourcePartId', 'sourceFootprintVersion', 'phases',
@@ -242,7 +246,7 @@ export function createActorActionBundle(definition: ActorActionBundleDefinition)
             || child.phases.some(phase => !record(phase, ['kind', 'durationTicks', 'segmentIndex']))) fail('invalid subaction definition');
     }
     const bundle: ActorActionBundle = {
-        actionId: definition.actionId, depth: definition.depth, decisionOwnerId: definition.decisionOwnerId,
+        owner: definition.owner, actionId: definition.actionId, depth: definition.depth, decisionOwnerId: definition.decisionOwnerId,
         timeChargeOwnerId: definition.timeChargeOwnerId, elapsedActionTicks: 0,
         subactions: [...definition.subactions].sort(comparePart).map((child, index) => ({
             sourceEntityId: child.sourceEntityId, sourcePartId: child.sourcePartId,
@@ -293,7 +297,7 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
             fault = error instanceof Error ? error : new Error(String(error));
             host.onFault(fault);
             throw fault;
-        } finally { executing = false; }
+        } finally { executing = false; host.changed?.(); }
     }
     function foreground(bundle: ActorActionBundle): boolean { return host.isDepthActive?.(bundle.depth) ?? true; }
     function bundleOf(ownerId: number): ActorActionBundle | undefined {
@@ -314,17 +318,7 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
         synchronous(host.abandoned?.(frozen(bundle)));
     }
     function interrupt(child: ActorSubaction, bundle: ActorActionBundle, recoveryTicks: number): void {
-        if (!integer(recoveryTicks, 1, MAX_ACTOR_ACTION_TICKS)) fail('invalid break recovery');
-        const phase = child.phases[child.phaseIndex]!;
-        const consumed = phase.durationTicks - child.phaseRemainingTicks;
-        const delay = child.nativeRecoveryDelayTicks ?? 0;
-        const remaining = phase.segmentIndex === null ? Math.max(child.phaseRemainingTicks, recoveryTicks) : recoveryTicks + delay;
-        const duration = consumed + remaining;
-        const prefixDuration = child.phases.slice(0, child.phaseIndex).reduce((sum, item) => sum + item.durationTicks, 0);
-        if (prefixDuration + duration > MAX_ACTOR_ACTION_TICKS) fail('break recovery budget exceeded');
-        child.phases.splice(child.phaseIndex, child.phases.length - child.phaseIndex,
-            { kind: 'break-recovery', durationTicks: duration, segmentIndex: null });
-        child.phaseRemainingTicks = remaining;
+        interruptActorSubaction(child,bundle,recoveryTicks);
         synchronous(host.interrupted?.(Object.freeze({ ...child, phases: child.phases.map(phase => ({ ...phase })) }), frozen(bundle)));
     }
     function cancelDead(): void {
@@ -406,6 +400,7 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
                     for (const child of bundle.subactions) if (active(child)) child.phaseRemainingTicks -= delta;
                     mirror(bundle);
                 }
+                synchronous(host.advanced?.());
             });
         },
         checkpointTransaction() { const previousFault=fault; return () => { fault=previousFault; }; },
@@ -497,4 +492,19 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
             state = candidate;
         },
     };
+}
+
+/** Trusted scheduler formula, also used by detached codec test adapters. */
+export function interruptActorSubaction(child:ActorSubaction,_bundle:ActorActionBundle,recoveryTicks:number):void {
+        if (!integer(recoveryTicks, 1, MAX_ACTOR_ACTION_TICKS)) fail('invalid break recovery');
+        const phase = child.phases[child.phaseIndex]!;
+        const consumed = phase.durationTicks - child.phaseRemainingTicks;
+        const delay = child.nativeRecoveryDelayTicks ?? 0;
+        const remaining = phase.segmentIndex === null ? Math.max(child.phaseRemainingTicks, recoveryTicks) : recoveryTicks + delay;
+        const duration = consumed + remaining;
+        const prefixDuration = child.phases.slice(0, child.phaseIndex).reduce((sum, item) => sum + item.durationTicks, 0);
+        if (prefixDuration + duration > MAX_ACTOR_ACTION_TICKS) fail('break recovery budget exceeded');
+        child.phases.splice(child.phaseIndex, child.phases.length - child.phaseIndex,
+            { kind: 'break-recovery', durationTicks: duration, segmentIndex: null });
+        child.phaseRemainingTicks = remaining;
 }

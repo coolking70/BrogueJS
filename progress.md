@@ -160,3 +160,11 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 2026-10-06 polish-3-4：执行八项DEV/UI/日志收尾，不commit；Node24.19.0、NODE_OPTIONS3072、Vitest2workers。复用Game夹具标记与三类缺失日志新增4项回归在旧生产全部失败；已按新局预检后退役清标记、成功结算日志及窄屏样式修复，待相关门禁/截图验收。
 
 - polish-3-4最终：八项DEV/UI/日志修复已实现；最终boundary/type/build、54相关文件1035项、terrain源码守卫1项全部exit0，960输入前后完全一致，结束UTC2026-10-06T08:45:12Z。6新增行为回归；旧守卫/断言/夹具/基线/trace未改。首轮新SSR翻译桩type/build exit2后改用真实i18next实例，保留原批次并从头复跑全绿；中文报告docs/ext/polish-3-4.report.md。Vite监听EPERM、Chromium MachPort权限失败、浏览器清单为空，320/390/桌面与亮暗真实截图仍待维护者复验；未暂存/commit/push，任务书政策下未跑完整npm test或删除矩阵。证据/tmp/brogue-polish-3-4/final/。
+
+- 2026-10-07 当前授权 5A2：完整执行 docs/ext/phase5a2.task.md；已批准裁定，fixture/骨架避开菌丛与口粮；Node24.19.0/3GiB/2workers，相关门禁，不 commit。基线 8e946bb（任务基线 c3319ae）。动作根迁移实施中。
+
+- 2026-10-07 5A2最终：5A2a–f工作树候选完成；foundation7/wholeRun5/录像4来源2IDB2/combat1.6.0 schema4。真实SDK/harness/纤维工具骨架与石材fixture不依赖菌丛/口粮；中立clock/世界根/唯一Itemowner/事务/原生NPC/确认/CAS/auto_work审计已完成。相关77文件1381pass/2既有CE源码skip；全combat及关联giants54文件942pass/4fail（三黄金仅协议摘要，D11原240s并行超时，单独158.55s通过），归因重录后原自然守卫/arena/boundaries4文件16pass；最终8底座C5文件124pass、追加共存后transactions20pass，新增9文件126项最终全通过。最后NPC取消重入新守卫先反证2条取消fact、只修生产后退款/事实各一次。boundary/types/build exit0；经典新增P95 .052250ms、0营地 .133875ms；工作历史2049批新增P95 113.716500ms如实标成本限制。UR3/UR4与giants黄金仅已登记codec/foundation派生叶；报告docs/ext/phase5a2.report.md含21调用+定义及3直写审计、反事实、D15、5A2-S/5A3与5B冻结SHA。最终997输入SHA 5233e07ea47cbb8a851b13a8668f31b0b8706ca87b271531aa38815948354a5b；真实浏览器EPERM/MachPort、最大状态长局及5Z未验证。未暂存/commit/push；集成人commit位保留。
+
+- 2026-10-07 5A2审查修复授权：逐项复核H1–H3/M1–M5/L1–L11；维护者已裁定 scoped 写集、64终结摘要、accepted 事实、dirty 摘要及D1/D8≥2000批新增P95≤10ms。复现与性能原资产已读，保留全图oracle；SDK尚未派发，允许修订。相关门禁，不commit。
+
+- 2026-10-07 5A2审查修复完成：H1–H3/M1–M5/L1–L11逐项处理，保留全图oracle；新增24审查回归，最终相关3文件67项通过、其余相关分组与boundary/vue-tsc/build通过。SDK1 accepted与64终结摘要/定义指纹重新冻结；D1/D8各2049批新增P95 2.948333/3.171291ms，经典/0营地 .031208/.054667ms。最终1002输入SHA 922ca79ebe6892955a9922777df1a43f9d886b2f37b34cb430b7b1091e516ae1，测前后同树；报告phase5a2.report.md新增审查发现处理及失败批次/反事实/最终SHA。原HEAD8e946bb，未暂存/commit/push。

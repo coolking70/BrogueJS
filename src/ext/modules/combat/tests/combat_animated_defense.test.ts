@@ -62,7 +62,7 @@ function warning(game: Game, id: number) {
     expect(result).toBeDefined();
     expect(result.cells).toContainEqual({ ...game.player.loc });
     expect(game.isInputLocked()).toBe(false);
-    return state(game).scheduler.bundles.find(b => b.decisionOwnerId === id)!.subactions[0]!;
+    return game.actorActions!.bundles.find(b => b.decisionOwnerId === id)!.subactions[0]!;
 }
 function mechanical(game: Game) {
     const snapshot = json(game.toSnapshot()); snapshot.savedAt = 0;
@@ -143,7 +143,7 @@ describe('animated defense uses the real UI command and frame advancement', () =
             expect(resource(game).stamina).toBe(22);
             for (let count = 1; count <= 2; count++) {
                 const retainedState = state(game), retainedSource = source;
-                const retainedBundle = retainedState.scheduler.bundles.find(b => b.decisionOwnerId === source.id)!;
+                const retainedBundle = game.actorActions!.bundles.find(b => b.decisionOwnerId === source.id)!;
                 const old = json(retainedBundle);
                 const scheduler = productionActorActionScheduler(game)!;
                 const advance = vi.spyOn(scheduler, 'advanceActionTime');
@@ -161,7 +161,7 @@ describe('animated defense uses the real UI command and frame advancement', () =
                 advance.mockRestore();
                 expect(state(game)).toBe(retainedState);
                 expect(game.monsters.find(m => m.id === source.id)).toBe(retainedSource);
-                expect(state(game).scheduler.bundles).not.toContain(retainedBundle);
+                expect(game.actorActions!.bundles).not.toContain(retainedBundle);
                 expect(old.subactions[0]!.phaseRemainingTicks).toBe(10); // Detached historical data stays unchanged.
                 expect(retainedBundle.subactions[0]!.phaseRemainingTicks).toBe(0); // Retired live bundle did advance.
                 expect(source.ticksUntilTurn).toBe(10);
@@ -169,7 +169,7 @@ describe('animated defense uses the real UI command and frame advancement', () =
                 expect(defended).toHaveBeenLastCalledWith(source.id, game.player.id, game.depth);
                 expect(game.player.hp).toBe(30); expect(source.hp).toBe(sourceHp);
                 expect(timeSystem.currentTick).toBe(tick + 100); expect(game.stats.turns).toBe(turn + 1);
-                const next = state(game).scheduler.bundles.find(b => b.decisionOwnerId === source.id)!;
+                const next = game.actorActions!.bundles.find(b => b.decisionOwnerId === source.id)!;
                 expect(next.actionId).toBeGreaterThan(old.actionId);
                 expect(next.elapsedActionTicks).toBe(40);
                 expect(next.subactions[0]).toMatchObject({ phaseIndex: 0, phaseRemainingTicks: 10 });

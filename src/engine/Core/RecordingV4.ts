@@ -67,7 +67,7 @@ export interface RecordingV4 {
   mode: GameMode;
   initialLevel: LevelRef;
   extensions: ExtensionManifest | null;
-  codec: { wholeRun: 4; foundation: 6; origin: 2 };
+  codec: { wholeRun: 5; foundation: 7; origin: 2 };
   digestAlgorithm: 'sha256-c5-merkle-v1';
   digestChunk: 256;
   checkpointPeriod: 2048;
@@ -83,7 +83,7 @@ export interface ReplaySnapshotV4 {
   levelRef: LevelRef;
   prefixDigest: Digest;
   checkpoint: MechanicalDigest;
-  snapshotCodec: 'brogue-web-whole-run-v4';
+  snapshotCodec: 'brogue-web-whole-run-v5';
   snapshotDigest: Digest;
   world: GameSnapshot;
   inputState: RecordingInputStateV2;

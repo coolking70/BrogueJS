@@ -1,17 +1,18 @@
+import { validateWorldModule } from '../engine/Core/WorldDefinitions';
 import { FOUNDATION_PROTOCOL } from './descriptor';
 import type { ExtensionModule, ExtensionManifest, ExtensionRulesIdentity } from './types';
 import { validId, canonical, isJson } from './json';
 import { ExtensionCompatibilityError } from './compatibility';
 
 export class ExtensionRegistry {
-    private readonly factories = new Map<string, { version: string; create: () => ExtensionModule; rules?: ExtensionRulesIdentity }>();
-    register(id: string, version: string, create: () => ExtensionModule, rules?: ExtensionRulesIdentity): void {
+    private readonly factories = new Map<string, { version: string; create: () => ExtensionModule; rules?: ExtensionRulesIdentity; worldSdk?: number; locales?: Readonly<Record<string, Readonly<Record<string,string>>>> }>();
+    register(id: string, version: string, create: () => ExtensionModule, rules?: ExtensionRulesIdentity, worldSdk?: number, locales?: Readonly<Record<string, Readonly<Record<string,string>>>>): void {
         if (!validId(id) || !/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Invalid extension identity/version');
         if (this.factories.has(id)) throw new Error(`Duplicate extension: ${id}`);
         if (rules && (!Number.isSafeInteger(rules.schema) || rules.schema < 1 || rules.version !== version
             || !/^sha256:[a-f0-9]{64}$/.test(rules.fingerprint)
             || Object.keys(rules).some(key => !['schema', 'version', 'fingerprint'].includes(key)))) throw new Error('Invalid extension rules identity');
-        this.factories.set(id, { version, create, ...(rules ? { rules: Object.freeze(structuredClone(rules)) } : {}) });
+        this.factories.set(id, { version, create, worldSdk, locales, ...(rules ? { rules: Object.freeze(structuredClone(rules)) } : {}) });
     }
     /** Registration never runs factories. Enable only at a new-run/load boundary. */
     manifest(ids: readonly string[]): ExtensionManifest {
@@ -55,6 +56,8 @@ export class ExtensionRegistry {
         const modules = new Map(manifest.modules.map(({ id, version, rules }) => {
             const module = this.factories.get(id)!.create();
             if (module.id !== id || module.version !== version || canonical(module.rules) !== canonical(rules)) throw new Error('Extension factory identity mismatch');
+            const declaration=this.factories.get(id)!;
+            validateWorldModule(module,declaration.worldSdk,declaration.locales ? new Set(Object.values(declaration.locales).flatMap(l=>Object.keys(l))) : undefined);
             return [id, module];
         }));
         const ordered: ExtensionModule[] = [], visiting = new Set<string>(), visited = new Set<string>();

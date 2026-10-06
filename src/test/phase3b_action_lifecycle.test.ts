@@ -41,7 +41,7 @@ describe('3b production action lifetime',()=>{
         for(let index=0;index<phaseIndex;index++){
             const ticks=scheduler.nextActionBoundary()!;scheduler.advanceActionTime(ticks);scheduler.dispatchActorBoundary(game.player.id);
         }
-        const stamina=state.actors[0]!.stamina, snapshot=game.toSnapshot(),random=rng.getState(),before=structuredClone(state),turn=game.stats.turns;
+        const stamina=state.actors[0]!.stamina, snapshot=game.toSnapshot(),random=rng.getState(),before=structuredClone(state),beforeRoot=structuredClone(game.actorActions!),turn=game.stats.turns;
         expect(game.loadSnapshot(snapshot)).toBe(true);expect(rng.getState()).toEqual(random);
         expect(game.extensionRuntime!.actorActionBinding()!.state).toEqual(before);expect(game.isInputLocked()).toBe(true);
         const start={...game.player.loc};game.executeCommand('move',{x:1,y:0});expect(game.player.loc).toEqual(start);
@@ -49,8 +49,8 @@ describe('3b production action lifetime',()=>{
         game.update();
         const loaded=game.extensionRuntime!.actorActionBinding()!.state as unknown as ProductionActorAttackState;
         // 3c: the unchanged single payment is followed by 60 recovery ticks at 1/20.
-        expect(loaded.scheduler.bundles).toEqual([]);expect(loaded.actors[0]!.stamina).toBe(stamina+3);
-        expect(loaded.nextActionId).toBe(before.nextActionId);expect(prelude).not.toHaveBeenCalled();
+        expect(game.actorActions!.bundles).toEqual([]);expect(loaded.actors[0]!.stamina).toBe(stamina+3);
+        expect(game.actorActions!.nextActionId).toBe(beforeRoot.nextActionId);expect(prelude).not.toHaveBeenCalled();
         expect(game.stats.turns).toBe(turn+1);expect(sweep.mock.calls.filter(call=>call[0]===game.player)).toHaveLength(1);
         expect(game.isInputLocked()).toBe(false);game.update();expect(game.stats.turns).toBe(turn+1);
     });
@@ -67,7 +67,7 @@ describe('3b production action lifetime',()=>{
         expect(game.loadSnapshot(snapshot)).toBe(false);expect(game.player).toBe(player);expect(game.extensionRuntime).toBe(runtime);
     });
     it('turns forced source displacement into one positive recovery without releasing old cells',()=>{
-        const {game,state,scheduler}=scene(), source=state.scheduler.bundles[0]!.subactions[0]!;
+        const {game,state,scheduler}=scene(), source=game.actorActions!.bundles[0]!.subactions[0]!;
         scheduler.advanceActionTime(7);
         const cost=state.actors[0]!.stamina, random=rng.getState();
         commitCreatureAnchor(game.player,{x:game.player.x,y:game.player.y+1});
@@ -76,17 +76,17 @@ describe('3b production action lifetime',()=>{
         expect(source.phaseRemainingTicks).toBe(50); expect(game.player.ticksUntilTurn).toBe(50);
         expect(state.actions[0]!.subactions[0]!.lockedCells).toEqual([]);
         expect(state.actors[0]!.stamina).toBe(cost); expect(rng.getState()).toEqual(random);
-        validateActorActionSchedulerState(state.scheduler);
+        validateActorActionSchedulerState(game.actorActions!);
         scheduler.advanceActionTime(13); reconcileProductionActorActions(game);
         expect(source.phaseRemainingTicks).toBe(37);
         const snapshot=game.toSnapshot(); expect(game.loadSnapshot(snapshot)).toBe(true);
-        expect((game.extensionRuntime!.actorActionBinding()!.state as unknown as ProductionActorAttackState).scheduler).toEqual(state.scheduler);
+        expect(game.actorActions!).toEqual(snapshot.run.actorActions);
     });
     it('does not revive a pending attack after a source moves away and back before reconciliation',()=>{
-        const {game,state}=scene(),origin={...game.player.loc},version=state.scheduler.bundles[0]!.subactions[0]!.sourceFootprintVersion;
+        const {game,state}=scene(),origin={...game.player.loc},version=game.actorActions!.bundles[0]!.subactions[0]!.sourceFootprintVersion;
         commitCreatureAnchor(game.player,{x:origin.x,y:origin.y+1});commitCreatureAnchor(game.player,origin);
         reconcileProductionActorActions(game);
-        const child=state.scheduler.bundles[0]!.subactions[0]!;
+        const child=game.actorActions!.bundles[0]!.subactions[0]!;
         expect(child.sourceFootprintVersion).toBe(version);expect(child.phases[child.phaseIndex]!.kind).toBe('break-recovery');
         expect(state.actions[0]!.subactions[0]!.lockedCells).toEqual([]);
     });
@@ -95,7 +95,7 @@ describe('3b production action lifetime',()=>{
         const monster=new Monster(game.player.x-1,game.player.y,(monsters as MonsterData[]).find(row=>row.id==='rat')!);
         monster.state=MonsterState.HUNTING;monster.ticksUntilTurn=0;game.monsters.push(monster);game.extensionRuntime!.attachCreature(monster);
         expect(selectNativeActorAction(game,monster.id)).toBe('handled');
-        const bundle=state.scheduler.bundles.find(row=>row.decisionOwnerId===monster.id)!,child=bundle.subactions[0]!;
+        const bundle=game.actorActions!.bundles.find(row=>row.decisionOwnerId===monster.id)!,child=bundle.subactions[0]!;
         const geometry=JSON.stringify(game.spatialOf(monster));
         (game as any).polymorphBoltTarget(monster);
         expect(monster.typeId).not.toBe('rat');expect(JSON.stringify(game.spatialOf(monster))).toBe(geometry);
@@ -112,12 +112,12 @@ describe('3b production action lifetime',()=>{
         scheduler.advanceActionTime(50);
         expect(scheduler.dispatchActorBoundary(game.player.id)).toBe('native-fallback');
         expect(sweep).toHaveBeenCalledExactlyOnceWith(game.player,61);
-        expect(state.scheduler.bundles).toEqual([]); expect(state.actions).toEqual([]);
+        expect(game.actorActions!.bundles).toEqual([]); expect(state.actions).toEqual([]);
     });
     it('retires a dead owner without a terminal sweep or delayed release',()=>{
         const {game,state,scheduler}=scene(),sweep=vi.spyOn(game as any,'sweepDeepWaterItem');
         game.player.hp=0; scheduler.cancelDeadActions();
-        expect(state.scheduler.bundles).toEqual([]); expect(state.actions).toEqual([]);
+        expect(game.actorActions!.bundles).toEqual([]); expect(state.actions).toEqual([]);
         expect(sweep).not.toHaveBeenCalled(); expect(scheduler.nextActionBoundary()).toBeNull();
     });
     it('cancels active releases on real floor departure and freezes cached recovery through return',()=>{
@@ -125,7 +125,7 @@ describe('3b production action lifetime',()=>{
         const monster=new Monster(game.player.x-1,game.player.y,(monsters as MonsterData[]).find(row=>row.id==='rat')!);
         monster.state=MonsterState.HUNTING;monster.ticksUntilTurn=0;game.monsters.push(monster);game.extensionRuntime!.attachCreature(monster);
         expect(selectNativeActorAction(game,monster.id)).toBe('handled');
-        const bundle=state.scheduler.bundles.find(row=>row.decisionOwnerId===monster.id)!;
+        const bundle=game.actorActions!.bundles.find(row=>row.decisionOwnerId===monster.id)!;
         scheduler.advanceActionTime(7);
         game.depth=2;(game as any).generateDepth(false,false);
         expect(game.levels.get(1)!.monsters).toContain(monster);
@@ -154,7 +154,7 @@ describe('3b production action lifetime',()=>{
         (game as any).playerTurnEnded();
         while(game.isAdvancing)game.tickAdvancement(1000);
         expect(game.depth).toBe(2);expect(game.isInputLocked()).toBe(false);expect(game.player.ticksUntilTurn).toBe(0);
-        expect(state.scheduler.bundles).toEqual([]);expect(state.actions).toEqual([]);expect(game.stats.turns).toBe(turn+1);
+        expect(game.actorActions!.bundles).toEqual([]);expect(state.actions).toEqual([]);expect(game.stats.turns).toBe(turn+1);
         expect(sweep.mock.calls.filter(call=>call[0]===game.player)).toHaveLength(0);
         expect(()=>game.toSnapshot()).not.toThrow();
     });
@@ -167,9 +167,9 @@ describe('3b production action lifetime',()=>{
         expect(game.loadSnapshot(valid)).toBe(true);expect(productionActorActionScheduler(game)!.isBusy(game.player.id)).toBe(true);
     });
     it('captures detached settled phase boundaries while display observes no random draws',()=>{
-        const {game,state}=scene(), phases:string[]=[], randomStates:ReturnType<typeof rng.getState>[]=[];
+        const {game}=scene(), phases:string[]=[], randomStates:ReturnType<typeof rng.getState>[]=[];
         const unbind=bindPresentationObserver(game,{reset(){},blocked(){return false;},observe(){
-            const source=state.scheduler.bundles[0]?.subactions[0];
+            const source=game.actorActions!.bundles[0]?.subactions[0];
             phases.push(source?.phases[source.phaseIndex]?.kind??'idle');
             const before=rng.getState(); game.extensionRuntime!.readModuleView('combat'); randomStates.push(rng.getState()); expect(rng.getState()).toEqual(before);
         }});
@@ -178,8 +178,8 @@ describe('3b production action lifetime',()=>{
         expect(phases).toContain('inter-segment');expect(phases).toContain('recovery');expect(phases[phases.length - 1]).toBe('idle');expect(randomStates.length).toBeGreaterThan(2);
     });
     it('refuses pending attacks on cached layers even if the timer mirror matches',()=>{
-        const {game,state}=scene();
-        expect(()=>validateProductionActorActionState(state.scheduler,{depth:2,player:game.player,levels:[]})).toThrow();
+        const {game}=scene();
+        expect(()=>validateProductionActorActionState(game.actorActions!,{depth:2,player:game.player,levels:[]})).toThrow();
     });
 });
 
@@ -193,7 +193,7 @@ describe('3b single-clock cached scheduler policy',()=>{
             writeOwnerTicks:(id,ticks)=>{actors.get(id)!.ticksUntilTurn=ticks;},isDepthActive:depth=>depth===currentDepth,
             isSourceValid:()=>true,resolveSegment:()=>{},finishAction:()=>{},onFault:error=>{throw error;},
         });
-        for(const [id,actor] of actors)scheduler.commitBundle(createActorActionBundle({actionId:id,depth:actor.depth,decisionOwnerId:id,timeChargeOwnerId:id,
+        for(const [id,actor] of actors)scheduler.commitBundle(createActorActionBundle({owner:'combat', actionId:id,depth:actor.depth,decisionOwnerId:id,timeChargeOwnerId:id,
             subactions:[{sourceEntityId:id,sourcePartId:'body',sourceFootprintVersion:'test',phases:[{kind:'recovery',durationTicks:50,segmentIndex:null}]}]}));
         scheduler.advanceActionTime(17);
         expect(actors.get(1)!.ticksUntilTurn).toBe(33); expect(actors.get(2)!.ticksUntilTurn).toBe(50);

@@ -206,8 +206,8 @@ describe('3c command decisions, recovery and native defense boundaries', () => {
         expect(game.player.loc).toEqual({ x: 21, y: 15 }); expect(timeSystem.currentTick - tick).toBe(80);
         expect(resource(game)).toMatchObject({ stamina: 22, regenRemainder: 0, regenDelayRemaining: 0,
             dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0, poise:12,poiseRecoveryRemainder:0,poiseRecoveryDelayRemaining:0,parryRemainingTicks:0,parryRecoveryRemainingTicks:0,parryFacing:null,staggerRemainingTicks:0 });
-        expect(state(game).schema).toBe(3); expect(state(game).nextActionId).toBe(1);
-        expect(state(game).scheduler.bundles).toEqual([]); expect(game.player.ticksUntilTurn).toBe(0); expect(game.isInputLocked()).toBe(false);
+        expect(state(game).schema).toBe(4); expect(game.actorActions!.nextActionId).toBe(1);
+        expect(game.actorActions!.bundles).toEqual([]); expect(game.player.ticksUntilTurn).toBe(0); expect(game.isInputLocked()).toBe(false);
     });
 
     it('protection includes the last positive tick, expires before contact, and recovery keeps the actor ineligible', () => {

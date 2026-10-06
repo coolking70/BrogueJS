@@ -1,3 +1,6 @@
+import { markRecordingRoot } from '../../ext/recordingRevisions';
+import {actorActionIdentityCheckpoint} from '../../ext/actorActionIdentity';
+import type {Json} from '../../ext/types';
 import type { Creature } from '../../entities/Creature';
 import { Monster, MonsterState } from '../../entities/Monster';
 import { actorSourceRevision, spatialOf } from '../Movement/CreatureSpatial';
@@ -20,7 +23,7 @@ export interface ActorActionProductionWorld {
 }
 export type ActorActionInterruptionReason = 'source-changed' | 'incapacitated' | 'layer-change';
 export interface ProductionActorActionOptions {
-    /** The module-owned state object is the sole mechanical clock. */
+    /** Production binds Game.actorActions, the sole neutral mechanical clock. */
     state: ActorActionSchedulerState;
     select?: (actorId: number, scope: ActorActionScope) => ActorActionDispatch;
     resolveSegment: (boundary: Readonly<ActorActionBoundary>) => void;
@@ -28,6 +31,7 @@ export interface ProductionActorActionOptions {
     shouldSweep?: (bundle: ReadonlyActorActionBundle) => boolean;
     breakRecoveryTicks: (source: ReadonlyActorActionBundle['subactions'][number], bundle: ReadonlyActorActionBundle) => number;
     interrupted?: (source: ReadonlyActorActionBundle['subactions'][number], bundle: ReadonlyActorActionBundle, reason: ActorActionInterruptionReason) => void;
+    advanced?:()=>void;
     elapsed?: (delta: number, depth: number) => void;
     sourceChanged?: (sourceEntityId:number) => void;
     /** Non-attack actions may own interruption and settle at the shared safe point. */
@@ -143,7 +147,8 @@ export function createProductionActorActionSession(game: Game, options: Producti
             binding.changedSources.delete(source.sourceEntityId);
             options.interrupted?.(source, bundle, binding.interruption);
         },
-        elapsed: delta => options.elapsed?.(delta, game.depth),
+        changed:()=>markRecordingRoot(options.state),
+        elapsed: delta => options.elapsed?.(delta, game.depth),advanced:()=>options.advanced?.(),
         onFault: error => { invalidateProductionActorActionSession(game); game.invalidateActorActionRun(error); },
     };
     binding.scheduler = createActorActionScheduler(options.state, host);
@@ -212,7 +217,7 @@ export function checkpointProductionActorActions(game:Game):()=>void {
     const binding=bindings.get(game);if(!binding)return()=>{};
     const changed=new Set(binding.changedSources),interruption=binding.interruption;
     const suspendedDepth=binding.suspendedDepth,resolving=binding.resolving,resumePending=binding.resumePending;
-    const restoreScheduler=binding.scheduler.checkpointTransaction();
+    const restoreScheduler=binding.scheduler.checkpointTransaction(),root=actorActionIdentityCheckpoint(binding.options.state as unknown as Json);
     return()=>{binding.changedSources=new Set(changed);binding.interruption=interruption;
-        binding.suspendedDepth=suspendedDepth;binding.resolving=resolving;binding.resumePending=resumePending;restoreScheduler();};
+        binding.suspendedDepth=suspendedDepth;binding.resolving=resolving;binding.resumePending=resumePending;root.restore();restoreScheduler();};
 }

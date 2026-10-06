@@ -16,5 +16,5 @@ export function combatAttackDefinitions(pack: CombatPack): ActorAttackDefinition
     };
 }
 export function initialProductionCombatState(): ProductionActorAttackState {
-    return {schema:3,revision:0,nextActionId:1,bonfires:initialBonfireState(),scheduler:{schema:1,bundles:[]},actions:[],actors:[]};
+    return {schema:4,revision:0,bonfires:initialBonfireState(),actions:[],actors:[]};
 }

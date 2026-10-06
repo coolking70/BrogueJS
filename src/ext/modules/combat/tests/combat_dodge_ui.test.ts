@@ -1,3 +1,4 @@
+import type {ActorActionBundle} from '../../../../engine/Core/ActorActionScheduler';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createSSRApp, effectScope, nextTick, ref, type EffectScope } from 'vue';
 import { renderToString } from '@vue/server-renderer';
@@ -51,8 +52,8 @@ afterEach(() => {
 describe('EXT-3c public stamina and dodge controls', () => {
     it('projects the same player resource ledger and shared costs without mutating state or RNG', () => {
         const definitions = combatAttackDefinitions(loadCombatDefinitionPack()), state = initialProductionCombatState();
-        const policy = definitions.resourcePolicies[0]!;
-        const observe = () => projectCombatView(state as unknown as ReadonlyJson, definitions, 1, 7) as unknown as {
+        const policy = definitions.resourcePolicies[0]!,bundles:ActorActionBundle[]=[];
+        const observe = () => projectCombatView(state as unknown as ReadonlyJson, definitions, 1, 7,undefined,undefined,bundles) as unknown as {
             schema: number; resources: ReturnType<typeof resources>; actions: { id: string; cost: number; canUse: boolean; unavailableKey?: string }[];
         };
         const before = { state: JSON.stringify(state), rng: rng.getState() }, initial = observe();
@@ -71,7 +72,7 @@ describe('EXT-3c public stamina and dodge controls', () => {
         expect(recovering.resources.dodgeRemainingTicks).toBe(10);
         expect(recovering.actions.every(action => !action.canUse && action.unavailableKey === 'ext.combat.ui.busy')).toBe(true);
         state.actors[0]!.dodgeRecoveryRemainingTicks = 0; state.actors[0]!.dodgeRemainingTicks = 0;
-        state.scheduler.bundles.push({ actionId: 1, depth: 1, decisionOwnerId: 7, timeChargeOwnerId: 7, elapsedActionTicks: 0, subactions: [] });
+        bundles.push({ owner:'combat',actionId: 1, depth: 1, decisionOwnerId: 7, timeChargeOwnerId: 7, elapsedActionTicks: 0, subactions: [] });
         expect(observe().actions.every(action => !action.canUse)).toBe(true);
         expect(projectCombatView()).toEqual({ schema: 1, telegraphs: [], resources: null, actions: [] });
     });

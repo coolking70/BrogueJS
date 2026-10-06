@@ -206,32 +206,32 @@ describe('4c production fixed zones', () => {
         const { game, boss } = scene(['giants', 'combat']);
         const plan = preparePhasedAttackCommand(game, command)!; expect(plan).toBeTruthy();
         expect(commitPhasedAttackCommand(game, plan)).toBe(true);
-        expect(state(game).scheduler.bundles).toHaveLength(1); hit(game, boss, 60);
-        const child = state(game).scheduler.bundles[0]!.subactions[0]!;
+        expect(game.actorActions!.bundles).toHaveLength(1); hit(game, boss, 60);
+        const child = game.actorActions!.bundles[0]!.subactions[0]!;
         expect(child.phases[child.phaseIndex]!.kind).toBe('break-recovery');
         expect(state(game).actions[0]!.subactions[0]!.lockedCells).toEqual([]);
         const binding = game.extensionRuntime!.actorActionBinding()!; validateProductionActorAttackState(binding.state, binding.definition);
         const saved = json(game.toSaveSnapshot()); expect(game.loadSnapshot(saved, message => { throw new Error(message); })).toBe(true);
-        expect(state(game).scheduler.bundles[0]!.subactions[0]!.phases[0]!.kind).toBe('break-recovery');
+        expect(game.actorActions!.bundles[0]!.subactions[0]!.phases[0]!.kind).toBe('break-recovery');
     });
     it.each(installedOptionalModules(['combat']))('prepared phased confirmation becomes stale on zone changes before payment', () => {
         const { game, boss } = scene(['giants', 'combat']); const plan = preparePhasedAttackCommand(game, command)!;
         hit(game, boss, 60); expect(() => commitPhasedAttackCommand(game, plan)).toThrow('Stale');
         expect(state(game).actors.filter(actor => actor.actorId === game.player.id)).toEqual([]);
         expect(state(game).actors.find(actor => actor.actorId === boss.id)).toMatchObject({ stamina: 24, poise: 6 });
-        expect(state(game).scheduler.bundles).toEqual([]);
+        expect(game.actorActions!.bundles).toEqual([]);
     });
     it.each(installedOptionalModules(['combat']))('a broken source cancels its pending native windup and disables its declared attack after fallback ends', () => {
         configure(false, undefined, true); const { game, boss } = scene(['giants', 'combat']);
         boss.ticksUntilTurn = 50; game.executeCommand('wait');
-        expect(state(game).scheduler.bundles.some(b => b.decisionOwnerId === boss.id)).toBe(true);
+        expect(game.actorActions!.bundles.some(b => b.decisionOwnerId === boss.id)).toBe(true);
         hit(game, boss, 60);
-        const child = state(game).scheduler.bundles.find(b => b.decisionOwnerId === boss.id)!.subactions[0]!;
+        const child = game.actorActions!.bundles.find(b => b.decisionOwnerId === boss.id)!.subactions[0]!;
         expect(child.phases[child.phaseIndex]!.kind).toBe('break-recovery');
-        const next = state(game).nextActionId;
+        const next = game.actorActions!.nextActionId;
         for (let i = 0; i < 5; i++) game.executeCommand('wait');
         expect(boss.spatial!.actionLockInTicks).toBeUndefined();
-        expect(state(game).nextActionId).toBe(next);
+        expect(game.actorActions!.nextActionId).toBe(next);
         expect(game.loadSnapshot(json(game.toSaveSnapshot()))).toBe(true);
     });
     it.each(installedOptionalModules(['combat']))('provider failure preserves shielding, corpse absorption and the pending native plan', () => {

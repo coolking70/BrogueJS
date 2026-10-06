@@ -39,20 +39,20 @@ describe('EXT-3b public telegraph projection and drawing', () => {
         const attack = definitions.attacks.find(attack => attack.id === 'fixture.double-thrust')!;
         attack.segments[0]!.parryable = false; attack.segments[1]!.parryable = true;
         const state = initialProductionCombatState();
-        const bundle = createActorActionBundle({ actionId: 1, depth: 1, decisionOwnerId: 10, timeChargeOwnerId: 10,
+        const bundle = createActorActionBundle({owner:'combat',  actionId: 1, depth: 1, decisionOwnerId: 10, timeChargeOwnerId: 10,
             subactions: [{ sourceEntityId: 10, sourcePartId: 'body', sourceFootprintVersion: 'fixture-v1',
                 phases: [{ kind: 'windup', durationTicks: attack.windupTicks, segmentIndex: 0 },
                     { kind: 'inter-segment', durationTicks: attack.segments[1]!.delayTicks, segmentIndex: 1 },
                     { kind: 'recovery', durationTicks: attack.recoveryTicks, segmentIndex: null }] }] });
         const source = bundle.subactions[0]!, segment = attack.segments[0]!;
-        state.scheduler.bundles.push(bundle);
+        const bundles=[bundle];
         state.actions.push({ actionId: 1, profileId: definitions.playerProfileId, paidCost: attack.cost,
             subactions: [{ sourceSubactionId: source.sourceSubactionId, attackId: attack.id, facing: 'e',
                 lockedCells: [{ x: 11, y: 10 }], approvedRisks: [],
                 shape: { schema: 1, kind: 'footprint-offset-union', offsets: structuredClone(segment.shape.offsets.e),
                     selfExclusion: segment.shape.selfExclusion } }] });
         source.phaseRemainingTicks = 17;
-        const project = (depth = 1) => projectCombatView(state as unknown as Json, definitions, depth, 1) as { telegraphs: Json[] };
+        const project = (depth = 1) => projectCombatView(state as unknown as Json, definitions, depth, 1,undefined,undefined, bundles) as { telegraphs: Json[] };
         const before = { state: structuredClone(state), definitions: structuredClone(definitions), rng: rng.getState() };
         const current = project().telegraphs;
         const first = { actionId: 1, sourceSubactionId: source.sourceSubactionId, sourceEntityId: 10,

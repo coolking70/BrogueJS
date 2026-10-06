@@ -1,6 +1,39 @@
+import { validateWorldWorkRoots } from './worldWorkSchema';
+import {
+  World5Error,
+  uint,
+  checkedAdd,
+  exact,
+  compareLevelRefs,
+  levelKey,
+  requireDungeon
+} from './worldBasics';
+export {
+  World5Error,
+  uint,
+  checkedAdd,
+  exact,
+  validateLevelRef,
+  levelKey,
+  compareLevelRefs,
+  requireDungeon
+} from './worldBasics';
+import type {
+  ContainerRecord,
+  ResourceNodeRecord,
+  StationRecord,
+  WorkTicket,
+  TerminalWorkTicket,
+  StartupGrantReceipt
+} from './worldSdk';
+export type MutableWorld<T> = T extends readonly (infer U)[]
+  ? MutableWorld<U>[]
+  : T extends object
+    ? { -readonly [K in keyof T]: MutableWorld<T[K]> }
+    : T;
 /** C5-1/1.0.0 r2: foundation-owned identities and persistent economic roots. */
 import { validId } from './json';
-import { c5Canonical } from '../engine/Core/WorldCanonical';
+import { c5Canonical } from './worldJson';
 import type { DeferredOutput } from '../engine/Core/WorldSettlement';
 export type LevelRef =
   | Readonly<{ kind: 'dungeon'; depth: number }>
@@ -91,94 +124,21 @@ export interface World5Snapshot {
   offline: OfflineLedger[];
   receipts: WorldReceipt[];
   structures: never[];
-  containers: never[];
-  nodes: never[];
-  stations: never[];
-  tickets: never[];
+  containers: MutableWorld<ContainerRecord>[];
+  nodes: MutableWorld<ResourceNodeRecord>[];
+  stations: MutableWorld<StationRecord>[];
+  tickets: MutableWorld<WorkTicket>[];
+  terminalTickets: MutableWorld<TerminalWorkTicket>[];
+  definitionsFingerprint: Record<string, string>;
   restPoints: never[];
-  pendingPlacements: never[];
-  startupGrants: never[];
-}
-export class World5Error extends Error {
-  constructor(
-    readonly code:
-      | 'C5_BAD_PAYLOAD'
-      | 'C5_BAD_REFERENCE'
-      | 'C5_BAD_VERSION'
-      | 'C5_BAD_OWNERSHIP'
-      | 'C5_BAD_TIME'
-      | 'C5_OVERFLOW'
-      | 'C5_UNSUPPORTED'
-      | 'C5_STALE'
-      | 'C5_PROVIDER'
-      | 'C5_TRANSACTION'
-      | 'C5_TERMINAL',
-    readonly field: string | null = null
-  ) {
-    super(code + (field ? `: ${field}` : ''));
-  }
-}
-export function uint(value: unknown, field: string, minimum = 0): asserts value is number {
-  if (!Number.isSafeInteger(value) || (value as number) < minimum)
-    throw new World5Error('C5_BAD_PAYLOAD', field);
-}
-export function checkedAdd(a: number, b: number): number {
-  uint(a, 'add.left');
-  uint(b, 'add.right');
-  if (b > Number.MAX_SAFE_INTEGER - a) throw new World5Error('C5_OVERFLOW');
-  return a + b;
-}
-export function exact(
-  value: unknown,
-  keys: string,
-  field: string
-): asserts value is Record<string, unknown> {
-  if (
-    !value ||
-    typeof value !== 'object' ||
-    Array.isArray(value) ||
-    ![Object.prototype, null].includes(Object.getPrototypeOf(value)) ||
-    Reflect.ownKeys(value).some(
-      (k) =>
-        typeof k !== 'string' ||
-        !Object.getOwnPropertyDescriptor(value, k)?.enumerable ||
-        !('value' in Object.getOwnPropertyDescriptor(value, k)!)
-    ) ||
-    Object.keys(value).sort().join(',') !== keys.split(',').sort().join(',')
-  )
-    throw new World5Error('C5_BAD_PAYLOAD', field);
-}
-export function validateLevelRef(value: unknown): asserts value is LevelRef {
-  if (!value || typeof value !== 'object') throw new World5Error('C5_BAD_PAYLOAD', 'levelRef');
-  const kind = Object.getOwnPropertyDescriptor(value, 'kind');
-  if (!kind || !('value' in kind)) throw new World5Error('C5_BAD_PAYLOAD', 'levelRef.kind');
-  const ref = value as Record<string, unknown>;
-  if (kind.value === 'dungeon') {
-    exact(ref, 'kind,depth', 'levelRef');
-    uint(ref.depth, 'depth', 1);
-    if (ref.depth > 40) throw new World5Error('C5_BAD_PAYLOAD', 'depth');
-  } else if (kind.value === 'site') {
-    exact(ref, 'kind,id', 'levelRef');
-    if (!validId(ref.id) || ref.id.length > 128) throw new World5Error('C5_BAD_PAYLOAD', 'site.id');
-  } else throw new World5Error('C5_BAD_PAYLOAD', 'levelRef.kind');
-}
-export function levelKey(ref: LevelRef): string {
-  validateLevelRef(ref);
-  return ref.kind === 'dungeon' ? `dungeon.${ref.depth}` : `site.${ref.id}`;
-}
-export function compareLevelRefs(a: LevelRef, b: LevelRef): number {
-  validateLevelRef(a);
-  validateLevelRef(b);
-  if (a.kind !== b.kind) return a.kind === 'dungeon' ? -1 : 1;
-  if (a.kind === 'dungeon' && b.kind === 'dungeon') return a.depth - b.depth;
-  const x = levelKey(a),
-    y = levelKey(b);
-  return x < y ? -1 : x > y ? 1 : 0;
-}
-export function requireDungeon(ref: LevelRef): number {
-  validateLevelRef(ref);
-  if (ref.kind !== 'dungeon') throw new World5Error('C5_UNSUPPORTED', 'site');
-  return ref.depth;
+  pendingPlacements: {
+    owner: string;
+    definitionId: string;
+    levelRef: LevelRef;
+    ordinal: number;
+    retriesLeft: 0 | 1;
+  }[];
+  startupGrants: MutableWorld<StartupGrantReceipt>[];
 }
 export function createWorld5(): World5Snapshot {
   return {
@@ -197,6 +157,8 @@ export function createWorld5(): World5Snapshot {
     nodes: [],
     stations: [],
     tickets: [],
+    terminalTickets: [],
+    definitionsFingerprint: {},
     restPoints: [],
     pendingPlacements: [],
     startupGrants: []
@@ -273,24 +235,16 @@ export function validateWorld5(
   }
   exact(
     value,
-    'schema,revision,simulationTicks,nextWorldId,nextPlanId,levels,orders,residents,offline,receipts,structures,containers,nodes,stations,tickets,restPoints,pendingPlacements,startupGrants',
+    'schema,revision,simulationTicks,nextWorldId,nextPlanId,levels,orders,residents,offline,receipts,structures,containers,nodes,stations,tickets,terminalTickets,definitionsFingerprint,restPoints,pendingPlacements,startupGrants',
     'world5'
   );
   const w = value as unknown as World5Snapshot;
   if (w.schema !== 1) throw new World5Error('C5_BAD_VERSION', 'world5.schema');
   for (const name of ['revision', 'simulationTicks', 'nextWorldId', 'nextPlanId'] as const)
     uint(w[name], name, name.startsWith('next') ? 1 : 0);
-  for (const name of [
-    'structures',
-    'containers',
-    'nodes',
-    'stations',
-    'tickets',
-    'restPoints',
-    'pendingPlacements',
-    'startupGrants'
-  ] as const)
+  for (const name of ['structures', 'restPoints'] as const)
     if (!Array.isArray(w[name]) || w[name].length) throw new World5Error('C5_UNSUPPORTED', name);
+  validateWorldWorkRoots(w, context.owners);
   const list = (v: unknown, n: number, f: string): void => {
     if (!Array.isArray(v) || v.length > n) throw new World5Error('C5_BAD_PAYLOAD', f);
   };
@@ -488,8 +442,14 @@ export function validateWorld5(
       ledger = w.offline.some((o) => levelKey(o.levelRef) === k);
     const reasons: PersistenceReason[] = [
       ...(ledger ? ['camp' as const] : []),
+      ...(w.containers.some((r) => levelKey(r.levelRef) === k) ? ['container' as const] : []),
       ...(w.residents.some((r) => levelKey(r.levelRef) === k) ? ['resident' as const] : []),
-      ...(w.orders.some((o) => levelKey(o.levelRef) === k) ? ['work' as const] : [])
+      ...(w.orders.some((o) => levelKey(o.levelRef) === k) ||
+      w.tickets.some(
+        (t) => levelKey(t.levelRef) === k && ['working', 'suspended'].includes(t.status)
+      )
+        ? ['work' as const]
+        : [])
     ];
     if (
       JSON.stringify(l.persistenceReasons) !== JSON.stringify(reasons) ||
@@ -512,7 +472,7 @@ export function validateWorld5(
       r.identity.length > 256 ||
       !r.identity.length ||
       r.tick > w.simulationTicks ||
-      r.kind !== 'offline' ||
+      !['offline', 'work', 'startup', 'placement', 'transfer'].includes(r.kind) ||
       !['completed', 'interrupted', 'skipped'].includes(r.result) ||
       (r.reason !== null && typeof r.reason !== 'string')
     )

@@ -190,7 +190,7 @@ describe.each(installedGiants)('3c explicit dodge capability on the installed 4b
         expect(rotate).toHaveBeenCalledTimes(1); expect(rotate.mock.calls[0]![0]).toBe(source);
         expect(turns).toHaveLength(1); expect(turns[0]!.before).toEqual(turns[0]!.after);
         expect(turns[0]!.cost).toBe(source.movementSpeed); expect(source.spatial!.pose).toBe('r0');
-        expect(state(game).scheduler.bundles).toEqual([]); expect(resource(game, source.id)).toBeUndefined();
+        expect(game.actorActions!.bundles).toEqual([]); expect(resource(game, source.id)).toBeUndefined();
         expect(isActorDodgeProtected(game, source.id)).toBe(false);
     });
 
@@ -218,6 +218,6 @@ describe.each(installedGiants)('3c explicit dodge capability on the installed 4b
         expect(rng.getState()).toEqual(random); expect(getNextEntityId()).toBe(id);
         source.ticksUntilTurn = 0;
         expect(prepareActorDodge(game, source.id, 'e')).toBeNull(); expect(isActorDodgeProtected(game, source.id)).toBe(false);
-        expect(state(game).scheduler.bundles).toEqual([]);
+        expect(game.actorActions!.bundles).toEqual([]);
     });
 });

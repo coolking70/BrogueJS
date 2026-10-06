@@ -1,3 +1,4 @@
+import {createActorActionsRoot} from './ActorActionsRoot';
 import { actorActionRecord } from './ActorActionData';
 import { markActorActionFixture } from './ActorActionSession';
 import type { Game, ControlledActionRisk } from './Game';
@@ -51,8 +52,9 @@ export class ActorActionAuthority {
     private readonly consumed = new WeakSet<ActorActionPlan>();
     private sessionRevision = 1;
     private closed = false;
+    private readonly actionRoot;
     constructor(private readonly game: Game, private readonly resources: ActorActionResources, private readonly sink: ActorActionSink) {
-        validateActorActionResources(resources);
+        validateActorActionResources(resources);this.actionRoot=game.actorActions??createActorActionsRoot();this.actionRoot.nextActionId=Math.max(this.actionRoot.nextActionId,resources.nextActionId);
     }
     private actor(id: number): Creature | undefined { return id === this.game.player.id ? this.game.player : this.game.monsters.find(m => m.id === id); }
     private facts(source: Creature): string {
@@ -81,7 +83,7 @@ export class ActorActionAuthority {
         const plan: ActorActionPlan = deepFreeze({ request, revision: this.resources.revision,
             sessionRevision: this.sessionRevision, sourceFootprintVersion: sourceFootprintVersion(view), depth: this.game.depth,
             lockedCells, risks: this.game.prepareActorAttackRisks(source.id, lockedCells),
-            bundle: createActorActionBundle({ actionId: this.resources.nextActionId, depth: this.game.depth, decisionOwnerId: source.id,
+            bundle: createActorActionBundle({owner:'combat',  actionId: this.actionRoot.nextActionId, depth: this.game.depth, decisionOwnerId: source.id,
                 timeChargeOwnerId: source.id, subactions: [{ sourceEntityId: source.id, sourcePartId: view.partId ?? 'body', sourceFootprintVersion: sourceFootprintVersion(view),
                     phases: [{ kind: 'windup', durationTicks: request.windupTicks, segmentIndex: 0 },
                         { kind: 'recovery', durationTicks: request.recoveryTicks, segmentIndex: null }] }] }) });
@@ -108,16 +110,16 @@ export class ActorActionAuthority {
                 this.consumed.add(plan); return { status: 'declined' };
             }
         }
-        const before = { ...this.resources };
+        const before = { ...this.resources },nextActionId=this.actionRoot.nextActionId;
         this.consumed.add(plan);
         try {
             this.resources.stamina -= plan.request.cost;
-            this.resources.revision++; this.resources.nextActionId++;
+            this.resources.revision++;this.actionRoot.nextActionId++;this.resources.nextActionId=this.actionRoot.nextActionId;
             this.sink.commitBundle(structuredClone(plan.bundle));
             this.sessionRevision++;
             return { status: 'committed', actionId: plan.bundle.actionId };
         } catch (error) {
-            Object.assign(this.resources, before); this.closed = true;
+            Object.assign(this.resources, before);this.actionRoot.nextActionId=nextActionId; this.closed = true;
             // No world-resolution callback has run at this commit point. The
             // scheduler must validate/commit its own bounded timer write atomically.
             throw error;

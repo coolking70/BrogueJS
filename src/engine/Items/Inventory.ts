@@ -1,3 +1,4 @@
+import { inventoryReservedSlots, worldItemMaxStack } from './WorldItems';
 /**
  * src/engine/Items/Inventory.ts
  * Manages picking up, dropping, and carrying items
@@ -12,11 +13,13 @@ export class Inventory {
     /** CE numberOfItemsInPack: ammunition and same-depth gems occupy one place per stack. */
     public packCount(): number {
         return this.items.reduce((count, item) => count +
-            ((item.category === ItemCategory.WEAPON || item.category === ItemCategory.GEM) ? 1 : item.quantity), 0);
+            ((item.category === ItemCategory.WEAPON || item.category === ItemCategory.GEM || item.category === ItemCategory.MATERIAL) ? 1 : item.quantity), 0);
     }
 
     public hasSpace(item?: Item): boolean {
-        if (!item) return this.packCount() < this.capacity;
+        if (!item) return this.packCount() + inventoryReservedSlots(this) < this.capacity;
+        if(item.category===ItemCategory.MATERIAL){const room=this.items.reduce((n,other)=>n+(this.materialCompatible(other,item)?worldItemMaxStack(other)-other.quantity:0),0);
+            return this.packCount()+inventoryReservedSlots(this)+Math.ceil(Math.max(0,item.quantity-room)/worldItemMaxStack(item))<=this.capacity;}
         if (item.category === ItemCategory.GOLD) return true;
         // CE Items.c:808–814：同来源层宝石可以在满包时继续叠放。
         if (item.category === ItemCategory.GEM && this.items.some(other =>
@@ -27,14 +30,19 @@ export class Inventory {
             && this.items.some(other => other.quiverNumber === item.quiverNumber)) return true;
         // CE tests the count before pickup, even when the incoming pile has
         // several non-weapon items and will put the pack over 26.
-        return this.packCount() < this.capacity;
+        return this.packCount() + inventoryReservedSlots(this) < this.capacity;
     }
 
     private kind(item: Item): string {
         return item.consumableId ?? item.identityId ?? item.name;
     }
 
-    private stacksWith(a: Item, b: Item): boolean {
+    private materialCompatible(a:Item,b:Item):boolean{return a.category===ItemCategory.MATERIAL&&b.category===ItemCategory.MATERIAL&&!!a.worldItem&&!!b.worldItem&&a.worldItem.definitionId===b.worldItem.definitionId&&a.worldItem.quality===b.worldItem.quality&&a.worldItem.toolDurability===null&&b.worldItem.toolDurability===null;}
+    public stacksWith(a: Item, b: Item): boolean {
+        // moduleData is reserved for 6A1; C5 items carry only worldItem.
+        if (a.category === ItemCategory.MATERIAL || b.category === ItemCategory.MATERIAL) return a.category === b.category
+            && !!a.worldItem && !!b.worldItem && a.worldItem.definitionId === b.worldItem.definitionId && a.worldItem.quality === b.worldItem.quality
+            && a.worldItem.toolDurability === null && b.worldItem.toolDurability === null && a.quantity + b.quantity <= worldItemMaxStack(a);
         if (a.category !== b.category || this.kind(a) !== this.kind(b)) return false;
         if (a.category === ItemCategory.GEM) return a.originDepth === b.originDepth;
         if (a.category === ItemCategory.FOOD || a.category === ItemCategory.POTION
@@ -56,6 +64,9 @@ export class Inventory {
     public addItem(item: Item): boolean {
         if (!this.hasSpace(item)) return false;
         if (item.category === ItemCategory.GOLD) return true; // Currency belongs to Game.stats.
+        if(item.category===ItemCategory.MATERIAL&&item.worldItem?.toolDurability===null){
+            for(const other of this.items){if(!this.materialCompatible(other,item))continue;const count=Math.min(item.quantity,worldItemMaxStack(other)-other.quantity);other.quantity+=count;item.quantity-=count;if(item.quantity===0)return true;}
+        }
         const stack = this.items.find(other => this.stacksWith(other, item));
         if (stack) {
             stack.quantity += item.quantity;

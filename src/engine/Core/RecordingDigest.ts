@@ -15,7 +15,7 @@ import type { ExtensionManifest, ExtensionSnapshot } from '../../ext/types';
 import type { World5Snapshot } from '../../ext/world5';
 import type { Item } from '../Items/Item';
 export const hashJson = (v: unknown) => sha256(c5Canonical(v, true));
-const codecIdentity = ['brogue-web-whole-run-v4', 4, 6, 2];
+const codecIdentity = ['brogue-web-whole-run-v5', 5, 7, 2];
 export const manifestFingerprint = (manifest: ExtensionManifest | null) => hashJson(manifest);
 export function merkleDomain(
   domain: DigestDomain,
@@ -43,14 +43,58 @@ export function digestRoot(
 export function eventDigest(
   extensions: ExtensionSnapshot | null,
   world5: World5Snapshot | null,
-  manifest: ExtensionManifest | null
+  manifest: ExtensionManifest | null,
+  actorActions: import('./ActorActionsRoot').ActorActionsRoot | null = null,
+  workFacts: readonly import('../../ext/worldSdk').CommittedWorkFact[] | null = null,
+  workDetails: readonly import('./WorldWork').WorldWorkDetail[] | null = null
 ): EventDigest | null {
   if (!extensions && !world5) return null;
   const domains = {
     extensions: merkleDomain('extensions', { root: extensions }),
-    world5: merkleDomain('world5', { root: world5 }),
-    actorActions: merkleDomain('actorActions', { root: null })
+    world5: merkleDomain('world5', {
+      root: world5,
+      ...(workFacts ? { facts: workFacts } : {}),
+      ...(workDetails ? { workDetails } : {})
+    }),
+    actorActions: merkleDomain('actorActions', { root: actorActions })
   };
+  return { domains, root: digestRoot(domains, manifest, EVENT_DOMAINS) };
+}
+/** Event domains reuse only explicitly clean roots. The full implementation above
+ * and mechanicalDigest remain independent oracles, including at chunk boundaries. */
+const eventCaches = new WeakMap<object, Map<string, { token: readonly unknown[]; hash: string }>>();
+export function dirtyEventDigest(
+  owner: object,
+  manifest: ExtensionManifest | null,
+  sources: Readonly<
+    Record<
+      (typeof EVENT_DOMAINS)[number],
+      { token: readonly unknown[]; leaves(): Readonly<Record<string, unknown>> }
+    >
+  >
+): EventDigest | null {
+  if (!manifest) return null;
+  let cache = eventCaches.get(owner);
+  if (!cache) {
+    cache = new Map();
+    eventCaches.set(owner, cache);
+  }
+  const domains = {} as EventDigest['domains'];
+  for (const domain of EVENT_DOMAINS) {
+    const source = sources[domain],
+      old = cache.get(domain);
+    if (
+      old &&
+      old.token.length === source.token.length &&
+      old.token.every((value, i) => value === source.token[i])
+    )
+      domains[domain] = old.hash;
+    else {
+      const hash = merkleDomain(domain, source.leaves());
+      cache.set(domain, { token: [...source.token], hash });
+      domains[domain] = hash;
+    }
+  }
   return { domains, root: digestRoot(domains, manifest, EVENT_DOMAINS) };
 }
 const cellKnowledge = new Set([
@@ -134,7 +178,10 @@ export function mechanicalDigest(
     ...root.entityGraph.items
   ];
   for (const item of items) split(item, itemKnowledge, 'item.' + item.id);
-  for (const item of items) { item.name = item.consumableId ?? item.identityId ?? 'entity.' + item.id; delete item.description; }
+  for (const item of items) {
+    item.name = item.consumableId ?? item.identityId ?? 'entity.' + item.id;
+    delete item.description;
+  }
   // Knowledge fields repeated in alias rows must be split from every physical row.
   for (const k of [
     'identifiedItems',
@@ -159,10 +206,17 @@ export function mechanicalDigest(
   // Archive grouping/id/repeat counts depend on rendered text. Keep the separate
   // bounded emission evidence, including its monotonic high water, instead.
   knownRun.logger = { turn: knownRun.logger.turn, mechanical: knownRun.logger.mechanical };
-  if (knownRun.signTexts) knownRun.signTexts = knownRun.signTexts.map(([at]: [string, string]) => [at, true]);
-  if (knownRun.pendingDiscoveryMessages) knownRun.pendingDiscoveryMessages = knownRun.pendingDiscoveryMessages.map((m: any) => ({ color: m.color }));
+  if (knownRun.signTexts)
+    knownRun.signTexts = knownRun.signTexts.map(([at]: [string, string]) => [at, true]);
+  if (knownRun.pendingDiscoveryMessages)
+    knownRun.pendingDiscoveryMessages = knownRun.pendingDiscoveryMessages.map((m: any) => ({
+      color: m.color
+    }));
   knownRun.gameOverReason = !!knownRun.gameOverReason;
-  if (knownRun.gameOverInventory) knownRun.gameOverInventory = knownRun.gameOverInventory.map(({ name: _name, ...row }: any) => row);
+  if (knownRun.gameOverInventory)
+    knownRun.gameOverInventory = knownRun.gameOverInventory.map(
+      ({ name: _name, ...row }: any) => row
+    );
   root.run.lastDamageSource = !!root.run.lastDamageSource;
   for (const key of unorderedSets)
     if (knownRun[key]) knownRun[key].sort((a: number, b: number) => a - b);
@@ -173,11 +227,16 @@ export function mechanicalDigest(
   const flavors = knowledge.flavors as Record<string, any>;
   const flavorIds = new Map<string, string>(flavors.identities.kinds);
   if (flavors) {
-    flavors.potions = flavors.potions.map(([id, value]: [string, { color: number }]) => [id, { color: value.color }]);
+    flavors.potions = flavors.potions.map(([id, value]: [string, { color: number }]) => [
+      id,
+      { color: value.color }
+    ]);
     flavors.arcana = flavors.arcana.map(([id]: [string, string]) => [id, flavorIds.get(id)]);
     flavors.scrolls = flavors.scrolls.map(([id]: [string, string]) => [id, flavorIds.get(id)]);
     flavors.staffSlots = flavors.identities.staffSlots;
-    flavors.identities.kinds.sort((a: [string, string], b: [string, string]) => compareCodePoints(a[0], b[0]));
+    flavors.identities.kinds.sort((a: [string, string], b: [string, string]) =>
+      compareCodePoints(a[0], b[0])
+    );
   }
   if (flavors)
     for (const key of ['potions', 'scrolls', 'arcana'])
@@ -185,13 +244,22 @@ export function mechanicalDigest(
   for (const key of ['callTitles', 'wandFlavors', 'staffFlavors'])
     if (Array.isArray(knowledge[key]))
       (knowledge[key] as [string, unknown][]).sort((a, b) => compareCodePoints(a[0], b[0]));
-  for (const key of ['wandFlavors', 'staffFlavors']) if (knowledge[key])
-    knowledge[key] = Object.keys(knowledge[key]).map(id => [id, flavorIds.get(id)]).sort((a, b) => compareCodePoints(a[0] as string, b[0] as string));
+  for (const key of ['wandFlavors', 'staffFlavors'])
+    if (knowledge[key])
+      knowledge[key] = Object.keys(knowledge[key])
+        .map((id) => [id, flavorIds.get(id)])
+        .sort((a, b) => compareCodePoints(a[0] as string, b[0] as string));
   const extensions = root.extensions ?? null,
     world5 = root.run.world5 ?? null,
+    workFacts = root.run.worldWorkFacts ?? null,
+    workDetails = root.run.worldWorkDetails ?? null,
+    actorActions = root.run.actorActions ?? null,
     random = root.rngState;
   delete root.extensions;
   delete root.run.world5;
+  delete root.run.worldWorkFacts;
+  delete root.run.worldWorkDetails;
+  delete root.run.actorActions;
   delete root.rngState;
   delete root.savedAt;
   delete root.run.recordingOrigin;
@@ -210,15 +278,26 @@ export function mechanicalDigest(
   ]) {
     delete actor.mapToMe;
     actor.name = actor.typeId ?? 'entity.' + actor.id;
-    delete actor.description; delete actor.targetCorpseName;
-    if (actor.form) { actor.form.name = actor.form.id; delete actor.form.description; }
-    if (actor.mutation) { actor.mutation.name = actor.mutation.id; delete actor.mutation.description; }
+    delete actor.description;
+    delete actor.targetCorpseName;
+    if (actor.form) {
+      actor.form.name = actor.form.id;
+      delete actor.form.description;
+    }
+    if (actor.mutation) {
+      actor.mutation.name = actor.mutation.id;
+      delete actor.mutation.description;
+    }
   }
   const domains = {
     native: merkleDomain('native', { world: root, inputState }),
     extensions: merkleDomain('extensions', { root: extensions }),
-    world5: merkleDomain('world5', { root: world5 }),
-    actorActions: merkleDomain('actorActions', { root: null }),
+    world5: merkleDomain('world5', {
+      root: world5,
+      ...(workFacts ? { facts: workFacts } : {}),
+      ...(workDetails ? { workDetails } : {})
+    }),
+    actorActions: merkleDomain('actorActions', { root: actorActions }),
     knowledge: merkleDomain('knowledge', knowledge),
     random: merkleDomain('random', { root: random })
   };

@@ -51,10 +51,10 @@ describe('3b production combat lifecycle',()=>{
   const {game,monster}=scene(),attack=loadCombatDefinitionPack().attacks.find(a=>a.id===id)!;
   acknowledge();const hp=monster.hp;monster.defense=-10000;
   game.executeCommand('ext:command',command(id));
-  expect(monster.hp).toBeLessThan(hp);expect(state(game).nextActionId).toBe(2);
+  expect(monster.hp).toBeLessThan(hp);expect(game.actorActions!.nextActionId).toBe(2);
   // 3c now regenerates during the declared recovery after the paid windup.
   expect(state(game).actors.find(a=>a.actorId===game.player.id)!.stamina).toBe(24-attack.cost+Math.floor(attack.recoveryTicks/20));
-  expect(state(game).scheduler.bundles).toEqual([]);expect(state(game).actions).toEqual([]);expect(game.player.ticksUntilTurn).toBe(0);
+  expect(game.actorActions!.bundles).toEqual([]);expect(state(game).actions).toEqual([]);expect(game.player.ticksUntilTurn).toBe(0);
   expect(()=>game.toSaveSnapshot()).not.toThrow();expect(()=>game.exportRecording()).not.toThrow();
  });
  it.each([false,true])('records one asynchronous risk decision %s with no premature writes',(answer)=>{
@@ -67,12 +67,12 @@ describe('3b production combat lifecycle',()=>{
   game.resolveCommandDecision(game.pendingCommandConfirmation!.token,answer);
   expect(game.recordedInputEvents[game.recordedInputEvents.length-1]!.decisions).toEqual([answer]);
   if(!answer){expect(state(game)).toEqual(before);expect(rng.getState()).toEqual(random);expect(game.absoluteTurnNumber).toBe(turn);}
-  else expect(state(game).nextActionId).toBe(2);
+  else expect(game.actorActions!.nextActionId).toBe(2);
  });
  it('shows an NPC windup across player decisions and saves/rebinds its same clock',()=>{
   const {game,monster}=scene('ogre');monster.ticksUntilTurn=50;
   acknowledge();game.executeCommand('wait');
-  const busy=state(game).scheduler.bundles.find(b=>b.decisionOwnerId===monster.id);expect(busy).toBeDefined();
+  const busy=game.actorActions!.bundles.find(b=>b.decisionOwnerId===monster.id);expect(busy).toBeDefined();
   const saved=game.toSaveSnapshot(),before=structuredClone(state(game)),random=rng.getState();
   const loaded=createHeadlessGame(17,'test');expect(loaded.loadSnapshot(saved)).toBe(true);loaded.animationEnabled=false;
   expect(state(loaded)).toEqual(before);expect(rng.getState()).toEqual(random);
@@ -81,8 +81,7 @@ describe('3b production combat lifecycle',()=>{
  it('rejects corrupt scheduler mirrors before retiring the active run',()=>{
   const {game,monster}=scene('ogre');monster.ticksUntilTurn=50;acknowledge();game.executeCommand('wait');
   const saved=game.toSaveSnapshot(),before=game.player,runtime=game.extensionRuntime;
-  const ledger=saved.extensions!.modules.combat as unknown as ProductionActorAttackState;
-  ledger.scheduler.bundles[0]!.subactions[0]!.phaseRemainingTicks++;
+  saved.run.actorActions!.bundles[0]!.subactions[0]!.phaseRemainingTicks++;
   expect(game.loadSnapshot(saved)).toBe(false);expect(game.player).toBe(before);expect(game.extensionRuntime).toBe(runtime);
  });
  it('rejects future actor risk approvals while retaining historical dead target IDs',()=>{

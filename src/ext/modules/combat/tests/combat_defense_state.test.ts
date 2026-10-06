@@ -1,3 +1,6 @@
+import {createActorActionsRoot} from '../../../../engine/Core/ActorActionsRoot';
+import type {ActorActionsRoot} from '../../../../engine/Core/ActorActionsRoot';
+type DefenseFixture=ProductionActorAttackState & {actorActions:ActorActionsRoot};
 import { describe, expect, it } from 'vitest';
 import { createActorActionBundle } from '../../../../engine/Core/ActorActionScheduler';
 import { advanceActorResources, chargeActorResources, initialActorResources } from '../../../../engine/Core/ActorResources';
@@ -13,14 +16,14 @@ import type { CombatPack } from '../types';
 const definitions = (): ActorAttackDefinitions => structuredClone(combatAttackDefinitions(loadCombatDefinitionPack()));
 const policy = (patch: Partial<ActorResourcePolicy> = {}): ActorResourcePolicy => ({ ...definitions().resourcePolicies[0]!, ...patch });
 const resource = (patch: Partial<ActorResourceState> = {}): ActorResourceState => ({ ...initialActorResources(policy()), ...patch });
-function state(patch: Partial<ActorResourceState> = {}): ProductionActorAttackState {
-    return { ...initialProductionCombatState(), actors: [{ actorId: 10, profileId: definitions().playerProfileId, ...resource(patch) }] };
+function state(patch: Partial<ActorResourceState> = {}): DefenseFixture {
+    return { ...initialProductionCombatState(),actorActions:createActorActionsRoot(), actors: [{ actorId: 10, profileId: definitions().playerProfileId, ...resource(patch) }] };
 }
-const validate = (value: unknown, pack = definitions()): void => validateProductionActorAttackState(value, pack);
-function attackState(): ProductionActorAttackState {
+const validate = (value: unknown, pack = definitions()): void => { const {actorActions,...combat}=value as DefenseFixture;validateProductionActorAttackState(combat, pack,new Set(),actorActions); };
+function attackState(): DefenseFixture {
     const result = state(), pack = definitions(), attack = pack.attacks[0]!, segment = attack.segments[0]!;
-    result.nextActionId = 2;
-    result.scheduler.bundles.push(createActorActionBundle({ actionId: 1, depth: 1, decisionOwnerId: 10, timeChargeOwnerId: 10,
+    result.actorActions.nextActionId = 2;
+    result.actorActions.bundles.push(createActorActionBundle({owner:'combat',  actionId: 1, depth: 1, decisionOwnerId: 10, timeChargeOwnerId: 10,
         subactions: [{ sourceEntityId: 10, sourcePartId: 'body', sourceFootprintVersion: 'fixture-v1',
             phases: [{ kind: 'windup', durationTicks: attack.windupTicks, segmentIndex: 0 },
                 { kind: 'recovery', durationTicks: attack.recoveryTicks, segmentIndex: null }] }] }));
@@ -34,7 +37,7 @@ function attackState(): ProductionActorAttackState {
 describe('combat 3d data and strict defense state', () => {
     it('exposes versioned data-driven parry, poise policy and segment damage through the foundation DTO', () => {
         const pack = loadCombatDefinitionPack(), dto = combatAttackDefinitions(pack);
-        expect(COMBAT_VERSION).toBe('1.5.0'); expect(initialProductionCombatState().schema).toBe(3);
+        expect(COMBAT_VERSION).toBe('1.6.0'); expect(initialProductionCombatState().schema).toBe(4);
         expect(dto.parry).toEqual({ cost: 3, windowTicks: 60, recoveryTicks: 100, poiseDamage: 12, contactRange: 1 });
         expect(dto.resourcePolicies).toEqual(pack.resourcePolicies);
         expect(dto.attacks.map(attack => attack.segments.map(segment => segment.poiseDamage)))
@@ -118,7 +121,7 @@ describe('combat 3d data and strict defense state', () => {
         // The existing scheduler may own an interrupted attack's break recovery;
         // resource state must not retain another countdown for that recovery.
         current.actors[0]!.staggerRemainingTicks = 0;
-        const child = current.scheduler.bundles[0]!.subactions[0]!;
+        const child = current.actorActions.bundles[0]!.subactions[0]!;
         child.phases = [{ kind: 'break-recovery', durationTicks: 50, segmentIndex: null }];
         child.phaseRemainingTicks = 50; current.actions[0]!.subactions[0]!.lockedCells = [];
         expect(() => validate(current)).not.toThrow();
@@ -128,7 +131,7 @@ describe('combat 3d data and strict defense state', () => {
         const current = attackState();
         current.actors[0]!.poise = 0;
         expect(() => validate(current)).toThrow(/zero poise without stagger/);
-        const child = current.scheduler.bundles[0]!.subactions[0]!;
+        const child = current.actorActions.bundles[0]!.subactions[0]!;
         // A future break tail cannot legitimize a zero-poise windup.
         child.phases[1] = { kind: 'break-recovery', durationTicks: 50, segmentIndex: null };
         expect(() => validate(current)).toThrow(/zero poise without stagger/);

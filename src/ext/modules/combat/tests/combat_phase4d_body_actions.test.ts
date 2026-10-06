@@ -109,7 +109,7 @@ describe('4d production body with 3b bundles and real 3d part-break provider',()
     it('one real core command selects two member sources, pays once each and keeps the native member timers unchanged',()=>{
         const {game,core,legs,group}=scene('normal',0),timers=legs.map(l=>l.ticksUntilTurn),attack=vi.spyOn(CombatSystem,'attack');
         game.executeCommand('wait');
-        const bundle=state(game).scheduler.bundles.find(b=>b.decisionOwnerId===core.id)!;
+        const bundle=game.actorActions!.bundles.find(b=>b.decisionOwnerId===core.id)!;
         expect(bundle).toBeDefined();expect(bundle.timeChargeOwnerId).toBe(core.id);expect(bundle.subactions).toHaveLength(2);
         expect(bundle.subactions.map(s=>[s.sourceEntityId,s.sourcePartId,s.sourceGeneration])).toEqual([[legs[0]!.id,'leg00',0],[legs[1]!.id,'leg01',0]]);
         expect(bundle.elapsedActionTicks).toBe(0);expect(core.ticksUntilTurn).toBe(40);
@@ -125,11 +125,11 @@ describe('4d production body with 3b bundles and real 3d part-break provider',()
         const {game,core}=scene('normal',0);game.executeCommand('wait');
         const own=new Set(game.monsters.flatMap(c=>footprintOf(c)).map(p=>`${p.x},${p.y}`));
         for(const sub of state(game).actions[0]!.subactions)expect(sub.lockedCells.every(p=>!own.has(`${p.x},${p.y}`))).toBe(true);
-        expect(state(game).scheduler.bundles[0]!.decisionOwnerId).toBe(core.id);
+        expect(game.actorActions!.bundles[0]!.decisionOwnerId).toBe(core.id);
     });
     it('distinct source profiles release at min boundaries but keep the bundle until max duration, with no shared payment pool',()=>{
         const {game,core,legs}=scene('normal',0,true),attack=vi.spyOn(CombatSystem,'attack');game.executeCommand('wait');
-        const bundle=state(game).scheduler.bundles[0]!;
+        const bundle=game.actorActions!.bundles[0]!;
         expect(state(game).actions[0]!.subactions.map(s=>s.profileId)).toEqual(['combat.follow-thrust','combat.fan-edge']);
         expect(state(game).actors.filter(r=>legs.slice(0,2).some(l=>l.id===r.actorId)).map(r=>r.stamina)).toEqual([18,20]);
         game.executeCommand('wait');
@@ -141,7 +141,7 @@ describe('4d production body with 3b bundles and real 3d part-break provider',()
     });
     it('caps a surrounded core activation at four independently paid phased sources',()=>{
         const {game,core,group}=scene('normal',0,false,true);game.executeCommand('wait');
-        const bundle=state(game).scheduler.bundles[0]!;
+        const bundle=game.actorActions!.bundles[0]!;
         expect(bundle.decisionOwnerId).toBe(core.id);expect(bundle.subactions.map(c=>c.sourcePartId)).toEqual(['leg00','leg01','leg02','leg03']);
         expect(group.members.filter(s=>s.readyInTicks>0)).toHaveLength(4);expect(state(game).actions[0]!.paidCost).toBe(24);
     });
@@ -149,15 +149,15 @@ describe('4d production body with 3b bundles and real 3d part-break provider',()
         const {game}=scene('normal',0);game.executeCommand('wait');const saved=json(game.toSaveSnapshot());
         const native=json(game.bodyGroups),ext=json(game.extensionRuntime!.snapshot()),random=rng.getState();
         for(const edit of [
-            (s:typeof saved)=>{(s.extensions!.modules.combat as unknown as ProductionActorAttackState).scheduler.bundles[0]!.subactions[0]!.sourceGeneration=1;},
-            (s:typeof saved)=>{delete (s.extensions!.modules.combat as unknown as ProductionActorAttackState).scheduler.bundles[0]!.subactions[0]!.sourceGeneration;},
-            (s:typeof saved)=>{(s.extensions!.modules.combat as unknown as ProductionActorAttackState).scheduler.bundles[0]!.subactions[0]!.sourcePartId='leg07';},
+            (s:typeof saved)=>{s.run.actorActions!.bundles[0]!.subactions[0]!.sourceGeneration=1;},
+            (s:typeof saved)=>{delete s.run.actorActions!.bundles[0]!.subactions[0]!.sourceGeneration;},
+            (s:typeof saved)=>{s.run.actorActions!.bundles[0]!.subactions[0]!.sourcePartId='leg07';},
             (s:typeof saved)=>{(s.extensions!.modules.combat as unknown as ProductionActorAttackState).actions[0]!.subactions[0]!.profileId='combat.fan-edge';},
         ]){const bad=json(saved);edit(bad);expect(game.loadSnapshot(bad)).toBe(false);expect(game.bodyGroups).toEqual(native);expect(game.extensionRuntime!.snapshot()).toEqual(ext);expect(rng.getState()).toEqual(random);}
     });
     it('retiring a windup source cancels only its child, keeps the other source and save/load continuation deterministic',()=>{
         const {game,core,legs}=scene('normal',0);game.executeCommand('wait');
-        const bundle=state(game).scheduler.bundles[0]!,dead=bundle.subactions[0]!,live=bundle.subactions[1]!;
+        const bundle=game.actorActions!.bundles[0]!,dead=bundle.subactions[0]!,live=bundle.subactions[1]!;
         hit(game,legs[0]!);expect(dead.cancelled).toBe(true);expect(dead.phaseIndex).toBe(dead.phases.length);
         expect(live.cancelled).toBe(false);expect(live.phases[live.phaseIndex]!.kind).toBe('windup');
         expect(state(game).actions[0]!.subactions[0]!.lockedCells).toEqual([]);
@@ -169,9 +169,9 @@ describe('4d production body with 3b bundles and real 3d part-break provider',()
     });
     it('member break exhausts core poise and converts every pending child into the same positive recovery without fallback',()=>{
         const {game,core,legs}=scene();game.executeCommand('wait');
-        const live=state(game),bundle=live.scheduler.bundles[0]!,child=bundle.subactions[1]!,phases=child.phases;
+        const live=state(game),bundle=game.actorActions!.bundles[0]!,child=bundle.subactions[1]!,phases=child.phases;
         hit(game,legs[0]!);
-        expect(state(game)).toBe(live);expect(live.scheduler.bundles[0]).toBe(bundle);expect(child.phases).toBe(phases);
+        expect(state(game)).toBe(live);expect(game.actorActions!.bundles[0]).toBe(bundle);expect(child.phases).toBe(phases);
         expect(child.phases[child.phaseIndex]!.kind).toBe('break-recovery');expect(child.phaseRemainingTicks).toBe(50);
         expect(core.ticksUntilTurn).toBe(50);expect(core.spatial!.actionLockInTicks).toBeUndefined();
         expect(live.actors.find(r=>r.actorId===core.id)).toMatchObject({poise:0,staggerRemainingTicks:0});
@@ -179,7 +179,7 @@ describe('4d production body with 3b bundles and real 3d part-break provider',()
     });
     it.each(['absent','unsupported'] as const)('a busy body with %s provider cancels into positive recovery with only the fallback lock',mode=>{
         const {game,core,legs}=scene(mode);game.executeCommand('wait');hit(game,legs[0]!);
-        const bundle=state(game).scheduler.bundles[0]!,child=bundle.subactions[1]!;
+        const bundle=game.actorActions!.bundles[0]!,child=bundle.subactions[1]!;
         expect(child.phases[child.phaseIndex]!.kind).toBe('break-recovery');expect(child.phaseRemainingTicks).toBe(50);
         expect(core.spatial!.actionLockInTicks).toBe(40);expect(core.ticksUntilTurn).toBe(50);
         expect(state(game).actors.find(r=>r.actorId===core.id)).toMatchObject({poise:12,staggerRemainingTicks:0});
@@ -187,7 +187,7 @@ describe('4d production body with 3b bundles and real 3d part-break provider',()
     });
     it('a local member lock cancels its pending releases without staggering the healthy source or writing a member timer',()=>{
         const {game,legs}=scene('normal',0);game.executeCommand('wait');
-        const timers=legs.map(l=>l.ticksUntilTurn),bundle=state(game).scheduler.bundles[0]!;
+        const timers=legs.map(l=>l.ticksUntilTurn),bundle=game.actorActions!.bundles[0]!;
         legs[0]!.spatial!.actionLockInTicks=40;notifyProductionActorSourceChanged(game,legs[0]!.id);
         expect(bundle.subactions[0]!.phases[bundle.subactions[0]!.phaseIndex]!.kind).toBe('break-recovery');
         expect(bundle.subactions[1]!.phases[bundle.subactions[1]!.phaseIndex]!.kind).toBe('windup');
@@ -198,21 +198,21 @@ describe('4d production body with 3b bundles and real 3d part-break provider',()
     });
     it.each(['throw','invalid','async'] as const)('%s after the real provider restores shield, HP, receipts, clocks and active graph identities',mode=>{
         const {game,core,legs,group}=scene(mode);game.executeCommand('wait');
-        const live=state(game),bundle=live.scheduler.bundles[0]!,child=bundle.subactions[0]!,phases=child.phases,phase=phases[0]!,scheduler=productionActorActionScheduler(game);
+        const live=state(game),bundle=game.actorActions!.bundles[0]!,child=bundle.subactions[0]!,phases=child.phases,phase=phases[0]!,scheduler=productionActorActionScheduler(game);
         const before=json(live),native=json(group),hp=[core.hp,legs[0]!.hp],timers=game.monsters.map(c=>c.ticksUntilTurn),random=rng.getState();
         legs[0]!.statusDurations.shielded=40;legs[0]!.maxShield=40;
         expect(()=>hit(game,legs[0]!)).toThrow();expect(state(game)).toBe(live);expect(live).toEqual(before);
-        expect(live.scheduler.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);expect(child.phases).toBe(phases);expect(phases[0]).toBe(phase);
+        expect(game.actorActions!.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);expect(child.phases).toBe(phases);expect(phases[0]).toBe(phase);
         expect(productionActorActionScheduler(game)).toBe(scheduler);expect(group).toEqual(native);expect([core.hp,legs[0]!.hp]).toEqual(hp);
         expect(game.monsters.map(c=>c.ticksUntilTurn)).toEqual(timers);expect(rng.getState()).toEqual(random);expect(legs[0]!.statusDurations.shielded).toBe(40);
         expect(()=>game.toSaveSnapshot()).not.toThrow();
     });
     it('a post-provider member cancellation fault restores native mirrors and permits the old prepared bundle to continue',()=>{
         const {game,core,legs,group}=scene();game.executeCommand('wait');
-        const live=state(game),bundle=live.scheduler.bundles[0]!,before=json(live),native=json(group),hp=[core.hp,legs[0]!.hp],timers=game.monsters.map(c=>c.ticksUntilTurn);
+        const live=state(game),bundle=game.actorActions!.bundles[0]!,before=json(live),native=json(group),hp=[core.hp,legs[0]!.hp],timers=game.monsters.map(c=>c.ticksUntilTurn);
         const fault=vi.spyOn(game,'footprintOf').mockImplementation(()=>{throw new Error('member cancellation fault');});
         expect(()=>hit(game,legs[0]!)).toThrow('member cancellation fault');fault.mockRestore();
-        expect(state(game)).toBe(live);expect(live).toEqual(before);expect(live.scheduler.bundles[0]).toBe(bundle);
+        expect(state(game)).toBe(live);expect(live).toEqual(before);expect(game.actorActions!.bundles[0]).toBe(bundle);
         expect(group).toEqual(native);expect([core.hp,legs[0]!.hp]).toEqual(hp);expect(game.monsters.map(c=>c.ticksUntilTurn)).toEqual(timers);
         expect(()=>game.toSaveSnapshot()).not.toThrow();game.executeCommand('wait');expect(game.lastAdvancementError).toBeNull();
     });

@@ -16,7 +16,7 @@ it('core native magic precedes declared member attacks and pays only the core ca
     core.state=MonsterState.HUNTING;core.givenUpOnScent=true;core.bolts=['FIRE'];core.behaviorFlags.add('MONST_ALWAYS_HUNTING');core.behaviorFlags.add('MONST_ALWAYS_USE_ABILITY');
     commitCreatureAnchor(game.player,{x:22,y:12});const cast=vi.spyOn(game,'castMonsterBolt');game.executeCommand('wait');
     expect(cast).toHaveBeenCalledOnce();expect(cast.mock.calls[0]![0]).toBe(core);expect(cast.mock.calls[0]![1]).toBe(game.player);
-    expect(game.extensionRuntime!.actorActionBinding()!.state.scheduler.bundles).toEqual([]);expect(game.monsters.slice(1).map(a=>a.ticksUntilTurn)).toEqual(clocks);expect(core.ticksUntilTurn).toBeGreaterThan(0);
+    expect(game.actorActions!.bundles).toEqual([]);expect(game.monsters.slice(1).map(a=>a.ticksUntilTurn)).toEqual(clocks);expect(core.ticksUntilTurn).toBeGreaterThan(0);
 });
 
 it('a real staircase follower migration cancels previously paid member shapes and preserves loadable source ledgers',()=>{

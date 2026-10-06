@@ -68,8 +68,8 @@ describe('4d declared fixed zones, finite statuses and optional member profiles'
         const {game,core,leg,group}=scene(combat,{profiles:true});commitCreatureAnchor(game.player,{x:14,y:10});
         game.executeCommand('wait');expect(core.ticksUntilTurn).toBeGreaterThan(0);
         if(combat){const state=game.extensionRuntime!.actorActionBinding()!.state;
-            expect(state.scheduler.bundles).toHaveLength(1);expect(state.scheduler.bundles[0]).toMatchObject({decisionOwnerId:core.id,timeChargeOwnerId:core.id});
-            expect(state.scheduler.bundles[0]!.subactions.some(s=>s.sourceEntityId===leg.id)).toBe(true);
+            expect(game.actorActions!.bundles).toHaveLength(1);expect(game.actorActions!.bundles[0]).toMatchObject({decisionOwnerId:core.id,timeChargeOwnerId:core.id});
+            expect(game.actorActions!.bundles[0]!.subactions.some(s=>s.sourceEntityId===leg.id)).toBe(true);
             expect(state.actors.find(s=>s.actorId===leg.id)!.profileId).toBe('combat.follow-thrust');
             expect(game.loadSnapshot(json(game.toSaveSnapshot()))).toBe(true);
         }else{expect(group.members.filter(s=>s.readyInTicks>0)).toHaveLength(2);expect(game.extensionRuntime!.actorActionBinding()).toBeNull();}
@@ -95,7 +95,7 @@ describe('4d declared fixed zones, finite statuses and optional member profiles'
         for(const leg of game.monsters.slice(1))withBodyContact(leg,leg.loc,()=>leg.takeDamage(8,true));
         core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');commitCreatureAnchor(game.player,{x:14,y:10});
         game.executeCommand('wait');expect(game.bodyGroups![0]!.members.every(s=>s.readyInTicks===0)).toBe(true);
-        expect(game.extensionRuntime!.actorActionBinding()?.state.scheduler.bundles??[]).toEqual([]);
+        expect(game.actorActions?.bundles??[]).toEqual([]);
     });
 
 

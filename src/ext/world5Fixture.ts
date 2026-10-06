@@ -28,3 +28,11 @@ export function world5FixtureConfiguration(
 export function isWorld5Fixture(module: ExtensionModule): boolean {
   return fixtures.has(module);
 }
+
+const workFixtures=new WeakSet<ExtensionModule>();
+export function registerWorld5WorkFixture(module:ExtensionModule):ExtensionModule { if(!import.meta.env.DEV)throw new Error('World work fixture registration unavailable');workFixtures.add(module);return registerWorld5Fixture(module); }
+export const isWorld5WorkFixture=(module:ExtensionModule)=>workFixtures.has(module);
+const registries=new WeakMap<object,import('./registry').ExtensionRegistry>();
+export function installWorldFixtureRegistry(game:object,registry:import('./registry').ExtensionRegistry):void { if(!import.meta.env.DEV)throw new Error('World fixture registry unavailable');registries.set(game,registry); }
+export const worldFixtureRegistry=(game:object)=>registries.get(game);
+export function copyWorldFixtureRegistry(from:object,to:object):void { const registry=registries.get(from);if(registry&&import.meta.env.DEV)registries.set(to,registry); }

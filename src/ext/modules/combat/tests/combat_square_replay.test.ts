@@ -44,7 +44,7 @@ function mechanical(game: Game) {
     return snapshot;
 }
 function phase(game: Game, actorId: number) {
-    const bundle = state(game).scheduler.bundles.find(value => value.decisionOwnerId === actorId);
+    const bundle = game.actorActions!.bundles.find(value => value.decisionOwnerId === actorId);
     const sub = bundle?.subactions[0];
     return sub?.phases[sub.phaseIndex]?.kind;
 }
@@ -131,7 +131,7 @@ describe('3b production square actions, native effects and persistence', () => {
             ]);
             expect(source.loc).toEqual(sourceAnchor); expect(target.loc).toEqual(targetAnchor);
             expect(state(game).actors.find(a => a.actorId === source.id)!.stamina).toBe(18);
-            expect(state(game).nextActionId).toBe(2);
+            expect(game.actorActions!.nextActionId).toBe(2);
         });
 
     it.each([2, 3] as const)('real acid degradation and physical facts happen twice across a %s-square target, never per covered cell', size => {
@@ -276,7 +276,7 @@ describe.each(catalog.getInstalledModuleDescriptors().filter(module => module.id
             naturalStep(game, (x, y) => body.some(p => Math.abs(p.x - x) + Math.abs(p.y - y) === 1), boss);
         }
         expect(game.isGameOver).toBe(false); expect(phase(game, boss.id)).toBe('windup');
-        const first = state(game).actions.find(action => state(game).scheduler.bundles.some(bundle => bundle.actionId === action.actionId && bundle.decisionOwnerId === boss.id))!;
+        const first = state(game).actions.find(action => game.actorActions!.bundles.some(bundle => bundle.actionId === action.actionId && bundle.decisionOwnerId === boss.id))!;
         expect(first.subactions[0]!.attackId).toBe('fixture.double-thrust');
         expect(first.subactions[0]!.lockedCells).toContainEqual({ ...game.player.loc });
         const native = vi.spyOn(game, 'resolveActorNativeMelee');

@@ -5,7 +5,7 @@ import locale from './locales/zh_CN.json';
 import { loadCombatPack } from './schema';
 import type { CombatPack } from './types';
 
-export const COMBAT_VERSION = '1.5.0';
+export const COMBAT_VERSION = '1.6.0';
 /** Only mechanical JSON participates. Object key order is canonicalized by the
  * foundation fingerprint helper; array order remains part of rule identity. */
 export function getCombatPackIdentity(): ExtensionRulesIdentity {

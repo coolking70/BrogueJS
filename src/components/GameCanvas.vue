@@ -1042,7 +1042,7 @@ onMounted(async () => {
                 inputManager.triggerAction('move', dir);
             }
         } else {
-            game.executeCommand('mouse_travel', { x: mapX, y: mapY });
+                game.executeCommand('mouse_travel', { x: mapX, y: mapY });
             game.update();
         }
     };

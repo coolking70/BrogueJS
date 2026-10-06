@@ -1,6 +1,5 @@
 /** Data-only module declaration for the trusted phased native attack executor.
  * This is a foundation protocol, not a module import or writable world API. */
-import type { ActorActionSchedulerState } from '../engine/Core/ActorActionScheduler';
 import type { ControlledActionRisk } from '../engine/Core/Game';
 import type { AttackShapeRequest } from '../engine/Movement/AttackShape';
 export type ActorAttackFacing = 'n'|'ne'|'e'|'se'|'s'|'sw'|'w'|'nw';
@@ -50,9 +49,8 @@ export interface ActorAttackMetadata {
         shape:AttackShapeRequest;approvedRisks:{targetId:number;risks:ControlledActionRisk[]}[]}[];
 }
 export interface ProductionActorAttackState {
-    schema:3;revision:number;nextActionId:number;
+    schema:4;revision:number;
     bonfires?: import('./worldRest').BonfireState;
-    scheduler:ActorActionSchedulerState;
     actions:ActorAttackMetadata[];
     actors:(ActorResourceState & {actorId:number;profileId:string;combatStats?:ActorCombatStats})[];
 }

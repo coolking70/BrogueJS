@@ -21,7 +21,8 @@ export enum ItemCategory {
     CHARM,
     KEY,
     AMULET,
-    GEM
+    GEM,
+    MATERIAL = 13
 }
 
 /** 未识别魔杖的使用次数后缀（CE Items.c:1615-1634：once/twice/N times）。 */
@@ -64,6 +65,7 @@ export class Item implements Entity {
     public consumableId?: string;
     public description?: string;
     public category: ItemCategory;
+    declare public worldItem?: import('../../ext/worldSdk').WorldItemFields;
     public weight: number;
 
     // Stats for weapons/armors
@@ -193,6 +195,7 @@ export class Item implements Entity {
     }
 
     get uninscribedName(): string {
+        if (this.category === ItemCategory.MATERIAL) return i18next.t(this.name);
         // Here we hook into the static registry if the item is a consumables
         switch (this.category) {
             case ItemCategory.GEM:

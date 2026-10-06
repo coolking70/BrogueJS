@@ -815,8 +815,9 @@ export function commitOfflineSettlement(
         Object.assign(order, clone(next));
       }
       for (const receipt of plan.receipts)
-        if (receipt.ordinal > previousOrdinal && receipt.ordinal <= ledger.lastEventOrdinal)
-          world.receipts.push(clone(receipt));
+        if (receipt.ordinal > previousOrdinal && receipt.ordinal <= ledger.lastEventOrdinal) {
+          world.receipts.push({...clone(receipt),ordinal:checkedAdd(world.receipts[world.receipts.length-1]?.ordinal??0,1)});
+        }
       if (world.receipts.length > 128) world.receipts.splice(0, world.receipts.length - 128);
       world.revision = revision;
       requireSynchronousSettlement(publish?.());

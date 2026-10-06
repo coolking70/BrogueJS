@@ -1,3 +1,4 @@
+import { mirrorWorldWorkTicks, worldWorkClockFinished, interruptWorldWork, interruptWorldWorkAtDepth, selectWorldWorkDecision } from './WorldWork';
 import { bodyStatusDisables } from '../Status/BodyStatuses';
 import i18next from 'i18next';
 import { logger } from '../Systems/Logger';
@@ -11,7 +12,7 @@ import type { ActorAttackDefinitions, ProductionActorAttackState, ActorAttackFac
 import { validateActorAttackDefinitions, validateProductionActorAttackState } from '../../ext/actorActionValidation';
 import { canonical } from '../../ext/json';
 import { projectAttackShape,sourceFootprintVersion,type AttackShapeRequest } from '../Movement/AttackShape';
-import { createActorActionBundle,type ActorActionScheduler,type ActorActionBoundary } from './ActorActionScheduler';
+import { interruptActorSubaction,createActorActionBundle,type ActorActionScheduler,type ActorActionBoundary } from './ActorActionScheduler';
 import { invalidateProductionActorActionSession } from './ActorActionSession';
 import { createProductionActorActionSession, productionActorActionScheduler, notifyProductionActorSourceChanged } from './ActorActionProduction';
 import { assertActorActionScope,assertNativeActorDecisionScope,withActorActionScope,type ActorActionScope } from './ActorActionScope';
@@ -31,6 +32,7 @@ import type { Json, OptionalQueryResult, CombatEventPayload } from '../../ext/ty
 
 type Session={state:ProductionActorAttackState;definitions:ActorAttackDefinitions;scheduler:ActorActionScheduler;runtime:object;moduleId:string;sessionRevision:number;defenseSources:Map<number,{actor:Creature;revision:number;depth:number}>};
 const sessions=new WeakMap<Game,Session>();
+const worldSessions=new WeakMap<Game,object>();
 function combatEvent(game:Game,source:Creature,eventKind:CombatEventPayload['eventKind'],detail:Partial<Omit<CombatEventPayload,'eventKind'>>={}):void {
     game.extensionRuntime?.commitCombatEvent(source,{eventKind,actionId:0,sourceSubactionId:null,segmentIndex:null,
         resolutionId:null,bonfireId:null,visit:null,hitCount:0,hpLost:0,...detail});
@@ -116,7 +118,7 @@ function synchronizeResource(row:ProductionActorAttackState['actors'][number],pr
  * command settlement runs. Canonicalize only an existing, now-idle pool there. */
 function synchronizeIdleResource(game:Game,session:Session,source:Creature):void {
     const row=session.state.actors.find(row=>row.actorId===source.id);
-    if(!row||source.hp<=0||session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===source.id
+    if(!row||source.hp<=0||game.actorActions!.bundles.some(bundle=>bundle.decisionOwnerId===source.id
         ||bundle.subactions.some(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length)))return;
     const current=resourcesFor(game,session,source);
     if(synchronizeResource(row,current.profile.id,current.policy,current.stats))bumpRevision(session.state);
@@ -125,7 +127,7 @@ function synchronizeIdleResource(game:Game,session:Session,source:Creature):void
  * query. No attach/load/query may normalize or fill a saved resource pool. */
 export function validateActorCombatCapacities(state:ProductionActorAttackState,definitions:ActorAttackDefinitions,
     creatures:readonly Creature[],query:(actor:Creature,input:Json)=>OptionalQueryResult,
-    bodyProfiles?:(actor:Creature)=>{declared:readonly string[];available:readonly string[]}|undefined):void {
+    bodyProfiles?:(actor:Creature)=>{declared:readonly string[];available:readonly string[]}|undefined, root?: import('./ActorActionsRoot').ActorActionsRoot):void {
     for(const row of state.actors){
         const source=creatures.find(actor=>actor.id===row.actorId);
         if(!source)throw new Error('Unknown combat resource actor');
@@ -137,7 +139,7 @@ export function validateActorCombatCapacities(state:ProductionActorAttackState,d
             :source instanceof Monster?definitions.nativeProfiles.find(binding=>binding.monsterId===source.typeId)?.profileId??definitions.playerProfileId
                 :definitions.playerProfileId;
         if(row.profileId!==currentProfile){
-            const bundle=state.scheduler.bundles.find(bundle=>bundle.decisionOwnerId===source.id
+            const bundle=(root?.bundles ?? []).find(bundle=>bundle.decisionOwnerId===source.id
                 ||bundle.subactions.some(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length));
             const metadata=bundle&&state.actions.find(action=>action.actionId===bundle.actionId);
             const ownChildren=bundle?.subactions.filter(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length)??[];
@@ -198,7 +200,7 @@ export function isActorDodgeProtected(game:Game,actorId:number):boolean {
 function advanceResources(game:Game,session:Session,delta:number):void {
     const resolved=new Map<Creature,ReturnType<typeof resourcesFor>>([game.player,...game.monsters].filter(source=>source.hp>0).map(source=>{
         const row=session.state.actors.find(row=>row.actorId===source.id);
-        const busy=session.state.scheduler.bundles.some(bundle=>bundle.depth===game.depth&&(bundle.decisionOwnerId===source.id
+        const busy=game.actorActions!.bundles.some(bundle=>bundle.depth===game.depth&&(bundle.decisionOwnerId===source.id
             ||bundle.subactions.some(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length)));
         return [source,resourcesFor(game,session,source,busy?row?.profileId:undefined)] as const;
     }));
@@ -218,7 +220,7 @@ function advanceResources(game:Game,session:Session,delta:number):void {
     session.state.actors.sort((a,b)=>a.actorId-b.actorId);
     for(const row of session.state.actors){
         const source=actor(game,row.actorId);if(!source||source.hp<=0)continue; // Cached layers freeze.
-        const bundle=session.state.scheduler.bundles.find(b=>(b.decisionOwnerId===source.id||b.subactions.some(s=>s.sourceEntityId===source.id&&s.phaseIndex<s.phases.length))&&b.depth===game.depth);
+        const bundle=game.actorActions!.bundles.find(b=>(b.decisionOwnerId===source.id||b.subactions.some(s=>s.sourceEntityId===source.id&&s.phaseIndex<s.phases.length))&&b.depth===game.depth);
         const current=resolved.get(source)!;
         synchronizeResource(row,current.profile.id,current.policy,current.stats);
         const policy=current.policy;
@@ -270,9 +272,9 @@ function commit(game:Game,plan:PhasedAttackPlan,scope:ActorActionScope):boolean 
     const current=prepare(game,source,plan.attackId,plan.facing);
     if(!current||canonical(current)!==canonical(plan))throw new Error('Stale phased attack preparation');
     const {state,definitions}=session,attack=definitions.attacks.find(a=>a.id===plan.attackId)!;
-    if(state.nextActionId>=Number.MAX_SAFE_INTEGER||state.revision>=Number.MAX_SAFE_INTEGER-1)throw new Error('Phased attack identity exhausted');
+    if(game.actorActions!.nextActionId>=Number.MAX_SAFE_INTEGER||state.revision>=Number.MAX_SAFE_INTEGER-1)throw new Error('Phased attack identity exhausted');
     const profile=definitions.profiles.find(p=>p.id===plan.profileId)!;
-    const bundle=createActorActionBundle({actionId:state.nextActionId,depth:game.depth,decisionOwnerId:source.id,timeChargeOwnerId:source.id,
+    const bundle=createActorActionBundle({owner:'combat', actionId:game.actorActions!.nextActionId,depth:game.depth,decisionOwnerId:source.id,timeChargeOwnerId:source.id,
         subactions:[{sourceEntityId:source.id,sourcePartId:game.spatialOf(source).partId??'body',sourceFootprintVersion:plan.sourceVersion,
             phases:[{kind:'windup',durationTicks:attack.windupTicks,segmentIndex:0},...attack.segments.slice(1).map((segment,index)=>({kind:'inter-segment' as const,durationTicks:segment.delayTicks,segmentIndex:index+1})),
                 {kind:'recovery',durationTicks:attack.recoveryTicks,segmentIndex:null}]}]});
@@ -281,7 +283,7 @@ function commit(game:Game,plan:PhasedAttackPlan,scope:ActorActionScope):boolean 
     const before=structuredClone(state);
     try {
         if(!pay(game,session,source,attack.cost))throw new Error('Insufficient action stamina');
-        state.nextActionId++;state.actions.push(metadata);
+        game.actorActions!.nextActionId++;state.actions.push(metadata);
         session.scheduler.commitBundle(bundle);
     }catch(error){
         Object.assign(state,before);
@@ -302,8 +304,8 @@ function commitBody(game:Game,core:Monster,plans:readonly PhasedAttackPlan[],sco
         return source?.spatial?.bodyMember?.groupId===core.id&&canonical(prepare(game,source,plan.attackId,plan.facing))===canonical(plan);
     })) throw new Error('Stale composite attack preparation');
     const group=game.bodyGroups!.find(g=>g.coreId===core.id)!,{state,definitions}=session;
-    if(state.nextActionId>=Number.MAX_SAFE_INTEGER||state.revision>=Number.MAX_SAFE_INTEGER-6)throw new Error('Phased attack identity exhausted');
-    const bundle=createActorActionBundle({actionId:state.nextActionId,depth:game.depth,decisionOwnerId:core.id,timeChargeOwnerId:core.id,
+    if(game.actorActions!.nextActionId>=Number.MAX_SAFE_INTEGER||state.revision>=Number.MAX_SAFE_INTEGER-6)throw new Error('Phased attack identity exhausted');
+    const bundle=createActorActionBundle({owner:'combat', actionId:game.actorActions!.nextActionId,depth:game.depth,decisionOwnerId:core.id,timeChargeOwnerId:core.id,
         subactions:plans.map(plan=>{const attack=definitions.attacks.find(a=>a.id===plan.attackId)!;
             return {sourceEntityId:plan.sourceEntityId,sourcePartId:game.spatialOf(actor(game,plan.sourceEntityId)!).partId!,sourceGeneration:0,sourceFootprintVersion:plan.sourceVersion,
                 phases:[{kind:'windup' as const,durationTicks:attack.windupTicks+attack.segments[0]!.delayTicks,segmentIndex:0},
@@ -320,7 +322,7 @@ function commitBody(game:Game,core:Monster,plans:readonly PhasedAttackPlan[],sco
         if(!own.row)state.actors.push(initialResource(core.id,own.profile.id,own.base,own.stats));
         for(const plan of plans)if(!pay(game,session,actor(game,plan.sourceEntityId)!,plan.cost))throw new Error('Insufficient source stamina');
         state.actors.sort((a,b)=>a.actorId-b.actorId);
-        state.nextActionId++;state.actions.push(metadata);
+        game.actorActions!.nextActionId++;state.actions.push(metadata);
         session.scheduler.commitBundle(bundle);
         for(const child of bundle.subactions)group.members.find(s=>s.entityId===child.sourceEntityId)!.readyInTicks=
             child.phases.reduce((sum,phase)=>sum+phase.durationTicks,0);
@@ -356,7 +358,7 @@ function resolveCommitted(game:Game,session:Session,boundary:Readonly<ActorActio
     const sub=metadata?.subactions.find(s=>s.sourceSubactionId===boundary.sourceSubactionId);
     if(!source||!sub)return;
     const attack=session.definitions.attacks.find(a=>a.id===sub.attackId)!,segment=attack.segments[boundary.segmentIndex]!;
-    const bundle=session.state.scheduler.bundles.find(b=>b.actionId===boundary.actionId)!,child=bundle.subactions.find(s=>s.sourceSubactionId===boundary.sourceSubactionId)!;
+    const bundle=game.actorActions!.bundles.find(b=>b.actionId===boundary.actionId)!,child=bundle.subactions.find(s=>s.sourceSubactionId===boundary.sourceSubactionId)!;
     const authority=new ActorCombatResolutionAuthority(game,{schema:1,nextResolutionId:1,actors:[]},{production:true,dodgeProtected:id=>isActorDodgeProtected(game,id),tryParry:(a,d,c)=>tryActorParry(game,a,d,c),poiseDamage:segment.poiseDamage});
     const plans=authority.prepareLockedBodySegment({kind:'locked-body-segment',depth:boundary.depth,sourceEntityId:source.id,
         sourceFootprintVersion:child.sourceFootprintVersion,shape:sub.shape,lockedCells:sub.lockedCells,
@@ -382,29 +384,38 @@ function resolveCommitted(game:Game,session:Session,boundary:Readonly<ActorActio
 export function bindPhasedAttackProduction(game:Game):void {
     bindNativeAttackWorld(game);
     const binding=game.extensionRuntime?.actorActionBinding();
-    if(!binding){sessions.delete(game);return;}
+    if(!binding){sessions.delete(game);if(!game.actorActions)return;
+        if(worldSessions.get(game)===game.actorActions&&productionActorActionScheduler(game))return;
+        worldSessions.set(game,game.actorActions);createProductionActorActionSession(game,{state:game.actorActions,
+            resolveSegment:()=>{throw new Error('Unexpected world-work segment');},breakRecoveryTicks:()=>0,
+            handlesInterruption:()=>true,elapsed:delta=>mirrorWorldWorkTicks(game,delta),advanced:()=>mirrorWorldWorkTicks(game,0),
+            shouldSweep:()=>false,finishAction:(bundle,reason)=>worldWorkClockFinished(game,bundle,reason),
+            sourceChanged:id=>interruptWorldWork(game,id,'moved'),
+            leftDepth:()=>{interruptWorldWorkAtDepth(game);},
+            select:(id,scope)=>selectWorldWorkDecision(game,id,scope)?'handled':'native-fallback'});return;}
     if((sessions.get(game)?.state as unknown)===binding.state && productionActorActionScheduler(game)===sessions.get(game)?.scheduler)return;
-    validateActorAttackDefinitions(binding.definition);validateProductionActorAttackState(binding.state,binding.definition);
+    validateActorAttackDefinitions(binding.definition);validateProductionActorAttackState(binding.state,binding.definition,new Set(),game.actorActions);
     const session={state:binding.state,definitions:binding.definition,runtime:game.extensionRuntime!,moduleId:binding.moduleId,sessionRevision:nextSessionRevision++,defenseSources:new Map()} as unknown as Session;
-    session.scheduler=createProductionActorActionSession(game,{state:session.state.scheduler,
+    session.scheduler=createProductionActorActionSession(game,{state:game.actorActions!,
         resolveSegment:boundary=>resolve(game,session,boundary),breakRecoveryTicks:()=>session.definitions.breakRecoveryTicks,
-        elapsed:delta=>{if(session.state.bonfires?.active?.phase==='resting')timeSystem.currentTick+=delta;advanceResources(game,session,delta);},
-        handlesInterruption:bundle=>session.state.bonfires?.active?.actionId===bundle.actionId,
+        elapsed:delta=>{if(session.state.bonfires?.active?.phase==='resting')timeSystem.currentTick+=delta;advanceResources(game,session,delta);mirrorWorldWorkTicks(game,delta);},advanced:()=>mirrorWorldWorkTicks(game,0),
+        handlesInterruption:bundle=>bundle.owner==='foundation'||session.state.bonfires?.active?.actionId===bundle.actionId,
         inputLocked:()=>session.state.actors.some(row=>row.actorId===game.player.id&&nativeRecovery(row)>0),
         resumeResources:()=>{for(const row of session.state.actors){const source=actor(game,row.actorId);if(source&&nativeRecovery(row)>0)source.ticksUntilTurn=nativeRecovery(row);}},
-        sourceChanged:id=>{worldRestSourceChanged(game,id);const row=session.state.actors.find(r=>r.actorId===id);if(row&&(row.dodgeRemainingTicks||row.parryRemainingTicks)){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;bumpRevision(session.state);}
+        sourceChanged:id=>{interruptWorldWork(game,id,'moved');worldRestSourceChanged(game,id);const row=session.state.actors.find(r=>r.actorId===id);if(row&&(row.dodgeRemainingTicks||row.parryRemainingTicks)){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;bumpRevision(session.state);}
             const source=actor(game,id);if(source)synchronizeIdleResource(game,session,source);
-            if(!source||source.hp<=0)for(const bundle of session.state.scheduler.bundles)
+            if(!source||source.hp<=0)for(const bundle of game.actorActions!.bundles)
                 for(const child of bundle.subactions)if(child.sourceEntityId===id){const sub=session.state.actions.find(a=>a.actionId===bundle.actionId)?.subactions.find(s=>s.sourceSubactionId===child.sourceSubactionId);if(sub)sub.lockedCells=[];}},
-        leftDepth:()=>{interruptWorldRest(game,'level-exit');settleWorldRest(game);bumpRevision(session.state);for(const row of session.state.actors){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}},
+        leftDepth:()=>{interruptWorldWorkAtDepth(game);interruptWorldRest(game,'level-exit');settleWorldRest(game);bumpRevision(session.state);for(const row of session.state.actors){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}},
         interrupted:(source,bundle,reason)=>{bumpRevision(session.state);const metadata=session.state.actions.find(a=>a.actionId===bundle.actionId);if(metadata&&reason==='layer-change')metadata.suppressTerminalSweep=true;const sub=metadata?.subactions.find(s=>s.sourceSubactionId===source.sourceSubactionId);if(sub)sub.lockedCells=[];},
-        shouldSweep:bundle=>!session.state.actions.find(action=>action.actionId===bundle.actionId)?.suppressTerminalSweep,
-        finishAction:(bundle,reason)=>{if(finishWorldRestClock(game,bundle,reason))return;const row=session.state.actors.find(row=>row.actorId===bundle.decisionOwnerId);
+        shouldSweep:bundle=>bundle.owner!=='foundation'&&!session.state.actions.find(action=>action.actionId===bundle.actionId)?.suppressTerminalSweep,
+        finishAction:(bundle,reason)=>{if(bundle.owner==='foundation'){worldWorkClockFinished(game,bundle,reason);return;}if(finishWorldRestClock(game,bundle,reason))return;const row=session.state.actors.find(row=>row.actorId===bundle.decisionOwnerId);
             if(row&&row.poise===0&&bundle.subactions.some(child=>child.phases.some(phase=>phase.kind==='break-recovery'))){const source=actor(game,row.actorId);if(source){const policy=resourcesFor(game,session,source).policy;row.poise=policy.poiseBreakRecoveryValue;row.poiseRecoveryRemainder=0;}}bumpRevision(session.state);session.state.actions=session.state.actions.filter(a=>a.actionId!==bundle.actionId);
             for(const id of new Set([bundle.decisionOwnerId,...bundle.subactions.map(child=>child.sourceEntityId)])){
                 const source=actor(game,id);if(source)synchronizeIdleResource(game,session,source);
             }},
         select:(id,scope)=>{
+            if(selectWorldWorkDecision(game,id,scope))return 'handled';
             const source=actor(game,id);if(!(source instanceof Monster)||!eligible(game,source,session))return 'native-fallback';
             if(source.spatial?.bodyMember)return selectBody(game,session,source,scope);
             // Native survival, corpse learning and spells keep their existing priority.
@@ -420,7 +431,7 @@ export function bindPhasedAttackProduction(game:Game):void {
             if(!facing)return 'native-fallback';
             // Only visible, already committed telegraphs inform defense. Stable
             // action/source order and no random draw; no future player input.
-            for(const bundle of [...session.state.scheduler.bundles].sort((a,b)=>a.decisionOwnerId-b.decisionOwnerId)){
+            for(const bundle of [...game.actorActions!.bundles].sort((a,b)=>a.decisionOwnerId-b.decisionOwnerId)){
                 const threat=actor(game,bundle.decisionOwnerId);
                 if(!threat||threat===source||!(threat===game.player?!source.isAlly:threat instanceof Monster&&monstersAreEnemies(source,threat)))continue;
                 if(!bodySightContact(game.grid,source,threat,(x,y,tx,ty)=>game.hasLineOfSight(x,y,tx,ty)))continue;
@@ -452,7 +463,7 @@ export function cancelPhasedAttacksAtZone(game: Game, target: Creature, zoneId: 
     reconcileActorNativeRecovery(game,target.id);
     const cells = new Set(game.footprintOf(target).filter(p => p.zoneId === zoneId).map(p => `${p.x},${p.y}`));
     const sources = new Set<number>([target.id]);
-    for (const bundle of session.state.scheduler.bundles) {
+    for (const bundle of game.actorActions!.bundles) {
         const metadata = session.state.actions.find(a => a.actionId === bundle.actionId);
         for (const child of bundle.subactions) {
             const sub = metadata?.subactions.find(s => s.sourceSubactionId === child.sourceSubactionId);
@@ -484,7 +495,7 @@ export function collectPhasedAttackActors(game:Game,reachable:readonly Creature[
     const keep=new Set(reachable.filter(actor=>actor.hp>0||actor===game.player).map(actor=>actor.id));
     const resolved=new Map(reachable.filter(source=>keep.has(source.id)).map(source=>{
         const row=session.state.actors.find(row=>row.actorId===source.id);
-        const busy=session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===source.id
+        const busy=game.actorActions!.bundles.some(bundle=>bundle.decisionOwnerId===source.id
             ||bundle.subactions.some(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length));
         return [source,resourcesFor(game,session,source,busy?row?.profileId:undefined)] as const;
     }));
@@ -513,14 +524,14 @@ export function collectPhasedAttackActors(game:Game,reachable:readonly Creature[
 /** Administrative retirement removes the source's ledger only after its child
  * is inert. An indivisible resolver may defer that cancellation to its return. */
 export function retirePhasedAttackSource(game:Game,id:number):void {
-    const session=sessions.get(game);if(!session||session.state.scheduler.bundles.some(bundle=>bundle.subactions.some(child=>child.sourceEntityId===id&&child.phaseIndex<child.phases.length)))return;
+    const session=sessions.get(game);if(!session||game.actorActions!.bundles.some(bundle=>bundle.subactions.some(child=>child.sourceEntityId===id&&child.phaseIndex<child.phases.length)))return;
     if(session.state.actors.some(row=>row.actorId===id)){session.state.actors=session.state.actors.filter(row=>row.actorId!==id);bumpRevision(session.state);}
     session.defenseSources.delete(id);
 }
 
 /** Candidate-world geometry validation ignores current occlusion (a wall may
  * legitimately have appeared since warning), but rejects invented/off-map cells. */
-export function validatePhasedAttackGeometry(state:ProductionActorAttackState, definitions:ActorAttackDefinitions, creatures:readonly Creature[], contains:(depth:number,x:number,y:number)=>boolean,activeActorIds?:ReadonlySet<number>,bodyProfiles?:(source:Creature,attackId:string)=>readonly string[]|undefined):void {
+export function validatePhasedAttackGeometry(state:ProductionActorAttackState, definitions:ActorAttackDefinitions, creatures:readonly Creature[], contains:(depth:number,x:number,y:number)=>boolean,activeActorIds?:ReadonlySet<number>,bodyProfiles?:(source:Creature,attackId:string)=>readonly string[]|undefined, root?: import('./ActorActionsRoot').ActorActionsRoot):void {
     const actors=new Map(creatures.map(actor=>[actor.id,actor]));
     for(const row of state.actors){
         const source=actors.get(row.actorId);
@@ -531,7 +542,7 @@ export function validatePhasedAttackGeometry(state:ProductionActorAttackState, d
         if(row.dodgeRemainingTicks>0&&activeActorIds&&!activeActorIds.has(row.actorId))throw new Error('Cached actor retains dodge protection');
         if(row.dodgeRecoveryRemainingTicks>0 && (!source||source.hp<=0||source.ticksUntilTurn!==row.dodgeRecoveryRemainingTicks||!dodgeBodySupported(source)))throw new Error('Invalid dodge recovery mirror');
     }
-    for(const bundle of state.scheduler.bundles) {
+    for(const bundle of (root?.bundles ?? []).filter(b => b.owner === 'combat')) {
         const metadata=state.actions.find(action=>action.actionId===bundle.actionId);
         if(state.bonfires?.active?.actionId===bundle.actionId) {
             const rest=state.bonfires.active,source=actors.get(rest.actorId);
@@ -645,7 +656,7 @@ export function isActorStaggered(game:Game,actorId:number):boolean {
     actorId=member?.groupId??actorId;
     const row=session.state.actors.find(row=>row.actorId===actorId);
     return (row?.staggerRemainingTicks??0)>0 || (!!row&&row.poise===0)
-        ||session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===actorId&&bundle.subactions.some(child=>(!member||child.sourceEntityId===sourceId)&&child.phases[child.phaseIndex]?.kind==='break-recovery'));
+        ||game.actorActions!.bundles.some(bundle=>bundle.decisionOwnerId===actorId&&bundle.subactions.some(child=>(!member||child.sourceEntityId===sourceId)&&child.phases[child.phaseIndex]?.kind==='break-recovery'));
 }
 export function nativeActorPoiseDamage(game:Game,actorId:number):number {
     const session=sessions.get(game),source=actor(game,actorId);
@@ -661,7 +672,7 @@ function applyActorPoiseDamageCommitted(game:Game,targetId:number,amount:number)
     const source=actor(game,targetId);
     if(!session||!source||source.hp<=0||!Number.isSafeInteger(amount)||amount<=0||amount>1_000_000)return;
     const existing=session.state.actors.find(row=>row.actorId===source.id);
-    const busy=session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===source.id);
+    const busy=game.actorActions!.bundles.some(bundle=>bundle.decisionOwnerId===source.id);
     const {profile,base,policy,stats}=resourcesFor(game,session,source,busy?existing?.profileId:undefined);
     if(existing&&synchronizeResource(existing,profile.id,policy,stats))bumpRevision(session.state);
     if(policy.poiseImmune||isActorStaggered(game,targetId))return;
@@ -674,16 +685,16 @@ function applyActorPoiseDamageCommitted(game:Game,targetId:number,amount:number)
         const recovery=Math.max(nativeRecovery(row),session.definitions.breakRecoveryTicks);
         row.dodgeRemainingTicks=row.parryRemainingTicks=0;row.parryFacing=null;
         row.dodgeRecoveryRemainingTicks=row.parryRecoveryRemainingTicks=0;
-        if(session.state.scheduler.bundles.some(bundle=>bundle.decisionOwnerId===source.id)){
+        if(game.actorActions!.bundles.some(bundle=>bundle.decisionOwnerId===source.id)){
             // Existing production interruption is deferred through the indivisible
             // native hit; pending later segments cannot resume after this strike.
-            const bundle=session.state.scheduler.bundles.find(bundle=>bundle.decisionOwnerId===source.id)!;
+            const bundle=game.actorActions!.bundles.find(bundle=>bundle.decisionOwnerId===source.id)!;
             for(const child of bundle.subactions)notifyProductionActorSourceChanged(game,child.sourceEntityId);
         }else{row.staggerRemainingTicks=Math.max(source.ticksUntilTurn,recovery);source.ticksUntilTurn=row.staggerRemainingTicks;}
     }
     bumpRevision(session.state);
     if(row.poise===0)combatEvent(game,source,'staggered',{
-        actionId:session.state.scheduler.bundles.find(bundle=>bundle.decisionOwnerId===source.id)?.actionId??0});
+        actionId:game.actorActions!.bundles.find(bundle=>bundle.decisionOwnerId===source.id)?.actionId??0});
 }
 /** Deterministic exact-facing contact, consumed before any native probability roll. */
 export function tryActorParry(game:Game,attackerId:number,defenderId:number,contact:{from:{x:number;y:number};to:{x:number;y:number}}):boolean {
@@ -704,7 +715,7 @@ function tryActorParryCommitted(game:Game,attackerId:number,defenderId:number,co
         if(game.extensionRuntime!.hasCommittedFactConsumer('combat.event.v1')){
             if(typeof resolutionId!=='number'||!Number.isSafeInteger(resolutionId)||resolutionId<1)throw new Error('Missing real parry resolution identity');
             combatEvent(game,defender,'parried',{resolutionId,
-                actionId:session.state.scheduler.bundles.find(bundle=>bundle.subactions.some(child=>child.sourceEntityId===attackerId))?.actionId??0});
+                actionId:game.actorActions!.bundles.find(bundle=>bundle.subactions.some(child=>child.sourceEntityId===attackerId))?.actionId??0});
         }
         if(defender===game.player)logger.log(i18next.t('actor_action.parry_success', {
             defaultValue: 'You successfully parry the attack.',
@@ -780,4 +791,13 @@ export function restoreActorRestResources(game:Game,restore:{stamina:string;pois
     if(restore.poise==='full'){resource.poise=policy.poiseCapacity;resource.poiseRecoveryRemainder=0;resource.poiseRecoveryDelayRemaining=0;}
     if(!row){session.state.actors.push(resource);session.state.actors.sort((a,b)=>a.actorId-b.actorId);}
     bumpRevision(session.state);
+}
+
+/** Native part-break publication is indivisible, including a due release boundary. */
+export function interruptCombatActionRoot(game:Game,actorId:number):void {
+ const session=sessions.get(game);if(!session)return;
+ const bundle=game.actorActions!.bundles.find(b=>b.owner==='combat'&&b.decisionOwnerId===actorId);if(!bundle)return;
+ for(const child of bundle.subactions)if(child.phaseIndex<child.phases.length&&child.phases[child.phaseIndex]!.kind!=='break-recovery')interruptActorSubaction(child,bundle,session.definitions.breakRecoveryTicks);
+ const source=actor(game,actorId);if(source)source.ticksUntilTurn=Math.min(...bundle.subactions.filter(c=>c.phaseIndex<c.phases.length).map(c=>c.phaseRemainingTicks));
+ const metadata=session.state.actions.find(a=>a.actionId===bundle.actionId);for(const sub of metadata?.subactions??[])sub.lockedCells=[];
 }

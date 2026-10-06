@@ -1,3 +1,4 @@
+import { markRecordingRoot } from './recordingRevisions';
 import { isJson } from './json';
 
 export type EffectKind = 'melee' | 'projectile' | 'bolt' | 'status' | 'reflection' | 'reprisal'
@@ -59,7 +60,7 @@ export class EffectCausality {
         const origin = { effectId, rootEffectId: parent?.rootEffectId ?? effectId,
             actorId, creditActorId, creditPartyId, kind, parentEffectId: parent?.effectId ?? null };
         if (!validEffectOrigin(origin) || effectId >= Number.MAX_SAFE_INTEGER - 1) throw new Error('Invalid effect origin');
-        this.data.nextEffectId++;
+        this.data.nextEffectId++; markRecordingRoot(this);
         return Object.freeze(origin);
     }
     withOrigin<T>(origin: EffectOrigin | null, resolve: () => T): T {
@@ -88,18 +89,18 @@ export class EffectCausality {
         return fact;
     }
     terminal(targetId: number, origin: EffectOrigin | null = this.current): void {
-        this.data.fatalOrigins[targetId] = origin === null ? null : structuredClone(origin);
+        markRecordingRoot(this); this.data.fatalOrigins[targetId] = origin === null ? null : structuredClone(origin);
     }
     /** A stored null is a known unowned death, never a reason to use an outer attack. */
     deathOrigin(targetId: number): EffectOrigin | null {
         return Object.prototype.hasOwnProperty.call(this.data.fatalOrigins, targetId) ? this.data.fatalOrigins[targetId]! : this.current;
     }
-    clearTerminal(targetId: number): void { delete this.data.fatalOrigins[targetId]; }
+    clearTerminal(targetId: number): void { if (Object.prototype.hasOwnProperty.call(this.data.fatalOrigins, targetId)) { delete this.data.fatalOrigins[targetId]; markRecordingRoot(this); } }
     statusChanged(targetId: number, status: OwnedStatus, before: number, after: number): void {
         if (after <= 0) { this.clearStatus(targetId, status); return; }
         // Countdown and ineffective reapplication never steal ownership.
         if (after <= before) return;
-        (this.data.statusOrigins[targetId] ??= {})[status] = this.current === null ? null : structuredClone(this.current);
+        markRecordingRoot(this); (this.data.statusOrigins[targetId] ??= {})[status] = this.current === null ? null : structuredClone(this.current);
     }
     statusOrigin(targetId: number, status: OwnedStatus): EffectOrigin | null {
         return this.data.statusOrigins[targetId]?.[status] ?? null;
@@ -107,18 +108,21 @@ export class EffectCausality {
     clearStatus(targetId: number, status: OwnedStatus): void {
         const statuses = this.data.statusOrigins[targetId];
         if (!statuses) return;
+        if (Object.prototype.hasOwnProperty.call(statuses, status)) markRecordingRoot(this);
         delete statuses[status];
         if (!Object.keys(statuses).length) delete this.data.statusOrigins[targetId];
     }
     markDisplacement(targetId: number, origin: EffectOrigin | null = this.terrainOrigin): void {
-        this.data.pendingDisplacements[targetId] = origin === null ? null : structuredClone(origin);
+        markRecordingRoot(this); this.data.pendingDisplacements[targetId] = origin === null ? null : structuredClone(origin);
     }
     consumeDisplacement(targetId: number): EffectOrigin | null {
         const origin = this.data.pendingDisplacements[targetId] ?? null;
+        if (Object.prototype.hasOwnProperty.call(this.data.pendingDisplacements, targetId)) markRecordingRoot(this);
         delete this.data.pendingDisplacements[targetId];
         return origin;
     }
     clearCreature(targetId: number): void {
+        if (Object.prototype.hasOwnProperty.call(this.data.statusOrigins, targetId) || Object.prototype.hasOwnProperty.call(this.data.fatalOrigins, targetId) || Object.prototype.hasOwnProperty.call(this.data.pendingDisplacements, targetId)) markRecordingRoot(this);
         delete this.data.statusOrigins[targetId]; delete this.data.fatalOrigins[targetId]; delete this.data.pendingDisplacements[targetId];
     }
     retainCreatures(ids: ReadonlySet<number>): void {
@@ -128,7 +132,7 @@ export class EffectCausality {
     snapshot(): CausalitySnapshot { return structuredClone(this.data); }
     restore(snapshot: CausalitySnapshot): void {
         if (!EffectCausality.validateSnapshot(snapshot)) throw new Error('Invalid effect causality snapshot');
-        this.data = structuredClone(snapshot);
+        this.data = structuredClone(snapshot); markRecordingRoot(this);
     }
     static validateSnapshot(value: unknown): value is CausalitySnapshot {
         if (!record(value) || !isJson(value) || Object.keys(value).length !== 4 || !positiveId(value.nextEffectId)

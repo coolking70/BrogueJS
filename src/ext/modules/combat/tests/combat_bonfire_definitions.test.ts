@@ -1,3 +1,4 @@
+import {createActorActionsRoot} from '../../../../engine/Core/ActorActionsRoot';
 import { createCombatModuleFromPack } from '../module';
 import { initialActorResources } from '../../../../engine/Core/ActorResources';
 import { describe, expect, it, vi } from 'vitest';
@@ -35,7 +36,7 @@ function fixture(options: { mutate?: (pack: CombatPack) => void; fail?: boolean;
     const services: ExtensionPorts = { depth: () => depth, playerId: () => 1,
         randomInt: vi.fn(() => { throw new Error('placement must not draw RNG'); }), message: vi.fn(),
         interactableCandidates: vi.fn(() => candidates), isInteractableVisible: () => true, canInteractWith: () => true };
-    const module: ExtensionModule = { id: 'combat', version: '1.5.0', worldInteractables: true,
+    const module: ExtensionModule = { id: 'combat', version: '1.6.0', worldInteractables: true,
         initialState: () => ({ revision: 0, nextActionId: 1, bonfires: initialBonfireState() as unknown as Json }),
         validateState: (value): value is Json => {
             try { validateBonfireState((value as {bonfires:unknown}).bonfires, definitionPack.bonfires, 1); return true; } catch { return false; }
@@ -57,7 +58,7 @@ function fixture(options: { mutate?: (pack: CombatPack) => void; fail?: boolean;
 
 describe('3e finite bonfire definitions', () => {
     it('declares versioned safe placement, 500-tick completion-only full recovery and no world reset', () => {
-        const value = pack(); expect(value.moduleVersion).toBe('1.5.0'); expect(value.rulesVersion).toBe('1.5.0');
+        const value = pack(); expect(value.moduleVersion).toBe('1.6.0'); expect(value.rulesVersion).toBe('1.6.0');
         expect(value.bonfires.definitions).toHaveLength(1);
         expect(value.bonfires.definitions[0]).toMatchObject({ restTicks: 500, interactionDistance: 1,
             restorePolicy: { hp: 'full', stamina: 'full', poise: 'full' }, resetPolicy: 'none',
@@ -302,16 +303,16 @@ describe('3e generic actor-ledger transaction identity rollback',()=>{
             simulationSettled:(_event,context)=>{if(kind==='settle')mutate(context);},
             interactablesRemoved:(event,context)=>{base.hooks!.interactablesRemoved!(event,context);throw new Error('after in-place actor state');}}};
         const registry=new ExtensionRegistry();registry.register(module.id,module.version,()=>module,module.rules);
-        const runtime=new ExtensionRuntime(registry,registry.manifest(['combat']),{depth:()=>1,playerId:()=>1,randomInt:()=>{throw new Error('unexpected RNG');},message:()=>{},
+        const actionRoot=createActorActionsRoot();const runtime=new ExtensionRuntime(registry,registry.manifest(['combat']),{actorActions:()=>actionRoot,depth:()=>1,playerId:()=>1,randomInt:()=>{throw new Error('unexpected RNG');},message:()=>{},
             interactableCandidates:()=>[{x:3,y:3}],isInteractableVisible:()=>true,canInteractWith:()=>true});
         const root=runtime.actorActionBinding()!.state;
         root.actors.push({actorId:1,profileId:definitionPack.playerProfileId,...initialActorResources(definitionPack.resourcePolicies[0]!)});
         const token=runtime.beginGeneration('identity-rest-point');runtime.emit('enteredLevel',{depth:1,firstVisit:true});runtime.commitGeneration(token);
-        const before=runtime.snapshot(),scheduler=root.scheduler,actors=root.actors,actor=actors[0]!,bonfires=root.bonfires!,bindings=bonfires.bindings;
+        const before=runtime.snapshot(),scheduler=actionRoot,actors=root.actors,actor=actors[0]!,bonfires=root.bonfires!,bindings=bonfires.bindings;
         const fail=()=>kind==='command'?runtime.command(JSON.stringify({module:'combat',action:'fault',payload:{}}))
             :kind==='settle'?runtime.settle([]):runtime.collectWorld([],false);
         expect(fail).toThrow('after in-place actor state');expect(runtime.snapshot()).toEqual(before);
-        expect(runtime.actorActionBinding()!.state).toBe(root);expect(root.scheduler).toBe(scheduler);expect(root.actors).toBe(actors);
+        expect(runtime.actorActionBinding()!.state).toBe(root);expect(actionRoot).toBe(scheduler);expect(root.actors).toBe(actors);
         expect(root.actors[0]).toBe(actor);expect(root.bonfires).toBe(bonfires);expect(root.bonfires!.bindings).toBe(bindings);
     });
 });

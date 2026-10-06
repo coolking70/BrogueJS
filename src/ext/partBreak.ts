@@ -18,6 +18,7 @@ export interface PartBreakRequest extends PartBreakReceipt {
     readonly fallbackStunTicks: number;
 }
 export interface PartBreakPrepareContext extends ExtensionRuleContext {
+    readonly actorActionBundles?: readonly import('../engine/Core/ActorActionScheduler').ReadonlyActorActionBundle[];
     readonly actor: Readonly<ActorFacts>;
     /** Query bound to this foundation-attested actor, never another payload ID. */
     queryActor?(capability:string,input:Json):OptionalQueryResult;

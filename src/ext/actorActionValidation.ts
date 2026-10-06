@@ -229,20 +229,21 @@ function risks(value: unknown): void {
     }
 }
 
-export function validateProductionActorAttackState(value: unknown, definitions: ActorAttackDefinitions, dueBoundaries: ReadonlySet<string> = new Set()): asserts value is ProductionActorAttackState {
+export function validateProductionActorAttackState(value: unknown, definitions: ActorAttackDefinitions, dueBoundaries: ReadonlySet<string> = new Set(), root?: import('../engine/Core/ActorActionsRoot').ActorActionsRoot): asserts value is ProductionActorAttackState {
     validateActorAttackDefinitions(definitions);
     plainJson(value);
-    actorActionRecord(value, ['schema', 'revision', 'nextActionId', 'scheduler', 'actions', 'actors', ...(definitions.bonfires ? ['bonfires'] : [])]);
-    if (value.schema !== 3) fail('invalid schema');
-    integer(value.revision, 0); const nextActionId = integer(value.nextActionId, 1);
-    validateActorActionSchedulerState(value.scheduler,dueBoundaries);
+    actorActionRecord(value, ['schema', 'revision', 'actions', 'actors', ...(definitions.bonfires ? ['bonfires'] : [])]);
+    if (value.schema !== 4) fail('invalid schema');
+    integer(value.revision, 0); const nextActionId = root?.nextActionId ?? Number.MAX_SAFE_INTEGER;
+    const scheduler = { schema: 1 as const, bundles: root?.bundles.filter(b => b.owner === 'combat') ?? [] };
+    validateActorActionSchedulerState(scheduler,dueBoundaries);
     actorActionArray(value.actions, 0, MAX_ACTOR_ACTION_BUNDLES);
     actorActionArray(value.actors, 0, MAX_ACTOR_ACTION_BUNDLES);
     if (definitions.bonfires) validateBonfireState(value.bonfires, definitions.bonfires, nextActionId);
     const rest = (value as unknown as ProductionActorAttackState).bonfires?.active;
-    if (value.actions.length + (rest?.phase === 'resting' ? 1 : 0) !== value.scheduler.bundles.length) fail('metadata and scheduler bundle mismatch');
-    if (rest) {
-        const bundle = value.scheduler.bundles.find(bundle => bundle.actionId === rest.actionId);
+    if (root && value.actions.length + (rest?.phase === 'resting' ? 1 : 0) !== scheduler.bundles.length) fail('metadata and scheduler bundle mismatch');
+    if (rest && root) {
+        const bundle = scheduler.bundles.find(bundle => bundle.actionId === rest.actionId);
         if (rest.phase === 'settling') { if (bundle) fail('settling rest still has a clock'); }
         else {
             const definition = definitions.bonfires!.definitions.find(definition => definition.id === rest.definitionId)!;
@@ -254,7 +255,7 @@ export function validateProductionActorAttackState(value: unknown, definitions: 
         }
         if ((value.actions as unknown as ProductionActorAttackState['actions']).some(action => action.actionId === rest.actionId)) fail('rest shares attack metadata');
     }
-    const bundles = new Map(value.scheduler.bundles.map(bundle => [bundle.actionId, bundle]));
+    const bundles = new Map(scheduler.bundles.map(bundle => [bundle.actionId, bundle]));
     if ((value as unknown as ProductionActorAttackState).bonfires?.receipts.some(receipt=>bundles.has(receipt.actionId))) fail('completed rest reuses active action identity');
     const attacks = new Map(definitions.attacks.map(attack => [attack.id, attack]));
     const profiles = new Map(definitions.profiles.map(profile => [profile.id, profile]));
@@ -294,12 +295,12 @@ export function validateProductionActorAttackState(value: unknown, definitions: 
             fail('overlapping defense or stagger recovery');
         if (staggerRemaining > 0 && (actor.poise !== 0 || actor.poiseRecoveryRemainder !== 0))
             fail('invalid stagger resource state');
-        const ownBundle = value.scheduler.bundles.find(bundle => bundle.decisionOwnerId === actorId);
+        const ownBundle = scheduler.bundles.find(bundle => bundle.decisionOwnerId === actorId);
         const hasBundle = ownBundle !== undefined;
         const schedulerStagger = ownBundle?.subactions.some(child => child.phases[child.phaseIndex]?.kind === 'break-recovery') ?? false;
         // Zero poise can only persist while one authoritative recovery owns the
         // break. Idle/windup zero rows would otherwise skip the >0 -> 0 trigger.
-        if (actor.poise === 0 && staggerRemaining === 0 && !schedulerStagger && !(rest?.actorId === actorId && rest.interrupted)) fail('zero poise without stagger recovery');
+        if (root && actor.poise === 0 && staggerRemaining === 0 && !schedulerStagger && !(rest?.actorId === actorId && rest.interrupted)) fail('zero poise without stagger recovery');
         if ((dodgeRemaining > 0 || dodgeRecoveryRemaining > 0) && hasBundle) fail('dodge cannot share an attack bundle');
         if ((parryRemaining > 0 || parryRecoveryRemaining > 0) && hasBundle) fail('parry cannot share an attack bundle');
         if (staggerRemaining > 0 && hasBundle) fail('stagger cannot share an attack bundle');
@@ -309,6 +310,17 @@ export function validateProductionActorAttackState(value: unknown, definitions: 
     for (const action of value.actions) {
         actorActionRecord(action, ['actionId', 'profileId', 'paidCost', 'subactions', ...(Object.prototype.hasOwnProperty.call(action, 'suppressTerminalSweep') ? ['suppressTerminalSweep'] : [])]);
         if (Object.prototype.hasOwnProperty.call(action, 'suppressTerminalSweep') && action.suppressTerminalSweep !== true) fail('invalid terminal sweep marker');
+        if (!root) {
+            integer(action.actionId, 1); id(action.profileId); integer(action.paidCost, 0);
+            actorActionArray(action.subactions, 1, MAX_PARALLEL_ACTOR_ACTIONS);
+            for (const sub of action.subactions) {
+                actorActionRecord(sub, ['sourceSubactionId','attackId','facing','lockedCells','shape','approvedRisks', ...(Object.prototype.hasOwnProperty.call(sub, 'profileId') ? ['profileId'] : [])]);
+                integer(sub.sourceSubactionId, 1); id(sub.attackId);
+                if (!FACINGS.includes(sub.facing as ActorAttackFacing) || !attacks.has(sub.attackId as string)) fail('invalid metadata');
+                cells(sub.lockedCells, 0, MAX_CELLS, MAX_COORDINATE, true); validateAttackShapeRequest(sub.shape); risks(sub.approvedRisks);
+            }
+            continue;
+        }
         const actionId = integer(action.actionId, 1), bundle = bundles.get(actionId), profile = profiles.get(id(action.profileId));
         if (seenActions.has(actionId) || actionId >= nextActionId || !bundle || !profile
             || actors.get(bundle.decisionOwnerId) !== profile.id) fail('invalid action identity or owner profile');
@@ -351,8 +363,8 @@ export function validateProductionActorAttackState(value: unknown, definitions: 
 /** Existing synchronous release boundaries may be zero while the native resolver
  * commits a provider. Only the exact already-due identities are permitted;
  * loading/saving always uses the strict default codec above. */
-export function validateProductionActorAttackTransactionState(value:unknown,definitions:ActorAttackDefinitions,current:ProductionActorAttackState):asserts value is ProductionActorAttackState {
-    const due=new Set(current.scheduler.bundles.flatMap(bundle=>bundle.subactions.filter(child=>child.phaseRemainingTicks===0&&child.phaseIndex<child.phases.length)
+export function validateProductionActorAttackTransactionState(value:unknown,definitions:ActorAttackDefinitions,_current:ProductionActorAttackState, root?: import('../engine/Core/ActorActionsRoot').ActorActionsRoot):asserts value is ProductionActorAttackState {
+    const due=new Set((root?.bundles ?? []).flatMap(bundle=>bundle.subactions.filter(child=>child.phaseRemainingTicks===0&&child.phaseIndex<child.phases.length)
         .map(child=>`${bundle.actionId}:${child.sourceSubactionId}:${child.phaseIndex}`)));
-    validateProductionActorAttackState(value,definitions,due);
+    validateProductionActorAttackState(value,definitions,due,root);
 }

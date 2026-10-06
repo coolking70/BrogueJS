@@ -1,3 +1,4 @@
+import i18next from 'i18next';
 import { getMonsterAbsorbStatus } from './MonsterTextCatalog';
 import type { ItemDetailContext } from './ItemDetailContext';
 import { itemIntro, itemEquipmentState } from './ItemDetailIntro';
@@ -291,6 +292,7 @@ export function generateMonsterDetail(
  * the contextual adapter there. All callers share the same knowledge gates. */
 export function generateItemDetail(item: Item, context: number | ItemDetailContext): DetailInfo {
     const ctx = typeof context === 'number' ? { strength: context } : context;
+    if(item.category===ItemCategory.MATERIAL)return {char:item.char,color:item.color,name:item.displayName,sections:[{lines:[{text:i18next.t(item.description??''),color:'#aaaacc'},...(item.worldItem?.toolDurability!==null?[{text:i18next.t('ext.foundation.world.tool-durability',{durability:item.worldItem?.toolDurability??0}),color:'#aaaacc'}]:[])]}]};
     const sections = itemIntro(item, ctx);
     switch (item.category) {
         case ItemCategory.WEAPON: case ItemCategory.ARMOR: sections.push(...equipmentDetail(item, ctx)); break;

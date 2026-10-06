@@ -124,6 +124,7 @@ const categoryLabel = (category: string) => {
         case '-- GEMS --': return t('inventory.category.gems');
         case '-- AMULETS --': return t('inventory.category.amulets');
         case '-- FOOD --': return t('inventory.category.food');
+        case '-- MATERIALS --': return t('inventory.category.materials');
         case '-- GOLD --': return t('inventory.category.gold');
         default: return t('inventory.category.other');
     }
@@ -156,7 +157,7 @@ const groupedItems = computed(() => {
         '-- GEMS --': [],
         '-- AMULETS --': [],
         '-- FOOD --': [],
-        '-- GOLD --': [],
+        '-- MATERIALS --': [],'-- GOLD --': [],
         '-- OTHER --': []
     };
 
@@ -187,6 +188,7 @@ const groupedItems = computed(() => {
             case ItemCategory.GEM: groups['-- GEMS --']!.push(entry); break;
             case ItemCategory.AMULET: groups['-- AMULETS --']!.push(entry); break;
             case ItemCategory.FOOD: groups['-- FOOD --']!.push(entry); break;
+            case ItemCategory.MATERIAL: groups['-- MATERIALS --']!.push(entry); break;
             case ItemCategory.GOLD: groups['-- GOLD --']!.push(entry); break;
             default: groups['-- OTHER --']!.push(entry); break;
         }

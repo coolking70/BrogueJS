@@ -8,7 +8,6 @@ import type { Json, ReadonlyJson } from '../../types';
 type ActorRow = ProductionActorAttackState['actors'][number];
 // The published production-state codec bounds these pools and scheduler tails.
 const MAX_ACTORS = 4096;
-const MAX_ACTION_TICKS = 1_000_000;
 
 function initialRow(actorId: number, profileId: string, policy: ActorResourcePolicy): ActorRow {
     return { actorId, profileId, stamina: policy.initialStamina, regenRemainder: 0, regenDelayRemaining: 0,
@@ -35,7 +34,7 @@ export function createCombatPartBreakProvider(definitions: ActorAttackDefinition
             const expectedState = canonical(context.state);
             const next = structuredClone(current);
             const row = next.actors.find(actor => actor.actorId === request.actorId);
-            const bundle = next.scheduler.bundles.find(candidate => candidate.decisionOwnerId === request.actorId);
+            const bundle = (context.actorActionBundles ?? []).find(candidate => candidate.owner==='combat'&&candidate.decisionOwnerId === request.actorId);
             // A busy actor's existing resource/profile pairing is authoritative.
             const profileId = bundle && row ? row.profileId : (context.actor.player ? definitions.playerProfileId
                 : definitions.nativeProfiles.find(binding => binding.monsterId === context.actor.monsterId)?.profileId
@@ -86,24 +85,14 @@ export function createCombatPartBreakProvider(definitions: ActorAttackDefinition
                     resource.parryFacing = null;
                     if (bundle) {
                         const metadata = next.actions.find(action => action.actionId === bundle.actionId)!;
-                        for (const child of bundle.subactions) {
-                            const phase = child.phases[child.phaseIndex];
-                            if (!phase) continue;
-                            // Same interruption formula as the sole foundation
-                            // scheduler: keep elapsed prefix, never shorten recovery.
-                            const consumed = phase.durationTicks - child.phaseRemainingTicks;
-                            const remaining = phase.segmentIndex === null
-                                ? Math.max(child.phaseRemainingTicks, definitions.breakRecoveryTicks)
-                                : definitions.breakRecoveryTicks;
-                            const duration = consumed + remaining;
-                            const prefix = child.phases.slice(0, child.phaseIndex)
-                                .reduce((sum, prior) => sum + prior.durationTicks, 0);
-                            if (prefix + duration > MAX_ACTION_TICKS) throw new Error('Part break recovery budget exhausted');
-                            child.phases.splice(child.phaseIndex, child.phases.length - child.phaseIndex,
-                                { kind: 'break-recovery', durationTicks: duration, segmentIndex: null });
-                            child.phaseRemainingTicks = remaining;
-                            metadata.subactions.find(sub => sub.sourceSubactionId === child.sourceSubactionId)!.lockedCells = [];
+                        for (const sub of metadata.subactions) sub.lockedCells = [];
+                        for(const child of bundle.subactions)if(child.phaseIndex<child.phases.length&&child.phases[child.phaseIndex]!.kind!=='break-recovery'){
+                            const phase=child.phases[child.phaseIndex]!,remaining=phase.segmentIndex===null?Math.max(child.phaseRemainingTicks,recovery):recovery+(child.nativeRecoveryDelayTicks??0);
+                            const prefix=child.phases.slice(0,child.phaseIndex).reduce((n,p)=>n+p.durationTicks,0);
+                            if(prefix+phase.durationTicks-child.phaseRemainingTicks+remaining>1_000_000)throw new Error('Action recovery budget exhausted');
                         }
+                        // Foundation constructs interruption recovery in the neutral clock.
+
                     } else resource.staggerRemainingTicks = recovery;
                 }
                 changed = true;

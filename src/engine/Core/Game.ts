@@ -1,4 +1,15 @@
-import { mechanicalDigest, eventDigest, inventoryStamp, recordingStart, recordingChain, worldSnapshotHash } from './RecordingDigest';
+import { recordingRootRevision } from '../../ext/recordingRevisions';
+import {interruptCombatActionRoot} from './PhasedAttackProduction';
+import { worldFixtureRegistry, copyWorldFixtureRegistry } from '../../ext/world5Fixture';
+import { containerItemRoots } from './WorldItemRoots';
+import { worldWorkReadSDK, reservedInventorySlots } from './WorldWorkWorld';
+import { bindInventoryReservations, bindWorldItem, worldItemDefinition } from '../Items/WorldItems';
+import { isWorldWorkCommand, isCancelWorkCommand, prepareWorldWorkCommand, commitWorldWork, withWorldActorScope, setWorldWorkError, cancelWorldWork, continueWorldWork, settleWorldWork, worldWorkInterruptionReason, interruptWorldWork, type WorldWorkDetail } from './WorldWork';
+import { enterWorldWorkLevel } from './WorldWorkPlacement';
+import { validateWorldWorkReferences } from './WorldWorkValidation';
+import { createActorActionsRoot, validateActorActionsRoot, type ActorActionsRoot } from './ActorActionsRoot';
+import { validateProductionActorAttackState } from '../../ext/actorActionValidation';
+import { mechanicalDigest, dirtyEventDigest, inventoryStamp, recordingStart, recordingChain, worldSnapshotHash } from './RecordingDigest';
 import { validateRecordingV4, recordingHeader, validOriginShape, boundedSnapshots, validAccelerationSnapshot } from './RecordingFormat';
 import { EVENT_DOMAINS, DIGEST_DOMAINS, type DigestDomain, type ReplayDiagnostic, type RecordingV4, type RecordingEventV4, type RecordingOriginV2, type RecordingHeaderV4, type ReplaySnapshotV4 } from './RecordingV4';
 export type { ReplayDiagnostic, RecordingV4, RecordingEventV4, RecordingOriginV2, ReplaySnapshotV4 } from './RecordingV4';
@@ -294,7 +305,7 @@ export interface CommandConfirmation {
 }
 /** Engine-owned risk facts; no entity, module context or callback survives preparation. */
 export interface ControlledActionRisk {
-    readonly kind: 'acid' | 'ally' | 'chasm' | 'fire' | 'gas' | 'plate';
+    readonly kind: 'tool-break' | 'acid' | 'ally' | 'chasm' | 'fire' | 'gas' | 'plate';
     readonly target: { readonly kind: 'creature'; readonly id: number } | { readonly kind: 'cell'; readonly x: number; readonly y: number };
     readonly message: string;
 }
@@ -399,6 +410,13 @@ const loadingSpatialCatalogs = new WeakMap<Game, SpatialCatalog>();
 export class Game {
     /** Explicit mechanical truth, across owned layers. Ordinary runs omit it. */
     declare public world5?: World5Snapshot;
+    declare public actorActions?: ActorActionsRoot;
+    declare public worldContainerItems?: Map<number,Item>;
+    declare public worldWorkDetails?: WorldWorkDetail[];
+    public worldWorkCommandEpoch=0;
+    private executingRecordedCommand=false;
+    public isExecutingRecordedCommand():boolean { return this.executingRecordedCommand; }
+    declare public worldWorkFacts?: import('../../ext/worldSdk').CommittedWorkFact[];
     declare public bodyGroups?: BodyGroupState[];
     public extensionRuntime: ExtensionRuntime | null = null;
     public get spatialCatalog(): SpatialCatalog { return this.extensionRuntime?.spatialCatalog ?? loadingSpatialCatalogs.get(this) ?? nativeSpatialCatalog; }
@@ -445,7 +463,7 @@ export class Game {
                 this.pendingFallenItemsByDepth,this.bodyGroups,this.stats,this.visibleMonsters,this.visibleItems,
                 this.seenBodyCoreIds,this.machineCells,this.monsterPathCache,this.safetyMap,this.loopMap,this.minersLight,this.squareLandingRetry,
                 this.everSeenMonsters,this.everSeenItems,this.examinedEntityIds,this.pendingCaughtFireCells,
-                this.floatingTexts,this.activeFlares,this.terrainFlashes,this.pendingDiscoveryMessages,actionState,
+                this.floatingTexts,this.activeFlares,this.terrainFlashes,this.pendingDiscoveryMessages,actionState,this.world5,this.actorActions,this.worldContainerItems,this.worldWorkFacts,this.worldWorkDetails,
                 ItemLoader.identifiedItems,ItemLoader.callTitles,ItemLoader.magicPolarityRevealed],
             references:[runtime,runtime.causality,...display.flatMap(state=>state.references)],
             restoreSession:display.map(state=>state.restore)}));
@@ -469,12 +487,12 @@ export class Game {
     }
 
     private createExtensionRuntime(manifest: ExtensionManifest, snapshot?: ExtensionSnapshot): ExtensionRuntime {
-        return new ExtensionRuntime(createExtensionRegistry(), manifest, {
+        return new ExtensionRuntime(worldFixtureRegistry(this) ?? createExtensionRegistry(), manifest, {
             actorQueryScope: actor => {const world=this.actorActionWorld();return resolveActorQueryScope({...world,levels:[...world.levels,{depth:this.depth,actors:this.purgatory}]},actor);},
             checkpointCommittedFacts: () => this.checkpointCombatFactWorld(),
             memberDamage: (actor, damage, kind) => this.applyBodyMemberDamage(actor, damage, kind),
             memberDamageCommitted: actor => this.finishBodyMemberDamage(actor),
-            nativeDamageCommitted: (actor, hpLost) => worldRestDamage(this, actor, hpLost),
+            nativeDamageCommitted: (actor, hpLost) => {worldRestDamage(this,actor,hpLost);if(hpLost>0)interruptWorldWork(this,actor.id,'damage');},
             worldRestUnavailable: id => worldRestUnavailable(this, id),
             validateMemberBreak: request => this.validateMemberBreak(request),
             memberBroken: (core, member) => {
@@ -526,6 +544,9 @@ export class Game {
                 if (!source || source.hp <= 0 || (source instanceof Monster && !canDirectlySeeMonster(this.player,this.grid,source))) return [];
                 return cells.filter(cell=>this.grid.getCell(cell.x,cell.y)?.isVisible).map(cell=>({x:cell.x,y:cell.y}));
             },
+            worldWorkRead: owner => worldWorkReadSDK(this,owner),
+            actorActions: () => this.actorActions,
+            interruptActorAction: id => interruptCombatActionRoot(this,id),
             playerId: () => this.player.id,
             canManageCharacter: () => !this.interactionActive && !this.isGameOver && this.player.hp > 0 && !this.player.hasStatus('paralyzed')
                 && !this.isAdvancing && !this.isInputLocked() && !logger.pendingAcknowledgment && !this.pendingIdentify
@@ -637,7 +658,7 @@ export class Game {
         cardinalPassability: boolean[];
         untilRecovered: boolean;
         initiallyEmbedded: boolean;
-    } | null = null;
+    } | {kind:'auto_work';ticketId:number} | null = null;
     private pendingDiscoveryMessages: Array<{ text: string; color: string }> = [];
     private activeMonsterList = ownedMonsterList([], this);
     public get monsters(): Monster[] { return this.activeMonsterList; }
@@ -887,7 +908,7 @@ export class Game {
         const seed = normalizeSeed(options?.seed ?? 0);
         if (options?.ruleSet !== undefined && options.ruleSet !== 'classic' && options.ruleSet !== 'extended') throw new Error('Invalid rule set');
         const extensionManifest = options?.ruleSet === 'extended'
-            ? createExtensionRegistry().manifest(options.extensions ?? DEFAULT_EXTENSIONS) : undefined;
+            ? (worldFixtureRegistry(this) ?? createExtensionRegistry()).manifest(options.extensions ?? DEFAULT_EXTENSIONS) : undefined;
         // Factories/data/state validators are pure preflight: an invalid data pack
         // must not unload the existing run. Player/depth ports are live closures.
         const preparedExtensions = extensionManifest ? this.createExtensionRuntime(extensionManifest) : null;
@@ -939,6 +960,8 @@ export class Game {
         this.clearSquareLandingRetry();
         delete this.bodyGroups;
         if (preparedExtensions?.needsWorld5) this.world5 = createWorld5(); else delete this.world5;
+        if (this.world5) { this.world5.definitionsFingerprint=preparedExtensions!.worldDefinitionFingerprints();this.worldContainerItems=new Map();this.worldWorkFacts=[];this.worldWorkDetails=[]; } else {delete this.worldContainerItems;delete this.worldWorkFacts;delete this.worldWorkDetails;}
+        if (this.world5 || preparedExtensions?.actorActionBinding()) this.actorActions = createActorActionsRoot(); else delete this.actorActions;
         this.depth = 1;
         this.currentLevelDepth = null;
         this.absoluteTurnNumber = 0;
@@ -1688,7 +1711,7 @@ export class Game {
                     deep: [target, this.player, creatures, this.monsters, this.dormantMonsters, this.purgatory,
                         ...cached.flatMap(level => [level.monsters, level.dormantMonsters]),
                         this.items, this.pendingFallenByDepth, this.pendingFallenItemsByDepth,
-                        this.levelSeeds, this.meteredItems, this.stats, this.minersLight, this.bodyGroups, this.world5, this.seenBodyCoreIds, actionState,
+                        this.levelSeeds, this.meteredItems, this.stats, this.minersLight, this.bodyGroups, this.world5, this.actorActions, this.worldContainerItems, this.worldWorkFacts,this.worldWorkDetails, this.seenBodyCoreIds, actionState,
                         // Dig-time DF aggravation can still reach the departed
                         // scent/waypoint system before the new ones are installed.
                         this.scent, this.waypoints, this.pendingCaughtFireCells,
@@ -1744,6 +1767,7 @@ export class Game {
                 if (this.world5) { indexWorldLevels(this.world5, this.levelSeeds, this.depth); assertWorldLevelOwnership(this.activeLevelState(), this.levels, { monsters: [...this.pendingFallenByDepth.values()].flat(), items: [...this.pendingFallenItemsByDepth.values()].flat() }); }
                 if (!isFirstLevel) resumeProductionActorActions(this);
                 if (firstVisit) runtime.emit('afterLevelGeneration', { depth: this.depth });
+                enterWorldWorkLevel(this,firstVisit);
                 runtime.emit('enteredLevel', { depth: this.depth, firstVisit, actorIds: [...new Set([this.player.id,...this.monsters.map(actor=>actor.id),...this.dormantMonsters.map(actor=>actor.id)])].sort((a,b)=>a-b) });
                 // Mutable module hooks only see the completed world and the run
                 // RNG restored by the generation coordinator's finally block.
@@ -3436,7 +3460,7 @@ export class Game {
     private makeRecordingHeader(): RecordingHeaderV4 {
         return { version: 4, recordedAt: Date.now(), seed: this.currentSeed, mode: this.mode,
             initialLevel: { kind: 'dungeon', depth: 1 }, extensions: this.extensionRuntime ? structuredClone(this.extensionRuntime.manifest) : null,
-            codec: { wholeRun: 4, foundation: 6, origin: 2 }, digestAlgorithm: 'sha256-c5-merkle-v1', digestChunk: 256, checkpointPeriod: 2048,
+            codec: { wholeRun: 5, foundation: 7, origin: 2 }, digestAlgorithm: 'sha256-c5-merkle-v1', digestChunk: 256, checkpointPeriod: 2048,
             initialDigest: mechanicalDigest(this.projectWholeRun(), this.recordingInputState()) };
     }
     private recordInputEvent(action: string, data: unknown, decisions: boolean[]): RecordedInputEvent {
@@ -3463,6 +3487,7 @@ export class Game {
         bindPhasedAttackProduction(this);
         reconcileProductionActorActions(this);
         settleWorldRest(this);
+        settleWorldWork(this);
         const roots = [...this.monsters, ...this.dormantMonsters, ...this.purgatory,
             ...[...this.levels.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]),
             ...[...this.pendingFallenByDepth.values()].flat()];
@@ -3472,6 +3497,15 @@ export class Game {
         this.extensionRuntime.settle(reachable);
         this.extensionRuntime.collectComponents(reachable);
         collectPhasedAttackActors(this, reachable);
+    }
+
+    private recordingEventDigest(manifest: ExtensionManifest | null) {
+        return dirtyEventDigest(this, manifest, {
+            extensions: { token: this.extensionRuntime?.recordingDigestToken() ?? [null], leaves:()=>({root:this.extensionRuntime?.snapshot()??null}) },
+            world5: { token:[this.world5,this.world5?.revision,recordingRootRevision(this.world5),this.worldWorkFacts,this.worldWorkDetails],
+                leaves:()=>({root:this.world5??null,...(this.worldWorkFacts?{facts:this.worldWorkFacts}:{}),...(this.worldWorkDetails?{workDetails:this.worldWorkDetails}:{})}) },
+            actorActions:{token:[this.actorActions,this.actorActions?.nextActionId,recordingRootRevision(this.actorActions)],leaves:()=>({root:this.actorActions??null})}
+        });
     }
 
     private updateRecordedCheckpoint(event: RecordedInputEvent): void {
@@ -3485,7 +3519,7 @@ export class Game {
         event.terminal = this.isGameOver ? { won: this.gameOverWon, superVictory: this.gameOverSuperVictory, score: this.gameOverScore } : null;
         const state = recordingState(this);
         const header = state.header ?? (state.header = this.makeRecordingHeader());
-        event.checkpoint = eventDigest(this.extensionRuntime?.snapshot() ?? null, this.world5 ?? null, header.extensions);
+        event.checkpoint = this.recordingEventDigest(header.extensions);
         if ((event.index + 1) % 256 === 0) {
             event.fullCheckpoint = mechanicalDigest(this.projectWholeRun(), this.recordingInputState());
             if (event.checkpoint && EVENT_DOMAINS.some(d => event.checkpoint!.domains[d] !== event.fullCheckpoint!.domains[d])) throw new Error('Recording domain divergence');
@@ -3495,7 +3529,7 @@ export class Game {
             const world = JSON.parse(JSON.stringify(this.projectWholeRun())) as GameSnapshot; world.savedAt = 0;
             const snapshot: ReplaySnapshotV4 = { afterCommand: event.index + 1, tick: event.tick, simulationTicks: event.simulationTicks,
                 levelRef: structuredClone(event.levelRef), prefixDigest: event.chainDigest, checkpoint: event.fullCheckpoint!,
-                snapshotCodec: 'brogue-web-whole-run-v4', snapshotDigest: worldSnapshotHash(world), world, inputState: this.recordingInputState() };
+                snapshotCodec: 'brogue-web-whole-run-v5', snapshotDigest: worldSnapshotHash(world), world, inputState: this.recordingInputState() };
             const state = recordingState(this); state.snapshots = boundedSnapshots([...state.snapshots, snapshot]);
             state.trustedSnapshots.add(snapshot.snapshotDigest);
         }
@@ -3579,7 +3613,7 @@ export class Game {
                     execution.pending = Object.freeze({ token: Object.freeze({}),
                         ownerCommandId: execution.id, message: result.value.message });
                     execution.pendingRecordsDecision = result.value.recordDecision !== false;
-                    execution.valid = this.confirmationGuard(execution.data);
+                    if(isWorldWorkCommand(this,execution.data)){const runtime=this.extensionRuntime,player=this.player;execution.valid=()=>this.extensionRuntime===runtime&&this.player===player;}else execution.valid = this.confirmationGuard(execution.data);
                     execution.autoStep = this.inAutoTravelStep;
                     execution.blockCombatText = logger.blockCombatText;
                     return;
@@ -3708,13 +3742,27 @@ export class Game {
         return this.runSynchronousStages(this.applyCommandStages(action, data, perform));
     }
 
-    private *applyCommandStages(action: string, data?: unknown, perform?: () => void): CommandStages<void> {
+    private *applyCommandStages(action:string,data?:unknown,perform?:()=>void):CommandStages<void> {
+        this.worldWorkCommandEpoch++;
+        const body=this.applyCommandBodyStages(action,data,perform);
+        let answer:boolean|undefined;
+        try { for(;;) {
+            const before=this.executingRecordedCommand;this.executingRecordedCommand=true;
+            let step:ReturnType<typeof body.next>;
+            try {step=body.next(answer!);} finally {this.executingRecordedCommand=before;}
+            if(step.done)return;
+            answer=yield step.value;
+        }} finally {const before=this.executingRecordedCommand;this.executingRecordedCommand=true;
+            try {body.return();} finally {this.executingRecordedCommand=before;}}
+
+    }
+    private *applyCommandBodyStages(action: string, data?: unknown, perform?: () => void): CommandStages<void> {
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data))
             throw new Error(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }));
         logger.onDisturb = () => { this.disturbed = true; };
         // All explicit input, including modal/unknown keys, cancels automation.
         // Nested movement from auto_step shares the same command boundary.
-        if (!this.inAutoTravelStep && action !== 'auto_step') this.stopAutoTravel();
+        if (!this.inAutoTravelStep && action !== 'auto_step' && !(action==='ext:command'&&isCancelWorkCommand(this,data))) this.stopAutoTravel();
         this.clearHover();
         if (!this.isAdvancing) this.finishTransientDisplay();
         if (action === 'world5:fixture') { this.registerWorldSettlementFixture(); return; }
@@ -3727,6 +3775,7 @@ export class Game {
             // §4.5: only detached data crosses the wait. Runtime.command and its
             // controlled callbacks remain entirely synchronous, including refusals.
             if (isWorldRestCommand(this,data)) yield* this.executeWorldRestCommandStages(data);
+            else if (isWorldWorkCommand(this,data)) yield* this.executeWorldWorkCommandStages(data);
             else if (isActorParryCommand(this,data)) {
                 const plan=prepareActorParryCommand(this,data);
                 if(plan&&commitActorParryCommand(this,plan)){timeSystem.currentTick+=this.player.ticksUntilTurn;observePresentation(this,'turn',0);this.playerTurnEnded();}
@@ -3821,6 +3870,23 @@ export class Game {
         this.updateVision();
     }
 
+    private *executeWorldWorkCommandStages(data:unknown):CommandStages<void> {
+        setWorldWorkError(this,null);const first=prepareWorldWorkCommand(this,data);
+        if(!first.outcome.ok){setWorldWorkError(this,first.outcome.code);return;}
+        let plan=first;
+        if(first.risks.length){
+            const message=i18next.t('ext.foundation.world.confirm.tool-break');
+            if(!this.replayRecording){const yes=yield {message,recordDecision:false};
+                plan=prepareWorldWorkCommand(this,data);if(!plan.outcome.ok||plan.canonical!==first.canonical){setWorldWorkError(this,'C5_STALE');return;}
+                const risk:ControlledActionRisk={kind:'tool-break',target:{kind:'creature',id:this.player.id},message};const state=recordingState(this);state.suppliedAnswers={request:null,answers:[{risk,decision:yes}],cursor:0};try{if(!(yield* this.requestConfirm(message,risk)))return;}finally{state.suppliedAnswers=null;}
+            }else if(!(yield* this.requestConfirm(message)))return;
+        }
+        if(!plan.outcome.ok)return;
+        const handle=plan.outcome.value;const outcome=withWorldActorScope(this,handle.owner,this.player.id,'player-command',scope=>commitWorldWork(this,handle,scope));
+        if(!outcome.ok){setWorldWorkError(this,outcome.code);return;}
+        bindInventoryReservations(this.player.inventory,()=>reservedInventorySlots(this));
+        if(outcome.value.chargedTicks>0)this.playerTurnEnded();
+    }
     private *executePhasedAttackCommandStages(data: unknown): CommandStages<void> {
         const runtime = this.extensionRuntime, plan = preparePhasedAttackCommand(this, data);
         if (!plan) return;
@@ -3982,7 +4048,7 @@ export class Game {
         const restoreServices=checkpointGenerationWorld(()=>({shallow:[logger],deep:[logger.messages,
             ItemLoader.potionFlavorMap,ItemLoader.scrollFlavorMap,ItemLoader.arcanaFlavorMap,ItemLoader.identifiedItems,ItemLoader.callTitles,ItemLoader.magicPolarityRevealed]}));
         let candidate:Game|undefined;
-        try { setMachineObservationHook(null); candidate=new Game({seed:1});candidate.animationEnabled=false;return run(candidate); }
+        try { setMachineObservationHook(null); candidate=new Game({seed:1});copyWorldFixtureRegistry(this,candidate);candidate.animationEnabled=false;return run(candidate); }
         finally {
             try { candidate?.extensionRuntime?.unload(); }
             finally {
@@ -4080,7 +4146,7 @@ export class Game {
             || JSON.stringify(rng.getState()) !== JSON.stringify(event.rng)) throw new Error('state mismatch at tick ' + event.tick + ' position ' + event.player.x + ',' + event.player.y);
         if (!!event.terminal !== this.isGameOver || (event.terminal && (this.gameOverWon !== event.terminal.won
             || this.gameOverSuperVictory !== event.terminal.superVictory || this.gameOverScore !== event.terminal.score))) throw new Error('endgame mismatch');
-        const checkpoint = eventDigest(this.extensionRuntime?.snapshot() ?? null, this.world5 ?? null, this.replayRecording!.extensions);
+        const checkpoint = this.recordingEventDigest(this.replayRecording!.extensions);
         for (const domain of EVENT_DOMAINS) if (checkpoint?.domains[domain] !== event.checkpoint?.domains[domain]) throw new ReplayDigestMismatch(domain, event);
         if (event.fullCheckpoint) {
             const full = mechanicalDigest(this.projectWholeRun(), this.recordingInputState());
@@ -4890,7 +4956,9 @@ export class Game {
 
     /** CE equip() rejects repeated commands; internal equipItem() can refresh
      * weapon/armor state (Items.c:4005-4008 vs 8538-8561). */
+    private rejectMaterialUse(item:Item):boolean {if(item.category!==ItemCategory.MATERIAL)return false;logger.log(i18next.t('ext.foundation.world.material-unusable'),'#cccccc');return true;}
     public equipItem(item: Item, replacement?: Item | null, fromCommand = false) {
+        if(this.rejectMaterialUse(item))return;
         if (this.interactionActive) return;
         const equipped = [this.player.equippedWeapon, this.player.equippedArmor, this.player.ringLeft, this.player.ringRight]
             .some(slot => slot?.id === item.id);
@@ -5006,6 +5074,7 @@ export class Game {
             if (peel) {
                 const copy = new Item(item.name, item.char, item.color, item.category);
                 dropped = Object.assign(copy, item, { id: copy.id, quantity: 1 });
+                const definition=worldItemDefinition(item);if(definition)bindWorldItem(dropped,definition);
                 item.quantity--;
             } else {
                 this.player.inventory.removeItem(item);
@@ -5162,6 +5231,7 @@ export class Game {
     }
 
     public quaffItem(item: Item, confirmed: boolean = false) {
+        if(this.rejectMaterialUse(item))return;
         if (this.interactionActive) return;
         if (item.category !== ItemCategory.POTION) return;
         // B-1c：CE Items.c:8050-8060——恶意且玩家已知时先 confirm，取消即
@@ -5361,6 +5431,7 @@ export class Game {
     }
 
     private *eatItemStages(item: Item): CommandStages<void> {
+        if(this.rejectMaterialUse(item))return;
         if (this.interactionActive) return;
         if (this.isInputLocked() || this.isGameOver || this.player.hp <= 0
             || this.player.hasStatus('paralyzed')) return;
@@ -5402,6 +5473,7 @@ export class Game {
     }
 
     public readItem(item: Item, confirmed: boolean = false) {
+        if(this.rejectMaterialUse(item))return;
         if (this.interactionActive) return;
         if (this.pendingEnchantment) return;
         if (item.category !== ItemCategory.SCROLL) return;
@@ -5568,6 +5640,7 @@ export class Game {
     }
 
     public useArcanaItem(item: Item) {
+        if(this.rejectMaterialUse(item))return;
         if (this.interactionActive) return;
         if (this.isInputLocked() || this.isGameOver || this.player.hp <= 0 || this.player.hasStatus('paralyzed')
             || this.pendingIdentify || this.pendingEnchantment || this.pendingArcana || !this.player.inventory.items.includes(item)) return;
@@ -7839,6 +7912,7 @@ export class Game {
     }
 
     public enterThrowMode(item: Item) {
+        if(this.rejectMaterialUse(item))return;
         if (this.interactionActive) return;
         this.isThrowing = true;
         this.throwItemTarget = item;
@@ -7936,6 +8010,7 @@ export class Game {
     }
 
     private *throwItemAtStages(item: Item, tx: number, ty: number): CommandStages<void> {
+        if(this.rejectMaterialUse(item))return;
         if (this.interactionActive) return;
         this.isThrowing = false;
         this.throwItemTarget = null;
@@ -10593,6 +10668,7 @@ export class Game {
             if (chosen.quantity > 1 && chosen.category !== ItemCategory.WEAPON && chosen.category !== ItemCategory.GEM) {
                 const peeled = new Item(chosen.name, chosen.char, chosen.color, chosen.category);
                 drop = Object.assign(peeled, chosen, { id: peeled.id, quantity: 1, loc: { x, y } });
+                const definition=worldItemDefinition(chosen);if(definition)bindWorldItem(drop,definition);
             }
             if (drop === chosen) this.player.inventory.removeItem(chosen);
             else chosen.quantity--;
@@ -10856,7 +10932,7 @@ export class Game {
                 advancementLoop: (stealthRange) => game.advancementLoop(stealthRange),
                 finishTurnEpilogue: () => game.finishTurnEpilogue(),
                 observeAnimationDelay: milliseconds => observePresentation(game, 'animation-delay', milliseconds),
-                settleWorldRest: () => settleWorldRest(game, false),
+                settleWorldRest: () => {settleWorldRest(game,false);settleWorldWork(game,false);},
                 observeActorActionBoundary: () => observePresentation(game, 'turn', game.animationEnabled ? Game.ANIMATION_PAUSE_MS : 0),
                 triggerGameOver: (victory, reason) => game.triggerGameOver(victory, reason),
             },
@@ -10996,6 +11072,7 @@ export class Game {
         logger.endCombatTurn();
         if (this.extensionRuntime) this.extensionRuntime.emit('playerTurnEnded', { turn: this.stats.turns });
         settleWorldRest(this);
+        settleWorldWork(this);
         observePresentation(this, 'turn', this.animationEnabled ? Game.ANIMATION_PAUSE_MS : 0);
     }
 
@@ -11294,6 +11371,8 @@ export class Game {
             autoAction: this.autoAction ?? undefined,
             pendingDiscoveryMessages: this.pendingDiscoveryMessages.length ? this.pendingDiscoveryMessages : undefined,
             ...(this.world5 ? { world5: this.world5 } : {}),
+            ...(this.actorActions ? { actorActions: this.actorActions } : {}),
+            ...(this.worldWorkFacts ? { worldWorkFacts: this.worldWorkFacts,worldWorkDetails:this.worldWorkDetails! } : {}),
             signTexts: [...this.signTexts], resetPlateRoomByPos: [...this.resetPlateRoomByPos],
             testRooms: [...this.testRooms], currentTestCategory: this.currentTestCategory,
             receivedLevitationWarning: this.receivedLevitationWarning || undefined,
@@ -11323,6 +11402,9 @@ export class Game {
         validateProductionActorActionSession(this);
         if (this.isAdvancing) throw new Error('Cannot save during turn advancement');
         this.finishTransientDisplay(true);
+        if(!!this.actorActions!==(!!this.world5||!!this.extensionRuntime?.actorActionBinding()))throw new Error('Invalid actorActions presence');
+        if(this.actorActions)validateActorActionsRoot(this.actorActions,!!this.extensionRuntime?.actorActionBinding(),!!this.world5);
+        validateWorldWorkReferences(this);
         const snapshot = this.projectWholeRun(false);
         if (!!snapshot.run.world5 !== !!this.extensionRuntime?.needsWorld5) throw new Error('C5_BAD_REFERENCE');
         if (snapshot.run.world5) validateWorld5(snapshot.run.world5, { ...world5SnapshotContext(snapshot),
@@ -11339,7 +11421,7 @@ export class Game {
             pendingFallenByDepth: this.pendingFallenByDepth,
             pendingFallenItemsByDepth: this.pendingFallenItemsByDepth,
             purgatory: this.purgatory, monsters: this.monsters, dormantMonsters: this.dormantMonsters,
-            items: this.items, player: this.player, everSeenMonsters: this.everSeenMonsters,
+            containerItems:containerItemRoots(this), items: this.items, player: this.player, everSeenMonsters: this.everSeenMonsters,
             everSeenItems: this.everSeenItems, visibleMonsters: this.visibleMonsters,
             visibleItems: this.visibleItems, travelTargetItem: this.travelTargetItem,
             isAdvancing: this.isAdvancing, currentSeed: this.currentSeed, levelSeeds: this.levelSeeds,
@@ -11441,6 +11523,8 @@ export class Game {
         if (!isWholeRunSnapshot(snapshot, extensions?.spatialCatalog)) return refuse();
         try {
             if (!!snapshot.run.world5 !== !!extensions?.needsWorld5) return refuse();
+            if (!!snapshot.run.actorActions !== !!(extensions?.needsWorld5 || extensions?.actorActionBinding())) return refuse();
+            if (snapshot.run.actorActions) validateActorActionsRoot(snapshot.run.actorActions, !!extensions?.actorActionBinding(),!!snapshot.run.world5);
             if (snapshot.run.world5) validateWorld5(snapshot.run.world5, { ...world5SnapshotContext(snapshot), rulesFingerprint: extensions!.world5SettlementFixture()?.configuration.rulesFingerprint });
         } catch { return refuse(); }
         if ('recordingOrigin' in snapshot.run) {
@@ -11490,7 +11574,14 @@ export class Game {
                 }
                 extensions.validateWorld([decodedPlayer, ...extensionCreatures], { depth: snapshot.depth, turn: snapshot.run.absoluteTurnNumber,
                     isGameOver: snapshot.run.isGameOver, nextEntityId: snapshot.run.nextEntityId });
+                if(snapshot.run.world5){const level=restored.get(snapshot.depth)!;
+                    const candidate=Object.assign({},{player:decodedPlayer,grid:level.grid,depth:snapshot.depth,items:level.items,monsters:level.monsters,dormantMonsters:level.dormantMonsters,
+                        levels:restored,currentLevelDepth:snapshot.depth,pendingFallenByDepth:new Map(snapshot.pendingFallenByDepth.map(q=>[q.depth,q.monsters.map(m=>entityGraph.monsters.get(m.id)!)])),pendingFallenItemsByDepth:new Map(snapshot.pendingFallenItemsByDepth.map(q=>[q.depth,q.items.map(i=>entityGraph.items.get(i.id)!)])),purgatory:(snapshot.purgatory??[]).map(m=>entityGraph.monsters.get(m.id)!),
+                        world5:snapshot.run.world5,autoAction:snapshot.run.autoAction,actorActions:snapshot.run.actorActions,worldWorkDetails:snapshot.run.worldWorkDetails,worldWorkFacts:snapshot.run.worldWorkFacts,extensionRuntime:extensions,worldContainerItems:new Map(snapshot.run.world5.containers.flatMap(c=>c.itemIds.map(id=>[id,entityGraph.items.get(id)!]))) });
+                    validateWorldWorkReferences(candidate as unknown as Game);
+                }
                 const actionBinding = extensions.actorActionBinding();
+                if (actionBinding) validateProductionActorAttackState(actionBinding.state,actionBinding.definition,new Set(),snapshot.run.actorActions);
                 if (actionBinding) {
                     const candidateWorld:ActorActionProductionWorld={depth:snapshot.depth,player:decodedPlayer,
                         ...(snapshot.run.spatialWorld?.groups.length?{bodyGroups:snapshot.run.spatialWorld.groups}:{}),
@@ -11506,7 +11597,7 @@ export class Game {
                             const declared=part.attackProfileIds.map(id=>extensions!.spatialCatalog.attackProfile(id).providerProfileId);
                             return {declared,available:declared.filter(id=>nativeZoneAttackAvailable(source,id)
                                 &&bodyPartAttackAvailable(extensions!.spatialCatalog,group!,source,id))};
-                        });
+                        },snapshot.run.actorActions);
                 }
                 if (actionBinding) validatePhasedAttackGeometry(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
                     (depth,x,y)=>restored.get(depth)?.grid.isValidPos(x,y)===true,
@@ -11517,8 +11608,8 @@ export class Game {
                         return part?.attackProfileIds.length ? part.attackProfileIds.map(id => extensions!.spatialCatalog.attackProfile(id).providerProfileId)
                             .filter(id=>bodyPartAttackAvailable(extensions!.spatialCatalog,group!,source,id)
                                 && bodyPartAttackAvailable(extensions!.spatialCatalog,group!,source,attackId)) : undefined;
-                    });
-                if (actionBinding) validateProductionActorActionState(actionBinding.state && typeof actionBinding.state === 'object' && !Array.isArray(actionBinding.state) ? actionBinding.state.scheduler : null, {
+                    }, snapshot.run.actorActions);
+                if (snapshot.run.actorActions) validateProductionActorActionState(snapshot.run.actorActions, {
                     depth: snapshot.depth, player: decodedPlayer,
                     ...(snapshot.run.spatialWorld?.groups.length ? { bodyGroups: snapshot.run.spatialWorld.groups } : {}),
                     levels: [
@@ -11548,6 +11639,8 @@ export class Game {
         this.mode = snapshot.mode; this.depth = snapshot.depth; this.currentLevelDepth = snapshot.currentLevelDepth;
         this.currentSeed = snapshot.seed; this.levelSeeds = copyLevelSeeds(snapshot.levelSeeds);
         if (snapshot.run.world5) this.world5 = structuredClone(snapshot.run.world5); else delete this.world5;
+        if (snapshot.run.world5) { this.worldContainerItems=new Map(snapshot.run.world5.containers.flatMap(c=>c.itemIds.map(id=>[id,entityGraph.items.get(id)!] as const)));this.worldWorkFacts=structuredClone(snapshot.run.worldWorkFacts??[]);this.worldWorkDetails=structuredClone(snapshot.run.worldWorkDetails??[]); } else {delete this.worldContainerItems;delete this.worldWorkFacts;delete this.worldWorkDetails;}
+        if (snapshot.run.actorActions) this.actorActions = structuredClone(snapshot.run.actorActions); else delete this.actorActions;
         this.ticksTillUpdateEnvironment = snapshot.ticksTillUpdateEnvironment;
         const active = restored.get(this.depth)!;
         this.grid = active.grid; this.environment = active.environment; this.fov = active.fov; this.lightMap = active.lightMap;
@@ -11571,6 +11664,7 @@ export class Game {
         this.activeFlares = []; this.terrainFlashes = []; this.flareLightMap = null; this.flareElapsedMs = 0;
 
         this.player = decodedPlayer;
+        if(this.world5)bindInventoryReservations(this.player.inventory,()=>reservedInventorySlots(this));
 
         const run = JSON.parse(JSON.stringify(snapshot.run)) as GameSnapshot['run'];
         this.meteredItems = run.meteredItems; this.foodSpawned = run.foodSpawned; this.goldGenerated = run.goldGenerated;
@@ -13293,7 +13387,28 @@ export class Game {
         }
     }
 
-    private stopAutoTravel() {
+    private stopAutoWorkInCommand(reason:string):void {
+        if(!this.executingRecordedCommand)throw new Error('World work stopped outside recorded command');
+        if(this.autoAction?.kind==='auto_work')cancelWorldWork(this,this.autoAction.ticketId,reason);
+    }
+    public hasWorldAutoWork():boolean { return this.autoAction?.kind==='auto_work'; }
+    public beginWorldAutoWork(ticketId:number):void { this.autoAction={kind:'auto_work',ticketId}; }
+    public clearWorldAutoWork(ticketId:number):void { if(this.autoAction?.kind==='auto_work'&&this.autoAction.ticketId===ticketId)this.autoAction=null; }
+    public checkpointWorldWork():()=>void {
+        // C5 operations never own grid/environment/cache-layer writes. Preserve
+        // native actor clock pointers shallowly and only traverse the explicit C5 write set.
+        const actors=[this.player,...this.monsters],runtime=this.extensionRuntime!;
+        const restore=checkpointGenerationWorld(()=>({shallow:[this,...actors],
+            deep:[this.world5,this.actorActions,this.worldContainerItems,this.worldWorkFacts,this.worldWorkDetails,
+                this.player.inventory,this.items,this.autoAction,...actors.map(a=>a instanceof Monster?a.carriedItem:null)],
+            references:[runtime]}));
+        const actions=checkpointProductionActorActions(this),log=logger.checkpoint(),id=getNextEntityId(),random=rng.getState(),tick=timeSystem.currentTick;
+        const invalid=isProductionActorActionRunInvalid(this),origin=recordingState(this).origin;
+        return()=>{restore();actions();log();restoreProductionActorActionValidity(this,invalid);recordingState(this).origin=origin;
+            restoreNextEntityId(id);rng.setState(random);timeSystem.currentTick=tick;};
+    }
+    private stopAutoTravel(reason='input') {
+        if(this.autoAction?.kind==='auto_work')this.stopAutoWorkInCommand(reason);
         this.autoFight = null;
         this.autoAction = null;
         this.autoPath = [];
@@ -13325,6 +13440,7 @@ export class Game {
     }
 
     protected handleAutoExplore(): void {
+        if(this.autoAction?.kind==='auto_work'&&!this.executingRecordedCommand)return;
         if (this.hasPendingConfirmation) return undefined;
         return this.runSynchronousStages(this.handleAutoExploreStages());
     }
@@ -13363,6 +13479,7 @@ export class Game {
      * Parent links also provide the route, avoiding a second A* scan.
      */
     private recomputeExplorePath() {
+        if(this.autoAction?.kind==='auto_work'&&!this.executingRecordedCommand)return;
         const queue: Pos[] = [{ ...this.player.loc }];
         const key = (p: Pos) => `${p.x},${p.y}`;
         const parents = new Map<string, Pos | null>([[key(this.player.loc), null]]);
@@ -13396,6 +13513,7 @@ export class Game {
     }
 
     public handleMouseTravel(x: number, y: number): void {
+        if(this.autoAction?.kind==='auto_work'&&!this.executingRecordedCommand)return;
         if (this.hasPendingConfirmation) return undefined;
         return this.runSynchronousStages(this.handleMouseTravelStages(x, y));
     }
@@ -14243,6 +14361,7 @@ export class Game {
     }
 
     public setAutoPath(x: number, y: number) {
+        if(this.autoAction?.kind==='auto_work')return;
         if (this.interactionActive) return;
         this.disturbed = false;
         this.autoFight = null;
@@ -14298,8 +14417,9 @@ export class Game {
     }
 
     private autoTravelDisturbed(): boolean {
+        if(this.autoAction?.kind==='auto_work'&&!this.executingRecordedCommand)return false;
         if (!this.disturbed) return false;
-        this.stopAutoTravel();
+        this.stopAutoTravel(this.autoAction?.kind==='auto_work' ? worldWorkInterruptionReason(this) ?? 'disturbed' : 'disturbed');
         return true;
     }
 
@@ -14381,6 +14501,7 @@ export class Game {
     private *stepAutoActionStages(): CommandStages<void> {
         if (this.autoTravelDisturbed() || !this.autoAction) return;
         const state = this.autoAction;
+        if(state.kind==='auto_work'){if(continueWorldWork(this,state.ticketId))this.playerTurnEnded();return;}
         const origin = { ...this.player.loc }, depth = this.depth, turn = this.stats.turns;
         const delta = state.kind === 'run' ? this.directionToVec(state.direction!) : { x: 0, y: 0 };
         yield* this.handlePlayerAction(state.kind === 'run' ? 'move' : state.kind === 'search_long' ? 'search' : 'wait',

@@ -1,8 +1,10 @@
+import {createActorActionsRoot,type ActorActionsRoot} from '../../../../engine/Core/ActorActionsRoot';
+type BreakFixture=ProductionActorAttackState & {actorActions:ActorActionsRoot};
 import { describe, expect, it, vi } from 'vitest';
-import { createActorActionBundle } from '../../../../engine/Core/ActorActionScheduler';
+import { createActorActionBundle, interruptActorSubaction } from '../../../../engine/Core/ActorActionScheduler';
 import { initialActorResources } from '../../../../engine/Core/ActorResources';
 import type { ActorAttackDefinitions, ActorResourceState, ProductionActorAttackState } from '../../../actorActions';
-import { validateProductionActorAttackState, validateProductionActorAttackTransactionState } from '../../../actorActionValidation';
+import { validateProductionActorAttackState, validateProductionActorAttackTransactionState as validateSeparatedTransaction } from '../../../actorActionValidation';
 import type { PartBreakCommitContext, PartBreakProvider, PartBreakRequest } from '../../../partBreak';
 import type { ActorFacts, Json } from '../../../types';
 import { loadCombatDefinitionPack } from '../definitions';
@@ -10,6 +12,8 @@ import { createCombatModuleFromPack } from '../module';
 import { createCombatPartBreakProvider } from '../partBreak';
 import { combatAttackDefinitions, initialProductionCombatState } from '../production';
 
+function combatOnly(v:BreakFixture){const {actorActions:_root,...state}=v;return structuredClone(state);}
+function validateSeparatedState(v:BreakFixture,pack:ActorAttackDefinitions){validateProductionActorAttackState(combatOnly(v),pack,new Set(),v.actorActions);}
 const definitions = (): ActorAttackDefinitions => structuredClone(combatAttackDefinitions(loadCombatDefinitionPack()));
 const json = (value: unknown): Json => value as Json;
 const request = (patch: Partial<PartBreakRequest> = {}): PartBreakRequest => ({ schema: 1, resolutionId: 1,
@@ -17,38 +21,40 @@ const request = (patch: Partial<PartBreakRequest> = {}): PartBreakRequest => ({ 
     balanceLoss: 6, fallbackStunTicks: 999, ...patch });
 const actor = (patch: Partial<ActorFacts> = {}): ActorFacts => ({ id: 10, name: 'fixture', hp: 30, maxHp: 30,
     x: 5, y: 5, player: false, monsterId: 'rat', allied: false, hostile: true, ...patch });
-function state(patch: Partial<ActorResourceState> = {}, pack = definitions()): ProductionActorAttackState {
-    return { ...initialProductionCombatState(), actors: [{ actorId: 10, profileId: 'combat.fan-edge',
+function state(patch: Partial<ActorResourceState> = {}, pack = definitions()): BreakFixture {
+    return { ...({...initialProductionCombatState(),actorActions:createActorActionsRoot()}),actorActions:createActorActionsRoot(), actors: [{ actorId: 10, profileId: 'combat.fan-edge',
         ...initialActorResources(pack.resourcePolicies[0]!), ...patch }] };
 }
 function freeze<T>(value: T): T {
     if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); }
     return value;
 }
-function prepare(provider: PartBreakProvider, before: ProductionActorAttackState,
+function prepare(provider: PartBreakProvider, before: BreakFixture,
     hit = request(), target = actor()): Json {
     const result = provider.prepare(freeze(structuredClone(hit)), { playerId: 1,
-        state: json(freeze(structuredClone(before))), actor: freeze(structuredClone(target)),
+        state: json(freeze(combatOnly(before))),actorActionBundles:freeze(structuredClone(before.actorActions?.bundles??[])), actor: freeze(structuredClone(target)),
         getComponent: () => { throw new Error('Unexpected component read'); } });
     expect(result.status).toBe('ready');
     if (result.status !== 'ready') throw new Error('Expected ready provider');
     return freeze(result.plan);
 }
-function commitContext(before: ProductionActorAttackState) {
+function commitContext(before: BreakFixture) {
     let current = before;
-    const setState = vi.fn((next: Json) => { current = next as unknown as ProductionActorAttackState; });
+    const setState = vi.fn((next: Json) => {current={...(next as unknown as ProductionActorAttackState),actorActions:structuredClone(before.actorActions??createActorActionsRoot())};
+        for(const bundle of current.actorActions.bundles)if(current.actors.find(a=>a.actorId===bundle.decisionOwnerId)?.poise===0)for(const child of bundle.subactions)if(child.phaseIndex<child.phases.length&&child.phases[child.phaseIndex]!.kind!=='break-recovery')interruptActorSubaction(child,bundle,50);
+    });
     const forbidden = () => { throw new Error('Unexpected component/message write'); };
-    const context: PartBreakCommitContext = { get state() { return json(current); }, setState,
+    const context: PartBreakCommitContext = { get state() { return json(combatOnly(current)); }, setState,
         getComponent: forbidden, setComponent: forbidden, removeComponent: forbidden, message: forbidden };
     return { context, setState, current: () => current };
 }
-function apply(before: ProductionActorAttackState, hit = request(), target = actor(), pack = definitions()) {
+function apply(before: BreakFixture, hit = request(), target = actor(), pack = definitions()) {
     const provider = createCombatPartBreakProvider(pack), original = structuredClone(before);
     const plan = prepare(provider, before, hit, target), result = commitContext(before);
     expect(before).toEqual(original);
     provider.commit(hit, plan, result.context);
     expect(before).toEqual(original);
-    validateProductionActorAttackState(result.current(), pack);
+    validateSeparatedState(result.current(), pack);
     return result;
 }
 function busy(pack = definitions(), stage: 'windup' | 'inter-segment' | 'recovery' = 'windup', elapsed = 0) {
@@ -57,20 +63,20 @@ function busy(pack = definitions(), stage: 'windup' | 'inter-segment' | 'recover
     const phases = attack.segments.map((segment, index) => ({ kind: index === 0 ? 'windup' as const : 'inter-segment' as const,
         durationTicks: index === 0 ? attack.windupTicks : segment.delayTicks, segmentIndex: index as number | null }));
     const phaseIndex = stage === 'windup' ? 0 : stage === 'inter-segment' ? 1 : phases.length;
-    const bundle = createActorActionBundle({ actionId: 1, depth: 1, decisionOwnerId: 10, timeChargeOwnerId: 10,
+    const bundle = createActorActionBundle({owner:'combat',  actionId: 1, depth: 1, decisionOwnerId: 10, timeChargeOwnerId: 10,
         subactions: [{ sourceEntityId: 10, sourcePartId: 'self', sourceFootprintVersion: 'fixture-v1',
             phases: [...phases, { kind: 'recovery', durationTicks: attack.recoveryTicks, segmentIndex: null }] }] });
     const child = bundle.subactions[0]!;
     child.phaseIndex = phaseIndex; child.phaseRemainingTicks = child.phases[phaseIndex]!.durationTicks - elapsed;
     bundle.elapsedActionTicks = child.phases.slice(0, phaseIndex).reduce((sum, phase) => sum + phase.durationTicks, 0) + elapsed;
     const segment = attack.segments[Math.min(phaseIndex, attack.segments.length - 1)]!;
-    result.nextActionId = 2; result.scheduler.bundles.push(bundle);
+    result.actorActions.nextActionId = 2; result.actorActions.bundles.push(bundle);
     result.actions.push({ actionId: 1, profileId: pack.playerProfileId, paidCost: attack.cost,
         subactions: [{ sourceSubactionId: 1, attackId: attack.id, facing: 'e',
             lockedCells: stage === 'recovery' ? [] : [{ x: 6, y: 5 }],
             shape: { schema: 1, kind: 'footprint-offset-union', offsets: structuredClone(segment.shape.offsets.e),
                 selfExclusion: segment.shape.selfExclusion }, approvedRisks: [] }] });
-    validateProductionActorAttackState(result, pack);
+    validateSeparatedState(result, pack);
     return result;
 }
 
@@ -101,7 +107,7 @@ describe('combat published part-break provider', () => {
         [actor(), 'combat.fan-edge'], [actor({ monsterId: 'unmapped-monster' }), 'fixture.profile'],
         [actor({ player: true, monsterId: 'rat' }), 'fixture.profile'],
     ])('creates a complete row from the appropriate resource profile %j', (target, profileId) => {
-        const result = apply(initialProductionCombatState(), request(), target as ActorFacts).current();
+        const result = apply(({...initialProductionCombatState(),actorActions:createActorActionsRoot()}), request(), target as ActorFacts).current();
         expect(result.actors).toEqual([{ actorId: 10, profileId,
             ...initialActorResources(definitions().resourcePolicies[0]!), poise: 6, poiseRecoveryDelayRemaining: 40 }]);
     });
@@ -112,13 +118,13 @@ describe('combat published part-break provider', () => {
         expect(result.actors[1]).toEqual(before.actors[0]);
     });
     it.each([false, true])('handles zero loss without a write or revision change, existing=%s', existing => {
-        const before = existing ? state() : initialProductionCombatState();
+        const before = existing ? state() : ({...initialProductionCombatState(),actorActions:createActorActionsRoot()});
         const result = apply(before, request({ balanceLoss: 0 }));
         expect(result.current()).toBe(before); expect(result.setState).not.toHaveBeenCalled();
     });
     it.each([false, true])('handles immune actors without fallback or new state, existing=%s', existing => {
         const pack = definitions(); pack.resourcePolicies[0]!.poiseImmune = true;
-        const before = existing ? state({}, pack) : initialProductionCombatState();
+        const before = existing ? state({}, pack) : ({...initialProductionCombatState(),actorActions:createActorActionsRoot()});
         const result = apply(before, request({ balanceLoss: 100 }), actor(), pack);
         expect(result.current()).toBe(before); expect(result.setState).not.toHaveBeenCalled();
     });
@@ -136,58 +142,58 @@ describe('combat published part-break provider', () => {
         expect(result.actors[0]).toEqual({ ...before.actors[0]!, poise: 0, poiseRecoveryDelayRemaining: 40,
             parryRemainingTicks: 0, parryRecoveryRemainingTicks: 0, parryFacing: null,
             dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0, staggerRemainingTicks: ticks });
-        expect(result.scheduler.bundles).toEqual([]);
+        expect(result.actorActions.bundles).toEqual([]);
     });
     it.each(['windup', 'inter-segment', 'recovery'] as const)('cancels a %s tail with the existing scheduler formula', stage => {
         const before = busy(definitions(), stage, 7), result = apply(before, request({ balanceLoss: 12 })).current();
-        const oldChild = before.scheduler.bundles[0]!.subactions[0]!, child = result.scheduler.bundles[0]!.subactions[0]!;
+        const oldChild = before.actorActions.bundles[0]!.subactions[0]!, child = result.actorActions.bundles[0]!.subactions[0]!;
         const remaining = stage === 'recovery' ? Math.max(oldChild.phaseRemainingTicks, 50) : 50;
         expect(child.phases).toEqual([...oldChild.phases.slice(0, oldChild.phaseIndex),
             { kind: 'break-recovery', durationTicks: 7 + remaining, segmentIndex: null }]);
         expect(child.phaseRemainingTicks).toBe(remaining); expect(child.phaseIndex).toBe(oldChild.phaseIndex);
-        expect(result.scheduler.bundles[0]!.elapsedActionTicks).toBe(before.scheduler.bundles[0]!.elapsedActionTicks);
+        expect(result.actorActions.bundles[0]!.elapsedActionTicks).toBe(before.actorActions.bundles[0]!.elapsedActionTicks);
         expect(result.actions[0]!.subactions[0]!.lockedCells).toEqual([]);
         expect(result.actions[0]!.paidCost).toBe(before.actions[0]!.paidCost);
         expect(result.actors[0]).toMatchObject({ profileId: before.actors[0]!.profileId, poise: 0, staggerRemainingTicks: 0 });
-        expect(result.nextActionId).toBe(before.nextActionId); expect(result.revision).toBe(before.revision + 1);
+        expect(result.actorActions.nextActionId).toBe(before.actorActions.nextActionId); expect(result.revision).toBe(before.revision + 1);
     });
     it('does not shorten a longer existing scheduler recovery', () => {
         const pack = definitions(); pack.attacks.find(attack => attack.id === 'fixture.double-thrust')!.recoveryTicks = 200;
         const before = busy(pack, 'recovery', 7), result = apply(before, request({ balanceLoss: 12 }), actor(), pack).current();
-        expect(result.scheduler.bundles[0]!.subactions[0]!.phaseRemainingTicks).toBe(193);
+        expect(result.actorActions.bundles[0]!.subactions[0]!.phaseRemainingTicks).toBe(193);
     });
     it('replaces its own due release while another due owner stays unchanged until dispatch', () => {
         const pack = definitions(), before = busy(pack), other = busy(pack);
         other.actors[0]!.actorId = 20;
-        const otherBundle = other.scheduler.bundles[0]!;
+        const otherBundle = other.actorActions.bundles[0]!;
         otherBundle.actionId = 2; otherBundle.decisionOwnerId = otherBundle.timeChargeOwnerId = 20;
         otherBundle.subactions[0]!.sourceEntityId = 20; other.actions[0]!.actionId = 2;
-        before.scheduler.bundles.push(otherBundle); before.actions.push(other.actions[0]!);
-        before.actors.push(other.actors[0]!); before.nextActionId = 3;
-        for (const bundle of before.scheduler.bundles) {
+        before.actorActions.bundles.push(otherBundle); before.actions.push(other.actions[0]!);
+        before.actors.push(other.actors[0]!); before.actorActions.nextActionId = 3;
+        for (const bundle of before.actorActions.bundles) {
             bundle.elapsedActionTicks = bundle.subactions[0]!.phases[0]!.durationTicks;
             bundle.subactions[0]!.phaseRemainingTicks = 0;
         }
         // Due zeroes exist only within synchronous dispatch, never a saved state.
-        expect(() => validateProductionActorAttackState(before, pack)).toThrow('phase clock');
+        expect(() => validateSeparatedState(before, pack)).toThrow('phase clock');
         const original = structuredClone(before), provider = createCombatPartBreakProvider(pack);
         const hit = request({ balanceLoss: 12 }), plan = prepare(provider, before, hit), target = commitContext(before);
         provider.commit(hit, plan, target.context);
         const result = target.current();
         expect(before).toEqual(original);
-        expect(result.scheduler.bundles[0]!.subactions[0]!).toMatchObject({ phaseRemainingTicks: 50,
-            phases: [{ kind: 'break-recovery', durationTicks: original.scheduler.bundles[0]!.elapsedActionTicks + 50, segmentIndex: null }] });
-        expect(result.scheduler.bundles[1]).toEqual(original.scheduler.bundles[1]);
+        expect(result.actorActions.bundles[0]!.subactions[0]!).toMatchObject({ phaseRemainingTicks: 50,
+            phases: [{ kind: 'break-recovery', durationTicks: original.actorActions.bundles[0]!.elapsedActionTicks + 50, segmentIndex: null }] });
+        expect(result.actorActions.bundles[1]).toEqual(original.actorActions.bundles[1]);
         expect(result.actions[1]).toEqual(original.actions[1]); expect(result.actors[1]).toEqual(original.actors[1]);
-        expect(() => validateProductionActorAttackTransactionState(result, pack, before)).not.toThrow();
-        expect(() => validateProductionActorAttackState(result, pack)).toThrow('phase clock');
+        expect(() => validateSeparatedTransaction(combatOnly(result),pack,combatOnly(before) as ProductionActorAttackState,result.actorActions)).not.toThrow();
+        expect(() => validateSeparatedState(result, pack)).toThrow('phase clock');
     });
     it.each([0, 6])('handles an already broken bundle at poise %s without another stun or new ledger', poise => {
         const before = apply(busy(), request({ balanceLoss: 12 })).current();
         before.actors[0]!.poise = poise;
         const result = apply(before, request({ resolutionId: 2, zoneId: 'leg', balanceLoss: 12 }));
         expect(result.current()).toBe(before); expect(result.setState).not.toHaveBeenCalled();
-        expect(Object.keys(result.current()).sort()).toEqual(['actions', 'actors', 'bonfires', 'nextActionId', 'revision', 'scheduler', 'schema']);
+        expect(Object.keys(result.current()).sort()).toEqual(['actions','actorActions','actors','bonfires','revision','schema']);
     });
     it('does not rebind a busy profile to the actor monster mapping', () => {
         const pack = definitions();
@@ -247,7 +253,7 @@ describe('combat published part-break provider', () => {
     });
     it('accepts canonically identical detached state with different object key order', () => {
         const provider = createCombatPartBreakProvider(definitions()), before = state(), plan = prepare(provider, before);
-        const reordered = Object.fromEntries(Object.entries(before).reverse()) as unknown as ProductionActorAttackState;
+        const reordered = Object.fromEntries(Object.entries(before).reverse()) as unknown as BreakFixture;
         const target = commitContext(reordered); provider.commit(request(), plan, target.context);
         expect(target.current().actors[0]!.poise).toBe(6);
     });
@@ -267,19 +273,19 @@ describe('combat published part-break provider', () => {
     it('a rejected setState cannot mutate caller state or its reusable frozen plan', () => {
         const provider = createCombatPartBreakProvider(definitions()), before = state(), original = structuredClone(before);
         const plan = prepare(provider, before), planBefore = structuredClone(plan), target = commitContext(before);
-        target.context.setState = next => { (next as unknown as ProductionActorAttackState).revision = 999; throw new Error('setState failed'); };
+        target.context.setState = next => { (next as unknown as BreakFixture).revision = 999; throw new Error('setState failed'); };
         expect(() => provider.commit(request(), plan, target.context)).toThrow('setState failed');
         expect(before).toEqual(original); expect(plan).toEqual(planBefore);
     });
     it('rejects malformed next state before attempting a commit', () => {
         const provider = createCombatPartBreakProvider(definitions()), before = state();
         const plan = structuredClone(prepare(provider, before)) as { [key: string]: Json };
-        (plan.next as unknown as ProductionActorAttackState).actors[0]!.poise = -1;
+        (plan.next as unknown as BreakFixture).actors[0]!.poise = -1;
         const target = commitContext(before);
         expect(() => provider.commit(request(), plan, target.context)).toThrow(); expect(target.setState).not.toHaveBeenCalled();
     });
     it('throws atomically when actor resources are full rather than selecting fallback', () => {
-        const before = initialProductionCombatState(), resource = state().actors[0]!;
+        const before = ({...initialProductionCombatState(),actorActions:createActorActionsRoot()}), resource = state().actors[0]!;
         before.actors = Array.from({ length: 4096 }, (_, index) => ({ ...resource, actorId: index + 20 }));
         const original = structuredClone(before);
         expect(() => prepare(createCombatPartBreakProvider(definitions()), before)).toThrow('budget exhausted');

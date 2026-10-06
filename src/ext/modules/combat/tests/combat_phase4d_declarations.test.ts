@@ -80,8 +80,8 @@ describe('4d declared fixed zones, finite statuses and optional member profiles'
         const {game,core,leg,group}=scene(combat,{profiles:true});commitCreatureAnchor(game.player,{x:14,y:10});
         game.executeCommand('wait');expect(core.ticksUntilTurn).toBeGreaterThan(0);
         if(combat){const state=game.extensionRuntime!.actorActionBinding()!.state;
-            expect(state.scheduler.bundles).toHaveLength(1);expect(state.scheduler.bundles[0]).toMatchObject({decisionOwnerId:core.id,timeChargeOwnerId:core.id});
-            expect(state.scheduler.bundles[0]!.subactions.some(s=>s.sourceEntityId===leg.id)).toBe(true);
+            expect(game.actorActions!.bundles).toHaveLength(1);expect(game.actorActions!.bundles[0]).toMatchObject({decisionOwnerId:core.id,timeChargeOwnerId:core.id});
+            expect(game.actorActions!.bundles[0]!.subactions.some(s=>s.sourceEntityId===leg.id)).toBe(true);
             expect(state.actors.find(s=>s.actorId===leg.id)!.profileId).toBe('combat.follow-thrust');
             expect(game.loadSnapshot(json(game.toSaveSnapshot()))).toBe(true);
         }else{expect(group.members.filter(s=>s.readyInTicks>0)).toHaveLength(2);expect(game.extensionRuntime!.actorActionBinding()).toBeNull();}
@@ -95,7 +95,7 @@ describe('4d declared fixed zones, finite statuses and optional member profiles'
         withBodyContact(leg,leg.loc,()=>leg.takeDamage(8,true,game.grid,undefined,'physical'));
         expect(leg.hp).toBe(12);expect(nativeZoneAttackAvailable(leg,'combat.follow-thrust')).toBe(false);
         core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');commitCreatureAnchor(game.player,{x:14,y:10});game.executeCommand('wait');
-        expect(game.extensionRuntime!.actorActionBinding()!.state.scheduler.bundles[0]!.subactions.some(s=>s.sourceEntityId===leg.id)).toBe(false);
+        expect(game.actorActions!.bundles[0]!.subactions.some(s=>s.sourceEntityId===leg.id)).toBe(false);
     });
     it.each([true])('all disabled declared profiles cannot regain attacks through immediate fallback (combat=%s)',combat=>{
         const data=declaration({zones:true,profiles:true});
@@ -105,7 +105,7 @@ describe('4d declared fixed zones, finite statuses and optional member profiles'
         for(const leg of game.monsters.slice(1))withBodyContact(leg,leg.loc,()=>leg.takeDamage(8,true));
         core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');commitCreatureAnchor(game.player,{x:14,y:10});
         game.executeCommand('wait');expect(game.bodyGroups![0]!.members.every(s=>s.readyInTicks===0)).toBe(true);
-        expect(game.extensionRuntime!.actorActionBinding()?.state.scheduler.bundles??[]).toEqual([]);
+        expect(game.actorActions?.bundles??[]).toEqual([]);
     });
     it('a disabled first profile permits the next declared profile and pays that actual source policy',()=>{
         const data=declaration({zones:true,profiles:true});
@@ -117,7 +117,7 @@ describe('4d declared fixed zones, finite statuses and optional member profiles'
         withBodyContact(leg,leg.loc,()=>leg.takeDamage(8,true));core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');
         commitCreatureAnchor(game.player,{x:14,y:10});game.executeCommand('wait');
         const state=game.extensionRuntime!.actorActionBinding()!.state;
-        expect(state.scheduler.bundles[0]!.subactions.some(s=>s.sourceEntityId===leg.id)).toBe(true);
+        expect(game.actorActions!.bundles[0]!.subactions.some(s=>s.sourceEntityId===leg.id)).toBe(true);
         expect(state.actors.find(s=>s.actorId===leg.id)!.profileId).toBe('combat.fan-edge');
         expect(game.loadSnapshot(json(game.toSaveSnapshot()))).toBe(true);game.executeCommand('wait');expect(game.lastAdvancementError).toBeNull();
     });
@@ -134,7 +134,7 @@ describe('4d declared fixed zones, finite statuses and optional member profiles'
 
     it('breaking a live source socket cancels paid releases into positive recovery and cannot be forged back on load',()=>{
         const {game,core,leg}=scene(true,{zones:true,profiles:true});commitCreatureAnchor(game.player,{x:14,y:10});game.executeCommand('wait');
-        const state=game.extensionRuntime!.actorActionBinding()!.state,child=state.scheduler.bundles[0]!.subactions.find(s=>s.sourceEntityId===leg.id)!;
+        const child=game.actorActions!.bundles[0]!.subactions.find(s=>s.sourceEntityId===leg.id)!;
         const paid=json(game.toSaveSnapshot());
         expect(child.phases.some(p=>p.segmentIndex!==null)).toBe(true);withBodyContact(leg,leg.loc,()=>leg.takeDamage(8,true));
         expect(leg.hp).toBeGreaterThan(0);expect(child.phases[child.phaseIndex]!.kind).toBe('break-recovery');expect(child.phaseRemainingTicks).toBeGreaterThan(0);

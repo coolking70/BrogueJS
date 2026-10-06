@@ -1,3 +1,5 @@
+import type {ActorActionsRoot} from '../engine/Core/ActorActionsRoot';
+type AttackFixture=ProductionActorAttackState & {actorActions:ActorActionsRoot};
 import { describe, expect, it, vi } from 'vitest';
 import { createActorActionBundle } from '../engine/Core/ActorActionScheduler';
 import type { ActorAttackDefinitions, ActorAttackFacing, ProductionActorAttackState } from '../ext/actorActions';
@@ -21,11 +23,11 @@ function definitions(): ActorAttackDefinitions {
         parry: { cost: 3, windowTicks: 60, recoveryTicks: 100, poiseDamage: 12, contactRange: 1 },
     };
 }
-function fixture(): { definitions: ActorAttackDefinitions; state: ProductionActorAttackState } {
+function fixture(): { definitions: ActorAttackDefinitions; state: AttackFixture } {
     const pack = definitions();
     return { definitions: pack, state: {
-        schema: 3, revision: 1, nextActionId: 2,
-        scheduler: { schema: 1, bundles: [createActorActionBundle({ actionId: 1, depth: 1, decisionOwnerId: 10, timeChargeOwnerId: 10,
+        schema: 4, revision: 1,
+        actorActions: { schema: 1,nextActionId:2, bundles: [createActorActionBundle({owner:'combat',  actionId: 1, depth: 1, decisionOwnerId: 10, timeChargeOwnerId: 10,
             subactions: [{ sourceEntityId: 10, sourcePartId: 'body', sourceFootprintVersion: 'fixture:source-v1', phases: [
                 { kind: 'windup', durationTicks: 10, segmentIndex: 0 },
                 { kind: 'inter-segment', durationTicks: 5, segmentIndex: 1 },
@@ -40,13 +42,13 @@ function fixture(): { definitions: ActorAttackDefinitions; state: ProductionActo
             parryRemainingTicks: 0, parryRecoveryRemainingTicks: 0, parryFacing: null, staggerRemainingTicks: 0 }],
     } };
 }
-function check(state: ProductionActorAttackState, pack = definitions()): void { validateProductionActorAttackState(state, pack); }
+function check(value: unknown, pack = definitions()): void { const actorActions=(value as AttackFixture).actorActions;const combat=Object.create(Object.getPrototypeOf(value),Object.getOwnPropertyDescriptors(value));delete combat.actorActions;validateProductionActorAttackState(combat, pack,new Set(),actorActions); }
 
 describe('generic production attack state codec', () => {
     it('validates declarations and a lazy empty binding without module state or a second clock', () => {
         const pack = definitions();
         expect(() => validateActorAttackDefinitions(pack)).not.toThrow();
-        expect(() => check({ schema: 3, revision: 0, nextActionId: 1, scheduler: { schema: 1, bundles: [] }, actions: [], actors: [] }, pack)).not.toThrow();
+        expect(() => check({ schema: 4, revision: 0, actorActions: { schema: 1,nextActionId:1, bundles: [] }, actions: [], actors: [] }, pack)).not.toThrow();
         const { state } = fixture(), before = structuredClone(state);
         expect(() => check(state, pack)).not.toThrow();
         expect(state).toEqual(before);
@@ -54,17 +56,17 @@ describe('generic production attack state codec', () => {
 
     it('rejects the previous production schema and incomplete resource rows', () => {
         const { state } = fixture();
-        expect(() => validateProductionActorAttackState({ ...state, schema: 2 }, definitions())).toThrow(/schema/);
-        const actor = { ...state.actors[0]! } as Partial<ProductionActorAttackState['actors'][number]>;
+        expect(() => check({ ...state, schema: 2 }, definitions())).toThrow(/schema/);
+        const actor = { ...state.actors[0]! } as Partial<AttackFixture['actors'][number]>;
         delete actor.regenRemainder;
-        expect(() => validateProductionActorAttackState({ ...state, actors: [actor] }, definitions())).toThrow();
+        expect(() => check({ ...state, actors: [actor] }, definitions())).toThrow();
     });
 
     it('validates dodge remaining time without accepting an attack scheduler bundle', () => {
         const { state } = fixture(), row = state.actors[0]!;
         row.dodgeRemainingTicks = 40; row.dodgeRecoveryRemainingTicks = 80;
         expect(() => check(state)).toThrow(/dodge cannot share/);
-        state.scheduler.bundles = []; state.actions = [];
+        state.actorActions.bundles = []; state.actions = [];
         expect(() => check(state)).not.toThrow();
         row.dodgeRemainingTicks = 20; row.dodgeRecoveryRemainingTicks = 60;
         expect(() => check(state)).not.toThrow();
@@ -86,7 +88,7 @@ describe('generic production attack state codec', () => {
     });
 
     it('cross-checks the current segment shape and keeps recovery previews empty', () => {
-        const { state } = fixture(), bundle = state.scheduler.bundles[0]!, child = bundle.subactions[0]!, meta = state.actions[0]!.subactions[0]!;
+        const { state } = fixture(), bundle = state.actorActions.bundles[0]!, child = bundle.subactions[0]!, meta = state.actions[0]!.subactions[0]!;
         bundle.elapsedActionTicks = 12; child.phaseIndex = 1; child.phaseRemainingTicks = 3;
         expect(() => check(state)).toThrow(/shape mismatch/);
         meta.shape.offsets = [{ x: 2, y: 0 }];
@@ -100,7 +102,7 @@ describe('generic production attack state codec', () => {
     });
 
     it('accepts elapsed-preserving break recovery and validates its immutable prefix', () => {
-        const { state } = fixture(), bundle = state.scheduler.bundles[0]!, child = bundle.subactions[0]!, meta = state.actions[0]!.subactions[0]!;
+        const { state } = fixture(), bundle = state.actorActions.bundles[0]!, child = bundle.subactions[0]!, meta = state.actions[0]!.subactions[0]!;
         bundle.elapsedActionTicks = 13;
         child.phases = [child.phases[0]!, { kind: 'break-recovery', durationTicks: 53, segmentIndex: null }];
         child.phaseIndex = 1; child.phaseRemainingTicks = 50; meta.lockedCells = []; meta.shape.offsets = [{ x: 2, y: 0 }];
@@ -112,11 +114,11 @@ describe('generic production attack state codec', () => {
     });
 
     it('permits break recovery before the first release and after the final release', () => {
-        const before = fixture().state, bundle = before.scheduler.bundles[0]!, child = bundle.subactions[0]!;
+        const before = fixture().state, bundle = before.actorActions.bundles[0]!, child = bundle.subactions[0]!;
         bundle.elapsedActionTicks = 3; child.phases = [{ kind: 'break-recovery', durationTicks: 53, segmentIndex: null }];
         child.phaseRemainingTicks = 50; before.actions[0]!.subactions[0]!.lockedCells = [];
         expect(() => check(before)).not.toThrow();
-        const after = fixture().state, other = after.scheduler.bundles[0]!, next = other.subactions[0]!;
+        const after = fixture().state, other = after.actorActions.bundles[0]!, next = other.subactions[0]!;
         other.elapsedActionTicks = 17; next.phaseIndex = 2; next.phaseRemainingTicks = 50;
         next.phases[2] = { kind: 'break-recovery', durationTicks: 52, segmentIndex: null };
         after.actions[0]!.subactions[0]!.lockedCells = []; after.actions[0]!.subactions[0]!.shape.offsets = [{ x: 2, y: 0 }];
@@ -126,7 +128,7 @@ describe('generic production attack state codec', () => {
     });
 
     it('allows a cancelled source to retain inert geometry while a sibling continues', () => {
-        const { state } = fixture(), bundle = state.scheduler.bundles[0]!, child = bundle.subactions[0]!;
+        const { state } = fixture(), bundle = state.actorActions.bundles[0]!, child = bundle.subactions[0]!;
         const sibling = structuredClone(child); sibling.sourceEntityId = 20; sibling.sourcePartId = 'leg'; sibling.sourceSubactionId = 2;
         bundle.subactions.push(sibling); child.cancelled = true; child.phaseIndex = child.phases.length; child.phaseRemainingTicks = 0;
         const metadata = structuredClone(state.actions[0]!.subactions[0]!); metadata.sourceSubactionId = 2;
@@ -137,22 +139,22 @@ describe('generic production attack state codec', () => {
     });
 
     it.each([
-        (state: ProductionActorAttackState) => { state.actions = []; },
-        (state: ProductionActorAttackState) => { state.actions.push(structuredClone(state.actions[0]!)); },
-        (state: ProductionActorAttackState) => { state.actions[0]!.actionId = 2; },
-        (state: ProductionActorAttackState) => { state.nextActionId = 1; },
-        (state: ProductionActorAttackState) => { state.revision = -1; },
-        (state: ProductionActorAttackState) => { state.actions[0]!.paidCost++; },
-        (state: ProductionActorAttackState) => { state.actions[0]!.subactions[0]!.sourceSubactionId = 2; },
-        (state: ProductionActorAttackState) => { state.actors = []; },
-        (state: ProductionActorAttackState) => { state.actors[0]!.profileId = 'missing'; },
-        (state: ProductionActorAttackState) => { state.actors[0]!.stamina = 25; },
-        (state: ProductionActorAttackState) => { state.actors.push(structuredClone(state.actors[0]!)); },
-        (state: ProductionActorAttackState) => { state.scheduler.bundles[0]!.elapsedActionTicks = 1; },
-        (state: ProductionActorAttackState) => { state.scheduler.bundles[0]!.subactions[0]!.phases[1]!.durationTicks++; },
-        (state: ProductionActorAttackState) => { state.actions[0]!.subactions[0]!.lockedCells.push({ x: 11, y: 10 }); },
-        (state: ProductionActorAttackState) => { state.actions[0]!.subactions[0]!.lockedCells.push({ x: 10, y: 10 }); },
-        (state: ProductionActorAttackState) => { state.actions[0]!.subactions[0]!.lockedCells[0]!.x = 1_000_001; },
+        (state: AttackFixture) => { state.actions = []; },
+        (state: AttackFixture) => { state.actions.push(structuredClone(state.actions[0]!)); },
+        (state: AttackFixture) => { state.actions[0]!.actionId = 2; },
+        (state: AttackFixture) => { state.actorActions.nextActionId = 1; },
+        (state: AttackFixture) => { state.revision = -1; },
+        (state: AttackFixture) => { state.actions[0]!.paidCost++; },
+        (state: AttackFixture) => { state.actions[0]!.subactions[0]!.sourceSubactionId = 2; },
+        (state: AttackFixture) => { state.actors = []; },
+        (state: AttackFixture) => { state.actors[0]!.profileId = 'missing'; },
+        (state: AttackFixture) => { state.actors[0]!.stamina = 25; },
+        (state: AttackFixture) => { state.actors.push(structuredClone(state.actors[0]!)); },
+        (state: AttackFixture) => { state.actorActions.bundles[0]!.elapsedActionTicks = 1; },
+        (state: AttackFixture) => { state.actorActions.bundles[0]!.subactions[0]!.phases[1]!.durationTicks++; },
+        (state: AttackFixture) => { state.actions[0]!.subactions[0]!.lockedCells.push({ x: 11, y: 10 }); },
+        (state: AttackFixture) => { state.actions[0]!.subactions[0]!.lockedCells.push({ x: 10, y: 10 }); },
+        (state: AttackFixture) => { state.actions[0]!.subactions[0]!.lockedCells[0]!.x = 1_000_001; },
     ])('rejects mismatched identities, timing, resources or cell bounds %#', mutate => {
         const { state } = fixture(); mutate(state);
         expect(() => check(state)).toThrow();
@@ -186,7 +188,7 @@ describe('generic production attack state codec', () => {
     });
 
     it('rejects non-JSON objects, array prototypes, symbols, sparse data and cycles', () => {
-        const mutations: ((state: ProductionActorAttackState) => void)[] = [
+        const mutations: ((state: AttackFixture) => void)[] = [
             state => { Object.setPrototypeOf(state.actors, { inherited: true }); },
             state => { Object.defineProperty(state, 'hidden', { value: true }); },
             state => { Object.assign(state, { [Symbol('hidden')]: true }); },

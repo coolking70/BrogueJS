@@ -59,7 +59,7 @@ function scene(ids=['combat','body-fixture']){
 }
 function hit(game:Game,boss:Monster){const cell=footprintOf(boss).find(p=>p.zoneId==='shell')!;
     return withBodyContact(boss,cell,()=>boss.takeDamage(60,true,game.grid,undefined,'physical'));}
-function pending(game:Game){const plan=preparePhasedAttackCommand(game,command)!;expect(plan).not.toBeNull();commitPhasedAttackCommand(game,plan);return state(game).scheduler.bundles[0]!;}
+function pending(game:Game){const plan=preparePhasedAttackCommand(game,command)!;expect(plan).not.toBeNull();commitPhasedAttackCommand(game,plan);return game.actorActions!.bundles[0]!;}
 // The independent foundation fixture preserves the historical zone geometry and values.
 beforeEach(() => installBodyFixture());
 afterEach(()=>{vi.restoreAllMocks();logger.reset();});
@@ -102,7 +102,7 @@ describe('3d production part-break integration with independent fixed-zone conte
         const live=state(game),scheduler=productionActorActionScheduler(game),before=json(live),hp=boss.hp,spatial=boss.spatial,zone=spatial!.zoneState![0]!;
         const zoneBefore=json(zone),random=rng.getState(),clocks=[game.player.ticksUntilTurn,boss.ticksUntilTurn];
         expect(()=>hit(game,boss)).toThrow();expect(state(game)).toBe(live);expect(state(game)).toEqual(before);
-        expect(productionActorActionScheduler(game)).toBe(scheduler);expect(live.scheduler.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);expect(child.phases).toBe(phases);expect(phases[0]).toBe(phase);
+        expect(productionActorActionScheduler(game)).toBe(scheduler);expect(game.actorActions!.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);expect(child.phases).toBe(phases);expect(phases[0]).toBe(phase);
         expect(boss.hp).toBe(hp);expect(boss.spatial).toBe(spatial);expect(spatial!.zoneState![0]).toBe(zone);expect(zone).toEqual(zoneBefore);
         expect([game.player.ticksUntilTurn,boss.ticksUntilTurn]).toEqual(clocks);expect(rng.getState()).toEqual(random);expect(()=>game.toSaveSnapshot()).not.toThrow();
     });
@@ -117,13 +117,13 @@ describe('3d production part-break integration with independent fixed-zone conte
         const {game,boss}=scene(),bundle=pending(game),child=bundle.subactions[0]!,live=state(game),before=json(live),hp=boss.hp,zone=json(boss.spatial);
         const next=vi.spyOn(game,'footprintOf').mockImplementation(()=>{throw new Error('zone cancellation fault');});
         expect(()=>hit(game,boss)).toThrow('zone cancellation fault');next.mockRestore();
-        expect(state(game)).toBe(live);expect(state(game)).toEqual(before);expect(live.scheduler.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);
+        expect(state(game)).toBe(live);expect(state(game)).toEqual(before);expect(game.actorActions!.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);
         expect(boss.hp).toBe(hp);expect(boss.spatial).toEqual(zone);expect(boss.movementSpeed).toBe(100);expect(game.player.ticksUntilTurn).toBe(50);expect(boss.ticksUntilTurn).toBe(1000);
         expect(()=>game.toSaveSnapshot()).not.toThrow();
     });
     it('success cancels locked target warning and preserves current graph identities',()=>{
         const {game,boss}=scene(),bundle=pending(game),child=bundle.subactions[0]!,live=state(game);hit(game,boss);
-        expect(state(game)).toBe(live);expect(live.scheduler.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);
+        expect(state(game)).toBe(live);expect(game.actorActions!.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);
         expect(child.phases[child.phaseIndex]!.kind).toBe('break-recovery');expect(live.actions[0]!.subactions[0]!.lockedCells).toEqual([]);expect(()=>game.toSaveSnapshot()).not.toThrow();
     });
     it('commit capabilities expire after the synchronous provider call',()=>{
@@ -132,9 +132,9 @@ describe('3d production part-break integration with independent fixed-zone conte
     });
     it('provider breaks an active source without replacing its scheduler graph',()=>{
         configure('normal',true);const{game,boss}=scene();boss.ticksUntilTurn=0;expect(selectNativeActorAction(game,boss.id)).toBe('handled');
-        const bundle=state(game).scheduler.bundles.find(bundle=>bundle.decisionOwnerId===boss.id)!,child=bundle.subactions[0]!;
+        const bundle=game.actorActions!.bundles.find(bundle=>bundle.decisionOwnerId===boss.id)!,child=bundle.subactions[0]!;
         applyActorPoiseDamage(game,boss.id,7);hit(game,boss);
-        expect(state(game).scheduler.bundles.find(b=>b.actionId===bundle.actionId)).toBe(bundle);expect(bundle.subactions[0]).toBe(child);
+        expect(game.actorActions!.bundles.find(b=>b.actionId===bundle.actionId)).toBe(bundle);expect(bundle.subactions[0]).toBe(child);
         expect(child.phases[child.phaseIndex]!.kind).toBe('break-recovery');expect(row(game,boss.id)).toMatchObject({poise:0,staggerRemainingTicks:0});expect(()=>game.toSaveSnapshot()).not.toThrow();
     });
     it('real native release handles two simultaneously due owners without weakening save codec',()=>{
@@ -143,13 +143,13 @@ describe('3d production part-break integration with independent fixed-zone conte
         const weapon=ItemLoader.spawnWeapon('dagger',-1,-1)!;weapon.damage='60-60';weapon.strengthRequired=game.player.effectiveStrength;weapon.enchantment=0;weapon.flags=[];game.player.equippedWeapon=weapon;game.player.inventory.addItem(weapon);
         expect(selectNativeActorAction(game,rat.id)).toBe('handled');pending(game);boss.setStatusDuration('paralyzed',10);
         const scheduler=productionActorActionScheduler(game)!;scheduler.advanceActionTime(50);
-        expect(state(game).scheduler.bundles.filter(bundle=>bundle.subactions[0]!.phaseRemainingTicks===0)).toHaveLength(2);
+        expect(game.actorActions!.bundles.filter(bundle=>bundle.subactions[0]!.phaseRemainingTicks===0)).toHaveLength(2);
         expect(()=>scheduler.dispatchActorBoundary(game.player.id)).not.toThrow();expect(boss.spatial!.zoneState![0]!.broken).toBe(true);
         expect(()=>scheduler.dispatchActorBoundary(rat.id)).not.toThrow();expect(()=>game.toSaveSnapshot()).not.toThrow();
     });
     it('provider-inserted recovery at the resolving source boundary is not advanced away',()=>{
         configure('normal',true);const {game,boss}=scene();boss.ticksUntilTurn=0;expect(selectNativeActorAction(game,boss.id)).toBe('handled');
-        const scheduler=productionActorActionScheduler(game)!,bundle=state(game).scheduler.bundles[0]!,child=bundle.subactions[0]!;
+        const scheduler=productionActorActionScheduler(game)!,bundle=game.actorActions!.bundles[0]!,child=bundle.subactions[0]!;
         scheduler.advanceActionTime(scheduler.nextActionBoundary()!);applyActorPoiseDamage(game,boss.id,7);
         vi.spyOn(game,'resolveActorNativeMelee').mockImplementation(()=>{hit(game,boss);return{hit:false,damage:0,backstab:false};});
         expect(scheduler.dispatchActorBoundary(boss.id)).toBe('handled');
@@ -161,7 +161,7 @@ describe('3d production part-break integration with independent fixed-zone conte
         configure(mode);const {game,boss}=scene(),bundle=pending(game),child=bundle.subactions[0]!,phase=child.phases[0]!,live=state(game);
         live.revision=Number.MAX_SAFE_INTEGER-1;const before=json(live),hp=boss.hp,spatial=json(boss.spatial),clock=game.player.ticksUntilTurn;
         expect(()=>hit(game,boss)).toThrow('Action revision exhausted');
-        expect(state(game)).toBe(live);expect(live).toEqual(before);expect(live.scheduler.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);expect(child.phases[0]).toBe(phase);
+        expect(state(game)).toBe(live);expect(live).toEqual(before);expect(game.actorActions!.bundles[0]).toBe(bundle);expect(bundle.subactions[0]).toBe(child);expect(child.phases[0]).toBe(phase);
         expect(boss.hp).toBe(hp);expect(boss.spatial).toEqual(spatial);expect(game.player.ticksUntilTurn).toBe(clock);expect(boss.movementSpeed).toBe(100);
         expect(()=>game.toSaveSnapshot()).not.toThrow();
     });

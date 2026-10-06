@@ -52,11 +52,11 @@ function bodyPhasedScene(coreSource = false) {
   core.state = MonsterState.HUNTING; core.behaviorFlags.add('MONST_ALWAYS_HUNTING'); core.givenUpOnScent = true;
   commitCreatureAnchor(game.player, coreSource ? { x: 13, y: 12 } : { x: 14, y: 10 }); game.executeCommand('wait');
   const state = game.extensionRuntime!.actorActionBinding()!.state as ProductionActorAttackState;
-  if (!coreSource) expect(state.scheduler.bundles[0]!.subactions).toHaveLength(2);
+  if (!coreSource) expect(game.actorActions!.bundles[0]!.subactions).toHaveLength(2);
   return { game, core, state };
 }
 it.each(['polymorph','fall'] as const)('whole %s cancels all old member windups and save/load retains the same subsequent state', reason => {
-  const { game, core, state } = bodyPhasedScene(), bundle = state.scheduler.bundles[0]!;
+  const { game, core, state } = bodyPhasedScene(), bundle = game.actorActions!.bundles[0]!;
   if (reason === 'polymorph') { selectSpecies(game, 'rat'); expect((game as any).polymorphBoltTarget(game.monsters[1])).toBe(true); }
   else { unsupported(game, game.monsters); game.executeCommand('wait'); }
   expect(bundle.subactions.every(c => c.cancelled || c.phaseIndex === c.phases.length || ['break-recovery','recovery'].includes(c.phases[c.phaseIndex]?.kind ?? ''))).toBe(true);
@@ -67,19 +67,19 @@ it.each(['polymorph','fall'] as const)('whole %s cancels all old member windups 
   expect(core.id).toBe(save.run.spatialWorld?.groups[0]?.coreId ?? core.id);
 });
 it('cloning during member windup preserves original paid sources and gives the clone no copied action or payment', () => {
-  const { game, core, state } = bodyPhasedScene(); const before = structuredClone(state);
+  const { game, core, state } = bodyPhasedScene(); const before = structuredClone(state),beforeRoot=structuredClone(game.actorActions!);
   const clone = game.cloneMonster(game.monsters[1]!)!;
-  expect(clone).not.toBeNull(); expect(state.scheduler).toEqual(before.scheduler);
+  expect(clone).not.toBeNull(); expect(game.actorActions!).toEqual(beforeRoot);
   expect(state.actions).toEqual(before.actions);
   expect(state.actors.filter(a => a.actorId === core.id)).toEqual(before.actors.filter(a => a.actorId === core.id));
-  expect(state.scheduler.bundles.some(b => b.decisionOwnerId === clone.id)).toBe(false);
+  expect(game.actorActions!.bundles.some(b => b.decisionOwnerId === clone.id)).toBe(false);
   expect(game.loadSnapshot(game.toSaveSnapshot())).toBe(true);
 });
 
 
 it('failed relocating polymorph restores live source revisions so the already paid core/member action continues like a fresh load', () => {
-  const { game, core, state } = bodyPhasedScene(true);
-  expect(state.scheduler.bundles[0]!.subactions.some(c => c.sourceEntityId === core.id)).toBe(true);
+  const { game, core } = bodyPhasedScene(true);
+  expect(game.actorActions!.bundles[0]!.subactions.some(c => c.sourceEntityId === core.id)).toBe(true);
   game.grid.setTerrain(core.x + 3, core.y, T.WALL); // outside old tethers, inside the four-cell replacement
   selectSpecies(game, 'body-fixture.spine-crawler'); const saved = game.toSaveSnapshot(), random = rng.getState();
   const audit = auditFullObjectGraph(fullGenerationRoots(game), [game.extensionRuntime!]);

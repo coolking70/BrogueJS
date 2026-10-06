@@ -38,7 +38,10 @@
     "autoAction": "native",
     "receivedLevitationWarning": "knowledge",
     "bodyGroups": "native",
-    "world5": "world5"
+    "world5": "world5",
+    "actorActions": "actorActions",
+    "worldWorkFacts": "world5",
+    "worldWorkDetails": "world5"
   },
   "excluded": {
     "squareLandingRetry": "derived",
@@ -122,7 +125,10 @@
     "monsterPathCache": "derived",
     "inventoryAction": "reset",
     "replayOmniscientDetails": "session",
-    "extensionRuntime": "persist"
+    "extensionRuntime": "persist",
+    "worldContainerItems": "derived",
+    "executingRecordedCommand": "session",
+    "worldWorkCommandEpoch": "session"
   },
   "extraRoots": {
     "rngState": "random",
@@ -134,8 +140,7 @@
     "flavors": "knowledge",
     "wandFlavors": "knowledge",
     "staffFlavors": "knowledge",
-    "logger": "knowledge",
-    "actorActions": "actorActions"
+    "logger": "knowledge"
   },
   "derivedEntityFields": [
     "mapToMe"

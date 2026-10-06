@@ -25,6 +25,8 @@ export interface WorldInteractionValidation {
     readonly regions?: readonly OwnedRegion[];
 }
 export interface ExtensionProjectionContext {
+    readonly worldWork?: import('./worldSdk').WorldWorkReadSDK;
+    readonly actorActionBundles?: readonly import('../engine/Core/ActorActionScheduler').ReadonlyActorActionBundle[];
     readonly playerId?: number;
     worldRestUnavailable?(id:number):import('./worldRest').WorldRestUnavailableReason|null;
     queryOptional(capability: string, input: import('./types').Json): import('./types').OptionalQueryResult;
@@ -75,4 +77,9 @@ export function publicInteractable(entity: WorldInteractable): WorldInteractable
 }
 export function sortInteractables<T extends Pick<WorldInteractable,'priority'|'id'>>(entities: readonly T[]): T[] {
     return [...entities].sort((a,b) => b.priority - a.priority || a.id - b.id);
+}
+
+/** Empty region ownership is absence, including every C5 placement path. */
+export function setOwnedRegions(world: WorldInteractionSnapshot, list: OwnedRegion[]): void {
+    if (list.length) world.regions = list; else delete world.regions;
 }

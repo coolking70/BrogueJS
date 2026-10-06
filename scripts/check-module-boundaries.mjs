@@ -283,6 +283,16 @@ export function checkModuleBoundaries(root = process.cwd()) {
     for (const error of aliases.errors) report(error.file, error.line, error.message);
     function check(file, line, reference, kind) {
         for (const target of referenceTargets(root, file, reference, aliases)) {
+            const relativeSource=slash(path.relative(root,file));
+            if(target.startsWith('src/ext/testing/')&&!/^(?:src\/test\/|src\/ext\/testing\/)/.test(relativeSource)&&!/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource))report(file,line,'test-only world adapter referenced by production',reference,target);
+            if(moduleOwner(relativeSource)&&!/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource)&&/^src\/engine\/(?:Core\/(?:WorldWork[^/]*|WorldMaterialTransfer|WorldItemRoots|ActorActionsRoot)|Items\/WorldItems)(?:\.ts)?$/.test(target))report(file,line,'trusted world authority referenced by content',reference,target);
+            if (moduleOwner(relativeSource) === 'crafting' && !/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource)
+                && target.startsWith('src/') && moduleOwner(target) !== 'crafting'
+                && !/^src\/ext\/(?:worldSdk|types|descriptor|fingerprint|world)(?:\.ts)?$/.test(target)
+                && !/^src\/(?:ext\/ui|ui)\//.test(target)) report(file,line,'world content import outside approved SDK/shared UI',reference,target);
+            if (moduleOwner(relativeSource)==='crafting' && /^src\/ext\/world(?:\.ts)?$/.test(target) && kind!=='import type') report(file,line,'world content world entry is type-only',reference,target);
+            if (/^src\/ext\/(?:worldSdk|worldBasics|worldJson|worldWorkSchema|recordingRevisions)\.ts$/.test(relativeSource)
+                && target.startsWith('src/engine/') && kind !== 'import type') report(file,line,'pure world SDK leaf references engine value',reference,target);
             const owner = moduleOwner(target);
             if (!owner || owner === moduleOwner(slash(path.relative(root, file)))) continue;
             // Node tooling enumerates metadata without naming any concrete owner.
@@ -314,7 +324,7 @@ export function checkModuleBoundaries(root = process.cwd()) {
         const checkNode = (node, kind) => { for (const value of expressionValues(node, constants)) check(file, lineAt(node), value, kind); };
         for (const directive of [...source.referencedFiles, ...source.typeReferenceDirectives]) check(file, offset + source.getLineAndCharacterOfPosition(directive.pos).line + 1, directive.fileName, 'TypeScript reference');
         const visit = node => {
-            if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) checkNode(node.moduleSpecifier, 'import/export');
+            if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) checkNode(node.moduleSpecifier, (ts.isImportDeclaration(node) && (node.importClause?.isTypeOnly || (node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings) && node.importClause.namedBindings.elements.length>0 && node.importClause.namedBindings.elements.every(e=>e.isTypeOnly)))) || (ts.isExportDeclaration(node) && node.isTypeOnly) ? 'import type' : 'import/export');
             else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference) && node.moduleReference.expression) checkNode(node.moduleReference.expression, 'import require');
             else if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) checkNode(node.argument.literal, 'import type');
             else if (ts.isCallExpression(node) || ts.isNewExpression(node)) {

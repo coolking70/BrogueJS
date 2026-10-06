@@ -1,3 +1,4 @@
+import {World5Error} from './world5';
 import i18next from 'i18next';
 import type { ExtensionRulesIdentity } from './types';
 
@@ -13,6 +14,7 @@ export class ExtensionCompatibilityError extends Error {
 }
 
 export function formatExtensionCompatibilityError(error: unknown): string {
+    if(error instanceof World5Error)return i18next.t('ext.foundation.world.error.'+error.code.slice(3).toLowerCase());
     if (!(error instanceof ExtensionCompatibilityError)) return i18next.t('ext.error.incompatible', {
         defaultValue: 'Extension set, version or state is incompatible.',
     });
