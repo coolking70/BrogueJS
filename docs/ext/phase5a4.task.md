@@ -1,5 +1,7 @@
 # 5A4 任务书：采食底座（可食世界物品、火接触、非魔法种类知识、整局派生抽样、分组放置、生物需求时钟、离队退役、沉眠状态）
 
+> **维护者批准（2026-10-07）：预先裁定 E1–E30 全部按推荐；设计缺口按任务书附录建议处理（首版只认发光菌/菌林地形；同伴虚弱/饥荒用 `increased` 负值；揭示烤菌同时揭示生菌）。**
+
 > 基线：**5A3 合入后的 `ext/phase5`（维护者开工时填写确切 commit：`________`）**。工作分支 `ext/phase5`。顺序 5A2 → 5A2-S → 5A3 → **5A4**，同一本地主笔串行（共享 `Game.ts`/`runtime.ts`/`TimeCoordinator.ts`）；可与 dot 的 5B（只写 `src/ext/modules/crafting/**`）并行。
 > 依据：[野外采食设计稿](phase5-foraging.md)（§9 H1–H8、§6、§11 的 5A4a–d 行、§12；§16 维护者 2026-10-06 裁定：Q12=B——篝火/灶台首版即可烤，按 §6.1 第 5 条软接口；Q1–Q11 全部 A）、[阶段 5 设计](phase5-settlement-world.md)（§8.3a、§14 的 5A4 行）、[C5-1 合同 r2](phase5a-contract.md)（含 5A1 后由 `ext/phase5` 写入的 §10.2 维护者裁定；本步读 §2、§3.1、§3.4、§4、§5、§9、§10、§11）、[5A2](phase5a2.task.md)/[5A2-S](phase5a2s.task.md)/[5A3](phase5a3.task.md) 任务书及其报告、[5B dot 任务包](phase5b.dot-package.md) §1.4（火炉 `station.hearth`）。行号以 `ext/phase5` 的 `8e946bb`（5A1 合入后）为参考，开工时按语义重定位并写实际行号。
 > 本步只交付**底座能力 + 底座测试 fixture `fgfixture`**，不建 `src/ext/modules/foraging/**`、不写任何蘑菇种类/数值/文案。`src/ext/worldSdk.ts` **逐字不变**（同 5A3 R2）。开发期门禁按 P5-D14=A 与[扩展门禁政策](README.md#当前验收门禁)。**不要 commit。**
