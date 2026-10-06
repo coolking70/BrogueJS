@@ -345,3 +345,20 @@ ebaa831e98d40c9ea086a64ddbe8d0b35af226219b8b7604485ba7f52c4e3be6
 | 942已有输入逐文件hash，HEAD=87d92c8，tracked/staged diff为空 | exit0；没有commit |
 
 最终只新增三个交付文件，另有用户原先的未跟踪任务书；原始JSON统计/日志及声明检查临时文件均在仓库外。
+
+## 7 r2 修订记录（2026-10-06，随 C5-1 文档修订 r2）
+
+本节修正本报告中与 [C5-1 r2](phase5a-contract.md) 冲突的条目；**冲突处以本节和合同 r2 为准**，其余批准内容不变。实测数字（§2）不受影响。
+
+| 评审项 | 原文位置 | 修正 |
+| --- | --- | --- |
+| M8 | §3.1 `RecordingV4.codec: { wholeRun: 4; foundation: 6; origin: 2 }` | 这些号码只是**候选**，与“5A0 不预占格式号”一致；实际值由 5A1 按其任务书 §1 分配后写入，若收尾抢占号码则以 5A1 报告版本表为准 |
+| I7 | §3.1 每条 `RecordingEventV4.checkpoint: MechanicalDigest`；§1 第4条/§2.5 的逐命令全量摘要 | 改为分层摘要（合同 §10.2）：事件字段 `checkpoint: EventDigest \| null`（`{ root; domains: { extensions; world5; actorActions } }`，经典局为 null）+ `fullCheckpoint: MechanicalDigest \| null`（仅 `(index+1)%256===0`、加速快照点与最后一条事件非 null），并新增廉价诊断 `hp` 与 `inventoryStamp`；`ReplaySnapshotV4.checkpoint` 仍为完整 MechanicalDigest；header 增加 `digestChunk: 256`。经典局不增加逐事件摘要成本；“每命令新增成本 P95”为 5A1-R 实测门禁并有文档化回退 |
+| I7 | §3.3 “录像库迁 IndexedDB（新对象仓库…）”、5A1 原任务书“独立 IndexedDB” | 录像与存档**同库** `brogue-web-saves`（v1→v2），新增 store `recordings / eventChunks / snapshots`，存档与来源前缀同一 readwrite 事务；64 MiB/128 份加速缓存**按每个录像**计；保留单一当前录像 UX，不新增列表 |
+| I5 | §5.3 物品表 `unitWeight` 列 | Brogue 无负重机械：unitWeight **不进入机械包与指纹**，表中数值仅可作显示资料，C5 DTO 已删除该字段 |
+| I5 | §5.3 ration “99（C5产出预留）” | 原生 FOOD 按 quantity 占背包格（`Inventory.packCount`），N 份口粮需 N 格，合并到已有口粮也不省格；99 只是单批输出上限校验。制造的 native 物品不带任何模块/世界字段，与自然物品同堆叠；MATERIAL=13（材料/工具/套件）每 stack 占 1 格 |
+| B3/I8 | §5.1 “sdk兼容标识须进入模块声明”、§5.2 命令实现 | 兼容标识为 descriptor 键 `worldSdk: 1`，foundation 号引用 `FOUNDATION_PROTOCOL`；四种命令经 `worldWorkCommands`（不是 `commands`）实现，提交由引擎执行（合同 §9）；5A2 另交付无头 harness 与 crafting 骨架示例 |
+| B1 | §5.5 每批 tick/批量 1…16 | 每批一个 bundle、一条录制命令，多批经 `auto_work` 续作；中途停止退款未开始批次（合同 §8）；harvest 单批 |
+| B3(e)(f) | §5.4 “随机候选顺序由底座确定”、defer、启动礼包 | 节点放置不抽原生 RNG，改用 `c5-place-v1` 哈希拒绝抽样；defer 由 foundation 在该层下一次入层重试一次；启动礼包收据可为 granted/partial/skipped 并逐项记录入包/落地/跳过数量 |
+| I6 | §5.6 “world Item roots 8192 由 foundation 共同核验”、§2.3 | 8192 是 C5 操作的接纳预算（为原生物品保留 1024 余量），load 只校验 C5 自有根，原生物品生成从不因此被拒 |
+| 顺序 | §4 拆分表 | 5A1-R 是 5A2 的硬前置；5A2 验收增加 WorldRestProduction/篝火 save/replay/seek/中断非回归；5A2 与 5A2-S 的 combat 格式变化合并一次升号；5A2-S 不改 C5 DTO 且集成时重跑 crafting trace；5A3 保持工位工作位/交互线逐格不变（合同 §11） |
