@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
-import { installProductionBody, emptyProductionArena, PRODUCTION_BODY_ID } from '../../../../test/support/productionComposite';
+import { installProductionBody, emptyProductionArena, startProductionGame, PRODUCTION_BODY_ID } from '../../../../test/support/productionComposite';
+import { CombatSystem } from '../../../../engine/Combat/Combat';
 import { auditFullObjectGraph, fullGenerationRoots } from '../../../../test/support/fullGenerationCheckpointOracle';
 import { selectNativeActorAction } from '../../../../engine/Core/ActorActionSession';
 import { Item, ItemCategory } from '../../../../engine/Items/Item';
@@ -83,6 +84,41 @@ function sync(game:Game){collectPhasedAttackActors(game,[game.player,...game.mon
 function parry(game:Game){const plan=prepareActorParryCommand(game,command('parry',{facing:'e'}));expect(plan).not.toBeNull();commitActorParryCommand(game,plan!);}
 function release(game:Game){const scheduler=productionActorActionScheduler(game)!;scheduler.advanceActionTime(scheduler.nextActionBoundary()!);scheduler.dispatchActorBoundary(game.player.id);}
 afterEach(()=>{vi.restoreAllMocks();logger.reset();logger.onDisturb=null;});
+it.each(['single','core','leg'] as const)('backstab of a busy %s survives scheduler mirrors, save/load and real elapsed time',kind=>{
+    if(kind!=='single')installProductionBody();setup({bodyAttacks:kind!=='single'});
+    const game=kind==='single'?scene():startProductionGame(['body-fixture','combat']);
+    if(kind!=='single')emptyProductionArena(game);
+    const owner=kind==='single'?npc(game):game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!;
+    owner.hp=owner.maxHp=1000;owner.state=MonsterState.HUNTING;owner.ticksUntilTurn=0;
+    if(kind!=='single')commitCreatureAnchor(game.player,{x:14,y:10});
+    expect(selectNativeActorAction(game,owner.id)).toBe('handled');
+    const target=kind==='leg'?game.monsters.find(m=>m.spatial?.bodyMember?.groupId===owner.id&&m!==owner)!:owner;
+    owner.state=MonsterState.WANDERING;target.hp=target.maxHp=1000;
+    const bundle=state(game).scheduler.bundles.find(b=>b.decisionOwnerId===owner.id)!;
+    const before=owner.ticksUntilTurn,tails=bundle.subactions.map(c=>c.phases[c.phases.length - 1]!.durationTicks),delay=Math.max(target.movementSpeed,target.attackSpeed);
+    game.executeCommand('fixture:backstab',undefined,()=>{
+        expect(CombatSystem.attack(game.player,target,{grid:game.grid}).backstab).toBe(true);
+    });
+    productionActorActionScheduler(game)!.refreshMirrors();
+    expect(owner.ticksUntilTurn).toBe(before);
+    for(const [i,child] of bundle.subactions.entries()){
+        expect(child.nativeRecoveryDelayTicks).toBe(delay);expect(child.phases[child.phases.length - 1]!.durationTicks).toBe(tails[i]!+delay);
+    }
+    const saved=game.toSaveSnapshot();
+    for(const patch of ['receipt','duration'] as const){
+        const bad=structuredClone(saved),s=bad.extensions!.modules.combat as unknown as ReturnType<typeof state>;
+        const child=s.scheduler.bundles.find(b=>b.decisionOwnerId===owner.id)!.subactions[0]!;
+        if(patch==='receipt')child.nativeRecoveryDelayTicks!++;else child.phases[child.phases.length - 1]!.durationTicks++;
+        expect(game.loadSnapshot(bad)).toBe(false);
+    }
+    expect(game.loadSnapshot(saved)).toBe(true);
+    const loaded=game.monsters.find(m=>m.id===owner.id)!;
+    game.executeCommand('wait');
+    expect(productionActorActionScheduler(game)!.isBusy(loaded.id)).toBe(true);
+    expect(state(game).scheduler.bundles.find(b=>b.decisionOwnerId===loaded.id)!.elapsedActionTicks).toBe(100);
+    if(kind==='single')expect(loaded.spatial).toBeUndefined();
+    expect(game.lastAdvancementError).toBeNull();
+});
 
 describe('3g strict optional combat capacity consumer',()=>{
     it.each([{status:'unavailable',reason:'absent'},{status:'available',value:{status:'unsupported'}}])('falls back only for explicit %j',result=>{

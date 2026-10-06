@@ -6203,7 +6203,8 @@ export class Game {
                 throw new Error('Uninstalled transition form');
             if (copy && (result.formId !== core.typeId || result.memberMap.length)) throw new Error('Copy must retain source topology');
             const definition = copy && sourceGroup ? this.spatialCatalog.body(sourceGroup.bodyDefinitionId) : this.spatialCatalog.bodyForCoreForm(data.id);
-            if (request.reason === 'phase' && sourceGroup?.appliedBreaks.length && definition?.id === sourceGroup.bodyDefinitionId)
+            if (!copy && sourceGroup && definition?.id === sourceGroup.bodyDefinitionId
+                && (sourceGroup.appliedBreaks.length || sourceGroup.members.some(slot => slot.life === 'removed')))
                 throw new Error('Same-body regeneration is not open');
             const order = definition ? bodyConstraintOrder(definition) : ['self'];
             const retained = !copy && resultIndex === 0;
@@ -6405,9 +6406,15 @@ export class Game {
             core.bodyTransitionHistory = [...(core.bodyTransitionHistory ?? []), move.id];
             core.hp -= move.hpCost;
             const fact = this.transitionBody({ ...move.transition, sourceGroupId: core.id }, move.id);
-            if (actorActionSchedulerFor(this)?.isBusy(core.id)) {
-                if (core.spatial) core.spatial.actionLockInTicks = Math.max(move.ticks, core.spatial.actionLockInTicks ?? 0);
-            } else core.ticksUntilTurn = Math.max(move.ticks, core.ticksUntilTurn);
+            // Copies retain the source too. Every result pays the same action
+            // wait; scheduler mirrors cannot own a second native countdown.
+            for (const id of new Set([core.id, ...fact.resultGroupIds])) {
+                const actor = this.monsters.find(m => m.id === id);
+                if (!actor || actor.hp <= 0) continue;
+                if (actorActionSchedulerFor(this)?.isBusy(id)) {
+                    if (actor.spatial) actor.spatial.actionLockInTicks = Math.max(move.ticks, actor.spatial.actionLockInTicks ?? 0);
+                } else actor.ticksUntilTurn = Math.max(move.ticks, actor.ticksUntilTurn);
+            }
             if (fact.outcome !== 'applied') this.extensionRuntime!.emit('bodyTransition', fact);
         }, rng.getState(), true);
         return true;
@@ -7880,6 +7887,7 @@ export class Game {
             const monst = this.getMonsterAt(x, y);
             if (monst && monst.hp > 0 && !monst.submerged) {
                 if (thrown.category === ItemCategory.WEAPON && !isIncendiaryDart(thrown)) {
+                    const defeatTarget = bodyDecisionActor(monst);
                     // CE Items.c:6906-6921：命中 → 结算后投掷物消失；
                     // 未命中 → break，投掷物落在怪物所在格的合格邻格。
                     // CE pre-hit aggression preserves permanent flight; Combat
@@ -7900,7 +7908,7 @@ export class Game {
                                 weapon: thrown.displayName, monster: monst.name,
                                 defaultValue: `The thrown ${thrown.displayName} killed the ${monst.name}!`
                             }), '#ffaa00');
-                            if (!this.isPeripheralBodyMember(monst)) this.stats.kills++;
+                            if (defeatTarget.hp <= 0) this.stats.kills++;
                         } else {
                             logger.log(i18next.t('throw.hit', {
                                 weapon: thrown.displayName, monster: monst.name, damage: res.damage,
@@ -8752,6 +8760,7 @@ export class Game {
             if (this.extensionRuntime) this.extensionRuntime.causality.clearStatus(entity.id, 'poisoned');
             return;
         }
+        const defeatTarget = bodyDecisionActor(entity);
         if (this.extensionRuntime) {
             const effects = this.extensionRuntime.causality;
             effects.withOrigin(effects.statusOrigin(entity.id, 'poisoned'),
@@ -8759,12 +8768,12 @@ export class Game {
         } else entity.takeDamage(Math.max(1, entity.poisonAmount), true, this.grid);
         if (entity === this.player) {
             this.lastDamageSource = 'poison';
-        } else if (entity.hp <= 0 && !this.isPeripheralBodyMember(entity)) {
-            if (this.canObserveBoltTarget(entity)) logger.log(i18next.t('env.poison_death', {
-                name: entity.name, defaultValue: `The ${entity.name} dies of poison.`
+        } else if (defeatTarget.hp <= 0) {
+            if (this.canObserveBoltTarget(defeatTarget)) logger.log(i18next.t('env.poison_death', {
+                name: defeatTarget.name, defaultValue: `The ${defeatTarget.name} dies of poison.`
             }), '#88aa88');
             this.stats.kills++;
-            this.dropMonsterLoot(entity as Monster);
+            this.dropMonsterLoot(defeatTarget as Monster);
         }
     }
 
@@ -9177,6 +9186,9 @@ export class Game {
             return effects.withOrigin(effects.create('melee', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
                 () => this.resolvePlayerMeleeAttackAt(target, lungeAttack));
         }
+        // Terminal transfer retires the live group before the attack returns.
+        // Capture its owner now so native player-only rewards use the core.
+        const defeatTarget = bodyDecisionActor(target);
         const res = CombatSystem.attack(this.player, target, { grid: this.grid, lungeAttack });
         if (this.player.hasStatus('invisible')) {
             this.player.setStatusDuration('invisible', 0);
@@ -9231,13 +9243,13 @@ export class Game {
         }
 
         // Check if monster died
-        if (target.hp <= 0 && !this.isPeripheralBodyMember(target)) {
+        if (defeatTarget.hp <= 0) {
             this.stats.kills++;
 
             // B-1a：CE Combat.c:1427-1430——玩家近战击杀非无生命怪
             //（MB_WEAPON_AUTO_ID 在怪物生成时对非 MONST_INANIMATE 恒置，
             // Monsters.c:157-159）时扣减装备武器的熟悉度计数，满 20 杀实例亮。
-            if (!target.hasBehavior('MONST_INANIMATE') && !target.isClone
+            if (!defeatTarget.hasBehavior('MONST_INANIMATE') && !defeatTarget.isClone
                 && ItemLoader.decrementWeaponAutoIDTimer(this.player.equippedWeapon)) {
                 const weapon = this.player.equippedWeapon!;
                 logger.log(i18next.t('item.familiar_weapon', {
@@ -9246,7 +9258,7 @@ export class Game {
                 }), '#00ffff');
             }
 
-            this.dropMonsterLoot(target);
+            this.dropMonsterLoot(defeatTarget);
         }
 
         // P4-7：钝器击退（CE Combat.c:1398-1401；"命中且目标存活"对应 CE 的
@@ -12234,12 +12246,6 @@ export class Game {
         const part = this.spatialCatalog.body(group.bodyDefinitionId).parts.find(p => p.partId === actor.spatial!.bodyMember!.partId)!;
         return part.attackProfileIds.map(id => this.spatialCatalog.attackProfile(id).providerProfileId);
     }
-    /** Retirement keeps the source identity on the detached member; checking
-     * the current live table here would incorrectly award a kill afterwards. */
-    private isPeripheralBodyMember(actor: Creature): boolean {
-        const member = actor.spatial?.bodyMember;
-        return !!member && member.groupId !== actor.id;
-    }
     public isBodyDecisionOwner(id: number): boolean {
         const actor = this.monsters.find(c => c.id === id);
         const identity = actor?.spatial?.bodyMember;
@@ -12312,9 +12318,9 @@ export class Game {
         const core = [...this.monsters, ...this.dormantMonsters].find(c => c.id === group.coreId);
         if (core && core.hp <= 0) {
             this.killMonster(core);
-            // The direct member exits never award a kill. A terminal transfer
-            // therefore owns the one core defeat here, before any later sweep.
-            this.stats.kills++;
+            // Death/facts belong to this transfer. Kill counts and native loot /
+            // weapon familiarity belong to the same source-specific callers as
+            // a direct core hit, never to an arbitrary damage hook.
         }
     }
     private retireBrokenBodyMembers(group: BodyGroupState): void {

@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { emptyProductionArena, installProductionBody, PRODUCTION_BODY_ID, startProductionGame } from './support/productionComposite';
-import { commitCreatureAnchor, footprintOf } from '../engine/Movement/CreatureSpatial';
-import { canDirectlySeeMonster, monsterHidden } from '../engine/UI/MonsterVisibility';
-import { commitWorldRest, prepareWorldRest, settleWorldRest, worldRestUnavailable } from '../engine/Core/WorldRestProduction';
-import { MonsterState, monstersAreEnemies } from '../entities/Monster';
-import { rng } from '../engine/Random';
-import { getNextEntityId } from '../entities/Creature';
-import { logger } from '../engine/Systems/Logger';
-import { timeSystem } from '../engine/Systems/Time';
+import { emptyProductionArena, installProductionBody, PRODUCTION_BODY_ID, startProductionGame } from '../../../../test/support/productionComposite';
+import { commitCreatureAnchor, footprintOf } from '../../../../engine/Movement/CreatureSpatial';
+import { canDirectlySeeMonster, monsterHidden } from '../../../../engine/UI/MonsterVisibility';
+import { commitWorldRest, prepareWorldRest, settleWorldRest, worldRestUnavailable } from '../../../../engine/Core/WorldRestProduction';
+import { MonsterState, monstersAreEnemies } from '../../../../entities/Monster';
+import { rng } from '../../../../engine/Random';
+import { getNextEntityId } from '../../../../entities/Creature';
+import { logger } from '../../../../engine/Systems/Logger';
+import { timeSystem } from '../../../../engine/Systems/Time';
 
 const json = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 afterEach(() => { vi.restoreAllMocks(); logger.reset(); logger.onDisturb = null; });

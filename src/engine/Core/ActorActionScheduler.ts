@@ -23,6 +23,9 @@ export interface ActorSubactionDefinition {
     phases: ActorActionPhase[];
 }
 export interface ActorSubaction extends ActorSubactionDefinition {
+    /** Cumulative native surprise delay, included in the terminal phase's
+     * duration. A receipt for codec attestation, never another countdown. */
+    nativeRecoveryDelayTicks?: number;
     sourceSubactionId: number;
     phaseIndex: number;
     phaseRemainingTicks: number;
@@ -99,6 +102,8 @@ export type ReadonlyActorActionBundle = Readonly<Omit<ActorActionBundle, 'subact
     })[];
 };
 export interface ActorActionScheduler extends ActorActionSchedulerPort {
+    /** Trusted native hit epilogue; pending releases retain their timing. */
+    delayOwnerRecovery(ownerId: number, ticks: number): boolean;
     commitBundle(bundle: ActorActionBundle): void;
     /** Trusted safe-boundary cancellation of an interruptible non-attack action. */
     retireBundle(actionId: number): void;
@@ -181,6 +186,7 @@ export function validateActorActionSchedulerState(value: unknown, dueBoundaries:
         let previous: ActorSubactionDefinition | undefined;
         for (const [index, child] of bundle.subactions.entries()) {
             if (!record(child, ['sourceEntityId', 'sourcePartId', 'sourceFootprintVersion', 'phases', 'sourceSubactionId', 'phaseIndex', 'phaseRemainingTicks', 'cancelled',
+                ...(Object.prototype.hasOwnProperty.call(child, 'nativeRecoveryDelayTicks') ? ['nativeRecoveryDelayTicks'] : []),
                 ...(Object.prototype.hasOwnProperty.call(child, 'sourceGeneration') ? ['sourceGeneration'] : [])])
                 || !integer(child.sourceEntityId, 1) || typeof child.sourcePartId !== 'string'
                 || (Object.prototype.hasOwnProperty.call(child, 'sourceGeneration') && child.sourceGeneration !== 0)
@@ -189,6 +195,9 @@ export function validateActorActionSchedulerState(value: unknown, dueBoundaries:
                 || parts.has(child.sourcePartId) || child.sourceSubactionId !== index + 1
                 || !dataArray(child.phases) || child.phases.length < 1 || child.phases.length > MAX_ACTOR_ACTION_PHASES
                 || typeof child.cancelled !== 'boolean' || !integer(child.phaseIndex, 0, child.phases.length) || !integer(child.phaseRemainingTicks, 0, MAX_ACTOR_ACTION_TICKS)) fail('invalid subaction');
+            if (Object.prototype.hasOwnProperty.call(child, 'nativeRecoveryDelayTicks')
+                && (!integer(child.nativeRecoveryDelayTicks, 1, MAX_ACTOR_ACTION_TICKS)
+                    || (child.phases[child.phases.length - 1] as ActorActionPhase).durationTicks <= child.nativeRecoveryDelayTicks)) fail('invalid native recovery delay');
             parts.add(child.sourcePartId);
             let duration = 0;
             let nextSegment = 0;
@@ -308,7 +317,8 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
         if (!integer(recoveryTicks, 1, MAX_ACTOR_ACTION_TICKS)) fail('invalid break recovery');
         const phase = child.phases[child.phaseIndex]!;
         const consumed = phase.durationTicks - child.phaseRemainingTicks;
-        const remaining = phase.segmentIndex === null ? Math.max(child.phaseRemainingTicks, recoveryTicks) : recoveryTicks;
+        const delay = child.nativeRecoveryDelayTicks ?? 0;
+        const remaining = phase.segmentIndex === null ? Math.max(child.phaseRemainingTicks, recoveryTicks) : recoveryTicks + delay;
         const duration = consumed + remaining;
         const prefixDuration = child.phases.slice(0, child.phaseIndex).reduce((sum, item) => sum + item.durationTicks, 0);
         if (prefixDuration + duration > MAX_ACTOR_ACTION_TICKS) fail('break recovery budget exceeded');
@@ -357,6 +367,28 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
         }
     }
     return {
+        delayOwnerRecovery(ownerId, ticks) {
+            check();
+            const bundle = bundleOf(ownerId);
+            if (!bundle || !foreground(bundle)) return false;
+            const children = bundle.subactions.filter(active);
+            // Validate the whole batch before changing the first child.
+            if (!integer(ticks, 1, MAX_ACTOR_ACTION_TICKS) || !children.length
+                || children.some(child => child.phases.reduce((sum, phase) => sum + phase.durationTicks, 0) + ticks > MAX_ACTOR_ACTION_TICKS))
+                fail('native recovery delay budget exceeded');
+            const delay = () => {
+                for (const child of children) {
+                    child.nativeRecoveryDelayTicks = (child.nativeRecoveryDelayTicks ?? 0) + ticks;
+                    child.phases[child.phases.length - 1]!.durationTicks += ticks;
+                    if (child.phaseIndex === child.phases.length - 1) child.phaseRemainingTicks += ticks;
+                }
+                mirror(bundle);
+                return true;
+            };
+            // Native damage may occur inside this scheduler's segment resolver.
+            // That outer dispatch already owns the transaction/fault boundary.
+            return executing ? delay() : run(delay, true);
+        },
         isDecisionOwner(entityId) { check(); return host.decisionOwnerId(entityId) === entityId; },
         isBusy(ownerId) { check(); const bundle = bundleOf(ownerId); return !!bundle && foreground(bundle); },
         nextActionBoundary() {
@@ -427,7 +459,7 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
             const copy = detached(bundle);
             const candidate: ActorActionSchedulerState = { schema: 1, bundles: [...state.bundles, copy] };
             validateActorActionSchedulerState(candidate);
-            if (copy.elapsedActionTicks !== 0 || copy.subactions.some(child => child.phaseIndex !== 0)) fail('commit requires a fresh action');
+            if (copy.elapsedActionTicks !== 0 || copy.subactions.some(child => child.phaseIndex !== 0 || child.nativeRecoveryDelayTicks !== undefined)) fail('commit requires a fresh action');
             if (!host.readActor(copy.decisionOwnerId)?.alive || host.decisionOwnerId(copy.decisionOwnerId) !== copy.decisionOwnerId
                 || copy.subactions.some(child => host.decisionOwnerId(child.sourceEntityId) !== copy.decisionOwnerId || !sourceValid(child, copy.depth))) fail('invalid action owner/source');
             const previousTicks = host.readActor(copy.decisionOwnerId)!.ticksUntilTurn;

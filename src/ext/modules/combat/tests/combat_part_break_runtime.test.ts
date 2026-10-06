@@ -1,4 +1,5 @@
-import { afterEach,describe,expect,it,vi } from 'vitest';
+import { installBodyFixture } from '../../../../test/support/productionComposite';
+import { afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import { Game } from '../../../../engine/Core/Game';
 import { withBodyContact } from '../../../../engine/Combat/BodyCombat';
@@ -32,7 +33,7 @@ function configure(mode:'normal'|'throw'|'invalid'|'async'|'unsupported'|'absent
         if(d.id!=='combat')return d;
         const base=d.create(),original=base.optionalPartBreaks!['combat.part-break.v1']!;
         const definitions=json(base.actorActions!.definitions) as unknown as ActorAttackDefinitions;
-        if(sourceProfile)definitions.nativeProfiles.push({monsterId:'giants.spine-crawler',profileId:'combat.shock-ring'});
+        if(sourceProfile)definitions.nativeProfiles.push({monsterId:'body-fixture.spine-crawler',profileId:'combat.shock-ring'});
         const provider:PartBreakProvider={prepare:(request,context)=>mode==='unsupported'?{status:'unsupported',reason:'unsupported-target'}:original.prepare(request,context),
             commit:(request,plan,context)=>{captured=context;original.commit(request,plan,context);
                 if(mode==='throw')throw new Error('after combat state');
@@ -44,7 +45,7 @@ function configure(mode:'normal'|'throw'|'invalid'|'async'|'unsupported'|'absent
     }));vi.spyOn(catalog,'createExtensionRegistry').mockReturnValue(registry);
     return ()=>captured;
 }
-function scene(ids=['combat','giants']){
+function scene(ids=['combat','body-fixture']){
     const game=createHeadlessGame(44206,'wizard');game.startNewGame({seed:44206,mode:'wizard',ruleSet:'extended',extensions:ids});
     game.animationEnabled=false;game.monsters=[];game.dormantMonsters=[];game.items=[];
     for(let y=0;y<game.grid.height;y++)for(let x=0;x<game.grid.width;x++){
@@ -53,14 +54,16 @@ function scene(ids=['combat','giants']){
         game.grid.getCell(x,y)!.machineNumber=0;
     }
     game.environment=new EnvironmentManager(game.grid);game.waypoints=new WaypointSystem();commitCreatureAnchor(game.player,{x:22,y:11});
-    const boss=game.createModuleMonster('giants.spine-crawler',{x:20,y:12})!;
+    const boss=game.createModuleMonster('body-fixture.spine-crawler',{x:20,y:12})!;
     boss.state=MonsterState.HUNTING;boss.ticksUntilTurn=1000;boss.defense=-1000;(game as any).updateVision();return{game,boss};
 }
 function hit(game:Game,boss:Monster){const cell=footprintOf(boss).find(p=>p.zoneId==='shell')!;
     return withBodyContact(boss,cell,()=>boss.takeDamage(60,true,game.grid,undefined,'physical'));}
 function pending(game:Game){const plan=preparePhasedAttackCommand(game,command)!;expect(plan).not.toBeNull();commitPhasedAttackCommand(game,plan);return state(game).scheduler.bundles[0]!;}
+// The independent foundation fixture preserves the historical zone geometry and values.
+beforeEach(() => installBodyFixture());
 afterEach(()=>{vi.restoreAllMocks();logger.reset();});
-describe('3d exact published part-break production integration',()=>{
+describe('3d production part-break integration with independent fixed-zone content',()=>{
     it.each(['normal','throw'] as const)('3e successive rest receipts keep distinct identities through %s provider adoption',mode=>{
         configure(mode);const {game,boss}=scene();boss.isAlly=true;boss.ticksUntilTurn=100000;
         const camp=game.extensionRuntime!.snapshot().foundation.world.entities.find(entity=>entity.owner==='combat')!;
@@ -86,7 +89,7 @@ describe('3d exact published part-break production integration',()=>{
         expect(game.loadSnapshot(json(game.toSaveSnapshot()))).toBe(true);
     });
     it.each(['absent','unsupported'] as const)('%s provider uses only native fallback',mode=>{
-        if(mode==='unsupported')configure('unsupported');const {game,boss}=scene(mode==='absent'?['giants']:undefined);hit(game,boss);
+        if(mode==='unsupported')configure('unsupported');const {game,boss}=scene(mode==='absent'?['body-fixture']:undefined);hit(game,boss);
         expect(boss.spatial!.actionLockInTicks).toBe(50);if(mode==='unsupported')expect(state(game).actors).toEqual([]);
     });
     it('core break mirrors max native recovery without stacking fallback, and survives load',()=>{

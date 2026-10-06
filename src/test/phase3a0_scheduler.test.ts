@@ -54,6 +54,42 @@ function fixture(playerTicks = 100, others: Monster[] = [], ownerOf: (id: number
 }
 
 describe('3a0 persistent actor action scheduler', () => {
+    it.each([false,true])('native delay extends only terminal recovery and survives rebind (already recovering=%s)',recovering=>{
+        const f=fixture(100,[actor(2,0)]);f.scheduler.commitBundle(createActorActionBundle(definition(2)));
+        if(recovering){f.scheduler.advanceActionTime(20);f.scheduler.dispatchActorBoundary(2);f.scheduler.advanceActionTime(3);}
+        const before=f.actors[1]!.ticksUntilTurn;
+        expect(f.scheduler.delayOwnerRecovery(2,100)).toBe(true);expect(f.scheduler.delayOwnerRecovery(2,30)).toBe(true);
+        const child=f.state.bundles[0]!.subactions[0]!;
+        expect(child.nativeRecoveryDelayTicks).toBe(130);expect(child.phases[child.phases.length - 1]!.durationTicks).toBe(140);
+        expect(f.actors[1]!.ticksUntilTurn).toBe(before+(recovering?130:0));
+        const loaded=createActorActionScheduler(f.scheduler.snapshot(),f.host);
+        while(loaded.isBusy(2)){loaded.advanceActionTime(loaded.nextActionBoundary()!);loaded.dispatchActorBoundary(2);}
+        expect(f.events).toEqual(['resolve:2:1:0','finish:2:160:completed']);
+        expect(f.actors[1]!.ticksUntilTurn).toBe(0);
+    });
+    it('native delay during another segment dispatch remains in the same scheduler transaction',()=>{
+        const f=fixture(100,[actor(2,0),actor(3,0)]);
+        f.scheduler.commitBundle(createActorActionBundle(definition(2)));
+        f.scheduler.commitBundle(createActorActionBundle(definition(3,[child(3,'body',phases(5,10))])));
+        vi.mocked(f.host.resolveSegment).mockImplementation(boundary=>{
+            f.events.push(`resolve:${boundary.decisionOwnerId}:${boundary.sourceSubactionId}:${boundary.segmentIndex}`);
+            if(boundary.decisionOwnerId===3)expect(f.scheduler.delayOwnerRecovery(2,100)).toBe(true);
+        });
+        f.drain();expect(f.state.bundles.find(b=>b.decisionOwnerId===2)!.subactions[0]!.phaseRemainingTicks).toBe(30);
+        expect(f.events).toEqual(['resolve:3:1:0','finish:3:15:completed','native:3','sweep:3:100','resolve:2:1:0','environment']);
+    });
+    it('native delay rejects malformed receipts, fresh delayed plans and over-budget batches without partial mutation',()=>{
+        const f=fixture(100,[actor(2,0)]);f.scheduler.commitBundle(createActorActionBundle(definition(2)));
+        f.scheduler.delayOwnerRecovery(2,100);const saved=f.scheduler.snapshot();
+        for(const value of [0,-1,1_000_001]){
+            const bad=structuredClone(saved);bad.bundles[0]!.subactions[0]!.nativeRecoveryDelayTicks=value;
+            expect(()=>validateActorActionSchedulerState(bad)).toThrow();
+        }
+        const fresh=createActorActionBundle(definition(3));fresh.subactions[0]!.nativeRecoveryDelayTicks=1;
+        expect(()=>f.scheduler.commitBundle(fresh)).toThrow('fresh action');
+        expect(()=>f.scheduler.delayOwnerRecovery(2,1_000_000)).toThrow('budget');
+        expect(f.state).toEqual(saved);expect(f.scheduler.delayOwnerRecovery(99,100)).toBe(false);
+    });
     it('advances the supplied countdown once and derives native mirrors from the minimum child boundary', () => {
         const f = fixture(15, [actor(2, 100)]);
         f.scheduler.commitBundle(createActorActionBundle(definition(2)));

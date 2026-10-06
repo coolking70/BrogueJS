@@ -1,3 +1,4 @@
+import { installedModuleSubsets } from './support/installedExtensions';
 /** Captured BEFORE production migration. Hash the complete reachable object
  * graph (including descriptors, aliases, cycles, maps, sets and typed bytes),
  * not EntitySnapshot's field whitelist. Compact SHA-256 fixtures keep the raw
@@ -19,7 +20,7 @@ import { timeSystem } from '../engine/Systems/Time';
 import { getNextMachineNumber } from '../engine/Generator/BlueprintEngine';
 
 const fixturePath = 'src/test/fixtures/phase4a0-single-cell-baseline.json';
-const sets = [[], ['growth'], ['narrative'], ['growth', 'narrative']];
+const sets = installedModuleSubsets(['growth', 'narrative']);
 afterEach(() => { vi.restoreAllMocks(); logger.presentAcknowledgments(null); });
 
 export function graphDigest(root: unknown) {

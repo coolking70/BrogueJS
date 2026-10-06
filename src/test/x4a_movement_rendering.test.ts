@@ -133,7 +133,9 @@ describe('X4a per-step known exploration/travel', () => {
         g.monsters.push(enemy); g.visibleMonsters.add(enemy);
         const attack = vi.spyOn(g as any, 'resolvePlayerMeleeAttackOn');
         g.handlePlayerAction('auto_explore');
-        expect(attack).toHaveBeenCalledWith(enemy);
+        // 4c passes lunge/contact explicitly; this ordinary rat still has no body scope.
+        expect(attack).toHaveBeenCalledTimes(1);
+        expect(attack).toHaveBeenCalledWith(enemy, false, undefined);
         expect(g.player.loc).toEqual({ x: 10, y: 10 }); expect(g.stats.turns).toBe(1);
     });
     it('automatic movement runs the same special-tile entry exactly once', () => {

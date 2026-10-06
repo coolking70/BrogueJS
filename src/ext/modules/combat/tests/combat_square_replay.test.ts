@@ -219,8 +219,8 @@ function naturalStep(game: Game, goal: (x: number, y: number) => boolean, exclud
     if (game.pendingCommandConfirmation) game.resolveCommandDecision(game.pendingCommandConfirmation.token, true);
 }
 
-describe('3b configured combat with the installed 3x3 form',()=>{
-    it.each(catalog.getInstalledModuleDescriptors().filter(module=>module.id==='giants'))('publishes the declared 3x3 species and persists its real phased native attack',descriptor=>{
+describe.each(catalog.getInstalledModuleDescriptors().filter(module=>module.id==='giants'))('3b configured combat with the installed 3x3 form',descriptor=>{
+    it('publishes the declared 3x3 species and persists its real phased native attack',()=>{
         const form=descriptor.create().nativeForms!.find(value=>value.size===3)!;
         expect(form).toBeDefined();
         const rules=json(descriptor.rules);
@@ -248,8 +248,8 @@ describe('3b configured combat with the installed 3x3 form',()=>{
     });
 });
 
-describe('3b configured combat with an actual naturally generated optional square actor', () => {
-    it.each(catalog.getInstalledModuleDescriptors().filter(module => module.id === 'giants'))('seed 7306 D3 ridgeback uses telegraphed native segments, each phase survives save/load, and the natural command recording replays', giantDescriptor => {
+describe.each(catalog.getInstalledModuleDescriptors().filter(module => module.id === 'giants'))('3b configured combat with an actual naturally generated optional square actor', giantDescriptor => {
+    it('seed 7306 D3 ridgeback uses telegraphed native segments, each phase survives save/load, and the natural command recording replays', () => {
         expect(giantDescriptor).toBeDefined();
         const form = giantDescriptor.create().nativeForms!.find(value => value.size === 2)!;
         expect(form).toBeDefined();

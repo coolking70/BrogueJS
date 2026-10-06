@@ -1,3 +1,4 @@
+import { installedModuleSubsets } from '../../../../test/support/installedExtensions';
 import { afterEach, expect, it, vi } from 'vitest';
 import { startGiants, json } from './naturalFixture';
 import { loadGiantsDefinitionPack } from '../definitions';
@@ -62,7 +63,7 @@ it('a failed whole-body generation publication restores the prior group and ever
   expect(()=>(game as any).generateDepth(false)).toThrow('body-publication-failure');
   expect(audit.differences()).toEqual([]);expect(game.extensionRuntime!.snapshot()).toEqual(runtime);expect(rng.getState()).toEqual(random);expect(getNextEntityId()).toBe(allocator);
 });
-it.each([['giants'],['giants','combat'],['giants','growth'],['giants','growth','combat']])('real native sweep hits two actual legs once in %j, with transfer only at the central HP exit', (...ids:string[]) => {
+it.each(installedModuleSubsets(['combat', 'growth']).map(subset => ['giants', ...subset]))('real native sweep hits two actual legs once in %j, with transfer only at the central HP exit', (...ids:string[]) => {
   const {game,core,legs}=scene(ids); commitCreatureAnchor(game.player,{x:13,y:10});
   const weapon=ItemLoader.spawnWeapon('axe',-1,-1)!;
   Object.assign(weapon,{damage:'8-8',enchantment:0,strengthRequired:game.player.effectiveStrength,flags:['ITEM_ATTACKS_ALL_ADJACENT']});
@@ -117,7 +118,7 @@ it('a fatal 1:4 member transfer counts the core defeat once, even though the dir
   game.executeCommand('move',{x:0,y:1});
   expect(core.hp).toBe(0);expect(game.stats.kills).toBe(kills+1);expect(emit.mock.calls.filter(c=>c[0]==='deathCaptured')).toHaveLength(1);
 });
-it.each([['giants'],['giants','combat'],['giants','growth'],['giants','growth','combat']])('public thrown incineration lights several real legs once per part in %j', (...ids:string[]) => {
+it.each(installedModuleSubsets(['combat', 'growth']).map(subset => ['giants', ...subset]))('public thrown incineration lights several real legs once per part in %j', (...ids:string[]) => {
   const {game,legs}=scene(ids); commitCreatureAnchor(game.player,{x:10,y:11});
   const item=ItemLoader.spawnPotion('potion_of_incineration',-1,-1)!;game.player.inventory.addItem(item);
   // Isolate the native item/DF area subsegment; objective burning is covered separately.

@@ -7,10 +7,48 @@ import { TerrainType as T, DungeonLayer as L } from '../engine/Map/Grid';
 import { logger } from '../engine/Systems/Logger';
 import { Monster, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
+import type { EffectKind } from '../ext/causality';
 afterEach(()=>{vi.restoreAllMocks();logger.reset();});
+it.each(['melee','projectile','bolt','terrain','death-effect',null] as const)
+('non-player or uncredited %s member transfer never awards a player kill',kind=>{
+    const {game,core,actors}=productionBodyScene();core.hp=1;
+    const effects=game.extensionRuntime!.causality,source=kind==='bolt'?game.player.id:actors[2]!.id;
+    const origin=kind?effects.create(kind as EffectKind,source):null,kills=game.stats.kills;
+    effects.withOrigin(origin,()=>actors[1]!.takeDamage(100,true,game.grid));
+    expect(core.hp).toBe(0);expect(core.deathProcessed).toBe(true);expect(game.stats.kills).toBe(kills);
+});
+it.each(['core','leg'] as const)('player melee through %s awards one core kill, loot and weapon familiarity',contact=>{
+    const {game,core,actors}=productionBodyScene();core.hp=1;core.applyStatus('paralyzed',1000);
+    const target=contact==='core'?core:actors[1]!,weapon=ItemLoader.spawnWeapon('sword',-1,-1)!;
+    weapon.damage='30-30';game.player.strength=30;game.player.inventory.addItem(weapon);game.player.equippedWeapon=weapon;
+    const autoID=vi.spyOn(ItemLoader,'decrementWeaponAutoIDTimer'),loot=vi.spyOn(game as any,'dropMonsterLoot'),kills=game.stats.kills;
+    game.executeCommand('fixture:melee',undefined,()=>{(game as any).resolvePlayerMeleeAttackOn(target);});
+    expect(core.hp).toBe(0);expect(game.stats.kills).toBe(kills+1);expect(autoID).toHaveBeenCalledExactlyOnceWith(weapon);
+    expect(loot).toHaveBeenCalledExactlyOnceWith(core);
+});
+it.each(['core','leg'] as const)('player thrown weapon through %s awards only one core kill',contact=>{
+    const {game,core,actors}=productionBodyScene();core.hp=1;core.applyStatus('paralyzed',1000);game.onConfirmRequest=()=>true;
+    const target=contact==='core'?core:actors[1]!,item=ItemLoader.spawnWeapon('dart',-1,-1)!;
+    item.damage='30-30';game.player.strength=30;game.player.inventory.addItem(item);
+    commitCreatureAnchor(game.player,{x:target.x-2,y:target.y});const kills=game.stats.kills;
+    const loot=vi.spyOn(game as any,'dropMonsterLoot'),autoID=vi.spyOn(ItemLoader,'decrementWeaponAutoIDTimer');
+    game.executeItemCommand('throw',item);game.executeCommand('mouse_travel',{x:target.x,y:target.y});
+    expect(core.hp).toBe(0);expect(game.stats.kills).toBe(kills+1);
+    expect(loot).not.toHaveBeenCalled();expect(autoID).not.toHaveBeenCalled();
+});
+it('severing a leg while its core survives awards neither kill nor weapon familiarity',()=>{
+    const {game,core,actors}=productionBodyScene();core.applyStatus('paralyzed',1000);
+    const weapon=ItemLoader.spawnWeapon('sword',-1,-1)!;weapon.damage='30-30';game.player.strength=30;
+    game.player.inventory.addItem(weapon);game.player.equippedWeapon=weapon;
+    const kills=game.stats.kills,autoID=vi.spyOn(ItemLoader,'decrementWeaponAutoIDTimer'),loot=vi.spyOn(game as any,'dropMonsterLoot');
+    game.executeCommand('fixture:melee',undefined,()=>{(game as any).resolvePlayerMeleeAttackOn(actors[1]!);});
+    expect(actors[1]!.hp).toBe(0);expect(core.hp).toBeGreaterThan(0);expect(game.stats.kills).toBe(kills);
+    expect(autoID).not.toHaveBeenCalled();expect(loot).not.toHaveBeenCalled();
+});
 it.each(['melee','throw','fire-bolt','poison','burning','explosion','lava','fall'] as const)
 ('actual %s termination owns one core death and one carried item, with no member death facts',cause=>{
     const {game,core,actors}=productionBodyScene();core.hp=1;core.applyStatus('paralyzed',1000);
+    const kills=game.stats.kills;
     const death=vi.spyOn(game.extensionRuntime!,'captureDeath'),drop=vi.spyOn(game,'makeMonsterDropItem'),loot=ItemLoader.spawnFood('ration_of_food',-1,-1)!;core.carriedItem=loot;
     commitCreatureAnchor(game.player,{x:core.x-3,y:core.y-1});game.onConfirmRequest=()=>true;
     if(cause==='melee'){
@@ -29,6 +67,7 @@ it.each(['melee','throw','fire-bolt','poison','burning','explosion','lava','fall
         for(let n=0;n<4&&core.hp>0;n++)game.executeCommand('wait');
     }
     expect(core.hp).toBe(0);expect(death.mock.calls.map(([a])=>a.id)).toEqual([core.id]);expect(game.bodyGroups).toBeUndefined();
+    expect(game.stats.kills-kills).toBe(['melee','throw','poison'].includes(cause)?1:0);
     expect(actors.slice(1).every(a=>a.deathProcessed&&a.administrativeDeath)).toBe(true);
     const facts=game.extensionRuntime!.snapshot().foundation.deaths;for(const member of actors.slice(1))expect(facts[String(member.id)]).toBeUndefined();
     expect(drop.mock.calls.filter(([a])=>a===core)).toHaveLength(1);const remaining=game.items.filter(i=>i===loot).length;

@@ -187,6 +187,7 @@ function sameShape(actual: AttackShapeRequest, attack: ActorAttackDefinition, fa
  * time already spent in its duration. It does not add an interruption clock. */
 function validatePhases(child: ActorSubaction, attack: ActorAttackDefinition, breakTicks: number): boolean {
     const tail = child.phases[child.phases.length - 1]!;
+    const nativeDuration = tail.durationTicks - (child.nativeRecoveryDelayTicks ?? 0);
     const broken = tail.kind === 'break-recovery';
     const releases = broken ? child.phases.length - 1 : attack.segments.length;
     if (releases > attack.segments.length || (!broken && child.phases.length !== releases + 1)) fail('attack phase count mismatch');
@@ -197,12 +198,12 @@ function validatePhases(child: ActorSubaction, attack: ActorAttackDefinition, br
             || phase.segmentIndex !== index) fail('attack phase timing mismatch');
     }
     if (!broken) {
-        if (tail.kind !== 'recovery' || tail.durationTicks !== attack.recoveryTicks) fail('attack recovery timing mismatch');
+        if (tail.kind !== 'recovery' || nativeDuration !== attack.recoveryTicks) fail('attack recovery timing mismatch');
     } else {
         const interruptedDuration = releases === attack.segments.length ? attack.recoveryTicks
             : releases === 0 ? attack.windupTicks + attack.segments[0]!.delayTicks : attack.segments[releases]!.delayTicks;
         const minimum = releases === attack.segments.length ? Math.max(attack.recoveryTicks, breakTicks) : breakTicks;
-        if (tail.durationTicks < minimum || tail.durationTicks > interruptedDuration + breakTicks
+        if (nativeDuration < minimum || nativeDuration > interruptedDuration + breakTicks
             || child.phaseIndex < releases) fail('invalid break recovery tail');
     }
     return broken;

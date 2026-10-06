@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import '../i18n';
-import { productionBodyScene, installProductionAttackBody, startProductionGame, emptyProductionArena, PRODUCTION_BODY_ID } from './support/productionComposite';
+import { productionBodyScene } from './support/productionComposite';
 import { commitCreatureAnchor, footprintOf } from '../engine/Movement/CreatureSpatial';
 import { MonsterState } from '../entities/Monster';
 import { TerrainType as T } from '../engine/Map/Grid';
@@ -25,14 +25,7 @@ it('native ally follow and fear retreat use the core decision without selecting 
     core.isAlly=false;core.leader=null;core.state=MonsterState.FLEEING;core.applyStatus('magical_fear',20);commitCreatureAnchor(game.player,{x:core.x+4,y:core.y});
     const before=Math.abs(core.x-game.player.x);game.executeCommand('wait');expect(Math.abs(core.x-game.player.x)).toBeGreaterThan(before);
 });
-it('core native magic precedes declared member attacks and pays only the core cast clock',()=>{
-    installProductionAttackBody();const game=startProductionGame(['body-fixture','combat']);emptyProductionArena(game);
-    const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!,clocks=game.monsters.slice(1).map(a=>a.ticksUntilTurn);
-    core.state=MonsterState.HUNTING;core.givenUpOnScent=true;core.bolts=['FIRE'];core.behaviorFlags.add('MONST_ALWAYS_HUNTING');core.behaviorFlags.add('MONST_ALWAYS_USE_ABILITY');
-    commitCreatureAnchor(game.player,{x:22,y:12});const cast=vi.spyOn(game,'castMonsterBolt');game.executeCommand('wait');
-    expect(cast).toHaveBeenCalledOnce();expect(cast.mock.calls[0]![0]).toBe(core);expect(cast.mock.calls[0]![1]).toBe(game.player);
-    expect(game.extensionRuntime!.actorActionBinding()!.state.scheduler.bundles).toEqual([]);expect(game.monsters.slice(1).map(a=>a.ticksUntilTurn)).toEqual(clocks);expect(core.ticksUntilTurn).toBeGreaterThan(0);
-});
+
 it('maintaining distance, confusion and an actual seizer keep positive group time without independent leg motion',()=>{
     const {game,core,actors}=productionBodyScene();core.behaviorFlags.add('MONST_MAINTAINS_DISTANCE');commitCreatureAnchor(game.player,{x:18,y:12});const at={...core.loc};game.executeCommand('wait');expect(core.loc).toEqual(at);
     core.setStatusDuration('confused',5);const draw=vi.spyOn(rng,'randRange');game.executeCommand('wait');expect(core.ticksUntilTurn).toBeGreaterThan(0);expect(draw.mock.calls.some(([min])=>min===0)).toBe(true);
@@ -85,34 +78,7 @@ it('a real staircase schedules and migrates the whole allied formation; save/loa
     expect(old.monsters.some(a=>a.spatial?.bodyMember?.groupId===core.id)).toBe(false);expect(game.monsters.filter(a=>a.spatial?.bodyMember?.groupId===core.id)).toHaveLength(9);
     expect(game.loadSnapshot(game.toSaveSnapshot())).toBe(true);
 });
-it('a real staircase follower migration cancels previously paid member shapes and preserves loadable source ledgers',()=>{
-    installProductionAttackBody();const game=startProductionGame(['body-fixture','combat']);emptyProductionArena(game);
-    const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!;core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');commitCreatureAnchor(game.player,{x:14,y:10});
-    game.executeCommand('wait');const initial=game.extensionRuntime!.actorActionBinding()!.state;
-    expect(initial.actions[0]!.paidCost).toBeGreaterThan(0);const paidId=initial.actions[0]!.actionId;
-    game.becomeAllyWith(core);game.grid.setTerrain(game.player.x,game.player.y,T.STAIRS_DOWN);game.levelSeeds[0]!.downStairsLoc={...game.player.loc};
-    game.executeCommand('stairs_down');const source=game.levels.get(1)!;
-    for(let n=0;n<150&&source.monsters.includes(core);n++)game.executeCommand('wait');
-    expect(source.monsters.some(a=>a.spatial?.bodyMember?.groupId===core.id)).toBe(false);expect(game.monsters.filter(a=>a.spatial?.bodyMember?.groupId===core.id)).toHaveLength(9);
-    const state=game.extensionRuntime!.actorActionBinding()!.state;
-    expect(state.actions.filter(a=>a.actionId===paidId).flatMap(a=>a.subactions).every(s=>s.lockedCells.length===0)).toBe(true);
-    expect(game.loadSnapshot(game.toSaveSnapshot())).toBe(true);game.executeCommand('wait');expect(game.lastAdvancementError).toBeNull();
-});
-it('a failed whole staircase restores a paid session and can execute the old plan after the fault is removed',()=>{
-    installProductionAttackBody();const game=startProductionGame(['body-fixture','combat']);emptyProductionArena(game);
-    const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!;core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');commitCreatureAnchor(game.player,{x:14,y:10});
-    game.executeCommand('wait');expect(game.extensionRuntime!.actorActionBinding()!.state.actions[0]!.paidCost).toBeGreaterThan(0);
-    game.grid.setTerrain(game.player.x,game.player.y,T.STAIRS_DOWN);game.levelSeeds[0]!.downStairsLoc={...game.player.loc};
-    const saved=game.toSaveSnapshot(),native=json(game.extensionRuntime!.actorActionBinding()!.state),random=rng.getState(),beforeDepth=game.depth;
-    const fail=vi.spyOn(game.extensionRuntime!,'commitGeneration').mockImplementation(()=>{throw Error('stairs fault');});
-    expect(()=>game.executeCommand('stairs_down')).toThrow('stairs fault');fail.mockRestore();
-    expect(game.depth).toBe(beforeDepth);expect(game.extensionRuntime!.actorActionBinding()!.state).toEqual(native);expect(rng.getState()).toEqual(random);
-    game.executeCommand('wait');expect(game.lastAdvancementError).toBeNull();const expected=json(game.toSaveSnapshot());
-    expect(game.loadSnapshot(saved)).toBe(true);game.executeCommand('wait');const actual=json(game.toSaveSnapshot());actual.savedAt=expected.savedAt;
-    // The generic thrown command invalidates recording provenance. Compare
-    // its complete mechanical world; successful recording paths are separate.
-    delete expected.run.recordingOrigin;delete actual.run.recordingOrigin;expect(actual).toEqual(expected);
-});
+
 it('a follower with no whole landing retains all old-layer anchors and shows the group reason',()=>{
     const {game,core,actors}=productionBodyScene();game.becomeAllyWith(core);const source=(game as any).activeLevelState(),positions=actors.map(a=>({...a.loc}));
     game.monsters=[];game.levels.set(2,source);

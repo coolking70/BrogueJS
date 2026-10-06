@@ -1,3 +1,4 @@
+import { installedModuleSubsets } from '../../../../test/support/installedExtensions';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import { createExtensionRegistry } from '../../../catalog';
@@ -102,7 +103,7 @@ describe('3b production combat lifecycle',()=>{
   (saved.extensions!.modules.combat as unknown as ProductionActorAttackState).actions[0]!.subactions[0]!.lockedCells=[cell];
   expect(game.loadSnapshot(saved)).toBe(false);expect(game.player).toBe(player);expect(game.extensionRuntime).toBe(runtime);
  });
- it.each([['combat'],['combat','growth'],['combat','narrative'],['combat','growth','narrative']].map(ids=>[ids]))('plays and reloads enabled subset %j',(ids)=>{
+ it.each(installedModuleSubsets(['growth', 'narrative']).map(subset => [['combat', ...subset]]))('plays and reloads enabled subset %j',(ids)=>{
   const game=start(ids as string[]);acknowledge();game.executeCommand('ext:command',command());
   const saved=game.toSaveSnapshot();expect(game.loadSnapshot(saved)).toBe(true);acknowledge();game.executeCommand('wait');
   expect(()=>game.exportRecording()).not.toThrow();

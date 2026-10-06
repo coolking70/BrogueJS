@@ -1,3 +1,4 @@
+import { installedModuleSubsets } from '../../../../test/support/installedExtensions';
 import { afterEach, expect, it, vi } from 'vitest';
 import { installProductionBody, emptyProductionArena, startProductionGame, PRODUCTION_BODY_ID } from '../../../../test/support/productionComposite';
 import { ItemLoader } from '../../../../engine/Items/ItemLoader';
@@ -23,7 +24,7 @@ function positiveQuoteScene(combat:boolean) {
     const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12},undefined,'natural')!;core.applyStatus('paralyzed',1000);const weapon=ItemLoader.spawnWeapon('dagger',-1,-1)!;game.player.inventory.addItem(weapon);game.player.equippedWeapon=weapon;game.player.strength=30;
     return {game,core,xp:()=>((game.extensionRuntime!.snapshot().components[game.player.id]!['growth:progression']) as {experience:number}).experience};
 }
-it.each([false,true])('positive immutable growth quotes award 27 once for the original core, zero for quoted legs and whole clones (combat=%s)',combat=>{
+it.each(installedModuleSubsets(['combat']).map(ids => ids.includes('combat')))('positive immutable growth quotes award 27 once for the original core, zero for quoted legs and whole clones (combat=%s)',combat=>{
     const {game,core,xp}=positiveQuoteScene(combat),before=xp(),clone=game.cloneMonster(core)!;
     const reward=game.extensionRuntime!.snapshot().components[core.id]!['growth:reward'] as {amount:number};expect(reward.amount).toBe(27);
     for(const leg of game.monsters.filter(a=>a.spatial?.bodyMember?.groupId===core.id&&a!==core))leg.takeDamage(100,true);

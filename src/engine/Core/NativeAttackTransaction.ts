@@ -4,6 +4,8 @@ import type { Creature } from '../../entities/Creature';
 import type { Grid } from '../Map/Grid';
 import type { Game } from './Game';
 import { assertActorActionScope, type ActorActionScope } from './ActorActionScope';
+import { bodyDecisionActor } from '../Status/BodyStatuses';
+import { productionActorActionScheduler } from './ActorActionProduction';
 import { applyActorPoiseDamage, canPayNativeActorAttack, chargeNativeActorAttack, isActorDodgeProtected, isActorStaggered,
     nativeActorPoiseDamage, reconcileActorNativeRecovery, tryActorParry } from './PhasedAttackProduction';
 
@@ -13,6 +15,14 @@ const worlds = new WeakMap<Grid, Game>();
 const credentials = new WeakMap<Creature, Credential>();
 
 export function bindNativeAttackWorld(game: Game): void { worlds.set(game.grid, game); }
+/** A busy owner's native timer is only the next-boundary mirror. Surprise
+ * delays its next decision in the owned recovery without moving releases. */
+export function delayNativeDecision(grid: Grid | undefined, defender: Creature, ticks: number): void {
+    const owner = bodyDecisionActor(defender), game = grid && worlds.get(grid);
+    if (game && game.grid === grid && owns(game, defender) && owns(game, owner)
+        && productionActorActionScheduler(game)?.delayOwnerRecovery(owner.id, ticks)) return;
+    owner.ticksUntilTurn += ticks;
+}
 function owns(game: Game, actor: Creature): boolean {
     return actor === game.player || game.monsters.some(candidate => candidate === actor);
 }

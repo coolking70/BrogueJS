@@ -1,11 +1,12 @@
 {
   "test": [
     "tests/giants_colossus.test.ts",
+    "tests/giants_committed_transition.test.ts",
     "tests/giants_composite.test.ts",
     "tests/giants_composite_natural.test.ts",
     "tests/giants_composite_sfc.test.ts",
-    "tests/giants_contract.test.ts",
     "tests/giants_config_examples.test.ts",
+    "tests/giants_contract.test.ts",
     "tests/giants_rigid.test.ts",
     "tests/giants_runtime.test.ts",
     "tests/giants_transitions.test.ts",

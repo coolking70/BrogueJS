@@ -1,5 +1,5 @@
 import { bodyDecisionActor } from '../Status/BodyStatuses';
-import { guardNativeMelee, settleNativeMeleePoise } from '../Core/NativeAttackTransaction';
+import { delayNativeDecision, guardNativeMelee, settleNativeMeleePoise } from '../Core/NativeAttackTransaction';
 import { bodyAttackContactOf, nearestLegalMeleeContact, withBodyAttackContact } from './BodyCombat';
 import { distanceBetweenFootprints } from '../Movement/CreatureSpatial';
 import { ringTransferencePercent } from '../Items/ItemEffectFormulas';
@@ -359,7 +359,7 @@ export class CombatSystem {
         // CE :1248-1258: only the sneak set delays/wakes a monster, even on an
         // immune hit; lunge/captive/attackHit-only paralysis do not.
         if (backstab && defender instanceof Monster) {
-            bodyDecisionActor(defender).ticksUntilTurn += Math.max(defender.movementSpeed, defender.attackSpeed);
+            delayNativeDecision(opts?.grid, defender, Math.max(defender.movementSpeed, defender.attackSpeed));
             if (!bodyDecisionActor(defender).isAlly) bodyDecisionActor(defender).state = MonsterState.HUNTING;
         }
 
@@ -666,7 +666,7 @@ export class CombatSystem {
         // CE :1248-1258: only the sneak set delays/wakes a monster, even on an
         // immune hit; lunge/captive/attackHit-only paralysis do not.
         if (backstab && defender instanceof Monster) {
-            bodyDecisionActor(defender).ticksUntilTurn += Math.max(defender.movementSpeed, defender.attackSpeed);
+            delayNativeDecision(opts?.grid, defender, Math.max(defender.movementSpeed, defender.attackSpeed));
             if (!bodyDecisionActor(defender).isAlly) bodyDecisionActor(defender).state = MonsterState.HUNTING;
         }
 

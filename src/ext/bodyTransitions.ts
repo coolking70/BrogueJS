@@ -62,6 +62,7 @@ export function validActiveBodyTransitions(value: unknown, owner: string,
         const mapped = new Set<string>();
         for (const result of t.results) {
             if (!result || !keys(result, ['formId','memberMap']) || !forms.some(f => f.id === result.formId)
+                || t.reason === 'split' && result.formId === d.sourceFormId
                 || bodies.some(b => b.parts.some(p => p.role !== 'core' && p.formId === result.formId))
                 || !Array.isArray(result.memberMap) || result.memberMap.length > 16) return false;
             const source = bodies.find(b => b.parts.some(p => p.role === 'core' && p.formId === d.sourceFormId));

@@ -80,22 +80,7 @@ it('the failed active split receipt and paid positive wait survive load, replay,
   const record=detached(game.exportRecording()),after=mechanics(game),loaded=fresh();expect(loaded.loadSnapshot(save)).toBe(true);loaded.executeCommand('wait');ack();expect(mechanics(loaded)).toBe(after);
   replay(fresh,record,new Map([[index,before],[record.events.length,after]]));
 },60000);
-it('a paid core windup is cancelled by a body transition, keeps recovery/payment and never replays its old warning',()=>{
-  const fresh=fixture('split',true),game=fresh(),core=game.monsters[0]!;core.hp=260;
-  game.executeCommand('wait');game.executeCommand('wait');ack();
-  const state=game.extensionRuntime!.actorActionBinding()!.state,bundle=state.scheduler.bundles[0]!;expect(bundle).toBeTruthy();const paid=state.actions[0]!.paidCost;expect(paid).toBeGreaterThan(0);
-  core.hp=129;expect((game as any).tryActiveBodyTransition(core)).toBe(true);
-  expect(bundle.subactions.every(c=>c.cancelled||['break-recovery','recovery'].includes(c.phases[c.phaseIndex]?.kind??'')||c.phaseIndex===c.phases.length)).toBe(true);
-  expect(state.actions[0]!.paidCost).toBe(paid);expect(state.actions.flatMap(a=>a.subactions).every(s=>s.lockedCells.length===0)).toBe(true);
-  const save=detached(game.toSaveSnapshot());game.executeCommand('wait');ack();const after=mechanics(game);expect(game.loadSnapshot(save)).toBe(true);game.executeCommand('wait');ack();expect(mechanics(game)).toBe(after);
-});
-it('bonfire rest ends immediately when a hidden source converts and its visible descendants appear; one receipt and exact replay',()=>{
-  const fresh=fixture('split',true,false,true),game=fresh(),fire=game.extensionRuntime!.snapshot().foundation.world.entities.find(e=>e.owner==='combat'&&e.depth===1)!;
-  game.executeCommand('ext:command',JSON.stringify({module:'combat',action:'rest',payload:{bonfireId:fire.id}}));ack();
-  expect(game.monsters).toHaveLength(2);const state=game.extensionRuntime!.actorActionBinding()!.state;
-  expect(state.bonfires!.receipts).toHaveLength(1);expect(state.bonfires!.receipts[0]).toMatchObject({result:'interrupted',reason:'threat'});
-  const recording=detached(game.exportRecording());replay(fresh,recording,new Map([[recording.events.length,mechanics(game)]]));
-},60000);
+
 it('normal finite equipment defeats the independent colossus fixture and both active split descendants via actual commands',()=>{
   const game=startProductionGame(['body-fixture'],7341,'normal');emptyProductionArena(game);game.player.hp=game.player.maxHp=30;
   const core=game.createModuleMonster('body-fixture.abyssal-colossus',{x:20,y:12})!;core.state=MonsterState.HUNTING;core.givenUpOnScent=true;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');

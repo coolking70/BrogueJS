@@ -24,7 +24,7 @@ function installActive(reason: 'phase'|'split'|'clone'|'summon' = 'split', hook?
   const installed = catalog.createExtensionRegistry(), descriptors = catalog.getInstalledModuleDescriptors();
   const base = installed.create(installed.manifest(['body-fixture']))[0]!;
   const move: ActiveBodyTransition = { id:'body-fixture.fixture-once',sourceFormId:'body-fixture.fixture-core',condition:{kind:'hp-at-most',numerator:1,denominator:2},ticks:175,hpCost:3,
-    transition:{...request(1,reason), results:request(1,reason).results} as ActiveBodyTransition['transition'] };
+    transition:{...request(1,reason), results:request(1,reason,reason==='split'?'body-fixture.ridgeback':'body-fixture.fixture-core').results} as ActiveBodyTransition['transition'] };
   // sourceGroupId belongs to the runtime request, never the module declaration.
   delete (move.transition as unknown as Record<string,unknown>).sourceGroupId;
   const module: ExtensionModule = {...base,bodyTransitions:[move]};
@@ -177,6 +177,25 @@ it('same-body phases cannot regenerate broken parts while a copy retains the rem
   expect(()=>game.transitionBody(request(core.id,'phase'))).toThrow('Same-body regeneration is not open');
   const fact=game.transitionBody(request(core.id,'clone'));expect(fact.outcome).toBe('applied');
   const group=game.bodyGroups!.find(g=>g.coreId===fact.resultGroupIds[0])!;expect(group.members[1]).toMatchObject({life:'removed',entityId:null});
+});
+it('same-body split cannot revive a broken slot and rejection preserves the complete world',()=>{
+  const {game,core,actors}=productionBodyScene();actors[1]!.hp=0;game.killMonster(actors[1]!);
+  const audit=auditFullObjectGraph(fullGenerationRoots(game),[game.extensionRuntime!]),random=rng.getState(),next=getNextEntityId();
+  expect(()=>game.transitionBody(request(core.id,'split'))).toThrow('Same-body regeneration is not open');
+  expect(audit.differences()).toEqual([]);expect(rng.getState()).toEqual(random);expect(getNextEntityId()).toBe(next);
+});
+it('active declarations reject same-form split results before installation',()=>{
+  const {module,move}=installActive();
+  const same={...move,transition:{...move.transition,results:request(1,'split').results}};
+  expect(validActiveBodyTransitions([same],'body-fixture',module.nativeForms!,module.nativeBodies!.definitions)).toBe(false);
+});
+it.each(['phase','split','clone','summon'] as const)('active %s charges the declared wait to every resulting core',reason=>{
+  const {game,core,move}=activeScene(reason);
+  expect((game as any).tryActiveBodyTransition(core)).toBe(true);
+  const cores=game.monsters.filter(m=>!m.spatial?.bodyMember||m.spatial.bodyMember.groupId===m.id);
+  expect(cores).toHaveLength(reason==='phase'?1:2);
+  for(const actor of cores)expect(actor.ticksUntilTurn).toBeGreaterThanOrEqual(move.ticks);
+  expect(game.loadSnapshot(game.toSaveSnapshot())).toBe(true);
 });
 it('innate active shape replacement can change an inanimate form without weakening incoming CE polymorph qualification',()=>{
   const {game,core}=productionBodyScene();core.behaviorFlags.add('MONST_INANIMATE');core.behaviorFlags.add('MONST_TURRET');core.behaviorFlags.add('MONST_INVULNERABLE');

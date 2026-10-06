@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { installedModuleSubsets } from './support/installedExtensions';
 import { emptyProductionArena, installProductionBody, productionBodyScene, PRODUCTION_BODY_ID, startProductionGame } from './support/productionComposite';
 import { getNextEntityId } from '../entities/Creature';
 import { rng } from '../engine/Random';
@@ -79,7 +80,7 @@ describe('4d production composite birth, native owner, member damage and tombsto
         const other = productionBodyScene().game;
         expect(() => other.monsters.push(member)).toThrow('Cross-session');
     });
-    it.each([false, true])('real executeCommand advances only the core and elapsed slot cooldowns (combat=%s)', combat => {
+    it.each(installedModuleSubsets(['combat']).map(ids => ids.includes('combat')))('real executeCommand advances only the core and elapsed slot cooldowns (combat=%s)', combat => {
         const { game, core, group, actors } = productionBodyScene(8, combat);
         const before = { ...core.loc }, memberTimers = actors.slice(1).map(c => c.ticksUntilTurn);
         group.members[1]!.readyInTicks = 350;

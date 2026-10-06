@@ -1,3 +1,4 @@
+import { installedOptionalModules } from '../../../../test/support/installedExtensions';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { startGiants, json } from './naturalFixture';
 import { loadGiantsDefinitionPack } from '../definitions';
@@ -106,7 +107,7 @@ describe('4c production fixed zones', () => {
         withSquareContactScope(game.grid, new Set(), () => (game as any).resolveExplosionDamage(boss));
         expect(damage).toHaveBeenCalledTimes(2); expect(boss.hp).toBe(0);
     });
-    it.each([{ids:['giants']}, {ids:['giants', 'growth']}, {ids:['giants', 'combat']}])('native melee in %j uses one roll, one transfer/event and no local kill', ({ids}) => {
+    it.each([[], ...installedOptionalModules(['growth', 'combat']).map(id => [id])].map(optional => ({ ids: ['giants', ...optional] })))('native melee in %j uses one roll, one transfer/event and no local kill', ({ids}) => {
         const { game, boss } = scene(ids);
         const source = new Monster(22, 11, species.find(m => m.id === 'ogre')! as MonsterData);
         source.damageString = '60-60'; source.accuracy = 1000; source.isAlly = true; source.state = MonsterState.HUNTING;
@@ -185,7 +186,7 @@ describe('4c production fixed zones', () => {
             expect(commit).toHaveBeenCalledTimes(mode === 'handled' ? 1 : 0);
         }
     });
-    it('prepared 3b native plans cancel only the broken target zone; sibling native zones remain hittable', () => {
+    it.each(installedOptionalModules(['combat']))('prepared 3b native plans cancel only the broken target zone; sibling native zones remain hittable', () => {
         const { game, boss } = scene(['giants', 'combat']);
         const authority = new ActorCombatResolutionAuthority(game, { schema: 1, nextResolutionId: 1, actors: [] }, { production: true });
         const plan = authority.prepareNativeMelee({ kind: 'native-melee', depth: game.depth, sourceEntityId: game.player.id,
@@ -200,7 +201,7 @@ describe('4c production fixed zones', () => {
         expect(withActorActionScope(game, 'player-command', game.player.id, scope => authority.commitNativeMelee(scope, plan))).toBeNull();
         expect(withActorActionScope(game, 'player-command', game.player.id, scope => authority.commitNativeMelee(scope, siblings[0]!))).not.toBeNull();
     });
-    it('pending native windup targeting a broken zone enters 3b break recovery and clears telegraph', () => {
+    it.each(installedOptionalModules(['combat']))('pending native windup targeting a broken zone enters 3b break recovery and clears telegraph', () => {
         const { game, boss } = scene(['giants', 'combat']);
         const plan = preparePhasedAttackCommand(game, command)!; expect(plan).toBeTruthy();
         expect(commitPhasedAttackCommand(game, plan)).toBe(true);
@@ -212,14 +213,14 @@ describe('4c production fixed zones', () => {
         const saved = json(game.toSaveSnapshot()); expect(game.loadSnapshot(saved, message => { throw new Error(message); })).toBe(true);
         expect(state(game).scheduler.bundles[0]!.subactions[0]!.phases[0]!.kind).toBe('break-recovery');
     });
-    it('prepared phased confirmation becomes stale on zone changes before payment', () => {
+    it.each(installedOptionalModules(['combat']))('prepared phased confirmation becomes stale on zone changes before payment', () => {
         const { game, boss } = scene(['giants', 'combat']); const plan = preparePhasedAttackCommand(game, command)!;
         hit(game, boss, 60); expect(() => commitPhasedAttackCommand(game, plan)).toThrow('Stale');
         expect(state(game).actors.filter(actor => actor.actorId === game.player.id)).toEqual([]);
         expect(state(game).actors.find(actor => actor.actorId === boss.id)).toMatchObject({ stamina: 24, poise: 6 });
         expect(state(game).scheduler.bundles).toEqual([]);
     });
-    it('a broken source cancels its pending native windup and disables its declared attack after fallback ends', () => {
+    it.each(installedOptionalModules(['combat']))('a broken source cancels its pending native windup and disables its declared attack after fallback ends', () => {
         configure(false, undefined, true); const { game, boss } = scene(['giants', 'combat']);
         boss.ticksUntilTurn = 50; game.executeCommand('wait');
         expect(state(game).scheduler.bundles.some(b => b.decisionOwnerId === boss.id)).toBe(true);
@@ -232,7 +233,7 @@ describe('4c production fixed zones', () => {
         expect(state(game).nextActionId).toBe(next);
         expect(game.loadSnapshot(json(game.toSaveSnapshot()))).toBe(true);
     });
-    it('provider failure preserves shielding, corpse absorption and the pending native plan', () => {
+    it.each(installedOptionalModules(['combat']))('provider failure preserves shielding, corpse absorption and the pending native plan', () => {
         configure(false, { prepare: () => ({ status: 'ready', plan: {} }), commit: () => { throw new Error('provider rollback'); } });
         const { game, boss } = scene(['giants', 'combat']);
         commitPhasedAttackCommand(game, preparePhasedAttackCommand(game, command)!);
@@ -258,7 +259,7 @@ describe('4c production fixed zones', () => {
         expect(boss.hp).toBe(150); expect(boss.spatial).toEqual(spatial); expect(boss.getStatusDuration('shielded')).toBe(100);
         expect(boss.maxShield).toBe(100); expect(boss.isAbsorbing).toBe(true);
     });
-    it('3b locked area uses one native hit per distinct zone, never per cell', () => {
+    it.each(installedOptionalModules(['combat']))('3b locked area uses one native hit per distinct zone, never per cell', () => {
         configure(true); const { game, boss } = scene(['giants', 'combat']);
         const authority = new ActorCombatResolutionAuthority(game, { schema: 1, nextResolutionId: 1, actors: [] }, { production: true });
         const view = game.spatialOf(game.player), shape = { schema: 1 as const, kind: 'footprint-offset-union' as const,

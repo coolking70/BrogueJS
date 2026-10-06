@@ -41,7 +41,9 @@ describe('Expedition workspace presentation contract',()=>{
  });
  it('reads context only through the existing visibility-aware sidebar model',()=>{
   const s=source('components/ContextPanel.vue');
-  expect(s).toContain('sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth)');
+  // 4d groups add a visibility-aware adapter; the original model still owns entity rows.
+  expect(s).toContain('displayedFrame(game)?.rows ?? publicSidebarEntityRows(game)');
+  expect(source('engine/UI/MonsterGroups.ts')).toContain('sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth)');
   expect(s).not.toMatch(/executeCommand|executeItemCommand|rng\./);
   expect(source('components/theme/ThemeHud.vue')).toContain('stats.stealthRange');
  });

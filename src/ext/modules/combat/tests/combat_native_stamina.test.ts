@@ -1,3 +1,4 @@
+import { installedOptionalModules } from '../../../../test/support/installedExtensions';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import type { Game } from '../../../../engine/Core/Game';
@@ -172,6 +173,7 @@ describe('3c common native stamina action ownership', () => {
         game.executeCommand('ext:command', JSON.stringify({ module: 'combat', action: 'attack', payload: { attackId: attack.id, facing: 'e' } }));
         expect(target.hp).toBeLessThan(hp); expect(stamina(game)).toBe(24 - attack.cost);
     });
+    describe.each(installedOptionalModules(['growth']))('optional %s dual-resource integration', () => {
     it('commits real growth focus and exactly one native stamina charge across sweep hits', () => {
         configured(); const { game, target } = scene(true); equip(game, 'axe'); add(game, 20, 16); (game as any).updateVision();
         const before = focus(game); growthCommand(game, 'use-skill', { skillId, target: { kind: 'creature', id: target.id } });
@@ -195,5 +197,6 @@ describe('3c common native stamina action ownership', () => {
         expect(after.foundation.causality.nextEffectId).toBe(before.foundation.causality.nextEffectId + 1);
         // A fresh common charge must rebind the rolled-back ledger rather than the abandoned session object.
         expect(chargeNativeActorAttack(game, game.player.id)).toBe(true); expect(stamina(game)).toBe(22);
+    });
     });
 });

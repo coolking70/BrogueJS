@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { installedModuleSubsets } from '../../../../test/support/installedExtensions';
 import { createHeadlessGame } from '../../../../test/harness';
 import type { Game } from '../../../../engine/Core/Game';
 import { prepareActorDodge, commitActorDodge, chargeNativeActorAttack,
@@ -32,9 +33,8 @@ const poses = installedGiants.flatMap(() => RIGID_POSES);
 
 /** Narrow diagnostic arena copied from the real 3c dodge fixture. Bodies are
  * created by Game's checked APIs; this does not claim a natural encounter. */
-function scene(): Game {
+function scene(extensions = ['combat', 'giants']): Game {
     const seed = 73073, game = createHeadlessGame(seed, 'test'), registry = catalog.createExtensionRegistry();
-    const extensions = ['combat', 'giants'];
     const initialCommands = registry.create(registry.manifest(extensions)).flatMap(module => module.initialCommand
         ? [JSON.stringify({ module: module.id, ...module.initialCommand })] : []);
     game.startNewGame({ seed, mode: 'test', ruleSet: 'extended', extensions, initialCommands });
@@ -80,7 +80,20 @@ function world(game: Game) { const snapshot = json(game.toSnapshot()); snapshot.
 
 afterEach(() => { vi.restoreAllMocks(); logger.reset(); logger.onDisturb = null; });
 
-describe('3c explicit dodge capability on the installed 4b foundation', () => {
+it.each(installedModuleSubsets(['giants']).flatMap(ids => ([1, 2, 3] as const).map(size => ({ ids: ['combat', ...ids], size }))))
+('still commits a native $size-cell-side r0 dodge with $ids', ({ ids, size }) => {
+    const game = scene(ids), source = nativeActor(game, size), body = footprintOf(source), plan = prepareActorDodge(game, source.id, 'e');
+    expect(plan).not.toBeNull();
+    const random = rng.getState(), id = getNextEntityId(), tick = timeSystem.currentTick;
+    expect(withNativeActorDecisionScope(game, source.id, scope => commitActorDodge(game, plan!, scope))).toBe(true);
+    expect(footprintOf(source)).toEqual(body.map(cell => ({ ...cell, x: cell.x + 1 })));
+    expect(resource(game, source.id)).toMatchObject({ stamina: 20, regenDelayRemaining: 40,
+        dodgeRemainingTicks: 40, dodgeRecoveryRemainingTicks: 80 });
+    expect(source.ticksUntilTurn).toBe(80); expect(isActorDodgeProtected(game, source.id)).toBe(true);
+    expect(timeSystem.currentTick).toBe(tick); expect(getNextEntityId()).toBe(id); expect(rng.getState()).toEqual(random);
+});
+
+describe.each(installedGiants)('3c explicit dodge capability on the installed 4b foundation', () => {
     it.each(poses)('rejects the valid registered %s mask before spatial fallback, resource allocation, time, IDs or RNG', pose => {
         const game = scene(), source = crawler(game, pose);
         expect(game.canStepFootprint(source, { x: source.x + 1, y: source.y })).toBe(true);
@@ -140,19 +153,6 @@ describe('3c explicit dodge capability on the installed 4b foundation', () => {
         expect(game.monsters).toBe(actors); expect(game.monsters.find(actor => actor.id === source.id)).toBe(restored);
         expect(facts(game)).toEqual(before); expect(world(game)).toEqual(snapshot);
         expect(isActorDodgeProtected(game, source.id)).toBe(false);
-    });
-
-    it.each(installedGiants.flatMap(() => [1, 2, 3] as const))
-    ('still commits a native %s-cell-side r0 dodge with both modules installed', size => {
-        const game = scene(), source = nativeActor(game, size), body = footprintOf(source), plan = prepareActorDodge(game, source.id, 'e');
-        expect(plan).not.toBeNull();
-        const random = rng.getState(), id = getNextEntityId(), tick = timeSystem.currentTick;
-        expect(withNativeActorDecisionScope(game, source.id, scope => commitActorDodge(game, plan!, scope))).toBe(true);
-        expect(footprintOf(source)).toEqual(body.map(cell => ({ ...cell, x: cell.x + 1 })));
-        expect(resource(game, source.id)).toMatchObject({ stamina: 20, regenDelayRemaining: 40,
-            dodgeRemainingTicks: 40, dodgeRecoveryRemainingTicks: 80 });
-        expect(source.ticksUntilTurn).toBe(80); expect(isActorDodgeProtected(game, source.id)).toBe(true);
-        expect(timeSystem.currentTick).toBe(tick); expect(getNextEntityId()).toBe(id); expect(rng.getState()).toEqual(random);
     });
 
     it.each(poses)('keeps full-mask native translation and rotation available at %s with combat installed', pose => {
