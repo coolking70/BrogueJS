@@ -21,7 +21,7 @@
 1. 只改 src/ext/modules/crafting/**、docs/ext/crafting-config.md、docs/ext/phase5b.report.md。其他任何文件（Game/引擎、src/ext/*.ts、src/ext/testing/**、src/ext/ui/**、其他模块、scripts/**、package.json、配置、基线/trace、其他文档）一律不改。
 2. 生产代码只可 import：src/ext/worldSdk、src/ext/types、src/ext/descriptor、src/ext/fingerprint、src/ext/world（仅 import type）、src/ext/ui/**、src/ui/** 与模块自有文件（边界脚本强制）；测试可另用 src/ext/testing/worldHarness 等。
 3. 不改任务书给定的 ID、数值、上限、版本号；不增加任务书非目标中的玩法。
-4. SDK 缺口/缺陷/与合同不符：不绕过、不在模块里另造调度器或补丁，记入报告“SDK 问题清单”（含最小复现），其余工作继续推进。基线既有失败（例如任务书 §9.2 写明的组合 smoke 失败）照实记录，不修共享脚本。
+4. SDK 缺口/缺陷/与合同不符：不绕过、不在模块里另造调度器或补丁，记入报告“SDK 问题清单”（含最小复现），其余工作继续推进。基线既有失败照实记录，不修共享脚本。
 5. 遇到任务书未写明的细节，按任务书 §12 的裁决规则自行决定并在报告“自行决定事项”列出，不要停下来问。
 6. 开发期每个里程碑只跑任务书 §9.1 的功能门禁；全部完成后跑一次 §9.2 收尾门禁。不跑完整 npm test、不跑全量删除矩阵、不跑 ce:fetch/test:full/test:gen。环境 Node 24.19.0、NODE_OPTIONS=--max-old-space-size=3072、vitest --maxWorkers=2。
 
@@ -78,7 +78,7 @@
 | 6 | prepare 无 state | 是 | 原假设成立 | ☑ |
 | 7 | `c5fixture` 同局 | 可以。fixture 在 D1 玩家附近放自己的节点、桌（tags `["table"]`，不满足本包 `station.table`）与一个容量 16 的箱（owner `c5fixture`）；crafting 可把该箱作来源/目标（同层、Chebyshev ≤1、交互线、hasMemory）；fixture 会占开局附近格子 | §8.2 T7/T10 说明 | ☑ |
 | 8 | harness 原生命令 | `command(action,data)` 直接调用原生 `executeCommand` | 原假设成立 | ☑ |
-| 9 | removal/composition/测试发现自动发现新模块 | 在 `/private/tmp` 副本加最小 crafting 实测：catalog 安装列表、`check-module-removal.mjs --plan --profile=removal --retain=…`（两行矩阵）、`scripts/test-discovery.mjs`、`check-module-boundaries.mjs` 均自动发现 crafting。**但** `check-module-composition-smoke.mjs` 在基线本身（不加 crafting）即失败：`recordingOrigin.initial` 为 undefined（录像来源已升 version 2，脚本未跟上） | §9.2 写明“基线既有失败”的处理 | ☑ |
+| 9 | removal/composition/测试发现自动发现新模块 | 在 `/private/tmp` 副本加最小 crafting 实测：catalog 安装列表、`check-module-removal.mjs --plan --profile=removal --retain=…`（两行矩阵）、`scripts/test-discovery.mjs`、`check-module-boundaries.mjs` 均自动发现 crafting。`check-module-composition-smoke.mjs` 原在基线上因录像 v4 失效，维护者已在派发基线中修复（v4 迁移，engine-only 16/16 通过） | 无需特殊处理 | ☑ |
 | 10 | 放置/礼包不碰原生 RNG | 是（c5-place-v1 SHA 拒绝抽样，不抽原生 RNG；固定向量见 `ext_world_work_boundaries`）；实体 ID 会被占用而偏移 | 原假设成立（T8 已允许 ID 偏移） | ☑ |
 
 ### A.4 合入与派发
@@ -679,11 +679,11 @@ dot 选定一个固定种子（normal 模式），**只用公开命令**（原�
 3. `npm run build`
 4. `npm run test:ext`（全部扩展测试一次，含其他模块与 foundation 的 ext 测试）
 5. `npm run test:drift`（一次；含 crafting trace）
-6. 组合 smoke：`node scripts/check-module-composition-smoke.mjs --output <仓库外目录>/smoke.json`，覆盖全部已安装模块子集（5 模块 32 个子集），engine + 当次构建浏览器；浏览器不可用时记为 **blocked**，不得记为通过，并另跑 `--engine-only`。**已知基线既有失败**：在 `2d870a2` 不加 crafting 时 engine 段即失败（`SyntaxError: "undefined" is not valid JSON`，脚本第 78 行读取 `recordingOrigin.initial`，而录像来源已是 version 2，无此字段）。dot 不修该脚本：先在干净基线复现一次并在报告记录原文，再记录含 crafting 时是否为同一错误；若同一错误，标“基线既有失败（非 5B 引入）”，不算 5B 失败。
+6. 组合 smoke：`node scripts/check-module-composition-smoke.mjs --output <仓库外目录>/smoke.json`，覆盖全部已安装模块子集（5 模块 32 个子集），engine + 当次构建浏览器；浏览器不可用时记为 **blocked**，不得记为通过，并另跑 `--engine-only`。该脚本已在派发基线中迁移到录像 v4（维护者 engine-only 16/16 通过）；任何失败均按真实失败处理与归因。
 7. 删除（removal 档，两行）：
    - 删 crafting：`NODE_OPTIONS=--max-old-space-size=3072 node scripts/check-module-removal.mjs --profile=removal --retain=combat,giants,growth,narrative --maxWorkers=2 --output=<仓库外目录>`
    - 只留 crafting：同上 `--retain=crafting`
-   - 以上参数已在基线副本用 `--plan` 实测接受，且自动发现 crafting（两行矩阵分别 removed=[crafting] 与 removed=[combat,giants,growth,narrative]）。每行内含 composition-smoke 闸门，会遇到第 6 项的基线既有失败：照实记录各闸门结果，其余闸门（boundary/typecheck/build/test:ext）单独给出结论。
+   - 以上参数已在基线副本用 `--plan` 实测接受，且自动发现 crafting（两行矩阵分别 removed=[crafting] 与 removed=[combat,giants,growth,narrative]）。每行内含 composition-smoke 闸门，各闸门结果照实记录。
 8. 浏览器视口验收（§7.3）：1440×900、390×844、320×844 × 普通/沉浸 × 四种地图模式；覆盖长名称、满背包、取消、连点、blur、触摸、旧 ACK 帧与回放；真实设备与模拟分别标注；截图留仓库外，不提交。
 
 **不在 5B 范围**：完整 `npm test`、全量 64 行删除矩阵、5Z 体积/性能（留 5Z）。
@@ -707,7 +707,7 @@ dot 选定一个固定种子（normal 模式），**只用公开命令**（原�
 9. **组合与删除**：32 子集与两行删除的结果表。
 10. **浏览器与视口**：矩阵结果，真实/模拟分类，已知问题。
 11. **自行决定事项**：按 §12 规则作出的全部决定。
-12. **未覆盖 / 待本地集成**：例如 5A3 工位邻接回归、5A2-S 集成后 trace 重跑、组合 smoke 基线既有失败修复后的重跑。
+12. **未覆盖 / 待本地集成**：例如 5A3 工位邻接回归、5A2-S 集成后 trace 重跑。
 
 ### 10.2 `docs/ext/crafting-config.md`
 
