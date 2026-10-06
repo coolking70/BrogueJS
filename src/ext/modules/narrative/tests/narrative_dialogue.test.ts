@@ -236,6 +236,11 @@ describe('EXT-2d pure shared-host dialogue content', () => {
         expect(source).toContain('max-width:920px');
         expect(source).toContain('width:72px;height:96px');
         expect(source).toContain('width:48px;height:64px');
+        expect(source).toContain('max-width:384px');
+        const portraitComponent = readFileSync(new URL('../ui/NarrativePortrait.vue', import.meta.url), 'utf8');
+        expect(portraitComponent).toContain('image-rendering:crisp-edges;image-rendering:pixelated');
+        expect(portraitComponent).toContain('background:var(--bg-deep,#11130f)');
+        expect(portraitComponent).not.toContain('radial-gradient');
         expect(source).toContain('min-height:44px');
         expect(source).toContain('overscroll-behavior:contain');
         expect(source).toContain('white-space:pre-wrap');

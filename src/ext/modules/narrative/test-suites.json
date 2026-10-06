@@ -9,7 +9,8 @@
     "tests/narrative_dialogue.test.ts",
     "tests/narrative_persistence.test.ts",
     "tests/narrative_content.test.ts",
-    "tests/narrative_combat.test.ts"
+    "tests/narrative_combat.test.ts",
+    "tests/narrative_portrait_pixels.test.ts"
   ],
   "gen": [],
   "drift": []

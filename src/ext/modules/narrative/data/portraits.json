@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "displayVersion": "1.1.0",
+  "displayVersion": "1.2.0",
   "portraits": [
     {
       "id": "archive.keeper.neutral",
       "asset": "archive-keeper.png",
-      "width": 288,
-      "height": 384,
+      "width": 48,
+      "height": 64,
       "fit": "contain",
       "anchor": "bottom-center",
       "altKey": "ext.narrative.portrait.keeper",
@@ -15,8 +15,8 @@
     {
       "id": "bell.mender.neutral",
       "asset": "bell-mender.png",
-      "width": 288,
-      "height": 384,
+      "width": 48,
+      "height": 64,
       "fit": "contain",
       "anchor": "bottom-center",
       "altKey": "ext.narrative.portrait.bell.mender",
@@ -25,8 +25,8 @@
     {
       "id": "wick.listener.neutral",
       "asset": "wick-listener.png",
-      "width": 288,
-      "height": 384,
+      "width": 48,
+      "height": 64,
       "fit": "contain",
       "anchor": "bottom-center",
       "altKey": "ext.narrative.portrait.wick.listener",

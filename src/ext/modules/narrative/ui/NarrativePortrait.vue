@@ -20,8 +20,8 @@ const image = computed(() => {
   </span>
 </template>
 <style scoped>
-.narrative-portrait{display:flex;position:relative;width:100%;height:100%;min-width:0;min-height:0;align-items:flex-end;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at 50% 75%,#9c865422,transparent 75%),var(--bg-deep,#11130f)}
-.narrative-portrait img{display:block;width:100%;height:100%;object-fit:contain;object-position:bottom center;pointer-events:none;user-select:none}
+.narrative-portrait{display:flex;position:relative;width:100%;height:100%;min-width:0;min-height:0;align-items:flex-end;justify-content:center;overflow:hidden;background:var(--bg-deep,#11130f)}
+.narrative-portrait img{display:block;width:100%;height:100%;object-fit:contain;object-position:bottom center;image-rendering:crisp-edges;image-rendering:pixelated;pointer-events:none;user-select:none}
 .narrative-portrait img.portrait-loading{position:absolute;opacity:0}
 .narrative-portrait-fallback{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font:clamp(24px,5vw,72px) var(--font-main,monospace);line-height:1;color:var(--text-secondary,#a5a18e)}
 </style>

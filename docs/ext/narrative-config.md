@@ -9,7 +9,7 @@
 | `src/ext/modules/narrative/data/definitions.json` | 唯一机械内容包：预算、标记、计数器、NPC、放置、对话图、日志定义、事件与触发器 |
 | `src/ext/modules/narrative/locales/zh_CN.json` | 扁平的 `ext.narrative.*` 文本键到中文字符串映射；包括名字、对白、选项、禁用原因、日志与立绘替代文本 |
 | `src/ext/modules/narrative/data/portraits.json` | 独立显示清单：立绘 ID、本地图片相对路径、尺寸、占位字形 |
-| `src/ext/modules/narrative/assets/portraits/` | 新增图片的实际目录；当前包含三位NPC的原创GPT生成PNG立绘 |
+| `src/ext/modules/narrative/assets/portraits/` | 新增图片的实际目录；当前包含三位 NPC 的原创 GPT 生成像素立绘（48×64 索引色 PNG、共享调色板） |
 | `src/ext/modules/narrative/schema.ts`、`types.ts` | 结构、范围、引用、退出路径、循环与版本校验的实际依据 |
 | `conditions.ts`、`effects.ts`、`triggers.ts`、`placement.ts` | 位于同一模块目录；条件、效果、事件顺序、收据及放置语义 |
 | `state.ts`、`input.ts`、`sessions.ts` | 持久状态与命令合同；内容作者不要手改存档或自行造会话 ID |
@@ -33,7 +33,7 @@
 | `inputVersion` | `2` | open/choose/close 的 payload 必须带 `v: 2` |
 | `descriptor.ts.foundation` | `5` | 底座要求；不是内容开关 |
 | `portraits.json.schema` | `1` | 显示清单结构 |
-| `portraits.json.displayVersion` | `"1.1.0"` | 独立显示版本，格式为三段数字 |
+| `portraits.json.displayVersion` | `"1.2.0"` | 独立显示版本，格式为三段数字 |
 
 模块持久状态保存在 `extensions.modules.narrative`，不会另建顶层 narrative 存档；包括 flags/counters、日志、触发/奖励/放置收据、NPC 绑定和当前会话。内容定义不写入该状态来替代版本校验。
 
@@ -55,7 +55,7 @@
 - `bell.verdict` 的值为 unresolved/toll/hush，`wick.verdict` 为 unresolved/keep/release；结局生成独立日志并发出各自 settled 事件，触发各自一次性奖励收据。已结局时开场改为可选回顾路径，不再次发奖
 - 缄钟匠的残页旁支以 `archive.read=true` 为条件；未读时禁用并解释原因，叙事单独启用仍可走全部两个结局
 - 3g新增 `bonfire.rested`：玩家第一次真正完成篝火休息后置为true，解锁听烬人开场的“灰烬余温”旁支。不会自动打开对话、发消息、日志或奖励；未启用combat时旁支保持隐藏
-- 三张立绘清单绑定真实PNG，288×384、contain、bottom-center；UI依照原72×96/48×64展示合同缩放。缺图/失败降级仍保留，但不是本轮实际资产的替代
+- 三张立绘清单绑定 48×64 索引色 PNG，contain、bottom-center，共享 32 色调色板和二值透明背景；桌面 240×320，窄屏依照原 72×96/48×64 展示合同以最近邻放大，立绘页最大宽度 384px。缺图/失败降级仍保留，但不是实际资产的替代
 
 这些都是文件里实际保存的样例，不是省略字段时由加载器补出的默认值。
 
@@ -438,6 +438,15 @@ asset 是 `assets/portraits/` 下相对路径，只支持 png/webp，路径段�
 Vite 用模块目录内的静态白名单收集资源；不把 NPC ID 拼成请求地址。asset:null、未知显示 ID、缺文件、加载中或加载失败都显示占位；已被 definitions.json 引用的未知 portrait ID 则会在包校验时先被拒绝。迟到的旧图片事件不能清空新图。图片完成/失败不改变规则、RNG、存档、录像、命令进度或 seek。
 
 只替换既有 ID 下的图像/清单显示信息时，升 displayVersion 即可，不需为图片本身改 module/rules/state/input。新增实际图片后还要检查桌面、320/390 宽、横竖屏、长名字/正文，以及主动制造图片失败时仍可离开对话；不要把引擎测试当作这些像素检查的证据。
+
+### 10.1 像素立绘规范
+
+- 资产以 48×64 像素网格、1× 尺寸存储，禁止预放大；三位 NPC 共用 `assets/portraits/palette.json`，颜色按相对亮度升序排列，透明索引为 0。基础方案为 24 色，本次依据 D-22 一次提升至 32 色，以减少银发、铜铃与肤色细节合并；不抖动
+- PNG 必须为索引色（color type 3）、4 或 8 位、无隔行；alpha 只有 0/255，不含文本、EXIF 或时间块；每张不超过 4 KiB。轮廓、顶部和侧边留白、四角透明与配色由 `tests/narrative_portrait_pixels.test.ts` 检查
+- UI 使用 `image-rendering:crisp-edges;image-rendering:pixelated`，在纯色 `var(--bg-deep,#11130f)` 上只放大不缩小；桌面 5×、最窄屏 1×、手机 1.5×（DPR 2 时为 3 个物理像素），立绘页最大 8×
+- 后处理脚本为 `src/ext/modules/narrative/tools/pixelize_portraits.py`，依赖 Python、Pillow、numpy。输入顺序固定为档案守卫、缄钟匠、听烬人；使用三张原始 1024×1536 洋红底图，先检查四角键控色，再统一裁去顶部 171 行，预乘 alpha 的 BOX 降至 48×64、删除断开的至多两像素杂点、合并全部不透明像素作 median-cut 调色板并按 L1 最近色无抖动映射
+- 替换步骤：在仓库外准备三张原图，运行 `python src/ext/modules/narrative/tools/pixelize_portraits.py keeper-source.png bell-source.png wick-source.png --out /tmp/portrait-candidates --evidence /tmp/portrait-evidence --colors 32`；必须先取得全部数值检查通过，并检查 1×/5×/8× 联系表的朝向、光向、轮廓、面部、道具与裂口。三张作为一组复制最终 PNG 和 palette.json 回资产目录，保持 ID 与文件名，更新 displayVersion；原图、联系表和截图不进仓库
+- 接着跑 narrative 测试、boundary、vue-tsc、build 与 i18n 门禁；用当次构建在 1440×900、390×844、320×844，各 DPR 1/2，核对 NPC 对话及查看立绘页。生成失败或任一角色不达标时，不替换整套资产；浏览器不可用必须记录 blocked
 
 ## 11. 作者自检与交付
 
