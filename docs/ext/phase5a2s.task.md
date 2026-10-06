@@ -1,6 +1,6 @@
 # 5A2-S 任务书：foundation 统一属性修正管线（crafting / settlement / loot 共用）
 
-> 基线：**5A2 完整交付并合入后的 `ext/phase5`（维护者开工时填写确切 commit：`________`）**。工作分支 `ext/phase5`。本步由本地单一主笔执行，**不得与 5A2 或 5A3 并行写同一树**；可与 dot 的 5B（只写 `src/ext/modules/crafting/**`）并行。
+> 基线：**5A2 完整交付并合入后的 `ext/phase5`（维护者开工时填写确切 commit：`eb31996`（5A2 含审查修复））**。工作分支 `ext/phase5`。本步由本地单一主笔执行，**不得与 5A2 或 5A3 并行写同一树**；可与 dot 的 5B（只写 `src/ext/modules/crafting/**`）并行。
 > 依据（均已批准）：`docs/ext/phase5a-contract.md`（C5-1 r2；本步读 §1.2、§3.2、§5.1–§5.2、§7、§11 第 4 条）；**loot 分支** `docs/ext/phase6-loot.md`（阶段 6 设计已批准，L-D08=A：管线作为 5A2-S 排入阶段 5；本步读 §2 审计表、**§4 全部**、§5.2、§11.1、§11.3、§12.2）；`docs/ext/phase5a2.report.md`（实际版本号、combat 已分配版本、交接事项）。loot 文档位于 `ext/phase6-loot-design` 分支（本机工作树 `BrogueJS-loot`），开工时把其 §4 的内容视为本任务书的规格附录；若主仓库尚无该文件，**不要合并 loot 分支**，按本任务书 §1–§2 的裁定执行并在报告中引用其 commit `23fc19d`。
 > 目标：把分散在原生代码、growth 单提供者 `rulePolicies`、growth/combat 各自“已应用加值”账本中的属性派生，统一为一个确定、有序、可假设求值的 foundation 管线；growth、combat 改为**声明修正来源**；为 loot（6B）、crafting 软联动、settlement 光环（L5）预留通用入口。**数值膨胀已被接受，Brogue 数值对新来源不具约束力**；零修正时与旧值逐值相等只是回归证明，不是长期兼容义务。开发期门禁按 P5-D14=A。**不要 commit。**
 > 维护者 2026-10-06 对本任务书的全部预先裁定表态“全部按推荐”（记录见[阶段 5 设计 §15](phase5-settlement-world.md#15-待维护者决定推荐不是批准)）。
