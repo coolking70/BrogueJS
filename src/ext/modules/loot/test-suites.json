@@ -1,0 +1,16 @@
+{
+  "test": [
+    "tests/loot_data.test.ts",
+    "tests/loot_schema.test.ts",
+    "tests/loot_catalog.test.ts",
+    "tests/loot_generator_vectors.test.ts",
+    "tests/loot_generator_props.test.ts",
+    "tests/loot_item.test.ts",
+    "tests/loot_economy.test.ts",
+    "tests/loot_locale.test.ts",
+    "tests/loot_stats.test.ts",
+    "tests/loot_inert.test.ts"
+  ],
+  "gen": [],
+  "drift": []
+}

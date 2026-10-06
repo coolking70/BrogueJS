@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "familiarityMultiplierBp": {
+    "normal": 10000,
+    "magic": 5000,
+    "rare": 10000,
+    "unique": 15000
+  },
+  "familiarityRounding": "ceil",
+  "scrollRevealsAll": true,
+  "firstTriggerReveal": {
+    "enabled": true,
+    "excludedStats": [
+      "native.stealth-range",
+      "native.awareness",
+      "native.clairvoyance",
+      "native.light",
+      "native.wisdom",
+      "loot.rarity-find",
+      "growth.xp-gain"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "shardItemId": "loot.shard",
+  "nameKey": "ext.loot.shard.name",
+  "maxStack": 99,
+  "base": {
+    "normal": 1,
+    "magic": 3,
+    "rare": 8,
+    "unique": 20
+  },
+  "ilvlStep": 10,
+  "corruptedMultiplierBp": 15000,
+  "minimum": 1,
+  "exchange": {
+    "shards": 10,
+    "effect": "identify-one"
+  }
+}

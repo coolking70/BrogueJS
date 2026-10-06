@@ -1,0 +1,4404 @@
+{
+  "schema": 1,
+  "runeFamilyEnabled": false,
+  "affixes": [
+    {
+      "id": "loot.affix.keen",
+      "nameKey": "ext.loot.affix.keen",
+      "position": "prefix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "dmg-pct",
+      "weight": 1000,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1500,
+              2500
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              2600,
+              4000
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4100,
+              6000
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              6100,
+              8500
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              8600,
+              11500
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              11600,
+              15000
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "loot.local.damage",
+          "category": "local-increased",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.brutal",
+      "nameKey": "ext.loot.affix.brutal",
+      "position": "prefix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "dmg-flat",
+      "weight": 1000,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ],
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              2
+            ],
+            [
+              3,
+              5
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              2,
+              3
+            ],
+            [
+              5,
+              7
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              3,
+              5
+            ],
+            [
+              8,
+              11
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              5,
+              7
+            ],
+            [
+              12,
+              15
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              7,
+              9
+            ],
+            [
+              16,
+              20
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "loot.local.damage",
+          "category": "local-flat",
+          "valueIndex": 0,
+          "unit": "int"
+        },
+        {
+          "stat": "loot.local.damage",
+          "category": "local-flat",
+          "valueIndex": 1,
+          "unit": "int"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.honed",
+      "nameKey": "ext.loot.affix.honed",
+      "position": "prefix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "enchant",
+      "weight": 600,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              3,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              4,
+              5
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.weapon-enchant",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "int"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.giantsbane",
+      "nameKey": "ext.loot.affix.giantsbane",
+      "position": "prefix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "slayer",
+      "weight": 500,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2000,
+              3000
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3100,
+              4500
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4600,
+              6500
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              6600,
+              9000
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              9100,
+              12000
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              12100,
+              16000
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.physical-damage-dealt",
+          "category": "increased",
+          "valueIndex": 0,
+          "unit": "bp",
+          "conditions": [
+            {
+              "kind": "target-tag",
+              "tag": "body.large"
+            }
+          ]
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.reinforced",
+      "nameKey": "ext.loot.affix.reinforced",
+      "position": "prefix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "def-pct",
+      "weight": 1000,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1000,
+              1500
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1600,
+              2200
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              2300,
+              3000
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              3100,
+              4000
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              4100,
+              5000
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              5100,
+              6000
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "loot.local.armor",
+          "category": "local-increased",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.plated",
+      "nameKey": "ext.loot.affix.plated",
+      "position": "prefix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "def-flat",
+      "weight": 800,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              3,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              4,
+              5
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.defense",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "display-armor"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.warding",
+      "nameKey": "ext.loot.affix.warding",
+      "position": "prefix",
+      "itemClasses": [
+        "armor",
+        "ring"
+      ],
+      "group": "dr",
+      "weight": 700,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              -400,
+              -300
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              -600,
+              -500
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              -800,
+              -700
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              -1100,
+              -900
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              -1400,
+              -1200
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              -1800,
+              -1500
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.physical-damage-taken",
+          "category": "increased",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.radiant",
+      "nameKey": "ext.loot.affix.radiant",
+      "position": "prefix",
+      "itemClasses": [
+        "armor",
+        "ring"
+      ],
+      "group": "light",
+      "weight": 300,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.light",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "ring-point"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.precise",
+      "nameKey": "ext.loot.affix.precise",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon",
+        "ring"
+      ],
+      "group": "accuracy",
+      "weight": 900,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              800,
+              1200
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1300,
+              1800
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1900,
+              2500
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2600,
+              3300
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              3400,
+              4200
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              4300,
+              5200
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.accuracy",
+          "category": "increased",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.swift",
+      "nameKey": "ext.loot.affix.swift",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "speed",
+      "weight": 500,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              -600,
+              -400
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              -900,
+              -700
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              -1200,
+              -1000
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              -1500,
+              -1300
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              -1800,
+              -1600
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              -2200,
+              -1900
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.attack-speed",
+          "category": "more",
+          "valueIndex": 0,
+          "unit": "bp",
+          "slot": "speed"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.vital",
+      "nameKey": "ext.loot.affix.vital",
+      "position": "suffix",
+      "itemClasses": [
+        "armor",
+        "ring"
+      ],
+      "group": "life",
+      "weight": 1200,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              5,
+              9
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              10,
+              16
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              17,
+              25
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              26,
+              36
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              37,
+              50
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              51,
+              68
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.max-hp",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "int"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.mending",
+      "nameKey": "ext.loot.affix.mending",
+      "position": "suffix",
+      "itemClasses": [
+        "armor",
+        "ring"
+      ],
+      "group": "regen",
+      "weight": 500,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.regeneration",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "ring-point"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.titan",
+      "nameKey": "ext.loot.affix.titan",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon",
+        "armor",
+        "ring"
+      ],
+      "group": "strength",
+      "weight": 600,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              3,
+              4
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.strength",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "int"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.shadow",
+      "nameKey": "ext.loot.affix.shadow",
+      "position": "suffix",
+      "itemClasses": [
+        "armor",
+        "ring"
+      ],
+      "group": "stealth",
+      "weight": 400,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.stealth-range",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "ring-point"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.seeker",
+      "nameKey": "ext.loot.affix.seeker",
+      "position": "suffix",
+      "itemClasses": [
+        "ring"
+      ],
+      "group": "search",
+      "weight": 400,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              3,
+              4
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.awareness",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "ring-point"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.clairvoyant",
+      "nameKey": "ext.loot.affix.clairvoyant",
+      "position": "suffix",
+      "itemClasses": [
+        "ring"
+      ],
+      "group": "clairvoyance",
+      "weight": 250,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              3,
+              4
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.clairvoyance",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "ring-point"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.wisdom",
+      "nameKey": "ext.loot.affix.wisdom",
+      "position": "suffix",
+      "itemClasses": [
+        "ring"
+      ],
+      "group": "wisdom",
+      "weight": 300,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.wisdom",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "ring-point"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.fireward",
+      "nameKey": "ext.loot.affix.fireward",
+      "position": "suffix",
+      "itemClasses": [
+        "armor",
+        "ring"
+      ],
+      "group": "res-fire",
+      "weight": 700,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              800,
+              1200
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1300,
+              1800
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1900,
+              2500
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2600,
+              3300
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              3400,
+              4200
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              4300,
+              5000
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.resist.fire",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.antivenom",
+      "nameKey": "ext.loot.affix.antivenom",
+      "position": "suffix",
+      "itemClasses": [
+        "armor",
+        "ring"
+      ],
+      "group": "res-poison",
+      "weight": 700,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              800,
+              1200
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1300,
+              1800
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1900,
+              2500
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2600,
+              3300
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              3400,
+              4200
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              4300,
+              5000
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.resist.poison",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.leech",
+      "nameKey": "ext.loot.affix.leech",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "leech",
+      "weight": 500,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.transference",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "ring-point"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.reaper",
+      "nameKey": "ext.loot.affix.reaper",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "reaping",
+      "weight": 400,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              3,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              4,
+              5
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.reaping",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "ring-point"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.fortune",
+      "nameKey": "ext.loot.affix.fortune",
+      "position": "suffix",
+      "itemClasses": [
+        "ring"
+      ],
+      "group": "find",
+      "weight": 400,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              500,
+              1000
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1000,
+              1500
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1500,
+              2200
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2200,
+              3000
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              3000,
+              4000
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              4000,
+              5000
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "loot.rarity-find",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.enduring",
+      "nameKey": "ext.loot.affix.enduring",
+      "position": "prefix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "stamina",
+      "weight": 600,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              6,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              8,
+              10
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              10,
+              12
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "combat.stamina-capacity",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "int"
+        }
+      ],
+      "requires": {
+        "module": "combat",
+        "key": "combat.stamina-capacity"
+      },
+      "fallback": {
+        "kind": "replace",
+        "affixId": "loot.affix.vital"
+      },
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.steadfast",
+      "nameKey": "ext.loot.affix.steadfast",
+      "position": "suffix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "poise",
+      "weight": 500,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              3,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              4,
+              5
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "combat.poise-capacity",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "int"
+        }
+      ],
+      "requires": {
+        "module": "combat",
+        "key": "combat.poise-capacity"
+      },
+      "fallback": {
+        "kind": "omit"
+      },
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.tireless",
+      "nameKey": "ext.loot.affix.tireless",
+      "position": "suffix",
+      "itemClasses": [
+        "ring"
+      ],
+      "group": "stamina-regen",
+      "weight": 400,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              500,
+              800
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              800,
+              1200
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1200,
+              1600
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              1600,
+              2000
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              2000,
+              2500
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              2500,
+              3000
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "combat.stamina-regen",
+          "category": "increased",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": {
+        "module": "combat",
+        "key": "combat.stamina-regen"
+      },
+      "fallback": {
+        "kind": "replace",
+        "affixId": "loot.affix.mending"
+      },
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.sage",
+      "nameKey": "ext.loot.affix.sage",
+      "position": "suffix",
+      "itemClasses": [
+        "ring"
+      ],
+      "group": "focus",
+      "weight": 400,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "growth.focus-capacity",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "int"
+        }
+      ],
+      "requires": {
+        "module": "growth",
+        "key": "growth.focus-capacity"
+      },
+      "fallback": {
+        "kind": "replace",
+        "affixId": "loot.affix.mending"
+      },
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.adept",
+      "nameKey": "ext.loot.affix.adept",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon",
+        "armor",
+        "ring"
+      ],
+      "group": "attribute",
+      "weight": 600,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "growth.attribute:{attribute}",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "int"
+        }
+      ],
+      "requires": {
+        "module": "growth",
+        "key": "growth.attribute"
+      },
+      "fallback": {
+        "kind": "replace",
+        "affixId": "loot.affix.titan"
+      },
+      "expand": {
+        "kind": "growth-attributes"
+      },
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.scholar",
+      "nameKey": "ext.loot.affix.scholar",
+      "position": "suffix",
+      "itemClasses": [
+        "ring"
+      ],
+      "group": "xp",
+      "weight": 300,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              400,
+              600
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              600,
+              900
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              900,
+              1200
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              1200,
+              1600
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              1600,
+              2000
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              2000,
+              2500
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "growth.xp-gain",
+          "category": "increased",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": {
+        "module": "growth",
+        "key": "growth.xp-gain"
+      },
+      "fallback": {
+        "kind": "omit"
+      },
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.stalwart",
+      "nameKey": "ext.loot.affix.stalwart",
+      "position": "prefix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "poise-recovery",
+      "weight": 300,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              600,
+              1000
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              1000,
+              1400
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              1400,
+              1900
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              1900,
+              2500
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              2500,
+              3200
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              3200,
+              4000
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "combat.poise-recovery",
+          "category": "increased",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": {
+        "module": "combat",
+        "key": "combat.poise-recovery"
+      },
+      "fallback": {
+        "kind": "replace",
+        "affixId": "loot.affix.warding"
+      },
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.dull",
+      "nameKey": "ext.loot.affix.dull",
+      "position": "prefix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "dmg-pct",
+      "weight": 1000,
+      "polarity": -1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              -1000,
+              -1000
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              -1500,
+              -1500
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              -2000,
+              -2000
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              -2500,
+              -2500
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              -3000,
+              -3000
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              -3500,
+              -3500
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "loot.local.damage",
+          "category": "local-increased",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.brittle",
+      "nameKey": "ext.loot.affix.brittle",
+      "position": "prefix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "def-pct",
+      "weight": 1000,
+      "polarity": -1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              -1000,
+              -1000
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              -1500,
+              -1500
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              -2000,
+              -2000
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              -2500,
+              -2500
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              -3000,
+              -3000
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              -3500,
+              -3500
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "loot.local.armor",
+          "category": "local-increased",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.frail",
+      "nameKey": "ext.loot.affix.frail",
+      "position": "suffix",
+      "itemClasses": [
+        "armor",
+        "ring"
+      ],
+      "group": "life",
+      "weight": 1000,
+      "polarity": -1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              -4,
+              -4
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              -11,
+              -11
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              -18,
+              -18
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              -26,
+              -26
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              -33,
+              -33
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              -40,
+              -40
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.max-hp",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "int"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.clumsy",
+      "nameKey": "ext.loot.affix.clumsy",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon",
+        "ring"
+      ],
+      "group": "accuracy",
+      "weight": 800,
+      "polarity": -1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              -800,
+              -800
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              -1200,
+              -1200
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              -1700,
+              -1700
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              -2100,
+              -2100
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              -2600,
+              -2600
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              -3000,
+              -3000
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.accuracy",
+          "category": "increased",
+          "valueIndex": 0,
+          "unit": "bp"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.noisy",
+      "nameKey": "ext.loot.affix.noisy",
+      "position": "suffix",
+      "itemClasses": [
+        "armor",
+        "ring"
+      ],
+      "group": "stealth",
+      "weight": 600,
+      "polarity": -1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              -1,
+              -1
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              -1,
+              -1
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              -1,
+              -1
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              -2,
+              -2
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              -2,
+              -2
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              -2,
+              -2
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.stealth-range",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "ring-point"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.sluggish",
+      "nameKey": "ext.loot.affix.sluggish",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "speed",
+      "weight": 600,
+      "polarity": -1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              500,
+              500
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              700,
+              700
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              900,
+              900
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              1100,
+              1100
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              1300,
+              1300
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              1500,
+              1500
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.attack-speed",
+          "category": "more",
+          "valueIndex": 0,
+          "unit": "bp",
+          "slot": "speed"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": null,
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-w-speed",
+      "nameKey": "ext.loot.affix.rune-w-speed",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "rune",
+      "weight": 50,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "speed"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "weapon",
+        "runicType": "speed"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-w-quietus",
+      "nameKey": "ext.loot.affix.rune-w-quietus",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "rune",
+      "weight": 15,
+      "polarity": 1,
+      "maxTier": 4,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "quietus"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "weapon",
+        "runicType": "quietus"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-w-paralyzing",
+      "nameKey": "ext.loot.affix.rune-w-paralyzing",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "rune",
+      "weight": 35,
+      "polarity": 1,
+      "maxTier": 5,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "paralyzing"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "weapon",
+        "runicType": "paralyzing"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-w-multiplicity",
+      "nameKey": "ext.loot.affix.rune-w-multiplicity",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "rune",
+      "weight": 40,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "multiplicity"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "weapon",
+        "runicType": "multiplicity"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-w-slowing",
+      "nameKey": "ext.loot.affix.rune-w-slowing",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "rune",
+      "weight": 50,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "slowing"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "weapon",
+        "runicType": "slowing"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-w-confusion",
+      "nameKey": "ext.loot.affix.rune-w-confusion",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "rune",
+      "weight": 40,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "confusion"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "weapon",
+        "runicType": "confusion"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-w-force",
+      "nameKey": "ext.loot.affix.rune-w-force",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "rune",
+      "weight": 40,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "force"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "weapon",
+        "runicType": "force"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-w-slaying",
+      "nameKey": "ext.loot.affix.rune-w-slaying",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "rune",
+      "weight": 25,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "slaying"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "weapon",
+        "runicType": "slaying"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-a-multiplicity",
+      "nameKey": "ext.loot.affix.rune-a-multiplicity",
+      "position": "suffix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "rune",
+      "weight": 40,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.armor-runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "multiplicity"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "armor",
+        "runicType": "multiplicity"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-a-mutuality",
+      "nameKey": "ext.loot.affix.rune-a-mutuality",
+      "position": "suffix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "rune",
+      "weight": 40,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.armor-runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "mutuality"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "armor",
+        "runicType": "mutuality"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-a-absorption",
+      "nameKey": "ext.loot.affix.rune-a-absorption",
+      "position": "suffix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "rune",
+      "weight": 50,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.armor-runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "absorption"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "armor",
+        "runicType": "absorption"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-a-reprisal",
+      "nameKey": "ext.loot.affix.rune-a-reprisal",
+      "position": "suffix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "rune",
+      "weight": 50,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.armor-runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "reprisal"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "armor",
+        "runicType": "reprisal"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-a-immunity",
+      "nameKey": "ext.loot.affix.rune-a-immunity",
+      "position": "suffix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "rune",
+      "weight": 25,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.armor-runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "immunity"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "armor",
+        "runicType": "immunity"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-a-reflection",
+      "nameKey": "ext.loot.affix.rune-a-reflection",
+      "position": "suffix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "rune",
+      "weight": 40,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.armor-runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "reflection"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "armor",
+        "runicType": "reflection"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-a-respiration",
+      "nameKey": "ext.loot.affix.rune-a-respiration",
+      "position": "suffix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "rune",
+      "weight": 30,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.armor-runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "respiration"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "armor",
+        "runicType": "respiration"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-a-dampening",
+      "nameKey": "ext.loot.affix.rune-a-dampening",
+      "position": "suffix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "rune",
+      "weight": 30,
+      "polarity": 1,
+      "maxTier": 6,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "tier": 2,
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "tier": 3,
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "tier": 4,
+          "ranges": [
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "tier": 5,
+          "ranges": [
+            [
+              7,
+              8
+            ]
+          ]
+        },
+        {
+          "tier": 6,
+          "ranges": [
+            [
+              9,
+              10
+            ]
+          ]
+        }
+      ],
+      "modifiers": [
+        {
+          "stat": "native.armor-runic-power",
+          "category": "flat",
+          "valueIndex": 0,
+          "unit": "runic-strength",
+          "runicType": "dampening"
+        }
+      ],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "armor",
+        "runicType": "dampening"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-w-mercy",
+      "nameKey": "ext.loot.affix.rune-w-mercy",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "rune",
+      "weight": 10,
+      "polarity": -1,
+      "maxTier": 1,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": []
+        }
+      ],
+      "modifiers": [],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "weapon",
+        "runicType": "mercy"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-w-plenty",
+      "nameKey": "ext.loot.affix.rune-w-plenty",
+      "position": "suffix",
+      "itemClasses": [
+        "weapon"
+      ],
+      "group": "rune",
+      "weight": 10,
+      "polarity": -1,
+      "maxTier": 1,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": []
+        }
+      ],
+      "modifiers": [],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "weapon",
+        "runicType": "plenty"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-a-burden",
+      "nameKey": "ext.loot.affix.rune-a-burden",
+      "position": "suffix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "rune",
+      "weight": 10,
+      "polarity": -1,
+      "maxTier": 1,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": []
+        }
+      ],
+      "modifiers": [],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "armor",
+        "runicType": "burden"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-a-vulnerability",
+      "nameKey": "ext.loot.affix.rune-a-vulnerability",
+      "position": "suffix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "rune",
+      "weight": 10,
+      "polarity": -1,
+      "maxTier": 1,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": []
+        }
+      ],
+      "modifiers": [],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "armor",
+        "runicType": "vulnerability"
+      },
+      "tags": []
+    },
+    {
+      "id": "loot.affix.rune-a-immolation",
+      "nameKey": "ext.loot.affix.rune-a-immolation",
+      "position": "suffix",
+      "itemClasses": [
+        "armor"
+      ],
+      "group": "rune",
+      "weight": 10,
+      "polarity": -1,
+      "maxTier": 1,
+      "tiers": [
+        {
+          "tier": 1,
+          "ranges": []
+        }
+      ],
+      "modifiers": [],
+      "requires": null,
+      "fallback": null,
+      "expand": null,
+      "rune": {
+        "slot": "armor",
+        "runicType": "immolation"
+      },
+      "tags": []
+    }
+  ]
+}

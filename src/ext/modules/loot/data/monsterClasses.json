@@ -1,0 +1,290 @@
+{
+  "schema": 1,
+  "defaultClass": "standard",
+  "classes": [
+    "none",
+    "fodder",
+    "splitter",
+    "standard",
+    "elite"
+  ],
+  "members": [
+    {
+      "typeId": "rat",
+      "class": "fodder"
+    },
+    {
+      "typeId": "kobold",
+      "class": "fodder"
+    },
+    {
+      "typeId": "jackal",
+      "class": "fodder"
+    },
+    {
+      "typeId": "eel",
+      "class": "fodder"
+    },
+    {
+      "typeId": "monkey",
+      "class": "fodder"
+    },
+    {
+      "typeId": "bloat",
+      "class": "fodder"
+    },
+    {
+      "typeId": "pit_bloat",
+      "class": "fodder"
+    },
+    {
+      "typeId": "goblin",
+      "class": "standard"
+    },
+    {
+      "typeId": "goblin_conjurer",
+      "class": "standard"
+    },
+    {
+      "typeId": "goblin_mystic",
+      "class": "standard"
+    },
+    {
+      "typeId": "goblin_totem",
+      "class": "none"
+    },
+    {
+      "typeId": "pink_jelly",
+      "class": "splitter"
+    },
+    {
+      "typeId": "toad",
+      "class": "fodder"
+    },
+    {
+      "typeId": "vampire_bat",
+      "class": "standard"
+    },
+    {
+      "typeId": "arrow_turret",
+      "class": "none"
+    },
+    {
+      "typeId": "acid_mound",
+      "class": "fodder"
+    },
+    {
+      "typeId": "centipede",
+      "class": "standard"
+    },
+    {
+      "typeId": "ogre",
+      "class": "elite"
+    },
+    {
+      "typeId": "bog_monster",
+      "class": "standard"
+    },
+    {
+      "typeId": "ogre_totem",
+      "class": "none"
+    },
+    {
+      "typeId": "spider",
+      "class": "standard"
+    },
+    {
+      "typeId": "spark_turret",
+      "class": "none"
+    },
+    {
+      "typeId": "wisp",
+      "class": "fodder"
+    },
+    {
+      "typeId": "wraith",
+      "class": "standard"
+    },
+    {
+      "typeId": "zombie",
+      "class": "standard"
+    },
+    {
+      "typeId": "troll",
+      "class": "elite"
+    },
+    {
+      "typeId": "ogre_shaman",
+      "class": "standard"
+    },
+    {
+      "typeId": "naga",
+      "class": "elite"
+    },
+    {
+      "typeId": "salamander",
+      "class": "standard"
+    },
+    {
+      "typeId": "explosive_bloat",
+      "class": "fodder"
+    },
+    {
+      "typeId": "dar_blademaster",
+      "class": "standard"
+    },
+    {
+      "typeId": "dar_priestess",
+      "class": "standard"
+    },
+    {
+      "typeId": "dar_battlemage",
+      "class": "standard"
+    },
+    {
+      "typeId": "acidic_jelly",
+      "class": "splitter"
+    },
+    {
+      "typeId": "centaur",
+      "class": "standard"
+    },
+    {
+      "typeId": "underworm",
+      "class": "elite"
+    },
+    {
+      "typeId": "sentinel",
+      "class": "none"
+    },
+    {
+      "typeId": "dart_turret",
+      "class": "none"
+    },
+    {
+      "typeId": "kraken",
+      "class": "elite"
+    },
+    {
+      "typeId": "lich",
+      "class": "elite"
+    },
+    {
+      "typeId": "phylactery",
+      "class": "none"
+    },
+    {
+      "typeId": "pixie",
+      "class": "fodder"
+    },
+    {
+      "typeId": "phantom",
+      "class": "standard"
+    },
+    {
+      "typeId": "flame_turret",
+      "class": "none"
+    },
+    {
+      "typeId": "imp",
+      "class": "standard"
+    },
+    {
+      "typeId": "fury",
+      "class": "standard"
+    },
+    {
+      "typeId": "revenant",
+      "class": "standard"
+    },
+    {
+      "typeId": "tentacle_horror",
+      "class": "elite"
+    },
+    {
+      "typeId": "golem",
+      "class": "elite"
+    },
+    {
+      "typeId": "dragon",
+      "class": "elite"
+    },
+    {
+      "typeId": "goblin_warlord",
+      "class": "elite"
+    },
+    {
+      "typeId": "black_jelly",
+      "class": "splitter"
+    },
+    {
+      "typeId": "vampire",
+      "class": "elite"
+    },
+    {
+      "typeId": "flamedancer",
+      "class": "standard"
+    },
+    {
+      "typeId": "spectral_blade",
+      "class": "none"
+    },
+    {
+      "typeId": "spectral_sword",
+      "class": "none"
+    },
+    {
+      "typeId": "stone_guardian",
+      "class": "none"
+    },
+    {
+      "typeId": "winged_guardian",
+      "class": "none"
+    },
+    {
+      "typeId": "guardian_spirit",
+      "class": "none"
+    },
+    {
+      "typeId": "Warden_of_Yendor",
+      "class": "none"
+    },
+    {
+      "typeId": "eldritch_totem",
+      "class": "none"
+    },
+    {
+      "typeId": "mirrored_totem",
+      "class": "none"
+    },
+    {
+      "typeId": "unicorn",
+      "class": "elite"
+    },
+    {
+      "typeId": "ifrit",
+      "class": "elite"
+    },
+    {
+      "typeId": "phoenix",
+      "class": "elite"
+    },
+    {
+      "typeId": "phoenix_egg",
+      "class": "none"
+    },
+    {
+      "typeId": "mangrove_dryad",
+      "class": "elite"
+    }
+  ],
+  "modifiers": {
+    "leader": {
+      "chanceBonusBp": 500
+    },
+    "champion": {
+      "chanceBonusBp": 1000,
+      "rarityBonusBp": 5000
+    }
+  }
+}

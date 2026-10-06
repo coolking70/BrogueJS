@@ -1,0 +1,362 @@
+{
+  "schema": 1,
+  "presets": [
+    {
+      "id": "scarce",
+      "nameKey": "ext.loot.preset.scarce.name",
+      "descriptionKey": "ext.loot.preset.scarce.description",
+      "floorConversionBp": 10000,
+      "killDropMultiplierBp": 6000,
+      "maxPerKill": 1,
+      "rarityWeights": {
+        "normal": 850,
+        "magic": 120,
+        "rare": 27,
+        "unique": 3,
+        "set": 0
+      },
+      "rarityIlvlScalingBp": {
+        "normal": 0,
+        "magic": 100,
+        "rare": 150,
+        "unique": 150,
+        "set": 0
+      },
+      "affixCount": {
+        "magic": [
+          {
+            "n": 1,
+            "w": 60
+          },
+          {
+            "n": 2,
+            "w": 40
+          }
+        ],
+        "rare": [
+          {
+            "n": 3,
+            "w": 55
+          },
+          {
+            "n": 4,
+            "w": 35
+          },
+          {
+            "n": 5,
+            "w": 10
+          }
+        ],
+        "rareHighIlvl": {
+          "minIlvl": 40,
+          "table": [
+            {
+              "n": 4,
+              "w": 60
+            },
+            {
+              "n": 5,
+              "w": 30
+            },
+            {
+              "n": 6,
+              "w": 10
+            }
+          ]
+        }
+      },
+      "encounter": {
+        "count": 1,
+        "firstMinRarity": "magic",
+        "restMinRarity": "magic",
+        "uniqueWeightBp": 30000
+      },
+      "vault": {
+        "minRarity": "magic",
+        "highValueMinRarity": "magic"
+      },
+      "rarityFind": {
+        "k": 25000,
+        "cap": 10000
+      },
+      "corruptChanceBp": 1000,
+      "familiarity": {
+        "weaponKills": 20,
+        "armorTurns": 1000,
+        "ringTurns": 1500
+      },
+      "goldMultiplierBp": 5000,
+      "salvageMultiplierBp": 10000,
+      "monsterScaling": [
+        {
+          "depth": 1,
+          "hpBp": 0,
+          "damageBp": 0,
+          "accuracyBp": 0
+        },
+        {
+          "depth": 5,
+          "hpBp": 2000,
+          "damageBp": 5000,
+          "accuracyBp": 0
+        },
+        {
+          "depth": 10,
+          "hpBp": 3500,
+          "damageBp": 6500,
+          "accuracyBp": 0
+        },
+        {
+          "depth": 20,
+          "hpBp": 3500,
+          "damageBp": 5000,
+          "accuracyBp": 0
+        },
+        {
+          "depth": 26,
+          "hpBp": 2500,
+          "damageBp": 3000,
+          "accuracyBp": 0
+        }
+      ]
+    },
+    {
+      "id": "standard",
+      "nameKey": "ext.loot.preset.standard.name",
+      "descriptionKey": "ext.loot.preset.standard.description",
+      "floorConversionBp": 10000,
+      "killDropMultiplierBp": 10000,
+      "maxPerKill": 2,
+      "rarityWeights": {
+        "normal": 700,
+        "magic": 220,
+        "rare": 70,
+        "unique": 10,
+        "set": 0
+      },
+      "rarityIlvlScalingBp": {
+        "normal": 0,
+        "magic": 150,
+        "rare": 250,
+        "unique": 250,
+        "set": 0
+      },
+      "affixCount": {
+        "magic": [
+          {
+            "n": 1,
+            "w": 55
+          },
+          {
+            "n": 2,
+            "w": 45
+          }
+        ],
+        "rare": [
+          {
+            "n": 3,
+            "w": 45
+          },
+          {
+            "n": 4,
+            "w": 35
+          },
+          {
+            "n": 5,
+            "w": 20
+          }
+        ],
+        "rareHighIlvl": {
+          "minIlvl": 40,
+          "table": [
+            {
+              "n": 4,
+              "w": 45
+            },
+            {
+              "n": 5,
+              "w": 35
+            },
+            {
+              "n": 6,
+              "w": 20
+            }
+          ]
+        }
+      },
+      "encounter": {
+        "count": 2,
+        "firstMinRarity": "rare",
+        "restMinRarity": "magic",
+        "uniqueWeightBp": 30000
+      },
+      "vault": {
+        "minRarity": "magic",
+        "highValueMinRarity": "rare"
+      },
+      "rarityFind": {
+        "k": 25000,
+        "cap": 20000
+      },
+      "corruptChanceBp": 600,
+      "familiarity": {
+        "weaponKills": 10,
+        "armorTurns": 600,
+        "ringTurns": 800
+      },
+      "goldMultiplierBp": 10000,
+      "salvageMultiplierBp": 10000,
+      "monsterScaling": [
+        {
+          "depth": 1,
+          "hpBp": 0,
+          "damageBp": 0,
+          "accuracyBp": 0
+        },
+        {
+          "depth": 5,
+          "hpBp": 2500,
+          "damageBp": 7000,
+          "accuracyBp": 0
+        },
+        {
+          "depth": 10,
+          "hpBp": 5000,
+          "damageBp": 10000,
+          "accuracyBp": 0
+        },
+        {
+          "depth": 20,
+          "hpBp": 5000,
+          "damageBp": 9000,
+          "accuracyBp": 0
+        },
+        {
+          "depth": 26,
+          "hpBp": 4000,
+          "damageBp": 6500,
+          "accuracyBp": 0
+        }
+      ]
+    },
+    {
+      "id": "bountiful",
+      "nameKey": "ext.loot.preset.bountiful.name",
+      "descriptionKey": "ext.loot.preset.bountiful.description",
+      "floorConversionBp": 10000,
+      "killDropMultiplierBp": 20000,
+      "maxPerKill": 3,
+      "rarityWeights": {
+        "normal": 480,
+        "magic": 330,
+        "rare": 160,
+        "unique": 30,
+        "set": 0
+      },
+      "rarityIlvlScalingBp": {
+        "normal": 0,
+        "magic": 150,
+        "rare": 300,
+        "unique": 300,
+        "set": 0
+      },
+      "affixCount": {
+        "magic": [
+          {
+            "n": 1,
+            "w": 40
+          },
+          {
+            "n": 2,
+            "w": 60
+          }
+        ],
+        "rare": [
+          {
+            "n": 4,
+            "w": 50
+          },
+          {
+            "n": 5,
+            "w": 35
+          },
+          {
+            "n": 6,
+            "w": 15
+          }
+        ],
+        "rareHighIlvl": {
+          "minIlvl": 40,
+          "table": [
+            {
+              "n": 4,
+              "w": 30
+            },
+            {
+              "n": 5,
+              "w": 40
+            },
+            {
+              "n": 6,
+              "w": 30
+            }
+          ]
+        }
+      },
+      "encounter": {
+        "count": 3,
+        "firstMinRarity": "rare",
+        "restMinRarity": "magic",
+        "uniqueWeightBp": 60000
+      },
+      "vault": {
+        "minRarity": "rare",
+        "highValueMinRarity": "rare"
+      },
+      "rarityFind": {
+        "k": 25000,
+        "cap": 30000
+      },
+      "corruptChanceBp": 400,
+      "familiarity": {
+        "weaponKills": 6,
+        "armorTurns": 400,
+        "ringTurns": 500
+      },
+      "goldMultiplierBp": 15000,
+      "salvageMultiplierBp": 7500,
+      "monsterScaling": [
+        {
+          "depth": 1,
+          "hpBp": 0,
+          "damageBp": 0,
+          "accuracyBp": 0
+        },
+        {
+          "depth": 5,
+          "hpBp": 2500,
+          "damageBp": 9000,
+          "accuracyBp": 0
+        },
+        {
+          "depth": 10,
+          "hpBp": 5000,
+          "damageBp": 14000,
+          "accuracyBp": 0
+        },
+        {
+          "depth": 20,
+          "hpBp": 5000,
+          "damageBp": 12000,
+          "accuracyBp": 0
+        },
+        {
+          "depth": 26,
+          "hpBp": 4500,
+          "damageBp": 9000,
+          "accuracyBp": 0
+        }
+      ]
+    }
+  ]
+}

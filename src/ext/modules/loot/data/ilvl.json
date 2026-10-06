@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "ilvlPerDepthBp": 15000,
+  "min": 1,
+  "max": 99,
+  "siteIlvl": 1,
+  "sourceBonus": {
+    "floor": 0,
+    "kill": 0,
+    "vault": 3,
+    "encounter": 5,
+    "part": 2,
+    "craft": 0
+  },
+  "classBonus": {
+    "none": 0,
+    "fodder": 0,
+    "splitter": 0,
+    "standard": 0,
+    "elite": 1
+  },
+  "championBonus": 2
+}
