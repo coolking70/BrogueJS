@@ -54,7 +54,7 @@ export function travelDistanceMap(grid: Grid, monsters: readonly Monster[], orig
 }
 
 export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[], exit: Pos, direction: -1|0|1,
-    onRegionBlocked?: (actor: Monster) => void, onBodyFollower?: (core: Monster, exit: Pos, direction: -1|0|1) => void): void {
+    onRegionBlocked?: (actor: Monster) => void, onBodyFollower?: (core: Monster, exit: Pos, direction: -1|0|1) => void, exclude?: (actor: Monster) => boolean): void {
     let origin={...exit};
     if (cellTerrainFlags(grid,exit.x,exit.y)&T_AUTO_DESCENT) {
         const neighbor=TRAVEL_DIRECTIONS.map(([dx,dy])=>({x:exit.x+dx,y:exit.y+dy}))
@@ -68,6 +68,7 @@ export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[],
     try { for (const flying of [false,true]) {
         const map=travelDistanceMap(grid,monsters,origin,(flying?T_OBSTRUCTS_PASSABILITY:T_PATHING_BLOCKER)|T_SACRED);
         for (const m of monsters) {
+            if (exclude?.(m)) continue;
             if (m.spatial?.bodyMember && m.id !== m.spatial.bodyMember.groupId) continue;
             const levitating=m.hasStatus('levitating'), flags=cellTerrainFlags(grid,m.x,m.y);
             // Web separates allegiance from state; magical fear temporarily leaves CE ALLY.

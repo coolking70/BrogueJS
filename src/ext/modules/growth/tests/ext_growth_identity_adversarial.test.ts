@@ -1,3 +1,5 @@
+import { logger } from '../../../../engine/Systems/Logger';
+import { extensionDigest, checkpointExtensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game, type GameMode, type HordeEntry } from '../../../../engine/Core/Game';
 import { Monster, MonsterState } from '../../../../entities/Monster';
@@ -113,7 +115,7 @@ describe('EXT-1e independent native creation arithmetic regressions', () => {
         } else {
             expect(start).not.toThrow(); expect(game.player[resource]).toBe(Number.MAX_SAFE_INTEGER);
             const saved = game.toSaveSnapshot(); expect(game.loadSnapshot(saved)).toBe(true);
-            expect(game.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+            expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         }
     });
     it.each(['maxHp', 'strength'] as const)('rejects standalone %s overflow before mechanical or recording mutation', resource => {
@@ -123,10 +125,8 @@ describe('EXT-1e independent native creation arithmetic regressions', () => {
         expect(game.hasCompleteRecording).toBe(true);
         expect(() => game.executeCommand('ext:command', selectedCreation())).not.toThrow();
         const after = stableSnapshot(game);
-        // The existing rejected-command diagnostic is expected; all other logger and mechanical state stays exact.
-        expect(after.run.logger).toEqual({ ...before.run.logger, nextId: before.run.logger.nextId + 1,
-            messages: [...before.run.logger.messages, expect.objectContaining({ id: before.run.logger.nextId, color: '#ff6666', count: 1, turn: 0 })] });
-        expect({ ...after, run: { ...after.run, logger: before.run.logger } }).toEqual(before);
+        expect(after).toEqual(before);
+        expect(logger.displayMessages[logger.displayMessages.length - 1]).toMatchObject({ color: '#ff6666', turn: 0 });
         expect(rng.getState()).toEqual(random);
         expect(game.recordedInputEvents).toEqual(recording); expect(game.hasCompleteRecording).toBe(true); expect(state(game).created).toBe(false);
     });
@@ -142,7 +142,7 @@ describe('EXT-1e independent inherited native HP regressions', () => {
         expect(second.maxHp).toBe(21); expect(second.hp).toBe(expected);
         game.executeCommand('identity-adversarial-fixture', undefined, () => undefined);
         const saved = game.toSaveSnapshot(); expect(game.loadSnapshot(saved)).toBe(true);
-        expect(game.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         expect(game.monsters.find(monster => monster.id === clone.id)!.hp).toBe(expected);
     });
 });
@@ -185,6 +185,6 @@ describe('EXT-1e separate level, attribute, and passive-equipment resource recov
         expect(component<GrowthFocus>(game, allyId, 'focus').current).toBe(focus);
         expect(component<GrowthSkills>(game, allyId, 'skills').readyAt[brace]).toBe(preserve ? 100 : 0);
         const saved = game.toSaveSnapshot(); expect(game.loadSnapshot(saved)).toBe(true);
-        expect(game.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
     });
 });

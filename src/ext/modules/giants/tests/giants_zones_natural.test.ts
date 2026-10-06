@@ -44,7 +44,7 @@ function nextAttackCommand(game: Game, bossId: number): { x: number; y: number }
     }
     return { x: next.x - at.x, y: next.y - at.y };
 }
-const world = (game: Game) => { const s = json(game.toSnapshot()); s.savedAt = 0; s.run.recordedInputEvents = []; s.run.recordedInputIndex = 0; return canonical(s); };
+const world = (game: Game) => { const s = json(game.toSnapshot()); s.savedAt = 0;   return canonical(s); };
 
 it('seed 7309 naturally generates D11 zones and defeats them using native commands without growth/combat; break/save/replay/seek/continuation agree', () => {
     const { game, boss } = naturalSpine(), id = boss.id, arrived = game.exportRecording().events.length;

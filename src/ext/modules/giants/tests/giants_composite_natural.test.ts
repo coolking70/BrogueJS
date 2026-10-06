@@ -73,7 +73,7 @@ function approach(game: Game, id: number) {
   if(game.grid.getCell(next.x,next.y)!.terrain===T.SECRET_DOOR){game.executeCommand('search');return {x:0,y:0};}
   return {x:next.x-at.x,y:next.y-at.y};
 }
-const world=(game:Game)=>{const s=json(game.toSnapshot());s.savedAt=0;s.run.recordedInputEvents=[];s.run.recordedInputIndex=0;return canonical(s);};
+const world=(game:Game)=>{const s=json(game.toSnapshot());s.savedAt=0;return canonical(s);};
 
 function captureNaturalBody() {
   const game = startGiants(['giants'], 7309, 'wizard');

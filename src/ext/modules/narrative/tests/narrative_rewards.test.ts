@@ -1,3 +1,4 @@
+import { continuingPrefix, extensionDigest, checkpointExtensionDigest, replayExtensionAt, initialRecordingCheckpoint } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ExtensionRuntime, type ExtensionPorts } from '../../../runtime';
 import { ExtensionRegistry } from '../../../registry';
@@ -328,20 +329,20 @@ describe('EXT-2c real Game reward checkpoint ownership', () => {
         game.startNewGame({ seed, mode: 'test', ruleSet: 'extended', extensions: ['narrative', 'reward-fixture'],
             initialCommands: [JSON.stringify({ module: 'reward-fixture', action: 'create', payload: { v: 1 } })] });
         game.animationEnabled = false;
-        const initial = clone(game.toSaveSnapshot().run.recordingOrigin!.initial), recording = clone(game.exportRecording());
+        const initial = clone(initialRecordingCheckpoint(game)), recording = clone(game.exportRecording());
         expect(recording.events).toHaveLength(1);
         expect(initial.extensions!.foundation.nextFactId).toBe(1);
         expect(initial.extensions!.foundation.pendingStoryFacts).toHaveLength(1);
-        expect(recording.events[0]!.extensions!.modules['reward-fixture']).toMatchObject({ created: true, total: 20 });
-        expect(recording.events[0]!.extensions!.foundation.pendingStoryFacts).toEqual([]);
-        expect((recording.events[0]!.extensions!.modules.narrative as unknown as NarrativeState).rewardReceipts[0]).toMatchObject({ result: 'applied', reason: null });
+        expect(replayExtensionAt(game, recording, 0).modules['reward-fixture']).toMatchObject({ created: true, total: 20 });
+        expect(replayExtensionAt(game, recording, 0).foundation.pendingStoryFacts).toEqual([]);
+        expect((replayExtensionAt(game, recording, 0).modules.narrative as unknown as NarrativeState).rewardReceipts[0]).toMatchObject({ result: 'applied', reason: null });
         // A precreation checkpoint is structurally valid, but its queued fact must
         // still agree with this recorded event's own native depth and turn.
         const livePlayer = game.player, liveRuntime = game.extensionRuntime, live = gameCheckpoint(game);
         for (const field of ['depth', 'turn'] as const) {
             const bad = clone(recording);
-            bad.events[0]!.extensions = clone(initial.extensions!);
-            bad.events[0]!.extensions!.foundation.pendingStoryFacts[0]![field]++;
+            const corrupted=clone(initial.extensions!);corrupted.foundation.pendingStoryFacts[0]![field]++;
+            bad.events[0]!.checkpoint!.domains.extensions=extensionDigest(corrupted);
             expect(game.loadReplay(bad)).toBe(false);
             expect(game.player).toBe(livePlayer); expect(game.extensionRuntime).toBe(liveRuntime);
             expect(gameCheckpoint(game)).toEqual(live);
@@ -352,18 +353,18 @@ describe('EXT-2c real Game reward checkpoint ownership', () => {
         expect(gameCheckpoint(game)).toEqual(expected); expect(game.hasCompleteRecording).toBe(true);
         acknowledge(); game.executeCommand('wait');
         const continued = clone(game.exportRecording()), endpoint = gameCheckpoint(game);
-        expect(continued.events.slice(0, prior.events.length)).toEqual(prior.events);
+        expect(continued.events.slice(0, prior.events.length)).toEqual(continuingPrefix(prior));
         expect(game.loadReplay(continued)).toBe(true); game.animationEnabled = false;
         for (const event of continued.events) {
             game.replayStep(true); expect(game.replayError).toBeNull();
-            expect(game.toSnapshot().extensions).toEqual(event.extensions); expect(game.toSnapshot().rngState).toEqual(event.rng);
+            expect(extensionDigest(game.toSnapshot().extensions ?? null)).toBe(checkpointExtensionDigest(event)); expect(game.toSnapshot().rngState).toEqual(event.rng);
             expect(game.toSnapshot().run.absoluteTurnNumber).toBe(event.turn); expect(game.toSnapshot().run.currentTick).toBe(event.tick);
         }
         expect(gameCheckpoint(game)).toEqual(endpoint);
         for (const index of [0, 1, continued.events.length, 1, 0, continued.events.length]) {
             game.replaySeek(index); expect(game.replayError).toBeNull(); expect(game.replayCursor).toBe(index);
             const target = index === 0 ? initial : continued.events[index - 1]!;
-            expect(game.toSnapshot().extensions).toEqual(target.extensions); expect(game.toSnapshot().rngState).toEqual(target.rng);
+            expect(extensionDigest(game.toSnapshot().extensions ?? null)).toBe(checkpointExtensionDigest(target)); expect(game.toSnapshot().rngState).toEqual(target.rng);
         }
         expect(gameCheckpoint(game)).toEqual(endpoint);
         const finalState = game.extensionRuntime!.snapshot();

@@ -1,3 +1,4 @@
+import { installRecordingScene, rechain } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { Game } from '../engine/Core/Game';
@@ -60,8 +61,8 @@ const scenarios: Scenario[] = [
     { id: 'Q10', setup(g) { g.grid.setTerrain(11, 10, T.PRESSURE_PLATE); }, enter: move, message: 'Step onto the pressure plate?' },
 ];
 function scene(scenario: Pick<Scenario, 'setup'>) {
-    const g = createHeadlessGame(33201);
-    room(g); scenario.setup(g); return g;
+    installRecordingScene(g => { room(g); scenario.setup(g); });
+    return createHeadlessGame(33201);
 }
 /** No getState/toSnapshot/vision calls while a command is suspended. */
 function world(g: Game) {
@@ -114,8 +115,6 @@ describe('D2 Q1–Q10 use the actual command boundary and resume original suffix
         expect((g as any).recordedInputIndex).toBe(index + 1);
         expect(g.recordedInputEvents[g.recordedInputEvents.length - 1]!.decisions).toEqual([decision]);
         const recording = g.exportRecording();
-        const start = g.startNewGame.bind(g);
-        vi.spyOn(g, 'startNewGame').mockImplementation(options => { start(options); room(g); scenario.setup(g); });
         notify.mockClear();
         expect(g.loadReplay(recording)).toBe(true);
         g.replayStep(true); drain(g);
@@ -296,6 +295,7 @@ describe('D2 asynchronous lifecycle, save/export and resolver contracts', () => 
         const g = createHeadlessGame(33211); g.onConfirmRequest = () => false;
         g.executeItemCommand('eat', g.player.inventory.items.find(i => i.category === ItemCategory.FOOD)!);
         const recording = g.exportRecording(); recording.events[0]!.decisions = kind === 'missing' ? [] : [false, true];
+        rechain(recording);
         g.onCommandConfirmRequest = () => { expect(g.pendingCommandConfirmation).toBeNull(); };
         expect(g.loadReplay(recording)).toBe(true); g.replayStep();
         expect(g.replayError).toContain('OOS at command 1'); expect(g.replayCursor).toBe(0);

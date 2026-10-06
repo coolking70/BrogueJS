@@ -1,3 +1,4 @@
+import { rechain } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { Item, ItemCategory } from '../engine/Items/Item';
@@ -61,7 +62,7 @@ describe('U26b CE endgame settlement', () => {
         const game = createHeadlessGame(26003);
         game.handlePlayerAction('wait');
         const recording = game.exportRecording();
-        recording.events[0]!.end = { won: true, superVictory: false, score: 35000 };
+        recording.events[0]!.terminal = { won: true, superVictory: false, score: 35000 }; rechain(recording);
         expect(game.loadReplay(recording)).toBe(true);
         game.replayStep();
         expect(game.replayError).toContain('endgame mismatch');

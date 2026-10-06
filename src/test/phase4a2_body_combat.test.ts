@@ -1,3 +1,4 @@
+import { installRecordingScene } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { Game } from '../engine/Core/Game';
@@ -41,7 +42,7 @@ function weapon(g: Game, flag?: string, runic?: string) {
 }
 const json = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 const projection = (g: Game) => {
-    const s = json(g.toSnapshot()); s.savedAt = 0; s.run.recordedInputEvents = []; s.run.recordedInputIndex = 0; return s;
+    const s = json(g.toSnapshot()); s.savedAt = 0;   return s;
 };
 afterEach(() => vi.restoreAllMocks());
 
@@ -204,12 +205,11 @@ describe('4a-2 physical geometry scopes', () => {
 
 describe('4a-2 real native combat recording closure', () => {
     it.each([2, 3] as const)('%s-square tail attacks save/load, replay every event, seek and resume the exact prefix', size => {
-        const start = Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype, 'startNewGame').mockImplementation(function(this: Game, ...args) {
-            start.apply(this, args); arrange(this);
-            const m = this.createSquareMonster(rat, size, { x: 12, y: 12 })!;
+        installRecordingScene((game) => {
+            arrange(game);
+            const m = game.createSquareMonster(rat, size, { x: 12, y: 12 })!;
             m.hp = m.maxHp = 10000; m.defense = -1000; m.regenTurns = 0; m.state = MonsterState.HUNTING; m.ticksUntilTurn = 10000;
-            commitCreatureAnchor(this.player, { x: 12 + size, y: 11 + size }); weapon(this, 'ITEM_ATTACKS_ALL_ADJACENT');
+            commitCreatureAnchor(game.player, { x: 12 + size, y: 11 + size }); weapon(game, 'ITEM_ATTACKS_ALL_ADJACENT');
         });
         const g = createHeadlessGame(402202, 'test'), states = [];
         for (let i = 0; i < 2; i++) { g.executeCommand('move', { x: -1, y: 0 }); states.push(projection(g)); }

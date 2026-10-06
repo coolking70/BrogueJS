@@ -1,3 +1,4 @@
+import { installRecordingScene } from '../../../../test/support/recordingV4';
 import { installedOptionalModules } from '../../../../test/support/installedExtensions';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { startGiants, json } from './naturalFixture';
@@ -86,7 +87,7 @@ function hit(game: Game, boss: Monster, damage: number, zone = 'shell') {
 }
 const state = (g: Game) => g.extensionRuntime!.actorActionBinding()!.state;
 const command = JSON.stringify({ module: 'combat', action: 'attack', payload: { attackId: 'fixture.slash', facing: 's' } });
-const world = (game: Game) => { const s = json(game.toSnapshot()); s.savedAt = 0; s.run.recordedInputEvents = []; s.run.recordedInputIndex = 0; return s; };
+const world = (game: Game) => { const s = json(game.toSnapshot()); s.savedAt = 0;   return s; };
 afterEach(() => { vi.restoreAllMocks(); logger.reset(); logger.onDisturb = null; targetingState.aim = null; });
 
 describe('4c production fixed zones', () => {
@@ -322,13 +323,12 @@ describe('4c production fixed zones', () => {
         }
     });
     it('real zone-breaking input survives save/load, every replay event, seek and continued recording', () => {
-        const start = Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype, 'startNewGame').mockImplementation(function(this: Game, ...args) {
-            start.apply(this, args); if (!this.extensionRuntime?.nativeForms().some(f => f.id === 'giants.spine-crawler')) return;
-            arena(this);
-            const weapon = ItemLoader.spawnWeapon('sword', this.player.x, this.player.y, 1)!;
+        installRecordingScene((game) => {
+            if (!game.extensionRuntime?.nativeForms().some(f => f.id === 'giants.spine-crawler')) return;
+            arena(game);
+            const weapon = ItemLoader.spawnWeapon('sword', game.player.x, game.player.y, 1)!;
             weapon.damage = '20-20'; weapon.enchantment = 5; weapon.flags = []; weapon.strengthRequired = 1;
-            this.player.inventory.addItem(weapon); this.player.equippedWeapon = weapon;
+            game.player.inventory.addItem(weapon); game.player.equippedWeapon = weapon;
         });
         const game = startGiants(['giants'], 44006, 'wizard'), states: ReturnType<typeof world>[] = [];
         let checkpoint: ReturnType<Game['toSaveSnapshot']> | undefined;

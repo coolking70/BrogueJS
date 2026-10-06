@@ -1,3 +1,4 @@
+import { installRecordingScene } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { Game } from '../engine/Core/Game';
@@ -261,20 +262,19 @@ describe('4a-2 public targeting and native body perception', () => {
 
 const json = <V>(v: V): V => JSON.parse(JSON.stringify(v));
 function world(g: Game) {
-    const s = json(g.toSnapshot()); s.savedAt = 0; s.run.recordedInputEvents = []; s.run.recordedInputIndex = 0; return s;
+    const s = json(g.toSnapshot()); s.savedAt = 0;   return s;
 }
 describe('4a-2 real mixed commands, targeting, perception, DF and recording', () => {
     it.each([2, 3] as const)('%s-square plus the other size and ordinary reflectors: save modal, load, continue recording, replay every event and seek', size => {
-        const start = Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype, 'startNewGame').mockImplementation(function(this: Game, ...args) {
-            start.apply(this, args); arrange(this); square(this, size);
-            const npc = square(this, size === 2 ? 3 : 2, { x: 14, y: 6 }); npc.state = MonsterState.WANDERING; npc.ticksUntilTurn = 0; npc.bolts = ['SPARK'];
-            ordinary(this, 6); ordinary(this, 20, 6, true);
-            const bloat = new Monster(18, 6, monsters.find(m => m.id === 'explosive_bloat')! as MonsterData); bloat.hp = 1; bloat.ticksUntilTurn = 10000; this.monsters.push(bloat);
-            arcana(this); const dart = ItemLoader.spawnWeapon('dart', -1, -1)!; dart.quantity = 3; this.player.inventory.addItem(dart);
-            this.player.inventory.addItem(ItemLoader.spawnPotion('potion_of_incineration', -1, -1)!);
-            this.player.inventory.addItem(ItemLoader.spawnScroll('scroll_of_discord', -1, -1)!);
-            this.player.inventory.addItem(ItemLoader.spawnScroll('scroll_of_negation', -1, -1)!);
+        installRecordingScene((game) => {
+            arrange(game); square(game, size);
+            const npc = square(game, size === 2 ? 3 : 2, { x: 14, y: 6 }); npc.state = MonsterState.WANDERING; npc.ticksUntilTurn = 0; npc.bolts = ['SPARK'];
+            ordinary(game, 6); ordinary(game, 20, 6, true);
+            const bloat = new Monster(18, 6, monsters.find(m => m.id === 'explosive_bloat')! as MonsterData); bloat.hp = 1; bloat.ticksUntilTurn = 10000; game.monsters.push(bloat);
+            arcana(game); const dart = ItemLoader.spawnWeapon('dart', -1, -1)!; dart.quantity = 3; game.player.inventory.addItem(dart);
+            game.player.inventory.addItem(ItemLoader.spawnPotion('potion_of_incineration', -1, -1)!);
+            game.player.inventory.addItem(ItemLoader.spawnScroll('scroll_of_discord', -1, -1)!);
+            game.player.inventory.addItem(ItemLoader.spawnScroll('scroll_of_negation', -1, -1)!);
         });
         const g = createHeadlessGame(402203, 'test');
         const letter = (id: string) => g.player.inventory.items.find(i => i.identityId === id || (i as unknown as { consumableId: string }).consumableId === id)!.inventoryLetter;

@@ -1,3 +1,4 @@
+import { continuingPrefix, extensionDigest, checkpointExtensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   startGiants,
@@ -272,13 +273,13 @@ describe('giants original 3x3 colossus', () => {
     expect(saved.run.recordingOrigin).toBeTruthy();
     expect(game.loadSnapshot(saved)).toBe(true);
     game.animationEnabled = false;
-    expect(game.toSnapshot().extensions).toEqual(saved.extensions);
+    expect(extensionDigest(game.toSnapshot().extensions ?? null)).toBe(checkpointExtensionDigest(saved));
     expect(game.toSnapshot().monsters).toEqual(saved.monsters);
     expect(rng.getState()).toEqual(saved.rngState);
     game.executeCommand('wait');
     const continued = json(game.exportRecording()),
       after = game.toSnapshot();
-    expect(continued.events.slice(0, recording.events.length)).toEqual(recording.events);
+    expect(continued.events.slice(0, recording.events.length)).toEqual(continuingPrefix(recording));
     for (const rec of [recording, continued]) {
       expect(game.loadReplay(rec)).toBe(true);
       game.animationEnabled = false;
@@ -287,7 +288,7 @@ describe('giants original 3x3 colossus', () => {
         expect(game.replayError).toBeNull();
         expect(game.replayCursor).toBe(event.index + 1);
         expect(rng.getState()).toEqual(event.rng);
-        expect(game.toSnapshot().extensions).toEqual(event.extensions);
+        expect(extensionDigest(game.toSnapshot().extensions ?? null)).toBe(checkpointExtensionDigest(event));
       }
       for (const index of [0, Math.floor(rec.events.length / 2), rec.events.length]) {
         game.replaySeek(index);
@@ -297,7 +298,7 @@ describe('giants original 3x3 colossus', () => {
     }
     expect(game.toSnapshot().monsters).toEqual(after.monsters);
     expect(game.toSnapshot().entityGraph).toEqual(after.entityGraph);
-    expect(game.toSnapshot().extensions).toEqual(after.extensions);
+    expect(extensionDigest(game.toSnapshot().extensions ?? null)).toBe(checkpointExtensionDigest(after));
     expect(rng.getState()).toEqual(after.rngState);
   }, 120000);
 

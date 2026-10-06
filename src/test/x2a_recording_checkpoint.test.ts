@@ -1,3 +1,4 @@
+import { rechain } from './support/recordingV4';
 import { describe, expect, it } from 'vitest';
 import { createHeadlessGame } from './harness';
 
@@ -34,7 +35,7 @@ describe('X2a recording checkpoints', () => {
         expect(animated.replayCursor).toBe(1);
         expect(animated.replayError).toBeNull();
 
-        recording.events[0]!.tick++;
+        recording.events[0]!.tick++; rechain(recording);
         expect(animated.loadReplay(recording)).toBe(true);
         animated.replaySeek(1);
         expect(animated.replayError).toContain('OOS at command 1');

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { gzipSync, gunzipSync } from 'node:zlib';
+import { pathToFileURL } from 'node:url';
 import { createHeadlessGame } from './harness';
 import { DungeonLayer, TerrainType } from '../engine/Map/Grid';
 import { GasType } from '../engine/Environment/Gas';
@@ -8,7 +9,8 @@ import { logger } from '../engine/Systems/Logger';
 import { timeSystem } from '../engine/Systems/Time';
 import { rng } from '../engine/Random';
 
-const fixture = new URL('./fixtures/traces/u-r4-trace.json.gz', import.meta.url);
+const fixture = process.env.UR4_CAPTURE_DIR ? pathToFileURL(`${process.env.UR4_CAPTURE_DIR}/u-r4-trace.json.gz`)
+    : new URL('./fixtures/traces/u-r4-trace.json.gz', import.meta.url);
 
 type Scenario = 'slowed-environment' | 'hasted' | 'fall' | 'death';
 
@@ -52,7 +54,8 @@ function trace(kind: Scenario, animated: boolean) {
                 state,
                 log: logger.getState(), events: [...events],
                 tick: timeSystem.currentTick, rng: rng.getState(),
-                recording: game.exportRecording().events,
+                // Observe the session log while suspended; exporting requires a completed safe command.
+                recording: structuredClone(game.recordedInputEvents),
             });
         } finally { game.isAdvancing = advancing; }
     };

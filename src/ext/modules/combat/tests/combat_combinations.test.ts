@@ -43,7 +43,7 @@ function mechanical(game: Game) {
     const snapshot = json(game.toSnapshot()); snapshot.savedAt = 0;
     // Replay intentionally owns a different input buffer. All world, extension,
     // time, logger, allocation and both full RNG states/counts remain compared.
-    snapshot.run.recordedInputEvents = []; snapshot.run.recordedInputIndex = 0;
+
     return snapshot;
 }
 function pathToBonfire(game: Game, target: { x: number; y: number }) {
@@ -184,8 +184,9 @@ describe('3f independently installed combat combinations on a natural normal run
                 const after = mechanical(loaded);
                 // Rejection visibly reports the error; it must not replace any
                 // live world, recorder, runtime, allocator or random stream.
-                expect(last(after.run.logger.messages)?.text).toBe(errors[1]); after.run.logger = before.run.logger;
-                expect(after).toEqual(before); expect(loaded.recordedInputEvents).toEqual(saved.run.recordedInputEvents);
+                expect(last(logger.displayMessages)?.text).toBe(errors[1]);
+                expect(after.run.logger).toEqual(before.run.logger);
+                expect(after).toEqual(before); expect(loaded.recordedInputEvents).toEqual(saved.run.recordingOrigin!.events);
                 expect(loaded.player).toBe(retainedPlayer); expect(loaded.extensionRuntime).toBe(retainedRuntime);
                 expect(rng.getState()).toEqual(random); expect(getNextEntityId()).toBe(nextId); expect(unload).not.toHaveBeenCalled();
             };

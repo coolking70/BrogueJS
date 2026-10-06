@@ -2,12 +2,12 @@
   "empty": {
     "newGame": {
       "graph": {
-        "sha256": "85ee162c90bb332b4c4d35205f672cf6609801c79418b2622e1819959e01a11c",
-        "objects": 22987
+        "sha256": "b991f5ac6947801ac2c72b87bbbaf49bce02e4b4da487eea53c80104d8babf64",
+        "objects": 22988
       },
       "snapshot": {
-        "sha256": "26143ef9310a29da0fb999903875588ba8da4301ca62ca25a1a80e79c88a3094",
-        "objects": 11194
+        "sha256": "fd4b781d048ce2df3f137273e38eebdebd7a6fd9c99eaa0e99063e297fb1e118",
+        "objects": 11254
       },
       "rng": {
         "version": 2,
@@ -33,17 +33,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 0
+        "turn": 0,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "commands": {
       "graph": {
-        "sha256": "66129befff6a6ece7caabab4b470fe3decb5c6ccd8ada22ac2138bf9ffbde61b",
-        "objects": 23055
+        "sha256": "0f05333c2d601c4ec016ccc13a0dcceea35fe923cd639a57f7344df40d29e372",
+        "objects": 23025
       },
       "snapshot": {
-        "sha256": "df59524020126e557cc65af8bdaaa0341f3f188eb97b24b78c854ef7bf2b85db",
-        "objects": 11258
+        "sha256": "b7c533025e77dd7bbe94727018e5330efe8caab340624d0bcf7e771221fe03ae",
+        "objects": 11287
       },
       "rng": {
         "version": 2,
@@ -69,17 +73,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 3
+        "turn": 3,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "loaded": {
       "graph": {
-        "sha256": "31e8f3b2b92d26a6c1dd8285a093e0e70016c67354888b08e581cf1052148332",
-        "objects": 20679
+        "sha256": "f16a60b2d80847de3d9ac355c01a6b1d2871ce936e18dca1597894fb9bac564f",
+        "objects": 20648
       },
       "snapshot": {
-        "sha256": "df59524020126e557cc65af8bdaaa0341f3f188eb97b24b78c854ef7bf2b85db",
-        "objects": 11258
+        "sha256": "b7c533025e77dd7bbe94727018e5330efe8caab340624d0bcf7e771221fe03ae",
+        "objects": 11287
       },
       "rng": {
         "version": 2,
@@ -105,17 +113,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 3
+        "turn": 3,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "continued": {
       "graph": {
-        "sha256": "379da73cbf7e0fb524e5e92b6e7d6987f351d8f7ff15f807636ea41cf13f04aa",
-        "objects": 23077
+        "sha256": "0dfe21f1d43818ac3bca7b6aa57eee0d05e97f6823747446a01da7ba485e491a",
+        "objects": 23035
       },
       "snapshot": {
-        "sha256": "8edfd242422cfca8bee36bef67cff5980f9f93ec966da60049ec4c21d821e6bb",
-        "objects": 11279
+        "sha256": "5aeebaac90a42c16f028848f7476c4cc53888f3f78d52849c7b8ef9e275fd9b0",
+        "objects": 11297
       },
       "rng": {
         "version": 2,
@@ -141,17 +153,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 4
+        "turn": 4,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "replayed": {
       "graph": {
-        "sha256": "2ade57fc19e29f90770a6e3852b74535a7ee6bea001b7be7051c8c99f2a17279",
-        "objects": 23058
+        "sha256": "5fcc3c7b35b2693962e6cb7dc8944a8601934a6c8cbc14ff701d597e8ffa23f2",
+        "objects": 23033
       },
       "snapshot": {
-        "sha256": "f4ba3bb4c6710ceb6461ef695a2f4cc4569c2320f9f52b2f04b71c83a5d91e6d",
-        "objects": 11170
+        "sha256": "b7c533025e77dd7bbe94727018e5330efe8caab340624d0bcf7e771221fe03ae",
+        "objects": 11287
       },
       "rng": {
         "version": 2,
@@ -177,17 +193,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 3
+        "turn": 3,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "seek": {
       "graph": {
-        "sha256": "77edd5699fe17a454410bce601ca38dc2ebc7d1391e5789ddb8242e8895a0912",
-        "objects": 23058
+        "sha256": "8e487735f9700c3fc752555dfbf5831a885fa1a9d7cf1d98f3ee930382bfb879",
+        "objects": 20656
       },
       "snapshot": {
-        "sha256": "74e227ee11883fd5f07cdd6f33fe01373268deea0a5c73aa438c6b5aef2b775d",
-        "objects": 11170
+        "sha256": "da16f8c42d6088dec13c7b13a85b6cf846f6740919d8e6e7f4b2f0e0dbc4e86c",
+        "objects": 11266
       },
       "rng": {
         "version": 2,
@@ -213,17 +233,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 1
+        "turn": 1,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "combat": {
       "graph": {
-        "sha256": "d5f000942ebd33848a48a95048abcea788df62b68870dfa5d411719d08fb2465",
-        "objects": 22681
+        "sha256": "0130c87eaffcb14a562f897b93768b7277cf3451241f2e8b367bda9a100236d9",
+        "objects": 22674
       },
       "snapshot": {
-        "sha256": "59e48d8bdeb34c601f6af11467c6993cae7bce2d7935c9559f7cab1c61eeae5f",
-        "objects": 5662
+        "sha256": "d7a7f94ba98eaa2c22479db41dc1d9f72d577448c91d6d055e6d579395751476",
+        "objects": 5714
       },
       "rng": {
         "version": 2,
@@ -258,17 +282,28 @@
           }
         ],
         "nextId": 1,
-        "turn": 1
+        "turn": 1,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 1
+        }
       }
     },
     "knockback": {
       "graph": {
-        "sha256": "b1a780a7bb97f0c575bd30d7a794ff538e2ae9c99ef6e9b2f71d1caef4079210",
-        "objects": 22681
+        "sha256": "d4c688850cced1284ccc36f559d714c66190d79c923d88eb7de4ffec63f19cff",
+        "objects": 22674
       },
       "snapshot": {
-        "sha256": "b88b7b107a5c5cc6ef61adcb7f399d520b4d142ecf44a0eb974705003de4d2fa",
-        "objects": 5638
+        "sha256": "dda0d6ee7d5979731f7cd3f569ee3bf276b30c69dc17d36981eef6b4f55d7642",
+        "objects": 5691
       },
       "rng": {
         "version": 2,
@@ -303,17 +338,28 @@
           }
         ],
         "nextId": 1,
-        "turn": 1
+        "turn": 1,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 1
+        }
       }
     },
     "blink": {
       "graph": {
-        "sha256": "d0f74c0e1ffaae5e1dfdda3bb9071d818c6d83855cceaa7a3869541bc579bcd2",
-        "objects": 22761
+        "sha256": "70c2d2ed248d0167fa75f47184436c5d4e9af1cc4067172940561decb94c764e",
+        "objects": 22734
       },
       "snapshot": {
-        "sha256": "12141fabf6ae9ab591f29156895a95db31423f05ee32b79524ef3f904b889e18",
-        "objects": 5740
+        "sha256": "4e22d714e1334747d53365cf8e1d5773364616df08e9adc1630650035ace7b0e",
+        "objects": 5772
       },
       "rng": {
         "version": 2,
@@ -363,17 +409,40 @@
           }
         ],
         "nextId": 3,
-        "turn": 2
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
       }
     },
     "clone": {
       "graph": {
-        "sha256": "e1137ea24b5e3ad0133f823f550a9f93f5d4fad750c63014738a6b46d14d858c",
-        "objects": 22772
+        "sha256": "2cfa1208187a74ba81b19f9aac83553308e18e80b2e8d58167b25324212dc38b",
+        "objects": 22745
       },
       "snapshot": {
-        "sha256": "33d7de6d12a7cc99c939866bfb43ca8eb6e6ff0ddc43c78bc05f8cc3f2d44b15",
-        "objects": 5735
+        "sha256": "32f60df8f382d8b2569db6801edb149055f0293062eaa5886fbfe8b0f2d0130d",
+        "objects": 5748
       },
       "rng": {
         "version": 2,
@@ -423,17 +492,40 @@
           }
         ],
         "nextId": 3,
-        "turn": 2
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
       }
     },
     "summon": {
       "graph": {
-        "sha256": "23cb6bf3f5df7e89e5365ded43b0e48e901c1cf59ce272151e51949b169b7c96",
-        "objects": 22816
+        "sha256": "41755c9423605ca5f7eb2cba1376b5fbfd13693ccf062abf4fb629828632bf9c",
+        "objects": 22789
       },
       "snapshot": {
-        "sha256": "885423f0138baf9734c128639e9e1cf38b881a6d58ab48f91fd8b6830af7e256",
-        "objects": 5807
+        "sha256": "4405dd4a45555def1a676ebfabdb60b870aca69bbfd0def3e152c949f9f11c8e",
+        "objects": 5820
       },
       "rng": {
         "version": 2,
@@ -483,17 +575,40 @@
           }
         ],
         "nextId": 3,
-        "turn": 2
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
       }
     },
     "trap": {
       "graph": {
-        "sha256": "bb4109b1899e8e91770209e36fa453f16edacba9a7ae2d432add2b256b157a0a",
-        "objects": 22817
+        "sha256": "e6e20a3c0fceeb9278de822eca6cf572e15383346a851cbf00a7796afee4180a",
+        "objects": 22790
       },
       "snapshot": {
-        "sha256": "516072192ff574494b98e5146051db6461a73a38d1a4982b28de416d6119c353",
-        "objects": 5807
+        "sha256": "b5b3b002e2c9cbaa8ecd3901ab816ff4d2aeb8f2f3754b8916d826f5a2817dc5",
+        "objects": 5820
       },
       "rng": {
         "version": 2,
@@ -543,17 +658,40 @@
           }
         ],
         "nextId": 3,
-        "turn": 2
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
       }
     },
     "level": {
       "graph": {
-        "sha256": "d089414fe20552431d1da695eed23d511ae40b50b167cdba616b2fe7a677ef61",
-        "objects": 44777
+        "sha256": "9cf9389574ab605f16b200aa4c913469be8c50f766475be9474ba8f3ccd87269",
+        "objects": 44770
       },
       "snapshot": {
-        "sha256": "7157976075f614cd506c6cf64f749c42f13ea356afc8db17995c646d67fa7930",
-        "objects": 21087
+        "sha256": "80d64b737c91cb36b74db674580e2d6cd9e7c98796858d28292a5e91bce7eeb7",
+        "objects": 21139
       },
       "rng": {
         "version": 2,
@@ -587,611 +725,30 @@
           }
         ],
         "nextId": 1,
-        "turn": 0
-      }
-    }
-  },
-  "narrative": {
-    "newGame": {
-      "graph": {
-        "sha256": "e90f31471afff43c8f4600fa514cf291ceec62e2c5c8492f410753d913d934ed",
-        "objects": 23016
-      },
-      "snapshot": {
-        "sha256": "e7bed6591c7c0409eb2023ef343fe16f8c7f7f61cd8af6b1a93d160907a2b0e8",
-        "objects": 11236
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 543158261,
-            "b": 504864787,
-            "c": 3596199195,
-            "d": 4040340334
-          },
-          {
-            "a": 403309469,
-            "b": 2277680283,
-            "c": 2110359800,
-            "d": 4194199466
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2618,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [],
-        "nextId": 0,
-        "turn": 0
-      }
-    },
-    "commands": {
-      "graph": {
-        "sha256": "d246740084857748c4f5128365aad431016f9a92b12f6d5e59f463c4f5360ca3",
-        "objects": 23144
-      },
-      "snapshot": {
-        "sha256": "e0431c82963512826cfb3e08865cf87ae9ff68b612c4d0e18b2e6e29a1117b84",
-        "objects": 11360
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 1411386528,
-            "b": 3341572233,
-            "c": 2017584739,
-            "d": 3683598229
-          },
-          {
-            "a": 403309469,
-            "b": 2277680283,
-            "c": 2110359800,
-            "d": 4194199466
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2619,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [],
-        "nextId": 0,
-        "turn": 3
-      }
-    },
-    "loaded": {
-      "graph": {
-        "sha256": "d94c3306ba565691296b84deb87603620ef801b326bde426c2a58f865eae6b65",
-        "objects": 20768
-      },
-      "snapshot": {
-        "sha256": "e0431c82963512826cfb3e08865cf87ae9ff68b612c4d0e18b2e6e29a1117b84",
-        "objects": 11360
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 1411386528,
-            "b": 3341572233,
-            "c": 2017584739,
-            "d": 3683598229
-          },
-          {
-            "a": 403309469,
-            "b": 2277680283,
-            "c": 2110359800,
-            "d": 4194199466
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2619,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [],
-        "nextId": 0,
-        "turn": 3
-      }
-    },
-    "continued": {
-      "graph": {
-        "sha256": "5b06f49a743622a1aad049413e21a3dc11fdfd23d4fa97bfec3946a07d8bf1f0",
-        "objects": 23186
-      },
-      "snapshot": {
-        "sha256": "138c24e738b7583a821b04b9e57f43eeb703d9368c9bff2154880151b9ef2b29",
-        "objects": 11401
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 1411386528,
-            "b": 3341572233,
-            "c": 2017584739,
-            "d": 3683598229
-          },
-          {
-            "a": 403309469,
-            "b": 2277680283,
-            "c": 2110359800,
-            "d": 4194199466
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2619,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [],
-        "nextId": 0,
-        "turn": 4
-      }
-    },
-    "replayed": {
-      "graph": {
-        "sha256": "2cecd51380677e7ea7e702665241450a1e061f9fd96e8be6c692ea4b469fcb5c",
-        "objects": 23149
-      },
-      "snapshot": {
-        "sha256": "ba3cd792b1ab50e85e582c26418f7bca4c543df48101c57fd9774fa951375af2",
-        "objects": 11190
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 1411386528,
-            "b": 3341572233,
-            "c": 2017584739,
-            "d": 3683598229
-          },
-          {
-            "a": 403309469,
-            "b": 2277680283,
-            "c": 2110359800,
-            "d": 4194199466
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2619,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [],
-        "nextId": 0,
-        "turn": 3
-      }
-    },
-    "seek": {
-      "graph": {
-        "sha256": "e5f1c5e0a8cc0e2fdff04981441f879a03f984d2fd3b55d632ff934340d37281",
-        "objects": 23149
-      },
-      "snapshot": {
-        "sha256": "24f28fbbb8b08523215584725be97eff1cb1528c5c486a8bb993378be26f4ba4",
-        "objects": 11190
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 543158261,
-            "b": 504864787,
-            "c": 3596199195,
-            "d": 4040340334
-          },
-          {
-            "a": 403309469,
-            "b": 2277680283,
-            "c": 2110359800,
-            "d": 4194199466
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2618,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [],
-        "nextId": 0,
-        "turn": 1
-      }
-    },
-    "combat": {
-      "graph": {
-        "sha256": "c95c82254a084e96d7f5a744cb2b8d679289e93f93b439a48eddb0a8ef3da835",
-        "objects": 22730
-      },
-      "snapshot": {
-        "sha256": "eec8be9601acd016e0a886afcb6efd1dccb9eb98ee431e29df9ec74f1d08af0c",
-        "objects": 5724
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 285752434,
-            "b": 1416413835,
-            "c": 3768490395,
-            "d": 356591344
-          },
-          {
-            "a": 403309469,
-            "b": 2277680283,
-            "c": 2110359800,
-            "d": 4194199466
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2626,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [
-          {
-            "id": 0,
-            "text": "you hit something, catching it unaware",
-            "color": "#ffcc00",
-            "count": 1,
-            "turn": 1,
-            "foldable": true
-          }
-        ],
-        "nextId": 1,
-        "turn": 1
-      }
-    },
-    "knockback": {
-      "graph": {
-        "sha256": "20947abf2592cef2c7fd538c58ab06f5caad897d9e7c2e23dc96cf69766941aa",
-        "objects": 22730
-      },
-      "snapshot": {
-        "sha256": "64ba31ce8f167a2ee5dbd95f365d0b93742c791bd2eacd927c4038091ddf42a7",
-        "objects": 5678
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 285752434,
-            "b": 1416413835,
-            "c": 3768490395,
-            "d": 356591344
-          },
-          {
-            "a": 403309469,
-            "b": 2277680283,
-            "c": 2110359800,
-            "d": 4194199466
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2626,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [
-          {
-            "id": 0,
-            "text": "you hit something, catching it unaware",
-            "color": "#ffcc00",
-            "count": 1,
-            "turn": 1,
-            "foldable": true
-          }
-        ],
-        "nextId": 1,
-        "turn": 1
-      }
-    },
-    "blink": {
-      "graph": {
-        "sha256": "e18a1f647207d4b82b474bf7967baf9048827cd3bdde38f312cfd873fcde6121",
-        "objects": 22850
-      },
-      "snapshot": {
-        "sha256": "28f49cce97e9aae11e3f9dfa0efc4b0ae4ba10db28cfcd3c6da19a2d8b9efc96",
-        "objects": 5842
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 2975065899,
-            "b": 378110243,
-            "c": 3853423670,
-            "d": 2146405224
-          },
-          {
-            "a": 403309469,
-            "b": 2277680283,
-            "c": 2110359800,
-            "d": 4194199466
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2637,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [
-          {
-            "id": 0,
-            "text": "you hit something, catching it unaware",
-            "color": "#ffcc00",
-            "count": 1,
-            "turn": 1,
-            "foldable": true
-          },
-          {
-            "id": 1,
-            "text": "You identify Staff of Blinking.",
-            "color": "#00ffff",
-            "count": 1,
-            "turn": 1
-          },
-          {
-            "id": 2,
-            "text": "the Rat bites you",
-            "color": "#ff6666",
-            "count": 1,
-            "turn": 2,
-            "foldable": true
-          }
-        ],
-        "nextId": 3,
-        "turn": 2
-      }
-    },
-    "clone": {
-      "graph": {
-        "sha256": "a098af3294c37dba4405a9739e52c1799fe72e67f6c95207e88e5d867a9f37d2",
-        "objects": 22861
-      },
-      "snapshot": {
-        "sha256": "9544b88b1f397720d74f1a7de5c3d1d21db7544e86139b465c5db58e95e2d84f",
-        "objects": 5815
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 1055148670,
-            "b": 1704861598,
-            "c": 412034698,
-            "d": 3615745440
-          },
-          {
-            "a": 403309469,
-            "b": 2277680283,
-            "c": 2110359800,
-            "d": 4194199466
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2638,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [
-          {
-            "id": 0,
-            "text": "you hit something, catching it unaware",
-            "color": "#ffcc00",
-            "count": 1,
-            "turn": 1,
-            "foldable": true
-          },
-          {
-            "id": 1,
-            "text": "You identify Staff of Blinking.",
-            "color": "#00ffff",
-            "count": 1,
-            "turn": 1
-          },
-          {
-            "id": 2,
-            "text": "the Rat bites you",
-            "color": "#ff6666",
-            "count": 1,
-            "turn": 2,
-            "foldable": true
-          }
-        ],
-        "nextId": 3,
-        "turn": 2
-      }
-    },
-    "summon": {
-      "graph": {
-        "sha256": "f4cdcaf42ba123a5e747e45cef75dba90934d0d6cdf3372f9405b3edf1e62ab9",
-        "objects": 22905
-      },
-      "snapshot": {
-        "sha256": "8a72fecac6fb2c94bdf2894d62f96327492811dc45ab180359b28506c530a8bf",
-        "objects": 5887
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 4144429083,
-            "b": 4092665882,
-            "c": 2786539256,
-            "d": 730082252
-          },
-          {
-            "a": 4259299205,
-            "b": 2502646356,
-            "c": 3243009903,
-            "d": 704940194
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2644,
-        "cosmeticNumbersGenerated": 189
-      },
-      "messages": {
-        "messages": [
-          {
-            "id": 0,
-            "text": "you hit something, catching it unaware",
-            "color": "#ffcc00",
-            "count": 1,
-            "turn": 1,
-            "foldable": true
-          },
-          {
-            "id": 1,
-            "text": "You identify Staff of Blinking.",
-            "color": "#00ffff",
-            "count": 1,
-            "turn": 1
-          },
-          {
-            "id": 2,
-            "text": "the Rat bites you",
-            "color": "#ff6666",
-            "count": 1,
-            "turn": 2,
-            "foldable": true
-          }
-        ],
-        "nextId": 3,
-        "turn": 2
-      }
-    },
-    "trap": {
-      "graph": {
-        "sha256": "e0c337004a983c65f21241cebbf260989b0c2a2dc25164e6332038ec4ba9b8ab",
-        "objects": 22906
-      },
-      "snapshot": {
-        "sha256": "02d37d48a13b4283d1ed3734984ac77f56e2f98a5023283433145652d72e77ea",
-        "objects": 5887
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 4144429083,
-            "b": 4092665882,
-            "c": 2786539256,
-            "d": 730082252
-          },
-          {
-            "a": 4259299205,
-            "b": 2502646356,
-            "c": 3243009903,
-            "d": 704940194
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2644,
-        "cosmeticNumbersGenerated": 189
-      },
-      "messages": {
-        "messages": [
-          {
-            "id": 0,
-            "text": "you hit something, catching it unaware",
-            "color": "#ffcc00",
-            "count": 1,
-            "turn": 1,
-            "foldable": true
-          },
-          {
-            "id": 1,
-            "text": "You identify Staff of Blinking.",
-            "color": "#00ffff",
-            "count": 1,
-            "turn": 1
-          },
-          {
-            "id": 2,
-            "text": "the Rat bites you",
-            "color": "#ff6666",
-            "count": 1,
-            "turn": 2,
-            "foldable": true
-          }
-        ],
-        "nextId": 3,
-        "turn": 2
-      }
-    },
-    "level": {
-      "graph": {
-        "sha256": "0ad27426c716c2c317dadaccdf31bb04ecaa5154fade2bb2486c75765c0e01e3",
-        "objects": 44826
-      },
-      "snapshot": {
-        "sha256": "5af6b5113aac45ede4aef66654ec551f37a03d4a0abb3b2e19992554a6184cd7",
-        "objects": 21149
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 2427663898,
-            "b": 3871654266,
-            "c": 3621382121,
-            "d": 191341921
-          },
-          {
-            "a": 2602514118,
-            "b": 835655034,
-            "c": 2813996757,
-            "d": 2548811547
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 34421,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [
-          {
-            "id": 0,
-            "text": "You descend to depth 2.",
-            "color": "#ffff00",
-            "count": 1,
-            "turn": 0
-          }
-        ],
-        "nextId": 1,
-        "turn": 0
+        "turn": 0,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 0,
+              "color": "#ffff00",
+              "acknowledge": false,
+              "foldable": false
+            }
+          ],
+          "nextId": 1
+        }
       }
     }
   },
   "growth": {
     "newGame": {
       "graph": {
-        "sha256": "88a29d1608772267ecfb03d10236ef88473a9af8e6c6c53a7c14688b28ec8485",
-        "objects": 24458
+        "sha256": "a613b90e7ba05af8f8247d75233f7a106899538995fa39d323b3d2523c0e5acc",
+        "objects": 24418
       },
       "snapshot": {
-        "sha256": "759b2cb5cd50a0b5d900a552e97534aebf5fa0366f93c60b57ad20b92782bc9e",
-        "objects": 11294
+        "sha256": "4c2164105bc63a8fbbe4e28f3fd8e631c31ad46d3afd94bba4b5771d205ad91a",
+        "objects": 11300
       },
       "rng": {
         "version": 2,
@@ -1217,17 +774,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 0
+        "turn": 0,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "commands": {
       "graph": {
-        "sha256": "85d262240cd80e6d9bc6ead91d173c0bad3c0092eeff7a5bccc9420c39f50a83",
-        "objects": 24622
+        "sha256": "c5ef91259f5a5ac437900c55964ef15c2bf5f38c5b131cbae91584af91ed74ae",
+        "objects": 24453
       },
       "snapshot": {
-        "sha256": "31c06853ed943a2a5f11fd6129bec3a70592cfbb0689a8639d2e71a32d74708d",
-        "objects": 11454
+        "sha256": "f2d17a6f11ede70eb6aee86cfecdc234a4ebca256ad744ae9f3232ac7bd81651",
+        "objects": 11331
       },
       "rng": {
         "version": 2,
@@ -1253,17 +814,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 3
+        "turn": 3,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "loaded": {
       "graph": {
-        "sha256": "000cb240bb9d4d930c6a2ec304be00dd254c660786466823f8d60d63953a4ecd",
-        "objects": 22246
+        "sha256": "10153de449758c3cf94a6926e2ba09889efe424d753f5c345f30a17ed4ce4a3f",
+        "objects": 22076
       },
       "snapshot": {
-        "sha256": "31c06853ed943a2a5f11fd6129bec3a70592cfbb0689a8639d2e71a32d74708d",
-        "objects": 11454
+        "sha256": "f2d17a6f11ede70eb6aee86cfecdc234a4ebca256ad744ae9f3232ac7bd81651",
+        "objects": 11331
       },
       "rng": {
         "version": 2,
@@ -1289,17 +854,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 3
+        "turn": 3,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "continued": {
       "graph": {
-        "sha256": "95f79b4e37aaafb50feb6da9dc712100b251db06350ebae21fe2b75cfae26530",
-        "objects": 24676
+        "sha256": "bd40d34a44b62839624c34da090baafb3e1af297e35b63e74bcc2b35accdeb84",
+        "objects": 24463
       },
       "snapshot": {
-        "sha256": "4086b6a9566e02fdb2ad13de0ddb00ba851979010eee351e5b603c11a7d6c2c9",
-        "objects": 11507
+        "sha256": "f6c9a471618a178ea9f8622003b8ac710a8c0d23c46cea3f3802b244b3496a1c",
+        "objects": 11341
       },
       "rng": {
         "version": 2,
@@ -1325,17 +894,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 4
+        "turn": 4,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "replayed": {
       "graph": {
-        "sha256": "e603280b21c32a747a7a397bcf73ffe22d683915234fa36bbed29b96ecd64c83",
-        "objects": 24627
+        "sha256": "0bf17142fbbdddd1793088986b1bf36ef738d89d713242e9a524049b5a2a7097",
+        "objects": 24463
       },
       "snapshot": {
-        "sha256": "891c289dbcaa94f45ac0c2b3e42882a136d329ca386530e566b4ef72dd9de907",
-        "objects": 11202
+        "sha256": "f2d17a6f11ede70eb6aee86cfecdc234a4ebca256ad744ae9f3232ac7bd81651",
+        "objects": 11331
       },
       "rng": {
         "version": 2,
@@ -1361,17 +934,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 3
+        "turn": 3,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "seek": {
       "graph": {
-        "sha256": "381d748f4463efef86f931f0e56dc3cd27f5b0f944eb6ebbf33968080ec359e7",
-        "objects": 24623
+        "sha256": "81906770931a4ed01fedb9f0413188c92a5afd44fb0c87f6084373957c32994e",
+        "objects": 22086
       },
       "snapshot": {
-        "sha256": "777f38049f6449c7bd3de6990305385327f28403198052da7247d4b8692774f6",
-        "objects": 11202
+        "sha256": "4c2164105bc63a8fbbe4e28f3fd8e631c31ad46d3afd94bba4b5771d205ad91a",
+        "objects": 11300
       },
       "rng": {
         "version": 2,
@@ -1397,16 +974,132 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 0
+        "turn": 0,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "combat": {
       "graph": {
-        "sha256": "2b158f819943b5db1ac8d5ae6b60bb7b8ea94d27a4c7b55bceaff0299ff36325",
-        "objects": 24228
+        "sha256": "9af6408e6ddd719abc3fbe397686d120b99f4c63e6aa277c84aedb4412111d88",
+        "objects": 24124
       },
       "snapshot": {
-        "sha256": "477734077b0b9da1704727e4d9bbc74f1b2b6749858b6fb167b20529ce3f2825",
+        "sha256": "36901c35d57450daf30ea2d0d0eaccf934ca83154082c46361c8e61865eb09a0",
+        "objects": 5780
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 285752434,
+            "b": 1416413835,
+            "c": 3768490395,
+            "d": 356591344
+          },
+          {
+            "a": 403309469,
+            "b": 2277680283,
+            "c": 2110359800,
+            "d": 4194199466
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2626,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [
+          {
+            "id": 0,
+            "text": "you hit something, catching it unaware",
+            "color": "#ffcc00",
+            "count": 1,
+            "turn": 1,
+            "foldable": true
+          }
+        ],
+        "nextId": 1,
+        "turn": 1,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 1
+        }
+      }
+    },
+    "knockback": {
+      "graph": {
+        "sha256": "25598d3f2dc20c51bf486df3c6a104735f9c6deab04edb100cbda6bf6f49ea54",
+        "objects": 24124
+      },
+      "snapshot": {
+        "sha256": "557c33abe743eb17062009a948aab20669d68fa224b2cb1a20ccb3ca0f860e2a",
+        "objects": 5745
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 285752434,
+            "b": 1416413835,
+            "c": 3768490395,
+            "d": 356591344
+          },
+          {
+            "a": 403309469,
+            "b": 2277680283,
+            "c": 2110359800,
+            "d": 4194199466
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2626,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [
+          {
+            "id": 0,
+            "text": "you hit something, catching it unaware",
+            "color": "#ffcc00",
+            "count": 1,
+            "turn": 1,
+            "foldable": true
+          }
+        ],
+        "nextId": 1,
+        "turn": 1,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 1
+        }
+      }
+    },
+    "blink": {
+      "graph": {
+        "sha256": "57b48f4992a4ecbfea3b130d9e480513ecdf04110523beb81199fe8d15d9481a",
+        "objects": 24184
+      },
+      "snapshot": {
+        "sha256": "509de20fcd4a1ff7c275dde727ac754cf516a3b9d4e6e8d94c6308f1a0fb1bce",
         "objects": 5838
       },
       "rng": {
@@ -1414,96 +1107,6 @@
         "algorithm": "brogue-web-ranval32-uint64-level-v2",
         "streams": [
           {
-            "a": 285752434,
-            "b": 1416413835,
-            "c": 3768490395,
-            "d": 356591344
-          },
-          {
-            "a": 403309469,
-            "b": 2277680283,
-            "c": 2110359800,
-            "d": 4194199466
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2626,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [
-          {
-            "id": 0,
-            "text": "you hit something, catching it unaware",
-            "color": "#ffcc00",
-            "count": 1,
-            "turn": 1,
-            "foldable": true
-          }
-        ],
-        "nextId": 1,
-        "turn": 1
-      }
-    },
-    "knockback": {
-      "graph": {
-        "sha256": "1d863d22551374ba3d1eb9be5a74f9249fcdb7fec8f3127ec4144a3da7ff1e01",
-        "objects": 24228
-      },
-      "snapshot": {
-        "sha256": "ea52900f25f410309cf16b16002e09b8bd3e4f258dab4b746f6be593e11d34a5",
-        "objects": 5799
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
-            "a": 285752434,
-            "b": 1416413835,
-            "c": 3768490395,
-            "d": 356591344
-          },
-          {
-            "a": 403309469,
-            "b": 2277680283,
-            "c": 2110359800,
-            "d": 4194199466
-          }
-        ],
-        "currentRNG": 0,
-        "randomNumbersGenerated": 2626,
-        "cosmeticNumbersGenerated": 161
-      },
-      "messages": {
-        "messages": [
-          {
-            "id": 0,
-            "text": "you hit something, catching it unaware",
-            "color": "#ffcc00",
-            "count": 1,
-            "turn": 1,
-            "foldable": true
-          }
-        ],
-        "nextId": 1,
-        "turn": 1
-      }
-    },
-    "blink": {
-      "graph": {
-        "sha256": "2f38d5c50d9c5c0b5a1022e68f8a71bd84613944a7735797a90b3db62be0de2d",
-        "objects": 24416
-      },
-      "snapshot": {
-        "sha256": "92e292454c33f4acda86e2fccad796fde0de9d85f8ff18b9cdcda71bd01ebced",
-        "objects": 6024
-      },
-      "rng": {
-        "version": 2,
-        "algorithm": "brogue-web-ranval32-uint64-level-v2",
-        "streams": [
-          {
             "a": 2975065899,
             "b": 378110243,
             "c": 3853423670,
@@ -1547,17 +1150,40 @@
           }
         ],
         "nextId": 3,
-        "turn": 2
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
       }
     },
     "clone": {
       "graph": {
-        "sha256": "722e9caf621b11b60f72beb5a52636901dd80c8abc6262c5ccf4079e2d01dc93",
-        "objects": 24449
+        "sha256": "293644b1e607a23a46e0fcf8f7e07b7f442223e7c16d854a635c069834ebc7b4",
+        "objects": 24217
       },
       "snapshot": {
-        "sha256": "f546471b7914972625e55e3b0ee48446b8517063669498b95780cbb89d0dc04b",
-        "objects": 6026
+        "sha256": "1e8cc810a6ccefe9dde50d855e34890cc421b534485a1c39a1263cd359ec85c1",
+        "objects": 5824
       },
       "rng": {
         "version": 2,
@@ -1607,17 +1233,40 @@
           }
         ],
         "nextId": 3,
-        "turn": 2
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
       }
     },
     "summon": {
       "graph": {
-        "sha256": "5733fdf5bff9ddb4beff774993dceebb5442bfebb34a7d871e2da017254d7185",
-        "objects": 24581
+        "sha256": "3b29cc0e8909ec272ade49166933f73151eac54b7d61a74805810dd2d81c7589",
+        "objects": 24349
       },
       "snapshot": {
-        "sha256": "6d50e81a1acca6441145208139c80833bff07e48b31b4cab3c9b20ad838e8bb0",
-        "objects": 6186
+        "sha256": "7cad1ec4ffa8f6533ba9ac534279860a2eaf51065e2f8acebda42cbf8fb2c2db",
+        "objects": 5984
       },
       "rng": {
         "version": 2,
@@ -1667,17 +1316,40 @@
           }
         ],
         "nextId": 3,
-        "turn": 2
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
       }
     },
     "trap": {
       "graph": {
-        "sha256": "04451e262151704227cdb8d46f4641297f9106785cd383b022ba2325bcce97b0",
-        "objects": 24582
+        "sha256": "abb232f566d3d75fa04013811059dc63a4d2df9202fb853466df1b5c2c1ca2bd",
+        "objects": 24350
       },
       "snapshot": {
-        "sha256": "6999574896e00cfd5173583c35eb625fb50059a9babf4d7dc65700ec155fa5d5",
-        "objects": 6186
+        "sha256": "3818ee50a72f4a63761859847297f20ef7e72a40e924a6eef8bee371e4ec1ad3",
+        "objects": 5984
       },
       "rng": {
         "version": 2,
@@ -1727,17 +1399,40 @@
           }
         ],
         "nextId": 3,
-        "turn": 2
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
       }
     },
     "level": {
       "graph": {
-        "sha256": "77c2361fff5ab1d8a77b6220e463ea385ce7b0b9fdf771587bc0e136891b8c32",
-        "objects": 47007
+        "sha256": "493e2d81433636b2e56ab389581c23434b0905b19bed8159a4a03bdc34cd7714",
+        "objects": 46486
       },
       "snapshot": {
-        "sha256": "9ed526bc24751260a6e2b48bbd1982ed862a6f34858adf2ddb3ad279f4ffaa6d",
-        "objects": 22100
+        "sha256": "1a40dbde26d0590d2bf7bf9ee669e4d7c423a0356022e58a8de71ef76b7dea58",
+        "objects": 21471
       },
       "rng": {
         "version": 2,
@@ -1778,19 +1473,777 @@
           }
         ],
         "nextId": 2,
-        "turn": 0
+        "turn": 0,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 0,
+              "color": "#ffff00",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 0,
+              "color": "#88ccff",
+              "acknowledge": false,
+              "foldable": false
+            }
+          ],
+          "nextId": 2
+        }
+      }
+    }
+  },
+  "narrative": {
+    "newGame": {
+      "graph": {
+        "sha256": "732e3fcf5118630595c343ee44d4091dd91fbbf96ec06d4d59c0aa64ba13a006",
+        "objects": 23017
+      },
+      "snapshot": {
+        "sha256": "fb55cedb7906c89c7821b96b6a7d704f935fe434d7babea0765d1ecf83f123b3",
+        "objects": 11276
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 543158261,
+            "b": 504864787,
+            "c": 3596199195,
+            "d": 4040340334
+          },
+          {
+            "a": 403309469,
+            "b": 2277680283,
+            "c": 2110359800,
+            "d": 4194199466
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2618,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [],
+        "nextId": 0,
+        "turn": 0,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
+      }
+    },
+    "commands": {
+      "graph": {
+        "sha256": "b836cac4ff5baec27df99bb63b1d8aa98e94f80eabcc066e91f3691f7e6dc1fd",
+        "objects": 23054
+      },
+      "snapshot": {
+        "sha256": "f22e33bbe3fcea5c93e298d9ac277912e5279bcb0bfe9bbe53ee1ac729997ffc",
+        "objects": 11309
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1411386528,
+            "b": 3341572233,
+            "c": 2017584739,
+            "d": 3683598229
+          },
+          {
+            "a": 403309469,
+            "b": 2277680283,
+            "c": 2110359800,
+            "d": 4194199466
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2619,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [],
+        "nextId": 0,
+        "turn": 3,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
+      }
+    },
+    "loaded": {
+      "graph": {
+        "sha256": "08aeb5302270747b29e81cf6e181dbe46d825bb14733a44d4a04feff2cef3e77",
+        "objects": 20677
+      },
+      "snapshot": {
+        "sha256": "f22e33bbe3fcea5c93e298d9ac277912e5279bcb0bfe9bbe53ee1ac729997ffc",
+        "objects": 11309
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1411386528,
+            "b": 3341572233,
+            "c": 2017584739,
+            "d": 3683598229
+          },
+          {
+            "a": 403309469,
+            "b": 2277680283,
+            "c": 2110359800,
+            "d": 4194199466
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2619,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [],
+        "nextId": 0,
+        "turn": 3,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
+      }
+    },
+    "continued": {
+      "graph": {
+        "sha256": "7fe8068b2b7a22949c070feeca58aba5791e2073f5591efcc3f94e472457d51a",
+        "objects": 23064
+      },
+      "snapshot": {
+        "sha256": "1bfa726fb5cc34de420fe45e1f9f1b307d386807497ee5f5358f553453694bb1",
+        "objects": 11319
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1411386528,
+            "b": 3341572233,
+            "c": 2017584739,
+            "d": 3683598229
+          },
+          {
+            "a": 403309469,
+            "b": 2277680283,
+            "c": 2110359800,
+            "d": 4194199466
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2619,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [],
+        "nextId": 0,
+        "turn": 4,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
+      }
+    },
+    "replayed": {
+      "graph": {
+        "sha256": "3cc40f97fa792f858ea8ca299e7e5c2c26312a79b0b9795fcb640981708763fd",
+        "objects": 23064
+      },
+      "snapshot": {
+        "sha256": "f22e33bbe3fcea5c93e298d9ac277912e5279bcb0bfe9bbe53ee1ac729997ffc",
+        "objects": 11309
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1411386528,
+            "b": 3341572233,
+            "c": 2017584739,
+            "d": 3683598229
+          },
+          {
+            "a": 403309469,
+            "b": 2277680283,
+            "c": 2110359800,
+            "d": 4194199466
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2619,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [],
+        "nextId": 0,
+        "turn": 3,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
+      }
+    },
+    "seek": {
+      "graph": {
+        "sha256": "39eae3e2b83ac47d0df54bd09af8bdac2a6effa2c6f28eedc5f0c9e1566b07d5",
+        "objects": 20687
+      },
+      "snapshot": {
+        "sha256": "48051511d48aa0f394d9454dcb10c5660366081c24ea0e7db8cc739cc490d662",
+        "objects": 11288
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 543158261,
+            "b": 504864787,
+            "c": 3596199195,
+            "d": 4040340334
+          },
+          {
+            "a": 403309469,
+            "b": 2277680283,
+            "c": 2110359800,
+            "d": 4194199466
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2618,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [],
+        "nextId": 0,
+        "turn": 1,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
+      }
+    },
+    "combat": {
+      "graph": {
+        "sha256": "410d8b4ec9c6e230b57f8493ee378301708db74d9692e158095e5b10d1e07de8",
+        "objects": 22703
+      },
+      "snapshot": {
+        "sha256": "874b069fef08998224e2c8749c89f161a1657ac3238c958c0e1563c1760da8f9",
+        "objects": 5736
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 285752434,
+            "b": 1416413835,
+            "c": 3768490395,
+            "d": 356591344
+          },
+          {
+            "a": 403309469,
+            "b": 2277680283,
+            "c": 2110359800,
+            "d": 4194199466
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2626,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [
+          {
+            "id": 0,
+            "text": "you hit something, catching it unaware",
+            "color": "#ffcc00",
+            "count": 1,
+            "turn": 1,
+            "foldable": true
+          }
+        ],
+        "nextId": 1,
+        "turn": 1,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 1
+        }
+      }
+    },
+    "knockback": {
+      "graph": {
+        "sha256": "155e13b5853e69a81e4b589ce2afb03dea18b8a27033d9f8dd8365e4c14af93e",
+        "objects": 22703
+      },
+      "snapshot": {
+        "sha256": "0a4054ed5921ccdee406f9ad501071f223acfd86603dfcd450dfac8bbb358c5c",
+        "objects": 5711
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 285752434,
+            "b": 1416413835,
+            "c": 3768490395,
+            "d": 356591344
+          },
+          {
+            "a": 403309469,
+            "b": 2277680283,
+            "c": 2110359800,
+            "d": 4194199466
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2626,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [
+          {
+            "id": 0,
+            "text": "you hit something, catching it unaware",
+            "color": "#ffcc00",
+            "count": 1,
+            "turn": 1,
+            "foldable": true
+          }
+        ],
+        "nextId": 1,
+        "turn": 1,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 1
+        }
+      }
+    },
+    "blink": {
+      "graph": {
+        "sha256": "6a7b57f6c641d40c57b4bfa1d72d0ad22192772d32f76c51db8c46932603ad34",
+        "objects": 22763
+      },
+      "snapshot": {
+        "sha256": "28b98d075096ccc9c08b073a066550c4d7198b8d47dc6bc8a527cd454f0cb464",
+        "objects": 5794
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 2975065899,
+            "b": 378110243,
+            "c": 3853423670,
+            "d": 2146405224
+          },
+          {
+            "a": 403309469,
+            "b": 2277680283,
+            "c": 2110359800,
+            "d": 4194199466
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2637,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [
+          {
+            "id": 0,
+            "text": "you hit something, catching it unaware",
+            "color": "#ffcc00",
+            "count": 1,
+            "turn": 1,
+            "foldable": true
+          },
+          {
+            "id": 1,
+            "text": "You identify Staff of Blinking.",
+            "color": "#00ffff",
+            "count": 1,
+            "turn": 1
+          },
+          {
+            "id": 2,
+            "text": "the Rat bites you",
+            "color": "#ff6666",
+            "count": 1,
+            "turn": 2,
+            "foldable": true
+          }
+        ],
+        "nextId": 3,
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
+      }
+    },
+    "clone": {
+      "graph": {
+        "sha256": "37a759d1bcdf83921981f64fcdb76ddf21b5d909f5a91b33706b9db4a71f6f48",
+        "objects": 22774
+      },
+      "snapshot": {
+        "sha256": "152f7a676d04d625c82c4fe66b7e38d9f5c98f101cd687ec639e35477dea1812",
+        "objects": 5768
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1055148670,
+            "b": 1704861598,
+            "c": 412034698,
+            "d": 3615745440
+          },
+          {
+            "a": 403309469,
+            "b": 2277680283,
+            "c": 2110359800,
+            "d": 4194199466
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2638,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [
+          {
+            "id": 0,
+            "text": "you hit something, catching it unaware",
+            "color": "#ffcc00",
+            "count": 1,
+            "turn": 1,
+            "foldable": true
+          },
+          {
+            "id": 1,
+            "text": "You identify Staff of Blinking.",
+            "color": "#00ffff",
+            "count": 1,
+            "turn": 1
+          },
+          {
+            "id": 2,
+            "text": "the Rat bites you",
+            "color": "#ff6666",
+            "count": 1,
+            "turn": 2,
+            "foldable": true
+          }
+        ],
+        "nextId": 3,
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
+      }
+    },
+    "summon": {
+      "graph": {
+        "sha256": "330cbabdb7a66bf4f56f113a0ccccb2eed5212be5a5f036a3187400a2d3dcfaf",
+        "objects": 22818
+      },
+      "snapshot": {
+        "sha256": "97657c3af339c956fdbefc7dc8915650b162b3ce0ea3bef58c47f97f775ff55d",
+        "objects": 5840
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 4144429083,
+            "b": 4092665882,
+            "c": 2786539256,
+            "d": 730082252
+          },
+          {
+            "a": 4259299205,
+            "b": 2502646356,
+            "c": 3243009903,
+            "d": 704940194
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2644,
+        "cosmeticNumbersGenerated": 189
+      },
+      "messages": {
+        "messages": [
+          {
+            "id": 0,
+            "text": "you hit something, catching it unaware",
+            "color": "#ffcc00",
+            "count": 1,
+            "turn": 1,
+            "foldable": true
+          },
+          {
+            "id": 1,
+            "text": "You identify Staff of Blinking.",
+            "color": "#00ffff",
+            "count": 1,
+            "turn": 1
+          },
+          {
+            "id": 2,
+            "text": "the Rat bites you",
+            "color": "#ff6666",
+            "count": 1,
+            "turn": 2,
+            "foldable": true
+          }
+        ],
+        "nextId": 3,
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
+      }
+    },
+    "trap": {
+      "graph": {
+        "sha256": "ed49cd9e91f9badf46f30d810b998c5a89b291439c967ea33826fe3eb5f4053b",
+        "objects": 22819
+      },
+      "snapshot": {
+        "sha256": "85fe50be7ba2df7cd92112e7e6454ac59ab5589d184100e39e4851b5f44f4930",
+        "objects": 5840
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 4144429083,
+            "b": 4092665882,
+            "c": 2786539256,
+            "d": 730082252
+          },
+          {
+            "a": 4259299205,
+            "b": 2502646356,
+            "c": 3243009903,
+            "d": 704940194
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 2644,
+        "cosmeticNumbersGenerated": 189
+      },
+      "messages": {
+        "messages": [
+          {
+            "id": 0,
+            "text": "you hit something, catching it unaware",
+            "color": "#ffcc00",
+            "count": 1,
+            "turn": 1,
+            "foldable": true
+          },
+          {
+            "id": 1,
+            "text": "You identify Staff of Blinking.",
+            "color": "#00ffff",
+            "count": 1,
+            "turn": 1
+          },
+          {
+            "id": 2,
+            "text": "the Rat bites you",
+            "color": "#ff6666",
+            "count": 1,
+            "turn": 2,
+            "foldable": true
+          }
+        ],
+        "nextId": 3,
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
+      }
+    },
+    "level": {
+      "graph": {
+        "sha256": "dc90fbfd46da08cb95f368ef2ca27847604c71f7b4c6ae7db3ce858ae5b2628b",
+        "objects": 44799
+      },
+      "snapshot": {
+        "sha256": "0be88e9f67497e5fc0ad70e9bc04f38ff5c3702c7723dd8e7539bfde83e10b44",
+        "objects": 21161
+      },
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 2427663898,
+            "b": 3871654266,
+            "c": 3621382121,
+            "d": 191341921
+          },
+          {
+            "a": 2602514118,
+            "b": 835655034,
+            "c": 2813996757,
+            "d": 2548811547
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 34421,
+        "cosmeticNumbersGenerated": 161
+      },
+      "messages": {
+        "messages": [
+          {
+            "id": 0,
+            "text": "You descend to depth 2.",
+            "color": "#ffff00",
+            "count": 1,
+            "turn": 0
+          }
+        ],
+        "nextId": 1,
+        "turn": 0,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 0,
+              "color": "#ffff00",
+              "acknowledge": false,
+              "foldable": false
+            }
+          ],
+          "nextId": 1
+        }
       }
     }
   },
   "growth+narrative": {
     "newGame": {
       "graph": {
-        "sha256": "1ef58b0c0f602975d796fb96a4e2744d23060fd276614c69a87f99beec8a53a5",
-        "objects": 24507
+        "sha256": "e6378af6d55d78169f08588ddf16061a8df61dd25c695a37c026f006d54c33d7",
+        "objects": 24447
       },
       "snapshot": {
-        "sha256": "5b27f00edbba3ba55273f256394f7d8dee67b100c73b54ebf1cc1a9bb7cdf941",
-        "objects": 11357
+        "sha256": "f09bed3f81966b4c26022d78d5466162acabf8dd90a6ee2d46bc8066e41a169f",
+        "objects": 11322
       },
       "rng": {
         "version": 2,
@@ -1816,17 +2269,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 0
+        "turn": 0,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "commands": {
       "graph": {
-        "sha256": "efbde9c0c75ecbafc6d753ca8322268d10c8d61f2a2c3db2f95107992ceaa0fd",
-        "objects": 24731
+        "sha256": "eba1e2b0fc9f271774361955e494cf35c2bfa0e563712157f6496d97566fbac3",
+        "objects": 24482
       },
       "snapshot": {
-        "sha256": "e4e8fbce169387e5a5553c983f6aa2260fe6528801e6b8a70760bcf721f33a33",
-        "objects": 11577
+        "sha256": "cd2878dbf25fe392f87b00024e76857488769f403764e3a35598c274ced147fb",
+        "objects": 11353
       },
       "rng": {
         "version": 2,
@@ -1852,17 +2309,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 3
+        "turn": 3,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "loaded": {
       "graph": {
-        "sha256": "b2fa9554de651327e1d7888b53ddee7396dd510842a3997cac4fa8a78e0f1cd8",
-        "objects": 22355
+        "sha256": "c1a1c29bbe21ab0e470490f67fad5fc0cde9be239b02bfff93c9357f1c627fe3",
+        "objects": 22105
       },
       "snapshot": {
-        "sha256": "e4e8fbce169387e5a5553c983f6aa2260fe6528801e6b8a70760bcf721f33a33",
-        "objects": 11577
+        "sha256": "cd2878dbf25fe392f87b00024e76857488769f403764e3a35598c274ced147fb",
+        "objects": 11353
       },
       "rng": {
         "version": 2,
@@ -1888,17 +2349,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 3
+        "turn": 3,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "continued": {
       "graph": {
-        "sha256": "60bac0ce1e0c3078ee97340dcf70216d4adba86c9c1d2623657771147110989d",
-        "objects": 24805
+        "sha256": "6f89c050916a396dd268abd4866a1f76ed6ec69efaa7a6d37a353f8d00c8a3fb",
+        "objects": 24492
       },
       "snapshot": {
-        "sha256": "e0cd4ca8223f24f7d0d1843148a6d7a1938c77f0ce6e8c8481df9b0e5f791acb",
-        "objects": 11650
+        "sha256": "9647c6a3a76d47957491107d24842d5ee831ccc5af007168e6c732788e8431f7",
+        "objects": 11363
       },
       "rng": {
         "version": 2,
@@ -1924,17 +2389,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 4
+        "turn": 4,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "replayed": {
       "graph": {
-        "sha256": "dfcc57e5e112c3eae883b8acef2e7b822d00897b17b8f4eec199cbb8f3aa1470",
-        "objects": 24738
+        "sha256": "ad2a9ec6472acc44ea7a8e5c84a492096e7afc863d455bf6f882afdb98a522e6",
+        "objects": 24494
       },
       "snapshot": {
-        "sha256": "2f76efb8506d6498c59d419004ed3526218aa22cb7e960e0adfbe5cf64952935",
-        "objects": 11222
+        "sha256": "cd2878dbf25fe392f87b00024e76857488769f403764e3a35598c274ced147fb",
+        "objects": 11353
       },
       "rng": {
         "version": 2,
@@ -1960,17 +2429,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 3
+        "turn": 3,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "seek": {
       "graph": {
-        "sha256": "eee6a5aed567d8c5e426a9f9da8edd65c5c1bf632c0d8620f3707e2f874be2e5",
-        "objects": 24734
+        "sha256": "c6f7bc6b1fed9db0963f573299a33dd6902ad17e69689b597359f462862c9ef7",
+        "objects": 22117
       },
       "snapshot": {
-        "sha256": "07f883c344b348d87cd99efab02d9e0b413de8ee8dd8d6e8db779f98062c0dae",
-        "objects": 11222
+        "sha256": "f09bed3f81966b4c26022d78d5466162acabf8dd90a6ee2d46bc8066e41a169f",
+        "objects": 11322
       },
       "rng": {
         "version": 2,
@@ -1996,17 +2469,21 @@
       "messages": {
         "messages": [],
         "nextId": 0,
-        "turn": 0
+        "turn": 0,
+        "mechanical": {
+          "messages": [],
+          "nextId": 0
+        }
       }
     },
     "combat": {
       "graph": {
-        "sha256": "b2f956beb50a74c7fd97b86db9093779bd1919fd5749705e1ffccd858e6e1e15",
-        "objects": 24297
+        "sha256": "52d3e4a159c380a4a5960ad195bd498a1aa3c559bdf2b68d4a0d63c4aa3753b6",
+        "objects": 24153
       },
       "snapshot": {
-        "sha256": "2de7ab2e484653b77c6c5193cc713a8afb22209cac0dc1ebd7c95f21ee99b5e0",
-        "objects": 5921
+        "sha256": "9e15e81389b3341c67a6489e3e448ffab8ad6f972a33630649ea922285e9d6ec",
+        "objects": 5802
       },
       "rng": {
         "version": 2,
@@ -2041,17 +2518,28 @@
           }
         ],
         "nextId": 1,
-        "turn": 1
+        "turn": 1,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 1
+        }
       }
     },
     "knockback": {
       "graph": {
-        "sha256": "2238d4dc1776a5041ffe2e82e7b3ff8a148746e651a97ac7e576d1b46fb5c244",
-        "objects": 24297
+        "sha256": "a67393443f28dfe6c8e3aab5269cd1e6c4f03792e81d79eeaa9ea024e4fc19a9",
+        "objects": 24153
       },
       "snapshot": {
-        "sha256": "2686411bc03022d3ad6c50b309dff19e775d727267d3ef41dd6766366c737a9b",
-        "objects": 5859
+        "sha256": "1b475dc6925dfc9ca7c582e3b97f9f360566d22ca6d56ed4a677ad98cfebcb87",
+        "objects": 5765
       },
       "rng": {
         "version": 2,
@@ -2086,17 +2574,28 @@
           }
         ],
         "nextId": 1,
-        "turn": 1
+        "turn": 1,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 1
+        }
       }
     },
     "blink": {
       "graph": {
-        "sha256": "165ddf0d2a48e9aa5147ffd7cfaf55e5260def005e614e57f218569994640628",
-        "objects": 24525
+        "sha256": "ddac71209229a60dfc0f27508ff3aacea921b56a6b5ee11f4c216931852bdb0f",
+        "objects": 24213
       },
       "snapshot": {
-        "sha256": "b25d05153f5aa8d472650931907b36689814d58d3ecd5c0248ef730cb6d9abfc",
-        "objects": 6147
+        "sha256": "d6c59b1844436cb7406903aff63ba559bc842c6094235aa94ef96b158a9f032a",
+        "objects": 5860
       },
       "rng": {
         "version": 2,
@@ -2146,17 +2645,40 @@
           }
         ],
         "nextId": 3,
-        "turn": 2
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
       }
     },
     "clone": {
       "graph": {
-        "sha256": "31dc17ef08f8b9fd87f85b4e8a17ed43a0a53629f03a9f411177c913c614502d",
-        "objects": 24558
+        "sha256": "f969b5accea6fbf838f9977ce2c97bbe68a0bfa77993592edda34380362eca16",
+        "objects": 24246
       },
       "snapshot": {
-        "sha256": "7c2153194aa00ddaf7fc76c80865ac01d916e2e83f7b2e8f586751528a476031",
-        "objects": 6126
+        "sha256": "9bc353df1e86e58dae3cc3fbdb7f9ceca83438505f6dec003a7f27d534a4703a",
+        "objects": 5844
       },
       "rng": {
         "version": 2,
@@ -2206,17 +2728,40 @@
           }
         ],
         "nextId": 3,
-        "turn": 2
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
       }
     },
     "summon": {
       "graph": {
-        "sha256": "510efe5b19af125fe93ca0a53a69889e35c22f0db0de83d730cde0964cef3541",
-        "objects": 24690
+        "sha256": "522cf90bb8873360326e0be82dfb837ec7509c7b25d91a8b11fd4f96b9b1d12b",
+        "objects": 24378
       },
       "snapshot": {
-        "sha256": "3348b8302ed643f6220a0c23afff6f896b58fbb722d4600c002764831ecadc79",
-        "objects": 6286
+        "sha256": "b00163db40794fb6664959e3f458ff8b917bcd256139009938d9eda118e37c53",
+        "objects": 6004
       },
       "rng": {
         "version": 2,
@@ -2266,17 +2811,40 @@
           }
         ],
         "nextId": 3,
-        "turn": 2
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
       }
     },
     "trap": {
       "graph": {
-        "sha256": "74dd3852b991fa7aa0b21b7b7090d3d83476d400c5ca86f0f1f6d2afacbb2040",
-        "objects": 24691
+        "sha256": "1c8efda705258ed4aafb9298d215feecf4eae715237ff6698f13707219ad411f",
+        "objects": 24379
       },
       "snapshot": {
-        "sha256": "e91fbca09e0e8932901b417420553b3c86ac586c0f8d0313aca112240f8b7309",
-        "objects": 6286
+        "sha256": "4d10ba13f565dec4bbeb97a7fc83d06d32a32eebd1a8da3cc059f9fbd123e943",
+        "objects": 6004
       },
       "rng": {
         "version": 2,
@@ -2326,17 +2894,40 @@
           }
         ],
         "nextId": 3,
-        "turn": 2
+        "turn": 2,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 1,
+              "color": "#ffcc00",
+              "acknowledge": false,
+              "foldable": true
+            },
+            {
+              "turn": 1,
+              "color": "#00ffff",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 2,
+              "color": "#ff6666",
+              "acknowledge": false,
+              "foldable": true
+            }
+          ],
+          "nextId": 3
+        }
       }
     },
     "level": {
       "graph": {
-        "sha256": "e23220b16e6e0d62ea5f784d3482f26942c788614be16ab2730f84537f509c06",
-        "objects": 47076
+        "sha256": "b289ecb62e112bd4a48d9d955544011e888a798421f118e51ef5e85dbd6b77f5",
+        "objects": 46515
       },
       "snapshot": {
-        "sha256": "bd0adf15b8985da9bd675c722a9d29680124331e7a8a498676528bfd8087669c",
-        "objects": 22183
+        "sha256": "b088a4d6e4d596d8ad3224626ca6917a8cfdf34c7cb0ff3d93cf848dadfd0c04",
+        "objects": 21493
       },
       "rng": {
         "version": 2,
@@ -2377,7 +2968,24 @@
           }
         ],
         "nextId": 2,
-        "turn": 0
+        "turn": 0,
+        "mechanical": {
+          "messages": [
+            {
+              "turn": 0,
+              "color": "#ffff00",
+              "acknowledge": false,
+              "foldable": false
+            },
+            {
+              "turn": 0,
+              "color": "#88ccff",
+              "acknowledge": false,
+              "foldable": false
+            }
+          ],
+          "nextId": 2
+        }
       }
     }
   }

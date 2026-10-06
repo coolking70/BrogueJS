@@ -90,7 +90,7 @@ onMounted(() => {
         activeGame['calculateStealthRange']());
     }
     // Clone array for Vue reactivity
-    logs.value = foldCombatMessages(logger.messages).reverse();
+    logs.value = foldCombatMessages(logger.displayMessages).reverse();
   }, 100);
 });
 
@@ -102,7 +102,7 @@ onUnmounted(() => {
 
 <template>
   <div class="sidebar glass-panel" :class="{ 'sidebar-drawer': variant === 'drawer' }" :style="sidebarStyle">
-    
+
     <!-- Title Area -->
     <div class="brand-header">
       <h1 class="game-title">BROGUE <span class="edition">JS</span></h1>
@@ -118,15 +118,15 @@ onUnmounted(() => {
       <div class="stat-row">
         <span class="stat-label">{{ $t('sidebar.health') }}</span>
         <div class="hp-bar-container">
-          <div 
-            class="hp-bar" 
+          <div
+            class="hp-bar"
             :style="{ width: `${Math.max(0, (playerHp / Math.max(1, playerMaxHp)) * 100)}%` }"
             :class="{ 'low-hp': (playerHp / Math.max(1, playerMaxHp)) < 0.3 }"
           ></div>
         </div>
         <span class="stat-value">{{ playerHp }}/{{ playerMaxHp }}</span>
       </div>
-      
+
       <div class="stat-row" style="margin-top: 12px;">
         <span class="stat-label">{{ $t('sidebar.food') }}</span>
         <div class="nutrition-status" :style="{ color: getNutritionStatus(playerNutrition).color }">
@@ -153,7 +153,7 @@ onUnmounted(() => {
         <div v-for="(line, index) in playerNumberLines" :key="index">{{ line }}</div>
       </div>
     </div>
-    
+
     <div v-if="entityRows.length" class="monster-panel">
       <div class="monster-heading">{{ $t('sidebar.monsters') }}</div>
       <div v-for="entity in entityRows" :key="`${entity.kind}:${entity.id}`" class="monster-entry"
@@ -187,15 +187,15 @@ onUnmounted(() => {
     <div class="log-panel-container">
       <div class="log-header">{{ $t('sidebar.log') }}</div>
       <div class="log-panel">
-        <div 
-          v-for="(msg, index) in logs" 
-          :key="msg.id" 
+        <div
+          v-for="(msg, index) in logs"
+          :key="msg.id"
           class="log-message"
           :class="{ 'log-latest': index === 0, 'log-acknowledge': msg.acknowledge }"
           :style="{ color: msg.color }"
         >
-          <span class="log-bullet">›</span> 
-          {{ msg.text }} 
+          <span class="log-bullet">›</span>
+          {{ msg.text }}
           <span v-if="msg.count > 1" class="log-count">x{{ msg.count }}</span>
         </div>
       </div>

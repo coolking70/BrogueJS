@@ -1,3 +1,4 @@
+import { installRecordingScene } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Graphics } from 'pixi.js';
 import { createHeadlessGame } from './harness';
@@ -143,8 +144,7 @@ describe('4a-3 public body projection and shared drawing', () => {
         expect(observeDisplayFrame(game, logger).rows[0]).toMatchObject({ hp: 17, loc: { x: 21, y: 11 } });
     });
     it('replay and back/forward seek clear old projection/hover/aim and rebuild current square geometry', () => {
-        const start = Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype, 'startNewGame').mockImplementation(function(this: Game, ...args) { start.apply(this, args); squareDisplayScene(this); });
+        installRecordingScene(squareDisplayScene);
         const game = createHeadlessGame(403003, 'test'); game.executeCommand('wait'); game.executeCommand('move', { x: 1, y: 0 });
         const recording = game.exportRecording(); timeline(game); expect(game.loadReplay(recording)).toBe(true);
         for (const index of [2, 0, 1]) {

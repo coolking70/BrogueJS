@@ -21,7 +21,7 @@ const state = (game:Game):ProductionActorAttackState => game.extensionRuntime!.a
 // Diagnostic creation/hits are not a new-game recording. Compare every saved
 // mechanical field, excluding only wall time and input-history provenance.
 function mechanics(snapshot:ReturnType<Game['toSaveSnapshot']>) {
-    const value=json(snapshot);value.savedAt=0;value.run.recordedInputEvents=[];value.run.recordedInputIndex=0;
+    const value=json(snapshot);value.savedAt=0;
     delete value.run.recordingOrigin;return value;
 }
 type Mode = 'normal' | 'absent' | 'unsupported' | 'throw' | 'invalid' | 'async';

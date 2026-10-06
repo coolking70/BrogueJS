@@ -1,3 +1,4 @@
+import { installRecordingScene } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import i18next from 'i18next';
 import zhCN from '../locales/zh_CN.json';
@@ -222,14 +223,14 @@ describe('X3-U3 recording and replay', () => {
         g.replaySeek(0); g.replaySeek(4); settle(); expect(g.replayError).toBeNull(); expect(state(g)).toEqual(final);
     });
     it('cursed unequip/drop/replacement/throw replay and seek preserve refusals with zero OOS', () => {
-        const { g, item } = scene(); const replacement = new Item('Replacement', '/', 0xffffff, C.WEAPON);
-        g.player.inventory.addItem(replacement); g.onConfirmRequest = () => true;
-        g.executeItemCommand('unequip', item); g.executeItemCommand('drop', item); g.executeItemCommand('equip', replacement); throwCommand(g, item);
-        const recording = g.exportRecording(), final = state(g), start = g.startNewGame.bind(g);
-        vi.spyOn(g, 'startNewGame').mockImplementation(options => {
-            start(options); room(g); install(g, 'equippedWeapon');
+        installRecordingScene(g => {
+            room(g); install(g, 'equippedWeapon');
             g.player.inventory.addItem(new Item('Replacement', '/', 0xffffff, C.WEAPON));
         });
+        const g = createHeadlessGame(33003, 'test'), item = g.player.equippedWeapon!, replacement = g.player.inventory.items[1]!;
+        g.onConfirmRequest = () => true;
+        g.executeItemCommand('unequip', item); g.executeItemCommand('drop', item); g.executeItemCommand('equip', replacement); throwCommand(g, item);
+        const recording = g.exportRecording(), final = state(g);
         expect(g.loadReplay(recording)).toBe(true); g.onConfirmRequest = () => { throw new Error('Replay opened UI'); };
         for (let i = 0; i < recording.events.length; i++) g.replayStep();
         expect(g.replayError).toBeNull(); expect(state(g)).toEqual(final);

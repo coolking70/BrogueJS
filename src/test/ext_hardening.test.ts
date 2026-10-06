@@ -85,8 +85,8 @@ describe('EXT-0 cloud boundary regressions', () => {
             const snapshot = game.toSaveSnapshot(), player = game.player, runtime = game.extensionRuntime, random = rng.getState();
             for (const events of [{}, null, [null], undefined]) {
                 const malformed = structuredClone(snapshot);
-                if (events === undefined) delete (malformed.run as Partial<typeof malformed.run>).recordedInputEvents;
-                else (malformed.run as { recordedInputEvents: unknown }).recordedInputEvents = events;
+                if (events === undefined) delete (malformed.run.recordingOrigin as any).events;
+                else (malformed.run.recordingOrigin as any).events = events;
                 expect(game.loadSnapshot(malformed)).toBe(false);
                 expect(game.player).toBe(player);
                 expect(game.extensionRuntime).toBe(runtime);

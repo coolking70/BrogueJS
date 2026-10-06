@@ -6,7 +6,7 @@
 
 ## 0 开工核对（不通过先停下报告）
 
-1. 确认基线实际版本：`src/ext/types.ts` 中 `ExtensionManifest.foundation` / `ExtensionSnapshot.foundation.version` 为 **5**，`src/ext/descriptor.ts` 键白名单中 `foundation: 5`；`WholeRunSnapshot.ts` 的 `WHOLE_RUN_SCHEMA='brogue-web-whole-run-v3'` / version 3；`Game.ts` 录像 `version: 3`、`RecordingOrigin.version: 1`；`EntitySnapshot` envelope 3；growth 1.7.0、narrative 1.4.0、combat 1.5.0、giants 1.0.0；`SaveStorage.ts` 打开 `indexedDB.open('brogue-web-saves', 1)` 且只有 store `checkpoint`；`App.vue` 录像键 `brogue-web-replay-v1`。与 C5-1 §1 表不符（例如收尾已占用某个格式号）时**不要自行改号**，报告差异等维护者裁定。
+1. 确认基线实际版本：`src/ext/types.ts` 中 `ExtensionManifest.foundation` / `ExtensionSnapshot.foundation.version` 为 **5**，`src/ext/descriptor.ts` 键白名单中 `foundation: 5`；`WholeRunSnapshot.ts` 的 `WHOLE_RUN_SCHEMA='brogue-web-whole-run-v3'` / version 3；`Game.ts` 录像 `version: 3`、`RecordingOrigin.version: 1`；`EntitySnapshot` 行/图无独立 envelope 槽（共用整局外壳 v3）；growth 1.7.0、narrative 1.4.0、combat 1.5.0、giants 1.0.0；`SaveStorage.ts` 打开 `indexedDB.open('brogue-web-saves', 1)` 且只有 store `checkpoint`；`App.vue` 录像键 `brogue-web-replay-v1`。与 C5-1 §1 表不符（例如收尾已占用某个格式号）时**不要自行改号**，报告差异等维护者裁定。
 2. 复核合同 §1.3 中本步依赖的代码位置仍成立（行号可漂移，语义必须一致）：`TimeCoordinator.advancementLoop` 中 `soonestTurn>0` 时的 `bodies.advanceElapsed` 与 `actions.advanceActionTime`；`Game.monstersApproachStairs`；`LevelTravel.scheduleLevelFollowers`；`GenerationCoordinator.generateDepth` 中重访缓存层先 `restoreFallenItems()` 再 `catchUpEnvironment`；`Game.recordInputEvent` / `updateRecordedCheckpoint`。任何一处语义不同，停下报告。
 3. 用 `git log` 记录基线 commit 与工作区干净状态，写入报告。
 4. 通读 C5-1 r2 §0–§4、§10.2、§11 与 5A0 报告 §3 及其 r2 修订记录后再动手；名字、字段、算法 ID 以合同为准，合同未定的内部实现细节可自定但须在报告中列出。
@@ -17,7 +17,7 @@
 | --- | --- | --- |
 | foundation 协议 | 5 → **6** | manifest schema 仍为 1，存档/录像中的 foundation 精确匹配；`src/ext/descriptor.ts` 导出 `FOUNDATION_PROTOCOL = 6`，键白名单校验改为比较该常量；既有四模块 descriptor 改为 `foundation: FOUNDATION_PROTOCOL`，**不改**其 module/rules/state 版本 |
 | 整局快照 | whole-run-v3 / 3 → **whole-run-v4 / 4** | 新增可选 `run.world5`；save 不再同时持有 `run.recordedInputEvents` 第二份可写历史（见 §2 5A1-R） |
-| 实体 envelope | 3 → **4** | 仅当本步确有实体字段/根变化；若无变化在报告中说明并请维护者决定是否仍随批次升号，不得静默 |
+| 实体行/图与共用外壳 | 行/图不变；共用 whole-run **v4** | **维护者 2026-10-06 裁定选项 1**：不引入独立实体 codec 槽；报告写明“实体 envelope 无独立槽、未单独升号” |
 | 录像 | 3 → **4** | 5A0 报告 §3.1 `RecordingV4`，按报告 r2 修订记录调整事件摘要字段 |
 | 录像来源 | RecordingOrigin 1 → **2** | `RecordingOriginV2` |
 | IndexedDB | `brogue-web-saves` v1 → **v2** | 保留 `checkpoint`，新增 `recordings / eventChunks / snapshots` |
@@ -67,11 +67,11 @@
 - **分层摘要**（合同 §10.2，取代报告 §3.1 的逐事件全量 `MechanicalDigest`）：
   - 每条事件：`checkpoint` 只覆盖 dirty 跟踪域 **extensions / world5 / actorActions**（本步 actorActions 尚不存在，固定空域摘要），外加廉价诊断：tick、turn、simulationTicks、levelRef、玩家位置、玩家 HP、背包 `inventoryStamp`（合同 §4.2 `c5-inventory-v1`）、双 RNG 状态与计数。本步允许以“全量重算这三个域”实现（成本与今天逐事件 `extensionRuntime.snapshot()` 同量级）；若实现增量 dirty，须保留独立全量实现并在 chunk 边界与测试中比对。
   - 每 256 条命令的 chunk 边界（`(index+1) % 256 === 0`）、每个加速快照点与最后一条事件：`fullCheckpoint` = 完整 `MechanicalDigest`（native / extensions / world5 / actorActions / knowledge / random 全量重算），并校验增量域与全量一致。
-  - **经典局（无 extensions/world5/actorActions）**：每事件只记今天已有的 tick/depth→levelRef/player/turn/rng 诊断，`checkpoint` 为 null，**不得增加任何逐事件摘要成本**；完整原生摘要只在 chunk 边界/快照点。
-  - replay 在 chunk 边界发现 native/knowledge 不一致时，回到上一个已验证边界，用诊断模式逐事件全量重算定位首个不一致命令后停止。
+  - **经典局（无 extensions/world5/actorActions）**：每事件只记今天已有的 tick/depth→levelRef/player/turn/rng 诊断，`checkpoint` 为 null，**维护者 2026-10-06 接受 inventoryStamp/chainDigest 两次 SHA-256，以新增 P95 ≤1 ms 验收**；完整原生摘要只在 chunk 边界/快照点。
+  - **维护者 2026-10-06 裁定（选项 1；合同 §10.2）**：保留 r2 成本、格式与检测节奏，不增加逐事件 native/knowledge 证据。隐藏 native/knowledge 分歧在首个可验证的不一致完整摘要命令处停止，报告 command/域/tick/位置、前一个已验证边界及区间 `(previousVerifiedBoundary, command]`，并提供包含两端的 `fromCommand=previousVerifiedBoundary+1`、`toCommand=command`。边界 0 为已验证新局起点，其后只使用已通过完整摘要校验的边界（含已验证加速快照）。不得冒称隐藏分歧的精确首命令；dirty 域仍逐事件精确定位。
   - 摘要域字段清单与 `scripts/u03-state-contract.json` 绑定：每个 kind=`run` 字段恰属一个域，`derived/session/reset` 字段列入排除清单；新增测试校验一致。持久知识/记忆不得当显示缓存排除。
 - 加速快照：每 **2048 条已完成输入命令**在无 advancement/确认/未提交事务的安全点生成 world-only 快照（剥除 events/origin/snapshots 本身）；缓存 **按每个录像** ≤64 MiB 且 ≤128 份，按 afterCommand 淘汰最老；单份超 64 MiB 不存；seed/完整命令/摘要链**永不截断**。
-- replay：从 seed/manifest 重开，逐条比较本事件可得的摘要与诊断/双 RNG，chunk 边界比较全量；不同即停止并报首个 command/域/tick/位置。seek：选 ≤目标的最近有效快照，完整校验后在候选 Game 恢复再重放；坏快照跳过回退更早点/seed；外部未验证快照首次按 seed 重放验证。
+- replay：从 seed/manifest 重开，逐条比较本事件可得的摘要与诊断/双 RNG，chunk 边界比较全量；不同即停止，dirty 域报精确首个 command/域/tick/位置，隐藏 native/knowledge 按上述裁定报首个可验证分歧命令及完整区间字段。seek：选 ≤目标的最近有效快照，完整校验后在候选 Game 恢复再重放；坏快照跳过回退更早点/seed；外部未验证快照首次按 seed 重放验证；诊断精度和已验证边界在候选发布/回退后保持正确。
 - save：world + 一份 `RecordingOriginV2` 摘要前缀（与 save 同一 IDB 事务），续录检查 header/index/chain/inputState 连续；分支续录丢弃后缀与越界快照。
 - 存储：新增 `src/engine/Core/RecordingStorage.ts`，与 `SaveStorage.ts` **共用同一个 IndexedDB 库 `brogue-web-saves`**（共享 opener，版本 1→2 的 `onupgradeneeded` 只新增 store，不动 `checkpoint` 内容）；新增 store `recordings / eventChunks / snapshots`，event 每 256 条一 chunk，清单与 chunk 同事务；保存存档时 `checkpoint` 与相关 `recordings/eventChunks` 在**同一个 readwrite 事务**中提交。保持现有“单一当前录像”UX（以 IDB 中的当前录像替代 `brogue-web-replay-v1` 单键），不新增录像列表；localStorage 只留小偏好/索引；JSON 导入/导出保留（导出可选带快照）。**不新增 npm 依赖**：IDB 测试用注入的内存适配器/手写 fake，真实浏览器 IDB 列为未验证项。
 - **P95 门禁**（合同 §10.2）：实测“每条命令新增成本 P95”，拟议阈值经典 control ≤1 ms、0 营地扩展局 ≤5 ms，大状态代理样本如实报告；chunk 边界全量摘要耗时单独报告。超标时按合同回退顺序：先把完整原生摘要放宽到每 1024 条/仅快照点，再把 dirty 域退为仅 chunk 边界摘要；每次回退在报告中写明检测粒度损失，不缩小覆盖。最终阈值由维护者在审阅报告时确认。
@@ -85,7 +85,7 @@
 
 ## 4 必须保持的不变量
 
-1. **零影响**：未启用世界能力的组合不物化 world5、不建时钟、不加 RNG 调用/新域；经典局每事件录像成本不增加；两条 RNG 流、生成结果、UR2/UR3/UR4 黄金 trace 不变（格式外壳版本号变化除外，见 §6）。
+1. **零影响**：未启用世界能力的组合不物化 world5、不建时钟、不加 RNG 调用/新域；经典局每事件两次 SHA-256 按已批准 P95 门槛验收；两条 RNG 流、生成结果、UR2/UR3/UR4 黄金 trace 不变（格式外壳版本号变化除外，见 §6）。
 2. **确定性**：planner/offlineDraw/seedKey 只依赖输入 DTO；`S(t0,t2)=S(S(t0,t1),t1,t2)` 对全部余数/收据/ordinal/随机键成立；闭式长尾与参考迭代器逐字段相等。
 3. **恰好一次**：load、seek 本身、查看、UI 打开不结算；replay 在原来那条真实入层命令处结算且只一次；从结算后的快照 seek 不再结算。
 4. **回滚**：入层/提交任何发布点失败（ID 分配、账本、模块参与者、消息/事实、层移交、会话索引）→ 完整对象图恢复，不半发布；坏档/坏录像在退休旧局前拒绝。
@@ -94,6 +94,8 @@
 7. save 内只有一份可写录像历史；快照不递归包含 origin/events/snapshots。
 
 ## 5 必测场景（新测试登记到 `scripts/test-suites.json` 对应底座清单，命名 `ext_world5_*` / `ext_recording_v4_*` 等）
+
+**维护者 2026-10-06 审查裁定补充（对应合同 §10.2）**：存档来源与用户录像独立存储；seek 后/另一局存档不能改写录像或清缓存。居民经济归属与 native 承载分开，pending/离层/死亡后复活合法、相关旧工作停用，toSnapshot/loadSnapshot 使用同一 world5 校验；真实 monstersFall 单体/整体身体进入已缓存管理层必须 pending→结算→落位，补坠落及复活往返。六域摘要不含本地化正文/显示名、随机外观使用稳定 id，英文录制/中文回放和中途切语言通过，撤回 x2i 的切语言时机规避。收据滚动保留最近 128 条并按高水位去重，补 >128 回归。旧存档菜单可见、解释不兼容、覆盖需确认；旧 localStorage 录像可下载原 JSON 且永久关闭提示。补两个拒绝原因、配额去缓存重试、DEV 专用 fixture、seed seek 保留可信缓存和异常反馈、真实连接 checkpoint 的升级测试与生产 IDB 适配器测试；不新增依赖。经典两次 SHA-256/事件获准保留，新增 P95 ≤1 ms/≤5 ms、chunk 单列，并在交付报告登记该批准偏差。
 
 时钟与层：
 - 正 elapsed 累加一次（多 NPC、群体、环境块、麻痹/长动作/等待、无 actions 端口的组合）；动画 yield 恢复不重复加；坠落续圈只按新圈 elapsed；零时间命令/No 确认不推进；load/seek/UI 不推进；seek 重放重建同值；三种时间互不覆写。
@@ -112,15 +114,15 @@
 - 真实命令 save/load/逐条 replay/seek/续录，覆盖“离开管理层 → 别层耗时 → 返回结算”跨两层。
 
 录像格式：
-- 摘要正确性：每域篡改（native/extensions/world5/actorActions/knowledge/random 各一）均被检出——dirty 域在当条事件检出，native/knowledge 在所在 chunk 边界检出并能定位到首个命令；空域固定摘要；chain 起点/逐条向量冻结；recordedAt 不入链。
+- 摘要正确性：每域篡改（native/extensions/world5/actorActions/knowledge/random 各一）均被检出——dirty 域在首个分歧事件精确检出，隐藏 native/knowledge 在首个可验证完整摘要命令检出并报告前一个已验证边界及完整区间字段（维护者 2026-10-06 裁定）；空域固定摘要；chain 起点/逐条向量冻结；recordedAt 不入链。
 - 经典局：事件无 `checkpoint`、chunk 边界有 `fullCheckpoint`，逐事件成本与 v3 基线同量级（测量对照）。
 - u03 字段与摘要域绑定测试：新增一个未登记域的 run 字段必须使测试失败。
 - 快照节奏：0/1/255/256/257/2047/2048/2049/4096 命令边界；No 确认计入；长动作中不截快照。
 - 淘汰：同一录像超过 64 MiB 或 128 份按 afterCommand 淘汰最老；单份过大不存仍可从 seed seek。
 - seek 等价：从 seed、从有效快照、坏快照回退三条路径到同一目标的摘要完全一致；外部未验证快照首次走 seed 验证。
-- OOS：人为制造分歧（dirty 域与 native 域各一），停止并报首个 command/域/tick/位置。
+- OOS：人为制造 dirty 域、native 域及 knowledge 域分歧，停止并报 command/域/tick/位置；dirty 域精确首命令，隐藏 native/knowledge 明示“首个可验证分歧”和前一个已验证边界到该命令的区间，含 `previousVerifiedBoundary/fromCommand/toCommand`。覆盖新局边界 0、已验证 chunk/加速快照、seek 候选发布/坏缓存回退与重启后的边界重置；测试命名不得声称恢复了未记录的隐藏精确首命令。
 - 续录：活动模态（inventory/arcana/throw/pendingUseConfirm）保存后续录；分支续录丢弃后缀；长前缀 save 不二次嵌历史。
-- 存储：内存 IDB 适配器下 v1→v2 升级保留 `checkpoint` 内容；`checkpoint` 与 `recordings/eventChunks` 同事务写入，写失败原记录不丢；旧 localStorage v1 键被忽略/提示且不迁移。
+- 存储：内存 IDB 适配器下 v1→v2 升级保留 `checkpoint` 内容；`checkpoint` 与 `recordings/eventChunks` 同事务写入，写失败原记录不丢；旧 localStorage v1 键拒绝执行且不迁移，可导出原 JSON 并永久关闭提示；存档来源与用户录像隔离。
 - 旧版本拒绝：录像 3、来源 1、whole-run-v3、foundation 5 的存档与录像在退休当前局前拒绝。
 - 体积/耗时与 P95 门禁：对 5A0 报告 §2.4/§2.6 同口径样本（control 与可构造的大状态代理）测实际 v4 字节（64 / 2048 / 2049 命令）、每命令新增成本中位/P95（逐事件与 chunk 边界分开）、save/导出/seek 耗时；若基线有 `scripts/phase5a0-size-probe.mjs` 可复用方法（勿改其输出语义），否则在仓库外脚本测量；与 5A0 数字并列，说明不可比之处，并写明是否触发回退。
 

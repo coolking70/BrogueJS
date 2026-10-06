@@ -1,3 +1,4 @@
+import { installRecordingScene } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { Game } from '../engine/Core/Game';
@@ -189,9 +190,9 @@ describe('X3-U4 first sightings in simulation, never rendering', () => {
             if (kind === 'stairs') g.grid.setTerrain(45, 9, T.STAIRS_DOWN);
             if (kind === 'enemy') mob(g, 45, 9).ticksUntilTurn = 100000;
         };
-        const g = scene(); setup(g); g.executeCommand('mouse_travel', { x: 50, y: 10 }); walk(g, true);
-        const expected = state(g), recording = g.exportRecording(), start = g.startNewGame.bind(g);
-        vi.spyOn(g, 'startNewGame').mockImplementation(options => { start(options); setup(g); });
+        installRecordingScene(setup);
+        const g = createHeadlessGame(33004, 'test'); g.executeCommand('mouse_travel', { x: 50, y: 10 }); walk(g, true);
+        const expected = state(g), recording = g.exportRecording();
         for (const render of [false, true]) {
             expect(g.loadReplay(recording)).toBe(true); g.onRenderRequested = render ? () => {} : null;
             for (const _event of recording.events) { g.replayStep(); if (render) g.update(); expect(g.replayError).toBeNull(); }

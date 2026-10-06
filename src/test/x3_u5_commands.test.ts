@@ -1,3 +1,4 @@
+import { installRecordingScene } from './support/recordingV4';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { Game } from '../engine/Core/Game';
@@ -203,7 +204,8 @@ describe('X3-U5 command intent, snapshots and replay', () => {
         expect(g.isAutoTraveling()).toBe(false); expect(g.inventoryAction).toBeNull();
     });
     it('all new commands and autonomous steps record, replay and seek with zero OOS (including depth travel)', () => {
-        const g = scene(); put(g, 15, 10, T.STAIRS_DOWN);
+        installRecordingScene(g => { room(g); put(g, 15, 10, T.STAIRS_DOWN); });
+        const g = createHeadlessGame(33005, 'test');
         g.executeCommand('auto_rest'); g.stepAutoPath(); g.executeCommand('escape');
         g.executeCommand('search_long'); drain(g);
         g.executeCommand('run', Direction.RIGHT); g.executeCommand('escape');
@@ -211,8 +213,7 @@ describe('X3-U5 command intent, snapshots and replay', () => {
             g.executeCommand('inventory_action', operation); g.executeCommand('escape');
         }
         g.executeCommand('travel_stairs', 'down'); drain(g);
-        const expected = world(g), recording = g.exportRecording(), start = g.startNewGame.bind(g);
-        vi.spyOn(g, 'startNewGame').mockImplementation(options => { start(options); room(g); put(g, 15, 10, T.STAIRS_DOWN); });
+        const expected = world(g), recording = g.exportRecording();
         for (const render of [false, true]) {
             expect(g.loadReplay(recording)).toBe(true); g.onRenderRequested = render ? () => {} : null;
             for (const event of recording.events) { g.replayStep(); if (render) g.update(); expect(g.replayError, String(event.index)).toBeNull(); }

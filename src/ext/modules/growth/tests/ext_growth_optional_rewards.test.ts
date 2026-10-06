@@ -1,3 +1,4 @@
+import { extensionDigest, checkpointExtensionDigest, initialRecordingCheckpoint } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import type { Game } from '../../../../engine/Core/Game';
@@ -129,7 +130,7 @@ describe('EXT-2c growth optional reward provider',()=> {
         expect(state(game).pending).toEqual([]);expect(state(game).storyReceipts).toEqual(['reward-test:growth.reward.review:chapter.one']);
         expect(game.extensionRuntime!.snapshot().modules['reward-test']).toEqual({status:'applied'});
         const after = game.extensionRuntime!.snapshot();
-        expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.extensions).toEqual(after);
+        expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.checkpoint!.domains.extensions).toBe(extensionDigest(after ?? null));
         command(game);expect(game.extensionRuntime!.snapshot()).toEqual(after);
         expect(game.absoluteTurnNumber).toBe(turn);expect(timeSystem.currentTick).toBe(tick);expect(rng.getState()).toEqual(random);
         const saved = game.toSaveSnapshot();expect(game.loadSnapshot(saved)).toBe(true);
@@ -257,7 +258,7 @@ function projected(game: Game) {
 }
 describe.each(compositionCases)('EXT-2c discovered narrative and growth %s',kind=> {
     it.each([false,true])('keeps choice, rewards, saves, replay and seek coherent with reverse registration=%s',reversed=> {
-        const game = realComposition(kind,reversed), origin = structuredClone(game.toSaveSnapshot().run.recordingOrigin!.initial);
+        const game = realComposition(kind,reversed), origin = structuredClone(initialRecordingCheckpoint(game));
         const target = game.extensionRuntime!.snapshot().foundation.world.entities.find(entity=>entity.owner === 'narrative' && entity.contentId === 'archive.keeper')!;
         expect(target).toBeDefined();
         expect(Math.max(Math.abs(target.x-game.player.x),Math.abs(target.y-game.player.y))).toBeLessThanOrEqual(target.interactionDistance);
@@ -272,12 +273,12 @@ describe.each(compositionCases)('EXT-2c discovered narrative and growth %s',kind
         expect(state(game).storyReceipts).toHaveLength(kind === 'ready' ? 1 : 0);
         expect(narrativeState(game).rewardReceipts).toHaveLength(1);
         const after = projected(game), count = game.recordedInputEvents.length;
-        expect(game.recordedInputEvents[count-1]!.extensions).toEqual(after.extensions);
+        expect(game.recordedInputEvents[count-1]!.checkpoint!.domains.extensions).toBe(extensionDigest(after.extensions ?? null));
         game.executeCommand('ext:command',choice);
         expect(game.recordedInputEvents).toHaveLength(count);expect(projected(game)).toEqual(after);
         // Repeated checkpoint snapshots cannot flush or duplicate rewards.
-        expect(game.extensionRuntime!.snapshot()).toEqual(after.extensions);
-        expect(game.extensionRuntime!.snapshot()).toEqual(after.extensions);
+        expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(after));
+        expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(after));
         expect(rng.getState()).toEqual(random);expect(game.absoluteTurnNumber).toBe(turn);expect(timeSystem.currentTick).toBe(tick);
         const savedAfter = structuredClone(game.toSaveSnapshot());
         expect(game.loadSnapshot(savedAfter)).toBe(true);expect(projected(game)).toEqual(after);
@@ -294,13 +295,13 @@ describe.each(compositionCases)('EXT-2c discovered narrative and growth %s',kind
         expect(game.hasCompleteRecording).toBe(true);expect(game.loadReplay(recording)).toBe(true);game.animationEnabled = false;
         for (const event of recording.events) {
             game.replayStep(true);expect(game.replayError).toBeNull();
-            expect(game.extensionRuntime!.snapshot()).toEqual(event.extensions);expect(rng.getState()).toEqual(event.rng);
+            expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(event));expect(rng.getState()).toEqual(event.rng);
         }
         expect(projected(game)).toEqual(final);
         for (const index of [0,1,2,3,recording.events.length]) {
             game.replaySeek(index);expect(game.replayError).toBeNull();expect(game.replayCursor).toBe(index);
             const expected = index ? recording.events[index-1]! : origin;
-            expect(game.extensionRuntime!.snapshot()).toEqual(expected.extensions);expect(rng.getState()).toEqual(expected.rng);
+            expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(expected));expect(rng.getState()).toEqual(expected.rng);
         }
     },30000);
 });

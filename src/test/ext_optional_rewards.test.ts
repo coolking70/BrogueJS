@@ -239,7 +239,7 @@ describe('2c entered-level queue and global fact sequence', () => {
             const save = game.toSaveSnapshot(); save.extensions!.foundation.pendingStoryFacts.push(injected);
             expect(game.loadSnapshot(save)).toBe(false); expect(game.extensionRuntime).toBe(active); expect(game.player).toBe(player);
             expect(active!.snapshot()).toEqual(before);
-            const replay = game.exportRecording(); replay.events[0]!.extensions!.foundation.pendingStoryFacts.push(injected);
+            const replay = game.exportRecording(); replay.events[0]!.checkpoint!.domains.extensions='0'.repeat(64);
             expect(game.loadReplay(replay)).toBe(false); expect(game.extensionRuntime).toBe(active); expect(game.player).toBe(player);
             expect(active!.snapshot()).toEqual(before);
         } finally { spy.mockRestore(); }

@@ -1,3 +1,4 @@
+import { continuingPrefix, extensionDigest, checkpointExtensionDigest } from '../../../../test/support/recordingV4';
 import { installedModuleSubsets } from '../../../../test/support/installedExtensions';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
@@ -95,6 +96,8 @@ describe('3b production combat lifecycle',()=>{
   sub.approvedRisks=[{targetId:future,risks:[{kind:'acid',target:{kind:'creature',id:future},message:'fixture approved risk'}]}];
   expect(game.loadSnapshot(saved)).toBe(false);expect(game.player).toBe(player);expect(game.extensionRuntime).toBe(runtime);
   sub.approvedRisks=[{targetId:oldTarget.id,risks:[{kind:'acid',target:{kind:'creature',id:oldTarget.id},message:'fixture historical risk'}]}];
+  // A deliberately edited world has no authentic recording prefix.
+  delete saved.run.recordingOrigin;
   expect(game.loadSnapshot(saved)).toBe(true);
  });
  it.each([{x:999999,y:0},{x:5,y:5}])('rejects forged locked geometry %j before replacing the old world',(cell)=>{
@@ -114,12 +117,12 @@ describe('3b production combat lifecycle',()=>{
   const recording=structuredClone(game.exportRecording()),saved=game.toSaveSnapshot();
   const expected=structuredClone(state(game)),random=rng.getState();
   const replay=createHeadlessGame(81,'test');expect(replay.loadReplay(recording)).toBe(true);replay.animationEnabled=false;
-  for(const event of recording.events){replay.replayStep(true);expect(replay.replayError).toBeNull();expect(replay.extensionRuntime!.snapshot()).toEqual(event.extensions);}
+  for(const event of recording.events){replay.replayStep(true);expect(replay.replayError).toBeNull();expect(extensionDigest(replay.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(event));}
   expect(state(replay)).toEqual(expected);expect(rng.getState()).toEqual(random);
   for(const index of [0,1,recording.events.length]){replay.replaySeek(index);expect(replay.replayError).toBeNull();expect(replay.replayCursor).toBe(index);}
   const loaded=createHeadlessGame(82,'test');expect(loaded.loadSnapshot(saved)).toBe(true);loaded.animationEnabled=false;
   acknowledge();loaded.executeCommand('ext:command',command('fixture.slash'));
-  expect(loaded.exportRecording().events.slice(0,recording.events.length)).toEqual(recording.events);
+  expect(loaded.exportRecording().events.slice(0,recording.events.length)).toEqual(continuingPrefix(recording));
  });
  it('records bounded real-command performance samples without claiming renderer FPS',()=>{
   const elapsed:number[]=[],cells:number[]=[];
@@ -145,11 +148,9 @@ describe('3b production combat lifecycle',()=>{
   expect(onError).toHaveBeenCalledTimes(2);
   for(const [message] of onError.mock.calls){expect(message).toContain('combat');expect(message).toContain('not installed');}
   const after=game.toSnapshot();after.savedAt=0;
-  // The refusal deliberately adds one coalesced error message; preserve the
-  // original mechanical-world assertion without pretending feedback is silent.
-  expect(after.run.logger.messages).toHaveLength(before.run.logger.messages.length+1);
-  expect(after.run.logger.messages[after.run.logger.messages.length-1]).toMatchObject({text:onError.mock.calls[0]![0],count:2});
-  after.run.logger=before.run.logger;
+  // File refusal is visible feedback; it cannot change the persistent archive.
+  expect(logger.displayMessages[logger.displayMessages.length-1]).toMatchObject({text:onError.mock.calls[0]![0]});
+  expect(after.run.logger).toEqual(before.run.logger);
   expect(after).toEqual(before);expect(rng.getState()).toEqual(random);expect(getNextEntityId()).toBe(nextId);
   expect(game.player).toBe(player);expect(game.extensionRuntime).toBe(runtime);expect(unload).not.toHaveBeenCalled();
  });

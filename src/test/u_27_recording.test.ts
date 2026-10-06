@@ -1,3 +1,4 @@
+import { rechain } from './support/recordingV4';
 import { describe, expect, it } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { ItemCategory } from '../engine/Items/Item';
@@ -10,7 +11,7 @@ describe('U27 command recording', () => {
         expect(food).toBeDefined();
         game.executeItemCommand('eat', food!);
         const recording = game.exportRecording();
-        expect(recording.version).toBe(3);
+        expect(recording.version).toBe(4);
         expect(recording.events.every(e => e.rng && e.turn !== undefined && e.decisions)).toBe(true);
         expect(game.loadReplay(recording)).toBe(true);
         while (game.replayCursor < recording.events.length && !game.replayError) game.replayStep();
@@ -24,7 +25,7 @@ describe('U27 command recording', () => {
         game.handlePlayerAction('wait');
         const recording = game.exportRecording();
         expect(game.loadReplay({ ...recording, version: 1 })).toBe(false);
-        recording.events[1]!.tick += 1;
+        recording.events[1]!.tick += 1; rechain(recording);
         expect(game.loadReplay(recording)).toBe(true);
         game.replayStep();
         expect(game.replayError).toBeNull();

@@ -1,3 +1,4 @@
+import { continuingPrefix } from './support/recordingV4';
 import { describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import type { Game, GameSnapshot } from '../engine/Core/Game';
@@ -9,8 +10,8 @@ const json = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 function world(game: Game) {
     const { savedAt: _savedAt, ...snapshot } = json(game.toSnapshot());
     // The replay reads the command log; it does not record another copy.
-    snapshot.run.recordedInputEvents = [];
-    snapshot.run.recordedInputIndex = 0;
+
+
     return snapshot;
 }
 
@@ -55,8 +56,13 @@ describe('UX-1D persistent complete recordings', () => {
         const snapshot = json(game.toSaveSnapshot());
         expect(snapshot.run.recordingOrigin).toBeUndefined();
         expect(game.loadSnapshot(snapshot)).toBe(true);
+        // V4 persists history only in a validated origin. This incomplete save
+        // reloads as world-only; a new command cannot fabricate a seed prefix.
+        expect(game.recordedInputEvents).toEqual([]);
+        const reloadedTurns = game.stats.turns;
         game.executeCommand('wait');
-        expect(game.recordedInputEvents).toHaveLength(count + 1);
+        expect(game.stats.turns).toBe(reloadedTurns + 1);
+        expect(game.recordedInputEvents).toEqual([]);
         expect(game.hasCompleteRecording).toBe(false);
         expect(game.toSaveSnapshot().run.recordingOrigin).toBeUndefined();
     });
@@ -113,8 +119,8 @@ describe('UX-1D persistent complete recordings', () => {
         expect(game.disturbed).toBe(false);
         for (let step = 0; step < 3 && game.isAutoTraveling(); step++) game.stepAutoPath();
         const complete = json(game.exportRecording()), expected = world(game);
-        expect(complete.events.length).toBeGreaterThan(saved.run.recordedInputEvents.length);
-        expect(complete.events.slice(saved.run.recordedInputEvents.length).every(event => event.action === 'auto_step')).toBe(true);
+        expect(complete.events.length).toBeGreaterThan(saved.run.recordingOrigin!.events.length);
+        expect(complete.events.slice(saved.run.recordingOrigin!.events.length).every(event => event.action === 'auto_step')).toBe(true);
         const independent = createHeadlessGame(3);
         expect(independent.loadReplay(complete)).toBe(true);
         replayTo(independent, complete.events.length);
@@ -132,7 +138,7 @@ describe('UX-1D persistent complete recordings', () => {
         for (let step = 0; step < 100 && game.isAdvancing; step++) game.stepAdvancement();
         expect(game.canExportRecording).toBe(true);
         const saved = json(game.toSaveSnapshot());
-        expect(saved.run.recordedInputEvents[0]!.turn).toBe(1);
+        expect(saved.run.recordingOrigin!.events[0]!.turn).toBe(1);
         expect(game.loadSnapshot(saved)).toBe(true);
         game.executeCommand('wait');
         expect(game.canExportRecording).toBe(false);
@@ -152,7 +158,7 @@ describe('UX-1D persistent complete recordings', () => {
         // Controlled terminal lifecycle fixture, not a claim to have played to D40.
         game.executeCommand('wait', undefined, () => game.triggerGameOver(won, 'fixture', superVictory));
         const recording = json(game.exportRecording());
-        expect(recording.events[0]!.end).toEqual({ won, superVictory, score: game.gameOverScore });
+        expect(recording.events[0]!.terminal).toEqual({ won, superVictory, score: game.gameOverScore });
         const snapshot = json(game.toSaveSnapshot());
         expect(game.loadSnapshot(snapshot)).toBe(true);
         expect(game.isGameOver).toBe(true);
@@ -160,9 +166,9 @@ describe('UX-1D persistent complete recordings', () => {
         expect(game.canExportRecording).toBe(true);
         expect(game.exportRecording().events).toEqual(recording.events);
         const changed = json(snapshot);
-        changed.run.recordedInputEvents[0]!.end!.score++;
-        expect(game.loadSnapshot(changed)).toBe(true);
-        expect(game.canExportRecording).toBe(false);
+        changed.run.recordingOrigin!.events[0]!.terminal!.score++;
+        expect(game.loadSnapshot(changed)).toBe(false);
+        expect(game.canExportRecording).toBe(true);
     });
 
     it('exports detached data and checkpoints without consuming either RNG stream', () => {
@@ -225,7 +231,7 @@ describe('UX-1D persistent complete recordings', () => {
         resumed.executeCommand('search');
         const complete = json(resumed.exportRecording());
         const completeWorld = world(resumed);
-        expect(complete.events.slice(0, prefix.events.length)).toEqual(prefix.events);
+        expect(complete.events.slice(0, prefix.events.length)).toEqual(continuingPrefix(prefix));
         expect(complete.events.map(event => event.index)).toEqual([0, 1, 2, 3]);
         expect(complete.events.map(event => event.decisions)).toEqual([[], [false], [true], []]);
 
@@ -255,14 +261,14 @@ describe('UX-1D persistent complete recordings', () => {
     it('checks empty prefixes against the saved new-game checkpoint', () => {
         const game = createHeadlessGame(27029);
         const snapshot = json(game.toSaveSnapshot());
-        expect(snapshot.run.recordedInputEvents).toHaveLength(0);
+        expect(snapshot.run.recordingOrigin!.events).toHaveLength(0);
         expect(game.loadSnapshot(snapshot)).toBe(true);
         expect(game.canExportRecording).toBe(true);
         expect(game.exportRecording().events).toHaveLength(0);
         const advanced = json(snapshot);
         advanced.run.absoluteTurnNumber++;
-        expect(game.loadSnapshot(advanced)).toBe(true);
-        expect(game.hasCompleteRecording).toBe(false);
+        expect(game.loadSnapshot(advanced)).toBe(false);
+        expect(game.hasCompleteRecording).toBe(true);
     });
 
     it('does not promote malformed, stale or explicitly incomplete prefixes on load', () => {
@@ -273,27 +279,30 @@ describe('UX-1D persistent complete recordings', () => {
         const corruptions: Array<(snapshot: GameSnapshot) => void> = [
             snapshot => { delete snapshot.run.recordingOrigin; },
             snapshot => { (snapshot.run as any).recordingOrigin = false; },
-            snapshot => { snapshot.run.recordingOrigin!.seed = '42'; },
+            snapshot => { snapshot.run.recordingOrigin!.header.seed = '42'; },
             snapshot => { (snapshot.run.recordingOrigin as any).inputState = null; },
             snapshot => { snapshot.run.recordingOrigin!.inputState.throwItemId = 999999; },
-            snapshot => { snapshot.run.recordedInputIndex++; },
-            snapshot => { snapshot.run.recordedInputEvents[0]!.index = 1; },
-            snapshot => { snapshot.run.recordedInputEvents.pop(); },
-            snapshot => { snapshot.run.recordedInputEvents[1]!.tick++; },
-            snapshot => { snapshot.run.recordedInputEvents[1]!.turn!++; },
-            snapshot => { snapshot.run.recordedInputEvents[1]!.depth++; },
-            snapshot => { snapshot.run.recordedInputEvents[1]!.player.x++; },
-            snapshot => { snapshot.run.recordedInputEvents[1]!.rng!.streams[0].a ^= 1; },
-            snapshot => { snapshot.run.recordedInputEvents[1]!.end = { won: false, superVictory: false, score: 0 }; },
+            snapshot => { snapshot.run.recordingOrigin!.prefixDigest = "0".repeat(64); },
+            snapshot => { snapshot.run.recordingOrigin!.events[0]!.index = 1; },
+            snapshot => { snapshot.run.recordingOrigin!.events.pop(); },
+            snapshot => { snapshot.run.recordingOrigin!.events[1]!.tick++; },
+            snapshot => { snapshot.run.recordingOrigin!.events[1]!.turn!++; },
+            snapshot => { snapshot.run.recordingOrigin!.events[1]!.levelRef = { kind: "dungeon", depth: 2 }; },
+            snapshot => { snapshot.run.recordingOrigin!.events[1]!.player.x++; },
+            snapshot => { snapshot.run.recordingOrigin!.events[1]!.rng!.streams[0].a ^= 1; },
+            snapshot => { snapshot.run.recordingOrigin!.events[1]!.terminal = { won: false, superVictory: false, score: 0 }; },
         ];
         for (const corrupt of corruptions) {
             const snapshot = json(original);
             corrupt(snapshot);
-            expect(game.loadSnapshot(snapshot)).toBe(true);
-            expect(game.hasCompleteRecording).toBe(false);
-            expect(() => game.exportRecording()).toThrow('fresh new game');
-            game.executeCommand('wait');
-            expect(game.toSaveSnapshot().run.recordingOrigin).toBeUndefined();
+            const player = game.player;
+            if (!('recordingOrigin' in snapshot.run)) {
+                expect(game.loadSnapshot(snapshot)).toBe(true);
+                expect(game.hasCompleteRecording).toBe(false);
+                expect(() => game.exportRecording()).toThrow('fresh new game');
+                game.executeCommand('wait');
+                expect(game.toSaveSnapshot().run.recordingOrigin).toBeUndefined();
+            } else { expect(game.loadSnapshot(snapshot)).toBe(false); expect(game.player).toBe(player); }
         }
     });
 });

@@ -1,3 +1,4 @@
+import { continuingPrefix, installRecordingScene, rechain } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -17,14 +18,16 @@ import { recordingJsonAtBoundary } from '../ui/recordingExport';
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 function arrange(g: Game, animated = false) {
     const result = setupDialogD4Scene(g, animated);
-    // Test-only seed reconstruction below reproduces this diagnostic world.
+    // The recording scene hook reproduces this world before the real initial root.
     // The browser fixture itself always revokes complete-recording eligibility.
     (g as any).recordingFromNewGame = true;
     return result;
 }
 function scene(animated = false) {
+    let result!: ReturnType<typeof arrange>;
+    installRecordingScene(game => { result = arrange(game, game.animationEnabled); });
     const g = createHeadlessGame(33441);
-    const result = arrange(g, animated);
+    g.animationEnabled = animated;
     g.executeItemCommand('use', result.item);
     for (let i = 0; i < 10; i++) g.executeCommand('move', { x: 1, y: 0 });
     expect(g.pendingArcana?.cursor).toEqual(result.aim);
@@ -42,11 +45,6 @@ function answer(g: Game, decision: boolean) {
     expect(g.resolveCommandDecision(token, decision)).toBe(true);
     expect(g.resolveCommandDecision(token, !decision)).toBe(false);
 }
-function reconstruct(g: Game) {
-    const start = g.startNewGame.bind(g);
-    vi.spyOn(g, 'startNewGame').mockImplementation(options => { const animated = g.animationEnabled; start(options); arrange(g, animated); });
-}
-
 describe('D4 blink command continuation and protocol', () => {
     it.each([false, true])('answer %s resumes the real command once and records only the risk action', decision => {
         const { g, item, landing } = scene();
@@ -84,7 +82,7 @@ describe('D4 blink command continuation and protocol', () => {
         const expected = g.toSaveSnapshot().run.justRested;
         expect(expected).toBe(true);
         expect(g.recordedInputEvents[g.recordedInputEvents.length - 1]).toMatchObject({ action: 'arcana:risk-confirm', data: aim, decisions: [decision] });
-        const recording = g.exportRecording(); reconstruct(g);
+        const recording = g.exportRecording();
         expect(g.loadReplay(recording)).toBe(true); g.replaySeek(recording.events.length);
         expect(g.replayError).toBeNull(); expect(g.pendingArcana).toBeNull();
         expect(g.toSaveSnapshot().run.justRested).toBe(expected);
@@ -93,8 +91,8 @@ describe('D4 blink command continuation and protocol', () => {
         const { g } = scene(true); g.onCommandConfirmRequest = () => {};
         g.executeCommand('confirm_target'); answer(g, decision); drain(g);
         const expected = world(g), recording = g.exportRecording(), save = g.toSaveSnapshot();
-        expect(recording.version).toBe(3); expect(save.version).toBe(3);
-        reconstruct(g);
+        expect(recording.version).toBe(4); expect(save.version).toBe(4);
+
         g.onCommandConfirmRequest = () => { expect(g.pendingCommandConfirmation).toBeNull(); };
         g.onConfirmRequest = () => { throw new Error('replay resolver'); };
         expect(g.loadReplay(recording)).toBe(true);
@@ -113,14 +111,15 @@ describe('D4 blink command continuation and protocol', () => {
         if (g.hasPendingConfirmation) answer(g, false);
         drain(g);
         const resumed = g.exportRecording();
-        expect(resumed.events.slice(0, recording.events.length)).toEqual(recording.events);
+        expect(resumed.events.slice(0, recording.events.length)).toEqual(continuingPrefix(recording));
         expect(g.loadReplay(resumed)).toBe(true); g.replaySeek(resumed.events.length);
         expect(g.replayError).toBeNull(); expect(g.replayCursor).toBe(resumed.events.length);
     });
     it.each(['missing', 'surplus'])('new action rejects %s answers as OOS without Host', kind => {
         const { g } = scene(); g.onConfirmRequest = () => false; g.executeCommand('confirm_target');
         const recording = g.exportRecording(); recording.events[recording.events.length - 1]!.decisions = kind === 'missing' ? [] : [false, true];
-        reconstruct(g); g.onConfirmRequest = () => { throw new Error('replay resolver'); };
+        rechain(recording);
+         g.onConfirmRequest = () => { throw new Error('replay resolver'); };
         g.onCommandConfirmRequest = () => { expect(g.pendingCommandConfirmation).toBeNull(); };
         expect(g.loadReplay(recording)).toBe(true); g.replaySeek(recording.events.length);
         expect(g.replayError).toContain(`OOS at command ${recording.events.length}`);
@@ -129,8 +128,8 @@ describe('D4 blink command continuation and protocol', () => {
     it.each(['step', 'seek', 'playing'])('old approved confirm_target retains its answerless interpretation in %s', mode => {
         const { g } = scene(); g.onConfirmRequest = () => true; g.executeCommand('confirm_target');
         const recording = g.exportRecording();
-        Object.assign(recording.events[recording.events.length - 1]!, { action: 'confirm_target', decisions: [] });
-        const expected = world(g); reconstruct(g);
+        Object.assign(recording.events[recording.events.length - 1]!, { action: 'confirm_target', decisions: [] }); rechain(recording);
+        const expected = world(g);
         g.onConfirmRequest = () => { throw new Error('historical UI'); };
         g.onCommandConfirmRequest = () => { expect(g.pendingCommandConfirmation).toBeNull(); };
         expect(g.loadReplay(recording)).toBe(true);
@@ -144,8 +143,8 @@ describe('D4 blink command continuation and protocol', () => {
     });
     it('old cancellation remains an information gap; no checkpoint inference or manufactured answer', () => {
         const { g } = scene(); g.onConfirmRequest = () => false; g.executeCommand('confirm_target');
-        const recording = g.exportRecording(); Object.assign(recording.events[recording.events.length - 1]!, { action: 'confirm_target', decisions: [] });
-        reconstruct(g); expect(g.loadReplay(recording)).toBe(true); g.replaySeek(recording.events.length);
+        const recording = g.exportRecording(); Object.assign(recording.events[recording.events.length - 1]!, { action: 'confirm_target', decisions: [] }); rechain(recording);
+         expect(g.loadReplay(recording)).toBe(true); g.replaySeek(recording.events.length);
         expect(g.replayError).toContain('OOS'); expect(recording.events[recording.events.length - 1]!.decisions).toEqual([]);
     });
     it('P0 unsampled flare uses only the same cosmetic prefix as synchronous refusal, never a second prefix', () => {

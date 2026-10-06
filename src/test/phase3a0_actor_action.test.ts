@@ -196,7 +196,7 @@ describe('3a0 engine actor preparation and synchronous authority', () => {
         });
         expect(() => f.game.toSnapshot()).toThrow('fixture');
         expect(() => f.game.exportRecording()).toThrow('fixture');
-        expect(createHeadlessGame(7301, 'test').toSnapshot().version).toBe(3);
+        expect(createHeadlessGame(7301, 'test').toSnapshot().version).toBe(4);
     });
     it('rolls back fee/ID on bounded sink failure and revokes the authority', () => {
         const f = fixture(); vi.spyOn(f.scheduler, 'commitBundle').mockImplementation(() => { throw new Error('Injected commit failure'); });

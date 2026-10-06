@@ -1,3 +1,5 @@
+import { validateWorld5, assertWorldLevelOwnership } from '../../ext/world5';
+import { isLoggerSnapshot } from '../Systems/Logger';
 import { getNextEntityId, restoreNextEntityId } from '../../entities/Creature';
 import { assertNativeSpatial, assertSingleCellPlayer, CreatureSpatial, footprintOf, spatialCatalogFor } from '../Movement/CreatureSpatial';
 import { regionContains, validOwnedRegions } from '../../ext/regions';
@@ -32,7 +34,7 @@ import type { GameSnapshotItem, GameSnapshotMonster, GameSnapshotPlayer, EntityS
 import type { RandomState } from '../Random';
 import type { Pos } from '../../types';
 
-export const WHOLE_RUN_SCHEMA = 'brogue-web-whole-run-v3' as const;
+export const WHOLE_RUN_SCHEMA = 'brogue-web-whole-run-v4' as const;
 
 /** The run section is detached with the same JSON boundary as the original
  * Game method, including omission of undefined values. */
@@ -66,7 +68,7 @@ import type { ExtensionSnapshot } from '../../ext/types';
 
 export interface GameSnapshot extends LevelSnapshot {
     extensions?: ExtensionSnapshot;
-    /** U01 entity envelope version; schema discriminates whole-run saves. */
+    /** Shared whole-run envelope; entity row/graph codec has no independent version slot. */
     version: number;
     schema: typeof WHOLE_RUN_SCHEMA;
     savedAt: number;
@@ -182,7 +184,7 @@ export function toWholeRunSnapshot(source: WholeRunProjection): GameSnapshot {
     ], [...source.pendingFallenByDepth.values()]);
     return {
         ...source.snapshotLevel(source.depth, source.active),
-        version: 3, schema: WHOLE_RUN_SCHEMA, savedAt: Date.now(),
+        version: 4, schema: WHOLE_RUN_SCHEMA, savedAt: Date.now(),
         seed: source.currentSeed, rngState: source.services.rngState(), levelSeeds: copyLevelSeeds(source.levelSeeds),
         currentLevelDepth: source.currentLevelDepth ?? source.depth,
         levels: levels.map(([depth, level]) => source.snapshotLevel(depth, level)), pendingFallenByDepth, pendingFallenItemsByDepth,
@@ -467,9 +469,26 @@ function decodeNativeSpatialWorld(snapshot: GameSnapshot, graph: ReturnType<type
     return spatialLevels;
 }
 
+/** Native ownership facts for economic home references. Pending actors resolve
+ * by their actual native identity, as do actors on other floors. Unresolved
+ * historical IDs cannot borrow Items/Player or an unrelated live graph node.
+ * No IDs or persistent state are allocated. */
+export function world5SnapshotContext(s: GameSnapshot) {
+    const layers = [s, ...s.levels];
+    const actors = new Map(layers.flatMap(l => [...l.monsters, ...l.dormantMonsters].map(m => [m.id, l.depth] as const)));
+    for (const pending of s.pendingFallenByDepth) for (const actor of pending.monsters) actors.set(actor.id, pending.depth);
+    const occupiedEntityIds = new Set([s.player.id, ...s.entityGraph.items.map(i => i.id),
+        ...s.items.map(i => i.id), ...s.player.inventory.map(i => i.id), ...s.levels.flatMap(l => l.items.map(i => i.id)),
+        ...s.pendingFallenItemsByDepth.flatMap(q => q.items.map(i => i.id)),
+        ...[...s.entityGraph.monsters, ...(s.purgatory ?? []), ...s.pendingFallenByDepth.flatMap(q => q.monsters)]
+            .filter(m => m.hp > 0).map(m => m.id)]);
+    return { active: s.depth, visited: s.levelSeeds, cachedDepths: s.levels.map(l => l.depth),
+        owners: s.extensions?.manifest.modules.map(m => m.id) ?? [], actors, occupiedEntityIds, nextEntityId: s.run.nextEntityId };
+}
+
 export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatalog): value is GameSnapshot {
     const s = value as GameSnapshot | null;
-    if (!s || s.version !== 3 || s.schema !== WHOLE_RUN_SCHEMA || !isSeed(s.seed)
+    if (!s || s.version !== 4 || s.schema !== WHOLE_RUN_SCHEMA || !isSeed(s.seed)
         || !Random.isState(s.rngState) || !isLevelSeeds(s.levelSeeds)
         || s.currentLevelDepth !== s.depth || !s.run || !s.flavors || !s.player || !s.entityGraph
         || !Number.isFinite(s.ticksTillUpdateEnvironment) || typeof s.pendingEnchantment !== 'boolean'
@@ -480,12 +499,27 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
         || !Number.isFinite(s.run.goldGenerated) || !Number.isFinite(s.run.currentTick)
         || !Number.isSafeInteger(s.run.nextEntityId) || s.run.nextEntityId < 1
         || !Number.isFinite(s.run.monsterSpawnFuse) || !Number.isFinite(s.run.absoluteTurnNumber)
-        || typeof s.run.pendingIdentify !== 'boolean' || !s.run.logger
+        || typeof s.run.pendingIdentify !== 'boolean' || !isLoggerSnapshot(s.run.logger)
         || (s.run.seenBodyCoreIds !== undefined && (!Array.isArray(s.run.seenBodyCoreIds)
             || new Set(s.run.seenBodyCoreIds).size !== s.run.seenBodyCoreIds.length
             || s.run.seenBodyCoreIds.some(id => !Number.isSafeInteger(id) || id < 1 || id >= s.run.nextEntityId)))
         || !Array.isArray(s.levels) || !Array.isArray(s.pendingFallenByDepth) || !Array.isArray(s.pendingFallenItemsByDepth)
         || (s.purgatory !== undefined && !Array.isArray(s.purgatory))) return false;
+    const identities = s.flavors.identities;
+    const flavorId = (v: unknown) => typeof v === 'string' && /^(?:(potion|wand|staff|ring|charm)\.(0|[1-9][0-9]*)|scroll\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)){2,3})$/.test(v);
+    if (!identities || !Array.isArray(identities.kinds) || !Array.isArray(identities.staffSlots)
+        || !identities.kinds.every(row => Array.isArray(row) && row.length === 2 && typeof row[0] === 'string' && flavorId(row[1]))
+        || new Set(identities.kinds.map(row => row[0])).size !== identities.kinds.length
+        || !identities.staffSlots.every(flavorId)) return false;
+    const flavorKinds = new Map(identities.kinds);
+    for (const [key, prefix] of [['potions', 'potion.'], ['scrolls', 'scroll.'], ['arcana', null]] as const) {
+        const rows = s.flavors[key];
+        if (!Array.isArray(rows) || !rows.every(row => Array.isArray(row) && row.length === 2
+            && typeof row[0] === 'string' && flavorKinds.has(row[0])
+            && (!prefix || flavorKinds.get(row[0])!.startsWith(prefix)))) return false;
+    }
+    if (!Array.isArray(s.flavors.staffSlots) || s.flavors.staffSlots.length !== identities.staffSlots.length
+        || identities.staffSlots.some(id => !id.startsWith('staff.'))) return false;
     const depths = new Set<number>();
     for (const level of [s, ...s.levels]) {
         if (!level || !Number.isInteger(level.depth) || level.depth < 1 || level.depth > CE_DEEPEST_LEVEL
@@ -513,6 +547,10 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
     if (s.pendingFallenItemsByDepth.some(q => !q || !Number.isInteger(q.depth) || q.depth < 1 || q.depth > CE_DEEPEST_LEVEL
         || !Array.isArray(q.items) || q.items.some(item => !Number.isFinite(item.spawnTurnNumber)))) return false;
     if (!Array.isArray(s.player.inventory)) return false;
+    if (s.run.world5) {
+        try { assertWorldLevelOwnership(s, new Map(s.levels.map(l => [l.depth,l])), { monsters: s.pendingFallenByDepth.flatMap(q => q.monsters), items: s.pendingFallenItemsByDepth.flatMap(q => q.items) }); }
+        catch { return false; }
+    }
     const items = [...s.items, ...s.player.inventory, ...s.entityGraph.items,
         ...s.levels.flatMap(l => l.items), ...s.pendingFallenItemsByDepth.flatMap(q => q.items)];
     // New required persisted knowledge, never synthesized from old recharge state.
@@ -534,6 +572,10 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
     } catch { return false; }
     if (rows.some(m => !Number.isInteger(m.entersLevelIn) || m.entersLevelIn < 0 || m.entersLevelIn > 150
         || !Number.isInteger(m.approaching) || m.approaching < 0 || m.approaching > 7)) return false;
+    if (Object.prototype.hasOwnProperty.call(s.run, 'world5')) {
+        try { validateWorld5(s.run.world5, world5SnapshotContext(s)); }
+        catch { return false; }
+    }
     if (s.mode !== 'test' && s.levelSeeds.some((level, i) => level.visited && !depths.has(i + 1))) return false;
     return true;
 }

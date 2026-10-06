@@ -1,3 +1,4 @@
+import { extensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import type { Game } from '../../../../engine/Core/Game';
@@ -104,7 +105,7 @@ describe('EXT-1d native skill command replay and scheduling integration', () => 
         finish(game);
         expect(game.recordedInputEvents[before]).toBe(pending);
         expect(game.recordedInputEvents).toHaveLength(before + 1);
-        expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.extensions).toEqual(game.extensionRuntime!.snapshot());
+        expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.checkpoint!.domains.extensions).toBe(extensionDigest(game.extensionRuntime!.snapshot() ?? null));
         const snapshot = game.extensionRuntime!.snapshot(); finish(game);
         expect(game.extensionRuntime!.snapshot()).toEqual(snapshot); expect(game.recordedInputEvents).toHaveLength(before + 1);
     });

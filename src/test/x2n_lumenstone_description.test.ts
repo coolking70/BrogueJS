@@ -70,7 +70,7 @@ describe.each([false, true])('X2n victory quantities (superVictory=%s)', superVi
         const recording = game.exportRecording();
         const score = superVictory ? 195000 : 160000;
         expect(recording.events).toHaveLength(1);
-        expect(recording.events[0]!.end).toEqual({ won: true, superVictory, score });
+        expect(recording.events[0]!.terminal).toEqual({ won: true, superVictory, score });
         expect(readHighScores()[0]).toMatchObject({
             score, description: `${superVictory ? 'Mastered' : 'Escaped'} the Dungeons of Doom with 25 lumenstones!`
         });

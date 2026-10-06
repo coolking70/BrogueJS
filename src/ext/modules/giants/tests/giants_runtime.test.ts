@@ -1,3 +1,4 @@
+import { continuingPrefix, extensionDigest, checkpointExtensionDigest } from '../../../../test/support/recordingV4';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { getInstalledModuleDescriptors, createExtensionRegistry } from '../../../catalog';
 import * as catalog from '../../../catalog';
@@ -117,14 +118,14 @@ describe('giants natural run and original encounter', () => {
       game.executeCommand('wait');
       const continuation = json(game.exportRecording()),
         continued = mechanical(game);
-      expect(continuation.events.slice(0, recording.events.length)).toEqual(recording.events);
+      expect(continuation.events.slice(0, recording.events.length)).toEqual(continuingPrefix(recording));
       expect(game.loadReplay(recording)).toBe(true);
       game.animationEnabled = false;
       while (game.replayCursor < recording.events.length) {
         game.replayStep(true);
         expect(game.replayError).toBeNull();
       }
-      expect(game.toSnapshot().extensions).toEqual(expected.extensions);
+      expect(extensionDigest(game.toSnapshot().extensions ?? null)).toBe(checkpointExtensionDigest(expected));
       expect(rng.getState()).toEqual(expected.rngState);
       for (const index of [0, Math.floor(recording.events.length / 2), recording.events.length]) {
         game.replaySeek(index);
@@ -137,7 +138,7 @@ describe('giants natural run and original encounter', () => {
         game.replayStep(true);
         expect(game.replayError).toBeNull();
       }
-      expect(game.toSnapshot().extensions).toEqual(continued.extensions);
+      expect(extensionDigest(game.toSnapshot().extensions ?? null)).toBe(checkpointExtensionDigest(continued));
       expect(rng.getState()).toEqual(continued.rngState);
     },
     120000

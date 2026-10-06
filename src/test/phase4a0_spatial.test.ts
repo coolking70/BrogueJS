@@ -154,7 +154,7 @@ describe('4a0 strict schema and unopened capabilities', () => {
         expect(g.loadSnapshot(bad)).toBe(false); expect(g.player).toBe(previous); expect(rng.getState()).toEqual(before);
         const unopened = structuredClone(saved); unopened.run.spatialWorld = { schema: 1, definitions: { footprints: [], bodies: [] }, groups: [] }; expect(g.loadSnapshot(unopened)).toBe(false);
         const old = structuredClone(saved); old.version = 2; expect(g.loadSnapshot(old)).toBe(false);
-        const recording = g.exportRecording(); expect(recording.version).toBe(3); recording.version = 2; expect(g.loadReplay(recording)).toBe(false);
+        const recording = g.exportRecording(); expect(recording.version).toBe(4); (recording as any).version = 2; expect(g.loadReplay(recording)).toBe(false);
         const m = rat(); m.spatial = { schema: 1, footprintId: 'builtin:square-2', pose: 'r0', actionLockInTicks: 0 }; expect(() => g.monsters.push(m)).toThrow('not open'); expect(g.monsters).not.toContain(m);
         g.player.spatial = m.spatial; const tick = g.absoluteTurnNumber; expect(() => g.executeCommand('wait')).toThrow('not open'); expect(g.absoluteTurnNumber).toBe(tick); delete g.player.spatial;
         expect(Object.prototype.hasOwnProperty.call(g.toSnapshot().run, 'spatialWorld')).toBe(false);

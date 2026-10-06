@@ -16,7 +16,7 @@
 | I4 篝火 vs RestPoint | §7、§11 | combat 篝火仍归 combat；RestPoint 是独立 foundation 记录；5A2 加 WorldRestProduction/篝火回归 |
 | I5 背包语义 | §5.1 | FOOD 按 quantity 占格；native 输出不带模块字段；unitWeight 移出机械包 |
 | I6 8192 | §5.3、§10 | 8192 是 C5 操作接纳预算，为原生物品留余量；load 只校验 C5 自有根 |
-| I7 录像摘要成本与存储 | §10.2 | 逐事件只摘 dirty 域+廉价诊断；完整原生摘要只在 256 命令块边界/快照点；经典局不增逐事件成本；同库 `brogue-web-saves` 新 store；64 MiB 按录像计 |
+| I7 录像摘要成本与存储 | §10.2 | 逐事件只摘 dirty 域+廉价诊断；完整原生摘要只在 256 命令块边界/快照点；经典局两次 SHA-256/事件按 2026-10-06 裁定及 P95 门槛验收；同库 `brogue-web-saves` 新 store；64 MiB 按录像计 |
 | I8 精确 foundation 匹配 | §1.2、§9(h) | crafting 声明 `worldSdk: 1` 独立检查；foundation 号用导出常量；版本计划表 |
 | I9 5A2-S 余量 | §5.1、§5.6、§7、§11 | 劳动信用固定 elapsed×1；回血读管线键；统一 Item 扩展模型与 stacksWith；全 Item 根枚举器；combat 格式变化合并一次 |
 | I10 seedKey 可重掷 | §3.4 | seedKey 用稳定营地 slot，去掉 instance/levelKey；新增固定向量 |
@@ -35,7 +35,7 @@
 | manifest / foundation | schema=1 / **5**（`src/ext/descriptor.ts` 键白名单含字面量 `foundation: 5`） | 见 §1.2 版本计划 |
 | growth / narrative / combat / giants module·rules | 1.7.0 / 1.4.0 / 1.5.0 / 1.0.0 | 5A1 不改；combat 格式变化见 §1.2 |
 | narrative state / input | 4 / 2 | 不改 |
-| 整局 / 实体 envelope / 录像 / 来源 | whole-run-v3 / 3 / 3 / RecordingOrigin 1 | 见 §1.2 |
+| 整局 / 实体 envelope / 录像 / 来源 | whole-run-v3 / 实体无独立槽（共用整局外壳） / 3 / RecordingOrigin 1 | 见 §1.2 |
 
 模块没有统一的独立 input/display/state 版本槽，不能虚构“所有模块 state=1”。growth 的 GrowthState 无独立 schema 号；combat 的 scheduler、resource、bonfire 等子状态各有校验；narrative 的 displayVersion 来自显示包。所有旧格式统一拒绝，不迁移，不剥离缺失模块续玩。
 
@@ -43,7 +43,7 @@
 
 | 步骤 | 计划分配 | 条件 |
 | --- | --- | --- |
-| 5A1 + 5A1-R（同一格式批次） | foundation **6**；whole-run **v4**；录像 **4**；RecordingOrigin **2**；实体 envelope 仅在确有实体字段/根变化时随批次升 4 | 必然发生（新增 run.world5/录像格式） |
+| 5A1 + 5A1-R（同一格式批次） | foundation **6**；whole-run **v4**；录像 **4**；RecordingOrigin **2**；实体行/图不变、无独立 codec 槽，共用整局 v4（维护者 2026-10-06 选项 1） | 必然发生（新增 run.world5/录像格式） |
 | 5A2 | foundation **7** | 仅当保存格式确有变化（预计会：MATERIAL、容器/escrow 根、`run.actorActions`、`Item.worldItem`） |
 | 5A2 combat 格式 | combat state/module 版本只升一次 | 5A2 的 scheduler/nextActionId 迁出与 5A2-S 的容量物化合并为同一 combat 格式变化；若 5A2-S 取消或推迟，由维护者在 5A2 单独分配 |
 | 5A2-S | foundation/growth/combat 号仅在其格式变化时升 | 不预占；不得改任何 C5 DTO（§11） |
@@ -837,15 +837,24 @@ WorldCommit.chargedTicks 表示此次接收的耗时义务（timed-work 为首�
 
 ### 10.2 录像摘要策略（I7；修订 5A0 报告 §3.1/§3.3 的逐事件全量摘要）
 
+**维护者 2026-10-06 审查裁定（H1/H2/H3/M1/M2/M3/L3）**：
+
+- 存档来源镜像与用户“保存录像”是不同记录：`save-origin` 与 `current` 的 manifest/chunk/cache 键互相隔离。保存游戏（含 seek 后保存）只更新存档及来源镜像，绝不截断、替换或清理用户录像与其缓存；“单一当前录像”仅指用户录像 UX，不授权存档覆盖它。
+- ResidentRecord.levelRef 是经济归属层；原生实体在 pending、其它活动/缓存层，或死亡后保留历史登记，均为合法形状。原生离层停止相关工作并冻结为不可达；死亡登记复活后不自动重启旧工作。死亡 ledger 状态表示该经济登记最后生命周期，不强制抹除复活实体。历史无实体 ID 仍须满足 nextEntityId/dead ledger，不能借用 Player/Item 身份。写出与读入 world5 使用同一引用校验。坠入已缓存管理层的单体及整体身体均先归 pending，结算后才发布与落位。
+- 六个机械摘要域均不含本地化正文/显示名。日志可保留稳定消息证据或剔除正文；显示名与随机外观映射使用稳定 id，玩家自行输入的称呼/铭文保留。英文录制/中文回放、中途切语言和译文修订不得产生机械 OOS；不得用改变测试切语言时机掩盖根因。
+- 公开收据滚动保留最近 128 条；淘汰不降低 ordinal，高水位去重不依赖历史扫描。
+- 旧存档保留且在菜单可见，显示不兼容原因；只有保存前明确确认才覆盖。旧 localStorage 录像拒绝执行，但可下载原 JSON，提示可永久关闭而不删除 JSON。
+- 经典局逐事件两次 SHA-256（inventoryStamp 与 chainDigest）获准保留，以新增 P95 ≤1 ms 为验收；不增加逐事件 native/knowledge 完整摘要。0 营地扩展门槛仍为 ≤5 ms，chunk 单列。本裁定修订下面表格中“不增加任何逐事件摘要”的字面限制。
+
 5A0 实测全量 canonical+SHA-256 在 0 营地约 21 ms、8 营地约 190 ms，逐事件全量不可接受。冻结为分层摘要：
 
 | 时机 | 摘要内容 |
 | --- | --- |
 | 每条事件 | **dirty 跟踪域**：extensions（模块 state/components/foundation world，写入口已集中在 runtime）、world5、actorActions——只重算被显式写入口标脏的叶；加**廉价诊断**：tick、turn、simulationTicks、levelRef、玩家位置、玩家 HP、背包 `inventoryStamp`、双 RNG 状态与计数 |
 | 每 256 条命令的 chunk 边界、每个加速快照点、录像末尾 | **完整机械摘要**：native、knowledge 全量重算，加上述各域的全量重算并与增量值比对 |
-| 经典局（无 extensions/world5/actorActions） | 每事件只记今天已有的 tick/depth/player/turn/rng 诊断，**不增加任何逐事件摘要**；完整原生摘要仅在 chunk 边界/快照点 |
+| 经典局（无 extensions/world5/actorActions） | 每事件保留 tick/depth/player/turn/rng、inventoryStamp 与 chainDigest；**获准两次 SHA-256/事件，新增 P95 ≤1 ms**；完整原生摘要仅在 chunk 边界/快照点 |
 
-- replay 在 chunk 边界发现 native/knowledge 不一致时，回到上一个已验证边界，以诊断模式逐事件全量重算定位首个不一致命令后停止并报告（OOS 诊断不放宽检测，只是推迟定位）。
+- **维护者 2026-10-06 裁定（选项 1，修订本条 OOS 验收语义）**：保留 r2 的摘要成本、格式与上述检测节奏，不增加逐事件 native/knowledge 证据。隐藏的 native/knowledge 分歧在首个可验证的不一致完整摘要命令处停止，报告该 command、域、tick、玩家位置，以及**前一个已验证边界到该命令的区间**；不得称为隐藏变化的精确首命令。边界 0 表示已验证的新局起点，其后仅接受已通过完整摘要校验的命令边界（含已验证的加速快照点）。区间为 `(previousVerifiedBoundary, command]`，同时提供包含两端的命令范围 `fromCommand=previousVerifiedBoundary+1`、`toCommand=command`；重放和 seek 均须保留这些诊断字段。逐事件 dirty 域仍精确到首个分歧命令，廉价诊断/双 RNG 仍按每条事件验证。本裁定取代原“诊断重放定位 native/knowledge 精确首命令”的要求，不放宽摘要覆盖与检测节奏，也不改变格式版本。
 - 摘要域字段清单与 `scripts/u03-state-contract.json` 绑定：每个 kind=`run` 的字段必须恰好属于一个摘要域，kind=`derived/session/reset` 字段必须列入排除清单；新测试校验二者一致，漏登记即失败。持久知识/记忆不得作为显示缓存排除。
 - **5A1-R 门禁**：实测“每条命令新增成本 P95”。拟议阈值（5A1-R 报告中由维护者确认）：经典 control ≤1 ms；0 营地扩展局 ≤5 ms；预算内 8 营地代理样本如实报告。chunk 边界全量摘要的耗时单独报告，不摊入逐命令 P95。**超标回退**：依次 (1) 把完整原生摘要从每 256 条放宽到每 1024 条/仅快照点；(2) 若 dirty 域仍超标，退为仅在 chunk 边界摘要这些域、逐事件只保留诊断。每次回退都须在报告中写明检测粒度的损失，不得缩小摘要覆盖范围。
 - 存储：录像与存档**同一个 IndexedDB 库 `brogue-web-saves`**，库版本 1→2，保留 `checkpoint` store，新增 `recordings`、`eventChunks`、`snapshots` 三个 store；一次保存在同一 readwrite 事务中覆盖 `checkpoint` 与相关 `recordings/eventChunks`（save 与来源前缀同事务）。64 MiB 加速快照缓存与 ≤128 份上限**按每个录像**计算。保持现有“单一当前录像”的 UX（替换 `brogue-web-replay-v1` 的单键语义），C5-1 不新增录像列表；JSON 导入/导出保留。
@@ -853,6 +862,8 @@ WorldCommit.chargedTicks 表示此次接收的耗时义务（timed-work 为首�
 ### 10.3 完成条件
 
 5A1–5A3 必须验证：零启用机械/RNG 不变；真实 Game 安全点 save/load/replay/seek/续录；重复/陈旧/确认 No/跨层/终局/坏档在退休旧局前拒绝；在场/NPC 一次 prelude 与正耗时；离线分段/长尾（对参考迭代器）/精度切换/跨层写顺序；物品和预留守恒；同步多参与者失败注入下全对象图、引用身份、ID/计数/RNG/消息/缓存恢复。不得以只比 JSON 的测试代替独立写集差分。5A0 类型草案检查只说明声明互相可解析，不说明任一功能可用。
+
+5A1-R 的 OOS 验收按 §10.2 的维护者 2026-10-06 裁定：dirty 域精确首命令，隐藏 native/knowledge 报首个可验证分歧命令及完整区间字段；测试与诊断文本不得混称两种精度。此裁定关闭该合同语义阻断，§11 的 5A2 硬前置仍须待 5A1-R 验收并合入 commit 后关闭。
 
 ## 11 步骤顺序、版本与 5B 派发前冻结清单
 

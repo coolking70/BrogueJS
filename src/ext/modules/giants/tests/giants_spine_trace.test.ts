@@ -7,7 +7,7 @@ const hash=(value:unknown)=>createHash('sha256').update(canonical(value)).digest
 export function captureSpineNaturalTrace() {
   const {game,boss,state}=naturalSpine(),s=game.toSnapshot(),recording=game.exportRecording();
   return {schema:1,seed:GIANTS_SPINE_ACCEPTANCE_SEED,mode:game.mode,depth:game.depth,commands:recording.events.length,
-    commandsHash:hash(recording.events.map(e=>({action:e.action,data:e.data,decisions:e.decisions,tick:e.tick,turn:e.turn,depth:e.depth}))),
+    commandsHash:hash(recording.events.map(e=>({action:e.action,data:e.data,decisions:e.decisions,tick:e.tick,turn:e.turn,depth:e.levelRef.kind==='dungeon'?e.levelRef.depth:-1}))),
     nativeWorldHash:hash({grid:s.grid,monsters:s.monsters,items:s.items,rng:s.rngState}),extensionsHash:hash(s.extensions),
     rng:s.rngState,state,boss:{id:boss.id,typeId:boss.typeId,loc:boss.loc,hp:boss.hp,maxHp:boss.maxHp,spatial:boss.spatial}};
 }

@@ -1,3 +1,4 @@
+import { extensionDigest } from './support/recordingV4';
 import { describe, expect, it, vi } from 'vitest';
 import { ExtensionRegistry } from '../ext/registry';
 import { ExtensionRuntime, type ExtensionPorts } from '../ext/runtime';
@@ -24,7 +25,7 @@ describe('EXT-1a0 foundation versions and retained data', () => {
         const identity = { schema: 1, version: '1.0.0', fingerprint: `sha256:${'a'.repeat(64)}` };
         registry.register('probe', '1.0.0', factory, identity);
         const header = registry.manifest(['probe']);
-        expect(header.foundation).toBe(5); expect(factory).not.toHaveBeenCalled();
+        expect(header.foundation).toBe(6); expect(factory).not.toHaveBeenCalled();
         for (const change of [
             (v: typeof header) => { delete v.foundation; },
             (v: typeof header) => { v.modules[0]!.rules!.version = '1.0.1'; },
@@ -137,7 +138,8 @@ describe('EXT-1a0 command-boundary collection', () => {
             for (const unit of units.slice(0, 6)) expect(components[String(unit.id)]).toBeDefined();
             expect(components[String(observed!.id)]).toBeUndefined();
             expect(game.everSeenMonsters.has(observed!)).toBe(true);
-            expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.extensions!.components).toEqual(components);
+            expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.checkpoint!.domains.extensions).toBe(extensionDigest(game.extensionRuntime!.snapshot()));
+            expect(game.extensionRuntime!.snapshot().components).toEqual(components);
         } finally { spy.mockRestore(); }
     });
     it('finalizes animated checkpoints after collection and reproduces the same save/replay envelope', () => {
@@ -150,7 +152,7 @@ describe('EXT-1a0 command-boundary collection', () => {
         for (let i = 0; i < 100 && game.isAdvancing; i++) game.stepAdvancement();
         expect(game.isAdvancing).toBe(false); expect(collector).toHaveBeenCalled();
         const state = game.extensionRuntime!.snapshot();
-        expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.extensions).toEqual(state);
+        expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]!.checkpoint!.domains.extensions).toBe(extensionDigest(state ?? null));
         const recording = game.exportRecording(), saved = game.toSaveSnapshot();
         const restored = createHeadlessGame(702, 'test');
         expect(restored.loadSnapshot(saved)).toBe(true); expect(restored.extensionRuntime!.snapshot()).toEqual(state);

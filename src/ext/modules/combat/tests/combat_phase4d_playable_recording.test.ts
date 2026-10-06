@@ -1,3 +1,4 @@
+import { installRecordingScene } from '../../../../test/support/recordingV4';
 import { afterEach, expect, it, vi } from 'vitest';
 import "../../../../i18n";
 import { Game } from '../../../../engine/Core/Game';
@@ -11,25 +12,25 @@ import { canonical } from '../../../json';
 
 afterEach(()=>{vi.restoreAllMocks();logger.reset();});
 const detached=<T>(v:T):T=>JSON.parse(JSON.stringify(v));
-const mechanics=(game:Game)=>{const s=detached(game.toSnapshot());s.savedAt=0;s.run.recordedInputEvents=[];s.run.recordedInputIndex=0;return canonical(s);};
+const mechanics=(game:Game)=>{const s=detached(game.toSnapshot());s.savedAt=0;return canonical(s);};
 function ack(){while(logger.pendingAcknowledgment)logger.acknowledgeNext();}
 /** Fixed initialization is deliberately applied on start AND replay restart.
  * This is a functional encounter fixture, not natural generation evidence. */
 function fixedStart(rest=false) {
-    installProductionAttackBody();const native=Game.prototype.startNewGame;
-    vi.spyOn(Game.prototype,'startNewGame').mockImplementation(function(this:Game,options){
-        native.call(this,options);if(!options?.extensions?.includes('body-fixture'))return;
-        emptyProductionArena(this);this.onConfirmRequest=()=>true;
-        const fire=this.extensionRuntime!.snapshot().foundation.world.entities.find(e=>e.owner==='combat'&&e.depth===this.depth)!;
-        const at=rest?{x:Math.min(Math.max(fire.x+4,5),this.grid.width-5),y:Math.min(Math.max(fire.y,5),this.grid.height-5)}:{x:14,y:12};
-        const core=this.createCompositeMonster(PRODUCTION_BODY_ID,at)!;
+    installProductionAttackBody();
+    installRecordingScene((game) => {
+        if(!game.extensionRuntime?.manifest.modules.some(m => m.id === 'body-fixture'))return;
+        emptyProductionArena(game);game.onConfirmRequest=()=>true;
+        const fire=game.extensionRuntime!.snapshot().foundation.world.entities.find(e=>e.owner==='combat'&&e.depth===game.depth)!;
+        const at=rest?{x:Math.min(Math.max(fire.x+4,5),game.grid.width-5),y:Math.min(Math.max(fire.y,5),game.grid.height-5)}:{x:14,y:12};
+        const core=game.createCompositeMonster(PRODUCTION_BODY_ID,at)!;
         core.state=rest?MonsterState.ASLEEP:MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');core.givenUpOnScent=true;
-        commitCreatureAnchor(this.player,rest?{x:fire.x,y:fire.y}:{x:14,y:10});
-        if(rest){core.setStatusDuration('invisible',1);this.player.hp=10;}
-        else {for(const member of this.monsters.slice(1))member.setStatusDuration('stuck',1000);
-            const axe=ItemLoader.spawnWeapon('axe',-1,-1)!;axe.damage='30-30';axe.enchantment=8;this.player.strength=30;this.player.inventory.addItem(axe);this.player.equippedWeapon=axe;
-            const staff=ItemLoader.spawnStaff('staff_of_discord',-1,-1)!;this.player.inventory.addItem(staff);}
-        (this as any).updateVision();ack();
+        commitCreatureAnchor(game.player,rest?{x:fire.x,y:fire.y}:{x:14,y:10});
+        if(rest){core.setStatusDuration('invisible',1);game.player.hp=10;}
+        else {for(const member of game.monsters.slice(1))member.setStatusDuration('stuck',1000);
+            const axe=ItemLoader.spawnWeapon('axe',-1,-1)!;axe.damage='30-30';axe.enchantment=8;game.player.strength=30;game.player.inventory.addItem(axe);game.player.equippedWeapon=axe;
+            const staff=ItemLoader.spawnStaff('staff_of_discord',-1,-1)!;game.player.inventory.addItem(staff);}
+        (game as any).updateVision();ack();
     });
     return ()=>startProductionGame(['body-fixture','combat'],7318,rest?'normal':'wizard');
 }
@@ -50,7 +51,7 @@ it('actual paid member windup, axe break and shared discord save, continue, repl
     expect(core.hasStatus('discordant')).toBe(true);points.set(game.exportRecording().events.length,mechanics(game));
     game.executeCommand('wait');ack();const recording=detached(game.exportRecording()),final=mechanics(game);points.set(recording.events.length,final);
     const loaded=fresh();expect(loaded.loadSnapshot(save)).toBe(true);loaded.animationEnabled=false;
-    for(const event of recording.events.slice(save.run.recordedInputIndex)){loaded.executeCommand(event.action,event.data);ack();}
+    for(const event of recording.events.slice(save.run.recordingOrigin!.events.length)){loaded.executeCommand(event.action,event.data);ack();}
     expect(mechanics(loaded)).toBe(final);expect(loaded.exportRecording().events).toEqual(recording.events);
     verifyReplay(fresh,recording,points);
 });

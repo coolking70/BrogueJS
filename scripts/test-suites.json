@@ -68,6 +68,7 @@
     "src/test/ext_prepared_controlled_commands.test.ts",
     "src/test/ext_slaying_alignment.test.ts",
     "src/test/ext_validation.test.ts",
+    "src/test/ext_world5_clock_levels.test.ts",
     "src/test/ext_world_display.test.ts",
     "src/test/ext_world_interactables.test.ts",
     "src/test/f_1_fire_as_terrain.test.ts",
@@ -318,7 +319,11 @@
     "src/test/x4_r5_content_text.test.ts",
     "src/test/x4_r6_integration.test.ts",
     "src/test/x4a_movement_rendering.test.ts",
-    "src/test/x4b_flavor_text.test.ts"
+    "src/test/x4b_flavor_text.test.ts",
+    "src/test/ext_world5_offline.test.ts",
+    "src/test/ext_recording_v4_digest.test.ts",
+    "src/test/ext_recording_v4_storage.test.ts",
+    "src/test/ext_recording_v4_snapshots.test.ts"
   ],
   "gen": [
     "src/test/b1_retire_invented.test.ts",

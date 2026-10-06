@@ -1,3 +1,4 @@
+import { continuingPrefix, extensionDigest, checkpointExtensionDigest, initialRecordingCheckpoint } from '../../../../test/support/recordingV4';
 import { describe, expect, it } from 'vitest';
 import { createExtensionRegistry, getInstalledModuleDescriptors } from '../../../catalog';
 import type { Game, GameRecording } from '../../../../engine/Core/Game';
@@ -39,7 +40,7 @@ function target(game: Game, npcId: string): number {
  * world, actor resources, RNG, clocks, module state, placements and receipts. */
 function world(game: Game) {
     const { savedAt: _savedAt, run, ...snapshot } = game.toSnapshot();
-    const { recordedInputEvents: _events, recordedInputIndex: _index, logger: _logger,
+    const { logger: _logger,
         recordingOrigin: _origin, ...mechanicalRun } = run;
     return clone({ ...snapshot, run: mechanicalRun });
 }
@@ -80,7 +81,7 @@ function verifyReplay(game: Game, recording: GameRecording, endpoint: ReturnType
         game.replayStep(true);
         expect(game.replayError).toBeNull(); expect(game.replayCursor).toBe(event.index + 1);
         const snapshot = game.toSnapshot();
-        expect(snapshot.extensions).toEqual(event.extensions); expect(snapshot.rngState).toEqual(event.rng);
+        expect(extensionDigest(snapshot.extensions ?? null)).toBe(checkpointExtensionDigest(event)); expect(snapshot.rngState).toEqual(event.rng);
         expect(snapshot.run.absoluteTurnNumber).toBe(event.turn); expect(snapshot.run.currentTick).toBe(event.tick);
     }
     expect(game.replayStatus).toBe('finished'); expect(world(game)).toEqual(endpoint);
@@ -112,7 +113,7 @@ describe.each(combinations)('CONTENT-1 default narrative endings with %j', (...i
     for (const ending of endings) {
         it(`${ending.npc} ${ending.verdict}: plays opening to ending and exactly continues every save through recall, replay and seek`, () => {
             const game = newGame(ids), reason = ids.includes('growth') ? 'disabled' : 'absent';
-            const origin = clone(game.toSaveSnapshot().run.recordingOrigin!.initial);
+            const origin = clone(initialRecordingCheckpoint(game));
             const cuts: { name: string; next: number; save: ReturnType<Game['toSaveSnapshot']>; world: ReturnType<typeof world>; recording: GameRecording }[] = [];
             function step(index: number): void {
                 if (index === 0) {
@@ -183,7 +184,7 @@ describe.each(combinations)('CONTENT-1 default narrative endings with %j', (...i
                 expect(world(game), cut.name).toEqual(cut.world);
             }
             game.replaySeek(0); expect(game.replayError).toBeNull();
-            expect(game.toSnapshot().extensions).toEqual(origin.extensions); expect(game.toSnapshot().rngState).toEqual(origin.rng);
+            expect(extensionDigest(game.toSnapshot().extensions ?? null)).toBe(checkpointExtensionDigest(origin)); expect(game.toSnapshot().rngState).toEqual(origin.rng);
             game.replaySeek(recording.events.length); expect(game.replayError).toBeNull(); expect(world(game)).toEqual(endpoint);
         }, 60000);
     }
@@ -258,7 +259,7 @@ describe.each(combinations)('CONTENT-1 default narrative endings with %j', (...i
         }
         expect(storyProgress(game)).toEqual(progress); play(game);
         const continued = clone(game.exportRecording()), endpoint = world(game);
-        expect(continued.events.slice(0, prior.events.length)).toEqual(prior.events);
+        expect(continued.events.slice(0, prior.events.length)).toEqual(continuingPrefix(prior));
         verifyReplay(game, continued, endpoint);
         game.replaySeek(prior.events.length); expect(storyProgress(game)).toEqual(progress);
         game.replaySeek(0); game.replaySeek(continued.events.length);

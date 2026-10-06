@@ -1,3 +1,4 @@
+import { extensionDigest, checkpointExtensionDigest, initialRecordingCheckpoint } from '../../../../test/support/recordingV4';
 import { describe, expect, it } from 'vitest';
 import { createExtensionRegistry, getInstalledModuleDescriptors } from '../../../catalog';
 import { createHeadlessGame } from '../../../../test/harness';
@@ -16,7 +17,7 @@ const narrative = (game: Game) => game.extensionRuntime!.snapshot().modules.narr
  * the recording is asserted separately with exact structural equality except export wall-clock time. */
 function world(game: Game) {
     const { savedAt: _savedAt, run, ...snapshot } = game.toSnapshot();
-    const { recordedInputEvents: _events, recordedInputIndex: _index, logger: _logger,
+    const { logger: _logger,
         recordingOrigin: _origin, ...mechanicalRun } = run;
     return clone({ ...snapshot, run: mechanicalRun });
 }
@@ -44,7 +45,7 @@ function verifyReplay(game: Game, recording: GameRecording, endpoint: ReturnType
         game.replayStep(true);
         expect(game.replayError).toBeNull(); expect(game.replayCursor).toBe(event.index + 1);
         const snapshot = game.toSnapshot();
-        expect(snapshot.extensions).toEqual(event.extensions); expect(snapshot.rngState).toEqual(event.rng);
+        expect(extensionDigest(snapshot.extensions ?? null)).toBe(checkpointExtensionDigest(event)); expect(snapshot.rngState).toEqual(event.rng);
         expect(snapshot.run.currentTick).toBe(event.tick); expect(snapshot.run.absoluteTurnNumber).toBe(event.turn);
     }
     expect(world(game)).toEqual(endpoint);
@@ -63,7 +64,7 @@ describe.each(combinations)('EXT-2e natural normal-game persistence with %j', (.
         const target = game.extensionRuntime!.snapshot().foundation.world.entities.find(entity => entity.owner === 'narrative' && entity.contentId === 'archive.keeper')!;
         expect(target).toBeDefined();
         expect(Math.max(Math.abs(target.x - game.player.x), Math.abs(target.y - game.player.y))).toBeLessThanOrEqual(target.interactionDistance);
-        const origin = clone(game.toSaveSnapshot().run.recordingOrigin!.initial);
+        const origin = clone(initialRecordingCheckpoint(game));
         const cuts: { name: string; next: number; save: ReturnType<Game['toSaveSnapshot']>; world: ReturnType<typeof world>; recording: GameRecording }[] = [];
         const capture = (name: string, next: number) => {
             cuts.push({ name, next, save: clone(game.toSaveSnapshot()), world: world(game), recording: clone(game.exportRecording()) });
@@ -99,7 +100,7 @@ describe.each(combinations)('EXT-2e natural normal-game persistence with %j', (.
             expect(world(game), cut.name).toEqual(cut.world);
         }
         game.replaySeek(0); expect(game.replayError).toBeNull();
-        expect(game.toSnapshot().extensions).toEqual(origin.extensions); expect(game.toSnapshot().rngState).toEqual(origin.rng);
+        expect(extensionDigest(game.toSnapshot().extensions ?? null)).toBe(checkpointExtensionDigest(origin)); expect(game.toSnapshot().rngState).toEqual(origin.rng);
         game.replaySeek(recording.events.length); expect(game.replayError).toBeNull(); expect(world(game)).toEqual(endpoint);
     }, 60000);
 });

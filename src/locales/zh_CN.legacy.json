@@ -2544,5 +2544,6 @@
   "lab.game_note": "独立试玩 · 地下城等待你的到来",
   "lab.js": "JS",
   "lab.real_game": "真实游戏，同局切换三套界面",
-  "lab.title": "第二轮设计"
+  "lab.title": "第二轮设计",
+  "replay.legacy_ignored": "浏览器中的旧版录像不受支持；请保存当前局的新录像。"
 }

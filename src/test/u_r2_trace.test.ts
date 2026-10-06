@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { createHeadlessGame } from './harness';
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import { Item } from '../engine/Items/Item';
@@ -10,7 +11,8 @@ import { Monster, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
 import { TerrainType } from '../engine/Map/Grid';
 
-const fixture = new URL('./fixtures/traces/u-r2-trace.json', import.meta.url);
+const fixture = process.env.UR2_CAPTURE_DIR ? pathToFileURL(`${process.env.UR2_CAPTURE_DIR}/u-r2-trace.json`)
+    : new URL('./fixtures/traces/u-r2-trace.json', import.meta.url);
 
 function trace(kind: string, make: () => Item | null, commands: (game: ReturnType<typeof createHeadlessGame>, item: Item, snap: (step: string) => void) => void) {
     const game = createHeadlessGame(27027, 'test');

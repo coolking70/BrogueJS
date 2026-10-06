@@ -1,3 +1,4 @@
+import { rechain } from './support/recordingV4';
 import { describe, expect, it } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { Monster, MonsterState, type MonsterData } from '../entities/Monster';
@@ -134,7 +135,7 @@ describe('X3b display frames at the shared command boundary', () => {
         act('move', { x: 1, y: 0 });
         expect(g.isGameOver).toBe(true); expect(g.gameOverWon).toBe(true);
         const recording = g.exportRecording();
-        expect(recording.events[recording.events.length - 1]!.end?.won).toBe(true);
+        expect(recording.events[recording.events.length - 1]!.terminal?.won).toBe(true);
         for (const schedule of schedules) {
             g.animationEnabled = true;
             expect(g.loadReplay(recording)).toBe(true); setup(g);
@@ -288,12 +289,12 @@ describe('X3b importable public new-game command recording', () => {
             const bad = structuredClone(recording), index = flareIndex + 2, event = bad.events[index]!;
             if (field === 'tick') event.tick++;
             else if (field === 'turn') event.turn!++;
-            else if (field === 'depth') event.depth++;
+            else if (field === 'depth') event.levelRef = { kind: 'dungeon', depth: (event.levelRef.kind === 'dungeon' ? event.levelRef.depth : 1) + 1 };
             else if (field === 'player') event.player.x++;
             else if (field.startsWith('rng')) event.rng!.streams[field === 'rng0' ? 0 : 1].a = (event.rng!.streams[field === 'rng0' ? 0 : 1].a ^ 1) >>> 0;
             else if (field === 'decisions') event.decisions!.push(true);
-            else event.end = { won: true, superVictory: false, score: 1 };
-            expect(g.loadReplay(bad)).toBe(true);
+            else event.terminal = { won: true, superVictory: false, score: 1 };
+            rechain(bad); expect(g.loadReplay(bad)).toBe(true);
             g.replaySeek(index + 1);
             expect(g.replayCursor).toBe(index);
             expect(g.replayError, field).toContain(`OOS at command ${index + 1}:`);

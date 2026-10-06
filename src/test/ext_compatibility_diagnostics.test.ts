@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import translations from '../locales/zh_CN.json';
 import * as catalog from '../ext/catalog';
+import { FOUNDATION_PROTOCOL } from '../ext/descriptor';
 import { ExtensionCompatibilityError, formatExtensionCompatibilityError } from '../ext/compatibility';
 import { ExtensionRegistry } from '../ext/registry';
 import { ExtensionRuntime } from '../ext/runtime';
@@ -45,10 +46,10 @@ describe('extension compatibility diagnostics', () => {
     it('reports required and installed versions, missing IDs and a stable first mismatch without constructing modules', () => {
         const registry = new ExtensionRegistry(), factory = vi.fn(() => moduleFixture());
         registry.register('alpha', '1.0.0', factory);
-        expect(() => registry.validateManifest({ schema: 1, foundation: 5,
+        expect(() => registry.validateManifest({ schema: 1, foundation: FOUNDATION_PROTOCOL,
             modules: [{ id: 'zeta', version: '3.0.0' }, { id: 'alpha', version: '2.0.0' }] }))
             .toThrow(expect.objectContaining({ code: 'version', moduleId: 'alpha', expected: '2.0.0', actual: '1.0.0' }));
-        expect(() => registry.validateManifest({ schema: 1, foundation: 5, modules: [{ id: 'zeta', version: '3.0.0' }] }))
+        expect(() => registry.validateManifest({ schema: 1, foundation: FOUNDATION_PROTOCOL, modules: [{ id: 'zeta', version: '3.0.0' }] }))
             .toThrow(expect.objectContaining({ code: 'missing', moduleId: 'zeta', expected: '3.0.0', actual: null }));
         expect(factory).not.toHaveBeenCalled();
     });
@@ -107,12 +108,11 @@ describe('extension compatibility diagnostics', () => {
         expect(game.loadReplay(wrongReplay, display)).toBe(false); expect(lastMessage()).toBe(formatExtensionCompatibilityError(version)); assertIntact();
         expect(lastMessage()).toContain('模块 alpha 要求版本 2.0.0，当前安装版本为 1.0.0');
         const stateSave = copy(saved), stateReplay = copy(recording);
-        stateSave.extensions!.modules.alpha = { count: -1 }; stateReplay.events[0]!.extensions!.modules.alpha = { count: -1 };
+        stateSave.extensions!.modules.alpha = { count: -1 }; stateReplay.events[0]!.checkpoint!.domains.extensions = '0'.repeat(64);
         const state = new ExtensionCompatibilityError('state-invalid', 'alpha', 'Invalid module state');
         expect(game.loadSnapshot(stateSave, display)).toBe(false); expect(lastMessage()).toBe(formatExtensionCompatibilityError(state)); assertIntact();
         expect(lastMessage()).toContain('模块 alpha 的状态或组件无效');
-        expect(game.loadReplay(stateReplay, display)).toBe(false); expect(lastMessage()).toBe(formatExtensionCompatibilityError(state)); assertIntact();
-        expect(lastMessage()).toContain('模块 alpha 的状态或组件无效');
+        expect(game.loadReplay(stateReplay, display)).toBe(false); expect(lastMessage()).toBe(i18next.t('replay.format_invalid')); assertIntact();
         const generic = copy(saved); delete generic.extensions!.manifest.foundation;
         expect(game.loadSnapshot(generic, display)).toBe(false); expect(lastMessage()).toBe(formatExtensionCompatibilityError(undefined)); assertIntact();
     });
@@ -183,8 +183,8 @@ describe('menu compatibility diagnostic forwarding', () => {
                 if (diagnostic !== undefined) onError(diagnostic);
                 return false;
             });
-            const handler = new Function('activeGame', 'readSnapshot', 'window', 'REPLAY_KEY', 'cancelHeldInputs', 'replayMessage', 'i18next', `return ${code}`)(
-                { loadSnapshot: load, loadReplay: load }, async () => ({}), { localStorage: { getItem: () => '{}' } }, 'replay', vi.fn(), report, { t: (key: string) => key });
+            const handler = new Function('activeGame', 'readSnapshot', 'readRecording', 'REPLAY_KEY', 'cancelHeldInputs', 'replayMessage', 'i18next', `return ${code}`)(
+                { loadSnapshot: load, loadReplay: load }, async () => ({}), async () => ({}), 'replay', vi.fn(), report, { t: (key: string) => key });
             await handler({ text: async () => '{}' });
             expect(load).toHaveBeenCalledOnce(); expect(report).toHaveBeenCalledExactlyOnceWith(diagnostic ?? fallback);
         }

@@ -1,3 +1,4 @@
+import { extensionDigest, checkpointExtensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import data from '../data/definitions.json';
 import { GROWTH_VERSION, parseGrowthDefinitionPack } from '../definitions';
@@ -187,7 +188,7 @@ describe('EXT-3g growth combat provider actual commands and reconstruction',()=>
             const active=queryPlayer(game);expect(active).toMatchObject({status:'available',value:{staminaCapacity:109,poiseCapacity:56}});
             const saved=game.toSaveSnapshot();
             for(let n=0;n<8;n++)expect(queryPlayer(game)).toEqual(active);
-            expect(game.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+            expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
             expect(game.loadSnapshot(saved)).toBe(true);expect(queryPlayer(game)).toEqual(active);
             for(let n=0;n<3;n++) {game.executeCommand('wait');while(game.isAdvancing)game.stepAdvancement();}
             expect(queryPlayer(game)).toEqual(base);

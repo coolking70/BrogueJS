@@ -1,3 +1,4 @@
+import { installRecordingScene } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import { Game } from '../../../../engine/Core/Game';
@@ -71,7 +72,7 @@ function warning(game: Game, id: number) {
 }
 function mechanical(game: Game) {
     const snapshot = json(game.toSnapshot()); snapshot.savedAt = 0;
-    snapshot.run.recordedInputEvents = []; snapshot.run.recordedInputIndex = 0;
+
     return snapshot;
 }
 afterEach(() => { vi.restoreAllMocks(); acknowledge(); });
@@ -191,9 +192,8 @@ describe('3d visible decisions use ordinary commands and real scheduler time', (
         expect(defended).not.toHaveBeenCalled(); expect(resource(game).parryRemainingTicks).toBe(0);
     });
     it('visible-warning command success survives save/load, exact replay checkpoints and bidirectional seek', () => {
-        const original = Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype, 'startNewGame').mockImplementation(function(this: Game, ...args) {
-            original.apply(this, args); if (this.extensionRuntime?.actorActionBinding()) { arena(this); rat(this); }
+        installRecordingScene((game) => {
+            if (game.extensionRuntime?.actorActionBinding()) { arena(game); rat(game); }
         });
         const game = start(); acknowledge(); game.executeCommand('wait');
         const first = mechanical(game), saved = json(game.toSaveSnapshot()), random = rng.getState();

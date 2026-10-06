@@ -16,6 +16,7 @@ import data from '../data/definitions.json';
 import { extensionDataFingerprint } from '../../../../ext/fingerprint';
 import { ExtensionRegistry } from '../../../../ext/registry';
 import * as catalog from '../../../../ext/catalog';
+import { installRecordingScene, rechain } from '../../../../test/support/recordingV4';
 
 const seed = 671234;
 const skillId = (name: string) => `growth.skill.${name}`;
@@ -93,11 +94,12 @@ const moveChain: Scenario = { name: 'layered hazards', skill: 'withdraw', setup(
     game.grid.setTerrainLayer(11, 10, L.DUNGEON, T.PRESSURE_PLATE);
 }, messages: ['Dive into the depths?', 'Venture into flame?', 'Venture into dangerous gas?', 'Step onto the pressure plate?'] };
 function scene(scenario: Scenario) {
+    installRecordingScene(game => {
+        if (game.extensionRuntime) { room(game); scenario.setup(game); }
+    });
     const game = createHeadlessGame(seed, 'test');
-    const start = game.startNewGame.bind(game);
     // Replaying the actual recorded character-creation prefix reproduces the same
     // scene; no synthetic events or post-load mutation repair the replay world.
-    vi.spyOn(game, 'startNewGame').mockImplementation(options => { start(options); room(game); scenario.setup(game); });
     game.startNewGame({ seed, mode: 'test', ruleSet: 'extended' });
     command(game, 'create-character', { revision: 0 });
     command(game, 'allocate', { attributes: { 'growth.attribute.agility': 2 } });
@@ -350,7 +352,7 @@ describe('growth prepared confirmation stale guards and durable recorder', () =>
         configured(); const game = scene(twoQuestions);
         game.onCommandConfirmRequest = () => {}; use(game, twoQuestions); answer(game, true); answer(game, false);
         const recording = game.exportRecording(), finalIndex = recording.events.length - 1;
-        recording.events[finalIndex]!.decisions = kind === 'missing' ? [true] : [true, false, true];
+        recording.events[finalIndex]!.decisions = kind === 'missing' ? [true] : [true, false, true]; rechain(recording);
         const replayQuestions = captureQuestions(game);
         expect(game.loadReplay(recording)).toBe(true);
         for (let index = 0; index < recording.events.length && !game.replayError; index++) game.replayStep(true);

@@ -1,3 +1,4 @@
+import { installRecordingScene } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { Game } from '../engine/Core/Game';
@@ -25,9 +26,8 @@ function room(g: Game) {
     g.player.equippedWeapon = null; g.player.equippedArmor = null;
 }
 function scene(setup: (g: Game) => void = () => {}) {
-    const g = createHeadlessGame(33001, 'test');
-    room(g); setup(g);
-    return g;
+    installRecordingScene(g => { room(g); setup(g); });
+    return createHeadlessGame(33001, 'test');
 }
 function terrain(g: Game, t: T) { g.grid.setTerrain(11, 10, t); return g.grid.getCell(11, 10)!; }
 function before(g: Game) {
@@ -198,8 +198,6 @@ describe('X3-U1 D10 automation and recording', () => {
         g.stepAutoPath(); settle(g);
         const recording = g.exportRecording(), final = before(g);
         expect(recording.events).toHaveLength(1); expect(recording.events[0]?.decisions).toEqual([answer]);
-        const start = g.startNewGame.bind(g);
-        vi.spyOn(g, 'startNewGame').mockImplementation(options => { start(options); room(g); setup(g); });
         expect(g.loadReplay(recording)).toBe(true);
         g.onConfirmRequest = () => { throw new Error('Replay opened UI'); };
         g.replayStep(); settle(g);
@@ -246,10 +244,6 @@ describe('X3-U1 D10 automation and recording', () => {
         expect(before(g)).toEqual(old);
         g.onConfirmRequest = () => true; move(g);
         const final = before(g), recording = g.exportRecording();
-        // Install the same deterministic fixture after replay's normal seeded
-        // initialization; command dispatch and checkpoints are all production.
-        const start = g.startNewGame.bind(g);
-        vi.spyOn(g, 'startNewGame').mockImplementation(options => { start(options); room(g); setup(g); });
         expect(g.loadReplay(recording)).toBe(true);
         g.onConfirmRequest = () => { throw new Error('Replay must consume the decision without opening UI'); };
         g.replayStep(); expect(g.replayError).toBeNull(); expect(before(g)).toEqual(old);

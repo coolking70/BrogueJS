@@ -180,7 +180,11 @@
         "log": {
           "messages": [],
           "nextId": 0,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [],
+            "nextId": 0
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -406,7 +410,30 @@
             }
           ],
           "nextId": 3,
-          "turn": 1
+          "turn": 1,
+          "mechanical": {
+            "messages": [
+              {
+                "turn": 0,
+                "color": "#cccccc",
+                "acknowledge": false,
+                "foldable": false
+              },
+              {
+                "turn": 0,
+                "color": "#44ff44",
+                "acknowledge": false,
+                "foldable": false
+              },
+              {
+                "turn": 0,
+                "color": "#00ffff",
+                "acknowledge": false,
+                "foldable": false
+              }
+            ],
+            "nextId": 3
+          }
         },
         "tick": 100,
         "turn": 1,
@@ -628,7 +655,11 @@
         "log": {
           "messages": [],
           "nextId": 0,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [],
+            "nextId": 0
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -855,7 +886,30 @@
             }
           ],
           "nextId": 3,
-          "turn": 1
+          "turn": 1,
+          "mechanical": {
+            "messages": [
+              {
+                "turn": 0,
+                "color": "#cccccc",
+                "acknowledge": false,
+                "foldable": false
+              },
+              {
+                "turn": 0,
+                "color": "#00ffff",
+                "acknowledge": true,
+                "foldable": false
+              },
+              {
+                "turn": 0,
+                "color": "#aaaaaa",
+                "acknowledge": false,
+                "foldable": false
+              }
+            ],
+            "nextId": 3
+          }
         },
         "tick": 100,
         "turn": 1,
@@ -1079,7 +1133,11 @@
         "log": {
           "messages": [],
           "nextId": 0,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [],
+            "nextId": 0
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -1292,7 +1350,11 @@
         "log": {
           "messages": [],
           "nextId": 0,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [],
+            "nextId": 0
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -1514,7 +1576,11 @@
         "log": {
           "messages": [],
           "nextId": 0,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [],
+            "nextId": 0
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -1738,7 +1804,11 @@
         "log": {
           "messages": [],
           "nextId": 0,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [],
+            "nextId": 0
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -1983,7 +2053,18 @@
             }
           ],
           "nextId": 1,
-          "turn": 1
+          "turn": 1,
+          "mechanical": {
+            "messages": [
+              {
+                "turn": 0,
+                "color": "#aaaaaa",
+                "acknowledge": false,
+                "foldable": false
+              }
+            ],
+            "nextId": 1
+          }
         },
         "tick": 100,
         "turn": 1,
@@ -2226,7 +2307,11 @@
         "log": {
           "messages": [],
           "nextId": 0,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [],
+            "nextId": 0
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -2446,7 +2531,18 @@
             }
           ],
           "nextId": 1,
-          "turn": 1
+          "turn": 1,
+          "mechanical": {
+            "messages": [
+              {
+                "turn": 0,
+                "color": "#66ff88",
+                "acknowledge": false,
+                "foldable": false
+              }
+            ],
+            "nextId": 1
+          }
         },
         "tick": 100,
         "turn": 1,
@@ -2679,7 +2775,24 @@
             }
           ],
           "nextId": 2,
-          "turn": 1
+          "turn": 1,
+          "mechanical": {
+            "messages": [
+              {
+                "turn": 0,
+                "color": "#66ff88",
+                "acknowledge": false,
+                "foldable": false
+              },
+              {
+                "turn": 1,
+                "color": "#aaaaaa",
+                "acknowledge": false,
+                "foldable": false
+              }
+            ],
+            "nextId": 2
+          }
         },
         "tick": 100,
         "turn": 1,
@@ -2907,7 +3020,11 @@
         "log": {
           "messages": [],
           "nextId": 0,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [],
+            "nextId": 0
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -3127,7 +3244,18 @@
             }
           ],
           "nextId": 1,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [
+              {
+                "turn": 0,
+                "color": "#ffffff",
+                "acknowledge": false,
+                "foldable": false
+              }
+            ],
+            "nextId": 1
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -3368,7 +3496,24 @@
             }
           ],
           "nextId": 2,
-          "turn": 1
+          "turn": 1,
+          "mechanical": {
+            "messages": [
+              {
+                "turn": 0,
+                "color": "#ffffff",
+                "acknowledge": false,
+                "foldable": false
+              },
+              {
+                "turn": 0,
+                "color": "#aaaaaa",
+                "acknowledge": false,
+                "foldable": false
+              }
+            ],
+            "nextId": 2
+          }
         },
         "tick": 100,
         "turn": 1,
@@ -3595,7 +3740,11 @@
         "log": {
           "messages": [],
           "nextId": 0,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [],
+            "nextId": 0
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -3814,7 +3963,18 @@
             }
           ],
           "nextId": 1,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [
+              {
+                "turn": 0,
+                "color": "#ffcc44",
+                "acknowledge": false,
+                "foldable": false
+              }
+            ],
+            "nextId": 1
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -4039,7 +4199,18 @@
             }
           ],
           "nextId": 1,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [
+              {
+                "turn": 0,
+                "color": "#ffcc44",
+                "acknowledge": false,
+                "foldable": false
+              }
+            ],
+            "nextId": 1
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -4268,7 +4439,11 @@
         "log": {
           "messages": [],
           "nextId": 0,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [],
+            "nextId": 0
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -4489,7 +4664,18 @@
             }
           ],
           "nextId": 1,
-          "turn": 1
+          "turn": 1,
+          "mechanical": {
+            "messages": [
+              {
+                "turn": 0,
+                "color": "#ff8888",
+                "acknowledge": false,
+                "foldable": false
+              }
+            ],
+            "nextId": 1
+          }
         },
         "tick": 100,
         "turn": 1,
@@ -4717,7 +4903,11 @@
         "log": {
           "messages": [],
           "nextId": 0,
-          "turn": 0
+          "turn": 0,
+          "mechanical": {
+            "messages": [],
+            "nextId": 0
+          }
         },
         "tick": 0,
         "turn": 0,
@@ -4958,7 +5148,24 @@
             }
           ],
           "nextId": 2,
-          "turn": 1
+          "turn": 1,
+          "mechanical": {
+            "messages": [
+              {
+                "turn": 0,
+                "color": "#55cc55",
+                "acknowledge": false,
+                "foldable": false
+              },
+              {
+                "turn": 0,
+                "color": "#00ffff",
+                "acknowledge": false,
+                "foldable": false
+              }
+            ],
+            "nextId": 2
+          }
         },
         "tick": 100,
         "turn": 1,

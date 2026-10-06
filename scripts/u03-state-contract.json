@@ -232,8 +232,8 @@
     "contract": "由当前层地形/玩家/深度构建 FOV 与逻辑光；不推进世界、不掷骰。缓存层进层时重算。"
   },
   "loopMap": {
-    "kind": "run",
-    "contract": "run 同名键；Map 为 entries，嵌套结构深拷贝；常规跟随/环境补偿不新增消费者。"
+    "kind": "derived",
+    "contract": "run 同名键；Map 为 entries，嵌套结构深拷贝；常规跟随/环境补偿不新增消费者。 5A1-R：可重建的寻路/安全缓存保留原快照兼容投影，排除机械摘要。"
   },
   "machineCells": {
     "kind": "derived",
@@ -332,12 +332,12 @@
     "contract": "顶层 purgatory 怪物行保存 CE 可复活盟友；与全局实体图共享 ID 和引用，读档恢复同一对象。"
   },
   "recordedInputEvents": {
-    "kind": "run",
-    "contract": "run 同名键，深拷贝。toSaveSnapshot 附加可选 run.recordingOrigin（WeakMap 会话来源）；新局建立，clearRecording/回放清空。丢弃推进/异常/超时使完整来源失效，但同局保留起点并继续收集合法输入，仍禁止导出和保存有效来源。读档仅恢复来源有效、索引连续且末 checkpoint 与存点一致的前缀；缺来源仍可读档但不续录/导出，不迁移旧档。toSnapshot 保持世界投影。"
+    "kind": "session",
+    "contract": "C5-recording v4: sole live input writer; durable prefix appears only in run.recordingOrigin.events, never in world-only run or MechanicalDigest. origin/header/chain validate before live run retirement."
   },
   "recordedInputIndex": {
-    "kind": "run",
-    "contract": "run 同名键；续录前要求等于事件数且每条 index 连续。动画推进收尾后才提交完整 checkpoint；保存等待推进完成。"
+    "kind": "derived",
+    "contract": "C5-recording v4: equals live recorder event length; rebuild from validated origin.events. Not a second durable recording root."
   },
   "recordingStartAt": {
     "kind": "reset",
@@ -376,8 +376,8 @@
     "contract": "run 同名键；Map 为 entries，嵌套结构深拷贝；常规跟随/环境补偿不新增消费者。"
   },
   "safetyMap": {
-    "kind": "run",
-    "contract": "run 同名键；Map 为 entries，嵌套结构深拷贝；常规跟随/环境补偿不新增消费者。"
+    "kind": "derived",
+    "contract": "run 同名键；Map 为 entries，嵌套结构深拷贝；常规跟随/环境补偿不新增消费者。 5A1-R：可重建的寻路/安全缓存保留原快照兼容投影，排除机械摘要。"
   },
   "scent": {
     "kind": "level",
@@ -416,8 +416,8 @@
     "contract": "run 中 ID 列表/目标 ID；全局图包含仍被这些集合引用的实体。"
   },
   "updatedSafetyMapThisTurn": {
-    "kind": "run",
-    "contract": "run 同名键；Map 为 entries，嵌套结构深拷贝；常规跟随/环境补偿不新增消费者。"
+    "kind": "derived",
+    "contract": "run 同名键；Map 为 entries，嵌套结构深拷贝；常规跟随/环境补偿不新增消费者。 5A1-R：可重建的寻路/安全缓存保留原快照兼容投影，排除机械摘要。"
   },
   "visibleItems": {
     "kind": "level",
@@ -440,8 +440,8 @@
     "contract": "U17a：CE colorFlash 是瞬时显示状态；新局、换层、读档清空，不写入世界快照、不推进模拟。"
   },
   "monsterPathCache": {
-    "kind": "run",
-    "contract": "X2j: CE 玩家行动内共享的逃险/盟友安全图，null 表示尚未计算；逐玩家行动清空，新层重置，存档保持。"
+    "kind": "derived",
+    "contract": "X2j: CE 玩家行动内共享的逃险/盟友安全图，null 表示尚未计算；逐玩家行动清空，新层重置，存档保持。 5A1-R：可重建的寻路/安全缓存保留原快照兼容投影，排除机械摘要。"
   },
   "disturbed": {
     "kind": "run",
@@ -478,5 +478,9 @@
   "bodyGroups": {
     "kind": "run",
     "contract": "4d-1：仅已安装 nativeBodies 实际创建群体时存在的机械群表；跨物理层唯一 owner，写入 run.spatialWorld.groups，成员 spatial 保存群/槽身份；创建失败按显式生成写集原位回滚，开局清除，读档先验证闭包/群约束/墓碑再发布。普通局无字段。"
+  },
+  "world5": {
+    "kind": "run",
+    "contract": "C5-1 r2: run.world5 optional; manifest fixture determines lifetime; authority clock advances only at positive elapsed in advancementLoop; digest domain world5."
   }
 }

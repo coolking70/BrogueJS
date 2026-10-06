@@ -1,7 +1,7 @@
 /** Foundation-owned executable declarations. No installed module data, hooks,
  * UI, state or fingerprint is borrowed. The historical encounter values are
  * retained so the existing mechanics assertions keep their original meaning. */
-import type { ModuleDescriptor } from '../../ext/descriptor';
+import { FOUNDATION_PROTOCOL, type ModuleDescriptor } from '../../ext/descriptor';
 import type { ExtensionModule } from '../../ext/types';
 import type { NativeFormDefinition } from '../../ext/nativeForms';
 import type { BodyDefinition, PartBreakRule } from '../../engine/Movement/SpatialSchema';
@@ -47,5 +47,5 @@ export function bodyFixtureDescriptor(): ModuleDescriptor {
         initialState: () => ({ revision: 0 }), validateState: (v): v is import('../../ext/types').Json => !!v && typeof v === 'object' && !Array.isArray(v)
             && Object.keys(v).join(',') === 'revision' && 'revision' in v && Number.isSafeInteger(v.revision) && Number(v.revision) >= 0,
         ...structuredClone(declarations)});
-    return {id:owner,version:'1.0.0',foundation:5,rules,create:module,labelKey:`ext.${owner}.name`};
+    return {id:owner,version:'1.0.0',foundation:FOUNDATION_PROTOCOL,rules,create:module,labelKey:`ext.${owner}.name`};
 }

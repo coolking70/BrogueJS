@@ -1,3 +1,4 @@
+import { rechain } from './support/recordingV4';
 import { describe, expect, it } from 'vitest';
 import i18next from 'i18next';
 import zhCN from '../locales/zh_CN.json';
@@ -9,6 +10,8 @@ import { generateMonsterDetail } from '../engine/UI/DetailGenerator';
 import { Monster, MonsterState, type MonsterData } from '../entities/Monster';
 import { TerrainType } from '../engine/Map/Grid';
 import { logger } from '../engine/Systems/Logger';
+import { DIGEST_DOMAINS } from '../engine/Core/RecordingV4';
+import { digestRoot } from '../engine/Core/RecordingDigest';
 
 function detailLines(monster: Monster): string[] {
     return generateMonsterDetail(monster, 100, 12, 0, null, 0, 0)
@@ -67,17 +70,45 @@ describe('X2i generated kinds and capability claims', () => {
     });
 
     it('shows a localized replay failure while preserving the diagnostic code', () => {
+        createHeadlessGame(1);
+        i18next.changeLanguage('en');
         const game = createHeadlessGame(27028);
-        i18next.changeLanguage('zh_CN');
-        i18next.addResourceBundle('zh_CN', 'translation', zhCN, true, true);
         game.handlePlayerAction('wait');
         const recording = game.exportRecording();
-        recording.events[0]!.tick += 1;
+        i18next.changeLanguage('zh_CN');
+        i18next.addResourceBundle('zh_CN', 'translation', zhCN, true, true);
+        recording.events[0]!.tick += 1; rechain(recording);
         expect(game.loadReplay(recording)).toBe(true);
         game.replayStep();
         expect(game.replayError).toContain('OOS at command 1');
         expect(game.replayErrorDisplay).toContain('回放在第 1 条命令处不同步');
         expect(game.replayErrorDisplay).not.toMatch(/[A-Za-z]/);
-        expect(logger.messages[logger.messages.length - 1]?.text).toBe(game.replayErrorDisplay);
+        expect(logger.displayMessages[logger.displayMessages.length - 1]?.text).toBe(game.replayErrorDisplay);
+    });
+
+    it.each(['native', 'knowledge'] as const)('localizes first-verifiable %s OOS with both interval bounds through replay and seek', (domain) => {
+        i18next.changeLanguage('zh_CN');
+        i18next.addResourceBundle('zh_CN', 'translation', zhCN, true, true);
+        const game = createHeadlessGame(27028);
+        game.executeCommand('escape'); game.executeCommand('escape');
+        const recording = game.exportRecording(), event = recording.events[1]!;
+        event.fullCheckpoint!.domains[domain] = '0'.repeat(64);
+        event.fullCheckpoint!.root = digestRoot(event.fullCheckpoint!.domains, recording.extensions, DIGEST_DOMAINS);
+        rechain(recording);
+        expect(game.loadReplay(recording)).toBe(true);
+        const archive = logger.peekState();
+        game.replayStep(); game.replayStep();
+        const display = game.replayErrorDisplay;
+        expect(display).toContain('第 2 条命令首次验证出分歧');
+        expect(display).toContain('前一个已验证边界为 0');
+        expect(display).toContain('命令区间为 1—2');
+        expect(display).not.toContain('精确');
+        expect(logger.peekState()).toEqual(archive);
+        expect(logger.displayMessages[logger.displayMessages.length - 1]?.text).toBe(display);
+        game.replaySeek(2);
+        expect(game.replayErrorDisplay).toBe(display);
+        expect(game.replayDiagnostic?.interval).toEqual({ fromCommand: 1, toCommand: 2 });
+        expect(logger.displayMessages[logger.displayMessages.length - 1]?.text).toBe(display);
+        expect(logger.peekState()).toEqual(archive);
     });
 });

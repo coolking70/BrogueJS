@@ -195,7 +195,7 @@ describe('D1 real inventory command adapter', () => {
         press('ArrowRight', true); expect(game.recordedInputEvents).toHaveLength(events);
         click(findAction('no')!); await Vue.nextTick();
         const after = game.toSnapshot(); after.savedAt = 0;
-        // Cancel keeps the whole world and appends only the existing recorder event/index.
+        // Cancel keeps the whole world; the sole event/index change is session-only in v4.
         expect(game.player.inventory.items).toContain(item); expect(game.absoluteTurnNumber).toBe(turn);
         expect(rng.getState()).toEqual(random);
         const differences: string[] = [];
@@ -208,11 +208,9 @@ describe('D1 real inventory command adapter', () => {
                 compare((left as Record<string, unknown>)[key], (right as Record<string, unknown>)[key], path + '/' + key);
             }
         };
-        compare(world, after); expect(differences).toEqual([
-            `/run/recordedInputEvents/${events}: undefined => [object Object]`,
-            `/run/recordedInputIndex: ${events} => ${events + 1}`,
-        ]);
+        compare(world, after); expect(differences).toEqual([]);
         expect(game.recordedInputEvents).toHaveLength(events + 1);
+        expect((game as any).recordedInputIndex).toBe(events + 1);
         expect(game.recordedInputEvents[game.recordedInputEvents.length - 1]).toMatchObject({ action: 'item:command', data: 'cancel||', decisions: [] });
         expect(game.pendingUseConfirm).toBeNull();
     });

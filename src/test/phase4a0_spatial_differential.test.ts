@@ -19,7 +19,10 @@ import { logger } from '../engine/Systems/Logger';
 import { timeSystem } from '../engine/Systems/Time';
 import { getNextMachineNumber } from '../engine/Generator/BlueprintEngine';
 
-const fixturePath = 'src/test/fixtures/phase4a0-single-cell-baseline.json';
+const captureDirectory = process.env.P4A0_CAPTURE_DIR;
+const fixturePath = captureDirectory ? `${captureDirectory}/phase4a0-single-cell-baseline.json`
+    : 'src/test/fixtures/phase4a0-single-cell-baseline.json';
+let projectionIndex = 0;
 const sets = installedModuleSubsets(['growth', 'narrative']);
 afterEach(() => { vi.restoreAllMocks(); logger.presentAcknowledgments(null); });
 
@@ -60,6 +63,7 @@ export function graphDigest(root: unknown) {
         return ['ref', id];
     };
     const entry = encode(root);
+    if (captureDirectory) writeFileSync(`${captureDirectory}/p4-${projectionIndex++}.json`, JSON.stringify({ entry, nodes }));
     return { sha256: createHash('sha256').update(JSON.stringify({ entry, nodes })).digest('hex'), objects: nodes.length };
 }
 function observe(game: Game) {

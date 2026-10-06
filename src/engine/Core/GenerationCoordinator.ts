@@ -264,7 +264,7 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
 
         if (ports.currentLevelDepth !== null && ports.currentLevelDepth !== ports.depth) {
             if (fell) ports.currentLevelExitedVia = { ...exit };
-            scheduleLevelFollowers(ports.grid, ports.monsters, exit, fell ? 0 : isGoingUp ? -1 : 1, ports.onRegionFollowerBlocked, ports.scheduleBodyFollower);
+            scheduleLevelFollowers(ports.grid, ports.monsters, exit, fell ? 0 : isGoingUp ? -1 : 1, ports.onRegionFollowerBlocked, ports.scheduleBodyFollower, ports.excludeLevelFollower);
         }
         // The active layer is already visited even before it has a detached cache entry.
         // Track its real depth; test harnesses can jump depths or re-enter the current map.
@@ -427,20 +427,24 @@ export function generateDepth(ports: GenerationPorts, isGoingUp: boolean = false
             }
         }
 
+        const managed = cached && ports.managedWorld?.();
+        const frozenActors = managed ? new Set(ports.monsters.filter(m=>!m.preplaced).map(m=>m.id)) : undefined;
+        if (managed) { ports.levels.delete(ports.depth); ports.indexWorldOwnership?.(); ports.settleManagedWorld(); }
         if (cached) ports.restoreFallenItems();
+        if (managed) ports.restoreManagedPending();
 
         // No active-floor alias while environmental falls modify ownership.
         ports.levels.delete(ports.depth);
         for (let x = 0; x < ports.grid.width; x++) for (let y = 0; y < ports.grid.height; y++) {
             ports.grid.getCell(x, y)!.isVisible = false;
         }
-        ports.catchUpEnvironment(cached ? Math.max(0, ports.absoluteTurnNumber - (cached.awaySince ?? 0)) : 50);
+        if (!managed) ports.catchUpEnvironment(cached ? Math.max(0, ports.absoluteTurnNumber - (cached.awaySince ?? 0)) : 50);
         if (fell) ports.placePlayerOnFallLanding(exit.x, exit.y);
         else {
             const entry = ports.levelStair(isGoingUp ? TerrainType.STAIRS_DOWN : TerrainType.STAIRS_UP);
             if (entry) ports.placePlayerOnLevelEntry(entry);
         }
-        ports.restoreLevelResidents();
+        ports.restoreLevelResidents(frozenActors);
         if (!cached && sideChambers.length) ports.publishSideChambers?.(sideChambers);
         bindGenerationReservation(ports.grid);
         ports.currentLevelDepth = ports.depth;

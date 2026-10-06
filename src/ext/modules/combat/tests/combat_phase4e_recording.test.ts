@@ -1,3 +1,4 @@
+import { installRecordingScene } from '../../../../test/support/recordingV4';
 import { afterEach, expect, it, vi } from 'vitest';
 import "../../../../i18n";
 import { Game } from '../../../../engine/Core/Game';
@@ -15,7 +16,7 @@ import type { Json } from '../../../types';
 import { TerrainType as T } from '../../../../engine/Map/Grid';
 afterEach(()=>{vi.restoreAllMocks();logger.reset();});
 const detached=<V>(v:V):V=>JSON.parse(JSON.stringify(v));
-const mechanics=(game:Game)=>{const s=detached(game.toSnapshot());s.savedAt=0;s.run.recordedInputEvents=[];s.run.recordedInputIndex=0;return canonical(s);};
+const mechanics=(game:Game)=>{const s=detached(game.toSnapshot());s.savedAt=0;return canonical(s);};
 const ack=()=>{while(logger.pendingAcknowledgment)logger.acknowledgeNext();};
 function fixture(reason: 'phase'|'split'|'clone'|'summon', combat=false, noSpace=false, rest=false) {
   installBodyFixture();
@@ -37,18 +38,17 @@ function fixture(reason: 'phase'|'split'|'clone'|'summon', combat=false, noSpace
     return d;
   }));
   vi.spyOn(catalog,'createExtensionRegistry').mockReturnValue(registry);
-  const native=Game.prototype.startNewGame;
-  vi.spyOn(Game.prototype,'startNewGame').mockImplementation(function(this:Game,options){
-    native.call(this,options);if(!options?.extensions?.includes('body-fixture'))return;
-    emptyProductionArena(this);this.onConfirmRequest=()=>true;
-    const fire=rest?this.extensionRuntime!.snapshot().foundation.world.entities.find(e=>e.owner==='combat'&&e.depth===1)!:null;
-    const at=fire?{x:Math.min(Math.max(fire.x+4,5),this.grid.width-5),y:Math.min(Math.max(fire.y,5),this.grid.height-5)}:{x:20,y:12};
-    const core=this.createModuleMonster('body-fixture.abyssal-colossus',at)!;core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');core.givenUpOnScent=true;
+  installRecordingScene((game) => {
+    if(!game.extensionRuntime?.manifest.modules.some(m => m.id === 'body-fixture'))return;
+    emptyProductionArena(game);game.onConfirmRequest=()=>true;
+    const fire=rest?game.extensionRuntime!.snapshot().foundation.world.entities.find(e=>e.owner==='combat'&&e.depth===1)!:null;
+    const at=fire?{x:Math.min(Math.max(fire.x+4,5),game.grid.width-5),y:Math.min(Math.max(fire.y,5),game.grid.height-5)}:{x:20,y:12};
+    const core=game.createModuleMonster('body-fixture.abyssal-colossus',at)!;core.state=MonsterState.HUNTING;core.behaviorFlags.add('MONST_ALWAYS_HUNTING');core.givenUpOnScent=true;
     core.hp=rest?129:131;core.defense=0;
-    if(rest){core.setStatusDuration('invisible',1000);core.ticksUntilTurn=200;commitCreatureAnchor(this.player,{x:fire!.x,y:fire!.y});this.player.hp=10;}
-    else {commitCreatureAnchor(this.player,{x:at.x-1,y:at.y});const weapon=ItemLoader.spawnWeapon('mace',-1,-1)!;weapon.damage='4-4';weapon.enchantment=0;this.player.strength=30;this.player.inventory.addItem(weapon);this.player.equippedWeapon=weapon;}
-    if(noSpace){for(let x=0;x<this.grid.width;x++)for(let y=0;y<this.grid.height;y++)this.grid.setTerrain(x,y,T.WALL);for(const p of footprintOf(core))this.grid.setTerrain(p.x,p.y,T.FLOOR);this.grid.setTerrain(this.player.x,this.player.y,T.FLOOR);}
-    (this as any).updateVision();ack();
+    if(rest){core.setStatusDuration('invisible',1000);core.ticksUntilTurn=200;commitCreatureAnchor(game.player,{x:fire!.x,y:fire!.y});game.player.hp=10;}
+    else {commitCreatureAnchor(game.player,{x:at.x-1,y:at.y});const weapon=ItemLoader.spawnWeapon('mace',-1,-1)!;weapon.damage='4-4';weapon.enchantment=0;game.player.strength=30;game.player.inventory.addItem(weapon);game.player.equippedWeapon=weapon;}
+    if(noSpace){for(let x=0;x<game.grid.width;x++)for(let y=0;y<game.grid.height;y++)game.grid.setTerrain(x,y,T.WALL);for(const p of footprintOf(core))game.grid.setTerrain(p.x,p.y,T.FLOOR);game.grid.setTerrain(game.player.x,game.player.y,T.FLOOR);}
+    (game as any).updateVision();ack();
   });
   return ()=>startProductionGame(combat?['body-fixture','combat']:['body-fixture'],7339,rest?'normal':'wizard');
 }

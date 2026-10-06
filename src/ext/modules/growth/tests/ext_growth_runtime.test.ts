@@ -1,3 +1,4 @@
+import { extensionDigest, checkpointExtensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import { Game } from '../../../../engine/Core/Game';
@@ -118,15 +119,15 @@ describe('EXT-1a creation, XP and durable contracts',() => {
         expect(progression(g).level).toBeGreaterThan(1);
         const saved=g.toSaveSnapshot(), recording=g.exportRecording();
         const restored=createHeadlessGame(9,'test'); expect(restored.loadSnapshot(saved)).toBe(true);
-        expect(restored.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(extensionDigest(restored.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         const hp=restored.player.maxHp; restored.executeCommand('wait'); expect(restored.player.maxHp).toBe(hp);
         expect(restored.hasCompleteRecording).toBe(true);
         const replay=createHeadlessGame(10,'test'); expect(replay.loadReplay(recording)).toBe(true);
         while(replay.replayCursor<recording.events.length&&!replay.replayError)replay.replayStep(true);
-        expect(replay.replayError).toBeNull(); expect(replay.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(replay.replayError).toBeNull(); expect(extensionDigest(replay.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         replay.replaySeek(0); expect(replay.replayError).toBeNull();
         while(replay.replayCursor<recording.events.length&&!replay.replayError)replay.replayStep(true);
-        expect(replay.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(extensionDigest(replay.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
     });
     it('rejects missing/repeated creation in recordings before replacing an active game',() => {
         const g=game();create(g);g.executeCommand('wait');const recording=g.exportRecording(), player=g.player,runtime=g.extensionRuntime;

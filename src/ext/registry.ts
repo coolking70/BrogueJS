@@ -1,3 +1,4 @@
+import { FOUNDATION_PROTOCOL } from './descriptor';
 import type { ExtensionModule, ExtensionManifest, ExtensionRulesIdentity } from './types';
 import { validId, canonical, isJson } from './json';
 import { ExtensionCompatibilityError } from './compatibility';
@@ -15,7 +16,7 @@ export class ExtensionRegistry {
     /** Registration never runs factories. Enable only at a new-run/load boundary. */
     manifest(ids: readonly string[]): ExtensionManifest {
         if (new Set(ids).size !== ids.length) throw new Error('Duplicate enabled extension');
-        return { schema: 1, foundation: 5, modules: [...ids].sort().map(id => {
+        return { schema: 1, foundation: FOUNDATION_PROTOCOL, modules: [...ids].sort().map(id => {
             const registration = this.factories.get(id);
             if (!registration) throw new Error(`Unavailable extension: ${id}`);
             return { id, version: registration.version, ...(registration.rules ? { rules: structuredClone(registration.rules) } : {}) };
@@ -29,7 +30,7 @@ export class ExtensionRegistry {
             || Object.keys(header).some(key => key !== 'schema' && key !== 'modules' && key !== 'foundation')) throw new Error('Invalid extension manifest');
         // Keep malformed headers on the existing generic path. For otherwise
         // valid identities, report the first mismatch in stable module-ID order.
-        if (header.foundation === 5 && new Set(header.modules.map(entry => entry.id)).size === header.modules.length
+        if (header.foundation === FOUNDATION_PROTOCOL && new Set(header.modules.map(entry => entry.id)).size === header.modules.length
             && header.modules.every(entry => /^\d+\.\d+\.\d+$/.test(entry.version)
                 && (entry.rules === undefined || (entry.rules && Number.isSafeInteger(entry.rules.schema)
                     && entry.rules.schema >= 1 && /^\d+\.\d+\.\d+$/.test(entry.rules.version)

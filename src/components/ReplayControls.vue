@@ -21,6 +21,7 @@ const isPlaying = computed(() => { pulse.value; return activeGame.replayStatus =
 
 const currentCursor = computed(() => { pulse.value; return activeGame.replayCursor; });
 const totalEvents = computed(() => { pulse.value; return activeGame.replayEvents.length; });
+const replayWarning = computed(() => { pulse.value; return activeGame.replayWarnings[activeGame.replayWarnings.length - 1]; });
 const replayError = computed(() => { pulse.value; return activeGame.replayErrorDisplay; });
 
 const togglePlay = () => {
@@ -53,6 +54,7 @@ const onSeek = (e: Event) => {
 <template>
   <div v-if="isReplayActive" class="replay-controls">
     <div v-if="replayError" role="alert" class="replay-error">{{ replayError }}</div>
+    <div v-if="replayWarning" role="status">{{ replayWarning }}</div>
     <div class="controls-row">
         <button @click="togglePlay" class="play-btn" :disabled="!!replayError">
             {{ isPlaying ? t('replay.controls.pause', { defaultValue: 'Pause' }) : t('replay.controls.play', { defaultValue: 'Play' }) }}

@@ -265,7 +265,7 @@ describe('U26a natural maps and real player commands', () => {
         for (let i = 0; i < count; i++) g.player.inventory.addItem(ItemLoader.spawnGem(27 + i, 0, 0));
         g.handlePlayerAction('stairs_down');
         expect(g.gameOverSuperVictory).toBe(true);
-        expect(g.exportRecording().events.at(-1).end).toMatchObject({ won: true, superVictory: true });
+        expect(g.exportRecording().events.at(-1).terminal).toMatchObject({ won: true, superVictory: true });
         expect(g.gameOverScore).toBe(70000 + count * 5000);
         expect(readHighScores()[0]!.description).toBe(count === 0 ? 'Mastered the Dungeons of Doom!'
             : count === 1 ? 'Mastered the Dungeons of Doom with a lumenstone!' : 'Mastered the Dungeons of Doom with 2 lumenstones!');

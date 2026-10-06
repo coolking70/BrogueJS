@@ -6,7 +6,7 @@ import { rng } from '../engine/Random';
 
 function world(game: Game) {
     const { savedAt: _savedAt, ...snapshot } = JSON.parse(JSON.stringify(game.toSnapshot()));
-    snapshot.run.recordedInputEvents = []; snapshot.run.recordedInputIndex = 0;
+
     return snapshot;
 }
 

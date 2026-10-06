@@ -5,6 +5,8 @@ import { displaySettings } from './engine/Settings';
 import { inputManager } from './engine/Input';
 import { saveSnapshot, readSnapshot, readSaveSummary, deleteSnapshot, type SaveSummary } from './engine/Core/SaveStorage';
 import i18next from 'i18next';
+import { approveSaveOverwrite } from './ui/saveOverwrite';
+import { legacyReplayState, dismissLegacyReplay } from './ui/legacyReplay';
 import GameCanvas from './components/GameCanvas.vue';
 import ContextPanel from './components/ContextPanel.vue';
 import MessageJournal from './components/MessageJournal.vue';
@@ -36,7 +38,7 @@ import { recordingJsonAtBoundary, RecordingExportError } from './ui/recordingExp
 import type { DetailInfo } from './engine/UI/DetailGenerator';
 import { useModuleUi } from './ext/ui/useModuleUi';
 
-const REPLAY_KEY = 'brogue-web-replay-v1';
+import { saveRecording, readRecording, deleteRecording, hasStoredRecording } from './engine/Core/RecordingStorage';
 const dialogs = new DialogService();
 provide(dialogServiceKey, dialogs);
 
@@ -137,6 +139,9 @@ watch(menuOpen, (open) => {
   else if (activeGame.isAutoTraveling()) inputManager.triggerAction('interrupt_auto');
 });
 const storageTick = ref(0);
+const hasReplay = ref(false);
+const refreshReplayStorage = async () => { try { hasReplay.value = await hasStoredRecording(); } catch { hasReplay.value = false; } };
+watch(storageTick, refreshReplayStorage);
 const runAvailable = ref(false);
 const replayBusy = ref(false);
 const replayFeedback = ref('');
@@ -147,9 +152,12 @@ const canSaveReplay = computed(() => {
 });
 
 const saveInfo = ref<SaveSummary | null>(null);
+const saveBusy = ref(false), legacyReplayAvailable = ref(false), legacyReplayNotice = ref(false);
 const hasSave = computed(() => saveInfo.value !== null);
 onMounted(async () => {
   try { saveInfo.value = await readSaveSummary(); } catch { saveInfo.value = null; }
+  await refreshReplayStorage();
+  try { const legacy = legacyReplayState(window.localStorage); legacyReplayAvailable.value = !!legacy.raw; legacyReplayNotice.value = legacy.showNotice; } catch {}
 });
 
 const replayInfo = computed(() => {
@@ -162,14 +170,6 @@ const replayInfo = computed(() => {
   };
 });
 
-const hasReplay = computed(() => {
-  storageTick.value;
-  try {
-    return !!window.localStorage.getItem(REPLAY_KEY);
-  } catch {
-    return false;
-  }
-});
 
 const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "classic" | "extended"; extensions?: readonly string[]; initialCommands?: readonly string[]; onRejected?: () => void }) => {
   try {
@@ -199,18 +199,22 @@ const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "class
 };
 
 const saveGame = async () => {
-  if (!gameStarted.value) return;
+  if (!gameStarted.value || saveBusy.value) return;
   if (activeGame.hasPendingConfirmation) {
     replayMessage(i18next.t('menu.command.waiting', { defaultValue: 'Please answer the current confirmation before saving or exporting.' }));
     return;
   }
   try {
+    saveBusy.value = true;
+    const epoch = runEpoch.value;
+    saveInfo.value = await readSaveSummary();
+    if (!await approveSaveOverwrite(saveInfo.value, dialogs) || epoch !== runEpoch.value || !gameStarted.value) return;
     saveInfo.value = await saveSnapshot(activeGame.toSaveSnapshot());
     storageTick.value++;
     replayMessage(i18next.t('menu.log.game_saved', { defaultValue: 'Game saved.' }));
   } catch {
     replayMessage(i18next.t('menu.log.save_failed', { defaultValue: 'Save failed.' }));
-  }
+  } finally { saveBusy.value = false; }
 };
 
 const continueGame = async () => {
@@ -268,9 +272,9 @@ const saveReplay = async () => {
   replayBusy.value = true;
   try {
     const raw = await currentReplayJson();
-    window.localStorage.setItem(REPLAY_KEY, raw);
+    const stored = await saveRecording(JSON.parse(raw));
     storageTick.value++;
-    replayMessage(i18next.t('menu.log.replay_saved', { defaultValue: 'Replay saved.' }));
+    replayMessage(i18next.t(stored.discardedSnapshots ? 'replay.saved_without_snapshots' : 'menu.log.replay_saved'));
   } catch (error) {
     if (error instanceof RecordingExportError) {
       replayMessage(i18next.t('menu.replay.not_ready', { defaultValue: 'The recording is not ready. Please try again after the turn finishes.' }));
@@ -284,12 +288,11 @@ const saveReplay = async () => {
   }
 };
 
-const loadReplay = () => {
+const loadReplay = async () => {
   cancelHeldInputs();
   try {
-    const raw = window.localStorage.getItem(REPLAY_KEY);
-    if (!raw) return;
-    const recording = JSON.parse(raw);
+    const recording = await readRecording();
+    if (!recording) return;
     let diagnostic: string | undefined;
     if (!activeGame.loadReplay(recording, message => { diagnostic = message; })) {
       replayMessage(diagnostic ?? i18next.t('menu.log.replay_load_failed', { defaultValue: 'Replay load failed.' }));
@@ -307,9 +310,9 @@ const loadReplay = () => {
   }
 };
 
-const deleteReplay = () => {
+const deleteReplay = async () => {
   try {
-    window.localStorage.removeItem(REPLAY_KEY);
+    await deleteRecording();
     storageTick.value++;
     replayMessage(i18next.t('menu.log.replay_deleted', { defaultValue: 'Replay deleted.' }));
   } catch {
@@ -348,11 +351,19 @@ const downloadReplayJson = (raw: string) => {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     replayMessage(i18next.t('menu.log.replay_exported', { defaultValue: 'Replay JSON exported.' }));
 };
+const exportLegacyReplay = () => {
+  try { const raw = legacyReplayState(window.localStorage).raw; if (raw) downloadReplayJson(raw); }
+  catch { replayMessage(i18next.t('menu.log.replay_export_failed')); }
+};
+const hideLegacyReplayNotice = () => {
+  try { dismissLegacyReplay(window.localStorage); legacyReplayNotice.value = false; }
+  catch { replayMessage(i18next.t('replay.legacy_dismiss_failed')); }
+};
 
-const exportReplayJson = () => {
+const exportReplayJson = async () => {
   try {
-    const raw = window.localStorage.getItem(REPLAY_KEY);
-    if (raw) downloadReplayJson(raw);
+    const recording = await readRecording();
+    if (recording) downloadReplayJson(JSON.stringify(recording));
   } catch {
     replayMessage(i18next.t('menu.log.replay_export_failed', { defaultValue: 'Replay JSON export failed.' }));
   }
@@ -397,7 +408,7 @@ const handleReturnToTitle = async () => {
     // Return to menu logic
     gameStarted.value = false;
     menuOpen.value = true;
-    
+
     // Clear save if player was killed/won to prevent infinite loops of death
     try {
         await deleteSnapshot();
@@ -452,6 +463,9 @@ const handleReturnToTitle = async () => {
     <MainMenu
       v-if="menuOpen"
       :has-save="hasSave"
+      :save-busy="saveBusy"
+      :has-legacy-replay="legacyReplayAvailable"
+      :legacy-replay-notice="legacyReplayNotice"
       :has-replay="hasReplay"
       :in-game="gameStarted"
       :save-info="saveInfo"
@@ -462,6 +476,8 @@ const handleReturnToTitle = async () => {
       @new-game="startNewGame"
       @continue-game="continueGame"
       @save-game="saveGame"
+      @export-legacy-replay="exportLegacyReplay"
+      @dismiss-legacy-replay="hideLegacyReplayNotice"
       @delete-save="deleteSave"
       @save-replay="saveReplay"
       @load-replay="loadReplay"

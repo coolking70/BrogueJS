@@ -449,6 +449,8 @@ export class ItemLoader {
     public static potionFlavorMap = new Map<string, { name: string, color: number }>();
     public static scrollFlavorMap = new Map<string, string>();
     private static staffFlavorSlots: string[] = [];
+    private static flavorIdentities = new Map<string, string>();
+    private static staffFlavorIdentities: string[] = [];
     public static arcanaFlavorMap = new Map<string, string>();
 
     // Which IDs have been identified by the player
@@ -1064,6 +1066,7 @@ export class ItemLoader {
             potions: [...this.potionFlavorMap].map(([id, value]) => [id, { ...value }] as const),
             scrolls: [...this.scrollFlavorMap], arcana: [...this.arcanaFlavorMap],
             staffSlots: [...this.staffFlavorSlots],
+            identities: { kinds: [...this.flavorIdentities], staffSlots: [...this.staffFlavorIdentities] },
         };
     }
 
@@ -1072,12 +1075,15 @@ export class ItemLoader {
         this.scrollFlavorMap = new Map(state.scrolls);
         this.arcanaFlavorMap = new Map(state.arcana);
         this.staffFlavorSlots = [...state.staffSlots];
+        this.flavorIdentities = new Map(state.identities.kinds);
+        this.staffFlavorIdentities = [...state.identities.staffSlots];
     }
 
     public static initConsumables(random: Random = rng) {
         this.potionFlavorMap = new Map();
         this.scrollFlavorMap = new Map();
         this.arcanaFlavorMap = new Map();
+        this.flavorIdentities = new Map(); this.staffFlavorIdentities = [];
         this.identifiedItems = new Set();
         // B-1b：绰号随新局清零（CE resetItemTableEntry，Items.c:8778-8779）。
         // loadSnapshot 先走本方法再从快照回放，两全。
@@ -1174,12 +1180,15 @@ export class ItemLoader {
                 return;
             }
             this.potionFlavorMap.set(p.id, { name: tn(orig.name), color: orig.color });
+            this.flavorIdentities.set(p.id, 'potion.' + this.potionColors.indexOf(orig));
         });
 
         // Assign to scrolls（程序化标题，一局内两两不同）
         const usedTitles = new Set<string>();
         this.scrolls.forEach((s) => {
-            this.scrollFlavorMap.set(s.id, this.generateScrollTitle(usedTitles, random));
+            const title = this.generateScrollTitle(usedTitles, random);
+            this.scrollFlavorMap.set(s.id, title.label);
+            this.flavorIdentities.set(s.id, title.id);
         });
 
         this.assignArcanaFlavors(this.wands, this.wandFlavorNames, '魔杖', random);
@@ -1189,16 +1198,18 @@ export class ItemLoader {
     }
 
     /** CE 式卷轴标题：3~4 个词素拼接，重试保证一局内不重复（Items.c:8851-8856）。 */
-    private static generateScrollTitle(used: Set<string>, random: Random): string {
+    private static generateScrollTitle(used: Set<string>, random: Random): { label: string; id: string } {
         for (let attempt = 0; attempt < 1000; attempt++) {
             let title = '';
+            const indices: number[] = [];
             const phonemeCount = random.randRange(3, 4);
             for (let i = 0; i < phonemeCount; i++) {
-                title += ItemLoader.titlePhonemes[random.randRange(0, ItemLoader.titlePhonemes.length - 1)];
+                const index = random.randRange(0, ItemLoader.titlePhonemes.length - 1);
+                indices.push(index); title += ItemLoader.titlePhonemes[index];
             }
             if (!used.has(title)) {
                 used.add(title);
-                return `题为「${title}」的卷轴`;
+                return { label: `题为「${title}」的卷轴`, id: 'scroll.' + indices.join('.') };
             }
         }
         throw new Error('[ItemLoader] 无法生成不重复的卷轴标题（词素空间耗尽？）');
@@ -1217,6 +1228,8 @@ export class ItemLoader {
         random.shuffleList(shuffled);
         const isStaff = pool === this.staffs;
         if (isStaff) this.staffFlavorSlots = shuffled.map(tn);
+        const prefix = pool === this.wands ? 'wand' : isStaff ? 'staff' : pool === this.rings ? 'ring' : 'charm';
+        if (isStaff) this.staffFlavorIdentities = shuffled.map(f => prefix + '.' + flavors.indexOf(f));
         pool.forEach((entry, index) => {
             // Light keeps its definition untouched and uses CE's unused wood slot 2.
             const slot = isStaff ? entry.flavorIndex ?? (entry.id === 'staff_of_light' ? 2 : index) : index;
@@ -1227,6 +1240,7 @@ export class ItemLoader {
                 return;
             }
             this.arcanaFlavorMap.set(entry.id, tn(flavor));
+            this.flavorIdentities.set(entry.id, prefix + '.' + flavors.indexOf(flavor));
         });
     }
 

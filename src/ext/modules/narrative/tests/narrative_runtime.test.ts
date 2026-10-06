@@ -1,3 +1,4 @@
+import { continuingPrefix, extensionDigest, checkpointExtensionDigest, initialRecordingCheckpoint } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { descriptor } from '../descriptor';
 import { createNarrativeModule } from '../index';
@@ -108,7 +109,7 @@ describe('EXT-2b narrative installed contract', () => {
     });
     it('keeps narrative-only save/load, every replay checkpoint, seek and continued recording deterministic', () => {
         const game = start(['narrative']);
-        const origin = clone(game.toSaveSnapshot().run.recordingOrigin!.initial);
+        const origin = clone(initialRecordingCheckpoint(game));
         play(game); play(game);
         const saved = clone(game.toSaveSnapshot()), expected = checkpoint(game), recording = clone(game.exportRecording());
         expect(Object.keys(saved.extensions!.modules)).toEqual(['narrative']);
@@ -119,7 +120,7 @@ describe('EXT-2b narrative installed contract', () => {
         expect(game.hasCompleteRecording).toBe(true);
         play(game);
         const continuation = clone(game.exportRecording()), continued = checkpoint(game);
-        expect(continuation.events.slice(0, recording.events.length)).toEqual(recording.events);
+        expect(continuation.events.slice(0, recording.events.length)).toEqual(continuingPrefix(recording));
         expect(game.loadReplay(continuation)).toBe(true);
         game.animationEnabled = false;
         for (const event of continuation.events) {
@@ -127,7 +128,7 @@ describe('EXT-2b narrative installed contract', () => {
             expect(game.replayError).toBeNull();
             const snapshot = game.toSnapshot();
             expect(snapshot.rngState).toEqual(event.rng);
-            expect(snapshot.extensions).toEqual(event.extensions);
+            expect(extensionDigest(snapshot.extensions ?? null)).toBe(checkpointExtensionDigest(event));
             expect(snapshot.run.absoluteTurnNumber).toBe(event.turn);
             expect(snapshot.run.currentTick).toBe(event.tick);
         }
@@ -138,7 +139,7 @@ describe('EXT-2b narrative installed contract', () => {
             expect(game.replayCursor).toBe(index);
             const target = index ? continuation.events[index - 1]! : origin;
             expect(game.toSnapshot().rngState).toEqual(target.rng);
-            expect(game.extensionRuntime!.snapshot()).toEqual(target.extensions);
+            expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(target));
         }
     }, 30000);
 
@@ -213,7 +214,7 @@ describe.each(conversationCombinations)('EXT-2b actual Game dialogue with %j', (
         const target = game.extensionRuntime!.snapshot().foundation.world.entities.find(entity => entity.owner === 'narrative' && entity.contentId === 'archive.keeper')!;
         expect(target).toBeDefined();
         expect(Math.max(Math.abs(target.x - game.player.x), Math.abs(target.y - game.player.y))).toBeLessThanOrEqual(target.interactionDistance);
-        const stable = frozenWorld(game), origin = clone(game.toSaveSnapshot().run.recordingOrigin!.initial);
+        const stable = frozenWorld(game), origin = clone(initialRecordingCheckpoint(game));
         const count = () => game.exportRecording().events.length;
         const firstOpen = dialogueCommand(game, 'open', { targetEntityId: target.id });
         expect(narrative(game).active?.sessionId).toBe(1); expect(frozenWorld(game)).toEqual(stable);
@@ -247,7 +248,7 @@ describe.each(conversationCombinations)('EXT-2b actual Game dialogue with %j', (
         expect(game.hasCompleteRecording).toBe(true); expect(game.loadReplay(recording)).toBe(true); game.animationEnabled = false;
         for (const event of recording.events) {
             game.replayStep(true); expect(game.replayError).toBeNull();
-            const actual = game.toSnapshot(); expect(actual.extensions).toEqual(event.extensions);
+            const actual = game.toSnapshot(); expect(extensionDigest(actual.extensions ?? null)).toBe(checkpointExtensionDigest(event));
             expect(actual.rngState).toEqual(event.rng); expect(actual.run.absoluteTurnNumber).toBe(event.turn); expect(actual.run.currentTick).toBe(event.tick);
         }
         expect(checkpoint(game)).toEqual(terminal);
@@ -255,7 +256,7 @@ describe.each(conversationCombinations)('EXT-2b actual Game dialogue with %j', (
         for (const index of [0, activeIndex, activeIndex + 1, recording.events.length]) {
             game.replaySeek(index); expect(game.replayError).toBeNull(); expect(game.replayCursor).toBe(index);
             const targetCheckpoint = index ? recording.events[index - 1]! : origin;
-            expect(game.extensionRuntime!.snapshot()).toEqual(targetCheckpoint.extensions); expect(game.toSnapshot().rngState).toEqual(targetCheckpoint.rng);
+            expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(targetCheckpoint)); expect(game.toSnapshot().rngState).toEqual(targetCheckpoint.rng);
         }
     }, 30000);
     it('rejects damaged active saves and recordings without retiring or mutating the live run', () => {
@@ -281,7 +282,7 @@ describe.each(conversationCombinations)('EXT-2b actual Game dialogue with %j', (
         for (const mutation of ['version', 'reference', 'gate']) {
             const bad = clone(recording), index = bad.events.findIndex(event => event.action === 'ext:command' && String(event.data).includes('"module":"narrative"'));
             const event = bad.events[index]!;
-            if (mutation === 'gate') event.extensions!.foundation.world.gate = null;
+            if (mutation === 'gate') event.checkpoint!.domains.extensions = '0'.repeat(64);
             else { const input = JSON.parse(String(event.data)); if (mutation === 'version') input.payload.v = 1; else input.payload.targetEntityId = 999999; event.data = JSON.stringify(input); }
             expect(game.loadReplay(bad)).toBe(false); expect(game.player).toBe(player); expect(game.extensionRuntime).toBe(runtime); expect(checkpoint(game)).toEqual(before);
         }

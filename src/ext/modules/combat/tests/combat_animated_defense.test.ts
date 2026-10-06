@@ -66,7 +66,7 @@ function warning(game: Game, id: number) {
 }
 function mechanical(game: Game) {
     const snapshot = json(game.toSnapshot()); snapshot.savedAt = 0;
-    snapshot.run.recordedInputEvents = []; snapshot.run.recordedInputIndex = 0;
+
     return snapshot;
 }
 afterEach(() => { vi.restoreAllMocks(); acknowledge(); });

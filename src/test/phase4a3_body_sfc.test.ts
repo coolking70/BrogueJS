@@ -1,3 +1,4 @@
+import { installRecordingScene } from './support/recordingV4';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
 import * as Pixi from 'pixi.js';
@@ -165,8 +166,7 @@ describe('4a-3 real client SFC paths via shared harness', () => {
         expect(bodyGraphics().context.instructions).toHaveLength(0); expect(hoverGraphics().context.instructions).toHaveLength(0); expect(targetGraphics().context.instructions).toHaveLength(0);
     });
     it('GameCanvas real replay seek replaces the old body drawing and removes hover/throw focus', async () => {
-        const start = game.startNewGame.bind(game);
-        vi.spyOn(game, 'startNewGame').mockImplementation(options => { start(options); squareDisplayScene(game); });
+        installRecordingScene(squareDisplayScene);
         game.startNewGame({ seed: 403004, mode: 'test' });
         game.executeCommand('wait'); const recording = game.exportRecording();
         await mount('../components/GameCanvas.vue');

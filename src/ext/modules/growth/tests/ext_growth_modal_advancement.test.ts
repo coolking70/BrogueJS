@@ -1,3 +1,4 @@
+import { extensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
@@ -58,7 +59,7 @@ describe('EXT-1d actual canvas display loop while the skill modal remains open',
         for (let index = 0; index < 20 && game.isAdvancing; index++) frames.loop(16, 16);
         expect(game.isAdvancing).toBe(false); expect(game.isInputLocked()).toBe(false); expect(game.stats.turns).toBe(turns + 1);
         expect(game.recordedInputEvents).toHaveLength(count + 1);
-        expect(game.recordedInputEvents[count]!.extensions).toEqual(game.extensionRuntime!.snapshot());
+        expect(game.recordedInputEvents[count]!.checkpoint!.domains.extensions).toBe(extensionDigest(game.extensionRuntime!.snapshot() ?? null));
         expect(replay).not.toHaveBeenCalled(); expect(auto).not.toHaveBeenCalled(); expect(frames.flush).toHaveBeenCalled();
         const state = game.extensionRuntime!.snapshot(), random = rng.getState();
         for (let index = 0; index < 20; index++) frames.loop(1000, 16);
@@ -75,7 +76,7 @@ describe('EXT-1d actual canvas display loop while the skill modal remains open',
         for (let index = 0; index < 100 && game.isAdvancing; index++) frames.loop(1000, 16);
         expect(game.isAdvancing).toBe(false); expect(game.lastAdvancementError).toBeNull();
         expect(game.stats.turns).toBe(turns + 1); expect(game.recordedInputEvents).toHaveLength(count + 1);
-        expect(game.recordedInputEvents[count]!.extensions).toEqual(game.extensionRuntime!.snapshot());
+        expect(game.recordedInputEvents[count]!.checkpoint!.domains.extensions).toBe(extensionDigest(game.extensionRuntime!.snapshot() ?? null));
         expect(replay).not.toHaveBeenCalled(); expect(auto).not.toHaveBeenCalled();
     });
     it('drains native hunger ACK-following display delays while the character panel stays open', () => {

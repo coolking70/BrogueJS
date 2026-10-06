@@ -8,6 +8,7 @@ import { Monster, MonsterState, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
 import { logger } from '../engine/Systems/Logger';
 import { rng } from '../engine/Random';
+import { installRecordingScene, rechain } from './support/recordingV4';
 
 // Same deterministic room is reinstalled at replay initialization. Commands,
 // status application, scheduling, both RNG checkpoints and replay are real.
@@ -36,7 +37,7 @@ function settle(g: Game) {
 function state(g: Game) {
     const s = g.toSnapshot(); s.savedAt = 0;
     // Replay consumes its imported log rather than recording new inputs.
-    s.run.recordedInputEvents = []; s.run.recordedInputIndex = 0;
+
     return JSON.parse(JSON.stringify(s));
 }
 afterEach(() => { vi.restoreAllMocks(); logger.presentAcknowledgments(null); });
@@ -91,7 +92,7 @@ describe('X3-U8a B06: one command owns the complete forced wait', () => {
         g.executeCommand('wait');
         expect(g.isGameOver).toBe(true); expect(g.stats.turns).toBe(1);
         expect(g.absoluteTurnNumber).toBe(1); expect(g.player.hasStatus('paralyzed')).toBe(true);
-        expect(g.recordedInputEvents).toHaveLength(1); expect(g.recordedInputEvents[0]!.end).toBeDefined();
+        expect(g.recordedInputEvents).toHaveLength(1); expect(g.recordedInputEvents[0]!.terminal).toBeDefined();
     });
 
     it.each([false, true])('gas onset during an action, animation=%s: final checkpoint, replay and seek are identical', slowed => {
@@ -99,7 +100,8 @@ describe('X3-U8a B06: one command owns the complete forced wait', () => {
             room(g); if (slowed) g.player.setStatusDuration('slowed', 100);
             g.environment.addGas(10, 10, GasType.PARALYSIS, 1);
         };
-        const g = scene(); setup(g); g.animationEnabled = true;
+        installRecordingScene(setup);
+        const g = createHeadlessGame(33008, 'test'); g.animationEnabled = true;
         g.executeCommand('wait');
         expect(g.isAdvancing).toBe(true); expect(g.recordedInputEvents[0]!.turn).toBe(0);
         expect(() => g.exportRecording()).toThrow('advancing');
@@ -109,17 +111,16 @@ describe('X3-U8a B06: one command owns the complete forced wait', () => {
         const recording = g.exportRecording(), final = state(g);
         expect(recording.events).toHaveLength(1);
         expect(recording.events[0]!.turn).toBe(g.absoluteTurnNumber);
-        const sync = scene(); setup(sync); sync.executeCommand('wait');
+        const sync = createHeadlessGame(33008, 'test'); sync.executeCommand('wait');
         expect(sync.exportRecording().events).toEqual(recording.events);
         expect(state(sync)).toEqual(final);
 
-        const start = g.startNewGame.bind(g);
-        vi.spyOn(g, 'startNewGame').mockImplementation(options => { start(options); setup(g); });
         expect(g.loadReplay(recording)).toBe(true); g.replayStep(true); settle(g);
         expect(g.replayCursor).toBe(1); expect(g.replayError).toBeNull(); expect(state(g)).toEqual(final);
         g.replaySeek(0); g.replaySeek(1);
         expect(g.replayCursor).toBe(1); expect(g.replayError).toBeNull(); expect(state(g)).toEqual(final);
         recording.events[0]!.turn = recording.events[0]!.turn! - 1;
+        rechain(recording);
         expect(g.loadReplay(recording)).toBe(true); g.replaySeek(1);
         expect(g.replayError).toContain('OOS at command 1');
     });

@@ -1,4 +1,4 @@
-import type { ModuleDescriptor } from '../../../ext/descriptor';
+import { FOUNDATION_PROTOCOL, type ModuleDescriptor } from '../../../ext/descriptor';
 import type { ExtensionContext, ExtensionModule, Json } from '../../../ext/types';
 
 interface FixtureState {
@@ -63,6 +63,6 @@ export function compositionDescriptor(id: string, options: {
             },
         };
     };
-    return { id, version, rules, foundation: 5, labelKey: `ext.${id}.name`, create,
+    return { id, version, rules, foundation: FOUNDATION_PROTOCOL, labelKey: `ext.${id}.name`, create,
         locales: { en: { [`ext.${id}.name`]: `${id} fixture` } } };
 }

@@ -1,3 +1,4 @@
+import { continuingPrefix, installRecordingScene } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { naturalSpine, startGiants, json } from './naturalFixture';
 import { loadGiantsDefinitionPack } from '../definitions';
@@ -18,7 +19,7 @@ import { selectBossHud } from '../ui/view';
 import { observeDisplayFrame } from '../../../../ui/displayProjection';
 import { logger } from '../../../../engine/Systems/Logger';
 
-const world=(g:Game)=>{const s=json(g.toSnapshot());s.savedAt=0;s.run.recordedInputEvents=[];s.run.recordedInputIndex=0;return s;};
+const world=(g:Game)=>{const s=json(g.toSnapshot());s.savedAt=0;return s;};
 afterEach(()=>vi.restoreAllMocks());
 function diagnostic() {
   const g=startGiants(['giants'],44004,'wizard');g.monsters=[];g.dormantMonsters=[];g.items=[];
@@ -88,12 +89,11 @@ describe('giants 4b original four-cell spine crawler',()=>{
     g.executeCommand('wait');expect(g.monsters).toContain(pending);expect(pending.hp).toBe(hp);expect(pending.spatial!.pose).toBe('r270');expect((g as any).pendingFallenByDepth.has(2)).toBe(false);
   });
   it('real NPC r270 recording survives checkpoint, each replay event, seek and continuation',()=>{
-    const start=Game.prototype.startNewGame;
-    vi.spyOn(Game.prototype,'startNewGame').mockImplementation(function(this:Game,...args){start.apply(this,args);if(!this.extensionRuntime)return;
-      this.monsters=[];this.dormantMonsters=[];this.items=[];
-      for(let y=0;y<this.grid.height;y++)for(let x=0;x<this.grid.width;x++){this.grid.setTerrain(x,y,x===0||y===0||x===this.grid.width-1||y===this.grid.height-1?T.WALL:T.FLOOR);this.grid.getCell(x,y)!.machineNumber=0;}
-      this.environment=new EnvironmentManager(this.grid);this.waypoints=new WaypointSystem();commitCreatureAnchor(this.player,{x:65,y:14});
-      const m=this.createModuleMonster('giants.spine-crawler',{x:12,y:12})!;m.spatial!.pose='r270';m.state=MonsterState.HUNTING;m.behaviorFlags.add('MONST_ALWAYS_HUNTING');m.givenUpOnScent=true;
+    installRecordingScene((game) => {if(!game.extensionRuntime)return;
+      game.monsters=[];game.dormantMonsters=[];game.items=[];
+      for(let y=0;y<game.grid.height;y++)for(let x=0;x<game.grid.width;x++){game.grid.setTerrain(x,y,x===0||y===0||x===game.grid.width-1||y===game.grid.height-1?T.WALL:T.FLOOR);game.grid.getCell(x,y)!.machineNumber=0;}
+      game.environment=new EnvironmentManager(game.grid);game.waypoints=new WaypointSystem();commitCreatureAnchor(game.player,{x:65,y:14});
+      const m=game.createModuleMonster('giants.spine-crawler',{x:12,y:12})!;m.spatial!.pose='r270';m.state=MonsterState.HUNTING;m.behaviorFlags.add('MONST_ALWAYS_HUNTING');m.givenUpOnScent=true;
     });
     const g=startGiants(['giants'],44004,'wizard'),states=[];let checkpoint:ReturnType<Game['toSaveSnapshot']>|undefined;
     for(let i=0;i<6;i++){g.executeCommand('wait');states.push(world(g));if(i===2)checkpoint=json(g.toSaveSnapshot());}
@@ -115,7 +115,7 @@ describe('giants 4b original four-cell spine crawler',()=>{
   it('natural commands save/load, replay/seek and continue with trusted shape+region truth',()=>{
     const {game,boss}=naturalSpine(),saved=json(game.toSaveSnapshot()),recording=json(game.exportRecording()),expected=world(game);
     expect(game.loadSnapshot(saved)).toBe(true);game.animationEnabled=false;expect(world(game)).toEqual(expected);expect(game.monsters.find(c=>c.id===boss.id)!.spatial).toEqual(boss.spatial);
-    game.executeCommand('wait');const continued=world(game),continuation=json(game.exportRecording());expect(continuation.events.slice(0,recording.events.length)).toEqual(recording.events);
+    game.executeCommand('wait');const continued=world(game),continuation=json(game.exportRecording());expect(continuation.events.slice(0,recording.events.length)).toEqual(continuingPrefix(recording));
     expect(game.loadReplay(recording)).toBe(true);game.animationEnabled=false;
     while(game.replayCursor<recording.events.length){game.replayStep(true);expect(game.replayError).toBeNull();}expect(world(game)).toEqual(expected);
     for(const i of [0,Math.floor(recording.events.length/2),recording.events.length]){game.replaySeek(i);expect(game.replayCursor).toBe(i);expect(game.replayError).toBeNull();}

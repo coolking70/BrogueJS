@@ -1,3 +1,4 @@
+import { installRecordingScene, extensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import { Game } from '../../../../engine/Core/Game';
@@ -76,7 +77,7 @@ function unchangedFacts(game: Game) {
 }
 function mechanical(game: Game) {
     const snapshot = json(game.toSnapshot()); snapshot.savedAt = 0;
-    snapshot.run.recordedInputEvents = []; snapshot.run.recordedInputIndex = 0;
+
     return snapshot;
 }
 function configuredCombat(change: (pack: CombatPack) => void) {
@@ -114,8 +115,8 @@ describe('3c production dodge preflight and shared footprint authority', () => {
         const before = unchangedFacts(game), events = json(game.recordedInputEvents);
         expect(prepareActorDodgeCommand(game, command())).toBeNull(); acknowledge(); game.executeCommand('ext:command', command());
         expect(unchangedFacts(game)).toEqual(before); expect(game.recordedInputEvents).toHaveLength(events.length + 1);
-        expect(game.recordedInputEvents[events.length]).toMatchObject({ tick: before.tick, turn: before.turn, decisions: [],
-            extensions: { modules: { combat: before.state } } });
+        expect(game.recordedInputEvents[events.length]).toMatchObject({ tick: before.tick, turn: before.turn, decisions: [] });
+        expect(game.recordedInputEvents[events.length]!.checkpoint!.domains.extensions).toBe(extensionDigest(game.extensionRuntime!.snapshot()));
     });
 
     it.each(['paralyzed', 'entranced', 'confused', 'stuck', 'nauseous'] as const)('rejects the existing %s eligibility gate purely', status => {
@@ -292,7 +293,7 @@ describe('3c dodge persistence, deterministic continuation and floor lifetime', 
         const at = { ...loaded.player.loc }; loaded.executeCommand('move', { x: 1, y: 0 }); expect(loaded.player.loc).toEqual(at);
         loaded.update(); expect(loaded.isInputLocked()).toBe(false); expect(loaded.player.ticksUntilTurn).toBe(0);
         expect(resource(loaded)).toMatchObject({ stamina: 22, dodgeRemainingTicks: 0, dodgeRecoveryRemainingTicks: 0, poise:12,poiseRecoveryRemainder:0,poiseRecoveryDelayRemaining:0,parryRemainingTicks:0,parryRecoveryRemainingTicks:0,parryFacing:null,staggerRemainingTicks:0 });
-        expect(loaded.recordedInputEvents).toEqual(saved.run.recordedInputEvents);
+        expect(saved.run.recordingOrigin).toBeUndefined(); expect(loaded.recordedInputEvents).toEqual([]);
     });
 
     it('load preserves an active window and recovery without RNG, repayment or entry effects', () => {
@@ -312,9 +313,8 @@ describe('3c dodge persistence, deterministic continuation and floor lifetime', 
     });
 
     it('genuine dodge commands replay every checkpoint, seek in both directions and continue the exact saved prefix', () => {
-        const original = Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype, 'startNewGame').mockImplementation(function (this: Game, ...args) {
-            original.apply(this, args); if (this.extensionRuntime?.actorActionBinding()) arena(this);
+        installRecordingScene((game) => {
+            if (game.extensionRuntime?.actorActionBinding()) arena(game);
         });
         const game = start(), expected: ReturnType<typeof mechanical>[] = [], saves: ReturnType<Game['toSaveSnapshot']>[] = [];
         for (const facing of ['e', 's', 'w', 'n'] as const) {

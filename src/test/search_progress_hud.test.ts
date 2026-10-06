@@ -1,3 +1,4 @@
+import { installRecordingScene } from './support/recordingV4';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
 import I18NextVue from 'i18next-vue';
@@ -41,7 +42,8 @@ function mount(component: Vue.Component, props = {}) {
     app.use(I18NextVue, { i18next }); app.mount(root); mounted.push(app);
     return root;
 }
-function room() {
+function room(target: Game = game) {
+    const game = target;
     game.animationEnabled = false;
     game.monsters = []; game.dormantMonsters = []; game.items = [];
     game.visibleMonsters.clear(); game.visibleItems.clear(); game.everSeenMonsters.clear(); game.everSeenItems.clear();
@@ -123,7 +125,7 @@ beforeAll(async () => {
     ThemeHud = await harness.load('../components/theme/ThemeHud.vue'); Sidebar = await harness.load('../components/Sidebar.vue');
 });
 beforeEach(() => {
-    vi.useFakeTimers(); game.startNewGame({ seed: 33005, mode: 'test' }); room();
+    vi.useFakeTimers(); installRecordingScene(room); game.startNewGame({ seed: 33005, mode: 'test' });
 });
 afterEach(() => { for (const app of mounted.splice(0)) app.unmount(); vi.useRealTimers(); vi.restoreAllMocks(); });
 afterAll(() => vi.unstubAllGlobals());
@@ -248,8 +250,7 @@ describe('read-only search progress presentation', () => {
         const hud = mount(ThemeHud);
         game.executeCommand('search'); game.executeCommand('search'); game.executeCommand('wait');
         game.executeCommand('search_long'); while (game.isAutoTraveling()) game.stepAutoPath();
-        const recording = game.exportRecording(), start = game.startNewGame.bind(game);
-        vi.spyOn(game, 'startNewGame').mockImplementation(options => { start(options); room(); });
+        const recording = game.exportRecording();
         expect(game.loadReplay(recording)).toBe(true); await poll(); expectProgress(hud, 0);
         for (const charge of [1, 2, 0, 1, 2, 3, 4, 0]) {
             game.replayStep(); await poll(); expectProgress(hud, charge); expect(game.replayError).toBeNull();

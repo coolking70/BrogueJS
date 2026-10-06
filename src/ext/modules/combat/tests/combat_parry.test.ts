@@ -1,3 +1,4 @@
+import { installRecordingScene } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import { Game } from '../../../../engine/Core/Game';
@@ -55,7 +56,7 @@ function npc(game: Game, size: 1 | 2 | 3 = 1, at = { x: 24, y: 15 }) {
 }
 function parry(game:Game,facing:ActorAttackFacing='e') { const plan=prepareActorParryCommand(game,command(facing));expect(plan).not.toBeNull();expect(commitActorParryCommand(game,plan!)).toBe(true); }
 function advance(game:Game,delta:number) { productionActorActionScheduler(game)!.advanceActionTime(delta);for(const source of [game.player,...game.monsters])source.ticksUntilTurn=Math.max(0,source.ticksUntilTurn-delta); }
-function mechanical(game:Game){const snap=json(game.toSnapshot());snap.savedAt=0;snap.run.recordedInputEvents=[];snap.run.recordedInputIndex=0;return snap;}
+function mechanical(game:Game){const snap=json(game.toSnapshot());snap.savedAt=0;return snap;}
 afterEach(()=>{vi.restoreAllMocks();acknowledge();});
 describe('3d production deterministic parry and poise',()=>{
     it('pure prepare and stale commit preserve both RNGs, resources and time',()=>{
@@ -132,8 +133,7 @@ describe('3d production deterministic parry and poise',()=>{
         const oldPlayer=loaded.player;expect(loaded.loadSnapshot(corrupt)).toBe(false);expect(loaded.player).toBe(oldPlayer);
     });
     it('real commands replay checkpoints, bidirectional seek and saved continuation with exact RNG',()=>{
-        const original=Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype,'startNewGame').mockImplementation(function(this:Game,...args){original.apply(this,args);if(this.extensionRuntime?.actorActionBinding())arena(this);});
+        installRecordingScene((game) => {if(game.extensionRuntime?.actorActionBinding())arena(game);});
         const game=start(),expected:ReturnType<typeof mechanical>[]=[],saves:ReturnType<Game['toSaveSnapshot']>[]=[];
         for(const facing of ['e','s','w','n'] as const){acknowledge();game.executeCommand('ext:command',command(facing));expected.push(mechanical(game));saves.push(json(game.toSaveSnapshot()));}
         const recording=json(game.exportRecording()),replay=createHeadlessGame(94,'test');expect(replay.loadReplay(recording)).toBe(true);replay.animationEnabled=false;
@@ -189,9 +189,8 @@ describe('3d native scheduling and visible defensive decisions',()=>{
 
 describe('3d defended facts replay through native NPC windups',()=>{
     it('successful parries retain exact causal IDs, RNG, checkpoints and saved continuation',()=>{
-        const original=Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype,'startNewGame').mockImplementation(function(this:Game,...args){
-            original.apply(this,args);if(this.extensionRuntime?.actorActionBinding()){arena(this);npc(this,1,{x:21,y:15});}
+        installRecordingScene((game) => {
+            if(game.extensionRuntime?.actorActionBinding()){arena(game);npc(game,1,{x:21,y:15});}
         });
         const game=start(),expected:ReturnType<typeof mechanical>[]=[],saves:ReturnType<Game['toSaveSnapshot']>[]=[];
         const firstFact=game.extensionRuntime!.causality.snapshot().nextEffectId,parries=vi.spyOn(game.extensionRuntime!,'notifyActorParried');

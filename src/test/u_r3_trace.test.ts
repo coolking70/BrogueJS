@@ -2,15 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 import { createHeadlessGame } from './harness';
 import { rng } from '../engine/Random';
 import { logger } from '../engine/Systems/Logger';
 import { setMachineObservationHook, type MachineTrace } from '../engine/Generator/MachineObservation';
 
-const fixture = new URL('./fixtures/traces/u-r3-trace.json.gz', import.meta.url);
+const captureDirectory = process.env.UR3_CAPTURE_DIR;
+const fixture = captureDirectory ? pathToFileURL(`${captureDirectory}/u-r3-trace.json.gz`)
+    : new URL('./fixtures/traces/u-r3-trace.json.gz', import.meta.url);
 const seeds = [424242, 777, 20260913, 31337];
 
 function capture(seed: number) {
+    let projectionIndex = 0;
     const observations: MachineTrace[] = [];
     const game = createHeadlessGame(seed);
     setMachineObservationHook(trace => observations.push(JSON.parse(JSON.stringify(trace)) as MachineTrace));
@@ -19,6 +23,8 @@ function capture(seed: number) {
     const row = () => {
         const snapshot = game.toSnapshot();
         snapshot.savedAt = 0;
+        if (captureDirectory) writeFileSync(`${captureDirectory}/ur3-${seed}-${projectionIndex++}.json`,
+            JSON.stringify({ snapshot, rng: rng.getState(), log: logger.getState(), observations }));
         const hash = createHash('sha256').update(JSON.stringify({ snapshot, rng: rng.getState(), log: logger.getState(), observations })).digest('hex');
         return { hash, depth: game.depth, monsters: game.monsters.length, items: game.items.length, observations: observations.length };
     };
@@ -42,6 +48,8 @@ function capture(seed: number) {
     fallGenerate(false, false, true);
     const fallSnapshot = falling.toSnapshot();
     fallSnapshot.savedAt = 0;
+    if (captureDirectory) writeFileSync(`${captureDirectory}/ur3-${seed}-fall.json`,
+        JSON.stringify({ snapshot: fallSnapshot, rng: rng.getState(), log: logger.getState() }));
     const fall = createHash('sha256').update(JSON.stringify({ snapshot: fallSnapshot, rng: rng.getState(), log: logger.getState() })).digest('hex');
     return { depths, revisit, returnTo26, loaded, fall };
 }

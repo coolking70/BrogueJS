@@ -1,3 +1,4 @@
+import { installRecordingScene } from '../../../../test/support/recordingV4';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Vue from 'vue';
 import I18NextVue from 'i18next-vue';
@@ -451,7 +452,8 @@ describe('EXT-1d mounted skill learning, loadout, targeting and display', () => 
     }
     async function prepared() {
         configured(pack => { pack.config.levels.skillPoints = { kind: 'periodic', firstLevel: 1, every: 1, amount: 30 }; pack.config.skills.activeSlots = 6; });
-        await start(); game.monsters = []; game.dormantMonsters = []; game.items = [];
+        installRecordingScene(scene => { if (scene.extensionRuntime) { scene.monsters = []; scene.dormantMonsters = []; scene.items = []; } });
+        await start();
         record('allocate', { attributes: { 'growth.attribute.constitution': 2, 'growth.attribute.agility': 2, 'growth.attribute.perception': 2 } });
         vi.advanceTimersByTime(100); await tick();
     }
@@ -489,7 +491,7 @@ describe('EXT-1d mounted skill learning, loadout, targeting and display', () => 
         pending = null; execute.mockRestore();
         if (outcome === 'yes') original('ext:command', command);
         if (outcome === 'no') game.recordedInputEvents.push({ index: count, tick: 0, depth: game.depth,
-            player: { ...game.player.loc }, action: 'ext:command', data: command, decisions: [false] });
+            player: { ...game.player.loc }, action: 'ext:command', data: command, decisions: [false] } as unknown as import('../../../../engine/Core/Game').RecordedInputEvent);
         vi.advanceTimersByTime(100); await tick();
         expect(cls('growth-error')).toBeUndefined();
         if (outcome === 'yes') expect(text(cls('growth-success'))).toBe(i18next.t('ext.growth.ui.skill_used'));
@@ -573,7 +575,8 @@ describe('EXT-1d mounted skill learning, loadout, targeting and display', () => 
             const brace = pack.definitions.find(entry => entry.id === 'growth.skill.brace') as GrowthSkill;
             brace.cooldown = 0; brace.focusCost = 0; brace.prerequisites = [];
         });
-        await start(); game.monsters = []; game.dormantMonsters = []; game.items = [];
+        installRecordingScene(scene => { if (scene.extensionRuntime) { scene.monsters = []; scene.dormantMonsters = []; scene.items = []; } });
+        await start();
         record('learn-skill', { skillId: skillId('brace') }); record('equip-skills', { active: [skillId('brace')], passive: [] });
         vi.advanceTimersByTime(100); await tick();
         await skills(); click(cls('growth-back')); await tick();

@@ -24,11 +24,15 @@ const props = defineProps<{
   canSaveReplay?: boolean;
   replayBusy?: boolean;
   replayFeedback?: string;
+  saveBusy?: boolean;
+  hasLegacyReplay?: boolean;
+  legacyReplayNotice?: boolean;
   saveInfo: {
     depth: number;
     seed: string;
     mode: string;
     savedAt: number;
+    compatible?: boolean;
   } | null;
   replayInfo: {
     status: string;
@@ -41,6 +45,8 @@ const emit = defineEmits<{
   (e: "new-game", payload: { seed?: string; mode: GameMode; ruleSet?: RuleSet; extensions?: readonly string[]; initialCommands?: readonly string[]; onRejected?: () => void }): void;
   (e: "continue-game"): void;
   (e: "save-game"): void;
+  (e: "export-legacy-replay"): void;
+  (e: "dismiss-legacy-replay"): void;
   (e: "delete-save"): void;
   (e: "save-replay"): void;
   (e: "load-replay"): void;
@@ -292,7 +298,7 @@ const sidebarWidthModel = computed({
         </button>
         <button
           class="title-action"
-          :disabled="!hasSave || replayBusy"
+          :disabled="!hasSave || replayBusy || saveInfo?.compatible === false"
           @click="emit('continue-game')"
         >
           <span class="action-mark">◆</span>{{ t("menu.actions.continue")
@@ -399,11 +405,12 @@ const sidebarWidthModel = computed({
             </div>
           </div>
           <p v-else class="empty-message">{{ t("title.no_save") }}</p>
+          <p v-if="saveInfo?.compatible === false" role="alert" data-testid="incompatible-save">{{ t('save.incompatible') }}</p>
           <div class="actions">
-            <button v-if="inGame" @click="emit('save-game')">
+            <button v-if="inGame" :disabled="saveBusy" @click="emit('save-game')">
               {{ t("menu.actions.save") }}</button
             ><button
-              :disabled="!hasSave || replayBusy"
+              :disabled="!hasSave || replayBusy || saveBusy || saveInfo?.compatible === false"
               @click="emit('continue-game')"
             >
               {{ t("menu.actions.continue") }}</button
@@ -417,6 +424,11 @@ const sidebarWidthModel = computed({
           </div>
         </template>
         <template v-if="page === 'records'">
+          <div v-if="hasLegacyReplay" data-testid="legacy-replay">
+            <p v-if="legacyReplayNotice" role="status">{{ t('replay.legacy_recovery') }}</p>
+            <button @click="emit('export-legacy-replay')">{{ t('replay.export_legacy') }}</button>
+            <button v-if="legacyReplayNotice" @click="emit('dismiss-legacy-replay')">{{ t('replay.dismiss_legacy') }}</button>
+          </div>
           <h2>{{ t("menu.replay.title") }}</h2>
           <p class="recording-hint">{{ t("menu.replay.automatic_hint") }}</p>
           <div class="actions">

@@ -1,3 +1,4 @@
+import { installRecordingScene } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import { Game } from '../../../../engine/Core/Game';
@@ -38,8 +39,8 @@ function start(ids = ['combat'], seed = 73063, mode: 'normal' | 'test' = 'test')
 function mechanical(game: Game) {
     const snapshot = json(game.toSnapshot());
     snapshot.savedAt = 0;
-    snapshot.run.recordedInputEvents = [];
-    snapshot.run.recordedInputIndex = 0;
+
+
     return snapshot;
 }
 function phase(game: Game, actorId: number) {
@@ -156,10 +157,8 @@ describe('3b production square actions, native effects and persistence', () => {
 
     it.each([2, 3] as const)('%s-square fixture rebinds every phase, replays each command, seeks and continues an identical saved prefix', size => {
         configuredCombat(longPhases);
-        const original = Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype, 'startNewGame').mockImplementation(function (this: Game, ...args) {
-            original.apply(this, args);
-            if (this.extensionRuntime?.actorActionBinding()) squarePair(this, size, size);
+        installRecordingScene((game) => {
+            if (game.extensionRuntime?.actorActionBinding()) squarePair(game, size, size);
         });
         const game = start(), sourceId = game.monsters.find(m => m.isAlly)!.id;
         const expected: ReturnType<typeof mechanical>[] = [], checkpoints = new Map<string, { snapshot: ReturnType<Game['toSaveSnapshot']>; index: number }>();
@@ -302,7 +301,7 @@ describe.each(catalog.getInstalledModuleDescriptors().filter(module => module.id
             expect(phase(loaded, boss.id)).toBe(checkpoint.phase);
             expect(state(loaded)).toEqual(checkpoint.snapshot.extensions!.modules.combat as unknown as ProductionActorAttackState);
             expect(rng.getState()).toEqual(checkpoint.snapshot.rngState);
-            for (let index = checkpoint.snapshot.run.recordedInputEvents.length; index < recording.events.length; index++) wait(loaded);
+            for (let index = checkpoint.snapshot.run.recordingOrigin!.events.length; index < recording.events.length; index++) wait(loaded);
             expect(mechanical(loaded)).toEqual(final);
             expect(loaded.exportRecording().events).toEqual(recording.events);
         }
@@ -312,7 +311,7 @@ describe.each(catalog.getInstalledModuleDescriptors().filter(module => module.id
             replay.replayStep(true); expect(replay.replayError).toBeNull();
         }
         expect(mechanical(replay)).toEqual(final); expect(rng.getState()).toEqual(final.rngState);
-        const windupIndex = snapshots[0]!.snapshot.run.recordedInputEvents.length;
+        const windupIndex = snapshots[0]!.snapshot.run.recordingOrigin!.events.length;
         replay.replaySeek(windupIndex); expect(replay.replayError).toBeNull(); expect(phase(replay, boss.id)).toBe('windup');
         replay.replaySeek(recording.events.length); expect(replay.replayError).toBeNull(); expect(mechanical(replay)).toEqual(final);
         expect(giantDescriptor.rules).toEqual(originalGiantRules);

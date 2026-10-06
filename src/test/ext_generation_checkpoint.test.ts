@@ -393,11 +393,11 @@ describe('narrow extension generation checkpoints', () => {
         const fixture = setup(), { game } = fixture;
         enter(game, 2); enter(game, 3);
         const untouched = game.levels.get(1)!;
-        const event: RecordedInputEvent = { index: 0, tick: 0, depth: 1, player: { x: 1, y: 1 }, action: 'wait', data: null };
+        const event: RecordedInputEvent = { index: 0, tick: 0, depth: 1, player: { x: 1, y: 1 }, action: 'wait', data: null } as unknown as RecordedInputEvent;
         const history = Array.from({ length: 512 }, (_, index) => ({ ...event, index, player: { ...event.player }, rng: rng.getState() }));
         game.recordedInputEvents.push(...history);
         game.replayEvents.push(...history);
-        game.replayRecording = { version: 1, recordedAt: 1, seed: game.currentSeed, mode: 'normal', startDepth: 1, events: history };
+        game.replayRecording = { version: 1, recordedAt: 1, seed: game.currentSeed, mode: 'normal', startDepth: 1, events: history } as unknown as import('../engine/Core/Game').GameRecording;
         const forbidden = new Set<object>([
             untouched.grid, untouched.environment, untouched.fov, untouched.lightMap, untouched.scent!, untouched.waypoints!,
             (untouched.grid as any).cells, untouched.environment.gasGrid, (untouched.lightMap as any).lightGrid,
@@ -416,7 +416,7 @@ describe('narrow extension generation checkpoints', () => {
         expect(visited).toEqual([]);
         expect(game.levels.get(1)).toBe(untouched);
         expect(game.recordedInputEvents).toHaveLength(512); expect(game.recordedInputEvents[0]).toBe(history[0]);
-        expect(game.replayEvents).toHaveLength(512); expect(game.replayRecording.events).toBe(history);
+        expect(game.replayEvents).toHaveLength(512); expect(game.replayRecording!.events).toBe(history);
     });
 });
 

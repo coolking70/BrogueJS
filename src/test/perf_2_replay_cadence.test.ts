@@ -1,3 +1,4 @@
+import { rechain } from './support/recordingV4';
 import { describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import type { Game } from '../engine/Core/Game';
@@ -66,7 +67,7 @@ describe('PERF-2 replay uses elapsed display time', () => {
         tick(game, 100); expect(game.isInventoryOpen).toBe(true);
         tick(game, 100); expect(game.isInventoryOpen).toBe(false);
         expect(game.replayCursor).toBe(2); expect(game.replayError).toBeNull();
-        recording.events[0]!.tick += 1;
+        recording.events[0]!.tick += 1; rechain(recording);
         expect(game.loadReplay(recording)).toBe(true); game.replayPlay(); tick(game, 200);
         expect(game.replayError).toContain('OOS at command 1');
         expect(game.replayCursor).toBe(0);

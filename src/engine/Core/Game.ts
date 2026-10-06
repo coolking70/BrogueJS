@@ -1,3 +1,9 @@
+import { mechanicalDigest, eventDigest, inventoryStamp, recordingStart, recordingChain, worldSnapshotHash } from './RecordingDigest';
+import { validateRecordingV4, recordingHeader, validOriginShape, boundedSnapshots, validAccelerationSnapshot } from './RecordingFormat';
+import { EVENT_DOMAINS, DIGEST_DOMAINS, type DigestDomain, type ReplayDiagnostic, type RecordingV4, type RecordingEventV4, type RecordingOriginV2, type RecordingHeaderV4, type ReplaySnapshotV4 } from './RecordingV4';
+export type { ReplayDiagnostic, RecordingV4, RecordingEventV4, RecordingOriginV2, ReplaySnapshotV4 } from './RecordingV4';
+import { commitOfflineSettlement, planOfflineSettlement, offlineSeedKey } from './WorldSettlement';
+import { createWorld5, checkedAdd, levelKey, requireDungeon, advanceWorldClock, validateWorldClockAdvance, indexWorldLevels, validateWorld5, assertWorldLevelOwnership, type World5Snapshot } from '../../ext/world5';
 import { assertBodyTransitionRequest, bodyTransitionHp } from '../Movement/BodyTransition';
 import type { ActiveBodyTransition, BodyTransitionRequest, BodyTransitionFact } from '../../ext/bodyTransitions';
 import { checkpointSpatialTerrain } from '../Movement/SpatialRevision';
@@ -65,7 +71,7 @@ import { generateQualifiedMachineItem } from '../Items/MachineItemGeneration';
 import { minionPlacement, generationDistances, speciesForbiddenFlags } from '../Generator/GenerationPlacement';
 import { travelDistanceMap, travelPlacement, travelAvoidedFlags, restoreTravelPosition, restoreSquareTravelPosition, APPROACHING_DOWNSTAIRS, APPROACHING_UPSTAIRS, APPROACHING_PIT } from '../Movement/LevelTravel';
 import { snapshotLevel as projectLevel, projectRunState, toWholeRunSnapshot,
-    decodeWholeRunWorld, decodePlayer, isWholeRunSnapshot, type LevelSnapshot, type GameSnapshot } from './WholeRunSnapshot';
+    decodeWholeRunWorld, decodePlayer, isWholeRunSnapshot, world5SnapshotContext, type LevelSnapshot, type GameSnapshot } from './WholeRunSnapshot';
 import { memoryTerrainAppearance } from '../UI/Appearance';
 import { initializeLevelSeeds, copyLevelSeeds, type LevelSeed } from './LevelSeeds';
 import type { LevelState } from './LevelState';
@@ -96,7 +102,7 @@ import {
     RETIRED_INVENTED_BLUEPRINT_IDS,
 } from '../Generator/BlueprintEngine';
 import blueprintData from '../../data/blueprints.json';
-import { getMachineObservationHook, setMachineObservationSeed } from '../Generator/MachineObservation';
+import { getMachineObservationHook, setMachineObservationSeed, getMachineObservationSeed, setMachineObservationHook } from '../Generator/MachineObservation';
 import { PLAYER_STARTING_RESOURCES, Player, STOMACH_SIZE, type HungerState } from '../../entities/Player';
 import { monsterBoltContact, Monster, monstersAreTeammates, monstersAreEnemies, avoidedFlagsForCaster } from '../../entities/Monster';
 import { CombatSystem, type AttackResult } from '../Combat/Combat';
@@ -117,9 +123,9 @@ import { ItemLoader } from '../Items/ItemLoader';
 import { charmRechargeDelay, isCharmKind } from '../Items/CharmModel';
 import { equippedWisdomBonus, tickStaffRecharge, rechargeStaffFully } from '../Items/ArcanaRecharge';
 import { ringBonus, ringLightMultiplier } from '../Items/RingBonuses';
-import { rng, Random, RNGType } from '../Random';
+import { rng, RNGType } from '../Random';
 import { prepareFlare, flareState, type Flare } from '../Lighting/CosmeticLight';
-import { normalizeSeed, isSeed, type SeedInput } from '../Seed';
+import { normalizeSeed, type SeedInput } from '../Seed';
 import monsterData from '../../data/monsters.json';
 import hordeData from '../../data/hordes.json';
 import mutationData from '../../data/mutations.json';
@@ -276,47 +282,9 @@ export type GameRunSnapshot = ReturnType<Game['snapshotRunState']> & { recording
 
 export type RecordedInputData = number | { x: number; y: number } | string | null;
 
-export interface RecordedInputEvent {
-    extensions?: ExtensionSnapshot;
-    index: number;
-    tick: number;
-    depth: number;
-    player: Pos;
-    action: string;
-    data: RecordedInputData;
-    decisions?: boolean[];
-    turn?: number;
-    rng?: ReturnType<typeof rng.getState>;
-    end?: { won: boolean; superVictory: boolean; score: number };
-}
-
-export interface GameRecording {
-    extensions?: ExtensionManifest;
-    version: number;
-    recordedAt: number;
-    /** Exports are canonical decimal strings; safe numeric recordings remain readable. */
-    seed: string | number;
-    mode: GameMode;
-    startDepth: number;
-    events: RecordedInputEvent[];
-}
-
-/** Provenance for saves made by this recorder, not a proof against edited worlds. */
-export interface RecordingOrigin {
-    extensions?: ExtensionManifest;
-    version: 1;
-    seed: string;
-    mode: GameMode;
-    initial: Pick<RecordedInputEvent, 'tick' | 'depth' | 'player' | 'turn' | 'rng' | 'end' | 'extensions'>;
-    inputState: {
-        inventoryOpen: boolean;
-        inventoryAction: Game['inventoryAction'];
-        referenceScreen: Game['referenceScreen'];
-        arcana: { itemId: number; cursor: Pos } | null;
-        throwItemId: number | null;
-        pendingUseConfirmId: number | null;
-    };
-}
+export type RecordedInputEvent = RecordingEventV4;
+export type GameRecording = RecordingV4;
+export type RecordingOrigin = RecordingOriginV2;
 
 /** The UI sees a read-only capability, never a continuation or live entity. */
 export interface CommandConfirmation {
@@ -353,16 +321,27 @@ interface CommandExecution {
     blockCombatText: boolean;
 }
 type ReplayStatus = 'idle' | 'loaded' | 'playing' | 'finished';
+class ReplayDigestMismatch extends Error {
+    constructor(readonly domain: DigestDomain, event: RecordedInputEvent) {
+        super('domain ' + domain + ' at tick ' + event.tick + ' position ' + event.player.x + ',' + event.player.y);
+    }
+}
 interface RecordingRuntime {
     execution: CommandExecution | null;
     nextCommandId: number;
     drivingStages: number;
     replayError: string | null;
+    replayDiagnostic: ReplayDiagnostic | null;
+    verifiedReplayBoundary: number;
     commandDecisions: boolean[] | null;
     suppliedAnswers: SuppliedCommandAnswers | null;
     replayDecisionCursor: number;
     recordingFromNewGame: boolean;
     origin: RecordingOrigin | null;
+    header: RecordingHeaderV4 | null;
+    snapshots: ReplaySnapshotV4[];
+    trustedSnapshots: Set<string>;
+    replayWarnings: string[];
     pendingCommand: { kind: 'record'; event: RecordedInputEvent }
         | { kind: 'replay'; event: RecordedInputEvent; silent: boolean } | null;
 }
@@ -370,7 +349,7 @@ const recordingRuntime = new WeakMap<Game, RecordingRuntime>();
 function recordingState(game: Game): RecordingRuntime {
     let state = recordingRuntime.get(game);
     if (!state) {
-        state = { execution: null, nextCommandId: 1, drivingStages: 0, replayError: null, commandDecisions: null, suppliedAnswers: null, replayDecisionCursor: 0, recordingFromNewGame: true, origin: null, pendingCommand: null };
+        state = { execution: null, nextCommandId: 1, drivingStages: 0, replayError: null, replayDiagnostic: null, verifiedReplayBoundary: 0, commandDecisions: null, suppliedAnswers: null, replayDecisionCursor: 0, recordingFromNewGame: true, origin: null, header: null, snapshots: [], trustedSnapshots: new Set(), replayWarnings: [], pendingCommand: null };
         recordingRuntime.set(game, state);
     }
     return state;
@@ -419,6 +398,7 @@ const TURNS_FOR_FULL_REGEN = 300;
 const loadingSpatialCatalogs = new WeakMap<Game, SpatialCatalog>();
 export class Game {
     /** Explicit mechanical truth, across owned layers. Ordinary runs omit it. */
+    declare public world5?: World5Snapshot;
     declare public bodyGroups?: BodyGroupState[];
     public extensionRuntime: ExtensionRuntime | null = null;
     public get spatialCatalog(): SpatialCatalog { return this.extensionRuntime?.spatialCatalog ?? loadingSpatialCatalogs.get(this) ?? nativeSpatialCatalog; }
@@ -514,11 +494,13 @@ export class Game {
                 const clocks=[...new Set(actors)].map(actor=>({actor,ticks:actor.ticksUntilTurn,move:actor.movementSpeed,attack:actor.attackSpeed}));
                 const restoreActions=checkpointProductionActorActions(this),invalid=isProductionActorActionRunInvalid(this);
                 const origin=recordingState(this).origin,fromNew=this.recordingFromNewGame,error=this.lastAdvancementError,replayError=this.replayError;
+                const diagnostic=this.replayDiagnostic,verifiedBoundary=recordingState(this).verifiedReplayBoundary;
                 const hover=this.hoveredCell,text=this.hoveredText,arcana=this.pendingArcana,cursor=arcana?.cursor;
                 return()=>{
                     restoreActions();restoreProductionActorActionValidity(this,invalid);
                     for(const row of clocks){row.actor.ticksUntilTurn=row.ticks;row.actor.movementSpeed=row.move;row.actor.attackSpeed=row.attack;}
                     recordingState(this).origin=origin;this.recordingFromNewGame=fromNew;this.lastAdvancementError=error;this.replayError=replayError;
+                    recordingState(this).replayDiagnostic=diagnostic;recordingState(this).verifiedReplayBoundary=verifiedBoundary;
                     this.hoveredCell=hover;this.hoveredText=text;if(arcana&&cursor)arcana.cursor=cursor;
                 };
             },
@@ -846,13 +828,28 @@ export class Game {
     // Display milliseconds; retained name is part of the U03 reset contract.
     private replayFrameAccumulator: number = 0;
     private readonly replayFramesPerStep: number = 6;
+    public get replayWarnings(): readonly string[] { return recordingState(this).replayWarnings; }
     public get replayError(): string | null { return recordingState(this).replayError; }
-    private set replayError(value: string | null) { recordingState(this).replayError = value; }
+    public get replayDiagnostic(): ReplayDiagnostic | null { return recordingState(this).replayDiagnostic; }
+    private set replayError(value: string | null) {
+        recordingState(this).replayError = value;
+        recordingState(this).replayDiagnostic = null;
+    }
     /** Player-facing replay failure; replayError remains a diagnostic for tooling. */
     public get replayErrorDisplay(): string | null {
         if (!this.replayError) return null;
+        const diagnostic = this.replayDiagnostic;
+        if (diagnostic?.precision === 'interval') return i18next.t('replay.oos_interval', {
+            command: diagnostic.command, domain: i18next.t('replay.domain.' + diagnostic.domain),
+            tick: diagnostic.tick, x: diagnostic.player.x, y: diagnostic.player.y,
+            boundary: diagnostic.previousVerifiedBoundary, from: diagnostic.interval.fromCommand, to: diagnostic.interval.toCommand,
+        });
         const match = /^OOS at command (\d+): (.*)$/.exec(this.replayError);
         if (!match) return i18next.t('replay.out_of_sync_unknown', { defaultValue: 'Replay is out of sync.' });
+        const event = this.replayEvents[Number(match[1]) - 1];
+        const domain = /^domain ([a-zA-Z]+)/.exec(match[2]!);
+        if (domain && event) return i18next.t('replay.oos_detail', { command: Number(match[1]), domain: i18next.t('replay.domain.' + domain[1]),
+            tick: event.tick, x: event.player.x, y: event.player.y });
         const reason = match[2]!.startsWith('state mismatch') ? 'state'
             : match[2]!.startsWith('endgame mismatch') ? 'endgame' : 'other';
         return i18next.t('replay.out_of_sync', {
@@ -878,11 +875,11 @@ export class Game {
     public testRooms = new Map<number, TestRoomState>();
     public currentTestCategory: TestAssetCategory | null = null;
 
-    constructor() {
+    constructor(initial?: { seed: SeedInput }) {
         const startX = Math.floor(DCOLS / 2);
         const startY = Math.floor(DROWS / 2);
         this.player = new Player(startX, startY);
-        this.startNewGame();
+        this.startNewGame(initial);
     }
 
     public startNewGame(options?: { seed?: SeedInput; mode?: GameMode; ruleSet?: RuleSet; extensions?: readonly string[]; initialCommands?: readonly string[] }) {
@@ -940,6 +937,7 @@ export class Game {
         if (this.squareMotion) { this.squareMotion.spatial.dispose(); delete this.squareMotion; }
         this.clearSquareLandingRetry();
         delete this.bodyGroups;
+        if (preparedExtensions?.needsWorld5) this.world5 = createWorld5(); else delete this.world5;
         this.depth = 1;
         this.currentLevelDepth = null;
         this.absoluteTurnNumber = 0;
@@ -1095,14 +1093,10 @@ export class Game {
         // Drain run-ready story facts before the recording origin; creation-gated
         // modules retain their queue until their recorded initialization command.
         this.collectExtensionComponents();
-        recordingState(this).origin = {
-            version: 1, seed: this.currentSeed, mode: this.mode,
-            ...(this.extensionRuntime ? { extensions: this.extensionRuntime.manifest } : {}),
-            initial: { tick: timeSystem.currentTick, turn: this.absoluteTurnNumber, depth: this.depth,
-                player: { ...this.player.loc }, rng: rng.getState(),
-                ...(this.extensionRuntime ? { extensions: this.extensionRuntime.snapshot() } : {}) },
-            inputState: this.recordingInputState(),
-        };
+        const header = this.makeRecordingHeader();
+        recordingState(this).header = header;
+        recordingState(this).origin = { version: 2, header, events: [], prefixDigest: recordingStart(header), inputState: this.recordingInputState() };
+        recordingState(this).snapshots = []; recordingState(this).trustedSnapshots = new Set();
         for (const command of initialCommands ?? []) this.executeCommand('ext:command',command);
     }
 
@@ -1438,6 +1432,11 @@ export class Game {
         const thisGame = this;
         return {
             generationContributions: () => thisGame.extensionRuntime?.generationContributions(thisGame.depth) ?? [],
+            excludeLevelFollower: (actor: Monster) => thisGame.world5?.residents.some(r => r.actorId === actor.id) ?? false,
+            indexWorldOwnership: () => { if (thisGame.world5) indexWorldLevels(thisGame.world5, thisGame.levelSeeds, thisGame.depth); },
+            settleManagedWorld: () => thisGame.settleManagedWorld(),
+            restoreManagedPending: () => thisGame.restoreManagedPending(),
+            managedWorld: () => thisGame.world5?.levels.some(l => l.levelRef.kind === 'dungeon' && l.levelRef.depth === thisGame.depth && l.policy === 'frozen-ecology-economy-v1') ?? false,
             scheduleBodyFollower: (core: Monster,exit: Pos,direction: -1|0|1) => thisGame.scheduleBodyFollower(core,exit,direction),
             onRegionFollowerBlocked: this.extensionRuntime?.hasOwnedRegions
                 ? (actor: Monster) => thisGame.extensionRuntime!.reportRegionFollowBlocked(actor, thisGame.currentLevelDepth!) : undefined,
@@ -1688,7 +1687,7 @@ export class Game {
                     deep: [target, this.player, creatures, this.monsters, this.dormantMonsters, this.purgatory,
                         ...cached.flatMap(level => [level.monsters, level.dormantMonsters]),
                         this.items, this.pendingFallenByDepth, this.pendingFallenItemsByDepth,
-                        this.levelSeeds, this.meteredItems, this.stats, this.minersLight, this.bodyGroups, this.seenBodyCoreIds, actionState,
+                        this.levelSeeds, this.meteredItems, this.stats, this.minersLight, this.bodyGroups, this.world5, this.seenBodyCoreIds, actionState,
                         // Dig-time DF aggravation can still reach the departed
                         // scent/waypoint system before the new ones are installed.
                         this.scent, this.waypoints, this.pendingCaughtFireCells,
@@ -1733,14 +1732,15 @@ export class Game {
                     return [grid, traps, traps ? [...traps] : []] as const;
                 });
             const token = runtime.beginGeneration('floor');
-            if (runtime.generationContributions(this.depth).length) runtime.reserveGenerationAllocator(token);
+            if (runtime.generationContributions(this.depth).length || this.world5) runtime.reserveGenerationAllocator(token);
             try {
                 this.monsterPathCache = { safeTerrain: null, allySafety: null };
                 for (const m of this.monsters) m.mapToMe = null;
                 const firstVisit = !this.levelSeeds[this.depth - 1]?.visited;
                 if (firstVisit) runtime.emit('beforeLevelGeneration', { depth: this.depth });
-                if (!isFirstLevel) suspendProductionActorActions(this, previousDepth);
+                if (!isFirstLevel) { this.freezeManagedWorld(); suspendProductionActorActions(this, previousDepth); }
                 generateDepth(this.makeGenerationPorts('natural', token), isGoingUp, isFirstLevel, fell);
+                if (this.world5) { indexWorldLevels(this.world5, this.levelSeeds, this.depth); assertWorldLevelOwnership(this.activeLevelState(), this.levels, { monsters: [...this.pendingFallenByDepth.values()].flat(), items: [...this.pendingFallenItemsByDepth.values()].flat() }); }
                 if (!isFirstLevel) resumeProductionActorActions(this);
                 if (firstVisit) runtime.emit('afterLevelGeneration', { depth: this.depth });
                 runtime.emit('enteredLevel', { depth: this.depth, firstVisit, actorIds: [...new Set([this.player.id,...this.monsters.map(actor=>actor.id),...this.dormantMonsters.map(actor=>actor.id)])].sort((a,b)=>a-b) });
@@ -1784,6 +1784,93 @@ export class Game {
         this.monsterPathCache = { safeTerrain: null, allySafety: null };
         for (const m of this.monsters) m.mapToMe = null;
         return generateDepth(this.makeGenerationPorts('natural'), isGoingUp, isFirstLevel, fell);
+    }
+
+    /** Only a foundation test module can authorize this recorded engine fixture command. */
+    private registerWorldSettlementFixture(): void {
+        const world = this.world5, runtime = this.extensionRuntime, fixture = runtime?.world5SettlementFixture();
+        if (!world || !runtime || !fixture || world.offline.length || this.isGameOver) throw new Error('C5_UNSUPPORTED');
+        const restore = checkpointGenerationWorld(() => ({ shallow: [this], deep: [world, this.monsters, this.player], references: [runtime] }));
+        const random=rng.getState(), restoreLog=logger.checkpoint();
+        const token = runtime.beginGeneration('world-fixture'); runtime.reserveGenerationAllocator(token);
+        try {
+            const at = this.findQualifyingPathLocNear(this.player.loc);
+            if (!at) throw new Error('C5_BAD_REFERENCE');
+            const actor = new Monster(at.x, at.y, (monsterData as MonsterData[]).find(m => m.id === 'rat')!);
+            actor.isAlly = true; actor.state = MonsterState.WANDERING; actor.entersLevelIn = 0;
+            this.monsters.push(actor); runtime.attachCreature(actor);
+            const levelRef = { kind: 'dungeon' as const, depth: this.depth }, tick = world.simulationTicks;
+            const level = world.levels.find(l => levelKey(l.levelRef) === levelKey(levelRef))!;
+            level.policy = 'frozen-ecology-economy-v1'; level.persistenceReasons = ['camp', 'resident', 'work'];
+            const orderId = world.nextWorldId, planId = world.nextPlanId;
+            world.nextWorldId = checkedAdd(orderId, 1); world.nextPlanId = checkedAdd(planId, 1);
+            world.residents.push({ actorId: actor.id, owner: fixture.owner, campSlotId: 0, levelRef, revision: 0 });
+            world.orders.push({ id: orderId, owner: fixture.owner, actorId: actor.id, levelRef,
+                definitionId: fixture.owner + '.fixture-order', priority: 0, planId, remainingEpochs: 32,
+                ticketId: null, status: 'working', stopReason: null, revision: 0 });
+            world.offline.push({ levelRef, campSlotId: 0, lastSettledTick: tick, epochRemainder: tick % 1000, revision: 0,
+                seedKey: offlineSeedKey(this.currentSeed, 0, 'raid', fixture.configuration.rulesFingerprint), lastEventOrdinal: 0,
+                residentStates: [{ actorId: actor.id, alive: true, shortage: 0 }], pendingOutputs: [], needsResupply: false,
+                frozen: { capturedTick: tick, rulesFingerprint: fixture.configuration.rulesFingerprint,
+                    structureRevision: 0, residents: [{ actorId: actor.id, bedComponentId: null,
+                        route: { reachable: true, distance: 0, travelTicks: 0 } }], facilities: [], knownThreats: [] } });
+            world.revision = checkedAdd(world.revision, 1); runtime.commitGeneration(token);
+        } catch (error) { restore(); runtime.rollbackGeneration(token); rng.setState(random); restoreLog(); throw error; }
+    }
+    private freezeManagedWorld(): void {
+        const world = this.world5, config = this.extensionRuntime?.world5SettlementFixture()?.configuration;
+        const ledger = world?.offline.find(l => l.levelRef.kind === 'dungeon' && l.levelRef.depth === this.currentLevelDepth);
+        if (!world || !ledger || !config || this.isGameOver) return;
+        const map = travelDistanceMap(this.grid, this.monsters, this.player.loc, T_PATHING_BLOCKER);
+        ledger.lastSettledTick = world.simulationTicks; ledger.epochRemainder = world.simulationTicks % 1000;
+        ledger.frozen = { capturedTick: world.simulationTicks, rulesFingerprint: config.rulesFingerprint,
+            structureRevision: 0, facilities: [], knownThreats: [...this.visibleMonsters].filter(m => !m.isAlly && m.hp > 0).map(m => 'creature.' + m.id).sort(),
+            residents: ledger.residentStates.map(s => {
+                const actor = this.monsters.find(m => m.id === s.actorId) ?? this.dormantMonsters.find(m => m.id === s.actorId);
+                const distance = actor ? map[actor.x]?.[actor.y] ?? 30000 : 30000;
+                return { actorId: s.actorId, bedComponentId: null,
+                    route: { reachable: distance < 30000, distance: Math.min(30000, distance), travelTicks: actor ? distance * actor.movementSpeed : 0 } };
+            }) };
+        ledger.revision = checkedAdd(ledger.revision, 1); world.revision = checkedAdd(world.revision, 1);
+    }
+    /** Keep the economic home record while suspending work for a native departure. */
+    private displaceWorldResident(actorId: number): void {
+        const world = this.world5;
+        if (!world) return;
+        for (const ledger of world.offline) {
+            if (!ledger.residentStates.some(s => s.actorId === actorId)) continue;
+            const frozen = ledger.frozen.residents.find(r => r.actorId === actorId);
+            if (frozen) frozen.route = { reachable: false, distance: 30000, travelTicks: 0 };
+            for (const order of world.orders) if (order.actorId === actorId && order.status === 'working') {
+                order.status = 'stopped'; order.stopReason = 'resident-displaced'; order.revision = checkedAdd(order.revision, 1);
+            }
+            ledger.revision = checkedAdd(ledger.revision, 1); world.revision = checkedAdd(world.revision, 1);
+        }
+    }
+    private settleManagedWorld(): void {
+        const world = this.world5, runtime = this.extensionRuntime, fixture = runtime?.world5SettlementFixture();
+        const level = world?.levels.find(l => l.levelRef.kind === 'dungeon' && l.levelRef.depth === this.depth && l.policy === 'frozen-ecology-economy-v1');
+        if (!world || !runtime || !fixture || !level || this.isGameOver) return;
+        const ledger = world.offline.find(l => levelKey(l.levelRef) === levelKey(level.levelRef))!;
+        const plan = planOfflineSettlement({ schema: 1, rulesFingerprint: fixture.configuration.rulesFingerprint,
+            runSeed: this.currentSeed, campSlotId: ledger.campSlotId, level, fromTick: ledger.lastSettledTick,
+            toTick: world.simulationTicks, ledger, rules: fixture.configuration.rules, containers: [], nodes: [], tickets: [],
+            orders: world.orders.filter(o => levelKey(o.levelRef) === levelKey(level.levelRef)), pendingEvents: fixture.configuration.events(ledger.frozen.capturedTick) });
+        if (!plan.ok) throw new Error(plan.code);
+        const result = commitOfflineSettlement(world, plan.value, { checkpoint: () => () => {},
+            prepare: p => runtime.prepareWorld5Settlement(p as import('./WorldSettlement').OfflinePlan) }, false, this.isGameOver);
+        if (!result.ok) throw new Error(result.code);
+    }
+    private restoreManagedPending(): void {
+        const pending = this.pendingFallenByDepth.get(this.depth);
+        if (!pending) return;
+        this.pendingFallenByDepth.delete(this.depth);
+        for (const actor of pending) {
+            if (actor.spatial) { const rest = this.pendingFallenByDepth.get(this.depth) ?? []; rest.push(actor); this.pendingFallenByDepth.set(this.depth, rest); continue; }
+            const at = this.findQualifyingPathLocNear(actor.loc); if (!at) throw new Error('C5_BAD_REFERENCE');
+            commitCreatureAnchor(actor, at); actor.preplaced = false; this.monsters.push(actor);
+        }
+        this.retrySquareLandings();
     }
 
     private levelStair(type: TerrainType): Pos | null {
@@ -1840,12 +1927,12 @@ export class Game {
         if (m.leader && !this.monsters.includes(m.leader)) m.leader = null;
     }
 
-    private restoreLevelResidents(): void {
+    private restoreLevelResidents(preserve?: ReadonlySet<number>): void {
         this.retrySquareLandings();
         const stairs = travelDistanceMap(this.grid, this.monsters, this.player.loc, T_PATHING_BLOCKER);
         const pit = travelDistanceMap(this.grid, this.monsters, this.currentLevelExitedVia, T_PATHING_BLOCKER);
         for (const m of [...this.monsters]) {
-            if (m.hp <= 0) continue;
+            if (m.hp <= 0 || preserve?.has(m.id)) continue;
             this.restoreLevelResident(m, m.approaching & APPROACHING_PIT ? pit : stairs);
         }
     }
@@ -1855,7 +1942,7 @@ export class Game {
     private monstersApproachStairs(): void {
         for (const depth of [this.depth - 1, this.depth + 1]) {
             const level = this.levels.get(depth);
-            if (!level || !this.levelSeeds[depth - 1]?.visited) continue;
+            if (!level || !this.levelSeeds[depth - 1]?.visited || this.world5?.levels.some(l => l.levelRef.kind === 'dungeon' && l.levelRef.depth === depth && l.policy === 'frozen-ecology-economy-v1')) continue;
             for (const m of [...level.monsters]) {
                 if (m.hp <= 0 || m.spatial?.bodyMember && m.id !== m.spatial.bodyMember.groupId) continue;
                 if (m.entersLevelIn > 1) {
@@ -3345,18 +3432,28 @@ export class Game {
         return String(data);
     }
 
+    private makeRecordingHeader(): RecordingHeaderV4 {
+        return { version: 4, recordedAt: Date.now(), seed: this.currentSeed, mode: this.mode,
+            initialLevel: { kind: 'dungeon', depth: 1 }, extensions: this.extensionRuntime ? structuredClone(this.extensionRuntime.manifest) : null,
+            codec: { wholeRun: 4, foundation: 6, origin: 2 }, digestAlgorithm: 'sha256-c5-merkle-v1', digestChunk: 256, checkpointPeriod: 2048,
+            initialDigest: mechanicalDigest(this.projectWholeRun(), this.recordingInputState()) };
+    }
     private recordInputEvent(action: string, data: unknown, decisions: boolean[]): RecordedInputEvent {
-        const event: RecordedInputEvent = {
-            index: this.recordedInputIndex++,
-            tick: 0,
-            depth: 0,
-            player: { x: 0, y: 0 },
-            action,
-            data: this.toRecordedInputData(data),
-            decisions,
-        };
-        this.updateRecordedCheckpoint(event);
+        // Export/save adds a full digest to its then-last row. Once continued,
+        // that temporary boundary must not make the command chain depend on
+        // how often the caller saved. Fixed chunk boundaries remain intact.
+        const previous = this.recordedInputEvents[this.recordedInputEvents.length - 1];
+        if (previous?.fullCheckpoint && (previous.index + 1) % 256 !== 0) {
+            previous.fullCheckpoint = null;
+            previous.chainDigest = recordingChain(this.recordedInputEvents[previous.index - 1]?.chainDigest
+                ?? recordingStart(recordingState(this).header!), previous);
+        }
+        const event: RecordedInputEvent = { index: this.recordedInputIndex++, tick: 0, turn: 0,
+            levelRef: { kind: 'dungeon', depth: 1 }, simulationTicks: null, player: { x: 0, y: 0 }, hp: 0, inventoryStamp: '',
+            rng: rng.getState(), terminal: null, checkpoint: null, fullCheckpoint: null, chainDigest: '',
+            action, data: this.toRecordedInputData(data), decisions };
         this.recordedInputEvents.push(event);
+        if (!this.isAdvancing) this.updateRecordedCheckpoint(event);
         return event;
     }
 
@@ -3377,16 +3474,30 @@ export class Game {
     }
 
     private updateRecordedCheckpoint(event: RecordedInputEvent): void {
+        if (this.isAdvancing) return;
         if (this.extensionRuntime) this.collectExtensionComponents();
-        event.tick = timeSystem.currentTick;
-        event.depth = this.depth;
-        event.player = { x: this.player.loc.x, y: this.player.loc.y };
-        event.turn = this.absoluteTurnNumber;
-        event.rng = rng.getState();
-        if (this.extensionRuntime) event.extensions = this.extensionRuntime.snapshot();
-        else delete event.extensions;
-        if (this.isGameOver) event.end = { won: this.gameOverWon, superVictory: this.gameOverSuperVictory, score: this.gameOverScore };
-        else delete event.end;
+        event.tick = timeSystem.currentTick; event.levelRef = { kind: 'dungeon', depth: this.depth };
+        event.simulationTicks = this.world5?.simulationTicks ?? null;
+        event.player = { ...this.player.loc }; event.hp = this.player.hp;
+        event.inventoryStamp = inventoryStamp(this.player.inventory.items);
+        event.turn = this.absoluteTurnNumber; event.rng = rng.getState();
+        event.terminal = this.isGameOver ? { won: this.gameOverWon, superVictory: this.gameOverSuperVictory, score: this.gameOverScore } : null;
+        const state = recordingState(this);
+        const header = state.header ?? (state.header = this.makeRecordingHeader());
+        event.checkpoint = eventDigest(this.extensionRuntime?.snapshot() ?? null, this.world5 ?? null, header.extensions);
+        if ((event.index + 1) % 256 === 0) {
+            event.fullCheckpoint = mechanicalDigest(this.projectWholeRun(), this.recordingInputState());
+            if (event.checkpoint && EVENT_DOMAINS.some(d => event.checkpoint!.domains[d] !== event.fullCheckpoint!.domains[d])) throw new Error('Recording domain divergence');
+        }
+        event.chainDigest = recordingChain(this.recordedInputEvents[event.index - 1]?.chainDigest ?? recordingStart(header), event);
+        if ((event.index + 1) % 2048 === 0 && !recordingState(this).execution && !this.isAdvancing) {
+            const world = JSON.parse(JSON.stringify(this.projectWholeRun())) as GameSnapshot; world.savedAt = 0;
+            const snapshot: ReplaySnapshotV4 = { afterCommand: event.index + 1, tick: event.tick, simulationTicks: event.simulationTicks,
+                levelRef: structuredClone(event.levelRef), prefixDigest: event.chainDigest, checkpoint: event.fullCheckpoint!,
+                snapshotCodec: 'brogue-web-whole-run-v4', snapshotDigest: worldSnapshotHash(world), world, inputState: this.recordingInputState() };
+            const state = recordingState(this); state.snapshots = boundedSnapshots([...state.snapshots, snapshot]);
+            state.trustedSnapshots.add(snapshot.snapshotDigest);
+        }
     }
 
     /** Every user command, including inventory and modal choices, crosses this boundary. */
@@ -3396,7 +3507,7 @@ export class Game {
             || this.isInputLocked() || logger.pendingAcknowledgment || presentationBlocked(this)) return;
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data)) {
             const disturbed = this.disturbed;
-            try { logger.log(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }), '#ff6666'); }
+            try { logger.log(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }), '#ff6666', { presentationOnly: true }); }
             finally { this.disturbed = disturbed; }
             return;
         }
@@ -3605,6 +3716,7 @@ export class Game {
         if (!this.inAutoTravelStep && action !== 'auto_step') this.stopAutoTravel();
         this.clearHover();
         if (!this.isAdvancing) this.finishTransientDisplay();
+        if (action === 'world5:fixture') { this.registerWorldSettlementFixture(); return; }
         if (perform) {
             perform();
             return;
@@ -3810,37 +3922,27 @@ export class Game {
         this.executeCommand('item:command', `${operation}|${item?.inventoryLetter ?? ''}|${title ?? ''}`, perform);
     }
 
-    public exportRecording(): GameRecording {
+    private finishRecordingPrefix(events: RecordedInputEvent[], header: RecordingHeaderV4): void {
+        const last = events[events.length - 1];
+        if (last && !last.fullCheckpoint) {
+            last.fullCheckpoint = mechanicalDigest(this.projectWholeRun(), this.recordingInputState());
+            last.chainDigest = recordingChain(events[last.index - 1]?.chainDigest ?? recordingStart(header), last);
+        }
+    }
+    public exportRecording(options: { includeSnapshots?: boolean } = {}): GameRecording {
         assertNoActorActionFixture(this);
-        if (!this.hasCompleteRecording) throw new Error('Recording requires a fresh new game or a save with a complete recording prefix');
-        if (this.isAdvancing) throw new Error('Recording cannot be exported while a turn is advancing');
-        if (this.hasPendingConfirmation) throw new Error('Recording cannot be exported during a command');
-        return {
-            version: 3,
-            recordedAt: Date.now(),
-            seed: this.currentSeed,
-            mode: this.mode,
-            startDepth: 1,
-            ...(this.extensionRuntime ? { extensions: structuredClone(this.extensionRuntime.manifest) } : {}),
-            events: this.recordedInputEvents.map((event) => ({
-                index: event.index,
-                tick: event.tick,
-                depth: event.depth,
-                player: { x: event.player.x, y: event.player.y },
-                action: event.action,
-                data: typeof event.data === 'object' && event.data !== null ? { ...event.data } : event.data,
-                decisions: [...(event.decisions ?? [])],
-                turn: event.turn,
-                ...(event.extensions ? { extensions: structuredClone(event.extensions) } : {}),
-                rng: event.rng ? structuredClone(event.rng) : undefined,
-                ...(event.end ? { end: { ...event.end } } : {})
-            }))
-        };
+        if (!this.hasCompleteRecording || !recordingState(this).origin) throw new Error('Recording requires a fresh new game or a complete saved prefix');
+        if (recordingState(this).execution) throw new Error('Cannot export during a command');
+        if (this.isAdvancing || this.hasPendingConfirmation) throw new Error('Cannot export while advancing or during a pending command');
+        const state = recordingState(this), header = state.origin!.header;
+        this.finishRecordingPrefix(this.recordedInputEvents, header);
+        return { ...structuredClone(header), recordedAt: Date.now(), events: structuredClone(this.recordedInputEvents), snapshots: options.includeSnapshots === false ? [] : structuredClone(state.snapshots) };
     }
 
     public clearRecording() {
         recordingState(this).pendingCommand = null;
-        recordingState(this).origin = null;
+        recordingState(this).origin = null; recordingState(this).header = null;
+        recordingState(this).snapshots = []; recordingState(this).trustedSnapshots = new Set();
         this.recordedInputEvents = [];
         this.recordedInputIndex = 0;
         this.recordingStartAt = Date.now();
@@ -3854,7 +3956,8 @@ export class Game {
         this.replayCursor = 0;
         this.replayStatus = 'idle';
         this.replayFrameAccumulator = 0;
-        this.replayError = null;
+        this.replayError = null; recordingState(this).replayWarnings = [];
+        recordingState(this).verifiedReplayBoundary = 0;
     }
 
     private decodeRecordedInputData(data: RecordedInputData): unknown {
@@ -3864,92 +3967,55 @@ export class Game {
     }
 
     private isValidRecording(recording: unknown, onExtensionError?: (error: unknown) => void): recording is GameRecording {
-        if (!recording || typeof recording !== 'object') return false;
-        const r = recording as Partial<GameRecording>;
-        if (!Array.isArray(r.events)) return false;
-        if (r.extensions !== undefined) {
-            try {
-                const runtime = this.createExtensionRuntime(r.extensions);
-                for (const event of r.events ?? []) {
-                    runtime.validateSnapshot(event.extensions!);
-                    if (event.extensions!.foundation.pendingStoryFacts.some(fact => fact.depth !== event.depth || event.turn === undefined || fact.turn > event.turn))
-                        throw new Error('Invalid recording story fact world boundary');
-                    const world = event.extensions!.foundation.world;
-                    if (world.gate && (event.end || !world.entities.some(entity => entity.id === world.gate!.targetEntityId && entity.depth === event.depth)))
-                        throw new Error('Invalid recording interaction gate');
-                }
-                if (!runtime.validateRecording(r.events ?? [])) return false;
-            } catch (error) { onExtensionError?.(error); return false; }
-        } else if (r.events?.some(event => event?.extensions !== undefined || event?.action === 'ext:command')) return false;
-        const validSeed = isSeed(r.seed) || (typeof r.seed === 'number' && Number.isSafeInteger(r.seed) && r.seed >= 0);
-        return r.version === 3
-            && validSeed
-            && (r.mode === 'normal' || r.mode === 'easy' || r.mode === 'wizard' || r.mode === 'test')
-            && r.startDepth === 1
-            && Array.isArray(r.events)
-            && r.events.every((event, index) => !!event && typeof event === 'object'
-                && event.index === index
-                && typeof event.action === 'string'
-                && (event.data === null || typeof event.data === 'string'
-                    || (typeof event.data === 'number' && Number.isFinite(event.data))
-                    || (!!event.data && typeof event.data === 'object'
-                        && Number.isFinite(event.data.x) && Number.isFinite(event.data.y)))
-                && typeof event.tick === 'number' && Number.isFinite(event.tick)
-                && typeof event.turn === 'number' && Number.isFinite(event.turn)
-                && typeof event.depth === 'number' && Number.isFinite(event.depth)
-                && typeof event.player?.x === 'number' && typeof event.player?.y === 'number'
-                && Array.isArray(event.decisions) && event.decisions.every(d => typeof d === 'boolean')
-                && Random.isState(event.rng)
-                && (event.end === undefined || (!!event.end && typeof event.end === 'object' && typeof event.end.won === 'boolean'
-                    && typeof event.end.superVictory === 'boolean'
-                    && Number.isSafeInteger(event.end.score))));
-    }
-
-    public loadReplay(recording: unknown, onExtensionError?: (message: string) => void): boolean {
-        let extensionError: unknown;
-        if (!this.isValidRecording(recording, error => { extensionError = error; })) {
-            if (recording && typeof recording === 'object' && ('extensions' in recording
-                || (Array.isArray((recording as GameRecording).events)
-                    && (recording as GameRecording).events.some(event => event?.extensions !== undefined || event?.action === 'ext:command')))) {
-                const message = formatExtensionCompatibilityError(extensionError);
-                logger.log(message, '#ff6666'); onExtensionError?.(message);
-            }
-            return false;
+        try {
+            if (!validateRecordingV4(recording, manifest => { this.createExtensionRuntime(manifest as ExtensionManifest); })) return false;
+            return !recording.extensions || this.createExtensionRuntime(recording.extensions).validateRecordingInputPrefix(recording.events);
         }
-        const safeRecording: GameRecording = {
-            version: 3,
-            recordedAt: recording.recordedAt ?? Date.now(),
-            seed: normalizeSeed(recording.seed),
-            mode: recording.mode,
-            startDepth: recording.startDepth ?? 1,
-            ...(recording.extensions ? { extensions: structuredClone(recording.extensions) } : {}),
-            events: recording.events.map((event) => ({
-                index: event.index,
-                tick: event.tick,
-                depth: event.depth,
-                player: { ...event.player },
-                action: event.action,
-                data: typeof event.data === 'object' && event.data !== null ? { ...event.data } : event.data,
-                decisions: [...event.decisions!],
-                turn: event.turn,
-                ...(event.extensions ? { extensions: structuredClone(event.extensions) } : {}),
-                rng: structuredClone(event.rng!),
-                ...(event.end ? { end: { ...event.end } } : {})
-            }))
-        };
-
-        this.startNewGame({ seed: safeRecording.seed, mode: safeRecording.mode,
-            ruleSet: safeRecording.extensions ? 'extended' : 'classic',
-            extensions: safeRecording.extensions?.modules.map(module => module.id) });
-        this.clearRecording();
-        this.replayRecording = safeRecording;
-        this.replayEvents = safeRecording.events;
-        this.replayCursor = 0;
-        this.replayStatus = this.replayEvents.length > 0 ? 'loaded' : 'finished';
-        this.replayFrameAccumulator = 0;
-        this.needsRender = true;
-        this.update();
-        return true;
+        catch (error) { onExtensionError?.(error); return false; }
+    }
+    /** Candidate simulation borrows process-wide services and restores all of them before publication. */
+    private withReplayCandidate<T>(run: (candidate: Game) => T): T {
+        const tick=timeSystem.currentTick, random=rng.getState(), allocator=getNextEntityId(), machine=getNextMachineNumber(), reward=getRewardRoomsGenerated();
+        const observation=getMachineObservationHook(), observedSeed=getMachineObservationSeed();
+        const loader=Object.getOwnPropertyDescriptors(ItemLoader), restoreLog=logger.checkpoint();
+        const restoreServices=checkpointGenerationWorld(()=>({shallow:[logger],deep:[logger.messages,
+            ItemLoader.potionFlavorMap,ItemLoader.scrollFlavorMap,ItemLoader.arcanaFlavorMap,ItemLoader.identifiedItems,ItemLoader.callTitles,ItemLoader.magicPolarityRevealed]}));
+        let candidate:Game|undefined;
+        try { setMachineObservationHook(null); candidate=new Game({seed:1});candidate.animationEnabled=false;return run(candidate); }
+        finally {
+            try { candidate?.extensionRuntime?.unload(); }
+            finally {
+                restoreLog();restoreServices();
+                for(const key of Reflect.ownKeys(ItemLoader))if(!Object.prototype.hasOwnProperty.call(loader,key))Reflect.deleteProperty(ItemLoader,key);
+                Object.defineProperties(ItemLoader,loader);
+                restoreNextEntityId(allocator);restoreNextMachineNumber(machine);setRewardRoomsGenerated(reward);
+                rng.setState(random);timeSystem.currentTick=tick;setMachineObservationHook(observation);setMachineObservationSeed(observedSeed);
+            }
+        }
+    }
+    private startReplayUnchecked(recording: GameRecording): void {
+        this.startNewGame({ seed: recording.seed, mode: recording.mode, ruleSet: recording.extensions ? 'extended' : 'classic', extensions: recording.extensions?.modules.map(m => m.id) });
+        this.clearRecording(); this.replayRecording = recording; this.replayEvents = recording.events;
+        this.replayCursor = 0; this.replayStatus = recording.events.length ? 'loaded' : 'finished'; this.replayFrameAccumulator = 0;
+    }
+    public loadReplay(recording: unknown, onExtensionError?: (message: string) => void): boolean {
+        let error: unknown;
+        if (!this.isValidRecording(recording, e => { error = e; })) {
+            const message = error ? formatExtensionCompatibilityError(error) : i18next.t('replay.format_invalid', { defaultValue: 'Unsupported or damaged replay format.' });
+            logger.log(message, '#ff6666', { presentationOnly: true }); onExtensionError?.(message); return false;
+        }
+        try {
+            this.withReplayCandidate(candidate => {
+                candidate.startNewGame({ seed: recording.seed, mode: recording.mode, ruleSet: recording.extensions ? 'extended' : 'classic', extensions: recording.extensions?.modules.map(m => m.id) });
+                if (mechanicalDigest(candidate.projectWholeRun(), candidate.recordingInputState()).root !== recording.initialDigest.root) throw new Error('Invalid initial recording world');
+            });
+        } catch {
+            const message = i18next.t('replay.format_invalid', { defaultValue: 'Unsupported or damaged replay format.' });
+            logger.log(message, '#ff6666', { presentationOnly: true }); onExtensionError?.(message); return false;
+        }
+        const normalized={...structuredClone(recordingHeader(recording)),events:structuredClone(recording.events),snapshots:structuredClone(boundedSnapshots(recording.snapshots))};
+        this.startReplayUnchecked(normalized);
+        this.needsRender = true; this.update(); return true;
     }
 
     public replayPlay() {
@@ -3971,13 +4037,7 @@ export class Game {
 
     public replayRestart() {
         if (!this.replayRecording) return;
-        // A stale programmatically injected recording cannot be played, but a restart
-        // still retires the old run through U00's single new-game boundary.
-        if (!this.isValidRecording(this.replayRecording)) {
-            const { seed, mode } = this.replayRecording;
-            this.startNewGame({ seed, mode });
-            return;
-        }
+        if (!this.isValidRecording(this.replayRecording)) { this.loadReplay(this.replayRecording); return; }
         const omniscientDetails = this.replayOmniscientDetails;
         this.loadReplay(this.replayRecording);
         this.replayOmniscientDetails = omniscientDetails;
@@ -4012,37 +4072,38 @@ export class Game {
 
     private completeReplayEvent(event: RecordedInputEvent, silent: boolean): void {
         if (this.extensionRuntime) this.collectExtensionComponents();
-        const actual = { tick: timeSystem.currentTick, depth: this.depth,
-            player: this.player.loc, turn: this.absoluteTurnNumber, rng: rng.getState() };
-        if (actual.tick !== event.tick || actual.depth !== event.depth
-            || actual.player.x !== event.player.x || actual.player.y !== event.player.y
-            || actual.turn !== event.turn || this.replayDecisionCursor !== event.decisions!.length
-            || JSON.stringify(actual.rng) !== JSON.stringify(event.rng)) {
-            throw new Error(`state mismatch after command ${event.index + 1}`);
-        }
-        if (!!event.end !== this.isGameOver || (event.end && (this.gameOverWon !== event.end.won
-            || this.gameOverSuperVictory !== event.end.superVictory || this.gameOverScore !== event.end.score))) {
-            throw new Error(`endgame mismatch after command ${event.index + 1}`);
-        }
-        if (this.extensionRuntime && canonical(this.extensionRuntime.snapshot()) !== canonical(event.extensions)) {
-            throw new Error('extension state mismatch');
+        if (timeSystem.currentTick !== event.tick || this.depth !== requireDungeon(event.levelRef)
+            || this.player.x !== event.player.x || this.player.y !== event.player.y || this.player.hp !== event.hp
+            || this.absoluteTurnNumber !== event.turn || this.world5?.simulationTicks !== (event.simulationTicks ?? undefined)
+            || inventoryStamp(this.player.inventory.items) !== event.inventoryStamp || this.replayDecisionCursor !== event.decisions.length
+            || JSON.stringify(rng.getState()) !== JSON.stringify(event.rng)) throw new Error('state mismatch at tick ' + event.tick + ' position ' + event.player.x + ',' + event.player.y);
+        if (!!event.terminal !== this.isGameOver || (event.terminal && (this.gameOverWon !== event.terminal.won
+            || this.gameOverSuperVictory !== event.terminal.superVictory || this.gameOverScore !== event.terminal.score))) throw new Error('endgame mismatch');
+        const checkpoint = eventDigest(this.extensionRuntime?.snapshot() ?? null, this.world5 ?? null, this.replayRecording!.extensions);
+        for (const domain of EVENT_DOMAINS) if (checkpoint?.domains[domain] !== event.checkpoint?.domains[domain]) throw new ReplayDigestMismatch(domain, event);
+        if (event.fullCheckpoint) {
+            const full = mechanicalDigest(this.projectWholeRun(), this.recordingInputState());
+            for (const domain of DIGEST_DOMAINS) if (full.domains[domain] !== event.fullCheckpoint.domains[domain]) throw new ReplayDigestMismatch(domain, event);
         }
         this.update();
+        if (event.fullCheckpoint) recordingState(this).verifiedReplayBoundary = event.index + 1;
         this.replayCursor++;
-        if (this.replayCursor >= this.replayEvents.length) {
-            this.replayStatus = 'finished';
-            if (!silent) {
-                logger.log(i18next.t('replay.finished', { defaultValue: 'Replay finished.' }), '#88ccff');
-            }
-        } else if (this.replayStatus !== 'playing') {
-            this.replayStatus = 'loaded';
-        }
+        if (this.replayCursor >= this.replayEvents.length) { this.replayStatus = 'finished'; if (!silent) logger.log(i18next.t('replay.finished', { defaultValue: 'Replay finished.' }), '#88ccff', { presentationOnly: true }); }
+        else if (this.replayStatus !== 'playing') this.replayStatus = 'loaded';
     }
 
     private failReplayEvent(event: RecordedInputEvent, error: unknown): void {
         this.replayError = `OOS at command ${event.index + 1}: ${error instanceof Error ? error.message : String(error)}`;
+        if (error instanceof ReplayDigestMismatch) {
+            const command = event.index + 1, boundary = recordingState(this).verifiedReplayBoundary;
+            const precision = error.domain === 'native' || error.domain === 'knowledge' ? 'interval' : 'exact';
+            const interval = Object.freeze({ fromCommand: precision === 'interval' ? boundary + 1 : command, toCommand: command });
+            if (precision === 'interval') this.replayError += `; first verifiable divergence; previous verified boundary ${boundary}; possible divergence commands ${interval.fromCommand}..${interval.toCommand}`;
+            recordingState(this).replayDiagnostic = Object.freeze({ command, domain: error.domain, tick: event.tick,
+                player: Object.freeze({ ...event.player }), precision, previousVerifiedBoundary: boundary, interval });
+        }
         this.replayStatus = 'loaded';
-        logger.log(this.replayErrorDisplay ?? '', '#ff6666');
+        logger.log(this.replayErrorDisplay ?? '', '#ff6666', { presentationOnly: true });
     }
 
     public tickReplay(elapsedMs: number = DISPLAY_FRAME_MS) {
@@ -4055,33 +4116,74 @@ export class Game {
         );
     }
 
-    public replaySeek(targetIndex: number) {
-        if (!this.replayRecording) return;
-        if (!this.isValidRecording(this.replayRecording)) {
-            const { seed, mode } = this.replayRecording;
-            this.startNewGame({ seed, mode });
-            return;
-        }
-
-        const total = this.replayEvents.length;
-        const clamped = Math.max(0, Math.min(Math.floor(targetIndex), total));
-        const animationEnabled = this.animationEnabled;
-        const omniscientDetails = this.replayOmniscientDetails;
-        this.animationEnabled = false;
+    public replaySeek(targetIndex: number): void {
+        const recording = this.replayRecording; if (!recording || !this.isValidRecording(recording)) return;
+        const target = Math.max(0, Math.min(Math.floor(targetIndex), recording.events.length));
+        const animation = this.animationEnabled, omniscient = this.replayOmniscientDetails, trusted = recordingState(this).trustedSnapshots, warnings = recordingState(this).replayWarnings;
         try {
-            this.loadReplay(this.replayRecording);
-            for (let i = 0; i < clamped; i++) {
-                this.replayStep(true);
-                if (this.replayStatus === 'finished' || this.replayError) break;
+        const candidates = recording.snapshots.filter(s => s?.afterCommand <= target).sort((a,b) => b.afterCommand - a.afterCommand);
+        let restored = false;
+        for (const s of candidates) try {
+            const result = this.withReplayCandidate(candidate => {
+                if (!validAccelerationSnapshot(s,recording) || worldSnapshotHash(s.world) !== s.snapshotDigest) throw new Error('Invalid acceleration snapshot');
+                if (!trusted.has(s.snapshotDigest)) {
+                    candidate.startReplayUnchecked(recording); while (candidate.replayCursor < s.afterCommand && !candidate.replayError) candidate.replayStep(true);
+                    if (candidate.replayError || mechanicalDigest(candidate.projectWholeRun(), candidate.recordingInputState()).root !== s.checkpoint.root) throw new Error('Unverified acceleration prefix');
+                }
+                if (!candidate.loadSnapshot(s.world)) throw new Error('Invalid acceleration world');
+                candidate.restoreRecordingInput(s.inputState);
+                if (mechanicalDigest(candidate.projectWholeRun(), candidate.recordingInputState()).root !== s.checkpoint.root
+                    || s.checkpoint.root !== recording.events[s.afterCommand-1]!.fullCheckpoint!.root) throw new Error('Acceleration checkpoint mismatch');
+                candidate.replayRecording = recording; candidate.replayEvents = recording.events; candidate.replayCursor = s.afterCommand; candidate.replayStatus = 'loaded'; candidate.animationEnabled = false;
+                recordingState(candidate).verifiedReplayBoundary = s.afterCommand;
+                while (candidate.replayCursor < target && !candidate.replayError) candidate.replayStep(true);
+                if (candidate.replayError) throw new Error(candidate.replayError);
+                return { world: candidate.projectWholeRun(), input: candidate.recordingInputState(), verifiedBoundary: recordingState(candidate).verifiedReplayBoundary };
+            });
+            if (!this.loadSnapshot(result.world)) throw new Error('Candidate publication rejected');
+            this.restoreRecordingInput(result.input); this.clearRecording(); this.replayRecording = recording; this.replayEvents = recording.events;
+            recordingState(this).verifiedReplayBoundary = result.verifiedBoundary;
+            this.replayCursor = target; this.replayStatus = target === recording.events.length ? 'finished' : 'loaded'; trusted.add(s.snapshotDigest); recordingState(this).trustedSnapshots = trusted; restored = true; break;
+        } catch { if(warnings.length<128)warnings.push(i18next.t('replay.snapshot_damaged')); }
+        if (!restored) {
+            const result = this.withReplayCandidate(candidate => {
+                candidate.startReplayUnchecked(recording);
+                while (candidate.replayCursor < target && !candidate.replayError) candidate.replayStep(true);
+                return { world: candidate.projectWholeRun(), input: candidate.recordingInputState(), cursor: candidate.replayCursor, error: candidate.replayError,
+                    diagnostic: candidate.replayDiagnostic, verifiedBoundary: recordingState(candidate).verifiedReplayBoundary, unready: candidate.extensionRuntime?.readyToSave === false };
+            });
+            if (result.unready) {
+                // A verified seed prefix before character creation is a legal replay
+                // state, while ordinary save loading correctly rejects that world.
+                this.startReplayUnchecked(recording); this.animationEnabled = false;
+                while (this.replayCursor < result.cursor && !this.replayError) this.replayStep(true);
+                this.replayError = result.error;
+            } else {
+                if (!this.loadSnapshot(result.world)) throw new Error('Candidate publication rejected');
+                this.restoreRecordingInput(result.input); this.clearRecording();
+                this.replayRecording = recording; this.replayEvents = recording.events; this.replayCursor = result.cursor; this.replayError = result.error;
+                this.replayStatus = !result.error && result.cursor === recording.events.length ? 'finished' : 'loaded';
             }
+            recordingState(this).verifiedReplayBoundary = result.verifiedBoundary;
+            recordingState(this).replayDiagnostic = result.diagnostic;
+            if (result.error) logger.log(this.replayErrorDisplay ?? '', '#ff6666', { presentationOnly: true });
+        }
+        } catch {
+            const message = i18next.t('replay.seek_failed', { defaultValue: 'Replay seek failed.' });
+            if (warnings.length < 128) warnings.push(message);
+            logger.log(message, '#ff6666', { presentationOnly: true });
         } finally {
-            this.animationEnabled = animationEnabled;
-            this.replayOmniscientDetails = omniscientDetails;
+            recordingState(this).trustedSnapshots = trusted;
+            recordingState(this).replayWarnings = warnings;
+            this.animationEnabled = animation; this.replayOmniscientDetails = omniscient;
         }
-
-        if (this.replayStatus === 'playing') {
-            this.replayStatus = 'loaded';
-        }
+    }
+    private restoreRecordingInput(input: RecordingOrigin['inputState']): void {
+        this.isInventoryOpen = input.inventoryOpen; this.inventoryAction = input.inventoryAction; this.referenceScreen = input.referenceScreen;
+        const items = this.player.inventory.items;
+        this.pendingArcana = input.arcana ? { item: items.find(i => i.id === input.arcana!.itemId)!, cursor: { ...input.arcana.cursor } } : null;
+        this.throwItemTarget = input.throwItemId === null ? null : items.find(i => i.id === input.throwItemId)!; this.isThrowing = !!this.throwItemTarget;
+        this.pendingUseConfirm = input.pendingUseConfirmId === null ? null : items.find(i => i.id === input.pendingUseConfirmId)!;
     }
 
     public handlePlayerAction(action: string, data?: unknown, source: 'player' | 'system' = 'player') {
@@ -10011,7 +10113,10 @@ export class Game {
                     fellOut.add(m);
                     const targetDepth = this.depth + 1;
                     const cached = this.levels.get(targetDepth);
-                    if (cached && m.spatial) {
+                    this.displaceWorldResident(m.id);
+                    const managed = this.world5?.levels.some(l => l.levelRef.kind === 'dungeon' && l.levelRef.depth === targetDepth && l.policy === 'frozen-ecology-economy-v1');
+                    if (managed && targetDepth <= CE_DEEPEST_LEVEL) this.deferSquareLanding(m, targetDepth);
+                    else if (cached && m.spatial) {
                         const spot = this.squarePublicationFits(m, cached.monsters, cached.dormantMonsters ?? []) ? travelPlacement({ grid: cached.grid, player: { hp: 0 } as Creature, monsters: cached.monsters, dormantMonsters: cached.dormantMonsters }, m, m.loc, true, true, true) : null;
                         if (spot) { commitCreatureAnchor(m, spot); cached.monsters.push(m); }
                         else this.deferSquareLanding(m, targetDepth);
@@ -10068,7 +10173,9 @@ export class Game {
             return;
         }
         const cached = this.levels.get(targetDepth);
-        const world: SpatialWorld | undefined = cached && { grid: cached.grid, monsters: cached.monsters, dormantMonsters: cached.dormantMonsters };
+        for (const actor of actors) this.displaceWorldResident(actor.id);
+        const managed = this.world5?.levels.some(l => l.levelRef.kind === 'dungeon' && l.levelRef.depth === targetDepth && l.policy === 'frozen-ecology-economy-v1');
+        const world: SpatialWorld | undefined = cached && !managed ? { grid: cached.grid, monsters: cached.monsters, dormantMonsters: cached.dormantMonsters } : undefined;
         const places = world ? this.wholeBodyPlacement(actors, core.loc, this.spatialCatalog.body(group.bodyDefinitionId), [], false, undefined, world, true) : [];
         if (places.length) {
             this.translateBodyActors(actors, places[Math.floor(places.length / 2)]!);
@@ -10372,6 +10479,13 @@ export class Game {
             administrative ? null : this.extensionRuntime.causality.deathOrigin(m.id));
         dyingMonsters.add(m); // MB_IS_DYING, before item placement/DF callbacks
         m.hp = 0;
+        if (this.world5) for (const ledger of this.world5.offline) {
+            const resident=ledger.residentStates.find(s=>s.actorId===m.id&&s.alive);
+            if (resident) { resident.alive=false; ledger.revision=checkedAdd(ledger.revision,1);
+                for (const order of this.world5.orders) if (order.actorId===m.id&&order.status==='working') { order.status='stopped';order.stopReason='resident-dead';order.revision=checkedAdd(order.revision,1); }
+                this.world5.revision=checkedAdd(this.world5.revision,1);
+            }
+        }
         if (administrative) {
             m.administrativeDeath = true;
             m.carriedItem = null;
@@ -10618,6 +10732,7 @@ export class Game {
     private timePorts(): TimePorts {
         const game = this;
         return {
+            ...(this.world5 ? { worldClock: { validate: (elapsed: number) => validateWorldClockAdvance(this.world5!, elapsed), advance: (elapsed: number) => advanceWorldClock(this.world5!, elapsed) } } : {}),
             actions: actorActionSchedulerFor(game),
             ...(game.bodyGroups?.length ? { bodies: {
                 isDecisionOwner: (id: number) => game.isBodyDecisionOwner(id),
@@ -11150,7 +11265,7 @@ export class Game {
     private serializeItem(item: Item): GameSnapshotItem { return encodeItem(item); }
     private deserializeItem(s: GameSnapshotItem): Item { return decodeItem(s, entityCodecDeps); }
 
-    private snapshotRunState() {
+    private snapshotRunState(observeOnly = false) {
         return projectRunState({
             meteredItems: this.meteredItems, foodSpawned: this.foodSpawned, goldGenerated: this.goldGenerated,
             monsterSpawnFuse: this.monsterSpawnFuse, absoluteTurnNumber: this.absoluteTurnNumber,
@@ -11177,11 +11292,11 @@ export class Game {
             autoFight: this.autoFight ?? undefined,
             autoAction: this.autoAction ?? undefined,
             pendingDiscoveryMessages: this.pendingDiscoveryMessages.length ? this.pendingDiscoveryMessages : undefined,
-            recordedInputEvents: this.recordedInputEvents, recordedInputIndex: this.recordedInputIndex,
+            ...(this.world5 ? { world5: this.world5 } : {}),
             signTexts: [...this.signTexts], resetPlateRoomByPos: [...this.resetPlateRoomByPos],
             testRooms: [...this.testRooms], currentTestCategory: this.currentTestCategory,
             receivedLevitationWarning: this.receivedLevitationWarning || undefined,
-            logger: logger.getState(),
+            logger: observeOnly ? logger.peekState() : logger.getState(),
         });
     }
 
@@ -11203,9 +11318,18 @@ export class Game {
      * encoded; callers may retry once its existing animation has completed. */
     public toSnapshot(): GameSnapshot {
         assertNoActorActionFixture(this);
+        if (this.world5) assertWorldLevelOwnership(this.activeLevelState(), this.levels, { monsters: [...this.pendingFallenByDepth.values()].flat(), items: [...this.pendingFallenItemsByDepth.values()].flat() });
         validateProductionActorActionSession(this);
         if (this.isAdvancing) throw new Error('Cannot save during turn advancement');
         this.finishTransientDisplay(true);
+        const snapshot = this.projectWholeRun(false);
+        if (!!snapshot.run.world5 !== !!this.extensionRuntime?.needsWorld5) throw new Error('C5_BAD_REFERENCE');
+        if (snapshot.run.world5) validateWorld5(snapshot.run.world5, { ...world5SnapshotContext(snapshot),
+            rulesFingerprint: this.extensionRuntime!.world5SettlementFixture()?.configuration.rulesFingerprint });
+        return snapshot;
+    }
+
+    private projectWholeRun(observeOnly = true): GameSnapshot {
         const snapshot = toWholeRunSnapshot({
             ...(this.bodyGroups?.length ? { bodyGroups: this.bodyGroups, spatialCatalog: this.spatialCatalog } : {}),
             depth: this.depth, currentLevelDepth: this.currentLevelDepth,
@@ -11219,7 +11343,7 @@ export class Game {
             visibleItems: this.visibleItems, travelTargetItem: this.travelTargetItem,
             isAdvancing: this.isAdvancing, currentSeed: this.currentSeed, levelSeeds: this.levelSeeds,
             mode: this.mode, ticksTillUpdateEnvironment: this.ticksTillUpdateEnvironment,
-            pendingEnchantment: this.pendingEnchantment, stats: this.stats, run: this.snapshotRunState(),
+            pendingEnchantment: this.pendingEnchantment, stats: this.stats, run: this.snapshotRunState(observeOnly),
             services: {
                 rngState: () => rng.getState(),
                 identifiedItems: () => [...ItemLoader.identifiedItems],
@@ -11243,10 +11367,16 @@ export class Game {
         if (this.isAdvancing || recordingState(this).pendingCommand) throw new Error('Cannot save during turn advancement');
         if (recordingState(this).execution) throw new Error('Cannot save during a command');
         const snapshot = this.toSnapshot();
-        const origin = recordingState(this).origin;
-        if (this.hasCompleteRecording && origin) {
-            snapshot.run.recordingOrigin = { ...structuredClone(origin), inputState: this.recordingInputState() };
+        const state = recordingState(this), original = state.origin;
+        if (this.hasCompleteRecording && original) {
+            this.finishRecordingPrefix(this.recordedInputEvents, original.header);
+            snapshot.run.recordingOrigin = { version: 2, header: structuredClone(original.header), events: structuredClone(this.recordedInputEvents),
+                prefixDigest: this.recordedInputEvents[this.recordedInputEvents.length - 1]?.chainDigest ?? recordingStart(original.header), inputState: this.recordingInputState() };
             if (!this.hasContinuousSnapshotRecording(snapshot)) delete snapshot.run.recordingOrigin;
+        } else if (this.replayRecording && !this.replayError) {
+            const header = recordingHeader(this.replayRecording), events = structuredClone(this.replayEvents.slice(0, this.replayCursor));
+            this.finishRecordingPrefix(events, header);
+            snapshot.run.recordingOrigin = { version: 2, header, events, prefixDigest: events[events.length - 1]?.chainDigest ?? recordingStart(header), inputState: this.recordingInputState() };
         }
         return snapshot;
     }
@@ -11263,37 +11393,15 @@ export class Game {
     }
 
     private hasContinuousSnapshotRecording(snapshot: GameSnapshot): boolean {
-        const { run } = snapshot;
-        const origin = run.recordingOrigin;
-        if (snapshot.extensions && (canonical(origin?.extensions) !== canonical(snapshot.extensions.manifest)
-            || canonical((run.recordedInputEvents[run.recordedInputEvents.length - 1] ?? origin?.initial)?.extensions) !== canonical(snapshot.extensions))) return false;
-        if (!origin || origin.version !== 1 || origin.seed !== snapshot.seed || origin.mode !== snapshot.mode
-            || !origin.initial || origin.initial.tick !== 0 || origin.initial.turn !== 0 || origin.initial.depth !== 1
-            || origin.initial.end !== undefined || !Random.isState(origin.initial.rng)
-            || !Number.isInteger(origin.initial.player?.x) || !Number.isInteger(origin.initial.player?.y)
-            || !Number.isSafeInteger(run.recordedInputIndex) || run.recordedInputIndex !== run.recordedInputEvents?.length
-            || !this.isValidRecording({ version: 3, seed: snapshot.seed, mode: snapshot.mode, startDepth: 1,
-                recordedAt: snapshot.savedAt, events: run.recordedInputEvents,
-                ...(snapshot.extensions ? { extensions: snapshot.extensions.manifest } : {}) })) return false;
-        const input = origin.inputState;
-        const hasItem = (id: number | null) => id === null
-            || (Number.isSafeInteger(id) && snapshot.player.inventory.some(item => item.id === id));
-        if (!input || typeof input.inventoryOpen !== 'boolean'
-            || ![null, 'equip', 'unequip', 'drop', 'call', 'relabel'].includes(input.inventoryAction)
-            || ![null, 'discoveries', 'help'].includes(input.referenceScreen)
-            || !hasItem(input.throwItemId) || !hasItem(input.pendingUseConfirmId)
-            || (input.arcana !== null && (!input.arcana || typeof input.arcana.itemId !== 'number' || !hasItem(input.arcana.itemId)
-                || !Number.isInteger(input.arcana.cursor?.x) || !Number.isInteger(input.arcana.cursor?.y)
-                || input.arcana.cursor.x < 0 || input.arcana.cursor.x >= snapshot.width
-                || input.arcana.cursor.y < 0 || input.arcana.cursor.y >= snapshot.height))
-            || ((run.pendingIdentify || snapshot.pendingEnchantment) && !input.inventoryOpen)) return false;
-        const last = run.recordedInputEvents[run.recordedInputEvents.length - 1] ?? origin.initial;
-        return last.tick === run.currentTick && last.turn === run.absoluteTurnNumber && last.depth === snapshot.depth
-            && last.player.x === snapshot.player.loc.x && last.player.y === snapshot.player.loc.y
-            && JSON.stringify(last.rng) === JSON.stringify(snapshot.rngState)
-            && !!last.end === run.isGameOver
-            && (!last.end || (last.end.won === run.gameOverWon && last.end.score === run.gameOverScore
-                && last.end.superVictory === (run.gameOverSuperVictory ?? false)));
+        const origin = snapshot.run.recordingOrigin;
+        if (!origin || !validOriginShape(origin, snapshot, m => { this.createExtensionRuntime(m as ExtensionManifest); })) return false;
+        if (canonical(origin.header.extensions) !== canonical(snapshot.extensions?.manifest ?? null)) return false;
+        const last = origin.events[origin.events.length - 1], digest = mechanicalDigest(snapshot, origin.inputState);
+        if ((last?.fullCheckpoint ?? origin.header.initialDigest).root !== digest.root) return false;
+        return !last || (last.tick === snapshot.run.currentTick && last.turn === snapshot.run.absoluteTurnNumber
+            && requireDungeon(last.levelRef) === snapshot.depth && last.player.x === snapshot.player.loc.x && last.player.y === snapshot.player.loc.y
+            && last.hp === snapshot.player.hp && last.simulationTicks === (snapshot.run.world5?.simulationTicks ?? null)
+            && JSON.stringify(last.rng) === JSON.stringify(snapshot.rngState));
     }
 
     private serializeMonster(m: Monster): GameSnapshotMonster { return encodeMonster(m); }
@@ -11315,22 +11423,28 @@ export class Game {
 
     public loadSnapshot(snapshot: GameSnapshot, onExtensionError?: (message: string) => void): boolean {
         assertNoActorActionFixture(this);
-        if (!snapshot || typeof snapshot !== 'object' || !snapshot.run) return false;
+        const refuse = (): false => { const message=i18next.t('save.format_invalid', {defaultValue:'Unsupported or damaged save format.'});
+            logger.log(message,'#ff6666',{presentationOnly:true});onExtensionError?.(message);return false; };
+        if (!snapshot || typeof snapshot !== 'object' || !snapshot.run) return refuse();
         // Check history before extension/provenance inspection or retiring the live run.
-        if (!Array.isArray(snapshot.run.recordedInputEvents)
-            || snapshot.run.recordedInputEvents.some(event => !event || typeof event !== 'object' || Array.isArray(event))) return false;
-        if (snapshot.extensions === undefined && (snapshot.run.recordingOrigin?.extensions !== undefined
-            || snapshot.run.recordedInputEvents.some(event => event.extensions !== undefined))) return false;
+        if ('recordedInputEvents' in snapshot.run || 'recordedInputIndex' in snapshot.run) return refuse();
         let extensions: ExtensionRuntime | null = null;
         if (snapshot.extensions !== undefined) {
             try { extensions = this.createExtensionRuntime(snapshot.extensions.manifest, snapshot.extensions); }
             catch (error) {
                 const message = formatExtensionCompatibilityError(error);
-                logger.log(message, '#ff6666'); onExtensionError?.(message);
+                logger.log(message, '#ff6666', { presentationOnly: true }); onExtensionError?.(message);
                 return false;
             }
         }
-        if (!isWholeRunSnapshot(snapshot, extensions?.spatialCatalog)) return false;
+        if (!isWholeRunSnapshot(snapshot, extensions?.spatialCatalog)) return refuse();
+        try {
+            if (!!snapshot.run.world5 !== !!extensions?.needsWorld5) return refuse();
+            if (snapshot.run.world5) validateWorld5(snapshot.run.world5, { ...world5SnapshotContext(snapshot), rulesFingerprint: extensions!.world5SettlementFixture()?.configuration.rulesFingerprint });
+        } catch { return refuse(); }
+        if ('recordingOrigin' in snapshot.run) {
+            try { if (!this.hasContinuousSnapshotRecording(snapshot)) return refuse(); } catch { return refuse(); }
+        }
         // Decode the entire world before retiring the live one.
         let decoded: ReturnType<typeof decodeWholeRunWorld>;
         try {
@@ -11432,6 +11546,7 @@ export class Game {
         this.inAutoTravelStep = false;
         this.mode = snapshot.mode; this.depth = snapshot.depth; this.currentLevelDepth = snapshot.currentLevelDepth;
         this.currentSeed = snapshot.seed; this.levelSeeds = copyLevelSeeds(snapshot.levelSeeds);
+        if (snapshot.run.world5) this.world5 = structuredClone(snapshot.run.world5); else delete this.world5;
         this.ticksTillUpdateEnvironment = snapshot.ticksTillUpdateEnvironment;
         const active = restored.get(this.depth)!;
         this.grid = active.grid; this.environment = active.environment; this.fov = active.fov; this.lightMap = active.lightMap;
@@ -11443,8 +11558,8 @@ export class Game {
         this.machineCells = active.machineCells!; this.scent = active.scent!; this.waypoints = active.waypoints!;
         this.currentLevelExitedVia = { ...active.playerExitedVia! };
         this.currentLevelAwaySince = active.awaySince!; this.pendingCaughtFireCells = active.pendingCaughtFireCells!;
-        this.displacementTrapDepressions = new WeakMap();
-        for (const saved of levelRows) this.displacementTrapDepressions.set(restored.get(saved.depth)!.grid, new Set(saved.trapDepressions));
+        this.displacementTrapDepressions = levelRows.some(row=>row.trapDepressions.length) ? new WeakMap() : undefined;
+        if (this.displacementTrapDepressions) for (const saved of levelRows) this.displacementTrapDepressions.set(restored.get(saved.depth)!.grid, new Set(saved.trapDepressions));
         restored.delete(this.depth); this.levels = restored;
         this.pendingFallenItemsByDepth = new Map(snapshot.pendingFallenItemsByDepth.map(q =>
             [q.depth, q.items.map(item => entityGraph.items.get(item.id)!)]));
@@ -11488,11 +11603,13 @@ export class Game {
         logger.onDisturb = () => { this.disturbed = true; };
         logger.blockCombatText = false;
         this.travelTargetItem = run.travelTargetItemId === null ? undefined : entityGraph.items.get(run.travelTargetItemId);
-        this.recordedInputEvents = run.recordedInputEvents; this.recordedInputIndex = run.recordedInputIndex;
+        this.recordedInputEvents = structuredClone(run.recordingOrigin?.events ?? []); this.recordedInputIndex = this.recordedInputEvents.length;
+        recordingState(this).snapshots = []; recordingState(this).trustedSnapshots = new Set();
         this.recordingStartAt = Date.now();
         // Legacy/world-only snapshots remain playable, but cannot create a trusted prefix.
         this.recordingFromNewGame = this.hasContinuousSnapshotRecording(snapshot);
         recordingState(this).origin = this.recordingFromNewGame ? structuredClone(run.recordingOrigin!) : null;
+        recordingState(this).header = recordingState(this).origin?.header ?? null;
         this.clearReplay();
         this.signTexts = new Map(run.signTexts); this.resetPlateRoomByPos = new Map(run.resetPlateRoomByPos);
         this.testRooms = new Map(run.testRooms); this.currentTestCategory = run.currentTestCategory;

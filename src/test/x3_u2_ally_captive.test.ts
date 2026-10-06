@@ -1,3 +1,4 @@
+import { installRecordingScene } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { Game } from '../engine/Core/Game';
@@ -22,7 +23,10 @@ function room(g: Game) {
     g.player.loc = { x: 10, y: 10 }; g.player.hp = g.player.maxHp = 500;
     g.player.equippedWeapon = null; g.player.equippedArmor = null;
 }
-function scene() { const g = createHeadlessGame(33002, 'test'); room(g); return g; }
+function scene(setup: (g: Game) => void = () => {}) {
+    installRecordingScene(g => { room(g); setup(g); });
+    return createHeadlessGame(33002, 'test');
+}
 function mob(g: Game, kind: 'ally' | 'discordant' | 'captive' = 'ally', x = 11, y = 10, id = 'monkey') {
     const m = new Monster(x, y, { ...monsters.find(row => row.id === id)!, hp: 500, defense: 0 } as MonsterData);
     m.isAlly = kind !== 'captive'; m.isCaged = kind === 'captive'; m.state = MonsterState.WANDERING;
@@ -182,11 +186,9 @@ describe('X3-U2 D06 captive release', () => {
 describe('X3-U2 recording and auto-travel', () => {
     it.each(['swap', 'fallback', 'discordant', 'captive'] as const)('%s public commands replay and seek with zero OOS and no UI', kind => {
         const setup = (g: Game) => { mob(g, kind === 'discordant' || kind === 'captive' ? kind : 'ally'); if (kind === 'fallback') lavaOrigin(g); };
-        const g = scene(); setup(g); const old = state(g);
+        const g = scene(setup); const old = state(g);
         if (kind === 'discordant' || kind === 'captive') { g.onConfirmRequest = () => false; move(g); expect(state(g)).toEqual(old); }
         g.onConfirmRequest = () => true; move(g); const final = state(g), recording = g.exportRecording();
-        const start = g.startNewGame.bind(g);
-        vi.spyOn(g, 'startNewGame').mockImplementation(options => { start(options); room(g); setup(g); });
         expect(g.loadReplay(recording)).toBe(true); g.onConfirmRequest = () => { throw new Error('Replay opened UI'); };
         for (const _event of recording.events) g.replayStep();
         const check = () => {

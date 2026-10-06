@@ -1,3 +1,4 @@
+import { continuingPrefix, extensionDigest, initialRecordingCheckpoint } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as catalog from '../ext/catalog';
 import { validateModuleDescriptors, type ModuleDescriptor } from '../ext/descriptor';
@@ -46,11 +47,11 @@ function play(game: Game, turns = 3): void {
 }
 function checkpoint(game: Game) {
     return { tick: timeSystem.currentTick, turn: game.absoluteTurnNumber, depth: game.depth,
-        player: { ...game.player.loc }, rng: rng.getState(), extensions: game.extensionRuntime!.snapshot() };
+        player: { ...game.player.loc }, rng: rng.getState(), extensions: extensionDigest(game.extensionRuntime!.snapshot()) };
 }
 function eventCheckpoint(event: RecordedInputEvent) {
-    return { tick: event.tick, turn: event.turn, depth: event.depth, player: event.player,
-        rng: event.rng, extensions: event.extensions };
+    return { tick: event.tick, turn: event.turn, depth: event.levelRef.kind === 'dungeon' ? event.levelRef.depth : -1, player: event.player,
+        rng: event.rng, extensions: event.checkpoint!.domains.extensions };
 }
 function replayEveryCheckpoint(game: Game, recording: GameRecording): void {
     expect(game.loadReplay(copy(recording))).toBe(true);
@@ -67,14 +68,14 @@ function replayEveryCheckpoint(game: Game, recording: GameRecording): void {
 /** Real Game path, reused for each discovered set and synthetic combinations. */
 function verifyRoundTrip(ids: readonly string[]): void {
     const game = open(ids);
-    const origin = copy(game.toSaveSnapshot().run.recordingOrigin!.initial);
+    const origin = { ...initialRecordingCheckpoint(game), extensions: extensionDigest(initialRecordingCheckpoint(game).extensions) };
     play(game);
     const expected = checkpoint(game), saved = copy(game.toSaveSnapshot()), recording = copy(game.exportRecording());
     expect(Object.keys(saved.extensions!.modules).sort()).toEqual([...ids].sort());
     expect(saved.extensions!.manifest).toEqual(recording.extensions);
     expect(saved.run.recordingOrigin).toBeDefined();
     expect(recording.events.length).toBeGreaterThanOrEqual(3);
-    for (const event of recording.events) expect(event.extensions!.manifest).toEqual(recording.extensions);
+    for (const event of recording.events) expect(event.checkpoint!.domains.extensions).toMatch(/^[0-9a-f]{64}$/);
 
     const loaded = createHeadlessGame(81, 'test');
     expect(loaded.loadSnapshot(saved)).toBe(true);
@@ -84,7 +85,7 @@ function verifyRoundTrip(ids: readonly string[]): void {
     expect(loaded.exportRecording().events).toEqual(recording.events);
     play(loaded, 2);
     const continuation = copy(loaded.exportRecording()), continued = checkpoint(loaded);
-    expect(continuation.events.slice(0, recording.events.length)).toEqual(recording.events);
+    expect(continuation.events.slice(0, recording.events.length)).toEqual(continuingPrefix(recording));
     expect(continuation.events.length).toBe(recording.events.length + 2);
 
     const replay = createHeadlessGame(82, 'test');
@@ -258,7 +259,7 @@ describe('EXT-2a0 foundation-owned composition fixtures', () => {
         const saved = copy(game.toSaveSnapshot()), recording = copy(game.exportRecording());
         expect(saved.run.recordingOrigin).toBeDefined();
         expect(game.hasCompleteRecording).toBe(true);
-        expect(saved.run.recordedInputEvents).toEqual(recording.events);
+        expect(saved.run.recordingOrigin!.events).toEqual(recording.events);
         expect(game.extensionRuntime!.validateRecording(recording.events)).toBe(true);
         const current = { player: game.player, runtime: game.extensionRuntime, rng: rng.getState(), turn: game.absoluteTurnNumber };
         const unload = vi.spyOn(current.runtime!, 'unload');
@@ -305,7 +306,7 @@ describe('EXT-2a0 foundation-owned composition fixtures', () => {
         }
         const foreignSave = copy(saved), foreignRecording = copy(recording);
         foreignSave.extensions!.components[String(game.player.id)]!['missing:counter'] = { value: 1 };
-        foreignRecording.events[0]!.extensions!.components[String(game.player.id)]!['missing:counter'] = { value: 1 };
+        foreignRecording.events[0]!.checkpoint!.domains.extensions = '0'.repeat(64);
         expect(game.loadSnapshot(foreignSave)).toBe(false);
         expect(game.loadReplay(foreignRecording)).toBe(false);
         assertCurrentRun(game, current);

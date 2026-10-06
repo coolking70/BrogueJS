@@ -8,6 +8,9 @@ import ts from 'typescript';
 import { readFileSync } from 'node:fs';
 import zhCN from '../locales/zh_CN.json';
 import { createHeadlessGame } from './harness';
+import { DialogService } from '../ui/dialogService';
+import { approveSaveOverwrite } from '../ui/saveOverwrite';
+import { legacyReplayState, dismissLegacyReplay } from '../ui/legacyReplay';
 
 // Mount the compiled production SFC with Vue's real vModelText directive.
 // The host delivers input events, including Vue's type=number coercion; it does
@@ -102,6 +105,43 @@ afterEach(() => { app?.unmount(); app = undefined; });
 afterAll(() => vi.unstubAllGlobals());
 
 describe('MainMenu mounted replay seek', () => {
+    it('review M3: keeps incompatible saves visible with a reason and exposes legacy recovery controls', async () => {
+        const root = node('root'), onExport = vi.fn(), onDismiss = vi.fn();
+        app = renderer.createApp(MainMenu, { inGame: true, hasSave: true, hasReplay: false,
+            replayInfo: null,
+            saveInfo: { schema: 'brogue-web-whole-run-v3', compatible: false, depth: 7, seed: '517', mode: 'normal', savedAt: 0 },
+            hasLegacyReplay: true, legacyReplayNotice: true, onExportLegacyReplay: onExport, onDismissLegacyReplay: onDismiss,
+        }).use(I18NextVue, { i18next }); app.mount(root);
+        const clickTab = async (key: string) => { all(root).find(n => n.tag === 'button' && text(n).includes(i18next.t(key)))!.props.onClick(); await Vue.nextTick(); };
+        await clickTab('title.saves');
+        expect(text(root)).toContain(i18next.t('save.incompatible'));
+        const findButton = (key: string) => all(root).find(n => n.tag === 'button' && text(n) === i18next.t(key))!;
+        expect(findButton('menu.actions.continue').props.disabled).toBe(true);
+        findButton('title.back').props.onClick(); await Vue.nextTick();
+        await clickTab('menu.replay.title');
+        findButton('replay.export_legacy').props.onClick(); expect(onExport).toHaveBeenCalledOnce();
+        findButton('replay.dismiss_legacy').props.onClick(); expect(onDismiss).toHaveBeenCalledOnce();
+    });
+    it('review M3: incompatible save replacement requires an affirmative answer, including cancellation', async () => {
+        const summary = { schema: 'brogue-web-whole-run-v3', compatible: false, depth: 7, seed: '517', mode: 'normal' as const, savedAt: 0 };
+        const dialogs = new DialogService();
+        for (const answer of ['no', 'cancel', 'yes'] as const) {
+            const approval = approveSaveOverwrite(summary, dialogs), entry = dialogs.current!;
+            expect(entry.text).toBe(i18next.t('save.overwrite_incompatible')); expect(entry.defaultAction).toBe('no');
+            if (answer === 'cancel') dialogs.cancel(entry.token); else dialogs.answer(entry.token, answer);
+            expect(await approval).toBe(answer === 'yes');
+        }
+        expect(await approveSaveOverwrite({ ...summary, compatible: true }, dialogs)).toBe(true);
+        expect(dialogs.current).toBeUndefined();
+    });
+    it('review M3: legacy JSON survives dismissal and remains available for exact export after restart', () => {
+        const raw = '{ "version": 3, "events": [] }', values = new Map([['brogue-web-replay-v1', raw]]);
+        const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } };
+        expect(legacyReplayState(storage)).toEqual({ raw, showNotice: true });
+        dismissLegacyReplay(storage);
+        expect(legacyReplayState({ ...storage })).toEqual({ raw, showNotice: false });
+        expect(values.get('brogue-web-replay-v1')).toBe(raw);
+    });
     it('seeks a six-command recording through the numeric input and button, preserving engine clamping', async () => {
         const game = createHeadlessGame(517);
         game.animationEnabled = false;

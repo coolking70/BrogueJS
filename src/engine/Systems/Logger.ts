@@ -8,9 +8,12 @@ export interface LogMessage {
     acknowledge?: boolean;
     foldable?: boolean;
 }
+interface MessageEvidence { turn: number; color: string; acknowledge: boolean; foldable: boolean }
 
 export interface MessageOptions {
     acknowledge?: boolean;
+    /** Rejected inputs and file diagnostics are UI feedback, outside the archive. */
+    presentationOnly?: boolean;
     /** CE FOLDABLE: combat text; only same-turn duplicates collapse. */
     foldable?: boolean;
 }
@@ -30,6 +33,7 @@ function notifyPresentation(log: Logger): void {
 }
 const combatBuffers = new WeakMap<Logger, { text: string; color: string }[]>();
 const heardCombat = new WeakSet<Logger>();
+const feedback = new WeakMap<Logger, LogMessage>();
 type MessageObserver = (message: Readonly<LogMessage>, acknowledge: boolean, occurrence?: Readonly<LogMessage>) => void;
 const messageObservers = new WeakMap<Logger, MessageObserver>();
 const messageCheckpoints = new WeakMap<Logger, () => () => void>();
@@ -58,8 +62,15 @@ export class Logger {
         else messageCheckpoints.delete(this);
     }
     public messages: LogMessage[] = [];
+    public get displayMessages(): readonly LogMessage[] {
+        const notice = feedback.get(this);
+        return notice ? [...this.messages, notice] : this.messages;
+    }
     public turn = 0;
     private nextId = 0;
+    /** Emission evidence is independent of translated text and display folding. */
+    private mechanicalMessages: MessageEvidence[] = [];
+    private mechanicalNextId = 0;
     public get onDisturb(): (() => void) | null { return disturbanceCallbacks.get(this) ?? null; }
     public set onDisturb(callback: (() => void) | null) {
         if (callback) disturbanceCallbacks.set(this, callback);
@@ -130,8 +141,10 @@ export class Logger {
      * and pending combat. Unlike getState(), observing this checkpoint must not
      * flush messages, disturb the player or consume acknowledgments. */
     public checkpoint(): () => void {
+        const notice = feedback.get(this);
         const messages = this.messages.map(message => ({ ...message }));
         const nextId = this.nextId, turn = this.turn, blockCombatText = this.blockCombatText;
+        const mechanicalMessages = this.mechanicalMessages.map(m => ({ ...m })), mechanicalNextId = this.mechanicalNextId;
         const combat = combatBuffers.get(this)?.map(message => ({ ...message }));
         const heard = heardCombat.has(this), display = presentations.get(this);
         // D3 occurrences are immutable capabilities shared with the timeline.
@@ -143,8 +156,10 @@ export class Logger {
         const terminalShown = display?.terminalShown;
         const disturb = disturbanceCallbacks.get(this);
         return () => {
+            if (notice) feedback.set(this, notice); else feedback.delete(this);
             this.messages = messages.map(message => ({ ...message }));
             this.nextId = nextId; this.turn = turn; this.blockCombatText = blockCombatText;
+            this.mechanicalMessages = mechanicalMessages.map(m => ({ ...m })); this.mechanicalNextId = mechanicalNextId;
             if (combat) combatBuffers.set(this, combat.map(message => ({ ...message })));
             else combatBuffers.delete(this);
             if (heard) heardCombat.add(this); else heardCombat.delete(this);
@@ -157,21 +172,31 @@ export class Logger {
     }
     public getState() {
         this.flushCombat();
-        return { messages: this.messages.map(m => ({ ...m })), nextId: this.nextId, turn: this.turn };
+        return this.peekState();
+    }
+    /** Pure mechanical observation, including no presentation flush or disturbance. */
+    public peekState() {
+        return { messages: this.messages.map(m => ({ ...m })), nextId: this.nextId, turn: this.turn,
+            mechanical: { messages: this.mechanicalMessages.map(m => ({ ...m })), nextId: this.mechanicalNextId } };
     }
     public setState(state: ReturnType<Logger['getState']>): void {
+        feedback.delete(this);
         combatBuffers.delete(this);
         heardCombat.delete(this);
         this.messages = state.messages.map(m => ({ ...m }));
         this.nextId = state.nextId;
         this.turn = state.turn;
+        this.mechanicalMessages = state.mechanical.messages.map(m => ({ ...m }));
+        this.mechanicalNextId = state.mechanical.nextId;
         this.clearAcknowledgments();
     }
     public reset(): void {
+        feedback.delete(this);
         combatBuffers.delete(this);
         heardCombat.delete(this);
         this.messages = [];
         this.nextId = 0;
+        this.mechanicalMessages = []; this.mechanicalNextId = 0;
         this.turn = 0;
         this.blockCombatText = false;
         this.clearAcknowledgments();
@@ -179,7 +204,16 @@ export class Logger {
 
     public log(text: string, color = '#ffffff', options: MessageOptions = {}): void {
         if (!text) return;
+        if (options.presentationOnly) {
+            feedback.set(this, { id: -1, text, color, count: 1, turn: this.turn });
+            notifyPresentation(this);
+            return;
+        }
+        feedback.delete(this);
         this.flushCombat();
+        this.mechanicalMessages.push({ turn: this.turn, color, acknowledge: !!options.acknowledge, foldable: !!options.foldable });
+        this.mechanicalNextId++;
+        if (this.mechanicalMessages.length > MESSAGE_ARCHIVE_ENTRIES) this.mechanicalMessages.shift();
         this.disturb();
         let entry: LogMessage | undefined;
         // CE examines at most ARCHIVE_ENTRIES - 1 preceding entries. Stop at
@@ -217,3 +251,18 @@ export class Logger {
     }
 }
 export const logger = new Logger();
+
+/** The archive's rendered text is retained for display; only emission metadata
+ * is mechanical evidence. Validate both before retiring a world on load. */
+export function isLoggerSnapshot(value: unknown): value is ReturnType<Logger['getState']> {
+    const v = value as ReturnType<Logger['getState']> | null;
+    const uint = (n: number) => Number.isSafeInteger(n) && n >= 0;
+    return !!v && uint(v.nextId) && uint(v.turn) && Array.isArray(v.messages) && v.messages.length <= MESSAGE_ARCHIVE_ENTRIES
+        && v.messages.every(m => m && uint(m.id) && m.id < v.nextId && uint(m.turn) && typeof m.text === 'string'
+            && typeof m.color === 'string' && Number.isInteger(m.count) && m.count >= 1 && m.count <= MAX_MESSAGE_REPEATS
+            && (m.acknowledge === undefined || typeof m.acknowledge === 'boolean') && (m.foldable === undefined || typeof m.foldable === 'boolean'))
+        && !!v.mechanical && uint(v.mechanical.nextId) && Array.isArray(v.mechanical.messages)
+        && v.mechanical.messages.length <= Math.min(MESSAGE_ARCHIVE_ENTRIES, v.mechanical.nextId)
+        && v.mechanical.messages.every(m => m && Object.keys(m).sort().join(',') === 'acknowledge,color,foldable,turn'
+            && uint(m.turn) && typeof m.color === 'string' && typeof m.acknowledge === 'boolean' && typeof m.foldable === 'boolean');
+}

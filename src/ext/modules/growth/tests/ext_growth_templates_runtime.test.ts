@@ -1,3 +1,4 @@
+import { extensionDigest, checkpointExtensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game, type HordeEntry } from '../../../../engine/Core/Game';
 import { Monster, MonsterState, type MonsterData } from '../../../../entities/Monster';
@@ -121,7 +122,7 @@ describe('EXT-1e templates through actual engine lifecycles', () => {
             expect(component<GrowthProgression>(game, monster.id, 'progression').level).toBe(4);
         }
         const saved = game.toSaveSnapshot(); expect(game.loadSnapshot(saved)).toBe(true);
-        expect(game.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         standOn(game, TerrainType.STAIRS_UP); game.executeCommand('stairs_up'); finish(game); expect(game.depth).toBe(1);
         for (const monster of [...game.monsters, ...game.dormantMonsters]) if (old.has(monster.id))
             expect(component<GrowthIdentityBuild>(game, monster.id, 'identity')).toEqual(old.get(monster.id));
@@ -139,7 +140,7 @@ describe('EXT-1e templates through actual engine lifecycles', () => {
         const second = game.cloneMonster(clone, { x: 9, y: 5 }, { creationReason: 'clone' })!; expect(second.maxHp).toBe(clone.maxHp); expect(second.hp).toBe(clone.hp);
         settle(game); const saved = game.toSaveSnapshot(); expect(game.loadSnapshot(saved)).toBe(true);
         expect(game.monsters.find(monster => monster.id === clone.id)!.maxHp).toBe(clone.maxHp);
-        expect(game.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
     });
     it.each([false, true])('preserves template grants through real ally resurrection and respects native clone exclusion, copied=%s', copied => {
         configured(); const game = scene(), original = spawn(game, 'vampire', 7, true);
@@ -167,7 +168,7 @@ describe('EXT-1e templates through actual engine lifecycles', () => {
         expect(actor.maxHp).toBe(species('vampire').hp + bonus); expect(actor.hp).toBe(actor.maxHp);
         expect({ identity: component<GrowthIdentityBuild>(game, actor.id, 'identity'), progression: component<GrowthProgression>(game, actor.id, 'progression'),
             attributes: component<GrowthAttributes>(game, actor.id, 'attributes'), build: component<GrowthSkillBuild>(game, actor.id, 'skill-build') }).toEqual(before);
-        const saved = game.toSaveSnapshot(); expect(game.loadSnapshot(saved)).toBe(true); expect(game.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        const saved = game.toSaveSnapshot(); expect(game.loadSnapshot(saved)).toBe(true); expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
     });
     it.each([[18,18],[23,21],[33,31]])('clamps copied HP %s against the rebuilt maximum, preserving inherited constitution and native overhealth', (hp,expected) => {
         configured(); const game=scene(),source=spawn(game); source.hp=hp;
@@ -206,7 +207,7 @@ describe('EXT-1e templates through actual engine lifecycles', () => {
         const second = game.cloneMonster(clone, { x: 6, y: 5 }, { creationReason: 'clone' })!;
         expect(second.maxHp).toBe(native); expect(second.hp).toBe(20);
         settle(game); const saved = game.toSaveSnapshot(); expect(game.loadSnapshot(saved)).toBe(true);
-        expect(game.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
     });
     it('receives, saves and consumes pressure on an NPC whose growth is disabled without creating a build', () => {
         const pressure = 'growth.skill.pressure';
@@ -249,7 +250,7 @@ describe('EXT-1e templates through actual engine lifecycles', () => {
             expect(next.attributePoints).toBe((progression ? amount : 0) + (inheritUnspentPoints ? 2 : 0));
             expect(component<GrowthAttributes>(game, clone.id, 'attributes').values[con]).toBe(2);
             expect(next.experience).toBeLessThanOrEqual(experienceThreshold(pack.config.levels, pack.config.levels.cap));
-            const saved = game.toSaveSnapshot(); expect(game.loadSnapshot(saved)).toBe(true); expect(game.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+            const saved = game.toSaveSnapshot(); expect(game.loadSnapshot(saved)).toBe(true); expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         });
     it.each([[false, false], [false, true], [true, false], [true, true]] as const)('requires copied-body rewards=%s and creation eligibility=%s before paying a clone kill', (rewards, eligible) => {
         configured(pack => { pack.config.monsters.clone.rewards = rewards; if (eligible) pack.config.experience.kills.eligibleCreationReasons.push('clone'); });

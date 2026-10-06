@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Game, type GameMode, type GameRecording } from '../engine/Core/Game';
+import { Game, type GameMode } from '../engine/Core/Game';
 import { createHeadlessGame } from './harness';
 import { rng, RNGType } from '../engine/Random';
 import { ItemLoader } from '../engine/Items/ItemLoader';
@@ -115,17 +115,15 @@ function dirty(g: Game) {
     rng.setRNG(RNGType.RNG_COSMETIC); rng.randRange(1, 100);
     return () => expect(retired).toBe(1);
 }
-const recording: GameRecording = {
-    version: 1, recordedAt: 1234, seed: 12345, mode: 'normal', startDepth: 1,
-    events: Array.from({ length: 3 }, (_, index) => ({ index, tick: index * 100, depth: 1,
-        player: { x: 0, y: 0 }, action: 'wait', data: null })),
-};
 afterEach(() => vi.restoreAllMocks());
 
 describe('U00 full new-run equivalence', () => {
     for (const mode of ['normal', 'easy', 'wizard', 'test'] as GameMode[]) {
         for (const entrance of ['title', 'death', 'restart', 'seek'] as const) {
             it(`${entrance} → ${mode}: reused A→B equals fresh B, whole graph and both RNG streams`, () => {
+                const source=createHeadlessGame(12345,mode);
+                for(let n=0;n<3;n++)source.executeCommand('escape');
+                const rec=source.exportRecording();
                 const g = createHeadlessGame(777);
                 const confirm = () => false;
                 const render = () => {};
@@ -137,7 +135,6 @@ describe('U00 full new-run equivalence', () => {
                 const oldStats = g.stats;
                 const oldKnowledge = ItemLoader.identifiedItems;
                 const oldGrids = [g.grid, ...[...g.levels.values()].map(l => l.grid)];
-                const rec = { ...recording, mode };
                 const enter = (game: Game) => {
                     if (entrance === 'restart' || entrance === 'seek') {
                         game.replayRecording = rec;
@@ -157,7 +154,7 @@ describe('U00 full new-run equivalence', () => {
                 expect(g.onConfirmRequest).toBe(confirm);
                 expect(g.onRenderRequested).toBe(render);
                 expect(g.animationEnabled).toBe(true);
-                expect(bindings.mock.calls.filter(([, fn]) => fn !== null)).toHaveLength(1);
+                expect(bindings.mock.calls.filter(([grid, fn]) => grid === g.grid && fn !== null)).toHaveLength(1);
                 for (const grid of oldGrids) expect(bindings.mock.calls.some(([key, fn]) => key === grid && fn === null)).toBe(true);
                 expect(g.levels).not.toBe(oldLevels);
                 expect(oldLevels.size).toBeGreaterThan(0);

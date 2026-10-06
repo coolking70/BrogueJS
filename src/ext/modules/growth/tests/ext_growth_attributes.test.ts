@@ -1,3 +1,4 @@
+import { extensionDigest, checkpointExtensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import type { Game } from '../../../../engine/Core/Game';
@@ -55,7 +56,7 @@ describe('EXT-1b configured attributes and atomic commands',() => {
         const saved = g.toSaveSnapshot(), loaded = createHeadlessGame(9,'test');
         expect(loaded.loadSnapshot(saved)).toBe(true); expect(loaded.player.maxHp).toBe(g.player.maxHp);
         expect(loaded.player.strength).toBe(g.player.strength); expect(loaded.player.hp).toBe(hp);
-        expect(loaded.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(extensionDigest(loaded.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         expect(loaded.loadSnapshot(saved)).toBe(true); expect(loaded.player.maxHp).toBe(maximum+6);
     });
     it.each([
@@ -111,7 +112,7 @@ describe('EXT-1b configured attributes and atomic commands',() => {
     it('rejects disabled or unaffordable respec without partial native or component writes',() => {
         configured(pack=>{pack.config.respec={enabled:true,cost:{resource:'gold',amount:100},refundBasisPoints:10000,clearCooldowns:false};});
         const g=game(); allocate(g,{[con]:2,[str]:1}); const saved=g.toSaveSnapshot(), before=state(g).revision;
-        respec(g); expect(state(g).revision).toBe(before); expect(g.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        respec(g); expect(state(g).revision).toBe(before); expect(extensionDigest(g.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         expect(g.player.maxHp).toBe(saved.player.maxHp); expect(g.player.strength).toBe(saved.player.strength);
     });
     it('rejects forged point budgets, attributes and derived delta before retiring the live run',() => {
@@ -128,9 +129,9 @@ describe('EXT-1b configured attributes and atomic commands',() => {
         const saved=g.toSaveSnapshot(),recording=g.exportRecording(), replay=createHeadlessGame(23,'test');
         expect(replay.loadReplay(recording)).toBe(true);
         while(replay.replayCursor<recording.events.length&&!replay.replayError)replay.replayStep(true);
-        expect(replay.replayError).toBeNull();expect(replay.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(replay.replayError).toBeNull();expect(extensionDigest(replay.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         replay.replaySeek(1);while(replay.replayCursor<recording.events.length&&!replay.replayError)replay.replayStep(true);
-        expect(replay.replayError).toBeNull();expect(replay.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(replay.replayError).toBeNull();expect(extensionDigest(replay.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         const loaded=createHeadlessGame(24,'test');expect(loaded.loadSnapshot(saved)).toBe(true);allocate(loaded,{[con]:1});
         expect(loaded.hasCompleteRecording).toBe(true);expect(loaded.player.maxHp).toBe(g.player.maxHp+3);
     });
@@ -162,7 +163,7 @@ describe('EXT-1b configured attributes and atomic commands',() => {
         expect(progression.level).toBeGreaterThan(1);
         expect(progression.attributePoints).toBe((progression.level-1)*20+(inheritUnspentPoints?20:0));
         const saved=g.toSaveSnapshot(),loaded=createHeadlessGame(45,'test');expect(loaded.loadSnapshot(saved)).toBe(true);
-        expect(loaded.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(extensionDigest(loaded.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
     });
     it('respec preserves configured initial ranks and clone inheritance records the actual source balance',() => {
         configured(pack=>{pack.config.attributes.find(attribute=>attribute.id===con)!.initial=2;
@@ -175,6 +176,6 @@ describe('EXT-1b configured attributes and atomic commands',() => {
         expect(component<GrowthAttributes>(g,'attributes',clone.id).inheritedAttributePoints).toBe(sourcePoints);
         respec(g);expect(g.player.maxHp).toBe(initial);expect(component<GrowthAttributes>(g,'attributes').values[con]).toBe(2);
         const saved=g.toSaveSnapshot(),loaded=createHeadlessGame(46,'test');expect(loaded.loadSnapshot(saved)).toBe(true);
-        expect(loaded.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(extensionDigest(loaded.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
     });
 });

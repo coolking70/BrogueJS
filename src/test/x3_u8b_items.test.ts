@@ -1,3 +1,4 @@
+import { installRecordingScene } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import i18next from 'i18next';
 import zhCN from '../locales/zh_CN.json';
@@ -209,12 +210,13 @@ describe('X3-U8b A10 equipment branches', () => {
 
 describe('X3-U8b replay and seek', () => {
     it('ring choice, drop and avoidance reconstruct through public commands with zero OOS', () => {
-        const g = scene(); let r = rings(g);
+        let r!: ReturnType<typeof rings>;
+        installRecordingScene(g => { room(g); r = rings(g); });
+        const g = createHeadlessGame(33008, 'test');
         g.executeItemCommand('equip', r.third); g.executeCommand('escape');
         g.executeItemCommand('equip', r.third); g.executeItemCommand('equip', r.third, r.right.inventoryLetter);
         g.executeItemCommand('drop', r.third); g.executeCommand('move', { x: 1, y: 0 }); explore(g);
-        const recording = g.exportRecording(), final = state(g), start = g.startNewGame.bind(g);
-        vi.spyOn(g, 'startNewGame').mockImplementation(options => { start(options); room(g); r = rings(g); });
+        const recording = g.exportRecording(), final = state(g);
         expect(g.loadReplay(recording)).toBe(true);
         for (let n = 0; n < recording.events.length; n++) g.replayStep();
         expect(g.replayError).toBeNull(); expect(state(g)).toEqual(final);

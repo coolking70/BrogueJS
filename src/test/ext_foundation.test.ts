@@ -1,3 +1,4 @@
+import { extensionDigest, checkpointExtensionDigest, tamperExtension } from './support/recordingV4';
 import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import { ExtensionRegistry } from '../ext/registry';
 import { ExtensionRuntime, type ExtensionPorts } from '../ext/runtime';
@@ -148,7 +149,7 @@ describe('EXT-0 live game integration', () => {
         const admin = rat(game); game.monsters.push(admin); game.killMonster(admin, true); expect(kills(game)).toBe(1);
         const snapshot = copy(game.toSnapshot()), before = rng.getState(), loaded = createHeadlessGame(52, 'test');
         expect(loaded.loadSnapshot(snapshot)).toBe(true); expect(kills(loaded)).toBe(1); expect(rng.getState()).toEqual(before);
-        expect(loaded.toSnapshot().extensions).toEqual(snapshot.extensions);
+        expect(extensionDigest(loaded.toSnapshot().extensions ?? null)).toBe(checkpointExtensionDigest(snapshot));
         const second = rat(loaded); loaded.monsters.push(second); second.takeDamage(second.hp, true); expect(kills(loaded)).toBe(2);
     });
     it('rejects unavailable sets, wrong module versions/state and stripped extended headers before retiring the current game', () => {
@@ -163,7 +164,7 @@ describe('EXT-0 live game integration', () => {
             expect(game.loadReplay({ version: 2, seed: 4101, mode: 'test', events })).toBe(false);
             expect(game.player).toBe(current);
         }
-        game.executeCommand('wait'); const stripped = game.exportRecording(); delete stripped.extensions;
+        game.executeCommand('wait'); const stripped = game.exportRecording(); delete (stripped as any).extensions;
         expect(game.loadReplay(stripped)).toBe(false);
     });
     it('replays a natural example kill, seek and save continuation with exact extension/RNG checkpoints', () => {
@@ -190,10 +191,10 @@ describe('EXT-0 live game integration', () => {
         expect(replay.loadReplay(continued)).toBe(true);
         for (let i = 0; i < continued.events.length; i++) replay.replayStep(true);
         expect(replay.replayError).toBeNull(); expect(replay.extensionRuntime!.snapshot()).toEqual(continuedExtensions);
-        const tampered = copy(recording); tampered.events[tampered.events.length - 1]!.extensions!.modules.example = { kills: 999 };
+        const tampered = copy(recording); tamperExtension(game, tampered, tampered.events.length - 1, state => { state.modules.example = { kills: 999 }; });
         expect(replay.loadReplay(tampered)).toBe(true);
         for (let i = 0; i < tampered.events.length; i++) replay.replayStep(true);
-        expect(replay.replayError).toContain('extension state mismatch');
+        expect(replay.replayError).toContain('domain extensions');
     });
     it('routes extension commands through executeCommand and refuses missing commands in classic mode', () => {
         const game = extended(), registry = new ExtensionRegistry(); registry.register('alpha', '1.0.0', () => ({ ...probe('alpha'),
@@ -218,7 +219,7 @@ describe('EXT-0 live game integration', () => {
         const snapshot = game.toSaveSnapshot(), recording = game.exportRecording();
         expect(game.loadReplay(recording)).toBe(true); game.replayStep(true);
         expect(game.extensionRuntime).toBeNull(); expect(target.extensionHooks).toBeUndefined();
-        expect(snapshot.extensions).toBeUndefined(); expect(recording.extensions).toBeUndefined();
+        expect(snapshot.extensions).toBeUndefined(); expect(recording.extensions).toBeNull();
         expect(module).not.toHaveBeenCalled(); expect(hook).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled(); expect(initial).not.toHaveBeenCalled();
     });
     it('example hooks may use no RNG, including repeated dispatch outside game fixtures', () => {
@@ -236,9 +237,9 @@ describe('EXT fixture durable lifecycle', () => {
         g.startNewGame({seed:4901,mode:'test',ruleSet:'extended',extensions:['example']});g.executeCommand('wait');
         expect(g.extensionRuntime!.manifest.modules.map(module=>module.id)).toEqual(['example']);
         const saved=g.toSaveSnapshot(),recording=g.exportRecording();
-        const restored=createHeadlessGame(4902,'test');expect(restored.loadSnapshot(saved)).toBe(true);expect(restored.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        const restored=createHeadlessGame(4902,'test');expect(restored.loadSnapshot(saved)).toBe(true);expect(extensionDigest(restored.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         expect(restored.loadReplay(recording)).toBe(true);restored.replayStep(true);expect(restored.replayError).toBeNull();
-        expect(restored.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(extensionDigest(restored.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         const factory=vi.spyOn(catalog,'createExtensionRegistry').mockClear();const classic=createHeadlessGame(4903,'test');classic.executeCommand('wait');
         expect(factory).not.toHaveBeenCalled();expect(classic.extensionRuntime).toBeNull();expect(classic.toSnapshot().extensions).toBeUndefined();
     });

@@ -1,3 +1,4 @@
+import { installRecordingScene } from './support/recordingV4';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { Game } from '../engine/Core/Game';
@@ -183,14 +184,13 @@ describe('4a-1 real Game square capability/motion/contact', () => {
 
 
 const playbackWorld = (g: Game) => {
-    const state = stable(g); state.run.recordedInputEvents = []; state.run.recordedInputIndex = 0;
+    const state = stable(g);
     return state;
 };
 describe('4a-1 real Game square persistence and failure transactions', () => {
     it.each([2, 3] as const)('%s-square fixture replays each real command, seeks, and resumes the saved prefix', size => {
-        const start = Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype, 'startNewGame').mockImplementation(function(this: Game, ...args) {
-            start.apply(this, args); arrangeSquareGame(this); squareMonster(this, size);
+        installRecordingScene((game) => {
+            arrangeSquareGame(game); squareMonster(game, size);
         });
         const g = createHeadlessGame(41041, 'test'), expected = [];
         for (let i = 0; i < 2; i++) { g.executeCommand('wait'); expected.push(playbackWorld(g)); }
@@ -428,39 +428,36 @@ function verifyCommandRecording(g: Game, commands: Array<{ action: string; data?
 
 describe('4a-1 command displacement/level/pending recording closure', () => {
     it.each([2, 3] as const)('%s-square real force attack saves, resumes, replays and seeks', size => {
-        const start = Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype, 'startNewGame').mockImplementation(function(this: Game, ...args) {
-            start.apply(this, args); arrangeSquareGame(this); const m = squareMonster(this, size); m.defense = -1000; m.hp = m.maxHp = 1000000;
-            commitCreatureAnchor(this.player, { x: 11, y: 12 });
+        installRecordingScene((game) => {
+            arrangeSquareGame(game); const m = squareMonster(game, size); m.defense = -1000; m.hp = m.maxHp = 1000000;
+            commitCreatureAnchor(game.player, { x: 11, y: 12 });
             const weapon = ItemLoader.spawnWeapon('dagger', -1, -1)!;
-            weapon.enchantment = 30; weapon.runicType = 'force'; this.player.inventory.items.push(weapon); this.player.equippedWeapon = weapon;
+            weapon.enchantment = 30; weapon.runicType = 'force'; game.player.inventory.items.push(weapon); game.player.equippedWeapon = weapon;
         });
         const g = createHeadlessGame(41041, 'test'), force = vi.spyOn(g as any, 'applyWeaponRunicEffect');
         verifyCommandRecording(g, [{ action: 'move', data: { x: 1, y: 0 } }, { action: 'wait' }, { action: 'wait' }], 1);
         expect(force.mock.calls.some(c => c[2] === 'force')).toBe(true); expect(g.monsters[0]!.x).toBeGreaterThan(20);
     });
     it.each([2, 3] as const)('%s-square follows through real stair commands and persists both floors', size => {
-        const start = Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype, 'startNewGame').mockImplementation(function(this: Game, ...args) {
-            start.apply(this, args); arrangeSquareGame(this); this.mode = 'normal'; (this as any).currentLevelDepth = 1;
-            this.depth = 2; (this as any).generateDepth(false); arrangeSquareGame(this); this.grid.setTerrain(65, 14, T.STAIRS_UP); this.levelSeeds[1]!.upStairsLoc = { x: 65, y: 14 };
-            this.depth = 1; (this as any).generateDepth(true); arrangeSquareGame(this); this.grid.setTerrain(65, 14, T.STAIRS_DOWN); this.levelSeeds[0]!.downStairsLoc = { x: 65, y: 14 };
-            const m = squareMonster(this, size, 59, 14); m.isAlly = true;
+        installRecordingScene((game) => {
+            arrangeSquareGame(game); game.mode = 'normal'; (game as any).currentLevelDepth = 1;
+            game.depth = 2; (game as any).generateDepth(false); arrangeSquareGame(game); game.grid.setTerrain(65, 14, T.STAIRS_UP); game.levelSeeds[1]!.upStairsLoc = { x: 65, y: 14 };
+            game.depth = 1; (game as any).generateDepth(true); arrangeSquareGame(game); game.grid.setTerrain(65, 14, T.STAIRS_DOWN); game.levelSeeds[0]!.downStairsLoc = { x: 65, y: 14 };
+            const m = squareMonster(game, size, 59, 14); m.isAlly = true;
         });
         const g = createHeadlessGame(41041, 'normal');
         verifyCommandRecording(g, [{ action: 'stairs_down' }, ...Array.from({ length: 12 }, () => ({ action: 'wait' }))], 3);
         expect(g.depth).toBe(2); expect(g.monsters.some(m => m.spatial?.footprintId === `builtin:square-${size}`)).toBe(true);
     });
     it('no-fit pending remains single-owned through real commands, save continuation, each replay event and seek', () => {
-        const start = Game.prototype.startNewGame;
-        vi.spyOn(Game.prototype, 'startNewGame').mockImplementation(function(this: Game, ...args) {
-            start.apply(this, args); arrangeSquareGame(this); this.mode = 'normal'; (this as any).currentLevelDepth = 1;
-            this.depth = 2; (this as any).generateDepth(false); arrangeSquareGame(this);
-            for (let x = 0; x < this.grid.width; x++) for (let y = 0; y < this.grid.height; y++) this.grid.setTerrain(x, y, T.WALL);
-            this.grid.setTerrain(65, 14, T.STAIRS_UP); this.levelSeeds[1]!.upStairsLoc = { x: 65, y: 14 };
-            this.depth = 1; (this as any).generateDepth(true); arrangeSquareGame(this); this.grid.setTerrain(65, 14, T.STAIRS_DOWN); this.levelSeeds[0]!.downStairsLoc = { x: 65, y: 14 };
-            const m = squareMonster(this, 3); m.behaviorFlags.add('MONST_WILL_NOT_USE_STAIRS');
-            for (const p of footprintOf(m)) this.grid.setTerrain(p.x, p.y, T.CHASM);
+        installRecordingScene((game) => {
+            arrangeSquareGame(game); game.mode = 'normal'; (game as any).currentLevelDepth = 1;
+            game.depth = 2; (game as any).generateDepth(false); arrangeSquareGame(game);
+            for (let x = 0; x < game.grid.width; x++) for (let y = 0; y < game.grid.height; y++) game.grid.setTerrain(x, y, T.WALL);
+            game.grid.setTerrain(65, 14, T.STAIRS_UP); game.levelSeeds[1]!.upStairsLoc = { x: 65, y: 14 };
+            game.depth = 1; (game as any).generateDepth(true); arrangeSquareGame(game); game.grid.setTerrain(65, 14, T.STAIRS_DOWN); game.levelSeeds[0]!.downStairsLoc = { x: 65, y: 14 };
+            const m = squareMonster(game, 3); m.behaviorFlags.add('MONST_WILL_NOT_USE_STAIRS');
+            for (const p of footprintOf(m)) game.grid.setTerrain(p.x, p.y, T.CHASM);
         });
         const g = createHeadlessGame(41041, 'normal');
         const result = verifyCommandRecording(g, [{ action: 'wait' }, { action: 'move', data: { x: 1, y: 1 } }, { action: 'wait' }, { action: 'wait' }], 2);

@@ -1,3 +1,4 @@
+import { extensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import { Game } from '../../../../engine/Core/Game';
@@ -78,7 +79,7 @@ function facts(game: Game) {
 }
 function mechanical(game: Game) {
     const snapshot = json(game.toSnapshot()); snapshot.savedAt = 0;
-    snapshot.run.recordedInputEvents = []; snapshot.run.recordedInputIndex = 0;
+
     return snapshot;
 }
 function prepare(game: Game, id = bonfire(game).id) {
@@ -398,7 +399,7 @@ describe('3e optional modules and durable rest identity', () => {
             expect(game.lastAdvancementError).toBeNull(); expect(game.isInputLocked()).toBe(false);
             expect(timeSystem.currentTick - tick).toBe(500); expect(game.player.hp).toBe(1000); expect(ledger(game).receipts).toHaveLength(1);
             expect(game.recordedInputEvents).toHaveLength(events + 1);
-            expect(last(game.recordedInputEvents).extensions).toEqual(game.extensionRuntime!.snapshot());
+            expect(last(game.recordedInputEvents).checkpoint!.domains.extensions).toBe(extensionDigest(game.extensionRuntime!.snapshot() ?? null));
             const complete = facts(game); for (let frame = 0; frame < 10; frame++) { game.tickAdvancement(16); timeline.tick(16); }
             expect(facts(game)).toEqual(complete);
         } finally { unbind(); dialogs.dispose(); }

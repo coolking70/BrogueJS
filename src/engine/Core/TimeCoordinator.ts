@@ -110,6 +110,7 @@ export interface TimePorts {
     bodies?: { isDecisionOwner(id: number): boolean; advanceElapsed(ticks: number): void };
     /** Opt-in foundation scheduling; absence retains the native iteration/order. */
     actions?: ActorActionSchedulerPort;
+    worldClock?: { validate?(elapsed: number): void; advance(elapsed: number): void };
 }
 
 export function* advancementLoop(ports: TimePorts, stealthRange: number): Generator<number, void, void> {
@@ -135,6 +136,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
             if (actionBoundary != null && actionBoundary < soonestTurn) soonestTurn = actionBoundary;
             // Native readiness may start at zero (or overdue). It consumes no new elapsed time.
             if (actions) soonestTurn = Math.max(0, soonestTurn);
+            if (soonestTurn > 0) ports.worldClock?.validate?.(soonestTurn);
             for (const m of ports.world.monsters) {
                 if (soonestTurn > 0 && m.spatial?.actionLockInTicks !== undefined) {
                     m.spatial.actionLockInTicks = Math.max(0, m.spatial.actionLockInTicks - soonestTurn);
@@ -147,6 +149,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
             if (soonestTurn > 0) ports.bodies?.advanceElapsed(soonestTurn);
             // Busy native timers are mirrors written by this one countdown owner.
             if (actions && soonestTurn > 0) actions.advanceActionTime(soonestTurn);
+            if (soonestTurn > 0) ports.worldClock?.advance(soonestTurn);
 
             let completeObjective: (() => number) | undefined;
             let suspended = false;

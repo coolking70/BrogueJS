@@ -1,3 +1,5 @@
+import { isWorld5Fixture, world5FixtureConfiguration } from './world5Fixture';
+import { FOUNDATION_PROTOCOL } from './descriptor';
 import { resolveActorQueryScope } from './actorQuery';
 import type { ActorActionProductionWorld } from '../engine/Core/ActorActionProduction';
 import type { OptionalActorQueryProvider, CommittedFact, CombatEventFact, CombatEventPayload, CombatEventActor, CommittedFactConsumer, CombatEventKind } from './types';
@@ -40,6 +42,7 @@ const bodyHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts, 'memberD
 const actorQueryProviders = new WeakMap<ExtensionRuntime, Map<string, {module: ExtensionModule; provider: OptionalActorQueryProvider}>>();
 const committedTransactions = new WeakMap<ExtensionRuntime, { events: Omit<CombatEventFact,'factId'>[]; publishing: boolean; allocated:number; actors:Map<Creature,{depth:number;actor:CombatEventActor}> }>();
 const allocatingFacts = new WeakSet<ExtensionRuntime>();
+const world5Runtimes = new WeakSet<ExtensionRuntime>();
 const factConsumers = new WeakMap<ExtensionRuntime, Map<string, readonly {module:ExtensionModule;consumer:CommittedFactConsumer}[]>>();
 const restHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts,'nativeDamageCommitted'|'worldRestUnavailable'>>();
 const actorQueryScopes=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['actorQueryScope']>>();
@@ -171,6 +174,21 @@ export class ExtensionRuntime {
     private rewardProviderPhase = false;
     private pureProviderPhase = false;
     private readonly messageBuffers: string[][] = [];
+    get needsWorld5(): boolean { return world5Runtimes.has(this); }
+    /** Trusted foundation fixture only; never part of a module context or catalog. */
+    world5SettlementFixture() {
+        const module = this.modules.find(m => world5FixtureConfiguration(m));
+        return module ? { owner: module.id, configuration: world5FixtureConfiguration(module)! } : null;
+    }
+    prepareWorld5Settlement(plan: import('../engine/Core/WorldSettlement').OfflinePlan): () => void {
+        const fixture = this.world5SettlementFixture();
+        if (!fixture || !this.generations.length) throw new Error('World fixture requires an engine transaction');
+        const module = this.modules.find(m => m.id === fixture.owner)!;
+        const next = fixture.configuration.prepareState(freezeView(cloneJson(this.states[module.id]!)), freezeView(structuredClone(plan)));
+        requireSynchronous(next);
+        if (!isJson(next) || !module.validateState(next)) throw new Error('Invalid world fixture participant');
+        return () => { this.states[module.id] = cloneJson(next); };
+    }
     get spatialCatalog(): SpatialCatalog { return spatialCatalogs.get(this) ?? nativeSpatialCatalog; }
     constructor(registry: ExtensionRegistry, manifest: ExtensionManifest, private readonly ports: ExtensionPorts, snapshot?: ExtensionSnapshot) {
         if(ports.actorQueryScope||ports.checkpointCommittedFacts){
@@ -197,6 +215,7 @@ export class ExtensionRuntime {
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
         Object.freeze(this.manifest.modules); Object.freeze(this.manifest);
         this.modules = registry.create(manifest);
+        if (this.modules.some(isWorld5Fixture)) world5Runtimes.add(this);
         for (const module of this.modules) if (module.optionalPartBreaks !== undefined) {
             const providers = module.optionalPartBreaks, names = Object.keys(providers);
             const provider = providers[PART_BREAK_CAPABILITY];
@@ -983,6 +1002,15 @@ export class ExtensionRuntime {
         return this.modules.every(module => module.allowInput?.(action, data, this.context(module, null)) !== false);
     }
     get readyToSave(): boolean { return this.pendingStoryFacts.length === 0 && this.initializationReady && this.modules.every(module => module.readyToSave?.(this.context(module, null)) !== false); }
+    /** V4 stores historical states as digests. Input-only initialization guards
+     * still run before replacing a live game; state guards run during replay. */
+    validateRecordingInputPrefix(events: readonly {action:string;data:unknown}[]): boolean {
+        if (events.some(event => event.action === 'ext:command' && !this.hasRegisteredCommand(event.data))) return false;
+        const count = this.modules.filter(module => module.initialCommand).length;
+        return events.length >= count && events.slice(0, count).every(event => event.action === 'ext:command' && typeof event.data === 'string')
+            && this.validateInitialCommands(events.slice(0, count).map(event => event.data as string))
+            && !events.slice(count).some(event => this.isInitialAction(event.action, event.data));
+    }
     validateRecording(events: readonly {action:string;data:unknown;extensions?:ExtensionSnapshot}[]): boolean {
         if (events.some(event => event.action === 'ext:command' && !this.hasRegisteredCommand(event.data))) return false;
         // Check historical gates against their own previous checkpoint, never
@@ -1544,7 +1572,7 @@ export class ExtensionRuntime {
     snapshot(): ExtensionSnapshot {
         if (this.generations.length) throw new Error('Cannot snapshot an open generation transaction');
         return structuredClone({ manifest: this.manifest, modules: this.states, components: this.components,
-            foundation: { version: 5, nextFactId: this.nextFactId, pendingStoryFacts: this.pendingStoryFacts, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
+            foundation: { version: FOUNDATION_PROTOCOL, nextFactId: this.nextFactId, pendingStoryFacts: this.pendingStoryFacts, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
     }
     validateSnapshot(value: ExtensionSnapshot): void {
         if (!value || !isJson(value) || canonical(value.manifest) !== canonical(this.manifest)
@@ -1553,7 +1581,7 @@ export class ExtensionRuntime {
             || Object.keys(value).some(key => !['manifest', 'modules', 'components', 'foundation'].includes(key))
             || canonical(Object.keys(value.modules).sort()) !== canonical(this.modules.map(module => module.id).sort())) throw new Error('Invalid extension snapshot');
         const foundation = value.foundation;
-        if (!foundation || foundation.version !== 5 || Object.keys(foundation).sort().join(',') !== 'causality,deaths,nextFactId,pendingStoryFacts,version,world'
+        if (!foundation || foundation.version !== FOUNDATION_PROTOCOL || Object.keys(foundation).sort().join(',') !== 'causality,deaths,nextFactId,pendingStoryFacts,version,world'
             || !Number.isSafeInteger(foundation.nextFactId) || foundation.nextFactId < 1
             || !Array.isArray(foundation.pendingStoryFacts) || foundation.pendingStoryFacts.length > STORY_FACT_LIMIT
             || !foundation.pendingStoryFacts.every(validPendingStoryFact)

@@ -1,3 +1,4 @@
+import { extensionDigest, checkpointExtensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import type { Game } from '../../../../engine/Core/Game';
@@ -105,7 +106,7 @@ describe.each(modes)('content expansion real optional growth %s', kind => {
         expect(game.loadReplay(replay)).toBe(true); game.animationEnabled = false;
         for (const event of replay.events) {
             game.replayStep(true); expect(game.replayError).toBeNull();
-            expect(game.extensionRuntime!.snapshot()).toEqual(event.extensions);
+            expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(event));
             expect(game.toSnapshot().rngState).toEqual(event.rng);
         }
         expect(game.extensionRuntime!.snapshot()).toEqual(final);

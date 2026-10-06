@@ -1,3 +1,4 @@
+import { extensionDigest, checkpointExtensionDigest } from '../../../../test/support/recordingV4';
 import { describe, expect, it, vi } from 'vitest';
 import { ExtensionRegistry } from '../../../registry';
 import * as catalog from '../../../catalog';
@@ -31,7 +32,7 @@ describe('EXT-1a0 opt-in data contract module', () => {
         const restored = createHeadlessGame(705, 'test'); expect(restored.loadSnapshot(saved)).toBe(true);
         expect(restored.extensionRuntime!.manifest.modules[0]!.rules).toEqual(identity);
         const replay = createHeadlessGame(706, 'test'); expect(replay.loadReplay(recording)).toBe(true); replay.replayStep(true);
-        expect(replay.replayError).toBeNull(); expect(replay.extensionRuntime!.snapshot()).toEqual(saved.extensions);
+        expect(replay.replayError).toBeNull(); expect(extensionDigest(replay.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
         } finally { factory.mockRestore(); }
     });
     it('rejects invalid local data before retiring the previous live run', async () => {
