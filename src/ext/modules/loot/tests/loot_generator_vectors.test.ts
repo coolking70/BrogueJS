@@ -79,13 +79,19 @@ describe('literal deterministic loot tapes', () => {
         expect(result.items).toHaveLength(1);
     });
     for (const giants of [null, { formIds: ['giants.abyssal-colossus'] }]) {
-        it(`V${giants ? 7 : 8}: encounter truncation, unique x3, boss bias ${giants ? 'retained' : 'ignored'}, singleton unique draws nothing`, () => {
-            // D20 encounter ilvl35: magic335/rare131/unique18*3=54. First rare minimum total185; rest magic total520.
+        it(`V${giants ? 7 : 8}: encounter truncation, unique x1 (v1.1), boss bias ${giants ? 'retained' : 'ignored'}, singleton unique draws nothing`, () => {
+            // v1.1 regenerated through rollLootWithTrace with endpoint draws, then independently derived each draw:
+            // D20 ilvl35: floor(220*1.525)=335, floor(70*1.875)=131, floor(10*1.875)*1=18.
+            // Draws 1/2: class[1,100]=1 weapon, band3 base[1,102]=90 war_hammer (79..90).
+            // Draw3 rare minimum truncates normal/magic =>[1,149]=149 unique; draw4 maul damage[10000,13000]=12345.
+            // Draws5/6 class[1,100]=1, base[1,102]=1 dagger; draw7 magic minimum =>[1,484]=484 unique.
+            // Draws8/9 whisper accuracy[2000,3000]=2500, encounter gold[65,135]=100 (x10=1000).
+            // Singleton unique selection and constant unique rows consume no draws; every prior output remains identical.
             // Band3 weapon total102, war_hammer interval79..90. Each native base has a single unique, so bias cannot change selection.
             const effective = catalog({ ...unavailable, giants });
             const { result, trace } = tapeRoll({ ...common, source: 'encounter', depth: 20, formId: 'giants.abyssal-colossus' }, [
-                [1, 100, 1], [1, 102, 90], [1, 185, 185], [10000, 13000, 12345],
-                [1, 100, 1], [1, 102, 1], [1, 520, 520], [2000, 3000, 2500], [65, 135, 100],
+                [1, 100, 1], [1, 102, 90], [1, 149, 149], [10000, 13000, 12345],
+                [1, 100, 1], [1, 102, 1], [1, 484, 484], [2000, 3000, 2500], [65, 135, 100],
             ], effective);
             expect(result.newUniqueIds).toEqual(['loot.unique.colossus-maul', 'loot.unique.whisper']);
             expect(trace.uniqueOpportunities).toBe(2);
@@ -189,7 +195,10 @@ describe('literal deterministic loot tapes', () => {
         expect(result.items).toEqual([]); expect(result.gold).toBe(75);
     });
     it.each([false, true])('V22/V23: synthetic competing unique makes boss bias observable, giants=%s', giants => {
-        // Real v1 has one unique per base: a second maul fixture exposes the declared ×5 weight (300+60 vs60+60).
+        // v1.1 regenerated through rollLootWithTrace; draws1/2 [1,100]=1 weapon/[1,102]=90 maul.
+        // Draw3 ilvl35 rare minimum: 131+18=149 =>[1,149]=149 unique, exactly as V7/V8.
+        // Draw4 competing fixture: giants bias =>[1,360]=100 selects maul (weight300), absent =>[1,120]=100 selects test-maul (60).
+        // Draw5 damage[10000,13000]=10000; draw6 gold[65,135]=65. Both results, 6 draws and order are unchanged.
         const effective: EffectiveLootCatalog = changed(pack => {
             pack.presets.presets.find(preset => preset.id === 'standard')!.encounter.count = 1;
             const unique = structuredClone(pack.uniques.uniques.find(unique => unique.id === 'loot.unique.colossus-maul')!);
@@ -197,7 +206,7 @@ describe('literal deterministic loot tapes', () => {
             pack.uniques.uniques.push(unique);
         }, { ...unavailable, giants: giants ? { formIds: ['giants.abyssal-colossus'] } : null });
         const { result } = tapeRoll({ ...common, source: 'encounter', depth: 20, formId: 'giants.abyssal-colossus' }, [
-            [1, 100, 1], [1, 102, 90], [1, 185, 185], [1, giants ? 360 : 120, 100], [10000, 13000, 10000], [65, 135, 65],
+            [1, 100, 1], [1, 102, 90], [1, 149, 149], [1, giants ? 360 : 120, 100], [10000, 13000, 10000], [65, 135, 65],
         ], effective);
         expect(result.newUniqueIds).toEqual([giants ? 'loot.unique.colossus-maul' : 'loot.unique.test-maul']);
     });

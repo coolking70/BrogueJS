@@ -17,7 +17,7 @@ import rareNames from './data/rareNames.json';
 import { extensionDataFingerprint } from '../../fingerprint';
 import { assertLootPack, deepFreeze } from './schema';
 import type { LootPack, LootRawFiles } from './types';
-export const LOOT_VERSION = '0.1.0';
+export const LOOT_VERSION = '0.1.1';
 const files = { ilvl, tiers, bases, rarities, affixes, uniques, monsterClasses, dropTables, gold, presets, enhancement, identify, corruption, salvage, caps, rareNames };
 let defaultPack: LootPack | undefined;
 export function loadLootPack(raw?: LootRawFiles): LootPack {

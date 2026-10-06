@@ -54,7 +54,7 @@ const META = [
   'prefix weapon slayer 500 native.physical-damage-dealt increased bp',
   'prefix armor def-pct 1000 loot.local.armor local-increased bp',
   'prefix armor def-flat 800 native.defense flat display-armor',
-  'prefix armor,ring dr 700 native.physical-damage-taken increased bp',
+  'prefix armor dr 700 native.physical-damage-taken increased bp',
   'prefix armor,ring light 300 native.light flat ring-point',
   'suffix weapon,ring accuracy 900 native.accuracy increased bp',
   'suffix weapon speed 500 native.attack-speed more bp',
@@ -90,7 +90,9 @@ describe('loot data double transcription',()=>{
   it('loads exactly sixteen rule files and recursively freezes every object',()=>{
     expect(Object.keys(pack)).toEqual(['ilvl','tiers','bases','rarities','affixes','uniques','monsterClasses','dropTables','gold','presets','enhancement','identify','corruption','salvage','caps','rareNames']);
     const check=(v:unknown):void=>{if(v&&typeof v==='object'){expect(Object.isFrozen(v)).toBe(true);Object.values(v).forEach(check);}};check(pack);
-    expect(LOOT_VERSION).toBe('0.1.0');expect(getLootPackIdentity()).toEqual({schema:1,version:'0.1.0',fingerprint:extensionDataFingerprint(pack)});
+    expect(LOOT_VERSION).toBe('0.1.1');expect(getLootPackIdentity()).toEqual({schema:1,version:'0.1.1',fingerprint:extensionDataFingerprint(pack)});
+    // v1.1 four-field data patch; regenerated independently alongside the literal tapes.
+    expect(getLootPackIdentity().fingerprint).toBe('sha256:7785d8e68e6486bd422e40c6a3f0d317b102683116dcea8e483f2256d9c84fd2');
   });
   it('independently transcribes all 35 ordinary affix rows, exact intervals, metadata and dependencies',()=>{
     expect(pack.affixes.affixes).toHaveLength(56);expect(pack.affixes.runeFamilyEnabled).toBe(false);
@@ -161,7 +163,7 @@ describe('loot data double transcription',()=>{
     expect(rows.map(p=>p.affixCount.magic)).toEqual(['1:60 2:40','1:55 2:45','1:40 2:60'].map(parse));
     expect(rows.map(p=>p.affixCount.rare)).toEqual(['3:55 4:35 5:10','3:45 4:35 5:20','4:50 5:35 6:15'].map(parse));
     expect(rows.map(p=>p.affixCount.rareHighIlvl)).toEqual(['4:60 5:30 6:10','4:45 5:35 6:20','4:30 5:40 6:30'].map(s=>({minIlvl:40,table:parse(s)})));
-    expect(rows.map(p=>p.encounter)).toEqual([{count:1,firstMinRarity:'magic',restMinRarity:'magic',uniqueWeightBp:30000},{count:2,firstMinRarity:'rare',restMinRarity:'magic',uniqueWeightBp:30000},{count:3,firstMinRarity:'rare',restMinRarity:'magic',uniqueWeightBp:60000}]);
+    expect(rows.map(p=>p.encounter)).toEqual([{count:1,firstMinRarity:'magic',restMinRarity:'magic',uniqueWeightBp:5000},{count:2,firstMinRarity:'rare',restMinRarity:'magic',uniqueWeightBp:10000},{count:3,firstMinRarity:'rare',restMinRarity:'magic',uniqueWeightBp:5000}]);
     expect(rows.map(p=>p.vault)).toEqual([{minRarity:'magic',highValueMinRarity:'magic'},{minRarity:'magic',highValueMinRarity:'rare'},{minRarity:'rare',highValueMinRarity:'rare'}]);
     expect(rows.map(p=>p.rarityFind)).toEqual([{k:25000,cap:10000},{k:25000,cap:20000},{k:25000,cap:30000}]);
     expect(rows.map(p=>p.familiarity)).toEqual([{weaponKills:20,armorTurns:1000,ringTurns:1500},{weaponKills:10,armorTurns:600,ringTurns:800},{weaponKills:6,armorTurns:400,ringTurns:500}]);

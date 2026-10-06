@@ -26,7 +26,7 @@ describe('loot installed inert contract', () => {
     const before = rng.getState();
     const module = createLootModule();
     expect(Object.keys(module).sort()).toEqual(['id', 'initialState', 'rules', 'validateState', 'version']);
-    expect(module.id).toBe('loot'); expect(module.version).toBe('0.1.0');
+    expect(module.id).toBe('loot'); expect(module.version).toBe('0.1.1');
     expect(module.initialState!()).toEqual({});
     expect(module.validateState!({})).toBe(true);
     for (const invalid of [null, [], { extra: 1 }, 0, '', new Date()]) expect(module.validateState!(invalid)).toBe(false);

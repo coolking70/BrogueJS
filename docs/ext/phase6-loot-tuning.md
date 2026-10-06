@@ -2,7 +2,7 @@
 
 > **维护者批准（2026-10-07）：全部按推荐**——M1 Boss/遭遇唯一乘数按 v1.1 补丁；M2 warding 仅护甲；M3 丰饶保留 elite 1–3、接受 D26≈21 件/层；M4 武器伤害留到 6B2 以怪物倍率抗衡；数值表 v1.1 勘误与改目标值清单批准。
 
-> **状态：提案，待维护者裁决。** 2026-10-07。输入：6B1-α 交付（`origin/ext/phase6-loot-core` @ `6ab52bc`）的 [实施报告](phase6b1a.report.md) §7、[统计证据](evidence/phase6b1a-loot-stats.json)、[核心合同](loot-core-contract.md)、已批准的 [数值表 v1](phase6-loot-numbers.md)（维护者“全部按推荐”，N-12=B：冻结为 v1，真实生成器统计偏离 >±20% 再回调）与 [设计](phase6-loot.md)。本文**没有修改 `src/`，也没有提交**；所有实验都在 `/private/tmp` 的副本里完成，不在仓库内。补丁后的真实统计见 [evidence/phase6-loot-tuning-v1.1-stats.json](evidence/phase6-loot-tuning-v1.1-stats.json)。
+> **状态：维护者已批准；v1.1已落地（2026-10-07）。** 最新结果与门禁见 [实施报告 §13](phase6b1a.report.md#13-v11-调参)。以下保留调参提案的原始实验与归因。2026-10-07。输入：6B1-α 交付（`origin/ext/phase6-loot-core` @ `6ab52bc`）的 [实施报告](phase6b1a.report.md) §7、[统计证据](evidence/phase6b1a-loot-stats.json)、[核心合同](loot-core-contract.md)、已批准的 [数值表 v1](phase6-loot-numbers.md)（维护者“全部按推荐”，N-12=B：冻结为 v1，真实生成器统计偏离 >±20% 再回调）与 [设计](phase6-loot.md)。提案阶段**没有修改 `src/`，也没有提交**；当时所有实验都在 `/private/tmp` 的副本里完成，不在仓库内。补丁后的真实统计见 [evidence/phase6-loot-tuning-v1.1-stats.json](evidence/phase6-loot-tuning-v1.1-stats.json)。
 
 ## 0 结论速览
 

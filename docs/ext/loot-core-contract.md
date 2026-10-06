@@ -2,7 +2,7 @@
 
 ## 用途与稳定性
 
-本合同供 C6-1 / 5A2-S 起草与 6B 集成复核使用。当前 `loot` 0.1.0 只安装惰性 descriptor，默认关闭，模块 state 恒 `{}`；无玩法接线、命令、UI、statSources 或 itemDataValidators 注册。生成器仅供独立调用和测试，绝不能把本合同误读为可玩掉落已经接入。
+本合同供 C6-1 / 5A2-S 起草与 6B 集成复核使用。当前 `loot` 0.1.1 只安装惰性 descriptor，默认关闭，模块 state 恒 `{}`；无玩法接线、命令、UI、statSources 或 itemDataValidators 注册。生成器仅供独立调用和测试，绝不能把本合同误读为可玩掉落已经接入。
 
 - **稳定**：v1 数据 ID、单位、数组顺序、随机抽取顺序、冻结纯函数与错误边界
 - **临时待 C6-1**：Item.moduleData 形状、固定原生装配、随机端口和请求事实名称

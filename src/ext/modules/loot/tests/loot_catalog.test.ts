@@ -47,7 +47,7 @@ describe('effective loot catalog', () => {
         expect(catalog.effectiveWeight['loot.affix.titan']).toEqual({ weapon: 1200, armor: 1200, ring: 1200 });
         expect(catalog.effectiveWeight['loot.affix.mending']).toEqual({ armor: 500, ring: 1300 });
         expect(catalog.effectiveWeight['loot.affix.vital']).toEqual({ armor: 1800, ring: 1200 });
-        expect(catalog.effectiveWeight['loot.affix.warding']).toEqual({ armor: 1000, ring: 700 });
+        expect(catalog.effectiveWeight['loot.affix.warding']).toEqual({ armor: 1000 });
         expect(catalog.affixes.find(affix => affix.id === 'loot.affix.vital')!.position).toBe('suffix');
     });
     it('requires the actual declared stats, not only module presence', () => {

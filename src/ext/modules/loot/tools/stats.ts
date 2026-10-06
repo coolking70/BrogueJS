@@ -15,14 +15,18 @@ type RarityCounts = Record<typeof RARITY_IDS[number], number>;
 type SourceCounts = Record<LootSource, number>;
 type EventRequest = LootRollRequest extends infer T ? T extends LootRollRequest ? Omit<T, 'v' | 'depth' | 'presetId' | 'rarityFindBp' | 'claimedUniqueIds'> : never : never;
 type Power = { weapon: number; hp: number; armor: number; mitigation: number };
+export interface DefenseOption { hp: number; mitigationBp: number }
+export interface ConsistentDefense { hp: number; mitigation: number; ehp: number }
 export interface LootStatsOptions { runs?: number; presets?: readonly StatsPresetId[]; depths?: readonly number[]; seedBase?: number }
 export interface StatsComparison { preset: string; depth: number | null; metric: string; target: number; actual: number; deviationPct: number | null; flagged: boolean; reason: string | null }
 export interface RarityComparison {
   preset: string; ilvl: number; monsterClass: 'ordinary' | 'elite'; weights: Record<string, number>; actual: RarityCounts;
   target: RarityCounts | null; discrepancyPp: RarityCounts | null; mismatchedCells: string[];
+  tolerancePp: RarityCounts | null;
 }
 export interface LayerStats {
   depth: number; items: number; sources: SourceCounts; rarities: RarityCounts; cumulative: number; killGold: number;
+  uniqueOpportunities: number; uniqueDowngrades: number; netRare: number;
   tierShares: Record<string, number>; tierCounts: Record<string, number>; corruptedRate: number; eligibleCorruptedRate: number; averageAffixes: number;
 }
 export interface PresetStats {
@@ -31,6 +35,7 @@ export interface PresetStats {
   unique: { opportunitiesPerRun: number; itemsPerRun: number; downgradeRate: number; distribution: Record<string, number> };
   firstObservedTier: Record<string, number | null>; firstUncorruptedTier: Record<string, number | null>;
   power: ({ depth: number } & Power)[];
+  consistentDefense: ({ depth: number } & ConsistentDefense)[];
 }
 export interface LootStatsReport {
   schema: 1; options: { runs: number; presets: StatsPresetId[]; depths: number[]; seedBase: number };
@@ -110,15 +115,50 @@ function powerAt(depth: number, inventory: HeldItem[], catalog: EffectiveLootCat
     mitigation: Math.min(5000, armorMitigation + bestTwo(rings.map(i => -stat(i, 'native.physical-damage-taken')))) / 100 };
 }
 
+/** Exact slot-constrained EHP proxy; empty slots are legal and never duplicate a real ring.
+ * Pareto pruning is applied to completed pairs, not individual rings: a dominated ring
+ * can still belong to the best pair when its dominator is the other equipped ring.
+ */
+export function bestConsistentDefense(baseHp: number, armors: readonly DefenseOption[], rings: readonly DefenseOption[], capBp = 5000): ConsistentDefense {
+  const empty: DefenseOption = { hp: 0, mitigationBp: 0 };
+  const slots = [empty, empty, ...rings];
+  const pairs: DefenseOption[] = [];
+  for (let i = 0; i < slots.length; i++) for (let j = i + 1; j < slots.length; j++) {
+    pairs.push({ hp: slots[i]!.hp + slots[j]!.hp, mitigationBp: slots[i]!.mitigationBp + slots[j]!.mitigationBp });
+  }
+  pairs.sort((a, b) => b.hp - a.hp || b.mitigationBp - a.mitigationBp);
+  let maxMitigation = -Infinity;
+  const frontier = pairs.filter(pair => {
+    if (pair.mitigationBp <= maxMitigation) return false;
+    maxMitigation = pair.mitigationBp;
+    return true;
+  });
+  let best: ConsistentDefense = { hp: baseHp, mitigation: 0, ehp: baseHp };
+  for (const armor of [empty, ...armors]) for (const pair of frontier) {
+    const hp = Math.max(1, baseHp + armor.hp + pair.hp);
+    const mitigationBp = Math.min(capBp, armor.mitigationBp + pair.mitigationBp);
+    const ehp = hp / (1 - mitigationBp / 10000);
+    if (ehp > best.ehp) best = { hp, mitigation: mitigationBp / 100, ehp };
+  }
+  return best;
+}
+function consistentDefenseAt(depth: number, inventory: HeldItem[], catalog: EffectiveLootCatalog): ConsistentDefense {
+  const armorScrolls = Math.floor(Math.floor(.6 * depth) / 2);
+  const armors = inventory.filter(item => item.category === 'armor').map(item => ({
+    hp: stat(item, 'native.max-hp') + 5 * Math.min(armorScrolls, enhancementCap(item.data, catalog.pack)),
+    mitigationBp: -stat(item, 'native.physical-damage-taken'),
+  }));
+  const rings = inventory.filter(item => item.category === 'ring').map(item => ({
+    hp: stat(item, 'native.max-hp'), mitigationBp: -stat(item, 'native.physical-damage-taken'),
+  }));
+  return bestConsistentDefense(30 + 10 * Math.floor(depth / 4), armors, rings);
+}
+
 function reasonFor(metric: string, preset: string): string {
-  if (preset === 'bountiful' && ['items', 'kill', 'cumulative', 'magic', 'rare'].includes(metric)) return '模型口径差异（推断）：旧表丰饶精英件数似仍按均值1.5，任务书明确[1,3]均值2。D26精英占3/4，K=21.1，击杀解析期望19.7285件，与实测吻合，旧表15.1；稀有构成另叠加唯一降级。保持数据；可选先修订旧模型目标。';
-  if (metric === 'unique') return '模型口径差异（推断）：旧表唯一件数可能未完整执行基底/物等/同局收据门槛；本次逐次先抽基底再匹配唯一，失败即降为稀有。保持数据；可选先核对旧模型的机会/产出定义，再另审唯一池覆盖。';
-  if (metric === 'unique.opportunities') return '模型口径差异：精确稀有度逐步取整、Boss最低稀有度截断后重归一化、唯一×3/×6与寻宝反馈。保持数据；可选逐项复算旧模型的Boss机会概率与寻宝口径。';
-  if (metric.startsWith('power.')) return '模型口径差异：各指标独立取最大，忽略力量门槛/成长/鉴定；真实基底与原模型贪心换装不同。保持数据；可选以6Z真实游玩重估代理目标。';
-  if (metric === 'killGold') return '模型口径差异/有限样本：当前原生深度怪物池等权抽样，金币逐次整数取整；旧Monte-Carlo原脚本未随表提供。保持数据；可选同种子复跑旧模型核查怪物池。';
-  if (metric === 'kill' || metric === 'items' || metric === 'cumulative') return '模型口径差异/有限样本：真实怪物池、精英件数截断与事件共享随机流；旧表为另一粗模型样本。保持数据；可选增加统计样本并复核旧事件实现。';
-  if (metric === 'floor' || metric === 'vault' || metric === 'encounter') return '有限样本波动：固定几何楼层件数/宝库概率/遭遇概率模型，未为匹配旧表调整。可选增加样本验证收敛。';
-  return '模型口径差异：真实词缀生成、寻宝反馈与唯一降为稀有改变构成；旧表是粗模型样本。保持数据；可选先按精确规则重新标定目标。';
+  if (metric.startsWith('power.')) return 'D：乐观代理逐指标独立取最大，忽略力量/成长/鉴定；减伤另列按1甲+至多2戒的EHP最优一致装备代理。保持数据；武器/护甲目标留到6B2真实力量曲线复测。';
+  if (metric.startsWith('consistentDefense.')) return 'D：一致装备按EHP而非单独减伤选装，仍忽略鉴定/成长/攻速/符文和护甲命中效应；保持数据，待6B2/6Z实测。';
+  if (preset === 'bountiful') return 'A：v1粗模型遗漏elite[1,3]和寻宝反馈；v1.1接受D26约21件/层。当前净稀有/降级前机会口径已修正，残差为模型与有限样本差异；保持数据。';
+  return 'A：文档粗模型/有限样本差异；当前唯一按降级前机会、稀有剔除唯一降级。保持数据，不以残差改掉率或抽取次序。';
 }
 function compare(preset: string, depth: number | null, metric: string, actual: number, target: number): StatsComparison {
   const absolute = Math.abs(actual - target);
@@ -148,12 +188,14 @@ export function computeLootStats(options: LootStatsOptions = {}): LootStatsRepor
   for (const id of presetIds) {
     const preset = pack.presets.presets.find(p => p.id === id)!;
     const layers = Array.from({ length: maximumDepth }, (_, i) => ({ depth: i + 1, items: 0, sources: emptySources(), rarities: emptyRarities(), cumulative: 0, killGold: 0,
+      uniqueOpportunities: 0,
       tierCounts: emptyTiers(), tierShares: emptyTiers(), corruptedRate: 0, eligibleCorruptedRate: 0, averageAffixes: 0, rawCorrupted: 0, rawEligible: 0, rawAffixes: 0 }));
     const totals = { events: 0, items: 0, corrupted: 0, eligible: 0, averageAffixes: 0, corruptedRate: 0, eligibleCorruptedRate: 0, maxItemDraws: 0, maxEventDraws: 0, validationFailures: 0 };
     const unique = { opportunitiesPerRun: 0, itemsPerRun: 0, downgradeRate: 0, distribution: Object.fromEntries(pack.uniques.uniques.map(u => [u.id, 0])) };
     const firstObservedTier: Record<string, number | null> = Object.fromEntries([1, 2, 3, 4, 5, 6].map(t => [t, null]));
     const firstUncorruptedTier = { ...firstObservedTier };
     const powers = Array.from({ length: maximumDepth }, () => ({ weapon: [] as number[], hp: [] as number[], armor: [] as number[], mitigation: [] as number[] }));
+    const defenses = Array.from({ length: maximumDepth }, () => ({ hp: [] as number[], mitigation: [] as number[], ehp: [] as number[] }));
     for (let run = 0; run < runs; run++) {
       const random = mulberry32(seedBase + run);
       const claimed: string[] = [];
@@ -169,6 +211,7 @@ export function computeLootStats(options: LootStatsOptions = {}): LootStatsRepor
           totals.maxEventDraws = Math.max(totals.maxEventDraws, result.draws);
           totals.maxItemDraws = Math.max(totals.maxItemDraws, ...trace.itemDraws);
           unique.opportunitiesPerRun += trace.uniqueOpportunities;
+          layer.uniqueOpportunities += trace.uniqueOpportunities;
           if (request.source === 'kill') layer.killGold += result.gold;
           claimed.push(...result.newUniqueIds);
           for (const generated of result.items) {
@@ -212,6 +255,8 @@ export function computeLootStats(options: LootStatsOptions = {}): LootStatsRepor
         if (id === 'standard') {
           const power = powerAt(depth, inventory, catalog);
           for (const metric of ['weapon', 'hp', 'armor', 'mitigation'] as const) powers[depth - 1]![metric].push(power[metric]);
+          const defense = consistentDefenseAt(depth, inventory, catalog);
+          for (const metric of ['hp', 'mitigation', 'ehp'] as const) defenses[depth - 1]![metric].push(defense[metric]);
         }
       }
     }
@@ -219,6 +264,8 @@ export function computeLootStats(options: LootStatsOptions = {}): LootStatsRepor
       const affixes = sum(Object.values(layer.tierCounts));
       return { depth: layer.depth, items: layer.items / runs, sources: Object.fromEntries(Object.entries(layer.sources).map(([k, v]) => [k, v / runs])) as SourceCounts,
         rarities: Object.fromEntries(Object.entries(layer.rarities).map(([k, v]) => [k, v / runs])) as RarityCounts, cumulative: layer.cumulative / runs, killGold: layer.killGold / runs,
+        uniqueOpportunities: layer.uniqueOpportunities / runs, uniqueDowngrades: (layer.uniqueOpportunities - layer.rarities.unique) / runs,
+        netRare: (layer.rarities.rare - (layer.uniqueOpportunities - layer.rarities.unique)) / runs,
         tierCounts: layer.tierCounts, tierShares: Object.fromEntries(Object.entries(layer.tierCounts).map(([k, v]) => [k, ratio(v, affixes)])),
         corruptedRate: ratio(layer.rawCorrupted, layer.items), eligibleCorruptedRate: ratio(layer.rawCorrupted, layer.rawEligible), averageAffixes: ratio(layer.rawAffixes, layer.items) };
     }).filter(layer => depths.includes(layer.depth));
@@ -229,18 +276,22 @@ export function computeLootStats(options: LootStatsOptions = {}): LootStatsRepor
     unique.opportunitiesPerRun /= runs; unique.itemsPerRun /= runs;
     for (const key of Object.keys(unique.distribution)) unique.distribution[key] = unique.distribution[key]! / runs;
     const power = id === 'standard' ? depths.map(depth => ({ depth, weapon: median(powers[depth - 1]!.weapon), hp: median(powers[depth - 1]!.hp), armor: median(powers[depth - 1]!.armor), mitigation: median(powers[depth - 1]!.mitigation) })) : [];
-    presets.push({ id, layers: outputLayers, checkpoints: outputLayers.filter(l => (CHECKPOINT_DEPTHS as readonly number[]).includes(l.depth)), totals, unique, firstObservedTier, firstUncorruptedTier, power });
+    const consistentDefense = id === 'standard' ? depths.map(depth => ({ depth, hp: median(defenses[depth - 1]!.hp), mitigation: median(defenses[depth - 1]!.mitigation), ehp: median(defenses[depth - 1]!.ehp) })) : [];
+    presets.push({ id, layers: outputLayers, checkpoints: outputLayers.filter(l => (CHECKPOINT_DEPTHS as readonly number[]).includes(l.depth)), totals, unique, firstObservedTier, firstUncorruptedTier, power, consistentDefense });
     for (const target of LAYER_TARGETS[id]) {
       const layer = outputLayers.find(l => l.depth === target.depth);
       if (!layer) continue;
       for (const metric of ['items', 'cumulative', 'killGold'] as const) comparisons.push(compare(id, layer.depth, metric, layer[metric], target[metric]));
       for (const metric of ['kill', 'floor', 'vault', 'encounter'] as const) comparisons.push(compare(id, layer.depth, metric, layer.sources[metric], target[metric]));
-      for (const metric of RARITY_IDS) comparisons.push(compare(id, layer.depth, metric, layer.rarities[metric], target[metric]));
+      for (const metric of RARITY_IDS) comparisons.push(compare(id, layer.depth, metric,
+        metric === 'unique' ? layer.uniqueOpportunities : metric === 'rare' ? layer.netRare : layer.rarities[metric], target[metric]));
     }
     if (maximumDepth === 26) comparisons.push(compare(id, null, 'unique.opportunities', unique.opportunitiesPerRun, UNIQUE_OPPORTUNITY_TARGETS[id]));
     if (id === 'standard') for (const target of POWER_TARGETS) {
       const p = power.find(p => p.depth === target.depth);
       if (p) for (const metric of ['weapon', 'hp', 'armor', 'mitigation'] as const) comparisons.push(compare(id, p.depth, `power.${metric}`, p[metric], target[metric]));
+      const defense = consistentDefense.find(p => p.depth === target.depth);
+      if (defense) comparisons.push(compare(id, defense.depth, 'consistentDefense.mitigation', defense.mitigation, target.mitigation));
     }
     for (const target of RARITY_TARGETS[id]) for (const monsterClass of ['ordinary', 'elite'] as const) {
       const weights = computeRarityWeights(preset, target.ilvl, monsterClass === 'elite' ? 5000 : 0, 10000, 0, null);
@@ -249,8 +300,9 @@ export function computeLootStats(options: LootStatsOptions = {}): LootStatsRepor
       const source = target[monsterClass];
       const targetValues = source ? Object.fromEntries(RARITY_IDS.map((r, i) => [r, source[i]])) as RarityCounts : null;
       const discrepancies = targetValues ? Object.fromEntries(RARITY_IDS.map(r => [r, actual[r] - targetValues[r]])) as RarityCounts : null;
+      const tolerancePp = source ? Object.fromEntries(RARITY_IDS.map((r, i) => [r, target.tolerancePp[monsterClass]![i]!])) as RarityCounts : null;
       rarity.push({ preset: id, ilvl: target.ilvl, monsterClass, weights, actual, target: targetValues, discrepancyPp: discrepancies,
-        mismatchedCells: discrepancies ? RARITY_IDS.filter(r => Math.abs(discrepancies[r]) > .15) : [] });
+        tolerancePp, mismatchedCells: discrepancies ? RARITY_IDS.filter(r => Math.abs(discrepancies[r]) > tolerancePp![r]) : [] });
     }
   }
   const earliest = (minIlvl: number, bonus: number): number | null => {
@@ -266,11 +318,13 @@ export function computeLootStats(options: LootStatsOptions = {}): LootStatsRepor
       '每层按击杀→楼层→宝库→遭遇执行；唯一结果/0或100%模型事件不抽随机数；楼层完整几何件数先抽完，再逐件类别与生成。',
       'combat/growth/giants可用性均为空；击杀使用原生数据深度合法且非none、排除四种传说盟友的等权怪物池。',
       '每局唯一收据累积；寻宝取已获得戒指中fortune与gambler行总值最高两件，每个完整事件后更新。',
+      '逐层unique比较降级前trace.uniqueOpportunities；rare比较净稀有=产出rare−(机会−产出unique)，产出稀有度另列且仍合计为件数。',
       '金币只统计kill来源，排除Boss金币；原生楼层金币仅转录为背景目标，不模拟原生金币调度。',
       '强度口径不同（独立取最大、忽略力量/成长/鉴定），仅作复核提示；包含起始匕首与皮甲，不计入掉落件数。',
       '强度每层假设E=floor(0.6d)张卷轴分配给被评估武器/护甲并分别截顶；各指标允许独立最优装备与两戒指，负收益可不装备。',
+      '一致减伤代理精确枚举1甲+至多2件不同戒指（允许空槽），按EHP=HP/(1−减伤)选同一套装备；仅对已完成戒指对作Pareto去重，不截候选。生命/卷轴假设沿用乐观代理；不计护甲命中效应、力量、成长或鉴定，不代替真实生存倍率。',
       '阶分布计所有非唯一词缀（含腐化负面/补偿）；首次观察另列未腐化样本；理论首次层数不受该层事件概率为零影响。',
-      '数值表未发布ilvl15/30的elite目标，记null；已发布稀有度目标逐格按±0.15百分点审计，超差保留数据并记录原表算术偏差。',
+      '数值表v1.1：ilvl15/30的elite目标未刊，记null；稀有度容差为打印精度半单位：整数格±0.5百分点、一位小数格±0.05百分点（保留1.0等尾零），原19个整数打印超差消失。',
       '偏差阈值：绝对差>0.02且相对差>20%；目标为0时非零且绝对差>0.02标记，相对偏差记null。',
     ], presets, rarity, comparisons, firstTier,
     summary: { flaggedComparisons: comparisons.filter(c => c.flagged).length, rarityMismatchedCells: sum(rarity.map(r => r.mismatchedCells.length)),
@@ -281,17 +335,26 @@ const format = (n: number | null | undefined, digits = 3): string => n === null 
 export function renderLootStatsMarkdown(report: LootStatsReport): string {
   const lines = ['# 6B1-α 真实生成器统计', '', `运行：${report.options.runs} 局 × ${report.options.presets.join('/')}；seedBase=${report.options.seedBase}；D${report.options.depths[0]}–${report.options.depths[report.options.depths.length - 1]}`, '',
     `数据指纹：${report.packFingerprint}；有效目录：${report.catalogFingerprint}`, '', ...report.model.map(s => `- ${s}`), '',
-    `汇总：>±20% 标记 ${report.summary.flaggedComparisons} 项；稀有度原表超±0.15百分点 ${report.summary.rarityMismatchedCells} 格；生成物校验失败 ${report.summary.validationFailures}；单件/事件最大抽取 ${report.summary.maxItemDraws}/${report.summary.maxEventDraws}`, ''];
+    `汇总：>±20% 标记 ${report.summary.flaggedComparisons} 项；稀有度超打印精度半单位 ${report.summary.rarityMismatchedCells} 格；生成物校验失败 ${report.summary.validationFailures}；单件/事件最大抽取 ${report.summary.maxItemDraws}/${report.summary.maxEventDraws}`, ''];
   for (const preset of report.presets) {
-    lines.push(`## ${preset.id} 每层明细`, '', '| 深度 | 件数 | 击杀/楼层/宝库/Boss | 普/魔/稀/唯 | 累计 | 击杀金币 | T1/T2/T3/T4/T5/T6 % | 腐化/合资格 % | 平均词缀 |', '|---|---|---|---|---|---|---|---|---|');
-    for (const l of preset.layers) lines.push(`| ${l.depth} | ${format(l.items)} | ${Object.values(l.sources).map(v => format(v)).join('/')} | ${Object.values(l.rarities).map(v => format(v)).join('/')} | ${format(l.cumulative)} | ${format(l.killGold)} | ${Object.values(l.tierShares).map(v => format(v * 100, 2)).join('/')} | ${format(l.corruptedRate * 100)}/${format(l.eligibleCorruptedRate * 100)} | ${format(l.averageAffixes)} |`);
+    lines.push(`## ${preset.id} 每层明细`, '', '| 深度 | 件数 | 击杀/楼层/宝库/Boss | 产出普/魔/稀/唯 | 唯一机会/降级/净稀有 | 累计 | 击杀金币 | T1/T2/T3/T4/T5/T6 % | 腐化/合资格 % | 平均词缀 |', '|---|---|---|---|---|---|---|---|---|---|');
+    for (const l of preset.layers) lines.push(`| ${l.depth} | ${format(l.items)} | ${Object.values(l.sources).map(v => format(v)).join('/')} | ${Object.values(l.rarities).map(v => format(v)).join('/')} | ${[l.uniqueOpportunities, l.uniqueDowngrades, l.netRare].map(v => format(v)).join('/')} | ${format(l.cumulative)} | ${format(l.killGold)} | ${Object.values(l.tierShares).map(v => format(v * 100, 2)).join('/')} | ${format(l.corruptedRate * 100)}/${format(l.eligibleCorruptedRate * 100)} | ${format(l.averageAffixes)} |`);
     lines.push('', `唯一机会/局 ${format(preset.unique.opportunitiesPerRun)}；实际唯一/局 ${format(preset.unique.itemsPerRun)}；降级 ${format(preset.unique.downgradeRate * 100)}%；全部物品腐化率 ${format(preset.totals.corruptedRate * 100)}%；合资格物品腐化率 ${format(preset.totals.eligibleCorruptedRate * 100)}%；平均词缀 ${format(preset.totals.averageAffixes)}`, '', '| 唯一ID | 件/局 |', '|---|---|');
     for (const [id, count] of Object.entries(preset.unique.distribution)) lines.push(`| ${id} | ${format(count)} |`);
     lines.push('', '| 阶 | 首次观察D | 首次未腐化D |', '|---|---|---|');
     for (const tier of Object.keys(preset.firstObservedTier)) lines.push(`| ${tier} | ${format(preset.firstObservedTier[tier])} | ${format(preset.firstUncorruptedTier[tier])} |`);
     lines.push('');
   }
-  lines.push('## 稀有度精确权重与原表逐格审计', '', '每格：目标 → 实际（百分点差）；* = 超过 ±0.15百分点。所有超差格为原表算术/粗略取整，与精确公式不一致；测试另用独立手算权重逐格验证实现。ilvl15/30 elite原表无目标。', '', '| 预设 | ilvl/分级 | 权重 普/魔/稀/唯 | 普 % | 魔 % | 稀 % | 唯 % |', '|---|---|---|---|---|---|---|');
+  const standard = report.presets.find(p => p.id === 'standard');
+  if (standard) {
+    lines.push('## 标准减伤代理并列（中位数）', '', '| 深度 | 乐观HP/减伤% | 一致装备HP/减伤%/EHP |', '|---|---|---|');
+    for (const p of standard.power) {
+      const defense = standard.consistentDefense.find(d => d.depth === p.depth)!;
+      lines.push(`| ${p.depth} | ${format(p.hp)}/${format(p.mitigation)} | ${format(defense.hp)}/${format(defense.mitigation)}/${format(defense.ehp)} |`);
+    }
+    lines.push('');
+  }
+  lines.push('## 稀有度精确权重与原表逐格审计', '', '每格：目标 → 实际（百分点差）；* = 超过打印精度半单位（整数±0.5、一位小数±0.05百分点，保留尾零）。测试另用独立手算权重逐格验证实现。ilvl15/30 elite原表无目标。', '', '| 预设 | ilvl/分级 | 权重 普/魔/稀/唯 | 普 % | 魔 % | 稀 % | 唯 % |', '|---|---|---|---|---|---|---|');
   for (const row of report.rarity) lines.push(`| ${row.preset} | ${row.ilvl}/${row.monsterClass} | ${RARITY_IDS.map(r => row.weights[r]).join('/')} | ${RARITY_IDS.map(r => `${row.target ? format(row.target[r]) : '未刊'} → ${format(row.actual[r])}${row.discrepancyPp ? ` (${format(row.discrepancyPp[r])})` : ''}${row.mismatchedCells.includes(r) ? '*' : ''}`).join(' | ')} |`);
   lines.push('', '## 全部目标比较', '', '| 预设 | 深度 | 指标 | 目标 | 实际 | 相对偏差% | 标记 |', '|---|---|---|---|---|---|---|');
   for (const c of report.comparisons) lines.push(`| ${c.preset} | ${c.depth ?? '全局'} | ${c.metric} | ${format(c.target)} | ${format(c.actual)} | ${format(c.deviationPct)} | ${c.flagged ? '偏差>20%' : '—'} |`);

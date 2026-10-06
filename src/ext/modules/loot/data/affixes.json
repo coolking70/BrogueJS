@@ -529,8 +529,7 @@
       "nameKey": "ext.loot.affix.warding",
       "position": "prefix",
       "itemClasses": [
-        "armor",
-        "ring"
+        "armor"
       ],
       "group": "dr",
       "weight": 700,

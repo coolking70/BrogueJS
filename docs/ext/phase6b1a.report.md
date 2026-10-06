@@ -853,3 +853,116 @@ preview 探针停止，日志留在仓库外；最终构建门禁由总报告门
 ## 12 未覆盖项
 
 第二部分浏览器6个视口/DPR组合的对话页/立绘页尚未覆盖，具体阻塞见§8。按授权未运行完整 npm test、全部 test:ext、组合 smoke 脚本、删除矩阵、ce:fetch、test:full、test:gen、test:drift。未进行游戏掉落接线、属性管线、实际装备生效、鉴定/强化/分解执行、套装/插槽/符文之语或任何下一阶段工作。
+
+## 13 v1.1 调参
+
+2026-10-07，按 `phase6b1a-v11.task.md` 与维护者“全部按推荐”实施。§7及§9保留v1历史结果；[统计JSON](evidence/phase6b1a-loot-stats.json)已更新为本节v1.1最终树的300局×3预设（seedBase=1、D1–26）输出。只改loot模块与自有文档，未commit。
+
+### 13.1 数据、版本与边界
+
+| 数据路径 | v1 | v1.1 |
+| --- | --- | --- |
+| scarce encounter.uniqueWeightBp | 30000 | 5000 |
+| standard encounter.uniqueWeightBp | 30000 | 10000 |
+| bountiful encounter.uniqueWeightBp | 60000 | 5000 |
+| warding.itemClasses | armor, ring | armor |
+
+loot rules/module版本0.1.0→0.1.1；包指纹由 `sha256:c0a6945307bc78a9f1cfb2529988b33e2d750cdf47c7613c1c094cacee672c63` 变为 `sha256:7785d8e68e6486bd422e40c6a3f0d317b102683116dcea8e483f2256d9c84fd2`；空可用性目录指纹由 `sha256:d5feefbe3a77d526b76433b70907830abbb12a9b3d8b3489c2f203e0a86ce150` 变为 `sha256:ed86796fad38b1b7995aa94fb1ee4641a8d366e5c8f41c84295d206e9a1aa45c`。数据双转录与惰性版本断言同步，新增v1.1固定包指纹断言。
+
+生成器、稀有度规则、random/catalog/item/economy代码、抽取顺序和所有其他数据文件与HEAD逐字节一致。丰饶elite仍1–3、8件唯一门槛/同局收据、penitent −10%行、防御上限22、减伤上限−50%均未改。没有Game字段、存档录像格式、玩法接线或其它模块改动。
+
+### 13.2 旧测试反事实与逐抽重推
+
+- 新数据与版本配旧测试：loot完整10文件，9 failed/323 passed，exit1。仅回退本次生产文件 `data/presets.json`、`data/affixes.json`、`definitions.ts`，测试不动：4个相关旧文件52 passed，exit0；随后恢复v1.1。原始记录分别是 `v11-old-tests.log`、`counterfactual-tests.log`。
+- 九项分别是loot_data版本/词缀/预设3项、catalog fallback1项、V7/V8/V22/V23四条向量、inert版本1项。只按已批准数据更新转录、版本和输入录带区间；向量输出断言、消耗次数、unique选择/giants bias语义均未变。
+- 统计旧测试另在仓库外隔离副本验证：新工具配原test出现1 failed/11 passed（比较项192→198）；仅回退 `tools/stats.ts`/`doc-targets.ts` 即12 passed。当前只更新新增比较项数量、批准的打印精度前提，独立手算24组权重与逐格偏差断言保留；未删用例、skip/todo或改共享守卫。
+
+V7/V8/V22/V23通过真实 `rollLootWithTrace` 再生成：脚本按原类别/基底/唯一路径决策，稀有度取新区间端点，记录实际lo/hi/value；随后独立手算并写入测试注释。仓库外 `vectors-regenerated.json` 保存完整结果与录带：
+
+| 向量 | 逐抽推导（v1.1） |
+| --- | --- |
+| V7/V8 | D20 ilvl35；magic=floor(220×1.525)=335，rare=floor(70×1.875)=131，unique=floor(10×1.875)×1=18。第1/2抽class[1,100]=1、band3 base[1,102]=90；第3抽首件最低rare，[1,149]=149；第4抽maul伤害[10000,13000]=12345；第5/6抽class=1/base=1；第7抽最低magic，[1,484]=484；第8抽whisper命中[2000,3000]=2500；第9抽金币[65,135]=100。原185/520上界变149/484，仍9抽、maul+whisper与金币1000 |
+| V22/V23 | 第1/2抽同V7，第3抽[1,149]=149；第4抽合成双maul候选：giants缺席[1,120]=100→test-maul，在场[1,360]=100→maul；第5抽伤害[10000,13000]=10000，第6抽金币[65,135]=65。仍6抽，保留bias×5的选择差异 |
+
+### 13.3 工具口径、目标与前后对比
+
+B1/B2：逐层新增uniqueOpportunities、uniqueDowngrades与netRare，比较“唯”用降级前机会，比较“稀”剔除唯一降级；产出rarities原字段保留。B3：从独立转录的打印字符串保存尾零，按半单位容差审计（整数±0.5，一位小数±0.05）；原19个整数舍入标记消失，小数格没有放宽。
+
+减伤并列保留原乐观代理与一致装备代理：起始装备、生命/卷轴假设沿用；精确选1甲+至多2件不同戒指（允许空槽），以EHP=HP/(1−减伤)选择同一套装备，输出HP/减伤/EHP。仅对完整戒指对做Pareto删重，不按前14候选截断、不在单戒阶段删掉第二可装备候选；与16戒、30组独立穷举参照逐场核验，并覆盖双甲不相容、不能复制单戒、空槽/负收益、50%封顶。该代理不计护甲命中效应、力量/成长/鉴定/攻速/符文；本任务仅增加减伤代理，武器真实力量曲线按M4留到6B2。
+
+[数值表v1.1](phase6-loot-numbers.md) §0.4写入A1–A8，§3/4/5/6同步数据语义，§10.1与doc-targets同步批准的新目标：D1击杀0.22/0.37/0.74、稀缺/标准D1净稀有0.10/0.21、标准D5宝库0.30、标准D20/D26寻宝构成与稀缺D26机会0.020；丰饶D10/20/26件数/击杀/构成/累计按本批统计重标（D26目标21.13、累计296.4）。这是批准的规模基准，并非独立平衡预测；武器/护甲设计目标保持并显式留待6B2。
+
+CLI仅本工具增加ws:false，避免SSR统计仍尝试绑定HMR端口；未改Vite共享配置。开发期曾遇EPERM与一处容差转录笔误导致首次统计exit1，已修复；以下正式统计exit0、无该报错。
+
+| 指标 | v1 300局 | v1.1 300局 |
+| --- | --- | --- |
+| 标记 | 46 | 14（3A/11D） |
+| 稀有度格超差 | 19（旧±0.15pp） | 0（打印精度半单位） |
+| 校验失败 | 0 | 0 |
+| 单件/事件最大抽取 | 33/91 | 33/88 |
+| scarce唯一机会/局（原目标不变） | 1.22 | 0.583 |
+| scarce实际唯一/局 | 0.273 | 0.167 |
+| scarce唯一降级率% | 77.596 | 71.429 |
+| standard唯一机会/局（原目标不变） | 8.433 | 4.72 |
+| standard实际唯一/局 | 1.807 | 1.17 |
+| standard唯一降级率% | 78.577 | 75.212 |
+| bountiful唯一机会/局（原目标不变） | 30.55 | 15.457 |
+| bountiful实际唯一/局 | 4.84 | 3.16 |
+| bountiful唯一降级率% | 84.157 | 79.556 |
+| standard D20件数/累计 | 7.57/97.193 | 7.437/97.54 |
+| standard D26件数/累计 | 8.713/146.253 | 8.67/146.107 |
+| bountiful D20件数/累计 | 15.753/177.557 | 15.487/177.433 |
+| bountiful D26件数/累计 | 20.697/295.633 | 21.133/296.377 |
+
+原比较192项，新比较198项（新增6层一致减伤比较）。[调参实验的37个标记](evidence/phase6-loot-tuning-v1.1-stats.json)是在新数据+旧工具/旧目标上得到；最终14项不能全归因于数据补丁，另含B口径修复与维护者批准的A目标重标。已逐字段比较本次与调参实验的totals、unique、power、两种firstTier及全部旧layer字段，完全一致，工具修改没有改变生成事件/随机轨迹/乐观代理。
+
+| 标准深度 | 设计减伤目标% | v1乐观% | v1.1乐观% | v1.1一致减伤% | 一致HP/EHP中位数 |
+| --- | --- | --- | --- | --- | --- |
+| D1 | 0 | 0 | 0 | 0 | 30/30 |
+| D5 | 3 | 7.36 | 3.565 | 0 | 54/55 |
+| D10 | 6 | 18.025 | 5.89 | 3.45 | 97/100.762 |
+| D15 | 7 | 25.93 | 8.51 | 5.705 | 138/144.948 |
+| D20 | 9 | 33.2 | 10.925 | 7.835 | 193/209.222 |
+| D26 | 11 | 38.62 | 13.74 | 10.72 | 225.5/252.33 |
+
+每局先从同一套装备取得HP/减伤/EHP，再分别取300局中位数；表中中位HP与中位减伤不能直接相除重建中位EHP。D15/20/26的一致减伤5.705/7.835/10.720均在设计目标±20%内；D5/D10的EHP最优选择更偏生命，低减伤另标D而非隐藏。
+
+### 13.4 剩余标记逐项归类
+
+| 预设/深度 | 指标 | 目标→实际 | 相对偏差% | 类 | 归因 |
+| --- | --- | --- | --- | --- | --- |
+| scarce D1 | kill | 0.22→0.273 | 24.242 | A | A8低概率抽样：解析0.2223，seed1–300偏高；调参1000局换种子复核0.205。目标已改0.22，保留本批残差 |
+| scarce D5 | rare | 0.19→0.23 | 21.053 | A | 净稀有已扣降级；本批0.230（69/300）对v1粗模型0.19，有限样本/粗模型残差，不再是B口径 |
+| standard D1 | power.weapon | 6→4 | -33.333 | D | 乐观武器代理忽略力量；D1仍拿起始匕首，深层装备附魔/强化强度与旧粗模型有差异，M4按6B2真实力量及monsterScaling抗衡 |
+| standard D5 | consistentDefense.mitigation | 3→0 | -100 | D | EHP最优优先生命，减伤不单独最大；原曲线未指定同套装备和EHP取舍，早期偏低留待6B2验证 |
+| standard D10 | power.weapon | 34→41.535 | 22.162 | D | 乐观武器代理忽略力量；D1仍拿起始匕首，深层装备附魔/强化强度与旧粗模型有差异，M4按6B2真实力量及monsterScaling抗衡 |
+| standard D10 | consistentDefense.mitigation | 6→3.45 | -42.5 | D | EHP最优优先生命，减伤不单独最大；原曲线未指定同套装备和EHP取舍，早期偏低留待6B2验证 |
+| standard D15 | power.weapon | 42→54.336 | 29.372 | D | 乐观武器代理忽略力量；D1仍拿起始匕首，深层装备附魔/强化强度与旧粗模型有差异，M4按6B2真实力量及monsterScaling抗衡 |
+| standard D15 | power.mitigation | 7→8.51 | 21.571 | D | 乐观代理逐指标最大；同层一致装备减伤回到±20%内，不能组合不同护甲的最大生命/减伤 |
+| standard D20 | power.weapon | 52→70.571 | 35.714 | D | 乐观武器代理忽略力量；D1仍拿起始匕首，深层装备附魔/强化强度与旧粗模型有差异，M4按6B2真实力量及monsterScaling抗衡 |
+| standard D20 | power.armor | 14.7→17.758 | 20.8 | D | 乐观代理全背包最大且忽略力量，显示22封顶未变；真实装备/力量留6B2 |
+| standard D20 | power.mitigation | 9→10.925 | 21.389 | D | 乐观代理逐指标最大；同层一致装备减伤回到±20%内，不能组合不同护甲的最大生命/减伤 |
+| standard D26 | power.weapon | 64→83.876 | 31.057 | D | 乐观武器代理忽略力量；D1仍拿起始匕首，深层装备附魔/强化强度与旧粗模型有差异，M4按6B2真实力量及monsterScaling抗衡 |
+| standard D26 | power.mitigation | 11→13.74 | 24.909 | D | 乐观代理逐指标最大；同层一致装备减伤回到±20%内，不能组合不同护甲的最大生命/减伤 |
+| bountiful D5 | unique | 0.337→0.24 | -28.783 | A | 比较降级前机会；v1粗模型0.337与新遭遇乘数下实测0.240不符，未把单层抽样目标当作新平衡约束；全局15.457仍对14达标 |
+
+剩余仅3项A、11项D，无B/C。机会按原0.6/4.5/14达标；本步不再调整掉率、词缀数值或怪物倍率。
+
+### 13.5 正式门禁与可复核证据
+
+统一Node **v24.19.0**，PATH前置 `/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin`；`NODE_OPTIONS=--max-old-space-size=3072`；每条vitest显式`--maxWorkers=2`。所有正式门禁在仓库根串行执行，没有运行完整npm test。
+
+| 实际命令 | 退出码 | 实测 | 墙钟秒 |
+| --- | --- | --- | --- |
+| `node scripts/check-module-boundaries.mjs` | 0 | 边界/所有权通过 | 3.503 |
+| `npx vue-tsc -b` | 0 | 类型通过 | 14.957 |
+| `npm run build` | 0 | 生产构建通过（保留既有>500kB chunk提示） | 22.359 |
+| `npx vitest run src/ext/modules/loot/tests --maxWorkers=2` | 0 | 10文件335 passed | 15.664 |
+| `npx vitest run src/ext/modules/narrative/tests --maxWorkers=2` | 0 | 11文件218 passed | 105.591 |
+| `node src/ext/modules/loot/tools/loot-stats.mjs --runs 300 --seed-base 1 --out /private/tmp/phase6b1a-v11-evidence/final-stats` | 0 | 300局×3，430730事件/157252件，0校验失败 | 9.236 |
+
+正式测试合计553 passed，0 failed/skipped/todo。启动器提示CE参照不存在，本集合无CE依赖跳过；没有ce:fetch/full/gen/drift、完整test或其他范围外门禁。
+
+生产/测试输入树（src+scripts所有文件）门禁前后SHA-256一致：`d22f7ae1d3921ef16f954bc5965b05915f675dec1be98c17b5c619c4f084bdc8`。正式工具产出的JSON与仓库证据逐字节一致；git diff --check、JSON/目标转录核对、改动白名单与LF检查通过。
+
+原始日志、反事实副本、逐抽再生成与门禁元数据位于 `/private/tmp/phase6b1a-v11-evidence/`；原始大证据未放入仓库。所有改动未commit。

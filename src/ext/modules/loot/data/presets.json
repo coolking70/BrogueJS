@@ -69,7 +69,7 @@
         "count": 1,
         "firstMinRarity": "magic",
         "restMinRarity": "magic",
-        "uniqueWeightBp": 30000
+        "uniqueWeightBp": 5000
       },
       "vault": {
         "minRarity": "magic",
@@ -188,7 +188,7 @@
         "count": 2,
         "firstMinRarity": "rare",
         "restMinRarity": "magic",
-        "uniqueWeightBp": 30000
+        "uniqueWeightBp": 10000
       },
       "vault": {
         "minRarity": "magic",
@@ -307,7 +307,7 @@
         "count": 3,
         "firstMinRarity": "rare",
         "restMinRarity": "magic",
-        "uniqueWeightBp": 60000
+        "uniqueWeightBp": 5000
       },
       "vault": {
         "minRarity": "rare",

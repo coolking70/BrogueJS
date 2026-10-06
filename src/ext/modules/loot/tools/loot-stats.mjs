@@ -20,7 +20,7 @@ for (let i = 0; i < args.length; i += 2) {
 if (!out) throw new Error('--out is required');
 let server;
 try {
-  server = await createServer({ configFile: false, root, logLevel: 'error', optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  server = await createServer({ configFile: false, root, logLevel: 'error', optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
   const { computeLootStats, renderLootStatsMarkdown } = await server.ssrLoadModule('/src/ext/modules/loot/tools/stats.ts');
   const report = computeLootStats(options);
   await mkdir(out, { recursive: true });
