@@ -37,8 +37,7 @@ function scene(size: 1 | 2 | 3 = 2) {
         actors: [defense(game.player.id, game.depth), defense(target.id, game.depth)] };
     const authority = new ActorCombatResolutionAuthority(game, state);
     const physicalResolved = vi.fn(), beforeAttack = vi.fn(), afterAttack = vi.fn();
-    const hooks: CreatureExtensionHooks = { causality: new EffectCausality(), partyId: () => null,
-        rule: (_port, input) => input.baseValue, beforeAttack, afterAttack, physicalResolved, damage: vi.fn() };
+    const hooks: CreatureExtensionHooks = { causality: new EffectCausality(), partyId: () => null, beforeAttack, afterAttack, physicalResolved, damage: vi.fn() };
     game.player.extensionHooks = target.extensionHooks = hooks;
     rng.seedRandomGenerator(33301);
     const intent = (cells = footprintOf(target).map(p => ({ x: p.x, y: p.y }))): LockedBodySegmentIntent => ({

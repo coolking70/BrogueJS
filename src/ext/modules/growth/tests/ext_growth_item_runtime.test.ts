@@ -224,8 +224,9 @@ describe('EXT-1b native permanent-item bridge', () => {
     it('prevalidates the entire enchant bundle and leaves the accepted target and ledger untouched on overflow', () => {
         configured(pack => { pack.config.itemGrowth.rules[2]!.conversion = 3; });
         const g = game(), target = g.player.equippedWeapon!, scroll = ItemLoader.spawnScroll('scroll_of_enchantment', -1, -1)!;
-        target.enchantment = Number.MAX_SAFE_INTEGER - 1; target.timesEnchanted = 0; target.isCursed = true;
         g.player.inventory.addItem(scroll); g.executeItemCommand('read', scroll);
+        // The accepted modal precedes the intentionally malformed overflow proposal.
+        target.enchantment = Number.MAX_SAFE_INTEGER - 1; target.timesEnchanted = 0; target.isCursed = true;
         const before = Object.getOwnPropertyDescriptors(target), extensions = g.extensionRuntime!.snapshot(), random = rng.getState();
         expect(() => g.executeItemCommand('enchant', target)).toThrow();
         expect(Object.getOwnPropertyDescriptors(target)).toEqual(before);

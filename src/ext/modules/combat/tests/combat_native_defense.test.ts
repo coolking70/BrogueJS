@@ -40,7 +40,7 @@ function scene() {
     return { game, target, charge, dodge, stagger, parry, poise, recovery, attack };
 }
 function hooks(): CreatureExtensionHooks {
-    return { causality: new EffectCausality(), partyId: () => null, rule: (_port, input) => input.baseValue,
+    return { causality: new EffectCausality(), partyId: () => null,
         beforeAttack: vi.fn(), afterAttack: vi.fn(), physicalResolved: vi.fn(), damage: vi.fn() };
 }
 function productionAuthority(s: ReturnType<typeof scene>, options: {
@@ -91,7 +91,7 @@ describe('3d native defense plumbing', () => {
         const s = scene(), events: string[] = [];
         if (mode !== 'none') {
             const h = hooks();
-            if (mode === 'plain') h.rule = undefined;
+            if (mode === 'plain') h.wantsPhysicalResolution = () => false;
             if (mode === 'rules-without-facts') h.wantsPhysicalResolution = () => false;
             h.physicalResolved = () => events.push('physical'); s.game.player.extensionHooks = h;
         }

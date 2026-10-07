@@ -1,3 +1,4 @@
+import { nativeStat } from '../Stats/NativeStatSources';
 /** CE objective time and environment scheduling. No Game instance crosses this boundary. */
 import type { Game } from './Game';
 import type { ActorActionSchedulerPort } from './ActorActionScheduler';
@@ -222,7 +223,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                     if (m.isCaged && m.carriedItem) ports.effects.monsterDropItem(m);
                     if (!m.hasStatus('entranced') && !m.hasStatus('paralyzed') && !m.isCaged
                         && !m.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')) ports.effects.monsterTakeTurn(m, stealthRange);
-                    if (m.ticksUntilTurn <= 0) m.ticksUntilTurn = m.movementSpeed;
+                    if (m.ticksUntilTurn <= 0) m.ticksUntilTurn = nativeStat(m,'native.move-speed');
                     if (m.hp > 0 && !actions?.isBusy(m.id)) ports.effects.sweepDeepWaterItem(m, m.ticksUntilTurn);
                 }
 
@@ -467,7 +468,7 @@ export function playerTurnEnded(ports: TimePorts, continuingParalysis = false): 
             // < 0 分支对应 CE 的免费回合残留（player.ticksUntilTurn = -1）。
             ports.world.player.refreshSpeeds();
             if (ports.world.player.ticksUntilTurn === 0) {
-                ports.world.player.ticksUntilTurn += ports.world.player.movementSpeed;
+                ports.world.player.ticksUntilTurn += nativeStat(ports.world.player,'native.move-speed');
             } else if (ports.world.player.ticksUntilTurn < 0) {
                 ports.world.player.ticksUntilTurn = 0;
             }

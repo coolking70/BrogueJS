@@ -1,3 +1,4 @@
+import { nativeStat } from '../Stats/NativeStatSources';
 import { bodyStatusDisables } from '../Status/BodyStatuses';
 import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
@@ -141,16 +142,16 @@ export class CompositeMovement {
         return JSON.stringify({ group: cohort.group, actors: cohort.order.map(partId => {
             const actor = cohort.actors.get(partId)!;
             return { id: actor.id, loc: actor.loc, spatial: actor.spatial, hp: actor.hp, ticks: actor.ticksUntilTurn,
-                moveTicks: actor.movementSpeed, statuses: actor.statusDurations, sourceRevision: actorSourceRevision(actor) };
+                moveTicks: nativeStat(actor,'native.move-speed'), statuses: actor.statusDurations, sourceRevision: actorSourceRevision(actor) };
         }) });
     }
     planStep(groupId: number, coreAt: Readonly<Pos>, options: CompositeMovementOptions = {}): CompositeMoveResult {
         const cohort = this.cohort(groupId), corePart = cohort.order[0]!, core = cohort.actors.get(corePart)!;
         if (!integer(coreAt.x, -32768, 32767) || !integer(coreAt.y, -32768, 32767) || distance(core.loc, coreAt) !== 1
-            || !integer(core.movementSpeed, 1, 1000000)) throw new SpatialValidationError('Composite core needs one positive-cost step');
+            || !integer(nativeStat(core,'native.move-speed'), 1, 1000000)) throw new SpatialValidationError('Composite core needs one positive-cost step');
         const budget = options.branchBudget ?? COMPOSITE_MOVEMENT_LIMITS.branchNodes;
         if (!integer(budget, 1, COMPOSITE_MOVEMENT_LIMITS.branchNodes)) throw new SpatialValidationError('Composite branch budget exceeded');
-        const costTicks = bodyMoveTicks(cohort.definition, cohort.group, this.spatial.catalog, core.movementSpeed);
+        const costTicks = bodyMoveTicks(cohort.definition, cohort.group, this.spatial.catalog, nativeStat(core,'native.move-speed'));
         const blocked = (reason: Extract<CompositeMoveResult, { status: 'blocked' }>['reason'], branchNodes = 0): CompositeMoveResult =>
             Object.freeze({ status: 'blocked', reason, costTicks, branchNodes });
         if (!options.forced && (cohort.definition.parts.filter(p => p.providesSupport && cohort.actors.has(p.partId)).length < cohort.definition.minSupportParts

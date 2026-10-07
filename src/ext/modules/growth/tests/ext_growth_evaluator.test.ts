@@ -1,6 +1,7 @@
+import { createGrowthRulePolicies } from './legacyRulePolicies';
 import { describe, expect, it, vi } from 'vitest';
 import data from '../data/definitions.json';
-import { createGrowthRulePolicies, evaluateGrowthMagnitude, evaluateGrowthModifiers, evaluateGrowthPhysicalDamage,
+import { evaluateGrowthMagnitude, evaluateGrowthModifiers, evaluateGrowthPhysicalDamage,
     evaluateGrowthPort, growthAttributeModifiers, matchesGrowthConditions, meetsGrowthPrerequisites, roundGrowthValue,
     type GrowthEvaluatedModifier, type GrowthEvaluationFacts, type GrowthScopedModifiers } from '../evaluator';
 import { GrowthValidationError, validateGrowthDefinitionPack } from '../schema';

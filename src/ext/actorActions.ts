@@ -14,7 +14,6 @@ export interface ActorResourcePolicy {
 /** Remaining values advance only through the foreground foundation elapsed delta.
  * Native defense/stagger recovery mirrors the native action timer, never an
  * attack bundle. Scheduler-owned break recovery keeps staggerRemainingTicks=0. */
-export interface ActorCombatStats { staminaCapacity: number; poiseCapacity: number; revision: string }
 export interface ActorResourceState {
     stamina: number; regenRemainder: number; regenDelayRemaining: number;
     dodgeRemainingTicks: number; dodgeRecoveryRemainingTicks: number;
@@ -52,5 +51,5 @@ export interface ProductionActorAttackState {
     schema:4;revision:number;
     bonfires?: import('./worldRest').BonfireState;
     actions:ActorAttackMetadata[];
-    actors:(ActorResourceState & {actorId:number;profileId:string;combatStats?:ActorCombatStats})[];
+    actors:(ActorResourceState & {actorId:number;profileId:string})[];
 }

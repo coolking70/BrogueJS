@@ -118,25 +118,28 @@ function makeScene(seed: string, direction: Direction): Scene {
     return { attacker, defender, player, missile, grid,
         opts: gen.randRange(0, 3) === 0 ? { grid } : {} };
 }
+function ownEquipment(scene: Scene):void {
+    for(const item of [scene.player.equippedWeapon,scene.player.equippedArmor,scene.player.ringLeft,scene.player.ringRight])
+        if(item&&!scene.player.inventory.items.includes(item))scene.player.inventory.items.push(item);
+}
 function neutral(scene: Scene) {
+    ownEquipment(scene);
     const calls: { port: string; input: ExtensionRuleInput }[] = [];
-    const policy = (port: string) => (input: ExtensionRuleInput) => {
-        calls.push({ port, input: { ...input } });
-        // All additive bonuses zero, all multipliers one. No growth modules,
-        // budgets, min/max gameplay clamps or resource commits are installed.
-        return (input.baseValue + 0) * 1;
-    };
     const registry = new ExtensionRegistry();
     registry.register('neutral-parity', '1.0.0', () => ({ id: 'neutral-parity', version: '1.0.0',
         initialState: () => ({}), validateState: (value): value is Json => !!value && typeof value === 'object',
-        rulePolicies: { hitChance: policy('hitChance'), physicalDamage: policy('physicalDamage'),
-            nativeBonuses: () => ({ maxHp: 0, strength: 0 }) } }));
+        statSources:{collect:()=>[]} }));
     const runtime = new ExtensionRuntime(registry, registry.manifest(['neutral-parity']), {
         playerId: () => scene.player.id, depth: () => 1,
         randomInt: () => { throw new Error('Neutral policy must not consume RNG'); },
         message: () => { throw new Error('Neutral policy must not emit messages'); },
     });
     for (const actor of new Set([scene.player, scene.attacker, scene.defender])) runtime.attachCreature(actor);
+    const evaluatePair=runtime.stats.evaluatePair.bind(runtime.stats);
+    runtime.stats.evaluatePair=(actorId,targetId,kind,facts)=>{
+        calls.push({port:kind==='hit'?'hitChance':'physicalDamage',input:{actorId,targetId,baseValue:facts.baseValue!,rollMode:facts.probabilityRoll===false?'skip-guaranteed-hit':'roll-probability'} as ExtensionRuleInput});
+        return evaluatePair(actorId,targetId,kind,facts);
+    };
     return { runtime, calls };
 }
 const mon = (actor: Creature) => actor as Monster;
@@ -222,6 +225,7 @@ const profiles: Profile[] = [
 ];
 
 function execute(scene: Scene, extended: boolean, thrown = false, publicEntry = false) {
+    ownEquipment(scene);
     const extension = extended ? neutral(scene) : undefined;
     const beforeActors = fullGraph([scene.attacker, scene.defender, scene.player, scene.missile]);
     const beforeRng = rng.getState();
@@ -284,8 +288,9 @@ describe('EXT-1c neutral combat differential insurance', () => {
     it('really calls the identity policy, without consuming policy RNG or silently taking the classic branch', () => {
         const s = makeScene(seeds[0]!, 'player-monster'); s.defender.setStatusDuration('paralyzed', 3);
         const out = execute(s, true);
-        expect(out.calls.map(call => call.port)).toEqual(['hitChance', 'physicalDamage']);
-        expect(out.calls[0]!.input.rollMode).toBe('skip-guaranteed-hit');
+        expect(out.calls.map(call => call.port)).toEqual(['physicalDamage']);
+        expect(out.result.hit).toBe(true);
+        expect(out.result.damage).toBeGreaterThanOrEqual(0);
     });
     it('detects a classic-only result regression, actor mutation, message, and either RNG stream draw', () => {
         // Deliberate test-local mutants are restored after each independent run.
@@ -390,12 +395,16 @@ function previewScene(spec: PreviewCase): Scene {
     }
     s.player.strength = 12; s.player.equippedArmor = null; s.player.equippedWeapon = s.missile;
     s.missile.damage = '0'; s.missile.strengthRequired = 12; s.missile.enchantment = 0; s.missile.runicType = undefined;
-    spec.apply?.(s); return s;
+    spec.apply?.(s); ownEquipment(s); return s;
 }
 
 describe('EXT-1c exact preview probability and RNG boundaries', () => {
     for (const spec of previewCases) it(spec.name, () => {
-        const pure = previewScene(spec); const ext = neutral(pure);
+        const pure = previewScene(spec);
+        // The empty-dispatch assertion below describes the classic non-weapon
+        // preview. Extended non-weapon pairs now share the melee stat domain;
+        // ext_stats_review tests its modifiers and zero-source RNG equivalence.
+        const ext = neutral(pure.opts.isWeaponAttack === false ? previewScene(spec) : pure);
         const before = fullGraph([pure.attacker, pure.defender, pure.player]), beforeRng = rng.getState(), beforeRuntime = ext.runtime.snapshot();
         const preview = CombatSystem.previewHitChance(pure.attacker, pure.defender, pure.opts);
         expect(fullGraph([pure.attacker, pure.defender, pure.player])).toStrictEqual(before);

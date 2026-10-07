@@ -6,8 +6,8 @@ import type { CreatureBirth } from '../../birth';
 import type { DeepReadonly } from './definitions';
 import type { GrowthDefinitionPack } from './types';
 import { scheduledGrantTotal } from './experience';
-import { isGrowthDerived, isGrowthFocus, isGrowthProgression, isGrowthSkills } from './components';
-import { growthAllocatedCost, growthDerived, growthFocusCapacity, growthFocusInterval, growthRuleActor, isGrowthAttributes } from './attributes';
+import { isGrowthFocus, isGrowthProgression, isGrowthSkills } from './components';
+import { growthAllocatedCost, growthFocusCapacity, growthFocusInterval, growthRuleActor, isGrowthAttributes } from './attributes';
 import { isGrowthItemLedger, growthItemPointGrants } from './items';
 import { growthIdentityAttributeValues, growthIdentityGiftIds, growthIdentityEffects, isGrowthIdentityBuild } from './identities';
 import { growthSkillScopes, growthLearnedCost, isGrowthSkillBuild, validGrowthCooldowns } from './skills';
@@ -91,7 +91,7 @@ export function isGrowthState(value: unknown, pack: DeepReadonly<GrowthDefinitio
     });
 }
 /** Cross-component checks happen before a live run is retired; every point has a grant, allocation, or irreversible-fee owner. */
-export function validGrowthComponents(state: GrowthState, components: ExtensionSnapshot['components'], pack: DeepReadonly<GrowthDefinitionPack>): boolean {
+export function validGrowthComponents(state: GrowthState, components: ExtensionSnapshot['components'], pack: DeepReadonly<GrowthDefinitionPack>, applied?: readonly {actorId:number;key:string;bonus:number}[]): boolean {
     try {
     const config = pack.config, effectIds = new Set<number>();
     for (const [id, entries] of Object.entries(components)) {
@@ -110,7 +110,7 @@ export function validGrowthComponents(state: GrowthState, components: ExtensionS
             if (own.join(',') !== 'growth:reward,growth:skill-build' || build.learned.length || build.inherited.length || build.gifted.length || build.active.length || build.passive.length) return false;
             continue;
         }
-        if (own.join(',') !== 'growth:attributes,growth:derived,growth:focus,growth:identity,growth:items,growth:progression,growth:reward,growth:skill-build,growth:skills') return false;
+        if (own.join(',') !== 'growth:attributes,growth:focus,growth:identity,growth:items,growth:progression,growth:reward,growth:skill-build,growth:skills') return false;
         if (!isGrowthIdentityBuild(identity,pack,true)) return false;
         const progression = entries['growth:progression'], attributes = entries['growth:attributes'], items = entries['growth:items'];
         const clone = reward.nativeStatsCopied;
@@ -127,8 +127,8 @@ export function validGrowthComponents(state: GrowthState, components: ExtensionS
             || (clone && !config.monsters.clone.progression && (progression.level !== 1 || progression.experience !== 0))) return false;
         const actor = growthRuleActor(Number(id),progression,attributes), scopes = growthSkillScopes(pack,build,state.objectiveClock,'actor',identity);
         const grants = growthItemPointGrants(config.itemGrowth,items);
-        const focus = entries['growth:focus'], capacity = growthFocusCapacity(pack,actor,scopes), interval = growthFocusInterval(pack,actor,scopes);
-        if (!isGrowthFocus(focus,capacity,interval) || (config.focus.resetRemainderWhenFull && focus.current === capacity && focus.remainder !== 0)) return false;
+        const focus = entries['growth:focus'], capacity = applied ? pack.config.focus.base+(applied.find(row=>row.actorId===Number(id)&&row.key==='growth.focus-capacity')?.bonus??0) : growthFocusCapacity(pack,actor,scopes), interval = growthFocusInterval(pack,actor,scopes);
+        if (!isGrowthFocus(focus,capacity,applied?1_000_000:interval) || (config.focus.resetRemainderWhenFull && focus.current === capacity && focus.remainder !== 0)) return false;
         const baseLevel = clone ? 1 : template?.level ?? 0;
         const attributeGrants = BigInt(scheduledGrantTotal(config.levels.attributePoints,progression.level))
             - BigInt(scheduledGrantTotal(config.levels.attributePoints,baseLevel)) + BigInt(template?.unspentAttributePoints ?? attributes.inheritedAttributePoints);
@@ -137,7 +137,7 @@ export function validGrowthComponents(state: GrowthState, components: ExtensionS
         if (BigInt(progression.attributePoints) + BigInt(growthAllocatedCost(pack,attributes)) + BigInt(attributes.attributePointsSpent)
                 !== attributeGrants + BigInt(grants.attributePoints)
             || BigInt(progression.skillPoints) + BigInt(attributes.skillPointsSpent) + BigInt(growthLearnedCost(pack,build)) !== skillGrants + BigInt(grants.skillPoints)
-            || !isGrowthDerived(entries['growth:derived'],growthDerived(pack,actor,scopes))
+
             || !isGrowthSkills(entries['growth:skills'],pack.definitions.filter(def => def.kind === 'skill' && def.mode === 'active').map(def => def.id)) || !validGrowthCooldowns(entries['growth:skills'] as never,build)) return false;
     }
     for (const receipt of state.resourceReceipts) {

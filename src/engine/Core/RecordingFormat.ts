@@ -50,7 +50,7 @@ export function validateRecordingV4(
     if (
       r.version !== 4 ||
       r.codec.wholeRun !== 5 ||
-      r.codec.foundation !== 7 ||
+      r.codec.foundation !== 8 ||
       r.codec.origin !== 2 ||
       r.digestAlgorithm !== 'sha256-c5-merkle-v1' ||
       r.digestChunk !== 256 ||

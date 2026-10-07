@@ -1,3 +1,5 @@
+import { markItemStatsDirty } from './ItemStatInvalidation';
+import { atomicStats, nativeStat, markStatsDirty } from '../Stats/NativeStatSources';
 import { footprintContains } from '../Movement/CreatureSpatial';
 import { enchantedEquipment } from './ItemEffectFormulas';
 import { Item, ItemCategory } from './Item';
@@ -55,6 +57,7 @@ export function applyChosenEnchantmentGain(item: Item, magnitude: number): void 
     };
     if (!Object.values(gain).every(Number.isSafeInteger)) throw new RangeError('Unsafe enchantment gain');
     Object.assign(item, gain);
+    markItemStatsDirty(item);
 }
 
 /** Limited engine-owned undo state; never exposed through an extension context. */
@@ -66,10 +69,12 @@ export function checkpointEnchantmentGain(item: Item): () => void {
             if (descriptor) Object.defineProperty(item, key, descriptor);
             else Reflect.deleteProperty(item, key);
         }
+        markItemStatsDirty(item);
     };
 }
 
 export function finishChosenEnchantment(player: Player, item: Item, ports: EnchantmentPorts): void {
+    markStatsDirty(player);
     const wasCursed = item.isCursed;
     if (item.category === ItemCategory.RING) {
         if (player.rings().includes(item) && item.identityId === 'ring_of_clairvoyance') ports.updateVision();
@@ -86,14 +91,18 @@ export function finishChosenEnchantment(player: Player, item: Item, ports: Encha
     // This mutation creates no rune and changes no knowledge. The readScroll
     // autoIdentify tail is handled after the flare by Game (Items.c:8019-8026).
     item.isCursed = false;
+    markStatsDirty(player);
     ports.logEnchanted(item);
     if (wasCursed) ports.logUncursed(item);
 }
 
 export function enchantChosenItem(player: Player, item: Item, ports: EnchantmentPorts, magnitude = 1): void {
     // CE Items.c:7839-7899: the selected pack object, never a preferred slot.
-    applyChosenEnchantmentGain(item, magnitude);
-    finishChosenEnchantment(player, item, ports);
+    const restore = checkpointEnchantmentGain(item);
+    try { atomicStats(player, () => {
+        applyChosenEnchantmentGain(item, magnitude);
+        finishChosenEnchantment(player, item, ports);
+    }); } catch (error) { restore(); throw error; }
 }
 
 /** In this CE tree readScroll reassigns theItem to the chosen target, then
@@ -185,7 +194,7 @@ export function invokeCharm(player: Player, item: Item, identityId: string | und
 
 /** The callback runs after effects, so speed changes take effect on this turn. */
 export function finishItemUse(player: Player, endTurn: () => void): void {
-    timeSystem.currentTick += player.movementSpeed;
+    timeSystem.currentTick += nativeStat(player,'native.move-speed');
     endTurn();
 }
 

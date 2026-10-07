@@ -1,3 +1,6 @@
+import { markStatsDirty } from '../engine/Stats/NativeStatSources';
+import { nativeStat } from '../engine/Stats/NativeStatSources';
+import { nativeRational } from '../engine/Stats/NativeStatSources';
 import { canCommitNativeAttack, commitNativeAttackCost, withNativeAttackAction } from '../engine/Core/NativeAttackTransaction';
 import { bodyStatusDisables, bodyDecisionActor, bodyGroupActors, bodyStatusOwner, refreshBodyMemberSpeeds } from '../engine/Status/BodyStatuses';
 import { bindSpatialCatalog, spatialCatalogFor } from '../engine/Movement/CreatureSpatial';
@@ -431,13 +434,13 @@ export class Monster extends Creature {
 
     protected override bloodInvulnerable(): boolean { return this.isInvulnerable(); }
 
-    public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: import('../ext/causality').DamageKind = 'other'): void {
+    public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: import('../ext/causality').DamageKind = 'other', ignoresResistance = false): void {
         const commit=()=>{
             this.interruptCorpseAbsorption(amount);
             const damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
             // Preserve the original CE damage/blood call in classic runs.
-            if (this.extensionHooks) super.takeDamage(damage, true, grid, beforeHpLoss, damageKind);
-            else super.takeDamage(damage, true, grid, beforeHpLoss);
+            if (this.extensionHooks) super.takeDamage(damage, true, grid, beforeHpLoss, damageKind, ignoresResistance);
+            else super.takeDamage(damage, true, grid, beforeHpLoss, 'other', ignoresResistance);
         };
         if(this.extensionHooks?.withNativeDamage)this.extensionHooks.withNativeDamage(commit);else commit();
     }
@@ -502,6 +505,7 @@ export class Monster extends Creature {
         if (this.hasBehavior('MONST_INVISIBLE')) this.setStatusDuration('invisible', PERMANENT_STATUS_DURATION);
         this.maxStatus = { ...this.statusDurations };
         this.wasNegated = false;
+        markStatsDirty(this);
     }
 
     /** Time.c monstersFall / monsterEntersLevel clear ONLY the old-level position. */
@@ -772,7 +776,7 @@ export class Monster extends Creature {
             statusDurations: { ...player.statusDurations }, statusImmunities: new Set(player.statusImmunities),
             poisonAmount: player.poisonAmount, maxShield: player.maxShield,
             weaknessAmount: player.weaknessAmount, maxStatus: { ...player.maxStatus },
-            movementSpeed: player.movementSpeed, attackSpeed: player.attackSpeed,
+            movementSpeed: nativeStat(player,'native.move-speed'), attackSpeed: nativeStat(player,'native.attack-speed'),
             seized: player.seized, seizing: player.seizing,
             // CE RogueMain.c:363 memset(&player), unlike initializeMonster's
             // INVALID_POS. The copied zero counter expires this target in U11.
@@ -862,9 +866,10 @@ export class Monster extends Creature {
         this.baseAttackSpeed = data.attackSpeed ?? 100;
         this.movementSpeed = this.baseMoveSpeed;
         this.attackSpeed = this.baseAttackSpeed;
-        if (hasted) { this.movementSpeed = Math.trunc(this.movementSpeed / 2); this.attackSpeed = Math.trunc(this.attackSpeed / 2); }
+        if (hasted) { this.movementSpeed = Math.trunc(this.baseMoveSpeed / 2); this.attackSpeed = Math.trunc(this.baseAttackSpeed / 2); }
         if (slowed) { this.movementSpeed *= 2; this.attackSpeed *= 2; }
         this.polymorphKeepsSpeed = true;
+        markStatsDirty(this);
         this.behaviorFlags = new Set(data.behaviorFlags ?? []);
         this.abilityFlags = new Set(data.abilityFlags ?? []);
         this.bolts = [...(data.bolts ?? [])];
@@ -943,7 +948,7 @@ export class Monster extends Creature {
         }
         if (expired.includes('magical_fear')) {
             // CE restores ALLY if the leader is the player; web stores allegiance separately.
-            this.isAlly = this.isAlly || this.leader instanceof Player;
+            if(!this.isAlly&&this.leader instanceof Player){this.isAlly=true;markStatsDirty(this);}
             this.state = MonsterState.HUNTING;
         }
         return expired;
@@ -1035,8 +1040,8 @@ export class Monster extends Creature {
      * ->attackSpeed）：moveSpeed 以存取器别名到 Creature.movementSpeed，保证
      * 直接写 m.moveSpeed（legacy 回置、调试）立即对调度生效。
      */
-    public get moveSpeed(): number { return this.movementSpeed; }
-    public set moveSpeed(v: number) { this.movementSpeed = v; }
+    public get moveSpeed(): number { return nativeStat(this,'native.move-speed'); }
+    public set moveSpeed(v: number) { this.movementSpeed = v; markStatsDirty(this); }
 
     /** info 基准（CE monst->info.movementSpeed）：mutate() 改写基准后由 refreshSpeeds 生效。 */
     protected override get infoMovementSpeed(): number { return this.baseMoveSpeed; }
@@ -1045,7 +1050,7 @@ export class Monster extends Creature {
     /** Combat-enabled exhausted NPCs spend an ordinary wait instead of an uncharged attack. */
     private waitForNativeAttackStamina(game: Game): boolean {
         if (canCommitNativeAttack(game, this)) return false;
-        this.ticksUntilTurn = this.movementSpeed;
+        this.ticksUntilTurn = nativeStat(this,'native.move-speed');
         return true;
     }
 
@@ -1056,12 +1061,12 @@ export class Monster extends Creature {
      */
     private commitNativeAttackOrWait(game: Game): boolean {
         if (commitNativeAttackCost(game, this)) return true;
-        this.ticksUntilTurn = this.movementSpeed;
+        this.ticksUntilTurn = nativeStat(this,'native.move-speed');
         return false;
     }
 
     private endTurnWithAttack(): void {
-        this.ticksUntilTurn = this.attackSpeed * (this.hasBehavior('MONST_CAST_SPELLS_SLOWLY') ? 2 : 1);
+        this.ticksUntilTurn = nativeStat(this,'native.attack-speed') * (this.hasBehavior('MONST_CAST_SPELLS_SLOWLY') ? 2 : 1);
     }
 
     public mutate(m: MutationData) {
@@ -1120,6 +1125,7 @@ export class Monster extends Creature {
         // 与构造路径保持同一翻译层）。当前 mutations.json 不含
         // MONST_FLIES / MONST_IMMUNE_TO_FIRE，本调用是防御性的。
         this.syncFlagDerivedStatuses();
+        markStatsDirty(this);
     }
 
     public hasAbility(flag: string): boolean {
@@ -1301,12 +1307,12 @@ export class Monster extends Creature {
             }
             if (this.seized && game.monsters.some(m => m !== this && m.hp > 0 && m.seizing
                 && monstersAreEnemies(this, m) && !!nearestLegalMeleeContact(game.grid, m, this))) {
-                this.ticksUntilTurn = this.movementSpeed; return;
+                this.ticksUntilTurn = nativeStat(this,'native.move-speed'); return;
             }
             this.seized = this.seizing = false;
             if (game.canStepFootprint(this, to, { allowsTerrain: p => entrancementPassable(game.grid, p)
                 && (!this.hasBehavior('MONST_RESTRICTED_TO_LIQUID') || !!(cellTerrainMechFlags(game.grid, p.x, p.y) & TM_ALLOWS_SUBMERGING)) })
-                && game.placeCreature(this, to, { walkingSecretDoor: true })) this.ticksUntilTurn = this.movementSpeed;
+                && game.placeCreature(this, to, { walkingSecretDoor: true })) this.ticksUntilTurn = nativeStat(this,'native.move-speed');
             return;
         }
         if (!game.grid.isValidPos(to.x, to.y)) return;
@@ -1319,7 +1325,7 @@ export class Monster extends Creature {
                 && monstersAreEnemies(this, m)
                 && distanceBetweenFootprints(m, this) === 1
                 && !entrancementDiagonalBlocked(game.grid, this.loc, m.loc))) {
-                this.ticksUntilTurn = this.movementSpeed;
+                this.ticksUntilTurn = nativeStat(this,'native.move-speed');
                 return;
             }
             this.seized = false;
@@ -1332,11 +1338,11 @@ export class Monster extends Creature {
             || entrancementDiagonalBlocked(game.grid, this.loc, to))) return;
         if (defender) {
             if (!this.willAttackTarget(defender) || this.waitForNativeAttackStamina(game)) return;
-            this.ticksUntilTurn = this.attackSpeed;
+            this.ticksUntilTurn = nativeStat(this,'native.attack-speed');
             if (this.hasAbility('MA_ATTACKS_ALL_ADJACENT')) this.performSweepAttack(game, defender);
             else this.resolveGeometryAttackOn(game, defender, 'hostile');
         } else if (game.placeCreature(this, to, { walkingSecretDoor: true })) {
-            this.ticksUntilTurn = this.movementSpeed;
+            this.ticksUntilTurn = nativeStat(this,'native.move-speed');
         }
     }
 
@@ -1579,6 +1585,7 @@ export class Monster extends Creature {
                     // 卷轴置位，Game.protectEquippedGear）。
                     if (game.player.equippedArmor && !game.player.equippedArmor.isProtected && game.player.equippedArmor.enchantment > -3) {
                         game.player.equippedArmor.enchantment -= 1;
+                        markStatsDirty(game.player);
                         logger.log(i18next.t('combat.armor_degraded', { defaultValue: 'Your armor is corroded by acid!' }), '#ffaaaa');
                     }
                 }
@@ -1677,12 +1684,18 @@ export class Monster extends Creature {
 
     /** CE Monsters.c:1839-1847: objective regeneration precedes poison decrement. */
     public recoverPerTick(): void {
-        if (this.hp > 0 && this.regenTurns > 0 && this.hp < this.maxHp && !this.hasStatus('poisoned')) {
-            this.regenCounter++;
-            if (this.regenCounter >= this.regenTurns) {
-                this.hp = Math.min(this.maxHp, this.hp + 1);
-                this.regenCounter = 0;
-            }
+        if (this.hp <= 0 || this.hp >= this.maxHp || this.hasStatus('poisoned')) return;
+        const regeneration=nativeRational(this);
+        if (regeneration.numerator===0) return;
+        // The only conversion of the exact rate is this healing boundary.
+        const rate=regeneration.numerator/regeneration.denominator;
+        const interval=this.regenTurns>0?this.regenTurns:1, nativeRate=this.regenTurns>0?1/interval:0;
+        const native=Math.abs(rate-nativeRate)<=Number.EPSILON*Math.max(1,nativeRate)*4;
+        this.regenCounter+=native?1:rate*interval;
+        if (this.regenCounter >= interval) {
+            this.hp = Math.min(this.maxHp, this.hp + (native?1:Math.floor(this.regenCounter/interval)));
+            this.regenCounter = native?0:this.regenCounter%interval;
+            markStatsDirty(this);
         }
     }
 
@@ -1736,17 +1749,17 @@ export class Monster extends Creature {
         surfaceOnDryLand(this, game.grid);
         game.applyEntanglementFromTerrain(this);
         if (this.hasStatus('paralyzed') || this.hasStatus('entranced') || bodyStatusDisables(this,'decision')) {
-            if (this.spatial?.bodyMember && this.ticksUntilTurn <= 0) this.ticksUntilTurn = this.movementSpeed;
+            if (this.spatial?.bodyMember && this.ticksUntilTurn <= 0) this.ticksUntilTurn = nativeStat(this,'native.move-speed');
             return true;
         }
         if (this.isCaged) { game.makeMonsterDropItem(this); return true; }
 
         const wasAsleep = !this.isAlly && this.state === MonsterState.ASLEEP;
-        if (wasAsleep) this.ticksUntilTurn = this.movementSpeed;
+        if (wasAsleep) this.ticksUntilTurn = nativeStat(this,'native.move-speed');
         updateMonsterState(game, this, stealthRange);
         // CE awakening consumes this action, even for ALWAYS_HUNTING sleepers.
         if (wasAsleep || (!this.isAlly && this.state === MonsterState.ASLEEP)) {
-            if (this.ticksUntilTurn <= 0) this.ticksUntilTurn = this.movementSpeed;
+            if (this.ticksUntilTurn <= 0) this.ticksUntilTurn = nativeStat(this,'native.move-speed');
             return true;
         }
         return false;
@@ -2200,6 +2213,7 @@ export class Monster extends Creature {
                         // 的近战支同款（P4-6 几何分发的两处落点都要过这道门）。
                         if (game.player.equippedArmor && !game.player.equippedArmor.isProtected && game.player.equippedArmor.enchantment > -3) {
                             game.player.equippedArmor.enchantment -= 1;
+                            markStatsDirty(game.player);
                             logger.log(i18next.t('combat.armor_degraded', { defaultValue: 'Your armor is corroded by acid!' }), '#ffaaaa');
                         }
                     }
@@ -2375,7 +2389,7 @@ export class Monster extends Creature {
         if((inside && this.state===MonsterState.HUNTING) || game.meleeContact(this,game.player))return false;
         const step=game.planSquareStep(this,{kind:'anchors',anchors:[this.spawnLoc]});
         this.applyPlannedBodyStep(game, step);
-        if(this.ticksUntilTurn<=0)this.ticksUntilTurn=this.movementSpeed;
+        if(this.ticksUntilTurn<=0)this.ticksUntilTurn=nativeStat(this,'native.move-speed');
         return true;
     }
     private takeSquareMovementTurn(game: Game, normalAlly: boolean, allyEnemy: Monster | null): boolean {
@@ -2435,7 +2449,7 @@ export class Monster extends Creature {
         if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
         if (this.hasStatus('stuck') && footprintSome(this, p => !!(cellTerrainFlags(game.grid, p.x, p.y) & T_ENTANGLES)) && !this.hasCEBehavior('MONST_IMMUNE_TO_WEBS')) {
             if (!this.isInvulnerable()) this.setStatusDuration('stuck', this.getStatusDuration('stuck') - 1);
-            if (this.hasStatus('stuck')) { this.ticksUntilTurn = this.movementSpeed; return; }
+            if (this.hasStatus('stuck')) { this.ticksUntilTurn = nativeStat(this,'native.move-speed'); return; }
             for (const p of footprintOf(this)) breakEntanglingTerrain(game.grid, p.x, p.y);
         }
         game.rotateSpatialActor(this, step.quarterTurns!);
@@ -2528,7 +2542,7 @@ export class Monster extends Creature {
             if (this.hasStatus('stuck') && footprintSome(this, p => !!(cellTerrainFlags(game.grid, p.x, p.y) & T_ENTANGLES))
                 && !this.hasCEBehavior('MONST_IMMUNE_TO_WEBS')) {
                 if (!this.isInvulnerable()) this.setStatusDuration('stuck', this.getStatusDuration('stuck') - 1);
-                if (this.hasStatus('stuck')) { this.ticksUntilTurn = this.movementSpeed; return; }
+                if (this.hasStatus('stuck')) { this.ticksUntilTurn = nativeStat(this,'native.move-speed'); return; }
                 for (const p of footprintOf(this)) breakEntanglingTerrain(game.grid, p.x, p.y);
             }
             game.placeCreature(this, { x: nx, y: ny }, { walkingSecretDoor: true });
@@ -2543,7 +2557,7 @@ export class Monster extends Creature {
             if (!this.isInvulnerable()) this.setStatusDuration('stuck', this.getStatusDuration('stuck') - 1);
             if (!this.isInvulnerable() && this.hasStatus('stuck')) {
                 if (!game.isAutoTraveling() && game.grid.getCell(this.x, this.y)?.isVisible) logger.log(i18next.t('env.monster_stuck_web', { monster: game.monsterDisplayName(this), defaultValue: 'The {{monster}} struggles against the web.' }), '#aaaaaa');
-                this.ticksUntilTurn = this.movementSpeed;
+                this.ticksUntilTurn = nativeStat(this,'native.move-speed');
                 return;
             }
             if (!game.isAutoTraveling() && game.grid.getCell(this.x, this.y)?.isVisible) logger.log(i18next.t('env.monster_break_web', { monster: game.monsterDisplayName(this), defaultValue: 'The {{monster}} breaks the web.' }), '#aaaaaa');

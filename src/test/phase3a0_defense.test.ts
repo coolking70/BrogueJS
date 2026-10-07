@@ -39,7 +39,7 @@ function scene(npc = false) {
     const authority = new ActorCombatResolutionAuthority(game, state);
     const beforeAttack = vi.fn(), afterAttack = vi.fn(), physicalResolved = vi.fn(), damage = vi.fn();
     const hooks: CreatureExtensionHooks = { causality: new EffectCausality(), beforeAttack, afterAttack, physicalResolved, damage,
-        partyId: () => null, rule: (_port, input) => input.baseValue };
+        partyId: () => null, };
     attacker.extensionHooks = hooks; defender.extensionHooks = hooks;
     rng.seedRandomGenerator(923456);
     const intent: NativeMeleeResolutionIntent = { kind: 'native-melee', depth: game.depth,

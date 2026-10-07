@@ -1,3 +1,4 @@
+import { statRule } from '../../../../test/support/legacyStats';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import data from '../data/definitions.json';
 import { loadGrowthDefinitionPack, parseGrowthDefinitionPack } from '../definitions';
@@ -125,7 +126,7 @@ function combatHarness(zeroDamage=false, configure?: (pack:GrowthDefinitionPack)
     const custom=parseGrowthDefinitionPack(mutable,{moduleVersion:mutable.moduleVersion,hasText:()=>true});
     const player=new Player(4,4), enemy=new Monster(5,4,(monsters as MonsterData[]).find(m=>m.id==='rat')!);
     enemy.state=MonsterState.HUNTING;enemy.defense=30;enemy.damageString='20';enemy.hp=enemy.maxHp=100;player.hp=player.maxHp=100;
-    const weapon=new Item('test',')',0xffffff,ItemCategory.WEAPON);weapon.damage='20';weapon.strengthRequired=player.effectiveStrength;player.equippedWeapon=weapon;
+    const weapon=new Item('test',')',0xffffff,ItemCategory.WEAPON);weapon.damage='20';weapon.strengthRequired=player.effectiveStrength;player.inventory.addItem(weapon);player.equippedWeapon=weapon;
     const identity={schema:1,version:custom.moduleVersion,fingerprint:extensionDataFingerprint(custom as never)};
     const seed=(payload:Json,context:ExtensionContext) => {
         const p=payload as {actorId:number;passive:string[];timed:string[]};const build=initialGrowthSkillBuild();
@@ -222,8 +223,8 @@ describe('EXT-1d skill atomic commits, result facts and temporary scope',()=> {
     it('starts persistent self effect after core, then interrupts only a committed action fact, never queries',()=> {
         const {player,runtime,build,command}=combatHarness();command('learn-skill',{skillId:skill('hold-breath').id});
         command('equip-skills',{active:[skill('hold-breath').id],passive:[]});command('use-skill',{skillId:skill('hold-breath').id,target:{kind:'self'}});
-        expect(build(player.id).effects).toHaveLength(1);expect(runtime.rule('stealthRange',{actorId:player.id,targetId:null,baseValue:8,nativeMinimum:2,invisible:false})).toBe(6);
-        const before=runtime.snapshot();for(let i=0;i<5;i++)runtime.rule('stealthRange',{actorId:player.id,targetId:null,baseValue:8,nativeMinimum:2,invisible:false});expect(runtime.snapshot()).toEqual(before);
+        expect(build(player.id).effects).toHaveLength(1);expect(statRule(runtime,'stealthRange',{actorId:player.id,targetId:null,baseValue:8,nativeMinimum:2,invisible:false})).toBe(6);
+        const before=runtime.snapshot();for(let i=0;i<5;i++)statRule(runtime,'stealthRange',{actorId:player.id,targetId:null,baseValue:8,nativeMinimum:2,invisible:false});expect(runtime.snapshot()).toEqual(before);
         runtime.emit('committedAction',{actorId:player.id,action:'wait'});expect(build(player.id).effects).toHaveLength(1);
         runtime.emit('committedAction',{actorId:player.id,action:'throw'});expect(build(player.id).effects).toHaveLength(0);
     });

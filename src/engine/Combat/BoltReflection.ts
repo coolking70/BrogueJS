@@ -1,7 +1,8 @@
+import { statQuery } from '../Stats/NativeStatSources';
 import type { Creature } from '../../entities/Creature';
 import { Monster, monstersAreEnemies } from '../../entities/Monster';
 import { Player } from '../../entities/Player';
-import { netEnchant, reflectionChance } from './CombatFormulas';
+import { reflectionChance } from './CombatFormulas';
 import { rng } from '../Random';
 
 /** CE Globals.c:1416-1432, projected to existing web species IDs. Only used
@@ -40,7 +41,7 @@ export function projectileReflects(defender: Creature, attacker: Creature | null
             && IMMUNITY_CLASSES[armor.vorpalEnemy]?.includes(attacker.typeId)
             && monstersAreEnemies(attacker, defender)) return true;
         if (armor?.runicType !== 'reflection') return false;
-        const level = netEnchant(armor.enchantment ?? 0, defender.effectiveStrength, armor.strengthRequired ?? 0);
+        const level = statQuery(defender).breakdown(defender.id,'native.armor-runic-power').value/4;
         return level > 0 && rng.randPercent(reflectionChance(level));
     }
     return false;

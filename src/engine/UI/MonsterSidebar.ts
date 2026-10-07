@@ -1,3 +1,5 @@
+import { nativeStat } from '../Stats/NativeStatSources';
+import { statQuery } from '../Stats/NativeStatSources';
 import { getTerrainDescription, type TerrainTextOptions } from './TerrainTextCatalog';
 import i18next from 'i18next';
 import { TerrainType, type Grid, type Cell } from '../Map/Grid';
@@ -8,7 +10,7 @@ import { MonsterState, type Monster } from '../../entities/Monster';
 import type { Item } from '../Items/Item';
 import type { Pos } from '../../types';
 import { ItemLoader } from '../Items/ItemLoader';
-import { playerDefense, strengthModifier } from '../Combat/CombatFormulas';
+import { nativeStrengthAdjustment } from '../Stats/NativeStatSources';
 import { creatureStatusRows, isSidebarVisibleStatus } from '../Status/statusConfig';
 import { publicMonsterBody, bodyContains } from './MonsterBody';
 import { canSeeMonster, publicMonsterCells } from './MonsterVisibility';
@@ -41,7 +43,7 @@ export function monsterBehaviorLabel(player: Player, grid: Grid, monster: Monste
         if (decision.leader?.isCaged) return i18next.t('sidebar.behavior.guarding', { defaultValue: '(Guarding)' });
         return i18next.t('sidebar.behavior.wandering', { defaultValue: '(Wandering)' });
     }
-    if (decision.ticksUntilTurn > Math.max(0, player.ticksUntilTurn) + player.movementSpeed) {
+    if (decision.ticksUntilTurn > Math.max(0, player.ticksUntilTurn) + nativeStat(player,'native.move-speed')) {
         return i18next.t('sidebar.behavior.off_balance', { defaultValue: '(Off balance)' });
     }
     if (decision.state === MonsterState.HUNTING) return i18next.t('sidebar.behavior.hunting', { defaultValue: '(Hunting)' });
@@ -143,15 +145,13 @@ export function sidebarEntityRows(player: Player, grid: Grid, monsters: readonly
  * rolled defense/enchantment: use the public kind's unenchanted estimate. */
 export function sidebarPlayerStats(player: Player, gold: number, stealthRange: number) {
     const armor = player.equippedArmor;
-    const donning = player.getStatusDuration('donning');
     let armorValue = '0';
     if (armor?.isIdentified) {
-        armorValue = String(Math.trunc(playerDefense(armor.armor ?? 0, armor.enchantment,
-            player.effectiveStrength, armor.strengthRequired ?? 0, donning) / 10));
+        armorValue = String(Math.trunc(statQuery(player).breakdown(player.id,'native.defense',{},true).value / 10));
     } else if (armor) {
         const kind = ItemLoader.armors.find(kind => kind.id === armor.identityId);
         armorValue = kind ? `${Math.max(0, Math.trunc(kind.armor
-            + strengthModifier(player.effectiveStrength, armor.strengthRequired ?? kind.strengthRequired)) - donning)}?` : '?';
+            + nativeStrengthAdjustment(player.effectiveStrength, armor.strengthRequired ?? kind.strengthRequired)) - player.getStatusDuration('donning'))}?` : '?';
     }
     return { strength: player.effectiveStrength, maxStrength: player.strength, armor: armorValue, gold, stealthRange };
 }

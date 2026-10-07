@@ -32,15 +32,12 @@ function fixture(options: { before?(context: ExtensionContext): void; allow?: bo
             } },
             hooks: { committedAction: fact => commits.push({ ...fact }), physicalResolved: fact => facts.push(structuredClone(fact)),
                 objectiveTime(fact, ctx) { const state = ctx.state as { ticks: number }; ctx.setState({ ...(ctx.state as object), ticks: state.ticks + fact.ticks } as Json); } },
-            rulePolicies: { stealthRange(input, context) {
-                return options.timedStealth ? ((context.state as { ticks: number }).ticks < 100 ? 5 : 7) : input.baseValue;
-            }, physicalDamage(input, context) {
-                if (input.targetId === context.playerId) {
-                    enemyScopes.push((context.state as { active: boolean }).active);
-                    enemyClocks.push((context.state as { ticks: number }).ticks);
+            statSources:{collect(actor,context){
+                if(context.facts.direct!==undefined&&context.facts.targetId===context.playerId&&actor.id!==context.playerId){
+                    enemyScopes.push((context.state as {active:boolean}).active);enemyClocks.push((context.state as {ticks:number}).ticks);
                 }
-                return input.baseValue;
-            } },
+                return options.timedStealth?[{stat:'native.stealth-range',category:'override',layer:'temporary',value:(context.state as {ticks:number}).ticks<100?5:7,sourceKind:'timed',sourceId:'bridge.stealth'}]:[];
+            }},
         }));
         return registry;
     });

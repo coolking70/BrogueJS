@@ -332,7 +332,11 @@
     "src/test/x4_r6_integration.test.ts",
     "src/test/x4a_movement_rendering.test.ts",
     "src/test/x4b_flavor_text.test.ts",
-    "src/test/ext_world_work_review.test.ts"
+    "src/test/ext_world_work_review.test.ts",
+    "src/test/ext_stats_pipeline.test.ts",
+    "src/test/ext_stats_native.test.ts",
+    "src/test/ext_stats_runtime.test.ts",
+    "src/test/ext_stats_review.test.ts"
   ],
   "gen": [
     "src/test/b1_retire_invented.test.ts",

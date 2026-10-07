@@ -1,4 +1,9 @@
 {
+    "ext.stats.errors.declaration": "属性键声明无效，无法应用本次变更。",
+    "ext.stats.errors.source": "属性来源无效，无法应用本次变更。",
+    "ext.stats.errors.budget": "属性来源超出预算，无法应用本次变更。",
+    "ext.stats.errors.override": "属性替换来源冲突，无法应用本次变更。",
+    "ext.stats.errors.condition": "属性来源的条件无效，无法应用本次变更。",
     "sidebar.body_core_hidden": "已见复合体（核心不可见）",
     "movement.body_follow_no_space": "没有整组落脚的空间，{{name}}留在原层。",
     "sidebar.body_size": "{{size}}×{{size}}",

@@ -19,7 +19,7 @@ const resource = (patch: Partial<ActorResourceState> = {}): ActorResourceState =
 function state(patch: Partial<ActorResourceState> = {}): DefenseFixture {
     return { ...initialProductionCombatState(),actorActions:createActorActionsRoot(), actors: [{ actorId: 10, profileId: definitions().playerProfileId, ...resource(patch) }] };
 }
-const validate = (value: unknown, pack = definitions()): void => { const {actorActions,...combat}=value as DefenseFixture;validateProductionActorAttackState(combat, pack,new Set(),actorActions); };
+const validate = (value: unknown, pack = definitions()): void => { const {actorActions,...combat}=value as DefenseFixture;validateProductionActorAttackState(combat, pack,new Set(),actorActions, (_actorId, template) => template); };
 function attackState(): DefenseFixture {
     const result = state(), pack = definitions(), attack = pack.attacks[0]!, segment = attack.segments[0]!;
     result.actorActions.nextActionId = 2;

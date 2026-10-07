@@ -1,3 +1,5 @@
+import { markItemStatsDirty } from '../Items/ItemStatInvalidation';
+import { nativeRolledDamage, markStatsDirty, nativeEnchantedRoll, nativeStat, configureNativeStats } from '../Stats/NativeStatSources';
 import { recordingRootRevision } from '../../ext/recordingRevisions';
 import {interruptCombatActionRoot} from './PhasedAttackProduction';
 import { worldFixtureRegistry, copyWorldFixtureRegistry } from '../../ext/world5Fixture';
@@ -63,7 +65,7 @@ import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldS
 import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
 import { observePresentation, presentationBlocked, resetPresentation } from './PresentationObserver';
 import { DISPLAY_FRAME_MS, stepCadence } from '../UI/ActionCadence';
-import { staffHealingPercent, staffHasteDuration, staffDiscordDuration, armorStealthAdjustment, ringStealthAdjustment, ringAwarenessBonus, ringClairvoyanceRadius } from '../Items/ItemEffectFormulas';
+import { staffHealingPercent, staffHasteDuration, staffDiscordDuration, ringClairvoyanceRadius } from '../Items/ItemEffectFormulas';
 import { emitCreatureFeature } from '../Combat/CreatureFeatures';
 import { isIncendiaryDart, resolveIncendiaryDart } from '../Items/IncendiaryDart';
 import { applyAggravationScroll } from '../Items/AggravationScroll';
@@ -124,7 +126,7 @@ import { staffProtection } from '../Combat/Shielding';
 import { staffEntrancementDuration, ENTRANCEMENT_DIRECTIONS, entrancementPassable, entrancementDiagonalBlocked } from '../Movement/Entrancement';
 import { wandDominate } from '../Combat/Domination';
 import { staffBladeCount, bladeSpawnLocation } from '../Combat/Conjuration';
-import { weaponParalysisDuration, weaponConfusionDuration, weaponSlowDuration, weaponImageCount, weaponImageDuration, armorImageCount, weaponForceDistance, netEnchant, damageFraction, armorAbsorptionMax, armorReprisalPercent, monsterDamageAdjustmentAmount } from '../Combat/CombatFormulas';
+import { weaponParalysisDuration, weaponConfusionDuration, weaponSlowDuration, weaponImageCount, weaponImageDuration, armorImageCount, weaponForceDistance, armorAbsorptionMax, armorReprisalPercent } from '../Combat/CombatFormulas';
 import { monsterIsInClass } from '../Combat/MonsterClass';
 import { ItemCategory, Item } from '../Items/Item';
 import { consumeForUse, finishItemUse, prepareThrownItem, boltWorldFor, commitArcanaTarget, hasIdentifyTarget, canIdentifyChosenItem, canEnchantChosenItem, enchantChosenItem, applyChosenEnchantmentGain, checkpointEnchantmentGain, finishChosenEnchantment, type EnchantmentPorts, enchantingAutoIdentifiesTarget, invokeCharm } from '../Items/ItemUseCoordinator';
@@ -132,8 +134,7 @@ import { endgameScore, victoryLumenstoneQuantity } from './Endgame';
 import { saveHighScore } from './HighScores';
 import { ItemLoader } from '../Items/ItemLoader';
 import { charmRechargeDelay, isCharmKind } from '../Items/CharmModel';
-import { equippedWisdomBonus, tickStaffRecharge, rechargeStaffFully } from '../Items/ArcanaRecharge';
-import { ringBonus, ringLightMultiplier } from '../Items/RingBonuses';
+import { tickStaffRecharge, rechargeStaffFully } from '../Items/ArcanaRecharge';
 import { rng, RNGType } from '../Random';
 import { prepareFlare, flareState, type Flare } from '../Lighting/CosmeticLight';
 import { normalizeSeed, type SeedInput } from '../Seed';
@@ -586,7 +587,7 @@ export class Game {
         // Commands clear transient flare frames before dispatch. Never accept an
         // open from frame-only light and then fail after that display cleanup.
         if (this.lightMap.lightSumAt(entity.x,entity.y) > VISIBILITY_THRESHOLD) return true;
-        const clairvoyance = ringBonus(this.player.rings(), 'ring_of_clairvoyance');
+        const clairvoyance = nativeStat(this.player,'native.clairvoyance');
         const radius = ringClairvoyanceRadius(clairvoyance), dx = entity.x-this.player.x, dy = entity.y-this.player.y;
         return clairvoyance > 0 && dx*dx+dy*dy < radius*radius+radius
             && (cell.layers[DungeonLayer.DUNGEON] !== TerrainType.GRANITE || cell.isExplored);
@@ -603,6 +604,7 @@ export class Game {
 
     /** Select session adapters once; classic calls retain the original method bodies. */
     private configureExtensionRuleAdapters(): void {
+        configureNativeStats(this.player,{darkness:()=>this.playerInDarkness(),shadow:()=>this.lightMap.inShadowAt(this.player.x,this.player.y),rested:()=>this.justRested});
         if (this.spatialCatalog.hasBodies) this.seenBodyCoreIds ??= new Set();
         else delete (this as Partial<Game>).seenBodyCoreIds;
         const original = extensionRulePrototypes.get(this);
@@ -622,9 +624,7 @@ export class Game {
     private searchForSecretsExtended(strength: number): boolean {
         const mode = extensionManualSearch.has(this) ? 'manual' : 'automatic';
         extensionManualSearch.delete(this); // The later turn-end passive search is a separate automatic resolution.
-        const next = this.extensionRuntime!.rule('searchStrength', { actorId: this.player.id, targetId: null,
-            baseValue: strength, mode });
-        return Game.prototype.searchForSecrets.call(this, next);
+        return this.searchForSecretsNative(nativeStat(this.player,'native.search-strength',{baseValue:strength,mode}));
     }
     private manualSearchExtended(control?: ControlledPlayerAction): void {
         if (!control) this.extensionRuntime!.notifyCommittedAction({ actorId: this.player.id, action: 'search' });
@@ -1053,6 +1053,7 @@ export class Game {
         // UI callbacks and animationEnabled are session settings and stay intact.
         resetEntityIds();
         this.player = new Player(Math.floor(DCOLS / 2), Math.floor(DROWS / 2));
+        configureNativeStats(this.player,{darkness:()=>this.playerInDarkness(),shadow:()=>this.lightMap.inShadowAt(this.player.x,this.player.y),rested:()=>this.justRested});
         // RogueMain.c:403：monsterSpawnFuse 在开局时初始化（先于首层生成，保证 rng 流稳定）
         this.monsterSpawnFuse = rng.randRange(SPAWN_FUSE_MIN, SPAWN_FUSE_MAX);
         // RogueMain.c:404：客观时间门复位
@@ -1075,6 +1076,7 @@ export class Game {
             dagger.isCursed = false;
             dagger.runicType = undefined;
             dagger.runicKnown = true;
+            markItemStatsDirty(dagger);
             // B-1a：CE RogueMain.c:423-425 开局匕首 identify(theItem)——实例全亮
             dagger.identified = true;
             this.player.inventory.addItem(dagger);
@@ -1087,6 +1089,7 @@ export class Game {
             dart.isCursed = false;
             dart.runicType = undefined;
             dart.runicKnown = true;
+            markItemStatsDirty(dart);
             dart.quantity = 15;
             dart.identified = true; // CE RogueMain.c:431-433
             this.player.inventory.addItem(dart);
@@ -1098,6 +1101,7 @@ export class Game {
             leatherArmor.isCursed = false;
             leatherArmor.runicType = undefined;
             leatherArmor.runicKnown = true;
+            markItemStatsDirty(leatherArmor);
             leatherArmor.identified = true; // CE RogueMain.c:439-441
             this.player.inventory.addItem(leatherArmor);
             this.player.equip(leatherArmor);
@@ -1106,7 +1110,7 @@ export class Game {
         if (extensionManifest) {
             this.extensionRuntime = preparedExtensions!;
             this.configureExtensionRuleAdapters();
-            ItemLoader.onKnowledgeChanged = kindId => this.extensionRuntime!.emit('itemKnowledgeChanged',{kindId});
+            ItemLoader.onKnowledgeChanged = kindId => {markStatsDirty(this.player);this.extensionRuntime!.emit('itemKnowledgeChanged',{kindId});};
             this.extensionRuntime.newGame();
             this.extensionRuntime.attachCreature(this.player);
         }
@@ -1854,7 +1858,7 @@ export class Game {
                 const actor = this.monsters.find(m => m.id === s.actorId) ?? this.dormantMonsters.find(m => m.id === s.actorId);
                 const distance = actor ? map[actor.x]?.[actor.y] ?? 30000 : 30000;
                 return { actorId: s.actorId, bedComponentId: null,
-                    route: { reachable: distance < 30000, distance: Math.min(30000, distance), travelTicks: actor ? distance * actor.movementSpeed : 0 } };
+                    route: { reachable: distance < 30000, distance: Math.min(30000, distance), travelTicks: actor ? distance * nativeStat(actor,'native.move-speed') : 0 } };
             }) };
         ledger.revision = checkedAdd(ledger.revision, 1); world.revision = checkedAdd(world.revision, 1);
     }
@@ -1985,7 +1989,7 @@ export class Game {
         const target={id:Number.MAX_SAFE_INTEGER,hp:1,loc:exit} as Creature;
         const distance=this.planBodyCoreRoute(core,{kind:'anchors',anchors:[target.loc]},true).distance??Infinity;
         if(!Number.isFinite(distance)&&!core.isAlly)return;
-        const turns=Math.max(1,Math.min(150,Math.floor(distance*bodyMoveTicks(this.spatialCatalog.body(group.bodyDefinitionId),group,this.spatialCatalog,core.movementSpeed)/100)+1));
+        const turns=Math.max(1,Math.min(150,Math.floor(distance*bodyMoveTicks(this.spatialCatalog.body(group.bodyDefinitionId),group,this.spatialCatalog,nativeStat(core,'native.move-speed'))/100)+1));
         for(const actor of actors){actor.entersLevelIn=turns;actor.approaching|=direction===1?APPROACHING_DOWNSTAIRS:direction===-1?APPROACHING_UPSTAIRS:APPROACHING_PIT;}
     }
     private enterWholeBodyFollower(core: Monster, source: LevelState, origin: Pos, pit: boolean): void {
@@ -2002,7 +2006,7 @@ export class Game {
                 source.visibleMonsters.delete(actor);actor.clearCorpseTargetOnLevelChange();actor.entersLevelIn=actor.approaching=0;
                 actor.preplaced=actor.falling=false;notifyProductionActorSourceChanged(this,actor.id);
             }
-            core.ticksUntilTurn=bodyMoveTicks(this.spatialCatalog.body(group.bodyDefinitionId),group,this.spatialCatalog,core.movementSpeed);
+            core.ticksUntilTurn=bodyMoveTicks(this.spatialCatalog.body(group.bodyDefinitionId),group,this.spatialCatalog,nativeStat(core,'native.move-speed'));
             this.monsters=[...actors,...this.monsters];
             if(pit&&!core.hasStatus('levitating')&&!core.isInvulnerable())core.takeDamage(rng.randClumpedRange(6,12,2),false,this.grid);
             reconcileProductionActorActions(this);this.needsRender=true;
@@ -2020,7 +2024,7 @@ export class Game {
             commitCreatureAnchor(m, spot);
             source.monsters.splice(source.monsters.indexOf(m), 1); source.visibleMonsters.delete(m);
             m.clearCorpseTargetOnLevelChange(); m.entersLevelIn = m.approaching = 0;
-            m.preplaced = m.falling = false; m.ticksUntilTurn = m.movementSpeed;
+            m.preplaced = m.falling = false; m.ticksUntilTurn = nativeStat(m,'native.move-speed');
             this.monsters.unshift(m);
             if (pit && !m.hasStatus('levitating') && !m.isInvulnerable()) m.takeDamage(rng.randClumpedRange(6, 12, 2), false, this.grid);
             this.needsRender = true; return;
@@ -2043,7 +2047,7 @@ export class Game {
         m.preplaced = true;
         m.falling = false;
         this.restoreLevelResident(m);
-        m.ticksUntilTurn = m.movementSpeed;
+        m.ticksUntilTurn = nativeStat(m,'native.move-speed');
         if (pit && !m.hasStatus('levitating')) {
             const damage = rng.randClumpedRange(6, 12, 2);
             if (!m.isInvulnerable()) {
@@ -2713,8 +2717,8 @@ export class Game {
                     this.player.hasStatus('hallucinating'),
                     this.player.getStatusDuration('donning'),
                     this.player.hasStatus('stuck'),
-                    this.extensionRuntime ? direction => direction === 'incoming'
-                        ? CombatSystem.previewHitChance(m, this.player) : CombatSystem.previewHitChance(this.player, m) : undefined,
+                    direction => direction === 'incoming'
+                        ? CombatSystem.previewHitChance(m, this.player) : CombatSystem.previewHitChance(this.player, m),
                     this.player.equippedWeapon
                 );
                 return;
@@ -2768,8 +2772,8 @@ export class Game {
                 this.player.hasStatus('hallucinating'),
                 this.player.getStatusDuration('donning'),
                 this.player.hasStatus('stuck'),
-                this.extensionRuntime ? direction => direction === 'incoming'
-                    ? CombatSystem.previewHitChance(monster, this.player) : CombatSystem.previewHitChance(this.player, monster) : undefined,
+                direction => direction === 'incoming'
+                    ? CombatSystem.previewHitChance(monster, this.player) : CombatSystem.previewHitChance(this.player, monster),
                 this.player.equippedWeapon
             );
             this.inspectTarget = appendPublicBodyDetail(this, monster.id, this.inspectTarget);
@@ -2984,6 +2988,7 @@ export class Game {
                             item.runicType = r;
                             item.enchantment = 10;
                             item.runicKnown = true;
+                            markItemStatsDirty(item);
                         }
                         return { item: item ?? undefined, monster: new Monster(x + 1, y, dummyMonsterData!) };
                     }
@@ -2996,6 +3001,7 @@ export class Game {
                             item.runicType = r;
                             item.enchantment = 10;
                             item.runicKnown = true;
+                            markItemStatsDirty(item);
                         }
                         return { item: item ?? undefined, monster: new Monster(x + 1, y, dummyMonsterData!) };
                     }
@@ -3158,7 +3164,7 @@ export class Game {
             && !this.player.hasStatus('levitating')
             && !(flags & (T_ENTANGLES | T_OBSTRUCTS_PASSABILITY));
         this.minersLight = updateMinersLightRadius(this.minersLightBaseFixpt, {
-            lightMultiplier: ringLightMultiplier(this.player.rings()),
+            lightMultiplier: nativeStat(this.player,'native.light'),
             darknessStatus: this.player.getStatusDuration('darkness'),
             darknessMax: this.player.maxStatus.darkness,
             inWater: Number(inWater),
@@ -3266,6 +3272,7 @@ export class Game {
             maintainShadows: true,
         });
 
+        markStatsDirty(this.player);
         this.updateFieldOfViewDisplay((x, y) => lm.lightSumAt(x, y), remember);
 
         // 5. 渲染馈送（GameCanvas 消费 getLight 接口不变——引擎数据升级，
@@ -3280,7 +3287,7 @@ export class Game {
             DCOLS + DROWS, cell => cell.isOpaque);
         // CE Time.c:660-704: positive clairvoyance reveals nearby cells through
         // walls; a cursed ring darkens the same radius even inside ordinary FOV.
-        const clairvoyance = ringBonus(this.player.rings(), 'ring_of_clairvoyance');
+        const clairvoyance = nativeStat(this.player,'native.clairvoyance');
         const clairvoyanceRadius = ringClairvoyanceRadius(clairvoyance);
         for (let x = 0; x < DCOLS; x++) {
             for (let y = 0; y < DROWS; y++) {
@@ -3460,7 +3467,7 @@ export class Game {
     private makeRecordingHeader(): RecordingHeaderV4 {
         return { version: 4, recordedAt: Date.now(), seed: this.currentSeed, mode: this.mode,
             initialLevel: { kind: 'dungeon', depth: 1 }, extensions: this.extensionRuntime ? structuredClone(this.extensionRuntime.manifest) : null,
-            codec: { wholeRun: 5, foundation: 7, origin: 2 }, digestAlgorithm: 'sha256-c5-merkle-v1', digestChunk: 256, checkpointPeriod: 2048,
+            codec: { wholeRun: 5, foundation: 8, origin: 2 }, digestAlgorithm: 'sha256-c5-merkle-v1', digestChunk: 256, checkpointPeriod: 2048,
             initialDigest: mechanicalDigest(this.projectWholeRun(), this.recordingInputState()) };
     }
     private recordInputEvent(action: string, data: unknown, decisions: boolean[]): RecordedInputEvent {
@@ -3697,7 +3704,7 @@ export class Game {
         const facts = () => JSON.stringify({
             loc: player.loc, hp: player.hp, nutrition: player.nutrition, statuses: player.statusDurations,
             tick: timeSystem.currentTick, turn: this.absoluteTurnNumber, ticks: player.ticksUntilTurn,
-            movementSpeed: player.movementSpeed, attackSpeed: player.attackSpeed,
+            movementSpeed: nativeStat(player,'native.move-speed'), attackSpeed: nativeStat(player,'native.attack-speed'),
             seized: player.seized, strength: player.strength, gameOver: this.isGameOver,
             arcana: this.pendingArcana ? { cursor: this.pendingArcana.cursor,
                 item: this.pendingArcana.item.id,
@@ -4359,7 +4366,7 @@ export class Game {
         }
         // P4-8 返工：justRested 每次输入先清零，仅 wait 分支置位（CE IO.c:2521-2527
         // 的 REST/PERIOD/NUMPAD5 置位、Time.c:2874 回合末清除的等价口径）。
-        this.justRested = false;
+        if(this.justRested){this.justRested=false;markStatsDirty(this.player);}
         if (source === 'player' && this.replayStatus === 'playing') {
             return;
         }
@@ -4395,7 +4402,7 @@ export class Game {
         if (this.player.hasStatus('paralyzed') && action !== 'toggle_inventory' && action !== 'escape') {
             // Loaded/test states may already be paralyzed. The scheduler drains
             // the entire forced wait; the attempted action is not performed.
-            timeSystem.currentTick += this.player.movementSpeed;
+            timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
             this.playerTurnEnded();
             return;
         }
@@ -4601,7 +4608,7 @@ export class Game {
                         }
                     })) {
                     this.needsRender = true;
-                    timeSystem.currentTick += this.player.movementSpeed;
+                    timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
                     control?.afterResolve();
                     this.playerTurnEnded();
                     return;
@@ -4627,7 +4634,7 @@ export class Game {
                     this.playerRecoversFromAttacking(true);
                     this.moveEntrancedMonsters(dx, dy);
                     spentTurn = true;
-                    if (this.player.ticksUntilTurn !== -1) timeSystem.currentTick += this.player.attackSpeed;
+                    if (this.player.ticksUntilTurn !== -1) timeSystem.currentTick += nativeStat(this.player,'native.attack-speed');
                 } else if (blockingMonster?.isCaged) {
                     // CE Movement.c:1193-1215: a captive is released, never
                     // attacked. Confusion has already committed the direction.
@@ -4643,8 +4650,8 @@ export class Game {
                     this.freeCaptive(blockingMonster);
                     // This is not attack recovery: no weapon speed multiplier,
                     // nausea roll, entrancement step or player displacement.
-                    this.player.ticksUntilTurn += this.player.attackSpeed;
-                    timeSystem.currentTick += this.player.attackSpeed;
+                    this.player.ticksUntilTurn += nativeStat(this.player,'native.attack-speed');
+                    timeSystem.currentTick += nativeStat(this.player,'native.attack-speed');
                     spentTurn = true;
                 } else if (blockingMonster && (!blockingMonster.isAlly || blockingMonster.hasStatus('discordant'))) {
                     // Attack —— P4-7：CE Movement.c:1216-1247，buildHitList
@@ -4671,7 +4678,7 @@ export class Game {
                     this.playerRecoversFromAttacking(anyAttackHit);
                     this.moveEntrancedMonsters(dx, dy);
                     spentTurn = true;
-                    if (this.player.ticksUntilTurn !== -1) timeSystem.currentTick += this.player.attackSpeed;
+                    if (this.player.ticksUntilTurn !== -1) timeSystem.currentTick += nativeStat(this.player,'native.attack-speed');
                 } else if (this.player.seized) {
                     // P4-5：CE Movement.c:1267-1297（MB_SEIZED 检查，playerMoves()
                     // 内，在攻击分支之后、地形判定之前——移动进空地才会走到这里，
@@ -4690,7 +4697,7 @@ export class Game {
                         defaultValue: `You struggle but the ${seizer.name} is holding you!`
                     }), '#ff8888');
                     spentTurn = true;
-                    timeSystem.currentTick += this.player.movementSpeed;
+                    timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
                     this.moveEntrancedMonsters(dx, dy);
                 } else if (moveNotBlocked && !(yield* this.confirmPlayerMoveStages(newX, newY))) {
                     return;
@@ -4750,7 +4757,7 @@ export class Game {
                         }
                         this.needsRender = true;
                         spentTurn = true;
-                        timeSystem.currentTick += this.player.movementSpeed;
+                        timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
                     } else {
                         // CE LOCKED_DOOR 的 flavor（Globals.c:331 描述列）：
                         // "you search your pack but do not have a matching key"
@@ -4785,7 +4792,7 @@ export class Game {
                             this.needsRender = true;
                             // CE 无祭坛取物优惠耗时：与普通移动一样收满 movementSpeed
                             spentTurn = true;
-                            timeSystem.currentTick += this.player.movementSpeed;
+                            timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
                         } else {
                             logger.log(i18next.t('game.inventory_full', { defaultValue: 'Your inventory is full.' }), '#ff8888');
                         }
@@ -4800,7 +4807,7 @@ export class Game {
                         this.moveEntrancedMonsters(dx, dy);
                         this.needsRender = true;
                         spentTurn = true;
-                        timeSystem.currentTick += this.player.movementSpeed;
+                        timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
                         this.handleSpecialTileEntry();
                     }
                 } else if (this.canMoveTo(newX, newY)
@@ -4869,13 +4876,13 @@ export class Game {
                         // playerTurnEnded 只在 ticksUntilTurn==0 时补 movementSpeed，
                         // 攻击恢复已抢占该分支——currentTick 口径同步按攻击耗时记。
                         spentTurn = true;
-                        if (this.player.ticksUntilTurn !== -1) timeSystem.currentTick += this.player.attackSpeed;
+                        if (this.player.ticksUntilTurn !== -1) timeSystem.currentTick += nativeStat(this.player,'native.attack-speed');
                         this.playerRecoversFromAttacking(anySpecialHit);
                     } else {
                         // CE 的玩家移动耗时与地形无关（Time.c:2604 只看 movementSpeed）；
                         // web 原有的"泥泞 ×2"为自创口径，按 D1 移除。
                         spentTurn = true;
-                        timeSystem.currentTick += this.player.movementSpeed;
+                        timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
                     }
 
                     this.handleSpecialTileEntry();
@@ -4906,9 +4913,9 @@ export class Game {
                 // rest
                 if (control && !control.beforeCommit()) return;
                 if (this.extensionRuntime && !control) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'wait' });
-                this.justRested = true; // P4-8 返工：CE rogue.justRested（IO.c:2521-2524）
+                this.justRested = true;markStatsDirty(this.player); // P4-8 返工：CE rogue.justRested（IO.c:2521-2524）
                 spentTurn = true;
-                timeSystem.currentTick += this.player.movementSpeed;
+                timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
                 control?.afterResolve();
                 this.playerTurnEnded();
             }
@@ -4945,7 +4952,7 @@ export class Game {
                     }
                     this.needsRender = true;
                     // CE 拾取无"半回合"优惠（自创口径移除），收满 movementSpeed
-                    timeSystem.currentTick += this.player.movementSpeed;
+                    timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
                     this.playerTurnEnded();
                 } else {
                     this.markPackFull(item);
@@ -5012,7 +5019,7 @@ export class Game {
             }
             this.needsRender = true;
             // CE Items.c:4024 equip() 以 playerTurnEnded() 收尾——完整回合
-            timeSystem.currentTick += this.player.movementSpeed;
+            timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
             this.playerTurnEnded();
         } else {
             logger.log(i18next.t('item.equip_fail', { name: item.name, defaultValue: `You cannot equip the ${item.name}.` }), '#ff8888');
@@ -5048,7 +5055,7 @@ export class Game {
         if (endTurn) {
             logger.log(i18next.t('item.unequip', { name: item.name, defaultValue: `You took off the ${item.name}.` }), '#aaaaaa');
             // CE unequip() spends one turn; internal unequipItem() does not.
-            timeSystem.currentTick += this.player.movementSpeed;
+            timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
             this.playerTurnEnded();
         }
         return true;
@@ -5091,7 +5098,7 @@ export class Game {
             logger.log(i18next.t('item.drop', { name: item.name, defaultValue: `Dropped ${item.name}.` }), '#aaaaaa');
             this.needsRender = true;
             // CE Items.c:8390 drop() 以 playerTurnEnded() 收尾——完整回合
-            timeSystem.currentTick += this.player.movementSpeed;
+            timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
             this.playerTurnEnded();
         }
     }
@@ -5251,7 +5258,7 @@ export class Game {
                         if (!amount) return;
                         const field = life ? 'maxHp' : 'strength', next = this.player[field] + amount;
                         if (!Number.isSafeInteger(next)) throw new Error(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }));
-                        this.player[field] = next;
+                        this.player[field] = next; markStatsDirty(this.player);
                     },
                 });
             }
@@ -5437,7 +5444,7 @@ export class Game {
             || this.player.hasStatus('paralyzed')) return;
         if (!(yield* this.consumeFoodStages(item, true))) return;
         // CE Items.c:7633 apply()：FOOD 分支后统一 playerTurnEnded()。
-        timeSystem.currentTick += this.player.movementSpeed;
+        timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
         this.playerTurnEnded();
     }
 
@@ -5968,8 +5975,8 @@ export class Game {
                     // The spell directly destroys the embedded creature. Only
                     // this leaf carries the caster/reflector; excavation stays unowned.
                     if (this.extensionRuntime) this.extensionRuntime.causality.withOrigin(directOrigin,
-                        () => monster.takeDamage(monster.hp, true, this.grid));
-                    else monster.takeDamage(monster.hp, true, this.grid);
+                        () => monster.drainCurrentHp(this.grid));
+                    else monster.drainCurrentHp(this.grid);
                 }
             },
         });
@@ -6155,6 +6162,7 @@ export class Game {
     private observeBoltReflection(reflection: BoltReflection): void {
         if (reflection.creature === this.player && this.player.equippedArmor?.runicType === 'reflection') {
             this.player.equippedArmor.runicKnown = true;
+            markItemStatsDirty(this.player.equippedArmor);
         }
     }
 
@@ -6536,6 +6544,7 @@ export class Game {
             this.monsters = [...this.monsters, ...created];
             if (!copy) {
                 for (const actor of oldActors.filter(a => !retiredIds.includes(a.id))) {
+                    markStatsDirty(actor);
                     notifyProductionActorSourceChanged(this, actor.id);
                     if (request.statuses === 'clear') {
                         actor.extensionHooks?.causality.clearStatus(actor.id,'poisoned');
@@ -6723,7 +6732,7 @@ export class Game {
             blade.doesNotTrackLeader = true;
             // Player followers use leader=null (also used by freed captives).
             // CE sets info.attackSpeed + 1, not movementSpeed or a lifetime.
-            blade.ticksUntilTurn = blade.attackSpeed + 1;
+            blade.ticksUntilTurn = nativeStat(blade,'native.attack-speed') + 1;
             blade.goldDropChance = blade.itemDropChance = 0; // CE blade has no MONST_CARRY_ITEM_* flags.
             if (this.extensionRuntime) markCreatureBirth(blade, 'summoned', this.player.id);
             this.monsters.push(blade);
@@ -6745,7 +6754,7 @@ export class Game {
         guardian.state = MonsterState.HUNTING;
         guardian.boundToPlayer = true;
         guardian.doesNotTrackLeader = true;
-        guardian.ticksUntilTurn = guardian.attackSpeed + 1;
+        guardian.ticksUntilTurn = nativeStat(guardian,'native.attack-speed') + 1;
         guardian.setStatusDuration('lifespan_remaining', lifespan);
         guardian.maxStatus.lifespan_remaining = lifespan;
         guardian.goldDropChance = guardian.itemDropChance = 0;
@@ -7182,7 +7191,7 @@ export class Game {
                     if (meta.fiery && (target instanceof Player || target instanceof Monster)) this.exposeCreatureToFire(target);
                     if (target.hasStatus('paralyzed')) {
                         target.setStatusDuration('paralyzed', 0);
-                        target.ticksUntilTurn = Math.min(caster.attackSpeed, 100) - 1;
+                        target.ticksUntilTurn = Math.min(nativeStat(caster,'native.attack-speed'), 100) - 1;
                     }
                     target.setStatusDuration('entranced', 0);
                     target.shortenMagicalFear();
@@ -7355,6 +7364,7 @@ export class Game {
         this.pendingIdentify = false;
         this.isInventoryOpen = false;
         ItemLoader.identifyInstance(item);
+        markStatsDirty(this.player);
         logger.log(i18next.t('scroll.identify', { defaultValue: 'A flash of insight enters your mind!' }), '#ffff44');
         logger.log(i18next.t('item.identify_target', { name: item.displayName, defaultValue: `You identify the ${item.displayName}.` }), '#00ffff');
         this.needsRender = true;
@@ -7465,6 +7475,7 @@ export class Game {
                 if (item.runicType && !item.runicKnown) {
                     const oldName = item.displayName;
                     item.runicKnown = true;
+                    markItemStatsDirty(item);
                     logger.log(i18next.t('item.runic_revealed', { oldName, name: item.displayName,
                         interpolation: { escapeValue: false }, defaultValue: '(Your {{oldName}} must be {{name}}.)' }), '#00ffff');
                 }
@@ -7498,7 +7509,7 @@ export class Game {
             // module transaction. Cleanup and the existing RNG draw occur only afterward.
             this.extensionRuntime.commitItemGrowth(this.player, 'scroll_of_enchantment', 'enchantment', 1, {
                 apply: amount => {
-                    try { applyChosenEnchantmentGain(target, amount); }
+                    try { applyChosenEnchantmentGain(target, amount); markStatsDirty(this.player); }
                     catch { throw new Error(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' })); }
                 },
                 rollback: checkpointEnchantmentGain(target),
@@ -7749,6 +7760,7 @@ export class Game {
                     break;
             }
         }
+        markStatsDirty(this.player);
     }
 
     /**
@@ -7802,8 +7814,8 @@ export class Game {
                     if (monst.hasBehavior('MONST_ATTACKABLE_THRU_WALLS') || monst.hasBehavior('MONST_TURRET')) {
                         // CE inflictLethalDamage is the shattering spell's direct
                         // hit, independently of the unowned rubble/terrain DF.
-                        if (causality) causality.withOrigin(directOrigin, () => monst.takeDamage(monst.hp, true, this.grid));
-                        else monst.takeDamage(monst.hp, true, this.grid);
+                        if (causality) causality.withOrigin(directOrigin, () => monst.drainCurrentHp(this.grid));
+                        else monst.drainCurrentHp(this.grid);
                     } else if (monst.isCaged && (cellTerrainFlags(this.grid, i, j) & T_OBSTRUCTS_PASSABILITY)) {
                         // Movement.c:760 freeCaptivesEmbeddedAt, after the DF as in CE.
                         this.freeCaptive(monst);
@@ -8102,7 +8114,7 @@ export class Game {
                             }
                         }
                         this.needsRender = true;
-                        timeSystem.currentTick += this.player.movementSpeed;
+                        timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
                         this.playerTurnEnded();
                         return;
                     }
@@ -8192,7 +8204,7 @@ export class Game {
                 // 无效果、不自亮（ce2 残留的 heal_full 投掷满血分支已按 CE 删除）。
 
                 this.needsRender = true;
-                timeSystem.currentTick += this.player.movementSpeed;
+                timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
                 this.playerTurnEnded();
                 return; // 药水碎裂即消失（CE Items.c:7052）
             }
@@ -8216,7 +8228,7 @@ export class Game {
             },
         })) {
             this.needsRender = true;
-            timeSystem.currentTick += this.player.movementSpeed;
+            timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
             this.playerTurnEnded();
             return;
         }
@@ -8232,7 +8244,7 @@ export class Game {
 
         this.needsRender = true;
         // CE Items.c:7173 throwItem() 以 playerTurnEnded() 收尾——完整回合
-        timeSystem.currentTick += this.player.movementSpeed;
+        timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
         this.playerTurnEnded();
     }
 
@@ -8279,7 +8291,7 @@ export class Game {
 
     /** CE Items.c:8712: awareness contributes twenty points per effective E. */
     private awarenessBonus(): number {
-        return ringAwarenessBonus(ringBonus(this.player.rings(), 'ring_of_awareness'));
+        return nativeStat(this.player,'native.awareness');
     }
 
     /**
@@ -8303,85 +8315,9 @@ export class Game {
      *   - 戒指 stealthBonus           Time.c:822-824  ✅ 有效附魔接入
      *   - 下限钳制 2 / 1              Time.c:826-829  ✅ 照抄
      */
-    private calculateStealthRange(): number {
-        if (this.player.hasStatus('invisible')) return 1;
+    private calculateStealthRange(): number { return nativeStat(this.player,'native.stealth-range'); }
 
-        let range = 14;
-        // C-7 翻正 P4-8 的"恒处于阴影"近似（CE Time.c:798-806）：
-        //   - playerInDarkness（Light.c:283-287）：玩家格三通道光强全部
-        //     低于矿灯色−10 → 减半；
-        //   - IS_IN_SHADOW（Light.c:97-99：矿灯不驱散阴影，地形/生物正色光
-        //     驱散）→ 再减半，可叠加。周边无光源时玩家仍恒在阴影中（与
-        //     CE 一致），站进岩浆/祭坛烛光等光照范围则恢复。
-        if (this.playerInDarkness()) {
-            range = Math.floor(range / 2);
-        }
-        if (this.lightMap.inShadowAt(this.player.loc.x, this.player.loc.y)) {
-            range = Math.floor(range / 2);
-        }
-
-        const armor = this.player.equippedArmor;
-        if (armor) {
-            range += armorStealthAdjustment(armor.strengthRequired ?? 0);
-        }
-
-        if (this.justRested) {
-            range = Math.ceil(range / 2);
-        }
-
-        range += this.player.getStatusDuration('aggravating');
-        // CE Time.c:821-823 / updateRingBonuses: a negative stealth bonus is multiplied by four.
-        const stealth = ringBonus(this.player.rings(), 'ring_of_stealth');
-        range += ringStealthAdjustment(stealth);
-
-        if (range < 2 && !this.justRested) {
-            range = 2;
-        } else if (range < 1) {
-            range = 1;
-        }
-        return range;
-    }
-
-    private calculateStealthRangeExtended(): number {
-        if (this.player.hasStatus('invisible')) return 1;
-
-        let range = 14;
-        // C-7 翻正 P4-8 的"恒处于阴影"近似（CE Time.c:798-806）：
-        //   - playerInDarkness（Light.c:283-287）：玩家格三通道光强全部
-        //     低于矿灯色−10 → 减半；
-        //   - IS_IN_SHADOW（Light.c:97-99：矿灯不驱散阴影，地形/生物正色光
-        //     驱散）→ 再减半，可叠加。周边无光源时玩家仍恒在阴影中（与
-        //     CE 一致），站进岩浆/祭坛烛光等光照范围则恢复。
-        if (this.playerInDarkness()) {
-            range = Math.floor(range / 2);
-        }
-        if (this.lightMap.inShadowAt(this.player.loc.x, this.player.loc.y)) {
-            range = Math.floor(range / 2);
-        }
-
-        const armor = this.player.equippedArmor;
-        if (armor) {
-            range += armorStealthAdjustment(armor.strengthRequired ?? 0);
-        }
-
-        if (this.justRested) {
-            range = Math.ceil(range / 2);
-        }
-
-        range += this.player.getStatusDuration('aggravating');
-        // CE Time.c:821-823 / updateRingBonuses: a negative stealth bonus is multiplied by four.
-        const stealth = ringBonus(this.player.rings(), 'ring_of_stealth');
-        range += ringStealthAdjustment(stealth);
-
-        range = this.extensionRuntime!.rule('stealthRange', { actorId: this.player.id, targetId: null,
-            baseValue: range, nativeMinimum: this.justRested ? 1 : 2, invisible: false });
-        if (range < 2 && !this.justRested) {
-            range = 2;
-        } else if (range < 1) {
-            range = 1;
-        }
-        return range;
-    }
+    private calculateStealthRangeExtended(): number { return nativeStat(this.player,'native.stealth-range'); }
 
     /** CE Movement.c:700 / Monsters.c:3742. No HP/nutrition penalty.
      * Call only for physical movement/melee attempts, never rest or casting. */
@@ -8392,14 +8328,14 @@ export class Game {
             logger.log(i18next.t('status.vomit', { name: entity === this.player ? i18next.t('entity.you', { defaultValue: 'you' }) : entity.name,
                 defaultValue: '{{name}} vomits profusely.' }), '#b7a26b');
         }
-        if (entity instanceof Monster) entity.ticksUntilTurn = entity.movementSpeed;
+        if (entity instanceof Monster) entity.ticksUntilTurn = nativeStat(entity,'native.move-speed');
         this.needsRender = true;
         return true;
     }
 
     private playerVomitAttempt(control?: ControlledPlayerAction): boolean {
         if (!this.tryVomit(this.player)) return false;
-        timeSystem.currentTick += this.player.movementSpeed;
+        timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
         control?.afterResolve();
         this.playerTurnEnded();
         return true;
@@ -8565,13 +8501,13 @@ export class Game {
         // CE Combat.c:679-695: a visible flare/flash identifies before the
         // effect; submerged targets identify only through an observable effect.
         const visible = this.canObserveBoltTarget(target);
-        if (visible) weapon.runicKnown = true;
+        if (visible) { weapon.runicKnown = true; markItemStatsDirty(weapon); }
         if (!isSubmerged(target)) {
             if (runicType === 'speed') this.createFlare(this.player.x, this.player.y, LightKind.SCROLL_ENCHANTMENT_LIGHT);
             else if (runicType === 'quietus') this.createFlare(physicalContactOf(target).x, physicalContactOf(target).y, LightKind.QUIETUS_FLARE_LIGHT);
             else if (runicType === 'slaying') this.createFlare(physicalContactOf(target).x, physicalContactOf(target).y, LightKind.SLAYING_FLARE_LIGHT);
         }
-        const enchant = netEnchant(weapon.enchantment, this.player.effectiveStrength, weapon.strengthRequired ?? 0);
+        const enchant = nativeStat(this.player,'native.runic-power')/4;
 
         switch (runicType) {
             case 'paralyzing': {
@@ -8597,12 +8533,14 @@ export class Game {
             case 'quietus': {
                 withWholeBodyDamage(target, () => target.takeDamage(9999, true, this.grid));
                 weapon.runicKnown = true;
+                markItemStatsDirty(weapon);
                 logger.log(i18next.t('runic.weapon.quietus', { target: this.monsterDisplayName(target), defaultValue: `Runic magic instantly slays the ${this.monsterDisplayName(target)}!` }), '#ccaaff');
                 break;
             }
             case 'slaying': {
                 withWholeBodyDamage(target, () => target.takeDamage(9999, true, this.grid));
                 weapon.runicKnown = true;
+                markItemStatsDirty(weapon);
                 logger.log(i18next.t('runic.weapon.slaying', { target: this.monsterDisplayName(target), defaultValue: `Your weapon of slaying destroys the ${this.monsterDisplayName(target)}!` }), '#ff6666');
                 break;
             }
@@ -8618,6 +8556,7 @@ export class Game {
                 if (this.player.ticksUntilTurn !== -1) {
                     this.player.ticksUntilTurn = -1;
                     weapon.runicKnown = true;
+                    markItemStatsDirty(weapon);
                     logger.log(i18next.t('runic.weapon.speed', { target: this.monsterDisplayName(target), defaultValue: 'Your weapon trembles and time freezes for a moment!' }), '#ffffaa');
                 }
                 break;
@@ -8627,6 +8566,7 @@ export class Game {
                 target.setStatusDuration('hasted', 0);
                 if (visible) {
                     weapon.runicKnown = true;
+                    markItemStatsDirty(weapon);
                     logger.log(i18next.t('runic.weapon.slowing', { target: this.monsterDisplayName(target), defaultValue: `The ${this.monsterDisplayName(target)} slows down.` }), '#99cc99');
                 }
                 break;
@@ -8646,8 +8586,7 @@ export class Game {
                     blade.ticksUntilTurn = 100;
                     blade.accuracy = 100 + 5 * Math.trunc(enchant);
                     const baseDamage = CombatSystem.parseDamageString(weapon.damage ?? '1d2');
-                    const factor = damageFraction(enchant);
-                    blade.damageString = `${Math.max(1, Math.trunc(baseDamage.min * factor))}-${Math.max(1, Math.trunc(baseDamage.max * factor))}`;
+                    blade.damageString=`${Math.max(1,nativeEnchantedRoll(baseDamage.min,enchant))}-${Math.max(1,nativeEnchantedRoll(baseDamage.max,enchant))}`;
                     blade.setStatusDuration('lifespan_remaining', weaponImageDuration(enchant));
                     blade.goldDropChance = blade.itemDropChance = 0;
                     if (weapon.flags?.includes('ITEM_ATTACKS_STAGGER')) {
@@ -8660,6 +8599,7 @@ export class Game {
                     this.monsters.push(blade);
                 }
                 weapon.runicKnown = true;
+                markItemStatsDirty(weapon);
                 logger.log(i18next.t('runic.weapon.multiplicity', { name: weapon.displayName, defaultValue: `Your ${weapon.displayName} flashes, and spectral duplicates appear!` }), '#ffffff');
                 break;
             }
@@ -8716,13 +8656,13 @@ export class Game {
             case 'mercy': {
                 // CE heal(defender, onHitMercyHealPercent=50, false).
                 target.hp = Math.min(target.maxHp, target.hp + Math.trunc(target.maxHp / 2));
-                if (visible) weapon.runicKnown = true;
+                if (visible) { weapon.runicKnown = true; markItemStatsDirty(weapon); }
                 logger.log(i18next.t('runic.weapon.mercy', { target: this.monsterDisplayName(target), defaultValue: `Your weapon of mercy spares the ${this.monsterDisplayName(target)}.` }), '#88ff88');
                 break;
             }
             case 'plenty': {
                 const clone = this.cloneMonster(target);
-                if (clone && this.canObserveBoltTarget(clone)) weapon.runicKnown = true;
+                if (clone && this.canObserveBoltTarget(clone)) { weapon.runicKnown = true; markItemStatsDirty(weapon); }
                 break;
             }
             default:
@@ -8749,7 +8689,7 @@ export class Game {
 
         // 符文强度吃 netEnchant（含力量修正、钳 [-20,50]），与 P1-11 的 playerDefense
         // 同源；取值口径与 Combat.ts:73-78 一致（strengthRequired 缺省 0）。
-        const netEnch = netEnchant(armor.enchantment ?? 0, this.player.effectiveStrength, armor.strengthRequired ?? 0);
+        const netEnch = nativeStat(this.player,'native.armor-runic-power')/4;
 
         // W-4: reflection is resolved before bolt contact, including adjacent
         // casts. No post-damage half-hit shortcut and no second reflection roll.
@@ -8781,6 +8721,7 @@ export class Game {
                 clone.color = 0xff5555;
             }
             armor.runicKnown = true;
+            markItemStatsDirty(armor);
             logger.log(i18next.t('runic.armor.multiplicity', { name: armor.displayName,
                 target: this.monsterDisplayName(attacker), defaultValue: `Your ${armor.displayName} flashes, and spectral images appear!` }), '#ff7777');
             return remainingDamage;
@@ -8813,6 +8754,7 @@ export class Game {
                 }
                 const wasKnown = armor.runicKnown;
                 armor.runicKnown = true;
+                markItemStatsDirty(armor);
                 if (!wasKnown) logger.log(
                     i18next.t('runic.armor.mutuality', {
                         target: attacker.name,
@@ -8829,6 +8771,7 @@ export class Game {
             // web 自创符文（CE 无 A_VITALITY），本轮保留现有行为。
             this.applyTimedStatus(this.player, 'regenerating', 15);
             armor.runicKnown = true;
+            markItemStatsDirty(armor);
             logger.log(
                 i18next.t('runic.armor.vitality', {
                     defaultValue: `Your armor pulses with healing energy.`
@@ -8851,6 +8794,7 @@ export class Game {
             if (absorbRoll >= incomingDamage) {
                 const wasKnown = armor.runicKnown;
                 armor.runicKnown = true;
+                markItemStatsDirty(armor);
                 if (!wasKnown) logger.log(
                     i18next.t('runic.armor.absorption', {
                         damage: absorbed,
@@ -8877,6 +8821,7 @@ export class Game {
             } else attacker.takeDamage(reprisalDmg, true, this.grid);
             if (canSeeMonster(this.player, this.grid, attacker)) {
                 armor.runicKnown = true;
+                markItemStatsDirty(armor);
                 logger.log(
                     i18next.t('runic.armor.reprisal', {
                         target: attacker.name,
@@ -8892,6 +8837,7 @@ export class Game {
             prevent(incomingDamage);
             const wasKnown = armor.runicKnown;
             armor.runicKnown = true;
+            markItemStatsDirty(armor);
             if (!wasKnown) logger.log(
                 i18next.t('runic.armor.immunity', {
                     target: attacker.name,
@@ -8902,8 +8848,9 @@ export class Game {
             return remainingDamage;
         }
         if (armor.runicType === 'burden' && rng.randPercent(10)) {
-            armor.strengthRequired = (armor.strengthRequired ?? 0) + 1;
+            armor.strengthRequired = (armor.strengthRequired ?? 0) + 1;markStatsDirty(this.player);
             armor.runicKnown = true;
+            markItemStatsDirty(armor);
             logger.log(i18next.t('runic.armor.burden', { name: armor.displayName,
                 defaultValue: `Your ${armor.displayName} suddenly feels heavier!` }), '#ff8888');
             return remainingDamage;
@@ -8911,6 +8858,7 @@ export class Game {
         if (armor.runicType === 'vulnerability') {
             const wasKnown = armor.runicKnown;
             armor.runicKnown = true;
+            markItemStatsDirty(armor);
             if (!wasKnown) logger.log(i18next.t('runic.armor.vulnerability', { name: armor.displayName,
                 defaultValue: `Your ${armor.displayName} pulses and you are wracked with pain!` }), '#ff8888');
             return remainingDamage * 2;
@@ -8918,6 +8866,7 @@ export class Game {
         if (armor.runicType === 'immolation' && rng.randPercent(10)) {
             const wasKnown = armor.runicKnown;
             armor.runicKnown = true;
+            markItemStatsDirty(armor);
             logger.log(i18next.t('runic.armor.immolation', { name: armor.displayName,
                 defaultValue: `Flames suddenly explode out of your ${armor.displayName}!` }), '#ff8844', { acknowledge: !wasKnown });
             // CE Combat.c:1086-1088: catalog DF_ARMOR_IMMOLATION, refresh on, no blocking abort.
@@ -9408,7 +9357,7 @@ export class Game {
             const weapon = this.player.equippedWeapon;
             if (weapon && !weapon.isProtected && weapon.enchantment >= -10
                 && !(weapon.runicType === 'slaying' && monsterIsInClass(target.typeId, weapon.vorpalEnemy))) {
-                weapon.enchantment -= 1;
+                weapon.enchantment -= 1;markStatsDirty(this.player);
                 if (weapon.quiverNumber) {
                     // CE :1436-1438——投掷武器重掷 quiverNumber（唯一一笔交互期掷骰）
                     weapon.quiverNumber = rng.randRange(1, 60000);
@@ -9462,17 +9411,17 @@ export class Game {
     private playerRecoversFromAttacking(anAttackHit: boolean): void {
         if (this.player.ticksUntilTurn >= 0) {
             if (isActorStaggered(this,this.player.id)) {
-                const nativeTicks=this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_STAGGER')&&anAttackHit?2*this.player.attackSpeed
-                    :this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_QUICKLY')?Math.floor(this.player.attackSpeed/2):this.player.attackSpeed;
+                const nativeTicks=this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_STAGGER')&&anAttackHit?2*nativeStat(this.player,'native.attack-speed')
+                    :this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_QUICKLY')?Math.floor(nativeStat(this.player,'native.attack-speed')/2):nativeStat(this.player,'native.attack-speed');
                 this.player.ticksUntilTurn=Math.max(this.player.ticksUntilTurn,nativeTicks);
                 reconcileActorNativeRecovery(this,this.player.id);return;
             }
             if (this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_STAGGER') && anAttackHit) {
-                this.player.ticksUntilTurn += 2 * this.player.attackSpeed;
+                this.player.ticksUntilTurn += 2 * nativeStat(this.player,'native.attack-speed');
             } else if (this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_QUICKLY')) {
-                this.player.ticksUntilTurn += Math.floor(this.player.attackSpeed / 2);
+                this.player.ticksUntilTurn += Math.floor(nativeStat(this.player,'native.attack-speed') / 2);
             } else {
-                this.player.ticksUntilTurn += this.player.attackSpeed;
+                this.player.ticksUntilTurn += nativeStat(this.player,'native.attack-speed');
             }
         }
     }
@@ -10635,7 +10584,7 @@ export class Game {
      * at the next player turn, with ordinary death effects. ALLY is exempt. */
     private killOrphanedBoundFollowers(): void {
         for (const m of [...this.monsters]) {
-            if (m.hp > 0 && m.boundToLeader && !m.leader && !m.isAlly) m.takeDamage(m.hp, true);
+            if (m.hp > 0 && m.boundToLeader && !m.leader && !m.isAlly) m.drainCurrentHp();
         }
     }
 
@@ -11065,6 +11014,7 @@ export class Game {
      */
     private finishTurnEpilogue() {
         finishTurnEpilogue(this.timePorts());
+        if(this.mode==='test')this.extensionRuntime?.assertStats();
         this.prepareFlareKnowledge();
         this.refreshVisibleEntities();
         this.updateFlavorText(); // CE Time.c:2876, including headless/animated turns.
@@ -11088,7 +11038,7 @@ export class Game {
         }
         if (this.receivedLevitationWarning) return;
         const distance = buildMapToShore(this.grid)[this.player.x]![this.player.y]!;
-        const warning = shoreWarning(distance, this.player.movementSpeed,
+        const warning = shoreWarning(distance, nativeStat(this.player,'native.move-speed'),
             overLava ? Math.max(levitation, fireImmunity) : levitation);
         if (!warning) return;
         logger.log(warning === 'return'
@@ -11325,7 +11275,7 @@ export class Game {
     }
 
     private tickArcanaResources() {
-        const wisdom = equippedWisdomBonus(this.player.rings());
+        const wisdom = nativeStat(this.player,'native.wisdom');
         for (const item of this.player.inventory.items) {
             if (item.category === ItemCategory.STAFF) {
                 if (tickStaffRecharge(item, wisdom, rng, (item as any).identityId) > 0) {
@@ -11589,7 +11539,7 @@ export class Game {
                             {depth:snapshot.depth,actors:(snapshot.purgatory??[]).map(monster=>entityGraph.monsters.get(monster.id)!)},
                             ...snapshot.pendingFallenByDepth.map(queue=>({depth:queue.depth,actors:queue.monsters.map(monster=>entityGraph.monsters.get(monster.id)!)}))]};
                     validateActorCombatCapacities(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
-                        (actor,input)=>extensions!.queryOptionalActorInWorld('growth.combat-stats.v1',actor,input,candidateWorld),source=>{
+                        (actor,_input)=>extensions!.withStatWorld([decodedPlayer,...entityGraph.monsters.values()],()=>({staminaCapacity:extensions!.stats.value(actor.id,'combat.stamina-capacity'),poiseCapacity:extensions!.stats.value(actor.id,'combat.poise-capacity')})),source=>{
                             const identity=source.spatial?.bodyMember;
                             const group=candidateWorld.bodyGroups?.find(group=>group.groupId===identity?.groupId);
                             const part=group&&extensions!.spatialCatalog.body(group.bodyDefinitionId).parts.find(part=>part.partId===identity?.partId);
@@ -11757,7 +11707,7 @@ export class Game {
         loadingSpatialCatalogs.delete(this);
         if(extensions?.hasOwnedRegions)this.bindMovementRegionSession();
         this.configureExtensionRuleAdapters();
-        ItemLoader.onKnowledgeChanged = extensions ? kindId => extensions.emit('itemKnowledgeChanged',{kindId}) : null;
+        ItemLoader.onKnowledgeChanged = extensions ? kindId => {markStatsDirty(this.player);extensions.emit('itemKnowledgeChanged',{kindId});} : null;
         if (extensions) {
             extensions.attachCreature(this.player, false);
             for (const creature of extensionCreatures) extensions.attachCreature(creature, false);
@@ -11985,6 +11935,7 @@ export class Game {
             if (this.player.equippedArmor?.runicType === 'dampening') {
                 logger.log(i18next.t('runic.armor.dampening_explosion', { defaultValue: 'Your armor pulses and absorbs the damage.' }), '#66ffff');
                 this.player.equippedArmor.runicKnown = true;
+                markItemStatsDirty(this.player.equippedArmor);
                 return true;
             }
             this.lastDamageSource = 'violent explosion';
@@ -12045,7 +11996,7 @@ export class Game {
         }
         if (!this.isAutoTraveling()) logger.log(i18next.t('env.stuck_web', { defaultValue: 'You struggle against the sticky web.' }), '#aaaaaa');
         this.needsRender = true;
-        timeSystem.currentTick += this.player.movementSpeed;
+        timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
         this.moveEntrancedMonsters(dx, dy);
         control?.afterResolve();
         this.playerTurnEnded();
@@ -12060,6 +12011,7 @@ export class Game {
         if (entity === this.player && this.player.equippedArmor?.runicType === 'respiration') {
             if (!this.player.equippedArmor.runicKnown) logger.log(i18next.t('runic.armor.respiration_gas', { defaultValue: 'Your armor trembles and a pocket of clean air swirls around you.' }), '#66ffff');
             this.player.equippedArmor.runicKnown = true;
+            markItemStatsDirty(this.player.equippedArmor);
             return;
         }
         const first = !entity.hasStatus('nauseous');
@@ -12240,6 +12192,7 @@ export class Game {
                 if (!exempt && armor?.runicType === 'respiration') {
                     if (!armor.runicKnown) {
                         armor.runicKnown = true;
+                        markItemStatsDirty(armor);
                         logger.log(i18next.t('runic.armor.respiration_gas', { defaultValue: 'Your armor trembles and a pocket of clean air swirls around you.' }), '#66ffff');
                     }
                 } else if (!exempt) {
@@ -12293,6 +12246,7 @@ export class Game {
                         && this.player.equippedArmor?.runicType === 'respiration';
                     if (respirationImmune && !this.player.equippedArmor!.runicKnown) {
                         this.player.equippedArmor!.runicKnown = true;
+                        markItemStatsDirty(this.player.equippedArmor!);
                         logger.log(i18next.t('runic.armor.respiration_gas', { defaultValue: 'Your armor trembles and a pocket of clean air swirls around you.' }), '#66ffff');
                     }
 
@@ -12573,7 +12527,7 @@ export class Game {
         const group = this.bodyGroups?.find(g => g.coreId === core.id);
         if (!group) throw new Error('Invalid body decision owner');
         const definition = this.spatialCatalog.body(group.bodyDefinitionId), order = bodyConstraintOrder(definition);
-        const cost = bodyMoveTicks(definition, group, this.spatialCatalog, core.movementSpeed);
+        const cost = bodyMoveTicks(definition, group, this.spatialCatalog, nativeStat(core,'native.move-speed'));
         core.ticksUntilTurn = cost; // every blocked/empty selection pays positive time
         // CE moveMonster selects one valid confused direction. Validate the
         // whole formation; no foot runs a second confusion lottery.
@@ -12603,8 +12557,8 @@ export class Game {
             if (!contact || !canCommitNativeAttack(this, source)) continue;
             withActorActionScope(this, 'npc-scheduler', source.id, scope => withNativeAttackAction(this, source,
                 () => withBodyAttackContact(source, target, contact, () => source.resolveActorNativeMelee(scope, this, target))));
-            slot.readyInTicks = source.attackSpeed;
-            maxTicks = Math.max(maxTicks, source.attackSpeed); count++;
+            slot.readyInTicks = nativeStat(source,'native.attack-speed');
+            maxTicks = Math.max(maxTicks, nativeStat(source,'native.attack-speed')); count++;
         }
         if (count) { core.ticksUntilTurn = maxTicks; reconcileActorNativeRecovery(this, core.id); return; }
         if (core.hasBehavior('MONST_IMMOBILE') || core.hasBehavior('MONST_TURRET')) return;
@@ -12839,7 +12793,7 @@ export class Game {
         const core = actors[0]!, spatial = new CreatureSpatial(this.spatialWorldPort(), this.spatialCatalog);
         try {
             if (core.hasStatus('paralyzed') || core.spatial!.actionLockInTicks || bodyStatusDisables(core,'movement')
-                || bodyMoveTicks(definition,group,this.spatialCatalog,core.movementSpeed) <= 0
+                || bodyMoveTicks(definition,group,this.spatialCatalog,nativeStat(core,'native.move-speed')) <= 0
                 || definition.parts.filter(p=>p.providesSupport && group.members.some(s=>s.partId===p.partId && s.life==='active')).length < definition.minSupportParts) return false;
             const from = actor.spatial!.pose as RigidPose, pose = rotationStages(from, turns)[0]!;
             const options = { allowsTerrain: (at: Pos) => actor.canEnterMovementTerrain(this,at.x,at.y) };
@@ -12863,7 +12817,7 @@ export class Game {
             const previous = footprintOf(actor);
             this.commitBodyTransition('body-rotation-environment',()=>{
                 commitCompositeAnchors(actors.map(member=>({creature:member,at:member.loc,...(member===actor?{pose}:{})})));
-                core.ticksUntilTurn = bodyMoveTicks(definition,group,this.spatialCatalog,core.movementSpeed);
+                core.ticksUntilTurn = bodyMoveTicks(definition,group,this.spatialCatalog,nativeStat(core,'native.move-speed'));
                 this.applyEnvironmentalEffects(actor,false,new Set(),previous);
                 notifyProductionActorSourceChanged(this,actor.id); this.needsRender=true;
             },rng.getState(),true);
@@ -13702,7 +13656,8 @@ export class Game {
      *
      * 返回是否发现了什么（CE 返回值；当前无消费者，留作对齐）。
      */
-    private searchForSecrets(searchStrength: number): boolean {
+    private searchForSecrets(searchStrength:number):boolean{return this.searchForSecretsNative(nativeStat(this.player,'native.search-strength',{baseValue:searchStrength,mode:'automatic'}));}
+    private searchForSecretsNative(searchStrength: number): boolean {
         // 每层一次的全格预扫守卫：无已支持密格的层零开销短路（见字段注记）。
         if (this.secretScanDepth !== this.depth) {
             this.levelHasSecrets = false;
@@ -13805,7 +13760,7 @@ export class Game {
         this.searchForSecrets(Math.max(searchStrength, this.awarenessBonus() + 30));
 
         this.justSearched = true;
-        timeSystem.currentTick += this.player.movementSpeed;
+        timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
         control?.afterResolve();
         this.playerTurnEnded();
     }
@@ -13938,7 +13893,7 @@ export class Game {
                 commitCreatureAnchor(target, next, 'mutate'); moved = true;
             }
             if (moved) { this.applyEnvironmentalEffects(target, false, undefined, previousBody); this.updateVision(); this.needsRender = true; }
-            target.ticksUntilTurn = Math.max(target.ticksUntilTurn, this.player.attackSpeed + 1);
+            target.ticksUntilTurn = Math.max(target.ticksUntilTurn, nativeStat(this.player,'native.attack-speed') + 1);
             return seenBefore || this.canObserveBoltTarget(target);
         }
         if (target instanceof Monster && target.isCaged) this.freeCaptive(target);
@@ -13949,7 +13904,7 @@ export class Game {
         };
         const result = traceBolt(this.grid, blink, target.loc, caster.loc, this.boltWorld(target), undefined, { reverseBlink: true });
         this.finishBlink(result);
-        target.ticksUntilTurn = Math.max(target.ticksUntilTurn, this.player.attackSpeed + 1);
+        target.ticksUntilTurn = Math.max(target.ticksUntilTurn, nativeStat(this.player,'native.attack-speed') + 1);
         return seenBefore || this.canObserveBoltTarget(target);
     }
 
@@ -14060,7 +14015,7 @@ export class Game {
                 if(core.isCaged)this.freeCaptive(core);
                 for(const actor of actors){actor.setStatusDuration('stuck',0);actor.submerged=false;}
             }
-            core.ticksUntilTurn=Math.max(core.ticksUntilTurn,this.player.attackSpeed+1);
+            core.ticksUntilTurn=Math.max(core.ticksUntilTurn,nativeStat(this.player,'native.attack-speed')+1);
         },rng.getState(),true);
         this.updateVision();return seenBefore||this.canObserveBoltTarget(core);
     }
@@ -14147,7 +14102,7 @@ export class Game {
         this.makeMonsterDropItem(monster);
 
         monster.isCaged = false;
-        monster.isAlly = true;
+        monster.isAlly = true;markStatsDirty(monster);
         if (this.extensionRuntime) this.extensionRuntime.observeCreature(monster);
         monster.leader = null;
         monster.leaderlessAfterDemotion = false;
@@ -14537,8 +14492,7 @@ export class Game {
      * once, and ordinary combat text is blocked for the whole attack round. */
     private beginAutoFight(enemy: Monster): void {
         if (this.autoFight?.targetId === enemy.id) return;
-        let expectedDamage = Math.trunc(CombatSystem.parseDamageString(enemy.damageString).max
-            * monsterDamageAdjustmentAmount(enemy.weaknessAmount));
+        let expectedDamage = nativeRolledDamage(enemy,nativeStat(enemy,'native.damage-max'));
         if (this.mode === 'easy') expectedDamage = Math.trunc(expectedDamage / 5);
         this.autoFight = { targetId: enemy.id, loc: { ...enemy.loc }, expectedDamage,
             tillDeath: this.player.hasStatus('hallucinating') };

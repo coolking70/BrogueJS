@@ -150,7 +150,7 @@ describe('4c production fixed zones', () => {
     it('native sweep remembers distinct shell/tail contacts rather than reducing both to nearest cell', () => {
         configure(true); const { game, boss } = scene();
         commitCreatureAnchor(game.player, { x: 22, y: 11 });
-        const weapon = ItemLoader.spawnWeapon('axe', 0, 0, 1)!; weapon.damage = '8-8'; weapon.enchantment = 20; weapon.flags = ['ITEM_ATTACKS_ALL_ADJACENT']; game.player.equippedWeapon = weapon;
+        const weapon = ItemLoader.spawnWeapon('axe', 0, 0, 1)!; weapon.damage = '8-8'; weapon.enchantment = 20; weapon.flags = ['ITEM_ATTACKS_ALL_ADJACENT']; game.player.inventory.addItem(weapon);game.player.equippedWeapon = weapon;
         const event = vi.spyOn(boss.extensionHooks!, 'damage'); game.executeCommand('move', { x: 0, y: 1 });
         expect(event).toHaveBeenCalledTimes(2); expect(boss.spatial!.zoneState!.every(z => z.hp < (z.zoneId === 'shell' ? 30 : 10))).toBe(true);
     });

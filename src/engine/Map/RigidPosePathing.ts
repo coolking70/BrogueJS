@@ -1,3 +1,4 @@
+import { nativeStat } from '../Stats/NativeStatSources';
 import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
 import { CreatureSpatial, footprintOf, rigidMovementFootprint } from '../Movement/CreatureSpatial';
@@ -59,7 +60,7 @@ export class RigidPosePathing {
         }
         const shape = rigidMovementFootprint(actor, this.spatial.catalog);
         if (!this.spatial.isActive(actor)) throw new SpatialValidationError('Inactive or unowned rigid pathing actor');
-        if (!integer(actor.movementSpeed, 1, 1000000)) throw new SpatialValidationError('Rigid action cost must be positive');
+        if (!integer(nativeStat(actor,'native.move-speed'), 1, 1000000)) throw new SpatialValidationError('Rigid action cost must be positive');
         const grid = this.spatial.grid, revision = this.spatial.terrainRevision;
         if (this.grid !== grid || this.revision !== revision) {
             this.clear(); this.grid = grid; this.revision = revision;
@@ -301,6 +302,6 @@ export class RigidPosePathing {
         const a = this.pose(graph, from), b = this.pose(graph, to);
         return a === b ? { kind: 'step', at: Object.freeze(this.at(graph, to)), pose: b, replanned }
             : { kind: 'rotate', at: Object.freeze(this.at(graph, from)), pose: b, quarterTurns: turnedPose(a, 1) === b ? 1 : -1,
-                actionCost: actor.movementSpeed, replanned };
+                actionCost: nativeStat(actor,'native.move-speed'), replanned };
     }
 }

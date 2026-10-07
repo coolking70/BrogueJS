@@ -83,6 +83,8 @@ interface CharacterInput {
     pack: GrowthPack; session: object; revision: number; created: boolean; playerId: number;
     canManage: boolean; replay: boolean; progression: GrowthProgression; attributes: GrowthAttributes;
     derived: GrowthDerived; focus: GrowthFocus; skills: GrowthSkills; skillBuild: GrowthPublicSkillBuild; clock: number; identity: GrowthIdentityBuild;
+    stats?:Readonly<Record<string,number>>;
+    previewStats?:(attributes:GrowthAttributes)=>Readonly<Record<string,number>>;
     hp: number; maxHp: number; strength: number; effectiveStrength: number; gold: number;
 }
 function freeze<T>(value: T): T {
@@ -118,11 +120,12 @@ function plan(input: CharacterInput, action: 'allocate' | 'respec', increments: 
         } else if (fee.resource === 'skill-points') addGrowthIntegers(attributes.skillPointsSpent, fee.amount);
     }
     const nextActor = growthRuleActor(input.playerId, progression, attributes), derived = growthDerived(pack, nextActor, scopes);
-    const maxHp = reconcileGrowthMaximum(input.maxHp, oldDerived.appliedMaxHp, derived.appliedMaxHp);
-    const strength = reconcileGrowthMaximum(input.strength, oldDerived.appliedStrength, derived.appliedStrength);
-    const capacity = growthFocusCapacity(pack, nextActor, scopes);
+    const projected=input.previewStats?.(attributes);
+    const maxHp = projected?.['native.max-hp']??reconcileGrowthMaximum(input.maxHp, oldDerived.appliedMaxHp, derived.appliedMaxHp);
+    const strength = projected?.['native.strength']??reconcileGrowthMaximum(input.strength, oldDerived.appliedStrength, derived.appliedStrength);
+    const capacity = projected?.['growth.focus-capacity']??growthFocusCapacity(pack, nextActor, scopes);
     const resources = action === 'allocate' ? reconcileGrowthResources(config.levels, config.focus, 'allocation', {
-        hp: input.hp, maxHp: input.maxHp, nextMaxHp: maxHp, focus, focusCapacity: growthFocusCapacity(pack, oldActor, scopes),
+        hp: input.hp, maxHp: input.maxHp, nextMaxHp: maxHp, focus, focusCapacity: input.stats?.['growth.focus-capacity']??growthFocusCapacity(pack, oldActor, scopes),
         nextFocusCapacity: capacity, skills,
     }) : { hp: Math.min(input.hp, maxHp), focus: { ...focus, current: Math.min(focus.current, capacity) } };
     if (action === 'respec' && config.respec.cost.resource === 'focus')
@@ -188,12 +191,12 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
     const source = runtime.readModuleView('growth');
     if (!source || source.playerId !== game.player.id) return null;
     const components = source.components;
-    if (!components.progression || !components.attributes || !components.derived || !components.focus || !components.skills) return null;
+    if (!components.progression || !components.attributes || !components.focus || !components.skills) return null;
     const pack = source.definitions as unknown as GrowthPack;
-    const input: CharacterInput = { pack, session: source.session, revision: source.state.revision as number,
+    const input: CharacterInput = {previewStats:attributes=>runtime.hypotheticalComponents('growth',game.player.id,{attributes:attributes as unknown as import('../../types').Json},true),stats:runtime.stats.hypothetical(game.player.id,{},true), pack, session: source.session, revision: source.state.revision as number,
         created: source.state.created === true, playerId: source.playerId, canManage: source.canManageCharacter,
         replay: !!game.replayRecording, progression: components.progression as unknown as GrowthProgression,
-        attributes: components.attributes as unknown as GrowthAttributes, derived: components.derived as unknown as GrowthDerived,
+        attributes: components.attributes as unknown as GrowthAttributes, derived: {appliedStrength:game.extensionRuntime!.stats.applied(game.player.id,'native.strength'),appliedMaxHp:game.extensionRuntime!.stats.applied(game.player.id,'native.max-hp')},
         focus: components.focus as unknown as GrowthFocus, skills: components.skills as unknown as GrowthSkills,
         identity: { ...initialGrowthIdentityBuild(), ...(components.identity as unknown as Partial<GrowthIdentityBuild> | undefined) },
         skillBuild: (components['skill-build'] as unknown as GrowthPublicSkillBuild | undefined) ?? projectGrowthSkillBuild(pack, initialGrowthSkillBuild()), clock: (source.state.objectiveClock as number | undefined) ?? 0,
@@ -263,7 +266,7 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
     const refund = respecGrowthAttributes(pack, attributes).refund;
     const atLevelCap = progression.level === config.levels.cap;
     const threshold = experienceThreshold(config.levels, progression.level);
-    const capacity = growthFocusCapacity(pack, actor, growthPublicSkillScopes(pack, skillBuild, clock, 'actor', input.identity));
+    const capacity = input.stats?.['growth.focus-capacity']??growthFocusCapacity(pack, actor, growthPublicSkillScopes(pack, skillBuild, clock, 'actor', input.identity));
     const resources = (planned: ReturnType<typeof plan> | null): GrowthResourcePreview => ({
         hp: delta(input.hp, planned?.hp ?? input.hp), maxHp: delta(input.maxHp, planned?.maxHp ?? input.maxHp),
         strength: delta(input.effectiveStrength, input.effectiveStrength + (planned ? planned.strength - input.strength : 0)),

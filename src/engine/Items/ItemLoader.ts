@@ -1,3 +1,4 @@
+import { markItemStatsDirty } from './ItemStatInvalidation';
 import { CE_ITEM_BOLT_TYPES, CE_BOLT_CATALOG, CEBoltFlags } from '../Combat/BoltCatalog';
 /**
  * src/engine/Items/ItemLoader.ts
@@ -840,6 +841,7 @@ export class ItemLoader {
             item.identified = true;
         }
         if (kindId) this.tryIdentifyLastItemKinds(item.category);
+        markItemStatsDirty(item);
     }
 
     /**
@@ -853,6 +855,7 @@ export class ItemLoader {
             item.runicKnown = true; // CE: RUNIC_IDENTIFIED | RUNIC_HINTED
         }
         this.identifyItemKind(item);
+        markItemStatsDirty(item);
     }
 
     /**
@@ -889,6 +892,7 @@ export class ItemLoader {
         if (weapon.charges <= 0) {
             weapon.identified = true;
             weapon.canBeIdentified = false;
+            markItemStatsDirty(weapon);
             return true;
         }
         return false;
@@ -918,6 +922,7 @@ export class ItemLoader {
         }
         item.identified = true; // CE：护甲只亮实例，符文种类不必然揭示
         item.canBeIdentified = false;
+        markItemStatsDirty(item);
         return 'armor';
     }
 

@@ -1,3 +1,4 @@
+import { nativeRational } from '../Stats/NativeStatSources';
 import { canFitAt, footprintContains, footprintOf, distanceBetweenFootprints, type FootprintActor } from '../Movement/CreatureSpatial';
 import { footprintExposure } from '../Movement/FootprintExposure';
 import { playerTravelTerrainAllowed } from '../Movement/PlayerTravel';
@@ -24,7 +25,7 @@ import { boltLine, staffBlinkDistance, type BoltWorld } from './BoltTrajectory';
 import { perimeterCoords } from './BoltReflection';
 import { rng } from '../Random';
 import { CombatSystem } from './Combat';
-import { monsterDamageAdjustmentAmount } from './CombatFormulas';
+import { nativeRolledDamage, nativeStat } from '../Stats/NativeStatSources';
 import { entrancementDiagonalBlocked } from '../Movement/Entrancement';
 import { bodySightCornerClear } from './BodyPerception';
 
@@ -176,7 +177,7 @@ export function monsterBlinkToPreferenceMap(g: Game, m: Monster, map: number[][]
     const choice = chooseMonsterBlink(m.loc, value, uphill, avoids,
         p => monsterBlinkImpact(g, m, p), p => !!(flags(g, p) & T.T_OBSTRUCTS_PASSABILITY));
     if (!choice) return false;
-    m.ticksUntilTurn = m.attackSpeed * (m.hasBehavior('MONST_CAST_SPELLS_SLOWLY') ? 2 : 1);
+    m.ticksUntilTurn = nativeStat(m,'native.attack-speed') * (m.hasBehavior('MONST_CAST_SPELLS_SLOWLY') ? 2 : 1);
     g.castMonsterBlink(m, choice.aim);
     return true;
 }
@@ -328,7 +329,7 @@ export function closestBlinkEnemy(g: Game, m: Monster): Monster | null {
 export function blinkAllyFlees(g: Game, m: Monster, target: Monster | null): boolean {
     if (!target || m.maxHp <= 1 || m.hasStatus('lifespan_remaining')) return false;
     const d = distanceBetweenFootprints(m, target), pct = Math.trunc(100*m.hp/m.maxHp);
-    if (d < 10 && pct <= 33 && m.regenTurns > 0 && !m.carriedMonster
+    if (d < 10 && pct <= 33 && nativeRational(m).numerator > 0 && !m.carriedMonster
         && (m.hasBehavior('MONST_FLEES_NEAR_DEATH') || pct*2 < Math.trunc(100*g.player.hp/g.player.maxHp))) return true;
     return d < 4 && attacks(target,m) && (((target.isInvulnerable() || target.isImmuneToWeapons()) && !target.hasBehavior('MONST_IMMOBILE'))
         || m.hasBehavior('MONST_MAINTAINS_DISTANCE') || target.hasAbility('MA_KAMIKAZE')
@@ -378,7 +379,7 @@ export function blinkTowardCreature(g: Game, m: Monster, target: Creature): bool
 export function allyShouldPursue(g: Game, m: Monster, closest: Monster | null): boolean {
     let leash = m.seized ? Math.max(g.grid.width,g.grid.height) : g.allyBlinkLeashLength();
     if (closest && distanceBetweenFootprints(m, closest) === 1) {
-        if (closest.movementSpeed < m.movementSpeed && !closest.hasBehavior('MONST_FLITS') && !closest.hasBehavior('MONST_IMMOBILE') && closest.state === MonsterState.HUNTING) leash = Math.max(g.grid.width,g.grid.height);
+        if (nativeStat(closest,'native.move-speed') < nativeStat(m,'native.move-speed') && !closest.hasBehavior('MONST_FLITS') && !closest.hasBehavior('MONST_IMMOBILE') && closest.state === MonsterState.HUNTING) leash = Math.max(g.grid.width,g.grid.height);
         else leash++;
     }
     return !!closest && (distanceBetweenFootprints(m, g.player) < leash || m.doesNotTrackLeader)
@@ -410,9 +411,9 @@ export function blinkAllyAfterMagic(g: Game, m: Monster, closest: Monster | null
  * has no health/poison gate; both routes delegate to pathTowardCreature. */
 export function blinkTowardCaptiveLeader(g: Game, m: Monster): boolean {
     const leader = m.leader;
-    if (!leader?.isCaged || leader.regenTurns <= 0 || m.hasAbility('MA_POISONS')
+    if (!leader?.isCaged || nativeRational(leader).numerator <= 0 || m.hasAbility('MA_POISONS')
         || distance(m.loc, leader.loc) === 1 || entrancementDiagonalBlocked(g.grid, m.loc, leader.loc)) return false;
     const upper = CombatSystem.parseDamageString(m.damageString).max;
-    if (leader.hp <= Math.trunc(upper * monsterDamageAdjustmentAmount(m.weaknessAmount))) return false;
+    if (leader.hp <= nativeRolledDamage(m,upper)) return false;
     return blinkTowardCreature(g, m, leader);
 }

@@ -1,7 +1,7 @@
 import type { ActorAttackDefinitions, ActorResourcePolicy, ProductionActorAttackState } from '../../actorActions';
 import { validateProductionActorAttackTransactionState } from '../../actorActionValidation';
 import { canonical } from '../../json';
-import { resolveCombatStats, combatCapacityPolicy } from '../../combatStats';
+import { combatCapacityPolicy } from '../../combatStats';
 import { validatePartBreakRequest, type PartBreakProvider } from '../../partBreak';
 import type { Json, ReadonlyJson } from '../../types';
 
@@ -41,14 +41,13 @@ export function createCombatPartBreakProvider(definitions: ActorAttackDefinition
                     ?? definitions.playerProfileId);
             const profile = definitions.profiles.find(candidate => candidate.id === profileId)!;
             const base = definitions.resourcePolicies.find(candidate => candidate.id === profile.resourcePolicyId)!;
-            const stats = context.queryActor ? resolveCombatStats(context.queryActor('growth.combat-stats.v1',
-                {v:1,baseStaminaCapacity:base.staminaCapacity,basePoiseCapacity:base.poiseCapacity})) : row?.combatStats;
+            const stats=context.stats?{staminaCapacity:context.stats.value(request.actorId,'combat.stamina-capacity'),poiseCapacity:context.stats.value(request.actorId,'combat.poise-capacity')}:undefined;
             const policy = combatCapacityPolicy(base,stats);
             let changed = false;
             if(row){
                 const before=canonical(row);
                 row.stamina=Math.min(row.stamina,policy.staminaCapacity);row.poise=Math.min(row.poise,policy.poiseCapacity);
-                if(stats)row.combatStats={...stats};else delete row.combatStats;
+
                 changed=canonical(row)!==before;
             }
             if (row && row.profileId !== profile.id) {
@@ -69,7 +68,7 @@ export function createCombatPartBreakProvider(definitions: ActorAttackDefinition
                 if (!row && next.actors.length >= MAX_ACTORS) throw new Error('Actor resource budget exhausted');
                 const resource = row ?? initialRow(request.actorId, profile.id, base);
                 resource.stamina=Math.min(resource.stamina,policy.staminaCapacity);resource.poise=Math.min(resource.poise,policy.poiseCapacity);
-                if(stats)resource.combatStats={...stats};else delete resource.combatStats;
+
                 if (!row) {
                     next.actors.push(resource);
                     next.actors.sort((a, b) => a.actorId - b.actorId);

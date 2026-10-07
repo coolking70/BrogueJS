@@ -1,7 +1,7 @@
 import type { Json, ReadonlyJson } from '../../types';
 import type { ActorAttackDefinitions, ProductionActorAttackState } from '../../actorActions';
 /** Display projection is detached. The shell applies public visibility before rendering. */
-export function projectCombatView(value?: ReadonlyJson, definitions?: ActorAttackDefinitions, depth?:number, playerId?:number, nearby:readonly import('../../world').WorldInteractableView[]=[], unavailable?:(id:number)=>import('../../worldRest').WorldRestUnavailableReason|null, bundles:readonly import('../../../engine/Core/ActorActionScheduler').ReadonlyActorActionBundle[]=[]): Json {
+export function projectCombatView(value?: ReadonlyJson, definitions?: ActorAttackDefinitions, depth?:number, playerId?:number, nearby:readonly import('../../world').WorldInteractableView[]=[], unavailable?:(id:number)=>import('../../worldRest').WorldRestUnavailableReason|null, bundles:readonly import('../../../engine/Core/ActorActionScheduler').ReadonlyActorActionBundle[]=[],stats?:import('../../stats').StatQuery): Json {
     if (!value || !definitions) return {schema:1,telegraphs:[],resources:null,actions:[]};
     const state=value as unknown as ProductionActorAttackState;
     const telegraphs=bundles.filter(bundle=>bundle.depth===depth).flatMap(bundle=>{
@@ -21,8 +21,8 @@ export function projectCombatView(value?: ReadonlyJson, definitions?: ActorAttac
     const profile=definitions.profiles.find(profile=>profile.id===definitions.playerProfileId)!;
     const policy=definitions.resourcePolicies.find(policy=>policy.id===profile.resourcePolicyId)!;
     const actor=state.actors.find(actor=>actor.actorId===playerId);
-    const capacity=actor?.combatStats?.staminaCapacity??policy.staminaCapacity;
-    const poiseCapacity=actor?.combatStats?.poiseCapacity??policy.poiseCapacity;
+    const capacity=stats&&playerId?stats.value(playerId,'combat.stamina-capacity'):policy.staminaCapacity;
+    const poiseCapacity=stats&&playerId?stats.value(playerId,'combat.poise-capacity'):policy.poiseCapacity;
     const stamina=Math.min(actor?.stamina??policy.initialStamina,capacity);
     const busy=bundles.some(bundle=>bundle.decisionOwnerId===playerId)
         || (actor?.dodgeRecoveryRemainingTicks??0)>0 || (actor?.parryRecoveryRemainingTicks??0)>0 || (actor?.staggerRemainingTicks??0)>0;

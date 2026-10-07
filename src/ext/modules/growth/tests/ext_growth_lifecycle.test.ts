@@ -1,3 +1,4 @@
+import { appliedGrowth } from '../../../../test/support/legacyStats';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from '../../../../test/harness';
 import { Game } from '../../../../engine/Core/Game';
@@ -23,7 +24,7 @@ afterEach(() => vi.restoreAllMocks());
 const species = (id: string): MonsterData => (monsters as MonsterData[]).find(monster => monster.id === id)!;
 const state = (game: Game): GrowthState => game.extensionRuntime!.snapshot().modules.growth as unknown as GrowthState;
 const progression = (game: Game, id = game.player.id): GrowthProgression => game.extensionRuntime!.snapshot().components[id]!['growth:progression'] as GrowthProgression;
-const derived = (game: Game, id: number): GrowthDerived => game.extensionRuntime!.snapshot().components[id]!['growth:derived'] as GrowthDerived;
+const derived = (game: Game, id: number): GrowthDerived => appliedGrowth(game.extensionRuntime!,id);
 const create = (game: Game): void => game.executeCommand('ext:command', JSON.stringify({ module: 'growth', action: 'create-character', payload: { revision: 0 } }));
 function newGame(mode: 'test' | 'normal' = 'test'): Game {
     const game = createHeadlessGame(91013, 'test');

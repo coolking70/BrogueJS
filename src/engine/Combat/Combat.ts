@@ -1,3 +1,5 @@
+import { nativeProjectileProbability, nativeProjectileRoll, nativeProjectileRunic, nativeWeaknessFactor, nativeStat, nativePair, nativeHitChance, nativeHitBase, nativeRolledDamage } from '../Stats/NativeStatSources';
+import type { ExtensionRuleInput } from '../../ext/types';
 import { bodyDecisionActor } from '../Status/BodyStatuses';
 import { delayNativeDecision, guardNativeMelee, settleNativeMeleePoise } from '../Core/NativeAttackTransaction';
 import { bodyAttackContactOf, nearestLegalMeleeContact, withBodyAttackContact } from './BodyCombat';
@@ -10,29 +12,28 @@ import { stealFromPlayer } from './MonsterTheft';
  * and damage resolution into TypeScript.
  */
 
-import { monsterDamageAdjustmentAmount, monsterAccuracyAdjusted, monsterDefenseAdjusted } from './CombatFormulas';
+
 import { canSeeMonster } from '../UI/MonsterVisibility';
 import type { Grid } from '../Map/Grid';
 import { Creature } from '../../entities/Creature';
 import { Player } from '../../entities/Player';
 import { Monster, MonsterMode, MonsterState } from '../../entities/Monster';
 import type { Item } from '../Items/Item';
-import { ringBonus } from '../Items/RingBonuses';
-import { equippedWisdomBonus, rechargeItemsIncrementally } from '../Items/ArcanaRecharge';
+import { rechargeItemsIncrementally } from '../Items/ArcanaRecharge';
 import { logger } from '../Systems/Logger';
 import i18next from 'i18next';
 import { rng } from '../Random';
 import { monsterIsInClass, weaponSlaysMonster } from './MonsterClass';
 import type { AttackCircumstance } from './CombatText';
 import {
-    netEnchant,
-    hitProbability,
-    enchantedDamage,
-    playerDefense,
     clumpedRoll,
     runicWeaponChance
 } from './CombatFormulas';
 
+function combatStatPair(attacker:Creature,defender:Creature,port:'hitChance'|'physicalDamage',input:ExtensionRuleInput):number{
+ if(port==='hitChance'&&(input.rollMode!=='roll-probability'||input.baseValue===0)||port==='physicalDamage'&&input.immune)return input.baseValue;
+ return nativePair(attacker,defender,port==='hitChance'?'hit':'physical-damage',{baseValue:input.baseValue,...(input.attackKind?{attackKind:input.attackKind as 'melee'|'thrown'}:{}),...(input.adjacent!==undefined?{adjacent:input.adjacent}:{}),...(input.direct!==undefined?{direct:input.direct}:{})});
+}
 interface PhysicalResolutionTrace {
     probabilityRolled: boolean;
     positivePhysicalDamage: boolean;
@@ -99,16 +100,7 @@ export class CombatSystem {
     public static previewHitChance(attacker: Creature, defender: Creature, opts?: {
         lungeAttack?: boolean; isWeaponAttack?: boolean; grid?: Grid;
     }): number {
-        let accuracy = 100, defense = 0, enchant: number | undefined;
-        if (attacker instanceof Player) {
-            if (!attacker.equippedWeapon) accuracy = monsterAccuracyAdjusted(100, attacker.weaknessAmount);
-            if (attacker.equippedWeapon?.damage) enchant = netEnchant(attacker.equippedWeapon.enchantment,
-                attacker.effectiveStrength, attacker.equippedWeapon.strengthRequired || 0);
-        } else if (attacker instanceof Monster) accuracy = monsterAccuracyAdjusted(attacker.accuracy, attacker.weaknessAmount);
-        if (defender instanceof Monster) defense = monsterDefenseAdjusted(defender.defense, defender.weaknessAmount);
-        else if (defender instanceof Player && defender.equippedArmor?.armor) defense = playerDefense(defender.equippedArmor.armor,
-            defender.equippedArmor.enchantment, defender.effectiveStrength, defender.equippedArmor.strengthRequired || 0,
-            defender.getStatusDuration('donning'));
+
         if (attacker instanceof Monster && attacker.hasAbility('MA_KAMIKAZE')) return 100;
         if (opts?.isWeaponAttack !== false && attacker instanceof Monster && attacker.hasBehavior('MONST_RESTRICTED_TO_LIQUID')
             && (defender.hasStatus('levitating') || defender.hasStatus('flying'))) return 0;
@@ -121,8 +113,8 @@ export class CombatSystem {
         const probability = defender.seized && attacker.seizing
             || (attacker instanceof Player && defender instanceof Monster
                 && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId))
-            ? 100 : hitProbability(accuracy, defense, enchant);
-        const rule = opts?.isWeaponAttack === false ? undefined : (attacker.extensionHooks ?? defender.extensionHooks)?.rule;
+            ? 100 : nativeHitBase(attacker,defender);
+        const rule = (port:'hitChance'|'physicalDamage',input:ExtensionRuleInput)=>combatStatPair(attacker,defender,port,input);
         if (!rule) return autoHit ? 100 : probability;
         const result = Math.floor(rule('hitChance', { actorId: attacker.id, targetId: defender.id, baseValue: probability * 100,
             attackKind: 'melee', adjacent: distanceBetweenFootprints(attacker, defender) === 1,
@@ -160,7 +152,7 @@ export class CombatSystem {
             hooks.beforeAttack(attacker, defender);
             let result: AttackResult | undefined;
             try {
-                if (hooks.rule && origin.kind === 'melee' && opts?.isWeaponAttack !== false) {
+                if (origin.kind === 'melee' && opts?.isWeaponAttack !== false) {
                     if (!(hooks.wantsPhysicalResolution?.() ?? !!hooks.physicalResolved)) {
                         result = CombatSystem.resolveAttackExtended(attacker, defender, opts);
                         return result;
@@ -199,8 +191,6 @@ export class CombatSystem {
          */
         lungeAttack?: boolean;
     }): AttackResult {
-        let attackerAccuracy = 100; // Player base accuracy
-        let defenderDefense = 0;
         let damageString = '1d2'; // CE monsterCatalog[MK_YOU]
         let weaponName = 'bare hands';
         let weaponEnchant: number | undefined;
@@ -212,21 +202,14 @@ export class CombatSystem {
             && !(attacker.hasAbility('MA_SEIZES') && !attacker.seizing && legalSeizeContact(attacker, defender, opts?.grid))) attacker.submerged = false;
         // --- Determine attacker stats ---
         if (attacker instanceof Player) {
-            if (!attacker.equippedWeapon) attackerAccuracy = monsterAccuracyAdjusted(100, attacker.weaknessAmount);
             if (attacker.equippedWeapon && attacker.equippedWeapon.damage) {
                 damageString = attacker.equippedWeapon.damage;
                 clumping = attacker.equippedWeapon.clumping;
                 weaponName = attacker.equippedWeapon.name;
-                const strReq = attacker.equippedWeapon.strengthRequired || 0;
-                weaponEnchant = netEnchant(
-                    attacker.equippedWeapon.enchantment,
-                    attacker.effectiveStrength,
-                    strReq
-                );
+                weaponEnchant = nativeStat(attacker,'native.weapon-enchant')/4;
                 weaponRunic = attacker.equippedWeapon.runicType;
             }
         } else if (attacker instanceof Monster) {
-            attackerAccuracy = monsterAccuracyAdjusted(attacker.accuracy, attacker.weaknessAmount);
             damageString = attacker.damageString || '1d3';
             clumping = attacker.damageClumping;
             weaponName = 'claws/teeth';
@@ -234,20 +217,11 @@ export class CombatSystem {
 
         // --- Determine defender stats ---
         if (defender instanceof Monster) {
-            defenderDefense = monsterDefenseAdjusted(defender.defense, defender.weaknessAmount);
         } else if (defender instanceof Player) {
             // Player defense comes from equipped armor.
             // CE 内部 ×10 标度（Items.c:8515-8523），只降低被命中概率（Combat.c:140），
             // 不参与伤害结算——CE 的护甲没有任何"减伤"步骤。
             if (defender.equippedArmor && defender.equippedArmor.armor) {
-                const strReq = defender.equippedArmor.strengthRequired || 0;
-                defenderDefense = playerDefense(
-                    defender.equippedArmor.armor,
-                    defender.equippedArmor.enchantment,
-                    defender.effectiveStrength,
-                    strReq,
-                    defender.getStatusDuration('donning')
-                );
             }
         }
 
@@ -288,7 +262,7 @@ export class CombatSystem {
         // 死亡时触发的 DF（Game.triggerDeathFeatures），不是这次攻击本身。
         if (attacker instanceof Monster && attacker.hasAbility('MA_KAMIKAZE')) {
             if (defender instanceof Player && !logger.blockCombatText) logger.disturb();
-            attacker.takeDamage(attacker.hp, true);
+            attacker.drainCurrentHp();
             return { damage: 0, weaponName, hit: true, backstab: false, kamikazeSelfDestruct: true };
         }
 
@@ -332,7 +306,7 @@ export class CombatSystem {
         if (!autoHit && !rng.randPercent(defender.seized && attacker.seizing
             || (attacker instanceof Player && defender instanceof Monster
                 && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId))
-            ? 100 : hitProbability(attackerAccuracy, defenderDefense, weaponEnchant))) {
+            ? 100 : nativeHitChance(attacker,defender))) {
             return { damage: 0, weaponName, hit: false, backstab: false };
         }
 
@@ -340,11 +314,11 @@ export class CombatSystem {
 
         const parts = CombatSystem.parseDamageString(damageString);
         let { min, max } = parts;
-        if (weaponEnchant !== undefined) {
+        if (weaponEnchant !== undefined || attacker instanceof Monster) {
             // CE Items.c recalculateEquipmentBonuses: scale/truncate endpoints
             // BEFORE randClump, preserving clumpFactor and every interior value.
-            min = Math.max(1, enchantedDamage(min, weaponEnchant));
-            max = Math.max(1, enchantedDamage(max, weaponEnchant));
+            min = nativeStat(attacker,'native.damage-min');
+            max = nativeStat(attacker,'native.damage-max');
         }
         const isWeaponAttack = opts?.isWeaponAttack !== false;
         const immune = defender instanceof Monster && (defender.isInvulnerable()
@@ -354,12 +328,12 @@ export class CombatSystem {
         let damage = immune ? 0 : clumpedRoll(min, max, clumping ?? parts.clumping,
             (lo, hi) => rng.randRange(lo, hi));
 
-        if (attacker instanceof Monster) damage = Math.trunc(damage * monsterDamageAdjustmentAmount(attacker.weaknessAmount));
+        if (attacker instanceof Monster) damage = nativeRolledDamage(attacker,damage);
 
         // CE :1248-1258: only the sneak set delays/wakes a monster, even on an
         // immune hit; lunge/captive/attackHit-only paralysis do not.
         if (backstab && defender instanceof Monster) {
-            delayNativeDecision(opts?.grid, defender, Math.max(defender.movementSpeed, defender.attackSpeed));
+            delayNativeDecision(opts?.grid, defender, Math.max(nativeStat(defender,'native.move-speed'), nativeStat(defender,'native.attack-speed')));
             if (!bodyDecisionActor(defender).isAlly) bodyDecisionActor(defender).state = MonsterState.HUNTING;
         }
 
@@ -380,19 +354,26 @@ export class CombatSystem {
         // CE has no independent invisible damage multiplier. Visibility can
         // affect awareness through AI.
 
+        const contactPoison = isWeaponAttack && attacker instanceof Monster && attacker.hasAbility('MA_POISONS');
+        // BE_ATTACK/bolt/non-weapon delivery uses the same stat domain as melee,
+        // without entering its stamina/poise/active-defense scheduling domain.
+        const physicalDamage = (baseValue:number):number => combatStatPair(attacker,defender,'physicalDamage',{
+            actorId:attacker.id,targetId:defender.id,baseValue,attackKind:'melee',damageKind:'physical',direct:true,immune,
+        });
+        if(!contactPoison)damage=physicalDamage(damage);
         if (damage > 0 && opts?.beforeDamage) damage = opts.beforeDamage(damage) ?? damage;
 
         // CE Combat.c:1275-1289: only attack(), before inflictDamage/shielding,
         // capped by current HP. Thrown weapons and bolts do not enter this path.
         if (attacker instanceof Player
             && !(defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable()))) {
-            const reaping = ringBonus(attacker.rings(), 'ring_of_reaping');
+            const reaping = nativeStat(attacker,'native.reaping');
             if (reaping) {
                 const bound = (Math.min(damage, defender.hp) * reaping << 16) >> 16;
                 const amount = reaping > 0 ? rng.randRange(0, bound) : rng.randRange(bound, 0);
                 if (amount) {
                     const ready = rechargeItemsIncrementally(attacker.inventory.items,
-                        equippedWisdomBonus(attacker.rings()), rng, amount);
+                        nativeStat(attacker,'native.wisdom'), rng, amount);
                     for (const item of ready) logger.log(i18next.t('item.charm_recharged', {
                         name: item.displayName, defaultValue: `Your ${item.displayName} has recharged.`,
                     }), '#66ddff');
@@ -406,7 +387,7 @@ export class CombatSystem {
         // BE_DAMAGE is resolved separately by U06.
         const poisonDuration = isWeaponAttack && attacker instanceof Monster
             && attacker.hasAbility('MA_POISONS') && damage > 0 ? damage : 0;
-        if (poisonDuration > 0) damage = 1;
+        if (poisonDuration > 0) damage = physicalDamage(1);
 
 
         let triggeredRunic: string | undefined;
@@ -437,7 +418,7 @@ export class CombatSystem {
                 ? (defender instanceof Monster && monsterIsInClass(defender.typeId, attacker.equippedWeapon.vorpalEnemy) ? 100 : 0)
                 : defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable()) ? 0
                 : runicWeaponChance(
-                weaponEnchant ?? attacker.equippedWeapon.enchantment,
+                nativeStat(attacker,'native.runic-power')/4,
                 weaponRunic,
                 { damageMin: parts.min, damageMax: parts.max,
                   attacksStagger: attacker.equippedWeapon.flags?.includes('ITEM_ATTACKS_STAGGER'),
@@ -461,10 +442,10 @@ export class CombatSystem {
 
         if (isWeaponAttack && defender instanceof Player && defender.hp > 0 && attacker instanceof Monster) {
             stealFromPlayer(attacker, defender, () => defender.hasStatus('stuck') || defender.hasStatus('paralyzed')
-                || rng.randPercent(defender.seized && attacker.seizing ? 100 : hitProbability(attackerAccuracy, defenderDefense)), opts?.itemGenerationDepth ?? 1);
+                || rng.randPercent(defender.seized && attacker.seizing ? 100 : nativeHitChance(attacker,defender)), opts?.itemGenerationDepth ?? 1);
         }
         if (defender instanceof Monster) defender.enrageAfterAttack();
-        const adjustment = attacker instanceof Player ? 1 : monsterDamageAdjustmentAmount(attacker.weaknessAmount);
+        const adjustment = attacker instanceof Player ? 1 : nativeWeaknessFactor(attacker);
         const percentile = Math.trunc(Math.max(damage - Math.trunc(min * adjustment), 0) * 100
             / Math.max(1, Math.trunc((max - min) * adjustment)));
         const circumstance: AttackCircumstance = damage === 0 ? 'zero' : lungeAttack ? 'lunge'
@@ -499,8 +480,6 @@ export class CombatSystem {
          */
         lungeAttack?: boolean;
     }, trace?: PhysicalResolutionTrace): AttackResult {
-        let attackerAccuracy = 100; // Player base accuracy
-        let defenderDefense = 0;
         let damageString = '1d2'; // CE monsterCatalog[MK_YOU]
         let weaponName = 'bare hands';
         let weaponEnchant: number | undefined;
@@ -512,21 +491,14 @@ export class CombatSystem {
             && !(attacker.hasAbility('MA_SEIZES') && !attacker.seizing && legalSeizeContact(attacker, defender, opts?.grid))) attacker.submerged = false;
         // --- Determine attacker stats ---
         if (attacker instanceof Player) {
-            if (!attacker.equippedWeapon) attackerAccuracy = monsterAccuracyAdjusted(100, attacker.weaknessAmount);
             if (attacker.equippedWeapon && attacker.equippedWeapon.damage) {
                 damageString = attacker.equippedWeapon.damage;
                 clumping = attacker.equippedWeapon.clumping;
                 weaponName = attacker.equippedWeapon.name;
-                const strReq = attacker.equippedWeapon.strengthRequired || 0;
-                weaponEnchant = netEnchant(
-                    attacker.equippedWeapon.enchantment,
-                    attacker.effectiveStrength,
-                    strReq
-                );
+                weaponEnchant = nativeStat(attacker,'native.weapon-enchant')/4;
                 weaponRunic = attacker.equippedWeapon.runicType;
             }
         } else if (attacker instanceof Monster) {
-            attackerAccuracy = monsterAccuracyAdjusted(attacker.accuracy, attacker.weaknessAmount);
             damageString = attacker.damageString || '1d3';
             clumping = attacker.damageClumping;
             weaponName = 'claws/teeth';
@@ -534,20 +506,11 @@ export class CombatSystem {
 
         // --- Determine defender stats ---
         if (defender instanceof Monster) {
-            defenderDefense = monsterDefenseAdjusted(defender.defense, defender.weaknessAmount);
         } else if (defender instanceof Player) {
             // Player defense comes from equipped armor.
             // CE 内部 ×10 标度（Items.c:8515-8523），只降低被命中概率（Combat.c:140），
             // 不参与伤害结算——CE 的护甲没有任何"减伤"步骤。
             if (defender.equippedArmor && defender.equippedArmor.armor) {
-                const strReq = defender.equippedArmor.strengthRequired || 0;
-                defenderDefense = playerDefense(
-                    defender.equippedArmor.armor,
-                    defender.equippedArmor.enchantment,
-                    defender.effectiveStrength,
-                    strReq,
-                    defender.getStatusDuration('donning')
-                );
             }
         }
 
@@ -588,7 +551,7 @@ export class CombatSystem {
         // 死亡时触发的 DF（Game.triggerDeathFeatures），不是这次攻击本身。
         if (attacker instanceof Monster && attacker.hasAbility('MA_KAMIKAZE')) {
             if (defender instanceof Player && !logger.blockCombatText) logger.disturb();
-            attacker.takeDamage(attacker.hp, true);
+            attacker.drainCurrentHp();
             return { damage: 0, weaponName, hit: true, backstab: false, kamikazeSelfDestruct: true };
         }
 
@@ -628,11 +591,11 @@ export class CombatSystem {
 
         // CE Combat.c:122-146: seizing and actual matching slaying weapons keep
         // a 100% probability draw; they do not join the native auto-hit short circuit.
-        const rule = (attacker.extensionHooks ?? defender.extensionHooks)!.rule!;
+        const rule=(port:'hitChance'|'physicalDamage',input:ExtensionRuleInput)=>combatStatPair(attacker,defender,port,input);
         const probability = defender.seized && attacker.seizing
             || (attacker instanceof Player && defender instanceof Monster
                 && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId))
-            ? 100 : hitProbability(attackerAccuracy, defenderDefense, weaponEnchant);
+            ? 100 : nativeHitBase(attacker,defender);
         const adjustedProbability = Math.floor(rule('hitChance', {
             actorId: attacker.id, targetId: defender.id, baseValue: probability * 100, attackKind: 'melee',
             adjacent: distanceBetweenFootprints(attacker, defender) === 1,
@@ -647,11 +610,11 @@ export class CombatSystem {
 
         const parts = CombatSystem.parseDamageString(damageString);
         let { min, max } = parts;
-        if (weaponEnchant !== undefined) {
+        if (weaponEnchant !== undefined || attacker instanceof Monster) {
             // CE Items.c recalculateEquipmentBonuses: scale/truncate endpoints
             // BEFORE randClump, preserving clumpFactor and every interior value.
-            min = Math.max(1, enchantedDamage(min, weaponEnchant));
-            max = Math.max(1, enchantedDamage(max, weaponEnchant));
+            min = nativeStat(attacker,'native.damage-min');
+            max = nativeStat(attacker,'native.damage-max');
         }
         const isWeaponAttack = opts?.isWeaponAttack !== false;
         const immune = defender instanceof Monster && (defender.isInvulnerable()
@@ -661,12 +624,12 @@ export class CombatSystem {
         let damage = immune ? 0 : clumpedRoll(min, max, clumping ?? parts.clumping,
             (lo, hi) => rng.randRange(lo, hi));
 
-        if (attacker instanceof Monster) damage = Math.trunc(damage * monsterDamageAdjustmentAmount(attacker.weaknessAmount));
+        if (attacker instanceof Monster) damage = nativeRolledDamage(attacker,damage);
 
         // CE :1248-1258: only the sneak set delays/wakes a monster, even on an
         // immune hit; lunge/captive/attackHit-only paralysis do not.
         if (backstab && defender instanceof Monster) {
-            delayNativeDecision(opts?.grid, defender, Math.max(defender.movementSpeed, defender.attackSpeed));
+            delayNativeDecision(opts?.grid, defender, Math.max(nativeStat(defender,'native.move-speed'), nativeStat(defender,'native.attack-speed')));
             if (!bodyDecisionActor(defender).isAlly) bodyDecisionActor(defender).state = MonsterState.HUNTING;
         }
 
@@ -700,13 +663,13 @@ export class CombatSystem {
         // capped by current HP. Thrown weapons and bolts do not enter this path.
         if (attacker instanceof Player
             && !(defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable()))) {
-            const reaping = ringBonus(attacker.rings(), 'ring_of_reaping');
+            const reaping = nativeStat(attacker,'native.reaping');
             if (reaping) {
                 const bound = (Math.min(damage, defender.hp) * reaping << 16) >> 16;
                 const amount = reaping > 0 ? rng.randRange(0, bound) : rng.randRange(bound, 0);
                 if (amount) {
                     const ready = rechargeItemsIncrementally(attacker.inventory.items,
-                        equippedWisdomBonus(attacker.rings()), rng, amount);
+                        nativeStat(attacker,'native.wisdom'), rng, amount);
                     for (const item of ready) logger.log(i18next.t('item.charm_recharged', {
                         name: item.displayName, defaultValue: `Your ${item.displayName} has recharged.`,
                     }), '#66ddff');
@@ -754,7 +717,7 @@ export class CombatSystem {
                 ? (defender instanceof Monster && monsterIsInClass(defender.typeId, attacker.equippedWeapon.vorpalEnemy) ? 100 : 0)
                 : defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable()) ? 0
                 : runicWeaponChance(
-                weaponEnchant ?? attacker.equippedWeapon.enchantment,
+                nativeStat(attacker,'native.runic-power')/4,
                 weaponRunic,
                 { damageMin: parts.min, damageMax: parts.max,
                   attacksStagger: attacker.equippedWeapon.flags?.includes('ITEM_ATTACKS_STAGGER'),
@@ -778,10 +741,10 @@ export class CombatSystem {
 
         if (isWeaponAttack && defender instanceof Player && defender.hp > 0 && attacker instanceof Monster) {
             stealFromPlayer(attacker, defender, () => defender.hasStatus('stuck') || defender.hasStatus('paralyzed')
-                || rng.randPercent(defender.seized && attacker.seizing ? 100 : hitProbability(attackerAccuracy, defenderDefense)), opts?.itemGenerationDepth ?? 1);
+                || rng.randPercent(defender.seized && attacker.seizing ? 100 : nativeHitChance(attacker,defender)), opts?.itemGenerationDepth ?? 1);
         }
         if (defender instanceof Monster) defender.enrageAfterAttack();
-        const adjustment = attacker instanceof Player ? 1 : monsterDamageAdjustmentAmount(attacker.weaknessAmount);
+        const adjustment = attacker instanceof Player ? 1 : nativeWeaknessFactor(attacker);
         const percentile = Math.trunc(Math.max(damage - Math.trunc(min * adjustment), 0) * 100
             / Math.max(1, Math.trunc((max - min) * adjustment)));
         const circumstance: AttackCircumstance = damage === 0 ? 'zero' : lungeAttack ? 'lunge'
@@ -795,7 +758,7 @@ export class CombatSystem {
         if (defender instanceof Monster && (defender.hasCEBehavior('MONST_INANIMATE') || defender.isInvulnerable())) return;
         const dealt = Math.min(hpDamage, defender.hp);
         if (attacker instanceof Player) {
-            const bonus = ringBonus(attacker.rings(), 'ring_of_transference');
+            const bonus = nativeStat(attacker,'native.transference');
             if (!bonus) return;
             const amount = Math.trunc(dealt * ringTransferencePercent(bonus) / 100);
             const transfer = amount || (bonus > 0 ? 1 : -1);
@@ -870,7 +833,7 @@ export class CombatSystem {
         const origin = hooks.causality.current?.kind === 'projectile' ? hooks.causality.current
             : hooks.causality.create('projectile', thrower.id, thrower.id, hooks.partyId(thrower));
         return hooks.causality.withOrigin(origin, () => {
-            if (!hooks.rule) return CombatSystem.resolveThrownWeaponClassic(thrower, defender, item, grid);
+
             if (!(hooks.wantsPhysicalResolution?.() ?? !!hooks.physicalResolved))
                 return CombatSystem.resolveThrownWeaponExtended(thrower, defender, item, grid);
             const resolution = hooks.causality.create('projectile', thrower.id, origin.creditActorId, origin.creditPartyId);
@@ -892,8 +855,7 @@ export class CombatSystem {
             bodyDecisionActor(defender).state = MonsterState.HUNTING;
             defender.shortenMagicalFear();
         }
-        const strReq = item.strengthRequired || 0;
-        const enchant = netEnchant(item.enchantment, thrower.effectiveStrength, strReq);
+        const enchant=nativeProjectileRunic(thrower,item);
 
         // CE attackHit (Combat.c:149-158): short circuit, no accuracy roll.
         const autoHit = defender.hasStatus('paralyzed') || defender.hasStatus('stuck') || defender.isCaged;
@@ -901,7 +863,7 @@ export class CombatSystem {
         // consumes attackHit's rand_percent roll; only the conditions above skip it.
         const slayingHit = item.runicType === 'slaying' && monsterIsInClass(defender.typeId, item.vorpalEnemy);
         const probability = slayingHit || (defender.seized && thrower.seizing)
-            ? 100 : hitProbability(100, monsterDefenseAdjusted(defender.defense, defender.weaknessAmount), enchant);
+            ? 100 : nativeProjectileProbability(thrower,defender,item);
         const hit = autoHit || rng.randPercent(probability);
         if (!hit) {
             return { hit: false, damage: 0, killed: false };
@@ -914,7 +876,7 @@ export class CombatSystem {
             const parts = CombatSystem.parseDamageString(item.damage || '1d3');
             damage = clumpedRoll(parts.min, parts.max, item.clumping ?? parts.clumping,
                 (lo, hi) => rng.randRange(lo, hi));
-            damage = enchantedDamage(damage, enchant);
+            damage = nativeProjectileRoll(thrower,item,damage);
         }
 
         const hpDamage = defender.absorbShieldDamage(damage);
@@ -953,8 +915,7 @@ export class CombatSystem {
             bodyDecisionActor(defender).state = MonsterState.HUNTING;
             defender.shortenMagicalFear();
         }
-        const strReq = item.strengthRequired || 0;
-        const enchant = netEnchant(item.enchantment, thrower.effectiveStrength, strReq);
+        const enchant=nativeProjectileRunic(thrower,item);
 
         // CE attackHit (Combat.c:149-158): short circuit, no accuracy roll.
         const autoHit = defender.hasStatus('paralyzed') || defender.hasStatus('stuck') || defender.isCaged;
@@ -962,8 +923,8 @@ export class CombatSystem {
         // consumes attackHit's rand_percent roll; only the conditions above skip it.
         const slayingHit = item.runicType === 'slaying' && monsterIsInClass(defender.typeId, item.vorpalEnemy);
         const probability = slayingHit || (defender.seized && thrower.seizing)
-            ? 100 : hitProbability(100, monsterDefenseAdjusted(defender.defense, defender.weaknessAmount), enchant);
-        const rule = (thrower.extensionHooks ?? defender.extensionHooks)!.rule!;
+            ? 100 : nativeProjectileProbability(thrower,defender,item);
+        const rule=(port:'hitChance'|'physicalDamage',input:ExtensionRuleInput)=>combatStatPair(thrower,defender,port,input);
         const adjustedProbability = Math.floor(rule('hitChance', {
             actorId: thrower.id, targetId: defender.id, baseValue: probability * 100, attackKind: 'thrown',
             adjacent: distanceBetweenFootprints(thrower, defender) === 1,
@@ -982,7 +943,7 @@ export class CombatSystem {
             const parts = CombatSystem.parseDamageString(item.damage || '1d3');
             damage = clumpedRoll(parts.min, parts.max, item.clumping ?? parts.clumping,
                 (lo, hi) => rng.randRange(lo, hi));
-            damage = enchantedDamage(damage, enchant);
+            damage = nativeProjectileRoll(thrower,item,damage);
         }
 
         damage = rule('physicalDamage', { actorId: thrower.id, targetId: defender.id, baseValue: damage,

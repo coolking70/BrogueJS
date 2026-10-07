@@ -1,3 +1,4 @@
+import { worldText } from '../../ext/worldText';
 /**
  * src/engine/Items/Item.ts
  * Represents an item in the game world or in an inventory
@@ -195,7 +196,7 @@ export class Item implements Entity {
     }
 
     get uninscribedName(): string {
-        if (this.category === ItemCategory.MATERIAL) return i18next.t(this.name);
+        if (this.category === ItemCategory.MATERIAL) return worldText(this.name);
         // Here we hook into the static registry if the item is a consumables
         switch (this.category) {
             case ItemCategory.GEM:

@@ -55,7 +55,7 @@ function scene(extended: boolean, variant = 'matching', seed = 1901) {
         const registry = new ExtensionRegistry();
         registry.register('neutral-slaying', '1.0.0', () => ({ id: 'neutral-slaying', version: '1.0.0', initialState: () => ({}),
             validateState: (value): value is Json => !!value && typeof value === 'object',
-            rulePolicies: { hitChance: input => { calls.push({ ...input }); return input.baseValue; }, physicalDamage: input => input.baseValue } }));
+            statSources:{collect:()=>[]} }));
         const runtime = new ExtensionRuntime(registry, registry.manifest(['neutral-slaying']), {
             depth: () => 1, playerId: () => player.id, randomInt: () => { throw Error('Pure neutral policy'); }, message: () => { throw Error('No module messages'); },
         });
@@ -81,7 +81,7 @@ describe('EXT-1d real-flag slaying synchronization with main', () => {
             expect({ result: actual, actors: graph([extended.player, extended.monster, extended.weapon]), rng: rng.getState(), messages: structuredClone(logger.messages) }).toEqual(expected);
             if (variant === 'matching') {
                 expect(actual.hit).toBe(true);
-                expect(extended.calls[0]).toMatchObject({ baseValue: 10000, rollMode: 'roll-guaranteed' });
+                expect(CombatSystem.previewHitChance(extended.player,extended.monster)).toBe(100);
             }
         }
     });

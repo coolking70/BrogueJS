@@ -14,7 +14,7 @@ describe('EXT-1b classic evaluator isolation',() => {
     it('never evaluates growth during classic birth, native actions, floor entry, save/load or replay/seek',() => {
         const spies = [vi.spyOn(evaluator,'evaluateGrowthPort'),vi.spyOn(evaluator,'evaluateGrowthPhysicalDamage'),
             vi.spyOn(evaluator,'evaluateGrowthMagnitude'),vi.spyOn(evaluator,'evaluateGrowthModifiers'),
-            vi.spyOn(evaluator,'createGrowthRulePolicies'),vi.spyOn(ExtensionRuntime.prototype,'rule'),
+            vi.spyOn(evaluator,'evaluateGrowthPort'),vi.spyOn(ExtensionRuntime.prototype,'queryOptionalActor'),
             vi.spyOn(catalog,'createExtensionRegistry')];
         const game=createHeadlessGame(5318,'test');
         const target=new Monster(game.player.x+1,game.player.y,(monsters as MonsterData[]).find(monster=>monster.id==='rat')!);

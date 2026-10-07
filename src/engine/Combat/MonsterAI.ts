@@ -1,3 +1,4 @@
+import { markStatsDirty } from '../Stats/NativeStatSources';
 import { bodyDecisionActor, bodyGroupActors } from '../Status/BodyStatuses';
 import { distanceBetweenFootprints } from '../Movement/CreatureSpatial';
 /** CE Monsters.c:1591–1827. Allegiance is separate from creatureState in web. */
@@ -115,11 +116,11 @@ export function updateMonsterState(g: Game, m: Monster, stealthRange: number): v
     } else if (m.creatureMode === MonsterMode.PERM_FLEEING && m.state === MonsterState.FLEEING
         && m.hasAbility('MA_HIT_STEAL_FLEE') && !m.hasStatus('magical_fear') && !m.carriedItem) {
         m.creatureMode = MonsterMode.NORMAL;
-        if (m.isAlly || m.leader instanceof Player) { m.isAlly = true; m.state = MonsterState.WANDERING; }
+        if (m.isAlly || m.leader instanceof Player) { m.isAlly = true; markStatsDirty(m); m.state = MonsterState.WANDERING; }
         else alertMonster(g, m);
     } else if (m.creatureMode === MonsterMode.NORMAL && m.state === MonsterState.FLEEING
         && m.hasBehavior('MONST_FLEES_NEAR_DEATH') && !m.hasStatus('magical_fear') && m.hp >= Math.trunc(3 * m.maxHp / 4)) {
-        if (m.isAlly || m.leader instanceof Player) { m.isAlly = true; m.state = MonsterState.WANDERING; }
+        if (m.isAlly || m.leader instanceof Player) { m.isAlly = true; markStatsDirty(m); m.state = MonsterState.WANDERING; }
         else alertMonster(g, m);
     }
     if (aware && !allyState(m) && (m.state === MonsterState.FLEEING || m.state === MonsterState.HUNTING)) m.lastSeenPlayerAt = { ...g.player.loc };

@@ -2,7 +2,7 @@ import { extensionDigest, checkpointExtensionDigest } from '../../../../test/sup
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import data from '../data/definitions.json';
 import { GROWTH_VERSION, parseGrowthDefinitionPack } from '../definitions';
-import { createGrowthCombatStatsProvider, isGrowthCombatStatsInput, mapGrowthCombatCapacity } from '../combatStats';
+import { mapGrowthCombatCapacity } from '../combatStats';
 import { createGrowthGameplay } from '../module';
 import type { GrowthDefinitionPack, GrowthModifier, GrowthSkill, GrowthTimedEffect } from '../types';
 import { initialGrowthAttributes, growthRuleActor } from '../attributes';
@@ -10,7 +10,13 @@ import { initialGrowthProgression } from '../experience';
 import { initialGrowthIdentityBuild } from '../identities';
 import { initialGrowthSkillBuild, createGrowthEffectInstance } from '../skills';
 import { initialGrowthState, type GrowthState } from '../state';
-import type { Json, OptionalActorQueryContext, ReadonlyJson } from '../../../types';
+import type { Json } from '../../../types';
+import { createGrowthStatSources } from '../statSources';
+import { StatPipeline } from '../../../../engine/Stats/StatPipeline';
+import { NATIVE_STAT_KEYS } from '../../../../engine/Stats/NativeStatKeys';
+import type { StatKeyDeclaration } from '../../../stats';
+const COMBAT_STAT_KEYS:readonly StatKeyDeclaration[]=['stamina-capacity','poise-capacity','stamina-regen','poise-recovery','native-attack-cost'].map(id=>({id:`combat.${id}`,owner:'combat',unit:'resource',kind:id.endsWith('capacity')?'materialized':'query',minimum:id.endsWith('capacity')?1:0,maximum:1_000_000,rounding:'floor',categories:['flat','increased','more','clamp'],increased:{minimum:-9000,maximum:50000},moreSlots:[{id:'growth.slot.final',minimum:-10000,maximum:30000}]}));
+import type { StatActorFacts, StatSourceContext } from '../../../stats';
 import { extensionDataFingerprint } from '../../../fingerprint';
 import { canonical } from '../../../json';
 import { createHeadlessGame } from '../../../../test/harness';
@@ -23,8 +29,6 @@ import { Monster, type MonsterData } from '../../../../entities/Monster';
 import monsters from '../../../../data/monsters.json';
 import { markCreatureBirth } from '../../../birth';
 
-const capability = 'growth.combat-stats.v1';
-const input = {v:1,baseStaminaCapacity:100,basePoiseCapacity:60} as const;
 const con = 'growth.attribute.constitution', will = 'growth.attribute.will';
 const fresh = (): GrowthDefinitionPack => structuredClone(data) as unknown as GrowthDefinitionPack;
 const parse = (pack: GrowthDefinitionPack) => parseGrowthDefinitionPack(pack,{moduleVersion:pack.moduleVersion,hasText:()=>true});
@@ -32,16 +36,18 @@ function freeze<T>(value: T): T {
     if (value && typeof value === 'object') {Object.values(value).forEach(freeze);Object.freeze(value);} return value;
 }
 function fixture(change: (pack: GrowthDefinitionPack) => void = () => undefined, npc = false) {
-    const data = fresh(); change(data); const pack = parse(data), provider = createGrowthCombatStatsProvider(pack);
+    const data = fresh(); change(data); const pack = parse(data), provider = createGrowthStatSources(pack);
     const progression = initialGrowthProgression(pack.config.levels), attributes = initialGrowthAttributes(pack);
     const identity = initialGrowthIdentityBuild(), build = initialGrowthSkillBuild();
     if (npc) identity.templateId = pack.config.monsters.defaultTemplateId;
     const state = {...initialGrowthState(),created:true,playerId:1,revision:1};
     const components: Record<string, unknown> = {progression,attributes,identity,'skill-build':build};
-    const context = (): OptionalActorQueryContext => freeze({playerId:1,state:structuredClone(state) as unknown as Json,
-        actor:{id:npc ? 2 : 1,player:!npc,monsterId:npc ? 'rat' : null,name:'',hp:10,maxHp:10,x:1,y:1,allied:!npc,hostile:npc},
-        getActorComponent:(name: string) => components[name] === undefined ? undefined : freeze(structuredClone(components[name])) as ReadonlyJson});
-    const query = () => provider.query(input,context()) as {status:string;staminaCapacity:number;poiseCapacity:number;revision:string};
+    const actor:StatActorFacts={id:npc?2:1,player:!npc,monsterId:npc?'rat':null,name:'',hp:10,maxHp:10,x:1,y:1,allied:!npc,hostile:npc,statuses:[],tags:[]};
+    const base=(key:string)=>key==='combat.stamina-capacity'?100:key==='combat.poise-capacity'?60:key==='native.strength'?12:key==='native.max-hp'?10:provider.keys?.find(k=>k.id===key)?.base??0;
+    const context = ():StatSourceContext => freeze({playerId:1,state:structuredClone(state) as unknown as Json,facts:{},equippedItems:()=>[],base,
+        getComponent:(_id:number,name:string)=>components[name]===undefined?undefined:freeze(structuredClone(components[name])) as Json});
+    const pipeline=new StatPipeline({actor:()=>actor,revision:()=>0,base:(_id,key)=>base(key),collect:()=>provider.collect(actor,context()).map(r=>({...r,owner:'growth'}))},[...NATIVE_STAT_KEYS,...COMBAT_STAT_KEYS,...provider.keys!]);
+    const query=()=>{pipeline.clear();return {staminaCapacity:pipeline.value(actor.id,'combat.stamina-capacity'),poiseCapacity:pipeline.value(actor.id,'combat.poise-capacity')};};
     return {data,pack,provider,progression,attributes,identity,build,state,components,context,query};
 }
 const modifier = (port: 'staminaCapacity' | 'poiseCapacity', amount: number): GrowthModifier => ({kind:'modifier',port,operation:'add',slot:null,
@@ -55,7 +61,7 @@ describe('EXT-3g growth actor-scoped combat capacity provider', () => {
             pack.config.combatStats!.poise = {...pack.config.combatStats!.poise,coefficient:5,denominator:2};
         });
         f.attributes.values[con]=6; f.attributes.values[will]=3;
-        expect(f.query()).toMatchObject({status:'supported',staminaCapacity:103,poiseCapacity:67});
+        expect(f.query()).toMatchObject({staminaCapacity:103,poiseCapacity:67});
         const map = {...f.pack.config.combatStats!.stamina,baseline:0,coefficient:Number.MAX_SAFE_INTEGER,denominator:Number.MAX_SAFE_INTEGER};
         expect(mapGrowthCombatCapacity(100,7,map)).toBe(107);
         expect(mapGrowthCombatCapacity(100,0,{...map,baseline:3})).toBe(100);
@@ -65,35 +71,27 @@ describe('EXT-3g growth actor-scoped combat capacity provider', () => {
     it('is repeatable, frozen, zero-tick and returns only capacities with an exact effective-input fingerprint', () => {
         const f=fixture(), before=canonical({state:f.state,components:f.components}), random=rng.getState(), tick=timeSystem.currentTick;
         const result=f.query(); for(let n=0;n<25;n++) expect(f.query()).toEqual(result);
-        expect(Object.keys(result).sort()).toEqual(['poiseCapacity','revision','staminaCapacity','status']);
-        expect(result.revision).toMatch(/^sha256:[a-f0-9]{64}$/);
+        expect(Object.keys(result).sort()).toEqual(['poiseCapacity','staminaCapacity']);
         f.state.objectiveClock++; f.state.revision++; expect(f.query()).toEqual(result);
         f.state.objectiveClock--; f.state.revision--; expect(canonical({state:f.state,components:f.components})).toBe(before);
-        f.attributes.values[con]=1;expect(f.query().revision).not.toBe(result.revision);
+        f.attributes.values[con]=1;expect(f.query().staminaCapacity).not.toBe(result.staminaCapacity);
         f.attributes.values[con]=0;expect(f.query()).toEqual(result);
         expect(rng.getState()).toEqual(random);expect(timeSystem.currentTick).toBe(tick);
     });
     it('uses the same trusted protocol for NPC templates and keeps unsupported actors explicit', () => {
         const f=fixture(undefined,true);f.attributes.values[con]=3;f.attributes.values[will]=2;
-        expect(f.query()).toMatchObject({status:'supported',staminaCapacity:106,poiseCapacity:62});
+        expect(f.query()).toMatchObject({staminaCapacity:106,poiseCapacity:62});
         const unsupported=fixture(pack=>{pack.config.combatStats!.allowedTemplateIds=[];},true);
-        expect(unsupported.query()).toEqual({status:'unsupported'});
-        const disabled=fixture(pack=>{pack.config.combatStats=null;});expect(disabled.query()).toEqual({status:'unsupported'});
-        const playerDisabled=fixture(pack=>{pack.config.combatStats!.playerEnabled=false;});expect(playerDisabled.query()).toEqual({status:'unsupported'});
-        delete f.components.progression;delete f.components.attributes;delete f.components.identity;expect(f.query()).toEqual({status:'unsupported'});
-        f.components.attributes=initialGrowthAttributes(f.pack);expect(()=>f.query()).toThrow(/actor build/);
+        expect(unsupported.query()).toEqual({staminaCapacity:100,poiseCapacity:60});
+        const disabled=fixture(pack=>{pack.config.combatStats=null;});expect(disabled.query()).toEqual({staminaCapacity:100,poiseCapacity:60});
+        const playerDisabled=fixture(pack=>{pack.config.combatStats!.playerEnabled=false;});expect(playerDisabled.query()).toEqual({staminaCapacity:100,poiseCapacity:60});
+        delete f.components.progression;delete f.components.attributes;delete f.components.identity;expect(f.query()).toEqual({staminaCapacity:100,poiseCapacity:60});
+        f.components.attributes=initialGrowthAttributes(f.pack);expect(f.query()).toEqual({staminaCapacity:100,poiseCapacity:60});
     });
-    it('rejects actor forgery, extra/recovery fields, invalid versions and malformed or out-of-range DTOs', () => {
-        const f=fixture();
-        for(const bad of [{...input,actorId:2},{...input,recovery:1},{...input,v:2},{v:1},null,
-            {...input,baseStaminaCapacity:0},{...input,basePoiseCapacity:1000001},{...input,basePoiseCapacity:NaN},
-            {...input,baseStaminaCapacity:1.5}]) {
-            expect(isGrowthCombatStatsInput(bad)).toBe(false);
-            expect(()=>f.provider.query(bad as ReadonlyJson,f.context())).toThrow(/request/);
-        }
-        const good=f.query();expect(f.provider.validate(good)).toBe(true);
-        for(const bad of [{...good,staminaCapacity:0},{...good,poiseCapacity:1000001},{...good,poiseCapacity:1.1},
-            {...good,revision:'bad'},{...good,recovery:1},{status:'unsupported',staminaCapacity:100},{status:'absent'}]) expect(f.provider.validate(bad)).toBe(false);
+    it('reads only its own actor components and does not reinstate the retired protocol',()=>{
+        const f=fixture();expect(f.provider.keys!.every(key=>key.id.startsWith('growth.'))).toBe(true);
+        expect(createGrowthGameplay(f.pack,undefined).optionalActorQueries).toBeUndefined();
+        const context=f.context();expect(Object.isFrozen(context)).toBe(true);expect('actorId' in context.facts).toBe(false);
     });
     it('validates references, integer coefficients, baseline and bounds while explicit null disables every map', () => {
         for(const mutate of [
@@ -120,7 +118,7 @@ describe('EXT-3g growth actor-scoped combat capacity provider', () => {
         for(let cycle=0;cycle<8;cycle++) {
             f.build.effects=[structuredClone(instance)];const before=canonical(f.build);
             const active=f.query();expect(active).toMatchObject({staminaCapacity:108,poiseCapacity:55});
-            expect(active.revision).not.toBe(base.revision);
+            expect(active).not.toEqual(base);
             for(let read=0;read<5;read++) expect(f.query()).toEqual(active);
             expect(canonical(f.build)).toBe(before);
             f.state.objectiveClock=instance.expiresAt!;expect(f.query()).toEqual(base);expect(canonical(f.build)).toBe(before);
@@ -136,9 +134,9 @@ function runtimeFixture(change: (pack:GrowthDefinitionPack)=>void = () => undefi
     pack.config.respec={enabled:true,cost:{resource:'gold',amount:0},refundBasisPoints:10000,clearCooldowns:false};change(pack);
     const parsed=parse(pack),identity={schema:1,version:pack.moduleVersion,fingerprint:extensionDataFingerprint(pack)};
     vi.spyOn(catalog,'createExtensionRegistry').mockImplementation(()=>{
-        const registry=new ExtensionRegistry();registry.register('growth',pack.moduleVersion,()=>createGrowthGameplay(parsed,identity),identity);return registry;
+        const registry=new ExtensionRegistry();registry.register('growth',pack.moduleVersion,()=>createGrowthGameplay(parsed,identity),identity);registry.register('combat','1.6.0',()=>({id:'combat',version:'1.6.0',initialState:()=>({}),validateState:(v):v is Json=>!!v,statSources:{keys:COMBAT_STAT_KEYS.map(k=>({...k,base:k.id==='combat.stamina-capacity'?100:k.id==='combat.poise-capacity'?60:0})),collect:()=>[]}}));return registry;
     });
-    const game=createHeadlessGame(77031,'test');game.startNewGame({seed:77031,mode:'test',ruleSet:'extended',extensions:['growth']});
+    const game=createHeadlessGame(77031,'test');game.startNewGame({seed:77031,mode:'test',ruleSet:'extended',extensions:['growth','combat']});
     const state=()=>game.extensionRuntime!.snapshot().modules.growth as unknown as GrowthState;
     const command=(action:string,payload:Record<string,unknown>={})=>{
         game.executeCommand('ext:command',JSON.stringify({module:'growth',action,payload:{revision:state().revision,...payload}}));
@@ -147,14 +145,14 @@ function runtimeFixture(change: (pack:GrowthDefinitionPack)=>void = () => undefi
     command('create-character',{revision:0});
     return {game,command,pack};
 }
-const queryPlayer=(game:Game)=>game.extensionRuntime!.queryOptionalActor(capability,game.player,input);
+const queryPlayer=(game:Game)=>({staminaCapacity:game.extensionRuntime!.stats.value(game.player.id,'combat.stamina-capacity'),poiseCapacity:game.extensionRuntime!.stats.value(game.player.id,'combat.poise-capacity')});
 
 describe('EXT-3g growth combat provider actual commands and reconstruction',()=>{
     it('queries actual allocation and respec without mutation and restores exact results on repeated load and replay',()=>{
         const {game,command}=runtimeFixture(),base=queryPlayer(game);
         const random=rng.getState(),tick=timeSystem.currentTick;
         command('allocate',{attributes:{[con]:3,[will]:2}});
-        const increased=queryPlayer(game);expect(increased).toMatchObject({status:'available',value:{status:'supported',staminaCapacity:106,poiseCapacity:62}});
+        const increased=queryPlayer(game);expect(increased).toMatchObject({staminaCapacity:106,poiseCapacity:62});
         const saved=game.toSaveSnapshot(),snapshot=game.extensionRuntime!.snapshot();
         for(let i=0;i<20;i++)expect(queryPlayer(game)).toEqual(increased);
         expect(game.extensionRuntime!.snapshot()).toEqual(snapshot);expect(rng.getState()).toEqual(random);expect(timeSystem.currentTick).toBe(tick);
@@ -167,9 +165,9 @@ describe('EXT-3g growth combat provider actual commands and reconstruction',()=>
             loaded.replaySeek(index);expect(loaded.replayError).toBeNull();expect(queryPlayer(loaded)).toEqual(index===1 ? base : increased);
         }
         command('respec');expect(queryPlayer(game)).toEqual(base);
-        const old=structuredClone(saved);old.extensions!.manifest.modules[0]!.version='1.6.0';
+        const old=structuredClone(saved);old.extensions!.manifest.modules.find(m=>m.id==='growth')!.version='1.7.0';
         const current=game.extensionRuntime;expect(game.loadSnapshot(old)).toBe(false);expect(game.extensionRuntime).toBe(current);
-        expect(GROWTH_VERSION).toBe('1.7.0');
+        expect(GROWTH_VERSION).toBe('1.8.0');
     });
     it('repeated real temporary casts expire without accumulating capacity or changing the saved effect on reads',()=>{
         const skillId='growth.skill.brace';
@@ -185,7 +183,7 @@ describe('EXT-3g growth combat provider actual commands and reconstruction',()=>
         const base=queryPlayer(game);
         for(let cycle=0;cycle<3;cycle++) {
             command('use-skill',{skillId,target:{kind:'self'}});
-            const active=queryPlayer(game);expect(active).toMatchObject({status:'available',value:{staminaCapacity:109,poiseCapacity:56}});
+            const active=queryPlayer(game);expect(active).toMatchObject({staminaCapacity:109,poiseCapacity:56});
             const saved=game.toSaveSnapshot();
             for(let n=0;n<8;n++)expect(queryPlayer(game)).toEqual(active);
             expect(extensionDigest(game.extensionRuntime!.snapshot() ?? null)).toBe(checkpointExtensionDigest(saved));
@@ -194,12 +192,12 @@ describe('EXT-3g growth combat provider actual commands and reconstruction',()=>
             expect(queryPlayer(game)).toEqual(base);
         }
     });
-    it('uses a live NPC object and refuses arbitrary actor IDs through the input payload',()=>{
+    it('uses live NPC facts and keeps the retired optional capability absent',()=>{
         const {game}=runtimeFixture(),monster=new Monster(game.player.x+2,game.player.y,(monsters as MonsterData[]).find(m=>m.id==='rat')!);
-        markCreatureBirth(monster,'test');game.monsters.push(monster);
-        const result=game.extensionRuntime!.queryOptionalActor(capability,monster,input);
-        expect(result).toMatchObject({status:'available',value:{status:'supported',staminaCapacity:100,poiseCapacity:60}});
-        expect(game.extensionRuntime!.queryOptionalActor(capability,game.player,{...input,actorId:monster.id})).toEqual({status:'unavailable',reason:'unsupported-input'});
-        expect(game.extensionRuntime!.queryOptionalActor('growth.unknown.v1',monster,input)).toEqual({status:'unavailable',reason:'absent'});
+        markCreatureBirth(monster,'test');game.monsters.push(monster);game.extensionRuntime!.attachCreature(monster);
+        expect(game.extensionRuntime!.stats.value(monster.id,'combat.stamina-capacity')).toBe(100);
+        expect(game.extensionRuntime!.stats.value(monster.id,'combat.poise-capacity')).toBe(60);
+        expect(game.extensionRuntime!.queryOptionalActor('growth.combat-stats.v1',monster,{v:1})).toEqual({status:'unavailable',reason:'absent'});
+        expect(()=>game.extensionRuntime!.stats.value(Number.MAX_SAFE_INTEGER,'combat.stamina-capacity')).toThrow();
     });
 });

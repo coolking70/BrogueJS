@@ -1,3 +1,4 @@
+import { nativeStat } from '../Stats/NativeStatSources';
 import { bodyStatusOwner } from '../Status/BodyStatuses';
 import { spatialTerrainRevision, releaseSpatialTerrain } from './SpatialRevision';
 import { bodyConstraintsSatisfied, type BodyPose } from './BodyConstraints';
@@ -428,8 +429,8 @@ export class CreatureSpatial {
         rigidMovementFootprint(c, this.catalog);
         const stages = rotationStages(c.spatial!.pose, turns);
         if (!this.isActive(c) || !Object.getOwnPropertyDescriptor(c.spatial, 'pose')?.writable
-            || !integer(c.movementSpeed, 1, 1000000) || !this.canRotateFootprint(c, turns, options)) return null;
-        const plan = this.preparePlacement([{ creature: c, at: c.loc, pose: stages[stages.length - 1]! }], options, c.movementSpeed * stages.length);
+            || !integer(nativeStat(c,'native.move-speed'), 1, 1000000) || !this.canRotateFootprint(c, turns, options)) return null;
+        const plan = this.preparePlacement([{ creature: c, at: c.loc, pose: stages[stages.length - 1]! }], options, nativeStat(c,'native.move-speed') * stages.length);
         if (plan) this.rotationPlans.set(plan, turns);
         return plan;
     }
@@ -468,7 +469,7 @@ export class CreatureSpatial {
         if (turns !== undefined) {
             const actor = plan.changes[0]!.creature;
             if (!this.isActive(actor) || !Object.getOwnPropertyDescriptor(actor.spatial, 'pose')?.writable
-                || plan.actionCost !== actor.movementSpeed * Math.abs(turns) || !this.canRotateFootprint(actor, turns, options)) return false;
+                || plan.actionCost !== nativeStat(actor,'native.move-speed') * Math.abs(turns) || !this.canRotateFootprint(actor, turns, options)) return false;
         }
         const recheck = this.preparePlacement(plan.changes, options, plan.actionCost);
         if (!recheck) return false;

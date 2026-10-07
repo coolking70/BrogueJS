@@ -1,3 +1,4 @@
+import { markItemStatsDirty } from './ItemStatInvalidation';
 /** Fixed C5 assembly. Never calls the random spawning pipeline. */
 import { Item, ItemCategory } from './Item';
 import type { ItemDefinitionContribution } from '../../ext/worldSdk';
@@ -55,12 +56,14 @@ export function assembleWorldItem(definition: ItemDefinitionContribution, quanti
     item.damage = weapon.damage;
     item.clumping = weapon.clumping;
     item.strengthRequired = weapon.strengthRequired;
+    markItemStatsDirty(item);
     item.weight = weapon.weight;
     if (weapon.flags) item.flags = [...weapon.flags];
   } else if (armor) {
     item.identityId = template;
     item.armor = armor.armor;
     item.strengthRequired = armor.strengthRequired;
+    markItemStatsDirty(item);
     item.weight = armor.weight;
   } else {
     item.consumableId = template;

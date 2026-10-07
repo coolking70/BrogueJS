@@ -1,9 +1,9 @@
+import { equipmentStats, nativeStrengthAdjustment, nativeMeanDamage } from '../Stats/NativeStatSources';
 import { enchantedEquipment, armorStealthAdjustment } from '../Items/ItemEffectFormulas';
 import { ItemCategory as C, type Item } from '../Items/Item';
 import { ItemLoader } from '../Items/ItemLoader';
 import { CombatSystem } from '../Combat/Combat';
-import { accuracyFraction, damageFraction, enchantedDamage, netEnchant, playerDefense,
-    strengthModifier, runicWeaponChance, weaponParalysisDuration, weaponSlowDuration,
+import { runicWeaponChance, weaponParalysisDuration, weaponSlowDuration,
     weaponConfusionDuration, weaponForceDistance, weaponImageCount, weaponImageDuration,
     armorImageCount, armorAbsorptionMax, armorReprisalPercent, reflectionChance } from '../Combat/CombatFormulas';
 import { monsterIsInClass } from '../Combat/MonsterClass';
@@ -17,29 +17,31 @@ import i18next from 'i18next';
 export function equipmentDetail(item: Item, ctx: ItemDetailContext): DetailSection[] {
     const k = itemKnowledge(item, ctx), weapon = item.category === C.WEAPON;
     const req = item.strengthRequired ?? 0, str = ctx.strength;
-    const ne = netEnchant(k.instanceKnown ? item.enchantment : 0, str, req);
+    const projected=ctx.statProjection??equipmentStats({...item,enchantment:k.instanceKnown?item.enchantment:0},str);
+    const ne = projected[weapon?'native.weapon-enchant':'native.armor-enchant']!/4;
     // Same inputs as ItemUseCoordinator.enchantChosenItem: +1 E and -1 strength
     // requirement (floored at zero). Do not call the mutator: throwing gear rolls RNG.
     const projection = enchantedEquipment(item.enchantment, req);
     const nextReq = projection.strengthRequired;
-    const next = netEnchant(projection.enchantment, str, nextReq);
+    const nextStats=ctx.nextStatProjection??equipmentStats({...item,...projection},str);
+    const next = nextStats[weapon?'native.weapon-enchant':'native.armor-enchant']!/4;
     const lines: DetailLine[] = [], sections: DetailSection[] = [];
     const add = (key: string, values: Record<string, number | string> = {}) => lines.push({ text: detailText(key, values) });
     const range = item.damage ? CombatSystem.parseDamageString(item.damage) : undefined;
     if (weapon && range) {
         add('weapon.base', { dice: item.damage!, low: range.min, high: range.max });
         if (k.instanceKnown) {
-            add('weapon.actual', { low: Math.max(1, enchantedDamage(range.min, ne)), high: Math.max(1, enchantedDamage(range.max, ne)), enchant: signed(item.enchantment) });
-            add('weapon.next', { low: Math.max(1, enchantedDamage(range.min, next)), high: Math.max(1, enchantedDamage(range.max, next)), strength: nextReq });
+            add('weapon.actual', { low: projected['native.damage-min']!, high: projected['native.damage-max']!, enchant: signed(item.enchantment) });
+            add('weapon.next', { low: nextStats['native.damage-min']!, high: nextStats['native.damage-max']!, strength: nextReq });
         }
         if (ctx.weapon !== undefined && !ctx.equipped) {
             const current = ctx.weapon;
             const currentRange = CombatSystem.parseDamageString(current?.damage ?? '1d2');
-            const currentEnchant = current ? netEnchant(current.enchantment, str, current.strengthRequired) : 0;
-            const accuracy = Math.trunc(100 * accuracyFraction(ne));
-            const currentAccuracy = Math.trunc(100 * accuracyFraction(currentEnchant));
-            const mean = (range.min + range.max) / 2 * damageFraction(ne);
-            const currentMean = (currentRange.min + currentRange.max) / 2 * damageFraction(currentEnchant);
+            const currentEnchant = ctx.currentStatProjection?.['native.weapon-enchant']!==undefined?ctx.currentStatProjection['native.weapon-enchant']/4:current ? equipmentStats({...current,category:C.WEAPON},str)['native.weapon-enchant']!/4 : 0;
+            const accuracy = projected['native.accuracy']!;
+            const currentAccuracy = ctx.currentStatProjection?.['native.accuracy']??equipmentStats({...current,category:C.WEAPON,enchantment:current?.enchantment??0},str)['native.accuracy']!;
+            const mean = nativeMeanDamage(range.min,range.max,ne);
+            const currentMean = nativeMeanDamage(currentRange.min,currentRange.max,currentEnchant);
             add('weapon.compare', {
                 assumption: !k.instanceKnown || current?.assumed ? detailText('assumed') : '',
                 accuracy: signed(Math.trunc(accuracy * 100 / Math.max(1, currentAccuracy)) - 100),
@@ -50,15 +52,15 @@ export function equipmentDetail(item: Item, ctx: ItemDetailContext): DetailSecti
         add('armor.base', { armor: item.armor });
         if (k.instanceKnown) {
             if (ne !== 0 || item.enchantment !== 0) add('armor.actual', {
-                armor: Math.round((item.armor + ne) * 100) / 100, enchant: signed(ne),
+                armor: projected['native.defense']!/10, enchant: signed(ne),
                 note: ne !== item.enchantment ? detailText('strength.note') : '',
             });
-            add('armor.next', { armor: Math.trunc(playerDefense(item.armor, projection.enchantment, str, nextReq) / 10), strength: nextReq });
+            add('armor.next', { armor: Math.trunc(nextStats['native.defense']! / 10), strength: nextReq });
         }
         if (ctx.armor !== undefined && !ctx.equipped) {
             const current = ctx.armor;
-            const rating = Math.trunc(playerDefense(item.armor, k.instanceKnown ? item.enchantment : 0, str, req) / 10);
-            const currentRating = current ? Math.trunc(playerDefense(current.armor ?? 0, current.enchantment, str, current.strengthRequired) / 10) : 0;
+            const rating = Math.trunc(projected['native.defense']! / 10);
+            const currentRating = Math.trunc((ctx.currentStatProjection?.['native.defense']??(current?equipmentStats({...current,category:C.ARMOR},str)['native.defense']!:0))/10);
             add('armor.compare', { assumption: !k.instanceKnown || current?.assumed ? detailText('assumed') : '', armor: rating, current: currentRating });
             // CE armorStealthAdjustment / current Game.calculateStealthRange.
             const stealth = armorStealthAdjustment(req) - armorStealthAdjustment(current?.strengthRequired ?? 0);
@@ -66,7 +68,7 @@ export function equipmentDetail(item: Item, ctx: ItemDetailContext): DetailSecti
         }
     }
     if (item.strengthRequired !== undefined) {
-        const mod = strengthModifier(str, req);
+        const mod = nativeStrengthAdjustment(str, req);
         add('strength', { required: req, strength: str, state: detailText(mod >= 0 ? 'strength.enough' : 'strength.low') });
         if (mod) add('strength.modifier', { modifier: signed(mod) });
     }

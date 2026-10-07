@@ -873,3 +873,7 @@ WorldCommit.chargedTicks 表示此次接收的耗时义务（timed-work 为首�
 4. **5A2-S**（统一属性管线）：**不得修改任何 C5 DTO 或 §9 签名**；与 5A2 的 combat 格式变化合并为一次 combat 升号（§1.2）；回血改读 `native.regeneration`；属性来源收集用 §5.2 枚举器且箱内物品不贡献。集成时，dot 的 crafting 自然 trace/录像在 5A2-S 合入后**重跑**并逐字段归因。
 5. **5A3**：结构/房间/region revision/RestPoint。cellProperties 迁移前后，每个节点/工位/RestPoint/箱的工作位集合与交互线结果逐格不变（新增回归 fixture），否则 crafting 已录 trace 失效。
 6. 5C/5D/5E 另批；5C2 site 必须迁 region/world/spatial/action/实体 codec 的 depth 为 LevelRef，不是多加一个 depth=0。任何后续 SDK 需求由本地修订合同/fixture，dot 不直接改共享文件。
+
+维护者补充裁定（2026-10-07）：`native.regeneration` 在属性求值账本中保存精确有理数 `{numerator, denominator}`，分子、分母必须为安全整数，分母为正并约分；只在回血消费边界转为 `number`。S18 零修正逐值等价按此分数语义验收，整数键仍只在最终舍入一次。无法以安全整数约分表示的来源组合在提交前拒绝，不做近似。
+
+5A2-S 审查维护者裁定（2026-10-07）：原生键无模块来源时保持原生值，不套用硬限；攻速有来源时 25…max(400, 原生值)，恢复减速塔/图腾/变异怪的经典零修正等价。速度 more 槽下限 −5000 bp；新增 native.regeneration-bonus → native.regeneration 固定 DAG，戒指单位先查原生表再得到上述精确分数。此三项同属本批 foundation 8，不再升号。物化键禁止条件行，装备变化只钳制；永久恢复由提供方资源提案显式声明，账本不得把含永久来源的整个键增量当补血量。markStatsDirty 仅置位，读时重算；装备/模块事务发布前仍执行完整来源准入。BE_ATTACK/bolt 与非武器 attack 复用相同命中/伤害成对属性域，近战调度域保持既有分类；扣光当前 HP 的 other 类调用不受抗性缩放。

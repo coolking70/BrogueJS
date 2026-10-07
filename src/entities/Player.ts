@@ -1,3 +1,4 @@
+import { nativeStat, nativeRational, markStatsDirty, atomicStats } from '../engine/Stats/NativeStatSources';
 import { PLAYER_BLOOD_TYPE } from '../engine/Combat/CreatureFeatures';
 /**
  * src/entities/Player.ts
@@ -9,7 +10,6 @@ import { Direction } from '../types';
 import { Inventory } from '../engine/Items/Inventory';
 import { Item, ItemCategory } from '../engine/Items/Item';
 import { rng } from '../engine/Random';
-import { ringBonus, turnsForFullRegenInThousandths } from '../engine/Items/RingBonuses';
 import { logger } from '../engine/Systems/Logger';
 import type { Grid } from '../engine/Map/Grid';
 
@@ -38,7 +38,7 @@ export class Player extends Creature {
     public ringRight: Item | null = null;
     public strength: number = PLAYER_STARTING_RESOURCES.strength;
     /** Equipment is computed on demand, so every dose/cure refreshes all consumers. */
-    public get effectiveStrength(): number { return this.strength - this.weaknessAmount; }
+    public get effectiveStrength(): number { return nativeStat(this,'native.effective-strength'); }
     public lastMoveDirection: Direction | null = null;
 
     // Hunger Mechanics
@@ -63,10 +63,10 @@ export class Player extends Creature {
 
     public override get bloodType(): number { return PLAYER_BLOOD_TYPE; }
 
-    public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: import('../ext/causality').DamageKind = 'other'): void {
+    public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: import('../ext/causality').DamageKind = 'other', ignoresResistance = false): void {
         const commit=()=>{
             if (amount > 0) logger.disturb();
-            super.takeDamage(amount, ignoresProtectionShield, grid, beforeHpLoss, damageKind);
+            super.takeDamage(amount, ignoresProtectionShield, grid, beforeHpLoss, damageKind, ignoresResistance);
         };
         if(this.extensionHooks?.withNativeDamage)this.extensionHooks.withNativeDamage(commit);else commit();
     }
@@ -105,18 +105,23 @@ export class Player extends Creature {
 
     /** Direct installation is also used by starting-kit/test setup (CE force).
      * Game.equipItem passes false for a player's ordinary equip action. */
-    public equip(item: Item, force = true): boolean {
+    private mutateEquipment(work:()=>boolean):boolean {
+        const slots=[this.equippedWeapon,this.equippedArmor,this.ringLeft,this.ringRight] as const,status={...this.statusDurations},maximum={...this.maxStatus};
+        try{return atomicStats(this,work);}catch(error){[this.equippedWeapon,this.equippedArmor,this.ringLeft,this.ringRight]=slots;this.statusDurations=status;this.maxStatus=maximum;throw error;}
+    }
+    public equip(item: Item, force = true): boolean {return this.mutateEquipment(()=>this.equipCommitted(item,force));}
+    private equipCommitted(item: Item, force: boolean): boolean {
         const previous = item.category === ItemCategory.WEAPON ? this.equippedWeapon
             : item.category === ItemCategory.ARMOR ? this.equippedArmor : null;
-        if (previous && !this.unequip(previous, force)) return false;
+        if (previous && !this.unequipCommitted(previous, force)) return false;
         if (item.category === ItemCategory.WEAPON) {
             this.equippedWeapon = item;
-            return true;
+            markStatsDirty(this); return true;
         } else if (item.category === ItemCategory.ARMOR) {
             this.setStatusDuration('donning', 0); // previous armor was removed
             if (!force) this.applyStatus('donning', Math.trunc(item.armor ?? 0));
             this.equippedArmor = item;
-            return true;
+            markStatsDirty(this); return true;
         } else if (item.category === ItemCategory.RING) {
             // CE Items.c:8560-8566：左槽优先；双占时拒绝（"no available ring slot"）
             if (this.ringLeft && this.ringRight) return false;
@@ -125,12 +130,13 @@ export class Player extends Creature {
             } else {
                 this.ringLeft = item;
             }
-            return true;
+            markStatsDirty(this); return true;
         }
         return false;
     }
 
-    public unequip(item: Item, force = false): boolean {
+    public unequip(item: Item, force = false): boolean {return this.mutateEquipment(()=>this.unequipCommitted(item,force));}
+    private unequipCommitted(item: Item, force: boolean): boolean {
         const equipped = [this.equippedWeapon, this.equippedArmor, this.ringLeft, this.ringRight]
             .some(slot => slot?.id === item.id);
         // CE Items.c:8640-8651: one removal gate, before any slot/status mutation.
@@ -143,7 +149,7 @@ export class Player extends Creature {
         }
         if (this.ringLeft?.id === item.id) this.ringLeft = null;
         if (this.ringRight?.id === item.id) this.ringRight = null;
-        return true;
+        markStatsDirty(this); return true;
     }
 
     /** 两枚戴着的戒指（护甲/武器另行），供遍历熟悉度与戒指效果的调用方使用。 */
@@ -221,6 +227,7 @@ export class Player extends Creature {
             if (this.regenCarry >= 1) {
                 const wholeHp = Math.floor(this.regenCarry);
                 this.hp = Math.min(this.maxHp, this.hp + wholeHp);
+                markStatsDirty(this);
                 this.regenCarry -= wholeHp;
                 if (this.hp >= this.maxHp) {
                     this.regenCarry = 0;
@@ -270,6 +277,7 @@ export class Player extends Creature {
             if (this.regenCarry >= 1) {
                 const wholeHp = Math.floor(this.regenCarry);
                 this.hp = Math.min(this.maxHp, this.hp + wholeHp);
+                markStatsDirty(this);
                 this.regenCarry -= wholeHp;
                 if (this.hp >= this.maxHp) {
                     this.regenCarry = 0;
@@ -282,20 +290,8 @@ export class Player extends Creature {
 
     /** CE Items.c:8736-8751, with the same integer divisions as fixpt. */
     private regenRatePerTurn(): number {
-        const full = turnsForFullRegenInThousandths(ringBonus(this.rings(), 'ring_of_regeneration'));
-        let remainingHp = this.maxHp;
-        let perTurn = 0;
-        const wholeTurns = Math.floor(full / 1000);
-        if (wholeTurns > 0) {
-            while (remainingHp > wholeTurns) {
-                perTurn++;
-                remainingHp -= wholeTurns;
-            }
-        }
-        const interval = Math.floor(full / remainingHp);
-        const rate = perTurn + (interval > 0 ? 1000 / interval : 0);
-        // Legacy non-ring regeneration status still has other web producers.
-        return this.hasStatus('regenerating') ? rate / 0.6 : rate;
+        const value=nativeRational(this);
+        return value.numerator/value.denominator;
     }
 
     /** Thresholds are display/warning tiers only (IO.c:4785-4793); they never gate regen. */

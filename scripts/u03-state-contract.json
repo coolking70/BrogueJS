@@ -473,7 +473,7 @@
   },
   "extensionRuntime": {
     "kind": "persist",
-    "contract": "EXT-0：经典局 null，不创建/调用模块；扩展局运行期服务，仅 modules/components/manifest 深拷贝到独立顶层 extensions。新局卸载后重建；读档验证版本和模块状态后重建，绑定全部生物，不重播生成事件，不消耗 RNG。"
+    "contract": "EXT-0：经典局 null，不创建/调用模块；扩展局运行期服务，仅 modules/components/manifest 深拷贝到独立顶层 extensions。新局卸载后重建；读档验证版本和模块状态后重建，绑定全部生物，不重播生成事件，不消耗 RNG。 5A2-S: foundation.stats 持久账本属 extensions dirty；StatPipeline/cache/actorStatRevision/模块冻结视图/假设组件/临时提案均 WeakMap derived/session，不写原生快照或摘要；load/seek/rollback 清缓存。"
   },
   "bodyGroups": {
     "kind": "run",

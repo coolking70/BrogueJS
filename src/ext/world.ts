@@ -25,6 +25,7 @@ export interface WorldInteractionValidation {
     readonly regions?: readonly OwnedRegion[];
 }
 export interface ExtensionProjectionContext {
+    readonly stats?: import('./stats').StatQuery;
     readonly worldWork?: import('./worldSdk').WorldWorkReadSDK;
     readonly actorActionBundles?: readonly import('../engine/Core/ActorActionScheduler').ReadonlyActorActionBundle[];
     readonly playerId?: number;

@@ -24,14 +24,14 @@
 | S1 | 规格来源 | 模型、求值公式、上限、查询/物化分类、缓存、录像中性、路由清单、迁移步骤一律以 loot §4.2–§4.9 为准；本表只补充或改写其未定/冲突处 |
 | S2 | C5 边界 | **不得修改任何 C5 DTO 或合同 §9 签名**（`worldSdk.ts` 导出逐字不变，5A2 报告记录的 SHA-256 以外的变化即越界）；不声明、不读取 `foundation.labor-rate`（合同 §3.2：C5-1 劳动信用固定 elapsed×1） |
 | S3 | 文件布局 | 求值核 `src/engine/Stats/StatPipeline.ts`、原生键与 DAG `src/engine/Stats/NativeStatKeys.ts`、原生来源 `src/engine/Stats/NativeStatSources.ts`、物化账本 `src/engine/Stats/MaterializedStats.ts`；模块可见类型与校验 `src/ext/stats.ts`（内容模块的唯一属性入口） |
-| S4 | 物化键 | 物化（有“当前值+上限”或需要写回原生字段）的只有：`native.max-hp`、`native.strength`、`combat.stamina-capacity`、`combat.poise-capacity`、`growth.focus-capacity`。其余全部为 query 键。物化政策：降则钳制、升则不补；可声明 `grantPolicy: 'refill-delta'` 的只有永久成长来源（growth 升级/属性点），沿 growth 现有行为 |
+| S4 | 物化键 | 物化（有“当前值+上限”或需要写回原生字段）的只有：`native.max-hp`、`native.strength`、`combat.stamina-capacity`、`combat.poise-capacity`、`growth.focus-capacity`。其余全部为 query 键。物化政策：降则钳制、升则不补；可声明 `grantPolicy: 'refill-delta'` 的只有永久成长来源（growth 升级/属性点），沿 growth 现有行为，由提供方资源提案显式给出永久补量；账本不从整个键增量推断补血。物化键安装期拒绝条件行 |
 | S5 | 账本位置 | `ExtensionSnapshot.foundation.stats = { schema: 1, applied: { actorId, key, bonus }[] }`，按 (actorId, key) 码点排序；**无行时省略 `stats` 键**（不写空数组）。经典局（无 runtime）没有账本，物化加值恒 0。读档校验“原生基础 + 账本加值 = 当前上限”，不等即坏档 |
 | S6 | 物化时机 | 与来源变化**同一事务**调用 `reconcileMaterialized(actor)`：装备/卸下、growth 组件提交、模块 state 提交且其 statSources 结果变化、状态起止（若影响物化键）、群体归属变化。测试/调试构建在每条命令 `finishTurnEpilogue` 后断言全部 actor 账本无漂移（全量重算对照） |
 | S7 | 装备来源定义 | “只有装备在背包中的物品是属性来源”（合同 §5.1）。来源集合的规范定义 = §5.2 枚举器 inventory 根中被装备槽引用的物品；生产实现可直接读装备槽引用，但须有测试断言二者相等，且箱/escrow/refund/remains/地面/生物携带中的物品贡献为 0 |
 | S8 | growth 迁移 | growth 删除 `rulePolicies`（十个端口），改为 `statSources`（L3 角色、L4 临时）；删除 `derived` 组件中的 `appliedStrength/appliedMaxHp`（由 S5 账本接管）；退役 `growth.combat-stats.v1` 可选查询，combat 改读 `combat.stamina-capacity / combat.poise-capacity` 物化键。runtime 删除十个单提供者端口与 `Conflicting extension rule providers` 检查。growth module 版本 1.7.0→**1.8.0**；rules 版本仅当指纹输入变化时升（报告举证）；旧档拒绝不迁移 |
 | S9 | combat 版本 | combat 删除 actors 行的 `combatStats`、容量改读物化键，**沿用 5A2 已分配的 combat 版本号，不再升**（合同 §1.2 合并升号）。若 5A2 的 combat 号已随某次合入打过标签，停下请维护者单独分配 |
 | S10 | foundation 版本 | 账本进入 foundation 快照 → foundation 7→**8**。whole-run 仅当实体字段变化才升（预期不升，仍 v5）。录像格式不变；账本属 extensions dirty 域；管线缓存登记为 derived/session 并列入摘要排除清单 |
-| S11 | 数值上限（接受膨胀） | 每键硬上下限与类别预算是 foundation 数据表（`NativeStatKeys.ts`），不是 CE 推导；初值按 loot §4.4 示例（`increased` 池 −9000…+50000 bp、每 `more` 槽 0…40000 bp、命中 500…9500 bp、攻速 25…400 tick、抗性 0…7500 bp），其余键给出不小于“零修正原生值 ×10”的上限并在报告列表；修改该表即升 foundation 号。中间值用 BigInt 或分子/分母，**任何合法输入不得溢出或产生浮点** |
+| S11 | 数值上限（接受膨胀） | 每键硬上下限与类别预算是 foundation 数据表（`NativeStatKeys.ts`），不是 CE 推导；初值按 loot §4.4 示例（`increased` 池 −9000…+50000 bp、普通 `more` 槽 0…40000 bp，速度类普通槽 −5000…40000 bp（growth final 为 −5000…30000 bp）、命中 500…9500 bp、攻速在无模块来源行时返回原生值不钳制；有来源时 25…max(400, 原生值) tick（含减速/变异）、抗性 0…7500 bp），其余键给出不小于“零修正原生值 ×10”的上限并在报告列表；后续修改该表或固定 DAG 即升 foundation 号；本批维护者 F1/F4/F5 裁定合并在 foundation 8 内，不另升号。中间值用 BigInt 或分子/分母，**任何合法输入不得溢出或产生浮点** |
 | S12 | 舍入 | 每键声明一次舍入（`floor` / `nearest-half-away` / `ceil`），只在最后舍入一次；原生键的舍入选择以“零修正逐值等于旧实现”为准，逐键写入报告 |
 | S13 | 影子模式 | 旧计算函数在迁移完成后**移出生产**，保留为仅测试 oracle（`src/test/support/legacyStats.ts`）；零修正影子差分测试长期保留 |
 | S14 | 条件词汇 | 首版条件只实现 loot §4.2 的有限词汇：攻击类别 melee/thrown、目标公开标签（`body.*` 与 MonsterClass 成员）、自身状态、相邻、HP 比例阈值（基点）。条件只读冻结事实 |
@@ -141,3 +141,7 @@
   - 性能实测与 5A2 录像成本对照。
   - 交接：给 6A0/6B（`StatQuery`、`statSources`、`equippedItems()` DTO 扩展点、物化政策）、给 5A3（`native.regeneration` 用法）、给集成人（crafting trace 重跑）。
 - 原始证据放仓库外；**不要 commit / push**；README 仅可在报告完成后追加一行。
+
+维护者补充裁定（2026-10-07）：`native.regeneration` 在属性求值账本中保存精确有理数 `{numerator, denominator}`，分子、分母必须为安全整数，分母为正并约分；只在回血消费边界转为 `number`。S18 零修正逐值等价按此分数语义验收，整数键仍只在最终舍入一次。无法以安全整数约分表示的来源组合在提交前拒绝，不做近似。
+
+维护者审查裁定（2026-10-07）：F1 无模块来源的原生键保持原生值，不套用硬限；attack-speed 有来源时下限 25、上限 max(400, 原生值)。F4 速度类 more 槽下限 −5000 bp；F5 增加 native.regeneration-bonus → native.regeneration 的固定 DAG 输入边，用原生戒指单位表达 mending。本批仍为 foundation 8。F2 只有提供方显式永久恢复资源提案可补量，装备仅钳制；F6 物化键拒绝所有条件行。markStatsDirty 惰性置位，读时重算，事务发布前准入不放宽。第二部分调度器既有缺陷由独立 foundation 任务处理，本步不改调度器。

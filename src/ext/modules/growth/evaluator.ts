@@ -1,7 +1,8 @@
+import { evaluateStat, decimalStatFraction, roundStatFraction, safeStatRational, type StatKeyDeclaration } from '../../stats';
 import type { DeepReadonly } from './definitions';
 import type { GrowthBounds, GrowthCondition, GrowthDamageInput, GrowthDefinitionPack, GrowthHitInput, GrowthMagnitude,
     GrowthModifier, GrowthPrerequisite, GrowthRounding, GrowthRuleActor, GrowthRuleConfig, GrowthRuleInput,
-    GrowthRulePolicies, GrowthRulePort, GrowthTaggedModifier } from './types';
+    GrowthRulePort, GrowthTaggedModifier } from './types';
 
 export type GrowthEvaluationPack = DeepReadonly<GrowthDefinitionPack>;
 export type GrowthEvaluationOwner = 'actor' | 'target';
@@ -86,8 +87,14 @@ export function evaluateGrowthMagnitude(magnitude: DeepReadonly<GrowthMagnitude>
         default: throw new RangeError('Unknown growth magnitude source');
     }
     finite(source);
-    // An overflowing quotient is safely saturated by the declared magnitude bounds.
-    return clamp(roundGrowthValue(source * magnitude.coefficient / magnitude.divisor, magnitude.rounding), magnitude);
+    const a=decimalStatFraction(source),b=decimalStatFraction(magnitude.coefficient),c=decimalStatFraction(magnitude.divisor);
+    let n=a.numerator*b.numerator*c.denominator,d=a.denominator*b.denominator*c.numerator;
+    const lo=decimalStatFraction(magnitude.min),hi=decimalStatFraction(magnitude.max);
+    if(n*lo.denominator<lo.numerator*d)return magnitude.min;
+    if(n*hi.denominator>hi.numerator*d)return magnitude.max;
+    if(magnitude.rounding==='nearest'&&n<0n){return clamp(roundStatFraction({numerator:n*2n+d,denominator:d*2n},'floor'),magnitude);}
+    const mode=magnitude.rounding==='nearest'?'nearest-half-away':magnitude.rounding==='truncate'?(n<0n?'ceil':'floor'):magnitude.rounding;
+    return clamp(roundStatFraction({numerator:n,denominator:d},mode),magnitude);
 }
 
 export function matchesGrowthConditions(conditions: readonly DeepReadonly<GrowthCondition>[], facts: GrowthEvaluationFacts): boolean {
@@ -140,57 +147,23 @@ export function meetsGrowthPrerequisites(prerequisites: readonly DeepReadonly<Gr
 export function evaluateGrowthModifiers(rules: GrowthEvaluationPack['config']['rules'], rule: DeepReadonly<GrowthRuleConfig>,
     baseValue: number, modifiers: readonly GrowthEvaluatedModifier[], baseRatioValue = baseValue): number {
     finite(baseValue); finite(baseRatioValue);
-    const budget = rules.budgets.find(candidate => candidate.id === rule.budgetId);
-    if (!budget) throw new RangeError('Unknown growth additive budget');
-    const slots = new Map(rule.multiplierSlots.map(slot => [slot.id, slot]));
-    const factors = new Map<string, number>();
-    let additive = 0;
-    for (const modifier of modifiers) {
-        finite(modifier.magnitude);
-        if (modifier.operation === 'add') {
-            if (modifier.slot !== null) throw new RangeError('An additive growth modifier cannot use a multiplier slot');
-            additive += modifier.magnitude;
-        } else if (modifier.operation === 'multiply') {
-            if (modifier.slot === null || !slots.has(modifier.slot) || modifier.magnitude < 0) throw new RangeError('Invalid growth multiplier slot');
-            const previous = factors.get(modifier.slot);
-            factors.set(modifier.slot, previous === undefined ? modifier.magnitude : previous + (modifier.magnitude - 1));
-        } else throw new RangeError('Unknown growth modifier operation');
-    }
-    if (rule.preserveZero && baseValue === 0) return 0;
-    let value = baseValue, minimum = rule.globalClamp.min;
-    for (const operation of rules.order) {
-        switch (operation) {
-            case 'add': {
-                const amount = clamp(additive, budget);
-                value = rule.additiveMode === 'flat' ? value + amount : value + baseValue * amount / 10000;
-                break;
-            }
-            case 'multiply':
-                for (const slot of rule.multiplierSlots) {
-                    const factor = factors.get(slot.id);
-                    if (factor !== undefined) {
-                        const bounded = clamp(factor, slot);
-                        value = bounded === 0 ? 0 : value * bounded;
-                    }
-                }
-                break;
-            case 'global-clamp': {
-                if (baseValue > 0 && rule.minimumPositive !== null) minimum = Math.max(minimum, finite(rule.minimumPositive));
-                if (baseRatioValue > 0 && rule.minimumBaseRatio !== null) minimum = Math.max(minimum, baseRatioValue * finite(rule.minimumBaseRatio));
-                value = Math.max(value, minimum);
-                value = clamp(value, rule.globalClamp);
-                break;
-            }
-            case 'round': value = roundGrowthValue(value, rule.rounding); break;
-            default: throw new RangeError('Unknown growth evaluation operation');
-        }
-    }
-    finite(value);
-    // A fractional clamp endpoint must not let the rounding step escape the configured bounds.
-    const integerBounds = { min: Math.ceil(minimum), max: Math.floor(rule.globalClamp.max) };
-    if (integerBounds.min > integerBounds.max) throw new RangeError('Growth scalar bounds contain no integer');
-    value = clamp(value, integerBounds);
-    return value === 0 ? 0 : value;
+    const budget=rules.budgets.find(b=>b.id===rule.budgetId);if(!budget)throw new RangeError('Unknown growth additive budget');
+    if(rule.preserveZero&&baseValue===0)return 0;
+    let minimum=rule.globalClamp.min;
+    if(baseValue>0&&rule.minimumPositive!==null)minimum=Math.max(minimum,rule.minimumPositive);
+    if(baseRatioValue>0&&rule.minimumBaseRatio!==null){const a=decimalStatFraction(baseRatioValue),b=decimalStatFraction(rule.minimumBaseRatio);minimum=Math.max(minimum,roundStatFraction({numerator:a.numerator*b.numerator,denominator:a.denominator*b.denominator},'ceil'));}
+    const bp=(value:number)=>{const a=decimalStatFraction(value);let n=a.numerator*10000n;const limit=BigInt(Number.MAX_SAFE_INTEGER);if(n>limit*a.denominator)n=limit*a.denominator;if(n< -limit*a.denominator)n= -limit*a.denominator;return roundStatFraction({numerator:n,denominator:a.denominator},'nearest-half-away');};
+    const key:StatKeyDeclaration={id:'growth.preview',owner:'growth',unit:'scalar',kind:'query',minimum:Math.ceil(minimum),maximum:Math.floor(rule.globalClamp.max),rounding:rule.rounding==='nearest'?'nearest-half-away':rule.rounding==='truncate'?(baseValue<0?'ceil':'floor'):rule.rounding,categories:['flat','increased','more'],increased:{minimum:budget.min,maximum:budget.max},moreSlots:rule.multiplierSlots.map(slot=>({id:slot.id,minimum:bp(slot.min)-10000,maximum:bp(slot.max)-10000}))};
+    if(key.minimum>key.maximum)throw new RangeError('Growth scalar bounds contain no integer');
+    const rows=modifiers.map((m,index)=>{
+        finite(m.magnitude);
+        if(m.operation==='add'&&m.slot!==null)throw new RangeError('An additive growth modifier cannot use a multiplier slot');
+        if(m.operation==='multiply'&&(m.slot===null||!rule.multiplierSlots.some(slot=>slot.id===m.slot)||m.magnitude<0))throw new RangeError('Invalid growth multiplier slot');
+        return {owner:'growth',stat:key.id,category:m.operation==='multiply'?'more' as const:rule.additiveMode==='flat'?'flat' as const:'increased' as const,value:m.operation==='multiply'?bp(m.magnitude)-10000:m.magnitude,layer:'character' as const,sourceKind:'growth-preview',sourceId:`growth.preview.${index}`,...(m.operation==='multiply'?{slot:m.slot!}:{budget:{minimum:budget.min,maximum:budget.max}})};
+    });
+    const exactMore=new Map<string,{numerator:bigint;denominator:bigint}>();
+    for(const m of modifiers)if(m.operation==='multiply'){const a=decimalStatFraction(m.magnitude),old=exactMore.get(m.slot!)??{numerator:1n,denominator:1n};exactMore.set(m.slot!,{numerator:old.numerator*a.denominator+(a.numerator-a.denominator)*old.denominator,denominator:old.denominator*a.denominator});}
+    return evaluateStat(key,Number.isSafeInteger(baseValue)?baseValue:safeStatRational(decimalStatFraction(baseValue)),rows,exactMore).value;
 }
 
 function inputFacts(input: GrowthEvaluationInput, facts: GrowthEvaluationFacts): GrowthEvaluationFacts {
@@ -198,7 +171,7 @@ function inputFacts(input: GrowthEvaluationInput, facts: GrowthEvaluationFacts):
         adjacent: input.adjacent, probabilityRoll: input.rollMode === undefined ? undefined : input.rollMode === 'roll-probability',
         searchMode: input.mode, directDamage: input.direct, tags: input.tags, ...facts };
 }
-function collectModifiers(pack: GrowthEvaluationPack, input: GrowthEvaluationInput, effects: readonly GrowthScopedModifiers[],
+export function collectModifiers(pack: GrowthEvaluationPack, input: GrowthEvaluationInput, effects: readonly GrowthScopedModifiers[],
     ports: readonly { port: GrowthRulePort; owner: GrowthEvaluationOwner }[], facts: GrowthEvaluationFacts): GrowthEvaluatedModifier[] {
     const result: GrowthEvaluatedModifier[] = [], attributes = growthAttributeModifiers(pack), common = inputFacts(input, facts);
     for (const scope of ports) {
@@ -278,19 +251,3 @@ export function evaluateGrowthPhysicalDamage(pack: GrowthEvaluationPack, input: 
 }
 
 /** Phase 1b activates configured attributes only. Definitions, skill slots, identities and timers are not read. */
-export function createGrowthRulePolicies(pack: GrowthEvaluationPack): GrowthRulePolicies {
-    return Object.freeze({
-        hitChance: input => evaluateGrowthPort(pack, 'hitChance', input),
-        physicalDamage: input => evaluateGrowthPhysicalDamage(pack, input),
-        receivedPhysicalDamage: input => evaluateGrowthPort(pack, 'receivedPhysicalDamage', input),
-        stealthRange: input => evaluateGrowthPort(pack, 'stealthRange', input),
-        searchStrength: input => evaluateGrowthPort(pack, 'searchStrength', input),
-        strengthBonus: input => evaluateGrowthPort(pack, 'strengthBonus', input),
-        maxHpBonus: input => evaluateGrowthPort(pack, 'maxHpBonus', input),
-        focusCapacity: input => evaluateGrowthPort(pack, 'focusCapacity', input),
-        focusRecoveryInterval: input => evaluateGrowthPort(pack, 'focusRecoveryInterval', input),
-        cooldownDuration: input => evaluateGrowthPort(pack, 'cooldownDuration', input),
-        staminaCapacity: input => evaluateGrowthPort(pack, 'staminaCapacity', input),
-        poiseCapacity: input => evaluateGrowthPort(pack, 'poiseCapacity', input),
-    } satisfies GrowthRulePolicies);
-}

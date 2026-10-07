@@ -181,7 +181,7 @@ describe('U15a real inventory read + U01 v2 JSON round trip', () => {
         giveScroll(g);
         if (reload) {
             const snapshot = JSON.parse(JSON.stringify(g.toSnapshot())) as GameSnapshot;
-            expect(snapshot.version).toBe(4);
+            expect(snapshot.version).toBe(5);
             expect(snapshot.impregnableCells).toEqual([5 * DCOLS + 7]);
             g = createHeadlessGame(15151, 'test');
             g.loadSnapshot(snapshot);

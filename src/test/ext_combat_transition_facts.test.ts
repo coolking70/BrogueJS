@@ -6,7 +6,7 @@ import { getNextEntityId } from '../entities/Creature';
 import { rng, RNGType } from '../engine/Random';
 import { logger } from '../engine/Systems/Logger';
 import { auditFullObjectGraph, fullGenerationRoots } from './support/fullGenerationCheckpointOracle';
-import { scene, transition, capacityInput, attack, modules } from './support/committedBodyTransitions';
+import { scene, transition, attack } from './support/committedBodyTransitions';
 
 afterEach(() => { vi.restoreAllMocks(); logger.reset(); logger.onDisturb = null; });
 
@@ -34,11 +34,7 @@ describe('3g committed facts around successful 4e body transitions', () => {
             expect(applied.outcome).toBe('applied');
             expect(game.monsters).not.toContain(source);
             expect(resolveActorQueryScope(game.actorActionWorld(), source)).toBeNull();
-            if (modules.includes('growth')) {
-                expect(() => runtime.queryOptionalActor('growth.combat-stats.v1', source, capacityInput)).toThrow('Untrusted');
-            } else {
-                expect(runtime.queryOptionalActor('growth.combat-stats.v1', source, capacityInput)).toEqual({ status: 'unavailable', reason: 'absent' });
-            }
+            expect(() => runtime.queryOptionalActorInWorld('fixture.absent.v1', source, {}, game.actorActionWorld())).toThrow('Untrusted');
             // Exercise cached-light writes in the same native transaction too;
             // transitionBody already repaints the active light map itself.
             game.levels.get(1)!.lightMap.clear(); game.levels.get(1)!.lightMap.clearLighting();
@@ -52,7 +48,7 @@ describe('3g committed facts around successful 4e body transitions', () => {
         expect(game.monsters).toBe(list); expect(game.bodyGroups![0]).toBe(group); expect(source.spatial).toBe(spatial);
         expect(state).toBe(runtime.actorActionBinding()?.state);
         resources.forEach((resource, i) => expect(state!.actors[i]).toBe(resource));
-        expect(runtime.queryOptionalActor('growth.combat-stats.v1', source, capacityInput)).toMatchObject(modules.includes('growth') ? { status: 'available', value: { status: 'supported' } } : { status: 'unavailable', reason: 'absent' });
+        expect(runtime.stats.value(source.id, 'combat.stamina-capacity')).toBeGreaterThan(0);
         expect(observed).toHaveLength(1);
         expect(observed[0]).toMatchObject({ factId: before.foundation.nextFactId, actor: { entityId: source.id, partId: 'leg00', generation: 0 } });
 
@@ -62,20 +58,16 @@ describe('3g committed facts around successful 4e body transitions', () => {
         expect(getNextEntityId()).toBe(next + (reason === 'split' ? 1 : 0));
         expect(game.monsters).not.toContain(source); expect(source.hp).toBe(0);
         expect(death).not.toHaveBeenCalled();
-        expect(runtime.queryOptionalActor('growth.combat-stats.v1', core, capacityInput)).toMatchObject(modules.includes('growth') ? { status: 'available', value: { status: 'supported' } } : { status: 'unavailable', reason: 'absent' });
+        expect(runtime.stats.value(core.id, 'combat.stamina-capacity')).toBeGreaterThan(0);
         if (reason === 'phase') {
             expect(game.monsters).toEqual([core, actors[7], actors[8], external]);
             expect(resolveActorQueryScope(game.actorActionWorld(), actors[8]!)).toEqual({ depth: game.depth, partId: 'leg00', generation: 0 });
             expect(resolveActorQueryScope(game.actorActionWorld(), actors[7]!)).toEqual({ depth: game.depth, partId: 'leg01', generation: 0 });
             expect(resolveActorQueryScope(game.actorActionWorld(), source)).toBeNull();
-            expect(runtime.queryOptionalActor('growth.combat-stats.v1', actors[8]!, capacityInput)).toMatchObject(modules.includes('growth') ? { status: 'available', value: { status: 'supported' } } : { status: 'unavailable', reason: 'absent' });
+            expect(runtime.stats.value(actors[8]!.id, 'combat.stamina-capacity')).toBeGreaterThan(0);
             const forged = Object.assign(Object.create(Object.getPrototypeOf(actors[8]!)), actors[8]);
             expect(resolveActorQueryScope(game.actorActionWorld(), forged)).toBeNull();
-            if (modules.includes('growth')) {
-                expect(() => runtime.queryOptionalActor('growth.combat-stats.v1', forged, capacityInput)).toThrow('Untrusted');
-            } else {
-                expect(runtime.queryOptionalActor('growth.combat-stats.v1', forged, capacityInput)).toEqual({ status: 'unavailable', reason: 'absent' });
-            }
+            expect(() => runtime.queryOptionalActorInWorld('fixture.absent.v1', forged, {}, game.actorActionWorld())).toThrow('Untrusted');
         } else {
             expect(game.monsters.filter(actor => actor !== external).map(actor => actor.id)).toEqual([core.id, next]);
             expect(game.monsters.filter(actor => actor !== external).map(actor => actor.hp)).toEqual([40, 40]);

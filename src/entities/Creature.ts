@@ -1,3 +1,4 @@
+import { nativeStat, markStatsDirty } from '../engine/Stats/NativeStatSources';
 import { physicalContactOf } from '../engine/Combat/BodyCombat';
 import { bodyStatusOwner, bodyStatusStackMode } from '../engine/Status/BodyStatuses';
 /**
@@ -144,7 +145,7 @@ export class Creature implements Entity {
             atk = atk * 2;
         }
         this.movementSpeed = nativeZoneMoveTicks(this, move);
-        this.attackSpeed = atk;
+        this.attackSpeed = atk; markStatsDirty(this);
     }
 
     constructor(x: number, y: number, name: string, char: string, color: number, preparedId?: number) {
@@ -186,9 +187,11 @@ export class Creature implements Entity {
         } else {
             delete this.statusDurations[id];
         }
+        markStatsDirty(this);
     }
 
     public applyStatus(id: StatusId, duration: number, stackMode: StatusStackMode = 'refresh'): boolean {
+        markStatsDirty(this);
         const owner = bodyStatusOwner(this, id);
         if (owner !== this) return owner.applyStatus(id, duration, bodyStatusStackMode(this, id, stackMode));
         stackMode = bodyStatusStackMode(this, id, stackMode);
@@ -226,6 +229,7 @@ export class Creature implements Entity {
         const current = this.getStatusDuration('weakened');
         this.statusDurations.weakened = Math.max(current, duration);
         this.maxStatus.weakened = Math.max(this.maxStatus.weakened ?? 0, duration);
+        markStatsDirty(this);
         return before !== this.weaknessAmount || current !== this.statusDurations.weakened;
     }
 
@@ -240,6 +244,7 @@ export class Creature implements Entity {
     public heal(percent: number, panacea = false): number {
         const before = this.hp;
         this.hp = Math.min(this.maxHp, this.hp + Math.trunc(percent * this.maxHp / 100));
+        markStatsDirty(this);
         if (this.extensionHooks && before <= 0 && this.hp > 0) this.extensionHooks.causality.clearTerminal(this.id);
         if (panacea) {
             for (const id of ['hallucinating', 'confused', 'slowed', 'nauseous'] as const) {
@@ -264,9 +269,11 @@ export class Creature implements Entity {
         const owner = bodyStatusOwner(this, 'poisoned');
         if (owner !== this) return owner.addPoison(duration, concentration);
         if (duration <= 0 || !this.canBePoisoned()) return false;
+        duration=Number(BigInt(Math.trunc(duration))*BigInt(10000-nativeStat(this,'native.resist.poison'))/10000n);
+        if(duration<=0)return false;
         const oldDuration = this.getStatusDuration('poisoned');
         this.poisonAmount = Math.max(1, (oldDuration > 0 ? Math.max(1, this.poisonAmount) : 0) + concentration);
-        this.statusDurations.poisoned = oldDuration + duration;
+        this.statusDurations.poisoned = oldDuration + duration; markStatsDirty(this);
         if (this.extensionHooks) this.extensionHooks.causality.statusChanged(this.id, 'poisoned', oldDuration, oldDuration + duration);
         return true;
     }
@@ -337,6 +344,7 @@ export class Creature implements Entity {
             }
         }
         if (expired.length > 0) this.refreshSpeeds();
+        markStatsDirty(this);
         return expired;
     }
 
@@ -348,14 +356,20 @@ export class Creature implements Entity {
     public get bloodType(): number { return 0; }
     protected bloodInvulnerable(): boolean { return false; }
 
-    public takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: DamageKind = 'other') {
-        const commit=()=>this.takeDamageCommitted(amount,ignoresProtectionShield,grid,beforeHpLoss,damageKind);
+    public takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: DamageKind = 'other', ignoresResistance = false) {
+        const commit=()=>this.takeDamageCommitted(amount,ignoresProtectionShield,grid,beforeHpLoss,damageKind,ignoresResistance);
         if(this.extensionHooks?.withNativeDamage)this.extensionHooks.withNativeDamage(commit);else commit();
     }
 
-    private takeDamageCommitted(amount:number,ignoresProtectionShield:boolean,grid:Grid|undefined,beforeHpLoss:((damage:number)=>void)|undefined,damageKind:DamageKind):void {
+    /** CE self/administrative destruction, preserving the other damage origin. */
+    public drainCurrentHp(grid?:Grid):void { this.takeDamage(this.hp,true,grid,undefined,'other',true); }
+
+    private takeDamageCommitted(amount:number,ignoresProtectionShield:boolean,grid:Grid|undefined,beforeHpLoss:((damage:number)=>void)|undefined,damageKind:DamageKind,ignoresResistance:boolean):void {
         const hpBefore = this.hp;
         let damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
+        // Native administrative/self-destruction calls drain current HP.
+        const resistance=ignoresResistance?0:nativeStat(this,`native.resist.${damageKind}`);
+        if(resistance)damage=Number(BigInt(Math.trunc(damage))*BigInt(10000-resistance)/10000n);
         const zoneDamage = this.extensionHooks?.zoneDamage?.(this, damage, damageKind);
         if (zoneDamage !== undefined) damage = zoneDamage;
         if (grid) {
@@ -374,6 +388,7 @@ export class Creature implements Entity {
         const beforeNativeLoss = zoneDamage === undefined || beforeHpLoss ? this.hp : hpBefore;
         if (zoneDamage === undefined || beforeHpLoss) this.hp -= damage;
         if (this.extensionHooks) this.extensionHooks.damage(this, damage, beforeNativeLoss, damageKind);
+        markStatsDirty(this);
         if (this.hp <= 0 && !(zoneDamage !== undefined && this.spatial?.bodyMember
             && this.spatial.bodyMember.groupId !== this.id)) {
             this.die();

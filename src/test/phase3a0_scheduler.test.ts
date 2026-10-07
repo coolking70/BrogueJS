@@ -5,6 +5,7 @@ import {
     validateActorActionSchedulerState, type ActorActionBundleDefinition, type ActorActionPhase,
     type ActorActionSchedulerHost, type ActorActionSchedulerState, type ActorSubactionDefinition,
 } from '../engine/Core/ActorActionScheduler';
+import { Creature } from '../entities/Creature';
 import type { Monster } from '../entities/Monster';
 
 function phases(windup = 20, recovery = 10): ActorActionPhase[] {
@@ -18,8 +19,9 @@ function definition(owner: number, subactions = [child(owner)], actionId = owner
     return { owner: 'combat', actionId, depth: 1, decisionOwnerId: owner, timeChargeOwnerId: owner, subactions };
 }
 function actor(id: number, ticksUntilTurn: number): Monster {
-    return { id, hp: 10, ticksUntilTurn, movementSpeed: 100, isCaged: false, carriedItem: null,
-        hasStatus: () => false, hasBehavior: () => false } as unknown as Monster;
+    return Object.assign(new Creature(0, 0, 'fixture', 'x', 0, id), {
+        ticksUntilTurn, movementSpeed: 100, isCaged: false, carriedItem: null, hasBehavior: () => false,
+    }) as unknown as Monster;
 }
 function fixture(playerTicks = 100, others: Monster[] = [], ownerOf: (id: number) => number = id => id) {
     const player = actor(1, playerTicks);

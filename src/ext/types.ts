@@ -1,3 +1,5 @@
+import type { StatQuery, StatSourceProvider } from './stats';
+import type { MaterializedStatSnapshot } from '../engine/Stats/MaterializedStats';
 import type { WorldModuleFields } from './worldSdk';
 import type { WorldInteractable, WorldInteractablePlacement, WorldInteractablePlacementResult, WorldInteractionSnapshot, WorldInteractionValidation, ExtensionProjectionContext } from './world';
 import type { Creature } from '../entities/Creature';
@@ -25,13 +27,13 @@ export interface ExtensionModuleView {
 }
 export interface ExtensionRulesIdentity { schema: number; version: string; fingerprint: string }
 export interface ExtensionVersion { id: string; version: string; rules?: ExtensionRulesIdentity }
-export interface ExtensionManifest { schema: 1; foundation?: 7; modules: ExtensionVersion[] }
+export interface ExtensionManifest { schema: 1; foundation?: 8; modules: ExtensionVersion[] }
 export interface ExtensionSnapshot {
     manifest: ExtensionManifest;
     modules: Record<string, Json>;
     /** Run-local creature ID -> module-qualified component ID -> JSON. */
     components: Record<string, Record<string, Json>>;
-    foundation: { version: 7; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
+    foundation: { version: 8; stats?: MaterializedStatSnapshot; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
 }
 /** Native facts wait for run initialization; sequence numbers are reserved on commit. */
 export interface PendingStoryFact { kind: 'entered-level'; depth: number; firstVisit: boolean; turn: number }
@@ -111,6 +113,8 @@ export type OptionalQueryResult = { readonly status: 'unavailable'; readonly rea
 /** Versioned synchronous optional reward seam; provider plans never leave this call. */
 export interface OptionalRewardRequest { issuerId: string; rewardId: string; instanceId: string; recipient: 'player' }
 export interface OptionalRewardPrepareContext extends OptionalQueryContext {
+    readonly stats?: StatQuery;
+    previewStats?: ExtensionContext['previewStats'];
     readonly player: ActorFacts | null;
     readonly resources: Readonly<CharacterResources>;
 }
@@ -132,19 +136,7 @@ export interface ExtensionRuleInput {
     readonly nativeMinimum?: number; readonly invisible?: boolean; readonly mode?: 'manual' | 'automatic';
     readonly skillId?: string; readonly baseCooldown?: number;
 }
-export interface ExtensionRulePolicies {
-    hitChance?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
-    /** Outgoing and received physical modifiers must be combined in this one slot. */
-    physicalDamage?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
-    stealthRange?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
-    searchStrength?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
-    strengthBonus?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
-    maxHpBonus?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
-    focusCapacity?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
-    focusRecoveryInterval?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
-    cooldownDuration?(input: Readonly<ExtensionRuleInput>, context: ExtensionRuleContext): number;
-    nativeBonuses?(actorId: number, context: ExtensionRuleContext): Readonly<{ maxHp: number; strength: number }>;
-}
+
 export interface ItemGrowthInput {
     readonly actor: ActorFacts; readonly itemId: string;
     readonly nativeDestination: 'strengthBonus' | 'maxHpBonus' | 'enchantment'; readonly nativeAmount: number;
@@ -156,7 +148,7 @@ export type ControlledActionTarget = { kind: 'self' } | { kind: 'creature'; id: 
 export interface ControlledActionRequest { actorId: number; action: 'attack' | 'move' | 'wait' | 'search'; target: ControlledActionTarget }
 /** Pure, revocable preparation access: never a lifecycle/command context. */
 export type ControlledCommandPreparationContext = Pick<ExtensionContext,
-    'playerId' | 'state' | 'getComponent' | 'creature' | 'canManageCharacter' | 'validateAction'>;
+    'playerId' | 'state' | 'stats' | 'getComponent' | 'creature' | 'canManageCharacter' | 'validateAction'>;
 export interface ControlledCommandPreparation {
     readonly revision: number;
     readonly request: ControlledActionRequest;
@@ -216,6 +208,8 @@ export interface HookEvents {
 }
 export type HookName = keyof HookEvents;
 export interface ExtensionContext {
+    readonly stats: StatQuery;
+    previewStats?(actorId:number, ownComponents:Readonly<Record<string,Json>>):Readonly<Record<string,number>>;
     readonly moduleId: string;
     readonly depth: number;
     readonly turn: number;
@@ -293,7 +287,7 @@ export interface ExtensionModule extends ExtensionVersion, WorldModuleFields {
      * from temporary settlement/save readiness. Candidate validation has no native ports. */
     initializationReady?(context: ExtensionContext): boolean;
     resourceCommits?: boolean;
-    rulePolicies?: ExtensionRulePolicies;
+    readonly statSources?: StatSourceProvider;
     commitItemGrowth?(input: Readonly<ItemGrowthInput>, context: ExtensionContext): { nativeAmount: number };
     initialCommand?: { action: string; payload: Json };
     /** Pure creation preflight, before an existing run is retired; no live actor ports. */
@@ -321,7 +315,7 @@ export interface CreatureExtensionHooks {
     relationshipChanged?(creature: Creature): void;
     nativeMaximumReset?(creature: Creature, preserveOverhealth?: boolean): void;
     nativeMaximumBase?(creature: Creature): number;
-    rule?(port: 'hitChance' | 'physicalDamage', input: ExtensionRuleInput): number;
+
     damage(creature: Creature, amount: number, hpBefore: number, damageKind?: DamageKind): void;
 }
 export function creatureView(creature: Creature, playerId: number): CreatureView {

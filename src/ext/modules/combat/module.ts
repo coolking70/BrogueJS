@@ -1,3 +1,4 @@
+import { COMBAT_STAT_KEYS } from './statSources';
 import { enterCombatLevel, removeCombatBonfires, validateCombatBonfireWorldBindings } from './bonfires';
 import type { ExtensionModule, Json } from '../../types';
 import { extensionDataFingerprint } from '../../fingerprint';
@@ -14,7 +15,7 @@ export function createCombatModuleFromPack(pack: CombatPack): ExtensionModule {
     assertLoadedCombatPack(pack);
     const definitions = combatAttackDefinitions(pack);
     return {
-        id:'combat',version:pack.moduleVersion,
+        statSources:{keys:COMBAT_STAT_KEYS,collect:()=>[]}, id:'combat',version:pack.moduleVersion,
         rules:{schema:pack.schema,version:pack.rulesVersion,fingerprint:extensionDataFingerprint(pack)},
         actorActions:{definitions:definitions as unknown as Json},
         optionalPartBreaks:{'combat.part-break.v1':createCombatPartBreakProvider(definitions)},
@@ -38,6 +39,6 @@ export function createCombatModuleFromPack(pack: CombatPack): ExtensionModule {
                 && state.actors.every(row=>row.actorId<world.nextEntityId && actors.some(actor=>actor.id===row.actorId))
                 && state.actions.every(action=>action.subactions.every(sub=>sub.approvedRisks.every(approval=>approval.targetId<world.nextEntityId)));
         },
-        projectView:context=>projectCombatView(context.state,definitions,context.depth,context.playerId,context.nearbyInteractables,context.worldRestUnavailable, context.actorActionBundles),
+        projectView:context=>projectCombatView(context.state,definitions,context.depth,context.playerId,context.nearbyInteractables,context.worldRestUnavailable, context.actorActionBundles,context.stats),
     };
 }

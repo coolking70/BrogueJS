@@ -1,3 +1,4 @@
+import { appliedGrowth } from '../../../../test/support/legacyStats';
 import { extensionDigest, checkpointExtensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game, type HordeEntry } from '../../../../engine/Core/Game';
@@ -25,7 +26,7 @@ const con = 'growth.attribute.constitution', close = 'growth.skill.close-guard',
 const templateId = 'growth.template.runtime-guard';
 const species = (id: string) => (monsters as MonsterData[]).find(monster => monster.id === id)!;
 const state = (game: Game) => game.extensionRuntime!.snapshot().modules.growth as unknown as GrowthState;
-const component = <T>(game: Game, id: number, name: string) => game.extensionRuntime!.snapshot().components[id]?.[`growth:${name}`] as T;
+const component = <T>(game: Game, id: number, name: string) => (name==='derived'?appliedGrowth(game.extensionRuntime!,id):game.extensionRuntime!.snapshot().components[id]?.[`growth:${name}`]) as T;
 function finish(game: Game): void {
     for (let i = 0; i < 200 && game.isAdvancing; i++) game.stepAdvancement();
     expect(game.isAdvancing).toBe(false); expect(game.lastAdvancementError).toBeNull();

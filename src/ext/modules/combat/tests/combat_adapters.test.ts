@@ -25,8 +25,8 @@ import * as catalog from '../../../catalog';
 import { registryFromDescriptors } from '../../../descriptor';
 import { extensionDataFingerprint } from '../../../fingerprint';
 import { isJson } from '../../../json';
-import type { CombatEventFact, ExtensionModule, Json, OptionalQueryResult } from '../../../types';
-import { resolveCombatStats } from '../../../combatStats';
+import type { CombatEventFact, ExtensionModule, Json } from '../../../types';
+import { markStatsDirty } from '../../../../engine/Stats/NativeStatSources';
 import { loadCombatDefinitionPack } from '../definitions';
 import { combatAttackDefinitions } from '../production';
 import { validateProductionActorAttackState } from '../../../actorActionValidation';
@@ -47,9 +47,7 @@ function setup(options:{observe?:ConsumerObserver;query?:(actorId:number,playerI
             const actorActions=structuredClone(module.actorActions!);
             if(options.bodyAttacks)(actorActions.definitions as unknown as import('../../../actorActions').ActorAttackDefinitions).nativeProfiles.push({monsterId:'body-fixture.fixture-leg',profileId:'combat.follow-thrust'});
             const rules=options.bodyAttacks?{...module.rules!,fingerprint:extensionDataFingerprint(actorActions.definitions)}:module.rules;
-            return {...descriptor,rules,create:()=>({...module,rules,actorActions,optionalActorQueries:options.query?{'growth.combat-stats.v1':{
-                accepts:()=>true,query:(_input,context)=>options.query!(context.actor.id,context.playerId),validate:isJson,
-            }}:undefined} as ExtensionModule)};
+            return {...descriptor,rules,create:()=>({...module,rules,actorActions,statSources:{...module.statSources,collect:(actor,context)=>{const result=options.query?.(actor.id,context.playerId) as {status:string;staminaCapacity:number;poiseCapacity:number}|undefined;if(!result||result.status==='unsupported')return [];return [{stat:'combat.stamina-capacity',value:result.staminaCapacity-context.base('combat.stamina-capacity'),category:'flat',layer:'temporary',sourceId:'combat.fixture.stamina',sourceKind:'fixture'},{stat:'combat.poise-capacity',value:result.poiseCapacity-context.base('combat.poise-capacity'),category:'flat',layer:'temporary',sourceId:'combat.fixture.poise',sourceKind:'fixture'}];}}} as ExtensionModule)};
         }
         if(descriptor.id==='narrative'&&options.events)return {...descriptor,create:()=>({id:descriptor.id,version:descriptor.version,rules:descriptor.rules,
             initialState:()=>({events:[]}),validateState:isJson,committedFacts:{'combat.event.v1':{maxDerivedFacts:0,
@@ -80,7 +78,7 @@ function npc(game:Game){
     actor.state=MonsterState.HUNTING;actor.ticksUntilTurn=10000;actor.hp=actor.maxHp=1000;actor.defense=-10000;
     game.monsters.push(actor);game.extensionRuntime!.attachCreature(actor);(game as any).updateVision();return actor;
 }
-function sync(game:Game){collectPhasedAttackActors(game,[game.player,...game.monsters]);}
+function sync(game:Game){for(const a of [game.player,...game.monsters])markStatsDirty(a);collectPhasedAttackActors(game,[game.player,...game.monsters]);}
 function parry(game:Game){const plan=prepareActorParryCommand(game,command('parry',{facing:'e'}));expect(plan).not.toBeNull();commitActorParryCommand(game,plan!);}
 function release(game:Game){const scheduler=productionActorActionScheduler(game)!;scheduler.advanceActionTime(scheduler.nextActionBoundary()!);scheduler.dispatchActorBoundary(game.player.id);}
 afterEach(()=>{vi.restoreAllMocks();logger.reset();logger.onDisturb=null;});
@@ -121,22 +119,11 @@ it.each(['single','core','leg'] as const)('backstab of a busy %s survives schedu
 });
 
 describe('3g strict optional combat capacity consumer',()=>{
-    it.each([{status:'unavailable',reason:'absent'},{status:'available',value:{status:'unsupported'}}])('falls back only for explicit %j',result=>{
-        expect(resolveCombatStats(result as OptionalQueryResult)).toBeUndefined();
-    });
-    it.each([
-        {status:'supported',staminaCapacity:0,poiseCapacity:12,revision:revision(0)},
-        {status:'supported',staminaCapacity:24.5,poiseCapacity:12,revision:revision(24)},
-        {status:'supported',staminaCapacity:24,poiseCapacity:1_000_001,revision:revision(24)},
-        {status:'supported',staminaCapacity:24,poiseCapacity:12,revision:'old'},
-        {status:'unsupported',staminaCapacity:24},
-    ])('rejects malformed available DTO %j',value=>{
-        expect(()=>resolveCombatStats({status:'available',value:value as Json})).toThrow();
-    });
-    it('rejects accessors without invoking them',()=>{
-        const getter=vi.fn(()=>30),value={status:'supported',poiseCapacity:12,revision:revision(30)};
-        Object.defineProperty(value,'staminaCapacity',{get:getter,enumerable:true});
-        expect(()=>resolveCombatStats({status:'available',value:value as Json})).toThrow();expect(getter).not.toHaveBeenCalled();
+    it('keeps capacities in the foundation ledger and rejects the retired actor field',()=>{
+        setup({query:()=>supported()});const game=scene();chargeNativeActorAttack(game,game.player.id);
+        expect('combatStats' in row(game)).toBe(false);
+        const bad=structuredClone(state(game));Object.assign(bad.actors[0]!,{combatStats:{staminaCapacity:30,poiseCapacity:18}});
+        expect(()=>validateProductionActorAttackState(bad,combatAttackDefinitions(loadCombatDefinitionPack()))).toThrow();
     });
     it('applies repeated up/down temporary capacities without refill, clock change, or fractional loss',()=>{
         let capacity=30;setup({query:()=>supported(capacity,capacity/2)});const game=scene();
@@ -144,13 +131,13 @@ describe('3g strict optional combat capacity consumer',()=>{
         const resource=row(game);Object.assign(resource,{stamina:18,poise:9,regenRemainder:13,poiseRecoveryRemainder:17,
             regenDelayRemaining:20,poiseRecoveryDelayRemaining:30});
         for(const next of [60,10,40,10,60]){
-            const before=structuredClone(resource),random=rng.getState();capacity=next;
+            const before=structuredClone(resource),random=rng.getState();capacity=next;game.extensionRuntime!.stats.clear();
             prepareActorParryCommand(game,command('parry',{facing:'e'}));game.extensionRuntime!.readModuleView('combat');
             expect(resource).toEqual(before);expect(rng.getState()).toEqual(random);
             sync(game);
             expect(resource.stamina).toBe(Math.min(before.stamina,next));expect(resource.poise).toBe(Math.min(before.poise,next/2));
             expect(resource).toMatchObject({regenRemainder:13,poiseRecoveryRemainder:17,regenDelayRemaining:20,poiseRecoveryDelayRemaining:30});
-            expect(resource.combatStats).toEqual({staminaCapacity:next,poiseCapacity:next/2,revision:revision(next)});
+            expect(game.extensionRuntime!.stats.value(game.player.id,'combat.stamina-capacity')).toBe(next);expect(game.extensionRuntime!.stats.value(game.player.id,'combat.poise-capacity')).toBe(next/2);
             expect(()=>validateProductionActorAttackState(state(game),combatAttackDefinitions(loadCombatDefinitionPack()))).not.toThrow();
         }
     });
@@ -173,27 +160,23 @@ describe('3g strict optional combat capacity consumer',()=>{
         let npcSupported=true;const seen:number[]=[];
         setup({query:(id,playerId)=>{seen.push(id);return id===playerId?supported(30,18):npcSupported?supported(40,20):{status:'unsupported'};}});
         const game=scene(),target=npc(game);chargeNativeActorAttack(game,target.id);
-        expect(row(game,target.id)).toMatchObject({stamina:22,poise:12,combatStats:{staminaCapacity:40,poiseCapacity:20}});
+        expect(row(game,target.id)).toMatchObject({stamina:22,poise:12});
         expect(seen).toContain(target.id);npcSupported=false;sync(game);
-        expect(row(game,target.id).combatStats).toBeUndefined();expect(row(game,target.id).stamina).toBe(22);
-        expect(row(game).combatStats?.staminaCapacity).toBe(30);
+        expect(game.extensionRuntime!.stats.applied(target.id,'combat.stamina-capacity')).toBe(0);expect(row(game,target.id).stamina).toBe(22);
+        expect(game.extensionRuntime!.stats.value(game.player.id,'combat.stamina-capacity')).toBe(30);
     });
-    it('rejects stale saved revision and inflated capacity without changing the candidate',()=>{
+    it('rejects an inflated saved balance without changing the candidate',()=>{
         setup({query:()=>supported()});const game=scene();chargeNativeActorAttack(game,game.player.id);
         const binding=game.extensionRuntime!.actorActionBinding()!,copy=structuredClone(binding.state);
-        const query=(_actor:Creature,_input:Json):OptionalQueryResult=>({status:'available',value:supported()});
+        const query=()=>({staminaCapacity:30,poiseCapacity:18});
         expect(()=>validateActorCombatCapacities(copy,binding.definition,[game.player],query)).not.toThrow();
-        copy.actors[0]!.combatStats!.revision=revision(999);const before=structuredClone(copy);
-        expect(()=>validateActorCombatCapacities(copy,binding.definition,[game.player],query)).toThrow('Stale');expect(copy).toEqual(before);
-        delete copy.actors[0]!.combatStats;
-        expect(()=>validateActorCombatCapacities(copy,binding.definition,[game.player],query)).toThrow('Stale');
-        copy.actors[0]!.combatStats={staminaCapacity:999,poiseCapacity:999,revision:revision(30)};
-        expect(()=>validateActorCombatCapacities(copy,binding.definition,[game.player],query)).toThrow('Stale');
+        copy.actors[0]!.stamina=999;const before=structuredClone(copy);
+        expect(()=>validateActorCombatCapacities(copy,binding.definition,[game.player],query)).toThrow();expect(copy).toEqual(before);
     });
     it('rejects another valid template profile even when its capacities and revision exactly match',()=>{
         setup({query:()=>supported()});const game=scene();chargeNativeActorAttack(game,game.player.id);
         const binding=game.extensionRuntime!.actorActionBinding()!,saved=game.toSaveSnapshot(),runtime=game.extensionRuntime!,player=game.player;
-        const query=(_actor:Creature,_input:Json):OptionalQueryResult=>({status:'available',value:supported()});
+        const query=(_actor:Creature,_input:Json)=>({staminaCapacity:30,poiseCapacity:18});
         const candidate=structuredClone(binding.state);candidate.actors.find(actor=>actor.actorId===player.id)!.profileId='combat.follow-thrust';
         expect(()=>validateProductionActorAttackState(candidate,binding.definition)).not.toThrow();
         expect(()=>validateActorCombatCapacities(candidate,binding.definition,[player],query)).toThrow('actor template');
@@ -203,7 +186,7 @@ describe('3g strict optional combat capacity consumer',()=>{
     });
     it('attests idle native and declared profile selection while retaining only metadata-bound paid pins',()=>{
         setup({query:()=>supported()});const game=scene(),target=npc(game);chargeNativeActorAttack(game,target.id);
-        const binding=game.extensionRuntime!.actorActionBinding()!,query=(_actor:Creature,_input:Json):OptionalQueryResult=>({status:'available',value:supported()});
+        const binding=game.extensionRuntime!.actorActionBinding()!,query=(_actor:Creature,_input:Json)=>({staminaCapacity:30,poiseCapacity:18});
         const verify=(candidate=state(game),body?:{declared:readonly string[];available:readonly string[]})=>validateActorCombatCapacities(candidate,binding.definition,
             [game.player,target],query,actor=>actor===target?body:undefined,game.actorActions);
         expect(row(game,target.id).profileId).toBe('combat.fan-edge');expect(()=>verify()).not.toThrow();
@@ -224,7 +207,7 @@ describe('3g strict optional combat capacity consumer',()=>{
     });
     it('propagates provider exceptions and invalid available values before charging',()=>{
         let invalid=false;setup({query:()=>{if(invalid)throw new Error('provider broken');return supported();}});const game=scene();
-        const before=structuredClone(state(game));invalid=true;
+        const before=structuredClone(state(game));invalid=true;game.extensionRuntime!.stats.clear();
         expect(()=>chargeNativeActorAttack(game,game.player.id)).toThrow('provider broken');expect(state(game)).toEqual(before);
     });
 });
@@ -318,7 +301,7 @@ describe.skipIf(!installed.has('giants')||!installed.has('narrative'))('3g compo
         expect(selectNativeActorAction(game,core.id)).toBe('handled');
         const bundle=game.actorActions!.bundles[0]!;expect(bundle).toMatchObject({decisionOwnerId:core.id,timeChargeOwnerId:core.id});
         expect(bundle.subactions.length).toBeGreaterThan(0);expect(row(game,core.id).stamina).toBe(24);
-        for(const sub of bundle.subactions)expect(row(game,sub.sourceEntityId)).toMatchObject({stamina:18,combatStats:{staminaCapacity:40,poiseCapacity:20}});
+        for(const sub of bundle.subactions){expect(row(game,sub.sourceEntityId).stamina).toBe(18);expect(game.extensionRuntime!.stats.value(sub.sourceEntityId,'combat.stamina-capacity')).toBe(40);expect(game.extensionRuntime!.stats.value(sub.sourceEntityId,'combat.poise-capacity')).toBe(20);}
         const member=legs.find(actor=>bundle.subactions.some(sub=>sub.sourceEntityId===actor.id))!;
         const before=row(game,member.id).poise;applyActorPoiseDamage(game,member.id,3);
         expect(row(game,core.id).poise).toBe(9);expect(row(game,member.id).poise).toBe(before);
@@ -337,10 +320,9 @@ describe.skipIf(!installed.has('giants')||!installed.has('narrative'))('3g compo
     });
     it.skipIf(!installed.has('growth'))('part-break consumes actual growth actor stats and publishes one core stagger after committed retirement',()=>{
         const {game,core,legs}=body(true),leg=legs[0]!;
-        const before=game.extensionRuntime!.queryOptionalActor('growth.combat-stats.v1',core,{v:1,baseStaminaCapacity:24,basePoiseCapacity:12});
-        expect(before).toMatchObject({status:'available',value:{status:'supported'}});
+        expect(game.extensionRuntime!.stats.value(core.id,'combat.stamina-capacity')).toBe(24);expect(game.extensionRuntime!.stats.value(core.id,'combat.poise-capacity')).toBe(12);
         withBodyContact(leg,leg.loc,()=>leg.takeDamage(100,true,game.grid,undefined,'physical'));
-        expect(row(game,core.id)).toMatchObject({poise:0,combatStats:{staminaCapacity:24,poiseCapacity:12}});
+        expect(row(game,core.id).poise).toBe(0);expect(game.extensionRuntime!.stats.value(core.id,'combat.stamina-capacity')).toBe(24);expect(game.extensionRuntime!.stats.value(core.id,'combat.poise-capacity')).toBe(12);
         const stagger=events(game).filter(event=>event.eventKind==='staggered');expect(stagger).toHaveLength(1);
         expect(stagger[0]!.actor.entityId).toBe(core.id);expect(stagger[0]!.actor.partId).toBe('core');
         withBodyContact(legs[1]!,legs[1]!.loc,()=>legs[1]!.takeDamage(100,true,game.grid,undefined,'physical'));

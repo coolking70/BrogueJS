@@ -117,6 +117,7 @@ export function growthSkillScalar(pack: Pack, port: GrowthRulePort, actor: Growt
     build: DeepReadonly<GrowthSkillBuild>, base: number, clock = 0, identity?: GrowthIdentityFacts): number {
     return evaluateGrowthPort(pack,port,growthScalarInput(actor,base),growthSkillScopes(pack,build,clock,'actor',identity));
 }
+export function growthSkillCooldownBase(pack:Pack,skill:GrowthSkillDefinition,actor:GrowthRuleActor,build:DeepReadonly<GrowthSkillBuild>,identity?:GrowthIdentityFacts):number{return growthTaggedProperty(pack,'cooldown',skill.cooldown,skill.tags,actor,growthPassiveEffects(pack,build,identity));}
 export function growthSkillCooldown(pack: Pack, skill: GrowthSkillDefinition, actor: GrowthRuleActor,
     build: DeepReadonly<GrowthSkillBuild>, clock = 0, identity?: GrowthIdentityFacts): number {
     const taggedBase = growthTaggedProperty(pack,'cooldown',skill.cooldown,skill.tags,actor,growthPassiveEffects(pack,build,identity));

@@ -1,3 +1,5 @@
+import { worldText } from '../../ext/worldText';
+import { nativeProbability, nativeEnchantedRoll, nativeRolledDamage, nativeRational, equipmentStats, nativeStat } from '../Stats/NativeStatSources';
 import i18next from 'i18next';
 import { getMonsterAbsorbStatus } from './MonsterTextCatalog';
 import type { ItemDetailContext } from './ItemDetailContext';
@@ -16,8 +18,8 @@ import { ItemCategory } from '../Items/Item';
 import type { Monster } from '../../entities/Monster';
 import { MonsterState } from '../../entities/Monster';
 import { creatureStatusRows } from '../Status/statusConfig';
-import { monsterAccuracyAdjusted, monsterDefenseAdjusted, monsterDamageAdjustmentAmount } from '../Combat/CombatFormulas';
-import { hitProbability, netEnchant, damageFraction, playerDefense } from '../Combat/CombatFormulas';
+
+
 import { CombatSystem } from '../Combat/Combat';
 import { weaponSlaysMonster } from '../Combat/MonsterClass';
 
@@ -137,32 +139,32 @@ export function generateMonsterDetail(
     const dmgStr = monster.damageString;
     const mDmg = dmgStr ? CombatSystem.parseDamageString(dmgStr) : null;
     if (mDmg) {
-        const fraction = monsterDamageAdjustmentAmount(monster.weaknessAmount);
-        mDmg.min = Math.trunc(mDmg.min * fraction);
-        mDmg.max = Math.trunc(mDmg.max * fraction);
+        mDmg.min = nativeRolledDamage(monster,nativeStat(monster,'native.damage-min'));
+        mDmg.max = nativeRolledDamage(monster,nativeStat(monster,'native.damage-max'));
     }
     if (dmgStr) {
         statsLines.push({ text: `伤害: ${monster.weaknessAmount && mDmg ? `${mDmg.min}–${mDmg.max}` : dmgStr}` });
     }
 
     // Accuracy and defense
-    const monAcc = monsterAccuracyAdjusted(monster.accuracy ?? 100, monster.weaknessAmount);
-    const monDef = monsterDefenseAdjusted(monster.defense ?? 0, monster.weaknessAmount);
+    const monAcc = nativeStat(monster,'native.accuracy');
+    const monDef = nativeStat(monster,'native.defense');
     if (monAcc !== 100) statsLines.push({ text: `精度: ${monAcc}` });
     if (monDef > 0) statsLines.push({ text: `防御: ${monDef}` });
 
     // Move / attack speed
     const moveSpd = monster.moveSpeed ?? 100;
-    const atkSpd = monster.attackSpeed ?? 100;
+    const atkSpd = nativeStat(monster,'native.attack-speed');
     if (moveSpd < 100) statsLines.push({ text: '移动速度较快', color: '#ff8844' });
     else if (moveSpd > 100) statsLines.push({ text: '移动速度较慢' });
     if (atkSpd < 100) statsLines.push({ text: '攻击速度较快', color: '#ff8844' });
     else if (atkSpd > 100) statsLines.push({ text: '攻击速度较慢' });
 
-    const regen = monster.regenTurns;
-    if (regen !== undefined && regen > 0 && regen <= 1) {
+    const rate=nativeRational(monster);
+    const healing=BigInt(rate.numerator), interval=BigInt(rate.denominator);
+    if (healing > 0n && interval <= healing) {
         statsLines.push({ text: '再生极快', color: '#44ff44' });
-    } else if (regen !== undefined && regen > 0 && regen <= 5) {
+    } else if (healing > 0n && interval <= healing * 5n) {
         statsLines.push({ text: '再生较快', color: '#44ff44' });
     }
 
@@ -186,9 +188,9 @@ export function generateMonsterDetail(
     // 的 truthy 守卫），strengthRequired 缺省 0（同 Combat.ts 的 `|| 0`）。
     const armorBase = playerArmorBase ?? 0;
     const effectivePlayerDefense = armorBase > 0
-        ? playerDefense(armorBase, playerArmorEnchant ?? 0, playerStrength, playerArmorStrReq ?? 0, playerDonning)
+        ? Math.max(0,equipmentStats({category:ItemCategory.ARMOR,armor:armorBase,enchantment:playerArmorEnchant??0,strengthRequired:playerArmorStrReq??0},playerStrength)['native.defense']!-playerDonning*10)
         : 0;
-    const monHitProb = forecastHit ? forecastHit('incoming') : playerStuck ? 100 : hitProbability(monAcc, effectivePlayerDefense);
+    const monHitProb = forecastHit ? forecastHit('incoming') : playerStuck ? 100 : nativeProbability(monAcc, effectivePlayerDefense);
     combatLines.push({
         text: `该怪物有 ${monHitProb}% 的概率命中你。`,
         color: monHitProb > 50 ? '#ff6644' : '#ffcc44'
@@ -213,19 +215,18 @@ export function generateMonsterDetail(
 
     // Player hitting monster
     if (playerWeaponDamage) {
-        const wNE = netEnchant(playerWeaponEnchant, playerStrength, playerWeaponStrReq);
+        const wNE = equipmentStats({category:ItemCategory.WEAPON,enchantment:playerWeaponEnchant,strengthRequired:playerWeaponStrReq},playerStrength)['native.weapon-enchant']!/4;
         // CE Combat.c:130-135: use the actual rune even when unidentified.
         const playerHitProb = forecastHit ? forecastHit('outgoing') : monster.hasStatus('stuck') || monster.hasStatus('paralyzed') || monster.isCaged
             || weaponSlaysMonster(playerWeapon, monster.typeId)
-            ? 100 : hitProbability(100, monDef, wNE);
+            ? 100 : nativeProbability(100, monDef, wNE);
         combatLines.push({
             text: `你有 ${playerHitProb}% 的概率命中该怪物。`,
             color: playerHitProb > 70 ? '#44ff44' : '#ffcc44'
         });
 
-        const fraction = damageFraction(wNE);
-        const scaledLo = Math.max(1, Math.trunc(playerWeaponDamage[0] * fraction));
-        const scaledHi = Math.max(1, Math.trunc(playerWeaponDamage[1] * fraction));
+        const scaledLo=Math.max(1,nativeEnchantedRoll(playerWeaponDamage[0],wNE));
+        const scaledHi=Math.max(1,nativeEnchantedRoll(playerWeaponDamage[1],wNE));
         const scaledAvg = (scaledLo + scaledHi) / 2;
         if (monster.hp > 0) {
             const pctOfMonHP = Math.round(100 * scaledAvg / monster.hp);
@@ -292,7 +293,7 @@ export function generateMonsterDetail(
  * the contextual adapter there. All callers share the same knowledge gates. */
 export function generateItemDetail(item: Item, context: number | ItemDetailContext): DetailInfo {
     const ctx = typeof context === 'number' ? { strength: context } : context;
-    if(item.category===ItemCategory.MATERIAL)return {char:item.char,color:item.color,name:item.displayName,sections:[{lines:[{text:i18next.t(item.description??''),color:'#aaaacc'},...(item.worldItem?.toolDurability!==null?[{text:i18next.t('ext.foundation.world.tool-durability',{durability:item.worldItem?.toolDurability??0}),color:'#aaaacc'}]:[])]}]};
+    if(item.category===ItemCategory.MATERIAL)return {char:item.char,color:item.color,name:item.displayName,sections:[{lines:[{text:worldText(item.description??''),color:'#aaaacc'},...(item.worldItem?.toolDurability!==null?[{text:i18next.t('ext.foundation.world.tool-durability',{durability:item.worldItem?.toolDurability??0}),color:'#aaaacc'}]:[])]}]};
     const sections = itemIntro(item, ctx);
     switch (item.category) {
         case ItemCategory.WEAPON: case ItemCategory.ARMOR: sections.push(...equipmentDetail(item, ctx)); break;

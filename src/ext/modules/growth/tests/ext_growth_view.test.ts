@@ -129,7 +129,7 @@ describe('EXT-1c immutable configured growth character readmodel', () => {
         configured(); const g = game(); vi.spyOn(Date, 'now').mockReturnValue(123456);
         const saved = g.toSaveSnapshot(), extension = g.extensionRuntime!.snapshot(), random = rng.getState(), tick = timeSystem.currentTick;
         const snapshot = vi.spyOn(g.extensionRuntime!, 'snapshot');
-        const policy = vi.spyOn(g.extensionRuntime!, 'rule');
+        const policy = vi.spyOn(g.extensionRuntime!, 'queryOptionalActor');
         for (let index = 0; index < 25; index++) {
             const view = proposal(g, { [con]: index % 3 }).view;
             expect(Object.isFrozen(view)).toBe(true); expect(Object.isFrozen(view.attributes)).toBe(true);
@@ -242,7 +242,7 @@ describe('EXT-1c immutable configured growth character readmodel', () => {
     it('exposes immutable player-only selection and reuses its frozen pack rather than cloning the run per read', () => {
         configured(); const g = game(), first = g.extensionRuntime!.readModuleView('growth')!, second = g.extensionRuntime!.readModuleView('growth')!;
         expect(Object.keys(first.state).sort()).toEqual(['created', 'objectiveClock', 'revision']);
-        expect(Object.keys(first.components).sort()).toEqual(['attributes', 'derived', 'focus', 'identity', 'progression', 'skill-build', 'skills']);
+        expect(Object.keys(first.components).sort()).toEqual(['attributes', 'focus', 'identity', 'progression', 'skill-build', 'skills']);
         expect(first.definitions).toBe(second.definitions); expect(first.session).toBe(second.session);
         expect(Object.isFrozen(first.components['skill-build'])).toBe(true);
         expect(Object.isFrozen(first.components.identity)).toBe(true);

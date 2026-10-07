@@ -67,7 +67,7 @@ describe('giants original content contract', () => {
     });
     expect(new Set(pack.forms.map((f) => f.nameKey)).size).toBe(5);
     expect(m.commands).toBeUndefined();
-    expect(m.rulePolicies).toBeUndefined();
+    expect(m.statSources).toBeUndefined();
     expect(m.optionalRewards).toBeUndefined();
   });
   it('rejects malformed packs instead of repairing or accepting scripts', () => {

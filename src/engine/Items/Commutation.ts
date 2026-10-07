@@ -1,4 +1,5 @@
 import { ItemCategory, type Item } from './Item';
+import { markItemStatsDirty } from './ItemStatInvalidation';
 import { ItemLoader } from './ItemLoader';
 import { charmRechargeDelay, isCharmKind } from './CharmModel';
 
@@ -48,5 +49,6 @@ export function swapItemToEnchantLevel(item: Item, level: number, known: boolean
         item.flags = item.flags?.filter(f => !['ITEM_RUNIC', 'ITEM_RUNIC_HINTED', 'ITEM_RUNIC_IDENTIFIED'].includes(f));
     }
     if (level >= 0) item.isCursed = false;
+    markItemStatsDirty(item);
     return true;
 }

@@ -5,6 +5,7 @@ import { inventoryReservedSlots, worldItemMaxStack } from './WorldItems';
  */
 
 import { Item, ItemCategory } from './Item';
+import { markItemStatsDirty } from './ItemStatInvalidation';
 
 export class Inventory {
     public capacity: number = 26; // Brogue standard a-z inventory
@@ -81,12 +82,14 @@ export class Inventory {
             if (item.strengthRequired !== undefined)
                 stack.strengthRequired = Math.min(stack.strengthRequired ?? item.strengthRequired, item.strengthRequired);
             if (!stack.originDepth || stack.originDepth !== item.originDepth) stack.originDepth = 0;
+            markItemStatsDirty(this);
             return true;
         }
         if (!item.inventoryLetter || !/^[a-z]$/.test(item.inventoryLetter)
             || this.items.some(other => other.inventoryLetter === item.inventoryLetter))
             item.inventoryLetter = this.nextLetter();
         this.items.push(item);
+        markItemStatsDirty(this);
         return true;
     }
 
@@ -101,6 +104,7 @@ export class Inventory {
         const index = this.items.findIndex(i => i.id === item.id);
         if (index > -1) {
             this.items.splice(index, 1);
+            markItemStatsDirty(this);
             return true;
         }
         return false;

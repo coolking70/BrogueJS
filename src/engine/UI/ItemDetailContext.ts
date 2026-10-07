@@ -1,6 +1,7 @@
+import { enchantedEquipment } from '../Items/ItemEffectFormulas';
+import { hypotheticalItemFields, statQuery, nativeRingEnchant } from '../Stats/NativeStatSources';
 import type { Item } from '../Items/Item';
 import type { Player } from '../../entities/Player';
-import { effectiveRingEnchant } from '../Items/RingBonuses';
 import { itemKnowledge } from './ItemKnowledge';
 
 /** A detached, knowledge-filtered view of the current equipment. No live Items. */
@@ -15,6 +16,9 @@ export interface KnownEquipment {
 /** CE itemDetails inputs. Missing context means omit the contextual paragraph,
  * never guess HP, nutrition, ownership, equipment, or historical information. */
 export interface ItemDetailContext {
+    readonly statProjection?:Readonly<Record<string,number>>;
+    readonly currentStatProjection?:Readonly<Record<string,number>>;
+    readonly nextStatProjection?:Readonly<Record<string,number>>;
     readonly strength: number;
     readonly hp?: number;
     readonly maxHp?: number;
@@ -51,9 +55,9 @@ export function createItemDetailContext(
         if (!ring?.identityId || !itemKnowledge(ring, { omniscient }).kindKnown) continue;
         // CE apparentRingBonus: a known kind uses effectiveRingEnchant, including
         // a worn ring's observable negative effect and the unidentified + cap.
-        bonuses[ring.identityId] = (bonuses[ring.identityId] ?? 0) + (omniscient ? ring.enchantment : effectiveRingEnchant(ring));
+        bonuses[ring.identityId] = (bonuses[ring.identityId] ?? 0) + (omniscient ? ring.enchantment : nativeRingEnchant(ring));
     }
-    return Object.freeze({ strength: p.effectiveStrength, hp: p.hp, maxHp: p.maxHp,
+    return Object.freeze({ ...(p.inventory.items.includes(item)&&(item.category===0||item.category===1)?{statProjection:statQuery(p).hypothetical(p.id,{equip:item.id},!omniscient),nextStatProjection:hypotheticalItemFields(p,item.id,enchantedEquipment(item.enchantment,item.strengthRequired??0),!omniscient),currentStatProjection:statQuery(p).hypothetical(p.id,{},!omniscient)}:{}), strength: p.effectiveStrength, hp: p.hp, maxHp: p.maxHp,
         nutrition: p.nutrition, maxNutrition: p.maxNutrition,
         carried: p.inventory.items.some(i => i.id === item.id),
         equipped: [p.equippedWeapon, p.equippedArmor, p.ringLeft, p.ringRight].some(i => i?.id === item.id),

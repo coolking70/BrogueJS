@@ -155,5 +155,8 @@
     "isOpaque",
     "terrain",
     "isBurning"
-  ]
+  ],
+  "derivedSessionServices": {
+    "StatPipeline": "Excluded: cache, diagnostics, actorStatRevision, frozen provider views and hypothetical proposal contexts. Persist only ExtensionSnapshot.foundation.stats in extensions dirty domain."
+  }
 }

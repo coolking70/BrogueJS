@@ -157,13 +157,13 @@ describe('C5 recording v4 digest contract', () => {
     expect(digestRoot(empty, null, DIGEST_DOMAINS)).toBe(
       independent([
         'c5-root-v1',
-        ['brogue-web-whole-run-v5', 5, 7, 2],
+        ['brogue-web-whole-run-v5', 5, 8, 2],
         independent(null),
         DIGEST_DOMAINS.map((d) => empty[d])
       ])
     );
     expect(digestRoot(empty, null, DIGEST_DOMAINS)).toBe(
-      'e47b9c6389bbb10231605f929a086f5f90c6d34c480b0ddfd521f7b53a67264a'
+      '8cd4143674ecc3e7cd23fc439be10b6960988788ee563ea87ce226d8804bb6f1'
     );
     expect(merkleDomain('native', { '\u{10000}': 1, '\ue000': 2 })).toBe(
       independent([
@@ -181,13 +181,13 @@ describe('C5 recording v4 digest contract', () => {
       mode: 'normal',
       initialLevel: { kind: 'dungeon', depth: 1 },
       extensions: null,
-      codec: { wholeRun: 5, foundation: 7, origin: 2 },
+      codec: { wholeRun: 5, foundation: 8, origin: 2 },
       digestAlgorithm: 'sha256-c5-merkle-v1',
       digestChunk: 256,
       checkpointPeriod: 2048,
       recordedAt: 0,
       initialDigest: {
-        root: 'e47b9c6389bbb10231605f929a086f5f90c6d34c480b0ddfd521f7b53a67264a',
+        root: '8cd4143674ecc3e7cd23fc439be10b6960988788ee563ea87ce226d8804bb6f1',
         domains: {
           native: '323a572cbdc04b1211bc4c0198ba8209325c6fb699120b1d18cbaa99ae2a16ca',
           extensions: '45d52001ca271816b0e09831cbec73e18c38871c0dfe26b42f93ec734a3b64cd',
@@ -199,10 +199,10 @@ describe('C5 recording v4 digest contract', () => {
       }
     } as const;
     expect(recordingStart(vectorHeader)).toBe(
-      'b79ac6f05064939958ee8aef5cae19fdc77bec262c494ea4b4fca39490119681'
+      '76970205a70642ae188cc5c2b3e61a99d1e4eef32e41eb98c0d468e960a37b5e'
     );
     expect(recordingChain(recordingStart(vectorHeader), { index: 0, action: 'wait' } as any)).toBe(
-      '8e517f61f9d903949ade9dae12442001e2a221c017c860e2f3b40b165878ee79'
+      '978f9315ab7164b5b10a7261e32c2ff7c14dc108e5cb7eacb13b96b3a4443d23'
     );
     const game = createHeadlessGame(517);
     game.executeCommand('escape');

@@ -1,5 +1,8 @@
+import { appliedGrowth } from '../../../../test/support/legacyStats';
 import { extensionDigest, checkpointExtensionDigest } from '../../../../test/support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { isJson } from '../../../../ext/json';
+import { Item, ItemCategory } from '../../../../engine/Items/Item';
 import { createHeadlessGame } from '../../../../test/harness';
 import type { Game } from '../../../../engine/Core/Game';
 import { Monster, type MonsterData } from '../../../../entities/Monster';
@@ -19,11 +22,11 @@ import * as catalog from '../../../../ext/catalog';
 
 const con = 'growth.attribute.constitution', str = 'growth.attribute.strength-training', will = 'growth.attribute.will';
 const state = (game: Game) => game.extensionRuntime!.snapshot().modules.growth as unknown as GrowthState;
-const component = <T>(game: Game,name: string,id = game.player.id) => game.extensionRuntime!.snapshot().components[id]![`growth:${name}`] as T;
+const component = <T>(game: Game,name: string,id = game.player.id) => (name==='derived'?appliedGrowth(game.extensionRuntime!,id):game.extensionRuntime!.snapshot().components[id]![`growth:${name}`]) as T;
 function command(game: Game,action: string,payload: unknown): void { game.executeCommand('ext:command',JSON.stringify({module:'growth',action,payload})); }
 function allocate(game: Game,attributes: Record<string,number>): void { command(game,'allocate',{revision:state(game).revision,attributes}); }
 function respec(game: Game): void { command(game,'respec',{revision:state(game).revision}); }
-function configured(change?: (pack: GrowthDefinitionPack) => void): void {
+function configured(change?: (pack: GrowthDefinitionPack) => void, equipment = false): void {
     const pack = structuredClone(data) as unknown as GrowthDefinitionPack;
     pack.config.levels.attributePoints = {kind:'periodic',firstLevel:1,every:1,amount:20};
     pack.config.levels.skillPoints = {kind:'periodic',firstLevel:1,every:1,amount:4};
@@ -32,7 +35,9 @@ function configured(change?: (pack: GrowthDefinitionPack) => void): void {
     const parsed = parseGrowthDefinitionPack(pack,{moduleVersion:pack.moduleVersion,hasText:()=>true});
     const identity = {schema:1,version:pack.moduleVersion,fingerprint:extensionDataFingerprint(pack)};
     vi.spyOn(catalog,'createExtensionRegistry').mockImplementation(() => {
-        const registry = new ExtensionRegistry(); registry.register('growth',pack.moduleVersion,()=>createGrowthGameplay(parsed,identity),identity); return registry;
+        const registry = new ExtensionRegistry(); registry.register('growth',pack.moduleVersion,()=>createGrowthGameplay(parsed,identity),identity);
+        if(equipment)registry.register('lootfixture','1.0.0',()=>({id:'lootfixture',version:'1.0.0',initialState:()=>({}),validateState:isJson,statSources:{collect:(_actor,c)=>c.equippedItems().filter(i=>i.kindKey==='fixture_hp').map(i=>({stat:'native.max-hp',value:30,category:'flat',layer:'equipment',sourceKind:'equipment',sourceId:`lootfixture.item.${i.id}`}))}}));
+        return registry;
     });
 }
 function game(): Game {
@@ -42,6 +47,15 @@ function game(): Game {
 afterEach(() => vi.restoreAllMocks());
 
 describe('EXT-1b configured attributes and atomic commands',() => {
+    it('F2 permanent growth recovery is explicit and equipment never adds it, including after load',()=>{
+        configured(pack=>{pack.config.levels.recovery.allocationHp='increase';},true);
+        const g=createHeadlessGame(6721,'test');g.startNewGame({seed:6721,mode:'test',ruleSet:'extended',extensions:['growth','lootfixture']});command(g,'create-character',{revision:0});g.animationEnabled=false;g.player.hp=10;allocate(g,{[con]:1});expect(g.player.hp).toBe(13);
+        const maximum=g.player.maxHp,item=new Item('fixture',')',1,ItemCategory.WEAPON);item.identityId='fixture_hp';item.damage='1';g.player.inventory.items.push(item);
+        g.player.equip(item);expect(g.player.maxHp).toBe(maximum+30);expect(g.player.hp).toBe(13);
+        allocate(g,{[con]:1});expect(g.player.maxHp).toBe(maximum+33);expect(g.player.hp).toBe(16);
+        const save=g.toSaveSnapshot();expect(g.loadSnapshot(save)).toBe(true);const loaded=g.player.inventory.items.find(i=>i.id===item.id)!;
+        for(let i=0;i<3;i++){g.player.unequip(loaded,true);expect(g.player.maxHp).toBe(maximum+3);expect(g.player.hp).toBe(16);g.player.equip(loaded);expect(g.player.maxHp).toBe(maximum+33);expect(g.player.hp).toBe(16);}
+    });
     it('allocates through the recorded command, spends configured prices once, preserves wounds and both RNG streams',() => {
         configured(); const g = game(), maximum = g.player.maxHp, strength = g.player.strength;
         g.player.hp -= 7;
@@ -120,7 +134,7 @@ describe('EXT-1b configured attributes and atomic commands',() => {
         for(const mutate of [
             (bad:typeof saved)=>{(bad.extensions!.components[g.player.id]!['growth:progression'] as GrowthProgression).attributePoints++;},
             (bad:typeof saved)=>{(bad.extensions!.components[g.player.id]!['growth:attributes'] as GrowthAttributes).values[con]!++;},
-            (bad:typeof saved)=>{(bad.extensions!.components[g.player.id]!['growth:derived'] as GrowthDerived).appliedMaxHp++;},
+            (bad:typeof saved)=>{bad.extensions!.foundation.stats!.applied.find(row=>row.actorId===g.player.id&&row.key==='native.max-hp')!.bonus++;},
         ]) {const bad=structuredClone(saved);mutate(bad);expect(g.loadSnapshot(bad)).toBe(false);expect(g.player).toBe(player);expect(g.extensionRuntime).toBe(runtime);}
     });
     it('replays allocation and respec through seek and save/load continuation without drift',() => {

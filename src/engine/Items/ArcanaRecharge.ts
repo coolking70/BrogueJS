@@ -1,6 +1,6 @@
 import { ItemCategory, type Item } from './Item';
 import type { Random } from '../Random';
-import { ringBonus } from './RingBonuses';
+import { ringWisdom } from '../Stats/NativeStatSources';
 import { charmRechargeDelay, isCharmKind } from './CharmModel';
 
 /** CE Items.c:338: staffs start at 500 points (blink/obstruction: 1000), not a roll.
@@ -57,7 +57,7 @@ export function ringWisdomMultiplierPercent(wisdom: number): number {
 
 /** CE effectiveRingEnchant + updateRingBonuses, shared with all other rings. */
 export function equippedWisdomBonus(rings: readonly Item[]): number {
-    return ringBonus(rings, 'ring_of_wisdom');
+    return ringWisdom(rings);
 }
 
 /** Natural recharge calls once per objective 100-tick block; reaping supplies

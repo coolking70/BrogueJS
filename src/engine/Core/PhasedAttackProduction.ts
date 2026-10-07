@@ -1,8 +1,10 @@
+import type { CombatCapacities } from '../../ext/combatStats';
 import { mirrorWorldWorkTicks, worldWorkClockFinished, interruptWorldWork, interruptWorldWorkAtDepth, selectWorldWorkDecision } from './WorldWork';
 import { bodyStatusDisables } from '../Status/BodyStatuses';
 import i18next from 'i18next';
 import { logger } from '../Systems/Logger';
 import { timeSystem } from '../Systems/Time';
+import { markStatsDirty } from '../Stats/NativeStatSources';
 import { bindWorldRestSource, finishWorldRestClock, interruptWorldRest, settleWorldRest, worldRestSourceChanged } from './WorldRestProduction';
 /** Trusted data-driven executor. Optional content supplies finite definitions only. */
 import type { Game, ControlledActionRisk } from './Game';
@@ -26,9 +28,8 @@ import { advanceActorResources, chargeActorResources, initialActorResources } fr
 import { bindNativeAttackWorld } from './NativeAttackTransaction';
 import type { ActorResourcePhase } from '../../ext/actorActions';
 import { TerrainType } from '../Map/Grid';
-import { resolveCombatStats, combatCapacityPolicy } from '../../ext/combatStats';
-import type { ActorCombatStats } from '../../ext/actorActions';
-import type { Json, OptionalQueryResult, CombatEventPayload } from '../../ext/types';
+import { combatCapacityPolicy } from '../../ext/combatStats';
+import type { Json, CombatEventPayload } from '../../ext/types';
 
 type Session={state:ProductionActorAttackState;definitions:ActorAttackDefinitions;scheduler:ActorActionScheduler;runtime:object;moduleId:string;sessionRevision:number;defenseSources:Map<number,{actor:Creature;revision:number;depth:number}>};
 const sessions=new WeakMap<Game,Session>();
@@ -84,32 +85,32 @@ function profileId(session:Session,game:Game,source:Creature):string|undefined {
         session.definitions.nativeProfiles.find(binding=>binding.monsterId===source.typeId)?.profileId:undefined;
 }
 /** Resource policy is independent of whether the actor has a phased attack profile. */
-function capacities(game:Game,source:Creature,base:ActorResourcePolicy):ActorCombatStats|undefined {
-    const result=game.extensionRuntime!.queryOptionalActor('growth.combat-stats.v1',source,
-        {v:1,baseStaminaCapacity:base.staminaCapacity,basePoiseCapacity:base.poiseCapacity});
-    return resolveCombatStats(result);
+function capacities(game:Game,source:Creature,base:ActorResourcePolicy):CombatCapacities|undefined {
+ const stats=game.extensionRuntime!.stats;
+ const result={staminaCapacity:stats.value(source.id,'combat.stamina-capacity',{baseValue:base.staminaCapacity}),poiseCapacity:stats.value(source.id,'combat.poise-capacity',{baseValue:base.poiseCapacity})};
+ return result.staminaCapacity===base.staminaCapacity&&result.poiseCapacity===base.poiseCapacity?undefined:result;
 }
 function resourcesFor(game:Game, session:Session, source:Creature, pinnedProfileId?:string) {
     const profile=session.definitions.profiles.find(p=>p.id===(pinnedProfileId??profileId(session,game,source)??session.definitions.playerProfileId))!;
     const base=session.definitions.resourcePolicies.find(p=>p.id===profile.resourcePolicyId)!;
-    const stats=capacities(game,source,base),policy=combatCapacityPolicy(base,stats);
+    const stats=capacities(game,source,base),policy={...combatCapacityPolicy(base,stats),regenPerTickNumerator:game.extensionRuntime!.stats.value(source.id,'combat.stamina-regen',{baseValue:base.regenPerTickNumerator}),poiseRecoveryNumerator:game.extensionRuntime!.stats.value(source.id,'combat.poise-recovery',{baseValue:base.poiseRecoveryNumerator}),nativeAttackCost:game.extensionRuntime!.stats.value(source.id,'combat.native-attack-cost',{baseValue:base.nativeAttackCost})};
     const row=session.state.actors.find(a=>a.actorId===source.id);
     return {profile,base,policy,stats,row};
 }
 /** First materialization retains the template's initial absolute balances. */
-function initialResource(actorId:number,profileId:string,base:ActorResourcePolicy,stats?:ActorCombatStats):ProductionActorAttackState['actors'][number] {
+function initialResource(actorId:number,profileId:string,base:ActorResourcePolicy,stats?:CombatCapacities):ProductionActorAttackState['actors'][number] {
     const policy=combatCapacityPolicy(base,stats),result={actorId,profileId,...initialActorResources(base)};
     result.stamina=Math.min(result.stamina,policy.staminaCapacity);result.poise=Math.min(result.poise,policy.poiseCapacity);
-    return {...result,...(stats?{combatStats:stats}:{})};
+    return result;
 }
-function synchronizeResource(row:ProductionActorAttackState['actors'][number],profile:string,policy:ActorResourcePolicy,stats?:ActorCombatStats):boolean {
+function synchronizeResource(row:ProductionActorAttackState['actors'][number],profile:string,policy:ActorResourcePolicy,_stats?:CombatCapacities):boolean {
     const before=canonical(row);
     if(row.profileId!==profile){
         row.profileId=profile;row.regenRemainder=0;row.regenDelayRemaining=Math.min(row.regenDelayRemaining,policy.regenDelayTicks);
         row.poiseRecoveryRemainder=0;row.poiseRecoveryDelayRemaining=Math.min(row.poiseRecoveryDelayRemaining,policy.poiseRecoveryDelayTicks);
     }
     row.stamina=Math.min(row.stamina,policy.staminaCapacity);row.poise=Math.min(row.poise,policy.poiseCapacity);
-    if(stats)row.combatStats={...stats};else delete row.combatStats;
+
     // Capacity-only changes retain delays, fractional balances and accepted
     // windows. A later real resource tick/payment owns normal full-pool clearing.
     return canonical(row)!==before;
@@ -121,12 +122,14 @@ function synchronizeIdleResource(game:Game,session:Session,source:Creature):void
     if(!row||source.hp<=0||game.actorActions!.bundles.some(bundle=>bundle.decisionOwnerId===source.id
         ||bundle.subactions.some(child=>child.sourceEntityId===source.id&&child.phaseIndex<child.phases.length)))return;
     const current=resourcesFor(game,session,source);
+    const profileChanged=row.profileId!==current.profile.id;
     if(synchronizeResource(row,current.profile.id,current.policy,current.stats))bumpRevision(session.state);
+    if(profileChanged)markStatsDirty(source);
 }
 /** Candidate-load verification: a decoded, trusted actor world supplies the
  * query. No attach/load/query may normalize or fill a saved resource pool. */
 export function validateActorCombatCapacities(state:ProductionActorAttackState,definitions:ActorAttackDefinitions,
-    creatures:readonly Creature[],query:(actor:Creature,input:Json)=>OptionalQueryResult,
+    creatures:readonly Creature[],query:(actor:Creature,input:Json)=>CombatCapacities,
     bodyProfiles?:(actor:Creature)=>{declared:readonly string[];available:readonly string[]}|undefined, root?: import('./ActorActionsRoot').ActorActionsRoot):void {
     for(const row of state.actors){
         const source=creatures.find(actor=>actor.id===row.actorId);
@@ -157,8 +160,8 @@ export function validateActorCombatCapacities(state:ProductionActorAttackState,d
                 throw new Error('Combat resource profile does not match actor template');
         }
         const base=definitions.resourcePolicies.find(policy=>policy.id===profile.resourcePolicyId)!;
-        const stats=resolveCombatStats(query(source,{v:1,baseStaminaCapacity:base.staminaCapacity,basePoiseCapacity:base.poiseCapacity}));
-        if(canonical(row.combatStats)!==canonical(stats))throw new Error('Stale combat capacity revision');
+        const stats=query(source,{v:1,baseStaminaCapacity:base.staminaCapacity,basePoiseCapacity:base.poiseCapacity});
+
         const policy=combatCapacityPolicy(base,stats);
         if(row.stamina>policy.staminaCapacity||row.poise>policy.poiseCapacity)throw new Error('Invalid effective combat resource balance');
     }
@@ -173,8 +176,10 @@ function pay(game:Game,session:Session,source:Creature,cost:number):boolean {
         regenRemainder:0,regenDelayRemaining:Math.min(resource.regenDelayRemaining,policy.regenDelayTicks),
         poise:Math.min(resource.poise,policy.poiseCapacity),poiseRecoveryRemainder:0,poiseRecoveryDelayRemaining:Math.min(resource.poiseRecoveryDelayRemaining,policy.poiseRecoveryDelayTicks)};
     const next=chargeActorResources(input,policy,cost);if(!next)return false;
+    const profileChanged=resource.profileId!==profile.id;
     Object.assign(resource,next);resource.profileId=profile.id;
-    if(stats)resource.combatStats={...stats};else delete resource.combatStats;
+    if(profileChanged)markStatsDirty(source);
+
     if(!row){session.state.actors.push(resource);session.state.actors.sort((a,b)=>a.actorId-b.actorId);}
     bumpRevision(session.state);return true;
 }
@@ -222,7 +227,9 @@ function advanceResources(game:Game,session:Session,delta:number):void {
         const source=actor(game,row.actorId);if(!source||source.hp<=0)continue; // Cached layers freeze.
         const bundle=game.actorActions!.bundles.find(b=>(b.decisionOwnerId===source.id||b.subactions.some(s=>s.sourceEntityId===source.id&&s.phaseIndex<s.phases.length))&&b.depth===game.depth);
         const current=resolved.get(source)!;
+        const profileChanged=row.profileId!==current.profile.id;
         synchronizeResource(row,current.profile.id,current.policy,current.stats);
+        if(profileChanged)markStatsDirty(source);
         const policy=current.policy;
         const phases:ActorResourcePhase[]=bundle?bundle.subactions.filter(s=>s.sourceEntityId===source.id||bundle.decisionOwnerId===source.id).flatMap(s=>s.phases[s.phaseIndex]?[s.phases[s.phaseIndex]!.kind]:[]):[];
         if(!defenseSourceValid(game,session,source)){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}
@@ -518,7 +525,9 @@ export function collectPhasedAttackActors(game:Game,reachable:readonly Creature[
         if(source&&source.hp<=0){row.dodgeRemainingTicks=0;row.dodgeRecoveryRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;row.parryRecoveryRemainingTicks=0;row.staggerRemainingTicks=0;row.poise=resourcesFor(game,session,source).policy.poiseBreakRecoveryValue;row.poiseRecoveryRemainder=0;}
         if(!source)continue;
         const current=resolved.get(source)!;
-        if(synchronizeResource(row,current.profile.id,current.policy,current.stats))bumpRevision(session.state);
+        const profileChanged=row.profileId!==current.profile.id;
+    if(synchronizeResource(row,current.profile.id,current.policy,current.stats))bumpRevision(session.state);
+    if(profileChanged)markStatsDirty(source);
     }
 }
 /** Administrative retirement removes the source's ledger only after its child
@@ -589,7 +598,7 @@ export function prepareActorDodge(game:Game,sourceId:number,facing:ActorAttackFa
     const session=sessions.get(game),source=actor(game,sourceId);
     if(!session||!source||!facings.includes(facing)||!dodgeBodySupported(source)||!eligible(game,source,session)
         ||source.hasStatus('stuck')||source.hasStatus('nauseous'))return null;
-    const {row,policy,stats}=resourcesFor(game,session,source),dodge=session.definitions.dodge;
+    const {row,policy}=resourcesFor(game,session,source),dodge=session.definitions.dodge;
     if((!row&&session.state.actors.length>=4096)||Math.min(row?.stamina??policy.initialStamina,policy.staminaCapacity)<dodge.cost
         ||(row?.dodgeRecoveryRemainingTicks??0)>0)return null;
     const direction=directionVectors[facing],to={x:source.x+direction.x,y:source.y+direction.y};
@@ -599,7 +608,7 @@ export function prepareActorDodge(game:Game,sourceId:number,facing:ActorAttackFa
     const movement=game.prepareActorDodgeRisks(source.id,to);if(movement.certainDeath)return null;
     return deepFreeze({moduleId:session.moduleId,sourceEntityId:source.id,facing,to,revision:session.state.revision,
         sessionRevision:session.sessionRevision,sourceRevision:actorSourceRevision(source),risks:structuredClone(movement.risks),
-        facts:canonical({row:row??null,policy,combatStats:stats??null,hp:source.hp,status:source.statusDurations,depth:game.depth,
+        facts:canonical({row:row??null,policy,hp:source.hp,status:source.statusDurations,depth:game.depth,
             footprint:sourceFootprintVersion(game.spatialOf(source)),cells:cells.map(p=>game.grid.getCell(p.x,p.y)?.layers)})});
 }
 /** Caller supplies only a trusted synchronous authority, never a module callback. */
@@ -731,11 +740,11 @@ export function prepareActorParry(game:Game,sourceId:number,facing:ActorAttackFa
     bindPhasedAttackProduction(game);
     const session=sessions.get(game),source=actor(game,sourceId);
     if(!session||!source||source.spatial?.bodyMember&&source.spatial.bodyMember.groupId!==source.id||!facings.includes(facing)||!eligible(game,source,session))return null;
-    const {policy,row,stats}=resourcesFor(game,session,source);
+    const {policy,row}=resourcesFor(game,session,source);
     if((!row&&session.state.actors.length>=4096)||Math.min(row?.stamina??policy.initialStamina,policy.staminaCapacity)<session.definitions.parry.cost)return null;
     return deepFreeze({moduleId:session.moduleId,sourceEntityId:source.id,facing,revision:session.state.revision,
         sessionRevision:session.sessionRevision,sourceRevision:actorSourceRevision(source),
-        facts:canonical({row:row??null,policy,combatStats:stats??null,hp:source.hp,status:source.statusDurations,depth:game.depth,
+        facts:canonical({row:row??null,policy,hp:source.hp,status:source.statusDurations,depth:game.depth,
             footprint:sourceFootprintVersion(game.spatialOf(source))})});
 }
 export function commitActorParry(game:Game,plan:ActorParryPlan,scope:ActorActionScope):boolean {

@@ -1,3 +1,5 @@
+import { markItemStatsDirty } from '../Items/ItemStatInvalidation';
+import { worldText } from '../../ext/worldText';
 import { markRecordingRoot } from '../../ext/recordingRevisions';
 import { assertNativeActorDecisionScope, type ActorActionScope } from './ActorActionScope';
 /** Synchronous foundation authority: detached plans, scoped commits, escrow and batch settlement. */
@@ -1113,7 +1115,7 @@ export function worldMessage(
   if (!d) return;
   const disturbed = game.disturbed;
   logger.log(
-    i18next.t(`ext.foundation.world.message.${kind}`, { name: i18next.t(d.nameKey) }),
+    i18next.t(`ext.foundation.world.message.${kind}`, { name: worldText(d.nameKey) }),
     '#bbbbbb'
   );
   game.disturbed = disturbed;
@@ -1186,6 +1188,7 @@ function completeBatch(
           game,
           item.worldItem.definitionId
         ).tool!.durabilityPerBatch;
+        markItemStatsDirty(game.player.inventory);
       }
       t.completedBatches++;
       t.lastCompletionOrdinal = checkedAdd(t.lastCompletionOrdinal, 1);

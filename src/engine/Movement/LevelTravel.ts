@@ -1,3 +1,4 @@
+import { nativeStat } from '../Stats/NativeStatSources';
 import { RigidPosePathing } from '../Map/RigidPosePathing';
 import { squarePlacementCandidates } from './SquarePlacement';
 import { CreatureSpatial, isSquareFootprint } from './CreatureSpatial';
@@ -96,7 +97,7 @@ export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[],
                 if (!Number.isFinite(distance)) distance = 30000;
             }
             if (distance>=30000 && !ally) continue;
-            m.entersLevelIn=Math.max(1,Math.min(150,Math.floor(distance*m.movementSpeed/100)+1));
+            m.entersLevelIn=Math.max(1,Math.min(150,Math.floor(distance*nativeStat(m,'native.move-speed')/100)+1));
             m.approaching |= direction===1?APPROACHING_DOWNSTAIRS:direction===-1?APPROACHING_UPSTAIRS:APPROACHING_PIT;
         }
     } } finally { spatial?.dispose(); }
@@ -153,7 +154,7 @@ export function travelPlacement(world: PlacementWorld, target: Creature, origin:
 /** Architect.restoreMonster: move towards the exit for the elapsed portion of
  * the journey. nextStep picks the greatest descent, preferring reverse CE direction order (diagonals). */
 export function restoreTravelPosition(grid: Grid, m: Monster, map: number[][]): void {
-    const count=(map[m.x]?.[m.y]??30000)-Math.trunc(m.entersLevelIn*100/m.movementSpeed);
+    const count=(map[m.x]?.[m.y]??30000)-Math.trunc(m.entersLevelIn*100/nativeStat(m,'native.move-speed'));
     for(let i=0;i<count;i++) {
         let best=0, next:Pos|null=null;
         for(const [dx,dy] of [...TRAVEL_DIRECTIONS].reverse()) {
@@ -177,7 +178,7 @@ export function restoreSquareTravelPosition(world: PlacementWorld, m: Monster, e
         const pathing = isSquareFootprint(m) ? new FootprintPathing(spatial) : new RigidPosePathing(spatial), policy = { forbiddenFlags: travelAvoidedFlags(m), allowSecretDoors: true };
         const distance = pathing.planStep(m, { kind: 'contact', target }, policy, true).distance ?? Infinity;
         if (!Number.isFinite(distance)) return;
-        const count = Math.min(world.grid.width * world.grid.height, Math.max(0, distance - Math.trunc(m.entersLevelIn * 100 / m.movementSpeed)));
+        const count = Math.min(world.grid.width * world.grid.height, Math.max(0, distance - Math.trunc(m.entersLevelIn * 100 / nativeStat(m,'native.move-speed'))));
         for (let i = 0; i < count; i++) {
             const step = pathing.planStep(m, { kind: 'contact', target }, policy);
             if (!step.at) break;

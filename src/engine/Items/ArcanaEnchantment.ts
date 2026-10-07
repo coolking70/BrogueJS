@@ -1,3 +1,4 @@
+import { markItemStatsDirty } from './ItemStatInvalidation';
 import { ItemCategory, type Item } from './Item';
 import { WAND_INITIAL_RANGES } from './ArcanaInstance';
 import { charmRechargeDelay, isCharmKind } from './CharmModel';
@@ -46,6 +47,7 @@ export function finishArcanaEnchantment(item: Item): void {
 export function enchantArcana(item: Item, magnitude = 1): boolean {
     if (!canEnchantArcana(item)) return false;
     Object.assign(item, arcanaEnchantmentGain(item, magnitude));
+    markItemStatsDirty(item);
     finishArcanaEnchantment(item);
     return true;
 }

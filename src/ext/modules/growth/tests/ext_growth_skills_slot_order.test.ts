@@ -43,7 +43,7 @@ it('preserves nonlexical passive slot order while canonical timed tag sources su
     const loaded=createHeadlessGame(91,'test');expect(loaded.loadSnapshot(saved)).toBe(true);
     expect(loaded.extensionRuntime!.snapshot()).toEqual(expected);expect(build(loaded).passive).toEqual(passive);
     const forged=structuredClone(saved);
-    const capacity=game.extensionRuntime!.rule('focusCapacity',{actorId:game.player.id,targetId:null,baseValue:pack.config.focus.base});
+    const capacity=game.extensionRuntime!.stats.value(game.player.id,'growth.focus-capacity');
     forged.extensions!.components[game.player.id]!['growth:focus']={current:capacity,remainder:1};
     expect(loaded.loadSnapshot(forged)).toBe(false);expect(loaded.extensionRuntime!.snapshot()).toEqual(expected);
     const replay=createHeadlessGame(92,'test');expect(replay.loadReplay(recording)).toBe(true);
