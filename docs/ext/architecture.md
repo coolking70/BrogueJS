@@ -215,6 +215,9 @@
 
 `ExtensionModule.view` 是只读显示数据描述符。运行器创建会话时分离复制并深冻结定义和字段选择；`readModuleView` 只复制该模块指定的当前玩家组件/少量状态字段，返回不入存档的 opaque 会话身份。不会遍历整局、奖励收据、因果状态或所有怪物，也不向 UI 交付模块写能力。经典运行器为空，读模型立即返回 null。
 
+5B 集成为 `readModuleView(moduleId, displayQuery?)` 增加可选只读参数：安全整数 JSON 校验后复制并冻结，传入 `projectView` 的 `displayQuery`，不写模块状态、不进入存档/录像/随机流。crafting 用它选择材料来源，单次仍只预览一个来源（正式包≤112次），与箱子总数无关。SDK1 的可选 `lastCommandError?()` 是会话错误诊断，`ContainerRead.inReach?` 是 actor 相对的真实距离/交互线资格；UI 通过DTO读取，不导入可信引擎写口。省略查询保留原背包显示，具体字段、SHA及回归见 [5B集成报告](phase5b-integration.report.md)。
+
+
 `growth/view.ts` 负责定义驱动条目、经验阈值、合法草稿、资源与上下文参考预览、技能/槽位/前置和身份目录。草稿需要会话与 revision 同时匹配；提交 helper 再读当前会话，输出严格的已有 allocate/respec payload，最终仍由引擎命令预检与原子提交裁决。临时草稿、标签页、焦点、模态和成功提示不进 Game，不加实例字段，不改 U03 合同或 growth@1.2.0 规则版本。
 
 `App.vue` 拥有角色页显示状态，保持背包/检视/原生确认与目标选择隔离。`GameCanvas` 的可选显示模态属性只停止帧驱动的自动推进并屏蔽地图输入，不通过 interrupt 命令污染取消流程；关闭后恢复显示焦点。实体状态与随机数的不变性、真实组件行为和浏览器尺寸验收由1c报告列出。技能执行/身份创建仍等1d/1e授权，不因显示目录而启用。

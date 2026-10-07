@@ -4,6 +4,7 @@
     "tests/crafting_commands.test.ts",
     "tests/crafting_config_examples.test.ts",
     "tests/crafting_data_tables.test.ts",
+    "tests/crafting_geometry.test.ts",
     "tests/crafting_module.test.ts",
     "tests/crafting_persistence.test.ts",
     "tests/crafting_placement.test.ts",
@@ -12,6 +13,7 @@
     "tests/crafting_rejections.test.ts",
     "tests/crafting_runtime.test.ts",
     "tests/crafting_schema.test.ts",
+    "tests/crafting_sdk_integration.test.ts",
     "tests/crafting_ui.test.ts",
     "tests/crafting_work.test.ts"
   ],

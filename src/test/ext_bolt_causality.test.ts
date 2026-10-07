@@ -62,6 +62,7 @@ function damageEvents(game: Game) {
 function reflectionArmor(game: Game): void {
     const armor = new Item('reflection armor', ']', 0xffffff, ItemCategory.ARMOR);
     armor.runicType = 'reflection'; armor.enchantment = 50; armor.strengthRequired = game.player.strength;
+    game.player.inventory.addItem(armor); // S7: a hanging slot is not an equipment source.
     game.player.equippedArmor = armor;
 }
 beforeEach(() => {

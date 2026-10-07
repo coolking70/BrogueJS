@@ -65,6 +65,16 @@ describe('module UI selection and creation ownership', () => {
             ui.refresh(); expect(() => ui.commands.value).toThrow('ownership'); scope.stop();
         }
     });
+    it.each(['alpha.open', 'alpha:open'])('accepts the owned SDK1 UI command %s', id => {
+        const scope = effectScope(), invoke = vi.fn();
+        const game = { extensionRuntime: { manifest: { modules: [{ id: 'alpha' }] } } } as unknown as Game;
+        const ui = scope.run(() => useModuleUi({ game: () => game, tick: ref(0), immersive: ref(false), canOpenPanel: () => true, beforeOpenPanel() {}, afterClosePanel() {} }, [
+            { moduleId: 'alpha', useSession: () => ({ hud: ref(null), bar: ref(null), panel: ref(null), panelOpen: ref(false),
+                commands: ref([{ id, label: id, invoke }]), refresh() {}, close() {} }) },
+        ]))!;
+        try { ui.refresh(); ui.commands.value[0]!.invoke(); expect(invoke).toHaveBeenCalledOnce(); }
+        finally { scope.stop(); }
+    });
     it('retires exposed command and panel callbacks on replacement and scope disposal', () => {
         const called = vi.fn(), game = { extensionRuntime: { manifest: { modules: [{ id: 'alpha' }] } } } as unknown as Game;
         const scope = effectScope();

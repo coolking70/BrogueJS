@@ -2,7 +2,7 @@ import { computed, defineAsyncComponent, nextTick, onScopeDispose, ref, shallowR
 import i18next from 'i18next';
 import type { ModuleUiHost, ModuleUiSession } from '../../../ui/types';
 import { buildCancelCommand, buildCraftCommand, buildHarvestCommand, buildPlaceCommand } from './commands';
-import { craftingDirections, emptyCraftingDraft, readCraftingUiView, type CraftingDirection, type CraftingDraft, type CraftingTab, type CraftingUiView } from './view';
+import { craftingDirections, emptyCraftingDraft, readCraftingUiView, craftingErrorKey, type CraftingDirection, type CraftingDraft, type CraftingTab, type CraftingUiView } from './view';
 const CraftingEntry = defineAsyncComponent(() => import('./CraftingEntry.vue'));
 const CraftingWorkHud = defineAsyncComponent(() => import('./CraftingWorkHud.vue'));
 interface Presentation { data: CraftingUiView; session: object; readOnly: boolean; replay: boolean; cursor: number; x: number; y: number }
@@ -25,7 +25,7 @@ export function useCraftingUi(host: ModuleUiHost,
   function read(): Presentation | null {
     if (!live() || busy()) return null;
     try {
-      const source = runtime?.readModuleView('crafting'), data = readCraftingUiView(source?.state);
+      const source = runtime?.readModuleView('crafting', { sourceContainerId: draft.value.sourceContainerId }), data = readCraftingUiView(source?.state);
       if (!source || !data || !source.session || typeof source.session !== 'object') return null;
       return { data, session: source.session, readOnly: !!game.replayRecording || game.isGameOver || !source.canManageCharacter,
         replay: !!game.replayRecording, cursor: game.replayCursor, x: game.player.x, y: game.player.y };
@@ -64,11 +64,13 @@ export function useCraftingUi(host: ModuleUiHost,
       const batches: Record<string, number> = {};
       for (const recipe of next.data.recipes) if (draft.value.batches[recipe.recipeId] !== undefined)
         batches[recipe.recipeId] = Math.min(Math.max(1, draft.value.batches[recipe.recipeId]!), Math.max(1, recipe.maxBatch));
-      draft.value = { ...draft.value, batches };
+      draft.value = { ...draft.value, batches, destinationContainerId: next.data.containers.some(c => c.id === draft.value.destinationContainerId && c.inReach)
+        ? draft.value.destinationContainerId : null };
       if (pending && game.pendingCommandConfirmation?.ownerCommandId !== pending.ownerCommandId) {
         const was = pending; pending = null; submitting.value = false;
         // A declined confirmation is an intentional no-op, not a rejected CAS.
-        if (same(was.expected, next) && !game.recordedInputEvents[game.recordedInputEvents.length - 1]?.decisions?.includes(false)) error.value = 'ext.crafting.ui.rejected';
+        if (next.data.lastError) error.value = craftingErrorKey(next.data.lastError, key => i18next.exists(key));
+        else if (same(was.expected, next) && !game.recordedInputEvents[game.recordedInputEvents.length - 1]?.decisions?.includes(false)) error.value = 'ext.crafting.ui.rejected';
       }
     } finally { refreshing = false; }
   }
@@ -107,6 +109,12 @@ export function useCraftingUi(host: ModuleUiHost,
       || !craftingDirections.some(row => row.id === value)) return;
     draft.value = { ...draft.value, directions: { ...draft.value.directions, [definitionId]: value } }; error.value = null;
   }
+  function chooseContainer(role: 'source' | 'destination', id: number | null) {
+    if (!live() || !opened.value || busy() || submitting.value || view.value?.readOnly
+      || (id !== null && !view.value?.data.containers.some(c => c.id === id && c.inReach))) return;
+    draft.value = { ...draft.value, [role === 'source' ? 'sourceContainerId' : 'destinationContainerId']: id, batches: {} };
+    error.value = null; refresh();
+  }
   const canStop = () => view.value?.data.activeTicket?.status === 'working'
     && !game.actorActions?.bundles.some(bundle => bundle.decisionOwnerId === game.player.id);
   async function submit(expected: Presentation, command: string | null, event?: MouseEvent) {
@@ -122,7 +130,10 @@ export function useCraftingUi(host: ModuleUiHost,
       const confirmation = readConfirmation();
       if (confirmation) pending = { ownerCommandId: confirmation.ownerCommandId, expected };
       refresh();
-      if (!busy() && !pending && same(expected, view.value)) error.value = 'ext.crafting.ui.rejected';
+      if (!busy() && !pending) {
+        if (view.value?.data.lastError) error.value = craftingErrorKey(view.value.data.lastError, key => i18next.exists(key));
+        else if (same(expected, view.value)) error.value = 'ext.crafting.ui.rejected';
+      }
     } catch { if (live()) { error.value = 'ext.crafting.ui.rejected'; refresh(); } }
     finally { await nextTick(); if (live() && token === submission) submitting.value = pending !== null; }
   }
@@ -143,8 +154,7 @@ export function useCraftingUi(host: ModuleUiHost,
     panelOpen: opened, refresh, close,
     commands: computed(() => {
       host.tick.value;
-      // Foundation enforces owner + ':' rather than the taskbook's dotted id.
-      return [{ id: 'crafting:open', label: i18next.t('ext.crafting.ui.open'), glyph: '匠',
+      return [{ id: 'crafting.open', label: i18next.t('ext.crafting.ui.open'), glyph: '匠',
         disabled: !view.value || blockedOpen() || panelLoading.value, invoke: () => { void open(); } }];
     }),
     bar: computed(() => {
@@ -164,8 +174,10 @@ export function useCraftingUi(host: ModuleUiHost,
       return { component: AsyncPanel, props: {
         model: expected.data, readOnly: expected.readOnly, replay: expected.replay, draft: draft.value,
         submitting: submitting.value, error: error.value, canStop: canStop(), immersive: host.immersive.value,
-        onClose: close, onTab: changeTab, onAdjust: adjust, onDirection: direction,
-        onHarvest: (id: number, event?: MouseEvent) => submit(expected, buildHarvestCommand(expected.data, id), event),
+        onClose: close, onTab: changeTab, onAdjust: adjust, onDirection: direction, onContainer: chooseContainer,
+        onHarvest: (id: number, event?: MouseEvent) => submit(expected, buildHarvestCommand(expected.data, id, draft.value.destinationContainerId === null ? null
+          : (() => { const c = expected.data.containers.find(c => c.id === draft.value.destinationContainerId);
+            return c ? { id: c.id, revision: c.revision } : null; })()), event),
         onCraft: (id: string, event?: MouseEvent) => submit(expected, buildCraftCommand(expected.data, id, draft.value.batches[id] ?? 1), event),
         onPlace: (id: string, event?: MouseEvent) => {
           const selected = craftingDirections.find(row => row.id === draft.value.directions[id]);

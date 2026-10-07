@@ -7,7 +7,7 @@ import { StatValidationError, validateStatRows } from './stats';
 import type { PairFacts, StatQuery } from './stats';
 import { markRecordingRoot, recordingRootRevision } from './recordingRevisions';
 import { World5Error } from './world5';
-import { c5Hash } from './worldJson';
+import { c5Hash, c5Canonical } from './worldJson';
 import { isWorld5Fixture, isWorld5StructureFixture, isWorld5WorkFixture, world5FixtureConfiguration } from './world5Fixture';
 import { FOUNDATION_PROTOCOL } from './descriptor';
 import { resolveActorQueryScope } from './actorQuery';
@@ -1693,11 +1693,11 @@ export class ExtensionRuntime {
     }
     get sourceId(): number | null { return this.attacks[this.attacks.length - 1] ?? null; }
     /** Pure player-only projection. Never snapshots causal ledgers, NPCs, rewards, or the world. */
-    readModuleView(moduleId: string): ExtensionModuleView | null {
+    readModuleView(moduleId: string, displayQuery?: Json): ExtensionModuleView | null {
         const descriptor = this.views.get(moduleId), module = this.modules.find(entry => entry.id === moduleId);
         if (this.disposed || !module) return null;
         if (module.projectView) {
-            const projection = module.projectView(freezeView({ stats:this.statQuery, queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), ...(module.worldDefinitions ? {worldWork:this.ports.worldWorkRead?.(moduleId)} : {}), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
+            const projection = module.projectView(freezeView({ ...(displayQuery === undefined ? {} : { displayQuery: JSON.parse(c5Canonical(displayQuery)) as Json }), stats:this.statQuery, queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), ...(module.worldDefinitions ? {worldWork:this.ports.worldWorkRead?.(moduleId)} : {}), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
                 visibleInteractables: this.visibleInteractables(moduleId), actorActionBundles: structuredClone(this.ports.actorActions?.()?.bundles ?? []), nearbyInteractables: this.nearbyInteractables(moduleId),
                 worldRestUnavailable: id=>this.world.entities.some(entity=>entity.id===id&&entity.owner===moduleId)
                     ?restHandlers.get(this)?.worldRestUnavailable?.(id)??null:'unavailable' }));

@@ -15,7 +15,7 @@ function fixture(active = false): CraftingUiView {
   const pack = loadCraftingPack(), items = [...pack.materials, ...pack.tools];
   const name = (id: string) => items.find(row => row.id === id)!.nameKey;
   return {
-    v: 1, available: true, levelRef: { kind: 'dungeon', depth: 2 }, inventoryStamp: 'inventory:1',
+    v: 1, available: true, levelRef: { kind: 'dungeon', depth: 2 }, inventoryStamp: 'inventory:1', lastError: null, sourceContainerId: null, sourceRevision: null, containers: [{id:12,revision:2,at:{x:10,y:10},capacity:16,occupiedSlots:0,reservedSlots:0,inReach:true}],
     activeTicket: active ? { ticketId: 4, ticketRevision: 2, kind: 'craft', definitionId: 'crafting.make-pick',
       nameKey: 'ext.crafting.recipe.make-pick.name', totalBatches: 5, completedBatches: 1, remainingTicks: 500, status: 'working' } : null,
     nodes: [{ interactableId: 1, definitionId: 'crafting.metal-node', nameKey: 'ext.crafting.node.metal-node.name', glyph: '矿', color: '#B7C3CF',
@@ -122,6 +122,7 @@ describe('crafting UI exact command payloads', () => {
     expect(JSON.parse(buildPlaceCommand(view, 'crafting.table', { x: 11, y: 10 })!)).toEqual({ module: 'crafting', action: 'place-station', payload: { v: 1, definitionId: 'crafting.table', x: 11, y: 10, inventoryStamp: 'inventory:1' } });
     expect(JSON.parse(buildCancelCommand(view)!)).toEqual({ module: 'crafting', action: 'cancel-work', payload: { v: 1, ticketId: 4, ticketRevision: 2 } });
     expect(JSON.parse(buildHarvestCommand(view, 1, { id: 12, revision: 2 })!).payload).toMatchObject({ destinationId: 12, destinationRevision: 2 });
+    view.containers = [{id:12,revision:2,at:{x:10,y:10},capacity:16,occupiedSlots:0,reservedSlots:0,inReach:true}]; view.sourceContainerId=12; view.sourceRevision=2;
     expect(JSON.parse(buildCraftCommand(view, 'crafting.make-pick', 1, { id: 12, revision: 2 })!).payload).toMatchObject({ sourceContainerId: 12, sourceRevision: 2, stationId: null, stationRevision: null });
   });
   it('rejects unknown targets, unusable rows, invalid counts, coordinates and container pairs', () => {
@@ -129,6 +130,7 @@ describe('crafting UI exact command payloads', () => {
     for (const count of [0, 3, 17, -1, 1.5, NaN]) expect(buildCraftCommand(view, 'crafting.make-pick', count)).toBeNull();
     expect(buildHarvestCommand(view, 999)).toBeNull(); expect(buildCraftCommand(view, 'missing', 1)).toBeNull();
     expect(buildPlaceCommand(view, 'missing', { x: 1, y: 1 })).toBeNull(); expect(buildPlaceCommand(view, 'crafting.table', { x: Infinity, y: 1 })).toBeNull();
+    expect(buildCraftCommand(view, 'crafting.make-pick', 1, { id: 12, revision: 2 })).toBeNull();
     expect(buildHarvestCommand(view, 1, { id: 1, revision: null } as never)).toBeNull(); expect(buildCancelCommand(view)).toBeNull();
     view.nodes[0]!.canHarvest = false; view.nodes[0]!.reason = 'C5_TOOL'; expect(buildHarvestCommand(view, 1)).toBeNull();
   });
@@ -136,7 +138,7 @@ describe('crafting UI exact command payloads', () => {
 
 describe('crafting session lifecycle and command safety', () => {
   it('lazy-loads one panel, preserves command ownership and pairs shell open/close once', async () => {
-    const f = session(); expect(f.loader).not.toHaveBeenCalled(); expect(f.ui.commands.value[0]!.id).toBe('crafting:open');
+    const f = session(); expect(f.loader).not.toHaveBeenCalled(); expect(f.ui.commands.value[0]!.id).toBe('crafting.open');
     await f.open(); expect(f.ui.panelOpen.value).toBe(true); expect(f.host.beforeOpenPanel).toHaveBeenCalledOnce();
     f.ui.close(); f.ui.close(); expect(f.host.afterClosePanel).toHaveBeenCalledOnce(); await f.open(); expect(f.loader).toHaveBeenCalledOnce();
   });
@@ -239,15 +241,15 @@ const all = (n: Node): Node[] => [n, ...n.children.flatMap(all)];
 const text = (n: Node): string => n.text + n.children.map(text).join('');
 async function panel() {
   i18next.addResourceBundle(i18next.language, 'translation', locale, true, true);
-  const model = Vue.ref(fixture(true)), draft = Vue.ref<CraftingDraft>(emptyCraftingDraft()), readOnly = Vue.ref(false), hidden = Vue.ref(false), action = vi.fn();
+  const model = Vue.ref(fixture(true)), draft = Vue.ref<CraftingDraft>(emptyCraftingDraft()), readOnly = Vue.ref(false), hidden = Vue.ref(false), error = Vue.ref<string | null>(null), action = vi.fn();
   const component = await createSfcHarness({ baseURL: import.meta.url }).load('../ui/CraftingPanel.vue');
   const app = renderer.createApp({ render: () => Vue.h(component, { model: model.value, draft: draft.value, readOnly: readOnly.value, replay: readOnly.value,
-    submitting: false, error: null, canStop: true, presentationHidden: hidden.value, onHarvest: action, onCraft: action, onPlace: action, onCancelWork: action,
+    submitting: false, error: error.value, canStop: true, presentationHidden: hidden.value, onHarvest: action, onCraft: action, onPlace: action, onCancelWork: action,
     onTab: (tab: CraftingDraft['tab']) => { draft.value = { ...draft.value, tab }; },
     onAdjust: (id: string, amount: number) => { draft.value = { ...draft.value, batches: { ...draft.value.batches, [id]: (draft.value.batches[id] ?? 1) + amount } }; },
     onDirection: (id: string, direction: 'n') => { draft.value = { ...draft.value, directions: { ...draft.value.directions, [id]: direction } }; } }) });
   app.use(I18NextVue, { i18next }); apps.push(app); app.mount(node('root')); await Vue.nextTick();
-  return { model, draft, readOnly, hidden, action, tab: async (tab: string) => { all(body).find(n => n.props['data-tab'] === tab)!.props.onClick(); await Vue.nextTick(); } };
+  return { model, draft, readOnly, hidden, error, action, tab: async (tab: string) => { all(body).find(n => n.props['data-tab'] === tab)!.props.onClick(); await Vue.nextTick(); } };
 }
 
 describe('crafting client SFCs through the shared harness', () => {
@@ -267,6 +269,27 @@ describe('crafting client SFCs through the shared harness', () => {
     expect(all(body).filter(n => ['craft', 'confirm'].includes(n.props['data-action'])).every(n => n.props.disabled)).toBe(true);
     f.hidden.value = true; await Vue.nextTick(); expect(all(body).find(n => n.props.role === 'dialog')!.props.inert).toBe(true);
     expect(text(body)).not.toContain('C5_');
+  });
+  it('renders precise module and foundation errors, with a safe fallback for an unknown label', async () => {
+    const f = await panel();
+    const alert = () => all(body).find(n => n.props.role === 'alert')!;
+    f.error.value = 'ext.crafting.error.stale'; await Vue.nextTick();
+    expect(text(alert())).toBe('情况已经变化，请重新查看');
+    f.error.value = 'ext.foundation.world.error.bad_payload'; await Vue.nextTick();
+    expect(text(alert())).toBe('世界请求格式有误。');
+    f.error.value = 'ext.injected.value'; await Vue.nextTick();
+    expect(text(alert())).toBe('操作未执行，请重新查看');
+  });
+  it('renders owned container selectors and a reversible narrow-screen drawer toggle', async () => {
+    const f = await panel();
+    const selector = () => all(body).find(n => n.props['data-container'])!;
+    expect(selector().props['data-container']).toBe('destination'); expect(text(body)).toContain('采集存入');
+    await f.tab('craft'); expect(selector().props['data-container']).toBe('source'); expect(text(body)).toContain('材料来源');
+    const toggle = () => all(body).find(n => n.props['data-action'] === 'toggle-drawer')!;
+    expect(toggle().props['aria-expanded']).toBe(true); toggle().props.onClick(); await Vue.nextTick();
+    expect(toggle().props['aria-expanded']).toBe(false);
+    expect(all(body).some(n => String(n.props.class).includes('is-collapsed'))).toBe(true);
+    toggle().props.onClick(); await Vue.nextTick(); expect(toggle().props['aria-expanded']).toBe(true);
   });
   it('renders the fallback entry without adding a HUD and blocks double-click or historical input', async () => {
     i18next.addResourceBundle(i18next.language, 'translation', locale, true, true);

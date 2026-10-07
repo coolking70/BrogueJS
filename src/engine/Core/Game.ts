@@ -3556,7 +3556,8 @@ export class Game {
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
         assertSingleCellPlayer(this.player);
         if (recordingState(this).execution || this.replayRecording || this.isAdvancing
-            || this.isInputLocked() || logger.pendingAcknowledgment || presentationBlocked(this)) return;
+            || (this.isInputLocked() && !(action === 'ext:command' && isWorldWorkCommand(this, data)
+                && productionActorActionInputLocked(this))) || logger.pendingAcknowledgment || presentationBlocked(this)) return;
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data)) {
             const disturbed = this.disturbed;
             try { logger.log(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }), '#ff6666', { presentationOnly: true }); }
@@ -3776,6 +3777,11 @@ export class Game {
     private *applyCommandBodyStages(action: string, data?: unknown, perform?: () => void): CommandStages<void> {
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data))
             throw new Error(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }));
+        // An idle command boundary can report a live combat lock. Never advance
+        // its clock, stop automation or run a work provider for this refusal.
+        if (action === 'ext:command' && isWorldWorkCommand(this, data) && productionActorActionInputLocked(this)) {
+            setWorldWorkError(this, 'C5_BUSY'); return;
+        }
         logger.onDisturb = () => { this.disturbed = true; };
         // All explicit input, including modal/unknown keys, cancels automation.
         // Nested movement from auto_step shares the same command boundary.

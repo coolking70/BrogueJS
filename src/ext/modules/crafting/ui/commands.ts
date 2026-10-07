@@ -22,11 +22,12 @@ export function buildHarvestCommand(view: CraftingUiView, nodeId: number, destin
 }
 export function buildCraftCommand(view: CraftingUiView, recipeId: string, batchCount: number, source: CraftingContainerChoice | null = null): string | null {
   if (!readCraftingUiView(view) || !container(source)) return null;
+  if (source && (source.id !== view.sourceContainerId || source.revision !== view.sourceRevision)) return null;
   const recipe = view.recipes.find(row => row.recipeId === recipeId);
   if (!recipe || !Number.isSafeInteger(batchCount) || batchCount < 1 || batchCount > recipe.maxBatch) return null;
   return encode({ module: 'crafting', action: 'craft', payload: { v: 1, recipeId, batchCount,
     stationId: recipe.stationId, stationRevision: recipe.stationRevision,
-    sourceContainerId: source?.id ?? null, sourceRevision: source?.revision ?? null, inventoryStamp: view.inventoryStamp } });
+    sourceContainerId: source?.id ?? view.sourceContainerId, sourceRevision: source?.revision ?? view.sourceRevision, inventoryStamp: view.inventoryStamp } });
 }
 export function buildPlaceCommand(view: CraftingUiView, definitionId: string, at: Position): string | null {
   if (!readCraftingUiView(view) || !fields(at, ['x', 'y']) || !Number.isSafeInteger(at.x) || !Number.isSafeInteger(at.y)

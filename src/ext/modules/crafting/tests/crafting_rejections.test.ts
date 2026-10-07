@@ -31,7 +31,7 @@ describe('crafting T10 public rejection is recorded and mechanically free', () =
     rejected(h, 'harvest', payload, code);
   });
 
-  it.each([0, 17, Number.MAX_SAFE_INTEGER])('batchCount %s cannot exceed bounds or cause unsafe multiplication', count => {
+  it.each([0, 17, 1.5, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER + 1])('batchCount %s cannot exceed bounds or cause unsafe multiplication', count => {
     const h = staged();
     rejected(h, 'craft', craftPayload(h, 'make-table-kit', count), 'C5_BAD_PAYLOAD');
   });

@@ -1,6 +1,7 @@
 import type { CraftingView } from '../view';
 import type { WorldErrorCode } from '../../../worldSdk';
 import locale from '../locales/zh_CN.json';
+import errorLabels from '../data/ui-errors.json';
 
 export type CraftingUiView = Extract<CraftingView, { available: true }>;
 export type CraftingTab = 'harvest' | 'craft' | 'station' | 'work';
@@ -9,8 +10,10 @@ export interface CraftingDraft {
   tab: CraftingTab;
   batches: Readonly<Record<string, number>>;
   directions: Readonly<Record<string, CraftingDirection>>;
+  sourceContainerId: number | null;
+  destinationContainerId: number | null;
 }
-export const emptyCraftingDraft = (): CraftingDraft => ({ tab: 'harvest', batches: {}, directions: {} });
+export const emptyCraftingDraft = (): CraftingDraft => ({ tab: 'harvest', batches: {}, directions: {}, sourceContainerId: null, destinationContainerId: null });
 export const craftingDirections: readonly { id: CraftingDirection; dx: number; dy: number; glyph: string }[] = [
   { id: 'nw', dx: -1, dy: -1, glyph: '↖' }, { id: 'n', dx: 0, dy: -1, glyph: '↑' },
   { id: 'ne', dx: 1, dy: -1, glyph: '↗' }, { id: 'w', dx: -1, dy: 0, glyph: '←' },
@@ -85,12 +88,21 @@ function detached<T>(value: T): T {
 export function readCraftingUiView(value: unknown): CraftingUiView | null {
   try {
     if (!value || typeof value !== 'object' || own(value, 'available')?.value !== true) return null;
-    const root = object(value, ['v', 'available', 'levelRef', 'inventoryStamp', 'activeTicket', 'nodes', 'stations', 'recipes', 'placements', 'history']);
+    const root = object(value, ['v', 'available', 'levelRef', 'inventoryStamp', 'lastError', 'sourceContainerId', 'sourceRevision', 'containers', 'activeTicket', 'nodes', 'stations', 'recipes', 'placements', 'history']);
     if (root.v !== 1 || root.available !== true) return null;
     const level = root.levelRef;
     if (level && typeof level === 'object' && own(level, 'kind')?.value === 'dungeon') integer(object(level, ['kind', 'depth']).depth, 1, 40);
     else { const site = object(level, ['kind', 'id']); if (site.kind !== 'site') throw new Error('level'); string(site.id, /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/, 128); }
     string(root.inventoryStamp, undefined, 1024);
+    reason(root.lastError); pair(root.sourceContainerId, root.sourceRevision);
+    unique(root.containers, 112, 'id', row => {
+      integer(row.id, 1); integer(row.revision); const at = object(row.at, ['x', 'y']); integer(at.x); integer(at.y);
+      integer(row.capacity, 1, 64); integer(row.occupiedSlots, 0, row.capacity); integer(row.reservedSlots, 0, row.capacity);
+      if ((row.occupiedSlots as number) + (row.reservedSlots as number) > (row.capacity as number)) throw new Error('container capacity');
+      boolean(row.inReach);
+    }, ['id', 'revision', 'at', 'capacity', 'occupiedSlots', 'reservedSlots', 'inReach']);
+    if (root.sourceContainerId !== null && !(root.containers as { id: number; revision: number }[])
+      .some(c => c.id === root.sourceContainerId && c.revision === root.sourceRevision)) throw new Error('source');
     if (root.activeTicket !== null) {
       const ticket = object(root.activeTicket, ['ticketId', 'ticketRevision', 'kind', 'definitionId', 'nameKey', 'totalBatches', 'completedBatches', 'remainingTicks', 'status']);
       integer(ticket.ticketId, 1); integer(ticket.ticketRevision); definition(ticket.definitionId); textKey(ticket.nameKey);
@@ -137,8 +149,9 @@ export function readCraftingUiView(value: unknown): CraftingUiView | null {
 /** Keys are selected from a finite code set. Never display engine codes/fields. */
 export function craftingErrorKey(code: WorldErrorCode | null, exists: (key: string) => boolean): string {
   if (code && errorCodes.has(code)) {
-    const suffix = code.slice(3).toLowerCase();
-    for (const key of [`ext.crafting.error.${suffix}`, `ext.foundation.world.error.${suffix}`]) if (exists(key)) return key;
+    // The data table orders actual module labels before the foundation fallback.
+    const label = errorLabels.find(row => row.code === code && exists(row.reasonKey));
+    if (label) return label.reasonKey;
   }
   return 'ext.crafting.ui.rejected';
 }

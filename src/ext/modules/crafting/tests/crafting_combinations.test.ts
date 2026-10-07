@@ -11,6 +11,8 @@ import {
 import { Monster, MonsterState, type MonsterData } from '../../../../entities/Monster';
 import monsters from '../../../../data/monsters.json';
 import { TerrainType } from '../../../../engine/Map/Grid';
+import { arena, craftPayload as workPayload, rejected } from './runtimeHelpers';
+import { preparePhasedAttackCommand, commitPhasedAttackCommand } from '../../../../engine/Core/PhasedAttackProduction';
 import { logger } from '../../../../engine/Systems/Logger';
 import type { WorldHarness } from '../../../worldSdk';
 
@@ -88,9 +90,20 @@ describe('crafting independent installed-module combinations', () => {
   );
 
   if (installed.includes('combat')) {
-    // A staged live player combat bundle is intercepted by Game's input lock before the
-    // public craft command reaches the SDK. The T13 C5_BUSY receipt gap and executable
-    // reproduction are recorded in phase5b.report.md; no skipped assertion hides it here.
+    it('a live player combat bundle records C5_BUSY with no work or clock mutation', () => {
+      const h = start(['crafting', 'combat']), game = worldHarnessGame(h);
+      arena(game); game.player.ticksUntilTurn = 0;
+      const plan = preparePhasedAttackCommand(game, JSON.stringify({
+        module: 'combat', action: 'attack', payload: { attackId: 'fixture.slash', facing: 'e' }
+      }));
+      expect(plan).not.toBeNull(); expect(commitPhasedAttackCommand(game, plan!)).toBe(true);
+      expect(game.isInputLocked()).toBe(true);
+      const attack = structuredClone(game.actorActions);
+      rejected(h, 'craft', workPayload(h, 'make-pick'), 'C5_BUSY');
+      expect(game.actorActions).toEqual(attack);
+      const count = game.recordedInputEvents.length;
+      h.command('wait'); expect(game.recordedInputEvents).toHaveLength(count);
+    });
     it('combat damage during an accepted batch cancels output and refunds inputs exactly once', () => {
       const h = start(['crafting', 'combat']),
         game = worldHarnessGame(h);

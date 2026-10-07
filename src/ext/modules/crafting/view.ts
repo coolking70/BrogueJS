@@ -9,6 +9,11 @@ export interface CraftingAvailableView {
   available: true;
   levelRef: LevelRef;
   inventoryStamp: string;
+  lastError: WorldErrorCode | null;
+  sourceContainerId: number | null;
+  sourceRevision: number | null;
+  containers: { id: number; revision: number; at: { x: number; y: number }; capacity: number;
+    occupiedSlots: number; reservedSlots: number; inReach: boolean }[];
   activeTicket: null | {
     ticketId: number; ticketRevision: number; kind: WorkTicket['kind'];
     definitionId: string; nameKey: string; totalBatches: number; completedBatches: number;
@@ -49,12 +54,25 @@ export function projectCraftingView(
   const read = sdk.readWorkContext({ kind: 'inventory' });
   if (!read.ok) return { v: 1, available: false };
   const ctx = read.value;
+  const query = context.displayQuery;
+  const sourceField = query && typeof query === 'object' ? Object.getOwnPropertyDescriptor(query, 'sourceContainerId') : undefined;
+  const requestedSource = query === undefined ? null : sourceField?.value;
+  if (query !== undefined && (!query || typeof query !== 'object' || Array.isArray(query)
+    || ![Object.prototype, null].includes(Object.getPrototypeOf(query)) || Reflect.ownKeys(query).length !== 1
+    || !sourceField || !('value' in sourceField) || !sourceField.enumerable
+    || (requestedSource !== null && (!Number.isSafeInteger(requestedSource) || requestedSource <= 0))))
+    return { v: 1, available: false };
+  const containers = ctx.containers.filter(c => c.kind === 'chest' && c.at).sort((a, b) => a.id - b.id);
+  const source = requestedSource === null ? null : containers.find(c => c.id === requestedSource);
+  if (requestedSource !== null && !source) return { v: 1, available: false };
+  const sourceItems = source ? source.items : ctx.inventory;
   const items = new Map([...pack.materials, ...pack.tools].map(item => [item.id, item]));
   const definitions = new Map([
     ...pack.materials, ...pack.tools, ...pack.resourceNodes, ...pack.stations, ...pack.recipes
   ].map(row => [row.id, row]));
-  const have = (id: string): number => ctx.inventory.reduce(
+  const count = (rows: typeof ctx.inventory, id: string): number => rows.reduce(
     (sum, item) => sum + (item.definitionId === id ? item.available : 0), 0);
+  const have = (id: string) => count(ctx.inventory, id);
   const stations: CraftingAvailableView['stations'] = ctx.stations
     .filter(station => station.definitionId.startsWith('crafting.') && definitions.has(station.definitionId))
     .map(station => ({
@@ -72,7 +90,7 @@ export function projectCraftingView(
     const stationId = station?.interactableId ?? null;
     const inputs = recipe.inputs.map(input => ({
       itemDefinitionId: input.itemDefinitionId, nameKey: items.get(input.itemDefinitionId)!.nameKey,
-      perBatch: input.count, have: have(input.itemDefinitionId)
+      perBatch: input.count, have: count(sourceItems, input.itemDefinitionId)
     }));
     let maxBatch = 0;
     let reason: WorldErrorCode | null = null;
@@ -81,7 +99,7 @@ export function projectCraftingView(
       const candidate = Math.min(pack.limits.batchMax, ...inputs.map(input => Math.floor(input.have / input.perBatch)));
       // Even when input is insufficient, one preview supplies the authoritative reason.
       for (let n = Math.max(1, candidate); n >= 1; n--) {
-        const preview = sdk.previewRecipe(recipe.id, n, stationId, null);
+        const preview = sdk.previewRecipe(recipe.id, n, stationId, requestedSource);
         const currentReason = preview.ok ? preview.value.reason : preview.code;
         if (n === Math.max(1, candidate)) reason = currentReason;
         if (candidate > 0 && preview.ok && preview.value.ok) { maxBatch = n; reason = null; break; }
@@ -128,6 +146,10 @@ export function projectCraftingView(
   } : null;
   return {
     v: 1, available: true, levelRef: { ...ctx.levelRef }, inventoryStamp: ctx.inventoryStamp,
+    lastError: sdk.lastCommandError?.() ?? null,
+    sourceContainerId: requestedSource, sourceRevision: source?.revision ?? null,
+    containers: containers.map(c => ({ id: c.id, revision: c.revision, at: { ...c.at! }, capacity: c.capacity,
+      occupiedSlots: c.occupiedSlots, reservedSlots: c.reservedSlots, inReach: c.inReach === true })),
     activeTicket, nodes, stations, recipes,
     placements: pack.stations.map(station => {
       const kitHave = station.kitDefinitionId === null ? 0 : have(station.kitDefinitionId);

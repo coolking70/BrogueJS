@@ -1,0 +1,194 @@
+[
+  {
+    "code": "C5_STALE",
+    "reasonKey": "ext.crafting.error.stale"
+  },
+  {
+    "code": "C5_BUSY",
+    "reasonKey": "ext.crafting.error.busy"
+  },
+  {
+    "code": "C5_THREAT",
+    "reasonKey": "ext.crafting.error.threat"
+  },
+  {
+    "code": "C5_DISTANCE",
+    "reasonKey": "ext.crafting.error.distance"
+  },
+  {
+    "code": "C5_TOOL",
+    "reasonKey": "ext.crafting.error.tool"
+  },
+  {
+    "code": "C5_INPUT",
+    "reasonKey": "ext.crafting.error.input"
+  },
+  {
+    "code": "C5_CAPACITY",
+    "reasonKey": "ext.crafting.error.capacity"
+  },
+  {
+    "code": "C5_RESOURCE_EMPTY",
+    "reasonKey": "ext.crafting.error.resource_empty"
+  },
+  {
+    "code": "C5_RESERVED",
+    "reasonKey": "ext.crafting.error.reserved"
+  },
+  {
+    "code": "C5_BUDGET",
+    "reasonKey": "ext.crafting.error.budget"
+  },
+  {
+    "code": "C5_BLOCKED",
+    "reasonKey": "ext.crafting.error.blocked"
+  },
+  {
+    "code": "C5_GATE",
+    "reasonKey": "ext.crafting.error.gate"
+  },
+  {
+    "code": "C5_UNKNOWN_TARGET",
+    "reasonKey": "ext.crafting.error.unknown_target"
+  },
+  {
+    "code": "C5_BAD_PAYLOAD",
+    "reasonKey": "ext.foundation.world.error.bad_payload"
+  },
+  {
+    "code": "C5_BAD_DEFINITION",
+    "reasonKey": "ext.foundation.world.error.bad_definition"
+  },
+  {
+    "code": "C5_BAD_VERSION",
+    "reasonKey": "ext.foundation.world.error.bad_version"
+  },
+  {
+    "code": "C5_DISABLED",
+    "reasonKey": "ext.foundation.world.error.disabled"
+  },
+  {
+    "code": "C5_UNSUPPORTED",
+    "reasonKey": "ext.foundation.world.error.unsupported"
+  },
+  {
+    "code": "C5_SCOPE",
+    "reasonKey": "ext.foundation.world.error.scope"
+  },
+  {
+    "code": "C5_STALE",
+    "reasonKey": "ext.foundation.world.error.stale"
+  },
+  {
+    "code": "C5_PLAN_USED",
+    "reasonKey": "ext.foundation.world.error.plan_used"
+  },
+  {
+    "code": "C5_BUSY",
+    "reasonKey": "ext.foundation.world.error.busy"
+  },
+  {
+    "code": "C5_DEAD",
+    "reasonKey": "ext.foundation.world.error.dead"
+  },
+  {
+    "code": "C5_GATE",
+    "reasonKey": "ext.foundation.world.error.gate"
+  },
+  {
+    "code": "C5_UNKNOWN_TARGET",
+    "reasonKey": "ext.foundation.world.error.unknown_target"
+  },
+  {
+    "code": "C5_WRONG_LEVEL",
+    "reasonKey": "ext.foundation.world.error.wrong_level"
+  },
+  {
+    "code": "C5_DISTANCE",
+    "reasonKey": "ext.foundation.world.error.distance"
+  },
+  {
+    "code": "C5_THREAT",
+    "reasonKey": "ext.foundation.world.error.threat"
+  },
+  {
+    "code": "C5_TOOL",
+    "reasonKey": "ext.foundation.world.error.tool"
+  },
+  {
+    "code": "C5_INPUT",
+    "reasonKey": "ext.foundation.world.error.input"
+  },
+  {
+    "code": "C5_CAPACITY",
+    "reasonKey": "ext.foundation.world.error.capacity"
+  },
+  {
+    "code": "C5_RESOURCE_EMPTY",
+    "reasonKey": "ext.foundation.world.error.resource_empty"
+  },
+  {
+    "code": "C5_RESERVED",
+    "reasonKey": "ext.foundation.world.error.reserved"
+  },
+  {
+    "code": "C5_BUDGET",
+    "reasonKey": "ext.foundation.world.error.budget"
+  },
+  {
+    "code": "C5_OVERLAP",
+    "reasonKey": "ext.foundation.world.error.overlap"
+  },
+  {
+    "code": "C5_PROTECTED",
+    "reasonKey": "ext.foundation.world.error.protected"
+  },
+  {
+    "code": "C5_BLOCKED",
+    "reasonKey": "ext.foundation.world.error.blocked"
+  },
+  {
+    "code": "C5_ROOM",
+    "reasonKey": "ext.foundation.world.error.room"
+  },
+  {
+    "code": "C5_NEEDS_RESUPPLY",
+    "reasonKey": "ext.foundation.world.error.needs_resupply"
+  },
+  {
+    "code": "C5_BAD_TIME",
+    "reasonKey": "ext.foundation.world.error.bad_time"
+  },
+  {
+    "code": "C5_BAD_OWNERSHIP",
+    "reasonKey": "ext.foundation.world.error.bad_ownership"
+  },
+  {
+    "code": "C5_BAD_REFERENCE",
+    "reasonKey": "ext.foundation.world.error.bad_reference"
+  },
+  {
+    "code": "C5_PROVIDER",
+    "reasonKey": "ext.foundation.world.error.provider"
+  },
+  {
+    "code": "C5_TRANSACTION",
+    "reasonKey": "ext.foundation.world.error.transaction"
+  },
+  {
+    "code": "C5_OVERFLOW",
+    "reasonKey": "ext.foundation.world.error.overflow"
+  },
+  {
+    "code": "C5_TERMINAL",
+    "reasonKey": "ext.foundation.world.error.terminal"
+  },
+  {
+    "code": null,
+    "reasonKey": "ext.crafting.ui.rejected"
+  },
+  {
+    "code": null,
+    "reasonKey": "ext.crafting.ui.unavailable"
+  }
+]

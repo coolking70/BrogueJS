@@ -57,13 +57,16 @@ describe('2c optional reward preparation and atomic commit', () => {
         let prepared!: OptionalRewardPrepareContext;
         const prepare = vi.fn((_request, context: OptionalRewardPrepareContext): OptionalRewardPreparation => {
             prepared = context;
-            expect(Object.keys(context).sort()).toEqual(['getPlayerComponent', 'player', 'playerId', 'resources', 'state']);
+            // 5A2-S permits the frozen stat query and own-component preview.
+            expect(Object.keys(context).sort()).toEqual(['getPlayerComponent', 'player', 'playerId', 'previewStats', 'resources', 'state', 'stats']);
+            expect(Object.isFrozen(context.stats)).toBe(true);
             expect(Object.isFrozen(context.player)).toBe(true); expect(Object.isFrozen(context.resources)).toBe(true);
             return { status: 'ready', plan: { amount: 3 } };
         });
         const { runtime, player, ports } = setup([providerModule(provider({ prepare })), consumer(context => {
             expect(context.prepareOptionalReward(capability, 'known', 'once')).toEqual({ status: 'ready' });
             expect(() => prepared.getPlayerComponent('reward')).toThrow('Expired');
+            expect(() => prepared.previewStats!(context.playerId, {})).toThrow('Expired');
             expect(claim(context)).toEqual({ status: 'applied' });
         })]);
         runtime.command(command()); expect(prepare).toHaveBeenCalledTimes(2);

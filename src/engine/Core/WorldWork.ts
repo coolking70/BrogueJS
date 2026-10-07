@@ -96,7 +96,7 @@ const scopes = new WeakMap<
   { game: Game; owner: string; actorId: number; kind: string; active: boolean }
 >();
 const handles = new WeakMap<object, { game: Game; plan: Plan; used: boolean; epoch: number }>();
-const errors = new WeakMap<Game, WorldErrorCode | null>();
+const errors = new WeakMap<Game, { runtime: Game['extensionRuntime']; code: WorldErrorCode | null }>();
 const validErrors = new Set<string>([
   'C5_BAD_PAYLOAD',
   'C5_BAD_DEFINITION',
@@ -132,9 +132,12 @@ const validErrors = new Set<string>([
   'C5_OVERFLOW',
   'C5_TERMINAL'
 ]);
-export const worldWorkLastError = (game: Game) => errors.get(game) ?? null;
+export const worldWorkLastError = (game: Game) => {
+  const result = errors.get(game);
+  return result && result.runtime === game.extensionRuntime ? result.code : null;
+};
 export const setWorldWorkError = (game: Game, code: WorldErrorCode | null) =>
-  errors.set(game, code);
+  errors.set(game, { runtime: game.extensionRuntime, code });
 export function withWorldActorScope<T>(
   game: Game,
   owner: string,
@@ -197,8 +200,15 @@ function commandEnvelope(data: unknown): { module: string; action: string; paylo
 }
 export function isWorldWorkCommand(game: Game, data: unknown): boolean {
   try {
-    const v = commandEnvelope(data);
-    return !!game.extensionRuntime?.worldWorkCommand(v.module, v.action);
+    // Routing reads only the registered owner/action. Payload validation belongs
+    // to the world error path, including fractional and unsafe JSON numbers.
+    const v = typeof data === 'string' ? JSON.parse(data) : data;
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
+    const module = Object.getOwnPropertyDescriptor(v, 'module');
+    const action = Object.getOwnPropertyDescriptor(v, 'action');
+    return !!module && 'value' in module && typeof module.value === 'string'
+      && !!action && 'value' in action && typeof action.value === 'string'
+      && !!game.extensionRuntime?.worldWorkCommand(module.value, action.value);
   } catch {
     return false;
   }

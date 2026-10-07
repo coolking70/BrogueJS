@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import traceData from '../data/natural-trace.json';
 import { createWorldHarness, worldHarnessGame } from '../../../testing/worldHarness';
@@ -58,6 +59,12 @@ describe('crafting T15 natural public-command golden trace', () => {
     run(h);
     expect(worldHarnessGame(h).depth).toBe(2);
     expect(worldHarnessGame(h).isGameOver).toBe(false);
+    if (process.env.CRAFTING_CAPTURE_TRACE) {
+      const g = worldHarnessGame(h);
+      writeFileSync(process.env.CRAFTING_CAPTURE_TRACE, JSON.stringify({ final: craftingFinal(h),
+        snapshot: g.toSnapshot(), input: (g as any).recordingInputState(), recording: JSON.parse(h.exportRecording()) }) + '\n');
+      return;
+    }
     expect(craftingFinal(h)).toEqual(trace.final);
     // These facts establish the requested crafting progression independently of the final hash.
     const state = trace.final.state as unknown as {

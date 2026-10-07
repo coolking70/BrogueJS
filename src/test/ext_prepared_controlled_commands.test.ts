@@ -61,7 +61,9 @@ afterEach(() => { vi.restoreAllMocks(); logger.reset(); });
 describe('prepared controlled command foundation contract', () => {
     it('returns only detached frozen JSON and revokes every preparation capability before returning', () => {
         const f = fixture({ inspect(context) {
-            expect(Object.keys(context).sort()).toEqual(['canManageCharacter', 'creature', 'getComponent', 'playerId', 'state', 'validateAction']);
+            // 5A2-S exposes a query facade, still no write capabilities.
+            expect(Object.keys(context).sort()).toEqual(['canManageCharacter', 'creature', 'getComponent', 'playerId', 'state', 'stats', 'validateAction']);
+            expect(Object.isFrozen(context.stats)).toBe(true);
             expect('setState' in context).toBe(false); expect('executeAction' in context).toBe(false);
             (context.state as { paid: number }).paid = 80;
             expect(Object.isFrozen(context.creature(context.playerId))).toBe(true);
@@ -73,7 +75,7 @@ describe('prepared controlled command foundation contract', () => {
         expect(JSON.parse(JSON.stringify(plan))).toEqual(plan);
         expect(f.game.extensionRuntime!.snapshot()).toEqual(before); expect(rng.getState()).toEqual(random);
         const ctx = f.retained();
-        for (const read of [() => ctx.playerId, () => ctx.state, () => ctx.creature(f.game.player.id),
+        for (const read of [() => ctx.playerId, () => ctx.state, () => ctx.stats, () => ctx.creature(f.game.player.id),
             () => ctx.getComponent(f.game.player.id, 'anything'), () => ctx.canManageCharacter(), () => ctx.validateAction(f.request)])
             expect(read).toThrow('Closed controlled preparation context');
         expect(f.handler).not.toHaveBeenCalled();

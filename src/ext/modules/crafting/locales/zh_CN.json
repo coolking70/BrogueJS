@@ -110,5 +110,11 @@
   "ext.crafting.error.budget": "已达到数量上限",
   "ext.crafting.error.blocked": "那里不能放置",
   "ext.crafting.error.gate": "现在不能这样做",
-  "ext.crafting.error.unknown_target": "看不到目标"
+  "ext.crafting.error.unknown_target": "看不到目标",
+  "ext.crafting.ui.container.source": "材料来源",
+  "ext.crafting.ui.container.destination": "采集存入",
+  "ext.crafting.ui.container.inventory": "背包",
+  "ext.crafting.ui.container.chest": "箱 {{id}}（{{x}},{{y}}）· 余 {{free}} 格",
+  "ext.crafting.ui.collapse": "收起",
+  "ext.crafting.ui.expand": "展开"
 }

@@ -54,7 +54,8 @@ export function useModuleUi(host: ModuleUiHost, contributions: readonly ModuleUi
         commands: computed(() => {
             const seen = new Set<string>();
             return sessions.value.flatMap(entry => entry.session.commands.value.map(command => {
-                if (!command.id.startsWith(`${entry.id}:`) || command.id.length <= entry.id.length + 1 || seen.has(command.id))
+                if ((!command.id.startsWith(`${entry.id}:`) && !command.id.startsWith(`${entry.id}.`))
+                    || command.id.length <= entry.id.length + 1 || seen.has(command.id))
                     throw new Error('Invalid module UI command ownership');
                 seen.add(command.id);
                 return { ...command, disabled: command.disabled || presentationHidden.value,

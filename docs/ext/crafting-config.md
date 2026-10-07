@@ -236,6 +236,18 @@ foundation 另将每个 owner 的 SDK 定义包 canonical SHA-256 存入 `world5
 
 保存与录像要求精确 manifest。缺模块、错 module/rules 版本、错规则指纹或 SDK 定义指纹会被拒绝，不迁移旧档，不删除模块状态后强行加载，也不承诺用新规则回放旧录像。若未来批准升版本，需要一起更新 JSON、代码版本常量、校验与测试，不能只改一个字符串。
 
+## 8.1 SDK1 集成后的只读界面（foundation 9）
+
+模块栏使用 `crafting.open`；底座继续接受既有 `owner:action` 格式，两种格式都保留所有权、重复 ID 与会话退休检查。
+
+`readModuleView('crafting', { sourceContainerId: null | 箱ID })` 只提交显示查询。省略查询等于背包来源；输入经过安全整数 JSON 校验、复制与冻结，不进入模块状态、存档、录像或随机流。返回 DTO 增加 `lastError`、`sourceContainerId`、`sourceRevision` 和 `containers`。箱清单只包含当前层已有记忆的箱（全局上限 112），携带坐标、revision、capacity、occupiedSlots、reservedSlots、inReach；`inReach` 由底座的距离及真实交互线判定。UI 可分别选择采集目标箱和制作材料来源箱；制作产物仍放入背包。未知箱查询视为不可用，远处已知箱可见但不可选。
+
+配方的输入拥有量、maxBatch 与 reason 属于**当前所选来源**，不能把背包预览用于另一只箱。每次投影只预览一个来源，至多 `recipes.length × batchMax` 次 `previewRecipe`，正式包仍为 7×16=112；读库存 1 次、每个附近自有节点至多再读 1 次，无额外 `queryContainers`/`queryStations`。切换来源重读投影，不按箱数乘预算。放置工位仍只扣背包套件/材料。
+
+`WorldWorkReadSDK.lastCommandError?()` 与 `ContainerRead.inReach?` 是 SDK1 的可选兼容扩展，旧调用方式仍成立。最后工作错误是会话诊断，不保存；自身提交及确认完成后 UI 按有限错误码选 i18n 键，运行时替换时清空，不显示原始 code/field。正在推进/等待确认的命令边界仍不可重入；空闲边界上有玩家 combat bundle 时，已注册世界工作命令录制零成本 `C5_BUSY`，普通玩家输入仍被锁定。
+
+窄屏（≤700px）面板是至多 320px/36dvh 的底部抽屉，顶部可收起至 52px；内部滚动，地图使用剩余视口。桌面沿用 370px 侧面板。像素验收结果及 SDK 文件新 SHA 见 [集成报告](phase5b-integration.report.md)。
+
 ## 9 三个完整配置追加例子
 
 以下每个 JSON 块均为**独立应用于正式包的追加清单**，不是可直接作为根包载入的对象。`append` 的数组行按原顺序追加到同名根数组；`locale` 键合入 `locales/zh_CN.json`；其余正式字段和 startupItems/limits 保持原值。每个例子都包含新增定义的全部必填字段与全部翻译，没有省略号。

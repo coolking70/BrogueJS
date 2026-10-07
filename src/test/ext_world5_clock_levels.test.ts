@@ -489,7 +489,7 @@ describe('C5 related real-Game combinations (engine only, v4 recording path)', (
         initialCommands
       });
       g.animationEnabled = false;
-      const enabled = ids.includes('world5-fixture');
+      const enabled = ids.includes('world5-fixture') || registry.create(registry.manifest(ids)).some(m => !!m.worldDefinitions);
       const state = () => ({
         tick: timeSystem.currentTick,
         turn: g.absoluteTurnNumber,

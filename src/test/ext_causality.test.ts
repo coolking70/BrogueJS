@@ -230,7 +230,8 @@ describe('engine damage origin integration', () => {
     });
     it('negative transference is a separate self-owned cost and restores the incoming origin', () => {
         const game = scene(), target = mob(game), seen = events(game);
-        const ring = ItemLoader.spawnRing('ring_of_transference', -1, -1)!; ring.enchantment = -2; game.player.ringLeft = ring;
+        const ring = ItemLoader.spawnRing('ring_of_transference', -1, -1)!; ring.enchantment = -2;
+        game.player.inventory.addItem(ring); game.player.ringLeft = ring; // S7: equipped items belong to the inventory root.
         const cause = game.extensionRuntime!.causality, incoming = cause.create('reflection', game.player.id, target.id);
         cause.withOrigin(incoming, () => {
             CombatSystem.transferMonsterHealth(game.player, target, 20);

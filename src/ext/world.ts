@@ -1,3 +1,4 @@
+import type { WorldProjectionFields } from './worldSdk';
 import { isJson, validId } from './json';
 import { validOwnedRegions, type OwnedRegion } from './regions';
 
@@ -24,7 +25,7 @@ export interface WorldInteractionValidation {
     readonly depth: number; readonly turn: number; readonly isGameOver: boolean; readonly nextEntityId: number;
     readonly regions?: readonly OwnedRegion[];
 }
-export interface ExtensionProjectionContext {
+export interface ExtensionProjectionContext extends WorldProjectionFields {
     readonly stats?: import('./stats').StatQuery;
     readonly worldWork?: import('./worldSdk').WorldWorkReadSDK;
     readonly actorActionBundles?: readonly import('../engine/Core/ActorActionScheduler').ReadonlyActorActionBundle[];

@@ -1,4 +1,4 @@
-/** Frozen content-only C5-1 SDK. Trusted engine entry points are deliberately absent. */
+/** Content-only C5-1 SDK (compatible optional display additions). Trusted engine entry points are deliberately absent. */
 import type { World5Snapshot } from './world5';
 export type WorldId = number;
 export type EntityId = number;
@@ -169,6 +169,8 @@ export interface ItemRead {
   toolDurability: number | null;
 }
 export interface ContainerRead {
+  /** Actor-relative distance + interaction line; absent on older SDK1 readers. */
+  inReach?: boolean;
   id: WorldId;
   levelRef: LevelRef;
   at: Position | null;
@@ -429,6 +431,8 @@ export interface WorldWorkReadSDK {
   readonly contractVersion: '1.0.0';
   readonly worldSdk: 1;
   readonly owner: ModuleId;
+  /** Session-only diagnostic, never saved or included in a mechanical digest. */
+  lastCommandError?(): WorldErrorCode | null;
   readWorkContext(query: KnownWorkQuery): WorldResult<WorkContext>;
   queryStations(): WorldResult<readonly StationRead[]>;
   queryContainers(): WorldResult<readonly ContainerRead[]>;
@@ -447,6 +451,8 @@ export interface WorldModuleFields {
   worldWorkParticipant?: WorldWorkParticipant;
 }
 export interface WorldProjectionFields {
+  /** Detached display input; does not enter commands, module state or recordings. */
+  readonly displayQuery?: JsonValue;
   readonly worldWork?: WorldWorkReadSDK;
 }
 export interface WorldDescriptorFields {

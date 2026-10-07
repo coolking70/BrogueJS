@@ -3,7 +3,7 @@ import { markRecordingRoot } from '../../ext/recordingRevisions';
 import { bodyDecisionActor } from '../Status/BodyStatuses';
 import { monstersAreEnemies } from '../../entities/Monster';
 import { generationReserved } from '../Generator/GenerationReservation';
-import { previewWorldRecipe } from './WorldWork';
+import { previewWorldRecipe, worldWorkLastError } from './WorldWork';
 /** Read DTOs, stable placement and inventory simulation. No module owns a Grid or Item. */
 import type { Game } from './Game';
 import type {
@@ -395,7 +395,11 @@ export function readWorkContext(
         .world5!.containers.filter(
           (c) => c.kind === 'chest' && levelKey(c.levelRef) === `dungeon.${game.depth}`
         )
-        .map((c) => containerRead(game, c.id))
+        .map((c) => {
+          const read = containerRead(game, c.id);
+          return { ...read, inReach: !!read.at && distance(actor.loc, read.at) <= 1
+            && hasInteractionLine(game.grid, actor.loc, read.at) };
+        })
         .filter((c) => c.at && game.grid.getCell(c.at.x, c.at.y)?.hasMemory),
       activeTicket: activeTicket(game, actorId)
     };
@@ -706,6 +710,7 @@ export function worldWorkReadSDK(game: Game, owner: string): WorldWorkReadSDK | 
     contractVersion: '1.0.0' as const,
     worldSdk: 1 as const,
     owner,
+    lastCommandError: () => worldWorkLastError(game),
     readWorkContext: (query: KnownWorkQuery) => readWorkContext(game, owner, query),
     queryStations: () => result(() => queryStations(game, owner)),
     queryContainers: () =>
