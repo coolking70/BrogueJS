@@ -2,6 +2,8 @@
 
 > 2026-10-07。Claude 额度紧张，由 Codex 指挥进程临时接管“维护者侧”工作：写任务书、派发本地 Codex 执行进程、审查、合入、给维护者（用户）准备 dot 转贴文本。用户说中文，回复用中文。
 
+> Codex接管更新（2026-10-07）：owner阻断修复5e97530已推送；5G基线7fdc249已发布，待用户转贴。详见[指挥状态](commander-status.md)。
+
 ## 1 工作方式（必须遵守）
 - 先读根 `AGENTS.md`、`docs/HANDOFF.md`、`docs/ext/README.md`。扩展分支是独立新产品原型，不合 main；不改 main。
 - **执行与审查分离**：每个开发步骤由一个本地 Codex 执行进程实现（不 commit）；完成后另起一个 Codex 进程做只读独立审查（发现写 `docs/ext/<step>.review-findings.md`）；再让原执行会话 `resume` 修复；指挥进程核对报告后 commit + push。
@@ -17,7 +19,7 @@
 | 工作树 | 分支 | 用途 |
 |---|---|---|
 | `BrogueJS-p5` | `ext/phase5` | **阶段 5 主线**（当前 HEAD 含 5A1–5A4、5B crafting 集成、w_26 修复 `2571abe`） |
-| `BrogueJS-5gbase` | `ext/phase5g-base` | 5G foraging 派发基线（任务包定稿进行中） |
+| `BrogueJS-5gbase` | `ext/phase5g-base` | 5G foraging派发基线（7fdc249已发布，待转贴） |
 | `BrogueJS-5bbase` | `ext/phase5b-base` | 5B 派发基线（已用完） |
 | `BrogueJS-5b` | `ext/phase5b` | dot 的 5B（已合入 phase5） |
 | `BrogueJS-lootcore` | `ext/phase6-loot-core` | loot 纯核心 v1.1 + 6B1-β UI 组件（已验收 `93523fc`，不接入游戏） |
@@ -27,10 +29,11 @@
 版本（phase5 HEAD）：foundation 10、whole-run v6、recording 4、origin 2、worldSdk 1（SHA 见 5A2/5A4 报告，**不得改**）、growth 1.8.0、combat 1.6.0、crafting 1.0.0。
 
 ## 3 进行中
-1. **i18n 源码守卫修复**：已完成并提交（见 git log）。
-2. **5G 任务包定稿**：原由 Claude 子代理在 `BrogueJS-5gbase` 做（核对 §A、真实 SDK 校验内嵌数据、把“幻彩菌”换成不暗示效果的名字、边界脚本白名单扩到 foraging、推 `origin/ext/phase5g-base`）。若 `origin/ext/phase5g-base` 上还没有 “finalize 5G foraging dot package” 提交，就派一个 Codex 进程按 `docs/ext/phase5g.dot-package.md`（草稿在 `origin/ext/phase5-design` `ca5c63e`）完成上述事项。完成后把 §0 转贴块交给用户发 dot。
-
-   - **更新（定稿已完成，`origin/ext/phase5g-base` = `34bb6c7`，但暂不能派发）**：实测发现底座阻断——`WorldWorkValidation.ts:26/203/218` 与 `WorldWorkWorld.ts:708` 只按世界包 `items` 判定包归属，foraging 的 `items` 为空，导致采集一次后 `toSnapshot` 报 `C5_BAD_REFERENCE: terminal definition`（无法存档/录像），且采集投影 `context.worldWork` 为 undefined。修法：改为在 items/resourceNodes/stations/recipes/edibleItems 五个列表中查 owner；补丁 `/private/tmp/p5g-owner-lookup.patch`（已在副本验证：自然存读/回放/seek 通过，engine-only smoke 64/64）。步骤：在 `ext/phase5` 上派 Codex 应用补丁并补回归、提交推送 → 将 `ext/phase5g-base` 重建为“该修复提交 + 34bb6c7 的两个文件”（cherry-pick）→ 按包 §A.6 末尾说明改 §0 第二条基线行与 §2 表 → 再把 §0 转贴块交给用户。包中“幻彩菌”已改名“苍鸾菌”（待用户确认），§12.3 待签：nonEaters 名单、自写文案。
+1. **i18n源码守卫修复**：52e2b90已完成并推送，启动核验已通过。
+2. **5G底座阻断已解除**：owner查询修复由本地执行、另起独立审查无发现，相关242项及独立73项通过，5e97530已推送ext/phase5；SDK/格式未变。
+3. **5G任务包已发布**：origin/ext/phase5g-base = 7fdc2491cc3014f2c1a3736e262c7ff8b5d39ce7。基线5e97530 + 原定稿两个文件 + 文档修订；独立审查F1/P2已交原会话resume修正并由指挥关闭。见[派发报告](phase5g-dispatch.report.md)与[审查](phase5g-dispatch.review-findings.md)。旧34bb6c7保留本地ext/phase5g-base-before-owner-20261007。
+4. **等待用户转贴/回执**：§0位于5gbase工作树docs/ext/phase5g.dot-package.md。尚未收到dot回执，不声称云端已启动。§12.3全部20条、nonEaters20模板、苍鸾菌等按推荐临时采纳，待用户确认但不阻断；门禁已与本交接单统一。详见[指挥状态](commander-status.md)。
+5. **5C1任务书草稿已备**：[phase5c1.task.md](phase5c1.task.md)，尚未派发；按§4顺序在5G回执验收和本地集成后启动。
 
 ## 4 接下来（按序）
 1. 5G 派给 dot（用户转贴）。dot 回来后验收 → 合入 `ext/phase5` → 本地集成任务（参照 `docs/ext/phase5b-integration.task.md` 的做法）。
