@@ -17,11 +17,11 @@ export const worldHarnessGame = (h: WorldHarness): Game => {
   if (!game) throw new Error('Unknown harness');
   return game;
 };
-export function createWorldHarness(options: WorldHarnessOptions): WorldHarness {
+export function createWorldHarness(options: WorldHarnessOptions, overrides:readonly import('../descriptor').ModuleDescriptor[]=[]): WorldHarness {
   if (!import.meta.env.DEV) throw new Error('World harness unavailable');
   if (!i18next.isInitialized)
     i18next.init({ lng: 'en', fallbackLng: false, resources: {}, initImmediate: false });
-  const descriptors = [...getInstalledModuleDescriptors(), skeleton, basic],
+  const descriptors = [...getInstalledModuleDescriptors(), skeleton, basic].map(d=>overrides.find(o=>o.id===d.id)??d),
     registry = registryFromDescriptors(descriptors);
   const ids = [...options.modules];
   if (options.fixtures?.includes('crafting-skeleton') && !ids.includes('craftskel'))

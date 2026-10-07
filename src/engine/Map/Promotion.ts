@@ -1,3 +1,4 @@
+import { structureFlammable } from './CellProperties';
 /**
  * src/engine/Map/Promotion.ts — CE promoteTile + 每回合两趟晋升驱动（C-4c）
  *
@@ -810,8 +811,11 @@ export function exposeTileToFire(
         }
     }
 
+    const burningStructure=structureFlammable(cell);
+    if(burningStructure&&bestExtinguishingPriority>=DRAW_PRIORITY[TerrainType.FLOOR])ignitionChance=Math.max(ignitionChance,TERRAIN_FLAGS[TerrainType.WOODEN_BARRICADE].chanceToIgnite);
     if (alwaysIgnite || (ignitionChance && rng.randPercent(ignitionChance))) { // CE :1347
         result.ignited = true;
+        if(burningStructure){const fire=spawnDungeonFeature(grid,x,y,catalogFeature(DF.DF_PLAIN_FIRE),false);result.caughtFireCells.push(...fire.caughtFireCells);}
 
         // 爆轰邻居计数（CE :1348-1356）：G-2 起 METHANE_GAS 携带
         // TM_EXPLOSIVE_PROMOTE，分支真实可达——爆轰（≥8）时 promoteTile 走

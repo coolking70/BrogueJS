@@ -1,3 +1,4 @@
+import { composedCellFlags, structureBlocking, cellLiquidBlocked, structureBindingsActive } from './CellProperties';
 /**
  * src/engine/Map/DungeonFeature.ts — CE 地形特征（dungeon feature）子系统（C-4b）
  *
@@ -239,11 +240,14 @@ export function cellTerrainFlags(grid: Grid, x: number, y: number): number {
 
 /** Cell-valued form of the same four-layer query; never reads display priority. */
 export function terrainFlagsOfCell(cell: Cell): number {
-    let f = 0;
-    for (let l = 0; l < DungeonLayer.COUNT; l++) {
-        f |= TERRAIN_FLAGS[cell.layers[l]!].flags;
-    }
-    return f;
+    // The four native layers are fixed. Keep this small enough to inline in
+    // path/gas loops even with the optional structural composition branch.
+    const f = TERRAIN_FLAGS[cell.layers[0]!].flags
+        | TERRAIN_FLAGS[cell.layers[1]!].flags
+        | TERRAIN_FLAGS[cell.layers[2]!].flags
+        | TERRAIN_FLAGS[cell.layers[3]!].flags;
+    if(!structureBindingsActive)return f;
+    return composedCellFlags(cell, f);
 }
 
 /** CE terrainMechFlags(loc)（Globals.c:590）。
@@ -365,7 +369,7 @@ export function spawnMapDF(
     requirePropTerrain: boolean,
     startProb: number,
     probDec: number,
-    spawnMap: SpawnMap
+    spawnMap: SpawnMap, liquid = false
 ): void {
     const W = grid.width;
     const idx = (px: number, py: number): number => py * W + px;
@@ -387,6 +391,8 @@ export function spawnMapDF(
                             && (!requirePropTerrain
                                 || (propagationTerrain > 0
                                     && cellHasTerrainType(grid, x2, y2, propagationTerrain)))
+                            && (!liquid || !cellLiquidBlocked(grid.getCell(x2,y2)!,false))
+                            && !structureBlocking(grid.getCell(x2,y2)!)?.movement
                             && (!cellHasTerrainFlag(grid, x2, y2, T_OBSTRUCTS_SURFACE_EFFECTS)
                                 || (propagationTerrain > 0
                                     && cellHasTerrainType(grid, x2, y2, propagationTerrain)))
@@ -663,7 +669,7 @@ export function levelIsDisconnectedOnMovementGraph(
     const idx = (px: number, py: number): number => py * W + px;
     const movementPassable = (px: number, py: number): boolean => {
         const c = grid.getCell(px, py);
-        return !!c && (terrainAllowsMove(c.terrain) || c.terrain === TerrainType.SECRET_DOOR);
+        return !!c && !structureBlocking(c)?.movement && (terrainAllowsMove(c.terrain) || c.terrain === TerrainType.SECRET_DOOR);
     };
     const zoneMap = new Int16Array(W * H);
 
@@ -993,7 +999,7 @@ function executeDungeonFeature(
                 feat.propagationTerrain !== TerrainType.NOTHING,
                 feat.startProbability,
                 feat.probabilityDecrement,
-                blockingMap
+                blockingMap, feat.layer===DungeonLayer.LIQUID
             );
 
             for (const i of generationReservedCells(grid)) blockingMap[i]=0;

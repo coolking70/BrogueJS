@@ -1,6 +1,7 @@
+import { composedCellFlags } from '../Map/CellProperties';
 import type { Pos } from '../../types';
 import type { Grid } from '../Map/Grid';
-import { TERRAIN_FLAGS, T_OBSTRUCTS_PASSABILITY } from '../Map/TerrainCatalog';
+import { T_OBSTRUCTS_PASSABILITY } from '../Map/TerrainCatalog';
 import type { BodyConstraint, SpatialCatalog } from './SpatialSchema';
 import { bodyConstraintsSatisfied, type BodyPose } from './BodyConstraints';
 
@@ -68,7 +69,7 @@ export function trajectoryConstraintSatisfied(catalog: SpatialCatalog, constrain
             for (let y = Math.min(...points.map(p => p.y)); y <= Math.max(...points.map(p => p.y)); y++) {
                 for (let x = Math.min(...points.map(p => p.x)); x <= Math.max(...points.map(p => p.x)); x++) {
                     const cell = grid.getCell(x, y);
-                    if (!cell || cell.layers.some(t => !!(TERRAIN_FLAGS[t].flags & T_OBSTRUCTS_PASSABILITY))) return false;
+                    if (!cell || !!(composedCellFlags(cell)&T_OBSTRUCTS_PASSABILITY)) return false;
                 }
             }
         }

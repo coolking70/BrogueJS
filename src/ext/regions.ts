@@ -8,7 +8,7 @@ export interface OwnedRegionPlacement {
     readonly bounds: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
 }
 export interface OwnedRegion extends OwnedRegionPlacement {
-    readonly id: number; readonly owner: string; readonly depth: number;
+    readonly id: number; readonly owner: string; readonly depth: number; readonly revision: number; readonly campSlotId?: 0|1|2|3|4|5|6|7;
 }
 export const OWNED_REGION_LIMIT = 128;
 const integer = (v: unknown, min: number, max: number): v is number => Number.isSafeInteger(v) && (v as number) >= min && (v as number) <= max;
@@ -34,11 +34,13 @@ export function validOwnedRegions(value: unknown, owners: readonly string[]): va
     const instances = new Set<string>();
     const seen: OwnedRegion[] = [];
     for (const row of value) {
-        if (!row || typeof row !== 'object' || !keys(row, ['id', 'owner', 'depth', 'instanceKey', 'bounds', ...(Object.prototype.hasOwnProperty.call(row, 'guard') ? ['guard'] : [])]) || ('guard' in row && row.guard !== 'return-to-spawn') || !integer(row.id, previous + 1, Number.MAX_SAFE_INTEGER)
+        if (!row || typeof row !== 'object' || !keys(row, ['id', 'owner', 'depth', 'revision', 'instanceKey', 'bounds', ...(Object.prototype.hasOwnProperty.call(row, 'campSlotId') ? ['campSlotId'] : []), ...(Object.prototype.hasOwnProperty.call(row, 'guard') ? ['guard'] : [])]) || ('guard' in row && row.guard !== 'return-to-spawn') || !integer(row.id, previous + 1, Number.MAX_SAFE_INTEGER)
+            || !integer(row.revision,0,Number.MAX_SAFE_INTEGER) || ('campSlotId' in row && !integer(row.campSlotId,0,7))
             || typeof row.owner !== 'string' || !owners.includes(row.owner) || !integer(row.depth, 1, 40)
             || !validRegionPlacement({ instanceKey: row.instanceKey, bounds: row.bounds })) return false;
         const region = row as unknown as OwnedRegion, instance = `${region.owner}:${region.instanceKey}`;
         if (instances.has(instance) || seen.some(other => other.depth === region.depth && regionsOverlap(other, region))) return false;
+        if ('campSlotId' in region && (seen.some(r=>r.campSlotId===region.campSlotId || ('campSlotId' in r && r.depth===region.depth)) || region.bounds.width>24 || region.bounds.height>20 || region.bounds.width<9 || region.bounds.height<9)) return false;
         instances.add(instance); seen.push(region); previous = region.id;
     }
     return true;

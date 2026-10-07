@@ -1,0 +1,4030 @@
+{
+  "schema": 1,
+  "raw": [
+    {
+      "key": "2d4f32c3992efe5e951c168cf2a06696d421b4300bd0e7029d9a0955030c6dab",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "074f0e51bae56110f63b50c254bc2dbf11b58c4025f1ab06779fe7054c761a16",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "18d1d4dedef1f14071d573308a61cff6365872517651325398689f62018c3893",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "48ca36a8cea4f4eb09407a7f58e707d691501faf71945e15ca90f6126e466e88",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "74ff1c0ad956a2f50d9d635591d0724d44e0d41047cad8561db054dc830106e7",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "eaaf241bf298e0d316ffd74ea16e5ee3493f4d759acdb4478427e055ed98c584",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "27d209e3c721cdce0f321c636078c06673f704d38b050220b8969ff136ad06b6",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "9fe931b9c163d51c7adffdab76e3f21df9b2aa2686c2e4c448a32028b9da2053",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "70d1c64a9d3532550e06f74d40dadcf43c73c9946010cbff03a57fa6b42d7807",
+      "count": 3,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "6ef67a5ba6dcd60c2d00ce513db625d125fd2a0574aeaa21002f6ce45dfc6459",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "3dbb8dbf9a7aecd82f3a973c14631d6d701aed2988c3503e17290ae4c235a431",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "9ecbd06ebd7b7d0e6d14dc4e28076c26497ba18b727a18f921b4961489812d59",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "96a7785003ba8640c95e6de24893ea9d0d60310d4acf0126347a91173239d42a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "e94cfe3c983b7bbbb73fc1f67855e5719ea238472746c7cc69773710caa3ca6d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "09612760eebc0ee5bcd45a8bc0a66f2de9924cd36856df4e381699409f9b58a1",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "0a73ddef74a3ec5b5db33785984c34fc97bca255b83642f0772b46cee2e7b001",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "0d54e7aa0caf495e5f2653282ae5e4a92e87e4126b2829e191841cd99146fdf8",
+      "count": 3,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "afdcbc3327651068aefa0d2f094d2471953853bd18e98641942a7738bed8357c",
+      "count": 3,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "998109f97f126019fd48d5cd388e07121a689131b4075c50d7fa5e4bce4228c4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "a5b70ae2477dd7fb314152320393b1faba08138170572b6798bd3d3f3f3099f4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "941c51963e01d7add468fcd75c6b2c947131e487a336dfd255aedf8f8e4f64e6",
+      "count": 3,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "d7c3490695acab560482de72b6a39d2493d8ef910f0232f9e4d4fbeb5d07ded3",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "6bc77e1a6644d66f9ab7dbfc164ed48e282999a93957113c79ce776bdba49fc7",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "f3982e59d00f635881b22f122438bfa808bbecc98e9d7576b9b19ed63c449443",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "1ee49c7a3d66e8901e379a36c55df9f27839875ab0779ebfafd739cd402298ff",
+      "count": 3,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "b35733632e10807461cb5a51d056e3b5fefdfee5324e32c7880619a8eca18e10",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "1c85ef599d9c813fc08fd9e1ebb85955755148cce9fa00867b0530b027d3cbfe",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "0ee2e5bf9adf46f662f25bdf92c9096edd8e5495ab8af78a15ece0e7c81788cf",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "1a3f76ba29290ff26adc4821508acd578afc0b45d062790f54231079f26f7c31",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "31dc3632716d9db3d1fd47e0daa852459178fad473a2d241322105344e54fd2b",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "9412563181c5a82a6b28e9d2271e5dab2236dd3d2f3c34d81aae173973e58cba",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "369ace8112416f7edaab631350561bbb34699357c06d1fbee49c9904f1b23bc4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "9820e0cea3664ff1e156cad8c81201c607e43e268c341379b66c458766358387",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "7c52eee1ee7a5e938a4cfa3d8734e88600fab1b5a66e0d9761fa9a7761905bad",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "c026d1217239b16fb1f1ecb90cd7aa9f1cbdf9748be3d1392343cbbe72447457",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "1994852aee5b45f4331cfc91992bb2f18aa5ad25c122b117934b85c9dff23eb7",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "647c2df868a5530115635afe2bae787d62cef1c8440edfba3190cc2983b65095",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "91edf85040b940409bb3781779f17980e4eab306ce66f8136d1de9f9bc2188ee",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "1ff6657629c524b6a4ad03cce6c7ec4a46c35a5d654ffc5deeacba52c239de89",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "7c97f19241608fa42f5298f4a868cf6efdc309b4c19a32e02f9c577d971789d5",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "bd6dad293ae28e5bd8745e37a4d198506a8ebce868e21f80eb8af1fbed960409",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "ac6cf14fcbd16b4dccd79d0f21cfc4637b4d69233ec7e25aa9a434f49fbb09f3",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8a64fb3bc9735d4a1334a2711e0bbbada5833cbdf6dea6d10dfd641a8e44595a",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "28b37f796fe2bfc927a1d95fdbdf3d247059f0ed6d74914b1af97f27617eca54",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "ba2c0dba447e03144945200229438753282c84d01f15842d6bc4e1b33d43b598",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "20923330032341622f39dc137079da52caccd984eba445b3f54de5e0195284b9",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "a663e1527abde73454591ff565b822d238d325077f6cd40bda7297c0463ebbce",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "db1b92613c1087a74133b8d179e6191f7552d0b7fe804329f9d5dc1aaaf75470",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "f0c650b1c667afb6eaf5d6aa5655425812382fdbd74e7d6f2e69c25c20618470",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "23b10a8112b79bc0797689ae79058b423c53615439269cd1309074d9388c1f5b",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "3825c519b713e82dc1357d938e0975569de62c212d308c281dcf3a64e0d32d1b",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8f4403a63eb96498e4a69a0b3900e1befc2da3d188eb22fd0089e858d676a9ca",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "e790436018e9f62f6f617a04da9165f1b602b68dcb20e9ea9624e3cbaf28e3b4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "1bb4a6d66addd2b8dae3d18a067259b548480e1065b1204aee94fbb3c064d889",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "671b6fcaaf4cbcdcebbaf58723df96c732b4068afdeda2d5dec1e3aa8c24eee3",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "76ff17d19384e269e5b0388af6bcf480c6d28267370f881362b2448dc8f214fe",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "e9608afe5ce28e431a5628179e5792662591e278229fec732cbc9266a2e1e4fe",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8d912b15519193fdaa7060e548148da7d51dc7299ec0225f00754d3cb28cea3d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "d45fd10e848d2928d4cf6a51b460432f6e0775c234fd4e670fad8f7f8e86b51e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "47994fe27fc04db95f16d5be5a6fdd09484b9d62d6c9536699e6a8f486d7774c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "a9c2f793c350fa95f80abf75141685446f86de5c2c9b4feffc64f4e2fb3222b0",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "faac8eecea8d31eee14efad142ac79d2952fc570c22340677fdd84f7323b503b",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "55a381839a1818ecfed06c50f8f36d5354999a6d6f674a7dc1b42ea3d86898cf",
+      "count": 3,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "1fc126c50f9346e711f26ff989e42f22ae064eddf00b1097b72ea1dedb286ed8",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "e8d4d9cb36749172814adbe4e559e3dcd06ed70c7d0d1e0ffb9553a3528c9164",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8e2b71e2d67ed1316f9df4f858c0d7cb2a714c8cda50979647958463594cbe23",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "dabe8c7f57f47bd0ecb68817fbfb616f3338f4fa8c77b8e8f5a0649c6fb54ee2",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "38a9e9444f485812d462138bcc21da461f101016280789177387103a4617919c",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "d436bc7e125914609c9cba742e7b3e89a508da9e034d05c0d4dc505edc3952b6",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "617f490e2d5d871c283c06589952822b1c9cd759213e1a8b8315a4469ecb3518",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "09c29f59fab3e6160e697cd46e19d05bda0511b61d495257533cf35221ccca0d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "16f5f26390bbb865d977bb995213caa0893b0a406d9ea8e1959087a832fe4219",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "a836aca61167c2e7d9189b9de8eb12736ae527384aab526aea7b4ea69f8ea66b",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "5bd3388f15931ca4bc6888f666ea448c10fb1a5ee3b8fce70546813a208d2a54",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "c5fd82fe0eb96b38e58d12d2907a66bcf651acd158dc27f442116a9982733479",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "0220bad4c57f2293e98ae44247da410fb6c06d6829d987a966baec81ddc7f070",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "5da88eafbfff37cbf3da72415860a3828e88b9a7def422f3e6cbbd029c51af8a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "1d75991ad538ad13e770eb0c9991715996bf4503ddc3dfc43a563b1049e2d45c",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "c112445b8a7a5ddfc8ba09e7a2d1f8b68dffd555519db5eca6c5301435c9a306",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8900205d9c637f91ed33baafe1ee82f5f4db2978fc8e16f2423a3d7d3cc70596",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "25b6a3b04bc2b4fe1e8d4461ec3b97864c196e2d623ec0f3424b4423d459c2c9",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "979a8c62832210d3e76c12b64e8c211b244b61302789eea9abd3fb3b3f1b48dc",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "d51f0c804e6b9b24b20f26a68e038908a94c62689ce1173ed77551ab7e169e77",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "21c44e3a1d1111bcc8613c46f959a3f0aeda497d8ca224f88cca6644695600fe",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "685ee7cdc75b1056f5ca9112e3e6c32054d1c6f822cc080deda183dd7a5a39d3",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "88c65f0d2ec581b63bf966588a3065e971cf4ef0bf0f4cda6311671074a23598",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "42d79c0bdb1c8aaa73ab845c3dd28711502903ba40a905daff8a0bc4f9c3c199",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "606ffb66811e15f20f5dec4046367c19975f853becaefbdfe2ade620ddea01b2",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "0de3e8a037c5022b6d3990201593537644443eeee50ec70ae50ce9fc2233ee2a",
+      "count": 2,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "3c2cf378bfceb2d33b01750cc4404cc6ed29135b331e22d74e6b563a9786a90b",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "73c7e335a92d0e5ded4c5274e9f91ad28384f654c0c1d3f678aedf6d4dddd287",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "c23d0781b08164da32865b60170ea816a1ba396568a79177888d6ac9bcd8ea1c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "fd7fa9daa37f54bc1080f1dd6a0e455fb1aace1c6d11954b337d994963000123",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "14852b8fb69cbf72dd49f82ee2a40e8a89f3506ea9a486a6921508280c1c6d97",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "00f80af64ab8cca11db589fc1740b319920114b802d23a3eab99e9568223d18b",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "c23b5f66546e7a2f7b362f735404b3e6d25027de41cc0d0415a9d40a840b5362",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "114b58b6f5909be033908ce7b6fc752ef52acef7e3cebe83444128a251f1d66b",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "e0b4e1762182777da6e1026ca9abbf3f784f9026d97539531645867663f21d04",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "5ff2274bfea9040a2679b279b37442d4237be336f7ea253c8622e847303a3a35",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "02641c1557205c3dae3577187f8ba3a3e38c0a1e672d04da1284381ae8adf9c2",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "5659819504094f2dd5f7cdf73294e605a767772d6ed3fdc885e75c0713c0dda8",
+      "count": 3,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "f7cd3e316de7ee2af398d69d8a337acc4449a7c87e065f8df74051ba11fe5c08",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8ff5220367e7fa6367072225ca29634170f4bd20e4cf2fc9e27b0b55769f042d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "f9969958be1768c838538f035699b1fc9748aba7c6c3ece8d7b93070bd573e67",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "54044a28a57e70e63cfb31a50fd9ea5b46739b91dd8a7bfe3bc88e0797f0b2e0",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "80f6102dc01e5ca9a022119b60e3e681a3f3b5ff52f34e832c5c118fbfae00b2",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "2ba08ee0748490422376bf164dbc1bd235a7861fb356bce709d37514263903ea",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "862c19f89d96056aeaae7d1c51d3eefae62bd4cac179123969f65abad5cc4ae9",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "9251896fca0c84cbeea25251b1245d07a734636f4877a03a0c5060fa7a6d396c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "fe9df3d63ce1da45d52d4128fc6899bd2cd44d8b7f1a464b452b0911af58fe07",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "247be43db55920d267c2d0d6892f3f4af449b8122785717f2a53ffdcb4cd0c44",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "9e7353ee3fa81352f32060951bc3c108ed17bbd23722ff4fe882f42599fa56ac",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "7d59273d09048882068ce905464c4654fd429d567d0bf939d1393f281c7e2e4e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "e415d7dae5ee88b4f2114e39b0a9d338f708badf816e50ff7e9aaf4606554daa",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "ee15954d0f6a1e7b408863f178d9bd62460aed9931a6d0f6168360ae353c6340",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "97e3f7e136090588a716796955eca815bc5fb4bdd95c14263f98e3646aeefa8b",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "7e39ae3746acdfd3d8b3994fab5a2cc6748c1d7eecdc0287a0eed9c08d9668b0",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "9b56764bb2f56bf3fbe8484cb1fa500b744c14707835f3a5c8206f0a3889a3c6",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "49fa509c8c53f50c2a1bf43e7b1695e953631da53310b05119fe8d2d104e4948",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "a1c6fe98afa824ce73ca40c67aef12eba993c5d1bcec04045c31f9ed05ac17f4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "96a9aae76eae50201a3e3c37973ce543dacdd6e87b94ab35ce5729d1ad1558ad",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "79a0485aab16831414afb9f5c703757aeca78b07c78c24ca02e6be393578d156",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "4623fdfa5ea55f15ce14c321c188aed44f9754b902ad7e6a8082f1d88a36da87",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "0fdafebf82e6e2c22e01087f0798f5191062dc8fe2f6884f265b43028904b11a",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "78f90b26473283de39ca875461fee5380dbc4d7e5c8e85ad7ac30236d41b3344",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "5d869f77e458f2a3a580e1c67b39f56c0a1a68ea378163fde83594fa91997651",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "6484bd9ff9568f4d0aa867bd1851fb1480718cc471cad2bfe9c545897c1435dd",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8dd7cc0cd86d1211e6c3e65fcf7884771e5a37b9fddf580102c2cbbb8f8efdbd",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "b51f95fa55bbc9e3c9706625941dd29ef978c2ca4e8a8749f1b40f823e10e0ae",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "9c30188d881b96fd59111b10319ff13f35b03268f05400de4e40c67b7e4f2770",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "54453c2be0188c33b88f8ce4e50f0b47f8319d9718a8590249035ff6c6b0f8e7",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "b8721ac16f8cd02425177bd83785d8af2e80411aa8cef962be911c63b99dffca",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "707f8a178c1dc0fe60e00b7ed13a0bd0cf70cec1dd0f341a26c1669e6afd916f",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "89a183600895833ebd18373e7c05ddb12c83484c3e5fe358b69727d6bac1aac2",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "9f9cf2dbf573b89f5ef2dbce42e3bfedf10938b8d09fbe403078ee313ba9bd91",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "3b12c5e88da19979c8af6f7b7fe4b610b69143b95cebbf0bf0882096b46749e0",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "ea9700b003b678033d73be3ed88b896e7ad90247c43497161c1e7ecc147e30e2",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "cb6886309c7826e26841ab71f71d58094c51ccbb72cce5a4f1af284517835d93",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "755a8289dc684f696d6ae249fa677d4bb43c413a6cd33d5004dbf596ddcabe25",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "293dd11cdff475edccf3aeade18bbf1a600ee813d793601ce654f369ae8df5db",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8b47bb315550ac74d9de1cd2d9452f1a9eadbe7941cb46a97c39be4a7c38028f",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "433af89b14294e3165e5184c74c849aca1cecd372fec7d86fb578dfc127b272a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "a95239a0a0ad3dc8e6cdfcf21e3c0581d85c1427697b336e7c2271ce3028c887",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "26cc6ad2862c1fbe5e374d736279abab6587e4b6b08d7b9e5dc9391db224a0c6",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "885b0679accea5e1f88d172a6afdd5e09be5a74d270b5db2dc6260d73ea297c9",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "df245995d7af917fbc45041c5f1a3b9f8e39e176a005ef03a790c52548d6bc3d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "9f9901f25cae47098fab3dfce033ee1aad4be96ce1ef1057135549f1e171b2bd",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "d7d6f06e0664cc5c543aa72776ec79bd672fb4afdbb1a4b0fb75f672d8b7d60a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "b91f45f90612218c076f962058b3ac1f1cfdcb2160a3ce4007109365cdb1fa4a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "171b544f27a23e2b53fd19f4c366c449eff30a46878506588540552022c60b88",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "ec5f8b1354fc8643b3d81ac4ea82a1a747898423e24aa4c79aab046f3774594f",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "25d73dbd08b796e519866ea1b55ff3fdd29cd363920ceaadfbcba5ddd8cde03e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "c5c0742907834d136d99637a7a5a14b9d529116748d8aa6be84926a263bed771",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "904a37f69b6b75b3cb583edd33db6f826f762162d11d1a99ee0a1474bf4344cf",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "eb02120bab94b09281e01721175e5c2b2b5b98bf6b19ec4e56907a16da29b5ba",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "e8c0fa41ff9d9bf0922b807c58900a0533e1847a9b6925702f1116c93152c88a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "17c229de8751bdcb8a32d0eee69c3c61064d493d8a14dee3dd4114620d26c6b9",
+      "count": 2,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "631304ba64771203706012dca772e010263abf7be9cb3728f185f6930e718a48",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "5ab62f4df758885ae15714ad6bb3ac3d3bb0b59cb9ae0303d382d086a571338c",
+      "count": 3,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "d8aa220eef8c532b077830e361959957e3f8089c2c636d08dad26e42c6b5833a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "f9d04b126ddb0ec925c6f7dc577279a32a1771640347edf8adcf9efc9d90a019",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "aa4e2f497a5f86b30f397434e4d4c809d393101c8fe573e20a72624466ab125f",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "4b782ec7978818b607b9c00f57a2527ee3d1e00db8ec5e7cc31e05bd16073fe5",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "ce10e2da2323c7002e20d72dc3905d0b7e98371f9fc12471de324a1d4c1b8fcc",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "a30e96df9e76a7517933dcd21171a66c9c13c889319edc2f0e2bb7a00856cf85",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "c748f0edbecf91b5a598ed6297d25874b99a0a5e084498adeef7e1b90e384b4c",
+      "count": 3,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "cfadc85e790b4846bcd82d20793ac101d74098d64652adfb7df42cbcccc537db",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "b9916961ff2f3b9a318729f4d4397247c84d6a2dc004515d086d9d43eb15f6cf",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "3b63089aabae1cad9570b86e58e28ea86fa38bcace5a5d5dd43a23aa9d4d9cdc",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "c9ea6c73d3361b7bf8628b2212c7736e6bf13ae9b86da1dcbee445c2f78ca77c",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "cbbe754fa552c617567f9f194410e6817e19cf40763dac2bf5b04fbaf3906404",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "5fab1c3548693fbf22bbc1cbcd6281d6828015004a60d9bbb0e3e311737a1d28",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "9a8aef703b8e94738ce4279805f30ddd0caf82febf3121928e7d6b879b87c867",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "650423fcb262925a2d23702c2617f5b233a1582dc7459bc265c309189d2ffd05",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "dabfd3c1884ab078004dfa7a3e2dac0ae594f3f7595ff37dcd07e4665ef35cbc",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "8ca11714b4608b6fa33e7206c2c13cfcd250b6f214858461ce2e31e4244cf710",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "62f47375483528b074f024b2ce54ed76937f7223ce174b5f91263e149cf51719",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "0657ec40064593df27e75c400e8a174e6eb92459d77c030affa619e5480139a6",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "dee6a21152656c48df7c6a0fe4fb704c44882e09e88f0f3d1f053f18b481be82",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "e31e2cbf41d19bd8926db58aa8ef2ba77bcafcf049569b3d52ea3e2f188dc015",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "16e424b4c9c4b08240d1fb948257a5b9a219c97785f550a852cfed5cbb8de15b",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "94b0292704d0319f68aa0ce7f526db46cf7ad8e5452e2e9761645827697a8ccc",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "56e5706b9240428c7df5826d020bca2caf4bd64fa344a4041f712f64ac7a5afb",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "229da4193c756895c4ded32f7c9669a869235f8d6f8de5803a848609a2123aa2",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "cc283a6d946b97d25386369fa42c7b70a0a8084906722893ceb96d597a84797e",
+      "count": 3,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "1214973195ebdf6c001728305719b87fc23a8aa74566a4b29a8d2d6240a6f70f",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "eac0b89779814ae166fbc805a3437136bc1692656c5e94206055e923d9f66de4",
+      "count": 2,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "301238e146b130db5f4538e42db76e6af04f9191d2065fcff5152407b2f0143d",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "7a4c24c69f78ef58d4749a93790d5887c31fd8372576c2cc5c3f5c830f67d3fa",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "1bb9b3802f814bb0280989d0c149dd530492bc9b172272cc3695207b6362db77",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "13d96cbb7750ade372b2cfafa53f7ac0026b8648dc229f05790dc79b605beb1e",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "6bed00c2612362889051355e7c4415f7d21212cb2623a1030b5c80cf3b288530",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "ecd1beb11dae18c57aea3190ea5d8ce97703c27ce720657b67b7305502e10966",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "ff037a0273a19b46d664181169fc71e17e23b8b3487cb64261340cb5d0e92b00",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "4baf4e7c635956a562f075be98f4297410577cdf10b990d4126ad9e3667aceb8",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "64b3285cde1c3d5d3ed6af39c6de154745797914684abb630a1d62a88e79df31",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "d3726de93e07e44bf6b3929a6d65d55c6af3188782b96f2e85f65e1080fc4d6c",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "ca796738eaec8ed9fbb025246aadd18ab2bef7e81b31ab34dafd958a96fdf3f9",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "d6404d82fb01c9b8e7e2bf16fb7e01f978c0aad59a1e36be1a3764a36f51f904",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "d560d2d3103391c48b063bcd67baad6cba5b399568f0577961e59ca6908ee54f",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "e6a8f7b88ce011e997bd878d27bca5524ebee6be5d10baf09a1d039a44ed06df",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "667957e63275a10bfcf01a21f8c8706b99e49b485699e2948656e507e8156315",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "efa16407b12ba3a86da3d48d70e4582885fcc52f94db732fabb736ac98b46288",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "d641964e28be800e656cf791f84b43f81b37a47a96cbcf785337681eb8263401",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "482cd39413610f118965fd5fc3578065d1a96c6105902c3f892fe19b638592b8",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "c6f84acd342cd9b95224fa9bc0e1f49622d83b38fc7b2eece41766b5d99f4884",
+      "count": 2,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "08e7aa22b137887e7cc83b292b5b90e8c5a94d3c563e14e495e1e6c627ed2017",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "ac2384030d39d250116644f96d1fb015a7cb2829c0adf02d91a9c047d47511d8",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "ef6d49d49c73c0982d65aa253dfac636e41bf2bd277d2eff7d7f44c15da87181",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "ff91a43eaef716b2303b208a8795f980cb0686ed3fc3bd85635c5cc651a00037",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "d38c7bc543af02c5c18c613322159a92eb06cc85f60db2ac845d5bcb80da56db",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "7045224eda5782bf36291bf4cf6bbd7cae552e6be76ba2f8bd358abecddf8a3b",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "2bbbe1cd6e0648b870c1547de671f9efe3f81aaa288292663c004a8870d92d8d",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "2d9d415cbfc775ffd7bacac708e9985cd7f0b1ea56f1054abb720ecf14c2525e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "19dab99a9abbb01acec67489ce7524ec1b9d6ad392c56f4876b768d392c2f84e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "ebf2384e5e6f58afd96f3e5053d4e77cdc75e06971336c48a55940d3bb7bc715",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "02f3a4cba615feb5bfa32aec12110c8c91066c036eea0a192d3158059e617c05",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "520fcefc9530309b35dd9339faacafc271c7ec6feeed8712d0dc8dfe36f9709a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "7bd1f3bd2e5ca2c15eac8025bbd2bc40dcefb8d02fd7aed9e229840664a64b78",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "1cf3bd23a285123377f578e5279b5b16d728eb31ab7cdfa016caa60042bb80b4",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "8e4710b9d7788986d072dcd937c5223b4c196ac4437a4b1198486b9ce9c9573a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "d195d15e9a7b19840e64b32593ae00d0b79d444e674c4c490ba23fbed10c7cc8",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "54c978d505bbf9235dc898cfbda38dc77637cb65c4cd61eb9b2ea0811ec28ace",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "da5f40c042ab953f6a615bd30c793c5f038cb7acfc8b457d4f3b08588b16eacd",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "3f19dab220a7420c3a71e023ac846578bcddaedd8f43c5e286ec290280ba9ceb",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "af06d3536b0ebc614a5474b68a04b1e019cf1609a4be9d7bc93f1524a2ad13c2",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "5d35b9e2288229940bb3badf886ca0433f67e4c828c76a5e311873fe7410bded",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "e98db8868118ee9adadf0486a47ff08ce9590d255ea6356a45c84ab7b761dfc9",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "1ce1201fe23d590216eec350be23fb94a7b871f0e728fc7a2c693994523edcfa",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "35c995fead00b966cf298c2dab7fe706dd158c1810d2b4d677fa237c9daaecf5",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "9cc0674bf17a816821764ef5bcbe0f4850eb1a847183863e9abbb6f9c2f3dd65",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "249e17930fa6e0a0d50a0dd637fe5d3d289a1cc5d4b2e5803ce41808a1f04d06",
+      "count": 2,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "15653d4bc573a5508c2108e7a6217ca0b650830cb5f5ecb91a8852afbb0832f2",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "906c95ebdcc5589b4fa5d403c8db74016d7379914519cf8715bc0acbbf035414",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "6709758531dd8c9586fc1eb3b349529c1ae2deb01239f2037b23acd9d48878d0",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "e63ced3343e0c18fcdc4499a1a7e583b6d0daf10c9c0832b448ff0abe8b6bed1",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "e2827796fc1f78ca98939e4d48db9c60849d787bda21f7d90723845a19b0533a",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "5acb291b12a2e2de4f8a2bc472ede89ae4afaf5b3ee85ce691960b688693e60e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "ccf0d877aa8b955b8870664be45177a75f80565eb90b218a1c408b736bf30e11",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "a32bd7c578f56eae27a45c361187156a44bb05d10623f52aa660c675e09087be",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "7bde2caefb9312587f0928000f986a789ed28067588f455905728cc1fcd05ac4",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "204c93b401b969002ed4e6ad8e7e0eb2a9154d0e31cc207b8ff2e1c81ed97378",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "1064fc77248489747a929c1bc3cddb6436ac11401138a6f1b7cf8b0d1dfdd5ee",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "2d0c3ca6d08a5de1774b84d88801b3a4fe571d2df650d242156fe56931081bed",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "734a77376ccf47ea6de79a58c179c1f26ac6914641419c1e7fca1367ffa016fe",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "e016f62dd23755ec78bec32872ead6a07c906d0f3db79c977c22d8614ac53137",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "1f42dd89985986176d598b0f715da2aca46ce1fd244ff68b1b7eb9c96c77e175",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "4b114c59a1597c172d502d11496527227f47f05e33b7fa806916372b76e5f07f",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "b35fcd1042884eb5e70b30af60b99a9e5ac4ca36426fd02e1ba21d9185c1a2a0",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "f4a5d3917efeea8130e0af816a7ca636a6c83ce1f905afc07c315392a40414e2",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "cf5c4fb8f0e9b8c6c874d1b1dbb4049dcabf7f78e9b92547db81557c5c1fabbe",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "22bbf6494c1e53c663ba618d04568572318f96630785c93c1650a3167fc1a9ad",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "ce16d363281a0868084cd36006fd64074e9ac142c6f8d74895faa833f2e0af21",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "cf92ab403d45571c2c01e4ebd1deaae71f78542bb8694a355bedc6fb50510103",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "f7f2f3856d111690c12eb514d6255abd7e155bc2df04e67eb8ee04977e1d8ff0",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "21ce03d4e4414cf228286ee67c39c82caea86426191d3ff7204ba59313c00023",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "e5fc69b313c922a05daffbea9af1e0744739a549ebb9277c9c4bf764b8901d42",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "2be112dff59dd4d0b96c05d3f06d1861d1d0cda0cfa74e987671f959e54c5362",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "46e5c79994a07601faae5585292c67f2613dc72f00187fe76fc54c6d99a4f8e0",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "892e5b91fa6820d979868d9eb3bad968b53e77d5b2ad0c383e334b4673c0ab4a",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "d3c12df57e0270a2f966e87c5fca6368f66a5834c34600a86b58786a964d6485",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "c92e2b090e7bd82fba1a18fc5ee694700333c4ad39a16f570e2a62ba703e1fc0",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "6ca0e6523e7ef2d4795229000a52863b0c1910f793793b7b76029140eb738b66",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "03d06dbd5f8525033d47c7735ac553c02b05a00bd848b3fed303a471ffaca922",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "a8dd5535f97b97afa6614d449800a4d6ecd35a322909c93607923d6cef9740b3",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "86e0d18a898026187dc4c20c62e669278f4ac0fe77a9e622707f955a854841c3",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "6a3e95caa439d8ebaee1140a3926e094cfe2bd9c741376d57e6db565b3409f36",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "529fb5ca2c9a9c02fcd097c7dec9ae4852cf5b2f39593b1fb7b0b6a9f82aca2e",
+      "count": 3,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "8b61ad5f63d122b0fd527b7ef75933c5d6f0f428754b4f804398488874e89253",
+      "count": 2,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "4f14fa22e401cf968c7c4abbbbf346bda012be7f5b486396a856377a51dc5dcb",
+      "count": 2,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "07964082194aa3554319db9da49c2215a4b13c22d18dedc5bca271848d86000e",
+      "count": 4,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "88c7ddd64e2db2cc6eaa047f17d4d8474562bdf13e63bb4e48a546b260f34495",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "70027fa510c62eee50b57fe403130f3fbeef93856fa3b3601b2f185a8a5556da",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "052edfe7dc5174db4cbb8d69b4d41bc013c15c231889e80c205c6d2c042ccfaf",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "4b000c49790450dcfba2dc45f9af8d242bdbfea5800071608f48380e29b167cf",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "55ff353dae7cca4d8b09ed26e07351d22228f89f83e3d639780716766196467b",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "a60875a3fe04f1619743b24b22fc57b8506723908af630fb97c1f9156033819e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "9a0efb11f59cafa8701d4ab598d8add868ab91d2bceb6ca2b26ceffce5701690",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8f06bf613450caf2c582b8aaec09d8dc897b4c68ccc99bcffe902f6f964df015",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8e02f61a950f6d297da70ed041e4a9802fd474ac9969ca9b123a09af748a127a",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "d46da0afb7d9bb5894d8659bae1b2b428dc99ab7372a75a70cad703fe9797483",
+      "count": 2,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "383cd88c31a0a9f790e92eaadd397d5255bffbdd7ca5d766c50f3a6a6f6c980d",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8dc4a70673824d3342ca381d0c6bd4856f1ecf3881fc3f3faae4af97fdcfa262",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "6ea0d6db6b60dd1a3d6c3dda7c0776c07f52cc48519a5a54bc624115e6a02072",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "7026eb60484f69888d8dbd5280ca278dc0e9520653d46634dd086c40f8e3dedc",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "4b7a7211761d444ca57398b1fb28b844b36c3b7cb499d9c331958a9d2d615bf0",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "fcd36446a9badf48ba07b3cb31491f9d2b6698db07fb7b8f1768eca6ae1a3f09",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "a4f6a35355edfd7c4e0872cc8412be5c620ba79ecc14c4fbb2d33e0f2fdc4e85",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "63f6ec984811459ed1b4dfdef16daeb2a1265a61db5c906625370046d7f08fb7",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "e7ff0b813775a729337397f0b07b20db4b00ebd417f06c3903cad8e11ca4ff65",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "bbb64f83e3d77fa4ae85cbde745b9500de7d4d7247527a60923e80fc128c9945",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "d0e24370d2fc2eceee81c3d2a1c443550cf4630bee3a32eebed205dc6192a79c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "0860df7f734c21be23810d5bb3115b680b4700cd943a35902e0f263146ad5be3",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "ef02ddb5da567d8df5b1773b5a64c3392d2ca5b2a4a0907e79107c6580132e3c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "440d0042b88c3a50629a55c9bd6dfb4c27b03c5ba6e5ada3764df2e5ca3363a0",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "ef152aa06e8ed86a4cd942fa97e111765a23744ca6bdbf07983a753cc9a8db07",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "f78cd6a70fea1e753c74e751c12b39ab6ba88aa8747090c1411737f474190870",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "87c027f5a3427e7c8bd71c983bdd3ee036e561643a5c9c9e9fc2889527105bc9",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "c4f7ef190db798487717d7756d797a550e4f246830f3bccca9486a55f8ee513d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "d4b1e8d7738eb476d30812edee7020d217f9a8beebff38d0d63abc6a2b5f892f",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "dd9f5b29385478d4fd0b4332dbc570b8dae00fa07d3df5dfaecd5e52ce078d21",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "91da75830045586275725a836241072713b45ffaa063764a6a4799bee5732a00",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "468b80ab8bd43c6012d2ba3d586ed246f47271e4407a31c6eeddcd18fe60c0fe",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "7b3d46dcef1b4f88f12d7069988ed4e2ac60c9ac3ac609cafdf0f3a229b1f1b4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "bcc115617adee2bc4b49bfc1d6c838318ba74556df5db5eb48a5e73fe9af6316",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "e41e7561a8ee8dae4cdc3533076436918a0d72dd0f7422159340e2ec56d78726",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "c831163828d33b1c8b41294b51b6dd6365bf9078ef5b51473f09c50a868f278b",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "9b2df760dbb1118abcb285c124f721f61c5399428fe48d85d6d2a8eb3c17ace6",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "fa112b7aec394330da2cd832cd1fe79955650a6444c653b8091442b43ea27ef1",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "63390a27d0f2fdbf952943f8abdc4a5024f508be9d9adb3ef3dda647eecb96bf",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "5874012c9477a128699ca70c62caf524922ac9840832c43dca9cd73ed495afd0",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "038621a2d95b16a0cb856dc63f5aa2e0959320eca1a3e5c5aab7a87421ace98e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "64bba891d87f1bb2e3ed1dcdc408278deafed51ee9937a072ae526967907d32a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "c2aa772695eb15d29bccba35c8a05b927f7f12bc259b00a6d1da2a408fc746dd",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "166f9b0c7b641922a7428453c57fd105d799f23a019ba41e67e33fc2718985ff",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "5d3cbed5fa69fc9082ffc460aac99dbad0c4aad5c7cf9a7fd4520e1b3636eac0",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "250ecfe24782b190a636fedb72c95553913e7d826d136e7a4cfda72831aafb45",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "40607eaeaec66a497a4ac309c8595a30b8badf9f530346721bf92ea148d3fa9c",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "bfe2fd496114c34b3034de989182569d2e82b282c9b4576b77f9ef622263577a",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "33b16f436de77605c46d7ae93cf79279f1b74f010bffa004993780e38be780a3",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "a28d12c800b822541521a5be3e89f8b54db52a517d6d0b536ad5d2db7d5c0da9",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "2b4ba29787f8a8d671ca40c41742b6a6acf7204090c69c98e47bf5865aebb537",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "f3a2da257f5444dac76e0c70cb26f4d3b4d6cdb013c7eb38551755861f605106",
+      "count": 4,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "5f89a97cca135f1c8c5cbedc85199be3a841ef4b21da94b732bbc265397af677",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "7d31dcbf6d6c21410fb634f93dec8ad2e0cd4428adc0e79e4ce0fb221ea18baf",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "13c9dd61d7176cb26d57d6995b72f34ddfbe49c36743e5ed7b11d941639c87e4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "83900f2d6d9bc94d0ee5990cbed81088adacd6d41c2fcfeaeb15349f71428b67",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "6e62a7660b52e0a19479505e5d6cf0114212718200504727f7f4bc9bba96e0ef",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "439d6a2252b6e89b6524059f6cf61963b89f8bac0e4ee3210e7999e72fc56ba8",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "be3a4bc1cf34101fdf5719974a7c08c7be37a026b9a24f45d045984b9db373b1",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "4d0d54c35e05e9e20aee55252689fdd7955fbf2699edbd8fbecd502315062a0f",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "1dfa432af1be2df9c00c0473676ad9eaaed360be61bd80934a0787b3f1238d5a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "0154e228f4e7a15d158d8f12816807d3750163d1e0ec967d0ec49c4a1cb086d1",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "c82db6fb2194164981d6f0f4d6594206be56c6e6c33ab5daa8a0bdcdfe5b45a5",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "1b23561907fd467e793b75f512b8bfb1c69d85b56540b589675b74bfbaed0be1",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "858882ad9a1c14f106de1553f063669fe4af34b9f8d8a42fa8798db29250e5b4",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "c1af958f07d2d091cc332ec509da233e8bded45acef54a9160f6dfdd31ff3ed5",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "55971794b1c297ee5cfd523c09eb4166ae16782656c2464cc622b2391f9a1603",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "12cd79b4242119b39e684dae460658457e4357582ed94c53548bb83c21985c64",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "0dbe2d965e31bc62454f625f6a55f68440a26c4c6f8257b2b8003270de54b3eb",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "066a4b7fd9dd165a68c4df245a87b413efe539c3351c3dae59bf72422e335ce9",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "8509ce1036ce33236011c0dd6245ade69074926b6aba3c9a3966f63979eca625",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "6ddf195e1a178cb80797f439e9216e35b13a64fa5c87230a3e9cb5a4b9200e5e",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "b8527802039730e81875d384e3661d7bcc3493bb8e3e0741a9061a801aeb75ab",
+      "count": 2,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "343df3e09449f56990219f6b37be59a34623f02120c3d0e6c3f95162553889cc",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "f317020a927da70ff396fd10a3b2faba2b472d59510dfdcbe11e271aaacab405",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "45a891a22225b0c911b47f6d0d6ace0ebb531ec8aa58027b531d4409b433f325",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "e97934f72a7afc4d6a18eadc5b644cc369aa23000c517b932908ad0cb9fc928e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "a68ff37bff665b4af61cf2f34c759be014edea0afe921c7d9211614c2c25d2ef",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "ef81e76c2dcaa47a28c362f414f64c9918c8f88c0f55d7d459ef60ff658683bc",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "5eeae87bd7cfd9d4e117967db79f6d8ee0ef7c71e867426f9f87a47bf52dde97",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "ab4dcdccf0ef9a05ebb7060fa72e2f0d3892870e81fe970131e7720281a4f669",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "e9bb5dc5bca05aa10aa049311956434e815e3e2bfd1b51890c9c4da2ee963697",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "456c6e1c0d8d32798adaae2cc65fd8e81035f72d41bbbcef5fba8e85a4ac08e0",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "ccb1f01071a2f4d7840ff5b2f4d3910aece9986191e5bdc78c33f47f2240c870",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "7ee4bce5906f56e3493852637934a466442e0c929629e5b88daec91dbc014636",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "22be54fb2dfdcb8c07cd94be891adc0715484253e3eea95f1a8e35106774517e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "bf8918bf8d18aad8a0bcaadfa3bf601922bc54b23f2d78474277e265bdfd0f15",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "a8c2ff55514b7a4da36e7bd0e1bf502e8b579b00bca1a16ac4e1937cf462cd06",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "ad0817c03264c3351fa0eca06d66e17075f630054cb33cd0744b638c77e16826",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "939da658505a97ef80a5c7ba03a991e3e918c753d027e323668538b85f3ce95d",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "1aba9ec1df91ddf1c307d1f8b63e33f9c2af35ff2ddc933629ce310de4e63971",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "c544b1a7a153a3d8e834e829f5d617a6338bdaf59f0499119811d6209a25bd56",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "c7b0634cec44108b1e4ede5b0f23d568ecf4891791e8b26592dd82a8788ba2c7",
+      "count": 4,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "8e6ae2fd7e675e211534b382d6ba7cd667fe49435a45003a93ff9db74ae41ff7",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "1d10060acfff77c841e44105d87c65da84bdb9f356ffb72963751491fc46bd78",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "d7ff7cc2f96f972aa2483e7ced93ae827247a317823a9d2eea188080ee5049f7",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "c8486b2b4ecc3510087f18452fe8f29f05c301559dcd7b089fdc9a0142b25c48",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "498b344ca24581609a9afd86326f81c3c8fd525f93a119898934afc1a6cd43d9",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "5c80a3b439852ec772106933e1c9cb68c09093f0847b2460905add670aac4194",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "9db16a387dca6c6feb14d8e1e800ae6b7623c48b9f4bfc94a18b14cf74485ca3",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "cf7de61c20922411c705bb8b89a2921250242585c55cd4cb144f3c96b26cdd91",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "b0a1ebcbf5127fb0b5cf78f39ddee828610428fbc351704ea0bcb86a26850e91",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "de7bff4cb8cb1677427d995ea3897814af40bb81539a85a4bf3c5944bf6566d2",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "2e69a281ed7d1ca0abc1e149c39f789b79ecbee7b5a630b5d43279f30fec71f9",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "0b3c2103fdf44fb107586d6efe3361519bf72d62c0a5ab4562bde55791b883a8",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "921ad9e7067a5c0b659577e254bc9e30a54e0f7774b1c84509d934638c551d46",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "e48e3ee61a5c656fedf36a997e77a296a7975f7986b89373b1cf4b96960fe1f7",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "f91a0acbe68f4b069d6faadaed9b5c7aebb93097997103d72cb16d2259beca60",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "8806257dea27a23eace03d47fbb8b52f877e6658aec781024d4d442a8496d782",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "e1d76a48c77f0aada18bf01b49b17b1f16d57cf78996e7466b0ee598699aadde",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "aa27b6bcd06d3bf917b6f2c66a89ede6d8e8e71f9083c006f36297bbeb3ac3ab",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "01df3d2883604bb5cd0fc84d0da56f07417c058e6a28f6e2927c06ffbe7de699",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "71328b02742bbe3f590237e4e68d640245913e99d1afc766ec6ddf2d037537c8",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "307ed85b6b5c13e091bb329b3d816679480d2df0ed8ff222cd6ce439db6e070e",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "6524b8e146b0948806f11336ec534538955aee12fb891a4561e66ec81c03599c",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "70114bf16cd56e514c2f1271f72abc2fbde8890b4067fdff2605936e25205336",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "9a05349d1e8c78abe18c63022f6b38388f67f33c1cd8a1f84417d68388e8593f",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "8b8f0977952570d50f246288485af15e8e08aa957bab913b96d211d1e9c4ed3c",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "921f0f7622125f3a40ccfc4c73357fe2a2d5a14fcff1dd49342d3c4b8f5b4d51",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "bc5c4051b7e0d8919e9f7fac7b3c3ea51a3f4129dcb18f4b689c5a6a35ce32da",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "6b8e0ffc5d57b0902da149a56ca07e2f2a9bdd8be695ecf129b0a0483d9bc235",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "ef9e067d29c6bad6b8cc8474e86d846a985d0b32aaec24c78c2f5da671412393",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "f162df9221d814d7c6131edf016815294b9c79a1951c9fc342d427cbaf54b780",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "45a518c16675a0a214c503cda10638e58561cf9cbfc80c1e6e71a577f01bfb1d",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "54fb9bdca1fc312eb0b8b25c3047ec6c5f951647eb4e1a09674c3906311ad4fb",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "6a6e8db058ae63b860187fdafb58a0e74571360a8b1a6bb57289389d653ed547",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "506e1152be2d85d7321ab017aaf963526a6c8ff88385f2bdc886282df46b60d1",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "d582ecb5d2fe0a8d4fb97a541cc6e77cc8db478905283130750e50d304817f43",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "3cba89402ccd0e537e0d0343dca7549745d68d5bcc47513924f623da1d3ed011",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "2d090100efd184d255822eb589dc18b78cb839cf8bb3e4c7ed9c37d57c853a40",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "1030cdf006ddf438aae3e169cafe3e854d0657384df9abf39f2e15646f06362d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "6a548fbd869cb93a12ab3f6bcd5dc3a0ed9ac206e8b0eae0002abcce48cfcd45",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "7726d9bcf80fd086d12898968285eb88adf4d4942e403d2b4410ad088a5ae08c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "ff41cceecb268a7b38d0e9be63674e5f3d62128636f35aa386be53a4c950feb9",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "d09ce7abfddef7d028a2b02f00a1e46d03457378ae8ede6706ab07cae153c5cc",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "test:drift；地形目录枚举"
+    },
+    {
+      "key": "0f9b7e3be4145dfc6d7d1bce7c334fdadf6ec9d8ef5f7cf9b32bcf5f4bb9bafb",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "44c009a286d4607700587125b8f59c7d94360c5865534a118593393471a85f11",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "e5f221b57f86b8eb07c0396e7cf43d0d95e27ab63f1ba0177e0d4f893e0f46bf",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "85f0c4a2b07a6114c45bc478fccc9c4194bf54e1c7b83969f13197fa97e81e04",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "d8ac538899791e75997d999ff0373fe1a40fd7ebfc966f55a5f8d5484a48693b",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "31ba432ed1698bb852ca0fe02586a09e765278e983895cc9fe88503fec57b096",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "066200472cb6c678ebe494abaf89abae05ba34aa8ab8a5d15410caf883725037",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "b7a5760fc55e1240e27b42cfc502c41b2945a7448dac312e7ce891a33b79cf7b",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "140fdcaab4ec88abab3db103ed846ce0c70ce70b314df72e55cde4dd0d2adb6b",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "3b5e5cded9c43d1565618967d66d86a1f71845e41ea5482e1b11bfb27ca7a48f",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "e93174cdb7ef11c0b2a28c05da2511576c916040c96a6b06f25d7f757bedc8d4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "1d972022574af051e473070c7662ab43c2fcb42db2c2e858dcae2a4d6525bd04",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "01cfee6a2deab891b3413052aeb355e75b5aaf0f4e5207132eb5970f49feb8d2",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "ac1f82d8356a5e9dff96b63fc7f769b658e196a2b84adaaff46202e0465caa20",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "d2ce649602a2607e9425fad04979a06ea27b6f786fd3eb70b80a9575bc242d9c",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "706f4b7d607bdcbce08f194ee223122a7d069bac65a432329c70bcb1f3df20da",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "25710e10f2de5640c55fd553bca4bffd43fed9c2319c9dbeb5c238df7e023d41",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "ce72e74adf6aa5036cd84c57852b25dbe2ab48ad02ccb4d70de77286f4d7b962",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "a861e3eb6c1c6e465d63b7d61683294f6a368021833a5a2062a5c0e0ed92d8be",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "fed1d2f6d1b8e6b8c746a437ad932f929d9e1900d22846be57c03f87e2982d9e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "2e483c836c10eed6b13e64722ed9c2f7a3c0bb3b0dfb3a16a8b974af4dd156da",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "8a78c3e1fd089e70fa1397231a9b90c7fa35f256f50af8b53ad3643d2f11c83d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "2755498d7a0263b5da82fc672d913f12af75353f7efdfb483e6b8bb9d15f5882",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "4ae28e4208a61a0b3c601d1a2daf4b46eabba575c4b09df22c4b9b402edbf8ba",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "c366530b93be7ee58242e913c590efa1a5eb1833907c14fb3417bd5181b1d072",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "78bf60d54295630b73e9498aaa38cd36dac81f4c549ddba4172260db945261e4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "9482f5c74de8349f8b9160e8bcc2c0373f8293c87912d2f981df7ceed3f9777b",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "564763ad49552cfedf5aa57234f8e1a52e32bf58391ce74d38d3ea8e75d4d856",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "74f6429f6e926f67bf22da9f682f84378521e2d7c4239603501899789e2a1fb6",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "07266ba61cb91c138578429ae5d1ce518bd558c7b812dfe1437ce0965ff98b7a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "d501a4dac43cbd3c8662e64c8cbad2ac886a88dccb8e66edd1d29bf5f3816aa0",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "6b281509a81f64b2e85234375a527adb29523791f4e487b685b79a86b251032a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "26cf93bd60f10aa6c5238fc8e58618d3347db98d404347b11e215250e82a6200",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "59b904f9f901ee66a4a29c1a66f532ce3699957eeeaf723ae79a71c4330ffe47",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "6542da6cbe81acdc4bcf1fc62823b5364e3f45932f23a051fa3f3270e91f95c4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "26fe22de222360ddf7ce2b880b3c9741abccacf008f2287927ec449b73047be3",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "8c8e7276228de398980c2b20d5fe171364de04a5fdb8ba1f639a4687e4378ae2",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "66ae913c1024715751985aaa48344ac2685b6262373a7ba5415bd30038db220f",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "73603711fe2bacbc45ff091bc29ed89c24fe629f697f4b77ab3f858c8fe68273",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "4a12dc78d806c0b6df4b2bb06fe9fc6afd4becb3cc02b94f0a5f69a3d67304a1",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "9658d40507c9b6c3b20ae65a1594f00b23da23eae3e288a0c70d093d916b2bc7",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "5d7cdb1c3624e33a02212ed09999c14e028385df9e2bd9cc888f1bb7c9b13606",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "aab797d94b74bf5664a0aa7dd5ca2cc222f451836ee8b6b72084b5e2e741e87d",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "5bb5ebc2d5365fdc970db9b10d5b9dd3f248a40d723900bcd5368dbe3544aa92",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "06575b4b6ec9fc6bc140b5d9555f8f8c5cd3512452864dae1bbeebaeb42391c0",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "d8171117a5463c43aba14edf36bfeaa26992df7fe076072122fcd02a67745976",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "7f4b638b2472a80a4ec06d713c50deb15966352882c0675b5974efa5287d90cc",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "a164b327541fb2aee6a9c531b780b7eb40315ca211bc4ca4801241cdccfd03c2",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "95d8450e038e4d7ddc2c3372b90495678b5ed0eed4b3e12607d15aa9220c869c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "5b1c51851190acb3fa0d3956db5bab9ed9ba1a77ac65ac7b0c3345c53311a573",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_properties/integration/transactions；c_4b/c_4c/f_*/g_*/x2b"
+    },
+    {
+      "key": "324359528dbb5e79d9ddf169a5f2d53834af483777f7ba5a4bae90baaa7d2211",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "578759440015055140f157c54178e447d095464cc5e042e0927a6eb0eaa2e7d1",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "024134c7d2a7becf4d70426f54d4c792c2226567a92b5fe3f6dff56ddde97120",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "aeb48aa707780ac3ced4622a590ac2cacbf74a9b129374ee29f03024a96936fc",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8108cf231e991c8c1587548feaa72297bf34a6e8693dbc28e72477a73c35a816",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "98785f50ef17efcb24f1507c04c4778b18875f63dc1bd3ebea295fee42e4daf5",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "原生基础层保留写入语义，刷新边界经 structureCellChanged 提交地基失效；结构不写基础层。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "5523e07963e2c63c68a61f6a5f45b64379363b0aa333c114225bb70f450e322f",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "fd2c12b531194af399b30750bdbcfe8918b9f0cdfc41d1e0c91d8e1068ef569d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "d22a5bc630095d2fd41c1c8bfa3e5fa16fcfc48be68ecb55d6a31109248dde2a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "227586f6c8232a872c1466b320c6f8e54dcb74c11e1b543fe563d41b240c858c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "2c3ad0393a399a105fcb28d29eac105b28d1e8a102220d7a1957e9ecfb8485d7",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "80591cc3532aab0a785631a00e53b560bd7ba7d2f172205a6d8891c0abdf788c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "b31a851d6333ec6b79bd1082cfaac7267f9223dba054bd3abd8e69ad7ddfe0d3",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "a3456d96af04b54fff8da6ef1738d0b3af6b3e376f9340481d96f30228e13fc3",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "ca1dafff71024a5eee958f13f356d42a821700b8d756b85a88c5923930507838",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "d88b2312e31c1fd648e87dd4b08e0baa9dcc56e245d688e54acbfdd68faabe79",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "0f47c04bd41caef79ed589fe5b20c5a6d6af9b8a0710dce78332841ec9729205",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "9baa6940555934ed0b88983585b4f342638ebfb2481e562676694527eaca798d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "7cb091ebee63d20be2884c83cbd2d25fec4bc8070c134d0c81f434bcc184bf79",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "905ad946658527b5d3a13e5764a6e0488d2f0d7b7d7ddbbd0d127cd432acd117",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "ba6f985fd5364b2dbd0c7e4b4a84c0777880a108819b3680347f8c588b9b145e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "2f4b98dc6ee43994657b289880c7b8f19699c6688a18f26cbdd505205b0d3568",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "d5140f3b784d8a3737e1d5e0535b92acd0888d0d8454d292f8a77147727ff4c1",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "1aa36fc8c4a2d2562f3b37a58780abc6acf3827e631d234361e1f3d6ea2f0ae9",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "eb839f4ed6f3bd29fd67fbd930bcbdd21e2c8fb28dae166461bcbaef5ad6e1cd",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "72e465b1624b2f77e00a3c6c243896d7208ef3ff30569a8628eb303d3275fa8c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "504498887303be872c95068f5be3b28f62fd12c003d87d0dac8f8fc060014891",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "e6a513c57c5f8d5dbbbc9f9b82841ab6ebc0282caf112e0d56a925597a50692d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "86de9be31036838f69d7dbb23a47349b0beb99ce0ef7c68a8156995343fc63c8",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "d5e0f0deb48a42746bedb8c7a08e89ed47f202ef79bc7f9e64b90c5282805ac4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "6a492f27569dea6e1e890cb8bf0b8c7a6642b83126fbf4189da3bed0e0dbd57c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "897e008a16ac04f2a3ecb42a30f58ad3ab80d529ff268c4c8406e86001979019",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "8cfb34c67ed51f24148d030b702b1730deaf88ff3a694e26ddff66178689c17e",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "84153227221f1854fd19c22eec5c41318d8a9cd4ab1c6d18cbb0cd68e8031b27",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "0127da1159f6bff11494b858f4f026d38cac6b07ab0b0471c01814b174b9fc00",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "9b6484d3f8143cb6cbff1891a9b48f8a21910361f6c2cd6fce5f5b9b05648397",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "6f8481e5f1892a32ec846ca85f48cafd37aaa6a842ee6f168022d2953940192c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "1822cbe8a0e76c646731becdb81c9c266cfbc65623ed578e936d3346ed46cfd2",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "24c7d8074935edb90765166a4a07fa3bd8e93083bd22e646a50933b3985f81c6",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "f96b7918d5fa5b5d450d4ac4f0a2ed669a897a78c0fbeb7a2cb38f9ec98dff1f",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "76abbb081b0c7f5eedda2b2d2580964746f0c90a88e6d4ef6d28404094974b61",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "6982df0e14f5b6a769caa4dd16606483433e240243aa1d94f5c36c736d776e43",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "29471cae75d3650ede9dfd1c31c293e771315a14437dcdbdbe8789eba9c5a616",
+      "count": 2,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "c5888b231e902ce339f0dd1bb2cf4a3206689064a816ab5785e4832d7e7607e2",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "9190d101b9e06c6c86e0da875fbd39bb760388749618ae0506ef7a6d226a3cfa",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "5c9eca5b63ae0770d742979074fa7f904fc1dd4c09a304c05200a2abfa09fb95",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "ee8721470276caa3e9e67c6826cf30f9d179e83e3d4903b079d63d236f75143f",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "af7cc3020d90fa2abe989706b7c6c6fecb120d6a67e212849c36667838928dbc",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "24c5615478df6d1d3fb1f65517f4f80017797eb044fbebcf821e0b6e2d243732",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "2fd8b86f4f56599a589b83db244a3568afefde46d8547495105fe66608bdcf15",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "8ec308ecc0bb3334118ba817316d8390395f9ebef52148ac3e0dade639b91998",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "48642e481d062df594b40d5cfb68fa5cd9e0eaaefce864885bcb8ab38b81f24e",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "5f7a1eda6e3a9d26485315449691d8882b8a3c48c0f88af040ca173554fe6fce",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "2cb634cc3a38b7bf64b284f3752ca76e104776aa3bc0e82917a6cbd5e7cba68c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "ca39e838b09b10dc65402433c62a62c02a03ec3f8d79176396d35c3655192ddd",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "568a366225a770816d2abd559bc8bf7ef451ad65e40af1f22a25d19d9491dc00",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "0f46d1f91e956fadf656c850809ea547e0e5906cf30b44f6638cdb383f6e3b18",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "04fc024d2212b2c78ef4817cd9fffdc48f4e459f4da3db2a5d297ef2a89571f2",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "98b3fa7282f41c3cf44f6453dc77dd3547817596f28daf9f53e070aa60fe6120",
+      "count": 3,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "4cda8985a48a3b4cbb122b278577569791af297ddd12ac3c7cfbca02d0aa37d4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "fd987f6bd5f57b9cce1adfc9c6bda0fcdd7e3b164dc227e02dbd4459e4a8e819",
+      "count": 3,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "9b546d1d841a66316e4ee7733a6e6c1aee99c40bd390c3956839d268642cd637",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "124944057d515d5f53114ca04fc8c89cac633118cb953e1981749b90bb5bb3f6",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "7b638f8a4cd6047a0de1a063b39d6675f337e730c3717064ef8e01ad1431635b",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "0f536779edfacdcab9a186bfb93f74fe7d1f02cdb4fb5723b91cb8421eb28ce5",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "d7105776edba4d220d9f60257e62c07e62f488592196f7874e46e29eeda91f41",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "d9547c0313a187a2e033c79cd16a85b42f792f616a28e68c19169b1d8daa2bae",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "f3535f18e103ddc3252d6cfee4447fcd6df6709a5704651275e3cb6b495e7d43",
+      "count": 3,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "85f8e684798123cd74bef0b617d969fcdd9731fbb052e34c5317dbe5c6278ded",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "b98a1dafb76352a0f66fabe881b5aa053e75f41ff8edd0c249a669bdfb4fffe6",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "7c40595175dd96d15f8c13af49cdfd22191e310d7d3344b26ddb2dd5824b5aa9",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "c7a504c1aa3c337975bf3215b76f376494e1da26b4c866799440ad6256029f8d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "6c47676826948fcfc18e0d9f7c5e252352666a9aba85ab88f3c89f279f3f1a4c",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "1fd5748bf16d78f0d1605c1ae26fd751a9836dba3cff97af400f5d6b531c86c3",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "5667ab80d9f4e8310b0645fffadd544f69b486def6bdff3acff37d5ad510edf1",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "05d0fa71ae90614c0786e190f6a68a126fbefbb5fa1dbbef23ed5a710d3a93ff",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "6c5222ebe5912f3cc64548aee6dfd64f1f94bded743d500cceb67d9a4c68db17",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "a6efaf60ca89a8e6425961ae643bb4ff0805aef106cfa02de278287bf6245eef",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "27f0d170f064492bacf0852ca55abbfd116e1a694402fa7b204f324856809c24",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "ed7bea3f62db0afca5afb409aff73d05db56296d56daab5dd14a3f710035b2b9",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "d70925ad307266a92f682f7ded84abde958ff5000f011b6a6a06607a84b1076d",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "e20615b24e2e43d7ac98350a5eda77788e4c84bc33d742525bf24ac6f78aa9f4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "d90bb24d1d1e3344314532c8aa6254b05ac7180b81988983536aeebfacdccfd4",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "7b08b3742711ce5e9b90a1ddcc16e4f1b530797171f32c535426d6cd9a4c2dea",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "e1750b76cf9e6dac60b07e5b5adf8870460ccb7c369c82fb5128da92ead98eb6",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "3c9f1bd91cdcbfb6276c4996e93798004064c2b551ba6c1b8e3bc8b1c75b7b5f",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "ab8858d9d178ae1a5e2e7fc0eee1ea49d2bbe58ddabcabd10be7333bfb772c27",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "a2ad0c0545f68ff01b05453dd2223932181cb062519723c06cb968c81b7bc1e4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "937336cb9e1af17b7f89c1520bce7e1eda632084c96d650d6afad4a2f6482321",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "e9ad7909988648c10d6a437421b8c8527208e2cf6da940b67c0e5a0e8eef93d9",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "d4305b6906d206f9d839bb85562ca0eea83da050d23542b87a28aea68807e19f",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "4e54fed05834acdc1482b9a3490f9847e70f7ef1dbdb5c156c7ec24544b6db1b",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "30b946b8c0ed3854fbfe39ee7afa8b699acbded6c0a9a3a9ee09ba0671271f42",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "2350129e01dfe978ca381220a318f060d246f3bebf57bed3a78260b244fd5e4b",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "8c21b88001d084a5c6e4b194e56a9be85bce1ae989a9eb31e0771acf6954f5ba",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration；c_7/x2m/u21c/u_23/r_1"
+    },
+    {
+      "key": "1e0bb23bf8a9f6cc96c5f39d459d1c9b610a9222ec96933a0f960c0bfbc2479f",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "eb7191d99cb1bc2fb851c59a2fa551c79f2fd6691cbfe972dc3645de38249f3a",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "1d09f65b832539d632e2bff7f37f41be1682804fb7d84cb4e0703b140c18c059",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "c792e96b7037cde9c5e1f92ecdbb63ec5d5591c4ff6a2369fc9a018f968aa4a4",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "e2e9ef928abe1e5d0a2bcecd6c4c84de6bde08afbe6893f6b4d754ddb6a383ba",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "25178945685217f2b2a49254e0fc7a012903de3cf1f39b77c0aae901cf1b82c3",
+      "count": 1,
+      "classification": "写入口",
+      "handling": "保留原生基础层写法；setter/refresh只记录脏格，环境步末按层结算；显式结构写口按受控事务发布。",
+      "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
+    },
+    {
+      "key": "9585ba2b4d7265c4a445d322845a3d39efa4914b561a6d5a28a7cb5858fb5aa8",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "259000c4db62ff3613580caff1adb6c7e1a2a8412d588049bda2c3c758f9eea6",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "b9b7ae0809d7e605e57615567268345a8c39ac1ae72d4cd0a2cec7b76f0668e6",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "db2573807c6a47baff149c5633add447304b4ac4c023b1805a050802e75064c3",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "d762fe93eccf9e058c22c6bea63d4418758a268f6ed851aecf0fc93b647c6064",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "40510feea72e89bbb742ef44b04387dc2a0e8bff2eb8e253b47338325fb55cc6",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "0dcfc9333d1f36a084b54ae2a013a756f3e926b2d9def23da78b804ac7ea23ef",
+      "count": 6,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "78939eb1801ca03b8167d81f11b4d21ab62fff8f6fcc716f28e71a3b1482d871",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "87686f66614435c7db9022ebd8157d5f631a7b93c204b3afdbe01d2e83994e2b",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "92b6231a40a7098bd9bb2a40e944af5ef738b969b2c0ffffc5ce626ff7254cdf",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "222aa4ab40027a58edf0d23f13655286abfcfd393ba79722467378da54332202",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "4689902afb4c8f16edb73dfa39004dab98cb95f81d92a6afd7bd614982dedd9b",
+      "count": 2,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "35e96e261537b90f0bac3b9699e2e79439f023d5690525cbd7adda49be3d3e35",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "202d6b877e7e86d11e4a3bbfacaeec1a2835d9ba70ed5788b27766f75a6ae112",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "0c7d3719664981a44b593b124fbdb115ce6919ace3d5ae3dbf3c418992a39feb",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "7e3fd960d07d873e409e322117d2bf8165f505829b3462771688ece06554980b",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "cdb994aae9d735a82c3613860a2e393fbf3a952936603712ead0731be8a2cfc7",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
+      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
+    },
+    {
+      "key": "591168318ac740e83891a9b001dae11d196a46e8fbff9045f700aabbbbc9fa61",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
+      "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    }
+  ]
+}

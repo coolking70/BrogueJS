@@ -9,7 +9,7 @@ import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
 import type { Grid } from '../Map/Grid';
 import { T_OBSTRUCTS_PASSABILITY, T_OBSTRUCTS_DIAGONAL_MOVEMENT } from '../Map/TerrainCatalog';
-import { TERRAIN_FLAGS } from '../Map/TerrainCatalog';
+import { composedCellFlags } from '../Map/CellProperties';
 import { nativeSpatialCatalog, validateSpatialComponent, SpatialValidationError,
     deepFreeze, integer, keys, SPATIAL_LIMITS, type CreatureSpatialComponent, type CreatureSpatialView,
     type Pose, type SpatialCatalog, type FootprintCell, type BodyGroupState, type SpatialWorldSnapshot } from './SpatialSchema';
@@ -207,7 +207,7 @@ export function creatureAtCell(world: SpatialWorld, at: Pos, policy: OccupancyPo
     const active = candidates.find(c => !ignore?.has(c) && eligible(world, c, policy, false) && footprintContains(c, at));
     return active ?? (policy === 'active-or-reserved' ? world.dormantMonsters?.find(c => !ignore?.has(c) && eligible(world, c, policy, true) && footprintContains(c, at)) : undefined);
 }
-const flagsAt = (grid: Grid, p: Pos) => grid.getCell(p.x, p.y)?.layers.reduce((flags, t) => flags | TERRAIN_FLAGS[t].flags, 0) ?? T_OBSTRUCTS_PASSABILITY;
+const flagsAt = (grid: Grid, p: Pos) => {const cell=grid.getCell(p.x,p.y);return cell?composedCellFlags(cell):T_OBSTRUCTS_PASSABILITY;};
 export interface FitOptions {
     policy?: OccupancyPolicy; ignore?: ReadonlySet<Creature>;
     allowsTerrain?: (at: Pos) => boolean;

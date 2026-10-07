@@ -1,3 +1,4 @@
+import { composedCellFlags } from './CellProperties';
 import { nativeStat } from '../Stats/NativeStatSources';
 import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
@@ -127,7 +128,7 @@ export class RigidPosePathing {
     private allows(grid: Grid, at: Pos, policy: Policy): boolean {
         const cell = grid.getCell(at.x, at.y);
         if (!cell) return false;
-        const flags = policy.allowSecretDoors ? cell.layers.reduce((f, t) => f | (t === TerrainType.SECRET_DOOR ? 0 : TERRAIN_FLAGS[t].flags), 0) : cellTerrainFlags(grid, at.x, at.y);
+        const flags = policy.allowSecretDoors ? composedCellFlags(cell,cell.layers.reduce((f, t) => f | (t === TerrainType.SECRET_DOOR ? 0 : TERRAIN_FLAGS[t].flags), 0)) : cellTerrainFlags(grid, at.x, at.y);
         return !(flags & policy.forbiddenFlags) && (!policy.requiresSubmergible || !!(cellTerrainMechFlags(grid, at.x, at.y) & TM_ALLOWS_SUBMERGING));
     }
     private area(graph: Graph): number { return graph.grid.width * graph.grid.height; }

@@ -1,3 +1,4 @@
+import { composedCellFlags } from './CellProperties';
 import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
 import { CreatureSpatial, assertNativeSpatial, conservativeSquareStep, footprintOf, squareMovementSize } from '../Movement/CreatureSpatial';
@@ -166,7 +167,7 @@ export class FootprintPathing {
     private allows(grid: Grid, p: Pos, policy: ReturnType<FootprintPathing['policy']>): boolean {
         const cell = grid.getCell(p.x, p.y);
         if (!cell) return false;
-        const flags = policy.allowSecretDoors ? cell.layers.reduce((f, tile) => f | (tile === TerrainType.SECRET_DOOR ? 0 : TERRAIN_FLAGS[tile].flags), 0) : cellTerrainFlags(grid, p.x, p.y);
+        const flags = policy.allowSecretDoors ? composedCellFlags(cell,cell.layers.reduce((f, tile) => f | (tile === TerrainType.SECRET_DOOR ? 0 : TERRAIN_FLAGS[tile].flags), 0)) : cellTerrainFlags(grid, p.x, p.y);
         return !(flags & policy.forbiddenFlags)
             && (!policy.requiresSubmergible || !!(cellTerrainMechFlags(grid, p.x, p.y) & TM_ALLOWS_SUBMERGING));
     }

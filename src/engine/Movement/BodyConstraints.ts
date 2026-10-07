@@ -1,5 +1,6 @@
+import { composedCellFlags } from '../Map/CellProperties';
 import type { Grid } from '../Map/Grid';
-import { TERRAIN_FLAGS, T_OBSTRUCTS_PASSABILITY } from '../Map/TerrainCatalog';
+import { T_OBSTRUCTS_PASSABILITY } from '../Map/TerrainCatalog';
 import type { Pos } from '../../types';
 import { SpatialValidationError, type BodyDefinition, type Pose, type SpatialCatalog } from './SpatialSchema';
 
@@ -25,7 +26,7 @@ export function bodyConstraintOrder(definition: BodyDefinition): readonly string
 export function clearBodyLink(grid: Grid, from: Pos, to: Pos): boolean {
     const blocked = (x: number, y: number) => {
         const cell = grid.getCell(x, y);
-        return !cell || cell.layers.some(t => !!(TERRAIN_FLAGS[t].flags & T_OBSTRUCTS_PASSABILITY));
+        return !cell || !!(composedCellFlags(cell)&T_OBSTRUCTS_PASSABILITY);
     };
     if (blocked(from.x, from.y)) return false;
     let x = from.x, y = from.y;

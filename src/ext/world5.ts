@@ -1,3 +1,5 @@
+import type { StructureCell, RestPoint } from './structureTypes';
+import { validateStructureRoots } from './structureSchema';
 import { validateWorldWorkRoots } from './worldWorkSchema';
 import {
   World5Error,
@@ -123,14 +125,14 @@ export interface World5Snapshot {
   residents: ResidentRecord[];
   offline: OfflineLedger[];
   receipts: WorldReceipt[];
-  structures: never[];
+  structures: MutableWorld<StructureCell>[];
   containers: MutableWorld<ContainerRecord>[];
   nodes: MutableWorld<ResourceNodeRecord>[];
   stations: MutableWorld<StationRecord>[];
   tickets: MutableWorld<WorkTicket>[];
   terminalTickets: MutableWorld<TerminalWorkTicket>[];
   definitionsFingerprint: Record<string, string>;
-  restPoints: never[];
+  restPoints: MutableWorld<RestPoint>[];
   pendingPlacements: {
     owner: string;
     definitionId: string;
@@ -139,6 +141,7 @@ export interface World5Snapshot {
     retriesLeft: 0 | 1;
   }[];
   startupGrants: MutableWorld<StartupGrantReceipt>[];
+  campSlotOrdinals?: number[];
 }
 export function createWorld5(): World5Snapshot {
   return {
@@ -226,6 +229,7 @@ export function validateWorld5(
     rulesFingerprint?: string;
     nextEntityId?: number;
     occupiedEntityIds?: ReadonlySet<number>;
+    campDepths?: readonly number[];
   }
 ): asserts value is World5Snapshot {
   try {
@@ -235,15 +239,14 @@ export function validateWorld5(
   }
   exact(
     value,
-    'schema,revision,simulationTicks,nextWorldId,nextPlanId,levels,orders,residents,offline,receipts,structures,containers,nodes,stations,tickets,terminalTickets,definitionsFingerprint,restPoints,pendingPlacements,startupGrants',
+    'schema,revision,simulationTicks,nextWorldId,nextPlanId,levels,orders,residents,offline,receipts,structures,containers,nodes,stations,tickets,terminalTickets,definitionsFingerprint,restPoints,pendingPlacements,startupGrants'+(Object.prototype.hasOwnProperty.call(value??{},'campSlotOrdinals')?',campSlotOrdinals':''),
     'world5'
   );
   const w = value as unknown as World5Snapshot;
   if (w.schema !== 1) throw new World5Error('C5_BAD_VERSION', 'world5.schema');
   for (const name of ['revision', 'simulationTicks', 'nextWorldId', 'nextPlanId'] as const)
     uint(w[name], name, name.startsWith('next') ? 1 : 0);
-  for (const name of ['structures', 'restPoints'] as const)
-    if (!Array.isArray(w[name]) || w[name].length) throw new World5Error('C5_UNSUPPORTED', name);
+  validateStructureRoots(w,context.owners);
   validateWorldWorkRoots(w, context.owners);
   const list = (v: unknown, n: number, f: string): void => {
     if (!Array.isArray(v) || v.length > n) throw new World5Error('C5_BAD_PAYLOAD', f);
@@ -441,7 +444,7 @@ export function validateWorld5(
     const k = levelKey(l.levelRef),
       ledger = w.offline.some((o) => levelKey(o.levelRef) === k);
     const reasons: PersistenceReason[] = [
-      ...(ledger ? ['camp' as const] : []),
+      ...(ledger || context.campDepths?.includes(requireDungeon(l.levelRef)) ? ['camp' as const] : []),
       ...(w.containers.some((r) => levelKey(r.levelRef) === k) ? ['container' as const] : []),
       ...(w.residents.some((r) => levelKey(r.levelRef) === k) ? ['resident' as const] : []),
       ...(w.orders.some((o) => levelKey(o.levelRef) === k) ||
@@ -472,7 +475,7 @@ export function validateWorld5(
       r.identity.length > 256 ||
       !r.identity.length ||
       r.tick > w.simulationTicks ||
-      !['offline', 'work', 'startup', 'placement', 'transfer'].includes(r.kind) ||
+      !['offline', 'work', 'startup', 'placement', 'transfer', 'region', 'structure', 'rest'].includes(r.kind) ||
       !['completed', 'interrupted', 'skipped'].includes(r.result) ||
       (r.reason !== null && typeof r.reason !== 'string')
     )

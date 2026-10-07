@@ -25,7 +25,7 @@ describe('EXT-1a0 foundation versions and retained data', () => {
         const identity = { schema: 1, version: '1.0.0', fingerprint: `sha256:${'a'.repeat(64)}` };
         registry.register('probe', '1.0.0', factory, identity);
         const header = registry.manifest(['probe']);
-        expect(header.foundation).toBe(8); expect(factory).not.toHaveBeenCalled();
+        expect(header.foundation).toBe(9); expect(factory).not.toHaveBeenCalled();
         for (const change of [
             (v: typeof header) => { delete v.foundation; },
             (v: typeof header) => { v.modules[0]!.rules!.version = '1.0.1'; },

@@ -67,7 +67,7 @@ export interface RecordingV4 {
   mode: GameMode;
   initialLevel: LevelRef;
   extensions: ExtensionManifest | null;
-  codec: { wholeRun: 5; foundation: 8; origin: 2 };
+  codec: { wholeRun: 5; foundation: 9; origin: 2 };
   digestAlgorithm: 'sha256-c5-merkle-v1';
   digestChunk: 256;
   checkpointPeriod: 2048;

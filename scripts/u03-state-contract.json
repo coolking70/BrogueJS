@@ -457,7 +457,7 @@
   },
   "autoAction": {
     "kind": "run",
-    "contract": "X3-U5：逐步长休息/长搜索/奔跑的剩余回合、初始恢复/嵌墙与四邻通行状态；5A2 新增 auto_work 的 ticketId，取消仅在录制命令内；新局清空，快照深拷贝并原样恢复。"
+    "contract": "X3-U5：逐步长休息/长搜索/奔跑的剩余回合、初始恢复/嵌墙与四邻通行状态；5A2 新增 auto_work 的 ticketId，5A3 新增 rest_point 的 restPointId/revision/ordinal/remaining/hp/depth/anchor；工作取消与休息停止收据仅在录制命令内；新局清空，快照深拷贝并原样恢复。"
   },
   "inventoryAction": {
     "kind": "reset",

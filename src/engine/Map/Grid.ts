@@ -1,3 +1,4 @@
+import { composedCellFlags, structureCellChanged, structureBindingsActive, structureObserversActive } from './CellProperties';
 import { notifySpatialCellRefresh } from '../Movement/SpatialRevision';
 /**
  * src/engine/Map/Grid.ts
@@ -862,10 +863,12 @@ export class Cell {
      * writer refreshes here before exposing its result to another consumer.
      */
     public refreshTerrainProperties(): void {
-        let flags = 0;
-        for (let layer = 0; layer < DungeonLayer.COUNT; layer++) {
-            flags |= TERRAIN_FLAGS[this.layers[layer]!]!.flags;
-        }
+        let flags = TERRAIN_FLAGS[this.layers[0]!]!.flags
+            | TERRAIN_FLAGS[this.layers[1]!]!.flags
+            | TERRAIN_FLAGS[this.layers[2]!]!.flags
+            | TERRAIN_FLAGS[this.layers[3]!]!.flags;
+        if(structureObserversActive)structureCellChanged(this);
+        if(structureBindingsActive)flags = composedCellFlags(this, flags);
         this.isPassable = !(flags & T_OBSTRUCTS_PASSABILITY);
         this.isOpaque = !!(flags & T_OBSTRUCTS_VISION);
         notifySpatialCellRefresh(this);

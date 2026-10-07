@@ -1,3 +1,4 @@
+import { composedCellFlags } from '../Map/CellProperties';
 import { markRecordingRoot } from '../../ext/recordingRevisions';
 import { bodyDecisionActor } from '../Status/BodyStatuses';
 import { monstersAreEnemies } from '../../entities/Monster';
@@ -28,7 +29,6 @@ import { countWorldItemRoots } from './WorldItemRoots';
 import { sha256 } from '../../ext/fingerprint';
 import { c5Canonical } from './WorldCanonical';
 import {
-  TERRAIN_FLAGS,
   T_OBSTRUCTS_PASSABILITY,
   T_OBSTRUCTS_ITEMS,
   T_AUTO_DESCENT,
@@ -63,7 +63,7 @@ export function worldPack(game: Game, owner: string) {
         p.items.some((d) => d.owner === owner) ||
         p.resourceNodes.some((d) => d.owner === owner) ||
         p.stations.some((d) => d.owner === owner) ||
-        p.recipes.some((d) => d.owner === owner)
+        p.recipes.some((d) => d.owner === owner) || p.structures?.some(d=>d.owner===owner) || p.restPoints?.some(d=>d.owner===owner)
     );
   if (!game.world5 || !pack) throw new World5Error('C5_DISABLED');
   return pack;
@@ -129,7 +129,7 @@ export function stableGround(game: Game, at: Position): boolean {
   return (
     !!cell &&
     !generationReserved(game.grid, at.x, at.y) &&
-    !(cell.layers.reduce((flags, layer) => flags | TERRAIN_FLAGS[layer]!.flags, 0) & unsafe) &&
+    !(composedCellFlags(cell) & unsafe) &&
     cell.machineNumber === 0 &&
     !game.grid.impregnableCells.has(at.y * game.grid.width + at.x) &&
     !cell.layers.some((layer) =>
@@ -156,7 +156,7 @@ export function workPositions(game: Game, at: Position, interactionDistance = 1)
         rows.push({ x, y });
   return rows;
 }
-export function clearWorldCell(game: Game, at: Position): boolean {
+export function clearWorldCell(game: Game, at: Position, ignoreEntityId?:number): boolean {
   return (
     stableGround(game, at) &&
     !game.extensionRuntime?.worldWorkPlacementProtected(at, game.depth) &&
@@ -165,7 +165,7 @@ export function clearWorldCell(game: Game, at: Position): boolean {
     !(game.player.x === at.x && game.player.y === at.y) &&
     !game.extensionRuntime
       ?.worldWorkEntities()
-      .some((e) => e.depth === game.depth && e.x === at.x && e.y === at.y) &&
+      .some((e) => e.id!==ignoreEntityId&&e.depth === game.depth && e.x === at.x && e.y === at.y) &&
     workPositions(game, at).length > 0
   );
 }
@@ -476,7 +476,7 @@ export function updateWorldReasons(game: Game): void {
   for (const l of w.levels) {
     const key = levelKey(l.levelRef);
     l.persistenceReasons = [
-      ...(w.offline.some((o) => levelKey(o.levelRef) === key) ? ['camp' as const] : []),
+      ...(w.offline.some((o) => levelKey(o.levelRef) === key) || game.extensionRuntime?.worldStructureRegions().some(r=>'campSlotId' in r && `dungeon.${r.depth}`===key) ? ['camp' as const] : []),
       ...(w.containers.some((c) => levelKey(c.levelRef) === key) ? ['container' as const] : []),
       ...(w.residents.some((r) => levelKey(r.levelRef) === key) ? ['resident' as const] : []),
       ...(w.orders.some((o) => levelKey(o.levelRef) === key) ||
@@ -504,7 +504,7 @@ export function recordWorldFact(
 export function recordWorldReceipt(
   game: Game,
   owner: string,
-  kind: 'work' | 'startup' | 'placement' | 'transfer',
+  kind: 'work' | 'startup' | 'placement' | 'transfer' | 'region' | 'structure' | 'rest',
   identity: string,
   result: 'completed' | 'interrupted' | 'skipped',
   reason: string | null
@@ -569,7 +569,7 @@ export function placeNode(
 export function checkInteractableBudget(game: Game, extra = 1): void {
   const w = game.world5!;
   if (
-    w.nodes.length + w.stations.length + w.containers.filter((c) => c.position).length + extra >
+    w.nodes.length + w.stations.length + w.restPoints.length + w.containers.filter((c) => c.position).length + extra >
       832 ||
     game.extensionRuntime!.worldWorkEntities().length + extra > 1024
   )

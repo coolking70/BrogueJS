@@ -1,3 +1,4 @@
+import { structureAppearance } from '../Map/CellProperties';
 /**
  * R-1（渲染纯重构轮）：「格子/实体 → 外观」的纯决策函数。
  *
@@ -265,7 +266,9 @@ function layeredTerrainAppearance(cell: Cell, depth: number, layers = cell.layer
 
 /** Terrain portion of CE's rememberedAppearance, before unseen entities are overlaid. */
 export function memoryTerrainAppearance(cell: Cell, depth: number): TerrainVisual {
-    const visual = layeredTerrainAppearance(cell, depth, cell.rememberedLayers);
+    const base = layeredTerrainAppearance(cell, depth, cell.rememberedLayers);
+    const structure=(cell.isVisible||cell.isMagicMapped)?structureAppearance(cell):null;
+    const visual=structure?{...base,...structure}:base;
     if (cell.rememberedTerrain === TerrainType.STAIRS_UP || cell.rememberedTerrain === TerrainType.STAIRS_DOWN || cell.rememberedTerrain === TerrainType.DUNGEON_PORTAL) {
         return { ...visual, color: '#ffffff', bgColor: visual.bgColor === null ? null : 0x222222 };
     }
@@ -307,6 +310,8 @@ export function cellAppearance(cell: Cell, ctx: CellAppearanceContext): TerrainV
     let { char, color, bgColor } = !cell.isVisible && cell.rememberedAppearance
         ? cell.rememberedAppearance
         : layeredTerrainAppearance(cell, ctx.depth ?? 1, remembered ? cell.rememberedLayers : cell.layers, cell.isVisible ? ctx.terrainRandomValues : undefined);
+
+    if(cell.isVisible){const structure=structureAppearance(cell);if(structure){char=structure.char;color=structure.color;}}
 
     // Apply Environmental Overrides (Gas) —— 燃烧覆盖层已移除（UI-1 第 1 条：
     // 火视觉 = 地形本体；Grid.isBurning 仍供气体的 !isBurning 守卫使用）。

@@ -65,7 +65,7 @@ describe('4a-4 foundation owned regions / movement bounds milestone', () => {
         expect(validRegionPlacement(placement)).toBe(true);
         for (const bad of [null, { ...placement, script: 'dig' }, { ...placement, bounds: { ...placement.bounds, width: 0 } },
             { ...placement, bounds: { ...placement.bounds, x: 0.5 } }, { ...placement, bounds: { ...placement.bounds, width: 1024 } }]) expect(validRegionPlacement(bad)).toBe(false);
-        const region = { ...placement, id: 100, owner: 'fixture', depth: 1 };
+        const region = { ...placement, revision: 0, id: 100, owner: 'fixture', depth: 1 };
         expect(validOwnedRegions([region], ['fixture'])).toBe(true);
         expect(validOwnedRegions([region], [])).toBe(false);
         expect(validOwnedRegions([region, { ...region, id: 101, instanceKey: 'other' }], ['fixture'])).toBe(false);

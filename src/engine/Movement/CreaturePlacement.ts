@@ -1,3 +1,4 @@
+import { composedCellFlags } from '../Map/CellProperties';
 import { assertNativeSpatial, footprintContains, footprintOf, canFitAt } from './CreatureSpatial';
 import { DijkstraMap, MAX_DISTANCE } from '../Map/Pathfinding';
 /** W-11: destination policy is separate from the displacement commit.
@@ -32,7 +33,7 @@ export function canPlaceCreature(world: Pick<PlacementWorld, 'grid' | 'player' |
     assertNativeSpatial(target);
     if (target.spatial && walkingSecretDoor) return canFitAt(world, target, at, { allowsTerrain: p => {
         const cell = world.grid.getCell(p.x, p.y);
-        return !!cell && !(cell.layers.reduce((f, tile) => f | (tile === TerrainType.SECRET_DOOR ? 0 : TERRAIN_FLAGS[tile].flags), 0) & T_OBSTRUCTS_PASSABILITY);
+        return !!cell && !(composedCellFlags(cell,cell.layers.reduce((f, tile) => f | (tile === TerrainType.SECRET_DOOR ? 0 : TERRAIN_FLAGS[tile].flags), 0)) & T_OBSTRUCTS_PASSABILITY);
     } });
     return canFitAt(world, target, at, { allowsTerrain: p => !(cellTerrainFlags(world.grid, p.x, p.y) & T_OBSTRUCTS_PASSABILITY)
         || !!(walkingSecretDoor && world.grid.getCell(p.x, p.y)?.layers.includes(TerrainType.SECRET_DOOR)) });
@@ -94,7 +95,7 @@ export function teleportCandidates(world: PlacementWorld, target: Creature, resp
     const threshold = Math.floor(grid.width / 2);
     const hasFarCell = distances.some(column => column.some(d => d > threshold));
     const fov = new FOVSys(grid).computeFOVMask(target.loc.x, target.loc.y, grid.width,
-        cell => cell.layers.some(t => (TERRAIN_FLAGS[t].flags & T_OBSTRUCTS_VISION) !== 0));
+        cell => !!(composedCellFlags(cell)&T_OBSTRUCTS_VISION));
     const result: Pos[] = [];
     for (let x = 0; x < grid.width; x++) for (let y = 0; y < grid.height; y++) {
         if (hasFarCell && distances[x]![y]! <= threshold) continue;

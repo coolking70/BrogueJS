@@ -1,15 +1,22 @@
+import { cellProjectileFlags, structureBlocking } from '../Map/CellProperties';
 import { isSubmerged, hiddenBySubmersion } from '../Movement/Submersion';
 import type { Pos } from '../../types';
 import type { Creature } from '../../entities/Creature';
 import { Monster, monstersAreEnemies, monstersAreTeammates } from '../../entities/Monster';
 import { Player } from '../../entities/Player';
-import { DungeonLayer, type Grid } from '../Map/Grid';
+import { DungeonLayer, type Grid, type Cell } from '../Map/Grid';
 import { cellTerrainFlags, cellTerrainMechFlags } from '../Map/DungeonFeature';
 import { T_IS_FLAMMABLE, T_OBSTRUCTS_PASSABILITY, T_OBSTRUCTS_VISION, TM_REFLECTS_BOLTS } from '../Map/TerrainCatalog';
 import { BoltEffect, boltStatusId, boltTargetCategory, createBoltResult, type BoltConfig, type BoltHit, type BoltReflection } from './Bolt';
 import { collectBodyTargets } from '../Movement/CreatureSpatial';
 import { projectileReflects, randomReflectionOffset } from './BoltReflection';
 import { CE_BOLT_CATALOG, CEBoltFlags as F } from './BoltCatalog';
+
+function trajectoryFlags(cell:Cell,bolt:BoltConfig):number {
+    const physical=[BoltEffect.BLINKING,BoltEffect.DISTANCE_ATTACK,BoltEffect.POISON_DART].includes(bolt.effect);
+    const flags=cellProjectileFlags(cell,!physical);
+    return bolt.effect===BoltEffect.BLINKING&&structureBlocking(cell)?.movement?flags|T_OBSTRUCTS_PASSABILITY:flags;
+}
 
 const BLOCKS = T_OBSTRUCTS_PASSABILITY | T_OBSTRUCTS_VISION;
 const FP = 1 << 16; // CE Rogue.h FP_FACTOR; C integer divisions truncate toward zero.
@@ -62,7 +69,7 @@ export function boltLine(grid: Grid, from: Pos, to: Pos, bolt?: BoltConfig, worl
         let score = 0, unknown = false;
         for (const p of path) {
             const cell = grid.getCell(p.x, p.y)!;
-            const terrain = cellTerrainFlags(grid, p.x, p.y);
+            const terrain = trajectoryFlags(grid.getCell(p.x,p.y)!,bolt);
             const occupant = world.creatureAt(p);
             const invisible = occupant?.hasStatus('invisible') || (occupant instanceof Monster && occupant.isTrulyInvisible());
             // CE monsterIsHidden ignores telepathy but gas outlines invisible
@@ -189,7 +196,7 @@ export function traceBolt(grid: Grid, bolt: BoltConfig, from: Pos, aim: Pos, wor
         const pos = pending[next++]!;
         const occupant = world.creatureAt(pos);
         const creature = isSubmerged(occupant) ? undefined : occupant;
-        const blocked = !!(cellTerrainFlags(grid, pos.x, pos.y) & BLOCKS);
+        const blocked = !!(trajectoryFlags(grid.getCell(pos.x,pos.y)!,bolt) & BLOCKS);
         if (!path.length && bolt.effect === BoltEffect.BLINKING && (blocked || (creature && !piercing))) break;
         path.push(pos);
         const firstContact = !creature?.spatial || collectBodyTargets({ grid, monsters: [creature] }, [pos],
@@ -202,19 +209,19 @@ export function traceBolt(grid: Grid, bolt: BoltConfig, from: Pos, aim: Pos, wor
         if (hit) hits.push(hit);
         if (onCell?.(pos, hit) === false) break;
         if (creature && !piercing) break;
-        let stillBlocked = !!(cellTerrainFlags(grid, pos.x, pos.y) & BLOCKS);
-        if (tunneling && stillBlocked) {
+        let stillBlocked = !!(trajectoryFlags(grid.getCell(pos.x,pos.y)!,bolt) & BLOCKS);
+        if (tunneling && (stillBlocked || structureBlocking(grid.getCell(pos.x,pos.y)!)?.movement)) {
             // Previews are read-only: predict excavation/budget, without DF,
             // diagonal repair or reflection RNG. Execution re-reads live flags.
             const opened = hooks?.onTunnel ? hooks.onTunnel(pos, false) : !grid.isImpregnable(pos.x, pos.y);
             if (opened && --tunnelBudget <= 0) break;
-            stillBlocked = hooks?.onTunnel ? !!(cellTerrainFlags(grid, pos.x, pos.y) & BLOCKS)
+            stillBlocked = hooks?.onTunnel ? !!(trajectoryFlags(grid.getCell(pos.x,pos.y)!,bolt) & BLOCKS)
                 : !opened || pos.x === 0 || pos.y === 0 || pos.x === grid.width - 1 || pos.y === grid.height - 1;
         }
         if (stillBlocked) break;
         const ahead = pending[next];
         if (!ahead) break;
-        const aheadBlocked = !!(cellTerrainFlags(grid, ahead.x, ahead.y) & BLOCKS);
+        const aheadBlocked = !!(trajectoryFlags(grid.getCell(ahead.x,ahead.y)!,bolt) & BLOCKS);
         if ((flags & F.HALTS_BEFORE_OBSTRUCTION) && (aheadBlocked || (!piercing && world.creatureAt(ahead) && !isSubmerged(world.creatureAt(ahead))))) break;
         if (canReflect && aheadBlocked && ((cellTerrainMechFlags(grid, ahead.x, ahead.y) & TM_REFLECTS_BOLTS)
             || (tunneling && grid.isImpregnable(ahead.x, ahead.y)))

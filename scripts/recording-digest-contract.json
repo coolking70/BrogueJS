@@ -158,5 +158,22 @@
   ],
   "derivedSessionServices": {
     "StatPipeline": "Excluded: cache, diagnostics, actorStatRevision, frozen provider views and hypothetical proposal contexts. Persist only ExtensionSnapshot.foundation.stats in extensions dirty domain."
+  },
+  "world5Leaves": {
+    "foundation": 9,
+    "root": "Metadata and clocks excluding the seven per-level economic arrays. Null world keeps root:null.",
+    "perLevel": [
+      "structures",
+      "restPoints",
+      "stations",
+      "nodes",
+      "containers",
+      "orders",
+      "tickets"
+    ],
+    "key": "<array>.<dungeon depth>; empty array retains <array>:[]",
+    "ordering": "Leaf keys in Unicode code-point order; row order preserved from strict root codec.",
+    "eventCache": "Explicit structure publication revisions + cached canonical UTF-8 strings; world clock never invalidates clean structures leaves.",
+    "fullOracle": "256/2048 full projection bypasses event caches; native and knowledge always recomputed."
   }
 }

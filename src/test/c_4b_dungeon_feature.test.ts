@@ -1148,7 +1148,11 @@ describe('C-4b F：留痕（本轮明确不做的事；C-4c 翻转）', () => {
         expect(creatureSource).toContain('const hpBefore = this.hp;');
         expect(creatureSource).toContain('spawnCreatureBlood(grid, this.loc, this.bloodType, damage, hpBefore, this.bloodInvulnerable())');
         expect(creatureSource).toContain('spawnCreatureBlood(grid, contact, this.bloodType, damage, hpBefore, this.bloodInvulnerable())');
-        expect(readFileSync(join(srcDir, 'entities/Monster.ts'), 'utf8')).toContain('super.takeDamage(damage, true, grid, beforeHpLoss)');
+        // 5A2-S already added damage kind/resistance arguments; preserve the
+        // callback-before-HP-loss guard for both extension and classic paths.
+        const monsterSource=readFileSync(join(srcDir, 'entities/Monster.ts'), 'utf8');
+        expect(monsterSource).toContain('super.takeDamage(damage, true, grid, beforeHpLoss, damageKind, ignoresResistance)');
+        expect(monsterSource).toContain("super.takeDamage(damage, true, grid, beforeHpLoss, 'other', ignoresResistance)");
         expect(readFileSync(join(srcDir, 'engine/Combat/CreatureFeatures.ts'), 'utf8')).toContain('catalogFeature(bloodType as DF)');
         const pattern = /spawnDungeonFeature|spawnMapDF|fillSpawnMap|levelIsDisconnectedWithBlockingMap|catalogFeature|createSpawnMap|DUNGEON_FEATURE_CATALOG|DF_MISSING_TILES/;
         // T-1（AI-1 登记）：原实现只剥 `//` 行注释，写在 /* */ 块注释里的

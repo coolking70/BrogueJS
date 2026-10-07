@@ -6,7 +6,7 @@
   "commands": 402,
   "commandsHash": "7ce36f0880ff9c7e9c26eb6ff4ace7216ca247b6ef73fababc147e3c27270d51",
   "nativeWorldHash": "84d5a3103bf0d96151ffa1ae84fb6b582cfc20f0912ae665eafdd2b581edc93c",
-  "extensionsHash": "81b36977e975059b6e689388cd7bd9d41eb9ae1817f5c997784e8965d05d61f0",
+  "extensionsHash": "fafd76e8260b6b4fa7d9384fac305eda2335ce6e4b026849f89258b974afb0da",
   "rng": {
     "version": 2,
     "algorithm": "brogue-web-ranval32-uint64-level-v2",
@@ -39,7 +39,8 @@
     "guard": "return-to-spawn",
     "id": 144,
     "owner": "giants",
-    "depth": 7
+    "depth": 7,
+    "revision": 0
   },
   "state": {
     "schema": 1,

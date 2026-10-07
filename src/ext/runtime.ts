@@ -1,3 +1,4 @@
+import { FOUNDATION_STRUCTURE_RULES } from './structureSchema';
 import { StatPipeline } from '../engine/Stats/StatPipeline';
 import { NATIVE_STAT_KEYS, NATIVE_STAT_DAG } from '../engine/Stats/NativeStatKeys';
 import { MaterializedStats, validateMaterializedStats } from '../engine/Stats/MaterializedStats';
@@ -7,7 +8,7 @@ import type { PairFacts, StatQuery } from './stats';
 import { markRecordingRoot, recordingRootRevision } from './recordingRevisions';
 import { World5Error } from './world5';
 import { c5Hash } from './worldJson';
-import { isWorld5Fixture, isWorld5WorkFixture, world5FixtureConfiguration } from './world5Fixture';
+import { isWorld5Fixture, isWorld5StructureFixture, isWorld5WorkFixture, world5FixtureConfiguration } from './world5Fixture';
 import { FOUNDATION_PROTOCOL } from './descriptor';
 import { resolveActorQueryScope } from './actorQuery';
 import type { ActorActionProductionWorld } from '../engine/Core/ActorActionProduction';
@@ -22,7 +23,7 @@ import { validGenerationContribution } from './generation';
 import type { Creature } from '../entities/Creature';
 import { Player } from '../entities/Player';
 import { allocateEntityId, getNextEntityId, restoreNextEntityId } from '../entities/Creature';
-import { validWorldPlacement, validWorldSnapshot, publicInteractable, sortInteractables, WORLD_INTERACTABLE_LIMIT, type WorldInteractable, type WorldInteractablePlacement, type WorldInteractablePlacementResult, type WorldInteractionSnapshot, type WorldInteractionValidation } from './world';
+import { setOwnedRegions, validWorldPlacement, validWorldSnapshot, publicInteractable, sortInteractables, WORLD_INTERACTABLE_LIMIT, type WorldInteractable, type WorldInteractablePlacement, type WorldInteractablePlacementResult, type WorldInteractionSnapshot, type WorldInteractionValidation } from './world';
 import type { ExtensionRegistry } from './registry';
 import type { ExtensionModule, ExtensionContext, ExtensionManifest, ExtensionSnapshot, HookEvents, HookName, Json, ActorFacts, ResourceCommit, ReadonlyJson, CharacterResources, CharacterResourceCommit, ExtensionRuleContext, ItemGrowthInput, ExtensionViewDescriptor, ExtensionModuleView, ExtensionCreationResources, ControlledCommandPreparationContext, PreparedControlledCommand } from './types';
 import { creatureView } from './types';
@@ -1520,7 +1521,7 @@ export class ExtensionRuntime {
     publicActorTags(id: number): readonly string[] {
         return this.modules.flatMap(module => (module.publicActorTags ?? []).filter(t => this.components[String(id)]?.[`${module.id}:${t.component}`] !== undefined).map(t => `${module.id}.${t.tag}`));
     }
-    get hasOwnedRegions(): boolean { return !this.disposed && this.modules.some(module => module.ownedRegions); }
+    get hasOwnedRegions(): boolean { return !this.disposed && (!!this.world.regions?.length || this.modules.some(module => module.ownedRegions)); }
     /** Native generation-only capability; not exposed to hook/command contexts.
      * Full batch preflight precedes IDs and ledger writes. Nested aborts restore
      * both geometry and allocator, even after an inner transaction commits. */
@@ -1543,7 +1544,7 @@ export class ExtensionRuntime {
         if (!requests.length) return Object.freeze([]);
         for (const frame of this.generations) frame.placementNextEntityId ??= getNextEntityId();
         const placed = [...requests].sort((a, b) => a.instanceKey < b.instanceKey ? -1 : 1)
-            .map(request => ({ ...structuredClone(request), id: allocateEntityId(), owner, depth }));
+            .map(request => ({ ...structuredClone(request), id: allocateEntityId(), owner, depth, revision:0 }));
         this.world.regions = [...existing, ...placed].sort((a, b) => a.id - b.id);
         return freezeView(structuredClone(placed));
     }
@@ -1650,8 +1651,8 @@ export class ExtensionRuntime {
         return module ? { moduleId: module.id, state: this.states[module.id]! as unknown as import('./actorActions').ProductionActorAttackState, definition: module.actorActions!.definitions as unknown as import('./actorActions').ActorAttackDefinitions } : null;
     }
     isWorldWorkFixture(owner:string):boolean { const module=this.modules.find(m=>m.id===owner);return !!module&&isWorld5WorkFixture(module); }
-    worldDefinitionPacks(): readonly import('./worldSdk').WorldDefinitionPack[] { return this.modules.flatMap(m=>m.worldDefinitions?[m.worldDefinitions]:[]); }
-    worldDefinitionFingerprints():Record<string,string> {return Object.fromEntries(this.modules.filter(m=>m.worldDefinitions).map(m=>[m.id,`sha256:${c5Hash(m.worldDefinitions)}`]));}
+    worldDefinitionPacks(): readonly import('./structureTypes').WorldDefinitionPack[] { return this.modules.flatMap(m=>m.worldDefinitions?[m.worldDefinitions]:[]); }
+    worldDefinitionFingerprints():Record<string,string> {return Object.fromEntries(this.modules.filter(m=>m.worldDefinitions).map(m=>[m.id,`sha256:${c5Hash(m.worldDefinitions!.structures!==undefined||m.worldDefinitions!.restPoints!==undefined?{pack:m.worldDefinitions,foundationStructureRules:FOUNDATION_STRUCTURE_RULES}:m.worldDefinitions)}`]));}
     worldWorkCommand(owner:string,action:string): import('./worldSdk').WorldWorkCommand | undefined { return this.modules.find(m=>m.id===owner)?.worldWorkCommands?.[action as import('./worldSdk').CraftingAction]; }
     worldWorkTransaction<T>(work:()=>T):T { return this.transaction(work); }
     worldWorkEntities(): readonly WorldInteractable[] { return this.world.entities; }
@@ -1662,6 +1663,11 @@ export class ExtensionRuntime {
         if (!this.modules.some(m=>m.id===entity.owner&&m.worldDefinitions) || this.world.entities.length>=WORLD_INTERACTABLE_LIMIT) throw new Error('C5_BUDGET');
         markRecordingRoot(this);const placed={...entity,id:allocateEntityId()};this.world.entities.push(placed);this.world.entities.sort((a,b)=>a.id-b.id);return placed;
     }
+    isWorldStructureFixture(owner:string):boolean {const module=this.modules.find(m=>m.id===owner);return !!module&&isWorld5StructureFixture(module);}
+    worldStructureRegions(): readonly OwnedRegion[] { return this.world.regions??[]; }
+    worldStructureSetRegions(regions:readonly OwnedRegion[]):void { markRecordingRoot(this);setOwnedRegions(this.world,[...regions]); }
+    worldStructureRelocateInteractable(id:number,at:{x:number;y:number}):void { const e=this.world.entities.find(e=>e.id===id);if(!e)throw new Error('C5_UNKNOWN_TARGET');markRecordingRoot(this);Object.assign(e,at); }
+    worldStructureRemoveInteractable(id:number):void { markRecordingRoot(this);this.world.entities=this.world.entities.filter(e=>e.id!==id); }
     worldWorkFact(value: Omit<import('./worldSdk').CommittedWorkFact,'factId'>, participant=true): import('./worldSdk').CommittedWorkFact {
         if (this.nextFactId>=Number.MAX_SAFE_INTEGER) throw new Error('C5_OVERFLOW');
         const fact=freezeView({...value,factId:this.nextFactId++});const module=this.modules.find(m=>m.id===fact.owner);
@@ -1759,7 +1765,7 @@ export class ExtensionRuntime {
             || typeof foundation.deaths !== 'object') throw new Error('Invalid extension foundation snapshot');
         if(foundation.stats!==undefined)validateMaterializedStats(foundation.stats);
         if (foundation.world.entities.some(entity => !this.modules.find(module => module.id === entity.owner)?.worldInteractables && !this.modules.find(module => module.id === entity.owner)?.worldDefinitions)
-            || foundation.world.regions?.some(region => !this.modules.find(module => module.id === region.owner)?.ownedRegions)
+            || foundation.world.regions?.some(region => {const m=this.modules.find(module => module.id === region.owner);return region.campSlotId!==undefined?!m?.worldDefinitions:!m?.ownedRegions;})
             || (foundation.world.gate && !this.modules.find(module => module.id === foundation.world.gate!.owner)?.interactionCommands?.length))
             throw new Error('Undeclared world interaction capability');
         for (const [id, fact] of Object.entries(foundation.deaths)) {

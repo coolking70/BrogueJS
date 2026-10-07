@@ -9,6 +9,7 @@ import ts from 'typescript';
 import { parse as parseSfc } from '@vue/compiler-sfc';
 import { parse as parseTemplate } from '@vue/compiler-dom';
 import postcss from 'postcss';
+import { checkStructureReaders } from './check-structure-readers.mjs';
 import { resolveTestSuites } from './test-discovery.mjs';
 
 const slash = value => value.replace(/\\/g, '/');
@@ -285,7 +286,7 @@ export function checkModuleBoundaries(root = process.cwd()) {
         for (const target of referenceTargets(root, file, reference, aliases)) {
             const relativeSource=slash(path.relative(root,file));
             if(target.startsWith('src/ext/testing/')&&!/^(?:src\/test\/|src\/ext\/testing\/)/.test(relativeSource)&&!/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource))report(file,line,'test-only world adapter referenced by production',reference,target);
-            if(moduleOwner(relativeSource)&&!/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource)&&/^src\/engine\/(?:Core\/(?:WorldWork[^/]*|WorldMaterialTransfer|WorldItemRoots|ActorActionsRoot)|Items\/WorldItems)(?:\.ts)?$/.test(target))report(file,line,'trusted world authority referenced by content',reference,target);
+            if(moduleOwner(relativeSource)&&!/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource)&&/^src\/engine\/(?:Core\/(?:WorldWork[^/]*|WorldMaterialTransfer|WorldItemRoots|ActorActionsRoot)|Map\/StructureWorld|Items\/WorldItems)(?:\.ts)?$/.test(target))report(file,line,'trusted world authority referenced by content',reference,target);
             if (moduleOwner(relativeSource) === 'crafting' && !/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource)
                 && target.startsWith('src/') && moduleOwner(target) !== 'crafting'
                 && !/^src\/ext\/(?:worldSdk|types|descriptor|fingerprint|world)(?:\.ts)?$/.test(target)
@@ -414,6 +415,7 @@ export function checkModuleBoundaries(root = process.cwd()) {
     }
     try { resolveTestSuites(root); }
     catch (error) { report(path.join(root, 'scripts/test-suites.json'), 1, `test ownership: ${error.message}`); }
+    if(existsSync(path.join(root,'scripts/structure-readers.json')))issues.push(...checkStructureReaders(root));
     return issues.sort();
 }
 

@@ -137,7 +137,7 @@ export function validateWorldWorkRoots(w: World5Snapshot, owners: readonly strin
     identity(s);
     uint(s.interactableId, 'station', 1);
     uint(s.revision, 'revision');
-    if (interactables.has(s.interactableId) || s.boundComponentId !== null) fail('station');
+    if (interactables.has(s.interactableId) || (s.boundComponentId !== null && (!Number.isSafeInteger(s.boundComponentId)||s.boundComponentId<1))) fail('station');
     interactables.add(s.interactableId);
   }
   const actorIds = new Set<number>();

@@ -2,11 +2,11 @@
   "empty": {
     "newGame": {
       "graph": {
-        "sha256": "b991f5ac6947801ac2c72b87bbbaf49bce02e4b4da487eea53c80104d8babf64",
+        "sha256": "98240369732eb5e85a5967b997bd7bc9c560c523548039863b48d665cdb3be03",
         "objects": 22988
       },
       "snapshot": {
-        "sha256": "fd4b781d048ce2df3f137273e38eebdebd7a6fd9c99eaa0e99063e297fb1e118",
+        "sha256": "bf4dc0cfff8863dbbc2ca3e07fd74e948cd2970983eae1000a9d4ffd7263d901",
         "objects": 11254
       },
       "rng": {
@@ -42,11 +42,11 @@
     },
     "commands": {
       "graph": {
-        "sha256": "0f05333c2d601c4ec016ccc13a0dcceea35fe923cd639a57f7344df40d29e372",
+        "sha256": "baff9d42249a70db3a82b91f454c0cfbc69ee599254133f75b72c455031f17f5",
         "objects": 23025
       },
       "snapshot": {
-        "sha256": "b7c533025e77dd7bbe94727018e5330efe8caab340624d0bcf7e771221fe03ae",
+        "sha256": "172f1a4f7d853fe921e42f7abfb79f97f7474e57178a51a0249eace726d0262c",
         "objects": 11287
       },
       "rng": {
@@ -82,11 +82,11 @@
     },
     "loaded": {
       "graph": {
-        "sha256": "f16a60b2d80847de3d9ac355c01a6b1d2871ce936e18dca1597894fb9bac564f",
+        "sha256": "168a10aeff532a091dfde132f8c375e8190b8b50eda5f7a36ace468f818f9a51",
         "objects": 20648
       },
       "snapshot": {
-        "sha256": "b7c533025e77dd7bbe94727018e5330efe8caab340624d0bcf7e771221fe03ae",
+        "sha256": "172f1a4f7d853fe921e42f7abfb79f97f7474e57178a51a0249eace726d0262c",
         "objects": 11287
       },
       "rng": {
@@ -122,11 +122,11 @@
     },
     "continued": {
       "graph": {
-        "sha256": "0dfe21f1d43818ac3bca7b6aa57eee0d05e97f6823747446a01da7ba485e491a",
+        "sha256": "e72cd683a39c47ed195ebd41f0d2f8c4177f555e5010c922e48d54e5909ca2de",
         "objects": 23035
       },
       "snapshot": {
-        "sha256": "5aeebaac90a42c16f028848f7476c4cc53888f3f78d52849c7b8ef9e275fd9b0",
+        "sha256": "0bab085ebed160b7221594bdfc27028189222cef3db17efe41d335760f0a901e",
         "objects": 11297
       },
       "rng": {
@@ -162,11 +162,11 @@
     },
     "replayed": {
       "graph": {
-        "sha256": "5fcc3c7b35b2693962e6cb7dc8944a8601934a6c8cbc14ff701d597e8ffa23f2",
+        "sha256": "77317b35ded8afd44be7725c9e0cb72c30c1006b764732a5aea989ac671379c5",
         "objects": 23033
       },
       "snapshot": {
-        "sha256": "b7c533025e77dd7bbe94727018e5330efe8caab340624d0bcf7e771221fe03ae",
+        "sha256": "172f1a4f7d853fe921e42f7abfb79f97f7474e57178a51a0249eace726d0262c",
         "objects": 11287
       },
       "rng": {
@@ -202,11 +202,11 @@
     },
     "seek": {
       "graph": {
-        "sha256": "8e487735f9700c3fc752555dfbf5831a885fa1a9d7cf1d98f3ee930382bfb879",
+        "sha256": "8c363378fbc2b32004a16c0e6118d6bcad8f197d590692362d8a839bc943b6a9",
         "objects": 20656
       },
       "snapshot": {
-        "sha256": "da16f8c42d6088dec13c7b13a85b6cf846f6740919d8e6e7f4b2f0e0dbc4e86c",
+        "sha256": "fddb203d41295497f177bb2225747ebd5151fdc7188e5e60f790162bd49110f6",
         "objects": 11266
       },
       "rng": {
@@ -242,11 +242,11 @@
     },
     "combat": {
       "graph": {
-        "sha256": "0130c87eaffcb14a562f897b93768b7277cf3451241f2e8b367bda9a100236d9",
+        "sha256": "21e3fb315779994f36ca9602918578a723f7a11200ecb9172b5d270b51080c89",
         "objects": 22674
       },
       "snapshot": {
-        "sha256": "d7a7f94ba98eaa2c22479db41dc1d9f72d577448c91d6d055e6d579395751476",
+        "sha256": "4f5a05b36cbdf32462ea7b173dd323c8552f9a89dc882d3c042fa1e287b53d5d",
         "objects": 5714
       },
       "rng": {
@@ -298,7 +298,7 @@
     },
     "knockback": {
       "graph": {
-        "sha256": "d4c688850cced1284ccc36f559d714c66190d79c923d88eb7de4ffec63f19cff",
+        "sha256": "9b3aabd8f2effc32544453aed8bd00009b1676d84542472ccb03c3d2795ea22a",
         "objects": 22674
       },
       "snapshot": {
@@ -354,11 +354,11 @@
     },
     "blink": {
       "graph": {
-        "sha256": "70c2d2ed248d0167fa75f47184436c5d4e9af1cc4067172940561decb94c764e",
+        "sha256": "3b2f0624af7c0b5caf182be6141dcab97dcbd5ac173a4326324aefe4af5d6294",
         "objects": 22734
       },
       "snapshot": {
-        "sha256": "4e22d714e1334747d53365cf8e1d5773364616df08e9adc1630650035ace7b0e",
+        "sha256": "4613445f5621b97a8a1f8f5908d5259dfd768e17a013391cda3ac70b4dbea31c",
         "objects": 5772
       },
       "rng": {
@@ -437,7 +437,7 @@
     },
     "clone": {
       "graph": {
-        "sha256": "2cfa1208187a74ba81b19f9aac83553308e18e80b2e8d58167b25324212dc38b",
+        "sha256": "9606988113f03a065cf681cde334ed90f0e0654a230729dfb17619c7cca3f2ed",
         "objects": 22745
       },
       "snapshot": {
@@ -520,7 +520,7 @@
     },
     "summon": {
       "graph": {
-        "sha256": "41755c9423605ca5f7eb2cba1376b5fbfd13693ccf062abf4fb629828632bf9c",
+        "sha256": "ed407b9ffc6d7321f6dcde321b3164698d0173c8a6ad2f6673048b72e4941b8b",
         "objects": 22789
       },
       "snapshot": {
@@ -603,7 +603,7 @@
     },
     "trap": {
       "graph": {
-        "sha256": "e6e20a3c0fceeb9278de822eca6cf572e15383346a851cbf00a7796afee4180a",
+        "sha256": "6fbeeddd860ecc543e240e54fb976c14574bbc72351ac7ebfbd147439b54e6f6",
         "objects": 22790
       },
       "snapshot": {
@@ -686,11 +686,11 @@
     },
     "level": {
       "graph": {
-        "sha256": "9cf9389574ab605f16b200aa4c913469be8c50f766475be9474ba8f3ccd87269",
+        "sha256": "b28fa14cf4f68bd673e4dcf07b2637c3c76c91c77c2a3ab6e34dc00e6e8956e2",
         "objects": 44770
       },
       "snapshot": {
-        "sha256": "80d64b737c91cb36b74db674580e2d6cd9e7c98796858d28292a5e91bce7eeb7",
+        "sha256": "e561a5ec67d407138b577d1d3f77815d8d8d7cfbd3eb54d686c28274a45753ca",
         "objects": 21139
       },
       "rng": {
@@ -743,12 +743,12 @@
   "growth": {
     "newGame": {
       "graph": {
-        "sha256": "a613b90e7ba05af8f8247d75233f7a106899538995fa39d323b3d2523c0e5acc",
-        "objects": 24418
+        "sha256": "94197b8565bfc58fb6f63fdafc3e4add4b4405ba178c747c62bc28b9c14631b1",
+        "objects": 24436
       },
       "snapshot": {
-        "sha256": "4c2164105bc63a8fbbe4e28f3fd8e631c31ad46d3afd94bba4b5771d205ad91a",
-        "objects": 11300
+        "sha256": "7f88ccfedc6fe44010919cbf86e1866b99e298f2bb6496082b58282da3d98d73",
+        "objects": 11299
       },
       "rng": {
         "version": 2,
@@ -783,12 +783,12 @@
     },
     "commands": {
       "graph": {
-        "sha256": "c5ef91259f5a5ac437900c55964ef15c2bf5f38c5b131cbae91584af91ed74ae",
-        "objects": 24453
+        "sha256": "8c502f121b804b116d82369dc085562bb67467f8f9287840564534bd709b4b4e",
+        "objects": 24471
       },
       "snapshot": {
-        "sha256": "f2d17a6f11ede70eb6aee86cfecdc234a4ebca256ad744ae9f3232ac7bd81651",
-        "objects": 11331
+        "sha256": "70d1f7c04749e96b0306ad84cf963e44f9f47d8be92e7774f4a84713c5f6676d",
+        "objects": 11330
       },
       "rng": {
         "version": 2,
@@ -823,12 +823,12 @@
     },
     "loaded": {
       "graph": {
-        "sha256": "10153de449758c3cf94a6926e2ba09889efe424d753f5c345f30a17ed4ce4a3f",
-        "objects": 22076
+        "sha256": "833aa0edf4289843084bae52a67bbab807d04887a484632e630aa616f7402dcd",
+        "objects": 22094
       },
       "snapshot": {
-        "sha256": "f2d17a6f11ede70eb6aee86cfecdc234a4ebca256ad744ae9f3232ac7bd81651",
-        "objects": 11331
+        "sha256": "70d1f7c04749e96b0306ad84cf963e44f9f47d8be92e7774f4a84713c5f6676d",
+        "objects": 11330
       },
       "rng": {
         "version": 2,
@@ -863,12 +863,12 @@
     },
     "continued": {
       "graph": {
-        "sha256": "bd40d34a44b62839624c34da090baafb3e1af297e35b63e74bcc2b35accdeb84",
-        "objects": 24463
+        "sha256": "c46f9a55181896c9d3bc1c1772f652f67d697b8d3ca5f2d4cf695439e09b5bb9",
+        "objects": 24481
       },
       "snapshot": {
-        "sha256": "f6c9a471618a178ea9f8622003b8ac710a8c0d23c46cea3f3802b244b3496a1c",
-        "objects": 11341
+        "sha256": "83c7f9fd46f4d956b01cf599a074c10e959da7806f753837edd67880bb84ca4e",
+        "objects": 11340
       },
       "rng": {
         "version": 2,
@@ -903,12 +903,12 @@
     },
     "replayed": {
       "graph": {
-        "sha256": "0bf17142fbbdddd1793088986b1bf36ef738d89d713242e9a524049b5a2a7097",
-        "objects": 24463
+        "sha256": "bffa1aace4460898b4946dcd2230bdecaa83b0c1c5087a5fef28bceb2596e32b",
+        "objects": 24481
       },
       "snapshot": {
-        "sha256": "f2d17a6f11ede70eb6aee86cfecdc234a4ebca256ad744ae9f3232ac7bd81651",
-        "objects": 11331
+        "sha256": "70d1f7c04749e96b0306ad84cf963e44f9f47d8be92e7774f4a84713c5f6676d",
+        "objects": 11330
       },
       "rng": {
         "version": 2,
@@ -943,12 +943,12 @@
     },
     "seek": {
       "graph": {
-        "sha256": "81906770931a4ed01fedb9f0413188c92a5afd44fb0c87f6084373957c32994e",
-        "objects": 22086
+        "sha256": "9d8ed28132ea9408f2749543aa8edcf1833e15bdbd14a4f74ffae225edede851",
+        "objects": 22104
       },
       "snapshot": {
-        "sha256": "4c2164105bc63a8fbbe4e28f3fd8e631c31ad46d3afd94bba4b5771d205ad91a",
-        "objects": 11300
+        "sha256": "7f88ccfedc6fe44010919cbf86e1866b99e298f2bb6496082b58282da3d98d73",
+        "objects": 11299
       },
       "rng": {
         "version": 2,
@@ -983,12 +983,12 @@
     },
     "combat": {
       "graph": {
-        "sha256": "9af6408e6ddd719abc3fbe397686d120b99f4c63e6aa277c84aedb4412111d88",
-        "objects": 24124
+        "sha256": "9f579dfe73fe5fc523891a3f8b96acc3263f4e262a37d39310fccc61ccc2debc",
+        "objects": 24141
       },
       "snapshot": {
-        "sha256": "36901c35d57450daf30ea2d0d0eaccf934ca83154082c46361c8e61865eb09a0",
-        "objects": 5780
+        "sha256": "5546997d9b013fb148ac0a1aed8f8c0b6dea1e2e80cbdc103a137473677b282f",
+        "objects": 5778
       },
       "rng": {
         "version": 2,
@@ -1039,12 +1039,12 @@
     },
     "knockback": {
       "graph": {
-        "sha256": "25598d3f2dc20c51bf486df3c6a104735f9c6deab04edb100cbda6bf6f49ea54",
-        "objects": 24124
+        "sha256": "e63be55a06034533e6de0abb8fba227e4d246f31736dd4fc5e848c48f0d5fa2c",
+        "objects": 24141
       },
       "snapshot": {
-        "sha256": "557c33abe743eb17062009a948aab20669d68fa224b2cb1a20ccb3ca0f860e2a",
-        "objects": 5745
+        "sha256": "a84f24d41792d8f39856bbe34022fc1c38ae00673534122a7cf6a73b94b7d967",
+        "objects": 5743
       },
       "rng": {
         "version": 2,
@@ -1095,12 +1095,12 @@
     },
     "blink": {
       "graph": {
-        "sha256": "57b48f4992a4ecbfea3b130d9e480513ecdf04110523beb81199fe8d15d9481a",
-        "objects": 24184
+        "sha256": "fc80a69084a1aac4707c3d343dfffd3699c2d271367909c4fb9561b357178b66",
+        "objects": 24201
       },
       "snapshot": {
-        "sha256": "509de20fcd4a1ff7c275dde727ac754cf516a3b9d4e6e8d94c6308f1a0fb1bce",
-        "objects": 5838
+        "sha256": "d3cde112b2d12c44098ca30a4e7b8bd002ac293a26eefa706117d46204cce1b8",
+        "objects": 5836
       },
       "rng": {
         "version": 2,
@@ -1178,12 +1178,12 @@
     },
     "clone": {
       "graph": {
-        "sha256": "293644b1e607a23a46e0fcf8f7e07b7f442223e7c16d854a635c069834ebc7b4",
-        "objects": 24217
+        "sha256": "f6e1cec003dc723748cc49ea56a3776ce09e36ad6a2c853f8358232de84e950c",
+        "objects": 24233
       },
       "snapshot": {
-        "sha256": "1e8cc810a6ccefe9dde50d855e34890cc421b534485a1c39a1263cd359ec85c1",
-        "objects": 5824
+        "sha256": "81bc59f3f5f2753a9520675b24db6753e31b4011abffc0ce5ff5863109518fa9",
+        "objects": 5821
       },
       "rng": {
         "version": 2,
@@ -1261,12 +1261,12 @@
     },
     "summon": {
       "graph": {
-        "sha256": "3b29cc0e8909ec272ade49166933f73151eac54b7d61a74805810dd2d81c7589",
-        "objects": 24349
+        "sha256": "0194ee8e0af67ffe6bc670d3fe065dae1a9eb76fa510a94a63422a09a0808ef0",
+        "objects": 24361
       },
       "snapshot": {
-        "sha256": "7cad1ec4ffa8f6533ba9ac534279860a2eaf51065e2f8acebda42cbf8fb2c2db",
-        "objects": 5984
+        "sha256": "46d464ba70850624ce4910bf098694ae72817ac3485a73e74986df9353f43c12",
+        "objects": 5977
       },
       "rng": {
         "version": 2,
@@ -1344,12 +1344,12 @@
     },
     "trap": {
       "graph": {
-        "sha256": "abb232f566d3d75fa04013811059dc63a4d2df9202fb853466df1b5c2c1ca2bd",
-        "objects": 24350
+        "sha256": "923cbe0843fda5e305c8fbde0a4cdb54b1c70c75d61da2f348cce3952f78c06a",
+        "objects": 24362
       },
       "snapshot": {
-        "sha256": "3818ee50a72f4a63761859847297f20ef7e72a40e924a6eef8bee371e4ec1ad3",
-        "objects": 5984
+        "sha256": "8e3ce07653304c93ce1dd9a49cccfb386d48971785af6518b5e167356d41f44a",
+        "objects": 5977
       },
       "rng": {
         "version": 2,
@@ -1427,12 +1427,12 @@
     },
     "level": {
       "graph": {
-        "sha256": "493e2d81433636b2e56ab389581c23434b0905b19bed8159a4a03bdc34cd7714",
-        "objects": 46486
+        "sha256": "09be456f36e1433e5ee0ab8b480a2a8c10a473a991b99a1cb3c936fb06a7c36e",
+        "objects": 46491
       },
       "snapshot": {
-        "sha256": "1a40dbde26d0590d2bf7bf9ee669e4d7c423a0356022e58a8de71ef76b7dea58",
-        "objects": 21471
+        "sha256": "9d24e0819ae42efc61644895f213404e6629fad207d8800a458dd5c191af943c",
+        "objects": 21460
       },
       "rng": {
         "version": 2,
@@ -1497,11 +1497,11 @@
   "narrative": {
     "newGame": {
       "graph": {
-        "sha256": "732e3fcf5118630595c343ee44d4091dd91fbbf96ec06d4d59c0aa64ba13a006",
+        "sha256": "2f37aaf518d804f9f82c955058aa2ceaf6a27e8e9f260112e7d26c0685b87baf",
         "objects": 23017
       },
       "snapshot": {
-        "sha256": "fb55cedb7906c89c7821b96b6a7d704f935fe434d7babea0765d1ecf83f123b3",
+        "sha256": "4e7788a89811696392ab1b8d812570b57788cddbdeee21313333e532110d8614",
         "objects": 11276
       },
       "rng": {
@@ -1537,11 +1537,11 @@
     },
     "commands": {
       "graph": {
-        "sha256": "b836cac4ff5baec27df99bb63b1d8aa98e94f80eabcc066e91f3691f7e6dc1fd",
+        "sha256": "78f2259808d0d301759567e24a66dc6f4aa762ea3ebd8b1a72fbd70c7fc63a47",
         "objects": 23054
       },
       "snapshot": {
-        "sha256": "f22e33bbe3fcea5c93e298d9ac277912e5279bcb0bfe9bbe53ee1ac729997ffc",
+        "sha256": "f281f677f21745a276780256c20632d35b1aae6c05d870aef0538ff64d606ea3",
         "objects": 11309
       },
       "rng": {
@@ -1577,11 +1577,11 @@
     },
     "loaded": {
       "graph": {
-        "sha256": "08aeb5302270747b29e81cf6e181dbe46d825bb14733a44d4a04feff2cef3e77",
+        "sha256": "79c14be547de04f87e9c67677a160406f6e49ee3e14328b91104315f6979dd5b",
         "objects": 20677
       },
       "snapshot": {
-        "sha256": "f22e33bbe3fcea5c93e298d9ac277912e5279bcb0bfe9bbe53ee1ac729997ffc",
+        "sha256": "f281f677f21745a276780256c20632d35b1aae6c05d870aef0538ff64d606ea3",
         "objects": 11309
       },
       "rng": {
@@ -1617,11 +1617,11 @@
     },
     "continued": {
       "graph": {
-        "sha256": "7fe8068b2b7a22949c070feeca58aba5791e2073f5591efcc3f94e472457d51a",
+        "sha256": "a09eaae2dd1cc69e628d35661353204cc18070d4673c2e2714d5e8820b92b929",
         "objects": 23064
       },
       "snapshot": {
-        "sha256": "1bfa726fb5cc34de420fe45e1f9f1b307d386807497ee5f5358f553453694bb1",
+        "sha256": "7904b87a6674e56228d3efa3d17792ba60ae2326892e9c771b0da2046511be4c",
         "objects": 11319
       },
       "rng": {
@@ -1657,11 +1657,11 @@
     },
     "replayed": {
       "graph": {
-        "sha256": "3cc40f97fa792f858ea8ca299e7e5c2c26312a79b0b9795fcb640981708763fd",
+        "sha256": "1bbe9ab20e8c5f849bca3b41f32c45ba8bd24081046d89768d2bd94d4dd4dac3",
         "objects": 23064
       },
       "snapshot": {
-        "sha256": "f22e33bbe3fcea5c93e298d9ac277912e5279bcb0bfe9bbe53ee1ac729997ffc",
+        "sha256": "f281f677f21745a276780256c20632d35b1aae6c05d870aef0538ff64d606ea3",
         "objects": 11309
       },
       "rng": {
@@ -1697,11 +1697,11 @@
     },
     "seek": {
       "graph": {
-        "sha256": "39eae3e2b83ac47d0df54bd09af8bdac2a6effa2c6f28eedc5f0c9e1566b07d5",
+        "sha256": "6dcd30177a88fde0fa41be96e0a6e6c54034a1bcb25a89805390c4776e99a353",
         "objects": 20687
       },
       "snapshot": {
-        "sha256": "48051511d48aa0f394d9454dcb10c5660366081c24ea0e7db8cc739cc490d662",
+        "sha256": "fd025eaa8d484cee7def173ff8c1bfc8cf767d439378fc8d2a9c08baede1033f",
         "objects": 11288
       },
       "rng": {
@@ -1737,11 +1737,11 @@
     },
     "combat": {
       "graph": {
-        "sha256": "410d8b4ec9c6e230b57f8493ee378301708db74d9692e158095e5b10d1e07de8",
+        "sha256": "df89e5268460868585224beff794ee4d299af676f0e351749bc75862e66acd17",
         "objects": 22703
       },
       "snapshot": {
-        "sha256": "874b069fef08998224e2c8749c89f161a1657ac3238c958c0e1563c1760da8f9",
+        "sha256": "12b08c69c34a89d43ed9c9b779d9b6f3fbf71a57c2a471e9098c07778d29965e",
         "objects": 5736
       },
       "rng": {
@@ -1793,7 +1793,7 @@
     },
     "knockback": {
       "graph": {
-        "sha256": "155e13b5853e69a81e4b589ce2afb03dea18b8a27033d9f8dd8365e4c14af93e",
+        "sha256": "1e41f2715c7582bf0cf4c993802c3cf29f9fe007a06b0cdc80d53aaa9e7cc41f",
         "objects": 22703
       },
       "snapshot": {
@@ -1849,11 +1849,11 @@
     },
     "blink": {
       "graph": {
-        "sha256": "6a7b57f6c641d40c57b4bfa1d72d0ad22192772d32f76c51db8c46932603ad34",
+        "sha256": "e1a4904936d6328efdc1b7bb45e651533237de3c78c60c365b9256275dc35b2d",
         "objects": 22763
       },
       "snapshot": {
-        "sha256": "28b98d075096ccc9c08b073a066550c4d7198b8d47dc6bc8a527cd454f0cb464",
+        "sha256": "6f779275da42e8ff47aeb38a3a8c3e1e294db95df5cddd293415f5fbb64b9ae5",
         "objects": 5794
       },
       "rng": {
@@ -1932,7 +1932,7 @@
     },
     "clone": {
       "graph": {
-        "sha256": "37a759d1bcdf83921981f64fcdb76ddf21b5d909f5a91b33706b9db4a71f6f48",
+        "sha256": "04e2dc733923f204242b63237b6231fb02d86116118438b3da89afd1e7253383",
         "objects": 22774
       },
       "snapshot": {
@@ -2015,7 +2015,7 @@
     },
     "summon": {
       "graph": {
-        "sha256": "330cbabdb7a66bf4f56f113a0ccccb2eed5212be5a5f036a3187400a2d3dcfaf",
+        "sha256": "2b40ed1df01de6377c435f618087c29cdab07e3383b901e5a96f621923d8e79a",
         "objects": 22818
       },
       "snapshot": {
@@ -2098,7 +2098,7 @@
     },
     "trap": {
       "graph": {
-        "sha256": "ed49cd9e91f9badf46f30d810b998c5a89b291439c967ea33826fe3eb5f4053b",
+        "sha256": "aa0b5ce0afddb284c70680b0742a837c2f345178e8d67927f5a1c5e5faef9d26",
         "objects": 22819
       },
       "snapshot": {
@@ -2181,11 +2181,11 @@
     },
     "level": {
       "graph": {
-        "sha256": "dc90fbfd46da08cb95f368ef2ca27847604c71f7b4c6ae7db3ce858ae5b2628b",
+        "sha256": "fcc65693a10ef99ccd349f92b04971e986535bfbfebece0dac2a221bf1fdd429",
         "objects": 44799
       },
       "snapshot": {
-        "sha256": "0be88e9f67497e5fc0ad70e9bc04f38ff5c3702c7723dd8e7539bfde83e10b44",
+        "sha256": "da7959686fd9ad715f278643e642d398e9a349590091b5a49da1f956a3c6cc56",
         "objects": 21161
       },
       "rng": {
@@ -2238,12 +2238,12 @@
   "growth+narrative": {
     "newGame": {
       "graph": {
-        "sha256": "e6378af6d55d78169f08588ddf16061a8df61dd25c695a37c026f006d54c33d7",
-        "objects": 24447
+        "sha256": "ff1194bc245b7d9fcfbfa3d57fe34d9464a1c0f8d3345deddb56db81240e0cc5",
+        "objects": 24465
       },
       "snapshot": {
-        "sha256": "f09bed3f81966b4c26022d78d5466162acabf8dd90a6ee2d46bc8066e41a169f",
-        "objects": 11322
+        "sha256": "61551b9aa211e70b7d622382ad9a6962d8b6daf7c53e9327fe10d9f94893d5db",
+        "objects": 11321
       },
       "rng": {
         "version": 2,
@@ -2278,12 +2278,12 @@
     },
     "commands": {
       "graph": {
-        "sha256": "eba1e2b0fc9f271774361955e494cf35c2bfa0e563712157f6496d97566fbac3",
-        "objects": 24482
+        "sha256": "70d09ff18819495aaf2907ae6d52874e69c9b4a0432710ccf684000a7cfc4ec0",
+        "objects": 24500
       },
       "snapshot": {
-        "sha256": "cd2878dbf25fe392f87b00024e76857488769f403764e3a35598c274ced147fb",
-        "objects": 11353
+        "sha256": "0ded96e879bf22c1cd8e619ddcc0f066c6e515f451abf8688a0cc810568587e9",
+        "objects": 11352
       },
       "rng": {
         "version": 2,
@@ -2318,12 +2318,12 @@
     },
     "loaded": {
       "graph": {
-        "sha256": "c1a1c29bbe21ab0e470490f67fad5fc0cde9be239b02bfff93c9357f1c627fe3",
-        "objects": 22105
+        "sha256": "06b8450b4d39cd513a71b155eb08144ad7455fc3f12654939117f79d40782179",
+        "objects": 22123
       },
       "snapshot": {
-        "sha256": "cd2878dbf25fe392f87b00024e76857488769f403764e3a35598c274ced147fb",
-        "objects": 11353
+        "sha256": "0ded96e879bf22c1cd8e619ddcc0f066c6e515f451abf8688a0cc810568587e9",
+        "objects": 11352
       },
       "rng": {
         "version": 2,
@@ -2358,12 +2358,12 @@
     },
     "continued": {
       "graph": {
-        "sha256": "6f89c050916a396dd268abd4866a1f76ed6ec69efaa7a6d37a353f8d00c8a3fb",
-        "objects": 24492
+        "sha256": "04a407235b0e077b6c3715d9fd0cbd395ef5dfbc934b7f8ad1d096156120c3c8",
+        "objects": 24510
       },
       "snapshot": {
-        "sha256": "9647c6a3a76d47957491107d24842d5ee831ccc5af007168e6c732788e8431f7",
-        "objects": 11363
+        "sha256": "6537172932765d17de6e18d00e270f4e78a7ca10bba891c598a4315bc123108e",
+        "objects": 11362
       },
       "rng": {
         "version": 2,
@@ -2398,12 +2398,12 @@
     },
     "replayed": {
       "graph": {
-        "sha256": "ad2a9ec6472acc44ea7a8e5c84a492096e7afc863d455bf6f882afdb98a522e6",
-        "objects": 24494
+        "sha256": "2973f03a6a0384636d66c1c9ceedfb8ec64a0ae7f705d295162d831123d39abd",
+        "objects": 24512
       },
       "snapshot": {
-        "sha256": "cd2878dbf25fe392f87b00024e76857488769f403764e3a35598c274ced147fb",
-        "objects": 11353
+        "sha256": "0ded96e879bf22c1cd8e619ddcc0f066c6e515f451abf8688a0cc810568587e9",
+        "objects": 11352
       },
       "rng": {
         "version": 2,
@@ -2438,12 +2438,12 @@
     },
     "seek": {
       "graph": {
-        "sha256": "c6f7bc6b1fed9db0963f573299a33dd6902ad17e69689b597359f462862c9ef7",
-        "objects": 22117
+        "sha256": "de1d9e753bcdc128e6d51da31cbdbe146007cb86973df93a01c24a151cb8b2fb",
+        "objects": 22135
       },
       "snapshot": {
-        "sha256": "f09bed3f81966b4c26022d78d5466162acabf8dd90a6ee2d46bc8066e41a169f",
-        "objects": 11322
+        "sha256": "61551b9aa211e70b7d622382ad9a6962d8b6daf7c53e9327fe10d9f94893d5db",
+        "objects": 11321
       },
       "rng": {
         "version": 2,
@@ -2478,12 +2478,12 @@
     },
     "combat": {
       "graph": {
-        "sha256": "52d3e4a159c380a4a5960ad195bd498a1aa3c559bdf2b68d4a0d63c4aa3753b6",
-        "objects": 24153
+        "sha256": "cca1d37664ecc064a309e533d67a3cae13baab4b32c84795a569ee626b4a4640",
+        "objects": 24170
       },
       "snapshot": {
-        "sha256": "9e15e81389b3341c67a6489e3e448ffab8ad6f972a33630649ea922285e9d6ec",
-        "objects": 5802
+        "sha256": "500758a4911969154abf894456a8ae2337c656b4b4a8d235d05171231b8f55ae",
+        "objects": 5800
       },
       "rng": {
         "version": 2,
@@ -2534,12 +2534,12 @@
     },
     "knockback": {
       "graph": {
-        "sha256": "a67393443f28dfe6c8e3aab5269cd1e6c4f03792e81d79eeaa9ea024e4fc19a9",
-        "objects": 24153
+        "sha256": "de31155cbbe293a630c4a26a2dcc8d46825e5c622f2cac2b68aafbed7b2e9acb",
+        "objects": 24170
       },
       "snapshot": {
-        "sha256": "1b475dc6925dfc9ca7c582e3b97f9f360566d22ca6d56ed4a677ad98cfebcb87",
-        "objects": 5765
+        "sha256": "cc715952986ac1e54bc8cb7c8ce6f38dee6e9a053524d6693e0b0b958ec375af",
+        "objects": 5763
       },
       "rng": {
         "version": 2,
@@ -2590,12 +2590,12 @@
     },
     "blink": {
       "graph": {
-        "sha256": "ddac71209229a60dfc0f27508ff3aacea921b56a6b5ee11f4c216931852bdb0f",
-        "objects": 24213
+        "sha256": "4f3ec1ae4a4f1ac1d5446886e4c75ea0719dba10714acec8ac9282589e7050c8",
+        "objects": 24230
       },
       "snapshot": {
-        "sha256": "d6c59b1844436cb7406903aff63ba559bc842c6094235aa94ef96b158a9f032a",
-        "objects": 5860
+        "sha256": "02966f0dd66256a7a46f82c11842cfe1519e2dff6436d475c20a486e516e4195",
+        "objects": 5858
       },
       "rng": {
         "version": 2,
@@ -2673,12 +2673,12 @@
     },
     "clone": {
       "graph": {
-        "sha256": "f969b5accea6fbf838f9977ce2c97bbe68a0bfa77993592edda34380362eca16",
-        "objects": 24246
+        "sha256": "6a05584f51c2342406b481ec5f0da072e0e39708bb0baf47da3f98549922db54",
+        "objects": 24262
       },
       "snapshot": {
-        "sha256": "9bc353df1e86e58dae3cc3fbdb7f9ceca83438505f6dec003a7f27d534a4703a",
-        "objects": 5844
+        "sha256": "cca06deb4000dd68e2e4fe546b9d2e9c270937865a069056b375f6f52dc7163b",
+        "objects": 5841
       },
       "rng": {
         "version": 2,
@@ -2756,12 +2756,12 @@
     },
     "summon": {
       "graph": {
-        "sha256": "522cf90bb8873360326e0be82dfb837ec7509c7b25d91a8b11fd4f96b9b1d12b",
-        "objects": 24378
+        "sha256": "fb353291bc9637fdf50f73248d769a90b80fe70bc61a1a7599cf177966aac685",
+        "objects": 24390
       },
       "snapshot": {
-        "sha256": "b00163db40794fb6664959e3f458ff8b917bcd256139009938d9eda118e37c53",
-        "objects": 6004
+        "sha256": "687eb8046141afdb4bc8448b8c43b2c0b5cc4c49e8746b42cb4ad0d1aaaceb8b",
+        "objects": 5997
       },
       "rng": {
         "version": 2,
@@ -2839,12 +2839,12 @@
     },
     "trap": {
       "graph": {
-        "sha256": "1c8efda705258ed4aafb9298d215feecf4eae715237ff6698f13707219ad411f",
-        "objects": 24379
+        "sha256": "d5ae48283d5c30b80a3da6c3400498336cd99461a9c8d9d40c254b69bb9a81bb",
+        "objects": 24391
       },
       "snapshot": {
-        "sha256": "4d10ba13f565dec4bbeb97a7fc83d06d32a32eebd1a8da3cc059f9fbd123e943",
-        "objects": 6004
+        "sha256": "3b538b9708682d4168bd78259dc6931d7bf216b2ad7ec9905c2e673e2919eccd",
+        "objects": 5997
       },
       "rng": {
         "version": 2,
@@ -2922,12 +2922,12 @@
     },
     "level": {
       "graph": {
-        "sha256": "b289ecb62e112bd4a48d9d955544011e888a798421f118e51ef5e85dbd6b77f5",
-        "objects": 46515
+        "sha256": "62014124e365da12ea4eb77530c7703736dd60d0e93a7bb731d22905e3ba1e01",
+        "objects": 46520
       },
       "snapshot": {
-        "sha256": "b088a4d6e4d596d8ad3224626ca6917a8cfdf34c7cb0ff3d93cf848dadfd0c04",
-        "objects": 21493
+        "sha256": "52f39d7f3188e84e3a11f029000898d6f3794f5aceb00886e7f21a4cb7c0db0c",
+        "objects": 21482
       },
       "rng": {
         "version": 2,

@@ -484,6 +484,7 @@ export function world5SnapshotContext(s: GameSnapshot) {
         ...[...s.entityGraph.monsters, ...(s.purgatory ?? []), ...s.pendingFallenByDepth.flatMap(q => q.monsters)]
             .filter(m => m.hp > 0).map(m => m.id)]);
     return { active: s.depth, visited: s.levelSeeds, cachedDepths: s.levels.map(l => l.depth),
+        campDepths: s.extensions?.foundation.world.regions?.filter(r=>r.campSlotId!==undefined).map(r=>r.depth)??[],
         owners: s.extensions?.manifest.modules.map(m => m.id) ?? [], actors, occupiedEntityIds, nextEntityId: s.run.nextEntityId };
 }
 
@@ -560,6 +561,9 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
     if(auto!==undefined){
         if(!auto||typeof auto!=='object'||Array.isArray(auto))return false;
         if(auto.kind==='auto_work'){if(!s.run.world5||Object.keys(auto).sort().join(',')!=='kind,ticketId'||!Number.isSafeInteger(auto.ticketId)||auto.ticketId<1)return false;}
+        else if(auto.kind==='rest_point'){
+          if(!s.run.world5||Object.keys(auto).sort().join(',')!=='anchor,depth,hp,kind,ordinal,remaining,restPointId,revision'||['restPointId','revision','ordinal','remaining','hp','depth'].some(k=>!Number.isSafeInteger(auto[k])||auto[k]<0)||auto.remaining>300||auto.depth!==s.depth||!auto.anchor||Object.keys(auto.anchor).sort().join(',')!=='x,y'||!Number.isSafeInteger(auto.anchor.x)||!Number.isSafeInteger(auto.anchor.y))return false;
+        }
         else {const keys=['kind','remaining','cardinalPassability','untilRecovered','initiallyEmbedded',...(Object.prototype.hasOwnProperty.call(auto,'direction')?['direction']:[])].sort();
             if(!['auto_rest','search_long','run'].includes(auto.kind)||Object.keys(auto).sort().join(',')!==keys.join(',')||!Number.isSafeInteger(auto.remaining)||auto.remaining<0||!Array.isArray(auto.cardinalPassability)||auto.cardinalPassability.length!==4||auto.cardinalPassability.some((v:unknown)=>typeof v!=='boolean')||typeof auto.untilRecovered!=='boolean'||typeof auto.initiallyEmbedded!=='boolean')return false;
             if(auto.direction&&(!Number.isInteger(auto.direction.x)||!Number.isInteger(auto.direction.y)||Math.abs(auto.direction.x)>1||Math.abs(auto.direction.y)>1||Object.keys(auto.direction).sort().join(',')!=='x,y'))return false;

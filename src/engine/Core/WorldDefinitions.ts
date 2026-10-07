@@ -1,6 +1,7 @@
 /** Static content validation, before any run or ID allocator is touched. */
 import type { ExtensionModule } from '../../ext/types';
-import type { WorldDefinitionPack, ItemAmount } from '../../ext/worldSdk';
+import type { ItemAmount } from '../../ext/worldSdk';
+import type { WorldDefinitionPack } from '../../ext/structureTypes';
 import { validId } from '../../ext/json';
 import { c5Canonical } from './WorldCanonical';
 import { deepFreeze } from '../Movement/SpatialSchema';
@@ -37,7 +38,7 @@ export function assertWorldDefinitionPack(
     if (v.some((s: any, i: number) => !validId(s) || (i > 0 && v[i - 1] >= s))) fail('tags');
   };
   const pack = value as WorldDefinitionPack;
-  record(pack, 'schema,worldSdk,items,resourceNodes,stations,recipes,startupItems');
+  record(pack, 'schema,worldSdk,items,resourceNodes,stations,recipes,startupItems'+('structures' in pack?',structures':'')+('restPoints' in pack?',restPoints':''));
   if (pack.schema !== 1 || pack.worldSdk !== 1) fail('version');
   for (const key of ['items', 'resourceNodes', 'stations', 'recipes'] as const)
     list(pack[key], 0, 128);
@@ -171,6 +172,29 @@ export function assertWorldDefinitionPack(
     int(d.workTicks, 1, 10000);
     if (typeof d.offlineEligible !== 'boolean' || (d.toolTag !== null && !validId(d.toolTag)))
       fail('recipe');
+  }
+  if(pack.structures!==undefined)list(pack.structures,0,128);
+  if(pack.restPoints!==undefined)list(pack.restPoints,0,64);
+  for (const d of pack.restPoints??[]) {
+    record(d,'owner,id,nameKey,descriptionKey,glyph,color,maxRestTicks,interactionDistance,restorePolicy,resetPolicy');define(d);
+    int(d.maxRestTicks,100,30000);int(d.interactionDistance,0,16);
+    record(d.restorePolicy,'hp,optionalCombatResources');
+    if(d.maxRestTicks%100||!['native-over-time','none'].includes(d.restorePolicy.hp)||d.restorePolicy.optionalCombatResources!=='none'||d.resetPolicy!=='none')fail('restPoint.policy');
+  }
+  for (const d of pack.structures??[]) {
+    record(d,'owner,id,slot,barrierKind,nameKey,descriptionKey,maxHp,blocks,flammable,resistances,constructionCost,constructionTicks,refundNumerator,refundDenominator,containerCapacity,stationDefinitionId,restPointDefinitionId,tags');define(d);tags(d.tags);
+    if(!['floor','barrier','roof','fixture'].includes(d.slot)||(d.slot==='barrier'?!['wall','door','window'].includes(d.barrierKind!):d.barrierKind!==null))fail('structure.slot');
+    int(d.maxHp,1,1000000);int(d.constructionTicks,1,10000);int(d.refundDenominator,1,10000);int(d.refundNumerator,0,d.refundDenominator);
+    record(d.resistances,'physical,fire');int(d.resistances.physical,0,100);int(d.resistances.fire,0,100);
+    record(d.blocks,'movement,vision,physicalProjectile,magicProjectile,gas,liquid');if(Object.values(d.blocks).some(v=>typeof v!=='boolean')||typeof d.flammable!=='boolean')fail('structure.blocks');
+    amounts(d.constructionCost,true);
+    if(d.slot==='barrier'){
+      const window=d.barrierKind==='window';if(!d.blocks.movement||!d.blocks.physicalProjectile||!d.blocks.liquid||d.blocks.vision===window||d.blocks.gas===window)fail('barrier.blocks');
+    }
+    if(d.slot==='floor'||d.slot==='roof')if(Object.values(d.blocks).some(Boolean))fail('structure.nonBlocking');
+    if(d.containerCapacity!==null){if(d.slot!=='fixture')fail('container.slot');int(d.containerCapacity,1,64);}
+    if(d.stationDefinitionId!==null&&(d.slot!=='fixture'||!pack.stations.some(s=>s.id===d.stationDefinitionId)))fail('structure.station');
+    if(d.restPointDefinitionId!==null&&(d.slot!=='fixture'||!pack.restPoints?.some(r=>r.id===d.restPointDefinitionId)))fail('structure.restPoint');
   }
   if (pack.startupItems) {
     record(pack.startupItems, 'instanceKey,items,overflow');

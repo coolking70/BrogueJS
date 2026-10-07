@@ -1,3 +1,4 @@
+import { structureBlocking } from './CellProperties';
 /**
  * src/engine/Map/LoopMap.ts — C-0：地牢环路（addLoops）+ IN_LOOP 标志
  *
@@ -207,7 +208,7 @@ export function applyLoopDoorSites(grid: Grid, sites: Pos[], depth: number): Pos
  *   - 门（CE 的门不挡通行）、浅水、草/树/泥/网/楼梯/祭坛等 → 不阻挡
  */
 export function blocksPathing(cell: Cell): boolean {
-    if (cell.isBurning) return true; // T_IS_FIRE
+    if (structureBlocking(cell)?.movement || cell.isBurning) return true; // T_IS_FIRE
     switch (cell.terrain) {
         case TerrainType.GRANITE:
         case TerrainType.WALL:
@@ -497,7 +498,7 @@ export function analyzeChokeMap(
         loop[x] = new Array<boolean>(DROWS);
         for (let y = 0; y < DROWS; y++) {
             const cell = grid.getCell(x, y);
-            const passable = !!cell && terrainAllowsMove(cell.terrain);
+            const passable = !!cell && !structureBlocking(cell)?.movement && terrainAllowsMove(cell.terrain);
             passMap[x]![y] = passable;
             loop[x]![y] = passable;
         }

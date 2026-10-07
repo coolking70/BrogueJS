@@ -1,3 +1,4 @@
+import { composedCellFlags, structureBlocking } from '../Map/CellProperties';
 import { generationReserved } from '../Generator/GenerationReservation';
 /**
  * src/engine/Items/ItemSpawnHeatMap.ts — B-4b：物品落位热力图。
@@ -74,7 +75,7 @@ function cellTerrainFlagUnion(cell: Cell): number {
         if (t === TerrainType.NOTHING) continue;
         flags |= TERRAIN_FLAGS[t].flags;
     }
-    return flags;
+    return composedCellFlags(cell,flags);
 }
 
 /** CE cellHasTMFlag 的四层并集。 */
@@ -220,7 +221,7 @@ function playerReachableFrom(grid: Grid, start: Pos): boolean[] {
     const passable = (x: number, y: number): boolean => {
         const cell = grid.getCell(x, y);
         if (!cell) return false;
-        return terrainAllowsMove(cell.terrain) || cell.terrain === TerrainType.SECRET_DOOR;
+        return !structureBlocking(cell)?.movement&&(terrainAllowsMove(cell.terrain) || cell.terrain === TerrainType.SECRET_DOOR);
     };
     if (!passable(start.x, start.y)) return result;
     const queue: number[] = [start.y * DCOLS + start.x];

@@ -1,3 +1,4 @@
+import { composedCellFlags, knownCellFlags } from '../Map/CellProperties';
 /** Terrain eligibility for automatic travel/exploration (Movement.c:2041-2178,
  * Monsters.c:1335-1502). Manual movement and forced displacement are separate.
  * This supplies the existing A* frontier policy, not CE's weighted cost map.
@@ -7,16 +8,10 @@ import type { Cell, Grid } from '../Map/Grid';
 import type { Pos } from '../../types';
 import { terrainMechFlags } from '../Map/DungeonFeature';
 import {
-    TERRAIN_FLAGS, T_OBSTRUCTS_PASSABILITY, T_AUTO_DESCENT, T_LAVA_INSTA_DEATH,
+    T_OBSTRUCTS_PASSABILITY, T_AUTO_DESCENT, T_LAVA_INSTA_DEATH,
     T_IS_DEEP_WATER, T_IS_DF_TRAP, T_IS_FIRE, T_SPONTANEOUSLY_IGNITES,
     T_HARMFUL_TERRAIN, T_RESPIRATION_IMMUNITIES, T_CAUSES_POISON, TM_IS_SECRET, T_OBSTRUCTS_DIAGONAL_MOVEMENT,
 } from '../Map/TerrainCatalog';
-
-function knownFlags(cell: Cell): number {
-    if (!cell.isVisible && !cell.hasMemory && !cell.isMagicMapped && !cell.isExplored) return 0;
-    const layers = cell.isVisible ? cell.layers : cell.rememberedLayers;
-    return layers.reduce((flags, tile) => flags | TERRAIN_FLAGS[tile].flags, 0);
-}
 
 /** CE diagonalBlocked: automatic travel uses known terrain; manual moves use actual layers. */
 export function playerTravelDiagonalBlocked(grid: Grid, from: Pos, to: Pos, limitToPlayerKnowledge = true): boolean {
@@ -24,15 +19,15 @@ export function playerTravelDiagonalBlocked(grid: Grid, from: Pos, to: Pos, limi
     return [[from.x, to.y], [to.x, from.y]].some(([x, y]) => {
         const cell = grid.getCell(x!, y!);
         if (!cell) return true;
-        const flags = limitToPlayerKnowledge ? knownFlags(cell)
-            : cell.layers.reduce((f, tile) => f | TERRAIN_FLAGS[tile].flags, 0);
+        const flags = limitToPlayerKnowledge ? knownCellFlags(cell)
+            : composedCellFlags(cell);
         return !!(flags & T_OBSTRUCTS_DIAGONAL_MOVEMENT);
     });
 }
 
 export function playerTravelTerrainAllowed(cell: Cell, here: Cell, player: Player): boolean {
     if (!cell.isVisible && !cell.hasMemory && !cell.isMagicMapped && !cell.isExplored) return true;
-    const flags = knownFlags(cell), origin = knownFlags(here);
+    const flags = knownCellFlags(cell), origin = knownCellFlags(here);
     if (flags & T_OBSTRUCTS_PASSABILITY) return false;
     // CE monsterAvoids: the player cannot avoid an unrevealed floor hazard.
     // Physical walls are handled first, including undiscovered secret doors.

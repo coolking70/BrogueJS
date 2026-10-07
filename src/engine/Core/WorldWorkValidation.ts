@@ -1,3 +1,4 @@
+import { validateStructureReferences } from '../Map/StructureValidation';
 import { exact, uint, World5Error } from '../../ext/world5';
 import type { Game } from './Game';
 import { forEachItemRoot } from './WorldItemRoots';
@@ -10,6 +11,7 @@ const fail = (field: string): never => {
 export function validateWorldWorkReferences(game: Game): void {
   const w = game.world5;
   if (!w) return;
+  validateStructureReferences(game);
   const runtime = game.extensionRuntime!,
     packs = runtime.worldDefinitionPacks(),
     entities = runtime.worldWorkEntities();

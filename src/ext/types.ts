@@ -1,6 +1,8 @@
 import type { StatQuery, StatSourceProvider } from './stats';
 import type { MaterializedStatSnapshot } from '../engine/Stats/MaterializedStats';
-import type { WorldModuleFields } from './worldSdk';
+import type { WorldModuleFields as WorkModuleFields } from './worldSdk';
+import type { WorldDefinitionPack } from './structureTypes';
+type WorldModuleFields = Omit<WorkModuleFields,'worldDefinitions'> & {worldDefinitions?:WorldDefinitionPack};
 import type { WorldInteractable, WorldInteractablePlacement, WorldInteractablePlacementResult, WorldInteractionSnapshot, WorldInteractionValidation, ExtensionProjectionContext } from './world';
 import type { Creature } from '../entities/Creature';
 import type { AttackResult } from '../engine/Combat/Combat';
@@ -27,13 +29,13 @@ export interface ExtensionModuleView {
 }
 export interface ExtensionRulesIdentity { schema: number; version: string; fingerprint: string }
 export interface ExtensionVersion { id: string; version: string; rules?: ExtensionRulesIdentity }
-export interface ExtensionManifest { schema: 1; foundation?: 8; modules: ExtensionVersion[] }
+export interface ExtensionManifest { schema: 1; foundation?: 9; modules: ExtensionVersion[] }
 export interface ExtensionSnapshot {
     manifest: ExtensionManifest;
     modules: Record<string, Json>;
     /** Run-local creature ID -> module-qualified component ID -> JSON. */
     components: Record<string, Record<string, Json>>;
-    foundation: { version: 8; stats?: MaterializedStatSnapshot; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
+    foundation: { version: 9; stats?: MaterializedStatSnapshot; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
 }
 /** Native facts wait for run initialization; sequence numbers are reserved on commit. */
 export interface PendingStoryFact { kind: 'entered-level'; depth: number; firstVisit: boolean; turn: number }

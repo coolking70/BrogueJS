@@ -818,6 +818,8 @@ describe('C-4a E：留痕（本轮明确不做的事，断言现状）', () => {
     // 是一次自造的假绿。留痕测试若能被改写形态绕过，就不是门禁而是装饰。
     // 现在正则同时捕获点号读取与解构读取两种形态。
     const PROMOTE_FIELD_READERS = new Set([
+        'engine/Map/CellProperties.ts', // 5A3: the one base-mechanical composition kernel.
+
         'ui/worldInteractableMap.ts', // 2b: display-only secret filtering must not reveal hidden traps by disappearing a marker.
         'engine/Core/Game.ts', // U19f searchForSecrets consumes TM_IS_SECRET for every CE hidden terrain
 

@@ -166,6 +166,10 @@ export function withWorldActorScope<T>(
     entry.active = false;
   }
 }
+/** Trusted siblings share the same short-lived authority, never infer it from DTO fields. */
+export function worldActorAuthority(scope:WorldActorScope) {
+  const entry=scopes.get(scope);if(!entry?.active)throw new World5Error('C5_SCOPE');return entry;
+}
 function reject(code: WorldErrorCode, field: string | null = null): never {
   throw new World5Error(code, field);
 }
