@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { createActorActionBundle, createActorActionScheduler, validateActorActionSchedulerState, type ActorActionSchedulerState } from '../engine/Core/ActorActionScheduler';
 import { productionActorActionScheduler, reconcileProductionActorActions, validateProductionActorActionState } from '../engine/Core/ActorActionProduction';
-import { preparePhasedAttackCommand, commitPhasedAttackCommand } from '../engine/Core/PhasedAttackProduction';
+import { bindPhasedAttackProduction, preparePhasedAttackCommand, commitPhasedAttackCommand } from '../engine/Core/PhasedAttackProduction';
 import { commitCreatureAnchor } from '../engine/Movement/CreatureSpatial';
 import { TerrainType } from '../engine/Map/Grid';
 import { rng } from '../engine/Random';
@@ -28,6 +28,18 @@ function scene(mode: 'test'|'normal'='test') {
 afterEach(()=>{vi.restoreAllMocks();logger.reset();});
 
 describe('3b production action lifetime',()=>{
+    it('retains the live binding at a due boundary while new binding and save/load stay strict',()=>{
+        const {game,state,scheduler}=scene();
+        scheduler.advanceActionTime(scheduler.nextActionBoundary()!);
+        const before=structuredClone(state),random=rng.getState();
+        expect(()=>bindPhasedAttackProduction(game)).not.toThrow();
+        expect(productionActorActionScheduler(game)).toBe(scheduler);
+        expect(state).toEqual(before);expect(rng.getState()).toEqual(random);
+        expect(()=>game.toSaveSnapshot()).toThrow('inconsistent phase clock');
+        expect(()=>validateProductionActorActionState(state.scheduler,game.actorActionWorld())).toThrow('inconsistent phase clock');
+        expect(scheduler.dispatchActorBoundary(game.player.id)).toBe('handled');
+        expect(()=>game.toSaveSnapshot()).not.toThrow();
+    });
     it('binds a module-owned busy action on load without time, RNG, cost, or a release',()=>{
         const {game,state}=scene(), snapshot=game.toSnapshot(), before=structuredClone(state), random=rng.getState();
         expect(game.loadSnapshot(snapshot)).toBe(true);

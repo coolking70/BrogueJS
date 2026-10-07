@@ -152,7 +152,8 @@ function active(child: ActorSubaction): boolean { return child.phaseIndex < chil
 export function actorSubactionHasPendingSegments(child: Readonly<ActorSubaction>): boolean {
     return child.phases.slice(child.phaseIndex).some(phase => phase.segmentIndex !== null);
 }
-/** Zero is permitted only transiently inside a synchronous dispatch microstep. */
+/** Zero is transient between clock advancement and each owner's synchronous
+ * dispatch, including other owners' new commits in the same tick. */
 function boundaryOf(bundle: ActorActionBundle): number {
     return Math.min(...bundle.subactions.filter(active).map(child => child.phaseRemainingTicks));
 }
@@ -453,7 +454,14 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
             validateActorActionSchedulerState({ schema: 1, bundles: [bundle] });
             const copy = detached(bundle);
             const candidate: ActorActionSchedulerState = { schema: 1, bundles: [...state.bundles, copy] };
-            validateActorActionSchedulerState(candidate);
+            // An earlier owner in the same native sweep may start an action
+            // before a later owner's already-due phase is dispatched. Attest
+            // only existing foreground identities; the new plan and codecs
+            // retain strict positive-clock validation.
+            const due = new Set(state.bundles.filter(foreground).flatMap(existing => existing.subactions
+                .filter(child => active(child) && !child.cancelled && child.phaseRemainingTicks === 0)
+                .map(child => `${existing.actionId}:${child.sourceSubactionId}:${child.phaseIndex}`)));
+            validateActorActionSchedulerState(candidate, due);
             if (copy.elapsedActionTicks !== 0 || copy.subactions.some(child => child.phaseIndex !== 0 || child.nativeRecoveryDelayTicks !== undefined)) fail('commit requires a fresh action');
             if (!host.readActor(copy.decisionOwnerId)?.alive || host.decisionOwnerId(copy.decisionOwnerId) !== copy.decisionOwnerId
                 || copy.subactions.some(child => host.decisionOwnerId(child.sourceEntityId) !== copy.decisionOwnerId || !sourceValid(child, copy.depth))) fail('invalid action owner/source');
