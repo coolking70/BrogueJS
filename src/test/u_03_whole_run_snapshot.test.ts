@@ -219,4 +219,65 @@ describe('U03 whole-run persistence', () => {
         saved.run.meteredItems[0]!.frequency += 17;
         expect((restored as any).meteredItems[0].frequency).not.toBe(saved.run.meteredItems[0]!.frequency);
     });
+
+    it.each(['missing kinds', 'partial map', 'legacy order'] as const)(
+        'staff flavor reconstruction keeps stable slot identities through durable save/load: %s', mode => {
+            const g = fresh(), current = ItemLoader.staffs;
+            const added = ['staff_of_obstruction', 'staff_of_discord', 'staff_of_protection'];
+            let saved: GameSnapshot;
+            try {
+                if (mode === 'missing kinds') {
+                    ItemLoader.staffs = current.filter(staff => !added.includes(staff.id));
+                    rng.seedRandomGenerator(g.currentSeed);
+                    ItemLoader.initConsumables();
+                }
+                saved = json(g.toSnapshot());
+            } finally { ItemLoader.staffs = current; }
+            // Stored display labels may differ from today's translations. The
+            // persisted slot/identity pairs, including unused woods, are authoritative.
+            const labels = new Map(saved.flavors.staffSlots.map((label, slot) => [label, `saved wood ${slot}`]));
+            saved.flavors.staffSlots = saved.flavors.staffSlots.map(label => labels.get(label)!);
+            saved.flavors.arcana = saved.flavors.arcana.map(([id, label]) => [id, labels.get(label) ?? label]);
+            saved.staffFlavors = Object.fromEntries(Object.entries(saved.staffFlavors!).map(([id, label]) => [id, labels.get(label)!]));
+            const expectedIds = new Map(saved.flavors.staffSlots.map((label, slot) => [label, saved.flavors.identities.staffSlots[slot]!]));
+            expect(g.loadSnapshot(saved)).toBe(true);
+            const before = rng.getState();
+            const source = mode === 'legacy order' ? undefined : mode === 'partial map'
+                ? { staff_of_blinking: saved.staffFlavors.staff_of_blinking! } : saved.staffFlavors;
+            ItemLoader.restoreStaffFlavors(source);
+            expect(rng.getState()).toEqual(before);
+            const rebuilt = json(g.toSaveSnapshot()), kinds = new Map(rebuilt.flavors.identities.kinds);
+            for (const staff of current) {
+                expect(kinds.get(staff.id), staff.id).toBe(expectedIds.get(rebuilt.staffFlavors![staff.id]!));
+            }
+            expect(new Set(current.map(staff => kinds.get(staff.id))).size).toBe(current.length);
+            expect(g.loadSnapshot(rebuilt)).toBe(true);
+            expect(g.toSnapshot().flavors).toEqual(rebuilt.flavors);
+            expect(rng.getState()).toEqual(before);
+            ItemLoader.restoreStaffFlavors(rebuilt.staffFlavors);
+            expect(g.toSnapshot().flavors).toEqual(rebuilt.flavors);
+            expect(g.loadSnapshot(json(g.toSaveSnapshot()))).toBe(true);
+            expect(rng.getState()).toEqual(before);
+        }
+    );
+
+    it('wand flavor reassignment from legacy order moves stable identities without touching other kinds or RNG', () => {
+        const g = fresh(), saved = json(g.toSnapshot());
+        expect(g.loadSnapshot(saved)).toBe(true);
+        const savedKinds = new Map(saved.flavors.identities.kinds);
+        const expectedIds = new Map(saved.flavors.arcana.map(([id, label]) => [label, savedKinds.get(id)!]));
+        const before = rng.getState();
+        ItemLoader.restoreWandFlavors();
+        expect(rng.getState()).toEqual(before);
+        const rebuilt = json(g.toSaveSnapshot()), kinds = new Map(rebuilt.flavors.identities.kinds);
+        for (const wand of ItemLoader.wands) {
+            expect(kinds.get(wand.id), wand.id).toBe(expectedIds.get(rebuilt.wandFlavors![wand.id]!));
+        }
+        for (const [id, identity] of saved.flavors.identities.kinds) {
+            if (!ItemLoader.wands.some(wand => wand.id === id)) expect(kinds.get(id)).toBe(identity);
+        }
+        expect(g.loadSnapshot(rebuilt)).toBe(true);
+        expect(g.toSnapshot().flavors).toEqual(rebuilt.flavors);
+        expect(rng.getState()).toEqual(before);
+    });
 });

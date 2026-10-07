@@ -1121,6 +1121,8 @@ export class ItemLoader {
      */
     public static restoreWandFlavors(saved?: Record<string, string>): void {
         const slots = this.wands.map(w => this.arcanaFlavorMap.get(w.id)!);
+        // Capture label/identity pairs before reassigning any kind's slot.
+        const identities = new Map(this.wands.map(w => [this.arcanaFlavorMap.get(w.id)!, this.flavorIdentities.get(w.id)!]));
         const legacy = ['wand_of_fire', 'wand_of_lightning', 'wand_of_teleportation',
             'wand_of_slowness', 'wand_of_invisibility', 'wand_of_empowerment', 'wand_of_beckoning'];
         const source = saved ?? Object.fromEntries(legacy.map((id, i) => [id, slots[i]!]));
@@ -1140,6 +1142,7 @@ export class ItemLoader {
                 used.add(flavor);
             }
             this.arcanaFlavorMap.set(w.id, restored.get(w.id)!);
+            this.flavorIdentities.set(w.id, identities.get(restored.get(w.id)!)!);
         }
     }
 
@@ -1162,6 +1165,10 @@ export class ItemLoader {
                 restored.set(staff.id, flavor); used.add(flavor);
             }
             this.arcanaFlavorMap.set(staff.id, restored.get(staff.id)!);
+            // Rebuilt kinds must carry the persisted wood's stable ID as well
+            // as its label; never derive IDs from today's translated names.
+            const slot = this.staffFlavorSlots.indexOf(restored.get(staff.id)!);
+            this.flavorIdentities.set(staff.id, this.staffFlavorIdentities[slot]!);
         }
     }
 
