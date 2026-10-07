@@ -1,0 +1,4719 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`loot UI complete state snapshots > card.combat-affix 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        "]"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◆"
+      </span>
+      <span class="loot-chip-name">
+        "晨隙之锋 锁子甲"
+      </span>
+      <span class="loot-chip-rarity">
+        "稀有"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "稀有"
+    </span>
+    <span>
+      "物等 25"
+    </span>
+    <span>
+      "护甲"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "护甲"
+      </dt>
+      <dd>
+        "7.8"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "13"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "加固的"
+        </span>
+        <span class="loot-affix-tier">
+          "2阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+17.61%"
+        </span>
+        <span>
+          "本地护甲"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "镶板的"
+        </span>
+        <span class="loot-affix-tier">
+          "3阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+2"
+        </span>
+        <span>
+          "护甲"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "坚忍的"
+        </span>
+        <span class="loot-affix-tier">
+          "3阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+5"
+        </span>
+        <span>
+          "体力上限"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.corrupted 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◆"
+      </span>
+      <span class="loot-chip-name">
+        "荒影之冠 鞭子"
+      </span>
+      <span class="loot-chip-rarity">
+        "稀有"
+      </span>
+      <span aria-label="腐化物品" class="loot-chip-corrupted">
+        "†"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "稀有"
+    </span>
+    <span>
+      "物等 25"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "2–4"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "14"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "屠巨的"
+        </span>
+        <span class="loot-affix-tier">
+          "2阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+35.05%"
+        </span>
+        <span>
+          "物理伤害"
+        </span>
+        <span class="loot-affix-condition">
+          "对大型目标"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "淬炼的"
+        </span>
+        <span class="loot-affix-tier">
+          "5阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+3"
+        </span>
+        <span>
+          "武器附魔"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-negative" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "钝化的"
+        </span>
+        <span class="loot-affix-tier">
+          "2阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-bad">
+        <span class="loot-affix-value">
+          "-15%"
+        </span>
+        <span>
+          "本地伤害"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "迅捷之"
+        </span>
+        <span class="loot-affix-tier">
+          "2阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "-7.78%"
+        </span>
+        <span>
+          "攻击耗时"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "巨力之"
+        </span>
+        <span class="loot-affix-tier">
+          "3阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+1"
+        </span>
+        <span>
+          "力量"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "汲血之"
+        </span>
+        <span class="loot-affix-tier">
+          "2阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+1"
+        </span>
+        <span>
+          "吸血"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <ul class="loot-card-notices">
+    <li>
+      "腐化：已诅咒，无法卸下"
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.enhanced-cap 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◇"
+      </span>
+      <span class="loot-chip-name">
+        "凶暴的迅捷之连枷"
+        <span>
+          " +8"
+        </span>
+      </span>
+      <span class="loot-chip-rarity">
+        "魔法"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "魔法"
+    </span>
+    <span>
+      "物等 12"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "18–30"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "17"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "强化"
+      </dt>
+      <dd>
+        "8/8"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "凶暴的"
+        </span>
+        <span class="loot-affix-tier">
+          "1阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+1–2"
+        </span>
+        <span>
+          "本地伤害"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "迅捷之"
+        </span>
+        <span class="loot-affix-tier">
+          "1阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "-5.15%"
+        </span>
+        <span>
+          "攻击耗时"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.familiarity 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◇"
+      </span>
+      <span class="loot-chip-name">
+        "连枷"
+      </span>
+      <span class="loot-chip-rarity">
+        "魔法"
+      </span>
+      <span aria-label="2 条未知词缀" class="loot-chip-unknown-badge">
+        "?×2"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "魔法"
+    </span>
+    <span>
+      "物等 12"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "9–15"
+        <span aria-label="仅含已知效果，数值尚不完整" class="loot-card-partial">
+          " ?"
+        </span>
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "17"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知前缀"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知后缀"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <ul class="loot-card-notices">
+    <li>
+      "未知词缀仍然生效"
+    </li>
+    <li>
+      "再击杀 3 个敌人即可熟悉"
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.floor 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        "]"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◆"
+      </span>
+      <span class="loot-chip-name">
+        "未鉴定的稀有带甲"
+      </span>
+      <span class="loot-chip-rarity">
+        "稀有"
+      </span>
+      <span aria-label="拾取后可知词缀数量" class="loot-chip-unknown-badge">
+        "?"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "稀有"
+    </span>
+    <span>
+      "护甲"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "15"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes"></ul>
+  <ul class="loot-card-notices">
+    <li>
+      "拾取后可查看物等与词缀数量"
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.folded 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◆"
+      </span>
+      <span class="loot-chip-name">
+        "灰月之心 匕首"
+      </span>
+      <span class="loot-chip-rarity">
+        "稀有"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "稀有"
+    </span>
+    <span>
+      "物等 48"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "8–16"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "12"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "凶暴的"
+        </span>
+        <span class="loot-affix-tier">
+          "5阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+5–12"
+        </span>
+        <span>
+          "本地伤害"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "淬炼的"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+3"
+        </span>
+        <span>
+          "武器附魔"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "屠巨的"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+69.44%"
+        </span>
+        <span>
+          "物理伤害"
+        </span>
+        <span class="loot-affix-condition">
+          "对大型目标"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "巨力之"
+        </span>
+        <span class="loot-affix-tier">
+          "5阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+2"
+        </span>
+        <span>
+          "力量"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <button aria-expanded=false class="loot-card-button loot-card-toggle" data-action="toggle-rows">
+    "更多（2）"
+  </button>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.giantsbane 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◆"
+      </span>
+      <span class="loot-chip-name">
+        "断星之握 战斧"
+      </span>
+      <span class="loot-chip-rarity">
+        "稀有"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "稀有"
+    </span>
+    <span>
+      "物等 25"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "19–26"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "19"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "锋利的"
+        </span>
+        <span class="loot-affix-tier">
+          "3阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+58.67%"
+        </span>
+        <span>
+          "本地伤害"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "屠巨的"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+89.73%"
+        </span>
+        <span>
+          "物理伤害"
+        </span>
+        <span class="loot-affix-condition">
+          "对大型目标"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "迅捷之"
+        </span>
+        <span class="loot-affix-tier">
+          "3阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "-10.31%"
+        </span>
+        <span>
+          "攻击耗时"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "精准之"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+26.5%"
+        </span>
+        <span>
+          "命中"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.growth-fallback 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◇"
+      </span>
+      <span class="loot-chip-name">
+        "精擅之阔剑"
+      </span>
+      <span class="loot-chip-rarity">
+        "魔法"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "魔法"
+    </span>
+    <span>
+      "物等 25"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "14–22"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "19"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "精擅之"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+2"
+        </span>
+        <span>
+          "strength"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.growth-labels 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◇"
+      </span>
+      <span class="loot-chip-name">
+        "精擅之阔剑"
+      </span>
+      <span class="loot-chip-rarity">
+        "魔法"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "魔法"
+    </span>
+    <span>
+      "物等 25"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "14–22"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "19"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "精擅之"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+2"
+        </span>
+        <span>
+          "力量"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.magic-unknown 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◇"
+      </span>
+      <span class="loot-chip-name">
+        "连枷"
+      </span>
+      <span class="loot-chip-rarity">
+        "魔法"
+      </span>
+      <span aria-label="2 条未知词缀" class="loot-chip-unknown-badge">
+        "?×2"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "魔法"
+    </span>
+    <span>
+      "物等 12"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "9–15"
+        <span aria-label="仅含已知效果，数值尚不完整" class="loot-card-partial">
+          " ?"
+        </span>
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "17"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知前缀"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知后缀"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <ul class="loot-card-notices">
+    <li>
+      "未知词缀仍然生效"
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.malevolent 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◆"
+      </span>
+      <span class="loot-chip-name">
+        "未鉴定的稀有鞭子"
+      </span>
+      <span class="loot-chip-rarity">
+        "稀有"
+      </span>
+      <span aria-label="6 条未知词缀" class="loot-chip-unknown-badge">
+        "?×6"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "稀有"
+    </span>
+    <span>
+      "物等 25"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "3–5"
+        <span aria-label="仅含已知效果，数值尚不完整" class="loot-card-partial">
+          " ?"
+        </span>
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "14"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知前缀"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知前缀"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知前缀"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知后缀"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知后缀"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知后缀"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <ul class="loot-card-notices">
+    <li>
+      "未知词缀仍然生效"
+    </li>
+    <li>
+      "侦测到恶意魔法"
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.rare-brutal 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◆"
+      </span>
+      <span class="loot-chip-name">
+        "霜枝之息 长矛"
+      </span>
+      <span class="loot-chip-rarity">
+        "稀有"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "稀有"
+    </span>
+    <span>
+      "物等 25"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "7–14"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "13"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "凶暴的"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+3–9"
+        </span>
+        <span>
+          "本地伤害"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "淬炼的"
+        </span>
+        <span class="loot-affix-tier">
+          "3阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+2"
+        </span>
+        <span>
+          "武器附魔"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "巨力之"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+2"
+        </span>
+        <span>
+          "力量"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.rare-partial 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        "]"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◆"
+      </span>
+      <span class="loot-chip-name">
+        "未鉴定的稀有带甲"
+      </span>
+      <span class="loot-chip-rarity">
+        "稀有"
+      </span>
+      <span aria-label="2 条未知词缀" class="loot-chip-unknown-badge">
+        "?×2"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "稀有"
+    </span>
+    <span>
+      "物等 19"
+    </span>
+    <span>
+      "护甲"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "护甲"
+      </dt>
+      <dd>
+        "7"
+        <span aria-label="仅含已知效果，数值尚不完整" class="loot-card-partial">
+          " ?"
+        </span>
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "15"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "辉光的"
+        </span>
+        <span class="loot-affix-tier">
+          "1阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+1"
+        </span>
+        <span>
+          "照明"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知前缀"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "活力之"
+        </span>
+        <span class="loot-affix-tier">
+          "1阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+5"
+        </span>
+        <span>
+          "生命上限"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知后缀"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <ul class="loot-card-notices">
+    <li>
+      "未知词缀仍然生效"
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.ring-unknown-kind 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        "="
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◇"
+      </span>
+      <span class="loot-chip-name">
+        "未知戒指"
+      </span>
+      <span class="loot-chip-rarity">
+        "魔法"
+      </span>
+      <span aria-label="1 条未知词缀" class="loot-chip-unknown-badge">
+        "?×1"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "魔法"
+    </span>
+    <span>
+      "物等 6"
+    </span>
+    <span>
+      "戒指"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "戒指本体"
+      </dt>
+      <dd>
+        "1"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "未知后缀"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <ul class="loot-card-notices">
+    <li>
+      "未知词缀仍然生效"
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.t6 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        "]"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◆"
+      </span>
+      <span class="loot-chip-name">
+        "沉沙之梦 板条甲"
+      </span>
+      <span class="loot-chip-rarity">
+        "稀有"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "稀有"
+    </span>
+    <span>
+      "物等 63"
+    </span>
+    <span>
+      "护甲"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "护甲"
+      </dt>
+      <dd>
+        "14.7"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "17"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "镶板的"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+2"
+        </span>
+        <span>
+          "护甲"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "加固的"
+        </span>
+        <span class="loot-affix-tier">
+          "5阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+41.6%"
+        </span>
+        <span>
+          "本地护甲"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "守护的"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "-10.62%"
+        </span>
+        <span>
+          "受到的物理伤害"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "抗毒之"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+30.29%"
+        </span>
+        <span>
+          "毒素抗性"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "愈合之"
+        </span>
+        <span class="loot-affix-tier">
+          "6阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+3"
+        </span>
+        <span>
+          "再生"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.unfolded 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "◆"
+      </span>
+      <span class="loot-chip-name">
+        "灰月之心 匕首"
+      </span>
+      <span class="loot-chip-rarity">
+        "稀有"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "稀有"
+    </span>
+    <span>
+      "物等 48"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "8–16"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "12"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "凶暴的"
+        </span>
+        <span class="loot-affix-tier">
+          "5阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+5–12"
+        </span>
+        <span>
+          "本地伤害"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "淬炼的"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+3"
+        </span>
+        <span>
+          "武器附魔"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="prefix">
+      <div class="loot-affix-heading">
+        <span>
+          "屠巨的"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+69.44%"
+        </span>
+        <span>
+          "物理伤害"
+        </span>
+        <span class="loot-affix-condition">
+          "对大型目标"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "巨力之"
+        </span>
+        <span class="loot-affix-tier">
+          "5阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+2"
+        </span>
+        <span>
+          "力量"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "迅捷之"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "-14.27%"
+        </span>
+        <span>
+          "攻击耗时"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="suffix">
+      <div class="loot-affix-heading">
+        <span>
+          "精准之"
+        </span>
+        <span class="loot-affix-tier">
+          "4阶"
+        </span>
+      </div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+29.84%"
+        </span>
+        <span>
+          "命中"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <button aria-expanded=true class="loot-card-button loot-card-toggle" data-action="toggle-rows">
+    "收起"
+  </button>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.unique-maul 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "★"
+      </span>
+      <span class="loot-chip-name">
+        "巨像之锤"
+      </span>
+      <span class="loot-chip-rarity">
+        "唯一"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "唯一"
+    </span>
+    <span>
+      "物等 35"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "33–49"
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "20"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="row">
+      <div class="loot-affix-heading"></div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+8–14"
+        </span>
+        <span>
+          "本地伤害"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="row">
+      <div class="loot-affix-heading"></div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+4"
+        </span>
+        <span>
+          "力量"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="row">
+      <div class="loot-affix-heading"></div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+107.16%"
+        </span>
+        <span>
+          "物理伤害"
+        </span>
+        <span class="loot-affix-condition">
+          "对大型目标"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="row">
+      <div class="loot-affix-heading"></div>
+      <div class="loot-affix-line loot-affix-tone-bad">
+        <span class="loot-affix-value">
+          "+15%"
+        </span>
+        <span>
+          "攻击耗时"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="row">
+      <div class="loot-affix-heading"></div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "8"
+        </span>
+        <span>
+          "符文强度"
+        </span>
+        <span>
+          "力场"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <p class="loot-card-flavor">
+    "锤首凿痕深邃，仿佛曾击落一整片石穹。"
+  </p>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.unique-ring 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        "="
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "★"
+      </span>
+      <span class="loot-chip-name">
+        "苦修者之环"
+      </span>
+      <span class="loot-chip-rarity">
+        "唯一"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "唯一"
+    </span>
+    <span>
+      "物等 26"
+    </span>
+    <span>
+      "戒指"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "戒指本体"
+      </dt>
+      <dd>
+        "3"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row" data-known=true data-position="row">
+      <div class="loot-affix-heading"></div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "=3"
+        </span>
+        <span>
+          "戒指本体"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="row">
+      <div class="loot-affix-heading"></div>
+      <div class="loot-affix-line loot-affix-tone-bad">
+        <span class="loot-affix-value">
+          "-10"
+        </span>
+        <span>
+          "生命上限"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="row">
+      <div class="loot-affix-heading"></div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "-10%"
+        </span>
+        <span>
+          "受到的物理伤害"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row" data-known=true data-position="row">
+      <div class="loot-affix-heading"></div>
+      <div class="loot-affix-line loot-affix-tone-good">
+        <span class="loot-affix-value">
+          "+40%"
+        </span>
+        <span>
+          "毒素抗性"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <p class="loot-card-flavor">
+    "内壁细小的刻痕记着每一次默默承受的伤。"
+  </p>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > card.unique-unknown 1`] = `
+"<section aria-labelledby="v-0" class="loot-item-card" role="dialog">
+  <h2 class="loot-card-title" id="v-0">
+    <span class="loot-item-chip">
+      <span aria-hidden="true" class="loot-chip-glyph">
+        ")"
+      </span>
+      <span aria-hidden="true" class="loot-chip-marker">
+        "★"
+      </span>
+      <span class="loot-chip-name">
+        "未鉴定的唯一战锤"
+      </span>
+      <span class="loot-chip-rarity">
+        "唯一"
+      </span>
+      <span aria-label="5 条未知词缀" class="loot-chip-unknown-badge">
+        "?×5"
+      </span>
+    </span>
+  </h2>
+  <div class="loot-card-subtitle">
+    <span>
+      "唯一"
+    </span>
+    <span>
+      "物等 35"
+    </span>
+    <span>
+      "武器"
+    </span>
+  </div>
+  <dl class="loot-card-base-stats">
+    <div class="loot-card-base-stat">
+      <dt>
+        "伤害"
+      </dt>
+      <dd>
+        "25–35"
+        <span aria-label="仅含已知效果，数值尚不完整" class="loot-card-partial">
+          " ?"
+        </span>
+      </dd>
+    </div>
+    <div class="loot-card-base-stat">
+      <dt>
+        "力量需求"
+      </dt>
+      <dd>
+        "20"
+      </dd>
+    </div>
+  </dl>
+  <ul class="loot-card-affixes">
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="row">
+      <div class="loot-affix-heading">
+        <span>
+          "未知词条"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="row">
+      <div class="loot-affix-heading">
+        <span>
+          "未知词条"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="row">
+      <div class="loot-affix-heading">
+        <span>
+          "未知词条"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="row">
+      <div class="loot-affix-heading">
+        <span>
+          "未知词条"
+        </span>
+      </div>
+    </li>
+    <li class="loot-affix-row loot-affix-unknown" data-known=false data-position="row">
+      <div class="loot-affix-heading">
+        <span>
+          "未知词条"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <ul class="loot-card-notices">
+    <li>
+      "未知词缀仍然生效"
+    </li>
+  </ul>
+  <div class="loot-card-actions">
+    <button class="loot-card-button" data-action="compare">
+      "比较"
+    </button>
+    <button class="loot-card-button" data-action="salvage">
+      "分解"
+    </button>
+    <button class="loot-card-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > chip.corrupted 1`] = `
+"<span class="loot-item-chip">
+  <span aria-hidden="true" class="loot-chip-glyph">
+    ")"
+  </span>
+  <span aria-hidden="true" class="loot-chip-marker">
+    "◆"
+  </span>
+  <span class="loot-chip-name">
+    "荒影之冠 鞭子"
+  </span>
+  <span class="loot-chip-rarity">
+    "稀有"
+  </span>
+  <span aria-label="腐化物品" class="loot-chip-corrupted">
+    "†"
+  </span>
+</span>"
+`;
+
+exports[`loot UI complete state snapshots > chip.enhanced 1`] = `
+"<span class="loot-item-chip">
+  <span aria-hidden="true" class="loot-chip-glyph">
+    ")"
+  </span>
+  <span aria-hidden="true" class="loot-chip-marker">
+    "◇"
+  </span>
+  <span class="loot-chip-name">
+    "凶暴的迅捷之连枷"
+    <span>
+      " +8"
+    </span>
+  </span>
+  <span class="loot-chip-rarity">
+    "魔法"
+  </span>
+</span>"
+`;
+
+exports[`loot UI complete state snapshots > chip.floor 1`] = `
+"<span class="loot-item-chip">
+  <span aria-hidden="true" class="loot-chip-glyph">
+    "]"
+  </span>
+  <span aria-hidden="true" class="loot-chip-marker">
+    "◆"
+  </span>
+  <span class="loot-chip-name">
+    "未鉴定的稀有带甲"
+  </span>
+  <span class="loot-chip-rarity">
+    "稀有"
+  </span>
+  <span aria-label="拾取后可知词缀数量" class="loot-chip-unknown-badge">
+    "?"
+  </span>
+</span>"
+`;
+
+exports[`loot UI complete state snapshots > chip.hallucinating 1`] = `
+"<span class="loot-item-chip loot-item-chip-unknown">
+  <span aria-hidden="true" class="loot-chip-glyph">
+    "]"
+  </span>
+  <span aria-hidden="true" class="loot-chip-marker">
+    "?"
+  </span>
+  <span class="loot-chip-name">
+    "护甲"
+  </span>
+  <span aria-label="拾取后可知词缀数量" class="loot-chip-unknown-badge">
+    "?"
+  </span>
+</span>"
+`;
+
+exports[`loot UI complete state snapshots > chip.magic-unknown 1`] = `
+"<span class="loot-item-chip">
+  <span aria-hidden="true" class="loot-chip-glyph">
+    ")"
+  </span>
+  <span aria-hidden="true" class="loot-chip-marker">
+    "◇"
+  </span>
+  <span class="loot-chip-name">
+    "连枷"
+  </span>
+  <span class="loot-chip-rarity">
+    "魔法"
+  </span>
+  <span aria-label="2 条未知词缀" class="loot-chip-unknown-badge">
+    "?×2"
+  </span>
+</span>"
+`;
+
+exports[`loot UI complete state snapshots > chip.normal 1`] = `
+"<span class="loot-item-chip">
+  <span aria-hidden="true" class="loot-chip-glyph">
+    ")"
+  </span>
+  <span aria-hidden="true" class="loot-chip-marker"></span>
+  <span class="loot-chip-name">
+    "钉锤"
+  </span>
+  <span class="loot-chip-rarity">
+    "普通"
+  </span>
+</span>"
+`;
+
+exports[`loot UI complete state snapshots > chip.rare-identified 1`] = `
+"<span class="loot-item-chip">
+  <span aria-hidden="true" class="loot-chip-glyph">
+    ")"
+  </span>
+  <span aria-hidden="true" class="loot-chip-marker">
+    "◆"
+  </span>
+  <span class="loot-chip-name">
+    "霜枝之息 长矛"
+  </span>
+  <span class="loot-chip-rarity">
+    "稀有"
+  </span>
+</span>"
+`;
+
+exports[`loot UI complete state snapshots > chip.rare-unknown 1`] = `
+"<span class="loot-item-chip">
+  <span aria-hidden="true" class="loot-chip-glyph">
+    ")"
+  </span>
+  <span aria-hidden="true" class="loot-chip-marker">
+    "◆"
+  </span>
+  <span class="loot-chip-name">
+    "未鉴定的稀有长矛"
+  </span>
+  <span class="loot-chip-rarity">
+    "稀有"
+  </span>
+  <span aria-label="3 条未知词缀" class="loot-chip-unknown-badge">
+    "?×3"
+  </span>
+</span>"
+`;
+
+exports[`loot UI complete state snapshots > chip.ring-kind-unknown 1`] = `
+"<span class="loot-item-chip">
+  <span aria-hidden="true" class="loot-chip-glyph">
+    "="
+  </span>
+  <span aria-hidden="true" class="loot-chip-marker">
+    "◇"
+  </span>
+  <span class="loot-chip-name">
+    "未知戒指"
+  </span>
+  <span class="loot-chip-rarity">
+    "魔法"
+  </span>
+  <span aria-label="1 条未知词缀" class="loot-chip-unknown-badge">
+    "?×1"
+  </span>
+</span>"
+`;
+
+exports[`loot UI complete state snapshots > chip.selected 1`] = `
+"<button aria-pressed=true class="loot-item-chip loot-item-chip-interactive loot-item-chip-selected">
+  <span aria-hidden="true" class="loot-chip-glyph">
+    ")"
+  </span>
+  <span aria-hidden="true" class="loot-chip-marker">
+    "◆"
+  </span>
+  <span class="loot-chip-name">
+    "霜枝之息 长矛"
+  </span>
+  <span class="loot-chip-rarity">
+    "稀有"
+  </span>
+</button>"
+`;
+
+exports[`loot UI complete state snapshots > chip.unique-identified 1`] = `
+"<span class="loot-item-chip">
+  <span aria-hidden="true" class="loot-chip-glyph">
+    ")"
+  </span>
+  <span aria-hidden="true" class="loot-chip-marker">
+    "★"
+  </span>
+  <span class="loot-chip-name">
+    "低语"
+  </span>
+  <span class="loot-chip-rarity">
+    "唯一"
+  </span>
+</span>"
+`;
+
+exports[`loot UI complete state snapshots > chip.unique-unknown 1`] = `
+"<span class="loot-item-chip">
+  <span aria-hidden="true" class="loot-chip-glyph">
+    ")"
+  </span>
+  <span aria-hidden="true" class="loot-chip-marker">
+    "★"
+  </span>
+  <span class="loot-chip-name">
+    "未鉴定的唯一匕首"
+  </span>
+  <span class="loot-chip-rarity">
+    "唯一"
+  </span>
+  <span aria-label="4 条未知词缀" class="loot-chip-unknown-badge">
+    "?×4"
+  </span>
+</span>"
+`;
+
+exports[`loot UI complete state snapshots > compare.empty-slot 1`] = `
+"<section aria-labelledby="v-0" class="loot-compare" role="dialog">
+  <div class="loot-compare-heading">
+    <h2 class="loot-compare-title" id="v-0">
+      "装备比较"
+    </h2>
+    <button class="loot-compare-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+  <span class="loot-item-chip">
+    <span aria-hidden="true" class="loot-chip-glyph">
+      "]"
+    </span>
+    <span aria-hidden="true" class="loot-chip-marker"></span>
+    <span class="loot-chip-name">
+      "锁子甲"
+    </span>
+    <span class="loot-chip-rarity">
+      "普通"
+    </span>
+  </span>
+  <div class="loot-compare-columns">
+    <section class="loot-compare-column">
+      <h3 class="loot-compare-slot">
+        "护甲"
+      </h3>
+      <p class="loot-compare-empty">
+        "空"
+      </p>
+      <table class="loot-compare-table">
+        <thead>
+          <tr>
+            <th>
+              "属性"
+            </th>
+            <th>
+              "当前"
+            </th>
+            <th>
+              "候选"
+            </th>
+            <th>
+              "差值"
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "护甲"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
+              "5"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+5"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "力量需求"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
+              "13"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+13"
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+  <ul class="loot-compare-notices">
+    <li>
+      "估算值，仅含已知效果"
+    </li>
+  </ul>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > compare.floor 1`] = `
+"<section aria-labelledby="v-0" class="loot-compare" role="dialog">
+  <div class="loot-compare-heading">
+    <h2 class="loot-compare-title" id="v-0">
+      "装备比较"
+    </h2>
+    <button class="loot-compare-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+  <span class="loot-item-chip">
+    <span aria-hidden="true" class="loot-chip-glyph">
+      "]"
+    </span>
+    <span aria-hidden="true" class="loot-chip-marker">
+      "◆"
+    </span>
+    <span class="loot-chip-name">
+      "未鉴定的稀有带甲"
+    </span>
+    <span class="loot-chip-rarity">
+      "稀有"
+    </span>
+    <span aria-label="拾取后可知词缀数量" class="loot-chip-unknown-badge">
+      "?"
+    </span>
+  </span>
+  <ul class="loot-compare-notices">
+    <li>
+      "拾取后才可比较"
+    </li>
+  </ul>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > compare.folded 1`] = `
+"<section aria-labelledby="v-0" class="loot-compare" role="dialog">
+  <div class="loot-compare-heading">
+    <h2 class="loot-compare-title" id="v-0">
+      "装备比较"
+    </h2>
+    <button class="loot-compare-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+  <span class="loot-item-chip">
+    <span aria-hidden="true" class="loot-chip-glyph">
+      ")"
+    </span>
+    <span aria-hidden="true" class="loot-chip-marker">
+      "◆"
+    </span>
+    <span class="loot-chip-name">
+      "灰月之心 匕首"
+    </span>
+    <span class="loot-chip-rarity">
+      "稀有"
+    </span>
+  </span>
+  <div class="loot-compare-columns">
+    <section class="loot-compare-column">
+      <h3 class="loot-compare-slot">
+        "武器"
+      </h3>
+      <span class="loot-item-chip loot-item-chip-compact">
+        <span aria-hidden="true" class="loot-chip-glyph">
+          ")"
+        </span>
+        <span aria-hidden="true" class="loot-chip-marker">
+          "◇"
+        </span>
+        <span class="loot-chip-name">
+          "精准之阔剑"
+        </span>
+      </span>
+      <table class="loot-compare-table">
+        <thead>
+          <tr>
+            <th>
+              "属性"
+            </th>
+            <th>
+              "当前"
+            </th>
+            <th>
+              "候选"
+            </th>
+            <th>
+              "差值"
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "伤害"
+            </th>
+            <td data-label="当前">
+              "14–22"
+            </td>
+            <td data-label="候选">
+              "8–16"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-6–-6"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "力量需求"
+            </th>
+            <td data-label="当前">
+              "19"
+            </td>
+            <td data-label="候选">
+              "12"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-7"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "本地伤害"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
+              "+17"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+17"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "武器附魔"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
+              "+3"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+3"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "物理伤害"
+            </th>
+            <td data-label="当前">
+              "0%"
+            </td>
+            <td data-label="候选">
+              "+69.44%"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+69.44%"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "命中"
+            </th>
+            <td data-label="当前">
+              "+13.3%"
+            </td>
+            <td data-label="候选">
+              "+29.84%"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+16.54%"
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <button aria-expanded=false class="loot-compare-button loot-compare-toggle" data-action="toggle-compare" data-column=0>
+        "全部比较"
+      </button>
+    </section>
+  </div>
+  <ul class="loot-compare-notices">
+    <li>
+      "估算值，仅含已知效果"
+    </li>
+  </ul>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > compare.partial 1`] = `
+"<section aria-labelledby="v-0" class="loot-compare" role="dialog">
+  <div class="loot-compare-heading">
+    <h2 class="loot-compare-title" id="v-0">
+      "装备比较"
+    </h2>
+    <button class="loot-compare-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+  <span class="loot-item-chip">
+    <span aria-hidden="true" class="loot-chip-glyph">
+      "]"
+    </span>
+    <span aria-hidden="true" class="loot-chip-marker">
+      "◆"
+    </span>
+    <span class="loot-chip-name">
+      "未鉴定的稀有带甲"
+    </span>
+    <span class="loot-chip-rarity">
+      "稀有"
+    </span>
+    <span aria-label="2 条未知词缀" class="loot-chip-unknown-badge">
+      "?×2"
+    </span>
+  </span>
+  <div class="loot-compare-columns">
+    <section class="loot-compare-column">
+      <h3 class="loot-compare-slot">
+        "护甲"
+      </h3>
+      <span class="loot-item-chip loot-item-chip-compact">
+        <span aria-hidden="true" class="loot-chip-glyph">
+          "]"
+        </span>
+        <span aria-hidden="true" class="loot-chip-marker">
+          "◇"
+        </span>
+        <span class="loot-chip-name">
+          "活力之带甲"
+        </span>
+      </span>
+      <table class="loot-compare-table">
+        <thead>
+          <tr>
+            <th>
+              "属性"
+            </th>
+            <th>
+              "当前"
+            </th>
+            <th>
+              "候选"
+            </th>
+            <th>
+              "差值"
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="loot-compare-row loot-compare-same">
+            <th>
+              "护甲"
+            </th>
+            <td data-label="当前">
+              "7"
+            </td>
+            <td data-label="候选">
+              "7?"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "0?"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-same">
+            <th>
+              "力量需求"
+            </th>
+            <td data-label="当前">
+              "15"
+            </td>
+            <td data-label="候选">
+              "15"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "0"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "照明"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
+              "+1"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+1"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "生命上限"
+            </th>
+            <td data-label="当前">
+              "+15"
+            </td>
+            <td data-label="候选">
+              "+5"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-10"
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+  <ul class="loot-compare-notices">
+    <li>
+      "共 2 条未知效果未计入"
+    </li>
+    <li>
+      "估算值，仅含已知效果"
+    </li>
+  </ul>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > compare.rings 1`] = `
+"<section aria-labelledby="v-0" class="loot-compare" role="dialog">
+  <div class="loot-compare-heading">
+    <h2 class="loot-compare-title" id="v-0">
+      "装备比较"
+    </h2>
+    <button class="loot-compare-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+  <span class="loot-item-chip">
+    <span aria-hidden="true" class="loot-chip-glyph">
+      "="
+    </span>
+    <span aria-hidden="true" class="loot-chip-marker">
+      "◇"
+    </span>
+    <span class="loot-chip-name">
+      "精准之感知戒指"
+    </span>
+    <span class="loot-chip-rarity">
+      "魔法"
+    </span>
+  </span>
+  <div class="loot-compare-columns">
+    <section class="loot-compare-column">
+      <h3 class="loot-compare-slot">
+        "左戒"
+      </h3>
+      <span class="loot-item-chip loot-item-chip-compact">
+        <span aria-hidden="true" class="loot-chip-glyph">
+          "="
+        </span>
+        <span aria-hidden="true" class="loot-chip-marker">
+          "◆"
+        </span>
+        <span class="loot-chip-name">
+          "白烬之壳 光明戒指"
+        </span>
+      </span>
+      <table class="loot-compare-table">
+        <thead>
+          <tr>
+            <th>
+              "属性"
+            </th>
+            <th>
+              "当前"
+            </th>
+            <th>
+              "候选"
+            </th>
+            <th>
+              "差值"
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "戒指本体"
+            </th>
+            <td data-label="当前">
+              "2"
+            </td>
+            <td data-label="候选">
+              "1"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-1"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "照明"
+            </th>
+            <td data-label="当前">
+              "+1"
+            </td>
+            <td data-label="候选">
+              "0"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-1"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "命中"
+            </th>
+            <td data-label="当前">
+              "+24.54%"
+            </td>
+            <td data-label="候选">
+              "+10.88%"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-13.66%"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "生命上限"
+            </th>
+            <td data-label="当前">
+              "+12"
+            </td>
+            <td data-label="候选">
+              "0"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-12"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "力量"
+            </th>
+            <td data-label="当前">
+              "+1"
+            </td>
+            <td data-label="候选">
+              "0"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-1"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "戒指本体"
+            </th>
+            <td data-label="当前">
+              "+2"
+            </td>
+            <td data-label="候选">
+              "+1"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-1"
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="loot-compare-column">
+      <h3 class="loot-compare-slot">
+        "右戒"
+      </h3>
+      <span class="loot-item-chip loot-item-chip-compact">
+        <span aria-hidden="true" class="loot-chip-glyph">
+          "="
+        </span>
+        <span aria-hidden="true" class="loot-chip-marker">
+          "◇"
+        </span>
+        <span class="loot-chip-name">
+          "精准之感知戒指"
+        </span>
+      </span>
+      <table class="loot-compare-table">
+        <thead>
+          <tr>
+            <th>
+              "属性"
+            </th>
+            <th>
+              "当前"
+            </th>
+            <th>
+              "候选"
+            </th>
+            <th>
+              "差值"
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "戒指本体"
+            </th>
+            <td data-label="当前">
+              "2"
+            </td>
+            <td data-label="候选">
+              "1"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-1"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "命中"
+            </th>
+            <td data-label="当前">
+              "+16.6%"
+            </td>
+            <td data-label="候选">
+              "+10.88%"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-5.72%"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "戒指本体"
+            </th>
+            <td data-label="当前">
+              "+2"
+            </td>
+            <td data-label="候选">
+              "+1"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-1"
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+  <ul class="loot-compare-notices">
+    <li>
+      "估算值，仅含已知效果"
+    </li>
+  </ul>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > compare.strength-short 1`] = `
+"<section aria-labelledby="v-0" class="loot-compare" role="dialog">
+  <div class="loot-compare-heading">
+    <h2 class="loot-compare-title" id="v-0">
+      "装备比较"
+    </h2>
+    <button class="loot-compare-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+  <span class="loot-item-chip">
+    <span aria-hidden="true" class="loot-chip-glyph">
+      ")"
+    </span>
+    <span aria-hidden="true" class="loot-chip-marker">
+      "◆"
+    </span>
+    <span class="loot-chip-name">
+      "霜枝之息 长矛"
+    </span>
+    <span class="loot-chip-rarity">
+      "稀有"
+    </span>
+  </span>
+  <div class="loot-compare-columns">
+    <section class="loot-compare-column">
+      <h3 class="loot-compare-slot">
+        "武器"
+      </h3>
+      <span class="loot-item-chip loot-item-chip-compact">
+        <span aria-hidden="true" class="loot-chip-glyph">
+          ")"
+        </span>
+        <span aria-hidden="true" class="loot-chip-marker">
+          "◇"
+        </span>
+        <span class="loot-chip-name">
+          "精准之阔剑"
+        </span>
+      </span>
+      <table class="loot-compare-table">
+        <thead>
+          <tr>
+            <th>
+              "属性"
+            </th>
+            <th>
+              "当前"
+            </th>
+            <th>
+              "候选"
+            </th>
+            <th>
+              "差值"
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "伤害"
+            </th>
+            <td data-label="当前">
+              "14–22"
+            </td>
+            <td data-label="候选">
+              "7–14"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-7–-8"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "力量需求"
+            </th>
+            <td data-label="当前">
+              "19"
+            </td>
+            <td data-label="候选">
+              "13"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-6"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "本地伤害"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
+              "+12"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+12"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "武器附魔"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
+              "+2"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+2"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "命中"
+            </th>
+            <td data-label="当前">
+              "+13.3%"
+            </td>
+            <td data-label="候选">
+              "0%"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-13.3%"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "力量"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
+              "+2"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+2"
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+  <ul class="loot-compare-notices">
+    <li>
+      "力量还差 1 点"
+    </li>
+    <li>
+      "估算值，仅含已知效果"
+    </li>
+  </ul>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > compare.weapon 1`] = `
+"<section aria-labelledby="v-0" class="loot-compare" role="dialog">
+  <div class="loot-compare-heading">
+    <h2 class="loot-compare-title" id="v-0">
+      "装备比较"
+    </h2>
+    <button class="loot-compare-button" data-action="close">
+      "关闭"
+    </button>
+  </div>
+  <span class="loot-item-chip">
+    <span aria-hidden="true" class="loot-chip-glyph">
+      ")"
+    </span>
+    <span aria-hidden="true" class="loot-chip-marker">
+      "◆"
+    </span>
+    <span class="loot-chip-name">
+      "霜枝之息 长矛"
+    </span>
+    <span class="loot-chip-rarity">
+      "稀有"
+    </span>
+  </span>
+  <div class="loot-compare-columns">
+    <section class="loot-compare-column">
+      <h3 class="loot-compare-slot">
+        "武器"
+      </h3>
+      <span class="loot-item-chip loot-item-chip-compact">
+        <span aria-hidden="true" class="loot-chip-glyph">
+          ")"
+        </span>
+        <span aria-hidden="true" class="loot-chip-marker">
+          "◇"
+        </span>
+        <span class="loot-chip-name">
+          "精准之阔剑"
+        </span>
+      </span>
+      <table class="loot-compare-table">
+        <thead>
+          <tr>
+            <th>
+              "属性"
+            </th>
+            <th>
+              "当前"
+            </th>
+            <th>
+              "候选"
+            </th>
+            <th>
+              "差值"
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "伤害"
+            </th>
+            <td data-label="当前">
+              "14–22"
+            </td>
+            <td data-label="候选">
+              "7–14"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-7–-8"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "力量需求"
+            </th>
+            <td data-label="当前">
+              "19"
+            </td>
+            <td data-label="候选">
+              "13"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-6"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "本地伤害"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
+              "+12"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+12"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "武器附魔"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
+              "+2"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+2"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-worse">
+            <th>
+              "命中"
+            </th>
+            <td data-label="当前">
+              "+13.3%"
+            </td>
+            <td data-label="候选">
+              "0%"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "-13.3%"
+            </td>
+          </tr>
+          <tr class="loot-compare-row loot-compare-better">
+            <th>
+              "力量"
+            </th>
+            <td data-label="当前">
+              "0"
+            </td>
+            <td data-label="候选">
+              "+2"
+            </td>
+            <td class="loot-compare-delta" data-label="差值">
+              "+2"
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+  <ul class="loot-compare-notices">
+    <li>
+      "估算值，仅含已知效果"
+    </li>
+  </ul>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > filter.bountiful 1`] = `
+"<form aria-busy=false aria-labelledby="v-0" class="loot-filter" role="dialog">
+  <h2 class="loot-filter-title" id="v-0">
+    "拾取过滤"
+  </h2>
+  <p class="loot-filter-preset">
+    "当前预设：丰饶"
+  </p>
+  <fieldset class="loot-filter-fieldset" disabled=false>
+    <legend>
+      "最低稀有度"
+    </legend>
+    <div aria-label="最低稀有度" class="loot-filter-rarities" role="radiogroup">
+      <button aria-checked=false class="loot-filter-radio" data-rarity="normal" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true"></span>
+        " 普通"
+      </button>
+      <button aria-checked=true class="loot-filter-radio" data-rarity="magic" disabled=false role="radio" tabindex=0>
+        <span aria-hidden="true">
+          "◇"
+        </span>
+        " 魔法"
+      </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="rare" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "◆"
+        </span>
+        " 稀有"
+      </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="unique" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "★"
+        </span>
+        " 唯一"
+      </button>
+    </div>
+  </fieldset>
+  <fieldset class="loot-filter-fieldset" disabled=false>
+    <legend>
+      "拾取类别"
+    </legend>
+    <div class="loot-filter-classes">
+      <button aria-checked=true class="loot-filter-check" data-class="weapon" disabled=false role="checkbox">
+        <span aria-hidden="true">
+          "☑"
+        </span>
+        " 武器"
+      </button>
+      <button aria-checked=true class="loot-filter-check" data-class="armor" disabled=false role="checkbox">
+        <span aria-hidden="true">
+          "☑"
+        </span>
+        " 护甲"
+      </button>
+      <button aria-checked=true class="loot-filter-check" data-class="ring" disabled=false role="checkbox">
+        <span aria-hidden="true">
+          "☑"
+        </span>
+        " 戒指"
+      </button>
+    </div>
+  </fieldset>
+  <button aria-checked=true class="loot-filter-check loot-filter-gold" data-action="gold" disabled=false role="switch">
+    <span aria-hidden="true">
+      "☑"
+    </span>
+    " 自动拾取金币"
+  </button>
+  <div class="loot-filter-actions">
+    <button class="loot-filter-button" data-action="reset" disabled=false>
+      "恢复预设默认"
+    </button>
+    <button class="loot-filter-button" data-action="submit" disabled=true>
+      "保存过滤"
+    </button>
+    <button class="loot-filter-button" data-action="cancel" disabled=false>
+      "取消"
+    </button>
+  </div>
+</form>"
+`;
+
+exports[`loot UI complete state snapshots > filter.dirty 1`] = `
+"<form aria-busy=false aria-labelledby="v-0" class="loot-filter" role="dialog">
+  <h2 class="loot-filter-title" id="v-0">
+    "拾取过滤"
+  </h2>
+  <p class="loot-filter-preset">
+    "当前预设：标准"
+  </p>
+  <fieldset class="loot-filter-fieldset" disabled=false>
+    <legend>
+      "最低稀有度"
+    </legend>
+    <div aria-label="最低稀有度" class="loot-filter-rarities" role="radiogroup">
+      <button aria-checked=false class="loot-filter-radio" data-rarity="normal" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true"></span>
+        " 普通"
+      </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="magic" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "◇"
+        </span>
+        " 魔法"
+      </button>
+      <button aria-checked=true class="loot-filter-radio" data-rarity="rare" disabled=false role="radio" tabindex=0>
+        <span aria-hidden="true">
+          "◆"
+        </span>
+        " 稀有"
+      </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="unique" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "★"
+        </span>
+        " 唯一"
+      </button>
+    </div>
+  </fieldset>
+  <fieldset class="loot-filter-fieldset" disabled=false>
+    <legend>
+      "拾取类别"
+    </legend>
+    <div class="loot-filter-classes">
+      <button aria-checked=true class="loot-filter-check" data-class="weapon" disabled=false role="checkbox">
+        <span aria-hidden="true">
+          "☑"
+        </span>
+        " 武器"
+      </button>
+      <button aria-checked=true class="loot-filter-check" data-class="armor" disabled=false role="checkbox">
+        <span aria-hidden="true">
+          "☑"
+        </span>
+        " 护甲"
+      </button>
+      <button aria-checked=true class="loot-filter-check" data-class="ring" disabled=false role="checkbox">
+        <span aria-hidden="true">
+          "☑"
+        </span>
+        " 戒指"
+      </button>
+    </div>
+  </fieldset>
+  <button aria-checked=true class="loot-filter-check loot-filter-gold" data-action="gold" disabled=false role="switch">
+    <span aria-hidden="true">
+      "☑"
+    </span>
+    " 自动拾取金币"
+  </button>
+  <div class="loot-filter-actions">
+    <button class="loot-filter-button" data-action="reset" disabled=false>
+      "恢复预设默认"
+    </button>
+    <button class="loot-filter-button" data-action="submit" disabled=false>
+      "保存过滤"
+    </button>
+    <button class="loot-filter-button" data-action="cancel" disabled=false>
+      "取消"
+    </button>
+  </div>
+</form>"
+`;
+
+exports[`loot UI complete state snapshots > filter.no-classes 1`] = `
+"<form aria-busy=false aria-labelledby="v-0" class="loot-filter" role="dialog">
+  <h2 class="loot-filter-title" id="v-0">
+    "拾取过滤"
+  </h2>
+  <p class="loot-filter-preset">
+    "当前预设：标准"
+  </p>
+  <fieldset class="loot-filter-fieldset" disabled=false>
+    <legend>
+      "最低稀有度"
+    </legend>
+    <div aria-label="最低稀有度" class="loot-filter-rarities" role="radiogroup">
+      <button aria-checked=false class="loot-filter-radio" data-rarity="normal" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true"></span>
+        " 普通"
+      </button>
+      <button aria-checked=true class="loot-filter-radio" data-rarity="magic" disabled=false role="radio" tabindex=0>
+        <span aria-hidden="true">
+          "◇"
+        </span>
+        " 魔法"
+      </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="rare" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "◆"
+        </span>
+        " 稀有"
+      </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="unique" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "★"
+        </span>
+        " 唯一"
+      </button>
+    </div>
+  </fieldset>
+  <fieldset class="loot-filter-fieldset" disabled=false>
+    <legend>
+      "拾取类别"
+    </legend>
+    <div class="loot-filter-classes">
+      <button aria-checked=false class="loot-filter-check" data-class="weapon" disabled=false role="checkbox">
+        <span aria-hidden="true">
+          "☐"
+        </span>
+        " 武器"
+      </button>
+      <button aria-checked=false class="loot-filter-check" data-class="armor" disabled=false role="checkbox">
+        <span aria-hidden="true">
+          "☐"
+        </span>
+        " 护甲"
+      </button>
+      <button aria-checked=false class="loot-filter-check" data-class="ring" disabled=false role="checkbox">
+        <span aria-hidden="true">
+          "☐"
+        </span>
+        " 戒指"
+      </button>
+    </div>
+  </fieldset>
+  <button aria-checked=true class="loot-filter-check loot-filter-gold" data-action="gold" disabled=false role="switch">
+    <span aria-hidden="true">
+      "☑"
+    </span>
+    " 自动拾取金币"
+  </button>
+  <div class="loot-filter-actions">
+    <button class="loot-filter-button" data-action="reset" disabled=false>
+      "恢复预设默认"
+    </button>
+    <button class="loot-filter-button" data-action="submit" disabled=true>
+      "保存过滤"
+    </button>
+    <button class="loot-filter-button" data-action="cancel" disabled=false>
+      "取消"
+    </button>
+  </div>
+</form>"
+`;
+
+exports[`loot UI complete state snapshots > filter.read-only 1`] = `
+"<form aria-busy=false aria-labelledby="v-0" class="loot-filter" role="dialog">
+  <h2 class="loot-filter-title" id="v-0">
+    "拾取过滤"
+  </h2>
+  <p class="loot-filter-preset">
+    "当前预设：标准"
+  </p>
+  <p class="loot-filter-notice">
+    "当前仅可查看，不能修改拾取过滤"
+  </p>
+  <fieldset class="loot-filter-fieldset" disabled=true>
+    <legend>
+      "最低稀有度"
+    </legend>
+    <div aria-label="最低稀有度" class="loot-filter-rarities" role="radiogroup">
+      <button aria-checked=false class="loot-filter-radio" data-rarity="normal" disabled=true role="radio" tabindex=-1>
+        <span aria-hidden="true"></span>
+        " 普通"
+      </button>
+      <button aria-checked=true class="loot-filter-radio" data-rarity="magic" disabled=true role="radio" tabindex=0>
+        <span aria-hidden="true">
+          "◇"
+        </span>
+        " 魔法"
+      </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="rare" disabled=true role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "◆"
+        </span>
+        " 稀有"
+      </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="unique" disabled=true role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "★"
+        </span>
+        " 唯一"
+      </button>
+    </div>
+  </fieldset>
+  <fieldset class="loot-filter-fieldset" disabled=true>
+    <legend>
+      "拾取类别"
+    </legend>
+    <div class="loot-filter-classes">
+      <button aria-checked=true class="loot-filter-check" data-class="weapon" disabled=true role="checkbox">
+        <span aria-hidden="true">
+          "☑"
+        </span>
+        " 武器"
+      </button>
+      <button aria-checked=true class="loot-filter-check" data-class="armor" disabled=true role="checkbox">
+        <span aria-hidden="true">
+          "☑"
+        </span>
+        " 护甲"
+      </button>
+      <button aria-checked=true class="loot-filter-check" data-class="ring" disabled=true role="checkbox">
+        <span aria-hidden="true">
+          "☑"
+        </span>
+        " 戒指"
+      </button>
+    </div>
+  </fieldset>
+  <button aria-checked=true class="loot-filter-check loot-filter-gold" data-action="gold" disabled=true role="switch">
+    <span aria-hidden="true">
+      "☑"
+    </span>
+    " 自动拾取金币"
+  </button>
+  <div class="loot-filter-actions">
+    <button class="loot-filter-button" data-action="reset" disabled=true>
+      "恢复预设默认"
+    </button>
+    <button class="loot-filter-button" data-action="submit" disabled=true>
+      "保存过滤"
+    </button>
+    <button class="loot-filter-button" data-action="cancel" disabled=true>
+      "取消"
+    </button>
+  </div>
+</form>"
+`;
+
+exports[`loot UI complete state snapshots > filter.standard 1`] = `
+"<form aria-busy=false aria-labelledby="v-0" class="loot-filter" role="dialog">
+  <h2 class="loot-filter-title" id="v-0">
+    "拾取过滤"
+  </h2>
+  <p class="loot-filter-preset">
+    "当前预设：标准"
+  </p>
+  <fieldset class="loot-filter-fieldset" disabled=false>
+    <legend>
+      "最低稀有度"
+    </legend>
+    <div aria-label="最低稀有度" class="loot-filter-rarities" role="radiogroup">
+      <button aria-checked=false class="loot-filter-radio" data-rarity="normal" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true"></span>
+        " 普通"
+      </button>
+      <button aria-checked=true class="loot-filter-radio" data-rarity="magic" disabled=false role="radio" tabindex=0>
+        <span aria-hidden="true">
+          "◇"
+        </span>
+        " 魔法"
+      </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="rare" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "◆"
+        </span>
+        " 稀有"
+      </button>
+      <button aria-checked=false class="loot-filter-radio" data-rarity="unique" disabled=false role="radio" tabindex=-1>
+        <span aria-hidden="true">
+          "★"
+        </span>
+        " 唯一"
+      </button>
+    </div>
+  </fieldset>
+  <fieldset class="loot-filter-fieldset" disabled=false>
+    <legend>
+      "拾取类别"
+    </legend>
+    <div class="loot-filter-classes">
+      <button aria-checked=true class="loot-filter-check" data-class="weapon" disabled=false role="checkbox">
+        <span aria-hidden="true">
+          "☑"
+        </span>
+        " 武器"
+      </button>
+      <button aria-checked=true class="loot-filter-check" data-class="armor" disabled=false role="checkbox">
+        <span aria-hidden="true">
+          "☑"
+        </span>
+        " 护甲"
+      </button>
+      <button aria-checked=true class="loot-filter-check" data-class="ring" disabled=false role="checkbox">
+        <span aria-hidden="true">
+          "☑"
+        </span>
+        " 戒指"
+      </button>
+    </div>
+  </fieldset>
+  <button aria-checked=true class="loot-filter-check loot-filter-gold" data-action="gold" disabled=false role="switch">
+    <span aria-hidden="true">
+      "☑"
+    </span>
+    " 自动拾取金币"
+  </button>
+  <div class="loot-filter-actions">
+    <button class="loot-filter-button" data-action="reset" disabled=false>
+      "恢复预设默认"
+    </button>
+    <button class="loot-filter-button" data-action="submit" disabled=true>
+      "保存过滤"
+    </button>
+    <button class="loot-filter-button" data-action="cancel" disabled=false>
+      "取消"
+    </button>
+  </div>
+</form>"
+`;
+
+exports[`loot UI complete state snapshots > preset.disabled 1`] = `
+"<section aria-labelledby="v-0" class="loot-preset" role="dialog">
+  <h2 class="loot-preset-title" id="v-0">
+    "选择掉落预设"
+  </h2>
+  <div aria-label="选择掉落预设" class="loot-preset-options" role="radiogroup">
+    <button aria-checked=false class="loot-preset-option" data-preset="scarce" disabled=true role="radio" tabindex=-1>
+      <span class="loot-preset-name">
+        "稀缺"
+      </span>
+      <span class="loot-preset-description">
+        "装备难得，每一件收获都值得珍惜。"
+      </span>
+      <span class="loot-preset-metrics">
+        <span class="loot-preset-metric">
+          <span>
+            "击杀掉落倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×0.6"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "每次击杀最多掉落"
+          </span>
+          <span class="loot-preset-value">
+            "1"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等一：魔法 12.1% · 稀有 2.7% · 唯一 0.3%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等三十：魔法 14.9% · 稀有 3.7% · 唯一 0.4%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "腐化概率"
+          </span>
+          <span class="loot-preset-value">
+            "10%"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "金币倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×0.5"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "怪物最高生命 / 伤害增幅"
+          </span>
+          <span class="loot-preset-value">
+            "+35% / +65%"
+          </span>
+        </span>
+      </span>
+    </button>
+    <button aria-checked=true class="loot-preset-option" data-preset="standard" disabled=true role="radio" tabindex=0>
+      <span class="loot-preset-name">
+        "标准"
+      </span>
+      <span class="loot-preset-description">
+        "掉落与挑战均衡的远征。"
+      </span>
+      <span class="loot-preset-metrics">
+        <span class="loot-preset-metric">
+          <span>
+            "击杀掉落倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×1.0"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "每次击杀最多掉落"
+          </span>
+          <span class="loot-preset-value">
+            "2"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等一：魔法 22.2% · 稀有 7.1% · 唯一 1.0%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等三十：魔法 27.5% · 稀有 10.5% · 唯一 1.5%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "腐化概率"
+          </span>
+          <span class="loot-preset-value">
+            "6%"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "金币倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×1.0"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "怪物最高生命 / 伤害增幅"
+          </span>
+          <span class="loot-preset-value">
+            "+50% / +100%"
+          </span>
+        </span>
+      </span>
+    </button>
+    <button aria-checked=false class="loot-preset-option" data-preset="bountiful" disabled=true role="radio" tabindex=-1>
+      <span class="loot-preset-name">
+        "丰饶"
+      </span>
+      <span class="loot-preset-description">
+        "装备丰厚，深处的敌人也更加凶猛。"
+      </span>
+      <span class="loot-preset-metrics">
+        <span class="loot-preset-metric">
+          <span>
+            "击杀掉落倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×2.0"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "每次击杀最多掉落"
+          </span>
+          <span class="loot-preset-value">
+            "3"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等一：魔法 33.1% · 稀有 16.3% · 唯一 3.0%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等三十：魔法 36.2% · 稀有 23.0% · 唯一 4.3%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "腐化概率"
+          </span>
+          <span class="loot-preset-value">
+            "4%"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "金币倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×1.5"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "怪物最高生命 / 伤害增幅"
+          </span>
+          <span class="loot-preset-value">
+            "+50% / +140%"
+          </span>
+        </span>
+      </span>
+    </button>
+  </div>
+  <button class="loot-preset-confirm" data-action="confirm" disabled=true>
+    "确认预设"
+  </button>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > preset.keyboard 1`] = `
+"<section aria-labelledby="v-0" class="loot-preset" role="dialog">
+  <h2 class="loot-preset-title" id="v-0">
+    "选择掉落预设"
+  </h2>
+  <div aria-label="选择掉落预设" class="loot-preset-options" role="radiogroup">
+    <button aria-checked=false class="loot-preset-option" data-preset="scarce" disabled=false role="radio" tabindex=-1>
+      <span class="loot-preset-name">
+        "稀缺"
+      </span>
+      <span class="loot-preset-description">
+        "装备难得，每一件收获都值得珍惜。"
+      </span>
+      <span class="loot-preset-metrics">
+        <span class="loot-preset-metric">
+          <span>
+            "击杀掉落倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×0.6"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "每次击杀最多掉落"
+          </span>
+          <span class="loot-preset-value">
+            "1"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等一：魔法 12.1% · 稀有 2.7% · 唯一 0.3%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等三十：魔法 14.9% · 稀有 3.7% · 唯一 0.4%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "腐化概率"
+          </span>
+          <span class="loot-preset-value">
+            "10%"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "金币倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×0.5"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "怪物最高生命 / 伤害增幅"
+          </span>
+          <span class="loot-preset-value">
+            "+35% / +65%"
+          </span>
+        </span>
+      </span>
+    </button>
+    <button aria-checked=false class="loot-preset-option" data-preset="standard" disabled=false role="radio" tabindex=-1>
+      <span class="loot-preset-name">
+        "标准"
+      </span>
+      <span class="loot-preset-description">
+        "掉落与挑战均衡的远征。"
+      </span>
+      <span class="loot-preset-metrics">
+        <span class="loot-preset-metric">
+          <span>
+            "击杀掉落倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×1.0"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "每次击杀最多掉落"
+          </span>
+          <span class="loot-preset-value">
+            "2"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等一：魔法 22.2% · 稀有 7.1% · 唯一 1.0%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等三十：魔法 27.5% · 稀有 10.5% · 唯一 1.5%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "腐化概率"
+          </span>
+          <span class="loot-preset-value">
+            "6%"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "金币倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×1.0"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "怪物最高生命 / 伤害增幅"
+          </span>
+          <span class="loot-preset-value">
+            "+50% / +100%"
+          </span>
+        </span>
+      </span>
+    </button>
+    <button aria-checked=true class="loot-preset-option" data-preset="bountiful" disabled=false role="radio" tabindex=0>
+      <span class="loot-preset-name">
+        "丰饶"
+      </span>
+      <span class="loot-preset-description">
+        "装备丰厚，深处的敌人也更加凶猛。"
+      </span>
+      <span class="loot-preset-metrics">
+        <span class="loot-preset-metric">
+          <span>
+            "击杀掉落倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×2.0"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "每次击杀最多掉落"
+          </span>
+          <span class="loot-preset-value">
+            "3"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等一：魔法 33.1% · 稀有 16.3% · 唯一 3.0%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等三十：魔法 36.2% · 稀有 23.0% · 唯一 4.3%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "腐化概率"
+          </span>
+          <span class="loot-preset-value">
+            "4%"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "金币倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×1.5"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "怪物最高生命 / 伤害增幅"
+          </span>
+          <span class="loot-preset-value">
+            "+50% / +140%"
+          </span>
+        </span>
+      </span>
+    </button>
+  </div>
+  <button class="loot-preset-confirm" data-action="confirm" disabled=false>
+    "确认预设"
+  </button>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > preset.standard 1`] = `
+"<section aria-labelledby="v-0" class="loot-preset" role="dialog">
+  <h2 class="loot-preset-title" id="v-0">
+    "选择掉落预设"
+  </h2>
+  <div aria-label="选择掉落预设" class="loot-preset-options" role="radiogroup">
+    <button aria-checked=false class="loot-preset-option" data-preset="scarce" disabled=false role="radio" tabindex=-1>
+      <span class="loot-preset-name">
+        "稀缺"
+      </span>
+      <span class="loot-preset-description">
+        "装备难得，每一件收获都值得珍惜。"
+      </span>
+      <span class="loot-preset-metrics">
+        <span class="loot-preset-metric">
+          <span>
+            "击杀掉落倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×0.6"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "每次击杀最多掉落"
+          </span>
+          <span class="loot-preset-value">
+            "1"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等一：魔法 12.1% · 稀有 2.7% · 唯一 0.3%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等三十：魔法 14.9% · 稀有 3.7% · 唯一 0.4%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "腐化概率"
+          </span>
+          <span class="loot-preset-value">
+            "10%"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "金币倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×0.5"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "怪物最高生命 / 伤害增幅"
+          </span>
+          <span class="loot-preset-value">
+            "+35% / +65%"
+          </span>
+        </span>
+      </span>
+    </button>
+    <button aria-checked=true class="loot-preset-option" data-preset="standard" disabled=false role="radio" tabindex=0>
+      <span class="loot-preset-name">
+        "标准"
+      </span>
+      <span class="loot-preset-description">
+        "掉落与挑战均衡的远征。"
+      </span>
+      <span class="loot-preset-metrics">
+        <span class="loot-preset-metric">
+          <span>
+            "击杀掉落倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×1.0"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "每次击杀最多掉落"
+          </span>
+          <span class="loot-preset-value">
+            "2"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等一：魔法 22.2% · 稀有 7.1% · 唯一 1.0%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等三十：魔法 27.5% · 稀有 10.5% · 唯一 1.5%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "腐化概率"
+          </span>
+          <span class="loot-preset-value">
+            "6%"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "金币倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×1.0"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "怪物最高生命 / 伤害增幅"
+          </span>
+          <span class="loot-preset-value">
+            "+50% / +100%"
+          </span>
+        </span>
+      </span>
+    </button>
+    <button aria-checked=false class="loot-preset-option" data-preset="bountiful" disabled=false role="radio" tabindex=-1>
+      <span class="loot-preset-name">
+        "丰饶"
+      </span>
+      <span class="loot-preset-description">
+        "装备丰厚，深处的敌人也更加凶猛。"
+      </span>
+      <span class="loot-preset-metrics">
+        <span class="loot-preset-metric">
+          <span>
+            "击杀掉落倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×2.0"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "每次击杀最多掉落"
+          </span>
+          <span class="loot-preset-value">
+            "3"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等一：魔法 33.1% · 稀有 16.3% · 唯一 3.0%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "物等三十：魔法 36.2% · 稀有 23.0% · 唯一 4.3%"
+          </span>
+          <span class="loot-preset-value"></span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "腐化概率"
+          </span>
+          <span class="loot-preset-value">
+            "4%"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "金币倍率"
+          </span>
+          <span class="loot-preset-value">
+            "×1.5"
+          </span>
+        </span>
+        <span class="loot-preset-metric">
+          <span>
+            "怪物最高生命 / 伤害增幅"
+          </span>
+          <span class="loot-preset-value">
+            "+50% / +140%"
+          </span>
+        </span>
+      </span>
+    </button>
+  </div>
+  <button class="loot-preset-confirm" data-action="confirm" disabled=false>
+    "确认预设"
+  </button>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > salvage.batch 1`] = `
+"<section aria-busy=false aria-labelledby="v-0" class="loot-salvage" role="dialog">
+  <h2 class="loot-salvage-title" id="v-0">
+    "确认分解"
+  </h2>
+  <ul class="loot-salvage-entries">
+    <li class="loot-salvage-entry" data-entry="R04:0">
+      <div class="loot-salvage-item">
+        <span class="loot-item-chip">
+          <span aria-hidden="true" class="loot-chip-glyph">
+            ")"
+          </span>
+          <span aria-hidden="true" class="loot-chip-marker">
+            "◇"
+          </span>
+          <span class="loot-chip-name">
+            "凶暴的迅捷之连枷"
+          </span>
+          <span class="loot-chip-rarity">
+            "魔法"
+          </span>
+        </span>
+        <span class="loot-salvage-yield">
+          "6 碎片"
+        </span>
+      </div>
+    </li>
+    <li class="loot-salvage-entry" data-entry="R10:1">
+      <div class="loot-salvage-item">
+        <span class="loot-item-chip">
+          <span aria-hidden="true" class="loot-chip-glyph">
+            ")"
+          </span>
+          <span aria-hidden="true" class="loot-chip-marker">
+            "◆"
+          </span>
+          <span class="loot-chip-name">
+            "未鉴定的稀有鞭子"
+          </span>
+          <span class="loot-chip-rarity">
+            "稀有"
+          </span>
+          <span aria-label="6 条未知词缀" class="loot-chip-unknown-badge">
+            "?×6"
+          </span>
+        </span>
+        <span class="loot-salvage-yield">
+          "24–36 碎片"
+        </span>
+      </div>
+      <p class="loot-salvage-warning">
+        "腐化情况未知，碎片数量为区间"
+      </p>
+    </li>
+    <li class="loot-salvage-entry" data-entry="R03:2">
+      <div class="loot-salvage-item">
+        <span class="loot-item-chip">
+          <span aria-hidden="true" class="loot-chip-glyph">
+            "="
+          </span>
+          <span aria-hidden="true" class="loot-chip-marker"></span>
+          <span class="loot-chip-name">
+            "感知戒指"
+          </span>
+          <span class="loot-chip-rarity">
+            "普通"
+          </span>
+        </span>
+        <span class="loot-salvage-yield">
+          "1 碎片"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <p class="loot-salvage-total">
+    "合计 31–43 碎片"
+  </p>
+  <p class="loot-salvage-exchange">
+    "每 10 碎片可兑换鉴定一件"
+  </p>
+  <div class="loot-salvage-actions">
+    <button class="loot-salvage-button" data-action="confirm" disabled=false>
+      "分解 3 件，获得 31–43 碎片"
+    </button>
+    <button class="loot-salvage-button" data-action="cancel">
+      "取消"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > salvage.blocked 1`] = `
+"<section aria-busy=false aria-labelledby="v-0" class="loot-salvage" role="dialog">
+  <h2 class="loot-salvage-title" id="v-0">
+    "确认分解"
+  </h2>
+  <ul class="loot-salvage-entries">
+    <li class="loot-salvage-entry loot-salvage-blocked" data-entry="E-W:0">
+      <div class="loot-salvage-item">
+        <span class="loot-item-chip">
+          <span aria-hidden="true" class="loot-chip-glyph">
+            ")"
+          </span>
+          <span aria-hidden="true" class="loot-chip-marker">
+            "◇"
+          </span>
+          <span class="loot-chip-name">
+            "精准之阔剑"
+          </span>
+          <span class="loot-chip-rarity">
+            "魔法"
+          </span>
+        </span>
+        <span class="loot-salvage-yield">
+          "6 碎片"
+        </span>
+      </div>
+      <p class="loot-salvage-reason">
+        "已装备，不能分解"
+      </p>
+    </li>
+    <li class="loot-salvage-entry" data-entry="R02:1">
+      <div class="loot-salvage-item">
+        <span class="loot-item-chip">
+          <span aria-hidden="true" class="loot-chip-glyph">
+            "]"
+          </span>
+          <span aria-hidden="true" class="loot-chip-marker"></span>
+          <span class="loot-chip-name">
+            "锁子甲"
+          </span>
+          <span class="loot-chip-rarity">
+            "普通"
+          </span>
+        </span>
+        <span class="loot-salvage-yield">
+          "1 碎片"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <p class="loot-salvage-total">
+    "合计 1 碎片"
+  </p>
+  <p class="loot-salvage-exchange">
+    "每 10 碎片可兑换鉴定一件"
+  </p>
+  <div class="loot-salvage-actions">
+    <button class="loot-salvage-button" data-action="confirm" disabled=false>
+      "分解 1 件，获得 1 碎片"
+    </button>
+    <button class="loot-salvage-button" data-action="cancel">
+      "取消"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > salvage.bountiful 1`] = `
+"<section aria-busy=false aria-labelledby="v-0" class="loot-salvage" role="dialog">
+  <h2 class="loot-salvage-title" id="v-0">
+    "确认分解"
+  </h2>
+  <ul class="loot-salvage-entries">
+    <li class="loot-salvage-entry" data-entry="R04:0">
+      <div class="loot-salvage-item">
+        <span class="loot-item-chip">
+          <span aria-hidden="true" class="loot-chip-glyph">
+            ")"
+          </span>
+          <span aria-hidden="true" class="loot-chip-marker">
+            "◇"
+          </span>
+          <span class="loot-chip-name">
+            "凶暴的迅捷之连枷"
+          </span>
+          <span class="loot-chip-rarity">
+            "魔法"
+          </span>
+        </span>
+        <span class="loot-salvage-yield">
+          "4 碎片"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <p class="loot-salvage-total">
+    "合计 4 碎片"
+  </p>
+  <p class="loot-salvage-exchange">
+    "每 10 碎片可兑换鉴定一件"
+  </p>
+  <div class="loot-salvage-actions">
+    <button class="loot-salvage-button" data-action="confirm" disabled=false>
+      "分解 1 件，获得 4 碎片"
+    </button>
+    <button class="loot-salvage-button" data-action="cancel">
+      "取消"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > salvage.corrupted 1`] = `
+"<section aria-busy=false aria-labelledby="v-0" class="loot-salvage" role="dialog">
+  <h2 class="loot-salvage-title" id="v-0">
+    "确认分解"
+  </h2>
+  <ul class="loot-salvage-entries">
+    <li class="loot-salvage-entry" data-entry="R10:0">
+      <div class="loot-salvage-item">
+        <span class="loot-item-chip">
+          <span aria-hidden="true" class="loot-chip-glyph">
+            ")"
+          </span>
+          <span aria-hidden="true" class="loot-chip-marker">
+            "◆"
+          </span>
+          <span class="loot-chip-name">
+            "荒影之冠 鞭子"
+          </span>
+          <span class="loot-chip-rarity">
+            "稀有"
+          </span>
+          <span aria-label="腐化物品" class="loot-chip-corrupted">
+            "†"
+          </span>
+        </span>
+        <span class="loot-salvage-yield">
+          "36 碎片"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <p class="loot-salvage-total">
+    "合计 36 碎片"
+  </p>
+  <p class="loot-salvage-exchange">
+    "每 10 碎片可兑换鉴定一件"
+  </p>
+  <div class="loot-salvage-actions">
+    <button class="loot-salvage-button" data-action="confirm" disabled=false>
+      "分解 1 件，获得 36 碎片"
+    </button>
+    <button class="loot-salvage-button" data-action="cancel">
+      "取消"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > salvage.single 1`] = `
+"<section aria-busy=false aria-labelledby="v-0" class="loot-salvage" role="dialog">
+  <h2 class="loot-salvage-title" id="v-0">
+    "确认分解"
+  </h2>
+  <ul class="loot-salvage-entries">
+    <li class="loot-salvage-entry" data-entry="R04:0">
+      <div class="loot-salvage-item">
+        <span class="loot-item-chip">
+          <span aria-hidden="true" class="loot-chip-glyph">
+            ")"
+          </span>
+          <span aria-hidden="true" class="loot-chip-marker">
+            "◇"
+          </span>
+          <span class="loot-chip-name">
+            "凶暴的迅捷之连枷"
+          </span>
+          <span class="loot-chip-rarity">
+            "魔法"
+          </span>
+        </span>
+        <span class="loot-salvage-yield">
+          "6 碎片"
+        </span>
+      </div>
+    </li>
+  </ul>
+  <p class="loot-salvage-total">
+    "合计 6 碎片"
+  </p>
+  <p class="loot-salvage-exchange">
+    "每 10 碎片可兑换鉴定一件"
+  </p>
+  <div class="loot-salvage-actions">
+    <button class="loot-salvage-button" data-action="confirm" disabled=false>
+      "分解 1 件，获得 6 碎片"
+    </button>
+    <button class="loot-salvage-button" data-action="cancel">
+      "取消"
+    </button>
+  </div>
+</section>"
+`;
+
+exports[`loot UI complete state snapshots > salvage.unique 1`] = `
+"<section aria-busy=false aria-labelledby="v-0" class="loot-salvage" role="dialog">
+  <h2 class="loot-salvage-title" id="v-0">
+    "确认分解"
+  </h2>
+  <ul class="loot-salvage-entries">
+    <li class="loot-salvage-entry" data-entry="R14:0">
+      <div class="loot-salvage-item">
+        <span class="loot-item-chip">
+          <span aria-hidden="true" class="loot-chip-glyph">
+            ")"
+          </span>
+          <span aria-hidden="true" class="loot-chip-marker">
+            "★"
+          </span>
+          <span class="loot-chip-name">
+            "低语"
+          </span>
+          <span class="loot-chip-rarity">
+            "唯一"
+          </span>
+        </span>
+        <span class="loot-salvage-yield">
+          "40 碎片"
+        </span>
+      </div>
+      <p class="loot-salvage-warning">
+        "分解后本局不会再掉落同一件"
+      </p>
+    </li>
+  </ul>
+  <p class="loot-salvage-total">
+    "合计 40 碎片"
+  </p>
+  <p class="loot-salvage-exchange">
+    "每 10 碎片可兑换鉴定一件"
+  </p>
+  <div class="loot-salvage-actions">
+    <button class="loot-salvage-button" data-action="confirm" disabled=false>
+      "分解 1 件，获得 40 碎片"
+    </button>
+    <button class="loot-salvage-button" data-action="cancel">
+      "取消"
+    </button>
+  </div>
+</section>"
+`;

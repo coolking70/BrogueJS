@@ -9,7 +9,15 @@
     "tests/loot_economy.test.ts",
     "tests/loot_locale.test.ts",
     "tests/loot_stats.test.ts",
-    "tests/loot_inert.test.ts"
+    "tests/loot_inert.test.ts",
+    "tests/loot_ui_knowledge.test.ts",
+    "tests/loot_ui_viewmodel.test.ts",
+    "tests/loot_ui_fixtures.test.ts",
+    "tests/loot_ui_components.test.ts",
+    "tests/loot_ui_i18n.test.ts",
+    "tests/loot_ui_style.test.ts",
+    "tests/loot_ui_preview.test.ts",
+    "tests/loot_ui_inert.test.ts"
   ],
   "gen": [],
   "drift": []
