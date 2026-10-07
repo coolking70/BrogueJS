@@ -11615,52 +11615,57 @@ export class Game {
                         || distanceToFootprint(decodedPlayer, target) > target.interactionDistance
                         || !hasInteractionLine(activeGrid,decodedPlayer.loc,target)) throw new Error('Invalid saved interaction gate');
                 }
-                extensions.validateWorld([decodedPlayer, ...extensionCreatures], { depth: snapshot.depth, turn: snapshot.run.absoluteTurnNumber,
-                    isGameOver: snapshot.run.isGameOver, nextEntityId: snapshot.run.nextEntityId });
-                if(snapshot.run.world5){const level=restored.get(snapshot.depth)!;
-                    const candidate=Object.assign({},{currentSeed:snapshot.seed,player:decodedPlayer,grid:level.grid,depth:snapshot.depth,items:level.items,monsters:level.monsters,dormantMonsters:level.dormantMonsters,
-                        levels:restored,currentLevelDepth:snapshot.depth,pendingFallenByDepth:new Map(snapshot.pendingFallenByDepth.map(q=>[q.depth,q.monsters.map(m=>entityGraph.monsters.get(m.id)!)])),pendingFallenItemsByDepth:new Map(snapshot.pendingFallenItemsByDepth.map(q=>[q.depth,q.items.map(i=>entityGraph.items.get(i.id)!)])),purgatory:(snapshot.purgatory??[]).map(m=>entityGraph.monsters.get(m.id)!),
-                        world5:snapshot.run.world5,autoAction:snapshot.run.autoAction,actorActions:snapshot.run.actorActions,worldWorkDetails:snapshot.run.worldWorkDetails,worldWorkFacts:snapshot.run.worldWorkFacts,extensionRuntime:extensions,worldContainerItems:new Map(snapshot.run.world5.containers.flatMap(c=>c.itemIds.map(id=>[id,entityGraph.items.get(id)!]))) });
-                    validateWorldWorkReferences(candidate as unknown as Game);
-                }
-                const actionBinding = extensions.actorActionBinding();
-                if (actionBinding) validateProductionActorAttackState(actionBinding.state,actionBinding.definition,new Set(),snapshot.run.actorActions);
-                if (actionBinding) {
-                    const candidateWorld:ActorActionProductionWorld={depth:snapshot.depth,player:decodedPlayer,
-                        ...(snapshot.run.spatialWorld?.groups.length?{bodyGroups:snapshot.run.spatialWorld.groups}:{}),
-                        levels:[...[...restored].map(([depth,level])=>({depth,actors:[...level.monsters,...(level.dormantMonsters??[])]})),
-                            {depth:snapshot.depth,actors:(snapshot.purgatory??[]).map(monster=>entityGraph.monsters.get(monster.id)!)},
-                            ...snapshot.pendingFallenByDepth.map(queue=>({depth:queue.depth,actors:queue.monsters.map(monster=>entityGraph.monsters.get(monster.id)!)}))]};
-                    validateActorCombatCapacities(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
-                        (actor,_input)=>extensions!.withStatWorld([decodedPlayer,...entityGraph.monsters.values()],()=>({staminaCapacity:extensions!.stats.value(actor.id,'combat.stamina-capacity'),poiseCapacity:extensions!.stats.value(actor.id,'combat.poise-capacity')})),source=>{
-                            const identity=source.spatial?.bodyMember;
-                            const group=candidateWorld.bodyGroups?.find(group=>group.groupId===identity?.groupId);
-                            const part=group&&extensions!.spatialCatalog.body(group.bodyDefinitionId).parts.find(part=>part.partId===identity?.partId);
-                            if(!part?.attackProfileIds.length)return undefined;
-                            const declared=part.attackProfileIds.map(id=>extensions!.spatialCatalog.attackProfile(id).providerProfileId);
-                            return {declared,available:declared.filter(id=>nativeZoneAttackAvailable(source,id)
-                                &&bodyPartAttackAvailable(extensions!.spatialCatalog,group!,source,id))};
-                        },snapshot.run.actorActions);
-                }
-                if (actionBinding) validatePhasedAttackGeometry(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
-                    (depth,x,y)=>restored.get(depth)?.grid.isValidPos(x,y)===true,
-                    new Set([decodedPlayer.id,...(restored.get(snapshot.depth)?.monsters??[]).map(actor=>actor.id)]), (source,attackId) => {
-                        const identity = source.spatial?.bodyMember;
-                        const group = snapshot.run.spatialWorld?.groups.find(g => g.groupId === identity?.groupId);
-                        const part = group && extensions!.spatialCatalog.body(group.bodyDefinitionId).parts.find(p => p.partId === identity?.partId);
-                        return part?.attackProfileIds.length ? part.attackProfileIds.map(id => extensions!.spatialCatalog.attackProfile(id).providerProfileId)
-                            .filter(id=>bodyPartAttackAvailable(extensions!.spatialCatalog,group!,source,id)
-                                && bodyPartAttackAvailable(extensions!.spatialCatalog,group!,source,attackId)) : undefined;
-                    }, snapshot.run.actorActions);
-                if (snapshot.run.actorActions) validateProductionActorActionState(snapshot.run.actorActions, {
-                    depth: snapshot.depth, player: decodedPlayer,
-                    ...(snapshot.run.spatialWorld?.groups.length ? { bodyGroups: snapshot.run.spatialWorld.groups } : {}),
-                    levels: [
-                        ...[...restored].map(([depth, level]) => ({ depth, actors: [...level.monsters, ...(level.dormantMonsters ?? [])] })),
-                        ...snapshot.pendingFallenByDepth.map(queue => ({ depth: queue.depth,
-                            actors: queue.monsters.map(monster => entityGraph.monsters.get(monster.id)!) })),
-                    ],
-                });
+                // All detached candidate stat/resource reads use its validated clock.
+                // The scope restores actors/time and clears caches before publication.
+                const candidateExtensions = extensions;
+                candidateExtensions.withStatWorld([decodedPlayer, ...entityGraph.monsters.values()], () => {
+                    candidateExtensions.validateWorld([decodedPlayer, ...extensionCreatures], { depth: snapshot.depth, turn: snapshot.run.absoluteTurnNumber,
+                        isGameOver: snapshot.run.isGameOver, nextEntityId: snapshot.run.nextEntityId });
+                    if(snapshot.run.world5){const level=restored.get(snapshot.depth)!;
+                        const candidate=Object.assign({},{currentSeed:snapshot.seed,player:decodedPlayer,grid:level.grid,depth:snapshot.depth,items:level.items,monsters:level.monsters,dormantMonsters:level.dormantMonsters,
+                            levels:restored,currentLevelDepth:snapshot.depth,pendingFallenByDepth:new Map(snapshot.pendingFallenByDepth.map(q=>[q.depth,q.monsters.map(m=>entityGraph.monsters.get(m.id)!)])),pendingFallenItemsByDepth:new Map(snapshot.pendingFallenItemsByDepth.map(q=>[q.depth,q.items.map(i=>entityGraph.items.get(i.id)!)])),purgatory:(snapshot.purgatory??[]).map(m=>entityGraph.monsters.get(m.id)!),
+                            world5:snapshot.run.world5,autoAction:snapshot.run.autoAction,actorActions:snapshot.run.actorActions,worldWorkDetails:snapshot.run.worldWorkDetails,worldWorkFacts:snapshot.run.worldWorkFacts,extensionRuntime:candidateExtensions,worldContainerItems:new Map(snapshot.run.world5.containers.flatMap(c=>c.itemIds.map(id=>[id,entityGraph.items.get(id)!]))) });
+                        validateWorldWorkReferences(candidate as unknown as Game);
+                    }
+                    const actionBinding = candidateExtensions.actorActionBinding();
+                    if (actionBinding) validateProductionActorAttackState(actionBinding.state,actionBinding.definition,new Set(),snapshot.run.actorActions);
+                    if (actionBinding) {
+                        const candidateWorld:ActorActionProductionWorld={depth:snapshot.depth,player:decodedPlayer,
+                            ...(snapshot.run.spatialWorld?.groups.length?{bodyGroups:snapshot.run.spatialWorld.groups}:{}),
+                            levels:[...[...restored].map(([depth,level])=>({depth,actors:[...level.monsters,...(level.dormantMonsters??[])]})),
+                                {depth:snapshot.depth,actors:(snapshot.purgatory??[]).map(monster=>entityGraph.monsters.get(monster.id)!)},
+                                ...snapshot.pendingFallenByDepth.map(queue=>({depth:queue.depth,actors:queue.monsters.map(monster=>entityGraph.monsters.get(monster.id)!)}))]};
+                        validateActorCombatCapacities(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
+                            (actor,_input)=>candidateExtensions.withStatWorld([decodedPlayer,...entityGraph.monsters.values()],()=>({staminaCapacity:candidateExtensions.stats.value(actor.id,'combat.stamina-capacity'),poiseCapacity:candidateExtensions.stats.value(actor.id,'combat.poise-capacity')})),source=>{
+                                const identity=source.spatial?.bodyMember;
+                                const group=candidateWorld.bodyGroups?.find(group=>group.groupId===identity?.groupId);
+                                const part=group&&candidateExtensions.spatialCatalog.body(group.bodyDefinitionId).parts.find(part=>part.partId===identity?.partId);
+                                if(!part?.attackProfileIds.length)return undefined;
+                                const declared=part.attackProfileIds.map(id=>candidateExtensions.spatialCatalog.attackProfile(id).providerProfileId);
+                                return {declared,available:declared.filter(id=>nativeZoneAttackAvailable(source,id)
+                                    &&bodyPartAttackAvailable(candidateExtensions.spatialCatalog,group!,source,id))};
+                            },snapshot.run.actorActions);
+                    }
+                    if (actionBinding) validatePhasedAttackGeometry(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
+                        (depth,x,y)=>restored.get(depth)?.grid.isValidPos(x,y)===true,
+                        new Set([decodedPlayer.id,...(restored.get(snapshot.depth)?.monsters??[]).map(actor=>actor.id)]), (source,attackId) => {
+                            const identity = source.spatial?.bodyMember;
+                            const group = snapshot.run.spatialWorld?.groups.find(g => g.groupId === identity?.groupId);
+                            const part = group && candidateExtensions.spatialCatalog.body(group.bodyDefinitionId).parts.find(p => p.partId === identity?.partId);
+                            return part?.attackProfileIds.length ? part.attackProfileIds.map(id => candidateExtensions.spatialCatalog.attackProfile(id).providerProfileId)
+                                .filter(id=>bodyPartAttackAvailable(candidateExtensions.spatialCatalog,group!,source,id)
+                                    && bodyPartAttackAvailable(candidateExtensions.spatialCatalog,group!,source,attackId)) : undefined;
+                        }, snapshot.run.actorActions);
+                    if (snapshot.run.actorActions) validateProductionActorActionState(snapshot.run.actorActions, {
+                        depth: snapshot.depth, player: decodedPlayer,
+                        ...(snapshot.run.spatialWorld?.groups.length ? { bodyGroups: snapshot.run.spatialWorld.groups } : {}),
+                        levels: [
+                            ...[...restored].map(([depth, level]) => ({ depth, actors: [...level.monsters, ...(level.dormantMonsters ?? [])] })),
+                            ...snapshot.pendingFallenByDepth.map(queue => ({ depth: queue.depth,
+                                actors: queue.monsters.map(monster => entityGraph.monsters.get(monster.id)!) })),
+                        ],
+                    });
+                }, snapshot.run.world5?.simulationTicks ?? 0);
             }
         } catch { return false; }
         const levelRows = [snapshot, ...snapshot.levels];

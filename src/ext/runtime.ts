@@ -64,7 +64,7 @@ const restHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts,'nativeDa
 const actorQueryScopes=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['actorQueryScope']>>();
 const nativeFactCheckpoints=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['checkpointCommittedFacts']>>();
 interface StatProposal {hp?:number;maxHp?:number;strength?:number;oldMaxBonus:number;oldStrengthBonus:number}
-interface StatSession { pipeline:StatPipeline; ledger:MaterializedStats; actors:Map<number,Creature>; inProgress:boolean; writes:boolean; overrides:Map<string,number>; proposals:Map<number,StatProposal>|null; moduleViews:Map<string,{state:ReadonlyJson;components:Record<string,ReadonlyJson>}>; previewComponents:Readonly<Record<string,Json>>|null; materialSignatures:Map<number,string>; materialValues:Map<number,Map<string,number>>; collecting:boolean; dirty:Set<number>; reconciling:boolean }
+interface StatSession { pipeline:StatPipeline; ledger:MaterializedStats; actors:Map<number,Creature>; simulationTicks:number|null; inProgress:boolean; writes:boolean; overrides:Map<string,number>; proposals:Map<number,StatProposal>|null; moduleViews:Map<string,{state:ReadonlyJson;components:Record<string,ReadonlyJson>}>; previewComponents:Readonly<Record<string,Json>>|null; materialSignatures:Map<number,string>; materialValues:Map<number,Map<string,number>>; collecting:boolean; dirty:Set<number>; reconciling:boolean }
 const statSessions=new WeakMap<ExtensionRuntime,StatSession>();
 const edibleDiagnostics=new WeakMap<ExtensionRuntime,{owner:string;method:string}[]>();
 const statQueries=new WeakMap<ExtensionRuntime,StatQuery>();
@@ -371,7 +371,7 @@ export class ExtensionRuntime {
         let query=statQueries.get(this);if(!query){const pipeline=this.stats;query=Object.freeze({applied:pipeline.applied.bind(pipeline),value:pipeline.value.bind(pipeline),rational:pipeline.rational.bind(pipeline),breakdown:pipeline.breakdown.bind(pipeline),hypothetical:pipeline.hypothetical.bind(pipeline)});statQueries.set(this,query);}return query;
     }
     private initializeStats(snapshot?:ExtensionSnapshot):void{
-        const session:StatSession={pipeline:null!,ledger:new MaterializedStats(()=>markRecordingRoot(this)),actors:new Map(),inProgress:false,writes:false,overrides:new Map(),proposals:null,moduleViews:new Map(),previewComponents:null,materialSignatures:new Map(),materialValues:new Map(),collecting:false,dirty:new Set(),reconciling:false};
+        const session:StatSession={pipeline:null!,ledger:new MaterializedStats(()=>markRecordingRoot(this)),actors:new Map(),simulationTicks:null,inProgress:false,writes:false,overrides:new Map(),proposals:null,moduleViews:new Map(),previewComponents:null,materialSignatures:new Map(),materialValues:new Map(),collecting:false,dirty:new Set(),reconciling:false};
         statSessions.set(this,session);session.ledger.restore(snapshot?.foundation.stats);
         const actor=(id:number)=>{const a=session.actors.get(id);if(!a)throw new StatValidationError('source');return a;};
         session.pipeline=new StatPipeline({nativeSignature:id=>JSON.stringify([nativeStatSignature(actor(id)),this.actorActionBinding()?.state.actors.find(row=>row.actorId===id)?.profileId]),beforeRead:id=>{if(session.dirty.has(id)&&!session.inProgress&&!session.reconciling&&!this.pureProviderPhase)this.reconcileMaterialized(id);},debug:this.ports.testMode?.()===true,applied:(id,key)=>session.ledger.bonus(id,key),actor:id=>nativeStatFacts(actor(id),this.ports.playerId()),revision:id=>nativeStatRevision(actor(id)),
@@ -384,7 +384,7 @@ export class ExtensionRuntime {
                 if(session.collecting)throw new StatValidationError('source');
                 session.collecting=true;try{
                 const all:import('../engine/Stats/StatPipeline').OwnedStatRow[]=[...nativeRows(actor(id),change,known)];
-                for(const r of peekEdibleState(this).timedStats?.rows??[])if(r.actorId===id&&(this.ports.simulationTicks?.()??0)<r.untilTick)all.push({stat:r.key,category:r.category,value:r.value,layer:'temporary',sourceKind:'edible',sourceId:`${r.owner}.${r.key}`,owner:r.owner,...(r.category==='more'?{slot:'temporary'}:{})});
+                for(const r of peekEdibleState(this).timedStats?.rows??[])if(r.actorId===id&&(session.simulationTicks??this.ports.simulationTicks?.()??0)<r.untilTick)all.push({stat:r.key,category:r.category,value:r.value,layer:'temporary',sourceKind:'edible',sourceId:`${r.owner}.${r.key}`,owner:r.owner,...(r.category==='more'?{slot:'temporary'}:{})});
                 for(const module of this.modules){const provider=module.statSources;if(!provider)continue;
                     const previous=this.pureProviderPhase;this.pureProviderPhase=true;
                     try{let view=!change?session.moduleViews.get(module.id):undefined;if(!view){view={state:freezeView(cloneJson(this.states[module.id]!)),components:{}};if(!change)session.moduleViews.set(module.id,view);}const context=Object.freeze({playerId:this.ports.playerId(),state:view.state,facts:freezeView(structuredClone(facts)),
@@ -451,7 +451,15 @@ export class ExtensionRuntime {
         }
     }
     assertStats():void{const session=statSessions.get(this)!;session.ledger.assert([...session.actors.keys()],session.pipeline,(id,key)=>{const a=session.actors.get(id)!;return key==='native.max-hp'?a.maxHp:key==='native.strength'&&a instanceof Player?a.strength:undefined;});}
-    withStatWorld<T>(actors:readonly Creature[],work:()=>T):T{const s=statSessions.get(this)!;const previous=s.actors;s.actors=new Map(actors.map(a=>[a.id,a]));s.pipeline.clear();try{return work();}finally{s.actors=previous;s.pipeline.clear();}}
+    /** Engine preflight only: nested actor scopes inherit the candidate clock. */
+    withStatWorld<T>(actors:readonly Creature[],work:()=>T,simulationTicks?:number):T{
+        const s=statSessions.get(this)!,previousActors=s.actors,previousTicks=s.simulationTicks;
+        s.actors=new Map(actors.map(a=>[a.id,a]));
+        s.simulationTicks=simulationTicks??previousTicks;
+        s.pipeline.clear();
+        try{return work();}
+        finally{s.actors=previousActors;s.simulationTicks=previousTicks;s.pipeline.clear();}
+    }
     private context(module: ExtensionModule, scope: object | null): ExtensionContext {
         const runtime = this;
         const writable = (): void => { if (!scope || runtime.activeScope !== scope || runtime.disposed || runtime.pureProviderPhase) throw new Error('Extension mutation outside lifecycle/command/hook'); markRecordingRoot(runtime); };
