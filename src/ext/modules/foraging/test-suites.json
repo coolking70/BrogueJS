@@ -1,0 +1,12 @@
+{
+  "test": [
+    "tests/foraging_commands.test.ts",
+    "tests/foraging_data_tables.test.ts",
+    "tests/foraging_imports.test.ts",
+    "tests/foraging_module.test.ts",
+    "tests/foraging_names.test.ts",
+    "tests/foraging_schema.test.ts"
+  ],
+  "gen": [],
+  "drift": []
+}
