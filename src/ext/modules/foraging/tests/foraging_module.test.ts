@@ -299,3 +299,53 @@ describe('foraging projection privacy', () => {
     work.activeTicket = { owner: 'other', kind: 'harvest', definitionId: node.definitionId, ticketId: 9, remainingTicks: 40 }; expect(read().activeTicket).toBeNull();
   });
 });
+
+// These tests distinguish invalid input fallback from failures of trusted transaction writers.
+describe('foraging participant submission failures', () => {
+  const cases = [
+    ['consumed', () => consumed('venom', { definitionId: 'foraging.venom-roasted' }), ['markKnowledge', 'markKnowledge', 'message', 'replaceState']],
+    ['fire', () => fire({ definitionId: 'foraging.blast', result: 'exploded', toDefinitionId: null, explosion: 'explosion-fire' }), ['markKnowledge', 'replaceState']],
+    ['band', () => need({ kind: 'band', band: 'weak', previousBand: 'hungry' }), ['setOwnComponent', 'message', 'replaceState']],
+    ['deadline', () => need({ kind: 'deadline', band: 'starving' }), ['message', 'depart', 'replaceState']],
+    ['detached', () => need({ kind: 'detached', reason: 'ineligible' }), ['removeOwnComponent', 'replaceState']]
+  ] as const;
+  function invoke(label: string, fact: unknown, tx: EdibleTransaction & NeedTransaction) {
+    const m = createForagingModule();
+    if (label === 'consumed') m.edibleParticipant!.onConsumed!(fact as EdibleConsumedFact, tx);
+    else if (label === 'fire') m.edibleParticipant!.onFireContact!(fact as FireContactFact, tx);
+    else m.actorNeedParticipant!.onNeedEvent!(fact as NeedEventFact, tx);
+  }
+  for (const [label, fact, writers] of cases) {
+    for (const phase of ['before', 'after'] as const) for (let index = 0; index < writers.length; index++) {
+      it(`${label}: ${phase} writer ${index + 1} (${writers[index]}) propagates the identical error and stops`, () => {
+        const tx = transactions(), error = Error('injected writer failure'), calls: string[] = [], completed: string[] = [];
+        const wrapped = { ...tx };
+        for (const key of ['markKnowledge', 'message', 'replaceState', 'setOwnComponent', 'removeOwnComponent', 'depart'] as const) {
+          Object.assign(wrapped, { [key]: (...args: unknown[]) => {
+            calls.push(key);
+            if (calls.length === index + 1 && phase === 'before') throw error;
+            const result = (tx[key] as (...args: unknown[]) => unknown)(...args); completed.push(key);
+            if (calls.length === index + 1 && phase === 'after') throw error;
+            return result;
+          } });
+        }
+        expect(() => invoke(label, fact(), wrapped)).toThrow(error);
+        expect(calls).toEqual(writers.slice(0, index + 1));
+        expect(completed).toEqual(writers.slice(0, index + (phase === 'after' ? 1 : 0)));
+      });
+    }
+    it(`${label}: malformed, foreign, duplicate and inaccessible state inputs invoke no writer`, () => {
+      const tx = transactions();
+      const accessor = vi.fn(() => { throw Error('accessor'); });
+      const f = fact();
+      for (const invalid of [{ ...f, owner: 'foreign' }, { ...f, factId: 0 },
+        Object.defineProperty({ ...f }, 'tick', { enumerable: true, get: accessor })]) invoke(label, invalid, tx);
+      for (const invalidState of [null, { ...initialForagingState(), lastFactId: 1 }, { ...initialForagingState(), unexpected: true }])
+        invoke(label, f, { ...tx, state: invalidState } as never);
+      invoke(label, f, { ...tx, get state(): never { throw Error('state'); } });
+      expect(accessor).not.toHaveBeenCalled();
+      for (const key of ['markKnowledge', 'message', 'replaceState', 'setOwnComponent', 'removeOwnComponent', 'depart'] as const)
+        expect(tx[key]).not.toHaveBeenCalled();
+    });
+  }
+});

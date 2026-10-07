@@ -350,3 +350,15 @@ rules=`{schema:1,version:'1.0.0',fingerprint:extensionDataFingerprint(pack)}`。
 - boundary / vue-tsc / build / 全部foraging定向测试 / 受影响旧测试 / drift / 七相关组合 / 两条自然trace已运行并如实记结果
 - 浏览器能力实际检查，未运行不能声称通过；完整npm test、全部test:ext、64子集与删除门禁留5Z
 - 交接settlement仅按food.ingredient.mushroom标签求quantity总和；厨师不得读取隐藏kind或改变知识
+
+## 7 集中修订的事务与首版反馈合同
+
+本节依照 `phase5g-revision.dot-package.md`，覆盖旧包“参与者绝不抛”的泛化解释；不改机械数据、固定名称、规则身份或接口版本。
+
+- `onConsumed/onFireContact/onNeedEvent` 在首个 writer 前完成全部事实/state验证与纯规划。畸形、重复、外owner输入保守返回且零writer；`qualifies`及可选居民查询仍布尔兜底
+- 提交开始后，知识、消息、state、组件和depart writer异常必须传播到foundation；不得吞错、继续写或补偿。`markKnowledge=false`为正常的未新增/未升级结果
+- eat/feed的消费参与者与主动roast的火参与者失败：已有外层事务回滚，命令仍录制，零成本C5_PROVIDER。环境火和所有需求参与者（也包括feed产生的需求事件）失败：仅撤销参与者写入/缓冲消息/本事件depart请求，保留先前机械结算并记诊断，不保证重投或整笔feed回滚
+- revealed按产生新known知识的事实计数，同一烤菌事实两次知识写返回值取OR、最多加1。重复known、降级与仅tasted不增加revealed，正常消费计数仍增长
+- worldSdk已有可选`lastCommandError`读口；固定ForagingView不投影具体提交错误。维护者明确接受首版通用拒绝反馈，本轮不增加lastError字段、不猜测错误码；节点已有reason仍显示相应原因。此为首版规格裁定，不称所有具体提交码已实现
+
+特殊布景持久化与自然录像分列：真实同伴沉眠可在公开feed完成后保存；玩家沉眠通常在同一食用命令内同步排空到醒来，不虚造命令间保存窗口。九类特殊布景各自完整新局录像移交5Z。

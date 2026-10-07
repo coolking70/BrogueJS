@@ -21,7 +21,8 @@ import {
   scene,
   saveContinue,
   state,
-  waitTurns
+  waitTurns,
+  hasPeerCapability
 } from './mechanicsHelpers';
 
 const nonEaters = [
@@ -47,7 +48,7 @@ const nonEaters = [
   'zombie'
 ];
 function needs(h: WorldHarness) {
-  return game(h).extensionRuntime!.snapshot().foundation.actorNeeds?.rows ?? [];
+  return game(h).extensionRuntime?.snapshot().foundation.actorNeeds?.rows ?? [];
 }
 function component(h: WorldHarness, id: number) {
   return game(h).extensionRuntime!.snapshot().components[String(id)]?.['foraging:hunger'];
@@ -110,7 +111,7 @@ describe('T-COMP eligibility and shared actor needs', () => {
       })
     ]);
     expect(component(h, ally.id)).toEqual({ band: 'fed' });
-    const plain = makeHarness(51020001, ['crafting']);
+    const plain = makeHarness(51020001, []);
     scene(plain);
     addAlly(plain);
     expect(needs(plain)).toEqual([]);
@@ -201,28 +202,31 @@ describe('T-COMP eligibility and shared actor needs', () => {
     expect(state(h).totals.departed).toBe(0);
   });
 
-  it('gives a real giants group only one core need and retires every member together', () => {
-    const h = makeHarness(51020001, ['foraging', 'giants']);
-    const g = scene(h);
-    const body = g.extensionRuntime!.edibleModule('giants')!.nativeBodies!.definitions[0]!;
-    const core = g.createCompositeMonster(body.id, { x: 13, y: 12 });
-    expect(core).not.toBeNull();
-    g.becomeAllyWith(core!);
-    const group = g.bodyGroups![0]!,
-      ids = group.members.flatMap((m) => (m.entityId === null ? [] : [m.entityId]));
-    expect(ids.length).toBeGreaterThan(1);
-    expect(needs(h).map((r) => r.actorId)).toEqual([group.coreId]);
-    for (const m of g.monsters) m.ticksUntilTurn = 1_000_000;
-    starving(h, core!);
-    waitTurns(h, 320);
-    expect(g.monsters.some((m) => ids.includes(m.id))).toBe(false);
-    expect(g.bodyGroups).toBeUndefined();
-    expect(needs(h)).toEqual([]);
-    expect(g.extensionRuntime!.snapshot().foundation.departures!.receipts).toHaveLength(1);
-    expect(
-      ids.every((id) => g.extensionRuntime!.snapshot().foundation.deaths[String(id)] === undefined)
-    ).toBe(true);
-  });
+  if (hasPeerCapability('giants', 'bodies'))
+    it('gives a real giants group only one core need and retires every member together', () => {
+      const h = makeHarness(51020001, ['foraging', 'giants']);
+      const g = scene(h);
+      const body = g.extensionRuntime!.edibleModule('giants')!.nativeBodies!.definitions[0]!;
+      const core = g.createCompositeMonster(body.id, { x: 13, y: 12 });
+      expect(core).not.toBeNull();
+      g.becomeAllyWith(core!);
+      const group = g.bodyGroups![0]!,
+        ids = group.members.flatMap((m) => (m.entityId === null ? [] : [m.entityId]));
+      expect(ids.length).toBeGreaterThan(1);
+      expect(needs(h).map((r) => r.actorId)).toEqual([group.coreId]);
+      for (const m of g.monsters) m.ticksUntilTurn = 1_000_000;
+      starving(h, core!);
+      waitTurns(h, 320);
+      expect(g.monsters.some((m) => ids.includes(m.id))).toBe(false);
+      expect(g.bodyGroups).toBeUndefined();
+      expect(needs(h)).toEqual([]);
+      expect(g.extensionRuntime!.snapshot().foundation.departures!.receipts).toHaveLength(1);
+      expect(
+        ids.every(
+          (id) => g.extensionRuntime!.snapshot().foundation.deaths[String(id)] === undefined
+        )
+      ).toBe(true);
+    });
 });
 
 describe('T-COMP exact hunger and non-lethal departure', () => {

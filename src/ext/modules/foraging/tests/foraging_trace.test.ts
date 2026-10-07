@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { captureNatural } from './naturalCapture';
 import { executeTraceCommand, foragingFinal, startNatural, type TraceCommand } from './traceHelpers';
+import { getInstalledModuleDescriptors } from '../../../catalog';
 import { worldHarnessGame } from '../../../testing/worldHarness';
 
 type Trace={seed:number;mode:'normal';modules:string[];commands:TraceCommand[];final:ReturnType<typeof foragingFinal>};
@@ -16,8 +17,11 @@ function run(h:ReturnType<typeof startNatural>,trace:Trace,from=0,until=trace.co
   if(snapshot&&c.answers?.[0]===false)expect({items:JSON.stringify(g.player.inventory.items),nutrition:g.player.nutrition,tick:g.toSnapshot().run.currentTick,turn:g.absoluteTurnNumber}).toEqual(snapshot);
  }
 }
+// Trace B is genuine crafting integration: physically absent crafting makes it inapplicable.
+const traces=([['A','natural-trace.json'],['B','natural-trace-hearth.json']] as const)
+ .filter(([kind])=>kind==='A'||getInstalledModuleDescriptors().some(d=>d.id==='crafting'));
 describe('foraging T-TRACE natural public-command evidence',()=>{
- it.each([['A','natural-trace.json'],['B','natural-trace-hearth.json']] as const)('%s reproduces exact commands, decisions and final state',(kind,name)=>{
+ it.each(traces)('%s reproduces exact commands, decisions and final state',(kind,name)=>{
   if(process.env.FORAGING_CAPTURE_DIRECTORY){captureNatural(kind,`${process.env.FORAGING_CAPTURE_DIRECTORY}/${name}`);return;}
   const trace=load(name),h=startNatural(trace.seed,trace.modules);
   try{run(h,trace);expect(foragingFinal(h)).toEqual(trace.final);const rec=JSON.parse(h.exportRecording());expect(rec.version).toBe(4);
@@ -25,7 +29,7 @@ describe('foraging T-TRACE natural public-command evidence',()=>{
    expect(h.replay(JSON.stringify(rec))).toEqual({ok:true,firstMismatch:null});expect(foragingFinal(h)).toEqual(trace.final);
   }finally{h.dispose();}
  });
- it.each(['natural-trace.json','natural-trace-hearth.json'])('%s save/load, seek and authentic continued recording',(name)=>{
+ it.each(traces.map(([,name])=>name))('%s save/load, seek and authentic continued recording',(name)=>{
   if(process.env.FORAGING_CAPTURE_DIRECTORY)return;
   const trace=load(name),h=startNatural(trace.seed,trace.modules);
   try{

@@ -284,7 +284,7 @@ describe('foraging SFCs with shared harness', () => {
 describe('foraging live Game SFC privacy after real commands', () => {
   it.each(['eat', 'throw', 'drop', 'equip', 'call', 'harvest', 'roast', 'feed', 'explosion', 'save-load'] as const)(
     '%s renders only observed names and suppresses unknown nutrition in every tab', async action => {
-      const h = makeHarness(51020001, ['foraging', ...(action === 'roast' || action === 'explosion' ? ['crafting'] : [])]);
+      const h = makeHarness(51020001, ['foraging', ...(action === 'roast' || action === 'explosion' ? ['fgheat'] : [])]);
       scene(h);
       const food = addFood(h, action === 'explosion' ? 'blast' : 'mend', 2);
       if (action === 'eat') eat(h, food);

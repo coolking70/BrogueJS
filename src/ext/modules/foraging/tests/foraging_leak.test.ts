@@ -17,7 +17,7 @@ function safeVisible(h: WorldHarness) {
 }
 describe('foraging T-LEAK actual player-visible text and projection', () => {
   it.each(['eat', 'throw', 'drop', 'equip', 'call', 'harvest', 'roast', 'feed', 'explosion', 'save-load'] as const)('%s never leaks unresolved kind IDs, translation keys or hidden satiety', action => {
-    const h = makeHarness(51020001, ['foraging', ...(action === 'roast' || action === 'explosion' ? ['crafting'] : [])]), g = scene(h);
+    const h = makeHarness(51020001, ['foraging', ...(action === 'roast' || action === 'explosion' ? ['fgheat'] : [])]), g = scene(h);
     const food = addFood(h, action === 'explosion' ? 'blast' : 'mend', 2);
     if (action === 'eat') eat(h, food);
     if (action === 'throw') { native(h, 'item:execute', `throw|${food.inventoryLetter}`); h.command('mouse_travel', { x: 13, y: 10 }); }

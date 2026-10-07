@@ -12,7 +12,7 @@ import type { ForagingAction } from '../commands';
 import { assembleEdibleItem } from '../../../../engine/Core/KindKnowledge';
 import { Monster } from '../../../../entities/Monster';
 import monsters from '../../../../data/monsters.json';
-import { TerrainType } from '../../../../engine/Map/Grid';
+import { makeHarness, scene, hearth } from './mechanicsHelpers';
 
 const payloads = {
   harvest: { v: 1, nodeId: 5, nodeRevision: 0, inventoryStamp: 'stamp', destinationId: null as number | null, destinationRevision: null as number | null },
@@ -107,13 +107,9 @@ describe('foraging real SDK preparation purity', () => {
     } finally { h.dispose(); }
   });
   it('valid feed and roast plans are equally pure, including successful foundation handles', () => {
-    const h = createWorldHarness({ seed: 51020001, modules: ['combat', 'foraging'] });
+    const h = makeHarness(51020001, ['fgheat', 'foraging']);
     try {
-      const g = worldHarnessGame(h); g.monsters = []; g.dormantMonsters = [];
-      const bindings = g.extensionRuntime!.actorActionBinding()!.state.bonfires!.bindings;
-      const source = g.extensionRuntime!.worldWorkEntities().find(e => bindings[String(e.id)] && e.depth === g.depth)!;
-      expect(source).toBeDefined(); g.player.loc = { x: source.x + 1, y: source.y };
-      for (let y = source.y - 1; y <= source.y + 1; y++) for (let x = source.x; x <= source.x + 2; x++) g.grid.setTerrain(x, y, TerrainType.FLOOR);
+      const g = scene(h), source = hearth(h);
       const template = monsters.find(m => m.id === 'goblin')!;
       const ally = new Monster(g.player.x, g.player.y + 1, template as unknown as ConstructorParameters<typeof Monster>[2]);
       ally.ticksUntilTurn = 1000000; g.monsters.push(ally); g.extensionRuntime!.attachCreature(ally); g.becomeAllyWith(ally);
@@ -121,14 +117,14 @@ describe('foraging real SDK preparation purity', () => {
       (g as unknown as { updateVision(): void }).updateVision();
       const read = readEdibleContext(g, 'foraging'); if (!read.ok) throw Error(read.code);
       const target = read.value.feedTargets.find(t => t.actorId === ally.id)!;
-      expect(target).toBeDefined(); expect(read.value.heatSources.some(s => s.interactableId === source.id)).toBe(true);
+      expect(target).toBeDefined(); expect(read.value.heatSources.some(s => s.interactableId === source.interactableId)).toBe(true);
       const mechanical = () => ({ world: h.world5(), runtime: g.extensionRuntime!.snapshot(), actions: structuredClone(g.actorActions), nextId: getNextEntityId(),
         rng: rng.getState(), tick: g.toSnapshot().run.currentTick, messages: logger.getState(), events: g.recordedInputEvents.length,
         inventory: g.player.inventory.items.map(i => ({ id: i.id, quantity: i.quantity, world: i.worldItem })) });
       const before = mechanical();
       for (const [action, payload] of [
         ['feed', { v: 1, targetId: ally.id, targetRevision: target.targetRevision, itemId: item.id, inventoryStamp: read.value.inventoryStamp }],
-        ['roast', { v: 1, heatSourceId: source.id, itemId: item.id, inventoryStamp: read.value.inventoryStamp }]
+        ['roast', { v: 1, heatSourceId: source.interactableId, itemId: item.id, inventoryStamp: read.value.inventoryStamp }]
       ] as const) {
         const prepared = prepareEdibleCommand(g, JSON.stringify({ module: 'foraging', action, payload }));
         expect(prepared.outcome.ok).toBe(true); expect(mechanical()).toEqual(before);

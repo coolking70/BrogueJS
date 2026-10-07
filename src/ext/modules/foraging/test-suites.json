@@ -1,5 +1,6 @@
 {
   "test": [
+    "tests/foraging_atomic.test.ts",
     "tests/foraging_combinations.test.ts",
     "tests/foraging_commands.test.ts",
     "tests/foraging_companion.test.ts",

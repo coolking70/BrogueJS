@@ -15,7 +15,8 @@ import {
   mechanics,
   observeFacts,
   scene,
-  state
+  state,
+  roastChoice
 } from './mechanicsHelpers';
 
 /** Initial scene only: load a valid low-satiety save, then use the public feed command. */
@@ -135,10 +136,11 @@ describe('T-FEED real public feeding', () => {
         expect(g.player.hasStatus(status)).toBe(false);
         expect(fact.outcome).toMatchObject({ applied: true, newlyStarted: true });
       }
-      // §12.2 SDK gap: goblin maxHp15/hp5 should gain5, but heal-fraction passes5
-      // into Creature.heal(percent), producing0. Exact healing assertion awaits foundation repair.
-      if (kind === 'mend')
+      if (kind === 'mend') {
         expect(fact.resolvedIntent).toEqual({ kind: 'heal-fraction', percent: 30, min: 5 });
+        expect(fact.outcome.hpGained).toBe(5);
+        expect(ally.hp).toBe(10);
+      }
       if (kind === 'upheave') expect(fact.outcome.satietyLost).toBe(250);
       if (['prism', 'farsense', 'veil'].includes(kind))
         expect(fact.outcome).toMatchObject({ notApplicable: true, applied: false });
@@ -159,6 +161,47 @@ describe('T-FEED real public feeding', () => {
     }
   );
 
+  it.each([
+    ['minimum', 15, 1, 5],
+    ['percent', 101, 1, 30],
+    ['cap', 101, 99, 2],
+    ['full', 101, 101, 0]
+  ] as const)('companion mend %s reports exact immediate HP and gain', (_case, maxHp, hp, gain) => {
+    let ally: Monster,
+      immediateHp = -1;
+    const facts = observeFacts(() => {
+        immediateHp = ally.hp;
+      }),
+      h = makeHarness(51020001, ['foraging'], [facts.override]);
+    scene(h);
+    ally = addAlly(h);
+    ally.maxHp = maxHp;
+    ally.hp = hp;
+    expect(feed(h, ally, addFood(h, 'mend')).error).toBeNull();
+    expect(facts.consumed[0]!.outcome.hpGained).toBe(gain);
+    expect(immediateHp).toBe(hp + gain);
+  });
+  it.each([0, 1] as const)('companion roasted mend policy %i keeps or strips healing', (choice) => {
+    const fp = game(makeHarness()).extensionRuntime!.worldDefinitionFingerprints().foraging!;
+    let seed = 1;
+    while (roastChoice(seed, fp, 0) !== choice) seed++;
+    let ally: Monster,
+      immediateHp = -1;
+    const facts = observeFacts(() => {
+        immediateHp = ally.hp;
+      }),
+      h = makeHarness(seed, ['foraging'], [facts.override]);
+    scene(h);
+    ally = addAlly(h);
+    ally.maxHp = 101;
+    ally.hp = 1;
+    expect(feed(h, ally, addFood(h, 'mend-roasted')).error).toBeNull();
+    expect(facts.consumed[0]!.resolvedIntent).toEqual(
+      choice === 0 ? { kind: 'heal-fraction', percent: 30, min: 5 } : { kind: 'none' }
+    );
+    expect(facts.consumed[0]!.outcome.hpGained).toBe(choice === 0 ? 30 : 0);
+    expect(immediateHp).toBe(choice === 0 ? 31 : 1);
+  });
   it('full-health mend is tasted, then feeding while injured reveals the same kind', () => {
     const h = makeHarness();
     scene(h);
