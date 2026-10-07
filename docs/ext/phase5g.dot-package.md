@@ -1,10 +1,12 @@
 # 5G dot 任务包：独立 `foraging` 内容模块（野外采食，整包一次派发）
 
-> 状态：**定稿**（2026-10-07，分支 `ext/phase5g-base`，父提交 `6e068cd`）。由 Claude 依据已批准的[野外采食设计稿](phase5-foraging.md)（§16 裁定 Q1–Q11=A、Q12=B）、[5A4 任务书](phase5a4.task.md)（E1–E30 已签认，附录设计缺口按建议处理）与已提交的 5A4 实现（`6e068cd`，含审查修复 P1–P10；[`phase5a4.report.md`](phase5a4.report.md) §7“5G 冻结清单”与 §10“审查发现处理”）编写；格式沿用[5B dot 任务包](phase5b.dot-package.md)定稿版。
+> 状态：**定稿**（2026-10-07，分支 `ext/phase5g-base`，实际代码基线 `5e9753030696d2e8ea177c27007c2f15253d3eba`）。由 Claude 依据已批准的[野外采食设计稿](phase5-foraging.md)（§16 裁定 Q1–Q11=A、Q12=B）、[5A4 任务书](phase5a4.task.md)（E1–E30 已签认，附录设计缺口按建议处理）与已提交的 5A4 实现（`6e068cd`，含审查修复 P1–P10；[`phase5a4.report.md`](phase5a4.report.md) §7“5G 冻结清单”与 §10“审查发现处理”）编写；格式沿用[5B dot 任务包](phase5b.dot-package.md)定稿版。
 >
 > 维护者规则（2026-10-06/07，本包强制）：每种菌**恰好一个**特性；全部未鉴定外观名与已知名必须**纯奇幻**，不得描述或令人联想任何真实蘑菇——审阅过的固定名单 + 禁用词测试；篝火/灶台烤制首版即做；临时力量；玩家着火瞬间背包菌各 1/3 概率火接触；同伴长期饥饿**离队不死亡**；营地食物经济**不在本包**（归 settlement 5D）。
 >
-> 本包按 `6e068cd` 实际导出的 `src/ext/edibleSdk.ts` 编写，§A 记录了派发前对真实代码的逐项核对与仓库外实测（定义包已通过真实校验器与真实新局）。§A.6 列出**派发前必须由维护者处理的底座阻断项**；§12.3 为本包自行决定、需维护者签认的事项。
+> 当前代码基线为 `5e9753030696d2e8ea177c27007c2f15253d3eba`（含已独立审查的 owner 查询修复及 i18n/w_26 修复）。§A.1 的冻结 SHA、模块与格式版本已按当前基线复核；§A.2–A.4 保留 `6e068cd` 副本的历史核对/实测来源，不代表本轮重跑。§A.6 的底座阻断已解除，见[修复报告](phase5g-owner-lookup.report.md)与[独立审查](phase5g-owner-lookup.review-findings.md)。
+>
+> 依据维护者本轮“按推荐推进并记录，只有大且难回退才停”的授权，指挥临时采纳 §12.3 全部 20 条、nonEaters 20 个模板、“苍鸾菌”及揭示烤菌同时揭示生菌：**按推荐执行，待用户确认（可逆，不阻断派发）**，不表示用户逐条终审。门禁由指挥按[交接单 §1、§4](commander-handoff.md)最新政策更新（§9），完整测试/组合/删除收口到 5Z，功能验收要求保留。
 
 ---
 
@@ -15,11 +17,11 @@
 
 基线与分支：
 - git fetch origin && git switch -c ext/phase5g origin/ext/phase5g-base
-- 该 tip = 代码基线 6e068cd（ext/phase5：5A1–5A4 含 5A4 审查修复 P1–P10，FOUNDATION_PROTOCOL=10，EDIBLE_SDK_VERSION=1，worldSdk 1，whole-run 6）+ 一个定稿提交（docs/ext/phase5g.dot-package.md + scripts/check-module-boundaries.mjs：把 crafting 的严格导入白名单推广到 foraging，另允许 src/ext/edibleSdk）。开工先确认 `git diff --stat 6e068cd HEAD` 只列出这两个文件、`git status` 干净。
+- 该 tip = 代码基线 5e9753030696d2e8ea177c27007c2f15253d3eba（ext/phase5：5A1–5A4 含 5A4 审查修复 P1–P10、已独立审查的 owner 查询修复及 i18n/w_26 修复，FOUNDATION_PROTOCOL=10，EDIBLE_SDK_VERSION=1，worldSdk 1，whole-run 6）+ 包与白名单定稿修订（不限定一个提交；docs/ext/phase5g.dot-package.md + scripts/check-module-boundaries.mjs：把 crafting 的严格导入白名单推广到 foraging，另允许 src/ext/edibleSdk）。开工先确认 `git diff --stat 5e9753030696d2e8ea177c27007c2f15253d3eba HEAD` 只列出这两个文件、`git status` 干净。
 - 只推 ext/phase5g；不推 ext/phase5、ext/phase5g-base、ext/foundation、main；不打 tag；不合并、不 rebase 任何分支。
 - 本地可能并行开发 settlement 或其他修复（只写各自目录）。你只在下面允许的路径内工作，不碰任何共享文件；与它们的集成 rebase 和 trace 重跑由维护者完成，你不需要预留兼容。
 
-唯一任务书：docs/ext/phase5g.dot-package.md（本提示与其冲突时以该文件为准；它的 §A 是维护者已完成的核对与实测记录，可作背景）。先读 AGENTS.md、docs/ext/README.md，再完整读该任务书；它引用的设计稿 docs/ext/phase5-foraging.md、5A4 任务书 docs/ext/phase5a4.task.md 与 5A4 报告 docs/ext/phase5a4.report.md（§7、§10）只作背景，数值、ID、名称、文案、版本均以任务书为准（设计稿里的旧名“幻彩菌”已由任务书改为“苍鸾菌”）；任务书与基线实际 SDK 冲突时以基线代码为准。
+唯一任务书：docs/ext/phase5g.dot-package.md（本提示与其冲突时以该文件为准；它的 §A.1/A.5/A.6 是当前基线核对，§A.2–A.4 是旧副本历史实测，可作背景）。先读 AGENTS.md、docs/ext/README.md，再完整读该任务书；它引用的设计稿 docs/ext/phase5-foraging.md、5A4 任务书 docs/ext/phase5a4.task.md 与 5A4 报告 docs/ext/phase5a4.report.md（§7、§10）只作背景，数值、ID、名称、文案、版本均以任务书为准（设计稿里的旧名“幻彩菌”已由任务书改为“苍鸾菌”）；任务书与基线实际 SDK 冲突时以基线代码为准。
 
 硬规则（详见任务书 §11）：
 1. 只改 src/ext/modules/foraging/**、docs/ext/foraging-config.md、docs/ext/phase5g.report.md。其他任何文件（Game/引擎、src/ext/*.ts、src/ext/testing/**、src/ext/ui/**、src/ui/**、src/components/**、其他模块、scripts/**、package.json、配置、基线/trace、其他文档、共享 locale）一律不改。
@@ -27,29 +29,31 @@
 3. 不改任务书给定的 ID、数值、名单、文案名称、上限、版本号；外观名池与已知名一个字都不改；不增加任务书非目标中的玩法（营地食物经济、厨师、粮仓一律不做）。
 4. SDK 缺口/缺陷/与任务书不符：不绕过、不在模块里另造调度器或补丁，记入报告“SDK 问题清单”（含最小复现），其余工作继续推进。基线既有失败照实记录，不修共享脚本。
 5. 遇到任务书未写明的细节，按任务书 §12.2 的裁决规则自行决定并在报告“自行决定事项”列出，不要停下来问。
-6. 开发期每个里程碑只跑任务书 §9.1 的功能门禁；全部完成后跑一次 §9.2 收尾门禁。不跑完整 npm test、不跑全量删除矩阵、不跑 ce:fetch/test:full/test:gen。环境 Node 24.19.0、NODE_OPTIONS=--max-old-space-size=3072、vitest --maxWorkers=2。
+6. 按指挥依据交接单最新政策更新的 §9 执行：开发期每个里程碑跑相关功能门禁；5G 交付跑 boundary、vue-tsc、build、全部 foraging 自有定向测试、直接受影响既有测试、test:drift、§8.2 T-COMBO 相关真实组合、两条自然 trace、能执行的浏览器矩阵，缺口如实记录。完整 npm test、全部 test:ext、完整 64 组合 smoke、所有删除检查均留到 5Z，5G 不跑；不跑 ce:fetch/test:full/test:gen。环境 Node 24.19.0、NODE_OPTIONS=--max-old-space-size=3072、vitest --maxWorkers=2。
 
-交付：按任务书 §10 写 docs/ext/phase5g.report.md 与 docs/ext/foraging-config.md，按逻辑分若干提交推到 ext/phase5g，最后按任务书 §10.4 模板回复一段 ≤30 行的中文摘要（最终 commit、报告路径、门禁结果一览、SDK 问题清单条数、未覆盖项）。
+交付：按任务书 §10 写 docs/ext/phase5g.report.md 与 docs/ext/foraging-config.md，按逻辑分若干提交推到 ext/phase5g，每个提交信息末尾保留署名 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`（交接单 §1），最后按任务书 §10.4 模板回复一段 ≤30 行的中文摘要（最终 commit、报告路径、门禁结果一览、SDK 问题清单条数、未覆盖项）。
 ```
 
 ---
 
-## A 派发前维护者检查清单（核对与实测已完成；dot 只作背景阅读，不需执行）
+## A 派发前维护者检查清单（当前复核与历史实测分列；dot 只作背景阅读）
 
-核对对象：`6e068cd`（`ext/phase5`，5A4 含审查修复 P1–P10 已提交）与 `phase5a4.report.md` §7、§10。实测在仓库外副本 `/private/tmp/p5g-validate`（`git archive 6e068cd` + 本提交的边界脚本 + 按本文 §5.10/§7.4 抽出的最小 foraging 模块与一次性测试）中进行，Node 24.19.0、`NODE_OPTIONS=--max-old-space-size=3072`；副本与其测试不提交。☑ = 已核对且本文已按实际改正；⚠ = 需维护者处理。
+当前核对对象：`5e9753030696d2e8ea177c27007c2f15253d3eba`，§A.1 已按当前工作树复核，§A.5/A.6 记录阻断解除与授权状态。本轮仅做文档、数据/哈希/差异检查与 boundary，未重跑类型/构建/游戏门禁。
+
+**§A.2–A.4 以下记录均为旧定稿 `34bb6c7` 的历史来源**：核对对象为 `6e068cd`（`ext/phase5`，5A4 含审查修复 P1–P10 已提交）与 `phase5a4.report.md` §7、§10。实测在仓库外副本 `/private/tmp/p5g-validate`（`git archive 6e068cd` + 旧定稿的边界脚本 + 按本文 §5.10/§7.4 抽出的最小 foraging 模块与一次性测试）中进行，Node 24.19.0、`NODE_OPTIONS=--max-old-space-size=3072`；副本与其测试不提交。☑ 表示相应记录中的核对完成；历史副本中的临时修复不等同当前基线重新运行。64 子集全覆盖留到 5Z，历史结果不追改。
 
 ### A.1 占位符（已全部替换进正文）
 
 | 占位符 | 实际值 | 来源 | 状态 |
 | --- | --- | --- | --- |
-| `<BASE_COMMIT>` | `6e068cd`；派发 tip = `origin/ext/phase5g-base` = `6e068cd` + 定稿提交（本文件 + `scripts/check-module-boundaries.mjs`） | `git log` | ☑ |
+| `<BASE_COMMIT>` | `5e9753030696d2e8ea177c27007c2f15253d3eba`；派发 tip = 该代码基线 + 包与白名单定稿修订（本文件 + `scripts/check-module-boundaries.mjs`，不限定一个提交） | `git log` | ☑ |
 | `<FOUNDATION_PROTOCOL>` | **10** | `src/ext/descriptor.ts:5` | ☑ |
-| whole-run / 录像 / 来源 / IDB | 6 / 4 / 2 / 2 | 5A4 报告 §1、§10.4 | ☑ |
+| whole-run / 录像 / 来源 / IDB | 6 / 4 / 2 / 2 | 当前 WholeRunSnapshot/Game/SaveDatabase，值同 5A4 报告 | ☑ |
 | `EDIBLE_SDK_VERSION` | 1 | `src/ext/worldEdible.ts:13` | ☑ |
 | `<INSTALLED_MODULES>` | combat、crafting、giants、growth、narrative（settlement 未合入） | `ls src/ext/modules` | ☑ |
 | `<MODULE_VERSIONS>` | combat 1.6.0、crafting 1.0.0、giants 1.0.0、growth 1.8.0、narrative 1.4.0 | 各 `definitions.ts` | ☑ |
-| `<SUBSET_COUNT>` | 加入 foraging 后 6 模块 **64** 子集（实测 `check-module-removal.mjs --plan` 矩阵 64 行） | 2^6 | ☑ |
-| `src/ext/worldSdk.ts` | `297803afb0dd07d40d601644ca2b71349d3373e2d2d3bae3535288be741fa343` | `shasum -a 256` @ `6e068cd` | ☑ |
+| `<SUBSET_COUNT>` | 加入 foraging 后 6 模块 **64** 子集（旧副本 `--plan` 实测 64 行；本轮未重跑，全覆盖留 5Z） | 2^6 | ☑ |
+| `src/ext/worldSdk.ts` | `297803afb0dd07d40d601644ca2b71349d3373e2d2d3bae3535288be741fa343` | 当前工作树 SHA-256 与 `5e9753030696d2e8ea177c27007c2f15253d3eba` 逐字节比对 | ☑ |
 | `src/ext/edibleSdk.ts` | `fc7edee625d48d61affe9f64d7bc9b66d38d23d2b391eb93599d044a8ef3ae0b` | 同上 | ☑ |
 | `src/ext/worldEdible.ts` | `7f498298e12f1d7c5366b8e7cdce555b958350f89d51a90b737abafa55dc9e67` | 同上 | ☑ |
 | `src/ext/kindKnowledge.ts` | `4be5703961933f450fababbcb6f9f2d5d987ffd701e6f3e67d27cd27d90a184f` | 同上 | ☑ |
@@ -118,24 +122,27 @@
 
 ### A.5 合入与派发
 
-- ☐ §12.3 自行决定事项待维护者签认（尤其 nonEaters 名单 Q10、名称/描述文本、A.7 改名）。
-- ☑ 本文件与边界脚本定稿提交于 `ext/phase5g-base`（父提交 `6e068cd`）并推送；正文与 §0 占位符已替换。
-- ☐ **A.6 底座阻断项处理后才可派发**（处理后按 A.6 末尾更新 §0 基线行）。
+- ☑ §12.3 全部 20 条、nonEaters 20 个模板、A.7“苍鸾菌”与 §6.4 揭示烤菌同时揭示生菌，均由指挥依本轮授权临时采纳：**按推荐执行，待用户确认（可逆，不阻断派发）**；用户尚未逐条终审。
+- ☑ 当前本地树为代码基线 `5e9753030696d2e8ea177c27007c2f15253d3eba` + cherry-pick 旧定稿 `34bb6c7`（本地提交 `4829b40`）+ 本包派发前文档更新；相对代码基线只含本文件与 `scripts/check-module-boundaries.mjs`。边界脚本逐字保持 `34bb6c7` 已验收内容；本轮不 commit/push，远端派发 tip 由指挥发布后确认。
+- ☑ A.6 已在当前代码基线修复并通过独立审查，不再阻断派发；不能把旧副本实测当成本轮运行。
+- ☑ 指挥按交接单最新政策更新 §0/§9/§10：完整 npm test、全部 test:ext、完整组合 smoke 与所有删除检查留 5Z；保留相关功能、trace 与可执行浏览器验收。
 - ☑ settlement 未合入：T-COMBO 不含 settlement 行；`settlement.resident-status.v1` 形状为本包定义的消费合同（§6.5），交接 5D。
 
-### A.6 ⚠ 派发前阻断项：world 包“owner 判定只看 `items`”（底座缺陷，dot 不可修）
+### A.6 ☑ 原派发阻断已解除：world 包 owner 查询（底座修复已入当前基线）
 
-`6e068cd` 中有 4 处用 `p.items.some(i => i.owner === owner)` 判断“某 owner 拥有世界包”。foraging 的 `items` 为空数组（全部物品是 `edibleItems`，fgfixture 同样），因此：
+**历史缺陷（以下行号属旧基线）**：`6e068cd` 中有 4 处用 `p.items.some(i => i.owner === owner)` 判断“某 owner 拥有世界包”。foraging 的 `items` 为空数组（全部物品是 `edibleItems`，fgfixture 同样），因此：
 
 1. `WorldWorkValidation.ts:26`：只要有一次采集完成（终端票据），`toSnapshot` 校验即抛 `C5_BAD_REFERENCE: terminal definition` → **采集后无法存档/录像**（实测）。
 2. `WorldWorkValidation.ts:203/218`：采集产生的 work fact 在读档校验时同样判 `workFact` 失败。
 3. `WorldWorkWorld.ts:708`：`worldWorkReadSDK` 对 foraging 返回 undefined → 投影上下文 `context.worldWork` 缺席（实测），按 §7.1 投影将恒为 `available:false`，采集页不可用。
 
-最小修法（副本已验证，补丁在 `/private/tmp/p5g-owner-lookup.patch`，40 行）：4 处改为 `[p.items, p.resourceNodes, p.stations, p.recipes, p.edibleItems ?? []].some(l => l.some(d => d.owner === owner))`；对 `items` 非空的现有模块行为不变。修后上面 A.4 自然路径的 save/load/replay/seek 全部通过。建议维护者在 `ext/phase5` 上以单独提交修复并补回归（采集后 save/load/replay、仅 edibleItems 的 owner 投影有 worldWork），再把 `ext/phase5g-base` 重建为“修复提交 + 本定稿提交”，并把 §0 基线行改为“代码基线 `<修复后 commit>` …… 开工先确认 `git diff --stat <修复后 commit> HEAD` 只列出这两个文件”，同时更新本节与 §2。**若不修即派发**，dot 的 T-NODE（采集后存档）、T-PERSIST、T-TRACE（trace A/B）、T-UI 采集页将全部被阻断。
+**当前状态**：代码基线 `5e9753030696d2e8ea177c27007c2f15253d3eba` 已采用共享内部 helper `WorldWorkOwner.ts`，按 items/resourceNodes/stations/recipes/edibleItems 五个定义列表查询 owner，统一终端票据、独立 work facts、活跃票据与只读 SDK 查询；具体 definitionId/owner/操作类型与引用闭包校验保留。§A.4 的自然路径和 64/64 为旧副本临时补丁证据，不是本轮执行结果。
 
-### A.7 维护者待定的改名（可逆）
+[修复报告](phase5g-owner-lookup.report.md)记录相关 15 文件 / 242 项、boundary/vue-tsc/build 通过及旧生产代码单变量反事实；[独立审查](phase5g-owner-lookup.review-findings.md)结论无阻塞发现，独立复跑 4 文件 / 73 项通过。这些均为修复/审查阶段的证据，本轮仅核对文档、数据、冻结哈希、版本、两文件差异及 boundary。采集后存读/录像和 worldWork 投影阻断已解除，dot 仍须用生产 foraging 完成 T-NODE/T-PERSIST/T-TRACE/T-UI 功能验收；若发现新 SDK 问题按 §12.2 报告。
 
-已知名 `prism`（幻觉）由“幻彩菌”改为 **“苍鸾菌”**（§5.2 表、§7.4 `ext.foraging.kind.prism.name`）。理由：“幻”字可能让玩家联想到幻觉/致幻，而本包要求名称纯奇幻；“苍鸾”是神话鸟名，不暗示任何效果、不描写真实菌体，过 §5.7 禁用词表，与 18 个外观名、其余 11 个已知名均不重复，以“菌”结尾。设计稿 `phase5-foraging.md` 仍写旧名，以本文为准。**待维护者确认**；若维护者要恢复，只需把这两处改回“幻彩菌”，不影响任何 ID、数值或指纹（locale 文本不进 rules 指纹）。
+### A.7 指挥临时采纳的改名（待用户确认，可逆，不阻断派发）
+
+已知名 `prism`（幻觉）由“幻彩菌”改为 **“苍鸾菌”**（§5.2 表、§7.4 `ext.foraging.kind.prism.name`）。理由：“幻”字可能让玩家联想到幻觉/致幻，而本包要求名称纯奇幻；“苍鸾”是神话鸟名，不暗示任何效果、不描写真实菌体，过 §5.7 禁用词表，与 18 个外观名、其余 11 个已知名均不重复，以“菌”结尾。设计稿 `phase5-foraging.md` 仍写旧名，以本文为准。**按推荐执行，待用户确认（可逆，不阻断派发）**；不是用户逐条终审。dot 按“苍鸾菌”执行；后续若调整名称，仍须维护者审阅并严格通过 §5.5/§5.7/T-NAME，不得降低命名规则或禁用词要求；locale 文本不进 rules 指纹。
 
 ---
 
@@ -153,7 +160,7 @@
 6. 盟友同伴有饱腹值，随时间下降；饿→虚弱→饥荒；饥荒满 300 回合离队（不死亡）；玩家用“喂食”命令把背包食物给相邻同伴，同伴对某些菌的反应可揭示种类。
 7. 全程真实命令录制，save/load/replay/seek/续录一致。
 
-### 1.2 已批准的产品选择（不再讨论）
+### 1.2 产品选择（已批准设计与指挥临时采纳项，dot 按此执行）
 
 - 12 种菌、每种恰好一个特性（无复合）；数值见 §5.2。
 - 非魔法知识：鉴定卷轴、探测魔法、最后种类升格、任何“揭示全部”永不揭示（foundation 已隔离）；只能自己吃、喂同伴看反应、目睹爆炸学会。
@@ -164,7 +171,7 @@
 - “暗影”= 原生 `darkness`（Q3=A）；临时力量 = `native.strength` +2、400 回合，到期移除。
 - 同伴饥饿仅在启用 foraging 时存在；同伴 AI 永不自己进食；喂食永远被接受；同伴不会饿死。
 - 同伴离队：视野外立即退役，视野内非敌对离开 ≤20 回合后退役（Q4=A，foundation H7）。
-- 不进食同伴：规则排除（无生命/限时召唤/群体成员/营地居民）+ 模板名单 `nonEaters`（Q10=A，名单待维护者审阅，§12.3）。
+- 不进食同伴：规则排除（无生命/限时召唤/群体成员/营地居民）+ 模板名单 `nonEaters`（Q10=A；20 个模板按推荐执行，待用户确认，可逆且不阻断派发，§12.3）。
 
 ### 1.3 非目标（出现即越界）
 
@@ -181,18 +188,18 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 基线 | `origin/ext/phase5g-base`：代码 = `ext/phase5` @ `6e068cd`（5A1–5A4 含 5A4 审查修复 P1–P10）+ 一个定稿提交（本文件 + `scripts/check-module-boundaries.mjs` 的 foraging 白名单） |
+| 基线 | `origin/ext/phase5g-base`：代码 = `ext/phase5` @ `5e9753030696d2e8ea177c27007c2f15253d3eba`（5A1–5A4 含审查修复 P1–P10、已独立审查的 owner 查询修复及 i18n/w_26 修复）+ 包与白名单定稿修订（不限定一个提交）（本文件 + `scripts/check-module-boundaries.mjs` 的 foraging 白名单） |
 | 工作分支 | `git switch -c ext/phase5g origin/ext/phase5g-base` |
 | foundation | `FOUNDATION_PROTOCOL = 10`（只引用常量，不写字面量）；`EDIBLE_SDK_VERSION = 1`；`worldSdk: 1`；whole-run 6 / 录像 4 / 来源 2 / IDB 2 |
 | 既有模块 | combat 1.6.0、crafting 1.0.0、giants 1.0.0、growth 1.8.0、narrative 1.4.0（settlement 未合入）；一个字节都不改 |
 | SDK 冻结文件（SHA-256） | `src/ext/worldSdk.ts` `297803afb0dd07d40d601644ca2b71349d3373e2d2d3bae3535288be741fa343`；`src/ext/edibleSdk.ts` `fc7edee625d48d61affe9f64d7bc9b66d38d23d2b391eb93599d044a8ef3ae0b`；`src/ext/worldEdible.ts` `7f498298e12f1d7c5366b8e7cdce555b958350f89d51a90b737abafa55dc9e67`；`src/ext/kindKnowledge.ts` `4be5703961933f450fababbcb6f9f2d5d987ffd701e6f3e67d27cd27d90a184f`；`src/ext/actorNeeds.ts` `8e56c4a90e24424adf5fe443d9623c6474a59e5ef17763aa44981b9c1e3c333e`；`src/ext/stats.ts` `c80ae73f2e08c1f9e1dc8b34c7b63684244b4b24a47a4135f3ed5d8093302c84`；`src/ext/testing/worldHarness.ts` `a3caff8906b22826814907f2f3fbecbadd8cd022e2bf4da8691fb475a684e9e0`；`src/ext/testing/forageHarness.ts` `ea4b47e02fe0c967fb0867211d33894d3eeb59f0bec202462c3627417a316d38`；`src/ext/testing/fixtures/forageFixture/index.ts` `adc02caaa085519c54a4c0c202ef9f06f1a2b818806bd6b819773f81a4b1abea`（目录树 `7c31db01609c097285a21493bf9771bda92e2eb6464fcad124314368f9e1c10c`，算法见 §A.1） |
 | 运行环境 | Node 24.19.0；`NODE_OPTIONS=--max-old-space-size=3072`；vitest `--maxWorkers=2`；不新增 npm 依赖 |
 
-开工第一件事：`git log -1`、`git status`（须干净）、`git diff --stat 6e068cd HEAD`（只应列出本任务书与 `scripts/check-module-boundaries.mjs`）、`shasum -a 256` 上述文件并与表比对，结果写入报告 §2。哈希不符**照常开工**，在报告记录差异并以基线实际代码为准。
+开工第一件事：`git log -1`、`git status`（须干净）、`git diff --stat 5e9753030696d2e8ea177c27007c2f15253d3eba HEAD`（只应列出本任务书与 `scripts/check-module-boundaries.mjs`）、`shasum -a 256` 上述文件并与表比对，结果写入报告 §2。哈希不符**照常开工**，在报告记录差异并以基线实际代码为准。
 
 开工前先完整阅读：`src/ext/testing/fixtures/forageFixture/index.ts`（测试专用 `fgfixture`，演示全部 E3/E4 字段与参与者接线；**只学接线，不抄数值与 `as any`**，它的参与者把整条事实写进 history、prepare 不校验 payload，本模块按 §6 严格实现）、`src/ext/modules/crafting/`（模块骨架、harvest 命令、投影、UI 会话、测试与 trace 的成熟写法，只读学习，不 import）、5A4 报告 §7（5G 冻结清单）与 §10（审查修复后的最终行为）。
 
-基线已知缺陷与保留行为（详见 §A.3#15、§A.6）：roast 命令内参与者失败会使整条火接触连锁回滚；玩家沉眠中原生自动进食仍可能吃口粮/芒果；若基线仍含 §A.6 所述“owner 只按 `items` 判定”的缺陷，采集后存档会 `C5_BAD_REFERENCE`、投影 `worldWork` 缺席——这些都按 §11 规则 4 记入 SDK 问题清单，不在模块内绕过。
+基线保留行为（§A.3#15）：roast 命令内参与者失败会使整条火接触连锁回滚；玩家沉眠中原生自动进食仍可能吃口粮/芒果，按 T-ROAST/T-EAT 验证并记录。§A.6 owner 查询阻断已在当前基线解除；生产 foraging 的实际闭环仍须本次实现与验收，发现新缺陷按 §12.2 记录，不在模块内绕过。
 
 ---
 
@@ -249,7 +256,7 @@ docs/ext/phase5g.report.md    执行报告（§10.1）
 
 ---
 
-## 5 数据包与完整数值（已批准，逐字照抄）
+## 5 数据包与完整数值（执行定值，逐字照抄；临时采纳项见 §12.3）
 
 ### 5.1 根结构（模块自有 schema）
 
@@ -365,7 +372,7 @@ foundation 每局倒序 Fisher–Yates 洗牌，取前 12 个按 `kinds` 顺序�
 | `backshadow` | 逆影菌 | 它的影子总是指向光源。 |
 | `hourglass` | 沙漏菌 | 内部有细沙自下而上缓缓流动。 |
 
-**编写时核验（Claude，2026-10-07）**：18 个外观名与 12 个已知名均以“菌”结尾、互不重复；§7.4 全部 200 条文案对 §5.7 禁用词表逐条扫描 0 命中；没有一项是已知真实菌种的中文名或俗名，也没有写实形态/颜色花纹描写（“星屑/光点”“灰烟”“彩色残影”是光与烟的奇幻特征，不是菌体花纹）。原已知名“幻彩菌”含“幻”字，可能让玩家联想到幻觉，派发前已改为纯奇幻、不暗示效果的“苍鸾菌”（§A.7，维护者待定、可逆；设计稿仍写旧名，以本文为准）。定稿时用真实 locale 再扫：200 条值对 §5.7 禁用词 0 命中，30 个名称以“菌”结尾且互不重复。
+**编写时核验（Claude，2026-10-07）**：18 个外观名与 12 个已知名均以“菌”结尾、互不重复；§7.4 全部 200 条文案对 §5.7 禁用词表逐条扫描 0 命中；没有一项是已知真实菌种的中文名或俗名，也没有写实形态/颜色花纹描写（“星屑/光点”“灰烟”“彩色残影”是光与烟的奇幻特征，不是菌体花纹）。原已知名“幻彩菌”含“幻”字，可能让玩家联想到幻觉，派发前已改为纯奇幻、不暗示效果的“苍鸾菌”（§A.7，按推荐执行，待用户确认，可逆且不阻断派发；设计稿仍写旧名，以本文为准）。定稿时用真实 locale 再扫：200 条值对 §5.7 禁用词 0 命中，30 个名称以“菌”结尾且互不重复。
 
 ### 5.7 禁用词表（T-NAME 使用，作用于 `locales/zh_CN.json` 全部值）
 
@@ -386,7 +393,7 @@ foundation 每局倒序 Fisher–Yates 洗牌，取前 12 个按 `kinds` 顺序�
 
 同伴不掉血、不饿死；任何进食使值 >0 即清除离队计时（foundation）。惩罚不写原生 `weaknessAmount`。
 
-`nonEaters`（**模板名单，待维护者审阅，Q10**；规则排除之外额外不进食的盟友）：`arrow_turret, bloat, dart_turret, explosive_bloat, flame_turret, flamedancer, golem, ifrit, lich, mangrove_dryad, phantom, phoenix, pit_bloat, revenant, sentinel, spark_turret, vampire, wisp, wraith, zombie`（20 个，码点序；理由：炮塔/构装、气囊、元素/火焰生物、亡灵与灵体、植物）。`MONST_INANIMATE` 模板（各类 totem、spectral blade/sword、guardian、phylactery、phoenix_egg）已由规则排除，不重复列入。
+`nonEaters`（**模板名单，Q10；按推荐执行，待用户确认（可逆，不阻断派发）**；规则排除之外额外不进食的盟友）：`arrow_turret, bloat, dart_turret, explosive_bloat, flame_turret, flamedancer, golem, ifrit, lich, mangrove_dryad, phantom, phoenix, pit_bloat, revenant, sentinel, spark_turret, vampire, wisp, wraith, zombie`（20 个，码点序；理由：炮塔/构装、气囊、元素/火焰生物、亡灵与灵体、植物）。`MONST_INANIMATE` 模板（各类 totem、spectral blade/sword、guardian、phylactery、phoenix_egg）已由规则排除，不重复列入。
 
 ### 5.9 schema 严格校验（`assertForagingPack(value, localeKeys)`）
 
@@ -610,7 +617,7 @@ export const descriptor: ModuleDescriptor = {
 
    “always”按设计稿 §3 字面：即使已处于该状态（取较大值导致时长未增）也揭示；只有免疫/不适用不揭示。
 
-3. `revealed`：`markKnowledge(definitionId,'known')`；若 form=roasted 再 `markKnowledge(raw,'known')`（揭示烤菌即知种类，维护者 2026-10-07 已批准）。消息：eat 生 → `message.revealed {name}`；eat 烤 → `message.revealed_roasted {name}`；feed → `message.fed_revealed {name}`。`name` = `i18next.t(kind.knownNameKey)`（模块预翻译后作参数）。
+3. `revealed`：`markKnowledge(definitionId,'known')`；若 form=roasted 再 `markKnowledge(raw,'known')`（揭示烤菌即知种类，指挥依据本轮授权临时采纳：按推荐执行，待用户确认，可逆且不阻断派发）。消息：eat 生 → `message.revealed {name}`；eat 烤 → `message.revealed_roasted {name}`；feed → `message.fed_revealed {name}`。`name` = `i18next.t(kind.knownNameKey)`（模块预翻译后作参数）。
 4. 否则 `markKnowledge(definitionId,'tasted')`（已 known 时返回 false，忽略）；eat → `message.tasted`；feed → `message.fed_tasted`。
 5. 生菌已知**不**自动标烤菌 known（烤后保留/去除是独立知识）。
 
@@ -684,7 +691,7 @@ interface ForagingView {
 }
 ```
 
-- **不输出** definitionId、kind、已知名、饱腹精确值（非 known 时 `satiety:null`）、烤制政策、需求精确值 `value`（只给档位）。
+- **不另行输出** definitionId、kind 或绕过知识解析的已知名；名称仅用 SDK 的 `displayName`。不输出未知物品的饱腹精确值（非 known 时 `satiety:null`）、烤制政策、需求精确值 `value`（只给档位）。
 - `foods`：`readEdibleContext().inventory` 列出背包内**任何 owner** 的可食定义；模块只列本包定义（`source:'foraging'`）与原生口粮/芒果（`source:'native'`），其他 owner 的可食物品跳过。`displayName/knowledge/satiety` 原样取自 SDK（已按知识解析）。
 - 节点行：对 `nearbyInteractables` 中本 owner 条目调用 `readWorkContext({kind:'node', interactableId})`，失败则不列；投影**不输出名称**——基线投影上下文的 `nearbyInteractables` 不带 `displayName`（知识解析名只经共享显示帧暴露，见 §7.2）；`canHarvest/reason` 按 crafting §7.1 同一顺序计算（`!available→C5_BUSY/C5_GATE`、距离 >1 `C5_DISTANCE`、`remaining<1` `C5_RESOURCE_EMPTY`、预留 `C5_RESERVED`；无工具要求）。
 - 投影 0 RNG、0 写；反复投影结果相同。
@@ -717,7 +724,7 @@ interface ForagingView {
 
 ### 7.4 i18n（`locales/zh_CN.json`，逐字照抄）
 
-名称类（kind/appearance/item/node 的 name、模板）**不得改一字**；描述与 UI/错误/消息文案仅可改错别字，且改后须仍通过 §5.7 禁用词与 T-NAME 快照（快照变化 = 需维护者审阅，dot 不应改）。
+本节既有名称、描述、模板、UI/错误/消息文本**不得改一字**，与 §0/§5 执行定值一致；发现错别字也先在报告提议，由维护者审阅。§12.2 仅允许按规则新增所需 UI/错误类键，不允许改本节既有文本。
 
 ```json
 {
@@ -932,19 +939,42 @@ interface ForagingView {
 
 `test` 套件：`foraging_imports`、`foraging_schema`、`foraging_data_tables`、`foraging_names`、`foraging_module`、`foraging_commands`、`foraging_eat`、`foraging_knowledge`、`foraging_fire`、`foraging_roast`、`foraging_nodes`、`foraging_companion`、`foraging_feed`、`foraging_leak`、`foraging_persistence`、`foraging_combinations`、`foraging_ui`。`drift` 套件：`foraging_trace`。文件名均为 `tests/<名>.test.ts`。除 imports/schema/data_tables/names/module/commands/ui 的纯单元部分外，**一律走真实 Game**（`createWorldHarness` 与真实 `executeCommand`/录像路径），不 mock 底座。
 
-harness 语义（写断言前必读，同 5B §8.1）：被拒命令也 `recorded:true`；`h.ext(..., answers)` 的 `answers` 只作用于 `ext:command`——原生 `item:execute` 的确认（吃“不太饿”）用 `worldHarnessGame(h).onConfirmRequest = () => <bool>`，或在 `h.command()` 后循环 `game.resolveCommandDecision(game.pendingCommandConfirmation.token, answer)`（crafting `traceHelpers.ts` 的写法，学其做法、不 import）；`error` 是最后一次世界工作错误，非世界命令不重置；`replay()/seek()` **替换**活局（对照组另建 harness 或先 `save()`）；判断结果看事实、背包、知识视图与 state，不能只看 `error`。布景（放盟友、扣血、放火地形、给背包塞可食物品、调整位置）可用 `worldHarnessGame(h)` 与 §6.0 允许的引擎布景函数；被测动作必须走公开命令。i18n：测试自行初始化 i18next 并加入 foundation `ext.foundation.edible.*`/`status.slumber*`/`world.*` 与本模块 locale（参照 `forageHarness.ts` 的做法，不 import 它）。
+harness 语义（写断言前必读，同 5B §8.1）：被拒命令也 `recorded:true`；`h.ext(..., answers)` 的 `answers` 只作用于 `ext:command`；原生 `item:execute` 的确认（吃“不太饿”）必须在执行前安装本条命令自己的同步 `onConfirmRequest`，执行完在 `finally` 恢复（见下），不得复用上一条 `h.ext()` 遗留的回调；`error` 是最后一次世界工作错误，非世界命令不重置；`replay()/seek()` **替换**活局（对照组另建 harness 或先 `save()`）；判断结果看事实、背包、知识视图与 state，不能只看 `error`。布景（放盟友、扣血、放火地形、给背包塞可食物品、调整位置）可用 `worldHarnessGame(h)` 与 §6.0 允许的引擎布景函数；被测动作必须走公开命令。i18n：测试自行初始化 i18next 并加入 foundation `ext.foundation.edible.*`/`status.slumber*`/`world.*` 与本模块 locale（参照 `forageHarness.ts` 的做法，不 import 它）。
+
+**原生命令确认驱动（当前执行规范，补正历史 §A.2#19）**：捕获自然 trace/执行真实用例时，在非回放、无待决命令的活局使用同步方案。默认 harness 不启用挂起确认；仅在 `h.command()` 返回后检查 pending，答案可能早已默认取 true，不能补答 No。不要照抄 crafting `traceHelpers.ts` 的命令后 pending 循环作为原生 answers 驱动。本包不采用挂起方案；为确保同步路径，临时清空 `onCommandConfirmRequest`，并与同步回调一并恢复：
+
+```ts
+// command 是当前 trace 命令；每条原生命令独立安装，不能沿用 h.ext 的回调。
+const game = worldHarnessGame(h);
+expect(game.pendingCommandConfirmation).toBeNull();
+const previousConfirm = game.onConfirmRequest;
+const previousCommandConfirm = game.onCommandConfirmRequest;
+const answers = command.answers ?? [];
+let cursor = 0;
+try {
+  game.onCommandConfirmRequest = null;
+  game.onConfirmRequest = () => answers[cursor++] ?? true;
+  h.command(command.action, command.data);
+  expect(game.pendingCommandConfirmation).toBeNull();
+} finally {
+  game.onConfirmRequest = previousConfirm;
+  game.onCommandConfirmRequest = previousCommandConfirm;
+}
+```
+
+No/Yes 用例除结果断言外，分别要求本条命令的 `cursor === 1`，确认实际询问过一次；仅提供 `answers` 不代表发生了确认。录像重放使用录制事件的 `decisions`，不再用此捕获回调代答。`replay()/seek()` 后需要继续发活局命令时，重新调用 `worldHarnessGame(h)` 取当前 Game 并安装回调。
 
 ### 8.2 必须覆盖的用例
 
 | # | 文件 | 用例 |
 | --- | --- | --- |
-| T-IMP | imports | 扫描 `foraging/` 下非测试 `.ts/.vue` 的全部 import/动态 import/`import type` 说明符，逐条对照 §6.0 白名单；`stats`、`world` 只允许 `import type` |
+| T-IMP | imports | 扫描 `foraging/` 下非测试 `.ts/.vue` 的全部 import/动态 import/`import type` 说明符，逐条对照 §6.0 白名单；`stats` 禁止导入（含 `import type`）；`world` 仅允许 `import type`；statSources 类型从 `ExtensionModule` 派生 |
 | T1 | schema | §5.9 每条规则至少一个拒绝用例（未知键、缺键、越界、重复 ID、错误前缀、生烤意图不一致、ordinal 错、options[1] 非 none、glyph/color 不一致、blast 可烤、节点/分组不对应、模板键缺失、limits 放松、nonEaters 乱序）；指纹稳定；任一机械数组重排或数值变化 → 指纹变化；locale 文本变化 → 指纹不变 |
 | T-DATA | data_tables | 逐项断言 §5.2–§5.8 全部数值/ID/顺序（“改数值必须改此测试”的黄金表） |
 | T-NAME | names | 外观池 18 个与已知名 12 个比对测试内固定快照数组（人工审阅触发器）；池 ≥ 种类数；外观名与已知名全部以“菌”结尾且互不重复；locale 全部值对 §5.7 禁用词 0 命中；名称不含 ASCII 字母/数字；模板占位符恰为 A.2#17；运行期抽样（多个种子新局、各知识状态、生/烤/节点/绰号）foundation 解析名必为“名单项 / 烤+名单项 / 名单项+丛 / 附注 / 绰号”固定组合之一 |
 | T-MOD | module | descriptor 通过 `validateModuleDescriptors`；`toWorldDefinitionPack` 内容与顺序；state 初值/校验/拒绝；`applyFact` 幂等、跳号、64 上限、饱和；揭示判定纯函数全表（12 种 × eat/feed × 生/烤 × 条件真假 × immune/notApplicable）；`qualifies` 全分支（含 queryOptional 抛错/畸形/unavailable）；statSources 三档输出；参与者对畸形输入不抛 |
 | T-CMD | commands | 三种 payload 严格键与 `v`；成对 null；非安全整数；prepare 前后 state、两条 RNG、实体/计划 ID、消息不变 |
-| T-EAT | eat | 真实吃（`item:execute eat|x`，含 E9 确认 Yes/No：No 录制且 0 成本）：12 种生菌各自意图结果与揭示/tasted；回复满血 tasted、受伤 known；幻觉/暗影已处于时 tasted；免疫（如布景已免疫麻痹）tasted；呕吐饱腹下限 150；力量 +2 持续 400 回合到期回落且无永久成长；沉眠 25 回合受伤醒；爆燃菌吃下只得 150 饱腹 + tasted；自动进食永不选菌（营养降至 ≤1 时只吃原生 FOOD 或无）；烤菌 keep/strip 两种政策（用独立预言选种子，见下）各自结果，keep 揭示同时生菌 known，strip 只 tasted；**基线保留行为**：玩家沉眠中营养耗尽时原生自动进食仍会吃口粮/芒果（永不吃菌），用例照实断言并在报告记录 |
+| T-EAT | eat | 真实吃（`item:execute eat|x`，含 E9 确认先 No 再 Yes：两次各新增恰一条录制事件，首次 `decisions` 严格为 `[false]` 且背包/营养/当前 tick/绝对回合不变，零成本；其次严格为 `[true]` 并实际吃下 1 个、推进时间；确认驱动按 §8.1）：12 种生菌各自意图结果与揭示/tasted；回复满血 tasted、受伤 known；幻觉/暗影已处于时 tasted；免疫（如布景已免疫麻痹）tasted；呕吐饱腹下限 150；力量 +2 持续 400 回合到期回落且无永久成长；沉眠 25 回合受伤醒；爆燃菌吃下只得 150 饱腹 + tasted；自动进食永不选菌（营养降至 ≤1 时只吃原生 FOOD 或无）；烤菌 keep/strip 两种政策（用独立预言选种子，见下）各自结果，keep 揭示同时生菌 known，strip 只 tasted；**基线保留行为**：玩家沉眠中营养耗尽时原生自动进食仍会吃口粮/芒果（永不吃菌），用例照实断言并在报告记录 |
 | T-KNOW | knowledge | unknown/tasted/known 迁移单调；生/烤独立；名称/详情按 §5.5（经 foundation 解析）在背包、详情、悬停、节点各一；未知详情无饱腹；起绰号（`call|x|标题`）显示、known 后不显示但保留；鉴定卷轴菜单不含菌、探测魔法无标记、最后种类升格不触发、幻觉中名称不随机化 |
 | T-FIRE | fire | 布景火地形（spawn-fire）、地面燃烧、扔进火、玩家着火瞬间背包（1/3，固定种子下抽取位置与结果确定；背包无可食物品时两流计数不变）、熔岩：生→烤→焦炭→烧尽链与对应消息；冷却内不二次接触；爆燃 1/2/3 个 DF 选型；可见爆炸揭示、视野外爆炸不揭示、背包爆炸揭示；连锁顺序确定 |
 | T-ROAST | roast | crafting 火炉（真实放置）与 combat 篝火两种热源各一次 `roast`：生→烤、烤→焦、焦→烧尽、爆燃在热源格爆炸；未装提供方时投影 `heatSources` 为空且命令 `C5_DISTANCE/C5_UNKNOWN_TARGET` 0 成本；超距/无交互线/陈旧 stamp 拒绝 0 成本；扔进热源格一次接触；**基线保留行为**：roast 内参与者失败（测试内 override 一个会抛的参与者）→ 整条火接触连锁与命令一起回滚为已录制、0 成本的 `C5_PROVIDER`，背包/知识/两流不变 |
@@ -953,15 +983,17 @@ harness 语义（写断言前必读，同 5B §8.1）：被拒命令也 `recorde
 | T-FEED | feed | 相邻可见同伴：原生口粮 +1800、芒果 +1550、各菌饱腹与意图作用于同伴；揭示矩阵（§6.4：回复受伤才揭示、心灵感应/幻觉/暗影/爆燃只 tasted）；超量确认 Yes/No；拒绝 0 成本：非相邻、不可见、非同伴、失能、离开中（`C5_GATE`）、物品非食物、陈旧 targetRevision/stamp、跨层 |
 | T-LEAK | leak | 未知状态下执行吃、扔、丢弃、装备尝试、起绰号、采集、烤制、喂食、爆炸、存读后：日志全文、投影 JSON、UI 渲染文本中不出现 `ext.foraging.`、`foraging.` 定义 ID、任何未揭示种类的已知名或饱腹精确值；未知菌全部生菌外观同字形同色 |
 | T-PERSIST | persistence | 吃/烤/爆炸/喂/离开中/退役后/沉眠中/力量生效中/节点部分采空且有再生余数 各存一次档：load 后继续与不存档结果相同；整局 replay 首个不一致为 null；seek 到各点续录一致；面板反复开关/切页签前后 digest 与两流不变；坏 state（越界、乱序 history、未知键）读档被拒 |
-| T-COMBO | combinations | foraging 与 growth/narrative/combat/giants/crafting 各自及全开：新局、一次采集、一次吃、save/load/replay 成功；+combat 篝火烤制；+crafting 火炉烤制、crafting 包指纹不变；+giants 群体核心挂载与整体退役；settlement 若已安装则加“仅 settlement”“foraging+settlement”两行，未安装则该行不存在（不得硬引用 settlement） |
+| T-COMBO | combinations | 仅 foraging、foraging 与 growth/narrative/combat/giants/crafting 各自及全开：新局、一次采集、一次吃、save/load/replay 成功；+combat 篝火烤制；+crafting 火炉烤制、crafting 包指纹不变；+giants 群体核心挂载与整体退役；settlement 若已安装则加“仅 settlement”“foraging+settlement”两行，未安装则该行不存在（不得硬引用 settlement） |
 | T-UI | ui | `ui/view.ts` 对畸形 DTO fail-closed；三页签渲染；菌丛名取自显示帧 `interactables`、取不到不显示；相邻判断与自动选中；未知饱腹显示“少量”；连点只提交一次；回放只读；seek 清草稿；`presentationBusy` 关闭面板；HUD 只在有饥饿/离开同伴时出现（SFC 用仓库共享 harness） |
-| T-TRACE | trace（drift） | 重放 §8.3 两条 trace：`ext` 命令逐条 `{recorded,error}` 与 trace 一致；原生命令核对录制条数增量；终局背包（显示名+数量）、知识视图、state、digest 与 trace 末尾一致 |
+| T-TRACE | trace（drift） | 重放 §8.3 两条 trace：`ext` 命令逐条 `{recorded,error}` 与 trace 一致；原生命令核对录制条数增量；trace A 两次吃命令各增 1 条，真实录制事件 `decisions` 分别严格为 `[false]`/`[true]`，首次零成本、其次吃下（§8.3）；终局背包（显示名+数量）、知识视图、state、digest 与 trace 末尾一致 |
 
 烤制政策的独立预言：测试内用 `node:crypto` 按 5A4 §2.4 算法（`c5-derive-seed-v1`/`c5-derive-v1`、拒绝重抽 `range`）独立复算 `foraging.roast-policy` 第 k 种的选项，盐取 `worldHarnessGame(h).extensionRuntime.worldDefinitionFingerprints().foraging` 去掉 `sha256:`；以此挑选 keep 与 strip 的种子。预言与实际不符 → 记 SDK 问题，不改断言迎合。
 
 ### 8.3 自然公开命令 trace
 
-只用公开命令（原生移动/旅行/下楼、`item:execute` 吃/扔/起绰号、`mouse_travel` 选扔点、foraging 的 harvest/feed/roast、crafting 的 harvest/place-station、确认答案）。trace JSON 字段同 5B：`seed`、`mode`、`modules`、`commands:[{action,data,answers?,expect}]`、`final:{inventory,knowledge,digest}`；`ext:command` 的 `expect` 为 `{recorded,error}`，原生命令为 `{recorded}`。
+只用公开命令（原生移动/旅行/下楼、`item:execute` 吃/扔/起绰号、`mouse_travel` 选扔点、foraging 的 harvest/feed/roast、crafting 的 harvest/place-station、确认答案）。trace JSON 字段同 5B：`seed`、`mode`、`modules`、`commands:[{action,data,answers?,expect}]`、`final:{inventory,knowledge,state,digest}`（state 按 T-TRACE 记录）；`ext:command` 的 `expect` 为 `{recorded,error}`，原生命令为 `{recorded}`。`answers` 是 trace 驱动输入，**真实 recording v4 的答案字段是 `events[i].decisions: boolean[]`**，不是 `answers` 或对象数组；也可在命令后从 `game.recordedInputEvents[beforeIndex]` 读取同一事件。捕获与复核都必须检查实际事件，不能仅抄 trace 输入当成答案证据。
+
+trace A 的两次吃命令依次提供 `answers:[false]`、`answers:[true]`，按 §8.1 每条各自安装/恢复同步回调。每次执行前记下事件数、背包物品与数量、营养、`toSnapshot().run.currentTick`/`absoluteTurnNumber`；执行后断言事件数恰好 +1、新事件 `action === 'item:execute'`、`data === 'eat|<letter>'`（当次真实字母）且回调调用次数恰为 1。首次事件 `decisions` **严格等于 `[false]`**，背包、营养、tick 与绝对回合全部不变（零成本）；其次事件 `decisions` **严格等于 `[true]`**，该菌数量减少 1（吃完则物品移除）、模块 eaten 计数增加 1 且 tick/回合推进，证明实际吃下。No 也会增加录制事件，不能要求整个含录像来源的存档字节不变。导出 recording 后按两条事件的实际索引再次核对 `[false]`/`[true]`，重放与 seek 继续按 T-PERSIST/T-TRACE 验证。
 
 - **trace A**（`data/natural-trace.json`，`modules:['foraging']`）：新局 → 走到 D1 菌丛 → 采空（3 次）→ 吃 1 个（“不太饿”确认先答 No 一次、再答 Yes；开局营养 1800 时必触发，未触发则换种子）→ 扔 1 个到相邻地面 → 给 1 个未知菌起绰号 → 下 D2 → 再采 ≥1 个。种子从 1 起顺序尝试，D1 无可达菌丛或开局可见敌人导致采集被拒则换种子，最多 64 个，记录选择过程。
 - **trace B**（`data/natural-trace-hearth.json`，`modules:['crafting','foraging']`）：新局 → 采 crafting 石料补足火炉材料 → `place-station` 放火炉 → 采菌 ≥2 → 在火炉旁 `roast` 一堆（生→烤）→ 吃 1 个烤菌（答确认）→ 再 `roast` 剩余烤菌（烤→焦炭）。同样顺序选种子 ≤64。
@@ -987,23 +1019,21 @@ harness 语义（写断言前必读，同 5B §8.1）：被拒命令也 `recorde
 
 - boundary = `node scripts/check-module-boundaries.mjs`；vue-tsc = `npx vue-tsc -b`；build = `npm run build`。
 - foraging 定向测试 = `npx vitest run src/ext/modules/foraging/tests --maxWorkers=2`（若基线要求经 `scripts/run-test-suite.mjs` 的发现环境，用其等价定向方式并在报告写明）。
-- 开发期不跑完整 `npm test`、全部 `test:ext`、删除矩阵；不跑 `ce:fetch`、`test:full`、`test:gen`。
+- 5G 开发期及交付均不跑完整 `npm test`、全部 `test:ext`、完整组合 smoke 或任何删除检查；以上留到 5Z；不跑 `ce:fetch`、`test:full`、`test:gen`。
 
-### 9.2 5G 收尾（全部完成后一次，同一最终候选树）
+### 9.2 5G 交付（全部完成后一次，同一最终候选树）
+
+**政策依据**：指挥按[交接单 §1、§4](commander-handoff.md)与维护者本轮指令更新，优先于 README 的旧一般 full 要求及本包旧定稿门禁。此项调整全量门禁的执行阶段，不减少功能验收：§8 的 foraging 自有用例、直接受影响回归、相关真实组合、两条自然 trace 与可执行浏览器矩阵仍须覆盖；缺口逐项记录。
 
 1. `node scripts/check-module-boundaries.mjs`
 2. `npx vue-tsc -b`
 3. `npm run build`
-4. `npm run test:ext`（全部扩展测试**一次**，含其他模块与 foundation ext 测试）
-5. `npm run test:drift`（**一次**；含 foraging 两条 trace）
-6. 组合 smoke：`node scripts/check-module-composition-smoke.mjs --output <仓库外目录>/smoke.json`，覆盖**全部** 64 个已安装模块子集（6 模块），engine + 当次构建浏览器；浏览器不可用记 **blocked**（不得记通过），并另跑 `--engine-only`。任何失败按真实失败归因。
-7. 删除（removal 档，两行）：
-   - 只删 foraging：`NODE_OPTIONS=--max-old-space-size=3072 node scripts/check-module-removal.mjs --profile=removal --retain=combat,crafting,giants,growth,narrative --maxWorkers=2 --output=<仓库外目录>`
-   - 只留 foraging：同上 `--retain=foraging`
-   - 每行内含 composition-smoke 闸门，结果照实记录。
-8. 浏览器视口验收（§7.3）：1440×900、390×844、320×844 × 普通/沉浸 × 四种地图模式；覆盖长名称、满背包、无热源、多同伴、离开中同伴、连点、blur、触摸、回放；真实设备与模拟分别标注；截图留仓库外，不提交。
+4. 全部 foraging 自有定向测试：`npx vitest run src/ext/modules/foraging/tests --maxWorkers=2`（含 §8.1 全部 test/drift 文件）；直接受影响既有测试另按实际影响逐文件定向运行并列出命令，不能漏掉引入的回归。
+5. `npm run test:drift`（一次；含 foraging 两条自然 trace），另按 §8.3/§10.1 记录 trace A/B 的采集、烤制与持久化证据。
+6. §8.2 T-COMBO **相关真实组合**：仅 foraging、foraging 分别与 growth/narrative/combat/giants/crafting 组合、全开（当前共 7 行）；每行真实 Game 新局、采集、吃、save/load/replay，并验证相应热源/群体联动。由 `foraging_combinations.test.ts` 承载；同时按 T-PERSIST 覆盖 seek/续录。报告列实际组合与结果，不能称为 64 子集全覆盖。若 settlement 已安装再按 T-COMBO 加两行；当前未安装，不硬引用。
+7. 浏览器视口验收（§7.3）：1440×900、390×844、320×844 × 普通/沉浸 × 四种地图模式；覆盖长名称、满背包、无热源、多同伴、离开中同伴、连点、blur、触摸、回放。执行环境能运行的矩阵项均须做；不可执行的标明 **blocked/未运行**、原因和待本地补验项，不能记通过。真实设备与模拟分别标注；截图留仓库外，不提交。
 
-**不在 5G 范围**：完整 `npm test`、全量删除矩阵、5Z 体积/性能。
+**统一留到阶段 5Z，5G 不跑**：完整 `npm test`、全部 `test:ext`、完整组合 smoke（6 模块 64 子集全覆盖）、所有物理删除检查（含“只删 foraging”“只留 foraging”两行及完整删除矩阵），以及 5Z 体积/性能。`check-module-composition-smoke.mjs` 默认枚举全部子集，5G 不运行它，也不为缩小范围改共享脚本；相关组合使用上述模块自有真实测试。§A.4 的历史 64/64 证据保留原来源，不替代当前功能验收或 5Z 全覆盖。
 
 ---
 
@@ -1014,16 +1044,16 @@ harness 语义（写断言前必读，同 5B §8.1）：被拒命令也 `recorde
 按以下节序，事实写清，不夸大：
 
 1. **结论**：完成/部分完成；一句话说明仅 foraging 是否可玩完整闭环。
-2. **基线与环境**：基线 commit、分支、最终 commit、Node 版本、§2 冻结文件哈希比对结果。
-3. **交付清单**：新增文件列表（全部在允许范围内的声明 + `git diff --stat 6e068cd..HEAD` 摘要）。
+2. **基线与环境**：代码基线 `5e9753030696d2e8ea177c27007c2f15253d3eba`、实际起始 tip（代码基线 + 包与白名单定稿修订）、分支、最终 commit、Node 版本、§2 冻结文件哈希比对结果。
+3. **交付清单**：新增文件列表（全部在允许范围内的声明 + `git diff --stat 5e9753030696d2e8ea177c27007c2f15253d3eba..HEAD` 摘要；其中本任务书与边界脚本为起始 tip 带入，另用实际起始 tip 对比列明 dot 自有改动）。
 4. **版本与身份**：module/rules 版本、指纹值、state schema、payload v、worldSdk/edible SDK。
-5. **数据一致性**：声明 §5.10 数据与 §7.4 名称逐字照抄（指向 T-DATA、T-NAME）；禁用词扫描结果。
+5. **数据一致性**：声明 §5.10 数据与 §7.4 全部既有文案逐字照抄（指向 T-DATA、T-NAME）；禁用词扫描结果。
 6. **SDK 差异与问题清单**：每条含 任务书条款 / 实际行为 / 最小复现（测试名或命令）/ 对 foraging 的影响 / 建议的本地修订。没有则写“无”。
 7. **门禁结果表**：§9.1 末次与 §9.2 全部命令、退出码、数量、耗时。
 8. **自然 trace 与持久化证据**：两条 trace 的种子、命令数、总 tick、录像字节数、replay/seek 结果。
-9. **组合与删除**：全部子集与两行删除结果表。
+9. **相关组合与 5Z 延后项**：T-COMBO 实际组合逐行结果；明确完整 64 子集 smoke、所有删除检查未运行，按最新政策留 5Z，不填写全覆盖或删除通过。
 10. **浏览器与视口**：矩阵结果，真实/模拟分类，已知问题。
-11. **自行决定事项**：按 §12.2 作出的全部决定。
+11. **自行决定事项与待用户确认**：按 §12.2 作出的全部决定；另列指挥临时采纳的 §12.3 全部 20 条、nonEaters 20 模板、苍鸾菌及揭示烤菌同时揭示生菌，标“按推荐执行，待用户确认（可逆，不阻断派发）”，不得称用户逐条终审。
 12. **交接 5D**：`food.ingredient.mushroom` 标签计数、`settlement.resident-status.v1` 消费形状（§6.5）、厨师不得读种类/改知识。
 13. **未覆盖 / 待本地集成**。
 
@@ -1033,22 +1063,22 @@ harness 语义（写断言前必读，同 5B §8.1）：被拒命令也 `recorde
 
 ### 10.3 提交
 
-在 `ext/phase5g` 上按逻辑分提交（例如 data+schema+names / module+participants / projection+tests / UI / trace+docs），提交信息英文前缀 `feat(foraging): …` / `test(foraging): …` / `docs(ext): …`。先跑完门禁并确认结果，再单独推送。
+在 `ext/phase5g` 上按逻辑分提交（例如 data+schema+names / module+participants / projection+tests / UI / trace+docs），提交信息英文前缀 `feat(foraging): …` / `test(foraging): …` / `docs(ext): …`。按交接单 §1，每个提交信息末尾必须保留 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`。先跑完门禁并确认结果，再单独推送。
 
 ### 10.4 最终回复模板（≤30 行，中文）
 
 ```text
 5G foraging：<完成|部分完成>；仅 foraging 闭环：<可玩|不可玩，原因>
 分支 ext/phase5g，最终 commit <sha>；报告 docs/ext/phase5g.report.md；配置手册 docs/ext/foraging-config.md
-基线 6e068cd；冻结文件哈希：<全部一致|差异 N 项（见报告 §2）>
+代码基线 5e9753030696d2e8ea177c27007c2f15253d3eba；起始 tip <sha>（包与白名单定稿修订）；冻结文件哈希：<全部一致|差异 N 项（见报告 §2）>
 门禁：boundary <✓/✗> · vue-tsc <✓/✗> · build <✓/✗>
-      test:ext <passed/failed/skipped>（一次）· test:drift <passed/failed>（一次）
-      组合 smoke <通过数>/64（浏览器 <通过|blocked>）
-      删除：只删 foraging <✓/✗> · 只留 foraging <✓/✗>
+      foraging 全部自有定向测试 <passed/failed/skipped/todo> · 直接受影响既有测试 <结果>
+      test:drift <passed/failed/skipped/todo> · T-COMBO 相关真实组合 <实际通过/执行行数，见报告>
+5Z 延后未运行：完整 npm test、全部 test:ext、完整 64 组合 smoke、所有删除检查
 自然 trace：A 种子 <n>，<命令数> 条，<tick>；B 种子 <n>，<命令数> 条，<tick>
 视口：1440/390/320 × 普通/沉浸 × 4 模式 <结果>（真实设备 <有|无>）
 SDK 问题清单：<N> 条（最严重一条一句话）
-自行决定事项：<N> 条
+自行决定事项：<N> 条；§12.3 全部 20 条、20 模板、苍鸾菌及烤菌揭示生菌：按推荐执行，待用户确认（可逆，不阻断派发）
 未覆盖：<列表或“无”>
 ```
 
@@ -1072,7 +1102,7 @@ SDK 问题清单：<N> 条（最严重一条一句话）
 
 ## 12 已预先作出的决定与 dot 自主裁决规则
 
-### 12.1 已决定（不再讨论）
+### 12.1 dot 执行定值（临时采纳状态见 §12.3）
 
 1. 模块 id `foraging`，版本 1.0.0，state schema 1，payload v1，`defaultEnabled:false`。
 2. §5 全部数据，包括定义 ID 命名、生/烤/焦顺序、烤制 derived-choice 形状（options[0] 保留、[1] 去除、ordinal = kinds 下标）、节点与分组、需求声明、nonEaters、limits。
@@ -1091,7 +1121,9 @@ SDK 问题清单：<N> 条（最严重一条一句话）
 6. 任何可能泄露种类的取舍（显示、排序、过滤、消息、错误文案）→ 选择不泄露的一方，并列入自行决定事项。
 7. 文案需要新增键 → 只可新增 UI/错误类键，文本须通过 §5.7 禁用词；不得新增或改动名称类键。
 
-### 12.3 本包自行决定、需维护者派发前签认的事项
+### 12.3 指挥临时采纳事项（按推荐执行，待用户确认；可逆，不阻断派发）
+
+维护者本轮授权“按推荐推进并记录，只有大且难回退才停”。指挥据此临时采纳下列**全部 20 条**，包括 nonEaters 20 个模板与“苍鸾菌”；同时采纳 §6.4“揭示烤菌同时揭示生菌”。统一状态为**按推荐执行，待用户确认（可逆，不阻断派发）**；这是按授权推荐推进，不是用户已逐条终审。dot 以此为固定输入，保留严格命名规则和禁用词，在报告待确认清单如实登记。
 
 | # | 事项 | 决定 | 理由 |
 | --- | --- | --- | --- |
@@ -1105,11 +1137,11 @@ SDK 问题清单：<N> 条（最严重一条一句话）
 | 8 | 档位 ID | fed/hungry/weak/starving | 设计稿 §7.2 四档 |
 | 9 | 档位消息无名字，离队消息有名字 | `NeedEventFact` 无名字；`actorDeparted` 带 `actor.name` | SDK 事实；若维护者要求名字，需底座给需求事件补名字 |
 | 10 | 侧栏/盟友详情显示饱腹档 | 首版不做（共享组件不可改），改为模块 HUD + 喂食页 | 设计稿 §15 要求侧栏；需本地后续接线 |
-| 11 | nonEaters 名单 | §5.8 的 20 个模板 | Q10=A 要求维护者审阅 |
+| 11 | nonEaters 名单 | §5.8 的 20 个模板 | Q10=A 的具体名单由指挥临时采纳，待用户确认 |
 | 12 | 居民查询形状 | 输入 `{actorId}`，仅 `{resident:true}` 视为居民；其余（含缺席/畸形）视为非居民 | settlement 尚未定义；写入交接 5D |
 | 13 | 烤制页不按种类过滤 | 未知爆燃菌可选，烤即在热源爆炸 | 过滤会泄露种类 |
 | 14 | 自然 trace 拆为两条，喂食不入 trace | A 仅 foraging；B foraging+crafting 火炉 | 无提供方时无热源；自然盟友不可保证 |
-| 15 | 名称与文案 | §5.6 外观名/描述逐字沿用设计稿；12 条已知描述、模板、消息、UI 文案为本包新写；已知名“幻彩菌”改为“苍鸾菌”（§A.7，可逆） | 需维护者终审命名规则合规 |
+| 15 | 名称与文案 | §5.6 外观名/描述逐字沿用设计稿；12 条已知描述、模板、消息、UI 文案为本包新写；已知名“幻彩菌”改为“苍鸾菌”（§A.7，可逆） | 指挥临时采纳，待用户确认；命名规则与禁用词继续严格执行 |
 | 16 | 禁用词表扩充 | 设计稿列表 + 12 个追加词 | 更严格，现有文本全部通过 |
 | 17 | 导入白名单 | 基线边界脚本已把 crafting 白名单推广到 foraging（加 edibleSdk，不含 stats）；模块另带 `foraging_imports` 测试 | §A.3#14 |
 | 18 | might 同伴效果 | `native.physical-damage-dealt` temporary `more` +2500 bp | 设计稿“伤害 more +25%”；在 0…40000 预算内 |
