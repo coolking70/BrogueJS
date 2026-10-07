@@ -1,0 +1,511 @@
+{
+  "seed": 6,
+  "mode": "normal",
+  "modules": [
+    "crafting",
+    "foraging"
+  ],
+  "commands": [
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":29,\"nodeRevision\":0,\"inventoryStamp\":\"6e8fb15dee5708c3\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":29,\"nodeRevision\":2,\"inventoryStamp\":\"c06e79ab3c604c46\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"place-station\",\"payload\":{\"v\":1,\"definitionId\":\"crafting.hearth\",\"x\":44,\"y\":24,\"inventoryStamp\":\"92eda5917a4d46af\"}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":34,\"nodeRevision\":0,\"inventoryStamp\":\"4345be8395381a6b\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":34,\"nodeRevision\":2,\"inventoryStamp\":\"56cdc68d02cf4c19\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":34,\"nodeRevision\":4,\"inventoryStamp\":\"f69c9fee075cddfe\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"roast\",\"payload\":{\"v\":1,\"itemId\":42,\"heatSourceId\":41,\"inventoryStamp\":\"1e0a16490d1366d0\"}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "item:execute",
+      "data": "eat|f",
+      "answers": [
+        true
+      ],
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"roast\",\"payload\":{\"v\":1,\"itemId\":42,\"heatSourceId\":41,\"inventoryStamp\":\"0f52d107f866c4e3\"}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    }
+  ],
+  "final": {
+    "inventory": [
+      {
+        "displayName": "口粮",
+        "quantity": 1
+      },
+      {
+        "displayName": "匕首",
+        "quantity": 1
+      },
+      {
+        "displayName": "飞镖",
+        "quantity": 15
+      },
+      {
+        "displayName": "皮甲",
+        "quantity": 1
+      },
+      {
+        "displayName": "ext.crafting.item.wood.name",
+        "quantity": 4
+      },
+      {
+        "displayName": "ext.crafting.item.fiber.name",
+        "quantity": 2
+      },
+      {
+        "displayName": "焦炭",
+        "quantity": 2
+      }
+    ],
+    "knowledge": {
+      "groupId": "foraging.mushrooms",
+      "rows": [
+        {
+          "definitionId": "foraging.astray",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.astray-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.astray-roasted",
+          "state": "tasted",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.blast",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.blast-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.drowse",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.drowse-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.drowse-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.farsense",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.farsense-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.farsense-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.mend",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.mend-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.mend-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.might",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.might-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.might-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.prism",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.prism-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.prism-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.quicken",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.quicken-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.quicken-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.stiffen",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.stiffen-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.stiffen-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.upheave",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.upheave-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.upheave-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.veil",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.veil-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.veil-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.venom",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.venom-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.venom-roasted",
+          "state": "unknown",
+          "title": null
+        }
+      ]
+    },
+    "state": {
+      "schema": 1,
+      "lastFactId": 16,
+      "totals": {
+        "eaten": 1,
+        "fed": 0,
+        "revealed": 0,
+        "roasted": 1,
+        "charred": 1,
+        "burned": 0,
+        "exploded": 0,
+        "departed": 0
+      },
+      "history": [
+        {
+          "factId": 14,
+          "kind": "fire",
+          "result": "transformed",
+          "tick": 2600
+        },
+        {
+          "factId": 15,
+          "kind": "eat",
+          "result": "tasted",
+          "tick": 2700
+        },
+        {
+          "factId": 16,
+          "kind": "fire",
+          "result": "transformed",
+          "tick": 2800
+        }
+      ]
+    },
+    "digest": "96d1f1d4dfded76e1658030b870ff8c502587529008a6b5c3ae46f0a66e51131"
+  }
+}

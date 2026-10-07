@@ -1,13 +1,26 @@
 {
   "test": [
+    "tests/foraging_combinations.test.ts",
     "tests/foraging_commands.test.ts",
+    "tests/foraging_companion.test.ts",
+    "tests/foraging_config_examples.test.ts",
     "tests/foraging_data_tables.test.ts",
+    "tests/foraging_eat.test.ts",
+    "tests/foraging_feed.test.ts",
+    "tests/foraging_fire.test.ts",
     "tests/foraging_imports.test.ts",
+    "tests/foraging_knowledge.test.ts",
+    "tests/foraging_leak.test.ts",
     "tests/foraging_module.test.ts",
     "tests/foraging_names.test.ts",
+    "tests/foraging_nodes.test.ts",
+    "tests/foraging_persistence.test.ts",
+    "tests/foraging_roast.test.ts",
     "tests/foraging_schema.test.ts",
     "tests/foraging_ui.test.ts"
   ],
   "gen": [],
-  "drift": []
+  "drift": [
+    "tests/foraging_trace.test.ts"
+  ]
 }
