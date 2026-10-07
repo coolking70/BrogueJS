@@ -92,7 +92,7 @@ function mountState(state: LootUiState, overrides: Record<string, unknown> = {})
 async function setupState(state: LootUiState, root: HostNode) {
   if (state.setup === 'unfold') await click(find(root, 'data-action', 'toggle-rows'));
   if (state.setup === 'dirty') await click(find(root, 'data-rarity', 'rare'));
-  if (state.setup === 'keyboard') await key(findClass(root, 'loot-preset'), 'ArrowRight');
+  if (state.setup === 'keyboard') await key(find(root, 'role', 'radiogroup'), 'ArrowRight');
 }
 function submitForm(root: HostNode) { findClass(root, 'loot-filter').props.onSubmit({ preventDefault() {} }); }
 
@@ -105,6 +105,28 @@ describe('loot UI complete state snapshots', () => {
 });
 
 describe('loot UI local interactions', () => {
+  it('keeps preset confirm button Space activation and arrows outside the radio group native', async () => {
+    const preset = mountState(getLootUiState('preset.standard'));
+    const button = find(preset.root, 'data-action', 'confirm');
+    const bubble = async (value: string) => {
+      const event = { key: value, target: button, currentTarget: button,
+        preventDefault: vi.fn(), stopPropagation: vi.fn() };
+      for (let current: HostNode | null = button; current; current = current.parent) {
+        event.currentTarget = current;
+        current.props.onKeydown?.(event);
+        if (event.stopPropagation.mock.calls.length) break;
+      }
+      await nextTick();
+      return event;
+    };
+    expect((await bubble('ArrowRight')).preventDefault).not.toHaveBeenCalled();
+    expect(preset.props.modelValue).toBe('standard');
+    const space = await bubble(' ');
+    expect(space.preventDefault).not.toHaveBeenCalled();
+    // A browser dispatches the focused button's click on Space keyup unless canceled.
+    if (!space.preventDefault.mock.calls.length) await click(button);
+    expect(preset.events.confirm).toEqual([['standard']]);
+  });
   it('emits chip activation only when interactive, exactly once per click/Enter/Space', async () => {
     const plain = mountState(getLootUiState('chip.normal'));
     await click(findClass(plain.root, 'loot-item-chip')); await key(findClass(plain.root, 'loot-item-chip'), 'Enter');
@@ -193,7 +215,7 @@ describe('loot UI local interactions', () => {
   });
   it('changes preset with arrows/Home/End/Space and confirms on Enter/button without global handlers', async () => {
     const preset = mountState(getLootUiState('preset.standard'));
-    const panel = findClass(preset.root, 'loot-preset');
+    const panel = find(preset.root, 'role', 'radiogroup');
     for (const [press, id] of [['ArrowRight', 'bountiful'], ['Home', 'scarce'], ['End', 'bountiful'], ['ArrowDown', 'scarce'], ['ArrowLeft', 'bountiful'], ['ArrowUp', 'standard']] as const) {
       await key(panel, press); expect(preset.props.modelValue).toBe(id); expect(find(preset.root, 'data-preset', id).props.tabindex).toBe(0); expect(focused).toBe(find(preset.root, 'data-preset', id));
     }

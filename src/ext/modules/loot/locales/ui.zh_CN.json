@@ -117,5 +117,16 @@
   "ext.loot.ui.filter.submitting": "正在保存…",
   "ext.loot.ui.filter.cancel": "取消",
   "ext.loot.ui.preset.title": "选择掉落预设",
-  "ext.loot.ui.preset.confirm": "确认预设"
+  "ext.loot.ui.preset.confirm": "确认预设",
+  "ext.loot.ui.gallery.title": "Loot UI · 纯展示组件预览",
+  "ext.loot.ui.gallery.description": "固定种子真实夹具 · {{count}} 个状态 · 320 / 390 / 1024 px · 不连接游戏",
+  "ext.loot.ui.gallery.theme": "主题",
+  "ext.loot.ui.gallery.dark": "深色",
+  "ext.loot.ui.gallery.light": "浅色",
+  "ext.loot.ui.gallery.width": "容器宽度",
+  "ext.loot.ui.gallery.all-widths": "三种宽度",
+  "ext.loot.ui.gallery.width-value": "{{size}} 像素",
+  "ext.loot.ui.gallery.component": "组件",
+  "ext.loot.ui.gallery.all-components": "全部组件",
+  "ext.loot.ui.gallery.events": "组件事件会显示在这里；可直接操作按钮、选择与方向键"
 }

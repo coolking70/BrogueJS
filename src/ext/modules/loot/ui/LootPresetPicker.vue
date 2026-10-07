@@ -25,9 +25,9 @@ function keydown(event: KeyboardEvent) {
 }
 </script>
 <template>
-  <section ref="root" class="loot-preset" role="dialog" :aria-labelledby="titleId" @keydown="keydown">
+  <section ref="root" class="loot-preset" role="dialog" :aria-labelledby="titleId">
     <h2 :id="titleId" class="loot-preset-title">{{ t('ext.loot.ui.preset.title') }}</h2>
-    <div class="loot-preset-options" role="radiogroup" :aria-label="t('ext.loot.ui.preset.title')"><button v-for="(option, index) in options" :key="option.id" class="loot-preset-option" type="button" role="radio" :aria-checked="modelValue === option.id" :tabindex="selected === index ? 0 : -1" :disabled="disabled" :data-preset="option.id" @click="choose(option.id)">
+    <div class="loot-preset-options" role="radiogroup" @keydown="keydown" :aria-label="t('ext.loot.ui.preset.title')"><button v-for="(option, index) in options" :key="option.id" class="loot-preset-option" type="button" role="radio" :aria-checked="modelValue === option.id" :tabindex="selected === index ? 0 : -1" :disabled="disabled" :data-preset="option.id" @click="choose(option.id)">
       <span class="loot-preset-name">{{ t(option.name.nameKey, option.name.params) }}</span>
       <span class="loot-preset-description">{{ t(option.description.nameKey, option.description.params) }}</span>
       <span class="loot-preset-metrics"><span v-for="metric in option.metrics" :key="metric.key" class="loot-preset-metric"><span>{{ t(metric.label.nameKey, metric.label.params) }}</span><span class="loot-preset-value">{{ metric.value }}</span></span></span>
