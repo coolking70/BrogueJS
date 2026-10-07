@@ -119,8 +119,9 @@ describe('5A4 edible real commands', () => {
   });
   it('registered fixture grants never leak into production catalog', () => {
     expect(getInstalledModuleDescriptors().map((d) => d.id)).not.toContain('fgfixture');
-    expect(getInstalledModuleDescriptors().map((d) => d.id)).not.toContain('foraging');
     const h = make();
+    // Installed production packages are allowed; this harness must enable only its fixture.
+    expect(h.game().extensionRuntime!.manifest.modules.map((m) => m.id)).toEqual(['fgfixture']);
     expect(h.game().extensionRuntime!.worldDefinitionPacks()[0]!.edibleItems).toHaveLength(11);
     h.dispose();
   });
@@ -530,4 +531,97 @@ it('empty-items work facts remain valid after their terminal ticket leaves the b
   // Facts have their own retention bound and may outlive the terminal ticket.
   expect(() => validateWorldWorkReferences(g)).not.toThrow();
   expect(() => h.save()).not.toThrow();
+});
+
+import { nativeStatRevision } from '../engine/Stats/NativeStatSources';
+import { Player } from '../entities/Player';
+import type { EdibleConsumedFact } from '../ext/edibleSdk';
+const healingCases = [
+  { maxHp: 30, hp: 10, gained: 9 },
+  { maxHp: 10, hp: 1, gained: 5 },
+  { maxHp: 30, hp: 28, gained: 2 },
+  { maxHp: 30, hp: 30, gained: 0 },
+  { maxHp: 200, hp: 100, gained: 60 }
+];
+it.each(healingCases.flatMap(row => ['eat', 'feed'].map(operation => ({ ...row, operation }))))(
+  'point healing $operation max=$maxHp hp=$hp reports exactly $gained before the paid turn',
+  ({ maxHp, hp, gained, operation }) => {
+    let fact: EdibleConsumedFact | undefined, immediateHp = -1;
+    let target: Player | ReturnType<typeof ally>;
+    const observer = { ...descriptor, create: () => {
+      const m = descriptor.create(), original = m.edibleParticipant!.onConsumed;
+      m.edibleParticipant!.onConsumed = (f, tx) => {
+        fact = structuredClone(f); immediateHp = target.hp; original?.(f, tx);
+      };
+      return m;
+    } };
+    const h = forage([], [observer]), g = h.game(), food = grant(h, 'sample0');
+    target = operation === 'eat' ? g.player : ally(h);
+    target.maxHp = maxHp; target.hp = hp;
+    g.player.regenCarry = 0;
+    const revision = nativeStatRevision(target);
+    if (operation === 'eat') {
+      g.onConfirmRequest = () => true;
+      h.command('item:execute', 'eat|' + food.inventoryLetter);
+    } else {
+      const c = read(h), t = c.feedTargets.find(t => t.actorId === target.id)!;
+      expect(h.ext('fgfixture', 'feed', {
+        targetId: target.id, targetRevision: t.targetRevision,
+        itemId: food.id, inventoryStamp: c.inventoryStamp
+      }, [true]).error).toBeNull();
+    }
+    expect(fact).toMatchObject({ operation, hpBefore: hp, maxHp,
+      outcome: { hpGained: gained, applied: gained > 0 } });
+    expect(immediateHp).toBe(hp + gained);
+    expect(target.hp).toBe(hp + gained);
+    expect(nativeStatRevision(target)).toBeGreaterThan(revision);
+  }
+);
+it('native healing remains percentage based and point healing clears terminal causality', () => {
+  const p = new Player(0, 0); p.maxHp = 37; p.hp = 1;
+  expect(p.heal(30)).toBe(11); expect(p.hp).toBe(12);
+  const h = forage(), g = h.game(), a = ally(h);
+  a.hp = 0;
+  const clear = vi.spyOn(a.extensionHooks!.causality, 'clearTerminal');
+  const revision = nativeStatRevision(a);
+  expect(a.healPoints(5)).toBe(5);
+  expect(a.hp).toBe(5); expect(clear).toHaveBeenCalledWith(a.id);
+  expect(nativeStatRevision(a)).toBe(revision + 1);
+  void g;
+});
+
+it('public and harness node reads materialize 31900/32000, reservations and live CAS without writes', () => {
+  const pack = structuredClone(forageDefinitions);
+  pack.resourceNodes[0]!.regeneration = { kind: 'periodic', units: 1, intervalTicks: 32000 };
+  const h = forage([], [workProjectionFixture(pack)]), g = h.game();
+  h.fixture({ kind: 'node', definitionId: 'fgfixture.node-a', at: { x: 11, y: 10 } });
+  const node = g.world5!.nodes.find(n => n.at.x === 11 && n.at.y === 10)!;
+  const query = { kind: 'node' as const, interactableId: node.interactableId };
+  node.remaining = 0; node.lastSettledTick = 0; node.regenRemainder = 0;
+  h.fixture({ kind: 'advance', ticks: 31900 });
+  const sdk = worldWorkReadSDK(g, 'fgfixture')!;
+  const value = () => { const r = sdk.readWorkContext(query); if (!r.ok) throw Error(r.code); return r.value; };
+  expect(value().node!.remaining).toBe(0);
+  h.fixture({ kind: 'advance', ticks: 100 });
+  const before = h.save().replace(/"savedAt":\d+/, ''), random = rng.getState(), id = getNextEntityId();
+  for (let i = 0; i < 20; i++) {
+    const projected = value();
+    expect(projected.node).toMatchObject({ remaining: 1, revision: node.revision, lastSettledTick: 32000 });
+    expect(h.readWorkContext('fgfixture', query)).toEqual({ ok: true, value: projected });
+  }
+  expect(h.save().replace(/"savedAt":\d+/, '')).toBe(before);
+  expect(rng.getState()).toEqual(random); expect(getNextEntityId()).toBe(id);
+  const save = h.save(), projected = value(); h.load(save);
+  expect(value()).toEqual(projected);
+  const payload = { nodeId: node.interactableId, nodeRevision: projected.node!.revision,
+    inventoryStamp: projected.inventoryStamp, destinationId: null, destinationRevision: null };
+  expect(h.ext('fgfixture', 'harvest', payload).error).toBeNull();
+  expect(h.ext('fgfixture', 'harvest', { ...payload, inventoryStamp: read(h).inventoryStamp }).error).toBe('C5_STALE');
+  const live = g.world5!.nodes.find(n => n.interactableId === node.interactableId)!;
+  live.remaining = 0; live.lastSettledTick = g.world5!.simulationTicks - 32000; live.regenRemainder = 0; live.reservedUnits = 1;
+  expect(value().node).toMatchObject({ remaining: 1, reservedUnits: 1, revision: live.revision });
+  expect(h.ext('fgfixture', 'harvest', { ...payload, nodeRevision: live.revision,
+    inventoryStamp: read(h).inventoryStamp }).error).toBe('C5_RESERVED');
+  live.reservedUnits = 0; live.remaining = live.capacity; live.lastSettledTick = 0; live.regenRemainder = 123;
+  expect(value().node).toMatchObject({ remaining: live.capacity, regenRemainder: 0 });
 });

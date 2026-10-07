@@ -239,14 +239,21 @@ export class Creature implements Entity {
         if (this.hasStatus('magical_fear')) this.setStatusDuration('magical_fear', 1);
     }
 
+    /** Apply HP points with native healing's cache and causality notifications. */
+    public healPoints(points: number): number {
+        const before = this.hp;
+        this.hp = Math.min(this.maxHp, this.hp + Math.trunc(points));
+        markStatsDirty(this);
+        if (this.extensionHooks && before <= 0 && this.hp > 0) this.extensionHooks.causality.clearTerminal(this.id);
+        return this.hp - before;
+    }
+
     /** CE Items.c:4664 heal. Panacea reduces selected countdowns to ONE,
      * not zero; slow keeps its cached speed until the normal expiration tick.
      * Burning, paralysis, discord, entrancement and beneficial states survive. */
     public heal(percent: number, panacea = false): number {
         const before = this.hp;
-        this.hp = Math.min(this.maxHp, this.hp + Math.trunc(percent * this.maxHp / 100));
-        markStatsDirty(this);
-        if (this.extensionHooks && before <= 0 && this.hp > 0) this.extensionHooks.causality.clearTerminal(this.id);
+        this.healPoints(Math.trunc(percent * this.maxHp / 100));
         if (panacea) {
             for (const id of ['hallucinating', 'confused', 'slowed', 'nauseous'] as const) {
                 if (this.getStatusDuration(id) > 1) this.setStatusDuration(id, 1);
