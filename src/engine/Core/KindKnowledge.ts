@@ -89,6 +89,7 @@ export function knowledgeView(game: Game, owner: string, groupId: string): KindK
       .sort((a, b) => (a.definitionId < b.definitionId ? -1 : 1))
   });
 }
+/** True only for a newly added row or a strict knowledge promotion. */
 export function markKnowledge(
   game: Game,
   owner: string,
@@ -102,7 +103,7 @@ export function markKnowledge(
   let row = rows.find((r) => r.definitionId === id);
   if (
     row &&
-    ['unknown', 'tasted', 'known'].indexOf(state) <
+    ['unknown', 'tasted', 'known'].indexOf(state) <=
       ['unknown', 'tasted', 'known'].indexOf(row.state)
   )
     return false;

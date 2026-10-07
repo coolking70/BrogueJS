@@ -1,0 +1,1711 @@
+{
+  "seed": 2,
+  "mode": "normal",
+  "modules": [
+    "foraging"
+  ],
+  "commands": [
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":0,\"inventoryStamp\":\"c4eefa40159c9c94\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":2,\"inventoryStamp\":\"3d4191efc7d238b7\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":4,\"inventoryStamp\":\"ac69ac4f57004163\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "item:execute",
+      "data": "eat|e",
+      "answers": [
+        false
+      ],
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "item:execute",
+      "data": "eat|e",
+      "answers": [
+        true
+      ],
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "item:execute",
+      "data": "throw|e",
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "mouse_travel",
+      "data": {
+        "x": 29,
+        "y": 23
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":21,\"nodeRevision\":0,\"inventoryStamp\":\"3d4191efc7d238b7\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "item:execute",
+      "data": "call|f|旅途之星",
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "stairs_down",
+      "data": null,
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":49,\"nodeRevision\":0,\"inventoryStamp\":\"50173fed1278402c\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    }
+  ],
+  "final": {
+    "inventory": [
+      {
+        "displayName": "口粮",
+        "quantity": 1
+      },
+      {
+        "displayName": "匕首",
+        "quantity": 1
+      },
+      {
+        "displayName": "飞镖",
+        "quantity": 15
+      },
+      {
+        "displayName": "皮甲",
+        "quantity": 1
+      },
+      {
+        "displayName": "蚀骨菌",
+        "quantity": 1
+      },
+      {
+        "displayName": "回响菌（叫作：旅途之星）",
+        "quantity": 2
+      }
+    ],
+    "knowledge": {
+      "groupId": "foraging.mushrooms",
+      "rows": [
+        {
+          "definitionId": "foraging.astray",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.astray-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.astray-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.blast",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.blast-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.drowse",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.drowse-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.drowse-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.farsense",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.farsense-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.farsense-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.mend",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.mend-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.mend-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.might",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.might-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.might-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.prism",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.prism-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.prism-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.quicken",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.quicken-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.quicken-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.stiffen",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.stiffen-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.stiffen-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.upheave",
+          "state": "unknown",
+          "title": "旅途之星"
+        },
+        {
+          "definitionId": "foraging.upheave-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.upheave-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.veil",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.veil-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.veil-roasted",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.venom",
+          "state": "known",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.venom-patch",
+          "state": "unknown",
+          "title": null
+        },
+        {
+          "definitionId": "foraging.venom-roasted",
+          "state": "unknown",
+          "title": null
+        }
+      ]
+    },
+    "state": {
+      "schema": 1,
+      "lastFactId": 7,
+      "totals": {
+        "eaten": 1,
+        "fed": 0,
+        "revealed": 1,
+        "roasted": 0,
+        "charred": 0,
+        "burned": 0,
+        "exploded": 0,
+        "departed": 0
+      },
+      "history": [
+        {
+          "factId": 7,
+          "kind": "eat",
+          "result": "revealed",
+          "tick": 1100
+        }
+      ]
+    },
+    "digest": "7c4982739d5b70287596f058ac94964351ddc494462ede575a68cf46017b288a"
+  }
+}
