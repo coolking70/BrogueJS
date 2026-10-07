@@ -1,3 +1,4 @@
+import { isIncapacitated } from '../Status/Incapacitation';
 import { nativeStat } from '../Stats/NativeStatSources';
 import { RigidPosePathing } from '../Map/RigidPosePathing';
 import { squarePlacementCandidates } from './SquarePlacement';
@@ -86,7 +87,7 @@ export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[],
             if (direction===0 && m.hp<=10 && !levitating) continue;
             if (flying!==!!(levitating || (flags&T_PATHING_BLOCKER) || (cellTerrainFlags(grid,origin.x,origin.y)&T_AUTO_DESCENT))) continue;
             if (m.isCaged || m.hasCEBehavior('MONST_WILL_NOT_USE_STAIRS') || m.hasCEBehavior('MONST_RESTRICTED_TO_LIQUID')
-                || (flags&T_OBSTRUCTS_PASSABILITY) || m.hasStatus('entranced') || m.hasStatus('paralyzed')) continue;
+                || (flags&T_OBSTRUCTS_PASSABILITY) || m.hasStatus('entranced') || isIncapacitated(m)) continue;
             if (m.spatial?.bodyMember) { onBodyFollower?.(m,origin,direction); continue; }
             let distance=map[m.x]?.[m.y]??30000;
             if (m.spatial) {

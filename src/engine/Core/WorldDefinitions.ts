@@ -1,3 +1,4 @@
+import { validateEdibleDefinitions, validateEdibleModule, EDIBLE_PACKAGE_KEYS } from './EdibleDefinitions';
 /** Static content validation, before any run or ID allocator is touched. */
 import type { ExtensionModule } from '../../ext/types';
 import type { ItemAmount } from '../../ext/worldSdk';
@@ -38,7 +39,7 @@ export function assertWorldDefinitionPack(
     if (v.some((s: any, i: number) => !validId(s) || (i > 0 && v[i - 1] >= s))) fail('tags');
   };
   const pack = value as WorldDefinitionPack;
-  record(pack, 'schema,worldSdk,items,resourceNodes,stations,recipes,startupItems'+('structures' in pack?',structures':'')+('restPoints' in pack?',restPoints':''));
+  record(pack, 'schema,worldSdk,items,resourceNodes,stations,recipes,startupItems'+('structures' in pack?',structures':'')+('restPoints' in pack?',restPoints':'')+EDIBLE_PACKAGE_KEYS.filter(k=>k in pack).map(k=>','+k).join(''));
   if (pack.schema !== 1 || pack.worldSdk !== 1) fail('version');
   for (const key of ['items', 'resourceNodes', 'stations', 'recipes'] as const)
     list(pack[key], 0, 128);
@@ -63,17 +64,17 @@ export function assertWorldDefinitionPack(
     )
       fail('appearance');
   };
-  const amounts = (v: readonly ItemAmount[], input = false) => {
+  const amounts = (v: readonly ItemAmount[], input = false, edible = false) => {
     list(v, 1, 8);
     const used = new Set<string>();
     for (const row of v) {
       record(row, 'itemDefinitionId,count');
       int(row.count, 1, 99);
-      const definition = pack.items.find((d) => d.id === row.itemDefinitionId);
+      const definition = pack.items.find((d) => d.id === row.itemDefinitionId) ?? (edible ? pack.edibleItems?.find(d=>d.id===row.itemDefinitionId) : undefined);
       if (
         !definition ||
         used.has(row.itemDefinitionId) ||
-        (input && !['material', 'kit'].includes(definition.category))
+        (input && !['material', 'kit'].includes(('category' in definition ? definition.category : 'edible')))
       )
         fail('amount');
       used.add(row.itemDefinitionId);
@@ -110,7 +111,7 @@ export function assertWorldDefinitionPack(
     );
     define(d);
     if (!['wood', 'stone', 'ore', 'fiber', 'fungus'].includes(d.kind)) fail('node.kind');
-    amounts(d.yield);
+    amounts(d.yield, false, true);
     int(d.capacity, 1, 9999);
     int(d.harvestTicks, 1, 10000);
     int(d.unitsPerHarvest, 1, Math.min(99, d.capacity));
@@ -196,6 +197,7 @@ export function assertWorldDefinitionPack(
     if(d.stationDefinitionId!==null&&(d.slot!=='fixture'||!pack.stations.some(s=>s.id===d.stationDefinitionId)))fail('structure.station');
     if(d.restPointDefinitionId!==null&&(d.slot!=='fixture'||!pack.restPoints?.some(r=>r.id===d.restPointDefinitionId)))fail('structure.restPoint');
   }
+  validateEdibleDefinitions(pack, owner, localeKeys);
   if (pack.startupItems) {
     record(pack.startupItems, 'instanceKey,items,overflow');
     amounts(pack.startupItems.items);
@@ -208,6 +210,7 @@ export function validateWorldModule(
   worldSdk?: number,
   locales?: ReadonlySet<string>
 ): void {
+  validateEdibleModule(module, worldSdk);
   const declares = !!(
     module.worldDefinitions ||
     module.worldWorkCommands ||

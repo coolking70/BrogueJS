@@ -492,14 +492,14 @@
       "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
     },
     {
-      "key": "09c29f59fab3e6160e697cd46e19d05bda0511b61d495257533cf35221ccca0d",
+      "key": "e1455e6468c2691118ab2e51a5858a18298ea1b802b0cff01f2c7a424fc3e14a",
       "count": 1,
       "classification": "基础类型读者",
       "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
       "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
     },
     {
-      "key": "16f5f26390bbb865d977bb995213caa0893b0a406d9ea8e1959087a832fe4219",
+      "key": "af49cfe706dbb6a3e6f69005f423f7265ecf69d5e2f8f6e76c75240ce383b93c",
       "count": 1,
       "classification": "基础类型读者",
       "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
@@ -4025,6 +4025,27 @@
       "classification": "基础类型读者",
       "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
       "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
+    },
+    {
+      "key": "28dec4f4655931d76f105f53acc13775e7f6dc3a9383e2837277f5f15d36cfc3",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "E26: 楼梯身份检测；寻路使用travelDistanceMap组合性质。",
+      "coverage": "ext_placement_group_runtime/ext_departure_runtime"
+    },
+    {
+      "key": "fa00d7462546e6997920918ea7cec64634112e3b5aa5c99cae02f9d646d1c294",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "E26: 楼梯身份检测；寻路使用travelDistanceMap组合性质。",
+      "coverage": "ext_placement_group_runtime/ext_departure_runtime"
+    },
+    {
+      "key": "d1813a5746a618b6a4b31b63076acedc1d9e1f6da2ea9d0698fafb5e111f9d14",
+      "count": 1,
+      "classification": "基础类型读者",
+      "handling": "E23: 仅基础层发光菌/菌林偏好，不判断通行权限。",
+      "coverage": "ext_placement_group_runtime/ext_departure_runtime"
     }
   ]
 }

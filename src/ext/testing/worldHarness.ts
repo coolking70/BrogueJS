@@ -22,7 +22,7 @@ export function createWorldHarness(options: WorldHarnessOptions, overrides:reado
   if (!i18next.isInitialized)
     i18next.init({ lng: 'en', fallbackLng: false, resources: {}, initImmediate: false });
   const descriptors = [...getInstalledModuleDescriptors(), skeleton, basic].map(d=>overrides.find(o=>o.id===d.id)??d),
-    registry = registryFromDescriptors(descriptors);
+    registry = registryFromDescriptors([...descriptors,...overrides.filter(d=>!descriptors.some(o=>o.id===d.id))]);
   const ids = [...options.modules];
   if (options.fixtures?.includes('crafting-skeleton') && !ids.includes('craftskel'))
     ids.push('craftskel');

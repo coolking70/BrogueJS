@@ -1,3 +1,4 @@
+import { isIncapacitated } from '../Status/Incapacitation';
 import { nativeProjectileProbability, nativeProjectileRoll, nativeProjectileRunic, nativeWeaknessFactor, nativeStat, nativePair, nativeHitChance, nativeHitBase, nativeRolledDamage } from '../Stats/NativeStatSources';
 import type { ExtensionRuleInput } from '../../ext/types';
 import { bodyDecisionActor } from '../Status/BodyStatuses';
@@ -107,7 +108,7 @@ export class CombatSystem {
         if (attacker instanceof Monster && attacker.hasAbility('MA_SEIZES') && (!attacker.seizing || !defender.seized)
             && legalSeizeContact(attacker, defender, opts?.grid)) return 0;
         const inanimate = defender instanceof Monster && defender.hasBehavior('MONST_INANIMATE');
-        const autoHit = opts?.lungeAttack === true || defender.hasStatus('paralyzed') || defender.hasStatus('stuck')
+        const autoHit = opts?.lungeAttack === true || isIncapacitated(defender) || defender.hasStatus('stuck')
             || (defender instanceof Monster && (defender.isCaged || (!inanimate && (bodyDecisionActor(defender).state === MonsterState.ASLEEP
                 || (attacker instanceof Player && !bodyDecisionActor(defender).isAlly && bodyDecisionActor(defender).state === MonsterState.WANDERING)))));
         const probability = defender.seized && attacker.seizing
@@ -205,7 +206,7 @@ export class CombatSystem {
             if (attacker.equippedWeapon && attacker.equippedWeapon.damage) {
                 damageString = attacker.equippedWeapon.damage;
                 clumping = attacker.equippedWeapon.clumping;
-                weaponName = attacker.equippedWeapon.name;
+                weaponName = attacker.equippedWeapon.displayName;
                 weaponEnchant = nativeStat(attacker,'native.weapon-enchant')/4;
                 weaponRunic = attacker.equippedWeapon.runicType;
             }
@@ -237,7 +238,8 @@ export class CombatSystem {
         // 三类偷袭标志一律清零——web 原实现漏了这层守卫，此处照 CE 补上。
         const inanimateDefender = (defender instanceof Monster) &&
             defender.hasBehavior('MONST_INANIMATE');
-        const defenderStuck = !inanimateDefender && defender.hasStatus('paralyzed');
+        const defenderSlumber = defender.hasStatus('slumber');
+        const defenderStuck = !inanimateDefender && isIncapacitated(defender);
         const defenderAsleep = !inanimateDefender && (defender instanceof Monster) &&
             (bodyDecisionActor(defender).state === MonsterState.ASLEEP);
         const sneakAttack = !inanimateDefender && (attacker instanceof Player) &&
@@ -253,7 +255,7 @@ export class CombatSystem {
         // 偷袭触发集整体自动命中（CE Combat.c:1239 的 || 短路，attackHit 不掷）。
         // attackHit() has its own short circuit, even for an inanimate paralyzed
         // defender: it auto-hits without granting the sneak damage multiplier.
-        const autoHit = backstab || lungeAttack || defender.hasStatus('paralyzed') || defender.hasStatus('stuck')
+        const autoHit = backstab || lungeAttack || isIncapacitated(defender) || defender.hasStatus('stuck')
             || (defender instanceof Monster && defender.isCaged);
         // --- P4-4: MA_KAMIKAZE (Combat.c:1159-1162) ---
         // CE 的检查在 attackHit() 掷骰之前（line 1159 早于 line 1240 的命中判定）：
@@ -441,7 +443,7 @@ export class CombatSystem {
         }
 
         if (isWeaponAttack && defender instanceof Player && defender.hp > 0 && attacker instanceof Monster) {
-            stealFromPlayer(attacker, defender, () => defender.hasStatus('stuck') || defender.hasStatus('paralyzed')
+            stealFromPlayer(attacker, defender, () => defender.hasStatus('stuck') || isIncapacitated(defender)
                 || rng.randPercent(defender.seized && attacker.seizing ? 100 : nativeHitChance(attacker,defender)), opts?.itemGenerationDepth ?? 1);
         }
         if (defender instanceof Monster) defender.enrageAfterAttack();
@@ -449,7 +451,7 @@ export class CombatSystem {
         const percentile = Math.trunc(Math.max(damage - Math.trunc(min * adjustment), 0) * 100
             / Math.max(1, Math.trunc((max - min) * adjustment)));
         const circumstance: AttackCircumstance = damage === 0 ? 'zero' : lungeAttack ? 'lunge'
-            : defenderStuck ? 'paralyzed' : defenderAsleep ? 'asleep' : sneakAttack ? 'sneak'
+            : defenderSlumber ? 'asleep' : defenderStuck ? 'paralyzed' : defenderAsleep ? 'asleep' : sneakAttack ? 'sneak'
             : defender.hasStatus('stuck') || (defender instanceof Monster && defender.isCaged) ? 'helpless' : 'none';
         return { damage, weaponName, hit: true, backstab, lunge: lungeAttack, triggeredRunic,
             text: { percentile, circumstance } };
@@ -494,7 +496,7 @@ export class CombatSystem {
             if (attacker.equippedWeapon && attacker.equippedWeapon.damage) {
                 damageString = attacker.equippedWeapon.damage;
                 clumping = attacker.equippedWeapon.clumping;
-                weaponName = attacker.equippedWeapon.name;
+                weaponName = attacker.equippedWeapon.displayName;
                 weaponEnchant = nativeStat(attacker,'native.weapon-enchant')/4;
                 weaponRunic = attacker.equippedWeapon.runicType;
             }
@@ -526,7 +528,8 @@ export class CombatSystem {
         // 三类偷袭标志一律清零——web 原实现漏了这层守卫，此处照 CE 补上。
         const inanimateDefender = (defender instanceof Monster) &&
             defender.hasBehavior('MONST_INANIMATE');
-        const defenderStuck = !inanimateDefender && defender.hasStatus('paralyzed');
+        const defenderSlumber = defender.hasStatus('slumber');
+        const defenderStuck = !inanimateDefender && isIncapacitated(defender);
         const defenderAsleep = !inanimateDefender && (defender instanceof Monster) &&
             (bodyDecisionActor(defender).state === MonsterState.ASLEEP);
         const sneakAttack = !inanimateDefender && (attacker instanceof Player) &&
@@ -542,7 +545,7 @@ export class CombatSystem {
         // 偷袭触发集整体自动命中（CE Combat.c:1239 的 || 短路，attackHit 不掷）。
         // attackHit() has its own short circuit, even for an inanimate paralyzed
         // defender: it auto-hits without granting the sneak damage multiplier.
-        const autoHit = backstab || lungeAttack || defender.hasStatus('paralyzed') || defender.hasStatus('stuck')
+        const autoHit = backstab || lungeAttack || isIncapacitated(defender) || defender.hasStatus('stuck')
             || (defender instanceof Monster && defender.isCaged);
         // --- P4-4: MA_KAMIKAZE (Combat.c:1159-1162) ---
         // CE 的检查在 attackHit() 掷骰之前（line 1159 早于 line 1240 的命中判定）：
@@ -740,7 +743,7 @@ export class CombatSystem {
         }
 
         if (isWeaponAttack && defender instanceof Player && defender.hp > 0 && attacker instanceof Monster) {
-            stealFromPlayer(attacker, defender, () => defender.hasStatus('stuck') || defender.hasStatus('paralyzed')
+            stealFromPlayer(attacker, defender, () => defender.hasStatus('stuck') || isIncapacitated(defender)
                 || rng.randPercent(defender.seized && attacker.seizing ? 100 : nativeHitChance(attacker,defender)), opts?.itemGenerationDepth ?? 1);
         }
         if (defender instanceof Monster) defender.enrageAfterAttack();
@@ -748,7 +751,7 @@ export class CombatSystem {
         const percentile = Math.trunc(Math.max(damage - Math.trunc(min * adjustment), 0) * 100
             / Math.max(1, Math.trunc((max - min) * adjustment)));
         const circumstance: AttackCircumstance = damage === 0 ? 'zero' : lungeAttack ? 'lunge'
-            : defenderStuck ? 'paralyzed' : defenderAsleep ? 'asleep' : sneakAttack ? 'sneak'
+            : defenderSlumber ? 'asleep' : defenderStuck ? 'paralyzed' : defenderAsleep ? 'asleep' : sneakAttack ? 'sneak'
             : defender.hasStatus('stuck') || (defender instanceof Monster && defender.isCaged) ? 'helpless' : 'none';
         return { damage, weaponName, hit: true, backstab, lunge: lungeAttack, triggeredRunic,
             text: { percentile, circumstance } };
@@ -858,7 +861,7 @@ export class CombatSystem {
         const enchant=nativeProjectileRunic(thrower,item);
 
         // CE attackHit (Combat.c:149-158): short circuit, no accuracy roll.
-        const autoHit = defender.hasStatus('paralyzed') || defender.hasStatus('stuck') || defender.isCaged;
+        const autoHit = isIncapacitated(defender) || defender.hasStatus('stuck') || defender.isCaged;
         // A slaying rune (Combat.c:130-135) sets probability to 100 but still
         // consumes attackHit's rand_percent roll; only the conditions above skip it.
         const slayingHit = item.runicType === 'slaying' && monsterIsInClass(defender.typeId, item.vorpalEnemy);
@@ -918,7 +921,7 @@ export class CombatSystem {
         const enchant=nativeProjectileRunic(thrower,item);
 
         // CE attackHit (Combat.c:149-158): short circuit, no accuracy roll.
-        const autoHit = defender.hasStatus('paralyzed') || defender.hasStatus('stuck') || defender.isCaged;
+        const autoHit = isIncapacitated(defender) || defender.hasStatus('stuck') || defender.isCaged;
         // A slaying rune (Combat.c:130-135) sets probability to 100 but still
         // consumes attackHit's rand_percent roll; only the conditions above skip it.
         const slayingHit = item.runicType === 'slaying' && monsterIsInClass(defender.typeId, item.vorpalEnemy);

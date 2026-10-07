@@ -1,3 +1,7 @@
+import { validateEdibleSnapshot } from '../engine/Core/EdibleValidation';
+import i18next from 'i18next';
+import { edibleSnapshot, peekEdibleState, restoreEdibleState, cleanEdibleState, type EdibleState } from '../engine/Core/EdibleState';
+import { FOUNDATION_EDIBLE_RULES, hasEdibleDeclarations } from '../engine/Core/EdibleDefinitions';
 import { FOUNDATION_STRUCTURE_RULES } from './structureSchema';
 import { StatPipeline } from '../engine/Stats/StatPipeline';
 import { NATIVE_STAT_KEYS, NATIVE_STAT_DAG } from '../engine/Stats/NativeStatKeys';
@@ -60,6 +64,7 @@ const nativeFactCheckpoints=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPo
 interface StatProposal {hp?:number;maxHp?:number;strength?:number;oldMaxBonus:number;oldStrengthBonus:number}
 interface StatSession { pipeline:StatPipeline; ledger:MaterializedStats; actors:Map<number,Creature>; inProgress:boolean; writes:boolean; overrides:Map<string,number>; proposals:Map<number,StatProposal>|null; moduleViews:Map<string,{state:ReadonlyJson;components:Record<string,ReadonlyJson>}>; previewComponents:Readonly<Record<string,Json>>|null; materialSignatures:Map<number,string>; materialValues:Map<number,Map<string,number>>; collecting:boolean; dirty:Set<number>; reconciling:boolean }
 const statSessions=new WeakMap<ExtensionRuntime,StatSession>();
+const edibleDiagnostics=new WeakMap<ExtensionRuntime,{owner:string;method:string}[]>();
 const statQueries=new WeakMap<ExtensionRuntime,StatQuery>();
 function isCreatureView(value: unknown): boolean {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -69,6 +74,9 @@ function isCreatureView(value: unknown): boolean {
         && (v.id as number) > 0 && (v.maxHp as number) >= 0;
 }
 export interface ExtensionPorts {
+    edibleRead?(owner:string): NonNullable<import('./world').ExtensionProjectionContext['edible']>;
+    simulationTicks?(): number;
+    needTrigger?(creature:Creature,trigger:import('./actorNeeds').NeedTrigger):void;
     /** Engine verifies native identity, owned depth, and active group slot. */
     actorQueryScope?(actor: Creature): { depth: number; partId: string | null; generation: number | null } | null;
     checkpointCommittedFacts?(): () => void;
@@ -122,6 +130,7 @@ function requireSynchronous(result: unknown): void {
 }
 interface BufferedFact { name: HookName; event: HookEvents[HookName]; readonly?: boolean }
 interface GenerationFrame {
+    edible: EdibleState;
     token: GenerationToken;
     world: WorldInteractionSnapshot;
     placementNextEntityId: number | null;
@@ -350,6 +359,7 @@ export class ExtensionRuntime {
             this.nextFactId = snapshot.foundation.nextFactId;
             this.pendingStoryFacts = structuredClone(snapshot.foundation.pendingStoryFacts);
         }
+        restoreEdibleState(this, snapshot ? Object.fromEntries(['kindKnowledge','actorNeeds','timedStats','departures'].filter(k=>k in snapshot.foundation).map(k=>[k,(snapshot.foundation as any)[k]])) : {});
         this.initializeStats(snapshot);
         this.validateSnapshot(this.snapshot());
     }
@@ -371,6 +381,7 @@ export class ExtensionRuntime {
                 if(session.collecting)throw new StatValidationError('source');
                 session.collecting=true;try{
                 const all:import('../engine/Stats/StatPipeline').OwnedStatRow[]=[...nativeRows(actor(id),change,known)];
+                for(const r of peekEdibleState(this).timedStats?.rows??[])if(r.actorId===id&&(this.ports.simulationTicks?.()??0)<r.untilTick)all.push({stat:r.key,category:r.category,value:r.value,layer:'temporary',sourceKind:'edible',sourceId:`${r.owner}.${r.key}`,owner:r.owner,...(r.category==='more'?{slot:'temporary'}:{})});
                 for(const module of this.modules){const provider=module.statSources;if(!provider)continue;
                     const previous=this.pureProviderPhase;this.pureProviderPhase=true;
                     try{let view=!change?session.moduleViews.get(module.id):undefined;if(!view){view={state:freezeView(cloneJson(this.states[module.id]!)),components:{}};if(!change)session.moduleViews.set(module.id,view);}const context=Object.freeze({playerId:this.ports.playerId(),state:view.state,facts:freezeView(structuredClone(facts)),
@@ -965,6 +976,7 @@ export class ExtensionRuntime {
         return()=>{checkpoint.restore();this.states[binding.moduleId]=state;};
     }
     private transaction<T>(work: () => T): T {
+        const edibleBefore=edibleSnapshot(this);
         const statsBefore=statSessions.get(this)!.ledger.snapshot();
         const restoreActorState=this.checkpointActorStateIdentity();
         const states = structuredClone(this.states), components = structuredClone(this.components), world = structuredClone(this.world);
@@ -974,6 +986,7 @@ export class ExtensionRuntime {
         const restoreRandom = this.ports.checkpointRandom?.();
         try { return this.bufferMessages(work); }
         catch (error) {
+            restoreEdibleState(this,edibleBefore);
             statSessions.get(this)!.ledger.restore(statsBefore);statSessions.get(this)!.materialSignatures.clear();statSessions.get(this)!.materialValues.clear();statSessions.get(this)!.moduleViews.clear();this.stats.clear();
             this.states = states; restoreActorState(); this.components = components; this.world = world;
             this.nextFactId = nextFactId; this.pendingStoryFacts = pending; this.restoreResources(resources);
@@ -1081,7 +1094,7 @@ export class ExtensionRuntime {
                 && Object.keys(input.payload).join(',') === 'facing' && typeof input.payload.facing === 'string';
             if (module?.actorActions && input.action === 'attack') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
                 && Object.keys(input.payload).sort().join(',') === 'attackId,facing' && typeof input.payload.attackId === 'string' && typeof input.payload.facing === 'string';
-            if(module?.worldWorkCommands?.[input.action as import('./worldSdk').CraftingAction])return true;
+            if(module?.worldWorkCommands?.[input.action as import('./worldSdk').CraftingAction]||module?.edibleCommands?.[input.action as 'feed'|'roast'])return true;
             return !!module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action)
                 && typeof module.commands[input.action] === 'function';
         } catch { return false; }
@@ -1388,7 +1401,7 @@ export class ExtensionRuntime {
             },
             causality: this.causality,
             partyId: actor => this.creditParty(actor),
-            relationshipChanged: actor => {markStatsDirty(actor);this.observeCreature(actor);},
+            relationshipChanged: actor => {markStatsDirty(actor);this.observeCreature(actor);this.ports.needTrigger?.(actor,'ally-lost');},
             nativeMaximumReset: (actor, preserveOverhealth = false) => {
                 const session=statSessions.get(this)!;session.ledger.set(actor.id,'native.max-hp',0);session.pipeline.clear(actor.id);
                 this.reconcileMaterialized(actor.id);if(!preserveOverhealth)actor.hp=Math.min(actor.hp,actor.maxHp);this.emit('nativeMaximumReset',{actor:this.actorFacts(actor),...(preserveOverhealth?{preserveOverhealth:true}:{})});
@@ -1442,7 +1455,7 @@ export class ExtensionRuntime {
     beginGeneration(label: string): GenerationToken {
         if (this.disposed || this.publishingGeneration || !label.length) throw new Error('Invalid generation transaction');
         const token = Object.freeze({ label });
-        this.generations.push({ token, nextFactId: this.nextFactId, pendingStoryFacts: structuredClone(this.pendingStoryFacts), resources: this.resourceCheckpoint(), stats:statSessions.get(this)!.ledger.snapshot(), world: structuredClone(this.world), placementNextEntityId: null, states: structuredClone(this.states), components: structuredClone(this.components),
+        this.generations.push({ edible:edibleSnapshot(this), token, nextFactId: this.nextFactId, pendingStoryFacts: structuredClone(this.pendingStoryFacts), resources: this.resourceCheckpoint(), stats:statSessions.get(this)!.ledger.snapshot(), world: structuredClone(this.world), placementNextEntityId: null, states: structuredClone(this.states), components: structuredClone(this.components),
             causality: this.causality.snapshot(), deaths: structuredClone(this.deaths), creatures: new Set(this.creatures), facts: [], births: new Set() });
         return token;
     }
@@ -1474,6 +1487,7 @@ export class ExtensionRuntime {
     }
     rollbackGeneration(token: GenerationToken): void {
         const frame = this.generation(token);
+        restoreEdibleState(this,frame.edible);
         this.states = frame.states; this.components = frame.components; this.world = frame.world;
         this.nextFactId = frame.nextFactId; this.pendingStoryFacts = frame.pendingStoryFacts; this.restoreResources(frame.resources);
         if (frame.placementNextEntityId !== null) restoreNextEntityId(frame.placementNextEntityId);
@@ -1652,8 +1666,33 @@ export class ExtensionRuntime {
     }
     isWorldWorkFixture(owner:string):boolean { const module=this.modules.find(m=>m.id===owner);return !!module&&isWorld5WorkFixture(module); }
     worldDefinitionPacks(): readonly import('./structureTypes').WorldDefinitionPack[] { return this.modules.flatMap(m=>m.worldDefinitions?[m.worldDefinitions]:[]); }
-    worldDefinitionFingerprints():Record<string,string> {return Object.fromEntries(this.modules.filter(m=>m.worldDefinitions).map(m=>[m.id,`sha256:${c5Hash(m.worldDefinitions!.structures!==undefined||m.worldDefinitions!.restPoints!==undefined?{pack:m.worldDefinitions,foundationStructureRules:FOUNDATION_STRUCTURE_RULES}:m.worldDefinitions)}`]));}
+    worldDefinitionFingerprints():Record<string,string> {return Object.fromEntries(this.modules.filter(m=>m.worldDefinitions).map(m=>[m.id,`sha256:${c5Hash(hasEdibleDeclarations(m.worldDefinitions)?{pack:m.worldDefinitions,foundationEdibleRules:FOUNDATION_EDIBLE_RULES,...(m.worldDefinitions!.structures!==undefined||m.worldDefinitions!.restPoints!==undefined?{foundationStructureRules:FOUNDATION_STRUCTURE_RULES}:{})}:m.worldDefinitions!.structures!==undefined||m.worldDefinitions!.restPoints!==undefined?{pack:m.worldDefinitions,foundationStructureRules:FOUNDATION_STRUCTURE_RULES}:m.worldDefinitions)}`]));}
     worldWorkCommand(owner:string,action:string): import('./worldSdk').WorldWorkCommand | undefined { return this.modules.find(m=>m.id===owner)?.worldWorkCommands?.[action as import('./worldSdk').CraftingAction]; }
+    edibleCommand(owner:string,action:string) { return this.modules.find(m=>m.id===owner)?.edibleCommands?.[action as 'feed'|'roast']; }
+    edibleModule(owner:string) { return this.modules.find(m=>m.id===owner); }
+    edibleDirty(actorId?:number):void {cleanEdibleState(this);markRecordingRoot(this);this.invalidateStats();if(actorId!==undefined)this.reconcileMaterialized(actorId);}
+    edibleFactId():number {if(this.nextFactId>=Number.MAX_SAFE_INTEGER)throw new World5Error('C5_OVERFLOW');markRecordingRoot(this);return this.nextFactId++;}
+    ediblePure<T>(work:()=>T):T {const before=this.pureProviderPhase;this.pureProviderPhase=true;try{return work();}finally{this.pureProviderPhase=before;}}
+    edibleParticipate(owner:string,method:'onConsumed'|'onFireContact'|'onNeedEvent',fact:unknown,
+      extras:Readonly<Record<string,unknown>>,degrade=false):boolean {
+        const module=this.modules.find(m=>m.id===owner), participant=method==='onNeedEvent'?module?.actorNeedParticipant:module?.edibleParticipant;
+        const callback=(participant as any)?.[method];if(!module||!callback)return true;
+        let active=true;const check=()=>{if(!active)throw new World5Error('C5_SCOPE');};
+        try { this.transaction(()=>this.invoke(module,context=>{
+            const wrap=Object.fromEntries(Object.entries(extras).map(([key,v])=>[key,typeof v==='function'? (...args:unknown[])=>{check();return (v as Function)(...args);}:v]));
+            const tx=Object.freeze({...wrap,get state(){check();return freezeView(context.state);},
+                replaceState:(value:Json)=>{check();if(!isJson(value))throw new World5Error('C5_PROVIDER');context.setState(value);},
+                setOwnComponent:(id:number,name:string,value:Json)=>{check();if(id!==(fact as any).actorId||![...this.creatures].some(c=>c.id===id&&c.hp>0))throw new World5Error('C5_SCOPE');context.setComponent(id,name,value);},
+                removeOwnComponent:(id:number,name:string)=>{check();if(id!==(fact as any).actorId)throw new World5Error('C5_SCOPE');context.removeComponent(id,name);},
+                message:(key:string,params?:Record<string,string|number>)=>{check();if(!key.startsWith(`ext.${owner}.`))throw new World5Error('C5_PROVIDER');context.message(i18next.t(key,params));}
+            });
+            const result=callback(freezeView(structuredClone(fact)),tx);requireSynchronous(result);if(result!==undefined)throw new World5Error('C5_PROVIDER');
+        }));return true; } catch {if(!degrade)throw new World5Error('C5_PROVIDER');this.edibleDiagnostics.push({owner,method});return false;} finally {active=false;}
+    }
+    private get edibleDiagnostics():{owner:string;method:string}[] {let rows=edibleDiagnostics.get(this);if(!rows){rows=[];edibleDiagnostics.set(this,rows);}return rows;}
+    noteEdibleDiagnostic(owner:string,method:string):void {this.edibleDiagnostics.push({owner,method});}
+    readEdibleDiagnostics():readonly {owner:string;method:string}[] {return freezeView(structuredClone(edibleDiagnostics.get(this)??[]));}
+    retireEdibleActor(actor:Creature):void {delete this.components[String(actor.id)];this.creatures.delete(actor);statSessions.get(this)!.actors.delete(actor.id);statSessions.get(this)!.ledger.remove(actor.id);unbindStats(actor);actor.extensionHooks=undefined;this.invalidateStats();markRecordingRoot(this);}
     worldWorkTransaction<T>(work:()=>T):T { return this.transaction(work); }
     worldWorkEntities(): readonly WorldInteractable[] { return this.world.entities; }
     worldWorkPlacementProtected(at:{x:number;y:number},depth:number):boolean {
@@ -1697,7 +1736,7 @@ export class ExtensionRuntime {
         const descriptor = this.views.get(moduleId), module = this.modules.find(entry => entry.id === moduleId);
         if (this.disposed || !module) return null;
         if (module.projectView) {
-            const projection = module.projectView(freezeView({ ...(displayQuery === undefined ? {} : { displayQuery: JSON.parse(c5Canonical(displayQuery)) as Json }), stats:this.statQuery, queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), ...(module.worldDefinitions ? {worldWork:this.ports.worldWorkRead?.(moduleId)} : {}), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
+            const projection = module.projectView(freezeView({ ...(displayQuery === undefined ? {} : { displayQuery: JSON.parse(c5Canonical(displayQuery)) as Json }), stats:this.statQuery, queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), ...(hasEdibleDeclarations(module.worldDefinitions)?{edible:this.ports.edibleRead?.(moduleId)}:{}), ...(module.worldDefinitions ? {worldWork:this.ports.worldWorkRead?.(moduleId)} : {}), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
                 visibleInteractables: this.visibleInteractables(moduleId), actorActionBundles: structuredClone(this.ports.actorActions?.()?.bundles ?? []), nearbyInteractables: this.nearbyInteractables(moduleId),
                 worldRestUnavailable: id=>this.world.entities.some(entity=>entity.id===id&&entity.owner===moduleId)
                     ?restHandlers.get(this)?.worldRestUnavailable?.(id)??null:'unavailable' }));
@@ -1740,13 +1779,13 @@ export class ExtensionRuntime {
     }
     recordingDigestToken(): readonly unknown[] {
         return [this, recordingRootRevision(this), recordingRootRevision(this.causality), this.nextFactId,
-            this.states, this.components, this.world, this.pendingStoryFacts.length,
+            this.states, this.components, this.world, peekEdibleState(this), this.pendingStoryFacts.length,
             this.actorActionBinding()?.state.revision];
     }
     snapshot(): ExtensionSnapshot {
         if (this.generations.length) throw new Error('Cannot snapshot an open generation transaction');
         return structuredClone({ manifest: this.manifest, modules: this.states, components: this.components,
-            foundation: { version: FOUNDATION_PROTOCOL, ...(statSessions.get(this)?.ledger.snapshot()?{stats:statSessions.get(this)!.ledger.snapshot()}:{}), nextFactId: this.nextFactId, pendingStoryFacts: this.pendingStoryFacts, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
+            foundation: { ...edibleSnapshot(this), version: FOUNDATION_PROTOCOL, ...(statSessions.get(this)?.ledger.snapshot()?{stats:statSessions.get(this)!.ledger.snapshot()}:{}), nextFactId: this.nextFactId, pendingStoryFacts: this.pendingStoryFacts, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
     }
     validateSnapshot(value: ExtensionSnapshot): void {
         if (!value || !isJson(value) || canonical(value.manifest) !== canonical(this.manifest)
@@ -1755,7 +1794,7 @@ export class ExtensionRuntime {
             || Object.keys(value).some(key => !['manifest', 'modules', 'components', 'foundation'].includes(key))
             || canonical(Object.keys(value.modules).sort()) !== canonical(this.modules.map(module => module.id).sort())) throw new Error('Invalid extension snapshot');
         const foundation = value.foundation;
-        if (!foundation || foundation.version !== FOUNDATION_PROTOCOL || Object.keys(foundation).filter(k=>k!=='stats').sort().join(',') !== 'causality,deaths,nextFactId,pendingStoryFacts,version,world'
+        if (!foundation || foundation.version !== FOUNDATION_PROTOCOL || Object.keys(foundation).filter(k=>!['stats','kindKnowledge','actorNeeds','timedStats','departures'].includes(k)).sort().join(',') !== 'causality,deaths,nextFactId,pendingStoryFacts,version,world'
             || !Number.isSafeInteger(foundation.nextFactId) || foundation.nextFactId < 1
             || !Array.isArray(foundation.pendingStoryFacts) || foundation.pendingStoryFacts.length > STORY_FACT_LIMIT
             || !foundation.pendingStoryFacts.every(validPendingStoryFact)
@@ -1763,6 +1802,7 @@ export class ExtensionRuntime {
             || !validWorldSnapshot(foundation.world, this.modules.map(module => module.id))
             || !EffectCausality.validateSnapshot(foundation.causality) || !foundation.deaths || Array.isArray(foundation.deaths)
             || typeof foundation.deaths !== 'object') throw new Error('Invalid extension foundation snapshot');
+        validateEdibleSnapshot(this,foundation);
         if(foundation.stats!==undefined)validateMaterializedStats(foundation.stats);
         if (foundation.world.entities.some(entity => !this.modules.find(module => module.id === entity.owner)?.worldInteractables && !this.modules.find(module => module.id === entity.owner)?.worldDefinitions)
             || foundation.world.regions?.some(region => {const m=this.modules.find(module => module.id === region.owner);return region.campSlotId!==undefined?!m?.worldDefinitions:!m?.ownedRegions;})

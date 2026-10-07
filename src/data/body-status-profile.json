@@ -1,5 +1,15 @@
 [
   {
+    "statusId": "slumber",
+    "owner": "group",
+    "merge": "max",
+    "disables": [
+      "decision",
+      "attacks",
+      "movement"
+    ]
+  },
+  {
     "statusId": "paralyzed",
     "owner": "group",
     "merge": "max",

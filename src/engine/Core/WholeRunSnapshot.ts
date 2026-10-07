@@ -34,7 +34,7 @@ import type { GameSnapshotItem, GameSnapshotMonster, GameSnapshotPlayer, EntityS
 import type { RandomState } from '../Random';
 import type { Pos } from '../../types';
 
-export const WHOLE_RUN_SCHEMA = 'brogue-web-whole-run-v5' as const;
+export const WHOLE_RUN_SCHEMA = 'brogue-web-whole-run-v6' as const;
 
 /** The run section is detached with the same JSON boundary as the original
  * Game method, including omission of undefined values. */
@@ -185,7 +185,7 @@ export function toWholeRunSnapshot(source: WholeRunProjection): GameSnapshot {
     ], [...source.pendingFallenByDepth.values()]);
     return {
         ...source.snapshotLevel(source.depth, source.active),
-        version: 5, schema: WHOLE_RUN_SCHEMA, savedAt: Date.now(),
+        version: 6, schema: WHOLE_RUN_SCHEMA, savedAt: Date.now(),
         seed: source.currentSeed, rngState: source.services.rngState(), levelSeeds: copyLevelSeeds(source.levelSeeds),
         currentLevelDepth: source.currentLevelDepth ?? source.depth,
         levels: levels.map(([depth, level]) => source.snapshotLevel(depth, level)), pendingFallenByDepth, pendingFallenItemsByDepth,
@@ -490,7 +490,7 @@ export function world5SnapshotContext(s: GameSnapshot) {
 
 export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatalog): value is GameSnapshot {
     const s = value as GameSnapshot | null;
-    if (!s || s.version !== 5 || s.schema !== WHOLE_RUN_SCHEMA || !isSeed(s.seed)
+    if (!s || s.version !== 6 || s.schema !== WHOLE_RUN_SCHEMA || !isSeed(s.seed)
         || !Random.isState(s.rngState) || !isLevelSeeds(s.levelSeeds)
         || s.currentLevelDepth !== s.depth || !s.run || !s.flavors || !s.player || !s.entityGraph
         || !Number.isFinite(s.ticksTillUpdateEnvironment) || typeof s.pendingEnchantment !== 'boolean'

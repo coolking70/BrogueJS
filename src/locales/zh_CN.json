@@ -1533,5 +1533,11 @@
   "ext.foundation.world.error.transaction": "事务未能完成。",
   "ext.foundation.world.error.overflow": "数值已达上限。",
   "ext.foundation.world.error.terminal": "本局已经结束。",
-  "inventory.category.materials": "材料"
+  "inventory.category.materials": "材料",
+    "ext.foundation.status.slumber": "沉眠",
+    "ext.foundation.status.slumber_wake_player": "你从沉眠中醒来。",
+    "ext.foundation.status.slumber_wake_monster": "{{monster}}从沉眠中醒来。",
+    "ext.foundation.edible.confirm.not_hungry": "你现在不太饿，仍要吃下它吗？",
+    "ext.foundation.edible.confirm.overfeed": "它现在不太饿，仍要喂食吗？",
+    "ext.foundation.edible.satiety": " 饱腹：{{value}}。"
 }

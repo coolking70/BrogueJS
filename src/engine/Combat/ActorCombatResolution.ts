@@ -1,3 +1,4 @@
+import { isIncapacitated } from '../Status/Incapacitation';
 /** Engine-owned authority for native melee and bounded locked body segments.
  * Nothing installs this on Game or changes ordinary CombatSystem.attack calls.
  * Mechanical data is caller-owned and explicitly exportable; only prepared
@@ -294,13 +295,13 @@ export class ActorCombatResolutionAuthority {
         if (this.game.isGameOver || this.game.player !== this.player || this.game.grid !== this.grid
             || this.game.depth !== this.depth || intent.depth !== this.game.depth) return null;
         const a = this.liveActor(intent.sourceEntityId), d = this.liveActor(intent.targetEntityId);
-        if (!a || !d || a === d || a.hp <= 0 || d.hp <= 0 || (a.spatial?.actionLockInTicks ?? 0) > 0 || a.hasStatus('paralyzed') || a.hasStatus('entranced')
+        if (!a || !d || a === d || a.hp <= 0 || d.hp <= 0 || (a.spatial?.actionLockInTicks ?? 0) > 0 || isIncapacitated(a) || a.hasStatus('entranced')
             || a.hasStatus('confused') || (this.defense(a.id)?.staggerRemainingTicks ?? 0) > 0) return null;
         // Registered members retain their own physical source, with the core
         // owning sleep/decision state and the production action clock.
         assertNativeSpatial(a); assertNativeSpatial(d);
         const owner=a.spatial?.bodyMember?this.liveActor(a.spatial.bodyMember.groupId):a;
-        if (!owner || owner.hp<=0 || (owner.spatial?.actionLockInTicks??0)>0 || owner.hasStatus('paralyzed') || owner.hasStatus('entranced')) return null;
+        if (!owner || owner.hp<=0 || (owner.spatial?.actionLockInTicks??0)>0 || isIncapacitated(owner) || owner.hasStatus('entranced')) return null;
         if (a instanceof Monster && (a.spatial?.bodyMember && !this.game.ownsBodyMember(a) || a.isDormant || a.deathProcessed || a.isCaged
             || owner instanceof Monster && owner.state === MonsterState.ASLEEP
             || !a.spatial?.bodyMember && (a.hasBehavior('MONST_IMMOBILE') || a.hasBehavior('MONST_TURRET')
@@ -339,7 +340,7 @@ export class ActorCombatResolutionAuthority {
         if (!contact || JSON.stringify(contact) !== JSON.stringify(saved.contact)) return null;
         if (this.state.nextResolutionId >= Number.MAX_SAFE_INTEGER - 1) fail('resolution identity budget exhausted');
         const [attacker, defender] = pair, defense = this.defense(defender.id);
-        const defenseActive = defender.hp > 0 && !defender.hasStatus('paralyzed') && !defender.hasStatus('entranced')
+        const defenseActive = defender.hp > 0 && !isIncapacitated(defender) && !defender.hasStatus('entranced')
             && !(defender instanceof Monster && (defender.isCaged || defender.state === MonsterState.ASLEEP))
             && (defense?.staggerRemainingTicks ?? 0) === 0;
         const dodged = defenseActive && plan.intent.dodgeable && ((defense?.dodgeRemainingTicks ?? 0) > 0 || this.options?.dodgeProtected?.(defender.id) === true);

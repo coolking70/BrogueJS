@@ -1,3 +1,4 @@
+import { isIncapacitated } from '../Status/Incapacitation';
 import {createActorActionsRoot} from './ActorActionsRoot';
 import { actorActionRecord } from './ActorActionData';
 import { markActorActionFixture } from './ActorActionSession';
@@ -70,7 +71,7 @@ export class ActorActionAuthority {
         const source = this.actor(request.sourceEntityId), isPlayer = source === this.game.player;
         if (!source || source.hp <= 0 || this.game.isGameOver || this.game.interactionActive
             || (isPlayer ? request.origin !== 'player-command' : request.origin !== 'npc-scheduler')
-            || source.ticksUntilTurn > 0 || source.hasStatus('paralyzed') || source.hasStatus('entranced') || source.hasStatus('confused')
+            || source.ticksUntilTurn > 0 || isIncapacitated(source) || source.hasStatus('entranced') || source.hasStatus('confused')
             || (source instanceof Monster && (source.isCaged || source.isDormant || source.deathProcessed || source.state === MonsterState.ASLEEP || source.hasBehavior('MONST_IMMOBILE')
                 || source.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')))
             || this.sink.isBusy(source.id)) return { status: 'rejected', reason: 'ineligible' };

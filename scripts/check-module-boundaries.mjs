@@ -286,13 +286,13 @@ export function checkModuleBoundaries(root = process.cwd()) {
         for (const target of referenceTargets(root, file, reference, aliases)) {
             const relativeSource=slash(path.relative(root,file));
             if(target.startsWith('src/ext/testing/')&&!/^(?:src\/test\/|src\/ext\/testing\/)/.test(relativeSource)&&!/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource))report(file,line,'test-only world adapter referenced by production',reference,target);
-            if(moduleOwner(relativeSource)&&!/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource)&&/^src\/engine\/(?:Core\/(?:WorldWork[^/]*|WorldMaterialTransfer|WorldItemRoots|ActorActionsRoot)|Map\/StructureWorld|Items\/WorldItems)(?:\.ts)?$/.test(target))report(file,line,'trusted world authority referenced by content',reference,target);
+            if(moduleOwner(relativeSource)&&!/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource)&&/^src\/engine\/(?:Core\/(?:WorldWork[^/]*|WorldMaterialTransfer|WorldItemRoots|ActorActionsRoot|Edible[^/]*|FireContact|KindKnowledge|DerivedDraw|PlacementGroups|ActorNeeds|ActorDeparture)|Map\/StructureWorld|Items\/WorldItems)(?:\.ts)?$/.test(target))report(file,line,'trusted world authority referenced by content',reference,target);
             if (moduleOwner(relativeSource) === 'crafting' && !/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource)
                 && target.startsWith('src/') && moduleOwner(target) !== 'crafting'
                 && !/^src\/ext\/(?:worldSdk|types|descriptor|fingerprint|world)(?:\.ts)?$/.test(target)
                 && !/^src\/(?:ext\/ui|ui)\//.test(target)) report(file,line,'world content import outside approved SDK/shared UI',reference,target);
             if (moduleOwner(relativeSource)==='crafting' && /^src\/ext\/world(?:\.ts)?$/.test(target) && kind!=='import type') report(file,line,'world content world entry is type-only',reference,target);
-            if (/^src\/ext\/(?:worldSdk|worldBasics|worldJson|worldWorkSchema|recordingRevisions)\.ts$/.test(relativeSource)
+            if (/^src\/ext\/(?:worldSdk|edibleSdk|worldEdible|kindKnowledge|actorNeeds|worldBasics|worldJson|worldWorkSchema|recordingRevisions)\.ts$/.test(relativeSource)
                 && target.startsWith('src/engine/') && kind !== 'import type') report(file,line,'pure world SDK leaf references engine value',reference,target);
             const owner = moduleOwner(target);
             if (!owner || owner === moduleOwner(slash(path.relative(root, file)))) continue;

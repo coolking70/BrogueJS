@@ -1,3 +1,4 @@
+import i18next from 'i18next';
 import type { Creature, StatusId } from '../../entities/Creature';
 import { bodyStatusEntries, bodyStatusOwner } from './BodyStatuses';
 
@@ -18,6 +19,7 @@ export interface StatusConfigEntry {
 }
 
 export const STATUS_CONFIG: Record<BurningStatusId, StatusConfigEntry> = {
+    slumber: { id: 'slumber', get label() { return i18next.t('ext.foundation.status.slumber'); }, color: '#c4b5fd', isDebuff: true },
     paralyzed: { id: 'paralyzed', label: '麻痹', color: '#fca5a5', isDebuff: true },
     invisible: { id: 'invisible', label: '隐形', color: '#93c5fd', isDebuff: false },
     shielded: { id: 'shielded', label: '护盾', color: '#fde68a', isDebuff: false },

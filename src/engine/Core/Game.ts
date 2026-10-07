@@ -1,3 +1,14 @@
+import { isEdibleFixtureCommand, executeEdibleFixtureCommand } from './EdibleFixturePort';
+import { World5Error } from '../../ext/world5';
+import { knowledgeName, knowledgeDescription, knowledgeMember, edibleDefinition, confirmationSatiety, knowledgeState, callEdible, bindEdibleItem } from './KindKnowledge';
+import { consumeEdible, settleTimedStats } from './EdibleEffects';
+import { edibleProjection, isEdibleCommand, prepareEdibleCommand, commitEdibleCommand, transactEdible, heatSources } from './EdibleCommands';
+import { queueFireContact, drainFireContacts, igniteEdibleInventory, fireContactPending, clearFireContacts } from './FireContact';
+import { triggerActorNeeds, settleActorNeeds, detachActorNeeds } from './ActorNeeds';
+import { isDeparting, settleDepartures, departureStep } from './ActorDeparture';
+import { peekEdibleState } from './EdibleState';
+import { bindSlumberWake } from '../Status/Incapacitation';
+import { isIncapacitated } from '../Status/Incapacitation';
 import { structureBlocking, cellProjectileBlocked, composedCellFlags } from '../Map/CellProperties';
 import { bindWorldStructures, advanceStructureFire, settleStructureFoundations, excavateStructures, isStructureFixtureCommand, executeStructureFixtureCommand } from '../Map/StructureWorld';
 import { restPointDefinition } from '../Map/StructureWorld';
@@ -8,7 +19,7 @@ import { nativeRolledDamage, markStatsDirty, nativeEnchantedRoll, nativeStat, co
 import { recordingRootRevision } from '../../ext/recordingRevisions';
 import {interruptCombatActionRoot} from './PhasedAttackProduction';
 import { worldFixtureRegistry, copyWorldFixtureRegistry } from '../../ext/world5Fixture';
-import { containerItemRoots } from './WorldItemRoots';
+import { forEachItemRoot, containerItemRoots } from './WorldItemRoots';
 import { worldWorkReadSDK, reservedInventorySlots } from './WorldWorkWorld';
 import { bindInventoryReservations, bindWorldItem, worldItemDefinition } from '../Items/WorldItems';
 import { isWorldWorkCommand, isCancelWorkCommand, prepareWorldWorkCommand, commitWorldWork, withWorldActorScope, setWorldWorkError, cancelWorldWork, continueWorldWork, settleWorldWork, worldWorkInterruptionReason, interruptWorldWork, type WorldWorkDetail } from './WorldWork';
@@ -311,7 +322,7 @@ export interface CommandConfirmation {
 }
 /** Engine-owned risk facts; no entity, module context or callback survives preparation. */
 export interface ControlledActionRisk {
-    readonly kind: 'tool-break' | 'acid' | 'ally' | 'chasm' | 'fire' | 'gas' | 'plate';
+    readonly kind: 'edible-overfeed' | 'tool-break' | 'acid' | 'ally' | 'chasm' | 'fire' | 'gas' | 'plate';
     readonly target: { readonly kind: 'creature'; readonly id: number } | { readonly kind: 'cell'; readonly x: number; readonly y: number };
     readonly message: string;
 }
@@ -550,11 +561,14 @@ export class Game {
                 if (!source || source.hp <= 0 || (source instanceof Monster && !canDirectlySeeMonster(this.player,this.grid,source))) return [];
                 return cells.filter(cell=>this.grid.getCell(cell.x,cell.y)?.isVisible).map(cell=>({x:cell.x,y:cell.y}));
             },
+            simulationTicks: () => this.world5?.simulationTicks ?? 0,
+            edibleRead: owner => edibleProjection(this,owner),
+            needTrigger: (actor,trigger) => {if(actor instanceof Monster)triggerActorNeeds(this,[actor],trigger);},
             worldWorkRead: owner => worldWorkReadSDK(this,owner),
             actorActions: () => this.actorActions,
             interruptActorAction: id => interruptCombatActionRoot(this,id),
             playerId: () => this.player.id,
-            canManageCharacter: () => !this.interactionActive && !this.isGameOver && this.player.hp > 0 && !this.player.hasStatus('paralyzed')
+            canManageCharacter: () => !this.interactionActive && !this.isGameOver && this.player.hp > 0 && !isIncapacitated(this.player)
                 && !this.isAdvancing && !this.isInputLocked() && !logger.pendingAcknowledgment && !this.pendingIdentify
                 && !this.pendingEnchantment && !this.pendingArcana && !this.throwItemTarget && !this.pendingUseConfirm,
             validateAction: request => this.validateControlledAction(request),
@@ -582,7 +596,7 @@ export class Game {
 
     /** Pure public world projection, filtered by actual ordinary visibility. */
     public readVisibleInteractables(): readonly WorldInteractableView[] {
-        return this.extensionRuntime?.visibleInteractables() ?? [];
+        return this.extensionRuntime?.visibleInteractables().map(view=>{const entity=this.extensionRuntime!.worldWorkEntities().find(e=>e.id===view.id)!;return knowledgeMember(this,entity.contentId)?Object.freeze({...view,displayName:knowledgeName(this,entity.contentId,entity.nameKey),displayDescription:knowledgeDescription(this,entity.contentId,entity.descriptionKey)}):view;}) ?? [];
     }
     public get interactionActive(): boolean { return this.extensionRuntime?.interactionActive ?? false; }
     private stableInteractionVisibility(entity: WorldInteractable): boolean {
@@ -598,7 +612,7 @@ export class Game {
             && (cell.layers[DungeonLayer.DUNGEON] !== TerrainType.GRANITE || cell.isExplored);
     }
     private canInteractWith(entity: WorldInteractable): boolean {
-        return entity.depth === this.depth && !this.isGameOver && this.player.hp > 0 && !this.player.hasStatus('paralyzed')
+        return entity.depth === this.depth && !this.isGameOver && this.player.hp > 0 && !isIncapacitated(this.player)
             && !this.isAdvancing && !this.isInputLocked() && !logger.pendingAcknowledgment
             && !this.pendingIdentify && !this.pendingEnchantment && !this.pendingArcana && !this.pendingUseConfirm
             && !this.isInventoryOpen && !this.isThrowing && !this.throwItemTarget && !this.referenceScreen
@@ -953,6 +967,7 @@ export class Game {
         this.autoFight = null;
         this.autoAction = null;
         this.pendingDiscoveryMessages = [];
+        clearFireContacts(this);
         timeSystem.currentTick = 0;
 
         // V-1c：奖励房配额计数随新局清零（CE RogueMain.c:292）。必须先于首层
@@ -1465,7 +1480,7 @@ export class Game {
         const thisGame = this;
         return {
             generationContributions: () => thisGame.extensionRuntime?.generationContributions(thisGame.depth) ?? [],
-            excludeLevelFollower: (actor: Monster) => thisGame.world5?.residents.some(r => r.actorId === actor.id) ?? false,
+            excludeLevelFollower: (actor: Monster) => isDeparting(thisGame,actor.id)||(thisGame.world5?.residents.some(r => r.actorId === actor.id) ?? false),
             indexWorldOwnership: () => { if (thisGame.world5) indexWorldLevels(thisGame.world5, thisGame.levelSeeds, thisGame.depth); },
             settleManagedWorld: () => thisGame.settleManagedWorld(),
             restoreManagedPending: () => thisGame.restoreManagedPending(),
@@ -1771,12 +1786,13 @@ export class Game {
                 for (const m of this.monsters) m.mapToMe = null;
                 const firstVisit = !this.levelSeeds[this.depth - 1]?.visited;
                 if (firstVisit) runtime.emit('beforeLevelGeneration', { depth: this.depth });
-                if (!isFirstLevel) { this.freezeManagedWorld(); suspendProductionActorActions(this, previousDepth); }
+                if (!isFirstLevel) { settleDepartures(this,true); this.freezeManagedWorld(); suspendProductionActorActions(this, previousDepth); }
                 generateDepth(this.makeGenerationPorts('natural', token), isGoingUp, isFirstLevel, fell);
                 if (this.world5) { indexWorldLevels(this.world5, this.levelSeeds, this.depth); assertWorldLevelOwnership(this.activeLevelState(), this.levels, { monsters: [...this.pendingFallenByDepth.values()].flat(), items: [...this.pendingFallenItemsByDepth.values()].flat() }); }
                 if (!isFirstLevel) resumeProductionActorActions(this);
                 if (firstVisit) runtime.emit('afterLevelGeneration', { depth: this.depth });
                 enterWorldWorkLevel(this,firstVisit);
+                settleTimedStats(this,true);settleActorNeeds(this,true);
                 runtime.emit('enteredLevel', { depth: this.depth, firstVisit, actorIds: [...new Set([this.player.id,...this.monsters.map(actor=>actor.id),...this.dormantMonsters.map(actor=>actor.id)])].sort((a,b)=>a-b) });
                 // Mutable module hooks only see the completed world and the run
                 // RNG restored by the generation coordinator's finally block.
@@ -1839,6 +1855,7 @@ export class Game {
             const orderId = world.nextWorldId, planId = world.nextPlanId;
             world.nextWorldId = checkedAdd(orderId, 1); world.nextPlanId = checkedAdd(planId, 1);
             world.residents.push({ actorId: actor.id, owner: fixture.owner, campSlotId: 0, levelRef, revision: 0 });
+            triggerActorNeeds(this,[actor],'resident-changed');
             world.orders.push({ id: orderId, owner: fixture.owner, actorId: actor.id, levelRef,
                 definitionId: fixture.owner + '.fixture-order', priority: 0, planId, remainingEpochs: 32,
                 ticketId: null, status: 'working', stopReason: null, revision: 0 });
@@ -1990,7 +2007,7 @@ export class Game {
 
     private scheduleBodyFollower(core: Monster, exit: Pos, direction: -1|0|1): void {
         const group=this.bodyGroups!.find(g=>g.coreId===core.id)!,actors=this.orderedBodyActors(group,this.monsters);
-        if(actors.some(m=>m.spatial?.movementRegionId!==undefined||m.hasStatus('paralyzed')||m.hasStatus('entranced')||m.isCaged))return;
+        if(actors.some(m=>m.spatial?.movementRegionId!==undefined||isIncapacitated(m)||m.hasStatus('entranced')||m.isCaged))return;
         const target={id:Number.MAX_SAFE_INTEGER,hp:1,loc:exit} as Creature;
         const distance=this.planBodyCoreRoute(core,{kind:'anchors',anchors:[target.loc]},true).distance??Infinity;
         if(!Number.isFinite(distance)&&!core.isAlly)return;
@@ -3389,8 +3406,8 @@ export class Game {
                 || !monsterIsInClass(monster.typeId, item.vorpalEnemy)) continue;
             (item.flags ??= []).push('ITEM_RUNIC_HINTED');
             logger.log(weapon
-                ? i18next.t('runic.hint.weapon', { name: item.name, defaultValue: 'The runes on your {{name}} gleam balefully.' })
-                : i18next.t('runic.hint.armor', { name: item.name, defaultValue: 'The runes on your {{name}} glow protectively.' }),
+                ? i18next.t('runic.hint.weapon', { name: item.displayName, defaultValue: 'The runes on your {{name}} gleam balefully.' })
+                : i18next.t('runic.hint.armor', { name: item.displayName, defaultValue: 'The runes on your {{name}} glow protectively.' }),
                 '#ffff80', { acknowledge: true });
         }
     }
@@ -3472,7 +3489,7 @@ export class Game {
     private makeRecordingHeader(): RecordingHeaderV4 {
         return { version: 4, recordedAt: Date.now(), seed: this.currentSeed, mode: this.mode,
             initialLevel: { kind: 'dungeon', depth: 1 }, extensions: this.extensionRuntime ? structuredClone(this.extensionRuntime.manifest) : null,
-            codec: { wholeRun: 5, foundation: 9, origin: 2 }, digestAlgorithm: 'sha256-c5-merkle-v1', digestChunk: 256, checkpointPeriod: 2048,
+            codec: { wholeRun: 6, foundation: 10, origin: 2 }, digestAlgorithm: 'sha256-c5-merkle-v1', digestChunk: 256, checkpointPeriod: 2048,
             initialDigest: mechanicalDigest(this.projectWholeRun(), this.recordingInputState()) };
     }
     private recordInputEvent(action: string, data: unknown, decisions: boolean[]): RecordedInputEvent {
@@ -3546,7 +3563,7 @@ export class Game {
             const world = cloneDigestProjection(projected!) as GameSnapshot; world.savedAt = 0;
             const snapshot: ReplaySnapshotV4 = { afterCommand: event.index + 1, tick: event.tick, simulationTicks: event.simulationTicks,
                 levelRef: structuredClone(event.levelRef), prefixDigest: event.chainDigest, checkpoint: event.fullCheckpoint!,
-                snapshotCodec: 'brogue-web-whole-run-v5', snapshotDigest: worldSnapshotHash(world), world, inputState: projectedInput! };
+                snapshotCodec: 'brogue-web-whole-run-v6', snapshotDigest: worldSnapshotHash(world), world, inputState: projectedInput! };
             const state = recordingState(this); state.snapshots = boundedSnapshots([...state.snapshots, snapshot]);
             state.trustedSnapshots.add(snapshot.snapshotDigest);
         }
@@ -3799,6 +3816,8 @@ export class Game {
             // controlled callbacks remain entirely synchronous, including refusals.
             if(isStructureFixtureCommand(this,data)){const outcome=executeStructureFixtureCommand(this,data);setWorldWorkError(this,outcome.ok?null:outcome.code);}
             else if (isWorldRestCommand(this,data)) yield* this.executeWorldRestCommandStages(data);
+            else if (isEdibleFixtureCommand(this,data)) transactEdible(this,()=>executeEdibleFixtureCommand(this,data));
+            else if (isEdibleCommand(this,data)) yield* this.executeEdibleCommandStages(data);
             else if (isWorldWorkCommand(this,data)) yield* this.executeWorldWorkCommandStages(data);
             else if (isActorParryCommand(this,data)) {
                 const plan=prepareActorParryCommand(this,data);
@@ -3894,6 +3913,19 @@ export class Game {
         this.updateVision();
     }
 
+    private *executeEdibleCommandStages(data:unknown):CommandStages<void> {
+        setWorldWorkError(this,null);const first=prepareEdibleCommand(this,data);if(!first.outcome.ok){setWorldWorkError(this,first.outcome.code);return;}
+        let plan=first;
+        if(first.confirm){const message=i18next.t('ext.foundation.edible.confirm.overfeed');
+            if(!this.replayRecording){const yes=yield {message,recordDecision:false};plan=prepareEdibleCommand(this,data);
+                if(!plan.outcome.ok||plan.canonical!==first.canonical){setWorldWorkError(this,'C5_STALE');return;}
+                const risk:ControlledActionRisk={kind:'edible-overfeed',target:{kind:'creature',id:plan.feedTargetId!},message};const state=recordingState(this);
+                state.suppliedAnswers={request:null,answers:[{risk,decision:yes}],cursor:0};try{if(!(yield* this.requestConfirm(message,risk)))return;}finally{state.suppliedAnswers=null;}
+            }else if(!(yield* this.requestConfirm(message)))return;
+        }
+        if(!plan.outcome.ok)return;const outcome=commitEdibleCommand(this,plan.outcome.value);if(!outcome.ok){setWorldWorkError(this,outcome.code);return;}
+        if(outcome.value)this.playerTurnEnded();
+    }
     private *executeWorldWorkCommandStages(data:unknown):CommandStages<void> {
         setWorldWorkError(this,null);const first=prepareWorldWorkCommand(this,data);
         if(!first.outcome.ok){setWorldWorkError(this,first.outcome.code);return;}
@@ -4294,7 +4326,7 @@ export class Game {
             || !Number.isSafeInteger(request.actorId) || request.actorId !== this.player.id
             || !['attack', 'move', 'wait', 'search'].includes(request.action)
             || !request.target || typeof request.target !== 'object'
-            || this.interactionActive || this.isGameOver || this.player.hp <= 0 || this.player.hasStatus('paralyzed')
+            || this.interactionActive || this.isGameOver || this.player.hp <= 0 || isIncapacitated(this.player)
             || this.isAdvancing || this.isInputLocked() || logger.pendingAcknowledgment
             || this.pendingIdentify || this.pendingEnchantment || this.pendingArcana || this.pendingUseConfirm
             || this.isInventoryOpen || this.isThrowing || this.throwItemTarget || this.referenceScreen) return false;
@@ -4416,7 +4448,7 @@ export class Game {
         if (action === 'cycle_target') { this.handleExamineNearest(); return; }
         if (action === 'confirm_target' || action === 'cancel_target') return;
 
-        if (this.player.hasStatus('paralyzed') && action !== 'toggle_inventory' && action !== 'escape') {
+        if (isIncapacitated(this.player) && action !== 'toggle_inventory' && action !== 'escape') {
             // Loaded/test states may already be paralyzed. The scheduler drains
             // the entire forced wait; the attempted action is not performed.
             timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
@@ -4945,11 +4977,11 @@ export class Game {
                 const isFlying = this.player.hasStatus('flying') || this.player.hasStatus('levitating');
                 // F-1 跨层判定：火盖在深水/岩浆上不改变"够不着"判据
                 if (cell && cell.layers.includes(TerrainType.WATER_DEEP) && !isFlying) {
-                    logger.log(i18next.t('item.deep_water_reach', { defaultValue: `The ${item.name} is deep underwater.` }), '#aaaaaa');
+                    logger.log(i18next.t('item.deep_water_reach', { name: item.displayName, defaultValue: `The ${item.displayName} is deep underwater.` }), '#aaaaaa');
                     return;
                 }
                 if (cell && cell.layers.includes(TerrainType.LAVA) && !isFlying && !this.player.hasStatus('immune_fire')) {
-                    logger.log(i18next.t('item.lava_reach', { defaultValue: `The ${item.name} is submerged in lava.` }), '#ff4444');
+                    logger.log(i18next.t('item.lava_reach', { name: item.displayName, defaultValue: `The ${item.displayName} is submerged in lava.` }), '#ff4444');
                     return;
                 }
 
@@ -5010,7 +5042,7 @@ export class Game {
         }
         if (previous && !this.unequipItem(previous, false)) return;
         if (this.player.equip(item, false)) {
-            logger.log(i18next.t('item.equip', { name: item.name, defaultValue: `You equipped the ${item.name}.` }), '#88ff88');
+            logger.log(i18next.t('item.equip', { name: item.displayName, defaultValue: `You equipped the ${item.displayName}.` }), '#88ff88');
             // B-1a：CE Items.c:8583-8586——clairvoyance/light/stealth 三戒指戴上
             // 即 identifyItemKind；正附魔实例仍未知。清单在
             // ItemLoader.INSTANT_ID_RING_KINDS。CE 无消息，静默亮。
@@ -5039,7 +5071,7 @@ export class Game {
             timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
             this.playerTurnEnded();
         } else {
-            logger.log(i18next.t('item.equip_fail', { name: item.name, defaultValue: `You cannot equip the ${item.name}.` }), '#ff8888');
+            logger.log(i18next.t('item.equip_fail', { name: item.displayName, defaultValue: `You cannot equip the ${item.displayName}.` }), '#ff8888');
         }
     }
 
@@ -5070,7 +5102,7 @@ export class Game {
         this.syncEquipmentStatuses();
         this.needsRender = true;
         if (endTurn) {
-            logger.log(i18next.t('item.unequip', { name: item.name, defaultValue: `You took off the ${item.name}.` }), '#aaaaaa');
+            logger.log(i18next.t('item.unequip', { name: item.displayName, defaultValue: `You took off the ${item.displayName}.` }), '#aaaaaa');
             // CE unequip() spends one turn; internal unequipItem() does not.
             timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
             this.playerTurnEnded();
@@ -5112,7 +5144,7 @@ export class Game {
             for (const r of promoteOnItemPlaced(this.grid, this.player.loc.x, this.player.loc.y)) {
                 if (r.mutated) this.needsRender = true;
             }
-            logger.log(i18next.t('item.drop', { name: item.name, defaultValue: `Dropped ${item.name}.` }), '#aaaaaa');
+            logger.log(i18next.t('item.drop', { name: item.displayName, defaultValue: `Dropped ${item.displayName}.` }), '#aaaaaa');
             this.needsRender = true;
             // CE Items.c:8390 drop() 以 playerTurnEnded() 收尾——完整回合
             timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
@@ -5438,7 +5470,7 @@ export class Game {
                     // B-1a：CE Items.c:8199-8205 喝药水 autoIdentify（种类亮），
                     // 经 identifyItemKind 走"最后一种类升格"联动。
                     ItemLoader.identifyItemKind(item);
-                    logger.log(i18next.t('item.identified_as', { name: item.name, defaultValue: `It was a ${item.name}!` }), '#00ffff');
+                    logger.log(i18next.t('item.identified_as', { name: item.displayName, defaultValue: `It was a ${item.displayName}!` }), '#00ffff');
                 }
             }
 
@@ -5455,16 +5487,28 @@ export class Game {
     }
 
     private *eatItemStages(item: Item): CommandStages<void> {
+        if(edibleDefinition(this,item)){yield* this.consumeEdibleStages(item);return;}
         if(this.rejectMaterialUse(item))return;
         if (this.interactionActive) return;
         if (this.isInputLocked() || this.isGameOver || this.player.hp <= 0
-            || this.player.hasStatus('paralyzed')) return;
+            || isIncapacitated(this.player)) return;
         if (!(yield* this.consumeFoodStages(item, true))) return;
         // CE Items.c:7633 apply()：FOOD 分支后统一 playerTurnEnded()。
         timeSystem.currentTick += nativeStat(this.player,'native.move-speed');
         this.playerTurnEnded();
     }
 
+    private *consumeEdibleStages(item:Item):CommandStages<void> {
+        if(this.interactionActive||this.isInputLocked()||this.isGameOver||this.player.hp<=0||isIncapacitated(this.player)||!this.player.inventory.items.includes(item))return;
+        const definition=edibleDefinition(this,item)!;
+        if(STOMACH_SIZE-this.player.nutrition<confirmationSatiety(this,definition)){
+            const before=inventoryStamp(this.player.inventory.items);
+            if(!(yield* this.requestConfirm(i18next.t('ext.foundation.edible.confirm.not_hungry'))))return;
+            if(before!==inventoryStamp(this.player.inventory.items)){setWorldWorkError(this,'C5_STALE');return;}
+        }
+        try{transactEdible(this,()=>consumeEdible(this,item));}catch(error){setWorldWorkError(this,error instanceof World5Error?error.code:'C5_PROVIDER');return;}
+        this.playerTurnEnded();
+    }
     /** CE Items.c:7477-7505; automatic eating uses the same nutrition and message path. */
     private consumeFood(item: Item, confirm: boolean): boolean {
         if (this.hasPendingConfirmation) return false;
@@ -5504,7 +5548,7 @@ export class Game {
         if (!this.player.inventory.items.includes(item)) return;
         if ((item as Item & { consumableId?: string }).consumableId === 'scroll_of_enchantment'
             && (this.isInputLocked() || this.isGameOver || this.player.hp <= 0
-                || this.player.hasStatus('paralyzed') || this.pendingIdentify || this.pendingArcana)) return;
+                || isIncapacitated(this.player) || this.pendingIdentify || this.pendingArcana)) return;
         // B-1c：CE Items.c:7757-7767——同款恶意品确认（读卷轴分支）。
         if (this.gateMalevolentUse(item, confirmed)) return;
 
@@ -5652,7 +5696,7 @@ export class Game {
                     && trueId !== 'scroll_of_enchantment'
                     && trueId !== 'scroll_of_identify') {
                     ItemLoader.identifyItemKind(item);
-                    logger.log(i18next.t('item.was_a', { name: item.name, defaultValue: `It was a ${item.name}!` }), '#00ffff');
+                    logger.log(i18next.t('item.was_a', { name: item.displayName, defaultValue: `It was a ${item.displayName}!` }), '#00ffff');
                 }
             }
 
@@ -5666,7 +5710,7 @@ export class Game {
     public useArcanaItem(item: Item) {
         if(this.rejectMaterialUse(item))return;
         if (this.interactionActive) return;
-        if (this.isInputLocked() || this.isGameOver || this.player.hp <= 0 || this.player.hasStatus('paralyzed')
+        if (this.isInputLocked() || this.isGameOver || this.player.hp <= 0 || isIncapacitated(this.player)
             || this.pendingIdentify || this.pendingEnchantment || this.pendingArcana || !this.player.inventory.items.includes(item)) return;
         if (
             item.category !== ItemCategory.WAND
@@ -5681,7 +5725,7 @@ export class Game {
         if (item.category === ItemCategory.CHARM) {
             const remaining = item.cooldownRemaining ?? 0;
             if (remaining > 0) {
-                logger.log(i18next.t('arcana.cooldown', { name: item.name, turns: remaining, defaultValue: `${item.name} is on cooldown (${remaining} turns).` }), '#aaaaaa');
+                logger.log(i18next.t('arcana.cooldown', { name: item.displayName, turns: remaining, defaultValue: `${item.displayName} is on cooldown (${remaining} turns).` }), '#aaaaaa');
                 return;
             }
 
@@ -5769,7 +5813,7 @@ export class Game {
         const pending = this.pendingArcana;
         if (!pending || this.isInputLocked()) return null;
         const item = pending.item, cursor = { ...pending.cursor };
-        if (this.isGameOver || this.player.hp <= 0 || this.player.hasStatus('paralyzed')
+        if (this.isGameOver || this.player.hp <= 0 || isIncapacitated(this.player)
             || !this.player.inventory.items.includes(item)) {
             this.cancelArcanaSelection();
             return null;
@@ -6560,6 +6604,7 @@ export class Game {
                     copy ? staged[stageIndex]!.parts[partIndex]!.actor!.id : core.id, undefined, copy);
             if (nextId > firstId) ensureEntityIdAbove(nextId - 1);
             this.monsters = [...this.monsters, ...created];
+            triggerActorNeeds(this,liveStages.flat(),'group-changed');
             if (!copy) {
                 for (const actor of oldActors.filter(a => !retiredIds.includes(a.id))) {
                     markStatsDirty(actor);
@@ -7393,6 +7438,7 @@ export class Game {
      * between the whole kind and this item. The UI asks before accepting text;
      * the final recorded operation (call/inscribe) encodes that explicit choice. */
     public itemCallMode(item: Item): 'kind' | 'inscribe' | 'choice' | null {
+        if(edibleDefinition(this,item))return knowledgeState(this,item.worldItem!.definitionId)==='known'?null:'kind';
         const kindId = item.consumableId ?? item.identityId;
         const kindKnown = !!kindId && ItemLoader.identifiedItems.has(kindId);
         if (item.category === ItemCategory.POTION || item.category === ItemCategory.SCROLL) {
@@ -7442,6 +7488,7 @@ export class Game {
 
     /** Name an unidentified kind; inscribeItem names only the selected instance. */
     public callItem(item: Item, title: string): boolean {
+        if(edibleDefinition(this,item)){if(this.interactionActive)return false;if(knowledgeState(this,item.worldItem!.definitionId)==='known'){logger.log(i18next.t('item.already_known'),'#aaaaaa');return false;}try{return transactEdible(this,()=>callEdible(this,item,title));}catch{setWorldWorkError(this,'C5_PROVIDER');return false;}}
         if (this.interactionActive) return false;
         const kindId = ((item as any).consumableId ?? (item as any).identityId) as string | undefined;
         const hasKindTable = item.category === ItemCategory.POTION || item.category === ItemCategory.SCROLL
@@ -7943,7 +7990,7 @@ export class Game {
     }
 
     public enterThrowMode(item: Item) {
-        if(this.rejectMaterialUse(item))return;
+        if(!edibleDefinition(this,item)&&this.rejectMaterialUse(item))return;
         if (this.interactionActive) return;
         this.isThrowing = true;
         this.throwItemTarget = item;
@@ -8041,7 +8088,7 @@ export class Game {
     }
 
     private *throwItemAtStages(item: Item, tx: number, ty: number): CommandStages<void> {
-        if(this.rejectMaterialUse(item))return;
+        if(!edibleDefinition(this,item)&&this.rejectMaterialUse(item))return;
         if (this.interactionActive) return;
         this.isThrowing = false;
         this.throwItemTarget = null;
@@ -8080,6 +8127,7 @@ export class Game {
         // 再更新背包。堆叠 >1：数量 -1，克隆件（quantity=1）起飞；
         // 最后一件：整件移出背包（已装备则先卸下）。
         const thrown = prepareThrownItem(this.player, item, origin, false);
+        bindEdibleItem(this,thrown);
         thrown.flags = [...new Set([...(thrown.flags ?? []), 'ITEM_PLAYER_AVOIDS'])];
 
         // —— 弹道（CE throwItem，Items.c:6882-6947）——
@@ -8187,8 +8235,8 @@ export class Game {
                     if (!ItemLoader.identifiedItems.has(trueId ?? '')) {
                         ItemLoader.identifyItemKind(thrown);
                         logger.log(i18next.t('item.was_a', {
-                            name: thrown.name,
-                            defaultValue: `It was a ${thrown.name}!`
+                            name: thrown.displayName,
+                            defaultValue: `It was a ${thrown.displayName}!`
                         }), '#00ffff');
                     }
                 }
@@ -8260,6 +8308,7 @@ export class Game {
         const dropLoc = this.qualifyingThrowLanding({ x, y });
         thrown.loc = { ...dropLoc };
         this.items.push(thrown);
+        if(edibleDefinition(this,thrown)){const flags=cellTerrainFlags(this.grid,thrown.x,thrown.y);const heat=heatSources(this,false).some(h=>h.at.x===thrown.x&&h.at.y===thrown.y);if(flags&T_IS_FIRE||heat){queueFireContact(this,thrown,heat?'heat-source-throw':'thrown');drainFireContacts(this);}}
 
         this.needsRender = true;
         // CE Items.c:7173 throwItem() 以 playerTurnEnded() 收尾——完整回合
@@ -8690,7 +8739,7 @@ export class Game {
         if (!previouslyKnown && weapon.runicKnown) {
             logger.log(i18next.t('runic.weapon.identified', {
                 name: weapon.displayName,
-                defaultValue: `Your ${weapon.name} must be ${weapon.displayName}.`
+                defaultValue: `Your ${weapon.displayName} must be ${weapon.displayName}.`
             }), '#cccc99');
         }
     }
@@ -9382,8 +9431,8 @@ export class Game {
                     weapon.quiverNumber = rng.randRange(1, 60000);
                 }
                 logger.log(i18next.t('combat.weapon_weakens', {
-                    weapon: weapon.name,
-                    defaultValue: `your ${weapon.name} weakens!`
+                    weapon: weapon.displayName,
+                    defaultValue: `your ${weapon.displayName} weakens!`
                 }), '#646432'); // CE itemMessageColor {100,100,50}（Globals.c:281）
             }
         }
@@ -9524,9 +9573,10 @@ export class Game {
     private moveEntrancedMonsters(dx: number, dy: number): void {
         for (const monster of [...this.monsters]) {
             if (this.isGameOver) break;
+            if (isDeparting(this,monster.spatial?.bodyMember?.groupId ?? monster.id)) continue;
             if (monster.spatial?.bodyMember) {
                 if (this.isBodyDecisionOwner(monster.id) && monster.hp > 0 && !monster.isDormant && !monster.isCaged
-                    && monster.hasStatus('entranced') && !monster.hasStatus('paralyzed') && !monster.hasStatus('stuck') && (dx || dy))
+                    && monster.hasStatus('entranced') && !isIncapacitated(monster) && !monster.hasStatus('stuck') && (dx || dy))
                     this.tryMoveBodyCore(monster, { x: monster.x - dx, y: monster.y - dy });
                 continue;
             }
@@ -10547,6 +10597,8 @@ export class Game {
             && !m.boundToLeader && !m.carriedMonster) {
             logger.log(i18next.t('death.ally_loss', { defaultValue: 'You feel a sense of loss.' }), '#ff8888');
         }
+        detachActorNeeds(this,m.id,'death');
+        if(this.extensionRuntime){const s=peekEdibleState(this.extensionRuntime);if(s.timedStats||s.departures){if(s.timedStats)s.timedStats.rows=s.timedStats.rows.filter(r=>r.actorId!==m.id);if(s.departures)s.departures.active=s.departures.active.filter(r=>r.actorId!==m.id);this.extensionRuntime.edibleDirty();}}
         m.deathProcessed = true; // MB_HAS_DIED / occupancy removal
         if (this.extensionRuntime) this.extensionRuntime.emit('kill', {
             creature: creatureView(m, this.player.id), sourceId: this.extensionRuntime.sourceId, administrative, origin: death!.origin,
@@ -10878,6 +10930,7 @@ export class Game {
                 logHungerTransition: (transition) => game.logHungerTransition(transition),
                 consumeFood: (item, prompt) => game.consumeFood(item, prompt),
                 playerTurnEnded: () => game.playerTurnEnded(),
+                settleEdibleClocks: () => {settleTimedStats(game);settleActorNeeds(game);settleDepartures(game);},
                 monstersApproachStairs: () => game.monstersApproachStairs(),
                 wpContext: () => game.wpContext(),
                 monstersFall: () => game.monstersFall(),
@@ -11227,7 +11280,7 @@ export class Game {
         // to that same command. Drain forced turns synchronously (P2-4), before
         // recording/replay commits its final checkpoint. An aborted advancement
         // (including falling) keeps its existing early-return semantics.
-        if (!aborted && !this.isGameOver && this.player.hp > 0 && this.player.hasStatus('paralyzed')) {
+        if (!aborted && !this.isGameOver && this.player.hp > 0 && isIncapacitated(this.player)) {
             playerTurnEnded(this.timePorts(), true);
         }
         if (this.extensionRuntime) this.collectExtensionComponents();
@@ -11367,6 +11420,7 @@ export class Game {
     /** Saves are turn-boundary checkpoints. A suspended JS generator cannot be
      * encoded; callers may retry once its existing animation has completed. */
     public toSnapshot(): GameSnapshot {
+        if(fireContactPending(this))throw new World5Error('C5_BUSY','fireContactQueue');
         assertNoActorActionFixture(this);
         if (this.world5) assertWorldLevelOwnership(this.activeLevelState(), this.levels, { monsters: [...this.pendingFallenByDepth.values()].flat(), items: [...this.pendingFallenItemsByDepth.values()].flat() });
         validateProductionActorActionSession(this);
@@ -11537,7 +11591,7 @@ export class Game {
                 }
                 if (world.gate) {
                     const target = world.entities.find(entity => entity.id === world.gate!.targetEntityId), activeGrid = restored.get(snapshot.depth)!.grid;
-                    if (snapshot.run.isGameOver || decodedPlayer.hp <= 0 || decodedPlayer.hasStatus('paralyzed')
+                    if (snapshot.run.isGameOver || decodedPlayer.hp <= 0 || isIncapacitated(decodedPlayer)
                         || !target || target.depth !== snapshot.depth || !activeGrid.getCell(target.x,target.y)?.isVisible
                         || distanceToFootprint(decodedPlayer, target) > target.interactionDistance
                         || !hasInteractionLine(activeGrid,decodedPlayer.loc,target)) throw new Error('Invalid saved interaction gate');
@@ -11545,7 +11599,7 @@ export class Game {
                 extensions.validateWorld([decodedPlayer, ...extensionCreatures], { depth: snapshot.depth, turn: snapshot.run.absoluteTurnNumber,
                     isGameOver: snapshot.run.isGameOver, nextEntityId: snapshot.run.nextEntityId });
                 if(snapshot.run.world5){const level=restored.get(snapshot.depth)!;
-                    const candidate=Object.assign({},{player:decodedPlayer,grid:level.grid,depth:snapshot.depth,items:level.items,monsters:level.monsters,dormantMonsters:level.dormantMonsters,
+                    const candidate=Object.assign({},{currentSeed:snapshot.seed,player:decodedPlayer,grid:level.grid,depth:snapshot.depth,items:level.items,monsters:level.monsters,dormantMonsters:level.dormantMonsters,
                         levels:restored,currentLevelDepth:snapshot.depth,pendingFallenByDepth:new Map(snapshot.pendingFallenByDepth.map(q=>[q.depth,q.monsters.map(m=>entityGraph.monsters.get(m.id)!)])),pendingFallenItemsByDepth:new Map(snapshot.pendingFallenItemsByDepth.map(q=>[q.depth,q.items.map(i=>entityGraph.items.get(i.id)!)])),purgatory:(snapshot.purgatory??[]).map(m=>entityGraph.monsters.get(m.id)!),
                         world5:snapshot.run.world5,autoAction:snapshot.run.autoAction,actorActions:snapshot.run.actorActions,worldWorkDetails:snapshot.run.worldWorkDetails,worldWorkFacts:snapshot.run.worldWorkFacts,extensionRuntime:extensions,worldContainerItems:new Map(snapshot.run.world5.containers.flatMap(c=>c.itemIds.map(id=>[id,entityGraph.items.get(id)!]))) });
                     validateWorldWorkReferences(candidate as unknown as Game);
@@ -11624,7 +11678,7 @@ export class Game {
         this.currentLevelAwaySince = active.awaySince!; this.pendingCaughtFireCells = active.pendingCaughtFireCells!;
         this.displacementTrapDepressions = levelRows.some(row=>row.trapDepressions.length) ? new WeakMap() : undefined;
         if (this.displacementTrapDepressions) for (const saved of levelRows) this.displacementTrapDepressions.set(restored.get(saved.depth)!.grid, new Set(saved.trapDepressions));
-        restored.delete(this.depth); this.levels = restored;
+        restored.delete(this.depth); this.levels = restored;clearFireContacts(this);
         this.pendingFallenItemsByDepth = new Map(snapshot.pendingFallenItemsByDepth.map(q =>
             [q.depth, q.items.map(item => entityGraph.items.get(item.id)!)]));
         this.pendingFallenByDepth = new Map(snapshot.pendingFallenByDepth.map(q =>
@@ -11734,6 +11788,7 @@ export class Game {
             extensions.attachCreature(this.player, false);
             for (const creature of extensionCreatures) extensions.attachCreature(creature, false);
             extensions.loaded();
+            forEachItemRoot(this,item=>bindEdibleItem(this,item));
         }
         bindPhasedAttackProduction(this);
         markProductionActorActionResume(this);
@@ -11823,6 +11878,7 @@ export class Game {
             }
         }
         this.setBurningDuration(entity, Math.max(current, Game.BURNING_DURATION_TURNS));
+        if(current===0&&entity===this.player)igniteEdibleInventory(this);
     }
 
     /**
@@ -12361,11 +12417,13 @@ export class Game {
         for (const item of [...this.items]) {
             if (this.absoluteTurnNumber < item.spawnTurnNumber) continue;
             const flags = cellTerrainFlags(this.grid, item.x, item.y);
+            if(edibleDefinition(this,item)){if(flags&T_LAVA_INSTA_DEATH)queueFireContact(this,item,'lava');else if(!lavaOnly&&(flags&T_IS_FIRE))queueFireContact(this,item,'floor-burning');continue;}
             if (((flags & T_LAVA_INSTA_DEATH) && item.category !== ItemCategory.AMULET)
                 || (!lavaOnly && (flags & T_IS_FIRE) && item.category === ItemCategory.SCROLL)) {
                 this.burnFloorItem(item);
             }
         }
+        drainFireContacts(this);
     }
 
     private destroyFloorItemsInLava(): void {
@@ -12570,7 +12628,7 @@ export class Game {
             if (!target || fleeing || count === 4 || core.hp <= 0 || target.hp <= 0 || isActorStaggered(this, core.id)) break;
             const slot = group.members.find(s => s.partId === partId)!;
             const source = this.monsters.find(c => c.id === slot.entityId);
-            if (!source || bodyStatusDisables(source,'attacks') || slot.life !== 'active' || slot.readyInTicks > 0 || source.hasStatus('paralyzed') || source.hasStatus('entranced')
+            if (!source || bodyStatusDisables(source,'attacks') || slot.life !== 'active' || slot.readyInTicks > 0 || isIncapacitated(source) || source.hasStatus('entranced')
                 || source.hasBehavior('MONST_IMMOBILE') || source.hasBehavior('MONST_TURRET')
                 || (source.spatial?.actionLockInTicks ?? 0) > 0) continue;
             const profiles=this.bodyAttackProfileIds(source);
@@ -12621,14 +12679,14 @@ export class Game {
 
     /** One group placement for autonomous or entranced motion. Individual
      * limb relocation is never an alternate movement path. */
-    private tryMoveBodyCore(core: Monster, destinations: Pos | readonly Pos[], accept?: (at: Pos) => boolean, confused = false, forced = false, checkpointed = false): boolean {
+    private tryMoveBodyCore(core: Monster, destinations: Pos | readonly Pos[], accept?: (at: Pos) => boolean, confused = false, forced = false, checkpointed = false, departureStair?: Pos): boolean {
         const group = this.bodyGroups?.find(g => g.coreId === core.id);
         if (!group) return false;
         const active = this.orderedBodyActors(group,this.monsters);
         if (!forced && !checkpointed && active.some(member => member.hasStatus('stuck'))) {
             let moved = false;
             this.commitBodyTransition('body-web-attempt', () => {
-                moved = this.tryMoveBodyCore(core, destinations, accept, confused, forced, true);
+                moved = this.tryMoveBodyCore(core, destinations, accept, confused, forced, true, departureStair);
             }, rng.getState(), true);
             return moved;
         }
@@ -12650,6 +12708,7 @@ export class Game {
                 if (accept && !accept(at)) continue;
                 const result = movement.planStep(group.groupId, at, { forced, preferFormation:true, allowsTerrain: (id, p) => {
                     const actor = this.monsters.find(c => c.id === id)!;
+                    if (departureStair) return this.departureTerrainAllowed(actor,p,departureStair);
                     return footprintContains(actor,p) || (forced ? !(cellTerrainFlags(this.grid,p.x,p.y)&T_OBSTRUCTS_PASSABILITY) : actor.canEnterMovementTerrain(this, p.x, p.y));
                 } });
                 if (result.status !== 'planned') continue;
@@ -12661,16 +12720,22 @@ export class Game {
             let committed = false;
             this.commitBodyTransition('body-step-environment', () => {
                 const scope = new Set<string>(), cohort = this.orderedBodyActors(group, this.monsters), identity = JSON.stringify(group.members);
-                if (!forced) core.ticksUntilTurn = plan.costTicks;
+                // The departure plan validates the unchanged cohort before
+                // placement. Its timer is committed with the successful move.
+                if (!forced && !departureStair) core.ticksUntilTurn = plan.costTicks;
                 committed = movement.commit(plan, (actors, previous) => {
                     const anchors = new Map(actors.map(actor => [actor, { ...actor.loc }]));
                     for (const actor of actors) {
-                        if (actor.hp > 0) this.applyEnvironmentalEffects(actor, false, scope, previous.get(actor));
+                        if (actor.hp > 0) {
+                            if (departureStair) this.applyEntanglementFromTerrain(actor);
+                            else this.applyEnvironmentalEffects(actor, false, scope, previous.get(actor));
+                        }
                         if (core.hp <= 0 || !this.bodyGroups?.includes(group) || JSON.stringify(group.members) !== identity
                             || cohort.some(member => !this.monsters.includes(member) || member.hp <= 0 || member.x !== anchors.get(member)!.x || member.y !== anchors.get(member)!.y)) return false;
                     }
                     return true;
                 });
+                if (committed && !forced && departureStair) core.ticksUntilTurn = plan.costTicks;
             }, randomBeforePlanning, true);
             if (!committed) return false;
             this.needsRender = true;
@@ -12729,6 +12794,7 @@ export class Game {
             for (let i = 0; i < created.length; i++) created[i]!.spatial!.bodyMember = { groupId: core.id, partId: candidates[i]!.partId };
             (this.bodyGroups ??= []).push(group);
             this.monsters = [...this.monsters, ...created];
+            triggerActorNeeds(this,created,'group-changed');
             runtime.commitGeneration(token);
         } catch (error) {
             restore();
@@ -12814,7 +12880,7 @@ export class Game {
         const definition = this.spatialCatalog.body(group.bodyDefinitionId), actors = this.orderedBodyActors(group, this.monsters);
         const core = actors[0]!, spatial = new CreatureSpatial(this.spatialWorldPort(), this.spatialCatalog);
         try {
-            if (core.hasStatus('paralyzed') || core.spatial!.actionLockInTicks || bodyStatusDisables(core,'movement')
+            if (isIncapacitated(core) || core.spatial!.actionLockInTicks || bodyStatusDisables(core,'movement')
                 || bodyMoveTicks(definition,group,this.spatialCatalog,nativeStat(core,'native.move-speed')) <= 0
                 || definition.parts.filter(p=>p.providesSupport && group.members.some(s=>s.partId===p.partId && s.life==='active')).length < definition.minSupportParts) return false;
             const from = actor.spatial!.pose as RigidPose, pose = rotationStages(from, turns)[0]!;
@@ -12964,6 +13030,7 @@ export class Game {
      * 忘调的表现是：该层上任何 DFF_ACTIVATE_DORMANT_MONSTER 的 DF 静默不唤醒。
      */
     private bindDormantAwakener(): void {
+        for(const actor of [this.player,...this.monsters,...this.dormantMonsters])bindSlumberWake(actor,()=>{if(actor===this.player||this.grid.getCell(actor.x,actor.y)?.isVisible)logger.log(i18next.t(actor===this.player?'ext.foundation.status.slumber_wake_player':'ext.foundation.status.slumber_wake_monster',{monster:actor.name}),'#cccccc');});
         this.bindMovementRegionSession();
         setDormantAwakener(this.grid, (origin, builtCells) =>
             this.awakenDormantMonstersAt(origin, builtCells));
@@ -12997,6 +13064,7 @@ export class Game {
                 if (creature) this.applyDungeonFeatureContact(creature, scope);
             },
             burnItems: pos => this.burnFloorItemsAt(pos),
+            spawnSettled: () => drainFireContacts(this),
             caughtFire: pos => {
                 this.pendingCaughtFireCells ??= [];
                 if (!this.pendingCaughtFireCells.some(p => p.x === pos.x && p.y === pos.y)) this.pendingCaughtFireCells.push(pos);
@@ -13113,7 +13181,9 @@ export class Game {
     /** Architect.fillSpawnMap burns only ITEM_FLAMMABLE (CE: scrolls).
      * Falling/drifting/enchant swaps remain in the floor-item time phase. */
     private burnFloorItemsAt(pos: Pos): void {
+        for(const item of this.items.filter(i=>i.x===pos.x&&i.y===pos.y&&edibleDefinition(this,i)).sort((a,b)=>a.id-b.id))queueFireContact(this,item,'spawn-fire');
         for (const item of [...this.items]) {
+            if(edibleDefinition(this,item))continue;
             if (item.x === pos.x && item.y === pos.y && item.category === ItemCategory.SCROLL) this.burnFloorItem(item);
         }
     }
@@ -13192,6 +13262,9 @@ export class Game {
         const form = (monsterData as MonsterData[]).find(data => data.id === candidate.typeId);
         if (form?.abilityFlags?.includes('MA_ENTER_SUMMONS')) candidate.restoreSummonerForm(form);
         this.monsters.unshift(candidate);
+        triggerActorNeeds(this, candidate.spatial?.bodyMember
+            ? this.monsters.filter(m => m === candidate || m.spatial?.bodyMember?.groupId === candidate.spatial!.bodyMember!.groupId)
+            : [candidate], 'ally-gained');
         this.needsRender = true;
         return true;
     }
@@ -13401,6 +13474,60 @@ export class Game {
         if(this.player.x!==s.anchor.x||this.player.y!==s.anchor.y)return 'moved';
         const d=restPointDefinition(this,r.definitionId);if(Math.max(Math.abs(this.player.x-e.x),Math.abs(this.player.y-e.y))>d.interactionDistance||!hasInteractionLine(this.grid,this.player.loc,e))return 'distance';
         if(worldThreat(this))return 'threat';if(this.disturbed)return 'disturbed';return null;
+    }
+    public get worldWorkCommandScopeEpoch():number {return this.worldWorkCommandEpoch;}
+    public requestEdibleRender():void {this.prepareFlareKnowledge();this.needsRender=true;}
+    public checkpointEdibleWorld():()=>void {const native=this.checkpointCombatFactWorld(),world=this.checkpointWorldWork();return()=>{native();world();for(const i of [...this.items,...this.player.inventory.items])bindEdibleItem(this,i);};}
+    public removeEdibleFloorItem(item:Item):void {const index=this.items.indexOf(item);if(index>=0){this.items.splice(index,1);this.refreshDungeonFeatureCell({...item.loc});}}
+    public applyEdibleStatus(target:Player|Monster,status:StatusId,turns:number):void {
+        bindSlumberWake(target,()=>{if(target===this.player||this.grid.getCell(target.x,target.y)?.isVisible)logger.log(i18next.t(target===this.player?'ext.foundation.status.slumber_wake_player':'ext.foundation.status.slumber_wake_monster',{monster:target.name}),'#cccccc');});
+        if(target.hasStatusImmunity(status))return;
+        if(status==='poisoned'){target.addPoison(turns);return;}
+        if(status==='haste'||status==='hasted'){target.setStatusDuration('slowed',0);}
+        if(target===this.player)this.applyTimedStatus(target,status,turns);else this.applyStatusToMonster(target as Monster,status,turns);
+        if(status==='darkness'||status==='telepathy')this.updateVision();
+    }
+    public beginActorDeparture(actor:Monster):void {this.demoteMonsterFromLeadership(actor);actor.leader=null;actor.boundToLeader=false;actor.entersLevelIn=0;notifyProductionActorSourceChanged(this,actor.id);retirePhasedAttackSource(this,actor.id);}
+    /** Trusted ownership across active, cached, purgatory and pending fall roots. */
+    public departureActors():readonly Monster[] {
+        return [...new Set([...this.monsters,...this.dormantMonsters,...this.purgatory,
+            ...[...this.levels.values()].flatMap(l=>[...l.monsters,...l.dormantMonsters??[]]),
+            ...[...this.pendingFallenByDepth.values()].flat()])];
+    }
+    private departureTerrainAllowed(actor:Monster,p:Pos,stair?:Pos):boolean {
+        // Conservative even for immune actors: active departure motion never
+        // triggers damaging contacts, falls, drowning, traps or ignition.
+        const flags=cellTerrainFlags(this.grid,p.x,p.y);
+        if(flags&(T_HARMFUL_TERRAIN|T_LAVA_INSTA_DEATH|T_AUTO_DESCENT|T_IS_DEEP_WATER|T_IS_DF_TRAP|T_SPONTANEOUSLY_IGNITES))return false;
+        // Native monsterAvoids rejects stairs. E26 explicitly permits safe exits.
+        return actor.canEnterMovementTerrain(this,p.x,p.y)||!!stair&&p.x===stair.x&&p.y===stair.y&&!(flags&T_OBSTRUCTS_PASSABILITY);
+    }
+    public canMoveDepartingActor(actor:Monster,at:Pos,stairs=false):boolean {
+        const group=this.bodyGroups?.find(g=>g.coreId===actor.id);
+        return this.canStepFootprint(actor,at,{ignore:new Set(group?this.orderedBodyActors(group,this.monsters):[]),
+            allowsTerrain:p=>this.departureTerrainAllowed(actor,p,stairs?at:undefined)});
+    }
+    public moveDepartingActor(actor:Monster,at:Pos,stairs=false):boolean {
+        if(!this.canMoveDepartingActor(actor,at,stairs))return false;
+        const before={...actor.loc};
+        if(actor.spatial?.bodyMember)this.tryMoveBodyCore(actor,at,undefined,false,false,false,at);
+        else actor.moveForDeparture(at,this);
+        if(actor.x!==before.x||actor.y!==before.y){notifyProductionActorSourceChanged(this,actor.id);this.needsRender=true;}
+        return actor.x!==before.x||actor.y!==before.y;
+    }
+    public departureTurn(actor:Monster):boolean {return departureStep(this,actor);}
+    public retireDepartingActors(ids:ReadonlySet<number>):void {
+        const actors=this.departureActors().filter(a=>ids.has(a.id));
+        for(const actor of actors){
+            if(actor.carriedItem){const item=actor.carriedItem;delete item.fireContactCooldownUntilTurn;const candidates=captiveItemDropCandidates(this,actor.loc,this.items);item.loc={...(candidates.sort((a,b)=>Math.max(Math.abs(a.x-actor.x),Math.abs(a.y-actor.y))-Math.max(Math.abs(b.x-actor.x),Math.abs(b.y-actor.y))||a.y-b.y||a.x-b.x)[0]??actor.loc)};this.items.push(item);actor.carriedItem=null;}
+            if(actor.carriedMonster&&!ids.has(actor.carriedMonster.id)){const passenger=actor.carriedMonster;passenger.loc={...actor.loc};if(!this.monsters.includes(passenger))this.monsters.push(passenger);this.extensionRuntime!.attachCreature(passenger);}
+            actor.doesNotResurrect=true;actor.seized=actor.seizing=false;actor.leader=null;actor.carriedMonster=null;notifyProductionActorSourceChanged(this,actor.id);retirePhasedAttackSource(this,actor.id);this.extensionRuntime!.causality.clearCreature(actor.id);this.extensionRuntime!.retireEdibleActor(actor);this.visibleMonsters.delete(actor);this.everSeenMonsters.delete(actor);this.examinedEntityIds.delete(actor.id);}
+        for(const other of this.monsters){if(other.leader&&ids.has(other.leader.id))other.leader=null;if(other.carriedMonster&&ids.has(other.carriedMonster.id))other.carriedMonster=null;}
+        this.monsters=this.monsters.filter(a=>!ids.has(a.id));this.dormantMonsters=this.dormantMonsters.filter(a=>!ids.has(a.id));this.purgatory=this.purgatory.filter(a=>!ids.has(a.id));
+        for(const level of this.levels.values()){level.monsters=level.monsters.filter(a=>!ids.has(a.id));if(level.dormantMonsters)level.dormantMonsters=level.dormantMonsters.filter(a=>!ids.has(a.id));for(const actor of level.visibleMonsters)if(ids.has(actor.id))level.visibleMonsters.delete(actor);for(const actor of [...level.monsters,...level.dormantMonsters??[]]){if(actor.leader&&ids.has(actor.leader.id))actor.leader=null;if(actor.carriedMonster&&ids.has(actor.carriedMonster.id))actor.carriedMonster=null;}}
+        for(const [depth,list] of this.pendingFallenByDepth)this.pendingFallenByDepth.set(depth,list.filter(a=>!ids.has(a.id)));
+        if(this.bodyGroups){this.bodyGroups=this.bodyGroups.filter(g=>!ids.has(g.coreId));if(!this.bodyGroups.length)delete this.bodyGroups;}
+        this.player.seized=this.player.seized&&this.monsters.some(a=>a.seizing);this.hoveredCell=null;this.hoveredText='';this.needsRender=true;
     }
     public checkpointWorldWork():()=>void {
         // C5 operations never own grid/environment/cache-layer writes. Preserve
@@ -14150,6 +14277,7 @@ export class Game {
         monster = bodyDecisionActor(monster);
         const members = this.bodyStatusContext(monster)?.members() ?? [monster];
         for (const member of members) this.becomeSingleAllyWith(member as Monster);
+        triggerActorNeeds(this,members as Monster[],'ally-gained');
     }
 
     private becomeSingleAllyWith(monster: Monster): void {
@@ -14295,6 +14423,8 @@ export class Game {
             entities.push('x');
         }
 
+        // Nodes use the same knowledge resolver as inventory and fact messages.
+        if(cell.isVisible)for(const e of this.readVisibleInteractables().filter(e=>e.x===x&&e.y===y&&e.displayName))entities.push(e.displayName!);
         // Check items
         if (cell.isVisible) {
             this.items.filter(i => i.loc.x === x && i.loc.y === y)

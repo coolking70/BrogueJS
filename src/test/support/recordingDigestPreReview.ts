@@ -27,7 +27,7 @@ function digestRoot(
 ) {
   return hashJson([
     'c5-root-v1',
-    ['brogue-web-whole-run-v5', 5, 9, 2],
+    ['brogue-web-whole-run-v6', 6, 10, 2],
     hashJson(manifest),
     order.map((d) => domains[d])
   ]);

@@ -1,3 +1,4 @@
+import { isIncapacitated } from '../Status/Incapacitation';
 import { nativeStat } from '../Stats/NativeStatSources';
 import { bodyStatusDisables } from '../Status/BodyStatuses';
 import type { Creature } from '../../entities/Creature';
@@ -115,7 +116,7 @@ export class CompositeMovement {
     private candidates(partId: string, coreAt: Readonly<Pos>, cohort: Cohort, options: CompositeMovementOptions): readonly BodyTrajectory[] {
         const actor = cohort.actors.get(partId)!, constraint = cohort.definition.constraints.find(c => c.childPartId === partId)!;
         const paths: Readonly<Pos>[][] = [[{ ...actor.loc }]];
-        if (options.forced || !(actor.spatial!.actionLockInTicks || actor.hasStatus('stuck') || actor.hasStatus('paralyzed') || bodyStatusDisables(actor,'movement'))) {
+        if (options.forced || !(actor.spatial!.actionLockInTicks || actor.hasStatus('stuck') || isIncapacitated(actor) || bodyStatusDisables(actor,'movement'))) {
             // Enumerate simple paths, rather than discarding an alternative
             // two-step approach to the same anchor before crossing checks.
             for (let i = 0; i < paths.length; i++) {
@@ -155,7 +156,7 @@ export class CompositeMovement {
         const blocked = (reason: Extract<CompositeMoveResult, { status: 'blocked' }>['reason'], branchNodes = 0): CompositeMoveResult =>
             Object.freeze({ status: 'blocked', reason, costTicks, branchNodes });
         if (!options.forced && (cohort.definition.parts.filter(p => p.providesSupport && cohort.actors.has(p.partId)).length < cohort.definition.minSupportParts
-            || core.spatial!.actionLockInTicks || core.hasStatus('stuck') || core.hasStatus('paralyzed') || bodyStatusDisables(core,'movement'))) return blocked('immobile');
+            || core.spatial!.actionLockInTicks || core.hasStatus('stuck') || isIncapacitated(core) || bodyStatusDisables(core,'movement'))) return blocked('immobile');
         // Staying is a real candidate, not permission to skip terrain/region
         // qualification. Validate the whole published starting configuration.
         if ([...cohort.actors.values()].some(actor => !this.spatial.canFitAt(actor, actor.loc, this.options(actor, cohort, options)))) return blocked('terrain');

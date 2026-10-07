@@ -157,10 +157,11 @@
     "isBurning"
   ],
   "derivedSessionServices": {
-    "StatPipeline": "Excluded: cache, diagnostics, actorStatRevision, frozen provider views and hypothetical proposal contexts. Persist only ExtensionSnapshot.foundation.stats in extensions dirty domain."
+    "StatPipeline": "Excluded: cache, diagnostics, actorStatRevision, frozen provider views and hypothetical proposal contexts. Persist only ExtensionSnapshot.foundation.stats in extensions dirty domain.",
+    "EdibleFoundation": "5A4: knowledge/needs/timedStats/departures roots belong to extensions; Item.fireContactCooldownUntilTurn belongs to native. FireContact queue/draining/DF nesting are session, name/appearance/effect/nextDue are derived and excluded."
   },
   "world5Leaves": {
-    "foundation": 9,
+    "foundation": 10,
     "root": "Metadata and clocks excluding the seven per-level economic arrays. Null world keeps root:null.",
     "perLevel": [
       "structures",

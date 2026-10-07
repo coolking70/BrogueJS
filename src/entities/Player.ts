@@ -12,6 +12,7 @@ import { Item, ItemCategory } from '../engine/Items/Item';
 import { rng } from '../engine/Random';
 import { logger } from '../engine/Systems/Logger';
 import type { Grid } from '../engine/Map/Grid';
+import { wakeSlumber } from '../engine/Status/Incapacitation';
 
 // Hunger/regen constants aligned with Brogue CE (Rogue.h:1123-1127)
 export const TURNS_FOR_FULL_REGEN = 300; // Rogue.h:1123
@@ -211,6 +212,7 @@ export class Player extends Creature {
         // Starvation: nutrition exhausted, 1 HP lost per turn (Time.c:2525-2530)
         if (this.nutrition <= 0) {
             const hpBefore = this.hp;
+            wakeSlumber(this);
             this.hp -= 1;
             if (this.extensionHooks) {
                 const hooks = this.extensionHooks;

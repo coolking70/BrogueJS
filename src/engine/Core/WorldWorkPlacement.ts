@@ -1,3 +1,4 @@
+import { placeResourceGroups } from './PlacementGroups';
 /** Foundation level-entry effects, preceding all content enteredLevel hooks. */
 import { worldMessage } from './WorldWork';
 import type { Game } from './Game';
@@ -140,6 +141,11 @@ export function enterWorldWorkLevel(game: Game, firstVisit: boolean): void {
           }
         }
     }
+  }
+  if(firstVisit)placeResourceGroups(game);
+  for(const pack of runtime.worldDefinitionPacks()){
+    const owner=pack.items[0]?.owner??pack.resourceNodes[0]?.owner??pack.edibleItems?.[0]?.owner;
+    if(!owner)continue;
     if (
       game.depth === 1 &&
       firstVisit &&

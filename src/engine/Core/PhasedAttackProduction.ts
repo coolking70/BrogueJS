@@ -1,3 +1,4 @@
+import { isIncapacitated } from '../Status/Incapacitation';
 import type { CombatCapacities } from '../../ext/combatStats';
 import { mirrorWorldWorkTicks, worldWorkClockFinished, interruptWorldWork, interruptWorldWorkAtDepth, selectWorldWorkDecision } from './WorldWork';
 import { bodyStatusDisables } from '../Status/BodyStatuses';
@@ -71,7 +72,7 @@ function eligible(game:Game,source:Creature,session:Session):boolean {
     if (game.isGameOver||game.interactionActive||source.hp<=0||owner.ticksUntilTurn>0||session.scheduler.isBusy(owner.id)
         || isActorStaggered(game,source.id) || nativeRecovery(session.state.actors.find(row=>row.actorId===source.id))>0
         || (source.spatial?.actionLockInTicks ?? 0) > 0
-        ||['paralyzed','entranced','confused'].some(status=>source.hasStatus(status as 'paralyzed'))) return false;
+        ||isIncapacitated(source)||(['entranced','confused'] as const).some(status=>source.hasStatus(status))) return false;
     if (source instanceof Monster && (source.isCaged||source.isDormant||source.deathProcessed
         ||owner instanceof Monster&&(owner.state===MonsterState.ASLEEP||owner.state===MonsterState.FLEEING)
         ||!source.spatial?.bodyMember&&(source.hasBehavior('MONST_IMMOBILE')||source.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')))) return false;
@@ -198,7 +199,7 @@ export function chargeNativeActorAttack(game:Game,actorId:number):boolean {
 export function isActorDodgeProtected(game:Game,actorId:number):boolean {
     const session=sessions.get(game),source=actor(game,actorId);if(!session||!source)return false;
     const row=session.state.actors.find(r=>r.actorId===actorId),bound=session.defenseSources.get(actorId);
-    return !!row&&row.dodgeRemainingTicks>0&&source.hp>0&&!source.hasStatus('paralyzed')&&!source.hasStatus('entranced')
+    return !!row&&row.dodgeRemainingTicks>0&&source.hp>0&&!isIncapacitated(source)&&!source.hasStatus('entranced')
         &&!(source instanceof Monster&&(source.isCaged||source.state===MonsterState.ASLEEP))
         &&!!bound&&bound.actor===source&&bound.depth===game.depth&&bound.revision===actorSourceRevision(source);
 }
@@ -547,7 +548,7 @@ export function validatePhasedAttackGeometry(state:ProductionActorAttackState, d
     const actors=new Map(creatures.map(actor=>[actor.id,actor]));
     for(const row of state.actors){
         const source=actors.get(row.actorId);
-        if(row.parryRemainingTicks>0&&(!source||source.hp<=0||source.hasStatus('paralyzed')||source.hasStatus('entranced')
+        if(row.parryRemainingTicks>0&&(!source||source.hp<=0||isIncapacitated(source)||source.hasStatus('entranced')
             ||(source instanceof Monster&&(source.isCaged||source.state===MonsterState.ASLEEP))
             ||(activeActorIds&&!activeActorIds.has(row.actorId))))throw new Error('Invalid parry source');
         if((row.parryRecoveryRemainingTicks>0||row.staggerRemainingTicks>0)&&(!source||source.hp<=0||source.ticksUntilTurn!==nativeRecovery(row)))throw new Error('Invalid defense recovery mirror');
@@ -573,7 +574,7 @@ export function validatePhasedAttackGeometry(state:ProductionActorAttackState, d
             if(!source)throw new Error('Invalid action source metadata');
             const pending=child.phases.slice(child.phaseIndex).some(phase=>phase.segmentIndex!==null);
             const expected=source instanceof Monster?(bodyProfiles?.(source,sub.attackId) ?? [definitions.nativeProfiles.find(binding=>binding.monsterId===source.typeId)?.profileId]):[definitions.playerProfileId];
-            if(pending && (!expected.includes(sub.profileId??metadata.profileId) || bodyStatusDisables(source,'attacks') || source.hasStatus('paralyzed') || source.hasStatus('entranced') || (source instanceof Monster && source.isCaged)))
+            if(pending && (!expected.includes(sub.profileId??metadata.profileId) || bodyStatusDisables(source,'attacks') || isIncapacitated(source) || source.hasStatus('entranced') || (source instanceof Monster && source.isCaged)))
                 throw new Error('Invalid pending source profile or eligibility');
             if(!sub.lockedCells.length)continue;
             const footprint=spatialOf(source).cells, own=new Set(footprint.map(cell=>`${cell.x},${cell.y}`));
@@ -657,7 +658,7 @@ function nativeRecovery(row:ProductionActorAttackState['actors'][number]|undefin
 }
 function defenseSourceValid(game:Game,session:Session,source:Creature):boolean {
     const bound=session.defenseSources.get(source.id);
-    return source.hp>0&&!source.hasStatus('paralyzed')&&!source.hasStatus('entranced')
+    return source.hp>0&&!isIncapacitated(source)&&!source.hasStatus('entranced')
         &&!(source instanceof Monster&&(source.isCaged||source.state===MonsterState.ASLEEP))
         &&!!bound&&bound.actor===source&&bound.depth===game.depth&&bound.revision===actorSourceRevision(source);
 }

@@ -1,3 +1,4 @@
+import { isIncapacitated, wakeSlumber } from '../engine/Status/Incapacitation';
 import { markStatsDirty } from '../engine/Stats/NativeStatSources';
 import { nativeStat } from '../engine/Stats/NativeStatSources';
 import { nativeRational } from '../engine/Stats/NativeStatSources';
@@ -13,6 +14,7 @@ import { bodySightContact } from '../engine/Combat/BodyPerception';
 import { notifyMonsterDeath, squareListUsers } from '../engine/Core/MonsterLifecycle';
 import { creatureFeatureInfo, emitCreatureFeature } from '../engine/Combat/CreatureFeatures';
 import { updateMonsterState, wanderTowardLastSeen } from '../engine/Combat/MonsterAI';
+import { isDeparting } from '../engine/Core/ActorDeparture';
 /**
  * src/entities/Monster.ts
  * Base Monster class mirroring Brogue's monster initialization
@@ -357,6 +359,7 @@ export class Monster extends Creature {
     public onHitChance: number = 0;
     public onHitDuration: number = 0;
     public override hasStatusImmunity(id: StatusId): boolean {
+        if(id==='slumber')return this.hasStatusImmunity('paralyzed')||this.statusImmunities.has('slumber');
         const natural = (monsterCatalogData as MonsterData[]).find(row => row.id === this.typeId);
         return this.statusImmunities.has(id) && !natural?.statusImmunities?.includes(id);
     }
@@ -428,7 +431,8 @@ export class Monster extends Creature {
 
     public override absorbShieldDamage(amount: number): number {
         const damage = super.absorbShieldDamage(amount);
-        this.interruptCorpseAbsorption(amount);
+        if(amount>0)wakeSlumber(this);
+            this.interruptCorpseAbsorption(amount);
         return damage;
     }
 
@@ -436,6 +440,7 @@ export class Monster extends Creature {
 
     public override takeDamage(amount: number, ignoresProtectionShield = false, grid?: Grid, beforeHpLoss?: (damage: number) => void, damageKind: import('../ext/causality').DamageKind = 'other', ignoresResistance = false): void {
         const commit=()=>{
+            if(amount>0)wakeSlumber(this);
             this.interruptCorpseAbsorption(amount);
             const damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
             // Preserve the original CE damage/blood call in classic runs.
@@ -1288,12 +1293,13 @@ export class Monster extends Creature {
      * CE gates forced following on STATUS_STUCK, independent of terrain.
      */
     public moveEntranced(game: Game, dx: number, dy: number): void {
+        if (isDeparting(game,this.spatial?.bodyMember?.groupId ?? this.id)) return;
         withNativeAttackAction(game, this, () => this.moveEntrancedWithinAction(game, dx, dy));
     }
 
     private moveEntrancedWithinAction(game: Game, dx: number, dy: number): void {
         if (this.hp <= 0 || this.isDormant || !this.hasStatus('entranced')
-            || this.hasStatus('paralyzed') || this.isCaged || (!dx && !dy)) return;
+            || isIncapacitated(this) || this.isCaged || (!dx && !dy)) return;
         if (this.hasStatus('stuck')) return;
         const to = { x: this.loc.x + dx, y: this.loc.y + dy };
         if (this.spatial) {
@@ -1735,6 +1741,23 @@ export class Monster extends Creature {
      * consumes this decision; callers must not select an action or run the
      * native remainder. The scheduler retains its outer disability gates.
      * Busy action-phase boundaries must never run this prelude again. */
+    public moveForDeparture(at:Pos,game:Game):void {
+        // One attempt: no whip/spear/melee path, no second vomit/web struggle.
+        if (this.hasStatus('nauseous') && game.tryVomit(this)) return;
+        if (this.hasStatus('stuck') && footprintSome(this, p => !!(cellTerrainFlags(game.grid,p.x,p.y)&T_ENTANGLES))
+            && !this.hasBehavior('MONST_IMMUNE_TO_WEBS')) {
+            if (!this.isInvulnerable()) this.setStatusDuration('stuck',this.getStatusDuration('stuck')-1);
+            if (this.hasStatus('stuck')) return;
+            for (const p of footprintOf(this)) breakEntanglingTerrain(game.grid,p.x,p.y);
+        }
+        // Commit the safe anchor without terrain promotion/DF side effects.
+        // Departure settlement retires stair arrivals before native contacts.
+        commitCreatureAnchor(this,at,'mutate');
+        surfaceOnDryLand(this,game.grid);
+        if (!(cellTerrainFlags(game.grid,at.x,at.y)&T_ENTANGLES)) this.setStatusDuration('stuck',0);
+        game.applyEntanglementFromTerrain(this);
+    }
+
     public prepareNativeDecision(game: Game, stealthRange: number): boolean {
         assertNativeSpatial(this);
         if (this.hp <= 0) return true;
@@ -1742,13 +1765,14 @@ export class Monster extends Creature {
             this.ticksUntilTurn = this.spatial!.actionLockInTicks!;
             return true;
         }
+        if (game.departureTurn(this)) return true;
         // CE monstersTurn runs this before its own status/AI gates. Time.c's
         // outer scheduler separately withholds actions from disabled monsters.
         if (this.corpseAbsorptionCounter >= 0 && updateMonsterCorpseAbsorption(game, this)) return true;
         emitCreatureFeature(game.grid, this, 'activation');
         surfaceOnDryLand(this, game.grid);
         game.applyEntanglementFromTerrain(this);
-        if (this.hasStatus('paralyzed') || this.hasStatus('entranced') || bodyStatusDisables(this,'decision')) {
+        if (isIncapacitated(this) || this.hasStatus('entranced') || bodyStatusDisables(this,'decision')) {
             if (this.spatial?.bodyMember && this.ticksUntilTurn <= 0) this.ticksUntilTurn = nativeStat(this,'native.move-speed');
             return true;
         }
@@ -1785,6 +1809,7 @@ export class Monster extends Creature {
         return allyShouldPursue(game,this,enemy) ? enemy : null;
     }
     public takeNativeDecision(game: Game): void {
+        if (game.departureTurn(this) || this.spatial?.bodyMember && isDeparting(game,this.spatial.bodyMember.groupId)) return;
         withNativeAttackAction(game, this, () => this.takeNativeDecisionWithinAction(game));
     }
 

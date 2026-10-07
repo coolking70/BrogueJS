@@ -17,7 +17,7 @@ import type { ExtensionManifest, ExtensionSnapshot } from '../../ext/types';
 import type { World5Snapshot } from '../../ext/world5';
 import type { Item } from '../Items/Item';
 export const hashJson = (v: unknown) => sha256(c5Canonical(v, true));
-const codecIdentity = ['brogue-web-whole-run-v5', 5, FOUNDATION_PROTOCOL, 2];
+const codecIdentity = ['brogue-web-whole-run-v6', 6, FOUNDATION_PROTOCOL, 2];
 export const manifestFingerprint = (manifest: ExtensionManifest | null) => hashJson(manifest);
 export function merkleDomain(
   domain: DigestDomain,

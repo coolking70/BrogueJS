@@ -107,6 +107,7 @@ import { TM_PROMOTES_ON_CREATURE } from './TerrainCatalog';
 /** CE owns a world, not a return-value event queue. Ports are scoped to a grid;
  * recursion (including promotion during fill) sees the same live transaction. */
 export interface DungeonFeatureEffects {
+    spawnSettled?(): void;
     creatures?(): readonly { loc: Pos; forbiddenTerrain: number; occupies?(at: Pos): boolean; canPlace?(at: Pos, excluded: (p: Pos) => boolean): boolean; commitPosition?(at: Pos): void }[];
     occupied?(pos: Pos): boolean;
     refreshCell?(pos: Pos): void;
@@ -905,6 +906,9 @@ export interface SpawnFeatureResult {
  * spawnMapDF →（需要时）连通性否决 → fillSpawnMap → DFF_CLEAR_* 跨层清理
  * → subsequentDF 链（DFF_SUBSEQ_EVERYWHERE 时逐实际落点递归）。
  */
+/** True until the outermost feature has finished all native contacts. */
+export function dungeonFeatureActive(grid: Grid): boolean { return activeOptions.has(grid); }
+
 export function spawnDungeonFeature(
     grid: Grid,
     x: number,
@@ -923,17 +927,20 @@ export function spawnDungeonFeature(
         ...(previous && !requested?.independentContacts ? { parent: previous } : {}),
     };
     activeOptions.set(grid, transaction);
+    let result: SpawnFeatureResult;
     try {
         const firstFire = transaction.caughtFire.length;
-        const result = executeDungeonFeature(grid, x, y, feat, abortIfBlocking,
+        result = executeDungeonFeature(grid, x, y, feat, abortIfBlocking,
             transaction.refreshSideEffects, transaction.effects, typeof options === 'function' ? options : undefined);
         // Retain the audit/standalone-environment contract across descendants.
         result.caughtFireCells = transaction.caughtFire.slice(firstFire);
-        return result;
     } finally {
         if (previous) activeOptions.set(grid, previous);
         else activeOptions.delete(grid);
     }
+    // Failed DF execution propagates its own exception; settlement cannot mask it.
+    if (!previous) transaction.effects.spawnSettled?.();
+    return result;
 }
 
 function executeDungeonFeature(

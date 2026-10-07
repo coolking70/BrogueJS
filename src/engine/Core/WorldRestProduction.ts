@@ -1,3 +1,4 @@
+import { isIncapacitated } from '../Status/Incapacitation';
 import { bodyDecisionActor } from '../Status/BodyStatuses';
 import i18next from 'i18next';
 import { logger } from '../Systems/Logger';
@@ -48,7 +49,7 @@ function threat(game: Game): boolean {
         && !bodyDecisionActor(monster).isCaged && canDirectlySeeMonster(game.player, game.grid, monster));
 }
 function incapacitated(game: Game): boolean {
-    return game.player.seized || ['paralyzed', 'entranced', 'confused', 'stuck', 'nauseous'].some(status => game.player.hasStatus(status as 'paralyzed'))
+    return game.player.seized || isIncapacitated(game.player) || (['entranced', 'confused', 'stuck', 'nauseous'] as const).some(status => game.player.hasStatus(status))
         || (game.player.spatial?.actionLockInTicks ?? 0) > 0;
 }
 /** Pure advisory. The command repeats all checks after canonical confirmation. */

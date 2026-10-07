@@ -1,3 +1,4 @@
+import { validateEdibleTemplates } from '../engine/Core/EdibleDefinitions';
 import { validateWorldModule } from '../engine/Core/WorldDefinitions';
 import { FOUNDATION_PROTOCOL } from './descriptor';
 import type { ExtensionModule, ExtensionManifest, ExtensionRulesIdentity } from './types';
@@ -58,6 +59,7 @@ export class ExtensionRegistry {
             if (module.id !== id || module.version !== version || canonical(module.rules) !== canonical(rules)) throw new Error('Extension factory identity mismatch');
             const declaration=this.factories.get(id)!;
             validateWorldModule(module,declaration.worldSdk,declaration.locales ? new Set(Object.values(declaration.locales).flatMap(l=>Object.keys(l))) : undefined);
+            validateEdibleTemplates(module.worldDefinitions,declaration.locales);
             return [id, module];
         }));
         const ordered: ExtensionModule[] = [], visiting = new Set<string>(), visited = new Set<string>();

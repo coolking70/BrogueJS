@@ -1,3 +1,4 @@
+import { wakeSlumber } from '../engine/Status/Incapacitation';
 import { nativeStat, markStatsDirty } from '../engine/Stats/NativeStatSources';
 import { physicalContactOf } from '../engine/Combat/BodyCombat';
 import { bodyStatusOwner, bodyStatusStackMode } from '../engine/Status/BodyStatuses';
@@ -11,7 +12,7 @@ import type { Grid } from '../engine/Map/Grid';
 import type { Entity, Pos } from '../types';
 import { Direction } from '../types';
 
-export type StatusId = 'paralyzed' | 'invisible' | 'telepathy' | 'levitating' | 'hallucinating' | 'confused' | 'regenerating' | 'haste' | 'poisoned' | 'slowed' | 'hasted' | 'weakened' | 'flying' | 'immune_fire' | 'discordant' | 'shielded' | 'entranced' | 'nauseous' | 'darkness' | 'magical_fear' | 'stuck' | 'donning' | 'enraged' | 'lifespan_remaining' | 'aggravating';
+export type StatusId = 'slumber' | 'paralyzed' | 'invisible' | 'telepathy' | 'levitating' | 'hallucinating' | 'confused' | 'regenerating' | 'haste' | 'poisoned' | 'slowed' | 'hasted' | 'weakened' | 'flying' | 'immune_fire' | 'discordant' | 'shielded' | 'entranced' | 'nauseous' | 'darkness' | 'magical_fear' | 'stuck' | 'donning' | 'enraged' | 'lifespan_remaining' | 'aggravating';
 type StatusStackMode = 'refresh' | 'stack' | 'replace';
 
 /**
@@ -82,7 +83,7 @@ export class Creature implements Entity {
     public char: string;
     public statusDurations: Partial<Record<StatusId, number>>;
     public statusImmunities: Set<StatusId>;
-    public hasStatusImmunity(id: StatusId): boolean { return bodyStatusOwner(this, id).statusImmunities.has(id); }
+    public hasStatusImmunity(id: StatusId): boolean { return bodyStatusOwner(this,id).statusImmunities.has(id)||(id==='slumber'&&bodyStatusOwner(this,'paralyzed').statusImmunities.has('paralyzed')); }
     /** CE creature.poisonAmount: damage per objective poison tick. */
     public poisonAmount = 0;
     /** CE creature.weaknessAmount, independent of the weakened countdown. */
@@ -365,6 +366,7 @@ export class Creature implements Entity {
     public drainCurrentHp(grid?:Grid):void { this.takeDamage(this.hp,true,grid,undefined,'other',true); }
 
     private takeDamageCommitted(amount:number,ignoresProtectionShield:boolean,grid:Grid|undefined,beforeHpLoss:((damage:number)=>void)|undefined,damageKind:DamageKind,ignoresResistance:boolean):void {
+        if (amount > 0) wakeSlumber(this);
         const hpBefore = this.hp;
         let damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
         // Native administrative/self-destruction calls drain current HP.

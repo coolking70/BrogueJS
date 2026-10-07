@@ -1,3 +1,4 @@
+import { isIncapacitated } from '../Status/Incapacitation';
 import { nativeStat } from '../Stats/NativeStatSources';
 /** CE objective time and environment scheduling. No Game instance crosses this boundary. */
 import type { Game } from './Game';
@@ -80,6 +81,7 @@ export interface EffectsPort {
     logHungerTransition(transition: ReturnType<Game['player']['consumeHungerTransition']> & string): void;
     consumeFood(item: Item, prompt: boolean): boolean;
     playerTurnEnded(): void;
+    settleEdibleClocks?(): void;
     monstersApproachStairs(): void;
     wpContext(): ReturnType<Game['wpContext']>;
     monstersFall(): void;
@@ -207,6 +209,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                         .filter(actor => actions.isDecisionOwner(actor.id)).sort((a, b) => a.id - b.id)
                     : [...ports.world.monsters];
                 for (const actor of dueActors) {
+                    if (actor !== ports.world.player && !ports.world.monsters.includes(actor as Monster)) continue;
                     if (ports.bodies && !ports.bodies.isDecisionOwner(actor.id)) continue;
                     if (ports.clock.isGameOver) break; // CE Time.c:2721 的 gameHasEnded 守卫
                     if (!(actor.hp > 0 && actor.ticksUntilTurn <= 0)) continue;
@@ -217,14 +220,14 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                             continue;
                         }
                     }
-                    if (actor.hp <= 0 || actor === ports.world.player) continue; // All same-tick actors resolve before input resumes.
+                    if (actor.hp <= 0 || actor === ports.world.player || !ports.world.monsters.includes(actor as Monster)) continue; // All same-tick actors resolve before input resumes.
                     const m = actor as Monster;
                     // Only a free decision reaches native prelude/behavior and its one sweep.
                     if (m.isCaged && m.carriedItem) ports.effects.monsterDropItem(m);
-                    if (!m.hasStatus('entranced') && !m.hasStatus('paralyzed') && !m.isCaged
+                    if (!m.hasStatus('entranced') && !isIncapacitated(m) && !m.isCaged
                         && !m.hasBehavior('MONST_GETS_TURN_ON_ACTIVATION')) ports.effects.monsterTakeTurn(m, stealthRange);
                     if (m.ticksUntilTurn <= 0) m.ticksUntilTurn = nativeStat(m,'native.move-speed');
-                    if (m.hp > 0 && !actions?.isBusy(m.id)) ports.effects.sweepDeepWaterItem(m, m.ticksUntilTurn);
+                    if (m.hp > 0 && ports.world.monsters.includes(m) && !actions?.isBusy(m.id)) ports.effects.sweepDeepWaterItem(m, m.ticksUntilTurn);
                 }
 
                 if (!playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
@@ -336,6 +339,7 @@ export function objectiveTimeBlock(ports: TimePorts): void {
         // 最后一步（CE 里在 monstersApproachStairs 之后）。每 100 tick 恰好
         // 重算一个 waypoint；全量重建只在关卡生成/重访时发生。
         if (ports.clock.isGameOver || ports.world.player.hp <= 0) return;
+        ports.effects.settleEdibleClocks?.();
         ports.effects.monstersApproachStairs();
         ports.world.waypoints.rollingRefresh(ports.effects.wpContext());
     }
@@ -534,7 +538,7 @@ export function playerTurnEnded(ports: TimePorts, continuingParalysis = false): 
                 ports.effects.sweepDeepWaterItem(ports.world.player, ports.world.player.ticksUntilTurn);
             }
             if (ports.clock.animationEnabled && !ports.effects.isAutoTraveling()
-                && !ports.world.player.hasStatus('paralyzed')) {
+                && !isIncapacitated(ports.world.player)) {
                 ports.effects.beginAdvancement(stealthRange);
                 return;
             }
@@ -546,7 +550,7 @@ export function playerTurnEnded(ports: TimePorts, continuingParalysis = false): 
             // CE ends this invocation immediately on a fall or death.
             if (ports.clock.currentLevelDepth !== depth) return;
         } while (!ports.clock.isGameOver && ports.world.player.hp > 0
-            && ports.world.player.hasStatus('paralyzed'));
+            && isIncapacitated(ports.world.player));
 
     }
 

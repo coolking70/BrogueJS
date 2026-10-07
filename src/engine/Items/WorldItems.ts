@@ -1,3 +1,4 @@
+import { bindWorldItemPresentation } from './WorldItemPresentation';
 import { markItemStatsDirty } from './ItemStatInvalidation';
 /** Fixed C5 assembly. Never calls the random spawning pipeline. */
 import { Item, ItemCategory } from './Item';
@@ -14,6 +15,7 @@ export function bindWorldItem(item: Item, definition: ItemDefinitionContribution
   )
     throw new Error('C5_BAD_DEFINITION');
   definitions.set(item, definition);
+  bindWorldItemPresentation(item,definition);
 }
 export const worldItemDefinition = (item: Item) => definitions.get(item);
 export const worldItemMaxStack = (item: Item) => definitions.get(item)?.maxStack ?? 99;

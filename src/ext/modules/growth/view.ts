@@ -1,3 +1,4 @@
+import { isIncapacitated } from '../../../engine/Status/Incapacitation';
 import type { Game } from '../../../engine/Core/Game';
 import type { DeepReadonly } from './definitions';
 import type { GrowthAttributes, GrowthDerived, GrowthFocus, GrowthProgression, GrowthSkills } from './components';
@@ -317,7 +318,7 @@ export interface GrowthTargetChoice {
  * full-world eligibility belongs exclusively to the later command preflight. */
 function knownGrowthMoveCandidate(game: Game, x: number, y: number): boolean {
     const cell = game.grid.getCell(x, y);
-    if (!cell || game.player.hasStatus('confused') || game.player.hasStatus('paralyzed')) return false;
+    if (!cell || game.player.hasStatus('confused') || isIncapacitated(game.player)) return false;
     if (game.monsters.some(monster => monster.x === x && monster.y === y && canDisplayMonster(game.player, game.grid, monster))) return false;
     if (playerTravelDiagonalBlocked(game.grid, game.player.loc, { x, y }, true)) return false;
     const known = cell.isVisible || cell.hasMemory || cell.isMagicMapped || cell.isExplored;
@@ -342,7 +343,7 @@ export function readGrowthSkillTargets(game: Game, view: GrowthCharacterViewMode
         if (skill.action!.kind === 'move') return { direction, target: { kind: 'cell' as const, x, y }, enabled: knownGrowthMoveCandidate(game, x, y) };
         const creature = game.monsters.find(monster => monster.x === x && monster.y === y && canSeeMonster(game.player, game.grid, monster));
         const enabled = !!creature && !creature.isCaged && (!creature.isAlly || creature.hasStatus('discordant'))
-            && !game.player.hasStatus('confused') && !game.player.hasStatus('paralyzed')
+            && !game.player.hasStatus('confused') && !isIncapacitated(game.player)
             && (!playerTravelDiagonalBlocked(game.grid, game.player.loc, { x, y }, true) || creature.hasBehavior('MONST_ATTACKABLE_THRU_WALLS'));
         return { direction, target: { kind: 'creature' as const, id: enabled ? creature.id : 0 }, enabled };
     }));

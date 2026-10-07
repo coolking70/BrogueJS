@@ -348,7 +348,17 @@
     "src/test/x4_r5_content_text.test.ts",
     "src/test/x4_r6_integration.test.ts",
     "src/test/x4a_movement_rendering.test.ts",
-    "src/test/x4b_flavor_text.test.ts"
+    "src/test/x4b_flavor_text.test.ts",
+    "src/test/ext_derived_draw_vectors.test.ts",
+    "src/test/ext_edible_runtime.test.ts",
+    "src/test/ext_edible_review.test.ts",
+    "src/test/ext_actor_needs_runtime.test.ts",
+    "src/test/ext_departure_runtime.test.ts",
+    "src/test/ext_fire_contact_runtime.test.ts",
+    "src/test/ext_kind_knowledge_runtime.test.ts",
+    "src/test/ext_placement_group_runtime.test.ts",
+    "src/test/ext_slumber_runtime.test.ts",
+    "src/test/ext_edible_combinations.test.ts"
   ],
   "gen": [
     "src/test/b1_retire_invented.test.ts",

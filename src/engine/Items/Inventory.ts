@@ -64,6 +64,7 @@ export class Inventory {
 
     public addItem(item: Item): boolean {
         if (!this.hasSpace(item)) return false;
+        delete item.fireContactCooldownUntilTurn;
         if (item.category === ItemCategory.GOLD) return true; // Currency belongs to Game.stats.
         if(item.category===ItemCategory.MATERIAL&&item.worldItem?.toolDurability===null){
             for(const other of this.items){if(!this.materialCompatible(other,item))continue;const count=Math.min(item.quantity,worldItemMaxStack(other)-other.quantity);other.quantity+=count;item.quantity-=count;if(item.quantity===0)return true;}

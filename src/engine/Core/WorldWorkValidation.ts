@@ -1,3 +1,5 @@
+import { edibleItemAdapter } from './KindKnowledge';
+import { validateEdibleReferences } from './EdibleValidation';
 import { validateStructureReferences } from '../Map/StructureValidation';
 import { exact, uint, World5Error } from '../../ext/world5';
 import type { Game } from './Game';
@@ -69,7 +71,8 @@ export function validateWorldWorkReferences(game: Game): void {
     ...[...internal.pendingFallenByDepth].flatMap(([, a]) => a),
     ...game.purgatory
   ];
-  const definitions = packs.flatMap((p) => p.items),
+  validateEdibleReferences(game);
+  const definitions = packs.flatMap((p) => [...p.items,...(p.edibleItems??[]).map(d=>edibleItemAdapter(game,d))]),
     seen = new Set<number>();
   forEachItemRoot(game, (item) => {
     if (seen.has(item.id)) throw new World5Error('C5_BAD_OWNERSHIP');

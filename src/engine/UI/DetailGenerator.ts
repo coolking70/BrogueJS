@@ -1,3 +1,5 @@
+import { worldItemPresentation } from '../Items/WorldItemPresentation';
+import { isIncapacitated } from '../Status/Incapacitation';
 import { worldText } from '../../ext/worldText';
 import { nativeProbability, nativeEnchantedRoll, nativeRolledDamage, nativeRational, equipmentStats, nativeStat } from '../Stats/NativeStatSources';
 import i18next from 'i18next';
@@ -217,7 +219,7 @@ export function generateMonsterDetail(
     if (playerWeaponDamage) {
         const wNE = equipmentStats({category:ItemCategory.WEAPON,enchantment:playerWeaponEnchant,strengthRequired:playerWeaponStrReq},playerStrength)['native.weapon-enchant']!/4;
         // CE Combat.c:130-135: use the actual rune even when unidentified.
-        const playerHitProb = forecastHit ? forecastHit('outgoing') : monster.hasStatus('stuck') || monster.hasStatus('paralyzed') || monster.isCaged
+        const playerHitProb = forecastHit ? forecastHit('outgoing') : monster.hasStatus('stuck') || isIncapacitated(monster) || monster.isCaged
             || weaponSlaysMonster(playerWeapon, monster.typeId)
             ? 100 : nativeProbability(100, monDef, wNE);
         combatLines.push({
@@ -293,7 +295,7 @@ export function generateMonsterDetail(
  * the contextual adapter there. All callers share the same knowledge gates. */
 export function generateItemDetail(item: Item, context: number | ItemDetailContext): DetailInfo {
     const ctx = typeof context === 'number' ? { strength: context } : context;
-    if(item.category===ItemCategory.MATERIAL)return {char:item.char,color:item.color,name:item.displayName,sections:[{lines:[{text:worldText(item.description??''),color:'#aaaacc'},...(item.worldItem?.toolDurability!==null?[{text:i18next.t('ext.foundation.world.tool-durability',{durability:item.worldItem?.toolDurability??0}),color:'#aaaacc'}]:[])]}]};
+    if(item.category===ItemCategory.MATERIAL)return {char:item.char,color:item.color,name:item.displayName,sections:[{lines:[{text:worldItemPresentation(item)?.description() ?? worldText(item.description??''),color:'#aaaacc'},...(item.worldItem?.toolDurability!==null?[{text:i18next.t('ext.foundation.world.tool-durability',{durability:item.worldItem?.toolDurability??0}),color:'#aaaacc'}]:[])]}]};
     const sections = itemIntro(item, ctx);
     switch (item.category) {
         case ItemCategory.WEAPON: case ItemCategory.ARMOR: sections.push(...equipmentDetail(item, ctx)); break;

@@ -105,7 +105,7 @@ export function transform(p: Pos, pose: Pose): Pos {
 /** The native profile is a complete, finite classification, not a reducer
  * script or a guessed default for unknown status keys. */
 export function validateNativeBodyStatusRows(value: unknown): SpatialStatusProfileDefinition['rows'] {
-    const ids = new Set('paralyzed invisible telepathy levitating hallucinating confused regenerating haste poisoned slowed hasted weakened flying immune_fire discordant shielded entranced nauseous darkness magical_fear stuck donning enraged lifespan_remaining aggravating burning explosion_immunity'.split(' '));
+    const ids = new Set('slumber paralyzed invisible telepathy levitating hallucinating confused regenerating haste poisoned slowed hasted weakened flying immune_fire discordant shielded entranced nauseous darkness magical_fear stuck donning enraged lifespan_remaining aggravating burning explosion_immunity'.split(' '));
     const rows = Array.isArray(value) ? value : fail('Incomplete body status profile');
     if (rows.length !== ids.size) fail('Incomplete body status profile');
     const seen = new Set<string>();

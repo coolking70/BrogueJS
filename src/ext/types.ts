@@ -29,13 +29,13 @@ export interface ExtensionModuleView {
 }
 export interface ExtensionRulesIdentity { schema: number; version: string; fingerprint: string }
 export interface ExtensionVersion { id: string; version: string; rules?: ExtensionRulesIdentity }
-export interface ExtensionManifest { schema: 1; foundation?: 9; modules: ExtensionVersion[] }
+export interface ExtensionManifest { schema: 1; foundation?: typeof import('./descriptor').FOUNDATION_PROTOCOL; modules: ExtensionVersion[] }
 export interface ExtensionSnapshot {
     manifest: ExtensionManifest;
     modules: Record<string, Json>;
     /** Run-local creature ID -> module-qualified component ID -> JSON. */
     components: Record<string, Record<string, Json>>;
-    foundation: { version: 9; stats?: MaterializedStatSnapshot; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
+    foundation: { version: typeof import('./descriptor').FOUNDATION_PROTOCOL; kindKnowledge?: import('../engine/Core/EdibleState').KindKnowledgeSnapshot; actorNeeds?: import('../engine/Core/EdibleState').ActorNeedsSnapshot; timedStats?: import('../engine/Core/EdibleState').TimedStatsSnapshot; departures?: import('../engine/Core/EdibleState').DeparturesSnapshot; stats?: MaterializedStatSnapshot; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
 }
 /** Native facts wait for run initialization; sequence numbers are reserved on commit. */
 export interface PendingStoryFact { kind: 'entered-level'; depth: number; firstVisit: boolean; turn: number }
@@ -174,6 +174,7 @@ export interface ControlledActionCallbacks {
     afterResolve(result: Readonly<ControlledActionResult>, context: ExtensionContext): void;
 }
 export interface HookEvents {
+    actorDeparted: { actor: ActorFacts; owner: string; reason: string; deferred: boolean };
     storyFact: StoryFact;
     interactionClosed: { owner: string; targetEntityId: number; sessionId: number; reason: 'game-over' | 'target-removed' };
     interactablesRemoved: { owner: string; entityIds: number[] };
@@ -249,6 +250,9 @@ export type HookHandlers = { [K in HookName]?: (event: Readonly<HookEvents[K]>, 
 /** Detached native newborn bases for safe composition before a current run is retired. */
 export interface ExtensionCreationResources { readonly maxHp: number; readonly strength: number }
 export interface ExtensionModule extends ExtensionVersion, WorldModuleFields {
+    readonly edibleCommands?: Partial<Record<'feed'|'roast', import('./worldEdible').EdibleCommand>>;
+    readonly edibleParticipant?: import('./worldEdible').EdibleParticipant;
+    readonly actorNeedParticipant?: import('./actorNeeds').ActorNeedParticipant;
     dependencies?: readonly string[];
     readonly optionalRewards?: Readonly<Record<string, OptionalRewardProvider>>;
     readonly optionalActorQueries?: Readonly<Record<string, OptionalActorQueryProvider>>;

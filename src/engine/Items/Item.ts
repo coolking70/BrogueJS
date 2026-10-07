@@ -1,3 +1,4 @@
+import { worldItemPresentation } from './WorldItemPresentation';
 import { worldText } from '../../ext/worldText';
 /**
  * src/engine/Items/Item.ts
@@ -66,6 +67,7 @@ export class Item implements Entity {
     public consumableId?: string;
     public description?: string;
     public category: ItemCategory;
+    declare public fireContactCooldownUntilTurn?: number;
     declare public worldItem?: import('../../ext/worldSdk').WorldItemFields;
     public weight: number;
 
@@ -196,7 +198,7 @@ export class Item implements Entity {
     }
 
     get uninscribedName(): string {
-        if (this.category === ItemCategory.MATERIAL) return worldText(this.name);
+        if (this.category === ItemCategory.MATERIAL) return worldItemPresentation(this)?.name() ?? worldText(this.name);
         // Here we hook into the static registry if the item is a consumables
         switch (this.category) {
             case ItemCategory.GEM:

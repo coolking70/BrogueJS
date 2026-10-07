@@ -10,7 +10,7 @@ export interface WorldInteractable {
     readonly nameKey: string; readonly descriptionKey: string; readonly glyph: string; readonly color: string;
     readonly interactionDistance: number; readonly priority: number;
 }
-export type WorldInteractableView = Omit<WorldInteractable, 'instanceKey' | 'contentId'>;
+export type WorldInteractableView = Omit<WorldInteractable, 'instanceKey' | 'contentId'> & {readonly displayName?:string;readonly displayDescription?:string};
 export interface WorldInteractablePlacement {
     readonly instanceKey: string; readonly contentId: string;
     readonly nameKey: string; readonly descriptionKey: string; readonly glyph: string; readonly color: string;
@@ -26,6 +26,7 @@ export interface WorldInteractionValidation {
     readonly regions?: readonly OwnedRegion[];
 }
 export interface ExtensionProjectionContext extends WorldProjectionFields {
+    readonly edible?: {readEdibleContext(): import('./worldSdk').WorldResult<import('./worldEdible').EdibleContext>; knowledge(groupId:string):import('./kindKnowledge').KindKnowledgeView};
     readonly stats?: import('./stats').StatQuery;
     readonly worldWork?: import('./worldSdk').WorldWorkReadSDK;
     readonly actorActionBundles?: readonly import('../engine/Core/ActorActionScheduler').ReadonlyActorActionBundle[];
@@ -41,7 +42,7 @@ const integer = (value: unknown, min: number, max = Number.MAX_SAFE_INTEGER): va
 const keys = (value: unknown, expected: string[]): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value)
     && Object.keys(value).sort().join(',') === expected.sort().join(',');
 function content(value: Record<string, unknown>, owner: string): boolean {
-    return validId(value.instanceKey) && validId(value.contentId)
+    return (validId(value.instanceKey) || typeof value.instanceKey === 'string' && /^([a-z][a-z0-9_.-]*)#dungeon\.([1-9]|[1-3][0-9]|40)#([0-9]|[12][0-9]|3[01])$/.test(value.instanceKey) && value.instanceKey.startsWith(owner+'.')) && validId(value.contentId)
         && typeof value.nameKey === 'string' && value.nameKey.startsWith(`ext.${owner}.`) && value.nameKey.length <= 256
         && typeof value.descriptionKey === 'string' && value.descriptionKey.startsWith(`ext.${owner}.`) && value.descriptionKey.length <= 256
         && typeof value.glyph === 'string' && [...value.glyph].length === 1 && !/[\x00-\x1f\x7f]/.test(value.glyph)

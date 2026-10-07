@@ -1,3 +1,4 @@
+import { isIncapacitated } from '../Status/Incapacitation';
 import { markItemStatsDirty } from '../Items/ItemStatInvalidation';
 import { worldText } from '../../ext/worldText';
 import { markRecordingRoot } from '../../ext/recordingRevisions';
@@ -132,6 +133,7 @@ const validErrors = new Set<string>([
   'C5_OVERFLOW',
   'C5_TERMINAL'
 ]);
+export function isWorldErrorCode(value:unknown):value is WorldErrorCode {return typeof value==='string'&&validErrors.has(value);}
 export const worldWorkLastError = (game: Game) => {
   const result = errors.get(game);
   return result && result.runtime === game.extensionRuntime ? result.code : null;
@@ -253,7 +255,7 @@ function common(game: Game, owner: string, actorId: number, cancel = false): voi
   if (game.actorActions?.bundles.some((b) => b.decisionOwnerId === actorId) || a.ticksUntilTurn > 0)
     reject('C5_BUSY');
   if (!cancel && activeTicket(game, actorId)) reject('C5_BUSY');
-  if (a.hasStatus('paralyzed') || a.hasStatus('entranced')) reject('C5_BUSY');
+  if (isIncapacitated(a) || a.hasStatus('entranced')) reject('C5_BUSY');
   if (!cancel && threat(game, actorId)) reject('C5_THREAT');
 }
 function accessContainer(game: Game, id: number, revision: number | null, actorId: number): void {
@@ -983,9 +985,7 @@ function interruptReason(
   if (a.hp < d.hp) return 'damage';
   if (
     (a as any).seized ||
-    ['paralyzed', 'entranced', 'confused', 'stuck', 'nauseous'].some((status) =>
-      a.hasStatus(status as 'paralyzed')
-    ) ||
+    isIncapacitated(a) || (['entranced', 'confused', 'stuck', 'nauseous'] as const).some(status => a.hasStatus(status)) ||
     (a.spatial?.actionLockInTicks ?? 0) > 0
   )
     return 'incapacitated';

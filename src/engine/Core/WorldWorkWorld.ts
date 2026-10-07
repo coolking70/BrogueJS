@@ -1,3 +1,4 @@
+import { edibleDefinition, edibleItemAdapter } from './KindKnowledge';
 import { composedCellFlags } from '../Map/CellProperties';
 import { markRecordingRoot } from '../../ext/recordingRevisions';
 import { bodyDecisionActor } from '../Status/BodyStatuses';
@@ -60,7 +61,7 @@ export function worldPack(game: Game, owner: string) {
     ?.worldDefinitionPacks()
     .find(
       (p) =>
-        p.items.some((d) => d.owner === owner) ||
+        p.edibleItems?.some(d=>d.owner===owner) || p.actorNeeds?.some(d=>d.owner===owner) || p.items.some((d) => d.owner === owner) ||
         p.resourceNodes.some((d) => d.owner === owner) ||
         p.stations.some((d) => d.owner === owner) ||
         p.recipes.some((d) => d.owner === owner) || p.structures?.some(d=>d.owner===owner) || p.restPoints?.some(d=>d.owner===owner)
@@ -73,6 +74,7 @@ export const itemDefinition = (game: Game, id: string): ItemDefinitionContributi
     ?.worldDefinitionPacks()
     .flatMap((p) => p.items)
     .find((d) => d.id === id);
+  if(!d){const edible=edibleDefinition(game,id);if(edible)return edibleItemAdapter(game,edible);}
   if (!d) throw new World5Error('C5_BAD_DEFINITION', 'item');
   return d;
 };

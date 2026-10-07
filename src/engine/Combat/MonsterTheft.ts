@@ -52,6 +52,7 @@ export function stealFromPlayer(m: Monster, p: Player, attackHit: () => boolean,
         item = split;
     } else p.inventory.removeItem(item);
     item.flags = (item.flags ?? []).filter(flag => flag !== 'ITEM_PLAYER_AVOIDS');
+    delete item.fireContactCooldownUntilTurn;
     m.carriedItem = item;
     m.creatureMode = MonsterMode.PERM_FLEEING;
     m.state = MonsterState.FLEEING;

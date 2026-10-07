@@ -1,6 +1,7 @@
 /** Trusted foundation declarations. The frozen crafting SDK stays byte-identical. */
 import type {
   WorldDefinitionPack as WorkPack,
+  ModuleId, DefinitionId,
   ItemAmount,
   LevelRef,
   Position,
@@ -144,6 +145,10 @@ export interface RestPointPlacementRequest {
   at: Position;
 }
 export interface WorldDefinitionPack extends WorkPack {
+  edibleItems?: readonly import('./worldEdible').EdibleItemDefinition[];
+  knowledgeGroups?: readonly import('./kindKnowledge').KindKnowledgeGroup[];
+  placementGroups?: readonly PlacementGroup[];
+  actorNeeds?: readonly import('./actorNeeds').ActorNeedDeclaration[];
   structures?: readonly StructureDefinition[];
   restPoints?: readonly RestPointDefinition[];
 }
@@ -162,3 +167,13 @@ export type TrustedPlanner<T> = (
   request: T,
   scope: WorldActorScope
 ) => WorldResult<WorldPlanHandle>;
+
+export type TerrainPreferenceTag = 'terrain.luminescent-fungus' | 'terrain.fungus-forest';
+export interface PlacementGroup {
+  owner: ModuleId; id: string;                                  // owner. 前缀；每 owner ≤8
+  members: readonly Readonly<{ resourceDefinitionId: DefinitionId; minDepth: number; weight: number }>[]; // 1..64；1..40 / 1..100
+  perDepth: readonly Readonly<{ fromDepth: number; toDepth: number; min: number; max: number }>[]; // 不重叠，0≤min≤max≤32；未覆盖层数量 0
+  maxPerRun: number;                                            // 0..512
+  preference: Readonly<{ tags: readonly TerrainPreferenceTag[]; radius: number;   // 0..8
+    preferredWeight: number; otherWeight: number }> | null;      // 1..16
+}

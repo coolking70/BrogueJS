@@ -1,3 +1,4 @@
+import { bindWorldItem, worldItemDefinition } from './WorldItems';
 import { markItemStatsDirty } from './ItemStatInvalidation';
 import { atomicStats, nativeStat, markStatsDirty } from '../Stats/NativeStatSources';
 import { footprintContains } from '../Movement/CreatureSpatial';
@@ -137,22 +138,22 @@ export function invokeCharm(player: Player, item: Item, identityId: string | und
     const duration = charmEffectDuration(identityId, item.enchantment);
     if (identityId === 'charm_of_health') {
         const healed = player.heal(charmHealing(item.enchantment), false);
-        logger.log(i18next.t('arcana.charm_health', { item: item.name, heal: healed, defaultValue: `You invoke ${item.name} and recover ${healed} HP.` }), '#66ff88');
+        logger.log(i18next.t('arcana.charm_health', { item: item.displayName, heal: healed, defaultValue: `You invoke ${item.displayName} and recover ${healed} HP.` }), '#66ff88');
     } else if (identityId === 'charm_of_invisibility') {
         ports.applyTimedStatus('invisible', duration);
         player.setStatusDuration('invisible', duration);
         player.maxStatus.invisible = duration;
-        logger.log(i18next.t('arcana.charm_invisibility', { item: item.name, defaultValue: `You invoke ${item.name} and vanish from sight.` }), '#99ccff');
+        logger.log(i18next.t('arcana.charm_invisibility', { item: item.displayName, defaultValue: `You invoke ${item.displayName} and vanish from sight.` }), '#99ccff');
     } else if (identityId === 'charm_of_speed') {
         player.setStatusDuration('slowed', 0);
         player.setStatusDuration('haste', 0);
         ports.applyTimedStatus('hasted', duration);
         player.setStatusDuration('hasted', duration);
         player.maxStatus.hasted = duration;
-        logger.log(i18next.t('arcana.charm_speed', { item: item.name, defaultValue: `You invoke ${item.name} and feel unnaturally swift.` }), '#99ddff');
+        logger.log(i18next.t('arcana.charm_speed', { item: item.displayName, defaultValue: `You invoke ${item.displayName} and feel unnaturally swift.` }), '#99ddff');
     } else if (identityId === 'charm_of_protection') {
         player.applyShield(charmProtection(item.enchantment));
-        logger.log(i18next.t('arcana.charm_protection', { item: item.name, defaultValue: `A shimmering shield coalesces around you.` }), '#ffffaa');
+        logger.log(i18next.t('arcana.charm_protection', { item: item.displayName, defaultValue: `A shimmering shield coalesces around you.` }), '#ffffaa');
     } else if (identityId === 'charm_of_telepathy') {
         ports.applyTimedStatus('telepathy', duration);
         player.setStatusDuration('telepathy', duration);
@@ -186,7 +187,7 @@ export function invokeCharm(player: Player, item: Item, identityId: string | und
     item.cooldownRemaining = item.cooldownTurns;
     if (!ItemLoader.identifiedItems.has(identityId)) {
         ItemLoader.identify(identityId);
-        logger.log(i18next.t('item.identify', { name: item.name, defaultValue: `You identify ${item.name}.` }), '#00ffff');
+        logger.log(i18next.t('item.identify', { name: item.displayName, defaultValue: `You identify ${item.displayName}.` }), '#00ffff');
     }
     finishItemUse(player, ports.endTurn);
     return true;
@@ -204,6 +205,7 @@ export function prepareThrownItem(player: Player, item: Item, origin: Pos, isEqu
         const thrown = Object.assign(new Item(item.name, item.char, item.color, item.category), item);
         thrown.id = allocateEntityId();
         thrown.quantity = 1;
+        if(item.worldItem){thrown.worldItem={...item.worldItem};delete thrown.fireContactCooldownUntilTurn;const d=worldItemDefinition(item);if(d)bindWorldItem(thrown,d);}
         thrown.loc = { ...origin };
         return thrown;
     }

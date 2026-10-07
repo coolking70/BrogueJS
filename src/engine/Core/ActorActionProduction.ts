@@ -1,3 +1,4 @@
+import { isIncapacitated } from '../Status/Incapacitation';
 import { markRecordingRoot } from '../../ext/recordingRevisions';
 import {actorActionIdentityCheckpoint} from '../../ext/actorActionIdentity';
 import type {Json} from '../../ext/types';
@@ -54,7 +55,7 @@ function aliveSource(actor: Creature): boolean {
     return actor.hp > 0 && !(actor instanceof Monster && (actor.deathProcessed || actor.isDormant));
 }
 function incapacitatedSource(actor: Creature): boolean {
-    return (actor.spatial?.actionLockInTicks ?? 0) > 0 || actor.hasStatus('paralyzed') || actor.hasStatus('entranced')
+    return (actor.spatial?.actionLockInTicks ?? 0) > 0 || isIncapacitated(actor) || actor.hasStatus('entranced')
         || (actor instanceof Monster && (actor.isCaged || actor.state === MonsterState.ASLEEP
             && (!actor.spatial?.bodyMember || actor.spatial.bodyMember.groupId === actor.id)));
 }
