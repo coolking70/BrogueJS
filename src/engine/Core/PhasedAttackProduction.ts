@@ -383,6 +383,9 @@ export function bindPhasedAttackProduction(game:Game):void {
     bindNativeAttackWorld(game);
     const binding=game.extensionRuntime?.actorActionBinding();
     if(!binding){sessions.delete(game);return;}
+    // Reusing the live clock may occur between advance and same-tick dispatch,
+    // when foreground phases are due at zero. Do not run the strict new-binding
+    // codec on that transient graph; new sessions and save/load remain strict.
     if((sessions.get(game)?.state as unknown)===binding.state && productionActorActionScheduler(game)===sessions.get(game)?.scheduler)return;
     validateActorAttackDefinitions(binding.definition);validateProductionActorAttackState(binding.state,binding.definition);
     const session={state:binding.state,definitions:binding.definition,runtime:game.extensionRuntime!,moduleId:binding.moduleId,sessionRevision:nextSessionRevision++,defenseSources:new Map()} as unknown as Session;

@@ -29,6 +29,7 @@
     "tests/combat_phase4e_recording.test.ts",
     "tests/combat_planner.test.ts",
     "tests/combat_runtime.test.ts",
+    "tests/combat_scheduler_due.test.ts",
     "tests/combat_schema.test.ts",
     "tests/combat_square_replay.test.ts",
     "tests/combat_ui.test.ts",

@@ -54,6 +54,79 @@ function fixture(playerTicks = 100, others: Monster[] = [], ownerOf: (id: number
 }
 
 describe('3a0 persistent actor action scheduler', () => {
+    it.each([0, 1, 2])('commits another owner while an existing phase %s is due, then dispatches it once', phaseIndex => {
+        const f = fixture(100, [actor(2, 0), actor(3, 0)]);
+        f.scheduler.commitBundle(createActorActionBundle(definition(3, [child(3, 'body', [
+            { kind: 'windup', durationTicks: 7, segmentIndex: 0 },
+            { kind: 'inter-segment', durationTicks: 11, segmentIndex: 1 },
+            { kind: 'recovery', durationTicks: 13, segmentIndex: null },
+        ])])));
+        for (let index = 0; index <= phaseIndex; index++) {
+            f.scheduler.advanceActionTime(f.scheduler.nextActionBoundary()!);
+            if (index < phaseIndex) f.scheduler.dispatchActorBoundary(3);
+        }
+        const due = structuredClone(f.state.bundles[0]!);
+        expect(due.subactions[0]!.phaseRemainingTicks).toBe(0);
+        expect(() => f.scheduler.snapshot()).toThrow('inconsistent phase clock');
+        expect(() => f.scheduler.rebind(structuredClone(f.state))).toThrow('inconsistent phase clock');
+        expect(() => f.scheduler.commitBundle(createActorActionBundle(definition(2)))).not.toThrow();
+        expect(f.state.bundles[0]).toEqual(due);
+        expect(f.actors[2]!.ticksUntilTurn).toBe(0);
+        expect(f.actors[1]!.ticksUntilTurn).toBe(20);
+        expect(f.scheduler.dispatchActorBoundary(3)).toBe(phaseIndex === 2 ? 'native-fallback' : 'handled');
+        expect(f.events).toEqual([
+            'resolve:3:1:0', ...(phaseIndex >= 1 ? ['resolve:3:1:1'] : []),
+            ...(phaseIndex === 2 ? ['finish:3:31:completed'] : []),
+        ]);
+        f.scheduler.dispatchActorBoundary(3);
+        expect(f.host.resolveSegment).toHaveBeenCalledTimes(phaseIndex === 0 ? 1 : 2);
+        expect(f.host.onFault).not.toHaveBeenCalled();
+        expect(() => f.scheduler.snapshot()).not.toThrow();
+    });
+
+    it('commits within the ID-ordered native sweep before another owner releases its due inter-segment', () => {
+        const f = fixture(15, [actor(3, 0), actor(2, 15)]);
+        f.scheduler.commitBundle(createActorActionBundle(definition(3, [child(3, 'body', [
+            { kind: 'windup', durationTicks: 5, segmentIndex: 0 },
+            { kind: 'inter-segment', durationTicks: 15, segmentIndex: 1 },
+            { kind: 'recovery', durationTicks: 10, segmentIndex: null },
+        ])])));
+        f.scheduler.advanceActionTime(5); f.scheduler.dispatchActorBoundary(3); f.events.length = 0;
+        f.ports.effects.monsterTakeTurn = m => {
+            expect(m.id).toBe(2);
+            expect(f.state.bundles[0]!.subactions[0]!.phaseRemainingTicks).toBe(0);
+            f.events.push('commit:2');
+            f.scheduler.commitBundle(createActorActionBundle(definition(2)));
+        };
+        expect(() => f.drain()).not.toThrow();
+        expect(f.events).toEqual(['commit:2', 'resolve:3:1:1']);
+        expect(f.state.bundles.map(bundle => [bundle.decisionOwnerId, bundle.subactions[0]!.phaseRemainingTicks])).toEqual([[3, 10], [2, 20]]);
+        expect(f.ports.effects.sweepDeepWaterItem).not.toHaveBeenCalled();
+        expect(f.host.onFault).not.toHaveBeenCalled();
+    });
+
+    it.each(['background', 'cancelled', 'inconsistent elapsed'] as const)('rejects an existing %s zero before any commit write', invalid => {
+        const f = fixture(100, [actor(2, 0), actor(3, 0)]);
+        f.scheduler.commitBundle(createActorActionBundle(definition(3)));
+        f.scheduler.advanceActionTime(20);
+        if (invalid === 'background') f.host.isDepthActive = () => false;
+        if (invalid === 'cancelled') f.state.bundles[0]!.subactions[0]!.cancelled = true;
+        if (invalid === 'inconsistent elapsed') f.state.bundles[0]!.elapsedActionTicks--;
+        const before = structuredClone(f.state), write = vi.spyOn(f.host, 'writeOwnerTicks');
+        expect(() => f.scheduler.commitBundle(createActorActionBundle(definition(2)))).toThrow();
+        expect(f.state).toEqual(before); expect(write).not.toHaveBeenCalled();
+    });
+
+    it('rejects a newly submitted zero even while a different existing owner is due', () => {
+        const f = fixture(100, [actor(2, 0), actor(3, 0)]);
+        f.scheduler.commitBundle(createActorActionBundle(definition(3))); f.scheduler.advanceActionTime(20);
+        const candidate = createActorActionBundle(definition(2));
+        candidate.elapsedActionTicks = 20; candidate.subactions[0]!.phaseRemainingTicks = 0;
+        const before = structuredClone(f.state), write = vi.spyOn(f.host, 'writeOwnerTicks');
+        expect(() => f.scheduler.commitBundle(candidate)).toThrow('inconsistent phase clock');
+        expect(f.state).toEqual(before); expect(write).not.toHaveBeenCalled();
+    });
+
     it.each([false,true])('native delay extends only terminal recovery and survives rebind (already recovering=%s)',recovering=>{
         const f=fixture(100,[actor(2,0)]);f.scheduler.commitBundle(createActorActionBundle(definition(2)));
         if(recovering){f.scheduler.advanceActionTime(20);f.scheduler.dispatchActorBoundary(2);f.scheduler.advanceActionTime(3);}
