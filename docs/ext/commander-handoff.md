@@ -30,6 +30,8 @@
 1. **i18n 源码守卫修复**：本地 Codex 执行进程在 `BrogueJS-p5`（会话 `01a11...` 见 `/private/tmp/claude-501/-Users-coolking70-Documents------BrogueJS/522f7155-3db2-4bc2-9d6e-c8d191c438ac/scratchpad/w26.log`，done 文件同目录 `w26.done`，报告 `w26.report.md`）。完成后核对、commit、push `ext/phase5`。
 2. **5G 任务包定稿**：原由 Claude 子代理在 `BrogueJS-5gbase` 做（核对 §A、真实 SDK 校验内嵌数据、把“幻彩菌”换成不暗示效果的名字、边界脚本白名单扩到 foraging、推 `origin/ext/phase5g-base`）。若 `origin/ext/phase5g-base` 上还没有 “finalize 5G foraging dot package” 提交，就派一个 Codex 进程按 `docs/ext/phase5g.dot-package.md`（草稿在 `origin/ext/phase5-design` `ca5c63e`）完成上述事项。完成后把 §0 转贴块交给用户发 dot。
 
+   - **更新（定稿已完成，`origin/ext/phase5g-base` = `34bb6c7`，但暂不能派发）**：实测发现底座阻断——`WorldWorkValidation.ts:26/203/218` 与 `WorldWorkWorld.ts:708` 只按世界包 `items` 判定包归属，foraging 的 `items` 为空，导致采集一次后 `toSnapshot` 报 `C5_BAD_REFERENCE: terminal definition`（无法存档/录像），且采集投影 `context.worldWork` 为 undefined。修法：改为在 items/resourceNodes/stations/recipes/edibleItems 五个列表中查 owner；补丁 `/private/tmp/p5g-owner-lookup.patch`（已在副本验证：自然存读/回放/seek 通过，engine-only smoke 64/64）。步骤：在 `ext/phase5` 上派 Codex 应用补丁并补回归、提交推送 → 将 `ext/phase5g-base` 重建为“该修复提交 + 34bb6c7 的两个文件”（cherry-pick）→ 按包 §A.6 末尾说明改 §0 第二条基线行与 §2 表 → 再把 §0 转贴块交给用户。包中“幻彩菌”已改名“苍鸾菌”（待用户确认），§12.3 待签：nonEaters 名单、自写文案。
+
 ## 4 接下来（按序）
 1. 5G 派给 dot（用户转贴）。dot 回来后验收 → 合入 `ext/phase5` → 本地集成任务（参照 `docs/ext/phase5b-integration.task.md` 的做法）。
 2. **5C 营地与建造**（本地）：先写任务书 `docs/ext/phase5c1.task.md`（依据 `phase5-settlement-world.md` 的 5C1 行与 §8.3a 粮食经济的建营地存粮；5A3 结构/房间/区域已就绪），再派执行进程；含遗留：窄屏合成抽屉展开时地图视口不跟随玩家。
