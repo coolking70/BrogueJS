@@ -27,27 +27,53 @@ function exerciseGame(game, plans, unavailableIds) {
     const assert = (condition, message) => { if (!condition) throw new Error(message); };
     const checkpoint = () => {
         const state = game.toSnapshot();
-        return { tick: state.run.currentTick, turn: state.run.absoluteTurnNumber, depth: state.depth,
-            player: state.player.loc, rng: state.rngState, extensions: state.extensions };
+        return clone({ tick: state.run.currentTick, turn: state.run.absoluteTurnNumber, depth: state.depth,
+            player: state.player.loc, rng: state.rngState, extensions: state.extensions });
     };
-    const fromEvent = event => ({ tick: event.tick, turn: event.turn, depth: event.depth,
-        player: event.player, rng: event.rng, extensions: event.extensions });
-    const play = () => {
+    const exactCheckpoint = (actual, expected, message) => {
+        assert(expected, `${message}: missing live checkpoint`);
+        for (const field of ['tick', 'turn', 'depth', 'player', 'rng', 'extensions'])
+            equal(actual[field], expected[field], `${message}: ${field}`);
+    };
+    const fromEvent = event => {
+        assert(event.levelRef.kind === 'dungeon', 'Unexpected recording level reference');
+        return { tick: event.tick, turn: event.turn, depth: event.levelRef.depth,
+            player: event.player, rng: event.rng };
+    };
+    const command = (checkpoints, action, data) => {
+        const index = game.recordedInputEvents.length;
+        assert(checkpoints.length === index + 1, 'Incomplete live checkpoint history');
+        game.executeCommand(action, data);
+        while (game.pendingCommandConfirmation)
+            game.resolveCommandDecision(game.pendingCommandConfirmation.token, true);
+        const count = game.recordedInputEvents.length;
+        assert(count === index || count === index + 1, 'Command recorded an unexpected event count');
+        if (count === index + 1) checkpoints.push(checkpoint());
+        else exactCheckpoint(checkpoint(), checkpoints[index], 'Unrecorded command changed state');
+    };
+    const play = checkpoints => {
         const before = game.absoluteTurnNumber;
-        game.executeCommand('wait');
+        command(checkpoints, 'wait');
         assert(game.absoluteTurnNumber > before, 'Selected set cannot play a normal command');
     };
-    const replay = recording => {
+    const replay = (recording, checkpoints) => {
+        assert(recording.version === 4, 'Expected recording v4');
+        assert(checkpoints.length === recording.events.length + 1, 'Incomplete replay checkpoint history');
         assert(game.loadReplay(clone(recording)), 'Recording rejected');
         game.animationEnabled = false;
+        exactCheckpoint(checkpoint(), checkpoints[0], 'Replay initial checkpoint mismatch');
         for (const event of recording.events) {
             game.replayStep(true);
             assert(game.replayError === null, `Replay failed: ${game.replayError}`);
             assert(game.replayCursor === event.index + 1, 'Replay did not consume event');
-            equal(checkpoint(), fromEvent(event), 'Replay exact checkpoint/RNG mismatch');
+            const actual = checkpoint(), { extensions, ...eventState } = actual;
+            equal(eventState, fromEvent(event), 'Replay v4 event checkpoint/RNG mismatch');
+            // v4 stores extension digests, not the complete extension state. Compare
+            // the replayed world with the independent state captured during live play.
+            exactCheckpoint(actual, checkpoints[event.index + 1], `Replay command ${event.index + 1} mismatch`);
         }
     };
-    const walkNatural = (plan) => {
+    const walkNatural = (plan, checkpoints) => {
         for (let commands=0; commands<600 && game.depth<plan.naturalDepth && !game.isGameOver; commands++) {
             const grid=game.grid,key=p=>p.y*grid.width+p.x,target=game.levelSeeds[game.depth-1].downStairsLoc,start={...game.player.loc};
             const queue=[start],previous=new Map([[key(start),null]]);
@@ -58,10 +84,9 @@ function exerciseGame(game, plans, unavailableIds) {
             }
             assert(previous.has(key(target)),'No natural stair route');let at=target,next=target;
             while(previous.get(key(at))){next=at;at=previous.get(key(at));}
-            if(grid.getCell(next.x,next.y).terrain===plan.routeTerrain.secret)game.executeCommand('search');
-            else if(next.x===game.player.x&&next.y===game.player.y)game.executeCommand('stairs_down');
-            else game.executeCommand('move',{x:next.x-game.player.x,y:next.y-game.player.y});
-            if(game.pendingCommandConfirmation)game.resolveCommandDecision(game.pendingCommandConfirmation.token,true);
+            if(grid.getCell(next.x,next.y).terrain===plan.routeTerrain.secret)command(checkpoints,'search');
+            else if(next.x===game.player.x&&next.y===game.player.y)command(checkpoints,'stairs_down');
+            else command(checkpoints,'move',{x:next.x-game.player.x,y:next.y-game.player.y});
         }
         assert(game.depth===plan.naturalDepth&&!game.isGameOver,'Natural play did not reach contribution depth');
         assert(game.monsters.some(m=>plan.forms.includes(m.typeId)),'No natural contributed creature');
@@ -71,33 +96,45 @@ function exerciseGame(game, plans, unavailableIds) {
         // With real combat telegraphs active, the blind stair route is a serialization
         // probe, not an AI that reads warnings; use the public wizard mode there (no HP edits).
         const naturalMode = plan.ids.includes('combat') ? 'wizard' : 'normal';
-        game.startNewGame({ seed: plan.naturalDepth ? 7306 : 7301, mode: plan.naturalDepth ? naturalMode : 'test', ruleSet: 'extended', extensions: plan.ids, initialCommands: plan.initialCommands });
+        const options = { seed: plan.naturalDepth ? 7306 : 7301, mode: plan.naturalDepth ? naturalMode : 'test', ruleSet: 'extended', extensions: plan.ids };
+        // Observe command 0 before any creation command, then each creation state.
+        // Also exercise the original atomic startup batch against that live history.
+        game.startNewGame(options);
+        game.animationEnabled = false;
+        const checkpoints = [checkpoint()];
+        for (const initial of plan.initialCommands) command(checkpoints, 'ext:command', initial);
+        assert(checkpoints.length === plan.initialCommands.length + 1, 'Initial command was not recorded');
+        game.startNewGame({ ...options, initialCommands: plan.initialCommands });
         game.animationEnabled = false;
         equal(game.extensionRuntime.manifest, plan.manifest, 'Startup manifest mismatch');
         equal(game.recordedInputEvents.map(event => event.data), plan.initialCommands, 'Incomplete or reordered initial batch');
-        const origin = clone(game.toSaveSnapshot().run.recordingOrigin.initial);
-        if(plan.naturalDepth)walkNatural(plan);
-        play(); play();
+        exactCheckpoint(checkpoint(), checkpoints[checkpoints.length - 1], 'Startup batch checkpoint mismatch');
+        if(plan.naturalDepth)walkNatural(plan, checkpoints);
+        play(checkpoints); play(checkpoints);
+        // Saving/exporting adds a temporary full checkpoint to the last event.
+        // Appending in v4 restores its original fullCheckpoint/chainDigest, so the
+        // unsaved live events are the exact continuation-prefix oracle.
+        const continuingPrefix = clone(game.recordedInputEvents), recordedCheckpoints = checkpoints.slice();
         const saved = clone(game.toSaveSnapshot()), expected = checkpoint(), recording = clone(game.exportRecording());
-        assert(saved.run.recordingOrigin, 'Save lost recording provenance');
+        assert(saved.run.recordingOrigin?.version === 2, 'Save lost recording v2 provenance');
         equal(Object.keys(saved.extensions.modules).sort(), [...plan.ids].sort(), 'Save module ownership mismatch');
         assert(game.loadSnapshot(saved), 'Save rejected');
         game.animationEnabled = false;
-        equal(checkpoint(), expected, 'Load exact checkpoint/RNG mismatch');
+        exactCheckpoint(checkpoint(), expected, 'Load exact checkpoint/RNG mismatch');
         assert(game.hasCompleteRecording, 'Loaded save cannot continue recording');
-        play();
+        play(checkpoints);
         const continuation = clone(game.exportRecording()), continued = checkpoint();
-        equal(continuation.events.slice(0, recording.events.length), recording.events, 'Continuation rewrote history');
+        equal(continuation.events.slice(0, recording.events.length), continuingPrefix, 'Continuation rewrote history');
         assert(continuation.events.length === recording.events.length + 1, 'Continuation did not append');
-        replay(recording);
-        equal(checkpoint(), expected, 'Replay final mismatch');
+        replay(recording, recordedCheckpoints);
+        exactCheckpoint(checkpoint(), expected, 'Replay final mismatch');
         for (const index of [0, 1, recording.events.length]) {
             game.replaySeek(index);
             assert(game.replayError === null && game.replayCursor === index, 'Seek failed');
-            equal(checkpoint(), index ? fromEvent(recording.events[index - 1]) : origin, 'Seek exact checkpoint/RNG mismatch');
+            exactCheckpoint(checkpoint(), recordedCheckpoints[index], `Seek ${index} exact checkpoint/RNG mismatch`);
         }
-        replay(continuation);
-        equal(checkpoint(), continued, 'Continuation replay mismatch');
+        replay(continuation, checkpoints);
+        exactCheckpoint(checkpoint(), continued, 'Continuation replay mismatch');
         // Rejection must retain the old player, runtime and substantive/cosmetic RNG.
         const player = game.player, runtime = game.extensionRuntime, before = checkpoint();
         for (const id of unavailableIds) {
@@ -107,7 +144,7 @@ function exerciseGame(game, plans, unavailableIds) {
             assert(game.loadSnapshot(badSave) === false, `Missing ${id} save accepted`);
             assert(game.loadReplay(badRecording) === false, `Missing ${id} recording accepted`);
             assert(game.player === player && game.extensionRuntime === runtime, 'Failed input retired old run');
-            equal(checkpoint(), before, 'Failed input changed checkpoint/RNG');
+            exactCheckpoint(checkpoint(), before, 'Failed input changed checkpoint/RNG');
         }
         results.push({ modules: plan.ids, ...(plan.naturalDepth ? {naturalDepth:game.depth,naturalContributedBirth:true}:{}), events: recording.events.length, continuationEvents: continuation.events.length,
             exactCheckpoints: true, saveLoad: true, replaySeek: true, continuation: true, missingModuleRejected: unavailableIds });
