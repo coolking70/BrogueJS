@@ -1,3 +1,4 @@
+import { ownsWorldWorkDefinitions } from './WorldWorkOwner';
 import { edibleItemAdapter } from './KindKnowledge';
 import { validateEdibleReferences } from './EdibleValidation';
 import { validateStructureReferences } from '../Map/StructureValidation';
@@ -23,7 +24,7 @@ export function validateWorldWorkReferences(game: Game): void {
   )
     fail('definitionsFingerprint');
   for (const t of w.terminalTickets) {
-    const pack = packs.find((p) => p.items.some((i) => i.owner === t.owner));
+    const pack = packs.find((p) => ownsWorldWorkDefinitions(p, t.owner));
     const definitions =
       t.kind === 'craft'
         ? pack?.recipes
@@ -200,7 +201,7 @@ export function validateWorldWorkReferences(game: Game): void {
     if (
       f.factId <= previousFact ||
       f.factId >= nextFactId ||
-      !packs.some((p) => p.items.some((i) => i.owner === f.owner))
+      !packs.some((p) => ownsWorldWorkDefinitions(p, f.owner))
     )
       fail('workFact');
     previousFact = f.factId;
@@ -215,7 +216,7 @@ export function validateWorldWorkReferences(game: Game): void {
       (f.reason !== null && typeof f.reason !== 'string')
     )
       fail('workFact values');
-    const pack = packs.find((p) => p.items.some((i) => i.owner === f.owner))!;
+    const pack = packs.find((p) => ownsWorldWorkDefinitions(p, f.owner))!;
     const definition =
       f.operation === 'startup'
         ? pack.items
@@ -268,7 +269,7 @@ export function validateWorldWorkReferences(game: Game): void {
   }
   for (const t of w.tickets) {
     const pack = packs.find((p) =>
-      [...p.items, ...p.resourceNodes, ...p.stations, ...p.recipes].some((d) => d.owner === t.owner)
+      ownsWorldWorkDefinitions(p, t.owner)
     );
     if (
       !pack ||

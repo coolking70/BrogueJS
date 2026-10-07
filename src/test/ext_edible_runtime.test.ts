@@ -409,3 +409,125 @@ it('call knowledge publication failure restores the whole independent write set'
   expect(runtime.snapshot()).toEqual(ext);
   expect(rng.getState()).toEqual(random);
 });
+
+import { definitions as forageDefinitions } from '../ext/testing/fixtures/forageFixture';
+import type { WorldDefinitionPack } from '../ext/structureTypes';
+import type { Json } from '../ext/types';
+import { extensionDataFingerprint } from '../ext/fingerprint';
+import { worldWorkReadSDK } from '../engine/Core/WorldWorkWorld';
+import { validateWorldWorkReferences } from '../engine/Core/WorldWorkValidation';
+const workProjectionFixture = (pack: WorldDefinitionPack = forageDefinitions) => {
+  const rules = { schema: 1, version: '1.0.0', fingerprint: extensionDataFingerprint(pack) };
+  return {
+    ...descriptor, rules,
+    create: () => {
+      const m = descriptor.create();
+      m.rules = rules;
+      m.worldDefinitions = pack;
+      m.projectView = (c) => ({
+        context: c.worldWork?.readWorkContext({ kind: 'inventory' }) ?? null,
+        facts: c.worldWork?.recentFacts(0) ?? null
+      }) as unknown as Json;
+      return m;
+    }
+  };
+};
+function harvested() {
+  const h = forage([], [workProjectionFixture()]);
+  h.fixture({ kind: 'node', definitionId: 'fgfixture.node-a', at: { x: 11, y: 10 } });
+  const g = h.game(), node = g.world5!.nodes.find(n => n.at.x === 11 && n.at.y === 10)!;
+  const context = h.readWorkContext('fgfixture', { kind: 'node', interactableId: node.interactableId });
+  expect(context.ok).toBe(true);
+  if (!context.ok) throw Error(context.code);
+  expect(h.ext('fgfixture', 'harvest', {
+    nodeId: node.interactableId, nodeRevision: node.revision,
+    inventoryStamp: context.value.inventoryStamp, destinationId: null, destinationRevision: null
+  })).toEqual({ recorded: true, error: null });
+  expect(g.world5!.tickets).toEqual([]);
+  expect(g.world5!.terminalTickets).toHaveLength(1);
+  expect(g.world5!.terminalTickets[0]).toMatchObject({
+    owner: 'fgfixture', definitionId: 'fgfixture.node-a', kind: 'harvest', status: 'completed', completedBatches: 1
+  });
+  expect(g.worldWorkFacts!.map(f => [f.operation, f.result])).toEqual([
+    ['harvest', 'accepted'], ['harvest', 'completed']
+  ]);
+  expect(g.player.inventory.items.find(i => i.worldItem?.definitionId === 'fgfixture.raw')?.quantity).toBe(1);
+  return h;
+}
+it('empty-items harvest preserves terminal tickets and work facts through save/load, replay, seek and continuation', () => {
+  const h = harvested(), g = h.game();
+  const evidence = () => structuredClone({
+    terminal: g.world5!.terminalTickets, facts: g.worldWorkFacts,
+    projection: g.extensionRuntime!.readModuleView('fgfixture')!.state
+  });
+  const expected = evidence();
+  expect(expected.projection).toMatchObject({ context: { ok: true }, facts: { ok: true, value: expected.facts } });
+  const save = h.save(), digest = h.digest(), rec = h.exportRecording(), n = g.recordedInputEvents.length;
+  h.load(save);
+  expect(evidence()).toEqual(expected);
+  expect(h.digest()).toBe(digest);
+  // The harness calls replayStep(true) for every recorded command.
+  expect(h.replay(rec)).toEqual({ ok: true, firstMismatch: null });
+  expect(evidence()).toEqual(expected);
+  expect(h.digest()).toBe(digest);
+  h.seek(rec, n - 1);
+  expect(g.world5!.terminalTickets).toEqual([]);
+  expect(g.worldWorkFacts).toEqual([]);
+  expect(g.replayStep(true)).not.toBe(false);
+  expect(g.replayError).toBeNull();
+  expect(evidence()).toEqual(expected);
+  h.seek(rec, n);
+  expect(evidence()).toEqual(expected);
+  expect(h.digest()).toBe(digest);
+  h.load(save);
+  h.command('wait');
+  const continued = h.exportRecording(), continuedDigest = h.digest();
+  // Export promotes the final event to a full checkpoint and rechains it.
+  // Continuation keeps every command field and incremental checkpoint unchanged.
+  const prefix = (recording: string) => JSON.parse(recording).events.slice(0, n)
+    .map(({ fullCheckpoint: _full, chainDigest: _chain, ...event }: any) => event);
+  expect(prefix(continued)).toEqual(prefix(rec));
+  expect(h.replay(continued)).toEqual({ ok: true, firstMismatch: null });
+  expect(evidence()).toEqual(expected);
+  expect(h.digest()).toBe(continuedDigest);
+});
+it('only edibleItems supplies context.worldWork while an absent owner has no projection', () => {
+  const pack: WorldDefinitionPack = {
+    schema: 1, worldSdk: 1, items: [], resourceNodes: [], stations: [], recipes: [], startupItems: null,
+    edibleItems: [forageDefinitions.edibleItems![2]!]
+  };
+  const h = forage([], [workProjectionFixture(pack)]), g = h.game(), before = h.save(), random = rng.getState();
+  expect(g.extensionRuntime!.readModuleView('fgfixture')!.state).toMatchObject({
+    context: { ok: true, value: { owner: 'fgfixture' } }, facts: { ok: true, value: [] }
+  });
+  expect(worldWorkReadSDK(g, 'missing')).toBeUndefined();
+  expect(g.extensionRuntime!.readModuleView('missing')).toBeNull();
+  expect(h.save().replace(/"savedAt":\d+/, '')).toBe(before.replace(/"savedAt":\d+/, ''));
+  expect(rng.getState()).toEqual(random);
+  h.load(before);
+  expect(g.extensionRuntime!.readModuleView('fgfixture')!.state).toMatchObject({ context: { ok: true } });
+});
+it.each(['terminal-owner', 'terminal-definition', 'fact-owner', 'fact-definition'] as const)(
+  'empty-items harvest still rejects invalid %s references',
+  (kind) => {
+    const h = harvested(), g = h.game();
+    expect(() => validateWorldWorkReferences(g)).not.toThrow();
+    // Isolate work-fact validation from terminal-ticket validation as well.
+    if (kind.startsWith('fact')) {
+      g.world5!.terminalTickets = [];
+      g.worldWorkFacts = structuredClone(g.worldWorkFacts);
+      expect(() => validateWorldWorkReferences(g)).not.toThrow();
+    }
+    const row = kind.startsWith('terminal') ? g.world5!.terminalTickets[0]! : g.worldWorkFacts![0]!;
+    if (kind.endsWith('owner')) row.owner = 'missing';
+    else row.definitionId = 'fgfixture.missing';
+    expect(() => validateWorldWorkReferences(g)).toThrow('C5_BAD_REFERENCE');
+  }
+);
+it('empty-items work facts remain valid after their terminal ticket leaves the bounded ledger', () => {
+  const h = harvested(), g = h.game();
+  g.world5!.terminalTickets = [];
+  // Facts have their own retention bound and may outlive the terminal ticket.
+  expect(() => validateWorldWorkReferences(g)).not.toThrow();
+  expect(() => h.save()).not.toThrow();
+});

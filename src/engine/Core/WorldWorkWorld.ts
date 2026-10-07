@@ -1,3 +1,4 @@
+import { ownsWorldWorkDefinitions } from './WorldWorkOwner';
 import { edibleDefinition, edibleItemAdapter } from './KindKnowledge';
 import { composedCellFlags } from '../Map/CellProperties';
 import { markRecordingRoot } from '../../ext/recordingRevisions';
@@ -705,7 +706,7 @@ export function worldWorkReadSDK(game: Game, owner: string): WorldWorkReadSDK | 
     !game.world5 ||
     !game.extensionRuntime
       ?.worldDefinitionPacks()
-      .some((p) => p.items.some((i) => i.owner === owner))
+      .some((p) => ownsWorldWorkDefinitions(p, owner))
   )
     return;
   return deepFreeze({

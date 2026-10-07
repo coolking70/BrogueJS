@@ -247,3 +247,40 @@ it('one recipe amount can exceed maxStack and is split into native output rows',
     before + 2
   );
 });
+
+// Exercise each lookup branch without manufacturing a foreign owner. These sliced
+// packs are lookup-unit inputs; station/recipe-only packs are not legal content.
+import type { Game } from '../engine/Core/Game';
+import type { WorldDefinitionPack } from '../ext/structureTypes';
+import { assertWorldDefinitionPack } from '../engine/Core/WorldDefinitions';
+import { definitions as forageDefinitions } from '../ext/testing/fixtures/forageFixture';
+it.each(['items', 'resourceNodes', 'stations', 'recipes', 'edibleItems'] as const)(
+  'owner lookup recognizes %s and rejects an absent owner',
+  (kind) => {
+    const pack: WorldDefinitionPack = {
+      schema: 1, worldSdk: 1, items: [], resourceNodes: [], stations: [], recipes: [], startupItems: null
+    };
+    const owner = kind === 'edibleItems' ? 'fgfixture' : 'craftskel';
+    if (kind === 'edibleItems') pack.edibleItems = [forageDefinitions.edibleItems![2]!];
+    else Object.assign(pack, { [kind]: definitions[kind] });
+    const g = { world5: {}, extensionRuntime: { worldDefinitionPacks: () => [pack] } } as unknown as Game;
+    expect(publication.worldWorkReadSDK(g, owner)).toMatchObject({ owner, worldSdk: 1 });
+    expect(publication.worldWorkReadSDK(g, 'missing')).toBeUndefined();
+    if (kind === 'resourceNodes' || kind === 'stations' || kind === 'recipes') {
+      // Costs/outputs must resolve: recognizing a list's owner does not validate a pack.
+      expect(() => assertWorldDefinitionPack(pack, owner)).toThrow('C5_BAD_DEFINITION');
+    } else expect(() => assertWorldDefinitionPack(pack, owner)).not.toThrow();
+  }
+);
+it.each(['resourceNodes', 'edibleItems'] as const)(
+  'empty-items pack still rejects a foreign %s owner and an invalid definition',
+  (kind) => {
+    for (const field of ['owner', 'id'] as const) {
+      const pack = structuredClone(forageDefinitions);
+      const row = pack[kind]![0]!;
+      if (field === 'owner') row.owner = 'missing';
+      else row.id = 'missing.definition';
+      expect(() => assertWorldDefinitionPack(pack, 'fgfixture')).toThrow('C5_BAD_DEFINITION');
+    }
+  }
+);
