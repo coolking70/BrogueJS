@@ -8,6 +8,7 @@ import { DF } from '../Map/DungeonFeatureCatalog';
 import { spawnDungeonFeature, catalogFeature, dungeonFeatureActive } from '../Map/DungeonFeature';
 import { logger } from '../Systems/Logger';
 import i18next from 'i18next';
+import { worldText } from '../../ext/worldText';
 import { checkedAdd } from '../../ext/world5';
 import { rng } from '../Random';
 interface Contact {
@@ -22,6 +23,23 @@ interface Queue {
   depth: number;
 }
 const queues = new WeakMap<Game, Queue>();
+function fireMessageTemplate(result: FireContactFact['result']): string {
+  // Keep placeholders intact for the data-owned message's interpolation pass.
+  switch (result) {
+    case 'transformed': return i18next.t('ext.foundation.edible.fire.transformed', {
+      defaultValue: '{{item}} turns into {{result}}.', skipInterpolation: true
+    });
+    case 'burned-up': return i18next.t('ext.foundation.edible.fire.burned_up', {
+      defaultValue: '{{item}} burns up.', skipInterpolation: true
+    });
+    case 'exploded': return i18next.t('ext.foundation.edible.fire.exploded', {
+      defaultValue: '{{item}} explodes.', skipInterpolation: true
+    });
+    case 'destroyed': return i18next.t('ext.foundation.edible.fire.destroyed', {
+      defaultValue: '{{item}} is destroyed in the lava.', skipInterpolation: true
+    });
+  }
+}
 export function fireContactPending(game: Game): boolean {
   const q = queues.get(game);
   return !!q && (q.draining || q.pending.length > 0);
@@ -139,7 +157,8 @@ export function drainFireContacts(game: Game, strict = false): void {
       );
       if (visible)
         logger.log(
-          i18next.t(d.fire.messageKey, {
+          worldText(d.fire.messageKey, {
+            defaultValue: fireMessageTemplate(result),
             item: knowledgeName(game, beforeId, d.nameKey),
             result: toDefinitionId
               ? knowledgeName(game, toDefinitionId, edibleDefinition(game, toDefinitionId)!.nameKey)

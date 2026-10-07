@@ -1,5 +1,6 @@
 import { validateEdibleSnapshot } from '../engine/Core/EdibleValidation';
 import i18next from 'i18next';
+import { worldText } from './worldText';
 import { edibleSnapshot, peekEdibleState, restoreEdibleState, cleanEdibleState, type EdibleState } from '../engine/Core/EdibleState';
 import { FOUNDATION_EDIBLE_RULES, hasEdibleDeclarations } from '../engine/Core/EdibleDefinitions';
 import { FOUNDATION_STRUCTURE_RULES } from './structureSchema';
@@ -1684,7 +1685,14 @@ export class ExtensionRuntime {
                 replaceState:(value:Json)=>{check();if(!isJson(value))throw new World5Error('C5_PROVIDER');context.setState(value);},
                 setOwnComponent:(id:number,name:string,value:Json)=>{check();if(id!==(fact as any).actorId||![...this.creatures].some(c=>c.id===id&&c.hp>0))throw new World5Error('C5_SCOPE');context.setComponent(id,name,value);},
                 removeOwnComponent:(id:number,name:string)=>{check();if(id!==(fact as any).actorId)throw new World5Error('C5_SCOPE');context.removeComponent(id,name);},
-                message:(key:string,params?:Record<string,string|number>)=>{check();if(!key.startsWith(`ext.${owner}.`))throw new World5Error('C5_PROVIDER');context.message(i18next.t(key,params));}
+                message:(key:string,params?:Record<string,string|number>)=>{
+                    check();if(!key.startsWith(`ext.${owner}.`))throw new World5Error('C5_PROVIDER');
+                    context.message(worldText(key,{
+                        defaultValue:i18next.t('ext.foundation.edible.message_unavailable',{
+                            defaultValue:'The event could not be described.',skipInterpolation:true
+                        }),...params
+                    }));
+                }
             });
             const result=callback(freezeView(structuredClone(fact)),tx);requireSynchronous(result);if(result!==undefined)throw new World5Error('C5_PROVIDER');
         }));return true; } catch {if(!degrade)throw new World5Error('C5_PROVIDER');this.edibleDiagnostics.push({owner,method});return false;} finally {active=false;}

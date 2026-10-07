@@ -1539,5 +1539,13 @@
     "ext.foundation.status.slumber_wake_monster": "{{monster}}从沉眠中醒来。",
     "ext.foundation.edible.confirm.not_hungry": "你现在不太饿，仍要吃下它吗？",
     "ext.foundation.edible.confirm.overfeed": "它现在不太饿，仍要喂食吗？",
-    "ext.foundation.edible.satiety": " 饱腹：{{value}}。"
+    "ext.foundation.edible.satiety": " 饱腹：{{value}}。",
+    "ext.foundation.edible.template.node": "{{name}}菌丛",
+    "ext.foundation.edible.template.roasted": "烤{{name}}",
+    "ext.foundation.edible.template.called": "{{name}}，称作“{{title}}”",
+    "ext.foundation.edible.fire.transformed": "{{item}}变成了{{result}}。",
+    "ext.foundation.edible.fire.burned_up": "{{item}}烧尽了。",
+    "ext.foundation.edible.fire.exploded": "{{item}}爆裂了。",
+    "ext.foundation.edible.fire.destroyed": "{{item}}在熔岩中毁掉了。",
+    "ext.foundation.edible.message_unavailable": "无法显示这次事件的说明。"
 }

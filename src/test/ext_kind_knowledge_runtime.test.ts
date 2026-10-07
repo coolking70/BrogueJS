@@ -10,6 +10,11 @@ import {
 import { rng } from '../engine/Random';
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import { definitions } from '../ext/testing/fixtures/forageFixture';
+import i18next from 'i18next';
+import zhCN from '../locales/zh_CN.json';
+import { descriptor } from '../ext/testing/fixtures/forageFixture';
+import { queueFireContact, drainFireContacts } from '../engine/Core/FireContact';
+import { logger } from '../engine/Systems/Logger';
 it('name matrix raw/roasted/node, titles, tasted, raw known roasted unknown, monotonic isolation', () => {
   const h = forage(),
     g = h.game(),
@@ -143,4 +148,77 @@ it('edible stays outside identify/enchant/detect/polarity and automatic native f
   h.command('wait');
   expect(i.quantity).toBe(2);
   expect(g.player.inventory.items).toContain(i);
+});
+
+function withFallbackLanguage(language: 'en' | 'zh_CN', check: () => void) {
+  const previous = i18next.language, fallback = i18next.options.fallbackLng;
+  const locale = 'edible-i18n-' + language;
+  const resources: Record<string, string> = language === 'zh_CN' ? { ...zhCN } : {};
+  for (const item of definitions.edibleItems!) resources[item.nameKey] = language === 'en' ? 'fungus' : '菌';
+  for (const appearance of definitions.knowledgeGroups![0]!.appearancePool)
+    resources[appearance.nameKey] = language === 'en' ? 'speckled fungus' : '彩斑菌';
+  i18next.addResourceBundle(locale, 'translation', resources);
+  try {
+    i18next.options.fallbackLng = false;
+    i18next.changeLanguage(locale);
+    check();
+  } finally {
+    i18next.options.fallbackLng = fallback;
+    i18next.changeLanguage(previous);
+    i18next.removeResourceBundle(locale, 'translation');
+  }
+}
+
+it.each(['en', 'zh_CN'] as const)('data-owned names use %s template defaults without double interpolation or RNG', language => {
+  const h = forage(), g = h.game(), item = grant(h);
+  const title = '{{name}}<&>';
+  h.command('item:execute', 'call|' + item.inventoryLetter + '|' + title);
+  withFallbackLanguage(language, () => {
+    const random = rng.getState(), before = g.extensionRuntime!.snapshot();
+    const name = language === 'en' ? 'speckled fungus' : '彩斑菌';
+    expect(knowledgeName(g, 'fgfixture.node-a', '')).toBe(language === 'en' ? name + ' patch' : name + '菌丛');
+    expect(knowledgeName(g, 'fgfixture.roasted', '')).toBe(language === 'en' ? 'roasted ' + name : '烤' + name);
+    expect(knowledgeName(g, 'fgfixture.raw', '')).toBe(language === 'en' ? name + ' called "' + title + '"' : name + '，称作“' + title + '”');
+    expect(g.extensionRuntime!.snapshot()).toEqual(before);
+    expect(rng.getState()).toEqual(random);
+  });
+});
+
+it.each(['en', 'zh_CN'] as const)('fire-contact missing module text uses %s defaults with actual item/result interpolation', language => {
+  const h = forage(), g = h.game(), item = grant(h, 'raw', 1, true);
+  withFallbackLanguage(language, () => {
+    const before = logger.messages.length;
+    queueFireContact(g, item, 'spawn-fire');
+    drainFireContacts(g);
+    expect(item.worldItem!.definitionId).toBe('fgfixture.roasted');
+    expect(logger.messages.slice(before).map(message => message.text)).toContain(language === 'en'
+      ? 'speckled fungus turns into roasted speckled fungus.' : '彩斑菌变成了烤彩斑菌。');
+  });
+});
+
+it.each(['en', 'zh_CN'] as const)('participant messaging preserves owner scope and %s defaults', language => {
+  let key = 'ext.fgfixture.untranslated-message';
+  let params: Record<string, string | number> | undefined;
+  const custom = { ...descriptor, create: () => {
+    const module = descriptor.create();
+    module.edibleParticipant!.onConsumed = (_fact, tx) => tx.message(key, params);
+    return module;
+  } };
+  const h = forage([], [custom]), runtime = h.game().extensionRuntime!;
+  withFallbackLanguage(language, () => {
+    expect(runtime.edibleParticipate('fgfixture', 'onConsumed', {}, {})).toBe(true);
+    expect(logger.messages[logger.messages.length - 1]!.text).toBe(language === 'en'
+      ? 'The event could not be described.' : '无法显示这次事件的说明。');
+    params = { item: 'fungus', defaultValue: 'A participant reports {{item}}.' };
+    expect(runtime.edibleParticipate('fgfixture', 'onConsumed', {}, {})).toBe(true);
+    expect(logger.messages[logger.messages.length - 1]!.text).toBe('A participant reports fungus.');
+    i18next.addResource(i18next.language, 'translation', key, 'Module reports {{item}}.');
+    expect(runtime.edibleParticipate('fgfixture', 'onConsumed', {}, {})).toBe(true);
+    expect(logger.messages[logger.messages.length - 1]!.text).toBe('Module reports fungus.');
+    const before = logger.peekState(), random = rng.getState();
+    key = 'ext.other.untranslated-message';
+    expect(() => runtime.edibleParticipate('fgfixture', 'onConsumed', {}, {})).toThrow('C5_PROVIDER');
+    expect(logger.peekState()).toEqual(before);
+    expect(rng.getState()).toEqual(random);
+  });
 });

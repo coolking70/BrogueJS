@@ -181,10 +181,20 @@ export function knowledgeName(game: Game, id: string, fallbackKey: string): stri
       : appearance(game, m).nameKey
   );
   if (id === m.kind.node)
-    return i18next.t(m.group.templates.node, { name, interpolation: { escapeValue: false } });
+    return worldText(m.group.templates.node, {
+      name, interpolation: { escapeValue: false },
+      defaultValue: i18next.t('ext.foundation.edible.template.node', {
+        defaultValue: '{{name}} patch', skipInterpolation: true
+      })
+    });
   let result =
     id === m.kind.roasted
-      ? i18next.t(m.group.templates.roasted, { name, interpolation: { escapeValue: false } })
+      ? worldText(m.group.templates.roasted, {
+          name, interpolation: { escapeValue: false },
+          defaultValue: i18next.t('ext.foundation.edible.template.roasted', {
+            defaultValue: 'roasted {{name}}', skipInterpolation: true
+          })
+        })
       : name;
   if (state === 'tasted') result += worldText(m.group.templates.tastedNote);
   else if (id === m.kind.roasted && rawKnown && state !== 'known')
@@ -193,10 +203,13 @@ export function knowledgeName(game: Game, id: string, fallbackKey: string): stri
     (r) => r.definitionId === id
   )?.title;
   if (state !== 'known' && title)
-    result = i18next.t(m.group.templates.called, {
+    result = worldText(m.group.templates.called, {
       name: result,
       title,
-      interpolation: { escapeValue: false }
+      interpolation: { escapeValue: false },
+      defaultValue: i18next.t('ext.foundation.edible.template.called', {
+        defaultValue: '{{name}} called "{{title}}"', skipInterpolation: true
+      })
     });
   return result;
 }
@@ -206,11 +219,11 @@ export function knowledgeDescription(game: Game, id: string, fallbackKey: string
   if (!m)
     return (
       worldText(fallbackKey) +
-      (d ? i18next.t('ext.foundation.edible.satiety', { value: d.satiety }) : '')
+      (d ? i18next.t('ext.foundation.edible.satiety', { value: d.satiety, defaultValue: ' Satiety: {{value}}.' }) : '')
     );
   return knowledgeState(game, id) === 'known'
     ? worldText(m.kind.knownDescriptionKey) +
-        (d ? i18next.t('ext.foundation.edible.satiety', { value: d.satiety }) : '')
+        (d ? i18next.t('ext.foundation.edible.satiety', { value: d.satiety, defaultValue: ' Satiety: {{value}}.' }) : '')
     : worldText(appearance(game, m).descriptionKey) + worldText(m.group.templates.unknownDetail);
 }
 export function edibleItemAdapter(game: Game, d: EdibleItemDefinition): ItemDefinitionContribution {
