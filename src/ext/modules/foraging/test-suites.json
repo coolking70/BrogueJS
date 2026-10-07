@@ -5,7 +5,8 @@
     "tests/foraging_imports.test.ts",
     "tests/foraging_module.test.ts",
     "tests/foraging_names.test.ts",
-    "tests/foraging_schema.test.ts"
+    "tests/foraging_schema.test.ts",
+    "tests/foraging_ui.test.ts"
   ],
   "gen": [],
   "drift": []
