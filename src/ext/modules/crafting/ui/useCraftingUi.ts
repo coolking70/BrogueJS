@@ -140,7 +140,11 @@ export function useCraftingUi(host: ModuleUiHost,
   const removeKeys = host.registerKeyHandler?.(event => {
     if (!opened.value || !live() || busy()) return false;
     if (event.key === 'Escape') { event.preventDefault(); close(); }
-    else if (!['Tab', 'Enter', ' '].includes(event.key)) event.preventDefault();
+    else {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest?.('[data-map-drawer]')) return false;
+      if (target.tagName !== 'SELECT' && !['Tab', 'Enter', ' '].includes(event.key)) event.preventDefault();
+    }
     return true;
   }, 580);
   const removeSource = host.dialogs?.registerSource(refresh, -25);

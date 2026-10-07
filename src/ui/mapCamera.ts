@@ -118,8 +118,8 @@ export function computeMapCamera(
         return { ...base, follow: false, panX: 0, panY: 0 };
     }
     const scale = tilePx / tile;
-    const x = axis(viewW, cols * tilePx, (focus.x + 0.5) * tilePx, pan.x, paddingTiles * tilePx);
-    const y = axis(viewH, rows * tilePx, (focus.y + 0.5) * tilePx, pan.y, paddingTiles * tilePx);
+    const x = axis(viewW, cols * tilePx, (focus.x + 0.5) * tilePx, pan.x, paddingTiles * tilePx, true);
+    const y = axis(viewH, rows * tilePx, (focus.y + 0.5) * tilePx, pan.y, paddingTiles * tilePx, true);
     return { scaleX: scale, scaleY: scale, offsetX: x.offset, offsetY: y.offset, follow: true, panX: x.pan, panY: y.pan };
 }
 

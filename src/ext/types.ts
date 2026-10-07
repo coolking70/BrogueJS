@@ -250,6 +250,7 @@ export type HookHandlers = { [K in HookName]?: (event: Readonly<HookEvents[K]>, 
 /** Detached native newborn bases for safe composition before a current run is retired. */
 export interface ExtensionCreationResources { readonly maxHp: number; readonly strength: number }
 export interface ExtensionModule extends ExtensionVersion, WorldModuleFields {
+    readonly campPolicy?: import('./structureSdk').CampPolicy;
     readonly edibleCommands?: Partial<Record<'feed'|'roast', import('./worldEdible').EdibleCommand>>;
     readonly edibleParticipant?: import('./worldEdible').EdibleParticipant;
     readonly actorNeedParticipant?: import('./actorNeeds').ActorNeedParticipant;

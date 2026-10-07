@@ -15,7 +15,8 @@
     "tests/crafting_schema.test.ts",
     "tests/crafting_sdk_integration.test.ts",
     "tests/crafting_ui.test.ts",
-    "tests/crafting_work.test.ts"
+    "tests/crafting_work.test.ts",
+    "tests/crafting_input.test.ts"
   ],
   "gen": [],
   "drift": [

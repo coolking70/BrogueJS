@@ -63,6 +63,7 @@
     "src/test/ext_module_creation_ui.test.ts",
     "src/test/ext_module_removal.test.ts",
     "src/test/ext_module_ui.test.ts",
+    "src/test/ext_canvas_input.test.ts",
     "src/test/ext_optional_queries.test.ts",
     "src/test/ext_optional_rewards.test.ts",
     "src/test/ext_part_break_protocol.test.ts",

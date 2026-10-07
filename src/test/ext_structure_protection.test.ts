@@ -124,25 +124,21 @@ it('barrier slots are mutually exclusive and a standalone station binds atomical
   expect(s.revision).toBe(1);
   expect(g.extensionRuntime!.worldWorkEntities()).toHaveLength(count);
 });
-it('runtime region rejects D40, protected terrain and facilities cut by its boundary', () => {
+it('actual work cells reject protected machines and native D40 stairs', () => {
   const { g } = structureHarness();
-  g.grid.getCell(18, 8)!.machineNumber = 1;
   createCamp(g);
+  g.grid.getCell(21, 10)!.machineNumber = 1;
+  build(g, 'floor');
   expect(worldWorkLastError(g)).toBe('C5_PROTECTED');
-  g.grid.getCell(18, 8)!.machineNumber = 0;
-  g.depth = 40;
-  withWorldActorScope(g, 'c5fixture', g.player.id, 'trusted-world', (s) =>
-    expect(
-      planRegionChange(
-        {
-          kind: 'create',
-          instanceKey: 'bad',
-          levelRef: { kind: 'dungeon', depth: 40 },
-          bounds: { x: 17, y: 7, width: 9, height: 9 }
-        },
-        s
-      )
-    ).toMatchObject({ ok: false, code: 'C5_PROTECTED' })
+  const { g: deep } = structureHarness();
+  deep.depth = 40;
+  const r = createCamp(deep);
+  deep.grid.setTerrain(21, 10, TerrainType.STAIRS_DOWN);
+  withWorldActorScope(deep, 'c5fixture', deep.player.id, 'trusted-world', (scope) =>
+    expect(planStructureChange({
+      kind: 'build', regionId: r.id, definitionId: 'c5fixture.floor',
+      levelRef: {kind: 'dungeon', depth: 40}, at: {x: 21, y: 10}
+    }, scope)).toMatchObject({ ok: false, code: 'C5_PROTECTED' })
   );
 });
 

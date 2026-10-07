@@ -268,15 +268,17 @@ it.each(['tunnel', 'shatter'])('P3 %s destroys a structural barrier', (kind) => 
   expect(g.world5!.structures).toHaveLength(0);
   expect(g.grid.getCell(21, 10)!.isPassable).toBe(true);
 });
-it('P3 unseen region cells give the same error before inspecting hidden actors/machines', () => {
+it('P3 unseen actual work cells give the same error before inspecting hidden actors/machines', () => {
   const { g } = structureHarness();
-  g.grid.getCell(21, 12)!.isVisible = false;
   createCamp(g);
+  g.grid.getCell(21, 10)!.isVisible = false;
+  build(g, 'floor');
   expect(worldWorkLastError(g)).toBe('C5_BLOCKED');
-  g.grid.getCell(21, 12)!.machineNumber = 99;
-  createCamp(g);
+  g.grid.getCell(21, 10)!.machineNumber = 99;
+  build(g, 'floor');
   expect(worldWorkLastError(g)).toBe('C5_BLOCKED');
 });
+
 it('runtime monster sealed behind a closed structural door advances forty turns without passing or stalling', () => {
   const { g } = structureHarness();
   createCamp(g);

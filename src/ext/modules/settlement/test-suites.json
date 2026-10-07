@@ -1,0 +1,21 @@
+{
+  "test": [
+    "tests/settlement_runtime.test.ts",
+    "tests/settlement_camera.test.ts",
+    "tests/settlement_validation.test.ts",
+    "tests/settlement_persistence.test.ts",
+    "tests/settlement_boundaries.test.ts",
+    "tests/settlement_ui.test.ts",
+    "tests/settlement_materials.test.ts",
+    "tests/settlement_safety.test.ts",
+    "tests/settlement_performance.test.ts",
+    "tests/settlement_harvest.test.ts",
+    "tests/settlement_display.test.ts",
+    "tests/settlement_review.test.ts",
+    "tests/settlement_natural.test.ts",
+    "tests/settlement_input.test.ts",
+    "tests/settlement_inventory_ui.test.ts"
+  ],
+  "gen": [],
+  "drift": []
+}

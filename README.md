@@ -52,3 +52,21 @@ BROGUE_REQUIRE_CE=1 npm run test:gen  # 全量档另跑重型生成普查，强�
 ## 许可
 
 本项目衍生自 Brogue CE，按 **GNU Affero General Public License v3.0** 发布，见 [LICENSE](LICENSE)。Brogue 原作者 Brian Walker，Brogue CE 由社区维护。
+
+## 当前扩展开发记录（2026-10-07）
+
+5C1 未提交候选已实现默认关闭的生产营地模块、真实材料/储粮事务、施工存取休息撤营与UI相机接线，详见[执行报告](docs/ext/phase5c1.report.md)及[配置说明](docs/ext/settlement-config.md)。限定最终门禁：营地11文件118项、底座42文件963项（1项既有CE跳过）、drift5文件8项通过，boundary/types/build通过。后批仅修改三个自有测试夹具，另以不同输入hash重复通过营地专项和boundary/types/build；两批hash/命令/耗时分别列于报告。
+
+指挥真实390原版普通浏览器布局/选格/面板开合部分通过，但抽屉打开时DPad输入被拦截、移动跟随未通过；自然双粮闭环、完整24行矩阵及实机/FPS尚未验收。当前停止实现，等待另起独立审查；完整npm test、全部test:ext、全组合/删除矩阵留5Z。未commit/push。
+
+
+2026-10-08 更新：独立审查确认F1–F6并阻断，原结论保留；原执行会话按修复任务修完F1–F5，补正常开局seed28真实拾粮→天然D1营地闭环、D5明确首访准备的天然资格证据。最新源码/测试输入SHA `1b7565be78c172c9203061eded7698dcc928ed7b5046d3babfc828e6712b7681` 前后相同；boundary/types/build、营地13文件133pass、限定相关21文件569pass、drift5文件8pass均exit0，九个5G文件保持基线字节。固定新构建/公开自然路线/抽屉真实输入探针/矩阵副本已交指挥，尚未运行本轮浏览器；24矩阵/自然UI闭环/施工流畅度/实机仍待验，F6不能关闭。修复和准确批次见[报告§8](docs/ext/phase5c1.report.md#8-f1f6-审查修复交付2026-10-08)。原首次交付记录仅作历史，不代表最新验收。未commit/push，交付后停止，等指挥复核和必要独立定向复审。
+
+
+2026-10-08 R1更新：F1–F5已独立关闭，最终fixed3的24场景与自然双粮闭环已有指挥成功证据。复审新增R1共享测试硬依赖已仅通过测试归属拆分修复：两模块实际输入用例各归自有目录，共享Canvas用classic底座。限定6文件57pass、boundary/types/build通过；外部真实删settlement后10pass、删crafting后11pass、删全部生产目录后共享3pass，归属发现通过，无skip。生产及入口513文件和Vite实际1153依赖字节不变，新53构建文件全部匹配fixed3，已有GUI证据可复用；原79目录的26个旧残留chunk单列，不混称整目录hash一致。详见[报告§9](docs/ext/phase5c1.report.md#9-r1p2-测试归属修复交付2026-10-08)。原审查结论不改，R1交指挥复核、F6残余由指挥收口；未commit/push，验证完成后停止。
+
+
+2026-10-08 R2更新：独立审查确认原生背包关闭后营地computed长期disabled，原执行者只补commands的host.tick依赖；营地自有真实X/Esc/Confirm/ACK客户端回归先4红后4绿，最终8文件90pass、boundary/types/build全exit0，输入`72d1afadec5582146dbf5203f3bf3bc15710d3bc54c54e2c18c8afd1cb76ca64`前后相同。Game/InventoryOverlay/catalog和共享冻结9文件未变，R1测试归属保留。新固定build已交指挥，**旧24矩阵不能充当R2触发验收**，待新24矩阵及背包关闭→重开→六设施持续流程/另进程复审。见[报告§10](docs/ext/phase5c1.report.md#10-r2p2-原生背包关闭后入口恢复修复2026-10-08)。原审查结论不改，未commit/push，交付后停止。
+
+
+2026-10-08维护者最终收口：5C1按本步范围验收通过，最终输入72d1afadec5582146dbf5203f3bf3bc15710d3bc54c54e2c18c8afd1cb76ca64；独立F1–F5/R1/R2关闭，final4新24矩阵及原生背包重开→六设施/12秒持续交互通过。长内容/满槽显示夹具通过；高级浏览器、真实手机和全量收尾留5Z。详见[维护者验收](docs/ext/phase5c1.acceptance.md)。5G原0fb2720仍隔离，未最终验收。

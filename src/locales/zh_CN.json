@@ -1547,5 +1547,7 @@
     "ext.foundation.edible.fire.burned_up": "{{item}}烧尽了。",
     "ext.foundation.edible.fire.exploded": "{{item}}爆裂了。",
     "ext.foundation.edible.fire.destroyed": "{{item}}在熔岩中毁掉了。",
-    "ext.foundation.edible.message_unavailable": "无法显示这次事件的说明。"
+    "ext.foundation.edible.message_unavailable": "无法显示这次事件的说明。",
+    "ext.foundation.structure.completed": "营地操作已完成。",
+    "ext.foundation.structure.confirm": "确认执行？施工、存取和拆卸会推进时间；休息可被危险打断。"
 }

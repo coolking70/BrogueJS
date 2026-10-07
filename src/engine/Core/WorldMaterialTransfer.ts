@@ -1,3 +1,4 @@
+import {lockedFoodQuantity} from './StructureProduction';
 /** Trusted adapter only; absent from the content SDK. One atomic transfer, 100 ticks. */
 import type { Game } from './Game';
 import type { WorldResult, WorldCommit } from '../../ext/worldSdk';
@@ -60,7 +61,7 @@ export function planMaterialTransfer(
     )
       throw new World5Error('C5_BAD_PAYLOAD');
     const c = game.world5.containers.find(
-      (c) => c.id === request.containerId && c.kind === 'chest'
+      (c) => c.id === request.containerId && (c.kind === 'chest'||c.kind==='remains')
     );
     if (!c) throw new World5Error('C5_UNKNOWN_TARGET');
     if (levelKey(c.levelRef) !== `dungeon.${game.depth}`) throw new World5Error('C5_WRONG_LEVEL');
@@ -92,6 +93,7 @@ export function planMaterialTransfer(
         row.quantity > item.quantity
       )
         throw new World5Error('C5_BAD_PAYLOAD');
+      if(request.direction==='withdraw'&&item.quantity-row.quantity<lockedFoodQuantity(game,item.id))throw new World5Error('C5_RESERVED');
       seen.add(row.itemId);
       if (item.category === ItemCategory.GOLD) throw new World5Error('C5_INPUT');
       if (

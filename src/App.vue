@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {registerModuleMapSelection} from './ui/moduleMapSelection';
 import { computed, ref, watch, nextTick, provide, onMounted, onUnmounted } from 'vue';
 import { cancelHeldInputs } from './ui/heldInput';
 import { displaySettings } from './engine/Settings';
@@ -108,6 +109,7 @@ const moduleUi = useModuleUi({
   readDisplayFrame: () => displayedFrame(activeGame) ?? observeDisplayFrame(activeGame, logger),
   isPresentationBusy: () => !!presentationTimeline(activeGame)?.busy || !!logger.pendingAcknowledgment,
   game: () => activeGame, tick: replayTick, immersive: computed(() => displaySettings.immersiveMode),
+  selectMapCells: registerModuleMapSelection,
   registerKeyHandler: (handler, priority) => inputManager.registerModalKeyHandler(handler, priority),
   cancelHeldKeys: () => inputManager.cancelHeldKeys(),
   canOpenPanel: () => !(activeGame.interactionActive || creationTransition.value || menuOpen.value || activeGame.isInventoryOpen || activeGame.isThrowing || activeGame.pendingArcana
@@ -119,7 +121,9 @@ const moduleUi = useModuleUi({
   canOpenInteraction: () => !(panelOpen.value || journalOpen.value || themePanelOpen.value || modulePanelOpen.value
     || dialogs.current || presentationTimeline(activeGame)?.busy),
   beforeOpenPanel: () => {
-    cancelHeldInputs(); moduleUi.closePanels();
+    cancelHeldInputs();
+    if (activeGame.isAutoTraveling()) inputManager.triggerAction('interrupt_auto');
+    moduleUi.closePanels();
     panelOpen.value = false; journalOpen.value = false; themePanelOpen.value = false;
     nearbyInspection.value = null; activeGame.inspectTarget = null;
   },
@@ -429,7 +433,7 @@ const handleReturnToTitle = async () => {
       <ThemeLog class="area-log" :lines="themeLogLines" :single-line="displaySettings.immersiveMode && !themePanelOpen" @open-journal="journalOpen = true" />
       <ThemeNearby class="area-near" @inspect="nearbyInspection = $event" />
       <div class="map-area">
-        <GameCanvas class="game-view" :display-modal-open="modulePanelOpen || creationTransition" />
+        <GameCanvas class="game-view" :display-modal-open="creationTransition" :pause-automatic-actions="modulePanelOpen" />
         <MapZoomControls />
         <RadialCommands v-if="displaySettings.immersiveMode && !replayActive" class="area-radial" @modal-open="cancelHeldInputs" />
       </div>

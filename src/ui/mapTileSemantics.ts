@@ -68,6 +68,15 @@ export function terrainSemantic(cell: Cell, visual: TerrainVisual, hallucinating
     const id = TerrainType[winning] as keyof typeof mapText.terrain;
     return semantic(mapText.terrain[id] ?? mapText.special.unknown, 'terrain', id, char);
   }
+  // Structures are identified only by the winning rendered glyph, after native
+  // terrain/secret aliases and hallucination suppression. No live binding lookup.
+  const structures: Record<string, string> = {
+    '#': mapText.structures.wall, '+': mapText.structures.door, '/': mapText.structures.openDoor,
+    '▤': mapText.structures.window, '^': mapText.structures.roof,
+    ':': mapText.structures.roofedFloor, '=': mapText.structures.bed,
+    '□': mapText.structures.chest, 'T': mapText.structures.station,
+  };
+  if (structures[char]) return semantic(structures[char], 'terrain', 'structure:' + char, char);
   // Legacy gas overlays and any future effect are converted from displayed data.
   return glyphSemantic(char);
 }

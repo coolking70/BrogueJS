@@ -1,3 +1,4 @@
+import {isStructureCommand,prepareStructureCommand,commitStructureCommand,structureReadSDK,freezeProductionCamps,settleProductionCamps} from './StructureProduction';
 import { isEdibleFixtureCommand, executeEdibleFixtureCommand } from './EdibleFixturePort';
 import { World5Error } from '../../ext/world5';
 import { knowledgeName, knowledgeDescription, knowledgeMember, edibleDefinition, confirmationSatiety, knowledgeState, callEdible, bindEdibleItem } from './KindKnowledge';
@@ -564,6 +565,7 @@ export class Game {
             simulationTicks: () => this.world5?.simulationTicks ?? 0,
             edibleRead: owner => edibleProjection(this,owner),
             needTrigger: (actor,trigger) => {if(actor instanceof Monster)triggerActorNeeds(this,[actor],trigger);},
+            structureRead: owner => structureReadSDK(this,owner),
             worldWorkRead: owner => worldWorkReadSDK(this,owner),
             actorActions: () => this.actorActions,
             interruptActorAction: id => interruptCombatActionRoot(this,id),
@@ -1710,6 +1712,10 @@ export class Game {
     private generateDepth(isGoingUp: boolean = false, isFirstLevel: boolean = false, fell: boolean = false) {
         if (this.extensionRuntime) {
             const runtime = this.extensionRuntime;
+            // Production camp departure reports participate in the same floor
+            // transaction. Preserve module/world/logger object identities after
+            // the runtime's buffered generation rollback, not only save values.
+            const restoreCampIdentity=runtime.worldCampOwners().length?checkpointGenerationWorld(()=>({shallow:[],deep:[runtime,logger]})):()=>{};
             const actionState = runtime.actorActionBinding()?.state, restoreBindingIdentity = runtime.checkpointActorActionBindingIdentity();
             const restoreActions = checkpointProductionActorActions(this), restoreDefense = checkpointPhasedAttackSources(this);
             const invalidActions = isProductionActorActionRunInvalid(this);
@@ -1821,6 +1827,7 @@ export class Game {
                 restoreFeatureState();
                 restoreSpatialTerrain(); restoreActorRevisions();
                 runtime.rollbackGeneration(token);
+                restoreCampIdentity();
                 restoreBindingIdentity(); restoreActions(); restoreDefense(); restoreProductionActorActionValidity(this,invalidActions);
                 // The caller requested another depth before capture. Rebind
                 // only AFTER both that depth and the region ledger are restored.
@@ -1869,6 +1876,7 @@ export class Game {
         } catch (error) { restore(); runtime.rollbackGeneration(token); rng.setState(random); restoreLog(); throw error; }
     }
     private freezeManagedWorld(): void {
+        freezeProductionCamps(this,this.currentLevelDepth??this.depth);
         const world = this.world5, config = this.extensionRuntime?.world5SettlementFixture()?.configuration;
         const ledger = world?.offline.find(l => l.levelRef.kind === 'dungeon' && l.levelRef.depth === this.currentLevelDepth);
         if (!world || !ledger || !config || this.isGameOver) return;
@@ -1899,6 +1907,7 @@ export class Game {
         }
     }
     private settleManagedWorld(): void {
+        settleProductionCamps(this);
         const world = this.world5, runtime = this.extensionRuntime, fixture = runtime?.world5SettlementFixture();
         const level = world?.levels.find(l => l.levelRef.kind === 'dungeon' && l.levelRef.depth === this.depth && l.policy === 'frozen-ecology-economy-v1');
         if (!world || !runtime || !fixture || !level || this.isGameOver) return;
@@ -3573,7 +3582,7 @@ export class Game {
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
         assertSingleCellPlayer(this.player);
         if (recordingState(this).execution || this.replayRecording || this.isAdvancing
-            || (this.isInputLocked() && !(action === 'ext:command' && isWorldWorkCommand(this, data)
+            || (this.isInputLocked() && !(action === 'ext:command' && (isWorldWorkCommand(this, data)||isStructureCommand(this,data))
                 && productionActorActionInputLocked(this))) || logger.pendingAcknowledgment || presentationBlocked(this)) return;
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data)) {
             const disturbed = this.disturbed;
@@ -3648,7 +3657,7 @@ export class Game {
                     execution.pending = Object.freeze({ token: Object.freeze({}),
                         ownerCommandId: execution.id, message: result.value.message });
                     execution.pendingRecordsDecision = result.value.recordDecision !== false;
-                    if(isWorldWorkCommand(this,execution.data)){const runtime=this.extensionRuntime,player=this.player;execution.valid=()=>this.extensionRuntime===runtime&&this.player===player;}else execution.valid = this.confirmationGuard(execution.data);
+                    if(isWorldWorkCommand(this,execution.data)||isStructureCommand(this,execution.data)){const runtime=this.extensionRuntime,player=this.player;execution.valid=()=>this.extensionRuntime===runtime&&this.player===player;}else execution.valid = this.confirmationGuard(execution.data);
                     execution.autoStep = this.inAutoTravelStep;
                     execution.blockCombatText = logger.blockCombatText;
                     return;
@@ -3796,7 +3805,7 @@ export class Game {
             throw new Error(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }));
         // An idle command boundary can report a live combat lock. Never advance
         // its clock, stop automation or run a work provider for this refusal.
-        if (action === 'ext:command' && isWorldWorkCommand(this, data) && productionActorActionInputLocked(this)) {
+        if (action === 'ext:command' && (isWorldWorkCommand(this, data)||isStructureCommand(this,data)) && productionActorActionInputLocked(this)) {
             setWorldWorkError(this, 'C5_BUSY'); return;
         }
         logger.onDisturb = () => { this.disturbed = true; };
@@ -3814,7 +3823,8 @@ export class Game {
             if (!this.extensionRuntime) throw new Error('Extension command in classic mode');
             // §4.5: only detached data crosses the wait. Runtime.command and its
             // controlled callbacks remain entirely synchronous, including refusals.
-            if(isStructureFixtureCommand(this,data)){const outcome=executeStructureFixtureCommand(this,data);setWorldWorkError(this,outcome.ok?null:outcome.code);}
+            if(isStructureCommand(this,data))yield* this.executeStructureCommandStages(data);
+            else if(isStructureFixtureCommand(this,data)){const outcome=executeStructureFixtureCommand(this,data);setWorldWorkError(this,outcome.ok?null:outcome.code);}
             else if (isWorldRestCommand(this,data)) yield* this.executeWorldRestCommandStages(data);
             else if (isEdibleFixtureCommand(this,data)) transactEdible(this,()=>executeEdibleFixtureCommand(this,data));
             else if (isEdibleCommand(this,data)) yield* this.executeEdibleCommandStages(data);
@@ -3862,6 +3872,15 @@ export class Game {
         } else {
             (yield* this.performPlayerActionStages(action, data, 'system'));
         }
+    }
+
+    private *executeStructureCommandStages(data:unknown):CommandStages<void> {
+        setWorldWorkError(this,null);const first=prepareStructureCommand(this,data);
+        if(!first.ok){setWorldWorkError(this,first.code);return;}
+        if(!(yield* this.requestConfirm(i18next.t('ext.foundation.structure.confirm'))))return;
+        const outcome=commitStructureCommand(this,first.value);
+        if(!outcome.ok){setWorldWorkError(this,outcome.code);return;}
+        if(outcome.value.chargedTicks>0)this.playerTurnEnded();
     }
 
     private *executeWorldRestCommandStages(data:unknown):CommandStages<void> {

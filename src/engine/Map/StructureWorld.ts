@@ -50,7 +50,8 @@ import {
   reservedInventorySlots,
   clearWorldCell,
   reservedContainerSlots,
-  checkItemBudget
+  checkItemBudget,
+  containerItems
 } from '../Core/WorldWorkWorld';
 import { allocateEntityId } from '../../entities/Creature';
 import { inventoryStamp, markStructureDigestDirty } from '../Core/RecordingDigest';
@@ -91,7 +92,7 @@ import { assembleWorldItem } from '../Items/WorldItems';
 
 type Request =
   | { family: 'region'; change: RegionChange }
-  | { family: 'structure'; change: StructureChange }
+  | { family: 'structure'; change: StructureChange; materials?: readonly import('../../ext/worldSdk').ItemAmount[]; sourceContainerId?: number | null }
   | { family: 'placement'; change: RestPointPlacementRequest }
   | { family: 'rest'; change: RestRequest };
 type Plan = {
@@ -638,7 +639,6 @@ function protectedCell(
     generationReserved(game.grid, at.x, at.y) ||
     cell.machineNumber ||
     game.grid.isImpregnable(at.x, at.y) ||
-    game.depth === 40 ||
     game.extensionRuntime!.worldWorkPlacementProtected(at, game.depth) ||
     cell.layers.some((t) =>
       [
@@ -781,9 +781,6 @@ function validate(game: Game, owner: string, request: Request): string {
       b.y + b.height >= game.grid.height
     )
       fail('C5_BLOCKED');
-    for (let y = b.y; y < b.y + b.height; y++)
-      for (let x = b.x; x < b.x + b.width; x++)
-        if (!game.grid.getCell(x, y)?.isVisible) fail('C5_BLOCKED');
     if (c.kind === 'create') {
       ref(game, c.levelRef);
       if (!validId(c.instanceKey)) fail('C5_BAD_PAYLOAD');
@@ -810,7 +807,6 @@ function validate(game: Game, owner: string, request: Request): string {
       )
     )
       fail('C5_OVERLAP');
-    if (game.depth === 40) fail('C5_PROTECTED');
     if (
       world.containers.filter(
         (v) =>
@@ -830,42 +826,25 @@ function validate(game: Game, owner: string, request: Request): string {
       ).length > 16
     )
       fail('C5_BUDGET');
+    // Bounds own management space, including occluded natural rock. Only
+    // generation reservations exclude the whole rectangle. Terrain/machines/
+    // stairs are protected at the actual marker or construction work cell.
+    // Unknown reservations return a generic denial with no entity/terrain detail.
     for (let y = b.y; y < b.y + b.height; y++)
-      for (let x = b.x; x < b.x + b.width; x++) {
-        const cell = game.grid.getCell(x, y)!;
-        if (
-          cell.machineNumber ||
-          game.grid.isImpregnable(x, y) ||
-          generationReserved(game.grid, x, y) ||
-          cell.layers.some((t) =>
-            [TerrainType.STAIRS_UP, TerrainType.STAIRS_DOWN, TerrainType.DUNGEON_PORTAL].includes(t)
-          )
-        )
-          fail(cell.isVisible ? 'C5_PROTECTED' : 'C5_BLOCKED');
-      }
-    if (
-      runtime
-        .worldWorkEntities()
-        .filter((e) => e.depth === game.depth)
-        .some((e) => {
-          const positions = [e, ...workPositions(game, e, e.interactionDistance)];
-          const inside = positions.filter(
-            (p) => p.x >= b.x && p.y >= b.y && p.x < b.x + b.width && p.y < b.y + b.height
-          ).length;
-          return inside > 0 && inside !== positions.length;
-        })
-    )
-      fail('C5_PROTECTED');
-    if (
-      [game.player, ...game.monsters, ...game.dormantMonsters].some((a) => {
-        const f = game.footprintOf(a),
-          inside = f.filter(
-            (p) => p.x >= b.x && p.y >= b.y && p.x < b.x + b.width && p.y < b.y + b.height
-          ).length;
-        return inside > 0 && inside !== f.length;
-      })
-    )
-      fail('C5_PROTECTED');
+      for (let x = b.x; x < b.x + b.width; x++)
+        if (generationReserved(game.grid, x, y)) fail('C5_BLOCKED');
+    const cutsBoundary = (positions: readonly Position[]) => {
+      const inside = positions.filter(
+        (p) => p.x >= b.x && p.y >= b.y && p.x < b.x + b.width && p.y < b.y + b.height
+      ).length;
+      if (inside > 0 && inside !== positions.length)
+        fail(positions.every((p) => game.grid.getCell(p.x, p.y)?.isVisible)
+          ? 'C5_PROTECTED' : 'C5_BLOCKED');
+    };
+    for (const e of runtime.worldWorkEntities().filter((e) => e.depth === game.depth))
+      cutsBoundary([e, ...workPositions(game, e, e.interactionDistance)]);
+    for (const actor of [game.player, ...game.monsters, ...game.dormantMonsters])
+      cutsBoundary(game.footprintOf(actor));
     if (!escapes(game, game.player.loc, null)) fail('C5_PROTECTED');
     return c5Canonical([c, old?.revision ?? null]);
   }
@@ -1010,9 +989,9 @@ function validate(game: Game, owner: string, request: Request): string {
       )
         fail('C5_BUDGET');
     }
-    for (const a of d.constructionCost)
+    for (const a of request.materials ?? d.constructionCost)
       if (
-        game.player.inventory.items
+        (request.sourceContainerId == null ? game.player.inventory.items : containerItems(game,request.sourceContainerId))
           .filter((i) => i.worldItem?.definitionId === a.itemDefinitionId)
           .reduce((n, i) => n + i.quantity, 0) < a.count
       )
@@ -1021,7 +1000,9 @@ function validate(game: Game, owner: string, request: Request): string {
       c,
       r!.revision,
       inventoryStamp(game.player.inventory.items),
-      station?.revision ?? null
+      station?.revision ?? null,
+      request.materials ?? null,
+      request.sourceContainerId == null ? null : [request.sourceContainerId, game.world5!.containers.find(c=>c.id===request.sourceContainerId)?.revision]
     ]);
   }
   uint(c.componentId, 'componentId', 1);
@@ -1137,6 +1118,7 @@ export const planRegionChange = (change: RegionChange, scope: WorldActorScope) =
   prepare({ family: 'region', change }, scope);
 export const planStructureChange = (change: StructureChange, scope: WorldActorScope) =>
   prepare({ family: 'structure', change }, scope);
+export const planPaidStructure = (change:StructureChange,materials:readonly import('../../ext/worldSdk').ItemAmount[],sourceContainerId:number|null,scope:WorldActorScope)=>prepare({family:'structure',change,materials,sourceContainerId},scope);
 export const planRestPointPlacement = (change: RestPointPlacementRequest, scope: WorldActorScope) =>
   prepare({ family: 'placement', change }, scope);
 export const planRest = (change: RestRequest, scope: WorldActorScope) =>
@@ -1275,17 +1257,19 @@ function ensureRemains(game: Game, d: StructureDefinition, origin: Position): vo
     ticketId: null
   });
 }
-function build(game: Game, owner: string, c: Extract<StructureChange, { kind: 'build' }>): void {
+function build(game: Game, owner: string, c: Extract<StructureChange, { kind: 'build' }>, materials?:readonly import('../../ext/worldSdk').ItemAmount[], sourceId?:number|null): void {
   const w = game.world5!,
     d = structureDefinition(game, c.definitionId);
-  for (const a of d.constructionCost) {
+  const source=sourceId==null?game.player.inventory.items:containerItems(game,sourceId);
+  for (const a of materials ?? d.constructionCost) {
     let remaining = a.count;
-    for (const i of [...game.player.inventory.items])
+    for (const i of [...source])
       if (i.worldItem?.definitionId === a.itemDefinitionId) {
         const n = Math.min(remaining, i.quantity);
         remaining -= n;
         i.quantity -= n;
-        if (!i.quantity) game.player.inventory.removeItem(i);
+        if (!i.quantity) {if(sourceId==null)game.player.inventory.removeItem(i);else {const box=w.containers.find(c=>c.id===sourceId)!;box.itemIds.splice(box.itemIds.indexOf(i.id),1);game.worldContainerItems!.delete(i.id);}}
+        if(sourceId!=null){const box=w.containers.find(c=>c.id===sourceId)!;box.revision=checkedAdd(box.revision,1);}
         if (!remaining) break;
       }
   }
@@ -1515,7 +1499,8 @@ export function destroyComponent(game: Game, id: number, refund: boolean, reason
   w.restPoints = w.restPoints.filter((r) => !rest.includes(r));
   for (const e of entities) runtime.worldStructureRemoveInteractable(e.id);
   if (refund) {
-    const amounts = d.constructionCost
+    const paid=game.extensionRuntime!.worldCampOwners().flatMap(o=>game.extensionRuntime!.worldCampState(o).constructions).find(r=>r.componentId===id);
+    const amounts = (paid?.materials ?? d.constructionCost)
       .map((a) => ({ ...a, count: Math.floor((((a.count * c.hp) / d.maxHp) * 1) / 2) }))
       .filter((a) => a.count > 0);
     if (
@@ -1533,6 +1518,11 @@ export function destroyComponent(game: Game, id: number, refund: boolean, reason
       );
     }
   }
+  for(const owner of runtime.worldCampOwners()) {
+    const state=runtime.worldCampState(owner);
+    if(state.constructions.some(r=>r.componentId===id)){state.constructions=state.constructions.filter(r=>r.componentId!==id);runtime.worldCampReplace(owner,state);}
+  }
+
 }
 export function commitStructureWorld(
   game: Game,
@@ -1620,7 +1610,7 @@ export function commitStructureWorld(
       } else {
         const c = r.change;
         if (c.kind === 'build') {
-          build(game, p!.owner, c);
+          build(game, p!.owner, c, r.materials, r.sourceContainerId);
           ticks = structureDefinition(game, c.definitionId).constructionTicks;
         } else if (c.kind === 'dismantle')
           destroyComponent(game, c.componentId, true, 'dismantled');

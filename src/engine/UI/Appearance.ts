@@ -264,10 +264,19 @@ function layeredTerrainAppearance(cell: Cell, depth: number, layers = cell.layer
     return { char, color, bgColor };
 }
 
+function displayedStructure(cell: Cell, nativeChar: string) {
+    const appearance = structureAppearance(cell);
+    if (!appearance) return null;
+    // A later native fire or stair still wins over construction. Inspect only
+    // visible fire and the already selected native glyph, including in memory.
+    if ((cell.isVisible && cell.isBurning) || [TerrainType.STAIRS_UP, TerrainType.STAIRS_DOWN,
+        TerrainType.DUNGEON_PORTAL, TerrainType.PLAIN_FIRE].some(t=>TERRAIN_APPEARANCES[t].char===nativeChar)) return null;
+    return appearance;
+}
 /** Terrain portion of CE's rememberedAppearance, before unseen entities are overlaid. */
 export function memoryTerrainAppearance(cell: Cell, depth: number): TerrainVisual {
     const base = layeredTerrainAppearance(cell, depth, cell.rememberedLayers);
-    const structure=(cell.isVisible||cell.isMagicMapped)?structureAppearance(cell):null;
+    const structure=(cell.isVisible||cell.isMagicMapped)?displayedStructure(cell,base.char):null;
     const visual=structure?{...base,...structure}:base;
     if (cell.rememberedTerrain === TerrainType.STAIRS_UP || cell.rememberedTerrain === TerrainType.STAIRS_DOWN || cell.rememberedTerrain === TerrainType.DUNGEON_PORTAL) {
         return { ...visual, color: '#ffffff', bgColor: visual.bgColor === null ? null : 0x222222 };
@@ -311,7 +320,7 @@ export function cellAppearance(cell: Cell, ctx: CellAppearanceContext): TerrainV
         ? cell.rememberedAppearance
         : layeredTerrainAppearance(cell, ctx.depth ?? 1, remembered ? cell.rememberedLayers : cell.layers, cell.isVisible ? ctx.terrainRandomValues : undefined);
 
-    if(cell.isVisible){const structure=structureAppearance(cell);if(structure){char=structure.char;color=structure.color;}}
+    if(cell.isVisible){const structure=displayedStructure(cell,char);if(structure){char=structure.char;color=structure.color;}}
 
     // Apply Environmental Overrides (Gas) —— 燃烧覆盖层已移除（UI-1 第 1 条：
     // 火视觉 = 地形本体；Grid.isBurning 仍供气体的 !isBurning 守卫使用）。

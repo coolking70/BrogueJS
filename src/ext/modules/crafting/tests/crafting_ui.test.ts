@@ -206,9 +206,9 @@ describe('crafting session lifecycle and command safety', () => {
     await f.open(); f.present(false); f.ui.refresh(); expect(f.ui.panelOpen.value).toBe(false);
     f.scope.stop(); expect(f.unregister).toHaveBeenCalledOnce();
   });
-  it('uses the shared keyboard owner and Escape closes without submitting', async () => {
+  it('uses the shared keyboard owner inside its panel and Escape closes without submitting', async () => {
     const f = session(); await f.open(); const preventDefault = vi.fn();
-    expect(f.keyboard({ key: 'ArrowRight', preventDefault })).toBe(true); expect(preventDefault).toHaveBeenCalledOnce();
+    expect(f.keyboard({ key: 'ArrowRight', preventDefault, target: { tagName: 'BUTTON', closest: () => ({}) } })).toBe(true); expect(preventDefault).toHaveBeenCalledOnce();
     f.keyboard({ key: 'Escape', preventDefault }); expect(f.ui.panelOpen.value).toBe(false); expect(f.raw.executeCommand).not.toHaveBeenCalled();
   });
   it('no-change rejection is translated and pending foundation confirmation holds the submit lock', async () => {

@@ -13,6 +13,7 @@ import type { PairFacts, StatQuery } from './stats';
 import { markRecordingRoot, recordingRootRevision } from './recordingRevisions';
 import { World5Error } from './world5';
 import { c5Hash, c5Canonical } from './worldJson';
+import {STRUCTURE_ACTIONS} from './structureSdk';
 import { isWorld5Fixture, isWorld5StructureFixture, isWorld5WorkFixture, world5FixtureConfiguration } from './world5Fixture';
 import { FOUNDATION_PROTOCOL } from './descriptor';
 import { resolveActorQueryScope } from './actorQuery';
@@ -97,6 +98,7 @@ export interface ExtensionPorts {
     canInteractWith?(entity: WorldInteractable): boolean;
     visibleActorActionCells?(sourceEntityId: number, cells: readonly {x:number;y:number}[]): {x:number;y:number}[];
     actorActions?(): import('../engine/Core/ActorActionsRoot').ActorActionsRoot | undefined;
+    structureRead?(owner:string): import('./structureSdk').StructureReadSDK | undefined;
     worldWorkRead?(owner:string): import('./worldSdk').WorldWorkReadSDK | undefined;
     playerId(): number;
     canManageCharacter?(): boolean;
@@ -1095,6 +1097,7 @@ export class ExtensionRuntime {
                 && Object.keys(input.payload).join(',') === 'facing' && typeof input.payload.facing === 'string';
             if (module?.actorActions && input.action === 'attack') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
                 && Object.keys(input.payload).sort().join(',') === 'attackId,facing' && typeof input.payload.attackId === 'string' && typeof input.payload.facing === 'string';
+            if(module?.campPolicy&&(STRUCTURE_ACTIONS as readonly string[]).includes(input.action))return true;
             if(module?.worldWorkCommands?.[input.action as import('./worldSdk').CraftingAction]||module?.edibleCommands?.[input.action as 'feed'|'roast'])return true;
             return !!module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action)
                 && typeof module.commands[input.action] === 'function';
@@ -1710,6 +1713,20 @@ export class ExtensionRuntime {
         if (!this.modules.some(m=>m.id===entity.owner&&m.worldDefinitions) || this.world.entities.length>=WORLD_INTERACTABLE_LIMIT) throw new Error('C5_BUDGET');
         markRecordingRoot(this);const placed={...entity,id:allocateEntityId()};this.world.entities.push(placed);this.world.entities.sort((a,b)=>a.id-b.id);return placed;
     }
+    worldCampOwners():string[] {return this.modules.filter(m=>m.campPolicy).map(m=>m.id);}
+    worldCampPolicy(owner:string) {return this.modules.find(m=>m.id===owner)?.campPolicy;}
+    worldCampState(owner:string):import('./structureSdk').CampState {
+        return cloneJson(this.states[owner]!) as unknown as import('./structureSdk').CampState;
+    }
+    worldCampLockedQuantity(itemId:number):number {
+        let count=0;for(const module of this.modules)if(module.campPolicy){const s=this.states[module.id] as unknown as import('./structureSdk').CampState;
+            for(const c of s.camps)for(const lock of c.locked)if(lock.itemId===itemId)count+=lock.quantity;}
+        return count;
+    }
+    worldCampReplace(owner:string,state:import('./structureSdk').CampState):void {
+        const module=this.modules.find(m=>m.id===owner&&m.campPolicy);if(!module)throw new World5Error('C5_SCOPE');
+        this.invoke(module,context=>context.setState(state as unknown as Json));
+    }
     isWorldStructureFixture(owner:string):boolean {const module=this.modules.find(m=>m.id===owner);return !!module&&isWorld5StructureFixture(module);}
     worldStructureRegions(): readonly OwnedRegion[] { return this.world.regions??[]; }
     worldStructureSetRegions(regions:readonly OwnedRegion[]):void { markRecordingRoot(this);setOwnedRegions(this.world,[...regions]); }
@@ -1744,7 +1761,7 @@ export class ExtensionRuntime {
         const descriptor = this.views.get(moduleId), module = this.modules.find(entry => entry.id === moduleId);
         if (this.disposed || !module) return null;
         if (module.projectView) {
-            const projection = module.projectView(freezeView({ ...(displayQuery === undefined ? {} : { displayQuery: JSON.parse(c5Canonical(displayQuery)) as Json }), stats:this.statQuery, queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), ...(hasEdibleDeclarations(module.worldDefinitions)?{edible:this.ports.edibleRead?.(moduleId)}:{}), ...(module.worldDefinitions ? {worldWork:this.ports.worldWorkRead?.(moduleId)} : {}), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
+            const projection = module.projectView(freezeView({ ...(displayQuery === undefined ? {} : { displayQuery: JSON.parse(c5Canonical(displayQuery)) as Json }), ...(module.campPolicy?{structures:this.ports.structureRead?.(moduleId)}:{}), stats:this.statQuery, queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), ...(hasEdibleDeclarations(module.worldDefinitions)?{edible:this.ports.edibleRead?.(moduleId)}:{}), ...(module.worldDefinitions ? {worldWork:this.ports.worldWorkRead?.(moduleId)} : {}), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
                 visibleInteractables: this.visibleInteractables(moduleId), actorActionBundles: structuredClone(this.ports.actorActions?.()?.bundles ?? []), nearbyInteractables: this.nearbyInteractables(moduleId),
                 worldRestUnavailable: id=>this.world.entities.some(entity=>entity.id===id&&entity.owner===moduleId)
                     ?restHandlers.get(this)?.worldRestUnavailable?.(id)??null:'unavailable' }));

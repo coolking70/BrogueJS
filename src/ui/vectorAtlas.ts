@@ -24,6 +24,7 @@ export const VECTOR_TERRAIN_BY_HANZI: Readonly<Record<string, string>> = {
   '归':'portal', '坠':'fallingBridge', '孔':'vent', '喷':'flamethrower', '管':'pipe',
   '光':'light', '暗':'darkness', '罐':'canister', '碎':'glass', '苔':'lichen',
   '腐':'rot', '愈':'healing', '禾':'hay', '酸':'acid',
+  '窗':'window', '顶':'roof', '覆':'roofedFloor', '箱':'chest', '台':'workstation',
 };
 
 /** Species share anatomy, never their defining equipment or silhouette. */
@@ -196,6 +197,12 @@ function paintTerrain(p:Pen,f:string,variant=''):void {
       p.r(.6,.6,14.8,14.8,.20); p.l([.7,15.3,.7,.7,15.3,.7],1.25,.7);
       p.l([1,7.8,15,7.8],.85,.48); p.l([8,.9,8,7.7],.85,.48);p.l([4.1,8,4.1,15],.85,.48);p.l([12,8,12,15],.85,.48); return;
     case 'floor':p.r(7.2,7.2,1.6,1.6,.46);return;
+    case 'window':p.box(2,2,12,12,1,.85);p.l([8,2,8,14],1,.7);p.l([2,8,14,8],1,.7);return;
+    case 'roof':case 'roofedFloor':
+      p.l([1,9,8,2,15,9],1.6,.9);p.l([3,9,3,14,13,14,13,9],1,.65);
+      if(f==='roofedFloor')p.r(7.2,10.5,1.6,1.6,.8);return;
+    case 'chest':p.box(2,5,12,9,1,.85);p.l([2,8,14,8],1,.9);p.r(7,7,2,3,.9);return;
+    case 'workstation':p.r(2,6,12,2,.85);p.l([4,8,4,14],1.5,.7);p.l([12,8,12,14],1.5,.7);return;
     case 'ash':p.r(4,9,2,1,.33);p.r(9,5,1.5,1.5,.4);p.r(10,11,2,1,.35);return;
     case 'door': case 'lockedDoor': case 'openDoor':
       p.l([2.5,14.6,2.5,2,13.5,2,13.5,14.6],1.7,.9);

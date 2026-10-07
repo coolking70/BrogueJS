@@ -1,0 +1,547 @@
+{
+  "schema": 1,
+  "moduleVersion": "1.0.0",
+  "rulesVersion": "1.0.0",
+  "world": {
+    "schema": 1,
+    "worldSdk": 1,
+    "items": [
+      {
+        "owner": "settlement",
+        "id": "settlement.wood",
+        "nameKey": "ext.settlement.wood.name",
+        "descriptionKey": "ext.settlement.wood.description",
+        "category": "material",
+        "glyph": "%",
+        "color": "#A0784A",
+        "maxStack": 99,
+        "nativeTemplate": null,
+        "tags": ["basic.wood"],
+        "tool": null
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.stone",
+        "nameKey": "ext.settlement.stone.name",
+        "descriptionKey": "ext.settlement.stone.description",
+        "category": "material",
+        "glyph": "%",
+        "color": "#9EA3A8",
+        "maxStack": 99,
+        "nativeTemplate": null,
+        "tags": ["basic.stone"],
+        "tool": null
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.fiber",
+        "nameKey": "ext.settlement.fiber.name",
+        "descriptionKey": "ext.settlement.fiber.description",
+        "category": "material",
+        "glyph": "%",
+        "color": "#8DB360",
+        "maxStack": 99,
+        "nativeTemplate": null,
+        "tags": ["basic.fiber"],
+        "tool": null
+      }
+    ],
+    "resourceNodes": [
+      {
+        "owner": "settlement",
+        "id": "settlement.wood-node",
+        "nameKey": "ext.settlement.wood-node.name",
+        "descriptionKey": "ext.settlement.wood-node.description",
+        "glyph": "木",
+        "color": "#A0784A",
+        "kind": "wood",
+        "capacity": 20,
+        "harvestTicks": 100,
+        "unitsPerHarvest": 1,
+        "requiredToolTag": null,
+        "regeneration": {
+          "kind": "periodic",
+          "units": 1,
+          "intervalTicks": 2000
+        },
+        "placement": {
+          "dungeon": {
+            "minDepth": 1,
+            "maxDepth": 40,
+            "maxPerDepth": 1,
+            "maxPerRun": 40,
+            "onNoSpace": "skip"
+          },
+          "site": null
+        },
+        "yield": [
+          {
+            "itemDefinitionId": "settlement.wood",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.stone-node",
+        "nameKey": "ext.settlement.stone-node.name",
+        "descriptionKey": "ext.settlement.stone-node.description",
+        "glyph": "石",
+        "color": "#9EA3A8",
+        "kind": "stone",
+        "capacity": 20,
+        "harvestTicks": 100,
+        "unitsPerHarvest": 1,
+        "requiredToolTag": null,
+        "regeneration": {
+          "kind": "none"
+        },
+        "placement": {
+          "dungeon": {
+            "minDepth": 1,
+            "maxDepth": 40,
+            "maxPerDepth": 1,
+            "maxPerRun": 40,
+            "onNoSpace": "skip"
+          },
+          "site": null
+        },
+        "yield": [
+          {
+            "itemDefinitionId": "settlement.stone",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.fiber-node",
+        "nameKey": "ext.settlement.fiber-node.name",
+        "descriptionKey": "ext.settlement.fiber-node.description",
+        "glyph": "草",
+        "color": "#8DB360",
+        "kind": "fiber",
+        "capacity": 20,
+        "harvestTicks": 100,
+        "unitsPerHarvest": 1,
+        "requiredToolTag": null,
+        "regeneration": {
+          "kind": "periodic",
+          "units": 1,
+          "intervalTicks": 1000
+        },
+        "placement": {
+          "dungeon": {
+            "minDepth": 1,
+            "maxDepth": 40,
+            "maxPerDepth": 1,
+            "maxPerRun": 40,
+            "onNoSpace": "skip"
+          },
+          "site": null
+        },
+        "yield": [
+          {
+            "itemDefinitionId": "settlement.fiber",
+            "count": 1
+          }
+        ]
+      }
+    ],
+    "stations": [],
+    "recipes": [],
+    "startupItems": {
+      "instanceKey": "settlement.startup",
+      "items": [
+        {
+          "itemDefinitionId": "settlement.wood",
+          "count": 12
+        },
+        {
+          "itemDefinitionId": "settlement.stone",
+          "count": 8
+        },
+        {
+          "itemDefinitionId": "settlement.fiber",
+          "count": 6
+        }
+      ],
+      "overflow": "floor-then-skip"
+    },
+    "structures": [
+      {
+        "owner": "settlement",
+        "id": "settlement.wood-floor",
+        "slot": "floor",
+        "barrierKind": null,
+        "nameKey": "ext.settlement.wood-floor.name",
+        "descriptionKey": "ext.settlement.wood-floor.description",
+        "maxHp": 100,
+        "blocks": {
+          "movement": false,
+          "vision": false,
+          "physicalProjectile": false,
+          "magicProjectile": false,
+          "gas": false,
+          "liquid": false
+        },
+        "flammable": true,
+        "resistances": {
+          "physical": 0,
+          "fire": 0
+        },
+        "constructionCost": [
+          {
+            "itemDefinitionId": "settlement.wood",
+            "count": 1
+          }
+        ],
+        "constructionTicks": 100,
+        "refundNumerator": 1,
+        "refundDenominator": 2,
+        "containerCapacity": null,
+        "stationDefinitionId": null,
+        "restPointDefinitionId": null,
+        "tags": []
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.stone-floor",
+        "slot": "floor",
+        "barrierKind": null,
+        "nameKey": "ext.settlement.stone-floor.name",
+        "descriptionKey": "ext.settlement.stone-floor.description",
+        "maxHp": 200,
+        "blocks": {
+          "movement": false,
+          "vision": false,
+          "physicalProjectile": false,
+          "magicProjectile": false,
+          "gas": false,
+          "liquid": false
+        },
+        "flammable": false,
+        "resistances": {
+          "physical": 25,
+          "fire": 100
+        },
+        "constructionCost": [
+          {
+            "itemDefinitionId": "settlement.stone",
+            "count": 1
+          }
+        ],
+        "constructionTicks": 100,
+        "refundNumerator": 1,
+        "refundDenominator": 2,
+        "containerCapacity": null,
+        "stationDefinitionId": null,
+        "restPointDefinitionId": null,
+        "tags": []
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.wood-wall",
+        "slot": "barrier",
+        "barrierKind": "wall",
+        "nameKey": "ext.settlement.wood-wall.name",
+        "descriptionKey": "ext.settlement.wood-wall.description",
+        "maxHp": 150,
+        "blocks": {
+          "movement": true,
+          "vision": true,
+          "physicalProjectile": true,
+          "magicProjectile": true,
+          "gas": true,
+          "liquid": true
+        },
+        "flammable": true,
+        "resistances": {
+          "physical": 0,
+          "fire": 0
+        },
+        "constructionCost": [
+          {
+            "itemDefinitionId": "settlement.wood",
+            "count": 2
+          }
+        ],
+        "constructionTicks": 100,
+        "refundNumerator": 1,
+        "refundDenominator": 2,
+        "containerCapacity": null,
+        "stationDefinitionId": null,
+        "restPointDefinitionId": null,
+        "tags": []
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.stone-wall",
+        "slot": "barrier",
+        "barrierKind": "wall",
+        "nameKey": "ext.settlement.stone-wall.name",
+        "descriptionKey": "ext.settlement.stone-wall.description",
+        "maxHp": 300,
+        "blocks": {
+          "movement": true,
+          "vision": true,
+          "physicalProjectile": true,
+          "magicProjectile": true,
+          "gas": true,
+          "liquid": true
+        },
+        "flammable": false,
+        "resistances": {
+          "physical": 25,
+          "fire": 100
+        },
+        "constructionCost": [
+          {
+            "itemDefinitionId": "settlement.stone",
+            "count": 2
+          }
+        ],
+        "constructionTicks": 100,
+        "refundNumerator": 1,
+        "refundDenominator": 2,
+        "containerCapacity": null,
+        "stationDefinitionId": null,
+        "restPointDefinitionId": null,
+        "tags": []
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.door",
+        "slot": "barrier",
+        "barrierKind": "door",
+        "nameKey": "ext.settlement.door.name",
+        "descriptionKey": "ext.settlement.door.description",
+        "maxHp": 150,
+        "blocks": {
+          "movement": true,
+          "vision": true,
+          "physicalProjectile": true,
+          "magicProjectile": true,
+          "gas": true,
+          "liquid": true
+        },
+        "flammable": true,
+        "resistances": {
+          "physical": 0,
+          "fire": 0
+        },
+        "constructionCost": [
+          {
+            "itemDefinitionId": "settlement.wood",
+            "count": 2
+          }
+        ],
+        "constructionTicks": 200,
+        "refundNumerator": 1,
+        "refundDenominator": 2,
+        "containerCapacity": null,
+        "stationDefinitionId": null,
+        "restPointDefinitionId": null,
+        "tags": []
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.window",
+        "slot": "barrier",
+        "barrierKind": "window",
+        "nameKey": "ext.settlement.window.name",
+        "descriptionKey": "ext.settlement.window.description",
+        "maxHp": 100,
+        "blocks": {
+          "movement": true,
+          "vision": false,
+          "physicalProjectile": true,
+          "magicProjectile": false,
+          "gas": false,
+          "liquid": true
+        },
+        "flammable": true,
+        "resistances": {
+          "physical": 0,
+          "fire": 0
+        },
+        "constructionCost": [
+          {
+            "itemDefinitionId": "settlement.wood",
+            "count": 2
+          }
+        ],
+        "constructionTicks": 200,
+        "refundNumerator": 1,
+        "refundDenominator": 2,
+        "containerCapacity": null,
+        "stationDefinitionId": null,
+        "restPointDefinitionId": null,
+        "tags": []
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.roof",
+        "slot": "roof",
+        "barrierKind": null,
+        "nameKey": "ext.settlement.roof.name",
+        "descriptionKey": "ext.settlement.roof.description",
+        "maxHp": 100,
+        "blocks": {
+          "movement": false,
+          "vision": false,
+          "physicalProjectile": false,
+          "magicProjectile": false,
+          "gas": false,
+          "liquid": false
+        },
+        "flammable": true,
+        "resistances": {
+          "physical": 0,
+          "fire": 0
+        },
+        "constructionCost": [
+          {
+            "itemDefinitionId": "settlement.wood",
+            "count": 1
+          },
+          {
+            "itemDefinitionId": "settlement.fiber",
+            "count": 1
+          }
+        ],
+        "constructionTicks": 200,
+        "refundNumerator": 1,
+        "refundDenominator": 2,
+        "containerCapacity": null,
+        "stationDefinitionId": null,
+        "restPointDefinitionId": null,
+        "tags": []
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.bed",
+        "slot": "fixture",
+        "barrierKind": null,
+        "nameKey": "ext.settlement.bed.name",
+        "descriptionKey": "ext.settlement.bed.description",
+        "maxHp": 100,
+        "blocks": {
+          "movement": false,
+          "vision": false,
+          "physicalProjectile": false,
+          "magicProjectile": false,
+          "gas": false,
+          "liquid": false
+        },
+        "flammable": true,
+        "resistances": {
+          "physical": 0,
+          "fire": 0
+        },
+        "constructionCost": [
+          {
+            "itemDefinitionId": "settlement.wood",
+            "count": 4
+          },
+          {
+            "itemDefinitionId": "settlement.fiber",
+            "count": 2
+          }
+        ],
+        "constructionTicks": 300,
+        "refundNumerator": 1,
+        "refundDenominator": 2,
+        "containerCapacity": null,
+        "stationDefinitionId": null,
+        "restPointDefinitionId": "settlement.rest",
+        "tags": ["bed"]
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.chest",
+        "slot": "fixture",
+        "barrierKind": null,
+        "nameKey": "ext.settlement.chest.name",
+        "descriptionKey": "ext.settlement.chest.description",
+        "maxHp": 150,
+        "blocks": {
+          "movement": false,
+          "vision": false,
+          "physicalProjectile": false,
+          "magicProjectile": false,
+          "gas": false,
+          "liquid": false
+        },
+        "flammable": true,
+        "resistances": {
+          "physical": 0,
+          "fire": 0
+        },
+        "constructionCost": [
+          {
+            "itemDefinitionId": "settlement.wood",
+            "count": 6
+          }
+        ],
+        "constructionTicks": 300,
+        "refundNumerator": 1,
+        "refundDenominator": 2,
+        "containerCapacity": 64,
+        "stationDefinitionId": null,
+        "restPointDefinitionId": null,
+        "tags": []
+      }
+    ],
+    "restPoints": [
+      {
+        "owner": "settlement",
+        "id": "settlement.rest",
+        "nameKey": "ext.settlement.rest.name",
+        "descriptionKey": "ext.settlement.rest.description",
+        "glyph": "=",
+        "color": "#C4B78E",
+        "maxRestTicks": 30000,
+        "interactionDistance": 1,
+        "restorePolicy": {
+          "hp": "native-over-time",
+          "optionalCombatResources": "none"
+        },
+        "resetPolicy": "none"
+      }
+    ]
+  },
+  "camp": {
+    "markerDefinitionId": "settlement.marker",
+    "nameKey": "ext.settlement.marker.name",
+    "descriptionKey": "ext.settlement.marker.description",
+    "glyph": "⚑",
+    "color": "#D4BD79",
+    "createCost": [
+      {
+        "itemDefinitionId": "settlement.wood",
+        "count": 4
+      },
+      {
+        "itemDefinitionId": "settlement.stone",
+        "count": 2
+      }
+    ],
+    "expandCost": [
+      {
+        "itemDefinitionId": "settlement.wood",
+        "count": 2
+      },
+      {
+        "itemDefinitionId": "settlement.stone",
+        "count": 2
+      }
+    ],
+    "createTicks": 300,
+    "expandTicks": 300,
+    "dismantleTicks": 100,
+    "retireTicks": 100,
+    "supplyCapacity": 64,
+    "requiredFood": 2
+  }
+}

@@ -208,7 +208,7 @@ export function bindStructureCell(grid: Grid, cell: Cell, binding: Binding): voi
     addedFlags |= T_OBSTRUCTS_PASSABILITY | T_OBSTRUCTS_DIAGONAL_MOVEMENT | T_OBSTRUCTS_ITEMS;
   if (blocks.vision) addedFlags |= T_OBSTRUCTS_VISION;
   if (blocks.gas) addedFlags |= T_OBSTRUCTS_GAS;
-  const c = binding.row.barrier ?? binding.row.fixture ?? binding.row.floor;
+  const c = binding.row.barrier ?? binding.row.fixture ?? binding.row.floor ?? binding.row.roof;
   const d = c ? binding.definition(c.definitionId) : null;
   const appearance = d
     ? {
@@ -229,7 +229,7 @@ export function bindStructureCell(grid: Grid, cell: Cell, binding: Binding): voi
                       ? 'T'
                       : d.restPointDefinitionId
                         ? '='
-                        : '.',
+                        : d.slot === 'roof' ? '^' : binding.row.roof ? ':' : '.',
         color: '#bbbbbb'
       }
     : null;

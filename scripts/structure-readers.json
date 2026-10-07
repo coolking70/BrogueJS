@@ -3292,18 +3292,11 @@
       "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
     },
     {
-      "key": "ca1dafff71024a5eee958f13f356d42a821700b8d756b85a88c5923930507838",
+      "key": "0df7e355bea5b139bd484dc0440c7e3aadc3cdf34ed4f1d7bfbb4a8de991c5f3",
       "count": 1,
       "classification": "基础类型读者",
       "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
       "coverage": "ext_structure_properties/integration；相关原生门禁、drift"
-    },
-    {
-      "key": "d88b2312e31c1fd648e87dd4b08e0baa9dcc56e245d688e54acbfdd68faabe79",
-      "count": 1,
-      "classification": "基础类型读者",
-      "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
-      "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
     },
     {
       "key": "0f47c04bd41caef79ed589fe5b20c5a6d6af9b8a0710dce78332841ec9729205",

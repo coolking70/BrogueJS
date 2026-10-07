@@ -168,3 +168,43 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - 2026-10-07 5A2审查修复授权：逐项复核H1–H3/M1–M5/L1–L11；维护者已裁定 scoped 写集、64终结摘要、accepted 事实、dirty 摘要及D1/D8≥2000批新增P95≤10ms。复现与性能原资产已读，保留全图oracle；SDK尚未派发，允许修订。相关门禁，不commit。
 
 - 2026-10-07 5A2审查修复完成：H1–H3/M1–M5/L1–L11逐项处理，保留全图oracle；新增24审查回归，最终相关3文件67项通过、其余相关分组与boundary/vue-tsc/build通过。SDK1 accepted与64终结摘要/定义指纹重新冻结；D1/D8各2049批新增P95 2.948333/3.171291ms，经典/0营地 .031208/.054667ms。最终1002输入SHA 922ca79ebe6892955a9922777df1a43f9d886b2f37b34cb430b7b1091e516ae1，测前后同树；报告phase5a2.report.md新增审查发现处理及失败批次/反事实/最终SHA。原HEAD8e946bb，未暂存/commit/push。
+
+- 2026-10-07 5C1授权：基线9b651572b3c5561f91b3773dead11908ffa63b34、ext/phase5，保留三份未提交指挥文档；本地与dot5G并行，不另起子代理、不commit/push。按完整任务实施地牢营地/真实锁粮/生产事务/施工休息与UI相机，开发期相关门禁，浏览器按develop-web-game客户端；独立审查另起，本轮不自称审查。证据/private/tmp/brogue-commander-20261007/phase5c1-evidence/。
+
+- 5C1里程碑：自有材料/三种采集源/九种设施、独立生产结构适配器、真实FOOD锁与通用转移防绕过、空居民管理层策略、公开建造存取休息面板/临时选格接线完成；首组3项公开运行闭环通过。开发错误日志保留；下一步负例/跨层/回滚/相机与浏览器。
+
+- 5C1里程碑：D1…40公开建营边界50项、严格校验/完整对象图回滚16项、UI16格零时间草稿/首失败停止与kit/明确箱材料5项、相机有效视口4项通过；D1/D5存读/seek/续录与四相关组合通过，跨层真实行走补测通过。Vite listen EPERM与Chromium MachPort拒绝，原命令/日志保留且不重试；没有截图，浏览器验收明确未完成。
+
+- 5C1里程碑：指挥中途预检的抽屉CSS高度特异性与画布原点、presentationHidden消费已修；新增公开采集/再生/行走存读回放3项，严格状态/退款收据/不可见库存18项，Node24.19.0本批21pass。最终门禁显式PATH与3GB堆；浏览器自身受阻且CUA无可用既有浏览器，真实矩阵不记通过。
+
+- 5C1门禁里程碑：显式Node24.19.0/3GB/2workers，boundary/types/build与营地10文件104项exit0；普通命令P95对照3.595167ms、施工营地3.739417ms、差0.144250ms，256摘要单列54.5335ms。本结果为engine-only一层施工采样，浏览器FPS未验证；限定底座回归与drift继续。
+
+- 5C1门禁修正：首轮限定38文件883pass/2fail/1既有CE skip。新UI翻译a.key违反静态扫描，只修生产为有限字面量；旧D40 blanket前提与新任务冲突，外部同候选只回退StructureWorld.ts使原测试1pass，再只换为D40楼梯保护前提，拒绝断言不变。新候选7d6e7bdf…boundary/type/build与营地104项再次通过，限定39文件/漂移继续；配置/逐项报告已写，真实浏览器仍未验收。
+
+- 5C1收尾补充：ACK真实悬挂确认/模拟忙边界新用例先失败，修为保留旧DTO/暂停草稿队列、恢复后逐格确认，UI4项通过；resident查询合法/非法只读补测。四模式补齐门窗/床箱/屋顶汉字与纯矢量，后发火/楼梯保留优先；旧R1颜色多重集守卫只修生产选择色所有权。显示/查询/ACK与原地图/矢量/R1六文件100pass。types新Json数组推断失败日志与新tiles标签前提错误保留；最终同候选11专项+42限定底座+drift从头运行。
+
+- 5C1最新冻结候选：boundary/types/build通过，营地11文件118pass；限定42文件及drift等待最终结果。四模式补测100pass；保持原R1/i18n/terrain守卫，新增结构显示词汇走自身已显示字符字典，不新增原生terrain读点白名单。
+
+- 2026-10-07 5C1文档交付：按指挥续跑裁定停止实现，只整理已有证据，不改生产/测试、不跑新门禁。final输入4a18f719c555d37ecb5fecf1ddf115d54d73249154418d32cb07a11264aff74a测前后sameInput=true，boundary/types/build exit0、营地11文件118pass、限定42文件963pass/1既有CEskip、drift5文件8pass；final-fixture输入1eb3d53a127b0b8fba5f0497f5616cedc0e97242b919b379b006934be56c36bf前后sameInput=true，boundary2.1209s/types8.2948s/build11.1500s/营地11文件118pass75.6413s均exit0。两批仅helpers/boundaries/persistence三个自有测试文件不同，生产与底座/drift不变；fixture-before-occlusion的117pass/1fail C5_THREAT原前提失败保留。补齐9个5G冻结文件（含worldHarness）与已有基线SHA相同。报告填入门禁/性能/两批输入差异；README保留历史追加当前记录。
+
+- 5C1浏览器交付缺口：固定生产4a18构建390原版普通，指挥布局/选格/面板开合与部分截图实看通过；browser-smoke-01/02抽屉打开八方向DPad输入0/回合0/移动0，关闭后同右方向(38,26)→(39,26)、输入0→1/回合0→1，两个exit1保留，疑似GameCanvas.displayModalOpen拦截，真实跟随未验收。No available adapters待环境分类；browser-natural-food-01 seed5路线停滞、未取得2粮，录像保留，不能称自然闭环通过。24矩阵/实机/FPS待审查修复后做。本轮无独立审查，不commit/push，交付后停止，等待另进程发现再resume。
+
+- 2026-10-08 5C1审查修复：原F1–F6结论保留；新增6入口回归在旧候选全红后修F1–F5。非模态抽屉外原生keyboard/DPad命令与自动暂停分离，两模块仅消费自有键；营地独立有界选址/9×9范围/付费目标一致，正式UI rest严格字段并等待确认，No/拒绝留面板，桌面收起按钮按推荐隐藏。管理矩形允许包围岩体/墙后未知格，实际标记与施工仍可见/可达/保护；预留、region和全足迹/工作边界保持，隐藏边界冲突泛化拒绝。两个旧底座前提经只回退StructureWorld单变量反事实2pass后改为实际工作格，原拒绝断言不变；首批入口相关56pass，扩展66pass。自然seed28 normal仅settlement，离线侦察确定路线；76次原生move（包括2次普通战斗尝试）真实拾粮1→2，D1天然地图建营/床/扩张/存取/UI休息/拆卸撤营/save/replay零OOS通过。D5同背包首访准备、保留原生落点再公开走一步的单列闭环也通过，不冒称D1→D5徒步；满血床休息原生零时间停止，不注入伤害。准备最终冻结相关门禁与固定构建接力，不重试浏览器沙箱、不commit/push。
+
+
+- 2026-10-08 5C1修复交付：输入1b7565be78c172c9203061eded7698dcc928ed7b5046d3babfc828e6712b7681、1151files、sameInput=true；boundary2.7167s/types11.6003s/build16.2994s/营地13files133pass105.5926s/限定相关21files569pass109.9387s/drift5files8pass85.1889s全部exit0。无本批skip，不混入原42files CEskip。中间越模块导入/readonly夹具/经典构造runtime为空/旧合成焦点前提失败保留；只改新测试夹具和旧必要前提，checker/断言语义未放宽。旧StructureWorld两项和crafting一项分别单文件反事实2pass/1pass后最小修前提。九冻结文件/forageFixture完整已跟踪目录均与HEAD和原baselineSHA同字节。
+- 最终engine-only性能control/camp普通P95 4.741958/5.067500ms，差0.325542ms；256摘要peak78.283167/75.303334ms分列，browserFPS=null。自然D1正常seed28真实FOOD ID2 1→2、76公开move、营地(68,5)/床(66,5)/扩张/存取/UI满血休息零tick/拆卸撤营/save/replay零OOS；D5native landing(68,21)后公开右走一步建营(70,21)，首访准备非D1→D5徒步、未记D5准备录像通过。天然失败侦察/威胁/地形/边界拒绝均保留，没有降低守卫。
+- 接力与待办：browser-fix-handoff固定build SHA0a769e86a0fde11846814c06de9a7a6e48a447bd25ffc9ca98851c56b4553995，manifest含逐文件源码/测试/build/tool哈希；natural-route/drawer-input/panel-matrix-fixed仅语法exit0，原browser-qa-prep未改，本轮无浏览器执行/截图。指挥用技能原client先smoke实看截图，再自然normal route/输入/24矩阵/长内容满包/施工帧间隔；原GPU warning由静态控制页归环境但日志/退出码不抹。实机/5Z/最大长局未验。配置/README/report§8准确记录F1–F6、推荐narrow-only折叠及全部批次。原独立BLOCKED结论未改，不自称独立审查；未commit/push，交付后停止，等指挥复核/必要定向复审。
+
+
+- 2026-10-08 R1专项：完整读复审§5（特别5.3），只拆共享测试/清单；settlement输入2项与crafting仅自身输入1项分别自有，classic共享3项不装任何生产模块，保留输入/录制/回合/相机/自动中断并补真Confirm/ACK/恢复正对照；原共享文件删去，foundation support不读内容模块。未改生产、checker/discovery、5G冻结文件，无skip/缺模块提前return/exclude/空模块。
+- R1最终输入9c291c76ce787448198df8d717554ca5fbb017f805b62c2512bb53b3dfc8b9df/1154files/sameInput=true；boundary2.0428s/types7.7294s/限定6files57pass4.2539s/build10.8894s全部exit0。新外部副本实际删settlement 3files10pass3.4985s、删crafting 3files11pass3.6752s、删全部六生产模块 1file3pass3.0387s；各自sameInput，仅删除路径差异；四树所有权/发现断言通过，自有被删测试自然不发现。旧审查红对照/首批开发绿日志均保留，不重跑full npm test/ext/全删除矩阵或无影响drift。
+- R1字节与交付：production/entry513files SHA02d95d2954f7b280a88208f184dda79837299153ffac2999cd03007b107d5dae前后不变，实际Vite1153文件依赖SHA04e74b94edb703f718c2016e8b801f3b56cc1eac8506f938a439401a6282fece相同；新外部build53files SHA5fc2f8a26a9db4bef6821b69fac79a972bcca946d829a08606a54cc36b649b2e，每文件/index与fixed3相同，旧79files多26未引用残留chunk单列。GUI最终24矩阵/自然闭环可复用，不冒称本轮重跑；F1–F5独立已关闭，原报告§8待验状态历史保留，新增§9准确交付R1。F6残余裁决交指挥，实机5Z。证据phase5c1-r1-fix-evidence、状态phase5c1-r1-fix.status.md，README更新；原审查报告不动，不commit/push/派代理，验证完成即停止等复核提交。
+
+
+- 2026-10-08 R2修复：完整读任务/审查§7/独立inventory探针；正常seed28 only settlement路线建营、生产useModuleUi+CommandBar+InventoryOverlay客户端事件及App真实canOpen/canPresent，X/Esc正常poll恢复/80poll后点击重开，原生受控用物Confirm/真实logger ACK/原生参考屏幕仍阻断。新自有4项修前4fail exit1(4.79s)，只改useSettlementUi.commands computed无条件读host.tick，同一4项pass exit0(4.85s)，不改disabled/blocked/open/send。自定义renderer不冒称浏览器等待/几何，Confirm额外负面药水/ACK消息明确受控；没有跨模块测试依赖、skip/exclude/强点。
+- R2最终源输入72d1afadec5582146dbf5203f3bf3bc15710d3bc54c54e2c18c8afd1cb76ca64/1155files/sameInput=true，和9c291仅生产useSettlementUi、自有新test和test清单3项变化；boundary2.0913s/types8.1763s/8files90pass10.9640s/build11.1815s全exit0，无skip/todo。Game/InventoryOverlay/catalog/共享冻结9文件未改，不读安装dot隔离5G候选。不跑full npm/ext/全删除/133/569/drift，不运行浏览器。
+- R2交接：证据phase5c1-r2-fix-evidence，状态phase5c1-r2-fix.status.md；新空目录build 53files SHAfb5565541436efbe3a477d9ed4f1c1f205f2b1ad15204ad7548fea72091a61a9，manifest/9c291diff/红绿阶段记录/浏览器接力完整保留。新生产候选必须指挥新24矩阵及原生背包→重开→六设施持续交互，旧fixed3成功不算R2已验；原run-390-02失败/独立§7结论不改，另进程复审待安排。报告§10/README更新，未commit/push/派代理，交付后停止。
+
+
+2026-10-08维护者最终收口：5C1按本步范围验收通过，最终输入72d1afadec5582146dbf5203f3bf3bc15710d3bc54c54e2c18c8afd1cb76ca64；独立F1–F5/R1/R2关闭，final4新24矩阵及原生背包重开→六设施/12秒持续交互通过。长内容/满槽显示夹具通过；高级浏览器、真实手机和全量收尾留5Z。详见[维护者验收](docs/ext/phase5c1.acceptance.md)。5G原0fb2720仍隔离，未最终验收。

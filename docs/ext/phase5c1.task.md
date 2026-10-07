@@ -1,7 +1,7 @@
 # 5C1：可独立游玩的地牢远征营地
 
-> 状态：任务书草稿已备，尚未派发；按交接顺序在 5G 回执验收和本地集成后启动。
-> 维护者侧指挥任务书，2026-10-07。依据本轮用户授权按交接顺序推进。工作树 BrogueJS-p5 / ext/phase5；正式开工时记录 HEAD。不要 commit/push。5G 在 dot 独立目录并行开发，本任务不读取或假定 foraging 已存在。
+> 状态：已授权派发，本地与 dot 的 5G 并行推进；开工基线 9b651572b3c5561f91b3773dead11908ffa63b34。
+> 维护者侧指挥任务书，2026-10-07。依据用户本轮明确授权，依设计 §14.2 / foraging §11 与 5G 并行推进。工作树 BrogueJS-p5 / ext/phase5；正式开工时记录 HEAD。不要 commit/push。5G 在 dot 独立目录并行开发，本任务不读取或假定 foraging 已存在。
 
 ## 1 必读与优先级
 
@@ -64,3 +64,15 @@ AGENTS.md、docs/HANDOFF.md、docs/development.md、docs/architecture.md、docs/
 写 docs/ext/phase5c1.report.md、docs/ext/settlement-config.md；更新 README 只添加准确当前记录，保留历史。报告列：功能与数据决策、版本/冻结SHA、共享文件/所有权/注册表变动、每条任务验收证据、命令退出码数量耗时、反事实/基线逐叶变化、性能与浏览器、待用户确认及5D交接。
 
 完成后停止实现并给指挥检查，不commit/push；独立审查将另起进程，随后resume你修复。不要提前实现5D，不修改dot分支。
+
+## 8 本轮执行安排（2026-10-07）
+
+用户已将5G交给dot。5C1不等待其回执；共享文件由本地单一执行者主笔，5G冻结接口保持。执行与另起独立审查均优先 gpt-6.1-sol / high，只有明确高难度问题才考虑 Astra。完成后按执行→独立审查→原会话修复→指挥核对提交推送。
+
+## 9 指挥中途预检交接
+
+指挥通过正常权限流程已成功启动127.0.0.1:5397预览，并用技能客户端与IAB进行真实UI预检；执行进程自身的沙箱受阻日志继续保留。详情见/private/tmp/brogue-commander-20261007/phase5c1-browser-preflight.md。
+
+中途发现待最终复核：390×844普通布局抽屉打开时app-layout仍高844，canvas缩小后在504px高的flex容器内居中，下部约75px被抽屉遮住；须统一容器/画布原点与点击映射。SettlementPanel持续产生presentationHidden未声明的Vue警告，须正确处理该隐藏状态。源码仍在开发，若最终候选已修则以实际证据关闭；不能只以相机纯函数测试通过代替浏览器画面。
+
+最终审查还将独立核查坏存档能否通过删除locked数组绕过储粮、伪造construction退款账单、当前层未见容器库存是否泄漏；这些是指挥审查假设，尚未独立实测定案。

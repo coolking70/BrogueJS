@@ -22,9 +22,44 @@
 2. prism已知名采用“苍鸾菌”。这是指挥按用户本轮授权临时采纳，不声称用户逐条终审。
 3. 全量npm test、全部test:ext、完整组合smoke及所有删除检查统一留5Z；5G保留全部自有功能、相关真实组合、自然trace/drift与可执行浏览器矩阵。
 4. 256命令完整摘要卡顿记作5Z前独立步骤候选，当前未实施。
-5. 5C1任务书草稿已存phase5c1.task.md，其中新增样例数值按推荐列出，尚未实施；开工前按实际集成基线复核。
+5. 5C1任务书phase5c1.task.md已授权执行，新增样例数值按推荐列出；基线9b65157，与dot的5G并行。
 
 ## 当前交接点与下一步
-任务包在ext/phase5g-base分支的docs/ext/phase5g.dot-package.md，§0已备，等待用户手工转贴给dot。尚未收到回执，不声称云端已开工。dot从origin/ext/phase5g-base创建ext/phase5g，仅推自己的分支。
+用户已明确将5G交给dot执行，尚未收到完成回执。dot仅负责ext/phase5g的限定目录。本地立即按phase5c1.task.md推进5C1；此前“等待5G集成后启动”的串行解读错误，现依营地设计§14.2和采食设计§11纠正。
 
-收到回执后拉取dot分支，先做范围/门禁/必要UI验收，再合入ext/phase5并派本地集成任务；仍按执行→独立审查→原会话修复→指挥核验提交推送。随后启动5C1草稿。5D/5E/Worker/5Z/loot按交接顺序继续，尚未开工。
+执行与独立审查优先使用gpt-6.1-sol/high；只有明确高难度任务再考虑Astra。共享文件由本地单一执行者负责，5G冻结接口保持。收到dot回执后协调范围验收与本地集成，避免在执行者活跃时改动同一工作树。
+
+5C1流程：执行→另起独立审查→原会话resume修复→指挥核验提交推送。5D/5E/Worker/5Z/loot按依赖推进，尚未开工。
+
+## 5C1执行记录
+- 开工基线：9b651572b3c5561f91b3773dead11908ffa63b34。
+- 执行会话：01a1168a-491f-77c0-a3da-623fad8cbf7e；日志明确model=gpt-6.1-sol、reasoning effort=high。
+- 本地托管进程：phase5c1.run.zsh；日志phase5c1.log；完成标记phase5c1.done；目录均在/private/tmp/brogue-commander-20261007。
+- 执行状态文件：phase5c1.status.md；证据目录phase5c1-evidence；首次指挥复核9个5G冻结文件与基线相同，见phase5c1-frozen-baseline.json。
+- 开发候选已交付，独立审查中，尚未提交。后续状态以实际done、报告和独立审查更新。
+
+## 5C1候选交付与独立审查（本轮续记）
+- 原执行会话保持01a1168a-491f-77c0-a3da-623fad8cbf7e / gpt-6.1-sol/high。长时间无新输出后指挥中断旧托管进程（exit130，PID已确认停止），随后resume同一会话仅整理报告；phase5c1-finalize.done=exit0。原phase5c1.done没有生成，不据此误判代码丢失或门禁失败。
+- 全限定批次final输入4a18f719…：营地118、相关963、drift8通过；1项既有CE skip。首访层夹具改为保留原生落点/背包后，final-fixture输入1eb3d53a…：118与boundary/types/build通过；相对前批仅三个自有测试文件不同，生产代码相同，未重复累计通过数。详见phase5c1.report.md与外部delivery-manifest。
+- 独立审查会话01a116fd-89a7-77d0-a0f4-b49557c85401 / gpt-6.1-sol/high，phase5c1-review.log/.done；只读源代码，唯一仓库写入phase5c1.review-findings.md。已启动，尚未最终交付；发现须交原执行会话修复。
+- 浏览器工具准备独立会话01a116dc-7750-70f0-a331-8866dc7133b3 / gpt-6.1-sol/high，只写外部browser-qa-prep目录。指挥实际运行固定构建（5399）390原版普通：布局/选格/开合部分通过；合成抽屉打开时八方向触摸均0输入/0回合/0移动，关闭后同右方向立即走一格。因此真实跟随不通过，暂不展开重复24矩阵。
+- 静态favicon页无游戏代码也产生相同No available adapters警告（browser-gpu-control.json），已归因为无头浏览器环境探测；原警告和失败退出码保留。自然寻粮脚本在搜索循环停滞，未完成双粮/建营闭环，不归为产品故障；工具修订中。
+- 当前未commit/push，未改main/foundation/dot。5G仍等待用户回执。后续：审查报告→原会话修复→指挥复核与完整浏览器验收→提交推送。
+
+## 5C1审查修复中（2026-10-08）
+- 独立审查已完成，phase5c1-review.done=exit0；结论为暂不能交付，F1/F2两项P1、F3/F4/F6三项P2、F5一项P3。原审查证据保留，未改为通过。
+- 已写phase5c1-fix.task.md并resume原执行会话01a1168a-491f-77c0-a3da-623fad8cbf7e（gpt-6.1-sol/high）；当前日志phase5c1-fix.log，完成标记phase5c1-fix.done，状态phase5c1-fix.status.md。修输入所有权、管理范围资格、正式UI休息、选址一致性、桌面收起，以及自然路线证据。
+- 桌面收起采用可逆推荐方案：隐藏营地收起按钮，与合成面板一致；窄屏继续支持实际收起。真实手机证据留待用户试玩/5Z，不将模拟触摸写成实机验收。
+- 指挥已启动v3自然寻粮（旧固定构建5399，browser-natural-food-02，仅settlement/seed5/原生巫师开局），用于路线准备，不替代修复候选验收。工具v4另由原QA会话准备在独立临时目录browser-qa-v4，不改仓库或当前运行的v3脚本。
+- 六条新回归在旧候选均失败，执行者首轮修复已使其通过；这只是修复进度，最终门禁、独立复核和固定构建浏览器尚待完成。
+
+## 2026-10-08 用户转贴5G部分交付
+
+用户已交回dot回执：ext/phase5g最终0fb2720ff1e62ca49cf2f9bcc7b41c550a72d467，起始7fdc2491cc3014f2c1a3736e262c7ff8b5d39ce7，代码基线5e97530。指挥已fetch并完整读报告/配置手册；四条单父提交、指定Co-Authored-By、48个新增白名单文件与共享树零改动已直接核对。按“部分交付”接收，未验收通过、未合并。dot报告741自有通过、401旧通过/2旧失败、drift包装E2BIG/等价分区12通过、七相关组合与两条自然trace；这些仍是dot报告数字，本地未复跑。
+
+SDK-01治疗重复百分比、SDK-02提交错误公开读口、SDK-03注入writer失败与never-throw原子性、SDK-04再生只读投影阻止UI重采，由本地独立进程在隔离detached树/private/tmp/brogue-commander-20261007/phase5g-review-tree核查，证据phase5g-review-evidence；不在5C1未收尾树合入。24浏览器未运行的缺口由本地后续承担，实机/全组合/全删除仍按5Z边界；模块侧需dot修的事项等独立审查后集中提供§0转贴块。
+
+5C1原F1–F5及新增R1已独立关闭，最终生产fixed3的24场景/自然完整UI闭环通过、长名26/64槽三视口真实组件显示通过。R1仅改测试归属，source9c291c76…，生产与fixed3有效字节相同。当前补六设施持续交互时发现原生背包关闭后营地入口仍disabled；独立phase5c1-inventory-review正在核查。原工具缺料误判/导出后错点继续游戏及过严info日志分类已保留失败证据并修订；不能把新disabled现象未经核定当工具问题。当前仍未提交5C1，先完成此项修复验收，再集成5G。
+
+
+2026-10-08维护者最终收口：5C1按本步范围验收通过，最终输入72d1afadec5582146dbf5203f3bf3bc15710d3bc54c54e2c18c8afd1cb76ca64；独立F1–F5/R1/R2关闭，final4新24矩阵及原生背包重开→六设施/12秒持续交互通过。长内容/满槽显示夹具通过；高级浏览器、真实手机和全量收尾留5Z。详见[维护者验收](phase5c1.acceptance.md)。5G原0fb2720仍隔离，未最终验收。

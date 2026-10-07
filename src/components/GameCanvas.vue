@@ -1,4 +1,5 @@
 <script lang="ts">
+import { installCanvasGameInput } from '../ui/canvasGameInput';
 import { displayRandom } from '../engine/Lighting/CosmeticLight';
 import type { MapScaleMode } from '../engine/Settings';
 import { DCOLS, DROWS } from '../types';
@@ -106,6 +107,8 @@ import { logger } from '../engine/Systems/Logger';
 import { inputManager } from '../engine/Input';
 import i18next from 'i18next';
 import { displaySettings } from '../engine/Settings';
+import {moduleMapSelection,selectModuleMapCell,MODULE_MAP_SELECTION_COLOR} from '../ui/moduleMapSelection';
+import {readUsableMapViewport} from '../ui/mapViewport';
 import { viewport } from '../ui/layout';
 // FE-1：小屏跟随相机（纯显示状态，不进存档/录像）
 import { computeMapCamera, cameraState, zoomBy } from '../ui/mapCamera';
@@ -136,7 +139,7 @@ import { targetingState, clearAim, targetingTapCommand, type TapCommand, THROW_A
 import { publicZoneAt } from '../engine/UI/MonsterZones';
 import { dispatch as dispatchCommand, travelTo } from '../ui/commands';
 
-const props = withDefaults(defineProps<{ displayModalOpen?: boolean }>(), { displayModalOpen: false });
+const props = withDefaults(defineProps<{ displayModalOpen?: boolean; pauseAutomaticActions?: boolean }>(), { displayModalOpen: false, pauseAutomaticActions: false });
 
 const canvasContainer = ref<HTMLDivElement | null>(null);
 let pixiApp: Application | null = null;
@@ -277,6 +280,8 @@ onMounted(async () => {
     const drawHover = () => {
         hoverHighlight.clear();
         const game = activeGame, frame = displayedFrame(game);
+        const selected=moduleMapSelection.value;
+        if(selected&&!presentationTimeline(game)?.busy&&!dialogInput.busy())for(const p of selected.cells)if(game.grid.getCell(p.x,p.y)?.isVisible)hoverHighlight.rect(p.x*TILE_SIZE+1,p.y*TILE_SIZE+1,TILE_SIZE-2,TILE_SIZE-2).stroke({color:MODULE_MAP_SELECTION_COLOR,width:1.5});
         const pos = frame ? frame.hoverCell : game.hoveredCell;
         if (!pos || (frame ? frame.targeting !== 'none' || frame.terminal : game.isInventoryOpen || game.referenceScreen
             || game.pendingArcana || game.isThrowing || game.isGameOver)) return;
@@ -334,18 +339,24 @@ onMounted(async () => {
         // 容器 clientWidth/Height 是布局真值，覆盖侧栏增减等非窗口变化。
         // 尺寸观察器先同步 renderer，再进入这里更新图层与命中区；
         // 仅缩放/平移/遮挡变化也可独立走这里，不重复 resize 渲染器。
+        // The renderer already centers map layers. Anchor the canvas itself to
+        // the measured input origin when a drawer clips the drawable area.
+        Object.assign(pixiApp.canvas.style,{position:'absolute',left:'0px',top:'0px'});
+        const usable=readUsableMapViewport(el);
+        if(usable.width<=0||usable.height<=0)return;
+        if(pixiApp.renderer.screen.width!==usable.width||pixiApp.renderer.screen.height!==usable.height)pixiApp.renderer.resize(usable.width,usable.height);
         const preferredLayout = computeMapLayout(
-            el.clientWidth,
-            el.clientHeight,
+            usable.width,
+            usable.height,
             displaySettings.mapScaleMode,
         );
         const base = mapMode.value === 'hanzi' || mapMode.value === 'tiles'
-            ? computeMapLayout(el.clientWidth, el.clientHeight, 'uniform')
+            ? computeMapLayout(usable.width, usable.height, 'uniform')
             : preferredLayout;
         // zoom=1 时保留原桌面布局；主动放大或小屏自动放大后使用跟随相机。
         const focus = displayedFrame(activeGame)?.player ?? activeGame.player?.loc ?? { x: 0, y: 0 };
         const cam = cameraState.fit ? { ...base, follow: false, panX: 0, panY: 0 } : computeMapCamera(
-            el.clientWidth, el.clientHeight, base, DCOLS, DROWS, TILE_SIZE,
+            usable.width, usable.height, base, DCOLS, DROWS, TILE_SIZE,
             focus, cameraState.zoom, { x: cameraState.panX, y: cameraState.panY },
             viewport.mode !== 'desktop' || mapMode.value === 'hanzi' || mapMode.value === 'tiles',
             { fillViewport: displaySettings.immersiveMode,
@@ -379,7 +390,7 @@ onMounted(async () => {
         }
         // 命中区 = 画布容器区域（stage 坐标即 CSS 像素，autoDensity）。
         // 旧实现用 window 尺寸，侧栏右侧的点击会被映射到错误的格子。
-        pixiApp.stage.hitArea = new PIXI.Rectangle(0, 0, el.clientWidth, el.clientHeight);
+        pixiApp.stage.hitArea = new PIXI.Rectangle(0, 0, usable.width, usable.height);
     };
 
     // P2-6：地图缩放模式切换不改变容器尺寸（ResizeObserver 不会触发），
@@ -413,19 +424,7 @@ onMounted(async () => {
     // 同步推进（isAutoTraveling），不再每步吃动画。推进进行中输入锁生效。
     // headless（无渲染）环境不挂载本组件，animationEnabled 保持 false，同步推进。
     game.animationEnabled = true;
-    inputManager.setCallback((action, data) => {
-        if (props.displayModalOpen) return;
-        syncHeldInputContext();
-        game.handlePlayerAction(action, data);
-        syncHeldInputContext();
-        game.update();
-    });
-    inputManager.setUnboundKeyCallback(() => {
-        if (props.displayModalOpen) return;
-        if (!game.isAutoTraveling()) return;
-        game.handlePlayerAction('interrupt_auto');
-        game.update();
-    });
+    installCanvasGameInput(game, () => props.displayModalOpen);
 
     const renders = new RenderRequests();
     const renderProjection = (frame: DisplayFrame) => {
@@ -487,6 +486,7 @@ onMounted(async () => {
         }
         for (let i = floatIdx; i < MAX_FLOAT_SPRITES; i++) floatSprites[i]!.visible = false;
     };
+    watch(moduleMapSelection,()=>renders.request());
     const render = () => {
         const profileStart = frameProfile ? performance.now() : 0;
         drawHover();
@@ -988,8 +988,9 @@ onMounted(async () => {
      * 触屏及公开 square 身体在投掷/法杖瞄准时使用"先瞄准、再确认"（ui/targeting.ts）。
      */
     const activateCell = (mapX: number, mapY: number, button: number, pointer: 'mouse' | 'touch') => {
-        if (props.displayModalOpen) return;
         if (dialogInput.busy()) return;
+        if (props.displayModalOpen) return;
+        if(moduleMapSelection.value){if(button===0&&game.grid.getCell(mapX,mapY)?.isVisible)selectModuleMapCell({x:mapX,y:mapY});renders.request();return;}
         if (mapX < 0 || mapX >= DCOLS || mapY < 0 || mapY >= DROWS) return;
         if (game.pendingArcana) {
             if (pointer === 'touch' || publicSquareAt(mapX, mapY)) {
@@ -1103,7 +1104,7 @@ onMounted(async () => {
     let lastProjection = displayedFrame(game);
     let lastInput = game.recordedInputEvents[game.recordedInputEvents.length - 1];
     let skipNextDisplayTime = false;
-    const autoAllowed = () => !props.displayModalOpen && !game.replayRecording && !game.isTimePaused()
+    const autoAllowed = () => !props.displayModalOpen && !props.pauseAutomaticActions && !game.replayRecording && !game.isTimePaused()
         && !game.hasPendingConfirmation && !game.isAdvancing && !game.isInputLocked() && !game.isGameOver
         && !presentationTimeline(game)?.busy && !dialogInput.busy() && !logger.pendingAcknowledgment && game.isAutoTraveling() && !document.hidden;
     const displayFrame = (elapsedMs: number, animationMs: number = elapsedMs) => {
@@ -1116,7 +1117,7 @@ onMounted(async () => {
             // Browsing freezes replay/auto travel. A skill may have already committed
             // its one native action while this panel stays open to prevent click-through;
             // drain only that in-flight advancement so its time/checkpoint can settle.
-            if (props.displayModalOpen) {
+            if (props.displayModalOpen || props.pauseAutomaticActions) {
                 pathingTimer = 0;
                 if (game.isAdvancing && !game.replayRecording) game.tickAdvancement(animationMs);
                 // The panel can remain mounted through a skill's ACK. Drain its
@@ -1169,6 +1170,11 @@ onMounted(async () => {
             syncHeldInputContext();
             const nextProjection = displayedFrame(game);
             if (nextProjection !== lastProjection) { lastProjection = nextProjection; renders.request(); }
+            // A module panel suspends automatic actions, but accepted native
+            // commands may move the player. Update follow geometry independently
+            // of a render request, using the actual remaining map viewport.
+            const focus=nextProjection?.player??game.player.loc;
+            if(focus.x!==lastFocusX||focus.y!==lastFocusY){cameraState.panX=0;cameraState.panY=0;applyLayout();renders.request();}
             // Present requested overlays and final states even while paused.
             renders.flush(render);
         }

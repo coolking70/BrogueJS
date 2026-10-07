@@ -315,5 +315,16 @@
     "damage": "伤",
     "healing": "疗",
     "hallucination": "幻"
+  },
+  "structures": {
+    "window": "窗",
+    "roof": "顶",
+    "roofedFloor": "覆",
+    "bed": "床",
+    "chest": "箱",
+    "station": "台",
+    "wall": "墙",
+    "door": "门",
+    "openDoor": "开"
   }
 }

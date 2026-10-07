@@ -1,3 +1,4 @@
+import {validateProductionCampReferences} from './StructureProduction';
 import { ownsWorldWorkDefinitions } from './WorldWorkOwner';
 import { edibleItemAdapter } from './KindKnowledge';
 import { validateEdibleReferences } from './EdibleValidation';
@@ -15,6 +16,7 @@ export function validateWorldWorkReferences(game: Game): void {
   const w = game.world5;
   if (!w) return;
   validateStructureReferences(game);
+  validateProductionCampReferences(game);
   const runtime = game.extensionRuntime!,
     packs = runtime.worldDefinitionPacks(),
     entities = runtime.worldWorkEntities();

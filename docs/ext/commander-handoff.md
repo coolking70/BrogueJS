@@ -2,7 +2,7 @@
 
 > 2026-10-07。Claude 额度紧张，由 Codex 指挥进程临时接管“维护者侧”工作：写任务书、派发本地 Codex 执行进程、审查、合入、给维护者（用户）准备 dot 转贴文本。用户说中文，回复用中文。
 
-> Codex接管更新（2026-10-07）：owner阻断修复5e97530已推送；5G基线7fdc249已发布，待用户转贴。详见[指挥状态](commander-status.md)。
+> Codex接管更新（2026-10-07）：owner阻断修复5e97530已推送；5G基线7fdc249已发布，用户已转交dot执行；本地5C1并行开工。详见[指挥状态](commander-status.md)。
 
 ## 1 工作方式（必须遵守）
 - 先读根 `AGENTS.md`、`docs/HANDOFF.md`、`docs/ext/README.md`。扩展分支是独立新产品原型，不合 main；不改 main。
@@ -19,7 +19,7 @@
 | 工作树 | 分支 | 用途 |
 |---|---|---|
 | `BrogueJS-p5` | `ext/phase5` | **阶段 5 主线**（当前 HEAD 含 5A1–5A4、5B crafting 集成、w_26 修复 `2571abe`） |
-| `BrogueJS-5gbase` | `ext/phase5g-base` | 5G foraging派发基线（7fdc249已发布，待转贴） |
+| `BrogueJS-5gbase` | `ext/phase5g-base` | 5G foraging派发基线（7fdc249已发布，用户已交dot执行） |
 | `BrogueJS-5bbase` | `ext/phase5b-base` | 5B 派发基线（已用完） |
 | `BrogueJS-5b` | `ext/phase5b` | dot 的 5B（已合入 phase5） |
 | `BrogueJS-lootcore` | `ext/phase6-loot-core` | loot 纯核心 v1.1 + 6B1-β UI 组件（已验收 `93523fc`，不接入游戏） |
@@ -32,12 +32,12 @@
 1. **i18n源码守卫修复**：52e2b90已完成并推送，启动核验已通过。
 2. **5G底座阻断已解除**：owner查询修复由本地执行、另起独立审查无发现，相关242项及独立73项通过，5e97530已推送ext/phase5；SDK/格式未变。
 3. **5G任务包已发布**：origin/ext/phase5g-base = 7fdc2491cc3014f2c1a3736e262c7ff8b5d39ce7。基线5e97530 + 原定稿两个文件 + 文档修订；独立审查F1/P2已交原会话resume修正并由指挥关闭。见[派发报告](phase5g-dispatch.report.md)与[审查](phase5g-dispatch.review-findings.md)。旧34bb6c7保留本地ext/phase5g-base-before-owner-20261007。
-4. **等待用户转贴/回执**：§0位于5gbase工作树docs/ext/phase5g.dot-package.md。尚未收到dot回执，不声称云端已启动。§12.3全部20条、nonEaters20模板、苍鸾菌等按推荐临时采纳，待用户确认但不阻断；门禁已与本交接单统一。详见[指挥状态](commander-status.md)。
-5. **5C1任务书草稿已备**：[phase5c1.task.md](phase5c1.task.md)，尚未派发；按§4顺序在5G回执验收和本地集成后启动。
+4. **dot已交部分交付，隔离验收中**：最终0fb2720ff1e62ca49cf2f9bcc7b41c550a72d467已fetch；48白名单新增文件/四条署名提交核对通过。四项SDK及浏览器缺口待独立核查，未合并。原派发记录：§0位于5gbase工作树docs/ext/phase5g.dot-package.md。用户已明确5G交给dot执行，并于2026-10-08转贴部分交付回执。§12.3全部20条、nonEaters20模板、苍鸾菌等按推荐临时采纳，待用户确认但不阻断；门禁已与本交接单统一。详见[指挥状态](commander-status.md)。
+5. **5C1本地验收通过（2026-10-08）**：final4新24矩阵与六设施持续交互通过，F1–F6/R1/R2按本步范围关闭，见[维护者验收](phase5c1.acceptance.md)。原开工记录：[phase5c1.task.md](phase5c1.task.md)，用户已授权派执行进程；优先gpt-6.1-sol/high。此前将§4误读为等待5G集成的串行排期已纠正，依据营地设计§14.2与采食设计§11。
 
-## 4 接下来（按序）
-1. 5G 派给 dot（用户转贴）。dot 回来后验收 → 合入 `ext/phase5` → 本地集成任务（参照 `docs/ext/phase5b-integration.task.md` 的做法）。
-2. **5C 营地与建造**（本地）：先写任务书 `docs/ext/phase5c1.task.md`（依据 `phase5-settlement-world.md` 的 5C1 行与 §8.3a 粮食经济的建营地存粮；5A3 结构/房间/区域已就绪），再派执行进程；含遗留：窄屏合成抽屉展开时地图视口不跟随玩家。
+## 4 接下来（5G与5C1并行，其余按依赖）
+1. 5G 已由用户派给 dot，与本地5C1并行。dot 回来后验收 → 合入 `ext/phase5` → 本地集成任务（参照 `docs/ext/phase5b-integration.task.md` 的做法）。
+2. **5C 营地与建造**（本地，与5G并行，不等其回执）：任务书 `docs/ext/phase5c1.task.md`（依据 `phase5-settlement-world.md` 的 5C1 行与 §8.3a 粮食经济的建营地存粮；5A3 结构/房间/区域已就绪），现派执行进程；含遗留：窄屏合成抽屉展开时地图视口不跟随玩家。
 3. **5D 居民与工作**（含营地粮食经济、厨师、离线消耗；合同 C5-1 离线类型需修订，见 foraging 设计 §10 与 5A4 报告 5D 交接），5E 防御，按设计 §14.1。
 4. **周期完整摘要卡顿**：每 256 条命令完整摘要在 D8 约 1.1–1.3 s。5A3 报告附有 Worker 异步摘要接口草案；建议在 5Z 前单列一步实现（待用户确认排期）。
 5. 阶段 5 收尾 5Z：完整 npm test、全部 test:ext、全部组合 smoke、完整删除矩阵、浏览器全面验收。

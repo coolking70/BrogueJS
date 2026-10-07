@@ -26,6 +26,7 @@ export interface WorldInteractionValidation {
     readonly regions?: readonly OwnedRegion[];
 }
 export interface ExtensionProjectionContext extends WorldProjectionFields {
+    readonly structures?: import('./structureSdk').StructureReadSDK;
     readonly edible?: {readEdibleContext(): import('./worldSdk').WorldResult<import('./worldEdible').EdibleContext>; knowledge(groupId:string):import('./kindKnowledge').KindKnowledgeView};
     readonly stats?: import('./stats').StatQuery;
     readonly worldWork?: import('./worldSdk').WorldWorkReadSDK;
