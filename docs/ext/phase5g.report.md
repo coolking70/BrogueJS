@@ -355,3 +355,118 @@ exit1，Chromium `FATAL:chrome/browser/process_singleton_posix.cc:297 ... socket
 |T-COMP/T-FEED|20模板/规则/居民/群体资格、200tick每点/各档属性、30000截止/20回合grace、非致死/掉落/无XP、跨层/复活、原生与12菌喂食、所有拒绝与确认|治疗同SDK-01|
 |T-LEAK/T-UI|十种实际命令后日志/投影/详情/三页签真实SFC文本，未知精确饱腹隐藏；103UI断言|SDK-02提交码读口；浏览器blocked|
 |T-PERSIST/T-TRACE/T-COMBO|9类效果/需求布景存读续行；两自然trace、七相关组合真实新局/replay/seek/续录、额外两热源+群体联动|特定布景逐种完整新局录像未声称通过|
+
+---
+
+# 5G 集中修订追加报告
+
+本节是后续集中修订，以上首交记录原样保留，不用新增通过数改写历史失败。当前合同为 `phase5g-revision.dot-package.md`；完成候选不等于维护者最终验收。
+
+## R1 固定基线、环境与边界
+
+- 代码基线 `6874dbb07a67c6873b30580d0c06af2a42507875`，tree `31502966e231395c35daf78a6dc9159411866553`
+- 实际派发tip `db50a84511dde0b0196f8b182205b9ea70086ef3`，tree `cd4a1fdf9a94538180a0a67a1feb174fdb8c3a3e`，fresh clone起始干净
+- 代码基线→派发tip仅四份维护者文档：revision.dot-package、local.review-findings、atomic-contract、revision-package.review-findings；不计作本轮自有修改
+- 唯一执行/发布分支 `codex/phase5g-revision`；原ext/phase5g、ext/phase5、main、foundation和派发base不写入
+- 云Linux，Node24.19.0，所有门禁 `NODE_OPTIONS=--max-old-space-size=3072`、Vitest最多2workers；npm ci使用原锁文件成功，181包，无新增依赖
+- 九冻结文件逐字节符合原任务书，fgfixture树仍7c31db01609c097285a21493bf9771bda92e2eb6464fcad124314368f9e1c10c；权威数据、200文案、两自然trace禁止修改并保存开工哈希
+- 改动仅foraging自有目录、配置手册必要合同、本报告追加、独立review-findings；不提交共享SDK/runtime/engine/UI/test/scripts或任何其它模块更改
+
+## R2 逐项关闭与推荐决定
+
+| 返工项 | 实现/有效证据 | 状态 |
+|---|---|---|
+|G-R01 治疗|维护者3f6e237基础修复；本轮恢复玩家/同伴精确hpGained与事实即时HP，min5/30%/封顶/满血、烤制keep/strip|正常849项门禁通过|
+|G-R02 再生|真实32000tick投影与面板提交、纯读root/revision/RNG不变、投影CAS成功/旧CAS拒绝|正常849项门禁通过|
+|G-R04 提交异常|保留首写前防御；三参与者提交异常传播，不补偿、不锁存、不扩大底座；原参与者writer故障矩阵|正常849项门禁通过|
+|G-R05 重复揭示|真实SDK返回语义；raw/roasted四前提1/1/1/0、重复消费/爆炸/保存再吃|正常849项门禁通过|
+|G-R06 组合|无foraging用模块中立快照；正常10组合+3真实联动，保留两trace|正常849项门禁通过|
+|持久化|真实效果强度/完整到期/伤害唤醒/离队终態，两组相同公开后续命令；不手改食后duration|正常849项门禁通过|
+|可选模块测试|通用规则用合法fgheat测试descriptor，真实peer按能力注册；不移归共享/删测试/skip/伪return|正常849项通过；四副本另列|
+|G-R03 反馈|更正历史SDK-02描述：worldSdk已有可选lastCommandError；固定DTO未投影。维护者裁定接受首版通用拒绝，未新增读口|规格裁定，不称所有具体码已实现|
+|G-E01/E02/E03|基础已修fixture前提、平台tmpdir和runner大环境变量；本轮验证Linux实际旧共享测试与npm drift包装器|正常849项门禁通过|
+
+### 新发现：活动力量旧存档向已过期活局加载失败（共享基线，未改）
+
+真实foraging食用might，保存玩家力量14、临时+2直到tick40000。相同存档立即load=true；原活局公开wait至40000后，同一字节存档load=false；fresh Game load=true，manifest一致，存档字节未变，loadErrors为空。只读定位：runtime.ts约387的临时来源求值使用当前活局ports.simulationTicks()，约1234的候选账本检查由已过期来源12验证候选力量14。未更改共享runtime或冻结接口。
+
+最小复现：正常真实foraging harness→公开吃might→`saved=h.save()`→立即`h.load(saved)`成功→公开wait至simulationTicks40000→`worldHarnessGame(h).loadSnapshot(JSON.parse(saved))`为false；另新建相同模块harness载入saved为true。独立诊断日志保存于仓库外；这是实际观测的共享加载边界，不是writer故障注入。建议维护者用候选存档时钟/来源上下文验证materialized stats并补回归。
+
+本轮要求的力量持久化采用两个真正独立分支：未存读控制走到期；另fresh harness载入活动力量存档、确认+2仍激活，再执行完全相同公开wait直到期，逐项比较机械根/state/知识/需求/双RNG与digest。没有把上述“过期活局重新载入旧buff档”说成已通过；该附加场景明确待本地共享修复。
+
+推荐可回退决定：沿维护者新事务合同；首版通用反馈；特殊九类完整新局录像留5Z；通用规则改用自有合法热源fixture；活动力量用独立控制/加载分支证明期满一致并单列共享旧档加载缺口。均不视为维护者最终验收。
+
+## R3 实际验证命令与结果
+
+开发失败过程、修正后的完整候选、独立审查、四个最小删除副本分别列示，不相加重复通过数量。所有命令从相应正常/副本根运行，统一Node24.19.0、3GiB，maxWorkers不超过2。
+
+最终输入2651文件（完整跟踪/自有新增输入，排除仅更新证据的本报告和独立审查文档），路径+NUL+SHA256+LF聚合`7c9c8f740d49abeaabba04e21cd82249f9e511269b942cac54e913f853b027ba`。正常门禁后2651输入逐文件一致；四副本全部47个foraging文件及应保留输入均逐文件一致，独立审查已复核。
+
+|最终正常命令|exit|passed/failed/skipped/todo|wall秒|
+|---|---:|---|---:|
+|node scripts/check-module-boundaries.mjs|0|非测试命令|6.397|
+|npx vue-tsc -b|0|非测试命令|23.786|
+|npm run build|0|非测试命令，1274模块，仅原大chunk提示|34.085|
+|npx vitest run src/ext/modules/foraging/tests --maxWorkers=2|0|20文件；849/0/0/0；含10组合+3联动和原2trace|321.714|
+|必要共享集合（下列17文件）|0|17文件；347/0/0/0|464.437|
+|npm run test:drift -- --maxWorkers=2|0|6文件；12/0/0/0；包装器实际成功|197.584|
+
+测试命令均另加`--reporter=default --reporter=json --outputFile.json=<仓库外证据路径>`保留逐例结果，不改变选集。实际npm drift包装器不接受替代分区冒称通过。
+
+必要共享命令为：`npx vitest run src/test/ext_edible_runtime.test.ts src/test/ext_edible_review.test.ts src/test/ext_fire_contact_runtime.test.ts src/test/ext_kind_knowledge_runtime.test.ts src/test/ext_actor_needs_runtime.test.ts src/test/ext_departure_runtime.test.ts src/test/ext_slumber_runtime.test.ts src/test/ext_world_work_sdk_contract.test.ts src/test/ext_world_work_transactions.test.ts src/test/ext_world_work_review.test.ts src/test/ext_world_work_failures.test.ts src/test/ext_world_work_boundaries.test.ts src/test/ext_foundation_contracts.test.ts src/test/p1_30_i18n_gate.test.ts src/test/repo_hygiene.test.ts src/test/test_suite_membership.test.ts src/test/u24_hardcoded_text.test.ts --maxWorkers=2`。预留/满容量由ext_edible_runtime:621–626与world_work_transactions覆盖；库存不足由world_work_failures的capacity真实拒绝覆盖，不改共享断言。
+
+开发过程（不是新增唯一通过总数）：治疗/喂食/知识/节点初次4文件85 passed、87.76s；真实节点UI与修订持久化3类曾因logger参数、empty optional section及共享力量reload暴露红灯；修后节点7 passed，companion+persistence2文件48 passed、100.46s。通用heat初稿placementCost为空被合法schema拒绝，补自有stone成本后roast+commands77 passed/17.50s；combo+trace+leak+UI131 passed/136.57s。原子性初稿keep种子/可选字段/离队revision/死体保存前提错误逐项修正，不改事务期望；最后独立审查发现的4红及复修详R4。初次全树类型检查4个编写中类型错误已修；最终type前一后台会话因工具“network approval cancelled”中断、没有退出码，不记通过；同一授权本地命令重跑exit0。完整失败/命令stdout与JSON保留于仓库外phase5g-revision-evidence。
+
+### 四个授权的最小物理删除副本
+
+每份外部副本真实删除指定模块目录后，运行 `node scripts/test-discovery.mjs` 和 `npx vitest run src/ext/modules/foraging/tests --maxWorkers=2 --reporter=default --reporter=json --outputFile.json=<仓库外结果>`；全部保留20测试文件、47自有文件，无exclude/skip/todo/空壳替代。
+
+|副本|删除文件|保留输入逐字节一致|discovery exit/秒|测试 exit|passed/failed/skipped/todo|测试wall秒|
+|---|---:|---:|---|---:|---|---:|
+|无crafting|42|2609|0 / 0.086|0|845/0/0/0|297.316|
+|无combat|61|2590|0 / 0.077|0|846/0/0/0|307.135|
+|无giants|36|2615|0 / 0.078|0|846/0/0/0|314.609|
+|仅foraging，删除另六模块|283|2368|0 / 0.079|0|833/0/0/0|247.902|
+
+注册数量差异仅来自真实peer场景不适用与已安装子集重组；无crafting不注册两项自然B，无combat不注册其热源场景，无giants不注册其群体场景。仅foraging仍完整执行通用独立热源、模块规则与自然A。所有删除清单及运行JSON留存于外部证据目录，独立审查核对了实际不存在的目录/文件、保留输入及逐用例名称。
+
+
+## R4 独立审查与原执行者修复
+
+实现后另起未参与实施的审查；审查文件 `phase5g-revision.review-findings.md`。审查独立发现4个detached writer测试红灯：最后补强断言错误地将原生盟友死亡视为departure退休，要求删除组件行。实际死亡保留同一actor在purgatory，失败参与者的组件删除必须完整回滚。
+
+原执行者已复现4 failed（其余50未选），随后改为完整entry.components相等，并显式断言同一actor留在purgatory、不在活动monsters；不改生产或共享代码、不跳过。定向修复4 passed（其余50未选），exit0/10.193s；原红灯exit1/9.887s保留。独立复审全atomic54/54 passed、exit0、74.30s，R-F01关闭；未发现剩余本轮范围内生产/测试问题。独立初次atomic/combo/trace3文件67passed/4failed、258.83s仅上述旧oracle4红，combo13和trace4均绿；另独立persistence/nodes/knowledge31/31 passed、103.23s。共享活局力量旧档缺口R-E01保留为范围外P2。独立审查已完成全部四副本的真实删除、完整保留输入及结果复核，签署无剩余本轮范围内问题；不把实施者自查称独立审查。
+
+## R5 自然、受控、浏览器与真机边界
+
+原自然A（仅foraging、seed2、149条、14400tick）与B（crafting+foraging、seed6、27条、2900tick）字节不改；正常七模块树都运行。九类特殊布景验证真实效果后保存/相同公开命令续行，完整新局录像仍移交5Z，不制造origin/伪事件。
+
+受控保存时点（seed51020001）与5Z录像交接：
+
+|类别|本轮真实保存/观察时点|公开续行终态/5Z录像actor|
+|---|---|---|
+|吃|玩家venom，t100/poison7|公开wait到效果结束；玩家|
+|烤|mend→roasted，t100|roast→char→烧尽；背包堆|
+|爆炸|公开roast blast，t100|第二次预置blast公开爆炸且不重复揭示；物品/玩家|
+|喂食|同伴might，t100，伤害125%至40000|公开wait到期回100%；普通同伴|
+|力量|玩家might，t100，+2至40000|独立未读档/新Game载入两分支到期；玩家，另列旧活局reload缺口|
+|沉眠|公开feed同伴drowse，观察25，命令后t100余24|自然到期2500/真实爆炸伤害提前醒；同伴受攻击机会静止、醒后真实行动|
+|部分菌丛|t700，remaining1、余数600|到32000真实重采；节点|
+|离开中|t30000|public wait到非死亡退役；同伴|
+|退役后|t32000|公开后续命令保持收据/无复活；已退役同伴|
+
+玩家drowse仅在只读事实点观察25回合，同一食用命令在安全场景t2500醒来或真实伤害t100提前醒；不存在正常命令间的玩家沉眠保存窗口，不虚造一个。上述特殊布景的每种完整新局replay/seek仍交5Z；正常生产两trace及10组合的真实录像继续本轮验证。
+
+本轮云浏览器能力预检实际运行：`node -e "import('playwright').then(async({chromium})=>{const b=await chromium.launch({headless:true,executablePath:'/usr/bin/chromium'});console.log('cloud-browser-ready');await b.close()})"`，exit1，0.426s。预装Chromium仍在process_singleton_posix.cc:297报`socket() failed: Operation not permitted (1)`，另有crashpad database初始化错误。没有改安全参数、安装替代浏览器、调用用户Mac或绕限制；保存本轮完整stderr，不沿用旧截图。
+
+因此原24格（1440×900/390×844/320×844×普通/沉浸×4地图）和浏览器再生重采均blocked/未运行；真机未运行。控制器/SFC真实命令再生通过不等于浏览器像素验收。
+
+维护者复验路线：在最终commit构建上用自然A seed2/B seed6重放并打开采集/烤制/喂食，检查长名/满包/无热源/多同伴/离开中/连点/blur/触摸/回放和玩家邻格预警遮挡。再生专项用已登记nodes测试的seed51020001受控场景（邻格11,10、采3次、公开wait至32000），确认卡片可采、点击真正得到第4个菌、旧revision重试拒绝。活动沉眠用同seed公开feed drowse给普通同伴后余24回合快照；不得伪造玩家命令间沉眠窗口。真实设备由用户/5Z补验。
+
+## R6 发布、冻结核验与5Z交接
+
+完整npm test、全部test:ext、全128子集、完整删除矩阵和极限长局仍未运行；本轮仅明确授权的4个外部最小删除副本，不冒称完整removal档。最终commit以交付回执及本报告所属远端提交为准，避免自引用SHA。
+
+发布记录：HTTPS `GIT_TERMINAL_PROMPT=0 git push origin HEAD:refs/heads/codex/phase5g-revision` exit128，原因是未配置Username、终端提示已禁用，未写远端ref。按既定授权改用GitHub连接器创建完全相同树及单父提交，再仅创建目标分支；不寻找凭据。实施提交本地 `aebbcfb63f130b9895cf63947fda9f19a615a02c` 对应远端对象 `488dd7654984e2033cf86f302fcc784d8f2bdb39`，两者tree均 `839c74f1fa2c18541a01c708dd5e4795ce51f744`。连接器使用服务端作者/提交时间，故commit SHA不同；内容、完整消息和指定Co-Authored-By尾行保持一致。最终证据提交采用同法，最终SHA及拉取后逐树/单父链/尾行核验记录于交付回执。
+
+提交前再次确认2651测试输入完全不变、20个改动文件全部在白名单内、原报告历史前缀逐字节保留；九冻结SDK/harness文件、fixture树、权威数据/locale/两trace与开工值相同。独立审查完整签署后才提交。剩余共享R-E01、24格浏览器与真机、九特殊布景完整新局录像及5Z全量项均保持公开未关闭。
