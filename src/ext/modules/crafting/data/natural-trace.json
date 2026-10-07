@@ -1,0 +1,3439 @@
+{
+  "seed": 2,
+  "mode": "normal",
+  "modules": [
+    "crafting"
+  ],
+  "commands": [
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":0,\"inventoryStamp\":\"2d363b2f5c1f3a4e\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":2,\"inventoryStamp\":\"49a129c127908633\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":4,\"inventoryStamp\":\"d19fd2319cd605fa\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":6,\"inventoryStamp\":\"45eec62aa9269465\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":8,\"inventoryStamp\":\"33a3b303f85f135a\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":10,\"inventoryStamp\":\"9b22f63d0794025b\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":12,\"inventoryStamp\":\"44a82f1ada1a7a70\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":14,\"inventoryStamp\":\"3a530fe68ecd378a\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":16,\"inventoryStamp\":\"a5e01d5511d841e1\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":18,\"inventoryStamp\":\"19a008494c56ce3d\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":20,\"inventoryStamp\":\"4dff0883ae053b28\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":22,\"inventoryStamp\":\"3acfac6a5f8d8e01\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":24,\"inventoryStamp\":\"1bbc3ba43eebd009\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":26,\"inventoryStamp\":\"5a446c1121394b9e\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":28,\"inventoryStamp\":\"851fa0a0073e2ef6\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":30,\"inventoryStamp\":\"124970cbec6750a2\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":32,\"inventoryStamp\":\"8bd15ca094a2e5fa\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":24,\"nodeRevision\":0,\"inventoryStamp\":\"21d3df54f0d11829\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":24,\"nodeRevision\":2,\"inventoryStamp\":\"c047907aeafe394f\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":24,\"nodeRevision\":4,\"inventoryStamp\":\"5a3a7fc37199d442\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":24,\"nodeRevision\":6,\"inventoryStamp\":\"47449762a56b08e4\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":24,\"nodeRevision\":8,\"inventoryStamp\":\"aaa00b40c5cc4cae\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":24,\"nodeRevision\":10,\"inventoryStamp\":\"09c2690696cadec9\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":24,\"nodeRevision\":12,\"inventoryStamp\":\"7ff5957a078e2b90\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":24,\"nodeRevision\":14,\"inventoryStamp\":\"b1338599c50dba26\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":25,\"nodeRevision\":0,\"inventoryStamp\":\"109ddae2d80efc8a\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":25,\"nodeRevision\":2,\"inventoryStamp\":\"5fc81c6b85c0ac1b\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":25,\"nodeRevision\":4,\"inventoryStamp\":\"abb272d09b04f5e5\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":25,\"nodeRevision\":6,\"inventoryStamp\":\"008ab54959e8f393\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":25,\"nodeRevision\":8,\"inventoryStamp\":\"7b057421c020a4a3\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":25,\"nodeRevision\":10,\"inventoryStamp\":\"f399deb535e07cad\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":27,\"nodeRevision\":0,\"inventoryStamp\":\"9d8cec24bf058037\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":27,\"nodeRevision\":2,\"inventoryStamp\":\"5874cea9462246b3\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":27,\"nodeRevision\":4,\"inventoryStamp\":\"216dc3c2d8bdb933\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":27,\"nodeRevision\":6,\"inventoryStamp\":\"cec959eaf99e32b6\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"craft\",\"payload\":{\"v\":1,\"recipeId\":\"crafting.make-pick\",\"batchCount\":1,\"stationId\":null,\"stationRevision\":null,\"sourceContainerId\":null,\"sourceRevision\":null,\"inventoryStamp\":\"19a1dde8e14d2999\"}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"place-station\",\"payload\":{\"v\":1,\"definitionId\":\"crafting.table\",\"x\":46,\"y\":5,\"inventoryStamp\":\"d73720aaf1f759bb\"}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"place-station\",\"payload\":{\"v\":1,\"definitionId\":\"crafting.hearth\",\"x\":47,\"y\":5,\"inventoryStamp\":\"956163675a1fd652\"}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"craft\",\"payload\":{\"v\":1,\"recipeId\":\"crafting.make-leather-armor\",\"batchCount\":1,\"stationId\":71,\"stationRevision\":0,\"sourceContainerId\":null,\"sourceRevision\":null,\"inventoryStamp\":\"2ba9d242c367792c\"}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"craft\",\"payload\":{\"v\":1,\"recipeId\":\"crafting.make-bed-kit\",\"batchCount\":1,\"stationId\":71,\"stationRevision\":0,\"sourceContainerId\":null,\"sourceRevision\":null,\"inventoryStamp\":\"33cd7e27c873e4bd\"}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"craft\",\"payload\":{\"v\":1,\"recipeId\":\"crafting.make-chest-kit\",\"batchCount\":1,\"stationId\":71,\"stationRevision\":0,\"sourceContainerId\":null,\"sourceRevision\":null,\"inventoryStamp\":\"cf45e9aeea8c532a\"}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"craft\",\"payload\":{\"v\":1,\"recipeId\":\"crafting.make-table-kit\",\"batchCount\":1,\"stationId\":null,\"stationRevision\":null,\"sourceContainerId\":null,\"sourceRevision\":null,\"inventoryStamp\":\"5c1188306f252d3d\"}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "expect": {
+        "recorded": true
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":110,\"nodeRevision\":0,\"inventoryStamp\":\"0c60888c77af65e9\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":110,\"nodeRevision\":2,\"inventoryStamp\":\"fda7935948ef5bd4\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":110,\"nodeRevision\":4,\"inventoryStamp\":\"29c2f79cb26052bc\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":110,\"nodeRevision\":6,\"inventoryStamp\":\"502c101f837afc7d\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"place-station\",\"payload\":{\"v\":1,\"definitionId\":\"crafting.table\",\"x\":34,\"y\":8,\"inventoryStamp\":\"bb45789bf9fe5584\"}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"crafting\",\"action\":\"craft\",\"payload\":{\"v\":1,\"recipeId\":\"crafting.make-dagger\",\"batchCount\":1,\"stationId\":116,\"stationRevision\":0,\"sourceContainerId\":null,\"sourceRevision\":null,\"inventoryStamp\":\"f91557eeb003e373\"}}",
+      "expect": {
+        "recorded": true,
+        "error": null
+      }
+    }
+  ],
+  "final": {
+    "inventory": [
+      {
+        "id": 2,
+        "category": "native",
+        "nativeCategory": "food",
+        "definitionId": null,
+        "quantity": 1,
+        "available": 1,
+        "packSlots": 1,
+        "tags": [],
+        "toolDurability": null
+      },
+      {
+        "id": 3,
+        "category": "native",
+        "nativeCategory": "weapon",
+        "definitionId": null,
+        "quantity": 1,
+        "available": 1,
+        "packSlots": 1,
+        "tags": [],
+        "toolDurability": null
+      },
+      {
+        "id": 4,
+        "category": "native",
+        "nativeCategory": "weapon",
+        "definitionId": null,
+        "quantity": 15,
+        "available": 15,
+        "packSlots": 1,
+        "tags": [],
+        "toolDurability": null
+      },
+      {
+        "id": 5,
+        "category": "native",
+        "nativeCategory": "armor",
+        "definitionId": null,
+        "quantity": 1,
+        "available": 1,
+        "packSlots": 1,
+        "tags": [],
+        "toolDurability": null
+      },
+      {
+        "id": 68,
+        "category": "tool",
+        "nativeCategory": null,
+        "definitionId": "crafting.pick",
+        "quantity": 1,
+        "available": 1,
+        "packSlots": 1,
+        "tags": [
+          "basic.pick"
+        ],
+        "toolDurability": 36
+      },
+      {
+        "id": 77,
+        "category": "native",
+        "nativeCategory": "armor",
+        "definitionId": null,
+        "quantity": 1,
+        "available": 1,
+        "packSlots": 1,
+        "tags": [],
+        "toolDurability": null
+      },
+      {
+        "id": 79,
+        "category": "kit",
+        "nativeCategory": null,
+        "definitionId": "crafting.kit-bed",
+        "quantity": 1,
+        "available": 1,
+        "packSlots": 1,
+        "tags": [
+          "kit.bed"
+        ],
+        "toolDurability": null
+      },
+      {
+        "id": 81,
+        "category": "kit",
+        "nativeCategory": null,
+        "definitionId": "crafting.kit-chest",
+        "quantity": 1,
+        "available": 1,
+        "packSlots": 1,
+        "tags": [
+          "kit.chest"
+        ],
+        "toolDurability": null
+      },
+      {
+        "id": 117,
+        "category": "native",
+        "nativeCategory": "weapon",
+        "definitionId": null,
+        "quantity": 1,
+        "available": 1,
+        "packSlots": 1,
+        "tags": [],
+        "toolDurability": null
+      }
+    ],
+    "nodes": [
+      {
+        "interactableId": 21,
+        "owner": "crafting",
+        "definitionId": "crafting.wood-node",
+        "instanceKey": "crafting.wood-node.dungeon.1.0",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 1
+        },
+        "at": {
+          "x": 47,
+          "y": 10
+        },
+        "capacity": 20,
+        "remaining": 20,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 0,
+        "revision": 0
+      },
+      {
+        "interactableId": 22,
+        "owner": "crafting",
+        "definitionId": "crafting.wood-node",
+        "instanceKey": "crafting.wood-node.dungeon.1.1",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 1
+        },
+        "at": {
+          "x": 28,
+          "y": 22
+        },
+        "capacity": 20,
+        "remaining": 3,
+        "reservedUnits": 0,
+        "regenRemainder": 1600,
+        "lastSettledTick": 2500,
+        "revision": 34
+      },
+      {
+        "interactableId": 23,
+        "owner": "crafting",
+        "definitionId": "crafting.stone-node",
+        "instanceKey": "crafting.stone-node.dungeon.1.0",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 1
+        },
+        "at": {
+          "x": 72,
+          "y": 4
+        },
+        "capacity": 20,
+        "remaining": 20,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 0,
+        "revision": 0
+      },
+      {
+        "interactableId": 24,
+        "owner": "crafting",
+        "definitionId": "crafting.stone-node",
+        "instanceKey": "crafting.stone-node.dungeon.1.1",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 1
+        },
+        "at": {
+          "x": 69,
+          "y": 7
+        },
+        "capacity": 20,
+        "remaining": 12,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 8000,
+        "revision": 16
+      },
+      {
+        "interactableId": 25,
+        "owner": "crafting",
+        "definitionId": "crafting.fiber-node",
+        "instanceKey": "crafting.fiber-node.dungeon.1.0",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 1
+        },
+        "at": {
+          "x": 31,
+          "y": 13
+        },
+        "capacity": 20,
+        "remaining": 14,
+        "reservedUnits": 0,
+        "regenRemainder": 500,
+        "lastSettledTick": 12700,
+        "revision": 12
+      },
+      {
+        "interactableId": 26,
+        "owner": "crafting",
+        "definitionId": "crafting.fiber-node",
+        "instanceKey": "crafting.fiber-node.dungeon.1.1",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 1
+        },
+        "at": {
+          "x": 26,
+          "y": 8
+        },
+        "capacity": 20,
+        "remaining": 20,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 0,
+        "revision": 0
+      },
+      {
+        "interactableId": 27,
+        "owner": "crafting",
+        "definitionId": "crafting.hide-cache",
+        "instanceKey": "crafting.hide-cache.dungeon.1.0",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 1
+        },
+        "at": {
+          "x": 48,
+          "y": 6
+        },
+        "capacity": 12,
+        "remaining": 8,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 15500,
+        "revision": 8
+      },
+      {
+        "interactableId": 104,
+        "owner": "crafting",
+        "definitionId": "crafting.wood-node",
+        "instanceKey": "crafting.wood-node.dungeon.2.0",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 2
+        },
+        "at": {
+          "x": 65,
+          "y": 17
+        },
+        "capacity": 20,
+        "remaining": 20,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 25400,
+        "revision": 0
+      },
+      {
+        "interactableId": 105,
+        "owner": "crafting",
+        "definitionId": "crafting.wood-node",
+        "instanceKey": "crafting.wood-node.dungeon.2.1",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 2
+        },
+        "at": {
+          "x": 67,
+          "y": 12
+        },
+        "capacity": 20,
+        "remaining": 20,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 25400,
+        "revision": 0
+      },
+      {
+        "interactableId": 106,
+        "owner": "crafting",
+        "definitionId": "crafting.stone-node",
+        "instanceKey": "crafting.stone-node.dungeon.2.0",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 2
+        },
+        "at": {
+          "x": 10,
+          "y": 10
+        },
+        "capacity": 20,
+        "remaining": 20,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 25400,
+        "revision": 0
+      },
+      {
+        "interactableId": 107,
+        "owner": "crafting",
+        "definitionId": "crafting.stone-node",
+        "instanceKey": "crafting.stone-node.dungeon.2.1",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 2
+        },
+        "at": {
+          "x": 54,
+          "y": 18
+        },
+        "capacity": 20,
+        "remaining": 20,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 25400,
+        "revision": 0
+      },
+      {
+        "interactableId": 108,
+        "owner": "crafting",
+        "definitionId": "crafting.fiber-node",
+        "instanceKey": "crafting.fiber-node.dungeon.2.0",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 2
+        },
+        "at": {
+          "x": 15,
+          "y": 5
+        },
+        "capacity": 20,
+        "remaining": 20,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 25400,
+        "revision": 0
+      },
+      {
+        "interactableId": 109,
+        "owner": "crafting",
+        "definitionId": "crafting.fiber-node",
+        "instanceKey": "crafting.fiber-node.dungeon.2.1",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 2
+        },
+        "at": {
+          "x": 55,
+          "y": 19
+        },
+        "capacity": 20,
+        "remaining": 20,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 25400,
+        "revision": 0
+      },
+      {
+        "interactableId": 110,
+        "owner": "crafting",
+        "definitionId": "crafting.metal-node",
+        "instanceKey": "crafting.metal-node.dungeon.2.0",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 2
+        },
+        "at": {
+          "x": 36,
+          "y": 8
+        },
+        "capacity": 20,
+        "remaining": 16,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 29400,
+        "revision": 8
+      },
+      {
+        "interactableId": 111,
+        "owner": "crafting",
+        "definitionId": "crafting.hide-cache",
+        "instanceKey": "crafting.hide-cache.dungeon.2.0",
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 2
+        },
+        "at": {
+          "x": 70,
+          "y": 8
+        },
+        "capacity": 12,
+        "remaining": 12,
+        "reservedUnits": 0,
+        "regenRemainder": 0,
+        "lastSettledTick": 25400,
+        "revision": 0
+      }
+    ],
+    "state": {
+      "schema": 1,
+      "lastFactId": 97,
+      "totals": {
+        "harvest": 39,
+        "craftBatches": 6,
+        "placements": 3,
+        "cancels": 0,
+        "startup": 1
+      },
+      "placements": [
+        {
+          "factId": 75,
+          "definitionId": "crafting.table",
+          "result": "completed",
+          "tick": 16400
+        },
+        {
+          "factId": 77,
+          "definitionId": "crafting.hearth",
+          "result": "completed",
+          "tick": 16700
+        },
+        {
+          "factId": 95,
+          "definitionId": "crafting.table",
+          "result": "completed",
+          "tick": 29800
+        }
+      ],
+      "history": [
+        {
+          "factId": 1,
+          "operation": "startup",
+          "definitionId": "crafting.wood",
+          "completedBatches": 0,
+          "result": "completed",
+          "reason": null,
+          "tick": 0
+        },
+        {
+          "factId": 3,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 1000
+        },
+        {
+          "factId": 5,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 1100
+        },
+        {
+          "factId": 7,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 1200
+        },
+        {
+          "factId": 9,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 1300
+        },
+        {
+          "factId": 11,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 1400
+        },
+        {
+          "factId": 13,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 1500
+        },
+        {
+          "factId": 15,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 1600
+        },
+        {
+          "factId": 17,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 1700
+        },
+        {
+          "factId": 19,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 1800
+        },
+        {
+          "factId": 21,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 1900
+        },
+        {
+          "factId": 23,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 2000
+        },
+        {
+          "factId": 25,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 2100
+        },
+        {
+          "factId": 27,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 2200
+        },
+        {
+          "factId": 29,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 2300
+        },
+        {
+          "factId": 31,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 2400
+        },
+        {
+          "factId": 33,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 2500
+        },
+        {
+          "factId": 35,
+          "operation": "harvest",
+          "definitionId": "crafting.wood-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 2600
+        },
+        {
+          "factId": 37,
+          "operation": "harvest",
+          "definitionId": "crafting.stone-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 7400
+        },
+        {
+          "factId": 39,
+          "operation": "harvest",
+          "definitionId": "crafting.stone-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 7500
+        },
+        {
+          "factId": 41,
+          "operation": "harvest",
+          "definitionId": "crafting.stone-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 7600
+        },
+        {
+          "factId": 43,
+          "operation": "harvest",
+          "definitionId": "crafting.stone-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 7700
+        },
+        {
+          "factId": 45,
+          "operation": "harvest",
+          "definitionId": "crafting.stone-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 7800
+        },
+        {
+          "factId": 47,
+          "operation": "harvest",
+          "definitionId": "crafting.stone-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 7900
+        },
+        {
+          "factId": 49,
+          "operation": "harvest",
+          "definitionId": "crafting.stone-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 8000
+        },
+        {
+          "factId": 51,
+          "operation": "harvest",
+          "definitionId": "crafting.stone-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 8100
+        },
+        {
+          "factId": 53,
+          "operation": "harvest",
+          "definitionId": "crafting.fiber-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 12300
+        },
+        {
+          "factId": 55,
+          "operation": "harvest",
+          "definitionId": "crafting.fiber-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 12400
+        },
+        {
+          "factId": 57,
+          "operation": "harvest",
+          "definitionId": "crafting.fiber-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 12500
+        },
+        {
+          "factId": 59,
+          "operation": "harvest",
+          "definitionId": "crafting.fiber-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 12600
+        },
+        {
+          "factId": 61,
+          "operation": "harvest",
+          "definitionId": "crafting.fiber-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 12700
+        },
+        {
+          "factId": 63,
+          "operation": "harvest",
+          "definitionId": "crafting.fiber-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 12800
+        },
+        {
+          "factId": 65,
+          "operation": "harvest",
+          "definitionId": "crafting.hide-cache",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 15300
+        },
+        {
+          "factId": 67,
+          "operation": "harvest",
+          "definitionId": "crafting.hide-cache",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 15400
+        },
+        {
+          "factId": 69,
+          "operation": "harvest",
+          "definitionId": "crafting.hide-cache",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 15500
+        },
+        {
+          "factId": 71,
+          "operation": "harvest",
+          "definitionId": "crafting.hide-cache",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 15600
+        },
+        {
+          "factId": 73,
+          "operation": "craft-batch",
+          "definitionId": "crafting.make-pick",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 16100
+        },
+        {
+          "factId": 75,
+          "operation": "place-station",
+          "definitionId": "crafting.table",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 16400
+        },
+        {
+          "factId": 77,
+          "operation": "place-station",
+          "definitionId": "crafting.hearth",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 16700
+        },
+        {
+          "factId": 79,
+          "operation": "craft-batch",
+          "definitionId": "crafting.make-leather-armor",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 18200
+        },
+        {
+          "factId": 81,
+          "operation": "craft-batch",
+          "definitionId": "crafting.make-bed-kit",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 18700
+        },
+        {
+          "factId": 83,
+          "operation": "craft-batch",
+          "definitionId": "crafting.make-chest-kit",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 19200
+        },
+        {
+          "factId": 85,
+          "operation": "craft-batch",
+          "definitionId": "crafting.make-table-kit",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 19700
+        },
+        {
+          "factId": 87,
+          "operation": "harvest",
+          "definitionId": "crafting.metal-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 29200
+        },
+        {
+          "factId": 89,
+          "operation": "harvest",
+          "definitionId": "crafting.metal-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 29300
+        },
+        {
+          "factId": 91,
+          "operation": "harvest",
+          "definitionId": "crafting.metal-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 29400
+        },
+        {
+          "factId": 93,
+          "operation": "harvest",
+          "definitionId": "crafting.metal-node",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 29500
+        },
+        {
+          "factId": 95,
+          "operation": "place-station",
+          "definitionId": "crafting.table",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 29800
+        },
+        {
+          "factId": 97,
+          "operation": "craft-batch",
+          "definitionId": "crafting.make-dagger",
+          "completedBatches": 1,
+          "result": "completed",
+          "reason": null,
+          "tick": 30800
+        }
+      ]
+    },
+    "digest": "fa9fd43cd7071229c1321c5577a3af11721aaf99c9bad5f1473200de9a6844b4"
+  }
+}
