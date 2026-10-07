@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { workGame } from './support/worldWorkFixture';
-import { readWorkContext, materializedNode, containerRead } from '../engine/Core/WorldWorkWorld';
+import { readWorkContext, materializedNode, containerRead, nearbyCells, stableGround, distance } from '../engine/Core/WorldWorkWorld';
 import {
   prepareWorldWorkCommand,
   commitWorldWork,
@@ -21,6 +21,11 @@ import { inventoryStamp } from '../engine/Core/RecordingDigest';
 import { setOwnedRegions } from '../ext/world';
 import * as sdkExports from '../ext/worldSdk';
 import type { Game } from '../engine/Core/Game';
+import { hasInteractionLine } from '../ext/worldSpatial';
+import { productionActorActionScheduler, createProductionActorActionSession } from '../engine/Core/ActorActionProduction';
+import { bindPhasedAttackProduction, preparePhasedAttackCommand, commitPhasedAttackCommand } from '../engine/Core/PhasedAttackProduction';
+import { isProductionActorActionRunInvalid, selectNativeActorAction } from '../engine/Core/ActorActionSession';
+import { validateProductionActorAttackState } from '../ext/actorActionValidation';
 const read = (g: Game) => {
   const r = readWorkContext(g, 'craftskel', { kind: 'inventory' });
   if (!r.ok) throw new Error(r.code);
@@ -277,6 +282,123 @@ describe('C5 scoped transactions and real clocks', () => {
     expect(g.actorActions!.nextActionId).toBe(before + 1);
     expect(g.world5!.terminalTickets[0]!.completedBatches).toBe(1);
     expect(containerRead(g, chest.id).items[0]!.quantity).toBe(2);
+  });
+  it.each([{modules: []}, {modules: ['combat']}])('starts NPC work before a later same-tick due work owner (modules=$modules)', ({modules}) => {
+    const g = workGame({ modules }), node = g.world5!.nodes[0]!,
+      chest = g.world5!.containers.find(c => c.kind === 'chest')!, chestAt = containerRead(g, chest.id).at!;
+    g.monsters = []; g.dormantMonsters = [];
+    const positions = nearbyCells(g).filter(at => stableGround(g, at)
+      && distance(at, node.at) <= 1 && distance(at, chestAt) <= 1
+      && hasInteractionLine(g.grid, at, node.at) && hasInteractionLine(g.grid, at, chestAt));
+    expect(positions.length).toBeGreaterThanOrEqual(2);
+    g.player.loc = { ...nearbyCells(g).find(at => stableGround(g, at) && distance(at, positions[0]!) > 2)! };
+    const workers = positions.slice(0, 2).map(at => {
+      const m = new Monster(at.x, at.y, monsters.find(m => m.id === 'rat') as MonsterData);
+      m.isAlly = true; m.state = MonsterState.WANDERING; m.ticksUntilTurn = 0;
+      g.monsters.push(m); g.extensionRuntime!.attachCreature(m); return m;
+    });
+    for (const m of workers) {
+      const plan = prepareTrustedWorldWork(g, 'craftskel', m.id, {
+        kind: 'harvest', nodeId: node.interactableId, nodeRevision: node.revision,
+        destinationId: chest.id, destinationRevision: chest.revision, inventoryStamp: inventoryStamp([])
+      });
+      if (!plan.ok) throw new Error(plan.code);
+      withWorldActorScope(g, 'craftskel', m.id, 'trusted-world', scope =>
+        expect(commitWorldWork(g, plan.value, scope).ok).toBe(true));
+    }
+    const [earlier, later] = workers as [Monster, Monster];
+    expect(earlier.id).toBeLessThan(later.id);
+    expect(selectNativeActorAction(g, later.id)).toBe('handled');
+    const scheduler = productionActorActionScheduler(g)!, due = g.actorActions!.bundles[0]!;
+    expect(due.owner).toBe('foundation');
+    expect(due.subactions[0]!.phaseRemainingTicks).toBe(100);
+    earlier.ticksUntilTurn = 100;
+    const commit = scheduler.commitBundle.bind(scheduler), sweep = vi.spyOn(g, 'finishActorActionSweep');
+    const onCommit = vi.spyOn(scheduler, 'commitBundle').mockImplementation(bundle => {
+      expect(bundle.decisionOwnerId).toBe(earlier.id);
+      expect(due.subactions[0]!.phaseRemainingTicks).toBe(0);
+      expect(later.ticksUntilTurn).toBe(0);
+      const before = structuredClone(due), root = structuredClone(g.actorActions), random = rng.getState(), tick = timeSystem.currentTick;
+      expect(() => bindPhasedAttackProduction(g)).not.toThrow();
+      expect(productionActorActionScheduler(g)).toBe(scheduler);
+      expect(g.actorActions).toEqual(root);
+      expect(() => scheduler.snapshot()).toThrow('inconsistent phase clock');
+      expect(() => createProductionActorActionSession(g, {
+        state: g.actorActions!, resolveSegment: () => {}, breakRecoveryTicks: () => 0
+      })).toThrow('inconsistent phase clock');
+      commit(bundle);
+      expect(due).toEqual(before); expect(later.ticksUntilTurn).toBe(0);
+      expect(rng.getState()).toEqual(random); expect(timeSystem.currentTick).toBe(tick);
+    });
+    const turn = g.absoluteTurnNumber, tick = timeSystem.currentTick;
+    expect(() => g.executeCommand('wait')).not.toThrow();
+    expect(g.absoluteTurnNumber).toBe(turn + 1); expect(timeSystem.currentTick).toBe(tick + 100);
+    expect(onCommit).toHaveBeenCalledTimes(1); onCommit.mockRestore();
+    expect(isProductionActorActionRunInvalid(g)).toBe(false); expect(sweep).not.toHaveBeenCalled();
+    expect(g.world5!.terminalTickets.map(t => [t.actorId, t.completedBatches, t.status, t.stopReason])).toEqual([[later.id, 1, 'completed', null]]);
+    expect(g.actorActions!.bundles.map(b => [b.decisionOwnerId, b.subactions[0]!.phaseRemainingTicks])).toEqual([[earlier.id, 100]]);
+    expect(containerRead(g, chest.id).items[0]!.quantity).toBe(2);
+    expect(g.loadSnapshot(g.toSaveSnapshot())).toBe(true);
+    g.executeCommand('wait');
+    expect(g.actorActions!.bundles).toEqual([]); expect(g.actorActions!.nextActionId).toBe(3);
+    expect(g.world5!.terminalTickets.map(t => [t.actorId, t.completedBatches, t.status])).toEqual([
+      [later.id, 1, 'completed'], [earlier.id, 1, 'completed']
+    ]);
+    expect(g.world5!.receipts.filter(r => r.kind === 'work')).toHaveLength(2);
+    expect(containerRead(g, chest.id).items[0]!.quantity).toBe(4); expect(sweep).not.toHaveBeenCalled();
+    expect(g.loadSnapshot(g.toSaveSnapshot())).toBe(true);
+  });
+  it.each([0, 1, 2])('commits world work while combat phase %i is due without rebinding its live clock', phaseIndex => {
+    const g = workGame({ modules: ['combat'] }), at = { ...g.player.loc },
+      node = g.world5!.nodes[0]!, chest = g.world5!.containers.find(c => c.kind === 'chest')!;
+    g.monsters = []; g.dormantMonsters = [];
+    g.player.loc = { ...nearbyCells(g).find(p => stableGround(g, p) && distance(p, at) > 2)! };
+    g.player.ticksUntilTurn = 0;
+    const worker = new Monster(at.x, at.y, monsters.find(m => m.id === 'rat') as MonsterData);
+    worker.isAlly = true; worker.state = MonsterState.WANDERING; worker.ticksUntilTurn = 0;
+    g.monsters.push(worker); g.extensionRuntime!.attachCreature(worker);
+    const work = prepareTrustedWorldWork(g, 'craftskel', worker.id, {
+      kind: 'harvest', nodeId: node.interactableId, nodeRevision: node.revision,
+      destinationId: chest.id, destinationRevision: chest.revision, inventoryStamp: inventoryStamp([])
+    });
+    if (!work.ok) throw new Error(work.code);
+    withWorldActorScope(g, 'craftskel', worker.id, 'trusted-world', scope =>
+      expect(commitWorldWork(g, work.value, scope).ok).toBe(true));
+    const attack = preparePhasedAttackCommand(g, JSON.stringify({
+      module: 'combat', action: 'attack', payload: { attackId: 'fixture.double-thrust', facing: 'e' }
+    }));
+    expect(attack).not.toBeNull(); expect(commitPhasedAttackCommand(g, attack!)).toBe(true);
+    const scheduler = productionActorActionScheduler(g)!;
+    for (let index = 0; index < phaseIndex; index++) {
+      scheduler.advanceActionTime(scheduler.nextActionBoundary()!); scheduler.dispatchActorBoundary(g.player.id);
+    }
+    scheduler.advanceActionTime(scheduler.nextActionBoundary()!);
+    const due = g.actorActions!.bundles[0]!, before = structuredClone(due), random = rng.getState(), tick = timeSystem.currentTick,
+      binding = g.extensionRuntime!.actorActionBinding()!;
+    expect(due.subactions[0]!.phaseRemainingTicks).toBe(0);
+    expect(() => validateProductionActorAttackState(binding.state, binding.definition, new Set(), g.actorActions!)).toThrow('inconsistent phase clock');
+    expect(() => g.toSaveSnapshot()).toThrow('inconsistent phase clock');
+    expect(() => bindPhasedAttackProduction(g)).not.toThrow();
+    expect(selectNativeActorAction(g, worker.id)).toBe('handled');
+    expect(() => bindPhasedAttackProduction(g)).not.toThrow();
+    expect(productionActorActionScheduler(g)).toBe(scheduler);
+    expect(due).toEqual(before); expect(g.player.ticksUntilTurn).toBe(0);
+    expect(g.actorActions!.bundles[1]).toMatchObject({ owner: 'foundation', decisionOwnerId: worker.id, elapsedActionTicks: 0 });
+    expect(worker.ticksUntilTurn).toBe(100); expect(rng.getState()).toEqual(random); expect(timeSystem.currentTick).toBe(tick);
+    expect(scheduler.dispatchActorBoundary(g.player.id)).toBe(phaseIndex === 2 ? 'native-fallback' : 'handled');
+    const saved = g.toSaveSnapshot(); expect(g.loadSnapshot(saved)).toBe(true);
+    expect(g.actorActions).toEqual(saved.run.actorActions);
+    const loaded = productionActorActionScheduler(g)!;
+    while (loaded.nextActionBoundary() !== null) {
+      loaded.advanceActionTime(loaded.nextActionBoundary()!);
+      for (const bundle of [...g.actorActions!.bundles]) loaded.dispatchActorBoundary(bundle.decisionOwnerId);
+    }
+    expect(g.actorActions!.bundles).toEqual([]); expect(g.actorActions!.nextActionId).toBe(3);
+    expect(g.world5!.terminalTickets[0]).toMatchObject({ actorId: worker.id, completedBatches: 1, status: 'completed' });
+    expect(g.world5!.nodes.find(n => n.interactableId === node.interactableId)!.reservedUnits).toBe(0);
+    expect(g.world5!.receipts.filter(r => r.kind === 'work')).toHaveLength(1);
+    expect(containerRead(g, chest.id).items[0]!.quantity).toBe(2);
+    expect(isProductionActorActionRunInvalid(g)).toBe(false); expect(g.loadSnapshot(g.toSaveSnapshot())).toBe(true);
   });
   it('regions helper deletes an empty key and survives a real round trip', () => {
     const g = workGame();

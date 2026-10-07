@@ -6,6 +6,9 @@ import type { Game } from '../../../../engine/Core/Game';
 import { isProductionActorActionRunInvalid } from '../../../../engine/Core/ActorActionSession';
 import { logger } from '../../../../engine/Systems/Logger';
 import { canDirectlySeeMonster } from '../../../../engine/UI/MonsterVisibility';
+import { digestRoot, eventDigest, inventoryStamp } from '../../../../engine/Core/RecordingDigest';
+import { DIGEST_DOMAINS, EVENT_DOMAINS } from '../../../../engine/Core/RecordingV4';
+import { rechain } from '../../../../test/support/recordingV4';
 
 const move = (x: number, y: number): TurnAction => ({ action: 'move', data: { x, y } });
 const wait = (): TurnAction => ({ action: 'wait' });
@@ -44,15 +47,19 @@ function continuation(game: Game): TurnAction {
 }
 function mechanical(game: Game) {
     const snapshot = structuredClone(game.toSnapshot()); snapshot.savedAt = 0;
-    // Replay has its own input buffer; compare the complete world and both RNG
-    // streams, not just the player's position or a scheduler projection.
-    snapshot.run.recordedInputEvents = []; snapshot.run.recordedInputIndex = 0;
+    // v5 whole-run snapshots already exclude the session's recording buffer.
+    // Keep the neutral actorActions root and the complete world/both RNG streams.
     return snapshot;
 }
 function checkpoint(game: Game) {
     const snapshot = game.toSnapshot();
     return { tick: snapshot.run.currentTick, turn: snapshot.run.absoluteTurnNumber,
-        depth: snapshot.depth, player: snapshot.player.loc, rng: snapshot.rngState, extensions: snapshot.extensions };
+        simulationTicks: snapshot.run.world5?.simulationTicks ?? null,
+        levelRef: { kind: 'dungeon', depth: snapshot.depth }, player: snapshot.player.loc,
+        hp: snapshot.player.hp, inventoryStamp: inventoryStamp(game.player.inventory.items), rng: snapshot.rngState,
+        checkpoint: eventDigest(snapshot.extensions ?? null, snapshot.run.world5 ?? null,
+            snapshot.extensions?.manifest ?? null, snapshot.run.actorActions ?? null,
+            snapshot.run.worldWorkFacts ?? null, snapshot.run.worldWorkDetails ?? null) };
 }
 afterEach(() => { logger.reset(); logger.onDisturb = null; });
 
@@ -69,6 +76,7 @@ describe('same-tick production scheduler commits', () => {
         game.animationEnabled = false; game.onConfirmRequest = () => true;
         expect(reproduction).toHaveLength(27);
         const seekWorlds = new Map([[initialCommands.length, mechanical(game)]]);
+        const commandWorlds = new Map<number, ReturnType<typeof mechanical>>();
         for (let index = 0; index < reproduction.length + 100; index++) {
             const command = reproduction[index] ?? continuation(game);
             acknowledge(); const turn = game.absoluteTurnNumber;
@@ -76,6 +84,7 @@ describe('same-tick production scheduler commits', () => {
             expect(game.absoluteTurnNumber, `command ${index + 1}`).toBeGreaterThan(turn);
             expect(game.isGameOver).toBe(false); expect(isProductionActorActionRunInvalid(game)).toBe(false);
             expect(game.recordedInputEvents).toHaveLength(initialCommands.length + index + 1);
+            commandWorlds.set(initialCommands.length + index + 1, mechanical(game));
             if ([26, 27, 77, 127].includes(index + 1)) {
                 const before = mechanical(game), saved = game.toSaveSnapshot();
                 expect(game.loadSnapshot(structuredClone(saved))).toBe(true); game.animationEnabled = false;
@@ -85,13 +94,17 @@ describe('same-tick production scheduler commits', () => {
             }
         }
         const finalWorld = mechanical(game), recording = structuredClone(game.exportRecording());
+        expect(recording.version).toBe(4);
         expect(recording.events).toHaveLength(initialCommands.length + 127);
         expect(game.loadReplay(recording)).toBe(true); game.animationEnabled = false;
         for (const event of recording.events) {
             expect(() => game.replayStep(true)).not.toThrow();
             expect(game.replayError).toBeNull(); expect(game.replayCursor).toBe(event.index + 1);
-            expect(checkpoint(game)).toEqual({ tick: event.tick, turn: event.turn, depth: event.depth,
-                player: event.player, rng: event.rng, extensions: event.extensions });
+            expect(checkpoint(game)).toEqual({ tick: event.tick, turn: event.turn,
+                simulationTicks: event.simulationTicks, levelRef: event.levelRef,
+                player: event.player, hp: event.hp, inventoryStamp: event.inventoryStamp,
+                rng: event.rng, checkpoint: event.checkpoint });
+            if (event.index >= initialCommands.length) expect(mechanical(game)).toEqual(commandWorlds.get(event.index + 1));
             expect(isProductionActorActionRunInvalid(game)).toBe(false);
         }
         expect(mechanical(game)).toEqual(finalWorld);
@@ -103,5 +116,24 @@ describe('same-tick production scheduler commits', () => {
         }
         game.replaySeek(recording.events.length); expect(game.replayError).toBeNull();
         expect(mechanical(game)).toEqual(finalWorld);
+        expect(game.loadReplay({ ...recording, version: 3 })).toBe(false);
+        expect(mechanical(game)).toEqual(finalWorld);
+        // A valid hash chain cannot hide a forged neutral-clock checkpoint at
+        // the original crash boundary. Replay must name the exact command/domain.
+        const forged = structuredClone(recording), at = forged.events[initialCommands.length + 26]!;
+        expect(at.checkpoint).not.toBeNull();
+        at.checkpoint!.domains.actorActions = '0'.repeat(64);
+        at.checkpoint!.root = digestRoot(at.checkpoint!.domains, forged.extensions, EVENT_DOMAINS);
+        if (at.fullCheckpoint) {
+            at.fullCheckpoint.domains.actorActions = at.checkpoint!.domains.actorActions;
+            at.fullCheckpoint.root = digestRoot(at.fullCheckpoint.domains, forged.extensions, DIGEST_DOMAINS);
+        }
+        rechain(forged);
+        expect(game.loadReplay(forged)).toBe(true); game.animationEnabled = false;
+        while (game.replayCursor < at.index + 1 && !game.replayError) game.replayStep(true);
+        expect(game.replayDiagnostic).toMatchObject({ command: at.index + 1, domain: 'actorActions', precision: 'exact',
+            interval: { fromCommand: at.index + 1, toCommand: at.index + 1 } });
+        expect(game.replayError).toContain(`command ${at.index + 1}`);
+        expect(game.replayError).toContain('domain actorActions');
     }, 120_000);
 });

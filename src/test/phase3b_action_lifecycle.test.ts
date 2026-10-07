@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { createActorActionBundle, createActorActionScheduler, validateActorActionSchedulerState, type ActorActionSchedulerState } from '../engine/Core/ActorActionScheduler';
-import { productionActorActionScheduler, reconcileProductionActorActions, validateProductionActorActionState } from '../engine/Core/ActorActionProduction';
+import { createProductionActorActionSession, productionActorActionScheduler, reconcileProductionActorActions, validateProductionActorActionState } from '../engine/Core/ActorActionProduction';
 import { bindPhasedAttackProduction, preparePhasedAttackCommand, commitPhasedAttackCommand } from '../engine/Core/PhasedAttackProduction';
 import { commitCreatureAnchor } from '../engine/Movement/CreatureSpatial';
 import { TerrainType } from '../engine/Map/Grid';
@@ -12,6 +12,7 @@ import { selectNativeActorAction } from '../engine/Core/ActorActionSession';
 import { bindPresentationObserver } from '../engine/Core/PresentationObserver';
 import { Monster, MonsterState, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
+import { validateProductionActorAttackState } from '../ext/actorActionValidation';
 
 const attackCommand = JSON.stringify({module:'combat',action:'attack',payload:{attackId:'fixture.double-thrust',facing:'e'}});
 function scene(mode: 'test'|'normal'='test') {
@@ -28,16 +29,30 @@ function scene(mode: 'test'|'normal'='test') {
 afterEach(()=>{vi.restoreAllMocks();logger.reset();});
 
 describe('3b production action lifetime',()=>{
-    it('retains the live binding at a due boundary while new binding and save/load stay strict',()=>{
+    it.each([0,1,2])('retains the live binding at due phase %s while new binding and save/load stay strict',phaseIndex=>{
         const {game,state,scheduler}=scene();
+        for(let index=0;index<phaseIndex;index++){
+            scheduler.advanceActionTime(scheduler.nextActionBoundary()!);scheduler.dispatchActorBoundary(game.player.id);
+        }
+        const candidate=game.toSnapshot();
         scheduler.advanceActionTime(scheduler.nextActionBoundary()!);
-        const before=structuredClone(state),random=rng.getState();
+        const before=structuredClone(state),root=game.actorActions!,beforeRoot=structuredClone(root),random=rng.getState();
         expect(()=>bindPhasedAttackProduction(game)).not.toThrow();
         expect(productionActorActionScheduler(game)).toBe(scheduler);
-        expect(state).toEqual(before);expect(rng.getState()).toEqual(random);
+        expect(state).toEqual(before);expect(game.actorActions).toBe(root);expect(root).toEqual(beforeRoot);expect(rng.getState()).toEqual(random);
         expect(()=>game.toSaveSnapshot()).toThrow('inconsistent phase clock');
-        expect(()=>validateProductionActorActionState(state.scheduler,game.actorActionWorld())).toThrow('inconsistent phase clock');
-        expect(scheduler.dispatchActorBoundary(game.player.id)).toBe('handled');
+        expect(()=>validateProductionActorActionState(root,game.actorActionWorld())).toThrow('inconsistent phase clock');
+        const binding=game.extensionRuntime!.actorActionBinding()!;
+        expect(()=>validateProductionActorAttackState(state,binding.definition,new Set(),root)).toThrow('inconsistent phase clock');
+        expect(()=>createProductionActorActionSession(game,{state:root,resolveSegment:()=>{},breakRecoveryTicks:()=>50})).toThrow('inconsistent phase clock');
+        expect(()=>scheduler.snapshot()).toThrow('inconsistent phase clock');
+        expect(()=>scheduler.rebind(structuredClone(root))).toThrow('inconsistent phase clock');
+        candidate.run.actorActions=structuredClone(root);candidate.player.ticksUntilTurn=game.player.ticksUntilTurn;
+        const player=game.player,runtime=game.extensionRuntime;
+        expect(game.loadSnapshot(candidate)).toBe(false);
+        expect(game.player).toBe(player);expect(game.extensionRuntime).toBe(runtime);expect(productionActorActionScheduler(game)).toBe(scheduler);
+        expect(root).toEqual(beforeRoot);expect(state).toEqual(before);expect(rng.getState()).toEqual(random);
+        expect(scheduler.dispatchActorBoundary(game.player.id)).toBe(phaseIndex===2?'native-fallback':'handled');
         expect(()=>game.toSaveSnapshot()).not.toThrow();
     });
     it('binds a module-owned busy action on load without time, RNG, cost, or a release',()=>{
@@ -46,6 +61,7 @@ describe('3b production action lifetime',()=>{
         const loaded=game.extensionRuntime!.actorActionBinding()!.state;
         expect(loaded).toEqual(before); expect(rng.getState()).toEqual(random);
         expect(productionActorActionScheduler(game)!.isBusy(game.player.id)).toBe(true);
+        expect(game.actorActions).toEqual(snapshot.run.actorActions);
         expect(game.toSnapshot().extensions!.modules.combat).toEqual(snapshot.extensions!.modules.combat);
     });
     it.each([0,1,2])('resumes saved player phase %s on the next update, with no extra input, fee or prelude',phaseIndex=>{

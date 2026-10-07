@@ -42,7 +42,15 @@ function fixture(): { definitions: ActorAttackDefinitions; state: AttackFixture 
             parryRemainingTicks: 0, parryRecoveryRemainingTicks: 0, parryFacing: null, staggerRemainingTicks: 0 }],
     } };
 }
-function check(value: unknown, pack = definitions()): void { const actorActions=(value as AttackFixture).actorActions;const combat=Object.create(Object.getPrototypeOf(value),Object.getOwnPropertyDescriptors(value));delete combat.actorActions;validateProductionActorAttackState(combat, pack,new Set(),actorActions); }
+function check(value: unknown, pack = definitions()): void {
+    const actorActions=(value as AttackFixture).actorActions;
+    const combat=Object.create(Object.getPrototypeOf(value),Object.getOwnPropertyDescriptors(value));delete combat.actorActions;
+    // This fixture has no stat modifiers. 5A2-S obtains effective capacities
+    // from the trusted world rather than treating template limits as maxima.
+    validateProductionActorAttackState(combat,pack,new Set(),actorActions,(_actorId,policy)=>({
+        staminaCapacity:policy.staminaCapacity,poiseCapacity:policy.poiseCapacity,
+    }));
+}
 
 describe('generic production attack state codec', () => {
     it('validates declarations and a lazy empty binding without module state or a second clock', () => {
