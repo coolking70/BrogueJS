@@ -1,8 +1,19 @@
-# 维护者侧指挥状态（2026-10-07）
+# 维护者侧指挥状态（2026-10-08）
 
 本轮按用户授权临时接管 Claude，已完整阅读交接单与必读文档；开发由本地 Codex CLI、另起独立审查，发现交原会话 resume，指挥核对后提交推送。只推进扩展分支，main/foundation 未改。
 
-## 启动实查与完成结果
+## 当前有效状态（2026-10-08最终发布）
+
+1. **5C1已验收并推送**：代码提交5dbeb32d17e72124a04156bcdff9b875807cfa48，见[维护者验收](phase5c1.acceptance.md)。执行、独立审查、原会话修复和指挥浏览器复核已完成。final4新24矩阵与六设施持续交互通过；真实手机和高级/全量收尾仍留5Z。暂存检查仅清理一处测试尾空格，验收文档已分列被测输入与最终提交输入。
+2. **5G按部分交付接收，尚未合入ext/phase5**：原0fb2720及48白名单文件保留。共享治疗/再生/知识布尔、旧fixture/跨平台路径和drift启动问题已由本地gpt-6.1-sol/high执行、另进程独立审查，提交3f6e237c48f2696513426cfadc85ad79f22ae943位于隔离返工链。SDK-02首版通用反馈按推荐保留；SDK-03由dot修参与者吞错，未增加底座失败锁存。
+3. **返工基线已发布**：origin/codex/phase5g-revision-base = **db50a84511dde0b0196f8b182205b9ea70086ef3**，tree **cd4a1fdf9a94538180a0a67a1feb174fdb8c3a3e**；代码基线 **6874dbb07a67c6873b30580d0c06af2a42507875**，tree 31502966e231395c35daf78a6dc9159411866553。双亲为5C1和共享修复，原dot四提交在父链完整保留。代码基线至派发tip仅四份维护者文档；[集中返工包](https://github.com/coolking70/BrogueJS/blob/db50a84511dde0b0196f8b182205b9ea70086ef3/docs/ext/phase5g-revision.dot-package.md) §A列明全部身份、范围、门禁与独立审查。
+4. **本地整合实测**：208项相关通过、实际npm drift六文件12项通过、boundary/types/build通过。完整原组合11通过/1个已知settlement-only失败；独立精确foraging+settlement复验1通过/11未选。源码1201文件SHA为38e4410a5db8a13ad25e47d78fe4db354cf4c76fc946f344f7672f3f93311a7c。严格七生产模块、九冻结/黄金不变；发布不是5G最终验收。
+5. **待用户转贴§0**：dot从固定派发tip创建codex/phase5g-revision，仅推该新分支。必修提交异常传播、真实治疗/再生/知识断言、无foraging组合与全七行、持久化及同伴活动沉眠、已知peer测试硬依赖和四类最小物理删除复验。24浏览器与真机未验须继续如实分列。用户尚未确认已转发此新返工包；不把发布当作dot已经开工。
+6. **本地下一步为5D1任务书与合同核对**：居民/日粮/短缺/离开及C5-1离线DTO版本安排，沿§4顺序；5C2可选地表暂后置。5D1、5E、Worker和5Z尚未开工。全npm/test:ext、128全组合、完整删除矩阵/特殊布景全录像仍留5Z。
+
+隔离工作树在/private/tmp/brogue-commander-20261007/phase5g-revision-base-tree；旧dot/main/foundation远端已核对未变。原始审查树、SDK树与外部证据保留。以下条目保留各历史时点的状态；遇到“尚未回执/审查中/未提交”等旧叙述，以本节为当前结论。
+
+## 启动实查与完成结果（历史）
 - 启动时 ext/phase5 本地与远端均3134f1d，5gbase均34bb6c7，两工作树干净。i18n修复52e2b90已提交推送，历史证据243 passed/4既有CE条件skip、boundary/types/build通过。历史独立done文件未找到，以git与现存报告核验。
 - owner阻断修复提交5e9753030696d2e8ea177c27007c2f15253d3eba已推送ext/phase5。相关15文件242项通过，独立复跑4文件73项通过；反事实旧生产代码11项失败；冻结SDK/格式不变。独立审查无发现，指挥核验1114个门禁输入SHA一致。
 - ext/phase5g-base已重建并发布7fdc2491cc3014f2c1a3736e262c7ff8b5d39ce7：代码基线5e97530 + 原定稿cherry-pick4829b40 + 最终包7fdc249。相对代码基线仅任务包和白名单两个文件。
@@ -25,11 +36,10 @@
 5. 5C1任务书phase5c1.task.md已授权执行，新增样例数值按推荐列出；基线9b65157，与dot的5G并行。
 
 ## 当前交接点与下一步
-用户已明确将5G交给dot执行，尚未收到完成回执。dot仅负责ext/phase5g的限定目录。本地立即按phase5c1.task.md推进5C1；此前“等待5G集成后启动”的串行解读错误，现依营地设计§14.2和采食设计§11纠正。
 
-执行与独立审查优先使用gpt-6.1-sol/high；只有明确高难度任务再考虑Astra。共享文件由本地单一执行者负责，5G冻结接口保持。收到dot回执后协调范围验收与本地集成，避免在执行者活跃时改动同一工作树。
+5C1已验收推送。5G旧回执已经完成范围核对和共享修复处理，当前等待用户把新[集中返工包](https://github.com/coolking70/BrogueJS/blob/db50a84511dde0b0196f8b182205b9ea70086ef3/docs/ext/phase5g-revision.dot-package.md)的§0连同固定派发tip/tree转给dot；等待的是修订回执，不是首次交付。dot只在codex/phase5g-revision的新白名单内返工，本地后续5D1不修改其foraging目录。
 
-5C1流程：执行→另起独立审查→原会话resume修复→指挥核验提交推送。5D/5E/Worker/5Z/loot按依赖推进，尚未开工。
+执行与独立审查继续优先gpt-6.1-sol/high，只有高难度合同审查考虑Astra。本轮SDK-03复杂事务合同使用一次Astra独立交叉审查，其余执行/审查使用sol；所有开发仍由CLI子进程完成，指挥核对后提交。回执到达后先隔离审查，再决定最终5G合入与本地集成。
 
 ## 5C1执行记录
 - 开工基线：9b651572b3c5561f91b3773dead11908ffa63b34。
