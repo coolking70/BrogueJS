@@ -161,7 +161,7 @@
     "EdibleFoundation": "5A4: knowledge/needs/timedStats/departures roots belong to extensions; Item.fireContactCooldownUntilTurn belongs to native. FireContact queue/draining/DF nesting are session, name/appearance/effect/nextDue are derived and excluded."
   },
   "world5Leaves": {
-    "foundation": 10,
+    "foundation": 11,
     "root": "Metadata and clocks excluding the seven per-level economic arrays. Null world keeps root:null.",
     "perLevel": [
       "structures",

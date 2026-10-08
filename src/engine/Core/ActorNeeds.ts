@@ -297,3 +297,7 @@ export function settleActorNeeds(game: Game, deferred = false): void {
   runtime.edibleDirty();
   due.set(game, { runtime, next: nextDue(game) });
 }
+
+export function checkpointNeeds(game:Game):()=>void {
+  const old=due.get(game);return()=>{if(old)due.set(game,old);else due.delete(game);};
+}

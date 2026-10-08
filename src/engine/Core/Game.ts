@@ -1,3 +1,12 @@
+import { checkpointResidentPaths } from './ResidentPathing';
+import { c5Canonical } from '../../ext/worldJson';
+import { worldText } from '../../ext/worldText';
+import { FOUNDATION_PROTOCOL } from '../../ext/descriptor';
+import {isResidentCommand,prepareResidentCommand,commitResidentCommand,spawnResidentCandidates,recordRescuedResident,removeResident,terminateResidentSource,sealResidentCandidate} from './ResidentProduction';
+import {residentComponent,residentEligible,candidateSource,checkpointResidentBeds} from './ResidentWorld';
+import {transactResidentWorld,residentTransactionOwnsNativeWrites} from './ResidentWorld';
+import {settleResidentNeeds,freezeResidentCamps,hasPendingResidentNeeds} from './ResidentNeeds';
+import {cancelResidentWork,settleResidentWork} from './ResidentJobs';
 import {isStructureCommand,prepareStructureCommand,commitStructureCommand,structureReadSDK,freezeProductionCamps,settleProductionCamps} from './StructureProduction';
 import { isEdibleFixtureCommand, executeEdibleFixtureCommand } from './EdibleFixturePort';
 import { World5Error } from '../../ext/world5';
@@ -5,7 +14,7 @@ import { knowledgeName, knowledgeDescription, knowledgeMember, edibleDefinition,
 import { consumeEdible, settleTimedStats } from './EdibleEffects';
 import { edibleProjection, isEdibleCommand, prepareEdibleCommand, commitEdibleCommand, transactEdible, heatSources } from './EdibleCommands';
 import { queueFireContact, drainFireContacts, igniteEdibleInventory, fireContactPending, clearFireContacts } from './FireContact';
-import { triggerActorNeeds, settleActorNeeds, detachActorNeeds } from './ActorNeeds';
+import { triggerActorNeeds, settleActorNeeds, detachActorNeeds, checkpointNeeds } from './ActorNeeds';
 import { isDeparting, settleDepartures, departureStep } from './ActorDeparture';
 import { peekEdibleState } from './EdibleState';
 import { bindSlumberWake } from '../Status/Incapacitation';
@@ -17,7 +26,7 @@ import { recordWorldReceipt, threat as worldThreat } from './WorldWorkWorld';
 import type { RestPointAction } from '../../ext/structureTypes';
 import { markItemStatsDirty } from '../Items/ItemStatInvalidation';
 import { nativeRolledDamage, markStatsDirty, nativeEnchantedRoll, nativeStat, configureNativeStats } from '../Stats/NativeStatSources';
-import { recordingRootRevision } from '../../ext/recordingRevisions';
+import { recordingRootRevision, checkpointRecordingRoots } from '../../ext/recordingRevisions';
 import {interruptCombatActionRoot} from './PhasedAttackProduction';
 import { worldFixtureRegistry, copyWorldFixtureRegistry } from '../../ext/world5Fixture';
 import { forEachItemRoot, containerItemRoots } from './WorldItemRoots';
@@ -32,7 +41,7 @@ import { mechanicalDigest, dirtyEventDigest, inventoryStamp, recordingStart, rec
 import { validateRecordingV4, recordingHeader, validOriginShape, boundedSnapshots, validAccelerationSnapshot } from './RecordingFormat';
 import { EVENT_DOMAINS, DIGEST_DOMAINS, type DigestDomain, type ReplayDiagnostic, type RecordingV4, type RecordingEventV4, type RecordingOriginV2, type RecordingHeaderV4, type ReplaySnapshotV4, type RecordingInputStateV2 } from './RecordingV4';
 export type { ReplayDiagnostic, RecordingV4, RecordingEventV4, RecordingOriginV2, ReplaySnapshotV4 } from './RecordingV4';
-import { commitOfflineSettlement, planOfflineSettlement, offlineSeedKey } from './WorldSettlement';
+import { commitOfflineSettlement, planOfflineSettlement, offlineSeedKey, offlineOwnershipSignature } from './WorldSettlement';
 import { createWorld5, checkedAdd, levelKey, requireDungeon, advanceWorldClock, validateWorldClockAdvance, indexWorldLevels, validateWorld5, assertWorldLevelOwnership, type World5Snapshot } from '../../ext/world5';
 import { assertBodyTransitionRequest, bodyTransitionHp } from '../Movement/BodyTransition';
 import type { ActiveBodyTransition, BodyTransitionRequest, BodyTransitionFact } from '../../ext/bodyTransitions';
@@ -95,7 +104,7 @@ import { formatMonsterSummonMessage } from '../UI/MonsterTextCatalog';
 import { checkpointOwnedMonsterLists, ownedMonsterList, squareListUsers, dyingMonsters, iterateCreatures } from './MonsterLifecycle';
 import { alertMonster, wakeMonster } from '../Combat/MonsterAI';
 import { type MachineEntityRuntime } from '../Generator/BlueprintEngine';
-import { buildHordeMachine, checkpointGenerationWorld, createMachineRuntime, generateDepth, placeStairs, populateLevel } from './GenerationCoordinator';
+import { buildHordeMachine, checkpointGenerationWorld, checkpointGenerationWorldGroups, type GenerationCheckpointRoots, createMachineRuntime, generateDepth, placeStairs, populateLevel } from './GenerationCoordinator';
 import { itemIsSwappable, enchantLevelKnown, swapItemToEnchantLevel } from '../Items/Commutation';
 import { generateQualifiedMachineItem } from '../Items/MachineItemGeneration';
 import { minionPlacement, generationDistances, speciesForbiddenFlags } from '../Generator/GenerationPlacement';
@@ -161,7 +170,7 @@ import mutationData from '../../data/mutations.json';
 import type { MonsterData, MutationData } from '../../entities/Monster';
 import { MonsterMode, MonsterState } from '../../entities/Monster';
 import { Direction, type Pos } from '../../types';
-import { ensureEntityIdAbove, resetEntityIds, getNextEntityId, restoreNextEntityId, type StatusId, type Creature } from '../../entities/Creature';
+import { ensureEntityIdAbove, resetEntityIds, getNextEntityId, restoreNextEntityId, allocateEntityId, type StatusId, type Creature } from '../../entities/Creature';
 import { timeSystem } from '../Systems/Time';
 import { generateMonsterDetail, generateItemDetail, type DetailInfo } from '../UI/DetailGenerator';
 import { appendPublicBodyDetail } from '../UI/MonsterGroups';
@@ -464,9 +473,9 @@ export class Game {
 
     /** Combat fact transactions explicitly own native contact/rest writes, not
      * an arbitrary save/load round trip. Retained actor and scheduler identities survive. */
-    private checkpointCombatFactWorld(): () => void {
+    private checkpointCombatFactWorld(extraActors: Monster[] = []): () => void {
         const runtime=this.extensionRuntime!, cached=[...this.levels.values()];
-        const creatures=collectEntityGraph([...this.monsters,...this.dormantMonsters,...this.purgatory,
+        const creatures=collectEntityGraph([...extraActors,...this.monsters,...this.dormantMonsters,...this.purgatory,
             ...cached.flatMap(level=>[...level.monsters,...(level.dormantMonsters??[])]),
             ...[...this.pendingFallenByDepth.values()].flat()]).monsters;
         const actors=[this.player,...creatures], actionState=runtime.actorActionBinding()?.state;
@@ -564,7 +573,7 @@ export class Game {
             },
             simulationTicks: () => this.world5?.simulationTicks ?? 0,
             edibleRead: owner => edibleProjection(this,owner),
-            needTrigger: (actor,trigger) => {if(actor instanceof Monster)triggerActorNeeds(this,[actor],trigger);},
+            needTrigger: (actor,trigger) => {if(actor instanceof Monster){if(!residentEligible(this,actor)){if(this.world5?.residents.some(r=>r.actorId===actor.id))removeResident(this,actor.id,'qualification');sealResidentCandidate(this,actor.id);}triggerActorNeeds(this,[actor],trigger);}},
             structureRead: owner => structureReadSDK(this,owner),
             worldWorkRead: owner => worldWorkReadSDK(this,owner),
             actorActions: () => this.actorActions,
@@ -1482,7 +1491,12 @@ export class Game {
         const thisGame = this;
         return {
             generationContributions: () => thisGame.extensionRuntime?.generationContributions(thisGame.depth) ?? [],
-            excludeLevelFollower: (actor: Monster) => isDeparting(thisGame,actor.id)||(thisGame.world5?.residents.some(r => r.actorId === actor.id) ?? false),
+            excludeLevelFollower: (actor: Monster,direction:-1|0|1) => {
+                const source=candidateSource(thisGame,actor.id)?.source;
+                return isDeparting(thisGame,actor.id)||(source?.kind==='spawn'&&!source.consumed)||
+                    ((thisGame.world5?.residents.some(r=>r.actorId===actor.id)??false)&&
+                    (residentComponent(thisGame,actor.id)?.mode!=='escort'||direction===0||!residentEligible(thisGame,actor)||isIncapacitated(actor)));
+            },
             indexWorldOwnership: () => { if (thisGame.world5) indexWorldLevels(thisGame.world5, thisGame.levelSeeds, thisGame.depth); },
             settleManagedWorld: () => thisGame.settleManagedWorld(),
             restoreManagedPending: () => thisGame.restoreManagedPending(),
@@ -1799,6 +1813,7 @@ export class Game {
                 if (firstVisit) runtime.emit('afterLevelGeneration', { depth: this.depth });
                 enterWorldWorkLevel(this,firstVisit);
                 settleTimedStats(this,true);settleActorNeeds(this,true);
+                spawnResidentCandidates(this,token);
                 runtime.emit('enteredLevel', { depth: this.depth, firstVisit, actorIds: [...new Set([this.player.id,...this.monsters.map(actor=>actor.id),...this.dormantMonsters.map(actor=>actor.id)])].sort((a,b)=>a-b) });
                 // Mutable module hooks only see the completed world and the run
                 // RNG restored by the generation coordinator's finally block.
@@ -1868,7 +1883,7 @@ export class Game {
                 ticketId: null, status: 'working', stopReason: null, revision: 0 });
             world.offline.push({ levelRef, campSlotId: 0, lastSettledTick: tick, epochRemainder: tick % 1000, revision: 0,
                 seedKey: offlineSeedKey(this.currentSeed, 0, 'raid', fixture.configuration.rulesFingerprint), lastEventOrdinal: 0,
-                residentStates: [{ actorId: actor.id, alive: true, shortage: 0 }], pendingOutputs: [], needsResupply: false,
+                residentStates: [{ actorId: actor.id, alive:true,foodShortage:0,housingShortage:0,unfedDays:0,departed:false }], pendingOutputs: [], needsResupply: false,
                 frozen: { capturedTick: tick, rulesFingerprint: fixture.configuration.rulesFingerprint,
                     structureRevision: 0, residents: [{ actorId: actor.id, bedComponentId: null,
                         route: { reachable: true, distance: 0, travelTicks: 0 } }], facilities: [], knownThreats: [] } });
@@ -1876,6 +1891,9 @@ export class Game {
         } catch (error) { restore(); runtime.rollbackGeneration(token); rng.setState(random); restoreLog(); throw error; }
     }
     private freezeManagedWorld(): void {
+        settleResidentNeeds(this,true);
+        for(const j of [...this.world5?.residentJobs??[]])if(j.depth===(this.currentLevelDepth??this.depth))cancelResidentWork(this,j.actorId,"level-exit");
+        freezeResidentCamps(this,this.currentLevelDepth??this.depth);
         freezeProductionCamps(this,this.currentLevelDepth??this.depth);
         const world = this.world5, config = this.extensionRuntime?.world5SettlementFixture()?.configuration;
         const ledger = world?.offline.find(l => l.levelRef.kind === 'dungeon' && l.levelRef.depth === this.currentLevelDepth);
@@ -1896,6 +1914,7 @@ export class Game {
     private displaceWorldResident(actorId: number): void {
         const world = this.world5;
         if (!world) return;
+        cancelResidentWork(this,actorId,"displaced");
         for (const ledger of world.offline) {
             if (!ledger.residentStates.some(s => s.actorId === actorId)) continue;
             const frozen = ledger.frozen.residents.find(r => r.actorId === actorId);
@@ -1907,12 +1926,13 @@ export class Game {
         }
     }
     private settleManagedWorld(): void {
+        settleResidentNeeds(this,true);
         settleProductionCamps(this);
         const world = this.world5, runtime = this.extensionRuntime, fixture = runtime?.world5SettlementFixture();
         const level = world?.levels.find(l => l.levelRef.kind === 'dungeon' && l.levelRef.depth === this.depth && l.policy === 'frozen-ecology-economy-v1');
         if (!world || !runtime || !fixture || !level || this.isGameOver) return;
         const ledger = world.offline.find(l => levelKey(l.levelRef) === levelKey(level.levelRef))!;
-        const plan = planOfflineSettlement({ schema: 1, rulesFingerprint: fixture.configuration.rulesFingerprint,
+        const plan = planOfflineSettlement({ schema: 2, homeInstance: 'world5-fixture.home.'+ledger.campSlotId, granaryIds:[],food:[], ownershipSignature: offlineOwnershipSignature('world5-fixture.home.'+ledger.campSlotId,[],[]), rulesFingerprint: fixture.configuration.rulesFingerprint,
             runSeed: this.currentSeed, campSlotId: ledger.campSlotId, level, fromTick: ledger.lastSettledTick,
             toTick: world.simulationTicks, ledger, rules: fixture.configuration.rules, containers: [], nodes: [], tickets: [],
             orders: world.orders.filter(o => levelKey(o.levelRef) === levelKey(level.levelRef)), pendingEvents: fixture.configuration.events(ledger.frozen.capturedTick) });
@@ -2002,8 +2022,10 @@ export class Game {
     private monstersApproachStairs(): void {
         for (const depth of [this.depth - 1, this.depth + 1]) {
             const level = this.levels.get(depth);
-            if (!level || !this.levelSeeds[depth - 1]?.visited || this.world5?.levels.some(l => l.levelRef.kind === 'dungeon' && l.levelRef.depth === depth && l.policy === 'frozen-ecology-economy-v1')) continue;
+            if (!level || !this.levelSeeds[depth - 1]?.visited)continue;
+            const managed=this.world5?.levels.some(l=>l.levelRef.kind==='dungeon'&&l.levelRef.depth===depth&&l.policy==='frozen-ecology-economy-v1');
             for (const m of [...level.monsters]) {
+                if(managed&&!(residentComponent(this,m.id)?.mode==='escort'&&residentEligible(this,m)&&!isIncapacitated(m)&&(m.approaching&(APPROACHING_DOWNSTAIRS|APPROACHING_UPSTAIRS))))continue;
                 if (m.hp <= 0 || m.spatial?.bodyMember && m.id !== m.spatial.bodyMember.groupId) continue;
                 if (m.entersLevelIn > 1) {
                     m.entersLevelIn--;
@@ -2044,11 +2066,24 @@ export class Game {
         },rng.getState(),true);
     }
     private monsterEntersLevel(m: Monster, source: LevelState): void {
+        if (residentComponent(this, m.id)) {
+            transactResidentWorld(this, () => this.commitMonsterLevelEntry(m, source));
+            return;
+        }
+        this.commitMonsterLevelEntry(m, source);
+    }
+
+    private commitMonsterLevelEntry(m: Monster, source: LevelState): void {
         const pit = !(m.approaching & (APPROACHING_DOWNSTAIRS | APPROACHING_UPSTAIRS));
         const origin = pit ? source.playerExitedVia : this.levelStair(m.approaching & APPROACHING_DOWNSTAIRS
             ? TerrainType.STAIRS_UP : TerrainType.STAIRS_DOWN);
         if (!origin) throw new Error('Missing level travel exit');
         if(m.spatial?.bodyMember){this.enterWholeBodyFollower(m,source,origin,pit);return;}
+        // A managed single-cell escort cannot publish onto an occupied exit
+        // when there is no legal destination/displacement space. Keep the
+        // original cached owner, anchor and countdown for a later retry.
+        if (residentComponent(this, m.id) &&
+            !travelPlacement(this, m, origin, true, false, true)) return;
         if (m.spatial || squareListUsers(this.monsters) || squareListUsers(this.dormantMonsters)) {
             const spot = travelPlacement(this, m, origin, true, true, true);
             if (!spot) return; // retain original ownership, anchor and countdown
@@ -3498,7 +3533,7 @@ export class Game {
     private makeRecordingHeader(): RecordingHeaderV4 {
         return { version: 4, recordedAt: Date.now(), seed: this.currentSeed, mode: this.mode,
             initialLevel: { kind: 'dungeon', depth: 1 }, extensions: this.extensionRuntime ? structuredClone(this.extensionRuntime.manifest) : null,
-            codec: { wholeRun: 6, foundation: 10, origin: 2 }, digestAlgorithm: 'sha256-c5-merkle-v1', digestChunk: 256, checkpointPeriod: 2048,
+            codec: { wholeRun: 6, foundation: FOUNDATION_PROTOCOL, origin: 2 }, digestAlgorithm: 'sha256-c5-merkle-v1', digestChunk: 256, checkpointPeriod: 2048,
             initialDigest: mechanicalDigest(this.projectWholeRun(), this.recordingInputState()) };
     }
     private recordInputEvent(action: string, data: unknown, decisions: boolean[]): RecordedInputEvent {
@@ -3581,9 +3616,29 @@ export class Game {
     /** Every user command, including inventory and modal choices, crosses this boundary. */
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
         assertSingleCellPlayer(this.player);
+        // Raw extension envelopes must be data before any owner routing or
+        // runtime allowInput hook can observe them. Strings are parsed by their
+        // existing command validators; native finite numeric payloads stay valid.
+        if (action === 'ext:command' && typeof data !== 'string') {
+            try { c5Canonical(data, true); }
+            catch {
+                // An unsettled failed boundary keeps its existing opaque-input
+                // busy result; reject without invoking or settling the payload.
+                if (!recordingState(this).execution && !this.replayRecording && !this.isAdvancing
+                    && !this.isInputLocked() && !logger.pendingAcknowledgment && !presentationBlocked(this)
+                    && hasPendingResidentNeeds(this)) throw new World5Error('C5_BUSY');
+                if (!recordingState(this).execution && !this.replayRecording && !this.isAdvancing
+                    && !this.isInputLocked() && !logger.pendingAcknowledgment && !presentationBlocked(this))
+                    setWorldWorkError(this, 'C5_BAD_PAYLOAD');
+                return;
+            }
+        }
         if (recordingState(this).execution || this.replayRecording || this.isAdvancing
-            || (this.isInputLocked() && !(action === 'ext:command' && (isWorldWorkCommand(this, data)||isStructureCommand(this,data))
+            || (this.isInputLocked() && !(action === 'ext:command' && (isWorldWorkCommand(this, data)||isStructureCommand(this,data)||isResidentCommand(this,data))
                 && productionActorActionInputLocked(this))) || logger.pendingAcknowledgment || presentationBlocked(this)) return;
+        // Display and unaccepted extension quotes must not materialize needs.
+        // Native mechanical inputs retry before allocating their command prefix.
+        this.settleResidentNativeInput(action, data, perform);
         if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data)) {
             const disturbed = this.disturbed;
             try { logger.log(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }), '#ff6666', { presentationOnly: true }); }
@@ -3657,7 +3712,7 @@ export class Game {
                     execution.pending = Object.freeze({ token: Object.freeze({}),
                         ownerCommandId: execution.id, message: result.value.message });
                     execution.pendingRecordsDecision = result.value.recordDecision !== false;
-                    if(isWorldWorkCommand(this,execution.data)||isStructureCommand(this,execution.data)){const runtime=this.extensionRuntime,player=this.player;execution.valid=()=>this.extensionRuntime===runtime&&this.player===player;}else execution.valid = this.confirmationGuard(execution.data);
+                    if(isWorldWorkCommand(this,execution.data)||isStructureCommand(this,execution.data)||isResidentCommand(this,execution.data)){const runtime=this.extensionRuntime,player=this.player;execution.valid=()=>this.extensionRuntime===runtime&&this.player===player;}else execution.valid = this.confirmationGuard(execution.data);
                     execution.autoStep = this.inAutoTravelStep;
                     execution.blockCombatText = logger.blockCombatText;
                     return;
@@ -3786,7 +3841,38 @@ export class Game {
         return this.runSynchronousStages(this.applyCommandStages(action, data, perform));
     }
 
+    private settleResidentNativeInput(action: string, data?: unknown, perform?: () => void): void {
+        // Other mechanical commands may refuse the boundary rather than retry.
+        // Resident/structure stages retain their pure No/CAS preparation and
+        // account the boundary inside their accepted outer transaction.
+        if (hasPendingResidentNeeds(this)) {
+            const operation = action.startsWith('item:') && typeof data === 'string'
+                ? (data.split('|')[0] ?? '') : '';
+            const letter = typeof data === 'string' ? data.split('|')[1] : undefined;
+            const item = this.player.inventory.items.find(i => i.inventoryLetter === letter);
+            const targetPreparation = !perform && operation === 'use' && item !== undefined
+                && [ItemCategory.WAND, ItemCategory.STAFF].includes(item.category);
+            if ((action.startsWith('item:') && !targetPreparation &&
+                ['equip', 'unequip', 'drop', 'quaff', 'read', 'eat', 'use', 'confirm', 'identify', 'enchant'].includes(operation)) ||
+                (action === 'ext:command' && !isResidentCommand(this, data) && !isStructureCommand(this, data)))
+                throw new World5Error('C5_BUSY');
+        }
+        // Default reference directions and throw targeting have not accepted
+        // native effects. Throw/arcana confirmation settle after their own No.
+        if (!perform && this.referenceScreen) return;
+        if (!perform && action === 'mouse_travel' && this.isThrowing && this.throwItemTarget) return;
+        // A direction inside an inventory/target modal only changes display.
+        if (this.pendingArcana || this.pendingEnchantment) return;
+        if ((this.isInventoryOpen || this.pendingIdentify) &&
+            !['stairs_up', 'stairs_down'].includes(action) && !isIncapacitated(this.player)) return;
+        if (['move', 'wait', 'search', 'auto_step', 'auto_explore', 'auto_rest',
+            'search_long', 'run', 'mouse_travel', 'travel_stairs', 'stairs_up', 'stairs_down'].includes(action))
+            settleResidentNeeds(this);
+    }
+
     private *applyCommandStages(action:string,data?:unknown,perform?:()=>void):CommandStages<void> {
+        // Replay and internal synchronous stages share the public input barrier.
+        this.settleResidentNativeInput(action, data, perform);
         this.worldWorkCommandEpoch++;
         const body=this.applyCommandBodyStages(action,data,perform);
         let answer:boolean|undefined;
@@ -3805,7 +3891,7 @@ export class Game {
             throw new Error(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }));
         // An idle command boundary can report a live combat lock. Never advance
         // its clock, stop automation or run a work provider for this refusal.
-        if (action === 'ext:command' && (isWorldWorkCommand(this, data)||isStructureCommand(this,data)) && productionActorActionInputLocked(this)) {
+        if (action === 'ext:command' && (isWorldWorkCommand(this, data)||isStructureCommand(this,data)||isResidentCommand(this,data)) && productionActorActionInputLocked(this)) {
             setWorldWorkError(this, 'C5_BUSY'); return;
         }
         logger.onDisturb = () => { this.disturbed = true; };
@@ -3823,7 +3909,8 @@ export class Game {
             if (!this.extensionRuntime) throw new Error('Extension command in classic mode');
             // §4.5: only detached data crosses the wait. Runtime.command and its
             // controlled callbacks remain entirely synchronous, including refusals.
-            if(isStructureCommand(this,data))yield* this.executeStructureCommandStages(data);
+            if(isResidentCommand(this,data))yield* this.executeResidentCommandStages(data);
+            else if(isStructureCommand(this,data))yield* this.executeStructureCommandStages(data);
             else if(isStructureFixtureCommand(this,data)){const outcome=executeStructureFixtureCommand(this,data);setWorldWorkError(this,outcome.ok?null:outcome.code);}
             else if (isWorldRestCommand(this,data)) yield* this.executeWorldRestCommandStages(data);
             else if (isEdibleFixtureCommand(this,data)) transactEdible(this,()=>executeEdibleFixtureCommand(this,data));
@@ -3874,6 +3961,12 @@ export class Game {
         }
     }
 
+    private *executeResidentCommandStages(data:unknown):CommandStages<void> {
+        setWorldWorkError(this,null);const first=prepareResidentCommand(this,data);if(!first.ok){setWorldWorkError(this,first.code);return;}
+        if(first.value.chargedTicks>0&&!(yield* this.requestConfirm(i18next.t('ext.settlement.resident.confirm'))))return;
+        const outcome=commitResidentCommand(this,first.value);if(!outcome.ok){setWorldWorkError(this,outcome.code);return;}
+        if(outcome.value.chargedTicks>0)this.playerTurnEnded();
+    }
     private *executeStructureCommandStages(data:unknown):CommandStages<void> {
         setWorldWorkError(this,null);const first=prepareStructureCommand(this,data);
         if(!first.ok){setWorldWorkError(this,first.code);return;}
@@ -5864,9 +5957,22 @@ export class Game {
                 return null;
             }
         }
-        this.cancelArcanaSelection(); // Consume the pending transaction exactly once.
-        if (!bolt) return null;
-        if ((item.charges ?? 0) <= 0 && item.identified === true) return null;
+        if (!bolt || ((item.charges ?? 0) <= 0 && item.identified === true)) {
+            this.cancelArcanaSelection();
+            return null;
+        }
+        settleResidentNeeds(this);
+        const result = bolt.effect === BoltEffect.POLYMORPH && this.extensionRuntime?.residentOwners().length
+            ? transactResidentWorld(this, () => this.commitPlayerArcanaTarget(item, cursor, bolt), true)
+            : this.commitPlayerArcanaTarget(item, cursor, bolt);
+        // CE Time.c:2604-2605 uses movementSpeed at turn end (after effects).
+        if (!this.isGameOver) finishItemUse(this.player, () => this.playerTurnEnded());
+        return result;
+    }
+
+    /** Accepted synchronous spell publication ends before native elapsed begins. */
+    private commitPlayerArcanaTarget(item: Item, cursor: Pos, bolt: BoltConfig): BoltResult | null {
+        this.cancelArcanaSelection(); // Consume the accepted transaction exactly once.
         if (this.extensionRuntime) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'cast' });
         const result = commitArcanaTarget(item, cursor, {
             currentTurn: this.absoluteTurnNumber,
@@ -5876,8 +5982,6 @@ export class Game {
         }) as BoltResult | null;
         if (this.extensionRuntime) this.extensionRuntime.emit('itemUsed', { creature: creatureView(this.player, this.player.id), item: itemView(item), operation: 'arcana' });
         this.needsRender = true;
-        // CE Time.c:2604-2605 uses movementSpeed at turn end (after effects).
-        if (!this.isGameOver) finishItemUse(this.player, () => this.playerTurnEnded());
         return result;
     }
 
@@ -6396,6 +6500,11 @@ export class Game {
     }
 
     private polymorphBoltTarget(target: Creature | undefined): boolean {
+        if (target instanceof Monster && (residentComponent(this,target.id) || candidateSource(this,target.id)))
+            return transactResidentWorld(this, () => this.commitPolymorphBoltTarget(target), true);
+        return this.commitPolymorphBoltTarget(target);
+    }
+    private commitPolymorphBoltTarget(target: Creature | undefined): boolean {
         if (this.extensionRuntime?.nativeForms().length) return this.polymorphWholeBody(target);
         const square = !!target?.spatial || !!this.extensionRuntime?.nativeForms().length;
         if (!(target instanceof Monster) || !target.polymorph(() => this.demoteMonsterFromLeadership(target), data => {
@@ -8128,15 +8237,18 @@ export class Game {
             const cursedMessage = i18next.t('throw.cursed_equipped', {
                 name, defaultValue: 'You cannot unequip your {{name}}; it appears to be cursed.'
             });
-            if (equipped) {
-                if (!this.unequipItem(item, false, cursedMessage)) return;
-            } else if (item.isCursed) {
-                // CE also refuses an enchanted, unequipped cursed singleton.
+            if (item.isCursed) {
+                // CE refuses both equipped and enchanted unequipped singletons.
                 logger.log(cursedMessage, '#ff9999');
                 return;
             }
+            // Confirmation/curse refusal stay pure; accepted unequip is the
+            // first native mutation, including trusted perform callers.
+            settleResidentNeeds(this);
+            if (equipped && !this.unequipItem(item, false, cursedMessage)) return;
         }
 
+        settleResidentNeeds(this);
         if (this.extensionRuntime) this.extensionRuntime.notifyCommittedAction({ actorId: this.player.id, action: 'throw' });
 
         const origin = { ...this.player.loc };
@@ -10179,6 +10291,13 @@ export class Game {
      * this.monsters 快照后过滤——结果集相同）。
      */
     private monstersFall(): void {
+        if (this.extensionRuntime?.residentOwners().length && this.monsters.some(m => m.hp > 0 &&
+            (m.falling || this.creatureShouldFall(m)) &&
+            (residentComponent(this,m.id) || candidateSource(this,m.id)))) {
+            transactResidentWorld(this, () => this.commitMonstersFall());
+        } else this.commitMonstersFall();
+    }
+    private commitMonstersFall(): void {
         this.retrySquareLandings();
         const fellOut = new Set<Monster>();
         for (const m of [...this.monsters]) {
@@ -10567,6 +10686,22 @@ export class Game {
      * physical removal and purgatory. Reentrant death DFs cannot kill twice. */
     public killMonster(m: Monster, administrative = false): void {
         if (m.deathProcessed || dyingMonsters.has(m)) return;
+        if (!this.extensionRuntime?.residentOwners().length) {
+            this.killMonsterBody(m, administrative);
+            return;
+        }
+        // The native entry owns captureDeath, dying membership, drops, DFs,
+        // refunds and publication. A resident child checkpoint starts too late.
+        const restoreNative = this.checkpointCombatFactWorld([m]);
+        try {
+            transactResidentWorld(this, () => this.killMonsterBody(m, administrative));
+        } catch (error) {
+            restoreNative();
+            throw error;
+        }
+    }
+
+    private killMonsterBody(m: Monster, administrative: boolean): void {
         const group = this.bodyGroups?.find(g => g.groupId === m.spatial?.bodyMember?.groupId);
         if (group) {
             if (m.id !== group.coreId) {
@@ -10591,6 +10726,7 @@ export class Game {
             administrative ? null : this.extensionRuntime.causality.deathOrigin(m.id));
         dyingMonsters.add(m); // MB_IS_DYING, before item placement/DF callbacks
         m.hp = 0;
+        removeResident(this,m.id,"death");
         if (this.world5) for (const ledger of this.world5.offline) {
             const resident=ledger.residentStates.find(s=>s.actorId===m.id&&s.alive);
             if (resident) { resident.alive=false; ledger.revision=checkedAdd(ledger.revision,1);
@@ -10950,6 +11086,9 @@ export class Game {
                 consumeFood: (item, prompt) => game.consumeFood(item, prompt),
                 playerTurnEnded: () => game.playerTurnEnded(),
                 settleEdibleClocks: () => {settleTimedStats(game);settleActorNeeds(game);settleDepartures(game);},
+                settlePendingResidentNeeds:()=>settleResidentNeeds(game),
+                settleResidentBoundary:()=>{settleResidentNeeds(game);settleResidentWork(game);},
+                residentBoundaryTicks:()=>game.world5?.residents.length?1000-game.world5.simulationTicks%1000:Infinity,
                 monstersApproachStairs: () => game.monstersApproachStairs(),
                 wpContext: () => game.wpContext(),
                 monstersFall: () => game.monstersFall(),
@@ -11291,6 +11430,12 @@ export class Game {
                 // 生成器可能已因异常终止，忽略
             }
         }
+        if (hasPendingResidentNeeds(this)) {
+            // Keep paid clock/native effects and countdown mirrors at b. No
+            // epilogue or free decision may run until this boundary publishes.
+            recordingState(this).pendingCommand = null;
+            return;
+        }
         if (aborted) {
             this.player.ticksUntilTurn = 0;
         }
@@ -11578,12 +11723,14 @@ export class Game {
         try {
             const forms=extensions?.nativeForms()??[];
             decoded = decodeWholeRunWorld(snapshot, { ...entityCodecDeps, spatialCatalog: extensions?.spatialCatalog, allocateMonster: form => {
-                if(form.id.includes('.') && !forms.some(f=>f.id===form.id)) throw new Error('Unavailable saved native form');
+                if(form.id.includes('.') && !forms.some(f=>f.id===form.id) && !extensions?.residentOwners().some(o=>extensions!.residentPolicy(o)!.templates.some(t=>t.id===form.id))) throw new Error('Unavailable saved native form');
                 return entityCodecDeps.allocateMonster(form);
             } });
             for(const actor of decoded.entityGraph.monsters.values()) {
                 const form=forms.find(f=>f.id===actor.typeId);
-                if(actor.typeId.includes('.') && !form || form && (actor.spatial?.footprintId !== nativeFormSpatial(form).footprintId || !(form.footprint?.poses ?? ['r0']).includes(actor.spatial?.pose!))) throw new Error('Invalid saved native form body');
+                const residentTemplate=extensions?.residentOwners().flatMap(o=>extensions!.residentPolicy(o)!.templates).find(t=>t.id===actor.typeId);
+                if(residentTemplate && (actor.spatial || actor.snapshotForm().hp!==residentTemplate.hp || actor.damageString!==residentTemplate.damage || actor.snapshotForm().moveSpeed!==residentTemplate.moveSpeed || actor.snapshotForm().attackSpeed!==residentTemplate.attackSpeed))throw new Error('Invalid saved resident template');
+                if(actor.typeId.includes('.') && !form && !residentTemplate || form && (actor.spatial?.footprintId !== nativeFormSpatial(form).footprintId || !(form.footprint?.poses ?? ['r0']).includes(actor.spatial?.pose!))) throw new Error('Invalid saved native form body');
             }
         } catch { return false; }
         const { entityGraph, restored } = decoded;
@@ -13035,7 +13182,7 @@ export class Game {
 
     public getMonsterAt(x: number, y: number, ignore?: Creature): Monster | undefined {
         // CE clears HAS_MONSTER only after item placement and the death DF.
-        return this.monsters.find(m => m !== ignore && footprintContains(m, { x, y })
+        return this.monsters.find(m => m !== ignore && (m.spatial ? footprintContains(m, { x, y }) : m.loc.x === x && m.loc.y === y)
             && (m.hp > 0 || (dyingMonsters.has(m) && !m.deathProcessed)));
     }
 
@@ -13462,6 +13609,20 @@ export class Game {
     public hasWorldAutoWork():boolean { return this.autoAction?.kind==='auto_work'; }
     public beginWorldAutoWork(ticketId:number):void { this.autoAction={kind:'auto_work',ticketId}; }
     public clearWorldAutoWork(ticketId:number):void { if(this.autoAction?.kind==='auto_work'&&this.autoAction.ticketId===ticketId)this.autoAction=null; }
+    public residentGridAt(depth:number){return depth===(this.currentLevelDepth??this.depth)?this.grid:this.levels.get(depth)?.grid;}
+    public checkpointResidentWorld():()=>void {
+        const native=residentTransactionOwnsNativeWrites(this)?this.checkpointCombatFactWorld():null;
+        const paths=checkpointResidentPaths(this),beds=checkpointResidentBeds(this),cached=[...this.levels.values()],actors=this.departureActors(),needs=checkpointNeeds(this),dirty=checkpointRecordingRoots([this.world5!,this.extensionRuntime!,this.actorActions!]);
+        const base=this.checkpointWorldWork(()=>({shallow:[this,...cached],deep:[...actors,this.extensionRuntime,this.monsters,this.dormantMonsters,this.purgatory,this.pendingFallenByDepth,this.pendingFallenItemsByDepth,this.levels,this.visibleMonsters,this.everSeenMonsters,...cached.flatMap(l=>[l.monsters,l.dormantMonsters,l.items,l.visibleMonsters])]}));
+        return()=>{base();needs();dirty();paths();beds();native?.();};
+    }
+    public createResidentCandidate(token:import('../../ext/types').GenerationToken,owner:string,id:string,at:Pos):Monster|null {
+        this.extensionRuntime!.reserveGenerationAllocator(token);
+        const p=this.extensionRuntime?.residentPolicy(owner),t=p?.templates.find(t=>t.id===id);if(!t)throw new Error('C5_BAD_DEFINITION');
+        if(this.monsters.length+this.dormantMonsters.length>=128||this.monsters.reduce((n,a)=>n+footprintOf(a).length,footprintOf(this.player).length)>=512||!this.grid.getCell(at.x,at.y)?.isPassable||this.getMonsterAt(at.x,at.y)||footprintContains(this.player,at))return null;
+        const a=new Monster(at.x,at.y,{id:t.id,name:worldText(t.nameKey),description:worldText(t.descriptionKey),minDepth:1,maxDepth:40,goldDropChance:0,itemDropChance:0,char:'@',color:0xa5c98d,hp:t.hp,accuracy:t.accuracy,defense:t.defense,damage:t.damage,moveSpeed:t.moveSpeed,attackSpeed:t.attackSpeed},{id:allocateEntityId(),state:MonsterState.WANDERING});
+        a.isAlly=true;a.leader=null;a.boundToLeader=false;a.doesNotTrackLeader=true;a.state=MonsterState.WANDERING;markCreatureBirth(a,'natural');this.monsters.push(a);this.extensionRuntime!.attachCreature(a);return a;
+    }
     public checkpointStructureWorld():()=>void {
         const restore=this.checkpointCombatFactWorld();
         const identity=checkpointGenerationWorld(()=>({shallow:[],deep:[this.extensionRuntime!,logger]}));
@@ -13509,9 +13670,31 @@ export class Game {
     public beginActorDeparture(actor:Monster):void {this.demoteMonsterFromLeadership(actor);actor.leader=null;actor.boundToLeader=false;actor.entersLevelIn=0;notifyProductionActorSourceChanged(this,actor.id);retirePhasedAttackSource(this,actor.id);}
     /** Trusted ownership across active, cached, purgatory and pending fall roots. */
     public departureActors():readonly Monster[] {
-        return [...new Set([...this.monsters,...this.dormantMonsters,...this.purgatory,
-            ...[...this.levels.values()].flatMap(l=>[...l.monsters,...l.dormantMonsters??[]]),
-            ...[...this.pendingFallenByDepth.values()].flat()])];
+        const actors=new Set<Monster>(this.monsters);
+        for(const actor of this.dormantMonsters)actors.add(actor);
+        for(const actor of this.purgatory)actors.add(actor);
+        for(const level of this.levels.values()){
+            for(const actor of level.monsters)actors.add(actor);
+            for(const actor of level.dormantMonsters??[])actors.add(actor);
+        }
+        for(const list of this.pendingFallenByDepth.values())for(const actor of list)actors.add(actor);
+        return [...actors];
+    }
+    /** Fresh lookup in exactly departureActors ownership order, without
+     * allocating a whole Set/array for a single actor. Never cached: retiring
+     * a carrier can expose its passenger as a new owned root immediately. */
+    public departureActor(id:number):Monster|undefined {
+        const matches=(actor:Monster)=>actor.id===id;
+        let actor=this.monsters.find(matches)??this.dormantMonsters.find(matches)??this.purgatory.find(matches);
+        if(actor)return actor;
+        for(const level of this.levels.values()){
+            actor=level.monsters.find(matches)??level.dormantMonsters?.find(matches);
+            if(actor)return actor;
+        }
+        for(const list of this.pendingFallenByDepth.values()){
+            actor=list.find(matches);if(actor)return actor;
+        }
+        return undefined;
     }
     private departureTerrainAllowed(actor:Monster,p:Pos,stair?:Pos):boolean {
         // Conservative even for immune actors: active departure motion never
@@ -13538,8 +13721,24 @@ export class Game {
     public retireDepartingActors(ids:ReadonlySet<number>):void {
         const actors=this.departureActors().filter(a=>ids.has(a.id));
         for(const actor of actors){
-            if(actor.carriedItem){const item=actor.carriedItem;delete item.fireContactCooldownUntilTurn;const candidates=captiveItemDropCandidates(this,actor.loc,this.items);item.loc={...(candidates.sort((a,b)=>Math.max(Math.abs(a.x-actor.x),Math.abs(a.y-actor.y))-Math.max(Math.abs(b.x-actor.x),Math.abs(b.y-actor.y))||a.y-b.y||a.x-b.x)[0]??actor.loc)};this.items.push(item);actor.carriedItem=null;}
-            if(actor.carriedMonster&&!ids.has(actor.carriedMonster.id)){const passenger=actor.carriedMonster;passenger.loc={...actor.loc};if(!this.monsters.includes(passenger))this.monsters.push(passenger);this.extensionRuntime!.attachCreature(passenger);}
+            removeResident(this,actor.id,'retired');terminateResidentSource(this,actor.id);
+            const cached=[...this.levels.entries()].find(([,level])=>level.monsters.includes(actor)||level.dormantMonsters?.includes(actor));
+            const pending=[...this.pendingFallenByDepth.entries()].find(([,list])=>list.includes(actor));
+            const depth=cached?.[0]??pending?.[0]??this.depth;
+            const grid=cached?.[1].grid??(depth===this.depth?this.grid:undefined);
+            const items=cached?.[1].items??(pending?(this.pendingFallenItemsByDepth.get(depth)??[]):this.items);
+            if(pending)this.pendingFallenItemsByDepth.set(depth,items);
+            if(actor.carriedItem){
+                const item=actor.carriedItem;delete item.fireContactCooldownUntilTurn;
+                const candidates=grid?captiveItemDropCandidates({grid,player:this.player,monsters:cached?.[1].monsters??this.monsters},actor.loc,items):[];
+                item.loc={...(candidates.sort((a,b)=>Math.max(Math.abs(a.x-actor.x),Math.abs(a.y-actor.y))-Math.max(Math.abs(b.x-actor.x),Math.abs(b.y-actor.y))||a.y-b.y||a.x-b.x)[0]??actor.loc)};
+                items.push(item);actor.carriedItem=null;
+            }
+            if(actor.carriedMonster&&!ids.has(actor.carriedMonster.id)){
+                const passenger=actor.carriedMonster;passenger.loc={...actor.loc};
+                const target=cached?.[1].monsters??pending?.[1]??this.monsters;
+                if(!target.includes(passenger))target.push(passenger);this.extensionRuntime!.attachCreature(passenger);
+            }
             actor.doesNotResurrect=true;actor.seized=actor.seizing=false;actor.leader=null;actor.carriedMonster=null;notifyProductionActorSourceChanged(this,actor.id);retirePhasedAttackSource(this,actor.id);this.extensionRuntime!.causality.clearCreature(actor.id);this.extensionRuntime!.retireEdibleActor(actor);this.visibleMonsters.delete(actor);this.everSeenMonsters.delete(actor);this.examinedEntityIds.delete(actor.id);}
         for(const other of this.monsters){if(other.leader&&ids.has(other.leader.id))other.leader=null;if(other.carriedMonster&&ids.has(other.carriedMonster.id))other.carriedMonster=null;}
         this.monsters=this.monsters.filter(a=>!ids.has(a.id));this.dormantMonsters=this.dormantMonsters.filter(a=>!ids.has(a.id));this.purgatory=this.purgatory.filter(a=>!ids.has(a.id));
@@ -13548,14 +13747,15 @@ export class Game {
         if(this.bodyGroups){this.bodyGroups=this.bodyGroups.filter(g=>!ids.has(g.coreId));if(!this.bodyGroups.length)delete this.bodyGroups;}
         this.player.seized=this.player.seized&&this.monsters.some(a=>a.seizing);this.hoveredCell=null;this.hoveredText='';this.needsRender=true;
     }
-    public checkpointWorldWork():()=>void {
+    public checkpointWorldWork(additional?:()=>GenerationCheckpointRoots):()=>void {
         // C5 operations never own grid/environment/cache-layer writes. Preserve
         // native actor clock pointers shallowly and only traverse the explicit C5 write set.
         const actors=[this.player,...this.monsters],runtime=this.extensionRuntime!;
-        const restore=checkpointGenerationWorld(()=>({shallow:[this,...actors],
+        const roots=()=>({shallow:[this,...actors],
             deep:[this.world5,this.actorActions,this.worldContainerItems,this.worldWorkFacts,this.worldWorkDetails,
                 this.player.inventory,this.items,this.autoAction,...actors.map(a=>a instanceof Monster?a.carriedItem:null)],
-            references:[runtime]}));
+            references:[runtime]});
+        const restore=additional?checkpointGenerationWorldGroups([roots,additional]):checkpointGenerationWorld(roots);
         const actions=checkpointProductionActorActions(this),log=logger.checkpoint(),id=getNextEntityId(),random=rng.getState(),tick=timeSystem.currentTick;
         const invalid=isProductionActorActionRunInvalid(this),origin=recordingState(this).origin;
         return()=>{restore();actions();log();restoreProductionActorActionValidity(this,invalid);recordingState(this).origin=origin;
@@ -14301,6 +14501,7 @@ export class Game {
 
     private becomeSingleAllyWith(monster: Monster): void {
         this.demoteMonsterFromLeadership(monster);
+        const rescued=monster.isCaged;
         this.makeMonsterDropItem(monster);
 
         monster.isCaged = false;
@@ -14310,6 +14511,7 @@ export class Game {
         monster.leaderlessAfterDemotion = false;
         monster.seized = false;
         monster.state = MonsterState.WANDERING; // isAlly is web's MONSTER_ALLY state.
+        recordRescuedResident(this,monster,rescued);
         this.needsRender = true;
     }
 

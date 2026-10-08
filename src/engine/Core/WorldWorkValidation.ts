@@ -1,3 +1,4 @@
+import { validateResidentReferences } from './ResidentValidation';
 import {validateProductionCampReferences} from './StructureProduction';
 import { ownsWorldWorkDefinitions } from './WorldWorkOwner';
 import { edibleItemAdapter } from './KindKnowledge';
@@ -17,6 +18,7 @@ export function validateWorldWorkReferences(game: Game): void {
   if (!w) return;
   validateStructureReferences(game);
   validateProductionCampReferences(game);
+  validateResidentReferences(game);
   const runtime = game.extensionRuntime!,
     packs = runtime.worldDefinitionPacks(),
     entities = runtime.worldWorkEntities();
@@ -343,7 +345,7 @@ export function validateWorldWorkReferences(game: Game): void {
   for (const b of game.actorActions?.bundles ?? [])
     if (
       b.owner === 'foundation' &&
-      !w.tickets.some((t) => t.bundleActionId === b.actionId && t.status === 'working')
+      !w.tickets.some((t) => t.bundleActionId === b.actionId && t.status === 'working') && !w.residentJobs.some(j=>j.actionId===b.actionId&&j.status==='working')
     )
       fail('orphan world clock');
 }

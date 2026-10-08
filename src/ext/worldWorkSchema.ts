@@ -37,6 +37,10 @@ export function validateWorldWorkRoots(w: World5Snapshot, owners: readonly strin
     if (id >= w.nextWorldId || unique.has(id)) fail('worldId');
     unique.add(id);
   };
+  for (const job of w.residentJobs) {
+    identity({owner:job.owner,levelRef:{kind:'dungeon',depth:job.depth}});
+    wid(job.id);
+  }
   for (const t of w.terminalTickets) {
     exact(
       t,
@@ -140,7 +144,7 @@ export function validateWorldWorkRoots(w: World5Snapshot, owners: readonly strin
     if (interactables.has(s.interactableId) || (s.boundComponentId !== null && (!Number.isSafeInteger(s.boundComponentId)||s.boundComponentId<1))) fail('station');
     interactables.add(s.interactableId);
   }
-  const actorIds = new Set<number>();
+  const actorIds = new Set<number>(w.residentJobs.map(j => j.actorId));
   for (const t of w.tickets) {
     exact(
       t,
@@ -243,7 +247,7 @@ export function validateWorldWorkRoots(w: World5Snapshot, owners: readonly strin
           ['working', 'suspended'].includes(t.status)
       )
     )
-      fail('orphan escrow');
+      if(!w.residentJobs.some(j=>j.id===c.ticketId&&j.cargoId===c.id))fail('orphan escrow');
   for (const n of w.nodes)
     if (
       n.reservedUnits !==

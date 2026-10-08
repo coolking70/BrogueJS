@@ -2,6 +2,7 @@ import { computed, defineAsyncComponent, onScopeDispose, ref, shallowRef, nextTi
 import i18next from 'i18next';
 import type { ModuleUiHost, ModuleUiSession } from '../../../ui/types';
 import { base, payment, readView, campBounds, clampMapTarget, type SettlementView } from './view';
+import { RESIDENT_ACTIONS } from '../../../residentSdk';
 import type { ItemAmount } from '../../../worldSdk';
 const Panel = defineAsyncComponent(() => import('./SettlementPanel.vue'));
 const Entry = defineAsyncComponent(() => import('./SettlementEntry.vue'));
@@ -30,8 +31,10 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
     restRequested = false,
     queued = 0;
   const live = () => !retired && host.game() === game && game.extensionRuntime === runtime;
+  // Match shared module presentation: live lag pauses UI, replay/seek stays readable.
+  const presentationBusy = () => !game.replayRecording && !!host.isPresentationBusy?.();
   const blocked = () =>
-    !live() || !!host.isPresentationBusy?.() || host.canPresentInteraction?.() === false;
+    !live() || presentationBusy() || host.canPresentInteraction?.() === false;
   function reset() {
     queue = false;
     restRequested = false;
@@ -54,12 +57,14 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
     removeMap?.();
     removeMap = undefined;
     if (!opened.value || collapsed.value || blocked()) return;
-    if (tab.value !== 'build' && !campSelecting()) return;
+    if (tab.value !== 'build' && tab.value !== 'residents' && !campSelecting()) return;
     const b = campBounds(campTarget.value);
     const cells = campSelecting()
       ? Array.from({length: b.width * b.height}, (_, k) => ({x: b.x + k % b.width, y: b.y + Math.floor(k / b.width)}))
       : [...draft.value, cursor.value];
+    const selectionEpoch = queued;
     removeMap = host.selectMapCells?.(owner, (p) => {
+      if (!opened.value || collapsed.value || blocked() || queued !== selectionEpoch) return;
       if (campSelecting()) campTarget.value = clampMapTarget(p);
       else cursor.value = clampMapTarget(p);
       selectMap();
@@ -75,7 +80,7 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
       model.value = null;
       return;
     }
-    if (host.isPresentationBusy?.()) {
+    if (presentationBusy()) {
       // The host hides the presentation root. Keep the previous DTO and pause
       // the display-only queue until ACK/animation catches up; never read ahead.
       removeMap?.();
@@ -95,7 +100,7 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
       queue &&
       !game.isAdvancing &&
       !game.hasPendingConfirmation &&
-      !host.isPresentationBusy?.()
+      !presentationBusy()
     ) {
       if (
         next.lastError ||
@@ -133,7 +138,7 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
     selectMap();
   }
   function payload(action: string, v: SettlementView, extra: Record<string, unknown> = {}) {
-    const common = action === 'rest' ? { v: 1, stateRevision: v.revision } : base(v);
+    const common = action === 'rest' || (RESIDENT_ACTIONS as readonly string[]).includes(action) ? { v: 1, stateRevision: v.revision } : base(v);
     return JSON.stringify({ module: 'settlement', action, payload: { ...common, ...extra } });
   }
   function send(action: string, p: Record<string, unknown>) {
@@ -160,6 +165,34 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
       refresh();
     }
     return true;
+  }
+  function resident(action:string,id:number,extra:Record<string,unknown>={}){
+    const v=read();if(!v)return;
+    const row=v.residents?.residents.find(r=>r.id===id),candidate=v.residents?.candidates.find(r=>r.id===id);
+    const camp=v.camps.find(c=>row?c.regionId===row.campId:!c.remote);if(!camp)return;
+    const p:Record<string,unknown>={campId:camp.regionId,campRevision:camp.revision,...extra};
+    if(action==='set-granary'){const box=v.boxes.find(b=>b.id===id);if(!box)return;p.containerId=id;p.containerRevision=box.revision;}
+    else {p.targetId=id;p.targetRevision=row?.revision??candidate?.revision;if(p.targetRevision===undefined)return;}
+    if(action==='assign-job'){
+      const job=extra.job as {kind:string;sourceId?:number;destinationId?:number;plotIds?:number[]};
+      const targets = v.jobTargets?.find(t => t.campId === row?.campId);
+      if (job.kind === 'plant' || job.kind === 'haul') {
+        const source = targets?.boxes.find(b => b.id === job.sourceId);
+        const destination = targets?.boxes.find(b => b.id === job.destinationId);
+        const plots = job.plotIds?.map(id => targets?.plots.find(c => c.id === id)) ?? [];
+        if (!source || !destination || plots.some(p => !p)) return;
+        // Hidden box metadata grants no access to hidden haul stock.
+        if (job.kind === 'haul' && !v.boxes.some(b => b.id === job.sourceId)) return;
+        p.sourceRevision = source.revision;
+        p.destinationRevision = destination.revision;
+        p.componentRevisions = plots.map(p => p!.revision);
+      } else {
+        p.sourceRevision = p.destinationRevision = null;
+        p.componentRevisions = [];
+      }
+      p.inventoryStamp=v.inventoryStamp;
+    }
+    send(action,p);
   }
   function paid(v: SettlementView, cost: readonly ItemAmount[]) {
     const p = payment(v, cost, sourceId.value, materials.value);
@@ -334,7 +367,7 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
       ArrowRight: [1, 0]
     };
     if ((e.target as HTMLElement | null)?.closest?.('[data-map-drawer]')) return true;
-    if (!collapsed.value && (tab.value === 'build' || campSelecting()) && d[e.key]) {
+    if (!collapsed.value && (tab.value === 'build' || tab.value === 'residents' || campSelecting()) && d[e.key]) {
       e.preventDefault();
       const [dx, dy] = d[e.key]!;
       const target = campSelecting() ? campTarget : cursor;
@@ -367,9 +400,14 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
     refresh,
     close,
     hud: computed(() => null),
-    bar: computed(() =>
-      host.immersive.value && !opened.value ? { component: Entry, props: { onOpen: open } } : null
-    ),
+    bar: computed(() => {
+      // Replay hides App's gameplay CommandBar in every display mode. Native
+      // Game flags and panel eligibility follow the shell's ordinary poll.
+      host.tick.value;
+      return (host.immersive.value || !!game.replayRecording) && !opened.value
+        ? { component: Entry, props: { onOpen: open, disabled: blocked() || !model.value || !host.canOpenPanel() } }
+        : null;
+    }),
     commands: computed(() => {
       // Native Game eligibility is not reactive; keep the shell refresh edge
       // even when blocked() short-circuits the model dependency.
@@ -392,6 +430,7 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
             component: Panel,
             props: {
               model: model.value,
+              replayReadonly: !!game.replayRecording,
               tab: tab.value,
               selected: selected.value,
               cursor: cursor.value,
@@ -445,7 +484,8 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
               onTransfer: transfer,
               onRest: rest,
               onPart: part,
-              onHarvest: harvest
+              onHarvest: harvest,
+              onResident:resident
             }
           }
         : null

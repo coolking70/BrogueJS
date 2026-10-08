@@ -94,6 +94,7 @@ export interface OptionalQueryContext {
     readonly playerId: number;
     readonly state: ReadonlyJson;
     getPlayerComponent(name: string): ReadonlyJson | undefined;
+    getComponent?(actorId:number,name:string):ReadonlyJson|undefined;
 }
 export interface OptionalQueryProvider {
     accepts(input: ReadonlyJson): boolean;
@@ -266,6 +267,7 @@ export interface ExtensionModule extends ExtensionVersion, WorldModuleFields {
     readonly ownedRegions?: true;
     /** One discovered data-only owner for persistent phased attacks. */
     readonly actorActions?: { readonly definitions: Json };
+    readonly residentPolicy?: import("./residentSdk").ResidentPolicy;
     readonly nativeForms?: readonly import('./nativeForms').NativeFormDefinition[];
     readonly bodyTransitions?: readonly import('./bodyTransitions').ActiveBodyTransition[];
     /** Data-only composite declarations; foundation owns entities and clocks. */

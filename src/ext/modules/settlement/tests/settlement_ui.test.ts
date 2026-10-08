@@ -4,7 +4,7 @@ import { setup, establish } from './helpers';
 import { useSettlementUi } from '../ui/useSettlementUi';
 import { rng } from '../../../../engine/Random';
 import { getNextEntityId } from '../../../../entities/Creature';
-function ui(g: ReturnType<typeof setup>['g'], isPresentationBusy = () => false) {
+function ui(g: ReturnType<typeof setup>['g'], isPresentationBusy = () => false, canOpenPanel = () => true) {
   const scope = effectScope(),
     tick = ref(0);
   let map: (at: { x: number; y: number }) => void = () => {},
@@ -15,7 +15,7 @@ function ui(g: ReturnType<typeof setup>['g'], isPresentationBusy = () => false) 
       tick,
       immersive: ref(false),
       isPresentationBusy,
-      canOpenPanel: () => true,
+      canOpenPanel,
       beforeOpenPanel() {},
       afterClosePanel() {},
       selectMapCells(_owner, select) {
@@ -147,4 +147,48 @@ describe('settlement disposable construction UI', () => {
     expect(u.session.panelOpen.value).toBe(false);
     u.scope.stop();
   });
+});
+
+it('resident guard map choice uses the shared display cursor and clears selection on ACK and close', () => {
+  const {h,g}=setup();expect(h.ext('settlement','establish',establish(g)).error).toBeNull();
+  let busy=false;const u=ui(g,()=>busy);u.props().onTab('residents');
+  const world=structuredClone(g.world5),random=rng.getState(),id=getNextEntityId(),events=g.recordedInputEvents.length;
+  u.select({x:23,y:14});expect(u.props().cursor).toEqual({x:23,y:14});
+  u.keys({key:'ArrowLeft',preventDefault(){}} as KeyboardEvent);expect(u.props().cursor).toEqual({x:22,y:14});
+  expect(g.world5).toEqual(world);expect(rng.getState()).toEqual(random);expect(getNextEntityId()).toBe(id);expect(g.recordedInputEvents.length).toBe(events);
+  busy=true;u.session.refresh();u.select({x:24,y:15});expect(u.props().cursor).toEqual({x:22,y:14});
+  busy=false;u.session.refresh();u.props().onClose();u.select({x:25,y:15});
+  u.session.commands.value[0]!.invoke();expect(u.props().cursor).toEqual({x:g.player.x+1,y:g.player.y});
+  u.scope.stop();
+});
+
+it('replay entry ignores live presentation lag and refreshes native panel eligibility on tick', () => {
+  const { g } = setup();
+  expect(g.loadReplay(g.exportRecording())).toBe(true);
+  const saved = () => ({ ...g.toSaveSnapshot(), savedAt: 0 });
+  const before = saved(), random = rng.getState(), id = getNextEntityId();
+  let canOpen = true;
+  const u = ui(g, () => true, () => canOpen);
+  expect(u.session.panelOpen.value).toBe(true);
+  expect(u.props().replayReadonly).toBe(true);
+  expect(u.props().blocked).toBe(true);
+  u.session.close();
+  const entry = () => u.session.bar.value!.props as any;
+  expect(entry().disabled).toBe(false);
+  canOpen = false;
+  u.tick.value++;
+  u.session.refresh();
+  expect(entry().disabled).toBe(true);
+  entry().onOpen();
+  expect(u.session.panelOpen.value).toBe(false);
+  canOpen = true;
+  u.tick.value++;
+  u.session.refresh();
+  expect(entry().disabled).toBe(false);
+  entry().onOpen();
+  expect(u.session.panelOpen.value).toBe(true);
+  expect(saved()).toEqual(before);
+  expect(rng.getState()).toEqual(random);
+  expect(getNextEntityId()).toBe(id);
+  u.scope.stop();
 });

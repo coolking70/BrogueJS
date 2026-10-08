@@ -1,3 +1,4 @@
+import { assertResidentPolicy } from './residentSchema';
 import { validateEdibleSnapshot } from '../engine/Core/EdibleValidation';
 import i18next from 'i18next';
 import { worldText } from './worldText';
@@ -13,6 +14,7 @@ import type { PairFacts, StatQuery } from './stats';
 import { markRecordingRoot, recordingRootRevision } from './recordingRevisions';
 import { World5Error } from './world5';
 import { c5Hash, c5Canonical } from './worldJson';
+import { RESIDENT_ACTIONS } from './residentSdk';
 import {STRUCTURE_ACTIONS} from './structureSdk';
 import { isWorld5Fixture, isWorld5StructureFixture, isWorld5WorkFixture, world5FixtureConfiguration } from './world5Fixture';
 import { FOUNDATION_PROTOCOL } from './descriptor';
@@ -311,6 +313,7 @@ export class ExtensionRuntime {
             const entry={module,consumer:Object.freeze({maxDerivedFacts:consumer.maxDerivedFacts,prepare:consumer.prepare,commit:consumer.commit,...(consumer.eventKinds?{eventKinds:Object.freeze([...consumer.eventKinds])}:{})})};
             registry.set(capability,Object.freeze([...(registry.get(capability)??[]),entry].sort((a,b)=>a.module.id<b.module.id?-1:a.module.id>b.module.id?1:0)));
         }
+        for(const module of this.modules)if(module.residentPolicy){assertResidentPolicy(module.residentPolicy,module.id);Object.defineProperty(module,"residentPolicy",{value:freezeView(structuredClone(module.residentPolicy)),writable:false});}
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalActorQueries ?? {})) {
             if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
                 || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid actor query provider');
@@ -521,7 +524,16 @@ export class ExtensionRuntime {
                 // native action carries recovery across floors. Preserve its
                 // scheduler/actor object graph just like a part-break commit.
                 const current=runtime.states[module.id]!;
-                if(canonical(current)===canonical(value))return;
+                // Distinct finite own revision values already prove unequal JSON.
+                // Stored state is detached JSON; only its comparison can be skipped.
+                // Incoming serialization still runs (including reads/errors), even
+                // for a permissive generic module with accessor-backed input.
+                const a=!Array.isArray(current)&&current&&typeof current==='object'?Object.getOwnPropertyDescriptor(current,'revision'):undefined;
+                const b=!Array.isArray(value)&&value&&typeof value==='object'?Object.getOwnPropertyDescriptor(value,'revision'):undefined;
+                const changed=a?.enumerable&&b?.enumerable&&'value' in a&&'value' in b
+                    &&typeof a.value==='number'&&typeof b.value==='number'&&Number.isFinite(a.value)&&Number.isFinite(b.value)&&a.value!==b.value;
+                if(changed)canonical(value);
+                else if(canonical(current)===canonical(value))return;
                 runtime.states[module.id]=module.actorActions?adoptActorActionJson(current,value):cloneJson(value); if(module.statSources||module.actorActions)runtime.invalidateStats();
             },
             getComponent(id, name) { const value = runtime.components[creatureKey(id)]?.[componentKey(name)]; return value === undefined ? undefined : cloneJson(value); },
@@ -779,6 +791,7 @@ export class ExtensionRuntime {
         if (!accepted) return Object.freeze({ status: 'unavailable', reason: 'unsupported-input' });
         const result = provider.query(value, Object.freeze({
             playerId: this.ports.playerId(), state: freezeView(cloneJson(this.states[module.id]!)),
+            getComponent:(id:number,name:string)=>{if(!Number.isSafeInteger(id)||id<1||!validId(name))throw new Error('Invalid component query');const c=this.components[String(id)]?.[`${module.id}:${name}`];return c===undefined?undefined:freezeView(cloneJson(c));},
             getPlayerComponent: (name: string) => {
                 if (!validId(name)) throw new Error('Invalid optional player component');
                 const component = this.components[String(this.ports.playerId())]?.[`${module.id}:${name}`];
@@ -914,6 +927,7 @@ export class ExtensionRuntime {
             stats:this.statQuery, previewStats:(id:number,components:Readonly<Record<string,Json>>)=>{check();return this.hypotheticalComponents(module.id,id,components,false);}, playerId, player: actor ? this.actorFacts(actor) : null,
             resources: freezeView(actor ? this.characterResources(playerId) : { strength: null, gold: null }),
             state: freezeView(cloneJson(this.states[module.id]!)),
+            getComponent:(id:number,name:string)=>{if(!Number.isSafeInteger(id)||id<1||!validId(name))throw new Error('Invalid component query');const c=this.components[String(id)]?.[`${module.id}:${name}`];return c===undefined?undefined:freezeView(cloneJson(c));},
             getPlayerComponent: (name: string) => {
                 check();
                 if (!validId(name)) throw new Error('Invalid optional player component');
@@ -1097,6 +1111,7 @@ export class ExtensionRuntime {
                 && Object.keys(input.payload).join(',') === 'facing' && typeof input.payload.facing === 'string';
             if (module?.actorActions && input.action === 'attack') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
                 && Object.keys(input.payload).sort().join(',') === 'attackId,facing' && typeof input.payload.attackId === 'string' && typeof input.payload.facing === 'string';
+            if(module?.residentPolicy&&(RESIDENT_ACTIONS as readonly string[]).includes(input.action))return true;
             if(module?.campPolicy&&(STRUCTURE_ACTIONS as readonly string[]).includes(input.action))return true;
             if(module?.worldWorkCommands?.[input.action as import('./worldSdk').CraftingAction]||module?.edibleCommands?.[input.action as 'feed'|'roast'])return true;
             return !!module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action)
@@ -1713,10 +1728,27 @@ export class ExtensionRuntime {
         if (!this.modules.some(m=>m.id===entity.owner&&m.worldDefinitions) || this.world.entities.length>=WORLD_INTERACTABLE_LIMIT) throw new Error('C5_BUDGET');
         markRecordingRoot(this);const placed={...entity,id:allocateEntityId()};this.world.entities.push(placed);this.world.entities.sort((a,b)=>a.id-b.id);return placed;
     }
+    residentComponentIds(owner:string,name:'resident'|'source'):number[] {return Object.entries(this.components).filter(([,rows])=>rows[`${owner}:${name}`]!==undefined).map(([id])=>Number(id)).sort((a,b)=>a-b);}
+    residentOwners():string[] {return this.modules.filter(m=>m.residentPolicy).map(m=>m.id);}
+    /** Only a closed native retirement stage may coalesce unobservable camp writes. */
+    residentRetirementBatchSafe():boolean {return this.modules.every(m=>!m.statSources&&!m.actorActions&&!m.resourceCommits&&!m.actorNeedParticipant&&!m.edibleParticipant&&!m.worldWorkParticipant&&!Object.values(m.hooks??{}).some(h=>typeof h==='function'));}
+    residentPolicy(owner:string){return this.modules.find(m=>m.id===owner)?.residentPolicy;}
+    residentComponent<T>(owner:string,id:number,name:'resident'|'source'):T|undefined {const c=this.components[String(id)]?.[`${owner}:${name}`];return c===undefined?undefined:cloneJson(c) as T;}
+    replaceResidentComponent(owner:string,id:number,name:'resident'|'source',value:import('./residentSdk').ResidentComponent|import('./residentSdk').ResidentSource|null):void {const m=this.modules.find(m=>m.id===owner&&m.residentPolicy);if(!m)throw new World5Error('C5_SCOPE');this.invoke(m,c=>{if(value===null)c.removeComponent(id,name);else c.setComponent(id,name,value as unknown as Json);});}
     worldCampOwners():string[] {return this.modules.filter(m=>m.campPolicy).map(m=>m.id);}
     worldCampPolicy(owner:string) {return this.modules.find(m=>m.id===owner)?.campPolicy;}
     worldCampState(owner:string):import('./structureSdk').CampState {
         return cloneJson(this.states[owner]!) as unknown as import('./structureSdk').CampState;
+    }
+    worldCampRecords(owner:string):import('./structureSdk').CampRecord[] {
+        return cloneJson((this.states[owner] as unknown as import('./structureSdk').CampState).camps as unknown as Json) as unknown as import('./structureSdk').CampRecord[];
+    }
+    worldCampRecord(owner:string,id:number):import('./structureSdk').CampRecord|undefined {
+        const camp=(this.states[owner] as unknown as import('./structureSdk').CampState).camps.find(c=>c.regionId===id);
+        return camp?cloneJson(camp as unknown as Json) as unknown as import('./structureSdk').CampRecord:undefined;
+    }
+    worldCampPlotDays(owner:string):import('./structureSdk').CampState['plotDays'] {
+        return cloneJson((this.states[owner] as unknown as import('./structureSdk').CampState).plotDays as unknown as Json) as unknown as import('./structureSdk').CampState['plotDays'];
     }
     worldCampLockedQuantity(itemId:number):number {
         let count=0;for(const module of this.modules)if(module.campPolicy){const s=this.states[module.id] as unknown as import('./structureSdk').CampState;

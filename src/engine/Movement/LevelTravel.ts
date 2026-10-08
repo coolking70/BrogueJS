@@ -5,7 +5,7 @@ import { squarePlacementCandidates } from './SquarePlacement';
 import { CreatureSpatial, isSquareFootprint } from './CreatureSpatial';
 import { squareListUsers } from '../Core/MonsterLifecycle';
 import { FootprintPathing } from '../Map/FootprintPathing';
-import { commitCreatureAnchor, footprintContains } from './CreatureSpatial';
+import { commitCreatureAnchor, footprintContains, footprintOf } from './CreatureSpatial';
 /** U03b: RogueMain.startLevel / Time.monsterEntersLevel and Architect.restoreMonster. */
 import { Monster, MonsterState } from '../../entities/Monster';
 import type { Creature } from '../../entities/Creature';
@@ -29,12 +29,17 @@ const matrix = (g: Grid, n: number) => Array.from({length:g.width}, () => Array<
 export function travelDistanceMap(grid: Grid, monsters: readonly Monster[], origin: Pos, blocking: number,
     secretDoors = true, placement = false): number[][] {
     const cost = matrix(grid, 1), distance = matrix(grid, 30000);
+    // These are the only actors the native kernel treats as permanent blockers.
+    // Build their occupied cells once for this synchronous, read-only scan.
+    const blockers = new Set<number>();
+    if (!placement) for (const m of monsters) if (m.hp > 0
+        && (m.hasCEBehavior('MONST_IMMUNE_TO_WEAPONS') || m.hasCEBehavior('MONST_INVULNERABLE'))
+        && (m.hasCEBehavior('MONST_IMMOBILE') || m.hasCEBehavior('MONST_GETS_TURN_ON_ACTIVATION')))
+        for (const p of footprintOf(m)) if (grid.isValidPos(p.x,p.y)) blockers.add(p.y * grid.width + p.x);
     for (let x=0;x<grid.width;x++) for (let y=0;y<grid.height;y++) {
         const flags=cellTerrainFlags(grid,x,y);
         if (x===0 || y===0 || x===grid.width-1 || y===grid.height-1) cost[x]![y]=-2;
-        else if (!placement && monsters.some(m=>m.hp>0 && footprintContains(m, { x, y })
-            && (m.hasCEBehavior('MONST_IMMUNE_TO_WEAPONS') || m.hasCEBehavior('MONST_INVULNERABLE'))
-            && (m.hasCEBehavior('MONST_IMMOBILE') || m.hasCEBehavior('MONST_GETS_TURN_ON_ACTIVATION')))) cost[x]![y]=-1;
+        else if (blockers.has(y * grid.width + x)) cost[x]![y]=-1;
         else if (secretDoors && grid.getCell(x,y)!.layers.includes(TerrainType.SECRET_DOOR)) cost[x]![y]=1;
         else if ((flags & T_OBSTRUCTS_DIAGONAL_MOVEMENT) && (!placement || (blocking & (T_OBSTRUCTS_DIAGONAL_MOVEMENT|T_OBSTRUCTS_PASSABILITY)))) cost[x]![y]=-2;
         else if (flags & (blocking | (placement ? 0 : T_OBSTRUCTS_PASSABILITY))) cost[x]![y]=-1;
@@ -56,7 +61,7 @@ export function travelDistanceMap(grid: Grid, monsters: readonly Monster[], orig
 }
 
 export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[], exit: Pos, direction: -1|0|1,
-    onRegionBlocked?: (actor: Monster) => void, onBodyFollower?: (core: Monster, exit: Pos, direction: -1|0|1) => void, exclude?: (actor: Monster) => boolean): void {
+    onRegionBlocked?: (actor: Monster) => void, onBodyFollower?: (core: Monster, exit: Pos, direction: -1|0|1) => void, exclude?: (actor: Monster,direction:-1|0|1) => boolean): void {
     let origin={...exit};
     if (cellTerrainFlags(grid,exit.x,exit.y)&T_AUTO_DESCENT) {
         const neighbor=TRAVEL_DIRECTIONS.map(([dx,dy])=>({x:exit.x+dx,y:exit.y+dy}))
@@ -70,7 +75,7 @@ export function scheduleLevelFollowers(grid: Grid, monsters: readonly Monster[],
     try { for (const flying of [false,true]) {
         const map=travelDistanceMap(grid,monsters,origin,(flying?T_OBSTRUCTS_PASSABILITY:T_PATHING_BLOCKER)|T_SACRED);
         for (const m of monsters) {
-            if (exclude?.(m)) continue;
+            if (exclude?.(m,direction)) continue;
             if (m.spatial?.bodyMember && m.id !== m.spatial.bodyMember.groupId) continue;
             const levitating=m.hasStatus('levitating'), flags=cellTerrainFlags(grid,m.x,m.y);
             // Web separates allegiance from state; magical fear temporarily leaves CE ALLY.

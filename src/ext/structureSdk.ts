@@ -23,6 +23,8 @@ export interface CampRecord {
   revision: number;
   markerId: number;
   supplyId: number;
+  consumedLockedUnits: number;
+  granaryIds: number[];
   locked: { itemId: number; quantity: number }[];
   reportTick: number;
   reportItems: { itemId: number; quantity: number; name: string }[];
@@ -32,7 +34,9 @@ export interface ConstructionReceipt {
   materials: { itemDefinitionId: string; count: number }[];
 }
 export interface CampState {
-  schema: 1;
+  schema: 2;
+  spawnSlots: import("./residentSdk").ResidentSpawnSlot[];
+  plotDays: {componentId:number;day:number}[];
   revision: number;
   camps: CampRecord[];
   constructions: ConstructionReceipt[];

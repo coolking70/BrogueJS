@@ -1,5 +1,7 @@
 /** Trusted C5-1 offline economy. This module has no Game, RNG or presentation imports. */
+import { assertC5Json } from '../../ext/worldJson';
 import { c5Canonical, c5Hash } from './WorldCanonical';
+import { planResidentNeeds, type ResidentNeedsEffect } from './ResidentEconomy';
 import { sha256 } from '../../ext/fingerprint';
 import { validId } from '../../ext/json';
 import { isSeed } from '../Seed';
@@ -101,6 +103,7 @@ export interface WorkTicket {
 }
 export interface OfflineRules {
   epochTicks: 1000;
+  dayEpochs: 32;
   maxPlanEpochs: 32;
   maxCompletionsPerEpoch: 1024;
   foodUnitsPerResident: 1;
@@ -110,6 +113,12 @@ export interface OfflineRules {
   shortageEfficiencyNumerators: [number, number, number, number];
   efficiencyDenominator: number;
 }
+/** Trusted 5D1 production grants needs only; offline job outputs remain disabled. */
+export const RESIDENT_OFFLINE_RULES: OfflineRules = {
+  epochTicks: 1000, dayEpochs: 32, maxPlanEpochs: 32, maxCompletionsPerEpoch: 1024,
+  foodUnitsPerResident: 1, rationDefinitions: [], nodeDefinitions: [], recipes: [],
+  shortageEfficiencyNumerators: [100, 50, 0, 0], efficiencyDenominator: 100
+};
 export interface OfflineEvent {
   id: string;
   absoluteEpoch: number;
@@ -117,8 +126,24 @@ export interface OfflineEvent {
   kind: 'raid' | 'work-stop';
   policy: { remainingBudget: number };
 }
+/** Explicit native FOOD read; definition IDs never establish edibility. */
+export interface NativeFoodRead {
+  containerId: number;
+  containerRevision: number;
+  itemId: number;
+  consumableId: 'ration_of_food' | 'mango';
+  quantity: number;
+  lockedQuantity: number;
+}
+export function offlineOwnershipSignature(homeInstance: string, granaryIds: readonly number[], food: readonly NativeFoodRead[]): string {
+  return c5Hash([homeInstance, granaryIds, food]);
+}
 export interface OfflineInput {
-  schema: 1;
+  schema: 2;
+  homeInstance: string;
+  granaryIds: number[];
+  food: NativeFoodRead[];
+  ownershipSignature: string;
   rulesFingerprint: string;
   runSeed: string;
   campSlotId: CampSlotId;
@@ -134,6 +159,8 @@ export interface OfflineInput {
   pendingEvents: OfflineEvent[];
 }
 export type OfflineEffect =
+  | (Extract<ResidentNeedsEffect, {kind:'ration-consume'}>)
+  | (Extract<ResidentNeedsEffect, {kind:'resident-departure'}> & { homeInstance: string })
   | {
       kind: 'item-delta';
       containerId: number;
@@ -146,6 +173,10 @@ export type OfflineEffect =
   | { kind: 'pending-encounter'; eventId: string; remainingBudget: number };
 export interface OfflinePlan {
   contract: 'C5-1';
+  contractVersion: '1.1.0';
+  homeInstance: string;
+  ownershipSignature: string;
+  nextBeds: { actorId: number; bedId: number | null }[];
   planId: number;
   levelRef: LevelRef;
   fromTick: number;
@@ -191,14 +222,14 @@ export function offlineSeedKey(
   return sha256(c5Canonical(['c5-seed-v1', runSeed, campSlotId, domainId, rulesFingerprint]));
 }
 function validate(input: OfflineInput): void {
-  c5Canonical(input);
+  assertC5Json(input);
   exact(
     input,
-    'schema,rulesFingerprint,runSeed,campSlotId,level,fromTick,toTick,ledger,rules,containers,nodes,tickets,orders,pendingEvents',
+    'schema,homeInstance,granaryIds,food,ownershipSignature,rulesFingerprint,runSeed,campSlotId,level,fromTick,toTick,ledger,rules,containers,nodes,tickets,orders,pendingEvents',
     'offline.input'
   );
   if (
-    input.schema !== 1 ||
+    input.schema !== 2 ||
     !hex(input.rulesFingerprint) ||
     input.ledger.frozen.rulesFingerprint !== input.rulesFingerprint
   )
@@ -230,11 +261,14 @@ function validate(input: OfflineInput): void {
   const r = input.rules;
   exact(
     r,
-    'epochTicks,maxPlanEpochs,maxCompletionsPerEpoch,foodUnitsPerResident,rationDefinitions,nodeDefinitions,recipes,shortageEfficiencyNumerators,efficiencyDenominator',
+    'epochTicks,dayEpochs,maxPlanEpochs,maxCompletionsPerEpoch,foodUnitsPerResident,rationDefinitions,nodeDefinitions,recipes,shortageEfficiencyNumerators,efficiencyDenominator',
     'offline.rules'
   );
   if (
     r.epochTicks !== 1000 ||
+    r.dayEpochs !== 32 ||
+    r.efficiencyDenominator !== 100 ||
+    c5Canonical(r.shortageEfficiencyNumerators) !== '[100,50,0,0]' ||
     r.maxPlanEpochs !== 32 ||
     r.maxCompletionsPerEpoch !== 1024 ||
     r.foodUnitsPerResident !== 1
@@ -301,13 +335,15 @@ function validate(input: OfflineInput): void {
   ] as const)
     unique(rows, key);
   for (const a of l.residentStates) {
-    exact(a, 'actorId,alive,shortage', 'resident');
+    exact(a, 'actorId,alive,foodShortage,housingShortage,unfedDays,departed', 'resident');
     uint(a.actorId, 'actorId', 1);
-    uint(a.shortage, 'shortage');
-    if (a.shortage > 3 || typeof a.alive !== 'boolean') throw new World5Error('C5_BAD_PAYLOAD');
+    for (const n of [a.foodShortage, a.housingShortage, a.unfedDays]) uint(n, 'needs');
+    if (a.foodShortage > 3 || a.housingShortage > 3 || a.unfedDays > 4 ||
+      typeof a.alive !== 'boolean' || typeof a.departed !== 'boolean')
+      throw new World5Error('C5_BAD_PAYLOAD');
   }
   for (const a of f.residents) {
-    exact(a, 'actorId,bedComponentId,route', 'frozen.resident');
+    exact(a, 'actorId,bedComponentId,route'+('bedEligible' in a ? ',bedEligible':''), 'frozen.resident');
     exact(a.route, 'reachable,distance,travelTicks', 'route');
     uint(a.actorId, 'actorId', 1);
     uint(a.route.distance, 'distance');
@@ -382,6 +418,29 @@ function validate(input: OfflineInput): void {
       )
         throw new World5Error('C5_BAD_PAYLOAD');
     }
+  }
+  if (!validId(input.homeInstance) || !hex(input.ownershipSignature) ||
+      !Array.isArray(input.granaryIds) || input.granaryIds.length > 16 ||
+      new Set(input.granaryIds).size !== input.granaryIds.length ||
+      !Array.isArray(input.food) || input.food.length > 1024 ||
+      new Set(input.food.map(f => f.itemId)).size !== input.food.length ||
+      offlineOwnershipSignature(input.homeInstance, input.granaryIds, input.food) !== input.ownershipSignature)
+    throw new World5Error('C5_BAD_REFERENCE');
+  for (const id of input.granaryIds)
+    if (!input.containers.some(c => c.id === id && c.kind === 'chest'))
+      throw new World5Error('C5_BAD_REFERENCE');
+  for (const food of input.food) {
+    exact(food, 'containerId,containerRevision,itemId,consumableId,quantity,lockedQuantity', 'food');
+    uint(food.containerRevision, 'containerRevision');
+    for (const n of [food.containerId, food.itemId, food.quantity]) uint(n, 'food', 1);
+    uint(food.lockedQuantity, 'lockedQuantity');
+    const box = input.containers.find(c => c.id === food.containerId),
+      item = box?.items.find(i => i.id === food.itemId);
+    if (!input.granaryIds.includes(food.containerId) || box?.revision !== food.containerRevision ||
+        !item || item.category !== 'native' || item.nativeCategory !== 'food' ||
+        item.quantity !== food.quantity || food.lockedQuantity > food.quantity ||
+        !['ration_of_food','mango'].includes(food.consumableId))
+      throw new World5Error('C5_BAD_REFERENCE');
   }
   unique(r.nodeDefinitions, 'id');
   unique(r.recipes, 'id');
@@ -548,52 +607,36 @@ function compute(input: OfflineInput): OfflinePlan {
       n.lastSettledTick = through;
     }
   };
+  let needsTick = input.fromTick;
+  let needsFood = input.food.map(f => ({containerId:f.containerId,itemId:f.itemId,
+    quantity:f.quantity,lockedQuantity:f.lockedQuantity}));
+  let nextBeds = ledger.frozen.residents.map(r => ({actorId:r.actorId,bedId:r.bedComponentId}));
+  const eligibleBeds = ledger.frozen.facilities.filter(f => f.tags.includes('bed') &&
+    f.hp > 0 && f.roomEligible && f.reachable).map(f => f.componentId);
+  const settleNeeds = (through: number) => {
+    const needs = planResidentNeeds({schema:2,fromTick:needsTick,toTick:through,
+      residents:ledger.residentStates,rations:needsFood.filter(f => f.quantity > 0),
+      beds:nextBeds,eligibleBeds});
+    ledger.residentStates = needs.residents;
+    nextBeds = needs.beds;
+    needsFood = needs.rations;
+    for (const effect of needs.effects)
+      effects.push(effect.kind === 'resident-departure' ? {...effect,homeInstance:input.homeInstance} : effect);
+    for (const frozen of ledger.frozen.residents) {
+      frozen.bedComponentId = nextBeds.find(b => b.actorId === frozen.actorId)!.bedId;
+      frozen.bedEligible = frozen.bedComponentId !== null && eligibleBeds.includes(frozen.bedComponentId);
+    }
+    needsTick = through;
+  };
   let epoch = start;
   while (epoch <= end) {
-    // After finite jobs are exhausted, at most finite food and registered events remain.
-    const food = containers.reduce(
-      (n, c) =>
-        checkedAdd(
-          n,
-          c.items
-            .filter((i) => input.rules.rationDefinitions.includes(i.definitionId ?? ''))
-            .reduce((s, i) => checkedAdd(s, i.available), 0)
-        ),
-      0
-    );
-    const future =
-      events.find(
-        (e) =>
-          e.absoluteEpoch >= epoch && e.absoluteEpoch <= end && e.ordinal > ledger.lastEventOrdinal
-      )?.absoluteEpoch ?? end + 1;
-    if (
-      !orders.some((o) => o.status === 'working' && o.remainingEpochs > 0) &&
-      ledger.pendingOutputs.length === 0
-    ) {
-      const stop = Math.min(end + 1, future),
-        count = stop - epoch;
-      if (count > 0) {
-        const alive = ledger.residentStates
-            .filter((s) => s.alive)
-            .sort((a, b) => a.actorId - b.actorId),
-          need = alive.length * count,
-          used = Math.min(food, need);
-        let remaining = used;
-        for (const c of containers.slice().sort((a, b) => a.id - b.id))
-          for (const i of c.items) {
-            if (remaining && input.rules.rationDefinitions.includes(i.definitionId ?? '')) {
-              const take = Math.min(remaining, i.available);
-              if (take) {
-                itemDelta(c, i.definitionId!, -take, stop - 1);
-                remaining -= take;
-              }
-            }
-          }
-        alive.forEach((s, i) => {
-          const full = Math.floor(used / alive.length),
-            last = full + (i < used % alive.length ? 1 : 0);
-          s.shortage = Math.min(3, last > 0 ? count - last : s.shortage + count) as 0 | 1 | 2 | 3;
-        });
+    const future = events.find(e => e.absoluteEpoch >= epoch && e.absoluteEpoch <= end &&
+      e.ordinal > ledger.lastEventOrdinal)?.absoluteEpoch ?? end + 1;
+    if (!orders.some(o => o.status === 'working' && o.remainingEpochs > 0) &&
+        ledger.pendingOutputs.length === 0) {
+      const stop = Math.min(end + 1, future);
+      if (stop > epoch) {
+        settleNeeds((stop - 1) * 1000);
         epoch = stop;
         if (epoch > end) break;
       }
@@ -606,21 +649,7 @@ function compute(input: OfflineInput): OfflinePlan {
           itemDelta(c, amount.itemDefinitionId, amount.count, epoch);
         ledger.pendingOutputs.splice(ledger.pendingOutputs.indexOf(output), 1);
       }
-    for (const s of ledger.residentStates.slice().sort((a, b) => a.actorId - b.actorId))
-      if (s.alive) {
-        const food = containers
-          .slice()
-          .sort((a, b) => a.id - b.id)
-          .flatMap((c) => c.items.map((i) => ({ c, i })))
-          .find(
-            ({ i }) =>
-              input.rules.rationDefinitions.includes(i.definitionId ?? '') && i.available > 0
-          );
-        if (food) {
-          itemDelta(food.c, food.i.definitionId!, -1, epoch);
-          s.shortage = 0;
-        } else s.shortage = Math.min(3, s.shortage + 1) as 0 | 1 | 2 | 3;
-      }
+    settleNeeds(epoch * 1000);
     let completions = 0;
     for (const o of sortedOrders)
       if (o.status === 'working' && o.remainingEpochs > 0) {
@@ -631,7 +660,7 @@ function compute(input: OfflineInput): OfflinePlan {
         const ticket = tickets.find((t) => t.ticketId === o.ticketId),
           recipe = ticket && input.rules.recipes.find((r) => r.id === ticket.definitionId);
         if (resident?.alive && frozen?.route.reachable && recipe?.offlineEligible && ticket) {
-          const numerator = 1000 * input.rules.shortageEfficiencyNumerators[resident.shortage];
+          const numerator = 1000 * input.rules.shortageEfficiencyNumerators[Math.max(resident.foodShortage,resident.housingShortage)]!;
           if (!Number.isSafeInteger(numerator)) throw new World5Error('C5_OVERFLOW');
           const credit = Math.floor(numerator / input.rules.efficiencyDenominator);
           ticket.laborCreditTicks = checkedAdd(ticket.laborCreditTicks, credit);
@@ -711,6 +740,7 @@ function compute(input: OfflineInput): OfflinePlan {
     regenerate(epoch * 1000);
     epoch++;
   }
+  settleNeeds(input.toTick);
   if (end >= start) regenerate(end * 1000);
   ledger.lastSettledTick = input.toTick;
   ledger.epochRemainder = input.toTick % 1000;
@@ -718,6 +748,10 @@ function compute(input: OfflineInput): OfflinePlan {
   ledger.needsResupply = orders.some((o) => o.status === 'needs-resupply');
   return {
     contract: 'C5-1',
+    contractVersion: '1.1.0',
+    homeInstance: input.homeInstance,
+    ownershipSignature: input.ownershipSignature,
+    nextBeds,
     planId: Math.max(1, ...orders.map((o) => o.planId)),
     levelRef: clone(input.level.levelRef),
     fromTick: input.fromTick,
@@ -745,6 +779,8 @@ export function planOfflineSettlement(input: Readonly<OfflineInput>): WorldResul
 export interface SettlementParticipant {
   prepare(plan: Readonly<OfflinePlan>): () => void;
   checkpoint(): () => void;
+  /** Trusted root owner validates live item/lock/population CAS before publication. */
+  validateResidentEffects?(plan: Readonly<OfflinePlan>): void;
 }
 function jsonCheckpoint(root: object): () => void {
   const seen = new Set<object>(),
@@ -778,6 +814,8 @@ export function commitOfflineSettlement(
   terminal = false
 ): WorldResult<{ committed: boolean }> {
   try {
+    assertC5Json(plan);
+    if (plan.contract !== 'C5-1' || plan.contractVersion !== '1.1.0') throw new World5Error('C5_BAD_VERSION');
     if (terminal) throw new World5Error('C5_TERMINAL');
     const ledger = world.offline.find((l) => levelKey(l.levelRef) === levelKey(plan.levelRef));
     if (!ledger) throw new World5Error('C5_BAD_REFERENCE');
@@ -791,7 +829,12 @@ export function commitOfflineSettlement(
       return { ok: true, value: { committed: false } };
     if (ledger.revision !== plan.sourceRevision) throw new World5Error('C5_STALE');
     if (ledger.lastSettledTick !== plan.fromTick) throw new World5Error('C5_BAD_TIME');
-    if (!fixtureEffects && plan.effects.some((e) => e.kind !== 'pending-encounter'))
+    const residentEffects = plan.effects.some(e => e.kind === 'ration-consume' || e.kind === 'resident-departure');
+    if (residentEffects) {
+      if (!participant?.validateResidentEffects) throw new World5Error('C5_UNSUPPORTED');
+      requireSynchronousSettlement(participant.validateResidentEffects(plan));
+    }
+    if (!fixtureEffects && plan.effects.some((e) => !['pending-encounter','ration-consume','resident-departure'].includes(e.kind)))
       throw new World5Error('C5_UNSUPPORTED');
     if (plan.nextNodes.length && !fixtureEffects) throw new World5Error('C5_UNSUPPORTED');
     const restoreWorld = jsonCheckpoint(world);

@@ -1,5 +1,11 @@
 Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工试玩问题；用户在 2026-09-29 明确要求停止定时任务并启动合适子进程开发。
 
+- 2026-10-09 5D1立即收口：**本步按用户裁决验收，可提交**；父后续提交并记录提交号，本执行者未commit/push。已确证的玩法及存档/录像一致性问题已修复并独立关闭，当前无剩余已证实阻断。V16径向误激活与居民岗位选择问题已有窄回归及独立通过；同值DTO草稿刷新F1独立复验20项通过并关闭。最终浏览器复验仍未完成，不能称全场景通过。 已有结果分版本引用、不累计重叠数：V12正式性能16人净增P95为3.672584ms、64人峰值46.777167ms；final-ui-draft-fix原四文件81项及五守卫38项通过，boundary/types/实际build通过；final-ui-fix实际drift8项通过。父V17既有摘要为四原raw真实回放0 OOS、末9字段相同，同源build与selector准入通过；本轮不重新验证这些结果。 遗留①玩法/存档录像：无剩余已证实阻断；②证据/截图/脚本形式和最终V17十手势、24矩阵、self955三个完整浏览器场景、真机/失焦/截图及完整门禁归[5Z](docs/ext/phase5z-remainders.md)。静态5G R1只列后续集成风险。最多两轮审查→修复、第二轮余项移5Z，只留结果摘要，覆盖旧封存流程；本轮仅文档及git diff --check，不新增测试/browser/build/审查/冻结源。详见[报告](docs/ext/phase5d1.report.md)。
+
+以下为历史进度，保留原Original prompt及各阶段当时结论。
+
+- 2026-10-08 5D1当前收口：5D1限定回归已完成串行复核（原12文件批次exit1保留），boundary/types/npm build/npm drift已通过，V12正式性能两项通过；仍待登记/文档接入差量独立复核、最终浏览器及父验收提交。5G eda3094已验收发布、尚未集成。 正常英文956/957及两原raw、controlled尾、俘虏239/240及四原raw/23seek含0、选定12整文件完成串行复核（130通过1超时样失败、原门限单worker整文件38通过，原exit1保留），新boundary/types/npm build/npm drift实际通过；各阶段source前后不变，测试阶段15c32d016d8e3b7a88e92d11fad88e4e4b773632cac4f5c507708152237c83a6，全部生产保持V12字节。原自然exit1已精确归因916日志机械高水位，唯一测试前提修订已独立PASS；本轮单key登记已由父审核采纳，登记/文档实际差量待独立复核；审定手册与16段合同已接入，精确test/登记/doc delta交父封存。英文956与中文UI955、跨locale及设备/5Z限制分列，不累计历史测试数，未commit/push/浏览器/5G集成。见docs/ext/phase5d1.report.md当前入口。
+
 - 2026-10-05 当前授权 4d：执行 docs/ext/phase4d.task.md，不 commit，中文报告。按任务书允许的干净子里程碑交付 4d-0：fixture 复合体有界落脚规划与全路径约束/碰撞、原子位置发布、持久身份回归。生产 group 能力仍关闭；原生调度/战斗/状态/整体转换/迁层/UI/正式内容留完整4d接线。
 
 - 4d-0最终交付：8腿/多头/链/17成员fixture，树序/32候选/128分支/两平移子步、连续碰撞与牵引、一次性位置计划/原子最终锚点、静态群codec约束校验；生产group保持关闭。冻结v4 boundary/type/build、73文件1486项（34新增）、地形守卫1项、16/16 engine-only组合、drift4文件5项全exit0，883输入SHA集合1a548898b6219a572438a2077cfd415e2427155db9b2a9821d6c992b483da7bf前后一致，UTC2026-10-05T09:34:00结束。17成员20次fixture计划15成功/5预算blocked，冷1.803ms、暖P95 3.428ms，不冒充真实命令性能。原地保留成员地形/区域拒绝补先红后绿；前序3c经典射线delivery参数导致旧W4两失败，回退本轮CreatureSpatial仍同样失败后改Game适配器仅扩展传标记，旧测试未改，真实combat耗尽体力射线补保险。首次门禁主动中断130、v2 related exit1、v3新夹具字段type exit2原证据均保留，v4全链重新全绿。报告docs/ext/phase4d.report.md列完整4d剩余项；没有正式复合敌人/自然种子/生产UI，不声称完整4d。未暂存/commit/push，旧基线/trace未动。
@@ -208,3 +214,30 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 
 
 2026-10-08维护者最终收口：5C1按本步范围验收通过，最终输入72d1afadec5582146dbf5203f3bf3bc15710d3bc54c54e2c18c8afd1cb76ca64；独立F1–F5/R1/R2关闭，final4新24矩阵及原生背包重开→六设施/12秒持续交互通过。长内容/满槽显示夹具通过；高级浏览器、真实手机和全量收尾留5Z。详见[维护者验收](docs/ext/phase5c1.acceptance.md)。5G原0fb2720仍隔离，未最终验收。
+
+- 2026-10-08 5D1 正式实施授权：任务docs/ext/phase5d1.task.md SHA343295c3；保留Original prompt及两份指挥文档。A状态/来源/招募开始，B–F尚未完成，未运行功能门禁/浏览器，未commit/push/派代理。外部状态phase5d1-implementation.status.md、证据implementation-evidence。
+
+- 2026-10-08 5D1 v2恢复：保留A未提交实现，正式任务SHA8de2d031；F1半开劳动/端点先需求后产出/暂停保票据信用、F2以同步事务入口为故障oracle已采纳。指挥主动SIGINT不计产品失败；inbox未存在。
+
+## A 首轮真实入口验证（2026-10-08）
+Node24、3GiB、2workers，resident_sources + settlement_runtime：2文件5测试通过，日志 implementation-evidence/A-eighth.log。覆盖可信entry真实候选、原actor招募100tick、No与陈旧报价0tick/RNG/ID、source消费、故障回滚身份、生产save/load及结构录像。此前失败日志A-existing及A-first至A-seventh保留；发现并修复native模板underscore校验、运行期命令注册和独立单格读档接线。受控卧室准备明确不是自然路线。A其余救援/预算/codec负例继续补。下一步B：双需求独立参考、真实日粮与离队故障；C active bundle退款和劳动端点。
+
+5D1继续A→F：B实际需求4项（含完整2/17提交和cached终结存读）、C岗位3项及A06/A07劳动端点/保信用两项已阶段通过。K1严格数组修复经独立固定副本复审通过。C5-1旧语义反事实第二跑16项通过；新schema2原生FOOD DTO及1.1.0双轴需求已接入，正在相关回归。初始16人口性能证据无效，仍修正真实录像测量前置；D–F/自然录像/最终性能与门禁未交付，不停止在脚手架。
+
+
+2026-10-08 5D1 A/B短批次：I14/I15已消费，kill最外层含dying membership/后半掉落与publish/退款回滚可重试；已付需求边界在公开机械输入与新elapsed前补结/阻断，动画失败跳过未结epilogue，纯显示/No/CAS不物化。真实Game9故障/反例加入；当前相关13文件179通过2既有CE条件跳过（fix-ab-final-fifth），vue-tsc与boundary/diff通过。旧350-wait原生产反事实通过，最终仅补足三个离线绝对日界前提保留欠粮3断言。所有历史失败保留。交付集合361b94d5e343362bc817d8887d7ff9650778b18c42100b6a928496a57e40484a/1182输入，九冻结不变。外部phase5d1-fix-ab.status.md/manifest已交付，停止等待指挥固定输入复审，未提交。D/E/F及16代表性/64预算/自然trace/救援/更多C端点/D负例/UI/完整相关门禁保留，不称完整5D1通过。
+
+
+- 2026-10-08 5D1 fix AB2：只修新独立AB复审入口/日志身份，Game/Logger/resident_failures三文件变化，死亡外层保留。同一小Node旧候选8失败/3控制组通过，新候选11/11断言通过，准确源集合1182份SHA 5bc5be471b7c6eb417bf8f06e1e6a5e2356cec0aa09aacbf0c30754d5803deb7，前后不变，9冻结不变。外部phase5d1-fix-ab2.status.md/manifest.json/ready.md及implementation-evidence/ab2/state.json已写。**明确停在ready：本批未跑Vitest/types/boundary/build/重门禁，不将旧179/2当新输入结果；等待指挥安排相关测试/独立复审，不自行继续完整D/E/F。** 控制布景不称自然route；未读改5G、commit/push/派代理。
+
+
+- 2026-10-08 AB2/I16测试交付：最终源码1182份SHA a387f9729e3899696e63de3c818abb5e4e9dc016b80bfd6965cf00fda238b330，9冻结不变，同输入types/8文件290pass/2选择checkpoint pass/boundary全部exit0，源码前后不变；0CE条件skip，36项为名称过滤未选。补I16嵌套/重复checkpoint；Logger泛型数组描述符类型错误已修，D4历史whole-run版本pin5→6按单生产文件实际v5反事实归因同步，原0OOS/load续录断言保留，首轮失败日志保留。外部phase5d1-fix-ab2-tested.status.md与tested.manifest.json交付；**停止等待指挥安排独立AB复审**，不展开余下C/D/E/F/性能自然路线/救援UI，不commit/push/派代理，不改5G。
+
+
+- 2026-10-08 完整5D1 remainder恢复：独立第三轮AB/I15/I16已关闭，完整性记录对应生产SHA a387f972...1182份核对。继续A/B缺口、C/D/E/F；先真实来源/岗位/跨层，再自然公开路线/UI及性能合法布景。性能必须PERF-READY后由指挥安排安静窗口，最终build固定源/dist立即交parent真实浏览器接力。状态phase5d1-remainder.status.md；目前尚无remainder新测试，不将旧292当余项完成。
+
+- 2026-10-08 5D1 remainder候选：来源/劳动/真实坠落护送/F2/严格codec/UI和有界路径补齐；I30–I35已读，FR1跨营离队时间线及FR2 plant-delivery坏档已修，I33仅移植共享Logger空ACK通知守卫。新版untimed16真实三岗位+双组origin匹配、64四营/有限粮/MAX_SAFE完整1/2/17一致4case全pass；最终13文件resident批运行中。天然seed3原238/239需最终源复验；seed28首plant距离变化由parent有界重录，root不重复搜索。未计时/未最终browser或门禁，不称整步完成，无提交。详见docs/ext/phase5d1.report.md及外部current-status.md。
+
+- 2026-10-08 5D1 coordinated remainder：当前239天然俘虏原输入、23seek含0、四未改239/240原录全部当前源通过；C1与触控级联独立v6源码关闭。协议/schema黄金完成单变量与原捕获归因，仅crafting final.digest/三giants extensionsHash；同源UI14、边界、types、实际build、实际npm drift8项全部通过。PERF-READY已交准备，未计时；新自生956正常fresh复现待正式来源/最终接入，父级浏览器/quiet性能/最后独立验收未完成。未commit/push。
+
+2026-10-08 I57：父级正式安静性能实际失败（16新增P95 67.885542ms；64peak310.606708ms）。原五结果不覆盖。已完成同真实场景CPU profile归因，开始最小生产优化；并行浏览器期间只诊断不验收计时。自然956原输入/关键根已接入fixture和准确core/day-food测试，旧饥饿/实际crop退款尾段保留为明确controlled规则案例，尚未运行最终长回放。完整5D1继续未关闭。

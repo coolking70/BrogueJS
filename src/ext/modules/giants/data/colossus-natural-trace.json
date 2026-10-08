@@ -6,7 +6,7 @@
   "commands": 402,
   "commandsHash": "7ce36f0880ff9c7e9c26eb6ff4ace7216ca247b6ef73fababc147e3c27270d51",
   "nativeWorldHash": "84d5a3103bf0d96151ffa1ae84fb6b582cfc20f0912ae665eafdd2b581edc93c",
-  "extensionsHash": "f3f2496bd7a4b71c75d90cbc6a047b8eaced16eaf43ce61863f5ecf9d4b49a48",
+  "extensionsHash": "161591719a46b18ae62a3bddcf06e441106fa1739d8760b679952e22be6008f5",
   "rng": {
     "version": 2,
     "algorithm": "brogue-web-ranval32-uint64-level-v2",

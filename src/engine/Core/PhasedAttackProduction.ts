@@ -1,3 +1,4 @@
+import {advanceResidentLabor,residentWorkClockFinished,selectResidentDecision} from './ResidentJobs';
 import { isIncapacitated } from '../Status/Incapacitation';
 import type { CombatCapacities } from '../../ext/combatStats';
 import { mirrorWorldWorkTicks, worldWorkClockFinished, interruptWorldWork, interruptWorldWorkAtDepth, selectWorldWorkDecision } from './WorldWork';
@@ -396,11 +397,11 @@ export function bindPhasedAttackProduction(game:Game):void {
         if(worldSessions.get(game)===game.actorActions&&productionActorActionScheduler(game))return;
         worldSessions.set(game,game.actorActions);createProductionActorActionSession(game,{state:game.actorActions,
             resolveSegment:()=>{throw new Error('Unexpected world-work segment');},breakRecoveryTicks:()=>0,
-            handlesInterruption:()=>true,elapsed:delta=>mirrorWorldWorkTicks(game,delta),advanced:()=>mirrorWorldWorkTicks(game,0),
-            shouldSweep:()=>false,finishAction:(bundle,reason)=>worldWorkClockFinished(game,bundle,reason),
+            handlesInterruption:()=>true,elapsed:delta=>{advanceResidentLabor(game,delta);mirrorWorldWorkTicks(game,delta);},advanced:()=>mirrorWorldWorkTicks(game,0),
+            shouldSweep:()=>false,finishAction:(bundle,reason)=>{if(!residentWorkClockFinished(game,bundle,reason))worldWorkClockFinished(game,bundle,reason);},
             sourceChanged:id=>interruptWorldWork(game,id,'moved'),
             leftDepth:()=>{interruptWorldWorkAtDepth(game);},
-            select:(id,scope)=>selectWorldWorkDecision(game,id,scope)?'handled':'native-fallback'});return;}
+            select:(id,scope)=>selectResidentDecision(game,id,scope)==='handled'||selectWorldWorkDecision(game,id,scope)?'handled':'native-fallback'});return;}
     // Reusing the live clock may occur between advance and same-tick dispatch,
     // when foreground phases are due at zero. Do not run the strict new-binding
     // codec on that transient graph; new sessions and save/load remain strict.
@@ -409,7 +410,7 @@ export function bindPhasedAttackProduction(game:Game):void {
     const session={state:binding.state,definitions:binding.definition,runtime:game.extensionRuntime!,moduleId:binding.moduleId,sessionRevision:nextSessionRevision++,defenseSources:new Map()} as unknown as Session;
     session.scheduler=createProductionActorActionSession(game,{state:game.actorActions!,
         resolveSegment:boundary=>resolve(game,session,boundary),breakRecoveryTicks:()=>session.definitions.breakRecoveryTicks,
-        elapsed:delta=>{if(session.state.bonfires?.active?.phase==='resting')timeSystem.currentTick+=delta;advanceResources(game,session,delta);mirrorWorldWorkTicks(game,delta);},advanced:()=>mirrorWorldWorkTicks(game,0),
+        elapsed:delta=>{advanceResidentLabor(game,delta);if(session.state.bonfires?.active?.phase==='resting')timeSystem.currentTick+=delta;advanceResources(game,session,delta);mirrorWorldWorkTicks(game,delta);},advanced:()=>mirrorWorldWorkTicks(game,0),
         handlesInterruption:bundle=>bundle.owner==='foundation'||session.state.bonfires?.active?.actionId===bundle.actionId,
         inputLocked:()=>session.state.actors.some(row=>row.actorId===game.player.id&&nativeRecovery(row)>0),
         resumeResources:()=>{for(const row of session.state.actors){const source=actor(game,row.actorId);if(source&&nativeRecovery(row)>0)source.ticksUntilTurn=nativeRecovery(row);}},
@@ -420,12 +421,13 @@ export function bindPhasedAttackProduction(game:Game):void {
         leftDepth:()=>{interruptWorldWorkAtDepth(game);interruptWorldRest(game,'level-exit');settleWorldRest(game);bumpRevision(session.state);for(const row of session.state.actors){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}},
         interrupted:(source,bundle,reason)=>{bumpRevision(session.state);const metadata=session.state.actions.find(a=>a.actionId===bundle.actionId);if(metadata&&reason==='layer-change')metadata.suppressTerminalSweep=true;const sub=metadata?.subactions.find(s=>s.sourceSubactionId===source.sourceSubactionId);if(sub)sub.lockedCells=[];},
         shouldSweep:bundle=>bundle.owner!=='foundation'&&!session.state.actions.find(action=>action.actionId===bundle.actionId)?.suppressTerminalSweep,
-        finishAction:(bundle,reason)=>{if(bundle.owner==='foundation'){worldWorkClockFinished(game,bundle,reason);return;}if(finishWorldRestClock(game,bundle,reason))return;const row=session.state.actors.find(row=>row.actorId===bundle.decisionOwnerId);
+        finishAction:(bundle,reason)=>{if(bundle.owner==='foundation'){if(!residentWorkClockFinished(game,bundle,reason))worldWorkClockFinished(game,bundle,reason);return;}if(finishWorldRestClock(game,bundle,reason))return;const row=session.state.actors.find(row=>row.actorId===bundle.decisionOwnerId);
             if(row&&row.poise===0&&bundle.subactions.some(child=>child.phases.some(phase=>phase.kind==='break-recovery'))){const source=actor(game,row.actorId);if(source){const policy=resourcesFor(game,session,source).policy;row.poise=policy.poiseBreakRecoveryValue;row.poiseRecoveryRemainder=0;}}bumpRevision(session.state);session.state.actions=session.state.actions.filter(a=>a.actionId!==bundle.actionId);
             for(const id of new Set([bundle.decisionOwnerId,...bundle.subactions.map(child=>child.sourceEntityId)])){
                 const source=actor(game,id);if(source)synchronizeIdleResource(game,session,source);
             }},
         select:(id,scope)=>{
+            if(selectResidentDecision(game,id,scope)==='handled')return 'handled';
             if(selectWorldWorkDecision(game,id,scope))return 'handled';
             const source=actor(game,id);if(!(source instanceof Monster)||!eligible(game,source,session))return 'native-fallback';
             if(source.spatial?.bodyMember)return selectBody(game,session,source,scope);

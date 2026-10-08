@@ -4,11 +4,12 @@ import {
   commitOfflineSettlement,
   offlineDraw,
   offlineSeedKey,
+  offlineOwnershipSignature,
   planOfflineSettlement,
   type OfflineInput,
   type OfflinePlan
 } from '../engine/Core/WorldSettlement';
-import { createWorld5, indexWorldLevels, validateWorld5 } from '../ext/world5';
+import { advanceWorldClock, createWorld5, indexWorldLevels, validateWorld5 } from '../ext/world5';
 import {
   fixtureFingerprint,
   fixtureRules,
@@ -37,7 +38,11 @@ function input(toTick = 1000): OfflineInput {
   level.policy = 'frozen-ecology-economy-v1';
   level.persistenceReasons = ['camp', 'resident', 'work'];
   return {
-    schema: 1,
+    schema: 2,
+    homeInstance: 'world5-fixture.home.0',
+    granaryIds: [],
+    food: [],
+    ownershipSignature: offlineOwnershipSignature('world5-fixture.home.0', [], []),
     rulesFingerprint: fixtureFingerprint,
     runSeed: '51005000',
     campSlotId: 0,
@@ -52,7 +57,7 @@ function input(toTick = 1000): OfflineInput {
       revision: 0,
       seedKey: offlineSeedKey('51005000', 0, 'raid', fixtureFingerprint),
       lastEventOrdinal: 0,
-      residentStates: [{ actorId: 1, alive: true, shortage: 0 }],
+      residentStates: [{ actorId: 1, alive: true, foodShortage: 0, housingShortage: 0, unfedDays: 0, departed: false }],
       pendingOutputs: [],
       needsResupply: false,
       frozen: {
@@ -63,6 +68,7 @@ function input(toTick = 1000): OfflineInput {
           {
             actorId: 1,
             bedComponentId: null,
+            bedEligible: false,
             route: { reachable: true, distance: 1, travelTicks: 100 }
           }
         ],
@@ -120,7 +126,17 @@ function reference(i: OfflineInput) {
     epoch++
   ) {
     nextLedger.residentStates.forEach((s) => {
-      if (s.alive) s.shortage = Math.min(s.shortage + 1, 3) as 0 | 1 | 2 | 3;
+      if (!s.alive || s.departed) return;
+      if (epoch % 32 === 0) {
+        if (s.foodShortage === 3) {
+          s.departed = true;
+          effects.push({kind:'resident-departure',actorId:s.actorId,atTick:epoch*1000,
+            reason:'starvation',homeInstance:i.homeInstance});
+        }
+        s.foodShortage = Math.min(s.foodShortage + 1, 3) as 0 | 1 | 2 | 3;
+        s.unfedDays = Math.min(s.unfedDays + 1, 4);
+      }
+      if (!s.departed) s.housingShortage = Math.min(s.housingShortage + 1, 3) as 0|1|2|3;
     });
     for (const o of nextOrders)
       if (o.status === 'working' && o.remainingEpochs) {
@@ -393,6 +409,8 @@ describe('C5 offline deterministic economy', () => {
   });
   it('review M2: retains the latest 128 receipts and uses ledger ordinals after history eviction', () => {
     const i = input(128000);
+    // This receipt eviction oracle has no population requiring lifecycle publication.
+    i.ledger.residentStates=[];i.ledger.frozen.residents=[];i.orders=[];
     i.pendingEvents = Array.from({ length: 128 }, (_, n) => ({ id: 'raid.' + n, ordinal: n + 1,
       absoluteEpoch: n + 1, kind: 'raid' as const, policy: { remainingBudget: 0 } }));
     const p = plan(i), w = createWorld5();
@@ -453,7 +471,11 @@ describe('synchronous settlement participant rollback', () => {
 function economicInput(to = 40000): OfflineInput {
   const i = input(to);
   i.pendingEvents = [];
-  i.rules.rationDefinitions = ['fixture.ration'];
+  i.rules.rationDefinitions = [];
+  i.ledger.frozen.residents[0]!.bedComponentId = 99;
+  i.ledger.frozen.residents[0]!.bedEligible = true;
+  i.ledger.frozen.facilities = [{componentId:99,definitionId:'fixture.bed',hp:100,maxHp:100,
+    roomEligible:true,ventilated:false,reachable:true,tags:['bed']}];
   const item = (id: number, definitionId: string, quantity: number) => ({
     id,
     category: 'material' as const,
@@ -472,10 +494,10 @@ function economicInput(to = 40000): OfflineInput {
       at: null,
       kind: 'chest',
       revision: 0,
-      capacity: 1024,
-      occupiedSlots: 2,
+      capacity: 64,
+      occupiedSlots: 13,
       reservedSlots: 0,
-      items: [item(10, 'fixture.ration', 12), item(11, 'fixture.wood', 20)]
+      items: [{...item(10, 'fixture.ration', 12),category:'native',nativeCategory:'food',definitionId:null,packSlots:12}, item(11, 'fixture.wood', 20)]
     },
     {
       id: 11,
@@ -483,12 +505,15 @@ function economicInput(to = 40000): OfflineInput {
       at: null,
       kind: 'chest',
       revision: 0,
-      capacity: 1024,
+      capacity: 64,
       occupiedSlots: 0,
       reservedSlots: 10,
       items: []
     }
   ];
+  i.granaryIds = [10];
+  i.food = [{containerId:10,containerRevision:0,itemId:10,consumableId:'ration_of_food',quantity:12,lockedQuantity:2}];
+  i.ownershipSignature = offlineOwnershipSignature(i.homeInstance,i.granaryIds,i.food);
   i.rules.recipes = [
     {
       owner: 'world5-fixture',
@@ -574,6 +599,14 @@ function applyProxy(i: OfflineInput, p: OfflinePlan): OfflineInput {
       }
       row.quantity += effect.delta;
       row.available += effect.delta;
+    } else if (effect.kind === 'ration-consume') {
+      const box=next.containers.find(c=>c.id===effect.containerId)!;
+      const row=box.items.find(i=>i.id===effect.itemId)!;
+      row.quantity-=effect.quantity;row.available-=effect.quantity;
+      box.revision+=effect.quantity;
+      const food=next.food.find(f=>f.itemId===effect.itemId)!;
+      food.quantity-=effect.quantity;food.lockedQuantity-=effect.lockedQuantity;
+      food.containerRevision=box.revision;
     } else if (effect.kind === 'ticket-progress') {
       const t = next.tickets.find((t) => t.ticketId === effect.ticketId)!,
         recipe = next.rules.recipes.find((r) => r.id === t.definitionId)!;
@@ -581,6 +614,8 @@ function applyProxy(i: OfflineInput, p: OfflinePlan): OfflineInput {
       t.laborCreditTicks += effect.laborTicks - effect.completedBatches * recipe.workTicks;
     }
   }
+  next.food=next.food.filter(f=>f.quantity>0);
+  next.ownershipSignature=offlineOwnershipSignature(next.homeInstance,next.granaryIds,next.food);
   return next;
 }
 /** Independently advance exactly one normative epoch, including deferred output and node remainder. */
@@ -614,17 +649,22 @@ function economicReference(i: OfflineInput): OfflineInput {
       }
       n.ledger.pendingOutputs.splice(n.ledger.pendingOutputs.indexOf(output), 1);
     }
-    for (const actor of n.ledger.residentStates.slice().sort((a, b) => a.actorId - b.actorId))
-      if (actor.alive) {
-        const ration = n.containers
-          .flatMap((c) => c.items)
-          .find((i) => n.rules.rationDefinitions.includes(i.definitionId ?? '') && i.available > 0);
-        if (ration) {
-          ration.quantity--;
-          ration.available--;
-          actor.shortage = 0;
-        } else actor.shortage = Math.min(3, actor.shortage + 1) as 0 | 1 | 2 | 3;
+    for (const actor of n.ledger.residentStates.slice().sort((a,b)=>a.actorId-b.actorId)) {
+      if(!actor.alive||actor.departed)continue;
+      if(epoch%32===0){
+        const food=n.food.filter(f=>f.quantity>0).sort((a,b)=>(b.lockedQuantity>0?1:0)-(a.lockedQuantity>0?1:0)||
+          (a.lockedQuantity>0&&b.lockedQuantity>0?a.itemId-b.itemId:a.containerId-b.containerId||a.itemId-b.itemId))[0];
+        if(food){
+          const box=n.containers.find(c=>c.id===food.containerId)!,ration=box.items.find(i=>i.id===food.itemId)!;
+          ration.quantity--;ration.available--;box.revision++;food.quantity--;food.lockedQuantity=Math.max(0,food.lockedQuantity-1);food.containerRevision=box.revision;
+          actor.foodShortage=Math.max(0,actor.foodShortage-1) as 0|1|2|3;actor.unfedDays=0;
+        }else{
+          if(actor.foodShortage===3)actor.departed=true;
+          actor.foodShortage=Math.min(3,actor.foodShortage+1) as 0|1|2|3;actor.unfedDays=Math.min(4,actor.unfedDays+1);
+        }
       }
+      if(!actor.departed)actor.housingShortage=Math.max(0,actor.housingShortage-1) as 0|1|2|3;
+    }
     let completions = 0;
     for (const order of n.orders
       .slice()
@@ -641,7 +681,7 @@ function economicReference(i: OfflineInput): OfflineInput {
           recipe = n.rules.recipes.find((r) => r.id === t.definitionId)!,
           actor = n.ledger.residentStates.find((a) => a.actorId === order.actorId)!;
         t.laborCreditTicks += Math.floor(
-          (1000 * n.rules.shortageEfficiencyNumerators[actor.shortage]) /
+          (1000 * n.rules.shortageEfficiencyNumerators[actor.foodShortage]) /
             n.rules.efficiencyDenominator
         );
         const source = n.containers.find((c) => c.id === t.sourceContainerId)!;
@@ -694,6 +734,13 @@ function economicReference(i: OfflineInput): OfflineInput {
   n.ledger.lastSettledTick = n.toTick;
   n.ledger.epochRemainder = n.toTick % 1000;
   n.ledger.needsResupply = n.orders.some((o) => o.status === 'needs-resupply');
+  for(const frozen of n.ledger.frozen.residents) {
+    if(n.ledger.residentStates.find(s=>s.actorId===frozen.actorId)?.departed) {
+      frozen.bedComponentId=null;frozen.bedEligible=false;
+    }
+  }
+  n.food=n.food.filter(f=>f.quantity>0);
+  n.ownershipSignature=offlineOwnershipSignature(n.homeInstance,n.granaryIds,n.food);
   return n;
 }
 describe('C5 private economy effect fixture', () => {
@@ -747,7 +794,7 @@ describe('C5 private economy effect fixture', () => {
 
 function game() {
   const r = new ExtensionRegistry();
-  r.register('world5-fixture', '1.0.0', createWorld5Module, fixtureRulesIdentity);
+  r.register('world5-fixture', '1.1.0', createWorld5Module, fixtureRulesIdentity);
   vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(r);
   const g = createHeadlessGame(51005100, 'test');
   g.startNewGame({
@@ -789,6 +836,11 @@ describe('C5 real managed layer fixture', () => {
       monsters.find((m) => m.id === 'rat')! as MonsterData
     );
     (g as any).pendingFallenByDepth.set(1, [m]);
+    // Controlled offline fixture: keep the native 350-wait cache isolation
+    // check, then provide the three absolute food days this assertion requires.
+    // This is not a natural-route or recorded elapsed-time performance sample.
+    const thirdFoodDay = (Math.floor(frozen.capturedTick / 32000) + 3) * 32000;
+    advanceWorldClock(g.world5!, thirdFoodDay - g.world5!.simulationTicks);
     const saved = g.toSaveSnapshot(),
       state = clone(g.extensionRuntime!.snapshot().modules['world5-fixture']);
     expect(g.loadSnapshot(saved)).toBe(true);
@@ -799,7 +851,7 @@ describe('C5 real managed layer fixture', () => {
     expect(g.monsters.find((m) => m.id === resident.id)!.entersLevelIn).toBe(4);
     expect(g.world5!.simulationTicks).toBe(before);
     expect(g.world5!.orders[0]!.remainingEpochs).toBe(0);
-    expect(g.world5!.offline[0]!.residentStates[0]!.shortage).toBe(3);
+    expect(g.world5!.offline[0]!.residentStates[0]!.foodShortage).toBe(3);
     expect(g.world5!.receipts).toHaveLength(1);
     expect((g as any).pendingFallenByDepth.has(1)).toBe(false);
     expect(g.monsters.some((x) => x.id === m.id)).toBe(true);
@@ -1001,7 +1053,7 @@ describe('C5 actual two-floor input replay and continuation', () => {
     'settles once on the original return command in %j, including save/load, replay, seek and continuation',
     (ids) => {
       const registry = catalog.createExtensionRegistry();
-      registry.register('world5-fixture', '1.0.0', createWorld5Module, fixtureRulesIdentity);
+      registry.register('world5-fixture', '1.1.0', createWorld5Module, fixtureRulesIdentity);
       vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(registry);
       const g = createHeadlessGame(7306, 'test');
       g.startNewGame({ seed: 7306, mode: 'wizard', ruleSet: 'extended', extensions: ids });

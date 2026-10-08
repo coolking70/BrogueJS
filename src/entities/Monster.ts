@@ -1758,6 +1758,9 @@ export class Monster extends Creature {
         game.applyEntanglementFromTerrain(this);
     }
 
+    /** Uses the native ally perception target after this decision's single prelude. */
+    public hasNativeResidentPriority(game:Game):boolean {return !!closestBlinkEnemy(game,this)||!!this.targetCorpseLoc||monsterBlinkAvoids(game,this,this.loc);}
+    public moveResidentStep(at:Pos,game:Game):void {this.tryMoveTo(at.x,at.y,game);}
     public prepareNativeDecision(game: Game, stealthRange: number): boolean {
         assertNativeSpatial(this);
         if (this.hp <= 0) return true;

@@ -38,6 +38,25 @@ type MessageObserver = (message: Readonly<LogMessage>, acknowledge: boolean, occ
 const messageObservers = new WeakMap<Logger, MessageObserver>();
 const messageCheckpoints = new WeakMap<Logger, () => () => void>();
 
+/** Restore the original array and mutable rows, including folded repeats. */
+function checkpointRows<T extends object>(rows: T[]): () => void {
+    const descriptors = new Map(Reflect.ownKeys(rows).map(key =>
+        [key, Object.getOwnPropertyDescriptor(rows, key)!] as const));
+    const entries = rows.map(row => [row, Object.getOwnPropertyDescriptors(row)] as const);
+    return () => {
+        for (const [row, saved] of entries) {
+            for (const key of Reflect.ownKeys(row)) {
+                if (!Object.prototype.hasOwnProperty.call(saved, key)) Reflect.deleteProperty(row, key);
+            }
+            Object.defineProperties(row, saved);
+        }
+        for (const key of Reflect.ownKeys(rows)) {
+            if (!descriptors.has(key)) Reflect.deleteProperty(rows, key);
+        }
+        for (const [key, descriptor] of descriptors) Object.defineProperty(rows, key, descriptor);
+    };
+}
+
 /** CE FOLDABLE presentation: preserve the individual archive entries/repeats. */
 export function foldCombatMessages(messages: readonly LogMessage[], width = 100): LogMessage[] {
     const lines: LogMessage[] = [];
@@ -86,7 +105,10 @@ export class Logger {
     }
     public get pendingAcknowledgment(): LogMessage | undefined {
         const display = presentations.get(this);
-        if (display && !display.enabled()) this.clearAcknowledgments();
+        // Replay reads retire stale live ACKs once. Empty reads must not refresh reactive UI.
+        if (display && !display.enabled()
+            && (display.pending.length || display.unread.length || display.terminalShown))
+            this.clearAcknowledgments();
         return display?.pending[0];
     }
     public get pendingAcknowledgments(): readonly Readonly<LogMessage>[] {
@@ -142,29 +164,34 @@ export class Logger {
      * flush messages, disturb the player or consume acknowledgments. */
     public checkpoint(): () => void {
         const notice = feedback.get(this);
-        const messages = this.messages.map(message => ({ ...message }));
+        const messages = this.messages, restoreMessages = checkpointRows(messages);
         const nextId = this.nextId, turn = this.turn, blockCombatText = this.blockCombatText;
-        const mechanicalMessages = this.mechanicalMessages.map(m => ({ ...m })), mechanicalNextId = this.mechanicalNextId;
-        const combat = combatBuffers.get(this)?.map(message => ({ ...message }));
+        const mechanicalMessages = this.mechanicalMessages, restoreMechanical = checkpointRows(mechanicalMessages);
+        const mechanicalNextId = this.mechanicalNextId;
+        const combat = combatBuffers.get(this), restoreCombat = combat && checkpointRows(combat);
         const heard = heardCombat.has(this), display = presentations.get(this);
         // D3 occurrences are immutable capabilities shared with the timeline.
         // Rollback preserves their identities as well as their occurrence order.
-        const pending = display?.pending.slice();
-        const unread = display?.unread.slice();
+        const pending = display?.pending, unread = display?.unread;
+        const restorePending = pending && checkpointRows(pending);
+        const restoreUnread = unread && checkpointRows(unread);
         let restoreObservation: (() => void) | undefined;
         try { restoreObservation = messageCheckpoints.get(this)?.(); } catch { /* optional UI */ }
         const terminalShown = display?.terminalShown;
         const disturb = disturbanceCallbacks.get(this);
         return () => {
             if (notice) feedback.set(this, notice); else feedback.delete(this);
-            this.messages = messages.map(message => ({ ...message }));
+            restoreMessages(); this.messages = messages;
             this.nextId = nextId; this.turn = turn; this.blockCombatText = blockCombatText;
-            this.mechanicalMessages = mechanicalMessages.map(m => ({ ...m })); this.mechanicalNextId = mechanicalNextId;
-            if (combat) combatBuffers.set(this, combat.map(message => ({ ...message })));
+            restoreMechanical(); this.mechanicalMessages = mechanicalMessages; this.mechanicalNextId = mechanicalNextId;
+            if (combat) { restoreCombat!(); combatBuffers.set(this, combat); }
             else combatBuffers.delete(this);
             if (heard) heardCombat.add(this); else heardCombat.delete(this);
-            if (display) presentations.set(this, { enabled: display.enabled, pending: pending!.slice(),
-                unread: unread!.slice(), terminalShown: terminalShown!, changed: display.changed });
+            if (display) {
+                restorePending!(); restoreUnread!();
+                display.pending = pending!; display.unread = unread!; display.terminalShown = terminalShown!;
+                presentations.set(this, display);
+            }
             else presentations.delete(this);
             if (disturb) disturbanceCallbacks.set(this, disturb); else disturbanceCallbacks.delete(this);
             try { restoreObservation?.(); } catch { /* optional UI cannot break rollback */ }

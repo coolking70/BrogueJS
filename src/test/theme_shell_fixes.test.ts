@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { createRenderer, nextTick, type Component } from 'vue';
 import * as Vue from 'vue';
 import I18NextVue from 'i18next-vue';
@@ -208,10 +209,21 @@ describe('DESIGN-2 floating overlay geometry', () => {
 interface Node {
     type: string; text: string; props: Record<string, any>; children: Node[]; parent: Node | null;
     getBoundingClientRect(): { height: number }; blur(): void;
+    contains(target: unknown): boolean; closest(selector: string): Node | null;
+    readonly dataset: { radialIndex: string };
+    setPointerCapture(id: number): void; hasPointerCapture(id: number): boolean; releasePointerCapture(id: number): void;
 }
 let measuredHeight = 72;
-const node = (type: string, text = ''): Node => ({ type, text, props: {}, children: [], parent: null,
-    getBoundingClientRect: () => ({ height: measuredHeight }), blur() {} });
+const node = (type: string, text = ''): Node => {
+    const captures = new Set<number>();
+    return Vue.markRaw({ type, text, props: {} as Record<string, any>, children: [], parent: null as Node | null,
+        getBoundingClientRect: () => ({ height: measuredHeight }), blur() {},
+        contains(target: unknown) { return all(this).includes(target as Node); },
+        closest(selector: string): Node | null { return selector === '[data-radial-action]' && this.props['data-radial-action'] ? this : this.parent?.closest(selector) ?? null; },
+        get dataset() { return { radialIndex: String(this.props['data-radial-index']) }; },
+        setPointerCapture(id: number) { captures.add(id); }, hasPointerCapture(id: number) { return captures.has(id); }, releasePointerCapture(id: number) { captures.delete(id); },
+    });
+};
 const renderer = createRenderer<Node, Node>({
     createElement: type => node(type), createText: text => node('#text', text), createComment: text => node('#comment', text),
     insert(child, parent, anchor) {
@@ -231,6 +243,7 @@ const all = (n: Node): Node[] => [n, ...n.children.flatMap(all)];
 const text = (n: Node): string => n.text + n.children.map(text).join('');
 const findClass = (root: Node, cls: string) => all(root).find(n => String(n.props.class).split(' ').includes(cls))!;
 const mounted: Array<ReturnType<typeof renderer.createApp>> = [];
+const pointerCleanup: Array<() => void> = [];
 function mount(component: Component, props = {}) {
     const root = node('root');
     const app = renderer.createApp(component, props);
@@ -262,6 +275,7 @@ beforeAll(async () => {
 });
 afterEach(() => {
     for (const app of mounted.splice(0)) app.unmount();
+    pointerCleanup.splice(0).forEach(stop => stop());
     vi.useRealTimers();
 });
 afterAll(() => vi.unstubAllGlobals());
@@ -322,5 +336,142 @@ describe('DESIGN-2 live component regressions', () => {
         rest.props.onClick(); await nextTick();
         expect(command).toHaveBeenCalledExactlyOnceWith('wait', undefined);
         expect(findClass(root, 'rc-hub').props['aria-expanded']).toBe(false);
+    });
+});
+
+// Actual client SFC events + Vue update, with hit-testing explicitly modeled
+// from the current CSS. Real browser observations remain separate evidence.
+async function radialPointerFixture(compact = true, origin = { x: 300, y: 600 }) {
+    const { inputManager } = await import('../engine/Input');
+    const command = vi.fn(); inputManager.setCallback(command);
+    let key: (e: KeyboardEvent) => boolean = () => false;
+    const register = vi.spyOn(inputManager, 'registerModalKeyHandler').mockImplementation(fn => { key = fn; return () => {}; });
+    const originalDocument = document;
+    const listeners = new Map<string, EventListener>();
+    const stylesheet = readFileSync(new URL('../assets/theme-shells.css', import.meta.url), 'utf8');
+    const declarations = (selector: string) => {
+        const entry = stylesheet.split(selector + '{')[1]?.split('}')[0];
+        expect(entry, selector).toBeDefined(); return entry!;
+    };
+    const px = (entry: string, property: string) => Number(entry.match(new RegExp('(?:^|;)' + property + ':(?:max\\()?([0-9]+)px'))![1]);
+    const base = declarations('html[data-ui-concept=glyph] .immersive-mode .radial-commands.area-radial');
+    const sizing = compact ? declarations('html[data-ui-concept=glyph] .immersive-mode.has-touch-controls .radial-commands') : base;
+    const expanded = declarations('html[data-ui-concept=glyph] .immersive-mode' + (compact ? '.has-touch-controls' : '') + ' .radial-commands.open');
+    const radius = px(sizing, '--rc-radius'), size = px(sizing, '--rc-item-size');
+    const start = origin, shift = { x: px(expanded, 'right') - px(base, 'right'), y: px(expanded, 'bottom') - px(base, 'bottom') };
+    let liveRoot: Node;
+    const center = (index: number) => { const angle = (-90 + index * 45) * Math.PI / 180; return { x: start.x - shift.x + radius * Math.cos(angle), y: start.y - shift.y + radius * Math.sin(angle) }; };
+    const hit = vi.fn((x: number, y: number) => {
+        if (findClass(liveRoot, 'rc-hub')?.props['aria-expanded'] !== true) return null;
+        return all(liveRoot).find(n => n.props['data-radial-index'] !== undefined && Math.hypot(x - center(Number(n.props['data-radial-index'])).x, y - center(Number(n.props['data-radial-index'])).y) <= size / 2) ?? null;
+    });
+    vi.stubGlobal('document', { ...originalDocument, elementFromPoint: hit,
+        addEventListener(type: string, fn: EventListener) { listeners.set(type, fn); }, removeEventListener(type: string) { listeners.delete(type); } });
+    liveRoot = mount(RadialCommands);
+    const liveHub = findClass(liveRoot, 'rc-hub'), liveRing = findClass(liveRoot, 'radial-commands');
+    const event = (at = start, pointerId = 1) => ({ ...at, clientX: at.x, clientY: at.y, pointerId, currentTarget: liveHub });
+    pointerCleanup.push(() => { register.mockRestore(); inputManager.setCallback(() => {}); vi.stubGlobal('document', originalDocument); });
+    const down = (target: Node, e: object) => { listeners.get('pointerdown')?.({ ...e, target } as unknown as Event); target.props.onPointerdown?.(e); };
+    return { down, root: liveRoot, ring: liveRing, hub: liveHub, command, hit, start, center, event, key: (e: KeyboardEvent) => key(e), outside: () => listeners.get('pointerdown')!({ target: node('outside') } as unknown as Event) };
+}
+
+describe('radial pointer intent with the real SFC', () => {
+    it.each([0, 250])('stationary compact hub down/up after Vue relocation (%s ms) only opens', async hold => {
+        vi.useFakeTimers(); const f = await radialPointerFixture();
+        f.hub.props.onPointerdown(f.event()); await nextTick();
+        expect(f.hit(f.start.x, f.start.y)?.props['data-radial-action']).toBe('pickup');
+        vi.advanceTimersByTime(hold); f.ring.props.onPointerup(f.event()); await nextTick();
+        expect(f.command).not.toHaveBeenCalled(); expect(f.hub.props['aria-expanded']).toBe(true);
+    });
+    it('CSS-pixel jitter below the drag threshold cannot select the relocated pickup', async () => {
+        const f = await radialPointerFixture(); f.hub.props.onPointerdown(f.event()); await nextTick();
+        const at = { x: f.start.x + 3, y: f.start.y + 4 };
+        expect(f.hit(at.x, at.y)?.props['data-radial-action']).toBe('pickup');
+        f.ring.props.onPointermove?.(f.event(at)); f.ring.props.onPointerup(f.event(at)); await nextTick();
+        expect(f.command).not.toHaveBeenCalled(); expect(f.hub.props['aria-expanded']).toBe(true);
+    });
+    it('a real moved pointer selects one release item once, while direct item clicks still work', async () => {
+        const f = await radialPointerFixture(); f.hub.props.onPointerdown(f.event()); await nextTick();
+        const at = f.center(2); f.ring.props.onPointermove?.(f.event(at)); f.ring.props.onPointerup(f.event(at)); f.ring.props.onPointerup(f.event(at));
+        await nextTick(); expect(f.command).toHaveBeenCalledExactlyOnceWith('wait', undefined); expect(f.hub.props['aria-expanded']).toBe(false);
+        f.hub.props.onPointerdown(f.event()); await nextTick();
+        const rest = all(f.root).find(n => n.props['data-radial-action'] === 'wait')!;
+        rest.props.onClick(); await nextTick();
+        expect(f.command.mock.calls).toEqual([['wait', undefined], ['wait', undefined]]); expect(f.hub.props['aria-expanded']).toBe(false);
+    });
+    it('another pointer cannot toggle, cancel or release the owned gesture', async () => {
+        const f = await radialPointerFixture(); f.hub.props.onPointerdown(f.event()); await nextTick();
+        f.hub.props.onPointerdown(f.event(f.start, 2));
+        f.ring.props.onPointercancel?.(f.event(f.start, 2)); f.ring.props.onPointermove?.(f.event(f.center(2), 2)); f.ring.props.onPointerup(f.event(f.center(2), 2)); await nextTick();
+        expect(f.command).not.toHaveBeenCalled(); expect(f.hub.props['aria-expanded']).toBe(true);
+        f.ring.props.onPointermove?.(f.event(f.center(2))); f.ring.props.onPointerup(f.event(f.center(2))); await nextTick();
+        expect(f.command).toHaveBeenCalledExactlyOnceWith('wait', undefined);
+    });
+    it.each(['cancel', 'lostcapture', 'second-close', 'Escape', 'outside', 'unmount'])('%s retires any pending drag and old callbacks', async reason => {
+        const f = await radialPointerFixture(); f.hub.props.onPointerdown(f.event()); await nextTick();
+        const oldRest = all(f.root).find(n => n.props['data-radial-action'] === 'wait')!;
+        if (reason !== 'second-close') f.ring.props.onPointermove?.(f.event(f.center(2)));
+        if (reason === 'cancel') f.ring.props.onPointercancel?.(f.event());
+        else if (reason === 'lostcapture') f.ring.props.onLostpointercapture?.(f.event());
+        else if (reason === 'second-close') {
+            f.ring.props.onPointerup(f.event()); await nextTick();
+            f.hub.props.onPointerdown(f.event());
+        } else if (reason === 'Escape') f.key({ key: 'Escape' } as KeyboardEvent);
+        else if (reason === 'outside') f.outside();
+        else mounted.pop()!.unmount();
+        f.ring.props.onPointerup(f.event(f.center(2))); await nextTick();
+        expect(f.command).not.toHaveBeenCalled();
+        if (reason === 'unmount') {
+            oldRest.props.onClick();
+            f.hub.props.onPointerdown(f.event());
+            expect(f.command).not.toHaveBeenCalled();
+        }
+    });
+});
+
+// These sequences reproduce the retained V16 touch event order. Trusted fields
+// are modeled host inputs here; this is not a new browser/device observation.
+describe('radial compatibility click belongs to its originating gesture', () => {
+    it.each([['390 tap', 346, 0], ['390 hold', 346, 250], ['320 tap', 276, 0], ['320 hold', 276, 250]] as const)
+    ('%s: pointerup → lostcapture → relocated item click never dispatches pickup', async (_label, x, hold) => {
+        vi.useFakeTimers(); const f = await radialPointerFixture(true, { x, y: 724 });
+        const e = { ...f.event(f.start, 2), pointerType: 'touch', isTrusted: true, detail: 1 };
+        f.down(f.hub, e); await nextTick(); vi.advanceTimersByTime(hold);
+        const pickup = f.hit(e.clientX, e.clientY)!;
+        expect(pickup.props['data-radial-action']).toBe('pickup');
+        f.ring.props.onPointerup(e); f.ring.props.onLostpointercapture?.(e);
+        pickup.props.onClick(e); await nextTick();
+        expect(f.command).not.toHaveBeenCalled(); expect(f.hub.props['aria-expanded']).toBe(true);
+        const inventory = all(f.root).find(n => n.props['data-radial-action'] === 'toggle_inventory')!;
+        // The next genuine direct tap may reuse the same Pointer ID.
+        f.down(inventory, e); inventory.props.onClick(e); await nextTick();
+        expect(f.command).toHaveBeenCalledExactlyOnceWith('toggle_inventory', undefined);
+    });
+    it('a hub drag dispatches once even when the compatibility click targets a different item', async () => {
+        const f = await radialPointerFixture(); const e = { ...f.event(), pointerType: 'touch', detail: 1 };
+        f.down(f.hub, e); await nextTick();
+        f.ring.props.onPointermove(f.event(f.center(4))); f.ring.props.onPointerup(f.event(f.center(4)));
+        f.ring.props.onLostpointercapture?.(e);
+        all(f.root).find(n => n.props['data-radial-action'] === 'pickup')!.props.onClick(e);
+        await nextTick(); expect(f.command).toHaveBeenCalledExactlyOnceWith('toggle_inventory', undefined);
+    });
+    it.each(['pointercancel', 'lostpointercapture', 'closed'])('%s keeps hub ownership until the next real item gesture and allows keyboard activation', async reason => {
+        const f = await radialPointerFixture(); const e = { ...f.event(), detail: 1, pointerType: 'touch' };
+        f.down(f.hub, e); await nextTick();
+        if (reason === 'closed') { f.ring.props.onPointerup(e); f.down(f.hub, e); }
+        else f.ring.props[reason === 'pointercancel' ? 'onPointercancel' : 'onLostpointercapture'](e);
+        const item = all(f.root).find(n => n.props['data-radial-action'] === 'wait')!;
+        item.props.onClick(e); await nextTick(); expect(f.command).not.toHaveBeenCalled();
+        if (reason === 'closed') { f.down(f.hub, e); await nextTick(); }
+        // Native Enter/Space activation produces detail=0, independent of pointer ownership.
+        item.props.onClick({ detail: 0, pointerId: -1 }); await nextTick();
+        expect(f.command).toHaveBeenCalledExactlyOnceWith('wait', undefined);
+    });
+    it('an unrelated pointer cannot activate an item during an owned hub gesture', async () => {
+        const f = await radialPointerFixture(); f.down(f.hub, f.event()); await nextTick();
+        const item = all(f.root).find(n => n.props['data-radial-action'] === 'pickup')!;
+        const foreign = { ...f.event(f.start, 22), detail: 1 };
+        f.down(item, foreign); item.props.onClick(foreign); await nextTick();
+        expect(f.command).not.toHaveBeenCalled();
     });
 });

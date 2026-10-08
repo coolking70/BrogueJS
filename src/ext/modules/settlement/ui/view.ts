@@ -22,6 +22,12 @@ export interface SettlementView {
     slot: string;
     nameKey: string;
   })[];
+  jobTargets?: {
+    campId: number;
+    boxes: { id: number; revision: number; at: { x: number; y: number } }[];
+    plots: { id: number; revision: number; at: { x: number; y: number }; nameKey: string }[];
+  }[];
+  residents?:import("../../../residentSdk").ResidentRead;
   restPoints: RestPoint[];
   definitions: StructureDefinition[];
   policy: CampPolicy;

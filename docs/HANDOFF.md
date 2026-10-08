@@ -1,8 +1,18 @@
 # 交接说明（接手先读）
 
+## ext/phase5 当前裁决（2026-10-09）
+
+**5D1本步按用户裁决验收，可提交。** 父后续负责提交并记录提交号；本执行者未commit/push，未合main或5G。已确证的玩法及存档/录像一致性问题已修复并独立关闭，当前无剩余已证实阻断。V16径向误激活与居民岗位选择问题已有窄回归及独立通过；同值DTO草稿刷新F1独立复验20项通过并关闭。最终浏览器复验仍未完成，不能称全场景通过。
+
+已有结果分版本引用、不累计重叠数：V12正式性能16人净增P95为3.672584ms、64人峰值46.777167ms；final-ui-draft-fix原四文件81项及五守卫38项通过，boundary/types/实际build通过；final-ui-fix实际drift8项通过。父V17既有摘要为四原raw真实回放0 OOS、末9字段相同，同源build与selector准入通过；本轮不重新验证这些结果。 证据/截图/脚本形式和最终V17十手势、24矩阵、self955三个完整浏览器场景、真机/失焦及完整门禁移[5Z](ext/phase5z-remainders.md)，不再等待新采证轮次。后续5G静态R1集成风险不列为5D1已证实缺陷。见[5D1报告](ext/phase5d1.report.md)与[最新流程政策](ext/commander-handoff.md)：最多两轮审查→修复，第二轮后余项归5Z，只存结果摘要，覆盖旧封存流程。
+
+### 上一轮收口状态（历史，已由上文覆盖）
+
+5D1限定回归已完成串行复核（原12文件批次exit1保留），boundary/types/npm build/npm drift已通过，V12正式性能两项通过；仍待登记/文档接入差量独立复核、最终浏览器及父验收提交。5G eda3094已验收发布、尚未集成。 未commit/push、未合main或5G。正式自然首轮exit1已归因原916原生拒绝日志，仅修测试旧前提；正常英文956/957、controlled尾、俘虏239/240及选定居民整文件完成串行复核（原12文件批次exit1保留），新限定门禁实际通过，全部生产保持V12字节。见[5D1报告](ext/phase5d1.report.md)顶部和[审查入口](ext/phase5d1.review-findings.md)。父后续冻结最终源做中文raw桥接/实际浏览器，完成后再裁定提交；真实设备/原生失焦和全量兜底留5Z。
+
 本文件写给接手 BrogueJS 的开发者或 AI 会话：项目现在处于什么状态、之前定下了哪些不再重议的决策、怎样继续推进。
 
-最后更新：2026-10-01（DESIGN-3 在 design/new-theme 完成实现与相关门禁，尚待截图与合并前完整测试；未提交）。
+经典分支历史更新：2026-10-01（DESIGN-3 在 design/new-theme 完成实现与相关门禁，尚待截图与合并前完整测试；未提交）。
 
 ## 1. 项目一句话
 
@@ -101,3 +111,10 @@ LAVA 统一完整套件跑完：4573 项通过，2 项原 900000ms 超时；两�
 | `docs/known-issues.md` | 已知问题与待办 |
 | `docs/release.md` | 版本、发布与试玩构建 |
 | `docs/archive/dev-history/` | 旧开发文档归档（勘察报告、单元报告、任务书、进度日志），只读参考 |
+
+
+## 2026-10-08 ext/phase5 早期5D1续作（历史）
+
+当前工作树 BrogueJS-p5/HEAD769f6fc，resident foundation11/whole-run6/recording4/origin2；九冻结SDK不变。AB第三次独立身份/失败入口复审已关闭。remainder补真实救援来源、劳动、escrow退款、需求长跳与跨营规范departure、真实stairs/fall、UI名册选择/共享守卫选格和bounded派生路径；FR1/FR2固定v2独立probe通过，FR3晚多态鉴定/视觉写集已补原生完整同步检查点，本地早/晚回归过，仍待独立复核。I33仅授权移植已审5G的Logger空disabled ACK通知守卫，未完整合并5G。最终shared门禁正在跑，untimed16实际三岗位/匹配control和64合法四营/MAX_SAFE全根分段4case通过，计时未跑。必要未招募spawn不跟stairs使旧seed3录像/几何引用失配，已单变量归因；当前自然seed3与seed28新路线由指挥只读会话重录。parent负责真实浏览器24格/三容器与quiet性能，不能称本步完整通过；最终5Z兜底另排。详见[5D1报告](ext/phase5d1.report.md)、外部current-status.md/SOURCE-POLICY-FR3-READY.md；禁止依据阶段性通过提交/推送。
+
+5D1历史追加（V7前）：旧1980自生fixture不可当当前通过；parent新956正常fresh精确复现尚待正式交付，需原源重验后更新。seed3当前239与四原239/240、23seek含0已通过；外部C1封存绑定清单已交。I53局部scoped控件44px级联独立关闭，实际browser仍待parent。当前production scope10d373.../1198files九冻结不变；同source UI14/边界/types/build/实际drift8项exit0。黄金只更新已归因codec摘要叶，未改输入/断言。PERF-READY为准备，尚无5ms/50ms结论；源码/最终dist要在新自然输入/文档后repin。

@@ -1,3 +1,4 @@
+import { validResident,validResidentSource } from '../../residentSchema';
 import type { ExtensionModule, Json } from '../../types';
 import { initialState, validateState } from './state';
 import { loadSettlementPack, getSettlementIdentity } from './definitions';
@@ -7,10 +8,12 @@ export function createSettlementModule(): ExtensionModule {
   const pack = loadSettlementPack();
   return {
     id: 'settlement',
-    version: '1.0.0',
+    version: '1.1.0',
     rules: getSettlementIdentity(pack),
     worldDefinitions: pack.world,
     campPolicy: pack.camp,
+    residentPolicy: pack.residents,
+    componentValidators: { resident:validResident, source:validResidentSource },
     worldWorkCommands,
     initialState: () => initialState() as unknown as Json,
     validateState: (v): v is Json => validateState(v),
@@ -33,10 +36,10 @@ export function createSettlementModule(): ExtensionModule {
             typeof v === 'object' &&
             !Array.isArray(v) &&
             Object.keys(v).join(',') === 'resident' &&
-            (v as { resident: boolean }).resident === false
+            typeof (v as { resident: boolean }).resident === "boolean"
           );
         },
-        query(input) {
+        query(input,context) {
           if (
             !input ||
             typeof input !== 'object' ||
@@ -46,7 +49,7 @@ export function createSettlementModule(): ExtensionModule {
             Number((input as { actorId: number }).actorId) < 1
           )
             throw new Error('Invalid resident query');
-          return { resident: false };
+          return { resident: !!context.getComponent?.(Number((input as {actorId:number}).actorId),"resident") };
         }
       }
     }

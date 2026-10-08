@@ -1,3 +1,5 @@
+import {settleResidentNeeds,freezeResidentCamps} from './ResidentNeeds';
+import {residentRead} from './ResidentProduction';
 /** Trusted production adapter. Content declares data and receives read-only DTOs. */
 import type { Game } from './Game';
 import type { CampState, CampRecord, StructureAction } from '../../ext/structureSdk';
@@ -374,6 +376,7 @@ function validate(
         if (threat(game)) fail('C5_THREAT');
         const d = structureDefinition(game, p.definitionId);
         if (d.owner !== owner) fail('C5_BAD_OWNERSHIP');
+        if(d.tags.includes('plot')&&game.world5!.structures.filter(s=>s.regionId===r.id&&s.fixture?.definitionId===d.id).length>=12)fail('C5_BUDGET');
         const kit = d.tags.includes('bed')
           ? 'kit.bed'
           : d.containerCapacity !== null
@@ -540,6 +543,7 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
     )
       fail('C5_STALE');
     return transactStructureWorld(game, () => {
+      settleResidentNeeds(game,true);
       let state = runtime.worldCampState(owner),
         ticks = 0,
         identity = `camp.${owner}.${state.revision}.${game.world5!.revision}`;
@@ -590,6 +594,8 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
           markerId: e.id,
           supplyId,
           locked: [],
+          consumedLockedUnits:0,
+          granaryIds:[supplyId],
           reportTick: game.world5!.simulationTicks,
           reportItems: []
         };
@@ -676,6 +682,8 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
       for (const c of state.camps.filter((c) => c.depth === game.depth)) report(game, c);
       runtime.worldCampReplace(owner, state);
       updateWorldReasons(game);
+      settleResidentNeeds(game,true);
+      freezeResidentCamps(game,game.depth);
       recordWorldReceipt(
         game,
         owner,
@@ -750,6 +758,36 @@ export function structureReadSDK(game: Game, owner: string) {
               : []
           )
         );
+      // Job orders address a known, owned home, not just currently lit tiles.
+      // Return only target metadata; general boxes/items retain their FOV gate.
+      const residents = residentRead(game, owner);
+      const homeIds = new Set(residents.residents.map((a) => a.campId));
+      const built = new Set(state.constructions.map((c) => c.componentId));
+      const known = (at: { x: number; y: number }, componentId?: number) =>
+        (componentId !== undefined && built.has(componentId)) ||
+        !!game.grid.getCell(at.x, at.y)?.isExplored;
+      const jobTargets = state.camps.filter((c) => c.depth === game.depth && homeIds.has(c.regionId)).map((c) => {
+        const region = regions.find((r) => r.id === c.regionId)!;
+        const rows = w.structures.filter((r) => r.owner === owner && r.regionId === c.regionId &&
+          r.levelRef.kind === 'dungeon' && r.levelRef.depth === game.depth && regionContains(region, r.at));
+        return {
+          campId: c.regionId,
+          boxes: w.containers.filter((b) => b.owner === owner && b.kind === 'chest' &&
+            b.levelRef.kind === 'dungeon' && b.levelRef.depth === game.depth).flatMap((b) => {
+              const at = containerRead(game, b.id).at;
+              const chest = at && rows.find((r) => r.at.x === at.x && r.at.y === at.y &&
+                r.fixture?.definitionId === owner + '.chest');
+              // The supply chest is created by establish; other chests must be
+              // existing camp fixtures. Neither branch exposes box contents.
+              return at && regionContains(region, at) && (b.id === c.supplyId ||
+                (chest && known(at, chest.fixture!.id)))
+                ? [{ id: b.id, at: { ...at }, revision: b.revision }] : [];
+            }),
+          plots: rows.flatMap((r) => r.fixture?.definitionId === owner + '.plot' && known(r.at, r.fixture.id)
+            ? [{ id: r.fixture.id, at: { ...r.at }, revision: r.fixture.revision,
+                nameKey: structureDefinition(game, r.fixture.definitionId).nameKey }] : [])
+        };
+      });
       const knownRooms = local
         ? computeRooms(game, { kind: 'dungeon', depth: game.depth }).filter((r) =>
             r.cells.every((p) => game.grid.getCell(p.x, p.y)?.isVisible)
@@ -815,6 +853,8 @@ export function structureReadSDK(game: Game, owner: string) {
               nameKey: worldPack(game, owner).resourceNodes.find((d) => d.id === n.definitionId)!
                 .nameKey
             })),
+          residents,
+          jobTargets,
           lastError: worldWorkLastError(game)
         })
       );
@@ -856,7 +896,6 @@ export function validateProductionCampReferences(game: Game): void {
         !ledger ||
         ledger.levelRef.kind !== 'dungeon' ||
         ledger.levelRef.depth !== c.depth ||
-        ledger.residentStates.length ||
         ledger.pendingOutputs.length ||
         ledger.frozen.rulesFingerprint !==
           runtime.worldDefinitionFingerprints()[owner]!.replace(/^sha256:/, '') ||
@@ -928,10 +967,12 @@ export function freezeProductionCamps(game: Game, depth: number): void {
     report(game, c);
     runtime.worldCampReplace(owner, state);
     const ledger = game.world5.offline.find((l) => l.campSlotId === c.slot)!;
+    settleResidentNeeds(game,true);
+    freezeResidentCamps(game,c.depth);
     ledger.lastSettledTick = game.world5.simulationTicks;
     ledger.epochRemainder = game.world5.simulationTicks % 1000;
     ledger.frozen.capturedTick = game.world5.simulationTicks;
-    ledger.revision = checkedAdd(ledger.revision, 1);
+    if(!runtime.residentPolicy(owner))ledger.revision = checkedAdd(ledger.revision, 1);
   }
 }
 export function settleProductionCamps(game: Game): void {
@@ -943,10 +984,12 @@ export function settleProductionCamps(game: Game): void {
     if (!c) continue;
     const ledger = game.world5.offline.find((l) => l.campSlotId === c.slot)!;
     if (ledger.lastSettledTick > game.world5.simulationTicks) fail('C5_BAD_TIME');
+    settleResidentNeeds(game,true);
+    freezeResidentCamps(game,c.depth);
     ledger.lastSettledTick = game.world5.simulationTicks;
     ledger.epochRemainder = game.world5.simulationTicks % 1000;
     ledger.frozen.capturedTick = game.world5.simulationTicks;
-    ledger.revision = checkedAdd(ledger.revision, 1);
+    if(!runtime.residentPolicy(owner))ledger.revision = checkedAdd(ledger.revision, 1);
     report(game, c);
     runtime.worldCampReplace(owner, state);
   }

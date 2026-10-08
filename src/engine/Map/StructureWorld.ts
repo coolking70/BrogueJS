@@ -1,3 +1,6 @@
+import { cancelResidentWork } from '../Core/ResidentJobs';
+import { transactResidentWorld } from '../Core/ResidentWorld';
+import { settleResidentNeeds, freezeResidentCamps } from '../Core/ResidentNeeds';
 /** Trusted C5-1 foundation authority. No production catalog or public command. */
 import type { Game } from '../Core/Game';
 import type {
@@ -155,7 +158,8 @@ function component(
 }
 function levelGrid(game: Game, level: LevelRef): Grid {
   const depth = requireDungeon(level),
-    grid = depth === game.depth ? game.grid : game.levels.get(depth)?.grid;
+    grid = game.levels.get(depth)?.grid ??
+      (depth === game.depth || depth === (game as unknown as {currentLevelDepth:number|null}).currentLevelDepth ? game.grid : null);
   if (!grid) fail('C5_BAD_REFERENCE');
   return grid!;
 }
@@ -186,22 +190,14 @@ const terrainDirty = new WeakMap<Grid, Map<number, DirtyCell>>();
 const topologyMask =
   T_OBSTRUCTS_PASSABILITY | T_AUTO_DESCENT | T_LAVA_INSTA_DEATH | T_IS_DEEP_WATER;
 const stableFlags = (f: number) => !(f & topologyMask);
-/** Recompute only a dirty layer, using dense numeric geometry and O(1) roofs. */
-export function computeRooms(game: Game, level: LevelRef): readonly RoomRead[] {
-  const grid = levelGrid(game, level),
-    cached = rooms.get(grid);
-  if (cached && !roomDirty.has(grid) && (published.get(grid)?.size ?? 0) > 0) return cached;
-  const W = grid.width,
-    H = grid.height,
-    N = W * H,
-    index = new Array<StructureCell | undefined>(N),
-    stable = new Uint8Array(N),
-    boundary = new Uint8Array(N),
-    seen = new Uint8Array(N),
-    roofs = new Uint8Array(N),
-    out: RoomRead[] = [];
-  // Structure roots are validated at publication/load. Validate the requested
-  // level once; do not repeat strict schema validation per row on a hot read.
+/** Keep the dense raster loop independent of room assembly. Fresh loaded
+ * structure rows can have different object shapes; their scans must not force
+ * repeated optimization of the much larger flood-fill/room-publication body. */
+function roomGeometry(game: Game, grid: Grid, level: LevelRef) {
+  const W = grid.width, N = W * grid.height;
+  const index = new Array<StructureCell | undefined>(N),
+    stable = new Uint8Array(N), boundary = new Uint8Array(N);
+  // Validate the level once, with the same published/loaded structure roots.
   const depth = requireDungeon(level),
     rows = game.world5?.structures.filter(
       (s) => s.levelRef.kind === 'dungeon' && s.levelRef.depth === depth
@@ -209,21 +205,20 @@ export function computeRooms(game: Game, level: LevelRef): readonly RoomRead[] {
   for (const row of rows) index[row.at.y * W + row.at.x] = row;
   for (let n = 0; n < N; n++) {
     const c = grid.getCell(n % W, Math.floor(n / W))!,
-      f = baseCellFlags(c),
-      r = index[n];
+      f = baseCellFlags(c), r = index[n];
     stable[n] = +stableFlags(f);
     boundary[n] = +!!(
-      f & T_OBSTRUCTS_PASSABILITY ||
-      r?.barrier ||
+      f & T_OBSTRUCTS_PASSABILITY || r?.barrier ||
       (r?.fixture && structureDefinition(game, r.fixture.definitionId).blocks.movement)
     );
   }
-  const entities = new Map(
-    game.extensionRuntime
-      ?.worldWorkEntities()
-      .filter((e) => e.depth === requireDungeon(level))
-      .map((e) => [e.id, e]) ?? []
-  );
+  return { index, stable, boundary };
+}
+/** Flood fill only typed geometry, so its hot loops do not repeatedly compile
+ * room classification, SDK validation and publication on freshly loaded maps. */
+function enclosedRoomRegions(W: number, H: number, stable: Uint8Array, boundary: Uint8Array) {
+  const N = W * H, seen = new Uint8Array(N);
+  const regions: { cells: number[]; edge: Set<number> }[] = [];
   const dirs = [-W, -1, 1, W];
   for (let start = 0; start < N; start++) {
     if (seen[start] || boundary[start] || !stable[start]) continue;
@@ -256,6 +251,29 @@ export function computeRooms(game: Game, level: LevelRef): readonly RoomRead[] {
       }
     }
     if (!closed || cells.length < 2 || cells.length > 128) continue;
+    regions.push({ cells, edge });
+  }
+  return regions;
+}
+/** Recompute only a dirty layer, using dense numeric geometry and O(1) roofs. */
+export function computeRooms(game: Game, level: LevelRef): readonly RoomRead[] {
+  const grid = levelGrid(game, level),
+    cached = rooms.get(grid);
+  if (cached && !roomDirty.has(grid) && (published.get(grid)?.size ?? 0) > 0) return cached;
+  const W = grid.width,
+    H = grid.height,
+    N = W * H,
+    { index, stable, boundary } = roomGeometry(game, grid, level),
+    roofs = new Uint8Array(N),
+    out: RoomRead[] = [];
+  const entities = new Map(
+    game.extensionRuntime
+      ?.worldWorkEntities()
+      .filter((e) => e.depth === requireDungeon(level))
+      .map((e) => [e.id, e]) ?? []
+  );
+  const dirs = [-W, -1, 1, W];
+  for (const { cells, edge } of enclosedRoomRegions(W, H, stable, boundary)) {
     cells.sort((a, b) => a - b);
     const inside = new Set(cells),
       completeRoof = cells.every((n) => !!index[n]?.roof),
@@ -524,10 +542,12 @@ export function settleStructureFoundations(game: Game, burn = false, depth = gam
         }
       if (failed.length || fires.length) updateWorldReasons(game);
       invalidateStructureWorld(game, depth);
+      settleResidentNeeds(game, true);
+      freezeResidentCamps(game, depth);
     };
     if (failed.length || fires.length) transactStructureWorld(game, work);
     else work();
-  } catch {
+  } catch (error) {
     updating.add(game);
     try {
       for (const row of failed) {
@@ -546,6 +566,7 @@ export function settleStructureFoundations(game: Game, burn = false, depth = gam
     }
     bindWorldStructures(game, depth);
     roomDirty.add(grid);
+    if (game.extensionRuntime?.residentOwners().length) throw error;
     for (const owner of new Set(rows.map((r) => r.owner)))
       recordWorldReceipt(
         game,
@@ -558,6 +579,7 @@ export function settleStructureFoundations(game: Game, burn = false, depth = gam
   }
   terrainDirty.get(grid)?.clear();
 }
+
 export function transactStructureWorld<T>(game: Game, work: () => T): T {
   if (transactions.has(game)) return work();
   const grids = [game.grid, ...[...game.levels.values()].map((l) => l.grid)],
@@ -568,7 +590,9 @@ export function transactStructureWorld<T>(game: Game, work: () => T): T {
     );
   transactions.add(game);
   try {
-    return transactWorldWork(game, work);
+    return game.extensionRuntime?.residentOwners().length
+      ? transactResidentWorld(game, work)
+      : transactWorldWork(game, work);
   } catch (error) {
     restore();
     bindWorldStructures(game);
@@ -1401,6 +1425,11 @@ export function destroyComponent(game: Game, id: number, refund: boolean, reason
     chests = w.containers.filter(
       (v) => v.position?.kind === 'interactable' && ids.has(v.position.interactableId)
     );
+  settleResidentNeeds(game, true);
+  for (const job of [...w.residentJobs])
+    if (job.plotId === id || chests.some(ch =>
+      ch.id === job.sourceId || ch.id === job.destinationId))
+      cancelResidentWork(game, job.actorId, reason);
   for (const t of [...w.tickets])
     if (
       stations.some((s) => s.interactableId === t.stationId) ||
@@ -1520,7 +1549,16 @@ export function destroyComponent(game: Game, id: number, refund: boolean, reason
   }
   for(const owner of runtime.worldCampOwners()) {
     const state=runtime.worldCampState(owner);
-    if(state.constructions.some(r=>r.componentId===id)){state.constructions=state.constructions.filter(r=>r.componentId!==id);runtime.worldCampReplace(owner,state);}
+    const chestIds = new Set(chests.map(ch => ch.id));
+    state.constructions = state.constructions.filter(r => r.componentId !== id);
+    state.plotDays = state.plotDays.filter(p => p.componentId !== id);
+    for (const camp of state.camps) {
+      const previous = camp.granaryIds.length;
+      camp.granaryIds = camp.granaryIds.filter(box => !chestIds.has(box));
+      if (previous !== camp.granaryIds.length) camp.revision++;
+    }
+    state.revision++;
+    runtime.worldCampReplace(owner, state);
   }
 
 }
@@ -1640,7 +1678,11 @@ export function commitStructureWorld(
           'completed',
           null
         );
-      if (r.family === 'structure') invalidateStructureWorld(game);
+      if (r.family === 'structure') {
+        invalidateStructureWorld(game);
+        settleResidentNeeds(game, true);
+        freezeResidentCamps(game, game.depth);
+      }
       return {
         operation: r.family,
         receiptIdentity: identity,

@@ -283,7 +283,7 @@ export function withPublishingTicket<T>(game: Game, ticketId: number, work: () =
   }
 }
 export function reservedContainerSlots(game: Game, id: number): number {
-  return (game.world5?.tickets ?? []).reduce(
+  return (game.world5?.residentJobs??[]).reduce((n,j)=>n+(j.destinationId===id?j.reservedSlots:0)+(j.sourceId===id?j.reservedSlots:0),0)+(game.world5?.tickets ?? []).reduce(
     (n, t) =>
       n +
       (publishing.get(game) === t.ticketId
@@ -486,7 +486,7 @@ export function updateWorldReasons(game: Game): void {
       ...(w.offline.some((o) => levelKey(o.levelRef) === key) || game.extensionRuntime?.worldStructureRegions().some(r=>'campSlotId' in r && `dungeon.${r.depth}`===key) ? ['camp' as const] : []),
       ...(w.containers.some((c) => levelKey(c.levelRef) === key) ? ['container' as const] : []),
       ...(w.residents.some((r) => levelKey(r.levelRef) === key) ? ['resident' as const] : []),
-      ...(w.orders.some((o) => levelKey(o.levelRef) === key) ||
+      ...(w.residentJobs.some(j=>`dungeon.${j.depth}`===key) || w.orders.some((o) => levelKey(o.levelRef) === key) ||
       w.tickets.some(
         (t) => levelKey(t.levelRef) === key && ['working', 'suspended'].includes(t.status)
       )

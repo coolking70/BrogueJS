@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "moduleVersion": "1.0.0",
-  "rulesVersion": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "rulesVersion": "1.1.0",
   "world": {
     "schema": 1,
     "worldSdk": 1,
@@ -16,7 +16,9 @@
         "color": "#A0784A",
         "maxStack": 99,
         "nativeTemplate": null,
-        "tags": ["basic.wood"],
+        "tags": [
+          "basic.wood"
+        ],
         "tool": null
       },
       {
@@ -29,7 +31,9 @@
         "color": "#9EA3A8",
         "maxStack": 99,
         "nativeTemplate": null,
-        "tags": ["basic.stone"],
+        "tags": [
+          "basic.stone"
+        ],
         "tool": null
       },
       {
@@ -42,7 +46,39 @@
         "color": "#8DB360",
         "maxStack": 99,
         "nativeTemplate": null,
-        "tags": ["basic.fiber"],
+        "tags": [
+          "basic.fiber"
+        ],
+        "tool": null
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.seed",
+        "nameKey": "ext.settlement.seed.name",
+        "descriptionKey": "ext.settlement.seed.description",
+        "category": "material",
+        "glyph": ".",
+        "color": "#B1BA72",
+        "maxStack": 99,
+        "nativeTemplate": null,
+        "tags": [
+          "seed.basic"
+        ],
+        "tool": null
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.crop",
+        "nameKey": "ext.settlement.crop.name",
+        "descriptionKey": "ext.settlement.crop.description",
+        "category": "material",
+        "glyph": "%",
+        "color": "#73B77A",
+        "maxStack": 99,
+        "nativeTemplate": null,
+        "tags": [
+          "food.ingredient.crop"
+        ],
         "tool": null
       }
     ],
@@ -163,6 +199,10 @@
         },
         {
           "itemDefinitionId": "settlement.fiber",
+          "count": 6
+        },
+        {
+          "itemDefinitionId": "settlement.seed",
           "count": 6
         }
       ],
@@ -455,7 +495,9 @@
         "containerCapacity": null,
         "stationDefinitionId": null,
         "restPointDefinitionId": "settlement.rest",
-        "tags": ["bed"]
+        "tags": [
+          "bed"
+        ]
       },
       {
         "owner": "settlement",
@@ -491,6 +533,47 @@
         "stationDefinitionId": null,
         "restPointDefinitionId": null,
         "tags": []
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.plot",
+        "slot": "fixture",
+        "barrierKind": null,
+        "nameKey": "ext.settlement.plot.name",
+        "descriptionKey": "ext.settlement.plot.description",
+        "maxHp": 100,
+        "blocks": {
+          "movement": false,
+          "vision": false,
+          "physicalProjectile": false,
+          "magicProjectile": false,
+          "gas": false,
+          "liquid": false
+        },
+        "flammable": true,
+        "resistances": {
+          "physical": 0,
+          "fire": 0
+        },
+        "constructionCost": [
+          {
+            "itemDefinitionId": "settlement.wood",
+            "count": 2
+          },
+          {
+            "itemDefinitionId": "settlement.fiber",
+            "count": 1
+          }
+        ],
+        "constructionTicks": 300,
+        "refundNumerator": 1,
+        "refundDenominator": 2,
+        "containerCapacity": null,
+        "stationDefinitionId": null,
+        "restPointDefinitionId": null,
+        "tags": [
+          "plot"
+        ]
       }
     ],
     "restPoints": [
@@ -543,5 +626,48 @@
     "retireTicks": 100,
     "supplyCapacity": 64,
     "requiredFood": 2
+  },
+  "residents": {
+    "schema": 1,
+    "templates": [
+      {
+        "id": "settlement.wayfarer",
+        "nameKey": "ext.settlement.wayfarer.name",
+        "descriptionKey": "ext.settlement.wayfarer.description",
+        "hp": 20,
+        "accuracy": 80,
+        "defense": 0,
+        "damage": "1-3",
+        "moveSpeed": 100,
+        "attackSpeed": 100
+      },
+      {
+        "id": "settlement.gardener",
+        "nameKey": "ext.settlement.gardener.name",
+        "descriptionKey": "ext.settlement.gardener.description",
+        "hp": 24,
+        "accuracy": 80,
+        "defense": 0,
+        "damage": "1-3",
+        "moveSpeed": 100,
+        "attackSpeed": 100
+      }
+    ],
+    "spawnDepths": [
+      1,
+      5,
+      10,
+      15
+    ],
+    "rescuedTemplates": [
+      "kobold",
+      "goblin",
+      "goblin_mystic",
+      "goblin_conjurer",
+      "ogre"
+    ],
+    "dayEpochs": 32,
+    "lowLightChannels": 306,
+    "plotWorkTicks": 1000
   }
 }

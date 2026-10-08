@@ -82,6 +82,9 @@ export interface EffectsPort {
     consumeFood(item: Item, prompt: boolean): boolean;
     playerTurnEnded(): void;
     settleEdibleClocks?(): void;
+    settlePendingResidentNeeds?():void;
+    settleResidentBoundary?():void;
+    residentBoundaryTicks?():number;
     monstersApproachStairs(): void;
     wpContext(): ReturnType<Game['wpContext']>;
     monstersFall(): void;
@@ -121,6 +124,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
         // 置位后本回合不再进入暂停分支（E1-修订：锁存，至多暂停一次）
         let fastForward = false;
         while (ports.world.player.ticksUntilTurn > 0) {
+            ports.effects.settlePendingResidentNeeds?.();
             const actions = ports.actions;
             actions?.cancelDeadActions();
             const playerWasBusy = actions?.isBusy(ports.world.player.id) ?? false;
@@ -137,6 +141,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
 
             const actionBoundary = actions?.nextActionBoundary();
             if (actionBoundary != null && actionBoundary < soonestTurn) soonestTurn = actionBoundary;
+            if(ports.effects.residentBoundaryTicks)soonestTurn=Math.min(soonestTurn,ports.effects.residentBoundaryTicks());
             // Native readiness may start at zero (or overdue). It consumes no new elapsed time.
             if (actions) soonestTurn = Math.max(0, soonestTurn);
             if (soonestTurn > 0) ports.worldClock?.validate?.(soonestTurn);
@@ -195,6 +200,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                     }
                 }
 
+                ports.effects.settleResidentBoundary?.();
                 // CE Time.c:2720-2745：归零怪物行动。行动耗时按类型落账：
                 // 攻击/施法出口在 Monster.takeTurn 内已置 attackSpeed（含
                 // MONST_CAST_SPELLS_SLOWLY ×2）；移动/跳过（麻痹/俘虏/入迷等
@@ -214,7 +220,12 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                     if (ports.clock.isGameOver) break; // CE Time.c:2721 的 gameHasEnded 守卫
                     if (!(actor.hp > 0 && actor.ticksUntilTurn <= 0)) continue;
                     if (actions) {
+                        const wasBusy = actions.isBusy(actor.id);
                         const result = actions.dispatchActorBoundary(actor.id);
+                        // A completed foundation phase publishes its custody/output
+                        // before this now-free actor may choose or move again.
+                        if (wasBusy && result === 'native-fallback')
+                            ports.effects.settleResidentBoundary?.();
                         if (result !== 'native-fallback') {
                             if (actor.hp > 0 && actor.ticksUntilTurn <= 0) throw new Error('Actor action boundary must establish a positive timer');
                             continue;
@@ -423,6 +434,7 @@ export function updateEnvironment(ports: TimePorts): void {
     }
 
 export function playerTurnEnded(ports: TimePorts, continuingParalysis = false): void {
+    ports.effects.settlePendingResidentNeeds?.();
         // An animated action resumes inside CE's do/while, not at the function
         // entry: in particular its DF message eligibility must not be reset.
         if (!continuingParalysis) {

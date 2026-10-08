@@ -359,7 +359,8 @@
     "src/test/ext_kind_knowledge_runtime.test.ts",
     "src/test/ext_placement_group_runtime.test.ts",
     "src/test/ext_slumber_runtime.test.ts",
-    "src/test/ext_edible_combinations.test.ts"
+    "src/test/ext_edible_combinations.test.ts",
+    "src/test/ext_resident_needs.test.ts"
   ],
   "gen": [
     "src/test/b1_retire_invented.test.ts",

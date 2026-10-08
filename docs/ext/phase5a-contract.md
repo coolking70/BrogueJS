@@ -2,6 +2,8 @@
 
 日期：2026-10-06。合同标识 **`C5-1 / 1.0.0`**，文档修订 **r2**（取代 r1；r1 从未实现或发布，因此首次实现时版本串仍为 `1.0.0`，不另开 1.0.1）。来源是已批准的[阶段 5 设计](phase5-settlement-world.md)（P5-D01–D14 全 A）、[5A0 任务书](phase5a0.task.md)与一份针对 r1 的独立评审（B1–B4、I1–I11、M1–M9 及顺序意见），评审中的取舍已由维护者裁定，本文照裁定落实。本文冻结供 5A1–5A3 实现、5B 派发使用的名称、字段及行为，不表示这些 API 已实现。数值内容表见 [5A0 报告](phase5a0.report.md) §5（已批准，r2 修订见该报告末节）。
 
+2026-10-08 5D1 当前实现补注（已核对V12生产源）：经济合同使用 **C5-1/1.1.0**、foundation11、world5 schema2、settlement1.1.0/state2；冻结WorldWork SDK的contractVersion=1.0.0/worldSdk1及九冻结文件保持原字节，不能把经济修订改进冻结SDK。本文r2基线/版本计划/旧DTO代码块保留历史含义；当前差异以下方5D1说明及实际源码为准，不以旧shortage/空ledger/全部禁止护送授予当前能力。whole-run6、recording4/origin2保持；V12正式性能已通过（16人净增P95 3.672584ms、64人峰值46.777167ms）；最终浏览器、登记/文档接入差量独立复核及父验收尚未完成。
+
 ## 0 r2 修订记录
 
 | 评审项 | 本文落点 | 摘要 |
@@ -198,7 +200,7 @@ world5 是否存在**只由新局 manifest 静态决定**（I11）：manifest �
 
 ### 3.2 在场精度
 
-在场以原动作实际正耗时累积劳动信用，**C5-1 固定 laborCredit = elapsed × 1**（I9）；将来若引入工作速度属性，键名预留为 `foundation.labor-rate`（5A2-S 管线之后另批，C5-1 不读取）。在场 NPC 工作沿票据调度（§5.5）；玩家计时工作见 §8。
+5A2通用工作原有计时保持；5D1居民种植沿同一native bundle的唯一elapsed来源，仅对已接受planting与work班次的半开区间交集计信用。q=floor((r+dt×eff)/100)，余数取模100，eff取双欠额派生100/50/0/0；移动/取货/等待/rest/watch/战斗不授种植信用，escort不生产。端点先封信用，再FOOD/住房/生命周期，再合法完成入箱，最后新决策；恰work结束已达1000信用可完成，同刻新粮不得反供本次日粮。rest/watch或零效率暂停同票据及escrow并保留信用。种植接单前环境不符保计划等待，可显示water/light/plot-removed等具体原因；进入planting后环境失格按interrupted取消退款、销毁信用并回idle，卡片原因为interrupted，恢复条件后须重新指派，设施移除也不承诺可恢复暂停。改班不重置日界/需求、不赠信用，有票据时取消退款/销毁信用/回idle，未有票据的计划不一概清空；无工作属性加速/XP或第二调度器。
 
 ### 3.3 离线 DTO（I2）
 
@@ -282,11 +284,15 @@ export declare function offlineSeedKey(runSeed: string, campSlotId: CampSlotId,
 | 订单（含 `remainingEpochs`、`planId`） | `world5.orders` | **remainingEpochs 只在订单**；ledger 不再复制 planId/remainingEpochs |
 | 节点/票据/容器 | `world5.nodes/tickets/containers` | input 是这些根的冻结只读投影 |
 
-离线接口只向引擎可信适配器开放，不进入 module UI 的 public context。rules 从已启用机械定义构造，不能由保存自带数值授予能力；load 时校验 `ledger.frozen.rulesFingerprint` 与当前规则指纹一致。shortageEfficiencyNumerators 是等级 0…3 的四个定点分子（0 档等于分母、2/3 档为 0），具体 1 档值留 5D 数值任务审批。knownThreats/pendingEvents.policy 承载有界领域政策 JSON，schema 由该 owner 的已安装定义校验，不允许任意脚本。
+离线接口只向引擎可信适配器开放，load核验rulesFingerprint和真实所有权；保存自带数值不能授予能力。5D1当前DTO覆盖上方r2示意：OfflineResidentState删除可写shortage，保存actorId/alive、foodShortage/housingShortage(0…3)、unfedDays(0…4)、departed；frozen居民增可选bedEligible，床null合法。OfflineInput为schema2，加homeInstance、granaryIds、food:NativeFoodRead[]和ownershipSignature；NativeFoodRead键为containerId/containerRevision/itemId/consumableId/quantity/lockedQuantity，consumableId仅ration_of_food/mango。
 
-经济核按绝对完整 epoch 依次：上周期产物可用 → 按 actor ID 发真实口粮/分床 → 资格/预留/仓容 → 稳定 priority/job/actor 顺序的信用及批次 → 一个登记事件窗口 → 余数/高水位/停止原因。产物在下一 epoch 才可作他单输入；一件 Item 不能同时喂居民与补玩家 nutrition。固定政策下支持 0/999/1000/1001 tick、31/32/33 周期和任意中间分段；比较全部余数、预留、收据、ordinal 与随机键，满足 `S(t0,t2)=S(S(t0,t1),t1,t2)`。
+OfflineRules当前居民生产入口固定epochTicks1000/dayEpochs32/maxPlanEpochs32/maxCompletionsPerEpoch1024/foodUnitsPerResident1、效率分子[100,50,0,0]/分母100，rationDefinitions/nodeDefinitions/recipes为空，故仅做需求、不做离线岗位产物。OfflinePlan增contractVersion='1.1.0'、homeInstance/ownershipSignature/nextBeds；ration-consume效果还含actorId/firstTick/atTick及真实ID/数量/锁量，resident-departure含actorId/atTick/reason='starvation'/homeInstance。实际完整类型在world5.ts、WorldSettlement.ts和ResidentEconomy.ts；这是新可信经济端口，不修改九冻结SDK。
 
-remainingEpochs=0…32，属于补给单整个生命周期；fromTick 必须等于 ledger.lastSettledTick，epochRemainder 必须等于 lastSettledTick % 1000，toTick≥fromTick 且≤当前权威 simulationTicks。处理调用、查看、重访、load 不重置。**长尾的规范定义是逐 epoch 迭代**：订单耗尽后，每个后续 epoch 只做口粮发放/短缺饱和（0…3）/节点再生/pendingOutputs 可用。实现可以用闭式算式跳过任意多个 epoch，但其结果必须与参考逐 epoch 迭代器逐字段相等；测试用仓库内的参考迭代器（仅测试）在边界和随机分段上对照，闭式实现不得成为第二份规范。对已经计算到 toTick 的重复计划为同一提交收据的幂等 no-op；旧 revision 的不同计划报 C5_STALE，不重抽、不重复发物。
+需求唯一持久权威为home ledger；source/resident组件和world5归属索引只引用，CampState2新增spawnSlots/plotDays和camp.consumedLockedUnits/granaryIds；locked剩量+consumedLockedUnits恒2，初锁吃完不自动补锁。RESIDENT_ACTIONS只有recruit/set-residence/return-home/assign-job/set-schedule/set-granary/dismiss-resident，完整payload见配置手册。查看可见卡片不授予操作权限；指派岗位、改班、遣散及驻留操作共同要求当前直接可见、Chebyshev距离≤1、有交互线、双方存活可行动并满足资格/忙态门槛，岗位指派另需home营地同层范围。改班有票据则取消退款、销毁信用并回idle，无票据的未接单计划不一概清空。knownThreats/pendingEvents等保留的通用格式不是已实现袭击/离线生产授权。
+
+5D1住房每1000tick、FOOD每32000tick绝对边界处理；日界先按home slot/actorID分粮，锁单位按ItemID优先，后粮仓containerID/ItemID，再重算床与双欠额/生命周期，随后发布仍合法在场工作完成。未见/离场/escort都用home真粮，不扫包/邻营/未标箱；不结离线jobs。新人先结旧区间再加入，不补过去日界；消费真实FOOD和锁引用同事务，清零Item删唯一根。分段一致性比较余数、锁/库存、需求、床、绝对收据/高水位，不拿调用次数作机械事件。
+
+5D1 fromTick等于ledger.lastSettledTick、toTick不超过权威simulationTicks，重复空区间不推进需求。短区间参考规则为逐1000tick住房、逐32000tickFOOD；长区间按有限库存整轮/余粮/四步饥荒阈值跳跃，离开后重算人口与床，不逐经过天数循环。需求revision按跨过的规范epoch、实际消费/离队事实递增，不按调用次数。完整工作补给单remainingEpochs=0…32是底座后续接口，本步不据此产离线岗位物品。No/纯准备/CAS拒绝与提交前比较零成本；需求/完成/退款/离队/entry故障分别恢复各最外层同步事务入口写集及对象身份，保入口前已付时钟/原生效果；到b未结清需求不继续新信用/产出，退款失败显式暴露。
 
 ### 3.4 离线抽样与 seedKey（I10、M7）
 
@@ -316,8 +322,8 @@ r2 用 Python 标准库与 Node 24 `JSON.stringify`+`crypto` 两种实现独立�
 
 现有三条跨层写路径在管理层上的规则：
 
-1. **monstersApproachStairs**（`Game.ts:1855`）：对 policy 为管理层的相邻缓存层，**跳过整层**——既不 `entersLevelIn--`，也不 `monsterEntersLevel` 迁出。倒计时冻结，返回后从冻结值继续。非管理层不变。
-2. **scheduleLevelFollowers**（`LevelTravel.ts:56`）：在 `world5.residents` 中登记的居民（显式标志）一律不安排跟随，与 movementRegionId 绑定者同样被跳过（不触发 regionBlocked 通知）。实现方式是给该函数新增“排除谓词”端口，不改 Monster 字段。玩家的其他盟友仍按原规则跟随，并在入层序列中**于结算之后**落位。
+1. **monstersApproachStairs**（Game同名符号）：管理相邻缓存层仍冻结普通生态；仅明确escort、当前居民资格合法/存活/无原生失能、已安排真实上/下楼梯approaching的居民可继续原倒计时并迁出。目标无合法落点保source唯一actor/物品根及倒计时1重试；不能整层解冻。
+2. **scheduleLevelFollowers**（LevelTravel同名符号）：stay、不合资格或失能居民排除；明确escort且原生楼梯资格合法者允许原路径跟随，direction=0玩家坠落不免费带居民。movementRegion硬绑定和departing排除保持。经济home索引不随物理承载层变化；迁出取消工作退款，目标home到期需求先结，回营必须已真实回原home范围才确认stay。未招募自生候选留驻不follow。
 3. **restoreFallenItems / pendingFallenByDepth**（`GenerationCoordinator.ts:430`）：管理层重访时顺序改为 **离线结算（计划+提交）→ restoreFallenItems → pending 坠落生物 → 不跑 catch-up**。玩家不在时坠入管理层的物品/生物始终停在 pending 根，只在结算之后写入层。
 
 入层事务：冻结离开层（写 `ledger.frozen`）→ 移交目标唯一真实承载 → 旧区间纯规划与完整预检 → 同步提交世界/模块/收据 → 写入 pending 坠落物与生物 → 玩家落点及跟随者落位 → enteredLevel 放置/事实 → 原命令 checkpoint。load 只验证恢复，禁止 onLoad 产出；保存可带未物化离场区间。玩家终局冻结整局，不为终局页面补结离场经济。
