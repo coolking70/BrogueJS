@@ -195,6 +195,7 @@
     "src/test/presentation_timeline.test.ts",
     "src/test/r_1_appearance.test.ts",
     "src/test/repo_hygiene.test.ts",
+    "src/test/replay_import_ui.test.ts",
     "src/test/retained_map_drawing.test.ts",
     "src/test/retained_render_determinism.test.ts",
     "src/test/scroll_effects.test.ts",

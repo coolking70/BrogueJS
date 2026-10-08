@@ -525,3 +525,218 @@ describe('Shared Host readable long dialogue', () => {
         expect(service.current?.kind).toBe('dialogue');
     });
 });
+
+import { forage, grant } from './support/forageFixture';
+import { Item } from '../engine/Items/Item';
+import { getNextEntityId } from '../entities/Creature';
+import { getInstalledModuleDescriptors } from '../ext/catalog';
+import { assembleEdibleItem, knowledgeState, knowledgeView } from '../engine/Core/KindKnowledge';
+import { generateItemDetail } from '../engine/UI/DetailGenerator';
+import { createItemDetailContext } from '../engine/UI/ItemDetailContext';
+
+describe('browser G2 inventory edible entry', () => {
+    const selectInventoryItem = async (item: Item) => {
+        const row = all(body).find(n => n.props.class === 'item-letter' && n.text.startsWith(item.inventoryLetter!))!.parent!;
+        row.props.onClick(); await Vue.nextTick();
+    };
+    const eatButton = () => all(body).find(n => n.type === 'button' && n.text === i18next.t('Eat'));
+    const savedWorld = (game: Game) => ({ ...game.toSaveSnapshot(), savedAt: 0 });
+    async function edibleScene(name = 'raw') {
+        const h = forage(), game = h.game(), food = grant(h, name, 2);
+        gameModule.activeGame = game;
+        game.executeCommand('toggle_inventory'); mount(true); await Vue.nextTick();
+        await selectInventoryItem(food);
+        return { h, game, food };
+    }
+    it.each(['raw', 'roasted'])('renders MATERIAL %s food via the real installed definition with pure repeated reads', async name => {
+        const { game, food } = await edibleScene(name);
+        expect(food.category).toBe(ItemCategory.MATERIAL);
+        expect(eatButton()).toBeDefined();
+        const before = savedWorld(game), random = rng.getState(), nextId = getNextEntityId(), messages = logger.getState();
+        for (let read = 0; read < 10; read++) {
+            await selectInventoryItem(food); await selectInventoryItem(food); await settle();
+            expect(eatButton()).toBeDefined();
+        }
+        expect(savedWorld(game)).toEqual(before); expect(rng.getState()).toEqual(random);
+        expect(getNextEntityId()).toBe(nextId); expect(logger.getState()).toEqual(messages);
+    });
+    it.each(['pointer', 'e', 'a'].flatMap(entry => [false, true].map(decision => ({entry, decision}))))(
+        '$entry food confirmation $decision uses the original recorded command and closes after settlement', async ({entry, decision}) => {
+            const { game, food } = await edibleScene();
+            const count = game.recordedInputEvents.length, beforeTick = game.world5!.simulationTicks, random = rng.getState();
+            expect(eatButton()).toBeDefined();
+            if (entry === 'pointer') eatButton()!.props.onClick();
+            else (inputManager as unknown as {handleKeyDown(e: KeyboardEvent): void}).handleKeyDown(event(entry, false, null));
+            await Vue.nextTick();
+            expect(game.hasPendingConfirmation).toBe(true); expect(game.isInventoryOpen).toBe(true);
+            expect(game.recordedInputEvents).toHaveLength(count);
+            click(findAction(decision ? 'yes' : 'no')!); await Vue.nextTick();
+            while (game.isAdvancing) game.tickAdvancement(25);
+            await settle();
+            expect(game.recordedInputEvents[count]).toMatchObject({action: 'item:command', data: `eat|${food.inventoryLetter}|`, decisions: [decision]});
+            expect(food.quantity).toBe(decision ? 1 : 2);
+            expect(game.world5!.simulationTicks).toBe(beforeTick + (decision ? 100 : 0));
+            if (!decision) expect(rng.getState()).toEqual(random);
+            expect(game.hasPendingConfirmation).toBe(false); expect(game.isInventoryOpen).toBe(false);
+        });
+    it('keeps native FOOD edible while ordinary material and charcoal have no Eat or keyboard action', async () => {
+        const game = createHeadlessGame(33502); gameModule.activeGame = game;
+        game.executeCommand('toggle_inventory'); mount(true); await Vue.nextTick();
+        const native = game.player.inventory.items.find(i => i.category === ItemCategory.FOOD)!;
+        await selectInventoryItem(native); expect(eatButton()).toBeDefined();
+        for (const name of ['ordinary material', 'charcoal']) {
+            const material = new Item(name, '*', 0xffffff, ItemCategory.MATERIAL);
+            expect(game.player.inventory.addItem(material)).toBe(true); await settle();
+            await selectInventoryItem(material); expect(eatButton()).toBeUndefined();
+            const count = game.recordedInputEvents.length, before = savedWorld(game), random = rng.getState();
+            for (const key of ['e', 'a']) (inputManager as unknown as {handleKeyDown(e: KeyboardEvent): void}).handleKeyDown(event(key, false, null));
+            expect(game.recordedInputEvents).toHaveLength(count);
+            expect(savedWorld(game)).toEqual(before); expect(rng.getState()).toEqual(random);
+        }
+    });
+    it('does not infer food from a foreign definition when the module is absent', async () => {
+        const game = createHeadlessGame(33503); gameModule.activeGame = game;
+        const foreign = new Item('foreign material', '*', 0xffffff, ItemCategory.MATERIAL);
+        foreign.worldItem = {definitionId: 'fgfixture.raw', quality: 'basic', toolDurability: null};
+        game.player.inventory.addItem(foreign);
+        game.executeCommand('toggle_inventory'); mount(true); await Vue.nextTick();
+        await selectInventoryItem(foreign); expect(eatButton()).toBeUndefined();
+    });
+    // Optional installed production coverage; the neutral cases above always run.
+    if (getInstalledModuleDescriptors().some(d => d.id === 'foraging')) it('renders actual installed foraging raw/roasted food', async () => {
+        const h = forage(['foraging']), game = h.game(); gameModule.activeGame = game;
+        const foods = ['foraging.mend', 'foraging.mend-roasted'].map(id => assembleEdibleItem(game, id));
+        for (const item of foods) expect(game.player.inventory.addItem(item)).toBe(true);
+        game.executeCommand('toggle_inventory'); mount(true); await Vue.nextTick();
+        const before = savedWorld(game), random = rng.getState(), nextId = getNextEntityId();
+        for (const food of foods) {
+            expect(food.category).toBe(ItemCategory.MATERIAL);
+            await selectInventoryItem(food); expect(eatButton()).toBeDefined();
+        }
+        expect(savedWorld(game)).toEqual(before); expect(rng.getState()).toEqual(random); expect(getNextEntityId()).toBe(nextId);
+    });
+    it('resolves restored item identities after load and keeps replay clicks/keys read-only', async () => {
+        const { h, game, food } = await edibleScene();
+        const saved = h.save(), recording = h.exportRecording();
+        expect(game.loadSnapshot(JSON.parse(saved))).toBe(true); await settle();
+        const restored = game.player.inventory.items.find(i => i.id === food.id)!;
+        expect(restored).not.toBe(food); await selectInventoryItem(restored); expect(eatButton()).toBeDefined();
+        expect(h.replay(recording).ok).toBe(true); await settle();
+        expect(game.replayRecording).toBeTruthy();
+        await selectInventoryItem(game.player.inventory.items.find(i => i.id === food.id)!);
+        expect(eatButton()).toBeDefined();
+        const before = savedWorld(game), random = rng.getState(), nextId = getNextEntityId(), count = game.recordedInputEvents.length;
+        eatButton()!.props.onClick();
+        for (const key of ['e', 'a']) (inputManager as unknown as {handleKeyDown(e: KeyboardEvent): void}).handleKeyDown(event(key, false, null));
+        expect(savedWorld(game)).toEqual(before); expect(rng.getState()).toEqual(random);
+        expect(getNextEntityId()).toBe(nextId); expect(game.recordedInputEvents).toHaveLength(count);
+    });
+});
+
+describe('browser R-UI02 actual inventory names', () => {
+    const savedWorld = (game: Game) => ({ ...game.toSaveSnapshot(), savedAt: 0 });
+    const worldReads = (game: Game) => ({ save: savedWorld(game), random: rng.getState(),
+        nextId: getNextEntityId(), messages: logger.getState(), events: structuredClone(game.recordedInputEvents) });
+    const rowFor = (item: Item) => {
+        const letter = all(body).find(n => n.props.class === 'item-letter' && n.text === `${item.inventoryLetter}${item.isProtected ? '}' : ')'}`);
+        expect(letter).toBeDefined();
+        return letter!.parent!;
+    };
+    const rowName = (item: Item) => {
+        const name = rowFor(item).children.find(n => n.props.class === 'item-name');
+        expect(name).toBeDefined();
+        return all(name!).filter(n => n.type !== '#comment').map(n => n.text).join('').trim();
+    };
+    async function assertPureNameAndDetail(game: Game, item: Item, expected: string) {
+        const before = worldReads(game);
+        expect(item.displayName).toBe(expected);
+        for (let read = 0; read < 3; read++) {
+            expect(rowName(item)).toBe(`${expected}${item.quantity > 1 ? ` ×${item.quantity}` : ''}`);
+            rowFor(item).props.onClick(); await Vue.nextTick();
+            rowFor(item).props.onClick(); await settle();
+        }
+        rowFor(item).props.onClick(); await Vue.nextTick();
+        const detail = generateItemDetail(item, createItemDetailContext(game, item));
+        const inspect = all(rowFor(item).parent!).find(n => n.type === 'button' && n.text === i18next.t('item.inspect'));
+        expect(inspect).toBeDefined(); inspect!.props.onClick();
+        expect(game.inspectTarget).toEqual(detail); expect(game.inspectTarget!.name).toBe(expected);
+        expect(worldReads(game)).toEqual(before);
+    }
+    // All states use installed definitions and production commands. HP/nutrition
+    // are controlled legal scene inputs; no knowledge rows or bindings are forged.
+    if (getInstalledModuleDescriptors().some(d => d.id === 'foraging')) {
+        const addProductionLocale = () => {
+            const locale = getInstalledModuleDescriptors().find(d => d.id === 'foraging')!.locales!.zh_CN!;
+            i18next.addResources('zh_CN', 'translation', locale);
+        };
+        it.each(['unknown', 'called', 'tasted', 'tasted-called', 'known'] as const)(
+            'preserves production %s names and details through load identity replacement', async state => {
+                addProductionLocale();
+                const h = forage(['foraging']), game = h.game(); gameModule.activeGame = game;
+                const food = assembleEdibleItem(game, 'foraging.mend', 3);
+                expect(game.player.inventory.addItem(food)).toBe(true);
+                expect(food.displayName).toBe('镜面菌'); expect(knowledgeState(game, 'foraging.mend')).toBe('unknown');
+                game.player.nutrition = 1000; game.player.hp = game.player.maxHp;
+                const called = state === 'called' || state === 'tasted-called' || state === 'known';
+                if (called) game.executeItemCommand('call', food, '月下回声');
+                if (state === 'tasted' || state === 'tasted-called' || state === 'known') {
+                    game.executeItemCommand('eat', food);
+                    expect(food.quantity).toBe(2); expect(knowledgeState(game, 'foraging.mend')).toBe('tasted');
+                }
+                if (state === 'known') {
+                    game.player.hp = 1; game.executeItemCommand('eat', food);
+                    expect(food.quantity).toBe(1); expect(knowledgeState(game, 'foraging.mend')).toBe('known');
+                }
+                expect(game.isAdvancing).toBe(false); expect(game.hasPendingConfirmation).toBe(false);
+                const expected = state === 'known' ? '愈合菌'
+                    : `镜面菌${state.startsWith('tasted') ? '（吃过，无明显效果）' : ''}${called ? '（叫作：月下回声）' : ''}`;
+                if (called) expect(knowledgeView(game, 'foraging', 'foraging.mushrooms').rows.find(r => r.definitionId === 'foraging.mend')?.title).toBe('月下回声');
+                game.executeCommand('toggle_inventory'); mount(true); await Vue.nextTick();
+                await assertPureNameAndDetail(game, food, expected);
+                const snapshot = game.toSaveSnapshot();
+                expect(game.loadSnapshot(structuredClone(snapshot))).toBe(true); await settle();
+                const restored = game.player.inventory.items.find(i => i.id === food.id)!;
+                expect(restored).not.toBe(food); expect(Vue.isProxy(restored)).toBe(false);
+                expect(knowledgeState(game, 'foraging.mend')).toBe(state === 'known' ? 'known' : state.startsWith('tasted') ? 'tasted' : 'unknown');
+                if (called) expect(knowledgeView(game, 'foraging', 'foraging.mushrooms').rows.find(r => r.definitionId === 'foraging.mend')?.title).toBe('月下回声');
+                // Load clears the old selection; the same public row selects the new identity.
+                expect(all(body).some(n => n.props.class === 'item-actions')).toBe(false);
+                await assertPureNameAndDetail(game, restored, expected);
+            });
+        it.each([false, true])('keeps roasted prefix and roast knowledge note (raw known: %s)', async rawKnown => {
+            addProductionLocale();
+            const h = forage(['foraging']), game = h.game(); gameModule.activeGame = game;
+            if (rawKnown) {
+                const raw = assembleEdibleItem(game, 'foraging.mend'); game.player.inventory.addItem(raw);
+                game.player.hp = 1; game.player.nutrition = 1000; game.executeItemCommand('eat', raw);
+                expect(knowledgeState(game, 'foraging.mend')).toBe('known');
+            }
+            const roasted = assembleEdibleItem(game, 'foraging.mend-roasted'); game.player.inventory.addItem(roasted);
+            expect(knowledgeState(game, 'foraging.mend-roasted')).toBe('unknown');
+            game.executeCommand('toggle_inventory'); mount(true); await Vue.nextTick();
+            await assertPureNameAndDetail(game, roasted, rawKnown ? '烤愈合菌（烤后效果未知）' : '烤镜面菌');
+        });
+        it('keeps actual production charcoal named and edible by its public definition', async () => {
+            addProductionLocale();
+            const h = forage(['foraging']), game = h.game(); gameModule.activeGame = game;
+            const char = assembleEdibleItem(game, 'foraging.char'); game.player.inventory.addItem(char);
+            expect(char.category).toBe(ItemCategory.MATERIAL); expect(knowledgeState(game, 'foraging.char')).toBe('known');
+            game.executeCommand('toggle_inventory'); mount(true); await Vue.nextTick();
+            await assertPureNameAndDetail(game, char, '焦炭');
+            expect(all(body).some(n => n.type === 'button' && n.text === i18next.t('Eat'))).toBe(true);
+        });
+    }
+    it.each(['raw', 'roasted'])('preserves neutral edible module %s name and detail', async kind => {
+        const h = forage(), game = h.game(), food = grant(h, kind); gameModule.activeGame = game;
+        const expected = food.displayName;
+        game.executeCommand('toggle_inventory'); mount(true); await Vue.nextTick();
+        await assertPureNameAndDetail(game, food, expected);
+    });
+    it('preserves ordinary native FOOD name and detail', async () => {
+        const game = createHeadlessGame(33504); gameModule.activeGame = game;
+        const food = game.player.inventory.items.find(i => i.category === ItemCategory.FOOD)!;
+        const expected = food.displayName;
+        game.executeCommand('toggle_inventory'); mount(true); await Vue.nextTick();
+        await assertPureNameAndDetail(game, food, expected);
+    });
+});

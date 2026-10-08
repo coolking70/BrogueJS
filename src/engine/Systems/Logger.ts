@@ -86,7 +86,10 @@ export class Logger {
     }
     public get pendingAcknowledgment(): LogMessage | undefined {
         const display = presentations.get(this);
-        if (display && !display.enabled()) this.clearAcknowledgments();
+        // Replay reads retire stale live ACKs once. An already empty display
+        // must stay quiet: notifying its host can refresh reactive module UI.
+        if (display && !display.enabled()
+            && (display.pending.length || display.unread.length || display.terminalShown)) this.clearAcknowledgments();
         return display?.pending[0];
     }
     public get pendingAcknowledgments(): readonly Readonly<LogMessage>[] {

@@ -6,6 +6,7 @@ import { activeGame } from '../engine/Core/Game';
 import { ItemCategory } from '../engine/Items/Item';
 import type { Item } from '../engine/Items/Item';
 import { ItemLoader } from '../engine/Items/ItemLoader';
+import { edibleDefinition } from '../engine/Core/KindKnowledge';
 import { generateItemDetail } from '../engine/UI/DetailGenerator';
 import { createItemDetailContext } from '../engine/UI/ItemDetailContext';
 import { inputManager } from '../engine/Input';
@@ -198,13 +199,9 @@ const groupedItems = computed(() => {
     return Object.fromEntries(Object.entries(groups).filter(([_, items]) => items.length > 0));
 });
 
-// Helper to translate names using i18n
-// Note: displayName already handles identification status, so we use it directly
-const getLocalizedName = (name: string) => {
-    // displayName already returns the correct name (with identification respect)
-    // Just return it directly without further translation attempts
-    return name;
-};
+// Item presentation is keyed by raw identity; deep refs wrap inventory rows.
+// The public getter already applies localization and knowledge filtering.
+const getLocalizedName = (item: Item) => toRaw(item).displayName;
 
 const colorToCss = (color: number) => `#${color.toString(16).padStart(6, '0')}`;
 
@@ -221,7 +218,7 @@ const isEquipped = (item: Item) => {
 
 const isPotion = (item: Item) => item.category === ItemCategory.POTION;
 const isScroll = (item: Item) => item.category === ItemCategory.SCROLL;
-const isFood = (item: Item) => item.category === ItemCategory.FOOD;
+const isFood = (item: Item) => item.category === ItemCategory.FOOD || !!edibleDefinition(activeGame, toRaw(item));
 const isArcanaUsable = (item: Item) =>
     item.category === ItemCategory.WAND || item.category === ItemCategory.STAFF || item.category === ItemCategory.CHARM;
 
@@ -310,6 +307,7 @@ const selectItemOrIdentify = (item: Item) => {
 };
 
 const performInspect = (item: Item) => {
+    item = toRaw(item);
     activeGame.inspectTarget = generateItemDetail(item, createItemDetailContext(activeGame, item));
 };
 
@@ -515,7 +513,7 @@ const handleInventoryKey = (event: KeyboardEvent): boolean => {
                     <span class="item-sigil" :style="{ color: magicSigilColor(entry.item) }">{{ magicSigil(entry.item) }}</span>
                     <span class="item-char" :style="{ color: colorToCss(entry.item.color) }">{{ entry.item.char }}</span>
                     <span class="item-name">
-                       {{ getLocalizedName(entry.item.displayName) }}<span v-if="entry.item.quantity > 1"> ×{{ entry.item.quantity }}</span>
+                       {{ getLocalizedName(entry.item) }}<span v-if="entry.item.quantity > 1"> ×{{ entry.item.quantity }}</span>
                        <span v-if="isEquipped(entry.item)" class="equipped-tag">{{ t('(equipped)') || '(equipped)' }}</span>
                        <span v-if="entry.item.strengthRequired && activeGame.player.effectiveStrength < entry.item.strengthRequired" class="strength-warning">
                            {{ t('[Req Str:') || '[Req Str:' }} {{ entry.item.strengthRequired }}]
