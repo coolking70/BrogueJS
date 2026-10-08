@@ -41,7 +41,8 @@ function event(
   previousBand: string | null,
   crossedAtTick: number,
   deferred: boolean,
-  reason: NeedEventFact['reason'] = null
+  reason: NeedEventFact['reason'] = null,
+  degrade = true
 ): void {
   const actor = game.monsters.concat(game.dormantMonsters).find((a) => a.id === row.actorId),
     runtime = game.extensionRuntime!;
@@ -71,7 +72,7 @@ function event(
         departures.push(id);
       }
     },
-    true
+    degrade
   );
   if (ok)
     for (const id of departures)
@@ -144,16 +145,18 @@ export function triggerActorNeeds(
           revision: 1
         };
         (s.actorNeeds ??= { schema: 1, rows: [] }).rows.push(row);
-        event(game, d, row, 'attached', null, now, false);
+        // Resident ownership changes already have an encompassing native/economic
+        // transaction. A failed component writer must abort that handoff; ordinary
+        // need events retain their independent degraded-participant semantics.
+        event(game, d, row, 'attached', null, now, false, null, trigger !== 'resident-changed');
       } else if (!result && row) {
         s.actorNeeds!.rows = s.actorNeeds!.rows.filter((r) => r !== row);
-        event(game, d, projectNeed(row, d, now), 'detached', null, now, false, 'ineligible');
+        event(game, d, projectNeed(row, d, now), 'detached', null, now, false, 'ineligible', trigger !== 'resident-changed');
       }
     }
   }
   s.actorNeeds?.rows.sort((a, b) => a.actorId - b.actorId || (a.needId < b.needId ? -1 : 1));
   invalidateNeeds(game);
-  void trigger;
 }
 export function detachActorNeeds(
   game: Game,

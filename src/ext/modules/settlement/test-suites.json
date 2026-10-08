@@ -1,5 +1,6 @@
 {
   "test": [
+    "tests/resident_foraging_integration.test.ts",
     "tests/settlement_runtime.test.ts",
     "tests/settlement_camera.test.ts",
     "tests/settlement_validation.test.ts",

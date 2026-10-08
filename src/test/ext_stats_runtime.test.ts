@@ -1,3 +1,4 @@
+import { edibleState } from '../engine/Core/EdibleState';
 import { Monster, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
 import { forEachItemRoot } from '../engine/Core/WorldItemRoots';
@@ -124,5 +125,27 @@ describe('proposal validation and native ownership',()=>{
   attrs.values['growth.attribute.constitution']!++;
   const projected=runtime.hypotheticalComponents('growth',game.player.id,{attributes:attrs as never});
   expect(projected['native.max-hp']).toBe(game.player.maxHp+6);expect(runtime.snapshot()).toEqual(before);expect(rng.getState()).toEqual(random);
+ });
+});
+
+describe('candidate stat world scope', () => {
+ it('inherits and restores nested clocks/actors and discards cached candidate reads even on throw', () => {
+  const f=direct(),candidate=new Player(4,4);candidate.id=f.p.id;candidate.strength=20;
+  edibleState(f.runtime).timedStats={schema:1,rows:[{actorId:f.p.id,owner:'stats-fixture',key:'native.strength',category:'flat',value:2,untilTick:100}]};
+  const live=()=>f.runtime.stats.value(f.p.id,'native.strength');
+  expect(live()).toBe(14);
+  expect(()=>f.runtime.withStatWorld([candidate],()=>{
+    expect(live()).toBe(22);
+    f.runtime.withStatWorld([candidate],()=>expect(live()).toBe(22));
+    f.runtime.withStatWorld([candidate],()=>expect(live()).toBe(20),100);
+    expect(live()).toBe(22);
+    throw Error('candidate preflight rejected');
+  },99)).toThrow('candidate preflight rejected');
+  expect(f.runtime.stats.cacheSize(f.p.id)).toBe(0);
+  expect(live()).toBe(14);
+  expect([f.p.strength,candidate.strength]).toEqual([12,20]);
+  f.runtime.withStatWorld([f.p],()=>expect(live()).toBe(12),100);
+  expect(f.runtime.stats.cacheSize(f.p.id)).toBe(0);
+  expect(live()).toBe(14);
  });
 });

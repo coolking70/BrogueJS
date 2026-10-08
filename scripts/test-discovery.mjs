@@ -75,7 +75,7 @@ export function resolveTestSuites(root = repositoryRoot) {
     return { root, suites, files, modules, owners };
 }
 
-/** The npm runner resolves once before spawning Vite; direct Vite resolves here. */
+/** Vite repeats the runner's strict discovery unless a caller supplies a shared result. */
 export function getTestDiscovery(root = repositoryRoot) {
     const serialized = process.env.BROGUE_TEST_DISCOVERY;
     if (!serialized) return resolveTestSuites(root);

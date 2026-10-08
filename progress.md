@@ -1,5 +1,7 @@
 Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工试玩问题；用户在 2026-09-29 明确要求停止定时任务并启动合适子进程开发。
 
+- 2026-10-09：5D1 f067e89已由父提交推送；5G eda3094已语义集成，R1真实writer故障已复现并最小原子修复；单批87文件1916通过3失败/exit1保留，受影响3文件111复核全过。boundary/types/实际build/drift6文件12项exit0，5G已集成待父提交。只存结果摘要、最多两轮审查→修复，余项5Z；详见 docs/ext/phase5d1-5g-integration.report.md。
+
 - 2026-10-09 5D1立即收口：**本步按用户裁决验收，可提交**；父后续提交并记录提交号，本执行者未commit/push。已确证的玩法及存档/录像一致性问题已修复并独立关闭，当前无剩余已证实阻断。V16径向误激活与居民岗位选择问题已有窄回归及独立通过；同值DTO草稿刷新F1独立复验20项通过并关闭。最终浏览器复验仍未完成，不能称全场景通过。 已有结果分版本引用、不累计重叠数：V12正式性能16人净增P95为3.672584ms、64人峰值46.777167ms；final-ui-draft-fix原四文件81项及五守卫38项通过，boundary/types/实际build通过；final-ui-fix实际drift8项通过。父V17既有摘要为四原raw真实回放0 OOS、末9字段相同，同源build与selector准入通过；本轮不重新验证这些结果。 遗留①玩法/存档录像：无剩余已证实阻断；②证据/截图/脚本形式和最终V17十手势、24矩阵、self955三个完整浏览器场景、真机/失焦/截图及完整门禁归[5Z](docs/ext/phase5z-remainders.md)。静态5G R1只列后续集成风险。最多两轮审查→修复、第二轮余项移5Z，只留结果摘要，覆盖旧封存流程；本轮仅文档及git diff --check，不新增测试/browser/build/审查/冻结源。详见[报告](docs/ext/phase5d1.report.md)。
 
 以下为历史进度，保留原Original prompt及各阶段当时结论。

@@ -345,11 +345,12 @@ export function queryStations(game: Game, owner: string): StationRead[] {
       };
     });
 }
+/** Public/harness reads project elapsed regeneration; trusted callers may request the raw row. */
 export function readWorkContext(
   game: Game,
   owner: string,
   query: KnownWorkQuery,
-  virtual = false,
+  virtual = true,
   actorId = game.player.id
 ): WorldResult<WorkContext> {
   return result(() => {
@@ -714,7 +715,8 @@ export function worldWorkReadSDK(game: Game, owner: string): WorldWorkReadSDK | 
     worldSdk: 1 as const,
     owner,
     lastCommandError: () => worldWorkLastError(game),
-    readWorkContext: (query: KnownWorkQuery) => readWorkContext(game, owner, query),
+    // Project elapsed regeneration without committing it; CAS uses the live revision.
+    readWorkContext: (query: KnownWorkQuery) => readWorkContext(game, owner, query, true),
     queryStations: () => result(() => queryStations(game, owner)),
     queryContainers: () =>
       result(() => {

@@ -202,7 +202,7 @@ describe('settlement limits and structures', () => {
             .filter((i) => i.worldItem)
             .map((i) => [i.worldItem!.definitionId, i.quantity])
         )
-      ).toEqual({ 'settlement.wood': 12, 'settlement.stone': 8, 'settlement.fiber': 6 });
+      ).toEqual({ 'settlement.wood': 12, 'settlement.stone': 8, 'settlement.fiber': 6, 'settlement.seed': 6 });
       const receipts = structuredClone(g.world5!.startupGrants);
       h.load(h.save());
       expect(g.world5!.startupGrants).toEqual(receipts);

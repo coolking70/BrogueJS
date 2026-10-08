@@ -11,15 +11,18 @@ if (!Object.hasOwn(discovery.suites, suite)) {
     console.error(`Unknown test suite: ${command}. Expected test, full, gen, drift or ext.`);
     process.exit(1);
 }
+// Vite repeats the same strict discovery locally. Do not put the growing file
+// inventory in a single environment string (Linux's exec limit is per string).
+const env = { ...process.env, BROGUE_TEST_SUITE: suite,
+    ...(command === 'full' ? { BROGUE_REQUIRE_CE: '1' } : {}),
+};
+delete env.BROGUE_TEST_DISCOVERY;
 const result = spawnSync(process.execPath, [
     fileURLToPath(new URL('vitest.mjs', import.meta.resolve('vitest/package.json'))),
     'run', ...args,
 ], {
     cwd: repositoryRoot, stdio: 'inherit',
-    env: {
-        ...process.env, BROGUE_TEST_SUITE: suite, BROGUE_TEST_DISCOVERY: JSON.stringify(discovery),
-        ...(command === 'full' ? { BROGUE_REQUIRE_CE: '1' } : {}),
-    },
+    env,
 });
 if (result.error) console.error(result.error.message);
 process.exit(result.status ?? 1);
