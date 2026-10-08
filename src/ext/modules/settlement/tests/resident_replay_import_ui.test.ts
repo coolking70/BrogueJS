@@ -217,7 +217,7 @@ afterAll(async () => {
 });
 
 describe('public replay import with mounted App', () => {
-  it('accepts a newly captured foundation11 settlement file, settles reactive rendering and preserves seek/load/continuation', async () => {
+  it('accepts a newly captured foundation12 settlement file, settles reactive rendering and preserves seek/load/continuation', async () => {
     const game = new Game({ seed: 3 });
     gameModule.activeGame = game;
     const root = node('root');
@@ -444,7 +444,7 @@ it('read-only resident roster permits selection and disables every resident/gran
   const resident = all(root).find(n => n.props['data-resident'] === a.id)!;
   expect(resident).toBeDefined();
   const writes = all(resident).filter(n => n.type === 'button');
-  expect(writes).toHaveLength(8);
+  expect(writes).toHaveLength(9); // The new public order button is also disabled.
   expect(writes.every(n => n.props.disabled === true)).toBe(true);
   const granaries = all(root).filter(n => n.props['data-granary'] !== undefined);
   expect(granaries.length).toBeGreaterThan(0);

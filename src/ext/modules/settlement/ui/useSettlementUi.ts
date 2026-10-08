@@ -173,6 +173,21 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
     const p:Record<string,unknown>={campId:camp.regionId,campRevision:camp.revision,...extra};
     if(action==='set-granary'){const box=v.boxes.find(b=>b.id===id);if(!box)return;p.containerId=id;p.containerRevision=box.revision;}
     else {p.targetId=id;p.targetRevision=row?.revision??candidate?.revision;if(p.targetRevision===undefined)return;}
+    if(action==='order-work'||action==='resupply-work'||action==='cancel-order'){
+      const order=v.production?.orders.find(o=>o.actorId===id);
+      if(action!=='order-work'){if(!order)return;p.orderId=order.id;p.orderRevision=order.revision;}
+      if(action!=='cancel-order'){
+        const input=action==='order-work'?extra:order!;
+        const boxes=v.jobTargets?.find(t=>t.campId===row?.campId)?.boxes;
+        const source=boxes?.find(b=>b.id===input.sourceId),destination=boxes?.find(b=>b.id===input.destinationId);
+        if(!source||!destination)return;
+        p.sourceRevision=source.revision;p.destinationRevision=destination.revision;
+        p.stationRevision=v.production?.stations.find(s=>s.id===input.stationId)?.revision??null;
+        p.plotRevisions=(input.plotIds as number[]).map(id=>v.jobTargets?.find(t=>t.campId===row?.campId)?.plots.find(p=>p.id===id)?.revision);
+        if((p.plotRevisions as unknown[]).some(r=>r===undefined))return;
+        p.inventoryStamp=v.inventoryStamp;
+      }
+    }
     if(action==='assign-job'){
       const job=extra.job as {kind:string;sourceId?:number;destinationId?:number;plotIds?:number[]};
       const targets = v.jobTargets?.find(t => t.campId === row?.campId);

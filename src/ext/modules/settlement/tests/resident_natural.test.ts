@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs';
 import { expect, it, vi } from 'vitest';
 import { createWorldHarness, worldHarnessGame } from '../../../testing/worldHarness';
 import { residentComponent } from '../../../../engine/Core/ResidentWorld';
@@ -18,6 +19,7 @@ it('normal new-game core/day-food: original956, same actor/crop carry, guard, st
   const candidate = g.extensionRuntime!.worldCampState('settlement').spawnSlots[0]!.actorId!;
   const original = g.monsters.find((a) => a.id === candidate)!;
   const checkpoints = new Map(route.checkpoints.map((c) => [c.events, c]));
+  const captured = new Map<number, string>();
   const seeks = route.checkpoints.filter(c => c.digest !== null);
   let crop: Item | undefined, food: Item | undefined;
   const foods = () => g.player.inventory.items.filter(i => i.category === ItemCategory.FOOD)
@@ -29,7 +31,10 @@ it('normal new-game core/day-food: original956, same actor/crop carry, guard, st
     expect(original.loc).toEqual(point.actorLocation);
     expect(original.hp).toBe(point.actorHp);
     expect(g.monsters.includes(original)).toBe(point.actorActive);
-    if (point.digest !== null) expect(h.digest()).toBe(point.digest);
+    if (point.digest !== null) {
+      if (process.env.RESIDENT_FORMAT_CAPTURE) captured.set(point.events, h.digest());
+      else expect(h.digest()).toBe(point.digest);
+    }
   };
   try {
     expect(candidate).toBe(route.actorId);
@@ -141,8 +146,10 @@ it('normal new-game core/day-food: original956, same actor/crop carry, guard, st
     expect(h.replay(h.exportRecording())).toEqual({ok:true,firstMismatch:null});
     expect(h.replay(recording)).toEqual({ok:true,firstMismatch:null});
     for (const point of seeks) {
-      h.seek(recording,point.events);expect(h.digest()).toBe(point.digest);
+      h.seek(recording,point.events);expect(h.digest()).toBe(captured.get(point.events) ?? point.digest);
     }
+    if (process.env.RESIDENT_FORMAT_CAPTURE)
+      writeFileSync(process.env.RESIDENT_FORMAT_CAPTURE + '.natural.json', JSON.stringify([...captured].map(([events,digest])=>({events,digest})),null,2)+'\n');
     // Optional external originals are immutable references, never rewritten fixtures.
     if (process.env.RESIDENT_SELF_RECORDINGS) {
       const {readFileSync,writeFileSync} = await import('node:fs');

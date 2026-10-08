@@ -1,5 +1,7 @@
 # 合成与资源采集配置手册
 
+5D2接入补注（维护者验收通过）：模块新增同步只读 `crafting.recipe-catalog.v1`，返回当前注册配方按owner/ID排序的detached目录。settlement只可选择offlineEligible的chest-kit/bed-kit并复用同一WorkTicket/真实工具/材料/工位及owner提交政策；不导入crafting JSON或向NPC开放任意玩家命令。crafting自身module/rules1.0.0保持，此次底座协议升foundation12并拒旧档。详见[5D2报告](phase5d2.report.md)。
+
 适用：阶段 5B 的 `crafting` 内容模块，foundation **7**、冻结 **worldSdk 1**、C5-1 **1.0.0**；module/rules **1.0.0**，pack/state **schema 1**，四种命令 **payload v1**。本文说明已实现的配置入口，不把预留的 SDK 类型视为本模块已经开放的功能。
 
 机械数据入口是 `src/ext/modules/crafting/data/definitions.json`，文本入口是同目录的 `locales/zh_CN.json`。生产数据以[5B 任务书 §5](phase5b.dot-package.md#5-数据包与完整数值已批准逐字照抄)为准。本文示例仅用于作者学习与校验，不自动加入正式包，不修改本轮批准的数值、名称、ID 或版本。

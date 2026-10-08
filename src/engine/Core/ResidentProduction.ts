@@ -1,3 +1,4 @@
+import { prepareResidentOrder,commitResidentOrder,residentOrder } from './ResidentOrders';
 import type { Game } from './Game';
 import { generationReserved } from '../Generator/GenerationReservation';
 import { inventoryStamp } from './RecordingDigest';
@@ -75,7 +76,13 @@ export interface ResidentCommandPlan {
   canonical: string;
   chargedTicks: number;
 }
-export function prepareResidentCommand(
+export function prepareResidentCommand(g:Game,data:unknown):ReturnType<typeof prepareResidentCommandInternal>{
+  let production=false;try{const x=typeof data==='string'?JSON.parse(data):data;production=['order-work','resupply-work','cancel-order'].includes(x?.action);}catch{}
+  if(!production)return prepareResidentCommandInternal(g,data);
+  const restore=g.checkpointResidentWorld();
+  try{return prepareResidentCommandInternal(g,data);}finally{restore();}
+}
+function prepareResidentCommandInternal(
   g: Game,
   data: unknown
 ):
@@ -89,6 +96,9 @@ export function prepareResidentCommand(
     const p = x.payload,
       extra: Record<string, string> = {
         recruit: 'targetId,targetRevision',
+        'order-work':'targetId,targetRevision,recipeId,batchCount,sourceId,sourceRevision,destinationId,destinationRevision,stationId,stationRevision,plotIds,plotRevisions,inventoryStamp',
+        'resupply-work':'targetId,targetRevision,orderId,orderRevision,sourceRevision,destinationRevision,stationRevision,plotRevisions,inventoryStamp',
+        'cancel-order':'targetId,targetRevision,orderId,orderRevision',
         'set-residence': 'targetId,targetRevision,mode',
         'return-home': 'targetId,targetRevision',
         'assign-job':
@@ -142,7 +152,7 @@ export function prepareResidentCommand(
       if (
         residentDisabled(a!) ||
         (productionActorActionScheduler(g)?.isBusy(a!.id) &&
-          !(x.action !== 'recruit' && g.world5!.residentJobs.some((j) => j.actorId === a!.id)))
+          !(x.action !== 'recruit' && (g.world5!.residentJobs.some((j) => j.actorId === a!.id)||!!residentOrder(g,a!.id))))
       )
         failResident('C5_BUSY');
       const r = residentComponent(g, a!.id);
@@ -166,6 +176,11 @@ export function prepareResidentCommand(
         if (!r || r.campId !== c.regionId || r.campOrdinal !== c.ordinal)
           failResident('C5_BAD_REFERENCE');
         if (r!.revision !== p.targetRevision) failResident('C5_STALE');
+        if (['order-work','resupply-work','cancel-order'].includes(String(x.action))){
+          if(!inResidentCamp(g,c,a!.loc))failResident('C5_WRONG_LEVEL');
+          if(x.action!=='cancel-order'&&p.inventoryStamp!==inventoryStamp(g.player.inventory.items))failResident('C5_STALE');
+          prepareResidentOrder(g,c,String(x.action),p);
+        }
         if (x.action === 'set-residence') {
           if (!['stay', 'escort'].includes(String(p.mode))) failResident('C5_BAD_PAYLOAD');
           if (p.mode === 'stay' && !inResidentCamp(g, c, a!.loc)) failResident('C5_WRONG_LEVEL');
@@ -340,6 +355,9 @@ export function commitResidentCommand(g: Game, plan: ResidentCommandPlan) {
           state = runtime.worldCampState(plan.owner);
           c = state.camps.find((c) => c.regionId === p.campId)!;
           r = undefined;
+        } else if(['order-work','resupply-work','cancel-order'].includes(plan.action)){
+          commitResidentOrder(g,c,plan.action,p);
+          r!.job={kind:'idle'};r!.stopReason=null;
         } else {
           cancelResidentWork(g, a.id, 'reassigned');
           if (plan.action === 'set-residence' || plan.action === 'return-home') {
@@ -501,11 +519,12 @@ export function removeResident(
   )
     return;
   transactResidentWorld(g, () => {
-    cancelResidentWork(g, id, reason);
+    cancelResidentWork(g, id, reason,occurredTick);
     const rec = residentRecord(g, id),
       a = g.departureActor(id);
     if (rec) {
       for (const l of g.world5!.offline) {
+        if(l.productionQuotas)l.productionQuotas=l.productionQuotas.filter(q=>q.actorId!==id);
         l.residentStates = l.residentStates.filter((s) => s.actorId !== id);
         l.frozen.residents = l.frozen.residents.filter((s) => s.actorId !== id);
       }

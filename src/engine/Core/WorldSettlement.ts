@@ -29,6 +29,7 @@ export interface DeferredOutput {
   ticketId: number;
   availableEpoch: number;
   destinationId: number;
+  fallbackAt?: {x:number;y:number};
   items: ItemAmount[];
 }
 export interface OfflineItem {
@@ -173,7 +174,7 @@ export type OfflineEffect =
   | { kind: 'pending-encounter'; eventId: string; remainingBudget: number };
 export interface OfflinePlan {
   contract: 'C5-1';
-  contractVersion: '1.1.0';
+  contractVersion: '1.2.0';
   homeInstance: string;
   ownershipSignature: string;
   nextBeds: { actorId: number; bedId: number | null }[];
@@ -748,7 +749,7 @@ function compute(input: OfflineInput): OfflinePlan {
   ledger.needsResupply = orders.some((o) => o.status === 'needs-resupply');
   return {
     contract: 'C5-1',
-    contractVersion: '1.1.0',
+    contractVersion: '1.2.0',
     homeInstance: input.homeInstance,
     ownershipSignature: input.ownershipSignature,
     nextBeds,
@@ -781,6 +782,7 @@ export interface SettlementParticipant {
   checkpoint(): () => void;
   /** Trusted root owner validates live item/lock/population CAS before publication. */
   validateResidentEffects?(plan: Readonly<OfflinePlan>): void;
+  validateProductionEffects?(plan: Readonly<OfflinePlan>): void;
 }
 function jsonCheckpoint(root: object): () => void {
   const seen = new Set<object>(),
@@ -815,7 +817,7 @@ export function commitOfflineSettlement(
 ): WorldResult<{ committed: boolean }> {
   try {
     assertC5Json(plan);
-    if (plan.contract !== 'C5-1' || plan.contractVersion !== '1.1.0') throw new World5Error('C5_BAD_VERSION');
+    if (plan.contract !== 'C5-1' || plan.contractVersion !== '1.2.0') throw new World5Error('C5_BAD_VERSION');
     if (terminal) throw new World5Error('C5_TERMINAL');
     const ledger = world.offline.find((l) => levelKey(l.levelRef) === levelKey(plan.levelRef));
     if (!ledger) throw new World5Error('C5_BAD_REFERENCE');
@@ -834,9 +836,10 @@ export function commitOfflineSettlement(
       if (!participant?.validateResidentEffects) throw new World5Error('C5_UNSUPPORTED');
       requireSynchronousSettlement(participant.validateResidentEffects(plan));
     }
-    if (!fixtureEffects && plan.effects.some((e) => !['pending-encounter','ration-consume','resident-departure'].includes(e.kind)))
-      throw new World5Error('C5_UNSUPPORTED');
-    if (plan.nextNodes.length && !fixtureEffects) throw new World5Error('C5_UNSUPPORTED');
+    if (!fixtureEffects && (plan.effects.some((e) => !['pending-encounter','ration-consume','resident-departure'].includes(e.kind))||plan.nextNodes.length)){
+      if(!participant?.validateProductionEffects)throw new World5Error('C5_UNSUPPORTED');
+      requireSynchronousSettlement(participant.validateProductionEffects(plan));
+    }
     const restoreWorld = jsonCheckpoint(world);
     let restore: (() => void) | undefined;
     try {

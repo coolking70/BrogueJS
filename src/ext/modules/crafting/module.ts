@@ -15,6 +15,13 @@ export function createCraftingModuleFromPack(input: CraftingPack): ExtensionModu
     rules: getCraftingPackIdentity(pack),
     worldDefinitions: toWorldDefinitionPack(pack),
     worldWorkCommands: createCraftingCommands(pack),
+    optionalQueries: {
+      'crafting.recipe-catalog.v1': {
+        accepts: input => !!input && typeof input==='object' && !Array.isArray(input) && Object.keys(input).length===0,
+        validate: (value): value is Json => !!value && typeof value==='object' && !Array.isArray(value) && JSON.stringify(value)===JSON.stringify({schema:1,recipes:[...pack.recipes].sort((a,b)=>a.id.localeCompare(b.id))}),
+        query: () => ({schema:1,recipes:[...pack.recipes].sort((a,b)=>a.id.localeCompare(b.id))}) as unknown as Json
+      }
+    },
     worldWorkParticipant: {
       onCommitted(fact, tx) {
         // A bad delivery must not turn a cancellation into another provider failure.

@@ -1,3 +1,4 @@
+import { cancelResidentOrder } from './ResidentOrders';
 import { isIncapacitated } from '../Status/Incapacitation';
 import { markItemStatsDirty } from '../Items/ItemStatInvalidation';
 import { worldText } from '../../ext/worldText';
@@ -950,6 +951,7 @@ export function mirrorWorldWorkTicks(game: Game, delta: number): void {
   if (!game.world5) return;
   if (game.world5.tickets.length) markRecordingRoot(game.world5);
   for (const t of game.world5.tickets) {
+    if(game.world5.orders.some(o=>o.production&&o.ticketId===t.ticketId))continue;
     if (t.bundleActionId !== null) {
       const b = game.actorActions!.bundles.find((b) => b.actionId === t.bundleActionId);
       if (b) t.remainingTicks = b.subactions[0]!.phaseRemainingTicks;
@@ -1059,7 +1061,8 @@ function releaseTicket(game: Game, t: MutableWorld<import('../../ext/worldSdk').
     stopReason: t.stopReason,
     lastCompletionOrdinal: t.lastCompletionOrdinal
   });
-  w.terminalTickets.splice(0, Math.max(0, w.terminalTickets.length - 64));
+  const pending=new Set(w.offline.flatMap(l=>l.pendingOutputs.map(p=>p.ticketId)));
+  while(w.terminalTickets.length>64){const index=w.terminalTickets.findIndex(t=>!pending.has(t.ticketId));if(index<0)reject("C5_BUDGET");w.terminalTickets.splice(index,1);}
   updateWorldReasons(game);
 }
 export function cancelWorldWork(
@@ -1068,6 +1071,7 @@ export function cancelWorldWork(
   reason: string,
   participant = true
 ): void {
+  const order=game.world5?.orders.find(o=>o.production&&o.ticketId===ticketId);if(order){cancelResidentOrder(game,order.actorId,reason);return;}
   const t = activeTicketById(game, ticketId);
   if (!t || t.status === 'cancelled' || t.status === 'completed') return;
   transactWorldWork(game, () =>
@@ -1263,12 +1267,13 @@ function cancelFailedBatch(game: Game, ticketId: number, error: unknown): void {
 export function interruptWorldWorkAtDepth(game: Game): void {
   const ids = new Set(game.world5?.tickets.map((t) => t.ticketId));
   for (const d of game.worldWorkDetails ?? [])
-    if (ids.has(d.ticketId)) d.interrupted ??= 'level-exit';
+    if (ids.has(d.ticketId)&&!game.world5!.orders.some(o=>o.production&&o.ticketId===d.ticketId)) d.interrupted ??= 'level-exit';
   settleWorldWork(game, false);
 }
 export function settleWorldWork(game: Game, allowCompletion = true): void {
   if (!game.world5) return;
   for (const t of [...game.world5.tickets]) {
+    if(game.world5.orders.some(o=>o.production&&o.ticketId===t.ticketId))continue;
     if (t.status !== 'working') continue;
     const d = game.worldWorkDetails?.find((d) => d.ticketId === t.ticketId);
     if (!d) reject('C5_BAD_REFERENCE');
@@ -1301,7 +1306,7 @@ export function selectWorldWorkDecision(
   scope: ActorActionScope
 ): boolean {
   const t = activeTicket(game, actorId);
-  if (!t || actorId === game.player.id || t.bundleActionId !== null) return false;
+  if (!t || game.world5!.orders.some(o=>o.production&&o.ticketId===t.ticketId) || actorId === game.player.id || t.bundleActionId !== null) return false;
   assertNativeActorDecisionScope(scope, game, actorId);
   return withWorldActorScope(
     game,

@@ -31,7 +31,12 @@
     "tests/resident_captive_natural.test.ts",
     "tests/resident_lifecycle.test.ts",
     "tests/resident_scale.test.ts",
-    "tests/resident_replay_import_ui.test.ts"
+    "tests/resident_replay_import_ui.test.ts",
+    "tests/resident_production.test.ts",
+    "tests/resident_production_food.test.ts",
+    "tests/resident_production_economy.test.ts",
+    "tests/resident_production_codec.test.ts",
+    "tests/resident_production_replay.test.ts"
   ],
   "gen": [],
   "drift": []

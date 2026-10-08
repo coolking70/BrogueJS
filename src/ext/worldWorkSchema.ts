@@ -1,5 +1,15 @@
 import { exact, uint, levelKey, World5Error } from './worldBasics';
 import type { World5Snapshot } from './world5';
+import type { TerminalWorkTicket, LevelRef, ItemAmount } from './worldSdk';
+/** Foundation-owned delayed-output custody; the frozen SDK diagnostic stays unchanged. */
+export type TrustedTerminalWorkTicket = TerminalWorkTicket & {
+  residentOutput?: {
+    levelRef: LevelRef;
+    destinationId: number;
+    counts: readonly ItemAmount[];
+    fallbackAt?: { x: number; y: number };
+  };
+};
 const fail = (field: string): never => {
   throw new World5Error('C5_BAD_REFERENCE', field);
 };
@@ -44,7 +54,8 @@ export function validateWorldWorkRoots(w: World5Snapshot, owners: readonly strin
   for (const t of w.terminalTickets) {
     exact(
       t,
-      'ticketId,owner,actorId,kind,definitionId,totalBatches,completedBatches,status,stopReason,lastCompletionOrdinal',
+      'ticketId,owner,actorId,kind,definitionId,totalBatches,completedBatches,status,stopReason,lastCompletionOrdinal' +
+        (t.residentOutput ? ',residentOutput' : ''),
       'terminalTicket'
     );
     identity(t);
@@ -63,6 +74,27 @@ export function validateWorldWorkRoots(w: World5Snapshot, owners: readonly strin
       (t.status === 'completed' && t.completedBatches !== t.totalBatches)
     )
       fail('terminalTicket');
+    if (t.residentOutput) {
+      const r = t.residentOutput;
+      exact(r, 'levelRef,destinationId,counts' + (r.fallbackAt ? ',fallbackAt' : ''), 'residentOutput');
+      levelKey(r.levelRef);
+      identity({ owner: t.owner, levelRef: r.levelRef });
+      uint(r.destinationId, 'destinationId', 1);
+      list(r.counts, 32);
+      const ids = new Set<string>();
+      for (const a of r.counts) {
+        exact(a, 'itemDefinitionId,count', 'count');
+        uint(a.count, 'count', 1);
+        if (typeof a.itemDefinitionId !== 'string' || ids.has(a.itemDefinitionId) || a.count > 1584)
+          fail('residentOutput.count');
+        ids.add(a.itemDefinitionId);
+      }
+      if (r.fallbackAt) {
+        exact(r.fallbackAt, 'x,y', 'fallbackAt');
+        uint(r.fallbackAt.x, 'x');
+        uint(r.fallbackAt.y, 'y');
+      }
+    }
   }
   let previousReceipt = -1;
   for (const r of w.receipts) {
@@ -200,7 +232,7 @@ export function validateWorldWorkRoots(w: World5Snapshot, owners: readonly strin
         exact(r, 'destination,slots,mergeTargets,counts', 'reservation');
         uint(r.slots, 'slots');
         list(r.mergeTargets, 26);
-        list(r.counts, 8);
+        list(r.counts, w.orders.some(o=>o.production&&o.ticketId===t.ticketId)?32:8);
         const dest = r.destination;
         if (dest.kind === 'inventory') {
           exact(dest, 'kind,actorId', 'destination');

@@ -157,13 +157,13 @@ describe('C5 recording v4 digest contract', () => {
     expect(digestRoot(empty, null, DIGEST_DOMAINS)).toBe(
       independent([
         'c5-root-v1',
-        ['brogue-web-whole-run-v6', 6, 11, 2],
+        ['brogue-web-whole-run-v6', 6, 12, 2],
         independent(null),
         DIGEST_DOMAINS.map((d) => empty[d])
       ])
     );
     expect(digestRoot(empty, null, DIGEST_DOMAINS)).toBe(
-      'e1692e0378ebe92ed4f03a92ff51788bf38baa84d5250fc217ce3930eed042fc'
+      '834993e0cf0d4b18326ca5f54a1a55aeae586f318444d6b3538af07f3eef5340'
     );
     expect(merkleDomain('native', { '\u{10000}': 1, '\ue000': 2 })).toBe(
       independent([
@@ -175,6 +175,8 @@ describe('C5 recording v4 digest contract', () => {
         ]
       ])
     );
+    // Historical chain input remains foundation11: it freezes the hash
+    // algorithm independently of current recording compatibility.
     const vectorHeader = {
       version: 4,
       seed: '1',
@@ -198,10 +200,12 @@ describe('C5 recording v4 digest contract', () => {
         }
       }
     } as const;
-    expect(recordingStart(vectorHeader)).toBe(
+    // Hash-only historical input; it is not presented as a compatible replay.
+    const chainInput = vectorHeader as unknown as Parameters<typeof recordingStart>[0];
+    expect(recordingStart(chainInput)).toBe(
       '89e96a56a093844c95cde922e17911d0831ce80432a6fbc263e9d53cfbdc56cb'
     );
-    expect(recordingChain(recordingStart(vectorHeader), { index: 0, action: 'wait' } as any)).toBe(
+    expect(recordingChain(recordingStart(chainInput), { index: 0, action: 'wait' } as any)).toBe(
       'c364d3ef40232e0883be18202dfcb3a193199e5d0decf550ff286e6313262eb1'
     );
     const game = createHeadlessGame(517);

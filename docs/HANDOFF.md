@@ -1,10 +1,10 @@
 # 交接说明（接手先读）
 
-## 5D1 / 5G 集成候选（2026-10-09）
+## 5D2维护者验收（2026-10-09）
 
-5D1 已由父提交并推送 `f067e8968c76571c405b78b19d2c3da414160bfc`；5G `eda309443cdd57a4cad1ec92d2cd3c5da7230d34` **已集成待父提交**，尚未推送集成结果。当前保持 foundation11/world5 schema2/settlement1.1.0 state2 及九冻结接口。R1 真实联动 writer 失败已复现并作最小原子交接修复；严格交接及原普通需求降级在受影响复核中通过。详见[集成报告](ext/phase5d1-5g-integration.report.md)。
+开工HEAD `e0fa39a225428d36e6e342f6585f57f45960e6ba`；5D1 `f067e89`及5G集成 `467962b`（含`eda3094`）已由父提交推送。5D2交付有限生产订单、农田/猎人/厨师、可选crafting目录、真实输入/产物/事务与中文UI，当前未提交，第1轮修复完成，待父必要第2轮；见[任务书](ext/phase5d2.task.md)、[报告](ext/phase5d2.report.md)及[配置手册](ext/settlement-config.md)。
 
-本次单批87文件1916通过3失败/exit1保留；一次最小测试前提修正后，仅受影响3文件111项复核全过/exit0。boundary、类型、实际build均exit0，实际drift6文件12项exit0，不累计重叠通过数。完整 npm/test:ext、128组合、删除矩阵、浏览器、性能及真机/原生失焦留[5Z](ext/phase5z-remainders.md)。每步最多两轮审查→修复，只保存结果摘要，不作逐字节封存或多版本重建；后续按维护者安排推进5D2。
+当前foundation12/world5 schema3/经济合同1.2.0/settlement1.2.0 state2；whole-run6/recording4/origin2、worldSdk1/edibleSdk1及九冻结字节保持。相关门禁与格式重录按报告实际结果引用，完整npm/test:ext、128组合/删除、浏览器/真机及最大负载留[5Z](ext/phase5z-remainders.md)。原实施者已停止写入；维护者提交发布，最多两轮审查规则已执行。
 
 ## ext/phase5 5D1验收裁决（历史，提交见上文）
 

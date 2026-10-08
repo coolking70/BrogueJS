@@ -1,12 +1,12 @@
-# 远征营地 5D1 配置手册
+# 远征营地 5D2 配置手册
 
-本文已核对固定 V12 生产源码并接入独立审定稿；限定回归串行复核、boundary/types/npm build/npm drift及V12正式性能已通过；原12文件批次exit1保留，不称整批一次全绿。测试916旧前提修订已由NATURAL-PREMISE-REVIEW.md独立通过；实际浏览器与父最终验收尚未完成。本文描述当前功能和限制，不提供5D1整体验收结论；5C1历史验收保持原样。
+本文描述5D2未提交实现；实施测试和门禁见[5D2报告](phase5d2.report.md)，待父独立审查。5D1历史验收和性能仅按当时版本引用；完整门禁、最终浏览器和真机归[5Z](phase5z-remainders.md)。
 
 生产目录 `src/ext/modules/settlement/`；入口 `descriptor.ts` 由 catalog 自动发现，`defaultEnabled=false`。新局扩展选择中单独勾选「远征营地」即可使用，不依赖其他内容模块。启用后按原有启动收据发放建材，寻找第二份原生食物，再在合法地牢区域建营地。不开启时没有本模块定义、启动材料、采集节点或营地逻辑。
 
 ## 数据和身份
 
-`data/definitions.json` 是机械数据唯一来源。外层键为 `schema,moduleVersion,rulesVersion,world,camp,residents`；外层 schema=1、module/rules=1.1.0，内层 world schema/worldSdk=1，residents.schema=1。foundation=11，world5.schema=2，settlement state.schema=2；whole-run=6、recording=4、RecordingOrigin=2。SDK 兼容号和持久格式号是不同身份，不因 world5 升号就把 worldSdk 改成2。`definitions.ts` 对整个包计算一个 `extensionDataFingerprint`，同时包含营地政策、world 定义和居民政策。调整机械数据须同步 rules 身份并遵循存档/录像匹配；本步不迁移旧档。
+`data/definitions.json` 是机械数据唯一来源。外层键为 `schema,moduleVersion,rulesVersion,world,camp,residents`；外层 schema=1、module/rules=1.2.0，内层 world schema/worldSdk=1，residents.schema=1。foundation=12，world5.schema=3，settlement state.schema=2；whole-run=6、recording=4、RecordingOrigin=2。SDK 兼容号和持久格式号是不同身份，不因 world5 升号就把 worldSdk 改成2。`definitions.ts` 对整个包计算一个 `extensionDataFingerprint`，同时包含营地政策、world 定义和居民政策。调整机械数据须同步 rules 身份并遵循存档/录像匹配；本步不迁移旧档。
 
 `schema.ts` 和中性 `ext/constructionSchema.ts` 拒绝未知键、非法 JSON、getter、非安全整数、非法 owner/ID、缺失定义引用、预算越界；`WorldDefinitions.ts` 保留可信入口并继续调用既有 edible 校验。内容模块只声明数据和接收 detached/frozen DTO，不导入 Game，不注册结构 DEV fixture。
 
@@ -35,6 +35,7 @@
 | bed | wood4+fiber2 | 300 | 100 | 0/0 | fixture + RestPoint，易燃 |
 | chest | wood6 | 300 | 150 | 0/0 | fixture，64槽，易燃 |
 | plot | wood2+fiber1 | 300 | 100 | 0/0 | fixture，种植床，易燃 |
+| hearth | wood4+stone4 | 300 | 150 | 0/0 | fixture，station.hearth，易燃 |
 
 床的原生休息上限30000 tick、交互距离1、HP策略 `native-over-time`、可选战斗资源 `none`、重置 `none`。休息依原生 auto_step 推进；饥饿、环境、敌情/受伤/消息打断照常，不补满、不产生 FOOD、不重置篝火。
 
@@ -44,8 +45,8 @@
 
 | 数据字段 | 当前值/允许范围 | 性质与校验位置 |
 | --- | --- | --- |
-| schema、moduleVersion、rulesVersion、world.schema/worldSdk、residents.schema | 1、1.1.0、1.1.0、1/1、1 | 严格身份；settlement/schema.ts、constructionSchema.ts、residentSchema.ts；不能作数值旋钮 |
-| world.items[].maxStack/tags | 五种 MATERIAL均99；wood/stone/fiber/seed/crop标签见数据表 | maxStack 1…99，tags≤16、有效ID且严格排序；当前材料 nativeTemplate/tool=null。类目白名单 material/tool/kit/native 仅是底座格式支持，不表示本包已有工具/套件/装备配方 |
+| schema、moduleVersion、rulesVersion、world.schema/worldSdk、residents.schema | 1、1.2.0、1.2.0、1/1、1 | 严格身份；settlement/schema.ts、constructionSchema.ts、residentSchema.ts；不能作数值旋钮 |
+| world.items[].maxStack/tags | 木/石/纤维/种子/作物/肉等材料maxStack99；原生口粮模板及食材标签见数据表 | maxStack 1…99，tags≤16、有效ID且严格排序；普通材料 nativeTemplate/tool=null；settlement.ration为native原生食物模板，普通无特性。mushroom占位定义无食材标签，不能自行制造可用蘑菇 |
 | resourceNodes[].capacity/harvestTicks/unitsPerHarvest/yield/requiredToolTag | 20/100/1/1件/null | 容量1…9999；工时1…10000；单次1…min(99,capacity)；物品数量1…99、引用有效；工具tag可为null/合法ID，实际工具规则仍须满足底座 |
 | regeneration | 木 periodic(1,2000)，纤维 periodic(1,1000)，石 none | 枚举 none/periodic；periodic.units 1…99、intervalTicks 1…1000000 |
 | placement.dungeon | 深度1…40、每层1/每局40、onNoSpace=skip；site=null | min/maxDepth 1…40、maxPerDepth 1…32、maxPerRun 1…512，skip/defer；整包每层总尝试≤32、节点总预算≤512；现版只执行地牢，不能据site字段宣称已实现地表 |
@@ -53,7 +54,7 @@
 | camp.createCost/expandCost | wood4+stone2 / wood2+stone2 | 1…8项、数量1…99、无重复，引用本包basic.* material；create/expandTicks默认300、dismantle/retireTicks默认100，各1…10000 |
 | camp.supplyCapacity / requiredFood | 64 / 2 | supplyCapacity 1…64可改；requiredFood必须2，锁守恒也写死2，不能仅改JSON |
 | structures[].constructionCost/constructionTicks/maxHp/resistances/refund* | 上表；字段默认1/2 | 工时1…10000、HP1…1000000、物理/火抗0…100、分母1…10000、分子0…分母。refundNumerator/Denominator虽通过范围校验，实际destroyComponent固定按1/2退料，改JSON不能改变退款比例；退款读取实际原账单及当前耐久。部件slot/barrierKind与blocks必须配套，不能任意解锁墙/窗性质 |
-| structures[].containerCapacity/stationDefinitionId/restPointDefinitionId | chest64 / 全部station=null / bed→settlement.rest | 容器仅fixture可1…64；绑定台/休息点须同包定义；本包没有station。床/种植床语义还依赖tags及实际固定ID，不能只换标签制造额外岗位 |
+| structures[].containerCapacity/stationDefinitionId/restPointDefinitionId | chest64 / hearth→settlement.hearth-station / bed→settlement.rest | 容器仅fixture可1…64；绑定台/休息点须同包定义；本包有基础灶台。床/种植床语义还依赖tags及实际固定ID，不能只换标签制造额外岗位 |
 | restPoints[] | 30000/距离1，native-over-time/none/none | maxRestTicks 100…30000且100倍数，距离0…16，hp可native-over-time或none；optionalCombatResources/resetPolicy只能none |
 | residents.templates[] | 恰两模板：wayfarer HP20、gardener HP24；accuracy80、defense0、damage="1-3"、move/attack100 | 模板ID须settlement.前缀，文本key须ext.settlement.前缀；HP/速度1…1000，accuracy0…100，defense0…1000，伤害非负整数闭区间且上限1000；无任意行为/技能/随机装备字段 |
 | residents.rescuedTemplates | kobold/goblin/goblin_mystic/goblin_conjurer/ogre | 列表≤16，元素只可取这5个ID，可收窄；不能添加动物/巨兽突破原生资格 |
@@ -67,7 +68,7 @@
 每层1营地、全局8营地，使用最小空闲 slot0…7；重建时该 slot 的 ordinal 高水位递增。初始9×9、最大24×20，每营地384结构格/16箱，每箱64槽，遵守底座更严格的全局预算。补给堆也计入箱预算，所以另建箱最多15个；全局 chest 预算112。施工草稿最多16格，不持久化。
 
 
-居民与世界硬预算继续取代码，不是包内limits配置：每营16/整局64（含active/cached/escort/pending），自生4槽、未消费救援来源64，每居民至多1个residentJobs票据、全局residentJobs≤64，种植床每营12、plant.plotIds≤6、haul.quantity≤8；plotDays≤96。结构全局3072格/12288部件；world5层≤40、offline账本≤8、receipts≤128；所有计数/ID/时间为安全整数。world5.orders≤256、单次OfflineInput.orders≤32是底座已有根/计划上限，不代表5D1开放居民生产订单。
+居民与世界硬预算继续取代码，不是包内limits配置：每营16/整局64（含active/cached/escort/pending），自生4槽、未消费救援来源64，每居民至多1个residentJobs票据、全局residentJobs≤64，种植床每营12、plant.plotIds≤6、haul.quantity≤8；plotDays≤96。结构全局3072格/12288部件；world5层≤40、offline账本≤8、receipts≤128；所有计数/ID/时间为安全整数。world5.orders≤256、单次OfflineInput.orders≤32是底座已有根/计划上限，5D2每居民至多一个生产订单，与legacy residentJobs排他；单次实际经济核按营地和有界周期处理。
 
 C5新增Item接纳按真实根加预留的7168（8192−1024）预算，部分搬运拆堆和产物先验预算；全局world interactable≤1024且C5计数≤832，chest≤112、remains≤16、RestPoint≤64、nodes≤512（每层≤32）。普通自生创建还检查活动/沉眠实体128与空间512。箱槽按底座类目核算，FOOD quantity按份占槽；不是所有堆都只占一槽。这些限制相互取更严的一项，人口够不保证床/箱/活动实体仍有空间；不承诺最大负载已测通过。
 
@@ -176,6 +177,25 @@ job严格为 `{kind:'idle'}`、`{kind:'guard',at:{x,y}}`、`{kind:'plant',plotId
 
 折叠按推荐仅支持≤700px，桌面隐藏营地收起按钮，与合成一致；窄屏收起状态由 UI session 管理，清选格/草稿并恢复地图空间，展开后恢复当前页选格。此为可逆显示选择；真实桌面/窄屏几何仍须指挥固定构建验收。
 
+## 有限生产订单（5D2）
+
+居民名册选择配方、源/目标箱、设施和批数（1…16），提交 `order-work`；已有订单可 `cancel-order` 或 `resupply-work`。居民须在所属营地、stay、可见相邻、健康且无原生优先动作，命令带营地/居民/箱/工位/田地revision及库存stamp；No/陈旧/坏输入不扣物或时间。接单锁定全单真实输入escrow、工具及输出/退款槽，满仓先拒绝。未知/远处箱仅列公开身份，不投影隐藏物品。
+
+| 配方 | 实物输入 → 输出 | 有效劳动及限制 |
+| --- | --- | --- |
+| farm | 1种子 → 1作物 | 1000tick；每人最多6格，每格每绝对营地日最多1作物；实际水/暗光/路线资格 |
+| hunt | 无输入 → 1肉 | 1000tick；每人每天最多2肉，受真实劳动约束 |
+| cook-crop | 3作物 → 1普通口粮 | 500tick；station.hearth |
+| cook-meat | 2肉 → 1普通口粮 | 500tick；station.hearth |
+| cook-mushroom | 5份带food.ingredient.mushroom标签食材 → 1普通口粮 | 500tick；有foraging时列出；生/烤/不同种可混合，焦炭不可用 |
+| crafting目录 | 当前公开offlineEligible配方的原账单与产物 | 当前chest-kit/bed-kit；已知合法crafting工位/工具，不授权任意玩家命令 |
+
+蘑菇加工不触发食用、揭示、火接触或原有效果；产物为原生ration_of_food固定模板。没有foraging仍有作物/肉循环，没有crafting仍可建settlement基础灶台。crafting通过同步只读 `crafting.recipe-catalog.v1` 提供目录，缺席/unsupported降级，坏输出/异步/异常/越权显式拒绝并回滚。
+
+每单总寿命32个绝对1000tick经济周期，包含停工；load/返回/查看不刷新。日界先消费真实粮仓口粮及判住房，再以100/50/0/0效率结劳动；本周期完成的产物只在下一周期实体入库，不能同周期被后单或日粮消费。离场仅计别层真实simulationTicks；冻结设施/危险/路线，扣旅行和work/rest预算；长尾最多32生产周期加一次交付，再闭式结需求。绝对日配额独立持久，不因取消/换单/续工重置。
+
+危险/失能/缺料/需求不足会停工；danger保票据/escrow但须合格公开补给才能继续。寿命耗尽needs-resupply，补给分配新planId并保未完票据/余数；取消/死亡/拆除只退款一次。已赚但待次周期产物不提前兑现；目标箱毁坏后保原截止时间，在原位置形成唯一真实地面Item。存读/seek仅重建；回放面板只读，替换session清草稿，同值DTO保草稿。
+
 ## 居民查询、存读与尚未实现的范围
 
 `settlement.resident-status.v1` 已实现：严格输入 `{actorId: 正安全整数}`，且只能有这一个键；严格输出 `{resident: boolean}`。查询实际 `resident` 组件是否存在，不恒返 false，不包含岗位/欠额/来源详情，也不以普通 isAlly 判断。招募及解除后在可信提交中触发 resident-changed；查询本身不补算需求、不推进时间、不生成候选。当前固定源未安装生产 foraging，不能把中性消费者查询验证写成真实 foraging 联动验收。
@@ -186,6 +206,6 @@ job严格为 `{kind:'idle'}`、`{kind:'guard',at:{x,y}}`、`{kind:'plant',plotId
 
 所有状态输入通过公开命令并记录原生确认；NPC工作沿同一个 actorActions 调度器，不嵌套玩家命令或建立第二时钟。劳动按半开区间计算，在端点先封存信用，再结 FOOD/住房/离队，随后合法工作完成入箱，最后选下一动作；同刻刚搬入的粮不倒填本次日粮。失败回滚以该最外层同步事务入口为准，保留入口之前已付的原生时间/效果；需求失败未结清前不放行后续信用和生产。退款失败恢复退款事务并暴露失败，不吞掉材料。
 
-5D1 只做在场种植、搬运、守卫和全局到期需求。5D2 厨师/猎人/完整农田/离线岗位产出、自动续种/供应链、补给单续工及 crafting 配方居民订单尚未实现；JSON `stations=[]/recipes=[]` 不代表已有厨师能力。作物不能直接变日粮，不能按联合设计中厨师的500tick/食材比例声称当前可配置。5C2 site、5D3 narrative 随身招募、5E袭击、5F世界地图/Worker也未在本步实现。
+5D2已接入有限生产订单、完整农田、猎人、厨师及可选crafting。玩家不能直接合成FOOD；作物/肉先交厨师加工成普通口粮，进入目标粮仓后由原日粮消费。供应链通过真实源/目标箱和次周期可用库存串接，每个订单需显式下达；没有无限自动重订或跨层物流。5C2 site、5D3 narrative 随身招募、5E袭击、5F世界地图/Worker也未在本步实现。
 
 [5C1执行报告](phase5c1.report.md)保留当时验收事实；[5D1任务书](phase5d1.task.md)及[5D1报告](phase5d1.report.md)记录本轮范围和阶段证据。本文不把历史通过次数转述为5D1整体通过；V12正式16居民普通净增P95为3.672584ms（门槛≤5）、64居民冷+7暖峰值46.777167ms（门槛≤50），两项实际通过；测试旧前提独立窄复核已通过；实际浏览器和父最终验收尚未完成。最大8营地/3072结构格/满箱、完整体积矩阵、全量 npm test/全部test:ext/全组合和物理删除矩阵归5Z，真实手机另列。

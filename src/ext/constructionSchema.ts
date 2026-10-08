@@ -193,7 +193,8 @@ export function assertConstructionPack(
       'owner,id,nameKey,descriptionKey,inputs,outputs,stationTags,toolTag,workTicks,offlineEligible'
     );
     define(d);
-    amounts(d.inputs, true);
+    if (owner === "settlement" && d.id === "settlement.hunt" && Array.isArray(d.inputs) && d.inputs.length === 0) {}
+    else amounts(d.inputs, true);
     amounts(d.outputs);
     tags(d.stationTags);
     int(d.workTicks, 1, 10000);

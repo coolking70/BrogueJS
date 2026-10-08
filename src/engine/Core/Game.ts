@@ -6,6 +6,7 @@ import {isResidentCommand,prepareResidentCommand,commitResidentCommand,spawnResi
 import {residentComponent,residentEligible,candidateSource,checkpointResidentBeds} from './ResidentWorld';
 import {transactResidentWorld,residentTransactionOwnsNativeWrites} from './ResidentWorld';
 import {settleResidentNeeds,freezeResidentCamps,hasPendingResidentNeeds} from './ResidentNeeds';
+import {freezeResidentOrders,suspendResidentOrdersForExit,residentOrder,stopResidentOrder} from './ResidentOrders';
 import {cancelResidentWork,settleResidentWork} from './ResidentJobs';
 import {isStructureCommand,prepareStructureCommand,commitStructureCommand,structureReadSDK,freezeProductionCamps,settleProductionCamps} from './StructureProduction';
 import { isEdibleFixtureCommand, executeEdibleFixtureCommand } from './EdibleFixturePort';
@@ -1893,6 +1894,8 @@ export class Game {
     private freezeManagedWorld(): void {
         settleResidentNeeds(this,true);
         for(const j of [...this.world5?.residentJobs??[]])if(j.depth===(this.currentLevelDepth??this.depth))cancelResidentWork(this,j.actorId,"level-exit");
+        freezeResidentOrders(this,this.currentLevelDepth??this.depth);
+        suspendResidentOrdersForExit(this,this.currentLevelDepth??this.depth);
         freezeResidentCamps(this,this.currentLevelDepth??this.depth);
         freezeProductionCamps(this,this.currentLevelDepth??this.depth);
         const world = this.world5, config = this.extensionRuntime?.world5SettlementFixture()?.configuration;
@@ -1914,7 +1917,8 @@ export class Game {
     private displaceWorldResident(actorId: number): void {
         const world = this.world5;
         if (!world) return;
-        cancelResidentWork(this,actorId,"displaced");
+        if(residentOrder(this,actorId))stopResidentOrder(this,actorId,"resident-displaced");
+        else cancelResidentWork(this,actorId,"displaced");
         for (const ledger of world.offline) {
             if (!ledger.residentStates.some(s => s.actorId === actorId)) continue;
             const frozen = ledger.frozen.residents.find(r => r.actorId === actorId);
@@ -3963,7 +3967,7 @@ export class Game {
 
     private *executeResidentCommandStages(data:unknown):CommandStages<void> {
         setWorldWorkError(this,null);const first=prepareResidentCommand(this,data);if(!first.ok){setWorldWorkError(this,first.code);return;}
-        if(first.value.chargedTicks>0&&!(yield* this.requestConfirm(i18next.t('ext.settlement.resident.confirm'))))return;
+        if((first.value.chargedTicks>0||['order-work','resupply-work','cancel-order'].includes(first.value.action))&&!(yield* this.requestConfirm(i18next.t('ext.settlement.resident.confirm'))))return;
         const outcome=commitResidentCommand(this,first.value);if(!outcome.ok){setWorldWorkError(this,outcome.code);return;}
         if(outcome.value.chargedTicks>0)this.playerTurnEnded();
     }

@@ -283,7 +283,7 @@ export function withPublishingTicket<T>(game: Game, ticketId: number, work: () =
   }
 }
 export function reservedContainerSlots(game: Game, id: number): number {
-  return (game.world5?.residentJobs??[]).reduce((n,j)=>n+(j.destinationId===id?j.reservedSlots:0)+(j.sourceId===id?j.reservedSlots:0),0)+(game.world5?.tickets ?? []).reduce(
+  return (game.world5?.offline??[]).flatMap(l=>l.pendingOutputs).reduce((n,p)=>n+(p.destinationId===id&&!game.world5!.tickets.some(t=>t.ticketId===p.ticketId)&&publishing.get(game)!==p.ticketId?p.items.reduce((n,a)=>n+a.count,0):0),0)+(game.world5?.residentJobs??[]).reduce((n,j)=>n+(j.destinationId===id?j.reservedSlots:0)+(j.sourceId===id?j.reservedSlots:0),0)+(game.world5?.tickets ?? []).reduce(
     (n, t) =>
       n +
       (publishing.get(game) === t.ticketId

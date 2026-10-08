@@ -1776,11 +1776,14 @@ export class ExtensionRuntime {
         if (this.nextFactId>=Number.MAX_SAFE_INTEGER) throw new Error('C5_OVERFLOW');
         const fact=freezeView({...value,factId:this.nextFactId++});const module=this.modules.find(m=>m.id===fact.owner);
         if(participant&&module?.worldWorkParticipant) {
-            let active=true;
+            let active=true, writerFailed=false;
             try { const runtime=this; const result=module.worldWorkParticipant.onCommitted(fact,Object.freeze({
                 get state(){if(!active)throw new Error('Expired participant');return freezeView(cloneJson(runtime.states[module.id]!));},
-                replaceState(next:import('./worldSdk').JsonValue){if(!active||!isJson(next))throw new Error('Invalid participant state');runtime.invoke(module,context=>context.setState(cloneJson(next as Json)));}
-            }));requireSynchronous(result);if(result!==undefined)throw new Error('Invalid participant result'); }
+                replaceState(next:import('./worldSdk').JsonValue){
+                    try {if(!active||!isJson(next))throw new Error('Invalid participant state');runtime.invoke(module,context=>context.setState(cloneJson(next as Json)));}
+                    catch(error){writerFailed=true;throw error;}
+                }
+            }));requireSynchronous(result);if(writerFailed||result!==undefined)throw new Error('Invalid participant result'); }
             catch {throw new World5Error('C5_PROVIDER');} finally {active=false;}
         }
         return fact;

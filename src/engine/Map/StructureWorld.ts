@@ -1426,6 +1426,15 @@ export function destroyComponent(game: Game, id: number, refund: boolean, reason
       (v) => v.position?.kind === 'interactable' && ids.has(v.position.interactableId)
     );
   settleResidentNeeds(game, true);
+  // Earned output keeps its next-epoch deadline when its destination is
+  // destroyed. It will acquire one native floor owner at the removed fixture.
+  for(const ledger of w.offline)for(const output of ledger.pendingOutputs)if(chests.some(ch=>ch.id===output.destinationId)){
+    output.fallbackAt={...row.at};
+    const retired=w.terminalTickets.find(t=>t.ticketId===output.ticketId);
+    if(retired?.residentOutput)retired.residentOutput.fallbackAt={...row.at};
+  }
+  for(const order of [...w.orders])if(order.production?.plotIds.includes(id))cancelResidentWork(game,order.actorId,reason);
+  for(const l of w.offline)if(l.productionQuotas)for(const q of l.productionQuotas)q.plots=q.plots.filter(p=>p!==id);
   for (const job of [...w.residentJobs])
     if (job.plotId === id || chests.some(ch =>
       ch.id === job.sourceId || ch.id === job.destinationId))

@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "moduleVersion": "1.1.0",
-  "rulesVersion": "1.1.0",
+  "moduleVersion": "1.2.0",
+  "rulesVersion": "1.2.0",
   "world": {
     "schema": 1,
     "worldSdk": 1,
@@ -79,6 +79,47 @@
         "tags": [
           "food.ingredient.crop"
         ],
+        "tool": null
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.meat",
+        "nameKey": "ext.settlement.meat.name",
+        "descriptionKey": "ext.settlement.meat.description",
+        "category": "material",
+        "glyph": "%",
+        "color": "#C4B78E",
+        "maxStack": 99,
+        "nativeTemplate": null,
+        "tags": [
+          "food.ingredient.meat"
+        ],
+        "tool": null
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.mushroom",
+        "nameKey": "ext.settlement.mushroom.name",
+        "descriptionKey": "ext.settlement.mushroom.description",
+        "category": "material",
+        "glyph": "%",
+        "color": "#C4B78E",
+        "maxStack": 99,
+        "nativeTemplate": null,
+        "tags": [],
+        "tool": null
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.ration",
+        "nameKey": "ext.settlement.ration.name",
+        "descriptionKey": "ext.settlement.ration.description",
+        "category": "native",
+        "glyph": "%",
+        "color": "#C4B78E",
+        "maxStack": 99,
+        "nativeTemplate": "ration_of_food",
+        "tags": [],
         "tool": null
       }
     ],
@@ -184,8 +225,146 @@
         ]
       }
     ],
-    "stations": [],
-    "recipes": [],
+    "stations": [
+      {
+        "owner": "settlement",
+        "id": "settlement.hearth-station",
+        "nameKey": "ext.settlement.hearth.name",
+        "descriptionKey": "ext.settlement.hearth.description",
+        "glyph": "炉",
+        "color": "#C4B78E",
+        "interactionDistance": 1,
+        "stationTags": [
+          "station.hearth"
+        ],
+        "placementCost": [
+          {
+            "itemDefinitionId": "settlement.wood",
+            "count": 4
+          },
+          {
+            "itemDefinitionId": "settlement.stone",
+            "count": 4
+          }
+        ],
+        "placementTicks": 300,
+        "workPositionPolicy": "adjacent-passable",
+        "kitDefinitionId": null
+      }
+    ],
+    "recipes": [
+      {
+        "owner": "settlement",
+        "id": "settlement.farm",
+        "nameKey": "ext.settlement.farm.name",
+        "descriptionKey": "ext.settlement.farm.description",
+        "inputs": [
+          {
+            "itemDefinitionId": "settlement.seed",
+            "count": 1
+          }
+        ],
+        "outputs": [
+          {
+            "itemDefinitionId": "settlement.crop",
+            "count": 1
+          }
+        ],
+        "stationTags": [],
+        "toolTag": null,
+        "workTicks": 1000,
+        "offlineEligible": true
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.hunt",
+        "nameKey": "ext.settlement.hunt.name",
+        "descriptionKey": "ext.settlement.hunt.description",
+        "inputs": [],
+        "outputs": [
+          {
+            "itemDefinitionId": "settlement.meat",
+            "count": 1
+          }
+        ],
+        "stationTags": [],
+        "toolTag": null,
+        "workTicks": 1000,
+        "offlineEligible": true
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.cook-crop",
+        "nameKey": "ext.settlement.cook-crop.name",
+        "descriptionKey": "ext.settlement.cook-crop.description",
+        "inputs": [
+          {
+            "itemDefinitionId": "settlement.crop",
+            "count": 3
+          }
+        ],
+        "outputs": [
+          {
+            "itemDefinitionId": "settlement.ration",
+            "count": 1
+          }
+        ],
+        "stationTags": [
+          "station.hearth"
+        ],
+        "toolTag": null,
+        "workTicks": 500,
+        "offlineEligible": true
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.cook-meat",
+        "nameKey": "ext.settlement.cook-meat.name",
+        "descriptionKey": "ext.settlement.cook-meat.description",
+        "inputs": [
+          {
+            "itemDefinitionId": "settlement.meat",
+            "count": 2
+          }
+        ],
+        "outputs": [
+          {
+            "itemDefinitionId": "settlement.ration",
+            "count": 1
+          }
+        ],
+        "stationTags": [
+          "station.hearth"
+        ],
+        "toolTag": null,
+        "workTicks": 500,
+        "offlineEligible": true
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.cook-mushroom",
+        "nameKey": "ext.settlement.cook-mushroom.name",
+        "descriptionKey": "ext.settlement.cook-mushroom.description",
+        "inputs": [
+          {
+            "itemDefinitionId": "settlement.mushroom",
+            "count": 5
+          }
+        ],
+        "outputs": [
+          {
+            "itemDefinitionId": "settlement.ration",
+            "count": 1
+          }
+        ],
+        "stationTags": [
+          "station.hearth"
+        ],
+        "toolTag": null,
+        "workTicks": 500,
+        "offlineEligible": true
+      }
+    ],
     "startupItems": {
       "instanceKey": "settlement.startup",
       "items": [
@@ -573,6 +752,47 @@
         "restPointDefinitionId": null,
         "tags": [
           "plot"
+        ]
+      },
+      {
+        "owner": "settlement",
+        "id": "settlement.hearth",
+        "slot": "fixture",
+        "barrierKind": null,
+        "nameKey": "ext.settlement.hearth.name",
+        "descriptionKey": "ext.settlement.hearth.description",
+        "maxHp": 150,
+        "blocks": {
+          "movement": false,
+          "vision": false,
+          "physicalProjectile": false,
+          "magicProjectile": false,
+          "gas": false,
+          "liquid": false
+        },
+        "flammable": true,
+        "resistances": {
+          "physical": 0,
+          "fire": 0
+        },
+        "constructionCost": [
+          {
+            "itemDefinitionId": "settlement.wood",
+            "count": 4
+          },
+          {
+            "itemDefinitionId": "settlement.stone",
+            "count": 4
+          }
+        ],
+        "constructionTicks": 300,
+        "refundNumerator": 1,
+        "refundDenominator": 2,
+        "containerCapacity": null,
+        "stationDefinitionId": "settlement.hearth-station",
+        "restPointDefinitionId": null,
+        "tags": [
+          "station.hearth"
         ]
       }
     ],

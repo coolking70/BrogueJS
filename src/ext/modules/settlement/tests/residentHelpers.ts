@@ -28,8 +28,8 @@ export function bedroom(h: WorldHarness, g: Game) {
   expect(residentBedIds(g, current(g))).toHaveLength(1);
 }
 
-export function residentScene(){
- const {h,g}=setup();bedroom(h,g);
+export function residentScene(modules=["settlement"]){
+ const {h,g}=setup(modules);bedroom(h,g);
  const id=g.extensionRuntime!.worldCampState('settlement').spawnSlots[0]!.actorId!;
  const a=g.monsters.find(a=>a.id===id)!;a.loc={x:20,y:13};a.ticksUntilTurn=100;
  g.refreshStructureDerivedState();const c=current(g);

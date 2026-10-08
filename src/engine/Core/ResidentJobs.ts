@@ -1,3 +1,4 @@
+import { advanceResidentOrderLabor,residentOrderClockFinished,selectResidentOrderDecision,cancelResidentOrder,residentOrder,stopResidentOrder } from './ResidentOrders';
 import { residentDistanceMap, residentBlockedMap } from './ResidentPathing';
 /** Resident jobs share run.actorActions. Job rows own only material custody and earned credit. */
 import type { Game } from './Game';
@@ -94,7 +95,7 @@ export function residentPlotReason(g: Game, id: number): string | null {
 function near(a: Monster, p: { x: number; y: number }) {
   return Math.max(Math.abs(a.x - p.x), Math.abs(a.y - p.y)) <= 1;
 }
-function step(
+export function stepResident(
   g: Game,
   a: Monster,
   target: { x: number; y: number },
@@ -269,7 +270,8 @@ function accept(
   updateWorldReasons(g);
   return j;
 }
-export function cancelResidentWork(g: Game, id: number, reason: string): void {
+export function cancelResidentWork(g: Game, id: number, reason: string,occurredTick?:number): void {
+  cancelResidentOrder(g,id,reason,occurredTick);
   const j = work(g, id);
   if (!j) return;
   transactResidentWorld(g, () => {
@@ -312,6 +314,7 @@ export function cancelResidentWork(g: Game, id: number, reason: string): void {
 export function advanceResidentLabor(g: Game, dt: number): void {
   const w = g.world5;
   if (!w || dt <= 0) return;
+  advanceResidentOrderLabor(g,dt);
   const t0 = w.simulationTicks,
     t1 = checkedAdd(t0, dt);
   for (const j of w.residentJobs) {
@@ -353,6 +356,7 @@ export function residentWorkClockFinished(
   b: ReadonlyActorActionBundle,
   reason: string
 ): boolean {
+  if(residentOrderClockFinished(g,b,reason))return true;
   const j = g.world5?.residentJobs.find((j) => j.actionId === b.actionId);
   if (!j) return false;
   markRecordingRoot(g.world5!);
@@ -453,6 +457,7 @@ export function selectResidentDecision(
     return 'native-fallback';
   }
   if (r.mode === 'escort' || residentHasNativePriority(g, a)) {
+    if(residentOrder(g,id))stopResidentOrder(g,id,'danger');
     if (work(g, id)) cancelResidentWork(g, id, 'native-priority');
     return 'native-fallback';
   }
@@ -462,6 +467,7 @@ export function selectResidentDecision(
     a.ticksUntilTurn = a.movementSpeed;
     return 'handled';
   }
+  if(selectResidentOrderDecision(g,id))return "handled";
   let j = work(g, id);
   if (j) {
     if (j.phase === 'carrying') {
@@ -481,7 +487,7 @@ export function selectResidentDecision(
         return 'handled';
       }
       if (
-        step(
+        stepResident(
           g,
           a,
           target,
@@ -538,12 +544,12 @@ export function selectResidentDecision(
     Math.floor(g.world5!.simulationTicks / 1000) % 32 < r.schedule[0] + r.schedule[1]
   ) {
     const bed = g.world5!.structures.find((s) => s.fixture?.id === r.bedId)?.at;
-    if (bed) step(g, a, bed);
+    if (bed) stepResident(g, a, bed);
     if (a.ticksUntilTurn <= 0) a.ticksUntilTurn = a.movementSpeed;
     return 'handled';
   }
   if (r.job.kind === 'guard') {
-    step(g, a, r.job.at, false, r.revision);
+    stepResident(g, a, r.job.at, false, r.revision);
     if (a.ticksUntilTurn <= 0) a.ticksUntilTurn = a.movementSpeed;
     return 'handled';
   }
@@ -555,7 +561,7 @@ export function selectResidentDecision(
     const job = r.job,
       src = campBox(g, c, job.sourceId),
       target = containerRead(g, src.id).at!;
-    if (step(g, a, target, true, src.revision)) return 'handled';
+    if (stepResident(g, a, target, true, src.revision)) return 'handled';
     if (!hasInteractionLine(g.grid, a.loc, target)) {
       a.ticksUntilTurn = a.movementSpeed;
       return 'handled';
@@ -571,7 +577,7 @@ export function selectResidentDecision(
                 !plotDays.some(
                   (p) =>
                     p.componentId === id && p.day === Math.floor(g.world5!.simulationTicks / 32000)
-                ) && !g.world5!.residentJobs.some((j) => j.plotId === id)
+                ) && !g.world5!.orders.some(o=>o.production?.plotIds.includes(id)) && !g.world5!.residentJobs.some((j) => j.plotId === id)
             );
           if (plotId === undefined) failResident('C5_RESERVED');
           const reason = residentPlotReason(g, plotId!);
@@ -611,7 +617,7 @@ export function selectResidentDecision(
     return 'handled';
   }
   const bed = g.world5!.structures.find((s) => s.fixture?.id === r.bedId)?.at;
-  if (bed) step(g, a, bed);
+  if (bed) stepResident(g, a, bed);
   if (a.ticksUntilTurn <= 0) a.ticksUntilTurn = a.movementSpeed;
   return 'handled';
 }

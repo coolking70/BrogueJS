@@ -1,4 +1,4 @@
-/** Pure C5-1/1.1.0 needs transition. No Game, clocks, RNG or content imports. */
+/** Pure C5-1/1.2.0 needs transition. No Game, clocks, RNG or content imports. */
 import { assertC5Json } from '../../ext/worldJson';
 import { exact, uint, World5Error } from '../../ext/worldBasics';
 import type { OfflineResidentState } from '../../ext/world5';
@@ -42,7 +42,7 @@ export type ResidentNeedsEffect =
     }
   | { kind: 'resident-departure'; actorId: number; atTick: number; reason: 'starvation' };
 export interface ResidentNeedsPlan {
-  contractVersion: '1.1.0';
+  contractVersion: '1.2.0';
   fromTick: number;
   toTick: number;
   residents: OfflineResidentState[];
@@ -245,7 +245,7 @@ export function planResidentNeeds(input: Readonly<ResidentNeedsInput>): Resident
   }
   housing(input.toTick);
   return {
-    contractVersion: '1.1.0',
+    contractVersion: '1.2.0',
     fromTick: input.fromTick,
     toTick: input.toTick,
     residents: p.residents,

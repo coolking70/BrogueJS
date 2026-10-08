@@ -1,3 +1,4 @@
+import { validateResidentOrderReferences } from './ResidentOrderValidation';
 import { validateResidentReferences } from './ResidentValidation';
 import {validateProductionCampReferences} from './StructureProduction';
 import { ownsWorldWorkDefinitions } from './WorldWorkOwner';
@@ -19,6 +20,7 @@ export function validateWorldWorkReferences(game: Game): void {
   validateStructureReferences(game);
   validateProductionCampReferences(game);
   validateResidentReferences(game);
+  validateResidentOrderReferences(game);
   const runtime = game.extensionRuntime!,
     packs = runtime.worldDefinitionPacks(),
     entities = runtime.worldWorkEntities();
@@ -332,7 +334,7 @@ export function validateWorldWorkReferences(game: Game): void {
         bundle.decisionOwnerId !== t.actorId ||
         bundle.subactions.length !== 1 ||
         bundle.depth !== (t.levelRef as any).depth ||
-        bundle.subactions[0]!.phaseRemainingTicks !== t.remainingTicks)
+        (!w.orders.some(o=>o.production&&o.ticketId===t.ticketId)&&bundle.subactions[0]!.phaseRemainingTicks !== t.remainingTicks))
     )
       fail('ticket clock mirror');
     if (

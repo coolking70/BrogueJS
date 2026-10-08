@@ -8,7 +8,7 @@ export function createSettlementModule(): ExtensionModule {
   const pack = loadSettlementPack();
   return {
     id: 'settlement',
-    version: '1.1.0',
+    version: '1.2.0',
     rules: getSettlementIdentity(pack),
     worldDefinitions: pack.world,
     campPolicy: pack.camp,

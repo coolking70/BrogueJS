@@ -1,4 +1,5 @@
 import {settleResidentNeeds,freezeResidentCamps} from './ResidentNeeds';
+import { residentRecipeCatalog } from './ResidentOrders';
 import {residentRead} from './ResidentProduction';
 /** Trusted production adapter. Content declares data and receives read-only DTOs. */
 import type { Game } from './Game';
@@ -855,6 +856,11 @@ export function structureReadSDK(game: Game, owner: string) {
             })),
           residents,
           jobTargets,
+          production: {
+            recipes: residentRecipeCatalog(game).filter(r=>r.offlineEligible).map(r=>({id:r.id,owner:r.owner,nameKey:r.nameKey,workTicks:r.workTicks})),
+            stations: w.stations.filter(s=>s.levelRef.kind==='dungeon'&&s.levelRef.depth===game.depth).flatMap(s=>{const e=runtime.worldWorkEntities().find(e=>e.id===s.interactableId);return e&&game.grid.getCell(e.x,e.y)?.hasMemory?[{id:s.interactableId,revision:s.revision,definitionId:s.definitionId}]:[];}),
+            orders: w.orders.filter(o=>o.production&&residents.residents.some(r=>r.id===o.actorId)).map(o=>{const t=w.tickets.find(t=>t.ticketId===o.ticketId);return {id:o.id,actorId:o.actorId,revision:o.revision,recipeId:o.definitionId,remainingEpochs:o.remainingEpochs,status:o.status,stopReason:o.stopReason,ticketId:o.ticketId,sourceId:o.production!.sourceId,destinationId:o.production!.destinationId,stationId:o.production!.stationId,plotIds:o.production!.plotIds,batchCount:o.production!.batchCount,completedBatches:t?.completedBatches??o.production!.batchCount,laborCreditTicks:t?.laborCreditTicks??0};})
+          },
           lastError: worldWorkLastError(game)
         })
       );
@@ -896,7 +902,6 @@ export function validateProductionCampReferences(game: Game): void {
         !ledger ||
         ledger.levelRef.kind !== 'dungeon' ||
         ledger.levelRef.depth !== c.depth ||
-        ledger.pendingOutputs.length ||
         ledger.frozen.rulesFingerprint !==
           runtime.worldDefinitionFingerprints()[owner]!.replace(/^sha256:/, '') ||
         c.reportTick > game.world5.simulationTicks

@@ -97,5 +97,8 @@ export const RESIDENT_ACTIONS = [
   'assign-job',
   'set-schedule',
   'set-granary',
+  'order-work',
+  'resupply-work',
+  'cancel-order',
   'dismiss-resident'
 ] as const;

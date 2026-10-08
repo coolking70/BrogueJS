@@ -4,6 +4,8 @@
 
 2026-10-08 5D1 当前实现补注（已核对V12生产源）：经济合同使用 **C5-1/1.1.0**、foundation11、world5 schema2、settlement1.1.0/state2；冻结WorldWork SDK的contractVersion=1.0.0/worldSdk1及九冻结文件保持原字节，不能把经济修订改进冻结SDK。本文r2基线/版本计划/旧DTO代码块保留历史含义；当前差异以下方5D1说明及实际源码为准，不以旧shortage/空ledger/全部禁止护送授予当前能力。whole-run6、recording4/origin2保持；V12正式性能已通过（16人净增P95 3.672584ms、64人峰值46.777167ms）；最终浏览器、登记/文档接入差量独立复核及父验收尚未完成。
 
+2026-10-09 5D2当前补注：foundation12、world5 schema3、经济合同1.2.0、settlement1.2.0/state2。居民生产采用world5既有订单/票据/escrow、pendingOutputs及productionQuotas严格根；ResidentNeeds将真实需求与纯ResidentOrderEconomy按绝对周期同步提交，旧空订单/material-only投影不代表生产实现。固定32周期、次周期输出、日配额与软crafting目录详见[5D2报告](phase5d2.report.md)；九冻结SDK保持，历史代码块不追改。
+
 ## 0 r2 修订记录
 
 | 评审项 | 本文落点 | 摘要 |

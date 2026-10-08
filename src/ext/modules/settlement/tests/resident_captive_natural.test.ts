@@ -30,8 +30,8 @@ it('normal seed3 current-source UI route rescues the natural D3 original goblin,
     expect(g.recordedInputEvents).toHaveLength(0);
     expect(g.depth).toBe(initial.depth);
     expect(g.world5!.simulationTicks).toBe(initial.tick);
-    expect(h.digest()).toBe(initial.digest);
-    seeks.push({ events: 0, digest: initial.digest });
+    if (!process.env.RESIDENT_FORMAT_CAPTURE) expect(h.digest()).toBe(initial.digest);
+    seeks.push({ events: 0, digest: h.digest() });
     for (const step of route.steps)
       for (let n = 0; n < step.count; n++) {
         const before = g.recordedInputEvents.length,
@@ -60,7 +60,7 @@ it('normal seed3 current-source UI route rescues the natural D3 original goblin,
         if (!checkpoint) continue;
         expect(g.depth).toBe(checkpoint.depth);
         expect(g.world5!.simulationTicks).toBe(checkpoint.tick);
-        expect(h.digest()).toBe(checkpoint.digest);
+        if (!process.env.RESIDENT_FORMAT_CAPTURE) expect(h.digest()).toBe(checkpoint.digest);
         const point=checkpoint.name;
         if (point === 'before-rescue') {
           actor = g.monsters.find((a) => a.id === route.actorId);
@@ -143,6 +143,8 @@ it('normal seed3 current-source UI route rescues the natural D3 original goblin,
       h.seek(recording, point.events);
       expect(h.digest()).toBe(point.digest);
     }
+    if (process.env.RESIDENT_FORMAT_CAPTURE)
+      writeFileSync(process.env.RESIDENT_FORMAT_CAPTURE + '.captive.json', JSON.stringify(seeks,null,2)+'\n');
     // Optional final-source audit checks the untouched complete external trace,
     // including its original captured roots, rather than recapturing them.
     const references: string[] = process.env.RESIDENT_CAPTIVE_RECORDINGS ? JSON.parse(process.env.RESIDENT_CAPTIVE_RECORDINGS) : process.env.RESIDENT_CAPTIVE_RECORDING ? [process.env.RESIDENT_CAPTIVE_RECORDING] : [];

@@ -15,10 +15,15 @@ const source = ref<number | null>(null),
   quantity = ref(1),
   plots = ref<number[]>([]),
   selectedId = ref<number | null>(null),
+  recipeId = ref('settlement.hunt'),
+  stationId = ref<number | null>(null),
+  batches = ref(1),
   work = ref(16),
   rest = ref(8);
 const visibleBoxes = computed(() => props.model.boxes.filter((b) => b.kind === 'chest'));
-const targets = computed(() => props.model.jobTargets?.find((t) => t.campId === active.value?.campId));
+const targets = computed(() =>
+  props.model.jobTargets?.find((t) => t.campId === active.value?.campId)
+);
 const boxes = computed(() => targets.value?.boxes ?? []);
 const jobPlots = computed(() => targets.value?.plots ?? []);
 // Haul Item IDs/quantities still come only from the ordinary visible projection.
@@ -27,7 +32,11 @@ const active = computed(() =>
   props.model.residents?.residents.find((a) => a.id === selectedId.value)
 );
 const guard = computed(() => props.cursor ?? props.model.at);
+const productionOrder = computed(() =>
+  props.model.production?.orders.find((o) => o.actorId === active.value?.id)
+);
 const resetDraft = () => {
+  stationId.value = null;
   source.value = destination.value = itemId.value = null;
   plots.value = [];
 };
@@ -47,8 +56,16 @@ watch(
 );
 // Retire drafts if a selected endpoint disappears or any target/resident CAS
 // token changes. Model refreshes with identical tokens preserve user choices.
-watch(() => JSON.stringify([props.model.available, active.value?.revision, targets.value,
-  props.model.boxes.map((b) => [b.id, b.items.map((i) => [i.id, i.quantity, i.lockedQuantity])])]), resetDraft);
+watch(
+  () =>
+    JSON.stringify([
+      props.model.available,
+      active.value?.revision,
+      targets.value,
+      props.model.boxes.map((b) => [b.id, b.items.map((i) => [i.id, i.quantity, i.lockedQuantity])])
+    ]),
+  resetDraft
+);
 const camp = computed(() => props.model.camps.find((c) => !c.remote));
 const atHome = (a: { campId: number; at: { x: number; y: number } }) => {
   const c = props.model.camps.find((c) => c.regionId === a.campId);
@@ -164,12 +181,40 @@ function order(id: number, kind: string) {
         >{{ t('ext.settlement.resident.quantity')
         }}<input v-model.number="quantity" type="number" min="1" max="8"
       /></label>
-      <label
-        v-for="p in jobPlots"
-        :key="p.id"
+      <label v-for="p in jobPlots" :key="p.id"
         ><input v-model="plots" type="checkbox" :value="p.id" />{{ t(p.nameKey) }} ({{ p.at.x }},{{
           p.at.y
         }})</label
+      >
+      <label
+        >{{ t('ext.settlement.production.recipe')
+        }}<select v-model="recipeId">
+          <option v-for="r in model.production?.recipes ?? []" :key="r.id" :value="r.id">
+            {{ t(r.nameKey) }}
+          </option>
+        </select></label
+      >
+      <label
+        >{{ t('ext.settlement.production.station')
+        }}<select v-model="stationId">
+          <option :value="null">{{ t('ext.settlement.resident.choose') }}</option>
+          <option v-for="s in model.production?.stations ?? []" :key="s.id" :value="s.id">
+            {{ s.id }} ·
+            {{
+              t(
+                s.definitionId === 'settlement.hearth-station'
+                  ? 'ext.settlement.hearth.name'
+                  : 'ext.settlement.production.station'
+              )
+            }}
+          </option>
+        </select></label
+      >
+      <label
+        >{{ t('ext.settlement.resident.quantity')
+        }}<select v-model.number="batches">
+          <option v-for="n in 16" :key="n" :value="n">{{ n }}</option>
+        </select></label
       >
       <p>{{ t('ext.settlement.resident.guard_target', { x: guard.x, y: guard.y }) }}</p>
       <p>{{ t('ext.settlement.resident.guard_hint') }}</p>
@@ -224,7 +269,78 @@ function order(id: number, kind: string) {
           })
         }}
       </p>
+      <p v-if="productionOrder">
+        {{
+          t('ext.settlement.production.ticket', {
+            id: productionOrder.id,
+            ticket: productionOrder.ticketId ?? '—',
+            status: t(
+              'ext.settlement.production.' + (productionOrder.stopReason ?? productionOrder.status),
+              { defaultValue: productionOrder.status }
+            )
+          })
+        }}
+      </p>
+      <p v-if="productionOrder">
+        {{
+          t('ext.settlement.production.epochs', {
+            epochs: productionOrder.remainingEpochs,
+            done: productionOrder.completedBatches,
+            total: productionOrder.batchCount
+          })
+        }}
+      </p>
+      <p v-if="productionOrder">
+        {{
+          t('ext.settlement.production.endpoints', {
+            source: productionOrder.sourceId,
+            destination: productionOrder.destinationId,
+            station: productionOrder.stationId ?? '—'
+          })
+        }}
+      </p>
       <div class="actions">
+        <button
+          data-action="order-work"
+          :disabled="
+            blocked ||
+            !nearby(a.at) ||
+            !atHome(a) ||
+            !!productionOrder ||
+            !source ||
+            !destination ||
+            batches < 1 ||
+            batches > 16
+          "
+          @click="
+            emit('command', 'order-work', a.id, {
+              recipeId,
+              batchCount: batches,
+              sourceId: source,
+              destinationId: destination,
+              stationId,
+              plotIds: recipeId === 'settlement.farm' ? plots : []
+            })
+          "
+        >
+          {{ t('ext.settlement.production.order') }}
+        </button>
+        <button
+          v-if="productionOrder"
+          data-action="resupply-work"
+          :disabled="blocked || !nearby(a.at) || !atHome(a) || productionOrder.status === 'working'"
+          @click="emit('command', 'resupply-work', a.id, {})"
+        >
+          {{ t('ext.settlement.production.resupply') }}
+        </button>
+        <button
+          v-if="productionOrder"
+          data-action="cancel-order"
+          :disabled="blocked || !nearby(a.at) || !atHome(a)"
+          @click="emit('command', 'cancel-order', a.id, {})"
+        >
+          {{ t('ext.settlement.production.cancel_order') }}
+        </button>
         <button
           :disabled="blocked || !nearby(a.at) || (a.mode === 'escort' && !atHome(a))"
           @click="
