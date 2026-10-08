@@ -2,7 +2,7 @@
 
 ## 5D2维护者验收（2026-10-09）
 
-开工HEAD `e0fa39a225428d36e6e342f6585f57f45960e6ba`；5D1 `f067e89`及5G集成 `467962b`（含`eda3094`）已由父提交推送。5D2交付有限生产订单、农田/猎人/厨师、可选crafting目录、真实输入/产物/事务与中文UI，当前未提交，第1轮修复完成，待父必要第2轮；见[任务书](ext/phase5d2.task.md)、[报告](ext/phase5d2.report.md)及[配置手册](ext/settlement-config.md)。
+开工HEAD `e0fa39a225428d36e6e342f6585f57f45960e6ba`；5D1 `f067e89`及5G集成 `467962b`（含`eda3094`）已由父提交推送。5D2交付有限生产订单、农田/猎人/厨师、可选crafting目录、真实输入/产物/事务与中文UI，两轮独立审查已完成、R1/R2关闭，5D2 `ce7a2da`已推送至`ext/phase5`；见[任务书](ext/phase5d2.task.md)、[报告](ext/phase5d2.report.md)及[配置手册](ext/settlement-config.md)。
 
 当前foundation12/world5 schema3/经济合同1.2.0/settlement1.2.0 state2；whole-run6/recording4/origin2、worldSdk1/edibleSdk1及九冻结字节保持。相关门禁与格式重录按报告实际结果引用，完整npm/test:ext、128组合/删除、浏览器/真机及最大负载留[5Z](ext/phase5z-remainders.md)。原实施者已停止写入；维护者提交发布，最多两轮审查规则已执行。
 
