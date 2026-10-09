@@ -2,7 +2,7 @@
 
 ## 最新维护者入口（2026-10-09）
 
-5E1 `a9f554b`已发布。5Y的Y1-A/Y2-A及D8冻结投影P95≤100ms目标已获批准；[giants2前置底座修复](giants2-foundation.task.md)三项已审修推送`35045d9`，当前合入已指定`357a473`并在giants目录关闭旧D12五项路线前提，验收推送后启动[5Y](phase5y.task.md)，之后准备5Z。giants2验收结论已由用户传达“底座修复后合入”；不再沿用等待Claude结论的旧阻断。5C2/5D3移至阶段5之后，5D3随narrative扩充。当前以[五行状态卡](commander-status.md)为准。
+5E1 `a9f554b`已发布。5Y的Y1-A/Y2-A及D8冻结投影P95≤100ms目标已获批准；[giants2前置底座修复](giants2-foundation.task.md)三项已审修推送`35045d9`，固定`357a473`已集成发布`2709250`，旧D12五项与加载修复经集成R1关闭；现在启动[5Y](phase5y.task.md)，之后准备5Z。giants2验收结论已由用户传达“底座修复后合入”；不再沿用等待Claude结论的旧阻断。5C2/5D3移至阶段5之后，5D3随narrative扩充。当前以[五行状态卡](commander-status.md)为准。
 
 ## 当前工作规则
 
