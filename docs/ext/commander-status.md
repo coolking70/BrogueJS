@@ -1,10 +1,10 @@
 # 维护者侧指挥状态（2026-10-09）
 
-## 当前状态（2026-10-09，5Y任务书待确认）
-- 已完成：5E1 `a9f554b`、发布状态 `5b5edbe`；5Y任务书与只读勘察已准备，未派实现。
-- 已定范围：5C2/5D3移至阶段5之后，5D3随narrative扩充；见[设计§14](phase5-settlement-world.md#14-分步实施并行排期与-dot-交接)。
-- 遗留：[5Z清单](phase5z-remainders.md)；giants2等Claude验收结论，暂不操作其分支。
-- 下一步：用户确认[5Y待决清单](phase5y.task.md#2-开工前待决清单)后派执行；5Y及giants2处置完成后再准备5Z。
+## 当前状态（2026-10-09，giants2前置底座修复）
+- 已完成：5E1 `a9f554b`、5Y任务书 `02ef819`；Y1-A/Y2-A及D8投影P95≤100ms目标已批准。
+- 当前：底座三修首次实现交接，14项新增回归及boundary/types/build/drift通过；两轮独立审查完成，R1-F1已独立关闭，正在提交推送底座，见[报告](giants2-foundation.report.md)。
+- 遗留：[5Z清单](phase5z-remainders.md)；5C2/5D3移至阶段5之后，5D3随narrative扩充。
+- 下一步：底座审修推送→合入357a473并关闭giants五项路线验证→推送→5Y；同轮衔接、每步最多两轮。
 
 ## 当前工作规则
 

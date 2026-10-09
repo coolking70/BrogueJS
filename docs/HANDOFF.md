@@ -1,6 +1,6 @@
 # 阶段5最新安排（2026-10-09）
 
-5E1已发布`a9f554b`；下一步[5Y摘要卡顿优化任务书](ext/phase5y.task.md)待用户确认后派执行，当前仅完成文档/只读准备。5C2、5D3明确移到阶段5之后，不纳入5Z前范围；5D3随narrative扩充考虑。giants2由Claude侧验收并通知合入/底座修复结论，此前不操作其分支；上述完成后再准备5Z任务书。见[状态卡](ext/commander-status.md)、[范围登记](ext/phase5z-remainders.md)及设计§14；覆盖以下历史“待定”排期。
+5E1已发布`a9f554b`。用户已批准5Y的Y1-A/Y2-A，并补充D8满结构主线程冻结投影P95≤100ms目标（至少减半为保底，未达目标分解耗时登记5Z，不扩大范围）。当前先执行[giants2底座修复](ext/giants2-foundation.task.md)：SDK01死亡来源回放、SDK02硬直时序、共享空间写入口；审修推送后合入`357a473`、仅giants目录关闭旧D12五项路线前提并验收推送，再启动[5Y](ext/phase5y.task.md)，最后准备5Z任务书。5C2/5D3移至阶段5之后，5D3随narrative扩充。见[状态卡](ext/commander-status.md)；覆盖下方历史排期。
 
 # 5E1维护者收口（2026-10-09，已发布 `a9f554b`）
 

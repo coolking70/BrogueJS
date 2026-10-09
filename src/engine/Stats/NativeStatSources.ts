@@ -1,3 +1,4 @@
+import { checkpointGenerationWorld } from '../Core/GenerationCoordinator';
 import { footprintOf } from '../Movement/CreatureSpatial';
 /** Native formula nodes and the only production reader of raw ring bonuses. */
 import type { Creature } from '../../entities/Creature';
@@ -10,7 +11,7 @@ import { effectiveRingEnchant, ringBonus, turnsForFullRegenInThousandths } from 
 import { netEnchant, strengthModifier, accuracyFraction, enchantedDamage, monsterAccuracyAdjusted, monsterDefenseAdjusted, monsterDamageAdjustmentAmount, damageFraction, hitProbability } from '../Combat/CombatFormulas';
 import { MONSTER_CLASS_MEMBERS } from '../Combat/MonsterClass';
 import { armorStealthAdjustment, ringAwarenessBonus, ringStealthAdjustment } from '../Items/ItemEffectFormulas';
-import { bindItemStatInvalidation, unbindItemStatInvalidation } from '../Items/ItemStatInvalidation';
+import { bindItemStatInvalidation, unbindItemStatInvalidation, checkpointItemStatInvalidation } from '../Items/ItemStatInvalidation';
 type EquippedActor = Creature & { strength?: number; inventory?: {items: Item[]}; equippedWeapon?: Item|null; equippedArmor?: Item|null; ringLeft?: Item|null; ringRight?: Item|null; accuracy?: number; defense?: number; damageString?: string; regenTurns?: number; typeId?: string; isAlly?: boolean; isCaged?: boolean };
 interface NativeEnvironment { darkness(): boolean; shadow(): boolean; rested(): boolean }
 const environments = new WeakMap<Creature, NativeEnvironment>();
@@ -22,6 +23,25 @@ export function configureNativeStats(actor:Creature, environment:NativeEnvironme
 export function bindStats(actor:Creature, pipeline:StatPipeline, dirty:()=>void, bonus:(key:string)=>number,atomic:<T>(work:()=>T)=>T):void { bindings.set(actor,{pipeline,dirty,bonus,atomic});const inventory=(actor as EquippedActor).inventory;if(inventory)bindItemStatInvalidation(inventory,()=>markStatsDirty(actor)); }
 export function atomicStats<T>(actor:Creature,work:()=>T):T { return bindings.get(actor)?.atomic(work)??work(); }
 export function unbindStats(actor:Creature):void { bindings.delete(actor);const inventory=(actor as EquippedActor).inventory;if(inventory){unbindItemStatInvalidation(inventory);for(const item of inventory.items)unbindItemStatInvalidation(item);} }
+/** 可信事务外检查点：恢复 WeakMap 关联、原回调及原生查询缓存，不触发重新挂接。 */
+export function checkpointNativeStatBindings(actors: readonly Creature[]): () => void {
+  const rows = [...new Set(actors)].map(actor => ({ actor, binding: bindings.get(actor), revision: revisions.get(actor),
+    environment: environments.get(actor), proposal: itemProposals.get(actor), native: nativeSessions.get(actor) }));
+  const restoreNative = checkpointGenerationWorld(() => ({ shallow: [], deep: rows.map(row => row.native),
+    references: [...actors, ...rows.map(row => row.native?.target)] }));
+  const restoreItems = checkpointItemStatInvalidation(rows.flatMap(({ actor }) => {
+    const a = actor as EquippedActor;
+    return [a.inventory, ...(a.inventory?.items ?? []), a.equippedWeapon, a.equippedArmor, a.ringLeft, a.ringRight]
+      .filter((object): object is NonNullable<typeof object> => !!object);
+  }));
+  return () => { restoreNative(); restoreItems(); for (const row of rows) {
+    if (row.binding) bindings.set(row.actor, row.binding); else bindings.delete(row.actor);
+    if (row.revision === undefined) revisions.delete(row.actor); else revisions.set(row.actor, row.revision);
+    if (row.environment) environments.set(row.actor, row.environment); else environments.delete(row.actor);
+    if (row.proposal) itemProposals.set(row.actor, row.proposal); else itemProposals.delete(row.actor);
+    if (row.native) nativeSessions.set(row.actor, row.native); else nativeSessions.delete(row.actor);
+  } };
+}
 export function markStatsDirty(actor:Creature):void { revisions.set(actor,(revisions.get(actor)??0)+1); bindings.get(actor)?.dirty(); }
 export function nativeStatRevision(actor:Creature):number { return revisions.get(actor)??0; }
 /** Ingredients of every native formula/DAG node, excluding current resources.

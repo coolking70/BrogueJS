@@ -108,6 +108,7 @@
     "src/test/fe_1_touch.test.ts",
     "src/test/fix_rapier_travel.test.ts",
     "src/test/frame_profile.test.ts",
+    "src/test/giants2_foundation.test.ts",
     "src/test/g_1_gas_volumetric.test.ts",
     "src/test/g_2_gas_df_wiring.test.ts",
     "src/test/g_3_gas_effects.test.ts",

@@ -13758,7 +13758,39 @@ export class Game {
     }
     public departureTurn(actor:Monster):boolean {return departureStep(this,actor);}
     public retireDepartingActors(ids:ReadonlySet<number>):void {
-        const actors=this.departureActors().filter(a=>ids.has(a.id));
+        const owned=this.departureActors(),actors=owned.filter(a=>ids.has(a.id));
+        const landings=new Map<Monster,Pos>(),staged=new Map<import('../Map/Grid').Grid,Monster[]>();
+        // 先核验整批幸存乘客，再改变居民、物品或实体所有权。
+        // 行政退休只发布安全落点，不触发伤害性地形接触。
+        for(const actor of actors){
+            const passenger=actor.carriedMonster;
+            if(!passenger||ids.has(passenger.id))continue;
+            assertNativeSpatial(passenger);
+            if(passenger===actor||passenger.spatial?.bodyMember||owned.includes(passenger)
+                ||landings.has(passenger)||owned.some(other=>other!==actor&&other.carriedMonster===passenger))
+                throw new Error('Invalid departing passenger ownership');
+            const cached=[...this.levels.entries()].find(([,level])=>level.monsters.includes(actor)||level.dormantMonsters?.includes(actor));
+            const pending=[...this.pendingFallenByDepth.entries()].find(([,list])=>list.includes(actor));
+            const depth=cached?.[0]??pending?.[0]??this.depth;
+            const grid=cached?.[1].grid??(depth===this.depth?this.grid:undefined);
+            const target=cached?.[1].monsters??pending?.[1]??this.monsters;
+            const dormant=cached?.[1].dormantMonsters??(grid===this.grid?this.dormantMonsters:[]);
+            const prior=grid?staged.get(grid)??[]:[];
+            if(!grid||!canFitAt({grid,player:grid===this.grid?this.player:undefined,
+                monsters:[...target.filter(a=>!ids.has(a.id)),...prior],dormantMonsters:dormant.filter(a=>!ids.has(a.id))},passenger,actor.loc,
+                {allowsTerrain:p=>!(cellTerrainFlags(grid,p.x,p.y)&(T_OBSTRUCTS_PASSABILITY|T_HARMFUL_TERRAIN|T_LAVA_INSTA_DEATH|T_AUTO_DESCENT|T_IS_DEEP_WATER|T_IS_DF_TRAP|T_SPONTANEOUSLY_IGNITES))}))
+                throw new Error('No safe departing passenger landing');
+            landings.set(passenger,{...actor.loc});
+            staged.set(grid,[...prior,{...passenger,loc:{...actor.loc}} as Monster]);
+        }
+        if(!landings.size){this.retireDepartingActorsBody(ids,actors,landings);return;}
+        const restore=this.checkpointCombatFactWorld();
+        const restoreRuntimeIdentity=checkpointGenerationWorld(()=>({shallow:[],deep:[this.extensionRuntime!]}));
+        const restoreStats=this.extensionRuntime!.checkpointNativeStatSession();
+        try{this.extensionRuntime!.worldWorkTransaction(()=>this.retireDepartingActorsBody(ids,actors,landings));}
+        catch(error){restoreRuntimeIdentity();restore();restoreStats();throw error;}
+    }
+    private retireDepartingActorsBody(ids:ReadonlySet<number>,actors:readonly Monster[],landings:ReadonlyMap<Monster,Pos>):void {
         for(const actor of actors){
             removeResident(this,actor.id,'retired');terminateResidentSource(this,actor.id);
             const cached=[...this.levels.entries()].find(([,level])=>level.monsters.includes(actor)||level.dormantMonsters?.includes(actor));
@@ -13774,7 +13806,9 @@ export class Game {
                 items.push(item);actor.carriedItem=null;
             }
             if(actor.carriedMonster&&!ids.has(actor.carriedMonster.id)){
-                const passenger=actor.carriedMonster;passenger.loc={...actor.loc};
+                const passenger=actor.carriedMonster;
+                commitCreatureAnchor(passenger,{...landings.get(passenger)!});
+                notifyProductionActorSourceChanged(this,passenger.id);
                 const target=cached?.[1].monsters??pending?.[1]??this.monsters;
                 if(!target.includes(passenger))target.push(passenger);this.extensionRuntime!.attachCreature(passenger);
             }

@@ -210,6 +210,10 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 // 依赖此语义），重算反而会覆盖外部写入。
                 // E1-修订：怪物行动不 yield——常规动作一次性跑完后统一渲染
                 // （CE 连"豺狼 50 tick 走两步"也不单独成帧）。
+                // 同边界攻击可能建立新的防御恢复镜像：先扣已过去的时间，
+                // 再允许攻击建立完整新债务。忙碌玩家的镜像由 advanceActionTime
+                // 唯一倒计时；没有 scheduler 的经典路径仍保持 CE 原顺序。
+                if (actions && !playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
                 const dueActors = actions
                     ? [...ports.world.monsters, ...(playerWasBusy ? [ports.world.player] : [])]
                         .filter(actor => actions.isDecisionOwner(actor.id)).sort((a, b) => a.id - b.id)
@@ -241,7 +245,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                     if (m.hp > 0 && ports.world.monsters.includes(m) && !actions?.isBusy(m.id)) ports.effects.sweepDeepWaterItem(m, m.ticksUntilTurn);
                 }
 
-                if (!playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
+                if (!actions && !playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
                 completedBoundary = true;
                 if (actions) ports.effects.observeActorActionBoundary?.();
                 if (ports.clock.isGameOver) return; // CE Time.c:2756-2758

@@ -8,7 +8,8 @@ import { FOUNDATION_STRUCTURE_RULES } from './structureSchema';
 import { StatPipeline } from '../engine/Stats/StatPipeline';
 import { NATIVE_STAT_KEYS, NATIVE_STAT_DAG } from '../engine/Stats/NativeStatKeys';
 import { MaterializedStats, validateMaterializedStats } from '../engine/Stats/MaterializedStats';
-import { bindStats, markStatsDirty, nativeStatRevision, nativeStatSignature, nativeStatFacts, nativeBase, nativeEquippedItems, nativeRows, nativeNodeRows, unbindStats } from '../engine/Stats/NativeStatSources';
+import { checkpointGenerationWorld } from '../engine/Core/GenerationCoordinator';
+import { checkpointNativeStatBindings, bindStats, markStatsDirty, nativeStatRevision, nativeStatSignature, nativeStatFacts, nativeBase, nativeEquippedItems, nativeRows, nativeNodeRows, unbindStats } from '../engine/Stats/NativeStatSources';
 import { StatValidationError, validateStatRows } from './stats';
 import type { PairFacts, StatQuery } from './stats';
 import { markRecordingRoot, recordingRootRevision } from './recordingRevisions';
@@ -1238,8 +1239,14 @@ export class ExtensionRuntime {
             this.flushStoryFacts();
             for (const actor of [...this.creatures].sort((a, b) => a.id - b.id)) this.observeCreature(actor);
             const causes = this.causality.snapshot();
-            const origins = [...Object.values(causes.statusOrigins).flatMap(Object.values), ...Object.values(causes.fatalOrigins),
-                ...Object.values(causes.pendingDisplacements), ...Object.values(this.deaths).map(death => death.origin)];
+            // 奖励先于模块 GC 结算，待发击杀事实仍可读取全部已观察来源。
+            // 仅本次原生 GC 后仍可达目标的 origins 能继续保留来源摘要，
+            // 避免同一安全边界收集一次与两次得到不同状态。
+            const keep = new Set(reachable.map(actor => actor.id));
+            const retained = <T>(rows: Record<string, T>): T[] => Object.entries(rows)
+                .filter(([id]) => keep.has(Number(id))).map(([, value]) => value);
+            const origins = [...retained(causes.statusOrigins).flatMap(Object.values), ...retained(causes.fatalOrigins),
+                ...retained(causes.pendingDisplacements), ...retained(this.deaths).map(death => death.origin)];
             const sourceIds = [...new Set(origins.flatMap(origin => origin?.creditActorId ? [origin.creditActorId] : []))].sort((a,b) => a-b);
             this.emit('simulationSettled', { knownKinds: this.ports.knownKinds?.() ?? [],
                 reachableIds: reachable.map(actor => actor.id).sort((a,b) => a-b), sourceIds });
@@ -1727,6 +1734,15 @@ export class ExtensionRuntime {
     noteEdibleDiagnostic(owner:string,method:string):void {this.edibleDiagnostics.push({owner,method});}
     readEdibleDiagnostics():readonly {owner:string;method:string}[] {return freezeView(structuredClone(edibleDiagnostics.get(this)??[]));}
     retireEdibleActor(actor:Creature):void {delete this.components[String(actor.id)];this.creatures.delete(actor);statSessions.get(this)!.actors.delete(actor.id);statSessions.get(this)!.ledger.remove(actor.id);unbindStats(actor);actor.extensionHooks=undefined;this.invalidateStats();markRecordingRoot(this);}
+    /** 仅可信原生退休入口使用；模块上下文不提供此离图会话能力。 */
+    checkpointNativeStatSession(): () => void {
+        const session=statSessions.get(this)!,query=statQueries.get(this);
+        const actors=[...new Set([...session.actors.values(),...this.creatures])];
+        const restoreSession=checkpointGenerationWorld(()=>({shallow:[],deep:[session],references:[this,...this.modules,...actors]}));
+        const restoreBindings=checkpointNativeStatBindings(actors);
+        return()=>{restoreSession();statSessions.set(this,session);restoreBindings();
+            if(query)statQueries.set(this,query);else statQueries.delete(this);};
+    }
     worldWorkTransaction<T>(work:()=>T):T { return this.transaction(work); }
     worldWorkEntities(): readonly WorldInteractable[] { return this.world.entities; }
     worldWorkPlacementProtected(at:{x:number;y:number},depth:number):boolean {
