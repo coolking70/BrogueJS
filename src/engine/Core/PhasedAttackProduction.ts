@@ -418,7 +418,7 @@ export function bindPhasedAttackProduction(game:Game):void {
             const source=actor(game,id);if(source)synchronizeIdleResource(game,session,source);
             if(!source||source.hp<=0)for(const bundle of game.actorActions!.bundles)
                 for(const child of bundle.subactions)if(child.sourceEntityId===id){const sub=session.state.actions.find(a=>a.actionId===bundle.actionId)?.subactions.find(s=>s.sourceSubactionId===child.sourceSubactionId);if(sub)sub.lockedCells=[];}},
-        leftDepth:()=>{interruptWorldWorkAtDepth(game);interruptWorldRest(game,'level-exit');settleWorldRest(game);bumpRevision(session.state);for(const row of session.state.actors){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}},
+        leftDepth:()=>{interruptWorldWorkAtDepth(game);interruptWorldRest(game,'level-exit');settleWorldRest(game);bumpRevision(session.state);const frozen=new Set(game.actorActionWorld().frozenRaidActorIds);for(const row of session.state.actors){if(frozen.has(row.actorId))continue;row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}},
         interrupted:(source,bundle,reason)=>{bumpRevision(session.state);const metadata=session.state.actions.find(a=>a.actionId===bundle.actionId);if(metadata&&reason==='layer-change')metadata.suppressTerminalSweep=true;const sub=metadata?.subactions.find(s=>s.sourceSubactionId===source.sourceSubactionId);if(sub)sub.lockedCells=[];},
         shouldSweep:bundle=>bundle.owner!=='foundation'&&!session.state.actions.find(action=>action.actionId===bundle.actionId)?.suppressTerminalSweep,
         finishAction:(bundle,reason)=>{if(bundle.owner==='foundation'){if(!residentWorkClockFinished(game,bundle,reason))worldWorkClockFinished(game,bundle,reason);return;}if(finishWorldRestClock(game,bundle,reason))return;const row=session.state.actors.find(row=>row.actorId===bundle.decisionOwnerId);
@@ -468,7 +468,7 @@ export function bindPhasedAttackProduction(game:Game):void {
         }});
     sessions.set(game,session);
     bindWorldRestSource(game);
-    for(const row of session.state.actors){const source=actor(game,row.actorId);if(source&&(row.dodgeRemainingTicks||row.parryRemainingTicks))session.defenseSources.set(source.id,{actor:source,revision:actorSourceRevision(source),depth:game.depth});}
+    for(const row of session.state.actors){const world=game.actorActionWorld(),match=world.levels.flatMap(l=>l.actors.map(actor=>({actor,depth:l.depth}))).find(r=>r.actor.id===row.actorId),source=row.actorId===game.player.id?game.player:match?.actor;if(source&&(row.dodgeRemainingTicks||row.parryRemainingTicks))session.defenseSources.set(source.id,{actor:source,revision:actorSourceRevision(source),depth:match?.depth??game.depth});}
 }
 /** Whole-body sources use every zone; targets use only pending locked cells. */
 export function cancelPhasedAttacksAtZone(game: Game, target: Creature, zoneId: string, defer = false): void {

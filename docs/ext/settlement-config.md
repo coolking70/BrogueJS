@@ -1,12 +1,12 @@
-# 远征营地 5D2 配置手册
+# 远征营地 5E1 配置手册
 
-本文描述5D2未提交实现；实施测试和门禁见[5D2报告](phase5d2.report.md)，待父独立审查。5D1历史验收和性能仅按当时版本引用；完整门禁、最终浏览器和真机归[5Z](phase5z-remainders.md)。
+本文描述5E1实施候选（未提交）；实施测试、失败和覆盖缺口见[5E1报告](phase5e1.report.md)，待父独立审查。5D2已由父提交 `ce7a2da`。5D1历史验收和性能仅按当时版本引用；完整门禁、最终浏览器和真机归[5Z](phase5z-remainders.md)。
 
 生产目录 `src/ext/modules/settlement/`；入口 `descriptor.ts` 由 catalog 自动发现，`defaultEnabled=false`。新局扩展选择中单独勾选「远征营地」即可使用，不依赖其他内容模块。启用后按原有启动收据发放建材，寻找第二份原生食物，再在合法地牢区域建营地。不开启时没有本模块定义、启动材料、采集节点或营地逻辑。
 
 ## 数据和身份
 
-`data/definitions.json` 是机械数据唯一来源。外层键为 `schema,moduleVersion,rulesVersion,world,camp,residents`；外层 schema=1、module/rules=1.2.0，内层 world schema/worldSdk=1，residents.schema=1。foundation=12，world5.schema=3，settlement state.schema=2；whole-run=6、recording=4、RecordingOrigin=2。SDK 兼容号和持久格式号是不同身份，不因 world5 升号就把 worldSdk 改成2。`definitions.ts` 对整个包计算一个 `extensionDataFingerprint`，同时包含营地政策、world 定义和居民政策。调整机械数据须同步 rules 身份并遵循存档/录像匹配；本步不迁移旧档。
+建造与居民机械数据归 `data/definitions.json`；5E1 袭击默认规则归自有 `raids.ts`，两者及本局固定配置共同形成 manifest 的规则身份。外层键为 `schema,moduleVersion,rulesVersion,world,camp,residents`；外层 schema=1、module/rules=1.3.0，内层 world schema/worldSdk=1，residents.schema=1。foundation=13，world5.schema=4，settlement state.schema=2；whole-run=6、recording=4、RecordingOrigin=2。SDK 兼容号和持久格式号是不同身份，不因 world5 升号就把 worldSdk 改成2。`definitions.ts` 对整个包计算一个 `extensionDataFingerprint`，同时包含营地政策、world 定义和居民政策。调整机械数据须同步 rules 身份并遵循存档/录像匹配；本步不迁移旧档。
 
 `schema.ts` 和中性 `ext/constructionSchema.ts` 拒绝未知键、非法 JSON、getter、非安全整数、非法 owner/ID、缺失定义引用、预算越界；`WorldDefinitions.ts` 保留可信入口并继续调用既有 edible 校验。内容模块只声明数据和接收 detached/frozen DTO，不导入 Game，不注册结构 DEV fixture。
 
@@ -45,7 +45,7 @@
 
 | 数据字段 | 当前值/允许范围 | 性质与校验位置 |
 | --- | --- | --- |
-| schema、moduleVersion、rulesVersion、world.schema/worldSdk、residents.schema | 1、1.2.0、1.2.0、1/1、1 | 严格身份；settlement/schema.ts、constructionSchema.ts、residentSchema.ts；不能作数值旋钮 |
+| schema、moduleVersion、rulesVersion、world.schema/worldSdk、residents.schema | 1、1.3.0、1.3.0、1/1、1 | 严格身份；settlement/schema.ts、constructionSchema.ts、residentSchema.ts；不能作数值旋钮 |
 | world.items[].maxStack/tags | 木/石/纤维/种子/作物/肉等材料maxStack99；原生口粮模板及食材标签见数据表 | maxStack 1…99，tags≤16、有效ID且严格排序；普通材料 nativeTemplate/tool=null；settlement.ration为native原生食物模板，普通无特性。mushroom占位定义无食材标签，不能自行制造可用蘑菇 |
 | resourceNodes[].capacity/harvestTicks/unitsPerHarvest/yield/requiredToolTag | 20/100/1/1件/null | 容量1…9999；工时1…10000；单次1…min(99,capacity)；物品数量1…99、引用有效；工具tag可为null/合法ID，实际工具规则仍须满足底座 |
 | regeneration | 木 periodic(1,2000)，纤维 periodic(1,1000)，石 none | 枚举 none/periodic；periodic.units 1…99、intervalTicks 1…1000000 |
@@ -206,6 +206,19 @@ job严格为 `{kind:'idle'}`、`{kind:'guard',at:{x,y}}`、`{kind:'plant',plotId
 
 所有状态输入通过公开命令并记录原生确认；NPC工作沿同一个 actorActions 调度器，不嵌套玩家命令或建立第二时钟。劳动按半开区间计算，在端点先封存信用，再结 FOOD/住房/离队，随后合法工作完成入箱，最后选下一动作；同刻刚搬入的粮不倒填本次日粮。失败回滚以该最外层同步事务入口为准，保留入口之前已付的原生时间/效果；需求失败未结清前不放行后续信用和生产。退款失败恢复退款事务并暴露失败，不吞掉材料。
 
-5D2已接入有限生产订单、完整农田、猎人、厨师及可选crafting。玩家不能直接合成FOOD；作物/肉先交厨师加工成普通口粮，进入目标粮仓后由原日粮消费。供应链通过真实源/目标箱和次周期可用库存串接，每个订单需显式下达；没有无限自动重订或跨层物流。5C2 site、5D3 narrative 随身招募、5E袭击、5F世界地图/Worker也未在本步实现。
+5D2已接入有限生产订单、完整农田、猎人、厨师及可选crafting。玩家不能直接合成FOOD；作物/肉先交厨师加工成普通口粮，进入目标粮仓后由原日粮消费。供应链通过真实源/目标箱和次周期可用库存串接，每个订单需显式下达；没有无限自动重订或跨层物流。5C2 site、5D3 narrative 随身招募、5F世界地图/Worker尚未提供；5E1普通袭击与修缮见下文，大型袭击另立5E2。
 
 [5C1执行报告](phase5c1.report.md)保留当时验收事实；[5D1任务书](phase5d1.task.md)及[5D1报告](phase5d1.report.md)记录本轮范围和阶段证据。本文不把历史通过次数转述为5D1整体通过；V12正式16居民普通净增P95为3.672584ms（门槛≤5）、64居民冷+7暖峰值46.777167ms（门槛≤50），两项实际通过；测试旧前提独立窄复核已通过；实际浏览器和父最终验收尚未完成。最大8营地/3072结构格/满箱、完整体积矩阵、全量 npm test/全部test:ext/全组合和物理删除矩阵归5Z，真实手机另列。
+
+
+## 营地袭击与修缮（5E1）
+
+新局勾选“允许营地袭击”启用，默认关闭。本局开关写入 manifest.modules[].configuration，存读、回放和 seek 依存录重建；游戏内没有开关。未启用 settlement 时没有此项或袭击实体。规则默认1000 tick周期、建营32000 tick宽限、2000 tick预警、事件结束32000 tick冷却；每营一个事件、全局最多四个待展开/在场事件，第一批最多八个普通单格原生怪物。
+
+离层前已经物化的同一批入侵者冻结在原层，返回续打；已有combat预警/动作保原ID、阶段剩余与锁定格/资源，不在缓存层释放攻击，返回后下一实际推进继续。营地显示“被围”：冻结期间所有离线劳动、产物交付、需求扣粮、欠额、离营和袭击摘要暂停。返回本层仍须实际结束袭击；仅返回、菜单、换岗或取消订单均不解除被围。暂停时间从营地有效经济时钟排除，恢复不追补，也不刷新订单32周期寿命、日配额或粮食日界；其他营地和全局时间继续。
+
+尚未物化的离场事件只结算一次有限物资/耐久损失，不隐藏跑战斗、杀居民或生成残敌。连续离场不再结第二次；玩家实际进入营地region才确认报告并重新武装，后续仍有冷却。远营只显示最后报告，现场精确损失在回营后呈现。
+
+建造面板中，仍存在且受损的部件提供“付费修缮”。确认预览列出部件、恢复耐久、真实材料和tick；耗材按建造配方乘修复比例逐项向上取整，耗时同比例且至少100 tick。走原同步付费施工事务及所有权/距离/revision/CAS，No、陈旧计划或writer失败不免费恢复HP。已毁坏的部件按原建造命令重建。
+
+本步尚未提供大型袭击、自动修缮、战争或远征。5C2/5D3继续后置，5Z前范围待定；实际验证和覆盖限制见[5E1报告](phase5e1.report.md)。

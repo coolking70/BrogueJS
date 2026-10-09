@@ -2,57 +2,146 @@ import type { ExtensionModule, ExtensionRulesIdentity } from './types';
 import { ExtensionRegistry } from './registry';
 import { isJson, validId } from './json';
 
-export const FOUNDATION_PROTOCOL = 12 as const;
+export const FOUNDATION_PROTOCOL = 13 as const;
 
 /** Pure installed-package metadata. Discovery never creates a module or a run.
  * UI has a separate discovered declaration so engine imports never initialize Vue. */
 export interface ModuleDescriptor {
-    readonly worldSdk?: 1;
-    readonly id: string;
-    readonly version: string;
-    readonly foundation: typeof FOUNDATION_PROTOCOL;
-    readonly rules?: ExtensionRulesIdentity;
-    readonly create: () => ExtensionModule;
-    readonly labelKey: string;
-    readonly descriptionKey?: string;
-    /** Configurable sample default, not a dependency or permanent product policy. */
-    readonly defaultEnabled?: boolean;
-    readonly locales?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  readonly worldSdk?: 1;
+  readonly id: string;
+  readonly version: string;
+  readonly foundation: typeof FOUNDATION_PROTOCOL;
+  readonly rules?: ExtensionRulesIdentity;
+  readonly create: (configuration?: import('./types').Json) => ExtensionModule;
+  readonly runConfiguration?: import('./types').ExtensionRunConfiguration;
+  readonly labelKey: string;
+  readonly descriptionKey?: string;
+  /** Configurable sample default, not a dependency or permanent product policy. */
+  readonly defaultEnabled?: boolean;
+  readonly locales?: Readonly<Record<string, Readonly<Record<string, string>>>>;
 }
 function freeze<T>(value: T): T {
-    if (value && typeof value === 'object' && !Object.isFrozen(value)) {
-        Object.values(value).forEach(freeze); Object.freeze(value);
-    }
-    return value;
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.values(value).forEach(freeze);
+    Object.freeze(value);
+  }
+  return value;
 }
-export function validateModuleDescriptors(values: readonly ModuleDescriptor[]): readonly ModuleDescriptor[] {
-    if (!Array.isArray(values)) throw new Error('Invalid module descriptors');
-    const registry = new ExtensionRegistry();
-    const result = values.map(value => {
-        if (!value || typeof value !== 'object' || Array.isArray(value)
-            || Object.keys(value).some(key => !['worldSdk', 'id', 'version', 'foundation', 'rules', 'create', 'labelKey', 'descriptionKey', 'defaultEnabled', 'locales'].includes(key))
-            || !validId(value.id) || value.foundation !== FOUNDATION_PROTOCOL || typeof value.create !== 'function'
-            || (value.defaultEnabled !== undefined && typeof value.defaultEnabled !== 'boolean')) throw new Error('Invalid module descriptor');
-        const prefix = `ext.${value.id}.`;
-        if (typeof value.labelKey !== 'string' || !value.labelKey.startsWith(prefix)
-            || (value.descriptionKey !== undefined && (typeof value.descriptionKey !== 'string' || !value.descriptionKey.startsWith(prefix)))) throw new Error('Invalid module text ownership');
-        if (value.locales !== undefined && (!isJson(value.locales) || !value.locales || Array.isArray(value.locales)
-            || Object.entries(value.locales).some(([language, resource]) => !/^[a-z]{2}(?:_[A-Z]{2})?$/.test(language)
-                || !resource || Array.isArray(resource) || typeof resource !== 'object'
-                || Object.entries(resource).some(([key, text]) => !key.startsWith(prefix) || typeof text !== 'string')))) throw new Error('Invalid module locales');
-        registry.register(value.id, value.version, value.create, value.rules);
-        return freeze({ ...value, ...(value.rules ? { rules: structuredClone(value.rules) } : {}),
-            ...(value.locales ? { locales: structuredClone(value.locales) } : {}) });
+export function validateModuleDescriptors(
+  values: readonly ModuleDescriptor[]
+): readonly ModuleDescriptor[] {
+  if (!Array.isArray(values)) throw new Error('Invalid module descriptors');
+  const registry = new ExtensionRegistry();
+  const result = values.map((value) => {
+    if (
+      !value ||
+      typeof value !== 'object' ||
+      Array.isArray(value) ||
+      Object.keys(value).some(
+        (key) =>
+          ![
+            'worldSdk',
+            'runConfiguration',
+            'id',
+            'version',
+            'foundation',
+            'rules',
+            'create',
+            'labelKey',
+            'descriptionKey',
+            'defaultEnabled',
+            'locales'
+          ].includes(key)
+      ) ||
+      !validId(value.id) ||
+      value.foundation !== FOUNDATION_PROTOCOL ||
+      typeof value.create !== 'function' ||
+      (value.defaultEnabled !== undefined && typeof value.defaultEnabled !== 'boolean')
+    )
+      throw new Error('Invalid module descriptor');
+    if (value.runConfiguration) {
+      const c = value.runConfiguration;
+      if (
+        Object.keys(c).some((k) => !['default', 'identity', 'validate', 'controls'].includes(k)) ||
+        typeof c.validate !== 'function' ||
+        typeof c.identity !== 'function' ||
+        !isJson(c.default) ||
+        !c.validate(c.default)
+      )
+        throw new Error('Invalid run configuration declaration');
+      if (
+        c.controls &&
+        (!Array.isArray(c.controls) ||
+          c.controls.length > 8 ||
+          new Set(c.controls.map((x: {field:string;labelKey:string;descriptionKey:string}) => x.field)).size !== c.controls.length ||
+          c.controls.some(
+            (x: {field:string;labelKey:string;descriptionKey:string}) =>
+              Object.keys(x).sort().join(',') !== 'descriptionKey,field,labelKey' ||
+              !validId(x.field) ||
+              !x.labelKey.startsWith(`ext.${value.id}.`) ||
+              !x.descriptionKey.startsWith(`ext.${value.id}.`) ||
+              !c.default ||
+              Array.isArray(c.default) ||
+              typeof c.default !== 'object' ||
+              typeof c.default[x.field] !== 'boolean'
+          ))
+      )
+        throw new Error('Invalid run configuration controls');
+      const identity = c.identity(c.default);
+      if (JSON.stringify(identity) !== JSON.stringify(value.rules))
+        throw new Error('Run configuration default identity mismatch');
+    }
+    const prefix = `ext.${value.id}.`;
+    if (
+      typeof value.labelKey !== 'string' ||
+      !value.labelKey.startsWith(prefix) ||
+      (value.descriptionKey !== undefined &&
+        (typeof value.descriptionKey !== 'string' || !value.descriptionKey.startsWith(prefix)))
+    )
+      throw new Error('Invalid module text ownership');
+    if (
+      value.locales !== undefined &&
+      (!isJson(value.locales) ||
+        !value.locales ||
+        Array.isArray(value.locales) ||
+        Object.entries(value.locales).some(
+          ([language, resource]) =>
+            !/^[a-z]{2}(?:_[A-Z]{2})?$/.test(language) ||
+            !resource ||
+            Array.isArray(resource) ||
+            typeof resource !== 'object' ||
+            Object.entries(resource).some(
+              ([key, text]) => !key.startsWith(prefix) || typeof text !== 'string'
+            )
+        ))
+    )
+      throw new Error('Invalid module locales');
+    registry.register(value.id, value.version, value.create, value.rules);
+    return freeze({
+      ...value,
+      ...(value.rules ? { rules: structuredClone(value.rules) } : {}),
+      ...(value.locales ? { locales: structuredClone(value.locales) } : {})
     });
-    return Object.freeze(result.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  });
+  return Object.freeze(result.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)));
 }
 /** Caller and filesystem order cannot become simulation order. */
 export function registryFromDescriptors(values: readonly ModuleDescriptor[]): ExtensionRegistry {
-    const registry = new ExtensionRegistry();
-    for (const descriptor of validateModuleDescriptors(values)) registry.register(descriptor.id, descriptor.version, () => {
-        const module = descriptor.create();
-        if (module.dependencies?.length) throw new Error(`Stage modules may only depend on the foundation: ${descriptor.id}`);
+  const registry = new ExtensionRegistry();
+  for (const descriptor of validateModuleDescriptors(values))
+    registry.register(
+      descriptor.id,
+      descriptor.version,
+      (configuration) => {
+        const module = descriptor.create(configuration);
+        if (module.dependencies?.length)
+          throw new Error(`Stage modules may only depend on the foundation: ${descriptor.id}`);
         return module;
-    }, descriptor.rules, descriptor.worldSdk, descriptor.locales);
-    return registry;
+      },
+      descriptor.rules,
+      descriptor.worldSdk,
+      descriptor.locales,
+      descriptor.runConfiguration
+    );
+  return registry;
 }

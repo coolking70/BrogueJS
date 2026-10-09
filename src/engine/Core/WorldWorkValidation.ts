@@ -1,3 +1,4 @@
+import { validateRaidReferences } from './SettlementRaids';
 import { validateResidentOrderReferences } from './ResidentOrderValidation';
 import { validateResidentReferences } from './ResidentValidation';
 import {validateProductionCampReferences} from './StructureProduction';
@@ -21,6 +22,7 @@ export function validateWorldWorkReferences(game: Game): void {
   validateProductionCampReferences(game);
   validateResidentReferences(game);
   validateResidentOrderReferences(game);
+  validateRaidReferences(game);
   const runtime = game.extensionRuntime!,
     packs = runtime.worldDefinitionPacks(),
     entities = runtime.worldWorkEntities();

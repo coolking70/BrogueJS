@@ -93,9 +93,10 @@ import {
 import { generationReserved } from '../Generator/GenerationReservation';
 import { assembleWorldItem } from '../Items/WorldItems';
 
+type RepairChange={kind:'repair';componentId:number;revision:number;amount:number};
 type Request =
   | { family: 'region'; change: RegionChange }
-  | { family: 'structure'; change: StructureChange; materials?: readonly import('../../ext/worldSdk').ItemAmount[]; sourceContainerId?: number | null }
+  | { family: 'structure'; change: StructureChange|RepairChange; materials?: readonly import('../../ext/worldSdk').ItemAmount[]; sourceContainerId?: number | null }
   | { family: 'placement'; change: RestPointPlacementRequest }
   | { family: 'rest'; change: RestRequest };
 type Plan = {
@@ -914,7 +915,7 @@ function validate(game: Game, owner: string, request: Request): string {
     return c5Canonical([c, r!.lastUseOrdinal]);
   }
   const c = request.change;
-  if (!['build', 'door', 'dismantle', 'damage'].includes(c.kind)) fail('C5_BAD_PAYLOAD');
+  if (!['build', 'door', 'dismantle', 'damage','repair'].includes(c.kind)) fail('C5_BAD_PAYLOAD');
   exact(
     c,
     c.kind === 'build'
@@ -923,6 +924,7 @@ function validate(game: Game, owner: string, request: Request): string {
         ? 'kind,componentId,revision,open'
         : c.kind === 'damage'
           ? 'kind,componentId,revision,amount,damageKind'
+          : c.kind==='repair' ? 'kind,componentId,revision,amount'
           : 'kind,componentId,revision',
     'structureChange'
   );
@@ -1044,6 +1046,15 @@ function validate(game: Game, owner: string, request: Request): string {
     if (!game.grid.getCell(v.row.at.x, v.row.at.y)?.isVisible) fail('C5_BLOCKED');
     if (distance(game.player.loc, v.row.at) > 1) fail('C5_DISTANCE');
   }
+  if(c.kind==='repair'){
+    uint(c.amount,'amount',1);const d=structureDefinition(game,v.c.definitionId);
+    if(v.c.hp<=0||v.c.hp+c.amount>d.maxHp)fail('C5_BAD_PAYLOAD');
+    if(!game.grid.getCell(v.row.at.x,v.row.at.y)?.isVisible)fail('C5_BLOCKED');
+    adjacent(game,v.row.at);
+    const expected=d.constructionCost.map(a=>({...a,count:Math.ceil(a.count*c.amount/d.maxHp)}));
+    if(c5Canonical(request.materials)!==c5Canonical(expected))fail('C5_INPUT');
+    for(const a of expected)if((request.sourceContainerId==null?game.player.inventory.items:containerItems(game,request.sourceContainerId)).filter(i=>i.worldItem?.definitionId===a.itemDefinitionId).reduce((n,i)=>n+i.quantity,0)<a.count)fail('C5_INPUT');
+  }
   if (c.kind === 'damage') {
     uint(c.amount, 'amount', 1);
     if (!['physical', 'fire'].includes(c.damageKind)) fail('C5_BAD_PAYLOAD');
@@ -1142,6 +1153,7 @@ export const planRegionChange = (change: RegionChange, scope: WorldActorScope) =
   prepare({ family: 'region', change }, scope);
 export const planStructureChange = (change: StructureChange, scope: WorldActorScope) =>
   prepare({ family: 'structure', change }, scope);
+export const planPaidRepair=(change:RepairChange,materials:readonly import('../../ext/worldSdk').ItemAmount[],sourceContainerId:number|null,scope:WorldActorScope)=>prepare({family:'structure',change,materials,sourceContainerId},scope);
 export const planPaidStructure = (change:StructureChange,materials:readonly import('../../ext/worldSdk').ItemAmount[],sourceContainerId:number|null,scope:WorldActorScope)=>prepare({family:'structure',change,materials,sourceContainerId},scope);
 export const planRestPointPlacement = (change: RestPointPlacementRequest, scope: WorldActorScope) =>
   prepare({ family: 'placement', change }, scope);
@@ -1659,6 +1671,13 @@ export function commitStructureWorld(
         if (c.kind === 'build') {
           build(game, p!.owner, c, r.materials, r.sourceContainerId);
           ticks = structureDefinition(game, c.definitionId).constructionTicks;
+        } else if(c.kind==='repair'){
+          const v=component(game,c.componentId),d=structureDefinition(game,v.c.definitionId);
+          // The same synchronous paid construction contract: no HP or material publication before CAS.
+          const source=r.sourceContainerId==null?game.player.inventory.items:containerItems(game,r.sourceContainerId);
+          for(const a of r.materials!){let left=a.count;for(const i of [...source])if(i.worldItem?.definitionId===a.itemDefinitionId){const n=Math.min(left,i.quantity);i.quantity-=n;left-=n;if(!i.quantity){if(r.sourceContainerId==null)game.player.inventory.removeItem(i);else{const box=w.containers.find(b=>b.id===r.sourceContainerId)!;box.itemIds=box.itemIds.filter(id=>id!==i.id);game.worldContainerItems!.delete(i.id);}}if(!left)break;}}
+          if(r.sourceContainerId!=null){const box=w.containers.find(b=>b.id===r.sourceContainerId)!;box.revision=checkedAdd(box.revision,1);}
+          v.c.hp+=c.amount;v.c.revision=checkedAdd(v.c.revision,1);ticks=Math.max(100,Math.ceil(d.constructionTicks*c.amount/d.maxHp));
         } else if (c.kind === 'dismantle')
           destroyComponent(game, c.componentId, true, 'dismantled');
         else if (c.kind === 'door') {
@@ -1770,4 +1789,12 @@ function withStructureFixtureScope<T>(
   if (!game.extensionRuntime?.isWorldStructureFixture(owner) || !game.isExecutingRecordedCommand())
     fail('C5_SCOPE');
   return withWorldActorScope(game, owner, game.player.id, 'player-command', work);
+}
+
+/** Trusted static raid damage: bounded non-destructive, with the same physical resistance as damage plans. */
+export function applyRaidStructureDamage(game:Game,id:number,amount:number):number {
+  uint(amount,'raidDamage',1);const v=component(game,id),d=structureDefinition(game,v.c.definitionId);
+  const loss=Math.min(Math.max(0,v.c.hp-Math.ceil(d.maxHp/4)),Math.floor(amount*(100-d.resistances.physical)/100));
+  if(loss){v.c.hp-=loss;v.c.revision=checkedAdd(v.c.revision,1);markStructureDigestDirty(game.world5!,requireDungeon(v.row.levelRef));bindWorldStructures(game,requireDungeon(v.row.levelRef));}
+  return loss;
 }

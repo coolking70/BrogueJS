@@ -142,6 +142,9 @@ function number(event: Event) {
         </button>
       </nav>
       <main>
+        <template v-if="model.raids">
+          <p v-for="r in model.raids.camps" :key="r.campId">{{ t('ext.settlement.raid.report', {id:r.campId,tick:r.reportedTick}) }} · {{ t(r.besieged ? 'ext.settlement.raid.besieged' : 'ext.settlement.raid.phase.'+(r.phase ?? 'quiet')) }}<span v-if="r.besieged"> · {{ t('ext.settlement.raid.paused') }}</span><span v-if="r.reason==='slots'"> · {{ t('ext.settlement.raid.slots') }}</span><span v-if="r.reason==='summary' && (r.phase==='aftermath' || r.phase==='closed')"> · {{ t('ext.settlement.raid.loss',{units:r.lostUnits,hp:r.damagedHp}) }}</span></p>
+        </template>
         <p v-if="replayReadonly" class="replay-readonly">{{ t('ext.settlement.ui.replay_readonly') }}</p>
         <p v-if="error || model.lastError" class="error" role="alert">
           {{ t('ext.settlement.ui.rejected') }}
@@ -328,7 +331,7 @@ function number(event: Event) {
               {{
                 t(c.doorOpen ? 'ext.settlement.ui.door.close' : 'ext.settlement.ui.door.open')
               }}</button
-            ><button :disabled="blocked" @click="emit('part', 'dismantle', c.id)">
+            ><button v-if="c.hp < (model.definitions.find(d=>d.id===c.definitionId)?.maxHp ?? c.hp)" :disabled="blocked" @click="emit('part','repair',c.id)">{{ t('ext.settlement.raid.repair') }}</button><button :disabled="blocked" @click="emit('part', 'dismantle', c.id)">
               {{ t('ext.settlement.ui.dismantle') }}
             </button>
           </article>

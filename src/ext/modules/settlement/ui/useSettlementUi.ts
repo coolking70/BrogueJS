@@ -344,7 +344,8 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
       send(action, {
         componentId,
         componentRevision: c.revision,
-        ...(action === 'door' ? { open: !c.doorOpen } : {})
+        ...(action === 'door' ? { open: !c.doorOpen } : {}),
+        ...(action === 'repair' ? (()=>{const d=v.definitions.find(d=>d.id===c.definitionId)!;const amount=d.maxHp-c.hp;return {...payment(v,d.constructionCost.map(a=>({...a,count:Math.ceil(a.count*amount/d.maxHp)})),sourceId.value,{}),amount};})() : {})
       });
   }
   function harvest(nodeId: number) {

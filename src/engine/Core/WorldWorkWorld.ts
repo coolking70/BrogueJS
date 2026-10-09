@@ -512,7 +512,7 @@ export function recordWorldFact(
 export function recordWorldReceipt(
   game: Game,
   owner: string,
-  kind: 'work' | 'startup' | 'placement' | 'transfer' | 'region' | 'structure' | 'rest',
+  kind: 'work' | 'startup' | 'placement' | 'transfer' | 'region' | 'structure' | 'rest' | 'offline',
   identity: string,
   result: 'completed' | 'interrupted' | 'skipped',
   reason: string | null

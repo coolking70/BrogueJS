@@ -1,3 +1,4 @@
+import { validateRaidRoots } from './settlementRaidSchema';
 import {assertResidentOrderProgress} from './residentOrders';
 import type { StructureCell, RestPoint } from './structureTypes';
 import { validateStructureRoots } from './structureSchema';
@@ -121,7 +122,9 @@ export interface WorldReceipt {
   reason: string | null;
 }
 export interface World5Snapshot {
-  schema: 3;
+  schema: 4;
+  raidAdmissionCursor: number;
+  raidCamps: import("./settlementRaids").CampRaidState[];
   residentJobs:import("./residentSdk").ResidentWork[];
   revision: number;
   simulationTicks: number;
@@ -152,7 +155,9 @@ export interface World5Snapshot {
 }
 export function createWorld5(): World5Snapshot {
   return {
-    schema: 3,
+    schema: 4,
+    raidCamps: [],
+    raidAdmissionCursor: 0,
     residentJobs:[],
     revision: 0,
     simulationTicks: 0,
@@ -247,13 +252,14 @@ export function validateWorld5(
   }
   exact(
     value,
-    'schema,revision,simulationTicks,nextWorldId,nextPlanId,levels,orders,residents,offline,receipts,residentJobs,structures,containers,nodes,stations,tickets,terminalTickets,definitionsFingerprint,restPoints,pendingPlacements,startupGrants'+(Object.prototype.hasOwnProperty.call(value??{},'campSlotOrdinals')?',campSlotOrdinals':''),
+    'schema,raidCamps,raidAdmissionCursor,revision,simulationTicks,nextWorldId,nextPlanId,levels,orders,residents,offline,receipts,residentJobs,structures,containers,nodes,stations,tickets,terminalTickets,definitionsFingerprint,restPoints,pendingPlacements,startupGrants'+(Object.prototype.hasOwnProperty.call(value??{},'campSlotOrdinals')?',campSlotOrdinals':''),
     'world5'
   );
   const w = value as unknown as World5Snapshot;
-  if (w.schema !== 3) throw new World5Error('C5_BAD_VERSION', 'world5.schema');
+  if (w.schema !== 4) throw new World5Error('C5_BAD_VERSION', 'world5.schema');
   for (const name of ['revision', 'simulationTicks', 'nextWorldId', 'nextPlanId'] as const)
     uint(w[name], name, name.startsWith('next') ? 1 : 0);
+  validateRaidRoots(w, context.owners);
   validateStructureRoots(w,context.owners);
   validateWorldWorkRoots(w, context.owners);
   const list = (v: unknown, n: number, f: string): void => {
@@ -405,7 +411,7 @@ export function validateWorld5(
       exact(output,'ticketId,availableEpoch,destinationId,items'+(output.fallbackAt?',fallbackAt':''),'pendingOutput');
       if(output.fallbackAt){exact(output.fallbackAt,'x,y','fallbackAt');uint(output.fallbackAt.x,'x');uint(output.fallbackAt.y,'y');}
       uint(output.availableEpoch,'availableEpoch',1);
-      if(output.availableEpoch!==Math.floor(l.lastSettledTick/1000)+1||![...w.tickets,...w.terminalTickets].some(t=>t.ticketId===output.ticketId)||(!output.fallbackAt&&!w.containers.some(c=>c.id===output.destinationId&&c.kind==='chest'))||!Array.isArray(output.items)||output.items.length<1||output.items.length>128)throw new World5Error('C5_BAD_REFERENCE','pendingOutput');
+      if(output.availableEpoch!==Math.floor((l.lastSettledTick-(w.raidCamps.find(r=>r.slot===l.campSlotId)?.excludedTicks??0))/1000)+1||![...w.tickets,...w.terminalTickets].some(t=>t.ticketId===output.ticketId)||(!output.fallbackAt&&!w.containers.some(c=>c.id===output.destinationId&&c.kind==='chest'))||!Array.isArray(output.items)||output.items.length<1||output.items.length>128)throw new World5Error('C5_BAD_REFERENCE','pendingOutput');
       for(const a of output.items){exact(a,'itemDefinitionId,count','amount');uint(a.count,'count',1);if(!validId(a.itemDefinitionId))throw new World5Error('C5_BAD_REFERENCE','outputItem');}
     }
     if(l.productionQuotas){

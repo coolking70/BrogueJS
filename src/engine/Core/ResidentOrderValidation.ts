@@ -11,7 +11,7 @@ export function validateResidentOrderReferences(g: Game): void {
     throw new World5Error('C5_BAD_REFERENCE', 'production.' + field);
   };
   const orders = w.orders.filter(
-    (o) => o.production || residentRecord(g, o.actorId) || residentComponent(g, o.actorId)
+    (o) => o.production || (rt.residentPolicy(o.owner) && (residentRecord(g, o.actorId) || residentComponent(g, o.actorId)))
   );
   // Identify resident orders before using their optional progress as a discriminator.
   for (const o of orders) if (!o.production) fail('progress');

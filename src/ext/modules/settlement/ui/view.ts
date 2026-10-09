@@ -32,6 +32,7 @@ export interface SettlementView {
     stations:{id:number;revision:number;definitionId:string}[];
     orders:{id:number;actorId:number;revision:number;recipeId:string;remainingEpochs:number;status:string;stopReason:string|null;ticketId:number|null;sourceId:number;destinationId:number;stationId:number|null;plotIds:number[];batchCount:number;completedBatches:number;laborCreditTicks:number}[];
   };
+  raids?: {enabled:boolean;camps:{campId:number;reportedTick:number;phase:string|null;besieged:boolean;paused:boolean;reason:string|null;lostUnits:number|null;damagedHp:number|null}[]}|null;
   residents?:import("../../../residentSdk").ResidentRead;
   restPoints: RestPoint[];
   definitions: StructureDefinition[];

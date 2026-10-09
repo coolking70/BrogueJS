@@ -1,3 +1,5 @@
+2026-10-09 5E1实施补注：固定开局袭击配置、普通原生波次/有限摘要、付费修缮及已批准A/A/A与被围离线暂停已接生产入口，验证收尾中、未提交，见[报告](phase5e1.report.md)。当前foundation13/world5 schema4/settlement1.3.0；下文此前5D1/5D2状态及“待5E”措辞按历史理解，旧草案的离层可获经济收益和可生成残敌不覆盖本轮A/A/A。
+
 # 阶段 5 联合设计稿：远征营地、聚落建设与世界层
 
 2026-10-09实施补注：5D2有限生产、农田/猎人/厨师及可选crafting已实现，当前未提交、待父独立审查，见[5D2报告](phase5d2.report.md)和[配置手册](settlement-config.md)。下文5D1状态按历史理解；当前采用foundation12/world5 schema3/经济1.2.0/settlement1.2.0，公开订单为order-work/resupply-work/cancel-order。地表/叙事/袭击/战争不在本步范围。

@@ -1,3 +1,4 @@
+import { campEconomicTick, campRaid, residentEconomicTick, recordRaidProduction } from './SettlementRaids';
 /** Native resident authority. Public commands address resident IDs; actor scopes are internal. */
 import type { Game } from './Game';
 import type { CampRecord } from '../../ext/structureSdk';
@@ -127,7 +128,7 @@ export function orderRecipe(g: Game, o: Pick<EconomicOrder, 'definitionId'>): Re
 function orderTarget(g: Game, o: EconomicOrder) {
   const p = o.production!;
   if (o.definitionId === 'settlement.farm') {
-    const day = Math.floor(g.world5!.simulationTicks / 32000),
+    const day = Math.floor(campEconomicTick(g,residentRecord(g,o.actorId)!.campSlotId) / 32000),
       state = g.extensionRuntime!.worldCampState(o.owner),
       id =
         p.plotIds.find(
@@ -477,7 +478,7 @@ export function commitResidentOrder(g: Game, c: CampRecord, action: string, p: a
   if (!l.productionQuotas.some((q) => q.actorId === p.targetId))
     l.productionQuotas.push({
       actorId: p.targetId,
-      day: Math.floor(w.simulationTicks / 32000),
+      day: Math.floor(campEconomicTick(g,l.campSlotId) / 32000),
       meat: 0,
       plots: []
     });
@@ -699,7 +700,8 @@ export function settleResidentOrderEpoch(
   catalog: readonly RecipeDefinition[]
 ): void {
   const w = g.world5!,
-    boundary = Math.floor(to / 1000) > Math.floor(from / 1000);
+    offset=campRaid(g,c.slot)?.excludedTicks??0, economicTo=to-offset, economicFrom=from-offset,
+    boundary = Math.floor(economicTo / 1000) > Math.floor(economicFrom / 1000);
   for (const o of w.orders
     .filter((o) => o.production && o.levelRef.kind === 'dungeon' && o.levelRef.depth === c.depth)
     .sort(
@@ -720,7 +722,7 @@ export function settleResidentOrderEpoch(
       p.qualified &&
       r?.mode === 'stay'
     ) {
-      let ticks = scheduledWorkTicks(from, to, r.schedule[0]);
+      let ticks = scheduledWorkTicks(economicFrom, economicTo, r.schedule[0]);
       const travel = Math.min(ticks, p.travelRemainingTicks);
       p.travelRemainingTicks -= travel;
       ticks -= travel;
@@ -734,7 +736,7 @@ export function settleResidentOrderEpoch(
     const quota = l.productionQuotas!.find((q) => q.actorId === o.actorId)!;
     if (recipe.id === 'settlement.farm') {
       const state = g.extensionRuntime!.worldCampState(o.owner),
-        day = Math.floor(to / 32000);
+        day = Math.floor(economicTo / 32000);
       if (quota.day !== day) {
         quota.day = day;
         quota.meat = 0;
@@ -750,7 +752,7 @@ export function settleResidentOrderEpoch(
       ];
     }
     const plan = planResidentProductionEpoch({
-      epoch: Math.floor(to / 1000),
+      epoch: Math.floor(economicTo / 1000),
       offline: c.depth !== activeResidentDepth(g),
       order: o,
       ticket: t,
@@ -764,6 +766,7 @@ export function settleResidentOrderEpoch(
         tags: [...itemRead(g, i).tags]
       }))
     });
+    recordRaidProduction(g,c.slot,to,plan.ticket.completedBatches-t.completedBatches);
     Object.assign(o, plan.order);
     Object.assign(t, plan.ticket);
     Object.assign(quota, plan.quota);
@@ -804,7 +807,7 @@ export function settleResidentOrderEpoch(
       }));
       l.pendingOutputs.push({
         ticketId: t.ticketId,
-        availableEpoch: Math.floor(to / 1000) + 1,
+        availableEpoch: Math.floor(economicTo / 1000) + 1,
         destinationId: p.destinationId,
         items: plan.outputs
       });
@@ -1001,7 +1004,7 @@ export function advanceResidentOrderLabor(g: Game, dt: number): void {
       continue;
     o.production!.paidTicks = checkedAdd(
       o.production!.paidTicks,
-      scheduledWorkTicks(g.world5!.simulationTicks, g.world5!.simulationTicks + dt, r.schedule[0])
+      scheduledWorkTicks(residentEconomicTick(g,o.actorId), residentEconomicTick(g,o.actorId) + dt, r.schedule[0])
     );
   }
 }

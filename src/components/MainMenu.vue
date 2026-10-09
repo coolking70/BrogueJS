@@ -42,7 +42,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "new-game", payload: { seed?: string; mode: GameMode; ruleSet?: RuleSet; extensions?: readonly string[]; initialCommands?: readonly string[]; onRejected?: () => void }): void;
+  (e: "new-game", payload: { seed?: string; mode: GameMode; ruleSet?: RuleSet; extensions?: readonly string[]; extensionConfigurations?: Readonly<Record<string, import("../ext/types").Json>>; initialCommands?: readonly string[]; onRejected?: () => void }): void;
   (e: "continue-game"): void;
   (e: "save-game"): void;
   (e: "export-legacy-replay"): void;
@@ -117,6 +117,8 @@ const parsedSeed = computed(() => {
 });
 
 const creationContext = shallowRef<ModuleCreationPlan | null>(null);
+const configurationDrafts = ref<Record<string,Record<string,boolean>>>(Object.fromEntries(installedModules.filter(m=>m.runConfiguration).map(m=>[m.id,structuredClone(m.runConfiguration!.default as Record<string,boolean>)])));
+const configurationControls = computed(()=>installedModules.filter(m=>selectedModules.value.includes(m.id)).flatMap(m=>(m.runConfiguration?.controls??[]).map(c=>({...c,module:m.id}))));
 const creationStep = ref(0);
 const creationRun = shallowRef<{ seed?: string; mode: GameMode } | null>(null);
 const creationSelections = new Map<string, readonly string[]>();
@@ -161,7 +163,7 @@ function submitCreation() {
     const initialCommands = buildModuleCreationCommands(creationContext.value, creationSelections), session = creationSession;
     // Latch before emitting: repeated clicks/Enter cannot create a second run.
     creationSubmitting.value = true;
-    emit('new-game', { ...creationRun.value, ruleSet: 'extended', extensions: creationContext.value.extensions, initialCommands,
+    emit('new-game', { ...creationRun.value, ruleSet: 'extended', extensions: creationContext.value.extensions, ...(Object.keys(configurationDrafts.value).some(id=>creationContext.value!.extensions.includes(id)) ? {extensionConfigurations:Object.fromEntries(Object.entries(configurationDrafts.value).filter(([id])=>creationContext.value!.extensions.includes(id)))} : {}), initialCommands,
       onRejected: () => {
         if (session !== creationSession) return;
         creationSubmitting.value = false; creationError.value = 'ext.creation.start_failed';
@@ -375,6 +377,10 @@ const sidebarWidthModel = computed({
           >
             {{ t("menu.seed.range") }}
           </p>
+          <label v-for="control in (ruleSet === 'extended' ? configurationControls : [])" :key="control.module+'.'+control.field" class="module-option">
+            <input v-model="configurationDrafts[control.module]![control.field]" type="checkbox" :disabled="!!creationContext || creationSubmitting" />
+            <span>{{ t(control.labelKey) }}<small>{{ t(control.descriptionKey) }}</small></span>
+          </label>
           <p v-if="creationError && !creationComponent" class="field-hint" role="alert">{{ t(creationError === 'ext.creation.start_failed' ? 'ext.creation.start_failed' : 'ext.creation.unavailable') }}</p>
           <div v-if="creationContext && !creationComponent" class="creation-load-controls">
             <p v-if="creationLoading" class="field-hint" role="status">{{ t('ext.creation.loading') }}</p>

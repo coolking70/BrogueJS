@@ -1,17 +1,20 @@
+import { validRaidConfiguration, raidIdentity, RAID_RULES } from './raids';
 import { validResident,validResidentSource } from '../../residentSchema';
 import type { ExtensionModule, Json } from '../../types';
 import { initialState, validateState } from './state';
 import { loadSettlementPack, getSettlementIdentity } from './definitions';
 import { projectSettlement } from './projection';
 import { worldWorkCommands } from './commands';
-export function createSettlementModule(): ExtensionModule {
+export function createSettlementModule(configuration: Json = { raids: false }): ExtensionModule {
+  if (!validRaidConfiguration(configuration)) throw new Error("Invalid settlement run configuration");
   const pack = loadSettlementPack();
   return {
     id: 'settlement',
-    version: '1.2.0',
-    rules: getSettlementIdentity(pack),
+    version: '1.3.0',
+    rules: raidIdentity(configuration, getSettlementIdentity(pack)),
     worldDefinitions: pack.world,
     campPolicy: pack.camp,
+    raidRules: (configuration as {raids:boolean}).raids ? RAID_RULES : undefined,
     residentPolicy: pack.residents,
     componentValidators: { resident:validResident, source:validResidentSource },
     worldWorkCommands,

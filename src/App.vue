@@ -175,9 +175,9 @@ const replayInfo = computed(() => {
 });
 
 
-const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "classic" | "extended"; extensions?: readonly string[]; initialCommands?: readonly string[]; onRejected?: () => void }) => {
+const startNewGame = (payload: { seed?: string; mode: GameMode; ruleSet?: "classic" | "extended"; extensions?: readonly string[]; extensionConfigurations?: Readonly<Record<string, import("./ext/types").Json>>; initialCommands?: readonly string[]; onRejected?: () => void }) => {
   try {
-    activeGame.startNewGame({ seed: payload.seed, mode: payload.mode, ruleSet: payload.ruleSet, extensions: payload.extensions, initialCommands: payload.initialCommands });
+    activeGame.startNewGame({ seed: payload.seed, mode: payload.mode, ruleSet: payload.ruleSet, extensions: payload.extensions, extensionConfigurations: payload.extensionConfigurations, initialCommands: payload.initialCommands });
     // Preserve the explicit programmatic neutral start contract. The real menu
     // always supplies validated selected commands at the atomic new-run boundary.
     if (!payload.initialCommands) for (const command of activeGame.extensionRuntime?.initialCommands() ?? []) activeGame.executeCommand('ext:command', command);

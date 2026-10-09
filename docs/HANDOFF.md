@@ -1,10 +1,14 @@
+# 5E1维护者收口（2026-10-09，待提交发布）
+
+两轮独立审查及最后一次作者修复已完成，维护者已核对实际改动与测试日志并按本步限定范围收口。R1-F1原合法变形/坠层存读、F2摘要发布、F3时序拒档均已修复；R2-F1伪造坠离在末次窄修后被拒，原独立2探针与真实生命周期/活局保持回归通过，最终boundary/types通过。没有第3轮审查，最后修复不冒称独立关闭。当前无剩余已确认未修复正确性缺陷；全量、组合/删除、浏览器/真机、最大负载和细分覆盖留5Z。 分支`ext/phase5`，开工HEAD`5c34f50`；foundation13/world5 schema4/settlement1.3.0 state2，九冻结SDK保持。见[报告](ext/phase5e1.report.md)、[状态卡](ext/commander-status.md)及[5Z](ext/phase5z-remainders.md)。5C2/5D3继续后置，5Z前范围待定；不自动开下一大步骤。
+
 # 交接说明（接手先读）
 
 ## 5D2维护者验收（2026-10-09）
 
 开工HEAD `e0fa39a225428d36e6e342f6585f57f45960e6ba`；5D1 `f067e89`及5G集成 `467962b`（含`eda3094`）已由父提交推送。5D2交付有限生产订单、农田/猎人/厨师、可选crafting目录、真实输入/产物/事务与中文UI，两轮独立审查已完成、R1/R2关闭，5D2 `ce7a2da`已推送至`ext/phase5`；见[任务书](ext/phase5d2.task.md)、[报告](ext/phase5d2.report.md)及[配置手册](ext/settlement-config.md)。
 
-当前foundation12/world5 schema3/经济合同1.2.0/settlement1.2.0 state2；whole-run6/recording4/origin2、worldSdk1/edibleSdk1及九冻结字节保持。相关门禁与格式重录按报告实际结果引用，完整npm/test:ext、128组合/删除、浏览器/真机及最大负载留[5Z](ext/phase5z-remainders.md)。原实施者已停止写入；维护者提交发布，最多两轮审查规则已执行。
+5D2验收时foundation12/world5 schema3/经济合同1.2.0/settlement1.2.0 state2；whole-run6/recording4/origin2、worldSdk1/edibleSdk1及九冻结字节保持。相关门禁与格式重录按报告实际结果引用，完整npm/test:ext、128组合/删除、浏览器/真机及最大负载留[5Z](ext/phase5z-remainders.md)。原实施者已停止写入；维护者提交发布，最多两轮审查规则已执行。
 
 ## ext/phase5 5D1验收裁决（历史，提交见上文）
 

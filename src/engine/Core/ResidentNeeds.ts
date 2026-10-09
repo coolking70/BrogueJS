@@ -1,3 +1,4 @@
+import { campRaid, campEconomicTick, excludeRaidTime, finishRaidEvents, reportRaidVisits, raidBoundary, raidState, settleCampRaid } from './SettlementRaids';
 import {
   publishResidentOutputs,
   settleResidentOrderEpoch,
@@ -31,7 +32,7 @@ export function hasPendingResidentNeeds(g: Game): boolean {
     runtime.worldCampRecords(owner).some((camp) => {
       const ledger = w.offline.find((l) => l.campSlotId === camp.slot);
       return (
-        !!ledger && Math.floor(ledger.lastSettledTick / 1000) < Math.floor(w.simulationTicks / 1000)
+        !!ledger && Math.floor(campEconomicTick(g,ledger.campSlotId,ledger.lastSettledTick) / 1000) < Math.floor(campEconomicTick(g,ledger.campSlotId,w.simulationTicks) / 1000)
       );
     })
   );
@@ -41,6 +42,10 @@ export function settleResidentNeeds(g: Game, force = false): void {
   const w = g.world5,
     runtime = g.extensionRuntime;
   if (!w || !runtime || g.isGameOver) return;
+  if (w.raidCamps.some(r=>r.pauseFrom!==null && r.pauseThrough<w.simulationTicks))
+    transactResidentWorld(g,()=>{for(const r of w.raidCamps)excludeRaidTime(g,r,w.simulationTicks);});
+  finishRaidEvents(g);
+  reportRaidVisits(g);
   const dueCamps = runtime
     .residentOwners()
     .flatMap((owner) =>
@@ -52,10 +57,10 @@ export function settleResidentNeeds(g: Game, force = false): void {
     )
     .filter(
       ({ ledger }) =>
-        ledger &&
-        (force || Math.floor(ledger.lastSettledTick / 1000) < Math.floor(w.simulationTicks / 1000))
+        ledger && campRaid(g,ledger.campSlotId)?.pauseFrom == null &&
+        (force || Math.floor(campEconomicTick(g,ledger.campSlotId,ledger.lastSettledTick) / 1000) < Math.floor(campEconomicTick(g,ledger.campSlotId,w.simulationTicks) / 1000))
     )
-    .sort((a, b) => a.camp.slot - b.camp.slot);
+    .sort((a,b)=>Number(a.camp.regionId<=w.raidAdmissionCursor)-Number(b.camp.regionId<=w.raidAdmissionCursor)||a.camp.regionId-b.camp.regionId);
   if (!dueCamps.length) return;
   const productionReceipts: import('../../ext/world5').WorldReceipt[] = [];
   transactResidentWorld(g, () =>
@@ -74,22 +79,22 @@ export function settleResidentNeeds(g: Game, force = false): void {
       const recipes = w.orders.some((o) => o.production) ? residentRecipeCatalog(g) : [];
       const finalTick = w.simulationTicks,
         cuts: number[] = [];
-      if (w.orders.some((o) => o.production) || w.offline.some((l) => l.pendingOutputs.length)) {
-        const first = Math.min(...dueCamps.map((c) => c.ledger.lastSettledTick));
-        for (
-          let epoch = Math.floor(first / 1000) + 1;
-          epoch <= Math.floor(finalTick / 1000) && cuts.length < 33;
-          epoch++
-        )
-          cuts.push(epoch * 1000);
+      for(const {owner,camp,ledger} of dueCamps){
+        if(w.orders.some(o=>o.production&&o.levelRef.kind==='dungeon'&&o.levelRef.depth===camp.depth)||ledger.pendingOutputs.length){
+          const offset=campRaid(g,camp.slot)?.excludedTicks??0;
+          for(let epoch=Math.floor(campEconomicTick(g,camp.slot,ledger.lastSettledTick)/1000)+1,n=0;epoch*1000+offset<=finalTick&&n<33;epoch++,n++)cuts.push(epoch*1000+offset);
+        }
+        const raid=raidState(g,owner,camp);
+        if(raid){const boundary=raidBoundary(g,camp,raid,finalTick);if(boundary>ledger.lastSettledTick&&boundary<=finalTick)cuts.push(boundary);}
       }
-      if (cuts[cuts.length - 1] !== finalTick) cuts.push(finalTick);
+      cuts.push(finalTick);cuts.sort((a,b)=>a-b);
+      for(let n=cuts.length-1;n>0;n--)if(cuts[n]===cuts[n-1])cuts.splice(n,1);
       for (const through of cuts) {
         for (const { owner, camp: c, ledger: l } of dueCamps) {
           if (through < l.lastSettledTick) continue;
-          const intervalFrom = l.lastSettledTick;
-          if (Math.floor(through / 1000) > Math.floor(intervalFrom / 1000))
-            publishResidentOutputs(g, l, Math.floor(through / 1000));
+          const intervalFrom = l.lastSettledTick, offset=campRaid(g,c.slot)?.excludedTicks??0, economicFrom=intervalFrom-offset, economicTo=through-offset;
+          if (Math.floor(economicTo / 1000) > Math.floor(economicFrom / 1000))
+            publishResidentOutputs(g, l, Math.floor(economicTo / 1000));
           const state = runtime.worldCampState(owner),
             camp = state.camps.find((x) => x.regionId === c.regionId)!;
           const beds = residentBedIds(g, camp);
@@ -117,8 +122,8 @@ export function settleResidentNeeds(g: Game, force = false): void {
           // and escrow below, rather than a second projected inventory.
           const needs = planResidentNeeds({
             schema: 2,
-            fromTick: l.lastSettledTick,
-            toTick: through,
+            fromTick: economicFrom,
+            toTick: economicTo,
             residents: l.residentStates,
             rations: food.map((f) => ({
               containerId: f.containerId,
@@ -165,13 +170,13 @@ export function settleResidentNeeds(g: Game, force = false): void {
                 slot: camp.slot,
                 ordinal: camp.ordinal,
                 actorId: e.actorId,
-                atTick: e.firstTick + n * 32000,
+                atTick: e.firstTick + n * 32000 + offset,
                 kind: 'ration'
               });
           }
           l.residentStates = p.nextLedger.residentStates;
-          l.lastSettledTick = p.toTick;
-          l.epochRemainder = p.toTick % 1000;
+          l.lastSettledTick = through;
+          l.epochRemainder = through % 1000;
           l.revision = checkedAdd(l.revision, epochCount);
           w.revision = checkedAdd(w.revision, epochCount);
           for (const bed of p.nextBeds) {
@@ -183,6 +188,9 @@ export function settleResidentNeeds(g: Game, force = false): void {
             }
           }
           runtime.worldCampReplace(owner, state);
+          settleCampRaid(g,owner,c,l,through);
+          const raid=campRaid(g,c.slot);
+          if(raid?.event?.phase==='warning'&&raid.event.dueTick>through&&raid.event.dueTick<finalTick&&!cuts.includes(raid.event.dueTick)){cuts.push(raid.event.dueTick);cuts.sort((a,b)=>a-b);}
           settleResidentOrderEpoch(g, c, l, intervalFrom, through, recipes);
           for (const e of p.effects)
             if (e.kind === 'resident-departure') {
@@ -192,10 +200,10 @@ export function settleResidentNeeds(g: Game, force = false): void {
                 slot: camp.slot,
                 ordinal: camp.ordinal,
                 actorId: e.actorId,
-                atTick: e.atTick,
+                atTick: e.atTick+offset,
                 kind: 'departure'
               });
-              departures.push({ actorId: e.actorId, atTick: e.atTick, slot: camp.slot });
+              departures.push({ actorId: e.actorId, atTick: e.atTick+offset, slot: camp.slot });
             }
         }
       }
@@ -250,7 +258,8 @@ export function settleResidentNeeds(g: Game, force = false): void {
       w.receipts.splice(0, Math.max(0, w.receipts.length - 128));
       markRecordingRoot(w);
       invalidateNeeds(g);
-    })
+    }),
+    dueCamps.some(({camp})=>{const r=campRaid(g,camp.slot);return !!r && (r.event?.phase==='warning'||r.event?.phase==='deferred' ? r.event.dueTick<=w.simulationTicks : raidBoundary(g,camp,r,w.simulationTicks)+2000<=w.simulationTicks);})
   );
 }
 /** Refresh qualification snapshots only after the preceding interval has been accounted. */

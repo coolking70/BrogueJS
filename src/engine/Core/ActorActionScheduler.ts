@@ -88,6 +88,8 @@ export interface ActorActionSchedulerHost {
     isSourceValid(source: Readonly<ActorSubaction>, depth: number): boolean;
     /** Production clock advances only the foreground layer; cached countdowns freeze. */
     isDepthActive?(depth: number): boolean;
+    /** Trusted production may freeze a registered raid action intact. */
+    preserveOnDepthExit?(bundle: ReadonlyActorActionBundle): boolean;
     actorDepth?(entityId: number): number | null;
     /** Source changes may cancel pending segments into bounded positive recovery. */
     sourceInterruption?(source: Readonly<ActorSubaction>, bundle: ReadonlyActorActionBundle): { recoveryTicks: number } | null;
@@ -481,6 +483,8 @@ export function createActorActionScheduler(initialState: ActorActionSchedulerSta
         interruptDepth(depth) {
             run(() => {
                 for (const bundle of state.bundles.filter(bundle => bundle.depth === depth)) {
+                    const preserve=host.preserveOnDepthExit?.(frozen(bundle));synchronous(preserve);
+                    if(preserve===true)continue;
                     synchronous(host.leftDepth?.(frozen(bundle)));
                     for (const child of bundle.subactions) if (active(child) && actorSubactionHasPendingSegments(child)) {
                         const interruption = host.sourceInterruption?.(child, frozen(bundle));

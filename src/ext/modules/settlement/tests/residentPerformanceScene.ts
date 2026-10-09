@@ -1,3 +1,4 @@
+import { createConfiguredWorldHarness } from '../../../testing/configuredWorldHarness';
 /** Explicit controlled performance origins, never natural gameplay evidence. */
 import { expect } from 'vitest';
 import { installRecordingScene } from '../../../../test/support/recordingV4';
@@ -18,7 +19,7 @@ import { TerrainType } from '../../../../engine/Map/Grid';
 import { assembleWorldItem } from '../../../../engine/Items/WorldItems';
 import { worldWorkLastError } from '../../../../engine/Core/WorldWork';
 import { freezeResidentCamps, settleResidentNeeds } from '../../../../engine/Core/ResidentNeeds';
-import { createWorldHarness, worldHarnessGame } from '../../../testing/worldHarness';
+import { worldHarnessGame } from '../../../testing/worldHarness';
 
 const pack = loadSettlementPack();
 const workerPlaces = [
@@ -33,7 +34,7 @@ const workerPlaces = [
   { x: 25, y: 12 },
   { x: 25, y: 14 }
 ];
-export function prepareResidentPerformance(registered: boolean, camps: 1 | 4 = 1) {
+export function prepareResidentPerformance(registered: boolean, camps: 1 | 4 = 1, raids = false) {
   installRecordingScene((g: Game) => {
     if (!g.extensionRuntime?.residentOwners().includes('settlement')) return;
     // These are paid setup commands before the initial controlled header, not
@@ -384,7 +385,7 @@ export function prepareResidentPerformance(registered: boolean, camps: 1 | 4 = 1
       g.onConfirmRequest = null;
     }
   });
-  const h = createWorldHarness({ seed: 51020001, mode: 'normal', modules: ['settlement'] }),
+  const h = createConfiguredWorldHarness({ seed: 51020001, mode: 'normal', modules: ['settlement'] },{settlement:{raids}}),
     g = worldHarnessGame(h);
   return { h, g };
 }

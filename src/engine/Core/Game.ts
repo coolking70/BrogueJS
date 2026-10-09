@@ -5,10 +5,11 @@ import { FOUNDATION_PROTOCOL } from '../../ext/descriptor';
 import {isResidentCommand,prepareResidentCommand,commitResidentCommand,spawnResidentCandidates,recordRescuedResident,removeResident,terminateResidentSource,sealResidentCandidate} from './ResidentProduction';
 import {residentComponent,residentEligible,candidateSource,checkpointResidentBeds} from './ResidentWorld';
 import {transactResidentWorld,residentTransactionOwnsNativeWrites} from './ResidentWorld';
+import { freezeRaidLevel, resumeRaidLevel, campEconomicTick, reportRaidVisits, isRaidActor, recordRaidDeath, recordRaidForm, recordRaidFall, frozenRaidActors, finishRaidEvents, recordRaidLevelEntry } from './SettlementRaids';
 import {settleResidentNeeds,freezeResidentCamps,hasPendingResidentNeeds} from './ResidentNeeds';
 import {freezeResidentOrders,suspendResidentOrdersForExit,residentOrder,stopResidentOrder} from './ResidentOrders';
 import {cancelResidentWork,settleResidentWork} from './ResidentJobs';
-import {isStructureCommand,prepareStructureCommand,commitStructureCommand,structureReadSDK,freezeProductionCamps,settleProductionCamps} from './StructureProduction';
+import {isStructureCommand,prepareStructureCommand,commitStructureCommand,structureCommandConfirmation,structureReadSDK,freezeProductionCamps,settleProductionCamps} from './StructureProduction';
 import { isEdibleFixtureCommand, executeEdibleFixtureCommand } from './EdibleFixturePort';
 import { World5Error } from '../../ext/world5';
 import { knowledgeName, knowledgeDescription, knowledgeMember, edibleDefinition, confirmationSatiety, knowledgeState, callEdible, bindEdibleItem } from './KindKnowledge';
@@ -452,7 +453,7 @@ export class Game {
 
     /** Read-only world index for the optional persistent action executor. */
     public actorActionWorld(): ActorActionProductionWorld {
-        return { depth: this.depth, player: this.player, ...(this.bodyGroups?.length ? { bodyGroups: this.bodyGroups } : {}), levels: [
+        return { depth: this.depth, player: this.player, frozenRaidActorIds:frozenRaidActors(this), ...(this.bodyGroups?.length ? { bodyGroups: this.bodyGroups } : {}), levels: [
             { depth: this.currentLevelDepth ?? this.depth, actors: [...this.monsters, ...this.dormantMonsters] },
             ...[...this.levels].map(([depth, level]) => ({ depth, actors: [...level.monsters, ...(level.dormantMonsters ?? [])] })),
             ...[...this.pendingFallenByDepth].map(([depth, actors]) => ({ depth, actors })),
@@ -934,12 +935,12 @@ export class Game {
         this.startNewGame(initial);
     }
 
-    public startNewGame(options?: { seed?: SeedInput; mode?: GameMode; ruleSet?: RuleSet; extensions?: readonly string[]; initialCommands?: readonly string[] }) {
+    public startNewGame(options?: { seed?: SeedInput; mode?: GameMode; ruleSet?: RuleSet; extensions?: readonly string[]; extensionConfigurations?: Readonly<Record<string, import("../../ext/types").Json>>; initialCommands?: readonly string[] }) {
         // Validate before retiring the current run (unsafe numeric inputs cannot be recovered).
         const seed = normalizeSeed(options?.seed ?? 0);
         if (options?.ruleSet !== undefined && options.ruleSet !== 'classic' && options.ruleSet !== 'extended') throw new Error('Invalid rule set');
         const extensionManifest = options?.ruleSet === 'extended'
-            ? (worldFixtureRegistry(this) ?? createExtensionRegistry()).manifest(options.extensions ?? DEFAULT_EXTENSIONS) : undefined;
+            ? (worldFixtureRegistry(this) ?? createExtensionRegistry()).manifest(options.extensions ?? DEFAULT_EXTENSIONS, options.extensionConfigurations) : undefined;
         // Factories/data/state validators are pure preflight: an invalid data pack
         // must not unload the existing run. Player/depth ports are live closures.
         const preparedExtensions = extensionManifest ? this.createExtensionRuntime(extensionManifest) : null;
@@ -1494,7 +1495,7 @@ export class Game {
             generationContributions: () => thisGame.extensionRuntime?.generationContributions(thisGame.depth) ?? [],
             excludeLevelFollower: (actor: Monster,direction:-1|0|1) => {
                 const source=candidateSource(thisGame,actor.id)?.source;
-                return isDeparting(thisGame,actor.id)||(source?.kind==='spawn'&&!source.consumed)||
+                return isRaidActor(thisGame,actor.id)||isDeparting(thisGame,actor.id)||(source?.kind==='spawn'&&!source.consumed)||
                     ((thisGame.world5?.residents.some(r=>r.actorId===actor.id)??false)&&
                     (residentComponent(thisGame,actor.id)?.mode!=='escort'||direction===0||!residentEligible(thisGame,actor)||isIncapacitated(actor)));
             },
@@ -1898,6 +1899,7 @@ export class Game {
         suspendResidentOrdersForExit(this,this.currentLevelDepth??this.depth);
         freezeResidentCamps(this,this.currentLevelDepth??this.depth);
         freezeProductionCamps(this,this.currentLevelDepth??this.depth);
+        freezeRaidLevel(this,this.currentLevelDepth??this.depth);
         const world = this.world5, config = this.extensionRuntime?.world5SettlementFixture()?.configuration;
         const ledger = world?.offline.find(l => l.levelRef.kind === 'dungeon' && l.levelRef.depth === this.currentLevelDepth);
         if (!world || !ledger || !config || this.isGameOver) return;
@@ -1930,6 +1932,7 @@ export class Game {
         }
     }
     private settleManagedWorld(): void {
+        resumeRaidLevel(this);
         settleResidentNeeds(this,true);
         settleProductionCamps(this);
         const world = this.world5, runtime = this.extensionRuntime, fixture = runtime?.world5SettlementFixture();
@@ -1983,6 +1986,7 @@ export class Game {
                 actor.isAbsorbing = false; actor.corpseAbsorptionCounter = 0;
                 if (actor.leader && !this.monsters.includes(actor.leader)) actor.leader = null;
             }
+            recordRaidLevelEntry(this, m);
             return;
         }
         if (m.spatial) {
@@ -2009,6 +2013,7 @@ export class Game {
         // CE MB_FOLLOWER: a real level entry retires an absent monster leader.
         // This does not run during JSON decoding, which preserves the whole graph.
         if (m.leader && !this.monsters.includes(m.leader)) m.leader = null;
+        recordRaidLevelEntry(this, m);
     }
 
     private restoreLevelResidents(preserve?: ReadonlySet<number>): void {
@@ -2072,9 +2077,11 @@ export class Game {
     private monsterEntersLevel(m: Monster, source: LevelState): void {
         if (residentComponent(this, m.id)) {
             transactResidentWorld(this, () => this.commitMonsterLevelEntry(m, source));
+            recordRaidLevelEntry(this, m);
             return;
         }
         this.commitMonsterLevelEntry(m, source);
+        recordRaidLevelEntry(this, m);
     }
 
     private commitMonsterLevelEntry(m: Monster, source: LevelState): void {
@@ -3590,6 +3597,7 @@ export class Game {
     private updateRecordedCheckpoint(event: RecordedInputEvent): void {
         if (this.isAdvancing) return;
         settleStructureFoundations(this);
+        reportRaidVisits(this);
         if (this.extensionRuntime) this.collectExtensionComponents();
         event.tick = timeSystem.currentTick; event.levelRef = { kind: 'dungeon', depth: this.depth };
         event.simulationTicks = this.world5?.simulationTicks ?? null;
@@ -3974,7 +3982,7 @@ export class Game {
     private *executeStructureCommandStages(data:unknown):CommandStages<void> {
         setWorldWorkError(this,null);const first=prepareStructureCommand(this,data);
         if(!first.ok){setWorldWorkError(this,first.code);return;}
-        if(!(yield* this.requestConfirm(i18next.t('ext.foundation.structure.confirm'))))return;
+        if(!(yield* this.requestConfirm(structureCommandConfirmation(this,first.value))))return;
         const outcome=commitStructureCommand(this,first.value);
         if(!outcome.ok){setWorldWorkError(this,outcome.code);return;}
         if(outcome.value.chargedTicks>0)this.playerTurnEnded();
@@ -4233,7 +4241,7 @@ export class Game {
         }
     }
     private startReplayUnchecked(recording: GameRecording): void {
-        this.startNewGame({ seed: recording.seed, mode: recording.mode, ruleSet: recording.extensions ? 'extended' : 'classic', extensions: recording.extensions?.modules.map(m => m.id) });
+        this.startNewGame({ seed: recording.seed, mode: recording.mode, ruleSet: recording.extensions ? 'extended' : 'classic', extensions: recording.extensions?.modules.map(m => m.id), extensionConfigurations: Object.fromEntries(recording.extensions?.modules.filter(m=>m.configuration !== undefined).map(m=>[m.id,m.configuration!]) ?? []) });
         this.clearRecording(); this.replayRecording = recording; this.replayEvents = recording.events;
         this.replayCursor = 0; this.replayStatus = recording.events.length ? 'loaded' : 'finished'; this.replayFrameAccumulator = 0;
     }
@@ -4245,7 +4253,7 @@ export class Game {
         }
         try {
             this.withReplayCandidate(candidate => {
-                candidate.startNewGame({ seed: recording.seed, mode: recording.mode, ruleSet: recording.extensions ? 'extended' : 'classic', extensions: recording.extensions?.modules.map(m => m.id) });
+                candidate.startNewGame({ seed: recording.seed, mode: recording.mode, ruleSet: recording.extensions ? 'extended' : 'classic', extensions: recording.extensions?.modules.map(m => m.id), extensionConfigurations: Object.fromEntries(recording.extensions?.modules.filter(m=>m.configuration !== undefined).map(m=>[m.id,m.configuration!]) ?? []) });
                 if (mechanicalDigest(candidate.projectWholeRun(), candidate.recordingInputState()).root !== recording.initialDigest.root) throw new Error('Invalid initial recording world');
             });
         } catch {
@@ -6504,7 +6512,7 @@ export class Game {
     }
 
     private polymorphBoltTarget(target: Creature | undefined): boolean {
-        if (target instanceof Monster && (residentComponent(this,target.id) || candidateSource(this,target.id)))
+        if (target instanceof Monster && (residentComponent(this,target.id) || candidateSource(this,target.id) || this.world5?.raidCamps.some(r => r.event?.phase === 'active' && r.event.actorIds.includes(target.id))))
             return transactResidentWorld(this, () => this.commitPolymorphBoltTarget(target), true);
         return this.commitPolymorphBoltTarget(target);
     }
@@ -6527,6 +6535,7 @@ export class Game {
             if (this.squareMotion) { this.squareMotion.spatial.dispose(); delete this.squareMotion; }
             this.monsters = [...this.monsters]; this.dormantMonsters = [...this.dormantMonsters];
         }
+        recordRaidForm(this, target);
         notifyProductionActorSourceChanged(this, target.id);
         const autoID = !target.hasStatus('invisible');
         this.updateVision();
@@ -6758,6 +6767,7 @@ export class Game {
                 }
                 this.hoveredCell = null; this.hoveredText = '';
             }
+            if (!copy) for (const actors of liveStages) for (const actor of actors) recordRaidForm(this, actor);
             runtime.emit('bodyTransition', fact);
             this.needsRender = true;
         }, rollbackRandom);
@@ -10295,6 +10305,11 @@ export class Game {
      * this.monsters 快照后过滤——结果集相同）。
      */
     private monstersFall(): void {
+        if (this.world5?.raidCamps.some(r => r.event?.phase === 'active' && r.pauseFrom === null) &&
+            this.monsters.some(m => isRaidActor(this, m.id) && m.hp > 0 && (m.falling || this.creatureShouldFall(m)))) {
+            transactResidentWorld(this, () => { this.commitMonstersFall(); finishRaidEvents(this); }, true);
+            return;
+        }
         if (this.extensionRuntime?.residentOwners().length && this.monsters.some(m => m.hp > 0 &&
             (m.falling || this.creatureShouldFall(m)) &&
             (residentComponent(this,m.id) || candidateSource(this,m.id)))) {
@@ -10360,6 +10375,10 @@ export class Game {
                         if (q) q.push(m);
                         else this.pendingFallenByDepth.set(targetDepth, [m]);
                     }
+                    if (isRaidActor(this, m.id)) {
+                        recordRaidFall(this, m.id, targetDepth);
+                        notifyProductionActorSourceChanged(this, m.id);
+                    }
                     // 目标深度 > 40：CE 的 levels[] 容器恒可写而玩家不可达；
                     // web 无该容器，幸存者就地消失（登记）。
                 } else {
@@ -10418,6 +10437,7 @@ export class Game {
             const queue = this.pendingFallenByDepth.get(targetDepth) ?? [];
             queue.push(...actors); this.pendingFallenByDepth.set(targetDepth, queue);
         }
+        for (const actor of actors) recordRaidFall(this, actor.id, targetDepth);
         reconcileProductionActorActions(this); // rebind recovery depth after whole ownership moves
         this.needsRender = true;
     }
@@ -10759,6 +10779,7 @@ export class Game {
         detachActorNeeds(this,m.id,'death');
         if(this.extensionRuntime){const s=peekEdibleState(this.extensionRuntime);if(s.timedStats||s.departures){if(s.timedStats)s.timedStats.rows=s.timedStats.rows.filter(r=>r.actorId!==m.id);if(s.departures)s.departures.active=s.departures.active.filter(r=>r.actorId!==m.id);this.extensionRuntime.edibleDirty();}}
         m.deathProcessed = true; // MB_HAS_DIED / occupancy removal
+        recordRaidDeath(this,m.id);
         if (this.extensionRuntime) this.extensionRuntime.emit('kill', {
             creature: creatureView(m, this.player.id), sourceId: this.extensionRuntime.sourceId, administrative, origin: death!.origin,
         });
@@ -11092,7 +11113,7 @@ export class Game {
                 settleEdibleClocks: () => {settleTimedStats(game);settleActorNeeds(game);settleDepartures(game);},
                 settlePendingResidentNeeds:()=>settleResidentNeeds(game),
                 settleResidentBoundary:()=>{settleResidentNeeds(game);settleResidentWork(game);},
-                residentBoundaryTicks:()=>game.world5?.residents.length?1000-game.world5.simulationTicks%1000:Infinity,
+                residentBoundaryTicks:()=>game.world5?.residents.length?Math.min(...game.world5.offline.map(l=>1000-campEconomicTick(game,l.campSlotId)%1000)):Infinity,
                 monstersApproachStairs: () => game.monstersApproachStairs(),
                 wpContext: () => game.wpContext(),
                 monstersFall: () => game.monstersFall(),
@@ -11772,11 +11793,13 @@ export class Game {
                 candidateExtensions.withStatWorld([decodedPlayer, ...entityGraph.monsters.values()], () => {
                     candidateExtensions.validateWorld([decodedPlayer, ...extensionCreatures], { depth: snapshot.depth, turn: snapshot.run.absoluteTurnNumber,
                         isGameOver: snapshot.run.isGameOver, nextEntityId: snapshot.run.nextEntityId });
+                    let frozenRaidActorIds: number[] = [];
                     if(snapshot.run.world5){const level=restored.get(snapshot.depth)!;
                         const candidate=Object.assign({},{currentSeed:snapshot.seed,player:decodedPlayer,grid:level.grid,depth:snapshot.depth,items:level.items,monsters:level.monsters,dormantMonsters:level.dormantMonsters,
                             levels:restored,currentLevelDepth:snapshot.depth,pendingFallenByDepth:new Map(snapshot.pendingFallenByDepth.map(q=>[q.depth,q.monsters.map(m=>entityGraph.monsters.get(m.id)!)])),pendingFallenItemsByDepth:new Map(snapshot.pendingFallenItemsByDepth.map(q=>[q.depth,q.items.map(i=>entityGraph.items.get(i.id)!)])),purgatory:(snapshot.purgatory??[]).map(m=>entityGraph.monsters.get(m.id)!),
                             world5:snapshot.run.world5,autoAction:snapshot.run.autoAction,actorActions:snapshot.run.actorActions,worldWorkDetails:snapshot.run.worldWorkDetails,worldWorkFacts:snapshot.run.worldWorkFacts,extensionRuntime:candidateExtensions,worldContainerItems:new Map(snapshot.run.world5.containers.flatMap(c=>c.itemIds.map(id=>[id,entityGraph.items.get(id)!]))) });
                         validateWorldWorkReferences(candidate as unknown as Game);
+                        frozenRaidActorIds = frozenRaidActors(candidate as unknown as Game);
                     }
                     const actionBinding = candidateExtensions.actorActionBinding();
                     if (actionBinding) validateProductionActorAttackState(actionBinding.state,actionBinding.definition,new Set(),snapshot.run.actorActions);
@@ -11799,7 +11822,7 @@ export class Game {
                     }
                     if (actionBinding) validatePhasedAttackGeometry(actionBinding.state,actionBinding.definition,[decodedPlayer,...entityGraph.monsters.values()],
                         (depth,x,y)=>restored.get(depth)?.grid.isValidPos(x,y)===true,
-                        new Set([decodedPlayer.id,...(restored.get(snapshot.depth)?.monsters??[]).map(actor=>actor.id)]), (source,attackId) => {
+                        new Set([decodedPlayer.id,...(restored.get(snapshot.depth)?.monsters??[]).map(actor=>actor.id),...frozenRaidActorIds]), (source,attackId) => {
                             const identity = source.spatial?.bodyMember;
                             const group = snapshot.run.spatialWorld?.groups.find(g => g.groupId === identity?.groupId);
                             const part = group && candidateExtensions.spatialCatalog.body(group.bodyDefinitionId).parts.find(p => p.partId === identity?.partId);
@@ -11809,6 +11832,7 @@ export class Game {
                         }, snapshot.run.actorActions);
                     if (snapshot.run.actorActions) validateProductionActorActionState(snapshot.run.actorActions, {
                         depth: snapshot.depth, player: decodedPlayer,
+                        frozenRaidActorIds,
                         ...(snapshot.run.spatialWorld?.groups.length ? { bodyGroups: snapshot.run.spatialWorld.groups } : {}),
                         levels: [
                             ...[...restored].map(([depth, level]) => ({ depth, actors: [...level.monsters, ...(level.dormantMonsters ?? [])] })),
@@ -13624,6 +13648,12 @@ export class Game {
         const paths=checkpointResidentPaths(this),beds=checkpointResidentBeds(this),cached=[...this.levels.values()],actors=this.departureActors(),needs=checkpointNeeds(this),dirty=checkpointRecordingRoots([this.world5!,this.extensionRuntime!,this.actorActions!]);
         const base=this.checkpointWorldWork(()=>({shallow:[this,...cached],deep:[...actors,this.extensionRuntime,this.monsters,this.dormantMonsters,this.purgatory,this.pendingFallenByDepth,this.pendingFallenItemsByDepth,this.levels,this.visibleMonsters,this.everSeenMonsters,...cached.flatMap(l=>[l.monsters,l.dormantMonsters,l.items,l.visibleMonsters])]}));
         return()=>{base();needs();dirty();paths();beds();native?.();};
+    }
+    public createRaidMonster(typeId:string,at:Pos):Monster|null {
+        const data=(monsterData as MonsterData[]).find(m=>m.id===typeId);
+        if(!data||!this.canCreateNativeCandidate(data,{loc:at,hp:1} as Creature))return null;
+        const actor=new Monster(at.x,at.y,data);actor.spawnLoc={...at};actor.state=MonsterState.WANDERING;
+        markCreatureBirth(actor,'scripted');this.monsters.push(actor);this.extensionRuntime!.attachCreature(actor);return actor;
     }
     public createResidentCandidate(token:import('../../ext/types').GenerationToken,owner:string,id:string,at:Pos):Monster|null {
         this.extensionRuntime!.reserveGenerationAllocator(token);

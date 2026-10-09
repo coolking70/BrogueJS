@@ -2,33 +2,40 @@ import { validateEdibleTemplates } from '../engine/Core/EdibleDefinitions';
 import { validateWorldModule } from '../engine/Core/WorldDefinitions';
 import { FOUNDATION_PROTOCOL } from './descriptor';
 import type { ExtensionModule, ExtensionManifest, ExtensionRulesIdentity } from './types';
+import { c5Canonical } from './worldJson';
 import { validId, canonical, isJson } from './json';
 import { ExtensionCompatibilityError } from './compatibility';
 
 export class ExtensionRegistry {
-    private readonly factories = new Map<string, { version: string; create: () => ExtensionModule; rules?: ExtensionRulesIdentity; worldSdk?: number; locales?: Readonly<Record<string, Readonly<Record<string,string>>>> }>();
-    register(id: string, version: string, create: () => ExtensionModule, rules?: ExtensionRulesIdentity, worldSdk?: number, locales?: Readonly<Record<string, Readonly<Record<string,string>>>>): void {
+    private readonly factories = new Map<string, { version: string; create: (configuration?: import("./types").Json) => ExtensionModule; rules?: ExtensionRulesIdentity; runConfiguration?: import("./types").ExtensionRunConfiguration; worldSdk?: number; locales?: Readonly<Record<string, Readonly<Record<string,string>>>> }>();
+    register(id: string, version: string, create: (configuration?: import("./types").Json) => ExtensionModule, rules?: ExtensionRulesIdentity, worldSdk?: number, locales?: Readonly<Record<string, Readonly<Record<string,string>>>>, runConfiguration?: import("./types").ExtensionRunConfiguration): void {
         if (!validId(id) || !/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Invalid extension identity/version');
         if (this.factories.has(id)) throw new Error(`Duplicate extension: ${id}`);
         if (rules && (!Number.isSafeInteger(rules.schema) || rules.schema < 1 || rules.version !== version
             || !/^sha256:[a-f0-9]{64}$/.test(rules.fingerprint)
             || Object.keys(rules).some(key => !['schema', 'version', 'fingerprint'].includes(key)))) throw new Error('Invalid extension rules identity');
-        this.factories.set(id, { version, create, worldSdk, locales, ...(rules ? { rules: Object.freeze(structuredClone(rules)) } : {}) });
+        this.factories.set(id, { version, create, worldSdk, locales, runConfiguration, ...(rules ? { rules: Object.freeze(structuredClone(rules)) } : {}) });
     }
     /** Registration never runs factories. Enable only at a new-run/load boundary. */
-    manifest(ids: readonly string[]): ExtensionManifest {
+    manifest(ids: readonly string[], configurations: Readonly<Record<string, import("./types").Json>> = {}): ExtensionManifest {
+        c5Canonical(configurations);
+        if (!isJson(configurations) || Object.keys(configurations).some(id => !ids.includes(id) || !this.factories.get(id)?.runConfiguration)) throw new Error("Invalid run configuration");
         if (new Set(ids).size !== ids.length) throw new Error('Duplicate enabled extension');
         return { schema: 1, foundation: FOUNDATION_PROTOCOL, modules: [...ids].sort().map(id => {
             const registration = this.factories.get(id);
             if (!registration) throw new Error(`Unavailable extension: ${id}`);
-            return { id, version: registration.version, ...(registration.rules ? { rules: structuredClone(registration.rules) } : {}) };
+            const declaration = registration.runConfiguration;
+            const configuration = Object.prototype.hasOwnProperty.call(configurations,id) ? configurations[id] : declaration?.default;
+            if (declaration && !declaration.validate(configuration)) throw new Error("Invalid run configuration");
+            const rules = declaration ? declaration.identity(configuration!) : registration.rules;
+            return { id, version: registration.version, ...(rules ? { rules: structuredClone(rules) } : {}), ...(declaration ? { configuration: structuredClone(configuration!) } : {}) };
         }) };
     }
     validateManifest(value: unknown): asserts value is ExtensionManifest {
         const header = value as ExtensionManifest;
         if (!isJson(value) || !header || header.schema !== 1 || !Array.isArray(header.modules)
             || header.modules.some(entry => !entry || !validId(entry.id) || typeof entry.version !== 'string'
-                || Object.keys(entry).some(key => key !== 'id' && key !== 'version' && key !== 'rules'))
+                || Object.keys(entry).some(key => key !== 'id' && key !== 'version' && key !== 'rules' && key !== 'configuration'))
             || Object.keys(header).some(key => key !== 'schema' && key !== 'modules' && key !== 'foundation')) throw new Error('Invalid extension manifest');
         // Keep malformed headers on the existing generic path. For otherwise
         // valid identities, report the first mismatch in stable module-ID order.
@@ -44,18 +51,18 @@ export class ExtensionRegistry {
                     `Unavailable extension: ${entry.id}`, entry.version, null);
                 if (entry.version !== installed.version) throw new ExtensionCompatibilityError('version', entry.id,
                     `Extension set/version mismatch: ${entry.id}`, entry.version, installed.version);
-                if (canonical(entry.rules) !== canonical(installed.rules)) throw new ExtensionCompatibilityError('version', entry.id,
+                if (canonical(entry.rules) !== canonical(installed.runConfiguration && installed.runConfiguration.validate(entry.configuration) ? installed.runConfiguration.identity(entry.configuration!) : installed.rules)) throw new ExtensionCompatibilityError('version', entry.id,
                     `Extension set/version mismatch: ${entry.id}`, entry.version, installed.version,
                     { expected: entry.rules, actual: installed.rules });
             }
         }
-        const expected = this.manifest(header.modules.map(entry => entry.id));
+        const expected = this.manifest(header.modules.map(entry => entry.id), Object.fromEntries(header.modules.filter(e=>e.configuration !== undefined).map(e=>[e.id,e.configuration!])));
         if (canonical(header) !== canonical(expected)) throw new Error('Extension set/version mismatch');
     }
     create(manifest: ExtensionManifest): ExtensionModule[] {
         this.validateManifest(manifest);
-        const modules = new Map(manifest.modules.map(({ id, version, rules }) => {
-            const module = this.factories.get(id)!.create();
+        const modules = new Map(manifest.modules.map(({ id, version, rules, configuration }) => {
+            const module = this.factories.get(id)!.create(configuration);
             if (module.id !== id || module.version !== version || canonical(module.rules) !== canonical(rules)) throw new Error('Extension factory identity mismatch');
             const declaration=this.factories.get(id)!;
             validateWorldModule(module,declaration.worldSdk,declaration.locales ? new Set(Object.values(declaration.locales).flatMap(l=>Object.keys(l))) : undefined);

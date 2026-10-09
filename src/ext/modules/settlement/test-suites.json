@@ -36,7 +36,10 @@
     "tests/resident_production_food.test.ts",
     "tests/resident_production_economy.test.ts",
     "tests/resident_production_codec.test.ts",
-    "tests/resident_production_replay.test.ts"
+    "tests/resident_production_replay.test.ts",
+    "tests/settlement_raids.test.ts",
+    "tests/settlement_raid_replay.test.ts",
+    "tests/settlement_raid_performance.test.ts"
   ],
   "gen": [],
   "drift": []

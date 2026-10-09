@@ -1120,7 +1120,7 @@ export class ExtensionRuntime {
             if (module?.actorActions && input.action === 'attack') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
                 && Object.keys(input.payload).sort().join(',') === 'attackId,facing' && typeof input.payload.attackId === 'string' && typeof input.payload.facing === 'string';
             if(module?.residentPolicy&&(RESIDENT_ACTIONS as readonly string[]).includes(input.action))return true;
-            if(module?.campPolicy&&(STRUCTURE_ACTIONS as readonly string[]).includes(input.action))return true;
+            if(module?.campPolicy&&[...STRUCTURE_ACTIONS,'repair'].includes(input.action))return true;
             if(module?.worldWorkCommands?.[input.action as import('./worldSdk').CraftingAction]||module?.edibleCommands?.[input.action as 'feed'|'roast'])return true;
             return !!module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action)
                 && typeof module.commands[input.action] === 'function';
@@ -1744,6 +1744,7 @@ export class ExtensionRuntime {
     residentComponent<T>(owner:string,id:number,name:'resident'|'source'):T|undefined {const c=this.components[String(id)]?.[`${owner}:${name}`];return c===undefined?undefined:cloneJson(c) as T;}
     replaceResidentComponent(owner:string,id:number,name:'resident'|'source',value:import('./residentSdk').ResidentComponent|import('./residentSdk').ResidentSource|null):void {const m=this.modules.find(m=>m.id===owner&&m.residentPolicy);if(!m)throw new World5Error('C5_SCOPE');this.invoke(m,c=>{if(value===null)c.removeComponent(id,name);else c.setComponent(id,name,value as unknown as Json);});}
     worldCampOwners():string[] {return this.modules.filter(m=>m.campPolicy).map(m=>m.id);}
+    worldRaidRules(owner:string) { return this.modules.find(m=>m.id===owner)?.raidRules; }
     worldCampPolicy(owner:string) {return this.modules.find(m=>m.id===owner)?.campPolicy;}
     worldCampState(owner:string):import('./structureSdk').CampState {
         return cloneJson(this.states[owner]!) as unknown as import('./structureSdk').CampState;

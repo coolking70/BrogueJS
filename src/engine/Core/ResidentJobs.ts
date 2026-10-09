@@ -1,3 +1,4 @@
+import { residentEconomicTick } from './SettlementRaids';
 import { advanceResidentOrderLabor,residentOrderClockFinished,selectResidentOrderDecision,cancelResidentOrder,residentOrder,stopResidentOrder } from './ResidentOrders';
 import { residentDistanceMap, residentBlockedMap } from './ResidentPathing';
 /** Resident jobs share run.actorActions. Job rows own only material custody and earned credit. */
@@ -55,7 +56,7 @@ function efficiency(g: Game, id: number) {
   const r = residentComponent(g, id),
     n = g.world5!.offline.flatMap((l) => l.residentStates).find((s) => s.actorId === id);
   if (!r || !n || r.mode !== 'stay') return 0;
-  const phase = Math.floor(g.world5!.simulationTicks / 1000) % 32;
+  const phase = Math.floor(residentEconomicTick(g,id) / 1000) % 32;
   return phase < r.schedule[0] ? residentEfficiency(n) : 0;
 }
 export function residentHasNativePriority(g: Game, a: Monster): boolean {
@@ -263,7 +264,7 @@ function accept(
     creditRemainder: 0,
     status: 'working',
     pendingCompletion: false,
-    day: Math.floor(g.world5!.simulationTicks / 32000)
+    day: Math.floor(residentEconomicTick(g,id) / 32000)
   };
   g.world5!.residentJobs.push(j);
   startPhase(g, j, 100);
@@ -338,8 +339,9 @@ export function advanceResidentLabor(g: Game, dt: number): void {
       actor.y !== j.anchor.y
     )
       continue;
-    for (let at = t0; at < t1; ) {
-      const end = Math.min(t1, (Math.floor(at / 1000) + 1) * 1000),
+    const local0=residentEconomicTick(g,j.actorId,t0),local1=residentEconomicTick(g,j.actorId,t1);
+    for (let at = local0; at < local1; ) {
+      const end = Math.min(local1, (Math.floor(at / 1000) + 1) * 1000),
         phase = Math.floor(at / 1000) % 32,
         eff = r.mode === 'stay' && phase < r.schedule[0] ? residentEfficiency(n) : 0;
       const credit = j.creditRemainder + (end - at) * eff;
@@ -402,7 +404,7 @@ export function settleResidentWork(g: Game): void {
           if (j.kind === 'plant') {
             if (j.phase !== 'planting' || j.creditTicks !== 1000 || j.creditRemainder !== 0)
               failResident('C5_BAD_REFERENCE');
-            const day = Math.floor(g.world5!.simulationTicks / 32000);
+            const day = Math.floor(residentEconomicTick(g,j.actorId) / 32000);
             if (state.plotDays.some((p) => p.componentId === j.plotId && p.day === day))
               failResident('C5_RESERVED');
             state.plotDays = state.plotDays.filter((p) => p.componentId !== j.plotId);
@@ -513,7 +515,7 @@ export function selectResidentDecision(
             g,
             j,
             Math.min(
-              1000 - (g.world5!.simulationTicks % 1000),
+              1000 - (residentEconomicTick(g,id) % 1000),
               Math.ceil(100000 / efficiency(g, id))
             )
           );
@@ -529,7 +531,7 @@ export function selectResidentDecision(
           Math.max(
             1,
             Math.min(
-              1000 - (g.world5!.simulationTicks % 1000),
+              1000 - (residentEconomicTick(g,id) % 1000),
               Math.ceil(((1000 - j.creditTicks) * 100 - j.creditRemainder) / efficiency(g, id))
             )
           )
@@ -540,8 +542,8 @@ export function selectResidentDecision(
   }
   if (
     r.job.kind === 'guard' &&
-    Math.floor(g.world5!.simulationTicks / 1000) % 32 >= r.schedule[0] &&
-    Math.floor(g.world5!.simulationTicks / 1000) % 32 < r.schedule[0] + r.schedule[1]
+    Math.floor(residentEconomicTick(g,id) / 1000) % 32 >= r.schedule[0] &&
+    Math.floor(residentEconomicTick(g,id) / 1000) % 32 < r.schedule[0] + r.schedule[1]
   ) {
     const bed = g.world5!.structures.find((s) => s.fixture?.id === r.bedId)?.at;
     if (bed) stepResident(g, a, bed);
@@ -576,7 +578,7 @@ export function selectResidentDecision(
               (id) =>
                 !plotDays.some(
                   (p) =>
-                    p.componentId === id && p.day === Math.floor(g.world5!.simulationTicks / 32000)
+                    p.componentId === id && p.day === Math.floor(residentEconomicTick(g,a.id) / 32000)
                 ) && !g.world5!.orders.some(o=>o.production?.plotIds.includes(id)) && !g.world5!.residentJobs.some((j) => j.plotId === id)
             );
           if (plotId === undefined) failResident('C5_RESERVED');
