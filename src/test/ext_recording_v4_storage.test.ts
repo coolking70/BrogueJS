@@ -11,6 +11,7 @@ import { saveDatabaseTransaction } from '../engine/Core/SaveDatabase';
 import { MemoryIndexedDB } from './support/memoryIndexedDB';
 import { saveSnapshot, readSnapshot, readSaveSummary } from '../engine/Core/SaveStorage';
 import { saveRecording, readRecording, deleteRecording } from '../engine/Core/RecordingStorage';
+import { InlineRecordingBackend } from '../engine/Core/RecordingBackend';
 import { createHeadlessGame } from './harness';
 class MemoryDatabase implements SaveDatabaseAdapter {
   stores = new Map<SaveStore, Map<IDBValidKey, unknown>>(
@@ -54,6 +55,34 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe('C5 shared IDB v2 storage', () => {
+  it('5Y async frozen save and recording reject replaced generation before IDB publication and retain prior transactions', async () => {
+    const host = new MemoryIndexedDB(); vi.stubGlobal('indexedDB', host);
+    const g = createHeadlessGame(517); g.configureRecordingBackend(() => new InlineRecordingBackend());
+    for (let i = 0; i < 256; i++) g.executeCommand('escape');
+    const original = await g.toSaveSnapshotAsync(), recording = await g.exportRecordingAsync();
+    await saveSnapshot(original); await saveRecording(recording);
+    g.executeCommand('escape'); const next = await g.toSaveSnapshotAsync(), generation = g.recordingGeneration;
+    let replaced = false;
+    host.failRead = (store) => { if (store === 'recordings' && !replaced) { replaced = true; g.startNewGame({ seed: 518 }); } };
+    await expect(saveSnapshot(next, () => g.recordingGeneration === generation)).rejects.toThrow('generation replaced');
+    host.failRead = undefined;
+    expect(await readSnapshot()).toEqual(original); expect(await readRecording('save-origin')).toMatchObject({ events: recording.events });
+    const second = g.recordingGeneration; replaced = false;
+    host.failRead = (store) => { if (store === 'recordings' && !replaced) { replaced = true; g.startNewGame({ seed: 519 }); } };
+    await expect(saveRecording(recording, () => g.recordingGeneration === second)).rejects.toThrow('generation replaced');
+    host.failRead = undefined; expect(await readRecording()).toEqual(recording);
+    expect(g.recordedInputEvents).toHaveLength(0); g.disposeRecording();
+  });
+  it('5Y retires a generation after the last IDB participant but before native commit without replacing the old save', async () => {
+    const host = new MemoryIndexedDB(); vi.stubGlobal('indexedDB', host);
+    const g = createHeadlessGame(517), original = g.toSaveSnapshot(); await saveSnapshot(original);
+    g.executeCommand('escape'); const next = g.toSaveSnapshot(), signal = g.recordingAbortSignal;
+    let replaced = false;
+    host.failRequestWrite = (store, key) => { if (store === 'checkpoint' && key === 'world' && !replaced) { replaced = true; g.startNewGame({ seed: 519 }); } };
+    await expect(saveSnapshot(next, () => true, signal)).rejects.toThrow('generation replaced');
+    host.failRequestWrite = undefined; expect(await readSnapshot()).toEqual(original);
+    expect(g.recordedInputEvents).toHaveLength(0); g.disposeRecording();
+  });
   it('review H1: game saves after seek or in another run preserve the user recording and its snapshot cache', async () => {
     const db = new MemoryDatabase(); setSaveDatabaseAdapter(db);
     const g = createHeadlessGame(517);

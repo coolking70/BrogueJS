@@ -857,6 +857,8 @@ onMounted(async () => {
     (window as Window & { export_game_recording?: () => string }).export_game_recording = () =>
         JSON.stringify(game.exportRecording());
 
+    (window as Window & { export_game_recording_async?: () => Promise<string> }).export_game_recording_async = async () =>
+        JSON.stringify(await game.exportRecordingAsync());
     (window as Window & { import_game_recording?: (json: string) => void }).import_game_recording = (json: string) => {
         game.loadReplay(JSON.parse(json));
     };
@@ -1105,7 +1107,7 @@ onMounted(async () => {
     let lastInput = game.recordedInputEvents[game.recordedInputEvents.length - 1];
     let skipNextDisplayTime = false;
     const autoAllowed = () => !props.displayModalOpen && !props.pauseAutomaticActions && !game.replayRecording && !game.isTimePaused()
-        && !game.hasPendingConfirmation && !game.isAdvancing && !game.isInputLocked() && !game.isGameOver
+        && !game.recordingInputBlocked && !game.hasPendingConfirmation && !game.isAdvancing && !game.isInputLocked() && !game.isGameOver
         && !presentationTimeline(game)?.busy && !dialogInput.busy() && !logger.pendingAcknowledgment && game.isAutoTraveling() && !document.hidden;
     const displayFrame = (elapsedMs: number, animationMs: number = elapsedMs) => {
         syncHeldInputContext();
@@ -1234,6 +1236,7 @@ onUnmounted(() => {
   delete (window as Window & { advanceTime?: (ms: number) => void }).advanceTime;
   delete (window as Window & { render_game_to_text?: () => string }).render_game_to_text;
   delete (window as Window & { export_game_recording?: () => string }).export_game_recording;
+  delete (window as Window & { export_game_recording_async?: () => Promise<string> }).export_game_recording_async;
   
   if (activeGame.onRenderRequested) {
       activeGame.onRenderRequested = null;

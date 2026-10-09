@@ -36,11 +36,15 @@ export async function openSaveDatabase(): Promise<IDBDatabase> {
 export async function saveDatabaseTransaction<T>(
   names: readonly SaveStore[],
   mode: IDBTransactionMode,
-  action: (stores: Record<SaveStore, DatabaseStore>) => T | Promise<T>
+  action: (stores: Record<SaveStore, DatabaseStore>) => T | Promise<T>,
+  signal?: AbortSignal
 ): Promise<T> {
-  if (injected) return injected.transaction(names, mode, action);
+  const active = () => { if (signal?.aborted) throw new Error('Persistence generation replaced'); };
+  active();
+  if (injected) return injected.transaction(names, mode, async stores => { active(); const value = await action(stores); active(); return value; });
   const db = await openSaveDatabase();
   try {
+    active();
     return await new Promise<T>((resolve, reject) => {
       const tx = db.transaction([...names], mode);
       const stores = {} as Record<SaveStore, DatabaseStore>;
@@ -63,12 +67,14 @@ export async function saveDatabaseTransaction<T>(
         };
       }
       let result: T, failure: unknown, settled = false, completed = false;
+      const release = () => signal?.removeEventListener('abort', cancelled);
+      const cancelled = () => abort(new Error('Persistence generation replaced'));
       tx.oncomplete = () => {
-        completed = true;
+        release(); completed = true;
         if (settled) resolve(result);
         else reject(new Error('Save transaction completed before its action'));
       };
-      tx.onabort = () => { completed = true; reject(failure ?? tx.error ?? new Error('Save transaction aborted')); };
+      tx.onabort = () => { release(); completed = true; reject(failure ?? tx.error ?? new Error('Save transaction aborted')); };
       tx.onerror = () => {
         failure ??= tx.error;
       };
@@ -77,7 +83,9 @@ export async function saveDatabaseTransaction<T>(
         if (completed) return;
         try { tx.abort(); } catch { completed = true; reject(error); }
       };
+      signal?.addEventListener('abort', cancelled, { once: true });
       try {
+        active();
         Promise.resolve(action(stores)).then(
           (value) => {
             result = value;

@@ -1,3 +1,5 @@
+import { checkpointIdentity, type CheckpointJob, type CheckpointResult } from './RecordingCheckpoint';
+import { defaultRecordingBackend, type RecordingBackend } from './RecordingBackend';
 import { checkpointResidentPaths } from './ResidentPathing';
 import { c5Canonical } from '../../ext/worldJson';
 import { worldText } from '../../ext/worldText';
@@ -39,7 +41,7 @@ import { enterWorldWorkLevel } from './WorldWorkPlacement';
 import { validateWorldWorkReferences } from './WorldWorkValidation';
 import { createActorActionsRoot, validateActorActionsRoot, type ActorActionsRoot } from './ActorActionsRoot';
 import { validateProductionActorAttackState } from '../../ext/actorActionValidation';
-import { mechanicalDigest, dirtyEventDigest, inventoryStamp, recordingStart, recordingChain, worldSnapshotHash, world5DigestLeaves, world5LeafToken, cloneDigestProjection, world5CanonicalLeaf } from './RecordingDigest';
+import { manifestFingerprint, digestRoot, mechanicalDigest, dirtyEventDigest, inventoryStamp, recordingStart, recordingChain, worldSnapshotHash, world5DigestLeaves, world5LeafToken, cloneDigestProjection, world5CanonicalLeaf } from './RecordingDigest';
 import { validateRecordingV4, recordingHeader, validOriginShape, boundedSnapshots, validAccelerationSnapshot } from './RecordingFormat';
 import { EVENT_DOMAINS, DIGEST_DOMAINS, type DigestDomain, type ReplayDiagnostic, type RecordingV4, type RecordingEventV4, type RecordingOriginV2, type RecordingHeaderV4, type ReplaySnapshotV4, type RecordingInputStateV2 } from './RecordingV4';
 export type { ReplayDiagnostic, RecordingV4, RecordingEventV4, RecordingOriginV2, ReplaySnapshotV4 } from './RecordingV4';
@@ -366,7 +368,25 @@ class ReplayDigestMismatch extends Error {
         super('domain ' + domain + ' at tick ' + event.tick + ' position ' + event.player.x + ',' + event.player.y);
     }
 }
+interface PendingRecordingCheckpoint {
+    job: CheckpointJob;
+    event: RecordedInputEvent;
+    result?: CheckpointResult;
+    settled: Promise<void>;
+}
 interface RecordingRuntime {
+    generation: number;
+    lifetime: AbortController;
+    backend: RecordingBackend | null;
+    backendFactory?: () => RecordingBackend | null;
+    checkpoints: Map<number, PendingRecordingCheckpoint>;
+    chainFrontier: number;
+    verifiedRecordBoundary: number;
+    failure: { error: string; domain: string; fromCommand: number; toCommand: number } | null;
+    fences: number;
+    readers: Promise<unknown>;
+    metrics: { boundaryMainMs: number[]; projectionMs: number[]; encodingMs: number[]; dispatchMs: number[]; publishMs: number[]; computeMs: number[]; flushMs: number[]; peakBytes: number; peakJobs: number; saturated: number };
+
     execution: CommandExecution | null;
     nextCommandId: number;
     drivingStages: number;
@@ -389,7 +409,8 @@ const recordingRuntime = new WeakMap<Game, RecordingRuntime>();
 function recordingState(game: Game): RecordingRuntime {
     let state = recordingRuntime.get(game);
     if (!state) {
-        state = { execution: null, nextCommandId: 1, drivingStages: 0, replayError: null, replayDiagnostic: null, verifiedReplayBoundary: 0, commandDecisions: null, suppliedAnswers: null, replayDecisionCursor: 0, recordingFromNewGame: true, origin: null, header: null, snapshots: [], trustedSnapshots: new Set(), replayWarnings: [], pendingCommand: null };
+        state = { generation: 0, lifetime: new AbortController(), backend: null, checkpoints: new Map(), chainFrontier: 0, verifiedRecordBoundary: 0, failure: null, fences: 0, readers: Promise.resolve(),
+            metrics: { boundaryMainMs: [], projectionMs: [], encodingMs: [], dispatchMs: [], publishMs: [], computeMs: [], flushMs: [], peakBytes: 0, peakJobs: 0, saturated: 0 }, execution: null, nextCommandId: 1, drivingStages: 0, replayError: null, replayDiagnostic: null, verifiedReplayBoundary: 0, commandDecisions: null, suppliedAnswers: null, replayDecisionCursor: 0, recordingFromNewGame: true, origin: null, header: null, snapshots: [], trustedSnapshots: new Set(), replayWarnings: [], pendingCommand: null };
         recordingRuntime.set(game, state);
     }
     return state;
@@ -948,6 +969,7 @@ export class Game {
         const initialCommands = options?.initialCommands === undefined ? undefined : [...options.initialCommands];
         if (initialCommands !== undefined && (!preparedExtensions || !preparedExtensions.validateInitialCommands(initialCommands,options?.mode === 'easy' || options?.mode === 'wizard' ? PLAYER_MODE_RESOURCES[options.mode] : PLAYER_STARTING_RESOURCES)))
             throw new Error('Invalid extension creation commands');
+        this.disposeRecording();
         resetPresentation(this);
         // U00: retire the old run before seeding/allocating the next one. Returning
         // the iterator must not run an old turn's epilogue against the new world.
@@ -1158,6 +1180,7 @@ export class Game {
         recordingState(this).header = header;
         recordingState(this).origin = { version: 2, header, events: [], prefixDigest: recordingStart(header), inputState: this.recordingInputState() };
         recordingState(this).snapshots = []; recordingState(this).trustedSnapshots = new Set();
+        this.resetRecordingBackend();
         for (const command of initialCommands ?? []) this.executeCommand('ext:command',command);
     }
 
@@ -3596,6 +3619,7 @@ export class Game {
 
     private updateRecordedCheckpoint(event: RecordedInputEvent): void {
         if (this.isAdvancing) return;
+        const checkpointStart = performance.now();
         settleStructureFoundations(this);
         reportRaidVisits(this);
         if (this.extensionRuntime) this.collectExtensionComponents();
@@ -3608,25 +3632,205 @@ export class Game {
         const state = recordingState(this);
         const header = state.header ?? (state.header = this.makeRecordingHeader());
         event.checkpoint = this.recordingEventDigest(header.extensions);
-        let projected: GameSnapshot | undefined, projectedInput: RecordingInputStateV2 | undefined;
+        if ((event.index + 1) % 256 === 0 && state.backend) {
+            this.enqueueRecordingCheckpoint(event, (event.index + 1) % 2048 === 0);
+        } else {
+            let projected: GameSnapshot | undefined, projectedInput: RecordingInputStateV2 | undefined;
+            if ((event.index + 1) % 256 === 0) {
+                try { projected = this.projectWholeRun(); projectedInput = this.recordingInputState(); }
+                catch (error) { this.failRecordingCheckpoint(event, error, 'projection'); throw error; }
+                try { event.fullCheckpoint = mechanicalDigest(projected, projectedInput); }
+                catch (error) { this.failRecordingCheckpoint(event, error, 'full'); throw error; }
+                if (event.checkpoint && EVENT_DOMAINS.some(d => event.checkpoint!.domains[d] !== event.fullCheckpoint!.domains[d])) {
+                    this.failRecordingCheckpoint(event, 'event/full divergence', EVENT_DOMAINS.find(d => event.checkpoint!.domains[d] !== event.fullCheckpoint!.domains[d])!);
+                    throw new Error('Recording domain divergence');
+                }
+                state.verifiedRecordBoundary = event.index + 1;
+            }
+            this.publishRecordingChains();
+            if (projected && (event.index + 1) % 2048 === 0) {
+                const world = cloneDigestProjection(projected) as GameSnapshot; world.savedAt = 0;
+                try { this.publishRecordingSnapshot(event, world, projectedInput!, worldSnapshotHash(world)); }
+                catch (error) { this.failRecordingCheckpoint(event, error, 'snapshot'); throw error; }
+            }
+        }
         if ((event.index + 1) % 256 === 0) {
-            projected=this.projectWholeRun();projectedInput=this.recordingInputState();
-            event.fullCheckpoint = mechanicalDigest(projected, projectedInput);
-            if (event.checkpoint && EVENT_DOMAINS.some(d => event.checkpoint!.domains[d] !== event.fullCheckpoint!.domains[d])) throw new Error('Recording domain divergence');
+            state.metrics.boundaryMainMs.push(performance.now() - checkpointStart); this.boundRecordingMetrics();
         }
-        event.chainDigest = recordingChain(this.recordedInputEvents[event.index - 1]?.chainDigest ?? recordingStart(header), event);
-        if ((event.index + 1) % 2048 === 0 && !recordingState(this).execution && !this.isAdvancing) {
-            const world = cloneDigestProjection(projected!) as GameSnapshot; world.savedAt = 0;
-            const snapshot: ReplaySnapshotV4 = { afterCommand: event.index + 1, tick: event.tick, simulationTicks: event.simulationTicks,
-                levelRef: structuredClone(event.levelRef), prefixDigest: event.chainDigest, checkpoint: event.fullCheckpoint!,
-                snapshotCodec: 'brogue-web-whole-run-v6', snapshotDigest: worldSnapshotHash(world), world, inputState: projectedInput! };
-            const state = recordingState(this); state.snapshots = boundedSnapshots([...state.snapshots, snapshot]);
-            state.trustedSnapshots.add(snapshot.snapshotDigest);
+    }
+
+    private resetRecordingBackend(): void {
+        const state = recordingState(this);
+        state.lifetime.abort(); state.lifetime = new AbortController();
+        state.generation++; state.backend?.dispose(); state.checkpoints.clear();
+        state.backend = state.backendFactory ? state.backendFactory() : defaultRecordingBackend();
+        state.chainFrontier = this.recordedInputEvents.length;
+        state.verifiedRecordBoundary = Math.floor(this.recordedInputEvents.length / 256) * 256; state.failure = null; state.fences = 0;
+        state.readers = Promise.resolve();
+    }
+    /** Internal scheduling adapter; not an extension SDK capability or persistent state. */
+    public configureRecordingBackend(factory: () => RecordingBackend | null): void {
+        this.assertRecordingSettled();
+        recordingState(this).backendFactory = factory; this.resetRecordingBackend();
+    }
+    public disposeRecording(): void {
+        const state = recordingState(this);
+        state.lifetime.abort();
+        state.generation++; state.backend?.dispose(); state.backend = null;
+        state.checkpoints.clear(); state.fences = 0;
+    }
+    public get recordingAbortSignal(): AbortSignal { return recordingState(this).lifetime.signal; }
+    public get recordingGeneration(): number { return recordingState(this).generation; }
+    public get recordingMetrics() { return structuredClone(recordingState(this).metrics); }
+    public get recordingFailure() { return recordingState(this).failure; }
+    public get recordingInputBlocked(): boolean {
+        const state = recordingState(this);
+        return !!state.failure || state.fences > 0 || state.checkpoints.size >= 2;
+    }
+    private assertRecordingSettled(): void {
+        const state = recordingState(this);
+        if (state.failure) throw new Error('Recording integrity failure: ' + JSON.stringify(state.failure));
+        if (state.checkpoints.size) throw new Error('Recording checkpoint pending; use async persistence');
+    }
+    private failRecordingCheckpoint(event: RecordedInputEvent, error: unknown, domain = 'identity'): void {
+        const state = recordingState(this);
+        state.failure ??= { error: String(error), domain, fromCommand: state.verifiedRecordBoundary + 1, toCommand: event.index + 1 };
+        state.lifetime.abort();
+        state.backend?.dispose(); state.checkpoints.clear();
+    }
+    private publishRecordingChains(): void {
+        const state = recordingState(this);
+        if (state.failure) return;
+        while (state.chainFrontier < this.recordedInputEvents.length) {
+            const event = this.recordedInputEvents[state.chainFrontier]!;
+            if (state.checkpoints.has(event.index + 1)) break;
+            event.chainDigest = recordingChain(this.recordedInputEvents[event.index - 1]?.chainDigest ?? recordingStart(state.header!), event);
+            state.chainFrontier++;
         }
+    }
+    private publishRecordingSnapshot(event: RecordedInputEvent, world: GameSnapshot, inputState: RecordingInputStateV2, snapshotDigest: string): void {
+        const snapshot: ReplaySnapshotV4 = { afterCommand: event.index + 1, tick: event.tick, simulationTicks: event.simulationTicks,
+            levelRef: structuredClone(event.levelRef), prefixDigest: event.chainDigest, checkpoint: event.fullCheckpoint!,
+            snapshotCodec: 'brogue-web-whole-run-v6', snapshotDigest, world, inputState };
+        const state = recordingState(this); state.snapshots = boundedSnapshots([...state.snapshots, snapshot]);
+        // The replay consumer independently verifies snapshot hash and prefix before trusting it.
+    }
+    private enqueueRecordingCheckpoint(event: RecordedInputEvent, snapshot: boolean): Promise<void> {
+        const state = recordingState(this), generation = state.generation;
+        try {
+        const start = performance.now(), world = this.projectWholeRun(), inputState = this.recordingInputState();
+        const projected = performance.now();
+        const bytes = new TextEncoder().encode(JSON.stringify(world));
+        const encoded = performance.now();
+        const job: CheckpointJob = { generation, boundaryCommand: event.index + 1,
+            previousVerifiedBoundary: state.verifiedRecordBoundary, codecIdentity: JSON.stringify(state.header!.codec),
+            manifestFingerprint: manifestFingerprint(state.header!.extensions), snapshot, bytes, inputState, checkpoint: structuredClone(event.checkpoint) };
+        const pending: PendingRecordingCheckpoint = { job, event, settled: Promise.resolve() };
+        state.checkpoints.set(job.boundaryCommand, pending);
+        state.metrics.peakJobs = Math.max(state.metrics.peakJobs, state.checkpoints.size);
+        // Retained UTF-8 + transferred copy, and one decoded world per job; JSON byte
+        // count is the exact wire size, object heap is measured separately by the perf harness.
+        state.metrics.peakBytes = Math.max(state.metrics.peakBytes, [...state.checkpoints.values()].reduce((n, p) => n + p.job.bytes.byteLength * 2, 0));
+        if (state.checkpoints.size === 2) state.metrics.saturated++;
+        pending.settled = state.backend!.enqueue(job).then(result => {
+            if (state.generation !== generation || state.failure || !state.checkpoints.has(job.boundaryCommand)) return;
+            const begin = performance.now();
+            if (JSON.stringify(checkpointIdentity(result)) !== JSON.stringify(checkpointIdentity(job))) throw new Error('Checkpoint identity mismatch');
+            if (!result.full || DIGEST_DOMAINS.some(d => !/^[0-9a-f]{64}$/.test(result.full.domains?.[d] ?? ''))
+                || digestRoot(result.full.domains, state.header!.extensions, DIGEST_DOMAINS) !== result.full.root
+                || (snapshot ? !/^[0-9a-f]{64}$/.test(result.snapshotDigest ?? '') : result.snapshotDigest !== null)) throw new Error('Checkpoint digest mismatch');
+            const domain = EVENT_DOMAINS.find(d => event.checkpoint && event.checkpoint.domains[d] !== result.full.domains[d]);
+            if (domain) { this.failRecordingCheckpoint(event, 'event/full divergence', domain); return; }
+            pending.result = result;
+            state.metrics.computeMs.push(result.computeMs);
+            for (const [boundary, ready] of state.checkpoints) {
+                if (!ready.result) break;
+                ready.event.fullCheckpoint = ready.result.full;
+                state.chainFrontier = Math.min(state.chainFrontier, ready.event.index);
+                state.checkpoints.delete(boundary);
+                if (boundary % 256 === 0) state.verifiedRecordBoundary = boundary;
+                this.publishRecordingChains();
+                if (ready.job.snapshot) {
+                    const frozen = JSON.parse(new TextDecoder().decode(ready.job.bytes)) as GameSnapshot; frozen.savedAt = 0;
+                    this.publishRecordingSnapshot(ready.event, frozen, ready.job.inputState, ready.result.snapshotDigest!);
+                }
+            }
+            state.metrics.publishMs.push(performance.now() - begin);
+            this.boundRecordingMetrics();
+        }).catch(error => {
+            if (state.generation === generation && !state.failure) this.failRecordingCheckpoint(event, error);
+        });
+        state.metrics.projectionMs.push(projected - start); state.metrics.encodingMs.push(encoded - projected);
+        state.metrics.dispatchMs.push(performance.now() - encoded);
+        this.boundRecordingMetrics();
+        return pending.settled;
+        } catch (error) { this.failRecordingCheckpoint(event, error, 'projection'); throw error; }
+    }
+    /** Calling establishes an input fence immediately. Existing commands finish via
+     * the normal frame loop; this method never advances time or answers a prompt. */
+    private async atRecordingBoundary<T>(read: () => T | Promise<T>): Promise<T> {
+        const state = recordingState(this), generation = state.generation;
+        state.fences++;
+        const run = async () => {
+            const start = performance.now();
+            const current = () => { if (state.generation !== generation) throw new Error('Recording generation replaced'); };
+            const deadline = Date.now() + 30_000;
+            while (this.isAdvancing || state.execution || state.pendingCommand) {
+                current(); if (Date.now() >= deadline) throw new Error('Recording command still pending');
+                await new Promise<void>(resolve => setTimeout(resolve, 10));
+            }
+            current();
+            while (state.checkpoints.size) { await Promise.all([...state.checkpoints.values()].map(p => p.settled)); current(); }
+            this.assertRecordingSettled();
+            const value = await read(); current(); this.assertRecordingSettled();
+            state.metrics.flushMs.push(performance.now() - start); this.boundRecordingMetrics();
+            return value;
+        };
+        const result = state.readers.then(run, run);
+        state.readers = result.catch(() => undefined);
+        try { return await result; }
+        finally { if (state.generation === generation) state.fences--; }
+    }
+    private boundRecordingMetrics(): void {
+        const metrics = recordingState(this).metrics;
+        for (const values of [metrics.boundaryMainMs, metrics.projectionMs, metrics.encodingMs, metrics.dispatchMs, metrics.publishMs, metrics.computeMs, metrics.flushMs])
+            if (values.length > 128) values.splice(0, values.length - 128);
+    }
+    public flushRecording(): Promise<void> { return this.atRecordingBoundary(() => undefined); }
+    private async finishRecordingPrefixAsync(): Promise<void> {
+        const state = recordingState(this), last = this.recordedInputEvents[this.recordedInputEvents.length - 1];
+        if (state.backend && last && !last.fullCheckpoint) await this.enqueueRecordingCheckpoint(last, false);
+        this.assertRecordingSettled();
+    }
+    public exportRecordingAsync(options: { includeSnapshots?: boolean } = {}): Promise<GameRecording> {
+        return this.atRecordingBoundary(async () => { await this.finishRecordingPrefixAsync(); return this.exportRecording(options); });
+    }
+    public toSaveSnapshotAsync(): Promise<GameSnapshot> {
+        return this.atRecordingBoundary(async () => { await this.finishRecordingPrefixAsync(); return this.toSaveSnapshot(); });
+    }
+    public async replaySeekAsync(targetIndex: number): Promise<void> {
+        const generation = this.recordingGeneration;
+        await this.flushRecording();
+        if (generation !== this.recordingGeneration) throw new Error('Recording generation replaced');
+        this.replaySeek(targetIndex);
+    }
+    public async loadReplayAsync(recording: unknown, onError?: (message: string) => void): Promise<boolean> {
+        if (!this.isValidRecording(recording)) return this.loadReplay(recording, onError);
+        const generation = this.recordingGeneration;
+        await this.flushRecording();
+        if (generation !== this.recordingGeneration) throw new Error('Recording generation replaced');
+        return this.loadReplay(recording, onError);
+    }
+    public async loadSnapshotAsync(snapshot: GameSnapshot, onError?: (message: string) => void): Promise<boolean> {
+        const generation = this.recordingGeneration;
+        await this.flushRecording();
+        if (generation !== this.recordingGeneration) throw new Error('Recording generation replaced');
+        return this.loadSnapshot(snapshot, onError);
     }
 
     /** Every user command, including inventory and modal choices, crosses this boundary. */
     public executeCommand(action: string, data?: unknown, perform?: () => void): void {
+        if (this.recordingInputBlocked) return;
         assertSingleCellPlayer(this.player);
         // Raw extension envelopes must be data before any owner routing or
         // runtime allowInput hook can observe them. Strings are parsed by their
@@ -4172,11 +4376,13 @@ export class Game {
     private finishRecordingPrefix(events: RecordedInputEvent[], header: RecordingHeaderV4): void {
         const last = events[events.length - 1];
         if (last && !last.fullCheckpoint) {
-            last.fullCheckpoint = mechanicalDigest(this.projectWholeRun(), this.recordingInputState());
+            try { last.fullCheckpoint = mechanicalDigest(this.projectWholeRun(), this.recordingInputState()); }
+            catch (error) { this.failRecordingCheckpoint(last, error, 'full'); throw error; }
             last.chainDigest = recordingChain(events[last.index - 1]?.chainDigest ?? recordingStart(header), last);
         }
     }
     public exportRecording(options: { includeSnapshots?: boolean } = {}): GameRecording {
+        this.assertRecordingSettled();
         assertNoActorActionFixture(this);
         if (!this.hasCompleteRecording || !recordingState(this).origin) throw new Error('Recording requires a fresh new game or a complete saved prefix');
         if (recordingState(this).execution) throw new Error('Cannot export during a command');
@@ -4187,6 +4393,7 @@ export class Game {
     }
 
     public clearRecording() {
+        this.disposeRecording();
         recordingState(this).pendingCommand = null;
         recordingState(this).origin = null; recordingState(this).header = null;
         recordingState(this).snapshots = []; recordingState(this).trustedSnapshots = new Set();
@@ -4230,7 +4437,7 @@ export class Game {
         let candidate:Game|undefined;
         try { setMachineObservationHook(null); candidate=new Game({seed:1});copyWorldFixtureRegistry(this,candidate);candidate.animationEnabled=false;return run(candidate); }
         finally {
-            try { candidate?.extensionRuntime?.unload(); }
+            try { candidate?.disposeRecording(); candidate?.extensionRuntime?.unload(); }
             finally {
                 restoreLog();restoreServices();
                 for(const key of Reflect.ownKeys(ItemLoader))if(!Object.prototype.hasOwnProperty.call(loader,key))Reflect.deleteProperty(ItemLoader,key);
@@ -4260,6 +4467,7 @@ export class Game {
             const message = i18next.t('replay.format_invalid', { defaultValue: 'Unsupported or damaged replay format.' });
             logger.log(message, '#ff6666', { presentationOnly: true }); onExtensionError?.(message); return false;
         }
+        this.assertRecordingSettled();
         const normalized={...structuredClone(recordingHeader(recording)),events:structuredClone(recording.events),snapshots:structuredClone(boundedSnapshots(recording.snapshots))};
         this.startReplayUnchecked(normalized);
         this.needsRender = true; this.update(); return true;
@@ -4291,6 +4499,7 @@ export class Game {
     }
 
     public replayStep(silent: boolean = false) {
+        if (this.recordingInputBlocked) return;
         if (!this.replayRecording || this.replayError) return;
         // P2-2 输入锁：动画推进期间回放步同样不得插入（否则会在怪物行动的
         // 半途落地玩家动作，破坏逐次演出的因果顺序）
@@ -4358,12 +4567,13 @@ export class Game {
         // advancement locks control this clock, not the live-input pause state.
         this.replayFrameAccumulator = stepCadence(
             this.replayFrameAccumulator, elapsedMs, this.replayFramesPerStep * DISPLAY_FRAME_MS,
-            () => this.replayStatus === 'playing' && !this.isAdvancing && !this.isInputLocked(),
+            () => this.replayStatus === 'playing' && !this.recordingInputBlocked && !this.isAdvancing && !this.isInputLocked(),
             () => this.replayStep(),
         );
     }
 
     public replaySeek(targetIndex: number): void {
+        this.assertRecordingSettled();
         const recording = this.replayRecording; if (!recording || !this.isValidRecording(recording)) return;
         const target = Math.max(0, Math.min(Math.floor(targetIndex), recording.events.length));
         const animation = this.animationEnabled, omniscient = this.replayOmniscientDetails, trusted = recordingState(this).trustedSnapshots, warnings = recordingState(this).replayWarnings;
@@ -11659,6 +11869,7 @@ export class Game {
      * the world-only projection used by diagnostics and deterministic traces.
      * Missing provenance is never synthesized when an older save is loaded. */
     public toSaveSnapshot(): GameSnapshot {
+        this.assertRecordingSettled();
         if (this.extensionRuntime && !this.extensionRuntime.readyToSave) throw new Error(i18next.t('ext.command.creation_required', { defaultValue: 'Complete module initialization before saving.' }));
         if (this.isAdvancing || recordingState(this).pendingCommand) throw new Error('Cannot save during turn advancement');
         if (recordingState(this).execution) throw new Error('Cannot save during a command');
@@ -11743,6 +11954,7 @@ export class Game {
         if ('recordingOrigin' in snapshot.run) {
             try { if (!this.hasContinuousSnapshotRecording(snapshot)) return refuse(); } catch { return refuse(); }
         }
+        this.assertRecordingSettled();
         // Decode the entire world before retiring the live one.
         let decoded: ReturnType<typeof decodeWholeRunWorld>;
         try {
@@ -11844,6 +12056,7 @@ export class Game {
             }
         } catch { return false; }
         const levelRows = [snapshot, ...snapshot.levels];
+        this.disposeRecording();
 
         if (this.squareMotion) { this.squareMotion.spatial.dispose(); delete this.squareMotion; }
         this.clearSquareLandingRetry();
@@ -11928,6 +12141,7 @@ export class Game {
         this.recordingFromNewGame = this.hasContinuousSnapshotRecording(snapshot);
         recordingState(this).origin = this.recordingFromNewGame ? structuredClone(run.recordingOrigin!) : null;
         recordingState(this).header = recordingState(this).origin?.header ?? null;
+        this.resetRecordingBackend();
         this.clearReplay();
         this.signTexts = new Map(run.signTexts); this.resetPlateRoomByPos = new Map(run.resetPlateRoomByPos);
         this.testRooms = new Map(run.testRooms); this.currentTestCategory = run.currentTestCategory;

@@ -45,10 +45,14 @@ export async function writeRecording(
     stores.eventChunks.put(recording.events.slice(start, start + 256), rowKey(slot, start / 256));
   for (const snapshot of snapshots) stores.snapshots.put(snapshot, rowKey(slot, snapshot.afterCommand));
 }
-export async function saveRecording(recording: RecordingV4): Promise<{ discardedSnapshots: boolean }> {
+export async function saveRecording(recording: RecordingV4, isCurrent: () => boolean = () => true, signal?: AbortSignal): Promise<{ discardedSnapshots: boolean }> {
   // Detach before await, including Vue proxies. The simulation may advance while opening IDB.
   const detached = JSON.parse(JSON.stringify(recording)) as RecordingV4;
-  const write = () => saveDatabaseTransaction(RECORDING_STORES, 'readwrite', (stores) => writeRecording(stores, detached));
+  const write = () => saveDatabaseTransaction(RECORDING_STORES, 'readwrite', async (stores) => {
+    if (!isCurrent()) throw new Error('Recording generation replaced');
+    await writeRecording(stores, detached);
+    if (!isCurrent()) throw new Error('Recording generation replaced');
+  }, signal);
   try { await write(); return { discardedSnapshots: false }; }
   catch (error) {
     if ((error as { name?: string })?.name !== 'QuotaExceededError' || !detached.snapshots.length) throw error;

@@ -83,6 +83,11 @@ const themeLogLines = computed(() => displaySettings.immersiveMode
 watch(() => displaySettings.immersiveMode, () => { themePanelOpen.value = false; panelOpen.value = false; });
 const replayTick = ref(0);
 const replayActive = computed(() => { replayTick.value; return !!activeGame.replayRecording; });
+const recordingNotice = computed(() => {
+  replayTick.value;
+  return activeGame.recordingInputBlocked ? (activeGame.recordingFailure
+    ? i18next.t('replay.checkpoint_failed') : i18next.t('replay.checkpoint_waiting')) : '';
+});
 let replayTimer = 0;
 let removeImmersiveShortcut: (() => void) | undefined;
 // 结算页只显示结算后的保存/导出反馈；开局时的菜单反馈不应带进结算页。
@@ -93,10 +98,13 @@ onMounted(() => {
   }));
   replayTimer = window.setInterval(() => {
   replayTick.value++;
+  if (activeGame.recordingInputBlocked && !saveBusy.value && !replayBusy.value)
+    replayFeedback.value = (activeGame.recordingFailure ? i18next.t('replay.checkpoint_failed') : i18next.t('replay.checkpoint_waiting'));
+  else if (replayFeedback.value === i18next.t('replay.checkpoint_waiting')) replayFeedback.value = '';
   if (activeGame.isGameOver && !endFeedbackCleared) { endFeedbackCleared = true; replayFeedback.value = ''; }
   else if (!activeGame.isGameOver) endFeedbackCleared = false;
 }, 100); });
-onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTimer); clearCreationTransition(); runEpoch.value++; });
+onUnmounted(() => { removeImmersiveShortcut?.(); window.clearInterval(replayTimer); clearCreationTransition(); runEpoch.value++; activeGame.disposeRecording(); });
 /** 触控命令栏 + 方向键：紧凑模式或粗指针设备显示；回放期间让位给录像控制条。 */
 const showTouch = computed(() => (shouldShowTouchControls(viewport.coarsePointer, viewport.mode)
   || (displaySettings.immersiveMode && compact.value)) && !replayActive.value);
@@ -208,25 +216,32 @@ const saveGame = async () => {
     replayMessage(i18next.t('menu.command.waiting', { defaultValue: 'Please answer the current confirmation before saving or exporting.' }));
     return;
   }
+  const epoch = runEpoch.value;
   try {
     saveBusy.value = true;
-    const epoch = runEpoch.value;
     saveInfo.value = await readSaveSummary();
     if (!await approveSaveOverwrite(saveInfo.value, dialogs) || epoch !== runEpoch.value || !gameStarted.value) return;
-    saveInfo.value = await saveSnapshot(activeGame.toSaveSnapshot());
+    const signal = activeGame.recordingAbortSignal;
+    const snapshot = await activeGame.toSaveSnapshotAsync();
+    if (epoch !== runEpoch.value || !gameStarted.value) return;
+    const saved = await saveSnapshot(snapshot, () => epoch === runEpoch.value, signal);
+    if (epoch !== runEpoch.value) return;
+    saveInfo.value = saved;
     storageTick.value++;
     replayMessage(i18next.t('menu.log.game_saved', { defaultValue: 'Game saved.' }));
   } catch {
+    if (epoch !== runEpoch.value) return;
     replayMessage(i18next.t('menu.log.save_failed', { defaultValue: 'Save failed.' }));
   } finally { saveBusy.value = false; }
 };
 
 const continueGame = async () => {
+  const epoch = runEpoch.value;
   try {
     const snapshot = await readSnapshot();
-    if (!snapshot) return;
+    if (!snapshot || epoch !== runEpoch.value) return;
     let diagnostic: string | undefined;
-    if (!activeGame.loadSnapshot(snapshot, message => { diagnostic = message; })) {
+    if (!await activeGame.loadSnapshotAsync(snapshot, message => { diagnostic = message; })) {
       replayMessage(diagnostic ?? i18next.t('menu.log.save_format_not_supported', { defaultValue: 'Save format not supported.' }));
       return;
     }
@@ -239,6 +254,7 @@ const continueGame = async () => {
     gameStarted.value = true;
     menuOpen.value = false;
   } catch {
+    if (epoch !== runEpoch.value) return;
     replayMessage(i18next.t('menu.log.failed_load_save', { defaultValue: 'Failed to load save.' }));
   }
 };
@@ -274,12 +290,17 @@ const currentReplayJson = async (): Promise<string> => {
 const saveReplay = async () => {
   if (!canSaveReplay.value || replayBusy.value) return;
   replayBusy.value = true;
+  const epoch = runEpoch.value;
   try {
+    const signal = activeGame.recordingAbortSignal;
     const raw = await currentReplayJson();
-    const stored = await saveRecording(JSON.parse(raw));
+    if (epoch !== runEpoch.value) return;
+    const stored = await saveRecording(JSON.parse(raw), () => epoch === runEpoch.value, signal);
+    if (epoch !== runEpoch.value) return;
     storageTick.value++;
     replayMessage(i18next.t(stored.discardedSnapshots ? 'replay.saved_without_snapshots' : 'menu.log.replay_saved'));
   } catch (error) {
+    if (epoch !== runEpoch.value) return;
     if (error instanceof RecordingExportError) {
       replayMessage(i18next.t('menu.replay.not_ready', { defaultValue: 'The recording is not ready. Please try again after the turn finishes.' }));
     } else {
@@ -293,12 +314,13 @@ const saveReplay = async () => {
 };
 
 const loadReplay = async () => {
+  const epoch = runEpoch.value;
   cancelHeldInputs();
   try {
     const recording = await readRecording();
-    if (!recording) return;
+    if (!recording || epoch !== runEpoch.value) return;
     let diagnostic: string | undefined;
-    if (!activeGame.loadReplay(recording, message => { diagnostic = message; })) {
+    if (!await activeGame.loadReplayAsync(recording, message => { diagnostic = message; })) {
       replayMessage(diagnostic ?? i18next.t('menu.log.replay_load_failed', { defaultValue: 'Replay load failed.' }));
       return;
     }
@@ -310,6 +332,7 @@ const loadReplay = async () => {
     runAvailable.value = true;
     replayFeedback.value = '';
   } catch {
+    if (epoch !== runEpoch.value) return;
     replayMessage(i18next.t('menu.log.replay_load_failed', { defaultValue: 'Replay load failed.' }));
   }
 };
@@ -341,8 +364,10 @@ const replayRestart = () => {
   runEpoch.value++; activeGame.replayRestart(); moduleUi.refresh();
 };
 
-const replaySeek = (index: number) => {
-  runEpoch.value++; activeGame.replaySeek(index); moduleUi.refresh();
+const replaySeek = async (index: number) => {
+  const epoch = ++runEpoch.value;
+  try { await activeGame.replaySeekAsync(index); if (epoch === runEpoch.value) moduleUi.refresh(); }
+  catch { if (epoch === runEpoch.value) replayMessage(i18next.t('replay.seek_failed')); }
 };
 
 const downloadReplayJson = (raw: string) => {
@@ -365,10 +390,12 @@ const hideLegacyReplayNotice = () => {
 };
 
 const exportReplayJson = async () => {
+  const epoch = runEpoch.value;
   try {
     const recording = await readRecording();
-    if (recording) downloadReplayJson(JSON.stringify(recording));
+    if (recording && epoch === runEpoch.value) downloadReplayJson(JSON.stringify(recording));
   } catch {
+    if (epoch !== runEpoch.value) return;
     replayMessage(i18next.t('menu.log.replay_export_failed', { defaultValue: 'Replay JSON export failed.' }));
   }
 };
@@ -382,12 +409,14 @@ const exportCurrentReplayJson = async () => {
 };
 
 const importReplayJson = async (file: File) => {
+  const epoch = runEpoch.value;
   cancelHeldInputs();
   try {
     const text = await file.text();
+    if (epoch !== runEpoch.value) return;
     const recording = JSON.parse(text);
     let diagnostic: string | undefined;
-    if (!activeGame.loadReplay(recording, message => { diagnostic = message; })) {
+    if (!await activeGame.loadReplayAsync(recording, message => { diagnostic = message; })) {
       replayMessage(diagnostic ?? i18next.t('menu.log.replay_import_failed', { defaultValue: 'Replay JSON import failed.' }));
       return;
     }
@@ -400,6 +429,7 @@ const importReplayJson = async (file: File) => {
     const imported = i18next.t('menu.log.replay_imported', { defaultValue: 'Replay JSON imported.' });
     replayFeedback.value = imported + ' ' + replayFeedback.value;
   } catch {
+    if (epoch !== runEpoch.value) return;
     replayMessage(i18next.t('menu.log.replay_import_failed', { defaultValue: 'Replay JSON import failed.' }));
   }
 };
@@ -455,6 +485,7 @@ const handleReturnToTitle = async () => {
       <GameEndOverlay :can-save-replay="canSaveReplay" :replay-busy="replayBusy" :replay-feedback="replayFeedback"
         @save-replay="saveReplay" @export-replay-json="exportCurrentReplayJson" @return-to-title="handleReturnToTitle" />
       <ReplayControls />
+      <div v-if="recordingNotice && !menuOpen" class="recording-notice">{{ recordingNotice }}</div>
       <AgentControls class="agent-root" :hide-controls="compact || touchUi" />
       <DetailPanel :display-detail="nearbyInspection" @close="nearbyInspection = null" />
       <ReferenceOverlay />
@@ -500,6 +531,7 @@ const handleReturnToTitle = async () => {
 </template>
 
 <style scoped>
+.recording-notice { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); z-index: 70; padding: .5rem .75rem; color: var(--text-main, #e3dac4); background: var(--bg-panel, #1b1813); border: 1px solid var(--border-color, #70634c); pointer-events: none; }
 .module-bars{grid-area:skills;min-width:0;z-index:31}
 /* Whole-selector :global preserves grid scope after Vue's SFC compilation. */
 :global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop.has-module-bars:not(.immersive-mode)){grid-template-rows:auto auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals log' 'vitals map' 'near map' 'near skills' 'near cmd'!important}
