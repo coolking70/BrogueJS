@@ -1,6 +1,6 @@
 # 阶段5最新安排（2026-10-09）
 
-阶段5已推送：底座`35045d9`、giants2集成`2709250`、5Y`a4932d1`；5Y两轮审修完成，R1-F1经R2独立关闭，真实生产Worker功能及长期重复回包窄验通过，性能环境与边界见[报告](ext/phase5y.report.md)。[5Z任务书](ext/phase5z.task.md)已准备，唯一待决Z1为CE门禁口径（推荐沿当前README的A），确认前不派执行。七项既有门禁失败及未验覆盖见[5Z清单](ext/phase5z-remainders.md)。5C2/5D3明确阶段5之后，5D3随narrative扩充；以[状态卡](ext/commander-status.md)为准，覆盖下方历史排期。
+阶段5已推送：底座`35045d9`、giants2集成`2709250`、5Y`a4932d1`；5Y两轮审修完成，R1-F1经R2独立关闭，真实生产Worker功能及长期重复回包窄验通过，性能环境与边界见[报告](ext/phase5y.report.md)。[5Z任务书](ext/phase5z.task.md)已获Z1-A批准并开工；七项既有失败必须本步关闭，无法关闭逐项交用户裁定；浏览器/真机由Claude或用户手动验收，本地交付场景清单。七项既有门禁失败及未验覆盖见[5Z清单](ext/phase5z-remainders.md)。5C2/5D3明确阶段5之后，5D3随narrative扩充；以[状态卡](ext/commander-status.md)为准，覆盖下方历史排期。
 
 # 5E1维护者收口（2026-10-09，已发布 `a9f554b`）
 

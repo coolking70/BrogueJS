@@ -2,7 +2,7 @@
 
 ## 最新维护者入口（2026-10-09）
 
-底座`35045d9`、giants2集成`2709250`、5Y`a4932d1`已推送ext/phase5。5Y两轮审修结束，F1关闭，真实Worker功能补验通过；[5Z任务书](phase5z.task.md)已准备，唯一待决Z1为CE门禁口径，推荐A，确认前不派执行。5C2/5D3阶段5之后，5D3随narrative扩充；不处理dot源分支。当前见[五行状态](commander-status.md)与[遗留](phase5z-remainders.md)。
+底座`35045d9`、giants2集成`2709250`、5Y`a4932d1`已推送ext/phase5。5Y两轮审修结束，F1关闭，真实Worker功能补验通过；[5Z任务书](phase5z.task.md)已获Z1-A批准开工；七项既有失败必须本步关闭，无法关闭逐项交用户裁定；浏览器/真机由Claude或用户手动验收，本地交付场景清单。5C2/5D3阶段5之后，5D3随narrative扩充；不处理dot源分支。当前见[五行状态](commander-status.md)与[遗留](phase5z-remainders.md)。
 
 ## 当前工作规则
 
