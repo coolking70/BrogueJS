@@ -1,3 +1,7 @@
+# 阶段5最新安排（2026-10-09）
+
+5E1已发布`a9f554b`；下一步[5Y摘要卡顿优化任务书](ext/phase5y.task.md)待用户确认后派执行，当前仅完成文档/只读准备。5C2、5D3明确移到阶段5之后，不纳入5Z前范围；5D3随narrative扩充考虑。giants2由Claude侧验收并通知合入/底座修复结论，此前不操作其分支；上述完成后再准备5Z任务书。见[状态卡](ext/commander-status.md)、[范围登记](ext/phase5z-remainders.md)及设计§14；覆盖以下历史“待定”排期。
+
 # 5E1维护者收口（2026-10-09，已发布 `a9f554b`）
 
 两轮独立审查及最后一次作者修复已完成，维护者已核对实际改动与测试日志并按本步限定范围收口。R1-F1原合法变形/坠层存读、F2摘要发布、F3时序拒档均已修复；R2-F1伪造坠离在末次窄修后被拒，原独立2探针与真实生命周期/活局保持回归通过，最终boundary/types通过。没有第3轮审查，最后修复不冒称独立关闭。当前无剩余已确认未修复正确性缺陷；全量、组合/删除、浏览器/真机、最大负载和细分覆盖留5Z。 分支`ext/phase5`，开工HEAD`5c34f50`；foundation13/world5 schema4/settlement1.3.0 state2，九冻结SDK保持。见[报告](ext/phase5e1.report.md)、[状态卡](ext/commander-status.md)及[5Z](ext/phase5z-remainders.md)。5C2/5D3继续后置，5Z前范围待定；不自动开下一大步骤。
