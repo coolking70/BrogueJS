@@ -1,4 +1,4 @@
-import { checkpointGenerationWorld } from '../Core/GenerationCoordinator';
+import { checkpointGenerationWorld } from '../Core/WorldCheckpoint';
 import { footprintOf } from '../Movement/CreatureSpatial';
 /** Native formula nodes and the only production reader of raw ring bonuses. */
 import type { Creature } from '../../entities/Creature';

@@ -1,0 +1,1375 @@
+{
+  "schema": 1,
+  "seed": 1,
+  "mode": "wizard",
+  "modules": [
+    "giants"
+  ],
+  "species": "lantern",
+  "birth": {
+    "id": 70,
+    "depth": 2,
+    "placement": {
+      "instanceKey": "giants.lantern-chamber.depth-2",
+      "templateId": "giants.lantern-chamber",
+      "depth": 2,
+      "result": "placed",
+      "regionId": 69,
+      "reason": null
+    },
+    "encounter": {
+      "encounterKey": "giants.lantern-chamber.depth-2.encounter",
+      "primaryId": 70,
+      "spawnDefinitionId": "giants.blind-lantern",
+      "instanceKey": "giants.lantern-chamber.depth-2",
+      "regionId": 69,
+      "subjects": [
+        {
+          "groupId": 70,
+          "status": "alive"
+        }
+      ],
+      "status": "alive"
+    },
+    "birth": {
+      "creationReason": "natural",
+      "originalMonsterType": "giants.blind-lantern",
+      "initiallyHostile": true,
+      "sourceId": null,
+      "nativeStatsCopied": false
+    },
+    "spatial": {
+      "schema": 1,
+      "footprintId": "giants.blind-lantern",
+      "pose": "r0",
+      "movementRegionId": 69,
+      "zoneState": [
+        {
+          "zoneId": "mantle",
+          "hp": 18,
+          "broken": false,
+          "generation": 0
+        }
+      ]
+    }
+  },
+  "commands": [
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "decisions": []
+    }
+  ],
+  "checkpoints": [
+    {
+      "index": 0,
+      "label": "initial",
+      "worldHash": "0be02d40a9cd3728352fc5fff7619de02c4ca72fffa895ecc51c60301ea5ce53"
+    },
+    {
+      "index": 44,
+      "label": "arrival",
+      "worldHash": "2171a3f480df6ac101cfd8eff220635c532bbacc9648f60694c41dedd0999ee9"
+    },
+    {
+      "index": 123,
+      "label": "contact",
+      "worldHash": "1e29146d7a431fe9da04535c0a686aad98e9b64175aa60def64a099ac66d3501"
+    },
+    {
+      "index": 132,
+      "label": "before-break",
+      "worldHash": "6f9d96ac6c2325bfbc8ac824e0a88493aa8f468dc0afded2f6f2416c515fcd1a"
+    },
+    {
+      "index": 133,
+      "label": "break",
+      "worldHash": "880af667db470aa9e1c214b547bfa88c134155dea0b429f778836a29929f1d2b"
+    },
+    {
+      "index": 141,
+      "label": "before-phase",
+      "worldHash": "98a4455ed77b9e10ca112e9decf6981eabcd74d565638523a76b1eb39a0d683e"
+    },
+    {
+      "index": 142,
+      "label": "phase",
+      "worldHash": "0051f769e06334559f72ff2075976af1591dd1d376d35f1459eb515e99891ef1"
+    },
+    {
+      "index": 154,
+      "label": "before-defeat",
+      "worldHash": "14182c986eb7de380655a9433149563731cb0431953665be14a02b65a4535888"
+    },
+    {
+      "index": 155,
+      "label": "defeat",
+      "worldHash": "33ac78f35c8c07be7a1902756795e935ec268d0a2fd48624cb41fdb343dc7262"
+    },
+    {
+      "index": 155,
+      "label": "final",
+      "worldHash": "33ac78f35c8c07be7a1902756795e935ec268d0a2fd48624cb41fdb343dc7262"
+    }
+  ],
+  "finalHash": "33ac78f35c8c07be7a1902756795e935ec268d0a2fd48624cb41fdb343dc7262",
+  "finalRng": {
+    "version": 2,
+    "algorithm": "brogue-web-ranval32-uint64-level-v2",
+    "streams": [
+      {
+        "a": 3188529035,
+        "b": 3872818009,
+        "c": 1497780624,
+        "d": 249708360
+      },
+      {
+        "a": 2126303303,
+        "b": 372700846,
+        "c": 1788118878,
+        "d": 831250097
+      }
+    ],
+    "currentRNG": 0,
+    "randomNumbersGenerated": 102351,
+    "cosmeticNumbersGenerated": 162
+  },
+  "events": 155,
+  "recordingBytes": 150360,
+  "lastTick": 15400
+}

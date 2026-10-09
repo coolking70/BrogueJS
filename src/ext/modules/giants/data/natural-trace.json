@@ -1,69 +1,77 @@
 {
   "schema": 1,
-  "seed": 7306,
+  "seed": 7328,
   "depth": 3,
-  "commands": 152,
-  "commandsHash": "9d69be4c68abbfe097b0c4b118fdf15fe9104df072a30ebd72e00c080c94fe70",
-  "nativeWorldHash": "4ba05dba1b37d982339a77cd1e345833212e0db6f7581a76b3e531538ca0f125",
-  "extensionsHash": "3ff56ef0296ea2a668508681eae6e8b9553d2d29179d08394f4927087c5bba60",
+  "commands": 135,
+  "commandsHash": "a66a522b254e2b26f059ec1c404ce5c4e039572824f3901bc9de7d4560737b62",
+  "nativeWorldHash": "c449dde2ee8a373e220ac72b6837e045ffdf86b76ced0eb3f49aac84f5fdf28a",
+  "extensionsHash": "53a07a6240731b2fd41c68e612ebe11405229dc26fcb32cdf58bfd71be8474a8",
   "rng": {
     "version": 2,
     "algorithm": "brogue-web-ranval32-uint64-level-v2",
     "streams": [
       {
-        "a": 1682859513,
-        "b": 3057119382,
-        "c": 3892612344,
-        "d": 3589685941
+        "a": 1528303169,
+        "b": 3067604934,
+        "c": 552353547,
+        "d": 383403918
       },
       {
-        "a": 3459876219,
-        "b": 1517813164,
-        "c": 3529874670,
-        "d": 4176910288
+        "a": 193234601,
+        "b": 1016148519,
+        "c": 3967908132,
+        "d": 1106716129
       }
     ],
     "currentRNG": 0,
-    "randomNumbersGenerated": 280199,
-    "cosmeticNumbersGenerated": 162
+    "randomNumbersGenerated": 106170,
+    "cosmeticNumbersGenerated": 163
   },
   "region": {
     "instanceKey": "giants.stone-chamber.depth-3",
     "bounds": {
-      "x": 18,
-      "y": 2,
+      "x": 17,
+      "y": 3,
       "width": 12,
       "height": 10
     },
     "guard": "return-to-spawn",
-    "id": 54,
+    "id": 60,
     "owner": "giants",
     "depth": 3,
     "revision": 0
   },
   "state": {
     "schema": 1,
-    "revision": 1,
+    "revision": 2,
     "placements": [
       {
         "instanceKey": "giants.stone-chamber.depth-3",
         "templateId": "giants.stone-chamber",
         "depth": 3,
         "result": "placed",
-        "regionId": 54,
+        "regionId": 60,
         "reason": null
+      },
+      {
+        "instanceKey": "giants.lantern-chamber.depth-3",
+        "templateId": "giants.lantern-chamber",
+        "depth": 3,
+        "result": "skipped",
+        "regionId": null,
+        "reason": "budget"
       }
     ],
     "bosses": [
       {
         "encounterKey": "giants.stone-chamber.depth-3.encounter",
-        "primaryId": 55,
+        "primaryId": 61,
         "spawnDefinitionId": "giants.ridgeback",
         "instanceKey": "giants.stone-chamber.depth-3",
-        "regionId": 54,
+        "regionId": 60,
         "subjects": [
           {
-            "groupId": 55,
+            "groupId": 61,
             "status": "alive"
           }
         ],
@@ -72,11 +80,11 @@
     ]
   },
   "boss": {
-    "id": 55,
+    "id": 61,
     "typeId": "giants.ridgeback",
     "loc": {
-      "x": 23,
-      "y": 6
+      "x": 22,
+      "y": 7
     },
     "hp": 120,
     "maxHp": 120,
@@ -84,7 +92,7 @@
       "schema": 1,
       "footprintId": "builtin:square-2",
       "pose": "r0",
-      "movementRegionId": 54
+      "movementRegionId": 60
     }
   }
 }

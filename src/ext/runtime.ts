@@ -8,7 +8,7 @@ import { FOUNDATION_STRUCTURE_RULES } from './structureSchema';
 import { StatPipeline } from '../engine/Stats/StatPipeline';
 import { NATIVE_STAT_KEYS, NATIVE_STAT_DAG } from '../engine/Stats/NativeStatKeys';
 import { MaterializedStats, validateMaterializedStats } from '../engine/Stats/MaterializedStats';
-import { checkpointGenerationWorld } from '../engine/Core/GenerationCoordinator';
+import { checkpointGenerationWorld } from '../engine/Core/WorldCheckpoint';
 import { checkpointNativeStatBindings, bindStats, markStatsDirty, nativeStatRevision, nativeStatSignature, nativeStatFacts, nativeBase, nativeEquippedItems, nativeRows, nativeNodeRows, unbindStats } from '../engine/Stats/NativeStatSources';
 import { StatValidationError, validateStatRows } from './stats';
 import type { PairFacts, StatQuery } from './stats';

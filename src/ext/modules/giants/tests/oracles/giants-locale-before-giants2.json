@@ -1,6 +1,6 @@
 {
   "ext.giants.module.name": "巨兽",
-  "ext.giants.module.description": "在可绕开的地下侧室中遭遇岩脊兽、沉渊巨像、棘脊爬兽、页岩织兽、盲灯蜷兽与铜须伏螯。",
+  "ext.giants.module.description": "在可绕开的地下侧室中遭遇岩脊兽、沉渊巨像、棘脊爬兽与页岩织兽。",
   "ext.giants.ridgeback.name": "岩脊兽",
   "ext.giants.ridgeback.description": "地下的厚甲兽，背脊隆起如碎岩。它缓慢转动沉重的身体，守着宽阔的石室；离开场地便能摆脱追击。",
   "ext.giants.ui.hp": "{{current}} / {{maximum}}",
@@ -25,15 +25,5 @@
   "ext.giants.transition.result": "{{count}}具{{name}}",
   "ext.giants.transition.separator": "、",
   "ext.giants.transition.no_effect": "{{name}}的转换未能成形。",
-  "ext.giants.ui.descendants": "可见后裔：{{count}}",
-  "ext.giants.blind-lantern.name": "盲灯蜷兽",
-  "ext.giants.blind-lantern.description": "蜷起的肉躯顶着一层干硬的灯褶，头端苍白如熄灭的灯芯。击破灯褶能拖慢它并暴露芯首；伤势过半时，它会舒展成长钩般的躯体，随后加快追击。它只在侧室内活动。",
-  "ext.giants.blind-lantern-open.name": "展躯盲灯兽",
-  "ext.giants.blind-lantern-open.description": "灯褶已经收尽，苍白的长躯弯出一个钩角。它转身需要整段空地，步伐比蜷伏时更快；此前的伤势不会因展躯而痊愈。",
-  "ext.giants.blind-lantern.mantle": "灯褶",
-  "ext.giants.blind-lantern.wick": "芯首",
-  "ext.giants.copper-tendril.name": "铜须伏螯",
-  "ext.giants.copper-tendril.description": "四条铜色节须撑起扁阔的躯干，须尖贴着地面寻找落脚处。每条节须都能独立受击和近身抽打；击断三条后，它便只能停在原地，用剩余部位迎击。它不会越过侧室边界。",
-  "ext.giants.copper-tendril-limb.name": "伏螯节须",
-  "ext.giants.copper-tendril-limb.description": "铜须伏螯的一条支撑节须。折断会伤及核心并拖慢整体移动，不会独立掉落物品；失去的节须不再长回。"
+  "ext.giants.ui.descendants": "可见后裔：{{count}}"
 }

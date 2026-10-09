@@ -160,10 +160,12 @@ describe('giants original 3x3 colossus', () => {
     for (const depth of [7, 8])
       expect(game.extensionRuntime!.generationContributions(depth).map((t) => t.id)).toEqual([
         'giants.abyssal-chamber',
-        'giants.stone-chamber'
+        'giants.stone-chamber',
+        'giants.copper-chamber'
       ]);
     expect(game.extensionRuntime!.generationContributions(6).map((t) => t.id)).toEqual([
-      'giants.stone-chamber'
+      'giants.stone-chamber',
+        'giants.copper-chamber'
     ]);
     expect(game.extensionRuntime!.generationContributions(9).map((t) => t.id)).toEqual([
       'giants.abyssal-chamber',

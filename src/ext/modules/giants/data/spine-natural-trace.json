@@ -3,34 +3,34 @@
   "seed": 7309,
   "mode": "wizard",
   "depth": 11,
-  "commands": 1174,
-  "commandsHash": "2937b269b0c94d16606dfff5bd65e846bd7d09c9389c97bc2f986af2f6852acb",
-  "nativeWorldHash": "e22be1ef55fedf188ff2b9fac73ab2103ff3b555abc3aaee09af9961b9a8854b",
-  "extensionsHash": "df685216b1732de411c8d4befabbff6d85f2e3190eef3dfa659c42f3f5d84bce",
+  "commands": 1129,
+  "commandsHash": "9bec693d38ff51dd917d1b78489aee2d35aca7cc42b6028b70580976d8a34fd7",
+  "nativeWorldHash": "def2e9f8d126b570ec22448acb58e207e55e9e7436be48bd6768526601a30da0",
+  "extensionsHash": "79fa031fb1e16951f5981055890d1b3ee654bd0ee95ae844e6f64f2459f5acdd",
   "rng": {
     "version": 2,
     "algorithm": "brogue-web-ranval32-uint64-level-v2",
     "streams": [
       {
-        "a": 4151359883,
-        "b": 269303261,
-        "c": 2656930214,
-        "d": 2689637803
+        "a": 3353936444,
+        "b": 2709179059,
+        "c": 1286853845,
+        "d": 2528348433
       },
       {
-        "a": 1327421572,
-        "b": 3353250964,
-        "c": 445618263,
-        "d": 4118652294
+        "a": 3233743101,
+        "b": 1049576734,
+        "c": 596737203,
+        "d": 2112441856
       }
     ],
     "currentRNG": 0,
-    "randomNumbersGenerated": 3192634,
-    "cosmeticNumbersGenerated": 218
+    "randomNumbersGenerated": 1809992,
+    "cosmeticNumbersGenerated": 554
   },
   "state": {
     "schema": 1,
-    "revision": 10,
+    "revision": 13,
     "placements": [
       {
         "instanceKey": "giants.stone-chamber.depth-3",
@@ -45,7 +45,7 @@
         "templateId": "giants.stone-chamber",
         "depth": 4,
         "result": "placed",
-        "regionId": 76,
+        "regionId": 63,
         "reason": null
       },
       {
@@ -53,15 +53,31 @@
         "templateId": "giants.stone-chamber",
         "depth": 5,
         "result": "placed",
-        "regionId": 95,
+        "regionId": 101,
         "reason": null
+      },
+      {
+        "instanceKey": "giants.copper-chamber.depth-5",
+        "templateId": "giants.copper-chamber",
+        "depth": 5,
+        "result": "skipped",
+        "regionId": null,
+        "reason": "budget"
+      },
+      {
+        "instanceKey": "giants.copper-chamber.depth-6",
+        "templateId": "giants.copper-chamber",
+        "depth": 6,
+        "result": "skipped",
+        "regionId": null,
+        "reason": "no-space"
       },
       {
         "instanceKey": "giants.abyssal-chamber.depth-7",
         "templateId": "giants.abyssal-chamber",
         "depth": 7,
         "result": "placed",
-        "regionId": 144,
+        "regionId": 161,
         "reason": null
       },
       {
@@ -73,11 +89,19 @@
         "reason": "budget"
       },
       {
+        "instanceKey": "giants.copper-chamber.depth-7",
+        "templateId": "giants.copper-chamber",
+        "depth": 7,
+        "result": "skipped",
+        "regionId": null,
+        "reason": "budget"
+      },
+      {
         "instanceKey": "giants.abyssal-chamber.depth-8",
         "templateId": "giants.abyssal-chamber",
         "depth": 8,
         "result": "placed",
-        "regionId": 165,
+        "regionId": 199,
         "reason": null
       },
       {
@@ -93,7 +117,7 @@
         "templateId": "giants.abyssal-chamber",
         "depth": 10,
         "result": "placed",
-        "regionId": 232,
+        "regionId": 303,
         "reason": null
       },
       {
@@ -109,20 +133,20 @@
         "templateId": "giants.spine-chamber",
         "depth": 11,
         "result": "placed",
-        "regionId": 276,
+        "regionId": 354,
         "reason": null
       }
     ],
     "bosses": [
       {
         "encounterKey": "giants.stone-chamber.depth-4.encounter",
-        "primaryId": 77,
+        "primaryId": 64,
         "spawnDefinitionId": "giants.ridgeback",
         "instanceKey": "giants.stone-chamber.depth-4",
-        "regionId": 76,
+        "regionId": 63,
         "subjects": [
           {
-            "groupId": 77,
+            "groupId": 64,
             "status": "alive"
           }
         ],
@@ -130,13 +154,13 @@
       },
       {
         "encounterKey": "giants.stone-chamber.depth-5.encounter",
-        "primaryId": 96,
+        "primaryId": 102,
         "spawnDefinitionId": "giants.ridgeback",
         "instanceKey": "giants.stone-chamber.depth-5",
-        "regionId": 95,
+        "regionId": 101,
         "subjects": [
           {
-            "groupId": 96,
+            "groupId": 102,
             "status": "alive"
           }
         ],
@@ -144,13 +168,13 @@
       },
       {
         "encounterKey": "giants.abyssal-chamber.depth-7.encounter",
-        "primaryId": 145,
+        "primaryId": 162,
         "spawnDefinitionId": "giants.abyssal-colossus",
         "instanceKey": "giants.abyssal-chamber.depth-7",
-        "regionId": 144,
+        "regionId": 161,
         "subjects": [
           {
-            "groupId": 145,
+            "groupId": 162,
             "status": "alive"
           }
         ],
@@ -158,13 +182,13 @@
       },
       {
         "encounterKey": "giants.abyssal-chamber.depth-8.encounter",
-        "primaryId": 166,
+        "primaryId": 200,
         "spawnDefinitionId": "giants.abyssal-colossus",
         "instanceKey": "giants.abyssal-chamber.depth-8",
-        "regionId": 165,
+        "regionId": 199,
         "subjects": [
           {
-            "groupId": 166,
+            "groupId": 200,
             "status": "alive"
           }
         ],
@@ -172,13 +196,13 @@
       },
       {
         "encounterKey": "giants.abyssal-chamber.depth-10.encounter",
-        "primaryId": 233,
+        "primaryId": 304,
         "spawnDefinitionId": "giants.abyssal-colossus",
         "instanceKey": "giants.abyssal-chamber.depth-10",
-        "regionId": 232,
+        "regionId": 303,
         "subjects": [
           {
-            "groupId": 233,
+            "groupId": 304,
             "status": "alive"
           }
         ],
@@ -186,13 +210,13 @@
       },
       {
         "encounterKey": "giants.spine-chamber.depth-11.encounter",
-        "primaryId": 277,
+        "primaryId": 355,
         "spawnDefinitionId": "giants.spine-crawler",
         "instanceKey": "giants.spine-chamber.depth-11",
-        "regionId": 276,
+        "regionId": 354,
         "subjects": [
           {
-            "groupId": 277,
+            "groupId": 355,
             "status": "alive"
           }
         ],
@@ -201,7 +225,7 @@
     ]
   },
   "boss": {
-    "id": 277,
+    "id": 355,
     "typeId": "giants.spine-crawler",
     "loc": {
       "x": 25,
@@ -213,7 +237,7 @@
       "schema": 1,
       "footprintId": "giants.spine-crawler",
       "pose": "r0",
-      "movementRegionId": 276,
+      "movementRegionId": 354,
       "zoneState": [
         {
           "zoneId": "shell",

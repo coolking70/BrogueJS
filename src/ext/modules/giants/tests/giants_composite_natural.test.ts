@@ -10,6 +10,8 @@ import { cellTerrainFlags } from '../../../../engine/Map/DungeonFeature';
 import { T_OBSTRUCTS_DIAGONAL_MOVEMENT, T_IS_FIRE } from '../../../../engine/Map/TerrainCatalog';
 import { canonical } from '../../../json';
 
+// 整合新增生成数据后7309在D12无安全路线；仅回退definitions的原路线反事实通过。
+// 相邻种子搜索选定7322，保留原公开路线、全部断言及800/600/480000边界。
 /** Only read-only route choice; all movement, searches and stairs are recorded
  * commands. Avoid optional large bosses en route rather than repeatedly hitting
  * a spine crawler's armored shell with the naturally acquired distant weapon. */
@@ -76,7 +78,7 @@ function approach(game: Game, id: number) {
 const world=(game:Game)=>{const s=json(game.toSnapshot());s.savedAt=0;return canonical(s);};
 
 function captureNaturalBody() {
-  const game = startGiants(['giants'], 7309, 'wizard');
+  const game = startGiants(['giants'], 7322, 'wizard');
   let core;
   for (let depth = 2; depth <= 20; depth++) {
     if (depth <= 11) walkNaturalToDepth(game, depth, true); else descend(game, depth);
@@ -108,7 +110,7 @@ function captureNaturalBody() {
   expect(giantsState(game).bosses.find(b=>b.primaryId===id)!.status).toBe('defeated');
   expect(game.monsters.some(m=>m.spatial?.bodyMember?.groupId===id)).toBe(false);
   const recording=json(game.exportRecording()), final=world(game), last=recording.events.length;
-  writeFileSync('/private/tmp/p4d3-natural-acceptance.json',JSON.stringify({seed:7309,mode:'wizard',modules:['giants'],depth,arrived,breakEvent,last,coreId:id,broken:group.appliedBreaks.length,finalHp:core!.hp},null,2)+'\n');
+  writeFileSync('/private/tmp/p4d3-natural-acceptance.json',JSON.stringify({seed:7322,mode:'wizard',modules:['giants'],depth,arrived,breakEvent,last,coreId:id,broken:group.appliedBreaks.length,finalHp:core!.hp},null,2)+'\n');
   expect(brokenWorld).toBeDefined();
   // Cache only detached artifacts captured by public commands from a real run.
   // Each acceptance case loads its own Game; no shared live world or injected arena.
@@ -117,9 +119,9 @@ function captureNaturalBody() {
 }
 let captured:ReturnType<typeof captureNaturalBody>|undefined;
 const acceptance=()=>captured??=captureNaturalBody();
-const freshGame=()=>{const game=startGiants(['giants'],7309,'wizard');game.animationEnabled=false;return game;};
+const freshGame=()=>{const game=startGiants(['giants'],7322,'wizard');game.animationEnabled=false;return game;};
 
-it('only giants seed7309 naturally defeats the original body; the first broken-leg save continues with exact events', () => {
+it('only giants seed7322 naturally defeats the original body; the first broken-leg save continues with exact events', () => {
   const {recording,brokenSave,breakEvent,final}=acceptance(), game=freshGame();
   expect(game.loadSnapshot(brokenSave)).toBe(true);game.animationEnabled=false;
   for(const event of recording.events.slice(breakEvent)) {

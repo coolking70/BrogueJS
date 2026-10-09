@@ -156,3 +156,40 @@ npx vitest run \
 ## 维护者收口（2026-10-09）
 
 两轮独立审查完成；R1-F1已由原作者修复并经R2独立关闭，范围内无剩余已确证玩法/存档录像缺陷。维护者已核对实际差异、报告与命令结果：首次boundary/types/build/drift通过，R1修后受影响空间9项、六文件135项及types/boundary/build通过；R2结果见独立审查末节，各批不累加。未重跑首次未受影响整批，原6项基线失败及覆盖限制保持登记5Z；不追加第三轮或封存。当前生产变更限Game/TimeCoordinator/Runtime及R1所需NativeStatSources/ItemStatInvalidation，九冻结、协议与黄金未改。下一步按授权合入固定357a473并处理giants旧五项路线，再启动已批准5Y。
+
+
+## 集成发现的加载依赖修复
+
+2026-10-09；在HEAD `8d5f8a668e3fefc429c69e8ccd49034cfff5007b`、MERGE_HEAD `357a473e67281e2164ebdcac6f738336598e8027` 的集成现场进行一次窄修复。底座两轮审查历史保持；本次纳入集成自己的审查流程，不开启底座第三轮。
+
+**因果确证。** 按授权仅撤销 `giants_committed_transition.test.ts` 新增的harness预加载及两行说明，恢复原导入次序；实际收集即在 `Player extends Creature` 失败，栈经过 `MonsterVisibility` / `WorldWorkWorld`，0项测试执行，exit1。`git show 35045d9` 确认两个属性检查点值导入均为该底座提交新增。保持生成协调器原实现、全部巨兽数据/规则/测试断言及其余底座修复不变，只把NativeStatSources和Runtime这两个新增值导入改到原样复制的纯检查点文件，同一用例1项通过、exit0。故问题由底座新依赖边引入，不能归为旧protocol前提，也不能靠测试预加载解决。
+
+**最小修复。** 将原 `GenerationCheckpointRoots`、`checkpointGenerationWorld`、`checkpointGenerationWorldGroups` 原样移入无任何导入的内部 `src/engine/Core/WorldCheckpoint.ts`；`GenerationCoordinator.ts` 兼容转导出相同函数和type，两个新增调用改用轻入口。接口与两套捕获/恢复算法和HEAD原代码完全一致；不增加包装、不改变浅根/深根/引用停止、描述符、Map/Set、字节数组、追加队列、恢复顺序或会话回调。R1绑定/缓存恢复及对象身份语义保持。
+
+**正式回归。** 新增并登记 `src/test/ext_checkpoint_imports.test.ts`，每项先清空模块缓存，再分别从Creature、NativeStatSources、Runtime、WorldCheckpoint、GenerationCoordinator、Game六个入口加载；无Game/harness预加载，随后检查Player/Monster继承同一Creature原型及属性检查点入口。另查新旧导出为同一函数引用。仅将两个导入临时改回GenerationCoordinator路径，新回归的Creature首入口再次报同一错误（1失败、6仅过滤，exit1），之后立即恢复轻入口。此反事实即使旧入口已转导出仍失败，进一步排除捕获算法和巨兽数据差异。
+
+所有以下npm/npx命令均在仓库根执行，前缀环境为 `PATH=/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072`；实际Node为v24.19.0；Vitest串行、maxWorkers=1。结果按各批列出，不当作全量全绿。
+
+| 阶段与真实命令 | 退出码与实际结果 |
+| --- | --- |
+| 修前原顺序：`npx vitest run src/ext/modules/giants/tests/giants_committed_transition.test.ts --maxWorkers=1 --no-file-parallelism` | exit1；收集失败，0项执行 |
+| 仅切换两个底座导入的反事实：同上命令 | exit0；1通过，无过滤 |
+| 最终修复：`npx vitest run src/test/ext_checkpoint_imports.test.ts src/ext/modules/giants/tests/giants_committed_transition.test.ts --maxWorkers=1 --no-file-parallelism` | exit0；2文件、8通过，无过滤 |
+| 临时改回两条旧依赖后：`npx vitest run src/test/ext_checkpoint_imports.test.ts -t 'loads Creature first' --maxWorkers=1 --no-file-parallelism` | exit1；1失败、6仅过滤；finally恢复两条轻入口导入 |
+| `npx vitest run src/test/giants2_foundation.test.ts -t SPATIAL --maxWorkers=1 --no-file-parallelism` | exit0；9通过、6仅过滤；包括真正第二乘客的两种足迹，旧query/绑定/缓存/属性/图/索引/存读断言保持 |
+| `npx vitest run src/test/ext_stats_native.test.ts src/test/ext_stats_runtime.test.ts src/test/ext_stats_review.test.ts src/test/ext_world_work_transactions.test.ts src/test/ext_region_runtime_transactions.test.ts --maxWorkers=1 --no-file-parallelism` | exit0；5文件、109通过，无过滤 |
+| 检查点窄测：下方真实命令 | exit0；3文件、4通过、39仅过滤；覆盖循环/别名/描述符/字节/队列、分组写集停止边界、待发事实事务 |
+| `npm run check:modules` | exit0；实际boundary及测试归属通过 |
+| `npx vue-tsc -b` | exit0 |
+| `npm run build` | exit0；仅执行一次，Vite实际构建3.06秒；保留既有>500kB分块警告 |
+| `git diff --check` | exit0 |
+
+检查点窄测命令：
+
+```sh
+npx vitest run src/test/ext_generation_checkpoint.test.ts src/test/ext_generation_checkpoint_differential.test.ts src/test/ext_generation_transactions.test.ts -t 'generation checkpoint root contract|preserves independent shallow/reference stops|does not promote a reference-only descendant|checkpoints pending combat and acknowledgments' --maxWorkers=1 --no-file-parallelism
+```
+
+本轮选中测试无因缺CE而跳过的项；表中“仅过滤”均为 `-t` 未选中。执行日志及摘要位于 `/private/tmp/brogue-commander-20261009-g2-integration/` 的 `cycle-*.log`、`integration-cycle.progress.md` 与 `integration-cycle.READY.md`，不封存多版本工作树。
+
+**边界与剩余。** 九冻结SDK、协议、游戏规则、黄金和巨兽内容均未改；巨兽文件仅撤销授权的导入绕过，现该文件对HEAD无差异。父状态/HANDOFF/README/task及独立审查历史未编辑，已批准5Y文档与原集成作者其余差异全部保留。未重跑giants整套、原32文件、完整门禁或已登记六项旧基线失败，不补证/重录这些失败；既有失败与覆盖限制仍按原报告及5Z登记。本次加载环已关闭；剩余集成门禁及集成审查由父恢复原集成作者接续，本轮不能证明整批giants全绿。MERGE_HEAD和HEAD均保持，索引无U；未commit/push/abort、未操作分支或Git索引、未开代理/审查。完成记录后立即停止共享树写入。

@@ -57,7 +57,7 @@ export function captureGiantsNaturalTrace(colossus = false) {
   };
 }
 describe('giants fixed natural command trace', () => {
-  it('naturally recreates seed 7306 D3 world, encounter, bindings and both RNG streams', () => {
+  it('naturally recreates seed 7328 D3 world, encounter, bindings and both RNG streams', () => {
     const actual = captureGiantsNaturalTrace(),
       path = new URL('../data/natural-trace.json', import.meta.url);
     if (process.env.BROGUE_CAPTURE_GIANTS_TRACE === '1')

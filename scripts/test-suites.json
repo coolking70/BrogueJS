@@ -45,6 +45,7 @@
     "src/test/ext_births.test.ts",
     "src/test/ext_bolt_causality.test.ts",
     "src/test/ext_causality.test.ts",
+    "src/test/ext_checkpoint_imports.test.ts",
     "src/test/ext_combat_adapter_foundation.test.ts",
     "src/test/ext_combat_neutral_differential.test.ts",
     "src/test/ext_combat_transition_facts.test.ts",

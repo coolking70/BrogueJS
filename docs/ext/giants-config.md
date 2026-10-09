@@ -1,6 +1,6 @@
 # 巨兽与通用空间能力配置手册
 
-适用：`ext/phase4` 的 4a0–4e 实现及 4f 第一部分；foundation **4**，giants module/rules **1.0.0**，pack/state/spatial **schema 1**。本文以当前验证器和执行路径为准，设计草图中的预留类型不等于可用字段。3g 尚未合入；本文不提前声明 foundation 5 或新 adapter 已可使用。
+适用：giants2 派发基线 `e0fa39a225428d36e6e342f6585f57f45960e6ba`，foundation **11**、whole-run **6**、recording **4**、origin **2**、world **5 / schema 2**、worldSdk/edibleSdk **1**；giants module/rules **1.0.0**，pack/state/spatial **schema 1**。本文以本基线验证器和执行路径为准，设计草图中的预留类型不等于可用字段；不随并行 phase5 工作变动。
 
 作者主要编辑 `src/ext/modules/giants/data/definitions.json`，显示文字编辑同目录 `locales/zh_CN.json`。所有正式名称、描述、命中区名称必须走 i18n。不要编辑 `monsters.json` 来增加 giants 内容，不通过模块回调直接挖图、移动生物或改 HP。
 
@@ -201,15 +201,15 @@ GiantsState只由底座事实更新，初态schema1/revision0/placements[]/bosse
 ## 8 与其他模块的软接口现状
 
 - **combat.part-break.v1** 已接：底座证明group/part/zone/generation并提供balanceLoss/fallbackStunTicks；combat ready时扣韧性/进入恢复且底座不加fallback锁；absent/disabled/unsupported用短锁。非法或重复provider安装拒绝；异常同破坏事务回滚。来源破坏/退休/换形取消已付款预警，保留恢复/费用，不补射。
-- **phased profile** 已接：body attackProfileIds→providerProfileId，核心唯一decision/time owner，member作为独立来源、独立资源与scope；combat缺席native即时攻击，安装了provider却缺profile会拒绝。3g新增stat/event adapter当前未合入，不能宣称可用。
+- **phased profile** 已接：body attackProfileIds→providerProfileId，核心唯一decision/time owner，member作为独立来源、独立资源与scope；combat缺席native即时攻击，安装了provider却缺profile会拒绝。本手册不额外授权新种类专属招式或自定义 AI；giants2 四个新 form 没有新增 attack profile 绑定。
 - **growth XP报价** 已接出生、受击来源、真正终结：报价配置归growth的monsterQuotes（按originalMonsterType），giants无内置XP字段。未配正式type报价通常0XP；不能认为一个Boss默认27。27/13是正报价测试夹具。成员破坏无killXP、核心原权利一次，split额外主体/clone/summon零权利。无growth照常战斗与终结。
 - **narrative** 无正式Boss专用剧情联动/必需storyFact消费者；空间、可信事实和可选奖励接口可复用，现无剧情数据可配置“杀Boss开门”。不要把未来proposal当现成功能。未启用narrative不影响giants。
 
 ## 9 版本、旧档与作者验收
 
-当前whole-run/entity/recording版本3，whole-run schema `brogue-web-whole-run-v3`；foundation4、manifest schema1；模块独立版本、rules schema/version/fingerprint写入精确manifest。机械pack全文canonical指纹改变就拒绝旧指纹输入；缺giants、错版本、坏定义/群/zone/预算在旧局退休前拒绝。**不迁移旧档，不重放旧规则录像，不剥掉缺失模块状态继续加载。** locale消息更名本轮不改变机械pack指纹；但形态名称/描述进入实体快照，今后修改species文字仍须检查自然trace。
+当前 whole-run 版本6、recording版本4、recordingOrigin版本2、whole-run schema `brogue-web-whole-run-v6`；foundation11、manifest schema1、world5 schema2；模块独立版本、rules schema/version/fingerprint写入精确manifest。机械pack全文canonical指纹改变就拒绝旧指纹输入；缺giants、错版本、坏定义/群/zone/预算在旧局退休前拒绝。**不迁移旧档，不重放旧规则录像，不剥掉缺失模块状态继续加载。** locale消息更名本轮不改变机械pack指纹；但形态名称/描述进入实体快照，今后修改species文字仍须检查自然trace。
 
-新增数据后跑真实schema、boundary、类型、build、直接功能/giants专项和drift；改trace先归因、用原捕获入口重录并列逐字段变化。普通基线不得因为giants内容而无解释重录。4f第一部分不跑完整npm test、全部test:ext、16组合、实际删除矩阵或浏览器；3g合入后维护者通知统一收尾。
+新增数据后跑真实schema、boundary、类型、build、直接功能/giants专项和drift；改trace先归因、用原捕获入口重录并列逐字段变化。普通基线不得因为giants内容而无解释重录。giants2 只跑九行相关组合（无模块、仅 giants、分别配其他六模块、七模块全开）和只删 giants 的 plan；完整 npm test、全部 test:ext、128组合、实际删除、全项目性能/体积留5Z。自然trace须在生产概率/深度下从正式新局与公开命令采集；诊断布景不得冒充自然证据。
 
 ## 10 三个完整配置例子
 
@@ -513,3 +513,526 @@ GiantsState只由底座事实更新，初态schema1/revision0/placements[]/bosse
 ```
 
 半血时付2HP、200ticks，只触发一次；保持伤量换为example-small并清状态。无落点仍保留费用和正耗时。若改分裂，results须2–4且hp=conserve；若改clone/summon，目标必须等于来源且hp=current。
+
+
+## 11 giants2 正式内容索引与完整默认包
+
+本批恰两种 species：盲灯蜷兽与铜须伏螯。展躯盲灯兽是第一种的阶段形态，伏螯节须是第二种的外围成员，不能算第三／第四物种。首批岩脊兽、沉渊巨像、棘脊爬兽、页岩织兽保留；总计9 forms、6 templates、2 bodies、2 member break rules、2 transitions、原2 attack profiles。
+
+| 形态ID（giants. 前缀） | 名称 | HP | accuracy / defense | damage | move / attack ticks | 字形／颜色（十进制） | 用途 |
+| --- | --- | ---: | --- | --- | --- | --- | --- |
+| blind-lantern | 盲灯蜷兽 | 84 | 75 / 12 | 3–6 | 150 / 180 | L / 13153674 | D2–4，7格四旋转非矩形 |
+| blind-lantern-open | 展躯盲灯兽 | 84 | 80 / 8 | 4–7 | 100 / 140 | l / 14862475 | 只作换形目标，5格钩形 |
+| copper-tendril | 铜须伏螯 | 108 | 80 / 18 | 3–6 | 160 / 180 | T / 11239516 | D5–8，2×2核心 |
+| copper-tendril-limb | 伏螯节须 | 18 | 70 / 6 | 1–3 | 160 / 220 | t / 13212523 | 1×1外围，不能独立自然生成 |
+
+四形态 bloodType / DFChance / DFType 都为0。名字和描述对应 `ext.giants.<形态后缀>.name/.description`，芯首与灯褶另对应 `ext.giants.blind-lantern.wick/.mantle`。描述中的灯不提供照明，铜不提供矿物。
+
+### 11.1 默认形状、部位与行动
+
+蜷伏 r0 掩码为 (0,0),(1,0),(2,0),(0,1),(1,1),(2,1),(1,2)；展躯为 (0,0),(1,0),(2,0),(3,0),(3,1)。均为 r0/r90/r180/r270，绕锚点按 (x,y)→(-y,x) 旋转，不按包围盒重新对齐；凹格不占位。
+
+灯褶 mantle 标签 (1,0),(2,0),(2,1)，local HP18、armor1、伤害倍率1/1、向实体传伤1/1。芯首 wick 标签(0,0)，native HP、armor0、倍率1/1，使用 foundation:keep-zone；其他格为body。灯褶触发 hp-zero 后 keep-zone，整兽 move ticks ×4/3（150→200），暴露 self/wick 倍率2/1，balance-loss5；无provider fallback锁40ticks，不与combat恢复重复叠加。破坏不删格。
+
+lantern-uncoil 在下一合资格NPC决策满足 HP/maxHP≤1/2（HP≤42）时触发一次：200ticks、0HP、phase、一个 blind-lantern-open 结果、memberMap=[]、hp=ratio、statuses/relationships=preserve、placement=nearest。新旧maxHP同84，不回血；保留ID/区域/encounter与兼容pose。新形态没有旧local灯褶，wick倍率回到新定义的1/1、move100；失败也正耗时并记spent，不再尝试。
+
+伏螯body为 copper-tendril-body，5实体共8格。core偏好(0,0)，不提供支撑、coreTransfer0/1、foundation:keep-zone；limb00/01/02/03偏好(-1,0)/(2,0)/(-1,2)/(2,2)，各为support并提供支撑，使用 copper-tendril-limb、coreTransfer1/4。所有part的attackProfileIds=[]、statusProfileId=foundation:native。四条父边均直接连core，tether距离1…3、maxStepPerAction2、requiresClearLink=true；偏好不是刚性强制位置。
+
+外围hp-zero使用 copper-limb-retire：remove、childrenOnBreak=retire-subtree、move ticks×5/4、balance-loss4／fallback30ticks。单击先消耗其正HP限额，再向下取整传core四分之一；断须释放格、保留槽墓碑与一次收据，不再生。minSupportParts2，剩1或0不能移动但仍可合法近战。coreDeath=remove-members，无额外成员死亡奖励。核心唯一调度，沿原生感知、睡眠、寻路、接触、有限落脚；不添加脚本AI。
+
+### 11.2 默认生成与奖励
+
+lantern-chamber：D2–4、chance50、form blind-lantern、无bodyId；copper-chamber：D5–8、chance45、form copper-tendril、bodyId copper-tendril-body。两者均priority10、净空16×12、entranceWidth5、candidateLimit16、guard=return-to-spawn。旧priority0/1/2先尝试；每层最多1场地成功，chance是尝试率，空间/预算失败记完整跳过，不缩形、不封主路。
+
+四形态金币／物品掉率均0%，无携带物、专属奖励0；这些是nativeFormData固定执行合同，**不是可在JSON添加的掉落字段**。部位破坏与phase不发额外kill/XP；真正核心终结沿已有事实一次。growth对新type无报价时0XP，缺growth仍可玩。没有矿物、掉落表、肢体再生或新增combat招式配置。
+
+### 11.3 可独立校验的全部默认字段
+
+以下完整子包保存全部字段、引用与数组次序，可独立交给assertGiantsPack和真实Runtime安装。它不是完整生产包的替代品：按顺序追加forms/templates/transitions及bodies.definitions/breakRules；保留原根版本、旧数组前缀和旧bodies.attackProfiles，未提供的statusProfiles继续缺席。后续作者调数仍须遵守§1–7合法范围；本次交付不调参。新例子使用独立标记，不改变前三个作者示例。
+
+<!-- giants2-config-defaults -->
+```json
+{
+  "schema": 1,
+  "moduleVersion": "1.0.0",
+  "rulesVersion": "1.0.0",
+  "forms": [
+    {
+      "id": "giants.blind-lantern",
+      "nameKey": "ext.giants.blind-lantern.name",
+      "descriptionKey": "ext.giants.blind-lantern.description",
+      "char": "L",
+      "color": 13153674,
+      "hp": 84,
+      "accuracy": 75,
+      "defense": 12,
+      "damage": "3-6",
+      "moveSpeed": 150,
+      "attackSpeed": 180,
+      "bloodType": 0,
+      "DFChance": 0,
+      "DFType": 0,
+      "footprint": {
+        "geometry": {
+          "kind": "mask",
+          "cells": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 2,
+              "y": 0
+            },
+            {
+              "x": 0,
+              "y": 1
+            },
+            {
+              "x": 1,
+              "y": 1
+            },
+            {
+              "x": 2,
+              "y": 1
+            },
+            {
+              "x": 1,
+              "y": 2
+            }
+          ]
+        },
+        "poses": [
+          "r0",
+          "r90",
+          "r180",
+          "r270"
+        ],
+        "zones": [
+          {
+            "id": "mantle",
+            "nameKey": "ext.giants.blind-lantern.mantle",
+            "health": {
+              "kind": "local",
+              "maxHp": 18,
+              "ownerTransfer": {
+                "numerator": 1,
+                "denominator": 1
+              }
+            },
+            "armor": 1,
+            "damageMultiplier": {
+              "numerator": 1,
+              "denominator": 1
+            },
+            "breakRuleId": "giants.lantern-mantle-break"
+          },
+          {
+            "id": "wick",
+            "nameKey": "ext.giants.blind-lantern.wick",
+            "health": {
+              "kind": "native"
+            },
+            "armor": 0,
+            "damageMultiplier": {
+              "numerator": 1,
+              "denominator": 1
+            },
+            "breakRuleId": "foundation:keep-zone"
+          }
+        ],
+        "zoneCells": [
+          {
+            "x": 0,
+            "y": 0,
+            "zoneId": "wick"
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "zoneId": "mantle"
+          },
+          {
+            "x": 2,
+            "y": 0,
+            "zoneId": "mantle"
+          },
+          {
+            "x": 2,
+            "y": 1,
+            "zoneId": "mantle"
+          }
+        ]
+      },
+      "breakRules": [
+        {
+          "id": "giants.lantern-mantle-break",
+          "owner": "giants",
+          "trigger": "hp-zero",
+          "disposition": "keep-zone",
+          "modifiers": [
+            {
+              "kind": "move-ticks-multiplier",
+              "numerator": 4,
+              "denominator": 3
+            },
+            {
+              "kind": "expose-zone",
+              "partId": "self",
+              "zoneId": "wick",
+              "damageMultiplier": {
+                "numerator": 2,
+                "denominator": 1
+              }
+            },
+            {
+              "kind": "balance-loss",
+              "amount": 5,
+              "fallbackStunTicks": 40
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "giants.blind-lantern-open",
+      "nameKey": "ext.giants.blind-lantern-open.name",
+      "descriptionKey": "ext.giants.blind-lantern-open.description",
+      "char": "l",
+      "color": 14862475,
+      "hp": 84,
+      "accuracy": 80,
+      "defense": 8,
+      "damage": "4-7",
+      "moveSpeed": 100,
+      "attackSpeed": 140,
+      "bloodType": 0,
+      "DFChance": 0,
+      "DFType": 0,
+      "footprint": {
+        "geometry": {
+          "kind": "mask",
+          "cells": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 2,
+              "y": 0
+            },
+            {
+              "x": 3,
+              "y": 0
+            },
+            {
+              "x": 3,
+              "y": 1
+            }
+          ]
+        },
+        "poses": [
+          "r0",
+          "r90",
+          "r180",
+          "r270"
+        ],
+        "zones": [
+          {
+            "id": "wick",
+            "nameKey": "ext.giants.blind-lantern.wick",
+            "health": {
+              "kind": "native"
+            },
+            "armor": 0,
+            "damageMultiplier": {
+              "numerator": 1,
+              "denominator": 1
+            },
+            "breakRuleId": "foundation:keep-zone"
+          }
+        ],
+        "zoneCells": [
+          {
+            "x": 0,
+            "y": 0,
+            "zoneId": "wick"
+          }
+        ]
+      }
+    },
+    {
+      "id": "giants.copper-tendril",
+      "nameKey": "ext.giants.copper-tendril.name",
+      "descriptionKey": "ext.giants.copper-tendril.description",
+      "char": "T",
+      "color": 11239516,
+      "hp": 108,
+      "accuracy": 80,
+      "defense": 18,
+      "damage": "3-6",
+      "moveSpeed": 160,
+      "attackSpeed": 180,
+      "bloodType": 0,
+      "DFChance": 0,
+      "DFType": 0,
+      "size": 2
+    },
+    {
+      "id": "giants.copper-tendril-limb",
+      "nameKey": "ext.giants.copper-tendril-limb.name",
+      "descriptionKey": "ext.giants.copper-tendril-limb.description",
+      "char": "t",
+      "color": 13212523,
+      "hp": 18,
+      "accuracy": 70,
+      "defense": 6,
+      "damage": "1-3",
+      "moveSpeed": 160,
+      "attackSpeed": 220,
+      "bloodType": 0,
+      "DFChance": 0,
+      "DFType": 0,
+      "footprint": {
+        "geometry": {
+          "kind": "rect",
+          "width": 1,
+          "height": 1
+        },
+        "poses": [
+          "r0"
+        ]
+      }
+    }
+  ],
+  "templates": [
+    {
+      "id": "giants.lantern-chamber",
+      "priority": 10,
+      "minDepth": 2,
+      "maxDepth": 4,
+      "chance": 50,
+      "width": 16,
+      "height": 12,
+      "entranceWidth": 5,
+      "candidateLimit": 16,
+      "formId": "giants.blind-lantern",
+      "guard": "return-to-spawn"
+    },
+    {
+      "id": "giants.copper-chamber",
+      "priority": 10,
+      "minDepth": 5,
+      "maxDepth": 8,
+      "chance": 45,
+      "width": 16,
+      "height": 12,
+      "entranceWidth": 5,
+      "candidateLimit": 16,
+      "formId": "giants.copper-tendril",
+      "guard": "return-to-spawn",
+      "bodyId": "giants.copper-tendril-body"
+    }
+  ],
+  "bodies": {
+    "definitions": [
+      {
+        "id": "giants.copper-tendril-body",
+        "owner": "giants",
+        "parts": [
+          {
+            "partId": "core",
+            "role": "core",
+            "providesSupport": false,
+            "formId": "giants.copper-tendril",
+            "preferredOffset": {
+              "x": 0,
+              "y": 0
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 0,
+              "denominator": 1
+            },
+            "breakRuleId": "foundation:keep-zone",
+            "statusProfileId": "foundation:native"
+          },
+          {
+            "partId": "limb00",
+            "role": "support",
+            "providesSupport": true,
+            "formId": "giants.copper-tendril-limb",
+            "preferredOffset": {
+              "x": -1,
+              "y": 0
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 1,
+              "denominator": 4
+            },
+            "breakRuleId": "giants.copper-limb-retire",
+            "statusProfileId": "foundation:native"
+          },
+          {
+            "partId": "limb01",
+            "role": "support",
+            "providesSupport": true,
+            "formId": "giants.copper-tendril-limb",
+            "preferredOffset": {
+              "x": 2,
+              "y": 0
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 1,
+              "denominator": 4
+            },
+            "breakRuleId": "giants.copper-limb-retire",
+            "statusProfileId": "foundation:native"
+          },
+          {
+            "partId": "limb02",
+            "role": "support",
+            "providesSupport": true,
+            "formId": "giants.copper-tendril-limb",
+            "preferredOffset": {
+              "x": -1,
+              "y": 2
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 1,
+              "denominator": 4
+            },
+            "breakRuleId": "giants.copper-limb-retire",
+            "statusProfileId": "foundation:native"
+          },
+          {
+            "partId": "limb03",
+            "role": "support",
+            "providesSupport": true,
+            "formId": "giants.copper-tendril-limb",
+            "preferredOffset": {
+              "x": 2,
+              "y": 2
+            },
+            "attackProfileIds": [],
+            "coreTransfer": {
+              "numerator": 1,
+              "denominator": 4
+            },
+            "breakRuleId": "giants.copper-limb-retire",
+            "statusProfileId": "foundation:native"
+          }
+        ],
+        "constraints": [
+          {
+            "childPartId": "limb00",
+            "parentPartId": "core",
+            "kind": "tether",
+            "minDistance": 1,
+            "maxDistance": 3,
+            "maxStepPerAction": 2,
+            "requiresClearLink": true
+          },
+          {
+            "childPartId": "limb01",
+            "parentPartId": "core",
+            "kind": "tether",
+            "minDistance": 1,
+            "maxDistance": 3,
+            "maxStepPerAction": 2,
+            "requiresClearLink": true
+          },
+          {
+            "childPartId": "limb02",
+            "parentPartId": "core",
+            "kind": "tether",
+            "minDistance": 1,
+            "maxDistance": 3,
+            "maxStepPerAction": 2,
+            "requiresClearLink": true
+          },
+          {
+            "childPartId": "limb03",
+            "parentPartId": "core",
+            "kind": "tether",
+            "minDistance": 1,
+            "maxDistance": 3,
+            "maxStepPerAction": 2,
+            "requiresClearLink": true
+          }
+        ],
+        "minSupportParts": 2,
+        "noSupport": "immobile",
+        "coreDeath": "remove-members",
+        "statusProfileId": "foundation:native"
+      }
+    ],
+    "breakRules": [
+      {
+        "id": "giants.copper-limb-retire",
+        "owner": "giants",
+        "trigger": "hp-zero",
+        "disposition": "remove",
+        "childrenOnBreak": "retire-subtree",
+        "modifiers": [
+          {
+            "kind": "move-ticks-multiplier",
+            "numerator": 5,
+            "denominator": 4
+          },
+          {
+            "kind": "balance-loss",
+            "amount": 4,
+            "fallbackStunTicks": 30
+          }
+        ]
+      }
+    ]
+  },
+  "transitions": [
+    {
+      "id": "giants.lantern-uncoil",
+      "sourceFormId": "giants.blind-lantern",
+      "condition": {
+        "kind": "hp-at-most",
+        "numerator": 1,
+        "denominator": 2
+      },
+      "ticks": 200,
+      "hpCost": 0,
+      "transition": {
+        "reason": "phase",
+        "results": [
+          {
+            "formId": "giants.blind-lantern-open",
+            "memberMap": []
+          }
+        ],
+        "hp": "ratio",
+        "statuses": "preserve",
+        "relationships": "preserve",
+        "placement": "nearest"
+      }
+    }
+  ]
+}
+```
+
+### 11.4 指纹与验收入口
+
+本次只追加机械数据，用现有canonical算法得到 `sha256:1a49551065efebbcea96cb35cb83fcd049f969b24aee4bf6dd4c5c7f0790d4f8`，module/rules及全部协议版本不变。旧指纹save/recording须在当前player/runtime退休前拒绝；不能手改manifest蒙混兼容。locale不进机械fingerprint，但名称进入实体快照，改名也须复验trace。
+
+测试入口：`giants2_contract.test.ts`直接读派发文档、比对e0fa39a原包／原locale字节oracle、校验完整合并、独立子包、真实Runtime及历史原包正式命令save/replay拒绝；`giants2_imports.test.ts`用AST限制§6导入路径/type/value。功能覆盖按 `docs/ext/giants2.report.md` 的实际结果表核对；测试存在不代表已通过。原三个 `giants-config-example` 仍由 `giants_config_examples.test.ts` 读本文安装验证。
+
+最终候选门禁依次为boundary、vue-tsc、build、giants自有测试（maxWorkers2）、实际drift（maxWorkers2）、只删giants plan与diff-check；另跑直接受影响共享回归。运行环境为Node24.19.0、NODE_OPTIONS=--max-old-space-size=3072。两条新自然trace需出生、破坏、展躯／失撑、终结以及save/load/replay/seek/续录；normal模式另作短局。UI沿现有只读DisplayFrame/HUD/侧栏，三个viewport×普通/沉浸×四地图模式的实际浏览器覆盖按报告注明，不能以组件测试替代。
