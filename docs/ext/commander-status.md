@@ -1,11 +1,11 @@
 # 维护者侧指挥状态（2026-10-11）
 
-## 当前状态（2026-10-11 01:33，5Z待提交推送）
-- 实际HEAD `f1df690`；5Z候选已独立R1收口，零确证发现，无修复/R2/R3；源码与dist身份经父复核一致，正在提交推送`ext/phase5`。
-- 删除15/15、删除smoke29/29＋正常128/128＝157/157，额外124单列；前七行受影响复测/沿用，后八行完整首次通过。
-- 七项基线与npm首轮64败逐项关闭获独立核对；原完整npm exit1保留，无第二次完整npm全绿。[报告](phase5z.report.md)／[R1](phase5z.review.md)。
-- [人工清单](phase5z.manual-checklist.md)已交付，浏览器/真机待人工；[遗留](phase5z-remainders.md)保留覆盖边界。推送后停止监督，不合main/foundation、标签或下一步。
-- 父`01a1163c-1880-7c31-b810-dd60d1e07ac8`；看门狗`/private/tmp/brogue-commander-20261009-5z/watchdog.sh`已随子进程退出，60分钟兜底待推送后停止。
+## 当前状态（2026-10-11 01:34，5Z本地收口／人工待验）
+- 5Z实现`0ec7c561f278b3b1ae9319fb5d774ae9ebf5b509`已推送`ext/phase5`；本回执仅文档。独立R1零确证发现，无修复/R2/R3。
+- 删除15/15、必验smoke29/29＋正常128/128＝157/157；额外124单列。前七行受影响复测/沿用，后八行完整首次通过，未验112布局范围外。
+- 七项基线与npm首轮64败逐项关闭获R1核对；保留完整npm首次exit1，无第二次完整npm全绿。[报告](phase5z.report.md)／[独立审查](phase5z.review.md)。
+- [人工清单](phase5z.manual-checklist.md)以已推送提交为候选，浏览器/真机全部待人工；[遗留](phase5z-remainders.md)保留覆盖限制。不合main/foundation、打标签或开下一步。
+- 本地监督到此停止：纯shell看门狗均已退出，60分钟兜底按收口指令停用。父`01a1163c-1880-7c31-b810-dd60d1e07ac8`；看门狗记录`/private/tmp/brogue-commander-20261009-5z/watchdog.sh`。
 
 ## 当前工作规则
 
