@@ -9,8 +9,21 @@
     "tests/narrative_dialogue.test.ts",
     "tests/narrative_persistence.test.ts",
     "tests/narrative_content.test.ts",
-    "tests/narrative_combat.test.ts"
+    "tests/narrative_combat.test.ts",
+    "tests/narrative2_data.test.ts",
+    "tests/narrative2_world.test.ts",
+    "tests/narrative_portrait_pixels.test.ts",
+    "tests/narrative2_graph.test.ts",
+    "tests/narrative2_persistence.test.ts",
+    "tests/narrative2_runtime.test.ts",
+    "tests/narrative2_combinations.test.ts",
+    "tests/narrative2_ui.test.ts",
+    "tests/narrative2_metadata.test.ts",
+    "tests/narrative2_imports.test.ts",
+    "tests/narrative2_rewards.test.ts"
   ],
   "gen": [],
-  "drift": []
+  "drift": [
+    "tests/narrative2_trace.test.ts"
+  ]
 }

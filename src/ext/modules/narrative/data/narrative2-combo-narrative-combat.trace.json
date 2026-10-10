@@ -1,0 +1,662 @@
+{
+  "schema": 1,
+  "seed": 1,
+  "mode": "wizard",
+  "modules": [
+    "narrative",
+    "combat"
+  ],
+  "ending": "a",
+  "targets": [
+    "cord.mender"
+  ],
+  "births": [
+    {
+      "npcId": "cord.mender",
+      "entrance": {
+        "x": 66,
+        "y": 4
+      },
+      "entity": {
+        "instanceKey": "cord.mender.first.slot.1",
+        "contentId": "cord.mender",
+        "nameKey": "ext.narrative.n2.cord.mender.name",
+        "descriptionKey": "ext.narrative.n2.cord.mender.description",
+        "glyph": "绳",
+        "color": "#b08b5c",
+        "interactionDistance": 1,
+        "priority": 0,
+        "id": 59,
+        "owner": "narrative",
+        "depth": 2,
+        "x": 65,
+        "y": 4
+      },
+      "placement": {
+        "npcId": "cord.mender",
+        "placementId": "cord.mender.first",
+        "instanceKey": "cord.mender.first.slot.1",
+        "depth": 2,
+        "result": "placed"
+      },
+      "index": 59,
+      "turn": 58,
+      "tick": 5800
+    }
+  ],
+  "checkpoints": [
+    {
+      "label": "initial",
+      "index": 0,
+      "worldHash": "47099b2da029565026f1729a01a7b3589922c0fd9c44928329f543a9a292669e",
+      "messageHash": "03020f1dd34fbeb41cbb0478472485aca7d5071ce9263c93999f70e15efa720b",
+      "turn": 0,
+      "tick": 0
+    },
+    {
+      "label": "cord.mender:arrival",
+      "index": 59,
+      "worldHash": "d4a9f24ffc5dbf45ef0f5faab4c4ab1623484cefa951cf19192a6aec80e3f816",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    },
+    {
+      "label": "cord.mender:open",
+      "index": 60,
+      "worldHash": "79a0b583702a81c487db03b674880555c35516f636e4c3e119367d010b7aa740",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    },
+    {
+      "label": "cord.mender:decision",
+      "index": 64,
+      "worldHash": "5cb52942c8d9e35845217f0210de92672a1fe8ee6328f3c13417cc2c5267de96",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    },
+    {
+      "label": "cord.mender:ending",
+      "index": 65,
+      "worldHash": "4cefdbd28d0d06f328913906486fbee60e9ea5104eb38708ef0fee4850cbac4d",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    },
+    {
+      "label": "cord.mender:close",
+      "index": 66,
+      "worldHash": "878e67fa957859c75bfabe5ae78713198f430ca40b209a5dd9e65c157b718a45",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    },
+    {
+      "label": "cord.mender:recall",
+      "index": 68,
+      "worldHash": "5838e8870ae7b10fcdf95ff2e482e08b19745bb69a53a55d4fd2b9f4ee4eea86",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    },
+    {
+      "label": "cord.mender:finished",
+      "index": 69,
+      "worldHash": "6cf9f65d98942f2428f42ab88b6c0eccd632f5b1c29f219677c186c975b136c2",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    }
+  ],
+  "commands": [
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":4,\"targetEntityId\":59}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":5,\"sessionId\":1,\"nodeId\":\"hello\",\"choiceId\":\"ask\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":6,\"sessionId\":1,\"nodeId\":\"account\",\"choiceId\":\"detail\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":7,\"sessionId\":1,\"nodeId\":\"detail\",\"choiceId\":\"back-detail\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":8,\"sessionId\":1,\"nodeId\":\"account\",\"choiceId\":\"consider\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":9,\"sessionId\":1,\"nodeId\":\"decision\",\"choiceId\":\"choose-a\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":10,\"sessionId\":1,\"nodeId\":\"a\",\"choiceId\":\"leave-a\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":11,\"targetEntityId\":59}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":12,\"sessionId\":2,\"nodeId\":\"hello\",\"choiceId\":\"recall-a\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":13,\"sessionId\":2,\"nodeId\":\"recall-a\",\"choiceId\":\"leave-recall-a\"}}",
+      "decisions": []
+    }
+  ],
+  "events": 69,
+  "routeCommands": 59,
+  "recordingBytes": 69350,
+  "finalHash": "6cf9f65d98942f2428f42ab88b6c0eccd632f5b1c29f219677c186c975b136c2",
+  "finalRng": {
+    "version": 2,
+    "algorithm": "brogue-web-ranval32-uint64-level-v2",
+    "streams": [
+      {
+        "a": 2216519360,
+        "b": 1214810828,
+        "c": 1725609438,
+        "d": 3616932714
+      },
+      {
+        "a": 2191798856,
+        "b": 1829671747,
+        "c": 1130280361,
+        "d": 3577507528
+      }
+    ],
+    "currentRNG": 0,
+    "randomNumbersGenerated": 108383,
+    "cosmeticNumbersGenerated": 162
+  }
+}

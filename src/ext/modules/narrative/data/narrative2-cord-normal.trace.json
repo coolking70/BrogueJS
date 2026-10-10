@@ -1,0 +1,657 @@
+{
+  "schema": 1,
+  "seed": 1,
+  "mode": "normal",
+  "modules": [
+    "narrative"
+  ],
+  "ending": "a",
+  "targets": [
+    "cord.mender"
+  ],
+  "births": [
+    {
+      "npcId": "cord.mender",
+      "entity": {
+        "instanceKey": "cord.mender.first.slot.1",
+        "contentId": "cord.mender",
+        "nameKey": "ext.narrative.n2.cord.mender.name",
+        "descriptionKey": "ext.narrative.n2.cord.mender.description",
+        "glyph": "绳",
+        "color": "#b08b5c",
+        "interactionDistance": 1,
+        "priority": 0,
+        "id": 57,
+        "owner": "narrative",
+        "depth": 2,
+        "x": 65,
+        "y": 4
+      },
+      "placement": {
+        "npcId": "cord.mender",
+        "placementId": "cord.mender.first",
+        "instanceKey": "cord.mender.first.slot.1",
+        "depth": 2,
+        "result": "placed"
+      },
+      "index": 59,
+      "turn": 58,
+      "tick": 5800
+    }
+  ],
+  "checkpoints": [
+    {
+      "label": "initial",
+      "index": 0,
+      "worldHash": "de2d5bf7fff8c725ce44258f17a648c4132594fafda679ddec0a42c80e77c00d",
+      "messageHash": "03020f1dd34fbeb41cbb0478472485aca7d5071ce9263c93999f70e15efa720b",
+      "turn": 0,
+      "tick": 0
+    },
+    {
+      "label": "cord.mender:arrival",
+      "index": 59,
+      "worldHash": "bafbfc3b936dfa79f2133008418c1806cab318e5d20ab297c6437cbe03685ab9",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    },
+    {
+      "label": "cord.mender:open",
+      "index": 60,
+      "worldHash": "8d9e30140bc181b5b401b0f9ff681697c32b899e755a107c4d49e86206c34916",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    },
+    {
+      "label": "cord.mender:decision",
+      "index": 64,
+      "worldHash": "9bd79729c8dba26a4ef7e63a0af3d0eb48f58196d5cc5309bac9cad664334389",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    },
+    {
+      "label": "cord.mender:ending",
+      "index": 65,
+      "worldHash": "65c0e5a22e18407ffd3e39365bebd8490c1e7134eb382a6024a83e3f867e690e",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    },
+    {
+      "label": "cord.mender:close",
+      "index": 66,
+      "worldHash": "bcf6bb315b8a88625fc7bcd0b0a9408c82303d6a9ca8e33fe3300ee453d07e86",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    },
+    {
+      "label": "cord.mender:recall",
+      "index": 68,
+      "worldHash": "1c5e4e8f5775999c0e1e5e8681bdc27d09f2dc051588bf436792653d803548cc",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    },
+    {
+      "label": "cord.mender:finished",
+      "index": 69,
+      "worldHash": "e4e61ff810d26e0dc706bfb81033e59e814485867c2c9b76e1584050037f0716",
+      "messageHash": "698f1fa6ef9d6b7d4f138a7469e0d756fd0c53b7fb44af83a771a2a38e67e6d8",
+      "turn": 58,
+      "tick": 5800
+    }
+  ],
+  "commands": [
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":4,\"targetEntityId\":57}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":5,\"sessionId\":1,\"nodeId\":\"hello\",\"choiceId\":\"ask\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":6,\"sessionId\":1,\"nodeId\":\"account\",\"choiceId\":\"detail\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":7,\"sessionId\":1,\"nodeId\":\"detail\",\"choiceId\":\"back-detail\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":8,\"sessionId\":1,\"nodeId\":\"account\",\"choiceId\":\"consider\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":9,\"sessionId\":1,\"nodeId\":\"decision\",\"choiceId\":\"choose-a\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":10,\"sessionId\":1,\"nodeId\":\"a\",\"choiceId\":\"leave-a\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":11,\"targetEntityId\":57}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":12,\"sessionId\":2,\"nodeId\":\"hello\",\"choiceId\":\"recall-a\"}}",
+      "decisions": []
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"narrative\",\"action\":\"choose\",\"payload\":{\"v\":2,\"revision\":13,\"sessionId\":2,\"nodeId\":\"recall-a\",\"choiceId\":\"leave-recall-a\"}}",
+      "decisions": []
+    }
+  ],
+  "events": 69,
+  "routeCommands": 59,
+  "recordingBytes": 69120,
+  "finalHash": "e4e61ff810d26e0dc706bfb81033e59e814485867c2c9b76e1584050037f0716",
+  "finalRng": {
+    "version": 2,
+    "algorithm": "brogue-web-ranval32-uint64-level-v2",
+    "streams": [
+      {
+        "a": 2216519360,
+        "b": 1214810828,
+        "c": 1725609438,
+        "d": 3616932714
+      },
+      {
+        "a": 2191798856,
+        "b": 1829671747,
+        "c": 1130280361,
+        "d": 3577507528
+      }
+    ],
+    "currentRNG": 0,
+    "randomNumbersGenerated": 108383,
+    "cosmeticNumbersGenerated": 162
+  }
+}

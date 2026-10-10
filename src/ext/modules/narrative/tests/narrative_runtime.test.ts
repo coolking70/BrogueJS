@@ -325,21 +325,33 @@ describe('EXT-2b actual normal-world cache and terminal lifecycle', () => {
         expect(initialWorld.map(entity => entity.contentId).sort()).toEqual(firstFloorNpcIds);
         expect(initialWorld.every(entity => entity.depth === 1)).toBe(true);
         enterWorldOnly(game, 2);
-        expect(game.extensionRuntime!.snapshot().foundation.world.entities).toEqual(initialWorld);
-        expect(narrative(game).placementReceipts).toEqual(initialReceipts);
+        // N2 adds cord.mender on D2. Counterfactual evidence proves this is
+        // the sole old premise change; preserve every old object/receipt and
+        // compare the entire enlarged world after all subsequent operations.
+        const enteredWorld = clone(game.extensionRuntime!.snapshot().foundation.world.entities);
+        const enteredReceipts = clone(narrative(game).placementReceipts);
+        expect(enteredWorld.filter(entity => entity.depth === 1)).toEqual(initialWorld);
+        expect(enteredWorld.filter(entity => entity.depth === 2)).toEqual([{
+            id: 48, owner: 'narrative', contentId: 'cord.mender', instanceKey: 'cord.mender.first.slot.1',
+            nameKey: 'ext.narrative.n2.cord.mender.name', descriptionKey: 'ext.narrative.n2.cord.mender.description',
+            glyph: '绳', color: '#b08b5c', interactionDistance: 1, priority: 0, depth: 2, x: 66, y: 18,
+        }]);
+        expect(enteredReceipts).toEqual([...initialReceipts, { npcId: 'cord.mender', placementId: 'cord.mender.first',
+            instanceKey: 'cord.mender.first.slot.1', depth: 2, result: 'placed' }]
+            .sort((a, b) => a.instanceKey < b.instanceKey ? -1 : a.instanceKey > b.instanceKey ? 1 : 0));
         const cachedSave = clone(game.toSaveSnapshot());
         expect(cachedSave.depth).toBe(2); expect(cachedSave.levels.some(level => level.depth === 1)).toBe(true);
         expect(cachedSave.run.recordingOrigin).toBeUndefined();
         expect(game.loadSnapshot(cachedSave)).toBe(true); game.animationEnabled = false;
-        expect(game.extensionRuntime!.snapshot().foundation.world.entities).toEqual(initialWorld);
-        expect(narrative(game).placementReceipts).toEqual(initialReceipts);
+        expect(game.extensionRuntime!.snapshot().foundation.world.entities).toEqual(enteredWorld);
+        expect(narrative(game).placementReceipts).toEqual(enteredReceipts);
         enterWorldOnly(game, 1); enterWorldOnly(game, 2); enterWorldOnly(game, 1);
-        expect(game.extensionRuntime!.snapshot().foundation.world.entities).toEqual(initialWorld);
-        expect(narrative(game).placementReceipts).toEqual(initialReceipts);
-        expect(Object.keys(narrative(game).npcBindings).sort()).toEqual(initialWorld.map(entity => String(entity.id)).sort());
+        expect(game.extensionRuntime!.snapshot().foundation.world.entities).toEqual(enteredWorld);
+        expect(narrative(game).placementReceipts).toEqual(enteredReceipts);
+        expect(Object.keys(narrative(game).npcBindings).sort()).toEqual(enteredWorld.map(entity => String(entity.id)).sort());
         const revisitedSave = clone(game.toSaveSnapshot());
         expect(game.loadSnapshot(revisitedSave)).toBe(true);
-        expect(game.extensionRuntime!.snapshot().foundation.world.entities).toEqual(initialWorld);
+        expect(game.extensionRuntime!.snapshot().foundation.world.entities).toEqual(enteredWorld);
         expect(game.hasCompleteRecording).toBe(false);
     }, 30000);
     it('closes an actual active session on terminal state while keeping its NPC for terminal save/load inspection', () => {

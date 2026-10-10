@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "seed": 1,
+  "mode": "wizard",
+  "modules": [],
+  "ending": "a",
+  "targets": [],
+  "births": [],
+  "checkpoints": [
+    {
+      "label": "initial",
+      "index": 0,
+      "worldHash": "a957e077a091960cfc8e0a7cf666bd6b3c685ee19235779de25fcda66842d7b7",
+      "messageHash": "03020f1dd34fbeb41cbb0478472485aca7d5071ce9263c93999f70e15efa720b",
+      "turn": 0,
+      "tick": 0
+    },
+    {
+      "label": "played",
+      "index": 1,
+      "worldHash": "7208c080ad64217cb729d47599fcb2e7831f684de9ae02ae137015bb6c39a634",
+      "messageHash": "56ccefc1954f91a7bb123488ffd15db28b27eedb511af0733e0567082407ca3d",
+      "turn": 1,
+      "tick": 100
+    }
+  ],
+  "commands": [
+    {
+      "action": "wait",
+      "data": null,
+      "decisions": []
+    }
+  ],
+  "events": 1,
+  "routeCommands": 1,
+  "recordingBytes": 2396,
+  "finalHash": "7208c080ad64217cb729d47599fcb2e7831f684de9ae02ae137015bb6c39a634",
+  "finalRng": {
+    "version": 2,
+    "algorithm": "brogue-web-ranval32-uint64-level-v2",
+    "streams": [
+      {
+        "a": 3461082154,
+        "b": 750321241,
+        "c": 3767038554,
+        "d": 941060455
+      },
+      {
+        "a": 2099659151,
+        "b": 1150075135,
+        "c": 3012474754,
+        "d": 2027464969
+      }
+    ],
+    "currentRNG": 0,
+    "randomNumbersGenerated": 18840,
+    "cosmeticNumbersGenerated": 162
+  }
+}

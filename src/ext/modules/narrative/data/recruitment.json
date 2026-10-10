@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "targetPhase": "5D3",
+  "npcs": [
+    {
+      "npcId": "cord.mender",
+      "recruitable": true,
+      "eligibility": {
+        "flagId": "cord.mender.verdict",
+        "anyOf": [
+          "splice"
+        ]
+      }
+    },
+    {
+      "npcId": "cistern.listener",
+      "recruitable": true,
+      "eligibility": {
+        "flagId": "cistern.listener.verdict",
+        "anyOf": [
+          "mark"
+        ]
+      }
+    },
+    {
+      "npcId": "bone.clerk",
+      "recruitable": true,
+      "eligibility": {
+        "flagId": "bone.clerk.verdict",
+        "anyOf": [
+          "blank"
+        ]
+      }
+    },
+    {
+      "npcId": "salt.warden",
+      "recruitable": false,
+      "eligibility": null
+    },
+    {
+      "npcId": "letter.carrier",
+      "recruitable": true,
+      "eligibility": {
+        "flagId": "letter.carrier.verdict",
+        "anyOf": [
+          "return"
+        ]
+      }
+    }
+  ]
+}

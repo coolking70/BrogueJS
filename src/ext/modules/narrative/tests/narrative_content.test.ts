@@ -8,6 +8,10 @@ import type { NarrativeState } from '../state';
 import { buildNarrativeUiCommand, readNarrativeUiView } from '../ui/view';
 
 const clone = <T>(value: T): T => structuredClone(value);
+// N2 counterfactual: the same original full-object checks pass at 1.4 and
+// fail only on these five new initial flags at 1.5; no old outcome is relaxed.
+const pendingSecondBatch = { 'cord.mender.verdict': 'unresolved', 'cistern.listener.verdict': 'unresolved',
+    'bone.clerk.verdict': 'unresolved', 'salt.warden.verdict': 'unresolved', 'letter.carrier.verdict': 'unresolved' };
 const combinations = [['narrative'], ...(getInstalledModuleDescriptors().some(module => module.id === 'growth')
     ? [['growth', 'narrative']] : [])];
 const acknowledge = () => { while (logger.pendingAcknowledgment) logger.acknowledgeNext(); };
@@ -95,7 +99,7 @@ const endings = [
 type Ending = typeof endings[number];
 function assertEnding(game: Game, ending: Ending, reason: 'absent' | 'disabled'): void {
     const state = narrative(game);
-    expect(state.flags).toEqual({ 'bonfire.rested': false, 'archive.read': false, 'bell.verdict': ending.prefix === 'bell' ? ending.verdict : 'unresolved',
+    expect(state.flags).toEqual({ ...pendingSecondBatch, 'bonfire.rested': false, 'archive.read': false, 'bell.verdict': ending.prefix === 'bell' ? ending.verdict : 'unresolved',
         'wick.verdict': ending.prefix === 'wick' ? ending.verdict : 'unresolved' });
     expect(state.counters).toEqual({});
     expect(state.journal).toEqual([{ entryId: `${ending.prefix}.${ending.verdict}.note`, order: 1 }]);
@@ -248,7 +252,7 @@ describe.each(combinations)('CONTENT-1 default narrative endings with %j', (...i
         for (const ending of [endings[0], endings[3]]) {
             open(game, ending.npc); choose(game, ending.intro); choose(game, ending.settle); choose(game, ending.finish);
         }
-        expect(narrative(game).flags).toEqual({ 'archive.read': false, 'bell.verdict': 'toll', 'wick.verdict': 'release', 'bonfire.rested': false });
+        expect(narrative(game).flags).toEqual({ ...pendingSecondBatch, 'archive.read': false, 'bell.verdict': 'toll', 'wick.verdict': 'release', 'bonfire.rested': false });
         expect(narrative(game).journal).toEqual([{ entryId: 'bell.toll.note', order: 1 }, { entryId: 'wick.release.note', order: 2 }]);
         expect(narrative(game).rewardReceipts.map(receipt => receipt.id)).toEqual(['bell.reward', 'wick.reward']);
         expect(narrative(game).triggerReceipts.map(receipt => [receipt.triggerId, receipt.firings])).toEqual([['bell.reward', 1], ['wick.reward', 1]]);
