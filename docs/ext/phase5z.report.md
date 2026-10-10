@@ -1,10 +1,30 @@
 # 5Z 收口报告（独立R1通过，人工待验）
 
-本地实现与授权引擎门禁已完成；独立R1未发现确证缺陷，七项基线、64项首败及N40边界获独立核对，无需修复或R2。见[独立审查](phase5z.review.md)。维护者确认源码与dist仍匹配下列候选身份，5Z实现提交`0ec7c561f278b3b1ae9319fb5d774ae9ebf5b509`已推送`ext/phase5`；本地收口完成，后续回执仅改文档。见[状态卡](commander-status.md)。浏览器/真机全部待人工，不称阶段5整体验收完成。开工基线`f1df6907b3bc4187643387225563994281416261`。
+<!-- 5Z FINAL RERUN START -->
+## 用户追加：当前候选完整复测（2026-10-11）
+
+候选实现 `0ec7c56`；实际启动HEAD `59b9ba691daf66819eeea0299a0539f3641ad208`（仅文档后继）。源码聚合 `3321b89a32517e497a2485479fdcf147eb2696bb0597aaca7da6310d1c9ce3f5`。只运行测试、记录结果，不修改生产源码、测试、黄金或门限；失败仅归类报告，不自行修复。人工验收改由Claude抽样，回执未到前仍待验。
+
+运行环境：Node v24.19.0，NODE_OPTIONS=--max-old-space-size=3072；三套串行，均使用 --maxWorkers=1 --no-file-parallelism。不主动ce:fetch/test:full/test:gen，不修改既有skip/todo。
+
+| 套件 | exit | 秒 | 原始计数摘要 |
+| --- | --- | --- | --- |
+| npm-test | 0 | 8521.12 | Test Files  547 passed / 1 skipped (548)；Tests  10624 passed / 84 skipped / 5 todo (10713)；Duration  8520.58s (transform 6.77s, setup 0ms, import 231.38s, tests 8261.68s, environment 78ms) |
+| test-ext | 0 | 6706.4 | Test Files  292 passed / 1 skipped (293)；Tests  5863 passed / 1 skipped (5864)；Duration  6706.01s (transform 4.57s, setup 0ms, import 128.95s, tests 6561.84s, environment 43ms) |
+| test-drift | 0 | 161.15 | Test Files  7 passed (7)；Tests  14 passed (14)；Duration  160.85s (transform 1.13s, setup 0ms, import 4.93s, tests 155.55s, environment 1ms) |
+
+维护者已核对三套完整日志、done=exit0、实际进程退出及末次源码指纹：三套均0失败、0已报告unhandled。npm保留84真实skip/5todo，ext保留1真实skip，drift无skip/todo。三套有重叠，不累加测试数量。
+
+末次源码聚合 `3321b89a32517e497a2485479fdcf147eb2696bb0597aaca7da6310d1c9ce3f5`；与开始一致：True。
+
+原始日志与命令/退出码摘要：`/private/tmp/brogue-commander-20261009-5z/final-rerun`。失败的具体原因及影响由维护者读取完整失败段后归类，未经复现不将时限/资源错误判作产品缺陷或过时前提。
+<!-- 5Z FINAL RERUN END -->
+
+本地实现与授权引擎门禁已完成；独立R1未发现确证缺陷，七项基线、64项首败及N40边界获独立核对，无需修复或R2。见[独立审查](phase5z.review.md)。维护者确认源码与dist仍匹配下列候选身份，5Z实现提交`0ec7c561f278b3b1ae9319fb5d774ae9ebf5b509`已推送`ext/phase5`；原5Z本地收口完成。用户随后授权六项底座修复及narrative2集成；旧收口不代表新确认缺陷已关闭。见[状态卡](commander-status.md)。浏览器/真机全部待人工，不称阶段5整体验收完成。开工基线`f1df6907b3bc4187643387225563994281416261`。
 
 当前合同完成 **15/15真实物理布局、29/29删除双场景要求＋原正常128/128＝157/157**。前两行旧64批额外124单列保留，未加入157分母；463/591及127/2059/2187均为废止历史范围，另外112物理布局范围外未验。每行boundary/types/build、全部剩余ext、真实缺模块save/录像拒绝均已完成；前七行首败按受影响复测关闭并沿用明确未受影响部分，后八行当前候选完整首次通过。没有把plan、中断或定向拼接称为一次全量全绿。
 
-正常树实际完整npm首次exit1：548文件523过/24败/1跳过；10708项10555过/64败/84真实skip/5todo，另7个unhandled。七项基线失败与64项原测试名逐项关闭映射见下文；7个unhandled来自同一SFC轻DOM夹具几何方法遗漏，修后整文件及全部ext未再产生。**没有第二次完整npm exit0结果**；首次结果与修后受影响整文件、全部ext的覆盖对应关系保留。全部ext exit0（5862过/1原skip）、实际drift exit0（14过）、原正常128 engine-only exit0均沿用已核未受影响范围。正常128读口重复批及旧删除64补验由维护者范围调整SIGINT中断，不计新通过、不算产品失败。
+正常树实际完整npm首次exit1：548文件523过/24败/1跳过；10708项10555过/64败/84真实skip/5todo，另7个unhandled。七项基线失败与64项原测试名逐项关闭映射见下文；7个unhandled来自同一SFC轻DOM夹具几何方法遗漏，修后整文件及全部ext未再产生。**原5Z收口当时尚无第二次完整npm exit0；用户追加完整复跑现已exit0，详见顶部新批次结果**；首次结果与修后受影响整文件、全部ext的覆盖对应关系保留。全部ext exit0（5862过/1原skip）、实际drift exit0（14过）、原正常128 engine-only exit0均沿用已核未受影响范围。正常128读口重复批及旧删除64补验由维护者范围调整SIGINT中断，不计新通过、不算产品失败。
 
 候选源码聚合 `3321b89a32517e497a2485479fdcf147eb2696bb0597aaca7da6310d1c9ce3f5`（1298输入）；实际dist聚合 `d81dcb925dd2bf38f03a28d6fe6da25d34849c9f1201fa8b86d97a8fa87a561f`（60文件）。正常正式128、allExt及性能所测较早候选和后来读口/测试前提差量的影响核对见执行记录，未宣称所有历史命令都在这一身份执行。最后八删除布局使用该当前源码。Z1-A不主动CE获取/full/gen；真实缓存缺失，既有CE skip照实列出。Node24.19.0、3072MiB、重负载串行、Vitest单worker；门限、守卫及黄金原捕获方法保持。
 
@@ -519,3 +539,5 @@ N40最终影响核对：正常十整文件139过（1576.03s）、实删combat十
 R1有效只读审查一轮，exit0，全部89个tracked差量及8个untracked文件被审阅；零确证阻断或非阻断发现。首次stdin丢失的启动失败没有执行审查，未算额外轮次。无需原作者修复或R2，不开R3。父核对真实进程均已结束，并复核源码1298输入聚合与dist60文件聚合匹配作者交付及审查候选，git diff --check通过；本阶段只改交付文档，没有重复全量测试。原完整npm exit1、相关复测和沿用边界继续保留。提交推送后停止本地监控，交Claude或用户按人工清单验收，不自动合main/foundation、打标签或开下一步。
 
 推送回执：维护者已将5Z实现`0ec7c561f278b3b1ae9319fb5d774ae9ebf5b509`推送至origin/ext/phase5，未修改main/foundation或标签。人工候选为该提交及同源码构建；后续文档回执不改变源码/测试/dist身份。交付人工清单后停止本地监督。
+
+维护者阶段核对（2026-10-11 06:22）：本批完整npm test实际exit0，547文件通过/1跳过；10624项通过、0失败、84既有skip、5todo，日志未报告unhandled；耗时8521.12秒，结束后源码聚合未变。test:ext仍运行，test:drift未开始，不能称三套已全绿。同时观察到其它目录的narrative验收worker占用CPU（BrogueJS-narr2-acc、仓外narrative2-acceptance/fix）；未干预这些独立任务，若出现时限/性能失败需考虑但不能据此直接归因。
