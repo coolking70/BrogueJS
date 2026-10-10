@@ -206,8 +206,9 @@ describe('EXT-2c narrative optional reward transactions', () => {
         expect(Object.isFrozen(context.player)).toBe(true); expect(Object.isFrozen(context.resources)).toBe(true);
         expect(component).toEqual({ xp: 0 }); expect(Object.isFrozen(component)).toBe(true);
         expect(() => context.getPlayerComponent('character')).toThrow('Expired optional reward preparation');
-        // 5A2-S adds only the frozen stat query and own-component preview.
-        expect(Object.keys(context).sort()).toEqual(['getPlayerComponent', 'player', 'playerId', 'previewStats', 'resources', 'state', 'stats']);
+        expect(() => context.getComponent!(context.playerId, 'character')).toThrow('Expired optional reward preparation');
+        // 5A2-S stat/preview and 5D owned-actor reads remain frozen and expire together.
+        expect(Object.keys(context).sort()).toEqual(['getComponent', 'getPlayerComponent', 'player', 'playerId', 'previewStats', 'resources', 'state', 'stats']);
         expect(Object.isFrozen(context.stats)).toBe(true);
         expect(() => context.previewStats!(f.player.id, {})).toThrow('Expired optional reward preparation');
         expect(() => { (context.state as unknown as ProviderState).receipts.push('forged'); }).toThrow();

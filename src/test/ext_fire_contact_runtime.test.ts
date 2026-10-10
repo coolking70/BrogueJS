@@ -10,6 +10,12 @@ import { descriptor } from '../ext/testing/fixtures/forageFixture';
 import { rng } from '../engine/Random';
 import { DF } from '../engine/Map/DungeonFeatureCatalog';
 import { heatSources } from '../engine/Core/EdibleCommands';
+import { getInstalledModuleDescriptors } from '../ext/catalog';
+import { craftingMaterialFixture } from './fixtures/optionalCrafting';
+function hearthScene() {
+  const real = getInstalledModuleDescriptors().some(d => d.id === 'crafting');
+  return real ? forage(['crafting']) : forage([craftingMaterialFixture.id], [craftingMaterialFixture]);
+}
 describe('fire contact foundation', () => {
   it('floor transform same identity, cooldown 9/10/11 and full chain', () => {
     const h = forage(),
@@ -70,7 +76,7 @@ describe('fire contact foundation', () => {
     closedLoop(h);
   });
   it('real crafting hearth definition authorizes roast with whole stack and no native draw', () => {
-    const h = forage(['crafting']);
+    const h = hearthScene();
     const hearth = h
       .game()
       .extensionRuntime!.worldDefinitionPacks()
@@ -144,7 +150,7 @@ import * as features from '../engine/Map/DungeonFeature';
 it.each(['transform', 'fact', 'participant', 'message', 'DF', 'render'] as const)(
   'roast failure after %s restores every independent native write and owner',
   (point) => {
-    const h = forage(['crafting']),
+    const h = hearthScene(),
       g = h.game(),
       runtime = g.extensionRuntime!,
       hearth = runtime
@@ -220,7 +226,7 @@ it('same-cell id ordering and cross-cell FIFO eliminate chain self-contact', () 
 it.each(['floor-fire', 'real-hearth'] as const)(
   'real thrown stack landing into %s preserves identity/quantity and recording',
   (cause) => {
-    const h = forage(cause === 'real-hearth' ? ['crafting'] : []),
+    const h = cause === 'real-hearth' ? hearthScene() : forage(),
       g = h.game();
     if (cause === 'real-hearth') {
       const hearth = g

@@ -25,6 +25,7 @@ describe('3g committed facts around successful 4e body transitions', () => {
         const runtime = game.extensionRuntime!, list = game.monsters, source = actors[1]!, spatial = source.spatial!;
         const death = vi.spyOn(runtime, 'captureDeath');
         const state = runtime.actorActionBinding()?.state, resources = state ? [...state.actors] : [];
+        const stat = state ? 'combat.stamina-capacity' : 'native.max-hp';
         const next = getNextEntityId(), random = rng.getState(), before = runtime.snapshot(), messages = logger.getState();
         const keys = Reflect.ownKeys(game), audit = auditFullObjectGraph(fullGenerationRoots(game), [runtime]);
         const perform = () => runtime.withCommittedFacts(() => {
@@ -48,7 +49,7 @@ describe('3g committed facts around successful 4e body transitions', () => {
         expect(game.monsters).toBe(list); expect(game.bodyGroups![0]).toBe(group); expect(source.spatial).toBe(spatial);
         expect(state).toBe(runtime.actorActionBinding()?.state);
         resources.forEach((resource, i) => expect(state!.actors[i]).toBe(resource));
-        expect(runtime.stats.value(source.id, 'combat.stamina-capacity')).toBeGreaterThan(0);
+        expect(runtime.stats.value(source.id, stat)).toBeGreaterThan(0);
         expect(observed).toHaveLength(1);
         expect(observed[0]).toMatchObject({ factId: before.foundation.nextFactId, actor: { entityId: source.id, partId: 'leg00', generation: 0 } });
 
@@ -58,13 +59,13 @@ describe('3g committed facts around successful 4e body transitions', () => {
         expect(getNextEntityId()).toBe(next + (reason === 'split' ? 1 : 0));
         expect(game.monsters).not.toContain(source); expect(source.hp).toBe(0);
         expect(death).not.toHaveBeenCalled();
-        expect(runtime.stats.value(core.id, 'combat.stamina-capacity')).toBeGreaterThan(0);
+        expect(runtime.stats.value(core.id, stat)).toBeGreaterThan(0);
         if (reason === 'phase') {
             expect(game.monsters).toEqual([core, actors[7], actors[8], external]);
             expect(resolveActorQueryScope(game.actorActionWorld(), actors[8]!)).toEqual({ depth: game.depth, partId: 'leg00', generation: 0 });
             expect(resolveActorQueryScope(game.actorActionWorld(), actors[7]!)).toEqual({ depth: game.depth, partId: 'leg01', generation: 0 });
             expect(resolveActorQueryScope(game.actorActionWorld(), source)).toBeNull();
-            expect(runtime.stats.value(actors[8]!.id, 'combat.stamina-capacity')).toBeGreaterThan(0);
+            expect(runtime.stats.value(actors[8]!.id, stat)).toBeGreaterThan(0);
             const forged = Object.assign(Object.create(Object.getPrototypeOf(actors[8]!)), actors[8]);
             expect(resolveActorQueryScope(game.actorActionWorld(), forged)).toBeNull();
             expect(() => runtime.queryOptionalActorInWorld('fixture.absent.v1', forged, {}, game.actorActionWorld())).toThrow('Untrusted');

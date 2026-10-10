@@ -11,6 +11,7 @@ import { ItemLoader } from '../engine/Items/ItemLoader';
 import { Monster, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
 import type { StatusId } from '../entities/Creature';
+import { auditFullObjectGraph } from './support/fullGenerationCheckpointOracle';
 import { acknowledgmentKeys } from '../ui/messageAcknowledgment';
 
 function room(g: Game) {
@@ -256,5 +257,52 @@ describe('X3-U6 CE prose and acknowledgment producers', () => {
         for (const key of ['fall.flavor_chasm','fall.flavor_trapdoor','fall.flavor_hole','fall.plunge','env.player_incinerated','scroll.reveal_identify','scroll.reveal_enchantment']) {
             expect(source.split('\n').find(line => line.includes(`logger.log(i18next.t('${key}'`))).toContain('acknowledge: true');
         }
+    });
+});
+
+
+// I16: checkpoint rollback owns the original logger graph, even after reset
+// replaces its arrays or a duplicate mutates a retained archive row.
+describe('I16 Logger checkpoint identities', () => {
+    it('nested and repeated restores keep original arrays, rows, IDs, turn and ACK occurrences', () => {
+        const log = new Logger(); log.presentAcknowledgments(() => true); log.turn = 7;
+        log.log('alpha', '#fff', { acknowledge: true });
+        const outer = auditFullObjectGraph({ log }), array = log.messages, row = log.messages[0]!;
+        const occurrence = log.pendingAcknowledgment!, outerState = log.peekState(), restoreOuter = log.checkpoint();
+        log.log('alpha', '#fff', { acknowledge: true }); log.log('beta', '#fff', { acknowledge: true });
+        const inner = auditFullObjectGraph({ log }), innerRows = [...log.messages];
+        const innerOccurrences = log.pendingAcknowledgments, innerState = log.peekState(), restoreInner = log.checkpoint();
+        for (let n = 0; n < 2; n++) {
+            log.reset(); log.turn = 99; log.log('speculative'); restoreInner();
+            expect(inner.differences()).toEqual([]); expect(log.messages).toBe(array);
+            innerRows.forEach((r, i) => expect(log.messages[i]).toBe(r));
+            expect(log.peekState()).toEqual(innerState);
+            innerOccurrences.forEach((r, i) => expect(log.pendingAcknowledgments[i]).toBe(r));
+        }
+        for (let n = 0; n < 2; n++) {
+            restoreOuter(); expect(outer.differences()).toEqual([]);
+            expect(log.messages).toBe(array); expect(log.messages[0]).toBe(row); expect(row.count).toBe(1);
+            expect(log.peekState()).toEqual(outerState); expect(log.pendingAcknowledgment).toBe(occurrence);
+            expect(log.pendingAcknowledgments).toHaveLength(1);
+            log.log('alpha'); log.messages.shift(); log.turn = 42;
+        }
+        restoreOuter(); expect(outer.differences()).toEqual([]);
+    });
+    it('repeated rollback preserves unflushed combat, the heard latch and the original ACK', () => {
+        const log = new Logger(), disturb = vi.fn(); log.onDisturb = disturb; log.presentAcknowledgments(() => true);
+        log.log('existing', '#123456', { acknowledge: true }); log.hearCombat('unflushed'); disturb.mockClear();
+        const entry = auditFullObjectGraph({ log }), occurrence = log.pendingAcknowledgment!;
+        const state = log.peekState(), restore = log.checkpoint(); expect(disturb).not.toHaveBeenCalled();
+        log.log('existing', '#123456', { acknowledge: true }); log.acknowledgeNext(); log.showTerminalAcknowledgments();
+        log.turn = 12; log.blockCombatText = true; log.onDisturb = null;
+        for (let n = 0; n < 2; n++) {
+            restore(); expect(entry.differences()).toEqual([]); expect(log.peekState()).toEqual(state);
+            expect(log.pendingAcknowledgment).toBe(occurrence); expect(log.pendingAcknowledgments).toHaveLength(1);
+            expect(log.unreadAcknowledgments).toEqual([]);
+            log.hearCombat('must stay suppressed'); log.flushCombat();
+            expect(log.messages.map(m => m.text)).toEqual(['existing', 'unflushed']);
+            expect(log.messages.map(m => m.id)).toEqual([0, 1]);
+        }
+        restore(); expect(entry.differences()).toEqual([]); expect(log.pendingAcknowledgment).toBe(occurrence);
     });
 });

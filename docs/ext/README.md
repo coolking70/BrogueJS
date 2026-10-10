@@ -1,6 +1,32 @@
+# 阶段5最新安排（2026-10-11）
+
+阶段5已推送：底座`35045d9`、giants2集成`2709250`、5Y`a4932d1`。5Z本地实现及独立R1已收口：未发现确证缺陷，无需修复或R2。维护者已核对候选源码/构建身份，5Z实现`0ec7c56`已推送至`ext/phase5`；本地收口完成，交人工待验并停止监督。七项基线失败与完整npm首次64项失败均有逐项单变量归因/修复/复测关闭，7个unhandled亦真实说明；首次完整npm exit1保留，没有新一次完整npm exit0。全部ext、实际drift、原正常128引擎路径通过；批准15物理删除布局全部实际完成（7单删/7单留/1全删），每行boundary/types/build/全部剩余ext及真实缺包存档录像拒绝完成，前七行按明确影响范围复测关闭并沿用未受影响部分，后八行当前源码完整首次通过。删除smoke只全开/全关，全删去重，29/29+正常128/128=157/157；额外历史124单列，另外112布局范围外未验。详见[作者报告](phase5z.report.md)和[人工清单](phase5z.manual-checklist.md)，浏览器/真机全部待人工，不称阶段5全面验收通过。本次有效独立审查1轮，无R2/R3；5C2/5D3在阶段5之后，5E2/5F不扩。以[状态卡](commander-status.md)和[遗留](phase5z-remainders.md)为准，覆盖下方历史排期。
+
+# 5E1维护者收口（2026-10-09，已发布 `a9f554b`）
+
+两轮独立审查及最后一次作者修复已完成，维护者已核对实际改动与测试日志并按本步限定范围收口。R1-F1原合法变形/坠层存读、F2摘要发布、F3时序拒档均已修复；R2-F1伪造坠离在末次窄修后被拒，原独立2探针与真实生命周期/活局保持回归通过，最终boundary/types通过。没有第3轮审查，最后修复不冒称独立关闭。当前无剩余已确认未修复正确性缺陷；全量、组合/删除、浏览器/真机、最大负载和细分覆盖留5Z。 分支`ext/phase5`，开工HEAD`5c34f50`；foundation13/world5 schema4/settlement1.3.0 state2，九冻结SDK保持。见[报告](phase5e1.report.md)、[状态卡](commander-status.md)及[5Z](phase5z-remainders.md)。5C2/5D3继续后置，5Z前范围待定；不自动开下一大步骤。
+
 # 独立新产品原型：扩展开发路线
 
+## 5D2维护者验收（2026-10-09）
+
+开工HEAD `e0fa39a225428d36e6e342f6585f57f45960e6ba`；5D1 `f067e89`及5G集成 `467962b`（含`eda3094`）已由父提交推送。5D2交付有限生产订单、农田/猎人/厨师、可选crafting目录、真实输入/产物/事务与中文UI，两轮独立审查已完成、R1/R2关闭，5D2 `ce7a2da`已推送至`ext/phase5`；见[任务书](phase5d2.task.md)、[报告](phase5d2.report.md)及[配置手册](settlement-config.md)。
+
+5D2验收时foundation12/world5 schema3/经济合同1.2.0/settlement1.2.0 state2；whole-run6/recording4/origin2、worldSdk1/edibleSdk1及九冻结字节保持。相关门禁与格式重录按报告实际结果引用，完整npm/test:ext、128组合/删除、浏览器/真机及最大负载留[5Z](phase5z-remainders.md)。原实施者已停止写入；维护者提交发布，最多两轮审查规则已执行。
+
 `ext/foundation` 现定位为基于 BrogueJS 的**独立新产品原型分支**，暂不合并 `main`。允许按新产品目标彻底修改玩法与引擎；现有内容、数值和阶段样例均可在后续重新设计，不以继续兼容经典 CE 为前提。
+
+## 阶段5D1验收裁决（历史，提交见上文）
+
+**5D1本步按用户裁决验收，可提交。** 提交由父后续执行、提交号以随后记录为准；本执行者未commit/push，未合main或5G。已确证的玩法及存档/录像一致性问题已修复并独立关闭，当前无剩余已证实阻断。V16径向误激活与居民岗位选择问题已有窄回归及独立通过；同值DTO草稿刷新F1独立复验20项通过并关闭。最终浏览器复验仍未完成，不能称全场景通过。
+
+已有结果分版本引用、不累计重叠数：V12正式性能16人净增P95为3.672584ms、64人峰值46.777167ms；final-ui-draft-fix原四文件81项及五守卫38项通过，boundary/types/实际build通过；final-ui-fix实际drift8项通过。父V17既有摘要为四原raw真实回放0 OOS、末9字段相同，同源build与selector准入通过；本轮不重新验证这些结果。 遗留①玩法/存档录像正确性：无剩余已证实阻断；②证据/截图/脚本形式与最终V17十手势、24矩阵、self955三个完整浏览器场景、真机/失焦及完整门禁：归[5Z清单](phase5z-remainders.md)。5G静态R1是集成风险；5D2内容仍未实现，均不混作5D1已证实缺陷。流程按[指挥交接](commander-handoff.md)的两轮上限及摘要政策执行。当前范围和配置见[5D1报告](phase5d1.report.md)、[手册](settlement-config.md)。
+
+### 上一轮V12源码与文档接续（历史，已由上文覆盖）
+
+5C1历史验收保持；5D1当前源码已包含有限自生/真实救援招募、住房/粮仓/锁粮真实消费、32000tick日粮与1000tick住房双欠额、饥荒非死亡离队、在场种植/搬运/守卫及真实楼梯护送/回营。配置入口为[远征营地5D1手册](settlement-config.md)，范围及阶段证据见[5D1任务书](phase5d1.task.md)、[5D1报告](phase5d1.report.md)。foundation11/world5 schema2/settlement1.1.0/state2，whole-run6/recording4/origin2，worldSdk1/edibleSdk1及九冻结不变。
+
+本文当前说明已比对V12生产源，优化差量已独立审查；限定回归已完成串行复核，原12文件批次exit1保留；boundary/types/npm build/npm drift已通过。V12正式性能已通过（16人净增P95 3.672584ms、64人峰值46.777167ms）；最终浏览器、登记/文档接入差量独立复核及父验收尚未完成。不能据本段提交/推送或宣称5D1整体通过。5D2厨师/猎人/完整离线岗位/供应链与配方居民订单尚未实现；当前未安装生产foraging，真实5G联动需集成后另验。最大负载/完整体积/全组合/删除矩阵和全量兜底归5Z。下面阶段3/4的旧结论保留当时事实，不由本段追改。
 
 ## 阶段 4f 第一部分：配置手册与收尾补漏
 
@@ -33,6 +59,8 @@ dot 的 3g（foundation 4→5）尚未合入。完整 `npm test`、全部 `test:
 2d已选择性复用main `dc0b78bd3a877a89f9b514ac325280cfce583342` 的D1–D4、`26ad9c4` blur修复与共享SFC harness；同一个DialogService/DialogHost承载正式dialogue，DialogInput是唯一物理输入屏障，受控命令纯准备合同不另起新方案。历史实现和浏览器覆盖继续以[2d报告](phase2d.report.md)为准；没有新运行证据的项目不得称为2e新验证。
 
 ## 当前政策与历史记录的关系
+
+> **5Z当前合同优先：** 本次按2026-10-09任务书及用户授权执行单变量反事实、保断言语义/门限/原捕获方法，不宽化守卫、exclude或skip。下方1e政策保留为历史，不能用于豁免本次要求。
 
 以下原则是维护者在阶段 1e 验收后确认的新政策，**覆盖阶段 0/1 的旧验收原则**。`AGENTS.md`、主线 `docs/`、本目录旧任务书与报告中关于 CE 优先、classic 逐字节不变、经典隔离/零调用、中性战斗对等、旧守卫不可调整、单变量反事实及旧 CE 门禁的要求，不再作为本分支的未来义务；冲突时以维护者最新要求及本页为准。主线自身的开发政策不由本次文档更新改变。
 
@@ -76,13 +104,13 @@ dot 的 3g（foundation 4→5）尚未合入。完整 `npm test`、全部 `test:
 - 完整 `npm test` 一次，使用仓库的套件入口和清单，不以定向测试拼接代替
 - 所有已安装模块子集的真实 Game 新局、游玩、save/load、逐条 replay、seek 与存档续录 smoke
 
-**物理删除副本改用 removal 档，不再重复完整 `npm test`。** 每个副本实际删去模块整个自有目录，清理 TS/Vite 缓存后运行 boundary、vue-tsc、build、全部剩余 `test:ext`，以及所有剩余模块子集的真实新局/save/load/replay/seek/续录 smoke，并验证要求缺失模块的旧档/录像被拒绝。模块自有测试只随实际所属目录删除；底座与保留模块的所有已登记测试仍由发现器校验，不做宽泛 exclude、额外 skip 或空壳替代。2a0/2a1 当时每个删除副本已跑完整 npm test 的历史结果不追改。
+**物理删除副本改用 removal 档，不再重复完整 `npm test`。** 每个副本实际删去模块整个自有目录，清理 TS/Vite 缓存后运行 boundary、vue-tsc、build、全部剩余 `test:ext`，以及剩余模块全开和全部不开的真实新局/save/load/replay/seek/续录 smoke（全删去重，删除脚本显式传入`--combinations endpoints`；正常独立smoke默认仍全子集），并验证要求缺失模块的旧档/录像被拒绝。模块自有测试只随实际所属目录删除；底座与保留模块的所有已登记测试仍由发现器校验，不做宽泛 exclude、额外 skip 或空壳替代。2a0/2a1 当时每个删除副本已跑完整 npm test 的历史结果不追改。
 
-`check:module-removal` 默认 `--profile=auto` 枚举全部目录保留子集：未删除目录的行跑 full，真实删除的行跑 removal。`--profile=full` 只选择未删除目录的正常副本；`--profile=removal` 只选择实际删除行，可配 `--retain=none` 或明确保留列表。与 profile 不匹配的 retain 会报错，不能把正常树标成 removal 来省掉完整测试。正常树门禁已另行执行时，用 `--profile=removal` 避免重复正常 full；该结果明确记录正常 full 是外部必要门禁而尚未由该次运行验证。
+`check:module-removal` 默认 `--profile=auto` 枚举全部目录保留子集：未删除目录的行跑 full，真实删除的行跑 removal。`--profile=full` 只选择未删除目录的正常副本；`--profile=removal` 只选择实际删除行，可配 `--retain=none` 或明确保留列表。与 profile 不匹配的 retain 会报错，不能把正常树标成 removal 来省掉完整测试。5Z的2026-10-10最新合同只授权15个明确retain（7单删/7单留/1全删），不得使用默认全部枚举；正常树门禁已另行执行时，用 `--profile=removal` 并显式 `--retain` 避免重复正常 full和范围外行；该结果明确记录正常 full 是外部必要门禁而尚未由该次运行验证。
 
-例：`NODE_OPTIONS=--max-old-space-size=3072 node scripts/check-module-removal.mjs --profile=removal --maxWorkers=2 --output=<仓库外新证据目录>`。`--plan` 只列逐行档位与命令，`--prepare-only` 只复制/删除/核对所有权，均不声称测试通过。`--engine-only` 只验证真实引擎，证据仍标浏览器未验证，生成构建的真实浏览器验收另列。所有长门禁统一 Node 24.19.0、3 GiB 堆与 2 workers；正常树及各副本保留各自当前输入 hash、真实命令、退出码、数量与耗时。
+单删growth行示例（其余14行按任务书§5明确保留集合逐行执行，不省略retain）：`NODE_OPTIONS=--max-old-space-size=3072 node scripts/check-module-removal.mjs --engine-only --profile=removal --maxWorkers=1 --retain=combat,crafting,foraging,giants,narrative,settlement --output=<本行仓外新目录>`。`--plan` 只列逐行档位与命令，`--prepare-only` 只复制/删除/核对所有权，均不声称测试通过。`--engine-only` 只验证真实引擎，证据仍标浏览器未验证，生成构建的真实浏览器验收另列。5Z长门禁按最新合同统一 Node 24.19.0、3 GiB 堆与默认单worker（历史各步workers按原报告）；正常树及各副本保留各自当前输入 hash、真实命令、退出码、数量与耗时。
 
-不要求 CE 参照源码，不运行 `ce:fetch`、`test:full` 或 `test:gen`；正常树完整 `npm test` 保持仓库默认行为，已有 CE 缓存若被自动使用，无需禁用，也保留到删除副本。没有 CE 源码时由测试原有机制显式跳过 CE 依赖用例，不人为隐藏缓存制造跳过；报告列明实际通过、跳过、todo 与失败结果。改地图生成时另跑 `npm run test:drift`，允许按新设计需要重录基线，报告变更原因及结果；不再要求旧 CE 对齐或单变量反事实。2b 若改生成，仍须按实际影响追加 drift，不能沿用 2a1 的免跑理由。
+不要求 CE 参照源码，不运行 `ce:fetch`、`test:full` 或 `test:gen`；正常树完整 `npm test` 保持仓库默认行为，已有 CE 缓存若被自动使用，无需禁用，也保留到删除副本。没有 CE 源码时由测试原有机制显式跳过 CE 依赖用例，不人为隐藏缓存制造跳过；报告列明实际通过、跳过、todo 与失败结果。改地图生成时另跑 `npm run test:drift`，生成基线/黄金 trace 的变化须先单变量归因，再沿原捕获方法重录并逐叶登记，见 `docs/testing.md` §3；规则以 CE 执行路径为规格，不追求同种子逐骰一致。2b 若改生成，仍须按实际影响追加 drift，不能沿用 2a1 的免跑理由。
 
 ## 阶段
 
@@ -108,7 +136,7 @@ dot 的 3g（foundation 4→5）尚未合入。完整 `npm test`、全部 `test:
 
 ## 当前审阅入口
 
-- [阶段5远征营地、聚落建设与世界层联合设计](phase5-settlement-world.md)：已批准（P5-D01–D14=A）；只读代码审计、模块契约、并行排期与 P5-D01–D14 待决项，未实施
+- [阶段5远征营地、聚落建设与世界层联合设计](phase5-settlement-world.md)：已批准（P5-D01–D14=A）；历史设计保留，5D1当前实现/限制以[配置手册](settlement-config.md)、[任务书](phase5d1.task.md)及[报告](phase5d1.report.md)为准。5D1本步按最新用户裁决验收可提交，最终浏览器与完整门禁转[5Z](phase5z-remainders.md)；5D2及后续设计不视为已实现。
 - [阶段5野外采食 `foraging` 设计稿](phase5-foraging.md)：已批准（2026-10-06）；Q1–Q11 按推荐、Q12=B（篝火/灶台首版可烤）；底座钩子见 [5A4 任务书](phase5a4.task.md)
 - [阶段3独立类魂战斗设计](phase3-combat.md)：已批准（P3-D01–D07=A），3a0–3c 已验收；3d 候选见本页与报告
 - [3a0 共用动作底座报告](phase3a0.report.md)：基于已合并 4a0 的有限动作/调度/防御 fixture；正式 combat 仍保持 inert，等待独立验收

@@ -36,7 +36,7 @@ export function applyEdibleEffect(
   } else if (needId) o.satietyGained = feedNeed(game, target.id, needId, satiety);
   if (intent.kind === 'heal-fraction') {
     const hp = target.hp;
-    target.heal(Math.max(intent.min, Math.floor((target.maxHp * intent.percent) / 100)));
+    target.healPoints(Math.max(intent.min, Math.floor((target.maxHp * intent.percent) / 100)));
     o.hpGained = target.hp - hp;
     o.applied = o.hpGained > 0;
   }

@@ -19,6 +19,19 @@ export function checkedAdd(a: number, b: number): number {
   if (b > Number.MAX_SAFE_INTEGER - a) throw new World5Error('C5_OVERFLOW');
   return a + b;
 }
+// Schema spellings are immutable call-site data, not world state. Bound the
+// cache for arbitrary SDK callers; every actual value still gets all guards.
+const exactKeys = new Map<string, { sorted: string; names: Set<string>; count: number }>();
+function exactKeyShape(keys: string) {
+  let shape = exactKeys.get(keys);
+  if (shape === undefined) {
+    const names = keys.split(',');
+    shape = { sorted: names.sort().join(','), names: new Set(names), count: names.length };
+    if (exactKeys.size >= 64) exactKeys.clear();
+    exactKeys.set(keys, shape);
+  }
+  return shape;
+}
 export function exact(
   value: unknown,
   keys: string,
@@ -27,16 +40,25 @@ export function exact(
   if (
     !value ||
     typeof value !== 'object' ||
-    Array.isArray(value) ||
-    ![Object.prototype, null].includes(Object.getPrototypeOf(value)) ||
-    Reflect.ownKeys(value).some(
-      (k) =>
-        typeof k !== 'string' ||
-        !Object.getOwnPropertyDescriptor(value, k)?.enumerable ||
-        !('value' in Object.getOwnPropertyDescriptor(value, k)!)
-    ) ||
-    Object.keys(value).sort().join(',') !== keys.split(',').sort().join(',')
+    Array.isArray(value)
   )
+    throw new World5Error('C5_BAD_PAYLOAD', field);
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null)
+    throw new World5Error('C5_BAD_PAYLOAD', field);
+  for (const key of Reflect.ownKeys(value)) {
+    if (typeof key !== 'string') throw new World5Error('C5_BAD_PAYLOAD', field);
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor?.enumerable || !('value' in descriptor))
+      throw new World5Error('C5_BAD_PAYLOAD', field);
+  }
+  // Keep the second enumerable-key read, including its descriptor checks on
+  // proxies. A valid schema permutation needs no per-object sort or join.
+  const actual = Object.keys(value), shape = exactKeyShape(keys);
+  if (actual.length === shape.count && actual.every(key => shape.names.has(key))) return;
+  // Preserve the original joined-key contract even for unusual comma keys or
+  // duplicate/empty schema spellings supplied by generic SDK callers.
+  if (actual.sort().join(',') !== shape.sorted)
     throw new World5Error('C5_BAD_PAYLOAD', field);
 }
 export function validateLevelRef(value: unknown): asserts value is LevelRef {

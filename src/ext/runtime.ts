@@ -1,3 +1,4 @@
+import { assertResidentPolicy } from './residentSchema';
 import { validateEdibleSnapshot } from '../engine/Core/EdibleValidation';
 import i18next from 'i18next';
 import { worldText } from './worldText';
@@ -7,12 +8,14 @@ import { FOUNDATION_STRUCTURE_RULES } from './structureSchema';
 import { StatPipeline } from '../engine/Stats/StatPipeline';
 import { NATIVE_STAT_KEYS, NATIVE_STAT_DAG } from '../engine/Stats/NativeStatKeys';
 import { MaterializedStats, validateMaterializedStats } from '../engine/Stats/MaterializedStats';
-import { bindStats, markStatsDirty, nativeStatRevision, nativeStatSignature, nativeStatFacts, nativeBase, nativeEquippedItems, nativeRows, nativeNodeRows, unbindStats } from '../engine/Stats/NativeStatSources';
+import { checkpointGenerationWorld } from '../engine/Core/WorldCheckpoint';
+import { checkpointNativeStatBindings, bindStats, markStatsDirty, nativeStatRevision, nativeStatSignature, nativeStatFacts, nativeBase, nativeEquippedItems, nativeRows, nativeNodeRows, unbindStats } from '../engine/Stats/NativeStatSources';
 import { StatValidationError, validateStatRows } from './stats';
 import type { PairFacts, StatQuery } from './stats';
 import { markRecordingRoot, recordingRootRevision } from './recordingRevisions';
 import { World5Error } from './world5';
 import { c5Hash, c5Canonical } from './worldJson';
+import { RESIDENT_ACTIONS } from './residentSdk';
 import {STRUCTURE_ACTIONS} from './structureSdk';
 import { isWorld5Fixture, isWorld5StructureFixture, isWorld5WorkFixture, world5FixtureConfiguration } from './world5Fixture';
 import { FOUNDATION_PROTOCOL } from './descriptor';
@@ -64,7 +67,7 @@ const restHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts,'nativeDa
 const actorQueryScopes=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['actorQueryScope']>>();
 const nativeFactCheckpoints=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['checkpointCommittedFacts']>>();
 interface StatProposal {hp?:number;maxHp?:number;strength?:number;oldMaxBonus:number;oldStrengthBonus:number}
-interface StatSession { pipeline:StatPipeline; ledger:MaterializedStats; actors:Map<number,Creature>; inProgress:boolean; writes:boolean; overrides:Map<string,number>; proposals:Map<number,StatProposal>|null; moduleViews:Map<string,{state:ReadonlyJson;components:Record<string,ReadonlyJson>}>; previewComponents:Readonly<Record<string,Json>>|null; materialSignatures:Map<number,string>; materialValues:Map<number,Map<string,number>>; collecting:boolean; dirty:Set<number>; reconciling:boolean }
+interface StatSession { pipeline:StatPipeline; ledger:MaterializedStats; actors:Map<number,Creature>; simulationTicks:number|null; inProgress:boolean; writes:boolean; overrides:Map<string,number>; proposals:Map<number,StatProposal>|null; moduleViews:Map<string,{state:ReadonlyJson;components:Record<string,ReadonlyJson>}>; previewComponents:Readonly<Record<string,Json>>|null; materialSignatures:Map<number,string>; materialValues:Map<number,Map<string,number>>; collecting:boolean; dirty:Set<number>; reconciling:boolean }
 const statSessions=new WeakMap<ExtensionRuntime,StatSession>();
 const edibleDiagnostics=new WeakMap<ExtensionRuntime,{owner:string;method:string}[]>();
 const statQueries=new WeakMap<ExtensionRuntime,StatQuery>();
@@ -311,6 +314,7 @@ export class ExtensionRuntime {
             const entry={module,consumer:Object.freeze({maxDerivedFacts:consumer.maxDerivedFacts,prepare:consumer.prepare,commit:consumer.commit,...(consumer.eventKinds?{eventKinds:Object.freeze([...consumer.eventKinds])}:{})})};
             registry.set(capability,Object.freeze([...(registry.get(capability)??[]),entry].sort((a,b)=>a.module.id<b.module.id?-1:a.module.id>b.module.id?1:0)));
         }
+        for(const module of this.modules)if(module.residentPolicy){assertResidentPolicy(module.residentPolicy,module.id);Object.defineProperty(module,"residentPolicy",{value:freezeView(structuredClone(module.residentPolicy)),writable:false});}
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalActorQueries ?? {})) {
             if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
                 || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid actor query provider');
@@ -371,7 +375,7 @@ export class ExtensionRuntime {
         let query=statQueries.get(this);if(!query){const pipeline=this.stats;query=Object.freeze({applied:pipeline.applied.bind(pipeline),value:pipeline.value.bind(pipeline),rational:pipeline.rational.bind(pipeline),breakdown:pipeline.breakdown.bind(pipeline),hypothetical:pipeline.hypothetical.bind(pipeline)});statQueries.set(this,query);}return query;
     }
     private initializeStats(snapshot?:ExtensionSnapshot):void{
-        const session:StatSession={pipeline:null!,ledger:new MaterializedStats(()=>markRecordingRoot(this)),actors:new Map(),inProgress:false,writes:false,overrides:new Map(),proposals:null,moduleViews:new Map(),previewComponents:null,materialSignatures:new Map(),materialValues:new Map(),collecting:false,dirty:new Set(),reconciling:false};
+        const session:StatSession={pipeline:null!,ledger:new MaterializedStats(()=>markRecordingRoot(this)),actors:new Map(),simulationTicks:null,inProgress:false,writes:false,overrides:new Map(),proposals:null,moduleViews:new Map(),previewComponents:null,materialSignatures:new Map(),materialValues:new Map(),collecting:false,dirty:new Set(),reconciling:false};
         statSessions.set(this,session);session.ledger.restore(snapshot?.foundation.stats);
         const actor=(id:number)=>{const a=session.actors.get(id);if(!a)throw new StatValidationError('source');return a;};
         session.pipeline=new StatPipeline({nativeSignature:id=>JSON.stringify([nativeStatSignature(actor(id)),this.actorActionBinding()?.state.actors.find(row=>row.actorId===id)?.profileId]),beforeRead:id=>{if(session.dirty.has(id)&&!session.inProgress&&!session.reconciling&&!this.pureProviderPhase)this.reconcileMaterialized(id);},debug:this.ports.testMode?.()===true,applied:(id,key)=>session.ledger.bonus(id,key),actor:id=>nativeStatFacts(actor(id),this.ports.playerId()),revision:id=>nativeStatRevision(actor(id)),
@@ -384,7 +388,7 @@ export class ExtensionRuntime {
                 if(session.collecting)throw new StatValidationError('source');
                 session.collecting=true;try{
                 const all:import('../engine/Stats/StatPipeline').OwnedStatRow[]=[...nativeRows(actor(id),change,known)];
-                for(const r of peekEdibleState(this).timedStats?.rows??[])if(r.actorId===id&&(this.ports.simulationTicks?.()??0)<r.untilTick)all.push({stat:r.key,category:r.category,value:r.value,layer:'temporary',sourceKind:'edible',sourceId:`${r.owner}.${r.key}`,owner:r.owner,...(r.category==='more'?{slot:'temporary'}:{})});
+                for(const r of peekEdibleState(this).timedStats?.rows??[])if(r.actorId===id&&(session.simulationTicks??this.ports.simulationTicks?.()??0)<r.untilTick)all.push({stat:r.key,category:r.category,value:r.value,layer:'temporary',sourceKind:'edible',sourceId:`${r.owner}.${r.key}`,owner:r.owner,...(r.category==='more'?{slot:'temporary'}:{})});
                 for(const module of this.modules){const provider=module.statSources;if(!provider)continue;
                     const previous=this.pureProviderPhase;this.pureProviderPhase=true;
                     try{let view=!change?session.moduleViews.get(module.id):undefined;if(!view){view={state:freezeView(cloneJson(this.states[module.id]!)),components:{}};if(!change)session.moduleViews.set(module.id,view);}const context=Object.freeze({playerId:this.ports.playerId(),state:view.state,facts:freezeView(structuredClone(facts)),
@@ -451,7 +455,15 @@ export class ExtensionRuntime {
         }
     }
     assertStats():void{const session=statSessions.get(this)!;session.ledger.assert([...session.actors.keys()],session.pipeline,(id,key)=>{const a=session.actors.get(id)!;return key==='native.max-hp'?a.maxHp:key==='native.strength'&&a instanceof Player?a.strength:undefined;});}
-    withStatWorld<T>(actors:readonly Creature[],work:()=>T):T{const s=statSessions.get(this)!;const previous=s.actors;s.actors=new Map(actors.map(a=>[a.id,a]));s.pipeline.clear();try{return work();}finally{s.actors=previous;s.pipeline.clear();}}
+    /** Engine preflight only: nested actor scopes inherit the candidate clock. */
+    withStatWorld<T>(actors:readonly Creature[],work:()=>T,simulationTicks?:number):T{
+        const s=statSessions.get(this)!,previousActors=s.actors,previousTicks=s.simulationTicks;
+        s.actors=new Map(actors.map(a=>[a.id,a]));
+        s.simulationTicks=simulationTicks??previousTicks;
+        s.pipeline.clear();
+        try{return work();}
+        finally{s.actors=previousActors;s.simulationTicks=previousTicks;s.pipeline.clear();}
+    }
     private context(module: ExtensionModule, scope: object | null): ExtensionContext {
         const runtime = this;
         const writable = (): void => { if (!scope || runtime.activeScope !== scope || runtime.disposed || runtime.pureProviderPhase) throw new Error('Extension mutation outside lifecycle/command/hook'); markRecordingRoot(runtime); };
@@ -521,7 +533,16 @@ export class ExtensionRuntime {
                 // native action carries recovery across floors. Preserve its
                 // scheduler/actor object graph just like a part-break commit.
                 const current=runtime.states[module.id]!;
-                if(canonical(current)===canonical(value))return;
+                // Distinct finite own revision values already prove unequal JSON.
+                // Stored state is detached JSON; only its comparison can be skipped.
+                // Incoming serialization still runs (including reads/errors), even
+                // for a permissive generic module with accessor-backed input.
+                const a=!Array.isArray(current)&&current&&typeof current==='object'?Object.getOwnPropertyDescriptor(current,'revision'):undefined;
+                const b=!Array.isArray(value)&&value&&typeof value==='object'?Object.getOwnPropertyDescriptor(value,'revision'):undefined;
+                const changed=a?.enumerable&&b?.enumerable&&'value' in a&&'value' in b
+                    &&typeof a.value==='number'&&typeof b.value==='number'&&Number.isFinite(a.value)&&Number.isFinite(b.value)&&a.value!==b.value;
+                if(changed)canonical(value);
+                else if(canonical(current)===canonical(value))return;
                 runtime.states[module.id]=module.actorActions?adoptActorActionJson(current,value):cloneJson(value); if(module.statSources||module.actorActions)runtime.invalidateStats();
             },
             getComponent(id, name) { const value = runtime.components[creatureKey(id)]?.[componentKey(name)]; return value === undefined ? undefined : cloneJson(value); },
@@ -779,6 +800,7 @@ export class ExtensionRuntime {
         if (!accepted) return Object.freeze({ status: 'unavailable', reason: 'unsupported-input' });
         const result = provider.query(value, Object.freeze({
             playerId: this.ports.playerId(), state: freezeView(cloneJson(this.states[module.id]!)),
+            getComponent:(id:number,name:string)=>{if(!Number.isSafeInteger(id)||id<1||!validId(name))throw new Error('Invalid component query');const c=this.components[String(id)]?.[`${module.id}:${name}`];return c===undefined?undefined:freezeView(cloneJson(c));},
             getPlayerComponent: (name: string) => {
                 if (!validId(name)) throw new Error('Invalid optional player component');
                 const component = this.components[String(this.ports.playerId())]?.[`${module.id}:${name}`];
@@ -914,6 +936,7 @@ export class ExtensionRuntime {
             stats:this.statQuery, previewStats:(id:number,components:Readonly<Record<string,Json>>)=>{check();return this.hypotheticalComponents(module.id,id,components,false);}, playerId, player: actor ? this.actorFacts(actor) : null,
             resources: freezeView(actor ? this.characterResources(playerId) : { strength: null, gold: null }),
             state: freezeView(cloneJson(this.states[module.id]!)),
+            getComponent:(id:number,name:string)=>{check();if(!Number.isSafeInteger(id)||id<1||!validId(name))throw new Error('Invalid component query');const c=this.components[String(id)]?.[`${module.id}:${name}`];return c===undefined?undefined:freezeView(cloneJson(c));},
             getPlayerComponent: (name: string) => {
                 check();
                 if (!validId(name)) throw new Error('Invalid optional player component');
@@ -1097,7 +1120,8 @@ export class ExtensionRuntime {
                 && Object.keys(input.payload).join(',') === 'facing' && typeof input.payload.facing === 'string';
             if (module?.actorActions && input.action === 'attack') return !!input.payload && typeof input.payload === 'object' && !Array.isArray(input.payload)
                 && Object.keys(input.payload).sort().join(',') === 'attackId,facing' && typeof input.payload.attackId === 'string' && typeof input.payload.facing === 'string';
-            if(module?.campPolicy&&(STRUCTURE_ACTIONS as readonly string[]).includes(input.action))return true;
+            if(module?.residentPolicy&&(RESIDENT_ACTIONS as readonly string[]).includes(input.action))return true;
+            if(module?.campPolicy&&[...STRUCTURE_ACTIONS,'repair'].includes(input.action))return true;
             if(module?.worldWorkCommands?.[input.action as import('./worldSdk').CraftingAction]||module?.edibleCommands?.[input.action as 'feed'|'roast'])return true;
             return !!module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action)
                 && typeof module.commands[input.action] === 'function';
@@ -1215,8 +1239,14 @@ export class ExtensionRuntime {
             this.flushStoryFacts();
             for (const actor of [...this.creatures].sort((a, b) => a.id - b.id)) this.observeCreature(actor);
             const causes = this.causality.snapshot();
-            const origins = [...Object.values(causes.statusOrigins).flatMap(Object.values), ...Object.values(causes.fatalOrigins),
-                ...Object.values(causes.pendingDisplacements), ...Object.values(this.deaths).map(death => death.origin)];
+            // 奖励先于模块 GC 结算，待发击杀事实仍可读取全部已观察来源。
+            // 仅本次原生 GC 后仍可达目标的 origins 能继续保留来源摘要，
+            // 避免同一安全边界收集一次与两次得到不同状态。
+            const keep = new Set(reachable.map(actor => actor.id));
+            const retained = <T>(rows: Record<string, T>): T[] => Object.entries(rows)
+                .filter(([id]) => keep.has(Number(id))).map(([, value]) => value);
+            const origins = [...retained(causes.statusOrigins).flatMap(Object.values), ...retained(causes.fatalOrigins),
+                ...retained(causes.pendingDisplacements), ...retained(this.deaths).map(death => death.origin)];
             const sourceIds = [...new Set(origins.flatMap(origin => origin?.creditActorId ? [origin.creditActorId] : []))].sort((a,b) => a-b);
             this.emit('simulationSettled', { knownKinds: this.ports.knownKinds?.() ?? [],
                 reachableIds: reachable.map(actor => actor.id).sort((a,b) => a-b), sourceIds });
@@ -1704,6 +1734,15 @@ export class ExtensionRuntime {
     noteEdibleDiagnostic(owner:string,method:string):void {this.edibleDiagnostics.push({owner,method});}
     readEdibleDiagnostics():readonly {owner:string;method:string}[] {return freezeView(structuredClone(edibleDiagnostics.get(this)??[]));}
     retireEdibleActor(actor:Creature):void {delete this.components[String(actor.id)];this.creatures.delete(actor);statSessions.get(this)!.actors.delete(actor.id);statSessions.get(this)!.ledger.remove(actor.id);unbindStats(actor);actor.extensionHooks=undefined;this.invalidateStats();markRecordingRoot(this);}
+    /** 仅可信原生退休入口使用；模块上下文不提供此离图会话能力。 */
+    checkpointNativeStatSession(): () => void {
+        const session=statSessions.get(this)!,query=statQueries.get(this);
+        const actors=[...new Set([...session.actors.values(),...this.creatures])];
+        const restoreSession=checkpointGenerationWorld(()=>({shallow:[],deep:[session],references:[this,...this.modules,...actors]}));
+        const restoreBindings=checkpointNativeStatBindings(actors);
+        return()=>{restoreSession();statSessions.set(this,session);restoreBindings();
+            if(query)statQueries.set(this,query);else statQueries.delete(this);};
+    }
     worldWorkTransaction<T>(work:()=>T):T { return this.transaction(work); }
     worldWorkEntities(): readonly WorldInteractable[] { return this.world.entities; }
     worldWorkPlacementProtected(at:{x:number;y:number},depth:number):boolean {
@@ -1713,10 +1752,28 @@ export class ExtensionRuntime {
         if (!this.modules.some(m=>m.id===entity.owner&&m.worldDefinitions) || this.world.entities.length>=WORLD_INTERACTABLE_LIMIT) throw new Error('C5_BUDGET');
         markRecordingRoot(this);const placed={...entity,id:allocateEntityId()};this.world.entities.push(placed);this.world.entities.sort((a,b)=>a.id-b.id);return placed;
     }
+    residentComponentIds(owner:string,name:'resident'|'source'):number[] {return Object.entries(this.components).filter(([,rows])=>rows[`${owner}:${name}`]!==undefined).map(([id])=>Number(id)).sort((a,b)=>a-b);}
+    residentOwners():string[] {return this.modules.filter(m=>m.residentPolicy).map(m=>m.id);}
+    /** Only a closed native retirement stage may coalesce unobservable camp writes. */
+    residentRetirementBatchSafe():boolean {return this.modules.every(m=>!m.statSources&&!m.actorActions&&!m.resourceCommits&&!m.actorNeedParticipant&&!m.edibleParticipant&&!m.worldWorkParticipant&&!Object.values(m.hooks??{}).some(h=>typeof h==='function'));}
+    residentPolicy(owner:string){return this.modules.find(m=>m.id===owner)?.residentPolicy;}
+    residentComponent<T>(owner:string,id:number,name:'resident'|'source'):T|undefined {const c=this.components[String(id)]?.[`${owner}:${name}`];return c===undefined?undefined:cloneJson(c) as T;}
+    replaceResidentComponent(owner:string,id:number,name:'resident'|'source',value:import('./residentSdk').ResidentComponent|import('./residentSdk').ResidentSource|null):void {const m=this.modules.find(m=>m.id===owner&&m.residentPolicy);if(!m)throw new World5Error('C5_SCOPE');this.invoke(m,c=>{if(value===null)c.removeComponent(id,name);else c.setComponent(id,name,value as unknown as Json);});}
     worldCampOwners():string[] {return this.modules.filter(m=>m.campPolicy).map(m=>m.id);}
+    worldRaidRules(owner:string) { return this.modules.find(m=>m.id===owner)?.raidRules; }
     worldCampPolicy(owner:string) {return this.modules.find(m=>m.id===owner)?.campPolicy;}
     worldCampState(owner:string):import('./structureSdk').CampState {
         return cloneJson(this.states[owner]!) as unknown as import('./structureSdk').CampState;
+    }
+    worldCampRecords(owner:string):import('./structureSdk').CampRecord[] {
+        return cloneJson((this.states[owner] as unknown as import('./structureSdk').CampState).camps as unknown as Json) as unknown as import('./structureSdk').CampRecord[];
+    }
+    worldCampRecord(owner:string,id:number):import('./structureSdk').CampRecord|undefined {
+        const camp=(this.states[owner] as unknown as import('./structureSdk').CampState).camps.find(c=>c.regionId===id);
+        return camp?cloneJson(camp as unknown as Json) as unknown as import('./structureSdk').CampRecord:undefined;
+    }
+    worldCampPlotDays(owner:string):import('./structureSdk').CampState['plotDays'] {
+        return cloneJson((this.states[owner] as unknown as import('./structureSdk').CampState).plotDays as unknown as Json) as unknown as import('./structureSdk').CampState['plotDays'];
     }
     worldCampLockedQuantity(itemId:number):number {
         let count=0;for(const module of this.modules)if(module.campPolicy){const s=this.states[module.id] as unknown as import('./structureSdk').CampState;
@@ -1736,11 +1793,14 @@ export class ExtensionRuntime {
         if (this.nextFactId>=Number.MAX_SAFE_INTEGER) throw new Error('C5_OVERFLOW');
         const fact=freezeView({...value,factId:this.nextFactId++});const module=this.modules.find(m=>m.id===fact.owner);
         if(participant&&module?.worldWorkParticipant) {
-            let active=true;
+            let active=true, writerFailed=false;
             try { const runtime=this; const result=module.worldWorkParticipant.onCommitted(fact,Object.freeze({
                 get state(){if(!active)throw new Error('Expired participant');return freezeView(cloneJson(runtime.states[module.id]!));},
-                replaceState(next:import('./worldSdk').JsonValue){if(!active||!isJson(next))throw new Error('Invalid participant state');runtime.invoke(module,context=>context.setState(cloneJson(next as Json)));}
-            }));requireSynchronous(result);if(result!==undefined)throw new Error('Invalid participant result'); }
+                replaceState(next:import('./worldSdk').JsonValue){
+                    try {if(!active||!isJson(next))throw new Error('Invalid participant state');runtime.invoke(module,context=>context.setState(cloneJson(next as Json)));}
+                    catch(error){writerFailed=true;throw error;}
+                }
+            }));requireSynchronous(result);if(writerFailed||result!==undefined)throw new Error('Invalid participant result'); }
             catch {throw new World5Error('C5_PROVIDER');} finally {active=false;}
         }
         return fact;

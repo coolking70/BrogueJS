@@ -273,6 +273,12 @@ function cssReferences(value, imported = false) {
     return result;
 }
 
+/** Production files of these world-content modules may import only these shared entries (plus their own files and shared UI). */
+const STRICT_WORLD_CONTENT_SDK = Object.freeze({
+    crafting: /^src\/ext\/(?:worldSdk|types|descriptor|fingerprint|world)(?:\.ts)?$/,
+    foraging: /^src\/ext\/(?:worldSdk|edibleSdk|types|descriptor|fingerprint|world)(?:\.ts)?$/
+});
+
 /** @returns {string[]} Located ownership and test-manifest errors. */
 export function checkModuleBoundaries(root = process.cwd()) {
     root = path.resolve(root);
@@ -287,11 +293,13 @@ export function checkModuleBoundaries(root = process.cwd()) {
             const relativeSource=slash(path.relative(root,file));
             if(target.startsWith('src/ext/testing/')&&!/^(?:src\/test\/|src\/ext\/testing\/)/.test(relativeSource)&&!/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource))report(file,line,'test-only world adapter referenced by production',reference,target);
             if(moduleOwner(relativeSource)&&!/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource)&&/^src\/engine\/(?:Core\/(?:WorldWork[^/]*|WorldMaterialTransfer|WorldItemRoots|ActorActionsRoot|Edible[^/]*|FireContact|KindKnowledge|DerivedDraw|PlacementGroups|ActorNeeds|ActorDeparture)|Map\/StructureWorld|Items\/WorldItems)(?:\.ts)?$/.test(target))report(file,line,'trusted world authority referenced by content',reference,target);
-            if (moduleOwner(relativeSource) === 'crafting' && !/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource)
-                && target.startsWith('src/') && moduleOwner(target) !== 'crafting'
-                && !/^src\/ext\/(?:worldSdk|types|descriptor|fingerprint|world)(?:\.ts)?$/.test(target)
+            // Strict world-content whitelist: crafting (5B) and foraging (5G). Foraging may also use the frozen edible SDK.
+            const strictOwner = moduleOwner(relativeSource), strictSdk = strictOwner && Object.hasOwn(STRICT_WORLD_CONTENT_SDK, strictOwner) ? STRICT_WORLD_CONTENT_SDK[strictOwner] : null;
+            if (strictSdk && !/(?:\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(relativeSource)
+                && target.startsWith('src/') && moduleOwner(target) !== strictOwner
+                && !strictSdk.test(target)
                 && !/^src\/(?:ext\/ui|ui)\//.test(target)) report(file,line,'world content import outside approved SDK/shared UI',reference,target);
-            if (moduleOwner(relativeSource)==='crafting' && /^src\/ext\/world(?:\.ts)?$/.test(target) && kind!=='import type') report(file,line,'world content world entry is type-only',reference,target);
+            if (strictSdk && /^src\/ext\/world(?:\.ts)?$/.test(target) && kind!=='import type') report(file,line,'world content world entry is type-only',reference,target);
             if (/^src\/ext\/(?:worldSdk|edibleSdk|worldEdible|kindKnowledge|actorNeeds|worldBasics|worldJson|worldWorkSchema|recordingRevisions)\.ts$/.test(relativeSource)
                 && target.startsWith('src/engine/') && kind !== 'import type') report(file,line,'pure world SDK leaf references engine value',reference,target);
             const owner = moduleOwner(target);

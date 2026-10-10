@@ -11,6 +11,8 @@ import { assembleWorldItem } from '../engine/Items/WorldItems';
 import { itemDefinition } from '../engine/Core/WorldWorkWorld';
 import { Monster, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
+import * as catalog from '../ext/catalog';
+import { bodyArenaFixtureDescriptor } from './fixtures/bodyModule';
 afterEach(() => vi.restoreAllMocks());
 it.each([
   'stairs',
@@ -329,18 +331,23 @@ it('the serialized global maximum is 3072 cells and 12288 independently identifi
 });
 
 it('a giant generation arena cannot be appropriated by a runtime camp', () => {
-  const { g } = structureHarness(['giants']);
+  const installed = catalog.getInstalledModuleDescriptors(), hasGiants = installed.some(d => d.id === 'giants');
+  const body = hasGiants ? null : bodyArenaFixtureDescriptor();
+  if (body) vi.spyOn(catalog, 'getInstalledModuleDescriptors').mockReturnValue([...installed, body]);
+  const owner = body?.id ?? 'giants';
+  const { g } = structureHarness([owner]);
   g.startNewGame({
     seed: 7306,
     mode: 'wizard',
     ruleSet: 'extended',
-    extensions: ['c5fixture', 'giants']
+    extensions: ['c5fixture', owner]
   });
   for (let depth = 2; depth <= 3; depth++) {
     g.depth = depth;
     (g as any).generateDepth();
   }
-  const arena = g.extensionRuntime!.worldStructureRegions().find((r) => r.owner === 'giants')!;
+  expect(g.extensionRuntime!.manifest.modules.some(m => m.id === 'giants')).toBe(hasGiants);
+  const arena = g.extensionRuntime!.worldStructureRegions().find((r) => r.owner === owner)!;
   expect(arena).toBeDefined();
   expect(arena.revision).toBe(0);
   const bounds = {

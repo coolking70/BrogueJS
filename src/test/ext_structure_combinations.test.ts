@@ -1,8 +1,12 @@
 import { it, expect, afterEach, vi } from 'vitest';
 import { structureHarness, createCamp, build, fixture } from './support/structureFixture';
 import { worldWorkLastError } from '../engine/Core/WorldWork';
+import { installedOptionalModules } from './support/installedExtensions';
 afterEach(() => vi.restoreAllMocks());
-it.each([[], ['combat', 'giants']].map((modules) => ({ modules })))(
+it.each([...new Map([[], ['combat', 'giants']].map(ids => {
+  const modules = installedOptionalModules(ids);
+  return [modules.join(','), { modules }] as const;
+})).values()])(
   'structure fixture + %j real new/play/save/load/replay/seek/resume',
   ({ modules }) => {
     const { g, h } = structureHarness(modules);

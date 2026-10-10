@@ -1,8 +1,32 @@
+# 阶段5最新安排（2026-10-11）
+
+阶段5已推送：底座`35045d9`、giants2集成`2709250`、5Y`a4932d1`。5Z本地实现及独立R1已收口：未发现确证缺陷，无需修复或R2。维护者已核对候选源码/构建身份，5Z实现`0ec7c56`已推送至`ext/phase5`；本地收口完成，交人工待验并停止监督。七项基线失败与完整npm首次64项失败均有逐项单变量归因/修复/复测关闭，7个unhandled亦真实说明；首次完整npm exit1保留，没有新一次完整npm exit0。全部ext、实际drift、原正常128引擎路径通过；批准15物理删除布局全部实际完成（7单删/7单留/1全删），每行boundary/types/build/全部剩余ext及真实缺包存档录像拒绝完成，前七行按明确影响范围复测关闭并沿用未受影响部分，后八行当前源码完整首次通过。删除smoke只全开/全关，全删去重，29/29+正常128/128=157/157；额外历史124单列，另外112布局范围外未验。详见[作者报告](ext/phase5z.report.md)和[人工清单](ext/phase5z.manual-checklist.md)，浏览器/真机全部待人工，不称阶段5全面验收通过。本次有效独立审查1轮，无R2/R3；5C2/5D3在阶段5之后，5E2/5F不扩。以[状态卡](ext/commander-status.md)和[遗留](ext/phase5z-remainders.md)为准，覆盖下方历史排期。
+
+# 5E1维护者收口（2026-10-09，已发布 `a9f554b`）
+
+两轮独立审查及最后一次作者修复已完成，维护者已核对实际改动与测试日志并按本步限定范围收口。R1-F1原合法变形/坠层存读、F2摘要发布、F3时序拒档均已修复；R2-F1伪造坠离在末次窄修后被拒，原独立2探针与真实生命周期/活局保持回归通过，最终boundary/types通过。没有第3轮审查，最后修复不冒称独立关闭。当前无剩余已确认未修复正确性缺陷；全量、组合/删除、浏览器/真机、最大负载和细分覆盖留5Z。 分支`ext/phase5`，开工HEAD`5c34f50`；foundation13/world5 schema4/settlement1.3.0 state2，九冻结SDK保持。见[报告](ext/phase5e1.report.md)、[状态卡](ext/commander-status.md)及[5Z](ext/phase5z-remainders.md)。5C2/5D3继续后置，5Z前范围待定；不自动开下一大步骤。
+
 # 交接说明（接手先读）
+
+## 5D2维护者验收（2026-10-09）
+
+开工HEAD `e0fa39a225428d36e6e342f6585f57f45960e6ba`；5D1 `f067e89`及5G集成 `467962b`（含`eda3094`）已由父提交推送。5D2交付有限生产订单、农田/猎人/厨师、可选crafting目录、真实输入/产物/事务与中文UI，两轮独立审查已完成、R1/R2关闭，5D2 `ce7a2da`已推送至`ext/phase5`；见[任务书](ext/phase5d2.task.md)、[报告](ext/phase5d2.report.md)及[配置手册](ext/settlement-config.md)。
+
+5D2验收时foundation12/world5 schema3/经济合同1.2.0/settlement1.2.0 state2；whole-run6/recording4/origin2、worldSdk1/edibleSdk1及九冻结字节保持。相关门禁与格式重录按报告实际结果引用，完整npm/test:ext、128组合/删除、浏览器/真机及最大负载留[5Z](ext/phase5z-remainders.md)。原实施者已停止写入；维护者提交发布，最多两轮审查规则已执行。
+
+## ext/phase5 5D1验收裁决（历史，提交见上文）
+
+**5D1本步按用户裁决验收，可提交。** 父后续负责提交并记录提交号；本执行者未commit/push，未合main或5G。已确证的玩法及存档/录像一致性问题已修复并独立关闭，当前无剩余已证实阻断。V16径向误激活与居民岗位选择问题已有窄回归及独立通过；同值DTO草稿刷新F1独立复验20项通过并关闭。最终浏览器复验仍未完成，不能称全场景通过。
+
+已有结果分版本引用、不累计重叠数：V12正式性能16人净增P95为3.672584ms、64人峰值46.777167ms；final-ui-draft-fix原四文件81项及五守卫38项通过，boundary/types/实际build通过；final-ui-fix实际drift8项通过。父V17既有摘要为四原raw真实回放0 OOS、末9字段相同，同源build与selector准入通过；本轮不重新验证这些结果。 证据/截图/脚本形式和最终V17十手势、24矩阵、self955三个完整浏览器场景、真机/失焦及完整门禁移[5Z](ext/phase5z-remainders.md)，不再等待新采证轮次。后续5G静态R1集成风险不列为5D1已证实缺陷。见[5D1报告](ext/phase5d1.report.md)与[最新流程政策](ext/commander-handoff.md)：最多两轮审查→修复，第二轮后余项归5Z，只存结果摘要，覆盖旧封存流程。
+
+### 上一轮收口状态（历史，已由上文覆盖）
+
+5D1限定回归已完成串行复核（原12文件批次exit1保留），boundary/types/npm build/npm drift已通过，V12正式性能两项通过；仍待登记/文档接入差量独立复核、最终浏览器及父验收提交。5G eda3094已验收发布、尚未集成。 未commit/push、未合main或5G。正式自然首轮exit1已归因原916原生拒绝日志，仅修测试旧前提；正常英文956/957、controlled尾、俘虏239/240及选定居民整文件完成串行复核（原12文件批次exit1保留），新限定门禁实际通过，全部生产保持V12字节。见[5D1报告](ext/phase5d1.report.md)顶部和[审查入口](ext/phase5d1.review-findings.md)。父后续冻结最终源做中文raw桥接/实际浏览器，完成后再裁定提交；真实设备/原生失焦和全量兜底留5Z。
 
 本文件写给接手 BrogueJS 的开发者或 AI 会话：项目现在处于什么状态、之前定下了哪些不再重议的决策、怎样继续推进。
 
-最后更新：2026-10-01（DESIGN-3 在 design/new-theme 完成实现与相关门禁，尚待截图与合并前完整测试；未提交）。
+经典分支历史更新：2026-10-01（DESIGN-3 在 design/new-theme 完成实现与相关门禁，尚待截图与合并前完整测试；未提交）。
 
 ## 1. 项目一句话
 
@@ -101,3 +125,10 @@ LAVA 统一完整套件跑完：4573 项通过，2 项原 900000ms 超时；两�
 | `docs/known-issues.md` | 已知问题与待办 |
 | `docs/release.md` | 版本、发布与试玩构建 |
 | `docs/archive/dev-history/` | 旧开发文档归档（勘察报告、单元报告、任务书、进度日志），只读参考 |
+
+
+## 2026-10-08 ext/phase5 早期5D1续作（历史）
+
+当前工作树 BrogueJS-p5/HEAD769f6fc，resident foundation11/whole-run6/recording4/origin2；九冻结SDK不变。AB第三次独立身份/失败入口复审已关闭。remainder补真实救援来源、劳动、escrow退款、需求长跳与跨营规范departure、真实stairs/fall、UI名册选择/共享守卫选格和bounded派生路径；FR1/FR2固定v2独立probe通过，FR3晚多态鉴定/视觉写集已补原生完整同步检查点，本地早/晚回归过，仍待独立复核。I33仅授权移植已审5G的Logger空disabled ACK通知守卫，未完整合并5G。最终shared门禁正在跑，untimed16实际三岗位/匹配control和64合法四营/MAX_SAFE全根分段4case通过，计时未跑。必要未招募spawn不跟stairs使旧seed3录像/几何引用失配，已单变量归因；当前自然seed3与seed28新路线由指挥只读会话重录。parent负责真实浏览器24格/三容器与quiet性能，不能称本步完整通过；最终5Z兜底另排。详见[5D1报告](ext/phase5d1.report.md)、外部current-status.md/SOURCE-POLICY-FR3-READY.md；禁止依据阶段性通过提交/推送。
+
+5D1历史追加（V7前）：旧1980自生fixture不可当当前通过；parent新956正常fresh精确复现尚待正式交付，需原源重验后更新。seed3当前239与四原239/240、23seek含0已通过；外部C1封存绑定清单已交。I53局部scoped控件44px级联独立关闭，实际browser仍待parent。当前production scope10d373.../1198files九冻结不变；同source UI14/边界/types/build/实际drift8项exit0。黄金只更新已归因codec摘要叶，未改输入/断言。PERF-READY为准备，尚无5ms/50ms结论；源码/最终dist要在新自然输入/文档后repin。

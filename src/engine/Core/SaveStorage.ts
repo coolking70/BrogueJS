@@ -11,7 +11,7 @@ export interface SaveSummary {
   mode: GameMode;
   savedAt: number;
 }
-export async function saveSnapshot(snapshot: GameSnapshot): Promise<SaveSummary> {
+export async function saveSnapshot(snapshot: GameSnapshot, isCurrent: () => boolean = () => true, signal?: AbortSignal): Promise<SaveSummary> {
   const summary: SaveSummary = {
     schema: snapshot.schema,
     compatible: true,
@@ -26,11 +26,13 @@ export async function saveSnapshot(snapshot: GameSnapshot): Promise<SaveSummary>
     ['checkpoint', ...RECORDING_STORES],
     'readwrite',
     async (stores) => {
+      if (!isCurrent()) throw new Error('Save generation replaced');
       stores.checkpoint.put(json, 'world');
       stores.checkpoint.put(summary, 'summary');
       if (origin) await writeRecording(stores, originRecording(origin), 'save-origin');
       else await eraseRecording(stores, 'save-origin');
-    }
+      if (!isCurrent()) throw new Error('Save generation replaced');
+    }, signal
   );
   return summary;
 }

@@ -119,8 +119,9 @@ describe('5A4 edible real commands', () => {
   });
   it('registered fixture grants never leak into production catalog', () => {
     expect(getInstalledModuleDescriptors().map((d) => d.id)).not.toContain('fgfixture');
-    expect(getInstalledModuleDescriptors().map((d) => d.id)).not.toContain('foraging');
     const h = make();
+    // Installed production packages are allowed; this harness must enable only its fixture.
+    expect(h.game().extensionRuntime!.manifest.modules.map((m) => m.id)).toEqual(['fgfixture']);
     expect(h.game().extensionRuntime!.worldDefinitionPacks()[0]!.edibleItems).toHaveLength(11);
     h.dispose();
   });
@@ -530,4 +531,240 @@ it('empty-items work facts remain valid after their terminal ticket leaves the b
   // Facts have their own retention bound and may outlive the terminal ticket.
   expect(() => validateWorldWorkReferences(g)).not.toThrow();
   expect(() => h.save()).not.toThrow();
+});
+
+import { nativeStatRevision } from '../engine/Stats/NativeStatSources';
+import { nativeStat, nativePair } from '../engine/Stats/NativeStatSources';
+import { Player } from '../entities/Player';
+import type { EdibleConsumedFact } from '../ext/edibleSdk';
+const healingCases = [
+  { maxHp: 30, hp: 10, gained: 9 },
+  { maxHp: 10, hp: 1, gained: 5 },
+  { maxHp: 30, hp: 28, gained: 2 },
+  { maxHp: 30, hp: 30, gained: 0 },
+  { maxHp: 200, hp: 100, gained: 60 }
+];
+it.each(healingCases.flatMap(row => ['eat', 'feed'].map(operation => ({ ...row, operation }))))(
+  'point healing $operation max=$maxHp hp=$hp reports exactly $gained before the paid turn',
+  ({ maxHp, hp, gained, operation }) => {
+    let fact: EdibleConsumedFact | undefined, immediateHp = -1;
+    let target: Player | ReturnType<typeof ally>;
+    const observer = { ...descriptor, create: () => {
+      const m = descriptor.create(), original = m.edibleParticipant!.onConsumed;
+      m.edibleParticipant!.onConsumed = (f, tx) => {
+        fact = structuredClone(f); immediateHp = target.hp; original?.(f, tx);
+      };
+      return m;
+    } };
+    const h = forage([], [observer]), g = h.game(), food = grant(h, 'sample0');
+    target = operation === 'eat' ? g.player : ally(h);
+    target.maxHp = maxHp; target.hp = hp;
+    g.player.regenCarry = 0;
+    const revision = nativeStatRevision(target);
+    if (operation === 'eat') {
+      g.onConfirmRequest = () => true;
+      h.command('item:execute', 'eat|' + food.inventoryLetter);
+    } else {
+      const c = read(h), t = c.feedTargets.find(t => t.actorId === target.id)!;
+      expect(h.ext('fgfixture', 'feed', {
+        targetId: target.id, targetRevision: t.targetRevision,
+        itemId: food.id, inventoryStamp: c.inventoryStamp
+      }, [true]).error).toBeNull();
+    }
+    expect(fact).toMatchObject({ operation, hpBefore: hp, maxHp,
+      outcome: { hpGained: gained, applied: gained > 0 } });
+    expect(immediateHp).toBe(hp + gained);
+    expect(target.hp).toBe(hp + gained);
+    expect(nativeStatRevision(target)).toBeGreaterThan(revision);
+  }
+);
+it('native healing remains percentage based and point healing clears terminal causality', () => {
+  const p = new Player(0, 0); p.maxHp = 37; p.hp = 1;
+  expect(p.heal(30)).toBe(11); expect(p.hp).toBe(12);
+  const h = forage(), g = h.game(), a = ally(h);
+  a.hp = 0;
+  const clear = vi.spyOn(a.extensionHooks!.causality, 'clearTerminal');
+  const revision = nativeStatRevision(a);
+  expect(a.healPoints(5)).toBe(5);
+  expect(a.hp).toBe(5); expect(clear).toHaveBeenCalledWith(a.id);
+  expect(nativeStatRevision(a)).toBe(revision + 1);
+  void g;
+});
+
+it('public and harness node reads materialize 31900/32000, reservations and live CAS without writes', () => {
+  const pack = structuredClone(forageDefinitions);
+  pack.resourceNodes[0]!.regeneration = { kind: 'periodic', units: 1, intervalTicks: 32000 };
+  const h = forage([], [workProjectionFixture(pack)]), g = h.game();
+  h.fixture({ kind: 'node', definitionId: 'fgfixture.node-a', at: { x: 11, y: 10 } });
+  const node = g.world5!.nodes.find(n => n.at.x === 11 && n.at.y === 10)!;
+  const query = { kind: 'node' as const, interactableId: node.interactableId };
+  node.remaining = 0; node.lastSettledTick = 0; node.regenRemainder = 0;
+  h.fixture({ kind: 'advance', ticks: 31900 });
+  const sdk = worldWorkReadSDK(g, 'fgfixture')!;
+  const value = () => { const r = sdk.readWorkContext(query); if (!r.ok) throw Error(r.code); return r.value; };
+  expect(value().node!.remaining).toBe(0);
+  h.fixture({ kind: 'advance', ticks: 100 });
+  const before = h.save().replace(/"savedAt":\d+/, ''), random = rng.getState(), id = getNextEntityId();
+  for (let i = 0; i < 20; i++) {
+    const projected = value();
+    expect(projected.node).toMatchObject({ remaining: 1, revision: node.revision, lastSettledTick: 32000 });
+    expect(h.readWorkContext('fgfixture', query)).toEqual({ ok: true, value: projected });
+  }
+  expect(h.save().replace(/"savedAt":\d+/, '')).toBe(before);
+  expect(rng.getState()).toEqual(random); expect(getNextEntityId()).toBe(id);
+  const save = h.save(), projected = value(); h.load(save);
+  expect(value()).toEqual(projected);
+  const payload = { nodeId: node.interactableId, nodeRevision: projected.node!.revision,
+    inventoryStamp: projected.inventoryStamp, destinationId: null, destinationRevision: null };
+  expect(h.ext('fgfixture', 'harvest', payload).error).toBeNull();
+  expect(h.ext('fgfixture', 'harvest', { ...payload, inventoryStamp: read(h).inventoryStamp }).error).toBe('C5_STALE');
+  const live = g.world5!.nodes.find(n => n.interactableId === node.interactableId)!;
+  live.remaining = 0; live.lastSettledTick = g.world5!.simulationTicks - 32000; live.regenRemainder = 0; live.reservedUnits = 1;
+  expect(value().node).toMatchObject({ remaining: 1, reservedUnits: 1, revision: live.revision });
+  expect(h.ext('fgfixture', 'harvest', { ...payload, nodeRevision: live.revision,
+    inventoryStamp: read(h).inventoryStamp }).error).toBe('C5_RESERVED');
+  live.reservedUnits = 0; live.remaining = live.capacity; live.lastSettledTick = 0; live.regenRemainder = 123;
+  expect(value().node).toMatchObject({ remaining: live.capacity, regenRemainder: 0 });
+});
+
+// Candidate time is a foundation concern; these use the neutral four-turn food.
+const eatTemporaryStrength = (h: ReturnType<typeof forage>) => {
+  const food = grant(h, 'sample6');
+  h.game().onConfirmRequest = () => true;
+  h.command('item:execute', 'eat|' + food.inventoryLetter);
+  expect(h.game().player.strength).toBe(14);
+  return h.save();
+};
+const waitToTemporaryExpiry = (h: ReturnType<typeof forage>, until: number) => {
+  while (h.game().world5!.simulationTicks < until) h.command('wait');
+  expect(h.game().world5!.simulationTicks).toBe(until);
+};
+const loadProjection = (g: ReturnType<ReturnType<typeof forage>['game']>) =>
+  ({ ...g.toSaveSnapshot(), savedAt: 0 });
+
+describe('candidate clock load regression', () => {
+  it('reloads active strength into an expired same Game repeatedly and publicly expires at the boundary', () => {
+    const h = forage(), g = h.game(), saved = eatTemporaryStrength(h);
+    const until = JSON.parse(saved).extensions.foundation.timedStats.rows[0].untilTick;
+    expect([g.world5!.simulationTicks, until]).toEqual([100, 400]);
+    expect(g.loadSnapshot(JSON.parse(saved))).toBe(true);
+    for (let repetition = 0; repetition < 2; repetition++) {
+      waitToTemporaryExpiry(h, until);
+      expect(nativeStat(g.player, 'native.strength')).toBe(12);
+      expect(g.loadSnapshot(JSON.parse(saved))).toBe(true);
+      expect([g.world5!.simulationTicks, nativeStat(g.player, 'native.strength')]).toEqual([100, 14]);
+      expect(g.extensionRuntime!.stats.applied(g.player.id, 'native.strength')).toBe(2);
+    }
+    h.command('wait'); h.command('wait');
+    expect([g.world5!.simulationTicks, nativeStat(g.player, 'native.strength')]).toEqual([300, 14]);
+    h.command('wait');
+    expect([g.world5!.simulationTicks, nativeStat(g.player, 'native.strength')]).toEqual([400, 12]);
+    expect(g.extensionRuntime!.snapshot().foundation.timedStats).toBeUndefined();
+    expect(g.extensionRuntime!.stats.applied(g.player.id, 'native.strength')).toBe(0);
+  });
+  it('loads a later candidate into an earlier live clock and a fresh control', () => {
+    const h = forage(), g = h.game(), early = eatTemporaryStrength(h);
+    h.command('wait'); const later = h.save();
+    expect(g.loadSnapshot(JSON.parse(early))).toBe(true);
+    expect(g.world5!.simulationTicks).toBe(100);
+    expect(g.loadSnapshot(JSON.parse(later))).toBe(true);
+    expect([g.world5!.simulationTicks, nativeStat(g.player, 'native.strength')]).toEqual([200, 14]);
+    const fresh = forage(), fg = fresh.game();
+    expect(fg.world5!.simulationTicks).toBe(0);
+    expect(fg.loadSnapshot(JSON.parse(later))).toBe(true);
+    expect([fg.world5!.simulationTicks, nativeStat(fg.player, 'native.strength')]).toEqual([200, 14]);
+    waitToTemporaryExpiry(fresh, 400);
+    expect(nativeStat(fg.player, 'native.strength')).toBe(12);
+  });
+  it('does not resurrect an expired candidate row when the old live clock is earlier', () => {
+    const h = forage(), g = h.game(), active = eatTemporaryStrength(h);
+    waitToTemporaryExpiry(h, 400);
+    const expired = g.toSnapshot();
+    // Expired rows can remain on inactive actors. Isolate source filtering with
+    // a schema-valid retained row and its correctly empty applied ledger.
+    expired.extensions!.foundation.timedStats = JSON.parse(active).extensions.foundation.timedStats;
+    expect(g.loadSnapshot(JSON.parse(active))).toBe(true);
+    expect(g.world5!.simulationTicks).toBe(100);
+    expect(g.loadSnapshot(expired)).toBe(true);
+    expect([g.world5!.simulationTicks, nativeStat(g.player, 'native.strength')]).toEqual([400, 12]);
+    expect(g.extensionRuntime!.stats.applied(g.player.id, 'native.strength')).toBe(0);
+    h.command('wait');
+    expect(nativeStat(g.player, 'native.strength')).toBe(12);
+    expect(g.extensionRuntime!.snapshot().foundation.timedStats).toBeUndefined();
+  });
+  it('restores a companion non-materialized damage source and clears it on real expiry', () => {
+    const h = forage(), g = h.game(), a = ally(h), food = grant(h, 'sample6');
+    const c = read(h), target = c.feedTargets.find(t => t.actorId === a.id)!;
+    expect(h.ext('fgfixture', 'feed', {targetId: a.id, targetRevision: target.targetRevision,
+      itemId: food.id, inventoryStamp: c.inventoryStamp})).toEqual({recorded: true, error: null});
+    const damage = () => nativePair(g.monsters.find(m => m.id === a.id)!, g.player,
+      'physical-damage', {baseValue: 100, attackKind: 'melee', adjacent: true});
+    expect(damage()).toBe(120);
+    const saved = h.save(), until = JSON.parse(saved).extensions.foundation.timedStats.rows[0].untilTick;
+    expect(g.extensionRuntime!.snapshot().foundation.stats).toBeUndefined();
+    for (let repetition = 0; repetition < 2; repetition++) {
+      waitToTemporaryExpiry(h, until); expect(damage()).toBe(100);
+      expect(g.loadSnapshot(JSON.parse(saved))).toBe(true);
+      expect(damage()).toBe(120);
+      expect(g.player.strength).toBe(12);
+      expect(g.extensionRuntime!.snapshot().foundation.stats).toBeUndefined();
+    }
+    waitToTemporaryExpiry(h, until); expect(damage()).toBe(100);
+  });
+  it.each(['bonus', 'timed-value', 'until-boundary', 'candidate-clock'] as const)(
+    'rejects inconsistent %s without touching the live graph, messages or random streams', kind => {
+      const h = forage(), g = h.game(), saved = eatTemporaryStrength(h), bad = g.toSnapshot();
+      if (kind === 'bonus') bad.extensions!.foundation.stats!.applied[0]!.bonus++;
+      if (kind === 'timed-value') bad.extensions!.foundation.timedStats!.rows[0]!.value++;
+      if (kind === 'until-boundary') bad.extensions!.foundation.timedStats!.rows[0]!.untilTick = bad.run.world5!.simulationTicks;
+      if (kind === 'candidate-clock') bad.run.world5!.simulationTicks = 400;
+      const roots = [g.player, g.player.inventory, g.extensionRuntime, g.grid, g.monsters, g.items, g.world5];
+      const before = loadProjection(g), random = rng.getState(), id = getNextEntityId(), messages = logger.getState();
+      expect(g.loadSnapshot(bad)).toBe(false);
+      [g.player, g.player.inventory, g.extensionRuntime, g.grid, g.monsters, g.items, g.world5]
+        .forEach((root, index) => expect(root).toBe(roots[index]));
+      expect(loadProjection(g)).toEqual(before);
+      expect(rng.getState()).toEqual(random); expect(getNextEntityId()).toBe(id);
+      expect(logger.getState()).toEqual(messages);
+      expect(nativeStat(g.player, 'native.strength')).toBe(14);
+      h.command('wait'); h.command('wait'); h.command('wait');
+      expect(nativeStat(g.player, 'native.strength')).toBe(12);
+      expect(g.loadSnapshot(JSON.parse(saved))).toBe(true);
+      expect(nativeStat(g.player, 'native.strength')).toBe(14);
+    });
+});
+
+import { FOUNDATION_PROTOCOL, type ModuleDescriptor } from '../ext/descriptor';
+import { isJson } from '../ext/json';
+import { NATIVE_STAT_KEYS } from '../engine/Stats/NativeStatKeys';
+const resourceLoadFixture: ModuleDescriptor = {
+  id: 'growth', version: '1.0.0', foundation: FOUNDATION_PROTOCOL, labelKey: 'ext.growth.fixture',
+  create: () => ({
+    id: 'growth', version: '1.0.0', initialState: () => ({}), validateState: isJson,
+    statSources: {
+      keys: [
+        { ...NATIVE_STAT_KEYS.find(k => k.id === 'native.strength')!, id: 'growth.focus-capacity', owner: 'growth', minimum: 0, base: 5 },
+        { ...NATIVE_STAT_KEYS.find(k => k.id === 'native.strength')!, id: 'growth.focus-recovery-interval', owner: 'growth', kind: 'query', minimum: 1, base: 10 }
+      ], collect: () => []
+    },
+    onNewGame: c => c.setComponent(c.playerId, 'focus', { current: 5, remainder: 0 })
+  })
+};
+it('candidate clock load regression retains strict candidate resource bounds', () => {
+  const h = forage(['growth'], [resourceLoadFixture]), g = h.game(), saved = eatTemporaryStrength(h);
+  waitToTemporaryExpiry(h, 400);
+  expect(g.loadSnapshot(JSON.parse(saved))).toBe(true);
+  expect(g.extensionRuntime!.stats.value(g.player.id, 'growth.focus-capacity')).toBe(5);
+  for (const patch of [{current: 6}, {remainder: 10}]) {
+    const bad = g.toSnapshot();
+    Object.assign(bad.extensions!.components[String(g.player.id)]!['growth:focus']!, patch);
+    const player = g.player, runtime = g.extensionRuntime, world = g.world5;
+    const before = loadProjection(g), random = rng.getState(), nextId = getNextEntityId(), messages = logger.getState();
+    expect(g.loadSnapshot(bad)).toBe(false);
+    expect(g.player).toBe(player); expect(g.extensionRuntime).toBe(runtime); expect(g.world5).toBe(world);
+    expect(loadProjection(g)).toEqual(before); expect(rng.getState()).toEqual(random);
+    expect(getNextEntityId()).toBe(nextId); expect(logger.getState()).toEqual(messages);
+    expect(nativeStat(g.player, 'native.strength')).toBe(14);
+  }
+  waitToTemporaryExpiry(h, 400); expect(g.player.strength).toBe(12);
 });

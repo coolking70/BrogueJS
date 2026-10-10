@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createHeadlessGame } from './harness';
 import { workGame } from './support/worldWorkFixture';
 import {
@@ -188,7 +190,7 @@ describe('C5 placement, startup and work boundaries', () => {
     const single = run(1, 10000),
       batches = run(10, 1000);
     writeFileSync(
-      '/private/tmp/phase5a2-D15.json',
+      join(tmpdir(), 'phase5a2-D15.json'),
       JSON.stringify({ single, batches }, null, 2) + '\n'
     );
     expect(single).toMatchObject({

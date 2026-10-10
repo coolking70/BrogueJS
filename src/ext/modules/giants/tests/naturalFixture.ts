@@ -9,7 +9,9 @@ import { createExtensionRegistry } from '../../../catalog';
 import { TerrainType as T } from '../../../../engine/Map/Grid';
 import locale from '../locales/zh_CN.json';
 import type { GiantsState } from '../types';
-export const GIANTS_ACCEPTANCE_SEED = 7306;
+// Appended natural templates invalidate the former 7306 normal route (death on D2).
+// 7328 preserves the original cardinal-command route and sole D3 ridgeback scene.
+export const GIANTS_ACCEPTANCE_SEED = 7328;
 export const json = <V>(v: V): V => JSON.parse(JSON.stringify(v));
 export function startGiants(
   ids: readonly string[] = ['giants'],

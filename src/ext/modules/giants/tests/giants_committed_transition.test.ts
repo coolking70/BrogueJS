@@ -37,11 +37,11 @@ it('executes the formal active split and subsequent committed attack through nor
             expect(new Set(resolved.map(fact => fact.factId)).size).toBe(2);
         } else {
             expect(resolved).toEqual([]);
-            expect(game.toSaveSnapshot()).toEqual({ ...beforeAttack, run: { ...beforeAttack.run,
-                logger: { ...beforeAttack.run.logger, nextId: beforeAttack.run.logger.nextId + 1,
-                    messages: [...beforeAttack.run.logger.messages, { id: beforeAttack.run.logger.nextId,
-                        text: i18next.t('ext.command.rejected'), color: '#ff6666', count: 1,
-                        turn: beforeAttack.run.logger.turn }] } } });
+            expect(game.toSaveSnapshot()).toEqual(beforeAttack);
+            expect(logger.displayMessages[logger.displayMessages.length - 1]).toEqual({
+                id: -1, text: i18next.t('ext.command.rejected'), color: '#ff6666', count: 1,
+                turn: beforeAttack.run.logger.turn
+            });
             expect(game.extensionRuntime!.actorActionBinding()).toBeNull();
         }
         expect(game.lastAdvancementError).toBeNull();

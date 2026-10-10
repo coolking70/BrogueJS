@@ -1,3 +1,4 @@
+import {checkpointGenerationWorld,checkpointGenerationWorldGroups} from '../engine/Core/GenerationCoordinator';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game, type LevelState } from '../engine/Core/Game';
 import * as generation from '../engine/Core/GenerationCoordinator';
@@ -301,4 +302,24 @@ describe('full-graph oracle versus narrowed generation rollback', () => {
         expect(audit.differences()).toEqual([]);
         expect(root.item).toBe(item); expect(root.alias).toBe(item); expect(root.items.get(item)).toBe(item);
     });
+});
+
+it('preserves independent shallow/reference stops, shared identities and full descriptors across cyclic overlapping write sets',()=>{
+ for(const grouped of [false,true]){
+  const leaf={value:1},excluded={value:1},key={value:1},bytes=new Uint8Array([1,2]);
+  const shared:any={leaf,bytes,map:new Map([[key,leaf]]),set:new Set([leaf])};shared.self=shared;
+  const symbol=Symbol('owned');Object.defineProperty(shared,symbol,{value:leaf,enumerable:false,writable:true,configurable:true});
+  let reads=0;Object.defineProperty(shared,'getter',{get(){reads++;return excluded;},enumerable:true,configurable:true});
+  const root={shared,excluded},first=()=>({shallow:[root,shared],deep:[shared.map],references:[leaf]}),second=()=>({shallow:[root],deep:[shared],references:[excluded]});
+  const audit=auditFullObjectGraph(root,[excluded]);
+  const undo=grouped?checkpointGenerationWorldGroups([first,second]):(()=>{const a=checkpointGenerationWorld(first),b=checkpointGenerationWorld(second);return()=>{a();b();};})();
+  root.shared={} as any;shared.leaf={value:2};leaf.value=2;key.value=2;bytes.fill(9);shared.map.clear();shared.set.clear();shared.extra=3;delete shared[symbol];excluded.value=2;
+  undo();expect(audit.differences()).toEqual([]);expect(excluded.value).toBe(2);expect(reads).toBe(0);
+ }
+});
+it('does not promote a reference-only descendant or a shallow-only root while another selection owns their containers',()=>{
+ const reference={value:1},shallow={leaf:{value:1}},map=new Map([[reference,shallow]]),root={map};
+ const undo=checkpointGenerationWorldGroups([()=>({shallow:[shallow],deep:[root],references:[reference]}),()=>({shallow:[map],deep:[],references:[]})]);
+ reference.value=2;shallow.leaf.value=2;map.clear();undo();
+ expect(reference.value).toBe(2);expect(shallow.leaf.value).toBe(2);expect([...map]).toEqual([[reference,shallow]]);
 });

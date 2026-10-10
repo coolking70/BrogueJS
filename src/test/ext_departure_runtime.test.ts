@@ -1,4 +1,6 @@
 import { it, expect, vi } from 'vitest';
+import { installedOptionalModules } from './support/installedExtensions';
+import { bodyFixtureDescriptor } from './fixtures/bodyModule';
 import { forage, ally, grant, closedLoop } from './support/forageFixture';
 import { isDeparting } from '../engine/Core/ActorDeparture';
 import { rng } from '../engine/Random';
@@ -78,9 +80,11 @@ it('departure AI chooses the nearest stairs, cannot attack and cannot follow', (
   expect(a.entersLevelIn).toBe(0);
 });
 it('real giants group gives only its core a need and retires all members together', () => {
-  const h = forage(['combat', 'giants']),
+  const modules = installedOptionalModules(['combat', 'giants']);
+  const body = modules.includes('giants') ? null : bodyFixtureDescriptor();
+  const h = forage([...modules, ...(body ? [body.id] : [])], body ? [body] : []),
     g = h.game();
-  expect(h.fixture({ kind: 'group', at: { x: 11, y: 10 } }).error).toBeNull();
+  expect(h.fixture({ kind: 'group', at: { x: 11, y: 10 }, ...(body ? { bodyOwner: body.id } : {}) }).error).toBeNull();
   const group = g.bodyGroups![0]!,
     ids = group.members.flatMap((m) => (m.entityId === null ? [] : [m.entityId]));
   expect(ids.length).toBeGreaterThan(1);

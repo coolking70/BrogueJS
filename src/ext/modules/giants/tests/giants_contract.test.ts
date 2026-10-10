@@ -37,8 +37,8 @@ describe('giants original content contract', () => {
       ...pack.forms.flatMap((f) => [f.nameKey, f.descriptionKey])
     ])
       expect(locale[key as keyof typeof locale]).toBeTruthy();
-    expect(pack.forms).toHaveLength(5);
-    expect(pack.templates).toHaveLength(4);
+    expect(pack.forms).toHaveLength(9);
+    expect(pack.templates).toHaveLength(6);
     expect(pack.forms[1]).toMatchObject({
       id: 'giants.abyssal-colossus',
       size: 3,
@@ -65,7 +65,7 @@ describe('giants original content contract', () => {
       formId: 'giants.abyssal-colossus',
       guard: 'return-to-spawn'
     });
-    expect(new Set(pack.forms.map((f) => f.nameKey)).size).toBe(5);
+    expect(new Set(pack.forms.map((f) => f.nameKey)).size).toBe(9);
     expect(m.commands).toBeUndefined();
     expect(m.statSources).toBeUndefined();
     expect(m.optionalRewards).toBeUndefined();

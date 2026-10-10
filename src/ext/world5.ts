@@ -1,6 +1,8 @@
+import { validateRaidRoots } from './settlementRaidSchema';
+import {assertResidentOrderProgress} from './residentOrders';
 import type { StructureCell, RestPoint } from './structureTypes';
 import { validateStructureRoots } from './structureSchema';
-import { validateWorldWorkRoots } from './worldWorkSchema';
+import { validateWorldWorkRoots, type TrustedTerminalWorkTicket } from './worldWorkSchema';
 import {
   World5Error,
   uint,
@@ -25,7 +27,6 @@ import type {
   ResourceNodeRecord,
   StationRecord,
   WorkTicket,
-  TerminalWorkTicket,
   StartupGrantReceipt
 } from './worldSdk';
 export type MutableWorld<T> = T extends readonly (infer U)[]
@@ -73,11 +74,15 @@ export interface EconomicOrder {
   status: 'working' | 'stopped' | 'needs-resupply';
   stopReason: string | null;
   revision: number;
+  production?: import("./residentOrders").ResidentOrderProgress;
 }
 export interface OfflineResidentState {
   actorId: number;
   alive: boolean;
-  shortage: 0 | 1 | 2 | 3;
+  foodShortage:0|1|2|3;
+  housingShortage:0|1|2|3;
+  unfedDays:number;
+  departed:boolean;
 }
 export interface OfflineFrozenSummary {
   capturedTick: number;
@@ -86,9 +91,10 @@ export interface OfflineFrozenSummary {
   residents: {
     actorId: number;
     bedComponentId: WorldId | null;
+    bedEligible?:boolean;
     route: { reachable: boolean; distance: number; travelTicks: number };
   }[];
-  facilities: never[];
+  facilities: {componentId:number;definitionId:string;hp:number;maxHp:number;roomEligible:boolean;ventilated:boolean;reachable:boolean;tags:string[]}[];
   knownThreats: string[];
 }
 export interface OfflineLedger {
@@ -101,6 +107,7 @@ export interface OfflineLedger {
   lastEventOrdinal: number;
   residentStates: OfflineResidentState[];
   pendingOutputs: DeferredOutput[];
+  productionQuotas?: import("./residentOrders").ResidentProductionQuota[];
   needsResupply: boolean;
   frozen: OfflineFrozenSummary;
 }
@@ -115,7 +122,10 @@ export interface WorldReceipt {
   reason: string | null;
 }
 export interface World5Snapshot {
-  schema: 1;
+  schema: 4;
+  raidAdmissionCursor: number;
+  raidCamps: import("./settlementRaids").CampRaidState[];
+  residentJobs:import("./residentSdk").ResidentWork[];
   revision: number;
   simulationTicks: number;
   nextWorldId: WorldId;
@@ -130,7 +140,7 @@ export interface World5Snapshot {
   nodes: MutableWorld<ResourceNodeRecord>[];
   stations: MutableWorld<StationRecord>[];
   tickets: MutableWorld<WorkTicket>[];
-  terminalTickets: MutableWorld<TerminalWorkTicket>[];
+  terminalTickets: MutableWorld<TrustedTerminalWorkTicket>[];
   definitionsFingerprint: Record<string, string>;
   restPoints: MutableWorld<RestPoint>[];
   pendingPlacements: {
@@ -145,7 +155,10 @@ export interface World5Snapshot {
 }
 export function createWorld5(): World5Snapshot {
   return {
-    schema: 1,
+    schema: 4,
+    raidCamps: [],
+    raidAdmissionCursor: 0,
+    residentJobs:[],
     revision: 0,
     simulationTicks: 0,
     nextWorldId: 1,
@@ -239,13 +252,14 @@ export function validateWorld5(
   }
   exact(
     value,
-    'schema,revision,simulationTicks,nextWorldId,nextPlanId,levels,orders,residents,offline,receipts,structures,containers,nodes,stations,tickets,terminalTickets,definitionsFingerprint,restPoints,pendingPlacements,startupGrants'+(Object.prototype.hasOwnProperty.call(value??{},'campSlotOrdinals')?',campSlotOrdinals':''),
+    'schema,raidCamps,raidAdmissionCursor,revision,simulationTicks,nextWorldId,nextPlanId,levels,orders,residents,offline,receipts,residentJobs,structures,containers,nodes,stations,tickets,terminalTickets,definitionsFingerprint,restPoints,pendingPlacements,startupGrants'+(Object.prototype.hasOwnProperty.call(value??{},'campSlotOrdinals')?',campSlotOrdinals':''),
     'world5'
   );
   const w = value as unknown as World5Snapshot;
-  if (w.schema !== 1) throw new World5Error('C5_BAD_VERSION', 'world5.schema');
+  if (w.schema !== 4) throw new World5Error('C5_BAD_VERSION', 'world5.schema');
   for (const name of ['revision', 'simulationTicks', 'nextWorldId', 'nextPlanId'] as const)
     uint(w[name], name, name.startsWith('next') ? 1 : 0);
+  validateRaidRoots(w, context.owners);
   validateStructureRoots(w,context.owners);
   validateWorldWorkRoots(w, context.owners);
   const list = (v: unknown, n: number, f: string): void => {
@@ -341,9 +355,10 @@ export function validateWorld5(
   for (const o of w.orders) {
     exact(
       o,
-      'id,owner,actorId,levelRef,definitionId,priority,planId,remainingEpochs,ticketId,status,stopReason,revision',
+      'id,owner,actorId,levelRef,definitionId,priority,planId,remainingEpochs,ticketId,status,stopReason,revision'+(o.production?',production':''),
       'order'
     );
+    if(o.production)assertResidentOrderProgress(o.production);
     owner(o.owner);
     ref(o.levelRef);
     for (const n of ['id', 'actorId', 'priority', 'planId', 'remainingEpochs', 'revision'] as const)
@@ -352,9 +367,9 @@ export function validateWorld5(
       o.id >= w.nextWorldId ||
       o.planId >= w.nextPlanId ||
       o.remainingEpochs > 32 ||
-      o.ticketId !== null ||
+      (o.ticketId!==null&&!w.tickets.some(t=>t.ticketId===o.ticketId&&t.actorId===o.actorId)) ||
       !validId(o.definitionId) ||
-      !o.definitionId.startsWith(o.owner + '.') ||
+      (!o.production&&!o.definitionId.startsWith(o.owner + '.')) ||
       !['working', 'stopped', 'needs-resupply'].includes(o.status) ||
       !(o.stopReason === null || typeof o.stopReason === 'string') ||
       !w.residents.some(
@@ -363,10 +378,11 @@ export function validateWorld5(
     )
       throw new World5Error('C5_BAD_REFERENCE', 'order');
   }
+  if(!Array.isArray(w.residentJobs)||w.residentJobs.length>64||new Set(w.residentJobs.map(j=>j.actorId)).size!==w.residentJobs.length)throw new World5Error("C5_BAD_REFERENCE","residentJobs");
   for (const l of w.offline) {
     exact(
       l,
-      'levelRef,campSlotId,lastSettledTick,epochRemainder,revision,seedKey,lastEventOrdinal,residentStates,pendingOutputs,needsResupply,frozen',
+      'levelRef,campSlotId,lastSettledTick,epochRemainder,revision,seedKey,lastEventOrdinal,residentStates,pendingOutputs,needsResupply,frozen'+(l.productionQuotas?',productionQuotas':''),
       'ledger'
     );
     ref(l.levelRef);
@@ -388,9 +404,20 @@ export function validateWorld5(
       !/^[a-f0-9]{64}$/.test(l.seedKey) ||
       typeof l.needsResupply !== 'boolean' ||
       !Array.isArray(l.pendingOutputs) ||
-      l.pendingOutputs.length
+      l.pendingOutputs.length>1024
     )
       throw new World5Error('C5_BAD_PAYLOAD', 'ledger');
+    for(const output of l.pendingOutputs){
+      exact(output,'ticketId,availableEpoch,destinationId,items'+(output.fallbackAt?',fallbackAt':''),'pendingOutput');
+      if(output.fallbackAt){exact(output.fallbackAt,'x,y','fallbackAt');uint(output.fallbackAt.x,'x');uint(output.fallbackAt.y,'y');}
+      uint(output.availableEpoch,'availableEpoch',1);
+      if(output.availableEpoch!==Math.floor((l.lastSettledTick-(w.raidCamps.find(r=>r.slot===l.campSlotId)?.excludedTicks??0))/1000)+1||![...w.tickets,...w.terminalTickets].some(t=>t.ticketId===output.ticketId)||(!output.fallbackAt&&!w.containers.some(c=>c.id===output.destinationId&&c.kind==='chest'))||!Array.isArray(output.items)||output.items.length<1||output.items.length>128)throw new World5Error('C5_BAD_REFERENCE','pendingOutput');
+      for(const a of output.items){exact(a,'itemDefinitionId,count','amount');uint(a.count,'count',1);if(!validId(a.itemDefinitionId))throw new World5Error('C5_BAD_REFERENCE','outputItem');}
+    }
+    if(l.productionQuotas){
+      list(l.productionQuotas,16,'productionQuotas');unique(l.productionQuotas.map(q=>q.actorId),'productionQuotas');
+      for(const q of l.productionQuotas){exact(q,'actorId,day,meat,plots','productionQuota');uint(q.day,'day');uint(q.meat,'meat');if(q.meat>2||q.day>Math.floor(w.simulationTicks/32000)||!l.residentStates.some(s=>s.actorId===q.actorId)||!Array.isArray(q.plots)||q.plots.length>12||new Set(q.plots).size!==q.plots.length||q.plots.some(id=>!w.structures.some(s=>s.fixture?.id===id)))throw new World5Error('C5_BAD_REFERENCE','productionQuota');}
+    }
     list(l.residentStates, 16, 'residentStates');
     unique(
       l.residentStates.map((r) => r.actorId),
@@ -403,8 +430,8 @@ export function validateWorld5(
     if (JSON.stringify(ids) !== JSON.stringify(l.residentStates.map((r) => r.actorId)))
       throw new World5Error('C5_BAD_REFERENCE', 'residentStates');
     for (const r of l.residentStates) {
-      exact(r, 'actorId,alive,shortage', 'residentState');
-      if (typeof r.alive !== 'boolean' || ![0, 1, 2, 3].includes(r.shortage))
+      exact(r, 'actorId,alive,foodShortage,housingShortage,unfedDays,departed', 'residentState');
+      if (typeof r.alive !== 'boolean' || typeof r.departed!=='boolean' || ![0,1,2,3].includes(r.foodShortage)||![0,1,2,3].includes(r.housingShortage)||!Number.isSafeInteger(r.unfedDays)||r.unfedDays<0||r.unfedDays>4)
         throw new World5Error('C5_BAD_PAYLOAD', 'residentState');
     }
     const f = l.frozen;
@@ -420,7 +447,7 @@ export function validateWorld5(
       !/^([a-f0-9]{64}|sha256:[a-f0-9]{64})$/.test(f.rulesFingerprint) ||
       (context.rulesFingerprint !== undefined && f.rulesFingerprint !== context.rulesFingerprint) ||
       !Array.isArray(f.facilities) ||
-      f.facilities.length ||
+      f.facilities.length>384 ||
       !Array.isArray(f.knownThreats) ||
       f.knownThreats.length > 128 ||
       f.knownThreats.some((t) => !validId(t))
@@ -431,12 +458,23 @@ export function validateWorld5(
       JSON.stringify(f.residents.map((r) => r.actorId)) !== JSON.stringify(ids)
     )
       throw new World5Error('C5_BAD_REFERENCE', 'frozen.residents');
+    const facilityIds = new Set<number>();
+    for (const facility of f.facilities) {
+      exact(facility,'componentId,definitionId,hp,maxHp,roomEligible,ventilated,reachable,tags','facility');
+      uint(facility.componentId,'componentId',1);
+      uint(facility.hp,'hp');uint(facility.maxHp,'maxHp',1);
+      if(facilityIds.has(facility.componentId)||!validId(facility.definitionId)||facility.hp>facility.maxHp||
+        ![facility.roomEligible,facility.ventilated,facility.reachable].every(v=>typeof v==='boolean')||
+        !Array.isArray(facility.tags)||facility.tags.length>16||facility.tags.some(t=>!validId(t)))
+        throw new World5Error('C5_BAD_PAYLOAD','facility');
+      facilityIds.add(facility.componentId);
+    }
     for (const r of f.residents) {
-      exact(r, 'actorId,bedComponentId,route', 'frozen.resident');
+      exact(r, 'actorId,bedComponentId,route'+(Object.prototype.hasOwnProperty.call(r,'bedEligible')?',bedEligible':''), 'frozen.resident');
       exact(r.route, 'reachable,distance,travelTicks', 'route');
       uint(r.route.distance, 'distance');
       uint(r.route.travelTicks, 'travelTicks');
-      if (r.bedComponentId !== null || typeof r.route.reachable !== 'boolean')
+      if ((r.bedComponentId!==null&&!w.structures.some(s=>s.fixture?.id===r.bedComponentId)) || typeof r.route.reachable !== 'boolean' || (r.bedEligible!==undefined&&typeof r.bedEligible!=='boolean'))
         throw new World5Error('C5_BAD_PAYLOAD', 'route');
     }
   }
@@ -447,7 +485,7 @@ export function validateWorld5(
       ...(ledger || context.campDepths?.includes(requireDungeon(l.levelRef)) ? ['camp' as const] : []),
       ...(w.containers.some((r) => levelKey(r.levelRef) === k) ? ['container' as const] : []),
       ...(w.residents.some((r) => levelKey(r.levelRef) === k) ? ['resident' as const] : []),
-      ...(w.orders.some((o) => levelKey(o.levelRef) === k) ||
+      ...(w.residentJobs.some(j=>`dungeon.${j.depth}`===k) || w.orders.some((o) => levelKey(o.levelRef) === k) ||
       w.tickets.some(
         (t) => levelKey(t.levelRef) === k && ['working', 'suspended'].includes(t.status)
       )

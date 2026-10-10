@@ -222,3 +222,24 @@ it.each(['en', 'zh_CN'] as const)('participant messaging preserves owner scope a
     expect(rng.getState()).toEqual(random);
   });
 });
+
+it('knowledge boolean means an actual addition or promotion, with repeated requests leaving state and RNG intact', () => {
+  const h = forage(), g = h.game(), i = grant(h, 'raw', 3);
+  h.command('item:execute', 'call|' + i.inventoryLetter + '|甲');
+  expect(markKnowledge(g, 'fgfixture', 'fgfixture.raw', 'tasted')).toBe(true);
+  const tasted = g.extensionRuntime!.snapshot(), random = rng.getState();
+  expect(markKnowledge(g, 'fgfixture', 'fgfixture.raw', 'tasted')).toBe(false);
+  expect(g.extensionRuntime!.snapshot()).toEqual(tasted);
+  expect(markKnowledge(g, 'fgfixture', 'fgfixture.raw', 'known')).toBe(true);
+  const known = g.extensionRuntime!.snapshot();
+  expect(markKnowledge(g, 'fgfixture', 'fgfixture.raw', 'known')).toBe(false);
+  expect(markKnowledge(g, 'fgfixture', 'fgfixture.raw', 'tasted')).toBe(false);
+  expect(g.extensionRuntime!.snapshot()).toEqual(known);
+  expect(rng.getState()).toEqual(random);
+  expect(knowledgeName(g, 'fgfixture.raw', '')).toBe('已知样本a');
+  const save = h.save(); h.load(save);
+  expect(markKnowledge(g, 'fgfixture', 'fgfixture.raw', 'known')).toBe(false);
+  h.game().onConfirmRequest = () => true;
+  h.command('item:execute', 'eat|' + h.game().player.inventory.items.find(item => item.id === i.id)!.inventoryLetter);
+  expect(knowledgeState(h.game(), 'fgfixture.raw')).toBe('known');
+});

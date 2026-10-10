@@ -1,3 +1,4 @@
+import { installActorActionProtocolFixtureIfAbsent } from '../fixtures/actorActionProtocol';
 import { Game } from '../../engine/Core/Game';
 import { getInstalledModuleDescriptors } from '../../ext/catalog';
 import { registryFromDescriptors, FOUNDATION_PROTOCOL } from '../../ext/descriptor';
@@ -17,6 +18,7 @@ import { createHeadlessGame } from '../harness';
 export function workGame(
   options: {
     modules?: string[];
+    actorProtocolFixture?: boolean;
     mode?: 'normal' | 'wizard';
     pack?: (pack: any) => void;
     participant?: (fact: CommittedWorkFact, context: ModuleStateTransaction) => unknown;
@@ -24,6 +26,7 @@ export function workGame(
     rulesFingerprint?: string;
   } = {}
 ) {
+  if (options.actorProtocolFixture) installActorActionProtocolFixtureIfAbsent();
   createHeadlessGame(1);
   const pack = structuredClone(definitions);
   options.pack?.(pack);

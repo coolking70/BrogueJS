@@ -55,6 +55,7 @@ export function corpseDistanceMap(g: Game, ally: Monster, at: Pos): number[][] {
 }
 
 export function canAbsorb(g: Game, ally: Monster, ourBolts: Set<CEBoltType>, prey: Monster, map: number[][]): boolean {
+    if(g.extensionRuntime?.residentOwners().some(o=>g.extensionRuntime!.residentPolicy(o)!.templates.some(t=>t.id===ally.typeId)))return false;
     if (!allied(ally) || ally.newPowerCount <= 0 || valid(g, ally.targetCorpseLoc)
         || excluded(ally) || excluded(prey) || monsterBlinkAvoids(g, ally, prey.loc)
         || (map[ally.x]?.[ally.y] ?? 30000) > 10) return false;

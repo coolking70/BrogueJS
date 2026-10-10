@@ -478,3 +478,9 @@ export class EnvironmentManager {
         this.syncGasMirror();
     }
 }
+
+/** All edible fire features commit through the existing native fire/DF writer. */
+export function emitEdibleFireFeature(grid: Grid, at: { x: number; y: number }, explosion: 'explosion-fire' | 'bloat-explosion' | null): void {
+    const type = explosion === 'explosion-fire' ? DF.DF_EXPLOSION_FIRE : explosion === 'bloat-explosion' ? DF.DF_BLOAT_EXPLOSION : DF.DF_ITEM_FIRE;
+    spawnDungeonFeature(grid, at.x, at.y, catalogFeature(type), false);
+}

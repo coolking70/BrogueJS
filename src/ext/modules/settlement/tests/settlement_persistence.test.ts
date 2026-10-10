@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
+import { installedOptionalModules } from '../../../../test/support/installedExtensions';
 import { setup, establish, current, build, base, stairs, travelScenes } from './helpers';
 import { ItemCategory } from '../../../../engine/Items/Item';
 import { structureReadSDK } from '../../../../engine/Core/StructureProduction';
 import { rng } from '../../../../engine/Random';
 import { getNextEntityId } from '../../../../entities/Creature';
+import { craftingMaterials } from '../../../../test/fixtures/optionalCrafting';
 describe('settlement traversal/persistence public commands', () => {
   it.each([1, 5])('D%i full public operation/save/replay/seek/continue chain', (depth) => {
     const { h, g } = setup(['settlement'], depth);
@@ -135,12 +137,12 @@ describe('settlement traversal/persistence public commands', () => {
     h.command('escape');
     expect(g.isAutoTraveling()).toBe(false);
   });
-  it.each([
-    { modules: ['settlement'] },
-    { modules: ['settlement', 'crafting'] },
-    { modules: ['settlement', 'combat'] },
-    { modules: ['settlement', 'giants'] }
-  ])('plays paid camp and persists %j', ({ modules }) => {
+  it.each([...new Map([
+    ['settlement'], ['settlement', 'crafting'], ['settlement', 'combat'], ['settlement', 'giants']
+  ].map(ids => {
+    const modules = installedOptionalModules(ids);
+    return [modules.join(','), { modules }] as const;
+  })).values()])('plays paid camp and persists %j', ({ modules }) => {
     const { h, g } = setup(modules);
     expect(h.ext('settlement', 'establish', establish(g)).error).toBeNull();
     expect(h.ext('settlement', 'build', build(g, 'wood-floor')).error).toBeNull();
@@ -153,7 +155,7 @@ describe('settlement traversal/persistence public commands', () => {
     expect(h.digest()).toBe(digest);
   });
   it('no settlement installs no production definitions or camp UI state', () => {
-    const { g } = setup(['crafting']);
+    const { g } = setup([craftingMaterials().module]);
     expect(g.extensionRuntime!.worldCampOwners()).toEqual([]);
     expect(
       g

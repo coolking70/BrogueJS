@@ -33,7 +33,7 @@ describe('crafting module contract', () => {
     const module = createCraftingModule();
     expect(Object.keys(module).sort()).toEqual([
       'id', 'version', 'rules', 'worldDefinitions', 'worldWorkCommands',
-      'worldWorkParticipant', 'initialState', 'validateState', 'projectView'
+      'worldWorkParticipant', 'optionalQueries', 'initialState', 'validateState', 'projectView'
     ].sort());
     expect(module.rules).toEqual(descriptor.rules);
     expect(Object.keys(module.worldWorkCommands!).sort()).toEqual(['cancel-work', 'craft', 'harvest', 'place-station']);

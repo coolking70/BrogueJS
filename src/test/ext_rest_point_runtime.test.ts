@@ -1,3 +1,4 @@
+import { installedOptionalModules } from './support/installedExtensions';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { structureHarness, createCamp, build, fixture } from './support/structureFixture';
 import { worldWorkLastError, withWorldActorScope } from '../engine/Core/WorldWork';
@@ -127,7 +128,7 @@ describe('foundation RestPoint', () => {
     expect(() => assertWorldDefinitionPack(pack, 'c5fixture')).toThrow();
   });
   it('combat bonfires and foundation rest points keep separate ledgers and survive load', () => {
-    const { g, h } = structureHarness(['combat']);
+    const { g, h } = structureHarness(installedOptionalModules(['combat']));
     createCamp(g);
     build(g, 'bed');
     expect(g.world5!.restPoints).toHaveLength(1);

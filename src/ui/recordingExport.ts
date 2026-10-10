@@ -3,6 +3,7 @@ export interface RecordingExportSource {
     readonly hasCompleteRecording: boolean;
     readonly canExportRecording: boolean;
     exportRecording(): unknown;
+    exportRecordingAsync?(): Promise<unknown>;
 }
 
 export class RecordingExportError extends Error {
@@ -19,7 +20,11 @@ export async function recordingJsonAtBoundary(
     while (true) {
         if (!isCurrent()) throw new RecordingExportError('replaced');
         if (!source.hasCompleteRecording) throw new RecordingExportError('unavailable');
-        if (source.canExportRecording) return JSON.stringify(source.exportRecording());
+        if (source.canExportRecording) {
+            const recording = source.exportRecordingAsync ? await source.exportRecordingAsync() : source.exportRecording();
+            if (!isCurrent()) throw new RecordingExportError('replaced');
+            return JSON.stringify(recording);
+        }
         if (Date.now() >= deadline) throw new RecordingExportError('busy');
         await new Promise<void>(resolve => window.setTimeout(resolve, 25));
     }

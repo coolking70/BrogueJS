@@ -13,7 +13,10 @@ import { projectileReflects, randomReflectionOffset } from './BoltReflection';
 import { CE_BOLT_CATALOG, CEBoltFlags as F } from './BoltCatalog';
 
 function trajectoryFlags(cell:Cell,bolt:BoltConfig):number {
-    const physical=[BoltEffect.BLINKING,BoltEffect.DISTANCE_ATTACK,BoltEffect.POISON_DART].includes(bolt.effect);
+    // Preserve the two separate effect reads around cellProjectileFlags:
+    // public BoltConfig accessors may change values or throw on either read.
+    const effect=bolt.effect;
+    const physical=effect===BoltEffect.BLINKING||effect===BoltEffect.DISTANCE_ATTACK||effect===BoltEffect.POISON_DART;
     const flags=cellProjectileFlags(cell,!physical);
     return bolt.effect===BoltEffect.BLINKING&&structureBlocking(cell)?.movement?flags|T_OBSTRUCTS_PASSABILITY:flags;
 }
@@ -37,7 +40,7 @@ function flagsFor(bolt: BoltConfig): number {
         : CE_BOLT_CATALOG[bolt.ceType].flags;
 }
 
-function offsetLine(grid: Grid, from: Pos, to: Pos, offset: readonly [number, number]): Pos[] {
+function offsetLine(grid: Grid, from: Pos, to: Pos, offset: readonly [number, number], stopAtTarget = false): Pos[] {
     let x = from.x * FP + FP / 2, y = from.y * FP + FP / 2;
     let dx = to.x * FP + Math.trunc(offset[0] * FP / 100) - x;
     let dy = to.y * FP + Math.trunc(offset[1] * FP / 100) - y;
@@ -49,6 +52,7 @@ function offsetLine(grid: Grid, from: Pos, to: Pos, offset: readonly [number, nu
         const pos = { x: x < 0 ? -1 : Math.trunc(x / FP), y: y < 0 ? -1 : Math.trunc(y / FP) };
         if (!grid.getCell(pos.x, pos.y)) return path;
         path.push(pos);
+        if (stopAtTarget && pos.x === to.x && pos.y === to.y) return path;
     }
 }
 
@@ -56,20 +60,32 @@ function offsetLine(grid: Grid, from: Pos, to: Pos, offset: readonly [number, nu
  * No bolt = untuned center line. No RNG or mutation. Range limits belong to travel,
  * not scoring. Discovery uses visible/remembered/magic-mapped cells;
  * W-13 tunes only known tunneling. Submersion affects scoring and collision separately. */
-export function boltLine(grid: Grid, from: Pos, to: Pos, bolt?: BoltConfig, world?: BoltWorld): Pos[] {
+export function boltLine(grid: Grid, from: Pos, to: Pos, bolt?: BoltConfig, world?: BoltWorld, stopAtTarget = false): Pos[] {
     if (from.x === to.x && from.y === to.y) return [];
     if (![from.x, from.y, to.x, to.y].every(Number.isSafeInteger)) return [];
-    if (!bolt || !world) return offsetLine(grid, from, to, OFFSETS[0]);
+    if (!bolt || !world) return offsetLine(grid, from, to, OFFSETS[0], stopAtTarget);
     const flags = world.hideDetails ? 0 : flagsFor(bolt);
     // CE bestOffset starts at zero even if every candidate scores <= 0.
-    let bestScore = 0, best = offsetLine(grid, from, to, OFFSETS[0]);
+    let bestScore = 0, best: readonly [number, number] = OFFSETS[0];
     for (const offset of OFFSETS) {
-        const path = offsetLine(grid, from, to, offset);
-        const scoredBodies = new Set<string>();
+        // Walk each scoring ray only as far as its actual stopping condition.
+        // The fixed-point arithmetic is the same as offsetLine; the selected
+        // full ray is still generated below, including its tail past the aim.
+        let x = from.x * FP + FP / 2, y = from.y * FP + FP / 2;
+        let dx = to.x * FP + Math.trunc(offset[0] * FP / 100) - x;
+        let dy = to.y * FP + Math.trunc(offset[1] * FP / 100) - y;
+        const divisor = Math.max(Math.abs(dx), Math.abs(dy));
+        dx = Math.trunc(dx * FP / divisor); dy = Math.trunc(dy * FP / divisor);
+        let scoredBodies: Set<string> | undefined;
         let score = 0, unknown = false;
-        for (const p of path) {
-            const cell = grid.getCell(p.x, p.y)!;
-            const terrain = trajectoryFlags(grid.getCell(p.x,p.y)!,bolt);
+        for (;;) {
+            x += dx; y += dy;
+            const p = { x: x < 0 ? -1 : Math.trunc(x / FP), y: y < 0 ? -1 : Math.trunc(y / FP) };
+            const cell = grid.getCell(p.x, p.y);
+            if (!cell) break;
+            // Do not cache across candidates: effect accessors remain observable
+            // on every scored cell, before its live occupancy query.
+            const terrain = trajectoryFlags(cell,bolt);
             const occupant = world.creatureAt(p);
             const invisible = occupant?.hasStatus('invisible') || (occupant instanceof Monster && occupant.isTrulyInvisible());
             // CE monsterIsHidden ignores telepathy but gas outlines invisible
@@ -100,16 +116,16 @@ export function boltLine(grid: Grid, from: Pos, to: Pos, bolt?: BoltConfig, worl
                 continue;
             }
             const firstCreature = !creature?.spatial || collectBodyTargets({ grid, monsters: [creature] }, [p],
-                { effect: boltTargetCategory(bolt.effect), statusId: boltStatusId(bolt.effect) }, scoredBodies).length > 0;
+                { effect: boltTargetCategory(bolt.effect), statusId: boltStatusId(bolt.effect) }, scoredBodies ??= new Set<string>()).length > 0;
             if (creature && firstCreature && (flags & F.TARGET_ENEMIES)) score += enemy ? 50 : -200;
             if (creature && firstCreature && (flags & F.TARGET_ALLIES)) score += ally ? 50 : -200;
             if (burning) score--;
             if (creature && (flags & F.PASSES_THRU_CREATURES)) continue;
             if (creature || (terrain & T_OBSTRUCTS_PASSABILITY) || ((terrain & T_OBSTRUCTS_VISION) && !burning)) break;
         }
-        if (score > bestScore) { bestScore = score; best = path; }
+        if (score > bestScore) { bestScore = score; best = offset; }
     }
-    return best;
+    return offsetLine(grid, from, to, best, stopAtTarget);
 }
 
 /** CE Items.c:4998-5065. The first return retraces the exact incoming cells;

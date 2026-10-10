@@ -5,10 +5,19 @@ export function isJson(value: unknown, seen = new Set<object>()): value is Json 
     if (typeof value === 'number') return Number.isFinite(value);
     if (typeof value !== 'object' || seen.has(value)) return false;
     if (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null) return false;
-    if (Array.isArray(value) && (Object.keys(value).length !== value.length
-        || Object.keys(value).some((key, index) => key !== String(index)))) return false;
+    if (Array.isArray(value)) {
+        const keys = Object.keys(value);
+        if (keys.length !== value.length || keys.some((key, index) => key !== String(index))) return false;
+    }
     seen.add(value);
-    const valid = Object.entries(value).every(([key, child]) => !['__proto__', 'constructor', 'prototype'].includes(key) && isJson(child, seen));
+    let valid = true;
+    // Retain Object.entries' eager value reads (including legacy accessors),
+    // while avoiding a closure and a temporary banned-key array per property.
+    for (const [key, child] of Object.entries(value)) {
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype' || !isJson(child, seen)) {
+            valid = false; break;
+        }
+    }
     seen.delete(value);
     return valid;
 }

@@ -8,7 +8,7 @@ import { hiddenBySubmersion, isSubmerged } from '../Movement/Submersion';
  * No player targeting, item resource, generation or learning policy lives here.
  */
 import type { Game } from '../Core/Game';
-import { iterateCreatures } from '../Core/MonsterLifecycle';
+import { iterateCreatures, dyingMonsters } from '../Core/MonsterLifecycle';
 import { Monster, MonsterState, monstersAreEnemies, monstersAreTeammates } from '../../entities/Monster';
 import type { Creature } from '../../entities/Creature';
 import type { Pos } from '../../types';
@@ -35,8 +35,17 @@ export const MONSTER_BLINK: BoltConfig = { id: 'monster_blink', name: 'BLINKING'
 const sight: BoltConfig = { ...MONSTER_BLINK, ceType: CEBoltType.NONE, effect: BoltEffect.NONE };
 const distance = (a: Pos, b: Pos) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 const flags = (g: Game, p: Pos) => cellTerrainFlags(g.grid, p.x, p.y);
-const at = (g: Game, p: Pos): Creature | undefined => g.player.hp > 0 && footprintContains(g.player, p)
-    ? g.player : g.getMonsterAt(p.x, p.y);
+// The enemy selector is a synchronous read-only ray scan. Repeated rays may
+// query the same cell; this cache never spans a decision, hook, or native move.
+// Numeric coordinate pairs avoid allocating a string for every ray cell.
+// Separate axes preserve distinct coordinates without width-based aliasing.
+const enemyOccupancy = new WeakMap<Game, Map<number, Map<number, Creature>>>();
+const at = (g: Game, p: Pos): Creature | undefined => {
+    const cache = enemyOccupancy.get(g);
+    if (!cache) return g.player.hp > 0 && footprintContains(g.player, p) ? g.player : g.getMonsterAt(p.x, p.y);
+    const x = p.x, y = p.y;
+    return cache.get(x)?.get(y);
+};
 const alliedState = (m: Monster) => m.isAlly && m.state !== MonsterState.FLEEING && !m.hasStatus('magical_fear');
 const flying = (m: Creature) => m.hasStatus('levitating') || m.hasStatus('flying');
 export const hasBlink = (m: Monster) => m.bolts.some(b => MONSTER_BOLT_TABLE[b]?.effect === BoltEffect.BLINKING);
@@ -276,7 +285,9 @@ export function blinkTraversiblePath(g: Game, m: Monster, target: Pos | Creature
     return footprintOf(m).some(from => footprintOf(body).some(to => {
         if (distance(from, to) === 0) return true;
         if ((m.spatial || body.spatial) && !bodySightCornerClear(g.grid, from, to)) return false;
-        for (const p of boltLine(g.grid, from, to, sight, world(g, m))) {
+        // This read-only reachability query always returns at the aimed body
+        // cell. Keep all 21 offset scores, but do not allocate its unused tail.
+        for (const p of boltLine(g.grid, from, to, sight, world(g, m), true)) {
             if (footprintContains(body, p)) return true;
             if (footprintContains(m, p)) continue;
             if (monsterBlinkAvoids(g, m, p)) return false;
@@ -316,6 +327,22 @@ export function playerTraversiblePath(g: Game, player: Player, target: Pos | Cre
     });
 }
 export function closestBlinkEnemy(g: Game, m: Monster): Monster | null {
+    const previous = enemyOccupancy.get(g);
+    const occupied = new Map<number, Map<number, Creature>>();
+    const occupy = (p: Pos, actor: Creature) => {
+        const x = p.x, y = p.y;
+        let column = occupied.get(x);
+        if (!column) occupied.set(x, column = new Map());
+        if (!column.has(y)) column.set(y, actor);
+    };
+    // Same player/array priority and native death window as at/getMonsterAt.
+    // Full footprints are compiled through the installed catalog, once for this
+    // synchronous read-only selector; no occupancy survives into another action.
+    if (g.player.hp > 0) for (const p of footprintOf(g.player)) occupy(p, g.player);
+    for (const actor of g.monsters) if (actor.hp > 0 || (dyingMonsters.has(actor) && !actor.deathProcessed))
+        for (const p of footprintOf(actor)) occupy(p, actor);
+    enemyOccupancy.set(g, occupied);
+    try {
     let closest: Monster | null = null, shortest = Math.max(g.grid.width,g.grid.height);
     for (const target of iterateCreatures(g.monsters)) {
         const d = distanceBetweenFootprints(m, target);
@@ -325,6 +352,9 @@ export function closestBlinkEnemy(g: Game, m: Monster): Monster | null {
         closest = target; shortest = d;
     }
     return closest;
+    } finally {
+        if (previous) enemyOccupancy.set(g, previous); else enemyOccupancy.delete(g);
+    }
 }
 export function blinkAllyFlees(g: Game, m: Monster, target: Monster | null): boolean {
     if (!target || m.maxHp <= 1 || m.hasStatus('lifespan_remaining')) return false;

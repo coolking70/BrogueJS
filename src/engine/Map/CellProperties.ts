@@ -1,6 +1,7 @@
 /** One mechanical composition kernel. No Game import, constructors or RNG.
  * Weak bindings are derived session data; Cell's serialized shape is unchanged. */
 import type { Cell, Grid } from './Grid';
+import { TerrainType } from './TerrainType';
 import type { CellProperties, StructureCell, StructureDefinition } from '../../ext/structureTypes';
 import {
   TERRAIN_FLAGS,
@@ -13,7 +14,8 @@ import {
   T_IS_FLAMMABLE,
   T_AUTO_DESCENT,
   T_LAVA_INSTA_DEATH,
-  T_IS_DEEP_WATER
+  T_IS_DEEP_WATER,
+  TM_PROMOTES_WITH_KEY
 } from './TerrainCatalog';
 type Binding = {
   row: StructureCell;
@@ -66,6 +68,22 @@ export function knownCellFlags(cell: Cell): number {
     ? composedCellFlags(cell, base)
     : base |
         (cell.rememberedTerrainFlags & (T_OBSTRUCTS_PASSABILITY | T_OBSTRUCTS_DIAGONAL_MOVEMENT));
+}
+/** A read-only movement preview uses observed terrain and saved composition,
+ * never hidden live geometry. Actor and diagonal eligibility stay with callers. */
+export function knownCellAllowsMovePreview(cell: Cell): boolean {
+  const known = cell.isVisible || cell.hasMemory || cell.isMagicMapped || cell.isExplored;
+  if (!known) return true;
+  const layers = cell.isVisible ? cell.layers : cell.rememberedLayers;
+  if (layers.some(layer => layer === TerrainType.STAIRS_UP || layer === TerrainType.STAIRS_DOWN
+    || layer === TerrainType.DUNGEON_PORTAL || layer === TerrainType.ALTAR)) return false;
+  return !(knownCellFlags(cell) & T_OBSTRUCTS_PASSABILITY)
+    || layers.some(layer => TERRAIN_FLAGS[layer].mechFlags & TM_PROMOTES_WITH_KEY);
+}
+/** Diagnostic placement requires visible native floor, not a hidden floor or
+ * mechanical passability alone. Machine/entity eligibility stays with callers. */
+export function isVisibleNativeFloor(cell: Cell | null | undefined): cell is Cell {
+  return !!cell?.isVisible && cell.layers.every(t => t === TerrainType.FLOOR || t === TerrainType.NOTHING);
 }
 /** Foundation support depends on native ground, not room/roof qualification. */
 export function isStableBaseFloor(cell: Cell): boolean {

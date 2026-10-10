@@ -248,7 +248,7 @@ describe.each(catalog.getInstalledModuleDescriptors().filter(module=>module.id==
 });
 
 describe.each(catalog.getInstalledModuleDescriptors().filter(module => module.id === 'giants'))('3b configured combat with an actual naturally generated optional square actor', giantDescriptor => {
-    it('seed 7306 D3 ridgeback uses telegraphed native segments, each phase survives save/load, and the natural command recording replays', () => {
+    it('seed 7308 D3 ridgeback uses telegraphed native segments, each phase survives save/load, and the natural command recording replays', () => {
         expect(giantDescriptor).toBeDefined();
         const form = giantDescriptor.create().nativeForms!.find(value => value.size === 2)!;
         expect(form).toBeDefined();
@@ -258,7 +258,7 @@ describe.each(catalog.getInstalledModuleDescriptors().filter(module => module.id
             const definition = pack.attacks.find(value => value.id === 'fixture.double-thrust')!;
             definition.windupTicks = 150; definition.segments[1]!.delayTicks = 130; definition.recoveryTicks = 150;
         });
-        const game = start(['combat', 'giants'], 7306, 'normal');
+        const game = start(['combat', 'giants'], 7308, 'normal');
         for (let command = 0; command < 600 && game.depth < 3 && !game.isGameOver; command++) {
             const stairs = game.levelSeeds[game.depth - 1]!.downStairsLoc;
             naturalStep(game, (x, y) => x === stairs.x && y === stairs.y);

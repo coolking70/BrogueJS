@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { checkModuleRemoval, hashCandidate, isCandidateInput, removalGates, removalMatrix } from '../../scripts/check-module-removal.mjs';
+import { moduleCombinationSelections } from '../../scripts/module-composition-selection.mjs';
 
 const temporary: string[] = [];
 function directory() {
@@ -33,6 +34,17 @@ afterEach(() => {
 });
 
 describe('physical module removal verification inputs', () => {
+    it('keeps all normal combinations and selects only unique deletion endpoints', () => {
+        const ids = ['growth', 'narrative', 'combat', 'giants', 'crafting', 'settlement', 'foraging'];
+        const normal = moduleCombinationSelections(ids);
+        expect(normal).toHaveLength(128);
+        expect(new Set(normal.map((row: string[]) => row.join(','))).size).toBe(128);
+        expect(moduleCombinationSelections(ids.slice(1), 'endpoints')).toEqual([[], ids.slice(1)]);
+        expect(moduleCombinationSelections(['growth'], 'endpoints')).toEqual([[], ['growth']]);
+        expect(moduleCombinationSelections([], 'endpoints')).toEqual([[]]);
+        expect(moduleCombinationSelections(['alpha', 'beta'])).toEqual([[], ['alpha'], ['beta'], ['alpha', 'beta']]);
+        expect(() => moduleCombinationSelections(ids, 'typo')).toThrow('Invalid combination selection');
+    });
     it('enumerates every actual installed-directory subset without inventing future modules', () => {
         expect(removalMatrix([])).toEqual([{ id: 'keep-none', retained: [], removed: [] }]);
         expect(removalMatrix([{ id: 'alpha' }, { id: 'beta' }])).toEqual([
@@ -78,7 +90,7 @@ describe('normal-tree full and physical-removal gate profiles', () => {
                 .toHaveLength(row.removed.length ? 0 : 1);
             expect(gates.commands.find(gate => gate.id === 'composition-smoke')?.command)
                 .toEqual([process.execPath, 'scripts/check-module-composition-smoke.mjs', '--output', `/tmp/evidence/${row.id}-smoke.json`,
-                    '--engine-only', ...(row.removed.length ? ['--removed-modules', row.removed.join(',')] : [])]);
+                    '--engine-only', ...(row.removed.length ? ['--removed-modules', row.removed.join(','), '--combinations', 'endpoints'] : [])]);
             expect(gates.commands.flatMap(gate => gate.command).some(arg => ['ce:fetch', 'test:full', 'test:gen'].includes(arg))).toBe(false);
         }
     });

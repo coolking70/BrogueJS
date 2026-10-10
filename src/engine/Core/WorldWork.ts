@@ -1,3 +1,4 @@
+import { cancelResidentOrder } from './ResidentOrders';
 import { isIncapacitated } from '../Status/Incapacitation';
 import { markItemStatsDirty } from '../Items/ItemStatInvalidation';
 import { worldText } from '../../ext/worldText';
@@ -94,9 +95,9 @@ interface Plan {
 }
 const scopes = new WeakMap<
   object,
-  { game: Game; owner: string; actorId: number; kind: string; active: boolean }
+  { game: Game; world: Game['world5']; owner: string; actorId: number; kind: string; active: boolean }
 >();
-const handles = new WeakMap<object, { game: Game; plan: Plan; used: boolean; epoch: number }>();
+const handles = new WeakMap<object, { game: Game; world: Game['world5']; plan: Plan; used: boolean; epoch: number }>();
 const errors = new WeakMap<Game, { runtime: Game['extensionRuntime']; code: WorldErrorCode | null }>();
 const validErrors = new Set<string>([
   'C5_BAD_PAYLOAD',
@@ -163,7 +164,7 @@ export function withWorldActorScope<T>(
   )
     throw new World5Error('C5_SCOPE');
   const scope = Object.freeze({ owner, actorId, kind }) as WorldActorScope,
-    entry = { game, owner, actorId, kind, active: true };
+    entry = { game, world: game.world5, owner, actorId, kind, active: true };
   scopes.set(scope, entry);
   try {
     return work(scope);
@@ -173,7 +174,7 @@ export function withWorldActorScope<T>(
 }
 /** Trusted siblings share the same short-lived authority, never infer it from DTO fields. */
 export function worldActorAuthority(scope:WorldActorScope) {
-  const entry=scopes.get(scope);if(!entry?.active)throw new World5Error('C5_SCOPE');return entry;
+  const entry=scopes.get(scope);if(!entry?.active||entry.world!==entry.game.world5)throw new World5Error('C5_SCOPE');return entry;
 }
 function reject(code: WorldErrorCode, field: string | null = null): never {
   throw new World5Error(code, field);
@@ -534,7 +535,7 @@ function issue(game: Game, plan: Plan): WorldPlanHandle {
     operation: plan.request.kind,
     casKeys: casFor(plan)
   }) as unknown as WorldPlanHandle;
-  handles.set(handle, { game, plan, used: false, epoch: game.worldWorkCommandEpoch });
+  handles.set(handle, { game, world: game.world5, plan, used: false, epoch: game.worldWorkCommandEpoch });
   return handle;
 }
 function casFor(p: Plan): WorldPlanHandle['casKeys'] {
@@ -712,11 +713,12 @@ export function commitWorldWork(
     !authority ||
     !authority.active ||
     authority.game !== game ||
+    authority.world !== game.world5 ||
     authority.owner !== handle.owner ||
     authority.actorId !== handle.actorId
   )
     return { ok: false, code: 'C5_SCOPE', field: null };
-  if (!entry || entry.game !== game || entry.epoch !== game.worldWorkCommandEpoch)
+  if (!entry || entry.game !== game || entry.world !== game.world5 || entry.epoch !== game.worldWorkCommandEpoch)
     return { ok: false, code: 'C5_STALE', field: null };
   if (entry.used) return { ok: false, code: 'C5_PLAN_USED', field: null };
   entry.used = true;
@@ -950,6 +952,7 @@ export function mirrorWorldWorkTicks(game: Game, delta: number): void {
   if (!game.world5) return;
   if (game.world5.tickets.length) markRecordingRoot(game.world5);
   for (const t of game.world5.tickets) {
+    if(game.world5.orders.some(o=>o.production&&o.ticketId===t.ticketId))continue;
     if (t.bundleActionId !== null) {
       const b = game.actorActions!.bundles.find((b) => b.actionId === t.bundleActionId);
       if (b) t.remainingTicks = b.subactions[0]!.phaseRemainingTicks;
@@ -1059,7 +1062,8 @@ function releaseTicket(game: Game, t: MutableWorld<import('../../ext/worldSdk').
     stopReason: t.stopReason,
     lastCompletionOrdinal: t.lastCompletionOrdinal
   });
-  w.terminalTickets.splice(0, Math.max(0, w.terminalTickets.length - 64));
+  const pending=new Set(w.offline.flatMap(l=>l.pendingOutputs.map(p=>p.ticketId)));
+  while(w.terminalTickets.length>64){const index=w.terminalTickets.findIndex(t=>!pending.has(t.ticketId));if(index<0)reject("C5_BUDGET");w.terminalTickets.splice(index,1);}
   updateWorldReasons(game);
 }
 export function cancelWorldWork(
@@ -1068,6 +1072,7 @@ export function cancelWorldWork(
   reason: string,
   participant = true
 ): void {
+  const order=game.world5?.orders.find(o=>o.production&&o.ticketId===ticketId);if(order){cancelResidentOrder(game,order.actorId,reason);return;}
   const t = activeTicketById(game, ticketId);
   if (!t || t.status === 'cancelled' || t.status === 'completed') return;
   transactWorldWork(game, () =>
@@ -1263,12 +1268,13 @@ function cancelFailedBatch(game: Game, ticketId: number, error: unknown): void {
 export function interruptWorldWorkAtDepth(game: Game): void {
   const ids = new Set(game.world5?.tickets.map((t) => t.ticketId));
   for (const d of game.worldWorkDetails ?? [])
-    if (ids.has(d.ticketId)) d.interrupted ??= 'level-exit';
+    if (ids.has(d.ticketId)&&!game.world5!.orders.some(o=>o.production&&o.ticketId===d.ticketId)) d.interrupted ??= 'level-exit';
   settleWorldWork(game, false);
 }
 export function settleWorldWork(game: Game, allowCompletion = true): void {
   if (!game.world5) return;
   for (const t of [...game.world5.tickets]) {
+    if(game.world5.orders.some(o=>o.production&&o.ticketId===t.ticketId))continue;
     if (t.status !== 'working') continue;
     const d = game.worldWorkDetails?.find((d) => d.ticketId === t.ticketId);
     if (!d) reject('C5_BAD_REFERENCE');
@@ -1301,7 +1307,7 @@ export function selectWorldWorkDecision(
   scope: ActorActionScope
 ): boolean {
   const t = activeTicket(game, actorId);
-  if (!t || actorId === game.player.id || t.bundleActionId !== null) return false;
+  if (!t || game.world5!.orders.some(o=>o.production&&o.ticketId===t.ticketId) || actorId === game.player.id || t.bundleActionId !== null) return false;
   assertNativeActorDecisionScope(scope, game, actorId);
   return withWorldActorScope(
     game,

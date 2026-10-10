@@ -20,6 +20,7 @@ import { createHeadlessGame } from './harness';
 // Unlike a random-coordinate stub this fixture permits real CE teleport search.
 function scene() {
     const g = Object.create(Game.prototype) as Game;
+    g.depth = 1;
     g.grid = new Grid(26, 14);
     for (let x = 0; x < 26; x++) for (let y = 0; y < 14; y++) {
         g.grid.setTerrain(x, y, x === 0 || y === 0 || x === 25 || y === 13 || x === 12 ? T.WALL : T.FLOOR);

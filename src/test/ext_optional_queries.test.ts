@@ -36,7 +36,7 @@ describe('2a0 optional read-only capabilities', () => {
         expect(active.runtime.snapshot()).toEqual(snapshot); expect(active.ports.message).not.toHaveBeenCalled();
         expect(active.ports.randomInt).not.toHaveBeenCalled();
     });
-    it('exposes only frozen own state and selected player components, with detached frozen reply', () => {
+    it('exposes only frozen own state and owned actor components, with detached frozen reply', () => {
         let context!: OptionalQueryContext;
         const reply = { count: 9 };
         const { runtime } = setup([{ ...base('provider'),
@@ -44,8 +44,12 @@ describe('2a0 optional read-only capabilities', () => {
             optionalQueries: { [id]: provider({ query: (_input, ctx) => { context = ctx; return reply; } }) } }]);
         runtime.newGame(); const before = runtime.snapshot();
         const result = runtime.queryOptional(id, 'known');
-        expect(Object.keys(context).sort()).toEqual(['getPlayerComponent', 'playerId', 'state']);
+        expect(Object.keys(context).sort()).toEqual(['getComponent', 'getPlayerComponent', 'playerId', 'state']);
         expect(context.getPlayerComponent('public')).toEqual({ count: 5 });
+        expect(context.getComponent!(8, 'public')).toEqual({ secret: 88 });
+        expect(Object.isFrozen(context.getComponent!(8, 'public'))).toBe(true);
+        expect(context.getComponent!(8, 'other')).toBeUndefined();
+        expect(() => context.getComponent!(8, '../provider')).toThrow('component');
         expect(() => context.getPlayerComponent('../provider')).toThrow('component');
         expect(Object.isFrozen(context)).toBe(true); expect(Object.isFrozen(context.state)).toBe(true);
         expect(Object.isFrozen(context.getPlayerComponent('public'))).toBe(true);

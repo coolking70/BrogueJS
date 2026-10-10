@@ -1,3 +1,4 @@
+import { edibleState } from '../engine/Core/EdibleState';
 import { Monster, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
 import { forEachItemRoot } from '../engine/Core/WorldItemRoots';
@@ -117,12 +118,44 @@ describe('proposal validation and native ownership',()=>{
   f.p.inventory.items.splice(f.p.inventory.items.indexOf(i),1);markStatsDirty(f.p);expect(nativeStat(f.p,'native.damage-max')).toBe(2);
  });
  it('projects a growth component proposal through foreign multipliers without changing the world',()=>{
-  const descriptor=catalog.getInstalledModuleDescriptors().find(d=>d.id==='growth')!;
+  // This is a foundation projection fixture. With growth installed, retain its
+  // actual provider; without it, use a separate real fixture owner, never a
+  // registration pretending that the physically removed growth pack exists.
+  const descriptor=catalog.getInstalledModuleDescriptors().find(d=>d.id==='growth')??{
+   id:'proposal-fixture',version:'1.0.0',rules:undefined,create:():ExtensionModule=>({
+    id:'proposal-fixture',version:'1.0.0',initialState:()=>({}),validateState:isJson,
+    componentValidators:{attributes:isJson},
+    onNewGame(c){c.setComponent(c.playerId,'attributes',{values:{'growth.attribute.constitution':0}});},
+    statSources:{collect(actor,c){const attrs=c.getComponent(actor.id,'attributes') as unknown as {values:Record<string,number>}|undefined;return actor.player&&attrs?[row('native.max-hp',3*attrs.values['growth.attribute.constitution']!,{layer:'character',sourceId:'proposal-fixture.constitution'})]:[];}}
+   })
+  };
   vi.spyOn(catalog,'createExtensionRegistry').mockImplementation(()=>{const r=new ExtensionRegistry();r.register(descriptor.id,descriptor.version,descriptor.create,descriptor.rules);r.register('stats-fixture','1.0.0',()=>module({collect:a=>a.player?[row('native.max-hp',10000,{category:'increased',layer:'temporary'})]:[]}));return r;});
-  const game=createHeadlessGame(51019,'test');game.startNewGame({seed:51019,mode:'test',ruleSet:'extended',extensions:['growth','stats-fixture'],initialCommands:[JSON.stringify({module:'growth',action:'create-character',payload:{revision:0}})]});
-  const runtime=game.extensionRuntime!,before=runtime.snapshot(),random=rng.getState(),attrs=structuredClone(before.components[game.player.id]!['growth:attributes']) as unknown as {values:Record<string,number>};
+  const game=createHeadlessGame(51019,'test');game.startNewGame({seed:51019,mode:'test',ruleSet:'extended',extensions:[descriptor.id,'stats-fixture'],initialCommands:descriptor.id==='growth'?[JSON.stringify({module:'growth',action:'create-character',payload:{revision:0}})]:[]});
+  const runtime=game.extensionRuntime!,before=runtime.snapshot(),random=rng.getState(),attrs=structuredClone(before.components[game.player.id]![`${descriptor.id}:attributes`]) as unknown as {values:Record<string,number>};
   attrs.values['growth.attribute.constitution']!++;
-  const projected=runtime.hypotheticalComponents('growth',game.player.id,{attributes:attrs as never});
+  const projected=runtime.hypotheticalComponents(descriptor.id,game.player.id,{attributes:attrs as never});
   expect(projected['native.max-hp']).toBe(game.player.maxHp+6);expect(runtime.snapshot()).toEqual(before);expect(rng.getState()).toEqual(random);
+ });
+});
+
+describe('candidate stat world scope', () => {
+ it('inherits and restores nested clocks/actors and discards cached candidate reads even on throw', () => {
+  const f=direct(),candidate=new Player(4,4);candidate.id=f.p.id;candidate.strength=20;
+  edibleState(f.runtime).timedStats={schema:1,rows:[{actorId:f.p.id,owner:'stats-fixture',key:'native.strength',category:'flat',value:2,untilTick:100}]};
+  const live=()=>f.runtime.stats.value(f.p.id,'native.strength');
+  expect(live()).toBe(14);
+  expect(()=>f.runtime.withStatWorld([candidate],()=>{
+    expect(live()).toBe(22);
+    f.runtime.withStatWorld([candidate],()=>expect(live()).toBe(22));
+    f.runtime.withStatWorld([candidate],()=>expect(live()).toBe(20),100);
+    expect(live()).toBe(22);
+    throw Error('candidate preflight rejected');
+  },99)).toThrow('candidate preflight rejected');
+  expect(f.runtime.stats.cacheSize(f.p.id)).toBe(0);
+  expect(live()).toBe(14);
+  expect([f.p.strength,candidate.strength]).toEqual([12,20]);
+  f.runtime.withStatWorld([f.p],()=>expect(live()).toBe(12),100);
+  expect(f.runtime.stats.cacheSize(f.p.id)).toBe(0);
+  expect(live()).toBe(14);
  });
 });

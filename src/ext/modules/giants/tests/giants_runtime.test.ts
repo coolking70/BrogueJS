@@ -221,6 +221,8 @@ describe('giants natural run and original encounter', () => {
     );
     expect(boss.approaching).toBe(0);
     expect(logger.messages.some((m) => m.text.includes('留在原层'))).toBe(true);
+    // Diagnostic eligibility: choose a legal small native form, not a seed-sensitive no-fit sample.
+    vi.spyOn(rng, 'randRange').mockReturnValueOnce(species.findIndex((m) => m.id === 'rat') + 1);
     expect((game as any).polymorphBoltTarget(boss)).toBeTypeOf('boolean');
     expect(boss.typeId).not.toBe('giants.ridgeback');
     expect(boss.spatial?.movementRegionId).toBe(region.id);

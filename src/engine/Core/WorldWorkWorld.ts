@@ -283,7 +283,7 @@ export function withPublishingTicket<T>(game: Game, ticketId: number, work: () =
   }
 }
 export function reservedContainerSlots(game: Game, id: number): number {
-  return (game.world5?.tickets ?? []).reduce(
+  return (game.world5?.offline??[]).flatMap(l=>l.pendingOutputs).reduce((n,p)=>n+(p.destinationId===id&&!game.world5!.tickets.some(t=>t.ticketId===p.ticketId)&&publishing.get(game)!==p.ticketId?p.items.reduce((n,a)=>n+a.count,0):0),0)+(game.world5?.residentJobs??[]).reduce((n,j)=>n+(j.destinationId===id?j.reservedSlots:0)+(j.sourceId===id?j.reservedSlots:0),0)+(game.world5?.tickets ?? []).reduce(
     (n, t) =>
       n +
       (publishing.get(game) === t.ticketId
@@ -345,11 +345,12 @@ export function queryStations(game: Game, owner: string): StationRead[] {
       };
     });
 }
+/** Public/harness reads project elapsed regeneration; trusted callers may request the raw row. */
 export function readWorkContext(
   game: Game,
   owner: string,
   query: KnownWorkQuery,
-  virtual = false,
+  virtual = true,
   actorId = game.player.id
 ): WorldResult<WorkContext> {
   return result(() => {
@@ -486,7 +487,7 @@ export function updateWorldReasons(game: Game): void {
       ...(w.offline.some((o) => levelKey(o.levelRef) === key) || game.extensionRuntime?.worldStructureRegions().some(r=>'campSlotId' in r && `dungeon.${r.depth}`===key) ? ['camp' as const] : []),
       ...(w.containers.some((c) => levelKey(c.levelRef) === key) ? ['container' as const] : []),
       ...(w.residents.some((r) => levelKey(r.levelRef) === key) ? ['resident' as const] : []),
-      ...(w.orders.some((o) => levelKey(o.levelRef) === key) ||
+      ...(w.residentJobs.some(j=>`dungeon.${j.depth}`===key) || w.orders.some((o) => levelKey(o.levelRef) === key) ||
       w.tickets.some(
         (t) => levelKey(t.levelRef) === key && ['working', 'suspended'].includes(t.status)
       )
@@ -511,7 +512,7 @@ export function recordWorldFact(
 export function recordWorldReceipt(
   game: Game,
   owner: string,
-  kind: 'work' | 'startup' | 'placement' | 'transfer' | 'region' | 'structure' | 'rest',
+  kind: 'work' | 'startup' | 'placement' | 'transfer' | 'region' | 'structure' | 'rest' | 'offline',
   identity: string,
   result: 'completed' | 'interrupted' | 'skipped',
   reason: string | null
@@ -714,7 +715,8 @@ export function worldWorkReadSDK(game: Game, owner: string): WorldWorkReadSDK | 
     worldSdk: 1 as const,
     owner,
     lastCommandError: () => worldWorkLastError(game),
-    readWorkContext: (query: KnownWorkQuery) => readWorkContext(game, owner, query),
+    // Project elapsed regeneration without committing it; CAS uses the live revision.
+    readWorkContext: (query: KnownWorkQuery) => readWorkContext(game, owner, query, true),
     queryStations: () => result(() => queryStations(game, owner)),
     queryContainers: () =>
       result(() => {

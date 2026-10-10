@@ -1,3 +1,7 @@
+import {raidState,campRaid} from './SettlementRaids';
+import {settleResidentNeeds,freezeResidentCamps} from './ResidentNeeds';
+import { residentRecipeCatalog } from './ResidentOrders';
+import {residentRead} from './ResidentProduction';
 /** Trusted production adapter. Content declares data and receives read-only DTOs. */
 import type { Game } from './Game';
 import type { CampState, CampRecord, StructureAction } from '../../ext/structureSdk';
@@ -11,6 +15,7 @@ import {
   planRegionChange,
   planStructureChange,
   planPaidStructure,
+  planPaidRepair,
   planRest,
   commitStructureWorld,
   transactStructureWorld,
@@ -58,6 +63,7 @@ import { deepFreeze } from '../Movement/SpatialSchema';
 import { timeSystem } from '../Systems/Time';
 import { logger } from '../Systems/Logger';
 import i18next from 'i18next';
+import { worldText } from '../../ext/worldText';
 function fail(
   code: import('../../ext/worldSdk').WorldErrorCode,
   field: string | null = null
@@ -65,9 +71,10 @@ function fail(
   throw new World5Error(code, field);
 }
 const exact = (v: unknown, keys: string, field: string): void => assertExact(v, keys, field);
-type Input = { module: string; action: StructureAction; payload: any };
+type Input = { module: string; action: StructureAction|'repair'; payload: any };
 interface Prepared {
   game: Game;
+  world: Game['world5'];
   epoch: number;
   input: Input;
   stamp: string;
@@ -89,13 +96,13 @@ export function isStructureCommand(game: Game, data: unknown): boolean {
     return (
       !!v &&
       !!game.extensionRuntime?.worldCampPolicy(v.module) &&
-      (STRUCTURE_ACTIONS as readonly string[]).includes(v.action)
+      [...STRUCTURE_ACTIONS,'repair'].includes(v.action)
     );
   } catch {
     return false;
   }
 }
-const payloadKeys: Record<StructureAction, string> = {
+const payloadKeys: Record<StructureAction|'repair', string> = {
   establish:
     'v,stateRevision,inventoryStamp,x,y,bounds,food,sourceContainerId,sourceRevision,materials',
   expand:
@@ -103,6 +110,7 @@ const payloadKeys: Record<StructureAction, string> = {
   retire: 'v,stateRevision,inventoryStamp,regionId,regionRevision',
   build:
     'v,stateRevision,inventoryStamp,regionId,regionRevision,definitionId,x,y,sourceContainerId,sourceRevision,materials',
+  repair: 'v,stateRevision,inventoryStamp,componentId,componentRevision,amount,sourceContainerId,sourceRevision,materials',
   dismantle: 'v,stateRevision,inventoryStamp,componentId,componentRevision',
   door: 'v,stateRevision,inventoryStamp,componentId,componentRevision,open',
   transfer: 'v,stateRevision,containerId,containerRevision,inventoryStamp,direction,items',
@@ -261,13 +269,13 @@ export function lockedFoodQuantity(game: Game, itemId: number): number {
 function validate(
   game: Game,
   input: Input
-): Omit<Prepared, 'used' | 'epoch' | 'input' | 'stamp' | 'game'> {
+): Omit<Prepared, 'used' | 'epoch' | 'input' | 'stamp' | 'game' | 'world'> {
   available(game);
   const runtime = game.extensionRuntime!,
     p = input.payload,
     owner = input.module,
     policy = runtime.worldCampPolicy(owner);
-  if (!policy || !STRUCTURE_ACTIONS.includes(input.action)) fail('C5_BAD_PAYLOAD');
+  if (!policy || ![...STRUCTURE_ACTIONS,'repair'].includes(input.action)) fail('C5_BAD_PAYLOAD');
   exact(p, payloadKeys[input.action], 'payload');
   if (p.v !== 1) fail('C5_BAD_PAYLOAD');
   uint(p.stateRevision, 'stateRevision');
@@ -349,6 +357,7 @@ function validate(
         near(game, e!);
         if (threat(game)) fail('C5_THREAT');
         if (
+          (campRaid(game,c.slot)?.event && campRaid(game,c.slot)?.event?.phase!=='closed') ||
           game.world5!.structures.some((s) => s.regionId === r.id) ||
           game.world5!.residents.some((v) => v.campSlotId === c.slot) ||
           game.world5!.orders.some(
@@ -374,6 +383,7 @@ function validate(
         if (threat(game)) fail('C5_THREAT');
         const d = structureDefinition(game, p.definitionId);
         if (d.owner !== owner) fail('C5_BAD_OWNERSHIP');
+        if(d.tags.includes('plot')&&game.world5!.structures.filter(s=>s.regionId===r.id&&s.fixture?.definitionId===d.id).length>=12)fail('C5_BUDGET');
         const kit = d.tags.includes('bed')
           ? 'kit.bed'
           : d.containerCapacity !== null
@@ -406,6 +416,14 @@ function validate(
             scope
           )
         };
+      }
+      case 'repair':{
+        const row=game.world5!.structures.find(s=>['floor','barrier','roof','fixture'].some(slot=>(s as any)[slot]?.id===p.componentId));
+        const component=row&&[row.floor,row.barrier,row.roof,row.fixture].find(c=>c?.id===p.componentId);
+        if(!row||!component||row.owner!==owner)fail('C5_BAD_OWNERSHIP');
+        near(game,row!.at);uint(p.amount,'amount',1);const d=structureDefinition(game,component!.definitionId);
+        const materials=bill(game,owner,p,d.constructionCost.map(a=>({...a,count:Math.ceil(a.count*p.amount/d.maxHp)})));
+        return {materials,plan:planPaidRepair({kind:'repair',componentId:p.componentId,revision:p.componentRevision,amount:p.amount},materials,p.sourceContainerId,scope)};
       }
       case 'dismantle':
       case 'door': {
@@ -454,6 +472,7 @@ export function prepareStructureCommand(game: Game, data: unknown): WorldResult<
     plans.set(token, {
       ...parts,
       game,
+      world: game.world5,
       epoch: game.worldWorkCommandEpoch,
       input: structuredClone(input),
       stamp: c5Canonical([
@@ -516,11 +535,12 @@ function installEmptyLedger(game: Game, owner: string, c: CampRecord) {
       knownThreats: []
     }
   });
+  raidState(game,owner,c);
 }
 export function commitStructureCommand(game: Game, token: object): WorldResult<WorldCommit> {
   return result(() => {
     const old = plans.get(token);
-    if (!old || old.game !== game || old.epoch !== game.worldWorkCommandEpoch) fail('C5_SCOPE');
+    if (!old || old.game !== game || old.world !== game.world5 || old.epoch !== game.worldWorkCommandEpoch) fail('C5_SCOPE');
     if (old!.used) fail('C5_PLAN_USED');
     old!.used = true;
     const input = old!.input,
@@ -540,6 +560,7 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
     )
       fail('C5_STALE');
     return transactStructureWorld(game, () => {
+      settleResidentNeeds(game,true);
       let state = runtime.worldCampState(owner),
         ticks = 0,
         identity = `camp.${owner}.${state.revision}.${game.world5!.revision}`;
@@ -590,6 +611,8 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
           markerId: e.id,
           supplyId,
           locked: [],
+          consumedLockedUnits:0,
+          granaryIds:[supplyId],
           reportTick: game.world5!.simulationTicks,
           reportItems: []
         };
@@ -622,6 +645,7 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
         game.world5!.containers = game.world5!.containers.filter((b) => b.id !== c.supplyId);
         runtime.worldStructureRemoveInteractable(c.markerId);
         game.world5!.offline = game.world5!.offline.filter((l) => l.campSlotId !== c.slot);
+        game.world5!.raidCamps = game.world5!.raidCamps.filter(r=>r.slot!==c.slot);
         game.world5!.levels.find(
           (l) => l.levelRef.kind === 'dungeon' && l.levelRef.depth === c.depth
         )!.policy = 'native';
@@ -676,6 +700,8 @@ export function commitStructureCommand(game: Game, token: object): WorldResult<W
       for (const c of state.camps.filter((c) => c.depth === game.depth)) report(game, c);
       runtime.worldCampReplace(owner, state);
       updateWorldReasons(game);
+      settleResidentNeeds(game,true);
+      freezeResidentCamps(game,game.depth);
       recordWorldReceipt(
         game,
         owner,
@@ -750,6 +776,36 @@ export function structureReadSDK(game: Game, owner: string) {
               : []
           )
         );
+      // Job orders address a known, owned home, not just currently lit tiles.
+      // Return only target metadata; general boxes/items retain their FOV gate.
+      const residents = residentRead(game, owner);
+      const homeIds = new Set(residents.residents.map((a) => a.campId));
+      const built = new Set(state.constructions.map((c) => c.componentId));
+      const known = (at: { x: number; y: number }, componentId?: number) =>
+        (componentId !== undefined && built.has(componentId)) ||
+        !!game.grid.getCell(at.x, at.y)?.isExplored;
+      const jobTargets = state.camps.filter((c) => c.depth === game.depth && homeIds.has(c.regionId)).map((c) => {
+        const region = regions.find((r) => r.id === c.regionId)!;
+        const rows = w.structures.filter((r) => r.owner === owner && r.regionId === c.regionId &&
+          r.levelRef.kind === 'dungeon' && r.levelRef.depth === game.depth && regionContains(region, r.at));
+        return {
+          campId: c.regionId,
+          boxes: w.containers.filter((b) => b.owner === owner && b.kind === 'chest' &&
+            b.levelRef.kind === 'dungeon' && b.levelRef.depth === game.depth).flatMap((b) => {
+              const at = containerRead(game, b.id).at;
+              const chest = at && rows.find((r) => r.at.x === at.x && r.at.y === at.y &&
+                r.fixture?.definitionId === owner + '.chest');
+              // The supply chest is created by establish; other chests must be
+              // existing camp fixtures. Neither branch exposes box contents.
+              return at && regionContains(region, at) && (b.id === c.supplyId ||
+                (chest && known(at, chest.fixture!.id)))
+                ? [{ id: b.id, at: { ...at }, revision: b.revision }] : [];
+            }),
+          plots: rows.flatMap((r) => r.fixture?.definitionId === owner + '.plot' && known(r.at, r.fixture.id)
+            ? [{ id: r.fixture.id, at: { ...r.at }, revision: r.fixture.revision,
+                nameKey: structureDefinition(game, r.fixture.definitionId).nameKey }] : [])
+        };
+      });
       const knownRooms = local
         ? computeRooms(game, { kind: 'dungeon', depth: game.depth }).filter((r) =>
             r.cells.every((p) => game.grid.getCell(p.x, p.y)?.isVisible)
@@ -788,6 +844,23 @@ export function structureReadSDK(game: Game, owner: string) {
                 }
               : {})
           })),
+          raids: runtime.worldRaidRules(owner) ? {
+            enabled: true,
+            camps: state.camps.map(c => {
+              const r = campRaid(game, c.slot), report = r?.report;
+              // Only mechanical region entry publishes a report. Layer entry and UI reads do not.
+              return {
+                campId: c.regionId,
+                reportedTick: r?.reportedTick ?? 0,
+                phase: report?.phase ?? null,
+                besieged: report?.phase === 'active',
+                paused: report?.phase === 'active' && r?.pauseFrom !== null,
+                reason: report?.reason ?? null,
+                lostUnits: report?.lostUnits ?? null,
+                damagedHp: report?.damagedHp ?? null
+              };
+            })
+          } : null,
           boxes,
           components,
           rooms: knownRooms,
@@ -815,6 +888,13 @@ export function structureReadSDK(game: Game, owner: string) {
               nameKey: worldPack(game, owner).resourceNodes.find((d) => d.id === n.definitionId)!
                 .nameKey
             })),
+          residents,
+          jobTargets,
+          production: {
+            recipes: residentRecipeCatalog(game).filter(r=>r.offlineEligible).map(r=>({id:r.id,owner:r.owner,nameKey:r.nameKey,workTicks:r.workTicks})),
+            stations: w.stations.filter(s=>s.levelRef.kind==='dungeon'&&s.levelRef.depth===game.depth).flatMap(s=>{const e=runtime.worldWorkEntities().find(e=>e.id===s.interactableId);return e&&game.grid.getCell(e.x,e.y)?.hasMemory?[{id:s.interactableId,revision:s.revision,definitionId:s.definitionId}]:[];}),
+            orders: w.orders.filter(o=>o.production&&residents.residents.some(r=>r.id===o.actorId)).map(o=>{const t=w.tickets.find(t=>t.ticketId===o.ticketId);return {id:o.id,actorId:o.actorId,revision:o.revision,recipeId:o.definitionId,remainingEpochs:o.remainingEpochs,status:o.status,stopReason:o.stopReason,ticketId:o.ticketId,sourceId:o.production!.sourceId,destinationId:o.production!.destinationId,stationId:o.production!.stationId,plotIds:o.production!.plotIds,batchCount:o.production!.batchCount,completedBatches:t?.completedBatches??o.production!.batchCount,laborCreditTicks:t?.laborCreditTicks??0};})
+          },
           lastError: worldWorkLastError(game)
         })
       );
@@ -856,8 +936,6 @@ export function validateProductionCampReferences(game: Game): void {
         !ledger ||
         ledger.levelRef.kind !== 'dungeon' ||
         ledger.levelRef.depth !== c.depth ||
-        ledger.residentStates.length ||
-        ledger.pendingOutputs.length ||
         ledger.frozen.rulesFingerprint !==
           runtime.worldDefinitionFingerprints()[owner]!.replace(/^sha256:/, '') ||
         c.reportTick > game.world5.simulationTicks
@@ -928,10 +1006,12 @@ export function freezeProductionCamps(game: Game, depth: number): void {
     report(game, c);
     runtime.worldCampReplace(owner, state);
     const ledger = game.world5.offline.find((l) => l.campSlotId === c.slot)!;
+    settleResidentNeeds(game,true);
+    freezeResidentCamps(game,c.depth);
     ledger.lastSettledTick = game.world5.simulationTicks;
     ledger.epochRemainder = game.world5.simulationTicks % 1000;
     ledger.frozen.capturedTick = game.world5.simulationTicks;
-    ledger.revision = checkedAdd(ledger.revision, 1);
+    if(!runtime.residentPolicy(owner))ledger.revision = checkedAdd(ledger.revision, 1);
   }
 }
 export function settleProductionCamps(game: Game): void {
@@ -943,11 +1023,22 @@ export function settleProductionCamps(game: Game): void {
     if (!c) continue;
     const ledger = game.world5.offline.find((l) => l.campSlotId === c.slot)!;
     if (ledger.lastSettledTick > game.world5.simulationTicks) fail('C5_BAD_TIME');
+    settleResidentNeeds(game,true);
+    freezeResidentCamps(game,c.depth);
     ledger.lastSettledTick = game.world5.simulationTicks;
     ledger.epochRemainder = game.world5.simulationTicks % 1000;
     ledger.frozen.capturedTick = game.world5.simulationTicks;
-    ledger.revision = checkedAdd(ledger.revision, 1);
+    if(!runtime.residentPolicy(owner))ledger.revision = checkedAdd(ledger.revision, 1);
     report(game, c);
     runtime.worldCampReplace(owner, state);
   }
+}
+
+/** Pure preview of the already prepared, single-use paid plan. */
+export function structureCommandConfirmation(game:Game,token:object):string {
+  const p=plans.get(token);if(!p||p.game!==game||p.world!==game.world5)throw new World5Error('C5_STALE');
+  if(p.input.action!=='repair')return i18next.t('ext.foundation.structure.confirm');
+  const input=p.input.payload,component=game.world5!.structures.flatMap(s=>[s.floor,s.barrier,s.roof,s.fixture]).find(c=>c?.id===input.componentId)!;
+  const d=structureDefinition(game,component.definitionId);
+  return i18next.t('ext.settlement.raid.repair_confirm',{target:worldText(d.nameKey),amount:input.amount,ticks:Math.max(100,Math.ceil(d.constructionTicks*input.amount/d.maxHp)),materials:p.materials!.map(a=>worldText(game.extensionRuntime!.worldDefinitionPacks().flatMap(p=>p.items).find(d=>d.id===a.itemDefinitionId)!.nameKey)+' ×'+a.count).join('、')});
 }

@@ -28,7 +28,8 @@ export interface ExtensionModuleView {
     readonly canManageCharacter: boolean;
 }
 export interface ExtensionRulesIdentity { schema: number; version: string; fingerprint: string }
-export interface ExtensionVersion { id: string; version: string; rules?: ExtensionRulesIdentity }
+export interface ExtensionRunConfiguration { readonly controls?: readonly { readonly field: string; readonly labelKey: string; readonly descriptionKey: string }[]; readonly default: Json; validate(value: unknown): value is Json; identity(value: Json): ExtensionRulesIdentity }
+export interface ExtensionVersion { id: string; version: string; rules?: ExtensionRulesIdentity; configuration?: Json }
 export interface ExtensionManifest { schema: 1; foundation?: typeof import('./descriptor').FOUNDATION_PROTOCOL; modules: ExtensionVersion[] }
 export interface ExtensionSnapshot {
     manifest: ExtensionManifest;
@@ -94,6 +95,7 @@ export interface OptionalQueryContext {
     readonly playerId: number;
     readonly state: ReadonlyJson;
     getPlayerComponent(name: string): ReadonlyJson | undefined;
+    getComponent?(actorId:number,name:string):ReadonlyJson|undefined;
 }
 export interface OptionalQueryProvider {
     accepts(input: ReadonlyJson): boolean;
@@ -250,6 +252,7 @@ export type HookHandlers = { [K in HookName]?: (event: Readonly<HookEvents[K]>, 
 /** Detached native newborn bases for safe composition before a current run is retired. */
 export interface ExtensionCreationResources { readonly maxHp: number; readonly strength: number }
 export interface ExtensionModule extends ExtensionVersion, WorldModuleFields {
+    readonly raidRules?: import("./settlementRaids").RaidRules;
     readonly campPolicy?: import('./structureSdk').CampPolicy;
     readonly edibleCommands?: Partial<Record<'feed'|'roast', import('./worldEdible').EdibleCommand>>;
     readonly edibleParticipant?: import('./worldEdible').EdibleParticipant;
@@ -266,6 +269,7 @@ export interface ExtensionModule extends ExtensionVersion, WorldModuleFields {
     readonly ownedRegions?: true;
     /** One discovered data-only owner for persistent phased attacks. */
     readonly actorActions?: { readonly definitions: Json };
+    readonly residentPolicy?: import("./residentSdk").ResidentPolicy;
     readonly nativeForms?: readonly import('./nativeForms').NativeFormDefinition[];
     readonly bodyTransitions?: readonly import('./bodyTransitions').ActiveBodyTransition[];
     /** Data-only composite declarations; foundation owns entities and clocks. */

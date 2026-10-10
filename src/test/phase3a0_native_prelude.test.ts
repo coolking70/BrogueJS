@@ -21,6 +21,7 @@ function scene() {
     monster.ticksUntilTurn = 0;
     const game = {
         grid: new Grid(12, 12),
+        departureTurn: vi.fn(() => false),
         applyEntanglementFromTerrain: vi.fn(() => { order.push('entanglement'); }),
         makeMonsterDropItem: vi.fn(() => { order.push('drop'); }),
     } as unknown as Game;

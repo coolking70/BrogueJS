@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import type { SettlementView } from './view';
+import ResidentsPanel from './ResidentsPanel.vue';
 import { loadSettlementPack } from '../definitions';
 const props = defineProps<{
   model: SettlementView;
@@ -19,6 +20,7 @@ const props = defineProps<{
   blocked: boolean;
   error: string | null;
   presentationHidden?: boolean;
+  replayReadonly?: boolean;
 }>();
 const emit = defineEmits<{
   close: [];
@@ -41,6 +43,7 @@ const emit = defineEmits<{
   rest: [number];
   part: [string, number];
   harvest: [number];
+  resident:[string,number,Record<string,unknown>];
 }>();
 const { t } = useTranslation(),
   boxId = ref<number | null>(null);
@@ -92,7 +95,8 @@ const tabs = computed(() => [
   { id: 'camp', label: t('ext.settlement.ui.tab.camp') },
   { id: 'build', label: t('ext.settlement.ui.tab.build') },
   { id: 'inventory', label: t('ext.settlement.ui.tab.inventory') },
-  { id: 'harvest', label: t('ext.settlement.ui.tab.harvest') }
+  { id: 'harvest', label: t('ext.settlement.ui.tab.harvest') },
+  { id: 'residents', label: t('ext.settlement.resident.title') }
 ]);
 function number(event: Event) {
   return Number((event.target as HTMLInputElement).value);
@@ -138,6 +142,10 @@ function number(event: Event) {
         </button>
       </nav>
       <main>
+        <template v-if="model.raids">
+          <p v-for="r in model.raids.camps" :key="r.campId">{{ t('ext.settlement.raid.report', {id:r.campId,tick:r.reportedTick}) }} · {{ t(r.besieged ? 'ext.settlement.raid.besieged' : 'ext.settlement.raid.phase.'+(r.phase ?? 'quiet')) }}<span v-if="r.besieged"> · {{ t('ext.settlement.raid.paused') }}</span><span v-if="r.reason==='slots'"> · {{ t('ext.settlement.raid.slots') }}</span><span v-if="r.reason==='summary' && (r.phase==='aftermath' || r.phase==='closed')"> · {{ t('ext.settlement.raid.loss',{units:r.lostUnits,hp:r.damagedHp}) }}</span></p>
+        </template>
+        <p v-if="replayReadonly" class="replay-readonly">{{ t('ext.settlement.ui.replay_readonly') }}</p>
         <p v-if="error || model.lastError" class="error" role="alert">
           {{ t('ext.settlement.ui.rejected') }}
         </p>
@@ -323,7 +331,7 @@ function number(event: Event) {
               {{
                 t(c.doorOpen ? 'ext.settlement.ui.door.close' : 'ext.settlement.ui.door.open')
               }}</button
-            ><button :disabled="blocked" @click="emit('part', 'dismantle', c.id)">
+            ><button v-if="c.hp < (model.definitions.find(d=>d.id===c.definitionId)?.maxHp ?? c.hp)" :disabled="blocked" @click="emit('part','repair',c.id)">{{ t('ext.settlement.raid.repair') }}</button><button :disabled="blocked" @click="emit('part', 'dismantle', c.id)">
               {{ t('ext.settlement.ui.dismantle') }}
             </button>
           </article>
@@ -367,6 +375,7 @@ function number(event: Event) {
           >
           <p v-else>{{ t('ext.settlement.ui.no_box') }}</p>
         </template>
+        <ResidentsPanel v-else-if="tab==='residents'" :model="model" :blocked="blocked" :cursor="cursor" @command="(action,id,extra)=>emit('resident',action,id,extra)" />
         <template v-else
           ><article v-for="n in model.nodes" :key="n.interactableId">
             <h3>{{ t(n.nameKey) }}</h3>

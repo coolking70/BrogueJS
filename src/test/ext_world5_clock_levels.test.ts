@@ -1,3 +1,4 @@
+import { assertC5Json } from '../ext/worldJson';
 import { continuingPrefix } from './support/recordingV4';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as catalog from '../ext/catalog';
@@ -34,7 +35,7 @@ import {
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 function fixture() {
   const r = new ExtensionRegistry();
-  r.register('world5-fixture', '1.0.0', createWorld5Module, fixtureRulesIdentity);
+  r.register('world5-fixture', fixtureRulesIdentity.version, createWorld5Module, fixtureRulesIdentity);
   vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(r);
   const g = createHeadlessGame(51005001, 'test');
   g.startNewGame({
@@ -57,7 +58,7 @@ describe('C5 world clock and layer identity', () => {
   it('review H3: a real nine-member body falls into pending before a cached managed lower floor settles', () => {
     const registry = new ExtensionRegistry(), body = bodyFixtureDescriptor();
     registry.register(body.id, body.version, body.create, body.rules);
-    registry.register('world5-fixture', '1.0.0', createWorld5Module, fixtureRulesIdentity);
+    registry.register('world5-fixture', fixtureRulesIdentity.version, createWorld5Module, fixtureRulesIdentity);
     vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(registry);
     const g = createHeadlessGame(51005008, 'wizard');
     g.startNewGame({ seed: 51005008, mode: 'wizard', ruleSet: 'extended', extensions: ['world5-fixture', body.id] });
@@ -111,7 +112,7 @@ describe('C5 world clock and layer identity', () => {
     const registry = new ExtensionRegistry(),
       body = bodyFixtureDescriptor();
     registry.register(body.id, body.version, body.create, body.rules);
-    registry.register('world5-fixture', '1.0.0', createWorld5Module, fixtureRulesIdentity);
+    registry.register('world5-fixture', fixtureRulesIdentity.version, createWorld5Module, fixtureRulesIdentity);
     vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(registry);
     const g = createHeadlessGame(51005008, 'test');
     g.startNewGame({
@@ -390,7 +391,7 @@ describe('C5 world clock and layer identity', () => {
     const r = new ExtensionRegistry();
     r.register(
       'world5-fixture',
-      '1.0.0',
+      fixtureRulesIdentity.version,
       () => {
         const m = createWorld5Module(),
           entered = m.hooks!.enteredLevel!;
@@ -473,7 +474,7 @@ describe('C5 related real-Game combinations (engine only, v4 recording path)', (
     '%s: play/save/load/replay/seek/continuation',
     (_name, ids) => {
       const registry = catalog.createExtensionRegistry();
-      registry.register('world5-fixture', '1.0.0', createWorld5Module, fixtureRulesIdentity);
+      registry.register('world5-fixture', fixtureRulesIdentity.version, createWorld5Module, fixtureRulesIdentity);
       vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(registry);
       const initialCommands = registry
         .create(registry.manifest(ids))
@@ -536,4 +537,22 @@ describe('C5 related real-Game combinations (engine only, v4 recording path)', (
       expect(state()).toEqual(continuationState);
     }
   );
+});
+
+// Validation-only callers retain strict JSON guards, including descriptors that
+// JSON.stringify would silently drop or evaluate.
+it('validates C5 JSON without serialization or evaluating accessor payloads', () => {
+    const shared = { value: 1 }, cyclic: any = {}; cyclic.self = cyclic;
+    let reads = 0;
+    const getter = Object.defineProperty({}, 'x', { enumerable: true, get() { reads++; return 1; } });
+    const hidden = Object.defineProperty({}, 'x', { value: 1 });
+    const symbol = { [Symbol('x')]: 1 };
+    const badArray = [1]; Object.setPrototypeOf(badArray, null);
+    const valid = [null, true, 0, -0, Number.MAX_SAFE_INTEGER, '粮😀', [shared, shared], Object.assign(Object.create(null), { x: 1 })];
+    const invalid = [undefined, NaN, Infinity, 0.5, 1n, cyclic, getter, hidden, symbol, badArray, [,1], { constructor: 1 }, '\ud800', { ['\udc00']: 1 }, new Date(0)];
+    for (const value of valid) expect(() => assertC5Json(value)).not.toThrow();
+    for (const value of invalid) expect(() => assertC5Json(value)).toThrow();
+    expect(() => assertC5Json(0.5, true)).not.toThrow();
+    expect(() => assertC5Json(Infinity, true)).toThrow();
+    expect(reads).toBe(0);
 });

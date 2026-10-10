@@ -244,3 +244,17 @@ describe('EXT fixture durable lifecycle', () => {
         expect(factory).not.toHaveBeenCalled();expect(classic.extensionRuntime).toBeNull();expect(classic.toSnapshot().extensions).toBeUndefined();
     });
 });
+
+it('preserves incoming state serialization reads when an own revision proves inequality', () => {
+    let reads = 0;
+    const registry = new ExtensionRegistry();
+    registry.register('alpha', '1.0.0', () => ({ ...probe('alpha'),
+        initialState: () => ({ revision: 0, value: 0 }),
+        onNewGame: context => context.setState({ revision: 1, get value() { return ++reads; } }),
+    }));
+    const runtime = new ExtensionRuntime(registry, registry.manifest(['alpha']), ports());
+    runtime.newGame();
+    expect(reads).toBe(3);
+    expect(runtime.snapshot().modules.alpha).toEqual({ revision: 1, value: 3 });
+    runtime.unload();
+});

@@ -14,7 +14,7 @@ import monsters from '../../../../data/monsters.json';
 import { ItemLoader } from '../../../../engine/Items/ItemLoader';
 import { settleTimedStats } from '../../../../engine/Core/EdibleEffects';
 import { advanceWorldClock } from '../../../world5';
-import { spawnDungeonFeature, catalogFeature } from '../../../../engine/Map/DungeonFeature';
+import { stageDungeonFeature } from '../../../../test/support/dungeonFeatureScene';
 import { placeNode } from '../../../../engine/Core/WorldWorkWorld';
 import { TerrainType } from '../../../../engine/Map/Grid';
 const owner = 'fgfixture';
@@ -274,7 +274,7 @@ export function createForageFixture(): ExtensionModule {
       game.extensionRuntime!.attachCreature(a);
       game.becomeAllyWith(a);
     } else if (p.kind === 'group') {
-      const body = game.extensionRuntime!.edibleModule('giants')?.nativeBodies?.definitions[0];
+      const body = game.extensionRuntime!.edibleModule(p.bodyOwner ?? 'giants')?.nativeBodies?.definitions[0];
       if (!body) throw new Error('C5_DISABLED');
       const core = game.createCompositeMonster(body.id, p.at ?? { x: 12, y: 10 });
       if (!core) throw new Error('C5_GATE');
@@ -327,7 +327,7 @@ export function createForageFixture(): ExtensionModule {
         p.actorId === game.player.id ? game.player : game.monsters.find((a) => a.id === p.actorId)!;
       actor.takeDamage(p.amount);
     } else if (p.kind === 'df') {
-      spawnDungeonFeature(game.grid, p.at.x, p.at.y, catalogFeature(p.df), false);
+      stageDungeonFeature(game.grid, p.at, p.df);
       game.requestEdibleRender();
     } else if (p.kind === 'station') {
       const d = game

@@ -78,7 +78,10 @@ describe('giants 4b original four-cell spine crawler',()=>{
   });
   it('r270 pending fall and cached layer validate full masks; retry after terrain change preserves pose and one fall damage',()=>{
     const {g,m}=diagnostic();g.mode='normal';(g as any).currentLevelDepth=1;m.behaviorFlags.add('MONST_WILL_NOT_USE_STAIRS');
-    g.depth=2;(g as any).generateDepth(false);g.monsters=[];g.dormantMonsters=[];
+    g.depth=2;(g as any).generateDepth(false);
+    // Retire newly generated arena ownership before constructing the blocked landing fixture.
+    for(const actor of [...g.monsters,...g.dormantMonsters])g.killMonster(actor,true);
+    g.monsters=[];g.dormantMonsters=[];
     for(let y=0;y<g.grid.height;y++)for(let x=0;x<g.grid.width;x++)g.grid.setTerrain(x,y,T.WALL);
     g.depth=1;(g as any).generateDepth(true);const original=g.monsters.find(c=>c.id===m.id)!;original.falling=true;(g as any).monstersFall();
     expect((g as any).pendingFallenByDepth.get(2)).toContain(original);const hp=original.hp,saved=json(g.toSaveSnapshot());

@@ -1,9 +1,11 @@
 import type { CampState } from '../../structureSdk';
-import { c5Canonical } from '../../worldJson';
+import { assertC5Json } from '../../worldJson';
 import { exact, uint } from '../../worldBasics';
 import { validId } from '../../json';
 export const initialState = (): CampState => ({
-  schema: 1,
+  schema: 2,
+  spawnSlots: [],
+  plotDays: [],
   revision: 0,
   camps: [],
   constructions: [],
@@ -11,10 +13,10 @@ export const initialState = (): CampState => ({
 });
 export function validateState(v: unknown): v is CampState {
   try {
-    c5Canonical(v);
-    exact(v, 'schema,revision,camps,constructions,history', 'state');
+    assertC5Json(v);
+    exact(v, 'schema,revision,camps,constructions,history,spawnSlots,plotDays', 'state');
     const s = v as unknown as CampState;
-    if (s.schema !== 1) return false;
+    if (s.schema !== 2) return false;
     uint(s.revision, 'revision');
     if (
       !Array.isArray(s.camps) ||
@@ -25,6 +27,11 @@ export function validateState(v: unknown): v is CampState {
       s.history.length > 128
     )
       return false;
+    if(!Array.isArray(s.spawnSlots)||s.spawnSlots.length>4||!Array.isArray(s.plotDays)||s.plotDays.length>96)return false;
+    for(const a of s.spawnSlots){exact(a,'depth,attempts,status,actorId','spawnSlot');uint(a.attempts,'attempts',1);if(![1,5,10,15].includes(a.depth)||a.attempts>2||!['placed','skipped','terminal','deferred'].includes(a.status))return false;if(a.actorId!==null)uint(a.actorId,'actorId',1);if((a.status==='placed')!==(a.actorId!==null))return false;}
+    if(new Set(s.spawnSlots.map(a=>a.depth)).size!==s.spawnSlots.length)return false;
+    for(const a of s.plotDays){exact(a,'componentId,day','plotDay');uint(a.componentId,'componentId',1);uint(a.day,'day');}
+    if(new Set(s.plotDays.map(a=>a.componentId)).size!==s.plotDays.length)return false;
     const unique = (rows: readonly number[]) => new Set(rows).size === rows.length;
     if (
       !unique(s.camps.map((c) => c.regionId)) ||
@@ -36,7 +43,7 @@ export function validateState(v: unknown): v is CampState {
     for (const c of s.camps) {
       exact(
         c,
-        'regionId,depth,slot,ordinal,revision,markerId,supplyId,locked,reportTick,reportItems',
+        'regionId,depth,slot,ordinal,revision,markerId,supplyId,locked,reportTick,reportItems,consumedLockedUnits,granaryIds',
         'camp'
       );
       for (const k of ['regionId', 'depth', 'ordinal', 'markerId', 'supplyId'] as const)
@@ -58,7 +65,9 @@ export function validateState(v: unknown): v is CampState {
         uint(l.quantity, 'quantity', 1);
         total += l.quantity;
       }
-      if (total !== 2) return false;
+      uint(c.consumedLockedUnits, "consumedLockedUnits");
+      if (total + c.consumedLockedUnits !== 2 || !Array.isArray(c.granaryIds) || c.granaryIds.length>16 || !c.granaryIds.includes(c.supplyId) || !unique(c.granaryIds)) return false;
+      for(const id of c.granaryIds)uint(id,"granaryId",1);
       for (const r of c.reportItems) {
         exact(r, 'itemId,quantity,name', 'reportItem');
         uint(r.itemId, 'itemId', 1);

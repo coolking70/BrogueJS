@@ -1,3 +1,5 @@
+import * as catalog from '../ext/catalog';
+import { craftingMaterialFixture } from './fixtures/optionalCrafting';
 import * as worldPredicates from '../engine/Core/WorldWorkWorld';
 import { createWorldHarness, worldHarnessGame } from '../ext/testing/worldHarness';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -449,7 +451,9 @@ describe('5A2 independent review regressions', () => {
     });
   });
   it('fact rings preserve 128 per owner and receipt ordinals cannot duplicate on load', () => {
-    const g = workGame({ modules: ['combat'] });
+    const installed = catalog.getInstalledModuleDescriptors(), peer = installed.some(d => d.id === 'combat') ? 'combat' : craftingMaterialFixture.id;
+    if (peer !== 'combat') vi.spyOn(catalog, 'getInstalledModuleDescriptors').mockReturnValue([...installed, craftingMaterialFixture]);
+    const g = workGame({ modules: [peer] });
     for (let n = 0; n < 140; n++)
       recordWorldFact(
         g,
@@ -469,9 +473,9 @@ describe('5A2 independent review regressions', () => {
       );
     const first = g.worldWorkFacts!.filter((f) => f.owner === 'craftskel');
     for (let n = 0; n < 140; n++)
-      recordWorldFact(g, { ...first[0]!, owner: 'combat' } as any, false);
+      recordWorldFact(g, { ...first[0]!, owner: peer } as any, false);
     expect(g.worldWorkFacts!.filter((f) => f.owner === 'craftskel')).toHaveLength(128);
-    expect(g.worldWorkFacts!.filter((f) => f.owner === 'combat')).toHaveLength(128);
+    expect(g.worldWorkFacts!.filter((f) => f.owner === peer)).toHaveLength(128);
     const other = workGame();
     recordWorldReceipt(other, 'craftskel', 'placement', 'one', 'skipped', 'budget');
     recordWorldReceipt(other, 'craftskel', 'placement', 'two', 'skipped', 'budget');

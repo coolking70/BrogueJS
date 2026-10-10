@@ -1,5 +1,7 @@
 # 叙事内容配置手册
 
+5Z当前安装身份：foundation **13**、whole-run **6**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；引擎门禁与[人工待验清单](phase5z.manual-checklist.md)以[5Z报告](phase5z.report.md)为准。
+
 本文面向新增 NPC、对白、剧情事件和立绘的内容作者，按当前实际加载器与执行代码说明，不把 [阶段 2 设计](phase2-narrative.md) 中的接口草图当作已实现功能。路径均相对仓库根。分支政策与交付门禁以 [路线](README.md) 为准；本页不改变阶段授权或旧报告的验收结论。
 
 ## 1. 从哪里改
@@ -31,7 +33,7 @@
 | `moduleVersion`、`rulesVersion` | 均为 `"1.4.0"` | 当前加载器只接受此精确值，并非任意 semver |
 | `stateVersion` | `4` | 模块私有持久状态 `schema: 4` |
 | `inputVersion` | `2` | open/choose/close 的 payload 必须带 `v: 2` |
-| `descriptor.ts.foundation` | `5` | 底座要求；不是内容开关 |
+| `descriptor.ts.foundation` | `13` | 底座要求；不是内容开关 |
 | `portraits.json.schema` | `1` | 显示清单结构 |
 | `portraits.json.displayVersion` | `"1.1.0"` | 独立显示版本，格式为三段数字 |
 

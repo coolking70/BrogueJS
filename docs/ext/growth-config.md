@@ -1,4 +1,6 @@
-# Growth 数据配置合同（3g 战斗 adapter，schema 1 / rules 1.7.0）
+# Growth 数据配置合同（当前 Stat 接线，schema 1 / rules 1.8.0）
+
+5Z当前安装身份：foundation **13**、whole-run **6**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；引擎门禁与[人工待验清单](phase5z.manual-checklist.md)以[5Z报告](phase5z.report.md)为准。
 
 本文件记录 growth 数据包的实际字段合同。配置是有限、可校验的 JSON，不是脚本；数值是可调整的默认样例，不承诺平衡。1a0、1a、1a1 已验收；1b 启用 P01 纯求值、属性/训练/分配/洗点和原物品永久收益控制。1d 已接技能动作/效果消费/客观时钟；1e 接通身份选择/授予/誓约、怪物模板与盟友自动分配。§1.1–1.6 保留逐步交付历史，2c 新增可选能力见 §1.7；3g 可信 actor 容量查询见 §1.8。
 
@@ -8,7 +10,8 @@
 |---|---|
 | `src/ext/modules/growth/index.ts` | 生产 growth 工厂校验真实目录并创建 1e 运行器；保留显式合同探针工厂供底座测试 |
 | `src/ext/modules/growth/module.ts`、`state.ts` | XP 事实队列/安全点结算、角色创建、收据/来源摘要与跨组件/世界校验 |
-| `src/ext/modules/growth/combatStats.ts` | 3g 只读 actor-scope DTO、精确有界属性换算、有效输入 fingerprint |
+| `src/ext/modules/growth/combatStats.ts` | 旧3g query helper及当前仍使用的精确有界属性换算；生产接线见statSources |
+| `src/ext/modules/growth/statSources.ts` | 当前统一Stat声明/有限修正行、真实actor组件与可选combat容量映射 |
 | `src/ext/modules/growth/identities.ts`、`templates.ts` | 纯身份/选择/赠技/誓约与出生模板、确定性盟友分配 |
 | `src/ext/modules/growth/experience.ts`、`components.ts` | 精确整数等级/发点/自动 HP、资源提交基础、严格组件校验 |
 | `src/ext/modules/growth/types.ts` | 配置类型、判别联合、有限规则端口/动作词汇 |
@@ -132,7 +135,7 @@
 
 新测试 `ext_growth_optional_rewards.test.ts` 同时覆盖 provider 纯预检、整数溢出、默认/未知报价 skip、同命令连发、零值/重复收据，以及发现式安装组合中的真实 narrative 对话、存读、逐条 replay 和 seek；不通过导入 narrative 私有实现建立依赖。
 
-### 1.8 3g 可信 actor 容量查询（1.7.0 / foundation 5）
+### 1.8 3g 可信 actor 容量查询（历史1.7.0 / foundation 5，当前见§1.9）
 
 `growth.combat-stats.v1` 经独立 `optionalActorQueries` 注册。仅引擎凭已验证的当前/缓存世界 Creature 引用选择 actor；provider 收到冻结的 actor 事实、growth 自身状态与 `getActorComponent(name)`，不能以请求 actorId 选择目标，也不能借玩家 UI 查询读取 NPC。请求精确为 `{v:1,baseStaminaCapacity,basePoiseCapacity}`，两项基础容量由 combat 模板所有者提供，范围均为 [1,1000000] 的安全整数。
 
@@ -144,6 +147,12 @@
 - moduleVersion/rulesVersion 同升 1.7.0；完整定义 JSON 继续精确指纹绑定，descriptor 要求 foundation 5。旧1.6.0或旧指纹直接拒绝，无迁移。`ext_growth_combat_stats.test.ts` 覆盖精确数学、非法 DTO、NPC/unsupported、临时效果重复切换、纯查询及实际分配/洗点/重复存读/回放/seek
 
 旧配置守卫唯一前提扩展：删除全部属性的夹具同时设置 `combatStats:null`，移除本轮新增引用，原“不抛异常”断言不变。隔离原 HEAD 生产反事实通过，新生产原夹具仅因 dangling combatStats 属性引用失败；未在共享工作区反转生产文件。
+
+### 1.9 当前统一 Stat 接线（1.8.0 / foundation 13）
+
+当前module/rules精确为1.8.0，包schema仍1；旧版本/指纹拒绝而不迁移。生产 `module.ts` 注册 `createGrowthStatSources(pack)`，没有注册旧§1.8的 `growth.combat-stats.v1` optionalActorQueries。`combatStats.ts` 保留纯整数映射helper，容量配置和原先的属性/效果数学继续使用，不据此宣称旧DTO provider仍存在。
+
+公开结果经底座Stat查询：growth声明专注容量/恢复、冷却及XP键，并对实际声明的原生/可选combat键提供有限修正行；体力/韧性容量分别使用 `combat.stamina-capacity / combat.poise-capacity`。combat物理缺席时不会创建其声明，growth遇该键无声明便不提供该项修正；其它真实成长、原生HP/力量、角色创建和奖励仍独立工作。配置 `combatStats:null`、角色资格及允许NPC模板继续约束容量映射。读取实际actor与冻结自身组件，保持零状态写入/零RNG；物化容量按底座事务同步并保持增加容量不补满。当前生产接口以 `statSources.ts` 和 `src/ext/stats.ts` 为准。
 
 ## 2. 固定技术合同与可调数据
 
@@ -175,8 +184,8 @@
 | `$` | object；所有列出子键必填，未知键拒绝 | 对象；见子字段 | 1a0 |
 | `$.schema` | 枚举 `1` | `1` | 1a0 |
 | `$.moduleId` | 枚举 `"growth"` | `"growth"` | 1a0 |
-| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.7.0"` | 3g；actor-scope 容量合同升级 |
-| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.7.0"` | 3g；actor-scope 容量合同升级 |
+| `$.moduleVersion` | 三段非负整数版本，禁止多余前导0 | `"1.8.0"` | 当前统一Stat接线 |
+| `$.rulesVersion` | 三段非负整数版本，禁止多余前导0 | `"1.8.0"` | 当前统一Stat接线 |
 | `$.config` | object；全部配置子组必填，见以下各节 | 对象 | 1a–1e |
 | `$.definitions` | array；元素为Skill或Identity，完整结构见对应节 | 24项：12技能/4职业/4血统/4信仰 | 1d/1e |
 

@@ -1,3 +1,4 @@
+import { installedOptionalModules } from './support/installedExtensions';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -29,6 +30,8 @@ import {
 afterEach(() => vi.restoreAllMocks());
 const independent = (v: unknown) =>
   createHash('sha256').update(c5Canonical(v, true), 'utf8').digest('hex');
+const localeCompositions = [...new Map([[] as string[], ['growth', 'narrative', 'combat', 'giants']]
+  .map(ids => { const modules = installedOptionalModules(ids); return [modules.join(','), { modules }] as const; })).values()];
 const input = {
   inventoryOpen: false,
   inventoryAction: null,
@@ -64,7 +67,7 @@ describe('C5 recording v4 digest contract', () => {
     ]) { const bad = structuredClone(snapshot), player = g.player, notify = vi.fn(); mutate(bad);
       expect(g.loadSnapshot(bad, notify)).toBe(false); expect(g.player).toBe(player); expect(notify).toHaveBeenCalledOnce(); }
   });
-  it.each([{ modules: [] as string[] }, { modules: ['growth', 'narrative', 'combat', 'giants'] }])('review M1: all six initial domains ignore locale with modules %j', ({ modules }) => {
+  it.each(localeCompositions)('review M1: all six initial domains ignore locale with modules %j', ({ modules }) => {
     createHeadlessGame(1); i18next.addResourceBundle('zh_CN', 'translation', zhCN, true, true);
     const start = () => { const g = createHeadlessGame(27028); g.startNewGame({ seed: 27028, mode: 'wizard',
       ruleSet: modules.length ? 'extended' : 'classic', extensions: modules }); return g.toSnapshot(); };
@@ -89,7 +92,7 @@ describe('C5 recording v4 digest contract', () => {
     logger.log('an emitted message');
     expect(mechanicalDigest(g.toSnapshot(), input).domains.knowledge).not.toBe(original.domains.knowledge);
   });
-  it.each([{ modules: [] as string[] }, { modules: ['growth', 'narrative', 'combat', 'giants'] }])('review M1: English recordings replay in Chinese and switch locale between commands with %j', ({ modules }) => {
+  it.each(localeCompositions)('review M1: English recordings replay in Chinese and switch locale between commands with %j', ({ modules }) => {
     createHeadlessGame(1); i18next.addResourceBundle('zh_CN', 'translation', zhCN, true, true);
     i18next.changeLanguage('en');
     const g = createHeadlessGame(27028);
@@ -157,13 +160,13 @@ describe('C5 recording v4 digest contract', () => {
     expect(digestRoot(empty, null, DIGEST_DOMAINS)).toBe(
       independent([
         'c5-root-v1',
-        ['brogue-web-whole-run-v6', 6, 10, 2],
+        ['brogue-web-whole-run-v6', 6, 13, 2],
         independent(null),
         DIGEST_DOMAINS.map((d) => empty[d])
       ])
     );
     expect(digestRoot(empty, null, DIGEST_DOMAINS)).toBe(
-      '9d5107a7acbbeb18327718e80dadb26c61f3d3586a827873790e7b04e181c929'
+      '152975578513a29e6fa70ba2f785972e5828cebfc793592a5f0137feb50224a0'
     );
     expect(merkleDomain('native', { '\u{10000}': 1, '\ue000': 2 })).toBe(
       independent([
@@ -175,19 +178,21 @@ describe('C5 recording v4 digest contract', () => {
         ]
       ])
     );
+    // Historical chain input remains foundation11: it freezes the hash
+    // algorithm independently of current recording compatibility.
     const vectorHeader = {
       version: 4,
       seed: '1',
       mode: 'normal',
       initialLevel: { kind: 'dungeon', depth: 1 },
       extensions: null,
-      codec: { wholeRun: 6, foundation: 10, origin: 2 },
+      codec: { wholeRun: 6, foundation: 11, origin: 2 },
       digestAlgorithm: 'sha256-c5-merkle-v1',
       digestChunk: 256,
       checkpointPeriod: 2048,
       recordedAt: 0,
       initialDigest: {
-        root: '9d5107a7acbbeb18327718e80dadb26c61f3d3586a827873790e7b04e181c929',
+        root: 'e1692e0378ebe92ed4f03a92ff51788bf38baa84d5250fc217ce3930eed042fc',
         domains: {
           native: '323a572cbdc04b1211bc4c0198ba8209325c6fb699120b1d18cbaa99ae2a16ca',
           extensions: '45d52001ca271816b0e09831cbec73e18c38871c0dfe26b42f93ec734a3b64cd',
@@ -198,11 +203,13 @@ describe('C5 recording v4 digest contract', () => {
         }
       }
     } as const;
-    expect(recordingStart(vectorHeader)).toBe(
-      '92843353301e3135be842272d4d1eaf160c31f7f42320b94675b4a27a41fc627'
+    // Hash-only historical input; it is not presented as a compatible replay.
+    const chainInput = vectorHeader as unknown as Parameters<typeof recordingStart>[0];
+    expect(recordingStart(chainInput)).toBe(
+      '89e96a56a093844c95cde922e17911d0831ce80432a6fbc263e9d53cfbdc56cb'
     );
-    expect(recordingChain(recordingStart(vectorHeader), { index: 0, action: 'wait' } as any)).toBe(
-      '0c5dc5ed5167462a5206bf03453f4a7041f91cac047faf095424e78187a1297f'
+    expect(recordingChain(recordingStart(chainInput), { index: 0, action: 'wait' } as any)).toBe(
+      'c364d3ef40232e0883be18202dfcb3a193199e5d0decf550ff286e6313262eb1'
     );
     const game = createHeadlessGame(517);
     game.executeCommand('escape');
@@ -251,7 +258,7 @@ describe('C5 recording v4 digest contract', () => {
     'reports exact dirty-domain commands or bounded hidden-domain evidence for a valid-chain %s alteration',
     (domain) => {
       const registry = catalog.createExtensionRegistry();
-      registry.register('world5-fixture', '1.0.0', createWorld5Module, fixtureRulesIdentity);
+      registry.register('world5-fixture', fixtureRulesIdentity.version, createWorld5Module, fixtureRulesIdentity);
       vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(registry);
       const g = createHeadlessGame(517);
       g.startNewGame({

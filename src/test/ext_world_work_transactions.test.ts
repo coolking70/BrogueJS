@@ -1,3 +1,4 @@
+import { installedOptionalModules } from './support/installedExtensions';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { workGame } from './support/worldWorkFixture';
 import { readWorkContext, materializedNode, containerRead, nearbyCells, stableGround, distance } from '../engine/Core/WorldWorkWorld';
@@ -107,6 +108,21 @@ describe('C5 scoped transactions and real clocks', () => {
     const before = mechanical(g);
     ext(g, 'craft', p);
     expect(worldWorkLastError(g)).toBe('C5_STALE');
+    expect(mechanical(g)).toEqual(before);
+  });
+  it('a restored world cannot revive an old work handle at the same command epoch', () => {
+    const g = workGame();
+    expect(g.loadSnapshot(g.toSaveSnapshot())).toBe(true);
+    const epoch = g.worldWorkCommandEpoch, oldWorld = g.world5;
+    const prepared = prepareWorldWorkCommand(g, JSON.stringify({module: 'craftskel', action: 'craft', payload: payload(g)}));
+    if (!prepared.outcome.ok) throw new Error(prepared.outcome.code);
+    const handle = prepared.outcome.value;
+    expect(g.loadSnapshot(g.toSaveSnapshot())).toBe(true);
+    expect(g.worldWorkCommandEpoch).toBe(epoch); expect(g.world5).not.toBe(oldWorld);
+    const before = mechanical(g);
+    withWorldActorScope(g, 'craftskel', g.player.id, 'trusted-world', scope => {
+      expect(commitWorldWork(g, handle, scope)).toEqual({ok: false, code: 'C5_STALE', field: null});
+    });
     expect(mechanical(g)).toEqual(before);
   });
   it('expired/counterfeit scope and handle are rejected', () => {
@@ -283,7 +299,7 @@ describe('C5 scoped transactions and real clocks', () => {
     expect(g.world5!.terminalTickets[0]!.completedBatches).toBe(1);
     expect(containerRead(g, chest.id).items[0]!.quantity).toBe(2);
   });
-  it.each([{modules: []}, {modules: ['combat']}])('starts NPC work before a later same-tick due work owner (modules=$modules)', ({modules}) => {
+  it.each([...new Map([[], ['combat']].map(ids => { const modules = installedOptionalModules(ids); return [modules.join(','), {modules}] as const; })).values()])('starts NPC work before a later same-tick due work owner (modules=$modules)', ({modules}) => {
     const g = workGame({ modules }), node = g.world5!.nodes[0]!,
       chest = g.world5!.containers.find(c => c.kind === 'chest')!, chestAt = containerRead(g, chest.id).at!;
     g.monsters = []; g.dormantMonsters = [];
@@ -349,7 +365,7 @@ describe('C5 scoped transactions and real clocks', () => {
     expect(g.loadSnapshot(g.toSaveSnapshot())).toBe(true);
   });
   it.each([0, 1, 2])('commits world work while combat phase %i is due without rebinding its live clock', phaseIndex => {
-    const g = workGame({ modules: ['combat'] }), at = { ...g.player.loc },
+    const g = workGame({ modules: ['combat'], actorProtocolFixture: true }), at = { ...g.player.loc },
       node = g.world5!.nodes[0]!, chest = g.world5!.containers.find(c => c.kind === 'chest')!;
     g.monsters = []; g.dormantMonsters = [];
     g.player.loc = { ...nearbyCells(g).find(p => stableGround(g, p) && distance(p, at) > 2)! };
@@ -459,7 +475,7 @@ it('combat bonfire and foundation crafting share one clock, reject each other wh
   const { settleWorldWork } = await import('../engine/Core/WorldWork');
   const { nearbyCells, clearWorldCell, workPositions, distance } =
     await import('../engine/Core/WorldWorkWorld');
-  const g = workGame({ modules: ['combat'] });
+  const g = workGame({ modules: ['combat'], actorProtocolFixture: true });
   g.monsters = [];
   g.dormantMonsters = [];
   const world = (g.extensionRuntime as any).world,

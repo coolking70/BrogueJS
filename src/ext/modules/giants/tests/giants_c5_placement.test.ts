@@ -2,11 +2,11 @@ import { expect, it } from 'vitest';
 
 it('native generated arena remains protected for C5 placement after load', async () => {
   const { createWorldHarness, worldHarnessGame } = await import('../../../testing/worldHarness');
-  const { walkNaturalToDepth } = await import('./naturalFixture');
+  const { walkNaturalToDepth, GIANTS_ACCEPTANCE_SEED } = await import('./naturalFixture');
   const { regionContains } = await import('../../../regions');
   const { clearWorldCell } = await import('../../../../engine/Core/WorldWorkWorld');
   const h = createWorldHarness({
-      seed: 7306,
+      seed: GIANTS_ACCEPTANCE_SEED,
       modules: ['giants'],
       fixtures: ['crafting-skeleton']
     }),

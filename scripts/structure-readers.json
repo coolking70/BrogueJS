@@ -3222,7 +3222,7 @@
       "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
     },
     {
-      "key": "8108cf231e991c8c1587548feaa72297bf34a6e8693dbc28e72477a73c35a816",
+      "key": "9a11ff89adfdb30630d4ff063d6443608d574aa2d9a67ad078719906fffd35b4",
       "count": 1,
       "classification": "基础类型读者",
       "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",
@@ -3894,28 +3894,28 @@
       "coverage": "ext_structure_integration/protection；giants；phase4*；UR2/3/4"
     },
     {
-      "key": "9585ba2b4d7265c4a445d322845a3d39efa4914b561a6d5a28a7cb5858fb5aa8",
+      "key": "180ecce4b2353d12ece39dbb3a232d841f4f7d077adc9ff5d6aea3bd333af477",
       "count": 1,
       "classification": "基础类型读者",
       "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
       "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
     },
     {
-      "key": "259000c4db62ff3613580caff1adb6c7e1a2a8412d588049bda2c3c758f9eea6",
+      "key": "0443c86fd84e72451a30a95ed314d9adfcd51092235ef9425f01d978f3069bf8",
       "count": 1,
       "classification": "基础类型读者",
       "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
       "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
     },
     {
-      "key": "b9b7ae0809d7e605e57615567268345a8c39ac1ae72d4cd0a2cec7b76f0668e6",
+      "key": "6ebf695fe17bcbcd4506f8494805cca9ee459e5862afe0d89797661107dc9ef7",
       "count": 1,
       "classification": "基础类型读者",
       "handling": "基础类型/目录/记忆/基础层作用目标；不把类型等同于通行权限。",
       "coverage": "ext_structure_geometry；world_work/world5/harness；U03"
     },
     {
-      "key": "db2573807c6a47baff149c5633add447304b4ac4c023b1805a050802e75064c3",
+      "key": "406c292c97a93fc158e6130a2f93f0a0c8068702ecf4e7d6abb8ea02b5bf00c6",
       "count": 1,
       "classification": "基础类型读者",
       "handling": "保留基础类型/目录/玩家记忆/作用层目标；阻挡另经合成入口。",

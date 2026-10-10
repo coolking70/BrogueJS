@@ -1,0 +1,45 @@
+diff --git a/src/engine/Core/TimeCoordinator.ts b/src/engine/Core/TimeCoordinator.ts
+index 2d4fd9d..f6142c5 100644
+--- a/src/engine/Core/TimeCoordinator.ts
++++ b/src/engine/Core/TimeCoordinator.ts
+@@ -210,6 +210,10 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
+                 // 依赖此语义），重算反而会覆盖外部写入。
+                 // E1-修订：怪物行动不 yield——常规动作一次性跑完后统一渲染
+                 // （CE 连"豺狼 50 tick 走两步"也不单独成帧）。
++                // Charge elapsed time before same-boundary attacks can establish
++                // a new native recovery timer. That recovery starts now, not at
++                // the beginning of the interval that just elapsed.
++                if (actions && !playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
+                 const dueActors = actions
+                     ? [...ports.world.monsters, ...(playerWasBusy ? [ports.world.player] : [])]
+                         .filter(actor => actions.isDecisionOwner(actor.id)).sort((a, b) => a.id - b.id)
+@@ -241,7 +245,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
+                     if (m.hp > 0 && ports.world.monsters.includes(m) && !actions?.isBusy(m.id)) ports.effects.sweepDeepWaterItem(m, m.ticksUntilTurn);
+                 }
+ 
+-                if (!playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
++                if (!actions && !playerWasBusy) ports.world.player.ticksUntilTurn -= soonestTurn;
+                 completedBoundary = true;
+                 if (actions) ports.effects.observeActorActionBoundary?.();
+                 if (ports.clock.isGameOver) return; // CE Time.c:2756-2758
+diff --git a/src/ext/runtime.ts b/src/ext/runtime.ts
+index 9e2c05a..522ea33 100644
+--- a/src/ext/runtime.ts
++++ b/src/ext/runtime.ts
+@@ -1238,8 +1238,14 @@ export class ExtensionRuntime {
+             this.flushStoryFacts();
+             for (const actor of [...this.creatures].sort((a, b) => a.id - b.id)) this.observeCreature(actor);
+             const causes = this.causality.snapshot();
+-            const origins = [...Object.values(causes.statusOrigins).flatMap(Object.values), ...Object.values(causes.fatalOrigins),
+-                ...Object.values(causes.pendingDisplacements), ...Object.values(this.deaths).map(death => death.origin)];
++            // Settlement consumes pending rewards before module GC. Keep source
++            // summaries only for origins that survive this boundary's native GC;
++            // otherwise one collection and two collections produce different state.
++            const keep = new Set(reachable.map(actor => actor.id));
++            const retained = <T>(rows: Record<string, T>): T[] => Object.entries(rows)
++                .filter(([id]) => keep.has(Number(id))).map(([, value]) => value);
++            const origins = [...retained(causes.statusOrigins).flatMap(Object.values), ...retained(causes.fatalOrigins),
++                ...retained(causes.pendingDisplacements), ...retained(this.deaths).map(death => death.origin)];
+             const sourceIds = [...new Set(origins.flatMap(origin => origin?.creditActorId ? [origin.creditActorId] : []))].sort((a,b) => a-b);
+             this.emit('simulationSettled', { knownKinds: this.ports.knownKinds?.() ?? [],
+                 reachableIds: reachable.map(actor => actor.id).sort((a,b) => a-b), sourceIds });

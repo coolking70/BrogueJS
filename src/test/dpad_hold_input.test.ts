@@ -42,7 +42,7 @@ const settings = Vue.reactive({ immersiveMode: false, sidebarWidthMode: 'fixed' 
 const saveSnapshot = vi.fn();
 const toSaveSnapshot = vi.fn();
 const gameStub = { hasPendingConfirmation: false, toSaveSnapshot, replayStatus: 'idle', replayRecording: null, isGameOver: false, currentSeed: 123,
-    hasCompleteRecording: false, onConfirmRequest: null, startNewGame() {}, isAutoTraveling: () => false };
+    hasCompleteRecording: false, disposeRecording: vi.fn(), onConfirmRequest: null, startNewGame() {}, isAutoTraveling: () => false };
 let heldInput: typeof import('../ui/heldInput');
 
 beforeAll(async () => {

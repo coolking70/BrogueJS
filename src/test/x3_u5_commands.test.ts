@@ -203,6 +203,19 @@ describe('X3-U5 command intent, snapshots and replay', () => {
         g.executeCommand('inventory_action', 'drop'); g.startNewGame({ seed: 33005, mode: 'test' });
         expect(g.isAutoTraveling()).toBe(false); expect(g.inventoryAction).toBeNull();
     });
+    it('rejects malformed run directions before retiring the live automatic action', () => {
+        const g = scene(); g.executeCommand('run', Direction.RIGHT);
+        const save = JSON.parse(JSON.stringify(g.toSnapshot())), root = g.player, grid = g.grid;
+        const before = {action:structuredClone(save.run.autoAction),rng:rng.getState(),events:structuredClone(g.recordedInputEvents)};
+        for (const direction of [-1, 8, 3.5, '3', null, {x:1,y:0}]) {
+            const bad = structuredClone(save); bad.run.autoAction.direction = direction;
+            expect(g.loadSnapshot(bad)).toBe(false);
+            expect(g.player).toBe(root); expect(g.grid).toBe(grid);
+            expect({action:g.toSnapshot().run.autoAction,rng:rng.getState(),events:g.recordedInputEvents}).toEqual(before);
+        }
+        const missing = structuredClone(save); delete missing.run.autoAction.direction;
+        expect(g.loadSnapshot(missing)).toBe(false); expect(g.player).toBe(root);
+    });
     it('all new commands and autonomous steps record, replay and seek with zero OOS (including depth travel)', () => {
         installRecordingScene(g => { room(g); put(g, 15, 10, T.STAIRS_DOWN); });
         const g = createHeadlessGame(33005, 'test');

@@ -1,5 +1,6 @@
+import { createConfiguredWorldHarness } from '../../../testing/configuredWorldHarness';
 import { vi, afterEach, expect } from 'vitest';
-import { createWorldHarness, worldHarnessGame } from '../../../testing/worldHarness';
+import { worldHarnessGame } from '../../../testing/worldHarness';
 import type { WorldHarness } from '../../../worldSdk';
 import { installRecordingScene } from '../../../../test/support/recordingV4';
 import { TerrainType } from '../../../../engine/Map/Grid';
@@ -31,10 +32,10 @@ export function scene(g: Game, initial = true) {
   (g as any).levelSeeds[g.depth - 1].downStairsLoc = { x: 30, y: 25 };
   if (initial) g.player.loc = { x: 20, y: 12 };
   g.monsters.forEach((m, i) => {
-    m.loc = { x: 60 + (i % 10), y: 20 };
+    if (m.spatial?.movementRegionId === undefined) m.loc = { x: 60 + (i % 10), y: 20 };
     m.ticksUntilTurn = 100000;
   });
-  g.dormantMonsters.forEach((m) => (m.loc = { x: 60, y: 22 }));
+  g.dormantMonsters.forEach((m) => { if (m.spatial?.movementRegionId === undefined) m.loc = { x: 60, y: 22 }; });
   g.items.forEach((i) => (i.loc = { x: 65, y: 24 }));
   for (const e of g.extensionRuntime!.worldWorkEntities().filter((e) => e.depth === g.depth)) {
     Object.assign(e, { x: 4 + (e.id % 6), y: 4 });
@@ -53,7 +54,7 @@ export function scene(g: Game, initial = true) {
     if (i) i.quantity = 99;
   }
 }
-export function setup(modules = ['settlement'], depth = 1, foodQuantity = 4) {
+export function setup(modules = ['settlement'], depth = 1, foodQuantity = 4, raids = false) {
   installRecordingScene((g) => {
     if (g.extensionRuntime?.manifest.modules.some((m) => m.id === 'settlement')) {
       if (depth !== 1) {
@@ -65,7 +66,7 @@ export function setup(modules = ['settlement'], depth = 1, foodQuantity = 4) {
         foodQuantity;
     }
   });
-  const h = createWorldHarness({ seed: 51020001, modules });
+  const h = createConfiguredWorldHarness({ seed: 51020001, modules }, modules.includes('settlement') ? {settlement:{raids}} : {});
   live.push(h);
   return { h, g: worldHarnessGame(h) };
 }

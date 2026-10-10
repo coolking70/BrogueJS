@@ -21,6 +21,8 @@ export interface ActorActionProductionWorld {
     player: Creature;
     levels: readonly { depth: number; actors: readonly Creature[] }[];
     bodyGroups?: readonly BodyGroupState[];
+    /** Derived only from validated active, paused world4 raid roots. */
+    frozenRaidActorIds?: readonly number[];
 }
 export type ActorActionInterruptionReason = 'source-changed' | 'incapacitated' | 'layer-change';
 export interface ProductionActorActionOptions {
@@ -92,7 +94,7 @@ export function validateProductionActorActionState(state: unknown, world: ActorA
             if (identity.groupId !== bundle.decisionOwnerId || (identity.partId ?? 'body') !== source.sourcePartId)
                 throw new Error('Action source identity mismatch');
             if (actorSubactionHasPendingSegments(source)) {
-                if (bundle.depth !== world.depth) throw new Error('Cached action contains an unreleased attack');
+                if (bundle.depth !== world.depth && !(bundle.owner==='combat' && world.frozenRaidActorIds?.includes(bundle.decisionOwnerId) && bundle.subactions.every(s=>s.sourceEntityId===bundle.decisionOwnerId))) throw new Error('Cached action contains an unreleased attack');
                 if (incapacitatedSource(entity.actor) || incapacitatedSource(actors.get(bundle.decisionOwnerId)!.actor)) throw new Error('Incapacitated source contains an unreleased attack');
             }
         }
@@ -129,6 +131,7 @@ export function createProductionActorActionSession(game: Game, options: Producti
                 options.interrupted?.(source, bundle, 'layer-change');
         },
         abandoned: bundle => options.finishAction?.(bundle, 'source-invalid'),
+        preserveOnDepthExit: bundle => bundle.owner==='combat' && !!game.actorActionWorld().frozenRaidActorIds?.includes(bundle.decisionOwnerId) && bundle.subactions.every(s=>s.sourceEntityId===bundle.decisionOwnerId),
         isDepthActive: depth => depth === game.depth && binding.suspendedDepth !== depth,
         actorDepth: id => row(id)?.depth ?? null,
         isSourceValid: (source, depth) => { const entity = row(source.sourceEntityId); return !!entity && entity.depth === depth && liveSourceValid(source, entity.actor); },

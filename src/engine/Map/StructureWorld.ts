@@ -1,3 +1,6 @@
+import { cancelResidentWork } from '../Core/ResidentJobs';
+import { transactResidentWorld } from '../Core/ResidentWorld';
+import { settleResidentNeeds, freezeResidentCamps } from '../Core/ResidentNeeds';
 /** Trusted C5-1 foundation authority. No production catalog or public command. */
 import type { Game } from '../Core/Game';
 import type {
@@ -90,13 +93,15 @@ import {
 import { generationReserved } from '../Generator/GenerationReservation';
 import { assembleWorldItem } from '../Items/WorldItems';
 
+type RepairChange={kind:'repair';componentId:number;revision:number;amount:number};
 type Request =
   | { family: 'region'; change: RegionChange }
-  | { family: 'structure'; change: StructureChange; materials?: readonly import('../../ext/worldSdk').ItemAmount[]; sourceContainerId?: number | null }
+  | { family: 'structure'; change: StructureChange|RepairChange; materials?: readonly import('../../ext/worldSdk').ItemAmount[]; sourceContainerId?: number | null }
   | { family: 'placement'; change: RestPointPlacementRequest }
   | { family: 'rest'; change: RestRequest };
 type Plan = {
   game: Game;
+  world: Game['world5'];
   owner: string;
   actorId: number;
   request: Request;
@@ -155,7 +160,8 @@ function component(
 }
 function levelGrid(game: Game, level: LevelRef): Grid {
   const depth = requireDungeon(level),
-    grid = depth === game.depth ? game.grid : game.levels.get(depth)?.grid;
+    grid = game.levels.get(depth)?.grid ??
+      (depth === game.depth || depth === (game as unknown as {currentLevelDepth:number|null}).currentLevelDepth ? game.grid : null);
   if (!grid) fail('C5_BAD_REFERENCE');
   return grid!;
 }
@@ -186,22 +192,14 @@ const terrainDirty = new WeakMap<Grid, Map<number, DirtyCell>>();
 const topologyMask =
   T_OBSTRUCTS_PASSABILITY | T_AUTO_DESCENT | T_LAVA_INSTA_DEATH | T_IS_DEEP_WATER;
 const stableFlags = (f: number) => !(f & topologyMask);
-/** Recompute only a dirty layer, using dense numeric geometry and O(1) roofs. */
-export function computeRooms(game: Game, level: LevelRef): readonly RoomRead[] {
-  const grid = levelGrid(game, level),
-    cached = rooms.get(grid);
-  if (cached && !roomDirty.has(grid) && (published.get(grid)?.size ?? 0) > 0) return cached;
-  const W = grid.width,
-    H = grid.height,
-    N = W * H,
-    index = new Array<StructureCell | undefined>(N),
-    stable = new Uint8Array(N),
-    boundary = new Uint8Array(N),
-    seen = new Uint8Array(N),
-    roofs = new Uint8Array(N),
-    out: RoomRead[] = [];
-  // Structure roots are validated at publication/load. Validate the requested
-  // level once; do not repeat strict schema validation per row on a hot read.
+/** Keep the dense raster loop independent of room assembly. Fresh loaded
+ * structure rows can have different object shapes; their scans must not force
+ * repeated optimization of the much larger flood-fill/room-publication body. */
+function roomGeometry(game: Game, grid: Grid, level: LevelRef) {
+  const W = grid.width, N = W * grid.height;
+  const index = new Array<StructureCell | undefined>(N),
+    stable = new Uint8Array(N), boundary = new Uint8Array(N);
+  // Validate the level once, with the same published/loaded structure roots.
   const depth = requireDungeon(level),
     rows = game.world5?.structures.filter(
       (s) => s.levelRef.kind === 'dungeon' && s.levelRef.depth === depth
@@ -209,21 +207,20 @@ export function computeRooms(game: Game, level: LevelRef): readonly RoomRead[] {
   for (const row of rows) index[row.at.y * W + row.at.x] = row;
   for (let n = 0; n < N; n++) {
     const c = grid.getCell(n % W, Math.floor(n / W))!,
-      f = baseCellFlags(c),
-      r = index[n];
+      f = baseCellFlags(c), r = index[n];
     stable[n] = +stableFlags(f);
     boundary[n] = +!!(
-      f & T_OBSTRUCTS_PASSABILITY ||
-      r?.barrier ||
+      f & T_OBSTRUCTS_PASSABILITY || r?.barrier ||
       (r?.fixture && structureDefinition(game, r.fixture.definitionId).blocks.movement)
     );
   }
-  const entities = new Map(
-    game.extensionRuntime
-      ?.worldWorkEntities()
-      .filter((e) => e.depth === requireDungeon(level))
-      .map((e) => [e.id, e]) ?? []
-  );
+  return { index, stable, boundary };
+}
+/** Flood fill only typed geometry, so its hot loops do not repeatedly compile
+ * room classification, SDK validation and publication on freshly loaded maps. */
+function enclosedRoomRegions(W: number, H: number, stable: Uint8Array, boundary: Uint8Array) {
+  const N = W * H, seen = new Uint8Array(N);
+  const regions: { cells: number[]; edge: Set<number> }[] = [];
   const dirs = [-W, -1, 1, W];
   for (let start = 0; start < N; start++) {
     if (seen[start] || boundary[start] || !stable[start]) continue;
@@ -256,6 +253,29 @@ export function computeRooms(game: Game, level: LevelRef): readonly RoomRead[] {
       }
     }
     if (!closed || cells.length < 2 || cells.length > 128) continue;
+    regions.push({ cells, edge });
+  }
+  return regions;
+}
+/** Recompute only a dirty layer, using dense numeric geometry and O(1) roofs. */
+export function computeRooms(game: Game, level: LevelRef): readonly RoomRead[] {
+  const grid = levelGrid(game, level),
+    cached = rooms.get(grid);
+  if (cached && !roomDirty.has(grid) && (published.get(grid)?.size ?? 0) > 0) return cached;
+  const W = grid.width,
+    H = grid.height,
+    N = W * H,
+    { index, stable, boundary } = roomGeometry(game, grid, level),
+    roofs = new Uint8Array(N),
+    out: RoomRead[] = [];
+  const entities = new Map(
+    game.extensionRuntime
+      ?.worldWorkEntities()
+      .filter((e) => e.depth === requireDungeon(level))
+      .map((e) => [e.id, e]) ?? []
+  );
+  const dirs = [-W, -1, 1, W];
+  for (const { cells, edge } of enclosedRoomRegions(W, H, stable, boundary)) {
     cells.sort((a, b) => a - b);
     const inside = new Set(cells),
       completeRoof = cells.every((n) => !!index[n]?.roof),
@@ -524,10 +544,12 @@ export function settleStructureFoundations(game: Game, burn = false, depth = gam
         }
       if (failed.length || fires.length) updateWorldReasons(game);
       invalidateStructureWorld(game, depth);
+      settleResidentNeeds(game, true);
+      freezeResidentCamps(game, depth);
     };
     if (failed.length || fires.length) transactStructureWorld(game, work);
     else work();
-  } catch {
+  } catch (error) {
     updating.add(game);
     try {
       for (const row of failed) {
@@ -546,6 +568,7 @@ export function settleStructureFoundations(game: Game, burn = false, depth = gam
     }
     bindWorldStructures(game, depth);
     roomDirty.add(grid);
+    if (game.extensionRuntime?.residentOwners().length) throw error;
     for (const owner of new Set(rows.map((r) => r.owner)))
       recordWorldReceipt(
         game,
@@ -558,6 +581,7 @@ export function settleStructureFoundations(game: Game, burn = false, depth = gam
   }
   terrainDirty.get(grid)?.clear();
 }
+
 export function transactStructureWorld<T>(game: Game, work: () => T): T {
   if (transactions.has(game)) return work();
   const grids = [game.grid, ...[...game.levels.values()].map((l) => l.grid)],
@@ -568,7 +592,9 @@ export function transactStructureWorld<T>(game: Game, work: () => T): T {
     );
   transactions.add(game);
   try {
-    return transactWorldWork(game, work);
+    return game.extensionRuntime?.residentOwners().length
+      ? transactResidentWorld(game, work)
+      : transactWorldWork(game, work);
   } catch (error) {
     restore();
     bindWorldStructures(game);
@@ -890,7 +916,7 @@ function validate(game: Game, owner: string, request: Request): string {
     return c5Canonical([c, r!.lastUseOrdinal]);
   }
   const c = request.change;
-  if (!['build', 'door', 'dismantle', 'damage'].includes(c.kind)) fail('C5_BAD_PAYLOAD');
+  if (!['build', 'door', 'dismantle', 'damage','repair'].includes(c.kind)) fail('C5_BAD_PAYLOAD');
   exact(
     c,
     c.kind === 'build'
@@ -899,6 +925,7 @@ function validate(game: Game, owner: string, request: Request): string {
         ? 'kind,componentId,revision,open'
         : c.kind === 'damage'
           ? 'kind,componentId,revision,amount,damageKind'
+          : c.kind==='repair' ? 'kind,componentId,revision,amount'
           : 'kind,componentId,revision',
     'structureChange'
   );
@@ -1020,6 +1047,15 @@ function validate(game: Game, owner: string, request: Request): string {
     if (!game.grid.getCell(v.row.at.x, v.row.at.y)?.isVisible) fail('C5_BLOCKED');
     if (distance(game.player.loc, v.row.at) > 1) fail('C5_DISTANCE');
   }
+  if(c.kind==='repair'){
+    uint(c.amount,'amount',1);const d=structureDefinition(game,v.c.definitionId);
+    if(v.c.hp<=0||v.c.hp+c.amount>d.maxHp)fail('C5_BAD_PAYLOAD');
+    if(!game.grid.getCell(v.row.at.x,v.row.at.y)?.isVisible)fail('C5_BLOCKED');
+    adjacent(game,v.row.at);
+    const expected=d.constructionCost.map(a=>({...a,count:Math.ceil(a.count*c.amount/d.maxHp)}));
+    if(c5Canonical(request.materials)!==c5Canonical(expected))fail('C5_INPUT');
+    for(const a of expected)if((request.sourceContainerId==null?game.player.inventory.items:containerItems(game,request.sourceContainerId)).filter(i=>i.worldItem?.definitionId===a.itemDefinitionId).reduce((n,i)=>n+i.quantity,0)<a.count)fail('C5_INPUT');
+  }
   if (c.kind === 'damage') {
     uint(c.amount, 'amount', 1);
     if (!['physical', 'fire'].includes(c.damageKind)) fail('C5_BAD_PAYLOAD');
@@ -1105,6 +1141,7 @@ function prepare(request: Request, scope: WorldActorScope): WorldResult<WorldPla
     handle = r.value.handle;
   plans.set(handle, {
     game: a.game,
+    world: a.game.world5,
     owner: a.owner,
     actorId: a.actorId,
     request: structuredClone(request),
@@ -1118,6 +1155,7 @@ export const planRegionChange = (change: RegionChange, scope: WorldActorScope) =
   prepare({ family: 'region', change }, scope);
 export const planStructureChange = (change: StructureChange, scope: WorldActorScope) =>
   prepare({ family: 'structure', change }, scope);
+export const planPaidRepair=(change:RepairChange,materials:readonly import('../../ext/worldSdk').ItemAmount[],sourceContainerId:number|null,scope:WorldActorScope)=>prepare({family:'structure',change,materials,sourceContainerId},scope);
 export const planPaidStructure = (change:StructureChange,materials:readonly import('../../ext/worldSdk').ItemAmount[],sourceContainerId:number|null,scope:WorldActorScope)=>prepare({family:'structure',change,materials,sourceContainerId},scope);
 export const planRestPointPlacement = (change: RestPointPlacementRequest, scope: WorldActorScope) =>
   prepare({ family: 'placement', change }, scope);
@@ -1401,6 +1439,20 @@ export function destroyComponent(game: Game, id: number, refund: boolean, reason
     chests = w.containers.filter(
       (v) => v.position?.kind === 'interactable' && ids.has(v.position.interactableId)
     );
+  settleResidentNeeds(game, true);
+  // Earned output keeps its next-epoch deadline when its destination is
+  // destroyed. It will acquire one native floor owner at the removed fixture.
+  for(const ledger of w.offline)for(const output of ledger.pendingOutputs)if(chests.some(ch=>ch.id===output.destinationId)){
+    output.fallbackAt={...row.at};
+    const retired=w.terminalTickets.find(t=>t.ticketId===output.ticketId);
+    if(retired?.residentOutput)retired.residentOutput.fallbackAt={...row.at};
+  }
+  for(const order of [...w.orders])if(order.production?.plotIds.includes(id))cancelResidentWork(game,order.actorId,reason);
+  for(const l of w.offline)if(l.productionQuotas)for(const q of l.productionQuotas)q.plots=q.plots.filter(p=>p!==id);
+  for (const job of [...w.residentJobs])
+    if (job.plotId === id || chests.some(ch =>
+      ch.id === job.sourceId || ch.id === job.destinationId))
+      cancelResidentWork(game, job.actorId, reason);
   for (const t of [...w.tickets])
     if (
       stations.some((s) => s.interactableId === t.stationId) ||
@@ -1520,7 +1572,16 @@ export function destroyComponent(game: Game, id: number, refund: boolean, reason
   }
   for(const owner of runtime.worldCampOwners()) {
     const state=runtime.worldCampState(owner);
-    if(state.constructions.some(r=>r.componentId===id)){state.constructions=state.constructions.filter(r=>r.componentId!==id);runtime.worldCampReplace(owner,state);}
+    const chestIds = new Set(chests.map(ch => ch.id));
+    state.constructions = state.constructions.filter(r => r.componentId !== id);
+    state.plotDays = state.plotDays.filter(p => p.componentId !== id);
+    for (const camp of state.camps) {
+      const previous = camp.granaryIds.length;
+      camp.granaryIds = camp.granaryIds.filter(box => !chestIds.has(box));
+      if (previous !== camp.granaryIds.length) camp.revision++;
+    }
+    state.revision++;
+    runtime.worldCampReplace(owner, state);
   }
 
 }
@@ -1534,7 +1595,7 @@ export function commitStructureWorld(
       p = plans.get(handle);
     if (a.game !== game || a.owner !== handle.owner || a.actorId !== handle.actorId)
       fail('C5_SCOPE');
-    if (!p || p.game !== game || p.epoch !== game.worldWorkCommandEpoch) fail('C5_STALE');
+    if (!p || p.game !== game || p.world !== game.world5 || p.epoch !== game.worldWorkCommandEpoch) fail('C5_STALE');
     if (p!.used) fail('C5_PLAN_USED');
     p!.used = true;
     if (validate(game, p!.owner, p!.request) !== p!.stamp) fail('C5_STALE');
@@ -1612,6 +1673,13 @@ export function commitStructureWorld(
         if (c.kind === 'build') {
           build(game, p!.owner, c, r.materials, r.sourceContainerId);
           ticks = structureDefinition(game, c.definitionId).constructionTicks;
+        } else if(c.kind==='repair'){
+          const v=component(game,c.componentId),d=structureDefinition(game,v.c.definitionId);
+          // The same synchronous paid construction contract: no HP or material publication before CAS.
+          const source=r.sourceContainerId==null?game.player.inventory.items:containerItems(game,r.sourceContainerId);
+          for(const a of r.materials!){let left=a.count;for(const i of [...source])if(i.worldItem?.definitionId===a.itemDefinitionId){const n=Math.min(left,i.quantity);i.quantity-=n;left-=n;if(!i.quantity){if(r.sourceContainerId==null)game.player.inventory.removeItem(i);else{const box=w.containers.find(b=>b.id===r.sourceContainerId)!;box.itemIds=box.itemIds.filter(id=>id!==i.id);game.worldContainerItems!.delete(i.id);}}if(!left)break;}}
+          if(r.sourceContainerId!=null){const box=w.containers.find(b=>b.id===r.sourceContainerId)!;box.revision=checkedAdd(box.revision,1);}
+          v.c.hp+=c.amount;v.c.revision=checkedAdd(v.c.revision,1);ticks=Math.max(100,Math.ceil(d.constructionTicks*c.amount/d.maxHp));
         } else if (c.kind === 'dismantle')
           destroyComponent(game, c.componentId, true, 'dismantled');
         else if (c.kind === 'door') {
@@ -1640,7 +1708,11 @@ export function commitStructureWorld(
           'completed',
           null
         );
-      if (r.family === 'structure') invalidateStructureWorld(game);
+      if (r.family === 'structure') {
+        invalidateStructureWorld(game);
+        settleResidentNeeds(game, true);
+        freezeResidentCamps(game, game.depth);
+      }
       return {
         operation: r.family,
         receiptIdentity: identity,
@@ -1719,4 +1791,12 @@ function withStructureFixtureScope<T>(
   if (!game.extensionRuntime?.isWorldStructureFixture(owner) || !game.isExecutingRecordedCommand())
     fail('C5_SCOPE');
   return withWorldActorScope(game, owner, game.player.id, 'player-command', work);
+}
+
+/** Trusted static raid damage: bounded non-destructive, with the same physical resistance as damage plans. */
+export function applyRaidStructureDamage(game:Game,id:number,amount:number):number {
+  uint(amount,'raidDamage',1);const v=component(game,id),d=structureDefinition(game,v.c.definitionId);
+  const loss=Math.min(Math.max(0,v.c.hp-Math.ceil(d.maxHp/4)),Math.floor(amount*(100-d.resistances.physical)/100));
+  if(loss){v.c.hp-=loss;v.c.revision=checkedAdd(v.c.revision,1);markStructureDigestDirty(game.world5!,requireDungeon(v.row.levelRef));bindWorldStructures(game,requireDungeon(v.row.levelRef));}
+  return loss;
 }

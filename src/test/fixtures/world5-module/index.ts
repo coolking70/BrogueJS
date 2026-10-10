@@ -4,17 +4,19 @@ import { c5Hash } from '../../../engine/Core/WorldCanonical';
 import type { OfflineRules } from '../../../engine/Core/WorldSettlement';
 export const fixtureRules: OfflineRules = {
   epochTicks: 1000,
+  dayEpochs: 32,
   maxPlanEpochs: 32,
   maxCompletionsPerEpoch: 1024,
   foodUnitsPerResident: 1,
   rationDefinitions: [],
   nodeDefinitions: [],
   recipes: [],
-  shortageEfficiencyNumerators: [1, 1, 0, 0],
-  efficiencyDenominator: 1
+  shortageEfficiencyNumerators: [100, 50, 0, 0],
+  efficiencyDenominator: 100
 };
 export const fixtureFingerprint = c5Hash([
   'C5-1',
+  '1.1.0',
   'sha256-c5-offline-v1',
   'c5-seed-v1',
   fixtureRules,
@@ -22,14 +24,14 @@ export const fixtureFingerprint = c5Hash([
 ]);
 export const fixtureRulesIdentity = {
   schema: 1,
-  version: '1.0.0',
+  version: '1.1.0',
   fingerprint: 'sha256:' + fixtureFingerprint
 };
 export function createWorld5Module(): ExtensionModule {
   return registerWorld5Fixture(
     {
       id: 'world5-fixture',
-      version: '1.0.0',
+      version: '1.1.0',
       rules: fixtureRulesIdentity,
       initialState: () => ({ entries: 0, epochs: 0, encounters: [] }),
       validateState: (value: unknown): value is Json => {

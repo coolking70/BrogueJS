@@ -15,11 +15,21 @@
     "tests/giants_ui.test.ts",
     "tests/giants_zones.test.ts",
     "tests/giants_zones_natural.test.ts",
-    "tests/giants_zones_sfc.test.ts"
+    "tests/giants_zones_sfc.test.ts",
+    "tests/giants2_combinations.test.ts",
+    "tests/giants2_contract.test.ts",
+    "tests/giants2_generation.test.ts",
+    "tests/giants2_geometry.test.ts",
+    "tests/giants2_imports.test.ts",
+    "tests/giants2_parts.test.ts",
+    "tests/giants2_persistence.test.ts",
+    "tests/giants2_phase.test.ts",
+    "tests/giants2_ui.test.ts"
   ],
   "gen": [],
   "drift": [
     "tests/giants_trace.test.ts",
-    "tests/giants_spine_trace.test.ts"
+    "tests/giants_spine_trace.test.ts",
+    "tests/giants2_trace.test.ts"
   ]
 }
