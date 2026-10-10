@@ -1,0 +1,56 @@
+// Independent owner-side regressions. Uses the installed 1.4 or 1.5 pack as-is.
+// Fixtures retain physical commands only, with no teleports or snapshot edits.
+import { afterEach, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { createHeadlessGame } from '../../../../src/test/harness';
+import { createExtensionRegistry } from '../../../../src/ext/catalog';
+import { rng } from '../../../../src/engine/Random';
+import { logger } from '../../../../src/engine/Systems/Logger';
+import type { Game, GameRecording } from '../../../../src/engine/Core/Game';
+const clone = <T>(x:T):T => structuredClone(x);
+const settle = () => {while(logger.pendingAcknowledgment)logger.acknowledgeNext();};
+const world=(game:Game)=>{
+ const {savedAt:_time,run,...snapshot}=game.toSnapshot();
+ const {recordingOrigin:_origin,...rest}=run;
+ return clone({...snapshot,run:rest});
+};
+function start(ids:string[],seed:number){
+ const registry=createExtensionRegistry();
+ const initialCommands=registry.create(registry.manifest(ids)).flatMap(m=>m.initialCommand?[JSON.stringify({module:m.id,...m.initialCommand})]:[]);
+ const game=createHeadlessGame(seed,'test');game.startNewGame({seed,mode:'wizard',ruleSet:'extended',extensions:ids,initialCommands});game.animationEnabled=false;settle();return game;
+}
+type Command=Pick<GameRecording['events'][number],'action'|'data'|'decisions'>;
+function execute(game:Game,c:Command){
+ settle();const before=game.recordedInputEvents.length;game.executeCommand(c.action,c.data);
+ for(const answer of c.decisions??[])if(game.pendingCommandConfirmation)game.resolveCommandDecision(game.pendingCommandConfirmation.token,answer);
+ settle();expect(game.recordedInputEvents.length).toBe(before+1);
+}
+afterEach(()=>vi.restoreAllMocks());
+it('A01 full cached visibility survives save/load, replay and non-monotonic seek',()=>{
+ const input=JSON.parse(readFileSync(new URL('./a01-physical-route.fixture.json',import.meta.url),'utf8'));
+ const game=start(['narrative'],input.seed),zero=world(game);let previous=0;
+ for(const cut of input.cuts){
+  for(const c of input.commands.slice(previous,cut.index))execute(game,c);previous=cut.index;
+  expect(game.depth).toBe(cut.depth);expect(rng.getState()).toEqual(cut.rng);
+  expect({x:game.player.x,y:game.player.y,hp:game.player.hp}).toEqual(cut.player);
+  expect(game.absoluteTurnNumber).toBe(cut.turn);expect(game.toSnapshot().run.currentTick).toBe(cut.tick);
+  const saved=clone(game.toSaveSnapshot()),expected=world(game),recording=clone(game.exportRecording());
+  expect(game.loadSnapshot(saved)).toBe(true);expect(world(game)).toEqual(expected);
+  expect(game.loadReplay(recording)).toBe(true);game.animationEnabled=false;
+  for(const event of recording.events){game.replayStep(true);expect(game.replayError).toBeNull();expect(game.replayCursor).toBe(event.index+1);expect(rng.getState()).toEqual(event.rng);}
+  expect(world(game)).toEqual(expected);
+  for(const [index,truth] of [[recording.events.length,expected],[0,zero],[recording.events.length,expected]] as const){
+   game.replaySeek(index);expect(game.replayError).toBeNull();expect(game.replayCursor).toBe(index);expect(world(game)).toEqual(truth);
+  }
+  expect(game.loadSnapshot(saved)).toBe(true);game.animationEnabled=false;settle();
+ }
+});
+it('seven modules reconstruct every cached movement-region session after load',()=>{
+ const input=JSON.parse(readFileSync(new URL('./seven-physical-route.fixture.json',import.meta.url),'utf8'));
+ const game=start(input.modules,input.seed);for(const c of input.commands)execute(game,c);
+ expect(game.depth).toBe(8);
+ const saved=clone(game.toSaveSnapshot()),expected=world(game);
+ expect(game.loadSnapshot(saved)).toBe(true);expect(world(game)).toEqual(expected);
+ // A second persistence cycle must retain associations for the freshly decoded grids.
+ const second=clone(game.toSaveSnapshot());expect(game.loadSnapshot(second)).toBe(true);expect(world(game)).toEqual(expected);
+});

@@ -1,0 +1,17 @@
+diff --git a/src/engine/Core/Game.ts b/src/engine/Core/Game.ts
+--- a/src/engine/Core/Game.ts
++++ b/src/engine/Core/Game.ts
+@@ -12196,7 +12196,12 @@
+         rng.setState(snapshot.rngState);
+         this.extensionRuntime = extensions;
+         loadingSpatialCatalogs.delete(this);
+-        if(extensions?.hasOwnedRegions)this.bindMovementRegionSession();
++        if (extensions?.hasOwnedRegions) {
++            this.bindMovementRegionSession();
++            for (const [depth, level] of this.levels) {
++                bindMovementRegions(level.grid, (id, at) => extensions.containsOwnedRegion(id, depth, at));
++            }
++        }
+         this.configureExtensionRuleAdapters();
+         ItemLoader.onKnowledgeChanged = extensions ? kindId => {markStatsDirty(this.player);extensions.emit('itemKnowledgeChanged',{kindId});} : null;
+         if (extensions) {
