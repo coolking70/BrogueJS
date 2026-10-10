@@ -1,5 +1,13 @@
 const fs=require('fs'),path=require('path'),cp=require('child_process'),crypto=require('crypto');
-const root=process.cwd(), out='/private/tmp/party-p0';
+// Usage: node scripts/party/audit.cjs [external-output-directory]
+const root=process.cwd(), out=path.resolve(process.argv[2]??'/private/tmp/party-p0');
+if(process.argv.length>3)throw Error('Usage: audit.cjs [external-output-directory]');
+// Resolve symlinks as well: audit evidence must never be written into the repository.
+let ancestor=out;while(!fs.existsSync(ancestor))ancestor=path.dirname(ancestor);
+const realOut=path.resolve(fs.realpathSync(ancestor),path.relative(ancestor,out));
+const relative=path.relative(fs.realpathSync(root),realOut);
+if(!relative||(!relative.startsWith('..'+path.sep)&&relative!=='..'&&!path.isAbsolute(relative)))throw Error('Audit output must be outside the repository');
+fs.mkdirSync(out,{recursive:true});
 const ts=require(path.join(root,'node_modules/typescript'));
 const files=cp.execFileSync('rg',['--files','src'],{encoding:'utf8'}).trim().split('\n').sort();
 const hash=s=>crypto.createHash('sha256').update(s).digest('hex');

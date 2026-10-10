@@ -424,3 +424,127 @@ python3 /private/tmp/party-p0/verify.py
 | B | 57 | `squareLandingRetry`、`squareMotion`、`absoluteTurnNumber`、`combatSystem`、`currentLevelAwaySince`、`currentLevelDepth`、`currentTestCategory`、`depth`、`displacementTrapDepressions`、`dormantMonsterList`、`environment`、`everSeenItems`、`everSeenMonsters`、`examinedEntityIds`、`seenBodyCoreIds`、`foodSpawned`、`fov`、`goldGenerated`、`grid`、`items`、`lastPromotionUpdate`、`levelHasSecrets`、`levelSeeds`、`levels`、`lightMap`、`loopMap`、`machineCells`、`meteredItems`、`monsterSpawnFuse`、`activeMonsterList`、`pendingCaughtFireCells`、`pendingFallenItemsByDepth`、`pendingFallenByDepth`、`purgatory`、`resetPlateRoomByPos`、`safetyMap`、`scent`、`secretScanDepth`、`signTexts`、`stats`、`testRooms`、`ticksTillUpdateEnvironment`、`updatedSafetyMapThisTurn`、`visibleItems`、`visibleMonsters`、`waypoints`、`currentLevelExitedVia`、`monsterPathCache`、`pendingDiscoveryMessages`、`extensionRuntime`、`bodyGroups`、`world5`、`actorActions`、`worldContainerItems`、`worldWorkFacts`、`worldWorkDetails`、`worldWorkCommandEpoch` |
 | C | 25 | `autoPath`、`inAutoTravelStep`、`isAutoExploring`、`isMouseTraveling`、`isThrowing`、`justRested`、`justSearched`、`lastDamageSource`、`minersLight`、`minersLightBaseFixpt`、`pendingArcana`、`pendingEnchantment`、`pendingEnchantmentScrollWasKnown`、`pendingIdentify`、`pendingUseConfirm`、`playerFalling`、`poisonedDuringTurn`、`searchingCharge`、`throwItemTarget`、`travelTargetItem`、`disturbed`、`autoFight`、`autoAction`、`inventoryAction`、`receivedLevitationWarning` |
 | D | 19 | `advancementIter`、`currentSeed`、`gameOverInventory`、`gameOverReason`、`gameOverScore`、`gameOverWon`、`isAdvancing`、`isGameOver`、`lastAdvancementError`、`mode`、`player`、`recordedInputEvents`、`recordedInputIndex`、`recordingStartAt`、`replayCursor`、`replayEvents`、`replayRecording`、`replayStatus`、`executingRecordedCommand` |
+
+
+## 8 5Z 后重扫（2026-10-11）
+
+### 8.1 基线、方法与证据
+
+本节覆盖上文的**当前状态、计数与开工前置条件**，不改写 2026-10-08 的历史结果。重扫 HEAD `79bb26ed3d52d4f06955f32408404bed86d9faa7`（`ext/party-design`，合入 `ext/phase5`，含 5Z `0ec7c56` 与交接 `59b9ba6`）；工作区起始干净。比较基线仍为 `7ec0ca0964c822c026c0077b5d6f68477923f1c5`。当前实际 foundation **13** / whole-run **6** / recording **4** / origin **2** / world5 schema **4**；七模块含 foraging 已在树中。5C2/site、5D3/叙事招募仍后置，5E2/5F 不扩。本节不宣称阶段 5 全面验收通过：[5Z 报告](phase5z.report.md)保留完整 npm 首次 exit 1 与后续定向关闭，浏览器/真机有[人工待验](phase5z.manual-checklist.md)。另一指挥进程正在跑的完整测试不属于本节证据，未读取、操作或测试 BrogueJS-p5 工作树。
+
+复用 `scripts/party/audit.cjs`，只增加可选仓外输出参数、自动创建输出目录和仓内输出拒绝；AST 集合、分类规则、状态账及扫描范围保持。新增 `scripts/party/compare-audits.py` 比较两份清单；未运行会改写历史表格的 `render-report.py`。当前全部产物在 `/private/tmp/party-p0-rescan/`，包括 `inventory.json`、`summary.json`、`source-before.json`、`delta.json`、`delta-summary.json`、`verification.json` 与复核摘要；原始大 JSON 不提交。旧清单 SHA256 为 `1af961f4fa46259166d9ea986901fb708208155ffc3123b3d7f5e136e177c79d`，与旧 verification 一致；旧 manifest 的 **1125** 个文件通过 `git cat-file --batch` 对应历史提交逐项散列核对，不依赖另一工作树。
+
+复现（仓库根；Node 实际为 v24.19.0）：
+
+```bash
+export PATH=/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH
+export NODE_OPTIONS=--max-old-space-size=3072
+node scripts/party/audit.cjs /private/tmp/party-p0-rescan
+python3 scripts/party/compare-audits.py /private/tmp/party-p0/inventory.json /private/tmp/party-p0-rescan/inventory.json /private/tmp/party-p0-rescan
+```
+
+比较不使用每次重新编号的 P0 ID 或旧行号作为身份：先按 `scope/file/kind/symbol/context/text` 多重集配对，再对剩余同 `scope/file/kind/symbol/context` **两侧各唯一一条**的桶标为“修改候选”；歧义保留为新增/消失，双方位置和分类全部写入 `delta.json`。`text` 是扫描器保留的截断行文本，不是完整语义证明；修改候选需要人工核对，方法重命名、别名闭包变化也可能表现为新增/消失。下文“新增/消失”均指**审计 occurrence**，不代表新增缺陷或已消除单人假设。原 32 个 S 锚点不套用旧行号；本次阶段 5 的人工复核补充见 §8.4。
+
+### 8.2 分类与位置差量
+
+当前扫描 **1259** 文件；生产 **9188 occurrence / 5663 去重源码行 / 168 文件**（原 9048 / 5571 / 158）。生产文本直接引用 `this.player/game.player` **1522**，测试/支撑 **2712**，合计 **4234**（原 4119，+115）；独立 `rg --json` 的逐文件/行计数一致，4234 条均有关联分类，AST 解析错误 0。隐式 player 方法 **227**（原 223）。U03 仍 **127** 字段，A/B/C/D=26/57/25/19；只有 `world5`（袭击冻结与排除时钟）和 `worldWorkCommandEpoch`（换局归零及根身份绑定）的合同文字改变，不能据“字段没增加”推断居民/Worker 没增加状态。
+
+| 生产主类 | 原 P0 | 5Z 后 | 净变化 | 新增候选 | 消失候选 | 修改候选（类保持） |
+|---|---:|---:|---:|---:|---:|---:|
+| A 显示 | 1198 | 1209 | +11 | 11 | 0 | 0 |
+| B 共享/枚举 | 1078 | 1089 | +11 | 22 | 11 | 1 |
+| C 成员能力 | 5732 | 5836 | +104 | 154 | 50 | 6 |
+| D 生命周期/持久化 | 1040 | 1054 | +14 | 27 | 13 | 8 |
+| 合计 | 9048 | 9188 | +140 | 214 | 74 | 15 |
+
+8959 个生产 occurrence 匹配保留文本，其中 **6178** 个 line/column 改变，**2781** 个定位不变；15 个修改候选均未换主类，保留文本也无分类翻转。恒等式：旧 8959+15+74=9048，新 8959+15+214=9188。测试候选 19462→20865（新增1459/消失56/修改26）；文本残余518→527（+9）；资源71→73（+2）。这些不是测试通过数。总索引 **30653** 个 ID 唯一。
+
+完整子系统现值（含零变化系统，以免漏掉原有大头）：
+
+| 子系统 | A | B | C | D | 当前合计 | 相对原 P0 |
+|---|---:|---:|---:|---:|---:|---:|
+| `src/App.vue` | 9 | 0 | 0 | 4 | 13 | -1 |
+| `src/components` | 343 | 14 | 0 | 31 | 388 | +0 |
+| `src/engine/Combat` | 31 | 36 | 406 | 3 | 476 | +3 |
+| `src/engine/Core` | 104 | 482 | 4589 | 943 | 6118 | +101 |
+| `src/engine/Generator` | 0 | 22 | 0 | 0 | 22 | +0 |
+| `src/engine/Items` | 0 | 32 | 72 | 0 | 104 | +0 |
+| `src/engine/Map` | 0 | 7 | 165 | 3 | 175 | +5 |
+| `src/engine/Movement` | 0 | 38 | 46 | 0 | 84 | +0 |
+| `src/engine/Stats` | 0 | 8 | 12 | 2 | 22 | +4 |
+| `src/engine/UI` | 234 | 60 | 0 | 6 | 300 | +0 |
+| `src/entities` | 0 | 338 | 138 | 1 | 477 | +0 |
+| `src/ext` | 0 | 43 | 157 | 16 | 216 | +0 |
+| `src/ext/modules/combat` | 54 | 0 | 19 | 11 | 84 | +0 |
+| `src/ext/modules/crafting` | 2 | 0 | 0 | 3 | 5 | +0 |
+| `src/ext/modules/foraging` | 11 | 0 | 16 | 1 | 28 | +28 |
+| `src/ext/modules/giants` | 3 | 0 | 0 | 0 | 3 | +0 |
+| `src/ext/modules/growth` | 185 | 4 | 177 | 5 | 371 | +0 |
+| `src/ext/modules/narrative` | 1 | 0 | 39 | 8 | 48 | +0 |
+| `src/ext/modules/settlement` | 2 | 0 | 0 | 3 | 5 | +0 |
+| `src/ui` | 230 | 5 | 0 | 14 | 249 | +0 |
+
+全部发生候选增删改的 **23** 个生产文件如下；其余匹配项只可能位置移动。新增候选文件11个、退出候选文件1个（净+10）。`A/B/C/D` 是当前文件全量，逐处 old/new 位置在 `delta.json`，不把变化候选数当生产修改行数。
+
+| 文件 | 新增 | 消失 | 修改候选 | 原→现总量 | 当前 A/B/C/D |
+|---|---:|---:|---:|---:|---|
+| `src/App.vue` | 0 | 1 | 1 | 14 → 13 | 9/0/0/4 |
+| `src/components/GameCanvas.vue` | 0 | 0 | 1 | 202 → 202 | 185/12/0/5 |
+| `src/engine/Combat/MonsterBlink.ts` | 6 | 3 | 0 | 39 → 42 | 0/9/33/0 |
+| `src/engine/Core/ActorActionProduction.ts` | 1 | 0 | 0 | 16 → 17 | 0/0/15/2 |
+| `src/engine/Core/ActorDeparture.ts` | 0 | 0 | 1 | 13 → 13 | 0/2/11/0 |
+| `src/engine/Core/Game.ts` | 105 | 66 | 11 | 4722 → 4761 | 102/353/3671/635 |
+| `src/engine/Core/MonsterLifecycle.ts` | 0 | 1 | 0 | 1 → 0 | 0/0/0/0 |
+| `src/engine/Core/PhasedAttackProduction.ts` | 9 | 0 | 0 | 162 → 171 | 0/8/161/2 |
+| `src/engine/Core/ResidentJobs.ts` | 7 | 0 | 0 | 0 → 7 | 0/0/6/1 |
+| `src/engine/Core/ResidentNeeds.ts` | 2 | 0 | 0 | 0 → 2 | 0/0/0/2 |
+| `src/engine/Core/ResidentPathing.ts` | 5 | 0 | 0 | 0 → 5 | 0/0/5/0 |
+| `src/engine/Core/ResidentProduction.ts` | 24 | 0 | 0 | 0 → 24 | 0/4/18/2 |
+| `src/engine/Core/SettlementRaids.ts` | 10 | 0 | 0 | 0 → 10 | 0/0/5/5 |
+| `src/engine/Core/TimeCoordinator.ts` | 8 | 3 | 0 | 201 → 206 | 0/13/172/21 |
+| `src/engine/Core/WorldWork.ts` | 0 | 0 | 1 | 101 → 101 | 2/0/97/2 |
+| `src/engine/Map/StructureWorld.ts` | 5 | 0 | 0 | 36 → 41 | 0/0/39/2 |
+| `src/engine/Stats/NativeStatSources.ts` | 4 | 0 | 0 | 18 → 22 | 0/8/12/2 |
+| `src/ext/modules/foraging/knowledge.ts` | 7 | 0 | 0 | 0 → 7 | 0/0/7/0 |
+| `src/ext/modules/foraging/participants.ts` | 2 | 0 | 0 | 0 → 2 | 0/0/2/0 |
+| `src/ext/modules/foraging/schema.ts` | 3 | 0 | 0 | 0 → 3 | 0/0/3/0 |
+| `src/ext/modules/foraging/state.ts` | 4 | 0 | 0 | 0 → 4 | 0/0/4/0 |
+| `src/ext/modules/foraging/ui/useForagingUi.ts` | 4 | 0 | 0 | 0 → 4 | 3/0/0/1 |
+| `src/ext/modules/foraging/ui/view.ts` | 8 | 0 | 0 | 0 → 8 | 8/0/0/0 |
+
+### 8.3 代表位置：新增、消失与变化的解释
+
+| 类型 | 旧位置 → 当前位置 | 分类与人工核对结论 |
+|---|---|---|
+| 新增 | `ResidentProduction.ts:117–148,181,196,394`（均在 `src/engine/Core/`） | C；居民命令仍由主角判存活、busy、距离、可见性、库存戳与支付耗时，执行者迁移须覆盖整条 prepare/commit 链 |
+| 新增 | `ResidentPathing.ts:107`、`ResidentJobs.ts:119` | C 初分，语义兼 B；避让/走格只列主角，须用活动成员占位集合，不能因规则初分类掩盖共享空间问题 |
+| 新增 | `SettlementRaids.ts:199,243,275,421,654` | C 初分，语义兼 B/D；入营报告与重新武装入口绑定主角，落点枚举也只有 player+monsters；不能用焦点驱动经济事实 |
+| 新增 | `ActorActionProduction.ts:134` | C 初分，语义兼 B；已登记入侵者离层保留 combat bundle，仅限本体来源，普通 party 冻结不可滥用该白名单 |
+| 新增 | `src/ext/modules/foraging/participants.ts:52,88`、`ui/view.ts:102–105` | C/A；可见事实影响鉴定和消息，UI 相邻判定取 frame.player；共享知识与实际吃/喂执行者应拆开 |
+| 修改 | `TimeCoordinator.ts:233` → `:216` | 旧3个 occurrence 出、新段3个入，属于语句迁移；玩家计时扣减前移到同 tick 防御恢复建立之前，保留其顺序；同文件新增居民边界 `:144,202,232` |
+| 修改 | `Game.ts:3660` → `:3932` | C；确认有效性新增 `isResidentCommand`，仍绑定 runtime/player 身份；未来必须绑定实际 actor 与世界/命令 epoch |
+| 修改 | `WorldWork.ts:1304` → `:1310` | C；居民生产订单排除普通工作继续入口，不能让 party 指令和 residentOrder 双方领同一票据 |
+| 修改 | `src/components/GameCanvas.vue:1108` → `:1110` | D；自动步进新增 `recordingInputBlocked`，P1a 的成员输入同样要经过栅栏 |
+| 消失（词法） | `src/App.vue:229` → `:244` | 旧同步 `loadSnapshot` 候选消失，当前为 `await loadSnapshotAsync`；异步消费者责任仍在，不能当作单人假设已修复 |
+| 消失（扫描集合） | `MonsterLifecycle.ts:97` → `:97` | `owner.killMonster(monster)` 调用仍存在；Game.killMonster 拆到 wrapper/body，直接 player 方法发现集合改变，使原隐式调用不再命中。这是扫描边界，不是功能删除 |
+| 增删配对（方法拆分） | `Game.ts:13543–13549` → `:14009–14028` | retireDepartingActors→retireDepartingActorsBody 增加居民清理/事务；部分原读点被记增删，应按整条死亡/离营链迁移，不能按消失数抵扣工作量 |
+
+`RecordingBackend.ts`、`RecordingCheckpoint.ts`、`ResidentOrders.ts`、`ResidentEconomy.ts`、`WorldSettlement.ts` 等重要文件可能没有 player 候选；**不在候选文件表不等于无需接入 P1**。本次不修改自动分类规则来制造“已审覆盖”数字，用下表补足无 player 字样的真实执行约束。
+
+### 8.4 阶段 5 新系统对 P1 的新增约束
+
+| 系统 / 当前执行锚点 | P1 必须承接的约束与验收 |
+|---|---|
+| 营地与容器：`WorldItemRoots.ts:30`、`WorldWork.ts:147–166,227–238,455–475,655–670`、`src/engine/Map/StructureWorld.ts:1679–1680` | 成员库存、箱子、工作 escrow、装备引用保持唯一根；供料/容量/工具/库存戳用命令 actor，不随 focus。相邻交换、建造、撤单退款不能碰他人预留；P1a 需验证非主成员真实建造/取放，失败整个写集回滚。 |
+| 居民：`ResidentProduction.ts:117–196,285–394`、`ResidentWorld.ts:210`、`ResidentOrders.ts:655` | 现有招募来源收据、床/人口/日粮、岗位、订单、follow/住营与命令 revision 不能绕过；party↔居民必须同一 ID 互斥交接，先清劳动/escrow/需求/控制资格再发布，新 writer 失败要恢复对象图和两流。若 P1a 暂不开放此来源，必须拒绝双重身份，不把居民包关闭当适配。 |
+| 袭击：`SettlementRaids.ts:36–45,83–130,199,421,650`、`ActorActionProduction.ts:134`；已批准 [5E1 §1/§6](phase5e1.task.md) | 被围营地离层冻结同一事件/入侵者/动作，全部离线经济与损失摘要暂停，解围不追补 excludedTicks。成员留守不能算另一个活动层，不能借其驻营继续生产。仅真实成员进入 region 可触发入营事实，焦点/读档/远程看报告不能重新武装；主成员死亡不再等于整局停钟，party 全灭才沿终局停止。 |
+| 采食：`ActorNeeds.ts:95–104`、`src/ext/modules/foraging/participants.ts:64–78`、`EdibleCommands.ts`/`EdibleEffects.ts` | 当前普通同伴需求排除 player，foraging 通过 `settlement.resident-status.v1` 排除居民，仍是三种角色资格，不能直接对成员再附加同伴饥饿。每成员一个 nutrition 权威，吃/喂/临时加成按能力；成员冻结不补扣、居民按 home 经济时钟。保留 5G writer 抛错进入严格事务、普通事件降级的区别，不能吞错使身份交接半成功。 |
+| 合成与生产：`WorldWork.ts:161,334,465,1310`、`ResidentOrders.ts:58,347–392,579,655,694` | 自己制作的 actor 工单与居民有限订单有不同资格/计时所有者；保留真实输入、工具、escrow、容量预留、下周期交付与有限批次/寿命。取消、死亡、离层、身份转移只能退款一次。party+crafting 无 settlement 也能工作；可选配方查询不能直接 import 可选模块。 |
+| 离线结算：`TimeCoordinator.ts:125–144,202–238`、`Game.ts:11222,11327`、`ResidentNeeds.ts:42–126`、`WorldSettlement.ts:769,811` | 一次正 elapsed 推进一次 simulationTicks，居民边界作为最小时间切点，需求优先/下周期产物/袭击顺序保持。普通场外成员冻结与居民 home 补算互斥；袭击排除时钟不是第二个世界时钟。跨层、坠落、只余冻结成员恢复都走原迁层事务；一次长离场与分段结果相同，读档/seek/查看不生产。 |
+| Worker 摘要：`Game.ts:3687,3800–3834,11893`、`RecordingCheckpoint.ts:5–38`、`RecordingBackend.ts:36–95`；[5Y 报告 §1](phase5y.report.md) | 已有生产 Worker，不再按旧报告“可能涉及 Worker”处理。party native/knowledge/控制域必须进入同一个冻结切点、codec/manifest/generation 身份和独立 full oracle；保持最多两待决 chunk、按序发布链、旧 generation 隔离、运输故障一次 inline 回退而完整性错 fail-closed。成员命令先检查 recordingInputBlocked，save/export/load/seek 继续异步栅栏。P1a 测 actor 事件的边界，P1b 再接每窗口/segment 强制 full，不能把未完成 Worker 结果当已验证存档。 |
+
+### 8.5 本次验证及 P1a 交付边界
+
+扫描、差量守恒、独立 rg、历史基线散列、当前 **1259** 个 src 文件前后 SHA 均通过；扫描无未关联直接引用、无 AST 解析错误。差量脚本另验证重排/行号移动、重复文本、多义桶、唯一修改、类别变化及恒等式。文档检查与声明类型检查只证明本次交付自洽；**没有运行 npm test、test:full/gen/ext/drift、build、浏览器或删除矩阵**，没有引用指挥进程结果冒充本次门禁。未改生产代码、数据、测试或合同原文。
+
+下一步见 [P1a 任务书](party-p1a.task.md)：先由维护者确认新增产品边界与单步事件/codec 提案，再以冻结的实际树开工。5Z 的15种删除布局是该阶段特批范围，不能自动视为 P1 的豁免；P1a 的全量与成员/物品根/异步摘要专项要在自己的最终树执行。旧 P0 预算依然只是提案，5Y/5Z 的 Node Worker 数据不能充当四人或真机实测。
