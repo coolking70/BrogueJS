@@ -18,7 +18,7 @@ import { auditFullObjectGraph } from '../../../../test/support/fullGenerationChe
 // Controlled room/actor prerequisites, genuine installed participants and
 // public rescue/recruit decisions. Optional content is never a compile-time dependency.
 function rescued() {
-  const { h, g } = setup(['settlement', 'foraging']);
+  const { h, g } = setup(['settlement', ...getInstalledModuleDescriptors().filter(d => d.id === 'foraging').map(d => d.id)]);
   bedroom(h, g);
   const a = new Monster(20, 13, (monsters as MonsterData[]).find(m => m.id === 'goblin')!);
   a.isCaged = true;
@@ -150,5 +150,58 @@ if (getInstalledModuleDescriptors().some(d => d.id === 'foraging')) describe('re
     advanceWorldClock(g.world5!, 32000 - g.world5!.simulationTicks); settleResidentNeeds(g);
     expect(food.quantity).toBe(quantity - 1); exclusive(native);
     const digest = h.digest(); h.load(h.save()); expect(h.digest()).toBe(digest);
+  });
+});
+else describe('absent foraging / resident ownership', () => {
+  it('No is pure, Yes recruits, and present release never invents companion roots', () => {
+    const s = rescued(), { g, a } = s;
+    expect(g.extensionRuntime!.manifest.modules.some(m => m.id === 'foraging')).toBe(false);
+    expect(need(s)).toEqual([]); expect(hunger(s)).toBeUndefined();
+    const before = snapshot(g), digest = s.h.digest(), random = rng.getState(), id = getNextEntityId();
+    expect(recruit(s, false).error).toBeNull();
+    expect(snapshot(g)).toEqual(before); expect(s.h.digest()).toBe(digest);
+    expect(rng.getState()).toEqual(random); expect(getNextEntityId()).toBe(id);
+    expect(recruit(s).error).toBeNull(); exclusive(s);
+    expect(g.monsters).toContain(a);
+    removeResident(g, a.id, 'qualification');
+    expect(residentComponent(g, a.id)).toBeUndefined();
+    expect(need(s)).toEqual([]); expect(hunger(s)).toBeUndefined();
+    expect(g.departureActors()).toContain(a);
+    const saved = s.h.digest(); s.h.load(s.h.save()); expect(s.h.digest()).toBe(saved);
+    expect(need(s)).toEqual([]); expect(hunger(s)).toBeUndefined();
+  });
+
+  it('escort cached by real stairs still consumes only its home ration without foraging', () => {
+    travelScenes(); const s = rescued(), { g, a, h } = s;
+    expect(recruit(s).error).toBeNull();
+    expect(h.ext('settlement', 'set-residence', { ...payload(s), mode: 'escort' }).error).toBeNull();
+    a.setStatusDuration('paralyzed', 1000);
+    stairs(h, g, true); expect(g.depth).toBe(2);
+    expect(g.levels.get(1)!.monsters).toContain(a); exclusive(s);
+    const food = containerItems(g, current(g).supplyId)[0]!, quantity = food.quantity;
+    advanceWorldClock(g.world5!, 32000 - g.world5!.simulationTicks); settleResidentNeeds(g);
+    expect(food.quantity).toBe(quantity - 1); exclusive(s);
+    expect(residentComponent(g, a.id)?.mode).toBe('escort');
+    const digest = h.digest(); h.load(h.save()); expect(h.digest()).toBe(digest);
+    expect(need(s)).toEqual([]); expect(hunger(s)).toBeUndefined();
+  });
+
+  it('a real pending fall keeps home ration ownership without foraging', () => {
+    const s = rescued(), { g, a, h } = s;
+    expect(recruit(s).error).toBeNull();
+    removeResident(g, a.id, 'qualification');
+    const actor = g.monsters.find(m => m.id === g.extensionRuntime!.worldCampState('settlement').spawnSlots[0]!.actorId)!;
+    const native = { ...s, a: actor }; actor.loc = { x: 20, y: 13 };
+    expect(recruit(native).error).toBeNull(); exclusive(native);
+    actor.loc = { x: 27, y: 20 }; actor.ticksUntilTurn = 10000;
+    g.grid.setTerrain(27, 20, TerrainType.CHASM);
+    for (let n = 0; n < 3 && g.monsters.includes(actor); n++) h.command('wait');
+    expect(g.toSnapshot().pendingFallenByDepth.flatMap(q => q.monsters).some(m => m.id === actor.id)).toBe(true);
+    exclusive(native);
+    const food = containerItems(g, current(g).supplyId)[0]!, quantity = food.quantity;
+    advanceWorldClock(g.world5!, 32000 - g.world5!.simulationTicks); settleResidentNeeds(g);
+    expect(food.quantity).toBe(quantity - 1); exclusive(native);
+    const digest = h.digest(); h.load(h.save()); expect(h.digest()).toBe(digest);
+    expect(need(native)).toEqual([]); expect(hunger(native)).toBeUndefined();
   });
 });

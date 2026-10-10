@@ -10,6 +10,7 @@ import { rng } from '../../../../engine/Random';
 import { getNextEntityId } from '../../../../entities/Creature';
 import { auditFullObjectGraph } from '../../../../test/support/fullGenerationCheckpointOracle';
 import { containerItems } from '../../../../engine/Core/WorldWorkWorld';
+import { installedOptionalModules } from '../../../../test/support/installedExtensions';
 function production() {
   const s = residentScene();
   s.g.player.loc = { x: 20, y: 14 };
@@ -142,7 +143,7 @@ it.each([
 it.each(['throw', 'async', 'foreign', 'malformed'] as const)(
   'bad catalog %s is an explicit atomic prepare refusal',
   (kind) => {
-    const { g, a } = residentScene(['settlement', 'crafting']);
+    const { g, a } = residentScene(['settlement', ...installedOptionalModules(['crafting'])]);
     g.player.loc = { x: 20, y: 14 };
     g.refreshStructureDerivedState();
     const rt = g.extensionRuntime!,

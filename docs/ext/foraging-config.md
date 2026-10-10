@@ -1,10 +1,12 @@
 # 采食模块配置手册（5G，1.0.0）
 
+5Z当前安装身份：foundation **13**、whole-run **6**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；引擎门禁与[人工待验清单](phase5z.manual-checklist.md)以[5Z报告](phase5z.report.md)为准。
+
 ## 1 安装与通用约定
 
 本文面向采食内容包作者；首发数据与名称以[5G任务书 §5–§7](phase5g.dot-package.md)为准，运行接口以当前冻结 SDK 为准。本文的三个修改例子均为未批准的后续提案。
 
-模块目录 `src/ext/modules/foraging/` 由 catalog 自动发现，descriptor id 为 `foraging`，默认关闭，仅依赖 foundation 10 / worldSdk 1 / edible SDK 1。新局选择“采食”即生效；一局的模块集合固定。仅采食可完成发现、采集、吃、扔、绰号、知识、同伴喂食闭环。烤制需要可选 combat 篝火或 crafting 的火炉；没有热源时仍可正常采食。
+模块目录 `src/ext/modules/foraging/` 由 catalog 自动发现，descriptor id 为 `foraging`，默认关闭，仅依赖当前 foundation 13 / worldSdk 1 / edible SDK 1（5G最初要求foundation10）。新局选择“采食”即生效；一局的模块集合固定。仅采食可完成发现、采集、吃、扔、绰号、知识、同伴喂食闭环。烤制需要可选 combat 篝火或 crafting 的火炉；没有热源时仍可正常采食。
 
 机械配置在 `data/definitions.json`；文本在 `locales/zh_CN.json`。所有对象要求精确键集、安全整数、纯 JSON；getter、非标准原型、未知键、缺键、undefined、循环引用等均拒绝。可食、节点、知识组、放置组、需求共用 owner 前缀 ID 空间，禁止重复。数组顺序是规则身份的一部分，不可随意重排。首次安装先严格校验，失败不做部分注册。定义 ID 使用 `foraging.` 前缀和小写字母、数字、点、连字符，最长128字符；种类 ID、外观池 ID 和需求档位 ID 是各自表内的局部 ID，不要求该前缀。
 

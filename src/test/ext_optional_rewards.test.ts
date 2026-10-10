@@ -58,7 +58,7 @@ describe('2c optional reward preparation and atomic commit', () => {
         const prepare = vi.fn((_request, context: OptionalRewardPrepareContext): OptionalRewardPreparation => {
             prepared = context;
             // 5A2-S permits the frozen stat query and own-component preview.
-            expect(Object.keys(context).sort()).toEqual(['getPlayerComponent', 'player', 'playerId', 'previewStats', 'resources', 'state', 'stats']);
+            expect(Object.keys(context).sort()).toEqual(['getComponent', 'getPlayerComponent', 'player', 'playerId', 'previewStats', 'resources', 'state', 'stats']);
             expect(Object.isFrozen(context.stats)).toBe(true);
             expect(Object.isFrozen(context.player)).toBe(true); expect(Object.isFrozen(context.resources)).toBe(true);
             return { status: 'ready', plan: { amount: 3 } };
@@ -66,6 +66,7 @@ describe('2c optional reward preparation and atomic commit', () => {
         const { runtime, player, ports } = setup([providerModule(provider({ prepare })), consumer(context => {
             expect(context.prepareOptionalReward(capability, 'known', 'once')).toEqual({ status: 'ready' });
             expect(() => prepared.getPlayerComponent('reward')).toThrow('Expired');
+            expect(() => prepared.getComponent!(prepared.playerId, 'reward')).toThrow('Expired');
             expect(() => prepared.previewStats!(context.playerId, {})).toThrow('Expired');
             expect(claim(context)).toEqual({ status: 'applied' });
         })]);
@@ -222,7 +223,7 @@ describe('2c entered-level queue and global fact sequence', () => {
             expect(() => valid.runtime.validateWorld([valid.player], { depth: depth!, turn: turn!, isGameOver: false, nextEntityId: getNextEntityId() })).toThrow('world references');
         }
         // Own component readiness is likewise based on the candidate component set.
-        const components: ExtensionModule = { ...module, initializationReady: context => context.getComponent(123, 'creation') !== undefined };
+        const components: ExtensionModule = { ...module, initializationReady: context => context.getComponent!(123, 'creation') !== undefined };
         const waiting = setup([components]); enter(waiting.runtime); const candidate = waiting.runtime.snapshot();
         candidate.components['123'] = { 'consumer:creation': { ready: true } };
         expect(() => waiting.runtime.validateSnapshot(candidate)).toThrow('initialized snapshot');

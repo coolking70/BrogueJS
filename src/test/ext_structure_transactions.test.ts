@@ -367,3 +367,23 @@ it.each(['foundation', 'neighbor'])(
     });
   }
 );
+
+it('restored world identity revokes an old structure plan even when its epoch repeats', () => {
+  const { g } = structureHarness(); createCamp(g);
+  expect(g.loadSnapshot(g.toSaveSnapshot())).toBe(true);
+  let handle: ReturnType<typeof planStructureChange>;
+  withWorldActorScope(g, 'c5fixture', g.player.id, 'trusted-world', scope => {
+    handle = planStructureChange({kind: 'build', regionId: g.extensionRuntime!.worldStructureRegions()[0]!.id,
+      levelRef: {kind: 'dungeon', depth: 1}, at: {x: 21, y: 10}, definitionId: 'c5fixture.bed'}, scope);
+  });
+  if (!handle!.ok) throw new Error(handle!.code);
+  const value = handle!.value;
+  const epoch = g.worldWorkCommandEpoch, world = g.world5;
+  expect(g.loadSnapshot(g.toSaveSnapshot())).toBe(true);
+  expect(g.worldWorkCommandEpoch).toBe(epoch); expect(g.world5).not.toBe(world);
+  const before = auditFullObjectGraph({g, logger}), random = rng.getState(), id = getNextEntityId();
+  withWorldActorScope(g, 'c5fixture', g.player.id, 'trusted-world', scope => {
+    expect(commitStructureWorld(g, value, scope)).toMatchObject({ok: false, code: 'C5_STALE'});
+  });
+  expect(before.differences()).toEqual([]); expect(rng.getState()).toEqual(random); expect(getNextEntityId()).toBe(id);
+});

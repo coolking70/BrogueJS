@@ -3,7 +3,7 @@ import type { Game } from '../../../../engine/Core/Game';
 import { Monster, MonsterState, type MonsterData } from '../../../../entities/Monster';
 import type { Creature } from '../../../../entities/Creature';
 import monsters from '../../../../data/monsters.json';
-import { TerrainType } from '../../../../engine/Map/Grid';
+import { isVisibleNativeFloor } from '../../../../engine/Map/CellProperties';
 import { canFitAt, footprintOf } from '../../../../engine/Movement/CreatureSpatial';
 import { markActorActionFixture } from '../../../../engine/Core/ActorActionSession';
 import { bindPhasedAttackProduction } from '../../../../engine/Core/PhasedAttackProduction';
@@ -41,7 +41,7 @@ export function placeCombatTelegraphFixture(game: Game, attack: 'parryable' | 's
             if (Math.min(...cells.map(p => Math.max(Math.abs(p.x - game.player.x), Math.abs(p.y - game.player.y)))) !== 1) return false;
             return canFitAt(game, candidate, at, { allowsTerrain: p => {
                 const cell = game.grid.getCell(p.x, p.y);
-                return !!cell?.isVisible && cell.layers.every(t => t === TerrainType.FLOOR || t === TerrainType.NOTHING)
+                return isVisibleNativeFloor(cell)
                     && !cell.machineNumber && !game.items.some(item => item.x === p.x && item.y === p.y)
                     && !interactables.some(entity => entity.x === p.x && entity.y === p.y);
             } });

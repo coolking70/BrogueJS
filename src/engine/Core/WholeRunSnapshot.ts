@@ -32,7 +32,7 @@ import type { Game, GameRunSnapshot, LevelState, GameMode } from './Game';
 import type { CellSnapshot } from './LevelSnapshot';
 import type { GameSnapshotItem, GameSnapshotMonster, GameSnapshotPlayer, EntitySnapshotGraph } from './EntitySnapshot';
 import type { RandomState } from '../Random';
-import type { Pos } from '../../types';
+import { Direction, type Pos } from '../../types';
 
 export const WHOLE_RUN_SCHEMA = 'brogue-web-whole-run-v6' as const;
 
@@ -566,7 +566,7 @@ export function isWholeRunSnapshot(value: unknown, spatialCatalog?: SpatialCatal
         }
         else {const keys=['kind','remaining','cardinalPassability','untilRecovered','initiallyEmbedded',...(Object.prototype.hasOwnProperty.call(auto,'direction')?['direction']:[])].sort();
             if(!['auto_rest','search_long','run'].includes(auto.kind)||Object.keys(auto).sort().join(',')!==keys.join(',')||!Number.isSafeInteger(auto.remaining)||auto.remaining<0||!Array.isArray(auto.cardinalPassability)||auto.cardinalPassability.length!==4||auto.cardinalPassability.some((v:unknown)=>typeof v!=='boolean')||typeof auto.untilRecovered!=='boolean'||typeof auto.initiallyEmbedded!=='boolean')return false;
-            if(auto.direction&&(!Number.isInteger(auto.direction.x)||!Number.isInteger(auto.direction.y)||Math.abs(auto.direction.x)>1||Math.abs(auto.direction.y)>1||Object.keys(auto.direction).sort().join(',')!=='x,y'))return false;
+            if(auto.kind==='run' ? !Number.isInteger(auto.direction)||auto.direction<Direction.UP||auto.direction>Direction.DOWNRIGHT : Object.prototype.hasOwnProperty.call(auto,'direction'))return false;
         }
     }
     if(!s.run.world5&&('worldWorkFacts' in s.run||'worldWorkDetails' in s.run))return false;

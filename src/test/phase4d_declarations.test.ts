@@ -82,7 +82,7 @@ describe('4d declared fixed zones, finite statuses and optional member profiles'
         leg.applyStatus('magical_fear',3);other.applyStatus('magical_fear',4);
         expect(core.getStatusDuration('magical_fear')).toBe(7);expect(leg.statusDurations.magical_fear).toBeUndefined();
         const saved=json(game.toSaveSnapshot());expect(game.loadSnapshot(saved)).toBe(true);
-        const bad=json(saved);bad.run.spatialWorld!.definitions.statusProfiles!.find(p=>p.id==='body-fixture.fixture-local-status')!.rows[0]!.owner='group';
+        const bad=json(saved);bad.run.spatialWorld!.definitions.statusProfiles!.find(p=>p.id==='body-fixture.fixture-local-status')!.rows.find(row=>row.statusId==='paralyzed')!.owner='group';
         expect(game.loadSnapshot(bad)).toBe(false);
         expect(game.monsters.find(m=>m.id===leg.id)!.getStatusDuration('paralyzed')).toBe(2);
     });

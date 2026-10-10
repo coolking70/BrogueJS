@@ -1,8 +1,10 @@
 # 合成与资源采集配置手册
 
-5D2接入补注（维护者验收通过）：模块新增同步只读 `crafting.recipe-catalog.v1`，返回当前注册配方按owner/ID排序的detached目录。settlement只可选择offlineEligible的chest-kit/bed-kit并复用同一WorkTicket/真实工具/材料/工位及owner提交政策；不导入crafting JSON或向NPC开放任意玩家命令。crafting自身module/rules1.0.0保持，此次底座协议升foundation12并拒旧档。详见[5D2报告](phase5d2.report.md)。
+5Z当前安装身份：foundation **13**、whole-run **6**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；引擎门禁与[人工待验清单](phase5z.manual-checklist.md)以[5Z报告](phase5z.report.md)为准。
 
-适用：阶段 5B 的 `crafting` 内容模块，foundation **7**、冻结 **worldSdk 1**、C5-1 **1.0.0**；module/rules **1.0.0**，pack/state **schema 1**，四种命令 **payload v1**。本文说明已实现的配置入口，不把预留的 SDK 类型视为本模块已经开放的功能。
+5D2接入补注（维护者验收通过）：模块新增同步只读 `crafting.recipe-catalog.v1`，返回当前注册配方按owner/ID排序的detached目录。settlement只可选择offlineEligible的chest-kit/bed-kit并复用同一WorkTicket/真实工具/材料/工位及owner提交政策；不导入crafting JSON或向NPC开放任意玩家命令。crafting自身module/rules1.0.0保持，5D2当时底座协议升foundation12；当前foundation13并拒旧档。详见[5D2报告](phase5d2.report.md)。
+
+适用：阶段 5B 的 `crafting` 内容模块，foundation **13**、冻结 **worldSdk 1**、C5-1 **1.0.0**；module/rules **1.0.0**，pack/state **schema 1**，四种命令 **payload v1**。本文说明已实现的配置入口，不把预留的 SDK 类型视为本模块已经开放的功能。
 
 机械数据入口是 `src/ext/modules/crafting/data/definitions.json`，文本入口是同目录的 `locales/zh_CN.json`。生产数据以[5B 任务书 §5](phase5b.dot-package.md#5-数据包与完整数值已批准逐字照抄)为准。本文示例仅用于作者学习与校验，不自动加入正式包，不修改本轮批准的数值、名称、ID 或版本。
 
@@ -245,6 +247,9 @@ foundation 另将每个 owner 的 SDK 定义包 canonical SHA-256 存入 `world5
 `readModuleView('crafting', { sourceContainerId: null | 箱ID })` 只提交显示查询。省略查询等于背包来源；输入经过安全整数 JSON 校验、复制与冻结，不进入模块状态、存档、录像或随机流。返回 DTO 增加 `lastError`、`sourceContainerId`、`sourceRevision` 和 `containers`。箱清单只包含当前层已有记忆的箱（全局上限 112），携带坐标、revision、capacity、occupiedSlots、reservedSlots、inReach；`inReach` 由底座的距离及真实交互线判定。UI 可分别选择采集目标箱和制作材料来源箱；制作产物仍放入背包。未知箱查询视为不可用，远处已知箱可见但不可选。
 
 配方的输入拥有量、maxBatch 与 reason 属于**当前所选来源**，不能把背包预览用于另一只箱。每次投影只预览一个来源，至多 `recipes.length × batchMax` 次 `previewRecipe`，正式包仍为 7×16=112；读库存 1 次、每个附近自有节点至多再读 1 次，无额外 `queryContainers`/`queryStations`。切换来源重读投影，不按箱数乘预算。放置工位仍只扣背包套件/材料。
+
+公开节点读口沿已集成的5G再生修订：按当前世界时钟返回纯物化副本，预留量及CAS revision保持真实行；读取不写入节点、不消耗RNG。过时的“投影永远只读最后物化值”说明不适用于当前公开读口。
+
 
 `WorldWorkReadSDK.lastCommandError?()` 与 `ContainerRead.inReach?` 是 SDK1 的可选兼容扩展，旧调用方式仍成立。最后工作错误是会话诊断，不保存；自身提交及确认完成后 UI 按有限错误码选 i18n 键，运行时替换时清空，不显示原始 code/field。正在推进/等待确认的命令边界仍不可重入；空闲边界上有玩家 combat bundle 时，已注册世界工作命令录制零成本 `C5_BUSY`，普通玩家输入仍被锁定。
 

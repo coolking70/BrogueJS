@@ -379,7 +379,7 @@ const sidebarWidthModel = computed({
           </p>
           <label v-for="control in (ruleSet === 'extended' ? configurationControls : [])" :key="control.module+'.'+control.field" class="module-option">
             <input v-model="configurationDrafts[control.module]![control.field]" type="checkbox" :disabled="!!creationContext || creationSubmitting" />
-            <span>{{ t(control.labelKey) }}<small>{{ t(control.descriptionKey) }}</small></span>
+            <span>{{ t(`ext.${control.labelKey.slice(4)}`) }}<small>{{ t(`ext.${control.descriptionKey.slice(4)}`) }}</small></span>
           </label>
           <p v-if="creationError && !creationComponent" class="field-hint" role="alert">{{ t(creationError === 'ext.creation.start_failed' ? 'ext.creation.start_failed' : 'ext.creation.unavailable') }}</p>
           <div v-if="creationContext && !creationComponent" class="creation-load-controls">

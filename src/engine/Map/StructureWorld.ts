@@ -101,6 +101,7 @@ type Request =
   | { family: 'rest'; change: RestRequest };
 type Plan = {
   game: Game;
+  world: Game['world5'];
   owner: string;
   actorId: number;
   request: Request;
@@ -1140,6 +1141,7 @@ function prepare(request: Request, scope: WorldActorScope): WorldResult<WorldPla
     handle = r.value.handle;
   plans.set(handle, {
     game: a.game,
+    world: a.game.world5,
     owner: a.owner,
     actorId: a.actorId,
     request: structuredClone(request),
@@ -1593,7 +1595,7 @@ export function commitStructureWorld(
       p = plans.get(handle);
     if (a.game !== game || a.owner !== handle.owner || a.actorId !== handle.actorId)
       fail('C5_SCOPE');
-    if (!p || p.game !== game || p.epoch !== game.worldWorkCommandEpoch) fail('C5_STALE');
+    if (!p || p.game !== game || p.world !== game.world5 || p.epoch !== game.worldWorkCommandEpoch) fail('C5_STALE');
     if (p!.used) fail('C5_PLAN_USED');
     p!.used = true;
     if (validate(game, p!.owner, p!.request) !== p!.stamp) fail('C5_STALE');

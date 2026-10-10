@@ -936,7 +936,7 @@ export class ExtensionRuntime {
             stats:this.statQuery, previewStats:(id:number,components:Readonly<Record<string,Json>>)=>{check();return this.hypotheticalComponents(module.id,id,components,false);}, playerId, player: actor ? this.actorFacts(actor) : null,
             resources: freezeView(actor ? this.characterResources(playerId) : { strength: null, gold: null }),
             state: freezeView(cloneJson(this.states[module.id]!)),
-            getComponent:(id:number,name:string)=>{if(!Number.isSafeInteger(id)||id<1||!validId(name))throw new Error('Invalid component query');const c=this.components[String(id)]?.[`${module.id}:${name}`];return c===undefined?undefined:freezeView(cloneJson(c));},
+            getComponent:(id:number,name:string)=>{check();if(!Number.isSafeInteger(id)||id<1||!validId(name))throw new Error('Invalid component query');const c=this.components[String(id)]?.[`${module.id}:${name}`];return c===undefined?undefined:freezeView(cloneJson(c));},
             getPlayerComponent: (name: string) => {
                 check();
                 if (!validId(name)) throw new Error('Invalid optional player component');

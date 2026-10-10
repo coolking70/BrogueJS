@@ -218,8 +218,8 @@ describe('EXT-1e mounted new-game identity chooser', () => {
         const canvas = all(root).find(n => 'data-canvas-modal' in n.props)!;
         const canvasSource = source('components/GameCanvas.vue'), begin = canvasSource.indexOf('    let pathingTimer = 0;'), end = canvasSource.indexOf('    const resetDisplayClock =', begin);
         const loopCode = ts.transpileModule(canvasSource.slice(begin, end), { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText;
-        const frame = new Function('game', 'props', 'logger', 'syncHeldInputContext', 'renders', 'render', 'frameProfile', 'document', 'displayedFrame', 'presentationTimeline', 'dialogInput', `${loopCode}; return displayFrame;`)
-            (activeGame, { get displayModalOpen() { return canvas.props['data-canvas-modal']; } }, logger, () => {}, { flush: (paint: () => void) => paint() }, () => {}, null, { hidden: false }, displayedFrame, presentationTimeline, dialogInput);
+        const frame = new Function('game', 'props', 'logger', 'syncHeldInputContext', 'renders', 'render', 'frameProfile', 'document', 'displayedFrame', 'presentationTimeline', 'dialogInput', `${loopCode}; let lastFocusX = -1, lastFocusY = -1; const cameraState = {panX: 0, panY: 0}; const applyLayout = () => { const focus = displayedFrame(game)?.player ?? game.player.loc; lastFocusX = focus.x; lastFocusY = focus.y; }; return displayFrame;`)
+            (activeGame, { get displayModalOpen() { return canvas.props['data-canvas-modal']; } }, logger, () => {}, { request: vi.fn(), flush: (paint: () => void) => paint() }, () => {}, null, { hidden: false }, displayedFrame, presentationTimeline, dialogInput);
         for (let index = 0; index < 20; index++) frame(30, 30);
         const pointer = event(shield); shield.props.onPointerup(pointer);
         expect(pointer.preventDefault).toHaveBeenCalled(); expect(pointer.stopPropagation).toHaveBeenCalled();

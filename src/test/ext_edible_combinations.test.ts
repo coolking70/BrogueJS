@@ -1,3 +1,4 @@
+import { installedOptionalModules } from './support/installedExtensions';
 import { it, expect, afterEach, vi } from 'vitest';
 import { createWorldHarness } from '../ext/testing/worldHarness';
 import { createForageHarness } from '../ext/testing/forageHarness';
@@ -7,7 +8,8 @@ afterEach(() => {
   hs.splice(0).forEach((h) => h.dispose());
   vi.restoreAllMocks();
 });
-const rows = [
+// Keep foundation fixtures and all original assertions; optional inputs follow installation.
+const rows = [...new Map([
   [],
   ['growth'],
   ['narrative'],
@@ -22,7 +24,11 @@ const rows = [
   ['fgfixture', 'crafting'],
   ['fgfixture', 'combat', 'giants'],
   ['fgfixture', 'growth', 'narrative', 'combat', 'giants']
-];
+].map(ids => {
+  const installed = new Set(installedOptionalModules(ids));
+  const modules = ids.filter(id => id === 'fgfixture' || id === 'craftskel' || installed.has(id));
+  return [modules.join(','), modules] as const;
+})).values()];
 it.each(rows.map((modules) => ({ modules })))(
   'real combination $modules new/play/save/load/replay/seek/resume',
   ({ modules }) => {

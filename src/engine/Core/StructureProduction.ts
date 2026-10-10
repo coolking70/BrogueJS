@@ -63,6 +63,7 @@ import { deepFreeze } from '../Movement/SpatialSchema';
 import { timeSystem } from '../Systems/Time';
 import { logger } from '../Systems/Logger';
 import i18next from 'i18next';
+import { worldText } from '../../ext/worldText';
 function fail(
   code: import('../../ext/worldSdk').WorldErrorCode,
   field: string | null = null
@@ -73,6 +74,7 @@ const exact = (v: unknown, keys: string, field: string): void => assertExact(v, 
 type Input = { module: string; action: StructureAction|'repair'; payload: any };
 interface Prepared {
   game: Game;
+  world: Game['world5'];
   epoch: number;
   input: Input;
   stamp: string;
@@ -267,7 +269,7 @@ export function lockedFoodQuantity(game: Game, itemId: number): number {
 function validate(
   game: Game,
   input: Input
-): Omit<Prepared, 'used' | 'epoch' | 'input' | 'stamp' | 'game'> {
+): Omit<Prepared, 'used' | 'epoch' | 'input' | 'stamp' | 'game' | 'world'> {
   available(game);
   const runtime = game.extensionRuntime!,
     p = input.payload,
@@ -470,6 +472,7 @@ export function prepareStructureCommand(game: Game, data: unknown): WorldResult<
     plans.set(token, {
       ...parts,
       game,
+      world: game.world5,
       epoch: game.worldWorkCommandEpoch,
       input: structuredClone(input),
       stamp: c5Canonical([
@@ -537,7 +540,7 @@ function installEmptyLedger(game: Game, owner: string, c: CampRecord) {
 export function commitStructureCommand(game: Game, token: object): WorldResult<WorldCommit> {
   return result(() => {
     const old = plans.get(token);
-    if (!old || old.game !== game || old.epoch !== game.worldWorkCommandEpoch) fail('C5_SCOPE');
+    if (!old || old.game !== game || old.world !== game.world5 || old.epoch !== game.worldWorkCommandEpoch) fail('C5_SCOPE');
     if (old!.used) fail('C5_PLAN_USED');
     old!.used = true;
     const input = old!.input,
@@ -1033,9 +1036,9 @@ export function settleProductionCamps(game: Game): void {
 
 /** Pure preview of the already prepared, single-use paid plan. */
 export function structureCommandConfirmation(game:Game,token:object):string {
-  const p=plans.get(token);if(!p||p.game!==game)throw new World5Error('C5_STALE');
+  const p=plans.get(token);if(!p||p.game!==game||p.world!==game.world5)throw new World5Error('C5_STALE');
   if(p.input.action!=='repair')return i18next.t('ext.foundation.structure.confirm');
   const input=p.input.payload,component=game.world5!.structures.flatMap(s=>[s.floor,s.barrier,s.roof,s.fixture]).find(c=>c?.id===input.componentId)!;
   const d=structureDefinition(game,component.definitionId);
-  return i18next.t('ext.settlement.raid.repair_confirm',{target:i18next.t(d.nameKey),amount:input.amount,ticks:Math.max(100,Math.ceil(d.constructionTicks*input.amount/d.maxHp)),materials:p.materials!.map(a=>i18next.t(game.extensionRuntime!.worldDefinitionPacks().flatMap(p=>p.items).find(d=>d.id===a.itemDefinitionId)!.nameKey)+' ×'+a.count).join('、')});
+  return i18next.t('ext.settlement.raid.repair_confirm',{target:worldText(d.nameKey),amount:input.amount,ticks:Math.max(100,Math.ceil(d.constructionTicks*input.amount/d.maxHp)),materials:p.materials!.map(a=>worldText(game.extensionRuntime!.worldDefinitionPacks().flatMap(p=>p.items).find(d=>d.id===a.itemDefinitionId)!.nameKey)+' ×'+a.count).join('、')});
 }

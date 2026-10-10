@@ -32,10 +32,10 @@ export function scene(g: Game, initial = true) {
   (g as any).levelSeeds[g.depth - 1].downStairsLoc = { x: 30, y: 25 };
   if (initial) g.player.loc = { x: 20, y: 12 };
   g.monsters.forEach((m, i) => {
-    m.loc = { x: 60 + (i % 10), y: 20 };
+    if (m.spatial?.movementRegionId === undefined) m.loc = { x: 60 + (i % 10), y: 20 };
     m.ticksUntilTurn = 100000;
   });
-  g.dormantMonsters.forEach((m) => (m.loc = { x: 60, y: 22 }));
+  g.dormantMonsters.forEach((m) => { if (m.spatial?.movementRegionId === undefined) m.loc = { x: 60, y: 22 }; });
   g.items.forEach((i) => (i.loc = { x: 65, y: 24 }));
   for (const e of g.extensionRuntime!.worldWorkEntities().filter((e) => e.depth === g.depth)) {
     Object.assign(e, { x: 4 + (e.id % 6), y: 4 });

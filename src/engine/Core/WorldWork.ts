@@ -95,9 +95,9 @@ interface Plan {
 }
 const scopes = new WeakMap<
   object,
-  { game: Game; owner: string; actorId: number; kind: string; active: boolean }
+  { game: Game; world: Game['world5']; owner: string; actorId: number; kind: string; active: boolean }
 >();
-const handles = new WeakMap<object, { game: Game; plan: Plan; used: boolean; epoch: number }>();
+const handles = new WeakMap<object, { game: Game; world: Game['world5']; plan: Plan; used: boolean; epoch: number }>();
 const errors = new WeakMap<Game, { runtime: Game['extensionRuntime']; code: WorldErrorCode | null }>();
 const validErrors = new Set<string>([
   'C5_BAD_PAYLOAD',
@@ -164,7 +164,7 @@ export function withWorldActorScope<T>(
   )
     throw new World5Error('C5_SCOPE');
   const scope = Object.freeze({ owner, actorId, kind }) as WorldActorScope,
-    entry = { game, owner, actorId, kind, active: true };
+    entry = { game, world: game.world5, owner, actorId, kind, active: true };
   scopes.set(scope, entry);
   try {
     return work(scope);
@@ -174,7 +174,7 @@ export function withWorldActorScope<T>(
 }
 /** Trusted siblings share the same short-lived authority, never infer it from DTO fields. */
 export function worldActorAuthority(scope:WorldActorScope) {
-  const entry=scopes.get(scope);if(!entry?.active)throw new World5Error('C5_SCOPE');return entry;
+  const entry=scopes.get(scope);if(!entry?.active||entry.world!==entry.game.world5)throw new World5Error('C5_SCOPE');return entry;
 }
 function reject(code: WorldErrorCode, field: string | null = null): never {
   throw new World5Error(code, field);
@@ -535,7 +535,7 @@ function issue(game: Game, plan: Plan): WorldPlanHandle {
     operation: plan.request.kind,
     casKeys: casFor(plan)
   }) as unknown as WorldPlanHandle;
-  handles.set(handle, { game, plan, used: false, epoch: game.worldWorkCommandEpoch });
+  handles.set(handle, { game, world: game.world5, plan, used: false, epoch: game.worldWorkCommandEpoch });
   return handle;
 }
 function casFor(p: Plan): WorldPlanHandle['casKeys'] {
@@ -713,11 +713,12 @@ export function commitWorldWork(
     !authority ||
     !authority.active ||
     authority.game !== game ||
+    authority.world !== game.world5 ||
     authority.owner !== handle.owner ||
     authority.actorId !== handle.actorId
   )
     return { ok: false, code: 'C5_SCOPE', field: null };
-  if (!entry || entry.game !== game || entry.epoch !== game.worldWorkCommandEpoch)
+  if (!entry || entry.game !== game || entry.world !== game.world5 || entry.epoch !== game.worldWorkCommandEpoch)
     return { ok: false, code: 'C5_STALE', field: null };
   if (entry.used) return { ok: false, code: 'C5_PLAN_USED', field: null };
   entry.used = true;

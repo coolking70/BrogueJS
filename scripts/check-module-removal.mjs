@@ -58,7 +58,7 @@ export function removalGates(row, { maxWorkers = 2, engineOnly = false, output =
         { id: 'extension-tests', command: ['npm', 'run', 'test:ext', '--', `--maxWorkers=${maxWorkers}`] },
         ...(profile === 'full' ? [{ id: 'complete-npm-test', command: ['npm', 'test', '--', `--maxWorkers=${maxWorkers}`] }] : []),
         { id: 'composition-smoke', command: [process.execPath, 'scripts/check-module-composition-smoke.mjs', '--output', join(output, `${row.id}-smoke.json`),
-            ...(engineOnly ? ['--engine-only'] : []), ...(row.removed.length ? ['--removed-modules', row.removed.join(',')] : [])] },
+            ...(engineOnly ? ['--engine-only'] : []), ...(row.removed.length ? ['--removed-modules', row.removed.join(','), '--combinations', 'endpoints'] : [])] },
     ];
     return { profile, commands };
 }
@@ -132,8 +132,8 @@ export async function checkModuleRemoval(argv = process.argv.slice(2)) {
         ownedRoots: modules.map(module => module.root), tests: Object.fromEntries(Object.entries(discovery.suites).map(([name, files]) => [name, files.length])),
         normalTreeFullGate: { required: true, includedInMatrix: matrix.some(row => row.profile === 'full'), status: 'not-run',
             note: 'A full normal-tree gate remains required for this candidate. A removal-only run does not verify or replace it.' },
-        removalPolicy: 'Physical-deletion copies run boundaries, typecheck, build, all remaining extension tests and every remaining module subset smoke; complete npm test runs only on the normal tree.',
-        smokeScope: 'Every remaining installed module subset: real Game new/play/save/load/replay/seek/continued recording; removed-module input rejection.',
+        removalPolicy: 'Physical-deletion copies run boundaries, typecheck, build, all remaining extension tests and all-enabled/all-disabled smoke; complete npm test runs only on the normal tree.',
+        smokeScope: 'Physical deletion: remaining modules all-enabled and all-disabled, deduplicated when empty. Normal tree: every installed subset. All use real Game new/play/save/load/replay/seek/continued recording and removed-module input rejection.',
         caveat: modules.length === 1 ? 'Only the currently installed module is assessed. Absent future modules are not claimed as verified.' : 'Matrix covers only currently installed module directories.' };
     if (options.plan) { console.log(JSON.stringify(plan, null, 2)); return plan; }
     const output = options.output ?? mkdtempSync(join(tmpdir(), 'brogue-module-removal-evidence-'));

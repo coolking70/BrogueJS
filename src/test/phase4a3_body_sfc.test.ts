@@ -25,9 +25,9 @@ import type { ModuleUiHost } from '../ext/ui/types';
 import { readFileSync } from 'node:fs';
 
 interface Node { type: string; text: string; props: Record<string, any>; children: Node[]; parent: Node | null;
-    clientWidth: number; clientHeight: number; appendChild(child: unknown): void; focus(): void }
+    clientWidth: number; clientHeight: number; getBoundingClientRect(): { left: number; top: number; right: number; bottom: number }; appendChild(child: unknown): void; focus(): void }
 const node = (type = '', text = ''): Node => Vue.markRaw({ type, text, props: {}, children: [], parent: null,
-    clientWidth: 1440, clientHeight: 900, appendChild() {}, focus() {} });
+    clientWidth: 1440, clientHeight: 900, getBoundingClientRect() { return { left: 0, top: 0, right: this.clientWidth, bottom: this.clientHeight }; }, appendChild() {}, focus() {} });
 const renderer = Vue.createRenderer<Node, Node>({
     createElement: type => node(type), createText: text => node('text', text), createComment: () => node('comment'),
     insert(child, parent, anchor) { child.parent?.children.splice(child.parent.children.indexOf(child), 1);
@@ -59,7 +59,7 @@ class ApplicationFixture {
     constructor() { application = this; }
     async init() {} destroy() { this.stage.destroy({ children: true }); }
 }
-const doc = Object.assign(new EventTarget(), { hidden: false, fonts: { load: async () => [] }, documentElement: { dataset: {} } });
+const doc = Object.assign(new EventTarget(), { hidden: false, fonts: { load: async () => [] }, documentElement: { dataset: {} }, querySelectorAll: () => [] });
 beforeEach(() => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'performance'] });
     Object.assign(win, { setInterval: globalThis.setInterval, clearInterval: globalThis.clearInterval,

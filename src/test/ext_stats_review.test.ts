@@ -22,6 +22,7 @@ import { createHeadlessGame } from './harness';
 import type { Game } from '../engine/Core/Game';
 import { TerrainType } from '../engine/Map/Grid';
 import { logger } from '../engine/Systems/Logger';
+import { installedOptionalModules } from './support/installedExtensions';
 const data=(id:string)=>(monsters as MonsterData[]).find(row=>row.id===id)!;
 const row=(stat:string,value:number,extra:Partial<StatModifierRow>={}):OwnedStatRow=>({owner:'loot',stat,value,category:'flat',layer:'equipment',sourceKind:'fixture',sourceId:'loot.fixture',...extra});
 function fixture(collect:(id:number)=>readonly OwnedStatRow[], actors:Player|Monster=new Player(4,4)){
@@ -125,8 +126,9 @@ describe('5A2-S review regressions',()=>{
   const incoming=new Item('dart',')',1,ItemCategory.WEAPON);incoming.identityId='dart';incoming.quiverNumber=9;incoming.enchantment=2;incoming.strengthRequired=12;actor.inventory.addItem(incoming);expect(nativeStat(actor,'native.weapon-enchant')).toBe(8);
  });
  it('F3 a stacked known strength potion invalidates the native grant before any flare/turn/knowledge callback',()=>{
-  const registry=createExtensionRegistry(),initialCommands=registry.create(registry.manifest(['combat'])).flatMap(module=>module.initialCommand?[JSON.stringify({module:module.id,...module.initialCommand})]:[]);
-  const game=createHeadlessGame(81431,'wizard');game.startNewGame({seed:81431,mode:'wizard',ruleSet:'extended',extensions:['combat'],initialCommands});game.animationEnabled=false;game.monsters=[];
+  const extensions=installedOptionalModules(['combat']);
+  const registry=createExtensionRegistry(),initialCommands=registry.create(registry.manifest(extensions)).flatMap(module=>module.initialCommand?[JSON.stringify({module:module.id,...module.initialCommand})]:[]);
+  const game=createHeadlessGame(81431,'wizard');game.startNewGame({seed:81431,mode:'wizard',ruleSet:'extended',extensions,initialCommands});game.animationEnabled=false;game.monsters=[];
   const potion=ItemLoader.spawnPotion('potion_of_strength',-1,-1)!;potion.quantity=2;ItemLoader.identifyInstance(potion);game.player.inventory.addItem(potion);const before=nativeStat(game.player,'native.effective-strength');let atFlare:number|undefined;
   vi.spyOn(game as unknown as {playerTurnEnded():void},'playerTurnEnded').mockImplementation(()=>{});
   const flares=game as unknown as {createFlare(...args:unknown[]):void},original=flares.createFlare.bind(game);vi.spyOn(flares,'createFlare').mockImplementation((...args)=>{atFlare=nativeStat(game.player,'native.effective-strength');original(...args);});
@@ -143,7 +145,8 @@ describe('5A2-S review regressions',()=>{
   expect(item.runicKnown).toBe(true);expect(nativeStat(actor,'native.defense')).toBe(before+10);
  });
  it.each(['geometry','takeTurn'])('F3 acid corrosion in %s invalidates cached defense before the next read and across save/load',path=>{
-  const game=createHeadlessGame(7397,'wizard');game.startNewGame({seed:7397,mode:'wizard',ruleSet:'extended',extensions:['growth'],initialCommands:[JSON.stringify({module:'growth',action:'create-character',payload:{revision:0}})]});game.animationEnabled=false;game.monsters=[];game.player.loc={x:4,y:5};game.player.hp=game.player.maxHp;
+  const extensions=installedOptionalModules(['growth']);
+  const game=createHeadlessGame(7397,'wizard');game.startNewGame({seed:7397,mode:'wizard',ruleSet:'extended',extensions,initialCommands:extensions.includes('growth')?[JSON.stringify({module:'growth',action:'create-character',payload:{revision:0}})]:[]});game.animationEnabled=false;game.monsters=[];game.player.loc={x:4,y:5};game.player.hp=game.player.maxHp;
   for(let x=2;x<=7;x++)for(let y=2;y<=7;y++){game.grid.setTerrain(x,y,TerrainType.FLOOR,'.',1);game.grid.getCell(x,y)!.isVisible=true;}
   const armor=game.player.equippedArmor!;armor.enchantment=0;markStatsDirty(game.player);const before=nativeStat(game.player,'native.defense');const mound=new Monster(5,5,{...data('acid_mound'),accuracy:10000});mound.state=MonsterState.HUNTING;game.monsters.push(mound);game.extensionRuntime!.attachCreature(mound);
   // Prime the exact vulnerable cache window after combat's damage/status dirtiness.

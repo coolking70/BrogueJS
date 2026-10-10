@@ -8,10 +8,7 @@ import { allocateGrowthAttributes, growthDerived, growthFocusCapacity, growthFoc
 import { addGrowthIntegers, automaticMaxHpBonus, experienceThreshold, reconcileGrowthMaximum, reconcileGrowthResources } from './experience';
 import { evaluateGrowthPort, meetsGrowthPrerequisites, type GrowthEvaluationFacts, type GrowthEvaluationInput } from './evaluator';
 import { canonical } from '../../json';
-import { knownCellFlags } from '../../../engine/Map/CellProperties';
-import { TerrainType } from '../../../engine/Map/Grid';
-import { T_OBSTRUCTS_PASSABILITY, TM_PROMOTES_WITH_KEY } from '../../../engine/Map/TerrainCatalog';
-import { terrainMechFlags } from '../../../engine/Map/DungeonFeature';
+import { knownCellAllowsMovePreview } from '../../../engine/Map/CellProperties';
 import { playerTravelDiagonalBlocked } from '../../../engine/Movement/PlayerTravel';
 import { canDisplayMonster, canSeeMonster } from '../../../engine/UI/MonsterVisibility';
 import { describeGrowthAttribute, describeGrowthSkill, describeGrowthIdentity } from './describe';
@@ -321,13 +318,7 @@ function knownGrowthMoveCandidate(game: Game, x: number, y: number): boolean {
     if (!cell || game.player.hasStatus('confused') || isIncapacitated(game.player)) return false;
     if (game.monsters.some(monster => monster.x === x && monster.y === y && canDisplayMonster(game.player, game.grid, monster))) return false;
     if (playerTravelDiagonalBlocked(game.grid, game.player.loc, { x, y }, true)) return false;
-    const known = cell.isVisible || cell.hasMemory || cell.isMagicMapped || cell.isExplored;
-    if (!known) return true;
-    const layers = cell.isVisible ? cell.layers : cell.rememberedLayers;
-    if (layers.some(layer => layer === TerrainType.STAIRS_UP || layer === TerrainType.STAIRS_DOWN
-        || layer === TerrainType.DUNGEON_PORTAL || layer === TerrainType.ALTAR)) return false;
-    return !(knownCellFlags(cell) & T_OBSTRUCTS_PASSABILITY)
-        || layers.some(layer => terrainMechFlags(layer) & TM_PROMOTES_WITH_KEY);
+    return knownCellAllowsMovePreview(cell);
 }
 /** Target choices disclose no unobserved creature identity or hidden occupancy/terrain.
  * An optimistic candidate may still be rejected, without cost, when actually submitted. */

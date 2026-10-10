@@ -1,5 +1,7 @@
 # 战斗内容配置手册
 
+5Z当前安装身份：foundation **13**、whole-run **6**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；引擎门禁与[人工待验清单](phase5z.manual-checklist.md)以[5Z报告](phase5z.report.md)为准。
+
 本文按当前 combat 数据加载器、生产执行器及公开命令说明配置，不把[阶段 3 设计](phase3-combat.md)或[阶段 4 设计](phase4-giants.md)中的提案当成已实现能力。路径均相对仓库根。分支政策、阶段授权及验收范围以[扩展路线](README.md)和相应交付报告为准；本页不是新的功能验收报告。
 
 ## 1. 入口、版本与独立启用
@@ -21,14 +23,14 @@
 |---|---|
 | `schema` | `1`，combat 数据包结构 |
 | `moduleId` | `"combat"` |
-| `moduleVersion`、`rulesVersion`、`COMBAT_VERSION` | 均为 `"1.5.0"`；加载器接受精确值，不是任意 semver |
-| descriptor 的 `foundation` | `5` |
-| 扩展 manifest / foundation snapshot | manifest `schema: 1`，foundation 版本 `5` |
-| 原生整局存档 / 录像 | `version: 3`；整局 schema 为 `brogue-web-whole-run-v3` |
-| 正式 combat 持久状态 | `schema: 3`，位于 `extensions.modules.combat` |
-| 内嵌 scheduler / 只读模块 view | 各为 `schema: 1`，与数据包版本分别校验 |
+| `moduleVersion`、`rulesVersion`、`COMBAT_VERSION` | 均为 `"1.6.0"`；加载器接受精确值，不是任意 semver |
+| descriptor 的 `foundation` | `13` |
+| 扩展 manifest / foundation snapshot | manifest `schema: 1`，foundation 版本 `13` |
+| 原生整局存档 / 录像 | whole-run `version: 6` / `brogue-web-whole-run-v6`，录像 `version: 4` |
+| 正式 combat 持久状态 | `schema: 4`，位于 `extensions.modules.combat` |
+| 底座 `actorActions` 根 / 只读模块 view | 各为 `schema: 1`，与数据包版本分别校验；scheduler不再内嵌于combat模块state |
 
-`state.ts`、`components.ts` 和 `planner.ts` 保留早期纯规划/fixture 合同。它们的 `CombatState.schema: 1`、`combat:resources`、`combat:action` **不是正式游戏存档结构**。生产只有一份模块 ledger：`revision / nextActionId / scheduler / actions / actors / bonfires`；正式模块明确拒绝 `combat:*` 生物组件，不能同时添加第二份资源池或阶段时钟。
+`state.ts`、`components.ts` 和 `planner.ts` 保留早期纯规划/fixture 合同。它们的 `CombatState.schema: 1`、`combat:resources`、`combat:action` **不是正式游戏存档结构**。正式模块 ledger 为 `schema / revision / actions / actors / bonfires`；唯一动作时钟及动作ID高水位位于底座 `run.actorActions` 的 `bundles / nextActionId`，加载时核对模块metadata与该根一致。正式模块明确拒绝 `combat:*` 生物组件，不能同时添加第二份资源池或阶段时钟。
 
 ### 1.1 单独使用与组合
 
@@ -196,7 +198,7 @@ profile 精确字段为 `id / resourcePolicyId / attackIds`。资源策略和每
 - 复合体只有核心作自由决策并承担原生时间；最多 4 个真实就绪来源并行动作，总束耗时取最长来源、下一边界取最早来源
 - 当前生产每个来源按自己的 profile/资源行付款，捕获独立 shape、scope、冷却和来源身份；并非阶段 3 早期设计草图中的单个共享体力池。受到物理冲击或成员被弹反时的韧性/整体硬直归核心
 - 成员局部取消只取消自身待段；核心破防取消整束。成员不自行 `takeTurn`，也不写另一份原生行动时钟
-- 4d 仍有未完成项，含完整逐子步环境、整体转换/clone/迁层等；详见[当前 4d 报告](phase4d.report.md)。增加 profile 绑定不授权这些能力，也不能把当前限制包装成永久 Boss 免疫
+- 4d/4e 已完成路径及仍受限的转换能力以[4f 完整审计](phase4f.report.md)和实际身体定义为准；旧4d诊断阶段的未接线清单不能覆盖后来完成的逐子步环境、整体转换/clone/迁层。增加 profile 绑定本身不授权任意物种召唤、regrow等未开放能力
 
 ## 5. 闪避、弹反与硬直
 
@@ -283,17 +285,16 @@ provider 的 prepare 返回 ready 计划或明确 unsupported；commit 只能写
 
 成功 handled 与底座 fallback 互斥。combat 缺席、禁用或明确不支持时，底座才按身体数据 `fallbackStunTicks` 施加行动抑制；poise 免疫、正在硬直等合法 handled 情况不会再追加 fallback。provider 抛错会使同一破坏事务回滚，不以捕获错误后改走 fallback 来重复提交。局部破坏不发 kill、不额外给 XP、不触发成员死亡掉落；核心死亡沿原生终结路径处理。
 
-### 7.2 3g 受信属性容量 adapter
+### 7.2 当前受信 Stat 查询（combat 1.6 / growth 1.8）
 
-`growth.combat-stats.v1` 通过底座 `queryOptionalActor` 查询真实 actor。请求仅含 `v: 1 / baseStaminaCapacity / basePoiseCapacity`；actor 的身份、当前/缓存层和群体归属由底座核验，payload actorId 不能授予权限。provider 只读自己模块允许的冻结 actor 组件。缺 provider 或显式 unsupported 回退 combat 模板；provider 异常、非法 DTO、越界整数直接拒绝，不能伪装缺席。
+当前生产由底座 Stat 管线查询真实 actor 的 `combat.stamina-capacity / combat.poise-capacity`。combat 在 `statSources.ts` 声明这两个物化键及 `combat.stamina-regen / combat.poise-recovery / combat.native-attack-cost` 三个查询键；资源执行器提供所用profile的模板基值，growth的 `statSources.collect` 只提交自己允许的冻结组件、属性、身份与有效效果所生成的有限修正行。统一管线按既有整数舍入、预算、乘法槽及钳制规则一次求值，读取不写状态、不消耗RNG。
 
-成长模块解释它自己的数据映射与临时效果，combat 只消费 `status: supported / staminaCapacity / poiseCapacity / revision`。两容量均为 1–1,000,000 整数；revision 为 `sha256:` 加 64 位小写十六进制。当前成长换算选择 A：基础容量加属性投入的受限整数加值，再应用成长已声明的容量效果；实际绑定、整数系数/分母与上下限在成长包配置。恢复速率、费用、恢复相位与动作时钟仍为 combat 模板值。
+- growth容量映射仍使用 `config.combatStats`：配置关闭、角色无成长构筑或NPC模板不在许可表时不给容量修正；不要求growth存在。combat不存在时growth不创建其stat声明，相关映射跳过，不能把未知stat键当成可用战斗能力
+- 容量更新保持批准的余额A：`newCurrent=min(oldCurrent,newCapacity)`，提高容量不补值；保留付款、恢复延迟/余数、防御窗口及既有硬直。只有真实经过时间或成功休息可恢复余额
+- 当前合法资源行保存模板/profile与实际余额；不保存旧 `combatStats:{staminaCapacity,poiseCapacity,revision}` DTO。schema4加载器拒绝此旧附加字段，并依候选世界与Stat结果校验；不能补DTO或修改manifest来迁移旧档
+- 恢复分子与原生攻击费用也经上述已声明查询键求值；延迟、恢复相位、动作时钟仍由原模板/底座控制
 
-- 容量更新选择 A：`newCurrent = min(oldCurrent, newCapacity)`。容量增加不补值，下降截断溢出，反复开关效果不能刷满
-- 容量同步保留原恢复延迟、定点余数、防御窗口与已付费动作。仅后续真实恢复 tick/付款按原 full-pool 规则处理余数；提高韧性不解除已经开始的硬直
-- 支持成长 adapter 的已物化资源行保存 `combatStats: { staminaCapacity, poiseCapacity, revision }`。精确加载必须与候选世界 actor 的纯查询一致，删除/伪造 DTO 或过期 revision 拒绝；attach/load/预览不补值、不修档
-- 同步仅发生于付款、权威 elapsed 或机械结算。新行从模板初始绝对余额开始；只有正常恢复或实际成功休息可填新增容量
-- 群体成员独立支付自己的体力；decision/time 与 poise-break 仍归核心。NPC 使用同一可信协议，且只支持成长配置批准的模板
+`growth.combat-stats.v1` 的optionalActorQueries注册与带revision容量DTO属于旧3g合同；当前growth生产模块未注册该provider，不能按旧调用示例接新内容。旧helper及相应fixture不代表当前生产能力。当前接口见 `src/ext/stats.ts`、`src/ext/modules/growth/statSources.ts` 与 `src/engine/Core/PhasedAttackProduction.ts`。
 
 ### 7.3 3g 已提交战斗事实
 
@@ -306,7 +307,7 @@ provider 的 prepare 返回 ready 计划或明确 unsupported；commit 只能写
 
 底座按稳定模块 ID 排序，每个根事实只分配一次 ID，并为消费者预留互不碰撞的有界派生范围。原生改变、模块 state、事实计数、消息及两 RNG 处于同一提交事务；任意消费者或预算失败一起回滚。没有消费者时不产生队列或额外事实 ID。读取、重复加载与 replay/seek 不补发旧事实。narrative 用数据声明事件、公开 actor 角色/标签、条件、次数与唯一收据键，在安全点只应用 flag/计数/旁支资格，不允许订阅发奖励；不会自动打开对话。订阅种类在注册时冻结，未订阅的事件不分配队列/ID或执行原生事实检查点。
 
-原生没有 phased action 的 stagger/parry 使用 actionId=0；群成员 generation 从0开始，来源同 tick 退休仍保留事务开始时的可信来源身份。具体写集、独立审查与开发期验证见 [3g 报告](phase3g.report.md)。完整收尾门禁仍等4f统一通知。
+原生没有 phased action 的 stagger/parry 使用 actionId=0；群成员 generation 从0开始，来源同 tick 退休仍保留事务开始时的可信来源身份。具体写集、独立审查与开发期验证见 [3g 报告](phase3g.report.md)。阶段5当前引擎收尾及人工待验范围见[5Z报告](phase5z.report.md)，不把3g历史门禁当本次浏览器验收。
 
 以下仍未实现：`combat.attack-profile.v1`（仍使用 combat 自有 nativeProfiles）、`combat.public-state.v1`（已有 UI view 不等于剧情查询协议）。内容不得直接 import growth/narrative 实现；篝火、部位破坏及 combat 独立启用不依赖它们存在。现有 HUD 玩家行动计数保持 logger.turn 口径。
 

@@ -304,7 +304,10 @@ describe('P2-6 F: 源码守卫（设置 → 即时生效接线）', () => {
     it('F1 GameCanvas：computeMapLayout 吃设置值，且 watch 模式切换触发 applyLayout', () => {
         const src = readFileSync(new URL('../components/GameCanvas.vue', import.meta.url), 'utf8');
         // 布局计算必须使用当前设置（第三参），否则切换模式不会生效
-        expect(src).toMatch(/computeMapLayout\(\s*el\.clientWidth,\s*el\.clientHeight,\s*displaySettings\.mapScaleMode/);
+        expect(src).toMatch(/computeMapLayout\(\s*usable\.width,\s*usable\.height,\s*displaySettings\.mapScaleMode/);
+        expect(src).toContain('const usable=readUsableMapViewport(el)');
+        const viewport=readFileSync(new URL('../ui/mapViewport.ts', import.meta.url), 'utf8');
+        expect(viewport).toContain('{ width: el.clientWidth, height: el.clientHeight }');
         // 模式切换不改变容器尺寸，ResizeObserver 不会触发，必须显式 watch
         expect(src).toMatch(/watch\(\(\) => displaySettings\.mapScaleMode/);
         // 不得退回 window 视口口径（P2-4 E4 的守卫，本轮不得破坏）

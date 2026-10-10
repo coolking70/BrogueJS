@@ -1,6 +1,8 @@
 # 远征营地 5E1 配置手册
 
-本文描述5E1实施候选（未提交）；实施测试、失败和覆盖缺口见[5E1报告](phase5e1.report.md)，待父独立审查。5D2已由父提交 `ce7a2da`。5D1历史验收和性能仅按当时版本引用；完整门禁、最终浏览器和真机归[5Z](phase5z-remainders.md)。
+5Z当前安装身份：foundation **13**、whole-run **6**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；引擎门禁与[人工待验清单](phase5z.manual-checklist.md)以[5Z报告](phase5z.report.md)为准。
+
+5E1已两轮收口并发布 `a9f554b`；实施测试与历史覆盖边界见[5E1报告](phase5e1.report.md)。5D2已由父提交 `ce7a2da`。5D1历史验收和性能仅按当时版本引用；完整门禁、最终浏览器和真机归[5Z](phase5z-remainders.md)。
 
 生产目录 `src/ext/modules/settlement/`；入口 `descriptor.ts` 由 catalog 自动发现，`defaultEnabled=false`。新局扩展选择中单独勾选「远征营地」即可使用，不依赖其他内容模块。启用后按原有启动收据发放建材，寻找第二份原生食物，再在合法地牢区域建营地。不开启时没有本模块定义、启动材料、采集节点或营地逻辑。
 

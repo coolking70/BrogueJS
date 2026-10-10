@@ -1,3 +1,4 @@
+import { installedOptionalModules } from '../../../../test/support/installedExtensions';
 import { InlineRecordingBackend } from '../../../../engine/Core/RecordingBackend';
 import { createConfiguredWorldHarness } from '../../../testing/configuredWorldHarness';
 import { it, expect, vi, afterEach } from 'vitest';
@@ -86,7 +87,7 @@ function publicCamp(h: WorldHarness, g: Game) {
   ).toBeNull();
   return a;
 }
-it.each([{ modules: ['settlement'] }, { modules: ['settlement', 'combat'] }])(
+it.each([...new Map([['settlement'], ['settlement', 'combat']].map(ids => { const modules = installedOptionalModules(ids); return [modules.join(','), {modules}] as const; })).values()])(
   '5Y async complete-boundary raid pause/return/recovery, damage and offline production with $modules',
   async ({ modules }) => {
     vi.restoreAllMocks();

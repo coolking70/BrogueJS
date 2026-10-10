@@ -1,6 +1,8 @@
 # 巨兽与通用空间能力配置手册
 
-适用：giants2 派发基线 `e0fa39a225428d36e6e342f6585f57f45960e6ba`，foundation **11**、whole-run **6**、recording **4**、origin **2**、world **5 / schema 2**、worldSdk/edibleSdk **1**；giants module/rules **1.0.0**，pack/state/spatial **schema 1**。本文以本基线验证器和执行路径为准，设计草图中的预留类型不等于可用字段；不随并行 phase5 工作变动。
+5Z当前安装身份：foundation **13**、whole-run **6**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；引擎门禁与[人工待验清单](phase5z.manual-checklist.md)以[5Z报告](phase5z.report.md)为准。
+
+适用：giants2 已集成 `2709250`，foundation **13**、whole-run **6**、recording **4**、origin **2**、world **5 / schema 4**、worldSdk/edibleSdk **1**；giants module/rules **1.0.0**，pack/state/spatial **schema 1**。本文以本基线验证器和执行路径为准，设计草图中的预留类型不等于可用字段；派发历史身份见原报告，当前身份由本页顶部说明覆盖。
 
 作者主要编辑 `src/ext/modules/giants/data/definitions.json`，显示文字编辑同目录 `locales/zh_CN.json`。所有正式名称、描述、命中区名称必须走 i18n。不要编辑 `monsters.json` 来增加 giants 内容，不通过模块回调直接挖图、移动生物或改 HP。
 

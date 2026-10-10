@@ -1,3 +1,4 @@
+import { installedOptionalModules } from './support/installedExtensions';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -29,6 +30,8 @@ import {
 afterEach(() => vi.restoreAllMocks());
 const independent = (v: unknown) =>
   createHash('sha256').update(c5Canonical(v, true), 'utf8').digest('hex');
+const localeCompositions = [...new Map([[] as string[], ['growth', 'narrative', 'combat', 'giants']]
+  .map(ids => { const modules = installedOptionalModules(ids); return [modules.join(','), { modules }] as const; })).values()];
 const input = {
   inventoryOpen: false,
   inventoryAction: null,
@@ -64,7 +67,7 @@ describe('C5 recording v4 digest contract', () => {
     ]) { const bad = structuredClone(snapshot), player = g.player, notify = vi.fn(); mutate(bad);
       expect(g.loadSnapshot(bad, notify)).toBe(false); expect(g.player).toBe(player); expect(notify).toHaveBeenCalledOnce(); }
   });
-  it.each([{ modules: [] as string[] }, { modules: ['growth', 'narrative', 'combat', 'giants'] }])('review M1: all six initial domains ignore locale with modules %j', ({ modules }) => {
+  it.each(localeCompositions)('review M1: all six initial domains ignore locale with modules %j', ({ modules }) => {
     createHeadlessGame(1); i18next.addResourceBundle('zh_CN', 'translation', zhCN, true, true);
     const start = () => { const g = createHeadlessGame(27028); g.startNewGame({ seed: 27028, mode: 'wizard',
       ruleSet: modules.length ? 'extended' : 'classic', extensions: modules }); return g.toSnapshot(); };
@@ -89,7 +92,7 @@ describe('C5 recording v4 digest contract', () => {
     logger.log('an emitted message');
     expect(mechanicalDigest(g.toSnapshot(), input).domains.knowledge).not.toBe(original.domains.knowledge);
   });
-  it.each([{ modules: [] as string[] }, { modules: ['growth', 'narrative', 'combat', 'giants'] }])('review M1: English recordings replay in Chinese and switch locale between commands with %j', ({ modules }) => {
+  it.each(localeCompositions)('review M1: English recordings replay in Chinese and switch locale between commands with %j', ({ modules }) => {
     createHeadlessGame(1); i18next.addResourceBundle('zh_CN', 'translation', zhCN, true, true);
     i18next.changeLanguage('en');
     const g = createHeadlessGame(27028);

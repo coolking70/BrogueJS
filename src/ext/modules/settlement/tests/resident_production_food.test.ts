@@ -12,6 +12,20 @@ import { auditFullObjectGraph } from '../../../../test/support/fullGenerationChe
 import { rng } from '../../../../engine/Random';
 import { getNextEntityId } from '../../../../entities/Creature';
 import { c5Hash } from '../../../../engine/Core/WorldCanonical';
+import * as catalog from '../../../catalog';
+import { descriptor as edibleFixture, definitions as fixtureDefinitions } from '../../../testing/fixtures/forageFixture';
+import { extensionDataFingerprint } from '../../../fingerprint';
+import { registerResidentRecipeFixture } from '../../../../test/fixtures/optionalCrafting';
+const installed = catalog.getInstalledModuleDescriptors();
+const hasForaging = installed.some(d => d.id === 'foraging');
+const hasCrafting = installed.some(d => d.id === 'crafting');
+const cookingPlans = [...new Map([
+  ['settlement', 'crafting'],
+  ['settlement', 'crafting', 'foraging']
+].map(plan => {
+  const modules = plan.filter(id => (id !== 'foraging' || hasForaging) && (id !== 'crafting' || hasCrafting));
+  return [JSON.stringify(modules), modules] as const;
+})).values()];
 function cooking(modules = ['settlement']) {
   const s = residentScene(modules),
     { h, g } = s;
@@ -73,13 +87,27 @@ it.each([
   }
 );
 it('mixed raw/roasted mushrooms qualify by tags, char fails, no knowledge or food effects', () => {
-  const { h, g, a, station } = cooking(['settlement', 'foraging']);
+  // The cooking contract consumes ingredient tags, independently of which
+  // installed pack supplies them. Preserve the real pack path when present.
+  const prefix = hasForaging ? 'foraging.' : 'fgfixture.';
+  const ingredients = hasForaging ? ['venom', 'prism-roasted', 'char'] : ['raw', 'roasted', 'charred'];
+  if (!hasForaging) {
+    const definitions = structuredClone(fixtureDefinitions);
+    definitions.actorNeeds = [];
+    definitions.edibleItems!.find(d => d.id === 'fgfixture.raw')!.effect = { kind: 'status', status: 'poisoned', turns: 8 };
+    definitions.edibleItems!.find(d => d.id === 'fgfixture.roasted')!.effect = { kind: 'status', status: 'hallucinating', turns: 8 };
+    definitions.edibleItems!.find(d => d.id === 'fgfixture.charred')!.tags = [];
+    const rules = { schema: 1, version: edibleFixture.version, fingerprint: extensionDataFingerprint(definitions) };
+    const descriptor = { ...edibleFixture, rules, create: () => Object.assign(edibleFixture.create(), { rules, worldDefinitions: definitions }) };
+    vi.spyOn(catalog, 'getInstalledModuleDescriptors').mockReturnValue([...installed, descriptor]);
+  }
+  const { h, g, a, station } = cooking(['settlement', hasForaging ? 'foraging' : 'fgfixture']);
   const before = g.extensionRuntime!.snapshot().foundation.kindKnowledge;
-  g.player.inventory.addItem(assembleEdibleItem(g, 'foraging.venom', 2));
-  g.player.inventory.addItem(assembleEdibleItem(g, 'foraging.prism-roasted', 3));
-  g.player.inventory.addItem(assembleEdibleItem(g, 'foraging.char', 1));
+  g.player.inventory.addItem(assembleEdibleItem(g, prefix + ingredients[0], 2));
+  g.player.inventory.addItem(assembleEdibleItem(g, prefix + ingredients[1], 3));
+  g.player.inventory.addItem(assembleEdibleItem(g, prefix + ingredients[2], 1));
   for (const item of g.player.inventory.items.filter((i) =>
-    i.worldItem?.definitionId.startsWith('foraging.')
+    i.worldItem?.definitionId.startsWith(prefix)
   )) {
     expect(
       h.ext('settlement', 'transfer', {
@@ -104,9 +132,9 @@ it('mixed raw/roasted mushrooms qualify by tags, char fails, no knowledge or foo
   for (let n = 0; n < 40; n++) h.command('wait');
   expect(
     containerItems(g, current(g).supplyId)
-      .filter((i) => i.worldItem?.definitionId.startsWith('foraging.'))
+      .filter((i) => i.worldItem?.definitionId.startsWith(prefix))
       .map((i) => i.worldItem!.definitionId)
-  ).toEqual(['foraging.char']);
+  ).toEqual([prefix + ingredients[2]]);
   expect(g.extensionRuntime!.snapshot().foundation.kindKnowledge).toEqual(before);
   expect(a.hasStatus('poisoned') || a.hasStatus('hallucinating')).toBe(false);
   const order = residentOrder(g, a.id)!,
@@ -181,7 +209,7 @@ it('cached hunter is finite and whole/2/17 commits preserve all roots, IDs, RNG 
   expect(whole.world!.orders).toHaveLength(0); // four-day starvation retires, refunds, and releases the order.
 });
 it('provider failures restore the complete prepare object graph including references, IDs and random', () => {
-  const { h, g, a } = residentScene(['settlement', 'crafting']);
+  const { h, g, a } = residentScene(['settlement', ...(hasCrafting ? ['crafting'] : [])]);
   g.player.loc = { x: 20, y: 14 };
   g.refreshStructureDerivedState();
   const rt = g.extensionRuntime!,
@@ -207,14 +235,15 @@ it('provider failures restore the complete prepare object graph including refere
     []
   );
 });
-it.each([
-  ['settlement', 'crafting'],
-  ['settlement', 'crafting', 'foraging']
-])('registered offlineEligible crafting recipe actually produces with %j', (...modules) => {
-  const { h, g, a } = residentScene(modules);
+it.each(cookingPlans)('registered offlineEligible crafting recipe actually produces with %j', (...modules) => {
+  const recipe = hasCrafting
+    ? { input: 'crafting.wood', output: 'crafting.kit-chest', recipe: 'crafting.make-chest-kit' }
+    : registerResidentRecipeFixture();
+  const setup = hasCrafting ? residentScene(modules) : cooking(modules);
+  const { h, g, a } = setup;
   g.player.loc = { x: 20, y: 14 };
   g.refreshStructureDerivedState();
-  expect(
+  if (hasCrafting) expect(
     h.ext('crafting', 'place-station', {
       v: 1,
       definitionId: 'crafting.table',
@@ -223,9 +252,9 @@ it.each([
       inventoryStamp: base(g).inventoryStamp
     }).error
   ).toBeNull();
-  const station = g.world5!.stations.find((s) => s.definitionId === 'crafting.table')!;
-  add(g, 'crafting.wood', 6);
-  const wood = g.player.inventory.items.find((i) => i.worldItem?.definitionId === 'crafting.wood')!;
+  const station = g.world5!.stations.find((s) => s.definitionId === (hasCrafting ? 'crafting.table' : 'settlement.hearth-station'))!;
+  add(g, recipe.input, 6);
+  const wood = g.player.inventory.items.find((i) => i.worldItem?.definitionId === recipe.input)!;
   g.player.loc = { x: 22, y: 12 };
   g.refreshStructureDerivedState();
   expect(
@@ -242,19 +271,30 @@ it.each([
   g.refreshStructureDerivedState();
   expect(
     h.ext('settlement', 'order-work', {
-      ...payload(g, a.id, 'crafting.make-chest-kit', 1),
+      ...payload(g, a.id, recipe.recipe, 1),
       stationId: station.interactableId,
       stationRevision: station.revision
     }).error
   ).toBeNull();
-  if (modules.length === 2) {
-    const rt = g.extensionRuntime!,
-      module = (rt as any).modules.find((m: any) => m.id === 'crafting');
+  const ticket = residentOrder(g, a.id)!.ticketId;
+  if (!modules.includes('foraging')) {
+    const rt = g.extensionRuntime!;
     residentOrder(g, a.id)!.production!.paidTicks = 1000;
     advanceWorldClock(g.world5!, 1000 - (g.world5!.simulationTicks % 1000));
     // Existing crafting participants deliberately tolerate bad deliveries. A
     // failed real runtime writer must still poison the production transaction.
-    const writer = vi.spyOn(module, 'validateState').mockReturnValue(false);
+    const module = (rt as any).modules.find((m: any) => m.id === (hasCrafting ? 'crafting' : 'settlement'));
+    const validate = module.validateState.bind(module);
+    let inWriter = false;
+    const participant = module.worldWorkParticipant;
+    const committed = participant.onCommitted.bind(participant);
+    const scoped = hasCrafting ? null : vi.spyOn(participant, 'onCommitted').mockImplementation((...args) => {
+      inWriter = true;
+      try { return committed(...args); } finally { inWriter = false; }
+    });
+    const writer = hasCrafting
+      ? vi.spyOn(module, 'validateState').mockReturnValue(false)
+      : vi.spyOn(module, 'validateState').mockImplementation((value) => inWriter ? false : validate(value));
     const audit = auditFullObjectGraph({ g, rt }),
       random = rng.getState(),
       id = getNextEntityId(),
@@ -265,15 +305,21 @@ it.each([
     expect(getNextEntityId()).toBe(id);
     expect(g.world5!.simulationTicks).toBe(tick);
     writer.mockRestore();
+    scoped?.mockRestore();
     settleResidentNeeds(g);
   }
   for (let n = 0; n < 40; n++) h.command('wait');
   expect(
     containerItems(g, current(g).supplyId).some(
-      (i) => i.worldItem?.definitionId === 'crafting.kit-chest' && i.quantity === 1
+      (i) => i.worldItem?.definitionId === recipe.output && i.quantity === 1
     )
   ).toBe(true);
-  expect((g.extensionRuntime!.snapshot().modules.crafting as any).totals.craftBatches).toBe(1);
+  expect(g.world5!.terminalTickets.find(t => t.ticketId === ticket)?.completedBatches).toBe(1);
+  if (hasCrafting) expect((g.extensionRuntime!.snapshot().modules.crafting as any).totals.craftBatches).toBe(1);
+  else {
+    expect(g.extensionRuntime!.snapshot().modules.crafting).toBeUndefined();
+    expect(g.extensionRuntime!.queryOptional('crafting.recipe-catalog.v1', {})).toEqual({ status: 'unavailable', reason: 'absent' });
+  }
   const digest = h.digest();
   h.load(h.save());
   expect(h.digest()).toBe(digest);

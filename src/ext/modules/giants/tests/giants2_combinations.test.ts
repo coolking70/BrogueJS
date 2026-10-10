@@ -9,7 +9,14 @@ import { footprintOf } from '../../../../engine/Movement/CreatureSpatial';
 import { startGiants, json } from './naturalFixture';
 import { arriveNatural, attackNatural, settle, world } from './giants2NaturalFixture';
 import { lanternScene, BODY, hitZone } from './giants2MechanicsFixture';
-const optional = ['combat', 'growth', 'narrative', 'crafting', 'foraging', 'settlement'];
+import { installedOptionalModules } from '../../../../test/support/installedExtensions';
+// Physical removal retains this giants-owned test. Build the original plans
+// from the installed optional packs, keeping their native fallback assertions.
+const optional = installedOptionalModules(['combat', 'growth', 'narrative', 'crafting', 'foraging', 'settlement']);
+const installedPlans = (plans: string[][]) => [...new Map(plans.map(ids => {
+  const installed = installedOptionalModules(ids);
+  return [installed.join(','), { ids: installed }] as const;
+})).values()];
 const rows = [[], ['giants'], ...optional.map((id) => ['giants', id]), ['giants', ...optional]];
 afterEach(() => {
   vi.restoreAllMocks();
@@ -100,7 +107,7 @@ it.each(rows.map((ids) => ({ ids, label: ids.join('+') || 'foundation' })))(
   480000
 );
 
-it.each([{ ids: ['giants'] }, { ids: ['giants', 'combat'] }, { ids: ['giants', ...optional] }])(
+it.each(installedPlans([['giants'], ['giants', 'combat'], ['giants', ...optional]]))(
   'G2-COMBO diagnostic actual break chooses exclusive provider or fallback $ids',
   ({ ids }) => {
     const { game, boss } = lanternScene(ids),
@@ -147,20 +154,21 @@ function intactCopperScene(ids: string[]) {
   throw Error('No intact diagnostic copper body location');
 }
 
-it.each([{ ids: ['giants', 'growth'] }, { ids: ['giants', ...optional] }])(
+it.each(installedPlans([['giants', 'growth'], ['giants', ...optional]]))(
   'G2-COMBO diagnostic growth zero quote cannot duplicate member/core terminal rewards $ids',
   ({ ids }) => {
     const { game, core, limbs } = intactCopperScene(ids),
       runtime = game.extensionRuntime!;
     const progression = () =>
-      game.toSnapshot().extensions!.components[String(game.player.id)]!['growth:progression'];
+      game.toSnapshot().extensions!.components[String(game.player.id)]?.['growth:progression'] ?? null;
     const growth = json(progression()),
       items = json(game.items),
       emit = vi.spyOn(runtime, 'emit');
-    for (const actor of [core, ...limbs])
-      expect(
-        game.toSnapshot().extensions!.components[String(actor.id)]!['growth:reward']
-      ).toMatchObject({ amount: 0 });
+    for (const actor of [core, ...limbs]) {
+      const reward = game.toSnapshot().extensions!.components[String(actor.id)]?.['growth:reward'];
+      if (ids.includes('growth')) expect(reward).toMatchObject({ amount: 0 });
+      else expect(reward).toBeUndefined();
+    }
     const origin = runtime.causality.create('melee', game.player.id);
     for (const limb of limbs)
       runtime.causality.withOrigin(origin, () => limb.takeDamage(1000, true));
@@ -178,7 +186,7 @@ it.each([{ ids: ['giants', 'growth'] }, { ids: ['giants', ...optional] }])(
   }
 );
 
-it('G2-COMBO all seven naturally place complete copper body outside world nodes and structure reservations', () => {
+it('G2-COMBO all installed options naturally place complete copper body outside world nodes and structure reservations', () => {
   const { game, boss, placement } = arriveNatural('copper', 2, ['giants', ...optional]);
   const group = game.bodyGroups!.find((g) => g.coreId === boss.id)!;
   expect(group.members.filter((m) => m.life === 'active')).toHaveLength(5);
@@ -187,7 +195,7 @@ it('G2-COMBO all seven naturally place complete copper body outside world nodes 
   expect(members.flatMap((m) => footprintOf(m))).toHaveLength(8);
   const region = game.extensionRuntime!.ownedRegion(placement.regionId!, game.depth)!;
   const cells = members.flatMap((m) => footprintOf(m));
-  const reservations = [...game.world5!.nodes, ...game.world5!.structures].filter(
+  const reservations = [...(game.world5?.nodes ?? []), ...(game.world5?.structures ?? [])].filter(
     (r) => r.levelRef.kind === 'dungeon' && r.levelRef.depth === game.depth
   );
   for (const reservation of reservations) {

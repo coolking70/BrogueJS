@@ -11,11 +11,16 @@ import { loadGiantsDefinitionPack } from '../definitions';
 import { ItemLoader } from '../../../../engine/Items/ItemLoader';
 import { logger } from '../../../../engine/Systems/Logger';
 import { TerrainType as T } from '../../../../engine/Map/Grid';
+import { installedOptionalModules } from '../../../../test/support/installedExtensions';
+const installedPlans = (plans: string[][]) => [...new Map(plans.map(ids => {
+  const installed = installedOptionalModules(ids);
+  return [installed.join(','), { ids: installed }] as const;
+})).values()];
 afterEach(() => {
   vi.restoreAllMocks();
   logger.reset();
 });
-it.each([{ ids: ['giants'] }, { ids: ['giants', 'combat'] }])(
+it.each(installedPlans([['giants'], ['giants', 'combat']]))(
   'G2-ZONE diagnostic real melee: capped transfer, unique break, exposed wick and exclusive provider $ids',
   ({ ids }) => {
     const { game, boss } = lanternScene(ids);
@@ -166,7 +171,7 @@ it('G2-BODY diagnostic two supports move, one support stays but retains native a
   expect(attack.mock.calls.some((c) => c[0] === core && c[1] === game.player)).toBe(true);
   expect(core.loc).toEqual(immobile);
 });
-it.each([{ ids: ['giants'] }, { ids: ['giants', 'growth'] }])(
+it.each(installedPlans([['giants'], ['giants', 'growth']]))(
   'G2-REWARD diagnostic zero native drops and one core terminal without member rewards $ids',
   ({ ids }) => {
     const { game, core, limbs } = copperScene(ids);

@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createServer, preview } from 'vite';
 import { chromium } from 'playwright';
+import { moduleCombinationSelections } from './module-composition-selection.mjs';
 
 const args = process.argv.slice(2);
 const option = name => { const index = args.indexOf(name); return index < 0 ? undefined : args[index + 1]; };
@@ -13,7 +14,8 @@ const output = option('--output');
 const engineOnly = args.includes('--engine-only');
 const planOnly = args.includes('--plan');
 const removed = (option('--removed-modules') ?? '').split(',').filter(Boolean);
-const report = { schema: 1, cwd: process.cwd(), requestedScope: planOnly ? 'plan' : engineOnly ? 'engine-only' : 'engine-and-built-browser', removed, installed: [], engine: { status: 'not-run' }, browser: { status: 'not-run' } };
+const combinationSelection = option('--combinations') ?? 'all';
+const report = { schema: 1, cwd: process.cwd(), requestedScope: planOnly ? 'plan' : engineOnly ? 'engine-only' : 'engine-and-built-browser', combinationSelection, removed, installed: [], engine: { status: 'not-run' }, browser: { status: 'not-run' } };
 let sourceServer, productServer, browser;
 
 // Self-contained so exactly the same real-Game checks can run against built JS.
@@ -96,7 +98,9 @@ function exerciseGame(game, plans, unavailableIds) {
         // With real combat telegraphs active, the blind stair route is a serialization
         // probe, not an AI that reads warnings; use the public wizard mode there (no HP edits).
         const naturalMode = plan.ids.includes('combat') ? 'wizard' : 'normal';
-        const options = { seed: plan.naturalDepth ? 7306 : 7301, mode: plan.naturalDepth ? naturalMode : 'test', ruleSet: 'extended', extensions: plan.ids };
+        // Giants2 contributes from D2; seed 1 reaches that natural birth using
+        // the unchanged normal route and command limit. Other plans keep 7301.
+        const options = { seed: plan.naturalDepth ? 1 : 7301, mode: plan.naturalDepth ? naturalMode : 'test', ruleSet: 'extended', extensions: plan.ids };
         // Observe command 0 before any creation command, then each creation state.
         // Also exercise the original atomic startup batch against that live history.
         game.startNewGame(options);
@@ -153,12 +157,12 @@ function exerciseGame(game, plans, unavailableIds) {
 }
 
 try {
-    sourceServer = await createServer({ configFile: false, root: process.cwd(), server: { middlewareMode: true, watch: null, hmr: false }, appType: 'custom' });
+    sourceServer = await createServer({ configFile: false, root: process.cwd(), server: { middlewareMode: true, watch: null, hmr: false, ws: false }, appType: 'custom' });
     const catalog = await sourceServer.ssrLoadModule('/src/ext/catalog.ts');
     const descriptors = catalog.getInstalledModuleDescriptors();
     report.installed = descriptors.map(descriptor => descriptor.id);
     const unavailable = [...new Set([...removed, 'composition-unavailable'])].filter(id => !report.installed.includes(id));
-    const subsets = report.installed.reduce((sets, id) => [...sets, ...sets.map(set => [...set, id])], [[]]);
+    const subsets = moduleCombinationSelections(report.installed, combinationSelection);
     const registry = catalog.createExtensionRegistry();
     const { TerrainType } = await sourceServer.ssrLoadModule('/src/engine/Map/Grid.ts');
     const plans = subsets.map(ids => {

@@ -1,3 +1,4 @@
+import { installActorActionProtocolFixtureIfAbsent } from '../../../../test/fixtures/actorActionProtocol';
 import { productionActorActionScheduler } from '../../../../engine/Core/ActorActionProduction';
 import { ItemLoader } from '../../../../engine/Items/ItemLoader';
 import { TerrainType } from '../../../../engine/Map/Grid';
@@ -24,6 +25,13 @@ import { residentComponent } from '../../../../engine/Core/ResidentWorld';
 import { auditFullObjectGraph } from '../../../../test/support/fullGenerationCheckpointOracle';
 import { withWorldActorScope } from '../../../../engine/Core/WorldWork';
 import { planStructureChange, commitStructureWorld } from '../../../../engine/Map/StructureWorld';
+import { installedOptionalModules } from '../../../../test/support/installedExtensions';
+import * as catalog from '../../../catalog';
+import { bodyFixtureDescriptor } from '../../../../test/fixtures/bodyModule';
+const installedPlans = (plans: string[][]) => [...new Map(plans.map(ids => {
+  const modules = installedOptionalModules(ids);
+  return [modules.join(','), { modules }] as const;
+})).values()];
 function active(modules = ['settlement']) {
   const s = residentScene(modules, true),
     { h, g } = s;
@@ -58,14 +66,14 @@ const economics = (s: ReturnType<typeof active>) => ({
   locked: current(s.g).locked,
   consumed: current(s.g).consumedLockedUnits
 });
-it.each(
+it.each(installedPlans(
   [
     ['settlement'],
     ['settlement', 'combat'],
     ['settlement', 'giants'],
     ['settlement', 'combat', 'giants']
-  ].map((modules) => ({ modules }))
-)('real native bounded wave with $modules, local warning and strict persistence', ({ modules }) => {
+  ]
+))('real native bounded wave with $modules, local warning and strict persistence', ({ modules }) => {
   const s = active(modules),
     r = campRaid(s.g, current(s.g).slot)!,
     e = r.event!;
@@ -581,9 +589,14 @@ it('S1 other camp: a besieged cached home excludes all time while a second real 
   expect(Math.floor(l2.lastSettledTick / 1000)).toBe(Math.floor(g.world5!.simulationTicks / 1000));
 });
 it('existing giants group keeps occupancy, native target/damage/death identities beside an ordinary raid without extra giant births', () => {
-  const s = residentScene(['settlement', 'giants', 'combat'], true),
+  const installed = catalog.getInstalledModuleDescriptors(), hasGiants = installed.some(d => d.id === 'giants');
+  const body = hasGiants ? null : bodyFixtureDescriptor();
+  if (body) vi.spyOn(catalog, 'getInstalledModuleDescriptors').mockReturnValue([...installed, body]);
+  const owner = body?.id ?? 'giants';
+  const s = residentScene([...installedOptionalModules(['settlement', 'giants', 'combat']), ...(body ? [body.id] : [])], true),
     { g, h } = s;
-  const core = g.createCompositeMonster('giants.shale-weaver-body', { x: 12, y: 12 })!;
+  expect(g.extensionRuntime!.manifest.modules.some(m => m.id === 'giants')).toBe(hasGiants);
+  const core = g.createCompositeMonster(`${owner}.shale-weaver-body`, { x: 12, y: 12 })!;
   expect(core).toBeTruthy();
   const group = g.bodyGroups!.find((b) => b.coreId === core.id)!;
   const ids = group.members.map((m) => m.entityId);
@@ -761,6 +774,7 @@ it('ordinary raid uses a legal paid guard post and native danger priority with o
   expect(g.world5!.residentJobs).toHaveLength(0);
 });
 it('combat ordinary raid enters the existing native warning and poise pool, without treating walls as actors', () => {
+  installActorActionProtocolFixtureIfAbsent();
   const { h, g, a } = active(['settlement', 'combat']),
     e = campRaid(g, current(g).slot)!.event!;
   const enemy = g.monsters.find((m) => e.actorIds.includes(m.id))!;
@@ -906,6 +920,7 @@ it('five real paid homes share four raid slots; frozen active waves pin slots, f
   expect(h.digest()).toBe(final);
 });
 it('combat S1/S4: a real raid windup, locked cells and resource pool freeze intact across public stairs, long cached time and save/load; return resumes that action once', () => {
+  installActorActionProtocolFixtureIfAbsent();
   travelScenes();
   const { h, g } = active(['settlement', 'combat']),
     r = campRaid(g, current(g).slot)!;
@@ -994,7 +1009,7 @@ it('combat S1/S4: a real raid windup, locked cells and resource pool freeze inta
   expect(h.digest()).toBe(after);
 });
 
-it.each([['settlement'], ['settlement', 'combat'], ['settlement', 'giants'], ['settlement', 'combat', 'giants']].map(modules => ({ modules })))(
+it.each(installedPlans([['settlement'], ['settlement', 'combat'], ['settlement', 'giants'], ['settlement', 'combat', 'giants']]))(
   'R1-F1 native polymorph preserves raid identity and strict references with $modules', ({ modules }) => {
     travelScenes(); const { g, h } = active(modules), r = campRaid(g, current(g).slot)!, e = r.event!;
     for (const a of g.monsters) a.ticksUntilTurn = 1000000;
@@ -1025,7 +1040,8 @@ it.each([['settlement'], ['settlement', 'combat'], ['settlement', 'giants'], ['s
   }
 );
 it('R1-F1 native surviving fall retires only effective membership, with no death/reward/entity loss and no paused-time catch-up', () => {
-  travelScenes(); const { g, h } = setup(['settlement', 'combat', 'growth'], 9, 4, true); bedroom(h, g);
+  const modules = installedOptionalModules(['settlement', 'combat', 'growth']);
+  travelScenes(); const { g, h } = setup(modules, 9, 4, true); bedroom(h, g);
   const c = current(g), resident = new Monster(20, 13, species.find(a => a.id === 'goblin') as MonsterData);
   resident.isCaged = true; g.monsters.push(resident); g.extensionRuntime!.attachCreature(resident);
   g.executeCommand('wait', undefined, () => g.freeCaptive(resident));
@@ -1046,9 +1062,10 @@ it('R1-F1 native surviving fall retires only effective membership, with no death
   r = campRaid(g, c.slot)!; e = r.event!; const excluded = r.excludedTicks;
   expect(e.phase).toBe('active'); expect(r.pauseFrom).toBeNull();
   const deaths = structuredClone(g.extensionRuntime!.snapshot()), items = g.items.map(i => i.id);
-  const xp = () => (g.extensionRuntime!.snapshot().components[g.player.id]!['growth:progression'] as { experience: number }).experience;
+  const xp = () => (g.extensionRuntime!.snapshot().components[g.player.id]?.['growth:progression'] as { experience: number } | undefined)?.experience;
   const xpBefore = xp(), goldBefore = g.stats.gold;
-  expect(Number.isSafeInteger(xpBefore)).toBe(true);
+  expect(Number.isSafeInteger(xpBefore)).toBe(modules.includes('growth'));
+  if (!modules.includes('growth')) expect(xpBefore).toBeUndefined();
   enemy.loc = { x: 14, y: 10 }; enemy.ticksUntilTurn = 1000000;
   g.grid.setTerrain(enemy.x, enemy.y, TerrainType.HOLE); g.refreshStructureDerivedState();
   const fallTick = g.world5!.simulationTicks; h.command('wait');
@@ -1126,7 +1143,7 @@ it('R1-F2 same-layer return retains published report until real region entry, wi
 });
 
 it('R2-F1 forged departed cannot retire living camp invaders; candidate rejection preserves graph and session', () => {
-  travelScenes(); const { g, h } = active(['settlement', 'combat']), c = current(g);
+  travelScenes(); const { g, h } = active(installedOptionalModules(['settlement', 'combat'])), c = current(g);
   for (const a of g.monsters) a.ticksUntilTurn = 1000000;
   g.player.hp = g.player.maxHp = 1000;
   const event = campRaid(g, c.slot)!.event!, ids = [...event.actorIds];
@@ -1134,12 +1151,12 @@ it('R2-F1 forged departed cannot retire living camp invaders; candidate rejectio
   const candidate = g.toSnapshot();
   for (const row of candidate.run.world5!.raidCamps[0]!.event!.actors)
     row.departed = { depth: c.depth + 1, tick: event.lastAttemptTick };
-  const runtime = g.extensionRuntime, binding = runtime!.actorActionBinding()!, actions = g.actorActions;
+  const runtime = g.extensionRuntime, binding = runtime!.actorActionBinding(), actions = g.actorActions;
   const scheduler = productionActorActionScheduler(g); expect(scheduler).toBeDefined();
   const digest = h.digest(), audit = auditFullObjectGraph({ g, rt: runtime });
   expect(() => h.load(JSON.stringify(candidate))).toThrow();
-  expect(g.extensionRuntime).toBe(runtime); expect(runtime!.actorActionBinding()!.state).toBe(binding.state);
-  expect(runtime!.actorActionBinding()!.definition).toBe(binding.definition);
+  expect(g.extensionRuntime).toBe(runtime); expect(runtime!.actorActionBinding()?.state).toBe(binding?.state);
+  expect(runtime!.actorActionBinding()?.definition).toBe(binding?.definition);
   expect(productionActorActionScheduler(g)).toBe(scheduler);
   expect(g.actorActions).toBe(actions); expect(audit.differences()).toEqual([]); expect(h.digest()).toBe(digest);
   h.command('wait'); expect(campRaid(g, c.slot)!.event!.phase).toBe('active');

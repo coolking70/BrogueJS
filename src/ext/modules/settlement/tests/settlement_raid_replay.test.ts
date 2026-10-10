@@ -1,3 +1,4 @@
+import { installedOptionalModules } from '../../../../test/support/installedExtensions';
 import { ItemLoader } from '../../../../engine/Items/ItemLoader';
 import { createConfiguredWorldHarness } from '../../../testing/configuredWorldHarness';
 import { it, expect, vi, afterEach } from 'vitest';
@@ -87,7 +88,7 @@ function publicCamp(h: WorldHarness, g: Game) {
   ).toBeNull();
   return a;
 }
-it.each([{ modules: ['settlement'] }, { modules: ['settlement', 'combat'] }])(
+it.each([...new Map([['settlement'], ['settlement', 'combat']].map(ids => { const modules = installedOptionalModules(ids); return [modules.join(','), {modules}] as const; })).values()])(
   'S4 public controlled-origin raid, fixed enabled rules and actual freeze/close/recovery save/replay/seek with $modules',
   ({ modules }) => {
     vi.restoreAllMocks();
@@ -227,7 +228,7 @@ it('fixed manifest defaults off and rejects malformed configs, absent owners, an
   g.extensionRuntime?.unload();
 });
 
-it.each([{ modules: ['settlement'] }, { modules: ['settlement', 'combat'] }])(
+it.each([...new Map([['settlement'], ['settlement', 'combat']].map(ids => { const modules = installedOptionalModules(ids); return [modules.join(','), {modules}] as const; })).values()])(
   'R1-F1 public native polymorph, pause/return save/load/replay/seek with $modules', ({ modules }) => {
     vi.restoreAllMocks();
     installRecordingScene(g => {

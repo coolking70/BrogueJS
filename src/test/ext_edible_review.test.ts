@@ -13,6 +13,8 @@ import { logger } from '../engine/Systems/Logger';
 import { rng } from '../engine/Random';
 import { advanceWorldClock } from '../ext/world5';
 import i18next from 'i18next';
+import { installedOptionalModules } from './support/installedExtensions';
+import { bodyFixtureDescriptor } from './fixtures/bodyModule';
 
 it('P1 a departing spear wielder neither attacks nor retries the step', () => {
   const h = forage(),
@@ -618,11 +620,13 @@ it('P10 immediate retirement at an intermediate band stops every later callback'
 });
 
 it('P1 real body departure preserves formation and rejects hazards for every part', () => {
-  const h = forage(['combat', 'giants']),
+  const modules = installedOptionalModules(['combat', 'giants']);
+  const body = modules.includes('giants') ? null : bodyFixtureDescriptor();
+  const h = forage([...modules, ...(body ? [body.id] : [])], body ? [body] : []),
     g = h.game();
   for (let y = 4; y <= 24; y++)
     for (let x = 4; x <= 30; x++) g.grid.setTerrain(x, y, TerrainType.FLOOR);
-  h.fixture({ kind: 'group', at: { x: 17, y: 14 } });
+  h.fixture({ kind: 'group', at: { x: 17, y: 14 }, ...(body ? { bodyOwner: body.id } : {}) });
   const group = g.bodyGroups![0]!,
     core = g.monsters.find((m) => m.id === group.coreId)!;
   h.fixture({ kind: 'departure', actorId: core.id, grace: 1000 });

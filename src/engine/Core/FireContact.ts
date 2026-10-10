@@ -4,8 +4,8 @@ import type { Item } from '../Items/Item';
 import type { FireContactCause, FireContactFact } from '../../ext/worldEdible';
 import { edibleDefinition, edibleItemAdapter, markKnowledge, knowledgeName } from './KindKnowledge';
 import { bindWorldItem } from '../Items/WorldItems';
-import { DF } from '../Map/DungeonFeatureCatalog';
-import { spawnDungeonFeature, catalogFeature, dungeonFeatureActive } from '../Map/DungeonFeature';
+import { dungeonFeatureActive } from '../Map/DungeonFeature';
+import { emitEdibleFireFeature } from '../Environment/Gas';
 import { logger } from '../Systems/Logger';
 import i18next from 'i18next';
 import { worldText } from '../../ext/worldText';
@@ -167,18 +167,8 @@ export function drainFireContacts(game: Game, strict = false): void {
           }),
           '#ffaa55'
         );
-      if (explosion)
-        spawnDungeonFeature(
-          game.grid,
-          c.at.x,
-          c.at.y,
-          catalogFeature(
-            explosion === 'explosion-fire' ? DF.DF_EXPLOSION_FIRE : DF.DF_BLOAT_EXPLOSION
-          ),
-          false
-        );
-      else if (c.location === 'floor' && result !== 'transformed')
-        spawnDungeonFeature(game.grid, c.at.x, c.at.y, catalogFeature(DF.DF_ITEM_FIRE), false);
+      if (explosion || (c.location === 'floor' && result !== 'transformed'))
+        emitEdibleFireFeature(game.grid, c.at, explosion);
       render = true;
     }
     if (render) game.requestEdibleRender();

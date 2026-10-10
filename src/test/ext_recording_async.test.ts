@@ -1,3 +1,4 @@
+import { installedOptionalModules } from './support/installedExtensions';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { computeCheckpoint, type CheckpointJob, type CheckpointResult } from '../engine/Core/RecordingCheckpoint';
@@ -47,7 +48,13 @@ describe('5Y complete frozen checkpoint pipeline', () => {
     };
     expect(await run(true)).toEqual(await run(false));
   });
-  it.each([['settlement'], ['settlement', 'combat'], ['growth', 'narrative', 'combat', 'giants', 'settlement', 'foraging', 'crafting']])('round trips real Game module composition %j through async save, continuation, replay and seek', async (...modules) => {
+  // Removal keeps this foundation test. Exercise the real installed projections
+  // of the three original plans, including empty, without asking for absent packs.
+  const compositions = [...new Map([
+    ['settlement'], ['settlement', 'combat'],
+    ['growth', 'narrative', 'combat', 'giants', 'settlement', 'foraging', 'crafting'],
+  ].map(ids => { const installed = installedOptionalModules(ids); return [installed.join(','), installed] as const; })).values()];
+  it.each(compositions)('round trips real Game module composition %j through async save, continuation, replay and seek', async (...modules) => {
     const g = game(), registry = createExtensionRegistry();
     const initialCommands = registry.create(registry.manifest(modules)).flatMap(m => m.initialCommand ? [JSON.stringify({ module: m.id, ...m.initialCommand })] : []);
     g.startNewGame({ seed: 27028, mode: 'wizard', ruleSet: 'extended', extensions: modules, initialCommands });

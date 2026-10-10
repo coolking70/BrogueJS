@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { installedOptionalModules } from './support/installedExtensions';
 import { c5Canonical } from '../engine/Core/WorldCanonical';
 import {
   commitOfflineSettlement,
@@ -1048,7 +1049,10 @@ function walkToStair(g: ReturnType<typeof game>, kind: TerrainType): { x: number
 }
 describe('C5 actual two-floor input replay and continuation', () => {
   it.each(
-    [['world5-fixture'], ['world5-fixture', 'combat', 'giants']].map((ids) => [ids] as const)
+    [...new Map([[], ['combat', 'giants']].map(optional => {
+      const ids = ['world5-fixture', ...installedOptionalModules(optional)];
+      return [ids.join(','), [ids] as const] as const;
+    })).values()]
   )(
     'settles once on the original return command in %j, including save/load, replay, seek and continuation',
     (ids) => {

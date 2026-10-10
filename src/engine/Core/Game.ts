@@ -1020,6 +1020,7 @@ export class Game {
         this.depth = 1;
         this.currentLevelDepth = null;
         this.absoluteTurnNumber = 0;
+        this.worldWorkCommandEpoch = 0;
         this.currentLevelAwaySince = 0;
         this.currentLevelExitedVia = { x: 0, y: 0 };
         this.levels = new Map();
@@ -12074,6 +12075,7 @@ export class Game {
         this.inAutoTravelStep = false;
         this.mode = snapshot.mode; this.depth = snapshot.depth; this.currentLevelDepth = snapshot.currentLevelDepth;
         this.currentSeed = snapshot.seed; this.levelSeeds = copyLevelSeeds(snapshot.levelSeeds);
+        this.worldWorkCommandEpoch = 0;
         if (snapshot.run.world5) this.world5 = structuredClone(snapshot.run.world5); else delete this.world5;
         if (snapshot.run.world5) { this.worldContainerItems=new Map(snapshot.run.world5.containers.flatMap(c=>c.itemIds.map(id=>[id,entityGraph.items.get(id)!] as const)));this.worldWorkFacts=structuredClone(snapshot.run.worldWorkFacts??[]);this.worldWorkDetails=structuredClone(snapshot.run.worldWorkDetails??[]); } else {delete this.worldContainerItems;delete this.worldWorkFacts;delete this.worldWorkDetails;}
         if (snapshot.run.actorActions) this.actorActions = structuredClone(snapshot.run.actorActions); else delete this.actorActions;

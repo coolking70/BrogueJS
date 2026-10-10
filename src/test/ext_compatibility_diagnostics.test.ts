@@ -183,8 +183,8 @@ describe('menu compatibility diagnostic forwarding', () => {
                 if (diagnostic !== undefined) onError(diagnostic);
                 return false;
             });
-            const handler = new Function('activeGame', 'readSnapshot', 'readRecording', 'REPLAY_KEY', 'cancelHeldInputs', 'replayMessage', 'i18next', `return ${code}`)(
-                { loadSnapshot: load, loadReplay: load }, async () => ({}), async () => ({}), 'replay', vi.fn(), report, { t: (key: string) => key });
+            const handler = new Function('activeGame', 'readSnapshot', 'readRecording', 'REPLAY_KEY', 'cancelHeldInputs', 'replayMessage', 'i18next', 'runEpoch', `return ${code}`)(
+                { loadSnapshotAsync: load, loadReplayAsync: load }, async () => ({}), async () => ({}), 'replay', vi.fn(), report, { t: (key: string) => key }, { value: 0 });
             await handler({ text: async () => '{}' });
             expect(load).toHaveBeenCalledOnce(); expect(report).toHaveBeenCalledExactlyOnceWith(diagnostic ?? fallback);
         }

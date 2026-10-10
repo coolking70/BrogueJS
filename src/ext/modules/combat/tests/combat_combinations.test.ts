@@ -11,6 +11,24 @@ import { createExtensionRegistry, getInstalledModuleDescriptors } from '../../..
 import { readCreatureBirth } from '../../../birth';
 import type { ExtensionManifest } from '../../../types';
 
+// Vitest retains registered mocks. A method spy's restore closure owns its
+// target even after restoreAllMocks, so the 64-case matrix retained whole Games.
+// Keep call/result assertions, but restore target descriptors and clear the
+// unbound function mock's contexts after each case.
+const restoreSpies: (() => void)[] = [];
+function scopedMethodSpy<T extends object, K extends keyof T>(target: T, key: K) {
+    const descriptor = Object.getOwnPropertyDescriptor(target, key);
+    const mock = vi.fn(target[key] as (...args: any[]) => any);
+    target[key] = mock as T[K];
+    const restore = () => {
+        if (descriptor) Object.defineProperty(target, key, descriptor);
+        else Reflect.deleteProperty(target, key);
+        mock.mockClear();
+    };
+    restoreSpies.push(restore);
+    return { mock, restore };
+}
+
 const json = <V>(value: V): V => JSON.parse(JSON.stringify(value));
 const last = <V>(values: readonly V[]): V => values[values.length - 1]!;
 const acknowledge = () => { while (logger.pendingAcknowledgment) logger.acknowledgeNext(); };
@@ -35,7 +53,11 @@ function start(ids: string[]): Game {
     // Untouched production map, entities, resources, catalogs, placement and RNG.
     // The shipped attack IDs happen to be named fixture.*; no fixture pack or
     // arena, teleport, injected monster, HP edit or startNewGame override is used.
-    game.startNewGame({ seed: 7397, mode: 'normal', ruleSet: 'extended', extensions: ids, initialCommands });
+    // 5D1's real ally pursues the seed7397 kobold away from the waiting
+    // player. Keep the original short encounter/bonfire limits with a natural
+    // settlement scene instead of extending the wait budget.
+    const seed = ids.includes('settlement') ? 7399 : 7397;
+    game.startNewGame({ seed, mode: 'normal', ruleSet: 'extended', extensions: ids, initialCommands });
     game.animationEnabled = false; game.onConfirmRequest = () => true;
     return game;
 }
@@ -63,7 +85,7 @@ function pathToBonfire(game: Game, target: { x: number; y: number }) {
     throw new Error('The natural seed must expose a short walk to its bonfire');
 }
 
-afterEach(() => { vi.restoreAllMocks(); logger.reset(); logger.onDisturb = null; });
+afterEach(() => { for (const restore of restoreSpies.splice(0)) restore(); vi.restoreAllMocks(); logger.reset(); logger.onDisturb = null; });
 
 describe('3f independently installed combat combinations on a natural normal run', () => {
     it.each(subsets.map(ids => ({ ids, label: ids.join('+') })))(
@@ -76,7 +98,7 @@ describe('3f independently installed combat combinations on a natural normal run
             const inputs: { action: string; data?: unknown }[] = [];
             const expected: ReturnType<typeof mechanical>[] = [];
             const saves: ReturnType<Game['toSaveSnapshot']>[] = [];
-            const nativeMelee = vi.spyOn(game, 'resolveActorNativeMelee');
+            const { mock: nativeMelee, restore: restoreNativeMelee } = scopedMethodSpy(game, 'resolveActorNativeMelee');
             const play = (action: string, data?: unknown) => {
                 acknowledge(); const count = game.recordedInputEvents.length;
                 game.executeCommand(action, data);
@@ -149,7 +171,7 @@ describe('3f independently installed combat combinations on a natural normal run
             expect(playerResolutions.length).toBeGreaterThan(0);
             for (const index of playerResolutions) expect(readCreatureBirth(nativeMelee.mock.calls[index]![2])).toMatchObject({ creationReason: 'natural', initiallyHostile: true });
             expect(playerResolutions.some(index => nativeMelee.mock.results[index]!.value.damage > 0)).toBe(true);
-            nativeMelee.mockRestore();
+            restoreNativeMelee();
 
             const replay = createHeadlessGame(901, 'test');
             expect(replay.loadReplay(recording)).toBe(true); replay.animationEnabled = false;
@@ -173,7 +195,8 @@ describe('3f independently installed combat combinations on a natural normal run
             expect(mechanical(loaded)).toEqual(last(expected)); expect(loaded.exportRecording().events).toEqual(recording.events);
 
             const saved = json(loaded.toSaveSnapshot()), retainedPlayer = loaded.player, retainedRuntime = loaded.extensionRuntime!;
-            const unload = vi.spyOn(retainedRuntime, 'unload'), nextId = getNextEntityId(), random = rng.getState();
+            const { mock: unload } = scopedMethodSpy(retainedRuntime, 'unload');
+            const nextId = getNextEntityId(), random = rng.getState();
             const reject = (manifest: ExtensionManifest) => {
                 const corruptSave = json(saved), corruptReplay = json(recording);
                 corruptSave.extensions!.manifest = json(manifest); corruptReplay.extensions = json(manifest);

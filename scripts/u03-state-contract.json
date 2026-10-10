@@ -505,6 +505,6 @@
   },
   "worldWorkCommandEpoch": {
     "kind": "session",
-    "contract": "5A2: 会话句柄scope时期，非持久 ID。"
+    "contract": "5A2: 会话句柄scope时期，非持久 ID；新局/成功载入归零，句柄另绑定世界根身份，旧世界句柄不能复活。"
   }
 }

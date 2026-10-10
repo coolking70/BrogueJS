@@ -80,12 +80,25 @@ describe('crafting deterministic real-world projection', () => {
     g.player.loc.x=selected.at.x; g.player.loc.y=selected.at.y;
     expect(view(h).stations.find(s => s.interactableId===selected.interactableId)!.inReach).toBe(false);
   });
-  it('projects nearby owned node availability and never virtually regenerates it', () => {
+  it('projects elapsed regeneration purely with the existing live revision', () => {
+    const h = open(), g = worldHarnessGame(h), node = g.world5!.nodes.find(n => n.definitionId === 'crafting.wood-node')!;
+    g.monsters.length = 0; g.player.loc = {...node.at}; g.grid.getCell(node.at.x,node.at.y)!.hasMemory = true;
+    node.remaining = 3; node.reservedUnits = 2; node.lastSettledTick = 0; g.world5!.simulationTicks = 8000;
+    const ctx = context(h), entity = g.extensionRuntime!.worldWorkEntities().find(e => e.id === node.interactableId)!;
+    const before = {world: h.world5(), rng: rng.getState(), id: getNextEntityId()};
+    for (let i = 0; i < 20; i++) {
+      const result = projectCraftingView({...ctx,nearbyInteractables:[entity]});
+      if (!result.available) throw new Error('unavailable');
+      expect(result.nodes[0]).toMatchObject({remaining:7,available:5,nodeRevision:node.revision,canHarvest:true,reason:null});
+    }
+    expect({world: h.world5(), rng: rng.getState(), id: getNextEntityId()}).toEqual(before);
+  });
+  it('projects settled nearby owned node availability without committing regeneration', () => {
     const h = open(), g=worldHarnessGame(h), node=g.world5!.nodes.find(n=>n.definitionId==='crafting.wood-node')!;
     g.monsters.length=0;
     g.player.loc.x=node.at.x; g.player.loc.y=node.at.y;
     g.grid.getCell(node.at.x,node.at.y)!.hasMemory=true;
-    node.remaining=3; node.reservedUnits=2; node.lastSettledTick=0; g.world5!.simulationTicks=8000;
+    node.remaining=3; node.reservedUnits=2; node.lastSettledTick=8000; g.world5!.simulationTicks=8000;
     const ctx=context(h); const entity=g.extensionRuntime!.worldWorkEntities().find(e=>e.id===node.interactableId)!;
     const before=structuredClone(node);
     const result=projectCraftingView({...ctx,nearbyInteractables:[entity]});

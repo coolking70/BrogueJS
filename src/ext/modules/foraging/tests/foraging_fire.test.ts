@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TerrainType } from '../../../../engine/Map/Grid';
-import { spawnDungeonFeature, catalogFeature } from '../../../../engine/Map/DungeonFeature';
+import { stageDungeonFeature } from '../../../../test/support/dungeonFeatureScene';
 import { Random, rng } from '../../../../engine/Random';
 import { DF } from '../../../../engine/Map/DungeonFeatureCatalog';
 import { makeHarness, scene, addFood, game, observeFacts, knowledgeState, state, messages, waitTurns } from './mechanicsHelpers';
@@ -12,7 +12,7 @@ function floor(h: WorldHarness, kind: string, quantity = 1, at = { x: 13, y: 10 
 describe('foraging T-FIRE real environmental contacts', () => {
   it('spawn-fire uses the real outer DF drain and reveals no hidden kind on transform', () => {
     const o = observeFacts(), h = makeHarness(51020001, ['foraging'], [o.override]), g = scene(h), i = floor(h, 'mend', 2);
-    spawnDungeonFeature(g.grid, i.x, i.y, catalogFeature(DF.DF_PLAIN_FIRE), false);
+    stageDungeonFeature(g.grid, i.loc, DF.DF_PLAIN_FIRE);
     expect(i.worldItem!.definitionId).toBe('foraging.mend-roasted'); expect(i.quantity).toBe(2);
     expect(o.fire.filter(f => f.itemId === i.id)).toHaveLength(1);
     expect(o.fire[0]).toMatchObject({ cause: 'spawn-fire', result: 'transformed', location: 'floor' });
@@ -42,14 +42,14 @@ describe('foraging T-FIRE real environmental contacts', () => {
   });
   it.each([1, 2, 3])('visible blast stack %i selects its specified DF size and reveals before message rendering', quantity => {
     const o = observeFacts(), h = makeHarness(51020001, ['foraging'], [o.override]), g = scene(h), i = floor(h, 'blast', quantity);
-    spawnDungeonFeature(g.grid, i.x, i.y, catalogFeature(DF.DF_PLAIN_FIRE), false);
+    stageDungeonFeature(g.grid, i.loc, DF.DF_PLAIN_FIRE);
     expect(g.items).not.toContain(i); expect(o.fire[0]).toMatchObject({ quantity, result: 'exploded', explosion: quantity < 3 ? 'explosion-fire' : 'bloat-explosion' });
     expect(knowledgeState(g, 'foraging.blast')).toBe('known'); expect(messages()).toContain('爆燃菌炸开了！');
   });
   it('unseen floor explosion does not reveal the kind or log its name', () => {
     const o = observeFacts(), h = makeHarness(51020001, ['foraging'], [o.override]), g = scene(h), i = floor(h, 'blast', 1, { x: 60, y: 25 });
     g.grid.setTerrain(i.x, i.y, TerrainType.FLOOR); g.grid.getCell(i.x, i.y)!.isVisible = false;
-    spawnDungeonFeature(g.grid, i.x, i.y, catalogFeature(DF.DF_PLAIN_FIRE), false);
+    stageDungeonFeature(g.grid, i.loc, DF.DF_PLAIN_FIRE);
     expect(g.items).not.toContain(i); expect(o.fire[0]).toMatchObject({ result: 'exploded', visibleToPlayer: false });
     expect(knowledgeState(g, 'foraging.blast')).toBe('unknown'); expect(messages()).not.toContain('爆燃菌');
   });
@@ -61,7 +61,7 @@ describe('foraging T-FIRE real environmental contacts', () => {
   });
   it('same-cell blast chain consumes each physical stack once in deterministic entity order', () => {
     const o = observeFacts(), h = makeHarness(51020001, ['foraging'], [o.override]), g = scene(h), a = floor(h, 'blast', 3), b = floor(h, 'mend', 1, { x: 14, y: 10 }), c = floor(h, 'venom', 1, { x: 14, y: 10 });
-    spawnDungeonFeature(g.grid, a.x, a.y, catalogFeature(DF.DF_PLAIN_FIRE), false);
+    stageDungeonFeature(g.grid, a.loc, DF.DF_PLAIN_FIRE);
     expect(o.fire.filter(f => f.itemId === a.id)).toHaveLength(1);
     expect(o.fire.filter(f => [b.id, c.id].includes(f.itemId)).map(f => f.itemId)).toEqual([b.id, c.id]);
     expect(new Set(o.fire.map(f => f.itemId)).size).toBe(o.fire.length);

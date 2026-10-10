@@ -1,7 +1,9 @@
+import { installedOptionalModules } from './support/installedExtensions';
 import { describe, expect, it } from 'vitest';
 import { createWorldHarness, worldHarnessGame } from '../ext/testing/worldHarness';
 import { clearWorldCell } from '../engine/Core/WorldWorkWorld';
-const cases = [
+// Keep foundation fixtures and all original assertions; optional inputs follow installation.
+const cases = [...new Map([
   [],
   ['growth'],
   ['narrative'],
@@ -13,7 +15,11 @@ const cases = [
   ['craftskel', 'combat', 'giants'],
   ['craftskel', 'growth', 'narrative', 'combat', 'giants'],
   ['c5fixture']
-];
+].map(ids => {
+  const installed = new Set(installedOptionalModules(ids));
+  const modules = ids.filter(id => id === 'craftskel' || id === 'c5fixture' || installed.has(id));
+  return [modules.join(','), modules] as const;
+})).values()];
 describe('C5 real lifecycle combination smoke', () => {
   it.each(cases.map((modules) => ({ modules })))(
     '$modules new/play/save/load/replay/seek/continuation',

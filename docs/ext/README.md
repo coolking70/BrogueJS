@@ -1,6 +1,6 @@
-# 阶段5最新安排（2026-10-09）
+# 阶段5最新安排（2026-10-11）
 
-阶段5已推送：底座`35045d9`、giants2集成`2709250`、5Y`a4932d1`；5Y两轮审修完成，R1-F1经R2独立关闭，真实生产Worker功能及长期重复回包窄验通过，性能环境与边界见[报告](phase5y.report.md)。[5Z任务书](phase5z.task.md)已获Z1-A批准并开工；七项既有失败必须本步关闭，无法关闭逐项交用户裁定；浏览器/真机由Claude或用户手动验收，本地交付场景清单。七项既有门禁失败及未验覆盖见[5Z清单](phase5z-remainders.md)。5C2/5D3明确阶段5之后，5D3随narrative扩充；以[状态卡](commander-status.md)为准，覆盖下方历史排期。
+阶段5已推送：底座`35045d9`、giants2集成`2709250`、5Y`a4932d1`。5Z本地实现及独立R1已收口：未发现确证缺陷，无需修复或R2。维护者已核对候选源码/构建身份，准备提交推送；实际提交号以状态卡为准。七项基线失败与完整npm首次64项失败均有逐项单变量归因/修复/复测关闭，7个unhandled亦真实说明；首次完整npm exit1保留，没有新一次完整npm exit0。全部ext、实际drift、原正常128引擎路径通过；批准15物理删除布局全部实际完成（7单删/7单留/1全删），每行boundary/types/build/全部剩余ext及真实缺包存档录像拒绝完成，前七行按明确影响范围复测关闭并沿用未受影响部分，后八行当前源码完整首次通过。删除smoke只全开/全关，全删去重，29/29+正常128/128=157/157；额外历史124单列，另外112布局范围外未验。详见[作者报告](phase5z.report.md)和[人工清单](phase5z.manual-checklist.md)，浏览器/真机全部待人工，不称阶段5全面验收通过。本次有效独立审查1轮，无R2/R3；5C2/5D3在阶段5之后，5E2/5F不扩。以[状态卡](commander-status.md)和[遗留](phase5z-remainders.md)为准，覆盖下方历史排期。
 
 # 5E1维护者收口（2026-10-09，已发布 `a9f554b`）
 
@@ -60,6 +60,8 @@ dot 的 3g（foundation 4→5）尚未合入。完整 `npm test`、全部 `test:
 
 ## 当前政策与历史记录的关系
 
+> **5Z当前合同优先：** 本次按2026-10-09任务书及用户授权执行单变量反事实、保断言语义/门限/原捕获方法，不宽化守卫、exclude或skip。下方1e政策保留为历史，不能用于豁免本次要求。
+
 以下原则是维护者在阶段 1e 验收后确认的新政策，**覆盖阶段 0/1 的旧验收原则**。`AGENTS.md`、主线 `docs/`、本目录旧任务书与报告中关于 CE 优先、classic 逐字节不变、经典隔离/零调用、中性战斗对等、旧守卫不可调整、单变量反事实及旧 CE 门禁的要求，不再作为本分支的未来义务；冲突时以维护者最新要求及本页为准。主线自身的开发政策不由本次文档更新改变。
 
 历史阶段的实现、测试、门禁和验收结果仍是事实记录，不追改历史结果，也不因此承诺未来继续保持旧规则。模块生命周期、组件、命令边界、存档版本和确定性录像等仍有用的架构合同保留，详见 [架构](architecture.md)。阶段 2 设计已获四项 A 确认；2a0、2a1、2b已验收，2c+2d已联合验收。2e现已验收，本轮内容扩充状态见顶部；历史报告保留各步当时状态。
@@ -102,13 +104,13 @@ dot 的 3g（foundation 4→5）尚未合入。完整 `npm test`、全部 `test:
 - 完整 `npm test` 一次，使用仓库的套件入口和清单，不以定向测试拼接代替
 - 所有已安装模块子集的真实 Game 新局、游玩、save/load、逐条 replay、seek 与存档续录 smoke
 
-**物理删除副本改用 removal 档，不再重复完整 `npm test`。** 每个副本实际删去模块整个自有目录，清理 TS/Vite 缓存后运行 boundary、vue-tsc、build、全部剩余 `test:ext`，以及所有剩余模块子集的真实新局/save/load/replay/seek/续录 smoke，并验证要求缺失模块的旧档/录像被拒绝。模块自有测试只随实际所属目录删除；底座与保留模块的所有已登记测试仍由发现器校验，不做宽泛 exclude、额外 skip 或空壳替代。2a0/2a1 当时每个删除副本已跑完整 npm test 的历史结果不追改。
+**物理删除副本改用 removal 档，不再重复完整 `npm test`。** 每个副本实际删去模块整个自有目录，清理 TS/Vite 缓存后运行 boundary、vue-tsc、build、全部剩余 `test:ext`，以及剩余模块全开和全部不开的真实新局/save/load/replay/seek/续录 smoke（全删去重，删除脚本显式传入`--combinations endpoints`；正常独立smoke默认仍全子集），并验证要求缺失模块的旧档/录像被拒绝。模块自有测试只随实际所属目录删除；底座与保留模块的所有已登记测试仍由发现器校验，不做宽泛 exclude、额外 skip 或空壳替代。2a0/2a1 当时每个删除副本已跑完整 npm test 的历史结果不追改。
 
-`check:module-removal` 默认 `--profile=auto` 枚举全部目录保留子集：未删除目录的行跑 full，真实删除的行跑 removal。`--profile=full` 只选择未删除目录的正常副本；`--profile=removal` 只选择实际删除行，可配 `--retain=none` 或明确保留列表。与 profile 不匹配的 retain 会报错，不能把正常树标成 removal 来省掉完整测试。正常树门禁已另行执行时，用 `--profile=removal` 避免重复正常 full；该结果明确记录正常 full 是外部必要门禁而尚未由该次运行验证。
+`check:module-removal` 默认 `--profile=auto` 枚举全部目录保留子集：未删除目录的行跑 full，真实删除的行跑 removal。`--profile=full` 只选择未删除目录的正常副本；`--profile=removal` 只选择实际删除行，可配 `--retain=none` 或明确保留列表。与 profile 不匹配的 retain 会报错，不能把正常树标成 removal 来省掉完整测试。5Z的2026-10-10最新合同只授权15个明确retain（7单删/7单留/1全删），不得使用默认全部枚举；正常树门禁已另行执行时，用 `--profile=removal` 并显式 `--retain` 避免重复正常 full和范围外行；该结果明确记录正常 full 是外部必要门禁而尚未由该次运行验证。
 
-例：`NODE_OPTIONS=--max-old-space-size=3072 node scripts/check-module-removal.mjs --profile=removal --maxWorkers=2 --output=<仓库外新证据目录>`。`--plan` 只列逐行档位与命令，`--prepare-only` 只复制/删除/核对所有权，均不声称测试通过。`--engine-only` 只验证真实引擎，证据仍标浏览器未验证，生成构建的真实浏览器验收另列。所有长门禁统一 Node 24.19.0、3 GiB 堆与 2 workers；正常树及各副本保留各自当前输入 hash、真实命令、退出码、数量与耗时。
+单删growth行示例（其余14行按任务书§5明确保留集合逐行执行，不省略retain）：`NODE_OPTIONS=--max-old-space-size=3072 node scripts/check-module-removal.mjs --engine-only --profile=removal --maxWorkers=1 --retain=combat,crafting,foraging,giants,narrative,settlement --output=<本行仓外新目录>`。`--plan` 只列逐行档位与命令，`--prepare-only` 只复制/删除/核对所有权，均不声称测试通过。`--engine-only` 只验证真实引擎，证据仍标浏览器未验证，生成构建的真实浏览器验收另列。5Z长门禁按最新合同统一 Node 24.19.0、3 GiB 堆与默认单worker（历史各步workers按原报告）；正常树及各副本保留各自当前输入 hash、真实命令、退出码、数量与耗时。
 
-不要求 CE 参照源码，不运行 `ce:fetch`、`test:full` 或 `test:gen`；正常树完整 `npm test` 保持仓库默认行为，已有 CE 缓存若被自动使用，无需禁用，也保留到删除副本。没有 CE 源码时由测试原有机制显式跳过 CE 依赖用例，不人为隐藏缓存制造跳过；报告列明实际通过、跳过、todo 与失败结果。改地图生成时另跑 `npm run test:drift`，允许按新设计需要重录基线，报告变更原因及结果；不再要求旧 CE 对齐或单变量反事实。2b 若改生成，仍须按实际影响追加 drift，不能沿用 2a1 的免跑理由。
+不要求 CE 参照源码，不运行 `ce:fetch`、`test:full` 或 `test:gen`；正常树完整 `npm test` 保持仓库默认行为，已有 CE 缓存若被自动使用，无需禁用，也保留到删除副本。没有 CE 源码时由测试原有机制显式跳过 CE 依赖用例，不人为隐藏缓存制造跳过；报告列明实际通过、跳过、todo 与失败结果。改地图生成时另跑 `npm run test:drift`，生成基线/黄金 trace 的变化须先单变量归因，再沿原捕获方法重录并逐叶登记，见 `docs/testing.md` §3；规则以 CE 执行路径为规格，不追求同种子逐骰一致。2b 若改生成，仍须按实际影响追加 drift，不能沿用 2a1 的免跑理由。
 
 ## 阶段
 

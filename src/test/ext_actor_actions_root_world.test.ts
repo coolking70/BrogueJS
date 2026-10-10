@@ -1,3 +1,4 @@
+import { installedOptionalModules } from './support/installedExtensions';
 import { describe, expect, it, vi } from 'vitest';
 import { workGame } from './support/worldWorkFixture';
 import { createHeadlessGame } from './harness';
@@ -140,10 +141,11 @@ describe('C5 neutral root and recorded auto_work interruption', () => {
 it('combat-only load rejects a foundation bundle before retiring the current Game', async () => {
   const { createActorActionBundle } = await import('../engine/Core/ActorActionScheduler');
   const g = createHeadlessGame(51020001, 'wizard');
-  g.startNewGame({ seed: 51020001, mode: 'wizard', ruleSet: 'extended', extensions: ['combat'] });
+  g.startNewGame({ seed: 51020001, mode: 'wizard', ruleSet: 'extended', extensions: installedOptionalModules(['combat']) });
   const old = g.player,
     s = g.toSnapshot();
-  s.run.actorActions!.nextActionId = 2;
+  s.run.actorActions ??= { schema: 1, nextActionId: 1, bundles: [] };
+  s.run.actorActions.nextActionId = 2;
   s.run.actorActions!.bundles.push(
     createActorActionBundle({
       owner: 'foundation',

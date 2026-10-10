@@ -49,3 +49,21 @@ export function bodyFixtureDescriptor(): ModuleDescriptor {
         ...structuredClone(declarations)});
     return {id:owner,version:'1.0.0',foundation:FOUNDATION_PROTOCOL,rules,create:module,labelKey:`ext.${owner}.name`};
 }
+
+/** The same independent executable fixture, with a real D3 generation chamber
+ * for foundation region-protection tests when the optional giants pack is gone. */
+export function bodyArenaFixtureDescriptor(): ModuleDescriptor {
+    const base = bodyFixtureDescriptor(), module = base.create();
+    const generationContributions: import('../../ext/generation').GenerationContribution[] = [{
+        id: 'body-fixture.arena', priority: 0, minDepth: 3, maxDepth: 3, chance: 100,
+        width: 20, height: 14, entranceWidth: 3, candidateLimit: 16,
+        formId: 'body-fixture.ridgeback', guard: 'return-to-spawn'
+    }];
+    const rules = { ...base.rules!, fingerprint: extensionDataFingerprint({
+        nativeForms: module.nativeForms!, nativeBodies: module.nativeBodies!,
+        bodyTransitions: module.bodyTransitions!, generationContributions
+    }) };
+    return { ...base, rules, create: () => ({
+        ...base.create(), rules, generationContributions: structuredClone(generationContributions)
+    }) };
+}

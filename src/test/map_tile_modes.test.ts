@@ -98,7 +98,9 @@ describe('Independent map renderer catalog and knowledge boundaries',()=>{
  it('retains engine appearance and command pipeline; maps only at renderer boundaries',()=>{
   const src=readFileSync(new URL('../components/GameCanvas.vue',import.meta.url),'utf8');
   for(const marker of ['terrainSemantic(cell!, visual','rememberedItemSemantic(cell','itemSemantic(item','monsterSemantic(m','playerSemantic(playerVisual.char)','projectileSemantic(boltFrame.char)','floatingHanzi(ft.text)','watch(mapMode'])expect(src).toContain(marker);
-  expect(src).toContain('game.handlePlayerAction(action, data)');
+  expect(src).toContain('installCanvasGameInput(game, () => props.displayModalOpen)');
+  const binding=readFileSync(new URL('../ui/canvasGameInput.ts',import.meta.url),'utf8');
+  expect(binding).toContain('game.handlePlayerAction(action, data)');
  });
 });
 
