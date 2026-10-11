@@ -1,5 +1,18 @@
 {
   "test": [
+    "tests/combat2_body.test.ts",
+    "tests/combat2_combinations.test.ts",
+    "tests/combat2_content.test.ts",
+    "tests/combat2_defense_cancel.test.ts",
+    "tests/combat2_evasion.test.ts",
+    "tests/combat2_growth.test.ts",
+    "tests/combat2_links.test.ts",
+    "tests/combat2_natural.test.ts",
+    "tests/combat2_persistence.test.ts",
+    "tests/combat2_revisit.test.ts",
+    "tests/combat2_runtime.test.ts",
+    "tests/combat2_sdk_repro.test.ts",
+    "tests/combat2_ui.test.ts",
     "tests/combat_adapters.test.ts",
     "tests/combat_animated_defense.test.ts",
     "tests/combat_body_transition_facts.test.ts",

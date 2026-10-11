@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { combatDirections } from './view';
 import type { CombatUiAction } from './view';
 import type { Facing } from '../types';
-defineProps<{ attack: CombatUiAction; facing: Facing | null; unparryableWarning?: boolean }>();
+import { combatAttackPresentation } from './attackPresentation';
+const props = defineProps<{ attack: CombatUiAction; facing: Facing | null; unparryableWarning?: boolean }>();
+const presentation = computed(() => combatAttackPresentation(props.attack.id));
 </script>
 <template>
   <section class="combat-attack-dialog" data-testid="combat-attack-dialog" :data-combat-step="facing ? 'confirm' : 'direction'">
@@ -20,8 +23,17 @@ defineProps<{ attack: CombatUiAction; facing: Facing | null; unparryableWarning?
     <p v-if="facing && attack.id === 'parry' && unparryableWarning" class="combat-warning" data-testid="combat-parry-advisory">{{ $t('ext.combat.ui.parry_unparryable_warning') }}</p>
     <p v-if="attack.cost !== undefined" class="combat-cost">{{ $t('ext.combat.ui.stamina_cost', { cost: attack.cost }) }}</p>
     <p v-if="attack.windowTicks !== undefined && attack.recoveryTicks !== undefined" class="combat-timing">{{ $t('ext.combat.ui.defense_timing', { window: attack.windowTicks, recovery: attack.recoveryTicks }) }}</p>
+    <p v-if="presentation" class="combat-timing" data-testid="combat-attack-details">{{ $t('ext.combat.ui.attack_details', { windup: presentation.windup, delays: presentation.delays.join($t('ext.combat.ui.segment_separator')), recovery: presentation.recovery, total: presentation.total }) }}</p>
     <p v-if="attack.id === 'parry'" class="combat-note">{{ $t('ext.combat.ui.parry_hint') }}</p>
-    <p v-else class="combat-note">{{ $t(attack.id === 'dodge' ? 'ext.combat.ui.dodge_hint' : 'ext.combat.ui.locked_world_hint') }}</p>
+    <p v-else class="combat-note" data-testid="combat-attack-hint">
+      <template v-if="attack.id === 'combat.anchor-break'">{{ $t('ext.combat.attack.anchor-break.hint') }}</template>
+      <template v-else-if="attack.id === 'combat.returning-sweep'">{{ $t('ext.combat.attack.returning-sweep.hint') }}</template>
+      <template v-else-if="attack.id === 'combat.advancing-point'">{{ $t('ext.combat.attack.advancing-point.hint') }}</template>
+      <template v-else-if="attack.id === 'combat.cast-echo'">{{ $t('ext.combat.attack.cast-echo.hint') }}</template>
+      <template v-else-if="attack.id === 'combat.answering-edge'">{{ $t('ext.combat.attack.answering-edge.hint') }}</template>
+      <template v-else>{{ $t(attack.id === 'dodge' ? 'ext.combat.ui.dodge_hint' : 'ext.combat.ui.locked_world_hint') }}</template>
+    </p>
+    <p v-if="attack.id === 'parry'" class="combat-note" data-testid="combat-manual-counter">{{ $t('ext.combat.ui.manual_counter_hint') }}</p>
     <footer>
       <button v-if="facing" type="button" data-dialog-action="back">{{ $t('ext.combat.ui.back') }}</button>
       <button v-if="facing && attack.id === 'parry'" type="button" data-dialog-action="choice:confirm">{{ $t('ext.combat.ui.perform_parry') }}</button>

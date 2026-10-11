@@ -104,8 +104,8 @@ describe('combat published part-break provider', () => {
             poise: 3, poiseRecoveryRemainder: 0, poiseRecoveryDelayRemaining: 40 }] });
     });
     it.each([
-        [actor(), 'combat.fan-edge'], [actor({ monsterId: 'unmapped-monster' }), 'fixture.profile'],
-        [actor({ player: true, monsterId: 'rat' }), 'fixture.profile'],
+        [actor(), 'combat.fan-edge'], [actor({ monsterId: 'unmapped-monster' }), definitions().playerProfileId],
+        [actor({ player: true, monsterId: 'rat' }), definitions().playerProfileId],
     ])('creates a complete row from the appropriate resource profile %j', (target, profileId) => {
         const result = apply(({...initialProductionCombatState(),actorActions:createActorActionsRoot()}), request(), target as ActorFacts).current();
         expect(result.actors).toEqual([{ actorId: 10, profileId,

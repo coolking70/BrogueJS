@@ -90,5 +90,18 @@
   "ext.combat.ui.bonfire_busy": "当前动作尚未结束，不能休息",
   "ext.combat.ui.bonfire_gate": "其他交互尚未结束，不能休息",
   "ext.combat.ui.bonfire_distance": "需要靠近并看见篝火",
-  "ext.combat.ui.bonfire_unavailable": "当前不能在此休息"
+  "ext.combat.ui.bonfire_unavailable": "当前不能在此休息",
+  "ext.combat.attack.anchor-break.name": "沉锚击",
+  "ext.combat.attack.anchor-break.hint": "蓄力后打击前方扇面与中线远格，造成较高韧性冲击。不可弹反，可闪避；生命伤害沿用原生攻击。",
+  "ext.combat.attack.returning-sweep.name": "回潮扫",
+  "ext.combat.attack.returning-sweep.hint": "先扫前方，再预警后方并扫回。每段分别锁定地面，两段均可弹反、可闪避；后段不会追踪目标。",
+  "ext.combat.attack.advancing-point.name": "逐隙刺",
+  "ext.combat.attack.advancing-point.hint": "危险格沿起手方向逐段延伸到一、二、三格，使用者留在原地。每段重新预警，均可弹反、可闪避。",
+  "ext.combat.attack.cast-echo.name": "掷影击",
+  "ext.combat.attack.cast-echo.hint": "打击朝向上的第二、第三格，沿用原生物理接触规则。没有弹体，不消耗弹药，不在第一处生物碰撞停止；不可弹反，可闪避。",
+  "ext.combat.attack.answering-edge.name": "应隙斩",
+  "ext.combat.attack.answering-edge.hint": "短前摇打击正前一格，可独立使用，也可在弹反恢复后手动衔接。另付体力，不自动反击，不保证命中；可弹反、可闪避。",
+  "ext.combat.ui.attack_details": "前摇 {{windup}} 时间刻 · 段间隔 {{delays}} · 恢复 {{recovery}} 时间刻 · 共 {{total}} 时间刻",
+  "ext.combat.ui.manual_counter_hint": "弹反成功只消耗一次窗口并冲击对方韧性。恢复后可手动选择应隙斩，仍须另付体力。",
+  "ext.combat.ui.segment_separator": "、"
 }
