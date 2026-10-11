@@ -11,7 +11,7 @@
 | `src/ext/modules/narrative/data/definitions.json` | 唯一机械内容包：预算、标记、计数器、NPC、放置、对话图、日志定义、事件与触发器 |
 | `src/ext/modules/narrative/locales/zh_CN.json` | 扁平的 `ext.narrative.*` 文本键到中文字符串映射；包括名字、对白、选项、禁用原因、日志与立绘替代文本 |
 | `src/ext/modules/narrative/data/portraits.json` | 独立显示清单：立绘 ID、本地图片相对路径、尺寸、占位字形 |
-| `src/ext/modules/narrative/assets/portraits/` | 新增图片的实际目录；当前包含三位NPC的原创GPT生成PNG立绘 |
+| `src/ext/modules/narrative/assets/portraits/` | 新增图片的实际目录；八位NPC的48×64共享调色板像素立绘目录；实际交付/缺项以 narrative2 报告为准 |
 | `src/ext/modules/narrative/schema.ts`、`types.ts` | 结构、范围、引用、退出路径、循环与版本校验的实际依据 |
 | `conditions.ts`、`effects.ts`、`triggers.ts`、`placement.ts` | 位于同一模块目录；条件、效果、事件顺序、收据及放置语义 |
 | `state.ts`、`input.ts`、`sessions.ts` | 持久状态与命令合同；内容作者不要手改存档或自行造会话 ID |
@@ -30,12 +30,12 @@
 |---|---|---|
 | `definitions.json.schema` | `1` | 数据结构版本 |
 | `moduleId` | `"narrative"` | 稳定模块 ID |
-| `moduleVersion`、`rulesVersion` | 均为 `"1.4.0"` | 当前加载器只接受此精确值，并非任意 semver |
+| `moduleVersion`、`rulesVersion` | 均为 `"1.5.0"` | 当前加载器只接受此精确值，并非任意 semver |
 | `stateVersion` | `4` | 模块私有持久状态 `schema: 4` |
 | `inputVersion` | `2` | open/choose/close 的 payload 必须带 `v: 2` |
 | `descriptor.ts.foundation` | `13` | 底座要求；不是内容开关 |
 | `portraits.json.schema` | `1` | 显示清单结构 |
-| `portraits.json.displayVersion` | `"1.1.0"` | 独立显示版本，格式为三段数字 |
+| `portraits.json.displayVersion` | `"1.3.0"` | 独立显示版本，格式为三段数字 |
 
 模块持久状态保存在 `extensions.modules.narrative`，不会另建顶层 narrative 存档；包括 flags/counters、日志、触发/奖励/放置收据、NPC 绑定和当前会话。内容定义不写入该状态来替代版本校验。
 
@@ -57,9 +57,42 @@
 - `bell.verdict` 的值为 unresolved/toll/hush，`wick.verdict` 为 unresolved/keep/release；结局生成独立日志并发出各自 settled 事件，触发各自一次性奖励收据。已结局时开场改为可选回顾路径，不再次发奖
 - 缄钟匠的残页旁支以 `archive.read=true` 为条件；未读时禁用并解释原因，叙事单独启用仍可走全部两个结局
 - 3g新增 `bonfire.rested`：玩家第一次真正完成篝火休息后置为true，解锁听烬人开场的“灰烬余温”旁支。不会自动打开对话、发消息、日志或奖励；未启用combat时旁支保持隐藏
-- 三张立绘清单绑定真实PNG，288×384、contain、bottom-center；UI依照原72×96/48×64展示合同缩放。缺图/失败降级仍保留，但不是本轮实际资产的替代
+- 八张立绘清单统一48×64、contain、bottom-center；三位原角色择取固定来源的像素成品，五张新人沿同一共享32色管线生成。桌面240×320、≤700px72×96、≤350px48×64，立绘页最大384px。缺图/失败降级仍保留，但不能代替实际资产交付；见§10.1及本轮报告。
 
 这些都是文件里实际保存的样例，不是省略字段时由加载器补出的默认值。
+
+### 2.2.1 narrative2 八人索引与五人完整配置入口
+
+| NPC ID / 姓名 | 放置深度 | 对话 / flag | 结局 | rewardId |
+|---|---|---|---|---|
+| archive.keeper / 档案守卫 | D1 | archive.greeting / archive.read | 阅读残页 | archive.read |
+| bell.mender / 缄钟匠 | D1–2 | bell.greeting / bell.verdict | toll / hush | bell.settled |
+| wick.listener / 听烬人 | D1–2 | wick.greeting / wick.verdict | keep / release | wick.settled |
+| cord.mender / 缝绳人 | D2–3 | cord.mender.greeting / cord.mender.verdict | splice / sever | cord.settled |
+| cistern.listener / 听水员 | D3–4 | cistern.listener.greeting / cistern.listener.verdict | mark / erase | cistern.settled |
+| bone.clerk / 拾骨书记 | D4–6 | bone.clerk.greeting / bone.clerk.verdict | blank / number | bone.settled |
+| salt.warden / 盐灯看守 | D6–8 | salt.warden.greeting / salt.warden.verdict | share / keep | salt.settled |
+| letter.carrier / 末班递信人 | D8–10 | letter.carrier.greeting / letter.carrier.verdict | return / wait | letter.settled |
+
+五新人每人九节点：hello→account→detail/clue→account→decision→a/b；再次开口仅显示自己结局的recall-a或recall-b。各节点都有恒真、无效果、next:null的leave项；detail/clue返回不发奖。结局按set-flag→journal→emit-story执行，独立once-per-run trigger尝试可选奖励。日志ID为 `${npcId}.${verdict}.note`；收据ID为 `${npcId}.reward.receipt`。两结局互斥，五个verdict初始均为unresolved。
+
+五人placement ID为 `${npcId}.first`，maxPerRun/maxPerDepth/minStairDistance=1，maxEntranceDistance=8，onNoSpace=defer。驻点是生产入口附近合法可见安全FLOOR，不要求水池/骨堆/灯具；无位只在区间内后续首访层重试，不保证每seed出现。它们是可穿行、非Creature、固定交互对象；对白道具不改背包、照明或地形。
+
+旁支条件分别为archive.read=true、cord.mender.verdict=splice、archive.read=true、cistern.listener.verdict=mark、bone.clerk.verdict=blank；没有旁支也能独立完成任一结局。所有五人的姓名、描述、九节点、选项、禁用原因、两日志与alt在locales/zh_CN.json的完整字面键 `ext.narrative.n2.<npcId>.*` 下。
+
+离线转录工具 `tools/compile_narrative2.mjs` 导出纯装配函数，接受已解析的任务包内容行与干净基线JSON，生成四份JSON；它不自带命令行或文档提取步骤。拒绝重复追加，不是生产第二套解释器。当前静态包总计8 NPC / 59节点 / 15日志 / 9 flags / 8 storyEvents / 9 triggers。旧七类机械数组前缀与config预算不变。
+
+### 2.2.2 招募预留表：尚未实施5D3
+
+`data/recruitment.json`为schema1、targetPhase=5D3的独立作者静态表。`recruitment.ts`只供测试/内容工具严格校验并克隆深冻结；descriptor/module/view及任何生产入口均不读取。该表不进入当前机械指纹、存档或投影。
+
+- cord.mender：候选，资格提示splice
+- cistern.listener：候选，资格提示mark
+- bone.clerk：候选，资格提示blank
+- salt.warden：不可招募，eligibility=null
+- letter.carrier：候选，资格提示return
+
+true只代表未来可设计招募，不是加入营地、跟随或已招募事实。旧三人缺行表示未定义，不默认true；没有岗位、居民ID、成本或按钮。未来5D3若消费本表，须另定跨模块DTO、消费时机与规则身份/版本，不把它当作已冻结SDK。
 
 ### 2.3 所有定义共用的约束
 
@@ -249,7 +282,7 @@ repeat 完整变体：
 
 底座先为一个共享根fact及按模块ID排序的消费者派生范围做预算，再统一准备和提交；narrative不自行占用其他消费者的范围。combat订阅派生预算为0。entered-level改用 `foundation.story.v1`；只有可能直接发出story的入口trigger才预留 `eventsPerCommand` 的有界派生区间。直接玩家交谈命令继续由本模块按原合同提交连续的本地因果范围。
 
-narrative缺席，或内容包没有combat订阅时，不注册combat消费者，也不为叙事保留历史事件队列。combat缺席时既有NPC、对话和日志照常工作，篝火旁支保持隐藏，不补发旧事实。3g精确要求module/rules 1.4.0、state 4和foundation 5；旧版本或规则指纹不匹配直接拒绝，不迁移。
+narrative缺席，或内容包没有combat订阅时，不注册combat消费者，也不为叙事保留历史事件队列。combat缺席时既有NPC、对话和日志照常工作，篝火旁支保持隐藏，不补发旧事实。3g最初要求module/rules 1.4.0、state 4和foundation 5；当前内容批次为module/rules 1.5.0、state 4、foundation 13。旧版本或规则指纹不匹配直接拒绝，不迁移。
 
 ## 7. growth 可选联动
 
@@ -284,6 +317,22 @@ narrative缺席，或内容包没有combat订阅时，不注册combat消费者�
 4. 新建 growth+narrative 局核对当条命令到账，再验证 narrative-only 的 skip 路径。修改 growth 包会改变它自己的规则指纹，不能拿旧档热补
 
 narrative 不导入 growth 文件。以上仅是内容作者配置两份可组合包的说明；只写 narrative 内容时不必安装、开启或修改 growth。
+
+### 7.3 narrative2未来维护者报价示例（未实施）
+
+五新人当前只配置rewardId与唯一收据，不含XP数额；生产narrative-only为absent，growth+narrative默认为disabled，开启来源但缺报价为unsupported-key。均记录skipped，故事/日志照常完成，以后不补发。测试provider的applied只证明事务，不证明真实growth已配置。
+
+未来growth所有者可在另一个获准任务中添加以下建议（各5 XP，总上限25 XP，两结局同额）：
+
+| id | amount | 建议reasonKey（须另加growth locale） |
+|---|---:|---|
+| cord.settled | 5 | ext.growth.story.cord_settled |
+| cistern.settled | 5 | ext.growth.story.cistern_settled |
+| bone.settled | 5 | ext.growth.story.bone_settled |
+| salt.settled | 5 | ext.growth.story.salt_settled |
+| letter.settled | 5 | ext.growth.story.letter_settled |
+
+真实支付还需开启growth的story来源，核对其schema、升级growth规则身份并创建新局验证。narrative不得冒用bell/wick报价，不直接grantReward/写XP，不新增金币或物品provider。此表是未来配置建议，本轮没有修改growth。
 
 ## 8. 预算与失败定位
 
@@ -441,6 +490,16 @@ Vite 用模块目录内的静态白名单收集资源；不把 NPC ID 拼成请�
 
 只替换既有 ID 下的图像/清单显示信息时，升 displayVersion 即可，不需为图片本身改 module/rules/state/input。新增实际图片后还要检查桌面、320/390 宽、横竖屏、长名字/正文，以及主动制造图片失败时仍可离开对话；不要把引擎测试当作这些像素检查的证据。
 
+### 10.1 narrative2固定像素规范与替换步骤
+
+固定来源 `93523fc596b173396a0d526ab2073b327ff7cf3e` 的archive-keeper、bell-mender、wick-listener三张PNG及palette.json必须原字节保留；32个不透明色+索引0透明，本批不扩色。生成工具实际标识、提示词、原图/成品散列、尝试与视觉证据见[narrative2报告](narrative2.report.md#10-美术)。
+
+五新人文件名为cord-mender.png、cistern-listener.png、bone-clerk.png、salt-warden.png、letter-carrier.png。生成源必须1024×1536、纯洋红#FF00FF背景，固定crop=(0,171,1024,1536)，键控阈值60及min(r,b)−g>30；预乘alpha后BOX降至48×64，alpha128二值化，删断开≤2像素小块，再按固定palette做L1最近色无抖动。不得单人改裁切、人工描补或重新median-cut色表。
+
+模块自有 `tools/pixelize_portraits.py` 的固定palette入口处理仓外源图并输出仓外候选区；先运行该工具的--help核对精确参数，按报告中的实际调用复现。需要Python/Pillow/numpy，不增加npm依赖。 本轮入口：`python src/ext/modules/narrative/tools/pixelize_portraits.py --new-sources <cord> <cistern> <bone> <salt> <letter> --palette src/ext/modules/narrative/assets/portraits/palette.json --out /tmp/narrative2-art/candidates --evidence /tmp/narrative2-art/evidence`。八图均须P模式PNG、位深4或8、PLTE≤33、无半透明/洋红/文本元数据；单图≤4096 B、五新≤20KiB、八图≤32KiB。四角透明；顶行/左右上80%不透明≤2；头顶有效行3–12、全套极差≤4；覆盖35%–75%；边界对#11130f对比度中位数≥1.5。
+
+1×/5×/8×最近邻深底联系表逐图看脸/双手/道具、朝右/左上暖光、轮廓/像素密度、主色、无文字及无火光。全套数值通过不能替代视觉验收。五图齐全且逐图通过才整批安装；否则保留缺图降级并明确美术blocked，不发布半套或给资产测试加skip。UI img使用crisp-edges/pixelated、纯深底，390/DPR1的1.5倍显示需实测，不宣称逻辑像素等宽。
+
 ## 11. 作者自检与交付
 
 加载器入口是 `loadNarrativePack(definitions, portraits, locales)`（`schema.ts`），成功返回深冻结隔离包，失败抛带路径的 `NarrativeError`；`validateNarrativePack` 是同一入口别名，不返回宽松 boolean。纯函数执行样例可用 `initialNarrativeState`、`planNarrativeChoice`、`planNarrativeFact`；这些只是内容工具，不能代替真实 Game 目标资格/命令/存档/录像测试。
@@ -453,6 +512,6 @@ NODE_OPTIONS=--max-old-space-size=3072 npx vitest run src/ext/modules/narrative/
 
 此命令加载实际默认包并检查内核，不是完整交付门禁。新增分支/循环/联动内容还应加针对性用例，验证选择成功和失败、返回入口、hide/disable、计数边界、事件顺序、重复事实、收据以及 growth 缺席/关闭/未知报价/成功四条路径。测试归 narrative 自有目录并登记到 `test-suites.json`；不要跨模块导入 growth 私有代码，可通过底座发现式集成夹具验证组合。
 
-交付时按 README 当前 full 档，在同一最终正常树完整运行 boundary、vue-tsc、build、全部 test:ext、完整 npm test 以及所有已安装模块子集真实 Game 新局/游玩/save-load/逐条 replay/seek/续录 smoke。需要独立性验收时另在真实删除副本跑 removal 档，不能用关闭开关冒充删除。正常树完整 npm test 与删除副本 removal 不互相替代。
+narrative2按其任务包§9定向门禁：boundary、vue-tsc、build、自有全部测试、九份直接受影响回归、实际test:drift、精确只删narrative的--plan与diff检查；自有固定自然trace登记drift。完整npm/test:ext、128组合与实际删除由维护者对新候选另做集成验收，不以历史5Z结果代替。常规后续交付仍按当次授权与README门禁执行。
 
 除§6.3首休订阅外，本页其余示例是教学片段，未写入默认生产数据；片段合并后的 schema 和纯内核验证结果由本轮报告登记。所有实际门禁、浏览器覆盖和未覆盖项以当轮报告为准，不从本手册的操作说明推断已经通过。

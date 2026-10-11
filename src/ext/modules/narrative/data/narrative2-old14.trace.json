@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "baseline": "59b9ba691daf66819eeea0299a0539f3641ad208",
+  "purpose": "Genuine narrative 1.4.0 input rejection; captured via fresh public startNewGame + wait, not a mutated manifest.",
+  "sha256": "356aa4b4b19d2e82d5e703aad9c7200eb5ffa75a0c4548a2ea8dd7234753bb6b",
+  "recording": {
+    "version": 4,
+    "recordedAt": 1791662074586,
+    "seed": "1",
+    "mode": "wizard",
+    "initialLevel": {
+      "kind": "dungeon",
+      "depth": 1
+    },
+    "extensions": {
+      "schema": 1,
+      "foundation": 13,
+      "modules": [
+        {
+          "id": "narrative",
+          "version": "1.4.0",
+          "rules": {
+            "schema": 1,
+            "version": "1.4.0",
+            "fingerprint": "sha256:9ea296bd831838437026abda8ffec6bacf9f4b2edd104e6667eeec3b7b7067e8"
+          }
+        }
+      ]
+    },
+    "codec": {
+      "wholeRun": 6,
+      "foundation": 13,
+      "origin": 2
+    },
+    "digestAlgorithm": "sha256-c5-merkle-v1",
+    "digestChunk": 256,
+    "checkpointPeriod": 2048,
+    "initialDigest": {
+      "domains": {
+        "native": "7ef98590817372229e48fc7dc7f622f4dffe7778bea96ae328b9918c74a2f6e3",
+        "extensions": "146cc6d5ea0074efaa0aacb9d59f4fe8dbb0b23ac2a95b55f137b4009aa6e9d9",
+        "world5": "12d261a5676b74aaf5d71e57bff0dbfe3473d4c4120551927d1d70245ca63449",
+        "actorActions": "9f1c9dc4d52ec4c60fe72bcc1de71b66536be51dcd27556f1fa4142b0ddf0306",
+        "knowledge": "fd73139b0061e837bdeeca95272d3839276d378977cbf8ec531559a59e4a1a5f",
+        "random": "77157d94c4927cec0a54f9f53db911471ad317d05af4a9a4bd09e167f3b58f34"
+      },
+      "root": "684c91593e11dd0546a7193f24ee1b106819768231b86ae809e2f3a5b7142ab9"
+    },
+    "events": [
+      {
+        "index": 0,
+        "tick": 100,
+        "turn": 1,
+        "levelRef": {
+          "kind": "dungeon",
+          "depth": 1
+        },
+        "simulationTicks": null,
+        "player": {
+          "x": 32,
+          "y": 26
+        },
+        "hp": 999,
+        "inventoryStamp": "c4eefa40159c9c94",
+        "rng": {
+          "version": 2,
+          "algorithm": "brogue-web-ranval32-uint64-level-v2",
+          "streams": [
+            {
+              "a": 3461082154,
+              "b": 750321241,
+              "c": 3767038554,
+              "d": 941060455
+            },
+            {
+              "a": 2099659151,
+              "b": 1150075135,
+              "c": 3012474754,
+              "d": 2027464969
+            }
+          ],
+          "currentRNG": 0,
+          "randomNumbersGenerated": 18840,
+          "cosmeticNumbersGenerated": 162
+        },
+        "terminal": null,
+        "checkpoint": {
+          "domains": {
+            "extensions": "146cc6d5ea0074efaa0aacb9d59f4fe8dbb0b23ac2a95b55f137b4009aa6e9d9",
+            "world5": "12d261a5676b74aaf5d71e57bff0dbfe3473d4c4120551927d1d70245ca63449",
+            "actorActions": "9f1c9dc4d52ec4c60fe72bcc1de71b66536be51dcd27556f1fa4142b0ddf0306"
+          },
+          "root": "b7e244afccd53ec3aec6b76b147ee9a77ac4ec4532986dc05fb2dbcd7316417f"
+        },
+        "fullCheckpoint": {
+          "domains": {
+            "native": "f5cf537509b1fdc82417135c1fdbe7bd106cb3c7cffb2d5cf1df69bbba8c0f65",
+            "extensions": "146cc6d5ea0074efaa0aacb9d59f4fe8dbb0b23ac2a95b55f137b4009aa6e9d9",
+            "world5": "12d261a5676b74aaf5d71e57bff0dbfe3473d4c4120551927d1d70245ca63449",
+            "actorActions": "9f1c9dc4d52ec4c60fe72bcc1de71b66536be51dcd27556f1fa4142b0ddf0306",
+            "knowledge": "2b2c8cde17b9adbd67777eccc7080285789ede0f93ae87d96b32302e2cab65cf",
+            "random": "aee20999d1642558f2cd48540314cdbc6d57423992af292bb902b6b33064147f"
+          },
+          "root": "f7d4bad096c393c0bf3fe821291c985f328c545e68a2f21053c675a7e60dcf94"
+        },
+        "chainDigest": "721a6934789ab827e6c5102a7e0e940e8dc12d5385d53921826856d2ae3b2cca",
+        "action": "wait",
+        "data": null,
+        "decisions": []
+      }
+    ],
+    "snapshots": []
+  }
+}

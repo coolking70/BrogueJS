@@ -1,0 +1,15 @@
+diff --git a/src/engine/Core/Game.ts b/src/engine/Core/Game.ts
+--- a/src/engine/Core/Game.ts
++++ b/src/engine/Core/Game.ts
+@@ -6501,6 +6501,10 @@
+     /** Do not expose frame-dependent visibility to AI, targeting or snapshots. */
+     private finishTransientDisplay(discardQueued = false): void {
+-        if (!this.activeFlares?.length && !this.flareLightMap) return;
++        if (!this.activeFlares?.length && !this.flareLightMap) {
++            // Ordinary FOV must not depend on whether save/load retired a flare.
++            this.updateTransientVisibility(null, false);
++            return;
++        }
+         this.prepareFlareKnowledge();
+         // Commands cancel the displayed frame, but a not-yet-presented event
+         // remains queued for the animation pump (which checks turn expiry).

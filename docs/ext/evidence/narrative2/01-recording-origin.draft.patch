@@ -1,0 +1,32 @@
+diff --git a/src/engine/Core/Game.ts b/src/engine/Core/Game.ts
+--- a/src/engine/Core/Game.ts
++++ b/src/engine/Core/Game.ts
+@@ -3918,5 +3918,15 @@
+     private advanceCommand(execution: CommandExecution, answer?: boolean): void {
+         const state = recordingState(this);
++        // Acceptance draft: conservative, complete projection comparison. Replace
++        // with an audited transaction receipt before adopting on a hot path.
++        const rollbackSignature = (): string => {
++            const { savedAt: _savedAt, ...world } = this.projectWholeRun();
++            return canonical({ world, input: this.recordingInputState() });
++        };
++        let beforeRollback: string | null = null;
++        if (execution.action === 'ext:command' && this.recordingFromNewGame) {
++            try { beforeRollback = rollbackSignature(); } catch { /* fail closed */ }
++        }
+         const oldBlock = logger.blockCombatText, oldAuto = this.inAutoTravelStep;
+         this.commandDecisions = execution.decisions;
+         this.inAutoTravelStep = execution.autoStep;
+@@ -3947,7 +3957,11 @@
+             if (!this.isAdvancing) observePresentation(this, 'command-complete');
+         } catch (error) {
+             state.execution = null;
+-            this.recordingFromNewGame = false;
++            let fullyRolledBack = false;
++            if (beforeRollback !== null) {
++                try { fullyRolledBack = rollbackSignature() === beforeRollback; } catch { /* fail closed */ }
++            }
++            if (!fullyRolledBack) this.recordingFromNewGame = false;
+             throw error;
+         } finally {
+             state.drivingStages--;

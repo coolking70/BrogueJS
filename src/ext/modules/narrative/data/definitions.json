@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "moduleId": "narrative",
-  "moduleVersion": "1.4.0",
-  "rulesVersion": "1.4.0",
+  "moduleVersion": "1.5.0",
+  "rulesVersion": "1.5.0",
   "stateVersion": 4,
   "inputVersion": 2,
   "config": {
@@ -59,6 +59,66 @@
       "min": null,
       "max": null,
       "values": null
+    },
+    {
+      "id": "cord.mender.verdict",
+      "type": "string",
+      "initial": "unresolved",
+      "min": null,
+      "max": null,
+      "values": [
+        "unresolved",
+        "splice",
+        "sever"
+      ]
+    },
+    {
+      "id": "cistern.listener.verdict",
+      "type": "string",
+      "initial": "unresolved",
+      "min": null,
+      "max": null,
+      "values": [
+        "unresolved",
+        "mark",
+        "erase"
+      ]
+    },
+    {
+      "id": "bone.clerk.verdict",
+      "type": "string",
+      "initial": "unresolved",
+      "min": null,
+      "max": null,
+      "values": [
+        "unresolved",
+        "blank",
+        "number"
+      ]
+    },
+    {
+      "id": "salt.warden.verdict",
+      "type": "string",
+      "initial": "unresolved",
+      "min": null,
+      "max": null,
+      "values": [
+        "unresolved",
+        "share",
+        "keep"
+      ]
+    },
+    {
+      "id": "letter.carrier.verdict",
+      "type": "string",
+      "initial": "unresolved",
+      "min": null,
+      "max": null,
+      "values": [
+        "unresolved",
+        "return",
+        "wait"
+      ]
     }
   ],
   "counters": [],
@@ -124,6 +184,121 @@
           "id": "wick.listener.first",
           "minDepth": 1,
           "maxDepth": 2,
+          "maxPerRun": 1,
+          "maxPerDepth": 1,
+          "minStairDistance": 1,
+          "maxEntranceDistance": 8,
+          "onNoSpace": "defer"
+        }
+      ]
+    },
+    {
+      "id": "cord.mender",
+      "nameKey": "ext.narrative.n2.cord.mender.name",
+      "descriptionKey": "ext.narrative.n2.cord.mender.description",
+      "glyph": "绳",
+      "color": "#b08b5c",
+      "portraitId": "cord.mender.neutral",
+      "dialogueId": "cord.mender.greeting",
+      "presence": "stationary-interactable",
+      "interactionDistance": 1,
+      "placements": [
+        {
+          "id": "cord.mender.first",
+          "minDepth": 2,
+          "maxDepth": 3,
+          "maxPerRun": 1,
+          "maxPerDepth": 1,
+          "minStairDistance": 1,
+          "maxEntranceDistance": 8,
+          "onNoSpace": "defer"
+        }
+      ]
+    },
+    {
+      "id": "cistern.listener",
+      "nameKey": "ext.narrative.n2.cistern.listener.name",
+      "descriptionKey": "ext.narrative.n2.cistern.listener.description",
+      "glyph": "滴",
+      "color": "#657484",
+      "portraitId": "cistern.listener.neutral",
+      "dialogueId": "cistern.listener.greeting",
+      "presence": "stationary-interactable",
+      "interactionDistance": 1,
+      "placements": [
+        {
+          "id": "cistern.listener.first",
+          "minDepth": 3,
+          "maxDepth": 4,
+          "maxPerRun": 1,
+          "maxPerDepth": 1,
+          "minStairDistance": 1,
+          "maxEntranceDistance": 8,
+          "onNoSpace": "defer"
+        }
+      ]
+    },
+    {
+      "id": "bone.clerk",
+      "nameKey": "ext.narrative.n2.bone.clerk.name",
+      "descriptionKey": "ext.narrative.n2.bone.clerk.description",
+      "glyph": "骨",
+      "color": "#dcbd93",
+      "portraitId": "bone.clerk.neutral",
+      "dialogueId": "bone.clerk.greeting",
+      "presence": "stationary-interactable",
+      "interactionDistance": 1,
+      "placements": [
+        {
+          "id": "bone.clerk.first",
+          "minDepth": 4,
+          "maxDepth": 6,
+          "maxPerRun": 1,
+          "maxPerDepth": 1,
+          "minStairDistance": 1,
+          "maxEntranceDistance": 8,
+          "onNoSpace": "defer"
+        }
+      ]
+    },
+    {
+      "id": "salt.warden",
+      "nameKey": "ext.narrative.n2.salt.warden.name",
+      "descriptionKey": "ext.narrative.n2.salt.warden.description",
+      "glyph": "盐",
+      "color": "#daa267",
+      "portraitId": "salt.warden.neutral",
+      "dialogueId": "salt.warden.greeting",
+      "presence": "stationary-interactable",
+      "interactionDistance": 1,
+      "placements": [
+        {
+          "id": "salt.warden.first",
+          "minDepth": 6,
+          "maxDepth": 8,
+          "maxPerRun": 1,
+          "maxPerDepth": 1,
+          "minStairDistance": 1,
+          "maxEntranceDistance": 8,
+          "onNoSpace": "defer"
+        }
+      ]
+    },
+    {
+      "id": "letter.carrier",
+      "nameKey": "ext.narrative.n2.letter.carrier.name",
+      "descriptionKey": "ext.narrative.n2.letter.carrier.description",
+      "glyph": "函",
+      "color": "#b67932",
+      "portraitId": "letter.carrier.neutral",
+      "dialogueId": "letter.carrier.greeting",
+      "presence": "stationary-interactable",
+      "interactionDistance": 1,
+      "placements": [
+        {
+          "id": "letter.carrier.first",
+          "minDepth": 8,
+          "maxDepth": 10,
           "maxPerRun": 1,
           "maxPerDepth": 1,
           "minStairDistance": 1,
@@ -655,6 +830,1606 @@
           ]
         }
       ]
+    },
+    {
+      "id": "cord.mender.greeting",
+      "entry": "hello",
+      "nodes": [
+        {
+          "id": "hello",
+          "textKey": "ext.narrative.n2.cord.mender.text.hello",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "ask",
+              "textKey": "ext.narrative.n2.cord.mender.choice.ask",
+              "condition": {
+                "op": "flag",
+                "id": "cord.mender.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.cord.mender.settled",
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "recall-a",
+              "textKey": "ext.narrative.n2.cord.mender.choice.recall",
+              "condition": {
+                "op": "flag",
+                "id": "cord.mender.verdict",
+                "equals": "splice"
+              },
+              "unavailable": "hide",
+              "unavailableKey": "ext.narrative.n2.cord.mender.later",
+              "effects": [],
+              "next": "recall-a"
+            },
+            {
+              "id": "recall-b",
+              "textKey": "ext.narrative.n2.cord.mender.choice.recall",
+              "condition": {
+                "op": "flag",
+                "id": "cord.mender.verdict",
+                "equals": "sever"
+              },
+              "unavailable": "hide",
+              "unavailableKey": "ext.narrative.n2.cord.mender.later",
+              "effects": [],
+              "next": "recall-b"
+            },
+            {
+              "id": "leave-hello",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "account",
+          "textKey": "ext.narrative.n2.cord.mender.text.account",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "detail",
+              "textKey": "ext.narrative.n2.cord.mender.choice.detail",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "detail"
+            },
+            {
+              "id": "clue",
+              "textKey": "ext.narrative.n2.cord.mender.choice.clue",
+              "condition": {
+                "op": "flag",
+                "id": "archive.read",
+                "equals": true
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.cord.mender.clueLocked",
+              "effects": [],
+              "next": "clue"
+            },
+            {
+              "id": "consider",
+              "textKey": "ext.narrative.n2.cord.mender.choice.consider",
+              "condition": {
+                "op": "flag",
+                "id": "cord.mender.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.cord.mender.settled",
+              "effects": [],
+              "next": "decision"
+            },
+            {
+              "id": "leave-account",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "detail",
+          "textKey": "ext.narrative.n2.cord.mender.text.detail",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "back-detail",
+              "textKey": "ext.narrative.n2.cord.mender.choice.back",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "leave-detail",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "clue",
+          "textKey": "ext.narrative.n2.cord.mender.text.clue",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "back-clue",
+              "textKey": "ext.narrative.n2.cord.mender.choice.back",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "leave-clue",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "decision",
+          "textKey": "ext.narrative.n2.cord.mender.text.decision",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "choose-a",
+              "textKey": "ext.narrative.n2.cord.mender.choice.a",
+              "condition": {
+                "op": "flag",
+                "id": "cord.mender.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.cord.mender.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "cord.mender.verdict",
+                  "value": "splice"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "cord.mender.splice.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "cord.mender.settled"
+                }
+              ],
+              "next": "a"
+            },
+            {
+              "id": "choose-b",
+              "textKey": "ext.narrative.n2.cord.mender.choice.b",
+              "condition": {
+                "op": "flag",
+                "id": "cord.mender.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.cord.mender.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "cord.mender.verdict",
+                  "value": "sever"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "cord.mender.sever.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "cord.mender.settled"
+                }
+              ],
+              "next": "b"
+            },
+            {
+              "id": "leave-decision",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "a",
+          "textKey": "ext.narrative.n2.cord.mender.text.a",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-a",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "textKey": "ext.narrative.n2.cord.mender.text.b",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-b",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "recall-a",
+          "textKey": "ext.narrative.n2.cord.mender.text.recall-a",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-recall-a",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "recall-b",
+          "textKey": "ext.narrative.n2.cord.mender.text.recall-b",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-recall-b",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cistern.listener.greeting",
+      "entry": "hello",
+      "nodes": [
+        {
+          "id": "hello",
+          "textKey": "ext.narrative.n2.cistern.listener.text.hello",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "ask",
+              "textKey": "ext.narrative.n2.cistern.listener.choice.ask",
+              "condition": {
+                "op": "flag",
+                "id": "cistern.listener.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.cistern.listener.settled",
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "recall-a",
+              "textKey": "ext.narrative.n2.cistern.listener.choice.recall",
+              "condition": {
+                "op": "flag",
+                "id": "cistern.listener.verdict",
+                "equals": "mark"
+              },
+              "unavailable": "hide",
+              "unavailableKey": "ext.narrative.n2.cistern.listener.later",
+              "effects": [],
+              "next": "recall-a"
+            },
+            {
+              "id": "recall-b",
+              "textKey": "ext.narrative.n2.cistern.listener.choice.recall",
+              "condition": {
+                "op": "flag",
+                "id": "cistern.listener.verdict",
+                "equals": "erase"
+              },
+              "unavailable": "hide",
+              "unavailableKey": "ext.narrative.n2.cistern.listener.later",
+              "effects": [],
+              "next": "recall-b"
+            },
+            {
+              "id": "leave-hello",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "account",
+          "textKey": "ext.narrative.n2.cistern.listener.text.account",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "detail",
+              "textKey": "ext.narrative.n2.cistern.listener.choice.detail",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "detail"
+            },
+            {
+              "id": "clue",
+              "textKey": "ext.narrative.n2.cistern.listener.choice.clue",
+              "condition": {
+                "op": "flag",
+                "id": "cord.mender.verdict",
+                "equals": "splice"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.cistern.listener.clueLocked",
+              "effects": [],
+              "next": "clue"
+            },
+            {
+              "id": "consider",
+              "textKey": "ext.narrative.n2.cistern.listener.choice.consider",
+              "condition": {
+                "op": "flag",
+                "id": "cistern.listener.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.cistern.listener.settled",
+              "effects": [],
+              "next": "decision"
+            },
+            {
+              "id": "leave-account",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "detail",
+          "textKey": "ext.narrative.n2.cistern.listener.text.detail",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "back-detail",
+              "textKey": "ext.narrative.n2.cistern.listener.choice.back",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "leave-detail",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "clue",
+          "textKey": "ext.narrative.n2.cistern.listener.text.clue",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "back-clue",
+              "textKey": "ext.narrative.n2.cistern.listener.choice.back",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "leave-clue",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "decision",
+          "textKey": "ext.narrative.n2.cistern.listener.text.decision",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "choose-a",
+              "textKey": "ext.narrative.n2.cistern.listener.choice.a",
+              "condition": {
+                "op": "flag",
+                "id": "cistern.listener.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.cistern.listener.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "cistern.listener.verdict",
+                  "value": "mark"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "cistern.listener.mark.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "cistern.listener.settled"
+                }
+              ],
+              "next": "a"
+            },
+            {
+              "id": "choose-b",
+              "textKey": "ext.narrative.n2.cistern.listener.choice.b",
+              "condition": {
+                "op": "flag",
+                "id": "cistern.listener.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.cistern.listener.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "cistern.listener.verdict",
+                  "value": "erase"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "cistern.listener.erase.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "cistern.listener.settled"
+                }
+              ],
+              "next": "b"
+            },
+            {
+              "id": "leave-decision",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "a",
+          "textKey": "ext.narrative.n2.cistern.listener.text.a",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-a",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "textKey": "ext.narrative.n2.cistern.listener.text.b",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-b",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "recall-a",
+          "textKey": "ext.narrative.n2.cistern.listener.text.recall-a",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-recall-a",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "recall-b",
+          "textKey": "ext.narrative.n2.cistern.listener.text.recall-b",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-recall-b",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bone.clerk.greeting",
+      "entry": "hello",
+      "nodes": [
+        {
+          "id": "hello",
+          "textKey": "ext.narrative.n2.bone.clerk.text.hello",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "ask",
+              "textKey": "ext.narrative.n2.bone.clerk.choice.ask",
+              "condition": {
+                "op": "flag",
+                "id": "bone.clerk.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.bone.clerk.settled",
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "recall-a",
+              "textKey": "ext.narrative.n2.bone.clerk.choice.recall",
+              "condition": {
+                "op": "flag",
+                "id": "bone.clerk.verdict",
+                "equals": "blank"
+              },
+              "unavailable": "hide",
+              "unavailableKey": "ext.narrative.n2.bone.clerk.later",
+              "effects": [],
+              "next": "recall-a"
+            },
+            {
+              "id": "recall-b",
+              "textKey": "ext.narrative.n2.bone.clerk.choice.recall",
+              "condition": {
+                "op": "flag",
+                "id": "bone.clerk.verdict",
+                "equals": "number"
+              },
+              "unavailable": "hide",
+              "unavailableKey": "ext.narrative.n2.bone.clerk.later",
+              "effects": [],
+              "next": "recall-b"
+            },
+            {
+              "id": "leave-hello",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "account",
+          "textKey": "ext.narrative.n2.bone.clerk.text.account",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "detail",
+              "textKey": "ext.narrative.n2.bone.clerk.choice.detail",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "detail"
+            },
+            {
+              "id": "clue",
+              "textKey": "ext.narrative.n2.bone.clerk.choice.clue",
+              "condition": {
+                "op": "flag",
+                "id": "archive.read",
+                "equals": true
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.bone.clerk.clueLocked",
+              "effects": [],
+              "next": "clue"
+            },
+            {
+              "id": "consider",
+              "textKey": "ext.narrative.n2.bone.clerk.choice.consider",
+              "condition": {
+                "op": "flag",
+                "id": "bone.clerk.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.bone.clerk.settled",
+              "effects": [],
+              "next": "decision"
+            },
+            {
+              "id": "leave-account",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "detail",
+          "textKey": "ext.narrative.n2.bone.clerk.text.detail",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "back-detail",
+              "textKey": "ext.narrative.n2.bone.clerk.choice.back",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "leave-detail",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "clue",
+          "textKey": "ext.narrative.n2.bone.clerk.text.clue",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "back-clue",
+              "textKey": "ext.narrative.n2.bone.clerk.choice.back",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "leave-clue",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "decision",
+          "textKey": "ext.narrative.n2.bone.clerk.text.decision",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "choose-a",
+              "textKey": "ext.narrative.n2.bone.clerk.choice.a",
+              "condition": {
+                "op": "flag",
+                "id": "bone.clerk.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.bone.clerk.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "bone.clerk.verdict",
+                  "value": "blank"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "bone.clerk.blank.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "bone.clerk.settled"
+                }
+              ],
+              "next": "a"
+            },
+            {
+              "id": "choose-b",
+              "textKey": "ext.narrative.n2.bone.clerk.choice.b",
+              "condition": {
+                "op": "flag",
+                "id": "bone.clerk.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.bone.clerk.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "bone.clerk.verdict",
+                  "value": "number"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "bone.clerk.number.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "bone.clerk.settled"
+                }
+              ],
+              "next": "b"
+            },
+            {
+              "id": "leave-decision",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "a",
+          "textKey": "ext.narrative.n2.bone.clerk.text.a",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-a",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "textKey": "ext.narrative.n2.bone.clerk.text.b",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-b",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "recall-a",
+          "textKey": "ext.narrative.n2.bone.clerk.text.recall-a",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-recall-a",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "recall-b",
+          "textKey": "ext.narrative.n2.bone.clerk.text.recall-b",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-recall-b",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "salt.warden.greeting",
+      "entry": "hello",
+      "nodes": [
+        {
+          "id": "hello",
+          "textKey": "ext.narrative.n2.salt.warden.text.hello",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "ask",
+              "textKey": "ext.narrative.n2.salt.warden.choice.ask",
+              "condition": {
+                "op": "flag",
+                "id": "salt.warden.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.salt.warden.settled",
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "recall-a",
+              "textKey": "ext.narrative.n2.salt.warden.choice.recall",
+              "condition": {
+                "op": "flag",
+                "id": "salt.warden.verdict",
+                "equals": "share"
+              },
+              "unavailable": "hide",
+              "unavailableKey": "ext.narrative.n2.salt.warden.later",
+              "effects": [],
+              "next": "recall-a"
+            },
+            {
+              "id": "recall-b",
+              "textKey": "ext.narrative.n2.salt.warden.choice.recall",
+              "condition": {
+                "op": "flag",
+                "id": "salt.warden.verdict",
+                "equals": "keep"
+              },
+              "unavailable": "hide",
+              "unavailableKey": "ext.narrative.n2.salt.warden.later",
+              "effects": [],
+              "next": "recall-b"
+            },
+            {
+              "id": "leave-hello",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "account",
+          "textKey": "ext.narrative.n2.salt.warden.text.account",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "detail",
+              "textKey": "ext.narrative.n2.salt.warden.choice.detail",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "detail"
+            },
+            {
+              "id": "clue",
+              "textKey": "ext.narrative.n2.salt.warden.choice.clue",
+              "condition": {
+                "op": "flag",
+                "id": "cistern.listener.verdict",
+                "equals": "mark"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.salt.warden.clueLocked",
+              "effects": [],
+              "next": "clue"
+            },
+            {
+              "id": "consider",
+              "textKey": "ext.narrative.n2.salt.warden.choice.consider",
+              "condition": {
+                "op": "flag",
+                "id": "salt.warden.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.salt.warden.settled",
+              "effects": [],
+              "next": "decision"
+            },
+            {
+              "id": "leave-account",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "detail",
+          "textKey": "ext.narrative.n2.salt.warden.text.detail",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "back-detail",
+              "textKey": "ext.narrative.n2.salt.warden.choice.back",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "leave-detail",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "clue",
+          "textKey": "ext.narrative.n2.salt.warden.text.clue",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "back-clue",
+              "textKey": "ext.narrative.n2.salt.warden.choice.back",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "leave-clue",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "decision",
+          "textKey": "ext.narrative.n2.salt.warden.text.decision",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "choose-a",
+              "textKey": "ext.narrative.n2.salt.warden.choice.a",
+              "condition": {
+                "op": "flag",
+                "id": "salt.warden.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.salt.warden.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "salt.warden.verdict",
+                  "value": "share"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "salt.warden.share.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "salt.warden.settled"
+                }
+              ],
+              "next": "a"
+            },
+            {
+              "id": "choose-b",
+              "textKey": "ext.narrative.n2.salt.warden.choice.b",
+              "condition": {
+                "op": "flag",
+                "id": "salt.warden.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.salt.warden.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "salt.warden.verdict",
+                  "value": "keep"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "salt.warden.keep.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "salt.warden.settled"
+                }
+              ],
+              "next": "b"
+            },
+            {
+              "id": "leave-decision",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "a",
+          "textKey": "ext.narrative.n2.salt.warden.text.a",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-a",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "textKey": "ext.narrative.n2.salt.warden.text.b",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-b",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "recall-a",
+          "textKey": "ext.narrative.n2.salt.warden.text.recall-a",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-recall-a",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "recall-b",
+          "textKey": "ext.narrative.n2.salt.warden.text.recall-b",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-recall-b",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "letter.carrier.greeting",
+      "entry": "hello",
+      "nodes": [
+        {
+          "id": "hello",
+          "textKey": "ext.narrative.n2.letter.carrier.text.hello",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "ask",
+              "textKey": "ext.narrative.n2.letter.carrier.choice.ask",
+              "condition": {
+                "op": "flag",
+                "id": "letter.carrier.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.letter.carrier.settled",
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "recall-a",
+              "textKey": "ext.narrative.n2.letter.carrier.choice.recall",
+              "condition": {
+                "op": "flag",
+                "id": "letter.carrier.verdict",
+                "equals": "return"
+              },
+              "unavailable": "hide",
+              "unavailableKey": "ext.narrative.n2.letter.carrier.later",
+              "effects": [],
+              "next": "recall-a"
+            },
+            {
+              "id": "recall-b",
+              "textKey": "ext.narrative.n2.letter.carrier.choice.recall",
+              "condition": {
+                "op": "flag",
+                "id": "letter.carrier.verdict",
+                "equals": "wait"
+              },
+              "unavailable": "hide",
+              "unavailableKey": "ext.narrative.n2.letter.carrier.later",
+              "effects": [],
+              "next": "recall-b"
+            },
+            {
+              "id": "leave-hello",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "account",
+          "textKey": "ext.narrative.n2.letter.carrier.text.account",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "detail",
+              "textKey": "ext.narrative.n2.letter.carrier.choice.detail",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "detail"
+            },
+            {
+              "id": "clue",
+              "textKey": "ext.narrative.n2.letter.carrier.choice.clue",
+              "condition": {
+                "op": "flag",
+                "id": "bone.clerk.verdict",
+                "equals": "blank"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.letter.carrier.clueLocked",
+              "effects": [],
+              "next": "clue"
+            },
+            {
+              "id": "consider",
+              "textKey": "ext.narrative.n2.letter.carrier.choice.consider",
+              "condition": {
+                "op": "flag",
+                "id": "letter.carrier.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.letter.carrier.settled",
+              "effects": [],
+              "next": "decision"
+            },
+            {
+              "id": "leave-account",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "detail",
+          "textKey": "ext.narrative.n2.letter.carrier.text.detail",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "back-detail",
+              "textKey": "ext.narrative.n2.letter.carrier.choice.back",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "leave-detail",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "clue",
+          "textKey": "ext.narrative.n2.letter.carrier.text.clue",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "back-clue",
+              "textKey": "ext.narrative.n2.letter.carrier.choice.back",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": "account"
+            },
+            {
+              "id": "leave-clue",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "decision",
+          "textKey": "ext.narrative.n2.letter.carrier.text.decision",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "choose-a",
+              "textKey": "ext.narrative.n2.letter.carrier.choice.a",
+              "condition": {
+                "op": "flag",
+                "id": "letter.carrier.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.letter.carrier.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "letter.carrier.verdict",
+                  "value": "return"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "letter.carrier.return.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "letter.carrier.settled"
+                }
+              ],
+              "next": "a"
+            },
+            {
+              "id": "choose-b",
+              "textKey": "ext.narrative.n2.letter.carrier.choice.b",
+              "condition": {
+                "op": "flag",
+                "id": "letter.carrier.verdict",
+                "equals": "unresolved"
+              },
+              "unavailable": "disable",
+              "unavailableKey": "ext.narrative.n2.letter.carrier.settled",
+              "effects": [
+                {
+                  "kind": "set-flag",
+                  "id": "letter.carrier.verdict",
+                  "value": "wait"
+                },
+                {
+                  "kind": "journal",
+                  "entryId": "letter.carrier.wait.note"
+                },
+                {
+                  "kind": "emit-story",
+                  "eventId": "letter.carrier.settled"
+                }
+              ],
+              "next": "b"
+            },
+            {
+              "id": "leave-decision",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "a",
+          "textKey": "ext.narrative.n2.letter.carrier.text.a",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-a",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "textKey": "ext.narrative.n2.letter.carrier.text.b",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-b",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "recall-a",
+          "textKey": "ext.narrative.n2.letter.carrier.text.recall-a",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-recall-a",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        },
+        {
+          "id": "recall-b",
+          "textKey": "ext.narrative.n2.letter.carrier.text.recall-b",
+          "portraitId": null,
+          "choices": [
+            {
+              "id": "leave-recall-b",
+              "textKey": "ext.narrative.choice.leave",
+              "condition": {
+                "op": "true"
+              },
+              "unavailable": "disable",
+              "unavailableKey": null,
+              "effects": [],
+              "next": null
+            }
+          ]
+        }
+      ]
     }
   ],
   "journal": [
@@ -682,6 +2457,56 @@
       "id": "wick.release.note",
       "titleKey": "ext.narrative.journal.wick.release.title",
       "textKey": "ext.narrative.journal.wick.release.body"
+    },
+    {
+      "id": "cord.mender.splice.note",
+      "titleKey": "ext.narrative.n2.cord.mender.journal.splice.title",
+      "textKey": "ext.narrative.n2.cord.mender.journal.splice.body"
+    },
+    {
+      "id": "cord.mender.sever.note",
+      "titleKey": "ext.narrative.n2.cord.mender.journal.sever.title",
+      "textKey": "ext.narrative.n2.cord.mender.journal.sever.body"
+    },
+    {
+      "id": "cistern.listener.mark.note",
+      "titleKey": "ext.narrative.n2.cistern.listener.journal.mark.title",
+      "textKey": "ext.narrative.n2.cistern.listener.journal.mark.body"
+    },
+    {
+      "id": "cistern.listener.erase.note",
+      "titleKey": "ext.narrative.n2.cistern.listener.journal.erase.title",
+      "textKey": "ext.narrative.n2.cistern.listener.journal.erase.body"
+    },
+    {
+      "id": "bone.clerk.blank.note",
+      "titleKey": "ext.narrative.n2.bone.clerk.journal.blank.title",
+      "textKey": "ext.narrative.n2.bone.clerk.journal.blank.body"
+    },
+    {
+      "id": "bone.clerk.number.note",
+      "titleKey": "ext.narrative.n2.bone.clerk.journal.number.title",
+      "textKey": "ext.narrative.n2.bone.clerk.journal.number.body"
+    },
+    {
+      "id": "salt.warden.share.note",
+      "titleKey": "ext.narrative.n2.salt.warden.journal.share.title",
+      "textKey": "ext.narrative.n2.salt.warden.journal.share.body"
+    },
+    {
+      "id": "salt.warden.keep.note",
+      "titleKey": "ext.narrative.n2.salt.warden.journal.keep.title",
+      "textKey": "ext.narrative.n2.salt.warden.journal.keep.body"
+    },
+    {
+      "id": "letter.carrier.return.note",
+      "titleKey": "ext.narrative.n2.letter.carrier.journal.return.title",
+      "textKey": "ext.narrative.n2.letter.carrier.journal.return.body"
+    },
+    {
+      "id": "letter.carrier.wait.note",
+      "titleKey": "ext.narrative.n2.letter.carrier.journal.wait.title",
+      "textKey": "ext.narrative.n2.letter.carrier.journal.wait.body"
     }
   ],
   "storyEvents": [
@@ -693,6 +2518,21 @@
     },
     {
       "id": "wick.settled"
+    },
+    {
+      "id": "cord.mender.settled"
+    },
+    {
+      "id": "cistern.listener.settled"
+    },
+    {
+      "id": "bone.clerk.settled"
+    },
+    {
+      "id": "salt.warden.settled"
+    },
+    {
+      "id": "letter.carrier.settled"
     }
   ],
   "triggers": [
@@ -798,6 +2638,146 @@
           "kind": "set-flag",
           "id": "bonfire.rested",
           "value": true
+        }
+      ]
+    },
+    {
+      "id": "cord.mender.reward",
+      "on": {
+        "kind": "story",
+        "eventId": "cord.mender.settled"
+      },
+      "priority": 0,
+      "condition": {
+        "op": "not",
+        "arg": {
+          "op": "flag",
+          "id": "cord.mender.verdict",
+          "equals": "unresolved"
+        }
+      },
+      "repeat": {
+        "kind": "once-per-run"
+      },
+      "effects": [
+        {
+          "kind": "optional-reward",
+          "capability": "growth.story-reward.v1",
+          "rewardId": "cord.settled",
+          "receiptId": "cord.mender.reward.receipt",
+          "onUnavailable": "skip"
+        }
+      ]
+    },
+    {
+      "id": "cistern.listener.reward",
+      "on": {
+        "kind": "story",
+        "eventId": "cistern.listener.settled"
+      },
+      "priority": 0,
+      "condition": {
+        "op": "not",
+        "arg": {
+          "op": "flag",
+          "id": "cistern.listener.verdict",
+          "equals": "unresolved"
+        }
+      },
+      "repeat": {
+        "kind": "once-per-run"
+      },
+      "effects": [
+        {
+          "kind": "optional-reward",
+          "capability": "growth.story-reward.v1",
+          "rewardId": "cistern.settled",
+          "receiptId": "cistern.listener.reward.receipt",
+          "onUnavailable": "skip"
+        }
+      ]
+    },
+    {
+      "id": "bone.clerk.reward",
+      "on": {
+        "kind": "story",
+        "eventId": "bone.clerk.settled"
+      },
+      "priority": 0,
+      "condition": {
+        "op": "not",
+        "arg": {
+          "op": "flag",
+          "id": "bone.clerk.verdict",
+          "equals": "unresolved"
+        }
+      },
+      "repeat": {
+        "kind": "once-per-run"
+      },
+      "effects": [
+        {
+          "kind": "optional-reward",
+          "capability": "growth.story-reward.v1",
+          "rewardId": "bone.settled",
+          "receiptId": "bone.clerk.reward.receipt",
+          "onUnavailable": "skip"
+        }
+      ]
+    },
+    {
+      "id": "salt.warden.reward",
+      "on": {
+        "kind": "story",
+        "eventId": "salt.warden.settled"
+      },
+      "priority": 0,
+      "condition": {
+        "op": "not",
+        "arg": {
+          "op": "flag",
+          "id": "salt.warden.verdict",
+          "equals": "unresolved"
+        }
+      },
+      "repeat": {
+        "kind": "once-per-run"
+      },
+      "effects": [
+        {
+          "kind": "optional-reward",
+          "capability": "growth.story-reward.v1",
+          "rewardId": "salt.settled",
+          "receiptId": "salt.warden.reward.receipt",
+          "onUnavailable": "skip"
+        }
+      ]
+    },
+    {
+      "id": "letter.carrier.reward",
+      "on": {
+        "kind": "story",
+        "eventId": "letter.carrier.settled"
+      },
+      "priority": 0,
+      "condition": {
+        "op": "not",
+        "arg": {
+          "op": "flag",
+          "id": "letter.carrier.verdict",
+          "equals": "unresolved"
+        }
+      },
+      "repeat": {
+        "kind": "once-per-run"
+      },
+      "effects": [
+        {
+          "kind": "optional-reward",
+          "capability": "growth.story-reward.v1",
+          "rewardId": "letter.settled",
+          "receiptId": "letter.carrier.reward.receipt",
+          "onUnavailable": "skip"
         }
       ]
     }
