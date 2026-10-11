@@ -1,0 +1,13 @@
+--- a/src/ext/modules/growth/module.ts
++++ b/src/ext/modules/growth/module.ts
+@@ -649,7 +649,9 @@
+             actorObserved({actor},context) { const state = getState(context); observe(state,actor); saveState(context,state); },
+             deathCaptured({actor,origin,administrative,rewardEligible},context) {
+                 if (actor.player || rewardEligible === false) return;
+-                const state = getState(context); state.pending.push({kind:'kill',actor:{...actor},origin,administrative}); saveState(context,state);
++                // Persist only the existing growth death DTO, not optional live spatial facts.
++                const {id,name,hp,maxHp,x,y,player,monsterId,allied,hostile} = actor;
++                const state = getState(context); state.pending.push({kind:'kill',actor:{id,name,hp,maxHp,x,y,player,monsterId,allied,hostile},origin,administrative}); saveState(context,state);
+             },
+             enteredLevel({depth,firstVisit,actorIds},context) {
+                 if (!firstVisit) return;
