@@ -118,8 +118,8 @@ describe('G2-DATA authoritative package and historical compatibility', () => {
       '1.0.0',
       '1.0.0'
     ]);
-    // 合入前父底座已升至13；巨兽数据合入不得改变这个固定协议。
-    expect(FOUNDATION_PROTOCOL).toBe(13);
+    // 步骤A非致死袭击退休合同升至14；巨兽数据不自行改变固定协议。
+    expect(FOUNDATION_PROTOCOL).toBe(14);
     expect(descriptor.defaultEnabled).toBe(false);
     expect(createGiantsModuleFromPack(expected).dependencies ?? []).toEqual([]);
   });

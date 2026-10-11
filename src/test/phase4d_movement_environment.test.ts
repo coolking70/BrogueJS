@@ -40,6 +40,7 @@ it.each(['break','warp'] as const)('a first-substep %s prevents old second-step 
 });
 it('environment failure after terrain, status, HP and revision writes restores the independently audited graph and the next move',()=>{
     const {game,core,leg}=twoStepScene();const native=(game as any).applyEnvironmentalEffects.bind(game);
+    (game as unknown as { updateVision(remember: boolean): void }).updateVision(false);
     const before=game.toSaveSnapshot(),random=rng.getState(),id=getNextEntityId(),audit=auditFullObjectGraph(fullGenerationRoots(game),[game.extensionRuntime!]);
     const fail=vi.spyOn(game as any,'applyEnvironmentalEffects').mockImplementation((...args:any[])=>{
         native(...args);if(args[0]===leg){game.grid.setTerrainLayer(10,12,L.SURFACE,T.WEB);leg.addPoison(4);leg.takeDamage(4,true);rng.randRange(1,5);throw Error('substep fault');}

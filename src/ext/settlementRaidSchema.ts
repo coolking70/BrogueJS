@@ -160,10 +160,18 @@ export function validateRaidRoots(w: World5Snapshot, owners: readonly string[]):
     if (!Array.isArray(e.actors) || e.actors.length !== e.actorIds.length ||
         new Set(e.actors.map(a => a.actorId)).size !== e.actors.length) bad();
     for (const a of e.actors) {
-      exact(a, 'actorId,birthTypeId,currentTypeId,departed', 'raidLifecycle');
+      exact(a, 'actorId,birthTypeId,currentTypeId,departed,retired', 'raidLifecycle');
       uint(a.actorId, 'raidLifecycle.actorId', 1);
       if (!e.actorIds.includes(a.actorId) || typeof a.birthTypeId !== 'string' ||
           typeof a.currentTypeId !== 'string') bad();
+      if (a.retired !== null) {
+        exact(a.retired, 'owner,reason,tick,ordinal', 'raidRetirement');
+        uint(a.retired.tick, 'raidRetirement.tick');
+        uint(a.retired.ordinal, 'raidRetirement.ordinal', 1);
+        if (a.departed !== null || e.defeatedIds.includes(a.actorId) ||
+            !owners.includes(a.retired.owner) || typeof a.retired.reason !== 'string' || !a.retired.reason ||
+            a.retired.tick < e.lastAttemptTick || a.retired.tick > w.simulationTicks) bad();
+      }
       if (a.departed !== null) {
         exact(a.departed, 'depth,tick', 'raidDeparture');
         uint(a.departed.depth, 'raidDeparture.depth', 1);

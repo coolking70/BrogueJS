@@ -1,0 +1,36 @@
+{
+  "scope": "new five in expanded phase4 complete files, outside original63",
+  "firstStage": "foundation-r1-final-affected-v2",
+  "firstSource": "d3ef1e65dd93d244e6c32a6419323a04bc5be4fcde55a47b6da25e63a899967f",
+  "failures": [
+    {
+      "file": "src/test/phase4a2_body_effects.test.ts",
+      "test": "4a-2 public targeting and native body perception automatic exploration attacks a public adjacent tail rather than attempting a long movement toward its anchor",
+      "failure": "AssertionError: expected 1000 to be 998 // Object.is equality"
+    },
+    {
+      "file": "src/test/phase4a2_body_effects.test.ts",
+      "test": "4a-2 real mixed commands, targeting, perception, DF and recording 2-square plus the other size and ordinary reflectors: save modal, load, continue recording, replay every event and seek",
+      "failure": "AssertionError: expected { depth: 1, width: 79, …(41) } to deeply equal { depth: 1, width: 79, …(41) }"
+    },
+    {
+      "file": "src/test/phase4a2_body_effects.test.ts",
+      "test": "4a-2 real mixed commands, targeting, perception, DF and recording 3-square plus the other size and ordinary reflectors: save modal, load, continue recording, replay every event and seek",
+      "failure": "AssertionError: expected { depth: 1, width: 79, …(41) } to deeply equal { depth: 1, width: 79, …(41) }"
+    },
+    {
+      "file": "src/test/phase4a3_body_display.test.ts",
+      "test": "4a-3 development fixture export guard a no-space failure changes no world, IDs, recorder or rule RNG and leaves exports usable",
+      "failure": "AssertionError: expected [Function] to throw an error"
+    },
+    {
+      "file": "src/test/phase4d_movement_environment.test.ts",
+      "test": "environment failure after terrain, status, HP and revision writes restores the independently audited graph and the next move",
+      "failure": "AssertionError: expected { depth: 1, width: 79, …(42) } to deeply equal { depth: 1, width: 79, …(42) }"
+    }
+  ],
+  "counter": "ordinary no-flare VISIBILITY only reverted,58/58pass targets unchanged and production restored",
+  "legalScene": "58/58pass entire external original files with actual native light/dark FOV before origin/snapshot",
+  "formal": "v4 three original full files58/58pass, original assertions preserved",
+  "allOtherSourceBytesUnchanged": true
+}

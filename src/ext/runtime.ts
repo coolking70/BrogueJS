@@ -126,8 +126,17 @@ function freezeView<T>(value: T): T {
     }
     return value;
 }
+// Proof counters live outside snapshot-able runtime fields. Nested native fact
+// rollback may restore nativeActionRevision; an attempted native boundary is
+// still outside the generic synchronous extension receipt.
+const nativeBoundaryRevisions = new WeakMap<ExtensionRuntime, number>();
+function touchedNativeBoundary(runtime: ExtensionRuntime): void {
+    nativeBoundaryRevisions.set(runtime, (nativeBoundaryRevisions.get(runtime) ?? 0) + 1);
+}
+let asynchronousBoundaryRevision = 0;
 function requireSynchronous(result: unknown): void {
     if (result && typeof (result as { then?: unknown }).then === 'function') {
+        asynchronousBoundaryRevision++;
         // Reject the handler and retire its result; context capabilities expire
         // synchronously, so a continuation cannot write world state later.
         void Promise.resolve(result).catch(() => undefined);
@@ -567,6 +576,7 @@ export class ExtensionRuntime {
                 if (!callbacks || typeof callbacks.beforeCommit !== 'function' || typeof callbacks.afterResolve !== 'function')
                     throw new Error('Invalid controlled action callbacks');
                 const input = freezeView(structuredClone(request));
+                touchedNativeBoundary(runtime);
                 runtime.controlledAction = true; runtime.commandActionUsed = true; runtime.nativeActionRevision++; runtime.actionActorId = input.actorId;
                 let committed = false, resolved = false;
                 try {
@@ -984,13 +994,13 @@ export class ExtensionRuntime {
             if (actor instanceof Player) { actor.strength = strength!; this.ports.setGold?.(gold!); }
         }
     }
-    private bufferMessages<T>(work: () => T): T {
+    private bufferMessages<T>(work: () => T, beforePublish?: () => void): T {
         const messages: string[] = []; this.messageBuffers.push(messages);
         let result: T;
         try { result = work(); } catch (error) { this.messageBuffers.pop(); throw error; }
         this.messageBuffers.pop();
         const parent = this.messageBuffers[this.messageBuffers.length - 1];
-        if (parent) parent.push(...messages); else for (const message of messages) this.ports.message(message);
+        if (parent) parent.push(...messages); else { if (messages.length) beforePublish?.(); for (const message of messages) this.ports.message(message); }
         return result;
     }
     /** Extension-owned state and native resource ports form one synchronous commit. */
@@ -1001,7 +1011,7 @@ export class ExtensionRuntime {
         const state=binding.state as unknown as Json,checkpoint=actorActionIdentityCheckpoint(state);
         return()=>{checkpoint.restore();this.states[binding.moduleId]=state;};
     }
-    private transaction<T>(work: () => T): T {
+    private transaction<T>(work: () => T, rolledBack?: (error: unknown) => void): T {
         const edibleBefore=edibleSnapshot(this);
         const statsBefore=statSessions.get(this)!.ledger.snapshot();
         const restoreActorState=this.checkpointActorStateIdentity();
@@ -1010,8 +1020,17 @@ export class ExtensionRuntime {
         const nextFactId = this.nextFactId, pending = structuredClone(this.pendingStoryFacts), nativeActionRevision = this.nativeActionRevision;
         const creatures = new Map([...this.creatures].map(actor => [actor, actor.extensionHooks]));
         const restoreRandom = this.ports.checkpointRandom?.();
-        try { return this.bufferMessages(work); }
+        const asyncRevision = asynchronousBoundaryRevision, nativeBoundaryRevision = nativeBoundaryRevisions.get(this) ?? 0, allocator = getNextEntityId();
+        const restoreSession = rolledBack ? this.checkpointNativeStatSession() : undefined;
+        let publishingMessages = false;
+        try { return this.bufferMessages(work, () => { publishingMessages = true; }); }
         catch (error) {
+            let complete = false;
+            // GC can unbind native forms. A failure after native binding removal
+            // is outside this receipt even if JSON roots can be restored.
+            const retainedBindings = this.creatures.size === creatures.size
+                && [...creatures.keys()].every(actor => this.creatures.has(actor));
+            try {
             restoreEdibleState(this,edibleBefore);
             statSessions.get(this)!.ledger.restore(statsBefore);statSessions.get(this)!.materialSignatures.clear();statSessions.get(this)!.materialValues.clear();statSessions.get(this)!.moduleViews.clear();this.stats.clear();
             this.states = states; restoreActorState(); this.components = components; this.world = world;
@@ -1023,7 +1042,15 @@ export class ExtensionRuntime {
             // allocator rollback; pure reward/creation/settlement can rewind RNG.
             if (nativeActionRevision === this.nativeActionRevision) {
                 this.deaths = deaths; this.causality.restore(causes); restoreRandom?.();
+                if (rolledBack && !this.disposed && restoreRandom && retainedBindings && !publishingMessages && asyncRevision === asynchronousBoundaryRevision
+                    && nativeBoundaryRevision === (nativeBoundaryRevisions.get(this) ?? 0)) {
+                    this.creatures.clear(); for (const actor of creatures.keys()) this.creatures.add(actor);
+                    restoreSession?.(); restoreNextEntityId(allocator);
+                    complete = true;
+                }
             }
+            } catch { /* Preserve the original exception; never certify failed restoration. */ }
+            if (complete) rolledBack?.(error);
             throw error;
         } finally { markRecordingRoot(this); }
     }
@@ -1385,7 +1412,7 @@ export class ExtensionRuntime {
         } finally { open = false; this.pureProviderPhase = false; }
     }
 
-    command(data: unknown, settle?: () => void): void {
+    command(data: unknown, settle?: () => void, rolledBack?: (error: unknown) => void): void {
         if (this.world.gate && !this.allowsInput('ext:command', data)) throw new Error('Interaction gate rejects command');
         if (typeof data !== 'string') throw new Error('Extension command requires JSON string');
         const input = JSON.parse(data) as { module: string; action: string; payload: Json };
@@ -1404,7 +1431,7 @@ export class ExtensionRuntime {
                 this.invoke(module, context => handler(input.payload, context), true);
                 this.flushStoryFacts();
                 if (settle) requireSynchronous(settle());
-            });
+            }, rolledBack);
         } finally { this.resourcePhase = prior; this.commandModule = priorCommandModule; this.commandActionUsed = priorActionUsed; }
     }
     attachCreature(creature: Creature, notifySpawn = true): void {
@@ -1475,7 +1502,7 @@ export class ExtensionRuntime {
         }
         if(notifySpawn&&!this.generations.length){
             const saved=this.resourceCheckpoint(),ledger=session.ledger.snapshot();
-            try{session.pipeline.validateSources(creature.id);this.reconcileMaterialized(creature.id);}catch(error){this.restoreResources(saved);session.ledger.restore(ledger);session.materialSignatures.clear();session.materialValues.clear();session.actors.delete(creature.id);this.creatures.delete(creature);unbindStats(creature);creature.extensionHooks=undefined;session.pipeline.clear();throw error;}
+            try{session.pipeline.validateSources(creature.id);this.reconcileMaterialized(creature.id);}catch(error){this.restoreResources(saved);session.ledger.restore(ledger);session.materialSignatures.clear();session.materialValues.clear();session.actors.delete(creature.id);this.creatures.delete(creature);touchedNativeBoundary(this);unbindStats(creature);creature.extensionHooks=undefined;session.pipeline.clear();throw error;}
         }
 
     }
@@ -1528,7 +1555,7 @@ export class ExtensionRuntime {
         this.causality.restore(frame.causality); this.deaths = frame.deaths;
         const session=statSessions.get(this)!;session.ledger.restore(frame.stats);session.materialSignatures.clear();session.materialValues.clear();session.pipeline.clear();session.moduleViews.clear();
         for (const creature of this.creatures) if (!frame.creatures.has(creature)) {
-            bindNativeForms(creature); creature.extensionHooks = undefined; this.spawned.delete(creature); this.creatures.delete(creature);unbindStats(creature);session.actors.delete(creature.id);
+            touchedNativeBoundary(this); bindNativeForms(creature); creature.extensionHooks = undefined; this.spawned.delete(creature); this.creatures.delete(creature);touchedNativeBoundary(this);unbindStats(creature);session.actors.delete(creature.id);
         }
         this.generations.pop();
         const fact: BufferedFact = { name: 'generationRolledBack', event: { label: token.label }, readonly: true };
@@ -1688,7 +1715,7 @@ export class ExtensionRuntime {
         for (const id of Object.keys(this.deaths)) if (!keep.has(Number(id))) { delete this.deaths[id]; markRecordingRoot(this); }
         this.causality.retainCreatures(keep);
         for (const creature of this.creatures) if (!keep.has(creature.id)) {
-            bindNativeForms(creature); creature.extensionHooks = undefined; this.creatures.delete(creature); unbindStats(creature);statSessions.get(this)!.actors.delete(creature.id);statSessions.get(this)!.ledger.remove(creature.id);statSessions.get(this)!.materialSignatures.delete(creature.id);statSessions.get(this)!.materialValues.delete(creature.id);this.stats.clear(creature.id);
+            touchedNativeBoundary(this); bindNativeForms(creature); creature.extensionHooks = undefined; this.creatures.delete(creature); unbindStats(creature);statSessions.get(this)!.actors.delete(creature.id);statSessions.get(this)!.ledger.remove(creature.id);statSessions.get(this)!.materialSignatures.delete(creature.id);statSessions.get(this)!.materialValues.delete(creature.id);this.stats.clear(creature.id);
         }
         // Module-owned reward receipts are deliberately not collected with bodies.
     }
@@ -1733,7 +1760,7 @@ export class ExtensionRuntime {
     private get edibleDiagnostics():{owner:string;method:string}[] {let rows=edibleDiagnostics.get(this);if(!rows){rows=[];edibleDiagnostics.set(this,rows);}return rows;}
     noteEdibleDiagnostic(owner:string,method:string):void {this.edibleDiagnostics.push({owner,method});}
     readEdibleDiagnostics():readonly {owner:string;method:string}[] {return freezeView(structuredClone(edibleDiagnostics.get(this)??[]));}
-    retireEdibleActor(actor:Creature):void {delete this.components[String(actor.id)];this.creatures.delete(actor);statSessions.get(this)!.actors.delete(actor.id);statSessions.get(this)!.ledger.remove(actor.id);unbindStats(actor);actor.extensionHooks=undefined;this.invalidateStats();markRecordingRoot(this);}
+    retireEdibleActor(actor:Creature):void {touchedNativeBoundary(this);delete this.components[String(actor.id)];this.creatures.delete(actor);statSessions.get(this)!.actors.delete(actor.id);statSessions.get(this)!.ledger.remove(actor.id);unbindStats(actor);actor.extensionHooks=undefined;this.invalidateStats();markRecordingRoot(this);}
     /** 仅可信原生退休入口使用；模块上下文不提供此离图会话能力。 */
     checkpointNativeStatSession(): () => void {
         const session=statSessions.get(this)!,query=statQueries.get(this);
@@ -1923,6 +1950,6 @@ export class ExtensionRuntime {
         if (this.disposed) return;
         this.disposed = true;
         try { for (const module of [...this.modules].reverse()) requireSynchronous(module.onUnload?.()); }
-        finally { bodyHandlers.delete(this); for (const creature of this.creatures) { bindNativeForms(creature); creature.extensionHooks = undefined; } this.creatures.clear(); }
+        finally { bodyHandlers.delete(this); for (const creature of this.creatures) { touchedNativeBoundary(this); bindNativeForms(creature); creature.extensionHooks = undefined; } this.creatures.clear(); }
     }
 }

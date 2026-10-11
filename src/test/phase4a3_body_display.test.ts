@@ -177,7 +177,10 @@ describe('4a-3 development fixture export guard', () => {
         expect(rng.getState()).not.toEqual(before); remove(); expect((window as any).debug_square_bodies).toBeUndefined();
     });
     it('a no-space failure changes no world, IDs, recorder or rule RNG and leaves exports usable', () => {
-        const { game } = scene(); game.monsters = []; for (const column of (game.grid as any).cells) for (const cell of column) cell.isVisible = false;
+        const { game } = scene(); game.monsters = [];
+        for(let x=0;x<game.grid.width;x++)for(let y=0;y<game.grid.height;y++)Object.assign(game.lightMap.lightAt(x,y)!,{r:0,g:0,b:0});
+        (game as any).updateTransientVisibility(null,false);
+        expect((game.grid as any).cells.every((column: any[])=>column.every(cell=>!cell.isVisible))).toBe(true);
         const before = game.toSnapshot(), random = rng.getState();
         expect(() => placeSquareBodyFixtures(game)).toThrow('No safe visible space');
         const after = game.toSnapshot(); after.savedAt = before.savedAt;

@@ -1022,7 +1022,7 @@ it.each(installedPlans([['settlement'], ['settlement', 'combat'], ['settlement',
     g.executeItemCommand('use', wand); h.command('mouse_travel', { ...enemy.loc });
     expect(enemy.typeId).not.toBe(born); expect(enemy.hp).toBeGreaterThan(0);
     expect(e.id).toBe(eventId); expect(e.actorIds).toEqual(members);
-    expect(e.actors[0]).toEqual({ actorId: id, birthTypeId: born, currentTypeId: enemy.typeId, departed: null });
+    expect(e.actors[0]).toEqual({ actorId: id, birthTypeId: born, currentTypeId: enemy.typeId, departed: null, retired: null });
     exit({ g, h } as ReturnType<typeof active>);
     const economic = campEconomicTick(g, r.slot), form = enemy.typeId;
     advanceWorldClock(g.world5!, 96037); h.command('wait');

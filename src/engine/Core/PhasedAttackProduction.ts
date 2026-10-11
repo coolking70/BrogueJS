@@ -50,6 +50,11 @@ export function checkpointPhasedAttackSources(game: Game): () => void {
     const entries = [...session.defenseSources];
     return () => { session.defenseSources.clear(); for (const [id, value] of entries) session.defenseSources.set(id, value); };
 }
+/** Engine-only rollback proof: replaced derived sessions cannot be certified
+ * by restoring a prior scheduler object's fields alone. */
+export function phasedAttackBoundaryIdentity(game: Game): readonly (object | undefined)[] {
+    return [sessions.get(game), worldSessions.get(game)];
+}
 let nextSessionRevision=1;
 function bumpRevision(state:ProductionActorAttackState):void {
     if(!Number.isSafeInteger(state.revision)||state.revision>=Number.MAX_SAFE_INTEGER-1)throw new Error('Action revision exhausted');

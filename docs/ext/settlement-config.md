@@ -8,7 +8,7 @@
 
 ## 数据和身份
 
-建造与居民机械数据归 `data/definitions.json`；5E1 袭击默认规则归自有 `raids.ts`，两者及本局固定配置共同形成 manifest 的规则身份。外层键为 `schema,moduleVersion,rulesVersion,world,camp,residents`；外层 schema=1、module/rules=1.3.0，内层 world schema/worldSdk=1，residents.schema=1。foundation=13，world5.schema=4，settlement state.schema=2；whole-run=6、recording=4、RecordingOrigin=2。SDK 兼容号和持久格式号是不同身份，不因 world5 升号就把 worldSdk 改成2。`definitions.ts` 对整个包计算一个 `extensionDataFingerprint`，同时包含营地政策、world 定义和居民政策。调整机械数据须同步 rules 身份并遵循存档/录像匹配；本步不迁移旧档。
+建造与居民机械数据归 `data/definitions.json`；5E1 袭击默认规则归自有 `raids.ts`，两者及本局固定配置共同形成 manifest 的规则身份。外层键为 `schema,moduleVersion,rulesVersion,world,camp,residents`；外层 schema=1、module/rules=1.4.0，内层 world schema/worldSdk=1，residents.schema=1。foundation=14，world5.schema=5，settlement state.schema=2；whole-run=6、recording=4、RecordingOrigin=2。SDK 兼容号和持久格式号是不同身份，不因 world5 升号就把 worldSdk 改成2。`definitions.ts` 对整个包计算一个 `extensionDataFingerprint`，同时包含营地政策、world 定义和居民政策。调整机械数据须同步 rules 身份并遵循存档/录像匹配；本步不迁移旧档。
 
 `schema.ts` 和中性 `ext/constructionSchema.ts` 拒绝未知键、非法 JSON、getter、非安全整数、非法 owner/ID、缺失定义引用、预算越界；`WorldDefinitions.ts` 保留可信入口并继续调用既有 edible 校验。内容模块只声明数据和接收 detached/frozen DTO，不导入 Game，不注册结构 DEV fixture。
 
@@ -47,7 +47,7 @@
 
 | 数据字段 | 当前值/允许范围 | 性质与校验位置 |
 | --- | --- | --- |
-| schema、moduleVersion、rulesVersion、world.schema/worldSdk、residents.schema | 1、1.3.0、1.3.0、1/1、1 | 严格身份；settlement/schema.ts、constructionSchema.ts、residentSchema.ts；不能作数值旋钮 |
+| schema、moduleVersion、rulesVersion、world.schema/worldSdk、residents.schema | 1、1.4.0、1.4.0、1/1、1 | 严格身份；settlement/schema.ts、constructionSchema.ts、residentSchema.ts；不能作数值旋钮 |
 | world.items[].maxStack/tags | 木/石/纤维/种子/作物/肉等材料maxStack99；原生口粮模板及食材标签见数据表 | maxStack 1…99，tags≤16、有效ID且严格排序；普通材料 nativeTemplate/tool=null；settlement.ration为native原生食物模板，普通无特性。mushroom占位定义无食材标签，不能自行制造可用蘑菇 |
 | resourceNodes[].capacity/harvestTicks/unitsPerHarvest/yield/requiredToolTag | 20/100/1/1件/null | 容量1…9999；工时1…10000；单次1…min(99,capacity)；物品数量1…99、引用有效；工具tag可为null/合法ID，实际工具规则仍须满足底座 |
 | regeneration | 木 periodic(1,2000)，纤维 periodic(1,1000)，石 none | 枚举 none/periodic；periodic.units 1…99、intervalTicks 1…1000000 |
@@ -224,3 +224,8 @@ job严格为 `{kind:'idle'}`、`{kind:'guard',at:{x,y}}`、`{kind:'plant',plotId
 建造面板中，仍存在且受损的部件提供“付费修缮”。确认预览列出部件、恢复耐久、真实材料和tick；耗材按建造配方乘修复比例逐项向上取整，耗时同比例且至少100 tick。走原同步付费施工事务及所有权/距离/revision/CAS，No、陈旧计划或writer失败不免费恢复HP。已毁坏的部件按原建造命令重建。
 
 本步尚未提供大型袭击、自动修缮、战争或远征。5C2/5D3继续后置，5Z前范围待定；实际验证和覆盖限制见[5E1报告](phase5e1.report.md)。
+
+
+### 阶段5底座六项修复的格式登记（2026-10-11，实施中待独立审查）
+
+本步新增袭击成员 `retired={owner,reason,tick,ordinal}|null`，代表权威非致死退休，和仅限幸存坠层的 `departed`、原生死亡 `defeatedIds` 分开。退出记录必须对应 foundation.departures 的同一真实退休收据；不存在实体才可作为解决成员。退出不发击杀信用或奖励。active袭击的见证不会被正常128条离队历史裁剪删掉；关闭后沿旧合同清有效名册，离队历史按原预算保存。格式升为foundation14/world5 schema5/settlement module及rules1.4.0，state2和九冻结SDK兼容号不变；旧存档/录像身份严格拒绝，不迁移。实施与门禁状态见 [六项报告](phase5-foundation-repair.report.md)。

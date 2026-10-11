@@ -1,0 +1,2050 @@
+{
+  "version": 4,
+  "recordedAt": 1791686067173,
+  "seed": "2",
+  "mode": "normal",
+  "initialLevel": {
+    "kind": "dungeon",
+    "depth": 1
+  },
+  "extensions": {
+    "schema": 1,
+    "foundation": 14,
+    "modules": [
+      {
+        "id": "foraging",
+        "version": "1.0.0",
+        "rules": {
+          "schema": 1,
+          "version": "1.0.0",
+          "fingerprint": "sha256:d2e0803474a80f1adfc41680351199da38b7f3e8129df3d58ffd0349488d936f"
+        }
+      }
+    ]
+  },
+  "codec": {
+    "wholeRun": 6,
+    "foundation": 14,
+    "origin": 2
+  },
+  "digestAlgorithm": "sha256-c5-merkle-v1",
+  "digestChunk": 256,
+  "checkpointPeriod": 2048,
+  "initialDigest": {
+    "domains": {
+      "native": "ef1568757c87ca4723e5a042b587504e84ebe5256c08530da76501118c0d8b62",
+      "extensions": "a2964c534ebc7c0aefb5a8242fb5af6f1a3c079caea3e19ad8f1c9e9c3988f1b",
+      "world5": "504bb04e3594b612453676d643a0805a565aa775460def11acafc504f62240d2",
+      "actorActions": "23ceeadc115e803424133884336076b80773ff635ae0603517ec6088eaf1ceb4",
+      "knowledge": "02a8277b55c859957ec5b403813b5ee80b987cacd2dbfa76dd358ccef80b957d",
+      "random": "c98122fdad5adb3aa72bf19f136f05d26c2b0ee72f96ccf1ab067cddf2e620de"
+    },
+    "root": "f0474fdae3a347b724a0199ca9fa25431ba267bd419834e70abf5b6abec9c57a"
+  },
+  "events": [
+    {
+      "index": 0,
+      "tick": 100,
+      "turn": 1,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 100,
+      "player": {
+        "x": 37,
+        "y": 26
+      },
+      "hp": 30,
+      "inventoryStamp": "c4eefa40159c9c94",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 3921360361,
+            "b": 1366272770,
+            "c": 3738277942,
+            "d": 3771840544
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18159,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "a2964c534ebc7c0aefb5a8242fb5af6f1a3c079caea3e19ad8f1c9e9c3988f1b",
+          "world5": "83580d2a63addb65109e4a5824687fa82d28a23ab77fc10f3af4cc034950ca6b",
+          "actorActions": "23ceeadc115e803424133884336076b80773ff635ae0603517ec6088eaf1ceb4"
+        },
+        "root": "91a75b8d44931eee2c3fc454684ced62fc92bfb92231a6dc37ebe67e421e5681"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "6f14c021763f32c22f4213c3d7ef589c2573b4eb743d7f2a79ed2eacb31c7db0",
+      "action": "move",
+      "data": 2,
+      "decisions": []
+    },
+    {
+      "index": 1,
+      "tick": 200,
+      "turn": 2,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 200,
+      "player": {
+        "x": 36,
+        "y": 26
+      },
+      "hp": 30,
+      "inventoryStamp": "c4eefa40159c9c94",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 2405374007,
+            "b": 236315109,
+            "c": 3950030637,
+            "d": 3999755401
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18167,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "a2964c534ebc7c0aefb5a8242fb5af6f1a3c079caea3e19ad8f1c9e9c3988f1b",
+          "world5": "08be243a8268cc4f7e94a7d93a9b6530f155c28ff468163a1b35bef98b5c8bf6",
+          "actorActions": "23ceeadc115e803424133884336076b80773ff635ae0603517ec6088eaf1ceb4"
+        },
+        "root": "9986a210de9fdbfd2acaebe6ee6e47611fbc4e30f7db91827028f068999cd63b"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "fe713292d12cb81bc18bdd2f9805a5b3e8d484d3e80dbb48f9d6923decdd3272",
+      "action": "move",
+      "data": 2,
+      "decisions": []
+    },
+    {
+      "index": 2,
+      "tick": 300,
+      "turn": 3,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 300,
+      "player": {
+        "x": 35,
+        "y": 26
+      },
+      "hp": 30,
+      "inventoryStamp": "c4eefa40159c9c94",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 456453074,
+            "b": 817428443,
+            "c": 2364690940,
+            "d": 3815901364
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18175,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "a2964c534ebc7c0aefb5a8242fb5af6f1a3c079caea3e19ad8f1c9e9c3988f1b",
+          "world5": "c2defe6c503290ab9bbf8c451d6ec18ab9d85b993b9cd4670b4cd04d2172e74e",
+          "actorActions": "23ceeadc115e803424133884336076b80773ff635ae0603517ec6088eaf1ceb4"
+        },
+        "root": "f74d98acfc337bb0c1b97599506e3f06bac6386ce50317f9768b3257a1a1e2d5"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "5a091c7d3f7ca09fc96a8e7d211d5e8cc1ea4efe3a4cf3dc82215fd8e455d362",
+      "action": "move",
+      "data": 2,
+      "decisions": []
+    },
+    {
+      "index": 3,
+      "tick": 400,
+      "turn": 4,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 400,
+      "player": {
+        "x": 34,
+        "y": 26
+      },
+      "hp": 30,
+      "inventoryStamp": "c4eefa40159c9c94",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 2823324384,
+            "b": 2447066055,
+            "c": 3036735767,
+            "d": 395914591
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18183,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "a2964c534ebc7c0aefb5a8242fb5af6f1a3c079caea3e19ad8f1c9e9c3988f1b",
+          "world5": "e642ad7c3a53df0e74cea4ee7541e9c317f0b19561767a26caba9f40b868af21",
+          "actorActions": "23ceeadc115e803424133884336076b80773ff635ae0603517ec6088eaf1ceb4"
+        },
+        "root": "49cec84bf0a331af0bd9a89fb162ba7ca21de1d5b8724c741e1072cd8261364c"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "8eba0c2f9a8ba7f1713d106c5552ecaf9aa0b953f5d34c9d9b86ac82ed71ba19",
+      "action": "move",
+      "data": 2,
+      "decisions": []
+    },
+    {
+      "index": 4,
+      "tick": 500,
+      "turn": 5,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 500,
+      "player": {
+        "x": 33,
+        "y": 26
+      },
+      "hp": 30,
+      "inventoryStamp": "c4eefa40159c9c94",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 3054142899,
+            "b": 3681457500,
+            "c": 1917832291,
+            "d": 1734295848
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18191,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "a2964c534ebc7c0aefb5a8242fb5af6f1a3c079caea3e19ad8f1c9e9c3988f1b",
+          "world5": "add25f4739b3ad2728bf283973ade453a642d4924c9c2f4b0a57e6464f37e88a",
+          "actorActions": "23ceeadc115e803424133884336076b80773ff635ae0603517ec6088eaf1ceb4"
+        },
+        "root": "fd07cda16bfff4b8babf20035764b7ddb7c86b8c9afb7dce643635f94ac9a42e"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "0ba60bec500d8f24e44af8be0b30247d4d27aee7845937ea65c04a402d9e53b3",
+      "action": "move",
+      "data": 2,
+      "decisions": []
+    },
+    {
+      "index": 5,
+      "tick": 600,
+      "turn": 6,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 600,
+      "player": {
+        "x": 32,
+        "y": 26
+      },
+      "hp": 30,
+      "inventoryStamp": "c4eefa40159c9c94",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 471973285,
+            "b": 3055012199,
+            "c": 4242346766,
+            "d": 1091735518
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18199,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "a2964c534ebc7c0aefb5a8242fb5af6f1a3c079caea3e19ad8f1c9e9c3988f1b",
+          "world5": "1d026f2b2a8d70b87b763a22d65371b953fcb2402f103ebfd5b8ec3b14e4b574",
+          "actorActions": "23ceeadc115e803424133884336076b80773ff635ae0603517ec6088eaf1ceb4"
+        },
+        "root": "01a798c3f290ca3f7f95d96dd0b4e98407bf3870d727a5c6f22f67a70272cc98"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "296b15f39d280a01ca7afef8f746f1b0d8e36dc86632bdd9055d4775f1c18222",
+      "action": "move",
+      "data": 2,
+      "decisions": []
+    },
+    {
+      "index": 6,
+      "tick": 700,
+      "turn": 7,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 700,
+      "player": {
+        "x": 31,
+        "y": 25
+      },
+      "hp": 30,
+      "inventoryStamp": "c4eefa40159c9c94",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 3119505422,
+            "b": 1828617525,
+            "c": 3855805552,
+            "d": 1097617866
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18207,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "a2964c534ebc7c0aefb5a8242fb5af6f1a3c079caea3e19ad8f1c9e9c3988f1b",
+          "world5": "0b04c6b51c4619b4714ee838e5d62779f2491b3d1b1040418c0e3c61f12d5e0c",
+          "actorActions": "23ceeadc115e803424133884336076b80773ff635ae0603517ec6088eaf1ceb4"
+        },
+        "root": "83eb91bb4a5a062c31a169ab419dc5ab50d187196c049af8732aea14db0549a4"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "95e4781e8531db6bc8a9cc8e76496680eb31a87e9670f54bb13d419da276b5ac",
+      "action": "move",
+      "data": 4,
+      "decisions": []
+    },
+    {
+      "index": 7,
+      "tick": 800,
+      "turn": 8,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 800,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "c4eefa40159c9c94",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 2593277095,
+            "b": 1321565552,
+            "c": 891071046,
+            "d": 4250636839
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18215,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "a2964c534ebc7c0aefb5a8242fb5af6f1a3c079caea3e19ad8f1c9e9c3988f1b",
+          "world5": "5ad81cf99d68a0c6c35d8e751149ff247e85792fa4124b1ce39ce0a83b234290",
+          "actorActions": "23ceeadc115e803424133884336076b80773ff635ae0603517ec6088eaf1ceb4"
+        },
+        "root": "377f19a56ea87127c6160011660ac65ad1f13157ba2d9bf4b3b11750a3b6f086"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "1bd8b728f0d5f753c40a1273c01d28de293f72a568ba026b8743bce0e8aa2609",
+      "action": "move",
+      "data": 4,
+      "decisions": []
+    },
+    {
+      "index": 8,
+      "tick": 800,
+      "turn": 8,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 800,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "c4eefa40159c9c94",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 2593277095,
+            "b": 1321565552,
+            "c": 891071046,
+            "d": 4250636839
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18215,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "a2964c534ebc7c0aefb5a8242fb5af6f1a3c079caea3e19ad8f1c9e9c3988f1b",
+          "world5": "5ad81cf99d68a0c6c35d8e751149ff247e85792fa4124b1ce39ce0a83b234290",
+          "actorActions": "23ceeadc115e803424133884336076b80773ff635ae0603517ec6088eaf1ceb4"
+        },
+        "root": "377f19a56ea87127c6160011660ac65ad1f13157ba2d9bf4b3b11750a3b6f086"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "7b1cc2444dbbddd5a58d1840d5b67c58854632d929b681dff814fca98ad011b7",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 9,
+      "tick": 800,
+      "turn": 8,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 800,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "c4eefa40159c9c94",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 2593277095,
+            "b": 1321565552,
+            "c": 891071046,
+            "d": 4250636839
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18215,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "a2964c534ebc7c0aefb5a8242fb5af6f1a3c079caea3e19ad8f1c9e9c3988f1b",
+          "world5": "5ad81cf99d68a0c6c35d8e751149ff247e85792fa4124b1ce39ce0a83b234290",
+          "actorActions": "23ceeadc115e803424133884336076b80773ff635ae0603517ec6088eaf1ceb4"
+        },
+        "root": "377f19a56ea87127c6160011660ac65ad1f13157ba2d9bf4b3b11750a3b6f086"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "f75d2448dcd3975c57e2933ee1b50b5c454f2153ff928e5f83675dd6237c0d2d",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 10,
+      "tick": 900,
+      "turn": 9,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 900,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "3d4191efc7d238b7",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1706285961,
+            "b": 2651560426,
+            "c": 445728222,
+            "d": 1664346740
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18223,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "7d43987bc86ed8177605427a9f7dea3ea4ba4bf470153d69b99077e6f2a339f0",
+          "world5": "5f05ff59db7daed18e97d1ed9d96ecaaafcf619978e9b69dec37024d3166bd89",
+          "actorActions": "ef64a38c7c5ebcaf30b8336d5fa691db7785145295814c932e5136eb4d21cfcb"
+        },
+        "root": "6b2e81e6c7a159654d4e076447da7353da5fef4b03132ee8d29b80fc1aa725ea"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "ac727b85a822c21fb7cb93f66c7d93a966e4393eee237336edc3368f32a579f9",
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":0,\"inventoryStamp\":\"c4eefa40159c9c94\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "decisions": []
+    },
+    {
+      "index": 11,
+      "tick": 900,
+      "turn": 9,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 900,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "3d4191efc7d238b7",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1706285961,
+            "b": 2651560426,
+            "c": 445728222,
+            "d": 1664346740
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18223,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "7d43987bc86ed8177605427a9f7dea3ea4ba4bf470153d69b99077e6f2a339f0",
+          "world5": "5f05ff59db7daed18e97d1ed9d96ecaaafcf619978e9b69dec37024d3166bd89",
+          "actorActions": "ef64a38c7c5ebcaf30b8336d5fa691db7785145295814c932e5136eb4d21cfcb"
+        },
+        "root": "6b2e81e6c7a159654d4e076447da7353da5fef4b03132ee8d29b80fc1aa725ea"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "59f9f5bac5fdb5b96f3fc64b6c1c3e0e57fad4749f6067ef5619305f6693b630",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 12,
+      "tick": 900,
+      "turn": 9,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 900,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "3d4191efc7d238b7",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1706285961,
+            "b": 2651560426,
+            "c": 445728222,
+            "d": 1664346740
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18223,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "7d43987bc86ed8177605427a9f7dea3ea4ba4bf470153d69b99077e6f2a339f0",
+          "world5": "5f05ff59db7daed18e97d1ed9d96ecaaafcf619978e9b69dec37024d3166bd89",
+          "actorActions": "ef64a38c7c5ebcaf30b8336d5fa691db7785145295814c932e5136eb4d21cfcb"
+        },
+        "root": "6b2e81e6c7a159654d4e076447da7353da5fef4b03132ee8d29b80fc1aa725ea"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "311a4d01678f850a9ea7d2b9490ed77a31f1236247b8d3514e3d51856adefc72",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 13,
+      "tick": 900,
+      "turn": 9,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 900,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "3d4191efc7d238b7",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1706285961,
+            "b": 2651560426,
+            "c": 445728222,
+            "d": 1664346740
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18223,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "7d43987bc86ed8177605427a9f7dea3ea4ba4bf470153d69b99077e6f2a339f0",
+          "world5": "5f05ff59db7daed18e97d1ed9d96ecaaafcf619978e9b69dec37024d3166bd89",
+          "actorActions": "ef64a38c7c5ebcaf30b8336d5fa691db7785145295814c932e5136eb4d21cfcb"
+        },
+        "root": "6b2e81e6c7a159654d4e076447da7353da5fef4b03132ee8d29b80fc1aa725ea"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "f3aecfd85026e8f89299aacb0253e98f19df8aad4a7f1b8bff3d41f6bea1f400",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 14,
+      "tick": 900,
+      "turn": 9,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 900,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "3d4191efc7d238b7",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1706285961,
+            "b": 2651560426,
+            "c": 445728222,
+            "d": 1664346740
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18223,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "7d43987bc86ed8177605427a9f7dea3ea4ba4bf470153d69b99077e6f2a339f0",
+          "world5": "5f05ff59db7daed18e97d1ed9d96ecaaafcf619978e9b69dec37024d3166bd89",
+          "actorActions": "ef64a38c7c5ebcaf30b8336d5fa691db7785145295814c932e5136eb4d21cfcb"
+        },
+        "root": "6b2e81e6c7a159654d4e076447da7353da5fef4b03132ee8d29b80fc1aa725ea"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "44fd95526018f9278579571c0770bb12a5eff57551e972d3960625ba8246b87b",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 15,
+      "tick": 900,
+      "turn": 9,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 900,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "3d4191efc7d238b7",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1706285961,
+            "b": 2651560426,
+            "c": 445728222,
+            "d": 1664346740
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18223,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "7d43987bc86ed8177605427a9f7dea3ea4ba4bf470153d69b99077e6f2a339f0",
+          "world5": "5f05ff59db7daed18e97d1ed9d96ecaaafcf619978e9b69dec37024d3166bd89",
+          "actorActions": "ef64a38c7c5ebcaf30b8336d5fa691db7785145295814c932e5136eb4d21cfcb"
+        },
+        "root": "6b2e81e6c7a159654d4e076447da7353da5fef4b03132ee8d29b80fc1aa725ea"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "a06d5a92db40a4224047e594103010ea9a557d588a9104fe131b016d9f8eb5ef",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 16,
+      "tick": 900,
+      "turn": 9,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 900,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "3d4191efc7d238b7",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1706285961,
+            "b": 2651560426,
+            "c": 445728222,
+            "d": 1664346740
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18223,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "7d43987bc86ed8177605427a9f7dea3ea4ba4bf470153d69b99077e6f2a339f0",
+          "world5": "5f05ff59db7daed18e97d1ed9d96ecaaafcf619978e9b69dec37024d3166bd89",
+          "actorActions": "ef64a38c7c5ebcaf30b8336d5fa691db7785145295814c932e5136eb4d21cfcb"
+        },
+        "root": "6b2e81e6c7a159654d4e076447da7353da5fef4b03132ee8d29b80fc1aa725ea"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "d484af16830309342b9e23f27585c749e55cf0f549d82806735705f837456fd1",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 17,
+      "tick": 1000,
+      "turn": 10,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1000,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "ac69ac4f57004163",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 2567408043,
+            "b": 3340807820,
+            "c": 1336400870,
+            "d": 2287721480
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18231,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "ff6f5708c00d858e5e728659cc48943671a2aefc280eef39727948b1b417034f",
+          "world5": "b8e9525bd5a031e41ef4975011eab741abc763c227eebd5ed6ae1d100e437565",
+          "actorActions": "b59de64259a8dff3292316526b97e5c33d89af2ec58cee53cb8e61f55a7b6835"
+        },
+        "root": "9c75d87437f60e276421f96e7c0075ce5987a9b1323052c8a1723335bbaecd56"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "021ccfe06d86617ad9ce388bd300c19a596b67c58724204b16ed146344c74284",
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":2,\"inventoryStamp\":\"3d4191efc7d238b7\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "decisions": []
+    },
+    {
+      "index": 18,
+      "tick": 1000,
+      "turn": 10,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1000,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "ac69ac4f57004163",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 2567408043,
+            "b": 3340807820,
+            "c": 1336400870,
+            "d": 2287721480
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18231,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "ff6f5708c00d858e5e728659cc48943671a2aefc280eef39727948b1b417034f",
+          "world5": "b8e9525bd5a031e41ef4975011eab741abc763c227eebd5ed6ae1d100e437565",
+          "actorActions": "b59de64259a8dff3292316526b97e5c33d89af2ec58cee53cb8e61f55a7b6835"
+        },
+        "root": "9c75d87437f60e276421f96e7c0075ce5987a9b1323052c8a1723335bbaecd56"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "17a88d7aa4fb2fd3f02ef5db7b1806a1419da1570b158ffbf525bc336ec76562",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 19,
+      "tick": 1000,
+      "turn": 10,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1000,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "ac69ac4f57004163",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 2567408043,
+            "b": 3340807820,
+            "c": 1336400870,
+            "d": 2287721480
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18231,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "ff6f5708c00d858e5e728659cc48943671a2aefc280eef39727948b1b417034f",
+          "world5": "b8e9525bd5a031e41ef4975011eab741abc763c227eebd5ed6ae1d100e437565",
+          "actorActions": "b59de64259a8dff3292316526b97e5c33d89af2ec58cee53cb8e61f55a7b6835"
+        },
+        "root": "9c75d87437f60e276421f96e7c0075ce5987a9b1323052c8a1723335bbaecd56"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "0beb7dc1d241637bfd4ca0ddb1e85a1c2b6f96c56634abab41a7f20693f6513e",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 20,
+      "tick": 1000,
+      "turn": 10,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1000,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "ac69ac4f57004163",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 2567408043,
+            "b": 3340807820,
+            "c": 1336400870,
+            "d": 2287721480
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18231,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "ff6f5708c00d858e5e728659cc48943671a2aefc280eef39727948b1b417034f",
+          "world5": "b8e9525bd5a031e41ef4975011eab741abc763c227eebd5ed6ae1d100e437565",
+          "actorActions": "b59de64259a8dff3292316526b97e5c33d89af2ec58cee53cb8e61f55a7b6835"
+        },
+        "root": "9c75d87437f60e276421f96e7c0075ce5987a9b1323052c8a1723335bbaecd56"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "2da2d2179e6bb224350f11681bd17bce5b851b69d44393096c858ef0eba31e03",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 21,
+      "tick": 1000,
+      "turn": 10,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1000,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "ac69ac4f57004163",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 2567408043,
+            "b": 3340807820,
+            "c": 1336400870,
+            "d": 2287721480
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18231,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "ff6f5708c00d858e5e728659cc48943671a2aefc280eef39727948b1b417034f",
+          "world5": "b8e9525bd5a031e41ef4975011eab741abc763c227eebd5ed6ae1d100e437565",
+          "actorActions": "b59de64259a8dff3292316526b97e5c33d89af2ec58cee53cb8e61f55a7b6835"
+        },
+        "root": "9c75d87437f60e276421f96e7c0075ce5987a9b1323052c8a1723335bbaecd56"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "d256eb72125f016f06a2d76cabd08b7998b879c423fdd48ccf07726abdbe1711",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 22,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "29acfe09e8c669f3e476120cc3801d26b4d35b4b97a3db03120f6ac82edd886e",
+      "action": "ext:command",
+      "data": "{\"module\":\"foraging\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":22,\"nodeRevision\":4,\"inventoryStamp\":\"ac69ac4f57004163\",\"destinationId\":null,\"destinationRevision\":null}}",
+      "decisions": []
+    },
+    {
+      "index": 23,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "7131dd2621c0c675eb73eba3ae8b3c886754bf065fb902d91e25aea3bdd932e3",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 24,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "dea4af4376091c6c8ae1919d9fa501824ef94db3e6519b56fd38f6ea0ac8da7a",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 25,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "fa988f0dfec34ec211d4e331b14fa31d07c93d6d12841708358d78e0d350a2cc",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 26,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "cf13d2031766e1dce6f072a6bf2439cc004ca3067521250d4351c78a01e4dbf2",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 27,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "0a5fe9360d9a073bf3d027d1f0ba6e58e8af3324142cf2ff17e5f4c2cda62652",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 28,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "04d442a4cf8e9b2757f0f283a498adaea7a75b8bae3207076eac2e20444735af",
+      "action": "item:command",
+      "data": "eat|e|",
+      "decisions": [
+        false
+      ]
+    },
+    {
+      "index": 29,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "bc86a856f86eb2e773f1d1b1d44ceb9247e7438f31591226798196036352ec11",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 30,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "7005102a76b3bc744e1b75d1df424222876947865624e83d4f54316092b79f41",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 31,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "f0d6f3dc614dc0be880699c4169bfa00bb35bc87c8f3ba88afe9c255800ca98a",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 32,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "4cfba72b15e6b72fc5b7ae94bb09dc67b221d5a9c1caa16eeb4f7cac0c3fe63c",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 33,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "f0a33fad3e1dc77c142b5049123d54153483170e9aaf7e5c994b6d3960cf0860",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 34,
+      "tick": 1100,
+      "turn": 11,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1100,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 30,
+      "inventoryStamp": "5b1d4213e8b8da6f",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1342135698,
+            "b": 598553326,
+            "c": 1829982619,
+            "d": 1503553086
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18239,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "2ba7962797528fdb025d677b535a28c0b2190425d596ad99b2b5016a53369270",
+          "world5": "f7f5eb75f042a6fda4371a5758de41e920a003aac6a82779ed42e10060e00f90",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "53df232cb53c00a33975bc26179a0d803acd5ff5323ee254efefea01ec0906ad"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "4b83e4147b980bfe9248165abdb11f8c5077093a18b17614e566b2d49bc07079",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 35,
+      "tick": 1200,
+      "turn": 12,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1200,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 29,
+      "inventoryStamp": "ac69ac4f57004163",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1091065261,
+            "b": 2375530200,
+            "c": 3115104313,
+            "d": 2235834908
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18251,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "f347d9586db8e93698e94da02e212c5c8ed4d9c56ef00dd68cd13c1f4bd78575",
+          "world5": "872eb414ee55140550c653819a427f58bafb551030a53ed3a0632911afb8d776",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "5b4ce9f97bb057b4a8b1a7a8091250116aea7bc7cd5368cf504f8ef2d2e0477d"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "2fd7f75cc93ac087317c6c2b9ed6cb83e6a4a6eec83efa0c03c73846e23987b9",
+      "action": "item:command",
+      "data": "eat|e|",
+      "decisions": [
+        true
+      ]
+    },
+    {
+      "index": 36,
+      "tick": 1200,
+      "turn": 12,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1200,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 29,
+      "inventoryStamp": "ac69ac4f57004163",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1091065261,
+            "b": 2375530200,
+            "c": 3115104313,
+            "d": 2235834908
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18251,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "f347d9586db8e93698e94da02e212c5c8ed4d9c56ef00dd68cd13c1f4bd78575",
+          "world5": "872eb414ee55140550c653819a427f58bafb551030a53ed3a0632911afb8d776",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "5b4ce9f97bb057b4a8b1a7a8091250116aea7bc7cd5368cf504f8ef2d2e0477d"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "fbd1d315489b04e5246ce61edcc636d63c3274b2be2b0725b6a3c3e5d9bf97ff",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 37,
+      "tick": 1200,
+      "turn": 12,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1200,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 29,
+      "inventoryStamp": "ac69ac4f57004163",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1091065261,
+            "b": 2375530200,
+            "c": 3115104313,
+            "d": 2235834908
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18251,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "f347d9586db8e93698e94da02e212c5c8ed4d9c56ef00dd68cd13c1f4bd78575",
+          "world5": "872eb414ee55140550c653819a427f58bafb551030a53ed3a0632911afb8d776",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "5b4ce9f97bb057b4a8b1a7a8091250116aea7bc7cd5368cf504f8ef2d2e0477d"
+      },
+      "fullCheckpoint": null,
+      "chainDigest": "634884e66b9c731ccb5fd9ee269829d2447d6e9ad7eb141ac6863f8143b03aa5",
+      "action": "toggle_inventory",
+      "data": null,
+      "decisions": []
+    },
+    {
+      "index": 38,
+      "tick": 1200,
+      "turn": 12,
+      "levelRef": {
+        "kind": "dungeon",
+        "depth": 1
+      },
+      "simulationTicks": 1200,
+      "player": {
+        "x": 30,
+        "y": 24
+      },
+      "hp": 29,
+      "inventoryStamp": "ac69ac4f57004163",
+      "rng": {
+        "version": 2,
+        "algorithm": "brogue-web-ranval32-uint64-level-v2",
+        "streams": [
+          {
+            "a": 1091065261,
+            "b": 2375530200,
+            "c": 3115104313,
+            "d": 2235834908
+          },
+          {
+            "a": 4167490528,
+            "b": 1951059251,
+            "c": 1627484163,
+            "d": 2768498707
+          }
+        ],
+        "currentRNG": 0,
+        "randomNumbersGenerated": 18251,
+        "cosmeticNumbersGenerated": 162
+      },
+      "terminal": null,
+      "checkpoint": {
+        "domains": {
+          "extensions": "f347d9586db8e93698e94da02e212c5c8ed4d9c56ef00dd68cd13c1f4bd78575",
+          "world5": "872eb414ee55140550c653819a427f58bafb551030a53ed3a0632911afb8d776",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c"
+        },
+        "root": "5b4ce9f97bb057b4a8b1a7a8091250116aea7bc7cd5368cf504f8ef2d2e0477d"
+      },
+      "fullCheckpoint": {
+        "domains": {
+          "native": "5d3e4f304454c170499d3ed347dfa3b5e8176a2f0932d62d996b6447018b3f73",
+          "extensions": "f347d9586db8e93698e94da02e212c5c8ed4d9c56ef00dd68cd13c1f4bd78575",
+          "world5": "872eb414ee55140550c653819a427f58bafb551030a53ed3a0632911afb8d776",
+          "actorActions": "04d7f9c00d2a5224cd115b808d7bd36ac11f0cdd9c23cbf21e8367b217de503c",
+          "knowledge": "df9cf468541c0ba8e0f1b8bf8167ab5ef683325dac246363d24677cca2f5a32c",
+          "random": "600387f5555127a913ed52da191021f202aa686cb8e6ba05d4ffb4b861c0514d"
+        },
+        "root": "6f49f1a8d0c596d904a55e7135da8535b8ec64a2a20cacdbb64e5fa298cf6445"
+      },
+      "chainDigest": "e82f16d39a96e85e51c291025934b96a91803c3e23e6fb5b80cd65e55c59f405",
+      "action": "escape",
+      "data": null,
+      "decisions": []
+    }
+  ],
+  "snapshots": []
+}

@@ -268,6 +268,7 @@ describe('D2 real Host resumes engine command capabilities', () => {
         game.grid.setTerrain(11, 10, TerrainType.PRESSURE_PLATE);
         game.grid.setTerrainLayer(11, 10, 3, TerrainType.PLAIN_FIRE);
         Object.assign(game.grid.getCell(11, 10)!, { isVisible: true, hasMemory: true });
+        (game as any).updateVision(false);
         mount(); game.executeCommand('move', { x: 1, y: 0 }); await Vue.nextTick();
         const first = service.current!.token;
         press('Enter'); await Vue.nextTick();

@@ -271,6 +271,7 @@ it.each(['tunnel', 'shatter'])('P3 %s destroys a structural barrier', (kind) => 
 it('P3 unseen actual work cells give the same error before inspecting hidden actors/machines', () => {
   const { g } = structureHarness();
   createCamp(g);
+  Object.assign(g.lightMap.lightAt(21, 10)!, {r:0,g:0,b:0});
   g.grid.getCell(21, 10)!.isVisible = false;
   build(g, 'floor');
   expect(worldWorkLastError(g)).toBe('C5_BLOCKED');

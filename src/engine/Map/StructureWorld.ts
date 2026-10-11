@@ -1447,7 +1447,12 @@ export function destroyComponent(game: Game, id: number, refund: boolean, reason
     const retired=w.terminalTickets.find(t=>t.ticketId===output.ticketId);
     if(retired?.residentOutput)retired.residentOutput.fallbackAt={...row.at};
   }
-  for(const order of [...w.orders])if(order.production?.plotIds.includes(id))cancelResidentWork(game,order.actorId,reason);
+  for (const order of [...w.orders]) {
+    const p = order.production;
+    if (p && (p.plotIds.includes(id) || stations.some(s => s.interactableId === p.stationId)
+        || chests.some(ch => ch.id === p.sourceId || ch.id === p.destinationId)))
+      cancelResidentWork(game, order.actorId, reason);
+  }
   for(const l of w.offline)if(l.productionQuotas)for(const q of l.productionQuotas)q.plots=q.plots.filter(p=>p!==id);
   for (const job of [...w.residentJobs])
     if (job.plotId === id || chests.some(ch =>

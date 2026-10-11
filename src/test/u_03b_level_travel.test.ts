@@ -27,6 +27,7 @@ function arena(g:any) {
  g.environment=new EnvironmentManager(g.grid);g.pendingCaughtFireCells=[];
  g.grid.setTerrain(5,5,TerrainType.STAIRS_UP);g.grid.setTerrain(15,5,TerrainType.STAIRS_DOWN);
  g.player.loc={x:14,y:5};g.animationEnabled=false;
+ g.updateVision(false);
 }
 function pair() {
  const g:any=createHeadlessGame(7);arena(g);

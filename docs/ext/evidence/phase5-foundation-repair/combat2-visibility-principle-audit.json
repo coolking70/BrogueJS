@@ -1,0 +1,75 @@
+{
+  "method": "TypeScript AST original expectation matcher and public command-call ordered subsequence; supports but does not replace native semantic proof",
+  "rows": [
+    {
+      "path": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "baselineSha": "be0af1e74f0093faf0a8d452c9995d1d1063a8f91654787e50de7563779585ae",
+      "currentSha": "5046258f40a4f959aa9c9776e23517c8b5c6e2d9285edd8f902d8f2b5aeea168",
+      "originalAssertions": 102,
+      "currentAssertions": 103,
+      "originalAssertionsRetainedInOrder": true,
+      "originalPublicCallsRetainedInOrder": true,
+      "newSkipOrTodo": false
+    },
+    {
+      "path": "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts",
+      "baselineSha": "a30f9fe54107952dfb2e4bb2445497c2880e4a911d2ebc9f81186acdda922e7c",
+      "currentSha": "17bbe1d0fcdffdef3b58d7733474d0838aeca1268290bc0031dbf81eb6b610ca",
+      "originalAssertions": 34,
+      "currentAssertions": 34,
+      "originalAssertionsRetainedInOrder": true,
+      "originalPublicCallsRetainedInOrder": true,
+      "newSkipOrTodo": false
+    },
+    {
+      "path": "src/ext/modules/combat/tests/combat_phase4d_rest_relations.test.ts",
+      "baselineSha": "21d42e02b94c54977153dd2b531cba4388ebd5d095b9f70215eb8f91e0fff5da",
+      "currentSha": "c16a02005dd3037e82536096b55920e3e04ea711f6f502adae46747c93b6c63f",
+      "originalAssertions": 33,
+      "currentAssertions": 34,
+      "originalAssertionsRetainedInOrder": true,
+      "originalPublicCallsRetainedInOrder": true,
+      "newSkipOrTodo": false
+    },
+    {
+      "path": "src/ext/modules/foraging/tests/foraging_feed.test.ts",
+      "baselineSha": "44b00608ac3f03b72e8147f02355b7b87d85671170afb2ef1a88833d8a4a775a",
+      "currentSha": "65c16a30b60e596483a8c9f5a1513f5e21a4a42e74ce07cbffbe0d68dc582cab",
+      "originalAssertions": 70,
+      "currentAssertions": 81,
+      "originalAssertionsRetainedInOrder": true,
+      "originalPublicCallsRetainedInOrder": true,
+      "newSkipOrTodo": false
+    },
+    {
+      "path": "src/test/phase4a2_body_effects.test.ts",
+      "baselineSha": "ecc6f167c5035a894da69c8488e7b8eb4edafb7eae018d85d6a376b5f984c0c3",
+      "currentSha": "316f3be85c98961c93b0bb919c012aae2a344d15787d06b4e59040c72903aa07",
+      "originalAssertions": 122,
+      "currentAssertions": 123,
+      "originalAssertionsRetainedInOrder": true,
+      "originalPublicCallsRetainedInOrder": true,
+      "newSkipOrTodo": false
+    },
+    {
+      "path": "src/test/phase4a3_body_display.test.ts",
+      "baselineSha": "fd18bfcaad6f54d14249816a589d2d00e758fda919dcba92d8aea41c57a3a7ff",
+      "currentSha": "396adb932ff118e21d1c38f05ad3a51c6d0fdf66c3c7ab6a37309924a8b89d14",
+      "originalAssertions": 76,
+      "currentAssertions": 77,
+      "originalAssertionsRetainedInOrder": true,
+      "originalPublicCallsRetainedInOrder": true,
+      "newSkipOrTodo": false
+    },
+    {
+      "path": "src/test/phase4d_movement_environment.test.ts",
+      "baselineSha": "235670661d33ea69956e37e4a360fadb4bb855066d76d0ba80edd51df4ab66ef",
+      "currentSha": "477a50faf6af6b73bf30a87104110399302b9de38559f7f2cfa36204100a20c7",
+      "originalAssertions": 82,
+      "currentAssertions": 82,
+      "originalAssertionsRetainedInOrder": true,
+      "originalPublicCallsRetainedInOrder": true,
+      "newSkipOrTodo": false
+    }
+  ]
+}

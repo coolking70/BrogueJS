@@ -1,5 +1,5 @@
 /** Non-lethal retirement shared by companion needs and future residents. */
-import { checkedAdd } from '../../ext/world5';
+import { checkedAdd, World5Error } from '../../ext/world5';
 import type { Game } from './Game';
 import { edibleState, peekEdibleState } from './EdibleState';
 import { detachActorNeeds, invalidateNeeds } from './ActorNeeds';
@@ -11,6 +11,8 @@ import type { Monster } from '../../entities/Monster';
 import { isIncapacitated } from '../Status/Incapacitation';
 import { bodyStatusDisables } from '../Status/BodyStatuses';
 import { markRecordingRoot } from '../../ext/recordingRevisions';
+import { transactResidentWorld } from './ResidentWorld';
+import { recordRaidRetirement } from './SettlementRaids';
 export function isDeparting(game: Game, id: number): boolean {
   return (
     !!game.extensionRuntime &&
@@ -82,10 +84,6 @@ export function retireActor(
       actorId,
       ...(group?.members.flatMap((m) => (m.entityId === null ? [] : [m.entityId])) ?? [])
     ]);
-  for (const id of [...ids].sort((a, b) => a - b)) {
-    detachActorNeeds(game, id, 'departed', deferred);
-    if (s.timedStats) s.timedStats.rows = s.timedStats.rows.filter((r) => r.actorId !== id);
-  }
   const facts = {
     id: actor.id,
     name: actor.name,
@@ -98,19 +96,34 @@ export function retireActor(
     hostile: !actor.isAlly,
     monsterId: actor.typeId
   };
+  transactResidentWorld(game, () => {
+  for (const id of [...ids].sort((a, b) => a - b)) {
+    detachActorNeeds(game, id, 'departed', deferred);
+    if (s.timedStats) s.timedStats.rows = s.timedStats.rows.filter((r) => r.actorId !== id);
+  }
   game.retireDepartingActors(ids);
   s.departures!.active = s.departures!.active.filter((r) => !ids.has(r.actorId));
   const ordinal = s.departures!.nextOrdinal;
   s.departures!.nextOrdinal = checkedAdd(ordinal, 1);
-  s.departures!.receipts.push({
+  const receipt = {
     ordinal,
     actorId,
     owner: r.owner,
     reason: r.reason,
     tick: occurredTick ?? game.world5!.simulationTicks,
-    result: 'retired'
+    result: 'retired' as const
+  };
+  s.departures!.receipts.push(receipt);
+  recordRaidRetirement(game, receipt);
+  // Keep active raid witnesses even when unrelated departures age out.
+  const protectedOrdinals = new Set(game.world5!.raidCamps.flatMap(c =>
+    c.event?.actors.flatMap(a => a.retired ? [a.retired.ordinal] : []) ?? []));
+  while (s.departures!.receipts.length > 128) {
+    const index = s.departures!.receipts.findIndex(receipt => !protectedOrdinals.has(receipt.ordinal));
+    if (index < 0) throw new World5Error('C5_BUDGET', 'departureReceipt');
+    s.departures!.receipts.splice(index, 1);
+  }
   });
-  s.departures!.receipts.splice(0, Math.max(0, s.departures!.receipts.length - 128));
   // A hook's buffered module writes can fail without undoing retirement.
   if (runtime.hasHook('actorDeparted')) {
     try {

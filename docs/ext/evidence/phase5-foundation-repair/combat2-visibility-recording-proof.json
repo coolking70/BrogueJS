@@ -1,0 +1,114 @@
+{
+  "roots": 7635,
+  "chains": 7572,
+  "extensionSamples": 63,
+  "rows": [
+    {
+      "variant": "base",
+      "scenario": "evasion-3",
+      "events": 62
+    },
+    {
+      "variant": "base",
+      "scenario": "links-47",
+      "events": 425
+    },
+    {
+      "variant": "base",
+      "scenario": "natural-1",
+      "events": 111
+    },
+    {
+      "variant": "base",
+      "scenario": "natural-11",
+      "events": 315
+    },
+    {
+      "variant": "base",
+      "scenario": "natural-12",
+      "events": 1328
+    },
+    {
+      "variant": "base",
+      "scenario": "natural-2",
+      "events": 219
+    },
+    {
+      "variant": "base",
+      "scenario": "natural-3",
+      "events": 64
+    },
+    {
+      "variant": "nonvis",
+      "scenario": "evasion-3",
+      "events": 62
+    },
+    {
+      "variant": "nonvis",
+      "scenario": "links-47",
+      "events": 425
+    },
+    {
+      "variant": "nonvis",
+      "scenario": "natural-1",
+      "events": 111
+    },
+    {
+      "variant": "nonvis",
+      "scenario": "natural-11",
+      "events": 315
+    },
+    {
+      "variant": "nonvis",
+      "scenario": "natural-12",
+      "events": 1328
+    },
+    {
+      "variant": "nonvis",
+      "scenario": "natural-2",
+      "events": 219
+    },
+    {
+      "variant": "nonvis",
+      "scenario": "natural-3",
+      "events": 64
+    },
+    {
+      "variant": "final",
+      "scenario": "evasion-3",
+      "events": 62
+    },
+    {
+      "variant": "final",
+      "scenario": "links-47",
+      "events": 425
+    },
+    {
+      "variant": "final",
+      "scenario": "natural-1",
+      "events": 111
+    },
+    {
+      "variant": "final",
+      "scenario": "natural-11",
+      "events": 315
+    },
+    {
+      "variant": "final",
+      "scenario": "natural-12",
+      "events": 1328
+    },
+    {
+      "variant": "final",
+      "scenario": "natural-2",
+      "events": 219
+    },
+    {
+      "variant": "final",
+      "scenario": "natural-3",
+      "events": 64
+    }
+  ],
+  "passed": true,
+  "method": "Independent exact ECMAScript JSON/crypto formula; every root+chain and representative actual full-world extension projections"
+}

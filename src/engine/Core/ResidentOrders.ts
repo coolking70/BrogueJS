@@ -766,7 +766,8 @@ export function settleResidentOrderEpoch(
         tags: [...itemRead(g, i).tags]
       }))
     });
-    recordRaidProduction(g,c.slot,to,plan.ticket.completedBatches-t.completedBatches);
+    const completedBefore = t.completedBatches, ordinalBefore = t.lastCompletionOrdinal;
+    recordRaidProduction(g,c.slot,to,plan.ticket.completedBatches-completedBefore);
     Object.assign(o, plan.order);
     Object.assign(t, plan.ticket);
     Object.assign(quota, plan.quota);
@@ -812,14 +813,14 @@ export function settleResidentOrderEpoch(
         items: plan.outputs
       });
       receipt(g, o, t.ticketId, t.completedBatches, to, 'completed', null);
-      recordWorldFact(g, {
+      for (let batch = completedBefore + 1; batch <= t.completedBatches; batch++) recordWorldFact(g, {
         owner: t.owner,
         ticketId: t.ticketId,
-        completionOrdinal: t.lastCompletionOrdinal,
+        completionOrdinal: ordinalBefore + batch - completedBefore,
         operation: 'craft-batch',
         definitionId: t.definitionId,
         actorId: t.actorId,
-        completedBatches: t.completedBatches,
+        completedBatches: batch,
         result: 'completed',
         reason: null,
         tick: to

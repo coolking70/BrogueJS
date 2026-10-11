@@ -1,11 +1,11 @@
-# 维护者侧指挥状态（2026-10-11）
+# 维护者侧指挥状态（2026-10-12）
 
-## 当前状态（2026-10-11T07:59:17+08:00，六项底座修复）
-- 实现`0ec7c56`同源码完整复跑已核：npm 10624过/84skip/5todo；ext 5863过/1skip；drift 14过；均exit0、无失败/已报告unhandled；三套不累加。
-- 当前启动ORIGIN/VISIBILITY/SPATIAL与XR-01/02/03同一步修复；XR-02按权威非致死退休记录原因/时点，无击杀/奖励；必要格式升版本步登记。
-- 六项尚未关闭；先正式回归及受影响门禁，再独立R1→原作者修→最多R2，无R3；收口推送后才合固定narrative2 `1d0d900`并重跑全量/128/15布局，旧结果不沿用。
-- [任务书](phase5-foundation-repair.task.md)；Claude抽样仍待回执。耗时待六项首败与改动范围确认后估计，当前不承诺完成时点。
-- 父`01a1163c-1880-7c31-b810-dd60d1e07ac8`；看门狗`/private/tmp/brogue-commander-20261009-5z/watchdog.sh`；60分钟兜底，启动子进程后不轮询；每步或6小时更新。
+## 当前状态（2026-10-12T04:02:33+08:00，六项底座R2收口）
+- 六项、R1-F1至F5及combat2 VISIBILITY补充R2通过，新确证发现0；本提交收口ext/phase5，source73a08ca0/distb7055a7b与R2一致。
+- 正常226文件去重4314过/1既有CE skip，drift14过；缺五包ext2924过/1同一skip；补充76过及缺包native5过。保留首败和复测口径，不称新全量全绿。
+- combat2原完整文件2过2败，giantHit与zombie自然释放缺证据留集成；Claude最终候选人工待验。
+- 本轮推送后启动SDK-1/SDK-2作者，独立最多两轮后推送，再依次集成narrative2/combat2及统一全量。SDK实施粗估2至6小时，随归因更新。
+- 当前无作者或门禁进程；父01a1163c-1880-7c31-b810-dd60d1e07ac8；后续独立OS会话/nohup/run-child+done，watchdog=/private/tmp/brogue-commander-20261009-5z/watchdog.sh，启动即登记PID。
 
 ## 当前工作规则
 

@@ -19,7 +19,7 @@ describe('settlement limits and structures', () => {
       const p = establish(g);
       expect(h.ext('settlement', 'establish', p).error).toBeNull();
       g.player.loc = { x: 3, y: 2 };
-      g.grid.getCell(2, 2)!.isVisible = true;
+      (g as any).updateVision(false);
       // Region containment denies distant stairs; a protected marker location is rejected before payment.
       const q = establish(g);
       q.x = 2;
@@ -40,7 +40,10 @@ describe('settlement limits and structures', () => {
       if (kind === 'machine') g.grid.getCell(p.x, p.y)!.machineNumber = 1;
       if (kind === 'reservation')
         bindGenerationReservation(g.grid, new Set([9 * g.grid.width + 18]));
-      if (kind === 'unknown') g.grid.getCell(p.x, p.y)!.isVisible = false;
+      if (kind === 'unknown') {
+        Object.assign(g.lightMap.lightAt(p.x, p.y)!, {r:0,g:0,b:0});
+        g.grid.getCell(p.x, p.y)!.isVisible = false;
+      }
       if (kind === 'edge') p.bounds.x = 74;
       expect(h.ext('settlement', 'establish', p).error).not.toBeNull();
       expect(g.world5!.simulationTicks).toBe(tick);

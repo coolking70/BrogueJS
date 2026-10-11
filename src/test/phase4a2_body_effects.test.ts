@@ -163,6 +163,8 @@ describe('4a-2 public targeting and native body perception', () => {
         const { g, m } = scene(3); commitCreatureAnchor(g.player, { x: 11, y: 7 });
         const w = ItemLoader.spawnWeapon('sword', -1, -1)!; Object.assign(w, { damage: '2-2', strengthRequired: g.player.effectiveStrength, enchantment: 0, flags: [] });
         g.player.inventory.addItem(w); g.player.equippedWeapon = w;
+        (g as unknown as { updateVision(remember: boolean): void }).updateVision(false);
+        expect(canDirectlySeeMonster(g.player,g.grid,m)).toBe(true);
         g.executeCommand('auto_explore'); expect(m.hp).toBe(998); expect(g.player.loc).toEqual({ x: 11, y: 7 });
     });
     it('an exposed tail does not reveal hidden body cells through hover or inspect, and tail inspection resolves the same entity', () => {
@@ -275,6 +277,7 @@ describe('4a-2 real mixed commands, targeting, perception, DF and recording', ()
             game.player.inventory.addItem(ItemLoader.spawnPotion('potion_of_incineration', -1, -1)!);
             game.player.inventory.addItem(ItemLoader.spawnScroll('scroll_of_discord', -1, -1)!);
             game.player.inventory.addItem(ItemLoader.spawnScroll('scroll_of_negation', -1, -1)!);
+            (game as unknown as { updateVision(remember: boolean): void }).updateVision(false);
         });
         const g = createHeadlessGame(402203, 'test');
         const letter = (id: string) => g.player.inventory.items.find(i => i.identityId === id || (i as unknown as { consumableId: string }).consumableId === id)!.inventoryLetter;

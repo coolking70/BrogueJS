@@ -1,3 +1,4 @@
+import { FOUNDATION_PROTOCOL } from '../../ext/descriptor';
 import { c5Canonical } from './WorldCanonical';
 import { digestRoot, recordingStart, recordingChain } from './RecordingDigest';
 import {
@@ -50,7 +51,7 @@ export function validateRecordingV4(
     if (
       r.version !== 4 ||
       r.codec.wholeRun !== 6 ||
-      r.codec.foundation !== 13 ||
+      r.codec.foundation !== FOUNDATION_PROTOCOL ||
       r.codec.origin !== 2 ||
       r.digestAlgorithm !== 'sha256-c5-merkle-v1' ||
       r.digestChunk !== 256 ||

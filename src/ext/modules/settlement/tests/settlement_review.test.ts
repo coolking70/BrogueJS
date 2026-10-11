@@ -71,7 +71,7 @@ it('camp page owns its target independently of build cursor, preview and paid co
 it('camp target is bounded and a failed visible target does not spend food/material/time', () => {
   const {g}=setup();const u=session(g);u.props().onCampTarget(1000,-1000);
   expect(u.props().campTarget).toEqual({x:77,y:1});
-  u.props().onCampTarget(22,12);g.grid.getCell(22,12)!.isVisible=false;
+  u.props().onCampTarget(22,12);Object.assign(g.lightMap.lightAt(22,12)!,{r:0,g:0,b:0});g.grid.getCell(22,12)!.isVisible=false;
   const food=g.player.inventory.items.find(i=>i.consumableId==='ration_of_food')!;
   u.props().onFood(food.id,2);const ticks=g.world5!.simulationTicks,inventory=inventoryStamp(g.player.inventory.items);
   u.props().onEstablish();expect(g.world5!.simulationTicks).toBe(ticks);
@@ -84,14 +84,14 @@ it('collapsed selection does not claim movement, while expanded selection consum
   expect(u.s.panelOpen.value).toBe(true);u.scope.stop();
 });
 it('unseen actual marker/build requests deny generically, surrounding hidden machines reveal no detail', () => {
-  const {h,g}=setup();g.grid.getCell(21,12)!.isVisible=false;
+  const {h,g}=setup();Object.assign(g.lightMap.lightAt(21,12)!,{r:0,g:0,b:0});g.grid.getCell(21,12)!.isVisible=false;
   expect(h.ext('settlement','establish',establish(g)).error).toBe('C5_BLOCKED');
   g.grid.getCell(21,12)!.machineNumber=99;
   expect(h.ext('settlement','establish',establish(g)).error).toBe('C5_BLOCKED');
-  g.grid.getCell(21,12)!.machineNumber=0;g.grid.getCell(21,12)!.isVisible=true;
-  g.grid.getCell(18,9)!.isVisible=false;g.grid.getCell(18,9)!.machineNumber=99;
+  g.grid.getCell(21,12)!.machineNumber=0;(g as any).updateVision(false);
+  Object.assign(g.lightMap.lightAt(18,9)!,{r:0,g:0,b:0});g.grid.getCell(18,9)!.isVisible=false;g.grid.getCell(18,9)!.machineNumber=99;
   expect(h.ext('settlement','establish',establish(g)).error).toBeNull();
-  g.grid.getCell(20,13)!.isVisible=false;
+  Object.assign(g.lightMap.lightAt(20,13)!,{r:0,g:0,b:0});g.grid.getCell(20,13)!.isVisible=false;
   expect(h.ext('settlement','build',build(g)).error).toBe('C5_BLOCKED');
   g.grid.getCell(20,13)!.machineNumber=99;
   expect(h.ext('settlement','build',build(g)).error).toBe('C5_BLOCKED');
@@ -134,7 +134,7 @@ it('management still rejects same-level region conflicts atomically', () => {
 it('a boundary that cuts a hidden work footprint reports only a generic denial', () => {
   const {h,g}=setup();g.extensionRuntime!.worldWorkPlace({owner:'settlement',depth:1,x:16,y:12,
     instanceKey:'cut-boundary',contentId:'settlement.wood-node',nameKey:'ext.settlement.wood-node.name',descriptionKey:'ext.settlement.wood-node.description',glyph:'木',color:'#aaaaaa',interactionDistance:1,priority:0});
-  g.grid.getCell(16,12)!.isVisible=false;expect(h.ext('settlement','establish',establish(g)).error).toBe('C5_BLOCKED');
-  for(let y=11;y<=13;y++)for(let x=15;x<=17;x++)g.grid.getCell(x,y)!.isVisible=true;
+  Object.assign(g.lightMap.lightAt(16,12)!,{r:0,g:0,b:0});g.grid.getCell(16,12)!.isVisible=false;expect(h.ext('settlement','establish',establish(g)).error).toBe('C5_BLOCKED');
+  (g as any).updateVision(false);
   expect(h.ext('settlement','establish',establish(g)).error).toBe('C5_PROTECTED');
 });

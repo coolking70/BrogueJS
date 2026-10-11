@@ -1,0 +1,13 @@
+{
+  "currentFiles": 1311,
+  "currentSourceSha": "73a08ca004620f1e9c5f78ef0fe298aee4d236a5a6b47d4916d973604b9afc14",
+  "reconstructedR1Files": 1310,
+  "reconstructedR1Sha": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+  "expectedR1": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+  "onlyChangedInputs": [
+    "src/test/ext_foundation_native_visibility.test.ts",
+    "src/ext/modules/foraging/tests/foraging_feed.test.ts",
+    "scripts/test-suites.json"
+  ],
+  "allOtherInputsIdentical": true
+}

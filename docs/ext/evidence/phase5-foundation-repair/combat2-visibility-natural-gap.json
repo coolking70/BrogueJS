@@ -1,0 +1,27 @@
+{
+  "player": [
+    "combat.advancing-point",
+    "combat.anchor-break",
+    "combat.answering-edge",
+    "combat.cast-echo",
+    "combat.returning-sweep"
+  ],
+  "npc": [
+    "combat.advancing-point",
+    "combat.answering-edge",
+    "combat.cast-echo",
+    "combat.returning-sweep"
+  ],
+  "expected": [
+    "combat.advancing-point",
+    "combat.anchor-break",
+    "combat.answering-edge",
+    "combat.cast-echo",
+    "combat.returning-sweep"
+  ],
+  "missingNpc": [
+    "combat.anchor-break"
+  ],
+  "missingPlayer": [],
+  "classification": "pre-existing fixed natural traces; all original hits/releases matched base/nonvis/final"
+}

@@ -1,0 +1,457 @@
+{
+  "state": "R1 author repairs and all related gates completed; same-author combat2 VISIBILITY supplement required before R2",
+  "head": "4856505e2c48f37586ca016af2d59f443b79ec9d",
+  "source": {
+    "head": "4856505e2c48f37586ca016af2d59f443b79ec9d",
+    "branch": "ext/phase5",
+    "uncommitted": true,
+    "sourceDefinition": "sorted [path,fileSHA] src/scripts/public and seven root build/config inputs; compact UTF-8 JSON",
+    "sourceFiles": 1310,
+    "sourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+    "buildDefinition": "sorted [path,fileSHA] dist contents; compact UTF-8 JSON",
+    "buildFiles": 60,
+    "buildSha256": "b7055a7b4d2d84c21badd1c3bc9975e6a8014dc4fe04c4499ed840f2df4f6696"
+  },
+  "bulkFirstFail": {
+    "stage": "foundation-r1-final-affected-v2",
+    "exit": 1,
+    "files": 226,
+    "passed": 4309,
+    "failed": 5,
+    "existingSkip": 1,
+    "todo": 0,
+    "log": "foundation-r1-final-affected-v2.log"
+  },
+  "threeFullFilesRepaired": {
+    "stage": "foundation-r1-final-three-spatial-v4",
+    "exit": 0,
+    "pass": 58,
+    "fail": 0,
+    "skip": 0,
+    "todo": 0
+  },
+  "uniqueAffectedUnion": {
+    "files": 226,
+    "passedFiles": 225,
+    "existingSkippedFiles": 1,
+    "passedTests": 4314,
+    "failedTests": 0,
+    "existingSkippedTests": 1,
+    "todo": 0,
+    "countMethod": "replace exactly three corrected full files in actual v2 results, all other source bytes proved unchanged, no duplicated test count",
+    "sourceReuseProof": "foundation-r1-selective-reuse-proof-v4.json"
+  },
+  "finalNormalCommands": [
+    {
+      "stage": "foundation-r1-final-boundary-v4",
+      "command": [
+        "npm",
+        "run",
+        "check:modules"
+      ],
+      "exit": 0,
+      "seconds": 2.322669415967539
+    },
+    {
+      "stage": "foundation-r1-final-types-v4",
+      "command": [
+        "node",
+        "node_modules/vue-tsc/bin/vue-tsc.js",
+        "--noEmit",
+        "-p",
+        "tsconfig.app.json"
+      ],
+      "exit": 0,
+      "seconds": 8.451357417041436
+    },
+    {
+      "stage": "foundation-r1-final-build-v4",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "exit": 0,
+      "seconds": 11.823768083006144
+    },
+    {
+      "stage": "foundation-r1-final-three-spatial-v4",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/test/phase4a2_body_effects.test.ts",
+        "src/test/phase4a3_body_display.test.ts",
+        "src/test/phase4d_movement_environment.test.ts",
+        "--maxWorkers=1",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile=/private/tmp/brogue-commander-20261009-5z/foundation-r1-final-three-spatial-v4.vitest.json"
+      ],
+      "exit": 0,
+      "seconds": 33.15817441698164
+    },
+    {
+      "stage": "foundation-r1-final-drift-v4",
+      "command": [
+        "npm",
+        "run",
+        "test:drift",
+        "--",
+        "--maxWorkers=1",
+        "--no-file-parallelism",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile=/private/tmp/brogue-commander-20261009-5z/foundation-r1-final-drift-v4.vitest.json"
+      ],
+      "exit": 0,
+      "seconds": 149.63408600003459
+    },
+    {
+      "stage": "foundation-r1-final-c4a-source-v4",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/test/c_4a_terrain_catalog.test.ts",
+        "-t",
+        "promote/fire 类字段的生产读者只出现在白名单文件",
+        "--maxWorkers=1",
+        "--no-file-parallelism"
+      ],
+      "exit": 0,
+      "seconds": 2.047371417051181
+    },
+    {
+      "stage": "foundation-r1-real-seven-origin-v1",
+      "command": [
+        "node",
+        "/private/tmp/brogue-commander-20261009-5z/foundation-r1-real-missing.mjs",
+        "create"
+      ],
+      "exit": 0,
+      "seconds": 2.7639221670106053
+    }
+  ],
+  "sourceUnchanged": true,
+  "original63ExactlyMatchedPass": 63,
+  "drift": {
+    "files": 7,
+    "pass": 14,
+    "fail": 0,
+    "skip": 0,
+    "todo": 0,
+    "exit": 0
+  },
+  "localGuard": {
+    "pass": 1,
+    "nameFiltered": 29,
+    "realSkip": 0,
+    "exit": 0
+  },
+  "performance": {
+    "runtime": "v24.19.0",
+    "nodeOptions": "--max-old-space-size=3072",
+    "workers": 1,
+    "sourceSha256": "d3ef1e65dd93d244e6c32a6419323a04bc5be4fcde55a47b6da25e63a899967f",
+    "ordinaryP95DifferenceMs": 1.3714569999974628,
+    "ordinaryLimitMs": 5,
+    "sixtyFourPeakMs": 24.675167000001238,
+    "sixtyFourLimitMs": 50,
+    "retiredWorkerSources": 64,
+    "originalAssertionsUnchanged": true
+  },
+  "realSevenOrigin": {
+    "installed": [
+      "combat",
+      "crafting",
+      "foraging",
+      "giants",
+      "growth",
+      "narrative",
+      "settlement"
+    ],
+    "events": 4,
+    "saveAccepted": true,
+    "recordingAccepted": true,
+    "replayOutOfSync": 0,
+    "fixtureRegistry": false
+  },
+  "realMissingFiveGuard": {
+    "installed": [
+      "growth",
+      "settlement"
+    ],
+    "missing": [
+      "combat",
+      "crafting",
+      "foraging",
+      "giants",
+      "narrative"
+    ],
+    "sourceOrigin": [
+      "combat",
+      "crafting",
+      "foraging",
+      "giants",
+      "growth",
+      "narrative",
+      "settlement"
+    ],
+    "saveRejected": true,
+    "recordingRejected": true,
+    "completeWorldUnchanged": true,
+    "rootIdentitiesUnchanged": true,
+    "rngAllocatorUnchanged": true,
+    "fixtureRegistry": false
+  },
+  "testFocus": {
+    "src/test/ext_foundation_retirement_atomicity.test.ts": {
+      "passed": 6
+    },
+    "src/ext/modules/combat/tests/combat_phase4d_rest_relations.test.ts": {
+      "passed": 5
+    },
+    "src/ext/modules/giants/tests/giants_spine_trace.test.ts": {
+      "passed": 1
+    },
+    "src/ext/modules/giants/tests/giants_trace.test.ts": {
+      "passed": 2
+    },
+    "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts": {
+      "passed": 10
+    }
+  },
+  "completedAt": "2026-10-11T22:35:14.193394+08:00",
+  "physicalMissingFive": {
+    "stage": "foundation-r1-final-missing-v1",
+    "commandResults": [
+      {
+        "stage": "foundation-r1-real-missing-guards-v1",
+        "command": [
+          "node",
+          "/private/tmp/brogue-commander-20261009-5z/foundation-r1-real-missing.mjs",
+          "reject"
+        ],
+        "exit": 0,
+        "seconds": 2.0564419580623507
+      },
+      {
+        "stage": "foundation-r1-missing-boundary-v1",
+        "command": [
+          "npm",
+          "run",
+          "check:modules"
+        ],
+        "exit": 0,
+        "seconds": 2.059965542051941
+      },
+      {
+        "stage": "foundation-r1-missing-types-v1",
+        "command": [
+          "node",
+          "/Users/coolking70/Documents/同步空间/BrogueJS-p5/node_modules/vue-tsc/bin/vue-tsc.js",
+          "--noEmit",
+          "-p",
+          "tsconfig.app.json"
+        ],
+        "exit": 0,
+        "seconds": 7.32120145810768
+      },
+      {
+        "stage": "foundation-r1-missing-build-v1",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "exit": 0,
+        "seconds": 10.463948416989297
+      },
+      {
+        "stage": "foundation-r1-missing-remaining-ext-v1",
+        "command": [
+          "npm",
+          "run",
+          "test:ext",
+          "--",
+          "--maxWorkers=1",
+          "--no-file-parallelism",
+          "--reporter=default",
+          "--reporter=json",
+          "--outputFile=/private/tmp/brogue-commander-20261009-5z/foundation-r1-missing-remaining-ext-v1.vitest.json"
+        ],
+        "exit": 0,
+        "seconds": 2789.576124333078
+      }
+    ],
+    "remainingExt": {
+      "files": 191,
+      "passedFiles": 190,
+      "existingSkippedFiles": 1,
+      "pass": 2924,
+      "fail": 0,
+      "existingSkip": 1,
+      "todo": 0,
+      "exit": 0,
+      "noNewSkip": true,
+      "nameFilter": null
+    },
+    "sourceBefore": {
+      "files": 1059,
+      "sha256": "9f97e5667ad5ae055b011f1bca13518a480eb8b3f25ec79cfe90bdb418bf9f73",
+      "removedActuallyAbsent": true
+    },
+    "sourceAfter": {
+      "files": 1059,
+      "sha256": "9f97e5667ad5ae055b011f1bca13518a480eb8b3f25ec79cfe90bdb418bf9f73",
+      "removedActuallyAbsent": true
+    },
+    "sourceUnchanged": true,
+    "scope": "one physically missing-five related layout; not Step B128/15"
+  },
+  "finalMainIdentityRecheck": {
+    "head": "4856505e2c48f37586ca016af2d59f443b79ec9d",
+    "branch": "ext/phase5",
+    "uncommitted": true,
+    "sourceDefinition": "sorted [path,fileSHA] src/scripts/public and seven root build/config inputs; compact UTF-8 JSON",
+    "sourceFiles": 1310,
+    "sourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+    "buildDefinition": "sorted [path,fileSHA] dist contents; compact UTF-8 JSON",
+    "buildFiles": 60,
+    "buildSha256": "b7055a7b4d2d84c21badd1c3bc9975e6a8014dc4fe04c4499ed840f2df4f6696"
+  },
+  "diffScope": {
+    "allPaths": [
+      "docs/ext/commander-status.md",
+      "docs/ext/phase2-narrative.md",
+      "docs/ext/phase5-foundation-repair.task.md",
+      "docs/ext/settlement-config.md",
+      "scripts/test-suites.json",
+      "scripts/u03-state-contract.json",
+      "src/engine/Core/ActorDeparture.ts",
+      "src/engine/Core/Game.ts",
+      "src/engine/Core/PhasedAttackProduction.ts",
+      "src/engine/Core/RecordingFormat.ts",
+      "src/engine/Core/RecordingV4.ts",
+      "src/engine/Core/ResidentOrders.ts",
+      "src/engine/Core/SettlementRaids.ts",
+      "src/engine/Map/StructureWorld.ts",
+      "src/engine/Movement/SpatialRevision.ts",
+      "src/ext/descriptor.ts",
+      "src/ext/modules/combat/tests/combat_phase4d_rest_relations.test.ts",
+      "src/ext/modules/crafting/data/natural-trace.json",
+      "src/ext/modules/foraging/data/natural-trace-hearth.json",
+      "src/ext/modules/foraging/data/natural-trace.json",
+      "src/ext/modules/foraging/tests/foraging_feed.test.ts",
+      "src/ext/modules/giants/data/colossus-natural-trace.json",
+      "src/ext/modules/giants/data/giants2-copper-trace.json",
+      "src/ext/modules/giants/data/giants2-lantern-trace.json",
+      "src/ext/modules/giants/data/natural-trace.json",
+      "src/ext/modules/giants/data/spine-natural-trace.json",
+      "src/ext/modules/giants/tests/giants2_contract.test.ts",
+      "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts",
+      "src/ext/modules/settlement/data/definitions.json",
+      "src/ext/modules/settlement/definitions.ts",
+      "src/ext/modules/settlement/descriptor.ts",
+      "src/ext/modules/settlement/module.ts",
+      "src/ext/modules/settlement/schema.ts",
+      "src/ext/modules/settlement/test-suites.json",
+      "src/ext/modules/settlement/tests/helpers.ts",
+      "src/ext/modules/settlement/tests/resident-captive-route.json",
+      "src/ext/modules/settlement/tests/resident-natural-route.json",
+      "src/ext/modules/settlement/tests/residentHelpers.ts",
+      "src/ext/modules/settlement/tests/settlement_boundaries.test.ts",
+      "src/ext/modules/settlement/tests/settlement_raids.test.ts",
+      "src/ext/modules/settlement/tests/settlement_review.test.ts",
+      "src/ext/runtime.ts",
+      "src/ext/settlementRaidSchema.ts",
+      "src/ext/settlementRaids.ts",
+      "src/ext/world5.ts",
+      "src/test/dialog_host.test.ts",
+      "src/test/ext_foundation_contracts.test.ts",
+      "src/test/ext_recording_v4_digest.test.ts",
+      "src/test/ext_structure_review.test.ts",
+      "src/test/fixtures/phase4a0-single-cell-baseline.json",
+      "src/test/fixtures/traces/u-r4-trace.json.gz",
+      "src/test/phase4a2_body_effects.test.ts",
+      "src/test/phase4a3_body_display.test.ts",
+      "src/test/phase4d_movement_environment.test.ts",
+      "src/test/replay_import_ui.test.ts",
+      "src/test/support/structureFixture.ts",
+      "src/test/u_03b_level_travel.test.ts",
+      "docs/ext/evidence/phase5-foundation-repair/README.md",
+      "docs/ext/evidence/phase5-foundation-repair/golden-changes.json.gz",
+      "docs/ext/evidence/phase5-foundation-repair/r1-additional-spatial-failures.json",
+      "docs/ext/evidence/phase5-foundation-repair/r1-failures.json",
+      "docs/ext/evidence/phase5-foundation-repair/r1-gates.json",
+      "docs/ext/evidence/phase5-foundation-repair/r1-giants-golden-changes.json.gz",
+      "docs/ext/phase5-foundation-repair.report.md",
+      "docs/ext/phase5-foundation-repair.review-r1.md",
+      "src/ext/modules/settlement/tests/foundation_lifecycle_repair.test.ts",
+      "src/ext/modules/settlement/tests/foundation_retirement_replay.test.ts",
+      "src/ext/modules/settlement/tests/foundation_xr_repair.test.ts",
+      "src/test/ext_foundation_boundary_audit.test.ts",
+      "src/test/ext_foundation_origin_performance.test.ts",
+      "src/test/ext_foundation_origin_repair.test.ts",
+      "src/test/ext_foundation_retirement_atomicity.test.ts",
+      "src/test/ext_foundation_world_repair.test.ts",
+      "src/test/fixtures/foraging-foundation14-import.json",
+      "src/test/fixtures/foundation/a01-physical-route.fixture.json",
+      "src/test/fixtures/foundation/seven-physical-route.fixture.json",
+      "src/test/fixtures/foundationOptionalContent.ts"
+    ],
+    "productionPaths": [
+      "src/engine/Core/ActorDeparture.ts",
+      "src/engine/Core/Game.ts",
+      "src/engine/Core/PhasedAttackProduction.ts",
+      "src/engine/Core/RecordingFormat.ts",
+      "src/engine/Core/RecordingV4.ts",
+      "src/engine/Core/ResidentOrders.ts",
+      "src/engine/Core/SettlementRaids.ts",
+      "src/engine/Map/StructureWorld.ts",
+      "src/engine/Movement/SpatialRevision.ts",
+      "src/ext/descriptor.ts",
+      "src/ext/modules/settlement/data/definitions.json",
+      "src/ext/modules/settlement/definitions.ts",
+      "src/ext/modules/settlement/descriptor.ts",
+      "src/ext/modules/settlement/module.ts",
+      "src/ext/modules/settlement/schema.ts",
+      "src/ext/runtime.ts",
+      "src/ext/settlementRaidSchema.ts",
+      "src/ext/settlementRaids.ts",
+      "src/ext/world5.ts"
+    ],
+    "countSourceStatusPaths": 78,
+    "notAuthorEdited": "docs/ext/phase5-foundation-repair.review-r1.md maintained independent R1 report preserved read-only"
+  },
+  "restrictionsKept": {
+    "noAgentOrReviewRound": true,
+    "noCommitPushMergeTag": true,
+    "noCombat2Narrative2Integration": true,
+    "noSdkWork": true,
+    "noCeFetchFullGen": true,
+    "noNewSkipExclude": true,
+    "claudeReceipt": "pending"
+  },
+  "originPerformanceMeasurementNotNumericGate": {
+    "runtime": "v24.19.0",
+    "measurements": [
+      {
+        "depths": 1,
+        "p50": 0.32950000000005275,
+        "p95": 0.37058299999989686,
+        "max": 0.45395799999982955
+      },
+      {
+        "depths": 8,
+        "p50": 1.538041000000021,
+        "p95": 1.7827089999998407,
+        "max": 1.8035419999998794
+      }
+    ]
+  },
+  "finalLogUnhandledReports": 0
+}

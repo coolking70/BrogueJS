@@ -6,7 +6,7 @@
         "objects": 22988
       },
       "snapshot": {
-        "sha256": "50bdf4996988d933957d247856f27479eb7459dbab883b92ab7a166286cd9314",
+        "sha256": "64cfc50d79ef1448f5045c2dabf29c221314e277ef977a7f53f89e27aed76c40",
         "objects": 11254
       },
       "rng": {
@@ -42,11 +42,11 @@
     },
     "commands": {
       "graph": {
-        "sha256": "9875cb48a25680d67bcc14701528ce2a224a74d28fff01af409366f5d24d13ed",
+        "sha256": "f03864cee958bd302336caa837d5961c9a30724e58d27cd3f189ba1b4caf76de",
         "objects": 23025
       },
       "snapshot": {
-        "sha256": "f2d77383ebddc5fdfca54a7f136a42f3d57f16bb6ef3dc1ceee79d65fad694eb",
+        "sha256": "f6505f0ad6feaae75b738cbfaeaf7705aa3df5ae80fcb15738ffdb860e7035e7",
         "objects": 11287
       },
       "rng": {
@@ -82,11 +82,11 @@
     },
     "loaded": {
       "graph": {
-        "sha256": "b5d33306a8c65926b73e44056902cbf0f35caa3921090476070e173ba809cb12",
+        "sha256": "a7a7798156a33c55382aa2780a589fa9e778a07aba8cabf5384a8279097e514a",
         "objects": 20648
       },
       "snapshot": {
-        "sha256": "f2d77383ebddc5fdfca54a7f136a42f3d57f16bb6ef3dc1ceee79d65fad694eb",
+        "sha256": "f6505f0ad6feaae75b738cbfaeaf7705aa3df5ae80fcb15738ffdb860e7035e7",
         "objects": 11287
       },
       "rng": {
@@ -122,11 +122,11 @@
     },
     "continued": {
       "graph": {
-        "sha256": "70fc0f5580ec035502b0de710cab21007047160175b1d5cb4056e828d76fd046",
+        "sha256": "fabba769429673c987f128690dd41b5bbc523a2643eb8bccee2e3c6fb3293744",
         "objects": 23035
       },
       "snapshot": {
-        "sha256": "b94ebb8016cba35e0b241bff7c9041d9aeea3844508fc5a70896094e656f4e4f",
+        "sha256": "c7787ee29bdc46f6ef84fb30415363855e9e5a413d14c748585ec61f6654cd8e",
         "objects": 11297
       },
       "rng": {
@@ -162,11 +162,11 @@
     },
     "replayed": {
       "graph": {
-        "sha256": "ef7834a32aadfb4b80c7c53a067b6650d2ed9429a81c280adaa2c9bbd52fc4da",
+        "sha256": "3370272f087900dd5fc8d1d72a361c909d1adc36a4c2de355645c58c7c93e5d9",
         "objects": 23033
       },
       "snapshot": {
-        "sha256": "f2d77383ebddc5fdfca54a7f136a42f3d57f16bb6ef3dc1ceee79d65fad694eb",
+        "sha256": "f6505f0ad6feaae75b738cbfaeaf7705aa3df5ae80fcb15738ffdb860e7035e7",
         "objects": 11287
       },
       "rng": {
@@ -202,11 +202,11 @@
     },
     "seek": {
       "graph": {
-        "sha256": "c2e285f5178ac94c6221ed70d08a66c432301e9805ee23ea72c6a05daf997c11",
+        "sha256": "98ad31a25de6ab3c91ac8c6ab11e8dbcccdcc65ad8d375801fb3cedbe4ec9e28",
         "objects": 20656
       },
       "snapshot": {
-        "sha256": "134591101241237658dece15d5175faaa9f6853200fea5dd50bb194f07b54b49",
+        "sha256": "78dd22e0707831d239445b4bfa8f71d4df8b0700aabf42623bcf54c2bae60ba0",
         "objects": 11266
       },
       "rng": {
@@ -242,11 +242,11 @@
     },
     "combat": {
       "graph": {
-        "sha256": "17d55b581c8679075ed6571f4f80509e0a3047ed4169e2fb4dfc6e71fdd3057c",
+        "sha256": "ae485e9f2eef267897abe703d603db581884a1f058054e947cd8c8133eb30154",
         "objects": 22674
       },
       "snapshot": {
-        "sha256": "b67eb5c0da8064afd2d89bdbd1e9f42297cb7dbb6b535182b42654d96e4dfa25",
+        "sha256": "59f66826513160abd38fbb933637a2e4776a96d418fabf71e52caf15c1a498bb",
         "objects": 5714
       },
       "rng": {
@@ -274,7 +274,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -298,11 +298,11 @@
     },
     "knockback": {
       "graph": {
-        "sha256": "42cdd26294e96988f677ff9da227874c56ac863b4a1ae5f448bdf8ca8750622b",
+        "sha256": "de1d22fccd59ca3474c728d6124a55a2f8e1f36bf738a436dd86308de30e18a3",
         "objects": 22674
       },
       "snapshot": {
-        "sha256": "dda0d6ee7d5979731f7cd3f569ee3bf276b30c69dc17d36981eef6b4f55d7642",
+        "sha256": "724f54dc0e984f10893615c99143a46a5ab05ecedd2ef80e8b0c9c43b71e544b",
         "objects": 5691
       },
       "rng": {
@@ -330,7 +330,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -354,11 +354,11 @@
     },
     "blink": {
       "graph": {
-        "sha256": "3519d638c8a7011815a75a8d25aae8800ccd15f8439a19afcb0899ea81f485fc",
+        "sha256": "4cd5aef6550529be28bc289983cc119265e51aa33c707db30520ce079cf09508",
         "objects": 22734
       },
       "snapshot": {
-        "sha256": "32e4f015b5971a740d1d895e3b48ee061a00716307c88c53b0da7ed4f7ee2280",
+        "sha256": "28ed1f388aa7192ccdad28d6379d9639f2550782d300c00580c3eca8628b4329",
         "objects": 5772
       },
       "rng": {
@@ -386,7 +386,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -437,11 +437,11 @@
     },
     "clone": {
       "graph": {
-        "sha256": "19fd34da06f6125c300ff6b632f2ae5ca5569fbacc1e4a0f6e2bea781e2df790",
+        "sha256": "7ea107075563bdcb1eb692e7778f892bb872b47c400295f174b3e67e01ee742d",
         "objects": 22745
       },
       "snapshot": {
-        "sha256": "32f60df8f382d8b2569db6801edb149055f0293062eaa5886fbfe8b0f2d0130d",
+        "sha256": "4e952fdcc8f08b55269978e3788e70adb836efd82781c0319888c407dcff34f7",
         "objects": 5748
       },
       "rng": {
@@ -469,7 +469,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -520,11 +520,11 @@
     },
     "summon": {
       "graph": {
-        "sha256": "140d3a111dd2e5726166d74b20c39558c064dfea7bda66f1b7b179a774971359",
+        "sha256": "8df76616b7a44bf5c748765ff7afc9289240c0c4c79a22b2bfa6e85d165ae8b9",
         "objects": 22789
       },
       "snapshot": {
-        "sha256": "4405dd4a45555def1a676ebfabdb60b870aca69bbfd0def3e152c949f9f11c8e",
+        "sha256": "560cf29737309e9e10c135eb40f0eceb4dde8a195a8a3d2bbf61eb809f8e5cf1",
         "objects": 5820
       },
       "rng": {
@@ -552,7 +552,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -603,11 +603,11 @@
     },
     "trap": {
       "graph": {
-        "sha256": "a1c9a71c08653e4bf69ce539da72cd1e6f104596b3ce36f90b29e783d74d3aad",
+        "sha256": "37554ef09f4e1f05415dc576c973da2af8d90fb19890ab9c03bb5aaccc832c8c",
         "objects": 22790
       },
       "snapshot": {
-        "sha256": "b5b3b002e2c9cbaa8ecd3901ab816ff4d2aeb8f2f3754b8916d826f5a2817dc5",
+        "sha256": "70ab2579cd8bf6c0ecf216fb5f535418d0bb985fdbd64af18158292f196dd0eb",
         "objects": 5820
       },
       "rng": {
@@ -635,7 +635,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -686,11 +686,11 @@
     },
     "level": {
       "graph": {
-        "sha256": "52f1e4afd0c1c88d592be893719a1721fe34a37a7c93964381c1ce80405e0103",
+        "sha256": "067bf2a3edb1566f18b8470ba4a409ce51a65b7240fcfccde43d4c979156db98",
         "objects": 44770
       },
       "snapshot": {
-        "sha256": "7330dad2750e30e14a7af93b7f42ec780e4944eace92c9a6f3ff73b2db9ff6e1",
+        "sha256": "f40c3fa397857fe35168650516f6e7f6c53d728c6cd87cba3871d0a2cb08b3fe",
         "objects": 21139
       },
       "rng": {
@@ -743,11 +743,11 @@
   "growth": {
     "newGame": {
       "graph": {
-        "sha256": "80750db1a0be4095caaee2fc613097c125a24560e0158eeb66914dede30bd02a",
+        "sha256": "b1f58728faefd8f821234ef6da8611b67a059eebcba580e680c95e1c107f964c",
         "objects": 24436
       },
       "snapshot": {
-        "sha256": "19e9c312ba5ee6f706160260e55de8e2cfe5e036f6e02ab47ec21e2b4591a95b",
+        "sha256": "a2c687ac69a914cbb0d4a85d5895ef07ae45840f58bb3ba0c4d1172b7fa7f59a",
         "objects": 11299
       },
       "rng": {
@@ -783,11 +783,11 @@
     },
     "commands": {
       "graph": {
-        "sha256": "4aae7ba630da1cd5394f7fb0f63e45796d39e3bd37d0ff470653c6e7bdaad9b0",
+        "sha256": "5f2df858ca1dcf0e3eae3db125c09a3cf15cb14ba04dfedacb00f3e46e06dcb2",
         "objects": 24471
       },
       "snapshot": {
-        "sha256": "dec17327fe55ae7f2e7ce089e7f95f7ebe92136ec98c1c7d9d21b7922aa19b3b",
+        "sha256": "c81d848346f99000d536c67d8b90faf67c2b599b84b2211d9cf446be5c8fa36e",
         "objects": 11330
       },
       "rng": {
@@ -823,11 +823,11 @@
     },
     "loaded": {
       "graph": {
-        "sha256": "e81644a769ef8c406d1a8670f491c33c0ca29ba14cf2d8c4f352a0a2ec567841",
+        "sha256": "f421660349cc9e6e9c9416a63d0e6340fbb18b3f58109e40796c1429204792ad",
         "objects": 22094
       },
       "snapshot": {
-        "sha256": "dec17327fe55ae7f2e7ce089e7f95f7ebe92136ec98c1c7d9d21b7922aa19b3b",
+        "sha256": "c81d848346f99000d536c67d8b90faf67c2b599b84b2211d9cf446be5c8fa36e",
         "objects": 11330
       },
       "rng": {
@@ -863,11 +863,11 @@
     },
     "continued": {
       "graph": {
-        "sha256": "05d9fece611894a9a95aea478880f62a49b07c7fb11f2fb6297a6a327ef79445",
+        "sha256": "147274ecf68afba46617f0102bb89724b608c8990cb19928ab7385738701e489",
         "objects": 24481
       },
       "snapshot": {
-        "sha256": "883b904ed9f91d2e1ebe8c9ed9d9ae7f9928149acb7f0136a777639fe5c1ea43",
+        "sha256": "6892e7ed360736c2d173c55bcb985963e5f0d5095cb0ee330dd142e92415280a",
         "objects": 11340
       },
       "rng": {
@@ -903,11 +903,11 @@
     },
     "replayed": {
       "graph": {
-        "sha256": "c5dfe8c6798f2a45a850e7f5d321cce0b349625cc5b3b579b8a5b0a05b55e660",
+        "sha256": "103f856fbc7838305c08b721169d8b33b34554ea81fd2e52311a570067546094",
         "objects": 24481
       },
       "snapshot": {
-        "sha256": "dec17327fe55ae7f2e7ce089e7f95f7ebe92136ec98c1c7d9d21b7922aa19b3b",
+        "sha256": "c81d848346f99000d536c67d8b90faf67c2b599b84b2211d9cf446be5c8fa36e",
         "objects": 11330
       },
       "rng": {
@@ -943,11 +943,11 @@
     },
     "seek": {
       "graph": {
-        "sha256": "2f99cc8e86479bbfe97f91b66410b6363a9f36a9759e252f2371c2aaf5e4c7f6",
+        "sha256": "a9185e661dd5e282078779e9c80fd3d3bc7f01220770f10de9d1f7a0312a664d",
         "objects": 22104
       },
       "snapshot": {
-        "sha256": "19e9c312ba5ee6f706160260e55de8e2cfe5e036f6e02ab47ec21e2b4591a95b",
+        "sha256": "a2c687ac69a914cbb0d4a85d5895ef07ae45840f58bb3ba0c4d1172b7fa7f59a",
         "objects": 11299
       },
       "rng": {
@@ -983,11 +983,11 @@
     },
     "combat": {
       "graph": {
-        "sha256": "35358bf55260497d4109e00319ce0b7aeafd9232df697a322b6fc527414c5727",
+        "sha256": "7cae6cdf74fd512220260289635f88204909c6cb0be1b1072a579768aba610cd",
         "objects": 24141
       },
       "snapshot": {
-        "sha256": "ca92bc2e5ce7497b78ac9e20aed5b900d153c7fc396ffeb8174967dd7df432e9",
+        "sha256": "3ef39adea761eac6e0e7ab41d0d5564b0fc20a82c5d7bde18488407c4d578905",
         "objects": 5778
       },
       "rng": {
@@ -1015,7 +1015,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -1039,11 +1039,11 @@
     },
     "knockback": {
       "graph": {
-        "sha256": "caacc3b477fe7d221c27f4f52cf9ba0e62295ef4ddea556b6b620d6db438beee",
+        "sha256": "811886b68afbb6e18c042319f99bf9c229624a58333dee56166c66e9ccbd2d18",
         "objects": 24141
       },
       "snapshot": {
-        "sha256": "a84f24d41792d8f39856bbe34022fc1c38ae00673534122a7cf6a73b94b7d967",
+        "sha256": "013183b98a6cc67860e540af8e7ce1aba5eac34b89e6d403861444c9f60ae585",
         "objects": 5743
       },
       "rng": {
@@ -1071,7 +1071,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -1095,11 +1095,11 @@
     },
     "blink": {
       "graph": {
-        "sha256": "388d2be88f95589ad2874059398cb3eaa79724770c0c17bf8ee2ba546ae04591",
+        "sha256": "e7e8da55b9fd53a4292648975a0b4356fd81242ab617cdcfb9d298a618b3ad1e",
         "objects": 24201
       },
       "snapshot": {
-        "sha256": "c7f9fa6954a30866a4f84f87c29756cec059ca7e71a075781cbd327fea253bc4",
+        "sha256": "7f7d04df3b19fd77e3cf9a5498c6203b37bf45d608a4478a60f2dcacdb21aa52",
         "objects": 5836
       },
       "rng": {
@@ -1127,7 +1127,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -1178,11 +1178,11 @@
     },
     "clone": {
       "graph": {
-        "sha256": "9e4d5c9bbb1a7f2e28f0562ba0875e792acbe6f844dad5f9cf5c8be9d19fac92",
+        "sha256": "0948c2320310785b15a2e47cf2930ed941dd3d5acb3b4c776943624fbe12e6d0",
         "objects": 24233
       },
       "snapshot": {
-        "sha256": "81bc59f3f5f2753a9520675b24db6753e31b4011abffc0ce5ff5863109518fa9",
+        "sha256": "e24fddfaa41906f35a5e4eb03fc5c7c8b8fd7fade2206a95c4a311d9d006f1a6",
         "objects": 5821
       },
       "rng": {
@@ -1210,7 +1210,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -1261,11 +1261,11 @@
     },
     "summon": {
       "graph": {
-        "sha256": "336ada99c96274dfcbad4194c340296239b72dc29098c51c6be135f730d228e0",
+        "sha256": "7d0773e4be03b2e6696c4efd02a5ccc8117fee18d756bf8e139745e818dc2c98",
         "objects": 24361
       },
       "snapshot": {
-        "sha256": "46d464ba70850624ce4910bf098694ae72817ac3485a73e74986df9353f43c12",
+        "sha256": "b8e1667c4c89b647b526a26a3d6f8462bdbe84732ff1a068ab5f4a589cccfca8",
         "objects": 5977
       },
       "rng": {
@@ -1293,7 +1293,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -1344,11 +1344,11 @@
     },
     "trap": {
       "graph": {
-        "sha256": "9114516457a3466b0923d9bf2f60c3775e937f98bd1d9063878bbf395b422a51",
+        "sha256": "a4d9bbcfa209fa1463db52d006b5dd8c3fc908995c2bf88d5334753bea7907da",
         "objects": 24362
       },
       "snapshot": {
-        "sha256": "8e3ce07653304c93ce1dd9a49cccfb386d48971785af6518b5e167356d41f44a",
+        "sha256": "b74e9fda518fe6fc836f52a6e0715e9a76372ad37214218ad569be585d9ac989",
         "objects": 5977
       },
       "rng": {
@@ -1376,7 +1376,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -1427,11 +1427,11 @@
     },
     "level": {
       "graph": {
-        "sha256": "6e1b2b7b472c7a26bce265d904e01d717a7e10d866932f9b62c1a5f2db1da651",
+        "sha256": "76e4e300b506f5a8f3884740510fed19f6914267bc6362377526709221f81aac",
         "objects": 46491
       },
       "snapshot": {
-        "sha256": "fcf166c178ea91b65d54ea2eec14f424eac533a92bbd417d38279e246fe06a96",
+        "sha256": "9821875d130fd88fb6f40f14a30b8a9971f11a4919354e7bcc501895da21797a",
         "objects": 21460
       },
       "rng": {
@@ -1501,7 +1501,7 @@
         "objects": 23017
       },
       "snapshot": {
-        "sha256": "147f05a40f15cd7b6edf222dbc924331d8e000137f2203834352bf8a7fe64129",
+        "sha256": "c5c81222881d2f8ce5230e82bdd72a727fd739203fb5f834535edf5568be65ee",
         "objects": 11276
       },
       "rng": {
@@ -1537,11 +1537,11 @@
     },
     "commands": {
       "graph": {
-        "sha256": "c414c798bc4b5bf91b09a7c1209d684a61d1af7c14f35ea24aee6dfa4e62279c",
+        "sha256": "74ef334c200d6638d3d08f88c36192d9cb08f22ac19e92f56cc1d18ada68bae8",
         "objects": 23054
       },
       "snapshot": {
-        "sha256": "599d1435466b9b2f8ffa368b8fbe206ab26bfa288ac428e13daf513dbeaf90fb",
+        "sha256": "43d982e6fa84024c01b5ac90606f92c70ef0bc4cd72c84d46dbd95f69f5bee56",
         "objects": 11309
       },
       "rng": {
@@ -1577,11 +1577,11 @@
     },
     "loaded": {
       "graph": {
-        "sha256": "367451e040655990e3289c448ca12a464a8c27200338cc1dc5e83fef583813a4",
+        "sha256": "b3fbe2928f94aae6b34bcb519a484c2429ee7a70a80a1c723d3cb10564053458",
         "objects": 20677
       },
       "snapshot": {
-        "sha256": "599d1435466b9b2f8ffa368b8fbe206ab26bfa288ac428e13daf513dbeaf90fb",
+        "sha256": "43d982e6fa84024c01b5ac90606f92c70ef0bc4cd72c84d46dbd95f69f5bee56",
         "objects": 11309
       },
       "rng": {
@@ -1617,11 +1617,11 @@
     },
     "continued": {
       "graph": {
-        "sha256": "d3770f992137428294bb8ca7c6c7482110ef7acc5a016e1d73c1645308ce82e3",
+        "sha256": "13a0b56c6e71bf27641428829f9e2a4ae8e9a78a66184b2a879f2824c0c67005",
         "objects": 23064
       },
       "snapshot": {
-        "sha256": "10c10cf28ba14c6c3d7c036c5f651ac2d84127edfa2a08d2df5f9e589df1a8fe",
+        "sha256": "2c4964e3b6d7225ccecb86c46d639d76b829d18a28468de6939cbf1c8e2c7de0",
         "objects": 11319
       },
       "rng": {
@@ -1657,11 +1657,11 @@
     },
     "replayed": {
       "graph": {
-        "sha256": "7bef0051eee608466511b6e04078ba025662f12c035dc924dabacb5384c79d06",
+        "sha256": "b2509b27747881955a7e6a11a977908e7079f95bd5cfe151994d0d9064a889e3",
         "objects": 23064
       },
       "snapshot": {
-        "sha256": "599d1435466b9b2f8ffa368b8fbe206ab26bfa288ac428e13daf513dbeaf90fb",
+        "sha256": "43d982e6fa84024c01b5ac90606f92c70ef0bc4cd72c84d46dbd95f69f5bee56",
         "objects": 11309
       },
       "rng": {
@@ -1697,11 +1697,11 @@
     },
     "seek": {
       "graph": {
-        "sha256": "da468c3ead917ebf28e2b4dce67f8ae9ce58c2711f0283fc26cd8d5812862d42",
+        "sha256": "f19047a5bcef3a49ac832e5c6b887ad467023a11be9fca9a0d795fa48ab7454b",
         "objects": 20687
       },
       "snapshot": {
-        "sha256": "3241065f47fd197ed5ae9b121ad83fa9058e17bc01e9997d2f57555d6571242d",
+        "sha256": "1e39a0c02870ba4b35e8451e7128e9b2d2e64d7467562908d0bc204233864715",
         "objects": 11288
       },
       "rng": {
@@ -1737,11 +1737,11 @@
     },
     "combat": {
       "graph": {
-        "sha256": "d80bd0d21d584a463cbd59afb77a72f5c3a24636410b69679e9c5b0e135aa569",
+        "sha256": "a024d8d7b320ac081788a68be30b6af35918d667e4438371ef8350c8719126c3",
         "objects": 22703
       },
       "snapshot": {
-        "sha256": "254d94a735dbce9d682a6c740346a309c52fc34dfd075fad10fcd4ffd2397c2b",
+        "sha256": "ef867b88da6a53c9ec0d347a0db2c26b4454f498bf3931637b9150b13322f37b",
         "objects": 5736
       },
       "rng": {
@@ -1769,7 +1769,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -1793,11 +1793,11 @@
     },
     "knockback": {
       "graph": {
-        "sha256": "31ad284d013048cd7e8e15fb96c063364de284c38ba3ff5a7884e5bdface6d7f",
+        "sha256": "baf805827f594a6399f24f7cbfb380ecff7afc5f3b6b295a1ddfe5ca5fb86777",
         "objects": 22703
       },
       "snapshot": {
-        "sha256": "0a4054ed5921ccdee406f9ad501071f223acfd86603dfcd450dfac8bbb358c5c",
+        "sha256": "e9d5860ed8490bbac031422e5ace5528a5c78a626e8717847aa5e98011d98d40",
         "objects": 5711
       },
       "rng": {
@@ -1825,7 +1825,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -1849,11 +1849,11 @@
     },
     "blink": {
       "graph": {
-        "sha256": "f1642f64e8b96cde61fb9cbce6ee84062fc7b87cc6e1ec6479091c3d82b22257",
+        "sha256": "e10a1e718d1dabfdf97fce987f9e436265734d92b69008a2f8db150c7cbc568a",
         "objects": 22763
       },
       "snapshot": {
-        "sha256": "311c80d7c0badaa786185703ec62019efb2b1627df4de54ea49268da107dc4ab",
+        "sha256": "76df0ba200c8a6c9f206b3f5ea2731c0191df9cb591b96739b5c84fcfe2d7a64",
         "objects": 5794
       },
       "rng": {
@@ -1881,7 +1881,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -1932,11 +1932,11 @@
     },
     "clone": {
       "graph": {
-        "sha256": "315441ded99b7a63fcbedb163a1092c375cef7986bd25e0e9ca78b0be9af593b",
+        "sha256": "81caf2c8ba7bbf82d88bd1fcc1b774e40cf08a59d811b4c7d37031aade06cc0f",
         "objects": 22774
       },
       "snapshot": {
-        "sha256": "152f7a676d04d625c82c4fe66b7e38d9f5c98f101cd687ec639e35477dea1812",
+        "sha256": "7fd98c96fb68900e2489b15e13f62f348fa240151377204df1b3a8474668dcf0",
         "objects": 5768
       },
       "rng": {
@@ -1964,7 +1964,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -2015,11 +2015,11 @@
     },
     "summon": {
       "graph": {
-        "sha256": "de1d97f0a87117863e4c22cb4c1091547365ffa9506bb319a560348fa99cbc16",
+        "sha256": "6d7ddbcb95f3210d4d629415482e2a91b4313ac2897308dc690dcecfb0600602",
         "objects": 22818
       },
       "snapshot": {
-        "sha256": "97657c3af339c956fdbefc7dc8915650b162b3ce0ea3bef58c47f97f775ff55d",
+        "sha256": "15a53d1925d3aa98df7aac84685ad18f3124f81c16d5e2c8751b5cf4eeba6780",
         "objects": 5840
       },
       "rng": {
@@ -2047,7 +2047,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -2098,11 +2098,11 @@
     },
     "trap": {
       "graph": {
-        "sha256": "8e48648d733cfb279bbbae24d3eb5b199c0cf238374348b6b840495271f71979",
+        "sha256": "0a526734769f73ee9a0abf72c9c4c0ee21f771058cb2756b20a3d6e494041918",
         "objects": 22819
       },
       "snapshot": {
-        "sha256": "85fe50be7ba2df7cd92112e7e6454ac59ab5589d184100e39e4851b5f44f4930",
+        "sha256": "1314c1e3f2c32b998c5fd171e7e870a63eac541b5705ce863b200c816727a348",
         "objects": 5840
       },
       "rng": {
@@ -2130,7 +2130,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -2181,11 +2181,11 @@
     },
     "level": {
       "graph": {
-        "sha256": "48c4d252a628507660c137b6999e0775fe37c2d0835f9ec356bf75f736830d39",
+        "sha256": "33ac7f56e43e1f95c94f10e15ff2f94609e9e9f81899b5dae06bed4bbdf82852",
         "objects": 44799
       },
       "snapshot": {
-        "sha256": "aac8f6e59c7b4eed9097c0d000608efad841b430db08c0be5b2872f6cbdee645",
+        "sha256": "ef0f3b18795b8626570b029ff4396d378f1adc907b20e11fcb45c5c11b42ce68",
         "objects": 21161
       },
       "rng": {
@@ -2238,11 +2238,11 @@
   "growth+narrative": {
     "newGame": {
       "graph": {
-        "sha256": "265287158217a7ffee435f4d12ab85e9bce57e0164fa21fde93ed7f0322b178e",
+        "sha256": "4b1caf84be41f47229209b7e38e3bb12c059c8f91abaa0afab2ef2cb6388f34c",
         "objects": 24465
       },
       "snapshot": {
-        "sha256": "8a435ab46eab2bcfb4261ea3fb353335fb6a710e6e3957693263720ceb02866e",
+        "sha256": "f50a7831cc0530ac59508aa4cfbe65c891d75f99a5f11690fdc7a0412a806847",
         "objects": 11321
       },
       "rng": {
@@ -2278,11 +2278,11 @@
     },
     "commands": {
       "graph": {
-        "sha256": "853f6adbbbaaf443c3f4db5dd6112ccc271dde1a854ff374a887a498bf42b563",
+        "sha256": "413105e59d712e2050812c2b03348d274cd09056fd0efe27ef885291293fd62f",
         "objects": 24500
       },
       "snapshot": {
-        "sha256": "f3ccbd0c8178420d4aaeb8f244bdcc71430d77ca091ce9a352716e9a36ed99d1",
+        "sha256": "a10c41f344b14fe270a6b5e1577cf2d540a294c7c4dae087c2a61cf669f21489",
         "objects": 11352
       },
       "rng": {
@@ -2318,11 +2318,11 @@
     },
     "loaded": {
       "graph": {
-        "sha256": "c049545f866561bb2c28b0f891ebf2677017b0f730bacd14cbc0d766b89f7491",
+        "sha256": "9aaddb85ecd423858409884d1abd5054b09e0d6d265ac0cacafd4506f1599e0c",
         "objects": 22123
       },
       "snapshot": {
-        "sha256": "f3ccbd0c8178420d4aaeb8f244bdcc71430d77ca091ce9a352716e9a36ed99d1",
+        "sha256": "a10c41f344b14fe270a6b5e1577cf2d540a294c7c4dae087c2a61cf669f21489",
         "objects": 11352
       },
       "rng": {
@@ -2358,11 +2358,11 @@
     },
     "continued": {
       "graph": {
-        "sha256": "f4137488af0748f952893a1753bc8d5ec936aae76f51f1db920ea6894945bc2e",
+        "sha256": "e4caf91d3fa0d7ae617fc7a49571edd205036e75af10d5d46c6ca369d8a9fe45",
         "objects": 24510
       },
       "snapshot": {
-        "sha256": "629f2444753795e4b96ee7b5dbb43adec237dbeb55ec9a9fea932c8398e68221",
+        "sha256": "b8cf3a2495fd3dbedc874d6fedfe69fd29c86c35469143cf96e8ac53b50756d6",
         "objects": 11362
       },
       "rng": {
@@ -2398,11 +2398,11 @@
     },
     "replayed": {
       "graph": {
-        "sha256": "50f30157ae2bc1939372c3f1ba026492e6c00a173bbf6d892ce68a138ab3a027",
+        "sha256": "58da04c1de0a15c0c1ca9309a5615158ac768d5d7418872aa2600cff3e0e3073",
         "objects": 24512
       },
       "snapshot": {
-        "sha256": "f3ccbd0c8178420d4aaeb8f244bdcc71430d77ca091ce9a352716e9a36ed99d1",
+        "sha256": "a10c41f344b14fe270a6b5e1577cf2d540a294c7c4dae087c2a61cf669f21489",
         "objects": 11352
       },
       "rng": {
@@ -2438,11 +2438,11 @@
     },
     "seek": {
       "graph": {
-        "sha256": "67ec8a4e16310492282aea328be471b5c53e26491294f5edd021b0f28a72c997",
+        "sha256": "3701b48924db84c9bea917d772aeea8f022437e8a9331104bb1c72a9efd48f8d",
         "objects": 22135
       },
       "snapshot": {
-        "sha256": "8a435ab46eab2bcfb4261ea3fb353335fb6a710e6e3957693263720ceb02866e",
+        "sha256": "f50a7831cc0530ac59508aa4cfbe65c891d75f99a5f11690fdc7a0412a806847",
         "objects": 11321
       },
       "rng": {
@@ -2478,11 +2478,11 @@
     },
     "combat": {
       "graph": {
-        "sha256": "3ff9f97d6e86e957009a3e6de6ba82378cb1b64a88ccc51db8379e686850206b",
+        "sha256": "9461fa934bfc83915cffa04ac5c8e89366eeeeb0d0db31ba08b419a75326c02b",
         "objects": 24170
       },
       "snapshot": {
-        "sha256": "fe9770608427fc98eb6d4b7e269b28c95fa4da242659bf64dcae15954ee36601",
+        "sha256": "fd73a63b0ba2da808c2511cc28502a64dcd086eba7e72ceaac52dfe26bb53307",
         "objects": 5800
       },
       "rng": {
@@ -2510,7 +2510,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -2534,11 +2534,11 @@
     },
     "knockback": {
       "graph": {
-        "sha256": "2e85199191256d33048cd7ffc4ca72881168ac0cb4b3c5af3bb1d4fb4cd96b94",
+        "sha256": "b86926f59414acf88d0ba53c3ff11132ff8a70e1060603093ca35d074970e53c",
         "objects": 24170
       },
       "snapshot": {
-        "sha256": "cc715952986ac1e54bc8cb7c8ce6f38dee6e9a053524d6693e0b0b958ec375af",
+        "sha256": "19cf9ee4394b82b68ddef69664e0f170d6ed88e7bc777d8dba6a3cbdea365f6e",
         "objects": 5763
       },
       "rng": {
@@ -2566,7 +2566,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -2590,11 +2590,11 @@
     },
     "blink": {
       "graph": {
-        "sha256": "2817a0a9db27624b0a24da935fa529f3b74cfa00af534fb3596b872faaee5d6b",
+        "sha256": "f9f4c86ff26192e417dbc0eece873e0266f611b0dfdc8ea7879ad0244426b9f6",
         "objects": 24230
       },
       "snapshot": {
-        "sha256": "473e699b66592c2a3c6228d2be22076643dfb3b30b1a9c746393bf205b973c91",
+        "sha256": "b8b7812a9a38c67970e8c9bace3842ada68059560376d6f715b2531407a78515",
         "objects": 5858
       },
       "rng": {
@@ -2622,7 +2622,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -2673,11 +2673,11 @@
     },
     "clone": {
       "graph": {
-        "sha256": "4793f0f124812f33d51c5eab6d2a730859a8d7f440c86ecdd41e0d63d2ec6fa4",
+        "sha256": "ffd41f47efbff2a71273335e7f31e3aaf8d0c8752e1581742f26d5cf1a65a4f7",
         "objects": 24262
       },
       "snapshot": {
-        "sha256": "cca06deb4000dd68e2e4fe546b9d2e9c270937865a069056b375f6f52dc7163b",
+        "sha256": "e7e73127cd6222815e48693dc3326d5ffdfb88a574322e6ad0caba0de343851c",
         "objects": 5841
       },
       "rng": {
@@ -2705,7 +2705,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -2756,11 +2756,11 @@
     },
     "summon": {
       "graph": {
-        "sha256": "87b4208ee8c61609109e214768a23bb8eb39a034df51abad0b4fbfa589ad2118",
+        "sha256": "aec7939c57cdfe6d8a0fcfa41d48136c2948e6c5ae6cfe980e38e5e16a9f0a8b",
         "objects": 24390
       },
       "snapshot": {
-        "sha256": "687eb8046141afdb4bc8448b8c43b2c0b5cc4c49e8746b42cb4ad0d1aaaceb8b",
+        "sha256": "d2ff11e26a3bb56be380ee3294c326d2618e4e2e0103973bfa9fba825a9870bf",
         "objects": 5997
       },
       "rng": {
@@ -2788,7 +2788,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -2839,11 +2839,11 @@
     },
     "trap": {
       "graph": {
-        "sha256": "d4dc152133322b232505632fcecd180212f67c0302564ba73a82b40712116e98",
+        "sha256": "4c54484772e4f308a921656b4bfb8bf5a8762c46bca31acc0ad11b628e988431",
         "objects": 24391
       },
       "snapshot": {
-        "sha256": "3b538b9708682d4168bd78259dc6931d7bf216b2ad7ec9905c2e673e2919eccd",
+        "sha256": "ba0a9748d4dab3e7d95de4414308be96b743dbdbfff632ce3addf2dec95efdee",
         "objects": 5997
       },
       "rng": {
@@ -2871,7 +2871,7 @@
         "messages": [
           {
             "id": 0,
-            "text": "you hit something, catching it unaware",
+            "text": "you hit the Rat, catching it unaware",
             "color": "#ffcc00",
             "count": 1,
             "turn": 1,
@@ -2922,11 +2922,11 @@
     },
     "level": {
       "graph": {
-        "sha256": "f9e2b3053713a53c161240675391167a47f9fa402b7808c1e37144491bc6ec71",
+        "sha256": "91cd7ae0171c8d17e51613c6f5893cc013bb1b5acf5bdb94ec9be844aca02605",
         "objects": 46520
       },
       "snapshot": {
-        "sha256": "b1e4a75a522db9874021ebbb83997b812d1dd7fd29639ee62ec1c0194cfa1bba",
+        "sha256": "927c2341f716046a2f7a41c0131b29591d4cda18ba15dc4b9754cdee22068e4f",
         "objects": 21482
       },
       "rng": {

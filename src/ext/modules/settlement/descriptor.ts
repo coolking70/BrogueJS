@@ -5,7 +5,7 @@ import { getSettlementIdentity } from './definitions';
 import zhCN from './locales/zh_CN.json';
 export const descriptor: ModuleDescriptor = {
   id: 'settlement',
-  version: '1.3.0',
+  version: '1.4.0',
   foundation: FOUNDATION_PROTOCOL,
   worldSdk: 1,
   rules: raidIdentity({ raids: false }, getSettlementIdentity()),

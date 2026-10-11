@@ -39,6 +39,8 @@ export function structureScene(g: Game): void {
     }
   g.grid.impregnableCells.clear();
   bindWorldStructures(g);
+  // Map/player preparation must establish actual native lighting, before origin.
+  (g as any).updateVision(false);
 }
 export function structureHarness(modules: string[] = []) {
   installRecordingScene(structureScene);

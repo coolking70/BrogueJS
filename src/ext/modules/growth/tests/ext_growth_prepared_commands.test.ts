@@ -95,7 +95,13 @@ const moveChain: Scenario = { name: 'layered hazards', skill: 'withdraw', setup(
 }, messages: ['Dive into the depths?', 'Venture into flame?', 'Venture into dangerous gas?', 'Step onto the pressure plate?'] };
 function scene(scenario: Scenario) {
     installRecordingScene(game => {
-        if (game.extensionRuntime) { room(game); scenario.setup(game); }
+        if (game.extensionRuntime) {
+            room(game); scenario.setup(game);
+            // Rebuild native light for the staged map/player BEFORE the actual
+            // origin is captured, identically in live, replay and seek.
+            (game as unknown as { updateVision(remember: boolean): void }).updateVision(false);
+            expect(game.grid.getCell(11, 10)!.isVisible).toBe(true);
+        }
     });
     const game = createHeadlessGame(seed, 'test');
     // Replaying the actual recorded character-creation prefix reproduces the same

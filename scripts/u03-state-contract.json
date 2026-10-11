@@ -481,7 +481,7 @@
   },
   "world5": {
     "kind": "run",
-    "contract": "C5-1 r2: run.world5 optional; manifest fixture determines lifetime; authority clock advances only at positive elapsed in advancementLoop; digest domain world5; 5E1 schema4 raidCamps持久根保存固定事件身份、actor出生登记/可信原生形态/坠离登记、排除时钟和暂停边界；actorActionWorld的冻结袭击者白名单仅从同营层、未坠离、单格登记派生且候选先验本局时序，原actorActions bundle冻结不另建根，无新增Game字段。"
+    "contract": "C5-1 r2: run.world5 optional; manifest fixture determines lifetime; authority clock advances only at positive elapsed in advancementLoop; digest domain world5; 步骤A schema5 raidCamps持久根保存固定事件身份、actor出生登记/可信原生形态/幸存坠离登记及独立retired={owner,reason,tick,ordinal}；非致死退休必须匹配foundation权威departure receipt且实体已不存在，与defeated/departed互斥，不计击杀/奖励；保存排除时钟和暂停边界；actorActionWorld的冻结袭击者白名单仅从同营层、未坠离/未退休、单格登记派生且候选先验本局时序，原actorActions bundle冻结不另建根，无新增Game字段。"
   },
   "actorActions": {
     "kind": "run",

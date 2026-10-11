@@ -1,0 +1,13 @@
+{
+  "points": {
+    "base->nonvis": 2537,
+    "nonvis->final": 2537
+  },
+  "leaves": {
+    "foundation13->14": 5074,
+    "ordinary FOV": 120074
+  },
+  "totalLeaves": 125148,
+  "unknown": 0,
+  "examples": []
+}

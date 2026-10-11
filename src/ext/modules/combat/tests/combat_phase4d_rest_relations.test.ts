@@ -27,9 +27,10 @@ function scene() {
     return { game, core, leg, actors, fire, command, ledger: () => game.extensionRuntime!.actorActionBinding()!.state.bonfires! };
 }
 function onlyVisible(game: ReturnType<typeof scene>['game'], leg: ReturnType<typeof scene>['leg'] | null) {
-    for (let x = 0; x < game.grid.width; x++) for (let y = 0; y < game.grid.height; y++) game.grid.getCell(x, y)!.isVisible = false;
-    for (const entity of game.extensionRuntime!.snapshot().foundation.world.entities) if (entity.owner === 'combat' && entity.depth === game.depth) game.grid.getCell(entity.x, entity.y)!.isVisible = true;
-    if (leg) for (const at of footprintOf(leg)) game.grid.getCell(at.x, at.y)!.isVisible = true;
+    for (let x = 0; x < game.grid.width; x++) for (let y = 0; y < game.grid.height; y++) Object.assign(game.lightMap.lightAt(x, y)!, { r: 0, g: 0, b: 0 });
+    for (const entity of game.extensionRuntime!.snapshot().foundation.world.entities) if (entity.owner === 'combat' && entity.depth === game.depth) Object.assign(game.lightMap.lightAt(entity.x, entity.y)!, { r: 100, g: 100, b: 100 });
+    if (leg) for (const at of footprintOf(leg)) Object.assign(game.lightMap.lightAt(at.x, at.y)!, { r: 100, g: 100, b: 100 });
+    (game as unknown as { updateTransientVisibility(overlay: null, remember: boolean): void }).updateTransientVisibility(null, false);
 }
 describe('4d composite relations at the bonfire/native input boundary', () => {
     it('a visible peripheral enemy blocks pure preparation even with the core hidden; core allegiance is authoritative', () => {
@@ -48,6 +49,7 @@ describe('4d composite relations at the bonfire/native input boundary', () => {
     });
     it('asynchronous confirmation rechecks a newly visible member without charging a visit or time', () => {
         const { game, leg, command, ledger } = scene(); onlyVisible(game, null);
+        expect(canDirectlySeeMonster(game.player, game.grid, leg)).toBe(false);
         game.onCommandConfirmRequest = () => {}; while (logger.pendingAcknowledgment) logger.acknowledgeNext();
         const tick = timeSystem.currentTick; game.executeCommand('ext:command', command);
         const token = game.pendingCommandConfirmation!.token; onlyVisible(game, leg);

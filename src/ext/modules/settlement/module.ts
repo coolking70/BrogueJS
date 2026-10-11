@@ -10,7 +10,7 @@ export function createSettlementModule(configuration: Json = { raids: false }): 
   const pack = loadSettlementPack();
   return {
     id: 'settlement',
-    version: '1.3.0',
+    version: '1.4.0',
     rules: raidIdentity(configuration, getSettlementIdentity(pack)),
     worldDefinitions: pack.world,
     campPolicy: pack.camp,

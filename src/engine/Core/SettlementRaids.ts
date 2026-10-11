@@ -30,6 +30,7 @@ import { markRecordingRoot } from '../../ext/recordingRevisions';
 import { ItemCategory } from '../Items/Item';
 import i18next from 'i18next';
 import { logger } from '../Systems/Logger';
+import { peekEdibleState, type DepartureReceipt } from './EdibleState';
 export function campRaid(g: Game, slot: number) {
   return g.world5?.raidCamps.find((r) => r.slot === slot);
 }
@@ -46,7 +47,7 @@ export function residentEconomicTick(
 }
 export function isRaidActor(g: Game, id: number): boolean {
   return !!g.world5?.raidCamps.some(
-    (r) => r.event?.phase === 'active' && r.event.actors.some(a => a.actorId === id && a.departed === null)
+    (r) => r.event?.phase === 'active' && r.event.actors.some(a => a.actorId === id && a.departed === null && a.retired === null)
   );
 }
 export function raidState(g: Game, owner: string, c: CampRecord): CampRaidState | undefined {
@@ -143,7 +144,8 @@ export function finishRaidEvents(g: Game): void {
     if (
       !e.actorIds.every((id) => {
         const a = actors.find((a) => a.id === id);
-        return (e.actors.find(row => row.actorId === id)!.departed !== null &&
+        const row = e.actors.find(row => row.actorId === id)!;
+        return validRaidRetirement(g, row, e.dueTick, a !== undefined) || (row.departed !== null &&
           !!a && raidActorAwayFromCamp(g, a, g.extensionRuntime!.worldCampRecords(r.owner).find(c => c.slot === r.slot)!.depth)) ||
           (a ? (a.hp <= 0 && a.deathProcessed) || a.isAlly : e.defeatedIds.includes(id));
       })
@@ -511,7 +513,7 @@ export function settleCampRaid(
           const a = g.createRaidMonster(roster[draw % roster.length]!, spots[n]!);
           if (!a) throw new World5Error('C5_TRANSACTION');
           e.actorIds.push(a.id);
-          e.actors.push({ actorId: a.id, birthTypeId: a.typeId, currentTypeId: a.typeId, departed: null });
+          e.actors.push({ actorId: a.id, birthTypeId: a.typeId, currentTypeId: a.typeId, departed: null, retired: null });
         }
         e.phase = 'active';
         e.reason = null;
@@ -560,15 +562,39 @@ export function validateRaidReferences(g: Game): void {
       const id = row.actorId, a = actors.find(a => a.id === id), atDepth = a && raidActorDepth(g, a);
       if (!roster.includes(row.birthTypeId) ||
           !(knownPolymorphSpecies(row.currentTypeId) || rt.nativeForms().some(form => form.id === row.currentTypeId)) ||
-          (!a && !e.defeatedIds.includes(id)) ||
+          (!a && !e.defeatedIds.includes(id) && !validRaidRetirement(g, row, e.dueTick, false)) ||
           (a && (a.typeId !== row.currentTypeId || w.residents.some(s => s.actorId === id) ||
             e.defeatedIds.includes(id) && a.hp > 0 ||
             row.departed === null && a.hp > 0 && atDepth !== c.depth ||
             row.departed !== null && a.hp > 0 && !raidActorAwayFromCamp(g, a, c.depth) ||
             a.spatial?.bodyMember && a.spatial.bodyMember.groupId !== id)) ||
-          (row.departed && (row.departed.depth !== c.depth + 1 || row.departed.tick < e.dueTick)))
+          (row.departed && (row.departed.depth !== c.depth + 1 || row.departed.tick < e.dueTick)) ||
+          (row.retired !== null && (!validRaidRetirement(g, row, e.dueTick, !!a) || e.defeatedIds.includes(id) || row.departed !== null)))
         throw new World5Error('C5_BAD_REFERENCE', 'raidActor');
     }
+  }
+}
+
+/** Completion and persistence use the same witnessed, non-kill terminal fact. */
+function validRaidRetirement(g: Game, row: import('../../ext/settlementRaids').CampRaidEvent['actors'][number], dueTick: number, present: boolean): boolean {
+  const r = row.retired;
+  return !!r && !present && row.departed === null && r.tick >= dueTick && r.tick <= g.world5!.simulationTicks &&
+    !!peekEdibleState(g.extensionRuntime!).departures?.receipts.some(receipt =>
+      receipt.actorId === row.actorId && receipt.ordinal === r.ordinal && receipt.owner === r.owner &&
+      receipt.reason === r.reason && receipt.tick === r.tick && receipt.result === 'retired');
+}
+/** Called only inside the authoritative departure retirement transaction. */
+export function recordRaidRetirement(g: Game, receipt: DepartureReceipt): void {
+  for (const r of g.world5?.raidCamps ?? []) {
+    const e = r.event, row = e?.phase === 'active' && e.actors.find(row => row.actorId === receipt.actorId);
+    if (!row) continue;
+    if (e!.defeatedIds.includes(row.actorId) || row.retired !== null)
+      throw new World5Error('C5_BAD_REFERENCE', 'raidRetirement');
+    // A prior surviving fall is superseded by the actual terminal retirement,
+    // never used to permit a missing traveller during load.
+    row.departed = null;
+    row.retired = { owner: receipt.owner, reason: receipt.reason, tick: receipt.tick, ordinal: receipt.ordinal };
+    markRecordingRoot(g.world5!);
   }
 }
 
@@ -607,7 +633,7 @@ export function frozenRaidActors(g: Game): number[] {
     if (!c) return [];
     return r.event.actors.flatMap(row => {
       const a = actors.find(a => a.id === row.actorId);
-      return row.departed === null && a && a.hp > 0 && !a.deathProcessed &&
+      return row.departed === null && row.retired === null && a && a.hp > 0 && !a.deathProcessed &&
         a.typeId === row.currentTypeId && !a.spatial?.bodyMember && footprintOf(a).length === 1 &&
         raidActorDepth(g, a) === c.depth ? [a.id] : [];
     });

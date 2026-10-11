@@ -1,0 +1,46 @@
+{
+  "sourceFiles": 1340,
+  "sourceSha": "824c4f83453ad18587195291832afb1514cdfad7435d01bf546ca4e8afa501c6",
+  "sharedProductionSame": true,
+  "fixedContentRef": "4ea702c0fce7a25cea9be0bf92b27dbd3ff29677",
+  "testSourcesUnchanged": true,
+  "note": "isolated overlay and hash-only trace rebasing; not primary source or integration",
+  "traceFiles": [
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-sdk-seed118.json",
+      "currentSha": "c0a32b2559ec9169a240b043a249e226981523ae1db3acb91f8c5c85904bec08"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-sdk-seed23.json",
+      "currentSha": "74a2d58002d811960a3862c63a33c4c38f384fb7b67ec1932345ebc2c5dc4ab1"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-evasion.json",
+      "currentSha": "6fa260929a346a4a2110e46db4ab3f60f78be6186ed884d1d1612629ddcba73b"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-links.json",
+      "currentSha": "1b7bfce9a72f8e79a5d7584487eb32b66bd4197cf57f3c3a95e51f163d0cd5a6"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-revisit.json",
+      "currentSha": "1096ef247c45422cf8c551a0dc8991319111ffb6358abdc36233c879818febb1"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-natural.json",
+      "currentSha": "9f9fea92f17f29907142eb43630db4e5faa4431d34148df09e9b85c8052ca882"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-rows.json",
+      "currentSha": "7f84b1225d2cc5e07ba34e6bc55cfb5bedfe11ec9fc6dc814d19e698a69e6781"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-base.json",
+      "currentSha": "18f5a4ee4a6f83aa094e91c02a77739867a94529aaa2a822d564675d6623b9f7"
+    },
+    {
+      "file": "src/ext/modules/combat/tests/fixtures/combat2-base-locale.json",
+      "currentSha": "f5e0279f53ad87e8312af5f5ea364f952746bbf453ff8a3c3aeb6f8a6373f0b4"
+    }
+  ]
+}

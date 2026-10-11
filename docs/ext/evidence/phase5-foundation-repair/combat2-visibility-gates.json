@@ -1,0 +1,1672 @@
+{
+  "at": "2026-10-12T02:01:20.740165+08:00",
+  "candidate": {
+    "head": "4856505e2c48f37586ca016af2d59f443b79ec9d",
+    "branch": "ext/phase5",
+    "uncommitted": true,
+    "sourceDefinition": "sorted [path,fileSHA] src/scripts/public and seven root build/config inputs; compact UTF-8 JSON",
+    "sourceFiles": 1311,
+    "sourceSha256": "73a08ca004620f1e9c5f78ef0fe298aee4d236a5a6b47d4916d973604b9afc14",
+    "buildDefinition": "sorted [path,fileSHA] dist contents; compact UTF-8 JSON",
+    "buildFiles": 60,
+    "buildSha256": "b7055a7b4d2d84c21badd1c3bc9975e6a8014dc4fe04c4499ed840f2df4f6696"
+  },
+  "sameNineteenProductionPaths": {
+    "at": "2026-10-12T00:10:42.274861+08:00",
+    "mainSourceSha": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+    "sharedProductionIdentical": true,
+    "paths": [
+      {
+        "path": "src/engine/Core/ActorDeparture.ts",
+        "mainSha": "c2a9abdc5a7c64c62ad5b1924125e4fd44d9df51166559bd1ce2f056560021de",
+        "isolatedCurrentSha": "c2a9abdc5a7c64c62ad5b1924125e4fd44d9df51166559bd1ce2f056560021de"
+      },
+      {
+        "path": "src/engine/Core/Game.ts",
+        "mainSha": "20127237715f2311d37a35ddd85e132eae715e96ee78804e8b9b5e91ba67fe7c",
+        "isolatedCurrentSha": "20127237715f2311d37a35ddd85e132eae715e96ee78804e8b9b5e91ba67fe7c"
+      },
+      {
+        "path": "src/engine/Core/RecordingFormat.ts",
+        "mainSha": "23976856962cfc6b48b25049ea9658b61764ac5945b5731313cc6ca115603331",
+        "isolatedCurrentSha": "23976856962cfc6b48b25049ea9658b61764ac5945b5731313cc6ca115603331"
+      },
+      {
+        "path": "src/engine/Core/RecordingV4.ts",
+        "mainSha": "37d1daac6d59917e853a10ec162e8c7a4ddd64a09b75f2a45f2f3ee6fad70dd8",
+        "isolatedCurrentSha": "37d1daac6d59917e853a10ec162e8c7a4ddd64a09b75f2a45f2f3ee6fad70dd8"
+      },
+      {
+        "path": "src/engine/Core/ResidentOrders.ts",
+        "mainSha": "27d593640bc08ad48f666b7442ba304e8400eef0855d26f2c6b15382617088f9",
+        "isolatedCurrentSha": "27d593640bc08ad48f666b7442ba304e8400eef0855d26f2c6b15382617088f9"
+      },
+      {
+        "path": "src/engine/Core/SettlementRaids.ts",
+        "mainSha": "97ebf20e855ca9dee389a4e9e650a101b456ca249c35b2fc34e5df56960f6e6c",
+        "isolatedCurrentSha": "97ebf20e855ca9dee389a4e9e650a101b456ca249c35b2fc34e5df56960f6e6c"
+      },
+      {
+        "path": "src/engine/Map/StructureWorld.ts",
+        "mainSha": "a9ba53d1c0b6af8e1a5aac7b66d6c01585e13425eca3fc672be7e6ac2712cae8",
+        "isolatedCurrentSha": "a9ba53d1c0b6af8e1a5aac7b66d6c01585e13425eca3fc672be7e6ac2712cae8"
+      },
+      {
+        "path": "src/ext/descriptor.ts",
+        "mainSha": "b6d502e980ad58c81426a7359ccb30bfa7b4cbb955bdeb1b86d380f568c35619",
+        "isolatedCurrentSha": "b6d502e980ad58c81426a7359ccb30bfa7b4cbb955bdeb1b86d380f568c35619"
+      },
+      {
+        "path": "src/ext/modules/settlement/data/definitions.json",
+        "mainSha": "06335b39f7a0663c5b224d12df53c02945f689e5c73c312fc8db2def24c28350",
+        "isolatedCurrentSha": "06335b39f7a0663c5b224d12df53c02945f689e5c73c312fc8db2def24c28350"
+      },
+      {
+        "path": "src/ext/modules/settlement/definitions.ts",
+        "mainSha": "0c8db9542de67f7bf4f146ac345ed6abf9deadbfab1ccabd47611ee6aec4462e",
+        "isolatedCurrentSha": "0c8db9542de67f7bf4f146ac345ed6abf9deadbfab1ccabd47611ee6aec4462e"
+      },
+      {
+        "path": "src/ext/modules/settlement/descriptor.ts",
+        "mainSha": "85c6a292354877edd3005ab755638198441cfa0af49638cc4867bc3fb4e797f0",
+        "isolatedCurrentSha": "85c6a292354877edd3005ab755638198441cfa0af49638cc4867bc3fb4e797f0"
+      },
+      {
+        "path": "src/ext/modules/settlement/module.ts",
+        "mainSha": "2124ce2755f454290ab8f4ec098c1b8d934ae96f7b675a110e9b5595bd82d316",
+        "isolatedCurrentSha": "2124ce2755f454290ab8f4ec098c1b8d934ae96f7b675a110e9b5595bd82d316"
+      },
+      {
+        "path": "src/ext/modules/settlement/schema.ts",
+        "mainSha": "f364cda100334d28008125790e9fd9ad86788ce5861ceb0e7f91c053da297476",
+        "isolatedCurrentSha": "f364cda100334d28008125790e9fd9ad86788ce5861ceb0e7f91c053da297476"
+      },
+      {
+        "path": "src/ext/runtime.ts",
+        "mainSha": "8419ddfde696bbd9671d33dc58ff65925389a604472f6f41a2c28dfb95d2ef0b",
+        "isolatedCurrentSha": "8419ddfde696bbd9671d33dc58ff65925389a604472f6f41a2c28dfb95d2ef0b"
+      },
+      {
+        "path": "src/ext/settlementRaidSchema.ts",
+        "mainSha": "78f2b04f6a6aef5a43ba894b9733924cde4a66aa317d6b686da7588c6efa636d",
+        "isolatedCurrentSha": "78f2b04f6a6aef5a43ba894b9733924cde4a66aa317d6b686da7588c6efa636d"
+      },
+      {
+        "path": "src/ext/settlementRaids.ts",
+        "mainSha": "be50d0527e2374d8e16e850143584f090f63dd603c04fbb7766c763833d8472d",
+        "isolatedCurrentSha": "be50d0527e2374d8e16e850143584f090f63dd603c04fbb7766c763833d8472d"
+      },
+      {
+        "path": "src/ext/world5.ts",
+        "mainSha": "c830cffd0689cee5dba1ba53adbd461b4b929d54e32330977cce29500e745565",
+        "isolatedCurrentSha": "c830cffd0689cee5dba1ba53adbd461b4b929d54e32330977cce29500e745565"
+      },
+      {
+        "path": "src/engine/Core/PhasedAttackProduction.ts",
+        "mainSha": "d6f0cc5c040926aef5978cb85d5bac1a6fbd3c97a9ff14ab67bc456e66b34112",
+        "isolatedCurrentSha": "d6f0cc5c040926aef5978cb85d5bac1a6fbd3c97a9ff14ab67bc456e66b34112"
+      },
+      {
+        "path": "src/engine/Movement/SpatialRevision.ts",
+        "mainSha": "bb0f584f03f58b4d73d8fb57b8e4e12b375d77c989f2d9aea2b42495b3d74dd8",
+        "isolatedCurrentSha": "bb0f584f03f58b4d73d8fb57b8e4e12b375d77c989f2d9aea2b42495b3d74dd8"
+      }
+    ]
+  },
+  "tests": {
+    "original-before-v1": {
+      "numTotalTests": 4,
+      "numPassedTests": 1,
+      "numFailedTests": 3,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "files": [
+        {
+          "file": "/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_evasion.test.ts",
+          "status": "failed",
+          "cases": [
+            {
+              "name": "C2-NAT an original seed3 public prefix evades a new warning and preserves its complete origin",
+              "status": "failed",
+              "failure": [
+                "AssertionError: nonmonotonic seek index 62: expected 'a7920f27cbdcfab0e53071c47d5e921112c7f…' to be '48d9b3a353d8dd81ff70e475ab26458545cce…' // Object.is equality\n    at validateNaturalPersistence (/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/support/combat2Persistence.ts:36:68)\n    at /private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_evasion.test.ts:99:29\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_links.test.ts",
+          "status": "failed",
+          "cases": [
+            {
+              "name": "C2-NAT optional giants target and public growth skill share a genuine origin and complete persistence",
+              "status": "failed",
+              "failure": [
+                "AssertionError: nonmonotonic seek index 425: expected 'c5bf82103374dfcd4fee244dafd5af92b83f8…' to be '01abcc55e9f6b75f89c4fe489ba6a5097040e…' // Object.is equality\n    at validateNaturalPersistence (/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/support/combat2Persistence.ts:36:68)\n    at /private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_links.test.ts:44:58\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_natural.test.ts",
+          "status": "failed",
+          "cases": [
+            {
+              "name": "C2-NAT bounded original-world capture or complete compact-trace replay",
+              "status": "failed",
+              "failure": [
+                "AssertionError: nonmonotonic seek index 64: expected '839ed1c27730477501cdad4176b6b490a1e47…' to be '089d8ad7ce62b1809f23c6c73dba46317b042…' // Object.is equality\n    at validateNaturalPersistence (/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/support/combat2Persistence.ts:36:68)\n    at /private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_natural.test.ts:69:24\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)"
+              ]
+            },
+            {
+              "name": "C2-NAT normal short genuine new-hit and complete persistence",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        }
+      ]
+    },
+    "fov-only-counter-v1": {
+      "numTotalTests": 4,
+      "numPassedTests": 1,
+      "numFailedTests": 3,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "files": [
+        {
+          "file": "/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_evasion.test.ts",
+          "status": "failed",
+          "cases": [
+            {
+              "name": "C2-NAT an original seed3 public prefix evades a new warning and preserves its complete origin",
+              "status": "failed",
+              "failure": [
+                "AssertionError: nonmonotonic seek index 62: expected '4d6980fed3df8256ee85a81c7ae394ce0d303…' to be '3719a1539caf1d9e04a61dbbb983c5a2eddc3…' // Object.is equality\n    at validateNaturalPersistence (/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/support/combat2Persistence.ts:36:68)\n    at /private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_evasion.test.ts:99:29\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_links.test.ts",
+          "status": "failed",
+          "cases": [
+            {
+              "name": "C2-NAT optional giants target and public growth skill share a genuine origin and complete persistence",
+              "status": "failed",
+              "failure": [
+                "AssertionError: nonmonotonic seek index 425: expected '86f07a81f191f3ec82e5bdf1eb71cc46f33e3…' to be 'b59e950d39a1c563ba4a826356a10de6b7939…' // Object.is equality\n    at validateNaturalPersistence (/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/support/combat2Persistence.ts:36:68)\n    at /private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_links.test.ts:44:58\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_natural.test.ts",
+          "status": "failed",
+          "cases": [
+            {
+              "name": "C2-NAT bounded original-world capture or complete compact-trace replay",
+              "status": "failed",
+              "failure": [
+                "AssertionError: nonmonotonic seek index 64: expected 'ea9bddd823478b87ad6c38ae7aac8f827b170…' to be '58a2a74ceb2846ea0566e328c2d839d701ede…' // Object.is equality\n    at validateNaturalPersistence (/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/support/combat2Persistence.ts:36:68)\n    at /private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_natural.test.ts:69:24\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)"
+              ]
+            },
+            {
+              "name": "C2-NAT normal short genuine new-hit and complete persistence",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        }
+      ]
+    },
+    "original-fixed-v1": {
+      "numTotalTests": 4,
+      "numPassedTests": 2,
+      "numFailedTests": 2,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "files": [
+        {
+          "file": "/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_evasion.test.ts",
+          "status": "passed",
+          "cases": [
+            {
+              "name": "C2-NAT an original seed3 public prefix evades a new warning and preserves its complete origin",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        },
+        {
+          "file": "/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_links.test.ts",
+          "status": "failed",
+          "cases": [
+            {
+              "name": "C2-NAT optional giants target and public growth skill share a genuine origin and complete persistence",
+              "status": "failed",
+              "failure": [
+                "AssertionError: expected false to be true // Object.is equality\n    at /private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_links.test.ts:45:22\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2956:64"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "/private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_natural.test.ts",
+          "status": "failed",
+          "cases": [
+            {
+              "name": "C2-NAT bounded original-world capture or complete compact-trace replay",
+              "status": "failed",
+              "failure": [
+                "AssertionError: expected [ 'combat.advancing-point', …(3) ] to deeply equal [ 'combat.advancing-point', …(4) ]\n    at /private/tmp/brogue-commander-20261009-5z/foundation-combat2-tree/src/ext/modules/combat/tests/combat2_natural.test.ts:81:29\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2956:64"
+              ]
+            },
+            {
+              "name": "C2-NAT normal short genuine new-hit and complete persistence",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        }
+      ]
+    },
+    "main-related-v2": {
+      "numTotalTests": 76,
+      "numPassedTests": 71,
+      "numFailedTests": 5,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "files": [
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts",
+          "status": "failed",
+          "cases": [
+            {
+              "name": "native seed3 render=false fall/stair retains every cached field through seek and continuation",
+              "status": "failed",
+              "failure": [
+                "AssertionError: expected [ { x: 41, y: 14, kind: 26, …(2) } ] to have a length of +0 but got 1\n    at Proxy.<anonymous> (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/expect/dist/index.js:1389:20)\n    at Proxy.<anonymous> (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/chai/index.js:1700:25)\n    at step (/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:44:72)\n    at walk (/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:54:9)\n    at /Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:58:2\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2027:60\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20"
+              ]
+            },
+            {
+              "name": "native seed3 render=true fall/stair retains every cached field through seek and continuation",
+              "status": "failed",
+              "failure": [
+                "AssertionError: expected [ { x: 41, y: 14, kind: 26, …(2) } ] to have a length of +0 but got 1\n    at Proxy.<anonymous> (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/expect/dist/index.js:1389:20)\n    at Proxy.<anonymous> (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/chai/index.js:1700:25)\n    at step (/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:44:72)\n    at walk (/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:54:9)\n    at /Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:58:2\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2027:60\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20"
+              ]
+            },
+            {
+              "name": "native seed47 render=false fall/stair retains every cached field through seek and continuation",
+              "status": "failed",
+              "failure": [
+                "AssertionError: expected [ { x: 15, y: 13, kind: 26, …(2) } ] to have a length of +0 but got 1\n    at Proxy.<anonymous> (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/expect/dist/index.js:1389:20)\n    at Proxy.<anonymous> (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/chai/index.js:1700:25)\n    at step (/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:44:72)\n    at walk (/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:54:9)\n    at /Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:58:2\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2027:60\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20"
+              ]
+            },
+            {
+              "name": "native seed47 render=true fall/stair retains every cached field through seek and continuation",
+              "status": "failed",
+              "failure": [
+                "AssertionError: expected [ { x: 15, y: 13, kind: 26, …(2) } ] to have a length of +0 but got 1\n    at Proxy.<anonymous> (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/expect/dist/index.js:1389:20)\n    at Proxy.<anonymous> (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/chai/index.js:1700:25)\n    at step (/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:44:72)\n    at walk (/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:54:9)\n    at /Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:58:2\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2027:60\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20"
+              ]
+            },
+            {
+              "name": "empty display queue normalizes only the two FOV flags, with the complete native world unchanged",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        },
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/p1_30_i18n_gate.test.ts",
+          "status": "passed",
+          "cases": [
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 引用实际嵌套数据与跨文件 readonly 枚举派生模板，未使用错误码仍为死键",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 Vue script、相邻插值和条件属性逐个扫描，注释与普通属性不冒充调用",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 动态模块字段仅取实际 data JSON 词汇，投影别名需有真实转发",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 动态字段不能借用其它模块、未证实别名或任意表达式的词汇",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 新增数据键、属性末尾调用与有限 prop 缺失均亮红，同组死键仍亮红",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 开放 string prop 与 script 局部参数仍拒绝，未消费的有限 prop 不算引用",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 数据引用及有限模板缺失资源均亮红，不能由同前缀其它翻译掩盖",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 开放 string 模板不可扩大成前缀豁免，超过有限候选预算也拒绝",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 多插值保留所有静态后缀，只产生精确有限键",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 删除模块后数据及错误词汇均自然移除，不留硬导入或测试引用",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json 扫描覆盖了引擎、实体与界面（不含测试文件自身）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json 每个静态字面量键都存在（缺失即红）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json 每个动态键前缀下至少有一个真实键（防前缀打错字整组落空）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json 所有 t() 调用的首参都可静态解析（新调用点必须写成可扫描形式）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json zh_CN.json 没有从未被引用的死键（发现死键应移入 zh_CN.legacy.json 归档）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 数据驱动的 name.* 键覆盖（防归档误删：误删 = 怪物/物品名集体变英文） 英文形式的名字必须有 name.* 键且译文含中文（中文名原样返回，无需键）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × rat：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × kobold：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × jackal：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × goblin：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × pink_jelly：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × troll：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × wraith：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × dragon：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异名资源键全部存在（缺失时拼接会回退英文）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 实跑冒烟：真实资源下推进回合，任何 t() 命中缺失键即红 3 个 seed × 400 回合：无漏键、日志无裸键串",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        },
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/repo_hygiene.test.ts",
+          "status": "passed",
+          "cases": [
+            {
+              "name": "repo hygiene has no merge conflict markers in src",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "repo hygiene every JSON file under src parses",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        },
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/test_suite_membership.test.ts",
+          "status": "passed",
+          "cases": [
+            {
+              "name": "test suite membership registers every discovered test exactly once with its actual owner",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "test suite membership uses the exact resolved partition in Vite and ext includes all foundation/module tests",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "test suite membership routes all npm suites through the shared discovery runner",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "test suite membership removes only owned tests after actual module-directory deletion",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "test suite membership uses the same stable module-ID grammar as the runtime registry",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "test suite membership fails stale, unregistered, duplicate and escaped ownership rather than excluding tests",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        },
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/u24_hardcoded_text.test.ts",
+          "status": "passed",
+          "cases": [
+            {
+              "name": "U24 free-text guard renders discovery names and identified runes in Chinese without internal IDs",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "U24 free-text guard requires translated floating labels and logger messages",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "U24 free-text guard requires translated Vue template text",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        },
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/ext/modules/foraging/tests/foraging_feed.test.ts",
+          "status": "failed",
+          "cases": [
+            {
+              "name": "T-FEED real public feeding an invisible ally in a genuinely lit native FOV cell remains feedable exactly once",
+              "status": "failed",
+              "failure": [
+                "AssertionError: expected +0 to be 1 // Object.is equality\n    at /Users/coolking70/Documents/同步空间/BrogueJS-p5/src/ext/modules/foraging/tests/foraging_feed.test.ts:79:42\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2956:64"
+              ]
+            },
+            {
+              "name": "T-FEED real public feeding ration_of_food gives its exact native nutrition to the companion",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding mango gives its exact native nutrition to the companion",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding mend applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding venom applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding prism applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding astray applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding upheave applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding farsense applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding veil applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding drowse applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding blast applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding might applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding stiffen applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding quicken applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding companion mend minimum reports exact immediate HP and gain",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding companion mend percent reports exact immediate HP and gain",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding companion mend cap reports exact immediate HP and gain",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding companion mend full reports exact immediate HP and gain",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding companion roasted mend policy 0 keeps or strips healing",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding companion roasted mend policy 1 keeps or strips healing",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding full-health mend is tasted, then feeding while injured reveals the same kind",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding an immune companion only tastes stiffen and receives its nutrition",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding char supplies 20 nutrition without creating mushroom knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding overfeeding No and Yes record their actual decisions; No has zero cost and Yes saturates at 2150",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding distance feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding invisible feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding hostile feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding slumber feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding paralyzed feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding nonfood feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding revision feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding stamp feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding wrong-level feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        }
+      ]
+    },
+    "main-related-v3": {
+      "numTotalTests": 76,
+      "numPassedTests": 76,
+      "numFailedTests": 0,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "files": [
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts",
+          "status": "passed",
+          "cases": [
+            {
+              "name": "native seed3 render=false fall/stair retains every cached field through seek and continuation",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "native seed3 render=true fall/stair retains every cached field through seek and continuation",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "native seed47 render=false fall/stair retains every cached field through seek and continuation",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "native seed47 render=true fall/stair retains every cached field through seek and continuation",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "empty display queue normalizes only the two FOV flags, with the complete native world unchanged",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        },
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/p1_30_i18n_gate.test.ts",
+          "status": "passed",
+          "cases": [
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 引用实际嵌套数据与跨文件 readonly 枚举派生模板，未使用错误码仍为死键",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 Vue script、相邻插值和条件属性逐个扫描，注释与普通属性不冒充调用",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 动态模块字段仅取实际 data JSON 词汇，投影别名需有真实转发",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 动态字段不能借用其它模块、未证实别名或任意表达式的词汇",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 新增数据键、属性末尾调用与有限 prop 缺失均亮红，同组死键仍亮红",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 开放 string prop 与 script 局部参数仍拒绝，未消费的有限 prop 不算引用",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 数据引用及有限模板缺失资源均亮红，不能由同前缀其它翻译掩盖",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 开放 string 模板不可扩大成前缀豁免，超过有限候选预算也拒绝",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 多插值保留所有静态后缀，只产生精确有限键",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 模块包本地化引用：有限数据与错误词汇，不豁免命名空间 删除模块后数据及错误词汇均自然移除，不留硬导入或测试引用",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json 扫描覆盖了引擎、实体与界面（不含测试文件自身）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json 每个静态字面量键都存在（缺失即红）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json 每个动态键前缀下至少有一个真实键（防前缀打错字整组落空）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json 所有 t() 调用的首参都可静态解析（新调用点必须写成可扫描形式）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 键存在性红灯：源码引用的每个 i18n 键必须存在于 zh_CN.json zh_CN.json 没有从未被引用的死键（发现死键应移入 zh_CN.legacy.json 归档）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 数据驱动的 name.* 键覆盖（防归档误删：误删 = 怪物/物品名集体变英文） 英文形式的名字必须有 name.* 键且译文含中文（中文名原样返回，无需键）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × rat：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × kobold：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × jackal：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × goblin：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × pink_jelly：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × troll：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × wraith：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异 × dragon：拼接结果 = 资源键插值，无英文/无空格",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 变异名拼接：中文语序，无英文残留、无多余空格 8 个变异名资源键全部存在（缺失时拼接会回退英文）",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "P1-30 实跑冒烟：真实资源下推进回合，任何 t() 命中缺失键即红 3 个 seed × 400 回合：无漏键、日志无裸键串",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        },
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/repo_hygiene.test.ts",
+          "status": "passed",
+          "cases": [
+            {
+              "name": "repo hygiene has no merge conflict markers in src",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "repo hygiene every JSON file under src parses",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        },
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/test_suite_membership.test.ts",
+          "status": "passed",
+          "cases": [
+            {
+              "name": "test suite membership registers every discovered test exactly once with its actual owner",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "test suite membership uses the exact resolved partition in Vite and ext includes all foundation/module tests",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "test suite membership routes all npm suites through the shared discovery runner",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "test suite membership removes only owned tests after actual module-directory deletion",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "test suite membership uses the same stable module-ID grammar as the runtime registry",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "test suite membership fails stale, unregistered, duplicate and escaped ownership rather than excluding tests",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        },
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/u24_hardcoded_text.test.ts",
+          "status": "passed",
+          "cases": [
+            {
+              "name": "U24 free-text guard renders discovery names and identified runes in Chinese without internal IDs",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "U24 free-text guard requires translated floating labels and logger messages",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "U24 free-text guard requires translated Vue template text",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        },
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/ext/modules/foraging/tests/foraging_feed.test.ts",
+          "status": "passed",
+          "cases": [
+            {
+              "name": "T-FEED real public feeding an invisible ally in a genuinely lit native FOV cell remains feedable exactly once",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding ration_of_food gives its exact native nutrition to the companion",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding mango gives its exact native nutrition to the companion",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding mend applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding venom applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding prism applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding astray applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding upheave applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding farsense applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding veil applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding drowse applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding blast applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding might applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding stiffen applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding quicken applies only to the fed companion, with exact satiety and knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding companion mend minimum reports exact immediate HP and gain",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding companion mend percent reports exact immediate HP and gain",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding companion mend cap reports exact immediate HP and gain",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding companion mend full reports exact immediate HP and gain",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding companion roasted mend policy 0 keeps or strips healing",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding companion roasted mend policy 1 keeps or strips healing",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding full-health mend is tasted, then feeding while injured reveals the same kind",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding an immune companion only tastes stiffen and receives its nutrition",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding char supplies 20 nutrition without creating mushroom knowledge",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding overfeeding No and Yes record their actual decisions; No has zero cost and Yes saturates at 2150",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding distance feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding invisible feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding hostile feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding slumber feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding paralyzed feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding nonfood feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding revision feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding stamp feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "T-FEED real public feeding wrong-level feed rejection records an attempt with zero mechanical cost",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        }
+      ]
+    },
+    "missing-native-v1": {
+      "numTotalTests": 5,
+      "numPassedTests": 5,
+      "numFailedTests": 0,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "files": [
+        {
+          "file": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-removal/src/test/ext_foundation_native_visibility.test.ts",
+          "status": "passed",
+          "cases": [
+            {
+              "name": "native seed3 render=false fall/stair retains every cached field through seek and continuation",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "native seed3 render=true fall/stair retains every cached field through seek and continuation",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "native seed47 render=false fall/stair retains every cached field through seek and continuation",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "native seed47 render=true fall/stair retains every cached field through seek and continuation",
+              "status": "passed",
+              "failure": []
+            },
+            {
+              "name": "empty display queue normalizes only the two FOV flags, with the complete native world unchanged",
+              "status": "passed",
+              "failure": []
+            }
+          ]
+        }
+      ]
+    },
+    "native-fov-counter-v1": {
+      "numTotalTests": 5,
+      "numPassedTests": 0,
+      "numFailedTests": 5,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "files": [
+        {
+          "file": "/Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts",
+          "status": "failed",
+          "cases": [
+            {
+              "name": "native seed3 render=false fall/stair retains every cached field through seek and continuation",
+              "status": "failed",
+              "failure": [
+                "AssertionError: expected { depth: 1, width: 79, …(41) } to deeply equal { depth: 1, width: 79, …(41) }\n    at /Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:67:167\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2027:60\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)"
+              ]
+            },
+            {
+              "name": "native seed3 render=true fall/stair retains every cached field through seek and continuation",
+              "status": "failed",
+              "failure": [
+                "AssertionError: expected { depth: 1, width: 79, …(41) } to deeply equal { depth: 1, width: 79, …(41) }\n    at /Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:67:167\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2027:60\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)"
+              ]
+            },
+            {
+              "name": "native seed47 render=false fall/stair retains every cached field through seek and continuation",
+              "status": "failed",
+              "failure": [
+                "AssertionError: expected { depth: 1, width: 79, …(41) } to deeply equal { depth: 1, width: 79, …(41) }\n    at /Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:67:167\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2027:60\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)"
+              ]
+            },
+            {
+              "name": "native seed47 render=true fall/stair retains every cached field through seek and continuation",
+              "status": "failed",
+              "failure": [
+                "AssertionError: expected { depth: 1, width: 79, …(41) } to deeply equal { depth: 1, width: 79, …(41) }\n    at /Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:67:167\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2027:60\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)"
+              ]
+            },
+            {
+              "name": "empty display queue normalizes only the two FOV flags, with the complete native world unchanged",
+              "status": "failed",
+              "failure": [
+                "AssertionError: expected { depth: 1, width: 79, …(41) } to deeply equal { depth: 1, width: 79, …(41) }\n    at /Users/coolking70/Documents/同步空间/BrogueJS-p5/src/test/ext_foundation_native_visibility.test.ts:84:36\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)\n    at file:///Users/coolking70/Documents/%E5%90%8C%E6%AD%A5%E7%A9%BA%E9%97%B4/BrogueJS/node_modules/@vitest/runner/dist/chunk-artifact.js:2956:64"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "stages": {
+    "capture-v1": {
+      "stages": [
+        {
+          "stage": "foundation-combat2-original-before-v1",
+          "command": [
+            "node",
+            "/Users/coolking70/Documents/同步空间/BrogueJS-p5/node_modules/vitest/vitest.mjs",
+            "run",
+            "--config",
+            "supplement.config.ts",
+            "--maxWorkers=1",
+            "--no-file-parallelism",
+            "src/ext/modules/combat/tests/combat2_evasion.test.ts",
+            "src/ext/modules/combat/tests/combat2_natural.test.ts",
+            "src/ext/modules/combat/tests/combat2_links.test.ts",
+            "--reporter=default",
+            "--reporter=json",
+            "--outputFile=/private/tmp/brogue-commander-20261009-5z/foundation-combat2-original-before-v1.vitest.json"
+          ],
+          "exit": 1,
+          "seconds": 345.8729407498613
+        },
+        {
+          "stage": "foundation-combat2-capture-base-v1",
+          "command": [
+            "node",
+            "/Users/coolking70/Documents/同步空间/BrogueJS-p5/node_modules/vitest/vitest.mjs",
+            "run",
+            "--config",
+            "supplement.config.ts",
+            "--maxWorkers=1",
+            "--no-file-parallelism",
+            "supplement.probe.ts"
+          ],
+          "exit": 0,
+          "seconds": 496.5623488330748
+        },
+        {
+          "stage": "foundation-combat2-capture-nonvis-v1",
+          "command": [
+            "node",
+            "/Users/coolking70/Documents/同步空间/BrogueJS-p5/node_modules/vitest/vitest.mjs",
+            "run",
+            "--config",
+            "supplement.config.ts",
+            "--maxWorkers=1",
+            "--no-file-parallelism",
+            "supplement.probe.ts"
+          ],
+          "exit": 0,
+          "seconds": 496.70210287487134
+        },
+        {
+          "stage": "foundation-combat2-capture-final-v1",
+          "command": [
+            "node",
+            "/Users/coolking70/Documents/同步空间/BrogueJS-p5/node_modules/vitest/vitest.mjs",
+            "run",
+            "--config",
+            "supplement.config.ts",
+            "--maxWorkers=1",
+            "--no-file-parallelism",
+            "supplement.probe.ts"
+          ],
+          "exit": 0,
+          "seconds": 1456.5842909167986
+        }
+      ],
+      "started_at": "2026-10-11T23:47:17.319001+08:00",
+      "active": null,
+      "exit": 0,
+      "productionRestored": true,
+      "ended_at": "2026-10-12T00:33:53.212371+08:00",
+      "actualDone": "exit=0"
+    },
+    "original-gates-v1": {
+      "stages": [
+        {
+          "stage": "foundation-combat2-fov-only-counter-v1",
+          "command": [
+            "node",
+            "/Users/coolking70/Documents/同步空间/BrogueJS-p5/node_modules/vitest/vitest.mjs",
+            "run",
+            "--config",
+            "supplement.config.ts",
+            "--maxWorkers=1",
+            "--no-file-parallelism",
+            "src/ext/modules/combat/tests/combat2_evasion.test.ts",
+            "src/ext/modules/combat/tests/combat2_natural.test.ts",
+            "src/ext/modules/combat/tests/combat2_links.test.ts",
+            "--reporter=default",
+            "--reporter=json",
+            "--outputFile=/private/tmp/brogue-commander-20261009-5z/foundation-combat2-fov-only-counter-v1.vitest.json"
+          ],
+          "exit": 1,
+          "seconds": 346.16223279200494
+        },
+        {
+          "stage": "foundation-combat2-original-fixed-v1",
+          "command": [
+            "node",
+            "/Users/coolking70/Documents/同步空间/BrogueJS-p5/node_modules/vitest/vitest.mjs",
+            "run",
+            "--config",
+            "supplement.config.ts",
+            "--maxWorkers=1",
+            "--no-file-parallelism",
+            "src/ext/modules/combat/tests/combat2_evasion.test.ts",
+            "src/ext/modules/combat/tests/combat2_natural.test.ts",
+            "src/ext/modules/combat/tests/combat2_links.test.ts",
+            "--reporter=default",
+            "--reporter=json",
+            "--outputFile=/private/tmp/brogue-commander-20261009-5z/foundation-combat2-original-fixed-v1.vitest.json"
+          ],
+          "exit": 1,
+          "seconds": 1372.5864749588072
+        }
+      ],
+      "started_at": "2026-10-12T00:59:41.295204+08:00",
+      "originalTestsBefore": {
+        "src/ext/modules/combat/tests/combat2_evasion.test.ts": "584f26b4ea160d9365adda650a0f71a0ed295fb2d6152f42ca570cb41948c6ff",
+        "src/ext/modules/combat/tests/combat2_natural.test.ts": "fae63f0a52673a538246f773f02f3945fc2a3eeefa2ab8a53a94a050e9799189",
+        "src/ext/modules/combat/tests/combat2_links.test.ts": "3f429ceed67ad513afe51433d065855fa50305c68c2008a45ce4a7aee4d8f590"
+      },
+      "active": null,
+      "exit": 1,
+      "error": "RuntimeError('original fixed failed')",
+      "productionRestored": true,
+      "originalTestsAfter": {
+        "src/ext/modules/combat/tests/combat2_evasion.test.ts": "584f26b4ea160d9365adda650a0f71a0ed295fb2d6152f42ca570cb41948c6ff",
+        "src/ext/modules/combat/tests/combat2_natural.test.ts": "fae63f0a52673a538246f773f02f3945fc2a3eeefa2ab8a53a94a050e9799189",
+        "src/ext/modules/combat/tests/combat2_links.test.ts": "3f429ceed67ad513afe51433d065855fa50305c68c2008a45ce4a7aee4d8f590"
+      },
+      "testsUnchanged": true,
+      "ended_at": "2026-10-12T01:28:20.135760+08:00",
+      "actualDone": "exit=1"
+    },
+    "main-gates-v1": {
+      "stages": [],
+      "started_at": "2026-10-12T01:35:32.194616+08:00",
+      "sourceBefore": null,
+      "exit": 1,
+      "error": "NameError(\"name 'files' is not defined\")",
+      "sourceAfter": null,
+      "sourceUnchanged": true,
+      "active": null,
+      "ended_at": "2026-10-12T01:35:32.194968+08:00",
+      "actualDone": "exit=1"
+    },
+    "main-gates-v2": {
+      "stages": [
+        {
+          "stage": "foundation-combat2-main-boundary-v2",
+          "command": [
+            "node",
+            "scripts/check-module-boundaries.mjs"
+          ],
+          "exit": 0,
+          "seconds": 2.3148340408224612
+        },
+        {
+          "stage": "foundation-combat2-main-types-v2",
+          "command": [
+            "node",
+            "node_modules/vue-tsc/bin/vue-tsc.js",
+            "-b"
+          ],
+          "exit": 0,
+          "seconds": 8.961428250186145
+        },
+        {
+          "stage": "foundation-combat2-main-build-v2",
+          "command": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "exit": 0,
+          "seconds": 12.303960124962032
+        },
+        {
+          "stage": "foundation-combat2-main-related-v2",
+          "command": [
+            "node",
+            "node_modules/vitest/vitest.mjs",
+            "run",
+            "src/test/ext_foundation_native_visibility.test.ts",
+            "src/ext/modules/foraging/tests/foraging_feed.test.ts",
+            "src/test/test_suite_membership.test.ts",
+            "src/test/repo_hygiene.test.ts",
+            "src/test/p1_30_i18n_gate.test.ts",
+            "src/test/u24_hardcoded_text.test.ts",
+            "--maxWorkers=1",
+            "--no-file-parallelism",
+            "--reporter=default",
+            "--reporter=json",
+            "--outputFile=/private/tmp/brogue-commander-20261009-5z/foundation-combat2-main-related-v2.vitest.json"
+          ],
+          "exit": 1,
+          "seconds": 37.48193429107778
+        }
+      ],
+      "started_at": "2026-10-12T01:37:41.410941+08:00",
+      "sourceBefore": {
+        "files": 1311,
+        "sha": "fd164b95c2bf4225b8614b7b523b09bd0d059477abc1a58a616958296dbbf421"
+      },
+      "active": null,
+      "exit": 1,
+      "error": "RuntimeError('foundation-combat2-main-related-v2 failed')",
+      "sourceAfter": {
+        "files": 1311,
+        "sha": "fd164b95c2bf4225b8614b7b523b09bd0d059477abc1a58a616958296dbbf421"
+      },
+      "sourceUnchanged": true,
+      "ended_at": "2026-10-12T01:38:42.681928+08:00",
+      "actualDone": "exit=1"
+    },
+    "main-gates-v3": {
+      "stages": [
+        {
+          "stage": "foundation-combat2-main-boundary-v3",
+          "command": [
+            "node",
+            "scripts/check-module-boundaries.mjs"
+          ],
+          "exit": 0,
+          "seconds": 2.2943225000053644
+        },
+        {
+          "stage": "foundation-combat2-main-types-v3",
+          "command": [
+            "node",
+            "node_modules/vue-tsc/bin/vue-tsc.js",
+            "-b"
+          ],
+          "exit": 0,
+          "seconds": 8.904588875127956
+        },
+        {
+          "stage": "foundation-combat2-main-build-v3",
+          "command": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "exit": 0,
+          "seconds": 12.136920874938369
+        },
+        {
+          "stage": "foundation-combat2-main-related-v3",
+          "command": [
+            "node",
+            "node_modules/vitest/vitest.mjs",
+            "run",
+            "src/test/ext_foundation_native_visibility.test.ts",
+            "src/ext/modules/foraging/tests/foraging_feed.test.ts",
+            "src/test/test_suite_membership.test.ts",
+            "src/test/repo_hygiene.test.ts",
+            "src/test/p1_30_i18n_gate.test.ts",
+            "src/test/u24_hardcoded_text.test.ts",
+            "--maxWorkers=1",
+            "--no-file-parallelism",
+            "--reporter=default",
+            "--reporter=json",
+            "--outputFile=/private/tmp/brogue-commander-20261009-5z/foundation-combat2-main-related-v3.vitest.json"
+          ],
+          "exit": 0,
+          "seconds": 97.34817008394748
+        }
+      ],
+      "started_at": "2026-10-12T01:41:57.010625+08:00",
+      "sourceBefore": {
+        "files": 1311,
+        "sha": "73a08ca004620f1e9c5f78ef0fe298aee4d236a5a6b47d4916d973604b9afc14"
+      },
+      "active": null,
+      "exit": 0,
+      "sourceAfter": {
+        "files": 1311,
+        "sha": "73a08ca004620f1e9c5f78ef0fe298aee4d236a5a6b47d4916d973604b9afc14"
+      },
+      "sourceUnchanged": true,
+      "ended_at": "2026-10-12T01:43:57.780488+08:00",
+      "actualDone": "exit=0"
+    },
+    "missing-gates-v1": {
+      "stages": [
+        {
+          "stage": "foundation-combat2-missing-boundary-v1",
+          "command": [
+            "node",
+            "scripts/check-module-boundaries.mjs"
+          ],
+          "exit": 0,
+          "seconds": 2.1886685411445796
+        },
+        {
+          "stage": "foundation-combat2-missing-types-v1",
+          "command": [
+            "node",
+            "node_modules/vue-tsc/bin/vue-tsc.js",
+            "-b"
+          ],
+          "exit": 0,
+          "seconds": 7.6733159171417356
+        },
+        {
+          "stage": "foundation-combat2-missing-native-v1",
+          "command": [
+            "node",
+            "node_modules/vitest/vitest.mjs",
+            "run",
+            "src/test/ext_foundation_native_visibility.test.ts",
+            "--maxWorkers=1",
+            "--no-file-parallelism",
+            "--reporter=default",
+            "--reporter=json",
+            "--outputFile=/private/tmp/brogue-commander-20261009-5z/foundation-combat2-missing-native-v1.vitest.json"
+          ],
+          "exit": 0,
+          "seconds": 70.7304264579434
+        }
+      ],
+      "started_at": "2026-10-12T01:46:32.435255+08:00",
+      "actuallyAbsent": [
+        "combat",
+        "crafting",
+        "foraging",
+        "giants",
+        "narrative"
+      ],
+      "active": null,
+      "exit": 0,
+      "ended_at": "2026-10-12T01:47:53.031808+08:00",
+      "actuallyStillAbsent": true,
+      "actualDone": "exit=0"
+    },
+    "tail-gates-v1": {
+      "stages": [
+        {
+          "stage": "foundation-combat2-missing-gates-v1",
+          "command": [
+            "python3",
+            "/private/tmp/brogue-commander-20261009-5z/foundation-combat2-missing-gates-v1.py"
+          ],
+          "exit": 0,
+          "seconds": 80.63112675002776
+        },
+        {
+          "stage": "foundation-combat2-external-boundary-tail-v1",
+          "command": [
+            "node",
+            "scripts/check-module-boundaries.mjs"
+          ],
+          "exit": 1,
+          "seconds": 2.724499666830525
+        }
+      ],
+      "started_at": "2026-10-12T01:46:32.405611+08:00",
+      "targetShaBefore": "8c9ff36d063321b23b06d96d7b39175154c05b358bbc9b00282beafc561fe09a",
+      "active": null,
+      "exit": 1,
+      "error": "RuntimeError('external boundary failed')",
+      "productionRestored": true,
+      "targetShaAfter": "8c9ff36d063321b23b06d96d7b39175154c05b358bbc9b00282beafc561fe09a",
+      "targetUnchanged": true,
+      "ended_at": "2026-10-12T01:47:55.764490+08:00",
+      "actualDone": "exit=1"
+    },
+    "tail-gates-v2": {
+      "stages": [
+        {
+          "stage": "foundation-combat2-external-boundary-tail-v2",
+          "command": [
+            "node",
+            "scripts/check-module-boundaries.mjs"
+          ],
+          "exit": 0,
+          "seconds": 2.377358209108934
+        },
+        {
+          "stage": "foundation-combat2-external-types-tail-v2",
+          "command": [
+            "node",
+            "node_modules/vue-tsc/bin/vue-tsc.js",
+            "-b"
+          ],
+          "exit": 0,
+          "seconds": 8.77125595905818
+        },
+        {
+          "stage": "foundation-combat2-native-fov-counter-v1",
+          "command": [
+            "node",
+            "node_modules/vitest/vitest.mjs",
+            "run",
+            "src/test/ext_foundation_native_visibility.test.ts",
+            "--maxWorkers=1",
+            "--no-file-parallelism",
+            "--reporter=default",
+            "--reporter=json",
+            "--outputFile=/private/tmp/brogue-commander-20261009-5z/foundation-combat2-native-fov-counter-v1.vitest.json"
+          ],
+          "exit": 1,
+          "seconds": 47.2770781670697
+        }
+      ],
+      "started_at": "2026-10-12T01:51:53.149106+08:00",
+      "targetShaBefore": "8c9ff36d063321b23b06d96d7b39175154c05b358bbc9b00282beafc561fe09a",
+      "active": null,
+      "exit": 0,
+      "productionRestored": true,
+      "targetShaAfter": "8c9ff36d063321b23b06d96d7b39175154c05b358bbc9b00282beafc561fe09a",
+      "targetUnchanged": true,
+      "ended_at": "2026-10-12T01:52:51.579501+08:00",
+      "actualDone": "exit=0"
+    }
+  },
+  "contentNotMerged": true,
+  "sdkNotChanged": true,
+  "reviewsUsed": 1,
+  "newRound": false,
+  "scopeDecisionPending": [
+    "fixed natural traces have no zombie new-release",
+    "fixed links trace has no giant positive hit"
+  ],
+  "userQuestion": "independent same-seed prefix continuation or later content step; original input+assertions unchanged",
+  "skipPolicy": {
+    "newSkip": 0,
+    "newTodo": 0,
+    "nameFilters": 0,
+    "existingR1skip": "unchanged missingCE structure performance case, reused separately"
+  },
+  "fingerprints": {
+    "combat2-visibility-world-leaves.json.gz": "2ac4abea71c9910ede588ac8b6e5bf831cdaa1904d4d9cc66b7ac423adc7670a",
+    "combat2-visibility-recording-leaves.json.gz": "5bf4cbfe9b5150c79961d901624e586298552aa71f14621170b0ec35b0def9d6",
+    "combat2-visibility-leaves.json": "ae209727b09710f7a2d2b02142f2250a549749cf8f8c0dc08c72e6357bab2c74",
+    "combat2-visibility-recording-proof.json": "cda1fe175e3568cd207d3ae06ca9c521c0ecfcb8424e7b0c27e43c51b16997fe",
+    "combat2-visibility-first-leaves.json": "b3f8d32105fe45d3d67a828adc9010457d7de5b85ab1acda8f2396245a29199f",
+    "combat2-visibility-only-fov-leaves.json": "056c4218dc5259e0e7589151469b75348a4c0974d99db51a476e045641d6f26f",
+    "combat2-visibility-giant-gap.json": "7650d19323c4b5f9e06b622a4e0e1104e3907441792bba179f9ba121362420ac",
+    "combat2-visibility-natural-gap.json": "03f13f1a0b2b447fb82bf12caa789b700168c413ae00581bb7ef0962b7a4df9e",
+    "combat2-visibility-reuse-proof.json": "de6e1365b9d21af287ca7a2e233137156645664cc3c131f1f143b76883209936",
+    "combat2-visibility-principle-audit.json": "c4e5e68aee5ab147751f4dadf89c4d466d787ee276dfbb49fa1c0590eb513508"
+  }
+}

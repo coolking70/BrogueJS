@@ -44,6 +44,8 @@ export function scene(g: Game, initial = true) {
   }
   // Only the recording origin receives staged budgets. A real first visit may
   // reshape the test map, but never changes the native landing or backpack.
+  // Normalize the controlled scene against its current player/map and native light.
+  (g as any).updateVision(false);
   if (!initial) return;
   const food = g.player.inventory.items.find((i) => i.category === ItemCategory.FOOD)!;
   food.quantity = 4;
@@ -54,7 +56,7 @@ export function scene(g: Game, initial = true) {
     if (i) i.quantity = 99;
   }
 }
-export function setup(modules = ['settlement'], depth = 1, foodQuantity = 4, raids = false) {
+export function setup(modules = ['settlement'], depth = 1, foodQuantity = 4, raids = false, harness = createConfiguredWorldHarness) {
   installRecordingScene((g) => {
     if (g.extensionRuntime?.manifest.modules.some((m) => m.id === 'settlement')) {
       if (depth !== 1) {
@@ -66,7 +68,7 @@ export function setup(modules = ['settlement'], depth = 1, foodQuantity = 4, rai
         foodQuantity;
     }
   });
-  const h = createConfiguredWorldHarness({ seed: 51020001, modules }, modules.includes('settlement') ? {settlement:{raids}} : {});
+  const h = harness({ seed: 51020001, modules }, modules.includes('settlement') ? {settlement:{raids}} : {});
   live.push(h);
   return { h, g: worldHarnessGame(h) };
 }

@@ -49,7 +49,7 @@ import { commitOfflineSettlement, planOfflineSettlement, offlineSeedKey, offline
 import { createWorld5, checkedAdd, levelKey, requireDungeon, advanceWorldClock, validateWorldClockAdvance, indexWorldLevels, validateWorld5, assertWorldLevelOwnership, type World5Snapshot } from '../../ext/world5';
 import { assertBodyTransitionRequest, bodyTransitionHp } from '../Movement/BodyTransition';
 import type { ActiveBodyTransition, BodyTransitionRequest, BodyTransitionFact } from '../../ext/bodyTransitions';
-import { checkpointSpatialTerrain } from '../Movement/SpatialRevision';
+import { checkpointSpatialTerrain, checkpointSpatialTerrainSubscriptions } from '../Movement/SpatialRevision';
 import { validateActorCombatCapacities } from './PhasedAttackProduction';
 import { resolveActorQueryScope } from '../../ext/actorQuery';
 import { resolveFixedZoneContact, nativeZoneAttackAvailable } from '../Combat/FixedZoneHealth';
@@ -88,8 +88,8 @@ import { squareContactScope, withSquareContactScope } from '../Movement/SpatialC
 import { SPATIAL_LIMITS, type SpatialWorldSnapshot } from '../Movement/SpatialSchema';
 import { assertNativeSpatial, assertSingleCellPlayer, nativeContactOf, footprintOf, footprintEvery, footprintSome, commitCreatureAnchor, squareAnchorRevision, creatureAtCell, footprintContains, distanceBetweenFootprints, distanceToFootprint, nearestContact, spatialOf, canFitAt, canStepFootprint, collectBodyTargets } from '../Movement/CreatureSpatial';
 import { actorActionSchedulerFor, assertNoActorActionFixture, selectNativeActorAction, isProductionActorActionRunInvalid, restoreProductionActorActionValidity, retireActorActionFixtureForNewRun } from './ActorActionSession';
-import { checkpointProductionActorActions, consumeProductionActorActionResume, disposeProductionActorActionSession, markProductionActorActionResume, notifyProductionActorSourceChanged, productionActorActionInputLocked, reconcileProductionActorActions, resumeProductionActorActions, suspendProductionActorActions, validateProductionActorActionSession, validateProductionActorActionState, type ActorActionProductionWorld } from './ActorActionProduction';
-import { bindPhasedAttackProduction, checkpointPhasedAttackSources, isActorStaggered, reconcileActorNativeRecovery, isActorParryCommand, prepareActorParryCommand, commitActorParryCommand, isActorDodgeCommand, prepareActorDodgeCommand, commitActorDodgeCommand, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, retirePhasedAttackSource, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
+import { checkpointProductionActorActions, consumeProductionActorActionResume, disposeProductionActorActionSession, markProductionActorActionResume, productionActorActionScheduler, notifyProductionActorSourceChanged, productionActorActionInputLocked, reconcileProductionActorActions, resumeProductionActorActions, suspendProductionActorActions, validateProductionActorActionSession, validateProductionActorActionState, type ActorActionProductionWorld } from './ActorActionProduction';
+import { bindPhasedAttackProduction, phasedAttackBoundaryIdentity, checkpointPhasedAttackSources, isActorStaggered, reconcileActorNativeRecovery, isActorParryCommand, prepareActorParryCommand, commitActorParryCommand, isActorDodgeCommand, prepareActorDodgeCommand, commitActorDodgeCommand, isPhasedAttackCommand, preparePhasedAttackCommand, commitPhasedAttackCommand, collectPhasedAttackActors, retirePhasedAttackSource, validatePhasedAttackGeometry, cancelPhasedAttacksAtZone } from './PhasedAttackProduction';
 import { assertActorActionScope, type ActorActionScope } from './ActorActionScope';
 import { interactablePlacementCells, hasInteractionLine } from '../../ext/worldSpatial';
 import type { WorldInteractable, WorldInteractableView } from '../../ext/world';
@@ -361,6 +361,9 @@ interface CommandExecution {
     valid: (() => boolean) | null;
     autoStep: boolean;
     blockCombatText: boolean;
+    /** Engine-local receipt, scoped to this exact synchronous drive. */
+    rolledBackFailure?: { error: unknown };
+    hasSuspended?: boolean;
 }
 type ReplayStatus = 'idle' | 'loaded' | 'playing' | 'finished';
 class ReplayDigestMismatch extends Error {
@@ -3856,7 +3859,10 @@ export class Game {
         // Display and unaccepted extension quotes must not materialize needs.
         // Native mechanical inputs retry before allocating their command prefix.
         this.settleResidentNativeInput(action, data, perform);
-        if (this.extensionRuntime && !this.extensionRuntime.allowsInput(action, data)) {
+        let allowed: boolean;
+        try { allowed = !this.extensionRuntime || this.extensionRuntime.allowsInput(action, data); }
+        catch (error) { this.recordingFromNewGame = false; throw error; }
+        if (!allowed) {
             const disturbed = this.disturbed;
             try { logger.log(i18next.t('ext.command.rejected', { defaultValue: 'Module command is not available in the current state.' }), '#ff6666', { presentationOnly: true }); }
             finally { this.disturbed = disturbed; }
@@ -3917,17 +3923,36 @@ export class Game {
 
     private advanceCommand(execution: CommandExecution, answer?: boolean): void {
         const state = recordingState(this);
+        delete execution.rolledBackFailure;
+        // Native work/rest, confirmations and flares have larger write sets.
+        // They are deliberately outside this audited synchronous boundary.
+        const runtime = this.extensionRuntime;
+        let restoreBoundary: (() => void) | null = null;
         const oldBlock = logger.blockCombatText, oldAuto = this.inAutoTravelStep;
         this.commandDecisions = execution.decisions;
         this.inAutoTravelStep = execution.autoStep;
         logger.blockCombatText = execution.blockCombatText;
         state.drivingStages++;
         try {
+            const eligibleBoundary = execution.action === 'ext:command' && runtime && !execution.pending && !execution.hasSuspended
+            && !isWorldWorkCommand(this, execution.data) && !isStructureCommand(this, execution.data)
+            && !isResidentCommand(this, execution.data) && !isStructureFixtureCommand(this, execution.data)
+            && !isWorldRestCommand(this, execution.data) && !isEdibleFixtureCommand(this, execution.data)
+            && !isEdibleCommand(this, execution.data) && !isActorParryCommand(this, execution.data)
+            && !isActorDodgeCommand(this, execution.data) && !isPhasedAttackCommand(this, execution.data)
+            && execution.decisions.length === 0 && !this.isAdvancing && !state.pendingCommand
+            && !this.activeFlares?.length && !this.flareLightMap
+            && !this.hasWorldAutoWork() && this.foundationRestPointId() === null
+            && !this.actorActions?.bundles.length
+            && !this.world5?.tickets.some(t => t.status === 'working' && !this.world5!.orders.some(o => o.ticketId === t.ticketId))
+            && !runtime.actorActionBinding()?.state.bonfires?.active;
+            if (eligibleBoundary) restoreBoundary = this.checkpointExtensionCommandBoundary();
             let result = execution.stages.next(answer!);
             while (!result.done) {
                 if ((this.onCommandConfirmRequest || result.value.recordDecision === false) && !this.replayRecording) {
                     execution.pending = Object.freeze({ token: Object.freeze({}),
                         ownerCommandId: execution.id, message: result.value.message });
+                    execution.hasSuspended = true;
                     execution.pendingRecordsDecision = result.value.recordDecision !== false;
                     if(isWorldWorkCommand(this,execution.data)||isStructureCommand(this,execution.data)||isResidentCommand(this,execution.data)){const runtime=this.extensionRuntime,player=this.player;execution.valid=()=>this.extensionRuntime===runtime&&this.player===player;}else execution.valid = this.confirmationGuard(execution.data);
                     execution.autoStep = this.inAutoTravelStep;
@@ -3947,15 +3972,52 @@ export class Game {
             if (!this.isAdvancing) observePresentation(this, 'command-complete');
         } catch (error) {
             state.execution = null;
-            this.recordingFromNewGame = false;
+            let restored = false;
+            const receipt = (execution as CommandExecution).rolledBackFailure;
+            if (restoreBoundary && this.extensionRuntime === runtime && !this.isAdvancing
+                && receipt && Object.is(receipt.error, error)) {
+                try { restoreBoundary(); restored = true; } catch { /* Incomplete restoration fails closed. */ }
+            }
+            if (!restored) this.recordingFromNewGame = false;
             throw error;
         } finally {
+            delete execution.rolledBackFailure;
             state.drivingStages--;
             this.commandDecisions = null;
             logger.blockCombatText = oldBlock;
             this.inAutoTravelStep = oldAuto;
             this.notifyCommandConfirmation();
         }
+    }
+
+    /** Bounded preprocessing/FOV/stat and idle scheduler write set; derived
+     * binding replacement remains fail closed. No cached grid/terrain copy. */
+    private checkpointExtensionCommandBoundary(): () => void {
+        const restore = checkpointGenerationWorld(() => ({ shallow: [this, this.player, ...this.departureActors()], deep: [] }));
+        const cells = Array.from({ length: this.grid.width }, (_, x) =>
+            Array.from({ length: this.grid.height }, (_, y) => this.grid.getCell(x, y)!));
+        const flags = cells.map(column => column.map(cell => [cell.isVisible, cell.isClairvoyantVisible] as const));
+        const random = rng.getState(), log = logger.checkpoint();
+        const actions = checkpointProductionActorActions(this), defense = checkpointPhasedAttackSources(this);
+        const scheduler = productionActorActionScheduler(this), phase = phasedAttackBoundaryIdentity(this);
+        const stats = this.extensionRuntime!.checkpointNativeStatSession();
+        return () => {
+            if (productionActorActionScheduler(this) !== scheduler
+                || phasedAttackBoundaryIdentity(this).some((value, i) => value !== phase[i]))
+                throw new Error('Uncertified extension command boundary');
+            restore(); actions(); defense(); stats(); log(); rng.setState(random);
+            cells.forEach((column, x) => column.forEach((cell, y) => {
+                [cell.isVisible, cell.isClairvoyantVisible] = flags[x]![y]!;
+            }));
+        };
+    }
+
+    private runExtensionCommand(data: unknown, settle: () => void): void {
+        const execution = recordingState(this).execution;
+        this.extensionRuntime!.command(data, settle, error => {
+            if (execution && recordingState(this).execution === execution)
+                execution.rolledBackFailure = { error };
+        });
     }
 
     /** Legacy direct/headless helpers and replay drain the identical stages. */
@@ -4083,8 +4145,10 @@ export class Game {
         if ((this.isInventoryOpen || this.pendingIdentify) &&
             !['stairs_up', 'stairs_down'].includes(action) && !isIncapacitated(this.player)) return;
         if (['move', 'wait', 'search', 'auto_step', 'auto_explore', 'auto_rest',
-            'search_long', 'run', 'mouse_travel', 'travel_stairs', 'stairs_up', 'stairs_down'].includes(action))
-            settleResidentNeeds(this);
+            'search_long', 'run', 'mouse_travel', 'travel_stairs', 'stairs_up', 'stairs_down'].includes(action)) {
+            try { settleResidentNeeds(this); }
+            catch (error) { this.recordingFromNewGame = false; throw error; }
+        }
     }
 
     private *applyCommandStages(action:string,data?:unknown,perform?:()=>void):CommandStages<void> {
@@ -4141,7 +4205,7 @@ export class Game {
             else if (isActorDodgeCommand(this, data)) yield* this.executeActorDodgeCommandStages(data);
             else if (isPhasedAttackCommand(this, data)) yield* this.executePhasedAttackCommandStages(data);
             else if (this.onCommandConfirmRequest && !this.replayRecording) yield* this.executePreparedExtensionCommandStages(data);
-            else this.extensionRuntime.command(data, () => this.collectExtensionComponents());
+            else this.runExtensionCommand(data, () => this.collectExtensionComponents());
         } else if (action.startsWith('item:')) {
             const [operation, letter, ...rest] = String(data ?? '').split('|');
             const item = this.player.inventory.items.find(i => i.inventoryLetter === letter);
@@ -4295,7 +4359,7 @@ export class Game {
 
     private *executePreparedExtensionCommandStages(data: unknown): CommandStages<void> {
         const runtime = this.extensionRuntime!, plan = this.prepareControlledCommand(data);
-        if (!plan) { runtime.command(data, () => this.collectExtensionComponents()); return; }
+        if (!plan) { this.runExtensionCommand(data, () => this.collectExtensionComponents()); return; }
         const suppliedAnswers: { risk: ControlledActionRisk; decision: boolean }[] = [];
         for (const risk of plan.risks) {
             // Answers are not recorder decisions yet. The original requestConfirm
@@ -4310,7 +4374,7 @@ export class Game {
         const state = recordingState(this);
         state.suppliedAnswers = { request: plan.request, answers: suppliedAnswers, cursor: 0 };
         try {
-            runtime.command(plan.command, () => {
+            this.runExtensionCommand(plan.command, () => {
                 if (state.suppliedAnswers!.cursor !== suppliedAnswers.length) throw new Error('Unused supplied confirmation decision');
                 this.collectExtensionComponents();
             });
@@ -6500,7 +6564,10 @@ export class Game {
 
     /** Do not expose frame-dependent visibility to AI, targeting or snapshots. */
     private finishTransientDisplay(discardQueued = false): void {
-        if (!this.activeFlares?.length && !this.flareLightMap) return;
+        if (!this.activeFlares?.length && !this.flareLightMap) {
+            this.updateTransientVisibility(null, false);
+            return;
+        }
         this.prepareFlareKnowledge();
         // Commands cancel the displayed frame, but a not-yet-presented event
         // remains queued for the animation pump (which checks turn expiry).
@@ -12196,7 +12263,11 @@ export class Game {
         rng.setState(snapshot.rngState);
         this.extensionRuntime = extensions;
         loadingSpatialCatalogs.delete(this);
-        if(extensions?.hasOwnedRegions)this.bindMovementRegionSession();
+        this.bindMovementRegionSession();
+        for (const [depth, level] of this.levels) {
+            bindMovementRegions(level.grid, extensions?.hasOwnedRegions
+                ? (id, at) => extensions.containsOwnedRegion(id, depth, at) : undefined);
+        }
         this.configureExtensionRuleAdapters();
         ItemLoader.onKnowledgeChanged = extensions ? kindId => {markStatsDirty(this.player);extensions.emit('itemKnowledgeChanged',{kindId});} : null;
         if (extensions) {
@@ -13861,9 +13932,25 @@ export class Game {
     public residentGridAt(depth:number){return depth===(this.currentLevelDepth??this.depth)?this.grid:this.levels.get(depth)?.grid;}
     public checkpointResidentWorld():()=>void {
         const native=residentTransactionOwnsNativeWrites(this)?this.checkpointCombatFactWorld():null;
-        const paths=checkpointResidentPaths(this),beds=checkpointResidentBeds(this),cached=[...this.levels.values()],actors=this.departureActors(),needs=checkpointNeeds(this),dirty=checkpointRecordingRoots([this.world5!,this.extensionRuntime!,this.actorActions!]);
-        const base=this.checkpointWorldWork(()=>({shallow:[this,...cached],deep:[...actors,this.extensionRuntime,this.monsters,this.dormantMonsters,this.purgatory,this.pendingFallenByDepth,this.pendingFallenItemsByDepth,this.levels,this.visibleMonsters,this.everSeenMonsters,...cached.flatMap(l=>[l.monsters,l.dormantMonsters,l.items,l.visibleMonsters])]}));
-        return()=>{base();needs();dirty();paths();beds();native?.();};
+        const statBindings=this.extensionRuntime!.checkpointNativeStatSession();
+        const paths=checkpointResidentPaths(this),beds=checkpointResidentBeds(this),cached=[...this.levels.values()],actors=collectEntityGraph(this.departureActors()).monsters,needs=checkpointNeeds(this),dirty=checkpointRecordingRoots([this.world5!,this.extensionRuntime!,this.actorActions!]);
+        // Retirement owns actor/list/session writes even when it owns no terrain
+        // effects. A successful passenger landing can still be followed by an
+        // outer failure. Capture that narrow native closure, including off-graph
+        // bindings, without traversing active or cached maps/environment grids.
+        const revisions=checkpointSpatialActorRevisions([this.player,...actors]),defense=checkpointPhasedAttackSources(this);
+        const terrainSubscriptions=checkpointSpatialTerrainSubscriptions([this.grid,...cached.map(l=>l.grid)]);
+        const lists=checkpointOwnedMonsterLists([this.monsters,this.dormantMonsters,...cached.flatMap(l=>[l.monsters,...(l.dormantMonsters?[l.dormantMonsters]:[])])]);
+        // Deleting the last spatial session/group or a carried item's contact
+        // cooldown changes own-key order. Retain descriptors only for these
+        // deletion targets, not every object or cell in the world.
+        const deletedFields=[...(this.squareMotion||this.bodyGroups?[this]:[]),...actors.flatMap(a=>
+            a.carriedItem&&Object.prototype.hasOwnProperty.call(a.carriedItem,'fireContactCooldownUntilTurn')?[a.carriedItem]:[])];
+        const descriptors=deletedFields.map(target=>({target,values:Object.getOwnPropertyDescriptors(target)}));
+        const base=this.checkpointWorldWork(()=>({shallow:[this,...cached],deep:[...actors,this.extensionRuntime,this.squareMotion,this.bodyGroups,this.examinedEntityIds,this.monsters,this.dormantMonsters,this.purgatory,this.pendingFallenByDepth,this.pendingFallenItemsByDepth,this.levels,this.visibleMonsters,this.everSeenMonsters,...cached.flatMap(l=>[l.monsters,l.dormantMonsters,l.items,l.visibleMonsters])],references:[this.grid,...cached.map(l=>l.grid),this.spatialCatalog,...actors.flatMap(a=>[a.mapToMe,a.safetySnapshot])]}));
+        return()=>{base();needs();dirty();paths();beds();native?.();
+            for(const {target,values} of descriptors){for(const key of Reflect.ownKeys(target))if(Object.getOwnPropertyDescriptor(target,key)?.configurable)Reflect.deleteProperty(target,key);Object.defineProperties(target,values);}
+            lists();terrainSubscriptions();revisions();defense();statBindings();};
     }
     public createRaidMonster(typeId:string,at:Pos):Monster|null {
         const data=(monsterData as MonsterData[]).find(m=>m.id===typeId);

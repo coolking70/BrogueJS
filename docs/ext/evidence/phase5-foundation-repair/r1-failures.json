@@ -1,0 +1,2062 @@
+{
+  "source": "71907f538e762766a378fa94a74963217889ab53c04efd5911c5ea0afa30904c",
+  "log": "/private/tmp/brogue-commander-20261009-5z/foundation-affected-final-detached.log",
+  "total": 63,
+  "driftOverlap": 5,
+  "notIncluded": "R1-F1 independent native closure defect; F2 deletion contracts",
+  "failures": [
+    {
+      "id": "R1-T01",
+      "file": "src/ext/modules/combat/tests/combat_phase4d_rest_relations.test.ts",
+      "test": "4d composite relations at the bonfire/native input boundary > asynchronous confirmation rechecks a newly visible member without charging a visit or time",
+      "originalLogLine": 101,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "4d composite relations at the bonfire/native input boundary asynchronous confirmation rechecks a newly visible member without charging a visit or time",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T02",
+      "file": "src/ext/modules/foraging/tests/foraging_feed.test.ts",
+      "test": "T-FEED real public feeding > invisible feed rejection records an attempt with zero mechanical cost",
+      "originalLogLine": 113,
+      "group": "F3",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "foundation-r1-visibility-only-counter-v1: three FOV confirmation full files passed but invisible-only feed still failed; MonsterVisibility ally branch verified",
+        "legalSceneProof": "formal foraging_feed full file: actual darkness, normal transient FOV, pre-command cell invisible and canDirectlySeeMonster false; original assertions preserved"
+      },
+      "cause": "盟友invisible不构成目标格不可见。仅撤VISIBILITY仍首败；真实黑暗+ordinary FOV先断言目标不可直接见，再执行原拒绝/录制/零成本断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "T-FEED real public feeding invisible feed rejection records an attempt with zero mechanical cost",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T03",
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "test": "giants2 lantern natural persistence > continues damaged/phase checkpoints with exact complete world and recording prefix/suffix",
+      "originalLogLine": 135,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "giants2 lantern natural persistence continues damaged/phase checkpoints with exact complete world and recording prefix/suffix",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T04",
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "test": "giants2 lantern natural persistence > replays every real event and nonmonotonically seeks full snapshots and historical HUD including zero",
+      "originalLogLine": 153,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "giants2 lantern natural persistence replays every real event and nonmonotonically seeks full snapshots and historical HUD including zero",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T05",
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "test": "giants2 lantern natural persistence > rejects corrupt spatial closure and manifest, or actually missing module, without retiring or changing the current run",
+      "originalLogLine": 171,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "giants2 lantern natural persistence rejects corrupt spatial closure and manifest, or actually missing module, without retiring or changing the current run",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T06",
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "test": "giants2 lantern natural persistence > retains damage, broken slots and phase spent through real stairs, and defeated encounters never respawn",
+      "originalLogLine": 189,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "giants2 lantern natural persistence retains damage, broken slots and phase spent through real stairs, and defeated encounters never respawn",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T07",
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "test": "giants2 copper natural persistence > continues damaged/phase checkpoints with exact complete world and recording prefix/suffix",
+      "originalLogLine": 207,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "giants2 copper natural persistence continues damaged/phase checkpoints with exact complete world and recording prefix/suffix",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T08",
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "test": "giants2 copper natural persistence > replays every real event and nonmonotonically seeks full snapshots and historical HUD including zero",
+      "originalLogLine": 225,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "giants2 copper natural persistence replays every real event and nonmonotonically seeks full snapshots and historical HUD including zero",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T09",
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "test": "giants2 copper natural persistence > rejects corrupt spatial closure and manifest, or actually missing module, without retiring or changing the current run",
+      "originalLogLine": 243,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "giants2 copper natural persistence rejects corrupt spatial closure and manifest, or actually missing module, without retiring or changing the current run",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T10",
+      "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+      "test": "giants2 copper natural persistence > retains damage, broken slots and phase spent through real stairs, and defeated encounters never respawn",
+      "originalLogLine": 261,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "giants2 copper natural persistence retains damage, broken slots and phase spent through real stairs, and defeated encounters never respawn",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T11",
+      "file": "src/ext/modules/giants/tests/giants2_trace.test.ts",
+      "test": "fixed lantern natural public-command trace matches all mechanical checkpoint hashes",
+      "originalLogLine": 279,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "fixed lantern natural public-command trace matches all mechanical checkpoint hashes",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T12",
+      "file": "src/ext/modules/giants/tests/giants2_trace.test.ts",
+      "test": "fixed copper natural public-command trace matches all mechanical checkpoint hashes",
+      "originalLogLine": 295,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "fixed copper natural public-command trace matches all mechanical checkpoint hashes",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T13",
+      "file": "src/ext/modules/giants/tests/giants_spine_trace.test.ts",
+      "test": "naturally recreates spine seed, commands, both RNGs and original sample trace",
+      "originalLogLine": 311,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "naturally recreates spine seed, commands, both RNGs and original sample trace",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T14",
+      "file": "src/ext/modules/giants/tests/giants_trace.test.ts",
+      "test": "giants fixed natural command trace > naturally recreates seed 7328 D3 world, encounter, bindings and both RNG streams",
+      "originalLogLine": 341,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "giants fixed natural command trace naturally recreates seed 7328 D3 world, encounter, bindings and both RNG streams",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T15",
+      "file": "src/ext/modules/giants/tests/giants_trace.test.ts",
+      "test": "giants fixed natural command trace > naturally recreates the D7 colossus world, command route, bindings and both RNG streams",
+      "originalLogLine": 373,
+      "group": "F4",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "baseCounter": "foundation-r1-production-base-counter-v1: original seven files/goldens unchanged 69/69pass, only 18 production reverted",
+        "singleFixCapture": "foundation-r1-giants-captures-v1 base/nonvis/final, ordinary FOV branch alone reverted for nonvis; original capture functions and inputs",
+        "rawHashProof": "foundation-r1-giants-raw-hash-verify-v3 exit0, 84 original projection hashes across three variants, V8 undefined preserved",
+        "leafRegister": "r1-giants-golden-changes.json.gz, 9199 leaves, unknown0, original seeds/inputs/checkpoints unchanged",
+        "publish": "foundation-r1-giants-leaf-publish-v3 exit0; original final capture methods, no weakened full-world assertion"
+      },
+      "cause": "按原五路线固定seed/命令/决定/检查点，base→nonvis只格式及对应摘要，nonvis→final普通FOV完整叶及对应摘要。D3/D7 native hash为cached FOV14/51；spine extension hash为foundation13→14，其native投影不含缓存。9199全部叶登记，未知0；原值V8原方法84hash验证。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "giants fixed natural command trace naturally recreates the D7 colossus world, command route, bindings and both RNG streams",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T16",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > fire: answer false matches native synchronous world, RNG and growth cost",
+      "originalLogLine": 406,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once fire: answer false matches native synchronous world, RNG and growth cost",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T17",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > fire: answer true matches native synchronous world, RNG and growth cost",
+      "originalLogLine": 407,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once fire: answer true matches native synchronous world, RNG and growth cost",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T18",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > gas: answer false matches native synchronous world, RNG and growth cost",
+      "originalLogLine": 408,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once gas: answer false matches native synchronous world, RNG and growth cost",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T19",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > gas: answer true matches native synchronous world, RNG and growth cost",
+      "originalLogLine": 409,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once gas: answer true matches native synchronous world, RNG and growth cost",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T20",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > plate: answer false matches native synchronous world, RNG and growth cost",
+      "originalLogLine": 410,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once plate: answer false matches native synchronous world, RNG and growth cost",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T21",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > plate: answer true matches native synchronous world, RNG and growth cost",
+      "originalLogLine": 411,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once plate: answer true matches native synchronous world, RNG and growth cost",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T22",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > acid: answer false matches native synchronous world, RNG and growth cost",
+      "originalLogLine": 412,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once acid: answer false matches native synchronous world, RNG and growth cost",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T23",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > acid: answer true matches native synchronous world, RNG and growth cost",
+      "originalLogLine": 413,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once acid: answer true matches native synchronous world, RNG and growth cost",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T24",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > discordant ally: answer false matches native synchronous world, RNG and growth cost",
+      "originalLogLine": 414,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once discordant ally: answer false matches native synchronous world, RNG and growth cost",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T25",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > discordant ally: answer true matches native synchronous world, RNG and growth cost",
+      "originalLogLine": 415,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once discordant ally: answer true matches native synchronous world, RNG and growth cost",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T26",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > acid→ally questions consume answers [ false ] once, with no cost before final approval",
+      "originalLogLine": 427,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once acid→ally questions consume answers [ false ] once, with no cost before final approval",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T27",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > acid→ally questions consume answers [ true, false ] once, with no cost before final approval",
+      "originalLogLine": 446,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once acid→ally questions consume answers [ true, false ] once, with no cost before final approval",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T28",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > acid→ally questions consume answers [ true, true ] once, with no cost before final approval",
+      "originalLogLine": 447,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once acid→ally questions consume answers [ true, true ] once, with no cost before final approval",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T29",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > whip: measured-strike keeps whole-hit-list risks and answers [ false ]",
+      "originalLogLine": 466,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once whip: measured-strike keeps whole-hit-list risks and answers [ false ]",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T30",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > spear: measured-strike keeps whole-hit-list risks and answers [ false ]",
+      "originalLogLine": 467,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once spear: measured-strike keeps whole-hit-list risks and answers [ false ]",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T31",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > axe: measured-strike keeps whole-hit-list risks and answers [ false ]",
+      "originalLogLine": 468,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once axe: measured-strike keeps whole-hit-list risks and answers [ false ]",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T32",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > whip: measured-strike keeps whole-hit-list risks and answers [ true, false ]",
+      "originalLogLine": 487,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once whip: measured-strike keeps whole-hit-list risks and answers [ true, false ]",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T33",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > whip: measured-strike keeps whole-hit-list risks and answers [ true, true ]",
+      "originalLogLine": 488,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once whip: measured-strike keeps whole-hit-list risks and answers [ true, true ]",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T34",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > spear: measured-strike keeps whole-hit-list risks and answers [ true, false ]",
+      "originalLogLine": 489,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once spear: measured-strike keeps whole-hit-list risks and answers [ true, false ]",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T35",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > spear: measured-strike keeps whole-hit-list risks and answers [ true, true ]",
+      "originalLogLine": 490,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once spear: measured-strike keeps whole-hit-list risks and answers [ true, true ]",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T36",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > axe: measured-strike keeps whole-hit-list risks and answers [ true, false ]",
+      "originalLogLine": 491,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once axe: measured-strike keeps whole-hit-list risks and answers [ true, false ]",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T37",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > axe: measured-strike keeps whole-hit-list risks and answers [ true, true ]",
+      "originalLogLine": 492,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once axe: measured-strike keeps whole-hit-list risks and answers [ true, true ]",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T38",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > withdraw with rapier confirms its acidic movement attack, answer false",
+      "originalLogLine": 511,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once withdraw with rapier confirms its acidic movement attack, answer false",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T39",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > withdraw with rapier confirms its acidic movement attack, answer true",
+      "originalLogLine": 512,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once withdraw with rapier confirms its acidic movement attack, answer true",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T40",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > withdraw with flail confirms its acidic movement attack, answer false",
+      "originalLogLine": 513,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once withdraw with flail confirms its acidic movement attack, answer false",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T41",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > withdraw with flail confirms its acidic movement attack, answer true",
+      "originalLogLine": 514,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once withdraw with flail confirms its acidic movement attack, answer true",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T42",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > withdraw risk chain refuses at 1 without consuming action IDs, focus, cooldown, effects or time",
+      "originalLogLine": 526,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once withdraw risk chain refuses at 1 without consuming action IDs, focus, cooldown, effects or time",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T43",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > withdraw risk chain refuses at 2 without consuming action IDs, focus, cooldown, effects or time",
+      "originalLogLine": 545,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once withdraw risk chain refuses at 2 without consuming action IDs, focus, cooldown, effects or time",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T44",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > withdraw risk chain refuses at 3 without consuming action IDs, focus, cooldown, effects or time",
+      "originalLogLine": 564,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once withdraw risk chain refuses at 3 without consuming action IDs, focus, cooldown, effects or time",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T45",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared controlled commands keep Runtime.command synchronous and exactly once > withdraw risk chain refuses at 4 without consuming action IDs, focus, cooldown, effects or time",
+      "originalLogLine": 565,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared controlled commands keep Runtime.command synchronous and exactly once withdraw risk chain refuses at 4 without consuming action IDs, focus, cooldown, effects or time",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T46",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared confirmation stale guards and durable recorder > rejects stale growth revision without running the queued Runtime.command",
+      "originalLogLine": 584,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared confirmation stale guards and durable recorder rejects stale growth revision without running the queued Runtime.command",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T47",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared confirmation stale guards and durable recorder > rejects stale target without running the queued Runtime.command",
+      "originalLogLine": 585,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared confirmation stale guards and durable recorder rejects stale target without running the queued Runtime.command",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T48",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared confirmation stale guards and durable recorder > rejects stale runtime without running the queued Runtime.command",
+      "originalLogLine": 586,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared confirmation stale guards and durable recorder rejects stale runtime without running the queued Runtime.command",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T49",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared confirmation stale guards and durable recorder > rejects stale RNG without running the queued Runtime.command",
+      "originalLogLine": 587,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared confirmation stale guards and durable recorder rejects stale RNG without running the queued Runtime.command",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T50",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared confirmation stale guards and durable recorder > replay, seek and saved continued recording preserve a two-question answer false with zero OOS",
+      "originalLogLine": 599,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared confirmation stale guards and durable recorder replay, seek and saved continued recording preserve a two-question answer false with zero OOS",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T51",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared confirmation stale guards and durable recorder > replay, seek and saved continued recording preserve a two-question answer true with zero OOS",
+      "originalLogLine": 600,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared confirmation stale guards and durable recorder replay, seek and saved continued recording preserve a two-question answer true with zero OOS",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T52",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared confirmation stale guards and durable recorder > replay rejects missing recorded decisions instead of asking the UI",
+      "originalLogLine": 613,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared confirmation stale guards and durable recorder replay rejects missing recorded decisions instead of asking the UI",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T53",
+      "file": "src/ext/modules/growth/tests/ext_growth_prepared_commands.test.ts",
+      "test": "growth prepared confirmation stale guards and durable recorder > replay rejects surplus recorded decisions instead of asking the UI",
+      "originalLogLine": 614,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "growth prepared confirmation stale guards and durable recorder replay rejects surplus recorded decisions instead of asking the UI",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T54",
+      "file": "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts",
+      "test": "4a-2 real growth native body target preparation/consumption > 2-square tail target: No retains resources, cooldown, revisions, RNG and time",
+      "originalLogLine": 627,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "4a-2 real growth native body target preparation/consumption 2-square tail target: No retains resources, cooldown, revisions, RNG and time",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T55",
+      "file": "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts",
+      "test": "4a-2 real growth native body target preparation/consumption > 3-square tail target: No retains resources, cooldown, revisions, RNG and time",
+      "originalLogLine": 628,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "4a-2 real growth native body target preparation/consumption 3-square tail target: No retains resources, cooldown, revisions, RNG and time",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T56",
+      "file": "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts",
+      "test": "4a-2 real growth native body target preparation/consumption > pending square target moved invalidates approval before payment",
+      "originalLogLine": 647,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "4a-2 real growth native body target preparation/consumption pending square target moved invalidates approval before payment",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T57",
+      "file": "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts",
+      "test": "4a-2 real growth native body target preparation/consumption > pending square target out-and-back invalidates approval before payment",
+      "originalLogLine": 648,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "4a-2 real growth native body target preparation/consumption pending square target out-and-back invalidates approval before payment",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T58",
+      "file": "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts",
+      "test": "4a-2 real growth native body target preparation/consumption > pending square target shape invalidates approval before payment",
+      "originalLogLine": 649,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "4a-2 real growth native body target preparation/consumption pending square target shape invalidates approval before payment",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T59",
+      "file": "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts",
+      "test": "4a-2 real growth native body target preparation/consumption > pending square target corner invalidates approval before payment",
+      "originalLogLine": 650,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "4a-2 real growth native body target preparation/consumption pending square target corner invalidates approval before payment",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T60",
+      "file": "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts",
+      "test": "4a-2 real growth native body target preparation/consumption > Yes pays once and runs one physicalResolved and one real acid degradation despite two spear contact cells",
+      "originalLogLine": 662,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "4a-2 real growth native body target preparation/consumption Yes pays once and runs one physicalResolved and one real acid degradation despite two spear contact cells",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T61",
+      "file": "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts",
+      "test": "4a-2 real growth native body target preparation/consumption > real pressure target budget consumes once per square native strike and twice for independent strikes",
+      "originalLogLine": 669,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "4a-2 real growth native body target preparation/consumption real pressure target budget consumes once per square native strike and twice for independent strikes",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T62",
+      "file": "src/ext/modules/growth/tests/ext_growth_square_melee.test.ts",
+      "test": "4a-2 real growth native body target preparation/consumption > losing public body contact during prepared confirmation invalidates Yes without charging or recording a stale command",
+      "originalLogLine": 681,
+      "group": "FOV-confirmation-48",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "no-flare ordinary FOV only reverted; three confirmation full files pass; feed still fails invisible-only premise",
+        "legalSceneProof": "foundation-r1-legal-fov-v3: unchanged assertions in three complete external copies, native origin light+ordinary dark FOV, 56/56pass"
+      },
+      "cause": "旧布景移动/铺图后未重建光照，或只手写isVisible；正常无flare FOV覆盖这些过时旗标。仅撤VISIBILITY三完整文件通过，合法原生光照在origin前准备且全部原断言56/56通过；未缩短风险链/决定/费用/回放断言。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "4a-2 real growth native body target preparation/consumption losing public body contact during prepared confirmation invalidates Yes without charging or recording a stale command",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    },
+    {
+      "id": "R1-T63",
+      "file": "src/ext/modules/settlement/tests/foundation_lifecycle_repair.test.ts",
+      "test": "XR-02 real hungry ally retirement visible=true, witness, strict negatives and economic recovery",
+      "originalLogLine": 693,
+      "group": "F5",
+      "status": "closed: original full assertion title passed on actual candidate; final affected files/drift resolved",
+      "verification": {
+        "stage": "foundation-r1-ten-files-fixed-v1",
+        "log": "/private/tmp/brogue-commander-20261009-5z/foundation-r1-ten-files-fixed-v1.log",
+        "fileResult": "passed (9/10 files passed; only newly added F1 spatial last-session own-key case failed)",
+        "aggregateExit": 1,
+        "aggregateCounts": {
+          "pass": 133,
+          "fail": 1,
+          "skip": 0,
+          "todo": 0
+        },
+        "counterfactual": "foundation-r1-f5-cause-v1: read-only native rejection factor probe, live initial unrelated kobold25 at 60,20",
+        "legalSceneProof": "foundation_lifecycle_repair complete 20 tests passed; each actual candidate position asserted empty, no injected authoritative receipts"
+      },
+      "cause": "固定(60,20)已有初始活kobold25；地形、definition与空间budget合法但原生occupancy拒绝，非退休残留。仅改新用例到已证实空位(60,21)，真实129次权威退休与原128门限及原12+新3拒档都执行。",
+      "finalVerification": {
+        "bulk": "foundation-r1-final-affected-v2",
+        "candidateAssertionFullName": "XR-02 real hungry ally retirement visible=true, witness, strict negatives and economic recovery",
+        "assertionStatus": "passed",
+        "original63MatchedExactly": true,
+        "bulkAggregateExit": 1,
+        "bulkOtherFailures": "five new tests in three added spatial files, outside original63; full58 counter+legal proof+minimal premises then formal v4 full58passed",
+        "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625",
+        "productionUnchangedReuseProof": "foundation-r1-selective-reuse-proof-v4.json",
+        "drift": "foundation-r1-final-drift-v4:14/14pass; original5 overlap all resolved"
+      }
+    }
+  ],
+  "closedOriginalAtThisStage": 63,
+  "finalNormalSourceSha256": "2184edaa2205880e3c35a6517a69c996dfbe2d0a2f0a6c323a569515fb604625"
+}

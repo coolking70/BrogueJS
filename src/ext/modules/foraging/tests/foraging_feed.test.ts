@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ItemLoader } from '../../../../engine/Items/ItemLoader';
 import { TerrainType } from '../../../../engine/Map/Grid';
 import { nativeStat } from '../../../../engine/Stats/NativeStatSources';
+import { canDirectlySeeMonster } from '../../../../engine/UI/MonsterVisibility';
 import type { Monster } from '../../../../entities/Monster';
 import type { WorldHarness } from '../../../worldSdk';
 import {
@@ -65,6 +66,23 @@ const cases = [
 ] as const;
 
 describe('T-FEED real public feeding', () => {
+  it('an invisible ally in a genuinely lit native FOV cell remains feedable exactly once', () => {
+    const facts = observeFacts(), h = makeHarness(51020001, ['foraging'], [facts.override]);
+    scene(h); const ally = addAlly(h), g = game(h), food = addFood(h, 'mend');
+    ally.setStatusDuration('invisible', 10000);
+    (g as unknown as { updateVision(remember: boolean): void }).updateVision(false);
+    expect(g.grid.getCell(ally.x, ally.y)!.isVisible).toBe(true);
+    expect(canDirectlySeeMonster(g.player, g.grid, ally)).toBe(true);
+    const tick = g.toSnapshot().run.currentTick, events = g.recordedInputEvents.length, quantity = food.quantity;
+    expect(feed(h, ally, food).error).toBeNull();
+    expect(g.toSnapshot().run.currentTick - tick).toBe(100);
+    expect(g.recordedInputEvents.length).toBe(events + 1);
+    expect(facts.consumed).toHaveLength(1);
+    expect(facts.consumed[0]).toMatchObject({ operation: 'feed', eaterId: ally.id, feederId: g.player.id });
+    expect(g.player.inventory.items.find(item => item.id === food.id)?.quantity ?? 0).toBe(quantity - 1);
+    expect(state(h).totals.fed).toBe(1);
+  });
+
   it.each([
     ['ration_of_food', 1800],
     ['mango', 1550]
@@ -297,7 +315,13 @@ describe('T-FEED real public feeding', () => {
         expected = 'C5_DISTANCE';
         break;
       case 'invisible':
-        g.grid.getCell(ally.x, ally.y)!.isVisible = false;
+        ally.setStatusDuration('invisible', 10000);
+        // Native allies remain identifiable when invisible. The rejection
+        // requires an actually unlit ordinary-FOV cell, not that status.
+        Object.assign(g.lightMap.lightAt(ally.x, ally.y)!, { r: 0, g: 0, b: 0 });
+        (g as unknown as { updateTransientVisibility(overlay: null, remember: boolean): void }).updateTransientVisibility(null, false);
+        expect(g.grid.getCell(ally.x, ally.y)!.isVisible).toBe(false);
+        expect(canDirectlySeeMonster(g.player, g.grid, ally)).toBe(false);
         expected = 'C5_UNKNOWN_TARGET';
         break;
       case 'hostile':

@@ -1,0 +1,148 @@
+{
+  "verified_at": "2026-10-12T02:12:58.367489+08:00",
+  "method": "read actual existing summaries, all child done and reporter results; recompute source/build and compare fixed original test bytes; no tests rerun",
+  "buildPathConvention": "paths relative to dist directory, as original fingerprint.py",
+  "source": {
+    "files": 1311,
+    "sha": "73a08ca004620f1e9c5f78ef0fe298aee4d236a5a6b47d4916d973604b9afc14"
+  },
+  "build": {
+    "files": 60,
+    "sha": "b7055a7b4d2d84c21badd1c3bc9975e6a8014dc4fe04c4499ed840f2df4f6696"
+  },
+  "summaries": [
+    {
+      "summary": "foundation-combat2-capture-v1.summary.json",
+      "exit": 0,
+      "ended_at": "2026-10-12T00:33:53.212371+08:00",
+      "active": null,
+      "sourceUnchanged": null,
+      "productionRestored": true
+    },
+    {
+      "summary": "foundation-combat2-original-gates-v1.summary.json",
+      "exit": 1,
+      "ended_at": "2026-10-12T01:28:20.135760+08:00",
+      "active": null,
+      "sourceUnchanged": null,
+      "productionRestored": true
+    },
+    {
+      "summary": "foundation-combat2-main-gates-v3.summary.json",
+      "exit": 0,
+      "ended_at": "2026-10-12T01:43:57.780488+08:00",
+      "active": null,
+      "sourceUnchanged": true,
+      "productionRestored": null
+    },
+    {
+      "summary": "foundation-combat2-missing-gates-v1.summary.json",
+      "exit": 0,
+      "ended_at": "2026-10-12T01:47:53.031808+08:00",
+      "active": null,
+      "sourceUnchanged": null,
+      "productionRestored": null
+    },
+    {
+      "summary": "foundation-combat2-tail-gates-v2.summary.json",
+      "exit": 0,
+      "ended_at": "2026-10-12T01:52:51.579501+08:00",
+      "active": null,
+      "sourceUnchanged": null,
+      "productionRestored": true
+    }
+  ],
+  "dones": {
+    "foundation-combat2-capture-v1": "exit=0",
+    "foundation-combat2-original-before-v1": "exit=1",
+    "foundation-combat2-capture-base-v1": "exit=0",
+    "foundation-combat2-capture-nonvis-v1": "exit=0",
+    "foundation-combat2-capture-final-v1": "exit=0",
+    "foundation-combat2-original-gates-v1": "exit=1",
+    "foundation-combat2-fov-only-counter-v1": "exit=1",
+    "foundation-combat2-original-fixed-v1": "exit=1",
+    "foundation-combat2-main-gates-v3": "exit=0",
+    "foundation-combat2-main-boundary-v3": "exit=0",
+    "foundation-combat2-main-types-v3": "exit=0",
+    "foundation-combat2-main-build-v3": "exit=0",
+    "foundation-combat2-main-related-v3": "exit=0",
+    "foundation-combat2-missing-gates-v1": "exit=0",
+    "foundation-combat2-missing-boundary-v1": "exit=0",
+    "foundation-combat2-missing-types-v1": "exit=0",
+    "foundation-combat2-missing-native-v1": "exit=0",
+    "foundation-combat2-tail-gates-v2": "exit=0",
+    "foundation-combat2-external-boundary-tail-v2": "exit=0",
+    "foundation-combat2-external-types-tail-v2": "exit=0",
+    "foundation-combat2-native-fov-counter-v1": "exit=1",
+    "foundation-combat2-leaves-v1": "exit=0"
+  },
+  "tests": [
+    {
+      "stage": "foundation-combat2-main-related-v3",
+      "passed": 76,
+      "failed": 0,
+      "pending": 0,
+      "todo": 0,
+      "fullFiles": 6,
+      "failedAssertions": []
+    },
+    {
+      "stage": "foundation-combat2-missing-native-v1",
+      "passed": 5,
+      "failed": 0,
+      "pending": 0,
+      "todo": 0,
+      "fullFiles": 1,
+      "failedAssertions": []
+    },
+    {
+      "stage": "foundation-combat2-native-fov-counter-v1",
+      "passed": 0,
+      "failed": 5,
+      "pending": 0,
+      "todo": 0,
+      "fullFiles": 1,
+      "failedAssertions": [
+        "native seed3 render=false fall/stair retains every cached field through seek and continuation",
+        "native seed3 render=true fall/stair retains every cached field through seek and continuation",
+        "native seed47 render=false fall/stair retains every cached field through seek and continuation",
+        "native seed47 render=true fall/stair retains every cached field through seek and continuation",
+        "empty display queue normalizes only the two FOV flags, with the complete native world unchanged"
+      ]
+    },
+    {
+      "stage": "foundation-combat2-original-fixed-v1",
+      "passed": 2,
+      "failed": 2,
+      "pending": 0,
+      "todo": 0,
+      "fullFiles": 3,
+      "failedAssertions": [
+        "C2-NAT optional giants target and public growth skill share a genuine origin and complete persistence",
+        "C2-NAT bounded original-world capture or complete compact-trace replay"
+      ]
+    }
+  ],
+  "originalTests": [
+    {
+      "path": "src/ext/modules/combat/tests/combat2_evasion.test.ts",
+      "sha": "584f26b4ea160d9365adda650a0f71a0ed295fb2d6152f42ca570cb41948c6ff",
+      "fixedRefSourceUnchanged": true
+    },
+    {
+      "path": "src/ext/modules/combat/tests/combat2_natural.test.ts",
+      "sha": "fae63f0a52673a538246f773f02f3945fc2a3eeefa2ab8a53a94a050e9799189",
+      "fixedRefSourceUnchanged": true
+    },
+    {
+      "path": "src/ext/modules/combat/tests/combat2_links.test.ts",
+      "sha": "3f429ceed67ad513afe51433d065855fa50305c68c2008a45ce4a7aee4d8f590",
+      "fixedRefSourceUnchanged": true
+    }
+  ],
+  "scopeDecision": "combat2-giantHit-scope-decision.md",
+  "zombieDeferredBy": "pipeline-supplement-20261011.md §C10",
+  "newProductionChanges": false,
+  "newTestsRun": false,
+  "invalidPreflight": "Initial ad-hoc check included dist/ prefix in build path convention and failed before evidence write; corrected to original relative-dist method, not a build/source change."
+}

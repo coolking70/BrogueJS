@@ -26,7 +26,9 @@ export interface CampRaidEvent {
   defeatedIds: number[];
   /** Birth permission and native lifecycle facts share the event's sole root. */
   actors: { actorId: number; birthTypeId: string; currentTypeId: string;
-    departed: { depth: number; tick: number } | null }[];
+    departed: { depth: number; tick: number } | null;
+    /** Non-lethal retirement, independently witnessed by the foundation receipt. */
+    retired: { owner: string; reason: string; tick: number; ordinal: number } | null }[];
   reason: string | null;
   endedTick: number | null;
   lostUnits: number;

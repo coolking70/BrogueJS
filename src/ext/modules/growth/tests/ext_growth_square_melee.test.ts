@@ -50,6 +50,7 @@ function setup(size: 2 | 3 = 2, acid = true) {
     m.hp = m.maxHp = 10000; m.state = MonsterState.HUNTING; m.defense = -1000; m.regenTurns = 0; m.ticksUntilTurn = 10000;
     if (acid) m.behaviorFlags.add('MONST_DEFEND_DEGRADE_WEAPON');
     commitCreatureAnchor(g.player, { x: 12 + size, y: 11 + size });
+    (g as unknown as { updateVision(remember: boolean): void }).updateVision(false);
     const command = (action: string, payload: Record<string, unknown>) => g.executeCommand('ext:command', JSON.stringify({ module: 'growth', action, payload: { revision: state(g).revision, ...payload } }));
     command('create-character', { revision: 0 });
     command('learn-skill', { skillId: skillId('measured-strike') }); command('learn-skill', { skillId: skillId('pressure') });
@@ -101,8 +102,9 @@ describe('4a-2 real growth native body target preparation/consumption', () => {
     });
     it('a visible far body cell does not authorize an entity-targeted skill through an adjacent hidden tail', () => {
         const { g, m, use } = setup(2, false);
-        for (const at of g.footprintOf(m)) g.grid.getCell(at.x, at.y)!.isVisible = false;
-        g.grid.getCell(m.x, m.y)!.isVisible = true; // two cells from the player; adjacent contacts remain hidden
+        for (const at of g.footprintOf(m)) Object.assign(g.lightMap.lightAt(at.x, at.y)!, { r: 0, g: 0, b: 0 });
+        Object.assign(g.lightMap.lightAt(m.x, m.y)!, { r: 100, g: 100, b: 100 }); // two cells from the player; adjacent contacts remain hidden
+        (g as unknown as { updateTransientVisibility(overlay: null, remember: boolean): void }).updateTransientVisibility(null, false);
         const extension = g.extensionRuntime!.snapshot(), random = rng.getState(), tick = timeSystem.currentTick;
         expect(g.validateControlledAction({ actorId: g.player.id, action: 'attack', target: { kind: 'creature', id: m.id } })).toBe(false);
         use(); expect(g.extensionRuntime!.snapshot()).toEqual(extension); expect(rng.getState()).toEqual(random); expect(timeSystem.currentTick).toBe(tick);
@@ -111,7 +113,8 @@ describe('4a-2 real growth native body target preparation/consumption', () => {
         const { g, m, use } = setup(); g.onCommandConfirmRequest = () => {};
         const extension = g.extensionRuntime!.snapshot(), random = rng.getState(), tick = timeSystem.currentTick, count = g.recordedInputEvents.length;
         use(); const token = g.pendingCommandConfirmation!.token;
-        for (const at of g.footprintOf(m)) g.grid.getCell(at.x, at.y)!.isVisible = false;
+        for (const at of g.footprintOf(m)) Object.assign(g.lightMap.lightAt(at.x, at.y)!, { r: 0, g: 0, b: 0 });
+        (g as unknown as { updateTransientVisibility(overlay: null, remember: boolean): void }).updateTransientVisibility(null, false);
         g.resolveCommandDecision(token, true);
         expect(g.pendingCommandConfirmation).toBeNull(); expect(g.extensionRuntime!.snapshot()).toEqual(extension);
         expect(rng.getState()).toEqual(random); expect(timeSystem.currentTick).toBe(tick); expect(g.recordedInputEvents).toHaveLength(count);

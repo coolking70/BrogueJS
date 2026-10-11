@@ -1,0 +1,116 @@
+{
+  "fixtureSha": "a64d95f9db89962b993586d381030d0386b40dc0ac12632b884936ba100ca4dc",
+  "seed": 47,
+  "events": 425,
+  "reason": "no-safe-stair-route",
+  "originalGiantIds": [
+    51,
+    83,
+    99,
+    151
+  ],
+  "positiveTargets": [
+    {
+      "actorId": 14,
+      "type": "jackal",
+      "birthReason": "natural",
+      "sourceId": null
+    },
+    {
+      "actorId": 27,
+      "type": "monkey",
+      "birthReason": "natural",
+      "sourceId": null
+    },
+    {
+      "actorId": 36,
+      "type": "kobold",
+      "birthReason": "natural",
+      "sourceId": null
+    },
+    {
+      "actorId": 39,
+      "type": "goblin",
+      "birthReason": "natural",
+      "sourceId": null
+    },
+    {
+      "actorId": 53,
+      "type": "spectral_blade",
+      "birthReason": "summoned",
+      "sourceId": 37
+    },
+    {
+      "actorId": 71,
+      "type": "goblin",
+      "birthReason": "natural",
+      "sourceId": null
+    },
+    {
+      "actorId": 74,
+      "type": "rat",
+      "birthReason": "natural",
+      "sourceId": null
+    },
+    {
+      "actorId": 85,
+      "type": "kobold",
+      "birthReason": "natural",
+      "sourceId": null
+    },
+    {
+      "actorId": 88,
+      "type": "monkey",
+      "birthReason": "natural",
+      "sourceId": null
+    },
+    {
+      "actorId": 89,
+      "type": "kobold",
+      "birthReason": "natural",
+      "sourceId": null
+    },
+    {
+      "actorId": 106,
+      "type": "goblin_conjurer",
+      "birthReason": "natural",
+      "sourceId": null
+    },
+    {
+      "actorId": 107,
+      "type": "goblin",
+      "birthReason": "natural",
+      "sourceId": null
+    },
+    {
+      "actorId": 110,
+      "type": "acid_mound",
+      "birthReason": "natural",
+      "sourceId": null
+    }
+  ],
+  "positiveGiantHits": 0,
+  "originalGrowth": [
+    {
+      "index": 24,
+      "focusBefore": {
+        "current": 8,
+        "remainder": 0
+      },
+      "focusAfter": {
+        "current": 6,
+        "remainder": 1
+      },
+      "staminaBefore": 23,
+      "staminaAfter": 24
+    }
+  ],
+  "exactHitEqualityAlreadyPassed": [
+    "capture-base7",
+    "capture-nonvis7",
+    "capture-final7",
+    "original-links before persistence"
+  ],
+  "classification": "pre-existing fixed content trace does not satisfy its positive giant contact assertion; neither FOV nor format changes any hit",
+  "requiredDecision": "separate bounded same-seed prefix continuation or defer content gap; original input/fixture/assertion immutable"
+}
