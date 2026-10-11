@@ -2,6 +2,8 @@
 
 5Z当前安装身份：foundation **13**、whole-run **6**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；引擎门禁与[人工待验清单](phase5z.manual-checklist.md)以[5Z报告](phase5z.report.md)为准。
 
+combat2 内容扩充后的正式表为 **8 attacks / 10 profiles / 8 nativeProfiles**，总定义数20；玩家八招加闪避、弹反共10个动作，篝火另计。模块/规则仍为1.6.0，当前内容指纹为 `sha256:9c2be4947fa2e080890ad9ca2b6a7aca20197f0ee77648b042fc9194618587ae`。旧内容身份的存档/录像直接拒绝，保持原有无迁移政策。本批实施证据及缺口见[combat2报告](combat2.report.md)。
+
 本文按当前 combat 数据加载器、生产执行器及公开命令说明配置，不把[阶段 3 设计](phase3-combat.md)或[阶段 4 设计](phase4-giants.md)中的提案当成已实现能力。路径均相对仓库根。分支政策、阶段授权及验收范围以[扩展路线](README.md)和相应交付报告为准；本页不是新的功能验收报告。
 
 ## 1. 入口、版本与独立启用
@@ -131,10 +133,16 @@ profile 精确字段为 `id / resourcePolicyId / attackIds`。资源策略和每
 | `combat.fan-edge` | `fixture.slash` |
 | `combat.follow-thrust` | `fixture.double-thrust` |
 | `combat.shock-ring` | `fixture.stomp` |
+| `combat.anchor-break-profile` | `combat.anchor-break` |
+| `combat.returning-sweep-profile` | `combat.returning-sweep` |
+| `combat.advancing-point-profile` | `combat.advancing-point` |
+| `combat.cast-echo-profile` | `combat.cast-echo` |
+| `combat.answering-edge-profile` | `combat.answering-edge` |
+| `combat.second-profile` | 原三招，然后按下表顺序列出五新招 |
 
-所有默认 profile 都引用 `fixture.resources`。`playerProfileId` 为 `fixture.profile`；名称中的 `fixture` 是现有稳定 ID，当前已由生产入口使用，不能据此当作未启用示例删除。
+所有默认 profile 都引用 `fixture.resources`。`playerProfileId` 为 `combat.second-profile`，原 `fixture.profile` 仍保留原三招；名称中的 `fixture` 是现有稳定 ID，当前已由生产入口使用，不能据此当作未启用示例删除。
 
-默认物种绑定为 `rat → combat.fan-edge`、`kobold → combat.follow-thrust`、`ogre → combat.shock-ring`。每条精确字段为 `monsterId / profileId`；profile 必须存在，物种 ID 不可重复。包加载器只验证 `monsterId` 的格式，**不会验证它一定在原生/已安装形态目录中**；拼错物种名可能顺利加载但从不触发，要用实际出生实体验证。
+默认物种绑定保留 `rat → combat.fan-edge`、`kobold → combat.follow-thrust`、`ogre → combat.shock-ring`，新增 `zombie → combat.anchor-break-profile`、`goblin → combat.returning-sweep-profile`、`jackal → combat.advancing-point-profile`、`monkey → combat.cast-echo-profile`、`toad → combat.answering-edge-profile`。每条精确字段为 `monsterId / profileId`；profile 必须存在，物种 ID 不可重复。包加载器只验证 `monsterId` 的格式，**不会验证它一定在原生/已安装形态目录中**；拼错物种名可能顺利加载但从不触发，要用实际出生实体验证。
 
 未绑定物种没有额外 phased 招式，仍走原生行为；combat 已启用时，其原生攻击资源策略回退到玩家默认 profile，并非免体力。玩家与 NPC 共用付款、恢复、防御和硬直逻辑。growth 技能调用原生攻击时，专注与体力在已有原生动作事务中分别付一次；不要在技能效果或 combat JSON 中再扣一遍。
 
@@ -186,8 +194,31 @@ profile 精确字段为 `id / resourcePolicyId / attackIds`。资源策略和每
 | `fixture.slash` / 扇锋斩 | 4 | 50 | 第一段 0 | 40 | 90 | 2；可弹反、可闪避 |
 | `fixture.stomp` / 震环击 | 7 | 100 | 第一段 0 | 70 | 170 | 5；不可弹反、可闪避 |
 | `fixture.double-thrust` / 续锋刺 | 6 | 40 | 0、30 | 60 | 130 | 每段 2；两段均可弹反、可闪避 |
+| `combat.anchor-break` / 沉锚击 | 8 | 140 | 0 | 90 | 230 | 8；不可弹反、可闪避 |
+| `combat.returning-sweep` / 回潮扫 | 7 | 100 | 0、80 | 70 | 250 | 3、3；均可弹反、可闪避 |
+| `combat.advancing-point` / 逐隙刺 | 6 | 80 | 0、60、60 | 60 | 260 | 2、2、3；均可弹反、可闪避 |
+| `combat.cast-echo` / 掷影击 | 5 | 120 | 0 | 80 | 200 | 2；不可弹反、可闪避 |
+| `combat.answering-edge` / 应隙斩 | 3 | 30 | 0 | 50 | 80 | 3；可弹反、可闪避 |
 
 扇锋斩为面向附近三格；震环击为源身体的八邻偏移并集；续锋刺首段伸一格，第二段伸一、二格。大身体会改变实际并集，因此不能把默认“八个偏移”解释成永远只警示八个世界格。
+
+五新招均采用 whole-group 排除、line-of-effect、locked-world、part 接触、native-melee、无友军伤害和 cancel-pending。沉锚击扩充面向三格，加正前方第二格；回潮扫先打正面三格，80tick后打反面三格；逐隙刺依次只打正前方第一、第二、第三格，释放刻为80/140/200。掷影击同时打第二、第三格，第一格为空带；应隙斩只打一格，释放刻30。后段不会提前显示或命中。
+
+八向单位向量为 n=(0,-1)、e=(1,0)、s=(0,1)、w=(-1,0)、ne=(1,-1)、se=(1,1)、sw=(-1,1)、nw=(-1,-1)。三格扇形依次为 n=[(-1,-1),(0,-1),(1,-1)]、e=[(1,-1),(1,0),(1,1)]、s=[(1,1),(0,1),(-1,1)]、w=[(-1,1),(-1,0),(-1,-1)]、ne=[(0,-1),(1,-1),(1,0)]、se=[(1,0),(1,1),(0,1)]、sw=[(0,1),(-1,1),(-1,0)]、nw=[(-1,0),(-1,-1),(0,-1)]。反扇取相反朝向；第N格是单位向量乘N。最终世界格还须经实际足迹、排除、遮挡和边界裁切。
+
+这些招式全部原地执行。逐隙刺只延伸危险格，不带冲锋位移；掷影击不是弹体，不消耗弹药，中间生物不会充当弹体阻挡物，墙仍阻断作用线。应隙斩随时可独立选择，也可在一次成功弹反的恢复结束后手动选择，另付3体力；弹反不会自动反击。逐隙刺第三段虽标可弹反，默认contactRange=1，不能宣称三格外弹反有效。
+
+玩家可用八招。五新NPC各只绑定自己的一招，仍先走原生生存、施法等 prelude。AI要求首段覆盖目标：逐隙刺的第三格范围不能用来启动动作；猴子贴身时掷影击首段为空，可能回退普通原生近战。新表不改巨兽原有核心/腿profile，不承诺巨兽学会五新招；新招可命中其已有真实身体。群成员作为新招来源的配置合同由自有诊断fixture证明。
+
+默认满24体力完成五新招后的单人空场余额依表顺序为20/20/21/23/23。commit时分别先扣8/7/6/5/3，随后恢复阶段可恢复体力；回合末余额不能代替中途一次付费证据。
+
+### 4.2.1 显示与定向验证
+
+唯一 combat 栏按 profile 顺序呈现十个动作，保留横滚及44px控件。方向和确认页从本包已校验定义取得前摇、段间隔、恢复和总长，并显示新招限制；说明不进入机械 AttackDefinition。弹反页单列手动付费反击提示，不提供组合命令。
+
+HUD只使用当前公开 DisplayFrame 的可见来源、阶段、parryable和remainingTicks。没有公开attackId时不补招名、未来段或dodgeable；历史ACK和seek保持捕获数据，重叠预警分别列出。
+
+本批测试入口为 `combat2_content/runtime/defense_cancel/body/growth/persistence/ui/natural/evasion/revisit/links/combinations/sdk_repro.test.ts`，均登记在模块 `test-suites.json`。串行运行并显式逐文件列出，传 `--maxWorkers=1`，Node24.19.0与3072MB堆上限；不以模块目录通配符夹带旧64组合全矩阵。自然控制器和紧凑fixture位于本模块tests，完整原始证据在报告指定的仓库外目录。
 
 ### 4.3 阶段 4 组合边界
 

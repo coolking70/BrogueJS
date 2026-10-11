@@ -1,0 +1,10 @@
+--- a/src/engine/Core/Game.ts
++++ b/src/engine/Core/Game.ts
+@@ -6500,7 +6500,6 @@
+ 
+     /** Do not expose frame-dependent visibility to AI, targeting or snapshots. */
+     private finishTransientDisplay(discardQueued = false): void {
+-        if (!this.activeFlares?.length && !this.flareLightMap) return;
+         this.prepareFlareKnowledge();
+         // Commands cancel the displayed frame, but a not-yet-presented event
+         // remains queued for the animation pump (which checks turn expiry).

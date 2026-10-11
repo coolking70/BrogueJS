@@ -1,0 +1,7 @@
+[
+  {"id":"anchor-break","name":"沉锚击","monster":"zombie","cost":8,"windup":140,"recovery":90,"segments":[{"delay":0,"shape":"heavy","poise":8,"parry":false}],"hint":"蓄力后打击前方扇面与中线远格，造成较高韧性冲击。不可弹反，可闪避；生命伤害沿用原生攻击。"},
+  {"id":"returning-sweep","name":"回潮扫","monster":"goblin","cost":7,"windup":100,"recovery":70,"segments":[{"delay":0,"shape":"front","poise":3,"parry":true},{"delay":80,"shape":"back","poise":3,"parry":true}],"hint":"先扫前方，再预警后方并扫回。每段分别锁定地面，两段均可弹反、可闪避；后段不会追踪目标。"},
+  {"id":"advancing-point","name":"逐隙刺","monster":"jackal","cost":6,"windup":80,"recovery":60,"segments":[{"delay":0,"shape":"tip1","poise":2,"parry":true},{"delay":60,"shape":"tip2","poise":2,"parry":true},{"delay":60,"shape":"tip3","poise":3,"parry":true}],"hint":"危险格沿起手方向逐段延伸到一、二、三格，使用者留在原地。每段重新预警，均可弹反、可闪避。"},
+  {"id":"cast-echo","name":"掷影击","monster":"monkey","cost":5,"windup":120,"recovery":80,"segments":[{"delay":0,"shape":"far","poise":2,"parry":false}],"hint":"打击朝向上的第二、第三格，沿用原生物理接触规则。没有弹体，不消耗弹药，不在第一处生物碰撞停止；不可弹反，可闪避。"},
+  {"id":"answering-edge","name":"应隙斩","monster":"toad","cost":3,"windup":30,"recovery":50,"segments":[{"delay":0,"shape":"tip1","poise":3,"parry":true}],"hint":"短前摇打击正前一格，可独立使用，也可在弹反恢复后手动衔接。另付体力，不自动反击，不保证命中；可弹反、可闪避。"}
+]

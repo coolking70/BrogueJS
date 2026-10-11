@@ -16,15 +16,16 @@ const segment = (pack: CombatPack) => pack.attacks[0]!.segments[0]!;
 const facings = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const;
 
 describe('combat strict inert fixture package', () => {
-    it('loads three original attacks, explicit native profiles, and part targeting', () => {
+    it('loads three original and five second-batch attacks, explicit native profiles, and part targeting', () => {
         const pack = loadCombatDefinitionPack();
         expect(COMBAT_VERSION).toBe('1.6.0');
-        expect(pack.attacks.map(a => a.id)).toEqual(['fixture.slash', 'fixture.stomp', 'fixture.double-thrust']);
+        expect(pack.attacks.map(a => a.id)).toEqual(['fixture.slash', 'fixture.stomp', 'fixture.double-thrust',
+            'combat.anchor-break', 'combat.returning-sweep', 'combat.advancing-point', 'combat.cast-echo', 'combat.answering-edge']);
         expect(pack.profiles[0]).toEqual({ id: 'fixture.profile', resourcePolicyId: 'fixture.resources',
             attackIds: ['fixture.slash', 'fixture.stomp', 'fixture.double-thrust'] });
-        expect(pack.nativeProfiles).toHaveLength(3);
+        expect(pack.nativeProfiles).toHaveLength(8);
         expect(Object.keys(pack).sort()).toEqual(['schema', 'moduleId', 'moduleVersion', 'rulesVersion', 'resourcePolicies', 'attacks', 'profiles', 'nativeProfiles', 'playerProfileId', 'breakRecoveryTicks', 'dodge', 'parry', 'bonfires'].sort());
-        expect(pack.attacks.map(a => a.segments.length)).toEqual([1, 1, 2]);
+        expect(pack.attacks.map(a => a.segments.length)).toEqual([1, 1, 2, 1, 2, 3, 1, 1]);
         for (const attack of pack.attacks) for (const step of attack.segments) {
             expect(step.targetPolicy).toBe('part'); expect(step.locationPolicy).toBe('locked-world');
             expect(Object.keys(step.shape.offsets)).toEqual(facings);

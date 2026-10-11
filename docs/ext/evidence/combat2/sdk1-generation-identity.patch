@@ -1,0 +1,28 @@
+--- a/src/ext/runtime.ts
++++ b/src/ext/runtime.ts
+@@ -136,6 +136,7 @@
+ }
+ interface BufferedFact { name: HookName; event: HookEvents[HookName]; readonly?: boolean }
+ interface GenerationFrame {
++    restoreActorState: () => void;
+     edible: EdibleState;
+     token: GenerationToken;
+     world: WorldInteractionSnapshot;
+@@ -1489,7 +1490,7 @@
+     beginGeneration(label: string): GenerationToken {
+         if (this.disposed || this.publishingGeneration || !label.length) throw new Error('Invalid generation transaction');
+         const token = Object.freeze({ label });
+-        this.generations.push({ edible:edibleSnapshot(this), token, nextFactId: this.nextFactId, pendingStoryFacts: structuredClone(this.pendingStoryFacts), resources: this.resourceCheckpoint(), stats:statSessions.get(this)!.ledger.snapshot(), world: structuredClone(this.world), placementNextEntityId: null, states: structuredClone(this.states), components: structuredClone(this.components),
++        this.generations.push({ restoreActorState: this.checkpointActorStateIdentity(), edible:edibleSnapshot(this), token, nextFactId: this.nextFactId, pendingStoryFacts: structuredClone(this.pendingStoryFacts), resources: this.resourceCheckpoint(), stats:statSessions.get(this)!.ledger.snapshot(), world: structuredClone(this.world), placementNextEntityId: null, states: structuredClone(this.states), components: structuredClone(this.components),
+             causality: this.causality.snapshot(), deaths: structuredClone(this.deaths), creatures: new Set(this.creatures), facts: [], births: new Set() });
+         return token;
+     }
+@@ -1522,7 +1523,7 @@
+     rollbackGeneration(token: GenerationToken): void {
+         const frame = this.generation(token);
+         restoreEdibleState(this,frame.edible);
+-        this.states = frame.states; this.components = frame.components; this.world = frame.world;
++        this.states = frame.states; frame.restoreActorState(); this.components = frame.components; this.world = frame.world;
+         this.nextFactId = frame.nextFactId; this.pendingStoryFacts = frame.pendingStoryFacts; this.restoreResources(frame.resources);
+         if (frame.placementNextEntityId !== null) restoreNextEntityId(frame.placementNextEntityId);
+         this.causality.restore(frame.causality); this.deaths = frame.deaths;
