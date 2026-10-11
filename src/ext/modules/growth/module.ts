@@ -649,7 +649,10 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
             actorObserved({actor},context) { const state = getState(context); observe(state,actor); saveState(context,state); },
             deathCaptured({actor,origin,administrative,rewardEligible},context) {
                 if (actor.player || rewardEligible === false) return;
-                const state = getState(context); state.pending.push({kind:'kill',actor:{...actor},origin,administrative}); saveState(context,state);
+                // ActorFacts may carry live spatial fields; persist the existing
+                // closed death DTO explicitly, without extending its schema.
+                const {id,name,hp,maxHp,x,y,player,monsterId,allied,hostile} = actor;
+                const state = getState(context); state.pending.push({kind:'kill',actor:{id,name,hp,maxHp,x,y,player,monsterId,allied,hostile},origin,administrative}); saveState(context,state);
             },
             enteredLevel({depth,firstVisit,actorIds},context) {
                 if (!firstVisit) return;

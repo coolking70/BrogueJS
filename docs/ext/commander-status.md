@@ -1,11 +1,11 @@
 # 维护者侧指挥状态（2026-10-12）
 
-## 当前状态（2026-10-12T04:04:31+08:00，SDK-1/SDK-2执行中）
-- 六项底座、R1-F1至F5与combat2 VISIBILITY补充R2通过，无新确证发现，已提交并推送63a279e至origin/ext/phase5。收口报告/R2已入库；唯一源码收口差异为测试文件末尾空行清理，最终源cf4156f8。
-- SDK独立小步骤已实际启动：foundation-sdk-impl，wrapper PID 67442，作者 PID 67443；gpt-6.1-sol/high，独立OS session/nohup/run-child+done。任务书phase5-sdk-repair.task.md，本步审查轮数0。
-- 本步修生成rollback活ledger/子对象身份与growth合法空间ActorFacts投影，保镜像守卫和35045d9；作者须完成正式回归及相关复测再退出。giantHit/zombie内容缺口留combat2集成，原首败/断言保留。
-- 下一步SDK作者交接后独立R1→原作者修→最多R2并推送；再顺序集成narrative2/combat2，最终候选统一npm/ext/drift/128/15。实施粗估2至6小时、审修另计；Claude最终人工待验，XP skip、5D3另案。
-- 父01a1163c-1880-7c31-b810-dd60d1e07ac8；看门狗/private/tmp/brogue-commander-20261009-5z/watchdog.sh；同目录foundation-sdk-impl.pid/.done/.log/READY及launch-detached.py。事件记录加60分钟兜底，启动后不轮询。
+## 当前状态（2026-10-12T06:50:08+08:00，SDK R2通过收口）
+- 六项63a279e已推送；SDK独立R2通过，C1关闭，无新确证生产发现；最终十路径与被审候选一致，本提交收口SDK，当前无运行作者/审查/门禁。
+- SDK正式24过、原seed23/118存读4过，相关224/65/74/86及drift14各套通过；C1新2、raid28、归属6及types/boundary通过，不重叠累加。仅修正文档finish参数depth=1，生产和测试不变。
+- 下一步本轮推送SDK后独立启动唯一集成作者，先合固定narrative2 1d0d900，再合combat2 4ea702c；逐项关闭原12/九行、原6及自然内容证据，不重复单包完整全量。
+- 最终组合候选统一npm/ext/drift/128/15；giantHit/zombie等仍待集成关闭，Claude最终人工待验。集成定向修验粗估4至10小时，最终全量另计；XP skip、5D3另案。
+- 父01a1163c-1880-7c31-b810-dd60d1e07ac8；独立OS session/nohup/run-child+done，看门狗/private/tmp/brogue-commander-20261009-5z/watchdog.sh，后续启动同轮登记PID，不轮询，无SDK R3。
 
 ## 当前工作规则
 

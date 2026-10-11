@@ -1,0 +1,54 @@
+import { afterEach, expect, it, vi } from 'vitest';
+import { startProductionGame, emptyProductionArena, installProductionAttackBody, PRODUCTION_BODY_ID } from '../../../../test/support/productionComposite';
+import { auditFullObjectGraph } from '../../../../test/support/fullGenerationCheckpointOracle';
+import { logger } from '../../../../engine/Systems/Logger';
+import { productionActorActionScheduler } from '../../../../engine/Core/ActorActionProduction';
+import { selectNativeActorAction } from '../../../../engine/Core/ActorActionSession';
+import { MonsterState } from '../../../../entities/Monster';
+import * as catalog from '../../../catalog';
+import { registryFromDescriptors } from '../../../descriptor';
+import { extensionDataFingerprint } from '../../../fingerprint';
+import type { ActorAttackDefinitions } from '../../../actorActions';
+import type { Json } from '../../../types';
+import { commitCreatureAnchor } from '../../../../engine/Movement/CreatureSpatial';
+afterEach(()=>{vi.restoreAllMocks();logger.reset();logger.onDisturb=null;});
+it('SDK1 real old fixture.stomp survives a no-op blueprint rollback, finishes and saves without losing ledger/action/resource identities',()=>{
+    const game=startProductionGame(['combat']);emptyProductionArena(game);game.animationEnabled=true;
+    game.executeCommand('ext:command',JSON.stringify({module:'combat',action:'attack',payload:{attackId:'fixture.stomp',facing:'e'}}));
+    expect(game.actorActions!.bundles).toHaveLength(1);
+    const runtime=game.extensionRuntime!,ledger=runtime.actorActionBinding()!.state, value=structuredClone(ledger),graph=auditFullObjectGraph(ledger);
+    const action=ledger.actions[0],resource=ledger.actors[0],parent=runtime.beginGeneration('floor'),child=runtime.beginGeneration('blueprint');
+    runtime.rollbackGeneration(child);runtime.commitGeneration(parent);
+    expect(runtime.actorActionBinding()!.state).toBe(ledger);expect(ledger).toEqual(value);expect(graph.differences()).toEqual([]);
+    expect(ledger.actions[0]).toBe(action);expect(ledger.actors[0]).toBe(resource);
+    game.animationEnabled=false;while(game.isAdvancing)game.stepAdvancement();
+    expect(game.lastAdvancementError).toBeNull();expect(ledger.actions).toEqual([]);expect(game.actorActions!.bundles).toEqual([]);
+    (game as any).updateVision();
+    const save=game.toSaveSnapshot();expect(game.loadSnapshot(save)).toBe(true);
+    const after=game.toSaveSnapshot();after.savedAt=save.savedAt;expect(after).toEqual(save);
+});
+it('SDK1 retains all paid composite sources and finishes their real native action after rollback',()=>{
+    installProductionAttackBody();const descriptors=catalog.getInstalledModuleDescriptors(),installed=catalog.createExtensionRegistry();
+    const registry=registryFromDescriptors(descriptors.map(d=>{
+        const base=installed.create(installed.manifest([d.id]))[0]!;if(d.id!=='combat')return {...d,rules:base.rules,create:()=>base};
+        const definitions=structuredClone(base.actorActions!.definitions) as unknown as ActorAttackDefinitions;
+        definitions.nativeProfiles.push({monsterId:'body-fixture.fixture-leg',profileId:'combat.follow-thrust'});
+        const rules={...base.rules!,fingerprint:extensionDataFingerprint(definitions)};
+        return {...d,rules,create:()=>({...base,rules,actorActions:{definitions:definitions as unknown as Json}})};
+    }));
+    vi.spyOn(catalog,'createExtensionRegistry').mockReturnValue(registry);
+    const game=startProductionGame(['body-fixture','combat']);emptyProductionArena(game);
+    const core=game.createCompositeMonster(PRODUCTION_BODY_ID,{x:14,y:12})!;core.state=MonsterState.HUNTING;core.ticksUntilTurn=0;
+    commitCreatureAnchor(game.player,{x:14,y:10});
+    expect(selectNativeActorAction(game,core.id)).toBe('handled');
+    const runtime=game.extensionRuntime!,ledger=runtime.actorActionBinding()!.state,value=structuredClone(ledger),graph=auditFullObjectGraph(ledger);
+    expect(game.actorActions!.bundles[0]!.subactions.length).toBeGreaterThan(1);
+    const parent=runtime.beginGeneration('floor'),child=runtime.beginGeneration('blueprint');runtime.rollbackGeneration(child);runtime.commitGeneration(parent);
+    expect(runtime.actorActionBinding()!.state).toBe(ledger);expect(ledger).toEqual(value);expect(graph.differences()).toEqual([]);
+    const scheduler=productionActorActionScheduler(game)!;
+    for(let i=0;i<30&&scheduler.nextActionBoundary()!==null;i++){scheduler.advanceActionTime(scheduler.nextActionBoundary()!);scheduler.dispatchActorBoundary(core.id);}
+    expect(game.actorActions!.bundles).toEqual([]);expect(ledger.actions).toEqual([]);expect(game.lastAdvancementError).toBeNull();
+    (game as any).updateVision();
+    const save=game.toSaveSnapshot();expect(game.loadSnapshot(save)).toBe(true);
+    const after=game.toSaveSnapshot();after.savedAt=save.savedAt;expect(after).toEqual(save);
+});

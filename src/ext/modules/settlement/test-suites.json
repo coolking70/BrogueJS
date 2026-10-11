@@ -43,7 +43,8 @@
     "tests/settlement_raid_performance.test.ts",
     "tests/foundation_xr_repair.test.ts",
     "tests/foundation_lifecycle_repair.test.ts",
-    "tests/foundation_retirement_replay.test.ts"
+    "tests/foundation_retirement_replay.test.ts",
+    "tests/settlement_sdk_generation_raid.test.ts"
   ],
   "gen": [],
   "drift": []

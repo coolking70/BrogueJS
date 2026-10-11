@@ -370,7 +370,8 @@
     "src/test/x4_r6_integration.test.ts",
     "src/test/x4a_movement_rendering.test.ts",
     "src/test/x4b_flavor_text.test.ts",
-    "src/test/ext_foundation_native_visibility.test.ts"
+    "src/test/ext_foundation_native_visibility.test.ts",
+    "src/test/ext_generation_actor_identity.test.ts"
   ],
   "gen": [
     "src/test/b1_retire_invented.test.ts",

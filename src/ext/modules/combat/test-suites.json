@@ -33,7 +33,8 @@
     "tests/combat_schema.test.ts",
     "tests/combat_square_replay.test.ts",
     "tests/combat_ui.test.ts",
-    "tests/combat_warning_map.test.ts"
+    "tests/combat_warning_map.test.ts",
+    "tests/combat_sdk_generation_identity.test.ts"
   ],
   "gen": [],
   "drift": []
