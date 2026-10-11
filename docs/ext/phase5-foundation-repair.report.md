@@ -1,6 +1,6 @@
 # 六项底座维护者收口（2026-10-12）
 
-独立 [R2](phase5-foundation-repair.review-r2.md) 通过，新增确证 S1/S2/S3 均为0。R1-F1至F5与combat2 VISIBILITY补充关闭，无需末修，不开R3。本提交收口六项生产修复、R1响应与正式回归，由维护者提交推送ext/phase5。
+独立 [R2](phase5-foundation-repair.review-r2.md) 通过，新增确证 S1/S2/S3 均为0。R1-F1至F5与combat2 VISIBILITY补充关闭，无需末修，不开R3。本提交收口六项生产修复、R1响应与正式回归，维护者已提交 `63a279e26a9166beaf321d01e1c0d434c55c08a8` 并成功推送origin/ext/phase5。
 
 源码1311输入 SHA256 `73a08ca004620f1e9c5f78ef0fe298aee4d236a5a6b47d4916d973604b9afc14`，dist60 SHA256 `b7055a7b4d2d84c21badd1c3bc9975e6a8014dc4fe04c4499ed840f2df4f6696`，收口复算与R2一致。正常226文件唯一并集4314过/1既有CE skip，保留原bulk exit1与三完整文件修后58过替换口径；drift14过；缺五包剩余ext2924过/1同一skip；补充主6文件76过、缺包native5过。相关boundary/types/build与原性能通过。未重跑或累计既有结果，未冒称新一次226命令exit0。
 

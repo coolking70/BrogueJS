@@ -1,11 +1,11 @@
 # 维护者侧指挥状态（2026-10-12）
 
-## 当前状态（2026-10-12T04:02:33+08:00，六项底座R2收口）
-- 六项、R1-F1至F5及combat2 VISIBILITY补充R2通过，新确证发现0；本提交收口ext/phase5，source73a08ca0/distb7055a7b与R2一致。
-- 正常226文件去重4314过/1既有CE skip，drift14过；缺五包ext2924过/1同一skip；补充76过及缺包native5过。保留首败和复测口径，不称新全量全绿。
-- combat2原完整文件2过2败，giantHit与zombie自然释放缺证据留集成；Claude最终候选人工待验。
-- 本轮推送后启动SDK-1/SDK-2作者，独立最多两轮后推送，再依次集成narrative2/combat2及统一全量。SDK实施粗估2至6小时，随归因更新。
-- 当前无作者或门禁进程；父01a1163c-1880-7c31-b810-dd60d1e07ac8；后续独立OS会话/nohup/run-child+done，watchdog=/private/tmp/brogue-commander-20261009-5z/watchdog.sh，启动即登记PID。
+## 当前状态（2026-10-12T04:04:31+08:00，SDK-1/SDK-2执行中）
+- 六项底座、R1-F1至F5与combat2 VISIBILITY补充R2通过，无新确证发现，已提交并推送63a279e至origin/ext/phase5。收口报告/R2已入库；唯一源码收口差异为测试文件末尾空行清理，最终源cf4156f8。
+- SDK独立小步骤已实际启动：foundation-sdk-impl，wrapper PID 67442，作者 PID 67443；gpt-6.1-sol/high，独立OS session/nohup/run-child+done。任务书phase5-sdk-repair.task.md，本步审查轮数0。
+- 本步修生成rollback活ledger/子对象身份与growth合法空间ActorFacts投影，保镜像守卫和35045d9；作者须完成正式回归及相关复测再退出。giantHit/zombie内容缺口留combat2集成，原首败/断言保留。
+- 下一步SDK作者交接后独立R1→原作者修→最多R2并推送；再顺序集成narrative2/combat2，最终候选统一npm/ext/drift/128/15。实施粗估2至6小时、审修另计；Claude最终人工待验，XP skip、5D3另案。
+- 父01a1163c-1880-7c31-b810-dd60d1e07ac8；看门狗/private/tmp/brogue-commander-20261009-5z/watchdog.sh；同目录foundation-sdk-impl.pid/.done/.log/READY及launch-detached.py。事件记录加60分钟兜底，启动后不轮询。
 
 ## 当前工作规则
 
