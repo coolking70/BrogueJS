@@ -19,8 +19,10 @@ compare(a,b,'world');
 assert.equal(differences,0,JSON.stringify({differences,paths}));
 assert.deepEqual(sb.checkpoints,sa.checkpoints,'Floor-boundary state/RNG digests differ');
 assert.equal(sb.events,sa.events);
+const metadata = rows => rows.map(({ms, ...row}) => row);
+assert.deepEqual(metadata(read(after, 'rows')), metadata(read(before, 'rows')), 'Per-command results differ');
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-const result={events:sb.events,checkpoints:sb.checkpoints.length,comparedLeaves:leaves,differences,
+const result={events:sb.events,commandMetadataCompared:sb.events,checkpoints:sb.checkpoints.length,comparedLeaves:leaves,differences,
     normalizedFields:['savedAt'],beforeHash:hash(a),afterHash:hash(b),rng:b.rngState};
 if(output)writeFileSync(output,JSON.stringify(result,null,2));
 console.log(JSON.stringify(result,null,2));

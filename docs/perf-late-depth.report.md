@@ -175,3 +175,115 @@ npm run build
 ## 剩余瓶颈
 
 修复后 D28 P95 仍约 65.87 ms，D22 P95 36.52 ms；手机上仍可能卡顿。`dance()` 仍每 50 ms 新建一张 LightMap 并做逐源阴影投射，光图分配/GC 与 GPU 绘制成本没有被本次占位缓存消除。下一轮应分别处理通用怪物占位查询和重复视野/全图环境扫描，不能直接删掉知识更新或改调度次数。换层仍有生成/缓存恢复成本；连续麻痹会在一条命令中执行数十回合，不能为性能缩短游戏回合。没有改动画节奏、自动行动频率、规则、生成结果或缓存跨回合生命周期。
+
+## 第二轮（2026-10-15，未提交）
+
+本轮起点为第一轮已提交的 `a595a4c`（`perf/main-late-depth`）。仍使用原录像及原动画推进路径；没有改动画间隔、自动行动频率、强制回合数、路径平局顺序、规则、RNG 消耗或存档/录像格式。
+
+### 实现与缓存边界
+
+- 光照：`LightMap` 复用显示光图、输入/遮挡缓冲与颜色对象；闪光知识计算跨采样帧复用独立临时光图，不与显示帧共享。确定性光照输入及遮挡不变时跳过清图、泼光和渲染馈送。阴影掩码保留实际访问过的遮挡格，复用前逐项校验；缓存最多 1,024 项，函数身份关联放在模块级 WeakMap，避免进入世界对象图；批次已采样的遮挡直接按整数索引校验，省掉逐灯坐标解码和回调。颜色变化可复用阴影几何及距离衰减系数，半径、位置、地形或生物遮挡改变时失效。`paintLight()` 的单次原始路径仍可作独立参照。
+- `dance()` 保留每个光源的显示随机采样顺序；静态光源不再反复泼光，闪烁光源仍有原来的颜色/半径变化。没有把“玩家没动”误当成“世界没变”，也没有冻结火焰或改用实质 RNG。`Game.danceLighting()` 在只读显示计算期间共用占位索引。
+- 通用占位：普通查询读取已有生命周期 Proxy 的底层实时列表；寻路、游荡目的地选择、光照和安全图的同步计算区间建立坐标索引，工作量从 O(Q×M) 降为 O(Q+M)，游荡选择期间只改变访问标记和目的地，实际移动在索引销毁后执行。区间退出（含异常）即销毁。未把整个怪物行动或 DF 事务放进缓存，保持死亡掉物/死亡 DF 的 DYING 占格、列表顺序、移动、召唤与休眠的即时语义。
+- 寻路：A* 格子键使用整数，保持堆比较、插入顺序和回调次序；缺少尺寸、非整数或越界起点保留字符串路径。新增与旧版线性队列实现的逐回调对照，覆盖 512 障碍组合及边界起点。
+- 视野/记忆：只缓存纯 FOV 几何，按实际不透明格、玩家坐标和半径校验。原有每次知识发布、可见性、发现消息与物品记忆均保留；地面物品一次索引保留原 `find()` 的首个匹配语义。记忆外观直接计算最终的固定暗色/楼梯色，省掉随后会被覆盖的深度渐变计算。
+- 环境：气体体积缓冲复用，邻域旗标在一次同步扫描中复用，并在每个 GAS 写入点刷新。每格随机舍入、消散抽取和两轮扩散仍保持原顺序。地形晋升第二趟只遍历第一趟已标记格，顺序仍为 x/y/layer；DF 填充先检查当前掩码再读格子，仍可看见递归回调新增的后续格。
+- 地形/环路：四层旗标使用同样的四项并集，保留实时目录读取。环路剥离的 DFS 次序不变，栈改存整数；纯洪泛每格只入栈一次。环路分析校验实际通路输入，重复拓扑复用结果，对外返回独立行，调用者不能改坏缓存。
+- Canvas/DOM：保留显示与模拟 ticker，移除 Pixi 默认每帧 GPU 提交，只有场景、悬停、布局/镜头等发生变化才提交。日志抽屉每页最多 100 条，分页可访问全部保留消息；没有删除 Logger 档案或改变录像消息。轮询内容不变时不替换日志 ref。
+
+没有新增 Game 字段，U03 登记无需扩展；没有改旧断言、基线或黄金 trace。共新增 14 项回归，覆盖静态零泼光/零阴影投射、光图及闪光知识缓冲复用、动态色采样及双流、遮挡与光源失效、FOV 失效、每次只读占位查询复杂度、DF 稀疏读取及递归、环路缓存隔离、气体缓冲、全目录记忆外观、日志分页可达性。
+
+### 正式测量与确定性
+
+正式基线从 `git archive a595a4c` 提取到 `/private/tmp/mainperf/round2-baseline-src/`，依赖指向现有 node_modules。基线与最终版本依次运行，期间没有并行本任务的测试或 CPU profiler。仍为 Node 24.19.0、3072 MB 堆；统计口径沿用第一轮，包含所有命令、换层与多回合行动，不筛掉慢命令。D28 仍只有 32 条，不能代表完整深层或所有种子。
+
+严格门禁 `LATE_P95_MS=20` 两次完整退出 0：D22–D28 均达标。最终源码首次测量 P95 范围 6.70–18.11ms，独立完整复测为 6.65–18.81ms；D28 分别为 18.11ms、18.81ms。下表使用首次最终测量，单位 ms，median 取排序后 `floor(n/2)`，P95 取 nearest-rank；按命令开始时深度归组。
+
+| 深度 | 命令数 | 前 median | 后 median | 前 P95 | 后 P95 |
+|---|---:|---:|---:|---:|---:|
+| D1 | 445 | 7.52 | 2.64 | 9.50 | 4.72 |
+| D2 | 536 | 5.03 | 2.08 | 6.79 | 3.26 |
+| D3 | 393 | 8.51 | 2.99 | 12.41 | 5.09 |
+| D4 | 671 | 8.90 | 2.96 | 15.32 | 5.68 |
+| D5 | 498 | 5.32 | 2.30 | 10.25 | 4.62 |
+| D6 | 807 | 7.88 | 2.67 | 13.22 | 4.74 |
+| D7 | 656 | 5.43 | 2.37 | 19.31 | 9.42 |
+| D8 | 1239 | 8.30 | 2.56 | 11.99 | 4.52 |
+| D9 | 749 | 8.76 | 2.75 | 13.52 | 5.29 |
+| D10 | 943 | 8.28 | 2.80 | 13.96 | 5.52 |
+| D11 | 686 | 9.67 | 3.31 | 13.82 | 5.03 |
+| D12 | 531 | 9.39 | 3.05 | 14.03 | 5.02 |
+| D13 | 32 | 9.03 | 2.64 | 21.49 | 6.27 |
+| D14 | 304 | 6.32 | 2.42 | 13.35 | 4.89 |
+| D15 | 1147 | 8.71 | 2.75 | 21.84 | 6.69 |
+| D16 | 1259 | 9.12 | 2.83 | 14.66 | 5.57 |
+| D17 | 473 | 10.73 | 3.40 | 19.26 | 7.85 |
+| D18 | 647 | 8.99 | 2.68 | 15.43 | 5.63 |
+| D19 | 840 | 9.53 | 2.80 | 19.11 | 6.93 |
+| D20 | 562 | 11.35 | 3.56 | 21.87 | 8.28 |
+| D21 | 437 | 12.76 | 3.83 | 19.29 | 7.05 |
+| D22 | 1231 | 18.06 | 5.26 | 27.30 | 8.85 |
+| D23 | 422 | 10.98 | 3.34 | 20.15 | 7.66 |
+| D24 | 608 | 11.35 | 3.26 | 20.89 | 6.70 |
+| D25 | 954 | 11.18 | 3.24 | 39.76 | 12.35 |
+| D26 | 70 | 16.09 | 4.29 | 23.62 | 9.92 |
+| D27 | 565 | 15.02 | 5.13 | 32.37 | 10.62 |
+| D28 | 32 | 32.70 | 10.16 | 64.39 | 18.11 |
+
+所有命令计时合计 193.41s → 67.82s（减少 64.9%）；包含快照写盘/摘要等非行动工作时，脚本总耗时 205.11s → 79.27s。换层生成和多回合行动仍可能出现高于 20ms 的单次耗时，目标仅为逐深度 P95。
+
+两次均从开局 `loadReplay()` 逐条执行 17,737 条，零 OOS；与基线及复测逐条命令元数据、32 个换层/终点检查点相同。最终状态逐字段比较 5,041,466 个叶子，差异 0，只归一化 `savedAt`。最终 SHA-256：`f281e1d7a4f7915cded4f672d0208f7fd195f2a0f5f7e628a11ffdd11f8a6350`。
+
+最终 RNG 与基线相同：实质计数 29,199,283，装饰计数 5,582，currentRNG=0；两流分别为 `[315237989,4082802779,608228570,1082733734]` 和 `[3214256615,1125811508,1757741724,3999024907]`。
+
+渲染准备沿用同一组真实快照、20 帧预热 + 60 帧采样，保留闪烁：
+
+| 快照 | dance 前 median/P95 ms | dance 后 median/P95 ms |
+|---|---:|---:|
+| D19 | 1.248 / 1.543 | 0.259 / 0.381 |
+| D22 | 2.014 / 2.097 | 0.300 / 0.341 |
+| D27 | 1.446 / 1.542 | 0.318 / 0.347 |
+| D28 | 3.254 / 3.427 | 0.380 / 0.572 |
+
+渲染测量前后均断言模拟 RNG 不变；以上只计 CPU 准备，不含 GPU、DOM 布局或手机实机。静态零泼光/零投射由回归测试验证，表中为仍有闪烁的真实场景。
+
+正式证据：`round2-final-before.{summary,rows,state}.json`、`round2-result.{summary,rows,state}.json`、`round2-repeat.{summary,rows,state}.json`、`round2-comparison-final.json`、`round2-comparison-repeat.json`、`round2-render-{before,final}.json`。
+
+正式迭代门禁曾在 D28 测得 P95 20.30ms、20.57ms、20.33ms，均按 20ms 阈值退出 1（依次为 `round2-final-after.*`、`round2-after.*`、`round2-accepted.*`；最后一个是预先命名，实际未验收）。继续优化闪光知识缓冲、遮挡校验和寻路格子键后完整重跑，没有放宽阈值或删除命令。中间末层快照重放只用于定位热点，不代替从开局执行 `loadReplay()` 的正式证据。
+
+### 验收与复现
+
+首次完整常规套件退出 1（1082.29s）：252 文件通过，U00 新开局对象图检查 12 项失败，其余 4,523 passed / 83 skipped / 5 todo。原因是阴影缓存保留了函数引用；旧守卫未改。批次末清理方案通过 U00，但 D28 P95 20.06ms，严格性能门禁仍退出 1（`round2-validation.*`）。改为模块级 WeakMap 保存函数身份后，新开局及光照定向 27 项通过（24.35s），但完整重放 D28 P95 仍为 20.19ms（`round2-measured.*`，退出 1）。继续增加衰减系数复用、游荡选择占位索引及气体循环局部读取后，相关 4 文件 / 52 项通过（24.11s）。
+
+最终门禁全部完整退出 0：
+
+- 独立 vue-tsc -b：8.96s。日志 `round2-types-final.log`。
+- 生成档源码守卫定向运行：353.97s；Test Files  6 passed (6)；Tests  9 passed / 126 skipped (135)。日志 `round2-source-guards.log`。
+- 完整 npm test -- --maxWorkers=2：1073.55s；Test Files  253 passed (253)；Tests  4536 passed / 83 skipped / 5 todo (4624)。日志 `round2-test-final.log`。
+- npm run test:drift -- --maxWorkers=2：54.86s；Test Files  2 passed (2)；Tests  2 passed (2)。日志 `round2-drift.log`。
+- npm run build（含 vue-tsc）：12.73s。日志 `round2-build.log`。
+
+常规组的 CE 依赖用例按现有规则跳过；未新增 skip/todo。源码守卫的 126 项未执行来自 `-t` 定向过滤。生成基线和黄金 trace 均未重录。开发阶段 A* 的无尺寸 Grid 兼容/额外回调问题由旧守卫发现并修正生产代码；新增气体回归的初版计数初始化改为恢复同一 RNG 状态。旧断言、门限和种子均保留。
+
+验收前后 `src/` 与 `scripts/` 的 584 个文件 SHA-256 完全一致（`round2-code-verification.json`）。`git diff --check` 通过。最终性能重放、类型检查、测试和构建使用同一源码；build 的既有大 chunk 提示不影响退出 0。
+
+复现命令（Node 24.19.0、3072 MB 堆、Vitest 2 workers）：
+
+```sh
+export PATH=/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH
+export NODE_OPTIONS=--max-old-space-size=3072
+LATE_P95_MS=20 node scripts/profile-late-depth.mjs /private/tmp/mainperf/replay.json /private/tmp/mainperf/round2-result
+LATE_P95_MS=20 node scripts/profile-late-depth.mjs /private/tmp/mainperf/replay.json /private/tmp/mainperf/round2-repeat
+node scripts/compare-late-depth.mjs /private/tmp/mainperf/round2-final-before /private/tmp/mainperf/round2-result /private/tmp/mainperf/round2-comparison-final.json
+node scripts/compare-late-depth.mjs /private/tmp/mainperf/round2-result /private/tmp/mainperf/round2-repeat /private/tmp/mainperf/round2-comparison-repeat.json
+node scripts/profile-late-render.mjs /private/tmp/mainperf/round2-render-final.json /private/tmp/mainperf/mid.state.json /private/tmp/mainperf/deep.state.json /private/tmp/mainperf/d25.state.json /private/tmp/mainperf/animated.state.json
+npm test -- --maxWorkers=2
+npm run test:drift -- --maxWorkers=2
+node node_modules/vitest/vitest.mjs run src/test/b_1a_identification.test.ts src/test/c_4a_0_layer_model.test.ts src/test/c_4a_terrain_catalog.test.ts src/test/v_1a_blueprint_items.test.ts src/test/v_2b_4_altars.test.ts src/test/blueprint_center.test.ts -t 'InventoryOverlay 不再引用|setTerrainLayer 调用点|Grid.ts 未引入|promote/fire 类字段|T1 墓碑|D1 生产代码零|D2 生产代码与数据零|D3 越界守卫|b\) 全局扫描' --maxWorkers=2
+node node_modules/vue-tsc/bin/vue-tsc.js -b
+npm run build
+```
+
+浏览器可视验收未完成：Vite 监听 `127.0.0.1:5396` 被沙箱以 EPERM 拒绝；技能提供的 Playwright 客户端也在 Chromium MachPort 初始化时报 Permission denied。没有生成可检查截图，因此不声称已实测 GPU、手机帧率或分页的真实浏览器布局。相关组件测试、渲染准备测量与构建结果分别列在上面。
+
+原始数据、快照、CPU profile 与日志保存在 `/private/tmp/mainperf/`，不提交。没有 commit/push。

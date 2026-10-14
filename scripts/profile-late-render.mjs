@@ -35,7 +35,7 @@ try {
         let frame;
         for(let i=0;i<80;i++) {
             if (process.env.CPU_PROFILE && i===20) {session.connect();await post('Profiler.enable');await post('Profiler.start');}
-            let start=performance.now();game.lightMap.dance();const dance=performance.now()-start;
+            let start=performance.now();game.danceLighting();const dance=performance.now()-start;
             start=performance.now();frame=observeDisplayFrame(game,logger,frame);const projection=performance.now()-start;
             start=performance.now();foldCombatMessages(logger.messages);const fold=performance.now()-start;
             if(i>=20) {samples.dance.push(dance);samples.projection.push(projection);samples.fold.push(fold);}

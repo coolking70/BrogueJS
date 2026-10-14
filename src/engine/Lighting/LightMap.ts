@@ -67,16 +67,97 @@ export interface PaintLightParams {
 // of the simulation object graph; replacing the owning LightMap on new run or
 // travel also replaces this cache, without retaining a previous game's wiring.
 const renderSources = new WeakMap<LightMap, PaintLightParams[]>();
+// Callback identity is runtime wiring, not part of the world object graph.
+// A mask only holds its blocker data; retiring that mask also retires this link.
+const maskQueries = new WeakMap<boolean[][], PaintLightParams['hasCreatureAt']>();
+// A validated mask fixes the destination cells. Radius/fade also fix every
+// attenuation multiplier; changing RGB does not require repeating sqrt/trunc.
+const lightStencils = new WeakMap<boolean[][], { radius: number; fade: number;
+    entries: Array<{ channels: LightChannels; shadow: boolean[]; y: number; multiplier: number }> }>();
 
 export class LightMap {
     private visualMap: LightMap | null = null;
+    private visualBuffer: LightMap | null = null;
+    // Geometry depends on blockers and rounded radius, never on light color.
+    // Entries retain exactly the blocker reads made by shadowcasting, including
+    // cells outside the illuminated circle. Validate them before every reuse.
+    private masks = new Map<string, { mask: boolean[][]; cells: number[]; blocked: boolean[]; pass: number }>();
+    private maskPass = 0;
+    private batchMask = false;
+    private batchOpacity: Uint8Array | null = null;
+    private batchCreatureOffsets = new Map<NonNullable<PaintLightParams['hasCreatureAt']>, number>();
 
     /** Base light stays deterministic. Only the renderer requests color/radius noise. */
-    public dance(): void {
-        const visual = new LightMap(this.grid);
-        visual.paintLights((renderSources.get(this) ?? []).map(source =>
+    public dance(): boolean {
+        const visual = this.visualBuffer ??= new LightMap(this.grid);
+        const changed = visual.updateLighting((renderSources.get(this) ?? []).map(source =>
             ({ ...source, light: sampleLight(source.light, 100000, displayRandom(this.grid)) })));
+        const first = !this.visualMap;
         this.visualMap = visual;
+        return changed || first;
+    }
+
+    private lightingValid = false;
+    private lightingInputs = new Float64Array(0);
+    private blockers = new Uint8Array(0);
+
+    /** Complete deterministic pass. Equality is checked against the actual
+     * inputs, not turn counters: door edits, deaths, teleports and equipment
+     * changes can all occur within a turn. Memory publication remains in Game. */
+    public updateLighting(sources: readonly PaintLightParams[]): boolean {
+        const predicates = [...new Set(sources.filter(s => !s.light.passThroughCreatures)
+            .map(s => s.hasCreatureAt).filter((q): q is NonNullable<typeof q> => !!q))];
+        const inputCount = sources.length * 11;
+        let changed = !this.lightingValid || this.lightingInputs.length !== inputCount;
+        if (this.lightingInputs.length !== inputCount) this.lightingInputs = new Float64Array(inputCount);
+        let offset = 0;
+        const input = (value: number) => {
+            if (this.lightingInputs[offset] !== value) changed = true;
+            this.lightingInputs[offset++] = value;
+        };
+        for (const source of sources) {
+            const light = source.light;
+            input(source.x); input(source.y);
+            input(source.radiusHundredths ?? Math.floor((light.radius.lowerBound + light.radius.upperBound) / 2));
+            input(+(source.isMinersLight ?? false)); input(+(source.maintainShadows ?? false));
+            input(+light.passThroughCreatures); input(light.radialFadeToPercent);
+            input(light.color.red); input(light.color.green); input(light.color.blue);
+            input(light.passThroughCreatures ? -1 : predicates.indexOf(source.hasCreatureAt!));
+        }
+        const width = this.grid.width, height = this.grid.height;
+        const size = width * height;
+        const length = size * (predicates.length + 1);
+        if (this.blockers.length !== length) changed = true;
+        if (this.blockers.length !== length) this.blockers = new Uint8Array(length);
+        for (let x = 0; x < width; x++) for (let y = 0; y < height; y++) {
+            const index = x * height + y;
+            const opaque = +!!this.grid.getCell(x, y)?.isOpaque;
+            if (this.blockers[index] !== opaque) changed = true;
+            this.blockers[index] = opaque;
+            for (let p = 0; p < predicates.length; p++) {
+                const offset = (p + 1) * size + index, value = opaque ? 0 : +predicates[p]!(x, y);
+                if (this.blockers[offset] !== value) changed = true;
+                this.blockers[offset] = value;
+            }
+        }
+        // Keep live callbacks even when their current outputs are identical.
+        if (!changed) { renderSources.set(this, [...sources]); return false; }
+        this.clearLighting();
+        const queries = new Map(predicates.map((predicate, p) => {
+            const offset = (p + 1) * size;
+            const query = (x: number, y: number) => this.blockers[offset + x * height + y] === 1;
+            this.batchCreatureOffsets.set(query, offset);
+            return [predicate, query] as const;
+        }));
+        this.batchOpacity = this.blockers;
+        try {
+            this.paintLights(sources.map(source => ({ ...source,
+                hasCreatureAt: source.hasCreatureAt ? queries.get(source.hasCreatureAt) : undefined,
+            })));
+        } finally { this.batchOpacity = null; this.batchCreatureOffsets.clear(); }
+        renderSources.set(this, [...sources]);
+        this.lightingValid = true;
+        return true;
     }
 
     public renderLightAt(x: number, y: number): LightChannels | null {
@@ -140,6 +221,7 @@ export class LightMap {
      * 之后按 CE 顺序泼光：全部发光地形 → 生物光 → 矿灯（Game.updateVision）。
      */
     public clearLighting() {
+        this.lightingValid = false;
         renderSources.set(this, []);
         this.visualMap = null;
         for (let x = 0; x < this.grid.width; x++) {
@@ -175,6 +257,7 @@ export class LightMap {
      * 的 CE 语义在 web 无消费者，省略返回值。
      */
     public paintLight(params: PaintLightParams): void {
+        this.lightingValid = false;
         let sources = renderSources.get(this);
         if (!sources) renderSources.set(this, sources = []);
         sources.push(params);
@@ -184,33 +267,39 @@ export class LightMap {
     /** A synchronous lighting pass observes one stable world. Memoize the pure
      * occupancy predicates across its overlapping lights, not across turns.
      * Keep ORIGINAL callbacks for dance(): creatures can move before the next
-     * display frame. Every call (including each dance) gets fresh bounded tables.
+     * display frame. Each painting batch observes fresh predicate results;
+     * retained geometry is validated against those results before reuse.
      * Individual paintLight calls retain their uncached callback semantics. */
     public paintLights(params: readonly PaintLightParams[]): void {
+        this.lightingValid = false;
         const queries = new Map<NonNullable<PaintLightParams['hasCreatureAt']>, (x: number, y: number) => boolean>();
         let sources = renderSources.get(this);
         if (!sources) renderSources.set(this, sources = []);
-        for (const source of params) {
-            let query = source.hasCreatureAt;
-            if (query && !source.light.passThroughCreatures) {
-                let cached = queries.get(query);
-                if (!cached) {
-                    const original = query, height = this.grid.height;
-                    const cells = new Uint8Array(this.grid.width * height);
-                    cached = (x, y) => {
-                        // castLightMask checks bounds before querying occupancy.
-                        const index = x * height + y;
-                        let value = cells[index]!;
-                        if (value === 0) cells[index] = value = original(x, y) ? 1 : 2;
-                        return value === 1;
-                    };
-                    queries.set(query, cached);
+        this.maskPass++;
+        this.batchMask = true;
+        try {
+            for (const source of params) {
+                let query = source.hasCreatureAt;
+                if (query && !source.light.passThroughCreatures && !this.batchCreatureOffsets.has(query)) {
+                    let cached = queries.get(query);
+                    if (!cached) {
+                        const original = query, height = this.grid.height;
+                        const cells = new Uint8Array(this.grid.width * height);
+                        cached = (x, y) => {
+                            // castLightMask checks bounds before querying occupancy.
+                            const index = x * height + y;
+                            let value = cells[index]!;
+                            if (value === 0) cells[index] = value = original(x, y) ? 1 : 2;
+                            return value === 1;
+                        };
+                        queries.set(query, cached);
+                    }
+                    query = cached;
                 }
-                query = cached;
+                sources.push(source);
+                this.applyLight(source, query);
             }
-            sources.push(source);
-            this.applyLight(source, query);
-        }
+        } finally { this.batchMask = false; }
     }
 
     private applyLight(params: PaintLightParams, hasCreatureAt?: (x: number, y: number) => boolean): void {
@@ -252,27 +341,40 @@ export class LightMap {
             light.passThroughCreatures ? undefined : hasCreatureAt
         );
 
-        // Light.c:97-114：按衰减给掩码内格子加光。
-        for (let i = Math.max(0, x - radiusRounded); i < this.grid.width && i < x + radiusRounded; i++) {
-            for (let j = Math.max(0, y - radiusRounded); j < this.grid.height && j < y + radiusRounded; j++) {
-                if (!mask[i - (x - radiusRounded)]![j - (y - radiusRounded)]) continue;
-                const d2 = (i - x) * (i - x) + (j - y) * (j - y);
-                // lightMultiplier = 100 - (100-fade) * fp_sqrt(d2*FP) / radius。
-                // CE fp_sqrt 的量纲：输入 fixpt 值 u = d2（即 d2*FP 的整数形），
-                // 输出 √d2 * FP（Math.c:224 的 SQUARE_ROOTS 表即
-                // √k*65536，k=u>>16）——等价于 round(√d2)*FP。
-                const sqrtFixpt = Math.round(Math.sqrt(d2) * FP_FACTOR);
-                const lightMultiplier = 100 - Math.trunc(
-                    ((100 - fadeToPercent) * sqrtFixpt) / radius
-                );
-                const ch = this.lightGrid[i]![j]!;
-                ch.r += Math.trunc((colorComponents.red * lightMultiplier) / 100);
-                ch.g += Math.trunc((colorComponents.green * lightMultiplier) / 100);
-                ch.b += Math.trunc((colorComponents.blue * lightMultiplier) / 100);
-                if (dispelShadows) {
-                    this.shadowGrid[i]![j] = false;
+        const stencil = this.batchMask ? lightStencils.get(mask) : undefined;
+        if (stencil && stencil.radius === radius && stencil.fade === fadeToPercent) {
+            for (const entry of stencil.entries) {
+                entry.channels.r += Math.trunc((colorComponents.red * entry.multiplier) / 100);
+                entry.channels.g += Math.trunc((colorComponents.green * entry.multiplier) / 100);
+                entry.channels.b += Math.trunc((colorComponents.blue * entry.multiplier) / 100);
+                if (dispelShadows) entry.shadow[entry.y] = false;
+            }
+        } else {
+            const entries: NonNullable<typeof stencil>['entries'] = [];
+            // Light.c:97-114：按衰减给掩码内格子加光。
+            for (let i = Math.max(0, x - radiusRounded); i < this.grid.width && i < x + radiusRounded; i++) {
+                for (let j = Math.max(0, y - radiusRounded); j < this.grid.height && j < y + radiusRounded; j++) {
+                    if (!mask[i - (x - radiusRounded)]![j - (y - radiusRounded)]) continue;
+                    const d2 = (i - x) * (i - x) + (j - y) * (j - y);
+                    // lightMultiplier = 100 - (100-fade) * fp_sqrt(d2*FP) / radius。
+                    // CE fp_sqrt 的量纲：输入 fixpt 值 u = d2（即 d2*FP 的整数形），
+                    // 输出 √d2 * FP（Math.c:224 的 SQUARE_ROOTS 表即
+                    // √k*65536，k=u>>16）——等价于 round(√d2)*FP。
+                    const sqrtFixpt = Math.round(Math.sqrt(d2) * FP_FACTOR);
+                    const lightMultiplier = 100 - Math.trunc(
+                        ((100 - fadeToPercent) * sqrtFixpt) / radius
+                    );
+                    const ch = this.lightGrid[i]![j]!;
+                    if (this.batchMask) entries.push({ channels: ch, shadow: this.shadowGrid[i]!, y: j, multiplier: lightMultiplier });
+                    ch.r += Math.trunc((colorComponents.red * lightMultiplier) / 100);
+                    ch.g += Math.trunc((colorComponents.green * lightMultiplier) / 100);
+                    ch.b += Math.trunc((colorComponents.blue * lightMultiplier) / 100);
+                    if (dispelShadows) {
+                        this.shadowGrid[i]![j] = false;
+                    }
                 }
             }
+            if (this.batchMask) lightStencils.set(mask, { radius, fade: fadeToPercent, entries });
         }
 
         // Light.c:116-119：原点格无条件整份加光（掩码命中则叠加为两份——CE 原样）。
@@ -304,6 +406,44 @@ export class LightMap {
         cx: number, cy: number, radius: number, circular: boolean,
         hasCreatureAt?: (x: number, y: number) => boolean
     ): boolean[][] {
+        const key = `${cx},${cy},${radius},${+circular},${+!!hasCreatureAt}`;
+        const height = this.grid.height;
+        const opacity = this.batchOpacity;
+        const creatureOffset = hasCreatureAt ? this.batchCreatureOffsets.get(hasCreatureAt) : undefined;
+        // updateLighting already sampled these exact cells. Compare flat
+        // indices directly instead of decoding coordinates and invoking a
+        // predicate for every dependency of every overlapping light.
+        const sampledBlocker = opacity && (!hasCreatureAt || creatureOffset !== undefined)
+            ? (index: number) => opacity[index] === 1
+                || (creatureOffset !== undefined && opacity[creatureOffset + index] === 1)
+            : undefined;
+        const blockedAt = (mx: number, my: number): boolean =>
+            sampledBlocker ? sampledBlocker(mx * height + my)
+                : (opacity ? opacity[mx * height + my] === 1 : !!this.grid.getCell(mx, my)?.isOpaque)
+                    || !!hasCreatureAt?.(mx, my);
+        const cached = this.batchMask ? this.masks.get(key) : undefined;
+        let valid = !!cached;
+        if (cached && !(cached.pass === this.maskPass && maskQueries.get(cached.mask) === hasCreatureAt)) {
+            for (let i = 0; i < cached.cells.length; i++) {
+                const index = cached.cells[i]!;
+                const value = sampledBlocker ? sampledBlocker(index) : blockedAt(Math.floor(index / height), index % height);
+                if (value !== cached.blocked[i]) { valid = false; break; }
+            }
+        }
+        if (cached && valid) {
+            cached.pass = this.maskPass; maskQueries.set(cached.mask, hasCreatureAt);
+            return cached.mask;
+        }
+        const cells: number[] = [], blocked: boolean[] = [];
+        const observed = new Set<number>();
+        const readBlocker = (mx: number, my: number): boolean => {
+            const value = blockedAt(mx, my);
+            if (this.batchMask) {
+                const index = mx * height + my;
+                if (!observed.has(index)) { observed.add(index); cells.push(index); blocked.push(value); }
+            }
+            return value;
+        };
         const size = radius * 2;
         const mask: boolean[][] = [];
         for (let i = 0; i < size; i++) {
@@ -316,12 +456,7 @@ export class LightMap {
                 mask[mx - (cx - radius)]![my - (cy - radius)] = true;
             }
         };
-        const blockedAt = (mx: number, my: number): boolean => {
-            const cell = this.grid.getCell(mx, my);
-            if (cell && cell.isOpaque) return true;
-            if (hasCreatureAt && hasCreatureAt(mx, my)) return true;
-            return false;
-        };
+
 
         mark(cx, cy); // 原点恒被照亮
 
@@ -336,8 +471,13 @@ export class LightMap {
             { xx: 1, xy: 0, yx: 0, yy: -1 }
         ];
         for (const oct of octants) {
-            this.castLightMask(mask, mark, blockedAt, cx, cy, radius, circular,
+            this.castLightMask(mask, mark, readBlocker, cx, cy, radius, circular,
                 1, 1.0, 0.0, oct.xx, oct.xy, oct.yx, oct.yy);
+        }
+        if (this.batchMask) {
+            if (this.masks.size >= 1024 && !this.masks.has(key)) this.masks.delete(this.masks.keys().next().value!);
+            this.masks.set(key, { mask, cells, blocked, pass: this.maskPass });
+            maskQueries.set(mask, hasCreatureAt);
         }
         return mask;
     }
@@ -405,11 +545,9 @@ export class LightMap {
                 const ch = this.lightGrid[x]![y]!;
                 const sum = Math.max(0, ch.r) + Math.max(0, ch.g) + Math.max(0, ch.b);
                 const cell = this.lightCells[x]![y]!;
-                cell.color = {
-                    r: Math.max(0, Math.min(255, Math.round(ch.r))),
-                    g: Math.max(0, Math.min(255, Math.round(ch.g))),
-                    b: Math.max(0, Math.min(255, Math.round(ch.b)))
-                };
+                cell.color.r = Math.max(0, Math.min(255, Math.round(ch.r)));
+                cell.color.g = Math.max(0, Math.min(255, Math.round(ch.g)));
+                cell.color.b = Math.max(0, Math.min(255, Math.round(ch.b)));
                 cell.intensity = Math.max(0, Math.min(100, Math.round(sum / 7.65)));
             }
         }

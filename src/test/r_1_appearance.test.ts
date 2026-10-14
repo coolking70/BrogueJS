@@ -22,6 +22,7 @@ import { GasType, type GasCell } from '../engine/Environment/Gas';
 import type { LightChannels } from '../engine/Lighting/LightMap';
 import {
     terrainAppearance,
+    memoryTerrainAppearance,
     cellAppearance,
     itemAppearance,
     monsterAppearance,
@@ -562,4 +563,19 @@ describe('R-1 结构守卫：GameCanvas.vue 不得再出现外观决策', () => 
         expect(appearanceSrc.includes('activeGame')).toBe(false);
         expect(appearanceSrc.includes('Core/Game')).toBe(false);
     });
+});
+
+
+it('memory preparation matches the full display pipeline for every terrain and layered depth', () => {
+    const terrains = Object.values(TerrainType).filter((t): t is TerrainType => typeof t === 'number');
+    for (const terrain of terrains) for (const depth of [1, 22, 28]) {
+        const cell = makeCell(terrain, { explored: true, memory: true });
+        for (const surface of [TerrainType.NOTHING, TerrainType.WEB, TerrainType.PLAIN_FIRE]) {
+            cell.layers[3] = surface;
+            cell.rememberedLayers = [...cell.layers];
+            cell.rememberedTerrain = cell.terrain;
+            cell.rememberedAppearance = null;
+            expect(memoryTerrainAppearance(cell, depth)).toEqual(cellAppearance(cell, cellCtx({ depth })));
+        }
+    }
 });

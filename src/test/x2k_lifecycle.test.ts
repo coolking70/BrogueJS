@@ -190,3 +190,22 @@ it('reports loss immediately only for an unseen, unbound ally without a passenge
     g.grid.getCell(13, 8)!.isVisible = false; bound.takeDamage(bound.hp, true);
     expect(messages).toHaveBeenCalledTimes(count); messages.mockRestore();
 });
+
+
+it('queries the live underlying monster list without Proxy traversal or stale occupancy', () => {
+    const g = scene(), a = mob(g), b = mob(g);
+    const raw = [a, b]; g.monsters = raw;
+    const nativeFind = Array.prototype.find;
+    const find = vi.spyOn(raw, 'find').mockImplementation(function (this: Monster[], predicate, thisArg) {
+        expect(this).toBe(raw);
+        return nativeFind.call(this, predicate, thisArg);
+    });
+    expect(g.getMonsterAt(7, 7)).toBe(a);
+    a.loc.x = 8; expect(g.getMonsterAt(7, 7)).toBe(b);
+    b.hp = 0; expect(g.getMonsterAt(7, 7)).toBeUndefined();
+    b.hp = 1; g.monsters.reverse(); a.loc = { x: 7, y: 7 };
+    expect(g.getMonsterAt(7, 7)).toBe(b);
+    g.monsters.splice(0, 1); expect(g.getMonsterAt(7, 7)).toBe(a);
+    raw.length = 0; expect(g.getMonsterAt(7, 7)).toBeUndefined();
+    expect(find).toHaveBeenCalled(); find.mockRestore();
+});

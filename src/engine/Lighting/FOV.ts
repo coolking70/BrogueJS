@@ -12,6 +12,29 @@ export class FOVSys {
         this.grid = grid;
     }
 
+    private visionMask: boolean[][] | null = null;
+    private visionOrigin = '';
+    private opacity = new Uint8Array(0);
+
+    /** Only the pure geometric mask is retained; callers still publish sight
+     * and exploration in simulation order. Custom/scent predicates stay separate. */
+    public computeVisionMask(x: number, y: number, radius: number): boolean[][] {
+        const origin = `${x},${y},${radius}`;
+        let changed = !this.visionMask || origin !== this.visionOrigin;
+        const size = this.grid.width * this.grid.height;
+        if (this.opacity.length !== size) { this.opacity = new Uint8Array(size); changed = true; }
+        for (let cx = 0; cx < this.grid.width; cx++) for (let cy = 0; cy < this.grid.height; cy++) {
+            const index = cx * this.grid.height + cy, value = +this.grid.getCell(cx, cy)!.isOpaque;
+            if (this.opacity[index] !== value) changed = true;
+            this.opacity[index] = value;
+        }
+        if (changed) {
+            this.visionOrigin = origin;
+            this.visionMask = this.computeFOVMask(x, y, radius, cell => cell.isOpaque);
+        }
+        return this.visionMask!;
+    }
+
     /**
      * P4-8：CE getFOVMask 的 web 等价——按自定义遮挡谓词计算全图视野掩码，
      * 供气味图（ScentMap.update）等使用。只写返回的掩码数组，绝不触碰

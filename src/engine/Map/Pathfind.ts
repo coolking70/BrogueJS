@@ -19,10 +19,18 @@ export class Pathfind {
         if (!canPass(goalX, goalY)) return null;
 
         const openSet = new PathFrontier();
-        const cameFrom = new Map<string, Pos>();
-        const gScore = new Map<string, number>();
+        const cameFrom = new Map<string | number, Pos>();
+        const gScore = new Map<string | number, number>();
 
-        const toKey = (x: number, y: number) => `${x},${y}`;
+        // Bounded integer cells have a unique numeric index. Avoid allocating
+        // strings for every neighbor; retain the generic API's old keys for
+        // fractional/out-of-grid starts, whose search domain is not this grid.
+        const height = grid.height;
+        const numericKeys = Number.isSafeInteger(grid.width * height) && height > 0
+            && Number.isInteger(startX) && Number.isInteger(startY)
+            && startX >= 0 && startX < grid.width && startY >= 0 && startY < height;
+        const toKey = numericKeys ? (x: number, y: number) => x * height + y
+            : (x: number, y: number) => `${x},${y}`;
         const startKey = toKey(startX, startY);
 
         gScore.set(startKey, 0);
@@ -33,7 +41,7 @@ export class Pathfind {
             const current = openSet.pop();
 
             if (current.x === goalX && current.y === goalY) {
-                return this.reconstructPath(cameFrom, current);
+                return this.reconstructPath(cameFrom, current, toKey);
             }
 
             const currentKey = toKey(current.x, current.y);
@@ -76,13 +84,14 @@ export class Pathfind {
         return Math.max(dx, dy) + (Math.sqrt(2) - 1) * Math.min(dx, dy);
     }
 
-    private static reconstructPath(cameFrom: Map<string, Pos>, current: Pos): Pos[] {
+    private static reconstructPath(cameFrom: Map<string | number, Pos>, current: Pos,
+        toKey: (x: number, y: number) => string | number): Pos[] {
         const totalPath = [current];
-        let currKey = `${current.x},${current.y}`;
+        let currKey = toKey(current.x, current.y);
 
         while (cameFrom.has(currKey)) {
             current = cameFrom.get(currKey)!;
-            currKey = `${current.x},${current.y}`;
+            currKey = toKey(current.x, current.y);
             totalPath.unshift(current);
         }
 

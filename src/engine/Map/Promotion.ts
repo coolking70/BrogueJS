@@ -600,6 +600,8 @@ export function runPromotionUpdate(
         (opts.caughtFireCells ?? []).map((p) => idx(p.x, p.y))
     );
     let rngDraws = 0;
+    const catalog = TERRAIN_FLAGS, layerCount = DungeonLayer.COUNT;
+    const marked: number[] = [];
 
     const result: PromotionUpdateResult = {
         promotions: [],
@@ -616,8 +618,8 @@ export function runPromotionUpdate(
     for (let i = 0; i < W; i++) {
         for (let j = 0; j < grid.height; j++) {
             const cell = grid.getCell(i, j)!;
-            for (let layer = 0; layer < DungeonLayer.COUNT; layer++) {
-                const tile = TERRAIN_FLAGS[cell.layers[layer]!]!;
+            for (let layer = 0; layer < layerCount; layer++) {
+                const tile = catalog[cell.layers[layer]!]!;
                 let promoteChance: number;
                 if (tile.promoteChance < 0) {
                     // 扩散型：按合格 4 向邻居数负向累加（CE :1627-1640）。
@@ -646,25 +648,27 @@ export function runPromotionUpdate(
                     }
                 }
             }
+            if (promotions[idx(i, j)]) marked.push(idx(i, j));
         }
     }
     result.rngDraws = rngDraws;
 
     // ── 第二趟：落地（CE :1652-1663；不复查可晋升性，CE :1658 注释如此）───
-    for (let i = 0; i < W; i++) {
-        for (let j = 0; j < grid.height; j++) {
-            for (let layer = 0; layer < DungeonLayer.COUNT; layer++) {
-                if (promotions[idx(i, j)]! & (1 << layer)) {
-                    const r = promoteTile(grid, i, j, layer, false);
-                    result.promotions.push(r);
-                    if (r.mutated) result.renderDirty = true;
-                    if (r.staleLoopMap) result.staleLoopMap = true;
-                    if (r.spawn) {
-                        // CE：fillSpawnMap 落火地形时置 CAUGHT_FIRE_THIS_TURN
-                        // （Architect.c:3235-3238）——记入本回合起火集。
-                        for (const p of r.spawn.caughtFireCells) {
-                            caughtFire.add(idx(p.x, p.y));
-                        }
+    // Same phase and x/y/layer order; only visit cells whose first-pass bits
+    // were set. A promotion still sees all preceding promotion side effects.
+    for (const index of marked) {
+        const i = index % W, j = Math.floor(index / W);
+        for (let layer = 0; layer < layerCount; layer++) {
+            if (promotions[index]! & (1 << layer)) {
+                const r = promoteTile(grid, i, j, layer, false);
+                result.promotions.push(r);
+                if (r.mutated) result.renderDirty = true;
+                if (r.staleLoopMap) result.staleLoopMap = true;
+                if (r.spawn) {
+                    // CE：fillSpawnMap 落火地形时置 CAUGHT_FIRE_THIS_TURN
+                    // （Architect.c:3235-3238）——记入本回合起火集。
+                    for (const p of r.spawn.caughtFireCells) {
+                        caughtFire.add(idx(p.x, p.y));
                     }
                 }
             }

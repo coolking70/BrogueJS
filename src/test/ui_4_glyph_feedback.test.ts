@@ -237,6 +237,23 @@ describe('UI-4 log and journal', () => {
         expect(declaration(layout, '.journal-entries::-webkit-scrollbar', 'width')).toBe('12px');
         expect(declaration(layout, '.journal-entries::-webkit-scrollbar-thumb', 'background')).toBe('var(--th-dim)');
     });
+    it('bounds journal DOM to 100 entries and keeps every archived message reachable', async () => {
+        for (let i = 0; i < 350; i++) logger.log(`archive entry ${i}`);
+        const root = mount(Journal); await tick();
+        const before = state();
+        const seen = new Set<string>();
+        for (let page = 0; page < 4; page++) {
+            const entries = find(root, 'journal-entries');
+            const rows = entries.children.filter(n => n.type === 'div');
+            expect(rows.length).toBeLessThanOrEqual(100);
+            for (const row of rows) seen.add(text(row).match(/archive entry \d+/)![0]);
+            const buttons = all(find(root, 'journal-pages')).filter(n => n.type === 'button');
+            if (page < 3) { click(buttons[1]!); await tick(); expect(entries.scrollTop).toBe(0); }
+            else expect(buttons[1]!.props.disabled).toBe(true);
+        }
+        expect(seen.size).toBe(350);
+        expect(state()).toEqual(before);
+    });
     it.each(['Escape', 'outside', 'close'])('closes the existing journal drawer with %s without a game command', async method => {
         const open = Vue.ref(true), command = vi.fn(); input.setCallback(command);
         mount({ setup: () => () => Vue.h(Drawer, { open: open.value, variant: 'journal', onClose: () => { open.value = false; } }, () => Vue.h(Journal)) });

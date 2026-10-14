@@ -1,10 +1,11 @@
 import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
 import { createHeadlessGame } from './harness';
 import { TerrainType as T, DungeonLayer as L } from '../engine/Map/Grid';
 import { LightKind, LIGHT_CATALOG } from '../engine/Map/LightCatalog';
 import { rng, RNGType } from '../engine/Random';
+import { LightMap } from '../engine/Lighting/LightMap';
 import { sampleLight, cosmeticDraw } from '../engine/Lighting/CosmeticLight';
 import { Monster, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
@@ -223,4 +224,18 @@ describe('X2m cosmetic colors', () => {
         };
         expect(run(true)).toEqual(run(false));
     });
+});
+
+
+it('allocates one knowledge scratch light map across all flare samples on the same grid', () => {
+    const g = scene();
+    const allocation = vi.spyOn(LightMap.prototype as any, 'initCells');
+    try {
+        g.createFlare(12, 10, LightKind.SCROLL_ENCHANTMENT_LIGHT);
+        (g as any).prepareFlareKnowledge();
+        expect(allocation).toHaveBeenCalledTimes(1);
+        g.createFlare(14, 10, LightKind.SCROLL_ENCHANTMENT_LIGHT);
+        (g as any).prepareFlareKnowledge();
+        expect(allocation).toHaveBeenCalledTimes(1);
+    } finally { allocation.mockRestore(); }
 });

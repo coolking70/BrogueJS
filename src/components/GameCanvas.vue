@@ -165,6 +165,10 @@ onMounted(async () => {
     });
 
     canvasContainer.value.appendChild(pixiApp.canvas);
+    // Keep the simulation/display ticker, but submit GPU work only after a
+    // scene or overlay change. Pixi's default ticker otherwise renders at 60Hz.
+    pixiApp.ticker.remove(pixiApp.render, pixiApp);
+    let canvasDirty = true;
 
     const baseStyleOptions = {
       fontFamily: 'Courier New',
@@ -252,15 +256,19 @@ onMounted(async () => {
 
     // A display-only overlay. CE cursor mode highlights its current cell
     // (IO.c:655-664); passive mouse hover is a Web affordance.
+    let hoverKey = '';
     const drawHover = () => {
-        hoverHighlight.clear();
         const game = activeGame;
-        if (displayedFrame(game)) return;
         const pos = game.hoveredCell;
-        if (!pos || game.isInventoryOpen || game.referenceScreen || game.pendingArcana
-            || game.isThrowing || game.isGameOver) return;
-        const cell = game.grid.getCell(pos.x, pos.y);
-        if (!shouldHighlightMapCell(cell)) return;
+        const visible = !displayedFrame(game) && pos && !game.isInventoryOpen && !game.referenceScreen
+            && !game.pendingArcana && !game.isThrowing && !game.isGameOver
+            && shouldHighlightMapCell(game.grid.getCell(pos.x, pos.y));
+        const key = visible ? `${pos.x},${pos.y}` : '';
+        if (key === hoverKey) return;
+        hoverKey = key;
+        hoverHighlight.clear();
+        canvasDirty = true;
+        if (!visible || !pos) return;
         hoverHighlight.rect(pos.x * TILE_SIZE, pos.y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             .fill({ color: MAP_HOVER_FILL, alpha: 0.14 });
         hoverHighlight.rect(pos.x * TILE_SIZE + 0.75, pos.y * TILE_SIZE + 0.75,
@@ -301,6 +309,7 @@ onMounted(async () => {
     const applyLayout = () => {
         const el = canvasContainer.value;
         if (!el || !pixiApp) return;
+        canvasDirty = true;
         // 容器 clientWidth/Height 是布局真值，覆盖侧栏增减等非窗口变化。
         // 尺寸观察器先同步 renderer，再进入这里更新图层与命中区；
         // 仅缩放/平移/遮挡变化也可独立走这里，不重复 resize 渲染器。
@@ -1066,8 +1075,8 @@ onMounted(async () => {
             const flareChanged = game.tickFlareAnimation(animationMs);
             const terrainChanged = tickTerrainColors(game.grid, animationMs, game.depth);
             colorTimer += animationMs;
-            const lightChanged = colorTimer >= 50;
-            if (lightChanged) { colorTimer %= 50; game.lightMap.dance(); }
+            let lightChanged = false;
+            if (colorTimer >= 50) { colorTimer %= 50; lightChanged = game.danceLighting(); }
             if (boltChanged || flareChanged || terrainChanged || lightChanged) renders.request();
 
             pathingTimer = stepCadence(pathingTimer, autoWasAllowed ? elapsedMs : 0,
@@ -1082,7 +1091,8 @@ onMounted(async () => {
             const nextProjection = displayedFrame(game);
             if (nextProjection !== lastProjection) { lastProjection = nextProjection; renders.request(); }
             // Present requested overlays and final states even while paused.
-            renders.flush(render);
+            renders.flush(() => { render(); canvasDirty = true; });
+            if (canvasDirty && pixiApp) { pixiApp.render(); canvasDirty = false; }
         }
     };
     const resetDisplayClock = () => {
