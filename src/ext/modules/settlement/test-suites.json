@@ -28,6 +28,7 @@
     "tests/settlement_boundaries.test.ts",
     "tests/settlement_camera.test.ts",
     "tests/settlement_display.test.ts",
+    "tests/settlement_feedback_ui.test.ts",
     "tests/settlement_harvest.test.ts",
     "tests/settlement_input.test.ts",
     "tests/settlement_inventory_ui.test.ts",

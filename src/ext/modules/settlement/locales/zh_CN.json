@@ -207,5 +207,22 @@
   "ext.settlement.raid.phase.active": "在场袭击",
   "ext.settlement.raid.phase.aftermath": "待回营查看",
   "ext.settlement.raid.phase.closed": "已结束",
-  "ext.settlement.raid.repair_confirm": "修缮{{target}}，恢复{{amount}}耐久；消耗{{materials}}，用时{{ticks}} tick。确认？"
+  "ext.settlement.raid.repair_confirm": "修缮{{target}}，恢复{{amount}}耐久；消耗{{materials}}，用时{{ticks}} tick。确认？",
+  "ext.settlement.ui.food_missing": "还缺 {{count}} 份口粮或芒果",
+  "ext.settlement.ui.food_excess": "建营地需恰好存入 2 份口粮或芒果，请减少数量。",
+  "ext.settlement.ui.material_missing": "建材不足：{{name}} {{available}}/{{required}}",
+  "ext.settlement.ui.unavailable": "角色当前无法行动，暂不能执行营地操作。",
+  "ext.settlement.ui.camp_required": "请先在当前层建立营地。",
+  "ext.settlement.ui.draft_empty": "请先选择目标格并加入施工草稿。",
+  "ext.settlement.ui.draft_full": "施工草稿已达 16 格上限，请先施工或清空。",
+  "ext.settlement.ui.locked_food": "建营储粮不可取出，撤营时退还。",
+  "ext.settlement.resident.home_required": "回营、岗位与生产操作需要居民位于自己的营地内。",
+  "ext.settlement.resident.endpoints_required": "生产、种植或搬运前，请选择源箱和目的箱。",
+  "ext.settlement.resident.haul_required": "搬运需要选择实物，且源箱与目的箱不同。",
+  "ext.settlement.resident.plots_required": "安排种植需要选择 1–6 块种植床。",
+  "ext.settlement.resident.order_exists": "已有生产订单，不能重复下单。",
+  "ext.settlement.resident.order_working": "订单正在工作，暂不需要补给续工。",
+  "ext.settlement.resident.batches_required": "生产批数必须在 1–16 之间。",
+  "ext.settlement.resident.schedule_required": "工作、休整和值守各至少 1 段，合计 32 段。",
+  "ext.settlement.resident.supply_granary": "建营补给堆不能切换日粮仓标记。"
 }

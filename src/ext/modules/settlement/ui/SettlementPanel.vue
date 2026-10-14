@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useTranslation } from 'i18next-vue';
+import errorLabels from '../data/ui-errors.json';
 import type { SettlementView } from './view';
 import ResidentsPanel from './ResidentsPanel.vue';
 import { loadSettlementPack } from '../definitions';
@@ -82,6 +83,35 @@ const options = (id: string) =>
     .filter((i) => i.tags.includes('basic.' + id.split('.').pop()))
     .map((i) => ({ id: i.definitionId!, quantity: i.quantity, name: i.displayName }));
 const totalFood = computed(() => Object.values(props.food).reduce((n, q) => n + q, 0));
+// SDK-02 exposes the last command's C5 code through the read-only model.
+// Use the foundation translations without introducing a dependency on crafting.
+const rejection = computed(() => {
+  const code = props.error || props.model.lastError;
+  if (!code) return '';
+  const label = errorLabels.find(row => row.code === code);
+  return label ? t(label.reasonKey) : t('ext.settlement.ui.rejected');
+});
+const blockedReason = computed(() => !props.blocked ? '' : t(
+  props.replayReadonly ? 'ext.settlement.ui.replay_readonly'
+    : props.model.available ? 'ext.foundation.world.error.busy' : 'ext.settlement.ui.unavailable'
+));
+const foodReason = computed(() => totalFood.value < 2
+  ? t('ext.settlement.ui.food_missing', { count: 2 - totalFood.value })
+  : totalFood.value > 2 ? t('ext.settlement.ui.food_excess') : '');
+const appendReason = computed(() => !camp.value ? t('ext.settlement.ui.camp_required')
+  : props.draft.length >= 16 ? t('ext.settlement.ui.draft_full') : '');
+const constructReason = computed(() => !props.draft.length ? t('ext.settlement.ui.draft_empty') : '');
+const materialShortages = computed(() => {
+  const bill = props.tab === 'build' && props.kitId
+    ? [{ itemDefinitionId: props.kitId, count: 1 }] : costs.value;
+  return bill.flatMap(cost => {
+    const id = props.materials[cost.itemDefinitionId] ?? cost.itemDefinitionId;
+    const available = sourceItems.value.filter(i => i.definitionId === id)
+      .reduce((sum, i) => sum + i.available, 0);
+    return available < cost.count
+      ? [t('ext.settlement.ui.material_missing', { name: name(id), available, required: cost.count })] : [];
+  });
+});
 const selectedDefinition = computed(() =>
   props.model.definitions.find((d) => d.id === props.selected)
 );
@@ -147,8 +177,9 @@ function number(event: Event) {
         </template>
         <p v-if="replayReadonly" class="replay-readonly">{{ t('ext.settlement.ui.replay_readonly') }}</p>
         <p v-if="error || model.lastError" class="error" role="alert">
-          {{ t('ext.settlement.ui.rejected') }}
+          {{ rejection }}
         </p>
+        <p v-if="blockedReason && !replayReadonly" class="error" data-disabled-reason>{{ blockedReason }}</p>
         <template v-if="tab === 'camp' || tab === 'build'">
           <label
             >{{ t('ext.settlement.ui.source')
@@ -184,6 +215,9 @@ function number(event: Event) {
             </select></label
           >
         </template>
+        <template v-if="tab === 'camp' || tab === 'build'">
+          <p v-for="reason in materialShortages" :key="reason" class="error">{{ reason }}</p>
+        </template>
         <template v-if="tab === 'camp'">
           <article v-if="!camp">
             <h3>{{ t('ext.settlement.ui.establish') }}</h3>
@@ -206,7 +240,8 @@ function number(event: Event) {
             <p>{{ t('ext.settlement.ui.target_hint') }}</p>
             <p>{{ t('ext.settlement.ui.target_bounds', campBounds) }}</p>
             <div class="directions"><button v-for="d in direction" :key="d.id" :disabled="blocked" @click="emit('cursor', d.dx, d.dy)">{{ d.glyph }}</button></div>
-            <button :disabled="blocked || totalFood !== 2" @click="emit('establish')">
+            <p v-if="foodReason" class="error" data-disabled-reason>{{ foodReason }}</p>
+            <button :title="blockedReason || foodReason" :disabled="blocked || totalFood !== 2" @click="emit('establish')">
               {{ t('ext.settlement.ui.establish_cost') }}
             </button>
           </article>
@@ -306,7 +341,8 @@ function number(event: Event) {
               {{ d.glyph }}
             </button>
           </div>
-          <button :disabled="blocked || draft.length >= 16 || !camp" @click="emit('append')">
+          <p v-if="appendReason" class="error" data-disabled-reason>{{ appendReason }}</p>
+          <button :title="blockedReason || appendReason" :disabled="blocked || draft.length >= 16 || !camp" @click="emit('append')">
             {{ t('ext.settlement.ui.append', { count: draft.length }) }}
           </button>
           <ol>
@@ -314,9 +350,10 @@ function number(event: Event) {
               {{ name(p.definitionId) }} ({{ p.x }},{{ p.y }})
             </li>
           </ol>
+          <p v-if="constructReason" class="error" data-disabled-reason>{{ constructReason }}</p>
           <div class="actions">
             <button @click="emit('clear')">{{ t('ext.settlement.ui.clear') }}</button
-            ><button :disabled="blocked || !draft.length" @click="emit('construct')">
+            ><button :title="blockedReason || constructReason" :disabled="blocked || !draft.length" @click="emit('construct')">
               {{ t('ext.settlement.ui.construct') }}
             </button>
           </div>
@@ -349,9 +386,10 @@ function number(event: Event) {
             <article v-for="i in box.items" :key="i.id">
               <strong>{{ i.displayName }} ×{{ i.quantity }}</strong>
               <p v-if="i.lockedQuantity">
-                {{ t('ext.settlement.ui.locked', { quantity: i.lockedQuantity }) }}
+                {{ t('ext.settlement.ui.locked', { quantity: i.lockedQuantity }) }} · {{ t('ext.settlement.ui.locked_food') }}
               </p>
               <button
+                :title="blockedReason || (i.quantity <= i.lockedQuantity ? t('ext.settlement.ui.locked_food') : '')"
                 :disabled="blocked || i.quantity <= i.lockedQuantity"
                 @click="emit('transfer', box.id, i.id, i.quantity - i.lockedQuantity, 'withdraw')"
               >

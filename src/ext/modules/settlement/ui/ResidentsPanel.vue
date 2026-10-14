@@ -80,6 +80,21 @@ const atHome = (a: { campId: number; at: { x: number; y: number } }) => {
 };
 const nearby = (at: { x: number; y: number }) =>
   Math.max(Math.abs(at.x - props.model.at.x), Math.abs(at.y - props.model.at.y)) <= 1;
+const actionHints = computed(() => {
+  const a = active.value;
+  if (!a) return [];
+  const hints: string[] = [];
+  if (!nearby(a.at)) hints.push(t('ext.foundation.world.error.distance'));
+  if (!atHome(a)) hints.push(t('ext.settlement.resident.home_required'));
+  if (!source.value || !destination.value) hints.push(t('ext.settlement.resident.endpoints_required'));
+  if (!itemId.value || source.value === destination.value) hints.push(t('ext.settlement.resident.haul_required'));
+  if (!plots.value.length || plots.value.length > 6) hints.push(t('ext.settlement.resident.plots_required'));
+  if (productionOrder.value) hints.push(t('ext.settlement.resident.order_exists'));
+  if (productionOrder.value?.status === 'working') hints.push(t('ext.settlement.resident.order_working'));
+  if (batches.value < 1 || batches.value > 16) hints.push(t('ext.settlement.resident.batches_required'));
+  if (work.value < 1 || rest.value < 1 || work.value + rest.value >= 32) hints.push(t('ext.settlement.resident.schedule_required'));
+  return hints;
+});
 watch(
   () => props.model.depth,
   () => {
@@ -125,6 +140,8 @@ function order(id: number, kind: string) {
     <p>{{ t('ext.settlement.resident.hint') }}</p>
     <article v-for="a in model.residents?.candidates ?? []" :key="a.id" :data-candidate="a.id">
       <strong>{{ a.name }}</strong>
+      <p v-if="!camp" data-disabled-reason>{{ t('ext.settlement.ui.camp_required') }}</p>
+      <p v-if="!nearby(a.at)" data-disabled-reason>{{ t('ext.foundation.world.error.distance') }}</p>
       <button
         :disabled="blocked || !camp || !nearby(a.at)"
         data-action="recruit"
@@ -299,6 +316,7 @@ function order(id: number, kind: string) {
           })
         }}
       </p>
+      <p v-for="hint in actionHints" :key="hint" data-disabled-reason>{{ hint }}</p>
       <div class="actions">
         <button
           data-action="order-work"
@@ -389,9 +407,11 @@ function order(id: number, kind: string) {
       </div>
     </article>
     <h4>{{ t('ext.settlement.resident.granaries') }}</h4>
+    <p v-if="!camp && visibleBoxes.length" data-disabled-reason>{{ t('ext.settlement.ui.camp_required') }}</p>
+    <template v-for="b in visibleBoxes" :key="b.id">
+    <p v-if="!b.at || !nearby(b.at)" data-disabled-reason>{{ t('ext.settlement.ui.box', { id: b.id }) }} · {{ t('ext.foundation.world.error.distance') }}</p>
+    <p v-if="b.id === camp?.supplyId" data-disabled-reason>{{ t('ext.settlement.resident.supply_granary') }}</p>
     <button
-      v-for="b in visibleBoxes"
-      :key="b.id"
       :disabled="blocked || !camp || !b.at || !nearby(b.at) || b.id === camp.supplyId"
       :data-granary="b.id"
       @click="emit('command', 'set-granary', b.id, { enabled: !camp?.granaryIds.includes(b.id) })"
@@ -405,6 +425,7 @@ function order(id: number, kind: string) {
         )
       }}
     </button>
+    </template>
   </section>
 </template>
 <style scoped>

@@ -29,7 +29,8 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
     queue = false,
     wasAdvancing = false,
     restRequested = false,
-    queued = 0;
+    queued = 0,
+    foodSignature = '';
   const live = () => !retired && host.game() === game && game.extensionRuntime === runtime;
   // Match shared module presentation: live lag pauses UI, replay/seek stays readable.
   const presentationBusy = () => !game.replayRecording && !!host.isPresentationBusy?.();
@@ -74,6 +75,28 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
     if (blocked()) return null;
     return readView(runtime?.readModuleView('settlement')?.state);
   }
+  // Only read the player's known inventory after the presentation gate. Native
+  // food identity is not part of ItemRead; never infer it from translated names.
+  function prefillFood(v: SettlementView, force = false) {
+    const available = v.inventory.filter(i => i.food).flatMap(i => {
+      const item = game.player.inventory.items.find(item => item.id === i.id);
+      const kind = item?.consumableId ?? item?.identityId;
+      return kind === 'ration_of_food' || kind === 'mango'
+        ? [{ id: i.id, quantity: Math.min(i.quantity, i.available), priority: kind === 'ration_of_food' ? 0 : 1 }]
+        : [];
+    }).sort((a, b) => a.priority - b.priority || a.id - b.id);
+    const signature = JSON.stringify(available);
+    if (!force && signature === foodSignature) return;
+    foodSignature = signature;
+    let remaining = 2;
+    const next: Record<number, number> = {};
+    for (const item of available) {
+      const quantity = Math.min(remaining, item.quantity);
+      if (quantity > 0) next[item.id] = quantity;
+      remaining -= quantity;
+    }
+    food.value = next;
+  }
   function refresh() {
     if (!live() || host.canPresentInteraction?.() === false) {
       close();
@@ -96,6 +119,7 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
     if (model.value && game.replayRecording && model.value.inventoryStamp !== next.inventoryStamp)
       reset();
     model.value = next;
+    if (opened.value) prefillFood(next);
     if (
       queue &&
       !game.isAdvancing &&
@@ -133,7 +157,7 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
     campTarget.value = { ...cursor.value };
     collapsed.value = false;
     opened.value = true;
-    food.value = {};
+    prefillFood(model.value, true);
     error.value = null;
     selectMap();
   }

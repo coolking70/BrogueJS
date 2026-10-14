@@ -254,3 +254,6 @@ Node24、3GiB、2workers，resident_sources + settlement_runtime：2文件5测�
 - 2026-10-14：执行 p5-ui-fix2.task.md（HEAD 5fb605f），补地图尺寸变化跟随与 settlement 开局两份口粮；相关测试、boundary/types/build，不 commit。
 
 - 2026-10-14 P5 UI fix2 完成：地图几何变化清旧pan并在面板DOM更新后归中，桌面边界修正不再伪装手动平移；settlement startup补发1份原生口粮，开局共2份。四档SFC/布局、自然D1真实建营与存读回放通过。原20文件234pass/4fail保留，4项仅旧拾粮数量；单配置回退4pass后修前提，9文件136pass关闭并补守卫。两份narrative trace按原法重录、64字段登记及新检查点重建2pass，双包正式生命周期1pass；terrain守卫3pass/27未选、发现清单6pass、最终boundary/依赖/types/build/diff通过。浏览器Vite/Chromium受沙箱限制，无截图，不称实机通过。报告 docs/ext/phase5-ui-fix2.report.md；未commit/push。
+
+- 2026-10-14：执行 p5-ui-fix3.task.md（HEAD b820733），营地食物自动预填与精确拒绝文案；保持底座规则和命令路径，补 SFC/真实 Game 回归，限定门禁后写报告，不提交。
+- 2026-10-14 P5 UI fix3 完成：营地预填两份粮（口粮优先、变化重算、普通轮询保留手调）；SDK-02 lastError 复用完整基础错误译文，缺粮/缺料/置灰原因可见。新增真实 Game/SFC 13/13，通过相关首次9文件65项、最终源码56文件100项（905名称未选）、共享5文件52项、i18n/登记/结构守卫、boundary/types/build。原过宽源码批次中止exit130保留；既有resident自然source398及草稿组前置失败在开工HEAD b820733独立副本同样复现，旧测试/路线未改。浏览器被沙箱端口/Chromium限制；报告 docs/ext/phase5-ui-fix3.report.md，原始日志 /private/tmp/p5-ui-fix3-*.log。无commit/push；无新增规则、格式或基线改动。
