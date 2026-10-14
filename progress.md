@@ -257,3 +257,7 @@ Node24、3GiB、2workers，resident_sources + settlement_runtime：2文件5测�
 
 - 2026-10-14：执行 p5-ui-fix3.task.md（HEAD b820733），营地食物自动预填与精确拒绝文案；保持底座规则和命令路径，补 SFC/真实 Game 回归，限定门禁后写报告，不提交。
 - 2026-10-14 P5 UI fix3 完成：营地预填两份粮（口粮优先、变化重算、普通轮询保留手调）；SDK-02 lastError 复用完整基础错误译文，缺粮/缺料/置灰原因可见。新增真实 Game/SFC 13/13，通过相关首次9文件65项、最终源码56文件100项（905名称未选）、共享5文件52项、i18n/登记/结构守卫、boundary/types/build。原过宽源码批次中止exit130保留；既有resident自然source398及草稿组前置失败在开工HEAD b820733独立副本同样复现，旧测试/路线未改。浏览器被沙箱端口/Chromium限制；报告 docs/ext/phase5-ui-fix3.report.md，原始日志 /private/tmp/p5-ui-fix3-*.log。无commit/push；无新增规则、格式或基线改动。
+
+- 2026-10-14 P5 UI fix4：按外部 p5-ui-fix4.task.md 修复浮动战斗文字冻结快照残留，并排查 DEV wait。根因：快照浮字不随实时列表更新；动画模式 executeCommand(wait) 只安排下一显示帧推进，连续同步输入会被锁拒绝。新增 UI 浮字身份/毫秒时钟和 DEV debug_game.status()/await debug_game.wait()，所有命令走同一 UI 输入边界。首轮新增与原 Canvas 24 项中 23 过，1 项新夹具漏启 ACK 显示，已修正；相关回归进行中。不提交。Vite 5199 listen EPERM、标准 Playwright Chromium 初始化失败，真实浏览器未验证。
+
+- 2026-10-14 P5 UI fix4 完成：冻结快照与实时浮字共用 UI 身份/实际毫秒寿命，含 Pixi 慢帧钳制反例先红后绿；DEV debug_game.wait 沿用按钮输入并等待动作收尾，提供阻塞状态且不代答。最终相关 7 文件81项、受影响源码守卫16文件24项、boundary/types/build 全exit0；前序源码守卫57文件102项及模块源码18文件44项通过，筛选未运行数及重叠分别登记。成长模块两处截取画布循环的旧测试宿主已逐处单文件回退对照（5/5、1/1）后仅补真实依赖，原断言保持。浏览器Vite listen EPERM/Playwright启动失败，未冒称截图或真机验证。完整报告 docs/ext/phase5-ui-fix4.report.md；无剩余本次已确认缺陷，未提交/推送，完整npm/test:ext未跑。

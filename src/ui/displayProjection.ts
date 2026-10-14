@@ -1,4 +1,5 @@
 import type { Game } from '../engine/Core/Game';
+import { observeFloatingText } from './floatingTextPresentation';
 import type { ReadonlyJson } from '../ext/types';
 import type { Logger } from '../engine/Systems/Logger';
 import { cellAppearance, itemAppearance, rememberedItemAppearance, playerAppearance, type CosmeticRng } from '../engine/UI/Appearance';
@@ -146,7 +147,7 @@ export function observeDisplayFrame(game: Game, log: Logger, previous?: { map: D
         moduleViews: observeModuleViews(game),
         map: observeDisplayMap(game, previous?.map, interactables),
         bolt: game.getCurrentBoltFrame() ? { ...game.getCurrentBoltFrame()! } : null,
-        floatingTexts: game.floatingTexts.map(ft => ({ text: ft.text, color: ft.color, x: ft.x, y: ft.y, life: ft.life })),
+        floatingTexts: game.floatingTexts.map(observeFloatingText),
         terminal: game.isGameOver,
     });
 }

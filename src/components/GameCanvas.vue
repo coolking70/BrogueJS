@@ -124,6 +124,8 @@ import { normalizeMapGlyph } from '../ui/mapGlyph';
 import { readInteractableMapMarkers } from '../ui/worldInteractableMap';
 import { RetainedBackgroundLayer, RetainedVectorLayer, VectorGeometryCache } from '../ui/retainedMapDrawing';
 import { displayedFrame, presentationTimeline } from '../ui/presentationTimeline';
+import { FloatingTextPresentation, observeFloatingText } from '../ui/floatingTextPresentation';
+import { installGameDebug } from '../ui/gameDebug';
 import { publicMonsterBody, publicMonsterMapCells } from '../engine/UI/MonsterBody';
 import { observeDisplayMonster } from '../ui/monsterDisplay';
 import { paintBody, paintBodyOutline, selectedBodyCells } from '../ui/bodyDrawing';
@@ -163,6 +165,7 @@ let removeOcclusionObserver: (() => void) | null = null;
 let removeDisplayClockListener: (() => void) | null = null;
 let removeTouchListeners: (() => void) | null = null;
 let removeSquareBodyDiagnostics: (() => void) | null = null;
+let removeGameDebug: (() => void) | null = null;
 let removeHeldInputContext: (() => void) | null = null;
 
 onMounted(async () => {
@@ -415,6 +418,11 @@ onMounted(async () => {
     stopCameraWatch = watch(() => [cameraState.zoom, cameraState.panX, cameraState.panY, cameraState.fit], () => applyLayout());
 
     const game = activeGame;
+    const floatingPresentation = new FloatingTextPresentation();
+    const displayedFloatingTexts = () => floatingPresentation.project(
+        displayedFrame(game)?.floatingTexts ?? game.floatingTexts.map(observeFloatingText));
+    let hadFloatingTexts = false;
+    removeGameDebug = installGameDebug(game, () => props.displayModalOpen);
     removeSquareBodyDiagnostics = installSquareBodyDiagnostics(game);
     removeHeldInputContext = registerHeldInputContext(() => [
         game.isInventoryOpen, game.referenceScreen, game.inspectTarget,
@@ -490,7 +498,7 @@ onMounted(async () => {
         }
         vectorEntities.finish();
         let floatIdx = 0;
-        for (const ft of frame.floatingTexts) {
+        for (const ft of displayedFloatingTexts()) {
             if ((!displaySettings.showDamageNumbers && /^-\d+$/.test(ft.text)) || floatIdx >= MAX_FLOAT_SPRITES) continue;
             const sprite = floatSprites[floatIdx++]!;
             sprite.text = mapMode.value === 'hanzi' ? floatingHanzi(ft.text) : normalizeMapGlyph(ft.text);
@@ -756,7 +764,7 @@ onMounted(async () => {
 
         // ---- Floating texts ----
         let floatIdx = 0;
-        for (const ft of game.floatingTexts) {
+        for (const ft of displayedFloatingTexts()) {
             if (!displaySettings.showDamageNumbers && /^-\d+$/.test(ft.text)) continue;
             if (floatIdx >= MAX_FLOAT_SPRITES) break;
             const s = floatSprites[floatIdx]!;
@@ -819,6 +827,7 @@ onMounted(async () => {
 
         return JSON.stringify({
             mapStyle: mapMode.value,
+            floatingTexts: displayedFloatingTexts().map(({ identity: _identity, ...text }) => text),
             presentation: presentationTimeline(game)?.diagnostics ?? { simulationTurn: game.absoluteTurnNumber, displayTurn: game.absoluteTurnNumber },
             seed: game.currentSeed,
             acknowledgment: logger.pendingAcknowledgment?.text ?? null,
@@ -1162,12 +1171,6 @@ onMounted(async () => {
                 return;
             }
 
-            if (game.floatingTexts.length > 0) {
-                game.floatingTexts.forEach(ft => ft.update());
-                game.floatingTexts = game.floatingTexts.filter(ft => ft.life > 0);
-                renders.request();
-            }
-
             const boltChanged = game.tickBoltAnimation();
             const flareChanged = game.tickFlareAnimation(animationMs);
             const terrainChanged = tickTerrainColors(game.grid, animationMs, game.depth);
@@ -1185,6 +1188,14 @@ onMounted(async () => {
                 });
         } finally {
             syncHeldInputContext();
+            // Cosmetic lifetimes continue through ACKs, inventory and drawers.
+            // Frozen projections share identity with live effects, so switching
+            // frames cannot restart an expired label or mutate an archived frame.
+            floatingPresentation.tick(document.hidden ? 0 : elapsedMs);
+            const hasFloatingTexts = displayedFloatingTexts().length > 0;
+            game.floatingTexts = game.floatingTexts.filter(ft => !floatingPresentation.expired(ft));
+            if (hadFloatingTexts || hasFloatingTexts) renders.request();
+            hadFloatingTexts = hasFloatingTexts;
             const nextProjection = displayedFrame(game);
             if (nextProjection !== lastProjection) { lastProjection = nextProjection; renders.request(); }
             // A module panel suspends automatic actions, but accepted native
@@ -1246,6 +1257,8 @@ onUnmounted(() => {
   removeTouchListeners = null;
   removeSquareBodyDiagnostics?.();
   removeSquareBodyDiagnostics = null;
+  removeGameDebug?.();
+  removeGameDebug = null;
   removeHeldInputContext?.();
   removeHeldInputContext = null;
   clearAim();

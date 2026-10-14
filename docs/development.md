@@ -113,3 +113,16 @@ grep -rln '^<<<<<<<\|^>>>>>>>' src scripts     # 必查：-3 可能静默留下�
 - 规则代码旁注明 CE 出处（`Movement.c:1297-1308` 这类），便于核对；但**以执行路径为准**，注释可能过时。
 - 纯函数优先，副作用经 ports 注入；显示函数不消耗实质随机流。
 - 所有玩家可见文本走 i18n（见 `docs/i18n.md`）。
+
+## 9. 浏览器 DEV 回合调试
+
+开发构建进入游戏、画布挂载后，可在控制台使用：
+
+```js
+window.debug_game.status();
+await window.debug_game.wait();
+```
+
+`wait({ timeoutMs: 5000 })` 沿用界面“休息”的输入入口，只提交一次等待，并等到动画推进收尾。遇到 ACK、确认、浮层、回放或输入锁等阻塞会报出原因，不会代答或绕过门控；超时也不会重试已经提交的动作。循环推进时逐次 `await`，不要并发调用。生产构建不安装该助手。
+
+`executeCommand('wait')` 返回 void；在有画布的动画模式下，客观回合通常要到下一显示帧才更新，直接 `await executeCommand(...)` 不会等待回合完成。`stats.turns` 表示玩家动作数，`absoluteTurnNumber` 表示客观时间块，加速时两者并非一一对应。详细原因、返回值和测试范围见 [P5 UI fix4 报告](ext/phase5-ui-fix4.report.md)。

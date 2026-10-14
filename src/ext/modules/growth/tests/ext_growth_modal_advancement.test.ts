@@ -15,6 +15,7 @@ import { logger } from '../../../../engine/Systems/Logger';
 import { rng } from '../../../../engine/Random';
 import type { Game } from '../../../../engine/Core/Game';
 import { displayedFrame, presentationTimeline } from '../../../../ui/presentationTimeline';
+import { FloatingTextPresentation, observeFloatingText } from '../../../../ui/floatingTextPresentation';
 import { HUNGER_THRESHOLD } from '../../../../entities/Player';
 import { DialogService } from '../../../../ui/dialogService';
 import { bindDialogAcknowledgments } from '../../../../ui/dialogAcknowledgments';
@@ -28,8 +29,10 @@ function modalDisplayLoop(game: Game) {
     expect(start).toBeGreaterThan(0); expect(end).toBeGreaterThan(start);
     const code = ts.transpileModule(source.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS } }).outputText;
     const render = vi.fn(), request = vi.fn(), syncHeld = vi.fn(), flush = vi.fn((paint: () => void) => paint());
-    const loop = new Function('game', 'props', 'logger', 'syncHeldInputContext', 'renders', 'render', 'frameProfile', 'document', 'displayedFrame', 'presentationTimeline', 'dialogInput',
-        `${code}; let lastFocusX = -1, lastFocusY = -1; const cameraState = {panX: 0, panY: 0}; const applyLayout = () => { const focus = displayedFrame(game)?.player ?? game.player.loc; lastFocusX = focus.x; lastFocusY = focus.y; }; return displayFrame;`)(game, { displayModalOpen: true }, logger, syncHeld, { flush, request }, render, null, { hidden: false }, displayedFrame, presentationTimeline, dialogInput) as (elapsedMs: number, animationMs?: number) => void;
+    const floatingPresentation = new FloatingTextPresentation();
+    const displayedFloatingTexts = () => floatingPresentation.project(displayedFrame(game)?.floatingTexts ?? game.floatingTexts.map(observeFloatingText));
+    const loop = new Function('game', 'props', 'logger', 'syncHeldInputContext', 'renders', 'render', 'frameProfile', 'document', 'displayedFrame', 'presentationTimeline', 'dialogInput', 'floatingPresentation', 'displayedFloatingTexts', 'hadFloatingTexts',
+        `${code}; let lastFocusX = -1, lastFocusY = -1; const cameraState = {panX: 0, panY: 0}; const applyLayout = () => { const focus = displayedFrame(game)?.player ?? game.player.loc; lastFocusX = focus.x; lastFocusY = focus.y; }; return displayFrame;`)(game, { displayModalOpen: true }, logger, syncHeld, { flush, request }, render, null, { hidden: false }, displayedFrame, presentationTimeline, dialogInput, floatingPresentation, displayedFloatingTexts, false) as (elapsedMs: number, animationMs?: number) => void;
     return { loop, render, flush, syncHeld };
 }
 function setup() {

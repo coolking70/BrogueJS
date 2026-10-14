@@ -16,6 +16,7 @@ import { logger } from '../../../../engine/Systems/Logger';
 import { displaySettings } from '../../../../engine/Settings';
 import { createSfcHarness } from '../../../../test/support/sfcHarness';
 import { displayedFrame, presentationTimeline } from '../../../../ui/presentationTimeline';
+import { FloatingTextPresentation, observeFloatingText } from '../../../../ui/floatingTextPresentation';
 import { dialogInput } from '../../../../ui/dialogInput';
 
 interface Node {
@@ -218,8 +219,10 @@ describe('EXT-1e mounted new-game identity chooser', () => {
         const canvas = all(root).find(n => 'data-canvas-modal' in n.props)!;
         const canvasSource = source('components/GameCanvas.vue'), begin = canvasSource.indexOf('    let pathingTimer = 0;'), end = canvasSource.indexOf('    const resetDisplayClock =', begin);
         const loopCode = ts.transpileModule(canvasSource.slice(begin, end), { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText;
-        const frame = new Function('game', 'props', 'logger', 'syncHeldInputContext', 'renders', 'render', 'frameProfile', 'document', 'displayedFrame', 'presentationTimeline', 'dialogInput', `${loopCode}; let lastFocusX = -1, lastFocusY = -1; const cameraState = {panX: 0, panY: 0}; const applyLayout = () => { const focus = displayedFrame(game)?.player ?? game.player.loc; lastFocusX = focus.x; lastFocusY = focus.y; }; return displayFrame;`)
-            (activeGame, { get displayModalOpen() { return canvas.props['data-canvas-modal']; } }, logger, () => {}, { request: vi.fn(), flush: (paint: () => void) => paint() }, () => {}, null, { hidden: false }, displayedFrame, presentationTimeline, dialogInput);
+        const floatingPresentation = new FloatingTextPresentation();
+        const displayedFloatingTexts = () => floatingPresentation.project(displayedFrame(activeGame)?.floatingTexts ?? activeGame.floatingTexts.map(observeFloatingText));
+        const frame = new Function('game', 'props', 'logger', 'syncHeldInputContext', 'renders', 'render', 'frameProfile', 'document', 'displayedFrame', 'presentationTimeline', 'dialogInput', 'floatingPresentation', 'displayedFloatingTexts', 'hadFloatingTexts', `${loopCode}; let lastFocusX = -1, lastFocusY = -1; const cameraState = {panX: 0, panY: 0}; const applyLayout = () => { const focus = displayedFrame(game)?.player ?? game.player.loc; lastFocusX = focus.x; lastFocusY = focus.y; }; return displayFrame;`)
+            (activeGame, { get displayModalOpen() { return canvas.props['data-canvas-modal']; } }, logger, () => {}, { request: vi.fn(), flush: (paint: () => void) => paint() }, () => {}, null, { hidden: false }, displayedFrame, presentationTimeline, dialogInput, floatingPresentation, displayedFloatingTexts, false);
         for (let index = 0; index < 20; index++) frame(30, 30);
         const pointer = event(shield); shield.props.onPointerup(pointer);
         expect(pointer.preventDefault).toHaveBeenCalled(); expect(pointer.stopPropagation).toHaveBeenCalled();

@@ -379,9 +379,14 @@ class CanvasFixture extends EventTarget {
   }
 }
 class ApplicationFixture {
+  static latest: ApplicationFixture;
+  constructor() { ApplicationFixture.latest = this; }
   stage = new Pixi.Container();
   canvas = new CanvasFixture();
-  ticker = { add() {} };
+  ticker = {
+    frame: undefined as undefined | ((time: { elapsedMS: number; deltaMS: number }) => void),
+    add(frame: (time: { elapsedMS: number; deltaMS: number }) => void) { this.frame = frame; }
+  };
   renderer = {
     screen: { width: 800, height: 400 },
     resize(width: number, height: number) {
@@ -580,3 +585,111 @@ it.each([[320,844],[390,844],[800,991],[1440,900]])(
       displaySettings.immersiveMode = oldImmersive;
     }
   }, 20000);
+
+it('seven-module canvas expires frozen combat labels during ACK/drawers and clears the actual sprite pool', async () => {
+  const g = start(cases[0]!.extensions, false), dialogs = new DialogService();
+  const removeAcks = bindDialogAcknowledgments(dialogs, g, logger);
+  const paused = ref(false);
+  const Canvas = await createSfcHarness({ baseURL: import.meta.url, stubs: {
+    'pixi.js': { ...Pixi, Text: TextFixture, Application: ApplicationFixture },
+    '../engine/Core/Game': { activeGame: g }
+  } }).load('../components/GameCanvas.vue');
+  const app = renderer.createApp({ setup: () => () => Vue.h(Canvas, { pauseAutomaticActions: paused.value }) });
+  const read = () => JSON.parse((window as any).render_game_to_text()).floatingTexts;
+  const sprites = (): TextFixture[] => {
+    const walk = (c: Pixi.Container): Pixi.Container[] => [c, ...c.children.flatMap(walk)];
+    return walk(ApplicationFixture.latest.stage).filter(c => c instanceof TextFixture && c.text === '未命中' && c.visible) as TextFixture[];
+  };
+  try {
+    app.mount(node('root')); for (let n = 0; n < 12; n++) await Vue.nextTick();
+    g.spawnFloatingText('未命中', g.player.x, g.player.y);
+    logger.log('hold first frame', '#fff', { acknowledge: true });
+    logger.log('same effect, later frame', '#fff', { acknowledge: true });
+    const before = state(g);
+    (window as any).advanceTime(1);
+    expect(read()).toHaveLength(1); expect(sprites()).toHaveLength(1);
+    const y = sprites()[0]!.y;
+    paused.value = true; g.isInventoryOpen = true; await Vue.nextTick();
+    (window as any).advanceTime(250);
+    expect(sprites()[0]!.alpha).toBeCloseTo(0.5, 1); expect(sprites()[0]!.y).toBeLessThan(y);
+    (window as any).advanceTime(300);
+    expect(read()).toEqual([]); expect(sprites()).toEqual([]); expect(g.floatingTexts).toEqual([]);
+    expect(state(g)).toEqual(before);
+    const timeline = presentationTimeline(g)!;
+    timeline.acknowledge(timeline.acknowledgment!); (window as any).advanceTime(1);
+    expect(read()).toEqual([]); expect(sprites()).toEqual([]);
+    timeline.acknowledge(timeline.acknowledgment!);
+    paused.value = false; g.isInventoryOpen = false; await Vue.nextTick();
+    g.spawnFloatingText('未命中', g.player.x, g.player.y, '#aaa', 60);
+    (window as any).advanceTime(1); (window as any).advanceTime(550);
+    expect(sprites()).toHaveLength(1);
+    (window as any).advanceTime(500); expect(sprites()).toEqual([]);
+    // Pixi clamps deltaMS on a slow frame. Cosmetic expiry uses elapsed wall
+    // display time so low FPS cannot stretch a 500ms label over many turns.
+    g.spawnFloatingText('未命中', g.player.x, g.player.y);
+    (window as any).advanceTime(1); expect(sprites()).toHaveLength(1);
+    ApplicationFixture.latest.ticker.frame!({ elapsedMS: 1000, deltaMS: 100 });
+    expect(sprites()).toEqual([]);
+    g.spawnFloatingText('未命中', g.player.x, g.player.y);
+    (window as any).advanceTime(1); expect(sprites()).toHaveLength(1);
+    g.startNewGame({ seed: '7306', mode: 'wizard' });
+    (window as any).advanceTime(1); expect(read()).toEqual([]); expect(sprites()).toEqual([]);
+  } finally { app.unmount(); removeAcks(); dialogs.dispose(); g.disposeRecording(); }
+}, 20000);
+
+it('DEV wait uses real canvas input, awaits animation, and reports ACK/modal/overlay/lock blockers without extra commands', async () => {
+  const g = start(cases[0]!.extensions, false), modal = ref(false), dialogs = new DialogService();
+  prepareCanvasInputScene(g, true);
+  const removeAcks = bindDialogAcknowledgments(dialogs, g, logger), removeCommands = bindDialogCommands(dialogs, g);
+  const Canvas = await createSfcHarness({ baseURL: import.meta.url, stubs: {
+    'pixi.js': { ...Pixi, Text: TextFixture, Application: ApplicationFixture },
+    '../engine/Core/Game': { activeGame: g }
+  } }).load('../components/GameCanvas.vue');
+  const app = renderer.createApp({ setup: () => () => Vue.h(Canvas, { displayModalOpen: modal.value }) });
+  try {
+    app.mount(node('root')); for (let n = 0; n < 12; n++) await Vue.nextTick();
+    const debug = (window as any).debug_game;
+    expect(debug?.wait).toBeTypeOf('function');
+    const turn = g.absoluteTurnNumber, count = g.recordedInputEvents.length;
+    g.executeCommand('wait');
+    expect(g.isAdvancing).toBe(true); expect(g.absoluteTurnNumber).toBe(turn);
+    g.executeCommand('wait'); // locked: no second command
+    (window as any).advanceTime(100);
+    expect(g.absoluteTurnNumber).toBeGreaterThan(turn); expect(g.recordedInputEvents.length).toBe(count + 1);
+    for (let i = 0; i < 2; i++) {
+      const before = g.stats.turns, commands = g.recordedInputEvents.length;
+      const pending = debug.wait(); await Promise.resolve();
+      (window as any).advanceTime(100);
+      const result = await pending;
+      expect(result.after.turn).toBe(before + 1); expect(g.recordedInputEvents.length).toBe(commands + 1);
+      expect(g.recordedInputEvents[g.recordedInputEvents.length - 1]!.action).toBe('wait');
+    }
+    const before = state(g);
+    logger.log('read before resting', '#fff', { acknowledge: true });
+    await expect(debug.wait()).rejects.toThrow('acknowledgment'); expect(state(g)).toEqual(before);
+    presentationTimeline(g)!.acknowledge(presentationTimeline(g)!.acknowledgment!);
+    modal.value = true; await Vue.nextTick();
+    await expect(debug.wait()).rejects.toThrow('display modal'); expect(state(g)).toEqual(before);
+    modal.value = false; await Vue.nextTick(); g.isInventoryOpen = true;
+    await expect(debug.wait()).rejects.toThrow('overlay'); expect(state(g)).toEqual(before); g.isInventoryOpen = false;
+    const lock = vi.spyOn(g, 'isInputLocked').mockReturnValue(true);
+    await expect(debug.wait()).rejects.toThrow('input locked'); expect(state(g)).toEqual(before); lock.mockRestore();
+    const food = g.player.inventory.items.find(item => item.consumableId === 'ration_of_food')!;
+    g.executeItemCommand('eat', food);
+    expect(g.hasPendingConfirmation).toBe(true);
+    const confirmationState = state(g), confirmation = g.pendingCommandConfirmation!;
+    await expect(debug.wait()).rejects.toThrow('confirmation'); expect(state(g)).toEqual(confirmationState);
+    expect(g.pendingCommandConfirmation).toBe(confirmation);
+    g.resolveCommandDecision(confirmation.token, false);
+    (window as any).advanceTime(100);
+    const timeoutBefore = g.recordedInputEvents.length;
+    await expect(debug.wait({ timeoutMs: 1 })).rejects.toThrow('timed out');
+    (window as any).advanceTime(100);
+    expect(g.recordedInputEvents.length).toBe(timeoutBefore + 1); // no retry after timeout
+    const pending = debug.wait(); await Promise.resolve();
+    await expect(debug.wait()).rejects.toThrow('another wait is pending');
+    (window as any).advanceTime(100); await pending;
+    app.unmount(); expect((window as any).debug_game).toBeUndefined();
+    await expect(debug.wait()).rejects.toThrow('canvas disposed');
+  } finally { app.unmount(); removeCommands(); removeAcks(); dialogs.dispose(); g.disposeRecording(); }
+}, 20000);
