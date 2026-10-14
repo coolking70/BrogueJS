@@ -489,6 +489,18 @@
         "combat"
       ],
       "optional": []
+    },
+    "src/test/ext_phase5_ui_open.test.ts": {
+      "required": [
+        "combat",
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "narrative",
+        "settlement"
+      ],
+      "optional": []
     }
   }
 }

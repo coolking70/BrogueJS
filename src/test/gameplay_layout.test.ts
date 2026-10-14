@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { parse, compileStyle } from '@vue/compiler-sfc';
+import { parse as parseCss } from 'postcss';
+import { computeLayoutMode } from '../ui/layout';
 const source=(file:string)=>readFileSync(new URL('../'+file,import.meta.url),'utf8');
 describe('Expedition workspace presentation contract',()=>{
  it('keeps one canvas across glyph and immersive layouts with responsive panels and a replay row',()=>{
@@ -46,5 +49,48 @@ describe('Expedition workspace presentation contract',()=>{
   expect(source('engine/UI/MonsterGroups.ts')).toContain('sidebarEntityRows(game.player, game.grid, game.monsters, game.items, game.hoveredCell, game.depth)');
   expect(s).not.toMatch(/executeCommand|executeItemCommand|rng\./);
   expect(source('components/theme/ThemeHud.vue')).toContain('stats.stealthRange');
+ });
+});
+
+describe('seven-module compact map budget', () => {
+ const { descriptor } = parse(source('App.vue'));
+ const css = parseCss(descriptor.styles.map(style => compileStyle({
+  source: style.content, filename: 'App.vue', id: 'data-v-layout-test', scoped: true,
+ }).code).join('\n') + '\n' + source('assets/gameplay-layout.css'));
+ const portrait = 'html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode)';
+ const declaration = (selector: string, property: string) => {
+  let result: string | undefined;
+  css.walkRules(rule => {
+   if (rule.selectors.includes(selector)) rule.walkDecls(property, d => { result = d.value; });
+  });
+  return result;
+ };
+ it.each([[390,844],[320,844],[800,991],[1440,900]])('reserves map space at %i×%i without changing desktop tracks', (width,height) => {
+  const mode = computeLayoutMode(width!,height!);
+  if (mode === 'desktop') {
+   expect(declaration(portrait.replace('layout-portrait','layout-desktop'),'grid-template-rows'))
+    .toBe('auto auto minmax(0,1fr) auto auto');
+   return;
+  }
+  expect(mode).toBe('portrait');
+  const tracks = declaration(portrait,'grid-template-rows')!;
+  expect(tracks).toBe('fit-content(22%) fit-content(10%) minmax(40%,1fr) fit-content(10%) fit-content(18%)');
+  const caps = [...tracks.matchAll(/fit-content\((\d+)%\)/g)].map(m => Number(m[1])/100);
+  // Even arbitrarily tall module content must fit these four track caps. The
+  // compiled production CSS, not module counts/text lengths, defines the budget.
+  const reserved = height! * (Number(/minmax\((\d+)%/.exec(tracks)![1])/100);
+  expect(height! - caps.reduce((sum,cap)=>sum+height!*cap,0)).toBeCloseTo(reserved);
+  expect(reserved).toBeGreaterThanOrEqual(height!*0.4);
+  for (const area of ['vitals','log','skills','cmd','pad']) {
+   expect(declaration(`${portrait} > .area-${area}`,'min-height')).toBe('0');
+   expect(declaration(`${portrait} > .area-${area}`,'overflow')).toBe('auto');
+  }
+ });
+ it('keeps secondary bars and every command reachable by scrolling', () => {
+  expect(declaration(`${portrait} > .area-skills`,'display')).toBe('flex');
+  expect(declaration(`${portrait} > .area-skills > *`,'flex')).toBe('0 0 100%');
+  expect(declaration(`${portrait} > .area-cmd`,'display')).toBe('flex');
+  expect(declaration(`${portrait} > .area-cmd > .cmd-btn`,'min-height')).toBe('44px');
+  expect(declaration(`${portrait} > .area-cmd > .cmd-btn`,'flex')).toBe('0 0 auto');
  });
 });

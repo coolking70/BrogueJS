@@ -24,3 +24,17 @@ html[data-ui-concept=glyph] .drawer-panel{background:var(--th-panel);padding:0;o
 html[data-ui-concept=glyph] .app-layout .replay-controls{position:relative;grid-area:cmd;inset:auto;transform:none;min-width:0;width:100%;margin:0;padding:9px 14px;border-radius:var(--th-r);z-index:30}
 .replay-controls .controls-row{flex-wrap:wrap}
 @media(max-width:700px),(max-height:500px){.drawer-journal .drawer-panel{width:100%;height:70dvh!important}.message-journal{padding:18px}}
+
+/* Bound optional rows by the actual shell height (also when a camp drawer
+ * reserves space). Zero minimums let the tracks shrink; their contents remain
+ * reachable through scrolling instead of taking the map's reserved 40%. */
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode) > .area-vitals,
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode) > .area-log,
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode) > .area-skills,
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode) > .area-cmd,
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode) > .area-pad{min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;box-sizing:border-box}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode) > .area-skills{display:flex;align-items:start;gap:0}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode) > .area-skills > *{flex:0 0 100%;min-width:0}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode) > .area-cmd{display:flex!important;align-items:start;align-content:start}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode) > .area-cmd > .cmd-btn{flex:0 0 auto;min-width:60px;min-height:44px}
+html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode) > .area-pad{align-self:stretch;align-content:start}

@@ -1,0 +1,482 @@
+import '../i18n';
+import { it, expect, afterEach, beforeAll, afterAll, vi } from 'vitest';
+import * as Vue from 'vue';
+import * as Pixi from 'pixi.js';
+import { effectScope, ref } from 'vue';
+import I18NextVue from 'i18next-vue';
+import i18next from 'i18next';
+import { createSfcHarness } from './support/sfcHarness';
+type N = {
+  tag: string;
+  text: string;
+  props: Record<string, any>;
+  children: N[];
+  parent: N | null;
+  focus(): void;
+  clientWidth: number;
+  clientHeight: number;
+  getBoundingClientRect(): { left: number; top: number; right: number; bottom: number };
+  appendChild(): void;
+  closest(): null;
+};
+const node = (tag = '', text = ''): N =>
+  Vue.markRaw({
+    tag,
+    text,
+    props: {},
+    children: [],
+    parent: null,
+    focus() {},
+    clientWidth: 800,
+    clientHeight: 400,
+    getBoundingClientRect() {
+      return { left: 0, top: 0, right: this.clientWidth, bottom: this.clientHeight };
+    },
+    appendChild() {},
+    closest() {
+      return null;
+    }
+  });
+const body = node('body');
+const renderer = Vue.createRenderer<N, N>({
+  createElement: (tag) => node(tag),
+  createText: (t) => node('', t),
+  createComment: () => node(),
+  insert(child, parent, anchor) {
+    child.parent?.children.splice(child.parent.children.indexOf(child), 1);
+    const i = anchor ? parent.children.indexOf(anchor) : -1;
+    parent.children.splice(i < 0 ? parent.children.length : i, 0, child);
+    child.parent = parent;
+  },
+  remove(child) {
+    child.parent?.children.splice(child.parent.children.indexOf(child), 1);
+    child.parent = null;
+  },
+  setText(n, t) {
+    n.text = t;
+  },
+  setElementText(n, t) {
+    n.text = t;
+    n.children = [];
+  },
+  parentNode: (n) => n.parent,
+  nextSibling: (n) => n.parent?.children[n.parent.children.indexOf(n) + 1] ?? null,
+  patchProp(n, k, _old, v) {
+    n.props[k] = v;
+  },
+  querySelector: () => body
+});
+
+import { Game } from '../engine/Core/Game';
+import { prepareModuleCreation, buildModuleCreationCommands } from '../ext/ui/creation';
+import {
+  loadGrowthCreationContext,
+  createGrowthCreationDraft,
+  buildGrowthCreationCommands
+} from '../ext/modules/growth/view';
+import { useSettlementUi } from '../ext/modules/settlement/ui/useSettlementUi';
+import { registerModuleMapSelection, moduleMapSelection } from '../ui/moduleMapSelection';
+import { useModuleUi } from '../ext/ui/useModuleUi';
+import {
+  bindDialogAcknowledgments,
+  bindDialogCommands,
+  presentationTimeline
+} from '../ui/dialogAcknowledgments';
+import { logger } from '../engine/Systems/Logger';
+import { DialogService } from '../ui/dialogService';
+import { scene, establish } from '../ext/modules/settlement/tests/helpers';
+import { useCraftingUi } from '../ext/modules/crafting/ui/useCraftingUi';
+import { useForagingUi } from '../ext/modules/foraging/ui/useForagingUi';
+import { useGrowthUi } from '../ext/modules/growth/ui/useGrowthUi';
+import type { ModuleUiHost, ModuleUiSession } from '../ext/ui/types';
+import { rng } from '../engine/Random';
+import { getNextEntityId } from '../entities/Creature';
+
+const cases = [
+  { extensions: ['combat', 'crafting', 'foraging', 'giants', 'growth', 'narrative', 'settlement'] },
+  { extensions: ['settlement'] }
+];
+beforeAll(() => {
+  vi.stubGlobal(
+    'window',
+    Object.assign(new EventTarget(), {
+      innerWidth: 800,
+      innerHeight: 991,
+      devicePixelRatio: 1,
+      location: { search: '' },
+      setTimeout: globalThis.setTimeout,
+      clearTimeout: globalThis.clearTimeout,
+      setInterval: globalThis.setInterval,
+      clearInterval: globalThis.clearInterval
+    })
+  );
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      disconnect() {}
+    }
+  );
+  vi.stubGlobal('navigator', { vibrate() {} });
+  vi.stubGlobal('document', {
+    hidden: false,
+    fonts: { load: async () => [] },
+    documentElement: { dataset: {} },
+    activeElement: null,
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener() {},
+    removeEventListener() {}
+  });
+});
+afterAll(async () => {
+  (await import('../ui/dialogInput')).dialogInput.dispose();
+  vi.unstubAllGlobals();
+});
+afterEach(() => {
+  moduleMapSelection.value = null;
+  vi.restoreAllMocks();
+});
+const harness = createSfcHarness({ baseURL: import.meta.url });
+const panels = {
+  settlement: () => harness.load('../ext/modules/settlement/ui/SettlementPanel.vue'),
+  crafting: () => harness.load('../ext/modules/crafting/ui/CraftingPanel.vue'),
+  foraging: () => harness.load('../ext/modules/foraging/ui/ForagingPanel.vue'),
+  growth: () => harness.load('../ext/modules/growth/ui/GrowthCharacterPanel.vue')
+};
+function start(modules: string[], camp: boolean) {
+  const plan = prepareModuleCreation(modules),
+    selected = new Map<string, readonly string[]>();
+  if (modules.includes('growth')) {
+    const c = loadGrowthCreationContext();
+    selected.set('growth', buildGrowthCreationCommands(c, createGrowthCreationDraft(c.pack))!);
+  }
+  const g = new Game();
+  g.startNewGame({
+    seed: '7306',
+    mode: 'wizard',
+    ruleSet: 'extended',
+    extensions: modules,
+    initialCommands: buildModuleCreationCommands(plan, selected)
+  });
+  g.animationEnabled = false;
+  if (camp) {
+    // Keep real startup/creation, then stage a legal camp scene. Establish itself
+    // remains a real paid public command; no fake module view or camp DTO.
+    scene(g);
+    g.onConfirmRequest = () => true;
+    g.executeCommand(
+      'ext:command',
+      JSON.stringify({ module: 'settlement', action: 'establish', payload: establish(g) })
+    );
+    expect(g.extensionRuntime!.worldCampState('settlement').camps).toHaveLength(1);
+  }
+  return g;
+}
+function state(g: Game) {
+  return {
+    world: structuredClone(g.world5),
+    random: rng.getState(),
+    id: getNextEntityId(),
+    events: g.recordedInputEvents.length,
+    turn: g.absoluteTurnNumber
+  };
+}
+function host(g: Game, dialogs: DialogService): ModuleUiHost {
+  return {
+    game: () => g,
+    tick: ref(0),
+    immersive: ref(false),
+    dialogs,
+    selectMapCells: registerModuleMapSelection,
+    canOpenPanel: () => true,
+    beforeOpenPanel() {},
+    afterClosePanel() {}
+  };
+}
+async function renderPanel(session: ModuleUiSession, Panel: Vue.Component, dialogs: DialogService) {
+  const app = renderer
+    .createApp({
+      setup: () => () => (session.panel.value ? Vue.h(Panel, session.panel.value.props) : null)
+    })
+    .use(I18NextVue, { i18next });
+  const root = node('root');
+  app.mount(root);
+  await Vue.nextTick();
+  expect(body.children.some((n) => n.tag === 'section' || n.tag === 'div')).toBe(true);
+  try {
+    for (let i = 0; i < 10; i++) {
+      dialogs.sync();
+      session.refresh();
+      await Vue.nextTick();
+    }
+  } finally {
+    app.unmount();
+  }
+}
+for (const { extensions } of cases)
+  for (const camp of [false, true]) {
+    it(`camp panel seed 7306: ${extensions.join('+')}, camp=${camp}`, async () => {
+      const g = start(extensions, camp),
+        scope = effectScope(),
+        dialogs = new DialogService();
+      const Panel = await panels.settlement(),
+        before = state(g),
+        startTime = performance.now();
+      try {
+        const session = scope.run(() => useSettlementUi(host(g, dialogs)))!;
+        session.commands.value[0]!.invoke();
+        expect(session.panelOpen.value).toBe(true);
+        expect(moduleMapSelection.value?.cells.length ?? 0).toBe(camp ? 0 : 81);
+        await renderPanel(session, Panel, dialogs);
+        const props = session.panel.value!.props as any;
+        props.onTab('build');
+        props.onCursor(1, 0);
+        props.onAppend();
+        expect(moduleMapSelection.value?.cells.length).toBe(2);
+        props.onTab('residents');
+        await renderPanel(session, Panel, dialogs);
+        session.close();
+        expect(moduleMapSelection.value).toBeNull();
+        const elapsed = performance.now() - startTime;
+        process.stdout.write(
+          JSON.stringify({ panel: 'settlement', modules: extensions, camp, elapsedMs: elapsed }) +
+            '\n'
+        );
+        expect(elapsed).toBeLessThan(1000);
+        expect(state(g)).toEqual(before);
+      } finally {
+        scope.stop();
+        dialogs.dispose();
+        g.disposeRecording();
+      }
+    }, 20000);
+  }
+it.each(['crafting', 'foraging', 'growth'] as const)(
+  'all modules seed 7306 opens %s panel',
+  async (id) => {
+    const g = start(cases[0]!.extensions, false),
+      scope = effectScope(),
+      dialogs = new DialogService();
+    const Panel = await panels[id](),
+      before = state(g),
+      startTime = performance.now();
+    try {
+      const use = { crafting: useCraftingUi, foraging: useForagingUi, growth: useGrowthUi }[id];
+      const session = scope.run(() => use(host(g, dialogs), async () => Panel))!;
+      session.commands.value[0]!.invoke();
+      for (let i = 0; i < 10 && !session.panelOpen.value; i++) await Vue.nextTick();
+      expect(session.panelOpen.value).toBe(true);
+      await renderPanel(session, Panel, dialogs);
+      session.close();
+      expect(session.panelOpen.value).toBe(false);
+      const elapsed = performance.now() - startTime;
+      process.stdout.write(JSON.stringify({ panel: id, elapsedMs: elapsed }) + '\n');
+      expect(elapsed).toBeLessThan(1000);
+      expect(state(g)).toEqual(before);
+    } finally {
+      scope.stop();
+      dialogs.dispose();
+      g.disposeRecording();
+    }
+  },
+  20000
+);
+
+it('shared seven-module shell settles after opening camp through the real command bar', async () => {
+  const g = start(cases[0]!.extensions, false),
+    scope = effectScope(),
+    dialogs = new DialogService();
+  const h = host(g, dialogs);
+  let ui: ReturnType<typeof useModuleUi>;
+  h.beforeOpenPanel = () => ui.closePanels();
+  h.isPresentationBusy = () => !!presentationTimeline(g)?.busy || !!logger.pendingAcknowledgment;
+  h.canOpenPanel = () =>
+    !(
+      g.interactionActive ||
+      g.isInventoryOpen ||
+      g.isThrowing ||
+      g.pendingArcana ||
+      g.pendingEnchantment ||
+      g.pendingIdentify ||
+      g.pendingUseConfirm ||
+      logger.pendingAcknowledgment ||
+      g.referenceScreen ||
+      g.isGameOver ||
+      g.isAdvancing ||
+      g.isInputLocked()
+    );
+  h.canPresentInteraction = () => !g.isInventoryOpen && !g.referenceScreen && !g.pendingArcana;
+  h.canOpenInteraction = () =>
+    !ui.panelOpen.value && !dialogs.current && !presentationTimeline(g)?.busy;
+  ui = scope.run(() => useModuleUi(h))!;
+  ui.refresh();
+  const removeCommands = bindDialogCommands(dialogs, g),
+    removeAcks = bindDialogAcknowledgments(dialogs, g, logger);
+  const Bar = await harness.load('../components/CommandBar.vue'),
+    Panel = await panels.settlement();
+  const root = node('root'),
+    before = state(g);
+  const app = renderer
+    .createApp({
+      setup: () => () =>
+        Vue.h('div', [
+          Vue.h(Bar, { mode: 'portrait', moduleCommands: ui.commands.value }),
+          ...ui.panelSlots.value.map((slot) => Vue.h(Panel, slot.props))
+        ])
+    })
+    .use(I18NextVue, { i18next });
+  const walk = (n: N): N[] => [n, ...n.children.flatMap(walk)];
+  try {
+    app.mount(root);
+    await Vue.nextTick();
+    const button = walk(root).find((n) => n.props['data-action'] === 'settlement.open')!;
+    expect(button).toBeDefined();
+    expect(button.props.disabled).toBe(false);
+    const t = performance.now();
+    button.props.onClick();
+    await Vue.nextTick();
+    expect(ui.panelOpen.value).toBe(true);
+    for (let k = 0; k < 10; k++) {
+      dialogs.sync();
+      ui.refresh();
+      await Vue.nextTick();
+    }
+    expect(performance.now() - t).toBeLessThan(1000);
+    expect(state(g)).toEqual(before);
+  } finally {
+    app.unmount();
+    scope.stop();
+    removeCommands();
+    removeAcks();
+    dialogs.dispose();
+    g.disposeRecording();
+  }
+}, 20000);
+
+class TextFixture extends Pixi.Container {
+  text: string;
+  style: Pixi.TextStyle;
+  anchor = new Pixi.Point();
+  resolution = 1;
+  constructor(options: { text: string; style: Pixi.TextStyle }) {
+    super();
+    this.text = options.text;
+    this.style = options.style;
+  }
+}
+class CanvasFixture extends EventTarget {
+  style: Record<string, string> = {};
+  setPointerCapture() {}
+  releasePointerCapture() {}
+  getBoundingClientRect() {
+    return { left: 0, top: 0, right: 800, bottom: 400 };
+  }
+}
+class ApplicationFixture {
+  stage = new Pixi.Container();
+  canvas = new CanvasFixture();
+  ticker = { add() {} };
+  renderer = {
+    screen: { width: 800, height: 400 },
+    resize(width: number, height: number) {
+      this.screen = { width, height };
+    }
+  };
+  async init() {}
+  destroy() {
+    this.stage.destroy({ children: true });
+  }
+}
+for (const { extensions } of cases)
+  for (const camp of [false, true]) {
+    it(`actual GameCanvas camp: ${extensions.join('+')}, camp=${camp}`, async () => {
+      const g = start(extensions, camp),
+        scope = effectScope(),
+        dialogs = new DialogService(),
+        h = host(g, dialogs);
+      const { dialogInput } = await import('../ui/dialogInput');
+      let ui: ReturnType<typeof useModuleUi>;
+      h.beforeOpenPanel = () => ui.closePanels();
+      ui = scope.run(() => useModuleUi(h))!;
+      ui.refresh();
+      const remove = dialogInput.attach({ service: dialogs, contains: () => false, hint() {} });
+      const removeCommands = bindDialogCommands(dialogs, g),
+        removeAcks = bindDialogAcknowledgments(dialogs, g, logger);
+      const Canvas = await createSfcHarness({
+        baseURL: import.meta.url,
+        stubs: {
+          'pixi.js': { ...Pixi, Text: TextFixture, Application: ApplicationFixture },
+          '../engine/Core/Game': { activeGame: g }
+        }
+      }).load('../components/GameCanvas.vue');
+      const Panel = await panels.settlement(),
+        root = node('root');
+      const app = renderer
+        .createApp({
+          setup: () => () =>
+            Vue.h('div', [
+              Vue.h(Canvas, { pauseAutomaticActions: ui.panelOpen.value }),
+              ...ui.panelSlots.value.map((slot) => Vue.h(Panel, slot.props))
+            ])
+        })
+        .use(I18NextVue, { i18next });
+      try {
+        app.mount(root);
+        for (let n = 0; n < 12; n++) await Vue.nextTick();
+        expect((window as any).advanceTime).toBeTypeOf('function');
+        const before = state(g),
+          t = performance.now();
+        const read = g.extensionRuntime!.readModuleView.bind(g.extensionRuntime);
+        let depth = 0,
+          maxDepth = 0,
+          reads = 0;
+        vi.spyOn(g.extensionRuntime!, 'readModuleView').mockImplementation((...args) => {
+          depth++;
+          maxDepth = Math.max(maxDepth, depth);
+          reads++;
+          try {
+            return read(...args);
+          } finally {
+            depth--;
+          }
+        });
+        ui.commands.value.find((c) => c.id === 'settlement.open')!.invoke();
+        await Vue.nextTick();
+        for (let n = 0; n < 10; n++) {
+          g.onRenderRequested?.();
+          (window as any).advanceTime(1);
+          await Vue.nextTick();
+        }
+        expect(ui.panelOpen.value).toBe(true);
+        expect(moduleMapSelection.value?.cells.length ?? 0).toBe(camp ? 0 : 81);
+        expect(maxDepth).toBe(1);
+        expect(reads).toBeLessThan(1000);
+        const elapsed = performance.now() - t;
+        process.stdout.write(
+          JSON.stringify({
+            canvas: true,
+            modules: extensions,
+            camp,
+            elapsedMs: elapsed,
+            reads,
+            maxDepth
+          }) + '\n'
+        );
+        expect(elapsed).toBeLessThan(1000);
+        expect(state(g)).toEqual(before);
+        ui.closePanels();
+        await Vue.nextTick();
+        expect(ui.panelOpen.value).toBe(false);
+        expect(moduleMapSelection.value).toBeNull();
+      } finally {
+        app.unmount();
+        scope.stop();
+        remove();
+        removeCommands();
+        removeAcks();
+        dialogs.dispose();
+        g.disposeRecording();
+      }
+    }, 20000);
+  }

@@ -243,3 +243,10 @@ Node24、3GiB、2workers，resident_sources + settlement_runtime：2文件5测�
 - 2026-10-08 5D1 coordinated remainder：当前239天然俘虏原输入、23seek含0、四未改239/240原录全部当前源通过；C1与触控级联独立v6源码关闭。协议/schema黄金完成单变量与原捕获归因，仅crafting final.digest/三giants extensionsHash；同源UI14、边界、types、实际build、实际npm drift8项全部通过。PERF-READY已交准备，未计时；新自生956正常fresh复现待正式来源/最终接入，父级浏览器/quiet性能/最后独立验收未完成。未commit/push。
 
 2026-10-08 I57：父级正式安静性能实际失败（16新增P95 67.885542ms；64peak310.606708ms）。原五结果不覆盖。已完成同真实场景CPU profile归因，开始最小生产优化；并行浏览器期间只诊断不验收计时。自然956原输入/关键根已接入fixture和准确core/day-food测试，旧饥饿/实际crop退款尾段保留为明确controlled规则案例，尚未运行最终长回放。完整5D1继续未关闭。
+
+- 2026-10-14：执行 p5-ui-fix.task.md，修复营地面板卡死及七模块窄屏布局；只跑相关测试、boundary、types/build，不提交。
+
+- 2026-10-14 P5 UI 修复完成：PresentationTimeline 同值 checkpoint 恢复不再 notify，阻断只读营地配方查询恢复期间的 dialog source 重入；真实 GameCanvas CPU/SFC 四组合回归通过，单生产文件反事实重现七模块两个打开失败和 stat 属性回滚异常。保留事务守卫及真正 ACK 回滚通知。
+- P2：portrait 模块网格给地图至少 shell 高度 40%，次要区域有界滚动，子区域排列归共享 gameplay-layout.css，原 App 网格守卫未改。390×844、320×844、800×991 与 1440×900 编译样式／布局合同验证完成。
+- 门禁：相关首轮 19 文件 714 pass / 1 布局守卫 fail（无 skip/todo/unhandled）；收尾后受影响 2 文件 47 pass，关闭该失败；最终 boundary/依赖、vue-tsc、build、diff-check exit 0。未全量、未提交。报告 docs/ext/phase5-ui-fix.report.md；日志 /tmp/p5-ui-*.log，不累计重叠结果。
+- 浏览器仍待维护者抽样：Playwright Chromium MachPort 权限错误；原生 Chrome 控制被自动审批拒绝，没有本候选截图／真机验证。未把另一工作树页面当作本候选结果。无已确认未修复的本任务 headless/SFC 缺陷。

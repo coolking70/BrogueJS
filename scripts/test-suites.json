@@ -93,6 +93,7 @@
     "src/test/ext_optional_queries.test.ts",
     "src/test/ext_optional_rewards.test.ts",
     "src/test/ext_part_break_protocol.test.ts",
+    "src/test/ext_phase5_ui_open.test.ts",
     "src/test/ext_placement_group_runtime.test.ts",
     "src/test/ext_prepared_controlled_commands.test.ts",
     "src/test/ext_recording_async.test.ts",

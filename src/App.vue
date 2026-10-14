@@ -535,7 +535,7 @@ const handleReturnToTitle = async () => {
 .module-bars{grid-area:skills;min-width:0;z-index:31}
 /* Whole-selector :global preserves grid scope after Vue's SFC compilation. */
 :global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-desktop.has-module-bars:not(.immersive-mode)){grid-template-rows:auto auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals log' 'vitals map' 'near map' 'near skills' 'near cmd'!important}
-:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode)){grid-template-rows:auto auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals vitals' 'log log' 'map map' 'skills skills' 'cmd pad'!important}
+:global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-portrait.has-module-bars:not(.immersive-mode)){grid-template-rows:fit-content(22%) fit-content(10%) minmax(40%,1fr) fit-content(10%) fit-content(18%)!important;grid-template-areas:'vitals vitals' 'log log' 'map map' 'skills skills' 'cmd pad'!important}
 :global(html[data-ui-concept=glyph] .app-layout.theme-shell.layout-landscape.has-module-bars:not(.immersive-mode)){grid-template-rows:auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals log pad' 'vitals map pad' 'vitals skills pad' 'vitals cmd pad'!important}
 :global(html[data-ui-concept=glyph] .app-layout.theme-shell.immersive-mode.has-module-bars){grid-template-rows:auto minmax(0,1fr) auto auto!important;grid-template-areas:'vitals' 'map' 'skills' 'log'!important}
 

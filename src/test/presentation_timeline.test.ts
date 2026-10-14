@@ -313,6 +313,32 @@ describe('extension-neutral world marker projection', () => {
 
 
 describe('transactional presentation rollback', () => {
+    it('does not re-enter dialog projections when a read-only checkpoint is restored', () => {
+        const game = createHeadlessGame(33421);
+        const { service, timeline } = mount(game);
+        logger.log('committed warning', '#fff', { acknowledge: true });
+        const before = timeline.diagnostics;
+        const frame = timeline.projection;
+        const sync = vi.spyOn(service, 'sync');
+        const outer = logger.checkpoint(), inner = logger.checkpoint();
+        inner(); outer(); outer();
+        expect(sync).not.toHaveBeenCalled();
+        expect(timeline.diagnostics).toEqual(before);
+        expect(timeline.projection).toBe(frame);
+    });
+    it('still notifies dialog sources when rollback removes a speculative acknowledgment', () => {
+        const game = createHeadlessGame(33421);
+        const { service, timeline } = mount(game);
+        const restore = logger.checkpoint();
+        logger.log('speculative warning', '#fff', { acknowledge: true });
+        expect(service.current?.kind).toBe('acknowledgment');
+        const sync = vi.spyOn(service, 'sync');
+        restore();
+        expect(sync).toHaveBeenCalledOnce();
+        expect(service.current).toBeUndefined();
+        expect(timeline.busy).toBe(false);
+        expect(logger.pendingAcknowledgment).toBeUndefined();
+    });
     it('restores frozen acknowledgment identity and the queued presentation after a failed producer', () => {
         const game = createHeadlessGame(33421);
         setupDialogD3Scene(game, false);

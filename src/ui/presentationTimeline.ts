@@ -69,9 +69,16 @@ export class PresentationTimeline {
         };
         const events = this.events.slice();
         return () => {
+            // Read-only capability guards also restore checkpoints. Publishing
+            // an unchanged timeline re-enters dialog sources (and their guarded
+            // projections) in the middle of the enclosing world restoration.
+            const changed = (Object.keys(saved) as (keyof typeof saved)[])
+                .some(key => this[key] !== saved[key])
+                || this.events.length !== events.length
+                || this.events.some((event, index) => event !== events[index]);
             Object.assign(this, saved);
             this.events = events.slice();
-            this.notify();
+            if (changed) this.notify();
         };
     }
     private notify(): void { try { this.changed(); } catch { /* no business exceptions */ } }
