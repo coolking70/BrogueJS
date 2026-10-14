@@ -264,12 +264,24 @@ function layeredTerrainAppearance(cell: Cell, depth: number, layers = cell.layer
 }
 
 /** Terrain portion of CE's rememberedAppearance, before unseen entities are overlaid. */
-export function memoryTerrainAppearance(cell: Cell, depth: number): TerrainVisual {
-    const visual = layeredTerrainAppearance(cell, depth, cell.rememberedLayers);
-    if (cell.rememberedTerrain === TerrainType.STAIRS_UP || cell.rememberedTerrain === TerrainType.STAIRS_DOWN || cell.rememberedTerrain === TerrainType.DUNGEON_PORTAL) {
-        return { ...visual, color: '#ffffff', bgColor: visual.bgColor === null ? null : 0x222222 };
+export function memoryTerrainAppearance(cell: Cell, _depth: number): TerrainVisual {
+    // Memory always replaces both colors with fixed dim/stair colors below.
+    // Select the same glyph and background presence without calculating depth
+    // gradients which would immediately be discarded. GAS remains excluded.
+    let char = ' ', priority = Infinity, background = false;
+    for (let layer = 0; layer < cell.rememberedLayers.length; layer++) {
+        if (layer === DungeonLayer.GAS) continue;
+        const terrain = cell.rememberedLayers[layer]!;
+        if (terrain === TerrainType.NOTHING) continue;
+        const base = TERRAIN_APPEARANCES[terrain];
+        if (!base) throw new Error(`Missing CE appearance for TerrainType ${terrain}`);
+        if (base.char && DRAW_PRIORITY[terrain] < priority) {
+            char = base.char; priority = DRAW_PRIORITY[terrain];
+        }
+        if (base.bgColor !== null || base.backDynamic) background = true;
     }
-    return { ...visual, color: '#333333', bgColor: visual.bgColor === null ? null : 0x111111 };
+    const stairs = cell.rememberedTerrain === TerrainType.STAIRS_UP || cell.rememberedTerrain === TerrainType.STAIRS_DOWN || cell.rememberedTerrain === TerrainType.DUNGEON_PORTAL;
+    return { char, color: stairs ? '#ffffff' : '#333333', bgColor: background ? (stairs ? 0x222222 : 0x111111) : null };
 }
 
 /**

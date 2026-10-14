@@ -464,3 +464,26 @@ describe('G-1 游戏级：存档往返 / 房间基线还原清气', () => {
         expectMirrorMatchesTruth(game.grid, game.environment);
     });
 });
+
+
+it('reuses gas scratch buffers with the same successive-pass world and RNG as fresh managers', () => {
+    const initial = rng.getState();
+    const run = (reuse: boolean) => {
+        rng.setState(initial);
+        rng.seedRandomGenerator(29015);
+        const grid = roomGrid(); let manager = managerOver(grid);
+        manager.addGas(4, 4, GasType.POISON, 200);
+        manager.addGas(6, 5, GasType.CONFUSION, 90);
+        let volumes: Uint16Array | undefined;
+        for (let i = 0; i < 8; i++) {
+            if (!reuse) manager = managerOver(grid);
+            if (i === 3) grid.setTerrain(4, 4, C.WALL);
+            manager.updateGases();
+            if (reuse && volumes) expect((manager as any).gasVolumes).toBe(volumes);
+            volumes = (manager as any).gasVolumes;
+            expectMirrorMatchesTruth(grid, manager);
+        }
+        return { grid: JSON.stringify(grid), rng: rng.getState(), mirror: manager.gasGrid };
+    };
+    expect(run(true)).toEqual(run(false));
+});

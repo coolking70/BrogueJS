@@ -59,9 +59,10 @@ const NB_DIRS: ReadonlyArray<readonly [number, number]> = [
     [0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1],
 ];
 
+const mapWidth = DCOLS, mapHeight = DROWS;
 function inMap(x: number, y: number): boolean {
     // CE Rogue.h:1241 coordinatesAreInMap：含边界的全图判定
-    return x >= 0 && x < DCOLS && y >= 0 && y < DROWS;
+    return x >= 0 && x < mapWidth && y >= 0 && y < mapHeight;
 }
 
 /**
@@ -282,36 +283,37 @@ function checkLoopinessCell(loop: boolean[][], x: number, y: number): boolean {
  * 避免大开阔区的深递归。
  */
 function stripNonLoopyCells(loop: boolean[][]): void {
-    const stack: Array<[number, number]> = [];
-    for (let x = DCOLS - 1; x >= 0; x--) {
-        for (let y = DROWS - 1; y >= 0; y--) stack.push([x, y]);
+    // Same DFS order, numeric cells instead of allocating a pair per visit.
+    const stack: number[] = [];
+    for (let x = mapWidth - 1; x >= 0; x--) {
+        for (let y = mapHeight - 1; y >= 0; y--) stack.push(x * mapHeight + y);
     }
     while (stack.length > 0) {
-        const [x, y] = stack.pop()!;
+        const index = stack.pop()!, x = Math.floor(index / mapHeight), y = index % mapHeight;
         if (!checkLoopinessCell(loop, x, y)) continue;
         for (let d = 7; d >= 0; d--) {
-            const nx = x + CDIRS[d]![0]!;
-            const ny = y + CDIRS[d]![1]!;
-            if (inMap(nx, ny)) stack.push([nx, ny]); // CE 108-114 的递归复查
+            const nx = x + CDIRS[d]![0]!, ny = y + CDIRS[d]![1]!;
+            if (inMap(nx, ny)) stack.push(nx * mapHeight + ny);
         }
     }
 }
 
-/**
- * CE Architect.c:121-136 auditLoop：从 (0,0) 对"不在环上"的格子 8 向泛洪
- * （标记进 grid），供去除多余标记时判定"邻格是否通向非环区域"。
- */
+/** CE auditLoop: the non-loop component reachable from (0,0). Mark on
+ * enqueue so each cell has at most one pending entry; traversal order cannot
+ * affect reachability. pruneLoopMarkings still consumes the complete mask. */
 function auditLoopFlood(loop: boolean[][]): boolean[][] {
-    const flooded: boolean[][] = [];
-    for (let x = 0; x < DCOLS; x++) flooded[x] = new Array<boolean>(DROWS).fill(false);
-    const stack: Array<[number, number]> = [[0, 0]];
-    while (stack.length > 0) {
-        const [x, y] = stack.pop()!;
-        if (flooded[x]![y] || loop[x]![y]) continue; // CE 123-125：!grid && !IN_LOOP 才进
-        flooded[x]![y] = true;
+    const flooded = Array.from({ length: mapWidth }, () => new Array<boolean>(mapHeight).fill(false));
+    if (loop[0]![0]) return flooded;
+    const stack = new Int32Array(mapWidth * mapHeight);
+    let count = 1; flooded[0]![0] = true;
+    while (count > 0) {
+        const index = stack[--count]!, x = Math.floor(index / mapHeight), y = index % mapHeight;
         for (const [dx, dy] of NB_DIRS) {
             const nx = x + dx!, ny = y + dy!;
-            if (inMap(nx, ny) && !flooded[nx]![ny] && !loop[nx]![ny]) stack.push([nx, ny]);
+            if (inMap(nx, ny) && !flooded[nx]![ny] && !loop[nx]![ny]) {
+                flooded[nx]![ny] = true;
+                stack[count++] = nx * mapHeight + ny;
+            }
         }
     }
     return flooded;
@@ -334,8 +336,8 @@ function pruneLoopMarkings(loop: boolean[][]): void {
 
     // 步骤 3：auditLoop(0, 0, grid)（CE 221-222）+ 去除多余标记（224-244）
     const flooded = auditLoopFlood(loop);
-    for (let x = 0; x < DCOLS; x++) {
-        for (let y = 0; y < DROWS; y++) {
+    for (let x = 0; x < mapWidth; x++) {
+        for (let y = 0; y < mapHeight; y++) {
             if (!loop[x]![y]) continue;
             let survives = false;
             for (const [dx, dy] of NB_DIRS) {
@@ -360,17 +362,24 @@ function pruneLoopMarkings(loop: boolean[][]): void {
  *   3) auditLoop(0,0) 泛洪 + 去除"四周无非环邻格"的多余标记（220-244）。
  * 返回逐格 IN_LOOP 布尔图。确定性：纯函数，不消费 RNG。
  */
+const loopAnalysis = new WeakMap<Grid, { passable: Uint8Array; result: boolean[][] }>();
 export function analyzeLoopMap(grid: Grid): boolean[][] {
-    const loop: boolean[][] = [];
-    for (let x = 0; x < DCOLS; x++) {
-        loop[x] = new Array<boolean>(DROWS);
-        for (let y = 0; y < DROWS; y++) {
-            const cell = grid.getCell(x, y);
-            loop[x]![y] = !!cell && !blocksPathing(cell); // 步骤 1
-        }
+    const prior = loopAnalysis.get(grid);
+    const passable = new Uint8Array(mapWidth * mapHeight);
+    let changed = !prior;
+    for (let x = 0; x < mapWidth; x++) for (let y = 0; y < mapHeight; y++) {
+        const cell = grid.getCell(x, y), index = x * mapHeight + y;
+        passable[index] = +(!!cell && !blocksPathing(cell));
+        if (passable[index] !== prior?.passable[index]) changed = true;
     }
-
+    // DF invalidation can change one blocking flag into another without
+    // changing this topology. Check actual inputs, including edits in one turn.
+    if (!changed) return prior!.result.map(column => column.slice());
+    const loop = Array.from({ length: mapWidth }, (_, x) =>
+        Array.from({ length: mapHeight }, (_, y) => !!passable[x * mapHeight + y]));
     pruneLoopMarkings(loop);
+    // Never expose the cached rows: callers own their returned mutable map.
+    loopAnalysis.set(grid, { passable, result: loop.map(column => column.slice()) });
     return loop;
 }
 

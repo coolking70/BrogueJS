@@ -226,11 +226,11 @@ export function cellTerrainFlags(grid: Grid, x: number, y: number): number {
 
 /** Cell-valued form of the same four-layer query; never reads display priority. */
 export function terrainFlagsOfCell(cell: Cell): number {
-    let f = 0;
-    for (let l = 0; l < DungeonLayer.COUNT; l++) {
-        f |= TERRAIN_FLAGS[cell.layers[l]!].flags;
-    }
-    return f;
+    const layers = cell.layers, catalog = TERRAIN_FLAGS;
+    // Fixed CE four-layer union. Keep live catalog reads (including test
+    // overrides), without repeated enum/module lookups in the inner loop.
+    return catalog[layers[0]!]!.flags | catalog[layers[1]!]!.flags
+        | catalog[layers[2]!]!.flags | catalog[layers[3]!]!.flags;
 }
 
 /** CE terrainMechFlags(loc)（Globals.c:590）。
@@ -249,11 +249,9 @@ export function cellTerrainMechFlags(grid: Grid, x: number, y: number): number {
 }
 
 export function terrainMechFlagsOfCell(cell: Cell): number {
-    let f = 0;
-    for (let l = 0; l < DungeonLayer.COUNT; l++) {
-        f |= TERRAIN_FLAGS[cell.layers[l]!].mechFlags;
-    }
-    return f;
+    const layers = cell.layers, catalog = TERRAIN_FLAGS;
+    return catalog[layers[0]!]!.mechFlags | catalog[layers[1]!]!.mechFlags
+        | catalog[layers[2]!]!.mechFlags | catalog[layers[3]!]!.mechFlags;
 }
 
 /** U07 / CE Monsters.c:1284: OR immediate burn successors of flammable
@@ -445,6 +443,10 @@ export function fillSpawnMap(
 
     for (let i = 0; i < grid.width; i++) {
         for (let j = 0; j < grid.height; j++) {
+            // Most runtime fire/DF footprints contain only one or a few cells.
+            // Read live mask bits in the original scan order: callbacks can
+            // recurse, so do not precompute a list of accepted destinations.
+            if (!spawnMap[idx(i, j)]) continue;
             const cell = grid.getCell(i, j);
             if (!cell) {
                 spawnMap[idx(i, j)] = 0;

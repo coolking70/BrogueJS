@@ -101,3 +101,13 @@ Original prompt: 按 docs/tasks/ux-1-playtest-remediation.md 整改八项人工�
 - D4 最终冻结门禁：CE/type/build/相关10文件327项均exit0；完整test:full已exit0（251文件4582pass、8历史skip/5todo，1089.45s）。强制CE test:gen运行中，之后串行drift；runner会话26235、/private/tmp/dialog-d4/gates-state.json。578个src/scripts文件SHA256 3a4ab01e50a7a3b2765524b09d32cc0ed509b5d2832177d08578c443ce4316ba，中途复核相同。报告已写实现/兼容/反事实/复现，门禁尚待收尾，不重复启动或改源码。
 
 - 2026-10-04 D4 完成：最终CE/type/build/相关10文件327项/test:full（251文件4582pass、8历史skip/5todo）/强制CE test:gen（27文件436pass，无超时复跑）/drift（2文件2pass）全部exit0。578文件冻结前后SHA256均为3a4ab01e50a7a3b2765524b09d32cc0ed509b5d2832177d08578c443ce4316ba。报告docs/reports/dialog-d4-blink.report.md已补全反事实、旧取消缺口与seed33441浏览器布景；五份trace/基线未重录，无CRLF/截图/大证据/staging/commit/push。浏览器验收按任务交Claude，本轮无需重复开发或重启门禁。
+
+- 2026-10-15 第二轮后期性能：用户要求 D22–D28 Node P95 ≤20ms，固定录像 /private/tmp/mainperf/replay.json 零 OOS/状态与 RNG 一致；光照缓冲/遮挡复用、占位/视野/环境、画布与日志；完整常规/drift/typecheck/build，追加 perf-late-depth 报告，不 commit。Node 24.19.0、3072MB、vitest 两 worker；基线 round2-before 前台运行。
+
+- 2026-10-15 PERF late-depth 第二轮：正式完整录像 17,737 命令零 OOS，逐条元数据/32 检查点/5,041,466 状态叶子零差异；严格 LATE_P95_MS=20 门禁通过，D22–D28 P95 7.16–18.09ms。此前三次 D28 20.30/20.57/20.33ms 均保留为失败，未放宽阈值。D28 dance median/P95 3.254/3.427→0.482/0.533ms。src/scripts 已冻结，完整 npm test 正在前台执行；后续 drift、源码守卫、vue-tsc、build 尚待完成。浏览器启动受沙箱 EPERM/MachPort 限制，未取得截图；原始证据 /private/tmp/mainperf/round2-*。不 commit。
+
+- 第二轮首轮完整 npm test 已退出 1：252 文件通过，仅 U00 对象图 12 项发现阴影缓存函数引用。保持守卫不变，改为模块级 WeakMap 保存查询身份，U00/光照 27 项已通过；批次遍历清理版本曾测得 D28 P95 20.06ms，未算达标。最终实现正在重新执行完整录像性能门禁，后续仍需完整测试与构建。
+
+- 最终实现增加光照衰减系数复用、游荡目的地选择期间占位索引、气体循环局部读取。两次完整录像严格 20ms 门禁均通过：D28 P95 18.11/18.81ms，D22–D28 分别 6.70–18.11 / 6.65–18.81ms；两次对照均 17,737 命令、32 检查点、5,041,466 叶子零差异。最终 vue-tsc 已退出 0；源码守卫→完整主测试→drift→build 正在前台顺序验收，runner /private/tmp/mainperf/round2-gates.py，状态 round2-gates.log/json。源码哈希已重新冻结。
+
+- 第二轮最终验收完成：vue-tsc 0；源码守卫 6 文件/9 项（126 项定向过滤）0；完整 npm test 253 文件/4,536 passed/既有 83 skipped+5 todo，1073.03s，0；drift 2/2，54.35s，0；build 0（既有 chunk 提示）。验收前后 src/scripts 哈希一致。第二轮完整对比、失败迭代、最终复现命令与浏览器沙箱限制已追加 docs/perf-late-depth.report.md。所有长命令已结束，未 commit/push。

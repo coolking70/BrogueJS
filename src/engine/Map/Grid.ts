@@ -712,18 +712,21 @@ export const FIRE_TERRAIN_TYPES: readonly TerrainType[] = [
     TerrainType.CREATURE_FIRE,
 ];
 
+const fireTerrains = new Set(FIRE_TERRAIN_TYPES);
+
 /** CE Movement.c:64-80 的纯数据版：对一层快照取最高优先层。 */
 export function highestPriorityLayerOf(layers: readonly TerrainType[], skipGas: boolean = false): DungeonLayer {
     let bestPriority = 10000;
     let best = DungeonLayer.DUNGEON;
-    for (let tt = 0; tt < DungeonLayer.COUNT; tt++) {
+    const priorities = DRAW_PRIORITY, count = DungeonLayer.COUNT;
+    for (let tt = 0; tt < count; tt++) {
         if (tt === DungeonLayer.GAS && skipGas) {
             continue;
         }
         const t = layers[tt]!;
         // 注意 `layers[tt] &&`：CE 以"非零"判层非空，NOTHING=0 恰为空层哨兵
-        if (t !== TerrainType.NOTHING && DRAW_PRIORITY[t] < bestPriority) {
-            bestPriority = DRAW_PRIORITY[t];
+        if (t !== TerrainType.NOTHING && priorities[t] < bestPriority) {
+            bestPriority = priorities[t];
             best = tt as DungeonLayer;
         }
     }
@@ -889,8 +892,8 @@ export class Cell {
      * 新火地形落地时漏改会当场翻红。
      */
     get isBurning(): boolean {
-        for (const t of FIRE_TERRAIN_TYPES) {
-            if (this.layers.includes(t)) return true;
+        for (const t of this.layers) {
+            if (fireTerrains.has(t)) return true;
         }
         return false;
     }

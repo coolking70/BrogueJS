@@ -10,7 +10,7 @@ import { worldHealingText, worldFeatureText } from '../UI/WorldCatalogText';
 import { createItemDetailContext } from '../UI/ItemDetailContext';
 import { getTerrainDescription, describeTerrain, tileFlavor, selectTerrainTextLayer } from '../UI/TerrainTextCatalog';
 import { formatMonsterSummonMessage } from '../UI/MonsterTextCatalog';
-import { ownedMonsterList, dyingMonsters, iterateCreatures } from './MonsterLifecycle';
+import { withMonsterLookup, monsterAt, ownedMonsterList, dyingMonsters, iterateCreatures } from './MonsterLifecycle';
 import { alertMonster, wakeMonster } from '../Combat/MonsterAI';
 import { type MachineEntityRuntime } from '../Generator/BlueprintEngine';
 import { buildHordeMachine, createMachineRuntime, generateDepth, placeStairs, populateLevel } from './GenerationCoordinator';
@@ -113,7 +113,7 @@ import i18next from 'i18next';
 
 import { EnvironmentManager, GasType } from '../Environment/Gas';
 import { FOVSys } from '../Lighting/FOV';
-import { LightMap } from '../Lighting/LightMap';
+import { LightMap, type PaintLightParams } from '../Lighting/LightMap';
 import {
     LIGHT_CATALOG,
     LightKind,
@@ -292,6 +292,9 @@ interface RecordingRuntime {
     pendingCommand: { kind: 'record'; event: RecordedInputEvent }
         | { kind: 'replay'; event: RecordedInputEvent; silent: boolean } | null;
 }
+// Knowledge-only flare frames are consumed synchronously and never retained
+// by presentation. Reuse their scratch map; displayed flare frames stay separate.
+const flareKnowledgeBuffers = new WeakMap<Grid, LightMap>();
 const recordingRuntime = new WeakMap<Game, RecordingRuntime>();
 function recordingState(game: Game): RecordingRuntime {
     let state = recordingRuntime.get(game);
@@ -2469,7 +2472,12 @@ export class Game {
     /** CE getFOVMask 的 HAS_MONSTER|HAS_PLAYER 遮挡谓词（Light.c:85）。 */
     private hasCreatureAtForLight(x: number, y: number): boolean {
         if (this.player.loc.x === x && this.player.loc.y === y) return true;
-        return this.monsters.some((m) => m.hp > 0 && m.loc.x === x && m.loc.y === y);
+        return !!monsterAt(this.monsters, x, y, true);
+    }
+
+    /** Display-only light sampling; the lookup scope ends before any input can move creatures. */
+    public danceLighting(): boolean {
+        return withMonsterLookup(this.monsters, () => this.lightMap.dance());
     }
 
     /**
@@ -2493,20 +2501,23 @@ export class Game {
         this.refreshMinersLight();
 
         const lm = this.lightMap;
-        lm.clearLighting(); // Light.c:216-226：清零 + 全图 IS_IN_SHADOW
+
+        const lights: PaintLightParams[] = [];
+        const width = DCOLS, height = DROWS, catalog = TERRAIN_FLAGS;
+        const noLight = LightKind.NO_LIGHT, nothing = TerrainType.NOTHING, lightCatalog = LIGHT_CATALOG;
 
         // 1. 发光地形（Light.c:228-240：逐层扫描 tileCatalog.glowLight）
         const creatureBlocker = (x: number, y: number) => this.hasCreatureAtForLight(x, y);
-        for (let x = 0; x < DCOLS; x++) {
-            for (let y = 0; y < DROWS; y++) {
+        for (let x = 0; x < width; x++) {
+            for (let y = 0; y < height; y++) {
                 const cell = this.grid.getCell(x, y);
                 if (!cell) continue;
                 for (const t of cell.layers) {
-                    if (t === TerrainType.NOTHING) continue;
-                    const glow = TERRAIN_FLAGS[t]?.glowLight ?? LightKind.NO_LIGHT;
-                    if (glow !== LightKind.NO_LIGHT) {
-                        lm.paintLight({
-                            light: LIGHT_CATALOG[glow]!,
+                    if (t === nothing) continue;
+                    const glow = catalog[t]?.glowLight ?? noLight;
+                    if (glow !== noLight) {
+                        lights.push({
+                            light: lightCatalog[glow]!,
                             x, y,
                             hasCreatureAt: creatureBlocker,
                         });
@@ -2519,12 +2530,12 @@ export class Game {
         for (const m of this.monsters) {
             if (m.hp <= 0) continue;
             const kind = m.markedForSacrifice ? LightKind.SACRIFICE_MARK_LIGHT : MONSTER_INTRINSIC_LIGHT[m.typeId];
-            if (kind !== undefined) lm.paintLight({
+            if (kind !== undefined) lights.push({
                 light: LIGHT_CATALOG[kind]!, x: m.loc.x, y: m.loc.y,
                 hasCreatureAt: creatureBlocker,
             });
             const mutationKind = m.mutation && MUTATION_LIGHT[m.mutation.id];
-            if (mutationKind !== undefined) lm.paintLight({
+            if (mutationKind !== undefined) lights.push({
                 light: LIGHT_CATALOG[mutationKind]!, x: m.loc.x, y: m.loc.y,
                 hasCreatureAt: creatureBlocker,
             });
@@ -2536,7 +2547,7 @@ export class Game {
         const paintBurning = (entity: Player | Monster, fiery: boolean): void => {
             if (fiery) return;
             if (this.burningDuration(entity) > 0) {
-                lm.paintLight({
+                lights.push({
                     light: burningLight,
                     x: entity.loc.x, y: entity.loc.y,
                     hasCreatureAt: creatureBlocker,
@@ -2549,31 +2560,36 @@ export class Game {
         }
 
         // 4. 矿灯（Light.c:269：isMinersLight=true → 不驱散阴影、不圆截断）
-        lm.paintLight({
+        lights.push({
             light: this.minersLightDef(),
             x: this.player.loc.x, y: this.player.loc.y,
             isMinersLight: true,
             maintainShadows: true,
         });
 
-        this.updateFieldOfViewDisplay((x, y) => lm.lightSumAt(x, y), remember);
+        if (withMonsterLookup(this.monsters, () => lm.updateLighting(lights))) lm.fillRenderFromLighting();
 
-        // 5. 渲染馈送（GameCanvas 消费 getLight 接口不变——引擎数据升级，
-        //    渲染层零改动）
-        lm.fillRenderFromLighting();
+        this.updateFieldOfViewDisplay((x, y) => lm.lightSumAt(x, y), remember);
     }
 
     /** Movement.c:2572: temporary light shares the FOV/lit/clairvoyance gates.
      * Knowledge commits in simulation order; playback only changes visibility. */
     private updateFieldOfViewDisplay(lightSumAt: (x: number, y: number) => number, remember = true): void {
-        const mask = this.fov.computeFOVMask(this.player.loc.x, this.player.loc.y,
-            DCOLS + DROWS, cell => cell.isOpaque);
+        const width = DCOLS, height = DROWS;
+        const mask = this.fov.computeVisionMask(this.player.loc.x, this.player.loc.y, DCOLS + DROWS);
+        // Preserve the first item at each cell, as with the former find().
+        const itemsAt = new Map<number, Item>();
+        if (remember) for (const item of this.items) {
+            if (!this.grid.isValidPos(item.loc.x, item.loc.y)) continue;
+            const key = item.loc.x * height + item.loc.y;
+            if (!itemsAt.has(key)) itemsAt.set(key, item);
+        }
         // CE Time.c:660-704: positive clairvoyance reveals nearby cells through
         // walls; a cursed ring darkens the same radius even inside ordinary FOV.
         const clairvoyance = ringBonus(this.player.rings(), 'ring_of_clairvoyance');
         const clairvoyanceRadius = ringClairvoyanceRadius(clairvoyance);
-        for (let x = 0; x < DCOLS; x++) {
-            for (let y = 0; y < DROWS; y++) {
+        for (let x = 0; x < width; x++) {
+            for (let y = 0; y < height; y++) {
                 const cell = this.grid.getCell(x, y);
                 if (!cell) continue;
                 const dx = this.player.loc.x - x, dy = this.player.loc.y - y;
@@ -2599,7 +2615,7 @@ export class Game {
                     cell.rememberedTMFlags = cellTerrainMechFlags(this.grid, x, y);
                     cell.rememberedFlags = { passable: cell.isPassable, opaque: cell.isOpaque,
                         trapFree: (cell.rememberedTerrainFlags & T_IS_DF_TRAP) === 0 };
-                    const item = this.items.find(i => i.loc.x === x && i.loc.y === y);
+                    const item = itemsAt.get(x * height + y);
                     cell.rememberedItem = item ? { name: item.displayName, char: item.char, color: item.color } : null;
                     cell.rememberedItemCategory = item?.category ?? null;
                 }
@@ -4861,7 +4877,14 @@ export class Game {
     }
 
     private paintFlareFrame(frame?: number): LightMap {
-        const overlay = new LightMap(this.grid);
+        let overlay: LightMap;
+        if (frame === undefined) {
+            overlay = new LightMap(this.grid);
+        } else {
+            overlay = flareKnowledgeBuffers.get(this.grid) ?? new LightMap(this.grid);
+            flareKnowledgeBuffers.set(this.grid, overlay);
+            overlay.clearLighting();
+        }
         for (const flare of this.activeFlares) {
             const light = flareState(flare).samples?.[frame ?? flareState(flare).frame];
             if (light) overlay.paintLight({ light, x: flare.x, y: flare.y, maintainShadows: true,
@@ -8731,7 +8754,7 @@ export class Game {
      * 的 IN_LOOP -=10 分支生效）。
      */
     public updateSafetyMap(): void {
-        this.safetyMap = buildSafetyMap({
+        this.safetyMap = withMonsterLookup(this.monsters, () => buildSafetyMap({
             grid: this.grid,
             playerX: this.player.loc.x,
             playerY: this.player.loc.y,
@@ -8739,7 +8762,7 @@ export class Game {
             playerImmuneToFire: this.player.hasStatus('immune_fire'),
             monsterAt: (x, y) => this.getMonsterAt(x, y),
             isInLoop: (x, y) => this.loopMap[x]?.[y] === true,
-        });
+        }));
         this.updatedSafetyMapThisTurn = true;
     }
 
@@ -9942,8 +9965,7 @@ export class Game {
 
     public getMonsterAt(x: number, y: number): Monster | undefined {
         // CE clears HAS_MONSTER only after item placement and the death DF.
-        return this.monsters.find(m => m.loc.x === x && m.loc.y === y
-            && (m.hp > 0 || (dyingMonsters.has(m) && !m.deathProcessed)));
+        return monsterAt(this.monsters, x, y);
     }
 
     // ══ V-2b-5：休眠子系统（CE Monsters.c:4156-4210 + Architect.c:1655-1661/

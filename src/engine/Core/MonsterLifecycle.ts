@@ -47,3 +47,32 @@ export function notifyMonsterDeath(monster: Monster): void {
         owner.killMonster(monster);
     }
 }
+
+/** Read the underlying owned array without invoking a Proxy get for every
+ * candidate/property. Membership and order are still read live, including
+ * nested death effects, splices, dormancy and restored floor lists. */
+export function monsterAt(creatures: Monster[], x: number, y: number, livingOnly = false): Monster | undefined {
+    const index = positionReads.get(creatures);
+    const raw = index ? (index.get(x)?.get(y) ?? noMonsters) : (lists.get(creatures)?.raw ?? creatures);
+    return raw.find(m => m.loc.x === x && m.loc.y === y
+        && (m.hp > 0 || (!livingOnly && dyingMonsters.has(m) && !m.deathProcessed)));
+}
+
+const noMonsters: readonly Monster[] = [];
+const positionReads = new WeakMap<Monster[], Map<number, Map<number, Monster[]>>>();
+/** Scope for a synchronous, read-only search/light pass. Never wrap a monster
+ * turn or a DF transaction: those can move, spawn or kill mid-call. The normal
+ * lookup outside this scope always reads live membership and positions. */
+export function withMonsterLookup<T>(creatures: Monster[], read: () => T): T {
+    if (positionReads.has(creatures)) return read();
+    const index = new Map<number, Map<number, Monster[]>>();
+    for (const monster of lists.get(creatures)?.raw ?? creatures) {
+        let column = index.get(monster.x);
+        if (!column) index.set(monster.x, column = new Map());
+        let bucket = column.get(monster.y);
+        if (!bucket) column.set(monster.y, bucket = []);
+        bucket.push(monster); // Preserve first-match order, including DYING.
+    }
+    positionReads.set(creatures, index);
+    try { return read(); } finally { positionReads.delete(creatures); }
+}

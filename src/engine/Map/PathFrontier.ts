@@ -1,7 +1,7 @@
 import type { Pos } from '../../types';
 
 interface Entry {
-    key: string;
+    key: string | number;
     pos: Pos;
     score: number;
     order: number;
@@ -13,12 +13,12 @@ interface Entry {
  * insertion order; reopening a removed node gives it a new order. */
 export class PathFrontier {
     private heap: Entry[] = [];
-    private open = new Map<string, Entry>();
+    private open = new Map<string | number, Entry>();
     private nextOrder = 0;
 
     get length(): number { return this.heap.length; }
 
-    public improve(key: string, pos: Pos, score: number): void {
+    public improve(key: string | number, pos: Pos, score: number): void {
         const entry = this.open.get(key);
         if (entry) {
             // findPath calls this only after a strictly lower g; h is unchanged.

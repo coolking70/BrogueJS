@@ -8,11 +8,11 @@ import { rng } from '../engine/Random';
 
 type Finder = Pick<typeof Pathfind, 'findPath'>;
 interface Scene { width: number; height: number; blocked: Set<number>; start: Pos; goal: Pos; dynamic?: boolean; restrictDiagonals?: boolean }
-function observe(finder: Finder, scene: Scene) {
+function observe(finder: Finder, scene: Scene, dimensions = false) {
     const trace: string[] = [];
     let passCalls = 0, stepCalls = 0;
     const visits = new Map<number, number>();
-    const grid = { isValidPos(x: number, y: number) {
+    const grid = { ...(dimensions ? { width: scene.width, height: scene.height } : {}), isValidPos(x: number, y: number) {
         const result = x >= 0 && y >= 0 && x < scene.width && y < scene.height;
         trace.push(`valid:${x},${y}:${result}`); return result;
     } } as Grid;
@@ -82,6 +82,18 @@ describe('UX-1E stable A* frontier', () => {
 });
 
 describe('UX-1E independent legacy path and callback oracle', () => {
+    it('retains paths and every callback with numeric cell keys, including fractional/outside starts', () => {
+        for (let mask = 0; mask < 512; mask++) {
+            const blocked = new Set<number>();
+            for (let bit = 0; bit < 9; bit++) if (mask & (1 << bit)) blocked.add(bit);
+            for (const start of [{ x: 0, y: 0 }, { x: 2, y: 2 }, { x: -1, y: 0 }, { x: 0.5, y: 0.5 }]) {
+                const scene = { width: 3, height: 3, blocked, start, goal: { x: 1, y: 1 },
+                    dynamic: mask % 2 === 0, restrictDiagonals: mask % 3 === 0 };
+                expect(observe(Pathfind, scene, true)).toEqual(observe(LegacyPathfind, scene, true));
+            }
+        }
+    });
+
     it('matches all 512 obstacle masks on a 3×3 grid in both travel directions, with and without diagonals', () => {
         const randomState = rng.getState();
         for (let mask = 0; mask < 512; mask++) {
