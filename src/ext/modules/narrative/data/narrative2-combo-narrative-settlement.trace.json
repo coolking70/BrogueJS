@@ -26,7 +26,7 @@
         "color": "#b08b5c",
         "interactionDistance": 1,
         "priority": 0,
-        "id": 68,
+        "id": 69,
         "owner": "narrative",
         "depth": 2,
         "x": 65,
@@ -48,7 +48,7 @@
     {
       "label": "initial",
       "index": 0,
-      "worldHash": "df1c95997b0f3282e4f544627c382e34283c88cad7527bdfdf57b20eafbdbf88",
+      "worldHash": "f8800d23128c6dfbf6640a39827faa8bd8fe86a2a9c98c36a56fbe346f41141b",
       "messageHash": "7a066a7e613834f798820f4480a3e20c1b8f47bdc7a613183439c6693f17dfe4",
       "turn": 0,
       "tick": 0
@@ -56,7 +56,7 @@
     {
       "label": "cord.mender:arrival",
       "index": 56,
-      "worldHash": "a8d3558ae5975452c0fa243c096af8d91efade2fe7636e3771bb9f6113ab08fc",
+      "worldHash": "410f8dbedf05f237796ac3a00e51103132e5776f1b01e6da5505848877336fe5",
       "messageHash": "b673553c77c21937a70351abc147005ffd8a2841a262c411d67e19289dc41750",
       "turn": 55,
       "tick": 5500
@@ -64,7 +64,7 @@
     {
       "label": "cord.mender:open",
       "index": 57,
-      "worldHash": "3dbefe1ed3ee1a0d53e47162018eb2551c63ae9e27b13edc5c78024fc3cbc6c0",
+      "worldHash": "7829d32e2080d557a229ce962018de0be2481aabb3709c664b6e0f9261706b64",
       "messageHash": "b673553c77c21937a70351abc147005ffd8a2841a262c411d67e19289dc41750",
       "turn": 55,
       "tick": 5500
@@ -72,7 +72,7 @@
     {
       "label": "cord.mender:decision",
       "index": 61,
-      "worldHash": "a8a784ee0d9f67cf72e5c515c1a00489e109d0c8e459186e20557c6801cb391d",
+      "worldHash": "be27d41120a5d982339f16f94acaea63deae1e7a279e612918bcccb82ecc3fcb",
       "messageHash": "b673553c77c21937a70351abc147005ffd8a2841a262c411d67e19289dc41750",
       "turn": 55,
       "tick": 5500
@@ -80,7 +80,7 @@
     {
       "label": "cord.mender:ending",
       "index": 62,
-      "worldHash": "6f8d4e991f01e37743452941ee481bfa0f4ccaa1d179f2adbf6235f23e39ad6a",
+      "worldHash": "31956faa264de8f922e143ab9a889fcc0e513b2b3b64846c693f2948a2173801",
       "messageHash": "b673553c77c21937a70351abc147005ffd8a2841a262c411d67e19289dc41750",
       "turn": 55,
       "tick": 5500
@@ -88,7 +88,7 @@
     {
       "label": "cord.mender:close",
       "index": 63,
-      "worldHash": "34172f7f77a5b09a0561e832b792b3d4ebedc2d891c8b66efe10cbabdbd0c202",
+      "worldHash": "d046a06b054472e1189b88dfe85e0cb4263c4b8a2296dc51a0d0d9b21d959964",
       "messageHash": "b673553c77c21937a70351abc147005ffd8a2841a262c411d67e19289dc41750",
       "turn": 55,
       "tick": 5500
@@ -96,7 +96,7 @@
     {
       "label": "cord.mender:recall",
       "index": 65,
-      "worldHash": "409e96b17257dbdcd328320df538a4b105e65b4c65276b79da8ec4f19ffe8593",
+      "worldHash": "930f23634ce1176a14eb4fb6a550bdd97a83edcea61f926ddb600b3cfd348da6",
       "messageHash": "b673553c77c21937a70351abc147005ffd8a2841a262c411d67e19289dc41750",
       "turn": 55,
       "tick": 5500
@@ -104,7 +104,7 @@
     {
       "label": "cord.mender:finished",
       "index": 66,
-      "worldHash": "bedb8f6a8989cbda7364d8e6b919652d93385c80ebc9eeaf96362d5949ca15a1",
+      "worldHash": "8d0b8a98e176d77314b2843f83d3b5ccc691839e6eaf8bfffcca0dbffc9d1964",
       "messageHash": "b673553c77c21937a70351abc147005ffd8a2841a262c411d67e19289dc41750",
       "turn": 55,
       "tick": 5500
@@ -561,7 +561,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":4,\"targetEntityId\":68}}",
+      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":4,\"targetEntityId\":69}}",
       "decisions": []
     },
     {
@@ -596,7 +596,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":11,\"targetEntityId\":68}}",
+      "data": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":11,\"targetEntityId\":69}}",
       "decisions": []
     },
     {
@@ -613,7 +613,7 @@
   "events": 66,
   "routeCommands": 56,
   "recordingBytes": 66473,
-  "finalHash": "bedb8f6a8989cbda7364d8e6b919652d93385c80ebc9eeaf96362d5949ca15a1",
+  "finalHash": "8d0b8a98e176d77314b2843f83d3b5ccc691839e6eaf8bfffcca0dbffc9d1964",
   "finalRng": {
     "version": 2,
     "algorithm": "brogue-web-ranval32-uint64-level-v2",

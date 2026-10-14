@@ -1,0 +1,1035 @@
+{
+  "basis": "Only settlement startupItems adds one native ration. Old traces reconstruct under HEAD definitions; recaptured with original captureNatural at unchanged seed/mode/targets/ending.",
+  "worldDifferenceReasons": {
+    "quantity/originDepth": "Native ration stacks with starter food; Inventory.addItem sets merged originDepth to 0.",
+    "fingerprints/startupGrants": "Changed module definition and one-shot grant receipt.",
+    "entity IDs/references/dictionary keys": "assembleWorldItem allocates one ID before merging; all subsequent allocations and references shift by one. Key collisions in naive map diffs are rekeying, not reward/stat changes.",
+    "sourceFootprintVersion": "Derived footprint hash includes shifted source identity."
+  },
+  "traces": [
+    {
+      "trace": "src/ext/modules/narrative/data/narrative2-combo-narrative-settlement.trace.json",
+      "commandsUnchanged": false,
+      "finalRngUnchanged": true,
+      "traceChanges": [
+        {
+          "path": "$.births[0].entity.id",
+          "before": 68,
+          "after": 69
+        },
+        {
+          "path": "$.checkpoints[0].worldHash",
+          "before": "df1c95997b0f3282e4f544627c382e34283c88cad7527bdfdf57b20eafbdbf88",
+          "after": "f8800d23128c6dfbf6640a39827faa8bd8fe86a2a9c98c36a56fbe346f41141b"
+        },
+        {
+          "path": "$.checkpoints[1].worldHash",
+          "before": "a8d3558ae5975452c0fa243c096af8d91efade2fe7636e3771bb9f6113ab08fc",
+          "after": "410f8dbedf05f237796ac3a00e51103132e5776f1b01e6da5505848877336fe5"
+        },
+        {
+          "path": "$.checkpoints[2].worldHash",
+          "before": "3dbefe1ed3ee1a0d53e47162018eb2551c63ae9e27b13edc5c78024fc3cbc6c0",
+          "after": "7829d32e2080d557a229ce962018de0be2481aabb3709c664b6e0f9261706b64"
+        },
+        {
+          "path": "$.checkpoints[3].worldHash",
+          "before": "a8a784ee0d9f67cf72e5c515c1a00489e109d0c8e459186e20557c6801cb391d",
+          "after": "be27d41120a5d982339f16f94acaea63deae1e7a279e612918bcccb82ecc3fcb"
+        },
+        {
+          "path": "$.checkpoints[4].worldHash",
+          "before": "6f8d4e991f01e37743452941ee481bfa0f4ccaa1d179f2adbf6235f23e39ad6a",
+          "after": "31956faa264de8f922e143ab9a889fcc0e513b2b3b64846c693f2948a2173801"
+        },
+        {
+          "path": "$.checkpoints[5].worldHash",
+          "before": "34172f7f77a5b09a0561e832b792b3d4ebedc2d891c8b66efe10cbabdbd0c202",
+          "after": "d046a06b054472e1189b88dfe85e0cb4263c4b8a2296dc51a0d0d9b21d959964"
+        },
+        {
+          "path": "$.checkpoints[6].worldHash",
+          "before": "409e96b17257dbdcd328320df538a4b105e65b4c65276b79da8ec4f19ffe8593",
+          "after": "930f23634ce1176a14eb4fb6a550bdd97a83edcea61f926ddb600b3cfd348da6"
+        },
+        {
+          "path": "$.checkpoints[7].worldHash",
+          "before": "bedb8f6a8989cbda7364d8e6b919652d93385c80ebc9eeaf96362d5949ca15a1",
+          "after": "8d0b8a98e176d77314b2843f83d3b5ccc691839e6eaf8bfffcca0dbffc9d1964"
+        },
+        {
+          "path": "$.commands[56].data",
+          "before": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":4,\"targetEntityId\":68}}",
+          "after": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":4,\"targetEntityId\":69}}"
+        },
+        {
+          "path": "$.commands[63].data",
+          "before": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":11,\"targetEntityId\":68}}",
+          "after": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":11,\"targetEntityId\":69}}"
+        },
+        {
+          "path": "$.finalHash",
+          "before": "bedb8f6a8989cbda7364d8e6b919652d93385c80ebc9eeaf96362d5949ca15a1",
+          "after": "8d0b8a98e176d77314b2843f83d3b5ccc691839e6eaf8bfffcca0dbffc9d1964"
+        }
+      ],
+      "worldLeafChanges": 379,
+      "worldFields": {
+        "$[].world.extensions.components.<entityId>": {
+          "count": 16,
+          "example": {
+            "path": "$[0].world.extensions.components.41",
+            "before": {
+              "settlement:source": {
+                "schema": 1,
+                "key": "settlement.spawn.1",
+                "kind": "spawn",
+                "consumed": false,
+                "revision": 0
+              }
+            },
+            "after": null
+          }
+        },
+        "$[].world.extensions.foundation.world.entities[].id": {
+          "count": 52,
+          "example": {
+            "path": "$[0].world.extensions.foundation.world.entities[3].id",
+            "before": 42,
+            "after": 43
+          }
+        },
+        "$[].world.extensions.manifest.modules[].rules.fingerprint": {
+          "count": 8,
+          "example": {
+            "path": "$[0].world.extensions.manifest.modules[1].rules.fingerprint",
+            "before": "sha256:6eb2bb4426403a3c7de0ff78153ed02c7368e08920bd2b6ba5d780e71c960cc4",
+            "after": "sha256:7558e8ea74902c133a7210193ac113e7dc4ba36b5fc4d63921ddf10d412ae818"
+          }
+        },
+        "$[].world.extensions.modules.narrative.npcBindings.<entityId>": {
+          "count": 30,
+          "example": {
+            "path": "$[0].world.extensions.modules.narrative.npcBindings.42",
+            "before": {
+              "npcId": "archive.keeper",
+              "placementId": "archive.first",
+              "instanceKey": "archive.first.slot.1"
+            },
+            "after": null
+          }
+        },
+        "$[].world.extensions.modules.narrative.npcBindings.<entityId>.instanceKey": {
+          "count": 16,
+          "example": {
+            "path": "$[0].world.extensions.modules.narrative.npcBindings.43.instanceKey",
+            "before": "bell.mender.first.slot.1",
+            "after": "archive.first.slot.1"
+          }
+        },
+        "$[].world.extensions.modules.narrative.npcBindings.<entityId>.npcId": {
+          "count": 16,
+          "example": {
+            "path": "$[0].world.extensions.modules.narrative.npcBindings.43.npcId",
+            "before": "bell.mender",
+            "after": "archive.keeper"
+          }
+        },
+        "$[].world.extensions.modules.narrative.npcBindings.<entityId>.placementId": {
+          "count": 16,
+          "example": {
+            "path": "$[0].world.extensions.modules.narrative.npcBindings.43.placementId",
+            "before": "bell.mender.first",
+            "after": "archive.first"
+          }
+        },
+        "$[].world.extensions.modules.settlement.spawnSlots[].actorId": {
+          "count": 8,
+          "example": {
+            "path": "$[0].world.extensions.modules.settlement.spawnSlots[0].actorId",
+            "before": 41,
+            "after": 42
+          }
+        },
+        "$[].world.monsters[].id": {
+          "count": 50,
+          "example": {
+            "path": "$[0].world.monsters[6].id",
+            "before": 41,
+            "after": 42
+          }
+        },
+        "$[].world.player.inventory[].originDepth": {
+          "count": 8,
+          "example": {
+            "path": "$[0].world.player.inventory[0].originDepth",
+            "before": null,
+            "after": 0
+          }
+        },
+        "$[].world.player.inventory[].quantity": {
+          "count": 8,
+          "example": {
+            "path": "$[0].world.player.inventory[0].quantity",
+            "before": 1,
+            "after": 2
+          }
+        },
+        "$[].world.run.nextEntityId": {
+          "count": 8,
+          "example": {
+            "path": "$[0].world.run.nextEntityId",
+            "before": 45,
+            "after": 46
+          }
+        },
+        "$[].world.run.world5.definitionsFingerprint.settlement": {
+          "count": 8,
+          "example": {
+            "path": "$[0].world.run.world5.definitionsFingerprint.settlement",
+            "before": "sha256:80104764e816174dd4e5f91db49662740eb61456776cd206b139efa737b97e58",
+            "after": "sha256:4816731419756ca9481e3b2f6ed87a0130702efe5e95150b9d8befa33850a33e"
+          }
+        },
+        "$[].world.run.world5.startupGrants[].toInventory[]": {
+          "count": 8,
+          "example": {
+            "path": "$[0].world.run.world5.startupGrants[0].toInventory[4]",
+            "before": null,
+            "after": {
+              "itemDefinitionId": "settlement.ration",
+              "count": 1
+            }
+          }
+        },
+        "$[].world.items[].id": {
+          "count": 91,
+          "example": {
+            "path": "$[1].world.items[0].id",
+            "before": 45,
+            "after": 46
+          }
+        },
+        "$[].world.levels[].monsters[].id": {
+          "count": 7,
+          "example": {
+            "path": "$[1].world.levels[0].monsters[5].id",
+            "before": 41,
+            "after": 42
+          }
+        },
+        "$[].world.run.world5.nodes[].interactableId": {
+          "count": 21,
+          "example": {
+            "path": "$[1].world.run.world5.nodes[3].interactableId",
+            "before": 65,
+            "after": 66
+          }
+        },
+        "$[].world.extensions.foundation.world.gate.targetEntityId": {
+          "count": 4,
+          "example": {
+            "path": "$[2].world.extensions.foundation.world.gate.targetEntityId",
+            "before": 68,
+            "after": 69
+          }
+        },
+        "$[].world.extensions.modules.narrative.active.targetEntityId": {
+          "count": 4,
+          "example": {
+            "path": "$[2].world.extensions.modules.narrative.active.targetEntityId",
+            "before": 68,
+            "after": 69
+          }
+        }
+      },
+      "commandChanges": "Only narrative.open payload.targetEntityId increases by 1; original capture probe asserts all other command data/decisions unchanged.",
+      "messageHashesUnchanged": true
+    },
+    {
+      "trace": "src/ext/modules/narrative/data/narrative2-combo-narrative-growth-combat-giants-crafting-foraging-settlement.trace.json",
+      "commandsUnchanged": false,
+      "finalRngUnchanged": true,
+      "traceChanges": [
+        {
+          "path": "$.births[0].entity.id",
+          "before": 81,
+          "after": 82
+        },
+        {
+          "path": "$.births[1].entity.id",
+          "before": 155,
+          "after": 156
+        },
+        {
+          "path": "$.births[2].entity.id",
+          "before": 154,
+          "after": 155
+        },
+        {
+          "path": "$.births[3].entity.id",
+          "before": 249,
+          "after": 250
+        },
+        {
+          "path": "$.births[4].entity.id",
+          "before": 370,
+          "after": 371
+        },
+        {
+          "path": "$.checkpoints[0].worldHash",
+          "before": "c6f2aa716dcc81b8ad1fd160edd67fc9e4948b99daf327f3038685ece9fbe1ca",
+          "after": "b8b24fec65d90a8aa3c091ca26228e5f3a99328263f493a7862cc56aaefce987"
+        },
+        {
+          "path": "$.checkpoints[1].worldHash",
+          "before": "f435882463951f5060846cd6e3c00fdcff6d64e9311379e7852f3ffb57e4058f",
+          "after": "a54c04e0fe5ab174f95e0a044b14b14b464e408a431645cf560ce1bb5b328404"
+        },
+        {
+          "path": "$.checkpoints[2].worldHash",
+          "before": "5de7df3f502c75f3e0819597e532fd001747b28fea64e53ffef404ee621eb2df",
+          "after": "88f959d4bbaa3a72dd29f235842b1bd9d22be150abd9a22119521669051d1773"
+        },
+        {
+          "path": "$.checkpoints[3].worldHash",
+          "before": "6a925db168b40565fdc867ba556c664644bd3ddf3eb89f9b39bc95c12cf8fd1f",
+          "after": "cac14e4168151660a8fbc09b799b02d116e018982b3d93f2af12e53b427f516f"
+        },
+        {
+          "path": "$.checkpoints[4].worldHash",
+          "before": "36d3b88151d6c56416cd00da8f9ab43660824d5f155f31913f971b522d413508",
+          "after": "bb01097b40df7a58535dcb767fb19fc3f18f79bc7e384fead009ef1f8acfce2b"
+        },
+        {
+          "path": "$.checkpoints[5].worldHash",
+          "before": "76bf2fa3040f353ca2c3d5f48aed95c2adedbf02588417bce70f06a6f9f8a2f4",
+          "after": "9221a27a81a547701eb2abbe6af8a04ceb31c2747414af53474ade66d1635925"
+        },
+        {
+          "path": "$.checkpoints[6].worldHash",
+          "before": "68996328c39a5899c385ef41bde98deb7b67ee6416b4538cd2fcda41ea6f73a4",
+          "after": "3f656d7071e00ed7e2a0930c663c5b8d5bff66199113480cd47432177bd3cc70"
+        },
+        {
+          "path": "$.checkpoints[7].worldHash",
+          "before": "17cefff951a0675b8dc65df519ad2598e57972fdc3e0b9d678d7ae1cad284385",
+          "after": "95ad03a6a7701ecf646f840288fc24be392af205d6f8d8f63ceadf58609a1d20"
+        },
+        {
+          "path": "$.checkpoints[8].worldHash",
+          "before": "bcc9868d5672b2c2950a9ce941431bad9b1d3e79d6bafc6a67c7517c046ee38a",
+          "after": "feb71d2b5f625499e1461b1fce007ff6979899ca1b0ed38947438df1f66108f1"
+        },
+        {
+          "path": "$.checkpoints[9].worldHash",
+          "before": "c831a7435805aaee5cb5c37f878cecd2fe31cd8669c0d4807ad05b239b87eb2f",
+          "after": "987a9bb405dc536127ea8dce9b07b7b0c550ceee36cb7d8d6d2839cf5f175965"
+        },
+        {
+          "path": "$.checkpoints[10].worldHash",
+          "before": "9e5b9f4d9e8a2c7a1f2f8753c87f04ee452a313348ab9dcc04b7418bc9f6df9c",
+          "after": "eb17694343a1ebab43e2f39255190472e5b113855700fc6c52e0bb7ca9bce5e9"
+        },
+        {
+          "path": "$.checkpoints[11].worldHash",
+          "before": "2097f9077b2fb0711de7af248a54c6cf2ebff9563e507b7df76d7d831599cf9c",
+          "after": "73c5fd38ce216d60a1cf97cf91f450d1025c4b65ac10b168189436759d582c11"
+        },
+        {
+          "path": "$.checkpoints[12].worldHash",
+          "before": "9841a0cbf6a51a5b39d49c64c647c3a8bebd55fd122479cb4ca3a92f99c67a24",
+          "after": "03c7380b4a16b464c3204894e37105147c871d8f3f50f01e2f48352a307a9c3d"
+        },
+        {
+          "path": "$.checkpoints[13].worldHash",
+          "before": "4a00457236b00d718fbba5747efc61c3bbf8d86f8f199c7f6e5c26204e883e92",
+          "after": "72c36b5f51d5026dfcf99d991e876f1655980ad069c4c20bcaecea3c9b15b059"
+        },
+        {
+          "path": "$.checkpoints[14].worldHash",
+          "before": "ac6927fbb206ea2739f0f0e3722b275b6ec50b3bbcf20554fd2aa086cbf42943",
+          "after": "a876d6759b53d378c97959811bc9c3fb2a07efe80a30598440181e524e196ed3"
+        },
+        {
+          "path": "$.checkpoints[15].worldHash",
+          "before": "ac6927fbb206ea2739f0f0e3722b275b6ec50b3bbcf20554fd2aa086cbf42943",
+          "after": "a876d6759b53d378c97959811bc9c3fb2a07efe80a30598440181e524e196ed3"
+        },
+        {
+          "path": "$.checkpoints[16].worldHash",
+          "before": "ce281f97e57729132fbf728eb73e703d456b1dce5340cb102366222c03a7c1cc",
+          "after": "903b378390b2855e77571cd63be1faf07b97a95d10c9233c98ea9c90e0f953aa"
+        },
+        {
+          "path": "$.checkpoints[17].worldHash",
+          "before": "b625e18a4dc620b157f57f4b256c58fd85f697008e7a9889106b3eb4f10d44a0",
+          "after": "acaa2a957955b1ef17fb592e675be50b1b00b0962c2ab517529a9f13a7ee8f7a"
+        },
+        {
+          "path": "$.checkpoints[18].worldHash",
+          "before": "27d95d4f2e9ea8dcd671db7788d79449f9032abdeadca63f9e5df58ed90d3a16",
+          "after": "97df6de37fc33f94e8cc88f24a0dcafc2afa3d9ac256b9b89a8eb3dcae6a7c72"
+        },
+        {
+          "path": "$.checkpoints[19].worldHash",
+          "before": "7c29c80eb953e3f941ea51165b3754dcca8b52f324c70b0ed177eb7f9a807c10",
+          "after": "d4614d51d10c53d95c01c474110856d3cd74afbcd051eadfae73fb45f08b8b5a"
+        },
+        {
+          "path": "$.checkpoints[20].worldHash",
+          "before": "484c479e2dac16421d6cf9eb11345012c0764a419e08673482b7fa9e4a570d62",
+          "after": "c089628e4dce0ef0ea372698711f2ad1836ebb978b10ba150ca121ca643ec967"
+        },
+        {
+          "path": "$.checkpoints[21].worldHash",
+          "before": "28eaaacec27b725073e7278a18f33c501ed7d8346c8e3a9993cf39be315a17a5",
+          "after": "d57b63dba5dc817ba57c8ec841f4e846e7a6fb0ab7e5e6b8ab9312e1b978a43d"
+        },
+        {
+          "path": "$.checkpoints[22].worldHash",
+          "before": "7b3d5f7d0ccb127785d8e80798a2cad5a2e8ed3a650abad6a2ba81d8f9355291",
+          "after": "b6787f4156dc1faf93c5f217df2586291c14af19f3e8c386222fcb888223ceff"
+        },
+        {
+          "path": "$.checkpoints[23].worldHash",
+          "before": "c6aa6e1379a99e9862f0fe907764d9b06829b25e922d7859656cb8236a271931",
+          "after": "6e520f87cb91cc115e82b6cc3ec54724aba3a59d14f35bb33b423c237344cc07"
+        },
+        {
+          "path": "$.checkpoints[24].worldHash",
+          "before": "ebf7b170880d0b9edfc72bc7e75dfcd3970d5ab61ff01d638379257f298292bb",
+          "after": "a75d514835d2736c1a824acae90f39dc6a0e5028d09a88d46835f98c0c92791b"
+        },
+        {
+          "path": "$.checkpoints[25].worldHash",
+          "before": "b78aefd081cecc2f3d69d4cc9fbfbdb40dd9679818bc6247bf10d2b5e19ff3de",
+          "after": "01443be9f2f10d6d7b14a384d87c03d7cedb38f7b8b8340230c33ca4488978d6"
+        },
+        {
+          "path": "$.checkpoints[26].worldHash",
+          "before": "8b993d2fe2706060f6197d92904c6d29fdb894f4dc006f28503b0936596223ce",
+          "after": "c557ec45a4c3ea124cf5495b3dbac5f024f64c47e25990a046a494913f932e19"
+        },
+        {
+          "path": "$.checkpoints[27].worldHash",
+          "before": "20800df4cbb4dc1fe92b5ad3e8363c56687a3d184489baf17a0b582f27018a84",
+          "after": "1aa888cf4d808cb5132a91c9080d5fc9ee1e8626297ca7e3c181b19dfd9beac6"
+        },
+        {
+          "path": "$.checkpoints[28].worldHash",
+          "before": "83538a18856be2fc048221e32eafaf1679f04bbdd9606a1d0da26b9f0d1f3eed",
+          "after": "e12023ffa83908c62ff6675da3e26f70fd6b5cee0836d9b5f608ec0d2be3e3f5"
+        },
+        {
+          "path": "$.checkpoints[29].worldHash",
+          "before": "0457ebba12fa9b39a782cdb71537be880892c4e273c5f9501a2413d506fa009a",
+          "after": "572996cceae82d42d95c30bf399d82f93e16e7ef6963a1ba2d79dcaf63b03e82"
+        },
+        {
+          "path": "$.checkpoints[30].worldHash",
+          "before": "c019d88c74422cd76a50848177d396aa3c6d1865a68389d02543b8d7dd8bbbce",
+          "after": "67094ca423d742ae400738f006219ef7c1a1eefece6abefb0f57bee50f2f3189"
+        },
+        {
+          "path": "$.checkpoints[31].worldHash",
+          "before": "277091a02c44d420505138b316e13387f232000a5b50800cef98466301c5ebda",
+          "after": "36cc9405a68b51e7cc98f5a7094c3628810e18b26bd857cd7cdd835a0f44e19f"
+        },
+        {
+          "path": "$.checkpoints[32].worldHash",
+          "before": "770450bf6fc68bbe2a6f6a5fd38cf66d6c1556b45ebc0f39e60e596525b26aa1",
+          "after": "f1f377714cc5414591e5c7935c3005eb913c1601a2f28bbc4f9b1f635bcf45fc"
+        },
+        {
+          "path": "$.checkpoints[33].worldHash",
+          "before": "c3b21ea70498f50ad447312f5f8742264ab24a6c6bc15c08731a227ea8ff740d",
+          "after": "83e158535fa3b3f6f84c0e4075907c7d23f59cd25c8384a638d90ac1cf854b94"
+        },
+        {
+          "path": "$.checkpoints[34].worldHash",
+          "before": "b1bcca39e6397118f9fc4f3e3e18b5e6d91abc495a9646184160d24b1b4550fa",
+          "after": "6dd1227722b9f4421067ad46ab618d5d0cf3bfbcfe18802f8e9ba9d331d02da5"
+        },
+        {
+          "path": "$.checkpoints[35].worldHash",
+          "before": "33efc046abaea12a8c94727e6d531b3973b1bd863ea94e59df686d10a386b489",
+          "after": "15532b007a270feaf18331ad9a5fb7aae4a25c23c409f2370698a1b7e9c44dff"
+        },
+        {
+          "path": "$.commands[57].data",
+          "before": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":4,\"targetEntityId\":81}}",
+          "after": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":4,\"targetEntityId\":82}}"
+        },
+        {
+          "path": "$.commands[64].data",
+          "before": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":11,\"targetEntityId\":81}}",
+          "after": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":11,\"targetEntityId\":82}}"
+        },
+        {
+          "path": "$.commands[196].data",
+          "before": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":18,\"targetEntityId\":155}}",
+          "after": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":18,\"targetEntityId\":156}}"
+        },
+        {
+          "path": "$.commands[203].data",
+          "before": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":25,\"targetEntityId\":155}}",
+          "after": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":25,\"targetEntityId\":156}}"
+        },
+        {
+          "path": "$.commands[206].data",
+          "before": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":28,\"targetEntityId\":154}}",
+          "after": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":28,\"targetEntityId\":155}}"
+        },
+        {
+          "path": "$.commands[213].data",
+          "before": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":35,\"targetEntityId\":154}}",
+          "after": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":35,\"targetEntityId\":155}}"
+        },
+        {
+          "path": "$.commands[462].data",
+          "before": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":42,\"targetEntityId\":249}}",
+          "after": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":42,\"targetEntityId\":250}}"
+        },
+        {
+          "path": "$.commands[469].data",
+          "before": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":49,\"targetEntityId\":249}}",
+          "after": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":49,\"targetEntityId\":250}}"
+        },
+        {
+          "path": "$.commands[1610].data",
+          "before": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":56,\"targetEntityId\":370}}",
+          "after": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":56,\"targetEntityId\":371}}"
+        },
+        {
+          "path": "$.commands[1617].data",
+          "before": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":63,\"targetEntityId\":370}}",
+          "after": "{\"module\":\"narrative\",\"action\":\"open\",\"payload\":{\"v\":2,\"revision\":63,\"targetEntityId\":371}}"
+        },
+        {
+          "path": "$.finalHash",
+          "before": "33efc046abaea12a8c94727e6d531b3973b1bd863ea94e59df686d10a386b489",
+          "after": "15532b007a270feaf18331ad9a5fb7aae4a25c23c409f2370698a1b7e9c44dff"
+        }
+      ],
+      "worldLeafChanges": 12895,
+      "worldFields": {
+        "$[].world.extensions.components.<entityId>": {
+          "count": 830,
+          "example": {
+            "path": "$[0].world.extensions.components.40",
+            "before": {
+              "settlement:source": {
+                "schema": 1,
+                "key": "settlement.spawn.1",
+                "kind": "spawn",
+                "consumed": false,
+                "revision": 0
+              },
+              "growth:reward": {
+                "creationReason": "natural",
+                "originalMonsterType": "settlement.wayfarer",
+                "initiallyHostile": false,
+                "sourceId": null,
+                "nativeStatsCopied": false,
+                "rewardId": "birth:40",
+                "threatRank": 0,
+                "amount": 0
+              },
+              "growth:progression": {
+                "level": 1,
+                "experience": 0,
+                "attributePoints": 0,
+                "skillPoints": 0
+              },
+              "growth:attributes": {
+                "values": {
+                  "growth.attribute.strength-training": 0,
+                  "growth.attribute.agility": 0,
+                  "growth.attribute.constitution": 0,
+                  "growth.attribute.will": 0,
+                  "growth.attribute.perception": 0
+                },
+                "allocated": {
+                  "growth.attribute.strength-training": 0,
+                  "growth.attribute.agility": 0,
+                  "growth.attribute.constitution": 0,
+                  "growth.attribute.will": 0,
+                  "growth.attribute.perception": 0
+                },
+                "attributePointsSpent": 0,
+                "skillPointsSpent": 0,
+                "inheritedAttributePoints": 0,
+                "inheritedSkillPoints": 0
+              },
+              "growth:identity": {
+                "professionId": null,
+                "lineageId": null,
+                "faithId": null,
+                "choices": [],
+                "templateId": "growth.template.neutral"
+              },
+              "growth:items": {
+                "awarded": {}
+              },
+              "growth:skill-build": {
+                "inherited": [],
+                "gifted": [],
+                "learned": [],
+                "active": [],
+                "passive": [],
+                "effects": []
+              },
+              "growth:focus": {
+                "current": 8,
+                "remainder": 0
+              },
+              "growth:skills": {
+                "readyAt": {}
+              }
+            },
+            "after": null
+          }
+        },
+        "$[].world.extensions.foundation.world.entities[].id": {
+          "count": 2056,
+          "example": {
+            "path": "$[0].world.extensions.foundation.world.entities[12].id",
+            "before": 41,
+            "after": 42
+          }
+        },
+        "$[].world.extensions.manifest.modules[].rules.fingerprint": {
+          "count": 35,
+          "example": {
+            "path": "$[0].world.extensions.manifest.modules[6].rules.fingerprint",
+            "before": "sha256:6eb2bb4426403a3c7de0ff78153ed02c7368e08920bd2b6ba5d780e71c960cc4",
+            "after": "sha256:7558e8ea74902c133a7210193ac113e7dc4ba36b5fc4d63921ddf10d412ae818"
+          }
+        },
+        "$[].world.extensions.modules.combat.bonfires.bindings.<entityId>": {
+          "count": 248,
+          "example": {
+            "path": "$[0].world.extensions.modules.combat.bonfires.bindings.41",
+            "before": {
+              "definitionId": "combat.bonfire",
+              "instanceKey": "combat.bonfire.slot.1"
+            },
+            "after": null
+          }
+        },
+        "$[].world.extensions.modules.growth.actors.<entityId>": {
+          "count": 830,
+          "example": {
+            "path": "$[0].world.extensions.modules.growth.actors.40",
+            "before": {
+              "player": false,
+              "allied": true,
+              "hostile": false,
+              "alive": true,
+              "relation": 0
+            },
+            "after": null
+          }
+        },
+        "$[].world.extensions.modules.narrative.npcBindings.<entityId>": {
+          "count": 234,
+          "example": {
+            "path": "$[0].world.extensions.modules.narrative.npcBindings.42",
+            "before": {
+              "npcId": "archive.keeper",
+              "placementId": "archive.first",
+              "instanceKey": "archive.first.slot.1"
+            },
+            "after": null
+          }
+        },
+        "$[].world.extensions.modules.narrative.npcBindings.<entityId>.instanceKey": {
+          "count": 97,
+          "example": {
+            "path": "$[0].world.extensions.modules.narrative.npcBindings.43.instanceKey",
+            "before": "bell.mender.first.slot.1",
+            "after": "archive.first.slot.1"
+          }
+        },
+        "$[].world.extensions.modules.narrative.npcBindings.<entityId>.npcId": {
+          "count": 97,
+          "example": {
+            "path": "$[0].world.extensions.modules.narrative.npcBindings.43.npcId",
+            "before": "bell.mender",
+            "after": "archive.keeper"
+          }
+        },
+        "$[].world.extensions.modules.narrative.npcBindings.<entityId>.placementId": {
+          "count": 97,
+          "example": {
+            "path": "$[0].world.extensions.modules.narrative.npcBindings.43.placementId",
+            "before": "bell.mender.first",
+            "after": "archive.first"
+          }
+        },
+        "$[].world.extensions.modules.settlement.spawnSlots[].actorId": {
+          "count": 49,
+          "example": {
+            "path": "$[0].world.extensions.modules.settlement.spawnSlots[0].actorId",
+            "before": 40,
+            "after": 41
+          }
+        },
+        "$[].world.monsters[].id": {
+          "count": 378,
+          "example": {
+            "path": "$[0].world.monsters[7].id",
+            "before": 40,
+            "after": 41
+          }
+        },
+        "$[].world.player.inventory[].originDepth": {
+          "count": 35,
+          "example": {
+            "path": "$[0].world.player.inventory[0].originDepth",
+            "before": null,
+            "after": 0
+          }
+        },
+        "$[].world.player.inventory[].quantity": {
+          "count": 35,
+          "example": {
+            "path": "$[0].world.player.inventory[0].quantity",
+            "before": 1,
+            "after": 2
+          }
+        },
+        "$[].world.run.nextEntityId": {
+          "count": 35,
+          "example": {
+            "path": "$[0].world.run.nextEntityId",
+            "before": 45,
+            "after": 46
+          }
+        },
+        "$[].world.run.world5.definitionsFingerprint.settlement": {
+          "count": 35,
+          "example": {
+            "path": "$[0].world.run.world5.definitionsFingerprint.settlement",
+            "before": "sha256:80104764e816174dd4e5f91db49662740eb61456776cd206b139efa737b97e58",
+            "after": "sha256:4816731419756ca9481e3b2f6ed87a0130702efe5e95150b9d8befa33850a33e"
+          }
+        },
+        "$[].world.run.world5.startupGrants[].toInventory[]": {
+          "count": 35,
+          "example": {
+            "path": "$[0].world.run.world5.startupGrants[1].toInventory[4]",
+            "before": null,
+            "after": {
+              "itemDefinitionId": "settlement.ration",
+              "count": 1
+            }
+          }
+        },
+        "$[].world.extensions.components.<entityId>.growth:reward.originalMonsterType": {
+          "count": 703,
+          "example": {
+            "path": "$[1].world.extensions.components.46.growth:reward.originalMonsterType",
+            "before": "kobold",
+            "after": "rat"
+          }
+        },
+        "$[].world.extensions.components.<entityId>.growth:reward.amount": {
+          "count": 518,
+          "example": {
+            "path": "$[1].world.extensions.components.49.growth:reward.amount",
+            "before": 10,
+            "after": 8
+          }
+        },
+        "$[].world.extensions.components.<entityId>.growth:reward.threatRank": {
+          "count": 518,
+          "example": {
+            "path": "$[1].world.extensions.components.49.growth:reward.threatRank",
+            "before": 2,
+            "after": 1
+          }
+        },
+        "$[].world.extensions.foundation.world.regions[].id": {
+          "count": 62,
+          "example": {
+            "path": "$[1].world.extensions.foundation.world.regions[0].id",
+            "before": 65,
+            "after": 66
+          }
+        },
+        "$[].world.extensions.modules.combat.actors[].actorId": {
+          "count": 220,
+          "example": {
+            "path": "$[1].world.extensions.modules.combat.actors[1].actorId",
+            "before": 40,
+            "after": 41
+          }
+        },
+        "$[].world.extensions.modules.giants.bosses[].primaryId": {
+          "count": 62,
+          "example": {
+            "path": "$[1].world.extensions.modules.giants.bosses[0].primaryId",
+            "before": 66,
+            "after": 67
+          }
+        },
+        "$[].world.extensions.modules.giants.bosses[].regionId": {
+          "count": 62,
+          "example": {
+            "path": "$[1].world.extensions.modules.giants.bosses[0].regionId",
+            "before": 65,
+            "after": 66
+          }
+        },
+        "$[].world.extensions.modules.giants.bosses[].subjects[].groupId": {
+          "count": 62,
+          "example": {
+            "path": "$[1].world.extensions.modules.giants.bosses[0].subjects[0].groupId",
+            "before": 66,
+            "after": 67
+          }
+        },
+        "$[].world.extensions.modules.giants.placements[].regionId": {
+          "count": 62,
+          "example": {
+            "path": "$[1].world.extensions.modules.giants.placements[0].regionId",
+            "before": 65,
+            "after": 66
+          }
+        },
+        "$[].world.items[].id": {
+          "count": 342,
+          "example": {
+            "path": "$[1].world.items[0].id",
+            "before": 54,
+            "after": 55
+          }
+        },
+        "$[].world.levels[].monsters[].id": {
+          "count": 913,
+          "example": {
+            "path": "$[1].world.levels[0].monsters[7].id",
+            "before": 40,
+            "after": 41
+          }
+        },
+        "$[].world.monsters[].spatial.movementRegionId": {
+          "count": 21,
+          "example": {
+            "path": "$[1].world.monsters[9].spatial.movementRegionId",
+            "before": 65,
+            "after": 66
+          }
+        },
+        "$[].world.run.world5.nodes[].interactableId": {
+          "count": 1718,
+          "example": {
+            "path": "$[1].world.run.world5.nodes[12].interactableId",
+            "before": 67,
+            "after": 68
+          }
+        },
+        "$[].world.extensions.foundation.world.gate.targetEntityId": {
+          "count": 20,
+          "example": {
+            "path": "$[2].world.extensions.foundation.world.gate.targetEntityId",
+            "before": 81,
+            "after": 82
+          }
+        },
+        "$[].world.extensions.modules.narrative.active.targetEntityId": {
+          "count": 20,
+          "example": {
+            "path": "$[2].world.extensions.modules.narrative.active.targetEntityId",
+            "before": 81,
+            "after": 82
+          }
+        },
+        "$[].world.entityGraph.items[].id": {
+          "count": 34,
+          "example": {
+            "path": "$[8].world.entityGraph.items[0].id",
+            "before": 82,
+            "after": 83
+          }
+        },
+        "$[].world.extensions.components.<entityId>.growth:reward.creationReason": {
+          "count": 27,
+          "example": {
+            "path": "$[8].world.extensions.components.124.growth:reward.creationReason",
+            "before": "natural",
+            "after": "periodic"
+          }
+        },
+        "$[].world.extensions.modules.growth.rewardReceipts[]": {
+          "count": 718,
+          "example": {
+            "path": "$[8].world.extensions.modules.growth.rewardReceipts[0]",
+            "before": "birth:50",
+            "after": "birth:51"
+          }
+        },
+        "$[].world.levels[].items[].id": {
+          "count": 1057,
+          "example": {
+            "path": "$[8].world.levels[1].items[0].id",
+            "before": 54,
+            "after": 55
+          }
+        },
+        "$[].world.levels[].monsters[].carriedItemId": {
+          "count": 34,
+          "example": {
+            "path": "$[8].world.levels[1].monsters[4].carriedItemId",
+            "before": 82,
+            "after": 83
+          }
+        },
+        "$[].world.levels[].monsters[].spatial.movementRegionId": {
+          "count": 69,
+          "example": {
+            "path": "$[8].world.levels[1].monsters[5].spatial.movementRegionId",
+            "before": 65,
+            "after": 66
+          }
+        },
+        "$[].world.levels[].visibleItemIds[]": {
+          "count": 55,
+          "example": {
+            "path": "$[8].world.levels[2].visibleItemIds[0]",
+            "before": 102,
+            "after": 103
+          }
+        },
+        "$[].world.levels[].visibleMonsterIds[]": {
+          "count": 75,
+          "example": {
+            "path": "$[8].world.levels[2].visibleMonsterIds[0]",
+            "before": 51,
+            "after": 52
+          }
+        },
+        "$[].world.monsters[].leaderId": {
+          "count": 82,
+          "example": {
+            "path": "$[8].world.monsters[3].leaderId",
+            "before": 126,
+            "after": 127
+          }
+        },
+        "$[].world.extensions.components.<entityId>.growth:reward.sourceId": {
+          "count": 28,
+          "example": {
+            "path": "$[21].world.extensions.components.203.growth:reward.sourceId",
+            "before": 197,
+            "after": 194
+          }
+        },
+        "$[].world.levels[].monsters[].leaderId": {
+          "count": 140,
+          "example": {
+            "path": "$[21].world.levels[3].monsters[2].leaderId",
+            "before": 126,
+            "after": 127
+          }
+        },
+        "$[].world.extensions.components.<entityId>.growth:reward.initiallyHostile": {
+          "count": 14,
+          "example": {
+            "path": "$[28].world.extensions.components.286.growth:reward.initiallyHostile",
+            "before": false,
+            "after": true
+          }
+        },
+        "$[].world.extensions.components.<entityId>.giants:boss": {
+          "count": 7,
+          "example": {
+            "path": "$[28].world.extensions.components.312.giants:boss",
+            "before": null,
+            "after": {
+              "schema": 1,
+              "encounterKey": "giants.copper-chamber.depth-7.encounter",
+              "spawnDefinitionId": "giants.copper-tendril"
+            }
+          }
+        },
+        "$[].world.extensions.modules.growth.actors.<entityId>.hostile": {
+          "count": 14,
+          "example": {
+            "path": "$[28].world.extensions.modules.growth.actors.286.hostile",
+            "before": false,
+            "after": true
+          }
+        },
+        "$[].world.levels[].monsters[].spatial.bodyMember.groupId": {
+          "count": 35,
+          "example": {
+            "path": "$[28].world.levels[6].monsters[20].spatial.bodyMember.groupId",
+            "before": 311,
+            "after": 312
+          }
+        },
+        "$[].world.run.actorActions.bundles[].decisionOwnerId": {
+          "count": 7,
+          "example": {
+            "path": "$[28].world.run.actorActions.bundles[0].decisionOwnerId",
+            "before": 302,
+            "after": 303
+          }
+        },
+        "$[].world.run.actorActions.bundles[].subactions[].sourceEntityId": {
+          "count": 7,
+          "example": {
+            "path": "$[28].world.run.actorActions.bundles[0].subactions[0].sourceEntityId",
+            "before": 302,
+            "after": 303
+          }
+        },
+        "$[].world.run.actorActions.bundles[].subactions[].sourceFootprintVersion": {
+          "count": 7,
+          "example": {
+            "path": "$[28].world.run.actorActions.bundles[0].subactions[0].sourceFootprintVersion",
+            "before": "sha256:494f76aa6b0040bd801993249d1baef3a3959e927c51ad1ac23815e5c758a46c",
+            "after": "sha256:d7e8e5fcb289a9474878395a32957cc014577f3422421e6eb2f5023cb1f8bb98"
+          }
+        },
+        "$[].world.run.actorActions.bundles[].timeChargeOwnerId": {
+          "count": 7,
+          "example": {
+            "path": "$[28].world.run.actorActions.bundles[0].timeChargeOwnerId",
+            "before": 302,
+            "after": 303
+          }
+        },
+        "$[].world.run.spatialWorld.groups[].coreId": {
+          "count": 7,
+          "example": {
+            "path": "$[28].world.run.spatialWorld.groups[0].coreId",
+            "before": 311,
+            "after": 312
+          }
+        },
+        "$[].world.run.spatialWorld.groups[].groupId": {
+          "count": 7,
+          "example": {
+            "path": "$[28].world.run.spatialWorld.groups[0].groupId",
+            "before": 311,
+            "after": 312
+          }
+        },
+        "$[].world.run.spatialWorld.groups[].members[].entityId": {
+          "count": 35,
+          "example": {
+            "path": "$[28].world.run.spatialWorld.groups[0].members[0].entityId",
+            "before": 311,
+            "after": 312
+          }
+        }
+      },
+      "commandChanges": "Only narrative.open payload.targetEntityId increases by 1; original capture probe asserts all other command data/decisions unchanged.",
+      "messageHashesUnchanged": true
+    }
+  ]
+}

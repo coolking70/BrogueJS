@@ -21,10 +21,10 @@ function naturalLoop(depth:1|5) {
   };
   try {
     expect(g.player.loc).toEqual(route.start);
-    expect(g.player.inventory.items.filter(i=>i.category===ItemCategory.FOOD).reduce((n,i)=>n+i.quantity,0)).toBe(1);
+    expect(g.player.inventory.items.filter(i=>i.category===ItemCategory.FOOD).reduce((n,i)=>n+i.quantity,0)).toBe(2);
     for(let k=0;k<route.moves.length;k++){
       const m=route.moves[k]!;h.command('move',m.data);expect(g.player.loc).toEqual(m.at);
-      if(k===61)expect(g.player.inventory.items.filter(i=>i.category===ItemCategory.FOOD).reduce((n,i)=>n+i.quantity,0)).toBe(2);
+      if(k===61)expect(g.player.inventory.items.filter(i=>i.category===ItemCategory.FOOD).reduce((n,i)=>n+i.quantity,0)).toBe(3);
     }
     expect(g.isGameOver).toBe(false);
     const originalFood=g.player.inventory.items.find(i=>i.category===ItemCategory.FOOD)!;
@@ -75,7 +75,7 @@ function naturalLoop(depth:1|5) {
     const part=g.world5!.structures.find(s=>s.regionId===c.regionId)!.fixture!;
     expect(command('dismantle',{componentId:part.id,componentRevision:part.revision}).error).toBeNull();
     expect(command('retire',{regionId:c.regionId,regionRevision:region().revision}).error).toBeNull();
-    expect(g.player.inventory.items.find(i=>i.id===foodId)).toBe(originalFood);expect(originalFood.quantity).toBe(2);
+    expect(g.player.inventory.items.find(i=>i.id===foodId)).toBe(originalFood);expect(originalFood.quantity).toBe(3);
     evidence.closure=true;evidence.end={at:g.player.loc,food:originalFood.quantity,hp:g.player.hp,ticks:g.world5!.simulationTicks};
     evidence.inputs=inputs;evidence.recording=h.exportRecording();
     const save=h.save(),digest=h.digest();h.load(save);expect(h.digest()).toBe(digest);

@@ -250,3 +250,7 @@ Node24、3GiB、2workers，resident_sources + settlement_runtime：2文件5测�
 - P2：portrait 模块网格给地图至少 shell 高度 40%，次要区域有界滚动，子区域排列归共享 gameplay-layout.css，原 App 网格守卫未改。390×844、320×844、800×991 与 1440×900 编译样式／布局合同验证完成。
 - 门禁：相关首轮 19 文件 714 pass / 1 布局守卫 fail（无 skip/todo/unhandled）；收尾后受影响 2 文件 47 pass，关闭该失败；最终 boundary/依赖、vue-tsc、build、diff-check exit 0。未全量、未提交。报告 docs/ext/phase5-ui-fix.report.md；日志 /tmp/p5-ui-*.log，不累计重叠结果。
 - 浏览器仍待维护者抽样：Playwright Chromium MachPort 权限错误；原生 Chrome 控制被自动审批拒绝，没有本候选截图／真机验证。未把另一工作树页面当作本候选结果。无已确认未修复的本任务 headless/SFC 缺陷。
+
+- 2026-10-14：执行 p5-ui-fix2.task.md（HEAD 5fb605f），补地图尺寸变化跟随与 settlement 开局两份口粮；相关测试、boundary/types/build，不 commit。
+
+- 2026-10-14 P5 UI fix2 完成：地图几何变化清旧pan并在面板DOM更新后归中，桌面边界修正不再伪装手动平移；settlement startup补发1份原生口粮，开局共2份。四档SFC/布局、自然D1真实建营与存读回放通过。原20文件234pass/4fail保留，4项仅旧拾粮数量；单配置回退4pass后修前提，9文件136pass关闭并补守卫。两份narrative trace按原法重录、64字段登记及新检查点重建2pass，双包正式生命周期1pass；terrain守卫3pass/27未选、发现清单6pass、最终boundary/依赖/types/build/diff通过。浏览器Vite/Chromium受沙箱限制，无截图，不称实机通过。报告 docs/ext/phase5-ui-fix2.report.md；未commit/push。

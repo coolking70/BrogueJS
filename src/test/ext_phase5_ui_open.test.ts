@@ -6,6 +6,10 @@ import { effectScope, ref } from 'vue';
 import I18NextVue from 'i18next-vue';
 import i18next from 'i18next';
 import { createSfcHarness } from './support/sfcHarness';
+import { cameraState, recenterCamera } from '../ui/mapCamera';
+import { viewport, computeLayoutMode } from '../ui/layout';
+import { displaySettings } from '../engine/Settings';
+import { prepareCanvasInputScene } from './support/canvasInputScene';
 type N = {
   tag: string;
   text: string;
@@ -160,6 +164,7 @@ function start(modules: string[], camp: boolean) {
     initialCommands: buildModuleCreationCommands(plan, selected)
   });
   g.animationEnabled = false;
+  expect(g.player.inventory.items.filter(i => i.consumableId === 'ration_of_food').reduce((n,i) => n+i.quantity,0)).toBe(2);
   if (camp) {
     // Keep real startup/creation, then stage a legal camp scene. Establish itself
     // remains a real paid public command; no fake module view or camp DTO.
@@ -480,3 +485,98 @@ for (const { extensions } of cases)
       }
     }, 20000);
   }
+
+// Real SFC layout/watch/display loop; only DOM geometry and GPU text are fixtures.
+it.each([[320,844],[390,844],[800,991],[1440,900]])(
+  'GameCanvas follows resize/drawer/movement and preserves manual camera controls at %i×%i',
+  async (width, height) => {
+    const g = start(['settlement'], false);
+    prepareCanvasInputScene(g, true);
+    const oldViewport = { ...viewport }, oldCamera = { ...cameraState };
+    const oldImmersive = displaySettings.immersiveMode;
+    Object.assign(viewport, { width, height, mode: computeLayoutMode(width!, height!) });
+    Object.assign(window, { innerWidth: width, innerHeight: height });
+    Object.assign(cameraState, { zoom: 2, fit: false, panX: 0, panY: 0 });
+    displaySettings.immersiveMode = false;
+    const callbacks: Array<() => void> = [], frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(cb: () => void) { callbacks.push(cb); }
+      observe() {} disconnect() {}
+    });
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { frames.push(cb); return frames.length; });
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    const Canvas = await createSfcHarness({ baseURL: import.meta.url, stubs: {
+      'pixi.js': { ...Pixi, Text: TextFixture, Application: ApplicationFixture },
+      '../engine/Core/Game': { activeGame: g }
+    }}).load('../components/GameCanvas.vue');
+    const root = node('root'), panelOpen = ref(false);
+    const app = renderer.createApp({ setup: () => () => Vue.h(Canvas, { pauseAutomaticActions: panelOpen.value }) })
+      .use(I18NextVue, { i18next });
+    const flush = async () => {
+      for (const cb of callbacks) cb();
+      for (const cb of frames.splice(0)) cb(0);
+      await Vue.nextTick();
+      (window as any).advanceTime(1);
+      await Vue.nextTick();
+    };
+    try {
+      app.mount(root);
+      for (let n=0;n<12;n++) await Vue.nextTick();
+      const el = root.children[0]!;
+      const read = () => JSON.parse((window as any).render_game_to_text());
+      const visible = () => {
+        const { player, mapLayout: m } = read();
+        const x = m.offsetX + (player.x + 0.5) * m.tile * m.scaleX;
+        const y = m.offsetY + (player.y + 0.5) * m.tile * m.scaleY;
+        expect(x).toBeGreaterThanOrEqual(0); expect(x).toBeLessThanOrEqual(el.clientWidth);
+        expect(y).toBeGreaterThanOrEqual(0); expect(y).toBeLessThanOrEqual(el.clientHeight);
+      };
+      const before = state(g);
+      for (const [w,h] of [[width!,height!*0.6],[width!,height!*0.4],[height!,width!*0.4],[width!,height!*0.6]] as const) {
+        // A user pan must survive ordinary frames, then reset for new geometry.
+        cameraState.panX = -300; cameraState.panY = -150;
+        await Vue.nextTick();
+        const pan = { x: cameraState.panX, y: cameraState.panY };
+        (window as any).advanceTime(1); await Vue.nextTick();
+        expect({ x: cameraState.panX, y: cameraState.panY }).toEqual(pan);
+        Object.assign(el, { clientWidth: w, clientHeight: h });
+        const windowHeight = w === height! ? width! : height!;
+        Object.assign(window, { innerWidth: w, innerHeight: windowHeight });
+        Object.assign(viewport, { width: w, height: windowHeight, mode: computeLayoutMode(w,windowHeight) });
+        panelOpen.value = !panelOpen.value;
+        await flush(); visible();
+        expect(cameraState.panX).toBe(0); expect(cameraState.panY).toBe(0);
+        expect(cameraState.zoom).toBe(2); expect(cameraState.fit).toBe(false);
+      }
+      cameraState.panX = -100; await Vue.nextTick(); recenterCamera(); await Vue.nextTick(); visible();
+      // A drawer may clip the canvas without resizing its container. The post-DOM
+      // panel watcher must still measure and center in the remaining map band.
+      const cutHeight = Math.floor(el.clientHeight / 2);
+      const drawer = { getClientRects: () => [1], getBoundingClientRect: () => ({
+        left: 0, right: el.clientWidth, top: cutHeight, bottom: height!
+      }) };
+      const query = vi.spyOn(document, 'querySelectorAll').mockImplementation(() =>
+        (panelOpen.value ? [drawer] : []) as unknown as NodeListOf<Element>);
+      vi.stubGlobal('getComputedStyle', () => ({ visibility: 'visible' }));
+      panelOpen.value = false; await Vue.nextTick();
+      cameraState.zoom = 1; await Vue.nextTick();
+      panelOpen.value = true; await Vue.nextTick();
+      const clipped = read();
+      expect(clipped.mapLayout.offsetY + (clipped.player.y + 0.5) * clipped.mapLayout.tile * clipped.mapLayout.scaleY)
+        .toBeLessThanOrEqual(cutHeight);
+      panelOpen.value = false; await Vue.nextTick(); visible(); query.mockRestore();
+      cameraState.fit = true; await Vue.nextTick();
+      el.clientHeight -= 10; await flush(); visible(); expect(cameraState.fit).toBe(true);
+      cameraState.fit = false; await Vue.nextTick();
+      expect(state(g)).toEqual(before);
+      // Paused automatic actions must not pause following accepted native moves.
+      panelOpen.value = true; await Vue.nextTick();
+      g.executeCommand('move', { x: 1, y: 0 });
+      await flush(); visible();
+      expect(g.player.loc).toEqual({ x: 21, y: 12 });
+    } finally {
+      app.unmount(); g.disposeRecording();
+      Object.assign(viewport, oldViewport); Object.assign(cameraState, oldCamera);
+      displaySettings.immersiveMode = oldImmersive;
+    }
+  }, 20000);

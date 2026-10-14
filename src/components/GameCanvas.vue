@@ -156,6 +156,7 @@ let removeCanvasResizeObserver: (() => void) | null = null;
 let stopScaleModeWatch: (() => void) | null = null;
 let stopTileModeWatch: (() => void) | null = null;
 let stopCameraWatch: (() => void) | null = null;
+let stopViewportWatch: (() => void) | null = null;
 let stopImmersiveWatch: (() => void) | null = null;
 let removeOcclusionObserver: (() => void) | null = null;
 // FE-1：触屏手势监听的卸载函数
@@ -197,6 +198,7 @@ onMounted(async () => {
     let textResolution = window.devicePixelRatio || 1;
     let layoutScaleX = 1;
     let layoutScaleY = 1;
+    let lastLayoutGeometry = '';
 
     // ---------- Pre-allocated tile layer ----------
     // Retained quads and shared vector geometry avoid per-refresh tessellation.
@@ -344,6 +346,15 @@ onMounted(async () => {
         Object.assign(pixiApp.canvas.style,{position:'absolute',left:'0px',top:'0px'});
         const usable=readUsableMapViewport(el);
         if(usable.width<=0||usable.height<=0)return;
+        // Pan is relative to the old viewport. A new drawable size/layout starts
+        // from the displayed player, while zoom and explicit full-map stay intact.
+        const geometry = [usable.width, usable.height, viewport.mode, mapMode.value,
+            displaySettings.mapScaleMode, displaySettings.immersiveMode].join(':');
+        if (geometry !== lastLayoutGeometry) {
+            cameraState.panX = 0;
+            cameraState.panY = 0;
+            lastLayoutGeometry = geometry;
+        }
         if(pixiApp.renderer.screen.width!==usable.width||pixiApp.renderer.screen.height!==usable.height)pixiApp.renderer.resize(usable.width,usable.height);
         const preferredLayout = computeMapLayout(
             usable.width,
@@ -395,7 +406,11 @@ onMounted(async () => {
 
     // P2-6：地图缩放模式切换不改变容器尺寸（ResizeObserver 不会触发），
     // 需显式走同一条 applyLayout 重算路径，设置变更即时生效、无需刷新页面。
-    stopScaleModeWatch = watch(() => displaySettings.mapScaleMode, () => applyLayout());
+    stopScaleModeWatch = watch(() => displaySettings.mapScaleMode, () => { applyLayout(); renders.request(); }, { flush: 'post' });
+    // Edge drawers can shrink the usable band without changing container size.
+    // Measure after panel/viewport DOM updates, including desktop/compact switches.
+    stopViewportWatch = watch(() => [viewport.width, viewport.height, viewport.mode, props.pauseAutomaticActions],
+        () => { applyLayout(); renders.request(); }, { flush: 'post' });
     // FE-1：缩放级 / 平移量变化同样走 applyLayout（纯显示，不影响玩法）。
     stopCameraWatch = watch(() => [cameraState.zoom, cameraState.panX, cameraState.panY, cameraState.fit], () => applyLayout());
 
@@ -1219,6 +1234,8 @@ onUnmounted(() => {
   stopScaleModeWatch = null;
   stopCameraWatch?.();
   stopCameraWatch = null;
+  stopViewportWatch?.();
+  stopViewportWatch = null;
   stopImmersiveWatch?.();
   stopImmersiveWatch = null;
   removeOcclusionObserver?.();

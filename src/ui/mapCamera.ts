@@ -109,8 +109,8 @@ export function computeMapCamera(
         const factor = Math.max(1, Math.min(clamp(zoom, MIN_ZOOM, MAX_ZOOM), MAX_TILE_PX / maxBaseTilePx));
         const scaleX = base.scaleX * factor;
         const scaleY = base.scaleY * factor;
-        const x = axis(viewW, cols * tile * scaleX, (focus.x + 0.5) * tile * scaleX, pan.x, paddingTiles * tile * scaleX);
-        const y = axis(viewH, rows * tile * scaleY, (focus.y + 0.5) * tile * scaleY, pan.y, paddingTiles * tile * scaleY);
+        const x = axis(viewW, cols * tile * scaleX, (focus.x + 0.5) * tile * scaleX, pan.x, paddingTiles * tile * scaleX, true);
+        const y = axis(viewH, rows * tile * scaleY, (focus.y + 0.5) * tile * scaleY, pan.y, paddingTiles * tile * scaleY, true);
         return { scaleX, scaleY, offsetX: x.offset, offsetY: y.offset, follow: factor > 1, panX: x.pan, panY: y.pan };
     }
     const tilePx = clamp(defaultTilePx(viewW, viewH) * clamp(zoom, MIN_ZOOM, MAX_ZOOM), baseTilePx, MAX_TILE_PX);

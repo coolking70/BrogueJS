@@ -41,7 +41,7 @@ async function setup() {
  const h=createWorldHarness({seed:28,mode:'normal',modules:['settlement']}),g=worldHarnessGame(h);
  for(const m of route.moves)h.command('move',m.data);
  expect(g.player.loc).toEqual({x:67,y:5});
- const food=g.player.inventory.items.find(i=>i.consumableId==='ration_of_food')!;expect(food.quantity).toBe(2);
+ const food=g.player.inventory.items.find(i=>i.consumableId==='ration_of_food')!;expect(food.quantity).toBe(3);
  expect(h.ext('settlement','establish',{v:1,stateRevision:g.extensionRuntime!.worldCampState('settlement').revision,inventoryStamp:inventoryStamp(g.player.inventory.items),...route.campTarget,bounds:{x:64,y:1,width:9,height:9},sourceContainerId:null,sourceRevision:null,materials:[{itemDefinitionId:'settlement.wood',count:4},{itemDefinitionId:'settlement.stone',count:2}],food:[{itemId:food.id,quantity:2}]}).error).toBeNull();
  const tick=Vue.ref(0),gameStarted=Vue.ref(true),menuOpen=Vue.ref(false),creationTransition=Vue.ref(false),dialogs=new DialogService(),scope=Vue.effectScope();
  // Match App's real shell refs and native Game predicates. Game fields are not Vue refs.

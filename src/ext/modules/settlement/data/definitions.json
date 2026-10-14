@@ -383,6 +383,10 @@
         {
           "itemDefinitionId": "settlement.seed",
           "count": 6
+        },
+        {
+          "itemDefinitionId": "settlement.ration",
+          "count": 1
         }
       ],
       "overflow": "floor-then-skip"

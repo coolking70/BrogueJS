@@ -52,7 +52,7 @@
 | resourceNodes[].capacity/harvestTicks/unitsPerHarvest/yield/requiredToolTag | 20/100/1/1件/null | 容量1…9999；工时1…10000；单次1…min(99,capacity)；物品数量1…99、引用有效；工具tag可为null/合法ID，实际工具规则仍须满足底座 |
 | regeneration | 木 periodic(1,2000)，纤维 periodic(1,1000)，石 none | 枚举 none/periodic；periodic.units 1…99、intervalTicks 1…1000000 |
 | placement.dungeon | 深度1…40、每层1/每局40、onNoSpace=skip；site=null | min/maxDepth 1…40、maxPerDepth 1…32、maxPerRun 1…512，skip/defer；整包每层总尝试≤32、节点总预算≤512；现版只执行地牢，不能据site字段宣称已实现地表 |
-| startupItems | settlement.startup；12木/8石/6纤维/6种子 | items引用和数量校验；overflow只能 floor-then-skip，一次真实新局收据，不是每次读档发放 |
+| startupItems | settlement.startup；12木/8石/6纤维/6种子，另补1份原生口粮（与基础开局1份合计2份） | items引用和数量校验；overflow只能 floor-then-skip，一次真实新局收据，不是每次读档发放 |
 | camp.createCost/expandCost | wood4+stone2 / wood2+stone2 | 1…8项、数量1…99、无重复，引用本包basic.* material；create/expandTicks默认300、dismantle/retireTicks默认100，各1…10000 |
 | camp.supplyCapacity / requiredFood | 64 / 2 | supplyCapacity 1…64可改；requiredFood必须2，锁守恒也写死2，不能仅改JSON |
 | structures[].constructionCost/constructionTicks/maxHp/resistances/refund* | 上表；字段默认1/2 | 工时1…10000、HP1…1000000、物理/火抗0…100、分母1…10000、分子0…分母。refundNumerator/Denominator虽通过范围校验，实际destroyComponent固定按1/2退料，改JSON不能改变退款比例；退款读取实际原账单及当前耐久。部件slot/barrierKind与blocks必须配套，不能任意解锁墙/窗性质 |

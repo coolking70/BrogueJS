@@ -213,7 +213,7 @@ describe('settlement limits and structures', () => {
         g.player.inventory.items
           .filter((i) => i.category === ItemCategory.FOOD)
           .reduce((n, i) => n + i.quantity, 0)
-      ).toBe(1);
+      ).toBe(2);
     } finally {
       h.dispose();
     }

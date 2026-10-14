@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { computeMapCamera } from '../../../../ui/mapCamera';
 import { usableMapViewport } from '../../../../ui/mapViewport';
 describe('remaining map viewport camera', () => {
-  it.each([320, 390, 1440])(
+  it.each([320, 390, 800, 1440])(
     'uses actual %i viewport and drawer bounds for layout and pointer inversion',
     (width) => {
       const a = usableMapViewport(
@@ -58,4 +58,13 @@ describe('remaining map viewport camera', () => {
     expect(y).toBeGreaterThan(0);
     expect(y).toBeLessThan(480);
   });
+});
+
+it('desktop edge clamps do not become user pan on repeated layout or compact transition', () => {
+  const base = { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 };
+  const focus = { x: 1, y: 1 };
+  const first = computeMapCamera(1100, 700, base, 79, 29, 16, focus, 2, { x: 0, y: 0 }, false);
+  expect(first.panX).toBe(0); expect(first.panY).toBe(0);
+  const second = computeMapCamera(1100, 700, base, 79, 29, 16, focus, 2, { x: first.panX, y: first.panY }, false);
+  expect(second).toEqual(first);
 });
