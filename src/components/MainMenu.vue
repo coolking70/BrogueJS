@@ -163,7 +163,7 @@ function submitCreation() {
     const initialCommands = buildModuleCreationCommands(creationContext.value, creationSelections), session = creationSession;
     // Latch before emitting: repeated clicks/Enter cannot create a second run.
     creationSubmitting.value = true;
-    emit('new-game', { ...creationRun.value, ruleSet: 'extended', extensions: creationContext.value.extensions, ...(Object.keys(configurationDrafts.value).some(id=>creationContext.value!.extensions.includes(id)) ? {extensionConfigurations:Object.fromEntries(Object.entries(configurationDrafts.value).filter(([id])=>creationContext.value!.extensions.includes(id)))} : {}), initialCommands,
+    emit('new-game', { ...creationRun.value, ruleSet: 'extended', extensions: creationContext.value.extensions, ...(Object.keys(configurationDrafts.value).some(id=>creationContext.value!.extensions.includes(id)) ? {extensionConfigurations:Object.fromEntries(Object.entries(configurationDrafts.value).filter(([id])=>creationContext.value!.extensions.includes(id)).map(([id,cfg])=>[id,{...cfg}]))} : {}), initialCommands,
       onRejected: () => {
         if (session !== creationSession) return;
         creationSubmitting.value = false; creationError.value = 'ext.creation.start_failed';
