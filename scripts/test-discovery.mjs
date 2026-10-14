@@ -6,7 +6,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const suiteNames = Object.freeze(['test', 'gen', 'drift']);
+export const suiteNames = Object.freeze(['test', 'drift']);
 export const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const generatedDirectories = new Set(['.git', 'node_modules', 'dist', 'coverage', '.vite', '.cache']);
 const slash = path => path.split(sep).join('/');
@@ -47,7 +47,7 @@ export function resolveTestSuites(root = repositoryRoot) {
         catch (error) { errors.push(`Invalid test ownership manifest ${owner.manifest}: ${error.message}`); continue; }
         if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)
             || Object.keys(manifest).sort().join(',') !== [...suiteNames].sort().join(',')) {
-            errors.push(`${owner.manifest} must contain exactly test, gen, drift arrays`); continue;
+            errors.push(`${owner.manifest} must contain exactly test, drift arrays`); continue;
         }
         for (const suite of suiteNames) {
             if (!Array.isArray(manifest[suite])) { errors.push(`${owner.manifest}: ${suite} must be an array`); continue; }

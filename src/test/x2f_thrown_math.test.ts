@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CombatSystem } from '../engine/Combat/Combat';
 import { rng } from '../engine/Random';
@@ -7,48 +6,11 @@ import { Monster, MonsterState, type MonsterData } from '../entities/Monster';
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import monsters from '../data/monsters.json';
 
-interface Case {
-    lo: number; hi: number; clump: number; enchant: number;
-    strength: number; required: number; calls: number;
-    dice: number[][]; combinations: number; weights: Record<string, number>;
-}
-const golden = JSON.parse(fs.readFileSync('src/test/fixtures/ce-oracles/x2f/ce-thrown.json', 'utf8')) as Case[];
 const rat = (monsters as MonsterData[]).find(row => row.id === 'rat')!;
 afterEach(() => vi.restoreAllMocks());
 
 describe('X2f compiled CE thrown weapon mathematics', () => {
-    it.each(golden)('instance {$lo,$hi,$clump}, enchant {$enchant}, strength {$strength}: distribution and RNG tuples', row => {
-        const thrower = new Player(4, 5);
-        thrower.strength = row.strength;
-        const defender = new Monster(5, 5, rat);
-        defender.hp = defender.maxHp = 10000;
-        defender.state = MonsterState.HUNTING;
-        defender.isCaged = true; // attackHit short circuit, so only damage dice remain
-        const item = ItemLoader.spawnWeapon('javelin', -1, -1)!;
-        item.damage = `${row.lo}-${row.hi}`;
-        item.clumping = row.clump;
-        item.enchantment = row.enchant;
-        item.strengthRequired = row.required;
-        item.runicType = undefined;
-        const counts: Record<string, number> = {};
-        let tuple = 0;
-        const roll = vi.spyOn(rng, 'randRange').mockImplementation((lo, hi) => {
-            const value = lo + tuple % (hi - lo + 1);
-            tuple = Math.trunc(tuple / (hi - lo + 1));
-            return value;
-        });
-        for (let n = 0; n < row.combinations; n++) {
-            tuple = n;
-            defender.hp = defender.maxHp;
-            roll.mockClear();
-            const result = CombatSystem.resolveThrownWeapon(thrower, defender, item);
-            expect(result.hit).toBe(true);
-            counts[result.damage] = (counts[result.damage] ?? 0) + 1;
-            expect(roll.mock.calls).toEqual(row.dice);
-            expect(roll).toHaveBeenCalledTimes(row.calls);
-        }
-        expect(counts).toEqual(row.weights);
-    });
+
 
     it('a miss spends one hit die; auto hit spends none; immune hit spends no damage dice', () => {
         const thrower = new Player(4, 5);

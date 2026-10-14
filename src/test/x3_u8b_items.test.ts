@@ -28,6 +28,7 @@ function room(g: Game) {
             isClairvoyantVisible: false, isDiscovered: false, machineNumber: 0,
             rememberedLayers: [...c.layers], rememberedItem: null });
     }
+    (g as any).updateVision(false);
     logger.reset();
 }
 function scene() { const g = createHeadlessGame(33008, 'test'); room(g); return g; }

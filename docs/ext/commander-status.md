@@ -1,11 +1,18 @@
-# 维护者侧指挥状态（2026-10-12）
+# 当前状态（2026-10-14，最终失败修复完成）
 
-## 当前状态（2026-10-12T06:50:08+08:00，SDK R2通过收口）
-- 六项63a279e已推送；SDK独立R2通过，C1关闭，无新确证生产发现；最终十路径与被审候选一致，本提交收口SDK，当前无运行作者/审查/门禁。
-- SDK正式24过、原seed23/118存读4过，相关224/65/74/86及drift14各套通过；C1新2、raid28、归属6及types/boundary通过，不重叠累加。仅修正文档finish参数depth=1，生产和测试不变。
-- 下一步本轮推送SDK后独立启动唯一集成作者，先合固定narrative2 1d0d900，再合combat2 4ea702c；逐项关闭原12/九行、原6及自然内容证据，不重复单包完整全量。
-- 最终组合候选统一npm/ext/drift/128/15；giantHit/zombie等仍待集成关闭，Claude最终人工待验。集成定向修验粗估4至10小时，最终全量另计；XP skip、5D3另案。
-- 父01a1163c-1880-7c31-b810-dd60d1e07ac8；独立OS session/nohup/run-child+done，看门狗/private/tmp/brogue-commander-20261009-5z/watchdog.sh，后续启动同轮登记PID，不轮询，无SDK R3。
+- HEAD a15c980＋既有未提交集成/政策差量全部保留，候选SHA `f4542258a60ae235fea408d9c7ab356353fe6e4fcf2df2f87d3faee9b7ef7fa2`；无生产改动，未commit/push。见[修复报告](phase5-final-fix.report.md)。
+- 原96项未豁免失败及5空套件已关闭；5文件有效测试保留。完整图56黄金叶完成单变量归因/原法重录；原11超时所在4文件单worker全过。
+- 完整npm exit1：11340过/18败/9skip/5todo；ext exit1：6316过/3败/1skip。npm另15超时均有同源完整文件单worker通过证据，含末次giants2_persistence 8/8；不覆盖首次退出1。
+- drift16/16、boundary/测试依赖、types/build均exit0；全批与最后独立复验源码前后一致。所有前台门禁已结束；剩余已批准zombie/giantHit内容与N2七包900s调查，见[门禁摘要](evidence/phase5-final-fix-gates.json)。
+- 浏览器/真机仍沿用[人工待验清单](phase5-final-policy.manual-checklist.md)；下一步由维护者安排，不自动commit/push或重开已批准内容搜索，不称全量全绿。
+
+# 当前状态（2026-10-13T23:27:56+08:00，父核对完成，交付BLOCKED）
+
+- 本轮[最终门禁核对](phase5-final-policy-gates.report.md)完成：HEAD a15c980 + 未提交集成/政策差量，源码1343文件SHA `fb8be72f22f7bf43272de36a889ba3eec4dbeb72d1356d1fc2a12d0cee20c086`，全批与当前前后相同；delivery READY=false，未提交/未推送，index空。
+- npm exit1：11259过/99败/9skip/5todo/0unhandled，另5空套件；79行为败根因未区分，合计96条未获豁免失败未关闭。ext exit1：6314过/5败/1skip，其3条未豁免与npm重叠；原首败不被ext同名通过覆盖，见[npm台账](phase5-final-npm-triage.md)。
+- drift16过、正常128引擎、全删实际7目录后剩余ext1548过/24skip与边界/依赖/types/build/全关1及本轮真实七包save/recording拒绝、classic生命周期均通过。全删skip为23具名required组＋1既有性能skip，浏览器未验。
+- 父23:27实际ps确认最终runner58500/wrapper58499、接续58543及交付7885/wrapper7884均已退出，无运行中vitest；19项结果与done已逐套核对，当前活动PID无。R2 PASS保持，无R3；已批准zombie/giant内容及N2原900s调查仍保失败，不重复探针/门禁或修源。
+- 父01a1163c-1880-7c31-b810-dd60d1e07ac8已核对阻塞，下一步待用户裁定未关闭失败的后继处理；执行根`/private/tmp/brogue-commander-20261009-5z`的`policy-final-delivery-v1.BLOCKED.md`/`final.md`/`commit-remote.json`供接续，不依赖CLI resume、不停父自动化、不自动开下一步；[Claude人工清单](phase5-final-policy.manual-checklist.md)全部待验，XP skip/5D3另案/Z1-A不CEfetch/full/gen，无法估计阻塞解除时间。
 
 ## 当前工作规则
 

@@ -1,0 +1,494 @@
+{
+  "modules": [
+    "combat",
+    "crafting",
+    "foraging",
+    "giants",
+    "growth",
+    "narrative",
+    "settlement"
+  ],
+  "tests": {
+    "src/ext/modules/combat/tests/combat2_combinations.test.ts": {
+      "required": [],
+      "optional": [
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "narrative",
+        "settlement"
+      ]
+    },
+    "src/ext/modules/combat/tests/combat2_growth.test.ts": {
+      "required": [],
+      "optional": [
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "narrative",
+        "settlement"
+      ]
+    },
+    "src/ext/modules/combat/tests/combat2_integrated_natural.test.ts": {
+      "required": [],
+      "optional": [
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "narrative",
+        "settlement"
+      ]
+    },
+    "src/ext/modules/combat/tests/combat2_links.test.ts": {
+      "required": [],
+      "optional": [
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "narrative",
+        "settlement"
+      ]
+    },
+    "src/ext/modules/combat/tests/combat2_sdk_repro.test.ts": {
+      "required": [],
+      "optional": [
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "narrative",
+        "settlement"
+      ]
+    },
+    "src/ext/modules/combat/tests/combat_body_transition_facts.test.ts": {
+      "required": [
+        "giants",
+        "growth",
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/combat/tests/combat_bonfire_runtime.test.ts": {
+      "required": [
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/combat/tests/combat_foundation_dodge_gate.test.ts": {
+      "required": [
+        "giants"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/combat/tests/combat_native_stamina.test.ts": {
+      "required": [
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/combat/tests/combat_runtime.test.ts": {
+      "required": [
+        "growth",
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/combat/tests/combat_scheduler_due.test.ts": {
+      "required": [
+        "giants",
+        "growth",
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/combat/tests/combat_square_replay.test.ts": {
+      "required": [
+        "giants"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/crafting/tests/crafting_combinations.test.ts": {
+      "required": [
+        "combat",
+        "giants"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/foraging/tests/foraging_combinations.test.ts": {
+      "required": [
+        "giants"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/foraging/tests/foraging_companion.test.ts": {
+      "required": [
+        "giants"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/foraging/tests/foraging_roast.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/giants/tests/giants2_combinations.test.ts": {
+      "required": [],
+      "optional": [
+        "combat",
+        "crafting",
+        "foraging",
+        "growth",
+        "narrative",
+        "settlement"
+      ]
+    },
+    "src/ext/modules/giants/tests/giants2_parts.test.ts": {
+      "required": [
+        "combat",
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/giants/tests/giants_committed_transition.test.ts": {
+      "required": [
+        "combat",
+        "growth",
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/giants/tests/giants_composite.test.ts": {
+      "required": [
+        "combat",
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/giants/tests/giants_zones.test.ts": {
+      "required": [
+        "combat",
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/growth/tests/ext_growth_combat_stats.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/growth/tests/ext_growth_composite_rewards.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/growth/tests/ext_growth_content_rewards.test.ts": {
+      "required": [
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/growth/tests/ext_growth_optional_rewards.test.ts": {
+      "required": [
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/narrative/tests/narrative2_combinations.test.ts": {
+      "required": [],
+      "optional": [
+        "combat",
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "settlement"
+      ]
+    },
+    "src/ext/modules/narrative/tests/narrative2_metadata.test.ts": {
+      "required": [],
+      "optional": [
+        "settlement"
+      ]
+    },
+    "src/ext/modules/narrative/tests/narrative2_rewards.test.ts": {
+      "required": [],
+      "optional": [
+        "growth"
+      ]
+    },
+    "src/ext/modules/settlement/tests/foundation_lifecycle_repair.test.ts": {
+      "required": [
+        "crafting",
+        "foraging"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/settlement/tests/foundation_retirement_replay.test.ts": {
+      "required": [
+        "crafting",
+        "foraging"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/settlement/tests/foundation_xr_repair.test.ts": {
+      "required": [
+        "crafting",
+        "foraging"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/settlement/tests/resident_production_codec.test.ts": {
+      "required": [
+        "crafting"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/settlement/tests/settlement_raids.test.ts": {
+      "required": [
+        "combat",
+        "giants",
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/settlement/tests/settlement_sdk_generation_raid.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/test/dialog_host.test.ts": {
+      "required": [
+        "foraging"
+      ],
+      "optional": []
+    },
+    "src/test/ext_actor_actions_root_world.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/test/ext_combat_adapter_foundation.test.ts": {
+      "required": [
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/test/ext_combat_transition_facts.test.ts": {
+      "required": [
+        "combat",
+        "giants",
+        "growth",
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/test/ext_compatibility_diagnostics.test.ts": {
+      "required": [
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/test/ext_departure_runtime.test.ts": {
+      "required": [
+        "combat",
+        "giants"
+      ],
+      "optional": []
+    },
+    "src/test/ext_edible_review.test.ts": {
+      "required": [
+        "combat",
+        "giants"
+      ],
+      "optional": []
+    },
+    "src/test/ext_edible_runtime.test.ts": {
+      "required": [
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/test/ext_fire_contact_runtime.test.ts": {
+      "required": [
+        "crafting"
+      ],
+      "optional": []
+    },
+    "src/test/ext_foundation_boundary_audit.test.ts": {
+      "required": [
+        "combat",
+        "crafting",
+        "foraging",
+        "giants",
+        "settlement"
+      ],
+      "optional": []
+    },
+    "src/test/ext_foundation_retirement_atomicity.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/test/ext_foundation_world_repair.test.ts": {
+      "required": [
+        "combat",
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "narrative",
+        "settlement"
+      ],
+      "optional": []
+    },
+    "src/test/ext_generation_actor_identity.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/test/ext_rest_point_runtime.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/test/ext_stats_review.test.ts": {
+      "required": [
+        "combat",
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/test/ext_world_work_transactions.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/test/giants2_foundation.test.ts": {
+      "required": [
+        "combat",
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/test/native_bolt_delivery.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/test/phase3b_action_lifecycle.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/test/phase4a0_spatial_differential.test.ts": {
+      "required": [
+        "growth",
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/test/phase4d_body_lifecycle.test.ts": {
+      "required": [
+        "combat",
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/test/phase4d_effects_rewards.test.ts": {
+      "required": [
+        "combat",
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/test/phase4d_production_body.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/test/replay_import_ui.test.ts": {
+      "required": [
+        "foraging"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/combat/tests/combat_adapters.test.ts": {
+      "required": [
+        "giants",
+        "growth",
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/crafting/tests/crafting_placement.test.ts": {
+      "required": [
+        "giants"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/foraging/tests/foraging_trace.test.ts": {
+      "required": [
+        "crafting"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/settlement/tests/resident_foraging_integration.test.ts": {
+      "required": [
+        "combat",
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "narrative"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/settlement/tests/resident_production_food.test.ts": {
+      "required": [
+        "crafting",
+        "foraging"
+      ],
+      "optional": []
+    },
+    "src/test/ext_world_work_review.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/test/phase4d_declarations.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/test/phase4e_body_transition.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/test/phase4e_recording.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    }
+  }
+}

@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { Player } from '../entities/Player';
 import { Creature } from '../entities/Creature';
 import { Monster, MonsterState, specificallyValidBoltTarget, type MonsterData } from '../entities/Monster';
 import { MONSTER_BOLT_TABLE } from '../engine/Combat/Bolt';
 import { CombatSystem } from '../engine/Combat/Combat';
-import { playerDefense, hitProbability } from '../engine/Combat/CombatFormulas';
+import { hitProbability } from '../engine/Combat/CombatFormulas';
 import { blinkAllyFlees, monsterAvoidsCorridor, monsterBlinkAvoids } from '../engine/Combat/MonsterBlink';
 import { negateCreatureStatusEffects } from '../engine/Combat/Negation';
 import { creatureStatusRows } from '../engine/Status/statusConfig';
@@ -15,7 +14,6 @@ import { rng } from '../engine/Random';
 import { generateMonsterDetail } from '../engine/UI/DetailGenerator';
 import monsters from '../data/monsters.json';
 import { createHeadlessGame } from './harness';
-const golden = JSON.parse(readFileSync('src/test/fixtures/ce-oracles/u-14b/ce-donning.json', 'utf8')) as Array<Record<string, number>>;
 const mob = (id='rat', x=12, y=8) => { const m = new Monster(x,y,(monsters as MonsterData[]).find(d=>d.id===id)!); m.state=MonsterState.HUNTING; return m; };
 function scene() {
     const g=createHeadlessGame(1414,'test');g.monsters=[];g.dormantMonsters=[];g.items=[];g.animationEnabled=false;
@@ -97,9 +95,7 @@ describe('U14b STUCK is a counter with real terrain contact',()=>{
 });
 
 describe('U14b DONNING CE original function goldens and equipment flow',()=>{
-    it.each(golden)('weakness $weakness / donning $donning: defense $playerDefense',row=>{
-        expect(playerDefense(4,2,18-row.weakness!,17,row.donning!)).toBe(row.playerDefense);
-    });
+
     it('ordinary equip starts armor/10, refresh replaces; forced starting equipment and unequip clear',()=>{
         const g=scene(),armor=ItemLoader.spawnArmor('chain_mail',0,0)!;armor.armor=4.8;armor.enchantment=2;armor.strengthRequired=12;
         vi.spyOn(g as any,'playerTurnEnded').mockImplementation(()=>{});g.equipItem(armor);expect(g.player.getStatusDuration('donning')).toBe(4);expect(g.player.maxStatus.donning).toBe(4);

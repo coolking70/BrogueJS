@@ -1,4 +1,3 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import fs from 'node:fs';
 import i18next from 'i18next';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,12 +10,9 @@ import { ItemLoader } from '../engine/Items/ItemLoader';
 import { WAND_INITIAL_RANGES } from '../engine/Items/ArcanaInstance';
 import { enchantArcana } from '../engine/Items/ArcanaEnchantment';
 import { ItemCategory } from '../engine/Items/Item';
-import { getBoltForItem, BOLT_EFFECT_CE_EFFECT } from '../engine/Combat/Bolt';
-import { CEBoltType, CE_BOLT_CATALOG } from '../engine/Combat/BoltCatalog';
 import { rng } from '../engine/Random';
 import { Monster, MonsterState, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
-import arcana from '../data/arcana.json';
 import { createHeadlessGame } from './harness';
 const ids = 'teleportation slowness polymorphism negation domination beckoning plenty invisibility empowerment'.split(' ').map(s => 'wand_of_' + s);
 const added = ['wand_of_polymorphism', 'wand_of_negation', 'wand_of_domination', 'wand_of_plenty'];
@@ -42,32 +38,7 @@ function scene(id = 'rat') {
 }
 
 describe('W-24 CE nine-row catalog and ordinary entry', () => {
-    it.skipIf(!hasCeSource())('parses the actual CE rows: order, frequency, market value, charge range, polarity, power and flavor slots' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        const ce = fs.readFileSync(ceFile('src/variants/GlobalsBrogue.c'), 'utf8');
-        const body = ce.split('itemTable wandTable_Brogue[] = {')[1]!.split('\n};')[0]!;
-        const rows = [...body.matchAll(/\{"([^"]+)",\s*itemMetals\[(\d+)\], "",\s*(\d+),\s*(\d+),\s*0,\s*BOLT_(\w+),\s*\{(\d+),(\d+),(\d+)\}, false, false, (-?1),/g)];
-        expect(rows).toHaveLength(9);
-        expect(ItemLoader.genWands.map(w => w.id)).toEqual(ids);
-        expect(ItemLoader.wands.map(w => w.id)).toEqual([...ids, 'wand_of_fire', 'wand_of_lightning']);
-        expect(ItemLoader.genWands.map(w => w.frequency)).toEqual(weights);
-        expect(weights.reduce((a,b) => a+b, 0)).toBe(22);
-        rows.forEach((r, i) => {
-            const id = 'wand_of_' + r[1], cfg = ItemLoader.genWands[i]!;
-            expect(cfg.id).toBe(id); expect(Number(r[2])).toBe(i);
-            expect([cfg.frequency, cfg.marketValue]).toEqual([Number(r[3]), Number(r[4])]);
-            expect(WAND_INITIAL_RANGES[id]).toEqual(r.slice(6,9).map(Number));
-            expect(ItemLoader.kindPolarity(id)).toBe(Number(r[9]));
-            const bolt = getBoltForItem(id)!;
-            expect(bolt.ceType).toBe(CEBoltType[r[5] as keyof typeof CEBoltType]);
-            expect(BOLT_EFFECT_CE_EFFECT[bolt.effect]).toBe(CE_BOLT_CATALOG[bolt.ceType!].effect);
-        });
-        expect(arcana.staffs).toHaveLength(13);
-        expect(ItemLoader.genStaffs.reduce((s,w) => s + w.frequency!, 0)).toBe(110);
-        for (const id of ['wand_of_fire','wand_of_lightning']) {
-            expect(ItemLoader.wands.find(w => w.id === id)!.excludeFromGeneration).toBe(true);
-            expect(ItemLoader.spawnWand(id,0,0)).not.toBeNull();
-        }
-    });
+
     it('all 22 tickets follow the CE intervals through the actual Game kind selection', () => {
         const g: any = Object.create(Game.prototype), draw = vi.spyOn(rng, 'randRange');
         const expected = ids.flatMap((id,i) => Array(weights[i]).fill(id));

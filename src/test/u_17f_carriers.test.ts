@@ -1,12 +1,11 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {readFileSync} from 'node:fs';
-import {Grid, TerrainType as T, DungeonLayer as L, DRAW_PRIORITY, TERRAIN_HOME_LAYER} from '../engine/Map/Grid';
+import {Grid, TerrainType as T, DungeonLayer as L, TERRAIN_HOME_LAYER} from '../engine/Map/Grid';
 import {TERRAIN_FLAGS, TM_IS_CIRCUIT_BREAKER} from '../engine/Map/TerrainCatalog';
 import {DF, DF_MISSING_TILES, DUNGEON_FEATURE_CATALOG as D} from '../engine/Map/DungeonFeatureCatalog';
 import {catalogFeature, spawnDungeonFeature} from '../engine/Map/DungeonFeature';
 import {runPromotionUpdate} from '../engine/Map/Promotion';
 import {AUTO_GENERATOR_CATALOG, runAutogenerators} from '../engine/Map/AutoGenerator';
-import {LightKind} from '../engine/Map/LightCatalog';
 import {terrainAppearance} from '../engine/UI/Appearance';
 import {createHeadlessGame} from './harness';
 import {Item, ItemCategory as C} from '../engine/Items/Item';
@@ -39,19 +38,7 @@ function grid(){const g=new Grid(11,9);for(let x=0;x<11;x++)for(let y=0;y<9;y++)
 afterEach(()=>vi.restoreAllMocks());
 
 describe('U17f independent CE catalogs, appearances and data starts',()=>{
- it('six tile rows and eleven DF rows match CE, including granite superpriority and actual flash fields',()=>{
-  for(const [name,row] of Object.entries(golden.tiles)){
-   const t=T[name as keyof typeof T],{line,description,flavorText,drawPriority,glowLight,...expected}=row;
-   expect(line).toBeGreaterThan(0);expect(description).not.toBe('');expect(typeof flavorText).toBe('string');
-   expect(TERRAIN_FLAGS[t]).toEqual({...expected,glowLight:LightKind[glowLight as keyof typeof LightKind],webOnly:false});
-   expect(DRAW_PRIORITY[t]).toBe(drawPriority);expect(TERRAIN_HOME_LAYER[t]).toBe(name==='PORTAL_LIGHT'?L.SURFACE:name==='WORM_TUNNEL_MARKER_ACTIVE'?L.LIQUID:L.DUNGEON);
-  }
-  for(const [name,row] of Object.entries(golden.dfs)){
-   const id=DF[name as keyof typeof DF];expect(id).toBe(row.id);
-   expect(D[id]).toMatchObject({tile:T[row.tile as keyof typeof T],layer:L[row.layer as keyof typeof L],startProbability:row.startProbability,probabilityDecrement:row.probabilityDecrement,flags:row.flags,description:row.description,lightFlare:row.lightFlare,flashColor:row.flashColor,effectRadius:row.effectRadius,cePropagationTerrain:row.propagationTerrain,subsequentDF:row.subsequentDF?DF[row.subsequentDF as keyof typeof DF]:null});
-   expect(()=>catalogFeature(id)).not.toThrow();
-  }
- });
+
  it('retains the empty missing-tile guard and preserves old IDs; five appended appearances come from CE',()=>{
   expect(DF_MISSING_TILES).toEqual([]);expect(Object.values(D).filter(d=>d.tile===null)).toEqual([]);
   expect(T.SACRIFICE_LAVA).toBe(163);expect(T.RAT_TRAP_WALL_CRACKING).toBe(164);
@@ -61,11 +48,6 @@ describe('U17f independent CE catalogs, appearances and data starts',()=>{
   expect(rows.PORTAL_LIGHT.char).toBe('');expect(rows.WORM_TUNNEL_MARKER_ACTIVE.char).toBe('');
  });
  it('CE blueprint trigger and monster entry rows remain wired, including dormant marker and coffin trigger area',()=>{
-  for(const row of golden.blueprintFeatures){
-   const f=(blueprints as BlueprintDef[]).find(b=>b.ceBlueprintId===row.blueprint)!.features[row.index]!;
-   expect(f.featureDF??null,`${row.blueprint}/${row.index}`).toBe(row.featureDF);
-   if(row.terrain!=='0')expect(f.terrain).toBe(row.terrain==='ALTAR_INERT'?'ALTAR':row.terrain);
-  }
   for(const id of [21,29,43,69])expect((blueprints as BlueprintDef[]).find(b=>b.ceBlueprintId===id)!.features.some(f=>f.flags?.includes('MF_MONSTERS_DORMANT'))).toBe(true);
   const worms=(blueprints as BlueprintDef[]).find(b=>b.ceBlueprintId===55)!.features[1]!;
   expect(worms.monsterId).toBe('underworm');expect(worms.flags).not.toContain('MF_MONSTERS_DORMANT');

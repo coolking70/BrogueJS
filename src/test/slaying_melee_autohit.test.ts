@@ -152,6 +152,7 @@ describe('slaying command and inspection integration', () => {
         game.player.equippedWeapon = weapon();
         const monster = target();
         game.monsters.push(monster);
+        (game as any).updateVision(false);
         return { game, monster, item: game.player.equippedWeapon };
     }
 

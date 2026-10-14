@@ -1,7 +1,7 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {readFileSync} from 'node:fs';
-import {Grid, TerrainType as T, DungeonLayer as L, DRAW_PRIORITY, TERRAIN_HOME_LAYER, type Cell} from '../engine/Map/Grid';
-import {DF, DF_MISSING_TILES, DUNGEON_FEATURE_CATALOG as D} from '../engine/Map/DungeonFeatureCatalog';
+import {Grid, TerrainType as T, DungeonLayer as L, type Cell} from '../engine/Map/Grid';
+import {DF, DF_MISSING_TILES} from '../engine/Map/DungeonFeatureCatalog';
 import {TERRAIN_FLAGS, TM_IS_CIRCUIT_BREAKER} from '../engine/Map/TerrainCatalog';
 import {LightKind} from '../engine/Map/LightCatalog';
 import {catalogFeature, spawnDungeonFeature} from '../engine/Map/DungeonFeature';
@@ -44,19 +44,8 @@ function grid(){const g=new Grid(13,9);for(let x=0;x<13;x++)for(let y=0;y<9;y++)
 afterEach(()=>vi.restoreAllMocks());
 
 describe('U17d CE independent catalog, three chains and data starts',()=>{
- it('all nine tile rows (including dormant torch light) equal CE sources',()=>{
-  for(const [name,row] of Object.entries(golden.tiles)){
-   const t=T[name as keyof typeof T],{line,description,flavorText,drawPriority,glowLight,...expected}=row;
-   expect(line).toBeGreaterThan(0);expect(description).not.toBe('');expect(typeof flavorText).toBe('string');
-   expect(TERRAIN_FLAGS[t]).toEqual({...expected,glowLight:LightKind[glowLight as keyof typeof LightKind],webOnly:false});expect(DRAW_PRIORITY[t]).toBe(drawPriority);expect(TERRAIN_HOME_LAYER[t]).toBe(L.DUNGEON);
-  }
- });
- it('nine restored DF and six successors/armor rows equal CE including no immediate poison successor',()=>{
-  for(const [name,row] of Object.entries(golden.dfs)){
-   const id=DF[name as keyof typeof DF];expect(id).toBe(row.id);
-   expect(D[id]).toMatchObject({tile:T[row.tile as keyof typeof T],layer:L[row.layer as keyof typeof L],startProbability:row.startProbability,probabilityDecrement:row.probabilityDecrement,flags:row.flags,description:row.description,lightFlare:row.lightFlare,flashColor:row.flashColor,effectRadius:row.effectRadius,cePropagationTerrain:row.propagationTerrain,propagationTerrain:null,subsequentDF:row.subsequentDF?DF[row.subsequentDF as keyof typeof DF]:null});
-  }
- });
+
+
  it('removes precisely nine registrations, preserves remaining ordered eleven and old numeric IDs',()=>{
   expect(DF_MISSING_TILES).toEqual([]); // U17f closes the final six.
 

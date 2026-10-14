@@ -5,10 +5,11 @@ import { validateNaturalPersistence } from './support/combat2Persistence';
 import { rows, state } from './support/combat2Harness';
 import { logger } from '../../../../engine/Systems/Logger';
 
-const combinations = [[], ['combat'], ...['crafting', 'foraging', 'giants', 'growth', 'narrative', 'settlement'].map(id => ['combat', id]),
-    ['combat', 'crafting', 'foraging', 'giants', 'growth', 'narrative', 'settlement']];
+import { installedRelatedCombinations } from '../../../../test/support/optionalPackageLifecycle';
+
+const combinations = installedRelatedCombinations('combat', ['crafting', 'foraging', 'giants', 'growth', 'narrative', 'settlement']);
 afterEach(() => { vi.restoreAllMocks(); logger.reset(); logger.onDisturb = null; });
-describe('C2-COMBO nine related genuine new-game installations', () => {
+describe(`C2-COMBO ${combinations.length === 9 ? 'nine' : combinations.length} related genuine new-game installations`, () => {
     it.each(combinations.map((modules, index) => ({ modules, index, label: modules.join('+') || 'none' })))('$label verifies new attacks, genuine hit, save suffix, replay, seek and continued origin', ({ modules, index }) => {
         const goals = { player: new Set<string>(), npc: new Set<string>(), parry: true, evasion: true, giant: false, growth: false };
         const result = captureNatural(1, 'wizard', modules, goals, 300, 'combination');

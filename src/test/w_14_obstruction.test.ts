@@ -8,6 +8,7 @@ import { AUTO_GENERATOR_CATALOG } from '../engine/Map/AutoGenerator';
 import { T_OBSTRUCTS_PASSABILITY, T_OBSTRUCTS_VISION } from '../engine/Map/TerrainCatalog';
 import { WaypointSystem } from '../engine/Map/WaypointMap';
 import { FOVSys } from '../engine/Lighting/FOV';
+import { LightMap } from '../engine/Lighting/LightMap';
 import * as reflection from '../engine/Combat/BoltReflection';
 import { Pathfind } from '../engine/Map/Pathfind';
 import { Player } from '../entities/Player';
@@ -36,7 +37,7 @@ function floorGrid(w = 25, h = 15) {
 function scene() {
     const g = Object.create(Game.prototype) as Game;
     g.grid = floorGrid(DCOLS, DROWS); g.player = new Player(4, 5); g.monsters = []; g.dormantMonsters = []; g.items = [];
-    g.fov = new FOVSys(g.grid); g.waypoints = new WaypointSystem(); g.spawnFloatingText = vi.fn(); (g as any).updateVision = vi.fn();
+    g.fov = new FOVSys(g.grid); g.lightMap = new LightMap(g.grid); g.waypoints = new WaypointSystem(); g.spawnFloatingText = vi.fn(); (g as any).updateVision = vi.fn();
     return g;
 }
 function staff(E = 2) {

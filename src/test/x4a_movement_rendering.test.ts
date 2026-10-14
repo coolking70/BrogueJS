@@ -28,11 +28,13 @@ function scene() {
         Object.assign(c, { isVisible: true, hasMemory: true, isExplored: true, rememberedLayers: [...c.layers], rememberedItem: null });
     }
     for (let x = 9; x <= 16; x++) for (let y = 9; y <= 12; y++) tile(g, x, y, T.FLOOR);
+    (g as any).updateVision(false);
     vi.spyOn(g as any, 'updateVision').mockImplementation(() => {});
     return g;
 }
 function tile(g: ReturnType<typeof scene>, x: number, y: number, terrain: T, unknown = false) {
     g.grid.setTerrain(x, y, terrain);
+    if (unknown) Object.assign(g.lightMap.lightAt(x, y)!, { r: 0, g: 0, b: 0 });
     const c = g.grid.getCell(x, y)!;
     Object.assign(c, { isVisible: !unknown, hasMemory: !unknown, isExplored: !unknown, rememberedLayers: unknown ? [] : [...c.layers] });
     return c;
@@ -72,6 +74,7 @@ describe('X4a per-step known exploration/travel', () => {
     it('uses remembered terrain, not hidden live walls/hazards, when validating the remaining route', () => {
         const g = scene(); g.handleMouseTravel(15, 10);
         const c = g.grid.getCell(14, 10)!; c.isVisible = false;
+        Object.assign(g.lightMap.lightAt(14, 10)!, { r: 0, g: 0, b: 0 });
         g.grid.setTerrain(14, 10, T.GRANITE);
         g.stepAutoPath();
         expect(g.player.loc).toEqual({ x: 11, y: 10 });

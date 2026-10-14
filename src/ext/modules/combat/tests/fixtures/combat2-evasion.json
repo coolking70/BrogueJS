@@ -1,1 +1,899 @@
-{"seed":3,"mode":"wizard","modules":["combat"],"initialCommands":[],"prefix":0,"identity":{"schema":1,"foundation":13,"modules":[{"id":"combat","version":"1.6.0","rules":{"schema":1,"version":"1.6.0","fingerprint":"sha256:9c2be4947fa2e080890ad9ca2b6a7aca20197f0ee77648b042fc9194618587ae"}}]},"inputs":[{"action":"move","data":{"x":0,"y":-1},"index":1},{"action":"move","data":{"x":-1,"y":-1},"index":2},{"action":"move","data":{"x":-1,"y":-1},"index":3},{"action":"move","data":{"x":-1,"y":-1},"index":4},{"action":"move","data":{"x":-1,"y":0},"index":5},{"action":"move","data":{"x":-1,"y":0},"index":6},{"action":"move","data":{"x":-1,"y":0},"index":7},{"action":"move","data":{"x":-1,"y":0},"index":8},{"action":"move","data":{"x":0,"y":-1},"index":9},{"action":"move","data":{"x":0,"y":-1},"index":10},{"action":"move","data":{"x":-1,"y":0},"index":11},{"action":"move","data":{"x":-1,"y":0},"index":12},{"action":"move","data":{"x":0,"y":-1},"index":13},{"action":"move","data":{"x":0,"y":-1},"index":14},{"action":"move","data":{"x":-1,"y":0},"index":15},{"action":"move","data":{"x":-1,"y":0},"index":16},{"action":"move","data":{"x":0,"y":-1},"index":17},{"action":"move","data":{"x":0,"y":-1},"index":18},{"action":"move","data":{"x":-1,"y":0},"index":19},{"action":"move","data":{"x":0,"y":-1},"index":20},{"action":"move","data":{"x":-1,"y":0},"index":21},{"action":"move","data":{"x":0,"y":-1},"index":22},{"action":"move","data":{"x":0,"y":-1},"index":23},{"action":"move","data":{"x":1,"y":0},"index":24},{"action":"move","data":{"x":0,"y":-1},"index":25},{"action":"move","data":{"x":0,"y":-1},"index":26},{"action":"move","data":{"x":-1,"y":0},"index":27},{"action":"move","data":{"x":-1,"y":0},"index":28},{"action":"move","data":{"x":-1,"y":0},"index":29},{"action":"move","data":{"x":-1,"y":0},"index":30},{"action":"move","data":{"x":-1,"y":0},"index":31},{"action":"move","data":{"x":-1,"y":0},"index":32},{"action":"move","data":{"x":-1,"y":0},"index":33},{"action":"move","data":{"x":-1,"y":0},"index":34},{"action":"move","data":{"x":-1,"y":0},"index":35},{"action":"move","data":{"x":-1,"y":0},"index":36},{"action":"move","data":{"x":-1,"y":0},"index":37},{"action":"move","data":{"x":-1,"y":0},"index":38},{"action":"move","data":{"x":-1,"y":0},"index":39},{"action":"move","data":{"x":-1,"y":0},"index":40},{"action":"move","data":{"x":-1,"y":0},"index":41},{"action":"move","data":{"x":-1,"y":1},"index":42},{"action":"move","data":{"x":-1,"y":1},"index":43},{"action":"move","data":{"x":-1,"y":1},"index":44},{"action":"move","data":{"x":0,"y":1},"index":45},{"action":"move","data":{"x":0,"y":1},"index":46},{"action":"move","data":{"x":0,"y":1},"index":47},{"action":"move","data":{"x":-1,"y":0},"index":48},{"action":"ext:command","data":"{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.anchor-break\",\"facing\":\"w\"}}","index":49},{"action":"ext:command","data":"{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.answering-edge\",\"facing\":\"w\"}}","index":50},{"action":"move","data":{"x":-1,"y":0},"index":51},{"action":"move","data":{"x":-1,"y":-1},"index":52},{"action":"move","data":{"x":0,"y":-1},"index":53},{"action":"move","data":{"x":0,"y":-1},"index":54},{"action":"move","data":{"x":0,"y":1},"index":55},{"action":"move","data":{"x":0,"y":1},"index":56},{"action":"move","data":{"x":0,"y":1},"index":57},{"action":"move","data":{"x":0,"y":1},"index":58},{"action":"move","data":{"x":0,"y":1},"index":59},{"action":"wait","index":60},{"action":"move","data":{"x":0,"y":-1},"index":61},{"action":"wait","index":62}],"checkpoints":{"0":"492d0903a0deabba928cf150b893e14398b3888e84166deedc71b9ebdecf1cf4","1":"1e641a8ddc55549201efcc4e0cbe9e726288fe2e9e5ea3e3580f6f25d1ee48a8","2":"ea9efe5c84df840ecd5640a2cb3d92ad78c4dd29d63e8b92b82a9b41b2d654c5","3":"76341ed6cfd91b02393c9f28f1580b9573b277bb14f5a7e5b518c4b201f31287","4":"2ab7761effb75daebb1bc7538e06c9c7a68e47838ffa28eb6952c8ea82d97fcd","5":"67ddfbc6a42e331ebef59b682256fcbac9fa7be1bdf9df120c8b48578c32c0b0","6":"6517486214c53401fd0b35f1327d8f5eea0557edee13315614bbd8085183394a","7":"2c0c530afaff3351b87417c268d76002d154e98a888d3ffb3fd73ebc8afb8c49","8":"8d0ebc4cd7558602e2ca431d32223d674ab48ac5debfd90b7a07da0ddf4beb6f","9":"8f9fd5168313afedd9d5a27fbc0db88e68473009e45d121b36d67dbfb62b2118","10":"4abed35bd4cb13573c02fe61295aa6f4058efa514b6e00f8b4af824c3b1e83ec","11":"a5187a85a9c1f1c1474e2f07aa7e156a82541af23542c4e842989f5556763849","12":"dfb500bd9c556834d48cdb2c6103a33eb4f7d2ca4b425735dfc054ab48c9297a","13":"32414ad8d51c333a3694e521ad4a93c1e630b65dc3c82030d65027cf67254219","14":"ab5b5b3339d1dd07ee337831d63d4963679fab5e333ed649e8844c6f1e3b47a9","15":"1d6f4d2f42a24ea572af761682153503bda513f666527223d457c7e3a46cf09b","16":"5f369724797941cc379518b5bb28f908e1d8cc03df2375ed613ade4e824ae832","17":"a67f7dd72239a48d7a175d04b468840618835a7bd61599b8fa548d8a9e4f0bba","18":"b7a153994d1a0cf498d1b217a1524fa22b72d8d301d24455f2a4fdd4db23c125","19":"0f097215ef3bd6ea388e72e16a2d14cc24d821921261b3db88fd420144598593","20":"f09ecee4ef1e2144a864e193f8c50c8210f1f554aa1ed610806bd2ec14c7c7ce","21":"7dada1b65f21f5467e187f1fa1c2cf5cd348cae667449b94647b09b3d3e3aaa8","22":"22e8a46350eb60bfc017eb13a9e82468692f4cf6cecd519dcf4f1d0b92573ac9","23":"246f957ae629e359bf212083fbf3dc0e76956e069a209018f28e77f74da7bcb7","24":"03e468143247c68c4fadcb249078d9b48e8ad4252c28df26a87ffcc7361b814b","25":"cd5878bfde19ae89461a105116893003a28e12f9cb639c70dd0bcacf72c467fc","26":"2b9db4daec8fff6963eedc7054b0af7e07914ff3dc34e7cff7aad11f89b72cde","27":"43c34d1504323a773151d5da096377c382207c0fa4ed638ae6ce5033a9295a84","28":"86765c1cca9a15783fb689fa0d0e627cc884c881b322f6ada27e372054abd54b","29":"d0665ab20aaceec512ad8d9cae3f9a0fe8976ead3dff669f5ceae3c61cae1415","30":"f7e3eb75b5af3a8d334fd51e4377fc44aeeb62ad28d43fe2f8c00a58b4ae49bf","31":"eeaa1ed95d4d91d56f180a161debe38dcc29669e3d8095cc91aed0800213d9b4","32":"ca599893946cad2ff52afb68ec50b8bf131f782bd5a1f831ddace00441e14f94","33":"40b869cdd94611b061754f0592857e40672aaa04a09121677e6dd296a3d91655","34":"3059550498549d5da49dfb8cb3f21ee26418af6ae0abf294e0f97fc7fb5fefc1","35":"6e99c8022dcf2514b692cad331ee6862ea4c67ba35e25c1dd46fb65ebf51c3d9","36":"61becd3bf584558c0bb8ea9a19d78ccd8e1707cf34513dc8f472459e1db553ff","37":"7ec06c982ce705d34c6aed49706ed730429f91f7ff9d124d8715de05080bf1b6","38":"69655a685eeb3f070882ec36fcc444e6aaacc384baed83e9023ce241ae2efa7a","39":"1a4e010469ddf763b378ebf953eb7591982dcb4ac46c1f18772d1423f3758f1c","40":"d5c28c9f97dcdc279564047b994c9607ccda7838e4fa9113b0305c739d782620","41":"25f5b3a69b24deed5b37857cf4c6723c35d5748e782553b9f4ecffbcf9355edd","42":"e3c6c1e3c479e17acab1950b94e6f69c87d3ed94fd846dc1b3683a57bb616186","43":"c086f5c8dcb38ea0cc01e0ae1cb5b8fb0a2b219ce82d29bce4f823f89d97fa2f","44":"721d79c447b7571b9738afbd23c99a0187a63f6a56fb14e7d0a34e99af40eac5","45":"105ed50b70489312fbb936ae0c290d84d4404a97a05dfabc4d09e03c68434537","46":"e4fe5e36b821b8be43553064f85342c0581b884cef00997bb0d6599836fef794","47":"d1442569fafc6002da323b9b9f20219bd62a99f867251a56074443b2cb6edd87","48":"2bcecb2158d330f60d849d5878db1fcbf6404d1dad59fbc678feeb674b476dda","49":"5795393a2db9078c9b22f30108d26e6c9ba9bb611ee568ecb132b07895f34358","50":"d0e88aebe904f65372804b3e8003039eaebf1fc26658de8cb4e2e469054a9f68","51":"8ce090b13b942c657b79b11a2f03676ce8469603179f1d6893665131ee0927bb","52":"191ebcb4f599970e9ca1144ef771f34ae02c2f1eca2862d57f8a6fd0094e12af","53":"f389f23d4faf4c17f1754bdfb07e98da88c0a7eb3bbf0d41312da585fc2b4f0a","54":"fd41a88a31ec4fc3b5ae2cbff48787ad2f534051772b3bb517a37f480261a924","55":"4574fdfc1a1974f11d1ec5c634ab03e08d0ad5347e82ed6135daf8c12a9c4c9a","56":"d1572e228b845d07335f282ddbcdbaf9f9bfc32377b0a62790af4d4d7d35c136","57":"c6db8f769948068600c292b3b8aaac8f2918e8a164c2a0c7dc04deed56860923","58":"01ed24953ad06c3ad52e70a7832705de3612ea77a499de1ad2694e9a14004906","59":"8e890233f95c59e1d01b83dbc975f7c9981d6cfeaecc9dfba0650cfc25b8d1c6","60":"6b23a7c651b199504d47424af7f9b50f708ca92bf63bfb412e3f5cbd6163f91b","61":"aa55836aed85079c36c77d58e92b61b0d7147988ea4b945eecf236c0c7e91c71","62":"48d9b3a353d8dd81ff70e475ab26458545cce124a5493cdac44d14adc684f1ea"},"keyIndices":[0,60,62],"births":[{"id":12,"depth":1,"type":"rat","birth":{"creationReason":"natural","originalMonsterType":"rat","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":13,"depth":1,"type":"kobold","birth":{"creationReason":"natural","originalMonsterType":"kobold","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":14,"depth":1,"type":"rat","birth":{"creationReason":"natural","originalMonsterType":"rat","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":15,"depth":1,"type":"rat","birth":{"creationReason":"natural","originalMonsterType":"rat","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":16,"depth":1,"type":"rat","birth":{"creationReason":"natural","originalMonsterType":"rat","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":17,"depth":1,"type":"rat","birth":{"creationReason":"natural","originalMonsterType":"rat","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":18,"depth":1,"type":"rat","birth":{"creationReason":"natural","originalMonsterType":"rat","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":26,"depth":2,"type":"jackal","birth":{"creationReason":"natural","originalMonsterType":"jackal","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":27,"depth":2,"type":"jackal","birth":{"creationReason":"natural","originalMonsterType":"jackal","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":28,"depth":2,"type":"kobold","birth":{"creationReason":"natural","originalMonsterType":"kobold","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":29,"depth":2,"type":"monkey","birth":{"creationReason":"natural","originalMonsterType":"monkey","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":30,"depth":2,"type":"jackal","birth":{"creationReason":"natural","originalMonsterType":"jackal","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":31,"depth":2,"type":"rat","birth":{"creationReason":"natural","originalMonsterType":"rat","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}}],"hits":[{"sourceId":1,"targetId":17,"attackId":"combat.anchor-break","segmentIndex":0,"elapsed":140,"damage":4,"hit":true},{"sourceId":17,"targetId":1,"attackId":"fixture.slash","segmentIndex":0,"elapsed":50,"damage":0,"hit":false},{"sourceId":1,"targetId":17,"attackId":"combat.answering-edge","segmentIndex":0,"elapsed":30,"damage":3,"hit":true}],"releases":[{"actionId":1,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.anchor-break","segmentIndex":0,"elapsed":140,"cells":[{"x":7,"y":16},{"x":6,"y":17},{"x":7,"y":17},{"x":7,"y":18}]},{"actionId":2,"sourceId":17,"sourceSubactionId":1,"attackId":"fixture.slash","segmentIndex":0,"elapsed":50,"cells":[{"x":8,"y":16},{"x":8,"y":17},{"x":8,"y":18}]},{"actionId":3,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.answering-edge","segmentIndex":0,"elapsed":30,"cells":[{"x":7,"y":17}]},{"actionId":4,"sourceId":29,"sourceSubactionId":1,"attackId":"combat.cast-echo","segmentIndex":0,"elapsed":120,"cells":[{"x":7,"y":22},{"x":7,"y":23}]}],"parries":[],"evasion":[{"actionId":4,"index":61,"cells":[{"x":7,"y":22},{"x":7,"y":23}],"from":{"x":7,"y":22},"to":{"x":7,"y":21}}],"growth":[],"reason":"fixed-natural-prefix-new-warning-evasion","commands":62,"depth":2,"tick":5900,"finalRng":{"version":2,"algorithm":"brogue-web-ranval32-uint64-level-v2","streams":[{"a":4109073601,"b":229600261,"c":2040615281,"d":3443676455},{"a":3743919415,"b":3322842154,"c":109117171,"d":335710893}],"currentRNG":0,"randomNumbersGenerated":314064,"cosmeticNumbersGenerated":165},"recordingBytes":61382}
+{
+  "seed": 3,
+  "mode": "wizard",
+  "modules": [
+    "combat"
+  ],
+  "initialCommands": [],
+  "prefix": 0,
+  "identity": {
+    "schema": 1,
+    "foundation": 14,
+    "modules": [
+      {
+        "id": "combat",
+        "version": "1.6.0",
+        "rules": {
+          "schema": 1,
+          "version": "1.6.0",
+          "fingerprint": "sha256:9c2be4947fa2e080890ad9ca2b6a7aca20197f0ee77648b042fc9194618587ae"
+        }
+      }
+    ]
+  },
+  "inputs": [
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 1
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "index": 2
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "index": 3
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "index": 4
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 5
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 6
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 7
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 8
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 9
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 10
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 11
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 12
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 13
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 14
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 15
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 16
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 17
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 18
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 19
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 20
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 21
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 22
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 23
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 24
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 25
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 26
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 27
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 28
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 29
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 30
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 31
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 32
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 33
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 34
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 35
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 36
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 37
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 38
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 39
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 40
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 41
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 1
+      },
+      "index": 42
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 1
+      },
+      "index": 43
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 1
+      },
+      "index": 44
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "index": 45
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "index": 46
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "index": 47
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 48
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.anchor-break\",\"facing\":\"w\"}}",
+      "index": 49
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.answering-edge\",\"facing\":\"w\"}}",
+      "index": 50
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": 0
+      },
+      "index": 51
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": -1,
+        "y": -1
+      },
+      "index": 52
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 53
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 54
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "index": 55
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "index": 56
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "index": 57
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "index": 58
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": 1
+      },
+      "index": 59
+    },
+    {
+      "action": "wait",
+      "index": 60
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 61
+    },
+    {
+      "action": "wait",
+      "index": 62
+    }
+  ],
+  "checkpoints": {
+    "0": "9f082ffad927f2bd7426017e4eae808009bf54864e8b329d81cbc0ec8bae02f1",
+    "1": "c4869f405772b1b72eace8e0d428a19c2721e451a227c0f82c936e296c6c9893",
+    "2": "c7acb2b2806872f5c74ed4faa60c0089f7d28e7b9365b753797ff2b6802d1469",
+    "3": "cd99ca89af9cecd642e6af0bf7140ea8a4cef4ec4a0aa338bdb213fe1518dd14",
+    "4": "e37a460ebd2d689bdedec1138e5068c618ca58d05317d8b8a60aea57f0e23d23",
+    "5": "66d865c9b8db427ab531fc17991acf318aa10eadee6988ed213a101cf1c7c069",
+    "6": "8a41149cdb28078a1446cbe9d9068a0ad071e31d1cd42982e17695f54e4d36d0",
+    "7": "f60238325de8085e7ed539d01ca9425a0cb111fb4cc1b1d17575c5969f1523bc",
+    "8": "32d39f3298631035e323659ba6d2797a9ff699ddd7b174f78b401064c4513d85",
+    "9": "bba9422a59c10fed49cc6595665995776eabcb7ee7888e7f1dbe62fb9ddb22ec",
+    "10": "80fb900d207e89c7749b7f9701d402dbae4c8f45b5a4a20e4a7d1f7f3ca6fe70",
+    "11": "dd2b16954dacfc9217a77879159325cb263d0669209880faded3fafaf5573cf8",
+    "12": "ad323d86e8918891f112ec3c727cd6e76cc416ead67ea15a19b0b242a4a94e4b",
+    "13": "c3aff8a3b64e5567c28774d7d4f877db90f12c981d6477baee49335653ccc77b",
+    "14": "93c07bd8d72cd5c554f862092b7e6a7b647352de8182aeaf0e94167d35b5e1e7",
+    "15": "1ecaee19487a2626e94dadd36237f99a0d444aa0a0d03454e88460aed68b225d",
+    "16": "7c72468ebbbfaceeac5acabfb6e346eef7b51040c9398173beb41fb2446dce3d",
+    "17": "e2d990a09eec2424f2be7012c5378cebd56251485c11fdcd00aba617755318f8",
+    "18": "b3ef4c27fa988c79f6482ddcfd3378e5663a4c48eb579679d6eea2fb4a193afd",
+    "19": "e44c9564f15bed30c36c6d7f4a415b1181307132275f5445e5893946a9ce4cff",
+    "20": "0371e70b4a53d0e99c9f7fe8e729e0040da0fed0791b2f1227763da2c9ae3ad6",
+    "21": "695a9a0d330f8fca8610a3c5a153e16c9bd935fd7b6aebf64864eb6a57a7f223",
+    "22": "0d0491ba8d1991e8bf23a55fa5f47ae2bb40071f6d0f70bd96f0ee2ad5b3f494",
+    "23": "e4f4e5f2a7ac185acf64bbd3fbcd5a828fdfa5d4d1139eded40d846ffa75a6ba",
+    "24": "d4901f740f8bb04a784804314ae8c1c97c7040223d8b0f771b2015be0f729dc2",
+    "25": "105797514eb39631d4216ef8fd86dab9e9a1d6ec8db1c18fbc077009f26306ed",
+    "26": "0a62fdfc42205022a0a72e3e5148638238d369ce3b324a69c41464f6258ed825",
+    "27": "5ecbcf8c1df2db23427265740026b36fbbc831ee9f2dce4b0fddf5381a3ff493",
+    "28": "c7eb0c1795a1b63c54a3ece4b6d0d599f644db277f861bbf8bf90ebdf52169bd",
+    "29": "b659bfcce6fd150b266abe04424f9cd3eb6c5724f96486ea6dfa4ab177454ccd",
+    "30": "42889040ba2d4c0fb53639558d175545220457d7a5eaa39db1388ecf3eadec71",
+    "31": "d360292e8cddb142be60fa2e776df1ef313841ed75620364017bae1b8b4a56ce",
+    "32": "0407e5597b74d3a4aff04ffa543efcdbec92d7d5bc2fc3352eff00f75e310854",
+    "33": "89e704172b5f6a737715bbead3e3ddad5510746f48f32f2e496465255a650b1b",
+    "34": "f3cd3b28ba380f22449cb9f785b6c1f4aeb2376cbbdb6463e3415cd824a92449",
+    "35": "3bfedc0e19ded4d972f53e1378d80eac0f6a10f46a5fd3c8c25b58683be9d360",
+    "36": "371d492a583d2c2a556d96f6512a5343c40cdc8e86cf11a13753d150eb103e9d",
+    "37": "b586c204781a6adc98eb798d49cd956f13ed10eef0b81b9e36906bd5f13dd2ba",
+    "38": "21aef37b9d45c08a39ebfe75dbfcc6d2dafc6149fb39a73fec572ec32a15a62f",
+    "39": "e8c355c951ce04cac65b0b4e880563e3f882eaeb399d759d55f27acdff6c5f27",
+    "40": "14d3ecfd1e94473604173dee0b0f6b302c0e5c64e29a11eb82fdb80ac950a448",
+    "41": "492870380bd9e9b462bc18d069c937a42ec8d7ae4cd603536d98a54139a7a939",
+    "42": "218731043e84e40e0dbabf4de3844de44fe0ce36cb4a2240a6639829ec04ee04",
+    "43": "507bf076f3b62a98d335164cfa744684adbe246b7febc92e37d0f5e1118dc6a9",
+    "44": "54de235aab1f5faffe560842ced71820e4d6fe1fe33badf9ec6dcde57c74aa6f",
+    "45": "95e12ac13475dd8c8dbacc2c60bb6ac86970508006458f31ab594b0f0d178836",
+    "46": "07250af9fdb001f09fcdcbb5366b5e5db64cdcfd3e71104b817c6a783ee8afd5",
+    "47": "6f093e802fba8ba1611f4fb7c9c56b9c4c6f84f92a1fa3ece311d62741068865",
+    "48": "bb88ce336aafadc498188e235b973fc793a8f5e8de648e673e63d6bf0b3196af",
+    "49": "57ae0c3aefff1f137496c9cc8872b7b21f9aac8806d6e1090084cd8f30587929",
+    "50": "7a30152c9e60dd80ef8f0be3c0e74450a91ff1cf317d5c508475692f8b04b361",
+    "51": "891217a66ec9d934600dcd0e502236f2ad1fb28e8b6218b46a67f6d42b12500a",
+    "52": "5520ecd609577f9658dff12f2a3c42695b005274ddc2f05a20abeb3986cdd7ed",
+    "53": "dc0a33d9168bab06e919b1ea4976e1f0d5e433d2db63ae0057b0d05a0ec27fc4",
+    "54": "5a963fc2dda12ceacb224a8574c2e393d77045b340de510dace0af60c88f43dc",
+    "55": "f3d69799dc513888ba8236bca416485f48ea3b11064f4fe893265cdc7f420d66",
+    "56": "8ebb50fbf08550ea92b59c7e348122bde9ace23f56611eede74bc947caeb955e",
+    "57": "159fb0a03049792887fe64882e171f4824ec0c520284804a581165e00b165330",
+    "58": "8353e4502996a31e81f668d634e6a9a27778e37050ecefab4cfa55a70f415d6a",
+    "59": "af39968c08c1dee1f9fda2f3c963cd624f570853ef51971a3948bd4faa6cd146",
+    "60": "6e968cfce693618804b9f92f9c4bdc02064029ae850324a6a044ffbb0ce32d5a",
+    "61": "3999db0df3acd66cfeb57c3af56c1ab8c3ac86efe8de888f46f1b89dae752db2",
+    "62": "4d6980fed3df8256ee85a81c7ae394ce0d303a95daec9d04903d02cc79f5585c"
+  },
+  "keyIndices": [
+    0,
+    60,
+    62
+  ],
+  "births": [
+    {
+      "id": 12,
+      "depth": 1,
+      "type": "rat",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "rat",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 13,
+      "depth": 1,
+      "type": "kobold",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "kobold",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 14,
+      "depth": 1,
+      "type": "rat",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "rat",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 15,
+      "depth": 1,
+      "type": "rat",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "rat",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 16,
+      "depth": 1,
+      "type": "rat",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "rat",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 17,
+      "depth": 1,
+      "type": "rat",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "rat",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 18,
+      "depth": 1,
+      "type": "rat",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "rat",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 26,
+      "depth": 2,
+      "type": "jackal",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "jackal",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 27,
+      "depth": 2,
+      "type": "jackal",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "jackal",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 28,
+      "depth": 2,
+      "type": "kobold",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "kobold",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 29,
+      "depth": 2,
+      "type": "monkey",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "monkey",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 30,
+      "depth": 2,
+      "type": "jackal",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "jackal",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 31,
+      "depth": 2,
+      "type": "rat",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "rat",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    }
+  ],
+  "hits": [
+    {
+      "sourceId": 1,
+      "targetId": 17,
+      "attackId": "combat.anchor-break",
+      "segmentIndex": 0,
+      "elapsed": 140,
+      "damage": 4,
+      "hit": true
+    },
+    {
+      "sourceId": 17,
+      "targetId": 1,
+      "attackId": "fixture.slash",
+      "segmentIndex": 0,
+      "elapsed": 50,
+      "damage": 0,
+      "hit": false
+    },
+    {
+      "sourceId": 1,
+      "targetId": 17,
+      "attackId": "combat.answering-edge",
+      "segmentIndex": 0,
+      "elapsed": 30,
+      "damage": 3,
+      "hit": true
+    }
+  ],
+  "releases": [
+    {
+      "actionId": 1,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.anchor-break",
+      "segmentIndex": 0,
+      "elapsed": 140,
+      "cells": [
+        {
+          "x": 7,
+          "y": 16
+        },
+        {
+          "x": 6,
+          "y": 17
+        },
+        {
+          "x": 7,
+          "y": 17
+        },
+        {
+          "x": 7,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "actionId": 2,
+      "sourceId": 17,
+      "sourceSubactionId": 1,
+      "attackId": "fixture.slash",
+      "segmentIndex": 0,
+      "elapsed": 50,
+      "cells": [
+        {
+          "x": 8,
+          "y": 16
+        },
+        {
+          "x": 8,
+          "y": 17
+        },
+        {
+          "x": 8,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "actionId": 3,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.answering-edge",
+      "segmentIndex": 0,
+      "elapsed": 30,
+      "cells": [
+        {
+          "x": 7,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "actionId": 4,
+      "sourceId": 29,
+      "sourceSubactionId": 1,
+      "attackId": "combat.cast-echo",
+      "segmentIndex": 0,
+      "elapsed": 120,
+      "cells": [
+        {
+          "x": 7,
+          "y": 22
+        },
+        {
+          "x": 7,
+          "y": 23
+        }
+      ]
+    }
+  ],
+  "parries": [],
+  "evasion": [
+    {
+      "actionId": 4,
+      "index": 61,
+      "cells": [
+        {
+          "x": 7,
+          "y": 22
+        },
+        {
+          "x": 7,
+          "y": 23
+        }
+      ],
+      "from": {
+        "x": 7,
+        "y": 22
+      },
+      "to": {
+        "x": 7,
+        "y": 21
+      }
+    }
+  ],
+  "growth": [],
+  "reason": "fixed-natural-prefix-new-warning-evasion",
+  "commands": 62,
+  "depth": 2,
+  "tick": 5900,
+  "finalRng": {
+    "version": 2,
+    "algorithm": "brogue-web-ranval32-uint64-level-v2",
+    "streams": [
+      {
+        "a": 4109073601,
+        "b": 229600261,
+        "c": 2040615281,
+        "d": 3443676455
+      },
+      {
+        "a": 3743919415,
+        "b": 3322842154,
+        "c": 109117171,
+        "d": 335710893
+      }
+    ],
+    "currentRNG": 0,
+    "randomNumbersGenerated": 314064,
+    "cosmeticNumbersGenerated": 165
+  },
+  "recordingBytes": 61382
+}

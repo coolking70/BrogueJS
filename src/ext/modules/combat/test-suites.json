@@ -6,6 +6,7 @@
     "tests/combat2_defense_cancel.test.ts",
     "tests/combat2_evasion.test.ts",
     "tests/combat2_growth.test.ts",
+    "tests/combat2_integrated_natural.test.ts",
     "tests/combat2_links.test.ts",
     "tests/combat2_natural.test.ts",
     "tests/combat2_persistence.test.ts",
@@ -44,11 +45,10 @@
     "tests/combat_runtime.test.ts",
     "tests/combat_scheduler_due.test.ts",
     "tests/combat_schema.test.ts",
+    "tests/combat_sdk_generation_identity.test.ts",
     "tests/combat_square_replay.test.ts",
     "tests/combat_ui.test.ts",
-    "tests/combat_warning_map.test.ts",
-    "tests/combat_sdk_generation_identity.test.ts"
+    "tests/combat_warning_map.test.ts"
   ],
-  "gen": [],
   "drift": []
 }

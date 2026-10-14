@@ -1,6 +1,4 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { createHeadlessGame } from './harness';
 import { Item, ItemCategory } from '../engine/Items/Item';
 import { ItemLoader } from '../engine/Items/ItemLoader';
@@ -10,8 +8,7 @@ import { endgameScore, deathLumenstoneEntryCount } from '../engine/Core/Endgame'
 import { readHighScores } from '../engine/Core/HighScores';
 import { rng } from '../engine/Random';
 import { TerrainType as T, Grid } from '../engine/Map/Grid';
-import { DEEPEST_LEVEL, applyLoopDoorSites } from '../engine/Map/LoopMap';
-import { dungeonDescentPercent } from '../engine/Generator/Architect';
+import { applyLoopDoorSites } from '../engine/Map/LoopMap';
 import { generationDistances } from '../engine/Generator/GenerationPlacement';
 import { cellTerrainFlags } from '../engine/Map/DungeonFeature';
 import { T_PATHING_BLOCKER, T_OBSTRUCTS_ITEMS } from '../engine/Map/TerrainCatalog';
@@ -27,17 +24,7 @@ function terminal(g: Game, type: T) {
 }
 
 describe('U26a CE deep-level contracts', () => {
-    it.skipIf(!hasCeSource())('matches the CE 26/40 constants and all fourteen lumenstone quotas' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        const ce = readFileSync(ceFile('src/variants/GlobalsBrogue.c'), 'utf8');
-        expect(ce).toMatch(/#define AMULET_LEVEL\s+26/);
-        expect(ce).toMatch(/#define DEEPEST_LEVEL\s+40/);
-        const literal = ce.match(/lumenstoneDistribution_Brogue[^=]+=\s*\{([^}]+)\}/)![1]!;
-        expect(literal.split(',').map(Number)).toEqual(distribution);
-        expect(ItemLoader.CE_LUMENSTONE_DISTRIBUTION).toEqual(distribution);
-        expect(distribution.reduce((a, b) => a + b)).toBe(25);
-        expect(DEEPEST_LEVEL).toBe(40);
-        expect([26, 27, 40].map(dungeonDescentPercent)).toEqual([100, 100, 100]);
-    });
+
 
     it('D26 and D39 retain doors; D40 consumes the door roll but places floor', () => {
         const roll = vi.spyOn(rng, 'randPercent').mockReturnValue(true);

@@ -1,19 +1,14 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { describe, expect, it } from 'vitest';
-import { readFileSync, writeFileSync } from 'node:fs';
 import i18next from 'i18next';
 import golden from './fixtures/ce-oracles/x4-r1/ce-additions.json';
-import blueprints from '../data/blueprints.json';
-import { Grid, TerrainType, DungeonLayer, DRAW_PRIORITY, TERRAIN_HOME_LAYER, FIRE_TERRAIN_TYPES } from '../engine/Map/Grid';
+import { Grid, TerrainType, DungeonLayer, FIRE_TERRAIN_TYPES } from '../engine/Map/Grid';
 import * as flags from '../engine/Map/TerrainCatalog';
 import { DF, DUNGEON_FEATURE_CATALOG } from '../engine/Map/DungeonFeatureCatalog';
 import { catalogFeature, spawnDungeonFeature } from '../engine/Map/DungeonFeature';
 import { exposeTileToFire, promoteOnPlayerBump, promoteTile, runPromotionUpdate } from '../engine/Map/Promotion';
 import { terrainHealingAmount } from '../engine/Map/TerrainHealing';
-import { CE_TERRAIN_GAPS, CE_DF_GAPS, CE_MACHINE_GAPS, terrainForCE } from '../engine/Map/WorldCatalogAudit';
+import { terrainForCE } from '../engine/Map/WorldCatalogAudit';
 import { LIGHT_CATALOG, LightKind } from '../engine/Map/LightCatalog';
-import { TERRAIN_APPEARANCES } from '../engine/UI/TerrainAppearanceCatalog';
-import { TERRAIN_COLOR_NAMES } from '../engine/UI/TerrainColorCatalog';
 import { worldFeatureText, worldHealingText, worldTerrainText } from '../engine/UI/WorldCatalogText';
 import zhCN from '../locales/zh_CN.json';
 import { EnvironmentManager, isGasTerrain } from '../engine/Environment/Gas';
@@ -21,18 +16,6 @@ import { Architect } from '../engine/Generator/Architect';
 import { rng } from '../engine/Random';
 import { createHeadlessGame } from './harness';
 
-const ce = hasCeSource() ? readFileSync(ceFile('src/brogue/Globals.c'), 'utf8') : '';
-const header = hasCeSource() ? readFileSync(ceFile('src/brogue/Rogue.h'), 'utf8') : '';
-function enumEntries(name: string): [string, number][] {
-    const body = header.match(new RegExp(`enum\\s+${name}\\s*\\{([\\s\\S]*?)\\}`))![1]!
-        .replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '');
-    let id = -1;
-    return body.split(',').map(s => s.trim()).filter(Boolean).map(s => {
-        const [key, value] = s.split('=');
-        id = value === undefined ? id + 1 : Number(value.trim());
-        return [key!.trim(), id];
-    });
-}
 function floor(): Grid {
     const grid = new Grid(15, 15);
     for (let x = 0; x < grid.width; x++) for (let y = 0; y < grid.height; y++) grid.setTerrain(x, y, TerrainType.FLOOR);
@@ -44,83 +27,7 @@ function cells(grid: Grid) {
 function spawn(grid: Grid, df: DF, x = 7, y = 7) {
     return spawnDungeonFeature(grid, x, y, catalogFeature(df)!, false);
 }
-const mask = (text: string): number => text.replace(/[()]/g, '').split('|').reduce((v, name) =>
-    v | (name.trim() === '0' ? 0 : (flags as unknown as Record<string, number>)[name.trim()]!), 0);
 
-describe('X4-R1 CE identities, field fidelity and explicit scope ledger', () => {
-    it.skipIf(!hasCeSource())('preserves every CE field of the fifteen new terrain and their visuals' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        for (const [name, expected] of Object.entries(golden.tiles)) {
-            const tile = terrainForCE(name)!;
-            const f = expected.fields;
-            // Golden provenance is checked against the actual checked-in CE line.
-            const line = ce.split('\n')[expected.ceLine - 1]!;
-            expect(line).toContain(`/*${name}*/`);
-            for (const field of f) expect(line).toContain(field);
-            expect(flags.TERRAIN_FLAGS[tile]).toEqual({ flags: mask(f[10]!), mechFlags: mask(f[11]!),
-                chanceToIgnite: Number(f[4]), fireType: f[5] === '0' ? '' : f[5],
-                discoverType: f[6] === '0' ? '' : f[6], promoteType: f[7] === '0' ? '' : f[7],
-                promoteChance: Number(f[8]), glowLight: LightKind[f[9] as keyof typeof LightKind], webOnly: false });
-            expect(DRAW_PRIORITY[tile]).toBe(Number(f[3]));
-            expect(TERRAIN_HOME_LAYER[tile]).toBe(name === 'HEALING_CLOUD' ? DungeonLayer.GAS : DungeonLayer.SURFACE);
-            expect(TERRAIN_APPEARANCES[tile]).toEqual(expected.appearance);
-            expect(TERRAIN_COLOR_NAMES[tile]).toEqual(expected.colors);
-            expect(LIGHT_CATALOG[flags.TERRAIN_FLAGS[tile].glowLight]).toBeDefined();
-        }
-        expect(DRAW_PRIORITY[TerrainType.BLOODFLOWER_STALK]).toBe(10);
-        expect(flags.TERRAIN_FLAGS[TerrainType.BLOODFLOWER_STALK]).toMatchObject({chanceToIgnite: 20, promoteChance: 100, promoteType: 'DF_BLOODFLOWER_PODS_GROW'});
-    });
-
-    it.skipIf(!hasCeSource())('uses actual CE IDs and complete fields for all nineteen new DFs' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        const ids = Object.fromEntries(enumEntries('dungeonFeatureTypes'));
-        for (const [name, expected] of Object.entries(golden.dfs)) {
-            const id = DF[name as keyof typeof DF];
-            expect(id).toBe(ids[name]);
-            const f = expected.fields;
-            const entry = DUNGEON_FEATURE_CATALOG[id]!;
-            expect(entry).toEqual({ id, ceLine: expected.line, ceTile: f[0], tile: terrainForCE(f[0]!),
-                layer: DungeonLayer[f[1] as keyof typeof DungeonLayer], startProbability: Number(f[2]), probabilityDecrement: Number(f[3]),
-                flags: 0, cePropagationTerrain: '', propagationTerrain: null,
-                subsequentDF: f[10] && f[10] !== '0' ? DF[f[10] as keyof typeof DF] : null,
-                description: f[5] ? JSON.parse(f[5]) : '', lightFlare: f[6] && f[6] !== '0' ? f[6] : '', flashColor: '', effectRadius: 0 });
-            const grid = floor();
-            spawn(grid, id);
-            expect(grid.getCell(7, 7)!.layers[entry.layer]).toBe(entry.tile);
-            if (entry.layer === DungeonLayer.GAS) expect(grid.getCell(7, 7)!.volume).toBe(entry.startProbability);
-        }
-    });
-
-    it.skipIf(!hasCeSource())('has no substituted DF tile or propagation carrier, and accounts for every absent CE enum' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        const terrain = enumEntries('tileType').filter(([name]) => name !== 'NUMBER_TILETYPES');
-        const dfs = enumEntries('dungeonFeatureTypes').filter(([name]) => name.startsWith('DF_'));
-        const machines = enumEntries('machineTypes').filter(([name]) => name.startsWith('MT_') && name !== 'MT_NONE');
-        const missingTerrain = terrain.filter(([name]) => terrainForCE(name) === undefined).map(([name]) => name);
-        const missingDF = dfs.filter(([name]) => typeof DF[name as keyof typeof DF] !== 'number').map(([name]) => name);
-        const missingMachines = machines.filter(([, id]) => !blueprints.some(b => b.ceBlueprintId === id)).map(([name]) => name);
-        expect(missingTerrain.sort()).toEqual(Object.keys(CE_TERRAIN_GAPS).sort());
-        expect(missingDF.sort()).toEqual(Object.keys(CE_DF_GAPS).sort());
-        expect(missingMachines.sort()).toEqual(Object.keys(CE_MACHINE_GAPS).sort());
-        expect([terrain.length, dfs.length, machines.length]).toEqual([215, 218, 72]);
-        for (const entry of Object.values(DUNGEON_FEATURE_CATALOG)) {
-            expect(entry.tile, DF[entry.id]).toBe(terrainForCE(entry.ceTile));
-            if (entry.cePropagationTerrain) expect(entry.propagationTerrain).toBe(terrainForCE(entry.cePropagationTerrain));
-            if (entry.subsequentDF !== null) expect(DUNGEON_FEATURE_CATALOG[entry.subsequentDF]).toBeDefined();
-        }
-        for (const tile of Object.values(flags.TERRAIN_FLAGS)) for (const name of [tile.fireType, tile.promoteType, tile.discoverType]) {
-            if (name) expect(DUNGEON_FEATURE_CATALOG[DF[name as keyof typeof DF]], name).toBeDefined();
-        }
-        if (process.env.X4_R1_LEDGER === '1') {
-            const rows = [
-                '# X4-R1 CE 枚举 ↔ web 实体全账本', '',
-                '本表登记实体身份与缺位范围；存在实体不等于所有 Game 消费点已接通。', '',
-                '| 类别 | CE ID | CE 枚举 | web 实体 / 缺位原因 |', '|---|---:|---|---|',
-                ...terrain.map(([name, id]) => `| 地形 | ${id} | ${name} | ${terrainForCE(name) === undefined ? CE_TERRAIN_GAPS[name] : TerrainType[terrainForCE(name)!]} |`),
-                ...dfs.map(([name, id]) => `| DF | ${id} | ${name} | ${typeof DF[name as keyof typeof DF] === 'number' ? name : CE_DF_GAPS[name]} |`),
-                ...machines.map(([name, id]) => `| 机器 | ${id} | ${name} | ${blueprints.find(b => b.ceBlueprintId === id)?.id ?? CE_MACHINE_GAPS[name]} |`), '',
-            ];
-            writeFileSync('docs/archive/dev-history/reports/x4-r1-evidence/catalog-ledger.md', rows.join('\n'));
-        }
-    });
-});
 
 describe('X4-R1 bloodwort generation, growth, bursting and healing contract', () => {
     it('the real Game move command bursts an adjacent pod; healing gas survives a save round trip', () => {

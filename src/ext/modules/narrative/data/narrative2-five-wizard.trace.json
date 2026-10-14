@@ -16,6 +16,10 @@
   "births": [
     {
       "npcId": "cord.mender",
+      "entrance": {
+        "x": 7,
+        "y": 10
+      },
       "entity": {
         "instanceKey": "cord.mender.first.slot.1",
         "contentId": "cord.mender",
@@ -44,6 +48,10 @@
     },
     {
       "npcId": "cistern.listener",
+      "entrance": {
+        "x": 44,
+        "y": 18
+      },
       "entity": {
         "instanceKey": "cistern.listener.first.slot.1",
         "contentId": "cistern.listener",
@@ -72,6 +80,10 @@
     },
     {
       "npcId": "bone.clerk",
+      "entrance": {
+        "x": 77,
+        "y": 7
+      },
       "entity": {
         "instanceKey": "bone.clerk.first.slot.1",
         "contentId": "bone.clerk",
@@ -100,6 +112,10 @@
     },
     {
       "npcId": "salt.warden",
+      "entrance": {
+        "x": 64,
+        "y": 22
+      },
       "entity": {
         "instanceKey": "salt.warden.first.slot.1",
         "contentId": "salt.warden",
@@ -128,6 +144,10 @@
     },
     {
       "npcId": "letter.carrier",
+      "entrance": {
+        "x": 71,
+        "y": 13
+      },
       "entity": {
         "instanceKey": "letter.carrier.first.slot.1",
         "contentId": "letter.carrier",
@@ -159,7 +179,7 @@
     {
       "label": "initial",
       "index": 0,
-      "worldHash": "9bde5fc8f4a1873379c8227d3929757db63b981af62bef077b6e00b8a3bb8085",
+      "worldHash": "3d8cd0dd7fc73116673ae9859e49ff33c0891fcd9e226c21d15c1bb8c49e2b0d",
       "messageHash": "03020f1dd34fbeb41cbb0478472485aca7d5071ce9263c93999f70e15efa720b",
       "turn": 0,
       "tick": 0
@@ -167,7 +187,7 @@
     {
       "label": "cord.mender:arrival",
       "index": 56,
-      "worldHash": "c53263ee3c0803c0a1344e5a242713b759bb718808dbed30989a3e1c7923b34d",
+      "worldHash": "7d8e201edb6130d33c4196d86441542feadbf2302d8f5a88df5d6a7ff810b7b0",
       "messageHash": "94bb896dfc8b87e500f5a6d72a67b5c4f607647442b47099b900fb1a33b3a8de",
       "turn": 55,
       "tick": 5500
@@ -175,7 +195,7 @@
     {
       "label": "cord.mender:open",
       "index": 57,
-      "worldHash": "24824b5ee1739243a79f970bd406222443352475b1e7e56e8718fd8ba5fab3f3",
+      "worldHash": "ef9169e66df01c01320d50bd944d42a52d8dccaf3a649d7ba7a60cc8a651cdb8",
       "messageHash": "94bb896dfc8b87e500f5a6d72a67b5c4f607647442b47099b900fb1a33b3a8de",
       "turn": 55,
       "tick": 5500
@@ -183,7 +203,7 @@
     {
       "label": "cord.mender:decision",
       "index": 61,
-      "worldHash": "5ce3a1c82d646227d5664610b35b2a7e0bb2252f8b66fc605bf3e0dedc0e73a5",
+      "worldHash": "c4814f9079ab55a11e4f4950d0f5f13594df6b77ca1a331ac92e9bfbdf00b33c",
       "messageHash": "94bb896dfc8b87e500f5a6d72a67b5c4f607647442b47099b900fb1a33b3a8de",
       "turn": 55,
       "tick": 5500
@@ -191,7 +211,7 @@
     {
       "label": "cord.mender:ending",
       "index": 62,
-      "worldHash": "cbaabce4369c6edb3f041ad3419be4c1c7446921c856c1bfbc7fd8e640f44fd0",
+      "worldHash": "e6b3386b2efb038736abeaa066f9df4d2b90cfeb4c1a4ea1b8ad77f141b720e4",
       "messageHash": "94bb896dfc8b87e500f5a6d72a67b5c4f607647442b47099b900fb1a33b3a8de",
       "turn": 55,
       "tick": 5500
@@ -199,7 +219,7 @@
     {
       "label": "cord.mender:close",
       "index": 63,
-      "worldHash": "576a9c9f74c9085f8bf16ed4576e544ba26391310f39ee2bd0d807dfad5c0e19",
+      "worldHash": "ffe4e244759ffd7c7efa6f1f234c839d4077a3c6185920ac075b22b6cefb38a3",
       "messageHash": "94bb896dfc8b87e500f5a6d72a67b5c4f607647442b47099b900fb1a33b3a8de",
       "turn": 55,
       "tick": 5500
@@ -207,7 +227,7 @@
     {
       "label": "cord.mender:recall",
       "index": 65,
-      "worldHash": "8a8face6c445c0c3cfd7ad9334b49ffb62057b447935395c8bc6eb80d80618f3",
+      "worldHash": "e17047cdf55ddb71d9f3320f86e9b865128e1f388d6d41b763f5fc6d60fdaf24",
       "messageHash": "94bb896dfc8b87e500f5a6d72a67b5c4f607647442b47099b900fb1a33b3a8de",
       "turn": 55,
       "tick": 5500
@@ -215,7 +235,7 @@
     {
       "label": "cord.mender:finished",
       "index": 66,
-      "worldHash": "a1bef85ec070adc7febc49901e3af02514b4fe2ece61515b0c278f350cbc52d6",
+      "worldHash": "c762bf080218ad643216de0069f66fc293affe90a8bbb3ed98e835ccb27f88c3",
       "messageHash": "94bb896dfc8b87e500f5a6d72a67b5c4f607647442b47099b900fb1a33b3a8de",
       "turn": 55,
       "tick": 5500
@@ -223,7 +243,7 @@
     {
       "label": "cistern.listener:arrival",
       "index": 118,
-      "worldHash": "068087cce378308396c090a6f14bc2fdb18bd0bd4e182b5b6ba62b261ef1e6a4",
+      "worldHash": "10eb8d36e2486d61666191c68df0b7e7c4ca9f08e1ebca79fe0f913524e1b561",
       "messageHash": "c4d885216a6b75433454b9320b0e460825805e4e903c78990e2410a36ca99637",
       "turn": 107,
       "tick": 10600
@@ -231,7 +251,7 @@
     {
       "label": "cistern.listener:open",
       "index": 119,
-      "worldHash": "5dc511b563c3dfca0f829c02c62fbb259e36f6bfdb84be3aa31439627e403edd",
+      "worldHash": "5429f68fc7cbc00c1915dea0229c365ab7caa5d5403a8a77c518d7f583fe963f",
       "messageHash": "c4d885216a6b75433454b9320b0e460825805e4e903c78990e2410a36ca99637",
       "turn": 107,
       "tick": 10600
@@ -239,7 +259,7 @@
     {
       "label": "cistern.listener:decision",
       "index": 123,
-      "worldHash": "40eaeb14cd7eb077f85cadb705d1fee5abf1f4902db09684484bad1052745263",
+      "worldHash": "2622721db03f0dcf09103b0f20a01401503728270f600e418ff3c5adb37b18c6",
       "messageHash": "c4d885216a6b75433454b9320b0e460825805e4e903c78990e2410a36ca99637",
       "turn": 107,
       "tick": 10600
@@ -247,7 +267,7 @@
     {
       "label": "cistern.listener:ending",
       "index": 124,
-      "worldHash": "ccdeda299bf440709db5c95fcb7ac9b5e59d571abc5d80a709e6223a622e42f7",
+      "worldHash": "76cea2f3cae9e48c4f46bde6f5da92e2ce286bd21785f787aa81ed04bf28bcbf",
       "messageHash": "c4d885216a6b75433454b9320b0e460825805e4e903c78990e2410a36ca99637",
       "turn": 107,
       "tick": 10600
@@ -255,7 +275,7 @@
     {
       "label": "cistern.listener:close",
       "index": 125,
-      "worldHash": "57eb146d4b950b3f61207bb5c86a31a0058bf88d3d2a4292a79f14116e82ae0d",
+      "worldHash": "55ac4749549b2bcb7045921b0e7851d273e97a69df9db8324e3d4a5d1b900420",
       "messageHash": "c4d885216a6b75433454b9320b0e460825805e4e903c78990e2410a36ca99637",
       "turn": 107,
       "tick": 10600
@@ -263,7 +283,7 @@
     {
       "label": "cistern.listener:recall",
       "index": 127,
-      "worldHash": "88551a79cab5e54e19a383e115e41f59ea0fad0dec20d5ea20c2d9ed63071c79",
+      "worldHash": "dc06994cf55282803f48ce654bc71494e801f0182893d3ab51b28bd4253d5127",
       "messageHash": "c4d885216a6b75433454b9320b0e460825805e4e903c78990e2410a36ca99637",
       "turn": 107,
       "tick": 10600
@@ -271,7 +291,7 @@
     {
       "label": "cistern.listener:finished",
       "index": 128,
-      "worldHash": "39b3a45b699df4d0331cc81eae2bd0f0d974414c91eb052806094ad3b9ca987c",
+      "worldHash": "247c8b250b3bdd0c2bc7b6c43705ce8521dce605494f8f9ec3a99bb917ffe3bc",
       "messageHash": "c4d885216a6b75433454b9320b0e460825805e4e903c78990e2410a36ca99637",
       "turn": 107,
       "tick": 10600
@@ -279,7 +299,7 @@
     {
       "label": "bone.clerk:arrival",
       "index": 183,
-      "worldHash": "26f2308fb75ac8bf1b223cb16d48b53fdc1b3b18c3e7534baa94664d17aac615",
+      "worldHash": "be9a4959c8613744c27ec5aff3637dcc670b24e130e6620ce4f0f76be5d2a1aa",
       "messageHash": "48d76c86436952a6f3295a89ae11b68310de9ef81631b3559ddad78e6a80580c",
       "turn": 162,
       "tick": 16000
@@ -287,7 +307,7 @@
     {
       "label": "bone.clerk:open",
       "index": 184,
-      "worldHash": "24535412a65b01c17224e6249148d334ab6db0958c9def8251620f9a335f001c",
+      "worldHash": "942f921d45c82ff1c7177eabb971779888cf1145dccdaba6d6011a244a584def",
       "messageHash": "48d76c86436952a6f3295a89ae11b68310de9ef81631b3559ddad78e6a80580c",
       "turn": 162,
       "tick": 16000
@@ -295,7 +315,7 @@
     {
       "label": "bone.clerk:decision",
       "index": 188,
-      "worldHash": "5f26dc90578a70f459d96d3721d915023ebfcafe53db570fa9f76a12150a0796",
+      "worldHash": "6f2718c0c5c549fb3bbce29504c5143b902bb47e7692f7bb81269cfc26800bf0",
       "messageHash": "48d76c86436952a6f3295a89ae11b68310de9ef81631b3559ddad78e6a80580c",
       "turn": 162,
       "tick": 16000
@@ -303,7 +323,7 @@
     {
       "label": "bone.clerk:ending",
       "index": 189,
-      "worldHash": "f761f43214ecea556c8c41f0f84ff52cd2744350c35897d5b50cba287bd5e90f",
+      "worldHash": "0003d5bac48b457af08b8431bb1e7c1ff3fcb02c4fc83480220fd42b8c9e3142",
       "messageHash": "48d76c86436952a6f3295a89ae11b68310de9ef81631b3559ddad78e6a80580c",
       "turn": 162,
       "tick": 16000
@@ -311,7 +331,7 @@
     {
       "label": "bone.clerk:close",
       "index": 190,
-      "worldHash": "5559309fe9cc18ffc972ca201dde581b256fadace0a923f207d3f2b5e50ad0d9",
+      "worldHash": "78f2d63970d19735034c32bfe751bfd1cd304d97cf220e5fd9aee8a127f332e0",
       "messageHash": "48d76c86436952a6f3295a89ae11b68310de9ef81631b3559ddad78e6a80580c",
       "turn": 162,
       "tick": 16000
@@ -319,7 +339,7 @@
     {
       "label": "bone.clerk:recall",
       "index": 192,
-      "worldHash": "693ff5f4654e544b1cf943da9a3a450bc3417267b8b3b6cdd240558fe2558934",
+      "worldHash": "47f26bcf89924ead6d8ad2f08b3aac411e2963fb2baa80bd7437c88c6aa97709",
       "messageHash": "48d76c86436952a6f3295a89ae11b68310de9ef81631b3559ddad78e6a80580c",
       "turn": 162,
       "tick": 16000
@@ -327,7 +347,7 @@
     {
       "label": "bone.clerk:finished",
       "index": 193,
-      "worldHash": "29506769605c6ef3669575dd5fcfc382f22cefb3a194184bc3fafa4176bdd2f1",
+      "worldHash": "d178dc7ffa4a38adee1f87c13aebac53e305b16ae1bffc122f298ec6d49c5565",
       "messageHash": "48d76c86436952a6f3295a89ae11b68310de9ef81631b3559ddad78e6a80580c",
       "turn": 162,
       "tick": 16000
@@ -335,7 +355,7 @@
     {
       "label": "salt.warden:arrival",
       "index": 354,
-      "worldHash": "cbcc881a5d4c5f5d998cf4909df8afff590b159aefdb88b162dd0037b2bf343a",
+      "worldHash": "9b2d6ca79bbe4ee8c5bcd926fe7bef894e348d2430be5933eafe08ba04db3109",
       "messageHash": "95971b90081a0a9aee0efdd129e4906f87438cb0893ea1d6ca535035919cc9de",
       "turn": 324,
       "tick": 31900
@@ -343,7 +363,7 @@
     {
       "label": "salt.warden:open",
       "index": 355,
-      "worldHash": "2d3f2526e76e6faac8f2332aa29f64574ebac7a7fcfb8ecbd189fc4c9cac334a",
+      "worldHash": "dc08c0e69b6749dc4d1d92c01d89d36fdf4783c47ea41835b9b32b10fd63134d",
       "messageHash": "95971b90081a0a9aee0efdd129e4906f87438cb0893ea1d6ca535035919cc9de",
       "turn": 324,
       "tick": 31900
@@ -351,7 +371,7 @@
     {
       "label": "salt.warden:decision",
       "index": 359,
-      "worldHash": "528c8eb512e9478aa04614dc9251bc4068c25f361b8e97fe0f3d622d161f8876",
+      "worldHash": "b5f8c53b709dba8fcea8ef8089c76dea6a33dbc6d51b82fd020450265343e1fe",
       "messageHash": "95971b90081a0a9aee0efdd129e4906f87438cb0893ea1d6ca535035919cc9de",
       "turn": 324,
       "tick": 31900
@@ -359,7 +379,7 @@
     {
       "label": "salt.warden:ending",
       "index": 360,
-      "worldHash": "e0b7101311e87f924a7b4658e70c2bb63b9aee35cdade09bf8775574f8015ed9",
+      "worldHash": "0e4408554716b42ba8651ea4d8bbea276cee765655415eddff1ff5011423e96d",
       "messageHash": "95971b90081a0a9aee0efdd129e4906f87438cb0893ea1d6ca535035919cc9de",
       "turn": 324,
       "tick": 31900
@@ -367,7 +387,7 @@
     {
       "label": "salt.warden:close",
       "index": 361,
-      "worldHash": "a9e4cba3d3bb55f49f3ad89969ae92d9e349d5907eb531ab32679ee8b252d83d",
+      "worldHash": "6f2f6bd42bc80335a631abe50d6526d6e76efa663b0ccf55c59df8ba57ce67a6",
       "messageHash": "95971b90081a0a9aee0efdd129e4906f87438cb0893ea1d6ca535035919cc9de",
       "turn": 324,
       "tick": 31900
@@ -375,7 +395,7 @@
     {
       "label": "salt.warden:recall",
       "index": 363,
-      "worldHash": "d1d75510e034edb20c2d3cb8050b9d460b5db427a895b2ac3aa8224d61aa1123",
+      "worldHash": "f3037eaab3fe803526357cee400e38ae45f4613adcf362ad53e6317e57856702",
       "messageHash": "95971b90081a0a9aee0efdd129e4906f87438cb0893ea1d6ca535035919cc9de",
       "turn": 324,
       "tick": 31900
@@ -383,7 +403,7 @@
     {
       "label": "salt.warden:finished",
       "index": 364,
-      "worldHash": "8d8df6de58dec6ee1b148c24b46236218e4d3ff1553f9ac6a20a12d0c0961487",
+      "worldHash": "51c7965727a3268499242a327ec0338897e01cc71d7ef49f45957e08cf5a4e97",
       "messageHash": "95971b90081a0a9aee0efdd129e4906f87438cb0893ea1d6ca535035919cc9de",
       "turn": 324,
       "tick": 31900
@@ -391,7 +411,7 @@
     {
       "label": "letter.carrier:arrival",
       "index": 530,
-      "worldHash": "91626c2182cdcc6fd748ec568564e951160a49491947dcad592fd015ce5b91c0",
+      "worldHash": "7937d1dc77cfcde5b1a9036a93555332a0d7fa8f6e1fc3e1364e85a766e576b2",
       "messageHash": "3d71146d3b980f143b7b23c56c5b9b6100fcfb292271904637e46a6d24cdb49a",
       "turn": 489,
       "tick": 48300
@@ -399,7 +419,7 @@
     {
       "label": "letter.carrier:open",
       "index": 531,
-      "worldHash": "506c970cef60f68bec898166d3b37cfa5e926fd83ef837ba7879db081c1462cc",
+      "worldHash": "4a8525a337858238ec8cc1204d8752fa56cdde86c39582448fb122b4a843c0d3",
       "messageHash": "3d71146d3b980f143b7b23c56c5b9b6100fcfb292271904637e46a6d24cdb49a",
       "turn": 489,
       "tick": 48300
@@ -407,7 +427,7 @@
     {
       "label": "letter.carrier:decision",
       "index": 535,
-      "worldHash": "872d091ad9d715018daf15ec24f663c34b82324943f4769970c11c69d764673f",
+      "worldHash": "2103926d306f3dba39409ced2d66eb3d2588d4bc0f5c362af634134b1aec7640",
       "messageHash": "3d71146d3b980f143b7b23c56c5b9b6100fcfb292271904637e46a6d24cdb49a",
       "turn": 489,
       "tick": 48300
@@ -415,7 +435,7 @@
     {
       "label": "letter.carrier:ending",
       "index": 536,
-      "worldHash": "bf8d6805680782074821bf89088136b2f06e6039a6af7edcdfaf738aa7b93304",
+      "worldHash": "a0d1a1bd7c56c87324edb1c743f7b75fcf2dc1c6ee2a7d1eab7c9541932b015a",
       "messageHash": "3d71146d3b980f143b7b23c56c5b9b6100fcfb292271904637e46a6d24cdb49a",
       "turn": 489,
       "tick": 48300
@@ -423,7 +443,7 @@
     {
       "label": "letter.carrier:close",
       "index": 537,
-      "worldHash": "72c2319c14acff59b97947a91610003a51612d128d6a6887dda5d22bc95d15f0",
+      "worldHash": "c134e5506675b8d60bc9caa8f365aa7782a5e711442df1fe45d2f5b9e9cd3e20",
       "messageHash": "3d71146d3b980f143b7b23c56c5b9b6100fcfb292271904637e46a6d24cdb49a",
       "turn": 489,
       "tick": 48300
@@ -431,7 +451,7 @@
     {
       "label": "letter.carrier:recall",
       "index": 539,
-      "worldHash": "5b9d84b18c5510954f755e79221c6a2c1aef6e7f1a133dcba0bceca57ac3894f",
+      "worldHash": "bb148616f81a718cc32e77c6f901116cf6ef9a964c2e6237fc45173607550649",
       "messageHash": "3d71146d3b980f143b7b23c56c5b9b6100fcfb292271904637e46a6d24cdb49a",
       "turn": 489,
       "tick": 48300
@@ -439,7 +459,7 @@
     {
       "label": "letter.carrier:finished",
       "index": 540,
-      "worldHash": "b616527206bf5fd96e27984b992169009907f896162d7f76ffedfd758b02b0a3",
+      "worldHash": "c305447d2804a4bd72192409a69c2e43f1f29784782cb69cbfe6a96ee1b1a7ad",
       "messageHash": "3d71146d3b980f143b7b23c56c5b9b6100fcfb292271904637e46a6d24cdb49a",
       "turn": 489,
       "tick": 48300
@@ -4613,7 +4633,7 @@
   "events": 540,
   "routeCommands": 490,
   "recordingBytes": 529446,
-  "finalHash": "b616527206bf5fd96e27984b992169009907f896162d7f76ffedfd758b02b0a3",
+  "finalHash": "c305447d2804a4bd72192409a69c2e43f1f29784782cb69cbfe6a96ee1b1a7ad",
   "finalRng": {
     "version": 2,
     "algorithm": "brogue-web-ranval32-uint64-level-v2",

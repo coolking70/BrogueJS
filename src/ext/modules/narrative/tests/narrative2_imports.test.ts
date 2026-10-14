@@ -152,17 +152,19 @@ describe('N2-IMPORT exhaustive narrative production ownership', () => {
     });
     it('preserves the baseline Game field set and narrative-facing shared protocol declarations', () => {
         // Fixed code baseline 59b9ba691daf66819eeea0299a0539f3641ad208,
-        // read with git show during authoring. No git process is needed in CI.
+        // Game fields retain that baseline; descriptor/recording declarations pin
+        // published e9280c6 foundation14 (token-only changes independently checked).
+        // No git process is needed in CI.
         // This bounded guard is not a hash of whole shared implementations;
         // the final explicit repository scope audit covers all remaining files.
         expect(gameFieldFingerprint(readFileSync('src/engine/Core/Game.ts', 'utf8'))).toBe('fa8757e4632cfa4085e696dce03db57f03df78b717d1d3336a962a77c5386c64');
         const contracts: [string, string][] = [
-            ['src/ext/descriptor.ts', '1b52c6d08602e5d882df2b8a27eef3c32c091e2de90db412558ebcb7e22e564e'],
+            ['src/ext/descriptor.ts', '5a77c0852f72c1e70bd7760940e2381863b0d7bca5b3e5e47096442b4223db70'],
             ['src/ext/types.ts', '7c2ac69be372ad334774ca88164cef8792c9f89b25fd86beb6be1e6c1e984251'],
             ['src/ext/world.ts', 'a6d6092d9b31fc7d8f12de633efa92fcca1a59bb61763d1fb28ec356906cbc9d'],
             ['src/ext/ui/types.ts', '9f5d30861987256c91b64c4e1de3588e1b15c08f3cec15a5364382e470bf55f2'],
             ['src/engine/Core/WholeRunSnapshot.ts', 'fed93bfa016cf6fbd121201008e8dafb79d023000c7a1adb3d87b6b8238ad199'],
-            ['src/engine/Core/RecordingV4.ts', '99d6939db43449dc060de6d9fbe04a98a9c48386ec60e70ca036065028fa37c5'],
+            ['src/engine/Core/RecordingV4.ts', 'c5d34845e5d6da5855668e264342d59cc70a52f1d4844cded3e069ff3aabe119'],
         ];
         for (const [file, expected] of contracts) expect(declarationFingerprint(file, readFileSync(file, 'utf8')), file).toBe(expected);
         const sample = 'export interface A { readonly n: 1; }';
@@ -171,14 +173,14 @@ describe('N2-IMPORT exhaustive narrative production ownership', () => {
     });
     it('has exact test discovery membership without duplicate, stale or omitted tests', () => {
         const suites = JSON.parse(readFileSync(path.join(root, 'test-suites.json'), 'utf8')) as Record<string, string[]>;
-        expect(Object.keys(suites).sort()).toEqual(['drift', 'gen', 'test']);
+        expect(Object.keys(suites).sort()).toEqual(['drift', 'test']);
         const registered = Object.values(suites).flat(), discovered = files(path.join(root, 'tests'))
             .filter(file => file.endsWith('.test.ts')).map(file => slash(path.relative(root, file)));
         expect(registered.length).toBe(new Set(registered).size);
         expect([...registered].sort()).toEqual(discovered.sort());
         for (const entry of registered) expect(existsSync(path.join(root, entry)), entry).toBe(true);
         for (const name of ['data', 'metadata', 'graph', 'imports']) expect(suites.test).toContain(`tests/narrative2_${name}.test.ts`);
-        expect(suites.gen).toEqual([]);
+        expect(suites).not.toHaveProperty('gen');
         if (discovered.includes('tests/narrative2_trace.test.ts')) expect(suites.drift).toContain('tests/narrative2_trace.test.ts');
     });
     it('keeps metadata outside the rule schema, state and public projection declarations', () => {

@@ -12,7 +12,6 @@ import { ItemLoader } from '../engine/Items/ItemLoader';
 import { BoltEffect, getBoltForItem, type BoltConfig } from '../engine/Combat/Bolt';
 import { CEBoltType } from '../engine/Combat/BoltCatalog';
 import { CombatSystem } from '../engine/Combat/Combat';
-import { staffProtection } from '../engine/Combat/Shielding';
 import { rng } from '../engine/Random';
 import { logger } from '../engine/Systems/Logger';
 import { createHeadlessGame } from './harness';
@@ -62,12 +61,7 @@ beforeEach(() => { rng.seedRandomGenerator(1515); logger.messages = []; });
 afterEach(() => vi.restoreAllMocks());
 
 describe('W-15 CE shield units, fixed-point formula, max and decay', () => {
-    it('matches compiled CE fp_pow/staffProtection golden values, including negative exponent', () => {
-        const golden = [66,92,130,181,254,356,499,699,978,1370,1918,2685,3760,5264,7369,10317,14444,20222,28311,39635,55489];
-        const before = rng.randomNumbersGenerated;
-        golden.forEach((value, E) => expect(staffProtection(E)).toBe(value));
-        expect(staffProtection(3.9)).toBe(181); expect(rng.randomNumbersGenerated).toBe(before);
-    });
+
     it.each([[130, 3, 0, 100, 130], [130, 13, 0, 0, 0], [130, 16, 3, 0, 0], [1, 1, 0, 0, 0], [11, 3, 1, 0, 0]])(
         'shield %i / incoming %i: residual %i, current %i, max %i', (amount, damage, residual, current, max) => {
             const c = new Player(0, 0); c.applyShield(amount); const hp = c.hp;

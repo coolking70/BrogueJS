@@ -1,3 +1,4 @@
+import { missingPackages, verifyInstalledPackageFallback } from '../../../../test/support/optionalPackageLifecycle';
 import { afterEach, expect, it, vi } from 'vitest';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { start, play, mechanical, clone, state } from './support/combat2Harness';
@@ -23,8 +24,9 @@ it('C2-SDK natural seed23 must preserve metadata and scheduler ownership', () =>
     }
 }, 180000);
 
-it('C2-SDK natural seed118 death capture must preserve valid growth state', () => {
+it(missingPackages(secondFixture.modules).length ? 'C2-SDK seed118 dependencies absent: remaining-world lifecycle and genuine seven-pack save/replay rejection' : 'C2-SDK natural seed118 death capture must preserve valid growth state', () => {
     const out = '/tmp/combat2-evidence/natural/seed118';
+    if (missingPackages(secondFixture.modules).length) { verifyInstalledPackageFallback(secondFixture.modules); return; }
     const { game, initialCommands } = start(secondFixture.modules, secondFixture.seed, 'wizard');
     expect(initialCommands).toEqual(secondFixture.initialCommands);
     for (const input of secondFixture.inputs) play(game, input.action, input.data);

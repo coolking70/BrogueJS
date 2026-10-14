@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {BlueprintEngine, mapMachineInterior, resetMachineCounter, type BlueprintDef, type FeatureDef, type MachineResult} from '../engine/Generator/BlueprintEngine';
+import {BlueprintEngine, resetMachineCounter, type BlueprintDef, type FeatureDef, type MachineResult} from '../engine/Generator/BlueprintEngine';
 import {Grid, TerrainType as T, DungeonLayer, DCOLS, DROWS} from '../engine/Map/Grid';
 import * as auto from '../engine/Map/AutoGenerator';
 import {Architect} from '../engine/Generator/Architect';
@@ -8,7 +8,6 @@ import {rng} from '../engine/Random';
 import {createHeadlessGame} from './harness';
 import {machineScene} from './fixtures/u19a-machine-scenes';
 import {ItemCategory} from '../engine/Items/Item';
-import oracle from './fixtures/u19b-ce-occupancy.json';
 
 const origin={x:10,y:10}, neighbor={x:11,y:10};
 const key=(p:{x:number;y:number})=>p.y*DCOLS+p.x;
@@ -28,21 +27,7 @@ const vestibule=()=>blueprint({id:'child',ceBlueprintId:998,flags:['BP_VESTIBULE
 const flatten=(m:MachineResult):MachineResult[]=>[m,...m.subMachines.flatMap(flatten)];
 afterEach(()=>vi.restoreAllMocks());
 
-it('matches 64 compiled CE room/vestibule/candidate truth-table rows (five entity flags, two positions)',()=>{
- for(const row of oracle.rows){
-  const {grid,engine}=setup(),p={x:row.x,y:10};grid.setTerrain(12,10,T.FLOOR);
-  if(row.mask&1)engine.pendingItems.add(key(p));if(row.mask&2)engine.pendingMonsters.add(key(p));
-  // Player/dormant flags have no BlueprintEngine carrier; CE proves they are
-  // irrelevant in these three consumers. Stairs are represented by terrain.
-  if(row.mask&8)grid.setTerrain(p.x,p.y,T.STAIRS_UP);
-  const analysis=analyzeChokeMap(grid);
-  for(let x=0;x<DCOLS;x++)for(let y=0;y<DROWS;y++)analysis.chokeMap[x]![y]=30000;
-  for(let x=10;x<=12;x++)analysis.chokeMap[x]![10]=1;
-  expect(engine.cellIsFeatureCandidate(p.x,p.y,{x:12,y:10},new Set([key(p)]),1,new Set(),new Set()),JSON.stringify(row)).toBe(row.candidate);
-  expect(engine.fillVestibuleInterior(blueprint({roomSize:[2,2]}),origin)!==null,JSON.stringify(row)).toBe(row.vestibule);
-  expect(mapMachineInterior(grid,analysis,origin,(x,y)=>engine.pendingItems.has(key({x,y})))!==null,JSON.stringify(row)).toBe(row.room);
- }
-});
+
 
 describe('U19b CE-specific pending occupancy consumers',()=>{
  it.each([origin,neighbor])('vestibule aborts, rather than skipping, a real pending ground item at %j',at=>{

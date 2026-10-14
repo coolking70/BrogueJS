@@ -1,6 +1,4 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import * as creatureFeatures from '../engine/Combat/CreatureFeatures';
-import fs from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { Game } from '../engine/Core/Game';
@@ -43,13 +41,7 @@ const negate = (g:Game,m:Creature) => (g as unknown as {negateCreatureMagic(m:Cr
 afterEach(() => vi.restoreAllMocks());
 
 describe('U09 complete learning eligibility / negation / execution identity matrix', () => {
-    it.skipIf(!hasCeSource())('CE masks are exactly four behaviors and two abilities; no TURRET, FIERY, POISONS or reflection100' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        const source=fs.readFileSync(ceFile('src/brogue/Rogue.h'),'utf8');
-        const bits=(key:string)=>source.match(new RegExp(`${key}\\s*=\\s*\\(([^)]+)\\)`))![1]!.match(/\b(?:MONST|MA)_\w+/g);
-        expect(bits('LEARNABLE_BEHAVIORS')).toEqual(['MONST_INVISIBLE','MONST_FLIES','MONST_IMMUNE_TO_FIRE','MONST_REFLECT_50']);
-        expect(bits('LEARNABLE_ABILITIES')).toEqual(['MA_TRANSFERENCE','MA_CAUSES_WEAKNESS']);
-        expect(bits('MONST_TURRET')).toEqual(['MONST_IMMUNE_TO_WEBS','MONST_NEVER_SLEEPS','MONST_IMMOBILE','MONST_INANIMATE','MONST_ATTACKABLE_THRU_WALLS','MONST_WILL_NOT_USE_STAIRS']);
-    });
+
     it('all 22 learnable identities have metadata; the seven unlearnable entries stay excluded', () => {
         const actual=Object.values(CE_BOLT_CATALOG).filter(b=>b.type!==B.NONE && !(b.flags&F.NOT_LEARNABLE));
         expect(actual.map(b=>[B[b.type],b.magnitude])).toEqual(learnedBolts);
@@ -77,23 +69,7 @@ describe('U09 complete learning eligibility / negation / execution identity matr
 });
 
 describe('U09 hand-installed abilities use the real AI loop, without natural learning', () => {
-    it('matches the verbatim compiled CE predicate on all 198 new-identity target cases', () => {
-        const g=scene();
-        const oracle=JSON.parse(fs.readFileSync('src/test/fixtures/ce-oracles/u-09/ce-target-cases.json','utf8')) as {
-            formulas:{reflection48:number;lightningLow:number;lightningHigh:number};
-            tests:{name:string;label:string;casterAlly:boolean;targetAlly:boolean;playerTarget:boolean;behavior:string[];ability:string[];status:string[];expected:boolean}[];
-        };
-        expect(oracle.formulas).toEqual({reflection48:48,lightningLow:9,lightningHigh:29});expect(oracle.tests).toHaveLength(198);
-        for(const test of oracle.tests) {
-            g.monsters=[];g.player.statusDurations={};
-            const caster=mob(g),target=test.playerTarget?g.player:mob(g,8);caster.isAlly=test.casterAlly;
-            if(target instanceof Monster) {target.isAlly=test.targetAlly;target.behaviorFlags=new Set(test.behavior);target.abilityFlags=new Set(test.ability);}
-            if(test.label==='teammate' && target instanceof Monster) target.leader=caster;
-            const statuses={STATUS_ENTRANCED:'entranced',STATUS_SLOWED:'slowed',STATUS_INVISIBLE:'invisible',STATUS_IMMUNE_TO_FIRE:'immune_fire'} as const;
-            for(const id of test.status) target.setStatusDuration(statuses[id as keyof typeof statuses],10);
-            expect(specificallyValidBoltTarget(caster,target,test.name,g),`${test.name}/${test.label}`).toBe(test.expected);
-        }
-    });
+
     it.each(added)('%s: eligible target, real cast, attack ticks; no power counter spent', name => {
         const g=scene(),m=mob(g),target=mob(g,8);
         m.isAlly=name!=='INVISIBILITY'; target.isAlly=false;

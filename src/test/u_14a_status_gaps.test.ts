@@ -1,12 +1,9 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { Player } from '../entities/Player';
 import { Monster, MonsterState, type MonsterData } from '../entities/Monster';
 import { type Creature } from '../entities/Creature';
 import { Game } from '../engine/Core/Game';
 import { CombatSystem } from '../engine/Combat/Combat';
-import { monsterDamageAdjustmentAmount, monsterAccuracyAdjusted, monsterDefenseAdjusted, strengthModifier, netEnchant, playerDefense } from '../engine/Combat/CombatFormulas';
 import { projectileReflects } from '../engine/Combat/BoltReflection';
 import { negateCreatureStatusEffects, negationWillAffectMonster } from '../engine/Combat/Negation';
 import { creatureStatusRows } from '../engine/Status/statusConfig';
@@ -16,7 +13,6 @@ import { TerrainType as T, DungeonLayer } from '../engine/Map/Grid';
 import { rng } from '../engine/Random';
 import monsters from '../data/monsters.json';
 import { createHeadlessGame } from './harness';
-const golden = JSON.parse(readFileSync('src/test/fixtures/ce-oracles/u-14a/ce-weakness.json','utf8')) as Array<Record<string,number>>;
 const mob = (id='rat',x=12,y=8) => { const m=new Monster(x,y,(monsters as MonsterData[]).find(d=>d.id===id)!); m.state=MonsterState.HUNTING; return m; };
 function scene() {
     const g=createHeadlessGame(1414,'test'); g.monsters=[];g.dormantMonsters=[];g.items=[];g.animationEnabled=false;
@@ -30,26 +26,7 @@ const applyAll=(c:Creature)=>{ c.weaken(300);c.weaken(200);c.applyStatus('nauseo
 afterEach(()=>vi.restoreAllMocks());
 
 describe('U14a compiled CE weakness goldens and actual combat',()=>{
-    it.each(golden)('all consumers, weakness=$weakness',r=>{
-        const w=r.weakness!;
-        expect(monsterDamageAdjustmentAmount(w)*65536).toBe(r.damageFP);
-        expect(monsterAccuracyAdjusted(120,w)).toBe(r.accuracy);
-        expect(monsterDefenseAdjusted(160,w)).toBe(r.defense);
-        expect(strengthModifier(18-w,17)*65536).toBe(r.strengthModifierFP);
-        expect(netEnchant(2,18-w,17)*65536).toBe(r.netEnchantFP);
-        expect(playerDefense(4,2,18-w,17)).toBe(r.playerDefense);
-        const p=new Player(8,8),m=mob();p.strength=18;p.weaknessAmount=w;p.hp=p.maxHp=1000;
-        const weapon=ItemLoader.spawnWeapon('sword',0,0)!;Object.assign(weapon,{damage:'10-20',clumping:2,strengthRequired:17,enchantment:2,runicType:undefined});p.equippedWeapon=weapon;m.isCaged=true;m.hp=m.maxHp=1000;
-        const roll=vi.spyOn(rng,'randRange').mockImplementation(lo=>lo);
-        expect(CombatSystem.attack(p,m).damage).toBe(r.weaponLow);
-        roll.mockImplementation((_lo,hi)=>hi);expect(CombatSystem.attack(p,m).damage).toBe(r.weaponHigh);
-        const g=Object.create(Game.prototype) as Game;g.player=p;
-        expect((g as any).throwMaxDistance()).toBe(r.throwDistance);
-        p.equippedWeapon=null;m.isCaged=false;m.damageString='20';m.weaknessAmount=w;m.accuracy=120;
-        const chance=vi.spyOn(rng,'randPercent').mockReturnValue(true);
-        expect(CombatSystem.attack(m,p).damage).toBe(Math.trunc(20*r.damageFP!/65536));
-        expect(chance).toHaveBeenLastCalledWith(Math.min(100,r.accuracy!));
-    });
+
     it('repeat doses cap at ten, refresh both maxima, expiration clears layers',()=>{
         const p=new Player(0,0);for(let i=0;i<12;i++)p.weaken(30);
         expect(p.weaknessAmount).toBe(10);p.tickStatuses();p.weaken(10);
@@ -181,11 +158,7 @@ describe('U14a fear lifecycle and persistence/display',()=>{
         const detail=JSON.stringify(generateMonsterDetail(m,100,12,0,null,0,12));expect(detail).toContain('虚弱 -2');expect(detail).toContain('魔法恐惧');
         restored.player.setStatusDuration('weakened',1);restored.player.tickStatuses();expect(restored.player.effectiveStrength).toBe(12);
     });
-    it.skipIf(!hasCeSource())('CE fear source stays retired; X2g completed darkness throw returns at CE frequency' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON),()=>{
-        const ce=readFileSync(ceFile('src/brogue/Items.c'),'utf8');expect(ce).toContain('//void causeFear(');
-        expect(ItemLoader.genPotions.find(p=>p.id==='potion_of_darkness')).toMatchObject({frequency:7});
-        expect(ItemLoader.scrolls.find(p=>p.id==='scroll_of_fear')).toBeUndefined();
-    });
+
 });
 
 

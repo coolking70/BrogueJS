@@ -82,7 +82,7 @@ export function createN2RewardProvider(mode: ProviderMode = 'ready') {
 }
 export type N2Provider = ReturnType<typeof createN2RewardProvider>;
 
-export function startDiagnostic(options: { npcs: readonly string[]; growth?: boolean; provider?: N2Provider; change?: (raw: typeof definitions) => void }) {
+export function startDiagnostic(options: { npcs: readonly string[]; extensions?: readonly string[]; growth?: boolean; provider?: N2Provider; change?: (raw: typeof definitions) => void }) {
     const content = diagnosticPack(options.npcs, options.change), module = createNarrativeModuleFromPack(content);
     const descriptors: ModuleDescriptor[] = catalog.getInstalledModuleDescriptors().map(descriptor => descriptor.id === 'narrative'
         ? { ...descriptor, rules: module.rules, create: () => createNarrativeModuleFromPack(content) } : descriptor);
@@ -90,7 +90,7 @@ export function startDiagnostic(options: { npcs: readonly string[]; growth?: boo
         labelKey: 'ext.n2-reward-fixture.name', create: options.provider.create });
     const registry = registryFromDescriptors(descriptors);
     vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(registry);
-    const ids = ['narrative', ...(options.growth ? ['growth'] : []), ...(options.provider ? ['n2-reward-fixture'] : [])];
+    const ids = [...new Set(['narrative', ...(options.extensions ?? []), ...(options.growth ? ['growth'] : []), ...(options.provider ? ['n2-reward-fixture'] : [])])];
     const initialCommands = registry.create(registry.manifest(ids)).flatMap(entry => entry.initialCommand
         ? [JSON.stringify({ module: entry.id, ...entry.initialCommand })] : []);
     const seed = 8201, game = createHeadlessGame(seed, 'normal');

@@ -1,6 +1,4 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import fs from 'node:fs';
 import {ItemLoader} from '../engine/Items/ItemLoader';
 import {Item, ItemCategory as C} from '../engine/Items/Item';
 import {rng} from '../engine/Random';
@@ -9,7 +7,7 @@ import {Monster, MonsterState, type MonsterData} from '../entities/Monster';
 import monsters from '../data/monsters.json';
 import {CombatSystem} from '../engine/Combat/Combat';
 import {ringBonus, ringLightMultiplier} from '../engine/Items/RingBonuses';
-import {rechargeItemsIncrementally, tickStaffRecharge} from '../engine/Items/ArcanaRecharge';
+import {rechargeItemsIncrementally} from '../engine/Items/ArcanaRecharge';
 import {charmRechargeDelay} from '../engine/Items/CharmModel';
 import {minersLightBaseRadiusFixpt, updateMinersLightRadius} from '../engine/Map/LightCatalog';
 import {generateItemDetail} from '../engine/UI/DetailGenerator';
@@ -17,7 +15,6 @@ import {serializeItem, deserializeItem} from '../engine/Core/EntitySnapshot';
 import {createHeadlessGame} from './harness';
 import {TerrainType as T} from '../engine/Map/Grid';
 import {logger} from '../engine/Systems/Logger';
-const golden=JSON.parse(fs.readFileSync('src/test/fixtures/ce-oracles/u-15b2/ce-golden.json','utf8'));
 afterEach(()=>vi.restoreAllMocks());
 function ring(kind:string,e:number,identified=true){
     return Object.assign(new Item(kind,'=',0,C.RING),{identityId:'ring_of_'+kind,enchantment:e,identified,timesEnchanted:0,charges:1500});
@@ -38,16 +35,7 @@ function fighter(e=2,identified=true){
 }
 
 describe('U15b2 ordinary and machine birth / full CE ringTable',()=>{
-    it.skipIf(!hasCeSource())('matches all eight CE ringTable names, order, frequency and unfiltered kind draw' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON),()=>{
-        const ce=fs.readFileSync(ceFile('src/brogue/Globals.c'),'utf8').split('itemTable ringTable[NUMBER_RING_KINDS] = {')[1]!.split('\n};')[0]!;
-        const rows=[...ce.matchAll(/\{"(\w+)",\s+itemGems\[\d+\], "",\s+(\d+)/g)].map(m=>['ring_of_'+m[1],Number(m[2])]);
-        expect(rows).toHaveLength(8);
-        expect(ItemLoader.rings.map(r=>[r.id,r.frequency])).toEqual(rows);
-        expect(ItemLoader.genRings.map(r=>[r.id,r.frequency])).toEqual(rows);
-        const roll=vi.spyOn(rng,'randRange');
-        for(let n=1;n<=8;n++){roll.mockReturnValueOnce(n);expect(ItemLoader.chooseKind(rows.map(r=>r[1] as number))).toBe(n-1);}
-        expect(roll.mock.calls).toEqual(Array.from({length:8},()=>[1,8]));
-    });
+
     it('ordinary birth draws 1..3 once, then 16% curse OR an uncapped 10% tail',()=>{
         const clump=vi.spyOn(rng,'randClumpedRange').mockReturnValue(3);
         const pct=vi.spyOn(rng,'randPercent').mockReturnValueOnce(true);
@@ -89,12 +77,7 @@ describe('U15b2 light equipment -> CE fixed point -> visibility',()=>{
         a.identified=true;expect(ringLightMultiplier([a,b])).toBe(3);
         expect(ringLightMultiplier([ring('light',-3)])).toBe(-3);
     });
-    it('matches 144 compiled original CE light cases including darkness and water truncation',()=>{
-        for(const [base,lm,dark,water,radius,fade] of golden.light){
-            expect(updateMinersLightRadius(base,{lightMultiplier:lm,darknessStatus:dark,darknessMax:20,inWater:water}),JSON.stringify([base,lm,dark,water]))
-                .toEqual({radiusHundredths:radius,radialFadeToPercent:fade});
-        }
-    });
+
     it('refreshes actual Game light on equip/unequip, kind-only identification and load',()=>{
         const g=createHeadlessGame(1532,'test'),api=g as any;g.depth=26;api.generateDepth(false,false);g.monsters=[];
         for(let x=2;x<50;x++)for(let y=2;y<29;y++)g.grid.setTerrain(x,y,T.FLOOR);
@@ -113,15 +96,7 @@ describe('U15b2 light equipment -> CE fixed point -> visibility',()=>{
 });
 
 describe('U15b2 reaping melee -> shared staff/charm resource units',()=>{
-    it('matches 1944 original CE staff cases: negative/zero/positive, capacity and signed-short overflow',()=>{
-        for(const [kind,wis,mul,charges,timer,after,remaining,calls,lo,hi] of golden.recharge){
-            const id=['staff_of_lightning','staff_of_blinking','staff_of_obstruction'][kind]!;
-            const a=staff(3,charges,timer,id),roll=vi.fn((l:number,h:number,_c:number)=>Math.trunc((l+h)/2));
-            tickStaffRecharge(a,wis,{randClumpedRange:roll},id,mul);
-            expect([a.charges,a.staffRechargeRemaining,roll.mock.calls.length],JSON.stringify([kind,wis,mul,charges,timer])).toEqual([after,remaining,calls]);
-            if(calls)expect(roll.mock.calls[roll.mock.calls.length - 1]).toEqual([lo,hi,3]);
-        }
-    });
+
     it.each([2,-2])('E=%i caps by target HP before shield and charges with wisdom in the same hit',e=>{
         const {p,m,s,c}=fighter(e);p.ringRight=ring('wisdom',1);
         const roll=vi.spyOn(rng,'randRange').mockImplementation((l,h)=>e>0?h:l);

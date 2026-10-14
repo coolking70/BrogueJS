@@ -72,7 +72,7 @@ function clockScene(game: Game) {
   const actor = new Monster(
     game.player.x - 1,
     game.player.y,
-    (monsters as MonsterData[]).find((m) => m.id === 'jackal')!
+    (monsters as MonsterData[]).find((m) => m.id === 'wraith')!
   );
   game.monsters.push(actor);
   game.extensionRuntime.attachCreature(actor);

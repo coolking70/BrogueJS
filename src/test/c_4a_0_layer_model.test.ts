@@ -806,7 +806,7 @@ describe('C-4a-0 留痕（本轮明确不做的事，断言现状）', () => {
                                             // 地毯上铺菌林，两层共存）。
         ]);
         const srcDir = fileURLToPath(new URL('../', import.meta.url));
-        const prodFiles = collectFiles(srcDir).filter((f) => !f.split(sep).includes('test'));
+        const prodFiles = collectFiles(srcDir).filter((f) => !f.split(sep).some(part => part === 'test' || part === 'tests') && !/\.test\.[^.]+$/.test(f));
         const offenders: string[] = [];
         for (const f of prodFiles) {
             const rel = relative(srcDir, f);

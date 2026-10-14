@@ -4776,7 +4776,11 @@ export class Game {
                 // Focus's beforeCommit and the native stamina charge share runtime.command's transaction.
                 if (request.action === 'attack' && !commitNativeAttackCost(this, this.player)) return false;
                 this.extensionRuntime!.notifyCommittedAction({ actorId: this.player.id, action: request.action });
-                callbacks.beforeCommit(); committed = true; return true;
+                callbacks.beforeCommit();
+                // Controlled skills acquire input effects only after approval and fees.
+                // A refused ally attack must preserve the complete mechanical world.
+                if (this.justRested) { this.justRested = false; markStatsDirty(this.player); }
+                committed = true; return true;
             },
             afterResolve: () => {
                 if (!committed || resolved) return;
@@ -4814,7 +4818,7 @@ export class Game {
         }
         // P4-8 返工：justRested 每次输入先清零，仅 wait 分支置位（CE IO.c:2521-2527
         // 的 REST/PERIOD/NUMPAD5 置位、Time.c:2874 回合末清除的等价口径）。
-        if(this.justRested){this.justRested=false;markStatsDirty(this.player);}
+        if(!control&&this.justRested){this.justRested=false;markStatsDirty(this.player);}
         if (source === 'player' && this.replayStatus === 'playing') {
             return;
         }

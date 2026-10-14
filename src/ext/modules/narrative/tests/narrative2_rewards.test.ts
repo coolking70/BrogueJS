@@ -1,3 +1,4 @@
+import { installedOptionalModules } from '../../../../test/support/installedExtensions';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { rng } from '../../../../engine/Random';
 import { readNarrativeUiView, buildNarrativeUiCommand } from '../ui/view';
@@ -11,8 +12,9 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('N2-REWARD real Game independent quotes, two endings and durable once-only results', () => {
     for (const row of N2_CASES) {
-        for (const mode of ['absent', 'disabled', 'unsupported-key', 'ready'] as const) {
-            it(`${row.npc}: both endings produce ${mode === 'ready' ? 'fixture applied 5' : mode + ' skipped'} in the same command`, () => {
+        for (const requestedMode of ['absent', 'disabled', 'unsupported-key', 'ready'] as const) {
+            const mode = requestedMode === 'disabled' && !installedOptionalModules(['growth']).length ? 'absent' : requestedMode;
+            it(`${row.npc}: ${requestedMode === 'disabled' && mode === 'absent' ? 'growth physically absent; ' : ''}both endings produce ${mode === 'ready' ? 'fixture applied 5' : mode + ' skipped'} in the same command`, () => {
                 const provider = mode === 'ready' || mode === 'unsupported-key' ? createN2RewardProvider(mode) : undefined;
                 const { game } = startDiagnostic({ npcs: [row.npc], growth: mode === 'disabled', provider });
                 const initial = clone(game.toSaveSnapshot());

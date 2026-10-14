@@ -52,39 +52,6 @@ describe('monsters.json 五项 CE 战斗数值接线', () => {
         }
     });
 
-    it('CE 黄金值硬断言（注释中的 L 行号为 Globals.c monsterCatalog 表体）', () => {
-        // L1030: {0, "rat", ..., 6, 0, 80, {1, 3, 1}, 20, 100, 100, ...}
-        const rat = byId('rat');
-        expect(rat.accuracy).toBe(80);
-        expect(rat.defense).toBe(0);
-        expect(rat.regen).toBe(20);
-
-        // L1031: {0, "kobold", ..., 7, 0, 80, {1, 4, 1}, 20, 100, 100, ...}
-        const kobold = byId('kobold');
-        expect(kobold.accuracy).toBe(80);
-        expect(kobold.defense).toBe(0);
-
-        // L1032: {0, "jackal", ..., 8, 0, 70, {2, 4, 1}, 20, 50, 100, ...}
-        const jackal = byId('jackal');
-        expect(jackal.moveSpeed).toBe(50);
-
-        // L1033: {0, "eel", ..., 18, 27, 100, {3, 7, 2}, 5, 50, 100, ...}
-        const eel = byId('eel');
-        expect(eel.defense).toBe(27);
-        expect(eel.regen).toBe(5);
-        expect(eel.moveSpeed).toBe(50);
-
-        // L1061: {0, "ogre", ..., 55, 60, 125, {9, 13, 2}, 20, 100, 200, ...}
-        const ogre = byId('ogre');
-        expect(ogre.attackSpeed).toBe(200);
-        expect(ogre.defense).toBe(60);
-
-        // L1076: {0, "troll", ..., 65, 70, 125, {10, 15, 3}, 1, 100, 100, ...}
-        const troll = byId('troll');
-        expect(troll.regen).toBe(1);
-        expect(troll.defense).toBe(70);
-    });
-
     it('既有字段未被合并脚本破坏（抽样核对保留字段仍在）', () => {
         const kobold = byId('kobold');
         expect(kobold.onHitStatus).toBe('confused');

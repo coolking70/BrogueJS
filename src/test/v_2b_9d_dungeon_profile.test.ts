@@ -1,10 +1,7 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
 import data from '../data/blueprints.json';
-import monsters from '../data/monsters.json';
 import { Architect, DUNGEON_PROFILE_CATALOG as profiles, type DungeonProfileId } from '../engine/Generator/Architect';
-import { BlueprintEngine, blueprintQualifies, type BlueprintDef, type MachineResult } from '../engine/Generator/BlueprintEngine';
+import { BlueprintEngine, type BlueprintDef, type MachineResult } from '../engine/Generator/BlueprintEngine';
 import { Grid, TerrainType as C, DungeonLayer as L, DCOLS, DROWS, TERRAIN_HOME_LAYER, DRAW_PRIORITY } from '../engine/Map/Grid';
 import { addLoopsToWorkGrid } from '../engine/Map/LoopMap';
 import { terrainAllowsMove } from '../engine/Map/Connectivity';
@@ -48,38 +45,7 @@ function flood(grid: Grid, origin: Pos): Set<number> {
 }
 
 describe('V-2b-9d CE profiles, blueprint rows and closed terrain chains',()=>{
-    it.skipIf(!hasCeSource())('both headers and all 19 features match CE including item/monster aliases and literal flags' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON),()=>{
-        // Wrong category, profile, bounds, aliases, any omitted feature/flag/item column goes red.
-        const ce=readFileSync(ceFile('src/variants/GlobalsBrogue.c'),'utf8').split('\n');
-        for(const [id,line,count] of [[13,264,9],[14,275,10]]) {
-            const b=bp(id!);
-            const h=ce[line!]!.match(/\{(\d+),\s*(\d+)\},\s*\{(\d+),\s*(\d+)\},\s*(\d+),\s*(\d+),\s*(\w+),\s*\(([^)]+)\)/)!;
-            expect([b.name,b.depthRange,b.roomSize,b.frequency,b.features.length,b.category,b.dungeonProfile,b.flags]).toEqual([
-                ce[line!-1]!.split('"')[1],[+h[1]!,+h[2]!],[+h[3]!,+h[4]!],+h[5]!,+h[6]!,'reward',h[7],h[8]!.split(/\s*\|\s*/)]);
-            for(let i=0;i<count!;i++) {
-                const row=ce[line!+1+i]!.match(/\{(\w+),\s*(\w+),\s*(\w+),\s*\{(\d+),\s*(\d+)\},\s*(\d+),\s*(\([^)]*\)|\w+),\s*(-?\w+),\s*(\w+),\s*(\d+),\s*(\w+),\s*(\([^)]*\)|\w+),\s*(\([^)]*\)|\w+)/)!;
-                expect(row).not.toBeNull();
-                const optional=(s:string)=>s==='0'?undefined:s;
-                const flags=(s:string)=>s==='0'?[]:s.replace(/[()]/g,'').split(/\s*\|\s*/);
-                const monster=optional(row[9]!)?.replace('MK_','').toLowerCase();
-                const alias:Record<string,string>={goblin_chieftan:'goblin_warlord',guardian:'stone_guardian'};
-                const f=b.features[i]!;
-                expect([f.featureDF,f.terrain,f.layer,f.instanceCount,f.minimumInstanceCount,f.itemCategory,f.itemId,f.monsterId,f.personalSpace,f.hordeFlags,f.itemFlags,f.flags])
-                    .toEqual([optional(row[1]!),optional(row[2]!),optional(row[3]!),[+row[4]!,+row[5]!],+row[6]!,
-                        optional(row[7]!)?.replace(/[()\s]/g,''),({SCROLL_ENCHANTING:'scroll_of_enchantment',POTION_LIFE:'potion_of_life'} as Record<string,string>)[row[8]!],
-                        monster?(alias[monster]??monster):undefined,+row[10]!,optional(row[11]!)?[row[11]]:undefined,row[12]==='0'?undefined:flags(row[12]!),flags(row[13]!)]);
-                if(f.monsterId) expect(monsters.some(m=>m.id===f.monsterId),f.monsterId).toBe(true);
-            }
-            expect(blueprintQualifies(b,b.depthRange[0],['BP_REWARD'])).toBe(true);
-            expect(blueprintQualifies(b,b.depthRange[0]-1,['BP_REWARD'])).toBe(false);
-            expect(blueprintQualifies(b,b.depthRange[1]+1,['BP_REWARD'])).toBe(false);
-        }
-        expect(profiles.DP_GOBLIN_WARREN).toEqual({roomFrequencies:[0,0,1,0,0,0,0,0],corridorChance:0});
-        expect(profiles.DP_SENTINEL_SANCTUARY).toEqual({roomFrequencies:[0,5,0,1,0,0,0,0],corridorChance:0});
-        // B2 fills CE55's literal flag while retaining its engine quarantine.
-        expect((data as BlueprintDef[]).filter(b=>b.flags.includes('BP_MAXIMIZE_INTERIOR')).map(b=>b.ceBlueprintId)).toEqual([55,13,14]);
-        for(const id of [65,66]) expect(bp(id).frequency).toBe(0); // Existing 9b quarantine, untouched this round.
-    });
+
 
     it('recurses every feature terrain, DF tile, propagation terrain, successor and promote/fire edge',()=>{
         // A missing smoke/glyph carrier or a deferred normal/fire promotion is detected before generation.

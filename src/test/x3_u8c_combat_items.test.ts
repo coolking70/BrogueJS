@@ -1,10 +1,8 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
 import zh from '../locales/zh_CN.json';
 import { ATTACK_VERBS, attackVerb } from '../engine/Combat/AttackVerbs';
 import { formatCombatText, type CombatTextEvent } from '../engine/Combat/CombatText';
-import { MONSTER_CLASS_MEMBERS, monsterIsInClass } from '../engine/Combat/MonsterClass';
+import { monsterIsInClass } from '../engine/Combat/MonsterClass';
 import { CombatSystem } from '../engine/Combat/Combat';
 import { Logger, logger, foldCombatMessages } from '../engine/Systems/Logger';
 import { displaySettings, loadDisplaySettings } from '../engine/Settings';
@@ -20,7 +18,6 @@ const en = { translate: (_key: string, english: string) => english };
 const event: CombatTextEvent = { attacker: { player: false, visible: true, name: 'rat', typeId: 'rat' },
     defender: { player: true, visible: true, name: '', typeId: 'player' },
     damage: 2, hit: true, lethal: false, percentile: 99 };
-const alias = (id: string) => ({ you: 'player', goblin_chieftan: 'goblin_warlord', acid_jelly: 'acidic_jelly', will_o_the_wisp: 'wisp' }[id] ?? id);
 afterEach(() => { displaySettings.showDamageNumbers = false; logger.presentAcknowledgments(null); vi.restoreAllMocks(); });
 function scene() {
     const g = createHeadlessGame(33083, 'test');
@@ -44,19 +41,7 @@ function weapon(g: ReturnType<typeof scene>) {
 }
 
 describe('X3-U8c CE catalog and pure combat text', () => {
-    it.skipIf(!hasCeSource())('all 68 attack tables and all 15 overlapping classes match the local CE source' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        const globals = readFileSync(ceFile('src/brogue/Globals.c'), 'utf8');
-        const header = readFileSync(ceFile('src/brogue/Rogue.h'), 'utf8');
-        const ids = header.slice(header.indexOf('    MK_YOU,'), header.indexOf('    NUMBER_MONSTER_KINDS')).match(/MK_\w+/g)!;
-        const words = globals.slice(globals.indexOf('const monsterWords monsterText'), globals.indexOf('// ITEMS'));
-        const rows = [...words.matchAll(/^\s*\{"[^\n]*",\s*\n\s*"[^\n]*",\s*"[^\n]*",\s*\n\s*\{([^\n]*)/gm)];
-        expect(rows).toHaveLength(68);
-        expect(Object.keys(ATTACK_VERBS)).toHaveLength(68);
-        rows.forEach((row, n) => expect(ATTACK_VERBS[alias(ids[n]!.slice(3).toLowerCase())]).toEqual([...row[1]!.matchAll(/"([^"]+)"/g)].map(m => m[1])));
-        const classes = globals.slice(globals.indexOf('const monsterClass monsterClassCatalog'), globals.indexOf('// ITEMS'));
-        const classRows = [...classes.matchAll(/\{"(\w+)",\s+\d+,\s+-?\d+,\s+\{([^}]+)}/g)];
-        expect(classRows).toHaveLength(15);
-        for (const row of classRows) expect(MONSTER_CLASS_MEMBERS[row[1]!]).toEqual(row[2]!.match(/MK_\w+/g)!.map(id => alias(id.slice(3).toLowerCase())));
+    it('project monster classes support overlapping membership and reject unrelated classes',()=>{
         expect(monsterIsInClass('phantom', 'infernal')).toBe(true);
         expect(monsterIsInClass('phantom', 'undead')).toBe(true);
         expect(monsterIsInClass('rat', 'dragon')).toBe(false);

@@ -1,3 +1,4 @@
+import { installedOptionalModules } from '../../../../test/support/installedExtensions';
 import { describe, expect, it, vi } from 'vitest';
 import type { Json } from '../../../types';
 import * as catalog from '../../../catalog';
@@ -128,7 +129,7 @@ describe('N2-META author-only future recruitment metadata', () => {
             ? { ...descriptor, rules: module.rules, create: () => createNarrativeModuleFromPack(diagnostic) } : descriptor));
         const spy = vi.spyOn(catalog, 'createExtensionRegistry').mockReturnValue(registry), originalMetadata = fresh();
         try {
-            const ids = ['narrative', 'settlement'];
+            const ids = installedOptionalModules(['narrative', 'settlement']);
             const initialCommands = registry.create(registry.manifest(ids)).flatMap(m => m.initialCommand
                 ? [JSON.stringify({ module: m.id, ...m.initialCommand })] : []);
             const game = createHeadlessGame(8201, 'test');
@@ -163,7 +164,8 @@ describe('N2-META author-only future recruitment metadata', () => {
                 expect(game.recordedInputEvents).toHaveLength(length + 1);
             };
             const genuine = structuredClone(game.toSaveSnapshot()), before = snapshot(), identity = getNarrativePackIdentity();
-            expect(genuine.run.recordingOrigin).toBeDefined(); expect(genuine.extensions!.modules.settlement).toBeDefined();
+            expect(genuine.run.recordingOrigin).toBeDefined(); if (ids.includes('settlement')) expect(genuine.extensions!.modules.settlement).toBeDefined();
+            else expect(genuine.extensions!.modules.settlement).toBeUndefined();
             suffix(); const expected = snapshot(), expectedRecording = recording(), expectedView = visible();
             expect((expected.extensions!.modules.narrative as any).rewardReceipts).toContainEqual({ id: 'cord.mender.reward.receipt',
                 instanceKey: 'narrative.cord.mender.reward.receipt.run', result: 'skipped', reason: 'absent' });

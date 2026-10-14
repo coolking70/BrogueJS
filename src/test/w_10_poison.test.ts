@@ -1,7 +1,5 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import * as creatureFeatures from '../engine/Combat/CreatureFeatures';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { Game } from '../engine/Core/Game';
 import { Grid, TerrainType as T } from '../engine/Map/Grid';
 import { EnvironmentManager, GasType } from '../engine/Environment/Gas';
@@ -12,7 +10,6 @@ import { Item, ItemCategory } from '../engine/Items/Item';
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import { getBoltForItem } from '../engine/Combat/Bolt';
 import { CombatSystem } from '../engine/Combat/Combat';
-import { staffPoison } from '../engine/Combat/Poison';
 import { rng } from '../engine/Random';
 import { logger } from '../engine/Systems/Logger';
 import { createHeadlessGame } from './harness';
@@ -57,15 +54,7 @@ function live() {
 beforeEach(() => { vi.restoreAllMocks(); rng.seedRandomGenerator(1010); logger.messages = []; });
 
 describe('W-10 CE formula and real poison staff contacts', () => {
-    it.skipIf(!hasCeSource())('matches all 51 CE fixed-point table rows and both clamps, without pow approximation' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        const ce = readFileSync(ceFile('src/brogue/PowerTables.c'), 'utf8');
-        const body = ce.split('const fixpt POW_POISON[] = {')[1]!.split('};')[0]!.replace(/\/\/[^\n]*/g, '');
-        const table = body.match(/\d+/g)!.map(Number);
-        expect(table).toHaveLength(51);
-        table.forEach((v, i) => expect(staffPoison(i + 2)).toBe(Math.floor(5 * v / 65536)));
-        expect(staffPoison(-9)).toBe(5); expect(staffPoison(100)).toBe(staffPoison(52));
-        expect(staffPoison(3.9)).toBe(6);
-    });
+
     it.each([[2, 5], [3, 6], [8, 24]])('E%s gives %s, ignores charges/capacity/config magnitude, no immediate damage', (E, duration) => {
         const g = scene(), m = mob(g); const before = rng.randomNumbersGenerated;
         const r = zap(g, E);

@@ -261,7 +261,7 @@ describe('3e interruptions and native world continuation', () => {
         expect(last(ledger(game).receipts).result).toBe('completed');
     });
     it('an invisible native NPC hit due on the exact terminal tick prevents the terminal heal', () => {
-        const { game } = scene(), source = npc(game, { x: game.player.x + 1, y: game.player.y }, false, 'jackal');
+        const { game } = scene(), source = npc(game, { x: game.player.x + 1, y: game.player.y }, false, 'wraith');
         source.ticksUntilTurn = 500; source.accuracy = 10000; source.damageString = '7-7'; source.setStatusDuration('invisible', 50);
         game.player.equippedArmor = null; (game as any).updateVision();
         const attacks = vi.spyOn(CombatSystem, 'attack'), tick = timeSystem.currentTick;

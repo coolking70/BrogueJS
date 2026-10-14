@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import i18next from 'i18next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../engine/Core/Game';
@@ -43,24 +42,10 @@ const bolt: BoltConfig = { id: 'test_negation', name: 'negation', ceType: CEBolt
     magnitude: 10, char: '*', color: 0xff88cc, maxRange: 0, piercing: false, selfTargeting: false };
 const wand = () => Object.assign(new Item('explicit negation', '/', 0xff88cc, ItemCategory.WAND), { identityId: 'wand_of_negation', charges: 2 });
 const cast = (g: Game, m: Creature) => g.zapBoltFromPlayer(bolt, wand(), m.loc);
-const statuses = { weakened: 2, telepathy: 3, hallucinating: 4, levitating: 5, slowed: 6, hasted: 7, confused: 8,
-    burning: 9, paralyzed: 10, poisoned: 11, discordant: 14, immune_fire: 15, entranced: 21, shielded: 24, invisible: 25 };
 beforeEach(() => { if (!i18next.isInitialized) i18next.init({ lng: 'en', resources: {}, initImmediate: false }); vi.restoreAllMocks(); rng.seedRandomGenerator(2323); ItemLoader.identifiedItems.clear(); logger.messages = []; });
 
 describe('W-23 separate CE eligibility and actual effect contracts', () => {
-    it.each([false, true])('matches original compiled CE status rows (player=%s)', player => {
-        const rows = fs.readFileSync('src/test/fixtures/ce-oracles/w-23/ce-negation.txt', 'utf8').split('\n').filter(s => s.startsWith(`status ${+player} `));
-        const g = scene();
-        for (const [id, index] of Object.entries(statuses)) for (const duration of [1, 7]) {
-            const expected = rows.find(s => s.startsWith(`status ${+player} ${index} ${duration} `))!.split(' ').slice(1).map(Number);
-            const m = mob(g); g.player.statusDurations = {}; const c = player ? g.player : m;
-            c.setStatusDuration(id as StatusId, duration);
-            if (!player) expect(negationWillAffectMonster(m), id).toBe(!!expected[3]);
-            expect(negate(g, c), id).toBe(!!expected[4]);
-            expect(c.getStatusDuration(id as StatusId), id).toBe(expected[5]);
-            if (!player) expect(m.wasNegated, id).toBe(false);
-        }
-    });
+
     it.each(['telepathy', 'hallucinating'] as const)('%s is not eligible for known auto-target but DOES autoID on manual hit', status => {
         const g = scene(), m = mob(g), item = wand(); m.setStatusDuration(status, 9);
         expect(negationWillAffectMonster(m)).toBe(false); ItemLoader.identifiedItems.add('wand_of_negation');

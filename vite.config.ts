@@ -1,8 +1,11 @@
 import { configDefaults, defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import { getTestDiscovery } from './scripts/test-discovery.mjs'
+import { analyzeTestDependencies, testDependencyPlugin } from './scripts/check-test-dependencies.mjs'
 
 const discovery = getTestDiscovery()
+const dependencies = analyzeTestDependencies(discovery.root, { discovery })
+if (dependencies.errors.length) throw new Error(dependencies.errors.join("\n"))
 
 /** npm, direct Vitest and ownership guards consume the same discovered partition. */
 export function testSuiteOptions(suite: string | undefined): { include: string[]; exclude: string[] } {
@@ -20,7 +23,6 @@ export default defineConfig({
   // 更短 timeout 或断言来兜。
   test: {
     ...testSuiteOptions(process.env.BROGUE_TEST_SUITE),
-    globalSetup: ['./src/test/support/ceGlobalSetup.ts'],
     // 验收方 2026-09-16 上调：本套件有多个重型长跑用例（26 层 × 多种子的整图扫描），
     // 单文件耗时实测 c_0_add_loops 148s、p1_29 71s、invented_content_pool 52s。
     // 原来的 120s 在**并行执行方占用 CPU 时**会让它们集体假红——已发生两次，
@@ -36,5 +38,5 @@ export default defineConfig({
     hookTimeout: 120_000,
   },
 
-  plugins: [vue()],
+  plugins: [testDependencyPlugin(dependencies), vue()],
 })

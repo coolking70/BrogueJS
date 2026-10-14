@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { checkModuleBoundaries } from '../../scripts/check-module-boundaries.mjs';
 
 const temporary: string[] = [];
-const emptyManifest = JSON.stringify({ test: [], gen: [], drift: [] });
+const emptyManifest = JSON.stringify({ test: [], drift: [] });
 function fixture() {
     const root = mkdtempSync(join(tmpdir(), 'module-boundaries-'));
     temporary.push(root);
@@ -258,11 +258,11 @@ const picture = { src: 'https://example.org/src/ext/modules/deleted/picture.png'
         const f = fixture(); f.module('alpha');
         f.write('src/ext/modules/alpha/tests/owned.test.ts', 'export {};');
         expect(f.check().join('\n')).toContain('Unregistered discovered test');
-        f.write('src/ext/modules/alpha/test-suites.json', JSON.stringify({ test: ['tests/owned.test.ts'], gen: [], drift: [] }));
+        f.write('src/ext/modules/alpha/test-suites.json', JSON.stringify({ test: ['tests/owned.test.ts'], drift: [] }));
         expect(f.check()).toEqual([]);
-        f.write('src/ext/modules/alpha/test-suites.json', JSON.stringify({ test: ['tests/owned.test.ts', 'tests/owned.test.ts'], gen: [], drift: [] }));
+        f.write('src/ext/modules/alpha/test-suites.json', JSON.stringify({ test: ['tests/owned.test.ts', 'tests/owned.test.ts'], drift: [] }));
         expect(f.check().join('\n')).toContain('Duplicate test registration');
-        f.write('src/ext/modules/alpha/test-suites.json', JSON.stringify({ test: ['tests/deleted.test.ts'], gen: [], drift: [] }));
+        f.write('src/ext/modules/alpha/test-suites.json', JSON.stringify({ test: ['tests/deleted.test.ts'], drift: [] }));
         expect(f.check().join('\n')).toContain('Stale or invalid registered test');
         rmSync(join(f.root, 'scripts/test-suites.json'));
         expect(f.check().join('\n')).toContain('Missing test ownership manifest');
@@ -272,7 +272,7 @@ const picture = { src: 'https://example.org/src/ext/modules/deleted/picture.png'
         const f = fixture(); f.module('alpha');
         f.write('src/ext/modules/alpha/tests/owned.test.ts', 'export {};');
         f.write('src/test/generic.test.ts', `import '../ext/modules/alpha/descriptor';`);
-        f.write('scripts/test-suites.json', JSON.stringify({ test: ['src/ext/modules/alpha/tests/owned.test.ts', 'src/test/generic.test.ts'], gen: [], drift: [] }));
+        f.write('scripts/test-suites.json', JSON.stringify({ test: ['src/ext/modules/alpha/tests/owned.test.ts', 'src/test/generic.test.ts'], drift: [] }));
         const issues = f.check().join('\n');
         expect(issues).toContain('Foundation manifest cannot own module test');
         expect(issues).toContain('src/test/generic.test.ts:1: import/export');

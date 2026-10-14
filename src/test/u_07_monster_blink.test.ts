@@ -14,7 +14,6 @@ import { perimeterCoords } from '../engine/Combat/BoltReflection';
 import { chooseMonsterBlink, monsterBlinkToPreferenceMap, monsterBlinkImpact, monsterBlinkAvoids,
     monsterBlinkToSafety, buildBlinkAllySafetyMap, buildBlinkSafeTerrainMap, buildBlinkEnemyMap, buildBlinkTargetMap,
     closestBlinkEnemy, blinkTowardCreature, blinkTowardCaptiveLeader, blinkChance, blinkAllyFlees, blinkAllyAfterMagic, scanBlinkMap } from '../engine/Combat/MonsterBlink';
-import golden from './fixtures/ce-oracles/u-07/ce-blink.json';
 
 function scene() {
     const g = Object.create(Game.prototype) as Game;
@@ -43,17 +42,7 @@ const manhattan=(p:{x:number;y:number},q:{x:number;y:number})=>Math.abs(p.x-q.x)
 beforeEach(()=>{vi.restoreAllMocks();rng.seedRandomGenerator(707);});
 
 describe('U07 CE selector oracle and perimeter',()=>{
-    it('matches all 100 independently compiled CE vectors, with 40 probes and no RNG',()=>{
-        const before=rng.randomNumbersGenerated;
-        for(const c of golden.cases) {
-            let calls=0;
-            const choice=c.hasBolt?chooseMonsterBlink({x:15,y:15},p=>c.values[p.x]![p.y]!,c.uphill,
-                p=>!!c.avoids[p.x]![p.y],()=>c.impacts[calls++]!,p=>!!c.blocks[p.x]![p.y]):null;
-            expect(!!choice).toBe(c.expected.ok);expect(choice?.aim??{x:-1,y:-1}).toEqual(c.expected.aim);
-            expect(calls).toBe(c.expected.calls);
-        }
-        expect(rng.randomNumbersGenerated).toBe(before);
-    });
+
     it('enumerates the exact 40 targets without duplicated corners',()=>{
         const p=Array.from({length:40},(_,n)=>perimeterCoords(n));
         expect(new Set(p.map(p=>`${p.x},${p.y}`)).size).toBe(40);

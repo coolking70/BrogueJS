@@ -1,0 +1,328 @@
+{
+  "head": "a15c980",
+  "sourceSha256": "f4542258a60ae235fea408d9c7ab356353fe6e4fcf2df2f87d3faee9b7ef7fa2",
+  "node": "24.19.0",
+  "NODE_OPTIONS": "--max-old-space-size=3072",
+  "sourceUnchangedAcrossAllGatesAndIsolatedReruns": true,
+  "originalCandidatePreservation": {
+    "fileCount": 1343,
+    "mismatches": [],
+    "method": "Compare original policy candidate hashes against unchanged files plus before-premise backups and original spatial golden."
+  },
+  "gates": [
+    {
+      "name": "final-npm",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--maxWorkers=3",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile=/private/tmp/p5-final-fix-20261014/final-npm.json"
+      ],
+      "exit": 1,
+      "seconds": 12439.655731916428,
+      "numPassedTests": 11340,
+      "numFailedTests": 18,
+      "numPendingTests": 9,
+      "numTodoTests": 5,
+      "failures": [
+        {
+          "file": "src/test/ext_module_composition.test.ts",
+          "name": "EXT-2a0 installed module combinations opens, plays, saves, loads, replays, seeks and continues combat+crafting+foraging+giants+narrative"
+        },
+        {
+          "file": "src/test/ext_module_composition.test.ts",
+          "name": "EXT-2a0 installed module combinations opens, plays, saves, loads, replays, seeks and continues crafting+foraging+growth+narrative"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat2_links.test.ts",
+          "name": "C2-NAT optional giants target and public growth skill share a genuine origin and complete persistence"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat2_natural.test.ts",
+          "name": "C2-NAT bounded original-world capture or complete compact-trace replay"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+narrative+se…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+narrative+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+growth+narrative+settlement': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+growth+narrative+sett…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+growth+narrative+sett…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+growth+narra…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+giants+growth+narrative+settle…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+giants+growth+narrati…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+foraging+giants+growth+narrati…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat_combinations.test.ts",
+          "name": "3f independently installed combat combinations on a natural normal run 'combat+crafting+foraging+giants+growt…': real commands, every checkpoint, seek, continuation and corrupt-manifest preservation"
+        },
+        {
+          "file": "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+          "name": "giants2 copper natural persistence continues damaged/phase checkpoints with exact complete world and recording prefix/suffix"
+        },
+        {
+          "file": "src/ext/modules/narrative/tests/narrative2_combinations.test.ts",
+          "name": "N2-COMBO 'combo-narrative-growth-combat-giants-…' installed NPC/persistence lifecycle"
+        },
+        {
+          "file": "src/ext/modules/narrative/tests/narrative2_rewards.test.ts",
+          "name": "N2-REWARD real Game independent quotes, two endings and durable once-only results bone.clerk: both endings produce disabled skipped in the same command"
+        },
+        {
+          "file": "src/ext/modules/narrative/tests/narrative2_rewards.test.ts",
+          "name": "N2-REWARD real Game independent quotes, two endings and durable once-only results letter.carrier: both endings produce fixture applied 5 in the same command"
+        }
+      ],
+      "sourceUnchanged": true,
+      "jsonFileStatusCounts": {
+        "passed": 605,
+        "failed": 7
+      },
+      "textReporterFiles": {
+        "passed": 604,
+        "failed": 7,
+        "skipped": 1
+      }
+    },
+    {
+      "name": "final-ext",
+      "command": [
+        "npm",
+        "run",
+        "test:ext",
+        "--",
+        "--maxWorkers=3",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile=/private/tmp/p5-final-fix-20261014/final-ext.json"
+      ],
+      "exit": 1,
+      "seconds": 5581.890134096146,
+      "numPassedTests": 6316,
+      "numFailedTests": 3,
+      "numPendingTests": 1,
+      "numTodoTests": 0,
+      "failures": [
+        {
+          "file": "src/ext/modules/combat/tests/combat2_links.test.ts",
+          "name": "C2-NAT optional giants target and public growth skill share a genuine origin and complete persistence"
+        },
+        {
+          "file": "src/ext/modules/combat/tests/combat2_natural.test.ts",
+          "name": "C2-NAT bounded original-world capture or complete compact-trace replay"
+        },
+        {
+          "file": "src/ext/modules/narrative/tests/narrative2_combinations.test.ts",
+          "name": "N2-COMBO 'combo-narrative-growth-combat-giants-…' installed NPC/persistence lifecycle"
+        }
+      ],
+      "sourceUnchanged": true,
+      "jsonFileStatusCounts": {
+        "passed": 330,
+        "failed": 3
+      },
+      "textReporterFiles": {
+        "passed": 329,
+        "failed": 3,
+        "skipped": 1
+      }
+    },
+    {
+      "name": "final-drift",
+      "command": [
+        "npm",
+        "run",
+        "test:drift",
+        "--",
+        "--maxWorkers=3",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile=/private/tmp/p5-final-fix-20261014/final-drift.json"
+      ],
+      "exit": 0,
+      "seconds": 131.1576521396637,
+      "numPassedTests": 16,
+      "numFailedTests": 0,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "failures": [],
+      "sourceUnchanged": true,
+      "jsonFileStatusCounts": {
+        "passed": 8
+      },
+      "textReporterFiles": {
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "name": "final-boundary",
+      "command": [
+        "npm",
+        "run",
+        "check:modules"
+      ],
+      "exit": 0,
+      "seconds": 9.535130262374878,
+      "sourceUnchanged": true,
+      "failures": []
+    },
+    {
+      "name": "final-types",
+      "command": [
+        "node",
+        "node_modules/vue-tsc/bin/vue-tsc.js",
+        "-b"
+      ],
+      "exit": 0,
+      "seconds": 9.670256853103638,
+      "sourceUnchanged": true,
+      "failures": []
+    },
+    {
+      "name": "final-build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "exit": 0,
+      "seconds": 17.048444986343384,
+      "sourceUnchanged": true,
+      "failures": []
+    }
+  ],
+  "isolated": [
+    {
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/combat/tests/combat_combinations.test.ts",
+        "--maxWorkers=1",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile=/private/tmp/p5-final-fix-20261014/timeout-isolated-combat_combinations.json"
+      ],
+      "exit": 0,
+      "seconds": 964.0632238388062,
+      "numPassedTests": 64,
+      "numFailedTests": 0,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "failures": []
+    },
+    {
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/narrative/tests/narrative2_rewards.test.ts",
+        "--maxWorkers=1",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile=/private/tmp/p5-final-fix-20261014/timeout-isolated-narrative2_rewards.json"
+      ],
+      "exit": 0,
+      "seconds": 231.77194023132324,
+      "numPassedTests": 46,
+      "numFailedTests": 0,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "failures": []
+    },
+    {
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/test/blueprint_center.test.ts",
+        "--maxWorkers=1",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile=/private/tmp/p5-final-fix-20261014/timeout-isolated-blueprint_center.json"
+      ],
+      "exit": 0,
+      "seconds": 266.4206111431122,
+      "numPassedTests": 7,
+      "numFailedTests": 0,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "failures": []
+    },
+    {
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/test/ext_module_composition.test.ts",
+        "--maxWorkers=1",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile=/private/tmp/p5-final-fix-20261014/timeout-isolated-ext_module_composition.json"
+      ],
+      "exit": 0,
+      "seconds": 612.7409358024597,
+      "numPassedTests": 143,
+      "numFailedTests": 0,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "failures": []
+    },
+    {
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/giants/tests/giants2_persistence.test.ts",
+        "--maxWorkers=1",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile=/private/tmp/p5-final-fix-20261014/final-giants-isolated.json"
+      ],
+      "exit": 0,
+      "seconds": 379.4664707183838,
+      "numPassedTests": 8,
+      "numFailedTests": 0,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "failures": []
+    }
+  ],
+  "approvedRemaining": [
+    "combat2_links giantHit",
+    "combat2_natural zombie anchor-break",
+    "narrative2_combinations seven-package 900000ms"
+  ],
+  "interpretation": "Full npm and ext retain exit 1. Non-approved timeout files pass completely with maxWorkers=1; classified as load-related per task. No timeout, seed, skip, assertion relaxation, or production change.",
+  "fileCountNote": "Vitest JSON testResults marks fully skipped files as passed; textReporterFiles preserves actual passed/failed/skipped file counts. Describe suite counts are not file counts."
+}

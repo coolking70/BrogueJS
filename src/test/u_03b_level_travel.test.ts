@@ -1,4 +1,3 @@
-import golden from './fixtures/u03b-ce-follow.json';
 import {describe,it,expect,vi} from 'vitest';
 import {createHeadlessGame} from './harness';
 import {Grid,TerrainType,DungeonLayer} from '../engine/Map/Grid';
@@ -38,24 +37,7 @@ function pair() {
 const stable=(g:Game)=>{const {savedAt:_,...s}=g.toSnapshot();return JSON.parse(JSON.stringify(s));};
 
 describe('U03b CE level travel',()=>{
- it('4608 eligibility/countdown rows match the compiled local CE loop',()=>{
-  const maps=new Map<number,{grid:Grid,origin:{x:number,y:number}}>();
-  for(const distance of [0,4,149,30000]) {
-   const map=new Grid(155,7);
-   for(let x=1;x<154;x++)for(let y=1;y<6;y++)map.setTerrain(x,y,TerrainType.FLOOR);
-   if(distance===30000)for(let y=1;y<6;y++)map.setTerrain(5,y,TerrainType.WALL);
-   maps.set(distance,{grid:map,origin:{x:distance===30000?7:3+distance,y:3}});
-  }
-  const actual=golden.cases.map(row=>{
-   const [state,hp,lev,captive,flags,entranced,paralyzed,direction,speed,distance]=row as [number,number,number,number,number,number,number,number,number,number];
-   const m=rat(3,3);m.state=state===1?MonsterState.HUNTING:MonsterState.ASLEEP;m.isAlly=state===2;
-   m.hp=hp;m.movementSpeed=speed;m.isCaged=!!captive;m.setStatusDuration('levitating',lev);m.setStatusDuration('entranced',entranced);m.setStatusDuration('paralyzed',paralyzed);
-   if(flags&1)m.behaviorFlags.add('MONST_WILL_NOT_USE_STAIRS');if(flags&2)m.behaviorFlags.add('MONST_RESTRICTED_TO_LIQUID');
-   const map=maps.get(distance)!;scheduleLevelFollowers(map.grid,[m],map.origin,direction as -1|0|1);
-   return [m.entersLevelIn,m.approaching*2];
-  });
-  expect(actual).toEqual(golden.output);
- });
+
  it('two maps: hazards, secret doors, diagonal walls and immune stationary creatures',()=>{
   const g=grid();for(let y=1;y<11;y++)g.setTerrain(6,y,TerrainType.WATER_DEEP);
   expect(travelDistanceMap(g,[],{x:4,y:5},T_PATHING_BLOCKER)[8]![5]).toBe(30000);

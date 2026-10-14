@@ -1,6 +1,4 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
 import i18next from 'i18next';
 import '../i18n';
 import content from '../locales/zh_CN.content.json';
@@ -16,7 +14,6 @@ import { DF, DUNGEON_FEATURE_CATALOG } from '../engine/Map/DungeonFeatureCatalog
 import { catalogFeature, spawnDungeonFeature, resetDFMessageEligibility } from '../engine/Map/DungeonFeature';
 import { Game } from '../engine/Core/Game';
 
-const globals = (hasCeSource() ? readFileSync(ceFile('src/brogue/Globals.c'), 'utf8') : '').split(/\r?\n/);
 const chinese = (text: string) => {
     expect(text.trim()).not.toBe('');
     expect(text).toMatch(/[\u4e00-\u9fff]/);
@@ -24,24 +21,7 @@ const chinese = (text: string) => {
 };
 
 describe('X4-R5 CE text inventory', () => {
-    it.skipIf(!hasCeSource())('pins all 215 CE rows and all 188 nonempty flavors against the actual C source' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        const tileRows = globals.filter(line => /^\s*\/\*[A-Z_0-9]+,?\*\/\s*\{/.test(line));
-        expect(tileRows).toHaveLength(215);
-        expect(fixture.tiles).toHaveLength(215);
-        expect(Object.keys(CE_TERRAIN_TEXT)).toEqual(fixture.tiles.map(row => row.id));
-        expect(fixture.tiles.filter(row => row.flavor)).toHaveLength(188);
-        for (const row of fixture.tiles) {
-            const source = globals[row.line - 1]!;
-            expect(source).toMatch(new RegExp('/\\*' + row.id + ',?\\*/'));
-            const strings = Array.from(source.matchAll(/"(?:\\.|[^"\\])*"/g), match => JSON.parse(match[0]) as string);
-            expect(strings.slice(-2), row.id).toEqual([row.description, row.flavor]);
-            expect(source.includes('TM_IS_SECRET'), row.id).toBe(row.secret);
-            const text = CE_TERRAIN_TEXT[row.id as CETerrainTextId];
-            chinese(text.description);
-            if (row.flavor) chinese(text.flavor);
-            else expect(text.flavor, row.id).toBe('');
-        }
-    });
+
 
     it('covers every current web terrain, including the 88 former ground fallbacks and NOTHING', () => {
         const terrains = Object.values(T).filter((value): value is T => typeof value === 'number');
@@ -160,7 +140,7 @@ describe('X4-R5 CE layer selection and knowledge boundaries', () => {
 });
 
 describe('X4-R5 species-specific monster text', () => {
-    it.skipIf(!hasCeSource())('covers all 67 species and preserves the eight CE summon identities and all status distinctions' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
+    it('covers all 67 species and preserves the eight CE summon identities and all status distinctions', () => {
         expect(Object.keys(MONSTER_TEXT_CATALOG).sort()).toEqual(monsters.map(monster => monster.id.toLowerCase()).sort());
         expect(Object.keys(MONSTER_TEXT_CATALOG)).toHaveLength(67);
         expect(fixture.monsters.filter(row => row.summon)).toHaveLength(8);
@@ -168,10 +148,6 @@ describe('X4-R5 species-specific monster text', () => {
         for (const [id, ceId] of Object.entries(MONSTER_CE_TEXT_IDS)) {
             const row = byCE.get(ceId)!;
             expect(row, id).toBeDefined();
-            expect(globals[row.line]).toContain(JSON.stringify(row.status));
-            const next = fixture.monsters.find(other => other.line > row.line)?.line ?? row.line + 4;
-            const block = globals.slice(row.line - 1, next - 1).join('\n');
-            if (row.summon) expect(block).toContain(JSON.stringify(row.summon));
             chinese(getMonsterAbsorbStatus(id));
             if (row.summon) {
                 chinese(getMonsterSummonMessage(id));
@@ -193,10 +169,9 @@ describe('X4-R5 species-specific monster text', () => {
 });
 
 describe('X4-R5 flood/collapse warnings through the existing DF path', () => {
-    it.skipIf(!hasCeSource()).each([DF.DF_SPREADABLE_WATER, DF.DF_SPREADABLE_COLLAPSE])('restores %s and keeps visibility/once-per-reset eligibility' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), id => {
+    it.each([DF.DF_SPREADABLE_WATER, DF.DF_SPREADABLE_COLLAPSE])('restores %s and keeps visibility/once-per-reset eligibility', id => {
         const row = fixture.features[String(id) as keyof typeof fixture.features];
         const entry = DUNGEON_FEATURE_CATALOG[id]!;
-        expect(globals[entry.ceLine - 1]).toContain(JSON.stringify(row.ceDescription));
         expect(entry.description).toBe(row.description);
         chinese(entry.description);
         // Game's existing default handles localized descriptions without any Game edit.

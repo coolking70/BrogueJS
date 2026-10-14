@@ -7,7 +7,7 @@ export interface RemovalRow {
 }
 export type GateProfile = 'full' | 'removal';
 export interface PlannedGate {
-    id: 'boundaries' | 'typecheck' | 'build' | 'extension-tests' | 'complete-npm-test' | 'composition-smoke';
+    id: 'boundaries' | 'test-dependencies' | 'typecheck' | 'build' | 'extension-tests' | 'complete-npm-test' | 'composition-smoke';
     command: string[];
 }
 export interface PlannedRemovalRow extends RemovalRow {
@@ -18,7 +18,6 @@ export interface RemovalPlan {
     source: string;
     requestedProfile: 'auto' | GateProfile;
     foundationFixtureDirectories: string[];
-    preservedCeReference: boolean;
     installedModules: string[];
     matrix: PlannedRemovalRow[];
     ownedRoots: string[];

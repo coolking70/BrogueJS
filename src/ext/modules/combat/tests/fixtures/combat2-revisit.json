@@ -1,1 +1,1180 @@
-{"seed":1,"mode":"wizard","modules":["combat"],"initialCommands":[],"prefix":0,"identity":{"schema":1,"foundation":13,"modules":[{"id":"combat","version":"1.6.0","rules":{"schema":1,"version":"1.6.0","fingerprint":"sha256:9c2be4947fa2e080890ad9ca2b6a7aca20197f0ee77648b042fc9194618587ae"}}]},"inputs":[{"action":"move","data":{"x":1,"y":-1},"index":1},{"action":"move","data":{"x":1,"y":-1},"index":2},{"action":"move","data":{"x":1,"y":-1},"index":3},{"action":"move","data":{"x":1,"y":-1},"index":4},{"action":"move","data":{"x":1,"y":-1},"index":5},{"action":"move","data":{"x":1,"y":-1},"index":6},{"action":"wait","index":7},{"action":"wait","index":8},{"action":"wait","index":9},{"action":"wait","index":10},{"action":"ext:command","data":"{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.anchor-break\",\"facing\":\"e\"}}","index":11},{"action":"move","data":{"x":1,"y":-1},"index":12},{"action":"ext:command","data":"{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.anchor-break\",\"facing\":\"se\"}}","index":13},{"action":"ext:command","data":"{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.returning-sweep\",\"facing\":\"e\"}}","index":14},{"action":"ext:command","data":"{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.advancing-point\",\"facing\":\"se\"}}","index":15},{"action":"move","data":{"x":1,"y":-1},"index":16},{"action":"move","data":{"x":1,"y":-1},"index":17},{"action":"move","data":{"x":1,"y":0},"index":18},{"action":"move","data":{"x":1,"y":0},"index":19},{"action":"move","data":{"x":1,"y":0},"index":20},{"action":"move","data":{"x":1,"y":0},"index":21},{"action":"move","data":{"x":1,"y":0},"index":22},{"action":"move","data":{"x":1,"y":0},"index":23},{"action":"move","data":{"x":1,"y":0},"index":24},{"action":"move","data":{"x":1,"y":0},"index":25},{"action":"move","data":{"x":1,"y":0},"index":26},{"action":"move","data":{"x":1,"y":-1},"index":27},{"action":"move","data":{"x":1,"y":-1},"index":28},{"action":"move","data":{"x":0,"y":-1},"index":29},{"action":"move","data":{"x":0,"y":-1},"index":30},{"action":"move","data":{"x":0,"y":-1},"index":31},{"action":"move","data":{"x":0,"y":-1},"index":32},{"action":"move","data":{"x":0,"y":-1},"index":33},{"action":"ext:command","data":"{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.cast-echo\",\"facing\":\"se\"}}","index":34},{"action":"ext:command","data":"{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.answering-edge\",\"facing\":\"se\"}}","index":35},{"action":"ext:command","data":"{\"module\":\"combat\",\"action\":\"parry\",\"payload\":{\"facing\":\"se\"}}","index":36},{"action":"move","data":{"x":0,"y":-1},"index":37},{"action":"ext:command","data":"{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.answering-edge\",\"facing\":\"s\"}}","index":38},{"action":"move","data":{"x":0,"y":-1},"index":39},{"action":"move","data":{"x":0,"y":-1},"index":40},{"action":"move","data":{"x":1,"y":0},"index":41},{"action":"move","data":{"x":1,"y":-1},"index":42},{"action":"ext:command","data":"{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.cast-echo\",\"facing\":\"n\"}}","index":43},{"action":"ext:command","data":"{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.cast-echo\",\"facing\":\"ne\"}}","index":44},{"action":"move","data":{"x":1,"y":-1},"index":45},{"action":"move","data":{"x":1,"y":-1},"index":46},{"action":"move","data":{"x":1,"y":0},"index":47},{"action":"move","data":{"x":1,"y":0},"index":48},{"action":"move","data":{"x":1,"y":0},"index":49},{"action":"move","data":{"x":1,"y":0},"index":50},{"action":"move","data":{"x":1,"y":0},"index":51},{"action":"move","data":{"x":1,"y":0},"index":52},{"action":"move","data":{"x":1,"y":0},"index":53},{"action":"move","data":{"x":1,"y":0},"index":54},{"action":"move","data":{"x":1,"y":0},"index":55},{"action":"move","data":{"x":1,"y":0},"index":56},{"action":"move","data":{"x":0,"y":-1},"index":57},{"action":"wait","index":58},{"action":"move","data":{"x":1,"y":0},"index":59}],"checkpoints":{"0":"6ac98528e8c1a2747a40fc45e14231d454ae6841248da3d5fd39f9665d71e777","1":"8accb79e9680b0ca1f3b91c27fbf1bd44cffc99bdac49dfcc4a894ef0c6c81b1","2":"6d9ff7c97d3af450be34fff39cb5af77a203803c8941fe6ffda961993143e288","3":"5cf6b17f6911f149e981b59730c13f6f98e41ad05a511c4ecbf781779b01116e","4":"ccadd3ba41ca9c9a8e37660d6fed47e3a62e5dd72fef94ea56eaf67f9414e9e9","5":"db9f0e9a73d3ab54d5249f7878ecfc0a37130795e865f8852c48237aae1790e0","6":"2eb1ec4f242ff31a8e4febf07a0d58055469a912081983510c751c2a5c5300a1","7":"2efec4fb2facdb5e97c3c104af6be568cade89a0bf14b304f3d35382c6449695","8":"9dbf9dc16e311266e319c5570ffd347c751fc5d05692c5a4266f8995e4689ec8","9":"dee6e6c4d6c93f527d756ab19644ea8a247fe210106826642c4b65cd54b2febd","10":"6bae893611f18dda28bd538246b396ad1fc51cab072c2a3d8c79a9c10610c415","11":"9fd06b9cc8b22cdcb98c4c081f41e01676ca938466230e5e8e1b103cb9c5d6f8","12":"0c5c46edb8a6f968f8e11eb791afc4d2a7a6b6da60e99e86c479166d2439f2db","13":"3cfbbc6b4c35b5a08e65a0cce306044d12415d34491a4f59de4c61043bee7e6f","14":"afabc7e19ea3f521954948d14583e1515cd4f3cfdeedf63e2fbb5e0ade06acce","15":"8a2d8f80f82ef5db9d87d33becb6a28c4fa234dccbdcb41d4f04fd66c9b6a5f0","16":"392697c41b82790d34dcf150fb23eecc6a865ec6a279f2a362236dd237abe875","17":"1f62bde149d682630b4024b230eb80f873e3c4fd0fed69d6772396f128209f88","18":"9e9cd4947d8e3e8080b150fdce5d7cd3fbc7f2dce0e2e85ca8ee03d8c4c8eb57","19":"8fa6bf88402d125a628bd16b1d521b9f69e0b3a8a9745ec4c929856e78777d98","20":"d9f358a95566f9d15bfbcc929a27964b919b500879932f199f8f30b3e3b16b55","21":"a916568301fe34aab0d6c3a47a791988335fe8d0e73fc54793ccde0aa04dd7ad","22":"efe1e25a9916ce59ea645bb68347927d2d5f1ae6c80baab5296dc722ac10a1fb","23":"39cffe91627102657099577709d3d1d5872daab9b4c370be2d0db1d946b218de","24":"f96325cb5ef02ea18f870f87c0621040a7e22bb47ed2584655bb3e18c647899f","25":"fce60306b7775bfec999c0d07d57258381b2b915e0a8a44d21d023f526906885","26":"ca5901c277ee0eb791059058134e2f485f5ed869b2ff51960d4e6b15dcaa8ec3","27":"f16ac1ea53ce176f7a440b1a87b7e564bbf636096d76f4d49088cead6a443942","28":"af33cdc2deb8d08f16e2a12015e52db2dc8b977bd562a40ac75576174375b296","29":"b4176adb7e7bd3529aa6bfda051672ea55432c3a2a9db25952989077e2b39a0f","30":"8f4ce27a771986b06f9cad6a0c5c47b82bd6a29d8c30ee6c356d31fcc0cfcc84","31":"ea7756479745f7d9652e8e431956ab6dd0e2d8694a0fb2abe92afd3745c19871","32":"393473056164d79d06ad4b115a9e930f1b9c240c454fe2ad4187df0bd0e15921","33":"bca827baac1c19c92eed20485103385dce356b78eabd1d46729c5cc9f0bbbbc7","34":"0ae06df01de98d4d1cca4b955bf5b249f73474cfca7c247afe53b2b9eb008380","35":"61d0999b9e335982365f4699f3b3defc9bbd036b38715a5380b48e28d0e0f25b","36":"a0ddd30249815ec832052b31d8767ccec991a0f8295e2bed94c406a254ba29b2","37":"1a47c45e5c232c653258399516c462fc49c3998bf0b60239afabc21d926e2ae9","38":"3358cbfc8059d4fb3e692fe390111919b45471adcf85da9a3c04d8cb54c53546","39":"a9d6185bccaca1e31054925d48dfb7e971552b2dafd1031de5d9ceabf93ac512","40":"1050f961d839a91dc4f4ba74f15c743b34bc68ea3a2529caca7630a8ff45b899","41":"c62b8576b0535600f722483740c0168da0126217c157284d70ebd4e1efc535c3","42":"ffd18269ce997bb0a78012e1af478d9ce1510b4d6b6849e588d05011e57ce23a","43":"b6c38120d5db72eaf2b2bbedf8a2a967dfd329b5d3dc6f3a5667a1b1efbcadc1","44":"dd51b2db9ffd74f3dd3c0783cd6a1dc8ce3e0eb5353bc10c744215f2d6e521e7","45":"90edaae3398df8331110b7dd41eec415a6480860979a6411a8b1199064a33419","46":"e525e02167babfd072528dc959bde1c1d20f411237fe19e1d4ce3f2de19110ed","47":"058bea25ff9884bc27bc15a29756bde1b2d924e90fe5d5ff226679f5d03fe3bc","48":"1ec98b75329b01497fd44429c8989f39bf91940c00d8d1abda4cef14c883c4e3","49":"472500510e108b4de50476f54e988766187e07064a21ce60a91b028772d16a5a","50":"ede98bb23254c7bfb1f26ea8fd3493d8d3fcb9f81cdb4675ee60a9f8aa5ddaf3","51":"96e5547d88da0a845240be4652601a297e77462557b3aeae59cdbfd758566b91","52":"61633c16ba2fbfcea9665e2c94ec96bafad9ee8bdd898faf65bac0a1a6821391","53":"37a1ed91ae5eddbc7d059273fd6a48a9dba1255b01557fff485ba97d28ac8afe","54":"3df878028317e284f69769e0fa728ddef201d0759b56c390d5ff7d1eacd4183b","55":"9ecf5bcbfa8f84305b775bbb28e1b1541e9954da48f4c535a4c3772d32c66438","56":"0e3d510de84787b12d6a66b693b6e1af81debd59b584e33c907a7f31a43b70d2","57":"68dc962481bdfb40cb20081ada29038585b70e099a722ebe7f6e65f3ffb1efb6","58":"7a5f6583c46e4e030bd60978171d680ea94cfc734eef7f995b8f490dcd30dcb7","59":"8da492fa3e48f71848be28bba5402df1f8bee6124508ee89658a55c123264682"},"keyIndices":[0,56,56,57,57,59,59,59],"births":[{"id":23,"depth":1,"type":"kobold","birth":{"creationReason":"natural","originalMonsterType":"kobold","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":24,"depth":1,"type":"kobold","birth":{"creationReason":"natural","originalMonsterType":"kobold","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":25,"depth":1,"type":"kobold","birth":{"creationReason":"natural","originalMonsterType":"kobold","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":26,"depth":1,"type":"jackal","birth":{"creationReason":"natural","originalMonsterType":"jackal","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":27,"depth":1,"type":"jackal","birth":{"creationReason":"natural","originalMonsterType":"jackal","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":28,"depth":1,"type":"rat","birth":{"creationReason":"natural","originalMonsterType":"rat","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":42,"depth":2,"type":"eel","birth":{"creationReason":"natural","originalMonsterType":"eel","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":43,"depth":2,"type":"rat","birth":{"creationReason":"natural","originalMonsterType":"rat","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":44,"depth":2,"type":"kobold","birth":{"creationReason":"natural","originalMonsterType":"kobold","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":45,"depth":2,"type":"rat","birth":{"creationReason":"natural","originalMonsterType":"rat","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":46,"depth":2,"type":"eel","birth":{"creationReason":"natural","originalMonsterType":"eel","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":47,"depth":2,"type":"kobold","birth":{"creationReason":"natural","originalMonsterType":"kobold","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}},{"id":48,"depth":2,"type":"jackal","birth":{"creationReason":"natural","originalMonsterType":"jackal","initiallyHostile":true,"sourceId":null,"nativeStatsCopied":false}}],"hits":[{"sourceId":1,"targetId":27,"attackId":"combat.anchor-break","segmentIndex":0,"elapsed":140,"damage":4,"hit":true},{"sourceId":27,"targetId":1,"attackId":"combat.advancing-point","segmentIndex":0,"elapsed":80,"damage":0,"hit":false},{"sourceId":1,"targetId":27,"attackId":"combat.returning-sweep","segmentIndex":0,"elapsed":100,"damage":3,"hit":true},{"sourceId":27,"targetId":1,"attackId":"combat.advancing-point","segmentIndex":0,"elapsed":80,"damage":4,"hit":true},{"sourceId":1,"targetId":27,"attackId":"combat.advancing-point","segmentIndex":0,"elapsed":80,"damage":3,"hit":true},{"sourceId":23,"targetId":1,"attackId":"fixture.double-thrust","segmentIndex":0,"elapsed":40,"damage":2,"hit":true},{"sourceId":23,"targetId":1,"attackId":"fixture.double-thrust","segmentIndex":1,"elapsed":70,"damage":0,"hit":false},{"sourceId":1,"targetId":23,"attackId":"combat.answering-edge","segmentIndex":0,"elapsed":30,"damage":4,"hit":true},{"sourceId":1,"targetId":23,"attackId":"combat.answering-edge","segmentIndex":0,"elapsed":30,"damage":4,"hit":true}],"releases":[{"actionId":1,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.anchor-break","segmentIndex":0,"elapsed":140,"cells":[{"x":39,"y":19},{"x":39,"y":20},{"x":40,"y":20},{"x":39,"y":21}]},{"actionId":2,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.anchor-break","segmentIndex":0,"elapsed":140,"cells":[{"x":40,"y":19},{"x":39,"y":20},{"x":40,"y":20},{"x":41,"y":21}]},{"actionId":3,"sourceId":27,"sourceSubactionId":1,"attackId":"combat.advancing-point","segmentIndex":0,"elapsed":80,"cells":[{"x":39,"y":19}]},{"actionId":3,"sourceId":27,"sourceSubactionId":1,"attackId":"combat.advancing-point","segmentIndex":1,"elapsed":140,"cells":[{"x":38,"y":18}]},{"actionId":3,"sourceId":27,"sourceSubactionId":1,"attackId":"combat.advancing-point","segmentIndex":2,"elapsed":200,"cells":[{"x":37,"y":17}]},{"actionId":4,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.returning-sweep","segmentIndex":0,"elapsed":100,"cells":[{"x":40,"y":18},{"x":40,"y":19},{"x":40,"y":20}]},{"actionId":4,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.returning-sweep","segmentIndex":1,"elapsed":180,"cells":[{"x":38,"y":18},{"x":38,"y":19},{"x":38,"y":20}]},{"actionId":5,"sourceId":27,"sourceSubactionId":1,"attackId":"combat.advancing-point","segmentIndex":0,"elapsed":80,"cells":[{"x":39,"y":19}]},{"actionId":5,"sourceId":27,"sourceSubactionId":1,"attackId":"combat.advancing-point","segmentIndex":1,"elapsed":140,"cells":[{"x":38,"y":18}]},{"actionId":5,"sourceId":27,"sourceSubactionId":1,"attackId":"combat.advancing-point","segmentIndex":2,"elapsed":200,"cells":[{"x":37,"y":17}]},{"actionId":6,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.advancing-point","segmentIndex":0,"elapsed":80,"cells":[{"x":40,"y":20}]},{"actionId":6,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.advancing-point","segmentIndex":1,"elapsed":140,"cells":[{"x":41,"y":21}]},{"actionId":6,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.advancing-point","segmentIndex":2,"elapsed":200,"cells":[{"x":42,"y":22}]},{"actionId":7,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.cast-echo","segmentIndex":0,"elapsed":120,"cells":[{"x":54,"y":12},{"x":55,"y":13}]},{"actionId":8,"sourceId":23,"sourceSubactionId":1,"attackId":"fixture.double-thrust","segmentIndex":0,"elapsed":40,"cells":[{"x":52,"y":10}]},{"actionId":8,"sourceId":23,"sourceSubactionId":1,"attackId":"fixture.double-thrust","segmentIndex":1,"elapsed":70,"cells":[{"x":51,"y":9},{"x":52,"y":10}]},{"actionId":9,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.answering-edge","segmentIndex":0,"elapsed":30,"cells":[{"x":53,"y":11}]},{"actionId":10,"sourceId":23,"sourceSubactionId":1,"attackId":"fixture.double-thrust","segmentIndex":0,"elapsed":40,"cells":[{"x":52,"y":10}]},{"actionId":11,"sourceId":23,"sourceSubactionId":1,"attackId":"fixture.double-thrust","segmentIndex":0,"elapsed":40,"cells":[{"x":52,"y":10}]},{"actionId":11,"sourceId":23,"sourceSubactionId":1,"attackId":"fixture.double-thrust","segmentIndex":1,"elapsed":70,"cells":[{"x":51,"y":9},{"x":52,"y":10}]},{"actionId":12,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.answering-edge","segmentIndex":0,"elapsed":30,"cells":[{"x":52,"y":10}]},{"actionId":13,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.cast-echo","segmentIndex":0,"elapsed":120,"cells":[{"x":54,"y":3},{"x":54,"y":4}]},{"actionId":14,"sourceId":1,"sourceSubactionId":1,"attackId":"combat.cast-echo","segmentIndex":0,"elapsed":120,"cells":[{"x":57,"y":3},{"x":56,"y":4}]}],"parries":[{"sourceId":23,"targetId":1,"depth":1}],"evasion":[],"growth":[],"reason":"fixed-original-prefix-real-stair-revisit","commands":59,"depth":2,"tick":4700,"finalRng":{"version":2,"algorithm":"brogue-web-ranval32-uint64-level-v2","streams":[{"a":324413130,"b":2106368219,"c":448976081,"d":157982084},{"a":4186464015,"b":989628893,"c":943134691,"d":1165901774}],"currentRNG":0,"randomNumbersGenerated":124167,"cosmeticNumbersGenerated":162},"recordingBytes":59244}
+{
+  "seed": 1,
+  "mode": "wizard",
+  "modules": [
+    "combat"
+  ],
+  "initialCommands": [],
+  "prefix": 0,
+  "identity": {
+    "schema": 1,
+    "foundation": 14,
+    "modules": [
+      {
+        "id": "combat",
+        "version": "1.6.0",
+        "rules": {
+          "schema": 1,
+          "version": "1.6.0",
+          "fingerprint": "sha256:9c2be4947fa2e080890ad9ca2b6a7aca20197f0ee77648b042fc9194618587ae"
+        }
+      }
+    ]
+  },
+  "inputs": [
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 1
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 2
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 3
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 4
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 5
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 6
+    },
+    {
+      "action": "wait",
+      "index": 7
+    },
+    {
+      "action": "wait",
+      "index": 8
+    },
+    {
+      "action": "wait",
+      "index": 9
+    },
+    {
+      "action": "wait",
+      "index": 10
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.anchor-break\",\"facing\":\"e\"}}",
+      "index": 11
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 12
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.anchor-break\",\"facing\":\"se\"}}",
+      "index": 13
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.returning-sweep\",\"facing\":\"e\"}}",
+      "index": 14
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.advancing-point\",\"facing\":\"se\"}}",
+      "index": 15
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 16
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 17
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 18
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 19
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 20
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 21
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 22
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 23
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 24
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 25
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 26
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 27
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 28
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 29
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 30
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 31
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 32
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 33
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.cast-echo\",\"facing\":\"se\"}}",
+      "index": 34
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.answering-edge\",\"facing\":\"se\"}}",
+      "index": 35
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"combat\",\"action\":\"parry\",\"payload\":{\"facing\":\"se\"}}",
+      "index": 36
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 37
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.answering-edge\",\"facing\":\"s\"}}",
+      "index": 38
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 39
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 40
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 41
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 42
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.cast-echo\",\"facing\":\"n\"}}",
+      "index": 43
+    },
+    {
+      "action": "ext:command",
+      "data": "{\"module\":\"combat\",\"action\":\"attack\",\"payload\":{\"attackId\":\"combat.cast-echo\",\"facing\":\"ne\"}}",
+      "index": 44
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 45
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": -1
+      },
+      "index": 46
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 47
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 48
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 49
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 50
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 51
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 52
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 53
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 54
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 55
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 56
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 0,
+        "y": -1
+      },
+      "index": 57
+    },
+    {
+      "action": "wait",
+      "index": 58
+    },
+    {
+      "action": "move",
+      "data": {
+        "x": 1,
+        "y": 0
+      },
+      "index": 59
+    }
+  ],
+  "checkpoints": {
+    "0": "434a2b4b4018d641108bcd1fb72df9eca30984cbeb07c074f24ef29c1218720a",
+    "1": "da4356a0c2f8eb666eed335248b4540edc9adfccfd61d674a82a20e53605b46b",
+    "2": "8ebf3a196e60ff863491c707121f55876b505bfbfc2fced4b9d4d58a7fe95d43",
+    "3": "d197ae98404f5f99f8755ebec4a3642247e5a2a46a370471268c11e4bf9f122f",
+    "4": "9203b693163e365b2dff20f8a9786a39b29a6bccabdb4791984a1e9ffdd8530e",
+    "5": "60dedb507e5a61d66c75e4fdcd1f0fb9705b950bdf307e1fee03dcca000e6af2",
+    "6": "62f98783dce001ef573ceadd96012ef7e30a57a0f100e91d0c36cd28e33081eb",
+    "7": "a736858f6a836c7215924c70114d9bde197867211f899d26f5de647dfcbfc6cb",
+    "8": "64b66a599c270d755506929c184df366ffb4e3e38f4cf22bd7c9a5e7ab38f37f",
+    "9": "76f0d8c15f90beea0669a5da5410c2adae46767e71590b2b94d0a8fbb8768b0d",
+    "10": "471d06e9e5bff8d6d9808d65b933232141e3922384da4e529a1db61a5a7e9747",
+    "11": "441cd11e6c90db0d173f3b2717cc53d00b69508333a727a8c167e6ea9e9ccbf2",
+    "12": "019b22efc23780635f45b4ba0abeaa7780fa6ab1f5e432cf3f700c9d2169c861",
+    "13": "577190c0afec8af14faafa1a81acdc887a7cd026fa59ab2d4230078b0c163fb4",
+    "14": "7fd9853da7dfc60b74ee5c0f7d52e2ef549ec16521dd7b8fcbe6d571e1452bf7",
+    "15": "45aabde0a1936d613ee636a56e96a716ef90b270fde2baff6194ead918b745e4",
+    "16": "634bf6518ad024bccc3a42db87cf35c7ecd09e1253574e495697f43e9c8ff55f",
+    "17": "4a07096a80dab72163be7596678344be4d54669f2027f39bd000f854878cb328",
+    "18": "445b0da3deb28287082f3f1e4eb497782bd2860038235794c9969c650b9f5df6",
+    "19": "255ce74027ed035218cd7887ec081c6ae75e7ac5be424f23a097ac311d1e2e4a",
+    "20": "90f7712ec9afd8225fbd47bd614c5482340716ce2b9db59f0be287d35bc57ff0",
+    "21": "74143e2e0498d4285285232fb37119ce1b591d65b5115c3a29ec572a3fca8b83",
+    "22": "a8be9f09c894f1fddfb61650b4cfca0dfa198045b94ca576f64cb27580f15cb3",
+    "23": "360a3c86550292622a6a1e2820acd0bae2ded07854c11792a5f07e122042cc3c",
+    "24": "28d050de6540856e8e82972c009dd612e6b55b46ca49a87c04cbb782b0cdcb4a",
+    "25": "20a4d27644c5fe840d12c597792c37525858ff1bdf142b00d92b46dc3dd9c09b",
+    "26": "49e9ac19a284e71595c57085e4cb3551b2fb98b0a317686955166d4a131f8c74",
+    "27": "2f3d63ffbf8dff1f5c5c3e1d4651afefb04b6842ad3fa6aa4e4d787a73c95c3f",
+    "28": "2558d95d7bb30a206c8b92e56c3d824bc85cad6f3cd5ca3d6cdad6646225b52b",
+    "29": "0ac8516e8426d8d7e899fc5d4d22480012795d0846821a1a00bd45e286eb1d77",
+    "30": "05f82241b7683003b45885b9264b57ace1a3b6af5c550db1264afb7dc0fcf17e",
+    "31": "94a89b38f246995de5c2c836c2dd7d957d846f59aaaf1e27447f5e8cef63534f",
+    "32": "365970e4a8b085f183ade6a861edc95ff2e4d7dc8c44085e8691bfff14a8b7fb",
+    "33": "1fccaf63decca4ba5ddccbe0ffa674375ba90d6bf2a84f27e7acc9732919bcfc",
+    "34": "0e76817164533346a80dc9e7652d17501bcd2900aacdc8f4cd3b62e8919f79e3",
+    "35": "b63a01b737bd5251e8c87fce9f09eae536cb19d3142be7c07d318b495acfa25a",
+    "36": "166d6e539294d86490e70559cf3f915cebaf34949a2b2d3fd14c47b341d98c5e",
+    "37": "64a59a45ae1629147d11c00f1237cdce9bffa1616011d4c8ceac738e6cc3c2b3",
+    "38": "e3c63b85a037e2b2bd9de1ac297b7a451250abb2f8190b38981e717bf7e05261",
+    "39": "77324efab88036cd2011d663289408526980b7ae023a93ed2c2f5df22d7c1689",
+    "40": "0d8ea81de320822b902657ab1482effdab19b36d432420f42e03d7b0e66170c4",
+    "41": "857840eae9147d564da3d50fa5c242bf47ea0f57e2311f19dfe1d65d01788a23",
+    "42": "a819f78f8be26ac20303908a32b266b802b1ea19d21d4bae43738bc262b0d7a1",
+    "43": "5d535cf4cb0088d9fdcfeb1711e3603686d1355ad38cf9c3d7977a588b0dc4e8",
+    "44": "46fcf5b4f0e509ab062f93479b32e0ecb8b6fb04db1896b492132b3f733e387a",
+    "45": "e4972092d137cbb1b548eabd91c582d781bcabe3d96f6d06a8c8b2bcea9fc161",
+    "46": "4510044667080387626b16d80193f9b3109ecdcf05fd29503bb0a4c85b1b5d42",
+    "47": "ed5d93f9aa57b868e17cdc52d0bc7614898e4ce29e9853b0b3b335b62d392e37",
+    "48": "ccfa84a74cddcee53e64a3aacb1a819e286d3fce70ad2e3b80a3bbd14cbb9fd4",
+    "49": "6dd5c4a1b01dfb0b81d115e2330ca0ff64170819842f47546cc692748a0512db",
+    "50": "63f19ab6b20dd61ed156684288d52384312afeb26aa130b8b793118076cc6ce6",
+    "51": "b5c0ce33f818edf0738cbe7521bf2e787ce13e4c5f52b59951a33ad0538ebba6",
+    "52": "e046e61d8d57b80ab85df37c2209dfc160d8cd840f28d218340df906a84e8e65",
+    "53": "449dd415097958f21cd78f5727b2e1fb4861350ebd565ee171ee73d4c9e17539",
+    "54": "e363a7f5bd84025a289ffd54edad8603dbbccf7c406f2f5c655b05716a5b18b8",
+    "55": "ff28add2d60fd3d0800c5a2e6ac9dec97d335d47e6a82b930206bc24d45b5ee7",
+    "56": "df1c5492d87cf2cd93cf3960339008b43698e444c17ec1b67c56ab2aa706577d",
+    "57": "aa4a7b6d98dda12a20121c817f53de05a475aacf4e7fd43f784786b0afd18262",
+    "58": "1b5923cca5175f9b595e39fcbd56069dedd855b1d757970e899d6b5692f90704",
+    "59": "3abd891e083f25e3d63832b738699e186d3c1c27b2204a8a0e37c05712266169"
+  },
+  "keyIndices": [
+    0,
+    56,
+    56,
+    57,
+    57,
+    59,
+    59,
+    59
+  ],
+  "births": [
+    {
+      "id": 23,
+      "depth": 1,
+      "type": "kobold",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "kobold",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 24,
+      "depth": 1,
+      "type": "kobold",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "kobold",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 25,
+      "depth": 1,
+      "type": "kobold",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "kobold",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 26,
+      "depth": 1,
+      "type": "jackal",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "jackal",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 27,
+      "depth": 1,
+      "type": "jackal",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "jackal",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 28,
+      "depth": 1,
+      "type": "rat",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "rat",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 42,
+      "depth": 2,
+      "type": "eel",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "eel",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 43,
+      "depth": 2,
+      "type": "rat",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "rat",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 44,
+      "depth": 2,
+      "type": "kobold",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "kobold",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 45,
+      "depth": 2,
+      "type": "rat",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "rat",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 46,
+      "depth": 2,
+      "type": "eel",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "eel",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 47,
+      "depth": 2,
+      "type": "kobold",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "kobold",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    },
+    {
+      "id": 48,
+      "depth": 2,
+      "type": "jackal",
+      "birth": {
+        "creationReason": "natural",
+        "originalMonsterType": "jackal",
+        "initiallyHostile": true,
+        "sourceId": null,
+        "nativeStatsCopied": false
+      }
+    }
+  ],
+  "hits": [
+    {
+      "sourceId": 1,
+      "targetId": 27,
+      "attackId": "combat.anchor-break",
+      "segmentIndex": 0,
+      "elapsed": 140,
+      "damage": 4,
+      "hit": true
+    },
+    {
+      "sourceId": 27,
+      "targetId": 1,
+      "attackId": "combat.advancing-point",
+      "segmentIndex": 0,
+      "elapsed": 80,
+      "damage": 0,
+      "hit": false
+    },
+    {
+      "sourceId": 1,
+      "targetId": 27,
+      "attackId": "combat.returning-sweep",
+      "segmentIndex": 0,
+      "elapsed": 100,
+      "damage": 3,
+      "hit": true
+    },
+    {
+      "sourceId": 27,
+      "targetId": 1,
+      "attackId": "combat.advancing-point",
+      "segmentIndex": 0,
+      "elapsed": 80,
+      "damage": 4,
+      "hit": true
+    },
+    {
+      "sourceId": 1,
+      "targetId": 27,
+      "attackId": "combat.advancing-point",
+      "segmentIndex": 0,
+      "elapsed": 80,
+      "damage": 3,
+      "hit": true
+    },
+    {
+      "sourceId": 23,
+      "targetId": 1,
+      "attackId": "fixture.double-thrust",
+      "segmentIndex": 0,
+      "elapsed": 40,
+      "damage": 2,
+      "hit": true
+    },
+    {
+      "sourceId": 23,
+      "targetId": 1,
+      "attackId": "fixture.double-thrust",
+      "segmentIndex": 1,
+      "elapsed": 70,
+      "damage": 0,
+      "hit": false
+    },
+    {
+      "sourceId": 1,
+      "targetId": 23,
+      "attackId": "combat.answering-edge",
+      "segmentIndex": 0,
+      "elapsed": 30,
+      "damage": 4,
+      "hit": true
+    },
+    {
+      "sourceId": 1,
+      "targetId": 23,
+      "attackId": "combat.answering-edge",
+      "segmentIndex": 0,
+      "elapsed": 30,
+      "damage": 4,
+      "hit": true
+    }
+  ],
+  "releases": [
+    {
+      "actionId": 1,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.anchor-break",
+      "segmentIndex": 0,
+      "elapsed": 140,
+      "cells": [
+        {
+          "x": 39,
+          "y": 19
+        },
+        {
+          "x": 39,
+          "y": 20
+        },
+        {
+          "x": 40,
+          "y": 20
+        },
+        {
+          "x": 39,
+          "y": 21
+        }
+      ]
+    },
+    {
+      "actionId": 2,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.anchor-break",
+      "segmentIndex": 0,
+      "elapsed": 140,
+      "cells": [
+        {
+          "x": 40,
+          "y": 19
+        },
+        {
+          "x": 39,
+          "y": 20
+        },
+        {
+          "x": 40,
+          "y": 20
+        },
+        {
+          "x": 41,
+          "y": 21
+        }
+      ]
+    },
+    {
+      "actionId": 3,
+      "sourceId": 27,
+      "sourceSubactionId": 1,
+      "attackId": "combat.advancing-point",
+      "segmentIndex": 0,
+      "elapsed": 80,
+      "cells": [
+        {
+          "x": 39,
+          "y": 19
+        }
+      ]
+    },
+    {
+      "actionId": 3,
+      "sourceId": 27,
+      "sourceSubactionId": 1,
+      "attackId": "combat.advancing-point",
+      "segmentIndex": 1,
+      "elapsed": 140,
+      "cells": [
+        {
+          "x": 38,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "actionId": 3,
+      "sourceId": 27,
+      "sourceSubactionId": 1,
+      "attackId": "combat.advancing-point",
+      "segmentIndex": 2,
+      "elapsed": 200,
+      "cells": [
+        {
+          "x": 37,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "actionId": 4,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.returning-sweep",
+      "segmentIndex": 0,
+      "elapsed": 100,
+      "cells": [
+        {
+          "x": 40,
+          "y": 18
+        },
+        {
+          "x": 40,
+          "y": 19
+        },
+        {
+          "x": 40,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "actionId": 4,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.returning-sweep",
+      "segmentIndex": 1,
+      "elapsed": 180,
+      "cells": [
+        {
+          "x": 38,
+          "y": 18
+        },
+        {
+          "x": 38,
+          "y": 19
+        },
+        {
+          "x": 38,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "actionId": 5,
+      "sourceId": 27,
+      "sourceSubactionId": 1,
+      "attackId": "combat.advancing-point",
+      "segmentIndex": 0,
+      "elapsed": 80,
+      "cells": [
+        {
+          "x": 39,
+          "y": 19
+        }
+      ]
+    },
+    {
+      "actionId": 5,
+      "sourceId": 27,
+      "sourceSubactionId": 1,
+      "attackId": "combat.advancing-point",
+      "segmentIndex": 1,
+      "elapsed": 140,
+      "cells": [
+        {
+          "x": 38,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "actionId": 5,
+      "sourceId": 27,
+      "sourceSubactionId": 1,
+      "attackId": "combat.advancing-point",
+      "segmentIndex": 2,
+      "elapsed": 200,
+      "cells": [
+        {
+          "x": 37,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "actionId": 6,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.advancing-point",
+      "segmentIndex": 0,
+      "elapsed": 80,
+      "cells": [
+        {
+          "x": 40,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "actionId": 6,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.advancing-point",
+      "segmentIndex": 1,
+      "elapsed": 140,
+      "cells": [
+        {
+          "x": 41,
+          "y": 21
+        }
+      ]
+    },
+    {
+      "actionId": 6,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.advancing-point",
+      "segmentIndex": 2,
+      "elapsed": 200,
+      "cells": [
+        {
+          "x": 42,
+          "y": 22
+        }
+      ]
+    },
+    {
+      "actionId": 7,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.cast-echo",
+      "segmentIndex": 0,
+      "elapsed": 120,
+      "cells": [
+        {
+          "x": 54,
+          "y": 12
+        },
+        {
+          "x": 55,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "actionId": 8,
+      "sourceId": 23,
+      "sourceSubactionId": 1,
+      "attackId": "fixture.double-thrust",
+      "segmentIndex": 0,
+      "elapsed": 40,
+      "cells": [
+        {
+          "x": 52,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "actionId": 8,
+      "sourceId": 23,
+      "sourceSubactionId": 1,
+      "attackId": "fixture.double-thrust",
+      "segmentIndex": 1,
+      "elapsed": 70,
+      "cells": [
+        {
+          "x": 51,
+          "y": 9
+        },
+        {
+          "x": 52,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "actionId": 9,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.answering-edge",
+      "segmentIndex": 0,
+      "elapsed": 30,
+      "cells": [
+        {
+          "x": 53,
+          "y": 11
+        }
+      ]
+    },
+    {
+      "actionId": 10,
+      "sourceId": 23,
+      "sourceSubactionId": 1,
+      "attackId": "fixture.double-thrust",
+      "segmentIndex": 0,
+      "elapsed": 40,
+      "cells": [
+        {
+          "x": 52,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "actionId": 11,
+      "sourceId": 23,
+      "sourceSubactionId": 1,
+      "attackId": "fixture.double-thrust",
+      "segmentIndex": 0,
+      "elapsed": 40,
+      "cells": [
+        {
+          "x": 52,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "actionId": 11,
+      "sourceId": 23,
+      "sourceSubactionId": 1,
+      "attackId": "fixture.double-thrust",
+      "segmentIndex": 1,
+      "elapsed": 70,
+      "cells": [
+        {
+          "x": 51,
+          "y": 9
+        },
+        {
+          "x": 52,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "actionId": 12,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.answering-edge",
+      "segmentIndex": 0,
+      "elapsed": 30,
+      "cells": [
+        {
+          "x": 52,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "actionId": 13,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.cast-echo",
+      "segmentIndex": 0,
+      "elapsed": 120,
+      "cells": [
+        {
+          "x": 54,
+          "y": 3
+        },
+        {
+          "x": 54,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "actionId": 14,
+      "sourceId": 1,
+      "sourceSubactionId": 1,
+      "attackId": "combat.cast-echo",
+      "segmentIndex": 0,
+      "elapsed": 120,
+      "cells": [
+        {
+          "x": 57,
+          "y": 3
+        },
+        {
+          "x": 56,
+          "y": 4
+        }
+      ]
+    }
+  ],
+  "parries": [
+    {
+      "sourceId": 23,
+      "targetId": 1,
+      "depth": 1
+    }
+  ],
+  "evasion": [],
+  "growth": [],
+  "reason": "fixed-original-prefix-real-stair-revisit",
+  "commands": 59,
+  "depth": 2,
+  "tick": 4700,
+  "finalRng": {
+    "version": 2,
+    "algorithm": "brogue-web-ranval32-uint64-level-v2",
+    "streams": [
+      {
+        "a": 324413130,
+        "b": 2106368219,
+        "c": 448976081,
+        "d": 157982084
+      },
+      {
+        "a": 4186464015,
+        "b": 989628893,
+        "c": 943134691,
+        "d": 1165901774
+      }
+    ],
+    "currentRNG": 0,
+    "randomNumbersGenerated": 124167,
+    "cosmeticNumbersGenerated": 162
+  },
+  "recordingBytes": 59244
+}

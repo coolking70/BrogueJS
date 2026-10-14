@@ -23,3 +23,12 @@ combat2：原6失败（SDK原seed23第91、seed118第152；三个seed3/47完整s
 ## 执行、交接
 执行根/private/tmp/brogue-commander-20261009-5z。Node24/3GiB/单worker，重负载串行；所有后台长任务必须launch-detached.py独立OS session/nohup、文件stdin/stdout、run-child写done，不能会话内&依赖作者存活。作者不得派另一个作者或审查。实际修验完成再退出，不只做分析或准备；若不可关闭逐项原因/影响/未验交BLOCKED，不伪造完成。
 报告docs/ext/phase5-narrative2-combat2-integration.report.md；进度integration-narrative2-combat2.progress.md；READY/BLOCKED使用同前缀。阶段性合并提交只作流程检查点，不代表验收通过或准许push。最终报告包含两merge固定身份/修复diff、原12/九行/原6逐项表、自然/受控证据分列、门禁摘要、未验与人工清单。父会话01a1163c-1880-7c31-b810-dd60d1e07ac8，watchdog执行根，60分钟事件兜底。
+
+# 用户新裁定：自然补证限时及内容缺口非阻塞（2026-10-12）
+此裁定覆盖此前必须补齐 zombie/巨兽自然内容证据才能 READY 的冲突要求。
+- 每个自然搜索补证子进程外部硬限时1200秒（20分钟），保固定种子/命令预算；任何更短既有门限仍保留。使用执行根 bounded-natural-command.py --seconds 1200 --record 新唯一证据文件 -- 命令，外包 launch-detached/run-child。不能靠同步CPU循环中的测试timeout替代外部时钟，也不能拆分重试无限续预算。
+- 当前 natural-supplement-capture 实际运行约88分钟，用户授权停止。PID81282/81284已TERM，integration-next2-v2.done exit143，原始首败/部分结果保留；不称通过、不伪造退出124。旧作者73479也已TERM并done143，用原会话续跑本裁定，非新增审修轮。
+- zombie naturally 与自然巨兽正伤害/群体handled列为内容证据缺口，不阻塞集成/审查/最终统一全量。保原断言、原seed47首败及原23/118安全prefix；不删除、不弱化、不伪造自然命中。不得继续为此无界搜索或等裁定。部分seed118持久化标记不等于完整文件通过。
+- 仍完成原文件完整存读/seek/续录、其余集成必要回归；真实生产缺陷不得混入内容豁免。全模块门禁若碰到已豁免内容断言，如实列exit/失败与范围，其他结果完整统计，不能称全部全绿；原自然搜索capture不自动在常规全量中重启。
+- 独立 integration-content-following-v1 已自动接续固定trace刷新、原links原断言首败确认、原法narrative重录，先等该stage结束，不并发写生产。此后全narrative/combat、78受影响、boundary/types/build/drift → 独立最多两轮审修 → 最终统一npm/ext/drift/128/15。
+- 原法narrative重录仍属于必要工作，但所有自然搜索也受20分钟外部上限，若超时保留证据并逐项报告；只有用户明确豁免的zombie/giant内容缺口非阻塞，其他真实问题不自行豁免。

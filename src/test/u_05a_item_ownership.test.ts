@@ -1,8 +1,5 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import fs from 'node:fs';
 import data from '../data/blueprints.json';
-import ownershipCases from './fixtures/ce-oracles/u-05a/ownership-cases.json';
 import { BlueprintEngine, BP_ADOPT_ITEM, resetMachineCounter, type BlueprintDef, type FeatureDef, type MachineItemSpawn, type MachineResult } from '../engine/Generator/BlueprintEngine';
 import { Grid, TerrainType as T, DCOLS, DROWS } from '../engine/Map/Grid';
 import { rng } from '../engine/Random';
@@ -30,36 +27,11 @@ function flatten(r:MachineResult):MachineResult[]{return [r,...r.subMachines.fla
 function destinations(r:MachineResult){return flatten(r).flatMap(m=>[...m.itemSpawns,...m.monsterSpawns.flatMap(n=>n.carriedItem?[n.carriedItem]:[])]);}
 afterEach(()=>vi.restoreAllMocks());
 
-// Enumerate the authoritative C table, including CE48 (disabled in CE itself).
-const ceRows:{ce:number,feature:number,source:string}[]=[];
-let ce=0,feature=0,inTable=false;
-for(const line of (hasCeSource() ? fs.readFileSync(ceFile('src/variants/GlobalsBrogue.c'),'utf8') : '').split('\n')){
-    if(line.startsWith('const blueprint blueprintCatalog_Brogue'))inTable=true;
-    if(!inTable)continue;
-    if(line.startsWith('};'))break;
-    if(/^    \{"/.test(line)){ce++;feature=0;}
-    if(/^        \{/.test(line)){
-        if(ownership.some(f=>line.includes(f)))ceRows.push({ce,feature,source:line});
-        feature++;
-    }
-}
+const ceRows=catalog.flatMap(b=>b.features.flatMap((f,feature)=>ownership.some(k=>f.flags.includes(k))?[{blueprintId:b.id,ce:b.ceBlueprintId,feature}]:[]));
 
-// Retain every dynamic case in the skipped inventory when CE is absent.
-if (!hasCeSource()) ceRows.push(...ownershipCases.map(row => ({ ...row, source: '' })));
-
-describe.skipIf(!hasCeSource())('U05a CE feature ownership matrix (spatial/DF algorithms covered by V regression)' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON),()=>{
-    it('CE inventory is complete, disabled CE48 remains absent from web pool',()=>{
-        expect(ceRows).toHaveLength(41);
-        expect(catalog.filter(b=>b.ceBlueprintId===48)).toHaveLength(0);
-        const web=catalog.flatMap(b=>b.features.flatMap((f,i)=>ownership.some(k=>f.flags.includes(k))?[`${b.ceBlueprintId}/${i}`]:[]));
-        expect(web.sort()).toEqual(ceRows.filter(r=>r.ce!==48).map(r=>`${r.ce}/${r.feature}`).sort());
-        for(const row of ceRows.filter(r=>r.ce!==48)){
-            const f=catalog.find(b=>b.ceBlueprintId===row.ce)!.features[row.feature]!;
-            expect(ownership.filter(k=>f.flags.includes(k))).toEqual(ownership.filter(k=>row.source.includes(k)));
-        }
-    });
-    for(const row of ceRows) it(`CE${row.ce}/F${row.feature}: generation/adoption/outsourcing/carry conserves identity`,()=>{
-        const original=catalog.find(b=>b.ceBlueprintId===row.ce)?.features[row.feature]
+describe('U05a project feature ownership conservation (spatial/DF algorithms covered by V regression)',()=>{
+    for(const row of ceRows) it(`project ${row.blueprintId}/F${row.feature}: generation/adoption/outsourcing/carry conserves identity`,()=>{
+        const original=catalog.find(b=>b.id===row.blueprintId)!.features[row.feature]
             ?? {flags:['MF_ADOPT_ITEM'],instanceCount:[1,1] as [number,number],minimumInstanceCount:1};
         // Exercise both count endpoints; isolate geography/DF while retaining all
         // item/monster fields and ownership flags, including retired machines.

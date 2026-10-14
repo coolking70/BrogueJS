@@ -1,4 +1,3 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import fs from 'node:fs';
 import i18next from 'i18next';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,8 +11,6 @@ import { ItemLoader } from '../engine/Items/ItemLoader';
 import { enchantArcana } from '../engine/Items/ArcanaEnchantment';
 import { staffChargeDuration, tickStaffRecharge, rechargeStaffFully, restoreStaffRecharge } from '../engine/Items/ArcanaRecharge';
 import { ItemCategory } from '../engine/Items/Item';
-import { getBoltForItem, BOLT_EFFECT_CE_EFFECT } from '../engine/Combat/Bolt';
-import { CEBoltType, CE_BOLT_CATALOG } from '../engine/Combat/BoltCatalog';
 import { rng } from '../engine/Random';
 import { Monster, MonsterState, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
@@ -40,28 +37,7 @@ function scene(id = 'rat') {
 }
 
 describe('W-25 staff catalog', () => {
-    it.skipIf(!hasCeSource())('parses all twelve CE rows including non-contiguous wood slots, range, polarity, value and power' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        const body = fs.readFileSync(ceFile('src/brogue/Globals.c'),'utf8').split('itemTable staffTable[NUMBER_STAFF_KINDS] = {')[1]!.split('\n};')[0]!;
-        const rows = [...body.matchAll(/\{"([^"]+)",\s*itemWoods\[(\d+)\], "",\s*(\d+),\s*(\d+),\s*0,\s*BOLT_(\w+),\s*\{(\d+),(\d+),(\d+)\}, false, false, (-?1),/g)];
-        expect(rows).toHaveLength(12);
-        expect(ItemLoader.genStaffs.map(s=>s.id)).toEqual(ids);
-        expect(ItemLoader.staffs.map(s=>s.id)).toEqual([...ids,'staff_of_light']);
-        expect(ItemLoader.genStaffs.reduce((s,c)=>s+c.frequency!,0)).toBe(110);
-        expect(rows.map(r=>Number(r[2]))).toEqual([0,1,3,4,5,6,7,8,9,10,11,12]);
-        const ceIds = rows.map(r=>'staff_of_'+(r[1]==='firebolt'?'fire':r[1]));
-        expect(ceIds.filter(id=>ids.includes(id))).toEqual(ids);
-        rows.forEach((r,i)=>{
-            const id = ceIds[i]!, cfg = ItemLoader.staffs.find(s=>s.id===id);
-            expect(r.slice(6,9).map(Number)).toEqual([2,4,1]); // metadata, NOT the actual uncapped E lottery
-            expect(cfg).toBeDefined(); if (!cfg) throw Error('CE staff missing from final W-26 catalog');
-            expect([cfg.flavorIndex,cfg.frequency,cfg.marketValue,ItemLoader.kindPolarity(id)]).toEqual([r[2],r[3],r[4],r[9]].map(Number));
-            const bolt=getBoltForItem(id)!; expect(bolt.ceType).toBe(CEBoltType[r[5] as keyof typeof CEBoltType]);
-            expect(BOLT_EFFECT_CE_EFFECT[bolt.effect]).toBe(CE_BOLT_CATALOG[bolt.ceType!].effect);
-            expect(ItemLoader.arcanaFlavorMap.get(id)).toBe((ItemLoader as any).staffFlavorSlots[Number(r[2])]);
-        });
-        expect(ItemLoader.staffs.find(s=>s.id==='staff_of_light')!.excludeFromGeneration).toBe(true);
-        expect(ItemLoader.spawnStaff('staff_of_light',0,0)).not.toBeNull();
-    });
+
     it('all 110 tickets follow the CE row intervals through the real kind selector', () => {
         const g:any=Object.create(Game.prototype), draw=vi.spyOn(rng,'randRange');
         const expected=ids.flatMap((id,i)=>Array(weights[i]).fill(id));

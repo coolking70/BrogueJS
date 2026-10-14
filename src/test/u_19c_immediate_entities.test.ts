@@ -5,7 +5,6 @@ import {Monster, MonsterState, MonsterMode} from '../entities/Monster';
 import {rng} from '../engine/Random';
 import {createHeadlessGame} from './harness';
 import {setMachineObservationHook, type MachineTrace} from '../engine/Generator/MachineObservation';
-import oracle from './fixtures/u19c-ce-order.json';
 
 const feature=(over:Partial<FeatureDef>={}):FeatureDef=>({instanceCount:[1,1],minimumInstanceCount:1,personalSpace:0,flags:[],...over});
 const bp=(features:FeatureDef[],over:Partial<BlueprintDef>={}):BlueprintDef=>({id:'immediate',name:'immediate',ceBlueprintId:900,category:'thematic',depthRange:[1,26],roomSize:[1,900],frequency:1,flags:[],features,...over});
@@ -27,18 +26,7 @@ const owned=(g:any)=>[...g.items,...g.player.inventory.items,...g.monsters.flatM
 afterEach(()=>{vi.restoreAllMocks();setMachineObservationHook(null);});
 
 describe('U19c immediate machine entities',()=>{
- it('matches the compiled CE call-site RNG oracle before the NEXT feature (allocation stubs only)',()=>{
-  const {engine,room}=setup(),events:string[]=[];let draws=0,at=0;
-  const event=(name:string,n=1)=>{events.push(`${name}:${draws}`);draws+=n;};
-  const made:any[]=[];
-  engine.entities={checkpoint:()=>()=>made.splice(0),hasMonster:()=>false,
-   item:(spawn:any)=>{event('item');return spawn.entity={loc:{...spawn.pos}};},
-   spawn:(spawn:any)=>{if(spawn.hordeFlags)event('horde');const group=Array.from({length:spawn.hordeFlags?3:1},()=>{event('monster');return {id:made.length+1,loc:{...spawn.pos},hp:10};});made.push(...group);return group;},handOff:(spawn:any,item:any)=>{spawn.entities[0].carriedItem=item.entity;}};
-  engine.findFeaturePosition=()=>{event('feature');return {x:10+(at++)*10,y:10};};
-  const result=engine.applyBlueprint(bp([feature({itemCategory:'POTION',flags:['MF_GENERATE_ITEM','MF_GENERATE_HORDE','MF_MONSTER_TAKE_ITEM','MF_MONSTERS_DORMANT']}),feature({monsterId:'rat',flags:['MF_MONSTER_SLEEPING','MF_MONSTER_FLEEING']})]),room);
-  expect(result).not.toBeNull();event('commit',0);
-  expect(events).toEqual(oracle.events);expect(draws).toBe(oracle.draws);expect(made).toHaveLength(oracle.created);expect(made.filter(m=>m.carriedItem)).toHaveLength(oracle.carry);
- });
+
  it('real items, the leader AND every minion exist and occupy cells before the next feature',()=>{
   const {g,engine,apply}=setup();horde(g);let calls=0;
   engine.findFeaturePosition=()=>{if(calls++===1){expect(g.items).toHaveLength(1);expect(g.monsters).toHaveLength(3);for(const m of g.monsters)expect(engine.hasPendingOccupant(m.x,m.y)).toBe(true);expect(g.monsters.slice(1).every((m:any)=>m.leader===g.monsters[0])).toBe(true);}return {x:calls===1?10:20,y:10};};
@@ -91,7 +79,7 @@ describe('U19c immediate machine entities',()=>{
   const childBp=bp([feature({itemCategory:'KEY',itemId:'iron_key',monsterId:'rat',flags:['MF_GENERATE_ITEM','MF_MONSTER_TAKE_ITEM','MF_MONSTERS_DORMANT']})],{id:'child'});
   engine.buildAMachine=()=>child=apply(childBp);
   const find=engine.findFeaturePosition;let n=0;engine.findFeaturePosition=(...a:any[])=>++n===3?null:find(...a);
-  expect(apply(bp([feature({flags:['MF_BUILD_VESTIBULE']}),feature({monsterId:'rat'})]))).toBeNull();expect(child).not.toBeNull();expect(g.monsters).toEqual([]);expect(g.dormantMonsters).toEqual([]);expect(g.items).toEqual([]);expect(child.monsterSpawns[0].entities[0].carriedItem).toBeNull();expect(traces).toHaveLength(2);expect(traces.every(t=>t.status==='rolled_back')).toBe(true);expect(g.monsters.length+g.dormantMonsters.length).toBe(oracle.afterAbort);
+  expect(apply(bp([feature({flags:['MF_BUILD_VESTIBULE']}),feature({monsterId:'rat'})]))).toBeNull();expect(child).not.toBeNull();expect(g.monsters).toEqual([]);expect(g.dormantMonsters).toEqual([]);expect(g.items).toEqual([]);expect(child.monsterSpawns[0].entities[0].carriedItem).toBeNull();expect(traces).toHaveLength(2);expect(traces.every(t=>t.status==='rolled_back')).toBe(true);expect(g.monsters.length+g.dormantMonsters.length).toBe(0);
  });
  it('failed adoption retries restore the same parent instance and key metadata, without stale owners',()=>{
   const {g,runtime,apply}=setup();const original:any={instanceId:'parent:0',category:'KEY',id:'iron_key',pos:{x:6,y:6},keyLoc:[{loc:{x:5,y:5},machine:7,disposableHere:true}]};

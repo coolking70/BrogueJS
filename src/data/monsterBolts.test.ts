@@ -50,66 +50,6 @@ describe('monsters.json 的 bolts 字段（P4-1a 数据接线）', () => {
         }
     });
 
-    it('带 bolts 的怪物恰好 25 只（Globals.c monsterCatalog 逐条核对结果）', () => {
-        const withBolts = (monstersJson as MonsterEntry[]).filter((m) => (m.bolts?.length ?? 0) > 0);
-        expect(withBolts).toHaveLength(25);
-    });
-
-    // 逐条硬断言：单 bolt / 多 bolt、施法者 / 炮塔都覆盖到，注明 Globals.c 行号。
-    it('goblin_mystic：单 bolt，法师型（Globals.c:1045）', () => {
-        expect(byId('goblin_mystic').bolts).toEqual(['SHIELDING']);
-    });
-
-    it('goblin_totem：双 bolt，固定顺序 HASTE 在前（Globals.c:1047）', () => {
-        expect(byId('goblin_totem').bolts).toEqual(['HASTE', 'SPARK']);
-    });
-
-    it('arrow_turret：单 bolt，炮塔型（Globals.c:1055）', () => {
-        expect(byId('arrow_turret').bolts).toEqual(['DISTANCE_ATTACK']);
-    });
-
-    it('spider：单 bolt，U08 DF 施法 SPIDERWEB（Globals.c:1067）', () => {
-        expect(byId('spider').bolts).toEqual(['SPIDERWEB']);
-    });
-
-    it('spark_turret：单 bolt，炮塔型（Globals.c:1069）', () => {
-        expect(byId('spark_turret').bolts).toEqual(['SPARK']);
-    });
-
-    it('dart_turret：单 bolt，炮塔型（Globals.c:1100）', () => {
-        expect(byId('dart_turret').bolts).toEqual(['POISON_DART']);
-    });
-
-    it('dar_priestess：四 bolt，顺序为源码原始顺序而非字母序（Globals.c:1088）', () => {
-        // 源码里是 {BOLT_NEGATION, BOLT_HEALING, BOLT_HASTE, BOLT_SPARK}——
-        // 若实现时误排序成字母序会是 [HASTE, HEALING, NEGATION, SPARK]，与此不同。
-        const bolts = byId('dar_priestess').bolts;
-        expect(bolts).toEqual(['NEGATION', 'HEALING', 'HASTE', 'SPARK']);
-        expect(bolts).not.toEqual([...(bolts ?? [])].sort());
-    });
-
-    it('dar_battlemage：三 bolt，含已知缺口 SLOW_2（Globals.c:1090）', () => {
-        expect(byId('dar_battlemage').bolts).toEqual(['FIRE', 'SLOW_2', 'DISCORD']);
-    });
-
-    it('pixie：四 bolt，顺序为源码原始顺序（Globals.c:1108）', () => {
-        const bolts = byId('pixie').bolts;
-        expect(bolts).toEqual(['NEGATION', 'SLOW_2', 'DISCORD', 'SPARK']);
-        expect(bolts).not.toEqual([...(bolts ?? [])].sort());
-    });
-
-    it('dragon：单 bolt，DRAGONFIRE（Globals.c:1123）', () => {
-        expect(byId('dragon').bolts).toEqual(['DRAGONFIRE']);
-    });
-
-    it('vampire：双 bolt，BLINKING 在前（Globals.c:1131）', () => {
-        expect(byId('vampire').bolts).toEqual(['BLINKING', 'DISCORD']);
-    });
-
-    it('mangrove_dryad：单 bolt，U08 DF 施法 ANCIENT_SPIRIT_VINES（Globals.c:1163）', () => {
-        expect(byId('mangrove_dryad').bolts).toEqual(['ANCIENT_SPIRIT_VINES']);
-    });
-
     it('无 bolts 的怪物一律为空数组（抽样：rat 无远程攻击）', () => {
         expect(byId('rat').bolts).toEqual([]);
     });

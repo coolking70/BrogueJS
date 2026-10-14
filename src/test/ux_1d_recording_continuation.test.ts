@@ -247,7 +247,7 @@ describe('UX-1D persistent complete recordings', () => {
         expect(world(independent)).toEqual(completeWorld);
     });
 
-    it('keeps world-only and legacy snapshots playable without claiming a complete recording', () => {
+    it('keeps current-version world-only diagnostic snapshots playable without claiming a complete recording', () => {
         const game = createHeadlessGame(27029);
         game.executeCommand('wait');
         const snapshot = json(game.toSnapshot());

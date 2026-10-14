@@ -11,6 +11,7 @@ import { parse as parseTemplate } from '@vue/compiler-dom';
 import postcss from 'postcss';
 import { checkStructureReaders } from './check-structure-readers.mjs';
 import { resolveTestSuites } from './test-discovery.mjs';
+import { analyzeTestDependencies } from './check-test-dependencies.mjs';
 
 const slash = value => value.replace(/\\/g, '/');
 const moduleOwner = value => /^src\/ext\/modules\/([^/]+)(?:\/|$)/.exec(slash(value))?.[1];
@@ -283,6 +284,13 @@ const STRICT_WORLD_CONTENT_SDK = Object.freeze({
 export function checkModuleBoundaries(root = process.cwd()) {
     root = path.resolve(root);
     const issues = [], reported = new Set(), aliases = pathMappings(root);
+    const dependencies=existsSync(path.join(root,'scripts/test-dependencies.json'))?analyzeTestDependencies(root):null;
+    if(dependencies)issues.push(...dependencies.errors);
+    function declaredTestEdge(source, targetOwner){
+        if(!/(?:^src\/test\/|\/tests\/|\.test\.[cm]?[jt]sx?$)/.test(source))return false;
+        const consumers=dependencies?.files.filter(row=>row.imports.includes(source))??[];
+        return consumers.length>0&&consumers.every(row=>row.owner===targetOwner||row.required.includes(targetOwner));
+    }
     const report = (file, line, kind, reference, target) => {
         const text = `${slash(path.relative(root, file))}:${line}: ${kind}${reference ? ` ${JSON.stringify(reference)}` : ''}${target ? ` -> ${target}` : ''}`;
         if (!reported.has(text)) { reported.add(text); issues.push(text); }
@@ -307,6 +315,7 @@ export function checkModuleBoundaries(root = process.cwd()) {
             // Node tooling enumerates metadata without naming any concrete owner.
             // Imports and loader globs still require the exact discovery entries.
             if (owner === '*' && /^(?:existsSync|readdir(?:Sync)?|stat(?:Sync)?|access(?:Sync)?|readFile(?:Sync)?) resource$/.test(kind)) continue;
+            if(declaredTestEdge(relativeSource,owner))continue;
             report(file, line, `${kind}: ${moduleOwner(slash(path.relative(root, file))) ? 'cross-module reference' : 'module implementation/resource referenced outside its owner'}`, reference, target);
         }
     }

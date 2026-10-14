@@ -5,6 +5,7 @@
     "tests/crafting_config_examples.test.ts",
     "tests/crafting_data_tables.test.ts",
     "tests/crafting_geometry.test.ts",
+    "tests/crafting_input.test.ts",
     "tests/crafting_module.test.ts",
     "tests/crafting_persistence.test.ts",
     "tests/crafting_placement.test.ts",
@@ -15,10 +16,8 @@
     "tests/crafting_schema.test.ts",
     "tests/crafting_sdk_integration.test.ts",
     "tests/crafting_ui.test.ts",
-    "tests/crafting_work.test.ts",
-    "tests/crafting_input.test.ts"
+    "tests/crafting_work.test.ts"
   ],
-  "gen": [],
   "drift": [
     "tests/crafting_trace.test.ts"
   ]

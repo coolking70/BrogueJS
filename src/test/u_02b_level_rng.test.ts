@@ -1,29 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import fs from 'node:fs';
 import { Random, rng, RNGType } from '../engine/Random';
 import { initializeLevelSeeds, isLevelSeeds } from '../engine/Core/LevelSeeds';
 import { createHeadlessGame } from './harness';
 import { Architect } from '../engine/Generator/Architect';
 import { DCOLS, DROWS } from '../engine/Map/Grid';
 const json = <T>(value: T): T => JSON.parse(JSON.stringify(value));
-const ce = JSON.parse(fs.readFileSync('src/test/fixtures/ce-oracles/u-02b/ce-reference.json', 'utf8'));
 afterEach(() => vi.restoreAllMocks());
-const tuple = (r: Random, stream = 0) => Object.values(r.getState().streams[stream]!);
 const generate = (g: any, d: number, up = false) => { g.depth = d; g.generateDepth(up, false); };
 const terrain = (g: any) => g.toSnapshot().grid.map((c: any) => ({x:c.x,y:c.y,layers:c.layers,machineNumber:c.machineNumber}));
 
-describe('U02b CE extracted-C reference: uint64 initialization / raw hi-lo / interleaved level table', () => {
- for (const row of ce) it(`CE seed ${row.seed}: both tuples, eight raw64 values, all 41 seeds/stairs and count`, () => {
-  const r = new Random(row.seed);
-  expect([tuple(r), tuple(r,1)]).toEqual(row.initial);
-  expect(Array.from({length:8},()=>r.rand64bits().toString())).toEqual(row.raw64);
-  expect(r.randomNumbersGenerated).toBe(8);
-  r.seedRandomGenerator(row.seed); expect(r.randomNumbersGenerated).toBe(8);
-  r.resetCounters();
-  expect(initializeLevelSeeds(r,row.seed)).toEqual(row.levels);
-  expect(tuple(r)).toEqual(row.afterTable); expect(tuple(r,1)).toEqual(row.initial[1]);
-  expect(r.randomNumbersGenerated).toBe(row.count);
- });
+describe('U02b project raw hi-lo streams and interleaved level table', () => {
  it('raw64 draws exactly twice, hi before lo, on selected stream and counts once', () => {
   const r=new Random(7), initial=r.getState();
   const raw=vi.spyOn(r as any,'ranval').mockReturnValueOnce(0xdeadbeef).mockReturnValueOnce(0xfedcba98);

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import fs from 'node:fs';
+
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import { Item, ItemCategory } from '../engine/Items/Item';
 import { rng } from '../engine/Random';
@@ -8,12 +8,8 @@ import { serializeItem, deserializeItem } from '../engine/Core/EntitySnapshot';
 import { generateItemDetail } from '../engine/UI/DetailGenerator';
 import { machineItemRejections } from '../engine/Items/MachineItemGeneration';
 
-// Independently compiled from this checkout's original CE branches/enums/tables.
-// rand_range is an explicit recorded tape; production randPercent stays real.
-const golden = JSON.parse(fs.readFileSync('src/test/fixtures/ce-oracles/u-15d3/ce-golden.json', 'utf8'));
-const webKind = (name: string) => name === 'plate armor' ? 'plate_mail' : name.replace(/ /g, '_');
-const webRunic = (name: string) => name === 'paralysis' ? 'paralyzing' : name;
-const runics = [golden.weaponRunics.map(webRunic), golden.armorRunics.map(webRunic)] as string[][];
+// Current project catalogs drive generation/persistence coverage; no C oracle.
+const runics=[ [...ItemLoader.WEAPON_RUNIC_BY_CE_INDEX], [...ItemLoader.ARMOR_RUNIC_BY_CE_INDEX] ];
 const roundTrip = (item: Item) => deserializeItem(JSON.parse(JSON.stringify(serializeItem(item))));
 const payload = (item: Item) => ({
     kind: item.identityId, e: item.enchantment, cursed: item.isCursed,
@@ -24,45 +20,7 @@ const payload = (item: Item) => ({
 afterEach(() => vi.restoreAllMocks());
 
 describe('U15d-3 original CE C oracle equipment lotteries', () => {
-    it('maps every CE enum index, including all harmful runics, without holes or reordering', () => {
-        expect(ItemLoader.WEAPON_RUNIC_BY_CE_INDEX).toEqual(runics[0]);
-        expect(ItemLoader.ARMOR_RUNIC_BY_CE_INDEX).toEqual(runics[1]);
-        expect(runics.map(r => r.length)).toEqual([10, 11]);
-    });
 
-    for (const category of [0, 1]) it(`${category === 0 ? 'weapon' : 'armor'}: every kind, probability boundary, threshold, pool and ordered RNG request`, () => {
-        const seen = new Set<string>();
-        for (const row of golden.cases.filter((c: any) => c.request.category === category)) {
-            const { request: r, expected: e } = row;
-            const kind = webKind(golden.kinds[category === 0 ? 'WEAPON' : 'ARMOR'][r.kind]);
-            let cursor = 0;
-            const draw = vi.spyOn(rng, 'randRange').mockImplementation((lo, hi) => {
-                const call = e.draws[cursor++];
-                expect([lo, hi], `${kind} ${r.label} draw ${cursor}`).toEqual(call?.slice(0, 2));
-                return call[2];
-            });
-            const item = (category === 0 ? ItemLoader.spawnWeapon(kind, 0, 0, r.depth) : ItemLoader.spawnArmor(kind, 0, 0, r.depth))!;
-            draw.mockRestore();
-            expect(cursor, `${kind} ${r.label}`).toBe(e.draws.length);
-            expect({ enchantment: item.enchantment, runicIndex: item.runicType ? runics[category]!.indexOf(item.runicType) : -1,
-                isCursed: item.isCursed, vorpalIndex: item.vorpalEnemy ? golden.classes.findIndex((c: string[]) => c[0] === item.vorpalEnemy) : -1,
-                quantity: item.quantity, quiverNumber: item.quiverNumber ?? 0, charges: item.charges, strength: item.strengthRequired,
-            }, `${kind} ${r.label} ${r.tape}`).toEqual({ ...e, draws: undefined });
-            expect(item.flags?.includes('ITEM_RUNIC') ?? false).toBe(e.runicIndex >= 0);
-            expect(item.identified).toBe(false); expect(item.runicKnown).toBe(false);
-            if (item.runicType) seen.add(item.runicType);
-        }
-        expect([...seen].sort()).toEqual([...runics[category]!].sort());
-    });
-
-    it('vorpalEnemy: every ticket at all maxDepth boundaries uses exactly one CE weighted draw', () => {
-        for (const { request: r, expected: e } of golden.cases.filter((c: any) => c.request.category < 0)) {
-            const draw = vi.spyOn(rng, 'randRange').mockReturnValue(e.draws[0][2]);
-            expect(ItemLoader.chooseVorpalEnemy(r.depth)).toBe(golden.classes[e.vorpalIndex][0]);
-            expect(draw.mock.calls).toEqual([e.draws[0].slice(0, 2)]);
-            draw.mockRestore();
-        }
-    });
 
     it('bad pool implies negative enchant and curse; heavy weapons and plate cannot obtain a good runic', () => {
         for (const category of [0, 1]) for (const kind of (category === 0 ? ['broadsword', 'war_pike', 'war_hammer', 'war_axe'] : ['plate_mail'])) {

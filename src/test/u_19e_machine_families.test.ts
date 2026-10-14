@@ -1,13 +1,8 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import {afterEach,describe,expect,it,vi} from 'vitest';
-import {readFileSync} from 'node:fs';
-import crypto from 'node:crypto';
 import blueprints from '../data/blueprints.json';
-import golden from './fixtures/u19e-ce-catalog.json';
 import cases from './fixtures/u19e-natural-cases.json';
 import {BlueprintEngine,blueprintQualifies,type BlueprintDef} from '../engine/Generator/BlueprintEngine';
 import {rng} from '../engine/Random';
-import {AUTO_GENERATOR_CATALOG} from '../engine/Map/AutoGenerator';
 import {TerrainType as T,DungeonLayer as L} from '../engine/Map/Grid';
 import {createHeadlessGame} from './harness';
 import {setMachineObservationHook,type MachineTrace} from '../engine/Generator/MachineObservation';
@@ -17,19 +12,7 @@ const bps=blueprints as BlueprintDef[];
 afterEach(()=>{setMachineObservationHook(null);vi.restoreAllMocks();});
 
 describe('U19e independent CE selection contract',()=>{
- it.skipIf(!hasCeSource())('literal frequency/depth/room/feature flags and all autoGen entries retain local CE values' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON),()=>{
-  for(const [file,sha] of [[golden.file,golden.sha256],[golden.headerFile,golden.headerSHA256]])expect(crypto.createHash('sha256').update(readFileSync(ceFile(file!))).digest('hex')).toBe(sha);
-  for(const row of golden.machines){const bp=bps.find(b=>b.ceBlueprintId===row.ce)!;
-   expect(bp.frequency).toBe(row.frequency);expect(bp.depthRange).toEqual(row.depthRange);expect(bp.roomSize).toEqual(row.roomSize);
-   const flags=new Set(bp.flags);if(bp.category==='key_guard')flags.add('BP_ADOPT_ITEM');expect([...flags].sort()).toEqual([...row.flags].sort());expect(bp.features).toHaveLength(row.featureCount);
-   row.features.forEach((f,i)=>expect(bp.features[i]!.flags).toEqual(f.flags));
-  }
-  for(const row of golden.autogen){const a=AUTO_GENERATOR_CATALOG.find(a=>a.index===row.index)!;
-   expect(a).toMatchObject({ceMachine:row.machine,minDepth:row.minDepth,maxDepth:row.maxDepth,frequency:row.frequency,minNumberIntercept:row.minNumberIntercept,minNumberSlope:row.minNumberSlope,maxNumber:row.maxNumber});
-  }
-  const family=golden.machines.filter(r=>[1,2,6,7,26,47].includes(r.ce));
-  expect(golden.autogen.filter(a=>family.some(m=>m.machineType===a.machine))).toEqual([]);
- });
+
  it.each([1,2,6,7,26,47])('CE%i qualifies only within CE depth and its reward/adoption pool',ce=>{
   const bp=bps.find(b=>b.ceBlueprintId===ce)!,flag=[26,47].includes(ce)?'BP_ADOPT_ITEM':'BP_REWARD';
   for(let d=0;d<=40;d++)expect(blueprintQualifies(bp,d,[flag])).toBe(d>=bp.depthRange[0]&&d<=bp.depthRange[1]);

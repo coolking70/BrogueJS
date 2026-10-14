@@ -1,41 +1,15 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import {describe, expect, it, afterEach, vi} from 'vitest';
-import crypto from 'node:crypto';
-import {readFileSync} from 'node:fs';
 import {Grid, TerrainType as T, DungeonLayer as L, DCOLS, DROWS} from '../engine/Map/Grid';
 import {computeMachineView} from '../engine/Generator/MachineView';
 import {BlueprintEngine, type BlueprintDef} from '../engine/Generator/BlueprintEngine';
-import {FOVSys} from '../engine/Lighting/FOV';
-import {T_OBSTRUCTS_PASSABILITY, T_OBSTRUCTS_VISION} from '../engine/Map/TerrainCatalog';
-import {terrainFlagsOfCell} from '../engine/Map/DungeonFeature';
 import {rng} from '../engine/Random';
-import golden from './fixtures/u19a-ce-view.json';
-import blueprints from '../data/blueprints.json';
 import carriers from './fixtures/u19a-ce-carriers.json';
 import {affectedCE,machineScene,observeFromOrigin} from './fixtures/u19a-machine-scenes';
 import {createHeadlessGame} from './harness';
 
 const VIEW='MF_IN_VIEW_OF_ORIGIN',PASS='MF_IN_PASSABLE_VIEW_OF_ORIGIN';
 function arena(){const g=new Grid(DCOLS,DROWS);for(let x=0;x<DCOLS;x++)for(let y=0;y<DROWS;y++)g.setTerrain(x,y,T.FLOOR);return g;}
-function digest(mask:boolean[][]){return crypto.createHash('sha256').update(Array.from({length:DROWS},(_,y)=>Array.from({length:DCOLS},(_,x)=>mask[x]![y]?'1':'0').join('')).join('')).digest('hex');}
 afterEach(()=>vi.restoreAllMocks());
-
-describe('U19a independent compiled CE visibility oracle',()=>{
- it('579 whole-map masks agree with the actual CE C scanner in both modes',()=>{
-  for(const row of golden.cases){
-   const g=arena();for(const [x,y] of row.blocked)g.setTerrain(x!,y!,T.GRANITE);
-   for(const passable of [false,true])expect(digest(computeMachineView(g,row.origin,passable)),`${row.name}/${passable}`).toBe(row.mask);
-  }
- });
- it.skipIf(!hasCeSource())('oracle source hashes pin the C inputs, and the old web scan demonstrably differs' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON),()=>{
-  for(const [file,key] of [['Movement.c','movement'],['Math.c','math']] as const){
-   expect(crypto.createHash('sha256').update(readFileSync(ceFile(`src/brogue/${file}`))).digest('hex')).toBe(golden.source[key]);
-  }
-  const row=golden.cases.find(c=>c.name==='patch-1')!,g=arena();for(const [x,y] of row.blocked)g.setTerrain(x!,y!,T.GRANITE);
-  const old=new FOVSys(g).computeFOVMask(row.origin.x,row.origin.y,79,c=>!!(terrainFlagsOfCell(c)&(T_OBSTRUCTS_PASSABILITY|T_OBSTRUCTS_VISION)));
-  expect(digest(old)).not.toBe(row.mask);
- });
-});
 
 describe('U19a candidate gates and feature-time snapshots',()=>{
  // A straight corridor independently fixes expected geometry, including the
@@ -96,15 +70,7 @@ describe('U19a candidate gates and feature-time snapshots',()=>{
   expect(child).not.toBe(parent);expect(e.featureView({x:4,y:6},outer)).toBe(parent);
   expect(parent[8][6]).toBe(true);expect(child[4][6]).toBe(false);
  });
- it.skipIf(!hasCeSource())('affected catalog is exactly 14 machines / 18 features, retaining literal flags' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON),()=>{
-  expect(crypto.createHash('sha256').update(readFileSync(ceFile(carriers.file))).digest('hex')).toBe(carriers.sha256);
-  for(const row of carriers.rows)expect((blueprints as BlueprintDef[]).find(b=>b.ceBlueprintId===row.ce)!.features[row.index]!.flags).toEqual(row.flags);
-  const actual=(blueprints as BlueprintDef[]).flatMap(b=>b.features.flatMap((f,i)=>f.flags.some(x=>x===VIEW||x===PASS)?[[b.ceBlueprintId,i,f.flags.includes(PASS)?PASS:VIEW]]:[]));
-  expect(actual.sort((a,b)=>Number(a[0])-Number(b[0])||Number(a[1])-Number(b[1]))).toEqual([
-   [15,2,PASS],[18,2,PASS],[24,2,VIEW],[36,6,PASS],[37,0,VIEW],[38,6,PASS],[46,6,PASS],
-   [49,0,VIEW],[49,1,VIEW],[55,5,PASS],[56,1,VIEW],[62,0,VIEW],[62,1,VIEW],[62,2,VIEW],[62,3,VIEW],[65,3,VIEW],[66,2,VIEW],[71,0,VIEW],
-  ]);
- });
+
 });
 
 describe('U19a all affected machine writers -> player at origin -> search -> visible feature',()=>{

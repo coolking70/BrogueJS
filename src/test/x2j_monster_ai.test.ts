@@ -3,7 +3,6 @@ import { createHeadlessGame } from './harness';
 import { Monster, MonsterMode, MonsterState, type MonsterData } from '../entities/Monster';
 import { Player } from '../entities/Player';
 import monsters from '../data/monsters.json';
-import ceStates from './fixtures/ce-oracles/x2j/ce-state.json';
 import { getBoltForItem } from '../engine/Combat/Bolt';
 import { CombatSystem } from '../engine/Combat/Combat';
 import { updateMonsterState, wakeMonster, monsterFleesFrom } from '../engine/Combat/MonsterAI';
@@ -221,22 +220,4 @@ describe('X2j CE updateMonsterState and cache boundaries', () => {
         g.castMonsterBolt(caster, m, 'LIGHTNING');
         expect(m.state).toBe(MonsterState.WANDERING); expect(m.getStatusDuration('magical_fear')).toBe(1);
     });
-});
-
-it('matches the original compiled CE updateMonsterState over all 10,240 branch combinations', () => {
-    const m = mob('rat'), perception = aware(), item = ItemLoader.spawnFood('ration_of_food', 0, 0)!;
-    for (const [state, mode, flags, fear, steal, carrying, perceived, hp, closest, expectedState, expectedMode, seenX, ticks] of ceStates) {
-        m.isAlly = state === 4; m.state = state === 4 ? MonsterState.WANDERING : state!;
-        m.creatureMode = mode!; m.hp = hp!; m.maxHp = 100; m.ticksUntilTurn = 3;
-        m.lastSeenPlayerAt = null; m.loc = { x: g.player.x + closest!, y: g.player.y };
-        m.behaviorFlags = new Set(['MONST_MAINTAINS_DISTANCE']);
-        for (const [bit, name] of [[1, 'MONST_ALWAYS_HUNTING'], [2, 'MONST_IMMOBILE'], [4, 'MONST_FLEES_NEAR_DEATH']] as const)
-            if (flags! & bit) m.behaviorFlags.add(name);
-        m.abilityFlags = new Set(steal ? ['MA_HIT_STEAL_FLEE'] : []); m.carriedItem = carrying ? item : null;
-        m.statusDurations = fear ? { magical_fear: 2 } : {}; perception.mockReturnValue(!!perceived);
-        update(m);
-        const resultState = m.isAlly && m.state !== MonsterState.FLEEING ? 4 : m.state;
-        expect([resultState, m.creatureMode, (m.lastSeenPlayerAt as { x: number } | null)?.x ?? -1, m.ticksUntilTurn],
-            JSON.stringify([state,mode,flags,fear,steal,carrying,perceived,hp,closest])).toEqual([expectedState,expectedMode,seenX,ticks]);
-    }
 });

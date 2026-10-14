@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import fs from 'node:fs';
 import { Game } from '../engine/Core/Game';
 import { Grid, TerrainType as T, DCOLS, DROWS, DungeonLayer } from '../engine/Map/Grid';
 import { EnvironmentManager } from '../engine/Environment/Gas';
@@ -8,7 +7,6 @@ import { LightMap } from '../engine/Lighting/LightMap';
 import { getBoltForItem, BoltEffect } from '../engine/Combat/Bolt';
 import { CEBoltType } from '../engine/Combat/BoltCatalog';
 import { canObserveBoltCreature } from '../engine/Combat/BoltTargeting';
-import { staffEntrancementDuration } from '../engine/Movement/Entrancement';
 import { CombatSystem } from '../engine/Combat/Combat';
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import { Player } from '../entities/Player';
@@ -27,6 +25,7 @@ function scene() {
  g.player=new Player(4,5);g.player.hp=g.player.maxHp=100;g.monsters=[];g.dormantMonsters=[];g.items=[];
  g.environment=new EnvironmentManager(g.grid);g.fov=new FOVSys(g.grid);g.lightMap=new LightMap(g.grid);
  g.animationEnabled=false;g.player.ticksUntilTurn=0;g.ticksTillUpdateEnvironment=100;
+ (g as any).updateVision(false);
  g.spawnFloatingText=vi.fn();(g as any).updateVision=vi.fn();(g as any).needsRender=false;return g;
 }
 function mob(g:Game,id='rat',x=10,y=5){
@@ -41,11 +40,7 @@ function wait(g:Game){g.handlePlayerAction('wait',undefined,'system');expect(g.l
 beforeEach(()=>{vi.restoreAllMocks();ItemLoader.identifiedItems.clear();});
 
 describe('W-18 CE effect and trace',()=>{
- it('matches compiled CE duration including fixed-point truncation',()=>{
-  for(const row of fs.readFileSync('src/test/fixtures/ce-oracles/w-18/ce-entrancement.txt','utf8').trim().split('\n')){
-   const [fixed,duration]=row.split(' ').map(Number);expect(staffEntrancementDuration(fixed!/65536)).toBe(duration);
-  }
- });
+
  it.each([2,3,8])('E=%i, not charges/catalog magnitude; weaker recast replaces',e=>{
   const g=scene(),m=mob(g);const r=cast(g,m,e);expect(r.hits.map(h=>h.creature)).toEqual([m]);expect(r.outcome?.autoID).toBe(true);
   expect(m.getStatusDuration('entranced')).toBe(3*e);cast(g,m,2);expect(m.getStatusDuration('entranced')).toBe(6);

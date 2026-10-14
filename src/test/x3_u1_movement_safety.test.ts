@@ -7,6 +7,7 @@ import { ItemLoader } from '../engine/Items/ItemLoader';
 import { Monster, MonsterState, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
 import { rng } from '../engine/Random';
+import { Direction } from '../types';
 import { timeSystem } from '../engine/Systems/Time';
 import { logger } from '../engine/Systems/Logger';
 
@@ -26,8 +27,16 @@ function room(g: Game) {
     g.player.equippedWeapon = null; g.player.equippedArmor = null;
 }
 function scene(setup: (g: Game) => void = () => {}) {
-    installRecordingScene(g => { room(g); setup(g); });
+    installRecordingScene(g => { room(g); setup(g); (g as any).updateVision(false); });
     return createHeadlessGame(33001, 'test');
+}
+// A running continuation reaches native terrain confirmation. Mouse travel
+// revalidates a now-visible hazard and stops before asking; false isVisible +
+// true isClairvoyantVisible was an impossible old display fixture.
+function runningContinuation(g: Game) {
+    (g as any).autoAction = { kind: 'run', remaining: 99, direction: Direction.RIGHT,
+        cardinalPassability: [true, true, true, true] };
+    g.disturbed = false;
 }
 function terrain(g: Game, t: T) { g.grid.setTerrain(11, 10, t); return g.grid.getCell(11, 10)!; }
 function before(g: Game) {
@@ -190,7 +199,7 @@ describe('X3-U1 D10 automation and recording', () => {
     it.each([false, true])('an animated auto step records answer=%s and replay/seek stays stopped with zero OOS', answer => {
         const setup = (g: Game) => {
             terrain(g, T.PLAIN_FIRE); g.grid.getCell(11, 10)!.isVisible = false;
-            g.handleMouseTravel(13, 10); g.grid.getCell(11, 10)!.isClairvoyantVisible = true;
+            g.handleMouseTravel(13, 10); runningContinuation(g);
         };
         const settle = (g: Game) => { for (let i = 0; i < 100 && g.isAdvancing; i++) g.stepAdvancement(); expect(g.isAdvancing).toBe(false); };
         const g = scene(setup); g.animationEnabled = true;
@@ -222,11 +231,11 @@ describe('X3-U1 D10 automation and recording', () => {
 
     it.each([false, true])('stops an auto step before asking, and stays stopped after answer=%s', answer => {
         const g = scene(); terrain(g, T.PLAIN_FIRE);
-        // A newly revealed hazard on a previously safe, remembered route.
+        // A newly visible hazard ahead of an already running continuation.
         g.grid.getCell(11, 10)!.isVisible = false;
         g.handleMouseTravel(13, 10);
         expect(g.isAutoTraveling()).toBe(true);
-        g.grid.getCell(11, 10)!.isClairvoyantVisible = true;
+        runningContinuation(g);
         const ask = vi.fn(() => { expect(g.isAutoTraveling()).toBe(false); expect(g.autoPath).toEqual([]); return answer; });
         g.onConfirmRequest = ask; const old = before(g); g.stepAutoPath();
         expect(ask).toHaveBeenCalledExactlyOnceWith('Venture into flame?');

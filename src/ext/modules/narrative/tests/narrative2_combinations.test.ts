@@ -2,6 +2,8 @@ import { rng } from '../../../../engine/Random';
 import { afterEach, expect, it, vi } from 'vitest';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { logger } from '../../../../engine/Systems/Logger';
+import { installedRelatedCombinations, missingPackages, verifyInstalledPackageFallback, verifyGameLifecycle } from '../../../../test/support/optionalPackageLifecycle';
+import { N2_CASES, startDiagnostic, decide, choose, narrative as diagnosticNarrative } from './narrative2_rewardFixture';
 import {
   continuingPrefix,
   checkpointExtensionDigest,
@@ -25,22 +27,46 @@ import {
   world,
   writeEvidence
 } from './narrative2_naturalFixture';
-// Fixed package matrix: a missing optional module must fail its row, never shrink coverage.
 const optional = ['growth', 'combat', 'giants', 'crafting', 'foraging', 'settlement'];
-const rows = [
-  [],
-  ['narrative'],
-  ...optional.map((id) => ['narrative', id]),
-  ['narrative', ...optional]
-].map((ids) => ({ ids, name: 'combo-' + (ids.join('-') || 'empty') }));
+// The normal tree still has the original nine rows/fixtures. A deleted tree
+// retains each legal pair and one deduplicated all-remaining installation.
+const rows = installedRelatedCombinations('narrative', optional)
+  .map((ids) => ({ ids, name: 'combo-' + (ids.join('-') || 'empty') }));
 afterEach(() => {
   vi.restoreAllMocks();
   logger.reset();
   logger.onDisturb = null;
 });
+if (missingPackages(['narrative', ...optional]).length) {
+  it('N2-COMBO deletion layout rejects genuine original seven-pack save/replay and preserves the complete remaining-world lifecycle', () => {
+    verifyInstalledPackageFallback(['narrative', ...optional]);
+  }, 180000);
+}
 it.each(rows)(
-  'N2-COMBO $name natural new-NPC/persistence lifecycle',
+  'N2-COMBO $name installed NPC/persistence lifecycle',
   async ({ ids, name }) => {
+    if (ids.length > 2 && missingPackages(['narrative', ...optional]).length) {
+      // The original seven-pack natural route cannot identify a different
+      // generation tree. Refuse its genuine data; separately exercise all
+      // installed packages and each unchanged NPC's complete dialogue/lifecycle
+      // through the existing, explicitly named D1 diagnostic placement fixture.
+      verifyInstalledPackageFallback(['narrative', ...optional]);
+      for (const row of N2_CASES) {
+        const { game } = startDiagnostic({ npcs: [row.npc], extensions: ids });
+        expect(Object.keys(game.extensionRuntime!.snapshot().modules).sort()).toEqual([...ids].sort());
+        const target = game.extensionRuntime!.snapshot().foundation.world.entities.find(entity => entity.contentId === row.npc)!;
+        const budget = newBudget();
+        while (!game.extensionRuntime!.nearbyInteractables('narrative').some(entity => entity.id === target.id)) routeStep(game, budget, target);
+        decide(game, row.npc, 'a'); choose(game, 'leave-a');
+        expect(diagnosticNarrative(game).journal).toEqual([{ entryId: `${row.npc}.${row.a}.note`, order: 1 }]);
+        expect(diagnosticNarrative(game).rewardReceipts).toContainEqual(expect.objectContaining({
+          result: 'skipped', reason: ids.includes('growth') ? 'disabled' : 'absent'
+        }));
+        expect(diagnosticNarrative(game).active).toBeNull();
+        verifyGameLifecycle(game);
+      }
+      return;
+    }
     if (process.env.BROGUE_CAPTURE_NARRATIVE2_COMBOS === '1' && ids.length === 1) {
       // Exact same installed pack, seed, mode and commands already captured by N2-TRACE.
       writeFileSync(

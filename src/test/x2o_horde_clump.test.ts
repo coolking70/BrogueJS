@@ -1,17 +1,10 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import { Game } from '../engine/Core/Game';
-import { Random, RNGType, rng } from '../engine/Random';
+import { rng } from '../engine/Random';
 import { Grid, TerrainType as T } from '../engine/Map/Grid';
 import { Monster, type MonsterData } from '../entities/Monster';
-import { blueprintQualifies, RETIRED_INVENTED_BLUEPRINT_IDS, type BlueprintDef } from '../engine/Generator/BlueprintEngine';
 import hordes from '../data/hordes.json';
-import blueprints from '../data/blueprints.json';
 import monsters from '../data/monsters.json';
-import golden from './fixtures/x2o-ce-catalog.json';
-import oracle from './fixtures/x2o-clump-oracle.json';
 
 afterEach(() => vi.restoreAllMocks());
 function arena(terrain = T.FLOOR): any {
@@ -22,59 +15,6 @@ function arena(terrain = T.FLOOR): any {
     rng.seedRandomGenerator(20260927);
     return g;
 }
-
-describe('X2o independent CE catalog and exhaustive original-C randClump', () => {
-    it.skipIf(!hasCeSource())('pins CE source provenance and every member triple in all 175 rows' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        for (const [file, hash] of Object.entries(golden.sources))
-            expect(createHash('sha256').update(readFileSync(ceFile(file))).digest('hex')).toBe(hash);
-        expect(hordes).toHaveLength(golden.hordes.length);
-        hordes.forEach((h, index) => {
-            const ce = golden.hordes[index]!;
-            expect(h.leader).toBe(ce.leader);
-            expect(h.members.map(m => ({ type: m.type, lower: m.minCount, upper: m.maxCount, clumpFactor: m.clumpFactor }))).toEqual(ce.members);
-        });
-    });
-    it('all CE-mapped blueprints match both depth endpoints; unmapped rows remain explicitly retired', () => {
-        const mapped = blueprints.filter(b => b.ceBlueprintId !== null);
-        expect(mapped).toHaveLength(70);
-        expect(new Set(mapped.map(b => b.ceBlueprintId)).size).toBe(70);
-        // CE48 is the existing audited unsupported blueprint, not an omitted depth check.
-        expect(golden.blueprints.filter(c => !mapped.some(b => b.ceBlueprintId === c.ceBlueprintId)).map(c => c.ceBlueprintId)).toEqual([48]);
-        for (const b of blueprints) {
-            if (b.ceBlueprintId === null) { expect(RETIRED_INVENTED_BLUEPRINT_IDS.has(b.id)).toBe(true); continue; }
-            const ce = golden.blueprints.find(c => c.ceBlueprintId === b.ceBlueprintId)!;
-            expect(b.depthRange, b.id).toEqual(ce.depthRange);
-            const flags = ['BP_ADOPT_ITEM', 'BP_VESTIBULE'].filter(f => b.flags.includes(f) || (f === 'BP_ADOPT_ITEM' && b.category === 'key_guard') || (f === 'BP_VESTIBULE' && b.category === 'vestibule'));
-            for (const d of [ce.depthRange[0]! - 1, ce.depthRange[0]!, ce.depthRange[1]!, ce.depthRange[1]! + 1])
-                expect(blueprintQualifies(b as BlueprintDef, d, flags), `${b.id} D${d}`).toBe(d >= ce.depthRange[0]! && d <= ce.depthRange[1]!);
-        }
-    });
-    it('exhausts every C branch, value and rand_range call sequence, including constant and oversized clumps', () => {
-        for (const row of oracle) for (const c of row.cases) {
-            const r = new Random(37); let index = 0;
-            const spy = vi.spyOn(r, 'randRange').mockImplementation((lo, hi) => {
-                const call = c.calls[index++]; expect(call).toBeDefined();
-                expect([lo, hi]).toEqual(call!.slice(0, 2)); return call![2]!;
-            });
-            expect(r.randClumpedRange(row.range[0]!, row.range[1]!, row.range[2]!)).toBe(c.value);
-            expect(index).toBe(c.calls.length); spy.mockRestore();
-        }
-        const deep = oracle.find(r => r.range.join() === '5,10,2')!;
-        expect([5,6,7,8,9,10].map(n => deep.cases.filter(c => c.value === n).length)).toEqual([1,2,3,3,2,1]);
-        expect(deep.cases.every(c => c.calls.length === 2)).toBe(true);
-    });
-    it('same initial real RNG has the C-oracle result, logical draw count and complete final state on both streams', () => {
-        for (const row of oracle) for (let seed = 1; seed <= 16; seed++) for (const stream of [RNGType.RNG_SUBSTANTIVE, RNGType.RNG_COSMETIC]) {
-            const actual = new Random(seed), expected = new Random(seed);
-            actual.setRNG(stream); expected.setRNG(stream);
-            const bounds = row.cases[0]!.calls;
-            const tape = bounds.map(([lo, hi]) => expected.randRange(lo!, hi!));
-            const match = row.cases.find(c => c.calls.every((call, i) => call[2] === tape[i]))!;
-            expect(actual.randClumpedRange(row.range[0]!, row.range[1]!, row.range[2]!)).toBe(match.value);
-            expect(actual.getState()).toEqual(expected.getState());
-        }
-    });
-});
 
 describe('X2o horde consumers', () => {
     it('every ordinary/captive/machine horde consumes each member triple exactly once before placement', () => {

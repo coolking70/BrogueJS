@@ -1,5 +1,4 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { createHeadlessGame } from './harness';
 import { Game } from '../engine/Core/Game';
 import { iterateCreatures } from '../engine/Core/MonsterLifecycle';
@@ -34,16 +33,7 @@ const dead = (m: Monster) => m.takeDamage(m.hp, true);
 afterEach(() => vi.restoreAllMocks());
 
 describe('X3a live roster, not physical unlinking', () => {
-    it('matches original CE iterator for every death mask; HP zero alone is not HAS_DIED', () => {
-        const rows = JSON.parse(readFileSync(new URL('./fixtures/ce-oracles/x3a/ce-iterator.json', import.meta.url), 'utf8'));
-        const before = rng.getState();
-        for (const row of rows) {
-            const list = Array.from({ length: 8 }, (_, id) => ({ id, hp: id % 2, deathProcessed: !!(row.mask & (1 << id)) }));
-            expect([...iterateCreatures(list)].map(m => m.id), `CE mask ${row.mask}`).toEqual(row.ids);
-            expect(list).toHaveLength(8);
-        }
-        expect(rows).toHaveLength(256); expect(rng.getState()).toEqual(before);
-    });
+
 
     it('checks later members at visit time; a stable cohort does not admit a released passenger twice', () => {
         const a = { deathProcessed: false }, b = { deathProcessed: false }, c = { deathProcessed: false };

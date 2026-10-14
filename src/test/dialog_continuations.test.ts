@@ -61,7 +61,7 @@ const scenarios: Scenario[] = [
     { id: 'Q10', setup(g) { g.grid.setTerrain(11, 10, T.PRESSURE_PLATE); }, enter: move, message: 'Step onto the pressure plate?' },
 ];
 function scene(scenario: Pick<Scenario, 'setup'>) {
-    installRecordingScene(g => { room(g); scenario.setup(g); });
+    installRecordingScene(g => { room(g); scenario.setup(g); (g as any).updateVision(false); });
     return createHeadlessGame(33201);
 }
 /** No getState/toSnapshot/vision calls while a command is suspended. */

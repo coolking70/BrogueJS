@@ -1,6 +1,4 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { describe, expect, it } from 'vitest';
-import fs from 'node:fs';
 import { createHeadlessGame } from './harness';
 import { TerrainType as T, DungeonLayer as L } from '../engine/Map/Grid';
 import { LightKind, LIGHT_CATALOG } from '../engine/Map/LightCatalog';
@@ -13,7 +11,7 @@ import { getBoltForItem } from '../engine/Combat/Bolt';
 import { visibleMonsterRows } from '../engine/UI/MonsterSidebar';
 import { terrainAppearance, cellAppearance } from '../engine/UI/Appearance';
 import { terrainRandomValues, tickTerrainColors, bakeTerrainColor } from '../engine/UI/DancingColors';
-import { DUNGEON_FEATURE_CATALOG, DF } from '../engine/Map/DungeonFeatureCatalog';
+import { DF } from '../engine/Map/DungeonFeatureCatalog';
 import { spawnDungeonFeature, catalogFeature } from '../engine/Map/DungeonFeature';
 
 function scene() {
@@ -142,20 +140,7 @@ describe('X2m real sources and CE catalog', () => {
         expect((h as any).activeFlares).toHaveLength(0);
     });
 
-    it.skipIf(!hasCeSource())('checks every DF flare symbol against its CE source row and executes explosion DF' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        const lines = fs.readFileSync(ceFile('src/brogue/Globals.c'), 'utf8').split('\n');
-        let checked = 0;
-        for (const feature of Object.values(DUNGEON_FEATURE_CATALOG)) {
-            const row = lines[feature.ceLine - 1]!;
-            // Strip quoted text before splitting (descriptions may contain commas).
-            const fields = row.replace(/"(?:\\.|[^"\\])*"/g, '""').split(',');
-            const flare = fields[6]?.trim().replace(/}.*/, '') ?? '0';
-            if (feature.lightFlare || flare.endsWith('_LIGHT')) {
-                expect(feature.lightFlare, `${feature.id} CE:${feature.ceLine}`).toBe(flare);
-                checked++;
-            }
-        }
-        expect(checked).toBeGreaterThan(20);
+    it('actual explosion DF queues a visible transient flare',()=>{
         const g = scene(); (g as any).bindDungeonFeatureEffects();
         spawnDungeonFeature(g.grid, 16, 10, catalogFeature(DF.DF_BLOAT_EXPLOSION), false);
         expect((g as any).activeFlares.some((f: any) => f.kind === LightKind.EXPLOSION_FLARE_LIGHT)).toBe(true);

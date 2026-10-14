@@ -139,6 +139,7 @@ function entities(): SidebarEntityRow[] {
     game.monsters.push(monster);
     game.items.push(ItemLoader.spawnFood('ration_of_food', 12, 10)!);
     game.grid.setTerrain(13, 10, T.STAIRS_DOWN);
+    (game as any).updateVision(false);
     return sidebarEntityRows(game.player, game.grid, game.monsters, game.items, null, game.depth);
 }
 

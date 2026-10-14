@@ -1,4 +1,3 @@
-import { readCe, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { describe, expect, it } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { DungeonLayer as L, TerrainType as T, DRAW_PRIORITY, TERRAIN_HOME_LAYER } from '../engine/Map/Grid';
@@ -28,14 +27,7 @@ function spawn(g: ReturnType<typeof scene>, spawnsIn: string | null=null, x=10,y
  expect((g as any).spawnHordeAt(h,{x,y},1,false)).toBe(true);return g.monsters[g.monsters.length-1]!;
 }
 describe('CE captive manacles',()=>{
- it.skipIf(!hasCeSource())('all eight tile rows match the actual CE source'+(hasCeSource()?'':' - '+CE_SKIP_REASON),()=>{
-  const source=readCe('src/brogue/Globals.c');
-  for(const name of names) {
-   const row=source.split('\n').find(line=>line.includes('/*'+name+'*/'))!;
-   const fields=row.slice(row.indexOf('{')+1,row.indexOf('}')).split(',').map(x=>x.trim());
-   expect(fields.slice(1,12),name).toEqual(['&gray','0','20','0','0','0','0','0','NO_LIGHT','0','0']);
-  }
- });
+
  it('CE surface assignment replaces fungus foliage and removes only its opacity',()=>{
   const g=scene();g.grid.setTerrainLayer(9,9,L.SURFACE,T.FUNGUS_FOREST);expect(g.grid.getCell(9,9)!.isOpaque).toBe(true);
   const before=rng.getState();placeCaptiveManacles(g.grid,{x:10,y:10});expect(rng.getState()).toEqual(before);

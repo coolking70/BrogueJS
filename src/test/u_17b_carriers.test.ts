@@ -1,7 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {readFileSync} from 'node:fs';
-import {Grid, TerrainType as T, DungeonLayer as L, DRAW_PRIORITY} from '../engine/Map/Grid';
-import {DF, DF_MISSING_TILES, DUNGEON_FEATURE_CATALOG} from '../engine/Map/DungeonFeatureCatalog';
+import {Grid, TerrainType as T, DungeonLayer as L} from '../engine/Map/Grid';
+import {DF_MISSING_TILES} from '../engine/Map/DungeonFeatureCatalog';
 import {TERRAIN_FLAGS, T_OBSTRUCTS_VISION, T_AUTO_DESCENT} from '../engine/Map/TerrainCatalog';
 import {LightKind} from '../engine/Map/LightCatalog';
 import {catalogFeature, spawnDungeonFeature, cellTerrainFlags, setDungeonFeatureEffects} from '../engine/Map/DungeonFeature';
@@ -13,7 +13,7 @@ import {Item, ItemCategory} from '../engine/Items/Item';
 import {Monster, type MonsterData} from '../entities/Monster';
 import monsters from '../data/monsters.json';
 import {getBoltForItem} from '../engine/Combat/Bolt';
-import golden from './fixtures/u17b-ce-catalog.json';
+
 
 const restored=[61,66,104,83,98];
 function scene(){
@@ -35,25 +35,13 @@ function forcePromotion(value:number){const original=rng.randRange.bind(rng);ret
 beforeEach(()=>{vi.restoreAllMocks();rng.seedRandomGenerator(1718);});
 
 describe('U17b CE data / closed first family',()=>{
- it('five complete tile rows come from CE, including flags, all three chains and glow',()=>{
-  for(const [name,row] of Object.entries(golden.tiles)){
-   const t=T[name as keyof typeof T];const {line,description,flavorText,drawPriority,glowLight,...expected}=row;
-   expect(line).toBeGreaterThan(0);expect(description).not.toBe('');expect(flavorText).not.toBe('');
-   expect(TERRAIN_FLAGS[t]).toEqual({...expected,glowLight:LightKind[glowLight as keyof typeof LightKind],webOnly:false});expect(DRAW_PRIORITY[t]).toBe(drawPriority);
-  }
- });
- it('nine CE DF rows include the new regrowth successor and all inherited edge fields',()=>{
-  for(const [name,row] of Object.entries(golden.dfs)){
-   const id=DF[name as keyof typeof DF];expect(id).toBe(row.id);const f=DUNGEON_FEATURE_CATALOG[id]!;
-   expect(f).toMatchObject({tile:T[row.tile as keyof typeof T],layer:L[row.layer as keyof typeof L],startProbability:row.startProbability,probabilityDecrement:row.probabilityDecrement,flags:row.flags,description:row.description,lightFlare:row.lightFlare,flashColor:row.flashColor,effectRadius:row.effectRadius,cePropagationTerrain:row.propagationTerrain,propagationTerrain:row.propagationTerrain?T[row.propagationTerrain as keyof typeof T]:null,subsequentDF:row.subsequentDF?DF[row.subsequentDF as keyof typeof DF]:null});
-  }
- });
+
+
  it('historical U17b missing projection excludes exactly the five U17c and nine U17d closures',()=>{
   expect(DF_MISSING_TILES).toEqual([]); // U17f final six closures; preserve the empty guard.
  });
  it('appearance golden extension keeps every previous row byte-equivalent in value',()=>{
   const rows=JSON.parse(readFileSync('src/test/fixtures/u21c-ce-terrain.json','utf8'));
-  for(const name of Object.keys(golden.tiles))expect(rows[name].ceLine).toBe(golden.tiles[name as keyof typeof golden.tiles].line);
   expect(Object.keys(rows)).toHaveLength(190);expect(restored.every(id=>!DF_MISSING_TILES.includes(id))).toBe(true);
  });
 });

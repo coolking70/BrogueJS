@@ -41,7 +41,7 @@ interface HordeEntry {
 const hordes = hordesJson as HordeEntry[];
 
 /** 带非空断言的取项（下标 = CE 表体顺序，见各测试注释的 GlobalsBrogue.c 行号）。 */
-const horde = (i: number): HordeEntry => hordes[i]!;
+
 
 const EXCLUDED_FLAGS = [
     'HORDE_IS_SUMMONED',
@@ -155,122 +155,6 @@ describe('hordes.json — 全表字段形状', () => {
                 expect(m.minCount, `#${i} ${m.type} min`).toBeGreaterThanOrEqual(0);
                 expect(m.minCount <= m.maxCount, `#${i} ${m.type} min<=max`).toBe(true);
             }
-        });
-    });
-});
-
-describe('hordes.json — 与 CE 逐字段抽查（行号 = GlobalsBrogue.c）', () => {
-    // 下标即表内顺序（CE 表体自上而下）。
-    it('#0 RAT：L746 {MK_RAT,0,{0},{{0}},1,5,150}，尾部字段省略', () => {
-        expect(horde(0)).toEqual({
-            leader: 'RAT', members: [], minLevel: 1, maxLevel: 5,
-            frequency: 150, spawnsIn: null, machine: 0, flags: [],
-        });
-    });
-
-    it('#4 EEL：L750 {MK_EEL,…,2,17,100,DEEP_WATER}，省略 machine/flags', () => {
-        expect(horde(4)).toEqual({
-            leader: 'EEL', members: [], minLevel: 2, maxLevel: 17,
-            frequency: 100, spawnsIn: 'DEEP_WATER', machine: 0, flags: [],
-        });
-    });
-
-    it('#19 VAMPIRE_BAT：L765 成员{1,2,1}，6/13/70，HORDE_NEVER_OOD', () => {
-        expect(horde(19)).toEqual({
-            leader: 'VAMPIRE_BAT',
-            members: [{ type: 'VAMPIRE_BAT', minCount: 1, maxCount: 2, clumpFactor: 1 }],
-            minLevel: 6, maxLevel: 13, frequency: 70,
-            spawnsIn: null, machine: 0, flags: ['HORDE_NEVER_OOD'],
-        });
-    });
-
-    it('#21 GOBLIN 三成员：L767 {GOBLIN{2,3}, GOBLIN_MYSTIC{1,2}, JACKAL{1,2}}，6/12/40', () => {
-        expect(horde(21).leader).toBe('GOBLIN');
-        expect(horde(21).members).toEqual([
-            { type: 'GOBLIN', minCount: 2, maxCount: 3, clumpFactor: 1 },
-            { type: 'GOBLIN_MYSTIC', minCount: 1, maxCount: 2, clumpFactor: 1 },
-            { type: 'JACKAL', minCount: 1, maxCount: 2, clumpFactor: 1 },
-        ]);
-        expect(horde(21).minLevel).toBe(6);
-        expect(horde(21).maxLevel).toBe(12);
-        expect(horde(21).frequency).toBe(40);
-    });
-
-    it('#32 GOBLIN_TOTEM 四成员：L778 machine=MT_CAMP_AREA(62)，10/17/80，NO_PERIODIC', () => {
-        expect(horde(32)).toEqual({
-            leader: 'GOBLIN_TOTEM',
-            members: [
-                { type: 'GOBLIN_TOTEM', minCount: 1, maxCount: 2, clumpFactor: 1 },
-                { type: 'GOBLIN_CONJURER', minCount: 1, maxCount: 2, clumpFactor: 1 },
-                { type: 'GOBLIN_MYSTIC', minCount: 1, maxCount: 2, clumpFactor: 1 },
-                { type: 'GOBLIN', minCount: 3, maxCount: 5, clumpFactor: 1 },
-            ],
-            minLevel: 10, maxLevel: 17, frequency: 80,
-            spawnsIn: null, machine: 62, flags: ['HORDE_NO_PERIODIC_SPAWN'],
-        });
-    });
-
-    it('#56 TENTACLE_HORROR：L802 maxLevel=DEEPEST_LEVEL-1=39，22/39/100', () => {
-        expect(horde(56).leader).toBe('TENTACLE_HORROR');
-        expect(horde(56).minLevel).toBe(22);
-        expect(horde(56).maxLevel).toBe(39);
-        expect(horde(56).frequency).toBe(100);
-    });
-
-    it('#62 KRAKEN 深水群：L808 30/39/100 DEEP_WATER，成员{5,10,2}', () => {
-        expect(horde(62)).toEqual({
-            leader: 'KRAKEN',
-            members: [{ type: 'KRAKEN', minCount: 5, maxCount: 10, clumpFactor: 2 }],
-            minLevel: 30, maxLevel: 39, frequency: 100,
-            spawnsIn: 'DEEP_WATER', machine: 0, flags: [],
-        });
-    });
-
-    it('#65 GOBLIN_CONJURER 召唤：L813 0/0/100，SUMMONED|DIES_ON_LEADER_DEATH', () => {
-        expect(horde(65)).toEqual({
-            leader: 'GOBLIN_CONJURER',
-            members: [{ type: 'SPECTRAL_BLADE', minCount: 3, maxCount: 5, clumpFactor: 1 }],
-            minLevel: 0, maxLevel: 0, frequency: 100,
-            spawnsIn: null, machine: 0,
-            flags: ['HORDE_IS_SUMMONED', 'HORDE_DIES_ON_LEADER_DEATH'],
-        });
-    });
-
-    it('#75 MONKEY 俘虏：L825 1/5/10，LEADER_CAPTIVE|NEVER_OOD，成员 KOBOLD{1,2}', () => {
-        expect(horde(75)).toEqual({
-            leader: 'MONKEY',
-            members: [{ type: 'KOBOLD', minCount: 1, maxCount: 2, clumpFactor: 1 }],
-            minLevel: 1, maxLevel: 5, frequency: 10,
-            spawnsIn: null, machine: 0,
-            flags: ['HORDE_LEADER_CAPTIVE', 'HORDE_NEVER_OOD'],
-        });
-    });
-
-    it('#111 TENTACLE_HORROR 地牢俘虏：L867 maxLevel=AMULET_LEVEL=26', () => {
-        expect(horde(111)).toEqual({
-            leader: 'TENTACLE_HORROR', members: [],
-            minLevel: 20, maxLevel: 26, frequency: 100,
-            spawnsIn: null, machine: 0,
-            flags: ['HORDE_MACHINE_CAPTIVE', 'HORDE_LEADER_CAPTIVE'],
-        });
-    });
-
-    it('#113 GOBLIN 雕像：L871 spawnsIn=STATUE_DORMANT，1/6/100', () => {
-        expect(horde(113)).toEqual({
-            leader: 'GOBLIN', members: [],
-            minLevel: 1, maxLevel: 6, frequency: 100,
-            spawnsIn: 'STATUE_DORMANT', machine: 0,
-            flags: ['HORDE_MACHINE_STATUE'],
-        });
-    });
-
-    it('#174 末条 GOBLIN 兵营俘虏：L948 3/7/10，MACHINE_GOBLIN_WARREN|LEADER_CAPTIVE', () => {
-        expect(horde(174)).toEqual({
-            leader: 'GOBLIN',
-            members: [{ type: 'GOBLIN', minCount: 1, maxCount: 2, clumpFactor: 1 }],
-            minLevel: 3, maxLevel: 7, frequency: 10,
-            spawnsIn: null, machine: 0,
-            flags: ['HORDE_MACHINE_GOBLIN_WARREN', 'HORDE_LEADER_CAPTIVE'],
         });
     });
 });

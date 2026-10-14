@@ -24,7 +24,7 @@ function room(g: Game) {
     g.player.equippedWeapon = null; g.player.equippedArmor = null;
 }
 function scene(setup: (g: Game) => void = () => {}) {
-    installRecordingScene(g => { room(g); setup(g); });
+    installRecordingScene(g => { room(g); setup(g); (g as any).updateVision(false); });
     return createHeadlessGame(33002, 'test');
 }
 function mob(g: Game, kind: 'ally' | 'discordant' | 'captive' = 'ally', x = 11, y = 10, id = 'monkey') {

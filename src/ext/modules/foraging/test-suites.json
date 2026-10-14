@@ -20,7 +20,6 @@
     "tests/foraging_schema.test.ts",
     "tests/foraging_ui.test.ts"
   ],
-  "gen": [],
   "drift": [
     "tests/foraging_trace.test.ts"
   ]

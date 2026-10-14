@@ -17,10 +17,10 @@ function fixture(action: (directory: string) => void): void {
         mkdirSync(join(directory, path, '..'), { recursive: true });
         writeFileSync(join(directory, path), typeof data === 'string' ? data : JSON.stringify(data));
     };
-    put('scripts/test-suites.json', { test: ['src/test/ext_base.test.ts'], gen: [], drift: [] });
+    put('scripts/test-suites.json', { test: ['src/test/ext_base.test.ts'], drift: [] });
     put('src/test/ext_base.test.ts', '');
     put('src/ext/modules/probe/descriptor.ts', 'export default {}');
-    put('src/ext/modules/probe/test-suites.json', { test: ['tests/owned.test.ts'], gen: [], drift: [] });
+    put('src/ext/modules/probe/test-suites.json', { test: ['tests/owned.test.ts'], drift: [] });
     put('src/ext/modules/probe/tests/owned.test.ts', '');
     try { action(directory); } finally { rmSync(directory, { recursive: true, force: true }); }
 }
@@ -48,14 +48,14 @@ describe('test suite membership', () => {
 
     it('routes all npm suites through the shared discovery runner', () => {
         const { scripts } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { scripts: Record<string, string> };
-        for (const suite of ['test', 'full', 'gen', 'drift', 'ext']) {
+        for (const suite of ['test', 'drift', 'ext']) {
             expect(scripts[suite === 'test' ? 'test' : `test:${suite}`]).toBe(`node scripts/run-test-suite.mjs ${suite}`);
         }
     });
 
     it('removes only owned tests after actual module-directory deletion', () => fixture(directory => {
         writeFileSync(join(directory, 'src/test/phase4e_fixture.test.ts'), '');
-        writeFileSync(join(directory, 'scripts/test-suites.json'), JSON.stringify({ test: ['src/test/ext_base.test.ts', 'src/test/phase4e_fixture.test.ts'], gen: [], drift: [] }));
+        writeFileSync(join(directory, 'scripts/test-suites.json'), JSON.stringify({ test: ['src/test/ext_base.test.ts', 'src/test/phase4e_fixture.test.ts'], drift: [] }));
         const before = resolveTestSuites(directory);
         expect(before.suites.test).toHaveLength(3);
         rmSync(join(directory, 'src/ext/modules/probe'), { recursive: true });
@@ -77,14 +77,14 @@ describe('test suite membership', () => {
 
     it('fails stale, unregistered, duplicate and escaped ownership rather than excluding tests', () => fixture(directory => {
         const manifest = join(directory, 'src/ext/modules/probe/test-suites.json');
-        const save = (test: string[]) => writeFileSync(manifest, JSON.stringify({ test, gen: [], drift: [] }));
+        const save = (test: string[]) => writeFileSync(manifest, JSON.stringify({ test, drift: [] }));
         save(['tests/owned.test.ts', 'tests/missing.test.ts']);
         expect(() => resolveTestSuites(directory)).toThrow('Stale');
         save([]); expect(() => resolveTestSuites(directory)).toThrow('Unregistered');
         save(['tests/owned.test.ts', 'tests/owned.test.ts']); expect(() => resolveTestSuites(directory)).toThrow('Duplicate');
         save(['../other.test.ts']); expect(() => resolveTestSuites(directory)).toThrow('invalid owned path');
         save(['tests/owned.test.ts']);
-        writeFileSync(join(directory, 'scripts/test-suites.json'), JSON.stringify({ test: ['src/test/ext_base.test.ts', 'src/ext/modules/probe/tests/owned.test.ts'], gen: [], drift: [] }));
+        writeFileSync(join(directory, 'scripts/test-suites.json'), JSON.stringify({ test: ['src/test/ext_base.test.ts', 'src/ext/modules/probe/tests/owned.test.ts'], drift: [] }));
         expect(() => resolveTestSuites(directory)).toThrow('Foundation manifest cannot own module test');
     }));
 });

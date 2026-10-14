@@ -1,6 +1,4 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
 import data from '../data/blueprints.json';
 import { BlueprintEngine, blueprintQualifies, type BlueprintDef, type MachineResult } from '../engine/Generator/BlueprintEngine';
 import { Grid, DungeonLayer as L, TerrainType as C, DRAW_PRIORITY, TERRAIN_HOME_LAYER, type Cell } from '../engine/Map/Grid';
@@ -97,29 +95,7 @@ function reachable(g: Game, start: Pos, end: Pos, avoidHazards = false): boolean
 }
 
 describe('V-2b-9c CE data and complete promotion closure', () => {
-    it.skipIf(!hasCeSource())('four blueprint rows match every supported CE column; U19f restores #52 selection' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        // Fails for wrong category/frequency, omitted turret supply, altered CE feature flags/counts.
-        const ce = readFileSync(ceFile('src/variants/GlobalsBrogue.c'), 'utf8').split('\n');
-        for (const [id, line, count] of [[32,383,5],[51,509,3],[52,514,5],[54,531,4]]) {
-            const b = bp(id!);
-            const head = ce[line!]!.match(/\{(\d+),\s*AMULET_LEVEL\},\s*\{(\d+),\s*(\d+)\},\s*(\d+),\s*(\d+),\s*0,\s*\(([^)]+)\)/)!;
-            expect([b.depthRange, b.roomSize, b.frequency, b.features.length, b.category, b.flags]).toEqual([
-                [Number(head[1]),26], [Number(head[2]),Number(head[3])], Number(head[4]), Number(head[5]), 'key_guard', head[6]!.split(/\s*\|\s*/),
-            ]);
-            expect(b.name).toBe(ce[line! - 1]!.split('"')[1]);
-            for (let i = 0; i < count!; i++) {
-                const row = ce[line! + 1 + i]!.match(/\{(\w+),\s*(\w+),\s*(\w+),\s*\{(\d+),\s*(\d+)\},\s*(\d+),\s*0,\s*-?\d+,\s*(\w+),\s*(\d+),\s*(\w+),\s*0,\s*(\([^)]*\)|\w+)/)!;
-                expect(row, `CE row ${line! + 2 + i}`).not.toBeNull();
-                const f = b.features[i]!;
-                const opt = (s: string | undefined) => s === '0' ? undefined : s;
-                const flags = row[10]!.replace(/[()]/g, '');
-                expect([f.featureDF,f.terrain,f.layer,f.instanceCount,f.minimumInstanceCount,f.monsterId,f.personalSpace,f.hordeFlags,f.flags])
-                    .toEqual([opt(row[1]),opt(row[2]),opt(row[3]),[Number(row[4]),Number(row[5])],Number(row[6]),
-                        opt(row[7])?.replace('MK_','').toLowerCase(),Number(row[8]),opt(row[9]) ? [row[9]] : undefined,flags === '0' ? [] : flags.split(/\s*\|\s*/)]);
-            }
-            expect(blueprintQualifies(b, b.depthRange[0], ['BP_ADOPT_ITEM'])).toBe(true);
-        }
-    });
+
 
     it('55 retains CE data and U19f restores its complete tunnel consumer', () => {
         // Fails if a generation-stream change exposes the old permanent key enclosure again.

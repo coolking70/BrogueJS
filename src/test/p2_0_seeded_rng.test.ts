@@ -258,7 +258,7 @@ describe('P2-0 守卫: 生产代码不得再出现未播种随机源', () => {
         const offenders: string[] = [];
         const walk = (dir: string): void => {
             for (const entry of readdirSync(dir, { withFileTypes: true })) {
-                if (entry.name === 'test') continue; // 测试代码允许 stub Math.random
+                if (entry.name === 'test' || entry.name === 'tests' || /\.test\.[^.]+$/.test(entry.name)) continue; // 测试代码允许 stub Math.random
                 const p = join(dir, entry.name);
                 if (entry.isDirectory()) {
                     walk(p);

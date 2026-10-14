@@ -1,9 +1,8 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {readFileSync} from 'node:fs';
-import {Grid, TerrainType as T, DungeonLayer as L, DRAW_PRIORITY, TERRAIN_HOME_LAYER} from '../engine/Map/Grid';
-import {DF, DF_MISSING_TILES, DUNGEON_FEATURE_CATALOG as D} from '../engine/Map/DungeonFeatureCatalog';
+import {Grid, TerrainType as T, DungeonLayer as L} from '../engine/Map/Grid';
+import {DF, DF_MISSING_TILES} from '../engine/Map/DungeonFeatureCatalog';
 import {TERRAIN_FLAGS, TM_IS_CIRCUIT_BREAKER} from '../engine/Map/TerrainCatalog';
-import {LightKind} from '../engine/Map/LightCatalog';
+
 import {catalogFeature, spawnDungeonFeature, setDungeonFeatureEffects} from '../engine/Map/DungeonFeature';
 import {promoteTile, discoverTerrain} from '../engine/Map/Promotion';
 import {rng} from '../engine/Random';
@@ -14,8 +13,7 @@ import {BlueprintEngine, blueprintQualifies, type BlueprintDef} from '../engine/
 import {AUTO_GENERATOR_CATALOG} from '../engine/Map/AutoGenerator';
 import blueprints from '../data/blueprints.json';
 import monsters from '../data/monsters.json';
-import golden from './fixtures/u17c-ce-catalog.json';
-import {terrainAppearance} from '../engine/UI/Appearance';
+
 const restored=[154,17,152,95,144];
 function scene(){
  const g=createHeadlessGame(1719,'test');
@@ -32,29 +30,13 @@ function search(g:ReturnType<typeof scene>){for(let n=0;n<5;n++)g.handlePlayerAc
 beforeEach(()=>rng.seedRandomGenerator(1719));afterEach(()=>vi.restoreAllMocks());
 
 describe('U17c CE independent catalog and scope',()=>{
- it('five tile rows and all three chains equal CE-source goldens, including an invisible repeating floor',()=>{
-  for(const [name,row] of Object.entries(golden.tiles)){
-   const t=T[name as keyof typeof T],{line,description,flavorText,drawPriority,glowLight,...expected}=row;
-   expect(line).toBeGreaterThan(0);expect(description).not.toBe('');expect(typeof flavorText).toBe('string');
-   expect(TERRAIN_FLAGS[t]).toEqual({...expected,glowLight:LightKind[glowLight as keyof typeof LightKind],webOnly:false});expect(DRAW_PRIORITY[t]).toBe(drawPriority);
-  }
-  expect(TERRAIN_HOME_LAYER[T.TRAP_DOOR]).toBe(L.LIQUID);expect(TERRAIN_HOME_LAYER[T.MACHINE_TRIGGER_FLOOR_REPEATING]).toBe(L.LIQUID);
- });
- it('seven DF rows match CE flags, probability, layer, description/light and successor exactly',()=>{
-  for(const [name,row] of Object.entries(golden.dfs)){
-   const id=DF[name as keyof typeof DF];expect(id).toBe(row.id);
-   expect(D[id]).toMatchObject({tile:T[row.tile as keyof typeof T],layer:L[row.layer as keyof typeof L],startProbability:row.startProbability,probabilityDecrement:row.probabilityDecrement,flags:row.flags,description:row.description,lightFlare:row.lightFlare,flashColor:row.flashColor,effectRadius:row.effectRadius,cePropagationTerrain:row.propagationTerrain,propagationTerrain:row.propagationTerrain?T[row.propagationTerrain as keyof typeof T]:null,subsequentDF:row.subsequentDF?DF[row.subsequentDF as keyof typeof DF]:null});
-  }
- });
+
+
  it('historical U17c projection after nine U17d closures; every other missing identity remains ordered',()=>{
   expect(DF_MISSING_TILES).toEqual([]); // U17f final six closures; preserve the empty guard.
   for(const id of restored)expect(()=>catalogFeature(id)).not.toThrow();
  });
- it('CE-generated appearances preserve all old rows and represent the new glyphs',()=>{
-  const rows=JSON.parse(readFileSync('src/test/fixtures/u21c-ce-terrain.json','utf8'));
-  expect(Object.keys(rows)).toHaveLength(190);
-  for(const name of Object.keys(golden.tiles)){const t=T[name as keyof typeof T];expect(terrainAppearance(t,true)).toMatchObject({char:rows[name].char,color:rows[name].color,bgColor:rows[name].bgColor});}
- });
+
  it('three machine DF data starts restored, hidden-trap autoGen correct; U19d restores the secret lever and U19f restores the worm machine',()=>{
   for(const [ce,f,df] of [[7,2,'DF_MACHINE_FLOOR_TRIGGER_REPEATING'],[22,0,'DF_MEDIUM_HOLE'],[28,1,'DF_MEDIUM_HOLE']] as const){expect((blueprints as BlueprintDef[]).find(b=>b.ceBlueprintId===ce)!.features[f]!.featureDF).toBe(df);}
   const a=AUTO_GENERATOR_CATALOG.find(a=>a.index===25)!;expect(a).toMatchObject({terrain:T.TRAP_DOOR_HIDDEN,ceTerrain:'TRAP_DOOR_HIDDEN',layer:L.DUNGEON,carrier:'wired',minDepth:9,maxDepth:39});

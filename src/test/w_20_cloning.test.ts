@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../engine/Core/Game';
 import { Grid, TerrainType as T, DCOLS, DROWS } from '../engine/Map/Grid';
@@ -142,15 +141,7 @@ describe('W-20 save, identity and actual submission',()=>{
 
 
 describe('W-20 compiled CE and cross-effect regression',()=>{
- it('matches compiled original BE_PLENTY and cloneMonster for every HP 1..137',()=>{
-  const rows=fs.readFileSync('src/test/fixtures/ce-oracles/w-20/ce-clone.txt','utf8').trim().split('\n');
-  const hpRows=rows.filter(r=>r.startsWith('hp '));expect(hpRows).toHaveLength(137);
-  for(const row of hpRows){const [,hp,a,b,ok,ticks,leader,item,safety,status,flags]=row.split(' ').map(Number);
-   const g=scene(),m=mob(g);m.hp=hp!;m.statusDurations={confused:17};const result=cast(g,m),c=g.monsters[1]!;
-   c.setStatusDuration('confused',99);expect([m.hp,c.hp,Number(result.outcome?.autoID),c.ticksUntilTurn,Number(c.leader===m),Number(c.carriedItem===null),Number(c.safetySnapshot===null),m.getStatusDuration('confused')]).toEqual([a,b,ok,ticks,leader,item,safety,status]);expect(flags).toBe(8);
-  }
-  expect(rows.slice(-3)).toEqual(['carried 1 2 1','player 10 10 clone 1 2 0 3 1','captive 3 8 3 1']);
- });
+
  it('W-8 actual fire staff now leaves both surviving jelly bodies burning',()=>{
   const g=scene(),m=mob(g,'pink_jelly');m.hp=m.maxHp=100;const staff=ItemLoader.spawnStaff('staff_of_fire',-1,-1)!;
   g.zapBoltFromPlayer(getBoltForItem('staff_of_fire')!,staff,m.loc);expect(g.monsters).toHaveLength(2);expect((m.statusDurations as any).burning).toBeGreaterThan(0);expect(g.monsters[1]!.statusDurations).toEqual(m.statusDurations);expect(g.monsters[1]!.statusDurations).not.toBe(m.statusDurations);

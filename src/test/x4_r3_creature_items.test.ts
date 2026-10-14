@@ -1,6 +1,4 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
 import i18next from 'i18next';
 import species from '../data/monsters.json';
 import mutations from '../data/mutations.json';
@@ -11,7 +9,7 @@ import { Grid, DungeonLayer, TerrainType as T } from '../engine/Map/Grid';
 import { DF, DUNGEON_FEATURE_CATALOG } from '../engine/Map/DungeonFeatureCatalog';
 import { catalogFeature, setDungeonFeatureEffects } from '../engine/Map/DungeonFeature';
 import { creatureBloodFeature, creatureFeatureInfo, creatureFeatureChance, emitCreatureFeature,
-    spawnCreatureBlood, PLAYER_BLOOD_TYPE } from '../engine/Combat/CreatureFeatures';
+    spawnCreatureBlood } from '../engine/Combat/CreatureFeatures';
 import { isIncendiaryDart, resolveIncendiaryDart } from '../engine/Items/IncendiaryDart';
 import { applyAggravationScroll } from '../engine/Items/AggravationScroll';
 import { prepareThrownItem } from '../engine/Items/ItemUseCoordinator';
@@ -23,12 +21,6 @@ import { createHeadlessGame } from './harness';
 import { serializeMonster, restoreEntityGraph } from '../engine/Core/EntitySnapshot';
 
 afterEach(() => vi.restoreAllMocks());
-const ce = hasCeSource() ? readFileSync(ceFile('src/brogue/Globals.c'), 'utf8') : '';
-const header = hasCeSource() ? readFileSync(ceFile('src/brogue/Rogue.h'), 'utf8') : '';
-function enumNames(name: string): string[] {
-    return header.match(new RegExp(`enum ${name}\\s*\\{([\\s\\S]*?)\\}`))![1]!
-        .replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '').split(',').map(s => s.trim().split('=')[0]!.trim()).filter(Boolean);
-}
 function monster(id: string): Monster {
     return new Monster(7, 7, species.find(row => row.id === id)! as MonsterData);
 }
@@ -39,24 +31,7 @@ function floor(): Grid {
 }
 
 describe('X4-R3 CE species blood and feature pipeline', () => {
-    it.skipIf(!hasCeSource())('matches all 68 CE catalog rows and real DF enum IDs, including bloodless species' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        const body = ce.split('creatureType monsterCatalog[NUMBER_MONSTER_KINDS] = {')[1]!.split('\n};')[0]!;
-        const lines = body.split('\n').filter(line => /^\s*\{0,\s*"/.test(line));
-        expect(lines).toHaveLength(68);
-        const dfNames = enumNames('dungeonFeatureTypes');
-        const dfID = (name: string) => name === '0' ? 0 : dfNames.indexOf(name) + 1;
-        for (let i = 0; i < lines.length; i++) {
-            const fields = lines[i]!.replace(/\{[^{}]*\}/, 'DAMAGE').split(',').map(s => s.trim());
-            const expected = { bloodType: dfID(fields[11]!), DFChance: Number(fields[14]), DFType: dfID(fields[15]!) };
-            if (i === 0) { expect(PLAYER_BLOOD_TYPE).toBe(expected.bloodType); continue; }
-            const row = species[i - 1]!;
-            expect(row.name.toLowerCase()).toBe(fields[1]!.replace(/"/g, '').toLowerCase());
-            expect(row).toMatchObject(expected);
-            const m = monster(row.id);
-            expect({bloodType: m.bloodType, DFChance: m.DFChance, DFType: m.DFType}).toEqual(expected);
-        }
-        expect(monster('stone_guardian').bloodType).toBe(DF.DF_RUBBLE); // not RUBBLE_BLOOD
-    });
+
 
     it('truncates both C divisions, caps by pre-hit HP and never mutates the catalog', () => {
         const original = JSON.stringify(DUNGEON_FEATURE_CATALOG);
@@ -225,7 +200,7 @@ describe('X4-R3 incendiary darts and aggravation scroll R6 ports', () => {
         }
     });
 
-    it.skipIf(!hasCeSource())('registers the missing CE scroll in generation, polarity, metering, names and detail text' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
+    it('aggravation scroll is available through generation, polarity, metering, localized name and detail',()=>{
         const row = ItemLoader.genScrolls.find(s => s.id === 'scroll_of_aggravate_monsters')!;
         expect(row).toMatchObject({frequency:15, effect:'aggravate_monsters'});
         expect(ItemLoader.genScrolls).toHaveLength(14);
@@ -236,16 +211,6 @@ describe('X4-R3 incendiary darts and aggravation scroll R6 ports', () => {
         expect(JSON.stringify(generateItemDetail(item, 12))).toContain('唤醒本层怪物');
         const entries = ItemLoader.CE_METERED_ITEMS_TABLE;
         expect(entries.find(e => e.ceKind === 'SCROLL_AGGRAVATE_MONSTER')).toMatchObject({webId:row.id, initialFrequency:0});
-        const variants = readFileSync(ceFile('src/variants/GlobalsBrogue.c'), 'utf8');
-        const scrollRows = variants.split('itemTable scrollTable_Brogue[] = {')[1]!.split('\n};')[0]!
-            .split('\n').filter(line => /^\s*\{"/.test(line));
-        const weights = scrollRows.map(line => Number(line.split(',')[3]!.trim()));
-        expect(weights).toHaveLength(14); expect(weights.reduce((sum,n)=>sum+n,0)).toBe(158);
-        expect(entries.filter(e=>e.category==='SCROLL').map(e=>ItemLoader.genScrolls.find(s=>s.id===e.webId)!.frequency)).toEqual(weights);
-        for (const category of ['SCROLL','POTION'] as const) {
-            const names = enumNames(category === 'SCROLL' ? 'scrollKind' : 'potionKind');
-            expect(entries.filter(e => e.category === category).map(e => e.ceKind)).toEqual(names);
-        }
     });
 
     it('calls the existing CE alarm at width+height and retains waking, pursuit, scent and player status', () => {

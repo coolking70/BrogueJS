@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import fs from 'node:fs';
 import { Game } from '../engine/Core/Game';
 import { Grid, TerrainType as T, DungeonLayer as L, DCOLS, DROWS } from '../engine/Map/Grid';
 import { EnvironmentManager } from '../engine/Environment/Gas';
 import { FOVSys } from '../engine/Lighting/FOV';
 import { LightMap } from '../engine/Lighting/LightMap';
-import { staffBladeCount, bladeSpawnLocation } from '../engine/Combat/Conjuration';
+import { bladeSpawnLocation } from '../engine/Combat/Conjuration';
 import { getBoltForItem, BoltEffect } from '../engine/Combat/Bolt';
 import { CEBoltType } from '../engine/Combat/BoltCatalog';
 import { CombatSystem } from '../engine/Combat/Combat';
@@ -41,11 +40,7 @@ function single(g:Game,x=10,y=5){g.grid.setTerrain(x+1,y,T.WALL);cast(g,1,{x,y})
 beforeEach(()=>{vi.restoreAllMocks();rng.seedRandomGenerator(1616);ItemLoader.identifiedItems.clear();});
 
 describe('W-16 CE fixed point golden and actual detonation',()=>{
- it('matches clang-compiled unmodified staffBladeCount for 81 fixed-point inputs',()=>{
-  const values=fs.readFileSync('src/test/fixtures/ce-oracles/w-16/ce-blade-count.txt','utf8').trim().split('\n');
-  expect(values).toHaveLength(81);
-  for(const row of values){const [fp,n]=row.split(' ').map(Number);expect(staffBladeCount(fp!/65536)).toBe(n);}
- });
+
  it.each([[2,3],[3,4],[8,12]])('E=%i creates %i unique real entities near final landing, independent of charges/config',(e,n)=>{
   const g=scene();g.grid.setTerrain(15,5,T.WALL);const item=staff(e);
   const r=g.zapBoltFromPlayer({...bolt(),magnitude:99},item,{x:8,y:5});

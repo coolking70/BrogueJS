@@ -118,6 +118,7 @@ function arena() {
     const m = new Monster(5, 5, monsterData.find(m => m.id === 'rat')! as MonsterData);
     m.hp = m.maxHp = 10000; m.state = MonsterState.HUNTING;
     g.monsters.push(m);
+    (g as any).updateVision(false);
     return g;
 }
 function step(g: Game, combat: boolean) {

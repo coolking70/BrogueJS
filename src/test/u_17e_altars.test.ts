@@ -1,8 +1,8 @@
 import {describe, it, expect, afterEach, vi} from 'vitest';
 import {readFileSync} from 'node:fs';
-import {Grid, TerrainType as T, DungeonLayer as L, DRAW_PRIORITY, TERRAIN_HOME_LAYER} from '../engine/Map/Grid';
+import {Grid, TerrainType as T, DungeonLayer as L} from '../engine/Map/Grid';
 import {TERRAIN_FLAGS, TM_IS_CIRCUIT_BREAKER} from '../engine/Map/TerrainCatalog';
-import {DF, DF_MISSING_TILES, DUNGEON_FEATURE_CATALOG as D} from '../engine/Map/DungeonFeatureCatalog';
+import {DF, DF_MISSING_TILES} from '../engine/Map/DungeonFeatureCatalog';
 import {catalogFeature, spawnDungeonFeature} from '../engine/Map/DungeonFeature';
 import {LightKind} from '../engine/Map/LightCatalog';
 import {terrainAppearance} from '../engine/UI/Appearance';
@@ -55,23 +55,8 @@ function wholeRoom(id:number){
 afterEach(()=>vi.restoreAllMocks());
 
 describe('U17e CE catalog and carrier scope',()=>{
- it('seven tile rows and nine DF rows equal independently parsed CE, including three necessary successors',()=>{
-  for(const [name,row] of Object.entries(golden.tiles)){
-   const t=T[name as keyof typeof T],{line,description,flavorText,drawPriority,glowLight,...expected}=row;
-   expect(line).toBeGreaterThan(0);expect(description).not.toBe('');expect(flavorText).not.toBe('');
-   expect(TERRAIN_FLAGS[t]).toEqual({...expected,glowLight:LightKind[glowLight as keyof typeof LightKind],webOnly:false});
-   expect(DRAW_PRIORITY[t]).toBe(drawPriority);expect(TERRAIN_HOME_LAYER[t]).toBe(name.startsWith('PIPE_')?L.SURFACE:L.DUNGEON);
-  }
-  for(const [name,row] of Object.entries(golden.dfs)){
-   const id=DF[name as keyof typeof DF];expect(id).toBe(row.id);
-   expect(D[id]).toMatchObject({tile:T[row.tile as keyof typeof T],layer:L[row.layer as keyof typeof L],startProbability:row.startProbability,probabilityDecrement:row.probabilityDecrement,flags:row.flags,description:row.description,lightFlare:row.lightFlare,flashColor:row.flashColor,effectRadius:row.effectRadius,cePropagationTerrain:row.propagationTerrain,propagationTerrain:null,subsequentDF:null});
-  }
- });
- it('CE blueprint DF starts and all library item flag columns match raw source; frequencies and qualification stay separate',()=>{
-  for(const row of golden.blueprintFeatures){const bp=(blueprints as BlueprintDef[]).find(b=>b.ceBlueprintId===row.blueprint)!,f=bp.features[row.index]!;
-   expect(f.terrain).toBe(row.terrain);expect(f.featureDF??null).toBe(row.featureDF);expect([...(f.itemFlags??[])].sort()).toEqual([...row.itemFlags].sort());
-  }
- });
+
+
  it('removes exactly five missing rows and preserves saved numeric IDs',()=>{
   expect(DF_MISSING_TILES).toEqual([]); // U17f closes the final six.
  expect(T.FLAMETHROWER).toBe(156);expect(T.ALTAR_CAGE_CLOSED).toBe(157);

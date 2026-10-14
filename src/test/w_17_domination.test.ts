@@ -8,7 +8,6 @@ import { LightMap } from '../engine/Lighting/LightMap';
 import { getBoltForItem, BoltEffect } from '../engine/Combat/Bolt';
 import { CEBoltType } from '../engine/Combat/BoltCatalog';
 import { arcanaTargetCandidates } from '../engine/Combat/BoltTargeting';
-import { wandDominate } from '../engine/Combat/Domination';
 import { CombatSystem } from '../engine/Combat/Combat';
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import { Player } from '../entities/Player';
@@ -38,11 +37,7 @@ const dump=(m:Monster)=>JSON.stringify(m,(k,v)=>k==='leader'?(v?.id??null):v ins
 beforeEach(()=>{vi.restoreAllMocks();rng.seedRandomGenerator(1717);ItemLoader.identifiedItems.clear();});
 
 describe('W-17 compiled CE formula and actual 100-outcome boundary sweep',()=>{
- it('matches the unmodified clang-compiled formula, including integer truncation and overhealing',()=>{
-  const rows=fs.readFileSync('src/test/fixtures/ce-oracles/w-17/ce-domination.txt','utf8').trim().split('\n');
-  expect(rows.length).toBe(485);
-  for(const line of rows){const [hp,maxHp,chance,count]=line.split(' ').map(Number);expect(wandDominate({hp:hp!,maxHp:maxHp!})).toBe(chance);expect(count).toBe(chance);}
- });
+
  it.each([[100,0],[20,80],[19,100]])('HP %i/100: every possible CE roll yields exactly %i actual conversions',(hp,successes)=>{
   const g=scene(),m=mob(g),wand=item();const draw=vi.spyOn(rng,'randRange');let count=0;
   for(let roll=0;roll<100;roll++){

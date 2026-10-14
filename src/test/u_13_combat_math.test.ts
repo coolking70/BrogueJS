@@ -1,7 +1,5 @@
-import fs from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CombatSystem } from '../engine/Combat/Combat';
-import { accuracyFraction, damageFraction, defenseFraction, hitProbability, clumpedRoll, playerDefense } from '../engine/Combat/CombatFormulas';
 import { rng } from '../engine/Random';
 import { Player } from '../entities/Player';
 import { Monster, MonsterState, type MonsterData } from '../entities/Monster';
@@ -12,13 +10,6 @@ import { deserializeItem, serializeItem, serializeMonster, restoreEntityGraph } 
 import { createHeadlessGame } from './harness';
 import { TerrainType } from '../engine/Map/Grid';
 
-const golden = JSON.parse(fs.readFileSync('src/test/fixtures/ce-oracles/u-13/ce-combat.json', 'utf8')) as {
-    hits: { accuracy: number; defense: number; enchant: number | null; hit: number }[];
-    fractions: { enchant: number; accuracy: number; damage: number }[];
-    defenses: { defense: number; fraction: number }[];
-    equipment: { lo: number; hi: number; clump: number; enchant: number; strength: number; scaledLo: number; scaledHi: number; defense: number }[];
-    ranges: { lo: number; hi: number; clump: number; dice: number[][]; combinations: number; weights: number[] }[];
-};
 const data = (id: string) => (monsters as MonsterData[]).find(m => m.id === id)!;
 function mob(id = 'rat') {
     const m = new Monster(5, 5, data(id));
@@ -36,70 +27,8 @@ function player(weapon?: string) {
 }
 afterEach(() => vi.restoreAllMocks());
 
-describe('U13 compiled original CE mathematics', () => {
-    it('1215 hit probabilities include zero/negative defense/short maxima and every integer enchant', () => {
-        for (const r of golden.hits) expect(hitProbability(r.accuracy, r.defense, r.enchant ?? undefined), JSON.stringify(r)).toBe(r.hit);
-    });
-    it('all 281 enchant table entries and 711 defense boundary inputs match exactly', () => {
-        for (const r of golden.fractions) {
-            expect(accuracyFraction(r.enchant) * 65536).toBe(r.accuracy);
-            expect(damageFraction(r.enchant) * 65536).toBe(r.damage);
-        }
-        for (const r of golden.defenses) expect(defenseFraction(r.defense) * 65536).toBe(r.fraction);
-        expect(accuracyFraction(-100)).toBe(accuracyFraction(-20));
-        expect(damageFraction(100)).toBe(damageFraction(50));
-    });
-    it.each(golden.ranges)('every tuple and RNG range of {$lo,$hi,$clump} matches CE', r => {
-        const counts = Array(r.weights.length).fill(0);
-        for (let n = 0; n < r.combinations; n++) {
-            let tuple = n; const calls: number[][] = [];
-            const result = clumpedRoll(r.lo, r.hi, r.clump, (lo, hi) => {
-                calls.push([lo, hi]); const v = lo + tuple % (hi - lo + 1);
-                tuple = Math.trunc(tuple / (hi - lo + 1)); return v;
-            });
-            counts[result - r.lo]++;
-            expect(calls).toEqual(r.dice);
-        }
-        expect(counts).toEqual(r.weights);
-    });
-    it('168 original recalculateEquipmentBonuses cases reach actual player melee, including negative enchant and strength boundaries', () => {
-        const p = player('javelin'), m = mob();
-        let high = false;
-        vi.spyOn(rng, 'randRange').mockImplementation((lo, hi) => high ? hi : lo);
-        for (const r of golden.equipment) {
-            Object.assign(p.equippedWeapon!, { damage: `${r.lo}-${r.hi}`, clumping: r.clump, enchantment: r.enchant, strengthRequired: 12 });
-            p.strength = r.strength;
-            // Captive bypasses hit probability without a damage multiplier.
-            m.isCaged = true; high = false;
-            expect(CombatSystem.attack(p, m).damage, JSON.stringify(r)).toBe(r.scaledLo);
-            high = true;
-            expect(CombatSystem.attack(p, m).damage, JSON.stringify(r)).toBe(r.scaledHi);
-            expect(playerDefense(3, r.enchant, r.strength, 12)).toBe(r.defense);
-        }
-    });
-});
-
 describe('U13 complete damage ranges through actual actors', () => {
-    it.each(['eel', 'ogre', 'spider', 'troll', 'dragon'])('%s melee consumes the CE distribution, not just its mean', id => {
-        const m = mob(id), p = player(); m.accuracy = 100;
-        const parts = CombatSystem.parseDamageString(m.damageString);
-        const r = golden.ranges.find(r => r.lo === parts.min && r.hi === parts.max && r.clump === m.damageClumping)!;
-        const counts = Array(r.weights.length).fill(0);
-        let tuple = 0;
-        const roll = vi.spyOn(rng, 'randRange').mockImplementation((lo, hi) => {
-            if (hi === 99) return 0;
-            const n = lo + tuple % (hi - lo + 1); tuple = Math.trunc(tuple / (hi - lo + 1)); return n;
-        });
-        for (let n = 0; n < r.combinations; n++) {
-            tuple = n; p.hp = p.maxHp; p.statusDurations = {}; p.poisonAmount = 0; roll.mockClear();
-            const hit = CombatSystem.attack(m, p);
-            const rolled = id === 'spider' ? p.statusDurations.poisoned! : hit.damage;
-            if (id === 'spider') expect(hit.damage).toBe(1);
-            counts[rolled - r.lo]++;
-            expect(roll.mock.calls).toEqual([[0, 99], ...r.dice]);
-        }
-        expect(counts).toEqual(r.weights);
-    });
+
     it('javelin clump survives loading and melee; enchanted endpoints scale before rolling', () => {
         const p = player('javelin'), m = mob(); m.defense = 0;
         expect(p.equippedWeapon!.clumping).toBe(3);

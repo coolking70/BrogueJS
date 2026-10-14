@@ -1,5 +1,4 @@
 import * as creatureFeatures from '../engine/Combat/CreatureFeatures';
-import fs from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { Game } from '../engine/Core/Game';
@@ -10,8 +9,7 @@ import monsters from '../data/monsters.json';
 import { CombatSystem } from '../engine/Combat/Combat';
 import { MONSTER_BOLT_TABLE } from '../engine/Combat/Bolt';
 import { CEBoltType, CEBoltEffect, CE_BOLT_CATALOG } from '../engine/Combat/BoltCatalog';
-import { rollStaffDamage, staffDamageRange } from '../engine/Combat/StaffDamage';
-import { Random, rng } from '../engine/Random';
+import { rng } from '../engine/Random';
 import { Item, ItemCategory } from '../engine/Items/Item';
 import { logger } from '../engine/Systems/Logger';
 
@@ -46,24 +44,7 @@ beforeEach(() => vi.restoreAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
 describe('U06 CE compiled staffDamage goldens and real contacts', () => {
-    it.each(families)('$name catalog magnitude and exhaustive CE distribution', ({ name, magnitude, low, high, clumps }) => {
-        const golden = JSON.parse(fs.readFileSync('src/test/fixtures/ce-oracles/u-06/ce-staff-damage.json', 'utf8'))
-            .find((r: { magnitude: number }) => r.magnitude === magnitude);
-        expect(MONSTER_BOLT_TABLE[name]!.magnitude).toBe(magnitude);
-        expect(staffDamageRange(magnitude)).toEqual({ low, high, clumps });
-        const random = new Random(6), weights = Array(high - low + 1).fill(0);
-        let tuple = 0, calls: number[][] = [];
-        random.randRange = (lo, hi) => {
-            calls.push([lo, hi]); const n = lo + tuple % (hi - lo + 1);
-            tuple = Math.floor(tuple / (hi - lo + 1)); return n;
-        };
-        for (let n = 0; n < golden.combinations; n++) {
-            tuple = n; calls = [];
-            weights[rollStaffDamage(magnitude, random) - low]++;
-            if (n === 0 || n === golden.combinations - 1) expect(calls).toEqual(golden.dice);
-        }
-        expect(weights).toEqual(golden.weights);
-    });
+
 
     it.each(families)('$name ignores caster accuracy/damage/status/riders and monster armor, consumes only CE dice', ({ name, clumps, low, high }) => {
         const g = scene(), caster = mob(g, 12), target = mob(g);

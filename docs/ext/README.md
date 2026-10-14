@@ -1,3 +1,9 @@
+> 2026-10-14最终失败修复已完成，见[报告](phase5-final-fix.report.md) / [门禁摘要](evidence/phase5-final-fix-gates.json)。原96项未豁免失败与5空套件已关闭；完整npm仍exit1（11340过/18败，含15项已单文件复验通过的负载超时），ext仍exit1（6316过/3项已批准失败）。drift、boundary/依赖、types/build通过。未提交/推送，浏览器/真机仍待人工；下方2026-10-13阻塞记录保留为历史。
+
+> 2026-10-13最终交付 **BLOCKED，未提交/推送**：本轮[逐门禁核对](phase5-final-policy-gates.report.md) / [npm99条首败初分类](phase5-final-npm-triage.md) / [最终候选人工待验清单](phase5-final-policy.manual-checklist.md)。npm96项未获豁免失败及5空套件错误未关闭，ext另有重叠3项未获豁免失败；drift、正常128、全删1与本轮真实输入拒绝通过。下方旧收口计数为历史，不能代替本轮。
+
+> 扩展测试政策已于2026-10-13更新，以[当前验收门禁](#当前验收门禁)为准；以下旧收口与计数为历史记录，当前阶段见[状态顶部](commander-status.md)。
+
 # 阶段5最新安排（2026-10-11）
 
 阶段5已推送：底座`35045d9`、giants2集成`2709250`、5Y`a4932d1`。5Z本地实现及独立R1已收口：未发现确证缺陷，无需修复或R2。维护者已核对候选源码/构建身份，5Z实现`0ec7c56`已推送至`ext/phase5`；本地收口完成，交人工待验并停止监督。七项基线失败与完整npm首次64项失败均有逐项单变量归因/修复/复测关闭，7个unhandled亦真实说明；首次完整npm exit1保留，没有新一次完整npm exit0。全部ext、实际drift、原正常128引擎路径通过；批准15物理删除布局全部实际完成（7单删/7单留/1全删），每行boundary/types/build/全部剩余ext及真实缺包存档录像拒绝完成，前七行按明确影响范围复测关闭并沿用未受影响部分，后八行当前源码完整首次通过。删除smoke只全开/全关，全删去重，29/29+正常128/128=157/157；额外历史124单列，另外112布局范围外未验。详见[作者报告](phase5z.report.md)和[人工清单](phase5z.manual-checklist.md)，浏览器/真机全部待人工，不称阶段5全面验收通过。本次有效独立审查1轮，无R2/R3；5C2/5D3在阶段5之后，5E2/5F不扩。以[状态卡](commander-status.md)和[遗留](phase5z-remainders.md)为准，覆盖下方历史排期。
@@ -95,22 +101,38 @@ dot 的 3g（foundation 4→5）尚未合入。完整 `npm test`、全部 `test:
 
 ## 当前验收门禁
 
-以下保留从2b起的一般门禁；阶段3开发期以其上方最新专节为准，其余适用范围不由本次设计改变。从 2b 起，每次交付（包括纯文档交付）在同一最终正常候选树执行并如实报告以下 full 档。这里的 full 指完整 `npm test`，不指 CE 的 `test:full`：
+## 扩展分支测试门禁政策（2026-10-13 即日生效）
 
-- `node scripts/check-module-boundaries.mjs`
-- `npx vue-tsc -b`
-- `npm run build`
-- 全部扩展测试：`npm run test:ext`，由共用发现器合并底座清单与每个已安装模块的自有测试清单并校验防漏，不按旧路径或文件名前缀遗漏模块测试
-- 完整 `npm test` 一次，使用仓库的套件入口和清单，不以定向测试拼接代替
-- 所有已安装模块子集的真实 Game 新局、游玩、save/load、逐条 replay、seek 与存档续录 smoke
+仅适用于扩展分支；main 分支政策与文件不受本次调整影响。本节覆盖下文历史记录及旧任务书中冲突的 CE 对照、旧格式兼容、黄金归因、缺模块跳过和15行常规门禁要求；历史结果不追改。
 
-**物理删除副本改用 removal 档，不再重复完整 `npm test`。** 每个副本实际删去模块整个自有目录，清理 TS/Vite 缓存后运行 boundary、vue-tsc、build、全部剩余 `test:ext`，以及剩余模块全开和全部不开的真实新局/save/load/replay/seek/续录 smoke（全删去重，删除脚本显式传入`--combinations endpoints`；正常独立smoke默认仍全子集），并验证要求缺失模块的旧档/录像被拒绝。模块自有测试只随实际所属目录删除；底座与保留模块的所有已登记测试仍由发现器校验，不做宽泛 exclude、额外 skip 或空壳替代。2a0/2a1 当时每个删除副本已跑完整 npm test 的历史结果不追改。
+1. **按用途逐项清理 CE 对照测试。** 仅为对齐 CE 源码或 CE 行为而存在的测试从扩展分支移除，包括 CE 参考源依赖、CE 逐项比对；取消扩展分支的 `ce:fetch`、`test:full`、`test:gen` 要求。不可只按文件名或注释含 CE 批量删除。混合文件拆分，只移除纯 CE 对照部分；本项目自身同种子同生成、命令确定性、正确性、存读/回放/seek 一致性测试保留。报告逐项列文件/用例、移除或保留、理由及混合文件处理。
+2. **开发期不保护旧存档/旧格式。** 格式或版本升级不写迁移，不做旧格式兼容测试，旧版本输入直接拒绝；保留版本拒绝边界及当前版本非法输入拒绝，不把兼容清理变成放宽校验。保证同一版本内的完整存读/回放/seek/续录一致，最终产品存档可读、录像可播。黄金 trace 仅因格式/版本变化而变化时，直接按原法重录，报告说明版本原因，不做逐叶归因与反事实；混有玩法、RNG或未知原因的变化不能冒称纯格式变化。
+3. **新增静态测试依赖检查，与 boundary 同级。** 模块目录内普通测试只能依赖本模块与底座；跨模块用例须显式声明所需模块。检查覆盖实际测试发现清单、直接/间接导入与 helper/fixture/manifest 等模块需求，遗漏声明或未声明跨模块依赖必须失败，不仅靠字符串搜索。运行时缺少声明模块则明确按声明跳过并报告原因；正常树模块齐全时执行原用例和原断言。此为获准的缺依赖跳过，不能扩大为隐藏产品失败或已知内容断言。至少覆盖 R1-F1 的无条件请求已删除模块，以及模块齐全执行、缺依赖有说明跳过、同模块/底座合法依赖；检查本身不得依赖被删模块存在。
+4. **常规可删除性验证调整。** boundary/导入白名单 + 静态测试依赖检查 + 正常树128启用组合引擎 smoke + 1行“删除全部可选模块”物理删除。完整15行（7单删/7单留/1全删）仅在大版本发布前执行，本次阶段5收口不执行15行，也不要求旧29个删除 endpoint。全删必须真的删目录并核对所有权，执行 boundary/导入白名单、新依赖检查、types/build、全部剩余 test:ext、全关引擎生命周期 smoke（全删全开/全关去重为1）和真实缺包输入拒绝。缺包拒绝与旧格式兼容不同，使用同版本真实存档/录像验证。
+5. **测试前提调整。** 仅在断言语义改变时要求反事实；纯过时写法只需最小修改并在报告一句说明，不做无收益反事实。真实生产正确性回归仍修生产；不能借前提或声明跳过弱化同版本确定性和一致性断言。
 
-`check:module-removal` 默认 `--profile=auto` 枚举全部目录保留子集：未删除目录的行跑 full，真实删除的行跑 removal。`--profile=full` 只选择未删除目录的正常副本；`--profile=removal` 只选择实际删除行，可配 `--retain=none` 或明确保留列表。与 profile 不匹配的 retain 会报错，不能把正常树标成 removal 来省掉完整测试。5Z的2026-10-10最新合同只授权15个明确retain（7单删/7单留/1全删），不得使用默认全部枚举；正常树门禁已另行执行时，用 `--profile=removal` 并显式 `--retain` 避免重复正常 full和范围外行；该结果明确记录正常 full 是外部必要门禁而尚未由该次运行验证。
+最终收口在政策清理后的同一组合候选统一执行完整 `npm test` / `npm run test:ext` / `npm run test:drift`、boundary/导入白名单、新静态测试依赖检查、types/build、128引擎 smoke与全删1行。记录实际命令、源码身份、exit、通过/失败/真实skip/todo/unhandled及声明缺依赖跳过；重叠不累加，不沿用旧5Z结果。检查器实际入口与分类清单在实现报告登记，不能把政策文档当已实现或已通过。浏览器人工验收仍由Claude在最终候选抽样。
 
-单删growth行示例（其余14行按任务书§5明确保留集合逐行执行，不省略retain）：`NODE_OPTIONS=--max-old-space-size=3072 node scripts/check-module-removal.mjs --engine-only --profile=removal --maxWorkers=1 --retain=combat,crafting,foraging,giants,narrative,settlement --output=<本行仓外新目录>`。`--plan` 只列逐行档位与命令，`--prepare-only` 只复制/删除/核对所有权，均不声称测试通过。`--engine-only` 只验证真实引擎，证据仍标浏览器未验证，生成构建的真实浏览器验收另列。5Z长门禁按最新合同统一 Node 24.19.0、3 GiB 堆与默认单worker（历史各步workers按原报告）；正常树及各副本保留各自当前输入 hash、真实命令、退出码、数量与耗时。
+### 已实现入口与依赖声明
 
-不要求 CE 参照源码，不运行 `ce:fetch`、`test:full` 或 `test:gen`；正常树完整 `npm test` 保持仓库默认行为，已有 CE 缓存若被自动使用，无需禁用，也保留到删除副本。没有 CE 源码时由测试原有机制显式跳过 CE 依赖用例，不人为隐藏缓存制造跳过；报告列明实际通过、跳过、todo 与失败结果。改地图生成时另跑 `npm run test:drift`，生成基线/黄金 trace 的变化须先单变量归因，再沿原捕获方法重录并逐叶登记，见 `docs/testing.md` §3；规则以 CE 执行路径为规格，不追求同种子逐骰一致。2b 若改生成，仍须按实际影响追加 drift，不能沿用 2a1 的免跑理由。
+分类与实际验证见[政策清理报告](phase5-test-policy.report.md)。`npm run check:test-dependencies`检查全部发现文件；`npm run check:modules`依次执行边界/导入白名单与同级测试依赖检查。声明在`scripts/test-dependencies.json`，底座/自身无需声明；跨包必须有实际导入、helper、fixture或manifest需求对应的`required`/`optional`，漏报及空泛声明失败。`optional`须使用已有安装发现接口，且不能静态导入对方。缺少`required`包时，Vite插件在导入解析前保留该文件的发现归属、产生一个具名声明组skip；正常树返回原源码，执行全部原断言。文件组粒度及完整矩阵见报告；不得用于正常树内容失败豁免。
+
+保留的27个生成测试文件已并入普通`test`，没有发现器排除；当前注册表仅`test`/`drift`，`ext`是其中扩展归属集合。CE捕获/全局setup与`ce:fetch`/`test:full`/`test:gen`入口已移除，历史主线文档不追改。
+
+冻结新候选后，维护者以Node24、`NODE_OPTIONS=--max-old-space-size=3072`串行执行（长任务经执行根`launch-detached.py`/`run-child`）：
+
+```sh
+npm run check:modules
+node node_modules/vue-tsc/bin/vue-tsc.js -b
+npm run build
+npm test -- --maxWorkers=1 --no-file-parallelism
+npm run test:ext -- --maxWorkers=1 --no-file-parallelism
+npm run test:drift -- --maxWorkers=1 --no-file-parallelism
+node scripts/check-module-composition-smoke.mjs --engine-only --output /private/tmp/UNIQUE-normal128.json
+npm run check:module-removal -- --profile=removal --retain=none --engine-only --maxWorkers=1 --output=/private/tmp/UNIQUE-all-deleted
+```
+
+上述完整批次本步未执行。删除入口默认只有全删1行，真实删除目录、全部剩余ext、静态依赖/边界/types/build、去重生命周期1行及同版本真实缺包存档录像拒绝由脚本执行；`--plan`只查计划。`--release-matrix`仅大版本发布前显式使用，七包时15行，非本次义务。输出路径每次唯一，结果与声明skip分别登记。
 
 ## 阶段
 

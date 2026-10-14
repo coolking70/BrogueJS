@@ -2,7 +2,7 @@
  * Usage: npm run check:module-removal -- --plan
  *        npm run check:module-removal -- --profile=removal --output=/tmp/evidence
  *        npm run check:module-removal -- --profile=full --output=/tmp/full-evidence
- * Default auto profile covers every installed-directory subset; no worktree deletion.
+ * Default removal profile executes only the all-deleted row; --release-matrix plans the 15 release rows.
  * Normal copies use full gates; physically deleted copies omit only complete npm test.
  */
 import { createHash } from 'node:crypto';
@@ -18,7 +18,7 @@ const generated = new Set(['.git', 'node_modules', 'dist', 'coverage', '.vite', 
 function isCopiedPath(path) {
     const parts = slash(path).split('/');
     return !parts.some(part => generated.has(part) || /^tmp-phase/.test(part) || part === 'raw-evidence')
-        && !/\.tsbuildinfo$/.test(path);
+        && !/\.tsbuildinfo$/.test(path) && parts[0]!=='.ce-reference';
 }
 export function isCandidateInput(path) {
     return isCopiedPath(path) && slash(path).split('/')[0] !== '.ce-reference';
@@ -48,15 +48,16 @@ export function removalMatrix(modules) {
     }));
 }
 /** One command source for both planned and executed gates. "full" means complete
- * npm test, never the CE-only npm run test:full command. */
-export function removalGates(row, { maxWorkers = 2, engineOnly = false, output = '<evidence>' } = {}) {
+ * npm test; external reference gates are outside this branch policy. */
+export function removalGates(row, { maxWorkers = 1, engineOnly = false, output = '<evidence>' } = {}) {
     const profile = row.removed.length ? 'removal' : 'full';
     const commands = [
         { id: 'boundaries', command: [process.execPath, 'scripts/check-module-boundaries.mjs'] },
+        { id: 'test-dependencies', command: [process.execPath, 'scripts/check-test-dependencies.mjs'] },
         { id: 'typecheck', command: [process.execPath, 'node_modules/vue-tsc/bin/vue-tsc.js', '-b'] },
         { id: 'build', command: ['npm', 'run', 'build'] },
-        { id: 'extension-tests', command: ['npm', 'run', 'test:ext', '--', `--maxWorkers=${maxWorkers}`] },
-        ...(profile === 'full' ? [{ id: 'complete-npm-test', command: ['npm', 'test', '--', `--maxWorkers=${maxWorkers}`] }] : []),
+        { id: 'extension-tests', command: ['npm', 'run', 'test:ext', '--', `--maxWorkers=${maxWorkers}`, '--no-file-parallelism'] },
+        ...(profile === 'full' ? [{ id: 'complete-npm-test', command: ['npm', 'test', '--', `--maxWorkers=${maxWorkers}`, '--no-file-parallelism'] }] : []),
         { id: 'composition-smoke', command: [process.execPath, 'scripts/check-module-composition-smoke.mjs', '--output', join(output, `${row.id}-smoke.json`),
             ...(engineOnly ? ['--engine-only'] : []), ...(row.removed.length ? ['--removed-modules', row.removed.join(','), '--combinations', 'endpoints'] : [])] },
     ];
@@ -87,9 +88,10 @@ function cleanCaches(root) {
     visit(root);
 }
 function parseArguments(argv) {
-    const options = { plan: false, prepareOnly: false, engineOnly: false, profile: 'auto', maxWorkers: 2, root: repositoryRoot, output: null, retain: null };
+    const options = { plan: false, prepareOnly: false, engineOnly: false, profile: 'removal', releaseMatrix: false, maxWorkers: 1, root: repositoryRoot, output: null, retain: null };
     for (const argument of argv) {
-        if (argument === '--plan' || argument === '--dry-run') options.plan = true;
+        if (argument === '--release-matrix') options.releaseMatrix = true;
+        else if (argument === '--plan' || argument === '--dry-run') options.plan = true;
         else if (argument === '--prepare-only') options.prepareOnly = true;
         else if (argument === '--engine-only') options.engineOnly = true;
         else if (argument.startsWith('--profile=')) {
@@ -117,6 +119,10 @@ export async function checkModuleRemoval(argv = process.argv.slice(2)) {
     const options = parseArguments(argv), root = realpathSync(options.root);
     const discovery = resolveTestSuites(root), modules = discoverModules(root);
     let matrix = removalMatrix(modules);
+    // Current policy: one physical all-deleted row. Explicit retain is useful
+    // for a scoped fixture, full for the normal tree; 15 rows are release-only.
+    if(options.releaseMatrix)matrix=matrix.filter(row=>row.removed.length>0&&(row.retained.length<=1||row.removed.length===1));
+    else if(!options.retain)matrix=matrix.filter(row=>options.profile==='full'?row.removed.length===0:row.retained.length===0);
     if (options.retain) {
         if (new Set(options.retain).size !== options.retain.length || options.retain.some(id => !modules.some(module => module.id === id))) throw new Error(`Invalid retained module set: ${options.retain.join(',')}`);
         matrix = matrix.filter(row => [...row.retained].sort().join(',') === options.retain.join(','));
@@ -128,11 +134,11 @@ export async function checkModuleRemoval(argv = process.argv.slice(2)) {
         return { ...row, profile, plannedGates: commands };
     });
     const fixtureDirectory = join(root, 'src/test/fixtures');
-    const plan = { source: root, requestedProfile: options.profile, foundationFixtureDirectories: existsSync(fixtureDirectory) ? readdirSync(fixtureDirectory, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => `src/test/fixtures/${entry.name}`).sort() : [], preservedCeReference: existsSync(join(root, '.ce-reference')), installedModules: modules.map(module => module.id), matrix,
+    const plan = { source: root, requestedProfile: options.profile, foundationFixtureDirectories: existsSync(fixtureDirectory) ? readdirSync(fixtureDirectory, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => `src/test/fixtures/${entry.name}`).sort() : [], installedModules: modules.map(module => module.id), matrix,
         ownedRoots: modules.map(module => module.root), tests: Object.fromEntries(Object.entries(discovery.suites).map(([name, files]) => [name, files.length])),
         normalTreeFullGate: { required: true, includedInMatrix: matrix.some(row => row.profile === 'full'), status: 'not-run',
             note: 'A full normal-tree gate remains required for this candidate. A removal-only run does not verify or replace it.' },
-        removalPolicy: 'Physical-deletion copies run boundaries, typecheck, build, all remaining extension tests and all-enabled/all-disabled smoke; complete npm test runs only on the normal tree.',
+        removalPolicy: 'Physical-deletion copies run boundaries, typecheck, build, all remaining extension tests and all-disabled smoke when all packages are deleted (one deduplicated lifecycle); complete npm test runs only on the normal tree.',
         smokeScope: 'Physical deletion: remaining modules all-enabled and all-disabled, deduplicated when empty. Normal tree: every installed subset. All use real Game new/play/save/load/replay/seek/continued recording and removed-module input rejection.',
         caveat: modules.length === 1 ? 'Only the currently installed module is assessed. Absent future modules are not claimed as verified.' : 'Matrix covers only currently installed module directories.' };
     if (options.plan) { console.log(JSON.stringify(plan, null, 2)); return plan; }

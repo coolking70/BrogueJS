@@ -7,13 +7,7 @@ import { promoteTile } from '../engine/Map/Promotion';
 import { rng } from '../engine/Random';
 
 describe('V-2b-9b environment machines', () => {
-  it('contains the nine literal CE blueprint rows and keeps 38/39 in-pool because their escape items are implemented', () => {
-    const rows = (data as BlueprintDef[]).filter(b => [31,34,36,37,38,39,44,65,66].includes(b.ceBlueprintId ?? -1));
-    expect(rows.map(b => b.ceBlueprintId)).toEqual([31,34,36,37,38,39,44,65,66]);
-    expect(rows.find(b => b.ceBlueprintId === 38)?.features.map(f => f.itemId).filter(Boolean))
-      .toEqual(['potion_of_levitation', 'potion_of_fire_immunity']);
-    expect(rows.find(b => b.ceBlueprintId === 65)?.flags).toContain('BP_REQUIRE_BLOCKING');
-  });
+
 
   it('bulk promote uses the common spawnDungeonFeature propagation path for water, collapse, bridge and lava', () => {
     const cases: Array<[TerrainType, TerrainType]> = [

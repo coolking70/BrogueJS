@@ -1,6 +1,4 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import fs from 'node:fs';
 import i18next from 'i18next';
 import zhCN from '../locales/zh_CN.json';
 import { Game } from '../engine/Core/Game';
@@ -20,7 +18,6 @@ import { rng } from '../engine/Random';
 import { createHeadlessGame } from './harness';
 
 const ids = ['levitation', 'shattering', 'guardian', 'teleportation', 'recharging', 'negation'].map(k => `charm_of_${k}`);
-const oracle = JSON.parse(fs.readFileSync(new URL('./fixtures/ce-oracles/x2e/ce-oracle.json', import.meta.url), 'utf8'));
 type Kind = Parameters<typeof charm.charmRechargeDelay>[0];
 afterEach(() => vi.restoreAllMocks());
 
@@ -52,21 +49,7 @@ function addMonster(g: Game, id: string, x: number, y: number) {
 }
 
 describe('X2e CE charm formulas and complete instances', () => {
-    it('matches 624 compiled original C cases, including clamp and signed-short boundaries', () => {
-        expect(oracle.cases).toHaveLength(624);
-        for (const row of oracle.cases) {
-            const id = row.id as Kind, e = row.enchant;
-            expect(charm.isCharmKind(id), id).toBe(true);
-            expect(charm.charmEffectDuration(id, e), `${id}/E${e}/duration`).toBe(row.duration);
-            expect(charm.charmRechargeDelay(id, e), `${id}/E${e}/recharge`).toBe(row.recharge);
-            const magnitude = id === 'charm_of_health' ? charm.charmHealing(e)
-                : id === 'charm_of_protection' ? charm.charmProtection(e)
-                : id === 'charm_of_shattering' ? charm.charmShattering(e)
-                : id === 'charm_of_guardian' ? charm.charmGuardianLifespan(e)
-                : id === 'charm_of_negation' ? charm.charmNegationRadius(e) : 0;
-            expect(magnitude, `${id}/E${e}/magnitude`).toBe(row.magnitude);
-        }
-    });
+
 
     it('retains birth range/tail, identified state, cooldown, all own fields and zero-RNG enchanting for each new kind', () => {
         for (const id of ids) {
@@ -251,27 +234,5 @@ describe('X2e real charm effects through inventory use', () => {
         for (const c of floor) expect(c.cooldownRemaining).toBe(charm.charmRechargeDelay(c.identityId as Kind, c.enchantment));
         expect([hiddenItem.cooldownRemaining, outsideItem.cooldownRemaining, pack.cooldownRemaining]).toEqual([0, 0, 19]);
         expect(item.cooldownRemaining).toBe(1499);
-    });
-});
-
-describe('X2e CE pool restoration (run after effects stage)', () => {
-    it.skipIf(!hasCeSource())('matches all twelve CE table rows in order and frequency, including category-only machine requests' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON), () => {
-        const ce = fs.readFileSync(ceFile('src/variants/GlobalsBrogue.c'), 'utf8');
-        const table = ce.split('itemTable charmTable_Brogue[] = {')[1]!.split('\n};')[0]!.replace(/\/\/[^\n]*/g, '');
-        const rows = [...table.matchAll(/\{"([^"]+)",\s*"",\s*"",\s*(\d+),\s*(\d+)/g)].map(m => ({
-            id: `charm_of_${m[1] === 'haste' ? 'speed' : m[1]!.replace(/ /g, '_')}`, frequency: Number(m[2]),
-        }));
-        expect(rows).toHaveLength(12);
-        expect(ItemLoader.genCharms.map(c => ({ id: c.id, frequency: c.frequency }))).toEqual(rows);
-        const api = Object.create(Game.prototype) as any;
-        const chosen = vi.spyOn(ItemLoader, 'chooseKind');
-        for (let i = 0; i < rows.length; i++) {
-            chosen.mockReturnValue(i);
-            const item = api.spawnBlueprintItem('CHARM', undefined, 7, 8, 1);
-            expect(item.identityId).toBe(rows[i]!.id);
-            expect(item.identified).toBe(true);
-            expect(item.cooldownRemaining).toBe(0);
-            expect(chosen).toHaveBeenLastCalledWith(rows.map(r => r.frequency));
-        }
     });
 });

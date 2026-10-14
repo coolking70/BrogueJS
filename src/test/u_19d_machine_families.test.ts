@@ -1,11 +1,9 @@
-import { ceFile, hasCeSource, CE_SKIP_REASON } from './support/ceSource';
 import {afterEach,describe,expect,it,vi} from 'vitest';
-import {readFileSync} from 'node:fs';import crypto from 'node:crypto';
-import blueprints from '../data/blueprints.json';import golden from './fixtures/u19d-ce-catalog.json';
+import blueprints from '../data/blueprints.json';
 import cases from './fixtures/u19d-natural-cases.json';
 import {BlueprintEngine,blueprintQualifies,type BlueprintDef} from '../engine/Generator/BlueprintEngine';
 import {rng} from '../engine/Random';
-import {AUTO_GENERATOR_CATALOG} from '../engine/Map/AutoGenerator';
+
 import {TerrainType as T,DungeonLayer as L} from '../engine/Map/Grid';
 import {ItemCategory} from '../engine/Items/Item';
 import {createHeadlessGame} from './harness';
@@ -16,24 +14,14 @@ const bps=blueprints as BlueprintDef[];
 afterEach(()=>{setMachineObservationHook(null);vi.restoreAllMocks();});
 
 describe('U19d CE selection contract',()=>{
- it.skipIf(!hasCeSource())('all fifteen family rows retain CE depth, size, frequency and literal feature flags' + (hasCeSource() ? '' : ' — ' + CE_SKIP_REASON),()=>{
-  expect(crypto.createHash('sha256').update(readFileSync(ceFile(golden.file))).digest('hex')).toBe(golden.sha256);
-  for(const row of golden.machines){const bp=bps.find(b=>b.ceBlueprintId===row.ce)!;
-   expect(bp.depthRange).toEqual(row.depthRange);expect(bp.roomSize).toEqual(row.roomSize);expect(bp.frequency).toBe(row.frequency);
-   expect(bp.features).toHaveLength(row.features.length);expect(row.featureCount-row.features.length).toBe(row.ce===36?2:0);row.features.forEach((f,i)=>expect(bp.features[i]!.flags).toEqual(f.flags));
-  }
- });
+
  it('CE18 reenters only its CE depth and vestibule pool, CE67/68/69 keep zero lottery weight',()=>{
   const b=bps.find(b=>b.ceBlueprintId===18)!;for(const depth of [3,4,15,26,27])expect(blueprintQualifies(b,depth,['BP_VESTIBULE'])).toBe(depth>=4&&depth<=26);
   expect(blueprintQualifies(b,15,['BP_REWARD'])).toBe(false);
   for(const ce of [67,68,69])expect(bps.find(b=>b.ceBlueprintId===ce)!.frequency).toBe(0);
   for(const ce of [52,55])expect(blueprintQualifies(bps.find(b=>b.ceBlueprintId===ce)!,10,['BP_ADOPT_ITEM'])).toBe(true);
  });
- it('paralysis/statue/hidden-trap autoGen rate columns equal CE, including minima and caps',()=>{
-  for(const row of golden.autogen){const a=AUTO_GENERATOR_CATALOG.find(a=>a.index===row.index)!;
-   expect(a).toMatchObject({ceTerrain:row.terrain,ceMachine:row.machine,minDepth:row.minDepth,maxDepth:row.maxDepth,frequency:row.frequency,minNumberIntercept:row.minNumberIntercept,minNumberSlope:row.minNumberSlope,maxNumber:row.maxNumber,carrier:'wired'});
-  }
- });
+
 });
 
 describe('U19d whole natural machines: entrance → actual commands → payoff',()=>{

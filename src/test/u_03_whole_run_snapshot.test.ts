@@ -220,7 +220,7 @@ describe('U03 whole-run persistence', () => {
         expect((restored as any).meteredItems[0].frequency).not.toBe(saved.run.meteredItems[0]!.frequency);
     });
 
-    it.each(['missing kinds', 'partial map', 'legacy order'] as const)(
+    it.each(['missing kinds', 'partial map', 'current slot order'] as const)(
         'staff flavor reconstruction keeps stable slot identities through durable save/load: %s', mode => {
             const g = fresh(), current = ItemLoader.staffs;
             const added = ['staff_of_obstruction', 'staff_of_discord', 'staff_of_protection'];
@@ -242,7 +242,7 @@ describe('U03 whole-run persistence', () => {
             const expectedIds = new Map(saved.flavors.staffSlots.map((label, slot) => [label, saved.flavors.identities.staffSlots[slot]!]));
             expect(g.loadSnapshot(saved)).toBe(true);
             const before = rng.getState();
-            const source = mode === 'legacy order' ? undefined : mode === 'partial map'
+            const source = mode === 'current slot order' ? undefined : mode === 'partial map'
                 ? { staff_of_blinking: saved.staffFlavors.staff_of_blinking! } : saved.staffFlavors;
             ItemLoader.restoreStaffFlavors(source);
             expect(rng.getState()).toEqual(before);
@@ -261,7 +261,7 @@ describe('U03 whole-run persistence', () => {
         }
     );
 
-    it('wand flavor reassignment from legacy order moves stable identities without touching other kinds or RNG', () => {
+    it('current-version wand flavor reassignment from slot order moves stable identities without touching other kinds or RNG', () => {
         const g = fresh(), saved = json(g.toSnapshot());
         expect(g.loadSnapshot(saved)).toBe(true);
         const savedKinds = new Map(saved.flavors.identities.kinds);

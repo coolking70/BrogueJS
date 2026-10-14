@@ -69,6 +69,7 @@ function clearToOpenRoom(game: Game): void {
     game.player.loc.x = 4;
     game.player.loc.y = 5;
     game.player.maxHp = 500;
+    (game as any).updateVision(false);
     game.player.hp = 500;   // 高血量吸收反击伤害，让"挨打次数"可精确断言
     // 同 p4_6：脱甲保证玩家防御为 0，敌人 accuracy=200 必中
     game.player.equippedArmor = null;

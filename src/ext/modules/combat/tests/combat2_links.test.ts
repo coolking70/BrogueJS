@@ -1,3 +1,4 @@
+import { missingPackages, verifyInstalledPackageFallback } from '../../../../test/support/optionalPackageLifecycle';
 import { afterEach, expect, it, vi } from 'vitest';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { captureNatural, digest, type Trace } from './support/combat2Natural';
@@ -9,7 +10,8 @@ import type { Game } from '../../../../engine/Core/Game';
 
 const out = '/tmp/combat2-evidence/links', fixture = 'src/ext/modules/combat/tests/fixtures/combat2-links.json';
 afterEach(() => { vi.restoreAllMocks(); logger.reset(); logger.onDisturb = null; });
-it('C2-NAT optional giants target and public growth skill share a genuine origin and complete persistence', () => {
+it(missingPackages(['combat', 'giants', 'growth']).length ? 'C2-NAT removed link package: remaining-world lifecycle and genuine seven-pack save/replay rejection' : 'C2-NAT optional giants target and public growth skill share a genuine origin and complete persistence', () => {
+    if (missingPackages(['combat', 'giants', 'growth']).length) { verifyInstalledPackageFallback(['combat', 'giants', 'growth']); return; }
     mkdirSync(out, { recursive: true });
     if (process.env.COMBAT2_CAPTURE_LINK === '1') {
         const summaries: unknown[] = [];

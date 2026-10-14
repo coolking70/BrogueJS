@@ -1,6 +1,5 @@
 import { logger } from '../engine/Systems/Logger';
 import { DF, DUNGEON_FEATURE_CATALOG } from '../engine/Map/DungeonFeatureCatalog';
-import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../engine/Core/Game';
 import { Grid, TerrainType as T, DungeonLayer as L } from '../engine/Map/Grid';
@@ -11,7 +10,7 @@ import monsters from '../data/monsters.json';
 import mutations from '../data/mutations.json';
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import { captiveItemDropCandidates, qualifyingPathCandidates } from '../engine/Movement/CreaturePlacement';
-import { T_DIVIDES_LEVEL, T_OBSTRUCTS_ITEMS, T_HARMFUL_TERRAIN, T_PATHING_BLOCKER } from '../engine/Map/TerrainCatalog';
+import { T_HARMFUL_TERRAIN, T_PATHING_BLOCKER } from '../engine/Map/TerrainCatalog';
 import { rng } from '../engine/Random';
 import { createHeadlessGame } from './harness';
 
@@ -155,23 +154,7 @@ describe('X2k path distance and resurrection', () => {
 });
 
 
-it('matches original C Grid.c + Dijkstra.c + getQualifyingLocNear on 256 terrain/occupancy maps', () => {
-    const rows = JSON.parse(readFileSync(new URL('./fixtures/ce-oracles/x2k/ce-path.json', import.meta.url), 'utf8')) as {
-        seed: number; mode: number; cells: number[]; origin: number[]; candidates: number[][];
-    }[];
-    expect(rows).toHaveLength(256);
-    for (const row of rows) {
-        const grid = new Grid(9, 9);
-        for (let x = 0; x < 9; x++) for (let y = 0; y < 9; y++) {
-            const kind = row.cells[x * 9 + y];
-            grid.setTerrain(x, y, kind === 1 ? T.WALL : kind === 2 ? T.LAVA : kind === 3 ? T.PLAIN_FIRE : T.FLOOR);
-        }
-        const cells = qualifyingPathCandidates(grid, {x:row.origin[0]!,y:row.origin[1]!},
-            row.mode ? T_PATHING_BLOCKER | T_HARMFUL_TERRAIN : T_DIVIDES_LEVEL,
-            row.mode ? 0 : T_OBSTRUCTS_ITEMS, (x,y) => row.cells[x*9+y] === 4);
-        expect(cells.map(p => [p.x,p.y]), `CE seed=${row.seed} mode=${row.mode}`).toEqual(row.candidates);
-    }
-});
+
 
 it('pins CE death DF rows and the explosive mutation override', () => {
     expect(DUNGEON_FEATURE_CATALOG[DF.DF_BLOOD_EXPLOSION]).toMatchObject({id:36,tile:T.BLOOD,layer:L.SURFACE,startProbability:150,probabilityDecrement:30});

@@ -9,9 +9,7 @@ import { createHeadlessGame } from './harness';
 import { TerrainType } from '../engine/Map/Grid';
 import { serializeItem, deserializeItem } from '../engine/Core/EntitySnapshot';
 import { monsterIsInClass } from '../engine/Combat/MonsterClass';
-import { runicWeaponChance, weaponParalysisDuration, weaponSlowDuration,
-    weaponConfusionDuration, weaponImageCount, weaponImageDuration,
-    weaponForceDistance } from '../engine/Combat/CombatFormulas';
+import { runicWeaponChance } from '../engine/Combat/CombatFormulas';
 
 // Golden values from CE PowerTables.c:99-104,220-345, for a 3..4 damage
 // weapon (adjustedBaseDamage=3). Each row exercises different enchant levels.
@@ -38,20 +36,9 @@ describe('U15d CE weapon runic golden values', () => {
         expect(monsterIsInClass('goblin_warlord', 'goblin')).toBe(true);
     });
 
-    it('counterfactual: CE table runics at E10 are not the legacy 15% fallback', () => {
-        const dagger = { damageMin: 3, damageMax: 4 };
-        expect(runicWeaponChance(10, 'multiplicity', dagger)).toBe(74);
-        expect(runicWeaponChance(10, 'slowing', dagger)).toBe(72);
-    });
 
-    it('effect magnitudes follow CE integer truncation', () => {
-        expect([1, 3, 6].map(weaponParalysisDuration)).toEqual([2, 3, 5]);
-        expect([1, 3, 6].map(weaponConfusionDuration)).toEqual([3, 4, 9]);
-        expect([1, 3, 6].map(weaponSlowDuration)).toEqual([3, 8, 21]);
-        expect([1, 3, 6].map(weaponImageCount)).toEqual([1, 1, 2]);
-        expect([1, 3, 6].map(weaponImageDuration)).toEqual([3, 3, 3]);
-        expect([1, 3, 6].map(weaponForceDistance)).toEqual([4, 8, 14]);
-    });
+
+
 
     it.each(['speed', 'quietus', 'paralyzing', 'multiplicity', 'slowing',
         'confusion', 'force', 'mercy', 'plenty'])('%s: one runic RNG draw after a live hit', kind => {

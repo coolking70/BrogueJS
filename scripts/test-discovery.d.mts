@@ -1,4 +1,4 @@
-export type TestSuiteName = 'test' | 'gen' | 'drift';
+export type TestSuiteName = 'test' | 'drift';
 export interface DiscoveredModule { id: string; root: string; manifest: string }
 export interface TestDiscovery {
     root: string;

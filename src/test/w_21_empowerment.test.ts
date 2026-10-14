@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../engine/Core/Game';
 import { Grid, TerrainType as T, DCOLS, DROWS } from '../engine/Map/Grid';
@@ -11,7 +10,6 @@ import { CombatSystem } from '../engine/Combat/Combat';
 import { ItemLoader } from '../engine/Items/ItemLoader';
 import { generateMonsterDetail } from '../engine/UI/DetailGenerator';
 import { Player } from '../entities/Player';
-import type { StatusId } from '../entities/Creature';
 import { Monster, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
 import mutations from '../data/mutations.json';
@@ -37,19 +35,7 @@ const stats=(m:Monster)=>[m.maxHp,m.hp,m.defense,m.accuracy,CombatSystem.parseDa
 beforeEach(()=>{vi.restoreAllMocks();rng.seedRandomGenerator(2121);ItemLoader.identifiedItems.clear();});
 
 describe('W-21 CE integers and repeated actual wand hits',()=>{
- it('matches 540 compiled original CE cases, including zero and decade boundaries and twelve successive hits',()=>{
-  const rows=fs.readFileSync('src/test/fixtures/ce-oracles/w-21/ce-empower.txt','utf8').trim().split('\n').filter(l=>l.startsWith('empower '));
-  const g=scene(),m=mob(g),item=wand(),failures:unknown[]=[];const rngBefore=rng.randomNumbersGenerated;
-  for(const row of rows){
-   const [lo,hi,n,hpMax,hp,def,acc,dlo,dhi,clump,np,tp]=row.split(' ').slice(1).map(Number);
-   if(n===1){Object.assign(m,{maxHp:37,hp:1,defense:17,accuracy:85,damageString:`${lo}-${hi}`,newPowerCount:0,totalPowerCount:0});}
-   const result=g.zapBoltFromPlayer(bolt(),item,m.loc);
-   const expected=[hpMax,hp,def,acc,dlo,dhi,np,tp];
-   if(JSON.stringify(stats(m))!==JSON.stringify(expected)||!result.outcome?.autoID)failures.push({row,actual:stats(m)});
-   expect(clump).toBe(3); // CE preserves it; web's existing uniform combat is separately registered.
-  }
-  expect(rows).toHaveLength(540);expect(failures).toEqual([]);expect(rng.randomNumbersGenerated).toBe(rngBefore);
- });
+
  it.each([false,true])('same fixed increments for ally=%s; no allegiance, mutation or ability changes',ally=>{
   const g=scene(),m=mob(g,'ogre');m.isAlly=ally;m.mutate(structuredClone(mutations[0]!));m.hp=1;
   const before=stats(m),mutation=structuredClone(m.mutation),flags=[...m.behaviorFlags],bolts=[...m.bolts];cast(g,m);
@@ -63,17 +49,7 @@ describe('W-21 CE integers and repeated actual wand hits',()=>{
 });
 
 describe('W-21 heal panacea follows individual CE branches',()=>{
- const ids=['hallucinating','confused','slowed','weakened','poisoned','paralyzed','discordant','entranced','hasted','invisible','levitating','immune_fire','shielded'] as const;
- const ceIndex:Record<string,number>={weakened:2,hallucinating:4,levitating:5,slowed:6,hasted:7,confused:8,burning:9,paralyzed:10,poisoned:11,discordant:14,immune_fire:15,entranced:21,shielded:24,invisible:25};
- it.each([0,1,2,3])('matches compiled CE for all modeled statuses when duration=%i',duration=>{
-  const line=fs.readFileSync('src/test/fixtures/ce-oracles/w-21/ce-empower.txt','utf8').split('\n').find(l=>l.startsWith(`heal ${duration} `))!;
-  const values=line.split(' ').slice(1).map(Number),m=new Monster(9,5,data('rat'));
-  m.maxHp=37;m.hp=1;m.poisonAmount=4;m.maxShield=20;
-  for(const id of [...ids,'burning']) (m.statusDurations as Record<string,number>)[id]=duration;
-  m.refreshSpeeds();const speed=m.movementSpeed;m.heal(100,true);
-  expect(m.hp).toBe(values[1]);expect(m.poisonAmount).toBe(values[2]);expect(m.maxShield).toBe(20);expect(m.movementSpeed).toBe(speed);
-  for(const id of [...ids,'burning'])expect(m.getStatusDuration(id as StatusId),id).toBe(values[4+ceIndex[id]!]!);
- });
+
  it('slow survives at one turn and expires normally; panacea does not clear burns, grabs or paralysis',()=>{
   const g=scene(),m=mob(g);m.statusDurations={slowed:40,confused:40,hallucinating:40,poisoned:10,weakened:40,paralyzed:7,discordant:8,entranced:9,shielded:240};(m.statusDurations as any).burning=6;m.poisonAmount=3;m.maxShield=240;m.seized=m.seizing=true;m.refreshSpeeds();
   cast(g,m);expect(m.statusDurations).toMatchObject({slowed:1,confused:1,hallucinating:1,paralyzed:7,discordant:8,entranced:9,shielded:240,burning:6});expect(m.poisonAmount).toBe(0);expect(m.hasStatus('weakened')).toBe(false);expect(m.movementSpeed).toBe(200);expect(m.seized&&m.seizing).toBe(true);

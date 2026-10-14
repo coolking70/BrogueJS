@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../engine/Core/Game';
 import { Grid, TerrainType, DCOLS, DROWS } from '../engine/Map/Grid';
 import { EnvironmentManager } from '../engine/Environment/Gas';
+import { FOVSys } from '../engine/Lighting/FOV';
+import { LightMap } from '../engine/Lighting/LightMap';
 import { Player } from '../entities/Player';
 import { Monster, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
@@ -28,6 +30,10 @@ function scene() {
         game.grid.setTerrain(x, y, TerrainType.FLOOR);
         game.grid.getCell(x, y)!.isVisible = true;
     }
+    game.fov = new FOVSys(game.grid); game.lightMap = new LightMap(game.grid);
+    // This effect fixture freezes vision; back its visible cells with real light.
+    for (let x = 0; x < DCOLS; x++) for (let y = 0; y < DROWS; y++)
+        Object.assign(game.lightMap.lightAt(x, y)!, { r: 100, g: 100, b: 100 });
     game.player = new Player(4, 5);
     game.monsters = [];
     game.items = [];

@@ -17,7 +17,7 @@ function fixture() {
         mkdirSync(dirname(join(root, path)), { recursive: true });
         writeFileSync(join(root, path), content);
     };
-    const manifest = (test: string[]) => JSON.stringify({ test, gen: [], drift: [] });
+    const manifest = (test: string[]) => JSON.stringify({ test, drift: [] });
     write('scripts/test-suites.json', manifest(['src/test/ext_foundation_probe.test.ts']));
     write('src/test/ext_foundation_probe.test.ts', 'export {};');
     for (const id of ['alpha', 'beta']) {
@@ -82,10 +82,10 @@ describe('normal-tree full and physical-removal gate profiles', () => {
             const gates = removalGates(row, { maxWorkers: 2, engineOnly: true, output: '/tmp/evidence' });
             const ids = gates.commands.map(gate => gate.id);
             expect(gates.profile).toBe(row.removed.length ? 'removal' : 'full');
-            expect(ids).toEqual(['boundaries', 'typecheck', 'build', 'extension-tests',
+            expect(ids).toEqual(['boundaries', 'test-dependencies', 'typecheck', 'build', 'extension-tests',
                 ...(row.removed.length ? [] : ['complete-npm-test']), 'composition-smoke']);
             expect(gates.commands.find(gate => gate.id === 'extension-tests')?.command)
-                .toEqual(['npm', 'run', 'test:ext', '--', '--maxWorkers=2']);
+                .toEqual(['npm', 'run', 'test:ext', '--', '--maxWorkers=2', '--no-file-parallelism']);
             expect(gates.commands.filter(gate => gate.command[0] === 'npm' && gate.command[1] === 'test'))
                 .toHaveLength(row.removed.length ? 0 : 1);
             expect(gates.commands.find(gate => gate.id === 'composition-smoke')?.command)
@@ -95,13 +95,13 @@ describe('normal-tree full and physical-removal gate profiles', () => {
         }
     });
 
-    it('plans the complete matrix by default and explicitly records the normal-tree full obligation', async () => {
+    it('plans the single all-deleted row by default and explicitly records the normal-tree full obligation', async () => {
         const f = fixture();
         vi.spyOn(console, 'log').mockImplementation(() => {});
         const plan = await checkModuleRemoval([`--root=${f.root}`, '--plan']);
-        expect(plan.requestedProfile).toBe('auto');
-        expect(plan.matrix.map(row => row.profile)).toEqual(['full', 'removal', 'removal', 'removal']);
-        expect(plan.normalTreeFullGate).toMatchObject({ required: true, includedInMatrix: true, status: 'not-run' });
+        expect(plan.requestedProfile).toBe('removal');
+        expect(plan.matrix.map(row => row.profile)).toEqual(['removal']);
+        expect(plan.normalTreeFullGate).toMatchObject({ required: true, includedInMatrix: false, status: 'not-run' });
         for (const row of plan.matrix) {
             expect(row.plannedGates).toEqual(removalGates(row).commands);
         }
@@ -111,7 +111,7 @@ describe('normal-tree full and physical-removal gate profiles', () => {
         const f = fixture();
         vi.spyOn(console, 'log').mockImplementation(() => {});
         const removal = await checkModuleRemoval([`--root=${f.root}`, '--profile=removal', '--plan']);
-        expect(removal.matrix).toHaveLength(3);
+        expect(removal.matrix).toHaveLength(1);
         expect(removal.matrix.every(row => row.removed.length > 0 && row.profile === 'removal')).toBe(true);
         expect(removal.normalTreeFullGate).toMatchObject({ required: true, includedInMatrix: false, status: 'not-run' });
         const full = await checkModuleRemoval([`--root=${f.root}`, '--profile=full', '--plan']);
@@ -125,9 +125,8 @@ describe('normal-tree full and physical-removal gate profiles', () => {
             .rejects.toThrow('Invalid gate profile');
     });
 
-    it('prepares real deletions with exact test ownership, preserved CE sources and fresh caches without claiming execution', async () => {
+    it('prepares real deletions with exact test ownership, strict ownership and fresh caches without claiming execution', async () => {
         const f = fixture(), output = directory();
-        f.write('.ce-reference/source.txt', 'existing CE reference');
         f.write('dist/old.js', 'old build');
         f.write('node_modules/.vite/old.json', '{}');
         f.write('node_modules/.tmp/old.tsbuildinfo', 'old types');
@@ -151,7 +150,6 @@ describe('normal-tree full and physical-removal gate profiles', () => {
         expect(existsSync(join(f.root, removedRoot))).toBe(true);
         expect(existsSync(join(copy, removedRoot))).toBe(false);
         expect(existsSync(join(copy, retainedRoot))).toBe(true);
-        expect(readFileSync(join(copy, '.ce-reference/source.txt'), 'utf8')).toBe('existing CE reference');
         for (const cache of ['dist', 'node_modules/.vite', 'node_modules/.tmp', 'tsconfig.tsbuildinfo']) {
             expect(existsSync(join(copy, cache)), cache).toBe(false);
         }
