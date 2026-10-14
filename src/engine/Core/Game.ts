@@ -113,7 +113,7 @@ import i18next from 'i18next';
 
 import { EnvironmentManager, GasType } from '../Environment/Gas';
 import { FOVSys } from '../Lighting/FOV';
-import { LightMap } from '../Lighting/LightMap';
+import { LightMap, type PaintLightParams } from '../Lighting/LightMap';
 import {
     LIGHT_CATALOG,
     LightKind,
@@ -2495,6 +2495,8 @@ export class Game {
         const lm = this.lightMap;
         lm.clearLighting(); // Light.c:216-226：清零 + 全图 IS_IN_SHADOW
 
+        const lights: PaintLightParams[] = [];
+
         // 1. 发光地形（Light.c:228-240：逐层扫描 tileCatalog.glowLight）
         const creatureBlocker = (x: number, y: number) => this.hasCreatureAtForLight(x, y);
         for (let x = 0; x < DCOLS; x++) {
@@ -2505,7 +2507,7 @@ export class Game {
                     if (t === TerrainType.NOTHING) continue;
                     const glow = TERRAIN_FLAGS[t]?.glowLight ?? LightKind.NO_LIGHT;
                     if (glow !== LightKind.NO_LIGHT) {
-                        lm.paintLight({
+                        lights.push({
                             light: LIGHT_CATALOG[glow]!,
                             x, y,
                             hasCreatureAt: creatureBlocker,
@@ -2519,12 +2521,12 @@ export class Game {
         for (const m of this.monsters) {
             if (m.hp <= 0) continue;
             const kind = m.markedForSacrifice ? LightKind.SACRIFICE_MARK_LIGHT : MONSTER_INTRINSIC_LIGHT[m.typeId];
-            if (kind !== undefined) lm.paintLight({
+            if (kind !== undefined) lights.push({
                 light: LIGHT_CATALOG[kind]!, x: m.loc.x, y: m.loc.y,
                 hasCreatureAt: creatureBlocker,
             });
             const mutationKind = m.mutation && MUTATION_LIGHT[m.mutation.id];
-            if (mutationKind !== undefined) lm.paintLight({
+            if (mutationKind !== undefined) lights.push({
                 light: LIGHT_CATALOG[mutationKind]!, x: m.loc.x, y: m.loc.y,
                 hasCreatureAt: creatureBlocker,
             });
@@ -2536,7 +2538,7 @@ export class Game {
         const paintBurning = (entity: Player | Monster, fiery: boolean): void => {
             if (fiery) return;
             if (this.burningDuration(entity) > 0) {
-                lm.paintLight({
+                lights.push({
                     light: burningLight,
                     x: entity.loc.x, y: entity.loc.y,
                     hasCreatureAt: creatureBlocker,
@@ -2549,12 +2551,14 @@ export class Game {
         }
 
         // 4. 矿灯（Light.c:269：isMinersLight=true → 不驱散阴影、不圆截断）
-        lm.paintLight({
+        lights.push({
             light: this.minersLightDef(),
             x: this.player.loc.x, y: this.player.loc.y,
             isMinersLight: true,
             maintainShadows: true,
         });
+
+        lm.paintLights(lights);
 
         this.updateFieldOfViewDisplay((x, y) => lm.lightSumAt(x, y), remember);
 

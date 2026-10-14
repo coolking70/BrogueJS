@@ -74,7 +74,8 @@ export class LightMap {
     /** Base light stays deterministic. Only the renderer requests color/radius noise. */
     public dance(): void {
         const visual = new LightMap(this.grid);
-        for (const source of renderSources.get(this) ?? []) visual.paintLight({ ...source, light: sampleLight(source.light, 100000, displayRandom(this.grid)) });
+        visual.paintLights((renderSources.get(this) ?? []).map(source =>
+            ({ ...source, light: sampleLight(source.light, 100000, displayRandom(this.grid)) })));
         this.visualMap = visual;
     }
 
@@ -177,6 +178,42 @@ export class LightMap {
         let sources = renderSources.get(this);
         if (!sources) renderSources.set(this, sources = []);
         sources.push(params);
+        this.applyLight(params, params.hasCreatureAt);
+    }
+
+    /** A synchronous lighting pass observes one stable world. Memoize the pure
+     * occupancy predicates across its overlapping lights, not across turns.
+     * Keep ORIGINAL callbacks for dance(): creatures can move before the next
+     * display frame. Every call (including each dance) gets fresh bounded tables.
+     * Individual paintLight calls retain their uncached callback semantics. */
+    public paintLights(params: readonly PaintLightParams[]): void {
+        const queries = new Map<NonNullable<PaintLightParams['hasCreatureAt']>, (x: number, y: number) => boolean>();
+        let sources = renderSources.get(this);
+        if (!sources) renderSources.set(this, sources = []);
+        for (const source of params) {
+            let query = source.hasCreatureAt;
+            if (query && !source.light.passThroughCreatures) {
+                let cached = queries.get(query);
+                if (!cached) {
+                    const original = query, height = this.grid.height;
+                    const cells = new Uint8Array(this.grid.width * height);
+                    cached = (x, y) => {
+                        // castLightMask checks bounds before querying occupancy.
+                        const index = x * height + y;
+                        let value = cells[index]!;
+                        if (value === 0) cells[index] = value = original(x, y) ? 1 : 2;
+                        return value === 1;
+                    };
+                    queries.set(query, cached);
+                }
+                query = cached;
+            }
+            sources.push(source);
+            this.applyLight(source, query);
+        }
+    }
+
+    private applyLight(params: PaintLightParams, hasCreatureAt?: (x: number, y: number) => boolean): void {
         const { light, x, y } = params;
         const isMinersLight = params.isMinersLight ?? false;
         const maintainShadows = params.maintainShadows ?? false;
@@ -212,7 +249,7 @@ export class LightMap {
         const mask = this.buildLightMask(
             x, y, radiusRounded,
             !isMinersLight,
-            light.passThroughCreatures ? undefined : params.hasCreatureAt
+            light.passThroughCreatures ? undefined : hasCreatureAt
         );
 
         // Light.c:97-114：按衰减给掩码内格子加光。
