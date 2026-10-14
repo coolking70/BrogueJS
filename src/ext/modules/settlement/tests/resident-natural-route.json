@@ -1,15 +1,15 @@
 {
   "seed": 28,
-  "actorId": 24,
+  "actorId": 25,
   "events": 956,
-  "provenance": "self-route-astra sole fresh normal seed28 exact956 input replay; core/day-food per formal6.3, old starvation/refund semantics migrated to controlled test",
+  "provenance": "self-route-astra sole fresh normal seed28 exact956 input replay; core/day-food per formal6.3, old starvation/refund semantics migrated to controlled test; b820733 two-ration recapture: same public actions/data presence/decisions and checkpoint timing; historical hashes above/below identify the original capture, not this recapture",
   "fixedCaptureSourceManifestSha256": "5f93299d42b510641c2f67b3550aee547602eb482a6fd1ba92ac2d9481c8cba7",
   "originalRecordingSha256": "cb4c5db0bbe8484622ad128d73bef1ef21811bef9392862cec131971ec257710",
   "continuedRecordingSha256": "25a618817b07960fbbe7b0eeb7eaab53ccb0a3c801a0327a358602a21ca66f6a",
   "uiOperationGuideSha256": "d5625af0f5249356b35392bef68b568a8f0898c31dc213d6cbd9500da4668080",
-  "campId": 45,
+  "campId": 46,
   "bedId": 27,
-  "cropId": 53,
+  "cropId": 55,
   "sourceId": 30,
   "destinationId": 36,
   "milestones": {
@@ -40,7 +40,7 @@
       "events": 0,
       "depth": 1,
       "tick": 0,
-      "digest": "aa4681a80d91e22976ec96e12542670705d6eb777914e55711525f26e718d613",
+      "digest": "7c5893751c7e53f37f711b485afdcfee1e8fd53afce4e9fccdf0811e625a1936",
       "actorLocation": {
         "x": 37,
         "y": 25
@@ -66,7 +66,7 @@
       "events": 387,
       "depth": 1,
       "tick": 39900,
-      "digest": "38e9c15b8516c050f891dbb6a620ab378825b854ae25ca8437df6bdd916c52a1",
+      "digest": "0ffe35d9c61cefa81276b58995eda7222953e7b73ed5bcfe4621e33827b01dab",
       "actorLocation": {
         "x": 32,
         "y": 20
@@ -79,7 +79,7 @@
       "events": 388,
       "depth": 1,
       "tick": 40000,
-      "digest": "1a000a1ef614615f7086efd99b1987814dc924a4a6c7a7f4926bacad000a746f",
+      "digest": "f07d8604adf599561aa507f25c0a9e147650c8b187944f9011f23f41e3493c03",
       "actorLocation": {
         "x": 31,
         "y": 20
@@ -92,7 +92,7 @@
       "events": 399,
       "depth": 1,
       "tick": 41000,
-      "digest": "eaa7f25c5092f63b2db98ea015daf25acc95f92555cbb22c7f62a914e8eb1552",
+      "digest": "9b8150f2fedc931ee32d5cd375c6d7655f1ad68a1464a0192bae4d9dfbb3509d",
       "actorLocation": {
         "x": 29,
         "y": 23
@@ -105,7 +105,7 @@
       "events": 430,
       "depth": 1,
       "tick": 44100,
-      "digest": "c880a7a13fe4874e253604156edc58743d51b6bc249b0d214895056fccf7602b",
+      "digest": "3962091a8ba75181983d98a5ad6101567dfe125cebdf1c51bcf0d1cd0b768e9e",
       "actorLocation": {
         "x": 25,
         "y": 20
@@ -118,7 +118,7 @@
       "events": 444,
       "depth": 1,
       "tick": 45700,
-      "digest": "05586090bec343c6fc043c388b3922c41a0999ed710d0483a39dba6eabd87500",
+      "digest": "5d4236200dc7509fd0c3d6845863a17b8fd63e5444096c117b56bf157dedcc84",
       "actorLocation": {
         "x": 29,
         "y": 23
@@ -131,7 +131,7 @@
       "events": 456,
       "depth": 1,
       "tick": 46800,
-      "digest": "2ac7fb02a90da965a0c4e6582a8292c703cc832bd54a8d3e85a5101a1d16cb4a",
+      "digest": "1fb577322a7fdf21f423b581bbac775d98ab33c7315c13b2583d6638d330ba09",
       "actorLocation": {
         "x": 29,
         "y": 23
@@ -144,7 +144,7 @@
       "events": 628,
       "depth": 1,
       "tick": 64000,
-      "digest": "a4f45b06fc249f42856fb86f40000ac5c03664591197a29764bfeca042cb92b6",
+      "digest": "1bcfd8a6e6f462d0df99d3e2c4819f79a212dbd28342a6fd9b38cf927b13476a",
       "actorLocation": {
         "x": 38,
         "y": 18
@@ -157,7 +157,7 @@
       "events": 654,
       "depth": 1,
       "tick": 66600,
-      "digest": "adb2b02724ae515175707f1a5457bfa6fe14d39c9f14933d1e14864e520a483c",
+      "digest": "2bdd774db7554f72f2522dd143f88af2479ff8772269c449a9ea6dcd8fa9a681",
       "actorLocation": {
         "x": 38,
         "y": 19
@@ -170,7 +170,7 @@
       "events": 785,
       "depth": 1,
       "tick": 79300,
-      "digest": "1a58b4c5ffcc742581425c20aa4e91bdb2d195bea5042f7e09305071915d3652",
+      "digest": "1eb66c91f3a18705fb65e0c83977d4d69fb004eb45d72c9ecc7c53686386cd5a",
       "actorLocation": {
         "x": 25,
         "y": 20
@@ -183,7 +183,7 @@
       "events": 786,
       "depth": 1,
       "tick": 79400,
-      "digest": "9988b0a5fad7b5c6ec23099831ea4b8cda16074ba9fd87b021628dced18014ca",
+      "digest": "2da3e9e92ad4c14d306209e8f0b1ce44191c071bd66b6a50f915b561726d0931",
       "actorLocation": {
         "x": 26,
         "y": 20
@@ -196,7 +196,7 @@
       "events": 787,
       "depth": 1,
       "tick": 79500,
-      "digest": "38257f2ed354cc96c6d08fe430d70735462ccf43f02657f6806d232a3f94743e",
+      "digest": "8a52751cb8d9ae651c3f949229ede7d6f1d0ebd990c0dbc05a00870da313d64f",
       "actorLocation": {
         "x": 27,
         "y": 20
@@ -209,7 +209,7 @@
       "events": 789,
       "depth": 1,
       "tick": 79700,
-      "digest": "5280bf8c215b0a3bf62f49122edbcfbb10c4fd7cb43b7c248eafae9649c15d2f",
+      "digest": "228a2a754a3cad8bce083a911205aca64e018d0c4fd3e83cd96d55017fd0a16a",
       "actorLocation": {
         "x": 28,
         "y": 20
@@ -222,7 +222,7 @@
       "events": 808,
       "depth": 1,
       "tick": 81500,
-      "digest": "60ee84c7a69ed77c9b846f9ec2cf95eadb38203fb4f1a039bbb843e0576f22bd",
+      "digest": "e3aacc6a9962fa5f6a9ae19527315870506108178b919221b8cb1d6a4b29c3a9",
       "actorLocation": {
         "x": 29,
         "y": 23
@@ -235,7 +235,7 @@
       "events": 873,
       "depth": 1,
       "tick": 88000,
-      "digest": "128ce3391c7f5a8ef20440f423fa4753270b516491b7028425dfba1fc22f7de5",
+      "digest": "ec51735d0ba5b1d284ccaab2f47a6f72aa2017795eebda8b04dfdc1ee07165b8",
       "actorLocation": {
         "x": 29,
         "y": 22
@@ -248,7 +248,7 @@
       "events": 874,
       "depth": 1,
       "tick": 88100,
-      "digest": "7e17e2cd2deecbe4b0902bdd6b2c306ad6d8a30cd33fe67852acebf1d8ea634a",
+      "digest": "31475ed87e5f702af129bd77e8ee270cb701e4c0db5acc218c3a7cc913886373",
       "actorLocation": {
         "x": 29,
         "y": 22
@@ -261,7 +261,7 @@
       "events": 876,
       "depth": 1,
       "tick": 88200,
-      "digest": "24514a826ce07b650ef7bb7f9e38c86a45d82a74a98b281f858e4155c7b60ab2",
+      "digest": "59c1bbc184fd9b0e28b2537703857f2442e9da3c73609c999930acc4f6f6c4f7",
       "actorLocation": {
         "x": 29,
         "y": 22
@@ -274,7 +274,7 @@
       "events": 908,
       "depth": 1,
       "tick": 91300,
-      "digest": "28e03f5e08893191dd6598d86c116ab4d9d92caff398a0ed741f7938e8173a0c",
+      "digest": "b0659839c71ea8b35a4747da7fbcec551d14813f0b8b5e22390b68136e4c510b",
       "actorLocation": {
         "x": 34,
         "y": 4
@@ -287,7 +287,7 @@
       "events": 910,
       "depth": 2,
       "tick": 91400,
-      "digest": "6551936bde455e2d23ef745280e33ab52821d1fed2332854a5f7e07ac4498ccb",
+      "digest": "6accd30f71a0ca6836babedbf8c69489e0e5200f084eb7393eb33d13129131d6",
       "actorLocation": {
         "x": 33,
         "y": 3
@@ -300,7 +300,7 @@
       "events": 913,
       "depth": 2,
       "tick": 91700,
-      "digest": "682d5d224880641cbfd031b974af0570592f77bfc645db21bf3c9b217eef61df",
+      "digest": "89aac546872a77bdce17fe1e91235ddf64f92ec559a6c55de5a7f8d5ee1d1a05",
       "actorLocation": {
         "x": 35,
         "y": 4
@@ -313,7 +313,7 @@
       "events": 914,
       "depth": 2,
       "tick": 91800,
-      "digest": "0e934da33a12677216bc30e42915e58f847f671e03f473bd4a8bf1de935caf91",
+      "digest": "8a6ecd87bfd118e6acd19802468d7b50765043bbf66deb6d84fae0dd4fbab358",
       "actorLocation": {
         "x": 35,
         "y": 4
@@ -326,7 +326,7 @@
       "events": 916,
       "depth": 2,
       "tick": 91900,
-      "digest": "600d8e480c749c0408425c24341f399d1b7e16465a953586120ceeb3e1fa63f3",
+      "digest": "9248251b47ffff0fce8becface05b0d8b8f15b186297b9314892f8b8ce64f91d",
       "actorLocation": {
         "x": 34,
         "y": 4
@@ -339,7 +339,7 @@
       "events": 917,
       "depth": 1,
       "tick": 91900,
-      "digest": "23ba6753dcc29902f83983039947255ab43e90a3d4813df8a39ff107143413e9",
+      "digest": "f96cdc8b1d1ff473f7d78b4c0d068242b092109f1b89efa929440e8c4680b2f9",
       "actorLocation": {
         "x": 34,
         "y": 4
@@ -352,7 +352,7 @@
       "events": 956,
       "depth": 1,
       "tick": 95500,
-      "digest": "859eb5de9a880cae6562a22df3e7e5716fd6c3f0a83a930715dbc602cfea82c5",
+      "digest": "0c150aa539ef8e27aeae9c516d2a94aef4cbb5bcf986b9b504c68c4a85ad3293",
       "actorLocation": {
         "x": 31,
         "y": 23
@@ -519,7 +519,7 @@
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":0,\"inventoryStamp\":\"788d99f977322f29\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":0,\"inventoryStamp\":\"0f548b205935f23c\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "move",
@@ -570,115 +570,115 @@
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":2,\"inventoryStamp\":\"788d99f977322f29\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":2,\"inventoryStamp\":\"0f548b205935f23c\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":4,\"inventoryStamp\":\"66fa67aa46c358e1\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":4,\"inventoryStamp\":\"a184e5715ba57080\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":6,\"inventoryStamp\":\"9727449ccb3f372b\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":6,\"inventoryStamp\":\"e3c2cff5b1c851d1\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":8,\"inventoryStamp\":\"0b2ed9a65bd9e8fd\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":8,\"inventoryStamp\":\"e0b4be63aa2cc617\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":10,\"inventoryStamp\":\"33144196427b83c3\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":10,\"inventoryStamp\":\"1be6500e0bfbc0e9\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":12,\"inventoryStamp\":\"a4836d554278e49a\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":12,\"inventoryStamp\":\"7006e57562dde80c\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":14,\"inventoryStamp\":\"8f02e472050c7bc4\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":14,\"inventoryStamp\":\"4097e14744c4d551\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":16,\"inventoryStamp\":\"cd25986e41c92664\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":16,\"inventoryStamp\":\"c6a9f3647ecc2dd8\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":18,\"inventoryStamp\":\"7979e1de3b86290a\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":18,\"inventoryStamp\":\"f0d2ba61fa3ab61b\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":20,\"inventoryStamp\":\"486803c17cae1a06\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":20,\"inventoryStamp\":\"9d651824a65fb660\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":22,\"inventoryStamp\":\"64c97d065a4e102a\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":22,\"inventoryStamp\":\"c122cba671541d98\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":24,\"inventoryStamp\":\"a5b4141e9135fcf9\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":24,\"inventoryStamp\":\"41d9e30b50d8e0c7\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":26,\"inventoryStamp\":\"ba5b2e46e4083974\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":26,\"inventoryStamp\":\"ec9730abdd0c7f01\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":28,\"inventoryStamp\":\"3987a086d209804f\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":28,\"inventoryStamp\":\"361ae53dda5f5059\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":30,\"inventoryStamp\":\"b3637173da9bd34d\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":30,\"inventoryStamp\":\"83c6647074a4cc91\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":32,\"inventoryStamp\":\"8b519eea3bc93980\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":32,\"inventoryStamp\":\"61fba9ab45d7990c\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":34,\"inventoryStamp\":\"e58fd89349173454\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":34,\"inventoryStamp\":\"64d334660cf21ebb\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":36,\"inventoryStamp\":\"81ce26e14c397e39\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":36,\"inventoryStamp\":\"2e9253c7efaba273\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":38,\"inventoryStamp\":\"693d2a499175f04d\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":38,\"inventoryStamp\":\"878069d47aac3188\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "move",
@@ -722,7 +722,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"establish\",\"payload\":{\"v\":1,\"stateRevision\":1,\"inventoryStamp\":\"8a5f94cf12fc7b73\",\"x\":28,\"y\":24,\"bounds\":{\"x\":24,\"y\":19,\"width\":9,\"height\":9},\"food\":[{\"itemId\":2,\"quantity\":2}],\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":4},{\"itemDefinitionId\":\"settlement.stone\",\"count\":2}]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"establish\",\"payload\":{\"v\":1,\"stateRevision\":1,\"inventoryStamp\":\"62df4bd9d8d5f9bc\",\"x\":28,\"y\":24,\"bounds\":{\"x\":24,\"y\":19,\"width\":9,\"height\":9},\"food\":[{\"itemId\":2,\"quantity\":2}],\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":4},{\"itemDefinitionId\":\"settlement.stone\",\"count\":2}]}}"
     },
     {
       "action": "ext:command",
@@ -730,7 +730,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"expand\",\"payload\":{\"v\":1,\"stateRevision\":2,\"inventoryStamp\":\"76afb15b7ac078aa\",\"regionId\":45,\"regionRevision\":0,\"bounds\":{\"x\":23,\"y\":19,\"width\":10,\"height\":9},\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":2},{\"itemDefinitionId\":\"settlement.stone\",\"count\":2}]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"expand\",\"payload\":{\"v\":1,\"stateRevision\":2,\"inventoryStamp\":\"3e4469b639bd5a5f\",\"regionId\":46,\"regionRevision\":0,\"bounds\":{\"x\":23,\"y\":19,\"width\":10,\"height\":9},\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":2},{\"itemDefinitionId\":\"settlement.stone\",\"count\":2}]}}"
     },
     {
       "action": "ext:command",
@@ -738,7 +738,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":3,\"inventoryStamp\":\"abffeae7ebc4ec00\",\"regionId\":45,\"regionRevision\":1,\"definitionId\":\"settlement.wood-wall\",\"x\":30,\"y\":22,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":2}]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":3,\"inventoryStamp\":\"84624f56ddbaa311\",\"regionId\":46,\"regionRevision\":1,\"definitionId\":\"settlement.wood-wall\",\"x\":30,\"y\":22,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":2}]}}"
     },
     {
       "action": "ext:command",
@@ -746,7 +746,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":4,\"inventoryStamp\":\"833ed61c8f03cfe3\",\"regionId\":45,\"regionRevision\":1,\"definitionId\":\"settlement.wood-wall\",\"x\":28,\"y\":23,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":2}]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":4,\"inventoryStamp\":\"7e117a98ea8abe0c\",\"regionId\":46,\"regionRevision\":1,\"definitionId\":\"settlement.wood-wall\",\"x\":28,\"y\":23,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":2}]}}"
     },
     {
       "action": "move",
@@ -763,7 +763,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":5,\"inventoryStamp\":\"cc947a0031a9a256\",\"regionId\":45,\"regionRevision\":1,\"definitionId\":\"settlement.door\",\"x\":29,\"y\":23,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":2}]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":5,\"inventoryStamp\":\"92a50b0183635290\",\"regionId\":46,\"regionRevision\":1,\"definitionId\":\"settlement.door\",\"x\":29,\"y\":23,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":2}]}}"
     },
     {
       "action": "ext:command",
@@ -771,7 +771,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"door\",\"payload\":{\"v\":1,\"stateRevision\":6,\"inventoryStamp\":\"46467311cf38668c\",\"componentId\":24,\"componentRevision\":0,\"open\":true}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"door\",\"payload\":{\"v\":1,\"stateRevision\":6,\"inventoryStamp\":\"4c01d211cb2fb619\",\"componentId\":24,\"componentRevision\":0,\"open\":true}}"
     },
     {
       "action": "move",
@@ -797,7 +797,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":7,\"inventoryStamp\":\"46467311cf38668c\",\"regionId\":45,\"regionRevision\":1,\"definitionId\":\"settlement.roof\",\"x\":28,\"y\":22,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":1},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":1}]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":7,\"inventoryStamp\":\"4c01d211cb2fb619\",\"regionId\":46,\"regionRevision\":1,\"definitionId\":\"settlement.roof\",\"x\":28,\"y\":22,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":1},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":1}]}}"
     },
     {
       "action": "move",
@@ -814,7 +814,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":8,\"inventoryStamp\":\"1b6c9ade66132ddc\",\"regionId\":45,\"regionRevision\":1,\"definitionId\":\"settlement.roof\",\"x\":29,\"y\":22,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":1},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":1}]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":8,\"inventoryStamp\":\"2760d552bb5476e0\",\"regionId\":46,\"regionRevision\":1,\"definitionId\":\"settlement.roof\",\"x\":29,\"y\":22,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":1},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":1}]}}"
     },
     {
       "action": "move",
@@ -831,7 +831,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":9,\"inventoryStamp\":\"a3a2a93619d64b3c\",\"regionId\":45,\"regionRevision\":1,\"definitionId\":\"settlement.bed\",\"x\":28,\"y\":22,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":4},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":2}]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":9,\"inventoryStamp\":\"1e6603b33400af28\",\"regionId\":46,\"regionRevision\":1,\"definitionId\":\"settlement.bed\",\"x\":28,\"y\":22,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":4},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":2}]}}"
     },
     {
       "action": "move",
@@ -884,7 +884,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":10,\"inventoryStamp\":\"2b7129c382ec9a16\",\"regionId\":45,\"regionRevision\":1,\"definitionId\":\"settlement.chest\",\"x\":24,\"y\":20,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":6}]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":10,\"inventoryStamp\":\"9fba6aa0227b3295\",\"regionId\":46,\"regionRevision\":1,\"definitionId\":\"settlement.chest\",\"x\":24,\"y\":20,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":6}]}}"
     },
     {
       "action": "move",
@@ -901,7 +901,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":11,\"inventoryStamp\":\"e4fc235e64318400\",\"regionId\":45,\"regionRevision\":1,\"definitionId\":\"settlement.plot\",\"x\":23,\"y\":20,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":2},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":1}]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":11,\"inventoryStamp\":\"0bb05a602f776d91\",\"regionId\":46,\"regionRevision\":1,\"definitionId\":\"settlement.plot\",\"x\":23,\"y\":20,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":2},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":1}]}}"
     },
     {
       "action": "move",
@@ -963,7 +963,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"transfer\",\"payload\":{\"v\":1,\"stateRevision\":12,\"inventoryStamp\":\"60649e63dda20a86\",\"containerId\":21,\"containerRevision\":0,\"direction\":\"deposit\",\"items\":[{\"itemId\":23,\"quantity\":6}]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"transfer\",\"payload\":{\"v\":1,\"stateRevision\":12,\"inventoryStamp\":\"8680b0bb78d17676\",\"containerId\":21,\"containerRevision\":0,\"direction\":\"deposit\",\"items\":[{\"itemId\":23,\"quantity\":6}]}}"
     },
     {
       "action": "move",
@@ -1493,7 +1493,7 @@
         false
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"recruit\",\"payload\":{\"v\":1,\"stateRevision\":13,\"campId\":45,\"campRevision\":1,\"targetId\":24,\"targetRevision\":0}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"recruit\",\"payload\":{\"v\":1,\"stateRevision\":13,\"campId\":46,\"campRevision\":1,\"targetId\":25,\"targetRevision\":0}}"
     },
     {
       "action": "ext:command",
@@ -1501,7 +1501,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"recruit\",\"payload\":{\"v\":1,\"stateRevision\":13,\"campId\":45,\"campRevision\":1,\"targetId\":24,\"targetRevision\":0}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"recruit\",\"payload\":{\"v\":1,\"stateRevision\":13,\"campId\":46,\"campRevision\":1,\"targetId\":25,\"targetRevision\":0}}"
     },
     {
       "action": "move",
@@ -1566,7 +1566,7 @@
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"assign-job\",\"payload\":{\"v\":1,\"stateRevision\":14,\"campId\":45,\"campRevision\":2,\"targetId\":24,\"targetRevision\":1,\"job\":{\"kind\":\"plant\",\"plotIds\":[31],\"sourceId\":21,\"destinationId\":30},\"inventoryStamp\":\"3d2c627d9bc2e163\",\"sourceRevision\":2,\"destinationRevision\":0,\"componentRevisions\":[0]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"assign-job\",\"payload\":{\"v\":1,\"stateRevision\":14,\"campId\":46,\"campRevision\":2,\"targetId\":25,\"targetRevision\":1,\"job\":{\"kind\":\"plant\",\"plotIds\":[31],\"sourceId\":21,\"destinationId\":30},\"inventoryStamp\":\"a2560dfa68517f76\",\"sourceRevision\":2,\"destinationRevision\":0,\"componentRevisions\":[0]}}"
     },
     {
       "action": "move",
@@ -1631,7 +1631,7 @@
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":40,\"inventoryStamp\":\"3d2c627d9bc2e163\",\"destinationId\":null,\"destinationRevision\":null}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"harvest\",\"payload\":{\"v\":1,\"nodeId\":17,\"nodeRevision\":40,\"inventoryStamp\":\"a2560dfa68517f76\",\"destinationId\":null,\"destinationRevision\":null}}"
     },
     {
       "action": "move",
@@ -1666,7 +1666,7 @@
         true
       ],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":16,\"inventoryStamp\":\"d4ae12096dac20ac\",\"regionId\":45,\"regionRevision\":1,\"definitionId\":\"settlement.chest\",\"x\":28,\"y\":20,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":6}]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":16,\"inventoryStamp\":\"390e6e915d33505f\",\"regionId\":46,\"regionRevision\":1,\"definitionId\":\"settlement.chest\",\"x\":28,\"y\":20,\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":6}]}}"
     },
     {
       "action": "move",
@@ -1717,7 +1717,7 @@
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"assign-job\",\"payload\":{\"v\":1,\"stateRevision\":17,\"campId\":45,\"campRevision\":3,\"targetId\":24,\"targetRevision\":3,\"job\":{\"kind\":\"haul\",\"sourceId\":30,\"destinationId\":36,\"itemId\":53,\"quantity\":1},\"inventoryStamp\":\"9b845401b9b4e682\",\"sourceRevision\":1,\"destinationRevision\":0,\"componentRevisions\":[]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"assign-job\",\"payload\":{\"v\":1,\"stateRevision\":17,\"campId\":46,\"campRevision\":3,\"targetId\":25,\"targetRevision\":3,\"job\":{\"kind\":\"haul\",\"sourceId\":30,\"destinationId\":36,\"itemId\":55,\"quantity\":1},\"inventoryStamp\":\"332646f700bb7f3d\",\"sourceRevision\":1,\"destinationRevision\":0,\"componentRevisions\":[]}}"
     },
     {
       "action": "move",
@@ -2005,7 +2005,7 @@
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"assign-job\",\"payload\":{\"v\":1,\"stateRevision\":20,\"campId\":45,\"campRevision\":5,\"targetId\":24,\"targetRevision\":5,\"job\":{\"kind\":\"guard\",\"at\":{\"x\":29,\"y\":22}},\"inventoryStamp\":\"8f1843abcb04dc1f\",\"sourceRevision\":null,\"destinationRevision\":null,\"componentRevisions\":[]}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"assign-job\",\"payload\":{\"v\":1,\"stateRevision\":20,\"campId\":46,\"campRevision\":5,\"targetId\":25,\"targetRevision\":5,\"job\":{\"kind\":\"guard\",\"at\":{\"x\":29,\"y\":22}},\"inventoryStamp\":\"3e3f0398667f3d61\",\"sourceRevision\":null,\"destinationRevision\":null,\"componentRevisions\":[]}}"
     },
     {
       "action": "wait",
@@ -2025,7 +2025,7 @@
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"set-residence\",\"payload\":{\"v\":1,\"stateRevision\":21,\"campId\":45,\"campRevision\":6,\"targetId\":24,\"targetRevision\":6,\"mode\":\"escort\"}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"set-residence\",\"payload\":{\"v\":1,\"stateRevision\":21,\"campId\":46,\"campRevision\":6,\"targetId\":25,\"targetRevision\":6,\"mode\":\"escort\"}}"
     },
     {
       "action": "move",
@@ -2293,7 +2293,8 @@
       "action": "ext:command",
       "decisions": [],
       "count": 1,
-      "data": "{\"module\":\"settlement\",\"action\":\"return-home\",\"payload\":{\"v\":1,\"stateRevision\":22,\"campId\":45,\"campRevision\":7,\"targetId\":24,\"targetRevision\":7}}"
+      "data": "{\"module\":\"settlement\",\"action\":\"return-home\",\"payload\":{\"v\":1,\"stateRevision\":22,\"campId\":46,\"campRevision\":7,\"targetId\":25,\"targetRevision\":7}}"
     }
-  ]
+  ],
+  "recapturedRecordingSha256": "c0ea332eaf9049850d8ef7ca5525a91b6180283699f2e62c2872444e14eaa00f"
 }

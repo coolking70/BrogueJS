@@ -1,8 +1,8 @@
 {
   "seed": 3,
-  "actorId": 85,
+  "actorId": 86,
   "events": 239,
-  "provenance": "captive-source-stay normal seed3 UI-compatible239 capture + independent fresh exact rerun; raw originals immutable externally",
+  "provenance": "captive-source-stay normal seed3 UI-compatible239 capture + independent fresh exact rerun; raw originals immutable externally; b820733 two-ration recapture: same public actions/data presence/decisions and checkpoint timing; historical hashes above/below identify the original capture, not this recapture",
   "originalRecordingSha256": "8126671755afedfe2f795fca6d2168913145885b6aaea4c761df66549edb6d13",
   "routeSha256": "6b6efc7e9efbc8a5cf1c3fc8d0a95ec5499890682c10b3da990b498e2dc4af46",
   "campGeometry": {
@@ -29,168 +29,168 @@
       "events": 0,
       "depth": 1,
       "tick": 0,
-      "digest": "f5967c0d3e5e91dbb4ed4eb274a9e5257187e1ba7ce79b59181f4e60202cd49d"
+      "digest": "fcf82052efd1a86fa480181b92fed06681a830de69faee491612c784ee899e82"
     },
     {
       "name": "D2",
       "events": 45,
       "depth": 2,
       "tick": 4200,
-      "digest": "42a659049ca49862d7d821f1642dc6105bf0df02c1722feb46f7aa7c50199dc6"
+      "digest": "95ffb785bb0102a4e60325cb9b216d26d82a12ea83c583ce8d28e3dcbf68f428"
     },
     {
       "name": "D3",
       "events": 145,
       "depth": 3,
       "tick": 12600,
-      "digest": "83f8e534435574a350f7131faf1f95f718bb6bd9add4a215d067a61604d6fb17"
+      "digest": "69c146a9cd73163bbb4b43deef25f81d694cec1cb6c70453fbeb3f3f6abf1e08"
     },
     {
       "name": "before-rescue",
       "events": 191,
       "depth": 3,
       "tick": 17000,
-      "digest": "f7145e5eae8fa4fdaf0ec744415bc5ca849eba91498ead3efdda06421684f9b5"
+      "digest": "41eb09bdc050c86a8037322ac9f14ae47b21f3fe12ac5a60ea4cd6130df2b165"
     },
     {
       "name": "after-rescue-no",
       "events": 192,
       "depth": 3,
       "tick": 17000,
-      "digest": "5a5f081591d93d86f0d07305526bc6338cda2cbb7e301cfe451640551ff49a5a"
+      "digest": "73acfb1aeb6d4c139e1c36d0b7500f0e72c9e912a622270bcdd49ff324dd5f31"
     },
     {
       "name": "actual-rescue",
       "events": 193,
       "depth": 3,
       "tick": 17100,
-      "digest": "2de564779d5f6fa07b46516433cdfc3a41660a7026c923be1f34e4512a4f2ac6"
+      "digest": "0423a6d4b7a537c0c6e801524847e1e7b05256dd7b9a5c7f9d98498b35f73586"
     },
     {
       "name": "prefix223",
       "events": 223,
       "depth": 3,
       "tick": 20100,
-      "digest": "2093fa866d9c8c6659f20416c2f979ef3f762801db81934eeea8ee5f7a1506f6"
+      "digest": "aeaf46448e90275f452991e45ddcd57e86de27c0953db9ea8ec69340e04865b9"
     },
     {
       "name": "camp",
       "events": 224,
       "depth": 3,
       "tick": 20400,
-      "digest": "d10194f86b4709d5fc37de64a33143dca501f9e544ed54faf6f8d6efdb2b0d5e"
+      "digest": "d1772748c576cc65c482c388be0f1bc79a0a55c4df72822f8ae3d5c50b65df06"
     },
     {
       "name": "build-stone-wall",
       "events": 225,
       "depth": 3,
       "tick": 20500,
-      "digest": "cb0feb10cf0b6a031d8c99253421dbb4a4c1c997103840418d36540d451303c9"
+      "digest": "d492a8474c2d3a75557c6a74ad4d9c111c288a525692a763c4b67c0536458e5c"
     },
     {
       "name": "public-move",
       "events": 226,
       "depth": 3,
       "tick": 20600,
-      "digest": "ff1a5591b8c9b0d72475dfc1eda5e69296c087bf2e6c39f3e1d395d204ffbc47"
+      "digest": "f1b64bc47384caeee75d4a25a2dd151addc37748d5cb12dbc12adea4c12265f4"
     },
     {
       "name": "build-door",
       "events": 227,
       "depth": 3,
       "tick": 20800,
-      "digest": "527692a6178d58c590513eb3dc1245ac4dc9ad070f74580299e2232866bf1724"
+      "digest": "89039de09cc2ddf0a1b9908b1c6a7120c6ed1c43ffa077c75c05743bb9b13994"
     },
     {
       "name": "door-open",
       "events": 228,
       "depth": 3,
       "tick": 20900,
-      "digest": "0eca2bbbf0facacfe88d911140daac29331ca180379ba673d81f38e155f229fc"
+      "digest": "215f0a98a1af8b3f80759ffba6d7bff2dbec46715922607c56211930164b40ad"
     },
     {
       "name": "build-roof",
       "events": 229,
       "depth": 3,
       "tick": 21100,
-      "digest": "b042e940868ce9243f00ab9a871be99bda0d1fa683b4b0f37e3795a57dd1efaa"
+      "digest": "fb242c43a045cd8ae95ae970c88ec7fa10cb9da19e0f80e07b54294b3cda6099"
     },
     {
       "name": "public-move",
       "events": 230,
       "depth": 3,
       "tick": 21200,
-      "digest": "381c92a77d44b2a3410191605456fb9e2cdc5c48cc002fec6c309c725bb3a6d8"
+      "digest": "ee74790a3d60d3be07854d9d37a3f45bc6b38a2a911f30ef6956c90d72526d4f"
     },
     {
       "name": "build-roof",
       "events": 231,
       "depth": 3,
       "tick": 21400,
-      "digest": "5335551ecb611e6611985ca05a85a7c4bedd69e0bfbe294c2822f787bbebebaa"
+      "digest": "99a64f1185bfd60a60efc853c14220d5a54c6d91b59ad3d10cc5594593e21bf3"
     },
     {
       "name": "public-move",
       "events": 232,
       "depth": 3,
       "tick": 21500,
-      "digest": "3dce8fc30bf4ab515e0549465ace62539c7534fe1268aa779ee9e6722bbe627f"
+      "digest": "e03a0561a0a93a3a9510821caf81f71acd19aea6b105bf361ac30c55e4540b6f"
     },
     {
       "name": "public-move",
       "events": 233,
       "depth": 3,
       "tick": 21600,
-      "digest": "10108c56aab522d273f9c49cec90e3bb0e19cfaa985804464e90e21caf143342"
+      "digest": "f9fcc17e22c66602a939e21dd13f2057ab0fb508b70605e48e05b56fb9975294"
     },
     {
       "name": "build-bed",
       "events": 234,
       "depth": 3,
       "tick": 21900,
-      "digest": "cf02efc2ee97e80334e1fd797528ee398770eec46ac4cec63babc141067acf71"
+      "digest": "204d486c3be7226a660a2432d10d0503181576a54557dbe73ffbdbd79adc50b7"
     },
     {
       "name": "public-move",
       "events": 235,
       "depth": 3,
       "tick": 22000,
-      "digest": "1a78a4896f20093e0b15eb0a0b6a166fb67242466cd7fe6a7d039b7d9032cf6a"
+      "digest": "4ce60ca47e62ee9fbae9597ef8be1d04a7fd2bbc40e22f707924f6268ef28a1e"
     },
     {
       "name": "public-move",
       "events": 236,
       "depth": 3,
       "tick": 22100,
-      "digest": "b797be17bf8216b66265219decc01efee1d9443d428421ec4fb995d2621c992f"
+      "digest": "6c038458610b566b4c67ec72076aecb78a38ff49a780c8c9d923f842f4db8d67"
     },
     {
       "name": "public-move",
       "events": 237,
       "depth": 3,
       "tick": 22200,
-      "digest": "51e83efa3166957c149465abe6042bf4ed10d69be40eeaa6bbc9341e7d88f6c8"
+      "digest": "6359a24fb1f40faa6fa94abeac64fb83502ca236482aa5417c8e67db100ffe20"
     },
     {
       "name": "before-recruit",
       "events": 237,
       "depth": 3,
       "tick": 22200,
-      "digest": "51e83efa3166957c149465abe6042bf4ed10d69be40eeaa6bbc9341e7d88f6c8"
+      "digest": "6359a24fb1f40faa6fa94abeac64fb83502ca236482aa5417c8e67db100ffe20"
     },
     {
       "name": "after-recruit-no",
       "events": 238,
       "depth": 3,
       "tick": 22200,
-      "digest": "51e83efa3166957c149465abe6042bf4ed10d69be40eeaa6bbc9341e7d88f6c8"
+      "digest": "6359a24fb1f40faa6fa94abeac64fb83502ca236482aa5417c8e67db100ffe20"
     },
     {
       "name": "after-recruit-yes",
       "events": 239,
       "depth": 3,
       "tick": 22300,
-      "digest": "bc2bac9d6ced0bef1a653e29760707cf775836d28f94d7f2b71c1bc0118ca90a"
+      "digest": "8670c260bd2464758124f22cb3c0987f0f761d08b5de0c44492a3f1765ec53c1"
     }
   ],
   "steps": [
@@ -1151,7 +1151,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"settlement\",\"action\":\"establish\",\"payload\":{\"v\":1,\"stateRevision\":1,\"inventoryStamp\":\"7faf7f48615a6a31\",\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":4},{\"itemDefinitionId\":\"settlement.stone\",\"count\":2}],\"x\":46,\"y\":22,\"bounds\":{\"x\":42,\"y\":18,\"width\":9,\"height\":9},\"food\":[{\"itemId\":2,\"quantity\":2}]}}",
+      "data": "{\"module\":\"settlement\",\"action\":\"establish\",\"payload\":{\"v\":1,\"stateRevision\":1,\"inventoryStamp\":\"ae09b7a738420349\",\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":4},{\"itemDefinitionId\":\"settlement.stone\",\"count\":2}],\"x\":46,\"y\":22,\"bounds\":{\"x\":42,\"y\":18,\"width\":9,\"height\":9},\"food\":[{\"itemId\":2,\"quantity\":2}]}}",
       "decisions": [
         true
       ],
@@ -1159,7 +1159,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":2,\"inventoryStamp\":\"ad0f8ddf8e422846\",\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.stone\",\"count\":2}],\"regionId\":106,\"regionRevision\":0,\"definitionId\":\"settlement.stone-wall\",\"x\":45,\"y\":21}}",
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":2,\"inventoryStamp\":\"34b0ce8010f5debe\",\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.stone\",\"count\":2}],\"regionId\":107,\"regionRevision\":0,\"definitionId\":\"settlement.stone-wall\",\"x\":45,\"y\":21}}",
       "decisions": [
         true
       ],
@@ -1176,7 +1176,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":3,\"inventoryStamp\":\"b8ee73130ec26aef\",\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":2}],\"regionId\":106,\"regionRevision\":0,\"definitionId\":\"settlement.door\",\"x\":46,\"y\":21}}",
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":3,\"inventoryStamp\":\"c580929f63695d72\",\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":2}],\"regionId\":107,\"regionRevision\":0,\"definitionId\":\"settlement.door\",\"x\":46,\"y\":21}}",
       "decisions": [
         true
       ],
@@ -1184,7 +1184,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"settlement\",\"action\":\"door\",\"payload\":{\"v\":1,\"stateRevision\":4,\"inventoryStamp\":\"9368b2e6d9d54e45\",\"componentId\":3,\"componentRevision\":0,\"open\":true}}",
+      "data": "{\"module\":\"settlement\",\"action\":\"door\",\"payload\":{\"v\":1,\"stateRevision\":4,\"inventoryStamp\":\"2c0c13488b8e74fc\",\"componentId\":3,\"componentRevision\":0,\"open\":true}}",
       "decisions": [
         true
       ],
@@ -1192,7 +1192,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":5,\"inventoryStamp\":\"9368b2e6d9d54e45\",\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":1},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":1}],\"regionId\":106,\"regionRevision\":0,\"definitionId\":\"settlement.roof\",\"x\":45,\"y\":20}}",
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":5,\"inventoryStamp\":\"2c0c13488b8e74fc\",\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":1},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":1}],\"regionId\":107,\"regionRevision\":0,\"definitionId\":\"settlement.roof\",\"x\":45,\"y\":20}}",
       "decisions": [
         true
       ],
@@ -1209,7 +1209,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":6,\"inventoryStamp\":\"948dfd57d5fca97f\",\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":1},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":1}],\"regionId\":106,\"regionRevision\":0,\"definitionId\":\"settlement.roof\",\"x\":46,\"y\":20}}",
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":6,\"inventoryStamp\":\"4267129bf9f65386\",\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":1},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":1}],\"regionId\":107,\"regionRevision\":0,\"definitionId\":\"settlement.roof\",\"x\":46,\"y\":20}}",
       "decisions": [
         true
       ],
@@ -1235,7 +1235,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":7,\"inventoryStamp\":\"243f835080af5f4f\",\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":4},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":2}],\"regionId\":106,\"regionRevision\":0,\"definitionId\":\"settlement.bed\",\"x\":46,\"y\":20}}",
+      "data": "{\"module\":\"settlement\",\"action\":\"build\",\"payload\":{\"v\":1,\"stateRevision\":7,\"inventoryStamp\":\"d285b005b693720c\",\"sourceContainerId\":null,\"sourceRevision\":null,\"materials\":[{\"itemDefinitionId\":\"settlement.wood\",\"count\":4},{\"itemDefinitionId\":\"settlement.fiber\",\"count\":2}],\"regionId\":107,\"regionRevision\":0,\"definitionId\":\"settlement.bed\",\"x\":46,\"y\":20}}",
       "decisions": [
         true
       ],
@@ -1261,7 +1261,7 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"settlement\",\"action\":\"recruit\",\"payload\":{\"v\":1,\"stateRevision\":8,\"campId\":106,\"campRevision\":0,\"targetId\":85,\"targetRevision\":0}}",
+      "data": "{\"module\":\"settlement\",\"action\":\"recruit\",\"payload\":{\"v\":1,\"stateRevision\":8,\"campId\":107,\"campRevision\":0,\"targetId\":86,\"targetRevision\":0}}",
       "decisions": [
         false
       ],
@@ -1269,11 +1269,12 @@
     },
     {
       "action": "ext:command",
-      "data": "{\"module\":\"settlement\",\"action\":\"recruit\",\"payload\":{\"v\":1,\"stateRevision\":8,\"campId\":106,\"campRevision\":0,\"targetId\":85,\"targetRevision\":0}}",
+      "data": "{\"module\":\"settlement\",\"action\":\"recruit\",\"payload\":{\"v\":1,\"stateRevision\":8,\"campId\":107,\"campRevision\":0,\"targetId\":86,\"targetRevision\":0}}",
       "decisions": [
         true
       ],
       "count": 1
     }
-  ]
+  ],
+  "recapturedRecordingSha256": "822733ddfe34df80f5aedcc97f70850d2fa1486fa988ebe57cc55f3dc1fab248"
 }

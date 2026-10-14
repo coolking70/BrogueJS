@@ -1,0 +1,1113 @@
+{
+  "cause": "b820733 adds one settlement.ration startup grant (total two rations).",
+  "head": "9aab505df8d908a82e52e6ba545dbd033a567853",
+  "environment": {
+    "node": "24.19.0",
+    "NODE_OPTIONS": "--max-old-space-size=3072",
+    "vitestMaxWorkers": 2
+  },
+  "capture": {
+    "method": "Fresh normal new game; execute original public action sequence and No/Yes decisions, rebuild inventoryStamp from current inventory and bind affected entity IDs, capture recordedInputEvents and h.digest() at the original checkpoints. No world/HP/location/RNG injection. Replay freshly exported recording. Preserve missing data vs explicit null and duplicate checkpoint labels.",
+    "script": "/private/tmp/settlement-ration-audit/recapture.test.ts",
+    "scriptSha256": "b0583d199bdd795ebc5feabe3d63284adb04c537d4c1f7bd2ef91d4015a0df0f",
+    "evidenceDirectory": "/private/tmp/settlement-ration-audit",
+    "originalDigestMethod": "RESIDENT_FORMAT_CAPTURE=/private/tmp/settlement-ration-audit/original-capture node node_modules/vitest/vitest.mjs run src/ext/modules/settlement/tests/resident_natural.test.ts src/ext/modules/settlement/tests/resident_captive_natural.test.ts -t \"normal new-game core|normal seed3 current-source\" --maxWorkers=2",
+    "originalDigestVerification": {
+      "result": "2 selected natural tests passed, exit 0; 1 unrelated controlled test not selected. All 24 natural and 24 captive checkpoint digests exactly equal the original RESIDENT_FORMAT_CAPTURE output.",
+      "log": "original-capture.log"
+    }
+  },
+  "fixtures": [
+    {
+      "file": "src/ext/modules/settlement/tests/resident-natural-route.json",
+      "beforeSha256": "458b38d27b677b0748044f267d5338abb76fb6d9faa7f5c4d6adb294b1817c07",
+      "afterSha256": "ec2ddf79d4ba47d1e14c68678429a6d0f173f6576d3541b6d23845df47a0511d",
+      "changedLeaves": 91,
+      "changes": [
+        {
+          "path": "/actorId",
+          "before": 24,
+          "after": 25,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/campId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/checkpoints/0/digest",
+          "before": "aa4681a80d91e22976ec96e12542670705d6eb777914e55711525f26e718d613",
+          "after": "7c5893751c7e53f37f711b485afdcfee1e8fd53afce4e9fccdf0811e625a1936",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/10/digest",
+          "before": "1a58b4c5ffcc742581425c20aa4e91bdb2d195bea5042f7e09305071915d3652",
+          "after": "1eb66c91f3a18705fb65e0c83977d4d69fb004eb45d72c9ecc7c53686386cd5a",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/11/digest",
+          "before": "9988b0a5fad7b5c6ec23099831ea4b8cda16074ba9fd87b021628dced18014ca",
+          "after": "2da3e9e92ad4c14d306209e8f0b1ce44191c071bd66b6a50f915b561726d0931",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/12/digest",
+          "before": "38257f2ed354cc96c6d08fe430d70735462ccf43f02657f6806d232a3f94743e",
+          "after": "8a52751cb8d9ae651c3f949229ede7d6f1d0ebd990c0dbc05a00870da313d64f",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/13/digest",
+          "before": "5280bf8c215b0a3bf62f49122edbcfbb10c4fd7cb43b7c248eafae9649c15d2f",
+          "after": "228a2a754a3cad8bce083a911205aca64e018d0c4fd3e83cd96d55017fd0a16a",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/14/digest",
+          "before": "60ee84c7a69ed77c9b846f9ec2cf95eadb38203fb4f1a039bbb843e0576f22bd",
+          "after": "e3aacc6a9962fa5f6a9ae19527315870506108178b919221b8cb1d6a4b29c3a9",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/15/digest",
+          "before": "128ce3391c7f5a8ef20440f423fa4753270b516491b7028425dfba1fc22f7de5",
+          "after": "ec51735d0ba5b1d284ccaab2f47a6f72aa2017795eebda8b04dfdc1ee07165b8",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/16/digest",
+          "before": "7e17e2cd2deecbe4b0902bdd6b2c306ad6d8a30cd33fe67852acebf1d8ea634a",
+          "after": "31475ed87e5f702af129bd77e8ee270cb701e4c0db5acc218c3a7cc913886373",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/17/digest",
+          "before": "24514a826ce07b650ef7bb7f9e38c86a45d82a74a98b281f858e4155c7b60ab2",
+          "after": "59c1bbc184fd9b0e28b2537703857f2442e9da3c73609c999930acc4f6f6c4f7",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/18/digest",
+          "before": "28e03f5e08893191dd6598d86c116ab4d9d92caff398a0ed741f7938e8173a0c",
+          "after": "b0659839c71ea8b35a4747da7fbcec551d14813f0b8b5e22390b68136e4c510b",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/19/digest",
+          "before": "6551936bde455e2d23ef745280e33ab52821d1fed2332854a5f7e07ac4498ccb",
+          "after": "6accd30f71a0ca6836babedbf8c69489e0e5200f084eb7393eb33d13129131d6",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/2/digest",
+          "before": "38e9c15b8516c050f891dbb6a620ab378825b854ae25ca8437df6bdd916c52a1",
+          "after": "0ffe35d9c61cefa81276b58995eda7222953e7b73ed5bcfe4621e33827b01dab",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/20/digest",
+          "before": "682d5d224880641cbfd031b974af0570592f77bfc645db21bf3c9b217eef61df",
+          "after": "89aac546872a77bdce17fe1e91235ddf64f92ec559a6c55de5a7f8d5ee1d1a05",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/21/digest",
+          "before": "0e934da33a12677216bc30e42915e58f847f671e03f473bd4a8bf1de935caf91",
+          "after": "8a6ecd87bfd118e6acd19802468d7b50765043bbf66deb6d84fae0dd4fbab358",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/22/digest",
+          "before": "600d8e480c749c0408425c24341f399d1b7e16465a953586120ceeb3e1fa63f3",
+          "after": "9248251b47ffff0fce8becface05b0d8b8f15b186297b9314892f8b8ce64f91d",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/23/digest",
+          "before": "23ba6753dcc29902f83983039947255ab43e90a3d4813df8a39ff107143413e9",
+          "after": "f96cdc8b1d1ff473f7d78b4c0d068242b092109f1b89efa929440e8c4680b2f9",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/24/digest",
+          "before": "859eb5de9a880cae6562a22df3e7e5716fd6c3f0a83a930715dbc602cfea82c5",
+          "after": "0c150aa539ef8e27aeae9c516d2a94aef4cbb5bcf986b9b504c68c4a85ad3293",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/3/digest",
+          "before": "1a000a1ef614615f7086efd99b1987814dc924a4a6c7a7f4926bacad000a746f",
+          "after": "f07d8604adf599561aa507f25c0a9e147650c8b187944f9011f23f41e3493c03",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/4/digest",
+          "before": "eaa7f25c5092f63b2db98ea015daf25acc95f92555cbb22c7f62a914e8eb1552",
+          "after": "9b8150f2fedc931ee32d5cd375c6d7655f1ad68a1464a0192bae4d9dfbb3509d",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/5/digest",
+          "before": "c880a7a13fe4874e253604156edc58743d51b6bc249b0d214895056fccf7602b",
+          "after": "3962091a8ba75181983d98a5ad6101567dfe125cebdf1c51bcf0d1cd0b768e9e",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/6/digest",
+          "before": "05586090bec343c6fc043c388b3922c41a0999ed710d0483a39dba6eabd87500",
+          "after": "5d4236200dc7509fd0c3d6845863a17b8fd63e5444096c117b56bf157dedcc84",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/7/digest",
+          "before": "2ac7fb02a90da965a0c4e6582a8292c703cc832bd54a8d3e85a5101a1d16cb4a",
+          "after": "1fb577322a7fdf21f423b581bbac775d98ab33c7315c13b2583d6638d330ba09",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/8/digest",
+          "before": "a4f45b06fc249f42856fb86f40000ac5c03664591197a29764bfeca042cb92b6",
+          "after": "1bcfd8a6e6f462d0df99d3e2c4819f79a212dbd28342a6fd9b38cf927b13476a",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/9/digest",
+          "before": "adb2b02724ae515175707f1a5457bfa6fe14d39c9f14933d1e14864e520a483c",
+          "after": "2bdd774db7554f72f2522dd143f88af2479ff8772269c449a9ea6dcd8fa9a681",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/cropId",
+          "before": 53,
+          "after": 55,
+          "reason": "Seed28 extra ration allocation plus camp food-stack split advance the produced crop ID from 53 to 55."
+        },
+        {
+          "path": "/provenance",
+          "before": "self-route-astra sole fresh normal seed28 exact956 input replay; core/day-food per formal6.3, old starvation/refund semantics migrated to controlled test",
+          "after": "self-route-astra sole fresh normal seed28 exact956 input replay; core/day-food per formal6.3, old starvation/refund semantics migrated to controlled test; b820733 two-ration recapture: same public actions/data presence/decisions and checkpoint timing; historical hashes above/below identify the original capture, not this recapture",
+          "reason": "Recapture provenance; earlier original hashes retained as historical references."
+        },
+        {
+          "path": "/recapturedRecordingSha256",
+          "after": "c0ea332eaf9049850d8ef7ca5525a91b6180283699f2e62c2872444e14eaa00f",
+          "reason": "Recapture provenance; earlier original hashes retained as historical references."
+        },
+        {
+          "path": "/steps/133/data/payload/campId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/133/data/payload/targetId",
+          "before": 24,
+          "after": 25,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/134/data/payload/campId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/134/data/payload/targetId",
+          "before": 24,
+          "after": 25,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/142/data/payload/campId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/142/data/payload/inventoryStamp",
+          "before": "3d2c627d9bc2e163",
+          "after": "a2560dfa68517f76",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/142/data/payload/targetId",
+          "before": 24,
+          "after": 25,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/150/data/payload/inventoryStamp",
+          "before": "3d2c627d9bc2e163",
+          "after": "a2560dfa68517f76",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/154/data/payload/inventoryStamp",
+          "before": "d4ae12096dac20ac",
+          "after": "390e6e915d33505f",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/154/data/payload/regionId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/160/data/payload/campId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/160/data/payload/inventoryStamp",
+          "before": "9b845401b9b4e682",
+          "after": "332646f700bb7f3d",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/160/data/payload/job/itemId",
+          "before": 53,
+          "after": 55,
+          "reason": "Seed28 extra ration allocation plus camp food-stack split advance the produced crop ID from 53 to 55."
+        },
+        {
+          "path": "/steps/160/data/payload/targetId",
+          "before": 24,
+          "after": 25,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/17/data/payload/inventoryStamp",
+          "before": "788d99f977322f29",
+          "after": "0f548b205935f23c",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/195/data/payload/campId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/195/data/payload/inventoryStamp",
+          "before": "8f1843abcb04dc1f",
+          "after": "3e3f0398667f3d61",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/195/data/payload/targetId",
+          "before": 24,
+          "after": 25,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/198/data/payload/campId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/198/data/payload/targetId",
+          "before": 24,
+          "after": 25,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/23/data/payload/inventoryStamp",
+          "before": "788d99f977322f29",
+          "after": "0f548b205935f23c",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/230/data/payload/campId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/230/data/payload/targetId",
+          "before": 24,
+          "after": 25,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/24/data/payload/inventoryStamp",
+          "before": "66fa67aa46c358e1",
+          "after": "a184e5715ba57080",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/25/data/payload/inventoryStamp",
+          "before": "9727449ccb3f372b",
+          "after": "e3c2cff5b1c851d1",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/26/data/payload/inventoryStamp",
+          "before": "0b2ed9a65bd9e8fd",
+          "after": "e0b4be63aa2cc617",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/27/data/payload/inventoryStamp",
+          "before": "33144196427b83c3",
+          "after": "1be6500e0bfbc0e9",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/28/data/payload/inventoryStamp",
+          "before": "a4836d554278e49a",
+          "after": "7006e57562dde80c",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/29/data/payload/inventoryStamp",
+          "before": "8f02e472050c7bc4",
+          "after": "4097e14744c4d551",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/30/data/payload/inventoryStamp",
+          "before": "cd25986e41c92664",
+          "after": "c6a9f3647ecc2dd8",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/31/data/payload/inventoryStamp",
+          "before": "7979e1de3b86290a",
+          "after": "f0d2ba61fa3ab61b",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/32/data/payload/inventoryStamp",
+          "before": "486803c17cae1a06",
+          "after": "9d651824a65fb660",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/33/data/payload/inventoryStamp",
+          "before": "64c97d065a4e102a",
+          "after": "c122cba671541d98",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/34/data/payload/inventoryStamp",
+          "before": "a5b4141e9135fcf9",
+          "after": "41d9e30b50d8e0c7",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/35/data/payload/inventoryStamp",
+          "before": "ba5b2e46e4083974",
+          "after": "ec9730abdd0c7f01",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/36/data/payload/inventoryStamp",
+          "before": "3987a086d209804f",
+          "after": "361ae53dda5f5059",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/37/data/payload/inventoryStamp",
+          "before": "b3637173da9bd34d",
+          "after": "83c6647074a4cc91",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/38/data/payload/inventoryStamp",
+          "before": "8b519eea3bc93980",
+          "after": "61fba9ab45d7990c",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/39/data/payload/inventoryStamp",
+          "before": "e58fd89349173454",
+          "after": "64d334660cf21ebb",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/40/data/payload/inventoryStamp",
+          "before": "81ce26e14c397e39",
+          "after": "2e9253c7efaba273",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/41/data/payload/inventoryStamp",
+          "before": "693d2a499175f04d",
+          "after": "878069d47aac3188",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/46/data/payload/inventoryStamp",
+          "before": "8a5f94cf12fc7b73",
+          "after": "62df4bd9d8d5f9bc",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/47/data/payload/inventoryStamp",
+          "before": "76afb15b7ac078aa",
+          "after": "3e4469b639bd5a5f",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/47/data/payload/regionId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/48/data/payload/inventoryStamp",
+          "before": "abffeae7ebc4ec00",
+          "after": "84624f56ddbaa311",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/48/data/payload/regionId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/49/data/payload/inventoryStamp",
+          "before": "833ed61c8f03cfe3",
+          "after": "7e117a98ea8abe0c",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/49/data/payload/regionId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/51/data/payload/inventoryStamp",
+          "before": "cc947a0031a9a256",
+          "after": "92a50b0183635290",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/51/data/payload/regionId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/52/data/payload/inventoryStamp",
+          "before": "46467311cf38668c",
+          "after": "4c01d211cb2fb619",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/55/data/payload/inventoryStamp",
+          "before": "46467311cf38668c",
+          "after": "4c01d211cb2fb619",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/55/data/payload/regionId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/57/data/payload/inventoryStamp",
+          "before": "1b6c9ade66132ddc",
+          "after": "2760d552bb5476e0",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/57/data/payload/regionId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/59/data/payload/inventoryStamp",
+          "before": "a3a2a93619d64b3c",
+          "after": "1e6603b33400af28",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/59/data/payload/regionId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/65/data/payload/inventoryStamp",
+          "before": "2b7129c382ec9a16",
+          "after": "9fba6aa0227b3295",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/65/data/payload/regionId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/67/data/payload/inventoryStamp",
+          "before": "e4fc235e64318400",
+          "after": "0bb05a602f776d91",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/67/data/payload/regionId",
+          "before": 45,
+          "after": 46,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/74/data/payload/inventoryStamp",
+          "before": "60649e63dda20a86",
+          "after": "8680b0bb78d17676",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        }
+      ]
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident-captive-route.json",
+      "beforeSha256": "b914b1eb5caadc2ce43615279eb7f147b2233f2246fda76043fa41fe478e31d5",
+      "afterSha256": "2cbe69d1a4192cca012ccc9466e1dda4384d6854967dcf84c2c1d8f217733df5",
+      "changedLeaves": 43,
+      "changes": [
+        {
+          "path": "/actorId",
+          "before": 85,
+          "after": 86,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/checkpoints/0/digest",
+          "before": "f5967c0d3e5e91dbb4ed4eb274a9e5257187e1ba7ce79b59181f4e60202cd49d",
+          "after": "fcf82052efd1a86fa480181b92fed06681a830de69faee491612c784ee899e82",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/1/digest",
+          "before": "42a659049ca49862d7d821f1642dc6105bf0df02c1722feb46f7aa7c50199dc6",
+          "after": "95ffb785bb0102a4e60325cb9b216d26d82a12ea83c583ce8d28e3dcbf68f428",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/10/digest",
+          "before": "527692a6178d58c590513eb3dc1245ac4dc9ad070f74580299e2232866bf1724",
+          "after": "89039de09cc2ddf0a1b9908b1c6a7120c6ed1c43ffa077c75c05743bb9b13994",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/11/digest",
+          "before": "0eca2bbbf0facacfe88d911140daac29331ca180379ba673d81f38e155f229fc",
+          "after": "215f0a98a1af8b3f80759ffba6d7bff2dbec46715922607c56211930164b40ad",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/12/digest",
+          "before": "b042e940868ce9243f00ab9a871be99bda0d1fa683b4b0f37e3795a57dd1efaa",
+          "after": "fb242c43a045cd8ae95ae970c88ec7fa10cb9da19e0f80e07b54294b3cda6099",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/13/digest",
+          "before": "381c92a77d44b2a3410191605456fb9e2cdc5c48cc002fec6c309c725bb3a6d8",
+          "after": "ee74790a3d60d3be07854d9d37a3f45bc6b38a2a911f30ef6956c90d72526d4f",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/14/digest",
+          "before": "5335551ecb611e6611985ca05a85a7c4bedd69e0bfbe294c2822f787bbebebaa",
+          "after": "99a64f1185bfd60a60efc853c14220d5a54c6d91b59ad3d10cc5594593e21bf3",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/15/digest",
+          "before": "3dce8fc30bf4ab515e0549465ace62539c7534fe1268aa779ee9e6722bbe627f",
+          "after": "e03a0561a0a93a3a9510821caf81f71acd19aea6b105bf361ac30c55e4540b6f",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/16/digest",
+          "before": "10108c56aab522d273f9c49cec90e3bb0e19cfaa985804464e90e21caf143342",
+          "after": "f9fcc17e22c66602a939e21dd13f2057ab0fb508b70605e48e05b56fb9975294",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/17/digest",
+          "before": "cf02efc2ee97e80334e1fd797528ee398770eec46ac4cec63babc141067acf71",
+          "after": "204d486c3be7226a660a2432d10d0503181576a54557dbe73ffbdbd79adc50b7",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/18/digest",
+          "before": "1a78a4896f20093e0b15eb0a0b6a166fb67242466cd7fe6a7d039b7d9032cf6a",
+          "after": "4ce60ca47e62ee9fbae9597ef8be1d04a7fd2bbc40e22f707924f6268ef28a1e",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/19/digest",
+          "before": "b797be17bf8216b66265219decc01efee1d9443d428421ec4fb995d2621c992f",
+          "after": "6c038458610b566b4c67ec72076aecb78a38ff49a780c8c9d923f842f4db8d67",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/2/digest",
+          "before": "83f8e534435574a350f7131faf1f95f718bb6bd9add4a215d067a61604d6fb17",
+          "after": "69c146a9cd73163bbb4b43deef25f81d694cec1cb6c70453fbeb3f3f6abf1e08",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/20/digest",
+          "before": "51e83efa3166957c149465abe6042bf4ed10d69be40eeaa6bbc9341e7d88f6c8",
+          "after": "6359a24fb1f40faa6fa94abeac64fb83502ca236482aa5417c8e67db100ffe20",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/21/digest",
+          "before": "51e83efa3166957c149465abe6042bf4ed10d69be40eeaa6bbc9341e7d88f6c8",
+          "after": "6359a24fb1f40faa6fa94abeac64fb83502ca236482aa5417c8e67db100ffe20",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/22/digest",
+          "before": "51e83efa3166957c149465abe6042bf4ed10d69be40eeaa6bbc9341e7d88f6c8",
+          "after": "6359a24fb1f40faa6fa94abeac64fb83502ca236482aa5417c8e67db100ffe20",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/23/digest",
+          "before": "bc2bac9d6ced0bef1a653e29760707cf775836d28f94d7f2b71c1bc0118ca90a",
+          "after": "8670c260bd2464758124f22cb3c0987f0f761d08b5de0c44492a3f1765ec53c1",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/3/digest",
+          "before": "f7145e5eae8fa4fdaf0ec744415bc5ca849eba91498ead3efdda06421684f9b5",
+          "after": "41eb09bdc050c86a8037322ac9f14ae47b21f3fe12ac5a60ea4cd6130df2b165",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/4/digest",
+          "before": "5a5f081591d93d86f0d07305526bc6338cda2cbb7e301cfe451640551ff49a5a",
+          "after": "73acfb1aeb6d4c139e1c36d0b7500f0e72c9e912a622270bcdd49ff324dd5f31",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/5/digest",
+          "before": "2de564779d5f6fa07b46516433cdfc3a41660a7026c923be1f34e4512a4f2ac6",
+          "after": "0423a6d4b7a537c0c6e801524847e1e7b05256dd7b9a5c7f9d98498b35f73586",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/6/digest",
+          "before": "2093fa866d9c8c6659f20416c2f979ef3f762801db81934eeea8ee5f7a1506f6",
+          "after": "aeaf46448e90275f452991e45ddcd57e86de27c0953db9ea8ec69340e04865b9",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/7/digest",
+          "before": "d10194f86b4709d5fc37de64a33143dca501f9e544ed54faf6f8d6efdb2b0d5e",
+          "after": "d1772748c576cc65c482c388be0f1bc79a0a55c4df72822f8ae3d5c50b65df06",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/8/digest",
+          "before": "cb0feb10cf0b6a031d8c99253421dbb4a4c1c997103840418d36540d451303c9",
+          "after": "d492a8474c2d3a75557c6a74ad4d9c111c288a525692a763c4b67c0536458e5c",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/checkpoints/9/digest",
+          "before": "ff1a5591b8c9b0d72475dfc1eda5e69296c087bf2e6c39f3e1d395d204ffbc47",
+          "after": "f1b64bc47384caeee75d4a25a2dd151addc37748d5cb12dbc12adea4c12265f4",
+          "reason": "Extra startup ration changes inventory/startup grant and allocator state; camp food stack split adds another item ID in seed28. Public checkpoint timing, actor location/HP/active state unchanged."
+        },
+        {
+          "path": "/provenance",
+          "before": "captive-source-stay normal seed3 UI-compatible239 capture + independent fresh exact rerun; raw originals immutable externally",
+          "after": "captive-source-stay normal seed3 UI-compatible239 capture + independent fresh exact rerun; raw originals immutable externally; b820733 two-ration recapture: same public actions/data presence/decisions and checkpoint timing; historical hashes above/below identify the original capture, not this recapture",
+          "reason": "Recapture provenance; earlier original hashes retained as historical references."
+        },
+        {
+          "path": "/recapturedRecordingSha256",
+          "after": "822733ddfe34df80f5aedcc97f70850d2fa1486fa988ebe57cc55f3dc1fab248",
+          "reason": "Recapture provenance; earlier original hashes retained as historical references."
+        },
+        {
+          "path": "/steps/112/data/payload/inventoryStamp",
+          "before": "7faf7f48615a6a31",
+          "after": "ae09b7a738420349",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/113/data/payload/inventoryStamp",
+          "before": "ad0f8ddf8e422846",
+          "after": "34b0ce8010f5debe",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/113/data/payload/regionId",
+          "before": 106,
+          "after": 107,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/115/data/payload/inventoryStamp",
+          "before": "b8ee73130ec26aef",
+          "after": "c580929f63695d72",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/115/data/payload/regionId",
+          "before": 106,
+          "after": 107,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/116/data/payload/inventoryStamp",
+          "before": "9368b2e6d9d54e45",
+          "after": "2c0c13488b8e74fc",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/117/data/payload/inventoryStamp",
+          "before": "9368b2e6d9d54e45",
+          "after": "2c0c13488b8e74fc",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/117/data/payload/regionId",
+          "before": 106,
+          "after": 107,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/119/data/payload/inventoryStamp",
+          "before": "948dfd57d5fca97f",
+          "after": "4267129bf9f65386",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/119/data/payload/regionId",
+          "before": 106,
+          "after": 107,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/122/data/payload/inventoryStamp",
+          "before": "243f835080af5f4f",
+          "after": "d285b005b693720c",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/122/data/payload/regionId",
+          "before": 106,
+          "after": 107,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/125/data/payload/campId",
+          "before": 106,
+          "after": 107,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/125/data/payload/targetId",
+          "before": 85,
+          "after": 86,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/126/data/payload/campId",
+          "before": 106,
+          "after": 107,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        },
+        {
+          "path": "/steps/126/data/payload/targetId",
+          "before": 85,
+          "after": 86,
+          "reason": "Startup ration allocation advances the entity allocator by one; separate world component/container IDs unchanged."
+        }
+      ]
+    },
+    {
+      "file": "src/ext/modules/settlement/tests/resident-candidate-prefix.json",
+      "beforeSha256": "211d555ad8a8a3e28ecd1099567dc14a3f0d7c8626133d92d0da3bd5efb760eb",
+      "afterSha256": "5b81d127db2fccc30417bcc6f7fe982c1c814721f29d5cc958a464b8f7dd3556",
+      "changedLeaves": 19,
+      "changes": [
+        {
+          "path": "/provenance",
+          "before": "Unchanged first141 actual public inputs from original resident-natural-route; separate wait/danger attribution probe, not completed core loop",
+          "after": "Unchanged first141 actual public inputs from original resident-natural-route; separate wait/danger attribution probe, not completed core loop; b820733 two-ration recapture: same public actions/data presence/decisions and checkpoint timing; historical hashes above/below identify the original capture, not this recapture",
+          "reason": "Recapture provenance; earlier original hashes retained as historical references."
+        },
+        {
+          "path": "/recapturedRecordingSha256",
+          "after": "28fcbfb7fc28a9902aa99bd73dce6db3eff1ff3d854d5aab9461b960ae651c9c",
+          "reason": "Recapture provenance; earlier original hashes retained as historical references."
+        },
+        {
+          "path": "/steps/17/data/payload/inventoryStamp",
+          "before": "788d99f977322f29",
+          "after": "0f548b205935f23c",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/26/data/payload/inventoryStamp",
+          "before": "32ae674498ddbbcf",
+          "after": "2b8963e5e9f58d74",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/27/data/payload/inventoryStamp",
+          "before": "28d4046a356d50dc",
+          "after": "c03f1b1a80898b06",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/28/data/payload/inventoryStamp",
+          "before": "57aa46ee8641b48c",
+          "after": "8bd6b8962d433a3b",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/29/data/payload/inventoryStamp",
+          "before": "c3f6c3f902be5f72",
+          "after": "800094da486bf299",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/30/data/payload/inventoryStamp",
+          "before": "43724cbcd09e7fde",
+          "after": "43351b2f02dd3661",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/31/data/payload/inventoryStamp",
+          "before": "51a20e6a3565e11c",
+          "after": "8467417b9e9eecb8",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/32/data/payload/inventoryStamp",
+          "before": "ecc8a3c51805ac73",
+          "after": "8364a83ef5c5a278",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/33/data/payload/inventoryStamp",
+          "before": "363cea52f71bef71",
+          "after": "55b34b7ea8df1f75",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/34/data/payload/inventoryStamp",
+          "before": "697d13dfb58d7292",
+          "after": "ecc98cc1d44fb648",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/35/data/payload/inventoryStamp",
+          "before": "81d3b4b121e6a1e7",
+          "after": "5e1ad74960d01fe4",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/36/data/payload/inventoryStamp",
+          "before": "20de7c251f5dbf5b",
+          "after": "9b34f12a3a6c646d",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/37/data/payload/inventoryStamp",
+          "before": "a81d64b9f8a01de0",
+          "after": "c913e214c169d00e",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/38/data/payload/inventoryStamp",
+          "before": "606bee2528b268b1",
+          "after": "22711ab01785e1f8",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/39/data/payload/inventoryStamp",
+          "before": "43e7936add1ffc0e",
+          "after": "a29b2a5fcf160604",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/40/data/payload/inventoryStamp",
+          "before": "780623b7c066eda8",
+          "after": "4fc3e2519bb5d608",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        },
+        {
+          "path": "/steps/41/data/payload/inventoryStamp",
+          "before": "0f2e8966bdd5d237",
+          "after": "6d525a05e9b69c21",
+          "reason": "Recomputed from actual inventory before the same public command: extra ration, then seed28 food-stack split and resulting item IDs."
+        }
+      ]
+    }
+  ],
+  "counterfactual": {
+    "onlyChangedProductionFile": "src/ext/modules/settlement/data/definitions.json",
+    "change": "Remove only the settlement.ration count:1 startup grant introduced by b820733; all original tests/fixtures and other production files remain HEAD bytes in git archive copy.",
+    "sourceComparison": "/private/tmp/settlement-ration-audit/only-variable.json",
+    "oneRation": {
+      "residentReplayImportUi": "18/18 passed, exit 0; counter-ui.log",
+      "naturalRoutes": "3/3 selected tests passed, exit 0; 16 unrelated tests not selected; counter-routes.log"
+    },
+    "twoRationsOldFixtures": {
+      "residentReplayImportUi": "Original full-module attempt reproduced source398 failure and 11 beforeAll-dependent cases unexecuted; stopped before overall completion, exit 130; settlement-before.log",
+      "naturalRoutes": "3/3 selected tests failed, exit 1 (actor 25 vs 24, captive initial digest, candidate prefix C5_STALE); old-routes-new-ration.log"
+    }
+  },
+  "unchangedContracts": [
+    "956/239/141 public input counts and original action sequence",
+    "Every No/Yes decision and missing data versus explicit null",
+    "All checkpoint depth/tick and seed28 actor location/HP/active fields",
+    "Independent world component/container IDs",
+    "Assertions for identity, exact command payloads, UI draft preservation/CAS retirement, daily food, labor/haul/guard/escort/home, save/replay/seek/continuation"
+  ],
+  "testPremiseChanges": [
+    {
+      "file": "resident_natural.test.ts",
+      "changes": "Startup FOOD total 1→2; native pickup total 2→3. All later daily food, identity and replay assertions unchanged."
+    },
+    {
+      "file": "resident_captive_natural.test.ts",
+      "changes": "Exact rescue source/receipt identity settlement.rescue.85→settlement.rescue.86; recruited campId 106→107."
+    },
+    {
+      "file": "resident_replay_import_ui.test.ts",
+      "changes": "Natural resident 24→25; camp 45→46; crop 53→55; exact source399 inventoryStamp 3d2c627d9bc2e163→a2560dfa68517f76. Adverse DTO second resident 25→26 to remain distinct. All assertion predicates and counts unchanged."
+    }
+  ],
+  "additionalAffectedTests": [
+    {
+      "files": [
+        "settlement_raid_replay.test.ts",
+        "settlement_raid_async.test.ts"
+      ],
+      "failure": "Old pursuit selected a currently empty neighbor then walked the entire path; after two-ration startup shifted camp/event identity, a moving rat occupied that destination (event 713, player 29,24, target 3,6).",
+      "counterfactual": "Original S4 and async settlement-only cases pass after only reverting the startup ration grant; counter-raid.log and counter-raid-additional.log. Original two-ration cases fail in the full suite; a temporary diagnostic reports the occupied target in raid-diagnostic.log.",
+      "premiseChange": "Recalculate the approach each loop and submit one cardinal move through the real command boundary. Async uses its existing awaited step/flush. Original 120-iteration limit and every wave-closure, persistence, replay, seek, continuation and resident assertion unchanged.",
+      "preliminaryVerification": "Temporary current-production S4 settlement and settlement+combat both pass (raid-proposed.log); final workspace follow-up is raid-retest.log."
+    },
+    {
+      "files": [
+        "settlement_raids.test.ts"
+      ],
+      "failure": "combat S1/S4 picks a natural rat after camp/event identity changes. Its 50-tick windup + 40-tick recovery finishes within the old 100-tick observation wait; action 1 is gone and action 2 has begun, so the original same-action assertion fails.",
+      "counterfactual": "Only reverting the ration grant makes the unchanged test pass; counter-raid-additional.log. Two-ration exact diagnostic fails; windup-diagnostic.log.",
+      "premiseChange": "Only at the final observation point, apply native haste for 2 turns if remaining windup is under 50 ticks, so the 50-tick public wait observes the original action in recovery. Longer optional protocol windup retains the original normal wait. All freeze/time-exclusion/forgery/same-action/phase-progress/strict-save assertions unchanged.",
+      "preliminaryVerification": "Temporary current-production targeted case passes (windup-proposed-3.log); final workspace follow-up is raid-retest.log."
+    }
+  ],
+  "validationNotes": [
+    "Full settlement attempt: settlement-final.log (46 discovered files); preserve its true exit/result separately from targeted repair and quiet performance reruns.",
+    "Earlier exploratory multi-file attempts were stopped (exit 130); not counted as completed gates.",
+    "Narrative lifecycle filters first matched zero tests because Vitest quotes/truncates names. The corrected full lifecycle attempt was stopped (exit 130); not claimed as passed. A temporary runner reuses original installedRelatedCombinations/readTrace/reconstruct to verify precisely the two settlement traces, all commands/checkpoints/final RNG; narrative-trace-only-final.log. The first temporary runner had stale dependency declarations and did not start; the corrected runner retains the original dependency discovery helper."
+  ],
+  "validation": {
+    "boundary": {
+      "command": "npm run check:modules",
+      "exit": 0,
+      "log": "boundary-final2.log"
+    },
+    "types": {
+      "command": "node node_modules/vue-tsc/bin/vue-tsc.js -b",
+      "exit": 0,
+      "log": "types-final2.log"
+    },
+    "build": {
+      "command": "npm run build",
+      "exit": 0,
+      "log": "build-final2.log",
+      "warning": "Existing >500 kB chunk warning"
+    },
+    "affectedRaidRetest": {
+      "command": "node node_modules/vitest/vitest.mjs run src/ext/modules/settlement/tests/settlement_raid_replay.test.ts src/ext/modules/settlement/tests/settlement_raid_async.test.ts src/ext/modules/settlement/tests/settlement_raids.test.ts -t '^S4 public controlled-origin|^5Y async complete-boundary|combat S1/S4' --maxWorkers=2 --reporter=verbose",
+      "exit": 0,
+      "passed": 5,
+      "notSelected": 30,
+      "log": "raid-retest.log"
+    },
+    "settlementFull": {
+      "command": "node node_modules/vitest/vitest.mjs run src/ext/modules/settlement/tests --maxWorkers=2 --reporter=verbose",
+      "exit": 1,
+      "files": 46,
+      "passedTests": 386,
+      "failedTests": 5,
+      "skippedTests": 0,
+      "log": "settlement-final.log",
+      "scope": "This full batch executed the original raid tests before their subsequent premise repairs. Keep its failures separate from raid-retest.log and quiet performance verification; no claim of a single all-green full run.",
+      "failures": [
+        "settlement_raid_replay S4 settlement-only: occupied pursuit target",
+        "settlement_raid_async settlement-only: occupied pursuit target",
+        "settlement_raids combat S1/S4: 100-tick observation outlasts a 90-tick rat action",
+        "resident_performance 64 residents: 76.43275000000722 ms > 50 ms",
+        "settlement_raid_performance 16 residents: 9.358499000009033 ms > 5 ms"
+      ]
+    },
+    "relatedNarrativeTraces": {
+      "exit": 0,
+      "passed": 2,
+      "log": "narrative-trace-only-final.log",
+      "method": "Original reconstruct(readTrace(name)) with installedRelatedCombinations dependency discovery; checks all original public commands, full world/message checkpoint hashes, finalHash and finalRng. No capture flag and no trace changes.",
+      "runner": "/private/tmp/settlement-ration-audit/capture/src/ext/modules/narrative/tests/narrative2_combinations.test.ts",
+      "runnerSha256": "6bc428ed3f24fb7395e8348891eec011dc0b8a4c23096ec8d34828df562a1fac",
+      "traces": [
+        {
+          "name": "combo-narrative-settlement",
+          "events": 66,
+          "checkpoints": 8
+        },
+        {
+          "name": "combo-narrative-growth-combat-giants-crafting-foraging-settlement",
+          "events": 1620,
+          "checkpoints": 36
+        }
+      ]
+    },
+    "naturalSettlementRoute": {
+      "result": "Both unchanged settlement_natural cases pass in the full module batch; natural-route.json already updated in b820733 and needs no further change."
+    },
+    "performanceQuiet": {
+      "command": "node node_modules/vitest/vitest.mjs run src/ext/modules/settlement/tests/resident_performance.test.ts src/ext/modules/settlement/tests/settlement_raid_performance.test.ts --maxWorkers=2 --no-file-parallelism --reporter=verbose",
+      "exit": 0,
+      "files": 2,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "log": "performance-quiet.log",
+      "conditions": "Run after full module, raid follow-ups and trace checks completed; no other task tests running. Both original files/thresholds unchanged (5 ms ordinary delta, 50 ms peak; raid 5 ms delta and 50 ms long interval)."
+    },
+    "conclusion": "All 391 module cases were executed in the full batch (386 passed, 5 failed, exit 1). Three functional failures were repaired as test premises and the five affected raid cases passed; both timing failures passed unchanged in a serial three-case rerun. Keep these separate: no claim of one complete all-green module run. Original resident UI 18/18 now passes in the full batch. Two related narrative traces, boundary, vue-tsc and build pass. Production code unchanged; no commit."
+  },
+  "scope": {
+    "changedTrackedFiles": [
+      "src/ext/modules/settlement/tests/resident-candidate-prefix.json",
+      "src/ext/modules/settlement/tests/resident-captive-route.json",
+      "src/ext/modules/settlement/tests/resident-natural-route.json",
+      "src/ext/modules/settlement/tests/resident_captive_natural.test.ts",
+      "src/ext/modules/settlement/tests/resident_natural.test.ts",
+      "src/ext/modules/settlement/tests/resident_replay_import_ui.test.ts",
+      "src/ext/modules/settlement/tests/settlement_raid_async.test.ts",
+      "src/ext/modules/settlement/tests/settlement_raid_replay.test.ts",
+      "src/ext/modules/settlement/tests/settlement_raids.test.ts"
+    ],
+    "newAuditFile": "src/ext/modules/settlement/tests/resident-route-recapture.audit.json",
+    "productionChanged": false,
+    "committed": false
+  }
+}

@@ -995,6 +995,10 @@ it('combat S1/S4: a real raid windup, locked cells and resource pool freeze inta
   h.command('stairs_up');
   expect(g.depth).toBe(1);
   expect(frozen()).toEqual(original);
+  // The two-ration camp selects a rat with a 50+40-tick attack. Observe its
+  // recovery after a native hasted wait, before the whole action has ended.
+  // The optional protocol fixture's longer windup still uses a normal wait.
+  if (original.bundle!.subactions[0]!.phaseRemainingTicks < 50) g.player.applyStatus('haste', 2);
   h.command('wait');
   const resumed = g.actorActions!.bundles.find((b) => b.actionId === id)!;
   expect(resumed).toBeDefined();

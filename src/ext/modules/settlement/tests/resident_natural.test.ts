@@ -38,7 +38,7 @@ it('normal new-game core/day-food: original956, same actor/crop carry, guard, st
   };
   try {
     expect(candidate).toBe(route.actorId);
-    expect(foods()).toBe(1);
+    expect(foods()).toBe(2);
     checkPoint(checkpoints.get(0)!);
     for (const step of route.steps)
       for (let n = 0; n < step.count; n++) {
@@ -99,7 +99,7 @@ it('normal new-game core/day-food: original956, same actor/crop carry, guard, st
         const point = checkpoints.get(event);
         if (!point) continue;
         checkPoint(point);
-        if (point.name === 'native-food') expect(foods()).toBe(2);
+        if (point.name === 'native-food') expect(foods()).toBe(3);
         if (point.name === 'crop') {
           crop = g.worldContainerItems!.get(route.cropId);
           expect(crop).toBeDefined();

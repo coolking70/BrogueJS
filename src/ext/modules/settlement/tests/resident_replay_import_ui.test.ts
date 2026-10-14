@@ -521,7 +521,7 @@ it('normal seed28 source398: trusted home metadata offers hidden box30/plot31 an
   const model = read();
   expect(model.boxes.map(b => b.id)).toEqual([21]);
   expect(model.components.some(c => c.id === 31)).toBe(false);
-  const home = model.jobTargets!.find(t => t.campId === 45)!;
+  const home = model.jobTargets!.find(t => t.campId === 46)!;
   expect(home.boxes.map(b => b.id)).toEqual([21, 30]);
   expect(home.plots.map(p => p.id)).toEqual([31]);
   expect(Object.keys(home.boxes.find(b => b.id === 30)!)).toEqual(['id', 'at', 'revision']);
@@ -537,7 +537,7 @@ it('normal seed28 source398: trusted home metadata offers hidden box30/plot31 an
       model: displayed.value ?? props().model, blocked: props().blocked || displayed.value?.available === false, onCommand: props().onResident
     }) : null }).use(I18NextVue, { i18next });
     app.mount(root); await Vue.nextTick();
-    all(root).find(n => n.props['data-select-resident'] === 24)!.props.onClick(); await Vue.nextTick();
+    all(root).find(n => n.props['data-select-resident'] === 25)!.props.onClick(); await Vue.nextTick();
     const selects = () => all(root).filter(n => n.type === 'select');
     expect(selects()[1]!.options.map(n => n.value)).toContain(30);
     const plot = all(root).find(n => n.type === 'input' && n.props.type === 'checkbox' && n.value === 31)!;
@@ -557,43 +557,43 @@ it('normal seed28 source398: trusted home metadata offers hidden box30/plot31 an
     const last = game.recordedInputEvents[game.recordedInputEvents.length - 1]!;
     expect(last.action).toBe('ext:command');
     expect(JSON.parse(last.data as string)).toEqual({ module: 'settlement', action: 'assign-job', payload: {
-      v: 1, stateRevision: 14, campId: 45, campRevision: 2, targetId: 24, targetRevision: 1,
+      v: 1, stateRevision: 14, campId: 46, campRevision: 2, targetId: 25, targetRevision: 1,
       job: { kind: 'plant', plotIds: [31], sourceId: 21, destinationId: 30 },
-      sourceRevision: 2, destinationRevision: 0, componentRevisions: [0], inventoryStamp: '3d2c627d9bc2e163'
+      sourceRevision: 2, destinationRevision: 0, componentRevisions: [0], inventoryStamp: 'a2560dfa68517f76'
     } });
     expect(worldWorkLastError(game)).toBeNull();
-    expect(residentComponent(game, 24)!.job).toEqual({ kind: 'plant', plotIds: [31], sourceId: 21, destinationId: 30 });
+    expect(residentComponent(game, 25)!.job).toEqual({ kind: 'plant', plotIds: [31], sourceId: 21, destinationId: 30 });
     expect(game.world5!.simulationTicks).toBe(41000); expect(game.player.hp).toBe(30);
     expect(selects()[0]!.value).not.toBe(21); // CAS refresh retired the previous draft.
     const events = game.recordedInputEvents.length;
     for (const job of [
       { kind: 'plant', sourceId: 21, destinationId: 999, plotIds: [31] },
       { kind: 'plant', sourceId: 21, destinationId: 30, plotIds: [999] },
-      { kind: 'haul', sourceId: 30, destinationId: 21, itemId: 53, quantity: 1 }
-    ]) props().onResident('assign-job', 24, { job });
+      { kind: 'haul', sourceId: 30, destinationId: 21, itemId: 55, quantity: 1 }
+    ]) props().onResident('assign-job', 25, { job });
     expect(game.recordedInputEvents).toHaveLength(events);
     // Fixture-only adverse edits below: the natural prefix above never stages
     // visibility/actors/items/IDs. Mutate individual authorization prerequisites.
     const fixture = game.world5!.structures.find(r => r.fixture?.id === 31)!;
     const originalLevel = fixture.levelRef;
     fixture.levelRef = { kind: 'dungeon', depth: 2 };
-    expect(read().jobTargets!.find(t => t.campId === 45)!.plots).toEqual([]);
+    expect(read().jobTargets!.find(t => t.campId === 46)!.plots).toEqual([]);
     fixture.levelRef = originalLevel;
     const originalOwner = fixture.owner; fixture.owner = 'other';
-    expect(read().jobTargets!.find(t => t.campId === 45)!.plots).toEqual([]); fixture.owner = originalOwner;
+    expect(read().jobTargets!.find(t => t.campId === 46)!.plots).toEqual([]); fixture.owner = originalOwner;
     const originalRegion = fixture.regionId; fixture.regionId = 999;
-    expect(read().jobTargets!.find(t => t.campId === 45)!.plots).toEqual([]); fixture.regionId = originalRegion;
+    expect(read().jobTargets!.find(t => t.campId === 46)!.plots).toEqual([]); fixture.regionId = originalRegion;
     const state = game.extensionRuntime!.worldCampState('settlement');
     const originalConstruction = state.constructions;
     state.constructions = state.constructions.filter(c => c.componentId !== 31);
     game.extensionRuntime!.worldCampReplace('settlement', state);
     const cell = game.grid.getCell(23, 20)!, explored = cell.isExplored; cell.isExplored = false;
-    expect(read().jobTargets!.find(t => t.campId === 45)!.plots).toEqual([]);
+    expect(read().jobTargets!.find(t => t.campId === 46)!.plots).toEqual([]);
     cell.isExplored = explored; state.constructions = originalConstruction;
     game.extensionRuntime!.worldCampReplace('settlement', state);
     const chest = game.world5!.containers.find(c => c.id === 30)!;
     const kind = chest.kind; chest.kind = 'escrow';
-    expect(read().jobTargets!.find(t => t.campId === 45)!.boxes.map(b => b.id)).toEqual([21]); chest.kind = kind;
+    expect(read().jobTargets!.find(t => t.campId === 46)!.boxes.map(b => b.id)).toEqual([21]); chest.kind = kind;
     // Deleted targets, native CAS changes, unavailable and replay state retire
     // UI drafts/old actions; they never widen the command authority.
     session.refresh(); await Vue.nextTick();
@@ -603,7 +603,7 @@ it('normal seed28 source398: trusted home metadata offers hidden box30/plot31 an
     // Updating only display prerequisites cannot keep an old job draft alive.
     for (const change of ['camp', 'unavailable', 'depth'] as const) {
       displayed.value = read(); await Vue.nextTick();
-      const resident = all(root).find(n => n.props['data-select-resident'] === 24)!;
+      const resident = all(root).find(n => n.props['data-select-resident'] === 25)!;
       resident.props.onClick(); await Vue.nextTick();
       select(selects()[0]!, 21); select(selects()[1]!, 30); await Vue.nextTick();
       const changed = structuredClone(read());
@@ -619,7 +619,7 @@ it('normal seed28 source398: trusted home metadata offers hidden box30/plot31 an
     const oldAction = props().onResident;
     expect(game.loadReplay(game.exportRecording())).toBe(true);
     session.refresh(); await Vue.nextTick();
-    oldAction('assign-job', 24, { job: { kind: 'plant', plotIds: [31], sourceId: 21, destinationId: 30 } });
+    oldAction('assign-job', 25, { job: { kind: 'plant', plotIds: [31], sourceId: 21, destinationId: 30 } });
     expect(game.replayCursor).toBe(0); expect(game.replayError).toBeNull();
   } finally { sessionScope.stop(); game.extensionRuntime?.unload(); }
 }, 15000);
@@ -665,7 +665,7 @@ describe('resident draft survives unchanged DTO refresh', () => {
       blocked: blocked.value, onCommand: command
     }) }).use(I18NextVue, { i18next });
     app.mount(root); await Vue.nextTick();
-    all(root).find(n => n.props['data-select-resident'] === 24)!.props.onClick();
+    all(root).find(n => n.props['data-select-resident'] === 25)!.props.onClick();
     await Vue.nextTick();
     const selects = () => all(root).filter(n => n.type === 'select');
     const select = (element: HostNode, value: number) => {
@@ -701,11 +701,11 @@ describe('resident draft survives unchanged DTO refresh', () => {
       };
     };
     const initial = snapshot();
-    expect(initial).toMatchObject({ plantDisabled: false, haulDisabled: false, numbers: [4, 12, 6], selectedResidents: [24], fieldsets: 1 });
+    expect(initial).toMatchObject({ plantDisabled: false, haulDisabled: false, numbers: [4, 12, 6], selectedResidents: [25], fieldsets: 1 });
     expect(initial.fields).toEqual([
-      ['assign-job', 24, { job: { kind: 'plant', sourceId: 21, destinationId: 30, plotIds: [31] } }],
-      ['assign-job', 24, { job: { kind: 'haul', sourceId: 21, destinationId: 30, itemId: item.id, quantity: 4 } }],
-      ['set-schedule', 24, { schedule: [12, 6, 14] }]
+      ['assign-job', 25, { job: { kind: 'plant', sourceId: 21, destinationId: 30, plotIds: [31] } }],
+      ['assign-job', 25, { job: { kind: 'haul', sourceId: 21, destinationId: 30, itemId: item.id, quantity: 4 } }],
+      ['set-schedule', 25, { schedule: [12, 6, 14] }]
     ]);
     return { model, blocked, root, session, initial, snapshot };
   }
@@ -739,9 +739,9 @@ describe('resident draft survives unchanged DTO refresh', () => {
     if (change === 'unavailable') f.model.value.available = false;
     if (change === 'resident-deletion') f.model.value.residents!.residents = [];
     if (change === 'resident-switch') {
-      f.model.value.residents!.residents.push({ ...f.model.value.residents!.residents[0]!, id: 25 });
+      f.model.value.residents!.residents.push({ ...f.model.value.residents!.residents[0]!, id: 26 });
       await Vue.nextTick();
-      all(f.root).find(n => n.props['data-select-resident'] === 25)!.props.onClick();
+      all(f.root).find(n => n.props['data-select-resident'] === 26)!.props.onClick();
     }
     await Vue.nextTick(); await Vue.nextTick();
     const after = f.snapshot();
@@ -749,7 +749,7 @@ describe('resident draft survives unchanged DTO refresh', () => {
       expect(after.fieldsets).toBe(0); expect(after.selectedResidents).toEqual([]); expect(after.fields).toEqual([]);
     } else {
       expect(after.plantDisabled).toBe(true); expect(after.haulDisabled).toBe(true);
-      expect(after.fields[0]).toEqual(['assign-job', change === 'resident-switch' ? 25 : 24, { job: { kind: 'plant', sourceId: null, destinationId: null, plotIds: [] } }]);
+      expect(after.fields[0]).toEqual(['assign-job', change === 'resident-switch' ? 26 : 25, { job: { kind: 'plant', sourceId: null, destinationId: null, plotIds: [] } }]);
       expect(after.fields[1]![2]).toEqual({ job: { kind: 'haul', sourceId: null, destinationId: null, itemId: null, quantity: 4 } });
     }
     expect(saved(game)).toEqual(before); expect(rng.getState()).toEqual(random); expect(getNextEntityId()).toBe(nextId);

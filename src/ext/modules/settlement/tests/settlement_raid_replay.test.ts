@@ -1,3 +1,5 @@
+import { Pathfind } from '../../../../engine/Map/Pathfind';
+import { TerrainType } from '../../../../engine/Map/Grid';
 import { installedOptionalModules } from '../../../../test/support/installedExtensions';
 import { ItemLoader } from '../../../../engine/Items/ItemLoader';
 import { createConfiguredWorldHarness } from '../../../testing/configuredWorldHarness';
@@ -168,7 +170,17 @@ it.each([...new Map([['settlement'], ['settlement', 'combat']].map(ids => { cons
             Math.abs(b.y - g.player.y)
         );
       expect(spots.length).toBeGreaterThan(0);
-      walk(h, g, spots[0]!);
+      // The target can move onto this approach square during a multi-turn walk.
+      // Pursue one public cardinal step, then re-read the live enemy/occupancy.
+      const goal = spots[0]!, path = Pathfind.findPath(g.grid, g.player.x, g.player.y, goal.x, goal.y,
+        (x, y) => {
+          const cell = g.grid.getCell(x, y);
+          return !!cell?.isPassable && !g.getMonsterAt(x, y)
+            && !cell.layers.some(t => t === TerrainType.STAIRS_UP || t === TerrainType.STAIRS_DOWN);
+        }, (from, to) => from.x === to.x || from.y === to.y);
+      expect(path?.length).toBeGreaterThan(0);
+      const next = path![0]!;
+      h.command('move', { x: next.x - g.player.x, y: next.y - g.player.y });
     }
     expect(g.isGameOver).toBe(false);
     expect(campRaid(g, current(g).slot)!.event!.phase).toBe('closed');

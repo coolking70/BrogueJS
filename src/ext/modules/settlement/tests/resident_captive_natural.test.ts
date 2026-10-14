@@ -89,11 +89,11 @@ it('normal seed3 current-source UI route rescues the natural D3 original goblin,
           expect(actor).toMatchObject({ isCaged: false, isAlly: true });
           expect(candidateSource(g, actor!.id)?.source).toMatchObject({
             kind: 'rescue',
-            key: 'settlement.rescue.85',
+            key: 'settlement.rescue.86',
             consumed: false
           });
           expect(
-            g.world5!.receipts.filter((r) => r.identity === 'settlement.rescue.85')
+            g.world5!.receipts.filter((r) => r.identity === 'settlement.rescue.86')
           ).toHaveLength(1);
         }
         if (point === 'before-recruit')
@@ -116,7 +116,7 @@ it('normal seed3 current-source UI route rescues the natural D3 original goblin,
           expect(g.world5!.simulationTicks).toBe(beforeNo!.tick + 100);
           const resident = residentComponent(g, actor!.id);
           expect(resident).toBeDefined();
-          expect(resident).toMatchObject({ campId: 106, bedId: route.bed.id });
+          expect(resident).toMatchObject({ campId: 107, bedId: route.bed.id });
           expect(candidateSource(g, actor!.id)?.source.consumed).toBe(true);
         }
         seeks.push({ events: before + 1, digest: h.digest() });
