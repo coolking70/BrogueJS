@@ -36,7 +36,7 @@ export interface ExtensionSnapshot {
     modules: Record<string, Json>;
     /** Run-local creature ID -> module-qualified component ID -> JSON. */
     components: Record<string, Record<string, Json>>;
-    foundation: { version: typeof import('./descriptor').FOUNDATION_PROTOCOL; kindKnowledge?: import('../engine/Core/EdibleState').KindKnowledgeSnapshot; actorNeeds?: import('../engine/Core/EdibleState').ActorNeedsSnapshot; timedStats?: import('../engine/Core/EdibleState').TimedStatsSnapshot; departures?: import('../engine/Core/EdibleState').DeparturesSnapshot; stats?: MaterializedStatSnapshot; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
+    foundation: { itemDrops?: import('./itemDrops').ItemDropSnapshot; version: typeof import('./descriptor').FOUNDATION_PROTOCOL; kindKnowledge?: import('../engine/Core/EdibleState').KindKnowledgeSnapshot; actorNeeds?: import('../engine/Core/EdibleState').ActorNeedsSnapshot; timedStats?: import('../engine/Core/EdibleState').TimedStatsSnapshot; departures?: import('../engine/Core/EdibleState').DeparturesSnapshot; stats?: MaterializedStatSnapshot; nextFactId: number; pendingStoryFacts: PendingStoryFact[]; causality: CausalitySnapshot; deaths: Record<string, DeathFact>; world: WorldInteractionSnapshot };
 }
 /** Native facts wait for run initialization; sequence numbers are reserved on commit. */
 export interface PendingStoryFact { kind: 'entered-level'; depth: number; firstVisit: boolean; turn: number }
@@ -286,6 +286,13 @@ export interface ExtensionModule extends ExtensionVersion, WorldModuleFields {
     initialState(): Json;
     validateState(state: unknown): state is Json;
     hooks?: HookHandlers;
+    readonly itemPickup?: import('./itemSdk').ItemContribution['itemPickup'];
+    readonly itemCommands?: import('./itemSdk').ItemContribution['itemCommands'];
+    readonly itemPresentation?: import('./itemSdk').ItemPresentationProvider;
+    readonly itemKnowledge?: import('./itemSdk').ItemKnowledgeProvider;
+    readonly itemDrops?: import('./itemSdk').DropProvider;
+    readonly itemEncounters?: readonly string[];
+    readonly itemDataValidators?: import('./itemSdk').ItemContribution['itemDataValidators'];
     componentValidators?: Record<string, (value: unknown) => boolean>;
     onNewGame?(context: ExtensionContext): void;
     /** Rebuild session resources only; do not change serialized state. */

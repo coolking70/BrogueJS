@@ -1,8 +1,10 @@
 # 巨兽与通用空间能力配置手册
 
-5Z当前安装身份：foundation **13**、whole-run **6**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；引擎门禁与[人工待验清单](phase5z.manual-checklist.md)以[5Z报告](phase5z.report.md)为准。
+6A1新增通用遭遇声明，giants module/rules为1.1.0，state/schema保持1；未安装掉落provider时无新增掉落或骰。版本与开发期验证见[6A1报告](phase6a1.report.md)，尚未由维护者验收合入。历史dot包原文保持1.0.0；下方当前配置示例使用1.1.0。
 
-适用：giants2 已集成 `2709250`，foundation **13**、whole-run **6**、recording **4**、origin **2**、world **5 / schema 4**、worldSdk/edibleSdk **1**；giants module/rules **1.0.0**，pack/state/spatial **schema 1**。本文以本基线验证器和执行路径为准，设计草图中的预留类型不等于可用字段；派发历史身份见原报告，当前身份由本页顶部说明覆盖。
+6A1当前候选安装身份：foundation **15**、whole-run **7**、recording **4**、origin **2**、world5 **schema4**，SDK兼容号保持1。各模块自有版本/规则身份按下文，旧协议存档/录像直接拒绝、不迁移；本轮开发期门禁见[6A1报告](phase6a1.report.md)；[5Z报告](phase5z.report.md)与其人工清单只保留历史范围。
+
+适用：giants2 已集成 `2709250`，foundation **15**、whole-run **7**、recording **4**、origin **2**、world **5 / schema 4**、worldSdk/edibleSdk **1**；giants module/rules **1.1.0**，pack/state/spatial **schema 1**。本文以本基线验证器和执行路径为准，设计草图中的预留类型不等于可用字段；派发历史身份见原报告，当前身份由本页顶部说明覆盖。
 
 作者主要编辑 `src/ext/modules/giants/data/definitions.json`，显示文字编辑同目录 `locales/zh_CN.json`。所有正式名称、描述、命中区名称必须走 i18n。不要编辑 `monsters.json` 来增加 giants 内容，不通过模块回调直接挖图、移动生物或改 HP。
 
@@ -17,7 +19,7 @@
 | pack 字段 | 必填／范围／省略行为 |
 | --- | --- |
 | `schema` | 必填，恰为 1 |
-| `moduleVersion`、`rulesVersion` | 必填，当前各恰为 `1.0.0`；升版本须同步代码常量和 descriptor，不是只改 JSON |
+| `moduleVersion`、`rulesVersion` | 必填，当前各恰为 `1.1.0`；升版本须同步代码常量和 descriptor，不是只改 JSON |
 | `forms` | 必填，1–16 个，ID 唯一，按本章形态规则验证 |
 | `templates` | 必填，1–16 个，ID 唯一，全部引用 pack 内 form |
 | `bodies` | 可省略；提供时必含 `definitions`（1–16 个）及 `breakRules`（0–16 个）；另可含 `statusProfiles`、`attackProfiles`（各 0–16 个） |
@@ -236,8 +238,8 @@ GiantsState只由底座事实更新，初态schema1/revision0/placements[]/bosse
 ```json
 {
   "schema": 1,
-  "moduleVersion": "1.0.0",
-  "rulesVersion": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "rulesVersion": "1.1.0",
   "forms": [
     {
       "id": "giants.example-guardian",
@@ -283,8 +285,8 @@ GiantsState只由底座事实更新，初态schema1/revision0/placements[]/bosse
 ```json
 {
   "schema": 1,
-  "moduleVersion": "1.0.0",
-  "rulesVersion": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "rulesVersion": "1.1.0",
   "forms": [
     {
       "id": "giants.example-guardian",
@@ -432,8 +434,8 @@ GiantsState只由底座事实更新，初态schema1/revision0/placements[]/bosse
 ```json
 {
   "schema": 1,
-  "moduleVersion": "1.0.0",
-  "rulesVersion": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "rulesVersion": "1.1.0",
   "forms": [
     {
       "id": "giants.example-guardian",
@@ -556,8 +558,8 @@ lantern-chamber：D2–4、chance50、form blind-lantern、无bodyId；copper-ch
 ```json
 {
   "schema": 1,
-  "moduleVersion": "1.0.0",
-  "rulesVersion": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "rulesVersion": "1.1.0",
   "forms": [
     {
       "id": "giants.blind-lantern",

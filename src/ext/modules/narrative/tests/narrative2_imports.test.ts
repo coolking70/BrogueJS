@@ -153,18 +153,18 @@ describe('N2-IMPORT exhaustive narrative production ownership', () => {
     it('preserves the baseline Game field set and narrative-facing shared protocol declarations', () => {
         // Fixed code baseline 59b9ba691daf66819eeea0299a0539f3641ad208,
         // Game fields retain that baseline; descriptor/recording declarations pin
-        // published e9280c6 foundation14 (token-only changes independently checked).
+        // C6-1 foundation15/whole-run7 and explicit item contribution declarations.
         // No git process is needed in CI.
         // This bounded guard is not a hash of whole shared implementations;
         // the final explicit repository scope audit covers all remaining files.
         expect(gameFieldFingerprint(readFileSync('src/engine/Core/Game.ts', 'utf8'))).toBe('fa8757e4632cfa4085e696dce03db57f03df78b717d1d3336a962a77c5386c64');
         const contracts: [string, string][] = [
-            ['src/ext/descriptor.ts', '5a77c0852f72c1e70bd7760940e2381863b0d7bca5b3e5e47096442b4223db70'],
-            ['src/ext/types.ts', '7c2ac69be372ad334774ca88164cef8792c9f89b25fd86beb6be1e6c1e984251'],
+            ['src/ext/descriptor.ts', 'd7c563cb37b921a8234d789f71e273678d71ee324105b5fe0467fce897f25912'],
+            ['src/ext/types.ts', 'ccdd2ae378404f8acaa4b28654b35f3aa270e4736f59b77b58080b76acb51b6a'],
             ['src/ext/world.ts', 'a6d6092d9b31fc7d8f12de633efa92fcca1a59bb61763d1fb28ec356906cbc9d'],
             ['src/ext/ui/types.ts', '9f5d30861987256c91b64c4e1de3588e1b15c08f3cec15a5364382e470bf55f2'],
-            ['src/engine/Core/WholeRunSnapshot.ts', 'fed93bfa016cf6fbd121201008e8dafb79d023000c7a1adb3d87b6b8238ad199'],
-            ['src/engine/Core/RecordingV4.ts', 'c5d34845e5d6da5855668e264342d59cc70a52f1d4844cded3e069ff3aabe119'],
+            ['src/engine/Core/WholeRunSnapshot.ts', 'bdde1113622aecdfa5ef0e3d4e910b3920613cf0eef6dd2cc9bfa908de2a74e0'],
+            ['src/engine/Core/RecordingV4.ts', '858c712a875024b46445e638d8b589563ea67d7974efe1691e18b4ae4e868305'],
         ];
         for (const [file, expected] of contracts) expect(declarationFingerprint(file, readFileSync(file, 'utf8')), file).toBe(expected);
         const sample = 'export interface A { readonly n: 1; }';

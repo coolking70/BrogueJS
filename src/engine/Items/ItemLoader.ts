@@ -1,4 +1,6 @@
-import { markItemStatsDirty } from './ItemStatInvalidation';
+import { notifyItemIdentification, itemIdentificationTransaction } from './ItemExtensionBindings';
+import { nativeRingEnchant } from '../Stats/NativeStatSources';
+import { markItemStatsDirty, markItemKnowledgeDirty } from './ItemStatInvalidation';
 import { CE_ITEM_BOLT_TYPES, CE_BOLT_CATALOG, CEBoltFlags } from '../Combat/BoltCatalog';
 /**
  * src/engine/Items/ItemLoader.ts
@@ -827,7 +829,16 @@ export class ItemLoader {
      * 附魔 ≤0 的戒指与充能区间退化的魔杖在种类亮时连实例一起亮（无隐藏价值）。
      * 之后对该类别跑"最后一种类升格"。
      */
+    private static knowledgeChanged(item:Item,ringBefore?:number,reveal=notifyItemIdentification):void {
+        if(item.isIdentified)reveal(item);
+        markItemKnowledgeDirty(item);
+        if(ringBefore!==undefined&&ringBefore!==nativeRingEnchant(item))markItemStatsDirty(item);
+    }
     public static identifyItemKind(item: Item): void {
+        return itemIdentificationTransaction(item,()=>this.identifyItemKindBody(item));
+    }
+    private static identifyItemKindBody(item: Item, reveal=notifyItemIdentification): void {
+        const ringBefore=item.category===ItemCategory.RING?nativeRingEnchant(item):undefined;
         // U05 adds construction IDs to equipment for duplicate detection. They do
         // not create a flavor/knowledge table: CE identifies equipment per instance.
         if (item.category === ItemCategory.WEAPON || item.category === ItemCategory.ARMOR) return;
@@ -841,21 +852,35 @@ export class ItemLoader {
             item.identified = true;
         }
         if (kindId) this.tryIdentifyLastItemKinds(item.category);
-        markItemStatsDirty(item);
+        this.knowledgeChanged(item,ringBefore,reveal);
     }
 
     /**
      * CE identify（Items.c:7636-7648）：这一件全亮（附魔+符文）并亮种类。
      * 鉴定卷轴 / 戒指熟悉度倒计时归零走这里。
      */
-    public static identifyInstance(item: Item): void {
+    public static identifyInstance(item: Item, reveal=notifyItemIdentification): void {
+        return itemIdentificationTransaction(item,()=>this.identifyInstanceBody(item,reveal));
+    }
+    private static identifyInstanceBody(item: Item, reveal:typeof notifyItemIdentification): void {
+        const ringBefore=item.category===ItemCategory.RING?nativeRingEnchant(item):undefined;
         item.identified = true;
         item.canBeIdentified = false;
         if (item.runicType) {
             item.runicKnown = true; // CE: RUNIC_IDENTIFIED | RUNIC_HINTED
         }
-        this.identifyItemKind(item);
-        markItemStatsDirty(item);
+        this.identifyItemKindBody(item,()=>{});
+        this.knowledgeChanged(item,ringBefore,reveal);
+    }
+
+    /** Native instance-only reveal; it must not teach the flavor kind or rune. */
+    public static identifyInstanceOnly(item: Item): void {
+        itemIdentificationTransaction(item,()=>{
+            const before=item.category===ItemCategory.RING?nativeRingEnchant(item):undefined;
+            item.identified=true;
+            this.knowledgeChanged(item,before);
+            this.updateIdentifiableItem(item);
+        });
     }
 
     /**
@@ -886,13 +911,19 @@ export class ItemLoader {
      * 返回 true 表示这一次调用恰好揭示了。
      */
     public static decrementWeaponAutoIDTimer(weapon: Item | null): boolean {
+        if (!weapon || weapon.isIdentified || !weapon.charges || weapon.charges <= 0) return false;
+        if (weapon.charges > 1) { weapon.charges--; return false; }
+        return itemIdentificationTransaction(weapon,()=>this.decrementWeaponAutoIDTimerBody(weapon));
+    }
+    private static decrementWeaponAutoIDTimerBody(weapon: Item | null): boolean {
         if (!weapon || weapon.isIdentified) return false;
         if (!weapon.charges || weapon.charges <= 0) return false;
         weapon.charges--;
         if (weapon.charges <= 0) {
             weapon.identified = true;
             weapon.canBeIdentified = false;
-            markItemStatsDirty(weapon);
+            notifyItemIdentification(weapon);
+            markItemKnowledgeDirty(weapon);
             return true;
         }
         return false;
@@ -905,6 +936,12 @@ export class ItemLoader {
      * 返回 'armor' | 'ring' 表示这一次调用恰好揭示了什么，null = 无事发生。
      */
     public static decrementWornFamiliarity(item: Item | null): 'armor' | 'ring' | null {
+        if (!item || ![ItemCategory.RING,ItemCategory.ARMOR].includes(item.category) || !item.charges || item.charges <= 0) return null;
+        if (item.isIdentified && !(item.category===ItemCategory.RING && kindIdOf(item) && !this.identifiedItems.has(kindIdOf(item)!))) return null;
+        if (item.charges > 1) { item.charges--; return null; }
+        return itemIdentificationTransaction(item,()=>this.decrementWornFamiliarityBody(item));
+    }
+    private static decrementWornFamiliarityBody(item: Item | null): 'armor' | 'ring' | null {
         if (!item) return null;
         const isRing = item.category === ItemCategory.RING;
         const isArmor = item.category === ItemCategory.ARMOR;
@@ -922,7 +959,8 @@ export class ItemLoader {
         }
         item.identified = true; // CE：护甲只亮实例，符文种类不必然揭示
         item.canBeIdentified = false;
-        markItemStatsDirty(item);
+        notifyItemIdentification(item);
+        markItemKnowledgeDirty(item);
         return 'armor';
     }
 

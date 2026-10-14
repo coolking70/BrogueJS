@@ -1,3 +1,4 @@
+import { itemExtensionColor } from '../Items/ItemExtensionBindings';
 import { structureAppearance } from '../Map/CellProperties';
 /**
  * R-1（渲染纯重构轮）：「格子/实体 → 外观」的纯决策函数。
@@ -495,7 +496,7 @@ export function itemAppearance(item: Item, ctx: EntityAppearanceContext): Entity
         const halledColor = ctx.hallucinating && ctx.cosmetic.percent(30);
         return {
             char: halledChar ? '!' : item.char,
-            color: halledColor ? ctx.cosmetic.pick(HALLUCINATION_COLORS) : item.color,
+            color: halledColor ? ctx.cosmetic.pick(HALLUCINATION_COLORS) : ctx.hallucinating ? item.color : itemExtensionColor(item) ?? item.color,
             interactive: true,
         };
     }

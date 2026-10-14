@@ -1,3 +1,17 @@
+import type { Monster } from '../entities/Monster';
+import type { Item } from '../engine/Items/Item';
+import type { ItemCommandRead, ItemCommandProposal, ItemCommandProvider, ItemFacts, KnownItemFacts, TextRef } from './itemSdk';
+import { bindItemExtension, unbindItemExtension, ITEM_COLOR_TOKENS, type ItemLocation } from '../engine/Items/ItemExtensionBindings';
+import { redactItemProjection } from '../engine/Items/ItemPresentation';
+import { ItemLoader } from '../engine/Items/ItemLoader';
+import { itemFacts, hasItemData, copyItemValue, freezeItemValue } from '../engine/Items/ItemData';
+import { markItemKnowledgeDirty } from '../engine/Items/ItemStatInvalidation';
+import { itemStatPolicy } from '../engine/Stats/ItemStatPolicy';
+import { ItemDrops, type DropInput, type ItemDropSnapshot } from './itemDrops';
+import type { DropSource, DropProposal, DropAcceptance, DropEvent } from './itemSdk';
+import { assertItemJson } from '../engine/Items/ItemData';
+import { validateItemData, ItemDataError } from '../engine/Items/ItemData';
+import type { ItemDataPhase, ItemDataValidator } from './itemSdk';
 import { assertResidentPolicy } from './residentSchema';
 import { validateEdibleSnapshot } from '../engine/Core/EdibleValidation';
 import i18next from 'i18next';
@@ -5,12 +19,12 @@ import { worldText } from './worldText';
 import { edibleSnapshot, peekEdibleState, restoreEdibleState, cleanEdibleState, type EdibleState } from '../engine/Core/EdibleState';
 import { FOUNDATION_EDIBLE_RULES, hasEdibleDeclarations } from '../engine/Core/EdibleDefinitions';
 import { FOUNDATION_STRUCTURE_RULES } from './structureSchema';
-import { StatPipeline } from '../engine/Stats/StatPipeline';
+import { StatPipeline, sealStatRows } from '../engine/Stats/StatPipeline';
 import { NATIVE_STAT_KEYS, NATIVE_STAT_DAG } from '../engine/Stats/NativeStatKeys';
 import { MaterializedStats, validateMaterializedStats } from '../engine/Stats/MaterializedStats';
 import { checkpointGenerationWorld } from '../engine/Core/WorldCheckpoint';
-import { checkpointNativeStatBindings, bindStats, markStatsDirty, nativeStatRevision, nativeStatSignature, nativeStatFacts, nativeBase, nativeEquippedItems, nativeRows, nativeNodeRows, unbindStats } from '../engine/Stats/NativeStatSources';
-import { StatValidationError, validateStatRows } from './stats';
+import { checkpointNativeStatBindings, bindStats, markStatsDirty, nativeStatRevision, nativeStatSignature, nativeStatFacts, nativeBase, nativeTemplateBase, equippedStatItems, nativeRows, nativeNodeRows, unbindStats } from '../engine/Stats/NativeStatSources';
+import { StatValidationError, validateStatRows, isStatJson } from './stats';
 import type { PairFacts, StatQuery } from './stats';
 import { markRecordingRoot, recordingRootRevision } from './recordingRevisions';
 import { World5Error } from './world5';
@@ -52,6 +66,10 @@ import type { DeathFact, GenerationToken, ControlledActionRequest, ControlledAct
 
 // Pure geometry authority is session-derived. No own field/catalog allocation
 // is added to a runtime with no arbitrary-shape declarations.
+const boundExtensionItems=new WeakMap<ExtensionRuntime,Set<Item>>();
+const birthStatHealth=new WeakMap<Creature,{hp:number;maxHp:number}>();
+const dropSessions = new WeakMap<ExtensionRuntime, ItemDrops>();
+const itemValidators = new WeakMap<ExtensionRuntime, Map<string, ItemDataValidator>>();
 const spatialCatalogs = new WeakMap<ExtensionRuntime, SpatialCatalog>();
 // No new own runtime field in existing worlds (4a0 full-object differential).
 const partBreakProviders = new WeakMap<ExtensionRuntime, { module: ExtensionModule; provider: PartBreakProvider }>();
@@ -67,7 +85,7 @@ const restHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts,'nativeDa
 const actorQueryScopes=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['actorQueryScope']>>();
 const nativeFactCheckpoints=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['checkpointCommittedFacts']>>();
 interface StatProposal {hp?:number;maxHp?:number;strength?:number;oldMaxBonus:number;oldStrengthBonus:number}
-interface StatSession { pipeline:StatPipeline; ledger:MaterializedStats; actors:Map<number,Creature>; simulationTicks:number|null; inProgress:boolean; writes:boolean; overrides:Map<string,number>; proposals:Map<number,StatProposal>|null; moduleViews:Map<string,{state:ReadonlyJson;components:Record<string,ReadonlyJson>}>; previewComponents:Readonly<Record<string,Json>>|null; materialSignatures:Map<number,string>; materialValues:Map<number,Map<string,number>>; collecting:boolean; dirty:Set<number>; reconciling:boolean }
+interface StatSession { sourceValidation:Map<string,{stamp:string;rows:readonly import('../engine/Stats/StatPipeline').OwnedStatRow[]}>; pipeline:StatPipeline; ledger:MaterializedStats; actors:Map<number,Creature>; simulationTicks:number|null; inProgress:boolean; writes:boolean; overrides:Map<string,number>; proposals:Map<number,StatProposal>|null; moduleViews:Map<string,{state:ReadonlyJson;components:Record<string,ReadonlyJson>}>; previewComponents:Readonly<Record<string,Json>>|null; materialSignatures:Map<number,string>; materialValues:Map<number,Map<string,number>>; collecting:boolean; dirty:Set<number>; reconciling:boolean }
 const statSessions=new WeakMap<ExtensionRuntime,StatSession>();
 const edibleDiagnostics=new WeakMap<ExtensionRuntime,{owner:string;method:string}[]>();
 const statQueries=new WeakMap<ExtensionRuntime,StatQuery>();
@@ -145,6 +163,8 @@ function requireSynchronous(result: unknown): void {
 }
 interface BufferedFact { name: HookName; event: HookEvents[HookName]; readonly?: boolean }
 interface GenerationFrame {
+    itemBindings:Set<Item>;
+    itemDrops: ItemDropSnapshot;
     restoreActorState: () => void;
     edible: EdibleState;
     token: GenerationToken;
@@ -258,6 +278,13 @@ export class ExtensionRuntime {
         for (const entry of this.manifest.modules) { if (entry.rules) Object.freeze(entry.rules); Object.freeze(entry); }
         Object.freeze(this.manifest.modules); Object.freeze(this.manifest);
         this.modules = registry.create(manifest);
+        const validators = new Map<string, ItemDataValidator>();
+        for (const module of this.modules) if (module.itemDataValidators !== undefined) {
+            const entries = Object.getOwnPropertyDescriptors(module.itemDataValidators);
+            if (Reflect.ownKeys(entries).length !== 1 || !entries[module.id] || !('value' in entries[module.id]!) || typeof entries[module.id]!.value !== 'function' || validators.has(module.id)) throw new ItemDataError('C6_OWNER');
+            validators.set(module.id, entries[module.id]!.value);
+        }
+        itemValidators.set(this, validators);
         if (this.modules.some(m => isWorld5Fixture(m) || m.worldDefinitions)) world5Runtimes.add(this);
         for (const module of this.modules) if (module.optionalPartBreaks !== undefined) {
             const providers = module.optionalPartBreaks, names = Object.keys(providers);
@@ -326,7 +353,7 @@ export class ExtensionRuntime {
         }
         for(const module of this.modules)if(module.residentPolicy){assertResidentPolicy(module.residentPolicy,module.id);Object.defineProperty(module,"residentPolicy",{value:freezeView(structuredClone(module.residentPolicy)),writable:false});}
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalActorQueries ?? {})) {
-            if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
+            if (['foundation.stats.v1','foundation.item-encounters.v1'].includes(capability) || !validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
                 || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid actor query provider');
             let providers = actorQueryProviders.get(this);
             if (!providers) actorQueryProviders.set(this, providers = new Map());
@@ -339,7 +366,7 @@ export class ExtensionRuntime {
             Object.defineProperty(module, 'bodyTransitions', { value: freezeView(structuredClone(module.bodyTransitions)), writable: false });
         }
         for (const module of this.modules) for (const [capability, provider] of Object.entries(module.optionalQueries ?? {})) {
-            if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
+            if (['foundation.stats.v1','foundation.item-encounters.v1'].includes(capability) || !validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !provider
                 || typeof provider.accepts !== 'function' || typeof provider.query !== 'function' || typeof provider.validate !== 'function') throw new Error('Invalid optional query provider');
             if (this.optionalQueries.has(capability)) throw new Error(`Conflicting optional query providers: ${capability}`);
             this.optionalQueries.set(capability, { module, provider });
@@ -365,6 +392,18 @@ export class ExtensionRuntime {
             this.views.set(module.id, freezeView(structuredClone(module.view)));
         }
         if (this.modules.filter(module => module.commitItemGrowth).length > 1) throw new Error('Conflicting item growth providers');
+        for(const m of this.modules){
+            if(m.itemPickup!==undefined&&typeof m.itemPickup!=='function')throw new ItemDataError('C6_DATA');
+            if(m.itemKnowledge && ['known','unique','reveal'].some(k=>typeof (m.itemKnowledge as unknown as Record<string,unknown>)[k]!=='function'))throw new ItemDataError('C6_DATA');
+            if(m.itemPresentation && ['project','name','appearance'].some(k=>typeof (m.itemPresentation as unknown as Record<string,unknown>)[k]!=='function'))throw new ItemDataError('C6_DATA');
+            if(m.itemCommands)for(const [action,p] of Object.entries(m.itemCommands)){
+                if(!validId(action)||!p||!['create','filter','salvage','identify'].includes(p.kind)||typeof p.prepare!=='function'
+                  ||m.commands?.[action]||m.worldWorkCommands?.[action as import('./worldSdk').CraftingAction]
+                  ||p.kind==='identify'&&(!p.materialDefinitionId||!m.worldDefinitions?.items.some(d=>d.id===p.materialDefinitionId&&d.owner===m.id&&d.category==='material'&&d.tool===null)))throw new ItemDataError('C6_DATA');
+            }
+        }
+        boundExtensionItems.set(this,new Set());
+        dropSessions.set(this, new ItemDrops(this.modules));
         this.causality = new EffectCausality();
         if (snapshot) this.validateSnapshot(snapshot);
         this.states = snapshot ? structuredClone(snapshot.modules) : Object.fromEntries(this.modules.map(module => [module.id, cloneJson(module.initialState())]));
@@ -377,6 +416,7 @@ export class ExtensionRuntime {
             this.pendingStoryFacts = structuredClone(snapshot.foundation.pendingStoryFacts);
         }
         restoreEdibleState(this, snapshot ? Object.fromEntries(['kindKnowledge','actorNeeds','timedStats','departures'].filter(k=>k in snapshot.foundation).map(k=>[k,(snapshot.foundation as any)[k]])) : {});
+        if (snapshot?.foundation.itemDrops) dropSessions.get(this)!.restore(snapshot.foundation.itemDrops);
         this.initializeStats(snapshot);
         this.validateSnapshot(this.snapshot());
     }
@@ -385,7 +425,7 @@ export class ExtensionRuntime {
         let query=statQueries.get(this);if(!query){const pipeline=this.stats;query=Object.freeze({applied:pipeline.applied.bind(pipeline),value:pipeline.value.bind(pipeline),rational:pipeline.rational.bind(pipeline),breakdown:pipeline.breakdown.bind(pipeline),hypothetical:pipeline.hypothetical.bind(pipeline)});statQueries.set(this,query);}return query;
     }
     private initializeStats(snapshot?:ExtensionSnapshot):void{
-        const session:StatSession={pipeline:null!,ledger:new MaterializedStats(()=>markRecordingRoot(this)),actors:new Map(),simulationTicks:null,inProgress:false,writes:false,overrides:new Map(),proposals:null,moduleViews:new Map(),previewComponents:null,materialSignatures:new Map(),materialValues:new Map(),collecting:false,dirty:new Set(),reconciling:false};
+        const session:StatSession={sourceValidation:new Map(),pipeline:null!,ledger:new MaterializedStats(()=>markRecordingRoot(this)),actors:new Map(),simulationTicks:null,inProgress:false,writes:false,overrides:new Map(),proposals:null,moduleViews:new Map(),previewComponents:null,materialSignatures:new Map(),materialValues:new Map(),collecting:false,dirty:new Set(),reconciling:false};
         statSessions.set(this,session);session.ledger.restore(snapshot?.foundation.stats);
         const actor=(id:number)=>{const a=session.actors.get(id);if(!a)throw new StatValidationError('source');return a;};
         session.pipeline=new StatPipeline({nativeSignature:id=>JSON.stringify([nativeStatSignature(actor(id)),this.actorActionBinding()?.state.actors.find(row=>row.actorId===id)?.profileId]),beforeRead:id=>{if(session.dirty.has(id)&&!session.inProgress&&!session.reconciling&&!this.pureProviderPhase)this.reconcileMaterialized(id);},debug:this.ports.testMode?.()===true,applied:(id,key)=>session.ledger.bonus(id,key),actor:id=>nativeStatFacts(actor(id),this.ports.playerId()),revision:id=>nativeStatRevision(actor(id)),
@@ -398,20 +438,39 @@ export class ExtensionRuntime {
                 if(session.collecting)throw new StatValidationError('source');
                 session.collecting=true;try{
                 const all:import('../engine/Stats/StatPipeline').OwnedStatRow[]=[...nativeRows(actor(id),change,known)];
+                const self=nativeStatFacts(actor(id),this.ports.playerId()),pair=freezeView(structuredClone(facts));
+                let equipment:ReturnType<typeof equippedStatItems>|undefined;
+                const equipped=()=>equipment??(equipment=equippedStatItems(actor(id),change,known));
                 for(const r of peekEdibleState(this).timedStats?.rows??[])if(r.actorId===id&&(session.simulationTicks??this.ports.simulationTicks?.()??0)<r.untilTick)all.push({stat:r.key,category:r.category,value:r.value,layer:'temporary',sourceKind:'edible',sourceId:`${r.owner}.${r.key}`,owner:r.owner,...(r.category==='more'?{slot:'temporary'}:{})});
                 for(const module of this.modules){const provider=module.statSources;if(!provider)continue;
                     const previous=this.pureProviderPhase;this.pureProviderPhase=true;
-                    try{let view=!change?session.moduleViews.get(module.id):undefined;if(!view){view={state:freezeView(cloneJson(this.states[module.id]!)),components:{}};if(!change)session.moduleViews.set(module.id,view);}const context=Object.freeze({playerId:this.ports.playerId(),state:view.state,facts:freezeView(structuredClone(facts)),
+                    try{let view=!change?session.moduleViews.get(module.id):undefined;if(!view){view={state:freezeView(cloneJson(this.states[module.id]!)),components:{}};if(!change)session.moduleViews.set(module.id,view);}const context=Object.freeze({playerId:this.ports.playerId(),state:view.state,facts:pair,
                         getComponent:(actorId:number,name:string)=>{const key=`${actorId}:${name}`,value=session.previewComponents?.[`${actorId}:${module.id}:${name}`]??this.components[String(actorId)]?.[`${module.id}:${name}`];return value===undefined?undefined:view!.components[key]??(view!.components[key]=freezeView(cloneJson(value)));},
-                        equippedItems:()=>freezeView(nativeEquippedItems(actor(id),change).filter(item=>actor(id) instanceof Player&&(actor(id) as Player).inventory.items.some(owned=>owned.id===item.id)).map(item=>({id:item.id,category:item.category,kindKey:item.identityId??item.name,enchant:known&&!item.isIdentified?0:item.enchantment,identified:item.isIdentified,runic:{kind:item.runicType??null,identified:item.runicKnown}}))),
-                        base:(key:string)=>{if(!session.pipeline.keys.has(key))throw new StatValidationError('declaration');const {baseValue:_,...otherFacts}=facts,baseFacts:PairFacts=key===queryStat?facts:otherFacts;const value=key.startsWith('native.')?nativeBase(actor(id),key,()=>{throw new StatValidationError('declaration');},baseFacts,change,known,k=>session.ledger.bonus(id,k)):key.startsWith('combat.')?this.combatStatBase(actor(id),key,baseFacts):baseFacts.baseValue??session.pipeline.keys.get(key)?.base??0;if(typeof value!=='number')throw new StatValidationError('source');return value;}});
-                        const rows=provider.collect(nativeStatFacts(actor(id),this.ports.playerId()),context);validateStatRows(rows,module.id,session.pipeline.keys);
-                        if(provider.revisionHint){const revision=provider.revisionHint(nativeStatFacts(actor(id),this.ports.playerId()),context);if(!Number.isSafeInteger(revision)||revision<0)throw new StatValidationError('source');}
-                        all.push(...structuredClone(rows).map(row=>({...row,owner:module.id})));
+                        equippedItems:equipped,
+                        base:(key:string)=>{if(!session.pipeline.keys.has(key))throw new StatValidationError('declaration');const {baseValue:_,...otherFacts}=facts,baseFacts:PairFacts=key===queryStat?facts:otherFacts;const value=key.startsWith('native.')?nativeTemplateBase(actor(id),key,baseFacts,change,known,k=>session.ledger.bonus(id,k)):key.startsWith('combat.')?this.combatStatBase(actor(id),key,baseFacts):baseFacts.baseValue??session.pipeline.keys.get(key)?.base??0;if(typeof value!=='number')throw new StatValidationError('source');return value;}});
+                        const supplied=provider.collect(self,context);
+                        // Check JSON descriptors before deriving a cache key. Only
+                        // immutable, already validated outputs are reused; a provider
+                        // still runs, and changed/invalid rows cannot hide behind a revision.
+                        if(!isStatJson(supplied)||!Array.isArray(supplied))throw new StatValidationError('source');
+                        if(supplied.length>256)throw new StatValidationError('budget');
+                        const ids=provider.itemPolicy==='C6-1'?equipped().map(item=>item.id):undefined;
+                        const cacheKey=`${module.id}:${id}`,stamp=JSON.stringify([nativeStatRevision(actor(id)),session.pipeline.keys.size,provider.itemPolicy,ids,supplied]);
+                        const cached=!change?session.sourceValidation.get(cacheKey):undefined;
+                        let rows=cached?.stamp===stamp?cached.rows:undefined;
+                        if(!rows){
+                            if(provider.itemPolicy==='C6-1'){
+                                validateStatRows(supplied,module.id,session.pipeline.keys);
+                                rows=sealStatRows(itemStatPolicy(supplied,module.id,ids),module.id,session.pipeline.keys);
+                            }else rows=sealStatRows(supplied,module.id,session.pipeline.keys);
+                            if(!change){session.sourceValidation.set(cacheKey,{stamp,rows});if(session.sourceValidation.size>128)session.sourceValidation.delete(session.sourceValidation.keys().next().value!);}
+                        }
+                        if(provider.revisionHint){const revision=provider.revisionHint(self,context);if(!Number.isSafeInteger(revision)||revision<0)throw new StatValidationError('source');}
+                        all.push(...rows);
                     }finally{this.pureProviderPhase=previous;}
                 }return all;}finally{session.collecting=false;}
             },nativeRows:(id,key,dep,facts,change,known)=>nativeNodeRows(actor(id),key,dep,facts,change,known)} ,NATIVE_STAT_KEYS,NATIVE_STAT_DAG);
-        for(const module of this.modules){if(module.statSources){if(typeof module.statSources.collect!=='function')throw new StatValidationError('declaration');session.pipeline.registerProviderKeys(module.statSources.keys??[],module.id);}}
+        for(const module of this.modules){if(module.statSources){if(module.statSources.itemPolicy!==undefined&&module.statSources.itemPolicy!=='C6-1'||module.statSources.initializeHealthOnBirth!==undefined&&module.statSources.initializeHealthOnBirth!==true)throw new StatValidationError('declaration');if(typeof module.statSources.collect!=='function')throw new StatValidationError('declaration');session.pipeline.registerProviderKeys(module.statSources.keys??[],module.id);}}
     }
     /** Engine UI only: detached own-component proposal, never a module write port. */
     hypotheticalComponents(moduleId:string, actorId:number, components:Readonly<Record<string,Json>>, knownOnly=true):Readonly<Record<string,number>> {
@@ -802,6 +861,16 @@ export class ExtensionRuntime {
     queryOptional(capability: string, input: Json): OptionalQueryResult {
         if (this.disposed) throw new Error('Extension runtime unloaded');
         if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !isJson(input)) throw new Error('Invalid optional query');
+        if(capability==='foundation.stats.v1'){
+            if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).join(',')!=='keys'||!Array.isArray(input.keys)||input.keys.length>128||input.keys.some(k=>typeof k!=='string'||!validId(k)))return Object.freeze({status:'unavailable',reason:'unsupported-input'});
+            const keys=[...new Set(input.keys as string[])].sort().map((id):Json=>{const declaration=this.stats.keys.get(id);return declaration?{id,available:true,owner:declaration.owner,unit:declaration.unit,kind:declaration.kind,rounding:declaration.rounding,categories:[...declaration.categories],moreSlots:declaration.moreSlots.map(slot=>({...slot})),minimum:declaration.minimum,maximum:declaration.maximum}:{id,available:false};});
+            return freezeView({status:'available',value:{v:1,keys,fingerprint:c5Hash(keys)}});
+        }
+        if(capability==='foundation.item-encounters.v1'){
+            if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length)return Object.freeze({status:'unavailable',reason:'unsupported-input'});
+            const owners=this.modules.filter(m=>m.itemEncounters?.length).map(m=>({owner:m.id,templateIds:[...m.itemEncounters!].sort(),formIds:(m.nativeForms??[]).map(f=>f.id).sort()})).sort((a,b)=>a.owner<b.owner?-1:a.owner>b.owner?1:0);
+            return owners.length?freezeView({status:'available',value:{v:1,owners,fingerprint:c5Hash(owners)}}):Object.freeze({status:'unavailable',reason:'absent'});
+        }
         const entry = this.optionalQueries.get(capability);
         if (!entry) return Object.freeze({ status: 'unavailable', reason: 'absent' });
         const value = freezeView(cloneJson(input)), { module, provider } = entry;
@@ -1013,6 +1082,8 @@ export class ExtensionRuntime {
         return()=>{checkpoint.restore();this.states[binding.moduleId]=state;};
     }
     private transaction<T>(work: () => T, rolledBack?: (error: unknown) => void): T {
+        const bindingsBefore=new Set(boundExtensionItems.get(this));
+        const itemDropsBefore=dropSessions.get(this)!.snapshot();
         const edibleBefore=edibleSnapshot(this);
         const statsBefore=statSessions.get(this)!.ledger.snapshot();
         const restoreActorState=this.checkpointActorStateIdentity();
@@ -1032,6 +1103,9 @@ export class ExtensionRuntime {
             const retainedBindings = this.creatures.size === creatures.size
                 && [...creatures.keys()].every(actor => this.creatures.has(actor));
             try {
+            for(const item of boundExtensionItems.get(this)!)if(!bindingsBefore.has(item))unbindItemExtension(item);
+            boundExtensionItems.set(this,bindingsBefore);
+            dropSessions.get(this)!.restore(itemDropsBefore);
             restoreEdibleState(this,edibleBefore);
             statSessions.get(this)!.ledger.restore(statsBefore);statSessions.get(this)!.materialSignatures.clear();statSessions.get(this)!.materialValues.clear();statSessions.get(this)!.moduleViews.clear();this.stats.clear();
             this.states = states; restoreActorState(); this.components = components; this.world = world;
@@ -1150,6 +1224,7 @@ export class ExtensionRuntime {
                 && Object.keys(input.payload).sort().join(',') === 'attackId,facing' && typeof input.payload.attackId === 'string' && typeof input.payload.facing === 'string';
             if(module?.residentPolicy&&(RESIDENT_ACTIONS as readonly string[]).includes(input.action))return true;
             if(module?.campPolicy&&[...STRUCTURE_ACTIONS,'repair'].includes(input.action))return true;
+            if(module?.itemCommands?.[input.action])return true;
             if(module?.worldWorkCommands?.[input.action as import('./worldSdk').CraftingAction]||module?.edibleCommands?.[input.action as 'feed'|'roast'])return true;
             return !!module?.commands && Object.prototype.hasOwnProperty.call(module.commands, input.action)
                 && typeof module.commands[input.action] === 'function';
@@ -1221,7 +1296,11 @@ export class ExtensionRuntime {
                 || Object.keys(input).sort().join(',') !== 'action,module,payload') return false;
             const module = this.modules.find(module => module.id === input.module);
             if (!module?.initialCommand || input.action !== module.initialCommand.action
-                || !Object.prototype.hasOwnProperty.call(module.commands ?? {}, input.action)) return false;
+                || !(Object.prototype.hasOwnProperty.call(module.commands ?? {}, input.action)||module.itemCommands?.[input.action]?.kind==='create')) return false;
+            if(module.itemCommands?.[input.action as string]?.kind==='create') {
+                const p=input.payload,c=this.itemCommandConfiguration(module.id);
+                if(!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).sort().join(',')!=='presetId,v'||p.v!==1||!c||typeof c!=='object'||Array.isArray(c)||p.presetId!==(c as Readonly<Record<string,ReadonlyJson>>).presetId)return false;
+            }
             const accepted = module.validateInitialCommand ? module.validateInitialCommand(input.action, input.payload!)
                 : canonical(input) === canonical({ module: module.id, ...module.initialCommand });
             requireSynchronous(accepted);
@@ -1244,8 +1323,12 @@ export class ExtensionRuntime {
                 const input = JSON.parse(command), module = expected[index]!;
                 if (!isJson(input) || !input || typeof input !== 'object' || Array.isArray(input)
                     || Object.keys(input).sort().join(',') !== 'action,module,payload' || input.module !== module.id
-                    || typeof input.action !== 'string' || !Object.prototype.hasOwnProperty.call(module.commands ?? {}, input.action)) return false;
-                const accepted = module.validateInitialCommand ? module.validateInitialCommand(input.action,input.payload!,resources)
+                    || typeof input.action !== 'string' || !(Object.prototype.hasOwnProperty.call(module.commands ?? {}, input.action)||module.itemCommands?.[input.action]?.kind==='create')) return false;
+                if(module.itemCommands?.[input.action as string]?.kind==='create') {
+                const p=input.payload,c=this.itemCommandConfiguration(module.id);
+                if(!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).sort().join(',')!=='presetId,v'||p.v!==1||!c||typeof c!=='object'||Array.isArray(c)||p.presetId!==(c as Readonly<Record<string,ReadonlyJson>>).presetId)return false;
+            }
+            const accepted = module.validateInitialCommand ? module.validateInitialCommand(input.action,input.payload!,resources)
                     : canonical(input) === canonical({module:module.id,...module.initialCommand!});
                 requireSynchronous(accepted);
                 return accepted === true;
@@ -1290,6 +1373,7 @@ export class ExtensionRuntime {
         if (this.pendingStoryFacts.some(fact => fact.depth !== depth || fact.turn > turn))
             throw new Error('Invalid pending story fact world references');
         this.withStatWorld(creatures,()=>{this.assertResourceBounds(creatures);const session=statSessions.get(this)!;session.ledger.assert(creatures.map(a=>a.id),session.pipeline,(id,key)=>{const a=creatures.find(a=>a.id===id)!;return key==='native.max-hp'?a.maxHp:key==='native.strength'&&a instanceof Player?a.strength:undefined;});});
+        dropSessions.get(this)!.validateReferences(creatures.map(actor=>actor.id));
         const actors = creatures.map(actor => this.actorFacts(actor,creatures[0]!.id));
         for (const module of this.modules) if (module.validateWorld && !module.validateWorld(this.states[module.id]!, this.components, actors, freezeView({ ...world, depth: world?.depth ?? this.ports.depth(), turn: world?.turn ?? this.ports.turn?.() ?? 0, isGameOver: world?.isGameOver ?? false, nextEntityId: world?.nextEntityId ?? getNextEntityId(), entities: structuredClone(this.world.entities), gate: structuredClone(this.world.gate), ...(this.world.regions ? { regions: structuredClone(this.world.regions) } : {}) })))
             throw new Error('Invalid extension world references');
@@ -1360,6 +1444,15 @@ export class ExtensionRuntime {
         const freeze = (value: unknown): void => {
             if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); }
         };
+        const drops=dropSessions.get(this)!;
+        if (!readOnly && name==='simulationSettled') drops.prune((event as HookEvents['simulationSettled']).reachableIds);
+        if (!readOnly && name==='generationPlacement') drops.placement(event as HookEvents['generationPlacement'], id=>[...this.creatures].some(c=>c.id===id));
+        if (!readOnly && name==='bodyTransition') {
+            const fact=event as HookEvents['bodyTransition'];
+            const source=[...this.creatures].find(c=>c.id===fact.sourceGroupId) as Monster|undefined;
+            if(fact.outcome==='applied'&&source&&this.itemEncounterExcluded(source.id,!!source.isAlly,!!source.isClone,!!source.bodyTransitionRewardless))drops.lose(source.id);
+            drops.transition(fact,id=>[...this.creatures].some(c=>c.id===id));
+        }
         const input = structuredClone(event); freeze(input);
         for (const module of this.modules) {
             const handler = module.hooks?.[name];
@@ -1439,7 +1532,9 @@ export class ExtensionRuntime {
         if (this.disposed || this.creatures.has(creature)) return;
         this.creatures.add(creature);
         const session=statSessions.get(this)!; session.actors.set(creature.id,creature);
-        const birth=readCreatureBirth(creature);if(birth?.nativeStatsCopied&&birth.sourceId!==null){const copied=session.ledger.bonus(birth.sourceId,'native.max-hp');if(copied)session.ledger.set(creature.id,'native.max-hp',copied);}
+        const birth=readCreatureBirth(creature);
+        if(notifySpawn&&creature.id!==this.ports.playerId()&&birth?.initiallyHostile&&!birth.nativeStatsCopied&&this.modules.some(m=>m.statSources?.initializeHealthOnBirth))birthStatHealth.set(creature,{hp:creature.hp,maxHp:creature.maxHp});
+        if(birth?.nativeStatsCopied&&birth.sourceId!==null){const copied=session.ledger.bonus(birth.sourceId,'native.max-hp');if(copied)session.ledger.set(creature.id,'native.max-hp',copied);}
         bindStats(creature,session.pipeline,()=>{session.dirty.add(creature.id);},key=>session.ledger.bonus(creature.id,key),work=>{const previous=session.inProgress,ledger=session.ledger.snapshot(),resources=this.resourceCheckpoint();session.inProgress=true;try{const value=work();session.pipeline.validateSources(creature.id);this.reconcileMaterialized(creature.id);return value;}catch(error){session.ledger.restore(ledger);session.materialSignatures.clear();session.materialValues.clear();this.restoreResources(resources);session.pipeline.clear();throw error;}finally{session.inProgress=previous;}});
         const forms = this.nativeForms();
         if (forms.length) bindNativeForms(creature, forms, this.spatialCatalog);
@@ -1497,15 +1592,22 @@ export class ExtensionRuntime {
             },
         };
         if (notifySpawn && !this.spawned.has(creature)) {
+            dropSessions.get(this)!.birth(creature.id,readCreatureBirth(creature));
             this.spawned.add(creature);
             if (this.generations.length) this.generations[this.generations.length - 1]!.births.add(creature);
             this.emit('creatureSpawned', this.spawnFact(creature));
         }
         if(notifySpawn&&!this.generations.length){
             const saved=this.resourceCheckpoint(),ledger=session.ledger.snapshot();
-            try{session.pipeline.validateSources(creature.id);this.reconcileMaterialized(creature.id);}catch(error){this.restoreResources(saved);session.ledger.restore(ledger);session.materialSignatures.clear();session.materialValues.clear();session.actors.delete(creature.id);this.creatures.delete(creature);touchedNativeBoundary(this);unbindStats(creature);creature.extensionHooks=undefined;session.pipeline.clear();throw error;}
+            try{session.pipeline.validateSources(creature.id);this.reconcileMaterialized(creature.id);this.finishBirthStats(creature);}catch(error){this.restoreResources(saved);session.ledger.restore(ledger);session.materialSignatures.clear();session.materialValues.clear();session.actors.delete(creature.id);this.creatures.delete(creature);touchedNativeBoundary(this);unbindStats(creature);creature.extensionHooks=undefined;session.pipeline.clear();throw error;}
         }
 
+    }
+    private finishBirthStats(creature:Creature):void {
+        const initial=birthStatHealth.get(creature);if(!initial)return;
+        this.reconcileMaterialized(creature.id);
+        if(initial.hp===initial.maxHp&&creature.hp===initial.hp)creature.hp=creature.maxHp;
+        birthStatHealth.delete(creature);
     }
     private spawnFact(creature: Creature): HookEvents['creatureSpawned'] {
         const actor = this.actorFacts(creature);
@@ -1517,7 +1619,7 @@ export class ExtensionRuntime {
     beginGeneration(label: string): GenerationToken {
         if (this.disposed || this.publishingGeneration || !label.length) throw new Error('Invalid generation transaction');
         const token = Object.freeze({ label });
-        this.generations.push({ restoreActorState:this.checkpointActorStateIdentity(), edible:edibleSnapshot(this), token, nextFactId: this.nextFactId, pendingStoryFacts: structuredClone(this.pendingStoryFacts), resources: this.resourceCheckpoint(), stats:statSessions.get(this)!.ledger.snapshot(), world: structuredClone(this.world), placementNextEntityId: null, states: structuredClone(this.states), components: structuredClone(this.components),
+        this.generations.push({ itemBindings:new Set(boundExtensionItems.get(this)), itemDrops: dropSessions.get(this)!.snapshot(), restoreActorState:this.checkpointActorStateIdentity(), edible:edibleSnapshot(this), token, nextFactId: this.nextFactId, pendingStoryFacts: structuredClone(this.pendingStoryFacts), resources: this.resourceCheckpoint(), stats:statSessions.get(this)!.ledger.snapshot(), world: structuredClone(this.world), placementNextEntityId: null, states: structuredClone(this.states), components: structuredClone(this.components),
             causality: this.causality.snapshot(), deaths: structuredClone(this.deaths), creatures: new Set(this.creatures), facts: [], births: new Set() });
         return token;
     }
@@ -1544,11 +1646,15 @@ export class ExtensionRuntime {
             }
             for (const fact of frame.facts) if (fact.name !== 'creatureSpawned') this.dispatch<HookName>(fact.name, fact.event, fact.readonly);
             this.dispatch('generationCommitted', { label: token.label, creatureIds: [...frame.births].map(c => c.id).sort((a, b) => a - b) });
+            for(const creature of frame.births)this.finishBirthStats(creature);
             this.generations.pop();
         }); } finally { this.publishingGeneration = false; }
     }
     rollbackGeneration(token: GenerationToken): void {
         const frame = this.generation(token);
+        for(const item of boundExtensionItems.get(this)!)if(!frame.itemBindings.has(item))unbindItemExtension(item);
+        boundExtensionItems.set(this,frame.itemBindings);
+        dropSessions.get(this)!.restore(frame.itemDrops);
         restoreEdibleState(this,frame.edible);
         // Native action closures retain the live ledger and its children across
         // speculative blueprint scopes, including a committed child whose
@@ -1559,7 +1665,7 @@ export class ExtensionRuntime {
         this.causality.restore(frame.causality); this.deaths = frame.deaths;
         const session=statSessions.get(this)!;session.ledger.restore(frame.stats);session.materialSignatures.clear();session.materialValues.clear();session.pipeline.clear();session.moduleViews.clear();
         for (const creature of this.creatures) if (!frame.creatures.has(creature)) {
-            touchedNativeBoundary(this); bindNativeForms(creature); creature.extensionHooks = undefined; this.spawned.delete(creature); this.creatures.delete(creature);touchedNativeBoundary(this);unbindStats(creature);session.actors.delete(creature.id);
+            touchedNativeBoundary(this); bindNativeForms(creature); creature.extensionHooks = undefined; this.spawned.delete(creature); birthStatHealth.delete(creature); this.creatures.delete(creature);touchedNativeBoundary(this);unbindStats(creature);session.actors.delete(creature.id);
         }
         this.generations.pop();
         const fact: BufferedFact = { name: 'generationRolledBack', event: { label: token.label }, readonly: true };
@@ -1737,6 +1843,134 @@ export class ExtensionRuntime {
     edibleModule(owner:string) { return this.modules.find(m=>m.id===owner); }
     edibleDirty(actorId?:number):void {cleanEdibleState(this);markRecordingRoot(this);this.invalidateStats();if(actorId!==undefined)this.reconcileMaterialized(actorId);}
     edibleFactId():number {if(this.nextFactId>=Number.MAX_SAFE_INTEGER)throw new World5Error('C5_OVERFLOW');markRecordingRoot(this);return this.nextFactId++;}
+    itemCommandDeclaration(data:unknown):{owner:string;action:string;kind:ItemCommandProvider['kind'];materialDefinitionId?:string}|null {
+        try{if(typeof data!=='string')return null;const input=JSON.parse(data);
+            if(!input||typeof input!=='object')return null;
+            const p=this.modules.find(m=>m.id===input.module)?.itemCommands?.[input.action];
+            return p?Object.freeze({owner:input.module,action:input.action,kind:p.kind,...(p.materialDefinitionId?{materialDefinitionId:p.materialDefinitionId}:{})}):null;
+        }catch{return null;}
+    }
+    itemCommandState(owner:string):ReadonlyJson { if(!this.modules.some(m=>m.id===owner&&m.itemCommands))throw new ItemDataError('C6_OWNER');return freezeView(cloneJson(this.states[owner]!)); }
+    itemCommandConfiguration(owner:string):ReadonlyJson {return freezeView(cloneJson(this.manifest.modules.find(m=>m.id===owner)?.configuration??null));}
+    prepareItemCommand(owner:string,action:string,payload:ReadonlyJson,inventory:readonly ItemFacts[],equippedIds:readonly number[]):ItemCommandProposal|null {
+        if(this.disposed||this.pureProviderPhase||this.activeScope||this.commandModule)throw new ItemDataError('C6_DATA');
+        const state=this.itemCommandState(owner),revision=(state as Record<string,ReadonlyJson>).revision;
+        if(!Number.isSafeInteger(revision)||Number(revision)<0)throw new ItemDataError('C6_DATA');
+        const context:ItemCommandRead=freezeItemValue({owner,playerId:this.ports.playerId(),revision:revision as number,state,inventory:copyItemValue(inventory),equippedIds:[...equippedIds],configuration:this.itemCommandConfiguration(owner)});
+        const proposal=this.ediblePure(()=>this.modules.find(m=>m.id===owner)!.itemCommands![action]!.prepare(freezeItemValue(copyItemValue(payload)),context));
+        if(proposal===null)return null;assertItemJson(proposal,-3);return freezeItemValue(copyItemValue(proposal));
+    }
+    commitItemCommandState(owner:string,revision:number,next:ReadonlyJson):void {
+        if(this.pureProviderPhase)throw new ItemDataError('C6_DATA');
+        assertItemJson(next);const module=this.modules.find(m=>m.id===owner)!;
+        if((this.states[owner] as Record<string,Json>).revision!==revision||!next||typeof next!=='object'||Array.isArray(next)||(next as Record<string,ReadonlyJson>).revision!==revision+1
+          ||new TextEncoder().encode(JSON.stringify(next)).byteLength>4096||this.ediblePure(()=>module.validateState(next))!==true)throw new ItemDataError('C6_DATA');
+        this.states[owner]=copyItemValue(next) as Json;
+        const session=statSessions.get(this)!;session.pipeline.clear();session.moduleViews.clear();markRecordingRoot(this);
+    }
+    itemKnown(item:object):boolean {
+        const facts=itemFacts(item);return Object.entries(facts.moduleData??{}).every(([owner,data])=>{
+            const p=this.modules.find(m=>m.id===owner)?.itemKnowledge;if(!p)return true;
+            const known=this.ediblePure(()=>p.known(data));if(typeof known!=='boolean')throw new ItemDataError('C6_DATA');return known;
+        });
+    }
+    itemUnique(owner:string,item:object):boolean {
+        const facts=itemFacts(item),p=this.modules.find(m=>m.id===owner)?.itemKnowledge;if(!p||facts.moduleData?.[owner]===undefined)return false;
+        const unique=this.ediblePure(()=>p.unique(facts.moduleData![owner]!));if(typeof unique!=='boolean')throw new ItemDataError('C6_DATA');return unique;
+    }
+    revealedItemData(owner:string,item:object,reason:'native-identify'|'command'|'trigger'):ReadonlyJson {
+        const facts=itemFacts(item),provider=this.modules.find(m=>m.id===owner)?.itemKnowledge;
+        if(!provider||facts.moduleData?.[owner]===undefined)throw new ItemDataError('C6_OWNER');
+        const value=this.ediblePure(()=>provider.reveal(facts.moduleData![owner]!,freezeItemValue({item:facts,reason})));
+        assertItemJson(value);return copyItemValue(value);
+    }
+    revealItemKnowledge(item:Item,reason:'native-identify'|'command'|'trigger'='native-identify'):void {
+        if(this.pureProviderPhase)throw new ItemDataError('C6_DATA');
+        if(!hasItemData(item))return;
+        const candidate={...item,moduleData:copyItemValue(item.moduleData!)};
+        for(const owner of Object.keys(item.moduleData!))if(this.modules.find(m=>m.id===owner)?.itemKnowledge)
+            candidate.moduleData[owner]=this.revealedItemData(owner,item,reason) as Json;
+        candidate.identified=this.itemKnown(candidate);
+        this.validateItemData(candidate,'update');item.moduleData=candidate.moduleData;item.identified=candidate.identified;
+        // Owner knowledge only determines instance knowledge. Native kind/rune
+        // knowledge can still make this a valid identification-scroll target.
+        item.canBeIdentified=true;ItemLoader.updateIdentifiableItem(item);
+        markItemKnowledgeDirty(item);markRecordingRoot(item);markRecordingRoot(this);
+    }
+    itemAutoPickup(item:Item):boolean {
+        const facts=itemFacts(item);
+        for(const module of this.modules)if(module.itemPickup){const take=this.ediblePure(()=>module.itemPickup!(facts,freezeView(cloneJson(this.states[module.id]!))));if(typeof take!=='boolean')throw new ItemDataError('C6_DATA');if(!take)return false;}
+        return true;
+    }
+    private itemText(owner:string,ref:TextRef):string {
+        assertItemJson(ref);if(Object.keys(ref).sort().join(',')!=='nameKey,params'||typeof ref.nameKey!=='string'||!ref.nameKey.startsWith(`ext.${owner}.`)||!ref.params||Array.isArray(ref.params)||Object.values(ref.params).some(v=>!['string','number'].includes(typeof v)))throw new ItemDataError('C6_DATA');
+        return worldText(ref.nameKey,ref.params);
+    }
+    bindItemData(item:Item):void {
+        if(!hasItemData(item)||boundExtensionItems.get(this)!.has(item))return;
+        boundExtensionItems.get(this)!.add(item);
+        const hallucinating=()=>[...this.creatures].some(a=>a.id===this.ports.playerId()&&a.hasStatus('hallucinating'));
+        const known=(owner:string,baseName:string,location:ItemLocation):KnownItemFacts=>{
+            const facts=itemFacts(item),p=this.modules.find(m=>m.id===owner)!.itemPresentation!;
+            const knowledge=freezeItemValue({location,instanceKnown:item.isIdentified,kindKnown:ItemLoader.identifiedItems.has(item.identityId??item.consumableId??''),curseExposed:false,magicDetected:item.magicDetected,familiarityRemaining:item.charges??0});
+            const projection=this.ediblePure(()=>p.project(facts,knowledge));assertItemJson(projection);
+            if(new TextEncoder().encode(JSON.stringify(projection)).byteLength>4096)throw new ItemDataError('C6_BUDGET');
+            return freezeItemValue({v:1,location,baseName,nativeGlyph:item.char,hallucinating:false,data:redactItemProjection(projection,location,item.isIdentified,item.category===8&&!knowledge.kindKnown)});
+        };
+        bindItemExtension(item,{
+            atomic:work=>{const restore=nativeFactCheckpoints.get(this)?.();try{return work();}catch(error){restore?.();throw error;}},
+            name:(baseName,location)=>{
+                if(this.disposed||hallucinating())return baseName;
+                let name=baseName;for(const owner of Object.keys(item.moduleData!).sort()){
+                    const p=this.modules.find(m=>m.id===owner)?.itemPresentation;if(!p)continue;
+                    const ref=this.ediblePure(()=>p.name(known(owner,name,location)));if(ref!==null)name=this.itemText(owner,ref);
+                }return name;
+            },
+            appearance:()=>{
+                if(this.disposed||hallucinating())return null;
+                for(const owner of Object.keys(item.moduleData!).sort()){
+                    const p=this.modules.find(m=>m.id===owner)?.itemPresentation;if(!p)continue;
+                    const a=this.ediblePure(()=>p.appearance(known(owner,item.nativeUninscribedName,'floor')));if(a===null)continue;
+                    assertItemJson(a);if(Object.keys(a).sort().join(',')!=='colorToken,marker'||!Object.prototype.hasOwnProperty.call(ITEM_COLOR_TOKENS,a.colorToken)||typeof a.marker!=='string'||a.marker.length>4)throw new ItemDataError('C6_DATA');return a;
+                }return null;
+            },
+            identify:()=>{if(!this.disposed)this.revealItemKnowledge(item);},autoPickup:()=>this.itemAutoPickup(item)
+        });
+    }
+    hasItemDrops(source?: DropSource): boolean { const d=dropSessions.get(this)!; return source ? d.has(source) : d.active; }
+    itemDropEligible(id:number):boolean { return dropSessions.get(this)!.eligible(id); }
+    itemEncounterExcluded(id:number,ally:boolean,clone:boolean,rewardless:boolean):boolean {
+        const drops=dropSessions.get(this)!;
+        return drops.has('encounter')&&(ally||((clone||rewardless)&&!drops.splitSubject(id)));
+    }
+    loseItemEncounter(id:number):void {dropSessions.get(this)!.lose(id);markRecordingRoot(this);}
+    itemEncounterSubject(id:number):boolean { return dropSessions.get(this)!.subject(id); }
+    itemEncounterTerminal(id:number,lost:boolean) { if(!this.hasItemDrops())return null;const result=dropSessions.get(this)!.terminal(id,lost);markRecordingRoot(this);return result; }
+    /** Called only by native generation/death safe points inside their full-world checkpoint. */
+    resolveItemDrop(input:DropInput,accept:(proposal:DropProposal,event:DropEvent)=>DropAcceptance):DropAcceptance|null {
+        if(this.pureProviderPhase)throw new ItemDataError('C6_DATA');
+        const d=dropSessions.get(this)!,owner=d.owner(input.source);if(!owner)return null;
+        const token={},revision=recordingRootRevision(this);
+        const values=new Map<string,number>();
+        // Capture before invoking providers; reads during roll never reconcile.
+        for(const key of d.statKeys(input.source))values.set(key,this.stats.value(input.playerId,key));
+        return this.transaction(()=>{
+            const plan=d.prepare(input,token,revision,this.states[owner]!,work=>this.ediblePure(work),this.ports.randomInt,
+                (_id,key)=>{const value=values.get(key);if(value===undefined)throw new ItemDataError('C6_DATA');return value;});
+            if(!plan)return null;
+            return d.commit(plan,token,revision,accept,(moduleId,provider,event,accepted)=>{
+                const next=this.ediblePure(()=>provider.settle(freezeView(cloneJson(this.states[moduleId]!)),event,accepted));
+                assertItemJson(next);const module=this.modules.find(m=>m.id===moduleId)!;
+                if(new TextEncoder().encode(JSON.stringify(next)).byteLength>4096)throw new ItemDataError('C6_BUDGET');
+                if(this.ediblePure(()=>module.validateState(next))!==true)throw new ItemDataError('C6_VALIDATOR');
+                this.states[moduleId]=cloneJson(next as Json);this.invalidateStats();
+                this.stats.validateSources(input.playerId);this.reconcileMaterialized(input.playerId);
+            });
+        });
+    }
+    validateItemData(row: object, phase: ItemDataPhase): void {
+        this.ediblePure(() => validateItemData(row, this.manifest.modules.map(m => m.id), itemValidators.get(this)!, phase));
+    }
     ediblePure<T>(work:()=>T):T {const before=this.pureProviderPhase;this.pureProviderPhase=true;try{return work();}finally{this.pureProviderPhase=before;}}
     edibleParticipate(owner:string,method:'onConsumed'|'onFireContact'|'onNeedEvent',fact:unknown,
       extras:Readonly<Record<string,unknown>>,degrade=false):boolean {
@@ -1775,6 +2009,12 @@ export class ExtensionRuntime {
             if(query)statQueries.set(this,query);else statQueries.delete(this);};
     }
     worldWorkTransaction<T>(work:()=>T):T { return this.transaction(work); }
+    itemCommandTransaction<T>(work:()=>T):T {
+        const restore=checkpointGenerationWorld(()=>({shallow:[this],deep:[this.states,this.components,this.world,this.deaths,this.pendingStoryFacts,this.causality],references:[this.ports,...this.modules,...this.creatures]}));
+        const restoreStats=this.checkpointNativeStatSession();
+        try{return this.transaction(work);}catch(error){restore();restoreStats();throw error;}
+    }
+
     worldWorkEntities(): readonly WorldInteractable[] { return this.world.entities; }
     worldWorkPlacementProtected(at:{x:number;y:number},depth:number):boolean {
         return !!this.world.regions?.some(r=>r.depth===depth && regionContains(r,at) && !!this.modules.find(m=>m.id===r.owner)?.generationContributions?.length);
@@ -1901,7 +2141,7 @@ export class ExtensionRuntime {
     snapshot(): ExtensionSnapshot {
         if (this.generations.length) throw new Error('Cannot snapshot an open generation transaction');
         return structuredClone({ manifest: this.manifest, modules: this.states, components: this.components,
-            foundation: { ...edibleSnapshot(this), version: FOUNDATION_PROTOCOL, ...(statSessions.get(this)?.ledger.snapshot()?{stats:statSessions.get(this)!.ledger.snapshot()}:{}), nextFactId: this.nextFactId, pendingStoryFacts: this.pendingStoryFacts, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
+            foundation: { ...(dropSessions.get(this)!.active ? {itemDrops:dropSessions.get(this)!.snapshot()}:{}), ...edibleSnapshot(this), version: FOUNDATION_PROTOCOL, ...(statSessions.get(this)?.ledger.snapshot()?{stats:statSessions.get(this)!.ledger.snapshot()}:{}), nextFactId: this.nextFactId, pendingStoryFacts: this.pendingStoryFacts, causality: this.causality.snapshot(), deaths: this.deaths, world: this.world } });
     }
     validateSnapshot(value: ExtensionSnapshot): void {
         if (!value || !isJson(value) || canonical(value.manifest) !== canonical(this.manifest)
@@ -1910,7 +2150,7 @@ export class ExtensionRuntime {
             || Object.keys(value).some(key => !['manifest', 'modules', 'components', 'foundation'].includes(key))
             || canonical(Object.keys(value.modules).sort()) !== canonical(this.modules.map(module => module.id).sort())) throw new Error('Invalid extension snapshot');
         const foundation = value.foundation;
-        if (!foundation || foundation.version !== FOUNDATION_PROTOCOL || Object.keys(foundation).filter(k=>!['stats','kindKnowledge','actorNeeds','timedStats','departures'].includes(k)).sort().join(',') !== 'causality,deaths,nextFactId,pendingStoryFacts,version,world'
+        if (!foundation || foundation.version !== FOUNDATION_PROTOCOL || Object.keys(foundation).filter(k=>!['itemDrops','stats','kindKnowledge','actorNeeds','timedStats','departures'].includes(k)).sort().join(',') !== 'causality,deaths,nextFactId,pendingStoryFacts,version,world'
             || !Number.isSafeInteger(foundation.nextFactId) || foundation.nextFactId < 1
             || !Array.isArray(foundation.pendingStoryFacts) || foundation.pendingStoryFacts.length > STORY_FACT_LIMIT
             || !foundation.pendingStoryFacts.every(validPendingStoryFact)
@@ -1918,6 +2158,8 @@ export class ExtensionRuntime {
             || !validWorldSnapshot(foundation.world, this.modules.map(module => module.id))
             || !EffectCausality.validateSnapshot(foundation.causality) || !foundation.deaths || Array.isArray(foundation.deaths)
             || typeof foundation.deaths !== 'object') throw new Error('Invalid extension foundation snapshot');
+        if (dropSessions.get(this)!.active !== Object.prototype.hasOwnProperty.call(foundation,'itemDrops')) throw new ItemDataError('C6_DATA');
+        if (foundation.itemDrops) dropSessions.get(this)!.validate(foundation.itemDrops);
         validateEdibleSnapshot(this,foundation);
         if(foundation.stats!==undefined)validateMaterializedStats(foundation.stats);
         if (foundation.world.entities.some(entity => !this.modules.find(module => module.id === entity.owner)?.worldInteractables && !this.modules.find(module => module.id === entity.owner)?.worldDefinitions)
@@ -1953,6 +2195,7 @@ export class ExtensionRuntime {
     unload(): void {
         if (this.disposed) return;
         this.disposed = true;
+        for(const item of boundExtensionItems.get(this)??[])unbindItemExtension(item);boundExtensionItems.get(this)?.clear();
         try { for (const module of [...this.modules].reverse()) requireSynchronous(module.onUnload?.()); }
         finally { bodyHandlers.delete(this); for (const creature of this.creatures) { touchedNativeBoundary(this); bindNativeForms(creature); creature.extensionHooks = undefined; } this.creatures.clear(); }
     }

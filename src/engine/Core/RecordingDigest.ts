@@ -17,7 +17,7 @@ import type { ExtensionManifest, ExtensionSnapshot } from '../../ext/types';
 import type { World5Snapshot } from '../../ext/world5';
 import type { Item } from '../Items/Item';
 export const hashJson = (v: unknown) => sha256(c5Canonical(v, true));
-const codecIdentity = ['brogue-web-whole-run-v6', 6, FOUNDATION_PROTOCOL, 2];
+const codecIdentity = ['brogue-web-whole-run-v7', 7, FOUNDATION_PROTOCOL, 2];
 export const manifestFingerprint = (manifest: ExtensionManifest | null) => hashJson(manifest);
 export function merkleDomain(
   domain: DigestDomain,
@@ -338,7 +338,12 @@ export function mechanicalDigest(
     ...root.pendingFallenItemsByDepth.flatMap((q: any) => q.items),
     ...root.entityGraph.items
   ];
-  for (const item of items) split(item, itemKnowledge, 'item.' + item.id);
+  for (const item of items) {
+    split(item, itemKnowledge, 'item.' + item.id);
+    // Owner data carries partial-known flags. Hash it in both domains without
+    // teaching the foundation any module's private item schema.
+    if(item.moduleData)knowledge['item-data.'+item.id]=item.moduleData;
+  }
   for (const item of items) {
     item.name = item.consumableId ?? item.identityId ?? 'entity.' + item.id;
     delete item.description;

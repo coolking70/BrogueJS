@@ -82,7 +82,11 @@ it.each(rows)(
           ? NPCS.map((n) => n.id)
           : ['cord.mender'];
       let result: ReturnType<typeof captureNatural> | undefined;
-      for (let seed = 1; seed <= 256; seed++) {
+      // Format-only recapture can reuse the existing route's proven seed.
+      // Keep captureNatural and all lifecycle assertions unchanged; do not
+      // search for a different route when this explicit mode is requested.
+      const fixedSeed = process.env.BROGUE_RECAPTURE_NARRATIVE2_SEED === '1' ? readTrace(name).seed : null;
+      for (let seed = fixedSeed ?? 1; seed <= (fixedSeed ?? 256); seed++) {
         try {
           result = captureNatural(seed, ids, 'wizard', targets);
           attempts.push({

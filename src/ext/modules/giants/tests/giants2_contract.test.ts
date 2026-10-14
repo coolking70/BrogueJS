@@ -28,6 +28,12 @@ function section(marker: string): unknown {
   if (!match) throw new Error(`Missing authoritative ${marker} JSON`);
   return JSON.parse(match[1]!);
 }
+// Reuse immutable historical content under the current protocol, never migrate a save.
+function currentIdentity(value: unknown): GiantsPack {
+  const pack = { ...(value as object), moduleVersion: GIANTS_VERSION, rulesVersion: GIANTS_VERSION };
+  assertGiantsPack(pack);
+  return pack;
+}
 function original(): GiantsPack {
   // Byte oracle copied verbatim with git show e0fa39a225428d36e6e342f6585f57f45960e6ba.
   const bytes = readFileSync(new URL('./oracles/giants-before-giants2.json', import.meta.url));
@@ -35,13 +41,12 @@ function original(): GiantsPack {
     'dda97858a8770fde02ca47955dbdf7b5deac80c593abcefa4da8b1ef9b13a4ad'
   );
   const value: unknown = JSON.parse(bytes.toString());
-  assertGiantsPack(value);
-  return value;
+  expect(isGiantsPack(value)).toBe(false); // Old pack identity is rejected.
+  return currentIdentity(value);
 }
 function additions(): GiantsPack {
   const value = section('giants2-additions');
-  assertGiantsPack(value);
-  return value;
+  return currentIdentity(value);
 }
 function install(pack: GiantsPack, ids: readonly string[] = ['giants']) {
   const module = createGiantsModuleFromPack(pack);
@@ -58,7 +63,7 @@ afterEach(() => {
   logger.reset();
 });
 
-describe('G2-DATA authoritative package and historical compatibility', () => {
+describe('G2-DATA historical content oracle under the current protocol', () => {
   it('exactly appends the entire dispatch subpackage to immutable original prefixes', () => {
     const before = original(),
       added = additions();
@@ -109,17 +114,17 @@ describe('G2-DATA authoritative package and historical compatibility', () => {
     ])
       expect(new Set(list.map((entry) => entry.id)).size).toBe(list.length);
     expect(extensionDataFingerprint(expected)).toBe(
-      'sha256:1a49551065efebbcea96cb35cb83fcd049f969b24aee4bf6dd4c5c7f0790d4f8'
+      'sha256:cae84fd3f67cffdfb426d0fe275a820ac330104a83221104d127f960a74fb0e5'
     );
     expect(getGiantsPackIdentity()).toEqual(createGiantsModuleFromPack(expected).rules);
     expect(getGiantsPackIdentity().fingerprint).not.toBe(extensionDataFingerprint(before));
     expect([GIANTS_VERSION, expected.moduleVersion, expected.rulesVersion]).toEqual([
-      '1.0.0',
-      '1.0.0',
-      '1.0.0'
+      '1.1.0',
+      '1.1.0',
+      '1.1.0'
     ]);
-    // 步骤A非致死袭击退休合同升至14；巨兽数据不自行改变固定协议。
-    expect(FOUNDATION_PROTOCOL).toBe(14);
+    // C6遭遇声明统一升至foundation15；内容数组保持历史字节对应。
+    expect(FOUNDATION_PROTOCOL).toBe(15);
     expect(descriptor.defaultEnabled).toBe(false);
     expect(createGiantsModuleFromPack(expected).dependencies ?? []).toEqual([]);
   });
@@ -274,8 +279,9 @@ describe('G2-DATA authoritative package and historical compatibility', () => {
     expect(() => createGiantsModuleFromPack(pack)).toThrow('Invalid giants pack');
   });
 
-  it('rejects actual old-pack save and command recording before retiring an existing current run', () => {
-    // Capture genuine old rules from the immutable historical pack, not a patched current manifest.
+  it('rejects a genuine previous-content pack save and recording under the current protocol without retiring the live run', () => {
+    // Run historical content with current pack identity, then reject its different content fingerprint.
+    // The actual recorded manifest is never patched; old pack versions are refused above.
     const oldGame = install(original());
     oldGame.executeCommand('wait');
     oldGame.executeCommand('wait');

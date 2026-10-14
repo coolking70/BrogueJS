@@ -16,8 +16,8 @@ export function isGiantsPack(value: unknown): value is GiantsPack {
   const v = value as unknown as GiantsPack;
   const valid = (
     v.schema === 1 &&
-    v.moduleVersion === '1.0.0' &&
-    v.rulesVersion === '1.0.0' &&
+    v.moduleVersion === '1.1.0' &&
+    v.rulesVersion === '1.1.0' &&
     Array.isArray(v.forms) &&
     v.forms.length > 0 &&
     v.forms.length <= 16 &&

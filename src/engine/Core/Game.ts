@@ -1,3 +1,9 @@
+import { prepareItemCommand, commitItemCommand } from './ItemCommands';
+import type { DropInput } from '../../ext/itemDrops';
+import type { DropEvent, DropProposal, DropAcceptance, ItemClass } from '../../ext/itemSdk';
+import { assembleDropItem, FIXED_EQUIPMENT_BASES } from '../Items/FixedItemAssembly';
+import { validateLiveItemRoots, validateSnapshotItems } from './ItemDataValidation';
+import { ItemDataError, hasItemData } from '../Items/ItemData';
 import { checkpointIdentity, type CheckpointJob, type CheckpointResult } from './RecordingCheckpoint';
 import { defaultRecordingBackend, type RecordingBackend } from './RecordingBackend';
 import { checkpointResidentPaths } from './ResidentPathing';
@@ -29,7 +35,7 @@ import { restPointDefinition } from '../Map/StructureWorld';
 import { recordWorldReceipt, threat as worldThreat } from './WorldWorkWorld';
 import type { RestPointAction } from '../../ext/structureTypes';
 import { markItemStatsDirty } from '../Items/ItemStatInvalidation';
-import { nativeRolledDamage, markStatsDirty, nativeEnchantedRoll, nativeStat, configureNativeStats } from '../Stats/NativeStatSources';
+import { clearStatsKnowledge, nativeRolledDamage, markStatsDirty, nativeEnchantedRoll, nativeStat, configureNativeStats } from '../Stats/NativeStatSources';
 import { recordingRootRevision, checkpointRecordingRoots } from '../../ext/recordingRevisions';
 import {interruptCombatActionRoot} from './PhasedAttackProduction';
 import { worldFixtureRegistry, copyWorldFixtureRegistry } from '../../ext/world5Fixture';
@@ -106,6 +112,7 @@ import { createItemDetailContext } from '../UI/ItemDetailContext';
 import { getTerrainDescription, describeTerrain, tileFlavor, selectTerrainTextLayer } from '../UI/TerrainTextCatalog';
 import { formatMonsterSummonMessage } from '../UI/MonsterTextCatalog';
 import { checkpointOwnedMonsterLists, ownedMonsterList, squareListUsers, dyingMonsters, iterateCreatures } from './MonsterLifecycle';
+const convertedDropDeaths = new WeakSet<Monster>();
 import { alertMonster, wakeMonster } from '../Combat/MonsterAI';
 import { type MachineEntityRuntime } from '../Generator/BlueprintEngine';
 import { buildHordeMachine, checkpointGenerationWorld, checkpointGenerationWorldGroups, type GenerationCheckpointRoots, createMachineRuntime, generateDepth, placeStairs, populateLevel } from './GenerationCoordinator';
@@ -336,7 +343,7 @@ export interface CommandConfirmation {
 }
 /** Engine-owned risk facts; no entity, module context or callback survives preparation. */
 export interface ControlledActionRisk {
-    readonly kind: 'edible-overfeed' | 'tool-break' | 'acid' | 'ally' | 'chasm' | 'fire' | 'gas' | 'plate';
+    readonly kind: 'item-warning' | 'edible-overfeed' | 'tool-break' | 'acid' | 'ally' | 'chasm' | 'fire' | 'gas' | 'plate';
     readonly target: { readonly kind: 'creature'; readonly id: number } | { readonly kind: 'cell'; readonly x: number; readonly y: number };
     readonly message: string;
 }
@@ -526,7 +533,7 @@ export class Game {
         const restoreActions=checkpointProductionActorActions(this), restoreDefense=checkpointPhasedAttackSources(this),
             restoreRevisions=checkpointSpatialActorRevisions(actors), restoreLog=logger.checkpoint();
         const invalid=isProductionActorActionRunInvalid(this), origin=recordingState(this).origin,machine=getNextMachineNumber();
-        const dying=creatures.map(actor=>[actor,dyingMonsters.has(actor)] as const);
+        const dying=creatures.map(actor=>[actor,dyingMonsters.has(actor),convertedDropDeaths.has(actor)] as const);
         return()=>{restore();for(const {actor,descriptors:saved} of descriptors){
             for(const key of Reflect.ownKeys(actor))if(Object.getOwnPropertyDescriptor(actor,key)?.configurable)Reflect.deleteProperty(actor,key);
             Object.defineProperties(actor,saved);
@@ -535,7 +542,10 @@ export class Game {
             for(const {grid,cells,values} of traps){if(cells){cells.clear();values.forEach(value=>cells.add(value));this.displacementTrapDepressions?.set(grid,cells);}else this.displacementTrapDepressions?.delete(grid);}
             restoreActions();restoreDefense();restoreRevisions();restoreLog();restoreProductionActorActionValidity(this,invalid);
             recordingState(this).origin=origin;restoreNextMachineNumber(machine);
-            for(const [actor,wasDying] of dying)if(wasDying)dyingMonsters.add(actor);else dyingMonsters.delete(actor);
+            for(const [actor,wasDying,wasConverted] of dying){
+                if(wasDying)dyingMonsters.add(actor);else dyingMonsters.delete(actor);
+                if(wasConverted)convertedDropDeaths.add(actor);else convertedDropDeaths.delete(actor);
+            }
         };
     }
 
@@ -1169,7 +1179,7 @@ export class Game {
         if (extensionManifest) {
             this.extensionRuntime = preparedExtensions!;
             this.configureExtensionRuleAdapters();
-            ItemLoader.onKnowledgeChanged = kindId => {markStatsDirty(this.player);this.extensionRuntime!.emit('itemKnowledgeChanged',{kindId});};
+            ItemLoader.onKnowledgeChanged = kindId => {clearStatsKnowledge(this.player);this.extensionRuntime!.emit('itemKnowledgeChanged',{kindId});};
             this.extensionRuntime.newGame();
             this.extensionRuntime.attachCreature(this.player);
         }
@@ -1255,6 +1265,16 @@ export class Game {
         // ---- CE Items.c:88-107 pickItemCategory：类别加权抽取 ----
         const category = ItemLoader.pickItemCategory();
         let id: string | null = null;
+        let weaponPool=ItemLoader.genWeapons;
+        if(this.extensionRuntime?.hasItemDrops('floor') && [ItemCategory.WEAPON,ItemCategory.ARMOR,ItemCategory.RING].includes(category)) {
+            let eligible=true;
+            if(category===ItemCategory.WEAPON){
+                const throwing=weaponPool.filter(w=>!FIXED_EQUIPMENT_BASES.weapon.includes(w.id)),melee=weaponPool.filter(w=>FIXED_EQUIPMENT_BASES.weapon.includes(w.id));
+                const weights=[throwing,melee].map(pool=>pool.reduce((sum,w)=>sum+(w.frequency??10),0));
+                const pick=ItemLoader.chooseKind(weights);weaponPool=pick===0?throwing:melee;eligible=pick!==0;
+            }
+            if(eligible){const result=this.spawnExtensionDrop({source:'floor',itemClass:category===ItemCategory.WEAPON?'weapon':category===ItemCategory.ARMOR?'armor':'ring',level:{kind:'dungeon',depth},at:pos,playerId:this.player.id});if(result.converted)return result.item;}
+        }
         switch (category) {
             case ItemCategory.SCROLL:
                 id = this.chooseKindFromPool(ItemLoader.genScrolls.map(s => s.id), ItemLoader.genScrolls.map(s => s.frequency), meteredFreq);
@@ -1266,7 +1286,7 @@ export class Game {
                 break;
             }
             case ItemCategory.WEAPON:
-                id = this.chooseKindFromPool(ItemLoader.genWeapons.map(w => w.id), ItemLoader.genWeapons.map(w => w.frequency), meteredFreq);
+                id = this.chooseKindFromPool(weaponPool.map(w => w.id), weaponPool.map(w => w.frequency), meteredFreq);
                 break;
             case ItemCategory.ARMOR:
                 id = this.chooseKindFromPool(ItemLoader.genArmors.map(a => a.id), ItemLoader.genArmors.map(a => a.frequency), meteredFreq);
@@ -1298,6 +1318,30 @@ export class Game {
             this.decrementMeteredForSpawn(category, id);
         }
         return item;
+    }
+
+    private spawnExtensionDrop(input:DropInput):{converted:boolean;item:Item|null} {
+        let converted=false, resultItem:Item|null=null;
+        this.extensionRuntime!.resolveItemDrop(input,(proposal:DropProposal,event:DropEvent):DropAcceptance=>{
+            converted=proposal.converted;
+            const accepted: {index:number;itemId:number}[]=[],skipped:DropAcceptance['skipped'][number][]=[],newUniqueIds:string[]=[];
+            for(const spec of proposal.items)this.extensionRuntime!.validateItemData({id:getNextEntityId(),category:ItemCategory[spec.native.category.toUpperCase() as 'WEAPON'|'ARMOR'|'RING'],identityId:spec.native.kind,
+                quantity:1,identified:spec.native.identified,enchantment:spec.native.enchantment,isCursed:spec.native.isCursed,moduleData:spec.moduleData},'create');
+            const ids=new Set<number>();forEachItemRoot(this,item=>ids.add(item.id));let roots=ids.size;
+            const outer=event.source==='floor'||event.source==='vault';
+            const destination=()=>{if(outer)return {...event.at};const candidates=captiveItemDropCandidates(this,event.at,this.items);return candidates.length?{...candidates[rng.randRange(0,candidates.length-1)]!}:null;};
+            proposal.items.forEach((spec,index)=>{
+                if(roots>=8192){skipped.push({index,reason:'capacity'});return;}
+                const at=destination();if(!at){skipped.push({index,reason:'placement'});return;}
+                const item=assembleDropItem(spec);this.extensionRuntime!.validateItemData(item,'create');this.extensionRuntime!.bindItemData(item);item.loc=at;roots++;
+                if(outer)resultItem=item;else{this.items.push(item);promoteOnItemPlaced(this.grid,at.x,at.y);}
+                accepted.push({index,itemId:item.id});const uid=proposal.uniqueIds[index];if(uid!==null&&uid!==undefined)newUniqueIds.push(uid);
+            });
+            let acceptedGold=0;
+            if(proposal.gold>0&&roots<8192){const at=destination();if(at){const item=ItemLoader.spawnGold(proposal.gold,at.x,at.y)!;this.items.push(item);promoteOnItemPlaced(this.grid,at.x,at.y);acceptedGold=proposal.gold;this.goldGenerated+=acceptedGold;if(!Number.isSafeInteger(this.goldGenerated))throw new ItemDataError('C6_BUDGET');}}
+            return {v:1,eventId:event.eventId,accepted,skipped,acceptedGold,newUniqueIds};
+        });
+        return {converted,item:resultItem};
     }
 
     /** CE chooseKind 的池化封装：ids/freqs 等长，计量覆盖值优先于基表频率。 */
@@ -1371,12 +1415,12 @@ export class Game {
     /** Resolve a blueprint item spawn category string to an actual item */
     private spawnBlueprintItem(category: string, id: string | undefined, x: number, y: number, depth: number,
         qualifiers?: readonly string[], previous: readonly Item[] = []): Item | null {
-        const generate = () => this.rollBlueprintItem(category, id, x, y, depth);
+        const generate = () => this.rollBlueprintItem(category, id, x, y, depth, qualifiers === undefined);
         // Standalone/DF requests use generateItem; only machine creation applies Q.
         return qualifiers === undefined ? generate() : generateQualifiedMachineItem(generate, qualifiers, previous);
     }
 
-    private rollBlueprintItem(category: string, id: string | undefined, x: number, y: number, depth: number): Item | null {
+    private rollBlueprintItem(category: string, id: string | undefined, x: number, y: number, depth: number, allowDrop = false): Item | null {
         // V-1a：多类别掩码（CE machineFeature.itemCategory 是位掩码，如神祠
         // "Shrine -- safe haven…" 的 (POTION|SCROLL|WEAPON|ARMOR|RING)，
         // GlobalsBrogue.c:561-565）。blueprints.json 以 '|' 连接的字符串转录。
@@ -1406,6 +1450,17 @@ export class Game {
             }
         }
 
+        const itemClass=category.toLowerCase() as ItemClass;
+        if(allowDrop && this.extensionRuntime?.hasItemDrops('vault') && ['weapon','armor','ring'].includes(itemClass)
+            && (id===undefined || FIXED_EQUIPMENT_BASES[itemClass].includes(id))){
+            // Reuse the native category/kind draw: an unconverted throwing path
+            // consumes exactly the original dice, and refusal cannot redraw its branch.
+            const unspecifiedWeapon=itemClass==='weapon' && id===undefined;
+            const fallback=unspecifiedWeapon?ItemLoader.genWeapons[ItemLoader.chooseKind(ItemLoader.genWeapons.map(w=>w.frequency??0))]!.id:id;
+            const take=!unspecifiedWeapon||FIXED_EQUIPMENT_BASES.weapon.includes(fallback!);
+            if(take){const result=this.spawnExtensionDrop({source:'vault',itemClass,baseId:id??null,highValue:false,qualifiers:[],level:{kind:'dungeon',depth},at:{x,y},playerId:this.player.id});if(result.converted)return result.item;}
+            id=fallback;
+        }
         if (id) {
             // Specific item
             if (category === 'WEAPON') return ItemLoader.spawnWeapon(id, x, y, depth);
@@ -1812,7 +1867,7 @@ export class Game {
                 ...[...this.levels.values()].flatMap(level => [...level.monsters, ...(level.dormantMonsters ?? [])]),
                 ...[...this.pendingFallenByDepth.values()].flat()];
             const restoreActorRevisions = checkpointSpatialActorRevisions([this.player,...collectEntityGraph(roots).monsters]);
-            const previousDying = collectEntityGraph(roots).monsters.map(monster => [monster, dyingMonsters.has(monster)] as const);
+            const previousDying = collectEntityGraph(roots).monsters.map(monster => [monster, dyingMonsters.has(monster), convertedDropDeaths.has(monster)] as const);
             const previousDepth = this.currentLevelDepth ?? this.depth;
             const previousRewards = getRewardRoomsGenerated();
             const restoreMessages = logger.checkpoint();
@@ -1849,9 +1904,11 @@ export class Game {
                 runtime.commitGeneration(token);
             } catch (error) {
                 restoreWorld();
-                for (const [monster, wasDying] of previousDying) {
+                for (const [monster, wasDying, wasConverted] of previousDying) {
                     if (wasDying) dyingMonsters.add(monster);
                     else dyingMonsters.delete(monster);
+                    if (wasConverted) convertedDropDeaths.add(monster);
+                    else convertedDropDeaths.delete(monster);
                 }
                 this.depth = previousDepth;
                 for (const [grid, traps, cells] of previousTraps) {
@@ -3571,7 +3628,7 @@ export class Game {
     private makeRecordingHeader(): RecordingHeaderV4 {
         return { version: 4, recordedAt: Date.now(), seed: this.currentSeed, mode: this.mode,
             initialLevel: { kind: 'dungeon', depth: 1 }, extensions: this.extensionRuntime ? structuredClone(this.extensionRuntime.manifest) : null,
-            codec: { wholeRun: 6, foundation: FOUNDATION_PROTOCOL, origin: 2 }, digestAlgorithm: 'sha256-c5-merkle-v1', digestChunk: 256, checkpointPeriod: 2048,
+            codec: { wholeRun: 7, foundation: FOUNDATION_PROTOCOL, origin: 2 }, digestAlgorithm: 'sha256-c5-merkle-v1', digestChunk: 256, checkpointPeriod: 2048,
             initialDigest: mechanicalDigest(this.projectWholeRun(), this.recordingInputState()) };
     }
     private recordInputEvent(action: string, data: unknown, decisions: boolean[]): RecordedInputEvent {
@@ -3605,6 +3662,7 @@ export class Game {
         const reachable = [this.player, ...collectEntityGraph(roots).monsters];
         this.extensionRuntime.collectWorld([this.depth, ...this.levels.keys()], this.isGameOver);
         bindPhasedAttackProduction(this);
+        forEachItemRoot(this,item=>this.extensionRuntime!.bindItemData(item));
         this.extensionRuntime.settle(reachable);
         this.extensionRuntime.collectComponents(reachable);
         collectPhasedAttackActors(this, reachable);
@@ -3715,7 +3773,7 @@ export class Game {
     private publishRecordingSnapshot(event: RecordedInputEvent, world: GameSnapshot, inputState: RecordingInputStateV2, snapshotDigest: string): void {
         const snapshot: ReplaySnapshotV4 = { afterCommand: event.index + 1, tick: event.tick, simulationTicks: event.simulationTicks,
             levelRef: structuredClone(event.levelRef), prefixDigest: event.chainDigest, checkpoint: event.fullCheckpoint!,
-            snapshotCodec: 'brogue-web-whole-run-v6', snapshotDigest, world, inputState };
+            snapshotCodec: 'brogue-web-whole-run-v7', snapshotDigest, world, inputState };
         const state = recordingState(this); state.snapshots = boundedSnapshots([...state.snapshots, snapshot]);
         // The replay consumer independently verifies snapshot hash and prefix before trusting it.
     }
@@ -3938,7 +3996,7 @@ export class Game {
             && !isWorldWorkCommand(this, execution.data) && !isStructureCommand(this, execution.data)
             && !isResidentCommand(this, execution.data) && !isStructureFixtureCommand(this, execution.data)
             && !isWorldRestCommand(this, execution.data) && !isEdibleFixtureCommand(this, execution.data)
-            && !isEdibleCommand(this, execution.data) && !isActorParryCommand(this, execution.data)
+            && !runtime.itemCommandDeclaration(execution.data) && !isEdibleCommand(this, execution.data) && !isActorParryCommand(this, execution.data)
             && !isActorDodgeCommand(this, execution.data) && !isPhasedAttackCommand(this, execution.data)
             && execution.decisions.length === 0 && !this.isAdvancing && !state.pendingCommand
             && !this.activeFlares?.length && !this.flareLightMap
@@ -4083,7 +4141,7 @@ export class Game {
             items: [...new Set([...items, ...equipment].filter((item): item is Item => !!item))].map(item => ({
                 id: item.id, letter: item.inventoryLetter, quantity: item.quantity, category: item.category,
                 enchantment: item.enchantment, timesEnchanted: item.timesEnchanted, charges: item.charges,
-                cursed: item.isCursed, protected: item.isProtected, identified: item.isIdentified,
+                moduleData:item.moduleData, cursed: item.isCursed, protected: item.isProtected, identified: item.isIdentified,
                 runic: item.runicType, known: item.runicKnown, vorpal: item.vorpalEnemy, flags: item.flags,
                 identity: (item as Item & { identityId?: string }).identityId,
                 maxChargesKnown: item.maxChargesKnown,
@@ -4190,7 +4248,8 @@ export class Game {
             if (!this.extensionRuntime) throw new Error('Extension command in classic mode');
             // §4.5: only detached data crosses the wait. Runtime.command and its
             // controlled callbacks remain entirely synchronous, including refusals.
-            if(isResidentCommand(this,data))yield* this.executeResidentCommandStages(data);
+            if(this.extensionRuntime.itemCommandDeclaration(data))yield* this.executeItemCommandStages(data);
+            else if(isResidentCommand(this,data))yield* this.executeResidentCommandStages(data);
             else if(isStructureCommand(this,data))yield* this.executeStructureCommandStages(data);
             else if(isStructureFixtureCommand(this,data)){const outcome=executeStructureFixtureCommand(this,data);setWorldWorkError(this,outcome.ok?null:outcome.code);}
             else if (isWorldRestCommand(this,data)) yield* this.executeWorldRestCommandStages(data);
@@ -4306,6 +4365,19 @@ export class Game {
         this.updateVision();
     }
 
+    private *executeItemCommandStages(data:unknown):CommandStages<void> {
+        const plan=prepareItemCommand(this,data);if(!plan)return;
+        if(plan.confirmation){
+            if(!this.replayRecording){
+                const yes=yield {message:plan.confirmation,recordDecision:false};
+                const current=prepareItemCommand(this,data);if(!current||current.stamp!==plan.stamp)return;
+                const risk:ControlledActionRisk={kind:'item-warning',target:{kind:'creature',id:this.player.id},message:plan.confirmation};
+                const state=recordingState(this);state.suppliedAnswers={request:null,answers:[{risk,decision:yes}],cursor:0};
+                try{if(!(yield* this.requestConfirm(plan.confirmation,risk)))return;}finally{state.suppliedAnswers=null;}
+            }else if(!(yield* this.requestConfirm(plan.confirmation)))return;
+        }
+        if(commitItemCommand(this,plan)&&plan.chargedTicks>0)this.playerTurnEnded();
+    }
     private *executeEdibleCommandStages(data:unknown):CommandStages<void> {
         setWorldWorkError(this,null);const first=prepareEdibleCommand(this,data);if(!first.outcome.ok){setWorldWorkError(this,first.outcome.code);return;}
         let plan=first;
@@ -6986,7 +7058,9 @@ export class Game {
         const fact: BodyTransitionFact = { sourceGroupId: core.id, reason: request.reason, moveId, outcome: 'applied',
             resultGroupIds: staged.map(s => s.values[0]!.id), retiredIds };
         const wasAllied = core.isAlly, wasCaged = core.isCaged;
+        const encounterLost=runtime.itemEncounterSubject(core.id)&&runtime.itemEncounterExcluded(core.id,core.isAlly,core.isClone,!!core.bodyTransitionRewardless);
         this.commitBodyTransition(`body-${request.reason}`, () => {
+            if(encounterLost&&!copy)runtime.loseItemEncounter(core.id);
             if (this.grid !== originalGrid || before !== revision() || terrain !== spatialTerrainRevision(this.grid, this)) throw new Error('Stale body transition commit');
             if (!copy && sourceGroup) {
                 this.retireBodyEntities(sourceGroup, new Set(sourceGroup.members.filter(s => s.entityId !== null && retiredIds.includes(s.entityId)).map(s => s.partId)));
@@ -8159,10 +8233,22 @@ export class Game {
      *      RING 揭示 +0 / CHARM 重置充能延迟）。
      */
     private negationBlastFromPlayer(emitterName: string, distance = DCOLS): void {
+        // The reveal callback may reject. Capture before any player/monster/item
+        // effects or causality publication, not after enchantment/curse writes.
+        const restore=this.extensionRuntime && this.items.some(hasItemData)?this.checkpointCombatFactWorld():undefined;
+        const restoreRandom=restore?checkpointGenerationWorld(()=>({shallow:[],deep:[rng]})):undefined;
+        const allocatorBefore=getNextEntityId();
+        try {
+            if(restore && this.extensionRuntime)this.extensionRuntime.itemCommandTransaction(()=>this.negationBlastBody(emitterName,distance));
+            else this.negationBlastBody(emitterName,distance);
+        }
+        catch(error) { restore?.(); restoreRandom?.(); if(restore)restoreNextEntityId(allocatorBefore); throw error; }
+    }
+    private negationBlastBody(emitterName: string, distance: number): void {
         if (this.extensionRuntime && this.extensionRuntime.causality.current?.kind !== 'negation') {
             const effects = this.extensionRuntime.causality;
             return effects.withOrigin(effects.create('negation', this.player.id, this.player.id, this.player.extensionHooks?.partyId(this.player) ?? null),
-                () => this.negationBlastFromPlayer(emitterName, distance));
+                () => this.negationBlastBody(emitterName, distance));
         }
         logger.log(i18next.t('scroll.negate_burst', {
             emitter: emitterName,
@@ -8235,7 +8321,8 @@ export class Game {
                     // +0，但**不必然**揭示是哪种戒指（种类识别在 identifyItemKind
                     // 之外，这里不走 identifyInstance）。
                     theItem.enchantment = 0;
-                    theItem.identified = true;
+                    this.extensionRuntime?.bindItemData(theItem);
+                    ItemLoader.identifyInstanceOnly(theItem);
                     ItemLoader.updateIdentifiableItem(theItem); // CE updateIdentifiableItems()
                     break;
                 case ItemCategory.CHARM:
@@ -9750,6 +9837,7 @@ export class Game {
 
     /** Existing web loot rolls shared by melee and poison deaths. */
     private dropMonsterLoot(target: Monster): void {
+        if (convertedDropDeaths.has(target)) return;
         // Handle Drops
         if (rng.randPercent(Math.floor(target.goldDropChance * 100))) {
             const goldItem = new Item('Gold', '$', 0xffda75, ItemCategory.GOLD);
@@ -10992,22 +11080,30 @@ export class Game {
      * physical removal and purgatory. Reentrant death DFs cannot kill twice. */
     public killMonster(m: Monster, administrative = false): void {
         if (m.deathProcessed || dyingMonsters.has(m)) return;
-        if (!this.extensionRuntime?.residentOwners().length) {
+        if (!this.extensionRuntime || (!this.extensionRuntime.residentOwners().length
+            && !this.extensionRuntime.hasItemDrops('kill') && !this.extensionRuntime.itemEncounterSubject(m.id))) {
             this.killMonsterBody(m, administrative);
             return;
         }
         // The native entry owns captureDeath, dying membership, drops, DFs,
         // refunds and publication. A resident child checkpoint starts too late.
         const restoreNative = this.checkpointCombatFactWorld([m]);
+        const restoreRandomGraph=checkpointGenerationWorld(()=>({shallow:[],deep:[rng]})), allocatorBefore=getNextEntityId(), convertedBefore=convertedDropDeaths.has(m);
         try {
             transactResidentWorld(this, () => this.killMonsterBody(m, administrative));
         } catch (error) {
-            restoreNative();
+            restoreNative();restoreRandomGraph();restoreNextEntityId(allocatorBefore);
+            if(!convertedBefore)convertedDropDeaths.delete(m);
             throw error;
         }
     }
 
     private killMonsterBody(m: Monster, administrative: boolean): void {
+        const drops=this.extensionRuntime;
+        const encounterSubject=drops?.itemEncounterSubject(m.id)??false;
+        const rewardless=administrative||m.isAlly||m.isClone||m.bodyTransitionRewardless;
+        const eligible=!!drops?.itemDropEligible(m.id)&&!rewardless;
+        const dropFacts=Object.freeze({typeId:m.typeId,leader:this.monsters.some(other=>other.leader===m),champion:!!m.mutation,encounterSubject});
         const group = this.bodyGroups?.find(g => g.groupId === m.spatial?.bodyMember?.groupId);
         if (group) {
             if (m.id !== group.coreId) {
@@ -11028,6 +11124,7 @@ export class Game {
             // The corpse retains only the core's independent geometry.
             delete m.spatial!.actionLockInTicks;
         }
+        const terminal=drops?.itemEncounterTerminal(m.id,administrative||drops.itemEncounterExcluded(m.id,m.isAlly,m.isClone,!!m.bodyTransitionRewardless));
         const death = this.extensionRuntime?.captureDeath(m, administrative,
             administrative ? null : this.extensionRuntime.causality.deathOrigin(m.id));
         dyingMonsters.add(m); // MB_IS_DYING, before item placement/DF callbacks
@@ -11046,6 +11143,12 @@ export class Game {
             m.carriedMonster = null;
         } else {
             this.makeMonsterDropItem(m);
+            if(encounterSubject && drops?.hasItemDrops('encounter')) convertedDropDeaths.add(m);
+            if(eligible && !encounterSubject && drops?.hasItemDrops('kill')) {
+                const result=this.spawnExtensionDrop({source:'kill',actorId:m.id,monster:dropFacts,level:{kind:'dungeon',depth:this.depth},at:{...m.loc},playerId:this.player.id});
+                if(result.converted)convertedDropDeaths.add(m);
+            }
+            if(terminal && drops?.hasItemDrops('encounter')) this.spawnExtensionDrop({source:'encounter',...terminal,level:{kind:'dungeon',depth:this.depth},at:{...m.loc},playerId:this.player.id});
             if (this.extensionRuntime) {
                 const cause = this.extensionRuntime.causality;
                 const origin = cause.create('death-effect', m.id, m.id, m.extensionHooks?.partyId(m) ?? null);
@@ -11899,8 +12002,10 @@ export class Game {
         this.finishTransientDisplay(true);
         if(!!this.actorActions!==(!!this.world5||!!this.extensionRuntime?.actorActionBinding()))throw new Error('Invalid actorActions presence');
         if(this.actorActions)validateActorActionsRoot(this.actorActions,!!this.extensionRuntime?.actorActionBinding(),!!this.world5);
+        validateLiveItemRoots(this, 'save');
         validateWorldWorkReferences(this);
         const snapshot = this.projectWholeRun(false);
+        validateSnapshotItems(snapshot, this.extensionRuntime, 'save');
         if (!!snapshot.run.world5 !== !!this.extensionRuntime?.needsWorld5) throw new Error('C5_BAD_REFERENCE');
         if (snapshot.run.world5) validateWorld5(snapshot.run.world5, { ...world5SnapshotContext(snapshot),
             rulesFingerprint: this.extensionRuntime!.world5SettlementFixture()?.configuration.rulesFingerprint });
@@ -12016,6 +12121,7 @@ export class Game {
                 return false;
             }
         }
+        try { validateSnapshotItems(snapshot, extensions, 'load'); } catch { return refuse(); }
         if (!isWholeRunSnapshot(snapshot, extensions?.spatialCatalog)) return refuse();
         try {
             if (!!snapshot.run.world5 !== !!extensions?.needsWorld5) return refuse();
@@ -12045,7 +12151,7 @@ export class Game {
         const { entityGraph, restored } = decoded;
         // Player's decoder constructs a temporary instance. Growth preflight may
         // reject it, so that read-only phase cannot consume the live ID allocator.
-        const preflightNextId = extensions ? getNextEntityId() : null;
+        const preflightNextId = getNextEntityId();
         let decodedPlayer: Player;
         try { decodedPlayer = decodePlayer(snapshot.player, entityGraph.items); }
         catch { return false; }
@@ -12273,12 +12379,12 @@ export class Game {
                 ? (id, at) => extensions.containsOwnedRegion(id, depth, at) : undefined);
         }
         this.configureExtensionRuleAdapters();
-        ItemLoader.onKnowledgeChanged = extensions ? kindId => {markStatsDirty(this.player);extensions.emit('itemKnowledgeChanged',{kindId});} : null;
+        ItemLoader.onKnowledgeChanged = extensions ? kindId => {clearStatsKnowledge(this.player);extensions.emit('itemKnowledgeChanged',{kindId});} : null;
         if (extensions) {
             extensions.attachCreature(this.player, false);
             for (const creature of extensionCreatures) extensions.attachCreature(creature, false);
             extensions.loaded();
-            forEachItemRoot(this,item=>bindEdibleItem(this,item));
+            forEachItemRoot(this,item=>{bindEdibleItem(this,item);extensions.bindItemData(item);});
         }
         bindPhasedAttackProduction(this);
         markProductionActorActionResume(this);
@@ -14977,6 +15083,7 @@ export class Game {
             && (!this.inAutoTravelStep || !item.flags?.includes('ITEM_PLAYER_AVOIDS')));
         if (index < 0) return;
         const item = this.items[index]!;
+        if(this.extensionRuntime&&!this.extensionRuntime.itemAutoPickup(item))return;
         // CE Items.c:865-888: gold bypasses pack capacity and is currency,
         // never an inventory entry. W-11's ordinary-item pickup test missed it.
         if (item.category === ItemCategory.GOLD) this.stats.gold += item.quantity;

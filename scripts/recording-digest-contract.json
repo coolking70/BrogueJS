@@ -158,7 +158,8 @@
   ],
   "derivedSessionServices": {
     "StatPipeline": "Excluded: cache, diagnostics, actorStatRevision, frozen provider views and hypothetical proposal contexts. Persist only ExtensionSnapshot.foundation.stats in extensions dirty domain.",
-    "EdibleFoundation": "5A4: knowledge/needs/timedStats/departures roots belong to extensions; Item.fireContactCooldownUntilTurn belongs to native. FireContact queue/draining/DF nesting are session, name/appearance/effect/nextDue are derived and excluded."
+    "EdibleFoundation": "5A4: knowledge/needs/timedStats/departures roots belong to extensions; Item.fireContactCooldownUntilTurn belongs to native. FireContact queue/draining/DF nesting are session, name/appearance/effect/nextDue are derived and excluded.",
+    "ItemFoundation": "C6-1: Item.moduleData is native and also hashed in knowledge for partial-known changes; foundation.itemDrops lifecycle/receipts are extensions. Sealed plans, presentation/knowledge weak bindings and stat projection caches are session-only."
   },
   "world5Leaves": {
     "foundation": 11,

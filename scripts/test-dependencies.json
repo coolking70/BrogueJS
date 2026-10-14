@@ -501,6 +501,31 @@
         "settlement"
       ],
       "optional": []
+    },
+    "src/test/ext_item_drop.test.ts": {
+      "required": [
+        "giants"
+      ],
+      "optional": []
+    },
+    "src/test/ext_item_stats.test.ts": {
+      "required": [
+        "combat",
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/test/ext_item_recording.test.ts": {
+      "required": [],
+      "optional": [
+        "combat",
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "narrative",
+        "settlement"
+      ]
     }
   }
 }

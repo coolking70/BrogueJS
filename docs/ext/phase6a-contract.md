@@ -1,18 +1,18 @@
 # C6-1：阶段 6A 物品扩展与掉落服务合同
 
-2026-10-11，6A0 候选合同。**只交文档与只读探针，未实现任何下述新增 API，未启用 loot。** 6A1 合并、fixture 验收并填入导出散列后才可作为 dot 的冻结 SDK。声明的静态类型检查不等于运行时接线验收。
+2026-10-15，C6-1 v1 的独立审查修复已落在6A1工作树，当前验证与候选冻结身份以报告“审查发现处理”为准。底座与中性 fixture 已接线，验证、接口散列与限制见 [6A1报告](phase6a1.report.md)。**未安装 loot，未 commit；维护者验收合入前不派发6B1。** 本文声明块同步真实 itemSdk.ts，实际导出优先于6A0历史草案。
 
 ## 1. 依据与优先级
 
-- 代码基线：`ext/loot-6a0` / `origin/ext/phase5` = `59b9ba691daf66819eeea0299a0539f3641ad208`。本文所有生产代码 `文件:行` 均指该提交，不引用设计稿的旧行号作为实现事实。
+- 开工实值：`ext/phase6` / `ff9dee3d3dfba3daf752c74e097467c0ed4c50be`，foundation14；旧历史审计基线59b9ba6/foundation13仅供对照。§2历史锚点与当前差量逐项登记在6A1报告，当前实现路径见§10。
 - 设计输入固定为 `origin/ext/phase6-loot-core` = `93523fc596b173396a0d526ab2073b327ff7cf3e` 的 `docs/ext/{phase6-loot.md,phase6-loot-numbers.md,phase6-loot-tuning.md,loot-core-contract.md,loot-ui-contract.md}`。可用 `git show 93523fc:docs/ext/<文件>` 复核；本树不复制整套远端文档，也不合入远端模块。
-- §13 的 **6A0** 是本步授权。数值以已批准的 **v1.1** 为准：`scarce/standard/bountiful`，33 个非符文词缀、21 个符文变体数据、8 件唯一品；遭遇唯一乘数 5000/10000/5000，warding 仅护甲，丰饶 elite 1–3。旧设计“26 词缀、6 唯一品”、旧预设名与旧倍率不再用于派发。L-D、N、M 已批准项不重新提请。
+- 本次授权为phase6a1.task.md，已完成6A0裁定。数值以已批准的 **v1.1** 为准：`scarce/standard/bountiful`，33 个非符文词缀、21 个符文变体数据、8 件唯一品；遭遇唯一乘数 5000/10000/5000，warding 仅护甲，丰饶 elite 1–3。旧设计“26 词缀、6 唯一品”、旧预设名与旧倍率不再用于派发。L-D、N、M 已批准项不重新提请。
 - `loot-core-contract.md` 的 v1 实例形状（含 `corrupted`）、随机向量与严格错误边界保持；标记 `[C6-1]` / `[5A2-S]` 的临时接口由本合同逐项对接。规则包 0.1.1 与未挂载的 β UI 都不代表可玩集成。
-- 遵守当前任务的轻量验证限制，不触碰 BrogueJS-p5，不借历史 full 要求重复启动大套件。后续阶段 6 门禁政策仍需维护者明确。
+- 遵守当前任务的轻量验证限制，不触碰 BrogueJS-p5，不借历史 full 要求重复启动大套件。开发期遵循docs/ext/README.md与本次用户指示，不跑CE对照、不保护旧格式；纯格式黄金原法重录，无需反事实。
 
-## 2. 当前真实接入点与差量
+## 2. 6A0历史接入点与开工差量（当前实现见§10）
 
-| 接入点（本表均为现存源码） | 已实现事实 | 6A1 必须补齐 |
+| 历史接入点（59b9ba6） | 当时事实 | 6A1责任（现已接线） |
 | --- | --- | --- |
 | `src/engine/Items/Item.ts:71` | 可选 `worldItem` 是 C5 材料字段；没有 `moduleData` | 单一通用可选字段，不能把词缀塞进 worldItem |
 | `src/engine/Core/EntitySnapshot.ts:11`、`:97` | ITEM_FIELDS 显式投影，深拷贝普通容器；未列字段会丢失 | 序列化/反序列化登记 moduleData，保持缺席语义 |
@@ -47,32 +47,31 @@
 
 ## 3. Item.moduleData 与校验生命周期
 
-拟新增：`declare public moduleData?: Record<string, Json>`。每个顶层键必须等于启用模块的 module ID；值为该模块自描述版本对象（loot 是 `v:1`），不再增加第二层名字。`itemDataValidators` 使用同样的 ID 键，安装时要求键等于声明模块 ID；不照搬组件的 `module:name` 命名。
+实际字段：`declare public moduleData?: Record<string, Json>`。每个顶层键必须等于启用模块的 module ID；值为该模块自描述版本对象（loot 是 `v:1`），不再增加第二层名字。`itemDataValidators` 使用同样的 ID 键，安装时要求键等于声明模块 ID；不照搬组件的 `module:name` 命名。
 
 1. 原生物品省略属性；拒绝显式 undefined、null、空 map、未知模块键、已安装但本局未启用的键、无 validator 的键。codec 拷贝不能把缺席变成自有 undefined。
-2. 先验证有限 JSON、普通/空原型对象、稠密数组、无 getter/setter/符号/危险键/循环，再运行 owner validator；不得借 JSON.stringify 丢掉非法值来“净化”。候选预算：每件最多 4 owner、单 owner 紧凑 UTF-8 JSON ≤4 KiB、总 moduleData ≤8 KiB、递归深度≤16；这是 **6A0 新提案，待批准**。8,192 Item roots 上限沿 C5-1。
+2. 先验证有限 JSON、普通/空原型对象、稠密数组、无 getter/setter/符号/危险键/循环，再运行 owner validator；不得借 JSON.stringify 丢掉非法值来“净化”。已批准并实施预算：每件最多 4 owner、单 owner 紧凑 UTF-8 JSON ≤4 KiB、总 moduleData ≤8 KiB、递归深度≤16；深度以moduleData map为0、owner值为1计每条边。C6新增掉落接纳按8,192机械根；当前C5新增材料接纳实际为7,168，保留其预留策略；不为原生无限增长添加全局读档上限。
 3. validator 同步、纯，只接收脱离实体的事实；闭包可捕获已验证有效目录。校验失败或抛错都拒绝，无降级、删除坏字段或迁移。校验包含 id/kind/category/quantity=1、词缀阶/值域/互斥/预算、稀有度和 nameParts/uniqueId 关系、`identified ⇔ 全部 known` 等跨字段一致性。原生种类已知与实例已知必须区分。
 4. 每次可信创建/变更提交前验证；存档前验证所有根；读档先验证原始行再 decode，候选解码后复核引用与拥有者、目录、物化账本，最后一次性发布。失败保留当前局、两条 RNG、allocator、录像 generation/prefix。
 5. 移动背包/地面/携带/缓存/坠落/容器只转移所有权和同一实例。禁止对有 moduleData 的物品堆叠、自动合并和拆数量；深拷贝候选/回滚不共享可变子对象。loot.shard、后续符文 MATERIAL 本身不带 moduleData，仍可按 C5 堆到 99。
 6. 6B3 前原生强化仍可改 loot 物品原生 enchantment，因此**不能**在读档 validator 一律强制武/甲 enchantment=0；+0 是出生合同。6B3 开启重塑后再统一原生字段/数据关系与新版本。腐化后解咒也允许 isCursed=false 而 corrupted=true，不能按出生等式拒绝合法档。
 7. 绑定与缓存属于会话资源；load/seek 重建、卸载清理。知识变化也要更新 native 摘要，但不加机械 stat revision；应清理/重算已知投影缓存。新增 Game 字段须登记 `scripts/u03-state-contract.json`；优先由受控会话保存 plan/revision，避免每件新增持久版本字段。
 
-## 4. C6-1 声明草案（可独立类型检查）
+## 4. C6-1 实际声明（SDK v1）
 
-下块是**新 SDK 候选形状**，将落于 `src/ext/itemSdk.ts`，由 `src/ext/types.ts` 贡献类型接入。Json/文本/坐标等独立别名用于 6A0 无副作用类型检查，6A1 实现须复用仓内等价类型并做真实 provider fixture 类型检查。它不是现存导出列表。实例 LootItemDataV1 保持远端 core 类型，不在底座复制 loot 语义。
+导出路径`src/ext/itemSdk.ts`；`src/ext/types.ts`挂载模块贡献。下块仅将仓内ReadonlyJson替换为等价自包含别名，供旧文档类型探针检查。真实provider见`src/ext/testing/fixtures/itemFixture/index.ts`；不复制loot私有实例类型。
 
 ```ts
-// C6-1 declarations: checked by scripts/phase6a0-contract-check.mjs
-export type C6Json = null | boolean | number | string | readonly C6Json[]
-  | { readonly [key: string]: C6Json };
+// C6-1 declarations: synchronized with src/ext/itemSdk.ts
+export type C6Json = null | boolean | number | string | readonly C6Json[] | { readonly [key:string]:C6Json };
+export const ITEM_SDK_VERSION = 1 as const;
 export type ItemModuleData = Readonly<Record<string, C6Json>>;
-export type ItemClass = 'weapon' | 'armor' | 'ring';
-export type DropSource = 'floor' | 'kill' | 'encounter' | 'vault';
-export type At = Readonly<{ x: number; y: number }>;
+export type ItemDataPhase = 'create' | 'update' | 'save' | 'load';
 export interface ItemFacts {
   readonly id: number;
   readonly category: number;
   readonly kindKey: string;
+  readonly materialDefinitionId?: string;
   readonly quantity: number;
   readonly identified: boolean;
   readonly enchantment: number;
@@ -83,9 +82,23 @@ export interface ItemDataValidationContext {
   readonly owner: string;
   readonly enabledModules: readonly string[];
   readonly item: ItemFacts;
-  readonly phase: 'create' | 'update' | 'save' | 'load';
+  readonly phase: ItemDataPhase;
 }
-export type ItemDataValidator = (value: unknown, facts: ItemDataValidationContext) => boolean;
+export type ItemDataValidator = (value: C6Json, context: ItemDataValidationContext) => boolean;
+export interface ItemContribution {
+  readonly itemPickup?: (item:ItemFacts,state:C6Json)=>boolean;
+  readonly itemCommands?: Readonly<Record<string,ItemCommandProvider>>;
+  readonly itemPresentation?: ItemPresentationProvider;
+  readonly itemKnowledge?: ItemKnowledgeProvider;
+  readonly itemDrops?: DropProvider;
+  /** IDs of this owner’s generation templates that constitute encounters. */
+  readonly itemEncounters?: readonly string[];
+  readonly itemDataValidators?: Readonly<Record<string, ItemDataValidator>>;
+}
+
+export type ItemClass = 'weapon' | 'armor' | 'ring';
+export type DropSource = 'floor' | 'kill' | 'encounter' | 'vault';
+export type At = Readonly<{ x: number; y: number }>;
 interface DropBase {
   readonly v: 1;
   readonly eventId: number;
@@ -121,6 +134,8 @@ export interface DropRollContext {
   readonly owner: string;
   readonly state: C6Json;
   readonly event: DropEvent;
+  /** Switch to a monotonically increasing item draw bucket (0..7); gold uses bucket 8. */
+  beginItem(index: number): void;
   randomInt(lo: number, hi: number): number;
   stat(actorId: number, key: string): number;
 }
@@ -143,6 +158,9 @@ export interface DropAcceptance {
 declare const planBrand: unique symbol;
 export interface DropPlanHandle { readonly [planBrand]: true; readonly contract: 'C6-1' }
 export interface DropProvider {
+  /** Query keys captured by the host before roll (at most 16). */
+  readonly statKeys?: readonly string[];
+  readonly uniqueCatalog?: readonly string[];
   readonly sources: readonly DropSource[];
   roll(event: DropEvent, context: DropRollContext): DropProposal;
   // Pure next-state calculation, applied only with the native commit.
@@ -153,6 +171,7 @@ export interface DropAuthority {
   prepare(event: DropEvent): DropPlanHandle;
   commit(plan: DropPlanHandle): DropAcceptance;
 }
+
 export interface KnownItemFacts {
   readonly v: 1;
   readonly location: 'floor' | 'pack' | 'equipped' | 'container';
@@ -171,18 +190,13 @@ export interface ItemPresentationProvider {
   name(item: KnownItemFacts): TextRef | null;
   appearance(item: KnownItemFacts): Readonly<{ colorToken: string; marker: string }> | null;
 }
-export interface ItemContribution {
-  readonly itemDataValidators?: Readonly<Record<string, ItemDataValidator>>;
-  readonly itemDrops?: DropProvider;
-  readonly itemPresentation?: ItemPresentationProvider;
-  readonly itemCommands?: Readonly<Record<string, ItemCommandProvider>>;
-}
 export interface ItemCommandRead {
   readonly owner: string;
   readonly playerId: number;
   readonly revision: number;
   readonly state: C6Json;
   readonly inventory: readonly ItemFacts[];
+  readonly configuration: C6Json;
   readonly equippedIds: readonly number[];
 }
 export interface ItemCommandProposal {
@@ -196,15 +210,26 @@ export interface ItemCommandProposal {
   readonly confirmation: TextRef | null;
 }
 export interface ItemCommandProvider {
+  readonly kind: 'create' | 'filter' | 'salvage' | 'identify';
+  /** Identify consumes ten units of this owner's existing C5 material definition. */
+  readonly materialDefinitionId?: string;
   // Pure, detached preflight. Host owns confirmation, revalidation and commit.
   prepare(payload: C6Json, context: ItemCommandRead): ItemCommandProposal | null;
 }
-export type LootCommand = {
-  readonly module: 'loot';
-  readonly action: 'create' | 'set-filter' | 'salvage' | 'identify-shards'
-    | 'socket' | 'unsocket' | 'reforge';
-  readonly payload: C6Json;
-};
+
+export interface ItemKnowledgeProvider {
+  known(data:C6Json):boolean;
+  unique(data:C6Json):boolean;
+  reveal(data:C6Json,context:Readonly<{item:ItemFacts;reason:'native-identify'|'command'|'trigger'}>):C6Json;
+}
+
+/** `queryOptional('foundation.item-encounters.v1', {})`: declared public forms,
+ * never private encounter state. Unavailable/absent when no owner declares encounters. */
+export interface ItemEncounterCapability {
+  readonly v:1;
+  readonly owners:readonly {readonly owner:string;readonly templateIds:readonly string[];readonly formIds:readonly string[]}[];
+  readonly fingerprint:string;
+}
 ```
 
 `DropProposal.uniqueIds` 将纯包 `newUniqueIds` 和 items 对齐；宿主验证一一对应、重复与实际 accepted，不能直接照单持久化全部 newUniqueIds。`NativeAssembly` 不含不存在的 `Item.runicStrength`；强度保留在 moduleData，经管线使用。上面的 stat 读取只能读本事件捕获的合法玩家事实，不能在 roll 中触发 reconcile/消息/新事务。
@@ -218,9 +243,9 @@ export type LootCommand = {
 | 来源 | 宿主负责 | 纯包负责 |
 | --- | --- | --- |
 | floor | 计量/食物/深层宝石原路径；普通武器先保留投掷分流资格，甲/戒直接可转换；可转换路径不再掷被替换的原生近战基底。转换拒绝后才走原生 spawn；外层落点只做一次 | 转换率、类内基底/物等/词缀；converted=false 时无产物/金/收据 |
-| vault | 掩码选定类别、显式基底与 qualifiers。投掷/非三类走原生。先把已支持的品质语义映射为高价值/最低稀有，再仅做一次 loot 计划 | 固定基底不抽；其余按表；不通过重复原生 spawn 来凑品质 |
+| vault | 掩码选定类别、显式基底与 qualifiers。无指定武器保留一次原生 chooseKind 骰作为资格及拒绝回退结果；投掷不额外分流，近战拒绝不重抽。投掷/非三类走原生。首版仅qualifiers未定义可转换；任何已定义qualifiers（含空数组）的非诅咒/去重/品质约束均完整原生回退，不发C6收据 | 固定基底不抽；其余按表；不通过重复原生 spawn 来凑品质 |
 | kill | deathProcessed/dying 去重；先抓 clone、rewardless、召唤出生资格、ally、leader、mutation、encounter 事实，再 captureDeath；携带物先落，loot 再落，最后死亡 DF | 怪物分级/掉率/物品和金币（金币在所有物品抽取后） |
-| encounter | 同一已登记遭遇 alive→defeated 提交一次；成员/分裂主体全终结才有效；行政失去主体转 lost；load/seek/查询不派发 | 保底、件数、唯一偏置、金币；主体 kill 的 encounterSubject=true 防双掉 |
+| encounter | 同一已登记遭遇 alive→defeated 提交一次；成员/分裂主体全终结才有效；行政/盟友/独立克隆或无奖励主体转 lost；可信 split 子体共享原遭遇资格而无独立 kill 奖励；load/seek/查询不派发 | 保底、件数、唯一偏置、金币；主体 kill 的 encounterSubject=true 防双掉 |
 
 L-D10=C 是**任何击杀者的非行政死亡**都可掉，仍排除“死者为盟友/克隆/无奖励转换/召唤副本”。不能用“击杀者不是玩家”过滤。现 `DeathFact` 不包含这些全部字段，须在宿主生成可信 DropEvent；召唤资格要审计出生路径，不能临时凭怪物 ID 猜测。部位 part、合成 craft 与 site 均不进 v1 联合；无深度场景暂不发事件，不伪造 depth=1 等价于 siteIlvl（倍率非整数时二者不同）。
 
@@ -243,7 +268,7 @@ kill/encounter 的外层 checkpoint 必须在 `captureDeath` 之前开始，覆�
 
 建议新增底座通用遭遇声明/生命周期登记（模块提交冻结的 encounterKey/formId/subject IDs；底座核验出生/分裂/终结事实），而不是 loot 读 giants.bosses。giants 的现存 status 仍由 giants 管理；适配器在同一事务内发布经宿主验证的转移，底座单调分配 encounterOrdinal，原有公共 tag 用于主体识别。声明与 ordinal 要覆盖换层、分裂、行政清除、重载，6A1b 用中性 fixture 验证，真实 giants 接线由本地维护，dot 不碰它。
 
-loot state 目标仍 ≤4 KiB。唯一品用目录固定序号的紧凑收据（最多128），遭遇用已验证全序的 watermark，而非无限增长的 encounterKey 历史；目录与收据位置受 rules 指纹保护，不迁移。底座持久序号、遭遇登记的精确字段/预算需要在 6A1b 审查后统一纳入 foundation 格式，不得先声称存在。若选键列表替代 watermark，必须给最坏预算与溢出行为后重新冻结；不得截掉旧收据或退化为重复掉落。
+loot state 目标仍 ≤4 KiB。唯一品用目录固定序号的紧凑收据（最多128），遭遇用已验证全序的 watermark，而非无限增长的 encounterKey 历史；目录与收据位置受 rules 指纹保护，不迁移。6A1实际字段已纳入foundation.itemDrops，见§10与报告；ordinal在终结消费时分配，终结后删除活动登记，不保存无限历史key。不得截掉唯一收据或退化为重复掉落。
 
 ## 6. 固定装配、命令外壳与显示
 
@@ -263,21 +288,21 @@ loot state 目标仍 ≤4 KiB。唯一品用目录固定序号的紧凑收据（
 | --- | --- | --- |
 | create / 6B1 | `{v:1,presetId}`，恰一次，与 manifest configuration 一致 | 0 tick；初始命令，不准局中换预设 |
 | set-filter / 6B1 | `{v:1,revision,minRarity,classes,autoPickupGold}` | 0 tick但录像；class 去重规范排序；影响自动拾取的 state |
-| salvage / 6B1 | `{v:1,revision,itemIds}`，1–26 个互异当前背包 ID | 每件100 tick，事务全成或全败；唯一/装备中/粘装拒绝；碎片容量预检、确认先于提交 |
-| identify-shards / 6B1 | `{v:1,revision,itemId}` | 10碎片鉴定整件；建议100 tick，待维护者定时；消耗与揭示原子 |
+| salvage / 6B1 | `{v:1,revision,itemIds}`，1–26 个互异当前背包 ID | 每件100 tick，事务全成或全败；唯一需警告；装备中/粘装拒绝；碎片容量预检、确认先于提交 |
+| identify-shards / 6B1 | `{v:1,revision,itemId}` | 10碎片鉴定整件；100 tick；消耗与揭示原子 |
 | socket / 6C2 | `{v:1,revision,itemId,runeItemId}` | 100 tick；6B1 不注册，无空成功命令 |
 | unsocket/reforge / 6C3 | 走工位、受控工作票据/CAS | 未接线前拒绝，不在普通 commands 内绕过工位 |
 
 revision 是模块持久命令 revision；计划额外绑定 item/所有者/会话原生事实（不能只看模块 revision，否则丢弃/换装后仍可能接受旧目标）。非法、陈旧、拒绝确认均0消耗/0机械时间/0实质 RNG，不进已接受命令；确认决策由既有录像边界记录。未来“首次触发揭示”只能在结算安全点提交，不允许 statSources.collect / UI 查询触发。
 
-`itemCommands` 是拟新增宿主路由，复用 envelope 而不与同名 `commands` 双重注册；原 `prepareControlledCommand` 只承载 attack/move/wait/search（`src/ext/types.ts:152`），不能拿 wait 包装物品写入来冒充现成能力。宿主把 prepare 的纯DTO封为会话计划，先校验自身owner、背包所有权、装备/粘装、每件数量、材料定义归属/堆叠/容量、action允许的tick/修改种类，确认后再CAS重验，最后执行consume/update/material输出与nextState。updateOwnData只能改自己的顶层数据，原生identified/canBeIdentified等由可信知识同步器派生；原生强化/符文补丁权限留6B3另约。读档/回放执行同一宿主提交，普通callback拿不到Item能力。v1仅鉴定/分解/过滤，prepare无RNG；未来重铸不能塞进这个纯准备接口。
+`itemCommands` 是实际宿主路由，复用 envelope 而不与同名 `commands` 双重注册；原 `prepareControlledCommand` 只承载 attack/move/wait/search（`src/ext/types.ts:152`），不能拿 wait 包装物品写入来冒充现成能力。宿主把 prepare 的纯DTO封为会话计划，先校验自身owner、背包所有权、装备/粘装、每件数量、材料定义归属/堆叠/容量、action允许的tick/修改种类，确认后再CAS重验，最后执行consume/update/material输出与nextState。updateOwnData只能改自己的顶层数据，原生identified/canBeIdentified等由可信知识同步器派生；原生强化/符文补丁权限留6B3另约。读档/回放执行同一宿主提交，普通callback拿不到Item能力。v1仅鉴定/分解/过滤，prepare无RNG；未来重铸不能塞进这个纯准备接口。
 
-原始设计禁分解唯一品，数值表却给了唯一基础碎片20；本合同暂沿原设计**拒绝唯一**，保留数值行作预留，列为维护者待定而不擅自开放。β UI 发出 keys 必须由宿主转换为当前 item IDs 并重新校验。container 的 UI location 是新扩展，β 目前只有 floor/pack/equipped；不能把箱内未知物品强转为已知背包。
+C6-D4已裁定并实施：**唯一品可分解，事前Yes/No警告，收据不返还**。分解每件100 tick，10碎片鉴定100 tick；非法/取消/陈旧/失败整单0成本。β UI 发出 keys 必须由宿主转换为当前 item IDs 并重新校验。container 的 UI location 是新扩展，β 目前只有 floor/pack/equipped；不能把箱内未知物品强转为已知背包。
 
 ### 6.3 名称、外观与已知投影
 
 - 装饰器安装为 runtime/session WeakMap 绑定，禁止静态 import loot；模块缺席为原生名/外观。先算原生名称，再装饰，inscription 最外层保留；避免装饰器回调递归读 uninscribedName。
-- raw Item/moduleData 仅进入可信 owner `project`；Vue props/name/appearance 接收已知 DTO。底座给种类已知、实例已知、detect magic 可见极性、诅咒确已暴露、熟悉度剩余和位置。`isCursed` 本身不等于已暴露；没有可靠暴露事实时传 false，不能猜测。
+- raw Item/moduleData 仅进入可信 owner `project`；Vue props/name/appearance 接收已知 DTO。底座给project的知识上下文含kindKnown、instanceKnown、magicDetected、curseExposed=false、familiarityRemaining及location。原生极性仍沿原生显示，不把隐藏诅咒传给formatter。`isCursed` 本身不等于已暴露；没有可靠暴露事实时传 false，不能猜测。
 - floor 仅稀有度可见，词缀数/物等/未鉴定唯一名/稀有随机名不可见；未知戒指隐藏 baseId；未知行只有位置标签，没有 id/tier/values/sourceId。纯 getter 缺少位置时使用保守 floor 投影；明确背包/装备/容器读口再提供相应上下文。
 - itemAppearance 在 `cellVisible && !hallucinating` 时才请求稀有色。幻觉整条分支不读真实稀有度，即使原生 halledColor 骰未命中也不能泄露；记忆格沿记忆外观，不重新查真值。保持原生 glyph，仅改前景主题 token；mapTileDrawing 继续消费渲染结果。
 - 名称/颜色/比较/显示过滤均不得写状态、脏标记、时间或 RNG。机械自动拾取过滤走 state 与命令，显式拾取可越过过滤但仍经原生命令。
@@ -303,9 +328,9 @@ revision 是模块持久命令 revision；计划额外绑定 item/所有者/会�
 | loot 来源 enchant≤10、减伤≥−50% | row budget 与最终 clamp 是不同机制 | 对 loot 来源先聚合限界，不把 growth/native 一起截断；最终 defense≤220 等才用 clamp |
 | monsterScaling L0 increased | validateStatRows 不允许 owner=loot 对 native 键 layer=base | 用语义等价的 environment 来源或本地新增受控出生基础端口；不能让 dot 关闭 layer 校验 |
 
-上述公式前基底/戒指点/能力发现缺口是 **6A1s 子步**，不是假定 5A2-S 已全覆盖。建议新增底座 `native.weapon-base-min/max`、`native.armor-base` 及戒指点聚合输入节点，宿主扩充固定 DAG 和真实伤害读点；模块只产行，不新增边。最终导出节点名/舍入顺序/力量惩罚、随机掷伤害是否取修正后区间必须经实现与固定向量冻结，6A0 不把它伪装成已存在 SDK。不得直接把 UI 的向下取整公式复制到另一个求值器。
+6A1s已实现固定DAG节点 `native.weapon-base-min/max`、`native.armor-base`、`native.stealth-points`、`native.light-points`，实际和hypothetical共用投影。local flat→increased→floor 后进入原生附魔/力量/穿戴公式；模块不新增DAG边。`foundation.stats.v1`返回真实已注册键及稳定指纹；growth属性查询仍unavailable，giants用 `foundation.item-encounters.v1` 的公开声明。实际字段、单位与验证见§10和6A1报告。
 
-装备/分解/强化等机械变更经 `markItemStatsDirty` 与现有物化 reconcile，降容钳制、升容不补；出生怪物倍率如需满血，要用明确的出生初始化安全点，不能借 loot 来源获得 growth 的 refill-delta 权限。5A2-S 全量重算对照、知情/未知 hypothetical、不污染活体/cache/RNG、同基底双戒来源分离是必验项。鉴定仅改知识时不改机械值，仍使 native 摘要失效；当前 ItemLoader 的 unconditional mark 必须区分。
+装备/分解/强化等机械变更经 `markItemStatsDirty` 与现有物化 reconcile，降容钳制、升容不补；出生怪物倍率如需满血，要用明确的出生初始化安全点，不能借 loot 来源获得 growth 的 refill-delta 权限。5A2-S 全量重算对照、知情/未知 hypothetical、不污染活体/cache/RNG、同基底双戒来源分离是必验项。鉴定仅改知识时不改机械值，仍使 native 摘要失效；ItemLoader已区分知识dirty与机械dirty；原生戒指鉴定若改变真实点数仍是机械变化。
 
 ## 8. 与 5A1 录像/存档的关系
 
@@ -315,17 +340,31 @@ revision 是模块持久命令 revision；计划额外绑定 item/所有者/会�
 - digestChunk=256，checkpointPeriod=2048；seek 快照总预算64 MiB、最多128（`src/engine/Core/RecordingV4.ts:98`，`src/engine/Core/RecordingFormat.ts:205`）。新增 Item 字节影响整局/周期快照与实际编码成本；不随每个轻摘要等量重复，但会降低可留周期快照数。不能因此省掉 seek/续录边界校验。
 - plain snapshot、toSaveSnapshot 的 origin/prefix、录制初始 digest、周期 full、seek、存档续录、checkpoint worker 同步回退必须在6A1以中性带数据物品贯穿。校验错误发生在活局退休前；缺模块/错误版本严格拒绝，不剥离 moduleData 继续玩。
 
-## 9. 版本计划与停点
+## 9. 最终候选身份与发布停点
 
 | 身份 | 当前实值 | 6A1/6B 计划 |
 | --- | --- | --- |
-| foundation | 13 | C6 注册/掉落持久状态与 stats 接口统一升号，由集成人分配；不预占14 |
-| whole-run / schema | 6 / brogue-web-whole-run-v6 | 新 Item 字段与编码合同需升号；同批更新 WholeRunSnapshot/RecordingDigest/RecordingFormat/worker/类型与身份守卫 |
+| foundation | 15 | 从当前14统一升级；含C6/属性/giants声明 |
+| whole-run / schema | 7 / brogue-web-whole-run-v7 | Item与codec同批升级；旧6拒绝，worker复用同一计算器 |
 | recording envelope | 4 | 如果 event/header结构不变可留4，但 codec 指向新 whole-run/foundation；结构变更再升；旧 codec 仍拒绝 |
 | origin | 2 | 无前缀/输入状态结构变化可留2；必须跟新 header身份，不能接续旧规则 |
 | world5 schema / WorldWork SDK / edible SDK | 4 / 1 / 1 | C6不改变其格式时保持；固定装配内部复用不扩大旧冻结 SDK |
-| C6 SDK | 不存在 | 候选 v1；6A1验收后填导出文件清单与SHA-256 |
+| C6 SDK | 1 | ITEM_SDK_VERSION，导出散列/见证见6A1报告 |
 | loot module/rules | 远端0.1.1惰性包，本树未安装 | 接线改变行为与state，module/rules同步升级、state显式版本；不把纯包0.1.1当集成身份 |
 | 有效目录 | 由pack+availability构建 | 静态包指纹、预设configuration、能力规范排序一起保护；任一机械变化拒旧档 |
 
-所有改号与生成/trace变化在6A1做单变量归因、原方法重录、逐叶登记；6A0不改版本/黄金/测试清单。合同审查后可进入报告所列6A1子步；**不能据本合同直接派发可玩6B1或宣称阶段6底座验收完成**。
+纯格式黄金按原方法重录并登记变化，依用户新政策不做反事实；规则失败修生产。**本地候选不等于维护者验收合入，不据此派发6B1，也不代表阶段6完整验收。**
+
+
+## 10. 6A1实际接口差量与边界
+
+- `DropProvider.uniqueCatalog`最多128、`statKeys`最多16；`beginItem(index)`单调0…7及金币8，每桶64/全事件512。普通floor/vault最多1件无金币，kill/encounter最多8件+金币。没有合适落点不额外抽骰；跳过无ID/唯一收据，异常回滚。
+- 固定26基底在`Items/FixedItemAssembly.ts`。vault任何显式qualifiers（含空数组）完整回退：非诅咒/重复约束、heavy要求原生附魔、good-runic与loot稀有度不等价。未声明可安全转换的highValue请求。
+- `foundation.itemDrops`持久化事件/终结ordinal、目录哈希/128bit唯一位图、最多32768出生记录、128活动遭遇/每遭遇64主体。ordinal在终结消费时分配，逆登记顺序不会漏发；载入不重发。启用encounter provider时，登记额外保存必需splitSubjects（去重的subjects子集），以区分合法分裂子体与独立克隆/无奖励主体；失格先标lost并传至剩余主体。旧候选缺此字段直接拒绝；无encounter provider保持原登记形状。giants声明自有模板，module/rules1.1.0，state不变。
+- `queryOptional('foundation.stats.v1',{keys})`规范排序去重，真实注册键元数据和指纹。`foundation.item-encounters.v1`输入空对象，返回声明owner/templateIds/formIds及规范指纹；无声明返回unavailable/absent。growth.attributes.v1未发布，adept→titan；不猜安装名、不读私有state。
+- 属性实际公式前节点：weapon-base-min/max（HP）、armor-base（十分之一甲）、stealth-points/light-points（戒指点），全部`native.`前缀；固定DAG，不开放模块加边。四槽slot、base/moduleData使用相同冻结投影。显式`itemPolicy:'C6-1'`启动每件24行及owner聚合预算；最终速度25…400、护甲上限220。`initializeHealthOnBirth`只在真正满血新生安全点填满；之后升容不补。整enchant×4、甲×10、awareness×20，其它单位/向量见报告。
+- ItemCommandProvider要求kind四选一；identify另需本owner的materialDefinitionId。prepare仅冻结DTO，无Item指针、随机/ID/时间；宿主私有计划绑定背包完整事实/原引用、装备、revision、位置和容量。只允许自有data更新、整件分解、自有stack99材料；确认后CAS重验。Native identified由所有owner known合成。初始化payload须与manifest preset一致，后续create拒绝。
+- ItemKnowledgeProvider仅known/unique/reveal；鉴定由宿主安全点同步；否定只亮实例不学习戒指种类，碎片命令完成原生种类/符文及owner鉴定，实际戒指点数变化仍使机械缓存失效。ItemFacts可含只读materialDefinitionId；没有可写worldItem。位置支持floor/pack/equipped/container；原生名先算、铭文最后，缺位置按floor。六个颜色token固定在ItemExtensionBindings.ts；无glyph改写、无幻觉/记忆真值查询。
+- ItemDataError：C6_DATA（形状/协议）、C6_BUDGET（大小/深度/数量）、C6_OWNER（未启用/未登记）、C6_VALIDATOR（owner拒绝/抛错）、C6_OWNERSHIP（重复/错误根）。受控命令拒绝返回不接受，沿原录像边界保留输入/决策，不另建日志。字段更新与knowledge摘要通知不代替机械物化；计划、缓存、绑定不持久化。
+- `moduleData`在native摘要；同时以`knowledge.item-data.<id>`哈希原owner对象，覆盖部分known而不理解私有schema。foundation生命周期在extensions域。worldSdk/edibleSdk字节保持；stats有意扩展，不再声称所有旧SDK散列不变。
+- 本地冻结前置与实际测试/性能结果、未验范围及导出SHA，以6A1报告最终表为准；维护者合入commit待填写。loot UI/目录集成/符文强度重塑/工位分别留6B1/6B2/6B3/6C。

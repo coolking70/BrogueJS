@@ -1,3 +1,4 @@
+import { hasItemData } from './ItemData';
 import { inventoryReservedSlots, worldItemMaxStack } from './WorldItems';
 /**
  * src/engine/Items/Inventory.ts
@@ -19,16 +20,17 @@ export class Inventory {
 
     public hasSpace(item?: Item): boolean {
         if (!item) return this.packCount() + inventoryReservedSlots(this) < this.capacity;
+        if (hasItemData(item)) return item.quantity === 1 && this.packCount() + inventoryReservedSlots(this) < this.capacity;
         if(item.category===ItemCategory.MATERIAL){const room=this.items.reduce((n,other)=>n+(this.materialCompatible(other,item)?worldItemMaxStack(other)-other.quantity:0),0);
             return this.packCount()+inventoryReservedSlots(this)+Math.ceil(Math.max(0,item.quantity-room)/worldItemMaxStack(item))<=this.capacity;}
         if (item.category === ItemCategory.GOLD) return true;
         // CE Items.c:808–814：同来源层宝石可以在满包时继续叠放。
         if (item.category === ItemCategory.GEM && this.items.some(other =>
-            other.category === ItemCategory.GEM && other.originDepth === item.originDepth)) return true;
+            !hasItemData(other) && other.category === ItemCategory.GEM && other.originDepth === item.originDepth)) return true;
         // CE itemWillStackWithPack otherwise compares the nonzero quiver number.
         // addItemToPack performs the stricter category/kind match afterward.
         if ((item.quiverNumber ?? 0) > 0
-            && this.items.some(other => other.quiverNumber === item.quiverNumber)) return true;
+            && this.items.some(other => !hasItemData(other) && other.quiverNumber === item.quiverNumber)) return true;
         // CE tests the count before pickup, even when the incoming pile has
         // several non-weapon items and will put the pack over 26.
         return this.packCount() + inventoryReservedSlots(this) < this.capacity;
@@ -38,9 +40,9 @@ export class Inventory {
         return item.consumableId ?? item.identityId ?? item.name;
     }
 
-    private materialCompatible(a:Item,b:Item):boolean{return a.category===ItemCategory.MATERIAL&&b.category===ItemCategory.MATERIAL&&!!a.worldItem&&!!b.worldItem&&a.worldItem.definitionId===b.worldItem.definitionId&&a.worldItem.quality===b.worldItem.quality&&a.worldItem.toolDurability===null&&b.worldItem.toolDurability===null;}
+    private materialCompatible(a:Item,b:Item):boolean{return !hasItemData(a)&&!hasItemData(b)&&a.category===ItemCategory.MATERIAL&&b.category===ItemCategory.MATERIAL&&!!a.worldItem&&!!b.worldItem&&a.worldItem.definitionId===b.worldItem.definitionId&&a.worldItem.quality===b.worldItem.quality&&a.worldItem.toolDurability===null&&b.worldItem.toolDurability===null;}
     public stacksWith(a: Item, b: Item): boolean {
-        // moduleData is reserved for 6A1; C5 items carry only worldItem.
+        if (hasItemData(a) || hasItemData(b)) return false;
         if (a.category === ItemCategory.MATERIAL || b.category === ItemCategory.MATERIAL) return a.category === b.category
             && !!a.worldItem && !!b.worldItem && a.worldItem.definitionId === b.worldItem.definitionId && a.worldItem.quality === b.worldItem.quality
             && a.worldItem.toolDurability === null && b.worldItem.toolDurability === null && a.quantity + b.quantity <= worldItemMaxStack(a);
@@ -66,7 +68,7 @@ export class Inventory {
         if (!this.hasSpace(item)) return false;
         delete item.fireContactCooldownUntilTurn;
         if (item.category === ItemCategory.GOLD) return true; // Currency belongs to Game.stats.
-        if(item.category===ItemCategory.MATERIAL&&item.worldItem?.toolDurability===null){
+        if(!hasItemData(item)&&item.category===ItemCategory.MATERIAL&&item.worldItem?.toolDurability===null){
             for(const other of this.items){if(!this.materialCompatible(other,item))continue;const count=Math.min(item.quantity,worldItemMaxStack(other)-other.quantity);other.quantity+=count;item.quantity-=count;if(item.quantity===0)return true;}
         }
         const stack = this.items.find(other => this.stacksWith(other, item));
@@ -96,7 +98,7 @@ export class Inventory {
 
     /** Consume one food, potion or scroll from its pack stack. */
     public consumeOne(item: Item): boolean {
-        if (!this.items.includes(item)) return false;
+        if (!this.items.includes(item) || hasItemData(item) && item.quantity !== 1) return false;
         if (item.quantity > 1) { item.quantity--; return true; }
         return this.removeItem(item);
     }

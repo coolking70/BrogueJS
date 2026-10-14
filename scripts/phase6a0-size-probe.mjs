@@ -46,7 +46,7 @@ try {
   const paths = git('ls-tree', '-r', '--name-only', coreCommit, 'src/ext/modules/loot').trim().split('\n')
     .filter(p => /^src\/ext\/modules\/loot\/[^/]+\.ts$/.test(p) || /\/(data|locales)\/[^/]+\.json$/.test(p));
   for (const path of paths) {
-    const target = join(scratch, path); await mkdir(dirname(target), { recursive: true });
+    const target = join(scratch, path.replace('src/ext/modules/loot/', 'src/ext/inputs/loot/')); await mkdir(dirname(target), { recursive: true });
     await writeFile(target, git('show', `${coreCommit}:${path}`));
   }
   for (const path of ['src/ext/json.ts', 'src/ext/fingerprint.ts', 'src/data/weapons.json', 'src/data/armors.json', 'src/data/arcana.json']) {
@@ -57,7 +57,7 @@ try {
     optimizeDeps: { noDiscovery: true, include: [] }, appType: 'custom',
     server: { middlewareMode: true, hmr: false, ws: false, watch: null } });
   const load = path => server.ssrLoadModule(path);
-  const core = path => load(join(scratch, 'src/ext/modules/loot', path));
+  const core = path => load(join(scratch, 'src/ext/inputs/loot', path));
   const { loadLootPack, getLootPackIdentity } = await core('definitions.ts');
   const { buildEffectiveLootCatalog } = await core('catalog.ts');
   const { rollLoot } = await core('generator.ts');

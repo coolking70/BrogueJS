@@ -23,6 +23,16 @@ export interface StatFraction {
   readonly denominator: bigint;
 }
 export type OwnedStatRow = StatModifierRow & { readonly owner: string };
+// Engine-only certificates apply to detached, deeply frozen rows, never provider
+// objects. Registration changes invalidate certificates; aggregate budgets still
+// run on every collected set (including native and cross-owner sources).
+const certifiedRows = new WeakMap<object,{keys:ReadonlyMap<string,StatKeyDeclaration>;size:number;owner:string}>();
+export function sealStatRows(rows:readonly StatModifierRow[],owner:string,keys:ReadonlyMap<string,StatKeyDeclaration>):readonly OwnedStatRow[] {
+  validateStatRows(rows,owner,keys);
+  return frozen(structuredClone(rows).map(row=>{
+    const owned={...row,owner};certifiedRows.set(owned,{keys,size:keys.size,owner});return owned;
+  }));
+}
 export interface StatPipelineHost {
   beforeRead?(actorId:number):void;
   nativeSignature?(actorId:number):string;
@@ -153,15 +163,15 @@ export function evaluateStat(
   for (const r of rows) {
     if (r.category === 'flat' && !r.budget) flat += BigInt(r.value);
     if (r.category === 'increased' && !r.budget) increased += BigInt(r.value);
-    if (r.category === 'more') slots.set(r.slot!, (slots.get(r.slot!) ?? 0n) + BigInt(r.value));
+    if (r.category === 'more' && !r.budget) slots.set(r.slot!, (slots.get(r.slot!) ?? 0n) + BigInt(r.value));
     if (r.category === 'clamp') {
       min = Math.max(min, r.value);
       max = Math.min(max, r.maximum!);
     }
   }
-  const budgets=new Map<string,{category:string;minimum:number;maximum:number;sum:bigint}>();
-  for(const row of rows)if(row.budget){const id=`${row.owner}:${row.category}:${row.budget.minimum}:${row.budget.maximum}`,b=budgets.get(id)??{category:row.category,...row.budget,sum:0n};b.sum+=BigInt(row.value);budgets.set(id,b);}
-  for(const b of budgets.values()){const amount=bound(b.sum,b.minimum,b.maximum);if(b.category==='flat')flat+=amount;else increased+=amount;}
+  const budgets=new Map<string,{category:string;slot?:string;minimum:number;maximum:number;sum:bigint}>();
+  for(const row of rows)if(row.budget){const id=`${row.owner}:${row.category}:${row.budget.minimum}:${row.budget.maximum}:${row.slot??''}`,b=budgets.get(id)??{category:row.category,slot:row.slot,...row.budget,sum:0n};b.sum+=BigInt(row.value);budgets.set(id,b);}
+  for(const b of budgets.values()){const amount=bound(b.sum,b.minimum,b.maximum);if(b.category==='flat')flat+=amount;else if(b.category==='increased')increased+=amount;else slots.set(b.slot!,(slots.get(b.slot!)??0n)+amount);}
   if (min > max) throw new StatValidationError('source');
   const pool = bound(increased, key.increased.minimum, key.increased.maximum);
   let numerator = (b + flat * bd) * (10000n + pool),
@@ -270,9 +280,10 @@ export class StatPipeline implements StatQuery {
     const reusable=!suppliedRows&&!this.host.debug&&!change&&!knownOnly;
     let cached=this.sourceCache.get(actorId);if(reusable&&cached?.has(stamp)){const value=cached.get(stamp)!;return raw?value.raw:value.active;}
     const rows = suppliedRows??this.host.collect(actorId, frozen({ ...facts }), change, knownOnly, queryStat);
-    const owners = new Set(rows.map((r) => r.owner));
+    const unchecked=rows.filter(row=>{const proof=certifiedRows.get(row);return !proof||proof.keys!==this.keys||proof.size!==this.keys.size||proof.owner!==row.owner;});
+    const owners = new Set(unchecked.map((r) => r.owner));
     for (const owner of owners) {
-      const owned = rows.filter((r) => r.owner === owner).map(({ owner: _, ...row }) => row);
+      const owned = unchecked.filter((r) => r.owner === owner).map(({ owner: _, ...row }) => row);
       validateStatRows(owned, owner, this.keys);
     }
     validateStatBudget(rows);
@@ -288,55 +299,29 @@ export class StatPipeline implements StatQuery {
     knownOnly = false,
     proposedRows?: readonly OwnedStatRow[]
   ): StatBreakdown {
-    const key = this.keys.get(stat);
-    if (!key) throw new StatValidationError('declaration');
-    const active = new Set<string>(),
-      memo = new Map<string, number>(),
-      rows = proposedRows??this.rows(actorId, facts, change, knownOnly, undefined, stat);
-    const solve = (id: string): number => {
-      if (memo.has(id)) return memo.get(id)!;
-      if (active.has(id)) throw new StatValidationError('declaration');
+    const rows = proposedRows??this.rows(actorId, facts, change, knownOnly, undefined, stat);
+    return this.solver(actorId,facts,rows,change,knownOnly)(stat);
+  }
+  /** A projection owns one source set and one DAG memo; it never fills live caches. */
+  private solver(actorId:number,facts:PairFacts,rows:readonly OwnedStatRow[],change?:EquipChange,knownOnly=false):(id:string)=>StatBreakdown {
+    const active=new Set<string>(),memo=new Map<string,StatBreakdown>();
+    const byStat=new Map<string,OwnedStatRow[]>();
+    for(const row of rows){const group=byStat.get(row.stat)??[];group.push(row);byStat.set(row.stat,group);}
+    const solve=(id:string):StatBreakdown=>{
+      const cached=memo.get(id);if(cached)return cached;
+      if(active.has(id))throw new StatValidationError('declaration');
+      const key=this.keys.get(id);if(!key)throw new StatValidationError('declaration');
       active.add(id);
-      const declaration = this.keys.get(id);
-      if (!declaration) throw new StatValidationError('declaration');
-      for (const dep of this.dependencies[id] ?? []) solve(dep);
-      const value = evaluateStat(
-        declaration,
-        this.host.base(
-          actorId,
-          id,
-          (dep) => {
-            if (!(this.dependencies[id] ?? []).includes(dep))
-              throw new StatValidationError('declaration');
-            return solve(dep);
-          },
-          facts,
-          change,
-          knownOnly
-        ),
-        [...rows.filter((r) => r.stat === id),...(this.host.nativeRows?.(actorId,id,solve,facts,change,knownOnly)??[])]
-      ).value;
-      memo.set(id, value);
-      active.delete(id);
-      return value;
+      for(const dep of this.dependencies[id]??[])solve(dep);
+      const dependency=(dep:string):number=>{
+        if(!(this.dependencies[id]??[]).includes(dep))throw new StatValidationError('declaration');
+        return solve(dep).value;
+      };
+      const value=evaluateStat(key,this.host.base(actorId,id,dependency,facts,change,knownOnly),
+        [...(byStat.get(id)??[]),...(this.host.nativeRows?.(actorId,id,dependency,facts,change,knownOnly)??[])]);
+      memo.set(id,value);active.delete(id);return value;
     };
-    for (const dep of this.dependencies[stat] ?? []) solve(dep);
-    return evaluateStat(
-      key,
-      this.host.base(
-        actorId,
-        stat,
-        (dep) => {
-          if (!(this.dependencies[stat] ?? []).includes(dep))
-            throw new StatValidationError('declaration');
-          return solve(dep);
-        },
-        facts,
-        change,
-        knownOnly
-      ),
-      [...rows.filter((r) => r.stat === stat),...(this.host.nativeRows?.(actorId,stat,solve,facts,change,knownOnly)??[])]
-    );
+    return solve;
   }
   applied(actorId:number,key:string):number{this.host.beforeRead?.(actorId);return this.host.applied?.(actorId,key)??0;}
   value(actorId: number, stat: string, facts: PairFacts = {}): number {
@@ -408,9 +393,11 @@ export class StatPipeline implements StatQuery {
   ): Readonly<Record<string, number>> {
     validateEquipChange(change);
     change = frozen(structuredClone(change));
-    const values: Record<string, number> = {};
+    const values: Record<string, number> = {},facts=Object.freeze({});
+    const rows=this.rows(actorId,facts,change,knownOnly);
+    const solve=this.solver(actorId,facts,rows,change,knownOnly);
     for (const stat of this.keys.keys())
-      if (!this.keys.get(stat)!.rational) values[stat] = this.compute(actorId, stat, {}, change, knownOnly).value;
+      if (!this.keys.get(stat)!.rational) values[stat] = solve(stat).value;
     return frozen(values);
   }
   evaluatePair(

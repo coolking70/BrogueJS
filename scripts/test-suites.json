@@ -84,6 +84,7 @@
     "src/test/ext_generation_checkpoint_differential.test.ts",
     "src/test/ext_generation_transactions.test.ts",
     "src/test/ext_hardening.test.ts",
+    "src/test/ext_item_data.test.ts",
     "src/test/ext_kind_knowledge_runtime.test.ts",
     "src/test/ext_module_boundaries.test.ts",
     "src/test/ext_module_composition.test.ts",
@@ -399,7 +400,13 @@
     "src/test/x4_r5_content_text.test.ts",
     "src/test/x4_r6_integration.test.ts",
     "src/test/x4a_movement_rendering.test.ts",
-    "src/test/x4b_flavor_text.test.ts"
+    "src/test/x4b_flavor_text.test.ts",
+    "src/test/ext_item_drop.test.ts",
+    "src/test/ext_item_stats.test.ts",
+    "src/test/ext_item_commands.test.ts",
+    "src/test/ext_item_presentation.test.ts",
+    "src/test/ext_item_recording.test.ts",
+    "src/test/ext_item_roots.test.ts"
   ],
   "drift": [
     "src/test/generation_baseline.test.ts",

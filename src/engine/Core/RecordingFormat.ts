@@ -50,7 +50,7 @@ export function validateRecordingV4(
     exact(r.codec, 'wholeRun,foundation,origin', 'codec');
     if (
       r.version !== 4 ||
-      r.codec.wholeRun !== 6 ||
+      r.codec.wholeRun !== 7 ||
       r.codec.foundation !== FOUNDATION_PROTOCOL ||
       r.codec.origin !== 2 ||
       r.digestAlgorithm !== 'sha256-c5-merkle-v1' ||
@@ -252,7 +252,7 @@ export function validAccelerationSnapshot(
       s.afterCommand % 2048 !== 0 ||
       !e ||
       !e.fullCheckpoint ||
-      s.snapshotCodec !== 'brogue-web-whole-run-v6' ||
+      s.snapshotCodec !== 'brogue-web-whole-run-v7' ||
       s.tick !== e.tick ||
       s.simulationTicks !== e.simulationTicks ||
       levelKey(s.levelRef) !== levelKey(e.levelRef) ||

@@ -1,11 +1,8 @@
 import { bindWorldItemPresentation } from './WorldItemPresentation';
-import { markItemStatsDirty } from './ItemStatInvalidation';
+import { assembleNativeTemplate } from './FixedItemAssembly';
 /** Fixed C5 assembly. Never calls the random spawning pipeline. */
 import { Item, ItemCategory } from './Item';
 import type { ItemDefinitionContribution } from '../../ext/worldSdk';
-import weapons from '../../data/weapons.json';
-import armors from '../../data/armors.json';
-import { ItemLoader } from './ItemLoader';
 const definitions = new WeakMap<Item, ItemDefinitionContribution>();
 export function bindWorldItem(item: Item, definition: ItemDefinitionContribution): void {
   if (
@@ -41,37 +38,7 @@ export function assembleWorldItem(definition: ItemDefinitionContribution, quanti
     bindWorldItem(item, definition);
     return item;
   }
-  const template = definition.nativeTemplate!;
-  const weapon = template === 'dagger' ? weapons.find((w) => w.id === template) : null;
-  const armor = template === 'leather_armor' ? armors.find((a) => a.id === template) : null;
-  const item = new Item(
-    ItemLoader.translateName(weapon?.name ?? armor?.name ?? 'Ration of Food'),
-    weapon ? ')' : armor ? ']' : '%',
-    weapon ? 0xcccccc : armor ? 0x888888 : 0xddaa55,
-    weapon ? ItemCategory.WEAPON : armor ? ItemCategory.ARMOR : ItemCategory.FOOD
-  );
-  item.quantity = quantity;
-  item.identified = true;
-  item.canBeIdentified = false;
-  if (weapon) {
-    item.identityId = template;
-    item.damage = weapon.damage;
-    item.clumping = weapon.clumping;
-    item.strengthRequired = weapon.strengthRequired;
-    markItemStatsDirty(item);
-    item.weight = weapon.weight;
-    if (weapon.flags) item.flags = [...weapon.flags];
-  } else if (armor) {
-    item.identityId = template;
-    item.armor = armor.armor;
-    item.strengthRequired = armor.strengthRequired;
-    markItemStatsDirty(item);
-    item.weight = armor.weight;
-  } else {
-    item.consumableId = template;
-    item.weight = 5;
-  }
-  return item;
+  return assembleNativeTemplate(definition.nativeTemplate!, quantity);
 }
 
 const inventoryReservations = new WeakMap<object, () => number>();

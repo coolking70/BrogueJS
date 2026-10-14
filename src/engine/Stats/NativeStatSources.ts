@@ -1,3 +1,5 @@
+import { hasItemData, copyItemValue, freezeItemValue } from '../Items/ItemData';
+import type { EquippedStatItem } from '../../ext/stats';
 import { checkpointGenerationWorld } from '../Core/WorldCheckpoint';
 import { footprintOf } from '../Movement/CreatureSpatial';
 /** Native formula nodes and the only production reader of raw ring bonuses. */
@@ -43,6 +45,7 @@ export function checkpointNativeStatBindings(actors: readonly Creature[]): () =>
   } };
 }
 export function markStatsDirty(actor:Creature):void { revisions.set(actor,(revisions.get(actor)??0)+1); bindings.get(actor)?.dirty(); }
+export function clearStatsKnowledge(actor:Creature):void { bindings.get(actor)?.pipeline.clear(); nativeSessions.get(actor)?.pipeline.clear(); }
 export function nativeStatRevision(actor:Creature):number { return revisions.get(actor)??0; }
 /** Ingredients of every native formula/DAG node, excluding current resources.
  * Admission memoization remains valid across HP/clock-only writes. */
@@ -53,7 +56,7 @@ export function nativeStatSignature(actor:Creature):string {
     [a.maxHp,a.strength,a.weaknessAmount,a.accuracy,a.defense,a.damageString,a.regenTurns,a.attackSpeed,a.movementSpeed,
       a.getStatusDuration('donning'),a.getStatusDuration('aggravating')].map(scalar),
     a.hasStatus('regenerating'),a.hasStatus('invisible'),env?.darkness(),env?.shadow(),env?.rested(),
-    nativeEquippedItems(actor).map(i=>[i.id,i.category,i.identityId,i.enchantment,i.strengthRequired,i.damage,i.armor,i.identified,i.timesEnchanted].map(scalar))]);
+    nativeEquippedItems(actor).map(i=>[i.id,i.category,i.identityId,i.enchantment,i.strengthRequired,i.damage,i.armor,i.identified,i.timesEnchanted,hasItemData(i)?JSON.stringify(i.moduleData):undefined].map(scalar))]);
 }
 export function nativeStatFacts(actor:Creature,playerId:number):StatActorFacts {
   const a=actor as EquippedActor, player=actor.id===playerId, allied=player||a.isAlly===true;
@@ -62,7 +65,7 @@ export function nativeStatFacts(actor:Creature,playerId:number):StatActorFacts {
 }
 export function nativeEquippedItems(actor:Creature,change?:EquipChange):readonly Item[] {
   const a=actor as EquippedActor, slots=[a.equippedWeapon,a.equippedArmor,a.ringLeft,a.ringRight].filter((i):i is Item=>!!i&&(!bindings.has(actor)||a.inventory?.items.includes(i)===true));
-  if(bindings.has(actor))for(const item of slots)bindItemStatInvalidation(item,()=>markStatsDirty(actor));
+  if(bindings.has(actor)&&!change)for(const item of slots)bindItemStatInvalidation(item,()=>markStatsDirty(actor),()=>clearStatsKnowledge(actor));
   if(!change)return slots.map(item=>projectItem(actor,item));
   const remove=new Set(Array.isArray(change.unequip)?change.unequip:change.unequip?[change.unequip]:[]);
   let items=slots.filter(i=>!remove.has(i.id));
@@ -72,6 +75,21 @@ export function nativeEquippedItems(actor:Creature,change?:EquipChange):readonly
     if(!items.some(i=>i.id===item.id))items.push(item);
   }
   return items.map(item=>projectItem(actor,item));
+}
+/** The same detached equipment facts serve real and hypothetical queries. */
+export function equippedStatItems(actor:Creature,change?:EquipChange,knownOnly=false):readonly EquippedStatItem[] {
+  const a=actor as EquippedActor,items=nativeEquippedItems(actor,change),slots=new Map<number,EquippedStatItem['slot']>();
+  if(a.ringLeft&&items.some(i=>i.id===a.ringLeft!.id))slots.set(a.ringLeft.id,'left-ring');
+  if(a.ringRight&&items.some(i=>i.id===a.ringRight!.id))slots.set(a.ringRight.id,'right-ring');
+  return freezeItemValue(items.map(item=>{
+    let slot:EquippedStatItem['slot']=item.category===0?'weapon':item.category===1?'armor':slots.get(item.id)??([...slots.values()].includes('left-ring')?'right-ring':'left-ring');
+    if(item.category===8)slots.set(item.id,slot);
+    const damage=item.category===0?damageRange(a,item):{min:0,max:0};
+    return {id:item.id,slot,category:item.category,kindKey:item.identityId??item.name,enchant:knownOnly&&!item.isIdentified?0:item.enchantment,
+      identified:item.isIdentified,runic:{kind:item.runicType??null,identified:item.runicKnown},
+      base:{damageMin:damage.min,damageMax:damage.max,armorTenth:Math.trunc((item.armor??0)*10),strengthRequired:item.strengthRequired??0,weight:item.weight,flags:[...(item.flags??[])]},
+      ...(hasItemData(item)?{moduleData:copyItemValue(item.moduleData!)}:{})};
+  }));
 }
 function projectItem(actor:Creature,item:Item):Item {
   const proposal=itemProposals.get(actor)?.get(item.id);
@@ -90,14 +108,19 @@ export function nativeBase(actor:Creature,key:string,dep:(key:string)=>number,fa
   const enchant=(i:Item|undefined)=>i?(knownOnly&&!i.isIdentified?0:i.enchantment):0;
   const ring=(id:string)=>ringBonus(rings.filter(i=>!knownOnly||i.isIdentified),`ring_of_${id}`);
   switch(key){
+    case 'native.weapon-base-min':return damageRange(a,weapon).min;
+    case 'native.weapon-base-max':return damageRange(a,weapon).max;
+    case 'native.armor-base':return Math.trunc((armor?.armor??0)*10);
+    case 'native.stealth-points':return ring('stealth');
+    case 'native.light-points':return ring('light');
     case 'native.strength':return a.strength===undefined?12:a.strength-bonus(key);
     case 'native.max-hp':return a.maxHp-bonus(key);
     case 'native.effective-strength':return dep('native.strength');
     case 'native.weapon-enchant':return facts.projectileEnchant??enchant(weapon)*4;
     case 'native.armor-enchant':return enchant(armor)*4;
     case 'native.accuracy':return a.inventory?(weapon||facts.projectileEnchant!==undefined?Math.trunc(100*accuracyFraction(dep('native.weapon-enchant')/4)):monsterAccuracyAdjusted(100,a.weaknessAmount)):monsterAccuracyAdjusted(a.accuracy??100,a.weaknessAmount);
-    case 'native.defense':return a.inventory?(armor?.armor?Math.max(0,Math.trunc((armor.armor+dep('native.armor-enchant')/4-a.getStatusDuration('donning'))*10)):0):monsterDefenseAdjusted(a.defense??0,a.weaknessAmount);
-    case 'native.damage-min':case 'native.damage-max':{const d=damageRange(a,weapon),v=facts.baseValue??(key.endsWith('min')?d.min:d.max);if(facts.projectileEnchant!==undefined)return enchantedDamage(v,dep('native.weapon-enchant')/4);return weapon?Math.max(1,enchantedDamage(v,dep('native.weapon-enchant')/4)):v;}
+    case 'native.defense':return a.inventory?(armor?.armor?Math.max(0,Math.trunc(dep('native.armor-base')+dep('native.armor-enchant')*2.5-a.getStatusDuration('donning')*10)):0):monsterDefenseAdjusted(a.defense??0,a.weaknessAmount);
+    case 'native.damage-min':case 'native.damage-max':{const v=facts.baseValue??dep(key.endsWith('min')?'native.weapon-base-min':'native.weapon-base-max');if(facts.projectileEnchant!==undefined)return enchantedDamage(v,dep('native.weapon-enchant')/4);return weapon?Math.max(1,enchantedDamage(v,dep('native.weapon-enchant')/4)):v;}
     case 'native.hit-chance':case 'native.physical-damage-dealt':case 'native.physical-damage-taken':return facts.baseValue??0;
     case 'native.evasion':return 0;
     case 'native.runic-power':return dep('native.weapon-enchant');
@@ -107,12 +130,12 @@ export function nativeBase(actor:Creature,key:string,dep:(key:string)=>number,fa
     case 'native.awareness':return 0;
     case 'native.search-strength':return facts.baseValue??0;
     case 'native.clairvoyance':return 0;
-    case 'native.light':return 1;
+    case 'native.light':{const n=1+dep('native.light-points');return n<=0?n-1:n;}
     case 'native.reaping':return 0;
     case 'native.transference':return 0;
     case 'native.wisdom':return 0;
     case 'native.regeneration-bonus':return ring('regeneration');
-    case 'native.stealth-range':{if(facts.baseValue!==undefined)return facts.baseValue;if(a.hasStatus('invisible'))return 1;let r=14;const env=environments.get(actor);if(env?.darkness())r=Math.floor(r/2);if(env?.shadow())r=Math.floor(r/2);if(armor)r+=armorStealthAdjustment(armor.strengthRequired??0);if(env?.rested())r=Math.ceil(r/2);r+=a.getStatusDuration('aggravating')+ringStealthAdjustment(ring('stealth'));return Math.max(env?.rested()?1:2,r);}
+    case 'native.stealth-range':{if(facts.baseValue!==undefined)return facts.baseValue;if(a.hasStatus('invisible'))return 1;let r=14;const env=environments.get(actor);if(env?.darkness())r=Math.floor(r/2);if(env?.shadow())r=Math.floor(r/2);if(armor)r+=armorStealthAdjustment(armor.strengthRequired??0);if(env?.rested())r=Math.ceil(r/2);r+=a.getStatusDuration('aggravating')+ringStealthAdjustment(dep('native.stealth-points'));return Math.max(env?.rested()?1:2,r);}
     case 'native.regeneration':{
       if(!a.inventory){const interval=a.regenTurns??0;if(interval<=0)return {numerator:0,denominator:1};
         if(a.typeId==='player_clone')for(const scale of [300,180]){const hp=Math.round(scale/interval);if(hp>0&&Math.abs(scale/hp-interval)<=Number.EPSILON*Math.max(1,interval)*4)return safeStatRational({numerator:BigInt(hp),denominator:BigInt(scale)});}
@@ -126,14 +149,21 @@ export function nativeBase(actor:Creature,key:string,dep:(key:string)=>number,fa
     default:if(key.startsWith('native.resist.'))return 0;throw new StatValidationError('declaration');
   }
 }
+/** L0 template DAG for provider base() reads; never evaluates provider sources. */
+export function nativeTemplateBase(actor:Creature,key:string,facts:PairFacts={},change?:EquipChange,knownOnly=false,bonus:(key:string)=>number=()=>0):number|StatRational {
+  return nativeBase(actor,key,dep=>{
+    if(!NATIVE_STAT_DAG[key]?.includes(dep))throw new StatValidationError('declaration');
+    const value=nativeTemplateBase(actor,dep,facts,change,knownOnly,bonus);
+    if(typeof value!=='number')throw new StatValidationError('declaration');return value;
+  },facts,change,knownOnly,bonus);
+}
 export function nativeRows(actor:Creature,change?:EquipChange,knownOnly=false):readonly OwnedStatRow[]{
  const a=actor as EquippedActor,rows:OwnedStatRow[]=[{owner:'native',stat:'native.stealth-range',category:'clamp',value:a.hasStatus('invisible')||environments.get(actor)?.rested()?1:2,maximum:1_000_000,layer:'intrinsic',sourceKind:'native-state',sourceId:'native.stealth-minimum'}];
  const row=(stat:string,value:number,sourceId:string,layer:'intrinsic'|'temporary'='intrinsic'):void=>{rows.push({owner:'native',stat,category:'flat',value,layer,sourceKind:layer==='temporary'?'native-status':'native-ring',sourceId});};
  for(const [key,attack] of [['native.attack-speed',true],['native.move-speed',false]] as const){const delta=speedDelta(a,attack);if(delta)row(key,delta,attack?'native.status.attack-speed':'native.status.move-speed','temporary');}
  if(a.weaknessAmount)row('native.effective-strength',-a.weaknessAmount,'native.weakened','temporary');
  const rings=nativeEquippedItems(actor,change).filter(i=>i.category===8&&(!knownOnly||i.isIdentified));
- for(const ring of rings)for(const name of ['clairvoyance','light','reaping','transference','wisdom','awareness'])if(ring.identityId===`ring_of_${name}`)row(`native.${name}`,name==='awareness'?ringAwarenessBonus(effectiveRingEnchant(ring)):effectiveRingEnchant(ring),`native.item.${ring.id}`);
- if(1+ringBonus(rings,'ring_of_light')<=0)row('native.light',-1,'native.light-zero');
+ for(const ring of rings)for(const name of ['clairvoyance','reaping','transference','wisdom','awareness'])if(ring.identityId===`ring_of_${name}`)row(`native.${name}`,name==='awareness'?ringAwarenessBonus(effectiveRingEnchant(ring)):effectiveRingEnchant(ring),`native.item.${ring.id}`);
  return rows;
 }
 export function nativeNodeRows(actor:Creature,key:string,dep:(key:string)=>number,_facts:PairFacts={},change?:EquipChange,knownOnly=false):readonly OwnedStatRow[]{

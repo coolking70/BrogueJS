@@ -48,7 +48,7 @@ describe('C2-DATA authoritative transcription and frozen identity', () => {
         expect(pack.schema).toBe(1); expect(pack.moduleVersion).toBe('1.6.0'); expect(pack.rulesVersion).toBe('1.6.0');
         expect(module.rules).toEqual(getCombatPackIdentity()); expect(descriptor.rules).toEqual(module.rules);
         expect(module.rules!.fingerprint).toBe('sha256:9c2be4947fa2e080890ad9ca2b6a7aca20197f0ee77648b042fc9194618587ae');
-        expect(descriptor.foundation).toBe(14);
+        expect(descriptor.foundation).toBe(15);
         expect(module.initialState()).toMatchObject({ schema: 4 });
         expect(() => validateProductionActorAttackState(module.initialState(), combatAttackDefinitions(pack))).not.toThrow();
         expect(Object.isFrozen(pack)).toBe(true);

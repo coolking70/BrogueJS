@@ -1,3 +1,4 @@
+import { itemExtensionName } from './ItemExtensionBindings';
 import { worldItemPresentation } from './WorldItemPresentation';
 import { worldText } from '../../ext/worldText';
 /**
@@ -50,6 +51,7 @@ function calledLabel(categoryWord: 'potion' | 'scroll' | 'wand' | 'staff' | 'rin
 }
 
 export class Item implements Entity {
+    declare public moduleData?: Record<string, import('../../ext/types').Json>;
     /** CE Items.updateFloorItems: ignore falls from the future during catch-up. */
     public spawnTurnNumber: number = 0;
     public id: number;
@@ -197,7 +199,9 @@ export class Item implements Entity {
         return this.inscription ? `${name} "${this.inscription}"` : name;
     }
 
-    get uninscribedName(): string {
+    get uninscribedName(): string { return itemExtensionName(this,this.nativeUninscribedName); }
+
+    get nativeUninscribedName(): string {
         if (this.category === ItemCategory.MATERIAL) return worldItemPresentation(this)?.name() ?? worldText(this.name);
         // Here we hook into the static registry if the item is a consumables
         switch (this.category) {

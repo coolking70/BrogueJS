@@ -394,3 +394,11 @@ describe('foundation stat facts, DAG, pair and derived cache', () => {
     expect(s.collects()).toBe(0);
   });
 });
+
+it('review: hypothetical solves each DAG base once and rejects the complete shared source budget',()=>{
+ const counts=new Map<string,number>();let collects=0,oversize=false;
+ const keys=[{...sample,id:'sample.value'},{...sample,id:'sample.derived'}];
+ const pipeline=new StatPipeline({actor:()=>actor(),revision:()=>0,collect:()=>{collects++;return oversize?Array.from({length:257},(_,i)=>row('flat',1,{sourceId:`source.${i}`})):[];},base:(_id,key,dep)=>{counts.set(key,(counts.get(key)??0)+1);return key==='sample.value'?7:dep('sample.value')*2;}},keys,{'sample.derived':['sample.value']});
+ expect(pipeline.hypothetical(1,{},false)).toEqual({'sample.value':7,'sample.derived':14});expect(collects).toBe(1);expect([...counts.values()]).toEqual([1,1]);
+ oversize=true;expect(()=>pipeline.hypothetical(1,{},false)).toThrow();
+});

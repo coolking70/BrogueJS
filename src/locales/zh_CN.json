@@ -1,4 +1,5 @@
 {
+  "ext.foundation.item.invalid": "物品扩展数据无效（{{code}}）。",
   "replay.checkpoint_waiting": "正在验证录像摘要，请稍候…",
   "replay.checkpoint_failed": "录像摘要验证失败，已停止接受操作。请重新开始。",
     "ext.stats.errors.declaration": "属性键声明无效，无法应用本次变更。",

@@ -10,7 +10,7 @@
     {
       "label": "initial",
       "index": 0,
-      "worldHash": "63708e44a2f7e4992af56c5371b26dcd56378b4cfe2bec660b6df918bcc8587a",
+      "worldHash": "25d3b644343e31e556b8029253d8902272e9cda421ef6b09acb71b6c98a071d6",
       "messageHash": "03020f1dd34fbeb41cbb0478472485aca7d5071ce9263c93999f70e15efa720b",
       "turn": 0,
       "tick": 0
@@ -18,7 +18,7 @@
     {
       "label": "played",
       "index": 1,
-      "worldHash": "b0b3fd98dd8b0c4b35d8cca7eff1c9711385e5aa4cae137441320579c7c7e435",
+      "worldHash": "bceb7c525dabd7b3df61f974d276cf370f814cb28ebb07752d63dbb4a2fdb050",
       "messageHash": "56ccefc1954f91a7bb123488ffd15db28b27eedb511af0733e0567082407ca3d",
       "turn": 1,
       "tick": 100
@@ -34,7 +34,7 @@
   "events": 1,
   "routeCommands": 1,
   "recordingBytes": 2396,
-  "finalHash": "b0b3fd98dd8b0c4b35d8cca7eff1c9711385e5aa4cae137441320579c7c7e435",
+  "finalHash": "bceb7c525dabd7b3df61f974d276cf370f814cb28ebb07752d63dbb4a2fdb050",
   "finalRng": {
     "version": 2,
     "algorithm": "brogue-web-ranval32-uint64-level-v2",

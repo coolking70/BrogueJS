@@ -1,3 +1,4 @@
+import { assertItemDataShape } from '../Items/ItemData';
 import { SpatialValidationError, integer, validateSpatialComponent, type SpatialCatalog } from '../Movement/SpatialSchema';
 import { assertNativeSpatial, bindSpatialCatalog } from '../Movement/CreatureSpatial';
 /** U01: explicit instance contract. These lists are audited against declarations
@@ -15,7 +16,7 @@ export const ITEM_FIELDS = [
     'charges', 'identified', 'canBeIdentified', 'maxChargesKnown', 'magicDetected',
     'timesUsed', 'knownStaffUses', 'staffRechargeRemaining', 'rechargeTurns', 'rechargeCounter',
     'cooldownTurns', 'cooldownRemaining', 'quiverNumber', 'vorpalEnemy', 'keyLoc',
-    'fireContactCooldownUntilTurn', 'worldItem', 'originDepth', 'identityId', 'consumableId', 'description', 'spawnTurnNumber', 'inscription',
+    'fireContactCooldownUntilTurn', 'worldItem', 'moduleData', 'originDepth', 'identityId', 'consumableId', 'description', 'spawnTurnNumber', 'inscription',
 ] as const satisfies readonly (keyof Item)[];
 export const CREATURE_FIELDS = [
     'spatial', 'id', 'loc', 'hp', 'maxHp', 'name', 'color', 'char', 'statusDurations',
@@ -50,7 +51,7 @@ function copyValue<T>(value: T): T {
 }
 export function copyFields<T, K extends keyof T>(source: T, fields: readonly K[]): Pick<T, K> {
     if (fields.some(key => key === 'spatial') && Object.prototype.hasOwnProperty.call(source, 'spatial') && (source as any).spatial === undefined) throw new SpatialValidationError('Spatial absence must omit the property');
-    return Object.fromEntries(fields.filter(key => !['spatial','bodyTransitionHistory','bodyTransitionRewardless'].includes(String(key)) || Object.prototype.hasOwnProperty.call(source, key)).map(key => [key, copyValue(source[key])])) as Pick<T, K>;
+    return Object.fromEntries(fields.filter(key => !['spatial','bodyTransitionHistory','bodyTransitionRewardless','moduleData'].includes(String(key)) || Object.prototype.hasOwnProperty.call(source, key)).map(key => [key, copyValue(source[key])])) as Pick<T, K>;
 }
 export type GameSnapshotItem = Pick<Item, typeof ITEM_FIELDS[number]>;
 export type GameSnapshotMonster = Pick<Monster, typeof MONSTER_FIELDS[number]> & {
@@ -96,8 +97,9 @@ export const entityCodecDeps: EntityCodecDeps = {
     ensureIdAbove: ensureEntityIdAbove,
 };
 
-export function serializeItem(item: Item): GameSnapshotItem { const row=copyFields(item, ITEM_FIELDS);if(!Object.prototype.hasOwnProperty.call(item,'fireContactCooldownUntilTurn'))delete row.fireContactCooldownUntilTurn;if(!Object.prototype.hasOwnProperty.call(item,'worldItem'))delete row.worldItem;return row; }
+export function serializeItem(item: Item): GameSnapshotItem { assertItemDataShape(item);const row=copyFields(item, ITEM_FIELDS);if(!Object.prototype.hasOwnProperty.call(item,'fireContactCooldownUntilTurn'))delete row.fireContactCooldownUntilTurn;if(!Object.prototype.hasOwnProperty.call(item,'worldItem'))delete row.worldItem;return row; }
 export function deserializeItem(saved: GameSnapshotItem, deps: EntityCodecDeps = entityCodecDeps): Item {
+    assertItemDataShape(saved);
     const item=Object.assign(deps.allocateItem(), copyFields(saved, ITEM_FIELDS));if(!Object.prototype.hasOwnProperty.call(saved,'fireContactCooldownUntilTurn'))delete item.fireContactCooldownUntilTurn;if(!Object.prototype.hasOwnProperty.call(saved,'worldItem'))delete item.worldItem;return item;
 }
 export function serializeMonsterRow(m: Monster): GameSnapshotMonster {

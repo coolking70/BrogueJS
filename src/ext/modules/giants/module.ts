@@ -29,6 +29,7 @@ export function createGiantsModuleFromPack(input: GiantsPack): ExtensionModule {
     ...(pack.transitions ? { bodyTransitions: pack.transitions } : {}),
     ...(pack.bodies ? { nativeBodies: pack.bodies } : {}),
     generationContributions: pack.templates,
+    itemEncounters: pack.templates.map(template => template.id),
     publicActorTags: [{ component: 'boss', tag: 'boss', groupKey: 'encounterKey' }],
     initialState: () => initialGiantsState() as unknown as Json,
     validateState: (v): v is Json => isGiantsState(v, pack),

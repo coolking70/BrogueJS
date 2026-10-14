@@ -1,3 +1,4 @@
+import { hasItemData } from '../Items/ItemData';
 import {lockedFoodQuantity} from './StructureProduction';
 /** Trusted adapter only; absent from the content SDK. One atomic transfer, 100 ticks. */
 import type { Game } from './Game';
@@ -94,6 +95,7 @@ export function planMaterialTransfer(
       )
         throw new World5Error('C5_BAD_PAYLOAD');
       if(request.direction==='withdraw'&&item.quantity-row.quantity<lockedFoodQuantity(game,item.id))throw new World5Error('C5_RESERVED');
+      if (hasItemData(item) && (item.quantity !== 1 || row.quantity !== 1)) throw new World5Error('C5_INPUT');
       seen.add(row.itemId);
       if (item.category === ItemCategory.GOLD) throw new World5Error('C5_INPUT');
       if (

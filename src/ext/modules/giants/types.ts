@@ -3,8 +3,8 @@ import type { GenerationContribution } from '../../generation';
 import type { BodyDefinition, PartBreakRule } from '../../../engine/Movement/SpatialSchema';
 export interface GiantsPack {
   schema: 1;
-  moduleVersion: '1.0.0';
-  rulesVersion: '1.0.0';
+  moduleVersion: '1.1.0';
+  rulesVersion: '1.1.0';
   forms: NativeFormDefinition[];
   transitions?: import('../../bodyTransitions').ActiveBodyTransition[];
   bodies?: { definitions: BodyDefinition[]; breakRules: PartBreakRule[];

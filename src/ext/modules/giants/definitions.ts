@@ -2,7 +2,7 @@ import data from './data/definitions.json';
 import { assertGiantsPack } from './schema';
 import { extensionDataFingerprint } from '../../fingerprint';
 import type { GiantsPack } from './types';
-export const GIANTS_VERSION = '1.0.0';
+export const GIANTS_VERSION = '1.1.0';
 export function loadGiantsDefinitionPack(): GiantsPack {
   const pack = structuredClone(data);
   assertGiantsPack(pack);

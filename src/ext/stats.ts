@@ -69,6 +69,9 @@ export interface StatModifierRow {
   readonly known?: boolean;
 }
 export interface EquippedStatItem {
+  readonly slot: 'weapon' | 'armor' | 'left-ring' | 'right-ring';
+  readonly base: Readonly<{damageMin:number;damageMax:number;armorTenth:number;strengthRequired:number;weight:number;flags:readonly string[]}>;
+  readonly moduleData?: import('./itemSdk').ItemModuleData;
   readonly id: number;
   readonly category: number;
   readonly kindKey: string;
@@ -104,6 +107,10 @@ export interface StatSourceContext {
   base(stat: string): number;
 }
 export interface StatSourceProvider {
+  /** C6 source-only budgets, applied before the global key/slot bounds. */
+  readonly itemPolicy?: 'C6-1';
+  /** New hostile, noncopied births may initialize to their scaled maximum. */
+  readonly initializeHealthOnBirth?: true;
   readonly keys?: readonly StatKeyDeclaration[];
   collect(actor: Readonly<StatActorFacts>, context: StatSourceContext): readonly StatModifierRow[];
   revisionHint?(actor: Readonly<StatActorFacts>, context: StatSourceContext): number;
@@ -279,7 +286,7 @@ export function validateStatRows(
             'known'
           ].includes(k)
       ) ||
-      (row.budget!==undefined && (!isStatJson(row.budget)||Object.keys(row.budget).sort().join(',')!=='maximum,minimum'||!integer(row.budget.minimum)||!integer(row.budget.maximum)||row.budget.minimum>row.budget.maximum||!['flat','increased'].includes(row.category))) ||
+      (row.budget!==undefined && (!isStatJson(row.budget)||Object.keys(row.budget).sort().join(',')!=='maximum,minimum'||!integer(row.budget.minimum)||!integer(row.budget.maximum)||row.budget.minimum>row.budget.maximum||!['flat','increased','more'].includes(row.category))) ||
       !key ||
       !key.categories.includes(row.category) ||
       !integer(row.value) ||

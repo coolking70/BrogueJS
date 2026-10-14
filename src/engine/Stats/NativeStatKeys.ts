@@ -29,6 +29,11 @@ function key(
 export const NATIVE_STAT_KEYS: readonly StatKeyDeclaration[] = Object.freeze([
   { ...key('regeneration', 'HP/turn rational', 0, 1_000_000), rational: true },
   key('regeneration-bonus', 'ring enchant', -1_000_000, 1_000_000),
+  key('weapon-base-min', 'HP before enchant', 0, 1_000_000),
+  key('weapon-base-max', 'HP before enchant', 0, 1_000_000),
+  key('armor-base', 'tenth armor before enchant', 0, 1_000_000),
+  key('stealth-points', 'ring enchant', -1_000_000, 1_000_000),
+  key('light-points', 'ring enchant', -1_000_000, 1_000_000),
   key('weapon-enchant', 'quarter enchant', -800, 2000),
   key('armor-enchant', 'quarter enchant', -800, 2000),
   key('accuracy', 'accuracy', 0, 1_000_000),
@@ -57,14 +62,16 @@ export const NATIVE_STAT_KEYS: readonly StatKeyDeclaration[] = Object.freeze([
   ...['physical', 'fire', 'poison', 'other'].map((kind) => key(`resist.${kind}`, 'bp', 0, 7500))
 ]);
 export const NATIVE_STAT_DAG: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  'native.stealth-range': ['native.stealth-points'],
+  'native.light': ['native.light-points'],
   'native.regeneration': ['native.regeneration-bonus'],
   'native.effective-strength': ['native.strength'],
   'native.weapon-enchant': ['native.effective-strength'],
   'native.armor-enchant': ['native.effective-strength'],
   'native.accuracy': ['native.weapon-enchant'],
-  'native.defense': ['native.armor-enchant'],
-  'native.damage-min': ['native.weapon-enchant'],
-  'native.damage-max': ['native.weapon-enchant'],
+  'native.defense': ['native.armor-base','native.armor-enchant'],
+  'native.damage-min': ['native.weapon-base-min','native.weapon-enchant'],
+  'native.damage-max': ['native.weapon-base-max','native.weapon-enchant'],
   'native.runic-power': ['native.weapon-enchant'],
   'native.armor-runic-power': ['native.armor-enchant']
 });
