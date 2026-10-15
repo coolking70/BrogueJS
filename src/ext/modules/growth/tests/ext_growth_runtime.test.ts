@@ -146,3 +146,21 @@ describe('EXT-1a creation, XP and durable contracts',() => {
         }
     });
 });
+
+describe('P2 unchanged actor observations',()=>{
+ it('publishes only changed persisted facts, preserving allegiance transitions and death',()=>{
+  const pack=parseGrowthDefinitionPack(data,{moduleVersion:data.moduleVersion,hasText:()=>true});
+  const module=createGrowthGameplay(pack,{schema:1,version:data.moduleVersion,fingerprint:extensionDataFingerprint(data)});
+  let stored=module.initialState();
+  const setState=vi.fn((value:any)=>{expect(module.validateState(value)).toBe(true);stored=structuredClone(value);});
+  const context={get state(){return structuredClone(stored);},setState} as any;
+  let actor={id:123,name:'rat',hp:8,maxHp:8,x:1,y:2,player:false,allied:false,hostile:true,monsterId:'rat'};
+  const observe=()=>module.hooks!.actorObserved!({actor},context);
+  observe();expect(setState).toHaveBeenCalledTimes(1);
+  actor={...actor,hp:4,x:3};observe();expect(setState).toHaveBeenCalledTimes(1);
+  actor={...actor,allied:true,hostile:false};observe();expect(setState).toHaveBeenCalledTimes(2);
+  expect((stored as unknown as GrowthState).actors[123]!.relation).toBe(1);
+  actor={...actor,hp:0};observe();observe();expect(setState).toHaveBeenCalledTimes(3);
+  expect((stored as unknown as GrowthState).actors[123]).toEqual({player:false,allied:true,hostile:false,alive:false,relation:1});
+ });
+});

@@ -160,8 +160,10 @@ export class StatValidationError extends Error {
 }
 const integer = (value: unknown): value is number => Number.isSafeInteger(value);
 const CATEGORIES: readonly StatCategory[] = ['override', 'flat', 'increased', 'more', 'clamp'];
+const immutableStatJson = new WeakSet<object>();
 /** Unlike general JSON helpers, this boundary must never execute a getter. */
 export function isStatJson(value: unknown, seen = new Set<object>()): boolean {
+  if (value && typeof value === 'object' && !seen.has(value) && immutableStatJson.has(value)) return true;
   if (value === null || typeof value === 'string' || typeof value === 'boolean') return true;
   if (typeof value === 'number') return Number.isSafeInteger(value);
   if (!value || typeof value !== 'object' || seen.has(value)) return false;
@@ -180,6 +182,7 @@ export function isStatJson(value: unknown, seen = new Set<object>()): boolean {
   )
     return false;
   seen.add(value);
+  let immutable = Object.isFrozen(value);
   for (const k of keys) {
     if (array && k === 'length') continue;
     const d = Object.getOwnPropertyDescriptor(value, k)!;
@@ -193,8 +196,10 @@ export function isStatJson(value: unknown, seen = new Set<object>()): boolean {
       seen.delete(value);
       return false;
     }
+    if (d.value && typeof d.value === 'object' && !immutableStatJson.has(d.value)) immutable = false;
   }
   seen.delete(value);
+  if (immutable) immutableStatJson.add(value);
   return true;
 }
 export function validateStatKey(

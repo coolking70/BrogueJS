@@ -136,3 +136,71 @@ export function checkpointGenerationWorldGroups(selectors: readonly (() => Gener
         for (const apply of sessions) apply();
     };
 }
+
+export interface GenerationCheckpointCapture {
+    capture(select: () => GenerationCheckpointRoots): () => void;
+    seal(): void;
+    readonly diagnostics: Readonly<{ objects: number; properties: number; typedBytes: number; reused: number }>;
+}
+/** Share descriptor/byte captures made at the SAME synchronous write boundary.
+ * Each receipt retains its own reference stops, traversal and restore order.
+ * Never carry a pool across a write or use it for a later nested savepoint. */
+export function createGenerationCheckpointCapture(): GenerationCheckpointCapture {
+    const saved = new Map<object, { children: object[]; apply: () => void }>();
+    let sealed = false;
+    const counts = { objects: 0, properties: 0, typedBytes: 0, reused: 0 };
+    return {
+        get diagnostics() { return { ...counts }; },
+        seal() { sealed = true; saved.clear(); },
+        capture(select) {
+            if (sealed) throw new Error('Checkpoint capture boundary closed');
+            const roots = select(), seen = new Set<unknown>(roots.references), shallow = new Set(roots.shallow);
+            const restore: Array<() => void> = [];
+            for (const queue of roots.appendOnly ?? []) {
+                seen.add(queue); const length = queue.length;
+                restore.push(() => { queue.length = length; });
+            }
+            const capture = (value: unknown): void => {
+                if (!value || typeof value !== 'object' || seen.has(value) || Object.isFrozen(value)) return;
+                seen.add(value);
+                if (value instanceof WeakMap || value instanceof WeakSet) return;
+                let entry = saved.get(value);
+                if (entry) counts.reused++;
+                else {
+                    const children: object[] = [];
+                    const child = (v: unknown) => { if (v && typeof v === 'object') children.push(v); };
+                    let apply: () => void;
+                    if (ArrayBuffer.isView(value)) {
+                        const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength), copy = bytes.slice();
+                        counts.typedBytes += copy.length;
+                        apply = () => { bytes.set(copy); };
+                    } else if (value instanceof Map) {
+                        const entries = [...value];
+                        apply = () => { value.clear(); for (const [key, v] of entries) value.set(key, v); };
+                        for (const [key, v] of entries) { child(key); child(v); }
+                    } else if (value instanceof Set) {
+                        const entries = [...value];
+                        apply = () => { value.clear(); for (const v of entries) value.add(v); };
+                        entries.forEach(child);
+                    } else {
+                        const descriptors = Object.getOwnPropertyDescriptors(value);
+                        const keys = Reflect.ownKeys(descriptors); counts.properties += keys.length;
+                        apply = () => {
+                            for (const key of Reflect.ownKeys(value)) if (!Object.prototype.hasOwnProperty.call(descriptors, key)) Reflect.deleteProperty(value, key);
+                            Object.defineProperties(value, descriptors);
+                        };
+                        for (const key of keys) {
+                            const descriptor = descriptors[key as keyof typeof descriptors]!;
+                            if ('value' in descriptor) child(descriptor.value);
+                        }
+                    }
+                    entry = { children, apply }; saved.set(value, entry); counts.objects++;
+                }
+                restore.push(entry.apply);
+                if (!shallow.has(value)) entry.children.forEach(capture);
+            };
+            roots.shallow.forEach(capture); roots.deep.forEach(capture);
+            return () => { restore.forEach(apply => apply()); for (const apply of roots.restoreSession ?? []) apply(); };
+        }
+    };
+}

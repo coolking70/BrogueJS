@@ -57,7 +57,7 @@ import { clearMovementRegion } from '../engine/Movement/CreatureSpatial';
 import { footprintOf } from '../engine/Movement/CreatureSpatial';
 import { hasBodyContact, physicalContactOf, isWholeBodyDamage } from '../engine/Combat/BodyCombat';
 import { resolveFixedZoneContact } from '../engine/Combat/FixedZoneHealth';
-import { canonical, cloneJson, isJson, validId } from './json';
+import { canonical, cloneJson, checkpointJson, immutableJson, readonlyJson, isJson, validId } from './json';
 import { actorActionIdentityCheckpoint, adoptActorActionJson } from './actorActionIdentity';
 import { EffectCausality, validEffectOrigin, type EffectOrigin } from './causality';
 import { ExtensionCompatibilityError } from './compatibility';
@@ -86,7 +86,7 @@ const restHandlers = new WeakMap<ExtensionRuntime, Pick<ExtensionPorts,'nativeDa
 const actorQueryScopes=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['actorQueryScope']>>();
 const nativeFactCheckpoints=new WeakMap<ExtensionRuntime,NonNullable<ExtensionPorts['checkpointCommittedFacts']>>();
 interface StatProposal {hp?:number;maxHp?:number;strength?:number;oldMaxBonus:number;oldStrengthBonus:number}
-interface StatSession { sourceValidation:Map<string,{stamp:string;rows:readonly import('../engine/Stats/StatPipeline').OwnedStatRow[]}>; pipeline:StatPipeline; ledger:MaterializedStats; actors:Map<number,Creature>; depths:ReadonlyMap<number,number>|null; simulationTicks:number|null; inProgress:boolean; writes:boolean; overrides:Map<string,number>; proposals:Map<number,StatProposal>|null; moduleViews:Map<string,{state:ReadonlyJson;components:Record<string,ReadonlyJson>}>; previewComponents:Readonly<Record<string,Json>>|null; materialSignatures:Map<number,string>; materialValues:Map<number,Map<string,number>>; collecting:boolean; dirty:Set<number>; reconciling:boolean }
+interface StatSession { componentReaders:Map<string,Set<number>>|null; sourceValidation:Map<string,{stamp:string;rows:readonly import('../engine/Stats/StatPipeline').OwnedStatRow[]}>; pipeline:StatPipeline; ledger:MaterializedStats; actors:Map<number,Creature>; depths:ReadonlyMap<number,number>|null; simulationTicks:number|null; inProgress:boolean; writes:boolean; overrides:Map<string,number>; proposals:Map<number,StatProposal>|null; moduleViews:Map<string,{state:ReadonlyJson;components:Record<string,ReadonlyJson>}>; previewComponents:Readonly<Record<string,Json>>|null; materialSignatures:Map<number,string>; materialValues:Map<number,Map<string,number>>; collecting:boolean; dirty:Set<number>; reconciling:boolean }
 const statSessions=new WeakMap<ExtensionRuntime,StatSession>();
 const edibleDiagnostics=new WeakMap<ExtensionRuntime,{owner:string;method:string}[]>();
 const statQueries=new WeakMap<ExtensionRuntime,StatQuery>();
@@ -248,10 +248,10 @@ export class ExtensionRuntime {
         const fixture = this.world5SettlementFixture();
         if (!fixture || !this.generations.length) throw new Error('World fixture requires an engine transaction');
         const module = this.modules.find(m => m.id === fixture.owner)!;
-        const next = fixture.configuration.prepareState(freezeView(cloneJson(this.states[module.id]!)), freezeView(structuredClone(plan)));
+        const next = fixture.configuration.prepareState(readonlyJson(this.states[module.id]!), freezeView(structuredClone(plan)));
         requireSynchronous(next);
         if (!isJson(next) || !module.validateState(next)) throw new Error('Invalid world fixture participant');
-        return () => { this.states[module.id] = cloneJson(next); };
+        return () => { this.states[module.id] = module.actorActions ? cloneJson(next) : immutableJson(next); };
     }
     get spatialCatalog(): SpatialCatalog { return spatialCatalogs.get(this) ?? nativeSpatialCatalog; }
     constructor(registry: ExtensionRegistry, manifest: ExtensionManifest, private readonly ports: ExtensionPorts, snapshot?: ExtensionSnapshot) {
@@ -406,7 +406,7 @@ export class ExtensionRuntime {
         boundExtensionItems.set(this,new Set());
         dropSessions.set(this, new ItemDrops(this.modules));
         this.causality = new EffectCausality();
-        this.states = snapshot ? structuredClone(snapshot.modules) : Object.fromEntries(this.modules.map(module => [module.id, cloneJson(module.initialState())]));
+        this.states = snapshot ? structuredClone(snapshot.modules) : Object.fromEntries(this.modules.map(module => [module.id, (module.actorActions ? cloneJson(module.initialState()) : immutableJson(module.initialState()))]));
         this.components = snapshot ? structuredClone(snapshot.components) : {};
         if (snapshot) {
             this.causality.restore(snapshot.foundation.causality);
@@ -420,20 +420,25 @@ export class ExtensionRuntime {
         this.initializeStats(snapshot);
         for (const module of this.modules) if (module.prepareItemSession) {
             this.ediblePure(() => module.prepareItemSession!((capability, input) => this.queryOptional(capability, input)));
-            if (!snapshot) this.states[module.id] = cloneJson(module.initialState());
+            if (!snapshot) this.states[module.id] = (module.actorActions ? cloneJson(module.initialState()) : immutableJson(module.initialState()));
         }
         if (snapshot) this.validateSnapshot(snapshot);
         this.validateSnapshot(this.snapshot());
+        // Imported namespaces receive the same ownership proof as fresh writes.
+        // Native action schedulers and focus materialization retain mutable identity.
+        for (const module of this.modules) if (!module.actorActions) this.states[module.id] = immutableJson(this.states[module.id]!);
+        for (const rows of Object.values(this.components)) for (const name of Object.keys(rows))
+            if (name !== 'growth:focus') rows[name] = immutableJson(rows[name]!);
     }
     get stats():StatPipeline{return statSessions.get(this)!.pipeline;}
     private get statQuery():StatQuery{
         let query=statQueries.get(this);if(!query){const pipeline=this.stats;query=Object.freeze({applied:pipeline.applied.bind(pipeline),value:pipeline.value.bind(pipeline),rational:pipeline.rational.bind(pipeline),breakdown:pipeline.breakdown.bind(pipeline),hypothetical:pipeline.hypothetical.bind(pipeline)});statQueries.set(this,query);}return query;
     }
     private initializeStats(snapshot?:ExtensionSnapshot):void{
-        const session:StatSession={sourceValidation:new Map(),pipeline:null!,ledger:new MaterializedStats(()=>markRecordingRoot(this)),actors:new Map(),depths:null,simulationTicks:null,inProgress:false,writes:false,overrides:new Map(),proposals:null,moduleViews:new Map(),previewComponents:null,materialSignatures:new Map(),materialValues:new Map(),collecting:false,dirty:new Set(),reconciling:false};
+        const session:StatSession={componentReaders:new Map(),sourceValidation:new Map(),pipeline:null!,ledger:new MaterializedStats(()=>markRecordingRoot(this)),actors:new Map(),depths:null,simulationTicks:null,inProgress:false,writes:false,overrides:new Map(),proposals:null,moduleViews:new Map(),previewComponents:null,materialSignatures:new Map(),materialValues:new Map(),collecting:false,dirty:new Set(),reconciling:false};
         statSessions.set(this,session);session.ledger.restore(snapshot?.foundation.stats);
         const actor=(id:number)=>{const a=session.actors.get(id);if(!a)throw new StatValidationError('source');return a;};
-        session.pipeline=new StatPipeline({nativeSignature:id=>JSON.stringify([nativeStatSignature(actor(id)),this.actorActionBinding()?.state.actors.find(row=>row.actorId===id)?.profileId]),beforeRead:id=>{if(session.dirty.has(id)&&!session.inProgress&&!session.reconciling&&!this.pureProviderPhase)this.reconcileMaterialized(id);},debug:this.ports.testMode?.()===true,applied:(id,key)=>session.ledger.bonus(id,key),actor:id=>nativeStatFacts(actor(id),this.ports.playerId()),revision:id=>nativeStatRevision(actor(id)),
+        session.pipeline=new StatPipeline({actorCacheLimit:()=>session.actors.size,nativeSignature:id=>JSON.stringify([nativeStatSignature(actor(id)),this.actorActionBinding()?.state.actors.find(row=>row.actorId===id)?.profileId]),beforeRead:id=>{if(session.dirty.has(id)&&!session.inProgress&&!session.reconciling&&!this.pureProviderPhase)this.reconcileMaterialized(id);},debug:this.ports.testMode?.()===true,applied:(id,key)=>session.ledger.bonus(id,key),actor:id=>nativeStatFacts(actor(id),this.ports.playerId()),revision:id=>nativeStatRevision(actor(id)),
             base:(id,key,dep,facts,change,known)=>{
                 const override=session.overrides.get(`${id}:${key}`);if(override!==undefined)return override;
                 if(key.startsWith('native.'))return nativeBase(actor(id),key,dep,facts,change,known,k=>session.ledger.bonus(id,k));
@@ -453,8 +458,8 @@ export class ExtensionRuntime {
                 const roots = phase === 'derived' ? [...all] : [];
                 for(const module of this.modules){const provider=module.statSources;if(!provider || phase==='derived'&&!provider.derived)continue;
                     const previous=this.pureProviderPhase;this.pureProviderPhase=true;
-                    try{let view=!change?session.moduleViews.get(module.id):undefined;if(!view){view={state:freezeView(cloneJson(this.states[module.id]!)),components:{}};if(!change)session.moduleViews.set(module.id,view);}const context=Object.freeze({depth:session.depths?.get(id)??this.ports.actorQueryScope?.(actor(id))?.depth??this.ports.depth(),playerId:this.ports.playerId(),state:view.state,facts:pair,
-                        getComponent:(actorId:number,name:string)=>{const key=`${actorId}:${name}`,value=session.previewComponents?.[`${actorId}:${module.id}:${name}`]??this.components[String(actorId)]?.[`${module.id}:${name}`];return value===undefined?undefined:view!.components[key]??(view!.components[key]=freezeView(cloneJson(value)));},
+                    try{let view=!change?session.moduleViews.get(module.id):undefined;if(!view){view={state:readonlyJson(this.states[module.id]!),components:{}};if(!change)session.moduleViews.set(module.id,view);}const context=Object.freeze({depth:session.depths?.get(id)??this.ports.actorQueryScope?.(actor(id))?.depth??this.ports.depth(),playerId:this.ports.playerId(),state:view.state,facts:pair,
+                        getComponent:(actorId:number,name:string)=>{if(session.componentReaders){const dependency=`${module.id}:${actorId}:${name}`,readers=session.componentReaders.get(dependency)??new Set<number>();readers.add(id);session.componentReaders.set(dependency,readers);if(session.componentReaders.size>4096)session.componentReaders=null;}const key=`${actorId}:${name}`,value=session.previewComponents?.[`${actorId}:${module.id}:${name}`]??this.components[String(actorId)]?.[`${module.id}:${name}`];return value===undefined?undefined:view!.components[key]??(view!.components[key]=readonlyJson(value));},
                         equippedItems:equipped,
                         input:(key:string)=>{
                             if(phase!=='derived'||!provider.derived!.inputs.includes(key))throw new StatValidationError('declaration');
@@ -472,7 +477,7 @@ export class ExtensionRuntime {
                         providerRowCounts.set(module.id,rowCount);
                         if(phase==='derived'&&supplied.some(row=>![...provider.derived!.outputs,...(provider.derived!.optionalOutputs??[])].includes(row.stat)||session.pipeline.keys.get(row.stat)?.attributeId))throw new StatValidationError('declaration');
                         const ids=provider.itemPolicy==='C6-1'?equipped().map(item=>item.id):undefined;
-                        const cacheKey=`${module.id}:${id}:${phase}`,stamp=JSON.stringify([nativeStatRevision(actor(id)),session.pipeline.keys.size,provider.itemPolicy,ids,supplied]);
+                        const cacheKey=`${module.id}:${id}:${phase}`,stamp=JSON.stringify([session.pipeline.keys.size,provider.itemPolicy,ids,supplied]);
                         const cached=!change?session.sourceValidation.get(cacheKey):undefined;
                         let rows=cached?.stamp===stamp?cached.rows:undefined;
                         if(!rows){
@@ -509,7 +514,7 @@ export class ExtensionRuntime {
     hypotheticalComponents(moduleId:string, actorId:number, components:Readonly<Record<string,Json>>, knownOnly=true):Readonly<Record<string,number>> {
         if (!this.modules.some(module=>module.id===moduleId) || !isJson(components)) throw new StatValidationError('source');
         const session=statSessions.get(this)!,previous=session.previewComponents;
-        session.previewComponents=Object.fromEntries(Object.entries(components).map(([name,value])=>[`${actorId}:${moduleId}:${name}`,freezeView(cloneJson(value))]));
+        session.previewComponents=Object.fromEntries(Object.entries(components).map(([name,value])=>[`${actorId}:${moduleId}:${name}`,readonlyJson(value)]));
         try { return session.pipeline.hypothetical(actorId,{},knownOnly); }
         finally { session.previewComponents=previous; }
     }
@@ -523,7 +528,27 @@ export class ExtensionRuntime {
         if(key==='combat.stamina-regen')return policy.regenPerTickNumerator;if(key==='combat.poise-recovery')return policy.poiseRecoveryNumerator;
         if(key==='combat.native-attack-cost')return policy.nativeAttackCost;return 0;
     }
-    private invalidateStats():void{const session=statSessions.get(this);if(session){session.writes=true;session.pipeline.clear();session.moduleViews.clear();for(const actor of this.creatures)markStatsDirty(actor);}}
+    private forgetStatDependencies(actorId:number):void {
+        const readers=statSessions.get(this)?.componentReaders;
+        if(readers)for(const [key,ids] of readers){ids.delete(actorId);if(!ids.size)readers.delete(key);}
+    }
+    private invalidateStats(component?:{moduleId:string;actorId:number;name:string}):void {
+        const session=statSessions.get(this);if(!session)return;
+        session.writes=true;
+        if(component&&session.componentReaders){
+            const {moduleId,actorId,name}=component;
+            const view=session.moduleViews.get(moduleId);if(view)delete view.components[`${actorId}:${name}`];
+            // The bounded table falls back to global invalidation on overflow.
+            // Providers may read another actor's component. Retain the union of
+            // observed dependencies, including absent reads and both phases.
+            for(const id of session.componentReaders.get(`${moduleId}:${actorId}:${name}`)??[]){
+                session.pipeline.clear(id);const actor=session.actors.get(id);if(actor)markStatsDirty(actor);
+            }
+        }else{
+            session.pipeline.clear();session.moduleViews.clear();
+            for(const actor of this.creatures)markStatsDirty(actor);
+        }
+    }
     reconcileMaterialized(actorId:number):void{
         const session=statSessions.get(this)!;if(this.pureProviderPhase)return;
         const actor=session.actors.get(actorId);if(!actor)return;
@@ -645,16 +670,16 @@ export class ExtensionRuntime {
                     &&typeof a.value==='number'&&typeof b.value==='number'&&Number.isFinite(a.value)&&Number.isFinite(b.value)&&a.value!==b.value;
                 if(changed)canonical(value);
                 else if(canonical(current)===canonical(value))return;
-                runtime.states[module.id]=module.actorActions?adoptActorActionJson(current,value):cloneJson(value); if(module.statSources||module.actorActions)runtime.invalidateStats();
+                runtime.states[module.id]=module.actorActions?adoptActorActionJson(current,value):immutableJson(value); if(module.statSources||module.actorActions)runtime.invalidateStats();
             },
             getComponent(id, name) { const value = runtime.components[creatureKey(id)]?.[componentKey(name)]; return value === undefined ? undefined : cloneJson(value); },
-            setComponent(id, name, value) { writable(); if (module.componentValidators?.[name] && !module.componentValidators[name]!(value)) throw new Error('Invalid component value'); const key = creatureKey(id),nameKey=componentKey(name),current=runtime.components[key]?.[nameKey];if(current!==undefined&&canonical(current)===canonical(value))return; (runtime.components[key] ??= {})[nameKey] = cloneJson(value); if(module.statSources||module.actorActions)runtime.invalidateStats();
+            setComponent(id, name, value) { writable(); if (module.componentValidators?.[name] && !module.componentValidators[name]!(value)) throw new Error('Invalid component value'); const key = creatureKey(id),nameKey=componentKey(name),current=runtime.components[key]?.[nameKey];if(current!==undefined&&canonical(current)===canonical(value))return; (runtime.components[key] ??= {})[nameKey] = nameKey === 'growth:focus' ? cloneJson(value) : immutableJson(value); if(module.statSources||module.actorActions)runtime.invalidateStats({moduleId:module.id,actorId:id,name});
                 for(const receipt of module.statSources?.gainReceipts??[])if(receipt.component===name&&current&&value&&typeof current==='object'&&!Array.isArray(current)&&typeof value==='object'&&!Array.isArray(value)){
                     const before=current[receipt.field],after=value[receipt.field];
                     if(typeof before==='number'&&typeof after==='number'&&Number.isSafeInteger(before)&&Number.isSafeInteger(after)&&after>before)runtime.commitItemStatKnowledge(id,[receipt.stat]);
                 }
             },
-            removeComponent(id, name) { writable(); const key = creatureKey(id),nameKey=componentKey(name);if(runtime.components[key]?.[nameKey]===undefined)return; delete runtime.components[key]?.[nameKey]; if (runtime.components[key] && !Object.keys(runtime.components[key]!).length) delete runtime.components[key]; if(module.statSources||module.actorActions)runtime.invalidateStats(); },
+            removeComponent(id, name) { writable(); const key = creatureKey(id),nameKey=componentKey(name);if(runtime.components[key]?.[nameKey]===undefined)return; delete runtime.components[key]?.[nameKey]; if (runtime.components[key] && !Object.keys(runtime.components[key]!).length) delete runtime.components[key]; if(module.statSources||module.actorActions)runtime.invalidateStats({moduleId:module.id,actorId:id,name}); },
             creature(id) { const actor = [...runtime.creatures].find(creature => creature.id === id); return actor ? runtime.actorFacts(actor) : null; },
             grantReward(request) {
                 ordinaryCapability();
@@ -760,17 +785,13 @@ export class ExtensionRuntime {
         }
     }
     private ruleContext(module: ExtensionModule): ExtensionRuleContext {
-        const freeze = <T>(value: T): T => {
-            if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); }
-            return value;
-        };
         const runtime = this;
         return Object.freeze({ playerId: this.ports.playerId(),
-            get state() { return freeze(cloneJson(runtime.states[module.id]!)); },
+            get state() { return readonlyJson(runtime.states[module.id]!); },
             getComponent: (id: number, name: string): Json | undefined => {
                 if (!Number.isSafeInteger(id) || id < 1 || !validId(name)) throw new Error('Invalid rule component query');
                 const value = this.components[String(id)]?.[`${module.id}:${name}`];
-                return value === undefined ? undefined : freeze(cloneJson(value));
+                return value === undefined ? undefined : readonlyJson(value);
             } });
     }
     /** Trusted native reference, never a module/UI supplied actor ID. */
@@ -791,17 +812,17 @@ export class ExtensionRuntime {
             throw new Error('Invalid optional actor query');
         const entry = actorQueryProviders.get(this)?.get(capability);
         if (!entry) return Object.freeze({status: 'unavailable', reason: 'absent'});
-        const {module, provider} = entry, value = freezeView(cloneJson(input));
+        const {module, provider} = entry, value = readonlyJson(input);
         let open = true; this.pureProviderPhase = true;
         try {
             const accepted = provider.accepts(value); requireSynchronous(accepted);
             if (typeof accepted !== 'boolean') throw new Error('Invalid actor query acceptance');
             if (!accepted) return Object.freeze({status:'unavailable',reason:'unsupported-input'});
             const result = provider.query(value, Object.freeze({playerId, actor:freezeView(this.actorFacts(actor,playerId)),
-                state:freezeView(cloneJson(this.states[module.id]!)), getActorComponent: (name: string) => {
+                state:readonlyJson(this.states[module.id]!), getActorComponent: (name: string) => {
                     if (!open || !validId(name)) throw new Error('Closed or invalid actor component scope');
                     const component = this.components[String(actor.id)]?.[`${module.id}:${name}`];
-                    return component === undefined ? undefined : freezeView(cloneJson(component));
+                    return component === undefined ? undefined : readonlyJson(component);
                 }}));
             requireSynchronous(result);
             if (!isJson(result)) throw new Error('Invalid actor query result');
@@ -828,7 +849,7 @@ export class ExtensionRuntime {
             const read = () => { if (!open) throw new Error('Closed committed fact preparation'); };
             const priorPure=this.pureProviderPhase;this.pureProviderPhase=true;
             try {
-                const plan = consumer.prepare(fact,allocation,Object.freeze({playerId:this.ports.playerId(),state:freezeView(cloneJson(this.states[module.id]!)),
+                const plan = consumer.prepare(fact,allocation,Object.freeze({playerId:this.ports.playerId(),state:readonlyJson(this.states[module.id]!),
                     queryOptional:(capability:string,input:Json)=>{read();return this.queryOptional(capability,input);},
                     prepareOptionalReward:(capability:string,rewardId:string,instanceId:string)=>{read();this.pureProviderPhase=false;try{return this.prepareOptionalReward(module.id,capability,rewardId,instanceId);}finally{this.pureProviderPhase=true;}}}));
                 requireSynchronous(plan); return {module,consumer,plan};
@@ -911,18 +932,18 @@ export class ExtensionRuntime {
         }
         const entry = this.optionalQueries.get(capability);
         if (!entry) return Object.freeze({ status: 'unavailable', reason: 'absent' });
-        const value = freezeView(cloneJson(input)), { module, provider } = entry;
+        const value = readonlyJson(input), { module, provider } = entry;
         const accepted = provider.accepts(value);
         requireSynchronous(accepted);
         if (typeof accepted !== 'boolean') throw new Error('Invalid optional query acceptance');
         if (!accepted) return Object.freeze({ status: 'unavailable', reason: 'unsupported-input' });
         const result = provider.query(value, Object.freeze({
-            playerId: this.ports.playerId(), state: freezeView(cloneJson(this.states[module.id]!)),
-            getComponent:(id:number,name:string)=>{if(!Number.isSafeInteger(id)||id<1||!validId(name))throw new Error('Invalid component query');const c=this.components[String(id)]?.[`${module.id}:${name}`];return c===undefined?undefined:freezeView(cloneJson(c));},
+            playerId: this.ports.playerId(), state: readonlyJson(this.states[module.id]!),
+            getComponent:(id:number,name:string)=>{if(!Number.isSafeInteger(id)||id<1||!validId(name))throw new Error('Invalid component query');const c=this.components[String(id)]?.[`${module.id}:${name}`];return c===undefined?undefined:readonlyJson(c);},
             getPlayerComponent: (name: string) => {
                 if (!validId(name)) throw new Error('Invalid optional player component');
                 const component = this.components[String(this.ports.playerId())]?.[`${module.id}:${name}`];
-                return component === undefined ? undefined : freezeView(cloneJson(component));
+                return component === undefined ? undefined : readonlyJson(component);
             },
         }));
         requireSynchronous(result);
@@ -1053,13 +1074,13 @@ export class ExtensionRuntime {
         const context = Object.freeze({
             stats:this.statQuery, previewStats:(id:number,components:Readonly<Record<string,Json>>)=>{check();return this.hypotheticalComponents(module.id,id,components,false);}, playerId, player: actor ? this.actorFacts(actor) : null,
             resources: freezeView(actor ? this.characterResources(playerId) : { strength: null, gold: null }),
-            state: freezeView(cloneJson(this.states[module.id]!)),
-            getComponent:(id:number,name:string)=>{check();if(!Number.isSafeInteger(id)||id<1||!validId(name))throw new Error('Invalid component query');const c=this.components[String(id)]?.[`${module.id}:${name}`];return c===undefined?undefined:freezeView(cloneJson(c));},
+            state: readonlyJson(this.states[module.id]!),
+            getComponent:(id:number,name:string)=>{check();if(!Number.isSafeInteger(id)||id<1||!validId(name))throw new Error('Invalid component query');const c=this.components[String(id)]?.[`${module.id}:${name}`];return c===undefined?undefined:readonlyJson(c);},
             getPlayerComponent: (name: string) => {
                 check();
                 if (!validId(name)) throw new Error('Invalid optional player component');
                 const component = this.components[String(playerId)]?.[`${module.id}:${name}`];
-                return component === undefined ? undefined : freezeView(cloneJson(component));
+                return component === undefined ? undefined : readonlyJson(component);
             },
         });
         this.pureProviderPhase = true;
@@ -1125,7 +1146,12 @@ export class ExtensionRuntime {
         const edibleBefore=edibleSnapshot(this);
         const statsBefore=statSessions.get(this)!.ledger.snapshot();
         const restoreActorState=this.checkpointActorStateIdentity();
-        const states = structuredClone(this.states), components = structuredClone(this.components), world = structuredClone(this.world);
+        // The identity receipt above already owns every native scheduler write.
+        // A second JSON clone of that namespace would be discarded on rollback.
+        const actorState=this.actorActionBinding();
+        const states=checkpointJson(actorState?{...this.states,[actorState.moduleId]:null}:this.states);
+        if(actorState)states[actorState.moduleId]=actorState.state as unknown as Json;
+        const components = checkpointJson(this.components), world = structuredClone(this.world);
         const deaths = structuredClone(this.deaths), causes = this.causality.snapshot(), resources = this.resourceCheckpoint();
         const nextFactId = this.nextFactId, pending = structuredClone(this.pendingStoryFacts), nativeActionRevision = this.nativeActionRevision;
         const creatures = new Map([...this.creatures].map(actor => [actor, actor.extensionHooks]));
@@ -1175,11 +1201,11 @@ export class ExtensionRuntime {
             // its persisted namespace, never the still-live game's native ports.
             const candidate = snapshot ? Object.freeze({
                 moduleId: module.id, nextFactId: snapshot.foundation.nextFactId,
-                get state() { return freezeView(cloneJson(snapshot.modules[module.id]!)); },
+                get state() { return readonlyJson(snapshot.modules[module.id]!); },
                 getComponent(id: number, name: string) {
                     if (!Number.isSafeInteger(id) || id < 1 || !validId(name)) throw new Error('Invalid initialization component query');
                     const value = snapshot.components[String(id)]?.[`${module.id}:${name}`];
-                    return value === undefined ? undefined : freezeView(cloneJson(value));
+                    return value === undefined ? undefined : readonlyJson(value);
                 },
             }) : null;
             const context = candidate ? new Proxy(candidate, { get(target, key, receiver) {
@@ -1220,7 +1246,7 @@ export class ExtensionRuntime {
         const module = this.modules.find(module => module.commitItemGrowth);
         if (!module) { nativeCommit?.apply(nativeAmount); return nativeAmount; }
         if (!this.creatures.has(actor) || !Number.isSafeInteger(nativeAmount) || nativeAmount < 0) throw new Error('Invalid item growth owner or amount');
-        const states = structuredClone(this.states), components = structuredClone(this.components),stats=statSessions.get(this)!.ledger.snapshot();
+        const states = checkpointJson(this.states), components = checkpointJson(this.components),stats=statSessions.get(this)!.ledger.snapshot();
         const resources = [...this.creatures].map(creature => ({ creature, hp: creature.hp, maxHp: creature.maxHp,
             strength: creature instanceof Player ? creature.strength : null, gold: creature instanceof Player ? this.ports.gold?.() ?? 0 : null }));
         const prior = this.resourcePhase; this.resourcePhase = true;
@@ -1430,7 +1456,7 @@ export class ExtensionRuntime {
         try {
             requireSynchronous(callback(this.context(module,scope)));
             if(!statSession.writes&&!statSession.proposals?.size)return;
-            this.stats.clear();
+            for(const id of statSession.proposals?.keys()??[])this.stats.clear(id);
             // Resource owners propose current-resource recovery. Foundation alone
             // writes modified maxima/strength, once after the complete source set.
             for(const [id,proposal] of statSession.proposals??[]){
@@ -1445,7 +1471,7 @@ export class ExtensionRuntime {
                     if(nextBonus===oldBonus)statSession.overrides.set(`${id}:${key}`,desired-oldBonus);
                 }
             }
-            this.stats.clear();
+            for(const id of statSession.proposals?.keys()??[])this.stats.clear(id);
             for(const [id,proposal] of statSession.proposals??[])if(proposal.hp!==undefined)statSession.actors.get(id)!.hp=proposal.hp;
             for(const actor of this.creatures)this.stats.validateSources(actor.id);
             for(const actor of this.creatures)this.reconcileMaterialized(actor.id);
@@ -1669,7 +1695,7 @@ export class ExtensionRuntime {
     beginGeneration(label: string): GenerationToken {
         if (this.disposed || this.publishingGeneration || !label.length) throw new Error('Invalid generation transaction');
         const token = Object.freeze({ label });
-        this.generations.push({ itemBindings:new Set(boundExtensionItems.get(this)), itemDrops: dropSessions.get(this)!.snapshot(), restoreActorState:this.checkpointActorStateIdentity(), edible:edibleSnapshot(this), token, nextFactId: this.nextFactId, pendingStoryFacts: structuredClone(this.pendingStoryFacts), resources: this.resourceCheckpoint(), stats:statSessions.get(this)!.ledger.snapshot(), world: structuredClone(this.world), placementNextEntityId: null, states: structuredClone(this.states), components: structuredClone(this.components),
+        this.generations.push({ itemBindings:new Set(boundExtensionItems.get(this)), itemDrops: dropSessions.get(this)!.snapshot(), restoreActorState:this.checkpointActorStateIdentity(), edible:edibleSnapshot(this), token, nextFactId: this.nextFactId, pendingStoryFacts: structuredClone(this.pendingStoryFacts), resources: this.resourceCheckpoint(), stats:statSessions.get(this)!.ledger.snapshot(), world: structuredClone(this.world), placementNextEntityId: null, states: checkpointJson(this.states), components: checkpointJson(this.components),
             causality: this.causality.snapshot(), deaths: structuredClone(this.deaths), creatures: new Set(this.creatures), facts: [], births: new Set() });
         return token;
     }
@@ -1854,8 +1880,9 @@ export class ExtensionRuntime {
         const removed = this.world.entities.filter(entity => !depths.includes(entity.depth));
         const gate = this.world.gate;
         if (!removed.length && !(gate && isGameOver)) return;
-        const beforeWorld = structuredClone(this.world), beforeStates = structuredClone(this.states), beforeComponents = structuredClone(this.components);
+        const beforeWorld = structuredClone(this.world), beforeStates = checkpointJson(this.states), beforeComponents = checkpointJson(this.components);
         const restoreActorState=this.checkpointActorStateIdentity();
+        const session=statSessions.get(this)!,statsBefore=session.ledger.snapshot(),resources=this.resourceCheckpoint();
         try {
             markRecordingRoot(this);
             this.world.entities = this.world.entities.filter(entity => depths.includes(entity.depth));
@@ -1865,17 +1892,30 @@ export class ExtensionRuntime {
             }
             for (const owner of [...new Set(removed.map(entity => entity.owner))].sort())
                 this.emit('interactablesRemoved', { owner, entityIds: removed.filter(entity => entity.owner === owner).map(entity => entity.id) });
-        } catch (error) { this.world = beforeWorld; this.states = beforeStates; restoreActorState(); this.components = beforeComponents; throw error; }
+        } catch (error) {
+            this.world = beforeWorld; this.states = beforeStates; restoreActorState(); this.components = beforeComponents;
+            // Earlier GC hooks may have committed sources and native deltas before
+            // a later hook fails. Restore both domains and discard their read views.
+            session.ledger.restore(statsBefore);this.restoreResources(resources);
+            session.materialSignatures.clear();session.materialValues.clear();this.invalidateStats();
+            throw error;
+        }
     }
     /** Mechanical roots only: observation/history sets must not pin dead components. */
     collectComponents(reachable: Iterable<Creature>): void {
         if (this.generations.length || this.activeScope) throw new Error('Component collection outside safe boundary');
         const keep = new Set([...reachable].map(creature => creature.id));
-        for (const id of Object.keys(this.components)) if (!keep.has(Number(id))) { delete this.components[id]; markRecordingRoot(this); }
+        let removedComponents=false;
+        for (const id of Object.keys(this.components)) if (!keep.has(Number(id))) { delete this.components[id]; removedComponents=true; markRecordingRoot(this); }
+        // Whole-actor GC bypasses set/removeComponent. A surviving actor can
+        // read any retired actor's components, including through a cached view.
+        // Invalidate before forgetting retired readers; ordinary writes retain
+        // their precise dependency path. No removal means no extra invalidation.
+        if(removedComponents)this.invalidateStats();
         for (const id of Object.keys(this.deaths)) if (!keep.has(Number(id))) { delete this.deaths[id]; markRecordingRoot(this); }
         this.causality.retainCreatures(keep);
         for (const creature of this.creatures) if (!keep.has(creature.id)) {
-            touchedNativeBoundary(this); bindNativeForms(creature); creature.extensionHooks = undefined; this.creatures.delete(creature); unbindStats(creature);statSessions.get(this)!.actors.delete(creature.id);statSessions.get(this)!.ledger.remove(creature.id);statSessions.get(this)!.materialSignatures.delete(creature.id);statSessions.get(this)!.materialValues.delete(creature.id);this.stats.clear(creature.id);
+            touchedNativeBoundary(this); bindNativeForms(creature); creature.extensionHooks = undefined; this.creatures.delete(creature); unbindStats(creature);statSessions.get(this)!.actors.delete(creature.id);this.forgetStatDependencies(creature.id);statSessions.get(this)!.ledger.remove(creature.id);statSessions.get(this)!.materialSignatures.delete(creature.id);statSessions.get(this)!.materialValues.delete(creature.id);this.stats.forget(creature.id);
         }
         // Module-owned reward receipts are deliberately not collected with bodies.
     }
@@ -1900,8 +1940,8 @@ export class ExtensionRuntime {
             return p?Object.freeze({owner:input.module,action:input.action,kind:p.kind,...(p.materialDefinitionId?{materialDefinitionId:p.materialDefinitionId}:{})}):null;
         }catch{return null;}
     }
-    itemCommandState(owner:string):ReadonlyJson { if(!this.modules.some(m=>m.id===owner&&m.itemCommands))throw new ItemDataError('C6_OWNER');return freezeView(cloneJson(this.states[owner]!)); }
-    itemCommandConfiguration(owner:string):ReadonlyJson {return freezeView(cloneJson(this.manifest.modules.find(m=>m.id===owner)?.configuration??null));}
+    itemCommandState(owner:string):ReadonlyJson { if(!this.modules.some(m=>m.id===owner&&m.itemCommands))throw new ItemDataError('C6_OWNER');return readonlyJson(this.states[owner]!); }
+    itemCommandConfiguration(owner:string):ReadonlyJson {return readonlyJson(this.manifest.modules.find(m=>m.id===owner)?.configuration??null);}
     prepareItemCommand(owner:string,action:string,payload:ReadonlyJson,inventory:ItemCommandRead['inventory'],equippedIds:readonly number[]):ItemCommandProposal|null {
         if(this.disposed||this.pureProviderPhase||this.activeScope||this.commandModule)throw new ItemDataError('C6_DATA');
         const state=this.itemCommandState(owner),revision=(state as Record<string,ReadonlyJson>).revision;
@@ -1915,7 +1955,7 @@ export class ExtensionRuntime {
         assertItemJson(next);const module=this.modules.find(m=>m.id===owner)!;
         if((this.states[owner] as Record<string,Json>).revision!==revision||!next||typeof next!=='object'||Array.isArray(next)||(next as Record<string,ReadonlyJson>).revision!==revision+1
           ||new TextEncoder().encode(JSON.stringify(next)).byteLength>4096||this.ediblePure(()=>module.validateState(next))!==true)throw new ItemDataError('C6_DATA');
-        this.states[owner]=copyItemValue(next) as Json;
+        this.states[owner]=module.actorActions?copyItemValue(next) as Json:immutableJson(copyItemValue(next) as Json);
         const session=statSessions.get(this)!;session.pipeline.clear();session.moduleViews.clear();markRecordingRoot(this);
     }
     itemKnown(item:object):boolean {
@@ -1979,7 +2019,7 @@ export class ExtensionRuntime {
     }
     itemAutoPickup(item:Item):boolean {
         const facts=itemFacts(item);
-        for(const module of this.modules)if(module.itemPickup){const take=this.ediblePure(()=>module.itemPickup!(facts,freezeView(cloneJson(this.states[module.id]!))));if(typeof take!=='boolean')throw new ItemDataError('C6_DATA');if(!take)return false;}
+        for(const module of this.modules)if(module.itemPickup){const take=this.ediblePure(()=>module.itemPickup!(facts,readonlyJson(this.states[module.id]!)));if(typeof take!=='boolean')throw new ItemDataError('C6_DATA');if(!take)return false;}
         return true;
     }
     private itemText(owner:string,ref:TextRef):string {
@@ -2044,11 +2084,11 @@ export class ExtensionRuntime {
             if(!plan)return null;
             let rarityEvaluated=false;
             return d.commit(plan,token,revision,(proposal,event)=>{rarityEvaluated=proposal.items.length>0;return accept(proposal,event);},(moduleId,provider,event,accepted)=>{
-                const next=this.ediblePure(()=>provider.settle(freezeView(cloneJson(this.states[moduleId]!)),event,accepted));
+                const next=this.ediblePure(()=>provider.settle(readonlyJson(this.states[moduleId]!),event,accepted));
                 assertItemJson(next);const module=this.modules.find(m=>m.id===moduleId)!;
                 if(new TextEncoder().encode(JSON.stringify(next)).byteLength>4096)throw new ItemDataError('C6_BUDGET');
                 if(this.ediblePure(()=>module.validateState(next))!==true)throw new ItemDataError('C6_VALIDATOR');
-                this.states[moduleId]=cloneJson(next as Json);this.invalidateStats();
+                this.states[moduleId]=module.actorActions?cloneJson(next as Json):immutableJson(next as Json);this.invalidateStats();
                 this.stats.validateSources(input.playerId);this.reconcileMaterialized(input.playerId);
                 if(rarityEvaluated)this.commitItemStatKnowledge(input.playerId,d.statKeys(input.source));
             });
@@ -2084,7 +2124,7 @@ export class ExtensionRuntime {
     private get edibleDiagnostics():{owner:string;method:string}[] {let rows=edibleDiagnostics.get(this);if(!rows){rows=[];edibleDiagnostics.set(this,rows);}return rows;}
     noteEdibleDiagnostic(owner:string,method:string):void {this.edibleDiagnostics.push({owner,method});}
     readEdibleDiagnostics():readonly {owner:string;method:string}[] {return freezeView(structuredClone(edibleDiagnostics.get(this)??[]));}
-    retireEdibleActor(actor:Creature):void {touchedNativeBoundary(this);delete this.components[String(actor.id)];this.creatures.delete(actor);statSessions.get(this)!.actors.delete(actor.id);statSessions.get(this)!.ledger.remove(actor.id);unbindStats(actor);actor.extensionHooks=undefined;this.invalidateStats();markRecordingRoot(this);}
+    retireEdibleActor(actor:Creature):void {touchedNativeBoundary(this);delete this.components[String(actor.id)];this.creatures.delete(actor);statSessions.get(this)!.actors.delete(actor.id);this.forgetStatDependencies(actor.id);this.stats.forget(actor.id);statSessions.get(this)!.ledger.remove(actor.id);unbindStats(actor);actor.extensionHooks=undefined;this.invalidateStats();markRecordingRoot(this);}
     /** 仅可信原生退休入口使用；模块上下文不提供此离图会话能力。 */
     checkpointNativeStatSession(): () => void {
         const session=statSessions.get(this)!,query=statQueries.get(this);
@@ -2152,7 +2192,7 @@ export class ExtensionRuntime {
         if(participant&&module?.worldWorkParticipant) {
             let active=true, writerFailed=false;
             try { const runtime=this; const result=module.worldWorkParticipant.onCommitted(fact,Object.freeze({
-                get state(){if(!active)throw new Error('Expired participant');return freezeView(cloneJson(runtime.states[module.id]!));},
+                get state(){if(!active)throw new Error('Expired participant');return readonlyJson(runtime.states[module.id]!);},
                 replaceState(next:import('./worldSdk').JsonValue){
                     try {if(!active||!isJson(next))throw new Error('Invalid participant state');runtime.invoke(module,context=>context.setState(cloneJson(next as Json)));}
                     catch(error){writerFailed=true;throw error;}
@@ -2178,7 +2218,7 @@ export class ExtensionRuntime {
         const descriptor = this.views.get(moduleId), module = this.modules.find(entry => entry.id === moduleId);
         if (this.disposed || !module) return null;
         if (module.projectView) {
-            const projection = module.projectView(freezeView({ ...(displayQuery === undefined ? {} : { displayQuery: JSON.parse(c5Canonical(displayQuery)) as Json }), ...(module.campPolicy?{structures:this.ports.structureRead?.(moduleId)}:{}), stats:this.statQuery, queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), ...(hasEdibleDeclarations(module.worldDefinitions)?{edible:this.ports.edibleRead?.(moduleId)}:{}), ...(module.worldDefinitions ? {worldWork:this.ports.worldWorkRead?.(moduleId)} : {}), state: cloneJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
+            const projection = module.projectView(freezeView({ ...(displayQuery === undefined ? {} : { displayQuery: JSON.parse(c5Canonical(displayQuery)) as Json }), ...(module.campPolicy?{structures:this.ports.structureRead?.(moduleId)}:{}), stats:this.statQuery, queryOptional: (capability: string, input: Json) => this.queryOptional(capability,input), ...(hasEdibleDeclarations(module.worldDefinitions)?{edible:this.ports.edibleRead?.(moduleId)}:{}), ...(module.worldDefinitions ? {worldWork:this.ports.worldWorkRead?.(moduleId)} : {}), state: readonlyJson(this.states[moduleId]!), playerId:this.ports.playerId(), depth: this.ports.depth(), turn: this.ports.turn?.() ?? 0,
                 visibleInteractables: this.visibleInteractables(moduleId), actorActionBundles: structuredClone(this.ports.actorActions?.()?.bundles ?? []), nearbyInteractables: this.nearbyInteractables(moduleId),
                 worldRestUnavailable: id=>this.world.entities.some(entity=>entity.id===id&&entity.owner===moduleId)
                     ?restHandlers.get(this)?.worldRestUnavailable?.(id)??null:'unavailable' }));
@@ -2205,7 +2245,7 @@ export class ExtensionRuntime {
         for (const name of descriptor.playerComponents) {
             let value = this.components[String(playerId)]?.[`${moduleId}:${name}`];
             if (value !== undefined && projector) {
-                const projected = projector(name,freezeView(cloneJson(value)));requireSynchronous(projected);
+                const projected = projector(name,readonlyJson(value));requireSynchronous(projected);
                 if (!isJson(projected)) throw new Error('Invalid extension display projection');
                 value = projected;
             }

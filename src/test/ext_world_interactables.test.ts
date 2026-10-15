@@ -6,6 +6,7 @@ import { validWorldSnapshot, type WorldInteractablePlacement } from '../ext/worl
 import { interactablePlacementCells, hasInteractionLine } from '../ext/worldSpatial';
 import { Grid, TerrainType } from '../engine/Map/Grid';
 import { getNextEntityId } from '../entities/Creature';
+import { Player } from '../entities/Player';
 import { rng } from '../engine/Random';
 import { timeSystem } from '../engine/Systems/Time';
 import { createHeadlessGame } from './harness';
@@ -128,4 +129,21 @@ describe('world placement and line-of-interaction',()=>{
         expect({tick:timeSystem.currentTick,food:game.player.inventory.items.map(item=>[item.id,item.quantity]),rng:rng.getState(),turn:game.absoluteTurnNumber,events:game.recordedInputEvents.length,pos:{...game.player.loc},snapshot:game.extensionRuntime!.snapshot()}).toEqual(before);
         game.executeCommand('ext:command',command('close'));expect(game.interactionActive).toBe(false);
     });
+});
+
+
+it('restores stat source views and materialized resources when later world-GC publication fails',()=>{
+ const p=new Player(4,4),definition=fixture();
+ const rt=runtime({...definition,statSources:{collect(actor,c){
+  const bonus=c.getComponent(p.id,'bonus') as {value:number}|undefined;
+  return actor.player&&bonus?['native.light','native.max-hp'].map(stat=>({stat,value:bonus.value,category:'flat' as const,layer:'character' as const,sourceKind:'fixture',sourceId:'probe.bonus'})):[];
+ }},hooks:{...definition.hooks,
+  interactionClosed(_e,c){c.setComponent(p.id,'bonus',{value:6});},
+  interactablesRemoved(){throw Error('world GC rollback');}
+ }},{playerId:()=>p.id});
+ rt.attachCreature(p);enter(rt);rt.command(command('open'));
+ const before=rt.snapshot(),maximum=p.maxHp;
+ expect(()=>rt.collectWorld([],false)).toThrow('world GC rollback');
+ expect(rt.snapshot()).toEqual(before);
+ expect(rt.stats.value(p.id,'native.light')).toBe(1);expect(p.maxHp).toBe(maximum);rt.assertStats();
 });

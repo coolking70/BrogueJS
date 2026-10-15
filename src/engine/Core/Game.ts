@@ -115,7 +115,7 @@ import { withMonsterLookup, monsterAt, checkpointOwnedMonsterLists, ownedMonster
 const convertedDropDeaths = new WeakSet<Monster>();
 import { alertMonster, wakeMonster } from '../Combat/MonsterAI';
 import { type MachineEntityRuntime } from '../Generator/BlueprintEngine';
-import { buildHordeMachine, checkpointGenerationWorld, checkpointGenerationWorldGroups, type GenerationCheckpointRoots, createMachineRuntime, generateDepth, placeStairs, populateLevel } from './GenerationCoordinator';
+import { buildHordeMachine, checkpointGenerationWorld, checkpointGenerationWorldGroups, createGenerationCheckpointCapture, type GenerationCheckpointCapture, type GenerationCheckpointRoots, createMachineRuntime, generateDepth, placeStairs, populateLevel } from './GenerationCoordinator';
 import { itemIsSwappable, enchantLevelKnown, swapItemToEnchantLevel } from '../Items/Commutation';
 import { generateQualifiedMachineItem } from '../Items/MachineItemGeneration';
 import { minionPlacement, generationDistances, speciesForbiddenFlags } from '../Generator/GenerationPlacement';
@@ -507,7 +507,7 @@ export class Game {
 
     /** Combat fact transactions explicitly own native contact/rest writes, not
      * an arbitrary save/load round trip. Retained actor and scheduler identities survive. */
-    private checkpointCombatFactWorld(extraActors: Monster[] = []): () => void {
+    private checkpointCombatFactWorld(extraActors: Monster[] = [], captures?: GenerationCheckpointCapture): () => void {
         const runtime=this.extensionRuntime!, cached=[...this.levels.values()];
         const creatures=collectEntityGraph([...extraActors,...this.monsters,...this.dormantMonsters,...this.purgatory,
             ...cached.flatMap(level=>[...level.monsters,...(level.dormantMonsters??[])]),
@@ -517,7 +517,7 @@ export class Game {
         const traps=grids.map(grid=>{const cells=this.displacementTrapDepressions?.get(grid);return {grid,cells,values:[...(cells??[])]};});
         const restoreLists=checkpointOwnedMonsterLists([this.monsters,this.dormantMonsters,...cached.flatMap(level=>[level.monsters,...(level.dormantMonsters?[level.dormantMonsters]:[])])]);
         const display=[this.lightMap,...cached.map(level=>level.lightMap)].map(light=>light.checkpointRenderState());
-        const restore=checkpointGenerationWorld(()=>({shallow:[this],
+        const restore=(captures?.capture ?? checkpointGenerationWorld)(()=>({shallow:[this],
             deep:[this.player,creatures,this.squareMotion,this.grid,this.environment,this.fov,this.scent,this.waypoints,
                 this.lightMap,...cached.map(level=>level.lightMap),
                 this.monsters,this.dormantMonsters,this.purgatory,this.items,this.levels,this.pendingFallenByDepth,
@@ -14078,7 +14078,10 @@ export class Game {
     public clearWorldAutoWork(ticketId:number):void { if(this.autoAction?.kind==='auto_work'&&this.autoAction.ticketId===ticketId)this.autoAction=null; }
     public residentGridAt(depth:number){return depth===(this.currentLevelDepth??this.depth)?this.grid:this.levels.get(depth)?.grid;}
     public checkpointResidentWorld():()=>void {
-        const native=residentTransactionOwnsNativeWrites(this)?this.checkpointCombatFactWorld():null;
+        // Both receipts are constructed before any write. Share captures, while
+        // preserving their original independent restore and session order.
+        const captures=residentTransactionOwnsNativeWrites(this)?createGenerationCheckpointCapture():undefined;
+        const native=captures?this.checkpointCombatFactWorld([],captures):null;
         const statBindings=this.extensionRuntime!.checkpointNativeStatSession();
         const paths=checkpointResidentPaths(this),beds=checkpointResidentBeds(this),cached=[...this.levels.values()],actors=collectEntityGraph(this.departureActors()).monsters,needs=checkpointNeeds(this),dirty=checkpointRecordingRoots([this.world5!,this.extensionRuntime!,this.actorActions!]);
         // Retirement owns actor/list/session writes even when it owns no terrain
@@ -14094,7 +14097,8 @@ export class Game {
         const deletedFields=[...(this.squareMotion||this.bodyGroups?[this]:[]),...actors.flatMap(a=>
             a.carriedItem&&Object.prototype.hasOwnProperty.call(a.carriedItem,'fireContactCooldownUntilTurn')?[a.carriedItem]:[])];
         const descriptors=deletedFields.map(target=>({target,values:Object.getOwnPropertyDescriptors(target)}));
-        const base=this.checkpointWorldWork(()=>({shallow:[this,...cached],deep:[...actors,this.extensionRuntime,this.squareMotion,this.bodyGroups,this.examinedEntityIds,this.monsters,this.dormantMonsters,this.purgatory,this.pendingFallenByDepth,this.pendingFallenItemsByDepth,this.levels,this.visibleMonsters,this.everSeenMonsters,...cached.flatMap(l=>[l.monsters,l.dormantMonsters,l.items,l.visibleMonsters])],references:[this.grid,...cached.map(l=>l.grid),this.spatialCatalog,...actors.flatMap(a=>[a.mapToMe,a.safetySnapshot])]}));
+        const base=this.checkpointWorldWork(()=>({shallow:[this,...cached],deep:[...actors,this.extensionRuntime,this.squareMotion,this.bodyGroups,this.examinedEntityIds,this.monsters,this.dormantMonsters,this.purgatory,this.pendingFallenByDepth,this.pendingFallenItemsByDepth,this.levels,this.visibleMonsters,this.everSeenMonsters,...cached.flatMap(l=>[l.monsters,l.dormantMonsters,l.items,l.visibleMonsters])],references:[this.grid,...cached.map(l=>l.grid),this.spatialCatalog,...actors.flatMap(a=>[a.mapToMe,a.safetySnapshot])]}),captures);
+        captures?.seal();
         return()=>{base();needs();dirty();paths();beds();native?.();
             for(const {target,values} of descriptors){for(const key of Reflect.ownKeys(target))if(Object.getOwnPropertyDescriptor(target,key)?.configurable)Reflect.deleteProperty(target,key);Object.defineProperties(target,values);}
             lists();terrainSubscriptions();revisions();defense();statBindings();};
@@ -14270,7 +14274,7 @@ export class Game {
         if(this.bodyGroups){this.bodyGroups=this.bodyGroups.filter(g=>!ids.has(g.coreId));if(!this.bodyGroups.length)delete this.bodyGroups;}
         this.player.seized=this.player.seized&&this.monsters.some(a=>a.seizing);this.hoveredCell=null;this.hoveredText='';this.needsRender=true;
     }
-    public checkpointWorldWork(additional?:()=>GenerationCheckpointRoots):()=>void {
+    public checkpointWorldWork(additional?:()=>GenerationCheckpointRoots, captures?:GenerationCheckpointCapture):()=>void {
         // C5 operations never own grid/environment/cache-layer writes. Preserve
         // native actor clock pointers shallowly and only traverse the explicit C5 write set.
         const actors=[this.player,...this.monsters],runtime=this.extensionRuntime!;
@@ -14278,7 +14282,8 @@ export class Game {
             deep:[this.world5,this.actorActions,this.worldContainerItems,this.worldWorkFacts,this.worldWorkDetails,
                 this.player.inventory,this.items,this.autoAction,...actors.map(a=>a instanceof Monster?a.carriedItem:null)],
             references:[runtime]});
-        const restore=additional?checkpointGenerationWorldGroups([roots,additional]):checkpointGenerationWorld(roots);
+        const restore=captures?(()=>{const receipts=[roots,...(additional?[additional]:[])].map(select=>captures.capture(select));return()=>receipts.forEach(apply=>apply());})()
+            :additional?checkpointGenerationWorldGroups([roots,additional]):checkpointGenerationWorld(roots);
         const actions=checkpointProductionActorActions(this),log=logger.checkpoint(),id=getNextEntityId(),random=rng.getState(),tick=timeSystem.currentTick;
         const invalid=isProductionActorActionRunInvalid(this),origin=recordingState(this).origin;
         return()=>{restore();actions();log();restoreProductionActorActionValidity(this,invalid);recordingState(this).origin=origin;

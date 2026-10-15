@@ -1,3 +1,4 @@
+import { isImmutableJson } from '../../ext/json';
 import {
   STAT_LAYERS,
   StatValidationError,
@@ -27,13 +28,20 @@ export type OwnedStatRow = StatModifierRow & { readonly owner: string };
 // objects. Registration changes invalidate certificates; aggregate budgets still
 // run on every collected set (including native and cross-owner sources).
 const certifiedRows = new WeakMap<object,{keys:ReadonlyMap<string,StatKeyDeclaration>;size:number;owner:string}>();
+const sealedSources = new WeakMap<object,{keys:ReadonlyMap<string,StatKeyDeclaration>;size:number;owner:string;rows:readonly OwnedStatRow[]}>();
 export function sealStatRows(rows:readonly StatModifierRow[],owner:string,keys:ReadonlyMap<string,StatKeyDeclaration>):readonly OwnedStatRow[] {
+  const reusable=isImmutableJson(rows),prior=reusable?sealedSources.get(rows):undefined;
+  if(prior&&prior.keys===keys&&prior.size===keys.size&&prior.owner===owner)return prior.rows;
   validateStatRows(rows,owner,keys);
-  return frozen(structuredClone(rows).map(row=>{
+  const result=frozen(structuredClone(rows).map(row=>{
     const owned={...row,owner};certifiedRows.set(owned,{keys,size:keys.size,owner});return owned;
   }));
+  if(reusable)sealedSources.set(rows,{keys,size:keys.size,owner,rows:result});
+  return result;
 }
 export interface StatPipelineHost {
+  /** Known live mechanical actors; arbitrary query IDs still fail actor(). */
+  actorCacheLimit?():number;
   beforeRead?(actorId:number):void;
   nativeSignature?(actorId:number):string;
   actor(actorId: number): Readonly<StatActorFacts>;
@@ -263,6 +271,8 @@ export class StatPipeline implements StatQuery {
     if (actorId === undefined) {this.cache.clear();this.sourceCache.clear();}
     else {this.cache.delete(actorId);this.sourceCache.delete(actorId);}
   }
+  forget(actorId:number):void { this.clear(actorId); this.validatedSources.delete(actorId); }
+  private actorCacheLimit():number { return Math.max(128,this.host.actorCacheLimit?.()??128); }
   cacheSize(actorId: number): number {
     return this.cache.get(actorId)?.size ?? 0;
   }
@@ -288,7 +298,7 @@ export class StatPipeline implements StatQuery {
     }
     validateStatBudget(rows);
     const active=rows.filter(r=>(!knownOnly||r.known!==false)&&statConditionsMatch(r,self,target,facts));
-    if(reusable){if(!cached){if(this.sourceCache.size>=128)this.sourceCache.delete(this.sourceCache.keys().next().value!);cached=new Map();this.sourceCache.set(actorId,cached);}cached.set(stamp,{raw:rows,active});if(cached.size>128)cached.delete(cached.keys().next().value!);}
+    if(reusable){if(!cached){while(this.sourceCache.size>=this.actorCacheLimit())this.sourceCache.delete(this.sourceCache.keys().next().value!);cached=new Map();this.sourceCache.set(actorId,cached);}cached.set(stamp,{raw:rows,active});if(cached.size>128)cached.delete(cached.keys().next().value!);}
     return raw?rows:active;
   }
   private compute(
@@ -363,7 +373,7 @@ export class StatPipeline implements StatQuery {
     ]);
     let actorCache = this.cache.get(actorId);
     if (!actorCache) {
-      if (this.cache.size >= 128) this.cache.delete(this.cache.keys().next().value!);
+      while (this.cache.size >= this.actorCacheLimit()) this.cache.delete(this.cache.keys().next().value!);
       actorCache = new Map();
       this.cache.set(actorId, actorCache);
     }
@@ -452,15 +462,16 @@ export class StatPipeline implements StatQuery {
     for(const key of Object.keys(this.dependencies)) proposedKeys.add(key);
     // Rational output safety is relevant even when its base is the only source.
     for(const key of this.keys.values()) if(key.rational) proposedKeys.add(key.id);
+    const solve=this.solver(actorId,{},active);
     for (const key of proposedKeys) {
-      this.compute(actorId, key, {},undefined,false,active);
-      rows.push(...(this.host.nativeRows?.(actorId, key, dep => this.compute(actorId, dep, {},undefined,false,active).value, {}) ?? []));
+      solve(key);
+      rows.push(...(this.host.nativeRows?.(actorId, key, dep => solve(dep).value, {}) ?? []));
     }
     validateStatBudget(rows);
     if(signature!==undefined){
       this.validatedSources.delete(actorId);
       this.validatedSources.set(actorId,signature);
-      if(this.validatedSources.size>128)this.validatedSources.delete(this.validatedSources.keys().next().value!);
+      while(this.validatedSources.size>this.actorCacheLimit())this.validatedSources.delete(this.validatedSources.keys().next().value!);
     }
   }
 }

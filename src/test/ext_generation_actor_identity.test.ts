@@ -1,3 +1,4 @@
+import { ExtensionRuntime } from '../ext/runtime';
 import { afterEach, expect, it, vi } from 'vitest';
 import { writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -170,4 +171,21 @@ it('SDK1 real seed23 floor generation retains the native session ledger and both
     }
     const saved=game.toSaveSnapshot();expect(game.loadSnapshot(saved)).toBe(true);
     const after=game.toSaveSnapshot();after.savedAt=saved.savedAt;expect(after).toEqual(saved);
+});
+
+
+it('P2 item-state replacement leaves native scheduler storage detached and mutable', () => {
+    const registry=registryFromDescriptors([actorActionProtocolFixture]);
+    const runtime=new ExtensionRuntime(registry,registry.manifest(['combat']),{
+        playerId:()=>1,depth:()=>1,randomInt:()=>0,message:()=>undefined,
+    });
+    const before=runtime.actorActionBinding()!.state;
+    const next=structuredClone(before);next.revision++;
+    runtime.commitItemCommandState('combat',before.revision,next as unknown as import('../ext/types').ReadonlyJson);
+    const live=runtime.actorActionBinding()!.state;
+    expect(live).not.toBe(next);expect(live.revision).toBe(1);
+    next.revision=999;expect(live.revision).toBe(1);
+    live.revision++;live.actors.length=0;
+    expect(runtime.actorActionBinding()!.state).toBe(live);
+    expect(live.revision).toBe(2);
 });

@@ -1,4 +1,4 @@
-import {checkpointGenerationWorld,checkpointGenerationWorldGroups} from '../engine/Core/GenerationCoordinator';
+import {checkpointGenerationWorld,checkpointGenerationWorldGroups,createGenerationCheckpointCapture} from '../engine/Core/GenerationCoordinator';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game, type LevelState } from '../engine/Core/Game';
 import * as generation from '../engine/Core/GenerationCoordinator';
@@ -322,4 +322,25 @@ it('does not promote a reference-only descendant or a shallow-only root while an
  const undo=checkpointGenerationWorldGroups([()=>({shallow:[shallow],deep:[root],references:[reference]}),()=>({shallow:[map],deep:[],references:[]})]);
  reference.value=2;shallow.leaf.value=2;map.clear();undo();
  expect(reference.value).toBe(2);expect(shallow.leaf.value).toBe(2);expect([...map]).toEqual([[reference,shallow]]);
+});
+
+it('shares same-boundary native/economic captures while retaining independent stops and restore order',()=>{
+ const leaf={value:1},bytes=new Uint8Array([2,3]),shallow={leaf};
+ const map=new Map<object,unknown>([[leaf,bytes]]),root={shallow,map},order:string[]=[];
+ const pool=createGenerationCheckpointCapture();
+ const first=pool.capture(()=>({shallow:[shallow],deep:[root],references:[leaf],restoreSession:[()=>{order.push('native');}]}));
+ const before=pool.diagnostics;
+ const second=pool.capture(()=>({shallow:[],deep:[root],restoreSession:[()=>{order.push('economic');}]}));
+ expect(pool.diagnostics.typedBytes).toBe(2);
+ expect(pool.diagnostics.objects).toBe(before.objects+1); // only the formerly stopped leaf
+ expect(pool.diagnostics.reused).toBeGreaterThanOrEqual(before.objects);
+ pool.seal();expect(()=>pool.capture(()=>({shallow:[],deep:[root]}))).toThrow('boundary closed');
+ leaf.value=9;bytes[0]=8;map.clear();shallow.leaf={value:7};
+ second();first();
+ expect(root.shallow).toBe(shallow);expect(shallow.leaf).toBe(leaf);
+ expect([...map]).toEqual([[leaf,bytes]]);expect([...bytes]).toEqual([2,3]);expect(leaf.value).toBe(1);
+ expect(order).toEqual(['economic','native']);
+ // A later nested boundary always gets its own pool and point-in-time bytes.
+ leaf.value=4;const later=createGenerationCheckpointCapture().capture(()=>({shallow:[],deep:[root]}));
+ leaf.value=6;later();expect(leaf.value).toBe(4);
 });

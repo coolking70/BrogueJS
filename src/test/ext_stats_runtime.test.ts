@@ -182,3 +182,131 @@ describe('bounded root-attribute derivation',()=>{
   expect(make(false)).toBe(make(true));
  });
 });
+
+describe('P2 source dependency invalidation',()=>{
+ it('invalidates cross-actor and absent component readers without flushing unrelated actors',()=>{
+  const p=new Player(4,4),m=new Monster(5,4,(monsters as MonsterData[]).find(m=>m.id==='rat')!);
+  const calls=new Map<number,number>(),registry=new ExtensionRegistry();
+  registry.register('stats-fixture','1.0.0',()=>({...module({collect(actor,c){
+   calls.set(actor.id,(calls.get(actor.id)??0)+1);
+   const source=c.getComponent(actor.player?m.id:actor.id,'bonus') as {value:number}|undefined;
+   return source?[row('native.max-hp',source.value)]:[];
+  }}),commands:{component(payload,c){const v=payload as {id:number;name:string;value:number};c.setComponent(v.id,v.name,{value:v.value});},remove(payload,c){c.removeComponent((payload as {id:number}).id,'bonus');},fail(payload,c){c.setComponent((payload as {id:number}).id,'bonus',{value:99});throw Error('component rollback');}}}));
+  const runtime=new ExtensionRuntime(registry,registry.manifest(['stats-fixture']),{playerId:()=>p.id,depth:()=>1,randomInt:()=>0,message:()=>undefined});
+  runtime.attachCreature(p);runtime.attachCreature(m);
+  const command=(action:string,payload:object)=>runtime.command(JSON.stringify({module:'stats-fixture',action,payload}));
+  const base=[p.maxHp,m.maxHp];calls.clear();
+  runtime.collectComponents([p,m]);expect(calls.size).toBe(0);
+  command('component',{id:p.id,name:'unread',value:8});
+  expect(calls.size).toBe(0);
+  command('component',{id:m.id,name:'bonus',value:3});
+  expect([p.maxHp,m.maxHp]).toEqual(base.map(n=>n+3));
+  expect(calls.has(p.id)&&calls.has(m.id)).toBe(true);
+  const before=runtime.snapshot();
+  expect(()=>command('fail',{id:m.id})).toThrow('component rollback');
+  expect(runtime.snapshot()).toEqual(before);runtime.assertStats();
+  command('remove',{id:m.id});expect([p.maxHp,m.maxHp]).toEqual(base);
+ });
+});
+
+it('falls back to conservative invalidation when the component dependency table reaches its bound',()=>{
+ const p=new Player(4,4),registry=new ExtensionRegistry();
+ registry.register('stats-fixture','1.0.0',()=>({...module({collect(actor,c){
+  for(let i=0;i<4100;i++)c.getComponent(actor.id,`probe${i}`);
+  const bonus=c.getComponent(actor.id,'bonus') as {value:number}|undefined;
+  return bonus?[row('native.max-hp',bonus.value)]:[];
+ }}),commands:{component(_payload,c){c.setComponent(p.id,'bonus',{value:3});}}}));
+ const runtime=new ExtensionRuntime(registry,registry.manifest(['stats-fixture']),{playerId:()=>p.id,depth:()=>1,randomInt:()=>0,message:()=>undefined});
+ runtime.attachCreature(p);const base=p.maxHp;
+ runtime.command(JSON.stringify({module:'stats-fixture',action:'component',payload:{}}));
+ expect(p.maxHp).toBe(base+3);runtime.assertStats();
+});
+
+describe('P2 nested runtime captures',()=>{
+ it('restores independent inner and outer savepoints while sharing immutable namespace facts',()=>{
+  const f=direct();f.set([row('native.max-hp',2)]);
+  const before=f.runtime.snapshot(),hp=f.p.maxHp;
+  const outerState=(f.runtime as any).states['stats-fixture'];
+  expect(()=>f.runtime.worldWorkTransaction(()=>{
+   f.set([row('native.max-hp',5)]);
+   const inner=f.runtime.snapshot(),innerState=(f.runtime as any).states['stats-fixture'];
+   expect(()=>f.runtime.worldWorkTransaction(()=>{f.set([row('native.max-hp',9)]);throw Error('inner');})).toThrow('inner');
+   expect(f.runtime.snapshot()).toEqual(inner);
+   expect((f.runtime as any).states['stats-fixture']).toBe(innerState);
+   f.runtime.assertStats();
+   throw Error('outer');
+  })).toThrow('outer');
+  expect(f.runtime.snapshot()).toEqual(before);expect(f.p.maxHp).toBe(hp);
+  expect((f.runtime as any).states['stats-fixture']).toBe(outerState);
+  f.runtime.assertStats();
+ });
+});
+
+
+describe('P2 component lifetime dependency regression',()=>{
+ function fixture(derived=false){
+  const p=new Player(4,4),m=new Monster(5,4,(monsters as MonsterData[]).find(m=>m.id==='rat')!);
+  const registry=new ExtensionRegistry();let runtime:ExtensionRuntime;
+  const collect:StatSourceProvider['collect']=(actor,c)=>{
+   if(!actor.player)return [];
+   const branch=c.getComponent(p.id,'branch') as {value:number}|undefined;
+   const source=c.getComponent(m.id,branch?.value?'alternate':'bonus') as {value:number}|undefined;
+   return source?[row('native.light',source.value),row('native.max-hp',source.value)]:[];
+  };
+  const provider:StatSourceProvider=derived?{collect:()=>[],derived:{inputs:[],outputs:['native.light','native.max-hp'],collect}}:{collect};
+  registry.register('stats-fixture','1.0.0',()=>({...module(provider),commands:{write(payload,c){
+   const v=payload as {id:number;name:string;value?:number;fail?:boolean};
+   if(v.value===undefined)c.removeComponent(v.id,v.name);else c.setComponent(v.id,v.name,{value:v.value});
+   // Populate both query and materialized caches inside the transaction before failure.
+   if(v.fail){c.stats.value(p.id,'native.light');throw Error('dependency rollback');}
+  }}}));
+  runtime=new ExtensionRuntime(registry,registry.manifest(['stats-fixture']),{playerId:()=>p.id,depth:()=>1,randomInt:()=>0,message:()=>undefined});
+  runtime.attachCreature(p);runtime.attachCreature(m);
+  const base=p.maxHp;
+  const write=(id:number,name:string,value?:number,fail=false)=>runtime.command(JSON.stringify({module:'stats-fixture',action:'write',payload:{id,name,value,fail}}));
+  const check=(bonus:number)=>{expect(runtime.stats.value(p.id,'native.light')).toBe(1+bonus);expect(p.maxHp).toBe(base+bonus);runtime.assertStats();};
+  return {p,m,runtime,write,check};
+ }
+ it.each([[false,false],[false,true],[true,false],[true,true]])('invalidates a surviving cross-actor reader after GC (unrelated write: %s, derived: %s)',(unrelated,derived)=>{
+  const f=fixture(derived);f.write(f.m.id,'bonus',6);f.check(6);
+  f.runtime.collectComponents([f.p]);expect(f.runtime.snapshot().components[f.m.id]).toBeUndefined();
+  if(unrelated)f.write(f.p.id,'unread',1);
+  f.check(0);
+  // A later component at the same ID must not reuse the pre-GC module view.
+  f.write(f.m.id,'bonus',4);f.check(4);f.write(f.m.id,'bonus');f.check(0);
+  f.write(f.m.id,'bonus',2);f.runtime.collectComponents([f.p]);f.check(0);
+ });
+ it('retains absent and conditional cross-actor reads through create/delete/recreate and failed writes',()=>{
+  const f=fixture();f.check(0);f.write(f.m.id,'bonus',6);f.check(6);
+  f.write(f.p.id,'branch',1);f.check(0);f.write(f.m.id,'alternate',3);f.check(3);
+  const before=f.runtime.snapshot();expect(()=>f.write(f.m.id,'alternate',9,true)).toThrow('dependency rollback');
+  expect(f.runtime.snapshot()).toEqual(before);f.check(3);
+  f.write(f.m.id,'alternate');f.check(0);f.write(f.m.id,'alternate',5);f.check(5);
+  f.write(f.p.id,'branch',0);f.check(6);f.write(f.m.id,'bonus',2);f.check(2);
+ });
+ it('rebuilds cross-actor reads after nested and generation rollback',()=>{
+  const f=fixture();f.write(f.m.id,'bonus',6);const before=f.runtime.snapshot();
+  expect(()=>f.runtime.worldWorkTransaction(()=>{
+   f.write(f.m.id,'bonus');f.check(0);
+   expect(()=>f.runtime.worldWorkTransaction(()=>{f.write(f.m.id,'bonus',9);f.check(9);throw Error('inner');})).toThrow('inner');
+   f.check(0);f.write(f.m.id,'bonus',3);f.check(3);throw Error('outer');
+  })).toThrow('outer');
+  expect(f.runtime.snapshot()).toEqual(before);f.check(6);
+  const generation=f.runtime.beginGeneration('dependency rollback');f.write(f.m.id,'bonus',8);f.check(8);
+  f.runtime.rollbackGeneration(generation);expect(f.runtime.snapshot()).toEqual(before);f.check(6);
+  f.write(f.m.id,'bonus',4);f.check(4);
+ });
+ it.each(['collect','edible'])('restores retired reader bindings and dependency edges with the native transaction receipt (%s)',retirement=>{
+  const f=fixture();f.write(f.m.id,'bonus',6);const before=f.runtime.snapshot(),hooks=f.p.extensionHooks;
+  expect(()=>f.runtime.itemCommandTransaction(()=>{
+   f.runtime.collectComponents([f.m]);throw Error('retired reader');
+  })).toThrow('retired reader');
+  expect(f.runtime.snapshot()).toEqual(before);expect(f.p.extensionHooks).toBe(hooks);
+  f.write(f.m.id,'bonus',3);f.check(3);
+  expect(()=>f.runtime.itemCommandTransaction(()=>{
+   if(retirement==='collect')f.runtime.collectComponents([f.p]);else f.runtime.retireEdibleActor(f.m);
+   f.check(0);throw Error('retired source');
+  })).toThrow('retired source');
+  f.check(3);f.write(f.m.id,'bonus',2);f.check(2);
+ });
+});

@@ -43,7 +43,7 @@ const HORDE_MACHINE_ONLY_FLAGS: readonly string[] = [
 const HORDE_POPULATE_FORBIDDEN_FLAGS: readonly string[] = ['HORDE_IS_SUMMONED', ...HORDE_MACHINE_ONLY_FLAGS];
 
 // Compatibility entry for existing generation callers; capture has no entity dependencies.
-export { checkpointGenerationWorld, checkpointGenerationWorldGroups, type GenerationCheckpointRoots } from './WorldCheckpoint';
+export { checkpointGenerationWorld, checkpointGenerationWorldGroups, createGenerationCheckpointCapture, type GenerationCheckpointCapture, type GenerationCheckpointRoots } from './WorldCheckpoint';
 
 /** CE Monsters.c:860-862: build the accompanying camp before creating the
  * leader. A failed machine rolls back its terrain/entities; the horde still

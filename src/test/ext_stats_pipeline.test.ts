@@ -1,6 +1,8 @@
+import { immutableJson } from '../ext/json';
 import { describe, expect, it } from 'vitest';
 import {
   evaluateStat,
+  sealStatRows,
   roundStatFraction,
   StatPipeline,
   statConditionsMatch,
@@ -401,4 +403,40 @@ it('review: hypothetical solves each DAG base once and rejects the complete shar
  const pipeline=new StatPipeline({actor:()=>actor(),revision:()=>0,collect:()=>{collects++;return oversize?Array.from({length:257},(_,i)=>row('flat',1,{sourceId:`source.${i}`})):[];},base:(_id,key,dep)=>{counts.set(key,(counts.get(key)??0)+1);return key==='sample.value'?7:dep('sample.value')*2;}},keys,{'sample.derived':['sample.value']});
  expect(pipeline.hypothetical(1,{},false)).toEqual({'sample.value':7,'sample.derived':14});expect(collects).toBe(1);expect([...counts.values()]).toEqual([1,1]);
  oversize=true;expect(()=>pipeline.hypothetical(1,{},false)).toThrow();
+});
+
+it('never certifies a frozen stat root with mutable descendants or accessors',()=>{
+ const child={value:1},root=Object.freeze({child});
+ expect(isStatJson(root)).toBe(true);child.value=0.5;expect(isStatJson(root)).toBe(false);
+ let reads=0;const getter=Object.freeze({get value(){reads++;return 1;}});
+ expect(isStatJson(getter)).toBe(false);expect(reads).toBe(0);
+ const valid=Object.freeze({child:Object.freeze({value:1})});
+ expect(isStatJson(valid)).toBe(true);expect(isStatJson(valid)).toBe(true);
+});
+
+it('reuses each known world actor across read batches without evicting the start of a 200-actor batch',()=>{
+ let collections=0;const revisions=new Map<number,number>();
+ const pipeline=new StatPipeline({actorCacheLimit:()=>200,actor:id=>actor(id),revision:id=>revisions.get(id)??0,
+  base:(_id,_key,_dep,facts)=>facts.baseValue??10,collect:()=>{collections++;return [];}},[sample]);
+ for(let pass=0;pass<2;pass++)for(let id=1;id<=200;id++)expect(pipeline.value(id,sample.id)).toBe(10);
+ expect(collections).toBe(200);expect(pipeline.diagnostics).toEqual({hits:200,misses:200});
+ revisions.set(17,1);expect(pipeline.value(17,sample.id)).toBe(10);expect(collections).toBe(201);
+ expect(pipeline.value(18,sample.id)).toBe(10);expect(collections).toBe(201);
+ expect(pipeline.value(17,sample.id,{baseValue:11})).toBe(11);
+ pipeline.breakdown(17,sample.id,{},true);expect(collections).toBe(203);
+ pipeline.forget(17);expect(pipeline.cacheSize(17)).toBe(0);
+});
+
+it('reuses admitted immutable source rows only for the same owner and declaration set',()=>{
+ const keys=new Map([[sample.id,sample]]);
+ const input=immutableJson([{stat:sample.id,category:'flat',value:2,layer:'character',sourceKind:'fixture',sourceId:'sample.a'}]);
+ const first=sealStatRows(input as any,'sample',keys);
+ expect(sealStatRows(input as any,'sample',keys)).toBe(first);
+ keys.set('sample.other',{...sample,id:'sample.other'});
+ const next=sealStatRows(input as any,'sample',keys);expect(next).not.toBe(first);expect(next).toEqual(first);
+ const foreign=sealStatRows(input as any,'foreign',keys);expect(foreign).not.toBe(next);expect(foreign[0]!.owner).toBe('foreign');
+ const invalid=immutableJson([{...input[0]!,value:0.5}]);
+ expect(()=>sealStatRows(invalid as any,'sample',keys)).toThrow();
+ const mutable=structuredClone(input);sealStatRows(mutable as any,'sample',keys);mutable[0]!.value=0.5;
+ expect(()=>sealStatRows(mutable as any,'sample',keys)).toThrow();
 });

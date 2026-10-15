@@ -29,10 +29,16 @@ function remember<T extends string | number>(values: T[], value: T): boolean {
     if (values.includes(value)) return false;
     values.push(value); values.sort((a,b) => a < b ? -1 : a > b ? 1 : 0); return true;
 }
-function observe(state: GrowthState, actor: ActorFacts): void {
+function observe(state: GrowthState, actor: ActorFacts): boolean {
     const old = state.actors[actor.id];
+    // These are the complete persisted observation facts. An unchanged sighting
+    // has no write, reward, clock or resource effect; the stored state was already
+    // admitted at its actual mutation boundary.
+    if (old && old.player === actor.player && old.allied === actor.allied
+        && old.hostile === actor.hostile && old.alive === (actor.hp > 0)) return false;
     state.actors[actor.id] = { player: actor.player, allied: actor.allied, hostile: actor.hostile, alive: actor.hp > 0,
         relation: old ? old.relation + (old.allied === actor.allied ? 0 : 1) : 0 };
+    return true;
 }
 function isCreationCommand(data: unknown): boolean {
     if (typeof data !== 'string') return false;
@@ -661,7 +667,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                 if (!actor.player) initialize(context,state,actor,event.birth ?? {creationReason:'scripted',originalMonsterType:actor.monsterId,initiallyHostile:actor.hostile,sourceId:null,nativeStatsCopied:false});
                 saveState(context,state);
             },
-            actorObserved({actor},context) { const state = getState(context); observe(state,actor); saveState(context,state); },
+            actorObserved({actor},context) { const state = getState(context); if(observe(state,actor))saveState(context,state); },
             deathCaptured({actor,origin,administrative,rewardEligible},context) {
                 if (actor.player || rewardEligible === false) return;
                 // ActorFacts may carry live spatial fields; persist the existing

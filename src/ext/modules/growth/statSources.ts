@@ -1,3 +1,5 @@
+import { immutableJson } from '../../json';
+import type { Json } from '../../types';
 import { StatValidationError, decimalStatFraction, roundStatFraction } from '../../stats';
 import type { StatKeyDeclaration, StatModifierRow, StatSourceProvider } from '../../stats';
 import type { GrowthPack } from './attributes';
@@ -14,6 +16,13 @@ const PORTS:Partial<Record<GrowthRulePort,string>>={hitChance:'native.hit-chance
 function declaration(id:string,base:number,kind:StatKeyDeclaration['kind']='query'):StatKeyDeclaration{return {id,base,owner:'growth',unit:'integer',kind,minimum:0,maximum:1_000_000,rounding:id==='growth.cooldown-duration'?'ceil':'floor',categories:['override','flat','increased','more','clamp'],increased:{minimum:-9000,maximum:50000},moreSlots:[{id:'growth.slot.final',minimum:-10000,maximum:30000}]};}
 export const growthAttributeStat = (id:string):string => `growth.attribute:${id}`;
 export function createGrowthStatSources(pack:GrowthPack):StatSourceProvider {
+ // This module owns the collector and its complete dependencies. Cache by the
+ // actual active scopes, attributes, facts and L0 inputs, not a revision hint.
+ const derivedRows=new Map<string,readonly StatModifierRow[]>();
+ const frozenTree=(value:unknown):boolean=>!value||typeof value!=='object'||Object.isFrozen(value)&&Reflect.ownKeys(value).every(key=>{
+  const d=Object.getOwnPropertyDescriptor(value,key)!;return 'value' in d&&frozenTree(d.value);
+ });
+ const reusable=frozenTree(pack);
  return {gainReceipts:[{component:'progression',field:'experience',stat:'growth.xp-gain'}],keys:[declaration('growth.focus-capacity',pack.config.focus.base,'materialized'),declaration('growth.focus-recovery-interval',pack.config.focus.recoveryInterval),declaration('growth.cooldown-duration',0),{...declaration('growth.xp-gain',0),maximum:Number.MAX_SAFE_INTEGER},...pack.config.attributes.map(a=>({...declaration(growthAttributeStat(a.id),0),attributeId:a.id,unit:'rank',maximum:a.id===pack.config.strengthTraining.attributeId?Math.min(a.cap,pack.config.strengthTraining.cap):a.cap,categories:['flat','clamp'] as const,moreSlots:[]}))],
  collect(actor,context){
   const attributes=context.getComponent(actor.id,'attributes') as unknown as GrowthAttributes|undefined;
@@ -43,6 +52,13 @@ export function createGrowthStatSources(pack:GrowthPack):StatSourceProvider {
   const identity=context.getComponent(actor.id,'identity') as unknown as GrowthIdentityBuild|undefined;
   const build=context.getComponent(actor.id,'skill-build') as unknown as GrowthSkillBuild|undefined;
   const scopes=growthSkillScopes(pack,build??initialGrowthSkillBuild(),state.objectiveClock??0,'actor',identity);
+  const bases=new Map<string,number>();
+  for(const stat of [...Object.values(PORTS),'native.evasion']){
+   if(stat.startsWith('combat.')){const mapping=pack.config.combatStats;if(!mapping||!enabled||(actor.player&&!mapping.playerEnabled)||(!actor.player&&(!identity?.templateId||!mapping.allowedTemplateIds.includes(identity.templateId))))continue;}
+   try{bases.set(stat,context.base(stat));}catch(error){if(stat.startsWith('combat.')&&error instanceof StatValidationError&&error.reason==='declaration')continue;throw error;}
+  }
+  const stamp=JSON.stringify([enabled,ruleActor,permanentActor,scopes,actor.player,actor.statuses.includes('invisible'),identity?.templateId,context.facts,[...bases]]);
+  const prior=reusable?derivedRows.get(stamp):undefined;if(prior)return prior;
   const rows:StatModifierRow[]=[];
   if(enabled){const bonuses=growthDerived(pack,ruleActor,scopes),permanent=growthDerived(pack,permanentActor,[]);
    for(const [stat,value,base] of [['native.strength',bonuses.appliedStrength,permanent.appliedStrength],['native.max-hp',bonuses.appliedMaxHp,permanent.appliedMaxHp]] as const){
@@ -53,7 +69,7 @@ export function createGrowthStatSources(pack:GrowthPack):StatSourceProvider {
   for(const [port,stat] of [...Object.entries(PORTS),['hitChance','native.evasion']] as [GrowthRulePort,string][]){
    if(stat.startsWith('combat.')){const mapping=pack.config.combatStats;if(!mapping||!enabled||(actor.player&&!mapping.playerEnabled)||(!actor.player&&(!identity?.templateId||!mapping.allowedTemplateIds.includes(identity.templateId))))continue;}
    // Reading a capacity's L0 never queries another module's mutable state.
-   let base:number;try{base=context.base(stat);}catch(error){if(stat.startsWith('combat.')&&error instanceof StatValidationError&&error.reason==='declaration')continue;throw error;}
+   const base=bases.get(stat);if(base===undefined)continue;
    const owner=port==='receivedPhysicalDamage'||stat==='native.evasion'?'target':'actor',rule=pack.config.rules.ports[port],budget=pack.config.rules.budgets.find(b=>b.id===rule.budgetId)!;
    const input={actor:owner==='actor'?ruleActor:{...ruleActor,id:-1},target:owner==='target'?ruleActor:null,baseValue:base,actionId:0,resolutionId:0,tags:context.facts.skillId?growthSkillDefinition(pack,context.facts.skillId)?.tags??[]:[],attackKind:context.facts.attackKind,adjacent:context.facts.adjacent,direct:context.facts.direct,mode:context.facts.mode,rollMode:context.facts.probabilityRoll===false?'skip-guaranteed-hit' as const:'roll-probability' as const,inactiveAttributeActorIds:enabled?[]:[ruleActor.id]};
    const modifiers=collectModifiers(pack,input,scopes.map(s=>({...s,owner})),[{port,owner}],{},true);
@@ -63,6 +79,8 @@ export function createGrowthStatSources(pack:GrowthPack):StatSourceProvider {
    modifiers.forEach((m)=>rows.push({stat,category:m.operation==='multiply'?'more':rule.additiveMode==='flat'?'flat':'increased',value:m.operation==='multiply'?roundStatFraction((()=>{const f=decimalStatFraction(m.magnitude);let n=(f.numerator-f.denominator)*10000n;const limit=BigInt(Number.MAX_SAFE_INTEGER)*f.denominator;if(n>limit)n=limit;if(n< -limit)n= -limit;return {numerator:n,denominator:f.denominator};})(),'nearest-half-away'):m.magnitude,layer:'temporary',sourceKind:'growth-modifier',sourceId:m.sourceId!,...(m.operation==='multiply'?{slot:m.slot!,legacyFactor:String(m.magnitude)}:{budget:{minimum:budget.min,maximum:budget.max}})}));
    if(modifiers.length||enabled){let min=Math.ceil(rule.globalClamp.min),max=Math.min(1_000_000,Math.floor(rule.globalClamp.max));if(base>0&&rule.minimumPositive!==null)min=Math.max(min,rule.minimumPositive);if(port==='focusCapacity'){min=Math.max(min,pack.config.focus.min);max=Math.min(max,pack.config.focus.cap);}if(stat.startsWith('combat.')){const map=pack.config.combatStats![port==='staminaCapacity'?'stamina':'poise'];min=Math.max(min,map.min);max=Math.min(max,map.max);}if(rule.minimumBaseRatio!==null&&base>0)min=Math.max(min,roundStatFraction((()=>{const f=decimalStatFraction(rule.minimumBaseRatio!);return {numerator:BigInt(base)*f.numerator,denominator:f.denominator};})(),'ceil'));rows.push({stat,category:'clamp',value:min,maximum:max,layer:'character',sourceKind:'growth-rule',sourceId:`growth.${port.toLowerCase()}.bounds`});}
   }
-  return rows;
+  const frozen=immutableJson(rows as unknown as Json) as unknown as readonly StatModifierRow[];
+  if(reusable)derivedRows.set(stamp,frozen);if(derivedRows.size>1024)derivedRows.delete(derivedRows.keys().next().value!);
+  return frozen;
  }}};
 }
