@@ -12,8 +12,8 @@ export function redactItemProjection(value:ReadonlyJson,location:ItemLocation,kn
     if(!v||typeof v!=='object')return v;
     if(Array.isArray(v))return v.map(x=>visit(x,revealed));
     const record=v as Readonly<Record<string,ReadonlyJson>>,rowKnown=revealed||record.known===true;
-    return Object.fromEntries(Object.entries(record).filter(([key])=>key!=='isCursed'&&(!unknownRing||key!=='baseId')
-      &&(rowKnown||!['id','tier','values','sourceId','itemLevel','affixCount','uniqueName','randomName'].includes(key))).map(([key,child])=>[key,visit(child,rowKnown)]));
+    return Object.fromEntries(Object.entries(record).filter(([key])=>key!=='isCursed'&&(!unknownRing||key!=='baseId'||record[key]===null)
+      &&(rowKnown||!['id','tier','values','sourceId','itemLevel','uniqueName','randomName'].includes(key))).map(([key,child])=>[key,key==='ilvl'&&!rowKnown?null:visit(child,rowKnown)]));
   };
   return visit(value,known);
 }

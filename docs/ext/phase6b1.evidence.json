@@ -1,0 +1,1167 @@
+{
+  "schema": 1,
+  "baseline": "26aaaf3c90d6efb44fd1c6d120748cd81540f1bf",
+  "prototype": "93523fc596b173396a0d526ab2073b327ff7cf3e",
+  "node": "v24.19.0",
+  "nodeOptions": "--max-old-space-size=3072",
+  "maxWorkers": 2,
+  "candidateChangesSha256": "838063a0330790329920bc603ab778f5b2b70602d5ead9bfd45ff92118b63af1",
+  "sdkClosureSha256": "cb4d8ec3ce777d075f801c542472dd7c6d0c4eadbbe2a9124d1c158f11f7d432",
+  "testBatchesDoNotSumOverlappingRuns": true,
+  "normalTests": [
+    {
+      "id": "loot-final",
+      "files": [
+        "src/ext/modules/loot/tests/loot_data.test.ts",
+        "src/ext/modules/loot/tests/loot_schema.test.ts",
+        "src/ext/modules/loot/tests/loot_catalog.test.ts",
+        "src/ext/modules/loot/tests/loot_generator_vectors.test.ts",
+        "src/ext/modules/loot/tests/loot_generator_props.test.ts",
+        "src/ext/modules/loot/tests/loot_item.test.ts",
+        "src/ext/modules/loot/tests/loot_economy.test.ts",
+        "src/ext/modules/loot/tests/loot_locale.test.ts",
+        "src/ext/modules/loot/tests/loot_stats.test.ts",
+        "src/ext/modules/loot/tests/loot_inert.test.ts",
+        "src/ext/modules/loot/tests/loot_ui_knowledge.test.ts",
+        "src/ext/modules/loot/tests/loot_ui_viewmodel.test.ts",
+        "src/ext/modules/loot/tests/loot_ui_fixtures.test.ts",
+        "src/ext/modules/loot/tests/loot_ui_components.test.ts",
+        "src/ext/modules/loot/tests/loot_ui_i18n.test.ts",
+        "src/ext/modules/loot/tests/loot_ui_style.test.ts",
+        "src/ext/modules/loot/tests/loot_ui_preview.test.ts",
+        "src/ext/modules/loot/tests/loot_ui_inert.test.ts",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "src/ext/modules/loot/tests/loot_commands_integration.test.ts",
+        "src/ext/modules/loot/tests/loot_capabilities.test.ts",
+        "src/ext/modules/loot/tests/loot_stats_integration.test.ts"
+      ],
+      "command": [
+        "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests",
+        "--maxWorkers=2"
+      ],
+      "exit": 0,
+      "passed": 658,
+      "failed": 0,
+      "skipped": 0,
+      "unselected": 0,
+      "todo": 0,
+      "unhandled": 0,
+      "seconds": 29.99,
+      "log": "/private/tmp/phase6b1-loot-last.log"
+    },
+    {
+      "id": "shared-before-ownership-relocation",
+      "files": [
+        "src/test/ext_item_data.test.ts",
+        "src/test/ext_item_drop.test.ts",
+        "src/test/ext_item_stats.test.ts",
+        "src/test/ext_item_commands.test.ts",
+        "src/test/ext_item_presentation.test.ts",
+        "src/test/ext_item_roots.test.ts",
+        "src/test/ext_stats_review.test.ts",
+        "src/test/ext_module_creation_ui.test.ts",
+        "src/test/p1_30_i18n_gate.test.ts",
+        "src/test/u24_hardcoded_text.test.ts",
+        "src/ext/modules/settlement/tests/resident_foraging_integration.test.ts"
+      ],
+      "command": [
+        "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/test/ext_item_data.test.ts",
+        "src/test/ext_item_drop.test.ts",
+        "src/test/ext_item_stats.test.ts",
+        "src/test/ext_item_commands.test.ts",
+        "src/test/ext_item_presentation.test.ts",
+        "src/test/ext_item_roots.test.ts",
+        "src/test/ext_stats_review.test.ts",
+        "src/test/ext_module_creation_ui.test.ts",
+        "src/test/p1_30_i18n_gate.test.ts",
+        "src/test/u24_hardcoded_text.test.ts",
+        "src/ext/modules/settlement/tests/resident_foraging_integration.test.ts",
+        "--maxWorkers=2"
+      ],
+      "exit": 0,
+      "passed": 183,
+      "failed": 0,
+      "skipped": 0,
+      "unselected": 0,
+      "todo": 0,
+      "unhandled": 0,
+      "seconds": 56.19,
+      "log": "/private/tmp/phase6b1-shared-final1.log"
+    },
+    {
+      "id": "recording-targeted",
+      "files": [
+        "src/test/ext_item_recording.test.ts"
+      ],
+      "filter": "tracks partial knowledge|naturally generates, walks|records natural kill",
+      "exit": 0,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "unselected": 11,
+      "todo": 0,
+      "unhandled": 0,
+      "seconds": 10.76,
+      "log": "/private/tmp/phase6b1-recording-final.log"
+    },
+    {
+      "id": "ownership-drop",
+      "files": [
+        "src/test/ext_item_drop.test.ts",
+        "src/ext/modules/giants/tests/item_drop_integration.test.ts"
+      ],
+      "exit": 0,
+      "passed": 34,
+      "failed": 0,
+      "skipped": 0,
+      "unselected": 0,
+      "todo": 0,
+      "unhandled": 0,
+      "seconds": 19.34,
+      "log": "/private/tmp/phase6b1-ownership-drop.log"
+    },
+    {
+      "id": "carry-and-ui-relocation",
+      "files": [
+        "src/ext/modules/loot/tests/loot_capabilities.test.ts",
+        "src/ext/modules/settlement/tests/phase5_ui_open.test.ts"
+      ],
+      "filter": "retains the floor|camp panel seed 7306: settlement, camp=false",
+      "exit": 0,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "unselected": 22,
+      "todo": 0,
+      "unhandled": 0,
+      "seconds": 2.82,
+      "log": "/private/tmp/phase6b1-last-targeted.log"
+    },
+    {
+      "id": "last-wrapper-localization",
+      "files": [
+        "src/ext/modules/loot/tests/loot_ui_i18n.test.ts",
+        "src/test/u24_hardcoded_text.test.ts"
+      ],
+      "exit": 0,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "unselected": 0,
+      "todo": 0,
+      "unhandled": 0,
+      "seconds": 1.92,
+      "log": "/private/tmp/phase6b1-ui-last.log"
+    }
+  ],
+  "normalFinalGates": [
+    {
+      "label": "ui-last",
+      "command": [
+        "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_ui_i18n.test.ts",
+        "src/test/u24_hardcoded_text.test.ts",
+        "--maxWorkers=2"
+      ],
+      "exit": 0,
+      "seconds": 5.616,
+      "log": "/private/tmp/phase6b1-ui-last.log"
+    },
+    {
+      "label": "boundary-last",
+      "command": [
+        "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "scripts/check-module-boundaries.mjs"
+      ],
+      "exit": 0,
+      "seconds": 5.479,
+      "log": "/private/tmp/phase6b1-boundary-last.log"
+    },
+    {
+      "label": "dependencies-last",
+      "command": [
+        "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "scripts/check-test-dependencies.mjs"
+      ],
+      "exit": 0,
+      "seconds": 3.555,
+      "log": "/private/tmp/phase6b1-dependencies-last.log"
+    },
+    {
+      "label": "types-last",
+      "command": [
+        "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "node_modules/vue-tsc/bin/vue-tsc.js",
+        "-b"
+      ],
+      "exit": 0,
+      "seconds": 8.728,
+      "log": "/private/tmp/phase6b1-types-last.log"
+    },
+    {
+      "label": "build-last",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "exit": 0,
+      "seconds": 15.619,
+      "log": "/private/tmp/phase6b1-build-last.log"
+    }
+  ],
+  "s2": {
+    "red": {
+      "exit": 1,
+      "failed": 2,
+      "unselected": 77,
+      "log": "/private/tmp/phase6b1-s2-red.log"
+    },
+    "green": {
+      "exit": 0,
+      "passed": 2,
+      "unselected": 77,
+      "log": "/private/tmp/phase6b1-s2-green.log"
+    }
+  },
+  "removal": {
+    "preparation": {
+      "status": "prepared-not-verified",
+      "exit": 0,
+      "resultFile": "/private/tmp/phase6b1-all-removed-20261015-0756/module-removal-results.json",
+      "sourceHashBefore": "166ffe318d30e9b175235d2a62560f1eca0a0a573a8bbfdd6d907709efc697c6",
+      "sourceHashAfter": "166ffe318d30e9b175235d2a62560f1eca0a0a573a8bbfdd6d907709efc697c6",
+      "copy": "/var/folders/2s/dmv643cj5493tlmrh5rfgwxw0000gn/T/brogue-removed-modules-C20YVp/candidate",
+      "physicalLayouts": 1
+    },
+    "initialGates": [
+      {
+        "label": "boundary",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "scripts/check-module-boundaries.mjs"
+        ],
+        "exit": 0,
+        "seconds": 4.07,
+        "log": "/private/tmp/phase6b1-removed-boundary-first.log"
+      },
+      {
+        "label": "dependencies",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "scripts/check-test-dependencies.mjs"
+        ],
+        "exit": 0,
+        "seconds": 2.788,
+        "log": "/private/tmp/phase6b1-removed-dependencies-first.log"
+      },
+      {
+        "label": "types",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "node_modules/vue-tsc/bin/vue-tsc.js",
+          "-b"
+        ],
+        "exit": 2,
+        "seconds": 6.316,
+        "log": "/private/tmp/phase6b1-removed-types-first.log"
+      }
+    ],
+    "scopedGates": [
+      {
+        "label": "boundary",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "scripts/check-module-boundaries.mjs"
+        ],
+        "exit": 0,
+        "seconds": 4.294,
+        "log": "/private/tmp/phase6b1-removed-boundary.log"
+      },
+      {
+        "label": "dependencies",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "scripts/check-test-dependencies.mjs"
+        ],
+        "exit": 0,
+        "seconds": 2.904,
+        "log": "/private/tmp/phase6b1-removed-dependencies.log"
+      },
+      {
+        "label": "types",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "node_modules/vue-tsc/bin/vue-tsc.js",
+          "-b"
+        ],
+        "exit": 0,
+        "seconds": 6.328,
+        "log": "/private/tmp/phase6b1-removed-types.log"
+      },
+      {
+        "label": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "exit": 0,
+        "seconds": 11.756,
+        "log": "/private/tmp/phase6b1-removed-build.log"
+      },
+      {
+        "label": "related",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "src/test/ext_item_data.test.ts",
+          "src/test/ext_item_drop.test.ts",
+          "src/test/ext_item_commands.test.ts",
+          "src/test/ext_item_presentation.test.ts",
+          "src/test/ext_item_roots.test.ts",
+          "src/test/ext_stats_review.test.ts",
+          "src/test/ext_module_creation_ui.test.ts",
+          "--maxWorkers=2"
+        ],
+        "exit": 0,
+        "seconds": 28.735,
+        "log": "/private/tmp/phase6b1-removed-related.log"
+      },
+      {
+        "label": "probe",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "/private/tmp/phase6b1-removal-probe.mjs"
+        ],
+        "exit": 0,
+        "seconds": 6.474,
+        "log": "/private/tmp/phase6b1-removed-probe.log"
+      }
+    ],
+    "relatedTests": {
+      "files": 7,
+      "passedFiles": 6,
+      "skippedFiles": 1,
+      "passed": 97,
+      "failed": 0,
+      "skipped": 1,
+      "unselected": 0,
+      "todo": 0,
+      "unhandled": 0,
+      "skipReason": {
+        "src/test/ext_stats_review.test.ts": [
+          "combat",
+          "growth"
+        ]
+      },
+      "seconds": 25.77
+    },
+    "probe": {
+      "schema": 1,
+      "status": "passed",
+      "root": "/private/var/folders/2s/dmv643cj5493tlmrh5rfgwxw0000gn/T/brogue-removed-modules-C20YVp/candidate",
+      "installed": [],
+      "lifecycleCount": 1,
+      "allOffLifecycle": "new/play/save/load/replay/seek/continue",
+      "missingPackage": [
+        {
+          "kind": "save",
+          "sha256": "a83f341860ef70bf67228be1a22699cf05c16e9f2d4dc72a617b9534ed97a929",
+          "bytes": 2276634,
+          "version": 7,
+          "rejected": true,
+          "fullObjectGraphPreserved": true,
+          "rngAndAllocatorPreserved": true,
+          "recordingPreserved": true
+        },
+        {
+          "kind": "recording",
+          "sha256": "8e8ea5e4e35dd9bb39eb285a301c1dc3956c6d8b986a668e9061d306b10d4e46",
+          "bytes": 263931,
+          "version": 4,
+          "rejected": true,
+          "fullObjectGraphPreserved": true,
+          "rngAndAllocatorPreserved": true,
+          "recordingPreserved": true
+        }
+      ]
+    },
+    "followupAfterCarriedActorScopeFix": [
+      {
+        "label": "types",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "node_modules/vue-tsc/bin/vue-tsc.js",
+          "-b"
+        ],
+        "exit": 0,
+        "seconds": 6.225,
+        "log": "/private/tmp/phase6b1-removed-types-last.log"
+      },
+      {
+        "label": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "exit": 0,
+        "seconds": 11.945,
+        "log": "/private/tmp/phase6b1-removed-build-last.log"
+      }
+    ],
+    "identity": {
+      "copy": "/var/folders/2s/dmv643cj5493tlmrh5rfgwxw0000gn/T/brogue-removed-modules-C20YVp/candidate",
+      "sourceUnchanged": true,
+      "sourceHashAtSync": "357af03cb6ce9574b0bddac658f1832827b5eb10810d83a2583b05a9da4984ed",
+      "copyHash": "1442b991eb26d2c26cbf11b7c86728a46880719a3c0f11b7749ec7f96c26f248",
+      "equalsSourceMinusModules": true,
+      "sourceCodeHash": "0f1c774638d9168bf8ce32a705a52e1b59cdd4c778468c2982a8da2989f0276c",
+      "removedCodeHash": "f354209b7431d695877206b19c643c271fadb0ce36d0d21b4739aaf1ca9e0eb5",
+      "sourceModules": [
+        "combat",
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "loot",
+        "narrative",
+        "settlement"
+      ],
+      "removedModules": [],
+      "sourceTests": 653,
+      "remainingTests": 408,
+      "physicallyRemovedTests": 245
+    },
+    "note": "Same physical copy; no second removal or repeated all-off lifecycle. Final load-scope closure fix tested by current loot carried-actor regression and both-tree type/build; all-off and missing-package early-refusal paths do not enter that new branch. Documentation may change after identity capture; src/scripts code hashes remain final."
+  },
+  "notRun": [
+    "complete npm test",
+    "complete test:ext",
+    "complete test:drift",
+    "CE",
+    "300-run statistics",
+    "enabled-subset combinations",
+    "single-delete/single-retain matrix",
+    "browser/device/pixel",
+    "long-run performance"
+  ],
+  "diagnosticHistory": [
+    {
+      "id": "capabilities-first",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_capabilities.test.ts",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": null,
+        "Tests": null,
+        "Duration": null
+      },
+      "filteredSkippedAreUnselected": false,
+      "log": "/private/tmp/phase6b1-capabilities-first.log",
+      "sha256": "6faa59f46d827ddf10e3c95aaa0e610a7faf4bc871ac95c2a768622dad444aed"
+    },
+    {
+      "id": "capabilities-fourth",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_capabilities.test.ts",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "1 failed | 2 passed (3)",
+        "Duration": "5.30s (transform 1.09s, setup 0ms, import 1.57s, tests 3.67s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": false,
+      "log": "/private/tmp/phase6b1-capabilities-fourth.log",
+      "sha256": "0f669afcbb2f210bc34fbaa915927e037cddf13c90649de218df1c5fccabaddb"
+    },
+    {
+      "id": "capabilities-second",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_capabilities.test.ts",
+        "--maxWorkers=2"
+      ],
+      "exit": 130,
+      "summary": {
+        "Test Files": null,
+        "Tests": null,
+        "Duration": null
+      },
+      "filteredSkippedAreUnselected": false,
+      "log": "/private/tmp/phase6b1-capabilities-second.log",
+      "sha256": "c428daad7690fd21092fab1d00c8815c7ca59efb1a3801fa415540c68efba174"
+    },
+    {
+      "id": "capabilities-third",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_capabilities.test.ts",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "2 failed | 1 passed (3)",
+        "Duration": "5.32s (transform 1.10s, setup 0ms, import 1.64s, tests 3.63s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": false,
+      "log": "/private/tmp/phase6b1-capabilities-third.log",
+      "sha256": "a36760e320d45dc8ed17dd177158a30c14e0ba690fa8d41d9497f8ef8891036f"
+    },
+    {
+      "id": "commands-first",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_commands_integration.test.ts",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": null,
+        "Tests": null,
+        "Duration": null
+      },
+      "filteredSkippedAreUnselected": false,
+      "log": "/private/tmp/phase6b1-commands-first.log",
+      "sha256": "6dbabbc1d93936c67a5d4b144088c31d09a0ece5f3d95e721c7315f3772b37fc"
+    },
+    {
+      "id": "commands-second",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_commands_integration.test.ts",
+        "--maxWorkers=2"
+      ],
+      "exit": 0,
+      "summary": {
+        "Test Files": "1 passed (1)",
+        "Tests": "4 passed (4)",
+        "Duration": "3.66s (transform 1.09s, setup 0ms, import 1.63s, tests 1.98s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": false,
+      "log": "/private/tmp/phase6b1-commands-second.log",
+      "sha256": "dc89695c7f97ce607c634db81ade5e2159531d6337004b3af54c36b8dba497a8"
+    },
+    {
+      "id": "integration-first",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "1 failed | 8 passed (9)",
+        "Duration": "15.62s (transform 1.16s, setup 0ms, import 1.74s, tests 13.83s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": false,
+      "log": "/private/tmp/phase6b1-integration-first.log",
+      "sha256": "38271e3cd962dbc111ee511d3bd4c75d07258e1290bae920ab44bd3eaec0ff7d"
+    },
+    {
+      "id": "integration-second",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "src/ext/modules/loot/tests/loot_ui_components.test.ts",
+        "--maxWorkers=2",
+        "-u"
+      ],
+      "exit": 0,
+      "summary": {
+        "Test Files": "2 passed (2)",
+        "Tests": "88 passed (88)",
+        "Duration": "15.89s (transform 1.42s, setup 0ms, import 2.19s, tests 14.20s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": false,
+      "log": "/private/tmp/phase6b1-integration-second.log",
+      "sha256": "f5aea9c61b076d231d0e6e68f847913f67f3b6e0e5bb870dc127da96d98411e9"
+    },
+    {
+      "id": "loot-final1",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed | 21 passed (22)",
+        "Tests": "1 failed | 653 passed (654)",
+        "Duration": "29.31s (transform 2.66s, setup 0ms, import 7.17s, tests 48.31s, environment 4ms)"
+      },
+      "filteredSkippedAreUnselected": false,
+      "log": "/private/tmp/phase6b1-loot-final1.log",
+      "sha256": "7bcda20196933a5fa05b8032eceb0b366d591592ffaf68c35924d3c6596c8727"
+    },
+    {
+      "id": "loot-final2",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests",
+        "--maxWorkers=2"
+      ],
+      "exit": 0,
+      "summary": {
+        "Test Files": "22 passed (22)",
+        "Tests": "657 passed (657)",
+        "Duration": "31.30s (transform 2.94s, setup 0ms, import 6.93s, tests 54.40s, environment 4ms)"
+      },
+      "filteredSkippedAreUnselected": false,
+      "log": "/private/tmp/phase6b1-loot-final2.log",
+      "sha256": "8b31cc614cd8df61f55b72c41da99c3e691f66a3e4d47d4c5d5c569c04f06e61"
+    },
+    {
+      "id": "loot-first",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed | 17 passed (18)",
+        "Tests": "1 failed | 628 passed (629)",
+        "Duration": "8.69s (transform 1.45s, setup 0ms, import 2.95s, tests 13.46s, environment 3ms)"
+      },
+      "filteredSkippedAreUnselected": false,
+      "log": "/private/tmp/phase6b1-loot-first.log",
+      "sha256": "31190354425192c31b9f323ae47cab76e208e42f7fd1e1f846dbf3093530444a"
+    },
+    {
+      "id": "natural-eighth",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "-t",
+        "natural kill reward",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "1 failed | 9 skipped (10)",
+        "Duration": "27.65s (transform 1.19s, setup 0ms, import 1.70s, tests 25.90s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-natural-eighth.log",
+      "sha256": "c38643ba0b0dc3a838ed90bdaa4a8f50040b9d7041811aa6de65a4dd35945d00"
+    },
+    {
+      "id": "natural-fifth",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "-t",
+        "natural kill reward",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "1 failed | 9 skipped (10)",
+        "Duration": "3.58s (transform 1.26s, setup 0ms, import 1.81s, tests 1.72s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-natural-fifth.log",
+      "sha256": "c1167c7ef23858fcc7958d5542150dd42610457d8b5d1e633939e1225f39fd0e"
+    },
+    {
+      "id": "natural-first",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "-t",
+        "natural kill reward",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "1 failed | 9 skipped (10)",
+        "Duration": "3.55s (transform 1.17s, setup 0ms, import 1.71s, tests 1.79s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-natural-first.log",
+      "sha256": "3146ab2a6408b6c2e054cf713e6fb58214b8c7855a20b3b9650c77d92fcb96c0"
+    },
+    {
+      "id": "natural-fourth",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "-t",
+        "natural kill reward",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "1 failed | 9 skipped (10)",
+        "Duration": "34.23s (transform 1.25s, setup 0ms, import 1.92s, tests 32.25s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-natural-fourth.log",
+      "sha256": "572ac8ce6dc477463885908328fe9d0d28eb18eef8c1246cd46ef48263dfceed"
+    },
+    {
+      "id": "natural-ninth",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "-t",
+        "natural kill reward",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "1 failed | 9 skipped (10)",
+        "Duration": "33.94s (transform 1.17s, setup 0ms, import 1.67s, tests 32.21s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-natural-ninth.log",
+      "sha256": "b3b563f6725f6a3374f86ae47ab77fdd868193a3444f18a4b5057fecffe07495"
+    },
+    {
+      "id": "natural-second",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "-t",
+        "natural kill reward",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "1 failed | 9 skipped (10)",
+        "Duration": "11.60s (transform 1.19s, setup 0ms, import 1.67s, tests 9.88s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-natural-second.log",
+      "sha256": "188569423079b431c53b41e9dd9d37ea464fc6d8dd8e06d219d0c7304b59681d"
+    },
+    {
+      "id": "natural-seventh",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "-t",
+        "natural kill reward",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "1 failed | 9 skipped (10)",
+        "Duration": "7.42s (transform 1.20s, setup 0ms, import 1.69s, tests 5.66s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-natural-seventh.log",
+      "sha256": "57a6a2a41f5796fc59ef79cf8f7a42bce5696b9185f4050305d7d27dd8321a20"
+    },
+    {
+      "id": "natural-sixth",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "-t",
+        "natural kill reward",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "1 failed | 9 skipped (10)",
+        "Duration": "7.66s (transform 1.25s, setup 0ms, import 1.79s, tests 5.80s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-natural-sixth.log",
+      "sha256": "4dce13acd6aeceead9335201b427c13e42a769803f4a3fe1514c113a9a98fe56"
+    },
+    {
+      "id": "natural-tenth",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "-t",
+        "natural kill reward",
+        "--maxWorkers=2"
+      ],
+      "exit": 0,
+      "summary": {
+        "Test Files": "1 passed (1)",
+        "Tests": "1 passed | 9 skipped (10)",
+        "Duration": "10.57s (transform 1.16s, setup 0ms, import 1.67s, tests 8.86s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-natural-tenth.log",
+      "sha256": "85532fcd7c7694a2f317335945fb4559a50eb9f751c7f0f38ad5c38dd7557259"
+    },
+    {
+      "id": "natural-third",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_integration.test.ts",
+        "-t",
+        "natural kill reward",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "1 failed | 9 skipped (10)",
+        "Duration": "12.60s (transform 1.31s, setup 0ms, import 1.87s, tests 10.66s, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-natural-third.log",
+      "sha256": "1a6be02f0a5fc69c82126267271823c22eae0c313c684481777d84e8c2385e84"
+    },
+    {
+      "id": "ownership-ui",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/settlement/tests/phase5_ui_open.test.ts",
+        "-t",
+        "camp panel seed 7306: settlement, camp=false",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "1 failed | 17 skipped (18)",
+        "Duration": "2.80s (transform 1.44s, setup 0ms, import 2.23s, tests 518ms, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-ownership-ui.log",
+      "sha256": "17bec11fe51c4807f4d0c46dbfb385eeb389465f0bcd00f0d1d1cf2beabfd995"
+    },
+    {
+      "id": "s2-green",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_ui_components.test.ts",
+        "-t",
+        "F-03",
+        "--maxWorkers=2"
+      ],
+      "exit": 0,
+      "summary": {
+        "Test Files": "1 passed (1)",
+        "Tests": "2 passed | 77 skipped (79)",
+        "Duration": "444ms (transform 124ms, setup 0ms, import 287ms, tests 105ms, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-s2-green.log",
+      "sha256": "b2b388a0776d8b0ac2af4132de65e9fa43a70ab02ba72494ac621907b23dc2d2"
+    },
+    {
+      "id": "s2-red",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/ext/modules/loot/tests/loot_ui_components.test.ts",
+        "-t",
+        "F-03",
+        "--maxWorkers=2"
+      ],
+      "exit": 1,
+      "summary": {
+        "Test Files": "1 failed (1)",
+        "Tests": "2 failed | 77 skipped (79)",
+        "Duration": "454ms (transform 125ms, setup 0ms, import 288ms, tests 100ms, environment 0ms)"
+      },
+      "filteredSkippedAreUnselected": true,
+      "log": "/private/tmp/phase6b1-s2-red.log",
+      "sha256": "4455394dce6a51899e3451953b81cceee4dd2ce13f4994c6b89a768aa0470dde"
+    }
+  ],
+  "artifactHygiene": {
+    "hashManifestMismatches": 0,
+    "CRLF": 0,
+    "filesOver1MiB": 0,
+    "gitDiffCheck": "passed",
+    "stagedChanges": false,
+    "lootStateBytesInJourneySave": 276,
+    "previewGalleryOrFullPanelsInProductionBuild": false
+  },
+  "preReviewCandidateChangesSha256": "5c83235669921c52898063800e6c812d9d31891feee5e424e0439a1f7c812c8f",
+  "preReviewSdkClosureSha256": "893ff7f50a4160c734dffd0d079d079f18cffc2f690d813aeb08b5ad1e2ad540",
+  "historicalEvidenceNote": "normalTests, normalFinalGates, s2, removal, diagnosticHistory and artifactHygiene describe pre-review verification. review1 contains the F1 follow-up verification for current hashes; overlapping tests are not summed.",
+  "review1": {
+    "finding": "F1",
+    "status": "implemented; pending independent round-2 review",
+    "reviewSource": {
+      "path": "docs/ext/phase6b1.review-findings.md",
+      "sha256": "da629f4751b58f37b51e23a4da15e918f510ec4133bd43f36140a94898cab7e0"
+    },
+    "candidateChangesSha256": "838063a0330790329920bc603ab778f5b2b70602d5ead9bfd45ff92118b63af1",
+    "sdkClosureSha256": "cb4d8ec3ce777d075f801c542472dd7c6d0c4eadbbe2a9124d1c158f11f7d432",
+    "sourceFiles": [
+      {
+        "path": "src/engine/Core/ItemCommands.ts",
+        "sha256": "f3eb3c3f6cb075f4dbfa89d691509b05289682eb000dc71852577358ccecbc96"
+      },
+      {
+        "path": "src/engine/Items/ItemLoader.ts",
+        "sha256": "42bad042cd6f48cb1ef53407c752fc7815edd63279adbfd90f8a1a73487b32b0"
+      },
+      {
+        "path": "src/ext/itemSdk.ts",
+        "sha256": "567766ab26614be472b46b54e3341ed839b8d2f642f6a485c77d8cee587c8c7d"
+      },
+      {
+        "path": "src/ext/runtime.ts",
+        "sha256": "5d31c4cf4953dd17e65d53b9b0ee924697149e29cf390786da4c7a2977676900"
+      },
+      {
+        "path": "src/ext/modules/loot/commands.ts",
+        "sha256": "2c662f8646d4b92d4b8b5c48dd8862ec95e0638d9cb696a09acb085e31c755dc"
+      },
+      {
+        "path": "src/ext/modules/loot/tests/loot_commands_integration.test.ts",
+        "sha256": "d72449749e60362edff78d351262d1521559a1891437883c06262d1277688ac7"
+      },
+      {
+        "path": "src/test/ext_item_commands.test.ts",
+        "sha256": "29b2792ed07f7c56f3d34314e684c7bf022eb580c1577f3bf922d694b6a5add4"
+      }
+    ],
+    "sdkAddition": "ItemCommandFacts extends ItemFacts with readonly canBeIdentified; ItemCommandRead.inventory uses ItemCommandFacts; host supplies pure native instance/kind/rune eligibility and independently rechecks at prepare/commit.",
+    "regressions": [
+      "negated R05 ring after actual negation scroll and pickup, immediate and durable JSON save/load, 80 -> 70 shards / 100 ticks / revision +1",
+      "recorded ext:command input re-executed from its real pre-command snapshot: mechanical digest, both RNG streams and ID allocator match; fixture insertion is not a full new-game recording",
+      "fully known item rejected by loot provider with zero cost",
+      "neutral provider proposes fully known native ring/rune: host independently refuses with complete object graph unchanged",
+      "kind learned on another instance after preflight: sealed plan refuses with no charge"
+    ],
+    "diagnostics": [
+      {
+        "log": "/private/tmp/phase6b1-f1-red.log",
+        "sha256": "44fa2c80341d3aa422a68dbf3154ab9afc720b8a1c46c734f2d0d406c2b06c03",
+        "exit": 1,
+        "failed": 2,
+        "unselected": 4,
+        "seconds": 3.21,
+        "note": "New F1 eligibility assertions fail before production changes; initial reload used world snapshot."
+      },
+      {
+        "log": "/private/tmp/phase6b1-f1-green.log",
+        "sha256": "86a7c46057ef6a06085709f0c677561765a781698b1d6e99ff33bc01dafa08d8",
+        "exit": 1,
+        "failed": 2,
+        "unselected": 4,
+        "note": "New test wrongly expected successful charged command not to advance RNG; compare deterministic execution instead, retain preflight purity oracle."
+      },
+      {
+        "log": "/private/tmp/phase6b1-f1-green2.log",
+        "sha256": "a29e3644fd0bb7b1e290b8129cde13d876b46a07ba2e5f11e92cb58a516ab61d",
+        "exit": 1,
+        "passed": 4,
+        "failed": 1,
+        "unselected": 33,
+        "note": "World-only snapshot intentionally lacks recorder provenance; use actual durable save/load for recorded-input case."
+      },
+      {
+        "log": "/private/tmp/phase6b1-f1-green3.log",
+        "sha256": "51f2a8eba1c6f7fb1982eaf518e45bfffc05c1f59f34ab5c555849402cfb1aa5",
+        "exit": 0,
+        "passed": 5,
+        "unselected": 33,
+        "seconds": 4.08
+      },
+      {
+        "id": "types-initial",
+        "log": "/private/tmp/phase6b1-f1-initial-types.log",
+        "sha256": "d4a2bcdc0dcfc5a2a153d7e119be9e15e8bf0443b78d2c3f0467482bce80fc39",
+        "exit": 2,
+        "note": "New tests used Array.at unsupported by project lib; use indexed access; remove unused ItemFacts type import. No tsconfig change."
+      },
+      {
+        "id": "build-launch",
+        "note": "Node24 bin directory has node but no npm executable; initial runner did not launch build. Corrected to npm from PATH with Node24 first; final build result below."
+      }
+    ],
+    "tests": [
+      {
+        "id": "related",
+        "files": [
+          "src/ext/modules/loot/tests/loot_commands_integration.test.ts",
+          "src/test/ext_item_commands.test.ts",
+          "src/test/b_1a_identification.test.ts",
+          "src/test/b_1b_identification_persistence.test.ts",
+          "src/test/ext_item_presentation.test.ts",
+          "src/test/ext_kind_knowledge_runtime.test.ts"
+        ],
+        "command": "node node_modules/vitest/vitest.mjs run src/ext/modules/loot/tests/loot_commands_integration.test.ts src/test/ext_item_commands.test.ts src/test/b_1a_identification.test.ts src/test/b_1b_identification_persistence.test.ts src/test/ext_item_presentation.test.ts src/test/ext_kind_knowledge_runtime.test.ts --maxWorkers=2",
+        "log": "/private/tmp/phase6b1-f1-related.log",
+        "sha256": "da037b02e76c85c19df3e9f50898b00c3270993884e2a68077276c7d1b5de59e",
+        "exit": 0,
+        "passed": 117,
+        "unselected": 0,
+        "seconds": 58.84
+      },
+      {
+        "id": "natural-recording",
+        "files": [
+          "src/ext/modules/loot/tests/loot_integration.test.ts"
+        ],
+        "filter": "natural kill reward, shard identification",
+        "command": "node node_modules/vitest/vitest.mjs run src/ext/modules/loot/tests/loot_integration.test.ts -t 'natural kill reward, shard identification' --maxWorkers=2",
+        "log": "/private/tmp/phase6b1-f1-recording.log",
+        "sha256": "d0310cb58351c778be805590b4a8fec74f6d76917678a819ba7ac693d311260f",
+        "exit": 0,
+        "passed": 1,
+        "unselected": 9,
+        "seconds": 11.02
+      },
+      {
+        "id": "commands-final-after-types-fix",
+        "files": [
+          "src/ext/modules/loot/tests/loot_commands_integration.test.ts",
+          "src/test/ext_item_commands.test.ts"
+        ],
+        "command": "node node_modules/vitest/vitest.mjs run src/ext/modules/loot/tests/loot_commands_integration.test.ts src/test/ext_item_commands.test.ts --maxWorkers=2",
+        "log": "/private/tmp/phase6b1-f1-commands-final.log",
+        "sha256": "6c0fd26c45fe5e1a37a099bc0c95a4e07191744d0a91774a03cbcc1a4783b978",
+        "exit": 0,
+        "passed": 38,
+        "unselected": 0,
+        "seconds": 20.06
+      }
+    ],
+    "uniqueTestsPassed": 118,
+    "gates": [
+      {
+        "id": "boundary",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "scripts/check-module-boundaries.mjs"
+        ],
+        "exit": 0,
+        "seconds": 6.311,
+        "log": "/private/tmp/phase6b1-f1-boundary.log",
+        "sha256": "052d35285d84536423cee362e354f124f3023c02b3a29a2c38e8b3b970a078d2"
+      },
+      {
+        "id": "dependencies",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "scripts/check-test-dependencies.mjs"
+        ],
+        "exit": 0,
+        "seconds": 3.912,
+        "log": "/private/tmp/phase6b1-f1-dependencies.log",
+        "sha256": "34b8e4cc9b0c8806384764f1297a510311a025aaf084dc95351663bfa958ff8d"
+      },
+      {
+        "id": "types",
+        "command": [
+          "/Users/coolking70/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "node_modules/vue-tsc/bin/vue-tsc.js",
+          "-b"
+        ],
+        "exit": 0,
+        "seconds": 9.572,
+        "log": "/private/tmp/phase6b1-f1-types.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "id": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "exit": 0,
+        "seconds": 16.171,
+        "log": "/private/tmp/phase6b1-f1-build.log",
+        "sha256": "85d0be2542e341ea74e9d958fd618d7092d2b0a8cdf0e58366bc0171c58ead1c"
+      }
+    ],
+    "notRun": [
+      "full suites",
+      "drift",
+      "CE",
+      "module removal",
+      "composition matrices",
+      "browser"
+    ],
+    "historicalRemoval": "Evidence in removal is from the pre-review candidate, not re-executed or claimed for this F1 source hash.",
+    "artifactHygiene": {
+      "candidateAndSdkHashesMatch": true,
+      "migrationHashesMatch": true,
+      "logHashesMatch": true,
+      "crlf": [],
+      "filesOver1MiB": [],
+      "diffCheckExit": 0,
+      "stagedFiles": []
+    }
+  }
+}

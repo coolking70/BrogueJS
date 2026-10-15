@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "caps": {
+    "normal": 10,
+    "magic": 8,
+    "rare": 6,
+    "unique": 4,
+    "set": 4,
+    "runeword": 0
+  },
+  "weapon": {
+    "localDamageBpPerLevel": 1000,
+    "weaponEnchantEveryLevels": 3
+  },
+  "armor": {
+    "maxHpPerLevel": 5,
+    "defenseInternalPerLevel": 5
+  },
+  "ring": {
+    "implicitEveryLevels": 2
+  },
+  "atCap": {
+    "kind": "refine",
+    "target": "random-positive-affix",
+    "keep": "higher",
+    "rejectWhenAllAtTierMax": true
+  },
+  "nonLootItems": "native-plus-one"
+}

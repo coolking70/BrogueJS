@@ -1,0 +1,692 @@
+{
+  "schema": 1,
+  "uniques": [
+    {
+      "id": "loot.unique.whisper",
+      "nameKey": "ext.loot.unique.whisper.name",
+      "descriptionKey": "ext.loot.unique.whisper.description",
+      "baseId": "dagger",
+      "minIlvl": 5,
+      "weight": 100,
+      "rows": [
+        {
+          "rowId": "loot.unique.whisper.r0",
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.weapon-enchant",
+              "category": "flat",
+              "unit": "int",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.whisper.r1",
+          "ranges": [
+            [
+              2000,
+              3000
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.accuracy",
+              "category": "increased",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.whisper.r2",
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.transference",
+              "category": "flat",
+              "unit": "ring-point",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.whisper.r3",
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.runic-power",
+              "category": "flat",
+              "unit": "runic-strength",
+              "valueIndex": 0,
+              "runicType": "quietus"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loot.unique.ember-fang",
+      "nameKey": "ext.loot.unique.ember-fang.name",
+      "descriptionKey": "ext.loot.unique.ember-fang.description",
+      "baseId": "sword",
+      "minIlvl": 15,
+      "weight": 100,
+      "rows": [
+        {
+          "rowId": "loot.unique.ember-fang.r0",
+          "ranges": [
+            [
+              7000,
+              10000
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "loot.local.damage",
+              "category": "local-increased",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.ember-fang.r1",
+          "ranges": [
+            [
+              3000,
+              3000
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.resist.fire",
+              "category": "flat",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.ember-fang.r2",
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.light",
+              "category": "flat",
+              "unit": "ring-point",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.ember-fang.r3",
+          "ranges": [
+            [
+              1,
+              1
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.regeneration",
+              "category": "flat",
+              "unit": "ring-point",
+              "valueIndex": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loot.unique.penitent",
+      "nameKey": "ext.loot.unique.penitent.name",
+      "descriptionKey": "ext.loot.unique.penitent.description",
+      "baseId": "ring_of_regeneration",
+      "minIlvl": 12,
+      "weight": 80,
+      "rows": [
+        {
+          "rowId": "loot.unique.penitent.r0",
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "loot.ring-implicit",
+              "category": "override",
+              "unit": "ring-point",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.penitent.r1",
+          "ranges": [
+            [
+              -10,
+              -10
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.max-hp",
+              "category": "flat",
+              "unit": "int",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.penitent.r2",
+          "ranges": [
+            [
+              -1000,
+              -1000
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.physical-damage-taken",
+              "category": "increased",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.penitent.r3",
+          "ranges": [
+            [
+              4000,
+              4000
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.resist.poison",
+              "category": "flat",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loot.unique.shadowweave",
+      "nameKey": "ext.loot.unique.shadowweave.name",
+      "descriptionKey": "ext.loot.unique.shadowweave.description",
+      "baseId": "leather_armor",
+      "minIlvl": 8,
+      "weight": 100,
+      "rows": [
+        {
+          "rowId": "loot.unique.shadowweave.r0",
+          "ranges": [
+            [
+              3,
+              3
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.stealth-range",
+              "category": "flat",
+              "unit": "ring-point",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.shadowweave.r1",
+          "ranges": [
+            [
+              -1200,
+              -1200
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.attack-speed",
+              "category": "more",
+              "unit": "bp",
+              "valueIndex": 0,
+              "slot": "speed"
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.shadowweave.r2",
+          "ranges": [
+            [
+              25,
+              35
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.max-hp",
+              "category": "flat",
+              "unit": "int",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.shadowweave.r3",
+          "ranges": [
+            [
+              1500,
+              1500
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.accuracy",
+              "category": "increased",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loot.unique.cinder-mail",
+      "nameKey": "ext.loot.unique.cinder-mail.name",
+      "descriptionKey": "ext.loot.unique.cinder-mail.description",
+      "baseId": "chain_mail",
+      "minIlvl": 18,
+      "weight": 80,
+      "rows": [
+        {
+          "rowId": "loot.unique.cinder-mail.r0",
+          "ranges": [
+            [
+              4000,
+              4000
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "loot.local.armor",
+              "category": "local-increased",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.cinder-mail.r1",
+          "ranges": [
+            [
+              5000,
+              5000
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.resist.fire",
+              "category": "flat",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.cinder-mail.r2",
+          "ranges": [
+            [
+              6,
+              6
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.armor-runic-power",
+              "category": "flat",
+              "unit": "runic-strength",
+              "valueIndex": 0,
+              "runicType": "reflection"
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.cinder-mail.r3",
+          "ranges": [
+            [
+              -15,
+              -15
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.max-hp",
+              "category": "flat",
+              "unit": "int",
+              "valueIndex": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loot.unique.colossus-maul",
+      "nameKey": "ext.loot.unique.colossus-maul.name",
+      "descriptionKey": "ext.loot.unique.colossus-maul.description",
+      "baseId": "war_hammer",
+      "minIlvl": 25,
+      "weight": 60,
+      "rows": [
+        {
+          "rowId": "loot.unique.colossus-maul.r0",
+          "ranges": [
+            [
+              8,
+              8
+            ],
+            [
+              14,
+              14
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "loot.local.damage",
+              "category": "local-flat",
+              "unit": "int",
+              "valueIndex": 0
+            },
+            {
+              "stat": "loot.local.damage",
+              "category": "local-flat",
+              "unit": "int",
+              "valueIndex": 1
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.colossus-maul.r1",
+          "ranges": [
+            [
+              4,
+              4
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.strength",
+              "category": "flat",
+              "unit": "int",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.colossus-maul.r2",
+          "ranges": [
+            [
+              10000,
+              13000
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.physical-damage-dealt",
+              "category": "increased",
+              "unit": "bp",
+              "valueIndex": 0,
+              "conditions": [
+                {
+                  "kind": "target-tag",
+                  "tag": "body.large"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.colossus-maul.r3",
+          "ranges": [
+            [
+              1500,
+              1500
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.attack-speed",
+              "category": "more",
+              "unit": "bp",
+              "valueIndex": 0,
+              "slot": "speed"
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.colossus-maul.r4",
+          "ranges": [
+            [
+              8,
+              8
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.runic-power",
+              "category": "flat",
+              "unit": "runic-strength",
+              "valueIndex": 0,
+              "runicType": "force"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loot.unique.vigil-plate",
+      "nameKey": "ext.loot.unique.vigil-plate.name",
+      "descriptionKey": "ext.loot.unique.vigil-plate.description",
+      "baseId": "plate_mail",
+      "minIlvl": 30,
+      "weight": 60,
+      "rows": [
+        {
+          "rowId": "loot.unique.vigil-plate.r0",
+          "ranges": [
+            [
+              4500,
+              5500
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "loot.local.armor",
+              "category": "local-increased",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.vigil-plate.r1",
+          "ranges": [
+            [
+              60,
+              80
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.max-hp",
+              "category": "flat",
+              "unit": "int",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.vigil-plate.r2",
+          "ranges": [
+            [
+              -1500,
+              -1500
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.physical-damage-taken",
+              "category": "increased",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.vigil-plate.r3",
+          "ranges": [
+            [
+              -2,
+              -2
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.stealth-range",
+              "category": "flat",
+              "unit": "ring-point",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.vigil-plate.r4",
+          "ranges": [
+            [
+              8,
+              8
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.armor-runic-power",
+              "category": "flat",
+              "unit": "runic-strength",
+              "valueIndex": 0,
+              "runicType": "absorption"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loot.unique.gambler",
+      "nameKey": "ext.loot.unique.gambler.name",
+      "descriptionKey": "ext.loot.unique.gambler.description",
+      "baseId": "ring_of_awareness",
+      "minIlvl": 20,
+      "weight": 60,
+      "rows": [
+        {
+          "rowId": "loot.unique.gambler.r0",
+          "ranges": [
+            [
+              2,
+              2
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "loot.ring-implicit",
+              "category": "override",
+              "unit": "ring-point",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.gambler.r1",
+          "ranges": [
+            [
+              6000,
+              8000
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "loot.rarity-find",
+              "category": "flat",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.gambler.r2",
+          "ranges": [
+            [
+              -20,
+              -20
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.max-hp",
+              "category": "flat",
+              "unit": "int",
+              "valueIndex": 0
+            }
+          ]
+        },
+        {
+          "rowId": "loot.unique.gambler.r3",
+          "ranges": [
+            [
+              -1000,
+              -1000
+            ]
+          ],
+          "modifiers": [
+            {
+              "stat": "native.accuracy",
+              "category": "increased",
+              "unit": "bp",
+              "valueIndex": 0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "bossUniqueBias": [
+    {
+      "formId": "giants.abyssal-colossus",
+      "uniqueId": "loot.unique.colossus-maul",
+      "multiplierBp": 50000
+    }
+  ]
+}

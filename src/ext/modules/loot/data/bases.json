@@ -1,0 +1,174 @@
+{
+  "schema": 1,
+  "ilvlBands": [
+    {
+      "minIlvl": 1,
+      "maxIlvl": 11
+    },
+    {
+      "minIlvl": 12,
+      "maxIlvl": 26
+    },
+    {
+      "minIlvl": 27,
+      "maxIlvl": 99
+    }
+  ],
+  "weaponTierWeights": {
+    "light": [
+      10,
+      8,
+      6
+    ],
+    "medium": [
+      6,
+      10,
+      9
+    ],
+    "heavy": [
+      3,
+      8,
+      12
+    ]
+  },
+  "weapons": [
+    {
+      "baseId": "dagger",
+      "tier": "light"
+    },
+    {
+      "baseId": "whip",
+      "tier": "light"
+    },
+    {
+      "baseId": "spear",
+      "tier": "light"
+    },
+    {
+      "baseId": "rapier",
+      "tier": "light"
+    },
+    {
+      "baseId": "sword",
+      "tier": "light"
+    },
+    {
+      "baseId": "mace",
+      "tier": "medium"
+    },
+    {
+      "baseId": "axe",
+      "tier": "light"
+    },
+    {
+      "baseId": "flail",
+      "tier": "medium"
+    },
+    {
+      "baseId": "broadsword",
+      "tier": "heavy"
+    },
+    {
+      "baseId": "war_pike",
+      "tier": "heavy"
+    },
+    {
+      "baseId": "war_hammer",
+      "tier": "heavy"
+    },
+    {
+      "baseId": "war_axe",
+      "tier": "heavy"
+    }
+  ],
+  "armors": [
+    {
+      "baseId": "leather_armor",
+      "weights": [
+        12,
+        6,
+        4
+      ]
+    },
+    {
+      "baseId": "scale_mail",
+      "weights": [
+        10,
+        8,
+        6
+      ]
+    },
+    {
+      "baseId": "chain_mail",
+      "weights": [
+        8,
+        10,
+        8
+      ]
+    },
+    {
+      "baseId": "banded_mail",
+      "weights": [
+        5,
+        10,
+        10
+      ]
+    },
+    {
+      "baseId": "splint_mail",
+      "weights": [
+        3,
+        8,
+        10
+      ]
+    },
+    {
+      "baseId": "plate_mail",
+      "weights": [
+        2,
+        6,
+        10
+      ]
+    }
+  ],
+  "rings": [
+    {
+      "baseId": "ring_of_clairvoyance",
+      "weight": 10
+    },
+    {
+      "baseId": "ring_of_stealth",
+      "weight": 10
+    },
+    {
+      "baseId": "ring_of_regeneration",
+      "weight": 10
+    },
+    {
+      "baseId": "ring_of_transference",
+      "weight": 10
+    },
+    {
+      "baseId": "ring_of_light",
+      "weight": 10
+    },
+    {
+      "baseId": "ring_of_awareness",
+      "weight": 10
+    },
+    {
+      "baseId": "ring_of_wisdom",
+      "weight": 10
+    },
+    {
+      "baseId": "ring_of_reaping",
+      "weight": 10
+    }
+  ],
+  "ringImplicit": {
+    "base": 1,
+    "ilvlStep": 15,
+    "min": 1,
+    "max": 4
+  }
+}

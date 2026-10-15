@@ -40,7 +40,7 @@ export class ItemDrops {
       const p = m.itemDrops; if (!p) continue;
       if (!m.itemDataValidators?.[m.id] || typeof p.roll !== 'function' || typeof p.settle !== 'function'
         || !Array.isArray(p.sources) || !p.sources.length || new Set(p.sources).size !== p.sources.length
-        || Object.keys(p).some(k => !['sources','roll','settle','uniqueCatalog','statKeys'].includes(k))) fail();
+        || Object.keys(p).some(k => !['sources','roll','settle','uniqueCatalog','statKeys','validateReceipts'].includes(k))) fail();
       if(p.statKeys!==undefined && (!Array.isArray(p.statKeys)||p.statKeys.length>16||p.statKeys.some(k=>!validId(k))))fail();
       const catalog = p.uniqueCatalog ?? []; assertItemJson(catalog);
       if (!Array.isArray(catalog) || catalog.length > 128 || new Set(catalog).size !== catalog.length || catalog.some(id => !validId(id) || !id.startsWith(`${m.id}.`))) fail();
@@ -77,6 +77,14 @@ export class ItemDrops {
       keys.add(e.key); for (const id of e.subjects) { if (subjects.has(id)) fail(); subjects.add(id); }
     }
   }
+  validateModuleReceipts(snapshot:ItemDropSnapshot,states:Readonly<Record<string,ReadonlyJson>>,pure:<T>(work:()=>T)=>T):void {
+    for(const [owner,catalog] of this.catalogs){
+      const provider=[...this.providers.values()].find(p=>p.owner===owner)!.provider;
+      if(!provider.validateReceipts)continue;
+      const bits=BigInt(`0x${snapshot.unique[owner]}`),ids=catalog.filter((_,i)=>(bits&(1n<<BigInt(i)))!==0n);
+      if(pure(()=>provider.validateReceipts!(freezeItemValue(copyItemValue(states[owner]!)),Object.freeze(ids),snapshot.nextEncounterOrdinal-1))!==true)fail();
+    }
+  }
   birth(id: number, fact: CreatureBirth | undefined): void {
     if (!this.has('kill') || Object.prototype.hasOwnProperty.call(this.state.births, id)) return;
     if (Object.keys(this.state.births).length >= 32768) throw new ItemDataError('C6_BUDGET');
@@ -104,10 +112,12 @@ export class ItemDrops {
       ...f.resultGroupIds.filter(id=>id!==f.sourceGroupId&&!e.splitSubjects!.includes(id))];
     e.subjects = [...e.subjects.filter(id => id !== f.sourceGroupId), ...f.resultGroupIds]; this.validate(this.state);
   }
-  prune(reachable:readonly number[]):void {
+  prune(reachable:readonly number[]):boolean {
+    let changed=false;
     const ids=new Set(reachable);
-    for(const id of Object.keys(this.state.births))if(!ids.has(Number(id)))delete this.state.births[id];
-    for(const e of [...this.state.encounters])for(const id of [...e.subjects])if(!ids.has(id))this.terminal(id,true);
+    for(const id of Object.keys(this.state.births))if(!ids.has(Number(id))){delete this.state.births[id];changed=true;}
+    for(const e of [...this.state.encounters])for(const id of [...e.subjects])if(!ids.has(id)){this.terminal(id,true);changed=true;}
+    return changed;
   }
   validateReferences(ids:readonly number[]):void {
     const present=new Set(ids);

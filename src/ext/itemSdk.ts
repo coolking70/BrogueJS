@@ -46,7 +46,7 @@ export type DropEvent = DropBase & (
   | { readonly source: 'floor'; readonly itemClass: ItemClass }
   | { readonly source: 'vault'; readonly itemClass: ItemClass;
       readonly baseId: string | null; readonly highValue: boolean;
-      readonly qualifiers: readonly string[] }
+      readonly qualifiers?: readonly string[] }
   | { readonly source: 'kill'; readonly actorId: number;
       readonly monster: Readonly<{ typeId: string; leader: boolean;
         champion: boolean; encounterSubject: boolean }> }
@@ -94,6 +94,8 @@ export interface DropAcceptance {
 declare const planBrand: unique symbol;
 export interface DropPlanHandle { readonly [planBrand]: true; readonly contract: 'C6-1' }
 export interface DropProvider {
+  /** Cross-check compact module receipts against host-owned accepted receipts. */
+  validateReceipts?(state: ReadonlyJson, uniqueIds: readonly string[], watermark: number): boolean;
   /** Query keys captured by the host before roll (at most 16). */
   readonly statKeys?: readonly string[];
   readonly uniqueCatalog?: readonly string[];
@@ -126,12 +128,16 @@ export interface ItemPresentationProvider {
   name(item: KnownItemFacts): TextRef | null;
   appearance(item: KnownItemFacts): Readonly<{ colorToken: string; marker: string }> | null;
 }
+/** Detached command facts; eligibility includes native instance, kind and rune knowledge. */
+export interface ItemCommandFacts extends ItemFacts {
+  readonly canBeIdentified: boolean;
+}
 export interface ItemCommandRead {
   readonly owner: string;
   readonly playerId: number;
   readonly revision: number;
   readonly state: ReadonlyJson;
-  readonly inventory: readonly ItemFacts[];
+  readonly inventory: readonly ItemCommandFacts[];
   readonly configuration: ReadonlyJson;
   readonly equippedIds: readonly number[];
 }
@@ -153,7 +159,14 @@ export interface ItemCommandProvider {
   prepare(payload: ReadonlyJson, context: ItemCommandRead): ItemCommandProposal | null;
 }
 
+export interface ItemTriggerFact {
+  readonly kind: 'physical-hit';
+  readonly role: 'attacker' | 'defender';
+  readonly targetTags: readonly string[];
+}
 export interface ItemKnowledgeProvider {
+  /** Pure partial reveal, called only after a successful native melee damage settlement. */
+  trigger?(data: ReadonlyJson, context: Readonly<{item: ItemFacts; fact: ItemTriggerFact}>): ReadonlyJson;
   known(data:ReadonlyJson):boolean;
   unique(data:ReadonlyJson):boolean;
   reveal(data:ReadonlyJson,context:Readonly<{item:ItemFacts;reason:'native-identify'|'command'|'trigger'}>):ReadonlyJson;

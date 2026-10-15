@@ -888,21 +888,27 @@ export class ItemLoader {
      * "还有没有可学的东西"。鉴定卷轴的目标池按此过滤。
      */
     public static updateIdentifiableItem(item: Item): void {
+        item.canBeIdentified = this.canIdentifyItem(item);
+    }
+
+    /** Pure counterpart used by command preflight; shares the scroll target rule. */
+    public static canIdentifyItem(item: Item): boolean {
         const kindId = (item as any).consumableId ?? (item as any).identityId as string | undefined;
         const kindKnown = !!kindId && this.identifiedItems.has(kindId);
         if ((item.category === ItemCategory.SCROLL || item.category === ItemCategory.POTION) && kindKnown) {
-            item.canBeIdentified = false;
+            return false;
         } else if ((item.category === ItemCategory.RING || item.category === ItemCategory.STAFF
             || item.category === ItemCategory.WAND) && item.isIdentified && kindKnown) {
-            item.canBeIdentified = false;
+            return false;
         } else if ((item.category === ItemCategory.WEAPON || item.category === ItemCategory.ARMOR)
             && item.isIdentified && (!item.runicType || item.runicKnown)) {
-            item.canBeIdentified = false;
+            return false;
         } else if (item.category === ItemCategory.FOOD || item.category === ItemCategory.KEY
             || item.category === ItemCategory.CHARM || item.category === ItemCategory.GOLD
             || item.category === ItemCategory.AMULET) {
-            item.canBeIdentified = false; // CE NEVER_IDENTIFIABLE
+            return false; // CE NEVER_IDENTIFIABLE
         }
+        return item.canBeIdentified;
     }
 
     /**

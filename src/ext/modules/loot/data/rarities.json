@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "rarities": [
+    {
+      "id": "normal",
+      "order": 0,
+      "nameKey": "ext.loot.rarity.normal",
+      "colorDark": "#c8c8c8",
+      "colorLight": "#4a4a4a",
+      "marker": "",
+      "affixes": {
+        "prefixMax": 0,
+        "suffixMax": 0
+      },
+      "enhancementCap": 10,
+      "droppable": true
+    },
+    {
+      "id": "magic",
+      "order": 1,
+      "nameKey": "ext.loot.rarity.magic",
+      "colorDark": "#6a8cff",
+      "colorLight": "#2b4fd1",
+      "marker": "◇",
+      "affixes": {
+        "prefixMax": 1,
+        "suffixMax": 1
+      },
+      "enhancementCap": 8,
+      "droppable": true
+    },
+    {
+      "id": "rare",
+      "order": 2,
+      "nameKey": "ext.loot.rarity.rare",
+      "colorDark": "#ffd94a",
+      "colorLight": "#9c7a00",
+      "marker": "◆",
+      "affixes": {
+        "prefixMax": 3,
+        "suffixMax": 3
+      },
+      "enhancementCap": 6,
+      "droppable": true
+    },
+    {
+      "id": "unique",
+      "order": 3,
+      "nameKey": "ext.loot.rarity.unique",
+      "colorDark": "#c7a046",
+      "colorLight": "#7a5a14",
+      "marker": "★",
+      "affixes": null,
+      "enhancementCap": 4,
+      "droppable": true
+    },
+    {
+      "id": "set",
+      "order": 4,
+      "nameKey": "ext.loot.rarity.set",
+      "colorDark": "#3fd36b",
+      "colorLight": "#16803a",
+      "marker": "✦",
+      "affixes": null,
+      "enhancementCap": 4,
+      "droppable": false
+    },
+    {
+      "id": "runeword",
+      "order": 5,
+      "nameKey": "ext.loot.rarity.runeword",
+      "colorDark": "#b8a77a",
+      "colorLight": "#6b5c33",
+      "marker": "⊕",
+      "affixes": null,
+      "enhancementCap": 0,
+      "droppable": false
+    }
+  ]
+}

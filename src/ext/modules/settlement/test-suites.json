@@ -45,7 +45,8 @@
     "tests/settlement_safety.test.ts",
     "tests/settlement_sdk_generation_raid.test.ts",
     "tests/settlement_ui.test.ts",
-    "tests/settlement_validation.test.ts"
+    "tests/settlement_validation.test.ts",
+    "tests/phase5_ui_open.test.ts"
   ],
   "drift": []
 }

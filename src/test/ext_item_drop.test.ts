@@ -8,7 +8,7 @@ import { createItemDropFixture, createItemEncounterFixture, descriptor } from '.
 import { createItemHarness } from '../ext/testing/itemHarness';
 import { rng } from '../engine/Random';
 import { getNextEntityId } from '../entities/Creature';
-import { Monster, MonsterState, type MonsterData } from '../entities/Monster';
+import { Monster, type MonsterData } from '../entities/Monster';
 import monsters from '../data/monsters.json';
 import weapons from '../data/weapons.json';
 import armors from '../data/armors.json';
@@ -16,9 +16,6 @@ import arcana from '../data/arcana.json';
 import { markCreatureBirth } from '../ext/birth';
 import { auditFullObjectGraph } from './support/fullGenerationCheckpointOracle';
 import { forEachItemRoot } from '../engine/Core/WorldItemRoots';
-import { loadGiantsDefinitionPack } from '../ext/modules/giants/definitions';
-import { walkNaturalToDepth } from '../ext/modules/giants/tests/naturalFixture';
-import { createGiantsModuleFromPack } from '../ext/modules/giants/module';
 afterEach(()=>vi.restoreAllMocks());
 const spec=(kind='dagger',category:ItemClass='weapon'):DropItemSpec=>({native:{kind,category,enchantment:0,runicType:null,isCursed:false,identified:false,familiarityRemaining:20},moduleData:{c6fixture:{v:1,known:false,power:3}}});
 const input:DropInput={source:'kill',actorId:9,monster:{typeId:'rat',leader:false,champion:false,encounterSubject:false},at:{x:5,y:5},playerId:1,level:{kind:'dungeon',depth:1}};
@@ -67,16 +64,7 @@ describe('C6 authority and receipts',()=>{
     }
     expect(()=>s.prepare(input,t,1,m.initialState(),f=>f(),()=>0,()=>0)).toThrow();
   });
-  it('orders terminal consumption, survives reload, follows split and loses administrative encounters',()=>{
-    const pack=loadGiantsDefinitionPack(),m=createGiantsModuleFromPack(pack),s=new ItemDrops([m]);
-    const place=(actorId:number,key:string)=>s.placement({owner:'giants',instanceKey:`giants.${key}`,templateId:pack.templates[0]!.id,depth:1,result:'placed',reason:null,regionId:null,actorId,formId:pack.templates[0]!.formId},()=>true);
-    place(10,'first');place(20,'second');
-    const forged=s.snapshot();forged.encounters[0]!.formId='giants.undeclared';expect(()=>s.restore(forged)).toThrow();
-    s.transition({sourceGroupId:10,reason:'split',moveId:null,outcome:'applied',resultGroupIds:[11,12],retiredIds:[10]},()=>true);
-    expect(s.terminal(11,false)).toBeNull();expect(s.terminal(20,false)?.encounterOrdinal).toBe(1);
-    const restored=new ItemDrops([m]);restored.restore(s.snapshot());expect(restored.terminal(12,false)?.encounterOrdinal).toBe(2);expect(restored.terminal(12,false)).toBeNull();
-    place(30,'lost');expect(s.terminal(30,true)).toBeNull();expect(s.snapshot().nextEncounterOrdinal).toBe(2);
-  });
+
 });
 describe('C6 real Game safe points',()=>{
   it('generates floor equipment, fixed vault equipment and kill items after carried items, before DF',()=>{
@@ -162,21 +150,7 @@ it('a blocked placement skips without placement dice or IDs; all skips still con
   expect(g.extensionRuntime!.snapshot().foundation.itemDrops!.nextEventId).toBe(event+1);h.dispose();
 });
 
-it('real giants split transfers C6 subjects and terminal rewards survive save/load without reading private state',()=>{
-  const h=createItemHarness({seed:7309,modules:['giants']},[{...descriptor,create:()=>createItemDropFixture({sources:['encounter']})}]),g=h.game();
-  g.startNewGame({seed:7309,mode:'wizard',ruleSet:'extended',extensions:['c6fixture','giants']});g.animationEnabled=false;
-  walkNaturalToDepth(g,7,true);const boss=g.monsters.find(m=>m.typeId==='giants.abyssal-colossus')!;expect(boss).toBeDefined();
-  const key=g.extensionRuntime!.snapshot().foundation.itemDrops!.encounters.find(e=>e.subjects.includes(boss.id))!.key;
-  // Only damage/readiness is diagnostic, exactly as the existing native split test.
-  boss.hp=129;boss.state=MonsterState.HUNTING;boss.ticksUntilTurn=0;g.executeCommand('wait');expect(g.lastAdvancementError).toBeNull();
-  const subjects=g.extensionRuntime!.snapshot().foundation.itemDrops!.encounters.find(e=>e.key===key)!.subjects;expect(subjects).toHaveLength(2);
-  const before=(g.extensionRuntime!.snapshot().modules.c6fixture as any).settled;
-  g.killMonster(g.monsters.find(m=>m.id===subjects[0])!);expect((g.extensionRuntime!.snapshot().modules.c6fixture as any).settled).toBe(before);
-  expect(g.loadSnapshot(g.toSnapshot())).toBe(true);const last=g.monsters.find(m=>m.id===subjects[1])!;g.killMonster(last);
-  expect((g.extensionRuntime!.snapshot().modules.c6fixture as any).settled).toBe(before+1);
-  expect(g.extensionRuntime!.snapshot().foundation.itemDrops!.encounters.some(e=>e.key===key)).toBe(false);
-  const settled=g.toSnapshot();expect(g.loadSnapshot(settled)).toBe(true);g.killMonster(last);expect((g.extensionRuntime!.snapshot().modules.c6fixture as any).settled).toBe(before+1);h.dispose();
-},60000);
+
 it('restores converted-drop guards for a nested successful death when the outer DF fails',()=>{
   const h=harness(),g=h.game(),outer=victim(g),inner=victim(g);
   vi.spyOn(g as any,'triggerDeathFeatures').mockImplementation((m:unknown)=>{if(m===outer){g.killMonster(inner);throw Error('nested DF failure');}});

@@ -49,7 +49,8 @@ beforeAll(async () => {
     vi.stubGlobal('document', doc);
     await i18next.init({ lng: 'zh_CN', fallbackLng: false, resources: { zh_CN: { translation: zhCN } }, initImmediate: false });
     const empty = { default: { render: () => null }, __esModule: true };
-    const { buildModuleCreationCommands } = await import('../ext/ui/creation');
+    const { buildModuleCreationCommands, buildModuleCreationConfigurations } = await import('../ext/ui/creation');
+    const {registryFromDescriptors,FOUNDATION_PROTOCOL}=await import('../ext/descriptor');
     const modules: Record<string, unknown> = {
         vue: Vue, 'i18next-vue': translation,
         '../engine/Input': { inputManager: { registerModalKeyHandler: () => () => {} } },
@@ -57,7 +58,8 @@ beforeAll(async () => {
             { id: 'alpha', labelKey: 'ext.modules.label' }, { id: 'beta', labelKey: 'ext.modules.label' },
         ] },
         '../ext/ui/defaults': await import('../ext/ui/defaults'),
-        '../ext/ui/creation': { prepareModuleCreation: (ids: readonly string[]) => prepareOverride!(ids), buildModuleCreationCommands },
+        '../ext/ui/creation': { prepareModuleCreation: (ids: readonly string[]) => prepareOverride!(ids), buildModuleCreationCommands,
+            buildModuleCreationConfigurations:(plan:ModuleCreationPlan,selected:ReadonlyMap<string,readonly string[]>,drafts:Record<string,import('../ext/types').Json>)=>buildModuleCreationConfigurations(plan,selected,drafts,[],registryFromDescriptors(plan.modules.map(module=>({id:module.id,version:module.version,foundation:FOUNDATION_PROTOCOL,labelKey:`ext.${module.id}.name`,create:()=>module})))) },
         './MapTileLegend.vue': empty, './theme/TitleFx.vue': empty,
         '../ui/mapTiles': await import('../ui/mapTiles'), '../engine/Seed': await import('../engine/Seed'),
         '../engine/Settings': await import('../engine/Settings'),

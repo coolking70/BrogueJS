@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "amount": {
+    "minBase": 5,
+    "minPerDepth": 3,
+    "maxBase": 15,
+    "maxPerDepth": 6
+  },
+  "byClass": {
+    "fodder": {
+      "chanceBp": 1500,
+      "multiplier": 1
+    },
+    "splitter": {
+      "chanceBp": 500,
+      "multiplier": 1
+    },
+    "standard": {
+      "chanceBp": 2000,
+      "multiplier": 1
+    },
+    "elite": {
+      "chanceBp": 4000,
+      "multiplier": 3
+    }
+  },
+  "encounter": {
+    "chanceBp": 10000,
+    "multiplier": 10
+  }
+}

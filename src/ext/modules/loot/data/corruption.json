@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "eligibleRarities": [
+    "magic",
+    "rare"
+  ],
+  "maxTotalAffixes": 6,
+  "negativeRuneFallback": true,
+  "compensation": {
+    "tierStep": 1,
+    "maxTier": 6
+  },
+  "nativeCursed": true
+}

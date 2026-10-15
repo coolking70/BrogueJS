@@ -1,0 +1,199 @@
+{
+  "schema": 1,
+  "first": [
+    {
+      "nameKey": "ext.loot.rare.first.00"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.01"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.02"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.03"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.04"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.05"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.06"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.07"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.08"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.09"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.10"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.11"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.12"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.13"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.14"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.15"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.16"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.17"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.18"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.19"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.20"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.21"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.22"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.23"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.24"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.25"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.26"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.27"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.28"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.29"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.30"
+    },
+    {
+      "nameKey": "ext.loot.rare.first.31"
+    }
+  ],
+  "second": [
+    {
+      "nameKey": "ext.loot.rare.second.00"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.01"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.02"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.03"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.04"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.05"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.06"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.07"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.08"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.09"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.10"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.11"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.12"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.13"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.14"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.15"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.16"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.17"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.18"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.19"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.20"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.21"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.22"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.23"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.24"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.25"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.26"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.27"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.28"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.29"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.30"
+    },
+    {
+      "nameKey": "ext.loot.rare.second.31"
+    }
+  ]
+}

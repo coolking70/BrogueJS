@@ -162,3 +162,31 @@ it('review: a late shard-identification failure restores materials, rune, kind k
  vi.spyOn(r,'commitItemCommandState').mockImplementation(()=>{throw Error('late knowledge commit');});
  const audit=auditFullObjectGraph([g,rng]),revision=nativeStatRevision(g.player);expect(commitItemCommand(g,plan)).toBe(false);expect(audit.differences()).toEqual([]);expect(ItemLoader.identifiedItems.has(item.identityId!)).toBe(false);expect(nativeStatRevision(g.player)).toBe(revision);h.dispose();
 });
+
+it.each(['ring','runic'] as const)('F1: host accepts remaining native %s knowledge and rejects a fully known proposal',kind=>{
+ const {h,g,r}=setup(),item=kind==='ring'?assembleDropItem({native:{kind:'ring_of_regeneration',category:'ring',enchantment:4,runicType:null,isCursed:false,identified:false,familiarityRemaining:20},moduleData:{c6fixture:{v:1,power:1,known:false}}}):make();
+ if(kind==='runic')item.runicType='multiplicity';
+ g.player.inventory.addItem(item);r.bindItemData(item);ItemLoader.identifyInstanceOnly(item);
+ expect(r.itemKnown(item)).toBe(true);expect(item.isIdentified).toBe(true);expect(canIdentifyChosenItem(g.player,item)).toBe(true);
+ g.player.inventory.addItem(assembleWorldItem(commandDefinitions.items[0]!,20));
+ const prepare=vi.spyOn(r,'prepareItemCommand'),payload={v:1,revision:1,itemId:item.id};
+ const audit=auditFullObjectGraph([g,rng]),plan=prepareItemCommand(g,input('identify-shards',payload));
+ expect(plan).not.toBeNull();expect(audit.differences()).toEqual([]);
+ const facts=prepare.mock.calls[prepare.mock.calls.length-1]![3].find(i=>i.id===item.id)!;expect(facts).toMatchObject({identified:true,canBeIdentified:true});expect(facts).not.toBe(item);
+ expect(commitItemCommand(g,plan!)).toBe(true);
+ if(kind==='ring')expect(ItemLoader.identifiedItems.has(item.identityId!)).toBe(true);else expect(item.runicKnown).toBe(true);
+ // This provider deliberately proposes even when fully known: the host must independently refuse.
+ prepare.mockClear();const after=auditFullObjectGraph([g,rng]),tick=timeSystem.currentTick;
+ expect(prepareItemCommand(g,input('identify-shards',{...payload,revision:2}))).toBeNull();
+ expect(prepare.mock.results[0]!.value).not.toBeNull();expect(prepare.mock.calls[0]![3].find(i=>i.id===item.id)).toMatchObject({canBeIdentified:false});
+ expect(after.differences()).toEqual([]);expect(timeSystem.currentTick).toBe(tick);h.dispose();
+});
+it('F1: native kind learned after preflight invalidates an otherwise unchanged identify plan',()=>{
+ const {h,g,r}=setup(),item=assembleDropItem({native:{kind:'ring_of_regeneration',category:'ring',enchantment:0,runicType:null,isCursed:false,identified:false,familiarityRemaining:20},moduleData:{c6fixture:{v:1,power:1,known:false}}});
+ g.player.inventory.addItem(item);r.bindItemData(item);ItemLoader.identifyInstanceOnly(item);
+ g.player.inventory.addItem(assembleWorldItem(commandDefinitions.items[0]!,10));
+ const plan=prepareItemCommand(g,input('identify-shards',{v:1,revision:1,itemId:item.id}));expect(plan).not.toBeNull();
+ const sibling=ItemLoader.spawnRing(item.identityId!,-1,-1)!;ItemLoader.identifyInstance(sibling);
+ const audit=auditFullObjectGraph([g,rng]),tick=timeSystem.currentTick;
+ expect(commitItemCommand(g,plan!)).toBe(false);expect(audit.differences()).toEqual([]);expect(timeSystem.currentTick).toBe(tick);h.dispose();
+});

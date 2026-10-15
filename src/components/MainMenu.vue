@@ -9,7 +9,7 @@ import { normalizeSeed } from "../engine/Seed";
 import type { RuleSet } from '../ext/types';
 import { DEFAULT_EXTENSIONS, getInstalledModuleDescriptors } from '../ext/catalog';
 import { DEFAULT_NEW_GAME_RULE_SET } from '../ext/ui/defaults';
-import { prepareModuleCreation, buildModuleCreationCommands, type ModuleCreationPlan } from '../ext/ui/creation';
+import { prepareModuleCreation, buildModuleCreationCommands, buildModuleCreationConfigurations, type ModuleCreationPlan } from '../ext/ui/creation';
 import type { GameMode } from "../engine/Core/Game";
 import {
   displaySettings,
@@ -163,7 +163,7 @@ function submitCreation() {
     const initialCommands = buildModuleCreationCommands(creationContext.value, creationSelections), session = creationSession;
     // Latch before emitting: repeated clicks/Enter cannot create a second run.
     creationSubmitting.value = true;
-    emit('new-game', { ...creationRun.value, ruleSet: 'extended', extensions: creationContext.value.extensions, ...(Object.keys(configurationDrafts.value).some(id=>creationContext.value!.extensions.includes(id)) ? {extensionConfigurations:Object.fromEntries(Object.entries(configurationDrafts.value).filter(([id])=>creationContext.value!.extensions.includes(id)).map(([id,cfg])=>[id,{...cfg}]))} : {}), initialCommands,
+    emit('new-game', { ...creationRun.value, ruleSet: 'extended', extensions: creationContext.value.extensions, extensionConfigurations:buildModuleCreationConfigurations(creationContext.value,creationSelections,configurationDrafts.value), initialCommands,
       onRejected: () => {
         if (session !== creationSession) return;
         creationSubmitting.value = false; creationError.value = 'ext.creation.start_failed';

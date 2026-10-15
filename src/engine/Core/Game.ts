@@ -1458,7 +1458,7 @@ export class Game {
             const unspecifiedWeapon=itemClass==='weapon' && id===undefined;
             const fallback=unspecifiedWeapon?ItemLoader.genWeapons[ItemLoader.chooseKind(ItemLoader.genWeapons.map(w=>w.frequency??0))]!.id:id;
             const take=!unspecifiedWeapon||FIXED_EQUIPMENT_BASES.weapon.includes(fallback!);
-            if(take){const result=this.spawnExtensionDrop({source:'vault',itemClass,baseId:id??null,highValue:false,qualifiers:[],level:{kind:'dungeon',depth},at:{x,y},playerId:this.player.id});if(result.converted)return result.item;}
+            if(take){const result=this.spawnExtensionDrop({source:'vault',itemClass,baseId:id??null,highValue:false,level:{kind:'dungeon',depth},at:{x,y},playerId:this.player.id});if(result.converted)return result.item;}
             id=fallback;
         }
         if (id) {
@@ -12180,6 +12180,12 @@ export class Game {
                 // All detached candidate stat/resource reads use its validated clock.
                 // The scope restores actors/time and clears caches before publication.
                 const candidateExtensions = extensions;
+                const candidateStatWorld:ActorActionProductionWorld={depth:snapshot.depth,player:decodedPlayer,
+                    ...(snapshot.run.spatialWorld?.groups.length?{bodyGroups:snapshot.run.spatialWorld.groups}:{}),
+                    levels:[...[...restored].map(([depth,level])=>({depth,actors:[...level.monsters,...(level.dormantMonsters??[])]})),
+                        {depth:snapshot.depth,actors:(snapshot.purgatory??[]).map(actor=>entityGraph.monsters.get(actor.id)!)},
+                        ...snapshot.pendingFallenByDepth.map(queue=>({depth:queue.depth,actors:queue.monsters.map(actor=>entityGraph.monsters.get(actor.id)!)}))]};
+                const candidateDepths=new Map([decodedPlayer,...entityGraph.monsters.values()].map(actor=>[actor.id,resolveActorQueryScope(candidateStatWorld,actor)?.depth??snapshot.depth]));
                 candidateExtensions.withStatWorld([decodedPlayer, ...entityGraph.monsters.values()], () => {
                     candidateExtensions.validateWorld([decodedPlayer, ...extensionCreatures], { depth: snapshot.depth, turn: snapshot.run.absoluteTurnNumber,
                         isGameOver: snapshot.run.isGameOver, nextEntityId: snapshot.run.nextEntityId });
@@ -12230,7 +12236,7 @@ export class Game {
                                 actors: queue.monsters.map(monster => entityGraph.monsters.get(monster.id)!) })),
                         ],
                     });
-                }, snapshot.run.world5?.simulationTicks ?? 0);
+                }, snapshot.run.world5?.simulationTicks ?? 0, candidateDepths);
             }
         } catch { return false; }
         const levelRows = [snapshot, ...snapshot.levels];

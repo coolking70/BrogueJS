@@ -1,0 +1,50 @@
+import type { Json, ReadonlyJson, OptionalQueryResult } from '../../types';
+import { extensionDataFingerprint } from '../../fingerprint';
+import { isJson } from '../../json';
+import { loadLootPack, getLootPackIdentity } from './definitions';
+import { buildEffectiveLootCatalog } from './catalog';
+import { defaultLootPickupFilter, normalizeLootPickupFilter } from './ui/viewModel';
+import type { LootAvailability } from './types';
+
+export const LOOT_MODULE_VERSION = '0.2.0';
+export const DEFAULT_CONFIGURATION = { presetId: 'standard' };
+export function validConfiguration(value: unknown): value is Json {
+  return isJson(value) && !!value && typeof value === 'object' && !Array.isArray(value)
+    && Object.keys(value).join(',') === 'presetId'
+    && loadLootPack().presets.presets.some(p => p.id === value.presetId);
+}
+export function lootRules(configuration: Json = DEFAULT_CONFIGURATION) {
+  if (!validConfiguration(configuration)) throw new Error('Invalid loot configuration');
+  return { schema: 1, version: LOOT_MODULE_VERSION,
+    fingerprint: extensionDataFingerprint({ integration: LOOT_MODULE_VERSION, pack: getLootPackIdentity().fingerprint, configuration }) };
+}
+export function resolveLootCatalog(query: (capability: string, input: Json) => OptionalQueryResult) {
+  const keys = [...new Set(loadLootPack().affixes.affixes.filter(a => a.requires?.module === 'combat').map(a => a.requires!.key))];
+  const result = query('foundation.stats.v1', { keys });
+  const available = result.status === 'available' ? result.value as {keys: {id: string; available: boolean}[]} : null;
+  const stats = available?.keys.filter(k => k.available).map(k => k.id) ?? [];
+  const encounters = query('foundation.item-encounters.v1', {});
+  const forms = encounters.status === 'available' ? (encounters.value as {owners: {owner: string; formIds: string[]}[]}).owners.filter(o => o.owner === 'giants').flatMap(o => o.formIds) : [];
+  // growth.attributes.v1 is not published; never infer it from installation.
+  const availability: LootAvailability = { combat: stats.length ? {stats} : null, growth: null, giants: forms.length ? {formIds: forms} : null };
+  return buildEffectiveLootCatalog(loadLootPack(), availability);
+}
+export type LootState = { v: 1; presetId: string; created: boolean; revision: number; catalogFingerprint: string;
+  uniqueMask: number; watermark: number; filter: {v:1; minRarity:'normal'|'magic'|'rare'|'unique'; classes:('weapon'|'armor'|'ring')[]; autoPickupGold:boolean} };
+export const stateOf = (state: ReadonlyJson): LootState => state as unknown as LootState;
+export function initialLootState(presetId: string, catalogFingerprint: string): LootState {
+  return { v: 1, presetId, created: false, revision: 0, catalogFingerprint, uniqueMask: 0, watermark: 0,
+    filter: structuredClone(defaultLootPickupFilter(presetId)) as LootState['filter'] };
+}
+export function validLootState(value: unknown, presetId: string, fingerprint: string): value is Json {
+  if (!isJson(value) || !value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const s = value as unknown as LootState;
+  try { return Object.keys(s).sort().join(',') === 'catalogFingerprint,created,filter,presetId,revision,uniqueMask,v,watermark'
+    && s.v === 1 && s.presetId === presetId && s.catalogFingerprint === fingerprint && typeof s.created === 'boolean'
+    && Number.isSafeInteger(s.revision) && s.revision >= 0 && (s.created ? s.revision > 0 : s.revision === 0)
+    && Number.isSafeInteger(s.uniqueMask) && s.uniqueMask >= 0 && s.uniqueMask < 256
+    && Number.isSafeInteger(s.watermark) && s.watermark >= 0
+    && JSON.stringify(normalizeLootPickupFilter(s.filter)) === JSON.stringify(s.filter)
+    && new TextEncoder().encode(JSON.stringify(s)).length <= 4096;
+  } catch { return false; }
+}

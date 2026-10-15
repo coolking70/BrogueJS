@@ -5,6 +5,7 @@
     "foraging",
     "giants",
     "growth",
+    "loot",
     "narrative",
     "settlement"
   ],
@@ -450,12 +451,7 @@
     },
     "src/ext/modules/settlement/tests/resident_foraging_integration.test.ts": {
       "required": [
-        "combat",
-        "crafting",
-        "foraging",
-        "giants",
-        "growth",
-        "narrative"
+        "foraging"
       ],
       "optional": []
     },
@@ -490,24 +486,6 @@
       ],
       "optional": []
     },
-    "src/test/ext_phase5_ui_open.test.ts": {
-      "required": [
-        "combat",
-        "crafting",
-        "foraging",
-        "giants",
-        "growth",
-        "narrative",
-        "settlement"
-      ],
-      "optional": []
-    },
-    "src/test/ext_item_drop.test.ts": {
-      "required": [
-        "giants"
-      ],
-      "optional": []
-    },
     "src/test/ext_item_stats.test.ts": {
       "required": [
         "combat",
@@ -526,6 +504,25 @@
         "narrative",
         "settlement"
       ]
+    },
+    "src/ext/modules/loot/tests/loot_capabilities.test.ts": {
+      "required": [
+        "combat",
+        "giants",
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/settlement/tests/phase5_ui_open.test.ts": {
+      "required": [
+        "combat",
+        "crafting",
+        "foraging",
+        "giants",
+        "growth",
+        "narrative"
+      ],
+      "optional": []
     }
   }
 }

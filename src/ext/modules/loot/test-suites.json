@@ -1,0 +1,27 @@
+{
+  "test": [
+    "tests/loot_data.test.ts",
+    "tests/loot_schema.test.ts",
+    "tests/loot_catalog.test.ts",
+    "tests/loot_generator_vectors.test.ts",
+    "tests/loot_generator_props.test.ts",
+    "tests/loot_item.test.ts",
+    "tests/loot_economy.test.ts",
+    "tests/loot_locale.test.ts",
+    "tests/loot_stats.test.ts",
+    "tests/loot_inert.test.ts",
+    "tests/loot_ui_knowledge.test.ts",
+    "tests/loot_ui_viewmodel.test.ts",
+    "tests/loot_ui_fixtures.test.ts",
+    "tests/loot_ui_components.test.ts",
+    "tests/loot_ui_i18n.test.ts",
+    "tests/loot_ui_style.test.ts",
+    "tests/loot_ui_preview.test.ts",
+    "tests/loot_ui_inert.test.ts",
+    "tests/loot_integration.test.ts",
+    "tests/loot_commands_integration.test.ts",
+    "tests/loot_capabilities.test.ts",
+    "tests/loot_stats_integration.test.ts"
+  ],
+  "drift": []
+}

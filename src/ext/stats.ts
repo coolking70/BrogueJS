@@ -98,6 +98,7 @@ export interface StatActorFacts extends ActorFacts {
   readonly tags: readonly string[];
 }
 export interface StatSourceContext {
+  readonly depth?: number;
   readonly playerId: number;
   readonly state: ReadonlyJson;
   readonly facts: Readonly<PairFacts>;

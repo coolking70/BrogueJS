@@ -34,3 +34,16 @@ export function buildModuleCreationCommands(plan: ModuleCreationPlan, selected: 
         return [...commands];
     });
 }
+
+/** Bind UI selections to run configuration before the host generates any floor. */
+export function buildModuleCreationConfigurations(plan: ModuleCreationPlan, selected: ReadonlyMap<string, readonly string[]>, drafts: Readonly<Record<string, import('../types').Json>> = {}, contributions: readonly ModuleUiContribution[] = getInstalledModuleUiContributions(), registry: ExtensionRegistry = createExtensionRegistry()) {
+    const configurations: Record<string, import('../types').Json> = Object.fromEntries(Object.entries(drafts).filter(([id])=>plan.extensions.includes(id)));
+    for(const step of plan.steps){
+        const bridge=contributions.find(c=>c.moduleId===step.moduleId)?.configurationFromCreation;
+        if(bridge){const commands=selected.get(step.moduleId);if(!commands)throw new Error('Incomplete module creation');configurations[step.moduleId]=bridge(commands);}
+    }
+    const manifest=registry.manifest(plan.extensions,configurations);
+    const modules=registry.create(manifest);
+    for(const module of modules)for(const command of selected.get(module.id)??[]){const input=JSON.parse(command);if(module.validateInitialCommand&&!module.validateInitialCommand(input.action,input.payload))throw new Error('Invalid configured creation command');}
+    return Object.freeze(configurations);
+}

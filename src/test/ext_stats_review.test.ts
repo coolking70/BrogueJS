@@ -24,10 +24,10 @@ import { TerrainType } from '../engine/Map/Grid';
 import { logger } from '../engine/Systems/Logger';
 import { installedOptionalModules } from './support/installedExtensions';
 const data=(id:string)=>(monsters as MonsterData[]).find(row=>row.id===id)!;
-const row=(stat:string,value:number,extra:Partial<StatModifierRow>={}):OwnedStatRow=>({owner:'loot',stat,value,category:'flat',layer:'equipment',sourceKind:'fixture',sourceId:'loot.fixture',...extra});
+const row=(stat:string,value:number,extra:Partial<StatModifierRow>={}):OwnedStatRow=>({owner:'statsfixture',stat,value,category:'flat',layer:'equipment',sourceKind:'fixture',sourceId:'statsfixture.fixture',...extra});
 function fixture(collect:(id:number)=>readonly OwnedStatRow[], actors:Player|Monster=new Player(4,4)){
- const registry=new ExtensionRegistry();registry.register('loot','1.0.0',()=>({id:'loot',version:'1.0.0',initialState:()=>({}),validateState:isJson,statSources:{collect:a=>collect(a.id).map(({owner:_,...r})=>r)}}));
- const runtime=new ExtensionRuntime(registry,registry.manifest(['loot']),{playerId:()=>actors.id,depth:()=>1,randomInt:()=>0,message:()=>undefined});runtime.attachCreature(actors);return runtime;
+ const registry=new ExtensionRegistry();registry.register('statsfixture','1.0.0',()=>({id:'statsfixture',version:'1.0.0',initialState:()=>({}),validateState:isJson,statSources:{collect:a=>collect(a.id).map(({owner:_,...r})=>r)}}));
+ const runtime=new ExtensionRuntime(registry,registry.manifest(['statsfixture']),{playerId:()=>actors.id,depth:()=>1,randomInt:()=>0,message:()=>undefined});runtime.attachCreature(actors);return runtime;
 }
 type AttackOptions=NonNullable<Parameters<typeof CombatSystem.attack>[2]>;
 function attackInDelivery(runtime:ExtensionRuntime|undefined,attacker:Monster,defender:Player,options:AttackOptions){
@@ -78,7 +78,7 @@ describe('5A2-S review regressions',()=>{
  it.each(['native.max-hp','native.strength','combat.stamina-capacity','combat.poise-capacity','growth.focus-capacity'])('F6 rejects every conditional row on materialized %s before publication',stat=>{
   const declaration=NATIVE_STAT_KEYS.find(key=>key.id===stat)??{...NATIVE_STAT_KEYS.find(key=>key.id==='native.max-hp')!,id:stat,owner:stat.split('.')[0]!};
   const keys=new Map([[stat,declaration]]);
-  for(const conditions of [[{kind:'hp-ratio',comparison:'at-least',value:10000}],[{kind:'self-status',value:'slowed'}],[{kind:'attack-kind',value:'melee'}],[]])expect(()=>validateStatRows([{...row(stat,10,{conditions:conditions as never}),owner:undefined}].map(({owner:_,...r})=>r),'loot',keys)).toThrow();
+  for(const conditions of [[{kind:'hp-ratio',comparison:'at-least',value:10000}],[{kind:'self-status',value:'slowed'}],[{kind:'attack-kind',value:'melee'}],[]])expect(()=>validateStatRows([{...row(stat,10,{conditions:conditions as never}),owner:undefined}].map(({owner:_,...r})=>r),'statsfixture',keys)).toThrow();
  });
  it('F7 other resistance scales ordinary damage but cannot prevent draining current HP or kamikaze',()=>{
   const actor=new Monster(4,4,data('bloat'));fixture(()=>[row('native.resist.other',7500)],actor);actor.hp=20;
@@ -109,15 +109,15 @@ describe('5A2-S review regressions',()=>{
   for(let i=0;i<20;i++)markStatsDirty(actor);expect(calls).toBe(before);nativeStat(actor,'native.defense');expect(calls).toBe(before+1);nativeStat(actor,'native.defense');expect(calls).toBe(before+1);
  });
  it('admission reuse revalidates changed native inputs and activated conditions',()=>{
-  const actor=new Player(4,4),conditional=['native','equipment','character','temporary','environment'].map(slot=>row('native.regeneration',1,{category:'more',slot,sourceId:`loot.${slot}`,conditions:[{kind:'hp-ratio',comparison:'at-most',value:5000}]}));
+  const actor=new Player(4,4),conditional=['native','equipment','character','temporary','environment'].map(slot=>row('native.regeneration',1,{category:'more',slot,sourceId:`statsfixture.${slot}`,conditions:[{kind:'hp-ratio',comparison:'at-most',value:5000}]}));
   const runtime=fixture(()=>conditional,actor);runtime.stats.validateSources(actor.id);actor.hp=10;markStatsDirty(actor);expect(()=>runtime.stats.validateSources(actor.id)).toThrow();
   actor.hp=actor.maxHp;runtime.stats.validateSources(actor.id);actor.strength=NaN;markStatsDirty(actor);expect(()=>runtime.stats.validateSources(actor.id)).toThrow();
  });
  it('identical module state/component writes do not invalidate source preflight',()=>{
   const actor=new Player(4,4),registry=new ExtensionRegistry();let calls=0;
-  registry.register('loot','1.0.0',()=>({id:'loot',version:'1.0.0',initialState:()=>({}),validateState:isJson,statSources:{collect:()=>{calls++;return [];}},commands:{same(_payload,c){c.setState({});c.setComponent(actor.id,'fixture',{});c.setComponent(actor.id,'fixture',{});}}}));
-  const runtime=new ExtensionRuntime(registry,registry.manifest(['loot']),{playerId:()=>actor.id,depth:()=>1,randomInt:()=>0,message:()=>undefined});runtime.attachCreature(actor);
-  const command=()=>runtime.command(JSON.stringify({module:'loot',action:'same',payload:{}}));command();const before=calls;command();expect(calls).toBe(before);
+  registry.register('statsfixture','1.0.0',()=>({id:'statsfixture',version:'1.0.0',initialState:()=>({}),validateState:isJson,statSources:{collect:()=>{calls++;return [];}},commands:{same(_payload,c){c.setState({});c.setComponent(actor.id,'fixture',{});c.setComponent(actor.id,'fixture',{});}}}));
+  const runtime=new ExtensionRuntime(registry,registry.manifest(['statsfixture']),{playerId:()=>actor.id,depth:()=>1,randomInt:()=>0,message:()=>undefined});runtime.attachCreature(actor);
+  const command=()=>runtime.command(JSON.stringify({module:'statsfixture',action:'same',payload:{}}));command();const before=calls;command();expect(calls).toBe(before);
  });
  it('F3 invalidates commutation, unidentified ring discovery and inventory stack merging',()=>{
   const actor=new Player(4,4);fixture(()=>[],actor);const ring=new Item('ring','=',1,ItemCategory.RING);ring.identityId='ring_of_regeneration';ring.enchantment=4;ring.identified=false;actor.inventory.items.push(ring);actor.equip(ring);
@@ -137,9 +137,9 @@ describe('5A2-S review regressions',()=>{
  it.each(['reflection','weapon'])('F3 runic discovery in %s invalidates sources that read equipped runic knowledge',path=>{
   const game=createHeadlessGame(7397,'wizard'),actor=game.player,item=path==='reflection'?actor.equippedArmor!:actor.equippedWeapon!;
   item.runicType=path==='reflection'?'reflection':'paralyzing';item.runicKnown=false;
-  const registry=new ExtensionRegistry();registry.register('loot','1.0.0',()=>({id:'loot',version:'1.0.0',initialState:()=>({}),validateState:isJson,
-   statSources:{collect:(_actor,c)=>c.equippedItems().some(i=>i.runic.kind!==null&&i.runic.identified)?[{stat:'native.defense',value:10,category:'flat',layer:'equipment',sourceKind:'fixture',sourceId:'loot.runic-known'}]:[]}}));
-  const runtime=new ExtensionRuntime(registry,registry.manifest(['loot']),{playerId:()=>actor.id,depth:()=>1,randomInt:()=>0,message:()=>undefined});runtime.attachCreature(actor);const before=nativeStat(actor,'native.defense');
+  const registry=new ExtensionRegistry();registry.register('statsfixture','1.0.0',()=>({id:'statsfixture',version:'1.0.0',initialState:()=>({}),validateState:isJson,
+   statSources:{collect:(_actor,c)=>c.equippedItems().some(i=>i.runic.kind!==null&&i.runic.identified)?[{stat:'native.defense',value:10,category:'flat',layer:'equipment',sourceKind:'fixture',sourceId:'statsfixture.runic-known'}]:[]}}));
+  const runtime=new ExtensionRuntime(registry,registry.manifest(['statsfixture']),{playerId:()=>actor.id,depth:()=>1,randomInt:()=>0,message:()=>undefined});runtime.attachCreature(actor);const before=nativeStat(actor,'native.defense');
   if(path==='reflection')(game as unknown as {observeBoltReflection(r:{creature:Player}):void}).observeBoltReflection({creature:actor});
   else {const target=new Monster(actor.x+1,actor.y,data('rat'));vi.spyOn(game as unknown as {canObserveBoltTarget(t:Monster):boolean},'canObserveBoltTarget').mockReturnValue(true);(game as unknown as {applyWeaponRunicEffect(t:Monster,d:number,r:string):void}).applyWeaponRunicEffect(target,1,'paralyzing');}
   expect(item.runicKnown).toBe(true);expect(nativeStat(actor,'native.defense')).toBe(before+10);

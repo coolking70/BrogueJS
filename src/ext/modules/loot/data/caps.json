@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "caps": [
+    {
+      "stat": "native.max-hp",
+      "scope": "final",
+      "max": 9999,
+      "unit": "int"
+    },
+    {
+      "stat": "native.resist.fire",
+      "scope": "final",
+      "max": 7500,
+      "unit": "bp"
+    },
+    {
+      "stat": "native.resist.poison",
+      "scope": "final",
+      "max": 7500,
+      "unit": "bp"
+    },
+    {
+      "stat": "native.weapon-enchant",
+      "scope": "loot-sources",
+      "max": 10,
+      "unit": "int"
+    },
+    {
+      "stat": "native.defense",
+      "scope": "final",
+      "max": 220,
+      "unit": "int"
+    },
+    {
+      "stat": "native.regeneration",
+      "scope": "loot-sources",
+      "max": 8,
+      "unit": "ring-point"
+    },
+    {
+      "stat": "native.stealth-range",
+      "scope": "loot-sources",
+      "max": 5,
+      "unit": "ring-point"
+    },
+    {
+      "stat": "native.transference",
+      "scope": "loot-sources",
+      "max": 6,
+      "unit": "ring-point"
+    },
+    {
+      "stat": "native.reaping",
+      "scope": "loot-sources",
+      "max": 8,
+      "unit": "ring-point"
+    },
+    {
+      "stat": "native.wisdom",
+      "scope": "loot-sources",
+      "max": 6,
+      "unit": "ring-point"
+    },
+    {
+      "stat": "native.light",
+      "scope": "loot-sources",
+      "max": 6,
+      "unit": "ring-point"
+    },
+    {
+      "stat": "native.clairvoyance",
+      "scope": "loot-sources",
+      "max": 6,
+      "unit": "ring-point"
+    },
+    {
+      "stat": "native.awareness",
+      "scope": "loot-sources",
+      "max": 8,
+      "unit": "ring-point"
+    },
+    {
+      "stat": "native.attack-speed",
+      "scope": "loot-sources",
+      "min": -4000,
+      "unit": "bp"
+    },
+    {
+      "stat": "native.physical-damage-taken",
+      "scope": "loot-sources",
+      "min": -5000,
+      "unit": "bp"
+    }
+  ]
+}

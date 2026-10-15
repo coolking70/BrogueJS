@@ -54,6 +54,8 @@ export interface ModuleUiSession {
 /** Pure declarations only. Session factories run solely for enabled modules. */
 export interface ModuleUiContribution {
     readonly moduleId: string;
+    /** Pure owner configuration bridge; registry validates the resulting manifest before start. */
+    readonly configurationFromCreation?: (commands: readonly string[]) => import('../types').Json;
     readonly useSession?: (host: ModuleUiHost) => ModuleUiSession;
     /** Receives submitting/error props; emits complete(commands) or cancel. */
     readonly creationStep?: Component;

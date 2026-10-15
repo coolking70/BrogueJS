@@ -39,7 +39,7 @@ function prepareUnchecked(g:Game,data:unknown):ItemCommandPlan|null {
    if(kind==='salvage')requireValid(keys(payload,'v,revision,itemIds')&&Array.isArray(payload.itemIds)&&payload.itemIds.length>=1&&payload.itemIds.length<=26&&new Set(payload.itemIds).size===payload.itemIds.length&&payload.itemIds.every(positive));
    if(kind==='identify')requireValid(keys(payload,'v,revision,itemId')&&positive(payload.itemId));
   }
-  const proposal=runtime.prepareItemCommand(owner,action,payload,inv.map(itemFacts),ids);if(!proposal)return null;
+  const proposal=runtime.prepareItemCommand(owner,action,payload,inv.map(item=>({...itemFacts(item),canBeIdentified:ItemLoader.canIdentifyItem(item)})),ids);if(!proposal)return null;
   requireValid(keys(proposal,'v,revision,consume,updateOwnData,materials,nextState,chargedTicks,confirmation')&&proposal.v===1&&proposal.revision===revision&&Array.isArray(proposal.consume)&&Array.isArray(proposal.updateOwnData)&&Array.isArray(proposal.materials));
   requireValid(proposal.consume.length<=26&&proposal.updateOwnData.length<=26&&proposal.materials.length<=26);
   const consumed=new Map<number,number>(),updated=new Set<number>();
@@ -54,7 +54,7 @@ function prepareUnchecked(g:Game,data:unknown):ItemCommandPlan|null {
    if(requested.some(id=>runtime.itemUnique(owner,inv.find(i=>i.id===id)!)))requireValid(proposal.confirmation!==null);
   }
   if(kind==='identify'){
-   const target=inv.find(i=>i.id===payload.itemId);requireValid(target?.moduleData?.[owner]&&!runtime.itemKnown(target)&&updated.size===1&&updated.has(target.id)&&!outputs.length&&proposal.chargedTicks===100&&proposal.confirmation===null);
+   const target=inv.find(i=>i.id===payload.itemId);requireValid(target?.moduleData?.[owner]&&ItemLoader.canIdentifyItem(target)&&updated.size===1&&updated.has(target.id)&&!outputs.length&&proposal.chargedTicks===100&&proposal.confirmation===null);
    requireValid(JSON.stringify(proposal.updateOwnData[0]!.data)===JSON.stringify(runtime.revealedItemData(owner,target,'command')));
    let count=0;for(const [id,n]of consumed){const item=inv.find(i=>i.id===id)!;requireValid(item.category===ItemCategory.MATERIAL&&item.worldItem?.definitionId===materialDefinitionId);count+=n;}requireValid(count===10);
   }
@@ -77,6 +77,7 @@ export function prepareItemCommand(g:Game,data:unknown):ItemCommandPlan|null {
 export function commitItemCommand(g:Game,plan:ItemCommandPlan):boolean {
  const s=plans.get(plan);if(!s||s.used||s.game!==g||s.runtime!==g.extensionRuntime)return false;s.used=true;
  if(stamp(g,s.owner)!==s.stamp||s.items.some((i,n)=>g.player.inventory.items[n]!==i)||s.equipment.some((i,n)=>equipment(g)[n]!==i))return false;
+ if(s.kind==='identify'&&!ItemLoader.canIdentifyItem(g.player.inventory.items.find(i=>i.id===s.proposal.updateOwnData[0]!.itemId)!))return false;
  const restore=g.checkpointWorldWork(),restoreAuxiliary=checkpointGenerationWorld(()=>({shallow:[],deep:[rng,ItemLoader.identifiedItems,ItemLoader.callTitles,ItemLoader.magicPolarityRevealed]}));
  try{return s.runtime.itemCommandTransaction(()=>{
   for(const row of s.proposal.consume){const item=g.player.inventory.items.find(i=>i.id===row.itemId)!;if(item.quantity===row.quantity)g.player.inventory.items.splice(g.player.inventory.items.indexOf(item),1);else item.quantity-=row.quantity;markRecordingRoot(item);}

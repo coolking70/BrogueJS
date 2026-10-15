@@ -1,15 +1,15 @@
-import '../i18n';
+import '../../../../i18n';
 import { it, expect, afterEach, beforeAll, afterAll, vi } from 'vitest';
 import * as Vue from 'vue';
 import * as Pixi from 'pixi.js';
 import { effectScope, ref } from 'vue';
 import I18NextVue from 'i18next-vue';
 import i18next from 'i18next';
-import { createSfcHarness } from './support/sfcHarness';
-import { cameraState, recenterCamera } from '../ui/mapCamera';
-import { viewport, computeLayoutMode } from '../ui/layout';
-import { displaySettings } from '../engine/Settings';
-import { prepareCanvasInputScene } from './support/canvasInputScene';
+import { createSfcHarness } from '../../../../test/support/sfcHarness';
+import { cameraState, recenterCamera } from '../../../../ui/mapCamera';
+import { viewport, computeLayoutMode } from '../../../../ui/layout';
+import { displaySettings } from '../../../../engine/Settings';
+import { prepareCanvasInputScene } from '../../../../test/support/canvasInputScene';
 type N = {
   tag: string;
   text: string;
@@ -71,30 +71,30 @@ const renderer = Vue.createRenderer<N, N>({
   querySelector: () => body
 });
 
-import { Game } from '../engine/Core/Game';
-import { prepareModuleCreation, buildModuleCreationCommands } from '../ext/ui/creation';
+import { Game } from '../../../../engine/Core/Game';
+import { prepareModuleCreation, buildModuleCreationCommands } from '../../../ui/creation';
 import {
   loadGrowthCreationContext,
   createGrowthCreationDraft,
   buildGrowthCreationCommands
-} from '../ext/modules/growth/view';
-import { useSettlementUi } from '../ext/modules/settlement/ui/useSettlementUi';
-import { registerModuleMapSelection, moduleMapSelection } from '../ui/moduleMapSelection';
-import { useModuleUi } from '../ext/ui/useModuleUi';
+} from '../../growth/view';
+import { useSettlementUi } from '../ui/useSettlementUi';
+import { registerModuleMapSelection, moduleMapSelection } from '../../../../ui/moduleMapSelection';
+import { useModuleUi } from '../../../ui/useModuleUi';
 import {
   bindDialogAcknowledgments,
   bindDialogCommands,
   presentationTimeline
-} from '../ui/dialogAcknowledgments';
-import { logger } from '../engine/Systems/Logger';
-import { DialogService } from '../ui/dialogService';
-import { scene, establish } from '../ext/modules/settlement/tests/helpers';
-import { useCraftingUi } from '../ext/modules/crafting/ui/useCraftingUi';
-import { useForagingUi } from '../ext/modules/foraging/ui/useForagingUi';
-import { useGrowthUi } from '../ext/modules/growth/ui/useGrowthUi';
-import type { ModuleUiHost, ModuleUiSession } from '../ext/ui/types';
-import { rng } from '../engine/Random';
-import { getNextEntityId } from '../entities/Creature';
+} from '../../../../ui/dialogAcknowledgments';
+import { logger } from '../../../../engine/Systems/Logger';
+import { DialogService } from '../../../../ui/dialogService';
+import { scene, establish } from './helpers';
+import { useCraftingUi } from '../../crafting/ui/useCraftingUi';
+import { useForagingUi } from '../../foraging/ui/useForagingUi';
+import { useGrowthUi } from '../../growth/ui/useGrowthUi';
+import type { ModuleUiHost, ModuleUiSession } from '../../../ui/types';
+import { rng } from '../../../../engine/Random';
+import { getNextEntityId } from '../../../../entities/Creature';
 
 const cases = [
   { extensions: ['combat', 'crafting', 'foraging', 'giants', 'growth', 'narrative', 'settlement'] },
@@ -134,14 +134,14 @@ beforeAll(() => {
   });
 });
 afterAll(async () => {
-  (await import('../ui/dialogInput')).dialogInput.dispose();
+  (await import('../../../../ui/dialogInput')).dialogInput.dispose();
   vi.unstubAllGlobals();
 });
 afterEach(() => {
   moduleMapSelection.value = null;
   vi.restoreAllMocks();
 });
-const harness = createSfcHarness({ baseURL: import.meta.url });
+const harness = createSfcHarness({ baseURL: new URL('../../../../test/harness.ts',import.meta.url).href });
 const panels = {
   settlement: () => harness.load('../ext/modules/settlement/ui/SettlementPanel.vue'),
   crafting: () => harness.load('../ext/modules/crafting/ui/CraftingPanel.vue'),
@@ -405,7 +405,7 @@ for (const { extensions } of cases)
         scope = effectScope(),
         dialogs = new DialogService(),
         h = host(g, dialogs);
-      const { dialogInput } = await import('../ui/dialogInput');
+      const { dialogInput } = await import('../../../../ui/dialogInput');
       let ui: ReturnType<typeof useModuleUi>;
       h.beforeOpenPanel = () => ui.closePanels();
       ui = scope.run(() => useModuleUi(h))!;
@@ -414,7 +414,7 @@ for (const { extensions } of cases)
       const removeCommands = bindDialogCommands(dialogs, g),
         removeAcks = bindDialogAcknowledgments(dialogs, g, logger);
       const Canvas = await createSfcHarness({
-        baseURL: import.meta.url,
+        baseURL: new URL('../../../../test/harness.ts',import.meta.url).href,
         stubs: {
           'pixi.js': { ...Pixi, Text: TextFixture, Application: ApplicationFixture },
           '../engine/Core/Game': { activeGame: g }
@@ -510,7 +510,7 @@ it.each([[320,844],[390,844],[800,991],[1440,900]])(
     });
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { frames.push(cb); return frames.length; });
     vi.stubGlobal('cancelAnimationFrame', () => {});
-    const Canvas = await createSfcHarness({ baseURL: import.meta.url, stubs: {
+    const Canvas = await createSfcHarness({ baseURL: new URL('../../../../test/harness.ts',import.meta.url).href, stubs: {
       'pixi.js': { ...Pixi, Text: TextFixture, Application: ApplicationFixture },
       '../engine/Core/Game': { activeGame: g }
     }}).load('../components/GameCanvas.vue');
@@ -590,7 +590,7 @@ it('seven-module canvas expires frozen combat labels during ACK/drawers and clea
   const g = start(cases[0]!.extensions, false), dialogs = new DialogService();
   const removeAcks = bindDialogAcknowledgments(dialogs, g, logger);
   const paused = ref(false);
-  const Canvas = await createSfcHarness({ baseURL: import.meta.url, stubs: {
+  const Canvas = await createSfcHarness({ baseURL: new URL('../../../../test/harness.ts',import.meta.url).href, stubs: {
     'pixi.js': { ...Pixi, Text: TextFixture, Application: ApplicationFixture },
     '../engine/Core/Game': { activeGame: g }
   } }).load('../components/GameCanvas.vue');
@@ -641,7 +641,7 @@ it('DEV wait uses real canvas input, awaits animation, and reports ACK/modal/ove
   const g = start(cases[0]!.extensions, false), modal = ref(false), dialogs = new DialogService();
   prepareCanvasInputScene(g, true);
   const removeAcks = bindDialogAcknowledgments(dialogs, g, logger), removeCommands = bindDialogCommands(dialogs, g);
-  const Canvas = await createSfcHarness({ baseURL: import.meta.url, stubs: {
+  const Canvas = await createSfcHarness({ baseURL: new URL('../../../../test/harness.ts',import.meta.url).href, stubs: {
     'pixi.js': { ...Pixi, Text: TextFixture, Application: ApplicationFixture },
     '../engine/Core/Game': { activeGame: g }
   } }).load('../components/GameCanvas.vue');

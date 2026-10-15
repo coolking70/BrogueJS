@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getInstalledModuleDescriptors } from '../../../catalog';
+import { installedOptionalModules } from '../../../../test/support/installedExtensions';
 import { setup, current, travelScenes, stairs } from './helpers';
 import { bedroom } from './residentHelpers';
 import { Monster, type MonsterData } from '../../../../entities/Monster';
@@ -18,7 +18,7 @@ import { auditFullObjectGraph } from '../../../../test/support/fullGenerationChe
 // Controlled room/actor prerequisites, genuine installed participants and
 // public rescue/recruit decisions. Optional content is never a compile-time dependency.
 function rescued() {
-  const { h, g } = setup(['settlement', ...getInstalledModuleDescriptors().filter(d => d.id === 'foraging').map(d => d.id)]);
+  const { h, g } = setup(['settlement', ...installedOptionalModules(['foraging'])]);
   bedroom(h, g);
   const a = new Monster(20, 13, (monsters as MonsterData[]).find(m => m.id === 'goblin')!);
   a.isCaged = true;
@@ -59,7 +59,7 @@ function fault(s: Scene, writer: 'removeOwnComponent' | 'setOwnComponent' | 'rep
   return { spy, calls: () => calls };
 }
 
-if (getInstalledModuleDescriptors().some(d => d.id === 'foraging')) describe('real foraging / resident ownership', () => {
+if (installedOptionalModules(['foraging']).includes('foraging')) describe('real foraging / resident ownership', () => {
   it('No is pure, Yes removes both companion roots, and legal present release restores one need', () => {
     const s = rescued(), { g, a } = s;
     expect(need(s)).toHaveLength(1); expect(hunger(s)).toBeDefined();

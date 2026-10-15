@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "tiers": [
+    {
+      "tier": 1,
+      "minIlvl": 1,
+      "enabled": true
+    },
+    {
+      "tier": 2,
+      "minIlvl": 6,
+      "enabled": true
+    },
+    {
+      "tier": 3,
+      "minIlvl": 12,
+      "enabled": true
+    },
+    {
+      "tier": 4,
+      "minIlvl": 20,
+      "enabled": true
+    },
+    {
+      "tier": 5,
+      "minIlvl": 30,
+      "enabled": true
+    },
+    {
+      "tier": 6,
+      "minIlvl": 40,
+      "enabled": true
+    },
+    {
+      "tier": 7,
+      "minIlvl": 55,
+      "enabled": false
+    }
+  ],
+  "window": {
+    "size": 3,
+    "weightsHighToLow": [
+      25,
+      40,
+      35
+    ]
+  }
+}
