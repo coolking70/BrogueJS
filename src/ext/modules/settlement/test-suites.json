@@ -1,5 +1,6 @@
 {
   "test": [
+    "tests/camp_recording.test.ts",
     "tests/foundation_lifecycle_repair.test.ts",
     "tests/foundation_retirement_replay.test.ts",
     "tests/foundation_xr_repair.test.ts",

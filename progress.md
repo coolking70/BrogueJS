@@ -261,3 +261,6 @@ Node24、3GiB、2workers，resident_sources + settlement_runtime：2文件5测�
 - 2026-10-14 P5 UI fix4：按外部 p5-ui-fix4.task.md 修复浮动战斗文字冻结快照残留，并排查 DEV wait。根因：快照浮字不随实时列表更新；动画模式 executeCommand(wait) 只安排下一显示帧推进，连续同步输入会被锁拒绝。新增 UI 浮字身份/毫秒时钟和 DEV debug_game.status()/await debug_game.wait()，所有命令走同一 UI 输入边界。首轮新增与原 Canvas 24 项中 23 过，1 项新夹具漏启 ACK 显示，已修正；相关回归进行中。不提交。Vite 5199 listen EPERM、标准 Playwright Chromium 初始化失败，真实浏览器未验证。
 
 - 2026-10-14 P5 UI fix4 完成：冻结快照与实时浮字共用 UI 身份/实际毫秒寿命，含 Pixi 慢帧钳制反例先红后绿；DEV debug_game.wait 沿用按钮输入并等待动作收尾，提供阻塞状态且不代答。最终相关 7 文件81项、受影响源码守卫16文件24项、boundary/types/build 全exit0；前序源码守卫57文件102项及模块源码18文件44项通过，筛选未运行数及重叠分别登记。成长模块两处截取画布循环的旧测试宿主已逐处单文件回退对照（5/5、1/1）后仅补真实依赖，原断言保持。浏览器Vite listen EPERM/Playwright启动失败，未冒称截图或真机验证。完整报告 docs/ext/phase5-ui-fix4.report.md；无剩余本次已确认缺陷，未提交/推送，完整npm/test:ext未跑。
+
+- 2026-10-15 camp-fix：按用户要求排查线上 r/r2 录像初始摘要与营地施工失败反馈、键盘隔离；限定相关测试 + boundary/依赖 + types/build，不 commit。
+- 2026-10-15 camp-fix：证实 r2 从第0回合完整录制，首条建营地耗时300；真实损坏为异步旧检查点提前发布 index361 临时事件哈希。仅加 pendingCommand 发布边界，合成竞态先红后绿；原 r2 临时行哈希精确复现，外部恢复副本仅16个chainDigest字段变化、377条回放及最终摘要一致。施工失败持久提示、保留/移除/续做草稿、选格键盘隔离已实现。最终限定门禁12文件113项、i18n源码5项、boundary/依赖、vue-tsc/build/diff-check全部通过；无commit/push。浏览器端口与Chromium被沙箱权限阻断，实机验证留维护者。详见 docs/ext/camp-fix.report.md。

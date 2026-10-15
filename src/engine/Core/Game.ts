@@ -3707,7 +3707,11 @@ export class Game {
         if (state.failure) return;
         while (state.chainFrontier < this.recordedInputEvents.length) {
             const event = this.recordedInputEvents[state.chainFrontier]!;
-            if (state.checkpoints.has(event.index + 1)) break;
+            // An earlier worker result may arrive while a later command is still
+            // advancing. Its provisional row has no final checkpoint yet; do not
+            // hash it until finishAdvancement commits that command's state.
+            if (state.checkpoints.has(event.index + 1)
+                || (state.pendingCommand?.kind === 'record' && state.pendingCommand.event === event)) break;
             event.chainDigest = recordingChain(this.recordedInputEvents[event.index - 1]?.chainDigest ?? recordingStart(state.header!), event);
             state.chainFrontier++;
         }

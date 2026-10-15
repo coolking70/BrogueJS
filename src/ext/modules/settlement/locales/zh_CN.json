@@ -1,4 +1,7 @@
 {
+  "ext.settlement.ui.construction_failed": "第 {{index}} 格 ({{x}},{{y}}) 未施工：{{reason}}",
+  "ext.settlement.ui.construction_cancelled": "已取消确认。",
+  "ext.settlement.ui.remove_draft": "移出草稿",
   "ext.settlement.module.name": "远征营地",
   "ext.settlement.module.description": "收集建材，建立储粮营地，施工、存取与休息。",
   "ext.settlement.wood.name": "木材",
