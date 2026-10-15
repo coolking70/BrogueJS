@@ -59,6 +59,8 @@ export interface ClockPort {
 }
 
 export interface EffectsPort {
+    /** Optional diagnostic CPU observer; excludes yielded presentation waits. */
+    observeObjectiveWork?(milliseconds: number, completedBlock: boolean, elapsedTicks: number): void;
     objectiveTimeBlock(): void;
     settleWorldRest?(): void;
     /** Extension-only completed block fact; native environment/status order stays unchanged. */
@@ -124,6 +126,9 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
         // 置位后本回合不再进入暂停分支（E1-修订：锁存，至多暂停一次）
         let fastForward = false;
         while (ports.world.player.ticksUntilTurn > 0) {
+            const observeWork = ports.effects.observeObjectiveWork;
+            let segmentStart = observeWork ? performance.now() : 0, workBeforeYield = 0;
+            let objectiveBoundary = false;
             ports.effects.settlePendingResidentNeeds?.();
             const actions = ports.actions;
             actions?.cancelDeadActions();
@@ -167,6 +172,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 ports.clock.ticksTillUpdateEnvironment -= soonestTurn;
                 if (ports.clock.ticksTillUpdateEnvironment <= 0) {
                     ports.clock.ticksTillUpdateEnvironment += 100;
+                    objectiveBoundary = true;
                     completeObjective = ports.effects.beginObjectiveTime?.();
                     ports.effects.objectiveTimeBlock();
                     actions?.cancelDeadActions();
@@ -194,7 +200,9 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                         if (!ports.effects.isAutoTraveling()) {
                             ports.effects.observeAnimationDelay?.(ports.clock.animationEnabled ? ports.clock.animationPauseMs : 0);
                             suspended = true;
+                            if (observeWork) workBeforeYield += performance.now() - segmentStart;
                             yield ports.clock.animationPauseMs; // pauseAnimation(25, PAUSE_BEHAVIOR_DEFAULT)
+                            if (observeWork) segmentStart = performance.now();
                             suspended = false;
                         }
                     }
@@ -254,6 +262,7 @@ export function* advancementLoop(ports: TimePorts, stealthRange: number): Genera
                 // A yielded block is incomplete: retiring that iterator must not publish it.
                 if (!suspended && completeObjective) stealthRange = completeObjective();
                 if (!suspended && completedBoundary) ports.effects.settleWorldRest?.();
+                if (!suspended && observeWork) observeWork(workBeforeYield + performance.now() - segmentStart, objectiveBoundary, soonestTurn);
             }
         }
     }

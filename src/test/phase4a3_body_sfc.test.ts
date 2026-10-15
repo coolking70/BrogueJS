@@ -54,7 +54,8 @@ class TextFixture extends Pixi.Container {
 }
 let application: ApplicationFixture;
 class ApplicationFixture {
-    stage = new Pixi.Container(); canvas = new Canvas(); ticker = { add: vi.fn() };
+    stage = new Pixi.Container(); canvas = new Canvas(); ticker = { add: vi.fn(), remove: vi.fn() };
+    render = vi.fn();
     renderer = { screen: { width: 1440, height: 900 }, resize() {} };
     constructor() { application = this; }
     async init() {} destroy() { this.stage.destroy({ children: true }); }
@@ -200,4 +201,38 @@ describe('4a-3 real client SFC paths via shared harness', () => {
         expect(ui.hudSlots.value[0]?.props.presentationHidden).toBe(false);
         const shell = readFileSync('src/App.vue', 'utf8'); expect(shell).toContain('readDisplayFrame: () => displayedFrame(activeGame) ?? observeDisplayFrame(activeGame, logger)');
     });
+});
+
+it('skips idle Pixi submissions while a panel is open and still paints pointer/visibility changes', async () => {
+    await mount('../components/GameCanvas.vue', { pauseAutomaticActions: true });
+    (window as any).advanceTime(1);
+    const rendered = application.render.mock.calls.length, before = rng.getState(), turns = game.stats.turns;
+    expect(application.ticker.remove).toHaveBeenCalledWith(application.render, application);
+    (window as any).advanceTime(1000);
+    expect(application.render).toHaveBeenCalledTimes(rendered);
+    mouse('pointermove', game.player.x, game.player.y);
+    (window as any).advanceTime(1);
+    expect(application.render).toHaveBeenCalledTimes(rendered + 1);
+    doc.dispatchEvent(new Event('visibilitychange'));
+    (window as any).advanceTime(1);
+    expect(application.render).toHaveBeenCalledTimes(rendered + 2);
+    expect(rng.getState()).toEqual(before);
+    expect(game.stats.turns).toBe(turns);
+});
+
+it('retains the 50 ms hallucination redraw cadence when lighting and terrain are static', async () => {
+    const colors = await import('../engine/UI/DancingColors');
+    vi.spyOn(colors, 'tickTerrainColors').mockReturnValue(false);
+    vi.spyOn(game, 'danceLighting').mockReturnValue(false);
+    vi.spyOn(game, 'tickBoltAnimation').mockReturnValue(false);
+    vi.spyOn(game, 'tickFlareAnimation').mockReturnValue(false);
+    game.player.statusDurations.hallucinating = 10;
+    await mount('../components/GameCanvas.vue');
+    (window as any).advanceTime(1);
+    const rendered = application.render.mock.calls.length, before = rng.getState();
+    (window as any).advanceTime(48);
+    expect(application.render).toHaveBeenCalledTimes(rendered);
+    (window as any).advanceTime(1);
+    expect(application.render).toHaveBeenCalledTimes(rendered + 1);
+    expect(rng.getState()).toEqual(before);
 });

@@ -551,6 +551,10 @@
         "loot"
       ],
       "optional": []
+    },
+    "src/test/perf_ext_kernels.test.ts": {
+      "required": [],
+      "optional": []
     }
   }
 }

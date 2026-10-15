@@ -5,11 +5,36 @@
 
 import { Grid, type Cell } from '../Map/Grid';
 
+type VisionCache = { mask: boolean[][] | null; origin: string; opacity: Uint8Array };
+const visionCaches = new WeakMap<FOVSys, VisionCache>();
+
 export class FOVSys {
     private grid: Grid;
 
     constructor(grid: Grid) {
         this.grid = grid;
+    }
+
+
+    /** Only the pure geometric mask is retained; callers still publish sight
+     * and exploration in simulation order. Custom/scent predicates stay separate. */
+    public computeVisionMask(x: number, y: number, radius: number): boolean[][] {
+        let cache = visionCaches.get(this);
+        if (!cache) visionCaches.set(this, cache = { mask: null, origin: '', opacity: new Uint8Array(0) });
+        const origin = `${x},${y},${radius}`;
+        let changed = !cache.mask || origin !== cache.origin;
+        const size = this.grid.width * this.grid.height;
+        if (cache.opacity.length !== size) { cache.opacity = new Uint8Array(size); changed = true; }
+        for (let cx = 0; cx < this.grid.width; cx++) for (let cy = 0; cy < this.grid.height; cy++) {
+            const index = cx * this.grid.height + cy, value = +this.grid.getCell(cx, cy)!.isOpaque;
+            if (cache.opacity[index] !== value) changed = true;
+            cache.opacity[index] = value;
+        }
+        if (changed) {
+            cache.origin = origin;
+            cache.mask = this.computeFOVMask(x, y, radius, cell => cell.isOpaque);
+        }
+        return cache.mask!;
     }
 
     /**

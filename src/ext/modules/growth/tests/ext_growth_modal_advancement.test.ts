@@ -32,7 +32,7 @@ function modalDisplayLoop(game: Game) {
     const floatingPresentation = new FloatingTextPresentation();
     const displayedFloatingTexts = () => floatingPresentation.project(displayedFrame(game)?.floatingTexts ?? game.floatingTexts.map(observeFloatingText));
     const loop = new Function('game', 'props', 'logger', 'syncHeldInputContext', 'renders', 'render', 'frameProfile', 'document', 'displayedFrame', 'presentationTimeline', 'dialogInput', 'floatingPresentation', 'displayedFloatingTexts', 'hadFloatingTexts',
-        `${code}; let lastFocusX = -1, lastFocusY = -1; const cameraState = {panX: 0, panY: 0}; const applyLayout = () => { const focus = displayedFrame(game)?.player ?? game.player.loc; lastFocusX = focus.x; lastFocusY = focus.y; }; return displayFrame;`)(game, { displayModalOpen: true }, logger, syncHeld, { flush, request }, render, null, { hidden: false }, displayedFrame, presentationTimeline, dialogInput, floatingPresentation, displayedFloatingTexts, false) as (elapsedMs: number, animationMs?: number) => void;
+        `${code}; let canvasDirty = true; const pixiApp = { render() {} }; let lastFocusX = -1, lastFocusY = -1; const cameraState = {panX: 0, panY: 0}; const applyLayout = () => { const focus = displayedFrame(game)?.player ?? game.player.loc; lastFocusX = focus.x; lastFocusY = focus.y; }; return displayFrame;`)(game, { displayModalOpen: true }, logger, syncHeld, { flush, request }, render, null, { hidden: false }, displayedFrame, presentationTimeline, dialogInput, floatingPresentation, displayedFloatingTexts, false) as (elapsedMs: number, animationMs?: number) => void;
     return { loop, render, flush, syncHeld };
 }
 function setup() {

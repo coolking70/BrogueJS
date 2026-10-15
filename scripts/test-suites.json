@@ -195,6 +195,7 @@
     "src/test/p4_9_safety_map.test.ts",
     "src/test/perf_2_auto_cadence.test.ts",
     "src/test/perf_2_npc_path_cache.test.ts",
+    "src/test/perf_ext_kernels.test.ts",
     "src/test/perf_2_replay_cadence.test.ts",
     "src/test/phase3a0_actor_action.test.ts",
     "src/test/phase3a0_defense.test.ts",

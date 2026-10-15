@@ -1,5 +1,5 @@
 import { SpatialValidationError, type SpatialCatalog } from '../Movement/SpatialSchema';
-import { assertNativeSpatial, isSquareFootprint } from '../Movement/CreatureSpatial';
+import { assertNativeSpatial, isSquareFootprint, footprintOf, footprintContains } from '../Movement/CreatureSpatial';
 import type { Monster } from '../../entities/Monster';
 import { bindBodyStatuses, type BodyStatusContext } from '../Status/BodyStatuses';
 
@@ -96,4 +96,32 @@ export function notifyMonsterDeath(monster: Monster): void {
     if (owner && (owner.monsters.includes(monster) || owner.dormantMonsters.includes(monster))) {
         owner.killMonster(monster);
     }
+}
+
+/** Read-only pass indexes every footprint, including composite members. The
+ * bucket preserves list order; ignore and DYING are filtered at query time.
+ * Outside the scope, raw owned membership/positions are always read live. */
+export function monsterAt(creatures: Monster[], x: number, y: number, livingOnly = false, ignore?: import('../../entities/Creature').Creature): Monster | undefined {
+    const index = positionReads.get(creatures);
+    const raw = index ? (index.get(x)?.get(y) ?? noMonsters) : (lists.get(creatures)?.raw ?? creatures);
+    return raw.find(m => m !== ignore && (m.spatial ? footprintContains(m, {x,y}) : m.loc.x === x && m.loc.y === y)
+        && (m.hp > 0 || (!livingOnly && dyingMonsters.has(m) && !m.deathProcessed)));
+}
+const noMonsters: readonly Monster[] = [];
+const positionReads = new WeakMap<Monster[], Map<number, Map<number, Monster[]>>>();
+/** Never encompass a turn, move, spawn, death effect or extension transaction. */
+export function withMonsterLookup<T>(creatures: Monster[], read: () => T): T {
+    if (positionReads.has(creatures)) return read();
+    const index = new Map<number, Map<number, Monster[]>>();
+    for (const monster of lists.get(creatures)?.raw ?? creatures) {
+        for (const {x,y} of footprintOf(monster)) {
+            let column = index.get(x);
+            if (!column) index.set(x, column = new Map());
+            let bucket = column.get(y);
+            if (!bucket) column.set(y, bucket = []);
+            bucket.push(monster);
+        }
+    }
+    positionReads.set(creatures,index);
+    try { return read(); } finally { positionReads.delete(creatures); }
 }

@@ -383,7 +383,9 @@ class ApplicationFixture {
   constructor() { ApplicationFixture.latest = this; }
   stage = new Pixi.Container();
   canvas = new CanvasFixture();
+  render = vi.fn();
   ticker = {
+    remove: vi.fn(),
     frame: undefined as undefined | ((time: { elapsedMS: number; deltaMS: number }) => void),
     add(frame: (time: { elapsedMS: number; deltaMS: number }) => void) { this.frame = frame; }
   };

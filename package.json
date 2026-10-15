@@ -13,7 +13,11 @@
     "test:ext": "node scripts/run-test-suite.mjs ext",
     "check:modules": "node scripts/check-module-boundaries.mjs && node scripts/check-test-dependencies.mjs",
     "check:module-removal": "node scripts/check-module-removal.mjs",
-    "check:test-dependencies": "node scripts/check-test-dependencies.mjs"
+    "check:test-dependencies": "node scripts/check-test-dependencies.mjs",
+    "perf:late": "node scripts/profile-ext-perf.mjs",
+    "perf:late:generate": "node scripts/generate-ext-perf.mjs",
+    "perf:late:budget": "node scripts/ext-perf-budget.mjs",
+    "perf:late:check": "node scripts/check-ext-perf.mjs"
   },
   "dependencies": {
     "i18next": "^25.8.13",

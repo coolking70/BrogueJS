@@ -1,3 +1,4 @@
+import { structureObserversActive } from '../Map/CellProperties';
 /**
  * src/engine/Environment/Gas.ts
  * Gas subsystem: CE 的体积气体模型（G-1 起本文件是 updateVolumetricMedia 的宿主）
@@ -119,6 +120,9 @@ export interface GasCell {
 }
 
 export class EnvironmentManager {
+    // Scratch storage only; every pass overwrites flags and clears volumes.
+    private gasVolumes = new Uint16Array(0);
+    private gasFlags = new Int32Array(0);
     /**
      * 渲染/存档镜像（只读消费）。事实来源是 grid 各格的 layers[GAS]+volume；
      * 同步点：addGas（单格）、updateGases（每轮末全量）、syncGasMirror（外部
@@ -365,16 +369,30 @@ export class EnvironmentManager {
      */
     public updateGases(): void {
         const grid = this.grid;
+        const obstructsFlag = T_OBSTRUCTS_GAS, descentFlag = T_AUTO_DESCENT;
+        const random = rng;
+        const quickFlag = TM_GAS_DISSIPATES_QUICKLY, dissipatesFlag = TM_GAS_DISSIPATES;
         const W = grid.width;
         const H = grid.height;
         const idx = (px: number, py: number): number => py * W + px;
 
         // CE `unsigned short newGasVolume[DCOLS][DROWS]`：Uint16Array 复刻
         // CE 的 uint16 回绕语义（Time.c:1387）。
-        const newGasVolume = new Uint16Array(W * H);
-
+        if (this.gasVolumes.length !== W * H) {
+            this.gasVolumes = new Uint16Array(W * H);
+            this.gasFlags = new Int32Array(W * H);
+        }
+        const newGasVolume = structureObserversActive ? new Uint16Array(W * H) : this.gasVolumes;
+        newGasVolume.fill(0);
+        const flags = this.gasFlags;
+        const liveFlags = structureObserversActive;
+        for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
+            flags[idx(x, y)] = cellTerrainFlags(grid, x, y);
+        }
+        // Only GAS layers mutate during this synchronous scan. Refresh those
+        // entries at the write sites, preserving CE's in-pass type competition.
         const obstructsGas = (x: number, y: number): boolean =>
-            (cellTerrainFlags(grid, x, y) & T_OBSTRUCTS_GAS) !== 0;
+            ((liveFlags ? cellTerrainFlags(grid, x, y) : flags[idx(x, y)]!) & obstructsFlag) !== 0;
 
         for (let i = 0; i < W; i++) {
             for (let j = 0; j < H; j++) {
@@ -401,12 +419,12 @@ export class EnvironmentManager {
                     }
                     // CE :1404-1406：chasm/trapdoor 格 numSpaces++——
                     // 气体从此逃出层外（分母变大、总量减少）。
-                    if ((cellTerrainFlags(grid, i, j) & T_AUTO_DESCENT) !== 0) {
+                    if (((liveFlags ? cellTerrainFlags(grid, i, j) : flags[idx(i, j)]!) & descentFlag) !== 0) {
                         numSpaces++;
                     }
                     // CE :1408-1410：均分 + 随机舍入。
                     let nv = Math.floor(sum / Math.max(1, numSpaces));
-                    if (rng.randRange(0, numSpaces - 1) < (sum % numSpaces)) {
+                    if (random.randRange(0, numSpaces - 1) < (sum % numSpaces)) {
                         nv++; // stochastic rounding
                     }
                     // CE :1427-1431：类型竞争。邻域最大者的类型 ≠ 本格类型且
@@ -425,14 +443,15 @@ export class EnvironmentManager {
                         cell.layers[DungeonLayer.GAS] = TerrainType.NOTHING;
                         cell.refreshTerrainProperties();
                     }
+                    flags[idx(i, j)] = cellTerrainFlags(grid, i, j);
                     // CE :1437-1444：消散二档（读"当前"GAS 层 tile 的旗标——
                     // 换型/收层之后的值，CE 同序）。旧体积为 0 不掷。
                     if (cell.volume > 0) {
                         const mech = TERRAIN_FLAGS[cell.layers[DungeonLayer.GAS]!].mechFlags;
-                        if (mech & TM_GAS_DISSIPATES_QUICKLY) {
-                            if (rng.randPercent(50)) nv -= 1;
-                        } else if (mech & TM_GAS_DISSIPATES) {
-                            if (rng.randPercent(20)) nv -= 1;
+                        if (mech & quickFlag) {
+                            if (random.randPercent(50)) nv -= 1;
+                        } else if (mech & dissipatesFlag) {
+                            if (random.randPercent(20)) nv -= 1;
                         }
                     }
                     newGasVolume[idx(i, j)] = nv;
@@ -458,12 +477,14 @@ export class EnvironmentManager {
                                 const destination = grid.getCell(newX, newY)!;
                                 destination.layers[DungeonLayer.GAS] = cell.layers[DungeonLayer.GAS]!;
                                 destination.refreshTerrainProperties();
+                                flags[idx(newX, newY)] = cellTerrainFlags(grid, newX, newY);
                             }
                         }
                     }
                     newGasVolume[idx(i, j)] = 0;
                     cell.layers[DungeonLayer.GAS] = TerrainType.NOTHING;
                     cell.refreshTerrainProperties();
+                    flags[idx(i, j)] = cellTerrainFlags(grid, i, j);
                 }
             }
         }

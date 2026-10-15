@@ -11,7 +11,7 @@ import { nativeFormSpatial, nativeFormCatalogFor, bindNativeForms } from '../ext
 import { nearestLegalMeleeContact, legalMeleeContactAt, hasDeclaredZones, physicalContactOf, bodyAttackContactOf, withBodyAttackContact, appendBodyHit, bodyHitContact, bodyRayOrigin, bodyRayContact, type BodyAttackContact } from '../engine/Combat/BodyCombat';
 import { assertNativeSpatial, commitCreatureAnchor, footprintContains, footprintOf, footprintSome, nearestContact, distanceBetweenFootprints, distanceToFootprint } from '../engine/Movement/CreatureSpatial';
 import { bodySightContact } from '../engine/Combat/BodyPerception';
-import { notifyMonsterDeath, squareListUsers } from '../engine/Core/MonsterLifecycle';
+import { withMonsterLookup, notifyMonsterDeath, squareListUsers } from '../engine/Core/MonsterLifecycle';
 import { creatureFeatureInfo, emitCreatureFeature } from '../engine/Combat/CreatureFeatures';
 import { updateMonsterState, wanderTowardLastSeen } from '../engine/Combat/MonsterAI';
 import { isDeparting } from '../engine/Core/ActorDeparture';
@@ -2377,25 +2377,28 @@ export class Monster extends Creature {
                 wp.ensureVisitedInitialized(this);
                 this.waypointAlreadyVisited![this.targetWaypointIndex] = false;
             }
-            let dir: readonly [number, number] | null = null;
-            if (wp.count > 0 && wp.isValidWanderDestination(this, this.targetWaypointIndex, game.wpContext())) {
-                dir = wp.nextStep(this.targetWaypointIndex, this, game.wpContext());
-            }
-            // Monsters.c:3608-3615：无效或无下坡（含"已站在 waypoint 上"——
-            // 0 距离无更陡邻格）→ 换点。isValidWanderDestination 的 nextStep
-            // 与 CE 一样会被重复求值，保持同构、不求聪明。
-            if (dir === null || !wp.isValidWanderDestination(this, this.targetWaypointIndex, game.wpContext())) {
-                wp.chooseNewWanderDestination(this, game.wpContext());
-                if (wp.isValidWanderDestination(this, this.targetWaypointIndex, game.wpContext())) {
+            const dir = withMonsterLookup(game.monsters, () => {
+                let dir: readonly [number, number] | null = null;
+                if (wp.count > 0 && wp.isValidWanderDestination(this, this.targetWaypointIndex, game.wpContext())) {
                     dir = wp.nextStep(this.targetWaypointIndex, this, game.wpContext());
                 }
-            }
-            if (dir === null) {
-                // Monsters.c:3618-3619：仍无路 → 随机合法方向（深水里的鳗鱼
-                // 就是这么游荡的）。count==0 时先于掷骰返回，CE Movement.c:693
-                // 的防 OOS 注释同款。
-                dir = this.randFlittingDirection(game);
-            }
+                // Monsters.c:3608-3615：无效或无下坡（含"已站在 waypoint 上"——
+                // 0 距离无更陡邻格）→ 换点。isValidWanderDestination 的 nextStep
+                // 与 CE 一样会被重复求值，保持同构、不求聪明。
+                if (dir === null || !wp.isValidWanderDestination(this, this.targetWaypointIndex, game.wpContext())) {
+                    wp.chooseNewWanderDestination(this, game.wpContext());
+                    if (wp.isValidWanderDestination(this, this.targetWaypointIndex, game.wpContext())) {
+                        dir = wp.nextStep(this.targetWaypointIndex, this, game.wpContext());
+                    }
+                }
+                if (dir === null) {
+                    // Monsters.c:3618-3619：仍无路 → 随机合法方向（深水里的鳗鱼
+                    // 就是这么游荡的）。count==0 时先于掷骰返回，CE Movement.c:693
+                    // 的防 OOS 注释同款。
+                    dir = this.randFlittingDirection(game);
+                }
+                return dir;
+            });
             if (dir !== null) {
                 this.tryMoveTo(this.loc.x + dir[0]!, this.loc.y + dir[1]!, game);
             }
@@ -2514,7 +2517,7 @@ export class Monster extends Creature {
     private findPlayerPath(game: Game, canPass: (x: number, y: number) => boolean): Pos[] | null {
         const height = game.grid.height;
         const passability = new Uint8Array(game.grid.width * height);
-        return Pathfind.findPath(game.grid, this.x, this.y, game.player.x, game.player.y, (x, y) => {
+        return withMonsterLookup(game.monsters, () => Pathfind.findPath(game.grid, this.x, this.y, game.player.x, game.player.y, (x, y) => {
             // findPath bounds-checks the goal and every neighbor before canPass.
             const index = x * height + y;
             let state = passability[index]!;
@@ -2523,7 +2526,7 @@ export class Monster extends Creature {
                 passability[index] = state;
             }
             return state === 1;
-        });
+        }));
     }
 
     /** CE monsterAvoids chooses terrain for walking; vision opacity is never

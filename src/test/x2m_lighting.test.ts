@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { LightMap } from '../engine/Lighting/LightMap';
+import { describe, expect, it, vi } from 'vitest';
 import { createHeadlessGame } from './harness';
 import { TerrainType as T, DungeonLayer as L } from '../engine/Map/Grid';
 import { LightKind, LIGHT_CATALOG } from '../engine/Map/LightCatalog';
@@ -208,4 +209,31 @@ describe('X2m cosmetic colors', () => {
         };
         expect(run(true)).toEqual(run(false));
     });
+});
+
+it('allocates one knowledge scratch light map across all flare samples on the same grid', () => {
+    const g = scene();
+    const allocation = vi.spyOn(LightMap.prototype as any, 'initCells');
+    try {
+        g.createFlare(12, 10, LightKind.SCROLL_ENCHANTMENT_LIGHT);
+        (g as any).prepareFlareKnowledge();
+        expect(allocation).toHaveBeenCalledTimes(1);
+        g.createFlare(14, 10, LightKind.SCROLL_ENCHANTMENT_LIGHT);
+        (g as any).prepareFlareKnowledge();
+        expect(allocation).toHaveBeenCalledTimes(1);
+    } finally { allocation.mockRestore(); }
+});
+
+
+it('keeps the first visible item while excluding fractional coordinate aliases', () => {
+    const g = scene(), cell = g.grid.getCell(11,10)!;
+    const alias = ItemLoader.spawnWand('wand_of_empowerment',10.5,24.5)!;
+    const first = ItemLoader.spawnWand('wand_of_teleportation',11,10)!;
+    const later = ItemLoader.spawnWand('wand_of_domination',11,10)!;
+    g.items = [alias,first,later];
+    (g as any).updateFieldOfViewDisplay(() => 10000);
+    expect(cell.rememberedItem?.name).toBe(first.displayName);
+    g.items = [later,first,alias];
+    (g as any).updateFieldOfViewDisplay(() => 10000);
+    expect(cell.rememberedItem?.name).toBe(later.displayName);
 });

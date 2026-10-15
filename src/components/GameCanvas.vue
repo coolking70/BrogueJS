@@ -182,6 +182,9 @@ onMounted(async () => {
     });
 
     canvasContainer.value.appendChild(pixiApp.canvas);
+    // Keep simulation and presentation clocks; submit only changed scenes.
+    pixiApp.ticker.remove(pixiApp.render, pixiApp);
+    let canvasDirty = true;
 
     const baseStyleOptions = {
       fontFamily: 'Courier New',
@@ -283,6 +286,7 @@ onMounted(async () => {
         return body?.cells.some(p => p.x === at.x && p.y === at.y) ? body.cells : null;
     };
     const drawHover = () => {
+        canvasDirty = true;
         hoverHighlight.clear();
         const game = activeGame, frame = displayedFrame(game);
         const selected=moduleMapSelection.value;
@@ -341,6 +345,7 @@ onMounted(async () => {
     const applyLayout = () => {
         const el = canvasContainer.value;
         if (!el || !pixiApp) return;
+        canvasDirty = true;
         // 容器 clientWidth/Height 是布局真值，覆盖侧栏增减等非窗口变化。
         // 尺寸观察器先同步 renderer，再进入这里更新图层与命中区；
         // 仅缩放/平移/遮挡变化也可独立走这里，不重复 resize 渲染器。
@@ -1175,8 +1180,8 @@ onMounted(async () => {
             const flareChanged = game.tickFlareAnimation(animationMs);
             const terrainChanged = tickTerrainColors(game.grid, animationMs, game.depth);
             colorTimer += animationMs;
-            const lightChanged = colorTimer >= 50;
-            if (lightChanged) { colorTimer %= 50; game.lightMap.dance(); }
+            let lightChanged = false;
+            if (colorTimer >= 50) { colorTimer %= 50; lightChanged = game.danceLighting() || !!game.player.statusDurations.hallucinating; }
             if (boltChanged || flareChanged || terrainChanged || lightChanged) renders.request();
 
             pathingTimer = stepCadence(pathingTimer, autoWasAllowed ? elapsedMs : 0,
@@ -1204,10 +1209,12 @@ onMounted(async () => {
             const focus=nextProjection?.player??game.player.loc;
             if(focus.x!==lastFocusX||focus.y!==lastFocusY){cameraState.panX=0;cameraState.panY=0;applyLayout();renders.request();}
             // Present requested overlays and final states even while paused.
-            renders.flush(render);
+            renders.flush(() => { render(); canvasDirty = true; });
+            if (canvasDirty && pixiApp) { pixiApp.render(); canvasDirty = false; }
         }
     };
     const resetDisplayClock = () => {
+        canvasDirty = true; renders.request();
         pathingTimer = 0;
         game.tickReplay(0);
         skipNextDisplayTime = true;

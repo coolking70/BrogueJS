@@ -465,6 +465,9 @@ export function fillSpawnMap(
 
     for (let i = 0; i < grid.width; i++) {
         for (let j = 0; j < grid.height; j++) {
+            // Read the live mask in original scan order; recursive writes can
+            // still add later destinations during this pass.
+            if (!spawnMap[idx(i, j)]) continue;
             const cell = grid.getCell(i, j);
             if (!cell) {
                 spawnMap[idx(i, j)] = 0;

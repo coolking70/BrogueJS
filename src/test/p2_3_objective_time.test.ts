@@ -442,3 +442,32 @@ describe('P2-3 F: p2_3_baseline 一致性', () => {
         expect(mismatches).toEqual([]);
     }, 300000);
 });
+
+it('P0 diagnostic objective-work observation preserves forced-turn snapshots and clocks', () => {
+    const run = (observe: boolean) => {
+        const game = createHeadlessGame(731002, 'wizard');
+        game.animationEnabled = true; game.onRenderRequested = () => {};
+        game.player.setStatusDuration('slowed', 8);
+        const samples: Array<{ ms: number; completed: boolean; ticks: number }> = [];
+        const ports = (game as any).timePorts.bind(game);
+        const spy = observe ? vi.spyOn(game as any, 'timePorts').mockImplementation(() => {
+            const result = ports();
+            result.effects.observeObjectiveWork = (ms: number, completed: boolean, ticks: number) => samples.push({ ms, completed, ticks });
+            return result;
+        }) : null;
+        const start = game.absoluteTurnNumber;
+        for (let i = 0; i < 3; i++) {
+            game.executeCommand('wait');
+            while (game.isAdvancing) game.tickAdvancement(1000);
+            expect(game.lastAdvancementError).toBeNull();
+        }
+        spy?.mockRestore();
+        if (observe) {
+            expect(samples.filter(s => s.completed)).toHaveLength(game.absoluteTurnNumber - start);
+            expect(samples.every(s => s.ms >= 0 && s.ticks >= 0)).toBe(true);
+        }
+        const snapshot = game.toSnapshot(); snapshot.savedAt = 0;
+        return snapshot;
+    };
+    expect(run(true)).toEqual(run(false));
+});
