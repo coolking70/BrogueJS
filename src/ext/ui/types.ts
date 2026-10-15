@@ -27,6 +27,8 @@ export interface ModuleUiHost {
     /** Suppress a persisted interaction view during shell/lifecycle transitions. */
     canPresentInteraction?(): boolean;
     beforeOpenPanel(): void;
+    /** Transfer an inventory/inspection entry to a module panel after shell guards. */
+    beforeOpenItemPanel?(): boolean;
     afterClosePanel(): void;
 }
 /** Slots stay mounted during display lag. Teleported/multi-root components must
@@ -48,6 +50,7 @@ export interface ModuleUiSession {
     readonly panel: Readonly<Ref<ModuleUiSlot | null>>;
     readonly commands: Readonly<Ref<readonly ModuleUiCommand[]>>;
     readonly panelOpen: Readonly<Ref<boolean>>;
+    itemActions?(itemId: number): readonly ModuleUiCommand[];
     refresh(): void;
     close(): void;
 }

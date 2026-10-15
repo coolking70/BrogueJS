@@ -322,6 +322,8 @@ export interface ExtensionModule extends ExtensionVersion, WorldModuleFields {
 }
 /** Session-only wiring. Never serialized as part of a creature. */
 export interface CreatureExtensionHooks {
+    /** Engine-only settlement receipt, never invoked by stat reads. */
+    itemStatsCommitted?(stats: readonly string[], target?: Creature): void;
     /** Engine-only synchronous damage boundary; absent keeps native path unchanged. */
     withNativeDamage?(work:()=>void):void;
     /** Engine-only post-shield zone commit; undefined preserves native damage. */

@@ -6,7 +6,7 @@ import { buildEffectiveLootCatalog } from './catalog';
 import { defaultLootPickupFilter, normalizeLootPickupFilter } from './ui/viewModel';
 import type { LootAvailability } from './types';
 
-export const LOOT_MODULE_VERSION = '0.2.0';
+export const LOOT_MODULE_VERSION = '0.3.0';
 export const DEFAULT_CONFIGURATION = { presetId: 'standard' };
 export function validConfiguration(value: unknown): value is Json {
   return isJson(value) && !!value && typeof value === 'object' && !Array.isArray(value)

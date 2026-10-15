@@ -1580,6 +1580,7 @@ export class ExtensionRuntime {
                 try { if (result) this.emit('afterAttack', { attacker: creatureView(attacker, this.ports.playerId()), defender: creatureView(defender, this.ports.playerId()), result }); }
                 finally { this.attacks.pop(); }
             },
+            itemStatsCommitted: (stats, target) => this.commitItemStatKnowledge(creature.id, stats, target),
             wantsPhysicalResolution: () => this.actionResolutions !== null || this.hasHook('physicalResolved') || this.modules.some(m=>m.itemKnowledge?.trigger),
             physicalResolved: (attacker, defender, detail) => {
                 const fact: PhysicalResolutionFact = { ...detail, attacker: creatureView(attacker, this.ports.playerId()),
@@ -1912,6 +1913,19 @@ export class ExtensionRuntime {
         item.canBeIdentified=true;ItemLoader.updateIdentifiableItem(item);
         markItemKnowledgeDirty(item);markRecordingRoot(item);markRecordingRoot(this);
     }
+    /** Trusted native settlement port. Provider gets frozen facts, no live actor or item. */
+    commitItemStatKnowledge(actorId:number,stats:readonly string[],target?:Creature):void {
+        if(this.pureProviderPhase)throw new ItemDataError('C6_DATA');
+        if(!this.modules.some(m=>m.itemKnowledge?.trigger))return;
+        const actor=[...this.creatures].find(a=>a.id===actorId);
+        if(!(actor instanceof Player))return;
+        const keys=[...new Set(stats)].filter(key=>{try{this.stats.value(actorId,key);return true;}catch{return false;}});
+        if(!keys.length)return;
+        const fact={kind:'stat-commit' as const,stats:keys,targetTags:target?nativeStatFacts(target,this.ports.playerId()).tags:[]};
+        const commits=[...new Set([actor.equippedWeapon,actor.equippedArmor,actor.ringLeft,actor.ringRight])]
+            .filter((item):item is Item=>!!item&&hasItemData(item)).flatMap(item=>{const commit=this.prepareTriggeredItemKnowledge(item,fact);return commit?[commit]:[];});
+        if(commits.length){const restore=nativeFactCheckpoints.get(this)?.();try{for(const commit of commits)commit();}catch(error){restore?.();throw error;}}
+    }
     private prepareTriggeredItemKnowledge(item:Item,fact:import('./itemSdk').ItemTriggerFact):(()=>void)|null {
         const candidate={...item,moduleData:copyItemValue(item.moduleData!)};
         for(const [owner,data] of Object.entries(candidate.moduleData)) {
@@ -1991,13 +2005,15 @@ export class ExtensionRuntime {
             const plan=d.prepare(input,token,revision,this.states[owner]!,work=>this.ediblePure(work),this.ports.randomInt,
                 (_id,key)=>{const value=values.get(key);if(value===undefined)throw new ItemDataError('C6_DATA');return value;});
             if(!plan)return null;
-            return d.commit(plan,token,revision,accept,(moduleId,provider,event,accepted)=>{
+            let rarityEvaluated=false;
+            return d.commit(plan,token,revision,(proposal,event)=>{rarityEvaluated=proposal.items.length>0;return accept(proposal,event);},(moduleId,provider,event,accepted)=>{
                 const next=this.ediblePure(()=>provider.settle(freezeView(cloneJson(this.states[moduleId]!)),event,accepted));
                 assertItemJson(next);const module=this.modules.find(m=>m.id===moduleId)!;
                 if(new TextEncoder().encode(JSON.stringify(next)).byteLength>4096)throw new ItemDataError('C6_BUDGET');
                 if(this.ediblePure(()=>module.validateState(next))!==true)throw new ItemDataError('C6_VALIDATOR');
                 this.states[moduleId]=cloneJson(next as Json);this.invalidateStats();
                 this.stats.validateSources(input.playerId);this.reconcileMaterialized(input.playerId);
+                if(rarityEvaluated)this.commitItemStatKnowledge(input.playerId,d.statKeys(input.source));
             });
         });
     }

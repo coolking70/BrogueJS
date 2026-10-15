@@ -1,6 +1,7 @@
+import { useLootUi } from '../gameSession';
 import type { ModuleUiContribution } from '../../../ui/types';
 export default {
- moduleId:'loot',loadCreationStep:()=>import('./creation/LootCreationStep.vue').then(m=>m.default),
+ moduleId:'loot',useSession:useLootUi,loadCreationStep:()=>import('./creation/LootCreationStep.vue').then(m=>m.default),
  configurationFromCreation(commands){
   if(commands.length!==1)throw new Error('Invalid loot creation');
   const input=JSON.parse(commands[0]!);

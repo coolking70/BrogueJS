@@ -17,6 +17,7 @@ export function createLootModule(configuration:Json=DEFAULT_CONFIGURATION):Exten
  let catalog=buildEffectiveLootCatalog(loadLootPack(),{combat:null,growth:null,giants:null});
  const getCatalog=()=>catalog;
  return {id:'loot',version:LOOT_MODULE_VERSION,rules:lootRules(configuration),worldDefinitions:shardDefinitions,
+  projectView:ctx=>{const read=ctx.worldWork?.readWorkContext({kind:'inventory'});return {containerItemIds:read?.ok?read.value.containers.filter(c=>c.inReach).flatMap(c=>c.items.map(i=>i.id)):[]};},
   prepareItemSession:query=>{catalog=resolveLootCatalog(query);},
   initialState:()=>initialLootState(presetId,catalog.fingerprint),validateState:(value):value is Json=>validLootState(value,presetId,catalog.fingerprint),
   initialCommand:{action:'create',payload:{v:1,presetId}},validateInitialCommand:(action,payload)=>action==='create'&&!!payload&&typeof payload==='object'&&!Array.isArray(payload)&&Object.keys(payload).sort().join(',')==='presetId,v'&&payload.v===1&&payload.presetId===presetId,
@@ -28,7 +29,7 @@ export function createLootModule(configuration:Json=DEFAULT_CONFIGURATION):Exten
    const native=deriveNativeFacts(data,catalog);
    return phase!=='create'||item.enchantment===native.enchantment&&item.isCursed===native.isCursed;
   }},
-  itemKnowledge:{trigger:(data,{fact})=>triggerLootKnowledge(data as unknown as LootItemDataV1,catalog,fact),known:data=>(data as unknown as LootItemDataV1).affixes.every(a=>a.known),unique:data=>(data as unknown as LootItemDataV1).uniqueId!==null,reveal:data=>revealLoot(data as unknown as LootItemDataV1)},
+  itemKnowledge:{trigger:(data,{fact,item})=>triggerLootKnowledge(data as unknown as LootItemDataV1,catalog,fact,item.enchantment),known:data=>(data as unknown as LootItemDataV1).affixes.every(a=>a.known),unique:data=>(data as unknown as LootItemDataV1).uniqueId!==null,reveal:data=>revealLoot(data as unknown as LootItemDataV1)},
   itemPickup:(item,state)=>{const f=stateOf(state).filter;if(item.category===5)return f.autoPickupGold;
    const data=item.moduleData?.loot as unknown as LootItemDataV1|undefined;if(!data)return true;
    return f.classes.includes(lootItemClass(data.baseId,catalog)!)&&['normal','magic','rare','unique'].indexOf(data.rarity)>=['normal','magic','rare','unique'].indexOf(f.minRarity);}

@@ -9,10 +9,10 @@ function files(dir: string): string[] {
     ? files(join(dir, entry.name)) : [join(dir, entry.name)]);
 }
 const source = resolve('src'), loot = resolve('src/ext/modules/loot');
-describe('loot UI remains unmounted and pure', () => {
-  it('registers only the minimal creation contribution', () => {
+describe('loot UI owns its session and keeps presentation pure', () => {
+  it('registers creation and the owned game session', () => {
     expect(existsSync(join(loot, 'ui/descriptor.ts'))).toBe(true);
-    const entry=getInstalledModuleUiContributions().find(entry=>entry.moduleId==='loot')!;expect(entry.loadCreationStep).toBeTypeOf('function');expect(entry.useSession).toBeUndefined();
+    const entry=getInstalledModuleUiContributions().find(entry=>entry.moduleId==='loot')!;expect(entry.loadCreationStep).toBeTypeOf('function');expect(entry.useSession).toBeTypeOf('function');
   });
   it('has no references from outside its module, including relative paths', () => {
     const forbidden: string[] = [];

@@ -19,8 +19,8 @@ import type { Grid } from '../Map/Grid';
 import { Creature } from '../../entities/Creature';
 import { Player } from '../../entities/Player';
 import { Monster, MonsterMode, MonsterState } from '../../entities/Monster';
-import type { Item } from '../Items/Item';
-import { rechargeItemsIncrementally } from '../Items/ArcanaRecharge';
+import { ItemCategory, type Item } from '../Items/Item';
+import { rechargeItemsIncrementally, initialStaffRecharge } from '../Items/ArcanaRecharge';
 import { logger } from '../Systems/Logger';
 import i18next from 'i18next';
 import { rng } from '../Random';
@@ -111,10 +111,10 @@ export class CombatSystem {
         const autoHit = opts?.lungeAttack === true || isIncapacitated(defender) || defender.hasStatus('stuck')
             || (defender instanceof Monster && (defender.isCaged || (!inanimate && (bodyDecisionActor(defender).state === MonsterState.ASLEEP
                 || (attacker instanceof Player && !bodyDecisionActor(defender).isAlly && bodyDecisionActor(defender).state === MonsterState.WANDERING)))));
-        const probability = defender.seized && attacker.seizing
+        const forcedProbability = defender.seized && attacker.seizing
             || (attacker instanceof Player && defender instanceof Monster
-                && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId))
-            ? 100 : nativeHitBase(attacker,defender);
+                && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId));
+        const probability = forcedProbability ? 100 : nativeHitBase(attacker,defender);
         const rule = (port:'hitChance'|'physicalDamage',input:ExtensionRuleInput)=>combatStatPair(attacker,defender,port,input);
         if (!rule) return autoHit ? 100 : probability;
         const result = Math.floor(rule('hitChance', { actorId: attacker.id, targetId: defender.id, baseValue: probability * 100,
@@ -305,10 +305,14 @@ export class CombatSystem {
         // CE Combat.c:122-146: stuck/captive short circuit above, then seizing,
         // then the player's equipped slaying rune, then the clamped formula.
         // Seizing and slaying are probability=100 and still roll 0..99 here.
-        if (!autoHit && !rng.randPercent(defender.seized && attacker.seizing
-            || (attacker instanceof Player && defender instanceof Monster
-                && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId))
-            ? 100 : nativeHitChance(attacker,defender))) {
+        const forcedProbability = defender.seized && attacker.seizing
+            || (attacker instanceof Player && defender instanceof Monster && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId));
+        const hit = autoHit || rng.randPercent(forcedProbability ? 100 : nativeHitChance(attacker,defender));
+        if (!autoHit && !forcedProbability) {
+            attacker.extensionHooks?.itemStatsCommitted?.(['native.accuracy'],defender);
+            defender.extensionHooks?.itemStatsCommitted?.(['native.armor-base','native.armor-enchant'],attacker);
+        }
+        if (!hit) {
             return { damage: 0, weaponName, hit: false, backstab: false };
         }
 
@@ -374,8 +378,11 @@ export class CombatSystem {
                 const bound = (Math.min(damage, defender.hp) * reaping << 16) >> 16;
                 const amount = reaping > 0 ? rng.randRange(0, bound) : rng.randRange(bound, 0);
                 if (amount) {
+                    const beforeRecharge=JSON.stringify(attacker.inventory.items.map(i=>[i.charges,i.staffRechargeRemaining??initialStaffRecharge(i.identityId),i.cooldownRemaining]));
+                    const beforeStaff=JSON.stringify(attacker.inventory.items.filter(i=>i.category===ItemCategory.STAFF).map(i=>[i.charges,i.staffRechargeRemaining??initialStaffRecharge(i.identityId)]));
                     const ready = rechargeItemsIncrementally(attacker.inventory.items,
                         nativeStat(attacker,'native.wisdom'), rng, amount);
+                    if(beforeRecharge!==JSON.stringify(attacker.inventory.items.map(i=>[i.charges,i.staffRechargeRemaining??initialStaffRecharge(i.identityId),i.cooldownRemaining])))attacker.extensionHooks?.itemStatsCommitted?.(['native.reaping',...(beforeStaff!==JSON.stringify(attacker.inventory.items.filter(i=>i.category===ItemCategory.STAFF).map(i=>[i.charges,i.staffRechargeRemaining??initialStaffRecharge(i.identityId)]))?['native.wisdom']:[])],defender);
                     for (const item of ready) logger.log(i18next.t('item.charm_recharged', {
                         name: item.displayName, defaultValue: `Your ${item.displayName} has recharged.`,
                     }), '#66ddff');
@@ -595,17 +602,22 @@ export class CombatSystem {
         // CE Combat.c:122-146: seizing and actual matching slaying weapons keep
         // a 100% probability draw; they do not join the native auto-hit short circuit.
         const rule=(port:'hitChance'|'physicalDamage',input:ExtensionRuleInput)=>combatStatPair(attacker,defender,port,input);
-        const probability = defender.seized && attacker.seizing
+        const forcedProbability = defender.seized && attacker.seizing
             || (attacker instanceof Player && defender instanceof Monster
-                && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId))
-            ? 100 : nativeHitBase(attacker,defender);
+                && weaponSlaysMonster(attacker.equippedWeapon, defender.typeId));
+        const probability = forcedProbability ? 100 : nativeHitBase(attacker,defender);
         const adjustedProbability = Math.floor(rule('hitChance', {
             actorId: attacker.id, targetId: defender.id, baseValue: probability * 100, attackKind: 'melee',
             adjacent: distanceBetweenFootprints(attacker, defender) === 1,
             rollMode: autoHit ? 'skip-guaranteed-hit' : probability >= 100 ? 'roll-guaranteed' : 'roll-probability',
         }) / 100);
         if (trace) trace.probabilityRolled = !autoHit;
-        if (!autoHit && !rng.randPercent(adjustedProbability)) {
+        const hit = autoHit || rng.randPercent(adjustedProbability);
+        if (!autoHit && !forcedProbability) {
+            attacker.extensionHooks?.itemStatsCommitted?.(['native.accuracy'],defender);
+            defender.extensionHooks?.itemStatsCommitted?.(['native.armor-base','native.armor-enchant'],attacker);
+        }
+        if (!hit) {
             return { damage: 0, weaponName, hit: false, backstab: false };
         }
 
@@ -671,8 +683,11 @@ export class CombatSystem {
                 const bound = (Math.min(damage, defender.hp) * reaping << 16) >> 16;
                 const amount = reaping > 0 ? rng.randRange(0, bound) : rng.randRange(bound, 0);
                 if (amount) {
+                    const beforeRecharge=JSON.stringify(attacker.inventory.items.map(i=>[i.charges,i.staffRechargeRemaining??initialStaffRecharge(i.identityId),i.cooldownRemaining]));
+                    const beforeStaff=JSON.stringify(attacker.inventory.items.filter(i=>i.category===ItemCategory.STAFF).map(i=>[i.charges,i.staffRechargeRemaining??initialStaffRecharge(i.identityId)]));
                     const ready = rechargeItemsIncrementally(attacker.inventory.items,
                         nativeStat(attacker,'native.wisdom'), rng, amount);
+                    if(beforeRecharge!==JSON.stringify(attacker.inventory.items.map(i=>[i.charges,i.staffRechargeRemaining??initialStaffRecharge(i.identityId),i.cooldownRemaining])))attacker.extensionHooks?.itemStatsCommitted?.(['native.reaping',...(beforeStaff!==JSON.stringify(attacker.inventory.items.filter(i=>i.category===ItemCategory.STAFF).map(i=>[i.charges,i.staffRechargeRemaining??initialStaffRecharge(i.identityId)]))?['native.wisdom']:[])],defender);
                     for (const item of ready) logger.log(i18next.t('item.charm_recharged', {
                         name: item.displayName, defaultValue: `Your ${item.displayName} has recharged.`,
                     }), '#66ddff');
@@ -772,6 +787,7 @@ export class CombatSystem {
                 else attacker.takeDamage(-transfer, true);
             }
             else attacker.hp += transfer;
+            attacker.extensionHooks?.itemStatsCommitted?.(['native.transference'],defender);
         } else if (attacker instanceof Monster && attacker.hasAbility('MA_TRANSFERENCE')) {
             attacker.hp += Math.trunc(dealt * (attacker.isAlly ? 4 : 9) / 10);
         }

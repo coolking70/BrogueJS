@@ -78,7 +78,7 @@ describe('6B1 integrated loot',()=>{
   g.executeItemCommand('equip',item);expect(g.player.equippedWeapon).toBe(item);expect(nativeStat(g.player,'native.damage-max')).toBeGreaterThan(0);
   const project=(location:'floor'|'pack'|'equipped'|'container')=>r.projectKnownItem(item,'loot',location).data;
   expect(project('floor')).toEqual({rarity:data.rarity});
-  for(const location of ['pack','equipped','container'] as const)expect(project(location)).toMatchObject({location,ilvl:null,affixes:data.affixes.map(a=>({known:false,position:catalog.affixes.find(d=>d.id===a.id)!.position}))});
+  for(const location of ['pack','equipped','container'] as const)expect(project(location)).toMatchObject({location,ilvl:null,affixes:data.affixes.map(a=>a.id==='loot.affix.titan'?expect.objectContaining({known:true,id:a.id}):{known:false,position:catalog.affixes.find(d=>d.id===a.id)!.position})});
   const revision=nativeStatRevision(g.player);ItemLoader.identifyInstance(item);expect(nativeStatRevision(g.player)).toBe(revision);
   const known=project('pack') as unknown as LootKnownItem,audit=auditFullObjectGraph([g,rng]);
   const compare=buildLiveLootCompareView({id:item.id,known},[null],catalog,{presetId:'standard'},r.stats,g.player.id);

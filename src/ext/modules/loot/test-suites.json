@@ -21,7 +21,12 @@
     "tests/loot_integration.test.ts",
     "tests/loot_commands_integration.test.ts",
     "tests/loot_capabilities.test.ts",
-    "tests/loot_stats_integration.test.ts"
+    "tests/loot_stats_integration.test.ts",
+    "tests/loot_game_ui.test.ts",
+    "tests/loot_trigger_commits.test.ts",
+    "tests/loot_game_sfc.test.ts",
+    "tests/loot_trigger_settlements.test.ts",
+    "tests/loot_review_r1.test.ts"
   ],
   "drift": []
 }

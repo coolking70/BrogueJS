@@ -1,6 +1,6 @@
-# loot 核心合同（6B1 / module 0.2.0）
+# loot 核心合同（6B2 / module 0.3.0）
 
-2026-10-15 接入 C6-1。固定输入为 `93523fc596b173396a0d526ab2073b327ff7cf3e`，纯机械包保持 0.1.1 和原指纹；当前集成身份 0.2.0，默认关闭。下文纯类型中的历史阶段标记仅说明来源，当前接线以下表为准，验收见 [6B1 报告](phase6b1.report.md)。
+2026-10-15 接入 C6-1。固定输入为 `93523fc596b173396a0d526ab2073b327ff7cf3e`，纯机械包保持 0.1.1 和原指纹；当前集成身份 0.3.0，默认关闭。下文纯类型中的历史阶段标记仅说明来源，当前接线以下表为准，本轮验收见 [6B2 报告](phase6b2.report.md)（6B1历史结论不改）。
 
 ## 当前运行合同
 
@@ -16,7 +16,7 @@
 | 怪物 | 原 monsterScaling 曲线作为 environment 行；可信初生满血初始化，之后升容不补血、降容钳制。M4 平衡另验 |
 | 命令 | itemCommands 纯 prepare→宿主原子提交。create / set-filter 为0tick；salvage 每件100tick，唯一必须确认；identify-shards 消耗10片、100tick。revision/CAS/容量/所有权检查沿 SDK，失败无部分提交 |
 | 材料 | C5 MATERIAL `loot.shard`，stack99、无 moduleData，多堆使用原材料事务 |
-| 知识 | 原生鉴定/熟悉度/碎片经 itemKnowledge；首次触发仅真实近战物理结算后部分揭示，具体已接/缺口见报告 D5；查询不揭示 |
+| 知识 | 原生鉴定/熟悉度/碎片经 itemKnowledge；首次触发由真实物理/属性提交事实逐行揭示，具体正负例见 [6B2报告](phase6b2.report.md) D5；查询不揭示 |
 | 后续 | 固定唯一 runicType 保留原生行为；runicStrength 不写原生字段、完整强度6B3。随机符文/T7/套装等仍关闭 |
 
 ## 本轮通用 SDK 窄补口
@@ -268,3 +268,9 @@ C  腐化（仅 magic/rare，在全部词缀之后、第 8 步之前）：
 ## 明确未集成
 
 无属性管线、Game 掉落、装备生效、鉴定/强化/分解命令、背包/地面 UI、掉落收据持久化、套装、插槽、符文之语。共享文件没有因本包修改。后续集成须更新模块版本并按当步合同验收，不迁移旧格式。
+
+## 6B2 窄补口
+
+`ItemTriggerFact` 新增 `stat-commit`（参与键、目标tags），宿主只向已装备物品发事实；模块纯回调返回知识副本，宿主统一校验与提交，异常完整回滚。机械状态/原生随机流不由展示读取触发。可信宿主 `StatPipeline.hypotheticalValue` 读取同一假设管线中的派生标量/有理数，用于恢复与减伤比较。没有新增 Game 持久字段；worldSdk/edibleSdk 不变。
+
+属性门面守卫首败：新方法最初被加入模块context的StatQuery枚举；现限定到可信宿主 StatPipeline/UI 适配器，模块只读门面仍为原五方法，守卫与断言保持原样。

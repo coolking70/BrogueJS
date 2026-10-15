@@ -386,6 +386,12 @@ export class StatPipeline implements StatQuery {
     if (actorCache.size > 128) actorCache.delete(actorCache.keys().next().value!);
     return value;
   }
+  /** Trusted UI projection; deliberately absent from the module query facade. */
+  hypotheticalValue(actorId:number,change:EquipChange,stat:string,knownOnly:boolean,facts:PairFacts={}):number {
+    validateEquipChange(change);validatePairFacts(facts);
+    const result=this.compute(actorId,stat,frozen(structuredClone(facts)),frozen(structuredClone(change)),knownOnly);
+    return result.fraction ? result.fraction.numerator/result.fraction.denominator : result.value;
+  }
   hypothetical(
     actorId: number,
     change: EquipChange,

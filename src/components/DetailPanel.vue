@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ModuleItemActions from './ModuleItemActions.vue';
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { activeGame } from '../engine/Core/Game';
 import { inputManager } from '../engine/Input';
@@ -108,6 +109,7 @@ function colorToCSS(color: number): string {
                 </div>
 
                 <div class="detail-footer">
+                    <ModuleItemActions v-if="detail.itemId" :item-id="detail.itemId" />
                     <span class="footer-hint">{{ $t('detail.close_hint') }}</span>
                 </div>
             </div>

@@ -208,6 +208,28 @@ function compareTone(delta: number, lower = false): LootCompareRowView['tone'] {
   const value = delta * (lower ? -1 : 1);
   return value > 0 ? 'better' : value < 0 ? 'worse' : 'same';
 }
+/** Compare only known modifier groups; null is a native/empty side, never a fabricated loot DTO. */
+export function buildLootModifierCompareRows(candidate: LootKnownItem | null, equipped: LootKnownItem | null,
+  catalog: EffectiveLootCatalog, options: LootUiOptions): readonly LootCompareRowView[] {
+  checkOptions(options, catalog);
+  for (const item of [candidate, equipped]) if (item) assertLootKnownItem(item, catalog);
+  const afterMods = aggregate(candidate, catalog), beforeMods = aggregate(equipped, catalog);
+  const rows: LootCompareRowView[] = [];
+  const keys = [...new Set([...beforeMods.keys(), ...afterMods.keys()])];
+  keys.sort((a, b) => {
+    const am = afterMods.get(a) ?? beforeMods.get(a)!, bm = afterMods.get(b) ?? beforeMods.get(b)!;
+    return LOOT_UI_STATS.indexOf(statDefinition(am)) - LOOT_UI_STATS.indexOf(statDefinition(bm)) || a.localeCompare(b);
+  });
+  for (const key of keys) {
+    const mod = afterMods.get(key) ?? beforeMods.get(key)!;
+    const before = beforeMods.get(key)?.value ?? 0, after = afterMods.get(key)?.value ?? 0;
+    // A delta is arithmetic, never an assignment or an unsigned runic magnitude.
+    const deltaMod = { ...mod, category: 'flat' as const, unit: mod.unit === 'runic-strength' ? 'int' as const : mod.unit };
+    rows.push({ key, label: statRef(mod, options), condition: mod.conditions?.some(c=>c.tag==='body.large')?{nameKey:'ext.loot.ui.condition.body-large',params:{}}:null, runic: mod.runicType?ref(LOOT_UI_RUNICS.find(r=>r.runicType===mod.runicType)!):null, before: formatLootModifierValue(mod, before), after: formatLootModifierValue(mod, after),
+      delta: formatLootModifierValue(deltaMod, after - before), tone: compareTone(after - before, statDefinition(mod).better === 'lower') });
+  }
+  return freezeLootUi(rows);
+}
 export function buildLootCompareView(candidate: LootKnownItem, equipped: readonly (LootKnownItem | null)[],
   catalog: EffectiveLootCatalog, options: LootUiOptions & { readonly playerStrength: number | null }): LootCompareView {
   assertLootKnownItem(candidate, catalog); checkOptions(options, catalog);
@@ -222,10 +244,10 @@ export function buildLootCompareView(candidate: LootKnownItem, equipped: readonl
     notices: [{ nameKey: 'ext.loot.ui.compare.pickup-first', params: {} }] });
   const count = candidate.itemClass === 'ring' ? 2 : 1;
   if (equipped.length > count) throw new LootUiError('INVALID_INPUT', 'equipped.length');
-  const afterBase = numericBase(candidate, catalog), afterMods = aggregate(candidate, catalog);
+  const afterBase = numericBase(candidate, catalog);
   const columns = Array.from({ length: count }, (_, i) => {
     const item = equipped[i] ?? null;
-    const beforeBase = item ? numericBase(item, catalog) : [], beforeMods = aggregate(item, catalog);
+    const beforeBase = item ? numericBase(item, catalog) : [];
     const rows: LootCompareRowView[] = afterBase.map(after => {
       const before = beforeBase.find(row => row.key === after.key);
       if (after.values === null || before?.values === null) return { key: after.key, label: ref(BASE_LABELS[after.key]),
@@ -236,19 +258,7 @@ export function buildLootCompareView(candidate: LootKnownItem, equipped: readonl
         after: baseValue(after) + (after.partial ? '?' : ''), delta: delta.map(v => lootSigned(v, 1)).join('–') + (before?.partial || after.partial ? '?' : ''),
         tone: compareTone(delta.reduce((a, b) => a + b, 0) / delta.length, after.key === 'strength') };
     });
-    const keys = [...new Set([...beforeMods.keys(), ...afterMods.keys()])];
-    keys.sort((a, b) => {
-      const am = afterMods.get(a) ?? beforeMods.get(a)!, bm = afterMods.get(b) ?? beforeMods.get(b)!;
-      return LOOT_UI_STATS.indexOf(statDefinition(am)) - LOOT_UI_STATS.indexOf(statDefinition(bm)) || a.localeCompare(b);
-    });
-    for (const key of keys) {
-      const mod = afterMods.get(key) ?? beforeMods.get(key)!;
-      const before = beforeMods.get(key)?.value ?? 0, after = afterMods.get(key)?.value ?? 0;
-      // A delta is arithmetic, never an assignment or an unsigned runic magnitude.
-      const deltaMod = { ...mod, category: 'flat' as const, unit: mod.unit === 'runic-strength' ? 'int' as const : mod.unit };
-      rows.push({ key, label: statRef(mod, options), condition: mod.conditions?.some(c=>c.tag==='body.large')?{nameKey:'ext.loot.ui.condition.body-large',params:{}}:null, runic: mod.runicType?ref(LOOT_UI_RUNICS.find(r=>r.runicType===mod.runicType)!):null, before: formatLootModifierValue(mod, before), after: formatLootModifierValue(mod, after),
-        delta: formatLootModifierValue(deltaMod, after - before), tone: compareTone(after - before, statDefinition(mod).better === 'lower') });
-    }
+    rows.push(...buildLootModifierCompareRows(candidate, item, catalog, options));
     const slot = candidate.itemClass === 'weapon' ? { nameKey: 'ext.loot.ui.slot.weapon', params: {} }
       : candidate.itemClass === 'armor' ? { nameKey: 'ext.loot.ui.slot.armor', params: {} }
         : i === 0 ? { nameKey: 'ext.loot.ui.slot.left-ring', params: {} } : { nameKey: 'ext.loot.ui.slot.right-ring', params: {} };
@@ -274,19 +284,26 @@ export function buildLootSalvageView(entries: readonly { readonly key: string; r
     const item = entry.item;
     const blocked = item.location === 'floor' ? { nameKey: 'ext.loot.ui.salvage.blocked-floor', params: {} }
       : item.location === 'equipped' ? { nameKey: 'ext.loot.ui.salvage.blocked-equipped', params: {} } : null;
-    const yieldFor = (corrupted: boolean): number => {
-      if (item.ilvl === null || item.rarity === null) return 0;
-      const base = rules.base[item.rarity as keyof typeof rules.base];
+    const yieldFor = (rarity: NonNullable<LootKnownItem['rarity']>, ilvl: number, corrupted: boolean): number => {
+      const base = rules.base[rarity as keyof typeof rules.base];
       if (base === undefined) throw new LootUiError('INVALID_INPUT', 'item.rarity');
-      let q = Math.floor(base * (1 + Math.floor(item.ilvl / rules.ilvlStep)) * preset.salvageMultiplierBp / 10000);
+      let q = Math.floor(base * (1 + Math.floor(ilvl / rules.ilvlStep)) * preset.salvageMultiplierBp / 10000);
       if (corrupted) q = Math.floor(q * rules.corruptedMultiplierBp / 10000);
       return Math.max(rules.minimum, q);
     };
-    const range = item.corrupted === null && item.rarity !== null && catalog.pack.corruption.eligibleRarities.includes(item.rarity);
-    const min = yieldFor(item.corrupted === true), max = range ? yieldFor(true) : min;
+    // Unknown item levels stay hidden. Bound all publicly legal possibilities,
+    // including corruption, rather than treating missing knowledge as zero.
+    const levels = item.ilvl === null ? [catalog.pack.ilvl.min, catalog.pack.ilvl.max] : [item.ilvl];
+    const rarities = item.rarity === null ? Object.keys(rules.base) as (keyof typeof rules.base)[] : [item.rarity];
+    const yields = item.location === 'floor' ? [0] : rarities.flatMap(rarity => levels.flatMap(ilvl => {
+      const corruption = item.corrupted === null && catalog.pack.corruption.eligibleRarities.includes(rarity)
+        ? [false, true] : [item.corrupted === true];
+      return corruption.map(corrupted => yieldFor(rarity, ilvl, corrupted));
+    }));
+    const min = Math.min(...yields), max = Math.max(...yields);
     const warnings: LootTextRef[] = [];
     if (item.rarity === 'unique') warnings.push({ nameKey: 'ext.loot.ui.salvage.warn-unique', params: {} });
-    if (range && min !== max) warnings.push({ nameKey: 'ext.loot.ui.salvage.warn-range', params: {} });
+    if (min !== max) warnings.push({ nameKey: item.ilvl === null ? 'ext.loot.ui.salvage.warn-ilvl-range' : 'ext.loot.ui.salvage.warn-range', params: {} });
     return { key: entry.key, chip: buildLootChipView(item, catalog), shards: { min, max }, blocked, warnings };
   });
   return freezeLootUi({ entries: views, total: views.filter(v => !v.blocked).reduce((sum, v) => ({ min: sum.min + v.shards.min, max: sum.max + v.shards.max }), { min: 0, max: 0 }),

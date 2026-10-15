@@ -378,7 +378,9 @@ export class Creature implements Entity {
         let damage = ignoresProtectionShield ? amount : this.absorbShieldDamage(amount);
         // Native administrative/self-destruction calls drain current HP.
         const resistance=ignoresResistance?0:nativeStat(this,`native.resist.${damageKind}`);
+        const beforeResistance=damage;
         if(resistance)damage=Number(BigInt(Math.trunc(damage))*BigInt(10000-resistance)/10000n);
+        if(damage<beforeResistance)this.extensionHooks?.itemStatsCommitted?.([`native.resist.${damageKind}`]);
         const zoneDamage = this.extensionHooks?.zoneDamage?.(this, damage, damageKind);
         if (zoneDamage !== undefined) damage = zoneDamage;
         if (grid) {

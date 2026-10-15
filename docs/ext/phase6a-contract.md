@@ -6,7 +6,7 @@
 
 - 开工实值：`ext/phase6` / `ff9dee3d3dfba3daf752c74e097467c0ed4c50be`，foundation14；旧历史审计基线59b9ba6/foundation13仅供对照。§2历史锚点与当前差量逐项登记在6A1报告，当前实现路径见§10。
 - 设计输入固定为 `origin/ext/phase6-loot-core` = `93523fc596b173396a0d526ab2073b327ff7cf3e` 的 `docs/ext/{phase6-loot.md,phase6-loot-numbers.md,phase6-loot-tuning.md,loot-core-contract.md,loot-ui-contract.md}`。可用 `git show 93523fc:docs/ext/<文件>` 复核；本树不复制整套远端文档，也不合入远端模块。
-- 本次授权为phase6a1.task.md，已完成6A0裁定。数值以已批准的 **v1.1** 为准：`scarce/standard/bountiful`，33 个非符文词缀、21 个符文变体数据、8 件唯一品；遭遇唯一乘数 5000/10000/5000，warding 仅护甲，丰饶 elite 1–3。旧设计“26 词缀、6 唯一品”、旧预设名与旧倍率不再用于派发。L-D、N、M 已批准项不重新提请。
+- 本次授权为phase6a1.task.md，已完成6A0裁定。数值以已批准的 **v1.1** 为准：`scarce/standard/bountiful`，35 个非符文词缀（6B2 纯文字计数勘误，数据未改）、21 个符文变体数据、8 件唯一品；遭遇唯一乘数 5000/10000/5000，warding 仅护甲，丰饶 elite 1–3。旧设计“26 词缀、6 唯一品”、旧预设名与旧倍率不再用于派发。L-D、N、M 已批准项不重新提请。
 - `loot-core-contract.md` 的 v1 实例形状（含 `corrupted`）、随机向量与严格错误边界保持；标记 `[C6-1]` / `[5A2-S]` 的临时接口由本合同逐项对接。规则包 0.1.1 与未挂载的 β UI 都不代表可玩集成。
 - 遵守当前任务的轻量验证限制，不触碰 BrogueJS-p5，不借历史 full 要求重复启动大套件。开发期遵循docs/ext/README.md与本次用户指示，不跑CE对照、不保护旧格式；纯格式黄金原法重录，无需反事实。
 

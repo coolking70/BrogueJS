@@ -159,13 +159,18 @@ export interface ItemCommandProvider {
   prepare(payload: ReadonlyJson, context: ItemCommandRead): ItemCommandProposal | null;
 }
 
-export interface ItemTriggerFact {
+export type ItemTriggerFact = {
   readonly kind: 'physical-hit';
   readonly role: 'attacker' | 'defender';
   readonly targetTags: readonly string[];
-}
+} | {
+  readonly kind: 'stat-commit';
+  /** Host-witnessed keys participating in a completed settlement, never a query. */
+  readonly stats: readonly string[];
+  readonly targetTags: readonly string[];
+};
 export interface ItemKnowledgeProvider {
-  /** Pure partial reveal, called only after a successful native melee damage settlement. */
+  /** Pure partial reveal, called only at host-owned settlement points. */
   trigger?(data: ReadonlyJson, context: Readonly<{item: ItemFacts; fact: ItemTriggerFact}>): ReadonlyJson;
   known(data:ReadonlyJson):boolean;
   unique(data:ReadonlyJson):boolean;

@@ -128,6 +128,11 @@ const moduleUi = useModuleUi({
     && !activeGame.isInventoryOpen && !activeGame.referenceScreen && !activeGame.pendingArcana,
   canOpenInteraction: () => !(panelOpen.value || journalOpen.value || themePanelOpen.value || modulePanelOpen.value
     || dialogs.current || presentationTimeline(activeGame)?.busy),
+  beforeOpenItemPanel: () => {
+    if (activeGame.isAdvancing || activeGame.isInputLocked() || dialogs.current || logger.pendingAcknowledgment
+      || activeGame.pendingIdentify || activeGame.pendingEnchantment || activeGame.pendingUseConfirm || menuOpen.value) return false;
+    activeGame.isInventoryOpen = false; activeGame.inspectTarget = null; nearbyInspection.value = null; return true;
+  },
   beforeOpenPanel: () => {
     cancelHeldInputs();
     if (activeGame.isAutoTraveling()) inputManager.triggerAction('interrupt_auto');

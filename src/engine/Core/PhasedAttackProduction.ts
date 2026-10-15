@@ -242,9 +242,21 @@ function advanceResources(game:Game,session:Session,delta:number):void {
         if(!defenseSourceValid(game,session,source)){row.dodgeRemainingTicks=0;row.parryRemainingTicks=0;row.parryFacing=null;}
         // Native status/catch-up clocks may exceed dodge recovery. Split the
         // resource interval so differing idle/recovery policies stay additive.
+        let staminaRecovered=false,poiseRecovered=false;
+        const advance=(ticks:number,activePhases:ActorResourcePhase[])=>{
+            const beforeStamina=[row.stamina,row.regenRemainder],beforePoise=[row.poise,row.poiseRecoveryRemainder];
+            Object.assign(row,advanceActorResources(row,policy,ticks,activePhases));
+            staminaRecovered ||= row.stamina>beforeStamina[0]!||row.regenRemainder>beforeStamina[1]!;
+            // Attribute each actual interval, not the outer bundle. A native
+            // break interval can reset poise without using ordinary recovery.
+            poiseRecovered ||= !activePhases.includes('break-recovery')
+                && (row.poise>beforePoise[0]!||row.poiseRecoveryRemainder>beforePoise[1]!);
+        };
         const recovery=phases.length?0:Math.min(delta,nativeRecovery(row));
-        if(recovery)Object.assign(row,advanceActorResources(row,policy,recovery,[row.staggerRemainingTicks>0?'break-recovery':'recovery']));
-        if(delta>recovery)Object.assign(row,advanceActorResources(row,policy,delta-recovery,phases.length?phases:['idle']));
+        if(recovery)advance(recovery,[row.staggerRemainingTicks>0?'break-recovery':'recovery']);
+        if(delta>recovery)advance(delta-recovery,phases.length?phases:['idle']);
+        if(staminaRecovered)game.extensionRuntime?.commitItemStatKnowledge(source.id,['combat.stamina-regen']);
+        if(poiseRecovered)game.extensionRuntime?.commitItemStatKnowledge(source.id,['combat.poise-recovery']);
     }
     bumpRevision(session.state);
 }

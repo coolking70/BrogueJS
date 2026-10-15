@@ -28,6 +28,8 @@ import { weaponSlaysMonster } from '../Combat/MonsterClass';
 // ---------- Helper types ----------
 
 export interface DetailInfo {
+    /** Display identity only; action providers revalidate visibility and ownership. */
+    itemId?: number;
     /** Entity symbol character */
     char: string;
     /** Entity display color (hex) */
@@ -304,5 +306,5 @@ export function generateItemDetail(item: Item, context: number | ItemDetailConte
         case ItemCategory.CHARM: sections.push(...charmDetail(item, ctx)); break;
     }
     sections.push(...itemEquipmentState(item, ctx));
-    return { char: item.char, color: item.color, name: ctx.omniscient ? item.name : item.displayName, sections };
+    return { itemId: item.id, char: item.char, color: item.color, name: ctx.omniscient ? item.name : item.displayName, sections };
 }

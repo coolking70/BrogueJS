@@ -142,7 +142,7 @@ export function nativeBase(actor:Creature,key:string,dep:(key:string)=>number,fa
         const [digits,exponent='0']=String(interval).split('e'),parts=digits!.split('.'),places=parts[1]?.length??0;
         let n=BigInt(parts.join('')),d=10n**BigInt(places),e=Number(exponent);if(e>0)n*=10n**BigInt(e);else if(e<0)d*=10n**BigInt(-e);
         return safeStatRational({numerator:d,denominator:n});} 
-      const full=BigInt(turnsForFullRegenInThousandths(dep('native.regeneration-bonus'))),whole=full/1000n,hp=BigInt(a.maxHp),per=whole>0n?(hp-1n)/whole:0n,left=hp-per*whole,interval=full/left;
+      const full=BigInt(turnsForFullRegenInThousandths(dep('native.regeneration-bonus'))),whole=full/1000n,hp=BigInt(dep('native.max-hp')),per=whole>0n?(hp-1n)/whole:0n,left=hp-per*whole,interval=full/left;
       let d=interval>0n?interval:1n,n=per*d+(interval>0n?1000n:0n);
       if(a.hasStatus('regenerating')){n*=5n;d*=3n;}return safeStatRational({numerator:n,denominator:d});
     }

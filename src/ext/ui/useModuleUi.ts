@@ -1,4 +1,5 @@
-import { computed, effectScope, onScopeDispose, ref, shallowRef, watch, type EffectScope } from 'vue';
+import { computed, provide, effectScope, onScopeDispose, ref, shallowRef, watch, type EffectScope } from 'vue';
+import { moduleItemActions } from './itemActions';
 import { getInstalledModuleUiContributions } from './registry';
 import type { ModuleUiContribution, ModuleUiHost, ModuleUiSession } from './types';
 
@@ -49,6 +50,7 @@ export function useModuleUi(host: ModuleUiHost, contributions: readonly ModuleUi
                 inert: presentationHidden.value || slot.props.inert, 'aria-hidden': presentationHidden.value || slot.props['aria-hidden'] } : {}),
         } as Record<string, unknown> }] : [];
     }));
+    provide(moduleItemActions, itemId => sessions.value.flatMap(entry => entry.live() && !presentationHidden.value ? entry.session.itemActions?.(itemId) ?? [] : []));
     return {
         hudSlots: slots('hud'), barSlots: slots('bar'), panelSlots: slots('panel'),
         commands: computed(() => {

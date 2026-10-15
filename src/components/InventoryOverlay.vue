@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ModuleItemActions from './ModuleItemActions.vue';
 import { ref, onMounted, onUnmounted, computed, toRaw, nextTick, inject } from 'vue';
 import { useTranslation } from 'i18next-vue';
 import i18next from 'i18next';
@@ -521,6 +522,7 @@ const handleInventoryKey = (event: KeyboardEvent): boolean => {
                     </span>
                   </div>
                   <div v-if="selectedItem?.id === entry.item.id && !pendingIdentify && !pendingEnchantment && !ringReplacementTarget" class="item-actions">
+                     <ModuleItemActions :item-id="entry.item.id" />
                      <button @click="performInspect(entry.item)" class="action-btn">{{ t('item.inspect', { defaultValue: '查看详情' }) }}</button>
                      <button v-if="isEquippable(entry.item) && !isEquipped(entry.item)" @click="performEquip(entry.item)" class="action-btn">{{ t('Equip') || 'Equip' }}</button>
                      <button v-if="isEquippable(entry.item) && isEquipped(entry.item)" @click="performUnequip(entry.item)" class="action-btn">{{ t('Unequip') || 'Unequip' }}</button>

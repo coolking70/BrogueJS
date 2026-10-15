@@ -1,12 +1,14 @@
-# loot UI 合同（6B1 集成与 β 展示）
+# loot UI 合同（6B2 游戏会话与 β 展示）
 
-2026-10-15。纯包0.1.1、集成0.2.0。生产仅挂载模块自有新局预设选择，并接 C6 名称/颜色/已知投影；详情、比较、分解、过滤面板仍为未挂载 β 组件，留6B2。输入经可信边界投影后才允许进入视图模型与组件。
+2026-10-15。纯包0.1.1、集成0.3.0。生产挂载新局预设与背包/检视详情、实际属性比较、过滤、分解、已知装备来源；浏览器三档待维护者验收。输入经可信边界投影后才允许进入视图模型与组件。
 
 ## 当前边界
 
 - 新局选择同时输出 `{presetId}` manifest configuration 和恰一次 create，首层已使用选定配置。
 - 四位置 floor/pack/equipped/container。floor 对外仅稀有度，未知戒指 baseId 为 null；未知行只有位置；名称保留原生基底和外层铭文。无可靠诅咒暴露事实传 false，侦测不擅自推导历史腐化。幻觉/记忆不查询真实稀有度。
-- `buildLiveLootCompareView` 接候选实体ID、已知DTO和公开 StatQuery，以 `hypothetical(playerId, patch, true)` 求实际六项标量。双戒按替换实体分别求值。条件/符文行独立，不并入无条件收益；固定符文强度是数据展示，未宣称6B3强度已生效。
+- `buildLiveLootCompareView` 接候选实体ID、已知DTO和公开 StatQuery，以 `hypothetical(playerId, patch, true)` 求基础六项及实际生效扩展标量。戒指比较列与原生命令一致：双空仅左槽、单戒仅空槽、双满才分别替换左右实体；已装备候选仅展示当前槽且不提供重复装备动作。条件/符文行独立，不并入无条件收益；固定符文强度是数据展示，未宣称6B3强度已生效。
+- 原生/loot 两侧分别生成当前物品 chip 与已知条件/符文行，native↔loot 均保留条件收益增减；未知行不进入比较，不为原生物品伪造 loot DTO。
+- 包内未知/部分已知物品分解以公开合法物等上下界、已知稀有度和可能腐化状态计算可信产量区间；完全已知时给确定值。混合批次合计各有效条目上下界，不读取隐藏精确物等。地面分解仍阻断。
 - `buildLootCompareView` 仍供纯 β 预览；其中临时基础公式不是运行机械结果，禁止用作真实比较适配。
 - F-03：公开 LootCompareRowView 增加可选 `condition?: LootTextRef` / `runic?: LootTextRef`，视图模型保留分组身份，组件直接本地化引用，不解析key。R08“对大型目标”、R12“力量”有独立DTO与渲染文本回归，未揭示行不产生这些引用。
 - 原F-01/F-02回归保留；窄容器规则和SSR组件回归不等于浏览器像素/触控验收。
@@ -224,3 +226,7 @@ npm run dev 后打开 http://localhost:5173/src/ext/modules/loot/tools/preview/i
 | 强化上限、精炼 UI | 6B3 | 交互与成本 | 详情与新组件 | viewModel.ts、ui/ |
 | 地图稀有色装饰器 | 6A1 | 只读地图接口 | 地面提示 | 新 adapter |
 | 套装/插槽行 | 6C | 新 DTO 与行 | 详情、比较 | types.ts、viewModel.ts、组件 |
+
+## 6B2 会话接线
+
+共享 `ModuleUiSession.itemActions` 只传物品ID；loot适配器读取实际位置并构造已知DTO，容器ID经既有 `projectView/worldWork.readWorkContext` 公开只读能力返回。原生物品使用独立 fallback，不伪造loot实例。批量分解/碎片鉴定/过滤只走 `executeCommand`；装备只走 `executeItemCommand`。草稿与展示刷新解耦，零tick设置去重，确认与异步收尾后才发布反馈。关闭/换局/load/seek清会话选择并释放键处理器；主模态占用显示时遵从宿主互斥。来源页列实际已装备已知行，条件与符文保持标签，不归入无条件总收益。

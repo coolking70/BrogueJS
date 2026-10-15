@@ -171,7 +171,7 @@ import { endgameScore, victoryLumenstoneQuantity } from './Endgame';
 import { saveHighScore } from './HighScores';
 import { ItemLoader } from '../Items/ItemLoader';
 import { charmRechargeDelay, isCharmKind } from '../Items/CharmModel';
-import { tickStaffRecharge, rechargeStaffFully } from '../Items/ArcanaRecharge';
+import { tickStaffRecharge, rechargeStaffFully, initialStaffRecharge } from '../Items/ArcanaRecharge';
 import { rng, RNGType } from '../Random';
 import { prepareFlare, flareState, type Flare } from '../Lighting/CosmeticLight';
 import { normalizeSeed, type SeedInput } from '../Seed';
@@ -5180,6 +5180,7 @@ export class Game {
                     // nausea roll, entrancement step or player displacement.
                     this.player.ticksUntilTurn += nativeStat(this.player,'native.attack-speed');
                     timeSystem.currentTick += nativeStat(this.player,'native.attack-speed');
+                    this.extensionRuntime?.commitItemStatKnowledge(this.player.id,['native.attack-speed']);
                     spentTurn = true;
                 } else if (blockingMonster && (!blockingMonster.isAlly || blockingMonster.hasStatus('discordant'))) {
                     // Attack —— P4-7：CE Movement.c:1216-1247，buildHitList
@@ -5531,6 +5532,7 @@ export class Game {
                 ItemLoader.identifyItemKind(item);
             }
             this.syncEquipmentStatuses();
+            this.extensionRuntime?.commitItemStatKnowledge(this.player.id,['native.max-hp','native.strength','combat.stamina-capacity','combat.poise-capacity']);
             // CE Items.c:3925-3958 strengthCheck: message only; use actual
             // strengthRequired, with weakness deducted and the deficit clamped.
             if ((item.category === ItemCategory.WEAPON || item.category === ItemCategory.ARMOR)
@@ -9997,6 +9999,7 @@ export class Game {
      */
     private playerRecoversFromAttacking(anAttackHit: boolean): void {
         if (this.player.ticksUntilTurn >= 0) {
+            this.extensionRuntime?.commitItemStatKnowledge(this.player.id,['native.attack-speed']);
             if (isActorStaggered(this,this.player.id)) {
                 const nativeTicks=this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_STAGGER')&&anAttackHit?2*nativeStat(this.player,'native.attack-speed')
                     :this.player.equippedWeapon?.flags?.includes('ITEM_ATTACKS_QUICKLY')?Math.floor(nativeStat(this.player,'native.attack-speed')/2):nativeStat(this.player,'native.attack-speed');
@@ -11515,8 +11518,8 @@ export class Game {
                 killOrphanedBoundFollowers: () => game.killOrphanedBoundFollowers(),
                 removeDeadMonsters: (sweep) => game.removeDeadMonsters(sweep),
                 syncEquipmentStatuses: () => game.syncEquipmentStatuses(),
-                updateVision: () => game.updateVision(),
-                calculateStealthRange: () => game.calculateStealthRange(),
+                updateVision: () => { game.updateVision(); game.extensionRuntime?.commitItemStatKnowledge(game.player.id,['native.light-points','native.clairvoyance']); },
+                calculateStealthRange: () => { const range=game.calculateStealthRange(); if(!game.player.hasStatus('invisible'))game.extensionRuntime?.commitItemStatKnowledge(game.player.id,['native.stealth-points']); return range; },
                 updateSafetyMap: () => game.updateSafetyMap(),
                 awarenessBonus: () => game.awarenessBonus(),
                 searchForSecrets: (strength) => game.searchForSecrets(strength),
@@ -11929,9 +11932,11 @@ export class Game {
         const wisdom = nativeStat(this.player,'native.wisdom');
         for (const item of this.player.inventory.items) {
             if (item.category === ItemCategory.STAFF) {
+                const beforeRecharge=JSON.stringify([item.charges,item.staffRechargeRemaining??initialStaffRecharge(item.identityId)]);
                 if (tickStaffRecharge(item, wisdom, rng, (item as any).identityId) > 0) {
                     logger.log(i18next.t('item.regains_charge', { interpolation: { escapeValue: false }, name: item.displayName, defaultValue: `${item.displayName} regains a charge.` }), '#66ddff');
                 }
+                if(beforeRecharge!==JSON.stringify([item.charges,item.staffRechargeRemaining??initialStaffRecharge(item.identityId)]))this.extensionRuntime?.commitItemStatKnowledge(this.player.id,['native.wisdom']);
             } else if (item.category === ItemCategory.CHARM) {
                 const remain = item.cooldownRemaining ?? 0;
                 if (remain > 0) {
@@ -14603,6 +14608,7 @@ export class Game {
         let foundSomething = false;
         for (const { x, y, cell } of secretCells) {
             if (!canDirectlySee[x]?.[y]) continue; // CE playerCanDirectlySee 先于掷骰
+            this.extensionRuntime?.commitItemStatKnowledge(this.player.id,['native.awareness']);
             let percent = searchStrength
                 - Math.max(Math.abs(x - px), Math.abs(y - py)) * 10;
             if (!cell.isPassable) {

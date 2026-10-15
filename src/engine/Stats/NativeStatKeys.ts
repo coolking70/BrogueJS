@@ -64,7 +64,7 @@ export const NATIVE_STAT_KEYS: readonly StatKeyDeclaration[] = Object.freeze([
 export const NATIVE_STAT_DAG: Readonly<Record<string, readonly string[]>> = Object.freeze({
   'native.stealth-range': ['native.stealth-points'],
   'native.light': ['native.light-points'],
-  'native.regeneration': ['native.regeneration-bonus'],
+  'native.regeneration': ['native.regeneration-bonus','native.max-hp'],
   'native.effective-strength': ['native.strength'],
   'native.weapon-enchant': ['native.effective-strength'],
   'native.armor-enchant': ['native.effective-strength'],

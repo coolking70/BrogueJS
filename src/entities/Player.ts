@@ -226,6 +226,7 @@ export class Player extends Creature {
         // and while already at full HP (Time.c:2531-2541)
         if (this.hp < this.maxHp && !this.hasStatus('poisoned') && !suppressRegen) {
             this.regenCarry += this.regenRatePerTurn();
+            this.extensionHooks?.itemStatsCommitted?.(['native.regeneration-bonus']);
             if (this.regenCarry >= 1) {
                 const wholeHp = Math.floor(this.regenCarry);
                 this.hp = Math.min(this.maxHp, this.hp + wholeHp);
@@ -276,6 +277,7 @@ export class Player extends Creature {
         // and while already at full HP (Time.c:2531-2541)
         if (this.hp < this.maxHp && !this.hasStatus('poisoned')) {
             this.regenCarry += this.regenRatePerTurn();
+            this.extensionHooks?.itemStatsCommitted?.(['native.regeneration-bonus']);
             if (this.regenCarry >= 1) {
                 const wholeHp = Math.floor(this.regenCarry);
                 this.hp = Math.min(this.maxHp, this.hp + wholeHp);

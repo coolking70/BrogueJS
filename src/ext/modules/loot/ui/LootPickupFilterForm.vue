@@ -12,7 +12,7 @@ const titleId = useId();
 const root = ref<HTMLFormElement | null>(null);
 const clone = (value: LootPickupFilterDraft): LootPickupFilterDraft => ({ ...value, classes: [...value.classes] });
 const draft = ref(clone(props.initialDraft ?? props.value));
-watch(() => props.value, value => { draft.value = clone(value); }, { deep: true });
+watch(() => JSON.stringify(props.value), (value, previous) => { if (value !== previous) draft.value = clone(props.value); });
 const disabled = computed(() => props.readOnly || props.submitting);
 const dirty = computed(() => JSON.stringify(normalizeLootPickupFilter(draft.value)) !== JSON.stringify(normalizeLootPickupFilter(props.value)));
 const rarityOptions = rarities.rarities.filter(value => ['normal', 'magic', 'rare', 'unique'].includes(value.id));

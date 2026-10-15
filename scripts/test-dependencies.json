@@ -523,6 +523,18 @@
         "narrative"
       ],
       "optional": []
+    },
+    "src/ext/modules/loot/tests/loot_trigger_settlements.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/loot/tests/loot_review_r1.test.ts": {
+      "required": [
+        "combat"
+      ],
+      "optional": []
     }
   }
 }
