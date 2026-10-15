@@ -488,8 +488,7 @@
     },
     "src/test/ext_item_stats.test.ts": {
       "required": [
-        "combat",
-        "growth"
+        "combat"
       ],
       "optional": []
     },
@@ -508,8 +507,7 @@
     "src/ext/modules/loot/tests/loot_capabilities.test.ts": {
       "required": [
         "combat",
-        "giants",
-        "growth"
+        "giants"
       ],
       "optional": []
     },
@@ -539,6 +537,18 @@
     "src/ext/modules/loot/tests/loot_game_sfc.test.ts": {
       "required": [
         "growth"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/loot/tests/loot_growth_attributes.test.ts": {
+      "required": [
+        "growth"
+      ],
+      "optional": []
+    },
+    "src/ext/modules/growth/tests/ext_growth_loot_receipts.test.ts": {
+      "required": [
+        "loot"
       ],
       "optional": []
     }

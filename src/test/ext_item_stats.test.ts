@@ -91,8 +91,8 @@ it('item owner caps leave a second owner pool intact',()=>{
   const attacker=new Monster(1,1,(monsters as MonsterData[]).find(m=>m.id==='rat')!);g.monsters.push(attacker);g.extensionRuntime!.attachCreature(attacker);
   expect(nativePair(attacker,p,'physical-damage',{baseValue:100})).toBe(40);h.dispose();
 });
-it('combat capability discovery reports actual keys while growth attribute mapping remains unavailable even when installed',()=>{
-  const h=createItemHarness({modules:['combat','growth']}),r=h.game().extensionRuntime!;
+it('combat capability discovery reports actual keys while absent growth attribute mapping remains unavailable',()=>{
+  const h=createItemHarness({modules:['combat']}),r=h.game().extensionRuntime!;
   expect(r.queryOptional('foundation.stats.v1',{keys:['combat.stamina-capacity','combat.poise-capacity','combat.stamina-regen']})).toMatchObject({status:'available',value:{keys:[{available:true},{available:true},{available:true}]}});
   expect(r.queryOptional('growth.attributes.v1',{})).toEqual({status:'unavailable',reason:'absent'});expect(r.queryOptional('foundation.item-encounters.v1',{})).toEqual({status:'unavailable',reason:'absent'});h.dispose();
 });

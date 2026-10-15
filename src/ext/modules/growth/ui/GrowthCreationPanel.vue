@@ -8,7 +8,7 @@ import type { GrowthIdentity } from '../types';
 const props = defineProps<{ model: GrowthCreationView; submitting: boolean; error: string | null }>();
 const emit = defineEmits<{ cancel: []; select: [kind: GrowthIdentity['kind'], id: string]; adjust: [identityId: string, choiceIndex: number, attributeId: string, delta: number]; submit: [] }>();
 const { t } = useTranslation();
-const text = (key: string) => t(`ext.growth.${key.slice('ext.growth.'.length)}`);
+const text = (key: string) => t(`ext.${key.slice(4)}`);
 const navigationLocked = ref(false);
 let navigationTimer: ReturnType<typeof setTimeout> | undefined;
 const step = ref(0), panel = ref<HTMLElement | null>(null), content = ref<HTMLElement | null>(null);

@@ -1,4 +1,13 @@
 {
+  "ext.growth.ui.effective_attribute": "永久 {{permanent}} · 已知外部净增 {{external}} · 有效 {{effective}} → {{preview}}（上限 {{cap}}；未知来源未计入）",
+  "ext.growth.ui.attribute_source": "{{name}}：{{amount}} 点（合并后统一封顶）",
+  "ext.growth.ui.external_source": "临时或外部效果",
+  "ext.growth.ui.allocated_source": "永久投入",
+  "ext.growth.ui.initial_source": "初始或继承构筑",
+  "ext.growth.ui.tree_learned": "已学",
+  "ext.growth.ui.tree_unlearned": "未学",
+  "ext.growth.ui.tree_requires": "前置：{{names}}",
+
   "ext.growth.skill.steady-hand.name": "稳手",
   "ext.growth.skill.steady-hand.description": "普通投掷命中修正，保留原必中特例。",
   "ext.growth.skill.close-guard.name": "近身防御",

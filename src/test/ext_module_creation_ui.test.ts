@@ -55,9 +55,10 @@ beforeAll(async () => {
         vue: Vue, 'i18next-vue': translation,
         '../engine/Input': { inputManager: { registerModalKeyHandler: () => () => {} } },
         '../ext/catalog': { DEFAULT_EXTENSIONS: ['alpha', 'beta'], getInstalledModuleDescriptors: () => [
-            { id: 'alpha', labelKey: 'ext.modules.label' }, { id: 'beta', labelKey: 'ext.modules.label' },
+            { id: 'alpha', labelKey: 'ext.modules.label' }, { id: 'beta', labelKey: 'ext.modules.label' }, {id:'gamma',labelKey:'ext.modules.label',recommends:['beta']},
         ] },
         '../ext/ui/defaults': await import('../ext/ui/defaults'),
+        '../ext/selection': await import('../ext/selection'),
         '../ext/ui/creation': { prepareModuleCreation: (ids: readonly string[]) => prepareOverride!(ids), buildModuleCreationCommands,
             buildModuleCreationConfigurations:(plan:ModuleCreationPlan,selected:ReadonlyMap<string,readonly string[]>,drafts:Record<string,import('../ext/types').Json>)=>buildModuleCreationConfigurations(plan,selected,drafts,[],registryFromDescriptors(plan.modules.map(module=>({id:module.id,version:module.version,foundation:FOUNDATION_PROTOCOL,labelKey:`ext.${module.id}.name`,create:()=>module})))) },
         './MapTileLegend.vue': empty, './theme/TitleFx.vue': empty,
@@ -179,4 +180,17 @@ describe('foundation module creation loading and session ownership', () => {
         await openExtended(); rejected(); await tick();
         expect(find('data-step-ui', 'alpha', root)).toBeTruthy(); expect(text(root)).not.toContain(i18next.t('ext.creation.start_failed'));
     });
+});
+
+it('renders recommendation, permits opt-out across toggles and restores before constructing the exact creation plan',async()=>{
+ const submitted=await mount();const select=find('data-testid','rule-set',root);
+ for(const option of select.options)option.selected=option.value==='extended';for(const listener of select.listeners.change!)listener(event(select));await tick();
+ const toggle=async(id:string,checked:boolean)=>{find('data-module',id,root).props.onChange({target:{checked}});await tick();};
+ await toggle('beta',false);expect(find('data-module','beta',root).props.checked).toBe(false);
+ await toggle('gamma',true);expect(find('data-module','beta',root).props.checked).toBe(true);expect(text(root)).toContain('推荐启用');
+ await toggle('beta',false);await toggle('gamma',false);await toggle('gamma',true);expect(find('data-module','beta',root).props.checked).toBe(false);
+ expect(text(root)).toContain('已关闭推荐');click(button(i18next.t('ext.modules.restore_recommendations')));await tick();expect(find('data-module','beta',root).props.checked).toBe(true);
+ await toggle('gamma',false);expect(find('data-module','beta',root).props.checked).toBe(true);
+ prepareOverride=ids=>{expect(ids).toEqual(['alpha','beta']);return creationFixture(ids,{}).plan;};
+ click(button(i18next.t('title.begin')));await tick();expect(find('data-step-ui','alpha',root)).toBeTruthy();expect(submitted).not.toHaveBeenCalled();
 });

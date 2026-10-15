@@ -106,7 +106,7 @@ describe('EXT-1e mounted new-game identity chooser', () => {
     it('submits an explicitly empty installed subset without opening creation or inventing growth input, and retries rejected starts', async () => {
         const submitted = await mount(), factory = vi.spyOn(view, 'loadGrowthCreationContext');
         find('data-testid', 'rule-set', root).props['onUpdate:modelValue']('extended'); await tick();
-        find('data-module', 'growth', root).props['onUpdate:modelValue']([]); await tick();
+        find('data-module', 'growth', root).props.onChange({target:{checked:false}}); await tick();
         for (let index = 0; index < 2; index++) {
             click(button(i18next.t('title.begin'))); await tick();
             expect(submitted).toHaveBeenCalledTimes(index + 1);

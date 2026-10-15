@@ -6,7 +6,7 @@ import type { GrowthAttribute, GrowthCondition, GrowthEffect, GrowthModifier, Gr
 const describeText = (key: string, values: Record<string, unknown> = {}) => i18next.t(`ext.growth.describe.${key}`, { ...values, interpolation: { escapeValue: false } });
 const name = (pack: GrowthPack, id: string) => {
     const definition = [...pack.config.attributes, ...pack.definitions].find(item => item.id === id);
-    return definition ? i18next.t(`ext.growth.${definition.nameKey.slice('ext.growth.'.length)}`) : id;
+    return definition ? i18next.t(definition.nameKey) : id;
 };
 function tagName(pack: GrowthPack | undefined, tag: string): string {
     if (!pack) return tag;
@@ -147,7 +147,7 @@ export function describeGrowthIdentity(pack: GrowthPack, identity: DeepReadonly<
     }
     lines.push(...describeGrowthEffects(pack, identity.effects));
     for (const oath of identity.oaths) {
-        lines.push(i18next.t(`ext.growth.${oath.descriptionKey.slice('ext.growth.'.length)}`));
+        lines.push(i18next.t(oath.descriptionKey));
         lines.push(...describeGrowthEffects(pack, oath.effects));
     }
     for (const effect of [...identity.effects, ...identity.oaths.flatMap(oath => oath.effects)]) {

@@ -18,7 +18,7 @@ import { CombatSystem } from '../../../../engine/Combat/Combat';
 import { rng } from '../../../../engine/Random';
 import { extensionDataFingerprint } from '../../../../ext/fingerprint';
 import type { GrowthAttributes, GrowthProgression } from '../components';
-import { growthRuleActor } from '../attributes';
+import { growthRuleActor, initialGrowthAttributes, isGrowthAttributes } from '../attributes';
 import { markCreatureBirth } from '../../../../ext/birth';
 import type { GrowthState } from '../state';
 import type { ControlledActionRequest, ExtensionContext, Json } from '../../../../ext/types';
@@ -101,6 +101,29 @@ describe('EXT-1d generic skill definitions and P03/P07 pure state',()=> {
             row.effects=[structuredClone(mode==='active' ? skill('careful-step').effects[0]! : skill('brace').effects[0]!) as GrowthSkill['effects'][number]];
             expect(()=>parseGrowthDefinitionPack(mutable,{moduleVersion:mutable.moduleVersion,hasText:()=>true})).toThrow();
         }
+    });
+    it('R1-F1 validates effective snapshot ranks independently of permanent minimum and total investment',()=> {
+        const mutable=structuredClone(data) as unknown as GrowthDefinitionPack;
+        mutable.config.attributeTotalCap=4;
+        const will=mutable.config.attributes.find(a=>a.id==='growth.attribute.will')!;will.min=will.initial=1;mutable.config.combatStats!.poise.baseline=1;
+        const custom=parseGrowthDefinitionPack(mutable,{moduleVersion:mutable.moduleVersion,hasText:()=>true});
+        const brace=growthSkillDefinition(custom,'growth.skill.brace')!,effect=brace.effects[0]!;if(effect.kind!=='timed')throw Error();
+        const source={...actor,attributes:Object.fromEntries(custom.config.attributes.map(a=>[a.id,a.id===custom.config.strengthTraining.attributeId?custom.config.strengthTraining.cap:a.cap]))};
+        const build=equipped('brace');build.effects=[createGrowthEffectInstance(custom,brace,effect,source,build,0,1,1)];
+        expect(isGrowthSkillBuild(build,custom,actor.id,0,2)).toBe(true);
+        const check=(attributes:Record<string,number>)=>{
+            const copy=structuredClone(build);copy.effects[0]!.source={...copy.effects[0]!.source,attributes};
+            return isGrowthSkillBuild(copy,custom,actor.id,0,2);
+        };
+        // Effective roots clamp to zero, even if the permanent attribute minimum is positive.
+        expect(check({...source.attributes,[will.id]:0})).toBe(true);
+        for(const [id,value] of [[will.id,-1],[will.id,0.5],[will.id,will.cap+1],[custom.config.strengthTraining.attributeId!,custom.config.strengthTraining.cap+1],[will.id,Number.MAX_SAFE_INTEGER+1]] as const)
+            expect(check({...source.attributes,[id]:value})).toBe(false);
+        const missing={...source.attributes};delete missing[will.id];expect(check(missing)).toBe(false);
+        expect(check({...source.attributes,unknown:0})).toBe(false);
+        expect(isGrowthAttributes(initialGrowthAttributes(custom,source.attributes),custom,true)).toBe(false);
+        const zero=Object.fromEntries(custom.config.attributes.map(a=>[a.id,0]));
+        expect(isGrowthAttributes(initialGrowthAttributes(custom,zero),custom,true)).toBe(false);
     });
     it('accepts slot order and rejects corrupt effect deadlines, IDs, source facts and transient scopes',()=> {
         const build=equipped('survey','brace'); expect(isGrowthSkillBuild(build,pack,actor.id,0,1)).toBe(true);

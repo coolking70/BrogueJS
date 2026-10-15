@@ -1,3 +1,5 @@
+import { validateContent, type ContentContribution } from './content';
+import { extensionDataFingerprint } from './fingerprint';
 import { validateEdibleTemplates } from '../engine/Core/EdibleDefinitions';
 import { validateWorldModule } from '../engine/Core/WorldDefinitions';
 import { FOUNDATION_PROTOCOL } from './descriptor';
@@ -7,14 +9,26 @@ import { validId, canonical, isJson } from './json';
 import { ExtensionCompatibilityError } from './compatibility';
 
 export class ExtensionRegistry {
-    private readonly factories = new Map<string, { version: string; create: (configuration?: import("./types").Json) => ExtensionModule; rules?: ExtensionRulesIdentity; runConfiguration?: import("./types").ExtensionRunConfiguration; worldSdk?: number; locales?: Readonly<Record<string, Readonly<Record<string,string>>>> }>();
-    register(id: string, version: string, create: (configuration?: import("./types").Json) => ExtensionModule, rules?: ExtensionRulesIdentity, worldSdk?: number, locales?: Readonly<Record<string, Readonly<Record<string,string>>>>, runConfiguration?: import("./types").ExtensionRunConfiguration): void {
+    private readonly factories = new Map<string, { content?: readonly ContentContribution[]; version: string; create: (configuration?: import("./types").Json) => ExtensionModule; rules?: ExtensionRulesIdentity; runConfiguration?: import("./types").ExtensionRunConfiguration; worldSdk?: number; locales?: Readonly<Record<string, Readonly<Record<string,string>>>> }>();
+    register(id: string, version: string, create: (configuration?: import("./types").Json) => ExtensionModule, rules?: ExtensionRulesIdentity, worldSdk?: number, locales?: Readonly<Record<string, Readonly<Record<string,string>>>>, runConfiguration?: import("./types").ExtensionRunConfiguration, content?: readonly ContentContribution[]): void {
         if (!validId(id) || !/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Invalid extension identity/version');
         if (this.factories.has(id)) throw new Error(`Duplicate extension: ${id}`);
         if (rules && (!Number.isSafeInteger(rules.schema) || rules.schema < 1 || rules.version !== version
             || !/^sha256:[a-f0-9]{64}$/.test(rules.fingerprint)
             || Object.keys(rules).some(key => !['schema', 'version', 'fingerprint'].includes(key)))) throw new Error('Invalid extension rules identity');
-        this.factories.set(id, { version, create, worldSdk, locales, runConfiguration, ...(rules ? { rules: Object.freeze(structuredClone(rules)) } : {}) });
+        if(content)validateContent(content,id,version);
+        this.factories.set(id, { content:content?structuredClone(content):undefined, version, create, worldSdk, locales, runConfiguration, ...(rules ? { rules: Object.freeze(structuredClone(rules)) } : {}) });
+    }
+    private contributions(ids: readonly string[], target:string): readonly ContentContribution[] {
+        const all=[...ids].sort().flatMap(id=>this.factories.get(id)?.content??[]);
+        if(all.some(c=>!ids.includes(c.target)))throw new Error('Missing content target');
+        return all.filter(c=>c.target===target);
+    }
+    private contentIdentity(ids:readonly string[],id:string,rules:ExtensionRulesIdentity|undefined):ExtensionRulesIdentity|undefined {
+        const content=this.contributions(ids,id);
+        if(!content.length)return rules;
+        if(!rules)throw new Error('Content target requires rules identity');
+        return {...rules,fingerprint:extensionDataFingerprint({base:rules.fingerprint,content})};
     }
     /** Registration never runs factories. Enable only at a new-run/load boundary. */
     manifest(ids: readonly string[], configurations: Readonly<Record<string, import("./types").Json>> = {}): ExtensionManifest {
@@ -27,7 +41,7 @@ export class ExtensionRegistry {
             const declaration = registration.runConfiguration;
             const configuration = Object.prototype.hasOwnProperty.call(configurations,id) ? configurations[id] : declaration?.default;
             if (declaration && !declaration.validate(configuration)) throw new Error("Invalid run configuration");
-            const rules = declaration ? declaration.identity(configuration!) : registration.rules;
+            const rules = this.contentIdentity(ids,id,declaration ? declaration.identity(configuration!) : registration.rules);
             return { id, version: registration.version, ...(rules ? { rules: structuredClone(rules) } : {}), ...(declaration ? { configuration: structuredClone(configuration!) } : {}) };
         }) };
     }
@@ -51,7 +65,7 @@ export class ExtensionRegistry {
                     `Unavailable extension: ${entry.id}`, entry.version, null);
                 if (entry.version !== installed.version) throw new ExtensionCompatibilityError('version', entry.id,
                     `Extension set/version mismatch: ${entry.id}`, entry.version, installed.version);
-                if (canonical(entry.rules) !== canonical(installed.runConfiguration && installed.runConfiguration.validate(entry.configuration) ? installed.runConfiguration.identity(entry.configuration!) : installed.rules)) throw new ExtensionCompatibilityError('version', entry.id,
+                if (canonical(entry.rules) !== canonical(this.contentIdentity(header.modules.map(m=>m.id),entry.id,installed.runConfiguration && installed.runConfiguration.validate(entry.configuration) ? installed.runConfiguration.identity(entry.configuration!) : installed.rules))) throw new ExtensionCompatibilityError('version', entry.id,
                     `Extension set/version mismatch: ${entry.id}`, entry.version, installed.version,
                     { expected: entry.rules, actual: installed.rules });
             }
@@ -62,7 +76,14 @@ export class ExtensionRegistry {
     create(manifest: ExtensionManifest): ExtensionModule[] {
         this.validateManifest(manifest);
         const modules = new Map(manifest.modules.map(({ id, version, rules, configuration }) => {
-            const module = this.factories.get(id)!.create(configuration);
+            let module = this.factories.get(id)!.create(configuration);
+            const contributions=this.contributions(manifest.modules.map(m=>m.id),id);
+            if(contributions.length){
+                const base=this.factories.get(id)!;
+                if(canonical(module.rules)!==canonical(base.runConfiguration?base.runConfiguration.identity(configuration!):base.rules)||!module.assembleContent||!rules)throw new Error('Invalid content target');
+                const texts=manifest.modules.flatMap(m=>Object.values(this.factories.get(m.id)!.locales??{}).flatMap(l=>Object.keys(l)));
+                module=module.assembleContent(contributions,rules,texts);
+            }
             if (module.id !== id || module.version !== version || canonical(module.rules) !== canonical(rules)) throw new Error('Extension factory identity mismatch');
             const declaration=this.factories.get(id)!;
             validateWorldModule(module,declaration.worldSdk,declaration.locales ? new Set(Object.values(declaration.locales).flatMap(l=>Object.keys(l))) : undefined);

@@ -22,11 +22,11 @@ const enumeration = (...values: string[]): GrowthSchemaNode => ({ type: 'string'
 const literal = (value: string | number): GrowthSchemaNode => ({ enum: [value] });
 const union = (...oneOf: GrowthSchemaNode[]): GrowthSchemaNode => ({ oneOf });
 const nullable = (value: GrowthSchemaNode): GrowthSchemaNode => union(value, { type: 'null' });
-function buildGrowthSchema(): GrowthSchemaNode {
+function buildGrowthSchema(textOwners: readonly string[] = ['growth']): GrowthSchemaNode {
 const bool: GrowthSchemaNode = { type: 'boolean' };
 const id: GrowthSchemaNode = { type: 'string', pattern: '^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$' };
 const externalId: GrowthSchemaNode = { type: 'string', pattern: '^[a-zA-Z][a-zA-Z0-9_.:-]*$' };
-const textKey: GrowthSchemaNode = { type: 'string', pattern: '^ext\\.growth\\.[a-zA-Z0-9_.-]+$' };
+const textKey: GrowthSchemaNode = { type: 'string', pattern: `^ext\\.(${textOwners.map(owner=>owner.replace(/\./g,'\\.')).join('|')})\\.[a-zA-Z0-9_.-]+$` };
 const version: GrowthSchemaNode = { type: 'string', pattern: '^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$' };
 const rounding = enumeration('floor', 'ceil', 'nearest', 'truncate');
 const lockMode = enumeration('none', 'soft', 'hard');
@@ -183,6 +183,7 @@ const structural = (value: unknown, schema: GrowthSchemaNode, path: string): voi
     } else if (schema.type === 'boolean' && typeof value !== 'boolean') fail('shape', path, 'boolean');
 };
 export interface GrowthValidationOptions {
+    textOwners?: readonly string[];
     moduleVersion: string; hasText: (key: string) => boolean;
     /** When supplied, quotes must cover this exact engine catalog once; no engine import is needed. */
     monsterIds?: readonly string[];
@@ -194,7 +195,8 @@ export interface GrowthValidationOptions {
 /** Strict two-pass pure validation. Never repairs/coerces content or runs a data-provided callback. */
 export function validateGrowthDefinitionPack(value: unknown, options: GrowthValidationOptions): asserts value is GrowthDefinitionPack {
     if (!isJson(value)) fail('json', '$');
-    structural(value, getGrowthSchema(), '$');
+    if(options.textOwners?.some(owner=>!validId(owner)))fail('shape','$');
+    structural(value, options.textOwners?buildGrowthSchema(options.textOwners):getGrowthSchema(), '$');
     const pack = value as GrowthDefinitionPack, config = pack.config;
     if (pack.moduleVersion !== options.moduleVersion || pack.rulesVersion !== pack.moduleVersion) fail('version', '$.moduleVersion');
     const unique = <T>(values: readonly T[], key: (value: T) => string, path: string): Map<string, T> => {

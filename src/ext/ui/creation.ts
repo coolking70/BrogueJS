@@ -7,7 +7,7 @@ import type { ModuleUiContribution } from './types';
 
 export interface ModuleCreationPlan {
     readonly extensions: readonly string[];
-    readonly steps: readonly { moduleId: string; component?: Component; load?: () => Promise<Component> }[];
+    readonly steps: readonly { moduleId: string; definitions?: import('../types').ReadonlyJson; component?: Component; load?: () => Promise<Component> }[];
     readonly modules: readonly ExtensionModule[];
 }
 /** Validate enabled packages before retiring the old run; factories remain pure. */
@@ -15,7 +15,7 @@ export function prepareModuleCreation(extensions: readonly string[], contributio
     const manifest = registry.manifest(extensions), modules = registry.create(manifest);
     const steps = modules.flatMap(module => {
         const ui = contributions.find(entry => entry.moduleId === module.id);
-        return ui?.creationStep || ui?.loadCreationStep ? [{ moduleId: module.id, component: ui.creationStep, load: ui.loadCreationStep }] : [];
+        return ui?.creationStep || ui?.loadCreationStep ? [{ moduleId: module.id, definitions: module.view?.definitions, component: ui.creationStep, load: ui.loadCreationStep }] : [];
     });
     return { extensions: manifest.modules.map(entry => entry.id), modules, steps };
 }

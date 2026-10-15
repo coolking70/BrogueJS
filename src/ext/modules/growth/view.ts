@@ -1,3 +1,6 @@
+import i18next from 'i18next';
+import { growthTrees } from './content';
+import { itemDisplayName } from '../../../engine/Items/ItemExtensionBindings';
 import { isIncapacitated } from '../../../engine/Status/Incapacitation';
 import type { Game } from '../../../engine/Core/Game';
 import type { DeepReadonly } from './definitions';
@@ -31,6 +34,8 @@ export interface GrowthResourcePreview {
 export interface GrowthAttributeView {
     readonly id: string; readonly nameKey: string; readonly descriptionKey: string;
     readonly value: number; readonly allocated: number; readonly increment: number; readonly preview: number;
+    readonly effective?:number; readonly effectivePreview?:number; readonly external?:number;
+    readonly sources?:readonly {readonly id:string;readonly name:string;readonly amount:number}[];
     readonly pointCost: number; readonly cap: number; readonly enabled: boolean; readonly description: readonly string[];
     readonly canIncrease: boolean; readonly canDecrease: boolean;
 }
@@ -64,6 +69,7 @@ export interface GrowthCharacterViewModel {
     readonly attributePoints: number; readonly skillPoints: number; readonly hasUnspentPoints: boolean;
     readonly focus: { readonly current: number; readonly capacity: number };
     readonly attributes: readonly GrowthAttributeView[];
+    readonly trees?:readonly {readonly id:string;readonly nameKey:string;readonly nodes:readonly {readonly id:string;readonly nameKey:string;readonly learned:boolean;readonly requirements:readonly string[]}[]}[];
     readonly draft: { readonly valid: boolean; readonly stale: boolean; readonly changed: boolean; readonly cost: number;
         readonly remainingPoints: number; readonly errorKey: string | null };
     readonly preview: GrowthResourcePreview & { readonly ports: readonly GrowthPortPreview[] };
@@ -200,6 +206,10 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
         identity: { ...initialGrowthIdentityBuild(), ...(components.identity as unknown as Partial<GrowthIdentityBuild> | undefined) },
         skillBuild: (components['skill-build'] as unknown as GrowthPublicSkillBuild | undefined) ?? projectGrowthSkillBuild(pack, initialGrowthSkillBuild()), clock: (source.state.objectiveClock as number | undefined) ?? 0,
         hp: game.player.hp, maxHp: game.player.maxHp, strength: game.player.strength, effectiveStrength: game.player.effectiveStrength, gold: game.stats.gold };
+    const knownStats=input.stats!;
+    input.maxHp=knownStats['native.max-hp']!;input.strength=knownStats['native.strength']!;input.effectiveStrength=knownStats['native.effective-strength']!;
+    input.hp=Math.min(input.hp,input.maxHp);
+    input.focus={...input.focus,current:Math.min(input.focus.current,knownStats['growth.focus-capacity']!)};
     const { progression, attributes } = input, config = pack.config;
     const disabledReason = input.replay ? 'replay' : !input.created ? 'creation-required' : !input.canManage || input.hp <= 0 ? 'unavailable' : null;
     const readOnly = disabledReason !== null;
@@ -213,6 +223,9 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
     else problem = errorKey('empty');
     if (readOnly && !stale) problem = errorKey(disabledReason === 'creation-required' ? 'creation_required' : disabledReason!);
     const actor = growthRuleActor(input.playerId, progression, attributes), nextActor = proposal?.nextActor ?? actor;
+    const effectiveActor={...actor,attributes:Object.fromEntries(config.attributes.map(a=>[a.id,knownStats[`growth.attribute:${a.id}`]??actor.attributes[a.id]!]))};
+    const nextStats=proposal?input.previewStats!(proposal.attributes):knownStats;
+    const effectiveNextActor={...nextActor,attributes:Object.fromEntries(config.attributes.map(a=>[a.id,nextStats[`growth.attribute:${a.id}`]??nextActor.attributes[a.id]!]))};
     const skillBuild = input.skillBuild;
     const { learned, active, passive } = skillBuild;
     const clock = (source.state.objectiveClock as number | undefined) ?? 0;
@@ -227,7 +240,15 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
         if (!readOnly && !stale && enabled && (proposal || !changed)) {
             try { plan(input, 'allocate', { ...increments, [definition.id]: increment + 1 }); canIncrease = true; } catch { /* Unaffordable or capped. */ }
         }
-        return { id: definition.id, nameKey: definition.nameKey, descriptionKey: definition.descriptionKey,
+        const stat=`growth.attribute:${definition.id}`;
+        const sources=runtime.stats.breakdown(game.player.id,stat,{},true).rows.filter(row=>row.category==='flat'&&row.known!==false).map(row=>{
+            const itemId=Number(/\.item\.(\d+)/.exec(row.sourceId)?.[1]);
+            const item=game.player.inventory.items.find(item=>item.id===itemId);
+            const definition=pack.definitions.find(d=>row.sourceId.startsWith(`${d.id}.`));
+            const name=item?itemDisplayName(item,'equipped'):definition?i18next.t(definition.nameKey):row.sourceKind==='allocated-attribute'?i18next.t('ext.growth.ui.allocated_source'):row.sourceKind==='initial-attribute'?i18next.t('ext.growth.ui.initial_source'):i18next.t('ext.growth.ui.external_source');
+            return {id:row.sourceId,name,amount:row.value};
+        });
+        return {effective:knownStats[stat],effectivePreview:nextStats[stat],external:(knownStats[stat]??0)-attributes.values[definition.id]!,sources, id: definition.id, nameKey: definition.nameKey, descriptionKey: definition.descriptionKey,
             value: attributes.values[definition.id]!, allocated: attributes.allocated[definition.id]!, increment,
             preview: nextActor.attributes[definition.id]!, pointCost: definition.pointCost, cap, enabled, description: describeGrowthAttribute(pack, definition),
             canIncrease, canDecrease: !readOnly && !stale && Number.isSafeInteger(increment) && increment > 0 };
@@ -246,8 +267,8 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
             nameKey: prerequisiteName(requirement, pack), met: meetsGrowthPrerequisites([requirement], facts) })),
             prerequisitesMet: meetsGrowthPrerequisites(definition.prerequisites, facts), affordable: progression.skillPoints >= definition.cost,
             available: canUse, learned: isLearned, equipped, effectiveLockMode, canLearn, canEquip, canUse,
-            canUnequip: !readOnly && !stale && !changed && equipped, cooldownRemaining, description: describeGrowthSkill(pack, definition, cooldown(nextActor)),
-            adjustedCooldown: delta(cooldown(actor), cooldown(nextActor)) };
+            canUnequip: !readOnly && !stale && !changed && equipped, cooldownRemaining, description: describeGrowthSkill(pack, definition, cooldown(effectiveNextActor)),
+            adjustedCooldown: delta(cooldown(effectiveActor), cooldown(effectiveNextActor)) };
     });
     const slots = Object.entries(config.skills).filter(([key]) => key.endsWith('Slots')).map(([key, count]) => ({
         mode: key.slice(0, -5) as 'active' | 'passive', count: count as number, used: key === 'activeSlots' ? active.length : passive.length, available: !readOnly,
@@ -278,10 +299,11 @@ export function readGrowthCharacterView(game: Game | null | undefined, draft?: G
         attributePoints: progression.attributePoints, skillPoints: progression.skillPoints,
         hasUnspentPoints: progression.attributePoints > 0 || progression.skillPoints > 0,
         focus: { current: input.focus.current, capacity }, attributes: attributeRows,
+        trees:growthTrees(pack).filter(tree=>!tree.professionIds.length||!!input.identity.professionId&&tree.professionIds.includes(input.identity.professionId)).map(tree=>({id:tree.id,nameKey:tree.nameKey,nodes:tree.nodes.map(n=>({id:n.id,nameKey:pack.definitions.find(d=>d.id===n.skillId)!.nameKey,learned:learned.includes(n.skillId),requirements:n.requires.map(id=>pack.definitions.find(d=>d.id===tree.nodes.find(p=>p.id===id)!.skillId)!.nameKey)}))})),
         equipment: { time: config.skills.equipTime, preservesCooldowns: config.skills.equipPreservesCooldowns, preservesFocus: config.skills.equipPreservesFocus },
         draft: { valid: !!proposal && !readOnly && !stale, stale, changed, cost: proposal?.cost ?? 0,
             remainingPoints: proposal?.remainingPoints ?? progression.attributePoints, errorKey: problem },
-        preview: { ...resources(proposal), ports: previewPorts(pack, actor, nextActor, skillBuild, clock, input.identity) },
+        preview: { ...resources(proposal), ports: previewPorts(pack, effectiveActor, effectiveNextActor, skillBuild, clock, input.identity) },
         recovery: { hp: config.levels.recovery.allocationHp, focus: config.levels.recovery.allocationFocus,
             clearCooldowns: config.levels.recovery.clearCooldownOnAllocation }, skills, slots, identities,
         respec: { enabled: config.respec.enabled, available: respecAvailable, cost: config.respec.cost,

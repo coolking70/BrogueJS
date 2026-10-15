@@ -1,3 +1,4 @@
+import { extensionDataFingerprint } from '../../fingerprint';
 import { evaluateStat, decimalStatFraction, roundStatFraction, safeStatRational, type StatKeyDeclaration } from '../../stats';
 import type { DeepReadonly } from './definitions';
 import type { GrowthBounds, GrowthCondition, GrowthDamageInput, GrowthDefinitionPack, GrowthHitInput, GrowthMagnitude,
@@ -21,6 +22,7 @@ export interface GrowthEvaluationFacts {
 }
 /** Explicitly supplied active modifiers, not skill/identity activation or a mutable effect store. */
 export interface GrowthScopedModifiers {
+    readonly sourceId?: string;
     readonly owner: GrowthEvaluationOwner;
     readonly modifiers: readonly DeepReadonly<GrowthModifier>[];
     readonly tags?: readonly string[];
@@ -28,6 +30,7 @@ export interface GrowthScopedModifiers {
     readonly taggedModifiers?: readonly DeepReadonly<GrowthTaggedModifier>[];
 }
 export interface GrowthEvaluatedModifier {
+    readonly sourceId?:string;
     readonly operation: 'add' | 'multiply';
     readonly slot: string | null;
     readonly magnitude: number;
@@ -171,13 +174,17 @@ function inputFacts(input: GrowthEvaluationInput, facts: GrowthEvaluationFacts):
         adjacent: input.adjacent, probabilityRoll: input.rollMode === undefined ? undefined : input.rollMode === 'roll-probability',
         searchMode: input.mode, directDamage: input.direct, tags: input.tags, ...facts };
 }
+const modifierIds=new WeakMap<object,string>();
+function modifierId(modifier:object):string {
+    let id=modifierIds.get(modifier);if(!id){id=`growth.rule.${extensionDataFingerprint(modifier).slice(7)}`;modifierIds.set(modifier,id);}return id;
+}
 export function collectModifiers(pack: GrowthEvaluationPack, input: GrowthEvaluationInput, effects: readonly GrowthScopedModifiers[],
-    ports: readonly { port: GrowthRulePort; owner: GrowthEvaluationOwner }[], facts: GrowthEvaluationFacts): GrowthEvaluatedModifier[] {
-    const result: GrowthEvaluatedModifier[] = [], attributes = growthAttributeModifiers(pack), common = inputFacts(input, facts);
+    ports: readonly { port: GrowthRulePort; owner: GrowthEvaluationOwner }[], facts: GrowthEvaluationFacts, trace=false): GrowthEvaluatedModifier[] {
+    const result: GrowthEvaluatedModifier[] = [], common = inputFacts(input, facts);
     for (const scope of ports) {
         const owner = scope.owner === 'actor' ? input.actor : input.target;
         if (!owner) continue;
-        const groups: readonly GrowthScopedModifiers[] = [...(input.inactiveAttributeActorIds?.includes(owner.id) ? [] : [{owner:scope.owner,modifiers:attributes}]),...effects.filter(effect=>effect.owner === scope.owner)];
+        const groups: readonly GrowthScopedModifiers[] = [...(input.inactiveAttributeActorIds?.includes(owner.id) ? [] : pack.config.attributes.map(a=>({owner:scope.owner,sourceId:a.id,modifiers:a.effects}))),...effects.filter(effect=>effect.owner === scope.owner)];
         for (const group of groups) for (const modifier of group.modifiers) {
             const facts = { ...common, role: scope.owner, tags:[...(common.tags ?? []),...(group.tags ?? [])] };
             if (modifier.port === scope.port && matchesGrowthConditions(modifier.conditions, facts)) {
@@ -188,7 +195,7 @@ export function collectModifiers(pack: GrowthEvaluationPack, input: GrowthEvalua
                         && matchesGrowthConditions(item.conditions,facts)).map(item=>({operation:item.operation,slot:item.slot,magnitude:evaluateGrowthMagnitude(item.magnitude,source)}));
                     magnitude = evaluateGrowthModifiers(pack.config.rules,pack.config.rules.taggedProperties.intensity,magnitude,tags);
                 }
-                result.push({ operation: modifier.operation, slot: modifier.slot, magnitude });
+                result.push({ operation: modifier.operation, slot: modifier.slot, magnitude,...(trace?{sourceId:`${group.sourceId??'growth.effect'}.${modifierId(modifier)}`}:{}) });
             }
         }
     }

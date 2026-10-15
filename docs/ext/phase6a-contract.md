@@ -368,3 +368,8 @@ C6-D4已裁定并实施：**唯一品可分解，事前Yes/No警告，收据不�
 - ItemDataError：C6_DATA（形状/协议）、C6_BUDGET（大小/深度/数量）、C6_OWNER（未启用/未登记）、C6_VALIDATOR（owner拒绝/抛错）、C6_OWNERSHIP（重复/错误根）。受控命令拒绝返回不接受，沿原录像边界保留输入/决策，不另建日志。字段更新与knowledge摘要通知不代替机械物化；计划、缓存、绑定不持久化。
 - `moduleData`在native摘要；同时以`knowledge.item-data.<id>`哈希原owner对象，覆盖部分known而不理解私有schema。foundation生命周期在extensions域。worldSdk/edibleSdk字节保持；stats有意扩展，不再声称所有旧SDK散列不变。
 - 本地冻结前置与实际测试/性能结果、未验范围及导出SHA，以6A1报告最终表为准；维护者合入commit待填写。loot UI/目录集成/符文强度重塑/工位分别留6B1/6B2/6B3/6C。
+
+
+## 6B3 当前差量（2026-10-15）
+
+本节覆盖上文历史阶段的属性能力缺口及后续阶段编号。已落地内容见 [6B3实施合同](phase6b3-contract.md)：软推荐选择、正式 `growth.attributes.v1` / `growth.attribute:<完整定义ID>`、受限两阶段属性派生、sage/adept/scholar实际提交知识、有限职业/树贡献与已知来源UI。growth1.9.0、loot0.4.0、foundation16；原数值未调，其他持久格式按合同保持。上文强化/精炼/符文强度重塑指向的6B3均顺延6B4；不追改历史验收结论。当前限定门禁及维护者浏览器待验见 [6B3报告](phase6b3.report.md)。

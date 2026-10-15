@@ -159,3 +159,26 @@ describe('candidate stat world scope', () => {
   expect(live()).toBe(14);
  });
 });
+
+describe('bounded root-attribute derivation',()=>{
+ const key={id:'stats-fixture.attribute:stats-fixture.rank',attributeId:'stats-fixture.rank',owner:'stats-fixture',unit:'rank',kind:'query' as const,minimum:0,maximum:4,rounding:'floor' as const,categories:['flat','clamp'] as const,increased:{minimum:-9000,maximum:50000},moreSlots:[],base:0};
+ function provider():StatSourceProvider{return {keys:[key],collect:()=>[row(key.id,9,{known:false})],derived:{inputs:[key.id],outputs:['native.max-hp'],collect:(_a,c)=>[row('native.max-hp',c.input(key.id)*3)]}};}
+ it('clamps roots before deriving; unknown upstream is removed before any downstream evaluation',()=>{
+  const f=direct(provider());expect(f.runtime.stats.value(f.p.id,key.id)).toBe(4);
+  expect(f.runtime.stats.hypotheticalValue(f.p.id,{},key.id,true,{baseValue:100})).toBe(0);
+  const actual=f.runtime.stats.value(f.p.id,'native.max-hp');expect(f.runtime.stats.breakdown(f.p.id,'native.max-hp',{},true).value).toBe(actual-12);
+  expect(f.runtime.stats.hypothetical(f.p.id,{},true)['native.max-hp']).toBe(actual-12);f.runtime.assertStats();
+ });
+ it('rejects missing roots, native backedges, attribute outputs and undeclared writes',()=>{
+  for(const input of ['missing.rank','native.strength']){const p=provider();expect(()=>direct({...p,derived:{...p.derived!,inputs:[input]}})).toThrow();}
+  const p=provider();expect(()=>direct({...p,derived:{...p.derived!,outputs:[key.id]}})).toThrow();
+  expect(()=>direct({...p,derived:{...p.derived!,collect:()=>[row('native.strength',1)]}})).toThrow();
+  expect(()=>direct({...p,collect:()=>[row(key.id,1,{conditions:[]})]})).toThrow();
+ });
+ it('is independent of provider installation order and retains collect reentry guard',()=>{
+  const make=(reverse:boolean)=>{const p=new Player(4,4),r=new ExtensionRegistry(),first=module(provider()),second:ExtensionModule={id:'other-fixture',version:'1.0.0',initialState:()=>({}),validateState:isJson,statSources:{collect:()=>[row(key.id,-6,{sourceId:'other-fixture.rank',known:true})]}};
+   for(const m of reverse?[second,first]:[first,second])r.register(m.id,m.version,()=>m);
+   const runtime=new ExtensionRuntime(r,r.manifest([first.id,second.id]),{playerId:()=>p.id,depth:()=>1,randomInt:()=>{throw Error();},message:()=>undefined});runtime.attachCreature(p);return runtime.stats.value(p.id,'native.max-hp');};
+  expect(make(false)).toBe(make(true));
+ });
+});

@@ -6,6 +6,7 @@ import MapTileLegend from './MapTileLegend.vue';
 import { mapMode, selectMapMode, isMapMode } from '../ui/mapTiles';
 import TitleFx from "./theme/TitleFx.vue";
 import { normalizeSeed } from "../engine/Seed";
+import { resolveModuleRecommendations, selectModule } from '../ext/selection';
 import type { RuleSet } from '../ext/types';
 import { DEFAULT_EXTENSIONS, getInstalledModuleDescriptors } from '../ext/catalog';
 import { DEFAULT_NEW_GAME_RULE_SET } from '../ext/ui/defaults';
@@ -86,7 +87,18 @@ function goBack() {
 const mode = ref<GameMode>("normal");
 const ruleSet = ref<RuleSet>(DEFAULT_NEW_GAME_RULE_SET);
 const installedModules = getInstalledModuleDescriptors();
-const selectedModules = ref<string[]>([...DEFAULT_EXTENSIONS]);
+const moduleDraft = ref(resolveModuleRecommendations(installedModules, DEFAULT_EXTENSIONS));
+const selectedModules = computed(() => moduleDraft.value.selected);
+function toggleModule(id: string, event: Event) {
+  moduleDraft.value = selectModule(installedModules, moduleDraft.value, id, (event.target as HTMLInputElement).checked);
+}
+function restoreRecommendations() {
+  moduleDraft.value = resolveModuleRecommendations(installedModules, selectedModules.value);
+}
+const recommendationRows = computed(() => installedModules.filter(m => moduleDraft.value.reasons[m.id]?.length).map(m => ({
+  ...m, enabled: selectedModules.value.includes(m.id),
+  sources: installedModules.filter(source => moduleDraft.value.reasons[m.id]!.includes(source.id))
+})));
 const seedInput = ref("");
 const replaySeekInput = ref<string | number>("");
 const replayFileInput = ref<HTMLInputElement | null>(null);
@@ -341,9 +353,14 @@ const sidebarWidthModel = computed({
             <p class="field-hint">{{ t('ext.modules.hint') }}</p>
             <p class="field-hint">{{ t('ext.modules.default_hint') }}</p>
             <label v-for="module in installedModules" :key="module.id" class="module-option">
-              <input v-model="selectedModules" type="checkbox" :value="module.id" :data-module="module.id" />
+              <input type="checkbox" :checked="selectedModules.includes(module.id)" @change="toggleModule(module.id, $event)" :value="module.id" :data-module="module.id" />
               <span>{{ t(module.labelKey) }}<small v-if="module.descriptionKey">{{ t(module.descriptionKey) }}</small></span>
             </label>
+            <p v-for="row in recommendationRows" :key="row.id" class="field-hint">
+              {{ t(row.enabled ? 'ext.modules.recommended' : 'ext.modules.declined', { module: t(`ext.${row.labelKey.slice(4)}`), sources: row.sources.map(source => t(`ext.${source.labelKey.slice(4)}`)).join('、') }) }}
+            </p>
+            <p v-if="moduleDraft.missing.length" class="field-hint">{{ t('ext.modules.recommendation_missing') }}</p>
+            <button v-if="moduleDraft.declined.length" class="back-button" type="button" @click="restoreRecommendations">{{ t('ext.modules.restore_recommendations') }}</button>
             <p v-if="!selectedModules.length" class="field-hint">{{ t('ext.modules.empty') }}</p>
           </fieldset>
           <label class="field"
@@ -577,7 +594,7 @@ const sidebarWidthModel = computed({
       </footer>
     </div>
     <component v-if="creationComponent" :is="creationComponent" :key="`${creationSession}:${creationStep}:${activeCreationStep?.moduleId}`"
-      :submitting="creationSubmitting" :error="creationError" v-bind="creationHandlers" />
+      :submitting="creationSubmitting" :error="creationError" :definitions="activeCreationStep?.definitions" v-bind="creationHandlers" />
   </div>
 </template>
 

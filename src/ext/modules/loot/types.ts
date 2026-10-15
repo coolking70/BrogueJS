@@ -122,7 +122,7 @@ export interface LootModifierDraft {
 }
 export interface LootAvailability {
   combat: { stats: readonly string[] } | null;
-  growth: { stats: readonly string[]; attributes: readonly string[] } | null;
+  growth: { stats: readonly string[]; attributes: readonly string[]; fingerprint?: string } | null;
   giants: { formIds: readonly string[] } | null;
 }
 export interface EffectiveLootCatalog {

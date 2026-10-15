@@ -1,3 +1,4 @@
+import { assembleGrowthContent } from './content';
 import type { ExtensionModule } from '../../types';
 import { isJson } from '../../json';
 import { getGrowthPackIdentity, GROWTH_VERSION, loadGrowthDefinitionPack } from './definitions';
@@ -36,5 +37,5 @@ export function createGrowthModule(): ExtensionModule {
     const contract = createGrowthContractModule();
     const text: Readonly<Record<string,string>> = zhCN;
     const pack = loadGrowthDefinitionPack({hasText: key => typeof text[key] === 'string' && text[key]!.trim().length > 0});
-    return createGrowthGameplay(pack,contract.rules);
+    return {...createGrowthGameplay(pack,contract.rules),assembleContent:(contributions,identity,textKeys)=>createGrowthGameplay(assembleGrowthContent(pack,contributions,textKeys),identity)};
 }

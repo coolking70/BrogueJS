@@ -172,7 +172,7 @@ export function finishRaidEvents(g: Game): void {
       g.extensionRuntime!.worldCampReplace(r.owner, state);
       recordWorldReceipt(g, r.owner, 'offline', e.id + '.closed', 'completed', 'combat');
       markRecordingRoot(g.world5!);
-      logger.log(i18next.t('ext.settlement.raid.closed'), '#c4b78e');
+      logger.log(i18next.t('ext.world.raid.closed'), '#c4b78e');
     });
   }
 }
@@ -210,7 +210,7 @@ function notify(g: Game, r: CampRaidState, c: CampRecord, key: string, tick: num
       };
     const ledger = g.world5!.offline.find((l) => l.campSlotId === c.slot)!;
     logger.log(
-      i18next.t('ext.settlement.raid.' + key, {
+      i18next.t('ext.world.raid.' + key, {
         units: r.event?.lostUnits ?? 0,
         hp: r.event?.damagedHp ?? 0,
         shortage: Math.max(0, ...ledger.residentStates.map((n) => n.foodShortage)),

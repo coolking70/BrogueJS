@@ -8,7 +8,7 @@ const props = defineProps<{ model: GrowthCharacterViewModel; presentationHidden?
 const emit = defineEmits<{ close: []; reset: []; adjust: [id: string, amount: number]; submit: []; respec: []; skill: [action: 'learn' | 'equip' | 'unequip' | 'use', id: string]; target: [target: GrowthSkillTarget]; cancelTarget: [] }>();
 const { t } = useTranslation();
 // Names and descriptions have been validated against the pack's localization keys.
-const text = (key: string) => t(`ext.growth.${key.slice('ext.growth.'.length)}`);
+const text = (key: string) => t(`ext.${key.slice(4)}`);
 const definitionName = (id: string) => {
     const definition = [...props.model.attributes, ...props.model.skills, ...props.model.identities.flatMap(group => group.definitions)].find(entry => entry.id === id);
     return definition ? text(definition.nameKey) : '';
@@ -101,10 +101,17 @@ onUnmounted(() => removeKeyboard?.());
           <button v-for="item in tabs" :key="item.id" :data-tab="item.id" :class="{ selected: tab === item.id }" @click="tab = item.id; respecConfirm = false; emit('cancelTarget')">{{ item.label }}</button>
         </nav>
         <main class="growth-body" @click.self="emit('cancelTarget')">
+          <section v-if="tab === 'skills' && model.trees?.length" class="growth-preview">
+            <article v-for="tree in model.trees" :key="tree.id"><h3>{{ text(tree.nameKey) }}</h3>
+              <p v-for="node in tree.nodes" :key="node.id">{{ text(node.nameKey) }} — {{ $t(node.learned ? 'ext.growth.ui.tree_learned' : 'ext.growth.ui.tree_unlearned') }}<span v-if="node.requirements.length"> · {{ $t('ext.growth.ui.tree_requires', { names: node.requirements.map(text).join('、') }) }}</span></p>
+            </article>
+          </section>
           <template v-if="tab === 'attributes'">
             <p class="growth-hint">{{ $t('ext.growth.ui.draft_hint') }}</p>
             <article v-for="attribute in model.attributes" :key="attribute.id" class="growth-attribute" :data-attribute="attribute.id">
               <div class="growth-attribute-title"><h3>{{ text(attribute.nameKey) }}</h3><strong>{{ attribute.value }}<span v-if="attribute.increment" class="growth-delta"> → {{ attribute.preview }}</span></strong></div>
+              <p v-if="attribute.effective !== undefined" class="growth-effect-description">{{ $t('ext.growth.ui.effective_attribute', { permanent: attribute.value, external: attribute.external, effective: attribute.effective, preview: attribute.effectivePreview, cap: attribute.cap }) }}</p>
+              <p v-for="source in attribute.sources" :key="source.id" class="growth-effect-description">{{ $t('ext.growth.ui.attribute_source', { name: source.name, amount: source.amount }) }}</p>
               <p v-for="(line, index) in attribute.description" :key="index" class="growth-effect-description">{{ line }}</p>
               <div class="growth-attribute-controls">
                 <span>{{ $t('ext.growth.ui.attribute_cost_cap', { cost: attribute.pointCost, cap: attribute.cap }) }}</span>

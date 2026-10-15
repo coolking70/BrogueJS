@@ -12,7 +12,7 @@ import { initialGrowthSkillBuild, createGrowthEffectInstance } from '../skills';
 import { initialGrowthState, type GrowthState } from '../state';
 import type { Json } from '../../../types';
 import { createGrowthStatSources } from '../statSources';
-import { StatPipeline } from '../../../../engine/Stats/StatPipeline';
+import { StatPipeline, evaluateStat } from '../../../../engine/Stats/StatPipeline';
 import { NATIVE_STAT_KEYS } from '../../../../engine/Stats/NativeStatKeys';
 import type { StatKeyDeclaration } from '../../../stats';
 const COMBAT_STAT_KEYS:readonly StatKeyDeclaration[]=['stamina-capacity','poise-capacity','stamina-regen','poise-recovery','native-attack-cost'].map(id=>({id:`combat.${id}`,owner:'combat',unit:'resource',kind:id.endsWith('capacity')?'materialized':'query',minimum:id.endsWith('capacity')?1:0,maximum:1_000_000,rounding:'floor',categories:['flat','increased','more','clamp'],increased:{minimum:-9000,maximum:50000},moreSlots:[{id:'growth.slot.final',minimum:-10000,maximum:30000}]}));
@@ -46,7 +46,7 @@ function fixture(change: (pack: GrowthDefinitionPack) => void = () => undefined,
     const base=(key:string)=>key==='combat.stamina-capacity'?100:key==='combat.poise-capacity'?60:key==='native.strength'?12:key==='native.max-hp'?10:provider.keys?.find(k=>k.id===key)?.base??0;
     const context = ():StatSourceContext => freeze({playerId:1,state:structuredClone(state) as unknown as Json,facts:{},equippedItems:()=>[],base,
         getComponent:(_id:number,name:string)=>components[name]===undefined?undefined:freeze(structuredClone(components[name])) as Json});
-    const pipeline=new StatPipeline({actor:()=>actor,revision:()=>0,base:(_id,key)=>base(key),collect:()=>provider.collect(actor,context()).map(r=>({...r,owner:'growth'}))},[...NATIVE_STAT_KEYS,...COMBAT_STAT_KEYS,...provider.keys!]);
+    const pipeline=new StatPipeline({actor:()=>actor,revision:()=>0,base:(_id,key)=>base(key),collect:()=>{const rows=provider.collect(actor,context()).map(r=>({...r,owner:'growth'}));return [...rows,...provider.derived!.collect(actor,{...context(),input:key=>evaluateStat(provider.keys!.find(k=>k.id===key)!,0,rows.filter(r=>r.stat===key)).value}).map(r=>({...r,owner:'growth'}))];}},[...NATIVE_STAT_KEYS,...COMBAT_STAT_KEYS,...provider.keys!]);
     const query=()=>{pipeline.clear();return {staminaCapacity:pipeline.value(actor.id,'combat.stamina-capacity'),poiseCapacity:pipeline.value(actor.id,'combat.poise-capacity')};};
     return {data,pack,provider,progression,attributes,identity,build,state,components,context,query};
 }
@@ -167,7 +167,7 @@ describe('EXT-3g growth combat provider actual commands and reconstruction',()=>
         command('respec');expect(queryPlayer(game)).toEqual(base);
         const old=structuredClone(saved);old.extensions!.manifest.modules.find(m=>m.id==='growth')!.version='1.7.0';
         const current=game.extensionRuntime;expect(game.loadSnapshot(old)).toBe(false);expect(game.extensionRuntime).toBe(current);
-        expect(GROWTH_VERSION).toBe('1.8.0');
+        expect(GROWTH_VERSION).toBe('1.9.0');
     });
     it('repeated real temporary casts expire without accumulating capacity or changing the saved effect on reads',()=>{
         const skillId='growth.skill.brace';

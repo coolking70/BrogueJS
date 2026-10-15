@@ -1,3 +1,4 @@
+import { resolveModuleRecommendations } from './selection';
 import type { ExtensionRegistry } from './registry';
 import { registryFromDescriptors, validateModuleDescriptors, type ModuleDescriptor } from './descriptor';
 
@@ -13,4 +14,4 @@ export function createExtensionRegistry(descriptors: readonly ModuleDescriptor[]
     return registryFromDescriptors(descriptors);
 }
 /** Current configurable package defaults. Any subset, including empty, is valid. */
-export const DEFAULT_EXTENSIONS: readonly string[] = Object.freeze(installed.filter(module => module.defaultEnabled).map(module => module.id));
+export const DEFAULT_EXTENSIONS: readonly string[] = Object.freeze(resolveModuleRecommendations(installed, installed.filter(module => module.defaultEnabled).map(module => module.id)).selected);

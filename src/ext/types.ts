@@ -284,6 +284,7 @@ export interface ExtensionModule extends ExtensionVersion, WorldModuleFields {
     /** Pure projection receives only a detached selected player component, never a world/context capability. */
     projectPlayerComponent?(name: string, value: ReadonlyJson): Json;
     /** Build item catalogs from registered public capabilities before state validation. Pure, session-local only. */
+    assembleContent?(contributions: readonly import('./content').ContentContribution[], identity: ExtensionRulesIdentity, textKeys: readonly string[]): ExtensionModule;
     prepareItemSession?(query: (capability: string, input: Json) => OptionalQueryResult): void;
     initialState(): Json;
     validateState(state: unknown): state is Json;

@@ -38,6 +38,8 @@ export interface StatKeyDeclaration {
     readonly maximum: number;
   }[];
   readonly base?: number;
+  /** Root attribute: restricted key grammar, no conditional or derived writers. */
+  readonly attributeId?: string;
 }
 export type StatCondition =
   | { readonly kind: 'attack-kind'; readonly value: 'melee' | 'thrown' }
@@ -107,7 +109,18 @@ export interface StatSourceContext {
   /** Detached L0 template values, before any source is applied. */
   base(stat: string): number;
 }
+export interface StatDerivedContext extends StatSourceContext {
+  input(stat: string): number;
+}
 export interface StatSourceProvider {
+  readonly gainReceipts?: readonly {readonly component:string;readonly field:string;readonly stat:string}[];
+  /** One bounded phase: declared root attributes -> existing downstream keys. */
+  readonly derived?: {
+    readonly inputs: readonly string[];
+    readonly outputs: readonly string[];
+    readonly optionalOutputs?: readonly string[];
+    collect(actor: Readonly<StatActorFacts>, context: StatDerivedContext): readonly StatModifierRow[];
+  };
   /** C6 source-only budgets, applied before the global key/slot bounds. */
   readonly itemPolicy?: 'C6-1';
   /** New hostile, noncopied births may initialize to their scaled maximum. */
@@ -206,10 +219,12 @@ export function validateStatKey(
           'categories',
           'increased',
           'moreSlots',
-          'base'
+          'base',
+          'attributeId'
         ].includes(k)
     ) ||
-    !validId(v.id) ||
+    !(validId(v.id) || (v.attributeId !== undefined && v.id === `${owner}.attribute:${v.attributeId}` && validId(v.attributeId))) ||
+    (v.attributeId !== undefined && (!validId(v.attributeId) || v.kind !== 'query' || v.base !== 0 || v.minimum !== 0 || v.id !== `${owner}.attribute:${v.attributeId}`)) ||
     v.owner !== owner ||
     !v.id.startsWith(`${owner}.`) ||
     typeof v.unit !== 'string' ||
@@ -266,6 +281,7 @@ export function validateStatRows(
   if (value.length > 256) throw new StatValidationError('budget');
   for (const row of value as StatModifierRow[]) {
     const key = keys.get(row?.stat);
+    if (key?.attributeId && row.conditions !== undefined) throw new StatValidationError('condition');
     if (
       !row ||
       Object.keys(row).some(
@@ -395,3 +411,8 @@ export function validateEquipChange(change: unknown): asserts change is EquipCha
 
 /** Pure foundation scalar facade for detached module previews/source preparation. */
 export { evaluateStat, decimalStatFraction, roundStatFraction, safeStatRational } from '../engine/Stats/StatPipeline';
+
+/** Capability syntax only; actual queries must also find a registered declaration. */
+export function validStatId(id: unknown): id is string {
+  return validId(id) || typeof id === 'string' && /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\.attribute:[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/.test(id);
+}

@@ -19,6 +19,7 @@ export function buildEffectiveLootCatalog(pack: LootPack, availability: LootAvai
         combat: availability.combat === null ? null : { stats: sorted(availability.combat.stats) },
         growth: availability.growth === null ? null : {
             stats: sorted(availability.growth.stats), attributes: sorted(availability.growth.attributes),
+            ...(availability.growth.fingerprint ? {fingerprint:availability.growth.fingerprint}:{}),
         },
         giants: availability.giants === null ? null : { formIds: sorted(availability.giants.formIds) },
     };

@@ -1,3 +1,5 @@
+import i18next from 'i18next';
+import { validateAttributeCatalog } from '../../attributeCatalog';
 import type { Game } from '../../../engine/Core/Game';
 import { Item, ItemCategory } from '../../../engine/Items/Item';
 import { ItemLoader } from '../../../engine/Items/ItemLoader';
@@ -22,6 +24,10 @@ export function reachableLootItems(game: Game): { item: Item; location: LootUiLo
 /** The adapter is the only place reading live Items. Vue receives known display data only. */
 export function readLootGameView(game:Game,selectedId:number|null,selectedIds:readonly number[]) {
  const runtime=game.extensionRuntime!,catalog=resolveLootCatalog(runtime.queryOptional.bind(runtime)),state=stateOf(runtime.itemCommandState('loot'));
+ const attributeResult=runtime.queryOptional('growth.attributes.v1',{v:1});
+ const attributeLabels:Record<string,string>={};
+ if(attributeResult.status==='available'){validateAttributeCatalog(attributeResult.value);for(const entry of attributeResult.value.attributes)attributeLabels[entry.id]=i18next.t(entry.nameKey);}
+ const options={presetId:state.presetId,attributeLabels};
  const reachable=reachableLootItems(game),equipment=[game.player.equippedWeapon,game.player.equippedArmor,game.player.ringLeft,game.player.ringRight];
  function known(item:Item,location:LootUiLocation):LootKnownItem|null {
   if(!item.moduleData?.loot||game.player.hasStatus('hallucinating'))return null;
@@ -36,16 +42,16 @@ export function readLootGameView(game:Game,selectedId:number|null,selectedIds:re
  const selected=entries.find(e=>e.id===selectedId)??null;
  let card=null,compare=null;
  if(selected&&!game.player.hasStatus('hallucinating')) {
-  const raw=selected.known?buildLootItemView(selected.known,catalog,{presetId:state.presetId}):null;
+  const raw=selected.known?buildLootItemView(selected.known,catalog,options):null;
   // Beta base formulas are never displayed in the game. Native prose remains in inspection.
   card=raw?{...raw,baseStats:[]}:null;
   if(selected.location==='pack'||selected.location==='equipped') {
    const slots=selected.itemClass==='weapon'?[equipment[0]]:selected.itemClass==='armor'?[equipment[1]]:equipment.slice(2);
-   compare=buildLiveLootCompareView({id:selected.id,known:selected.known,native:{itemClass:selected.itemClass,name:selected.name}},slots.map(i=>i?{id:i.id,known:known(i,'equipped'),native:!i.moduleData?.loot?{itemClass:i.category===0?'weapon':i.category===1?'armor':'ring',name:itemDisplayName(i,'equipped')}:undefined}:null),catalog,{presetId:state.presetId},runtime.stats,game.player.id);
+   compare=buildLiveLootCompareView({id:selected.id,known:selected.known,native:{itemClass:selected.itemClass,name:selected.name}},slots.map(i=>i?{id:i.id,known:known(i,'equipped'),native:!i.moduleData?.loot?{itemClass:i.category===0?'weapon':i.category===1?'armor':'ring',name:itemDisplayName(i,'equipped')}:undefined}:null),catalog,options,runtime.stats,game.player.id);
   }
  }
  const salvage=buildLootSalvageView(entries.filter(e=>selectedIds.includes(e.id)&&e.canSalvage).map(e=>({key:String(e.id),item:e.known!})),catalog,state.presetId);
- const sourceItems=entries.filter(e=>e.location==='equipped'&&e.known).map(e=>({id:e.id,name:e.name,rows:buildLootItemView(e.known!,catalog,{presetId:state.presetId}).rows.filter(row=>row.known)}));
+ const sourceItems=entries.filter(e=>e.location==='equipped'&&e.known).map(e=>({id:e.id,name:e.name,rows:buildLootItemView(e.known!,catalog,options).rows.filter(row=>row.known)}));
  const sources=lootCompareScalars.flatMap(s=>{
   let b;try{b=runtime.stats.breakdown(game.player.id,s.key,{},true);}catch{return [];}
   return b.rows.filter(row=>row.known!==false&&row.layer==='equipment').map(row=>{

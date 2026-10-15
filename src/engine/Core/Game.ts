@@ -4307,7 +4307,7 @@ export class Game {
 
     private *executeResidentCommandStages(data:unknown):CommandStages<void> {
         setWorldWorkError(this,null);const first=prepareResidentCommand(this,data);if(!first.ok){setWorldWorkError(this,first.code);return;}
-        if((first.value.chargedTicks>0||['order-work','resupply-work','cancel-order'].includes(first.value.action))&&!(yield* this.requestConfirm(i18next.t('ext.settlement.resident.confirm'))))return;
+        if((first.value.chargedTicks>0||['order-work','resupply-work','cancel-order'].includes(first.value.action))&&!(yield* this.requestConfirm(i18next.t('ext.world.resident.confirm'))))return;
         const outcome=commitResidentCommand(this,first.value);if(!outcome.ok){setWorldWorkError(this,outcome.code);return;}
         if(outcome.value.chargedTicks>0)this.playerTurnEnded();
     }
@@ -5532,7 +5532,7 @@ export class Game {
                 ItemLoader.identifyItemKind(item);
             }
             this.syncEquipmentStatuses();
-            this.extensionRuntime?.commitItemStatKnowledge(this.player.id,['native.max-hp','native.strength','combat.stamina-capacity','combat.poise-capacity']);
+            this.extensionRuntime?.commitEquipmentStatKnowledge(this.player.id);
             // CE Items.c:3925-3958 strengthCheck: message only; use actual
             // strengthRequired, with weakness deducted and the deficit clamped.
             if ((item.category === ItemCategory.WEAPON || item.category === ItemCategory.ARMOR)

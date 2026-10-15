@@ -6,7 +6,7 @@ const props = defineProps<{ model: GrowthCharacterViewModel; blocked: boolean; s
 const emit = defineEmits<{ open: []; use: [id: string] }>();
 const growthSkillBarExpanded = ref(false);
 const equippedSkills = computed(() => props.model.skills.filter(skill => skill.mode === 'active' && skill.equipped));
-const growthName = (key: string) => i18next.t(`ext.growth.${key.slice('ext.growth.'.length)}`);
+const growthName = (key: string) => i18next.t(`ext.${key.slice(4)}`);
 </script>
 <template>
       <section  class="area-skills growth-skill-bar" @keydown.stop @keyup.stop @pointerdown.stop @touchstart.stop>

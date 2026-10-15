@@ -1,8 +1,9 @@
+import { validateContent, type ContentContribution } from './content';
 import type { ExtensionModule, ExtensionRulesIdentity } from './types';
 import { ExtensionRegistry } from './registry';
 import { isJson, validId } from './json';
 
-export const FOUNDATION_PROTOCOL = 15 as const;
+export const FOUNDATION_PROTOCOL = 16 as const;
 
 /** Pure installed-package metadata. Discovery never creates a module or a run.
  * UI has a separate discovered declaration so engine imports never initialize Vue. */
@@ -18,6 +19,8 @@ export interface ModuleDescriptor {
   readonly descriptionKey?: string;
   /** Configurable sample default, not a dependency or permanent product policy. */
   readonly defaultEnabled?: boolean;
+  readonly content?: readonly ContentContribution[];
+  readonly recommends?: readonly string[];
   readonly locales?: Readonly<Record<string, Readonly<Record<string, string>>>>;
 }
 function freeze<T>(value: T): T {
@@ -50,6 +53,8 @@ export function validateModuleDescriptors(
             'labelKey',
             'descriptionKey',
             'defaultEnabled',
+            'recommends',
+            'content',
             'locales'
           ].includes(key)
       ) ||
@@ -59,6 +64,8 @@ export function validateModuleDescriptors(
       (value.defaultEnabled !== undefined && typeof value.defaultEnabled !== 'boolean')
     )
       throw new Error('Invalid module descriptor');
+    if(value.content)validateContent(value.content,value.id,value.version);
+    if (value.recommends !== undefined && (!Array.isArray(value.recommends) || value.recommends.length > 32 || value.recommends.some((id: unknown) => !validId(id)))) throw new Error('Invalid module recommendations');
     if (value.runConfiguration) {
       const c = value.runConfiguration;
       if (
@@ -141,7 +148,8 @@ export function registryFromDescriptors(values: readonly ModuleDescriptor[]): Ex
       descriptor.rules,
       descriptor.worldSdk,
       descriptor.locales,
-      descriptor.runConfiguration
+      descriptor.runConfiguration,
+      descriptor.content
     );
   return registry;
 }

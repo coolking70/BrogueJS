@@ -10,7 +10,7 @@ const handles:ReturnType<typeof createWorldHarness>[]=[];
 function open(modules:string[]){const h=createWorldHarness({seed:7309,mode:'easy',modules});handles.push(h);return {h,g:worldHarnessGame(h)};}
 afterEach(()=>handles.splice(0).forEach(h=>h.dispose()));
 it('uses actual combat keys, retains unavailable growth fallback and binds capability identity',()=>{
- const h=createWorldHarness({seed:7309,mode:'easy',modules:['loot','combat','growth']});handles.push(h);const g=worldHarnessGame(h),r=g.extensionRuntime!,c=resolveLootCatalog(r.queryOptional.bind(r));
+ const h=createWorldHarness({seed:7309,mode:'easy',modules:['loot','combat']});handles.push(h);const g=worldHarnessGame(h),r=g.extensionRuntime!,c=resolveLootCatalog(r.queryOptional.bind(r));
  expect(c.availability.combat?.stats).toContain('combat.stamina-capacity');expect(c.availability.growth).toBeNull();
  expect(c.affixes.some(a=>a.id==='loot.affix.enduring')).toBe(true);expect(c.affixes.some(a=>a.id.startsWith('loot.affix.adept'))).toBe(false);
  expect(stateOf(r.snapshot().modules.loot!).catalogFingerprint).toBe(c.fingerprint);

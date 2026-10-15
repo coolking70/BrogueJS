@@ -230,3 +230,8 @@ npm run dev 后打开 http://localhost:5173/src/ext/modules/loot/tools/preview/i
 ## 6B2 会话接线
 
 共享 `ModuleUiSession.itemActions` 只传物品ID；loot适配器读取实际位置并构造已知DTO，容器ID经既有 `projectView/worldWork.readWorkContext` 公开只读能力返回。原生物品使用独立 fallback，不伪造loot实例。批量分解/碎片鉴定/过滤只走 `executeCommand`；装备只走 `executeItemCommand`。草稿与展示刷新解耦，零tick设置去重，确认与异步收尾后才发布反馈。关闭/换局/load/seek清会话选择并释放键处理器；主模态占用显示时遵从宿主互斥。来源页列实际已装备已知行，条件与符文保持标签，不归入无条件总收益。
+
+
+## 6B3 当前差量（2026-10-15）
+
+本节覆盖上文历史阶段的属性能力缺口及后续阶段编号。已落地内容见 [6B3实施合同](phase6b3-contract.md)：软推荐选择、正式 `growth.attributes.v1` / `growth.attribute:<完整定义ID>`、受限两阶段属性派生、sage/adept/scholar实际提交知识、有限职业/树贡献与已知来源UI。growth1.9.0、loot0.4.0、foundation16；原数值未调，其他持久格式按合同保持。上文强化/精炼/符文强度重塑指向的6B3均顺延6B4；不追改历史验收结论。当前限定门禁及维护者浏览器待验见 [6B3报告](phase6b3.report.md)。

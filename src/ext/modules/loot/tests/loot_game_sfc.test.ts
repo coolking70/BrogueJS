@@ -159,7 +159,7 @@ it('D7 growth confirmation hands the real menu to a focused loot modal, Escape r
  try{
   await click(button(i18next.t('menu.actions.new_game')));
   find('data-testid','rule-set',root).props['onUpdate:modelValue']('extended');await flush();
-  find('data-module','growth',root).props['onUpdate:modelValue'](['growth','loot']);await flush();
+  find('data-module','loot',root).props.onChange({target:{checked:true}});await flush();
   await reachLoot();expect(submitted).not.toHaveBeenCalled();
   const title=all(root).find(n=>String(n.props.class).includes('title-screen'))!;expect(title.props.inert).toBe(true);
   find('class','loot-creation').props.onKeydownCapture({key:'Escape',preventDefault(){},stopPropagation(){}});await flush();

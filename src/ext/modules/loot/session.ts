@@ -1,3 +1,4 @@
+import { validateAttributeCatalog } from '../../attributeCatalog';
 import type { Json, ReadonlyJson, OptionalQueryResult } from '../../types';
 import { extensionDataFingerprint } from '../../fingerprint';
 import { isJson } from '../../json';
@@ -6,7 +7,7 @@ import { buildEffectiveLootCatalog } from './catalog';
 import { defaultLootPickupFilter, normalizeLootPickupFilter } from './ui/viewModel';
 import type { LootAvailability } from './types';
 
-export const LOOT_MODULE_VERSION = '0.3.0';
+export const LOOT_MODULE_VERSION = '0.4.0';
 export const DEFAULT_CONFIGURATION = { presetId: 'standard' };
 export function validConfiguration(value: unknown): value is Json {
   return isJson(value) && !!value && typeof value === 'object' && !Array.isArray(value)
@@ -25,8 +26,19 @@ export function resolveLootCatalog(query: (capability: string, input: Json) => O
   const stats = available?.keys.filter(k => k.available).map(k => k.id) ?? [];
   const encounters = query('foundation.item-encounters.v1', {});
   const forms = encounters.status === 'available' ? (encounters.value as {owners: {owner: string; formIds: string[]}[]}).owners.filter(o => o.owner === 'giants').flatMap(o => o.formIds) : [];
-  // growth.attributes.v1 is not published; never infer it from installation.
-  const availability: LootAvailability = { combat: stats.length ? {stats} : null, growth: null, giants: forms.length ? {formIds: forms} : null };
+  const growthResult = query('growth.attributes.v1', {v:1});
+  let growth: LootAvailability['growth'] = null;
+  if (growthResult.status === 'available') {
+    validateAttributeCatalog(growthResult.value);
+    const catalog = growthResult.value;
+    const requested = ['growth.focus-capacity','growth.xp-gain',...catalog.attributes.map(a=>a.stat)];
+    const declared = query('foundation.stats.v1', {keys:requested});
+    if(declared.status!=='available')throw new Error('Missing stat capability');
+    const rows = (declared.value as {keys:{id:string;available:boolean}[]}).keys;
+    if(catalog.attributes.some(a=>!rows.some(k=>k.id===a.stat&&k.available)))throw new Error('Undeclared growth attribute');
+    growth={stats:[...rows.filter(k=>k.available).map(k=>k.id),'growth.attribute'],attributes:catalog.attributes.filter(a=>a.equipment).map(a=>a.id),fingerprint:catalog.fingerprint};
+  } else if(growthResult.reason!=='absent')throw new Error('Unsupported growth catalog');
+  const availability: LootAvailability = { combat: stats.length ? {stats} : null, growth, giants: forms.length ? {formIds: forms} : null };
   return buildEffectiveLootCatalog(loadLootPack(), availability);
 }
 export type LootState = { v: 1; presetId: string; created: boolean; revision: number; catalogFingerprint: string;

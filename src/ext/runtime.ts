@@ -1,3 +1,4 @@
+import { validStatId } from './stats';
 import type { Monster } from '../entities/Monster';
 import type { Item } from '../engine/Items/Item';
 import type { ItemCommandRead, ItemCommandProposal, ItemCommandProvider, KnownItemFacts, TextRef } from './itemSdk';
@@ -19,7 +20,7 @@ import { worldText } from './worldText';
 import { edibleSnapshot, peekEdibleState, restoreEdibleState, cleanEdibleState, type EdibleState } from '../engine/Core/EdibleState';
 import { FOUNDATION_EDIBLE_RULES, hasEdibleDeclarations } from '../engine/Core/EdibleDefinitions';
 import { FOUNDATION_STRUCTURE_RULES } from './structureSchema';
-import { StatPipeline, sealStatRows } from '../engine/Stats/StatPipeline';
+import { StatPipeline, sealStatRows, evaluateStat } from '../engine/Stats/StatPipeline';
 import { NATIVE_STAT_KEYS, NATIVE_STAT_DAG } from '../engine/Stats/NativeStatKeys';
 import { MaterializedStats, validateMaterializedStats } from '../engine/Stats/MaterializedStats';
 import { checkpointGenerationWorld } from '../engine/Core/WorldCheckpoint';
@@ -437,7 +438,8 @@ export class ExtensionRuntime {
                 const override=session.overrides.get(`${id}:${key}`);if(override!==undefined)return override;
                 if(key.startsWith('native.'))return nativeBase(actor(id),key,dep,facts,change,known,k=>session.ledger.bonus(id,k));
                 if(key.startsWith('combat.'))return this.combatStatBase(actor(id),key,facts);
-                return facts.baseValue??session.pipeline.keys.get(key)?.base??0;
+                const declaration=session.pipeline.keys.get(key);
+                return declaration?.attributeId ? declaration.base??0 : facts.baseValue??declaration?.base??0;
             },collect:(id,facts,change,known,queryStat)=>{
                 if(session.collecting)throw new StatValidationError('source');
                 session.collecting=true;try{
@@ -446,20 +448,31 @@ export class ExtensionRuntime {
                 let equipment:ReturnType<typeof equippedStatItems>|undefined;
                 const equipped=()=>equipment??(equipment=equippedStatItems(actor(id),change,known));
                 for(const r of peekEdibleState(this).timedStats?.rows??[])if(r.actorId===id&&(session.simulationTicks??this.ports.simulationTicks?.()??0)<r.untilTick)all.push({stat:r.key,category:r.category,value:r.value,layer:'temporary',sourceKind:'edible',sourceId:`${r.owner}.${r.key}`,owner:r.owner,...(r.category==='more'?{slot:'temporary'}:{})});
-                for(const module of this.modules){const provider=module.statSources;if(!provider)continue;
+                const providerRowCounts = new Map<string,number>();
+                for(const phase of ['base','derived'] as const) {
+                const roots = phase === 'derived' ? [...all] : [];
+                for(const module of this.modules){const provider=module.statSources;if(!provider || phase==='derived'&&!provider.derived)continue;
                     const previous=this.pureProviderPhase;this.pureProviderPhase=true;
                     try{let view=!change?session.moduleViews.get(module.id):undefined;if(!view){view={state:freezeView(cloneJson(this.states[module.id]!)),components:{}};if(!change)session.moduleViews.set(module.id,view);}const context=Object.freeze({depth:session.depths?.get(id)??this.ports.actorQueryScope?.(actor(id))?.depth??this.ports.depth(),playerId:this.ports.playerId(),state:view.state,facts:pair,
                         getComponent:(actorId:number,name:string)=>{const key=`${actorId}:${name}`,value=session.previewComponents?.[`${actorId}:${module.id}:${name}`]??this.components[String(actorId)]?.[`${module.id}:${name}`];return value===undefined?undefined:view!.components[key]??(view!.components[key]=freezeView(cloneJson(value)));},
                         equippedItems:equipped,
-                        base:(key:string)=>{if(!session.pipeline.keys.has(key))throw new StatValidationError('declaration');const {baseValue:_,...otherFacts}=facts,baseFacts:PairFacts=key===queryStat?facts:otherFacts;const value=key.startsWith('native.')?nativeTemplateBase(actor(id),key,baseFacts,change,known,k=>session.ledger.bonus(id,k)):key.startsWith('combat.')?this.combatStatBase(actor(id),key,baseFacts):baseFacts.baseValue??session.pipeline.keys.get(key)?.base??0;if(typeof value!=='number')throw new StatValidationError('source');return value;}});
-                        const supplied=provider.collect(self,context);
+                        input:(key:string)=>{
+                            if(phase!=='derived'||!provider.derived!.inputs.includes(key))throw new StatValidationError('declaration');
+                            const declaration=session.pipeline.keys.get(key)!;
+                            return evaluateStat(declaration,declaration.base??0,roots.filter(row=>row.stat===key&&(!known||row.known!==false))).value;
+                        },
+                        base:(key:string)=>{if(!session.pipeline.keys.has(key))throw new StatValidationError('declaration');const {baseValue:_,...otherFacts}=facts,baseFacts:PairFacts=key===queryStat?facts:otherFacts;const value=key.startsWith('native.')?nativeTemplateBase(actor(id),key,baseFacts,change,known,k=>session.ledger.bonus(id,k)):key.startsWith('combat.')?this.combatStatBase(actor(id),key,baseFacts):(session.pipeline.keys.get(key)?.attributeId?session.pipeline.keys.get(key)?.base??0:baseFacts.baseValue??session.pipeline.keys.get(key)?.base??0);if(typeof value!=='number')throw new StatValidationError('source');return value;}});
+                        const supplied=phase==='base'?provider.collect(self,context):provider.derived!.collect(self,context);
                         // Check JSON descriptors before deriving a cache key. Only
                         // immutable, already validated outputs are reused; a provider
                         // still runs, and changed/invalid rows cannot hide behind a revision.
                         if(!isStatJson(supplied)||!Array.isArray(supplied))throw new StatValidationError('source');
-                        if(supplied.length>256)throw new StatValidationError('budget');
+                        const rowCount=(providerRowCounts.get(module.id)??0)+supplied.length;
+                        if(rowCount>256)throw new StatValidationError('budget');
+                        providerRowCounts.set(module.id,rowCount);
+                        if(phase==='derived'&&supplied.some(row=>![...provider.derived!.outputs,...(provider.derived!.optionalOutputs??[])].includes(row.stat)||session.pipeline.keys.get(row.stat)?.attributeId))throw new StatValidationError('declaration');
                         const ids=provider.itemPolicy==='C6-1'?equipped().map(item=>item.id):undefined;
-                        const cacheKey=`${module.id}:${id}`,stamp=JSON.stringify([nativeStatRevision(actor(id)),session.pipeline.keys.size,provider.itemPolicy,ids,supplied]);
+                        const cacheKey=`${module.id}:${id}:${phase}`,stamp=JSON.stringify([nativeStatRevision(actor(id)),session.pipeline.keys.size,provider.itemPolicy,ids,supplied]);
                         const cached=!change?session.sourceValidation.get(cacheKey):undefined;
                         let rows=cached?.stamp===stamp?cached.rows:undefined;
                         if(!rows){
@@ -472,9 +485,25 @@ export class ExtensionRuntime {
                         if(provider.revisionHint){const revision=provider.revisionHint(self,context);if(!Number.isSafeInteger(revision)||revision<0)throw new StatValidationError('source');}
                         all.push(...rows);
                     }finally{this.pureProviderPhase=previous;}
-                }return all;}finally{session.collecting=false;}
+                }}return all;}finally{session.collecting=false;}
             },nativeRows:(id,key,dep,facts,change,known)=>nativeNodeRows(actor(id),key,dep,facts,change,known)} ,NATIVE_STAT_KEYS,NATIVE_STAT_DAG);
         for(const module of this.modules){if(module.statSources){if(module.statSources.itemPolicy!==undefined&&module.statSources.itemPolicy!=='C6-1'||module.statSources.initializeHealthOnBirth!==undefined&&module.statSources.initializeHealthOnBirth!==true)throw new StatValidationError('declaration');if(typeof module.statSources.collect!=='function')throw new StatValidationError('declaration');session.pipeline.registerProviderKeys(module.statSources.keys??[],module.id);}}
+        if([...session.pipeline.keys.values()].filter(key=>key.attributeId).length>32)throw new StatValidationError('budget');
+        for(const module of this.modules){
+        const receipts=module.statSources?.gainReceipts??[];
+        if(!Array.isArray(receipts)||receipts.length>16||new Set(receipts.map(r=>`${r.component}:${r.field}:${r.stat}`)).size!==receipts.length)throw new StatValidationError('declaration');
+        for(const receipt of receipts){
+            if(Object.keys(receipt).sort().join(',')!=='component,field,stat'||!validId(receipt.component)||!validId(receipt.field)||!module.componentValidators?.[receipt.component]||session.pipeline.keys.get(receipt.stat)?.owner!==module.id)throw new StatValidationError('declaration');
+        }}
+        for(const module of this.modules){const derived=module.statSources?.derived;if(!derived)continue;
+            if(!Array.isArray(derived.inputs)||derived.inputs.length>32||new Set(derived.inputs).size!==derived.inputs.length||!Array.isArray(derived.outputs)||derived.outputs.length>128||new Set(derived.outputs).size!==derived.outputs.length||typeof derived.collect!=='function')throw new StatValidationError('declaration');
+            for(const key of derived.inputs)if(!session.pipeline.keys.get(key)?.attributeId)throw new StatValidationError('declaration');
+            if(Object.keys(derived).some(key=>!['inputs','outputs','optionalOutputs','collect'].includes(key))||derived.optionalOutputs&&(!Array.isArray(derived.optionalOutputs)||derived.optionalOutputs.length>128))throw new StatValidationError('declaration');
+            const outputs=[...derived.outputs,...(derived.optionalOutputs??[])];
+            if(outputs.length>128||new Set(outputs).size!==outputs.length)throw new StatValidationError('declaration');
+            for(const key of derived.outputs)if(!session.pipeline.keys.has(key))throw new StatValidationError('declaration');
+            for(const key of [...derived.outputs,...(derived.optionalOutputs??[])])if(!validStatId(key)||session.pipeline.keys.get(key)?.attributeId||derived.inputs.includes(key))throw new StatValidationError('declaration');
+        }
     }
     /** Engine UI only: detached own-component proposal, never a module write port. */
     hypotheticalComponents(moduleId:string, actorId:number, components:Readonly<Record<string,Json>>, knownOnly=true):Readonly<Record<string,number>> {
@@ -619,7 +648,12 @@ export class ExtensionRuntime {
                 runtime.states[module.id]=module.actorActions?adoptActorActionJson(current,value):cloneJson(value); if(module.statSources||module.actorActions)runtime.invalidateStats();
             },
             getComponent(id, name) { const value = runtime.components[creatureKey(id)]?.[componentKey(name)]; return value === undefined ? undefined : cloneJson(value); },
-            setComponent(id, name, value) { writable(); if (module.componentValidators?.[name] && !module.componentValidators[name]!(value)) throw new Error('Invalid component value'); const key = creatureKey(id),nameKey=componentKey(name),current=runtime.components[key]?.[nameKey];if(current!==undefined&&canonical(current)===canonical(value))return; (runtime.components[key] ??= {})[nameKey] = cloneJson(value); if(module.statSources||module.actorActions)runtime.invalidateStats(); },
+            setComponent(id, name, value) { writable(); if (module.componentValidators?.[name] && !module.componentValidators[name]!(value)) throw new Error('Invalid component value'); const key = creatureKey(id),nameKey=componentKey(name),current=runtime.components[key]?.[nameKey];if(current!==undefined&&canonical(current)===canonical(value))return; (runtime.components[key] ??= {})[nameKey] = cloneJson(value); if(module.statSources||module.actorActions)runtime.invalidateStats();
+                for(const receipt of module.statSources?.gainReceipts??[])if(receipt.component===name&&current&&value&&typeof current==='object'&&!Array.isArray(current)&&typeof value==='object'&&!Array.isArray(value)){
+                    const before=current[receipt.field],after=value[receipt.field];
+                    if(typeof before==='number'&&typeof after==='number'&&Number.isSafeInteger(before)&&Number.isSafeInteger(after)&&after>before)runtime.commitItemStatKnowledge(id,[receipt.stat]);
+                }
+            },
             removeComponent(id, name) { writable(); const key = creatureKey(id),nameKey=componentKey(name);if(runtime.components[key]?.[nameKey]===undefined)return; delete runtime.components[key]?.[nameKey]; if (runtime.components[key] && !Object.keys(runtime.components[key]!).length) delete runtime.components[key]; if(module.statSources||module.actorActions)runtime.invalidateStats(); },
             creature(id) { const actor = [...runtime.creatures].find(creature => creature.id === id); return actor ? runtime.actorFacts(actor) : null; },
             grantReward(request) {
@@ -866,7 +900,7 @@ export class ExtensionRuntime {
         if (this.disposed) throw new Error('Extension runtime unloaded');
         if (!validId(capability) || !/\.v[1-9]\d*$/.test(capability) || !isJson(input)) throw new Error('Invalid optional query');
         if(capability==='foundation.stats.v1'){
-            if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).join(',')!=='keys'||!Array.isArray(input.keys)||input.keys.length>128||input.keys.some(k=>typeof k!=='string'||!validId(k)))return Object.freeze({status:'unavailable',reason:'unsupported-input'});
+            if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).join(',')!=='keys'||!Array.isArray(input.keys)||input.keys.length>128||input.keys.some(k=>!validStatId(k)))return Object.freeze({status:'unavailable',reason:'unsupported-input'});
             const keys=[...new Set(input.keys as string[])].sort().map((id):Json=>{const declaration=this.stats.keys.get(id);return declaration?{id,available:true,owner:declaration.owner,unit:declaration.unit,kind:declaration.kind,rounding:declaration.rounding,categories:[...declaration.categories],moreSlots:declaration.moreSlots.map(slot=>({...slot})),minimum:declaration.minimum,maximum:declaration.maximum}:{id,available:false};});
             return freezeView({status:'available',value:{v:1,keys,fingerprint:c5Hash(keys)}});
         }
@@ -1912,6 +1946,9 @@ export class ExtensionRuntime {
         // knowledge can still make this a valid identification-scroll target.
         item.canBeIdentified=true;ItemLoader.updateIdentifiableItem(item);
         markItemKnowledgeDirty(item);markRecordingRoot(item);markRecordingRoot(this);
+    }
+    commitEquipmentStatKnowledge(actorId:number):void {
+        this.commitItemStatKnowledge(actorId,['native.max-hp','native.strength','combat.stamina-capacity','combat.poise-capacity',...this.stats.keys.values()].flatMap(key=>typeof key==='string'?[key]:key.attributeId||key.kind==='materialized'?[key.id]:[]));
     }
     /** Trusted native settlement port. Provider gets frozen facts, no live actor or item. */
     commitItemStatKnowledge(actorId:number,stats:readonly string[],target?:Creature):void {

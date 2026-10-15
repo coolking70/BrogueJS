@@ -191,7 +191,7 @@
   "ext.loot.ui.live.weapon": "武器",
   "ext.loot.ui.live.armor": "护甲",
   "ext.loot.ui.live.ring": "戒指",
-  "ext.loot.ui.live.runic": "符文强度重塑留待 6B3；当前按原生符文规则生效。",
+  "ext.loot.ui.live.runic": "符文强度重塑留待 6B4；当前按原生符文规则生效。",
   "ext.loot.ui.live.recovery": "恢复（HP/回合）",
   "ext.loot.ui.live.physical-taken": "物理承伤（每100点，抗性前）",
   "ext.loot.ui.live.native-name": "{{name}}",

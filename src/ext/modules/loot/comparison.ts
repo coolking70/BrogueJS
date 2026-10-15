@@ -11,6 +11,7 @@ export const lootCompareScalars:readonly {key:string;label:LootTextRef;lower?:bo
  {key:'native.max-hp',label:{nameKey:'ext.loot.ui.integration.max-hp',params:{}}},
  {key:'native.strength',label:{nameKey:'ext.loot.ui.integration.strength',params:{}}},
  {key:'native.attack-speed',label:{nameKey:'ext.loot.ui.integration.attack-speed',params:{}},lower:true},
+ {key:'growth.focus-capacity',label:{nameKey:'ext.loot.ui.stat.growth-focus-capacity',params:{}}},
  {key:'native.accuracy',label:{nameKey:'ext.loot.ui.live.accuracy',params:{}},lower:false},
  {key:'native.move-speed',label:{nameKey:'ext.loot.ui.live.move-speed',params:{}},lower:true},
  {key:'native.regeneration-bonus',label:{nameKey:'ext.loot.ui.live.regeneration-bonus',params:{}},lower:false},
@@ -48,11 +49,12 @@ export function buildLiveLootCompareView(candidate:LiveLootItem,equipped:readonl
  const currentIndex=equipped.findIndex(item=>item?.id===candidate.id);
  const indices=currentIndex>=0?[currentIndex]:itemClass==='ring'?lootRingEquipSlots(candidate.id,equipped.map(item=>item?.id??null)):[0];
  const values=(change:Parameters<StatQuery['hypothetical']>[1])=>({...stats.hypothetical(playerId,change,true),...(stats.hypotheticalValue?Object.fromEntries(lootCompareScalars.filter(s=>s.probe).map(s=>[s.key,stats.hypotheticalValue!(playerId,change,s.key,true,s.key==='native.physical-damage-taken'?{baseValue:1000,attackKind:'melee'}:{})])):{})});
+ const scalars=[...lootCompareScalars,...(catalog.availability.growth?.attributes??[]).map(id=>({key:`growth.attribute:${id}`,label:{nameKey:'ext.loot.ui.stat.growth-attribute',params:{name:options.attributeLabels?.[id]??id}},divisor:1,lower:false}))];
  const before=values({});
  const columns=indices.map(index=>{
   const previous=equipped[index];
   const after=currentIndex>=0?before:values({equip:candidate.id,...(previous?{unequip:previous.id}:{})});
-  return {slot:{nameKey:slots[index]!,params:{}},equipped:previous?chip(previous):null,rows:[...lootCompareScalars.filter(s=>before[s.key]!==undefined&&after[s.key]!==undefined).map(s=>{
+  return {slot:{nameKey:slots[index]!,params:{}},equipped:previous?chip(previous):null,rows:[...scalars.filter(s=>before[s.key]!==undefined&&after[s.key]!==undefined).map(s=>{
    const a=before[s.key]!/(s.divisor??1),b=after[s.key]!/(s.divisor??1),d=b-a,score=s.lower?-d:d;
    return {key:s.key,label:s.label,before:String(Math.round(a*1000)/1000),after:String(Math.round(b*1000)/1000),delta:lootSigned(d,1),tone:score>0?'better' as const:score<0?'worse' as const:'same' as const};
   }),...buildLootModifierCompareRows(candidate.known,previous?.known??null,catalog,options).filter(row=>row.condition||row.runic)]};

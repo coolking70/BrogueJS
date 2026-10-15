@@ -274,3 +274,8 @@ C  腐化（仅 magic/rare，在全部词缀之后、第 8 步之前）：
 `ItemTriggerFact` 新增 `stat-commit`（参与键、目标tags），宿主只向已装备物品发事实；模块纯回调返回知识副本，宿主统一校验与提交，异常完整回滚。机械状态/原生随机流不由展示读取触发。可信宿主 `StatPipeline.hypotheticalValue` 读取同一假设管线中的派生标量/有理数，用于恢复与减伤比较。没有新增 Game 持久字段；worldSdk/edibleSdk 不变。
 
 属性门面守卫首败：新方法最初被加入模块context的StatQuery枚举；现限定到可信宿主 StatPipeline/UI 适配器，模块只读门面仍为原五方法，守卫与断言保持原样。
+
+
+## 6B3 当前差量（2026-10-15）
+
+本节覆盖上文历史阶段的属性能力缺口及后续阶段编号。已落地内容见 [6B3实施合同](phase6b3-contract.md)：软推荐选择、正式 `growth.attributes.v1` / `growth.attribute:<完整定义ID>`、受限两阶段属性派生、sage/adept/scholar实际提交知识、有限职业/树贡献与已知来源UI。growth1.9.0、loot0.4.0、foundation16；原数值未调，其他持久格式按合同保持。上文强化/精炼/符文强度重塑指向的6B3均顺延6B4；不追改历史验收结论。当前限定门禁及维护者浏览器待验见 [6B3报告](phase6b3.report.md)。

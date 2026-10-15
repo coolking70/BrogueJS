@@ -349,7 +349,7 @@ export function commitResidentCommand(g: Game, plan: ResidentCommandPlan) {
           );
           a.doesNotTrackLeader = true;
           a.entersLevelIn = a.approaching = 0;
-          logger.log(i18next.t('ext.settlement.resident.recruited', { name: a.name }), '#a5c98d');
+          logger.log(i18next.t('ext.world.resident.recruited', { name: a.name }), '#a5c98d');
         } else if (plan.action === 'dismiss-resident') {
           removeResident(g, a.id, 'dismiss', true);
           state = runtime.worldCampState(plan.owner);
@@ -422,7 +422,7 @@ export function recordRescuedResident(g: Game, a: Monster, wasCaged: boolean): v
         'skipped',
         'source-budget'
       );
-      logger.log(i18next.t('ext.settlement.resident.limit'), '#aaaaaa');
+      logger.log(i18next.t('ext.world.resident.limit'), '#aaaaaa');
       continue;
     }
     g.extensionRuntime!.replaceResidentComponent(owner, a.id, 'source', {

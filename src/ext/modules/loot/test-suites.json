@@ -26,7 +26,8 @@
     "tests/loot_trigger_commits.test.ts",
     "tests/loot_game_sfc.test.ts",
     "tests/loot_trigger_settlements.test.ts",
-    "tests/loot_review_r1.test.ts"
+    "tests/loot_review_r1.test.ts",
+    "tests/loot_growth_attributes.test.ts"
   ],
   "drift": []
 }

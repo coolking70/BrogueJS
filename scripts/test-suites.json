@@ -405,7 +405,8 @@
     "src/test/ext_item_commands.test.ts",
     "src/test/ext_item_presentation.test.ts",
     "src/test/ext_item_recording.test.ts",
-    "src/test/ext_item_roots.test.ts"
+    "src/test/ext_item_roots.test.ts",
+    "src/test/ext_module_recommendations.test.ts"
   ],
   "drift": [
     "src/test/generation_baseline.test.ts",

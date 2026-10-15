@@ -1,3 +1,6 @@
+import { extensionDataFingerprint } from '../../fingerprint';
+import { isGrowthProgression } from './components';
+import { validateAttributeCatalog, attributeCatalogFingerprint, type AttributeCatalogEntry } from '../../attributeCatalog';
 import { createGrowthStatSources } from './statSources';
 import i18next from 'i18next';
 import type { ControlledActionRequest, ControlledActionResult, ControlledCommandPreparationContext, ActorFacts, ExtensionContext, ExtensionModule, ExtensionCreationResources, ExtensionRuleContext, Json, ReadonlyJson, OptionalRewardRequest, OptionalRewardPrepareContext, OptionalQueryProvider } from '../../types';
@@ -74,7 +77,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
     const rejected = (): Error => new Error(i18next.t('ext.growth.command.rejected', {defaultValue:'Character command is not available in the current state.'}));
     const actorIdentity = (context: ExtensionRuleContext,id: number): GrowthIdentityBuild =>
         context.getComponent(id,'identity') as GrowthIdentityBuild | undefined ?? initialGrowthIdentityBuild();
-    const cooldown=(context:Pick<ExtensionContext,'playerId'|'stats'|'getComponent'|'state'>,skill:GrowthSkillDefinition,id:number)=>{const base=growthSkillCooldownBase(pack,skill,view(context as ExtensionRuleContext,id),skillBuild(context as ExtensionRuleContext,id),actorIdentity(context as ExtensionRuleContext,id));return context.stats.value(id,'growth.cooldown-duration',{baseValue:base,baseCooldown:base,skillId:skill.id});};
+    const cooldown=(context:Pick<ExtensionContext,'playerId'|'stats'|'getComponent'|'state'>,skill:GrowthSkillDefinition,id:number)=>{const base=growthSkillCooldownBase(pack,skill,effectiveView(context,id),skillBuild(context as ExtensionRuleContext,id),actorIdentity(context as ExtensionRuleContext,id));return context.stats.value(id,'growth.cooldown-duration',{baseValue:base,baseCooldown:base,skillId:skill.id});};
     function creationBuild(payload: Json, native?: ExtensionCreationResources): GrowthActorBuild {
         // The original explicit neutral contract remains useful to programmatic callers; the opening UI sends full selections.
         let identity: GrowthIdentityBuild;
@@ -107,6 +110,10 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         const progression = context.getComponent(id,'progression') as GrowthProgression | undefined;
         const attributes = context.getComponent(id,'attributes') as GrowthAttributes | undefined;
         return growthRuleActor(id,progression ?? initialGrowthProgression(config.levels),attributes ?? initialGrowthAttributes(pack));
+    }
+    function effectiveView(context:Pick<ExtensionContext,'stats'|'getComponent'|'state'|'playerId'>,id:number):GrowthRuleActor {
+        const actor=view(context as ExtensionRuleContext,id);
+        return {...actor,attributes:Object.fromEntries(config.attributes.map(a=>[a.id,context.stats.value(id,`growth.attribute:${a.id}`)]))};
     }
     const skillBuild = (context: ExtensionRuleContext, id: number): GrowthSkillBuild =>
         context.getComponent(id,'skill-build') as GrowthSkillBuild | undefined ?? initialGrowthSkillBuild();
@@ -361,7 +368,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
                 addGrowthIntegers(state.nextActionId,1);
                 addGrowthIntegers(state.nextEffectId,skill.effects.filter(effect=>effect.kind==='timed').length);
                 for (const effect of skill.effects) if (effect.kind==='timed') {
-                    const duration = growthEffectDuration(pack,effect,view(context,actorId),growthTaggedSources(pack,build,actorIdentity(context,actorId)));
+                    const duration = growthEffectDuration(pack,effect,effectiveView(context,actorId),growthTaggedSources(pack,build,actorIdentity(context,actorId)));
                     if (duration !== null) addGrowthIntegers(state.objectiveClock,duration);
                 }
             }
@@ -374,7 +381,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
         phase: 'action-start'|'action-result', target: ControlledActionRequest['target'], result?: Readonly<ControlledActionResult>): void {
         // A native struggled/vomited move attempt is committed and paid, but it did not perform the requested move.
         if (phase === 'action-result' && result?.action === 'move' && !result.moved) return;
-        const state = getState(context), source = view(context,actorId), sourceBuild = skillBuild(context,actorId);
+        const state = getState(context), source = effectiveView(context,actorId), sourceBuild = skillBuild(context,actorId);
         for (const effect of skill.effects) {
             if (effect.kind !== 'timed' || effect.application !== phase || !matchesGrowthConditions(effect.conditions,
                 {role:effect.recipient === 'self' ? 'actor' : 'target',hit:result?.hit,hpLost:result?.hpLost,
@@ -496,7 +503,15 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
     const module: ExtensionModule = {
         id: 'growth',version: pack.moduleVersion,rules: identity,resourceCommits: true,
         initializationReady: context => getState(context).created,
-        optionalQueries: {'growth.public-character.v1':publicCharacter},
+        optionalQueries: {'growth.public-character.v1':publicCharacter, 'growth.attributes.v1': {
+            accepts: publicCharacter.accepts,
+            query() {
+                const attributes:AttributeCatalogEntry[]=pack.config.attributes.map(a=>({id:a.id,stat:`growth.attribute:${a.id}`,nameKey:a.nameKey,descriptionKey:a.descriptionKey,unit:'rank' as const,minimum:0,maximum:a.id===config.strengthTraining.attributeId?Math.min(a.cap,config.strengthTraining.cap):a.cap,equipment:a.id!==config.strengthTraining.attributeId||config.strengthTraining.enabled})).sort((a,b)=>a.id<b.id?-1:1);
+                const rulesFingerprint=identity?.fingerprint??extensionDataFingerprint(pack);
+                return {v:1,attributes,rulesFingerprint,fingerprint:attributeCatalogFingerprint(attributes,rulesFingerprint)} as unknown as Json;
+            },
+            validate(value): value is Json {try { validateAttributeCatalog(value); return true; } catch { return false; }}
+        }},
         statSources:createGrowthStatSources(pack),
         optionalRewards: {'growth.story-reward.v1': {
             prepare(request,context) {
@@ -543,7 +558,7 @@ export function createGrowthGameplay(pack: DeepReadonly<GrowthDefinitionPack>, i
             } catch { throw rejected(); }
         },
         initialState: () => initialGrowthState() as unknown as Json,validateState: (value): value is Json => isGrowthState(value,pack),
-        componentValidators: { reward: isGrowthReward },
+        componentValidators: { reward: isGrowthReward, progression: (value): value is Json => isGrowthProgression(value,config.levels) },
         validateComponents: (state,components,foundation) => validGrowthComponents(state as GrowthState,components,pack,foundation.stats?.applied??[])
             && validGrowthSources(state as GrowthState,foundation) && (!(state as GrowthState).created || !(state as GrowthState).pending.length),
         validateWorld(state,components,actors) {

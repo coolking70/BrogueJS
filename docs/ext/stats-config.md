@@ -112,3 +112,8 @@ statSources: {
 此处 loot 为未来模块名示意，本步不安装 loot、不添加词缀或 moduleData。crafting 同样声明自己的键与来源，稳定 sourceId 可用 `crafting.<definitionId>`；settlement 光环用 environment 层，sourceId 可用 `settlement.aura.<structureId>`。环境/装备来源不声明 refill-delta。C5-1 劳动信用仍为 elapsed×1，不声明或读取 foundation.labor-rate，不改 C5 DTO/SDK。
 
 foraging 同伴虚弱/饥荒使用 increased 负值：命中 −2000/−4000 bp，造成伤害 −2500/−5000 bp。最低 −5000 在 −9000 下限内，可分别声明 native.accuracy 与 native.physical-damage-dealt；命中按 foraging 设计作用于攻击者 accuracy 输入节点；这是攻击方来源，别声明 native.evasion 或 damage-taken。多惩罚和正增益合并到公共池，合计低于 −9000 时按池下限钳制。focus 消耗与饥荒状态机由后续 foraging 模块负责，本步未实现玩法来源。
+
+
+## 6B3 当前差量（2026-10-15）
+
+本节覆盖上文历史阶段的属性能力缺口及后续阶段编号。已落地内容见 [6B3实施合同](phase6b3-contract.md)：软推荐选择、正式 `growth.attributes.v1` / `growth.attribute:<完整定义ID>`、受限两阶段属性派生、sage/adept/scholar实际提交知识、有限职业/树贡献与已知来源UI。growth1.9.0、loot0.4.0、foundation16；原数值未调，其他持久格式按合同保持。上文强化/精炼/符文强度重塑指向的6B3均顺延6B4；不追改历史验收结论。当前限定门禁及维护者浏览器待验见 [6B3报告](phase6b3.report.md)。

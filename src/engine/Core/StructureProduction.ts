@@ -1040,5 +1040,5 @@ export function structureCommandConfirmation(game:Game,token:object):string {
   if(p.input.action!=='repair')return i18next.t('ext.foundation.structure.confirm');
   const input=p.input.payload,component=game.world5!.structures.flatMap(s=>[s.floor,s.barrier,s.roof,s.fixture]).find(c=>c?.id===input.componentId)!;
   const d=structureDefinition(game,component.definitionId);
-  return i18next.t('ext.settlement.raid.repair_confirm',{target:worldText(d.nameKey),amount:input.amount,ticks:Math.max(100,Math.ceil(d.constructionTicks*input.amount/d.maxHp)),materials:p.materials!.map(a=>worldText(game.extensionRuntime!.worldDefinitionPacks().flatMap(p=>p.items).find(d=>d.id===a.itemDefinitionId)!.nameKey)+' ×'+a.count).join('、')});
+  return i18next.t('ext.world.raid.repair_confirm',{target:worldText(d.nameKey),amount:input.amount,ticks:Math.max(100,Math.ceil(d.constructionTicks*input.amount/d.maxHp)),materials:p.materials!.map(a=>worldText(game.extensionRuntime!.worldDefinitionPacks().flatMap(p=>p.items).find(d=>d.id===a.itemDefinitionId)!.nameKey)+' ×'+a.count).join('、')});
 }

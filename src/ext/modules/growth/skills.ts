@@ -1,3 +1,4 @@
+import { growthTreeAllows } from './content';
 import type { DeepReadonly } from './definitions';
 import type { GrowthDefinitionPack, GrowthEffect, GrowthModifier, GrowthRuleActor, GrowthRulePort, GrowthSkill, GrowthTimedEffect, GrowthTaggedModifier, GrowthMagnitude } from './types';
 import type { GrowthFocus, GrowthSkills } from './components';
@@ -50,6 +51,7 @@ function effectsForSources(pack: Pack, sources: readonly string[]): readonly Dee
 export function canLearnGrowthSkill(pack: Pack, skill: GrowthSkillDefinition, actor: GrowthRuleActor,
     build: DeepReadonly<Pick<GrowthSkillBuild,'learned'>>, identity: Pick<GrowthPrerequisiteFacts,'professionId'|'lineageId'|'faithId'> = {}): boolean {
     if (build.learned.includes(skill.id) || !meetsGrowthPrerequisites(skill.prerequisites,{...actor,...identity,skills:build.learned})) return false;
+    if(!growthTreeAllows(pack,skill.id,build.learned,identity?.professionId??null))return false;
     // min(global, per-skill); soft is deliberately only a recommendation.
     if (pack.config.skills.lockMode !== 'hard' || skill.lock.mode !== 'hard') return true;
     return (!skill.lock.professionIds.length || skill.lock.professionIds.includes(identity.professionId ?? ''))
@@ -70,8 +72,8 @@ function taggedModifiers(effects: readonly DeepReadonly<GrowthEffect>[]): readon
 function permanentSkillScopes(pack: Pack, build: DeepReadonly<Pick<GrowthSkillBuild,'passive'>>, owner: 'actor'|'target',
     identity?: GrowthIdentityFacts): readonly GrowthScopedModifiers[] {
     const tags = taggedModifiers(growthPassiveEffects(pack,build,identity));
-    return [{owner,modifiers:growthIdentityEffects(pack,identity).filter((effect): effect is DeepReadonly<GrowthModifier> => effect.kind === 'modifier'),taggedModifiers:tags},...build.passive.flatMap(id => {
-        const skill = growthSkillDefinition(pack,id); return skill ? [{owner,tags:skill.tags,taggedModifiers:tags,
+    return [...growthIdentityDefinitions(pack,identity).map(definition=>({owner,sourceId:definition.id,modifiers:[...definition.effects,...definition.oaths.flatMap(o=>o.effects)].filter((effect): effect is DeepReadonly<GrowthModifier> => effect.kind === 'modifier'),taggedModifiers:tags})),...build.passive.flatMap(id => {
+        const skill = growthSkillDefinition(pack,id); return skill ? [{owner,sourceId:id,tags:skill.tags,taggedModifiers:tags,
             modifiers:skill.effects.filter((effect): effect is DeepReadonly<GrowthModifier> => effect.kind === 'modifier')}] : [];
     })];
 }
@@ -79,7 +81,7 @@ export function growthSkillScopes(pack: Pack, build: DeepReadonly<GrowthSkillBui
     owner: 'actor'|'target' = 'actor', identity?: GrowthIdentityFacts): readonly GrowthScopedModifiers[] {
     return [...permanentSkillScopes(pack,build,owner,identity),...build.effects.filter(instance=>instance.expiresAt === null || instance.expiresAt > clock).flatMap(instance=> {
         const effect = growthTimedDefinition(pack,instance);
-        return effect ? [{owner,tags:effect.tags,source:instance.source,modifiers:effect.modifiers,
+        return effect ? [{owner,sourceId:`${instance.skillId}.${instance.effectId}.instance.${instance.instanceId}`,tags:effect.tags,source:instance.source,modifiers:effect.modifiers,
             taggedModifiers:taggedModifiers(effectsForSources(pack,instance.taggedSources))}] : [];
     })];
 }
@@ -197,9 +199,10 @@ export function isGrowthSkillBuild(value: unknown, pack: Pack, actorId: number, 
             || item.source.level > pack.config.levels.cap || !exact(item.source.attributes,pack.config.attributes.map(a=>a.id).sort().join(','))) return false;
         const source = item.source as unknown as GrowthRuleActor;
         if (source.id === actorId && identity !== undefined && !sameIdentitySources(pack,item.taggedSources,identity)) return false;
-        if (pack.config.attributes.some(a=>!integer(source.attributes[a.id]) || source.attributes[a.id]! < a.min || source.attributes[a.id]! > a.cap
-            || a.id === pack.config.strengthTraining.attributeId && source.attributes[a.id]! > pack.config.strengthTraining.cap)
-            || pack.config.attributeTotalCap !== null && Object.values(source.attributes).reduce((sum,value)=>sum+BigInt(value),0n) > BigInt(pack.config.attributeTotalCap)) return false;
+        // Casting snapshots use effective Stat roots: zero through each effective cap.
+        // Permanent minima and the total investment budget belong to values/allocated only.
+        if (pack.config.attributes.some(a=>!integer(source.attributes[a.id]) || source.attributes[a.id]! > a.cap
+            || a.id === pack.config.strengthTraining.attributeId && source.attributes[a.id]! > pack.config.strengthTraining.cap)) return false;
         const instance = item as unknown as GrowthEffectInstance, effect = growthTimedDefinition(pack,instance);
         if (!effect || effect.duration.kind !== 'objective-blocks' || (effect.recipient === 'self' && source.id !== actorId)
             || (effect.consume.event === 'none' ? instance.remaining !== 0 : instance.remaining < 1 || instance.remaining > effect.consume.count)) return false;
