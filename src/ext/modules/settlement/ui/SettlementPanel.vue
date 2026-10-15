@@ -20,6 +20,7 @@ const props = defineProps<{
   food: Record<number, number>;
   blocked: boolean;
   error: string | null;
+  constructionFailure?: { index: number; x: number; y: number; reason: string } | null;
   presentationHidden?: boolean;
   replayReadonly?: boolean;
 }>();
@@ -32,6 +33,7 @@ const emit = defineEmits<{
   cursor: [number, number];
   append: [];
   clear: [];
+  removeDraft: [number];
   construct: [];
   food: [number, number];
   source: [number | null];
@@ -85,6 +87,13 @@ const options = (id: string) =>
 const totalFood = computed(() => Object.values(props.food).reduce((n, q) => n + q, 0));
 // SDK-02 exposes the last command's C5 code through the read-only model.
 // Use the foundation translations without introducing a dependency on crafting.
+const reasonText = (code: string) => {
+  const label = errorLabels.find(row => row.code === code);
+  if (label) return t(label.reasonKey);
+  if (code === 'ext.settlement.ui.construction_cancelled') return t('ext.settlement.ui.construction_cancelled');
+  if (code === 'ext.settlement.ui.camp_required') return t('ext.settlement.ui.camp_required');
+  return t('ext.settlement.ui.rejected');
+};
 const rejection = computed(() => {
   const code = props.error || props.model.lastError;
   if (!code) return '';
@@ -345,9 +354,13 @@ function number(event: Event) {
           <button :title="blockedReason || appendReason" :disabled="blocked || draft.length >= 16 || !camp" @click="emit('append')">
             {{ t('ext.settlement.ui.append', { count: draft.length }) }}
           </button>
+          <p v-if="constructionFailure" class="error" role="alert" data-construction-failure>
+            {{ t('ext.settlement.ui.construction_failed', { ...constructionFailure, reason: reasonText(constructionFailure.reason) }) }}
+          </p>
           <ol>
             <li v-for="(p, index) in draft" :key="index">
               {{ name(p.definitionId) }} ({{ p.x }},{{ p.y }})
+              <button :disabled="blocked" @click="emit('removeDraft', index)">{{ t('ext.settlement.ui.remove_draft') }}</button>
             </li>
           </ol>
           <p v-if="constructReason" class="error" data-disabled-reason>{{ constructReason }}</p>

@@ -61,7 +61,7 @@ describe('settlement disposable construction UI', () => {
     await nextTick();
     expect(u.session.panelOpen.value).toBe(true);
     expect(u.props().model).toBe(displayed);
-    expect(u.props().draft).toHaveLength(1);
+    expect(u.props().draft).toHaveLength(2); // ACK freezes the uncommitted display draft too.
     expect(g.world5!.structures).toHaveLength(1);
     expect(g.hasPendingConfirmation).toBe(false);
     busy = false;
@@ -103,10 +103,12 @@ describe('settlement disposable construction UI', () => {
     expect(g.world5!.structures).toHaveLength(1);
     expect(g.world5!.simulationTicks - state!.simulationTicks).toBe(100);
     expect(g.recordedInputEvents.length - before).toBe(2);
-    expect(u.props().draft).toEqual([]);
+    expect(u.props().draft).toHaveLength(15);
+    expect(u.props().draft[0]).toMatchObject({ x: 22, y: 13 });
+    expect(u.props().constructionFailure).toEqual({ index: 2, x: 22, y: 13, reason: 'C5_DISTANCE' });
     u.scope.stop();
   });
-  it('confirmation No/blur clear the queue and never restore it after reopening', async () => {
+  it('confirmation No retains unfinished work; closing retires the draft before reopening', async () => {
     const { h, g } = setup();
     expect(h.ext('settlement', 'establish', establish(g)).error).toBeNull();
     const u = ui(g);
@@ -120,7 +122,8 @@ describe('settlement disposable construction UI', () => {
     u.session.refresh();
     expect(g.world5!.structures).toEqual([]);
     expect(g.world5!.simulationTicks).toBe(tick);
-    expect(u.props().draft).toEqual([]);
+    expect(u.props().draft).toEqual([{ x: 21, y: 13, definitionId: 'settlement.wood-floor' }]);
+    expect(u.props().constructionFailure?.reason).toBe('ext.settlement.ui.construction_cancelled');
     u.props().onClose();
     expect(u.session.panelOpen.value).toBe(false);
     u.session.commands.value[0]!.invoke();

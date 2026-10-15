@@ -23,11 +23,14 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
     sourceId = ref<number | null>(null),
     materials = shallowRef<Record<string, string>>({}),
     food = shallowRef<Record<number, number>>({}),
-    error = ref<string | null>(null);
+    error = ref<string | null>(null),
+    constructionFailure = shallowRef<{ index: number; x: number; y: number; reason: string } | null>(null);
   let removeMap: (() => void) | undefined,
     retired = false,
     queue = false,
-    wasAdvancing = false,
+    dispatching = false,
+    pendingBuild: number | null = null,
+    completed = 0,
     restRequested = false,
     queued = 0,
     foodSignature = '';
@@ -41,6 +44,8 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
     restRequested = false;
     queued++;
     draft.value = [];
+    constructionFailure.value = null;
+    pendingBuild = null;
     removeMap?.();
     removeMap = undefined;
   }
@@ -120,22 +125,19 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
       reset();
     model.value = next;
     if (opened.value) prefillFood(next);
-    if (
-      queue &&
-      !game.isAdvancing &&
-      !game.hasPendingConfirmation &&
-      !presentationBusy()
-    ) {
-      if (
-        next.lastError ||
-        game.isGameOver ||
-        !next.available ||
-        game.recordedInputEvents[game.recordedInputEvents.length - 1]?.decisions?.includes(false)
-      ) {
-        reset();
+    if (queue && !dispatching && pendingBuild !== null && !game.isAdvancing && !game.hasPendingConfirmation) {
+      const event = game.recordedInputEvents[pendingBuild];
+      const reason = error.value || next.lastError
+        || (event?.decisions.includes(false) ? 'ext.settlement.ui.construction_cancelled' : null)
+        || (!event ? 'C5_BUSY' : null);
+      pendingBuild = null;
+      if (reason) stopConstruction(reason);
+      else {
+        // Only retire a cell after its command has actually completed. A pending
+        // confirmation/animation is still an unfinished part of the draft.
+        draft.value = draft.value.slice(1);
+        completed++;
         submitting.value = false;
-      } else if (wasAdvancing) {
-        wasAdvancing = false;
         void runNext();
       }
     }
@@ -286,40 +288,42 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
       draft.value = [...draft.value, p];
     selectMap();
   }
+  function stopConstruction(reason: string) {
+    const p = draft.value[0];
+    if (p) constructionFailure.value = { index: completed + 1, x: p.x, y: p.y, reason };
+    queue = false;
+    pendingBuild = null;
+    submitting.value = false;
+  }
   async function runNext() {
     const displayEpoch = queued;
-    if (!queue || !draft.value.length) {
-      reset();
+    if (!queue) return;
+    if (!draft.value.length) {
+      queue = false;
       return;
     }
-    const v = read(),
-      c = v?.camps.find((c) => !c.remote),
-      p = draft.value[0]!;
+    const v = read(), c = v?.camps.find((c) => !c.remote), p = draft.value[0]!;
     if (!v || !c || game.isGameOver) {
-      reset();
+      stopConstruction(game.isGameOver ? 'C5_DEAD' : !c ? 'ext.settlement.ui.camp_required' : 'C5_BUSY');
       return;
     }
-    const d = v.definitions.find((d) => d.id === p.definitionId)!;
+    const d = v.definitions.find((d) => d.id === p.definitionId);
+    if (!d) { stopConstruction('C5_BAD_DEFINITION'); return; }
     // Revalidate one public command after every native time boundary. No future
     // input or ID is reserved for the rest of this display-only draft.
     submitting.value = false;
-    const accepted = send('build', {
-      ...paid(v, d.constructionCost),
-      regionId: c.regionId,
-      regionRevision: c.regionRevision,
-      ...p
-    });
-    if (!accepted) {
-      reset();
-      return;
-    }
-    draft.value = draft.value.slice(1);
-    wasAdvancing = true;
+    pendingBuild = game.recordedInputEvents.length;
+    dispatching = true;
+    let accepted: boolean;
+    try {
+      accepted = send('build', {
+        ...paid(v, d.constructionCost), regionId: c.regionId,
+        regionRevision: c.regionRevision, ...p
+      });
+    } finally { dispatching = false; }
+    if (!accepted) { stopConstruction('C5_BUSY'); return; }
     await nextTick();
-    if (queue && queued === displayEpoch && !game.isAdvancing && !game.hasPendingConfirmation) {
-      submitting.value = false;
-      refresh();
-    }
+    if (queue && queued === displayEpoch) refresh();
   }
   function construct() {
     if (queue || !draft.value.length) return;
@@ -335,6 +339,8 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
           ) ||
         (a.definitionId < b.definitionId ? -1 : a.definitionId > b.definitionId ? 1 : 0)
     );
+    constructionFailure.value = null;
+    completed = 0;
     queue = true;
     void runNext();
   }
@@ -415,7 +421,9 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
       selectMap();
       return true;
     }
-    return false;
+    // Selection owns the entire keyboard, including inventory/drop shortcuts.
+    // Leave native Tab/button behavior intact; InputManager stops propagation.
+    return !collapsed.value && (tab.value === 'build' || tab.value === 'residents' || campSelecting());
   }, 580);
   const removeReset = host.dialogs?.onReset(close),
     removeSource = host.dialogs?.registerSource(() => {
@@ -477,7 +485,7 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
               campTarget: campTarget.value,
               campBounds: campBounds(campTarget.value),
               collapsed: collapsed.value,
-              onCollapse: () => { collapsed.value = !collapsed.value; reset(); selectMap(); },
+              onCollapse: () => { collapsed.value = !collapsed.value; if (queue) reset(); selectMap(); },
               onCampTarget: (x: number, y: number) => { campTarget.value = clampMapTarget({x,y}); selectMap(); },
               draft: draft.value,
               sourceId: sourceId.value,
@@ -486,10 +494,11 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
               food: food.value,
               blocked: submitting.value || !model.value.available,
               error: error.value,
+              constructionFailure: constructionFailure.value,
               onClose: close,
               onTab: (value: string) => {
                 tab.value = value;
-                reset();
+                if (queue) reset();
                 selectMap();
               },
               onSelect: (value: string) => {
@@ -502,6 +511,11 @@ export function useSettlementUi(host: ModuleUiHost): ModuleUiSession {
                 selectMap();
               },
               onAppend: append,
+              onRemoveDraft: (index: number) => {
+                if (queue) return;
+                draft.value = draft.value.filter((_, i) => i !== index);
+                selectMap();
+              },
               onClear: reset,
               onConstruct: construct,
               onKit: (value: string | null) => {

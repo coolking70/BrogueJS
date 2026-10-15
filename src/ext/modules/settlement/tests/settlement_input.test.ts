@@ -62,3 +62,26 @@ it('opening a nonmodal drawer stops native automatic action through the same pub
  ui.commands.value[0]!.invoke();expect(ui.panelOpen.value).toBe(true);expect(g.isAutoTraveling()).toBe(false);
  expect(g.world5!.simulationTicks).toBe(ticks);scope.stop();
 });
+it.each(['build', 'camp', 'residents'])('selection tab %s claims inventory/drop/wait/movement keys from the actual InputManager route', async tab => {
+ const {g}=setup(true); install(g,()=>false);
+ const scope=effectScope();
+ const s=scope.run(()=>useOwnedUi({game:()=>g,tick:ref(0),immersive:ref(false),canOpenPanel:()=>true,beforeOpenPanel(){},afterClosePanel(){},
+  registerKeyHandler:(fn,p)=>input.registerModalKeyHandler(fn,p)}))!;
+ try {
+  s.commands.value[0]!.invoke();
+  (s.panel.value!.props as any).onTab(tab);
+  const before={at:{...g.player.loc},events:g.recordedInputEvents.length,turn:g.absoluteTurnNumber,inventory:g.player.inventory.items.map(i=>i.id)};
+  for(const key of ['i','d','a','j','.','x','Tab','Enter','ArrowDown']) {
+   const stop=vi.fn();
+   (input as unknown as {handleKeyDown(e:KeyboardEvent):void}).handleKeyDown({key,code:key,preventDefault(){},stopImmediatePropagation:stop} as unknown as KeyboardEvent);
+   expect(stop).toHaveBeenCalled(); s.refresh();
+  }
+  expect(g.isInventoryOpen).toBe(false);
+  expect({at:g.player.loc,events:g.recordedInputEvents.length,turn:g.absoluteTurnNumber,inventory:g.player.inventory.items.map(i=>i.id)}).toEqual(before);
+  expect((s.panel.value!.props as any)[tab==='camp'?'campTarget':'cursor']).toEqual({x:before.at.x+1,y:before.at.y+1});
+  (input as unknown as {handleKeyDown(e:KeyboardEvent):void}).handleKeyDown({key:'Escape',preventDefault(){},stopImmediatePropagation(){}} as KeyboardEvent);
+  expect(s.panelOpen.value).toBe(false);
+  (input as unknown as {handleKeyDown(e:KeyboardEvent):void}).handleKeyDown({key:'i',preventDefault(){},stopImmediatePropagation(){}} as KeyboardEvent);
+  expect(g.isInventoryOpen).toBe(true);
+ } finally {scope.stop();}
+});

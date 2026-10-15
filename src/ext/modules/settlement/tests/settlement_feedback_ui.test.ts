@@ -11,6 +11,7 @@ import { createSfcHarness } from '../../../../test/support/sfcHarness';
 import { setup, establish, current } from './helpers';
 import { residentScene } from './residentHelpers';
 import { useSettlementUi } from '../ui/useSettlementUi';
+import { MonsterState } from '../../../../entities/Monster';
 import { Item, ItemCategory } from '../../../../engine/Items/Item';
 import { rng } from '../../../../engine/Random';
 import { getNextEntityId } from '../../../../entities/Creature';
@@ -198,5 +199,58 @@ it('resident buttons explain their distance and missing selection gates in the a
     expect(u.text()).toContain('需要选择 1–6 块种植床');
     expect(u.button('下单生产').props.disabled).toBe(true);
     expect(unchanged(g)).toEqual(before);
+  } finally { u.dispose(); }
+});
+
+it('construction keeps the failed suffix and precise numbered reason across polls and tabs, then resumes an edited draft', async () => {
+  const { g, h } = setup(); expect(h.ext('settlement', 'establish', establish(g)).error).toBeNull();
+  const u = await mount(g);
+  try {
+    await u.click('建造');
+    u.props().onCursor(0, 1); await u.click('加入草稿'); // (21,13), in reach
+    u.props().onCursor(1, 0); await u.click('加入草稿'); // (22,13), too far
+    u.props().onCursor(1, 0); await u.click('加入草稿'); // (23,13), unattempted
+    const events = g.recordedInputEvents.length, tick = g.world5!.simulationTicks;
+    await u.click('确认逐格施工');
+    for (let n = 0; n < 5; n++) await u.refresh();
+    expect(g.world5!.structures).toHaveLength(1);
+    expect(g.recordedInputEvents.length - events).toBe(2);
+    expect(g.world5!.simulationTicks - tick).toBe(100);
+    expect(u.props().draft.map((p: any) => [p.x, p.y])).toEqual([[22, 13], [23, 13]]);
+    expect(u.text()).toContain('第 2 格 (22,13) 未施工：距离太远。');
+    await u.click('库存');
+    const wood = g.player.inventory.items.find(i => i.worldItem?.definitionId === 'settlement.wood')!;
+    u.props().onTransfer(current(g).supplyId, wood.id, 1, 'deposit'); await u.refresh();
+    expect(worldWorkLastError(g)).toBeNull();
+    await u.click('建造');
+    expect(u.text()).toContain('第 2 格 (22,13) 未施工：距离太远。');
+    await u.click('移出草稿'); await u.click('移出草稿');
+    u.props().onCursor(-3, 0); await u.click('加入草稿'); // corrected to (20,13)
+    await u.click('确认逐格施工');
+    for (let n = 0; n < 3; n++) await u.refresh();
+    expect(g.world5!.structures).toHaveLength(2);
+    expect(u.props().draft).toEqual([]);
+    expect(u.text()).not.toContain('未施工：');
+  } finally { u.dispose(); }
+});
+it.each(['materials', 'cancel', 'sleeping-threat'] as const)('first-cell %s stop persists without consuming the unfinished draft', async kind => {
+  const { g, h } = setup(); expect(h.ext('settlement', 'establish', establish(g)).error).toBeNull();
+  if (kind === 'materials') g.player.inventory.items.find(i => i.worldItem?.definitionId === 'settlement.wood')!.quantity = 0;
+  else if (kind === 'cancel') g.onConfirmRequest = () => false;
+  else {
+    const monster = g.monsters.find(m => !m.isAlly)!;
+    monster.loc = { x: 20, y: 13 }; monster.state = MonsterState.ASLEEP;
+    (g as any).updateVision(false);
+  }
+  const u = await mount(g);
+  try {
+    await u.click('建造'); u.props().onCursor(0, 1); await u.click('加入草稿');
+    const tick = g.world5!.simulationTicks;
+    await u.click('确认逐格施工');
+    for (let n = 0; n < 5; n++) await u.refresh();
+    expect(u.props().draft).toHaveLength(1);
+    expect(g.world5!.simulationTicks).toBe(tick);
+    expect(g.world5!.structures).toEqual([]);
+    expect(u.text()).toContain('第 1 格 (21,13) 未施工：' + (kind === 'materials' ? '材料不足。' : kind === 'cancel' ? '已取消确认。' : '附近有敌人。'));
   } finally { u.dispose(); }
 });
