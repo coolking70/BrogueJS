@@ -535,6 +535,12 @@
         "combat"
       ],
       "optional": []
+    },
+    "src/ext/modules/loot/tests/loot_game_sfc.test.ts": {
+      "required": [
+        "growth"
+      ],
+      "optional": []
     }
   }
 }

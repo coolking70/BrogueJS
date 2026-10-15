@@ -67,7 +67,9 @@ export function useLootUi(host:ModuleUiHost):ModuleUiSession {
  return {hud:ref(null),bar:ref(null),panelOpen:opened,
   commands:computed(()=>[{id:'loot:panel',label:i18next.t('ext.loot.ui.live.title'),invoke:()=>open()}]),
   itemActions:id=>reachableLootItems(game).some(e=>e.item.id===id)?[{id:'loot:details',label:i18next.t('ext.loot.ui.live.details'),invoke:()=>open(id)}]:[],
-  panel:computed(()=>opened.value&&view.value?{component:Panel,props:{view:view.value,tab:tab.value,comparing:comparing.value,onCompare:(value:boolean)=>{comparing.value=value;},selectedIds:batch.value,submitting:submitting.value,feedback:feedback.value,readOnly:readOnly(),
+  // Keep an accepted open mounted while its first stable DTO is deferred.
+  // The shared host tick / presentation-settled callback retries refresh.
+  panel:computed(()=>opened.value?{component:Panel,props:{view:view.value,tab:tab.value,comparing:comparing.value,onCompare:(value:boolean)=>{comparing.value=value;},selectedIds:batch.value,submitting:submitting.value,feedback:feedback.value,readOnly:readOnly(),
    onClose:close,onBack:back,onTab:(value:string)=>{tab.value=value;selected.value=null;comparing.value=false;refresh();},onSelect:(id:number)=>{selected.value=id;refresh();},onBatch:(ids:number[])=>{batch.value=ids;refresh();},
    onFilter:(draft:LootPickupFilterDraft)=>submit('set-filter',{...draft}),onSalvage:()=>submit('salvage',{itemIds:batch.value}),onIdentify:()=>submit('identify-shards',{itemId:selected.value}),onEquip:equip}}:null),refresh,close};
 }

@@ -197,5 +197,6 @@
   "ext.loot.ui.live.native-name": "{{name}}",
   "ext.loot.ui.live.wear-left": "佩戴到左戒槽",
   "ext.loot.ui.live.wear-right": "佩戴到右戒槽",
-  "ext.loot.ui.salvage.warn-ilvl-range": "物等尚未确定，碎片数量为可信区间"
+  "ext.loot.ui.salvage.warn-ilvl-range": "物等尚未确定，碎片数量为可信区间",
+  "ext.loot.ui.live.loading": "正在加载战利品…"
 }

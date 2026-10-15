@@ -6,12 +6,17 @@ import i18next from 'i18next';
 import { createSfcHarness } from '../../../../test/support/sfcHarness';
 import { createWorldHarness, worldHarnessGame } from '../../../testing/worldHarness';
 import { useLootUi } from '../gameSession';
+import { readFileSync } from 'node:fs';
+import { compileStyle, parse } from '@vue/compiler-sfc';
 import { timeSystem } from '../../../../engine/Systems/Time';
 type N = { tag: string; text: string; props: Record<string, any>; children: N[]; parent: N | null;
-  readonly tagName: string; readonly options: N[]; addEventListener(): void; removeEventListener(): void };
-const node = (tag = '', text = ''): N => ({ tag, text, props: {}, children: [], parent: null,
-  get tagName() { return tag.toUpperCase(); }, get options() { return this.children.filter(n => n.tag === 'option'); },
-  addEventListener() {}, removeEventListener() {} });
+  readonly tagName: string; readonly options: N[]; addEventListener(): void; removeEventListener(): void; focus():void; querySelector(selector:string):N|null; querySelectorAll(selector:string):N[]; matches(selector:string):boolean };
+const node = (tag = '', text = ''): N => Vue.markRaw<N>({ tag, text, props: {}, children: [], parent: null,
+  get tagName() { return tag.toUpperCase(); }, get options() { return this.children.filter((n:N) => n.tag === 'option'); },
+  addEventListener() {}, removeEventListener() {}, focus(){Reflect.set(document,'activeElement',this);},
+  matches(selector){return selector==='[data-preset]'?this.props['data-preset']!==undefined:false;},
+  querySelector(selector){const m=/\[data-preset="([^"]+)"\]/.exec(selector);return all(this).find(n=>m?n.props['data-preset']===m[1]:false)??null;},
+  querySelectorAll(){return all(this).filter(n=>n.tag==='button'&&!n.props.disabled&&n.props.tabindex!==-1);} });
 const body = node('body');
 const all = (n: N): N[] => [n, ...n.children.flatMap(all)];
 const text = (n: N): string => n.text + n.children.map(text).join('');
@@ -29,7 +34,7 @@ const renderer = Vue.createRenderer<N, N>({
 });
 
 let Panel:Vue.Component;
-beforeAll(async()=>{vi.stubGlobal('document',{activeElement:null,addEventListener(){},removeEventListener(){},querySelector(){return null;}});Panel=await createSfcHarness({baseURL:import.meta.url}).load('../ui/game/LootGamePanel.vue');});
+beforeAll(async()=>{vi.stubGlobal('window',{addEventListener(){},removeEventListener(){},localStorage:{getItem(){return null;},setItem(){}}});vi.stubGlobal('document',{documentElement:{dataset:{},style:{setProperty(){}}},activeElement:null,addEventListener(){},removeEventListener(){},querySelector(){return null;}});Panel=await createSfcHarness({baseURL:import.meta.url}).load('../ui/game/LootGamePanel.vue');});
 afterAll(()=>vi.unstubAllGlobals());
 it('real mounted game shell opens native comparison and applies one filter command, preserving a draft across polling',async()=>{
  const h=createWorldHarness({seed:42,mode:'easy',modules:['loot']}),g=worldHarnessGame(h),scope=Vue.effectScope();
@@ -63,4 +68,120 @@ it('R1-F2 mounted ring buttons fill only the actual empty slot and replace eithe
   await click('替换左戒');expect(g.player.ringLeft?.id).toBe(replacement.id);expect(g.player.ringRight?.id).toBe(right.id);expect(nativeStat(g.player,'native.regeneration-bonus')).toBe(4);
   expect(button('替换左戒')).toBeUndefined();expect(button('替换右戒')).toBeUndefined();
  }finally{app.unmount();scope.stop();h.dispose();body.children=[];}
+});
+it.each(['tick','settled'] as const)('D7 clean growth+loot shell opens from the real command bar and recovers via %s',async(release)=>{
+ const {useModuleUi}=await import('../../../ui/useModuleUi');
+ const {DialogService}=await import('../../../../ui/dialogService');
+ const {auditFullObjectGraph}=await import('../../../../test/support/fullGenerationCheckpointOracle');
+ const {rng}=await import('../../../../engine/Random');
+ const h=createWorldHarness({seed:42,mode:'easy',modules:['growth','loot']}),g=worldHarnessGame(h),scope=Vue.effectScope(),tick=Vue.ref(0);
+ let busy=false;let ui!:ReturnType<typeof useModuleUi>;
+ const host={game:()=>g,tick,immersive:Vue.ref(false),dialogs:new DialogService(),canOpenPanel:()=>true,canPresentInteraction:()=>true,isPresentationBusy:()=>busy,beforeOpenPanel(){ui.closePanels();},afterClosePanel(){}};
+ const Bar=await createSfcHarness({baseURL:import.meta.url}).load('../../../../components/CommandBar.vue');
+ const app=renderer.createApp({setup:()=>{ui=useModuleUi(host);ui.refresh();return ()=>Vue.h('div',[Vue.h(Bar,{mode:'desktop',moduleCommands:ui.commands.value}),...ui.panelSlots.value.map(slot=>Vue.h(Panel,slot.props))]);}});app.use(I18NextVue,{i18next});const root=node();app.mount(root);
+ const open=async()=>{const b=all(root).find(n=>n.tag==='button'&&text(n).includes('战利品'))!;expect(b).toBeDefined();b.props.onClick();await Vue.nextTick();};
+ try{
+  const audit=auditFullObjectGraph([g,rng]);await open();
+  expect(ui.panelOpen.value).toBe(true);expect(all(body).some(n=>String(n.props.class).includes('loot-game-panel'))).toBe(true);expect(text(body)).toContain('匕首');expect(audit.differences()).toEqual([]);
+  ui.closePanels();await Vue.nextTick();
+  host.beforeOpenPanel=()=>{ui.closePanels();busy=true;};await open();
+  expect(ui.panelOpen.value).toBe(true);expect(ui.panelSlots.value).toHaveLength(1);expect(text(body)).toContain('正在加载');
+  tick.value++;await Vue.nextTick();expect(ui.panelSlots.value[0]!.props.presentationHidden).toBe(true);
+  busy=false;if(release==='tick')tick.value++;else host.dialogs.sync();await Vue.nextTick();
+  expect(text(body)).toContain('匕首');expect(text(body)).not.toContain('正在加载');expect(audit.differences()).toEqual([]);
+ }finally{app.unmount();scope.stop();h.dispose();body.children=[];}
+});
+
+it('D7 creation is a body modal and focuses the selected preset after the previous-step lock',async()=>{
+ const Creation=await createSfcHarness({baseURL:import.meta.url}).load('../ui/creation/LootCreationStep.vue');
+ const props=Vue.reactive({submitting:true,error:null as string|null}),complete=vi.fn(),cancel=vi.fn();
+ const root=node(),app=renderer.createApp({setup:()=>()=>Vue.h(Creation,{...props,onComplete:complete,onCancel:cancel})});app.use(I18NextVue,{i18next});app.mount(root);
+ try{
+  await Vue.nextTick();const overlay=all(body).find(n=>n.props.class==='loot-creation')!;expect(overlay).toBeDefined();
+  const modal=all(body).find(n=>n.props.role==='dialog'&&n.props['aria-modal']==='true');expect(modal).toBeDefined();
+  props.submitting=false;await Vue.nextTick();await Vue.nextTick();
+  expect((document.activeElement as unknown as N)?.props['data-preset']).toBe('standard');
+  const b=all(body).find(n=>n.props['data-action']==='cancel')!;expect(b).toBeDefined();b.props.onClick();await Vue.nextTick();expect(cancel).toHaveBeenCalledTimes(1);expect(complete).not.toHaveBeenCalled();
+ }finally{app.unmount();body.children=[];}
+});
+it.each(['Enter',' '])('D7 creation keyboard %s confirms exactly once and ignores held repeat',async(key)=>{
+ const Creation=await createSfcHarness({baseURL:import.meta.url}).load('../ui/creation/LootCreationStep.vue');const complete=vi.fn();
+ const app=renderer.createApp(Creation,{submitting:false,error:null,onComplete:complete});app.use(I18NextVue,{i18next});app.mount(node());
+ try{
+  await Vue.nextTick();await Vue.nextTick();const overlay=all(body).find(n=>n.props.class==='loot-creation')!;expect(overlay).toBeDefined();
+  const selected=all(body).find(n=>n.props['data-preset']==='standard')!;
+  const event=(repeat=false)=>({key,repeat,target:selected,preventDefault:vi.fn(),stopPropagation:vi.fn()});
+  overlay.props.onKeydownCapture(event());overlay.props.onKeydownCapture(event(true));overlay.props.onKeydownCapture(event());
+  expect(complete).toHaveBeenCalledTimes(1);expect(JSON.parse(complete.mock.calls[0]![0][0])).toMatchObject({module:'loot',action:'create',payload:{presetId:'standard'}});
+ }finally{app.unmount();body.children=[];}
+});
+it('D7 creation compiled layout is viewport anchored with a scrollable body and reachable actions',()=>{
+ const filename=new URL('../ui/creation/LootCreationStep.vue',import.meta.url),sfc=parse(readFileSync(filename,'utf8')).descriptor;
+ const css=sfc.styles.map(s=>compileStyle({filename:filename.pathname,id:'d7',source:s.content,scoped:s.scoped}).code).join('\n');
+ expect(css).toMatch(/\.loot-creation\s*\{[^}]*position:\s*fixed/);expect(css).toMatch(/inset:\s*0/);expect(css).toMatch(/z-index:\s*2200/);
+ expect(css).toMatch(/max-height:\s*calc\(100dvh - 32px\)/);expect(css).toMatch(/overflow-y:\s*auto/);expect(css).toMatch(/width:\s*min\(940px,100%\)/);
+});
+it('D7 engine advancement deferred on open completes on the host poll; close/load revoke pending panels',async()=>{
+ const {useModuleUi}=await import('../../../ui/useModuleUi');
+ const h=createWorldHarness({seed:42,mode:'easy',modules:['growth','loot']}),g=worldHarnessGame(h),tick=Vue.ref(0);
+ let ui!:ReturnType<typeof useModuleUi>;const root=node();
+ const app=renderer.createApp({setup(){ui=useModuleUi({game:()=>g,tick,immersive:Vue.ref(false),canOpenPanel:()=>true,canPresentInteraction:()=>true,
+  beforeOpenPanel(){ui.closePanels();g.animationEnabled=true;g.executeCommand('wait');},afterClosePanel(){}});ui.refresh();return ()=>Vue.h('div',ui.panelSlots.value.map(s=>Vue.h(Panel,s.props)));}});app.use(I18NextVue,{i18next});app.mount(root);
+ const open=()=>ui.commands.value.find(c=>c.id==='loot:panel')!.invoke();
+ const settle=()=>{for(let i=0;i<1000&&g.isAdvancing;i++)g.stepAdvancement();expect(g.isAdvancing).toBe(false);};
+ try{
+  const events=g.recordedInputEvents.length;open();expect(g.isAdvancing).toBe(true);await Vue.nextTick();expect(text(body)).toContain('正在加载');
+  settle();tick.value++;await Vue.nextTick();expect(text(body)).toContain('匕首');expect(g.recordedInputEvents).toHaveLength(events+1);
+  ui.closePanels();open();ui.closePanels();settle();tick.value++;await Vue.nextTick();expect(ui.panelSlots.value).toEqual([]);
+  open();settle();expect(g.loadSnapshot(g.toSnapshot())).toBe(true);tick.value++;await Vue.nextTick();expect(ui.panelOpen.value).toBe(false);expect(ui.panelSlots.value).toEqual([]);
+ }finally{app.unmount();h.dispose();body.children=[];}
+});
+it('D7 growth confirmation hands the real menu to a focused loot modal, Escape returns, retry starts once',async()=>{
+ vi.useFakeTimers();
+ const harness=createSfcHarness({baseURL:import.meta.url});
+ const Growth=await harness.load('../../growth/ui/GrowthCreationStep.vue'),Loot=await harness.load('../ui/creation/LootCreationStep.vue');
+ const creation=await import('../../../ui/creation');
+ const Empty=Vue.defineComponent({render:()=>null});
+ const Menu=await createSfcHarness({baseURL:import.meta.url,components:{'../../../../components/theme/TitleFx.vue':Empty,'../../../../components/MapTileLegend.vue':Empty},stubs:{'../../../ui/creation':{...creation,
+  prepareModuleCreation(ids:readonly string[]){const plan=creation.prepareModuleCreation(ids);return {...plan,steps:plan.steps.map(step=>({...step,load:undefined,component:step.moduleId==='growth'?Growth:Loot}))};}
+ }}}).load('../../../../components/MainMenu.vue');
+ const submitted=vi.fn(),root=node(),app=renderer.createApp(Menu,{inGame:false,hasSave:false,hasReplay:false,saveInfo:null,replayInfo:null,onNewGame:submitted});app.use(I18NextVue,{i18next});app.mount(root);
+ const flush=async()=>{await Vue.nextTick();await Vue.nextTick();};
+ const find=(prop:string,value:string,where=body)=>all(where).find(n=>n.props[prop]===value)!;
+ const click=async(b:N)=>{expect(b).toBeDefined();expect(b.props.disabled).not.toBe(true);b.props.onClick?.({detail:1,preventDefault(){},stopPropagation(){}});await flush();};
+ const button=(label:string)=>all(root).find(n=>n.tag==='button'&&text(n).includes(label))!;
+ const reachLoot=async()=>{
+  await click(button(i18next.t('title.begin')));await flush();
+  for(let i=0;i<3;i++){await click(find('data-creation','next'));vi.advanceTimersByTime(600);await flush();}
+  await click(find('data-creation','submit'));await flush();vi.advanceTimersByTime(600);await flush();
+  expect(find('class','loot-creation')).toBeDefined();expect((document.activeElement as unknown as N)?.props['data-preset']).toBe('standard');
+ };
+ try{
+  await click(button(i18next.t('menu.actions.new_game')));
+  find('data-testid','rule-set',root).props['onUpdate:modelValue']('extended');await flush();
+  find('data-module','growth',root).props['onUpdate:modelValue'](['growth','loot']);await flush();
+  await reachLoot();expect(submitted).not.toHaveBeenCalled();
+  const title=all(root).find(n=>String(n.props.class).includes('title-screen'))!;expect(title.props.inert).toBe(true);
+  find('class','loot-creation').props.onKeydownCapture({key:'Escape',preventDefault(){},stopPropagation(){}});await flush();
+  expect(find('class','loot-creation')).toBeUndefined();expect(title.props.inert).toBe(false);expect(document.activeElement).toBe(title);
+  await reachLoot();await click(find('data-preset','scarce'));await click(find('data-action','confirm'));
+  expect(submitted).toHaveBeenCalledTimes(1);const payload=submitted.mock.calls[0]![0];
+  expect(payload.extensions).toEqual(['growth','loot']);expect(payload.extensionConfigurations.loot).toEqual({presetId:'scarce'});
+  expect(payload.initialCommands.map((s:string)=>JSON.parse(s).module)).toEqual(['growth','loot']);
+  const {Game}=await import('../../../../engine/Core/Game');const g=new Game();
+  try{g.startNewGame({...payload,seed:42});expect(g.depth).toBe(1);expect(g.extensionRuntime!.manifest.modules.map(m=>m.id)).toEqual(['growth','loot']);}
+  finally{g.disposeRecording();}
+ }finally{app.unmount();body.children=[];vi.useRealTimers();}
+});
+it('D7 preset Tab stays in the modal and a rejected start allows retry without losing the choice',async()=>{
+ const Creation=await createSfcHarness({baseURL:import.meta.url}).load('../ui/creation/LootCreationStep.vue');
+ const props=Vue.reactive({submitting:false,error:null as string|null}),complete=vi.fn(()=>{props.error='ext.creation.start_failed';});
+ const app=renderer.createApp({setup:()=>()=>Vue.h(Creation,{...props,onComplete:complete})});app.use(I18NextVue,{i18next});app.mount(node());
+ try{
+  await Vue.nextTick();await Vue.nextTick();const overlay=all(body).find(n=>n.props.class==='loot-creation')!,confirm=all(body).find(n=>n.props['data-action']==='confirm')!,cancel=all(body).find(n=>n.props['data-action']==='cancel')!;
+  const tab=(shiftKey=false)=>overlay.props.onKeydownCapture({key:'Tab',shiftKey,target:document.activeElement,preventDefault(){},stopPropagation(){}});
+  tab();expect(document.activeElement).toBe(confirm);tab();expect(document.activeElement).toBe(cancel);tab(true);expect(document.activeElement).toBe(confirm);
+  all(body).find(n=>n.props['data-preset']==='scarce')!.props.onClick();await Vue.nextTick();
+  for(let i=1;i<=2;i++){confirm.props.onClick();await Vue.nextTick();await Vue.nextTick();await Vue.nextTick();expect(complete).toHaveBeenCalledTimes(i);expect(confirm.props.disabled).toBe(false);expect((document.activeElement as unknown as N).props['data-preset']).toBe('scarce');}
+ }finally{app.unmount();body.children=[];}
 });

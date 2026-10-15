@@ -8,12 +8,12 @@ import LootPickupFilterForm from '../LootPickupFilterForm.vue';
 import LootSalvagePanel from '../LootSalvagePanel.vue';
 import type { LootGameView } from '../../gameView';
 import type { LootPickupFilterDraft } from '../types';
-const props=defineProps<{view:LootGameView;tab:string;comparing:boolean;selectedIds:readonly number[];submitting:boolean;feedback:string;readOnly:boolean;presentationHidden?:boolean}>();
+const props=defineProps<{view:LootGameView|null;tab:string;comparing:boolean;selectedIds:readonly number[];submitting:boolean;feedback:string;readOnly:boolean;presentationHidden?:boolean}>();
 const emit=defineEmits<{close:[];back:[];compare:[value:boolean];tab:[value:string];select:[id:number];batch:[ids:number[]];filter:[draft:LootPickupFilterDraft];salvage:[];identify:[];equip:[unequip:boolean,replace?:'left'|'right']}>();
 const {t}=useTranslation();
 const filter=ref('all');
-const entries=computed(()=>props.view.entries.filter(e=>filter.value==='all'||e.itemClass===filter.value));
-const disabled=computed(()=>props.submitting||props.readOnly);
+const entries=computed(()=>props.view?.entries.filter(e=>filter.value==='all'||e.itemClass===filter.value)??[]);
+const disabled=computed(()=>!props.view||props.submitting||props.readOnly);
 function toggle(id:number){emit('batch',props.selectedIds.includes(id)?props.selectedIds.filter(v=>v!==id):[...props.selectedIds,id]);}
 function back(){emit('back');}
 </script>
@@ -21,6 +21,8 @@ function back(){emit('back');}
  <Teleport to="body"><div class="loot-game-overlay" :hidden="presentationHidden" @click.stop @pointerdown.stop @wheel.stop @touchmove.stop>
   <section class="loot-game-panel" role="dialog" tabindex="-1" @keydown.stop @keyup.stop @keydown.esc.prevent="back">
    <header class="loot-game-header"><h2>{{ t('ext.loot.ui.live.title') }}</h2><button @click="emit('close')">{{ t('ext.loot.ui.live.close') }}</button></header>
+   <p v-if="!view" role="status">{{ t('ext.loot.ui.live.loading') }}</p>
+   <template v-else>
    <p>{{ t('ext.loot.ui.live.shards',{count:view.shards}) }}</p><p v-if="readOnly">{{ t('ext.loot.ui.live.readonly') }}</p><p v-if="feedback" class="loot-game-feedback">{{ feedback }}</p>
    <nav class="loot-game-nav"><button @click="emit('tab','items')">{{ t('ext.loot.ui.live.items') }}</button><button @click="emit('tab','filter')">{{ t('ext.loot.ui.live.filter') }}</button><button @click="emit('tab','salvage')">{{ t('ext.loot.ui.live.salvage') }}</button><button @click="emit('tab','sources')">{{ t('ext.loot.ui.live.sources') }}</button></nav>
    <template v-if="tab==='filter'"><LootPickupFilterForm :value="view.filter" :defaults="view.defaults" :preset-name="view.presetName" :read-only="readOnly" :submitting="submitting" @submit="emit('filter',$event)" @cancel="emit('back')" /></template>
@@ -43,6 +45,7 @@ function back(){emit('back');}
     <p v-if="!entries.length">{{ t('ext.loot.ui.live.empty') }}</p>
     <ul class="loot-game-list"><li v-for="entry in entries" :key="entry.id"><label v-if="tab==='salvage'"><input type="checkbox" :checked="selectedIds.includes(entry.id)" :disabled="disabled||!entry.canSalvage" @change="toggle(entry.id)" />{{ entry.name }}<span v-if="!entry.canSalvage"> · {{ entry.location==='equipped'?t('ext.loot.ui.live.equipped'):entry.location==='floor'?t('ext.loot.ui.live.floor'):entry.location==='container'?t('ext.loot.ui.live.container'):t('ext.loot.ui.live.native') }}</span></label><button v-else @click="emit('select',entry.id)">{{ entry.name }}</button></li></ul>
     <template v-if="tab==='salvage'"><p>{{ t('ext.loot.ui.live.cost',{count:view.salvage.entries.length*100}) }}</p><LootSalvagePanel :view="view.salvage" :submitting="disabled" @confirm="emit('salvage')" @cancel="emit('back')" /></template>
+   </template>
    </template>
   </section>
  </div></Teleport>

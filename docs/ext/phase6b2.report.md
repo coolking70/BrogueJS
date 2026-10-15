@@ -431,3 +431,91 @@ D4 状态：**基线已交，具体目标与曲线待维护者冻结**。未调 
 最终仍基于 `ext/phase6 / 9ab574550dabb88f6cfa9b1e94e6a5fa8450b737`，未commit/push。1489个非docs/progress/AGENTS输入按原算法 `path\0sha\n` 汇总SHA256：`1b145bc706fd4733fd53249120485048771e31e3d0c66447267768f780323fc4`，清单 `/private/tmp/phase6b2-r1/source-freeze.json`。相对首次交审源码仅上述7个生产文件、SFC测试、1个新回归文件及2个测试登记文件变化，共11路径；没有数值数据差量。此摘要取代旧候选摘要作为当前源码身份。
 
 本轮dist 61文件，沿原路径NUL+内容SHA256二进制算法摘要 `de7873291973e1484197811e4671fa42886638e835c3e846c6e54c0c44487eb3`；实际命令、结果、耗时和两次门禁轨迹保存在 `gates.json` / `finish-gates.json` / `candidate.json`，均位于 `/private/tmp/phase6b2-r1/`。源码及构建不再修改后交接。四项重要问题均已修复并补回归，D4整体延期、D7维护者浏览器待验继续单列；不将代码测试通过写成发布或浏览器验收结论。
+
+
+## D7 浏览器复核发现处理（2026-10-15）
+
+基线已合入 `fbcc607`；本轮处理维护者在 1024×768、vite dev、仅 growth+loot 的真实浏览器复核中提出的 F-D7-1/F-D7-2。不 commit，不进入6B3，不做D4曲线工作。开工另有未跟踪 `docs/ext/phase6b3.task.md`，保持原样。以下为当前修复候选，覆盖之前D7尚无维护者反馈的历史状态。
+
+### 验证范围（最终批次执行前登记）
+
+Node24、`NODE_OPTIONS=--max-old-space-size=3072`，Vitest `--maxWorkers=2`，各批次串行。只相关测试 + boundary + 测试依赖 + vue-tsc + build，无全量、drift、CE或移除复跑。
+
+- loot：本次会话/加载外壳/创建模态，原组件键盘与样式合同，i18n/隔离及存读回放生命周期；`src/ext/modules/loot/tests/loot_game_sfc.test.ts`, `src/ext/modules/loot/tests/loot_game_ui.test.ts`, `src/ext/modules/loot/tests/loot_ui_components.test.ts`, `src/ext/modules/loot/tests/loot_ui_i18n.test.ts`, `src/ext/modules/loot/tests/loot_ui_style.test.ts`, `src/ext/modules/loot/tests/loot_ui_inert.test.ts`, `src/ext/modules/loot/tests/loot_integration.test.ts`。
+- host：共享轮询与显示完成通知、创建菜单生命周期、身世构筑前一步；`src/test/ext_module_ui.test.ts`, `src/test/ext_module_creation_ui.test.ts`, `src/ext/modules/growth/tests/ext_growth_creation_ui.test.ts`。
+- guards：触达的i18n、硬编码、测试归属及仓库卫生；`src/test/u24_hardcoded_text.test.ts`, `src/test/p1_30_i18n_gate.test.ts`, `src/test/test_suite_membership.test.ts`, `src/test/repo_hygiene.test.ts`。
+
+完整命令、原始日志与退出码/耗时留 `/private/tmp/phase6b2-d7/plan.json`、各同名 `.log`、`gates.json`。
+
+### F-D7-1：已打开但首份 view 未就绪，没有面板槽位
+
+确认的代码缺口位于 `gameSession.open → refresh → panel`：通过打开门控后先置 `opened=true`，若刷新时显示仍忙或 `game.isAdvancing`，首份 `view` 尚未生成；旧 `opened && view` 条件因此返回null槽位，外壳却已把此模块算为打开。这与维护者观察到的激活按钮/其他入口禁用/无面板DOM一致。
+
+对疑点作一项纠正：**当前共享外壳并非没有轮询**。`App.vue` 每100ms增加 `replayTick`，`useModuleUi` 监听该tick调用session.refresh；另有显示从忙到稳时的dialog source通知补刷。受控SFC中，干净D1、growth+loot、无注入物品且稳定时，旧实现可正常显示起始匕首；在已接受打开请求后进入忙碌窗口，则精确复现 `panelOpen=true / panelSlots=[]`。本机不能重现维护者浏览器当时持续忙碌的具体时序，不把“没有轮询”写成已证实根因。
+
+修复：`opened` 独立决定是否提供面板槽位；`LootGamePanel` 接纳null DTO，始终保留标题与关闭入口，尚未就绪时显示 i18n“正在加载战利品…”。有稳定DTO后自然切换到列表。沿用共享轮询/显示完成通知，不另加定时器，不在忙碌阶段强读未来状态；共享 `presentationHidden` 仍可暂时遮住完整面板，结束后补刷再显示。原入口忙碌/生命周期门控保持；“已接受打开”后不再出现无槽位的激活状态。
+
+新增回归覆盖：真实CommandBar→useModuleUi→loot session→实际SFC；干净growth+loot D1；打开钩子期间变忙、忙时槽位保留及遮蔽、普通tick和dialog settled通知两种恢复；真实动画wait造成isAdvancing期间的加载→推进完成→列表；等待期间关闭及读档后不会复活旧面板。只读开关/轮询完整对象图与RNG不变，受控wait恰一条命令，无UI偷偷推进或补发命令。
+
+同类模块静态核查：
+
+|模块|现有打开/呈现方式|是否同类缺口|
+|---|---|---|
+|growth|先poll，确认view及异步组件就绪，再characterOpen；加载失败有单独状态|未见同类“先打开后空view”路径|
+|crafting / foraging|先refresh并要求view，异步加载后再复核live/门控/view，beforeOpenPanel后再次门控|未见相同模式|
+|settlement|先refresh并要求model，再打开；close不清model|未见相同模式|
+|combat / narrative|交给统一DialogService；选择/active事实与有效view关联，非loot这种可空面板槽位|未见相同模式|
+|giants|仅HUD，无可打开面板|不适用|
+
+这是针对相同代码模式的核查，未宣称其他模块重新完成全部浏览器验收。
+
+### F-D7-2：创建步骤缺少模态外壳与焦点所有权
+
+`LootPresetPicker` 本身是可嵌入的β展示组件，原 `LootCreationStep` 直接放普通div于MainMenu底部；既无Teleport/固定定位，也未接管焦点，故菜单已inert而选项在视口外。该缺口与维护者实测y≈1444一致。
+
+修复限定在创建适配器：Teleport到body；z-index2200固定全视口遮罩，与身世步骤同层级；居中 `width:min(940px,100%)` 对话框，四周16px，`max-height:calc(100dvh - 32px)`，内容纵向滚动，取消按钮置于顶部粘性栏。沿用Picker已有<360 / 360–639 / ≥640容器查询与44px控件，不修改β组件的键盘语义。
+
+打开后焦点移入当前选中预设；身世→loot的既有600ms提交锁结束后再补聚焦，避免聚焦禁用按钮。Tab/Shift+Tab留在本模态；Esc与取消返回菜单，由MainMenu恢复菜单焦点；沿用MainMenu已有1000优先级全局模态门控；子面板只在自身DOM捕获/阻止键盘冒泡，不另注册全局处理器。创建适配器的Enter/Space捕获确认当前预设、阻止默认重复点击；同步sent锁保证父props尚未刷新时也只发一次complete，忽略长按repeat。确认按钮仍保留原生键盘点击。启动失败可重试并保留选项，包括相同错误的同步再次拒绝。
+
+新增SFC/集成回归：body模态/aria-modal、前一步提交锁后的选中项焦点、取消、Enter/Space连续与repeat只提交一次、Tab循环、失败重试保留选项、编译CSS固定位置/视口上限/滚动边界；实际MainMenu+GrowthCreationStep+LootCreationStep走完整身世确认→loot→Esc返回→重开→scarce确认，仅发一次新局请求，两条创建命令顺序为growth/loot，真实Game接受该请求进入D1。仅将创建chunk加载替换为同源码的客户端SFC编译，未伪造创建view/命令或注入物品。
+
+### 首次失败与修复证据
+
+- `panel-red.log`：新增growth组合最初漏登记测试依赖，发现器拒绝启动；已在 `scripts/test-dependencies.json` 给现有 `loot_game_sfc` 登记required growth，无optional绕过。`panel-red-registered.log`：新CommandBar布景缺window；补齐最小DOM宿主后再测。
+- `panel-red-ready.log`：修复前旧生产明确命中 `panelSlots=[]` 断言失败，1失败/2名称未选，Vitest4.81s。干净稳定开局段先通过，忙碌打开段失败，未混写为整个浏览器现场已复现。
+- `creation-red.log`：旧生产4项新回归全失败，3名称未选，3.60s；body中无模态、无确认捕获处理器、无定位样式。`first-green.log` 修后7/7通过，6.66s。
+- `expanded.log` 8过1失败（7.93s）：完整MainMenu新布景缺documentElement。`creation-flow.log` 补齐后仅新布景的DOM对象被Vue代理，焦点身份比较失败；节点改为markRaw模拟原生DOM后，`expanded-final.log` 10/10通过，8.77s。没有调整旧断言或生产逻辑迎合这两次新宿主失败。最终再把显示恢复分为tick/settled两条，最终11项中9项为本轮新增。
+
+### 浏览器证据边界与维护者复核
+
+本机尝试启动vite 127.0.0.1:5199，`vite.log`为listen EPERM；按develop-web-game客户端运行Playwright，`browser.log`为Chromium MachPort bootstrap_check_in Permission denied，尚未创建页面或截图。未重复试探权限、未称浏览器通过。SFC与编译CSS合同不等于实际320/800/桌面像素验收。
+
+请维护者在本候选的 **320×568、800×900、1024×768** 各复核：仅growth+loot新局；身世确认后预设模态居中可见、standard获得焦点，内容可滚动，取消/确认始终可达；方向键切换、Enter/Space单次确认、Esc返回后重开可用；干净D1点击战利品，加载态或列表可靠出现，忙碌结束后自动补齐，关闭/重开正常。检查控制台并记录实际源码/构建；未通过项不得以本节SFC结果替代。
+
+
+限定A批首次为114通过/1失败（`related-loot.log`，Vitest60.24s，exit1）：旧UI纯展示守卫拒绝在创建SFC中读取全局document和导入Input。守卫与旧断言未改。改为沿用MainMenu现有全局模态门控；子面板仅从键盘事件target确定Tab起点、自身ref完成焦点移动，移除新增的全局键盘注册和引擎导入。新Tab布景补齐浏览器事件本来就有的target。收尾只复验受影响 `loot_game_sfc`、`loot_ui_inert`、`loot_ui_i18n`，其余A批原结果沿用，再继续host/guards/boundary/依赖/types/build，完整命令留finish-gates.json。
+
+
+类型检查首次 `types.log` exit2（16.22s）仅为新增CPU DOM宿主 `markRaw` 后的getter回调缺显式节点类型；补 `(n:N)`，无运行行为或断言变化，随后仅重跑vue-tsc/build（`build-gates.json`）。另检查GameCanvas的模块面板暂停分支：仍会推进在途动作及presentationTimeline，未发现“打开面板反过来停止忙碌收尾”的死锁，也未改该公共循环。
+
+工作期间HEAD由fbcc607前移至 `8911023fa8f7a15b23d48b4b0c69a462a5c3b51a`。已核对两者差量仅 `docs/ext/phase6b3.task.md`，属本轮之外的文档提交；本执行者未创建提交，生产基线与fbcc607相同，未修改该任务单。本次门禁无需因这一文档变动重跑。
+
+
+### D7修复候选限定验收结果
+
+|批次|实际结果|exit|墙钟耗时|
+|---|---|---|---|
+|`related-loot.log`|7文件114通过/1守卫失败；由related-fixed关闭（Vitest60.24s）|1|59.39s|
+|`related-fixed.log`|受影响3文件17项通过（Vitest11.21s）|0|18.81s|
+|`related-host.log`|3文件26项通过（Vitest8.10s）|0|15.37s|
+|`guards.log`|4文件37项通过（Vitest19.02s）|0|26.2s|
+|`boundary.log`|模块边界/测试归属通过|0|10.7s|
+|`dependencies.log`|静态测试依赖 errors=[]|0|6.69s|
+|`types-final.log`|vue-tsc -b通过|0|16.91s|
+|`build.log`|npm run build通过（含vue-tsc和Vite）|0|29.46s|
+
+最终相关覆盖14个不同文件、178项，0未关闭失败、0 skip/todo/unhandled；不是首次A批一次全绿，后续17项为重复复验、不额外累计。本轮新增SFC/集成9项；旧断言与守卫保持。未新增Game字段、SDK权限、规则/存档格式或随机消耗，loot仍module/rules0.3.0、pack0.1.1；仅本地化新增加载文案，不进入机械指纹。无trace或M4重录，未全量或全移除。
+
+候选源码 1489 个受跟踪非docs/progress/AGENTS输入，按 `path\0sha\n` 的SHA256摘要 `e6e1b7aae2b1f6e72aa716656ecf64eb4e8744bf187cc66c3520b6e2878e0fde`；dist 61文件摘要 `f9d985273dfde2dc559dafb7a3616db3213dbf6e69e8943c0d2e8eb5c42719c9`（路径NUL+内容SHA256二进制）。清单留 `/private/tmp/phase6b2-d7/source-freeze.json`、`candidate.json`；原始日志同目录。本次变更未commit/push，当前HEAD `8911023fa8f7a15b23d48b4b0c69a462a5c3b51a` 仅含上述外部6B3文档前移，生产基线仍为 `fbcc607e7727dedd32141d903e9f041c0eba7e51`。
+
+两项已证实代码缺口及新增回归已修复收口；真实浏览器的最终视觉/交互复验仍待维护者，特别是原F-D7-1现场持续忙碌时序。请按本节三档清单验证，不把SFC或CSS合同当作已完成浏览器验收。
